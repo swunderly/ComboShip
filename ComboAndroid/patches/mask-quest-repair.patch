@@ -1,0 +1,428 @@
+--- a/combo/rando/ComboPlaythrough.h
++++ b/combo/rando/ComboPlaythrough.h
+@@ -155,6 +155,25 @@
+     return out;
+ }
+ 
++inline std::unordered_set<std::string> QueryReachableWithMmStock(
++    const OracleFns& o, const std::vector<std::string>& owned, bool isMm,
++    const std::vector<CwPlacedItem>& placements, const std::unordered_set<size_t>& excluded = {}) {
++    CheckGenerationCancellation();
++    o.Reset();
++    o.SetOwnedItems(nlohmann::json(owned).dump().c_str());
++    if (isMm && o.PlaceItem) {
++        for (size_t i = 0; i < placements.size(); ++i) {
++            const auto& p = placements[i];
++            if (p.checkGame == GAME_MM) {
++                o.PlaceItem(p.check.c_str(), !excluded.count(i) && p.itemGame == GAME_MM ? p.item.c_str() : "");
++            }
++        }
++    }
++    std::unordered_set<std::string> out;
++    for (const auto& name : nlohmann::json::parse(o.GetReachableChecks())) out.insert(name.get<std::string>());
++    return out;
++}
++
+ // OOT->MM portal openness for the owned-set of the LAST QueryReachable on this oracle (see OracleFns).
+ // No export (MM oracle, or an old soh.dll) => ungated, matching the pre-gate behavior.
+ inline bool OraclePortalOpen(const OracleFns& o) {
+@@ -318,12 +337,29 @@
+     // and whether MM is already reachable; per-engine inventory caches lose those edges.
+     struct SongReachMemo { ReachSet oot, mm; bool mmOpen; };
+     std::unordered_map<std::string, SongReachMemo> songMemo;
++    std::unordered_set<size_t> stockSensitive;
++    const auto sourceMetadata = nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson)
++                                    .value("beanSources", nlohmann::json::object());
++    for (size_t i = 0; i < placements.size(); ++i) {
++        if (placements[i].checkGame != GAME_MM) continue;
++        const auto source = sourceMetadata.find(placements[i].check);
++        // Without metadata, keep the conservative cache separation. With a
++        // native dump, only renewable stock can change the resource search;
++        // excluding ordinary rewards is already reflected in owned inventory.
++        if (source == sourceMetadata.end() || source->value("renewable", false)) stockSensitive.insert(i);
++    }
+ 
+     // Excludes a SET of placements from ever crediting their items, then sphere-collects everything
+     // else from empty until stable. Latch the first win but continue collecting to distinguish
+     // optional boss paths from items required for the seed's selected victory condition.
+     auto winsWithout = [&](const std::unordered_set<size_t>& excludeIdx, std::vector<char>* creditedOut,
+                            uint64_t* pathsOut) {
++        std::vector<size_t> excludedKey;
++        for (const auto index : excludeIdx) if (stockSensitive.count(index)) excludedKey.push_back(index);
++        std::sort(excludedKey.begin(), excludedKey.end());
++        auto queryWithStock = [&](const OracleFns& o, const std::vector<std::string>& owned) {
++            return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements, excludeIdx);
++        };
+         const auto starts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
+         std::vector<std::string> ootOwned = starts.first, mmOwned = starts.second;
+         std::vector<char> credited(placements.size(), 0);
+@@ -338,7 +374,7 @@
+             CheckGenerationCancellation();
+             ApplySharedMirror(sharedMask, ootOwned, mmOwned, sharedGiven, nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+             const std::string key=nlohmann::json::array({CanonicalOwnedKey(ootOwned),
+-                CanonicalOwnedKey(mmOwned),portalOpen}).dump();
++                CanonicalOwnedKey(mmOwned),portalOpen,excludedKey}).dump();
+             auto memo=songMemo.find(key);
+             if(memo==songMemo.end()) {
+                 // Requiredness probes share prefixes, but unique counterfactual inventories
+@@ -346,7 +382,7 @@
+                 // Eviction only repeats the identical oracle query; it changes no rule.
+                 constexpr size_t kMaxSongReachMemoEntries = 128;
+                 if (songMemo.size() >= kMaxSongReachMemoEntries) songMemo.clear();
+-                auto worlds=QuerySongWorlds(ootOracle,mmOracle,ootOwned,mmOwned,portalOpen,QueryReachable);
++                auto worlds=QuerySongWorlds(ootOracle,mmOracle,ootOwned,mmOwned,portalOpen,queryWithStock);
+                 SongReachMemo value{std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.first)),
+                     std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.second)),portalOpen};
+                 memo=songMemo.emplace(key,std::move(value)).first;
+@@ -505,7 +541,9 @@
+     using Placed = CwPlacedItem;
+     std::vector<Placed> placements = ParseSpoilerPlacements(spoilerJson, sohDumpJson, mmDumpJson);
+ 
+-    auto queryReachable = QueryReachable;
++    auto queryReachable = [&](const OracleFns& o, const std::vector<std::string>& owned) {
++        return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements);
++    };
+ 
+     const auto starts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
+     std::vector<std::string> ownedOot = starts.first, ownedMm = starts.second;
+--- a/combo/rando/CrossWorldRando.h
++++ b/combo/rando/CrossWorldRando.h
+@@ -357,6 +357,7 @@
+     std::string name;
+     bool advancement;
+     CwCat cat = CwCat::UNKNOWN;
++    bool criticalRenewable = false;
+     // Only native-JUNK may absorb a surplus, and never if it gates logic: OOT files bombchus and
+     // Buy Blue Fire/Arrows as ITEM_CATEGORY_JUNK with advancement=true (item_list.cpp:278-325).
+     bool discardable() const {
+@@ -480,7 +481,7 @@
+                 CwCat cat = CwCatFromName(it.value("category", std::string{}));
+                 ++parsed;
+                 withCategory += (cat != CwCat::UNKNOWN) ? 1 : 0;
+-                (adv ? advItems : junkItems).push_back({ game, name, adv, cat });
++                (adv ? advItems : junkItems).push_back({ game, name, adv, cat, it.value("criticalRenewable", false) });
+             }
+             if (parsed > 0 && withCategory == 0)
+                 missingCategory = (game == GAME_OOT ? "soh.dll" : "2ship.dll");
+@@ -855,6 +856,7 @@
+     };
+     QueryStats ootStats, mmStats;
+ 
++    std::vector<CwPlacement> placements;
+     bool externalMmBeanRenewal=false;
+     auto queryReachable = [&](const OracleFns& oracle,
+                               const std::vector<std::string>& ownedItems) -> std::unordered_set<std::string> {
+@@ -866,6 +868,16 @@
+             arr.push_back(n);
+         oracle.Reset();
+         oracle.SetOwnedItems(arr.dump().c_str());
++        // Reset clears MM's simulated shelves. Reinstall the current placement
++        // map before its resource search; owned equipment alone cannot describe
++        // which reachable shops/cows supply renewable potions and Bombchus.
++        if (&oracle == &mmOracle && oracle.PlaceItem) {
++            for (const auto& p : placements) {
++                if (p.check.game == GAME_MM) {
++                    oracle.PlaceItem(p.check.name.c_str(), p.item.game == GAME_MM ? p.item.name.c_str() : "");
++                }
++            }
++        }
+         if(&oracle==&mmOracle&&externalMmBeanRenewal){
+             if(!oracle.SetExternalBeanRenewal||!oracle.SetExternalBeanRenewal(1))throw std::runtime_error("MM bean renewal oracle unavailable");
+         }
+@@ -982,7 +994,6 @@
+     // CHECK became reachable to the ITEM's game's owned set, until nothing changes. This spans
+     // both games because an MM item at an OOT check (or vice versa) can open progress anywhere,
+     // including the portal itself — so portal openness is re-evaluated every iteration.
+-    std::vector<CwPlacement> placements;
+     // ootReachable/mmReachable = reachable checks at the fixpoint; ootOwned = OOT items collected along
+     // the way (drives the BEATABLE_ONLY boss-key goal check without a second traversal).
+     struct FixResult {
+@@ -1165,6 +1176,19 @@
+         }
+         std::vector<CwItem> relaxedToJunk; // advancement stranded off-path under completion-only
+         cwShuffle(toPlace, rng);
++        // OoTMM solve.ts preserves critical renewable consumables in the
++        // required pool and puts their first copy at a repeatable source.
++        // Place those first so subsequent inventory queries can inspect actual
++        // stock, rather than pretending a one-time refill is renewable.
++        std::stable_partition(toPlace.begin(), toPlace.end(),
++                              [](const CwItem& item) { return !item.criticalRenewable; });
++        std::unordered_set<std::string> renewablePlaced;
++        for (const auto& p : placements) {
++            if (p.item.game != GAME_MM || p.check.game != GAME_MM) continue;
++            auto source = BeanSources::ForNativeCheck(true, p.check.name);
++            if (auto it = beanSources.find("MM:" + p.check.name); it != beanSources.end()) source = it->second;
++            if (source.renewable) renewablePlaced.insert(p.item.name);
++        }
+         std::vector<std::string> ootRemaining, mmRemaining;
+         for (const auto& it : toPlace)
+             (it.game == GAME_OOT ? ootRemaining : mmRemaining).push_back(it.name);
+@@ -1187,6 +1211,7 @@
+         bool deadEnd = false;
+         while (!toPlace.empty()) {
+             size_t k = std::min({ batchCap, std::max<size_t>(1, toPlace.size() / 4), toPlace.size() });
++            if (toPlace.back().criticalRenewable) k = 1;
+ 
+             std::vector<CwItem> batch;
+             batch.reserve(k);
+@@ -1205,6 +1230,14 @@
+                 if (filledChecks.count(checkKey(allChecks[ci])))
+                     continue;
+                 const auto& reach = allChecks[ci].game == GAME_OOT ? ootReachable : mmReachable;
++                if (batch.front().criticalRenewable && !renewablePlaced.count(batch.front().name)) {
++                    // Cross-game deliveries are one-time rewards in this
++                    // engine; only native MM stock can be bought repeatedly.
++                    if (allChecks[ci].game != GAME_MM) continue;
++                    auto source = BeanSources::ForNativeCheck(true, allChecks[ci].name);
++                    if (auto it = beanSources.find("MM:" + allChecks[ci].name); it != beanSources.end()) source = it->second;
++                    if (!source.renewable) continue;
++                }
+                 if (reach.count(allChecks[ci].name))
+                     candidates.push_back(ci);
+             }
+@@ -1241,6 +1274,7 @@
+                 candidates.pop_back();
+                 placements.push_back({ allChecks[pick], item });
+                 filledChecks.insert(checkKey(allChecks[pick]));
++                if (item.criticalRenewable) renewablePlaced.insert(item.name);
+             }
+             if (progress)
+                 // Count advancement placed (placements started at lockedPlacements), so placed/total is
+--- a/combo/rando/OotMaskQuest.h
++++ b/combo/rando/OotMaskQuest.h
+@@ -4,9 +4,14 @@
+ 
+ // OoTMM supplies all eight OoT masks as items; its Mask Shop is the game portal.
+ // Preserve serialized mode IDs, but resolve legacy Vanilla requests before fill.
+-// Never apply this conversion when restoring an existing seed's settings.
++// Existing seeds keep their settings and placements. Legacy Vanilla inventories
++// are backfilled as starting masks because their pool contains no mask items.
+ constexpr int NormalizeOotMaskQuestForGeneration(int mode) {
+     return mode == 0 ? 2 : mode;
+ }
+ 
++constexpr bool OotMaskQuestHasStartingMasks(int mode) {
++    return mode == 0 || mode == 1;
++}
++
+ } // namespace ComboRando
+--- a/mm/2s2h/BenPort.cpp
++++ b/mm/2s2h/BenPort.cpp
+@@ -3724,14 +3724,33 @@
+         checks.push_back({ { "name", cn } });
+     }
+ 
++    // OoTMM transform.ts counts consumables originally supplied by randomized
++    // renewable locations; solve.ts protects those copies from junk filling.
++    // Keep the native IDs here and export the resulting placement constraint.
++    auto criticalRenewable = [](RandoItemId id) {
++        return id == RI_BOMBCHU_10 || id == RI_RED_POTION_REFILL ||
++               id == RI_BLUE_POTION_REFILL || id == RI_MILK_REFILL;
++    };
++    std::unordered_map<RandoItemId, size_t> renewableJunks;
++    for (const auto id : checkPool) {
++        const auto& check = Rando::StaticData::Checks.at(id);
++        if (criticalRenewable(check.randoItemId) &&
++            Rando::BeanSourceForCheck(id, check.randoCheckType).renewable) {
++            ++renewableJunks[check.randoItemId];
++        }
++    }
++
+     // Pool = the real free item pool (every settings-added item; confined items already removed).
+     for (RandoItemId iid : itemPool) {
+         auto it = Rando::StaticData::Items.find(iid);
+         if (it == Rando::StaticData::Items.end() || !it->second.spoilerName || it->second.spoilerName[0] == '\0')
+             continue;
+         // ComboShip: friendly item name for the normalized combo spoiler.
++        const bool renewable = renewableJunks[iid] > 0;
++        if (renewable) --renewableJunks[iid];
+         pool.push_back({ { "name", Rando::StaticData::GetItemDisplayName(iid) },
+-                         { "advancement", isAdvancement(it->second) },
++                         { "advancement", isAdvancement(it->second) || renewable },
++                         { "criticalRenewable", renewable },
+                          { "category", categoryName(it->second) } });
+     }
+ 
+@@ -5161,8 +5180,15 @@
+     if (chkIt == Combo_MM_CheckNameToCheckId().end())
+         return;
+     auto itemIt = Combo_MM_SpoilerNameToItemId().find(itemName);
+-    if (itemIt == Combo_MM_SpoilerNameToItemId().end())
++    if (itemIt == Combo_MM_SpoilerNameToItemId().end()) {
++        // Empty is an oracle-only foreign reward. Do not let its original
++        // vanilla stock masquerade as a local renewable potion or ammo source.
++        if (!itemName[0] && sMM_OracleActive) {
++            RANDO_SAVE_CHECKS[chkIt->second].randoItemId = RI_COMBO_FOREIGN;
++            RANDO_SAVE_CHECKS[chkIt->second].shuffled = true;
++        }
+         return;
++    }
+     RANDO_SAVE_CHECKS[chkIt->second].randoItemId = itemIt->second;
+     RANDO_SAVE_CHECKS[chkIt->second].shuffled = true;
+ }
+--- a/mm/2s2h/Rando/ActorBehavior/EnGirlA.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnGirlA.cpp
+@@ -94,7 +94,7 @@
+     Rupees_ChangeBy(-play->msgCtx.unk1206C);
+ #ifdef COMBO_BUILD
+     // ComboShip: OOT-bound item — deliver cross-game instead of granting locally (mirrors CheckQueue).
+-    if (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN) {
++    if (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN && !wasObtained) {
+         if (!wasObtained) {
+             // ComboShip: the shelf draws for a few more frames, so freeze it before the cross-grant.
+             Rando::LatchComboForeign(randoCheckId);
+--- a/mm/2s2h/Rando/ConvertItem.cpp
++++ b/mm/2s2h/Rando/ConvertItem.cpp
+@@ -232,6 +232,27 @@
+     if (randoCheckId != RC_UNKNOWN) {
+         hasObtainedCheck = RANDO_SAVE_CHECKS[randoCheckId].obtained;
+     }
++#ifdef COMBO_BUILD
++    // Persisted check ownership, rather than the current cycle's inventory,
++    // decides whether a one-time reward may be given again. Native consumables,
++    // replaceable shields, bottle refills and consumed trade items retain their
++    // existing obtainability rules below.
++    if (hasObtainedCheck) {
++        switch (randoItemId) {
++            case RI_SHIELD_HERO: case RI_MAGIC_BEAN:
++            case RI_BOTTLE_RED_POTION: case RI_BOTTLE_MILK:
++            case RI_BOTTLE_CHATEAU_ROMANI: case RI_BOTTLE_GOLD_DUST:
++            case RI_MOONS_TEAR: case RI_DEED_LAND: case RI_DEED_SWAMP:
++            case RI_DEED_MOUNTAIN: case RI_DEED_OCEAN: case RI_ROOM_KEY:
++            case RI_LETTER_TO_MAMA: case RI_LETTER_TO_KAFEI: case RI_PENDANT_OF_MEMORIES:
++                break;
++            default:
++                if (Rando::StaticData::Items[randoItemId].randoItemType != RITYPE_JUNK ||
++                    randoItemId == RI_COMBO_FOREIGN) return false;
++                break;
++        }
++    }
++#endif
+ 
+     if (const auto* ring = FindKeyRing(randoItemId)) {
+         return !hasObtainedCheck && gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys[ring->dungeon] < ring->maximum;
+@@ -715,8 +736,10 @@
+ 
+ RandoItemId Rando::ConvertItem(RandoItemId randoItemId, RandoCheckId randoCheckId) {
+     if (randoItemId == RI_PROGRESSIVE_OCARINA) {
+-        return Ocarinas::NextTier(gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits,
+-                                  INV_CONTENT(ITEM_OCARINA_OF_TIME)) == 1 ? RI_OCARINA_FAIRY : RI_OCARINA;
++        if (randoCheckId != RC_UNKNOWN && RANDO_SAVE_CHECKS[randoCheckId].obtained) return RI_JUNK;
++        const auto tier = Ocarinas::NextTier(gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits,
++                                            INV_CONTENT(ITEM_OCARINA_OF_TIME));
++        return tier == 1 ? RI_OCARINA_FAIRY : tier == 2 ? RI_OCARINA : RI_JUNK;
+     }
+     if (IsItemObtainable(randoItemId, randoCheckId)) {
+         switch (randoItemId) {
+--- a/mm/2s2h/Rando/MiscBehavior/CheckQueue.cpp
++++ b/mm/2s2h/Rando/MiscBehavior/CheckQueue.cpp
+@@ -137,7 +137,7 @@
+                 .showGetItemCutscene =
+ #ifdef COMBO_BUILD
+                     // Foreign checks decide by the foreign item's home-game importance.
+-                (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN)
++                (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN && !randoSaveCheck.obtained)
+                     ? Rando::MiscBehavior::ShouldShowForeignCutscene(randoCheckId)
+                     :
+ #endif
+@@ -150,9 +150,9 @@
+                         // ComboShip: this MM check holds an item belonging to OOT. Present it like a
+                         // native item (real name + get-item cutscene when important at home; the
+                         // held-up model is drawn by the drawItem lambda -> MM_DrawComboForeign), then
+-                        // deliver it cross-game instead of granting locally. Branch on the raw stored
+-                        // id (before ConvertItem) so the sentinel is matched directly.
+-                        if (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN) {
++                        // deliver it cross-game instead of granting locally. An already-obtained
++                        // check follows normal conversion to junk, including its model and message.
++                        if (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN && !randoSaveCheck.obtained) {
+                             RandoCheckId cid = (RandoCheckId)CUSTOM_ITEM_PARAM;
+                             const ComboRando::ForeignItem* fi = Rando::MiscBehavior::MM_LookupForeign(cid);
+                             // A foreign trap fires on the FINDER, like a native RI_TRAP: MM's own trap
+--- a/soh/soh/Enhancements/randomizer/3drando/starting_inventory.cpp
++++ b/soh/soh/Enhancements/randomizer/3drando/starting_inventory.cpp
+@@ -1,5 +1,8 @@
+ #include "../souls/OotSouls.h"
+ #include "starting_inventory.hpp"
++#ifdef COMBO_BUILD
++#include "rando/OotMaskQuest.h"
++#endif
+ 
+ #include "../dungeon.h"
+ #include "../SeedContext.h"
+@@ -21,9 +24,9 @@
+     Rando::Souls::AddUnshuffledStarts(StartingInventory);
+ 
+ #ifdef COMBO_BUILD
+-    // Match the eight owned masks granted by Randomizer_InitSaveFile.
++    // Match Completed starts and the compatibility repair for old Vanilla seeds.
+     // OoTMM models starting masks as items, without borrowing from the portal.
+-    if (ctx->GetOption(RSK_MASK_QUEST).Is(RO_MASK_QUEST_COMPLETED)) {
++    if (ComboRando::OotMaskQuestHasStartingMasks(ctx->GetOption(RSK_MASK_QUEST).Get())) {
+         for (RandomizerGet mask : { RG_KEATON_MASK, RG_SKULL_MASK, RG_SPOOKY_MASK, RG_GORON_MASK,
+                                     RG_ZORA_MASK, RG_GERUDO_MASK, RG_MASK_OF_TRUTH }) {
+             AddItemToInventory(mask);
+--- a/soh/soh/Enhancements/randomizer/savefile.cpp
++++ b/soh/soh/Enhancements/randomizer/savefile.cpp
+@@ -432,6 +432,25 @@
+     }
+ }
+ 
++// Old Combo seeds serialized Vanilla but replaced the mask shop with the portal
++// and omitted every OoT mask from the pool. Preserve their placements/progress;
++// grant the native owned-mask starts instead of inventing a borrowing quest.
++extern "C" void Randomizer_RepairLegacyMaskInventory() {
++#ifdef COMBO_BUILD
++    if (!IS_RANDO || Randomizer_GetSettingValue(RSK_MASK_QUEST) != RO_MASK_QUEST_VANILLA) {
++        return;
++    }
++    for (RandomizerInf flag : { RAND_INF_CHILD_TRADES_HAS_MASK_KEATON, RAND_INF_CHILD_TRADES_HAS_MASK_SKULL,
++                               RAND_INF_CHILD_TRADES_HAS_MASK_SPOOKY, RAND_INF_CHILD_TRADES_HAS_MASK_BUNNY,
++                               RAND_INF_CHILD_TRADES_HAS_MASK_GORON, RAND_INF_CHILD_TRADES_HAS_MASK_ZORA,
++                               RAND_INF_CHILD_TRADES_HAS_MASK_GERUDO, RAND_INF_CHILD_TRADES_HAS_MASK_TRUTH }) {
++        if (!Flags_GetRandomizerInf(flag)) {
++            Flags_SetRandomizerInf(flag);
++        }
++    }
++#endif
++}
++
+ extern "C" void Randomizer_InitSaveFile() {
+     auto ctx = Rando::Context::GetInstance();
+     ctx->GetLogic()->SetSaveContext(&gSaveContext);
+@@ -711,4 +730,5 @@
+         gSaveContext.itemGetInf[3] |= 0x800;  // Bunny Hood related
+         gSaveContext.itemGetInf[3] |= 0x8000; // Obtained Mask of Truth
+     }
+-}
++    Randomizer_RepairLegacyMaskInventory();
++}
+--- a/soh/soh/Enhancements/randomizer/savefile.h
++++ b/soh/soh/Enhancements/randomizer/savefile.h
+@@ -6,6 +6,7 @@
+ #endif
+ 
+ void Randomizer_InitSaveFile();
++void Randomizer_RepairLegacyMaskInventory();
+ 
+ #ifdef __cplusplus
+ }
+--- a/soh/soh/SaveManager.cpp
++++ b/soh/soh/SaveManager.cpp
+@@ -7,6 +7,7 @@
+ #include "OTRGlobals.h"
+ #include "Enhancements/game-interactor/GameInteractor.h"
+ #include "Enhancements/randomizer/SeedContext.h"
++#include "Enhancements/randomizer/savefile.h"
+ #include "Enhancements/randomizer/entrance.h"
+ #include "Enhancements/randomizer/dungeon.h"
+ #include "Enhancements/randomizer/trial.h"
+@@ -1537,6 +1538,9 @@
+                 break;
+ #endif
+         }
++        // All native sections, including owned flags and seed settings, are now
++        // loaded. Reapply missing legacy mask starts before the tracker binds.
++        Randomizer_RepairLegacyMaskInventory();
+         InitMeta(fileNum);
+         GameInteractor::Instance->ExecuteHooks<GameInteractor::OnLoadFile>(fileNum);
+ #ifdef COMBO_BUILD

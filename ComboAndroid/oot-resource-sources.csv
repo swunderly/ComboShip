@@ -1,0 +1,108 @@
+reference_file,reference_line,reference_region,resource,reference_condition,native_regions,native_condition
+data/world/oot/dungeons/fire_temple.yml,16,Fire Temple Pre-Boss,BOMBS_OR_BOMBCHU,has_tunic_goron,RR_FIRE_TEMPLE_NEAR_BOSS_ROOM,(logic->CanUse(RG_GORON_TUNIC)) && logic->CanBreakPots()
+data/world/oot/dungeons/gerudo_fortress.yml,8,Gerudo Fortress Carpenter 1 Left,RUPEES,true,RR_TH_1_TORCH_CELL,true
+data/world/oot/dungeons/gerudo_fortress.yml,9,Gerudo Fortress Carpenter 1 Left,ARROWS,is_adult,RR_TH_1_TORCH_CELL,(logic->IsAdult) && logic->CanBreakPots()
+data/world/oot/dungeons/gerudo_fortress.yml,10,Gerudo Fortress Carpenter 1 Left,SEEDS,is_child,RR_TH_1_TORCH_CELL,(logic->IsChild) && logic->CanBreakPots()
+data/world/oot/dungeons/gerudo_fortress.yml,36,Gerudo Fortress Carpenter 2 Bottom,RUPEES,true,RR_TH_DOUBLE_CELL,true
+data/world/oot/dungeons/gerudo_fortress.yml,74,Gerudo Fortress Carpenter 4 Top,RUPEES,true,RR_TH_STEEP_SLOPE_CELL,true
+data/world/oot/dungeons/gerudo_fortress.yml,156,Gerudo Fortress Break Room Bottom,MAGIC,evade_gerudo,RR_TH_BREAK_ROOM,(logic->CanUse(RG_FAIRY_BOW) || logic->CanUse(RG_HOOKSHOT) || logic->HasItem(RG_GERUDO_MEMBERSHIP_CARD)) && logic->CanBreakPots()
+data/world/oot/dungeons/gerudo_fortress.yml,157,Gerudo Fortress Break Room Bottom,ARROWS,is_adult && (has(GERUDO_CARD) || can_hookshot || has_mask_stone),RR_TH_BREAK_ROOM,(logic->IsAdult && (logic->HasItem(RG_GERUDO_MEMBERSHIP_CARD) || logic->CanUse(RG_HOOKSHOT))) && logic->CanBreakPots()
+data/world/oot/dungeons/gerudo_fortress.yml,158,Gerudo Fortress Break Room Bottom,SEEDS,is_child && has(GERUDO_CARD),RR_TH_BREAK_ROOM,(logic->IsChild && logic->HasItem(RG_GERUDO_MEMBERSHIP_CARD)) && logic->CanBreakPots()
+data/world/oot/dungeons/shadow_temple.yml,19,Shadow Temple Pit,MAGIC,trick(OOT_LENS),RR_SHADOW_TEMPLE_LOWER_HUGE_PIT,(ctx->GetTrickOption(RT_LENS_SHADOW)) && logic->CanBreakPots()
+data/world/oot/dungeons/spirit_temple.yml,11,Spirit Temple,MAGIC,true,RR_SPIRIT_TEMPLE_FOYER,(true) && logic->CanBreakPots()
+data/world/oot/dungeons_mq/shadow_temple_mq.yml,23,Shadow Temple Truth Spinner,ARROWS,true,RR_SHADOW_TEMPLE_MQ_SPINNER_ROOM,(true) && logic->CanBreakPots()
+data/world/oot/dungeons_mq/shadow_temple_mq.yml,24,Shadow Temple Truth Spinner,BOMBS_OR_BOMBCHU,true,RR_SHADOW_TEMPLE_MQ_SPINNER_ROOM,(true) && logic->CanBreakPots()
+data/world/oot/dungeons_mq/shadow_temple_mq.yml,25,Shadow Temple Truth Spinner,MAGIC,true,RR_SHADOW_TEMPLE_MQ_SPINNER_ROOM,(true) && logic->CanBreakPots()
+data/world/oot/dungeons_mq/spirit_temple_mq.yml,10,Spirit Temple,BOMBS_OR_BOMBCHU,true,RR_SPIRIT_TEMPLE_MQ_FOYER,(true) && logic->CanBreakPots()
+data/world/oot/dungeons_mq/spirit_temple_mq.yml,11,Spirit Temple,MAGIC,true,RR_SPIRIT_TEMPLE_MQ_FOYER,(true) && logic->CanBreakPots()
+data/world/oot/overworld/death_mountain_crater.yml,13,Death Mountain Crater Top,BOMBS_OR_BOMBCHU,has_tunic_goron_strict || can_hammer_or_keg,RR_DMC_POTS,(logic->CanUse(RG_GORON_TUNIC) || logic->CanUse(RG_MEGATON_HAMMER)) && logic->CanBreakPots()
+data/world/oot/overworld/death_mountain_crater.yml,14,Death Mountain Crater Top,RUPEES,has_tunic_goron_strict || has_explosives_or_hammer,RR_DMC_POTS,logic->CanUse(RG_GORON_TUNIC) || logic->BlastOrSmash()
+data/world/oot/overworld/death_mountain_crater.yml,15,Death Mountain Crater Top,ARROWS,has_tunic_goron_strict || has_explosives_or_hammer,RR_DMC_POTS,(logic->CanUse(RG_GORON_TUNIC) || logic->BlastOrSmash()) && logic->CanBreakPots()
+data/world/oot/overworld/death_mountain_crater.yml,16,Death Mountain Crater Top,MAGIC,has_tunic_goron_strict || has_explosives_or_hammer,RR_DMC_POTS,(logic->CanUse(RG_GORON_TUNIC) || logic->BlastOrSmash()) && logic->CanBreakPots()
+data/world/oot/overworld/death_mountain_crater.yml,173,Fairy Fountain Double Magic,MAGIC,song_event(9),RR_DMC_GREAT_FAIRY_FOUNTAIN,logic->CanUse(RG_ZELDAS_LULLABY)
+data/world/oot/overworld/death_mountain_trail.yml,17,Death Mountain,RUPEES,true,RR_DEATH_MOUNTAIN_TRAIL,true
+data/world/oot/overworld/death_mountain_trail.yml,121,Death Mountain Cow Grotto,RUPEES,true,RR_DMT_COW_GROTTO,true
+data/world/oot/overworld/death_mountain_trail.yml,146,Fairy Fountain Magic,MAGIC,song_event(8),RR_DMT_GREAT_FAIRY_FOUNTAIN,logic->CanUse(RG_ZELDAS_LULLABY)
+data/world/oot/overworld/desert_colossus.yml,82,Fairy Fountain Nayru,MAGIC,song_event(7),RR_COLOSSUS_GREAT_FAIRY_FOUNTAIN,logic->CanUse(RG_ZELDAS_LULLABY)
+data/world/oot/overworld/gerudo_valley.yml,12,Gerudo Valley,RUPEES,true,RR_GERUDO_VALLEY,true
+data/world/oot/overworld/gerudo_valley.yml,13,Gerudo Valley,BOMBS_OR_BOMBCHU,is_child,RR_GERUDO_VALLEY,(logic->IsChild) && logic->CanBreakPots()
+data/world/oot/overworld/gerudo_valley.yml,14,Gerudo Valley,SEEDS,is_child,RR_GERUDO_VALLEY,(logic->IsChild) && logic->CanBreakPots()
+data/world/oot/overworld/gerudo_valley.yml,15,Gerudo Valley,MAGIC,is_child,RR_GERUDO_VALLEY,(logic->IsChild) && logic->CanBreakPots()
+data/world/oot/overworld/gerudo_valley.yml,101,Octorok Grotto,RUPEES,true,RR_GV_OCTOROK_GROTTO,true
+data/world/oot/overworld/goron_city.yml,25,Goron City,ARROWS,is_adult,RR_GORON_CITY,(logic->IsAdult) && logic->CanBreakPots()
+data/world/oot/overworld/goron_city.yml,123,Darunia Chamber,RUPEES,is_adult,RR_GC_DARUNIAS_CHAMBER,logic->IsAdult
+data/world/oot/overworld/graveyard.yml,17,Graveyard,BOMBS_OR_BOMBCHU,can_cut_grass,RR_THE_GRAVEYARD,logic->CanCutShrubs()
+data/world/oot/overworld/graveyard.yml,18,Graveyard,RUPEES,can_cut_grass,RR_THE_GRAVEYARD,logic->CanCutShrubs()
+data/world/oot/overworld/graveyard.yml,19,Graveyard,SEEDS,is_child && can_cut_grass,RR_THE_GRAVEYARD,logic->IsChild && logic->CanCutShrubs()
+data/world/oot/overworld/graveyard.yml,20,Graveyard,ARROWS,is_adult && can_cut_grass,RR_THE_GRAVEYARD,logic->IsAdult && logic->CanCutShrubs()
+data/world/oot/overworld/graveyard.yml,21,Graveyard,MAGIC,can_cut_grass,RR_THE_GRAVEYARD,logic->CanCutShrubs()
+data/world/oot/overworld/graveyard.yml,104,Dampe Grave,RUPEES,true,RR_GRAVEYARD_DAMPES_GRAVE,true
+data/world/oot/overworld/graveyard.yml,105,Dampe Grave,MAGIC,true,RR_GRAVEYARD_DAMPES_GRAVE,(true) && logic->CanBreakPots()
+data/world/oot/overworld/graveyard.yml,106,Dampe Grave,BOMBS_OR_BOMBCHU,true,RR_GRAVEYARD_DAMPES_GRAVE,(true) && logic->CanBreakPots()
+data/world/oot/overworld/graveyard.yml,107,Dampe Grave,SEEDS,is_child,RR_GRAVEYARD_DAMPES_GRAVE,(logic->IsChild) && logic->CanBreakPots()
+data/world/oot/overworld/graveyard.yml,108,Dampe Grave,ARROWS,is_adult,RR_GRAVEYARD_DAMPES_GRAVE,(logic->IsAdult) && logic->CanBreakPots()
+data/world/oot/overworld/hyrule_field.yml,27,Hyrule Field,BOMBS_OR_BOMBCHU,true,RR_HYRULE_FIELD,(true) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/hyrule_field.yml,28,Hyrule Field,RUPEES,true,RR_HYRULE_FIELD,true
+data/world/oot/overworld/hyrule_field.yml,29,Hyrule Field,SEEDS,is_child,RR_HYRULE_FIELD,(logic->IsChild) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/hyrule_field.yml,30,Hyrule Field,ARROWS,is_adult,RR_HYRULE_FIELD,(logic->IsAdult) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/hyrule_field.yml,31,Hyrule Field,MAGIC,true,RR_HYRULE_FIELD,(true) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/hyrule_field.yml,337,Hyrule Field Grotto Near Kak,SEEDS,is_child && can_use_sword,RR_HF_NEAR_KAK_GROTTO,logic->IsChild && logic->CanUse(RG_KOKIRI_SWORD)
+data/world/oot/overworld/hyrule_field.yml,338,Hyrule Field Grotto Near Kak,ARROWS,is_adult && can_use_sword,RR_HF_NEAR_KAK_GROTTO,logic->IsAdult && logic->CanJumpslashExceptHammer()
+data/world/oot/overworld/hyrule_ganon_castle.yml,14,Hyrule Castle,BOMBS_OR_BOMBCHU,true,RR_HC_PAST_GATE,(true) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/hyrule_ganon_castle.yml,15,Hyrule Castle,RUPEES,true,RR_HC_PAST_GATE,true
+data/world/oot/overworld/hyrule_ganon_castle.yml,16,Hyrule Castle,SEEDS,is_child,RR_HC_PAST_GATE,(logic->IsChild) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/hyrule_ganon_castle.yml,17,Hyrule Castle,MAGIC,true,RR_HC_PAST_GATE,(true) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/hyrule_ganon_castle.yml,106,Fairy Fountain Din,MAGIC,song_event(6),RR_HC_GREAT_FAIRY_FOUNTAIN,logic->CanUse(RG_ZELDAS_LULLABY)
+data/world/oot/overworld/hyrule_ganon_castle.yml,117,Hyrule Castle Grotto,RUPEES,has_explosives_or_hammer,RR_HC_STORMS_GROTTO,logic->BlastOrSmash()
+data/world/oot/overworld/hyrule_ganon_castle.yml,119,Hyrule Castle Grotto,SEEDS,has_explosives_or_hammer && is_child,RR_HC_STORMS_GROTTO,(logic->IsChild && logic->BlastOrSmash()) && logic->CanBreakPots()
+data/world/oot/overworld/hyrule_ganon_castle.yml,120,Hyrule Castle Grotto,ARROWS,has_explosives_or_hammer && is_adult,RR_HC_STORMS_GROTTO,(logic->IsAdult && logic->BlastOrSmash()) && logic->CanBreakPots()
+data/world/oot/overworld/hyrule_ganon_castle.yml,121,Hyrule Castle Grotto,BOMBS_OR_BOMBCHU,can_hammer,RR_HC_STORMS_GROTTO,(logic->CanUse(RG_MEGATON_HAMMER)) && logic->CanBreakPots()
+data/world/oot/overworld/hyrule_ganon_castle.yml,194,Fairy Fountain Defense,MAGIC,song_event(0x0a),RR_OGC_GREAT_FAIRY_FOUNTAIN,logic->CanUse(RG_ZELDAS_LULLABY)
+data/world/oot/overworld/kakariko.yml,6,Kakariko,BOMBS_OR_BOMBCHU,can_cut_grass,RR_KAKARIKO_VILLAGE,logic->CanCutShrubs()
+data/world/oot/overworld/kakariko.yml,7,Kakariko,RUPEES,can_cut_grass,RR_KAKARIKO_VILLAGE,logic->CanCutShrubs()
+data/world/oot/overworld/kakariko.yml,8,Kakariko,SEEDS,is_child && can_cut_grass,RR_KAKARIKO_VILLAGE,logic->IsChild && logic->CanCutShrubs()
+data/world/oot/overworld/kakariko.yml,9,Kakariko,ARROWS,is_adult,RR_KAKARIKO_VILLAGE,(logic->IsAdult) && logic->CanBreakPots()
+data/world/oot/overworld/kakariko.yml,10,Kakariko,MAGIC,can_cut_grass,RR_KAKARIKO_VILLAGE,logic->CanCutShrubs()
+data/world/oot/overworld/kokiri_forest.yml,30,Kokiri Forest,BOMBS_OR_BOMBCHU,true,RR_KOKIRI_FOREST,(true) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/kokiri_forest.yml,31,Kokiri Forest,RUPEES,true,RR_KOKIRI_FOREST,true
+data/world/oot/overworld/kokiri_forest.yml,32,Kokiri Forest,SEEDS,is_child,RR_KOKIRI_FOREST,(logic->IsChild) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/kokiri_forest.yml,33,Kokiri Forest,ARROWS,is_adult,RR_KOKIRI_FOREST,(logic->IsAdult) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/kokiri_forest.yml,34,Kokiri Forest,MAGIC,true,RR_KOKIRI_FOREST,(true) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/lake_hylia.yml,19,Lake Hylia,BOMBS_OR_BOMBCHU,can_cut_grass,RR_LAKE_HYLIA,logic->CanCutShrubs()
+data/world/oot/overworld/lake_hylia.yml,20,Lake Hylia,RUPEES,can_cut_grass,RR_LAKE_HYLIA,logic->CanCutShrubs()
+data/world/oot/overworld/lake_hylia.yml,21,Lake Hylia,SEEDS,is_child && can_cut_grass,RR_LAKE_HYLIA,logic->IsChild && logic->CanCutShrubs()
+data/world/oot/overworld/lake_hylia.yml,22,Lake Hylia,ARROWS,is_adult && can_cut_grass,RR_LAKE_HYLIA,logic->IsAdult && logic->CanCutShrubs()
+data/world/oot/overworld/lake_hylia.yml,23,Lake Hylia,MAGIC,can_cut_grass,RR_LAKE_HYLIA,logic->CanCutShrubs()
+data/world/oot/overworld/lon_lon_ranch.yml,15,Lon Lon Ranch,RUPEES,is_child,RR_LON_LON_RANCH,logic->IsChild
+data/world/oot/overworld/lost_woods.yml,43,Lost Woods,RUPEES,true,RR_THE_LOST_WOODS,true
+data/world/oot/overworld/lost_woods.yml,44,Lost Woods,BOMBS_OR_BOMBCHU,can_cut_grass,RR_THE_LOST_WOODS,logic->CanCutShrubs()
+data/world/oot/overworld/lost_woods.yml,45,Lost Woods,SEEDS,is_child && can_cut_grass,RR_THE_LOST_WOODS,logic->IsChild && logic->CanCutShrubs()
+data/world/oot/overworld/lost_woods.yml,46,Lost Woods,ARROWS,is_adult && can_cut_grass,RR_THE_LOST_WOODS,logic->IsAdult && logic->CanCutShrubs()
+data/world/oot/overworld/lost_woods.yml,47,Lost Woods,MAGIC,can_cut_grass,RR_THE_LOST_WOODS,logic->CanCutShrubs()
+data/world/oot/overworld/lost_woods.yml,155,Lost Woods Deep,RUPEES,can_cut_grass,RR_LW_BEYOND_MIDO,logic->CanCutShrubs()
+data/world/oot/overworld/lost_woods.yml,156,Lost Woods Deep,BOMBS_OR_BOMBCHU,can_cut_grass,RR_LW_BEYOND_MIDO,logic->CanCutShrubs()
+data/world/oot/overworld/lost_woods.yml,157,Lost Woods Deep,SEEDS,is_child && can_cut_grass,RR_LW_BEYOND_MIDO,logic->IsChild && logic->CanCutShrubs()
+data/world/oot/overworld/lost_woods.yml,158,Lost Woods Deep,ARROWS,is_adult && can_cut_grass,RR_LW_BEYOND_MIDO,logic->IsAdult && logic->CanCutShrubs()
+data/world/oot/overworld/lost_woods.yml,159,Lost Woods Deep,MAGIC,can_cut_grass,RR_LW_BEYOND_MIDO,logic->CanCutShrubs()
+data/world/oot/overworld/market.yml,34,Market,RUPEES,is_child,RR_THE_MARKET,logic->IsChild
+data/world/oot/overworld/market.yml,138,Market Pot House,RUPEES,true,RR_MARKET_GUARD_HOUSE,true
+data/world/oot/overworld/market.yml,254,Bombchu Bowling Rewards,BOMBS,can_use_wallet(2),RR_MARKET_BOMBCHU_BOWLING,logic->Get(LOGIC_COULD_PLAY_BOWLING) && logic->BombchusEnabled() && GetWalletCapacity() >= 200
+data/world/oot/overworld/sacred_forest_meadow.yml,9,Sacred Meadow Entryway,RUPEES,true,RR_SFM_ENTRYWAY,true
+data/world/oot/overworld/zora_domain.yml,14,Zora Domain,RUPEES,true,RR_ZORAS_DOMAIN,true
+data/world/oot/overworld/zora_fountain.yml,12,Zora Fountain,SEEDS,is_child,RR_ZORAS_FOUNTAIN,(logic->IsChild) && logic->CanBreakPots()
+data/world/oot/overworld/zora_fountain.yml,83,Fairy Fountain Farore,MAGIC,song_event(5),RR_ZF_GREAT_FAIRY_FOUNTAIN,logic->CanUse(RG_ZELDAS_LULLABY)
+data/world/oot/overworld/zora_river.yml,9,Zora River Front,BOMBS_OR_BOMBCHU,can_cut_grass,RR_ZR_FRONT,logic->CanCutShrubs()
+data/world/oot/overworld/zora_river.yml,10,Zora River Front,RUPEES,can_cut_grass,RR_ZR_FRONT,logic->CanCutShrubs()
+data/world/oot/overworld/zora_river.yml,11,Zora River Front,SEEDS,is_child && can_cut_grass,RR_ZR_FRONT,logic->IsChild && logic->CanCutShrubs()
+data/world/oot/overworld/zora_river.yml,12,Zora River Front,ARROWS,is_adult && can_cut_grass,RR_ZR_FRONT,logic->IsAdult && logic->CanCutShrubs()
+data/world/oot/overworld/zora_river.yml,13,Zora River Front,MAGIC,can_cut_grass,RR_ZR_FRONT,logic->CanCutShrubs()
+data/world/oot/overworld/zora_river.yml,51,Zora River,BOMBS_OR_BOMBCHU,true,RR_ZORAS_RIVER,(true) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/zora_river.yml,52,Zora River,RUPEES,true,RR_ZORAS_RIVER,true
+data/world/oot/overworld/zora_river.yml,53,Zora River,SEEDS,is_child,RR_ZORAS_RIVER,(logic->IsChild) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/zora_river.yml,54,Zora River,ARROWS,is_adult,RR_ZORAS_RIVER,(logic->IsAdult) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/zora_river.yml,55,Zora River,MAGIC,true,RR_ZORAS_RIVER,(true) && (logic->CanBreakPots() || logic->CanCutShrubs())
+data/world/oot/overworld/_system.yml,83,GENERIC_GROTTO_EVENTS,BOMBS_OR_BOMBCHU,can_cut_grass,grottoEvents,logic->CanCutShrubs()
+data/world/oot/overworld/_system.yml,84,GENERIC_GROTTO_EVENTS,RUPEES,can_cut_grass,grottoEvents,logic->CanCutShrubs()
+data/world/oot/overworld/_system.yml,85,GENERIC_GROTTO_EVENTS,SEEDS,is_child && can_cut_grass,grottoEvents,logic->IsChild && logic->CanCutShrubs()
+data/world/oot/overworld/_system.yml,86,GENERIC_GROTTO_EVENTS,ARROWS,is_adult && can_cut_grass,grottoEvents,logic->IsAdult && logic->CanCutShrubs()
+data/world/oot/overworld/_system.yml,87,GENERIC_GROTTO_EVENTS,MAGIC,can_cut_grass,grottoEvents,logic->CanCutShrubs()

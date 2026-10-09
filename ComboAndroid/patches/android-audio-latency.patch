@@ -1,0 +1,239 @@
+--- a/libultraship/src/ship/Context.cpp
++++ b/libultraship/src/ship/Context.cpp
+@@ -43,7 +43,7 @@
+ 
+ Context::~Context() {
+     SPDLOG_TRACE("destruct context");
+-    // ComboShip: null-guarded — a CreateUninitializedInstance() Context that never got Init*()
++    // ComboShip: null-guarded â€” a CreateUninitializedInstance() Context that never got Init*()
+     // has no Window/Config, and destroying one segfaulted here.
+     if (GetWindow() != nullptr) {
+         GetWindow()->SaveWindowToConfig();
+@@ -332,6 +332,14 @@
+         return true;
+     }
+ 
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    // Both engines share this device. Target 48 ms of game PCM (including
++    // conversion history); MM additionally submits one game frame per wake.
++    // Use small SDL output blocks at the device's native rate. The desktop
++    // 4096-frame reservoir plus two 1024-frame OpenSL blocks delayed every SFX.
++    settings.SampleLength = 256;
++    settings.DesiredBuffered = 1536;
++#endif
+     mAudio = std::make_shared<Audio>(settings);
+ 
+     if (GetAudio() == nullptr) {
+@@ -451,7 +459,7 @@
+ }
+ 
+ // ComboShip: swap the active ResourceManager (e.g. OOT<->MM on a game switch). The previous one is
+-// NOT destroyed here — the caller keeps a reference so its archives/resource cache stay loaded, which
++// NOT destroyed here â€” the caller keeps a reference so its archives/resource cache stay loaded, which
+ // lets each game keep its resources resident and avoids freeing data other globals still point into.
+ void Context::SetResourceManager(std::shared_ptr<ResourceManager> resourceManager) {
+     mResourceManager = resourceManager;
+--- a/libultraship/src/ship/audio/SDLAudioPlayer.cpp
++++ b/libultraship/src/ship/audio/SDLAudioPlayer.cpp
+@@ -1,5 +1,25 @@
+ #include "ship/audio/SDLAudioPlayer.h"
+ #include <spdlog/spdlog.h>
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++#include <jni.h>
++#include <mutex>
++
++namespace {
++std::recursive_mutex sAndroidAudioMutex;
++int AndroidOutputRate() {
++    auto* env = static_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
++    jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
++    if (!env || !activity) return 48000;
++    jclass cls = env->GetObjectClass(activity);
++    jmethodID method = env->GetMethodID(cls, "getAudioOutputSampleRate", "()I");
++    int rate = method ? env->CallIntMethod(activity, method) : 48000;
++    if (env->ExceptionCheck()) { env->ExceptionClear(); rate = 48000; }
++    env->DeleteLocalRef(cls);
++    env->DeleteLocalRef(activity);
++    return rate >= 32000 && rate <= 192000 ? rate : 48000;
++}
++} // namespace
++#endif
+ 
+ namespace Ship {
+ 
+@@ -10,6 +30,9 @@
+ }
+ 
+ void SDLAudioPlayer::DoClose() {
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    const std::lock_guard<std::recursive_mutex> lock(sAndroidAudioMutex);
++#endif
+     if (mDevice != 0) {
+         // Pause playback first
+         SDL_PauseAudioDevice(mDevice, 1);
+@@ -18,9 +41,17 @@
+         SDL_CloseAudioDevice(mDevice);
+         mDevice = 0;
+     }
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    if (mConversion) SDL_FreeAudioStream(mConversion);
++    mConversion = nullptr;
++    mSourceFrames = mConvertedSourceFrames = 0;
++#endif
+ }
+ 
+ bool SDLAudioPlayer::DoInit() {
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    const std::lock_guard<std::recursive_mutex> lock(sAndroidAudioMutex);
++#endif
+     if (SDL_Init(SDL_INIT_AUDIO) != 0) {
+         SPDLOG_ERROR("SDL init error: {}", SDL_GetError());
+         return false;
+@@ -32,29 +63,96 @@
+     SDL_AudioSpec want, have;
+     SDL_zero(want);
+     want.freq = this->GetSampleRate();
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    want.freq = AndroidOutputRate();
++#endif
+     want.format = AUDIO_S16SYS;
+     want.channels = mNumChannels;
+     want.samples = this->GetSampleLength();
+     want.callback = NULL;
+ 
+     mDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    if (mDevice == 0 && want.freq != GetSampleRate()) {
++        // Preserve playback on routes which reject the native-rate request.
++        want.freq = GetSampleRate();
++        mDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
++    }
++#endif
+     if (mDevice == 0) {
+         SPDLOG_ERROR("SDL_OpenAudio error: {}", SDL_GetError());
+         return false;
+     }
+ 
+-    SPDLOG_INFO("SDL Audio initialized: {} channels, {} Hz", mNumChannels, this->GetSampleRate());
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    mOutputRate = have.freq;
++    mSourceFrames = mConvertedSourceFrames = 0;
++    if (mOutputRate != GetSampleRate()) {
++        mConversion = SDL_NewAudioStream(AUDIO_S16SYS, mNumChannels, GetSampleRate(),
++                                        AUDIO_S16SYS, mNumChannels, mOutputRate);
++        if (!mConversion) {
++            SPDLOG_ERROR("SDL audio conversion error: {}", SDL_GetError());
++            DoClose();
++            return false;
++        }
++    }
++#endif
++
++    SPDLOG_INFO("SDL Audio initialized: driver={}, {} channels, {} Hz, output block={} frames, game queue={} frames",
++                SDL_GetCurrentAudioDriver(), mNumChannels, have.freq, have.samples, GetDesiredBuffered());
+ 
+     SDL_PauseAudioDevice(mDevice, 0);
+     return true;
+ }
+ 
+ int SDLAudioPlayer::Buffered() {
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    const std::lock_guard<std::recursive_mutex> lock(sAndroidAudioMutex);
++    if (!mDevice) return 0;
++    const uint64_t outputFrames = SDL_GetQueuedAudioSize(mDevice) / (sizeof(int16_t) * mNumChannels);
++    // Include samples retained by SDL's streaming resampler, and always report
++    // frames in the engines' 32 kHz units. Otherwise conversion adds an unseen
++    // reservoir or the producer changes music speed to chase a mismatched queue.
++    const uint64_t convertedSource = mConvertedSourceFrames;
++    const uint64_t pending = mSourceFrames > convertedSource ? mSourceFrames - convertedSource : 0;
++    return static_cast<int>(outputFrames * GetSampleRate() / mOutputRate + pending);
++#else
+     return SDL_GetQueuedAudioSize(mDevice) / (sizeof(int16_t) * mNumChannels);
++#endif
+ }
+ 
+ void SDLAudioPlayer::DoPlay(const uint8_t* buf, size_t len) {
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    const std::lock_guard<std::recursive_mutex> lock(sAndroidAudioMutex);
++#endif
+     if (Buffered() < 6000) {
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++        if (mConversion) {
++            if (SDL_AudioStreamPut(mConversion, buf, static_cast<int>(len)) < 0) {
++                SPDLOG_ERROR("SDL audio conversion failed: {}", SDL_GetError());
++                return;
++            }
++            mSourceFrames += len / (sizeof(int16_t) * mNumChannels);
++            // A multiple of both stereo and 5.1 frame sizes. SDL retains its
++            // filter history between submissions; never flush each game tick.
++            uint8_t converted[12288];
++            int bytes;
++            uint64_t outputFrames = 0;
++            while ((bytes = SDL_AudioStreamGet(mConversion, converted, sizeof(converted))) > 0) {
++                outputFrames += bytes / (sizeof(int16_t) * mNumChannels);
++                if (SDL_QueueAudio(mDevice, converted, bytes) < 0) {
++                    SPDLOG_ERROR("SDL audio queue failed: {}", SDL_GetError());
++                    return;
++                }
++            }
++            // SDL rounds each converted block to whole output frames. Charge
++            // that rounding to this submission, not to a phantom queue which
++            // grows forever on 44.1 kHz routes and eventually stalls production.
++            mConvertedSourceFrames += (outputFrames * GetSampleRate() + mOutputRate - 1) / mOutputRate;
++            if (bytes < 0) SPDLOG_ERROR("SDL audio conversion read failed: {}", SDL_GetError());
++            return;
++        }
++#endif
+         // Don't fill the audio buffer too much in case this happens
+         SDL_QueueAudio(mDevice, buf, len);
+     }
+--- a/soh/soh/OTRGlobals.cpp
++++ b/soh/soh/OTRGlobals.cpp
+@@ -1129,7 +1129,14 @@
+ #define SAMPLES_HIGH 560
+ #define SAMPLES_MID 544
+ #define SAMPLES_LOW 528
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++// The self-pump below already runs independently of rendering. Produce one
++// 60 Hz audio tick at a time: a three-tick batch cannot fit the mobile queue.
++// The existing sample-debt accumulator still averages exactly 32000 Hz.
++#define AUDIO_FRAMES_PER_UPDATE 1
++#else
+ #define AUDIO_FRAMES_PER_UPDATE (R_UPDATE_RATE > 0 ? R_UPDATE_RATE : 1)
++#endif
+ #define NUM_AUDIO_CHANNELS 2
+ 
+     // The sequencer advances a fixed slice of musical time per engine update
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -1386,7 +1386,7 @@
+         case HubEntry::COMBO_TIMERS: DrawTimersSharedPanel(); break;
+         case HubEntry::COMBO_NETWORK: DrawNetworkSharedPanel(); break;
+         case HubEntry::COMBO_ABOUT:
+-            ImGui::TextWrapped("Combo Ship for Android - 0.1.15");
++            ImGui::TextWrapped("Combo Ship for Android - 0.1.16");
+             ImGui::TextWrapped("A combined Ocarina of Time and Majora's Mask randomizer with shared menus, trackers and touch controls.");
+             ImGui::Spacing();
+             ImGui::SeparatorText("Built on community work");
+--- a/libultraship/include/ship/audio/SDLAudioPlayer.h
++++ b/libultraship/include/ship/audio/SDLAudioPlayer.h
+@@ -43,12 +43,18 @@
+ 
+     /**
+      * @brief Queues interleaved PCM samples to the SDL audio device.
+-     * @param buf Interleaved sample data (stereo: L,R,… or surround: FL,FR,C,LFE,SL,SR,…).
++     * @param buf Interleaved sample data (stereo: L,R,Ã¢â‚¬Â¦ or surround: FL,FR,C,LFE,SL,SR,Ã¢â‚¬Â¦).
+      * @param len Length of @p buf in bytes.
+      */
+     void DoPlay(const uint8_t* buf, size_t len) override;
+ 
+   private:
++#if defined(__ANDROID__) && defined(COMBO_BUILD)
++    SDL_AudioStream* mConversion = nullptr;
++    int mOutputRate = 32000;
++    uint64_t mSourceFrames = 0;
++    uint64_t mConvertedSourceFrames = 0;
++#endif
+     SDL_AudioDeviceID mDevice = 0; ///< Handle to the opened SDL audio device.
+     int32_t mNumChannels = 2;      ///< Number of output channels (2 for stereo, 6 for 5.1).
+ };

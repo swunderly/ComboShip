@@ -1,0 +1,14 @@
+ComboShip Android build dependencies
+
+AndroidX Core 1.15.0 and transitive AndroidX components: Android Open Source Project,
+Apache License 2.0. https://android.googlesource.com/platform/frameworks/support/
+
+Kotlin standard-library components, if included by AndroidX: JetBrains and contributors,
+Apache License 2.0. https://github.com/JetBrains/kotlin
+
+Gradle 8.11.1 wrapper/build tooling: Gradle and contributors. See Gradle-LICENSE.txt.
+https://github.com/gradle/gradle
+
+Native dependency licenses are collected from the pinned upstream and build trees
+into the APK's assets/licenses directory by tools/stage_runtime.py. Source and
+patch provenance is documented in ../README.md and ../BUILDING.md.

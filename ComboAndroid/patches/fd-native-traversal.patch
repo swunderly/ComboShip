@@ -1,0 +1,67 @@
+--- a/combo/rando/MmAbilities.h
++++ b/combo/rando/MmAbilities.h
+@@ -1,5 +1,10 @@
+ #pragma once
+ namespace ComboRando {
++// Native FD wades at least as deep as Goron (84 vs 56 units). This grants the
++// existing shallow-water routes only, never underwater swimming or Deku flight.
++inline constexpr bool CanTraverseWaistWater(bool swim, bool deku, bool zora, bool goron, bool logicalDeity) {
++    return swim || deku || zora || goron || logicalDeity;
++}
+ // These predicates describe the native port hooks, not ROM-hack movement tricks.
+ inline bool CanUseDeityOutsideBoss(bool ownsMask, bool logicalAnywhere) {
+     return ownsMask && logicalAnywhere;
+--- a/mm/2s2h/Rando/Logic/Logic.h
++++ b/mm/2s2h/Rando/Logic/Logic.h
+@@ -217,11 +217,13 @@
+ #ifdef COMBO_BUILD
+ #define COMBO_LOGIC_RULE(name) CVarGetInteger(ComboRando::LogicRuleKey(name).c_str(), 0)
+ #define CAN_USE_DEITY_OUTSIDE_BOSS ComboRando::CanUseDeityOutsideBoss(    HAS_ITEM(ITEM_MASK_FIERCE_DEITY), COMBO_LOGIC_RULE("gEnhancements.Masks.FierceDeitysAnywhere"))
++#define CAN_WADE_SHALLOW_WATER ComboRando::CanTraverseWaistWater(CAN_USE_ABILITY(SWIM), CAN_BE_DEKU, CAN_BE_ZORA, CAN_BE_GORON, CAN_USE_DEITY_OUTSIDE_BOSS)
+ #define CAN_GORON_SPIKE_ROLL ComboRando::CanSpikeRoll(CAN_BE_GORON, HAS_MAGIC,     COMBO_LOGIC_RULE("gEnhancements.Masks.GoronRollingIgnoresMagic"))
+ #define CAN_USE_POWDER_KEG ComboRando::CanUsePowderKeg(CAN_BE_GORON, HAS_ITEM(ITEM_POWDER_KEG),     HAS_ITEM(ITEM_MASK_BLAST), COMBO_LOGIC_RULE("gEnhancements.Masks.BlastMaskKeg"))
+ #else
+ #define COMBO_LOGIC_RULE(name) CVarGetInteger(name, 0)
+ #define CAN_USE_DEITY_OUTSIDE_BOSS (CAN_BE_DEITY && CVarGetInteger("gEnhancements.Masks.FierceDeitysAnywhere", 0))
++#define CAN_WADE_SHALLOW_WATER (CAN_USE_ABILITY(SWIM) || CAN_BE_DEKU || CAN_BE_ZORA || CAN_BE_GORON)
+ #define CAN_GORON_SPIKE_ROLL (CAN_BE_GORON && HAS_MAGIC)
+ #define CAN_USE_POWDER_KEG (CAN_BE_GORON && HAS_ITEM(ITEM_POWDER_KEG))
+ #endif
+--- a/mm/2s2h/Rando/Logic/Regions/South.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/South.cpp
+@@ -5,7 +5,7 @@
+ 
+ using namespace Rando::Logic;
+ 
+-#define CAN_TRAVERSE_WAIST_DEEP_WATER (CAN_USE_ABILITY(SWIM) || CAN_BE_DEKU || CAN_BE_ZORA || CAN_BE_GORON)
++#define CAN_TRAVERSE_WAIST_DEEP_WATER CAN_WADE_SHALLOW_WATER
+ 
+ inline bool CanGetPastBigOctoWithoutBoat() {
+     /*
+@@ -19,7 +19,7 @@
+     /*
+      * The water is clear in this state, so swimming comes into question. Either Link uses the swim ability, he hops
+      * over the water as Deku, or he uses one of the forms tall enough to walk through the water. This may also be
+-     * expanded if FD is ever logically considered.
++     * covered for FD only when its anywhere capability is a seed logic assumption.
+      */
+     if (RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE] && CAN_TRAVERSE_WAIST_DEEP_WATER) {
+         return true;
+@@ -378,7 +378,7 @@
+         .events = {
+             EVENT(RE_ACCESS_SPRING_WATER, true),
+             EVENT(RE_ACCESS_BEANS_REFILL, CAN_BE_DEKU && HAS_ITEM(ITEM_MAGIC_BEANS)),
+-            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)),
++            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC))),
+             EVENT(RE_ACCESS_PICTOGRAPH_SWAMP_GENERIC, HAS_ITEM(ITEM_PICTOGRAPH_BOX)),
+         },
+         .oneWayEntrances = {
+@@ -401,7 +401,7 @@
+             // Any form but Deku can bottle water here. Human can do it from a lilypad before it sinks.
+             // If human is ever shuffled, revisit this.
+             EVENT(RE_ACCESS_SPRING_WATER, true),
+-            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)),
++            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC))),
+             EVENT(RE_ACCESS_PICTOGRAPH_SWAMP_GENERIC, HAS_ITEM(ITEM_PICTOGRAPH_BOX)),
+         },
+     };

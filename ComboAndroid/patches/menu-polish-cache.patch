@@ -1,0 +1,491 @@
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -5,6 +5,7 @@
+ #include "ComboExport.h"
+ #include "ComboMenuModel.h"
+ #include "ComboNavigation.h"
++#include "ComboMenuNavigation.h"
+ #include "ComboMenuLayout.h"
+ #include "rando/ComboPresets.h"
+ #include "ComboWidgetRender.h"
+@@ -384,6 +385,7 @@
+     mSearchBuf[0] = 0;
+     mSearchQuery.clear();
+     mResetContentScroll = true;
++    mResetOptionsScroll = true;
+ }
+ 
+ void ComboMenu::DrawScopeHelp() {
+@@ -656,30 +658,7 @@
+ 
+ // A feature page can draw one or both engine sources without duplicating navigation.
+ namespace {
+-struct HubEntry {
+-    std::string label; // shown in the left panel
+-    std::string group; // owning group label (for the unique key)
+-    enum Kind {
+-        ENGINE,
+-        COMBO_GEN,
+-        COMBO_PLANDO,
+-        COMBO_TRACKER,
+-        COMBO_CHECK_TRACKER,
+-        COMBO_HINT_TRACKER,
+-        COMBO_TIMERS,
+-        COMBO_NETWORK,
+-        COMBO_HOME,
+-        COMBO_SHARED_ITEMS,
+-        COMBO_ABOUT,
+-        COMBO_SESSION,
+-        COMBO_INTERFACE
+-    } kind;
+-    struct Source { const ComboRando::GameMenu* game; const CwSidebar* sidebar; bool oot; const char* section; };
+-    std::vector<Source> sources;
+-    std::string key() const {
+-        return group + "/" + label;
+-    }
+-};
++
+ 
+ void DrawTrackerSharedPanel() {
+     ComboTrackerUI::DrawItemSettings();
+@@ -1645,78 +1624,8 @@
+     DrawRuleChangeWarning();
+     auto& model = ComboMenuModel::Get();
+     model.EnsureLoaded();
+-    std::vector<HubEntry> entries;
+-    auto add = [&](const char* scope, const char* label, HubEntry::Kind kind) {
+-        if (mScope != scope) return;
+-        HubEntry entry; entry.group = scope; entry.label = label; entry.kind = kind;
+-        entries.push_back(std::move(entry));
+-    };
+-    add("home", "Presets", HubEntry::COMBO_HOME);
+-    add("randomizer", "Shared items", HubEntry::COMBO_SHARED_ITEMS);
+-    add("randomizer", "Warps & travel", HubEntry::ENGINE);
+-    add("gameplay", "Warps & travel", HubEntry::ENGINE);
+-    add("randomizer", "Logic & access", HubEntry::ENGINE);
+-    add("gameplay", "Difficulty", HubEntry::ENGINE);
+-    add("gameplay", "Saving", HubEntry::ENGINE);
+-    add("gameplay", "Items & equipment", HubEntry::ENGINE);
+-    add("gameplay", "Time savers", HubEntry::ENGINE);
+-    add("randomizer", "Generate", HubEntry::COMBO_GEN);
+-    add("randomizer", "Gameplay rules", HubEntry::ENGINE);
+-    add("randomizer", "Plandomizer", HubEntry::COMBO_PLANDO);
+-    add("trackers", "Check Tracker", HubEntry::COMBO_CHECK_TRACKER);
+-    add("trackers", "Item Tracker", HubEntry::COMBO_TRACKER);
+-    add("trackers", "Hint Tracker", HubEntry::COMBO_HINT_TRACKER);
+-    add("trackers", "Timers", HubEntry::COMBO_TIMERS);
+-    add("settings", "Interface", HubEntry::COMBO_INTERFACE);
+-    add("media", "Screen & HUD", HubEntry::ENGINE);
+-    add("tools", "Session", HubEntry::COMBO_SESSION);
+-    add("tools", "Multiplayer", HubEntry::COMBO_NETWORK);
+-    const GameMenu* games[] = {&model.Oot(), &model.Mm()};
+-    for (int g = 0; g < 2; ++g) {
+-        const auto& game = *games[g];
+-        if (!game.loaded || !game.menu) continue;
+-        for (int s = 0; s < game.menu->sectionCount; ++s) {
+-            const auto& section = game.menu->sections[s];
+-            for (int b = 0; b < section.sidebarCount; ++b) {
+-                const auto& sidebar = section.sidebars[b];
+-                const auto dest = FeatureMenuRoute(g == 0, section.sectionLabel ? section.sectionLabel : "",
+-                                                  sidebar.sidebarName ? sidebar.sidebarName : "", 0);
+-                auto addSource = [&](const MenuDestination& route) {
+-                    if (route.scope != mScope) return;
+-                    auto it = std::find_if(entries.begin(), entries.end(), [&](const HubEntry& e) { return e.label == route.page; });
+-                    if (it == entries.end()) {
+-                        HubEntry entry; entry.group = route.scope; entry.label = route.page; entry.kind = HubEntry::ENGINE;
+-                        entries.push_back(std::move(entry)); it = entries.end() - 1;
+-                    }
+-                    if (std::none_of(it->sources.begin(), it->sources.end(), [&](const HubEntry::Source& source) {
+-                        return source.game == &game && source.sidebar == &sidebar;
+-                    })) it->sources.push_back({&game, &sidebar, g == 0, section.sectionLabel});
+-                };
+-                addSource(dest);
+-                std::string heading;
+-                int column = -1;
+-                for (int w = 0; w < sidebar.widgetCount; ++w) {
+-                    const auto& widget = sidebar.widgets[w];
+-                    if (widget.column != column) { column = widget.column; heading.clear(); }
+-                    if (widget.kind == CW_SEPARATOR_TEXT) heading = widget.name ? widget.name : "";
+-                    addSource(MenuGroupRoute(g == 0, section.sectionLabel, sidebar.sidebarName, column, heading, widget.cvar ? widget.cvar : ""));
+-                }
+-                const auto restoration = FeatureMenuRoute(g == 0, section.sectionLabel ? section.sectionLabel : "",
+-                                                         sidebar.sidebarName ? sidebar.sidebarName : "", 2);
+-                if (restoration.scope != dest.scope || restoration.page != dest.page) addSource(restoration);
+-            }
+-        }
+-    }
+-    if (mScope == "randomizer") {
+-        std::stable_sort(entries.begin(), entries.end(), [](const HubEntry& a, const HubEntry& b) {
+-            return RandomizerPageOrder(a.label) < RandomizerPageOrder(b.label);
+-        });
+-    }
+-    add("settings", "About Combo Ship", HubEntry::COMBO_ABOUT);
+-    if (mScope == "gameplay" || mScope == "media" || mScope == "settings")
+-        std::stable_sort(entries.begin(), entries.end(), [&](const HubEntry& a, const HubEntry& b) {
+-            return MenuPageOrder(mScope, a.label) < MenuPageOrder(mScope, b.label);
+-        });
++    static MenuNavigationCache navigation;
++    auto& entries = navigation.Get(mScope, model);
+     if (entries.empty()) { ImGui::TextUnformatted("Loading settings..."); return; }
+     auto active = std::find_if(entries.begin(), entries.end(), [&](const HubEntry& e) { return e.key() == mHubActive; });
+     if (active == entries.end()) { active = entries.begin(); mHubActive = active->key(); }
+@@ -1725,7 +1634,7 @@
+         for (const auto& e : entries) width = std::max(width, ImGui::CalcTextSize(e.label.c_str()).x + ImGui::GetStyle().ScrollbarSize + 40.0f);
+         width = std::min(width, ImGui::GetContentRegionAvail().x * 0.32f);
+         ImGui::BeginChild("##FeatureSidebar", ImVec2(width, 0));
+-        for (auto it = entries.begin(); it != entries.end(); ++it) {
++        auto drawEntry = [&](auto it) {
+             ImGui::PushID(it->key().c_str());
+             if (ComboMenu_StyledSidebarEntry(it->label.c_str(), it == active, ImGui::GetContentRegionAvail().x)) {
+                 active = it; mHubActive = it->key();
+@@ -1733,6 +1642,15 @@
+                 mSearchReturn.Clear();
+             }
+             ImGui::PopID();
++        };
++        for (auto it = entries.begin(); it != entries.end(); ++it)
++            if (mScope != "tools" || !IsDeveloperToolPage(it->label)) drawEntry(it);
++        if (mScope == "tools" && std::any_of(entries.begin(), entries.end(), [](const HubEntry& e) { return IsDeveloperToolPage(e.label); })) {
++            ImGui::Spacing();
++            if (IsDeveloperToolPage(active->label)) ImGui::SetNextItemOpen(true, ImGuiCond_Always);
++            if (ImGui::CollapsingHeader("Developer tools"))
++                for (auto it = entries.begin(); it != entries.end(); ++it)
++                    if (IsDeveloperToolPage(it->label)) drawEntry(it);
+         }
+         ImGui::EndChild();
+         ImGui::SameLine();
+@@ -1751,6 +1669,8 @@
+     ImGui::BeginDisabled(generating&&mScope!="randomizer"&&active->kind!=HubEntry::COMBO_GEN);
+     if (!mSearchQuery.empty()) {
+         DrawSearchResults(mSearchQuery);
++    } else if ((mScope == "randomizer" || mScope == "home") && ProfileUI::DrawUnavailableSettings()) {
++        // Never present fallback defaults as a file's saved/generated settings.
+     } else {
+         ImGui::SeparatorText(active->kind == HubEntry::COMBO_HOME ? "Community presets" : active->label.c_str());
+         if (mScope == "randomizer") MenuTooltip(RandomizerPageHelp(active->label));
+@@ -1862,7 +1782,7 @@
+             }
+             int subpage = -1;
+             if (active->label == "Items & checks") {
+-                choiceRow("PoolSection", "Locations", "Extra items", mPoolSection);
++                choiceRow("PoolSection", "Checks", "Items", mPoolSection);
+                 subpage = mPoolSection;
+             } else if (active->label == "Hints & traps") {
+                 choiceRow("HintSection", "Hints", "Traps", mHintSection);
+@@ -1872,30 +1792,36 @@
+             ImGui::PushID(selectedGame);
+             ImGui::PushID(subpage);
+             ImGui::BeginChild("##FeatureOptions", ImVec2(0, 0));
++            if (mResetOptionsScroll) { ImGui::SetScrollY(0.0f); mResetOptionsScroll = false; }
+             ImGui::BeginDisabled(seedOptions&&!ProfileUI::Editable());
+             DrawGameplayRules(seedOptions, active->label, selectedGame, &mRuleFocus);
+             ImGui::EndDisabled();
+             if(!seedOptions) DrawPairedPreferences(active->label);
+             if (mScope == "media" && active->label == "Appearance") DrawCosmeticSync();
+-            std::vector<CwWidget> widgets;
+-            uint32_t columns = 1;
+-            const GameMenu* selectedMenu = nullptr;
+-            for (const auto& source : active->sources) {
+-                if (source.oot != (selectedGame == 0)) continue;
+-                selectedMenu = source.game;
+-                if (!source.oot && subpage >= 0 &&
+-                    RandomizerWidgetGroup(false, source.sidebar->sidebarName, 0, "") != subpage) continue;
+-                AppendFeatureWidgets(source, active->label, subpage, widgets, columns);
+-            }
+-            if (selectedMenu) {
++            const auto bodyKey = std::make_pair(selectedGame, subpage);
++            auto body = active->bodies.find(bodyKey);
++            if (body == active->bodies.end()) {
++                HubEntry::Body built;
++                for (const auto& source : active->sources) {
++                    if (source.oot != (selectedGame == 0)) continue;
++                    built.game = source.game;
++                    if (!source.oot && subpage >= 0 &&
++                        RandomizerWidgetGroup(false, source.sidebar->sidebarName, 0, "") != subpage) continue;
++                    AppendFeatureWidgets(source, active->label, subpage, built.widgets, built.columns);
++                }
+                 if (active->label == "Controls" || active->label == "Saving") {
+-                    columns = 1;
+-                    for (auto& widget : widgets) widget.column = 0;
+-                    std::stable_partition(widgets.begin(), widgets.end(), [](const CwWidget& widget) { return widget.kind != CW_CUSTOM; });
++                    built.columns = 1;
++                    for (auto& widget : built.widgets) widget.column = 0;
++                    std::stable_partition(built.widgets.begin(), built.widgets.end(),
++                        [](const CwWidget& widget) { return widget.kind != CW_CUSTOM; });
+                 }
+-                const CwSidebar feature = {active->label.c_str(), columns, widgets.data(), (int)widgets.size()};
+-                if(seedOptions)ProfileUI::DrawSidebar(feature,*selectedMenu,selectedGame);
+-                else RenderSidebarWidgets(feature, *selectedMenu);
++                body = active->bodies.emplace(bodyKey, std::move(built)).first;
++            }
++            auto& content = body->second;
++            if (content.game) {
++                const CwSidebar feature = {active->label.c_str(), content.columns, content.widgets.data(), (int)content.widgets.size()};
++                if(seedOptions)ProfileUI::DrawSidebar(feature,*content.game,selectedGame);
++                else RenderSidebarWidgets(feature, *content.game);
+             }
+             ImGui::EndChild();
+             ImGui::PopID(); ImGui::PopID();
+--- a/combo/gui/ComboMenu.h
++++ b/combo/gui/ComboMenu.h
+@@ -52,6 +52,7 @@
+     std::string mGuideScope;
+     bool mHelpRequested = false;
+     bool mResetContentScroll = false;
++    bool mResetOptionsScroll = false;
+     char mSeedBuf[128] = { 0 };
+     std::string mHubActive;        // active hub entry key ("group/label"); persists across frames
+     std::string mScope;            // active top-level tab: feature scope
+@@ -59,7 +60,7 @@
+     std::map<std::string, std::string> mSectionSelection;
+     int mPreferenceGame = 0; // 0 follows foreground; 1 OoT; 2 MM
+     int mRandomizerGame = 0; // Seed configuration stays on the selected world, independent of gameplay.
+-    int mPoolSection = 0;   // Shared Locations / Extra items selection.
++    int mPoolSection = 0;   // Shared Checks / Items selection.
+     int mHintSection = 0;   // Shared Hints / Traps selection.
+ 
+ };
+--- /dev/null
++++ b/combo/gui/ComboMenuNavigation.h
+@@ -0,0 +1,141 @@
++#pragma once
++#include "ComboMenuModel.h"
++#include "ComboNavigation.h"
++#include <map>
++#include <utility>
++#include <vector>
++
++namespace ComboRando {
++struct HubEntry {
++    std::string label; // shown in the left panel
++    std::string group; // owning group label (for the unique key)
++    enum Kind {
++        ENGINE,
++        COMBO_GEN,
++        COMBO_PLANDO,
++        COMBO_TRACKER,
++        COMBO_CHECK_TRACKER,
++        COMBO_HINT_TRACKER,
++        COMBO_TIMERS,
++        COMBO_NETWORK,
++        COMBO_HOME,
++        COMBO_SHARED_ITEMS,
++        COMBO_ABOUT,
++        COMBO_SESSION,
++        COMBO_INTERFACE
++    } kind;
++    struct Source { const ComboRando::GameMenu* game; const CwSidebar* sidebar; bool oot; const char* section; };
++    std::vector<Source> sources;
++    struct Body {
++        const GameMenu* game = nullptr;
++        std::vector<CwWidget> widgets;
++        uint32_t columns = 1;
++    };
++    std::map<std::pair<int, int>, Body> bodies;
++    std::string key() const {
++        return group + "/" + label;
++    }
++};
++
++inline MenuDestination NavigationSourceRoute(bool oot, const std::string& section,
++                                              const std::string& sidebar, int column) {
++    return MenuGroupRoute(oot, section, sidebar, column, "");
++}
++
++inline std::vector<HubEntry> BuildFeatureNavigation(const std::string& scope, const ComboMenuModel& model) {
++    std::vector<HubEntry> entries;
++    auto add = [&](const char* destinationScope, const char* label, HubEntry::Kind kind) {
++        if (scope != destinationScope) return;
++        HubEntry entry; entry.group = destinationScope; entry.label = label; entry.kind = kind;
++        entries.push_back(std::move(entry));
++    };
++    add("home", "Presets", HubEntry::COMBO_HOME);
++    add("randomizer", "Shared items", HubEntry::COMBO_SHARED_ITEMS);
++    add("randomizer", "Warps & travel", HubEntry::ENGINE);
++    add("gameplay", "Warps & travel", HubEntry::ENGINE);
++    add("randomizer", "Logic & access", HubEntry::ENGINE);
++    add("gameplay", "Difficulty", HubEntry::ENGINE);
++    add("gameplay", "Saving", HubEntry::ENGINE);
++    add("gameplay", "Items & equipment", HubEntry::ENGINE);
++    add("gameplay", "Time savers", HubEntry::ENGINE);
++    add("randomizer", "Generate", HubEntry::COMBO_GEN);
++    add("randomizer", "Gameplay rules", HubEntry::ENGINE);
++    add("randomizer", "Plandomizer", HubEntry::COMBO_PLANDO);
++    add("trackers", "Check Tracker", HubEntry::COMBO_CHECK_TRACKER);
++    add("trackers", "Item Tracker", HubEntry::COMBO_TRACKER);
++    add("trackers", "Hint Tracker", HubEntry::COMBO_HINT_TRACKER);
++    add("trackers", "Timers", HubEntry::COMBO_TIMERS);
++    add("settings", "Interface", HubEntry::COMBO_INTERFACE);
++    add("media", "Screen & HUD", HubEntry::ENGINE);
++    add("tools", "Session", HubEntry::COMBO_SESSION);
++    add("tools", "Multiplayer", HubEntry::COMBO_NETWORK);
++    const GameMenu* games[] = {&model.Oot(), &model.Mm()};
++    for (int g = 0; g < 2; ++g) {
++        const auto& game = *games[g];
++        if (!game.loaded || !game.menu) continue;
++        for (int s = 0; s < game.menu->sectionCount; ++s) {
++            const auto& section = game.menu->sections[s];
++            for (int b = 0; b < section.sidebarCount; ++b) {
++                const auto& sidebar = section.sidebars[b];
++                const auto dest = NavigationSourceRoute(g == 0, section.sectionLabel ? section.sectionLabel : "",
++                                                  sidebar.sidebarName ? sidebar.sidebarName : "", 0);
++                auto addSource = [&](const MenuDestination& route) {
++                    if (route.scope != scope) return;
++                    auto it = std::find_if(entries.begin(), entries.end(), [&](const HubEntry& e) { return e.label == route.page; });
++                    if (it == entries.end()) {
++                        HubEntry entry; entry.group = route.scope; entry.label = route.page; entry.kind = HubEntry::ENGINE;
++                        entries.push_back(std::move(entry)); it = entries.end() - 1;
++                    }
++                    if (std::none_of(it->sources.begin(), it->sources.end(), [&](const HubEntry::Source& source) {
++                        return source.game == &game && source.sidebar == &sidebar;
++                    })) it->sources.push_back({&game, &sidebar, g == 0, section.sectionLabel});
++                };
++                addSource(dest);
++                std::string heading;
++                int column = -1;
++                for (int w = 0; w < sidebar.widgetCount; ++w) {
++                    const auto& widget = sidebar.widgets[w];
++                    if (widget.column != column) { column = widget.column; heading.clear(); }
++                    if (widget.kind == CW_SEPARATOR_TEXT) heading = widget.name ? widget.name : "";
++                    addSource(MenuGroupRoute(g == 0, section.sectionLabel, sidebar.sidebarName, column, heading, widget.cvar ? widget.cvar : ""));
++                }
++                const auto restoration = NavigationSourceRoute(g == 0, section.sectionLabel ? section.sectionLabel : "",
++                                                         sidebar.sidebarName ? sidebar.sidebarName : "", 2);
++                if (restoration.scope != dest.scope || restoration.page != dest.page) addSource(restoration);
++            }
++        }
++    }
++    if (scope == "randomizer") {
++        std::stable_sort(entries.begin(), entries.end(), [](const HubEntry& a, const HubEntry& b) {
++            return RandomizerPageOrder(a.label) < RandomizerPageOrder(b.label);
++        });
++    }
++    add("settings", "About Combo Ship", HubEntry::COMBO_ABOUT);
++    if (scope == "gameplay" || scope == "media" || scope == "settings" || scope == "tools")
++        std::stable_sort(entries.begin(), entries.end(), [&](const HubEntry& a, const HubEntry& b) {
++            return MenuPageOrder(scope, a.label) < MenuPageOrder(scope, b.label);
++        });
++    return entries;
++}
++
++// Native menu exports own immutable metadata for the process lifetime. Keep the
++// page index and grouped widget arrays, but still evaluate live values/callbacks
++// when rendering. A late-loading or replaced game export invalidates both caches.
++class MenuNavigationCache {
++  public:
++    std::vector<HubEntry>& Get(const std::string& scope, const ComboMenuModel& model) {
++        const CwMenu* current[] = {model.Oot().loaded ? model.Oot().menu : nullptr,
++                                  model.Mm().loaded ? model.Mm().menu : nullptr};
++        if (menus[0] != current[0] || menus[1] != current[1]) {
++            pages.clear();
++            menus[0] = current[0]; menus[1] = current[1];
++        }
++        auto found = pages.find(scope);
++        if (found == pages.end()) found = pages.emplace(scope, BuildFeatureNavigation(scope, model)).first;
++        return found->second;
++    }
++  private:
++    const CwMenu* menus[2]{};
++    std::map<std::string, std::vector<HubEntry>> pages;
++};
++} // namespace ComboRando
+--- a/combo/gui/ComboNavigation.h
++++ b/combo/gui/ComboNavigation.h
+@@ -148,11 +148,20 @@
+         "Quality of life", "Minigames", "Difficulty", "Fixes", "Restorations", "Extra Modes", "Cheats", "Randomizer extras"};
+     const char* media[] = {"Screen & HUD", "Camera", "Graphics", "Visual enhancements", "Appearance", "HUD & overlays", "Audio", "Music & sounds"};
+     const char* settings[] = {"General", "Controls", "Input Viewer", "Interface", "Notifications", "About Combo Ship"};
+-    const char* const* pages = scope == "gameplay" ? gameplay : scope == "media" ? media : settings;
++    const char* tools[] = {"Session", "Save Editor", "Mods", "Saved presets", "Multiplayer", "Developer options",
++        "Stats", "Console", "Hook Debugger", "Collision Viewer", "Actor Viewer", "Display lists", "Value Viewer",
++        "Message Viewer", "Gfx Debugger", "Event Log"};
++    const char* const* pages = scope == "gameplay" ? gameplay : scope == "media" ? media : scope == "tools" ? tools : settings;
+     const int count = scope == "gameplay" ? int(sizeof(gameplay)/sizeof(*gameplay)) :
+-                      scope == "media" ? int(sizeof(media)/sizeof(*media)) : int(sizeof(settings)/sizeof(*settings));
++                      scope == "media" ? int(sizeof(media)/sizeof(*media)) : scope == "tools" ? int(sizeof(tools)/sizeof(*tools)) : int(sizeof(settings)/sizeof(*settings));
+     for (int i = 0; i < count; ++i) if (page == pages[i]) return i;
+     return 100;
++}
++inline bool IsDeveloperToolPage(const std::string& page) {
++    for (const char* name : {"Developer options", "Stats", "Console", "Hook Debugger", "Collision Viewer",
++                            "Actor Viewer", "Display lists", "Value Viewer", "Message Viewer", "Gfx Debugger", "Event Log"})
++        if (page == name) return true;
++    return false;
+ }
+ inline MenuDestination NativeSearchPageRoute(bool oot, const std::string& section, const std::string& page) {
+     // Discovery of HUD editing goes to the common editor. The old advanced
+--- a/combo/gui/ComboRandomizerProfiles.cpp
++++ b/combo/gui/ComboRandomizerProfiles.cpp
+@@ -32,7 +32,7 @@
+ static void RefreshOptionPolicy(bool apply);
+ bool Ready(){return (callbacks.version==1||callbacks.version==2)&&callbacks.inspect&&callbacks.setDraft&&callbacks.copySaved&&callbacks.copyDraft&&callbacks.generate&&callbacks.cancel;}
+ const Json& Catalogue(){return catalog;}
+-int SelectedSlot(){return selected;} bool Active(){return active;} bool Editable(){return active&&view==0;}
++int SelectedSlot(){return selected;} bool Active(){return active;} bool Editable(){return active&&document.is_object()&&view==0;}
+ static bool Response(const char* raw){auto reply=Json::parse(raw?raw:"null");error=reply.value("error",std::string());return error.empty();}
+ static Json* Field(const char* key,bool create){
+  if(!document.is_object())return nullptr;
+@@ -89,14 +89,23 @@
+  }catch(const std::exception& e){error=e.what();}
+ }
+ void EndFrame(){if(dirty&&Editable()){refreshPending=true;try{Response(callbacks.setDraft(selected,document.dump().c_str()));}catch(const std::exception& e){error=e.what();}}active=false;}
++bool DrawUnavailableSettings(){
++ if(active&&document.is_object())return false;
++ if(!active){ImGui::TextWrapped("Settings are unavailable. Reopen the menu to try again.");return true;}
++ ImGui::TextWrapped(view==1?"File %d has no saved seed settings.":view==2?"File %d has no generated seed settings.":"File %d has no next-seed settings.",selected+1);
++ if(view!=0&&ImGui::Button("Configure next seed")){view=0;BeginFrame();}
++ return true;
++}
+ void DrawSelector(){
+  static const char* files[]={"File 1","File 2","File 3"};
+  ImGui::SetNextItemWidth(ImGui::GetFontSize()*5);if(ImGui::Combo("##Settings file",&selected,files,3))BeginFrame();
+  MenuTooltip("Choose the file whose saved rules you inspect or whose next seed you configure. This does not change gameplay.");
+  const char* modes[]={"Next seed","Saved seed","Generated seed"};
+- for(int i=0;i<3;++i){if(ImGui::GetItemRectMax().x+ImGui::CalcTextSize(modes[i]).x+44.f<ImGui::GetWindowPos().x+ImGui::GetContentRegionMax().x)ImGui::SameLine();if(ComboMenu_StyledHeaderEntry(modes[i],view==i)){view=i;BeginFrame();}}
+- MenuTooltip(view==0?"Editable setup for this file's next generation.":"Read-only seed settings. Existing placements and rules are unchanged.");
+- if(ImGui::GetItemRectMax().x+ImGui::CalcTextSize("Copy").x+44.f<ImGui::GetWindowPos().x+ImGui::GetContentRegionMax().x)ImGui::SameLine();if(ImGui::Button("Copy"))ImGui::OpenPopup("Copy settings");
++ const char* tips[]={"Editable settings for this file's next seed.","Read-only settings of the run saved in this file.","Read-only settings of the last seed generated for this file."};
++ for(int i=0;i<3;++i){if(ImGui::GetItemRectMax().x+ImGui::CalcTextSize(modes[i]).x+44.f<ImGui::GetWindowPos().x+ImGui::GetContentRegionMax().x)ImGui::SameLine();if(ComboMenu_StyledHeaderEntry(modes[i],view==i)){view=i;BeginFrame();}MenuTooltip(tips[i]);}
++ if(ImGui::GetItemRectMax().x+ImGui::CalcTextSize("Copy settings").x+44.f<ImGui::GetWindowPos().x+ImGui::GetContentRegionMax().x)ImGui::SameLine();
++ ImGui::BeginDisabled(!active||view==2||!document.is_object());if(ImGui::Button("Copy settings"))ImGui::OpenPopup("Copy settings");ImGui::EndDisabled();
++ MenuTooltip(view==2?"Select Next seed or Saved seed to copy settings.":"Copy these settings to a file's next-seed setup. This does not copy or replace saved progress.");
+  if(ImGui::BeginPopup("Copy settings")){
+   for(int destination=0;destination<3;++destination){const std::string label="To File "+std::to_string(destination+1)+" next seed";
+    ImGui::BeginDisabled(view==2||document.is_null());if(ImGui::Selectable(label.c_str())){refreshPending=true;try{Response(view==0?callbacks.copyDraft(selected,destination):callbacks.copySaved(selected,destination));}catch(const std::exception& e){error=e.what();}}ImGui::EndDisabled();}
+@@ -106,6 +115,7 @@
+ }
+ static void Tooltip(const char* help){if(help&&help[0])MenuTooltip(help);}
+ void DrawWidget(const CwWidget& w,const GameMenu& game){
++ if(!active||!document.is_object()){ImGui::TextDisabled("No settings for this file and view.");return;}
+  // A selection refreshes optionView; retain the current choices until this widget finishes drawing.
+  const auto policyView=optionView;
+  const auto* policy=policyView&&w.cvar?policyView->Find(w.cvar):nullptr;
+@@ -136,7 +146,17 @@
+ }
+ void DrawSidebar(const CwSidebar& side,const GameMenu& game,int world){
+  const unsigned desired=std::min<unsigned>(2,side.columnCount?side.columnCount:1);const unsigned columns=ImGui::GetContentRegionAvail().x<ImGui::GetFontSize()*20*desired?1:desired;
+- auto draw=[&](const CwWidget& widget){if(widget.kind==CW_CUSTOM)DrawCustom(widget.name,world);else DrawWidget(widget,game);};
++ bool pouchesDrawn=false;
++ const auto isPouch=[](const CwWidget& w){constexpr char prefix[]="gRandoSettings.SilverPouch";return w.cvar&&std::strncmp(w.cvar,prefix,sizeof(prefix)-1)==0;};
++ auto draw=[&](const CwWidget& widget){
++  if(world==0&&isPouch(widget)){
++   if(pouchesDrawn)return;pouchesDrawn=true;
++   ImGui::BeginDisabled(!ReadInteger("gRandoSettings.SilverRupeeShuffle",0));
++   if(ImGui::CollapsingHeader("Silver rupee pouches"))for(int i=0;i<side.widgetCount;++i){const auto& pouch=side.widgets[i];if(isPouch(pouch))DrawWidget(pouch,game);}
++   ImGui::EndDisabled();return;
++  }
++  if(widget.kind==CW_CUSTOM)DrawCustom(widget.name,world);else DrawWidget(widget,game);
++ };
+  if(columns==1){for(int i=0;i<side.widgetCount;++i)draw(side.widgets[i]);return;}
+  if(!ImGui::BeginTable("##NativeOptions",columns,ImGuiTableFlags_SizingStretchSame|ImGuiTableFlags_NoSavedSettings))return;
+  ImGui::TableNextRow();for(unsigned column=0;column<columns;++column){ImGui::TableSetColumnIndex(column);ImGui::PushID(int(column));ImGui::BeginGroup();for(int i=0;i<side.widgetCount;++i)if(unsigned(std::clamp(side.widgets[i].column,0,int(columns)-1))==column)draw(side.widgets[i]);ImGui::EndGroup();ImGui::PopID();}ImGui::EndTable();
+--- a/combo/gui/ComboRandomizerProfiles.h
++++ b/combo/gui/ComboRandomizerProfiles.h
+@@ -6,6 +6,7 @@
+ namespace ComboRando::ProfileUI {
+ void DrawSelector(); void BeginFrame(); void EndFrame();
+ bool Active(); bool Editable(); bool Ready(); int SelectedSlot();
++bool DrawUnavailableSettings();
+ int ReadInteger(const char*,int); void WriteInteger(const char*,int);
+ void DrawSidebar(const CwSidebar&,const GameMenu&,int);
+ void DrawWidget(const CwWidget&,const GameMenu&); void DrawCustom(const char*,int);

@@ -1,0 +1,193 @@
+--- a/mm/2s2h/Rando/Logic/Logic.h
++++ b/mm/2s2h/Rando/Logic/Logic.h
+@@ -11,6 +11,7 @@
+ #ifdef COMBO_BUILD
+ #include "rando/GameplayRules.h"
+ #include "rando/MmAbilities.h"
++#include "rando/MmTricks.h"
+ #endif
+ 
+ extern "C" {
+@@ -24,9 +25,13 @@
+ // their updatePaths; standalone builds get {} (behavior unchanged).
+ #define RANDO_LOGIC_INIT_PATHS \
+     { "RANDO_LOGIC" }
++#define COMBO_MM_TRICK(name) CVarGetInteger("gCombo.Tricks.MM." name, 0)
++#define CAN_NAVIGATE_HIDDEN ComboRando::CanNavigateHidden(HAS_ITEM(ITEM_LENS_OF_TRUTH), HAS_MAGIC, COMBO_MM_TRICK("Lensless") != 0)
+ #else
+ #define RANDO_LOGIC_INIT_PATHS \
+     {}
++#define COMBO_MM_TRICK(name) 0
++#define CAN_NAVIGATE_HIDDEN (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC)
+ #endif
+ 
+ namespace Rando {
+--- a/mm/2s2h/Rando/Logic/Regions/North.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/North.cpp
+@@ -149,14 +149,14 @@
+             EXIT(ENTRANCE(GROTTOS, 16),               ENTRANCE(GORON_VILLAGE_WINTER, 3), true)
+         },
+         .connections = {
+-            CONNECTION(RR_GORON_VILLAGE, HAS_MAGIC && HAS_ITEM(ITEM_LENS_OF_TRUTH))
++            CONNECTION(RR_GORON_VILLAGE, CAN_NAVIGATE_HIDDEN)
+         }
+     };
+     Regions[RR_LONE_PEAK_SHRINE] = RandoRegion{ .name = "Lone Peak", .sceneId = SCENE_KAKUSIANA,
+         // Lone Peak Shrine behaves differently from Grottos despite sharing a map. Seems okay to add here.
+         .checks = {
+             CHECK(RC_LONE_PEAK_SHRINE_BOULDER_CHEST, CAN_USE_EXPLOSIVE),
+-            CHECK(RC_LONE_PEAK_SHRINE_INVISIBLE_CHEST, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
++            CHECK(RC_LONE_PEAK_SHRINE_INVISIBLE_CHEST, CAN_NAVIGATE_HIDDEN),
+             CHECK(RC_LONE_PEAK_SHRINE_LENS_CHEST, true),
+             CHECK(RC_LONE_PEAK_SHRINE_GRASS_01, true),
+             CHECK(RC_LONE_PEAK_SHRINE_GRASS_02, true),
+@@ -239,7 +239,7 @@
+             CHECK(RC_MOUNTAIN_VILLAGE_DON_GERO_MASK,                RANDO_EVENTS[RE_SPAWN_SIRLOIN]), // TODO: For entrance rando we need to find a way to ensure the Rock Sirloin can be "walked" here
+             CHECK(RC_MOUNTAIN_VILLAGE_FROG_CHOIR,                   HAS_ITEM(ITEM_MASK_DON_GERO) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && FOUND_ALL_FROGS),
+             CHECK(RC_MOUNTAIN_VILLAGE_OWL_STATUE,                   CAN_USE_SWORD),
+-            CHECK(RC_MOUNTAIN_VILLAGE_WATERFALL_CHEST,              RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
++            CHECK(RC_MOUNTAIN_VILLAGE_WATERFALL_CHEST,              RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && CAN_NAVIGATE_HIDDEN),
+             CHECK(RC_MOUNTAIN_VILLAGE_WINTER_POT,                   CAN_HOOK_SCARECROW),
+             CHECK(RC_MOUNTAIN_VILLAGE_SPRING_POT,                   CAN_HOOK_SCARECROW && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+             CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BEEHIVE,               CAN_USE_PROJECTILE && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+@@ -310,7 +310,7 @@
+             EXIT(ENTRANCE(MOUNTAIN_SMITHY, 0),              ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 1), true),
+             EXIT(ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 2), true),
+             // TODO: When it's spring you need goron mask or zora mask instead?
+-            EXIT(ENTRANCE(GORON_GRAVERYARD, 0),             ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 3), HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
++            EXIT(ENTRANCE(GORON_GRAVERYARD, 0),             ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 3), (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC) || COMBO_MM_TRICK("DarmaniWall")),
+             EXIT(ENTRANCE(PATH_TO_SNOWHEAD, 0),             ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 4), true),
+             EXIT(ENTRANCE(PATH_TO_MOUNTAIN_VILLAGE, 1),     ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 6), true),
+         },
+@@ -502,7 +502,7 @@
+     };
+     Regions[RR_PATH_TO_SNOWHEAD_MIDDLE] = RandoRegion{ .sceneId = SCENE_14YUKIDAMANOMITI,
+         .checks = {
+-            CHECK(RC_PATH_TO_SNOWHEAD_PIECE_OF_HEART, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC && CAN_HOOK_SCARECROW),
++            CHECK(RC_PATH_TO_SNOWHEAD_PIECE_OF_HEART, CAN_NAVIGATE_HIDDEN && CAN_HOOK_SCARECROW),
+             CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_01, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+             CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_02, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
+--- a/mm/2s2h/Rando/Logic/Regions/East.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/East.cpp
+@@ -74,7 +74,7 @@
+         },
+         .connections = {
+             CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_BOSS, CAN_USE_EXPLOSIVE),
+-            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_BEFORE_PIT, HAS_MAGIC && HAS_ITEM(ITEM_LENS_OF_TRUTH)),
++            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_BEFORE_PIT, CAN_NAVIGATE_HIDDEN),
+         },
+     };
+     Regions[RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_BEFORE_PIT] = RandoRegion{ .name = "Night 2 Grave Before Pit", .sceneId = SCENE_HAKASHITA,
+@@ -95,7 +95,7 @@
+             EXIT(ENTRANCE(IKANA_GRAVEYARD, 2),              ENTRANCE(BENEATH_THE_GRAVERYARD, 0), true),
+         },
+         .connections = {
+-            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_AFTER_PIT, HAS_MAGIC && HAS_ITEM(ITEM_LENS_OF_TRUTH)),
++            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_AFTER_PIT, CAN_NAVIGATE_HIDDEN),
+         },
+     };
+     Regions[RR_GHOST_HUT] = RandoRegion{ .sceneId = SCENE_TOUGITES,
+--- a/mm/2s2h/Rando/Logic/Regions/BeneathTheWell.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/BeneathTheWell.cpp
+@@ -127,7 +127,7 @@
+     };
+     Regions[RR_BENEATH_THE_WELL_LEFT_FIRE_KEESE] = RandoRegion{ .name = "Left Fire Keese Room", .sceneId = SCENE_REDEAD,
+         .checks = {
+-            CHECK(RC_BENEATH_THE_WELL_KEESE_CHEST, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
++            CHECK(RC_BENEATH_THE_WELL_KEESE_CHEST, CAN_NAVIGATE_HIDDEN),
+             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
+             CHECK(RC_ENEMY_DROP_WALLMASTER, CanKillEnemy(ACTOR_EN_WALLMAS)),
+         },
+--- a/mm/2s2h/Rando/Logic/Regions/IkanaCastle.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/IkanaCastle.cpp
+@@ -156,7 +156,7 @@
+         },
+         .connections = {
+             CONNECTION(RR_IKANA_CASTLE_CEILING_ROOM, CAN_USE_SWORD || CAN_USE_PROJECTILE),
+-            CONNECTION(RR_IKANA_CASTLE_BUBBLE_ROOM, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC && CAN_BE_DEKU && (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_BOMB)))
++            CONNECTION(RR_IKANA_CASTLE_BUBBLE_ROOM, CAN_NAVIGATE_HIDDEN && CAN_BE_DEKU && (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_BOMB)))
+         },
+     };
+     Regions[RR_IKANA_CASTLE_THRONE_ROOM] = RandoRegion{ .name = "Throne Room", .sceneId = SCENE_IKNINSIDE,
+--- a/mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp
+@@ -177,7 +177,7 @@
+     Regions[RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_THIRD_FLOOR] = RandoRegion{ .sceneId = SCENE_HAKUGIN,
+         // This region is being treated the same as the upper part that you can access using the completed pillar puzzle...its probably fine like this.
+         .checks = {
+-            CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_ALCOVE_CHEST, ((CAN_BE_DEKU && CAN_BE_GORON) || HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_ITEM(ITEM_HOOKSHOT))),
++            CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_ALCOVE_CHEST, ((CAN_BE_DEKU && CAN_BE_GORON) || CAN_NAVIGATE_HIDDEN && HAS_ITEM(ITEM_HOOKSHOT))),
+             CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_3_LARGE_SNOWBALL_01, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+             CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_3_LARGE_SNOWBALL_02, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+             CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_3_LARGE_SNOWBALL_03, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+@@ -228,7 +228,7 @@
+             CHECK(RC_SNOWHEAD_TEMPLE_DUAL_SWITCHES_ROOM_LARGE_CRATE_02, true),
+             CHECK(RC_SNOWHEAD_TEMPLE_DUAL_SWITCHES_POT_01, true),
+             CHECK(RC_SNOWHEAD_TEMPLE_DUAL_SWITCHES_POT_02, true),
+-            CHECK(RC_SNOWHEAD_TEMPLE_SF_DUAL_SWITCHES, ((HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC && HAS_ITEM(ITEM_MASK_GREAT_FAIRY)) && ((HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT)) || CAN_BE_DEKU))),
++            CHECK(RC_SNOWHEAD_TEMPLE_SF_DUAL_SWITCHES, ((CAN_NAVIGATE_HIDDEN && HAS_ITEM(ITEM_MASK_GREAT_FAIRY)) && ((HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT)) || CAN_BE_DEKU))),
+             CHECK(RC_ENEMY_DROP_BOE, CanKillEnemy(ACTOR_EN_MKK)),
+         },
+         .connections = {
+@@ -262,7 +262,7 @@
+     };
+     Regions[RR_SNOWHEAD_TEMPLE_ICICLE_ROOM] = RandoRegion{ .sceneId = SCENE_HAKUGIN,
+         .checks = {
+-            CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_ALCOVE_CHEST, (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC)),
++            CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_ALCOVE_CHEST, (CAN_NAVIGATE_HIDDEN)),
+             CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_CHEST, ((CAN_USE_EXPLOSIVE && HAS_ITEM(ITEM_HOOKSHOT)) || CAN_BE_GORON)),
+             CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_FREESTANDING_RUPEE_01, CAN_USE_MAGIC_ARROW(FIRE)),
+             CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_FREESTANDING_RUPEE_02, CAN_USE_MAGIC_ARROW(FIRE)),
+@@ -305,7 +305,7 @@
+     };
+     Regions[RR_SNOWHEAD_TEMPLE_MAP_ROOM_UPPER] = RandoRegion{ .sceneId = SCENE_HAKUGIN,
+         .checks = {
+-            CHECK(RC_SNOWHEAD_TEMPLE_MAP_ALCOVE_CHEST, (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC && HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_ARROW_FIRE))),
++            CHECK(RC_SNOWHEAD_TEMPLE_MAP_ALCOVE_CHEST, (CAN_NAVIGATE_HIDDEN && HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_ARROW_FIRE))),
+             CHECK(RC_ENEMY_DROP_FREEZARD, CanKillEnemy(ACTOR_EN_FZ)),
+         },
+         .connections = {
+@@ -347,7 +347,7 @@
+     };
+     Regions[RR_SNOWHEAD_TEMPLE_SNOW_ROOM] = RandoRegion{ .sceneId = SCENE_HAKUGIN,
+         .checks = {
+-            CHECK(RC_SNOWHEAD_TEMPLE_SF_SNOW_ROOM, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC && HAS_ITEM(ITEM_MASK_GREAT_FAIRY) && CAN_USE_PROJECTILE),
++            CHECK(RC_SNOWHEAD_TEMPLE_SF_SNOW_ROOM, CAN_NAVIGATE_HIDDEN && HAS_ITEM(ITEM_MASK_GREAT_FAIRY) && CAN_USE_PROJECTILE),
+             CHECK(RC_SNOWHEAD_TEMPLE_SNOW_ROOM_SMALL_SNOWBALL_01, true),
+             CHECK(RC_SNOWHEAD_TEMPLE_SNOW_ROOM_SMALL_SNOWBALL_02, true),
+             CHECK(RC_SNOWHEAD_TEMPLE_SNOW_ROOM_SMALL_SNOWBALL_03, true),
+--- /dev/null
++++ b/combo/rando/MmTricks.h
+@@ -0,0 +1,31 @@
++#pragma once
++#include <cstdint>
++#include <string_view>
++
++namespace ComboRando {
++struct MmTrickDefinition {
++    int32_t id;
++    const char* key;
++    const char* name;
++    const char* description;
++    const char* area;
++    const char* tags;
++    int32_t difficulty;
++    uint32_t tagMask;
++};
++inline constexpr MmTrickDefinition kMmTricks[] = {
++    {0, "gCombo.Tricks.MM.Lensless", "Fewer Lens Requirements",
++     "Traverse remembered invisible platforms and collect invisible chests without the Lens of Truth. Following Darmani and seeing Shiro still require the Lens.",
++     "Overworld and dungeons", "Lens, navigation", 1, 1u << 1},
++    {1, "gCombo.Tricks.MM.DarmaniWall", "Climb to Darmani without the Lens",
++     "Climb the hidden wall using its fixed collision. This reaches the graveyard; following and healing Darmani still require the Lens.",
++     "Mountain Village", "Lens, navigation", 2, 1u << 2},
++};
++inline const MmTrickDefinition* FindMmTrick(int32_t id) {
++    for (const auto& trick : kMmTricks) if (trick.id == id) return &trick;
++    return nullptr;
++}
++inline constexpr bool CanNavigateHidden(bool lensOwned, bool magicOwned, bool lenslessEnabled) {
++    return (lensOwned && magicOwned) || lenslessEnabled;
++}
++} // namespace ComboRando

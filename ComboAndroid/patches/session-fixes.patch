@@ -1,0 +1,233 @@
+diff --git a/soh/soh/OTRGlobals.h b/soh/soh/OTRGlobals.h
+index b967b0d..a0f4d55 100644
+--- a/soh/soh/OTRGlobals.h
++++ b/soh/soh/OTRGlobals.h
+@@ -135,7 +135,9 @@ void SOH_TriggerComboGenerate(void);
+ int SOH_PollComboFinalize(void);
+ int SOH_GetComboGenPercent(void);
+ int SOH_GetComboGenPhase(void);
++int SOH_GetComboGenResult(void); // 0 pending/none, 1 ready in both games, -1 failed
+ uint8_t SOH_IsOnFileSelect(void);
++uint8_t SOH_CanGenerateComboSeed(void);
+ // Open the combo menu on the Randomizer tab (file-select "Open Randomizer Settings").
+ void SOH_OpenComboRandoSettings(void);
+ // Reload a consolidated seed file (null/empty path = the remembered pending file). Returns 1 if loaded.
+@@ -160,4 +162,4 @@ extern "C" {
+ uint64_t GetUnixTimestamp();
+ #ifdef __cplusplus
+ };
+-#endif
+\ No newline at end of file
++#endif
+diff --git a/soh/soh/OTRGlobals.cpp b/soh/soh/OTRGlobals.cpp
+index 2aa2789..e0f0bd3 100644
+--- a/soh/soh/OTRGlobals.cpp
++++ b/soh/soh/OTRGlobals.cpp
+@@ -5164,6 +5164,12 @@ extern "C" COMBO_EXPORT int SOH_GetComboGenPhase(void) {
+     return gComboProgressPtr ? gComboProgressPtr->phase.load() : 0;
+ }
+ 
++extern "C" COMBO_EXPORT int SOH_GetComboGenResult(void) {
++    if (!gComboProgressPtr || gComboProgressPtr->running.load() || !gComboProgressPtr->done.load())
++        return 0;
++    return gComboProgressPtr->success.load() ? 1 : -1;
++}
++
+ extern "C" COMBO_EXPORT void SOH_SetOnComboFinalizeCallback(int (*cb)()) {
+     gComboFinalizeCallback = cb;
+ }
+@@ -5276,7 +5282,10 @@ extern "C" COMBO_EXPORT const char* Combo_SOH_GetObtainedChecks(void) {
+ // Trigger combo generation. Gated on RandoGenerating so a second press during generation is a no-op;
+ // reads the seed from the shared CVar (written by the comboui seed field). Sets RandoGenerating=1 so
+ // the file-select loop swaps to gallop music + shows progress; the finalize poll clears it.
++extern "C" COMBO_EXPORT uint8_t SOH_CanGenerateComboSeed(void);
+ extern "C" COMBO_EXPORT void SOH_TriggerComboGenerate(void) {
++    if (!SOH_CanGenerateComboSeed())
++        return;
+     if (CVarGetInteger(CVAR_GENERAL("RandoGenerating"), 0) != 0)
+         return; // already generating
+     if (!gComboGenerateRequestCallback)
+@@ -5291,9 +5300,13 @@ extern "C" COMBO_EXPORT void SOH_TriggerComboGenerate(void) {
+ // GameState::init is cleared after init runs, so match on ::main (set to FileChoose_Main for the
+ // state's lifetime by FileChoose_Init).
+ extern "C" void FileChoose_Main(GameState* thisx);
++extern "C" int FileChoose_CanGenerateComboSeed(GameState* thisx);
+ extern "C" COMBO_EXPORT uint8_t SOH_IsOnFileSelect(void) {
+     return (gPlayState == NULL && gGameState != NULL && gGameState->main == (GameStateFunc)FileChoose_Main) ? 1 : 0;
+ }
++extern "C" COMBO_EXPORT uint8_t SOH_CanGenerateComboSeed(void) {
++    return SOH_IsOnFileSelect() && FileChoose_CanGenerateComboSeed(gGameState);
++}
+ 
+ // ComboShip (#89): leave OOT's game loop before its first Play frame so the launcher can enter MM.
+ // Clearing init is what ends RunFrame's `while (nextOvl)` (FileChoose queued Play_Init); no save and no
+diff --git a/soh/src/overlays/gamestates/ovl_file_choose/z_file_choose.c b/soh/src/overlays/gamestates/ovl_file_choose/z_file_choose.c
+index b734764..510eae3 100644
+--- a/soh/src/overlays/gamestates/ovl_file_choose/z_file_choose.c
++++ b/soh/src/overlays/gamestates/ovl_file_choose/z_file_choose.c
+@@ -369,6 +369,14 @@ bool fileSelectSpoilerFileLoaded = false;
+ // ComboShip: one combo seed auto-reload attempt per file-select entry (file IO, so never per frame);
+ // FileChoose_Init clears it so a failure or a save-load context reset gets another try on re-entry.
+ static u8 sComboReloadTried = 0;
++
++// A generation must finish before a save can be named, loaded, copied or erased.
++// These two screens also have a place to display its progress and result.
++int FileChoose_CanGenerateComboSeed(GameState* state) {
++    FileChooseContext* this = (FileChooseContext*)state;
++    return this->menuMode == FS_MENU_MODE_CONFIG &&
++           (this->configMode == CM_MAIN_MENU || this->configMode == CM_RANDOMIZER_SETTINGS_MENU);
++}
+ #endif
+ 
+ void FileChoose_UpdateRandomizer() {
+@@ -377,7 +385,11 @@ void FileChoose_UpdateRandomizer() {
+         Audio_PlaySequenceWithSeqPlayerIO(SEQ_PLAYER_BGM_MAIN, NA_BGM_HORSE, 0, 7, 1);
+         return;
+     } else if (CVarGetInteger(CVAR_GENERAL("RandoGenerating"), 0) == 0 && generating) {
+-        if (Randomizer_IsSeedGenerated()) {
++        if (Randomizer_IsSeedGenerated()
++#ifdef COMBO_BUILD
++            && SOH_GetComboGenResult() == 1
++#endif
++        ) {
+             Audio_PlayFanfare(NA_BGM_HORSE_GOAL);
+             retries = 0;
+         } else {
+@@ -464,6 +476,10 @@ void FileChoose_UpdateMainMenu(GameState* thisx) {
+ 
+     FileChoose_UpdateRandomizer();
+ 
++#ifdef COMBO_BUILD
++    if (generating) return;
++#endif
++
+     if (CHECK_BTN_ALL(input->press.button, BTN_START) || CHECK_BTN_ALL(input->press.button, BTN_A)) {
+         if (this->buttonIndex <= FS_BTN_MAIN_FILE_3) {
+             if (!Save_GetSaveMetaInfo(this->buttonIndex)->valid) {
+@@ -1918,17 +1934,40 @@ void FileChoose_DrawWindowContents(GameState* thisx) {
+ #ifdef COMBO_BUILD
+             // ComboShip: live combo-generation progress (worker thread keeps the main loop running).
+             {
+-                char comboPct[16];
+-                snprintf(comboPct, sizeof(comboPct), "%d%%", SOH_GetComboGenPercent());
++                char comboPct[64];
++                if (SOH_GetComboGenPhase() == 3)
++                    snprintf(comboPct, sizeof(comboPct), "Building hints. Please wait...");
++                else
++                    snprintf(comboPct, sizeof(comboPct), "%d%% - OoT + MM", SOH_GetComboGenPercent());
+                 Interface_DrawTextLine(this->state.gfxCtx, comboPct, 70, (80 + 80), 255, 255, 255, textAlpha, 0.8f,
+                                        true);
+             }
+ #endif
+         }
+ 
++#ifdef COMBO_BUILD
++        if (!generating) {
++            int result = SOH_GetComboGenResult();
++            if (result < 0) {
++                Interface_DrawTextLine(this->state.gfxCtx, "Generation failed. Open settings", 70, 144,
++                                       240, 80, 80, textAlpha, 0.7f, true);
++                Interface_DrawTextLine(this->state.gfxCtx, "for details, then try again.", 70, 160,
++                                       240, 80, 80, textAlpha, 0.7f, true);
++            } else if (Randomizer_IsSeedGenerated() || Randomizer_IsSpoilerLoaded()) {
++                Interface_DrawTextLine(this->state.gfxCtx, "Seed ready for OoT + MM", 70, 144,
++                                       150, 240, 180, textAlpha, 0.8f, true);
++                Interface_DrawTextLine(this->state.gfxCtx, "Select Start Randomizer to play.", 70, 160,
++                                       255, 255, 255, textAlpha, 0.7f, true);
++            }
++        }
++#endif
++
+         // If no randomizer is generated and "start randomizer" is selected, show text to explain why user can't start
+         // the randomizer.
+-        if (!Randomizer_IsSeedGenerated() && !Randomizer_IsSpoilerLoaded() &&
++        if (!generating && !Randomizer_IsSeedGenerated() && !Randomizer_IsSpoilerLoaded() &&
++#ifdef COMBO_BUILD
++            SOH_GetComboGenResult() >= 0 &&
++#endif
+             this->randomizerIndex == RSM_START_RANDOMIZER) {
+             Interface_DrawTextLine(this->state.gfxCtx,
+                                    SohFileSelect_GetSettingText(RSM_NO_RANDOMIZER_GENERATED, language), 70, (80 + 64),
+diff --git a/combo/gui/ComboMenu.cpp b/combo/gui/ComboMenu.cpp
+index 35b5a5d..f2fe29d 100644
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -43,7 +43,7 @@ void ResolveComboGenSyms() {
+     if (!sGetProgress)
+         sGetProgress = (FnGetProgress)Combo_ResolveSym("soh", "SOH_GetComboGenProgress");
+     if (!sIsOnFileSelect)
+-        sIsOnFileSelect = (FnIsOnFileSelect)Combo_ResolveSym("soh", "SOH_IsOnFileSelect");
++        sIsOnFileSelect = (FnIsOnFileSelect)Combo_ResolveSym("soh", "SOH_CanGenerateComboSeed");
+     if (!sRefreshStartingGameUI)
+         sRefreshStartingGameUI = (FnRefreshStartingGameUI)Combo_ResolveSym("soh", "SOH_RefreshComboStartingGameUI");
+ }
+@@ -1730,6 +1730,9 @@ void ComboMenu::DrawComboPanel() {
+ 
+     // Seed field -> shared CVar the generator reads (same source the native file-select
+     // "Generate a new seed" option uses).
++    // Keep restored custom seeds visible too; a blank-looking field must never hide a fixed seed.
++    std::strncpy(mSeedBuf, CVarGetString("gGeneral.ComboSeed", ""), sizeof(mSeedBuf) - 1);
++    mSeedBuf[sizeof(mSeedBuf) - 1] = '\0';
+     ImGui::SetNextItemWidth(260.0f);
+     if (ImGui::InputTextWithHint("Seed", "(blank = random)", mSeedBuf, sizeof(mSeedBuf))) {
+         CVarSetString("gGeneral.ComboSeed", mSeedBuf);
+@@ -1745,17 +1748,21 @@ void ComboMenu::DrawComboPanel() {
+ 
+     if (!canGenerate)
+         ImGui::BeginDisabled();
+-    if (ImGui::Button("Generate")) {
++    if (ImGui::Button("Generate combined seed")) {
+         CVarSetString("gGeneral.ComboSeed", mSeedBuf);
+         sTrigger(); // non-blocking: launcher spawns the worker; the main loop keeps running
+     }
+     if (!canGenerate)
+         ImGui::EndDisabled();
+ 
++    ImGui::TextWrapped("Leave Seed blank for a new random roll. The same text and settings repeat a seed. "
++                       "New seeds apply to new save files; existing saves keep their original seed.");
++
+     if (!sTrigger) {
+         ImGui::TextUnformatted("Generate unavailable (soh.dll export not found).");
+     } else if (!onFileSelect && !running) {
+-        ImGui::TextDisabled("Available on the file-select screen.");
++        ImGui::TextWrapped("Generate from the file list or an empty file's randomizer screen. "
++                           "Finish or cancel name entry first.");
+     }
+ 
+     // Live progress + result, polled from the launcher-owned progress each frame.
+@@ -1765,10 +1772,14 @@ void ComboMenu::DrawComboPanel() {
+             int total = p->total.load();
+             float frac = total > 0 ? (float)placed / (float)total : 0.0f;
+             ImGui::TextUnformatted(ComboGenProgress::PhaseLabel(p->phase.load()));
+-            ImGui::ProgressBar(frac, ImVec2(360.0f, 0.0f));
++            if (p->phase.load() == 3)
++                ImGui::TextWrapped("Items are placed. Building hints and preparing both games; please wait.");
++            else
++                ImGui::ProgressBar(frac, ImVec2(360.0f, 0.0f));
+             ImGui::Text("%d / %d", placed, total);
+         } else if (p->done.load()) {
+             if (p->success.load()) {
++                ImGui::TextUnformatted("Seed ready for OoT + MM. Start Randomizer on a new file.");
+                 // Show the reproducible seed token (the input string, not the internal masterSeed
+                 // hash). Paste it into the Seed field + same settings to reproduce — shareable
+                 // without sharing a save file.
+diff --git a/mm/2s2h/BenPort.cpp b/mm/2s2h/BenPort.cpp
+index 6b96514..20bf5ba 100644
+--- a/mm/2s2h/BenPort.cpp
++++ b/mm/2s2h/BenPort.cpp
+@@ -1237,12 +1237,14 @@ extern "C" void DeinitOTR() {
+ 
+     OTRGlobals::Instance->context = nullptr;
+     delete AudioCollection::Instance;
+-#ifdef COMBO_BUILD
++#if defined(COMBO_BUILD) && !defined(__ANDROID__)
+     // ComboShip: this DLL's module-local GImGui still points at the shared ImGui context, which is
+     // freed when soh's DeinitOTR releases the last Context ref right after this returns. A later
+     // 2ship static destructor calling ImGui::MemFree would then touch freed memory. Null it now.
+     ImGui::SetCurrentContext(nullptr);
+ #endif
++    // Android resolves ImGui through shared libultraship. Clearing its context here would make
++    // the subsequent SOH_Deinit crash in ImGui_ImplSDL2_Shutdown; SOH destroys it after both games.
+ }
+ 
+ #ifdef COMBO_BUILD

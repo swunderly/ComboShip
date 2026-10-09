@@ -1,0 +1,4053 @@
+--- a/mm/2s2h/BenPort.cpp
++++ b/mm/2s2h/BenPort.cpp
+@@ -2608,6 +2608,54 @@
+     }
+ }
+ 
++// Read-only foreign presentation assets. This RM is isolated from both running
++// engines and does not replace their archives, factories, save state or audio.
++extern "C" COMBO_EXPORT int MM_EnsureWarpResources() {
++    if(Ship::CrossRMRegistry::Get("mm-warp")) return 1;
++    auto path=Ship::Context::LocateFileAcrossAppDirs("mm.o2r",appShortName);
++    if(!std::filesystem::exists(path)) path=Ship::Context::LocateFileAcrossAppDirs("mm.otr",appShortName);
++    if(!std::filesystem::exists(path)) path=Ship::Context::LocateFileAcrossAppDirs("mm.zip",appShortName);
++    if(!std::filesystem::exists(path)) return 0;
++    auto rm=std::make_shared<Ship::ResourceManager>();
++    rm->Init({path}, {}, 1);
++    auto loader=rm->GetResourceLoader();
++    loader->RegisterResourceFactory(std::make_shared<Fast::ResourceFactoryBinaryTextureV0>(), RESOURCE_FORMAT_BINARY,
++        "Texture",static_cast<uint32_t>(Fast::ResourceType::Texture),0);
++    loader->RegisterResourceFactory(std::make_shared<Fast::ResourceFactoryBinaryTextureV1>(), RESOURCE_FORMAT_BINARY,
++        "Texture",static_cast<uint32_t>(Fast::ResourceType::Texture),1);
++    loader->RegisterResourceFactory(std::make_shared<Fast::ResourceFactoryBinaryVertexV0>(), RESOURCE_FORMAT_BINARY,
++        "Vertex",static_cast<uint32_t>(Fast::ResourceType::Vertex),0);
++    loader->RegisterResourceFactory(std::make_shared<Fast::ResourceFactoryBinaryDisplayListV0>(), RESOURCE_FORMAT_BINARY,
++        "DisplayList",static_cast<uint32_t>(Fast::ResourceType::DisplayList),0);
++    loader->RegisterResourceFactory(std::make_shared<Ship::ResourceFactoryBinaryBlobV0>(), RESOURCE_FORMAT_BINARY,
++        "Blob",static_cast<uint32_t>(Ship::ResourceType::Blob),0);
++    loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryArrayV0>(), RESOURCE_FORMAT_BINARY,
++        "Array",static_cast<uint32_t>(SOH::ResourceType::SOH_Array),0);
++    loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryTextureAnimationV0>(), RESOURCE_FORMAT_BINARY,
++        "TextureAnimation",static_cast<uint32_t>(SOH::ResourceType::TSH_TexAnim),0);
++    loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryKeyFrameAnim>(), RESOURCE_FORMAT_BINARY,
++        "KeyFrameAnim",static_cast<uint32_t>(SOH::ResourceType::TSH_CKeyFrameAnim),0);
++    loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryKeyFrameSkel>(), RESOURCE_FORMAT_BINARY,
++        "KeyFrameSkel",static_cast<uint32_t>(SOH::ResourceType::TSH_CKeyFrameSkel),0);
++    Ship::CrossRMRegistry::Register("mm-warp",rm);
++    return 1;
++}
++extern "C" COMBO_EXPORT void* MM_LoadWarpResource(const char* path) {
++    if(!path || !MM_EnsureWarpResources()) return nullptr;
++    Ship::OwnRMScope scope("mm-warp"); // Keyframe factories load their limb DLs recursively.
++    return Ship::CrossRMRegistry::Get("mm-warp")->GetResourceRawPointer(path);
++}
++extern "C" COMBO_EXPORT int MM_WarpVertexCount(const char* path) {
++    if(!path || !MM_EnsureWarpResources()) return 0;
++    Ship::OwnRMScope scope("mm-warp");
++    auto resource=Ship::CrossRMRegistry::Get("mm-warp")->LoadResource(path);
++    return resource ? static_cast<int>(resource->GetPointerSize()/sizeof(Vtx)) : 0;
++}
++extern "C" COMBO_EXPORT uint32_t MM_GetWarpMapClouds() {
++    return gSaveContext.save.saveInfo.worldMapCloudVisibility;
++}
++extern "C" COMBO_EXPORT void MM_DropWarpResources() { Ship::CrossRMRegistry::Unregister("mm-warp"); }
++
+ // ComboShip: -1 = normal MM boot; >= 0 = game-switch: skip title/file-select and load this slot.
+ // extern "C" so title_setup.c (a C file) can link to it without name mangling.
+ extern "C" int gComboStartFileNum = -1;
+@@ -4463,14 +4511,56 @@
+ }
+ extern "C" int Combo_MMForeignSongPlayback() { return sForeignSongRequest.load(); }
+ extern "C" void Combo_MMForeignSongPerformanceFinished() { sForeignSongPerformed=true; Combo_MMForeignSongDiagnostic("performance-finished"); }
++static bool LoadOOTWarpMessage(int song, bool confirmation, CustomMessage::Entry& entry) {
++    auto load=(int(*)(int,int,char*,int,int*))Combo_ResolveSym("soh","SOH_GetWarpMessage");
++    char source[1024]; int type=0;
++    const int size=load ? load(song,confirmation,source,sizeof(source),&type) : 0;
++    if(size<=0) return false;
++    std::string text;
++    // The engines use different text control bytes. Preserve the native OoT
++    // message's wording, spacing, colors and choices without interpreting it as MM text.
++    static constexpr unsigned char colors[]={0,1,2,3,5,6,4,7};
++    for(int i=0;i<size;i++) {
++        const auto ch=static_cast<unsigned char>(source[i]);
++        switch(ch) {
++            case 0x01: text.push_back(0x11); break; // newline
++            case 0x02: text.push_back(char(0xBF)); i=size; break; // end
++            case 0x04: text.push_back(0x10); break; // box break
++            case 0x05: // color
++                if(++i>=size || static_cast<unsigned char>(source[i])<0x40 ||
++                   static_cast<unsigned char>(source[i])>0x47) return false;
++                text.push_back(char(colors[static_cast<unsigned char>(source[i])-0x40])); break;
++            case 0x06: // horizontal shift
++                if(++i>=size) return false;
++                text.push_back(0x14); text.push_back(source[i]); break;
++            case 0x08: text.push_back(0x17); break; // quick text
++            case 0x09: text.push_back(0x18); break;
++            case 0x0A: text.push_back(0x1A); break;
++            case 0x0B: text.push_back(0x19); break;
++            case 0x0E: // fade
++                if(++i>=size) return false;
++                text.push_back(0x1C); text.push_back(source[i]); break;
++            case 0x1A: break; // native MM messages cannot be skipped by default
++            case 0x1B: text.push_back(char(0xC2)); break; // two choices
++            default:
++                if(ch<0x20) return false;
++                text.push_back(source[i]); break;
++        }
++    }
++    entry.msg=std::move(text); entry.textboxType=type; entry.autoFormat=false;
++    return true;
++}
+ extern "C" void Combo_MMForeignSongPlayedText() {
+     static constexpr const char* names[]={"Minuet of Forest","Bolero of Fire","Serenade of Water",
+         "Requiem of Spirit","Nocturne of Shadow","Prelude of Light"};
+     int song=sForeignSongRequest.load();
+     if(song<0 || song>=6 || !gPlayState) return;
+-    auto native=CustomMessage::LoadVanillaMessageTableEntry(0x1B7B); // You played Song of Soaring.
+-    native.autoFormat=false;
+-    CustomMessage::Replace(&native.msg,"Song of Soaring",names[song]);
++    CustomMessage::Entry native;
++    if(!LoadOOTWarpMessage(song,false,native)) {
++        native=CustomMessage::LoadVanillaMessageTableEntry(0x1B7B);
++        native.autoFormat=false;
++        CustomMessage::Replace(&native.msg,"Song of Soaring",names[song]);
++    }
+     CustomMessage::SetActiveCustomMessage(native.msg,native);
+     Message_ContinueTextbox(gPlayState,CUSTOM_MESSAGE_ID);
+ }
+@@ -4480,10 +4570,12 @@
+     const int dest=ComboRando::ActiveSongTravel().destination(sNativeSongSource);
+     sNativeSongOpen=true;
+     AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
+-    // Preserve the actual Soaring message's header, font, color controls and choices.
+-    auto native=CustomMessage::LoadVanillaMessageTableEntry(0x1B93);
+-    native.autoFormat=false;
+-    CustomMessage::Replace(&native.msg,std::string(1,char(0xD4)),ComboRando::kSongLandingNames[dest]);
++    CustomMessage::Entry native;
++    if(dest!=sForeignSongRequest.load() || !LoadOOTWarpMessage(sForeignSongRequest.load(),true,native)) {
++        native=CustomMessage::LoadVanillaMessageTableEntry(0x1B93);
++        native.autoFormat=false;
++        CustomMessage::Replace(&native.msg,std::string(1,char(0xD4)),ComboRando::kSongLandingNames[dest]);
++    }
+     CustomMessage::StartTextbox(native.msg,native);
+     gPlayState->msgCtx.ocarinaMode=1;
+     Combo_MMForeignSongDiagnostic(choices ? "confirmation" : "no-owls");
+@@ -4517,11 +4609,13 @@
+         input.press.button &= ~BTN_A; // the engine must not also launch its own warp
+     }
+ }
++extern "C" int Combo_MMStartWarp(PlayState*,int,int);
+ static void ProcessForeignSongReply() {
+     UpdateNativeSongDialogue();
+     int reply=sForeignSongReply.exchange(-2);
+     if(reply==-2) return;
+     const uint32_t choices=MM_ForeignSongChoices();
++    const int song=sForeignSongRequest.load();
+     Combo_MMForeignSongDiagnostic(reply<0 ? "cancel" : "confirmation-accepted");
+     sForeignSongRequest=-1; sForeignSongPerformed=false; sNativeSongOpen=false; sNativeSongSource=-1;
+     if(!gPlayState) return;
+@@ -4530,12 +4624,8 @@
+     gPlayState->msgCtx.ocarinaMode=4; // native ocarina END mode in both games
+     if(reply<0 || reply>=16 || !(choices & (1u<<reply))) return;
+     Combo_MMForeignSongDiagnostic("native-action");
+-    int dest=ComboRando::ActiveSongTravel().destination(reply);
+-    if(dest<6) { sSongDeparture=dest; gPlayState->transitionTrigger=TRANS_TRIGGER_OFF; }
+-    else { gPlayState->nextEntrance=ComboRando::kMmSongEntrances[dest-6];
+-        if(dest==13 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE)) gPlayState->nextEntrance=ENTRANCE(SOUTHERN_SWAMP_CLEARED,10);
+-        if(dest==9 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE)) gPlayState->nextEntrance=ENTRANCE(MOUNTAIN_VILLAGE_SPRING,8);
+-        gPlayState->transitionTrigger=TRANS_TRIGGER_START; gPlayState->transitionType=TRANS_TYPE_FADE_BLACK; }
++    const int dest=ComboRando::ActiveSongTravel().destination(reply);
++    if(!Combo_MMStartWarp(gPlayState,dest,song)) SPDLOG_ERROR("[ComboShip] Could not start OoT warp departure");
+ }
+ 
+ extern "C" uint32_t MM_LiveIncomingSongs() {
+@@ -4545,15 +4635,17 @@
+ extern "C" COMBO_EXPORT int MM_TakeSongDeparture() { int d=sSongDeparture; sSongDeparture=-1; return d; }
+ extern "C" COMBO_EXPORT void MM_SetSongArrival(int d) { sSongArrival=d>=6 && d<16 ? d : -1; }
+ extern "C" int MM_ConsumeSongArrival() { int d=sSongArrival; sSongArrival=-1; return d<6 ? -1 : ComboRando::kMmSongEntrances[d-6]; }
+-extern "C" int Combo_MMSongWarp(PlayState* play, int owl) {
+-    if (!IS_RANDO || !ComboRando::ActiveSongTravel().enabled || owl<0 || owl>=10) return 0;
+-    int d=ComboRando::ActiveSongTravel().destination(owl+6);
+-    if(d<6) { sSongDeparture=d; play->transitionTrigger=TRANS_TRIGGER_OFF; }
+-    else { play->nextEntrance=ComboRando::kMmSongEntrances[d-6];
++extern "C" void Combo_MMCompleteWarp(PlayState* play,int d) {
++    if(d<0 || d>=16) return;
++    if(d<6) {sSongDeparture=d;play->transitionTrigger=TRANS_TRIGGER_OFF;}
++    else {play->nextEntrance=ComboRando::kMmSongEntrances[d-6];
+         if(d==13 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE)) play->nextEntrance=ENTRANCE(SOUTHERN_SWAMP_CLEARED,10);
+         if(d==9 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE)) play->nextEntrance=ENTRANCE(MOUNTAIN_VILLAGE_SPRING,8);
+-        play->transitionTrigger=TRANS_TRIGGER_START; play->transitionType=TRANS_TYPE_FADE_BLACK; }
+-    return 1;
++        play->transitionTrigger=TRANS_TRIGGER_START;play->transitionType=TRANS_TYPE_FADE_BLACK;}
++}
++extern "C" int Combo_MMSongWarp(PlayState* play,int owl) {
++    if(!IS_RANDO || !ComboRando::ActiveSongTravel().enabled || owl<0 || owl>=10) return 0;
++    Combo_MMCompleteWarp(play,ComboRando::ActiveSongTravel().destination(owl+6));return 1;
+ }
+ extern "C" COMBO_EXPORT const char* Combo_MM_Rando_GetReachableChecks(void) {
+     ComboRando::MmSongOracle()=true;
+--- a/mm/include/tables/actor_table.h
++++ b/mm/include/tables/actor_table.h
+@@ -703,3 +703,7 @@
+ /* 0x2AF */ DEFINE_ACTOR(         En_Invisible_Ruppe,  ACTOR_EN_INVISIBLE_RUPPE,  ALLOCTYPE_NORMAL,    "En_Invisible_Ruppe",  "Invisible Ruppe")
+ /* 0x2B0 */ DEFINE_ACTOR(         Obj_Ending,          ACTOR_OBJ_ENDING,          ALLOCTYPE_NORMAL,    "Obj_Ending",          "Stump/Lighting (credits end)")
+ /* 0x2B1 */ DEFINE_ACTOR(         En_Rsn,              ACTOR_EN_RSN,              ALLOCTYPE_NORMAL,    "En_Rsn",              "Bomb Shop Man (credits)")
++
++#ifdef COMBO_BUILD
++DEFINE_ACTOR(Combo_Song_Warp, ACTOR_COMBO_SONG_WARP, ALLOCTYPE_NORMAL, "Combo_Song_Warp", "Cross-game warp particles")
++#endif
+--- a/mm/src/code/title_setup.c
++++ b/mm/src/code/title_setup.c
+@@ -68,17 +68,17 @@
+         Combo_AdoptOOTGlobalOptions();
+         // Set flashSaveAvailable so Sram_Alloc allocates saveBuf (normally set by the title screen).
+         gSaveContext.flashSaveAvailable = true;
+-        // Load the MM save that matches the OOT slot (OOT slot N → MM file N+1). ComboShip never blocks
++        // Load the MM save that matches the OOT slot (OOT slot N â†’ MM file N+1). ComboShip never blocks
+         // entry: a nonzero result is logged inside and leaves the fail-closed sentinel, and play proceeds.
+         Combo_LoadMMSaveFile(gComboStartFileNum + 1);
+         // ComboShip (#182): an owl save is the newest state whenever it exists, so it wins on both
+-        // entry kinds — but only a resume follows it to where it was saved.
++        // entry kinds â€” but only a resume follows it to where it was saved.
+         loadedOwlSave = (gComboOwlBlobSlot == gComboStartFileNum + 1);
+         if (loadedOwlSave) {
+             Combo_ApplyOwlSaveOpen(gComboEntryIsResume);
+             if (!gComboEntryIsResume) {
+                 // Arriving in South Clock Town runs neither owl-arrival path, so clear isOwlSave here
+-                // or it sticks — and then owl-save write timing stays armed for the whole session.
++                // or it sticks â€” and then owl-save write timing stays armed for the whole session.
+                 gSaveContext.save.isOwlSave = false;
+                 gSaveContext.save.entrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0);
+             }
+@@ -93,6 +93,7 @@
+         extern int MM_ConsumeSongArrival(void);
+         const int songArrival=MM_ConsumeSongArrival();
+         if (songArrival>=0) {
++            gSaveContext.save.isOwlSave = false;
+             gSaveContext.save.playerForm = PLAYER_FORM_HUMAN;
+             gSaveContext.save.equippedMask = PLAYER_MASK_NONE;
+             gSaveContext.save.entrance=songArrival;
+@@ -102,7 +103,7 @@
+                 gSaveContext.save.entrance=ENTRANCE(MOUNTAIN_VILLAGE_SPRING,8);
+         }
+         gSaveContext.save.cutsceneIndex = 0;
+-        // Reset magicLevel like Sram_OpenSave does — re-arms the magic meter grow animation
++        // Reset magicLevel like Sram_OpenSave does â€” re-arms the magic meter grow animation
+         // (Interface_Update only steps magicCapacity when magicLevel == 0).
+         gSaveContext.save.saveInfo.playerData.magicLevel = 0;
+         // Copy permanent flags into cycle flags, the same way Sram_OpenSave does.
+--- a/mm/src/code/z_message.c
++++ b/mm/src/code/z_message.c
+@@ -2110,15 +2110,15 @@
+     s32 k = *offset;
+     f32 f = *arg3;
+ 
+-    Font_LoadChar(play, 0x838B, k); // 0x838B = ル in JISX0213
++    Font_LoadChar(play, 0x838B, k); // 0x838B = ãƒ« in JISX0213
+     k += FONT_CHAR_TEX_SIZE;
+     msgCtx->decodedBuffer.wchar[t] = 0x838B;
+     t++;
+-    Font_LoadChar(play, 0x8373, k); // 0x8373 = ピ in JISX0213
++    Font_LoadChar(play, 0x8373, k); // 0x8373 = ãƒ” in JISX0213
+     k += FONT_CHAR_TEX_SIZE;
+     msgCtx->decodedBuffer.wchar[t] = 0x8373;
+     t++;
+-    Font_LoadChar(play, 0x815C, k); // 0x815C = ― in JISX0213
++    Font_LoadChar(play, 0x815C, k); // 0x815C = â€• in JISX0213
+     k += FONT_CHAR_TEX_SIZE;
+     msgCtx->decodedBuffer.wchar[t] = 0x815C;
+ 
+@@ -2144,7 +2144,7 @@
+     digits[1] = t / SECONDS_TO_TIMER(60);
+     t -= digits[1] * SECONDS_TO_TIMER(60);
+ 
+-    digits[2] = 0x135B; // 0x135B + 0x824F = 分 (minutes) in S-JIS
++    digits[2] = 0x135B; // 0x135B + 0x824F = åˆ† (minutes) in S-JIS
+ 
+     // 10 seconds
+     digits[3] = t / SECONDS_TO_TIMER(10);
+@@ -2154,7 +2154,7 @@
+     digits[4] = t / SECONDS_TO_TIMER(1);
+     t -= digits[4] * SECONDS_TO_TIMER(1);
+ 
+-    digits[5] = 0x1313; // 0x1313 + 0x824F = 秒 (seconds) in S-JIS
++    digits[5] = 0x1313; // 0x1313 + 0x824F = ç§’ (seconds) in S-JIS
+ 
+     // 100 milliseconds
+     digits[6] = t / SECONDS_TO_TIMER_PRECISE(0, 10);
+@@ -2247,7 +2247,7 @@
+         msgCtx->decodedBuffer.wchar[p] = digits[i] + 0x824F;
+         p++;
+         if (i == 1) {
+-            // Hours (時間)
++            // Hours (æ™‚é–“)
+             Font_LoadChar(play, 0x8E9E, o);
+             o += FONT_CHAR_TEX_SIZE;
+             msgCtx->decodedBuffer.wchar[p] = 0x8E9E;
+@@ -2257,7 +2257,7 @@
+             msgCtx->decodedBuffer.wchar[p] = 0x8E9E;
+             p++;
+         } else if (i == 3) {
+-            // Minutes (分)
++            // Minutes (åˆ†)
+             Font_LoadChar(play, 0x95AA, o);
+             o += FONT_CHAR_TEX_SIZE;
+             msgCtx->decodedBuffer.wchar[p] = 0x95AA;
+@@ -4066,6 +4066,11 @@
+ s32 sOcarinaEffectActorParams[] = { 0, 1, 2, 3, 4, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0 };
+ 
+ void Message_SpawnSongEffect(PlayState* play) {
++#ifdef COMBO_BUILD
++    // OoT warp songs have no Soaring screen wipe. Their native particles start
++    // only after the destination confirmation is accepted.
++    if (Combo_MMForeignSongPerformanceActive()) return;
++#endif
+     MessageContext* msgCtx = &play->msgCtx;
+     Player* player = GET_PLAYER(play);
+ 
+diff --git a/mm/src/overlays/actors/ovl_Combo_Song_Warp/z_combo_song_warp.c b/mm/src/overlays/actors/ovl_Combo_Song_Warp/z_combo_song_warp.c
+new file mode 100644
+--- /dev/null
++++ b/mm/src/overlays/actors/ovl_Combo_Song_Warp/z_combo_song_warp.c
+@@ -0,0 +1,224 @@
++#ifdef COMBO_BUILD
++#include "global.h"
++#include "BenPort.h"
++#include "align_asset_macro.h"
++#include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
++// OoT ovl_Demo_Kankyo particle path and palette, using MM camera/player adapters.
++extern void Combo_MMCompleteWarp(PlayState*,int);
++typedef struct {
++    Vec3f offset,pos; f32 scale,frame; s16 key,rotation; u8 phase,pulse;
++} CWWarpParticle;
++typedef struct {
++    Actor actor; CWWarpParticle particles[30]; int count,timer; s16 subCamId;
++    Vec3f origin; s16 yaw,camKey; f32 camFrame; int nativeTick; ActorFunc playerDraw;
++} CrossSongWarp;
++typedef struct { s8 continueFlag; s8 cameraRoll; s16 nextPointFrame; f32 viewAngle; Vec3s pos; } CWWarpPoint;
++static CWWarpPoint sWarpOutCameraPoints[] = {
++    { 0, 0, 8, 45.0f, { 0x0000, 0x0000, 0xFFE5 } },
++    { 0, 0, 8, 45.0f, { 0x0000, 0x0000, 0xFFE5 } },
++    { 0, 0, 8, 45.0f, { 0xFFE6, 0x0000, 0x0000 } },
++    { 0, 0, 8, 45.0f, { 0x0000, 0x0017, 0x0024 } },
++    { 0, 0, 8, 45.0f, { 0x001C, 0x0032, 0xFFFF } },
++    { 0, 0, 8, 45.0f, { 0x0001, 0x0018, 0xFFD9 } },
++    { 0, 0, 8, 45.0f, { 0xFFE6, 0xFFFA, 0x0003 } },
++    { 0, 0, 8, 45.0f, { 0x0000, 0x0025, 0x0037 } },
++    { 0, 0, 8, 45.0f, { 0x004F, 0x0066, 0x0029 } },
++    { 0, 0, 8, 45.0f, { 0x00A6, 0x00AD, 0x0006 } },
++    { 0, 0, 5, 45.0f, { 0x010D, 0x015A, 0xFF4C } },
++    { 0, 0, 5, 45.0f, { 0x019F, 0x0245, 0xFE35 } },
++    { -1, 0, 5, 45.0f, { 0x01CE, 0x036F, 0xFCC2 } },
++    { -1, 0, 5, 45.0f, { 0x01CE, 0x036F, 0xFCC2 } },
++};
++void CWWarpSplineCalc(f32 u, Vec3f* pos, f32* roll, f32* viewAngle, f32* point0, f32* point1, f32* point2, f32* point3) {
++    f32 coeff[4];
++
++    u = CLAMP_MAX(u, 1.0f);
++
++    coeff[0] = (1.0f - u) * (1.0f - u) * (1.0f - u) / 6.0f;
++    coeff[1] = u * u * u / 2.0f - u * u + 2.0f / 3.0f;
++    coeff[2] = -u * u * u / 2.0f + u * u / 2.0f + u / 2.0f + 1.0f / 6.0f;
++    coeff[3] = u * u * u / 6.0f;
++
++    pos->x = (coeff[0] * point0[0]) + (coeff[1] * point1[0]) + (coeff[2] * point2[0]) + (coeff[3] * point3[0]);
++    pos->y = (coeff[0] * point0[1]) + (coeff[1] * point1[1]) + (coeff[2] * point2[1]) + (coeff[3] * point3[1]);
++    pos->z = (coeff[0] * point0[2]) + (coeff[1] * point1[2]) + (coeff[2] * point2[2]) + (coeff[3] * point3[2]);
++    *roll = (coeff[0] * point0[3]) + (coeff[1] * point1[3]) + (coeff[2] * point2[3]) + (coeff[3] * point3[3]);
++    *viewAngle = (coeff[0] * point0[4]) + (coeff[1] * point1[4]) + (coeff[2] * point2[4]) + (coeff[3] * point3[4]);
++}
++
++s32 CWWarpSplineStep(Vec3f* pos, f32* roll, f32* fov, CWWarpPoint* point, s16* keyFrame, f32* curFrame) {
++    s32 ret = false;
++    f32 pointData[4][5];
++    s32 i;
++    f32 progress = *curFrame;
++    s32 key = *keyFrame;
++    f32 speed1 = 0.0f;
++    f32 speed2 = 0.0f;
++    f32 advance;
++
++    if (key < 0) {
++        progress = 0.0f;
++    }
++
++    if ((point[key].continueFlag == -1) || (point[key + 1].continueFlag == -1) || (point[key + 2].continueFlag == -1)) {
++        return true;
++    }
++
++    for (i = 0; i < 4; i++) {
++        pointData[i][0] = point[key + i].pos.x;
++        pointData[i][1] = point[key + i].pos.y;
++        pointData[i][2] = point[key + i].pos.z;
++        pointData[i][3] = point[key + i].cameraRoll;
++        pointData[i][4] = point[key + i].viewAngle;
++    }
++
++    CWWarpSplineCalc(progress, pos, roll, fov, pointData[0], pointData[1], pointData[2], pointData[3]);
++
++    if (point[*keyFrame + 1].nextPointFrame != 0) {
++        speed1 = 1.0f / point[*keyFrame + 1].nextPointFrame;
++    }
++
++    if (point[*keyFrame + 2].nextPointFrame != 0) {
++        speed2 = 1.0f / point[*keyFrame + 2].nextPointFrame;
++    }
++    advance = (*curFrame * (speed2 - speed1)) + speed1;
++    if (advance < 0.0f) {
++        advance = 0;
++    }
++    *curFrame += advance;
++    if (*curFrame >= 1) {
++        if (point[++*keyFrame + 3].continueFlag == -1) {
++            *keyFrame = 0;
++            ret = true;
++        }
++        *curFrame -= 1;
++    }
++
++    return ret;
++}
++
++// Native OoT child warp-out camera (gChildWarpInCS), with eye and at
++// traversing the same spline phase. MM runs at 30 Hz; these paths run at OoT's 20 Hz.
++static CWWarpPoint sEye[] = {
++    {0,0,30,60.324856f,{31,68,59}}, {0,0,30,60.324856f,{32,68,60}},
++    {0,0,7,60.324856f,{31,69,59}}, {0,0,7,60.324856f,{31,64,59}},
++    {0,0,30,60.324856f,{31,64,59}}, {0,0,1000,60.324856f,{31,64,59}},
++    {0,0,30,60.324856f,{31,64,59}}, {-1,0,30,60.324856f,{31,64,59}},
++};
++static CWWarpPoint sAt[] = {
++    {0,0,30,60.324856f,{12,40,22}}, {0,0,30,60.324856f,{11,38,22}},
++    {0,0,7,60.324856f,{11,39,22}}, {0,0,7,60.324856f,{57,86,21}},
++    {0,0,30,60.324856f,{57,86,21}}, {0,0,1000,60.324856f,{57,86,21}},
++    {0,0,30,60.324856f,{57,86,21}}, {-1,0,30,60.324856f,{57,86,21}},
++};
++static Vec3f RelativeToPlayer(CrossSongWarp* this, Vec3f local) {
++    return (Vec3f){this->origin.x+local.x*Math_CosS(this->yaw)+local.z*Math_SinS(this->yaw),
++        this->origin.y+local.y,this->origin.z+local.z*Math_CosS(this->yaw)-local.x*Math_SinS(this->yaw)};
++}
++static const Color_RGB8 sWarpColors[]={{0,200,0},{255,50,0},{0,150,255},{255,150,0},{200,50,255},{200,255,0}};
++static const ALIGN_ASSET(2) char sFlashDL[]="__OTR__@oot:objects/gameplay_keep/gEffFlash1DL";
++static void CrossSongWarp_Init(Actor* actor, PlayState* play) {
++    CrossSongWarp* this=(CrossSongWarp*)actor; Player* player=GET_PLAYER(play);
++    this->origin=player->actor.world.pos; this->yaw=player->actor.shape.rot.y;
++    this->playerDraw=player->actor.draw;
++    Camera* main=Play_GetCamera(play,CAM_ID_MAIN);
++    this->subCamId=Play_CreateSubCamera(play);
++    Play_SetCameraAtEye(play,this->subCamId,&main->at,&main->eye);
++    Play_SetCameraFov(play,this->subCamId,main->fov);
++    Play_ChangeCameraStatus(play,CAM_ID_MAIN,CAM_STATUS_WAIT);
++    Play_ChangeCameraStatus(play,this->subCamId,CAM_STATUS_ACTIVE);
++    Player_SetCsActionWithHaltedActors(play,actor,PLAYER_CSACTION_10);
++    player->stateFlags1|=PLAYER_STATE1_20000000;
++    Audio_PlaySfx(NA_SE_EV_LINK_WARP);
++}
++static void CrossSongWarp_Destroy(Actor* actor, PlayState* play) {
++    CrossSongWarp* this=(CrossSongWarp*)actor; Player* player=GET_PLAYER(play);
++    if(player) {
++        player->actor.draw=this->playerDraw;
++        player->stateFlags1 &= ~PLAYER_STATE1_20000000;
++        Player_SetCsAction(play,actor,PLAYER_CSACTION_END);
++    }
++    play->envCtx.fillScreen=false;
++    Play_ClearCamera(play,this->subCamId); Play_ChangeCameraStatus(play,CAM_ID_MAIN,CAM_STATUS_ACTIVE);
++}
++static void CrossSongWarp_Update(Actor* actor, PlayState* play) {
++    CrossSongWarp* this=(CrossSongWarp*)actor; Player* player=GET_PLAYER(play);
++    // Keep the original animation duration and particle density in a 30 Hz world.
++    this->nativeTick+=2;
++    if(this->nativeTick<3) return;
++    this->nativeTick-=3;
++    if(this->count<30) this->count+=2;
++    for(int i=this->count-1;i>=0;i--) {
++        CWWarpParticle* p=&this->particles[i]; float taper=1.0f-i/(float)this->count;
++        if(!p->phase) {
++            p->offset=(Vec3f){(Rand_ZeroOne()-.5f)*16*taper,(Rand_ZeroOne()-.5f)*16*taper,(Rand_ZeroOne()-.5f)*16*taper};
++            p->phase=1;
++        }
++        if(p->phase==1) {
++            Vec3f pos; float roll,fov;
++            if(CWWarpSplineStep(&pos,&roll,&fov,sWarpOutCameraPoints,&p->key,&p->frame)) p->phase=2;
++            else {
++                p->pos.x=this->origin.x+pos.x*Math_CosS(this->yaw)+pos.z*Math_SinS(this->yaw);
++                p->pos.y=this->origin.y+pos.y;
++                p->pos.z=this->origin.z+pos.z*Math_CosS(this->yaw)-pos.x*Math_SinS(this->yaw);
++            }
++        }
++        if(!p->pulse) {p->scale=Rand_ZeroOne();p->pulse=1;}
++        if(p->pulse==1) {Math_SmoothStepToF(&p->scale,1,.5f,.4f,.2f); if(p->scale>=1) p->pulse=2;}
++        else {Math_SmoothStepToF(&p->scale,0,.5f,.3f,.2f); if(p->scale<=0) p->pulse=1;}
++        p->rotation+=0x190;
++    }
++    if(this->timer>=34) {
++        Vec3f eye,at; float roll,fov;
++        s16 key=this->camKey; f32 frame=this->camFrame;
++        CWWarpSplineStep(&eye,&roll,&fov,sEye,&key,&frame);
++        CWWarpSplineStep(&at,&roll,&fov,sAt,&this->camKey,&this->camFrame);
++        eye=RelativeToPlayer(this,eye); at=RelativeToPlayer(this,at);
++        Play_SetCameraAtEye(play,this->subCamId,&at,&eye); Play_SetCameraFov(play,this->subCamId,fov);
++    }
++    // Original white flash wraps the player disappearing, then fades back while
++    // the colored particles follow their ascending native spline.
++    play->envCtx.fillScreen=false;
++    play->envCtx.screenFillColor[0]=play->envCtx.screenFillColor[1]=play->envCtx.screenFillColor[2]=255;
++    int remaining=35-this->timer;
++    if(remaining<21 && remaining>=15) {
++        play->envCtx.fillScreen=true; play->envCtx.screenFillColor[3]=255-255*(remaining-15)/5;
++    } else if(remaining<15 && remaining>=4) {
++        play->envCtx.fillScreen=true; play->envCtx.screenFillColor[3]=255*(remaining-4)/10;
++    }
++    if(++this->timer==20) player->actor.draw=NULL;
++    if(this->particles[0].phase==2) {
++        Combo_MMCompleteWarp(play,actor->params); Actor_Kill(actor);
++    }
++}
++static void CrossSongWarp_Draw(Actor* actor, PlayState* play) {
++    CrossSongWarp* this=(CrossSongWarp*)actor;
++    OPEN_DISPS(play->state.gfxCtx);
++    Gfx_SetupDL25_Xlu(play->state.gfxCtx);
++    Color_RGB8 color=sWarpColors[play->msgCtx.songPlayed<6 ? play->msgCtx.songPlayed : 0];
++    for(int i=this->count-1;i>=0;i--) {
++        CWWarpParticle* p=&this->particles[i];
++        if(p->phase!=1) continue;
++        FrameInterpolation_RecordOpenChild("Cross Song Warp",i);
++        float scale=p->scale*(.018f*(1.0f-i/(float)this->count));
++        Matrix_Translate(p->pos.x+p->offset.x,p->pos.y+p->offset.y,p->pos.z+p->offset.z,MTXMODE_NEW);
++        Matrix_Scale(scale,scale,scale,MTXMODE_APPLY);
++        Matrix_Mult(&play->billboardMtxF,MTXMODE_APPLY); Matrix_RotateZF(DEG_TO_RAD(p->rotation),MTXMODE_APPLY);
++        gDPSetPrimColor(POLY_XLU_DISP++,0,0x80,255,255,255,255);
++        gDPSetEnvColor(POLY_XLU_DISP++,color.r,color.g,color.b,255);
++        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++,play->state.gfxCtx);
++        gSPDisplayList(POLY_XLU_DISP++,sFlashDL);
++        FrameInterpolation_RecordCloseChild();
++    }
++    CLOSE_DISPS(play->state.gfxCtx);
++}
++ActorProfile Combo_Song_Warp_Profile={ACTOR_COMBO_SONG_WARP,ACTORCAT_ITEMACTION,
++    ACTOR_FLAG_UPDATE_CULLING_DISABLED|ACTOR_FLAG_DRAW_CULLING_DISABLED|ACTOR_FLAG_UPDATE_DURING_OCARINA,
++    GAMEPLAY_KEEP,sizeof(CrossSongWarp),CrossSongWarp_Init,CrossSongWarp_Destroy,CrossSongWarp_Update,CrossSongWarp_Draw};
++int Combo_MMStartWarp(PlayState* play,int destination,int song) {
++    Player* player=GET_PLAYER(play); play->msgCtx.songPlayed=song;
++    return Actor_Spawn(&play->actorCtx,play,ACTOR_COMBO_SONG_WARP,
++        player->actor.world.pos.x,player->actor.world.pos.y,player->actor.world.pos.z,0,0,0,destination)!=NULL;
++}
++
++#endif
+--- a/soh/include/tables/actor_table.h
++++ b/soh/include/tables/actor_table.h
+@@ -480,4 +480,7 @@
+ /* 0x01D3 */ DEFINE_ACTOR(En_Zl4, ACTOR_EN_ZL4, ALLOCTYPE_NORMAL)
+ /* 0x01D4 */ DEFINE_ACTOR(En_Mm2, ACTOR_EN_MM2, ALLOCTYPE_NORMAL)
+ /* 0x01D5 */ DEFINE_ACTOR(Bg_Jya_Block, ACTOR_BG_JYA_BLOCK, ALLOCTYPE_NORMAL)
+-/* 0x01D6 */ DEFINE_ACTOR(Obj_Warp2block, ACTOR_OBJ_WARP2BLOCK, ALLOCTYPE_NORMAL)
+\ No newline at end of file
++/* 0x01D6 */ DEFINE_ACTOR(Obj_Warp2block, ACTOR_OBJ_WARP2BLOCK, ALLOCTYPE_NORMAL)
++#ifdef COMBO_BUILD
++DEFINE_ACTOR(Combo_Owl_Warp, ACTOR_COMBO_OWL_WARP, ALLOCTYPE_NORMAL)
++#endif
+--- a/soh/soh/ActorDB.cpp
++++ b/soh/soh/ActorDB.cpp
+@@ -462,6 +462,9 @@
+     { ACTOR_EN_MM2, "Running Man (Adult Era)" },
+     { ACTOR_BG_JYA_BLOCK, "Silver Block (Child Era)" },
+     { ACTOR_OBJ_WARP2BLOCK, "Navi Infospot (Green, Time Block)" },
++#ifdef COMBO_BUILD
++    { ACTOR_COMBO_OWL_WARP, "Song of Soaring Warp" },
++#endif
+ };
+ static std::unordered_map<u16, const char*> actorDescriptions =
+     std::unordered_map<u16, const char*>(std::begin(actorDescriptionData), std::end(actorDescriptionData));
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossKeyframe.c b/soh/soh/Enhancements/CrossWarp/CrossKeyframe.c
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/CrossWarp/CrossKeyframe.c
+@@ -0,0 +1,780 @@
++#ifdef COMBO_BUILD
++/**
++ * @file c_keyframe.c
++ *
++ * This file implements a skeletal animation system supporting all of scale, rotation and translation on all joints. It
++ * uses keyframe data and interpolates intermediate values via cubic Hermite splines.
++ */
++#include "global.h"
++#include "CrossWarp.h"
++#include "CrossKeyframe.h"
++#define CB(x) ((x)*(x)*(x))
++#define DEG_TO_BINANG(d) ((s16)((d)*(0x10000/360.0f)))
++#include "soh/ResourceManagerHelpers.h"
++
++#define FMOD(x, mod) ((x) - ((s32)((x) * (1.0f / (mod))) * (f32)(mod)))
++
++/**
++ * @note Original name: cKF_FrameControl_zeroClera
++ */
++void CWFrameCtrl_Reset(CWFrameControl* frameCtrl) {
++    frameCtrl->frameCount = 0.0f;
++    frameCtrl->curTime = 0.0f;
++    frameCtrl->speed = 0.0f;
++    frameCtrl->end = 0.0f;
++    frameCtrl->start = 0.0f;
++    frameCtrl->animMode = KEYFRAME_ANIM_ONCE;
++}
++
++/**
++ * @note Original name: cKF_FrameControl_ct
++ */
++void CWFrameCtrl_Init(CWFrameControl* frameCtrl) {
++    CWFrameCtrl_Reset(frameCtrl);
++}
++
++/**
++ * @note Original name: cKF_FrameControl_setFrame
++ */
++void CWFrameCtrl_SetProperties(CWFrameControl* frameCtrl, f32 startTime, f32 endTime, f32 frameCount, f32 t, f32 speed,
++                             s32 animMode) {
++    frameCtrl->start = startTime;
++    frameCtrl->end = (endTime < 1.0f) ? frameCount : endTime;
++    frameCtrl->frameCount = frameCount;
++    frameCtrl->speed = speed;
++    frameCtrl->curTime = t;
++    frameCtrl->animMode = animMode;
++}
++
++/**
++ * @note Original name: cKF_FrameControl_passCheck
++ */
++s32 CWFrameCtrl_PassCheck(CWFrameControl* frameCtrl, f32 t, f32* remainingTime) {
++    f32 curTime;
++    f32 speed;
++
++    *remainingTime = 0.0f;
++    curTime = frameCtrl->curTime;
++
++    if (t == curTime) {
++        return false;
++    }
++
++    speed = ((frameCtrl->start < frameCtrl->end) ? frameCtrl->speed : -frameCtrl->speed) * (30.0f / 20.0f);
++
++    if (((speed >= 0.0f) && (curTime < t) && (t <= curTime + speed)) ||
++        ((speed < 0.0f) && (t < curTime) && (curTime + speed <= t))) {
++
++        *remainingTime = curTime + speed - t;
++        return true;
++    }
++    return false;
++}
++
++/**
++ * Updates a CWFrameControl structure whose mode is KEYFRAME_ANIM_ONCE
++ *
++ * @note Original name: cKF_FrameControl_stop_proc
++ */
++s32 CWFrameCtrl_UpdateOnce(CWFrameControl* frameCtrl) {
++    f32 remainingTime;
++
++    if (frameCtrl->curTime == frameCtrl->end) {
++        // If the current time is at the end time, the animation is done.
++        return KEYFRAME_DONE_ONCE;
++    }
++    if (CWFrameCtrl_PassCheck(frameCtrl, frameCtrl->end, &remainingTime)) {
++        frameCtrl->curTime = frameCtrl->end;
++        return KEYFRAME_DONE_ONCE;
++    }
++    if (CWFrameCtrl_PassCheck(frameCtrl, frameCtrl->start, &remainingTime)) {
++        frameCtrl->curTime = frameCtrl->end;
++        return KEYFRAME_DONE_ONCE;
++    }
++    return KEYFRAME_NOT_DONE;
++}
++
++/**
++ * Updates a CWFrameControl structure whose mode is KEYFRAME_ANIM_LOOP
++ *
++ * @note Original name: cKF_FrameControl_repeat_proc
++ */
++s32 CWFrameCtrl_UpdateLoop(CWFrameControl* frameCtrl) {
++    f32 remainingTime;
++
++    if (CWFrameCtrl_PassCheck(frameCtrl, frameCtrl->end, &remainingTime)) {
++        frameCtrl->curTime = frameCtrl->start + remainingTime;
++        return KEYFRAME_DONE_LOOP;
++    }
++    if (CWFrameCtrl_PassCheck(frameCtrl, frameCtrl->start, &remainingTime)) {
++        frameCtrl->curTime = frameCtrl->end + remainingTime;
++        return KEYFRAME_DONE_LOOP;
++    }
++    return KEYFRAME_NOT_DONE;
++}
++
++/**
++ * Check if the animation has finished playing and update the animation frame number.
++ *
++ * @note Original name: cKF_FrameControl_play
++ */
++s32 CWFrameCtrl_Update(CWFrameControl* frameCtrl) {
++    s32 result;
++    f32 speed;
++
++    // Check if the animation is done, possibly updating curTime
++    if (frameCtrl->animMode == KEYFRAME_ANIM_ONCE) {
++        result = CWFrameCtrl_UpdateOnce(frameCtrl);
++    } else {
++        result = CWFrameCtrl_UpdateLoop(frameCtrl);
++    }
++
++    if (result == KEYFRAME_NOT_DONE) {
++        // Animation is not done, step curTime by (speed * (30.0f / 20.0f)), adjusting the sign if the animation is
++        // playing in reverse (end <= start)
++        speed = (frameCtrl->start < frameCtrl->end) ? frameCtrl->speed : -frameCtrl->speed;
++        frameCtrl->curTime = frameCtrl->curTime + speed * (30.0f / 20.0f);
++    }
++
++    // Adjust time for looping
++    if (frameCtrl->curTime < 1.0f) {
++        // Wrap from the start to the end of the animation
++        frameCtrl->curTime = (frameCtrl->curTime - 1.0f) + frameCtrl->frameCount;
++    } else if (frameCtrl->frameCount < frameCtrl->curTime) {
++        // Wrap from the end to the start of the animation
++        frameCtrl->curTime = (frameCtrl->curTime - frameCtrl->frameCount) + 1.0f;
++    }
++
++    return result;
++}
++
++/**
++ * @note Original name unknown
++ */
++void CWKeyframe_ResetFlex(CWKFSkelAnimeFlex* kfSkelAnime) {
++    kfSkelAnime->skeleton = NULL;
++    kfSkelAnime->animation = NULL;
++    kfSkelAnime->jointTable = NULL;
++    kfSkelAnime->transformCallbacks = NULL;
++    kfSkelAnime->morphTable = NULL;
++    kfSkelAnime->morphFrames = 0.0f;
++}
++
++/**
++ * Initializes a flex-type keyframe skeleton. The initial animation type is KEYFRAME_ANIM_ONCE.
++ *
++ * @param skeleton Skeleton to animate
++ * @param animation Initial animation to use
++ * @param jointTable Joint table to store limb transformations. Should have enough space to store a root translation
++ *                   plus a limb rotation for all limbs in the skeleton.
++ * @param morphTable Joint table to store morph interpolation values. Should have enough space to store a root
++ *                   translation plus a limb rotation for all limbs in the skeleton.
++ * @param transformCallbacks Array of limb transformation callbacks that will be called when drawing a particular limb.
++ *                           The limb data contains the index to select which callback to run.
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_InitFlex(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton, CWKeyFrameAnimation* animation,
++                       Vec3s* jointTable, Vec3s* morphTable, KeyframeTransformCallback* transformCallbacks) {
++    if (ResourceMgr_OTRSigCheck(skeleton)) {
++        skeleton = (CWKeyFrameSkeleton*)Combo_SOHWarpResource(skeleton);
++    }
++    if (ResourceMgr_OTRSigCheck(animation)) {
++        animation = (CWKeyFrameAnimation*)Combo_SOHWarpResource(animation);
++    }
++
++    CWKeyframe_ResetFlex(kfSkelAnime);
++    CWFrameCtrl_Init(&kfSkelAnime->frameCtrl);
++    kfSkelAnime->skeleton = SEGMENTED_TO_VIRTUAL(skeleton);
++    kfSkelAnime->animation = SEGMENTED_TO_VIRTUAL(animation);
++    kfSkelAnime->jointTable = jointTable;
++    kfSkelAnime->morphTable = morphTable;
++    kfSkelAnime->transformCallbacks = transformCallbacks;
++}
++
++/**
++ * Destroys a flex-type keyframe skeleton.
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_DestroyFlex(CWKFSkelAnimeFlex* kfSkelAnime) {
++}
++
++void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton, CWKeyFrameAnimation* animation,
++                             f32 startTime, f32 endTime, f32 t, f32 speed, f32 morphFrames, s32 animMode);
++
++/**
++ * Immediately changes to an animation that plays once from start to end at the default speed.
++ *
++ * @param animation Animation data to switch to
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_FlexPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation) {
++    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
++                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f, 0.0f,
++                            KEYFRAME_ANIM_ONCE);
++}
++
++/**
++ * Immediately changes to an animation that plays once from start to end at the specified speed.
++ *
++ * @param animation Animation data to switch to
++ * @param speed Playback speed
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_FlexPlayOnceSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed) {
++    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
++                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, speed, 0.0f,
++                            KEYFRAME_ANIM_ONCE);
++}
++
++/**
++ * Smoothly transitions to an animation that plays once from start to end at the default speed, specifying the number of
++ * frames for the transition.
++ *
++ * @param animation Animation data to switch to
++ * @param morphFrames Number of frames to take to transition from the previous pose to the new animation. Positive morph
++ *                    frames morph from the current pose to the start pose of the new animation, then start the new
++ *                    animation. Negative morph frames start the new animation immediately, modified by the pose
++ *                    immediately before the animation change.
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_FlexMorphToPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames) {
++    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
++                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f,
++                            morphFrames, KEYFRAME_ANIM_ONCE);
++}
++
++/**
++ * Immediately changes to an animation that loops over start to end at the default speed.
++ *
++ * @param animation Animation data to switch to
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_FlexPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation) {
++    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
++                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f, 0.0f,
++                            KEYFRAME_ANIM_LOOP);
++}
++
++/**
++ * Immediately changes to an animation that loops over start to end at the specified speed.
++ *
++ * @param animation Animation data to switch to
++ * @param speed Playback speed
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_FlexPlayLoopSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed) {
++    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
++                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, speed, 0.0f,
++                            KEYFRAME_ANIM_LOOP);
++}
++
++/**
++ * Smoothly transitions to an animation that loops over start to end at the default speed, specifying the number of
++ * frames for the transition.
++ *
++ * @param animation Animation data to switch to
++ * @param morphFrames Number of frames to take to transition from the previous pose to the new animation. Positive morph
++ *                    frames morph from the current pose to the start pose of the new animation, then start the new
++ *                    animation. Negative morph frames start the new animation immediately, modified by the pose
++ *                    immediately before the animation change.
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_FlexMorphToPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames) {
++    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
++                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f,
++                            morphFrames, KEYFRAME_ANIM_LOOP);
++}
++
++/**
++ * General way to set a new animation for flex-type skeletons, allowing choice of playback speed, start/end loop points,
++ * start time, play mode, and number of transition frames.
++ *
++ * Time parameters are valid from 0 to the last frame of the animation.
++ *
++ * @param skeleton Skeleton that will be animated
++ * @param animation Animation data to switch to
++ * @param startTime Loop start time
++ * @param endTime Loop end time, 0 indicates to use the animation length
++ * @param t Playback start time
++ * @param speed Playback speed
++ * @param morphFrames Number of frames to take to transition from the previous pose to the new animation. Positive morph
++ *                    frames morph from the current pose to the start pose of the new animation, then start the new
++ *                    animation. Negative morph frames start the new animation immediately, modified by the pose
++ *                    immediately before the animation change.
++ * @param animMode Animation play mode, see CWKeyFrameAnimMode enum
++ *
++ * @see CWKeyFrameAnimMode
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton, CWKeyFrameAnimation* animation,
++                             f32 startTime, f32 endTime, f32 t, f32 speed, f32 morphFrames, s32 animMode) {
++    if (ResourceMgr_OTRSigCheck(skeleton)) {
++        skeleton = Combo_SOHWarpResource(skeleton);
++    }
++    if (ResourceMgr_OTRSigCheck(animation)) {
++        animation = Combo_SOHWarpResource(animation);
++        // Overwrite the end time after fetching the animation data as the parent caller most likely
++        // passed in garbage data from the "fake" animation pointer (casted from resource string)
++        endTime = animation->frameCount;
++    }
++
++    kfSkelAnime->morphFrames = morphFrames;
++
++    if (kfSkelAnime->skeleton != skeleton) {
++        kfSkelAnime->skeleton = SEGMENTED_TO_VIRTUAL(skeleton);
++    }
++    kfSkelAnime->animation = SEGMENTED_TO_VIRTUAL(animation);
++
++    CWFrameCtrl_SetProperties(&kfSkelAnime->frameCtrl, startTime, endTime, kfSkelAnime->animation->frameCount, t, speed,
++                            animMode);
++}
++
++/**
++ * Switches to a new animation without changing any of the playback parameters.
++ *
++ * @param animation The animation to switch to
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_FlexChangeAnimQuick(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation) {
++    kfSkelAnime->animation = SEGMENTED_TO_VIRTUAL(animation);
++    kfSkelAnime->frameCtrl.frameCount = kfSkelAnime->animation->frameCount;
++}
++
++/**
++ * Compute a value on the cubic Hermite spline x(t) at a time `t` in the unit interval [0, 1]
++ *
++ * @param t Time parameter at which to sample the curve
++ * @param delta Scales the rates of change of the curve endpoints v0 and v1
++ * @param x0 Value on the curve at t=0
++ * @param x1 Value on the curve at t=1
++ * @param v0 Rate of change of the curve at t=0
++ * @param v1 Rate of change of the curve at t=1
++ *
++ * @note Original name: cKF_HermitCalc
++ */
++f32 CWKeyframe_Interpolate(f32 t, f32 delta, f32 x0, f32 x1, f32 v0, f32 v1) {
++    f32 px1 = 3.0f * SQ(t) - 2.0f * CB(t);
++    f32 px0 = 1.0f - px1;
++    f32 pv0 = CB(t) - 2.0f * SQ(t) + t;
++    f32 pv1 = CB(t) - SQ(t);
++
++    return px0 * x0 + px1 * x1 + (pv0 * v0 + pv1 * v1) * delta;
++}
++
++/**
++ * Computes an output value at time `t` based on interpolation of the provided keyframes.
++ * Interpolation between keyframes is performed via cubic Hermite splines.
++ *
++ * @param kfStart Index of the first keyframe to consider
++ * @param kfNum Number of keyframes following the first keyframe to consider
++ * @param keyFrames Array of all keyframes
++ * @param t Time at which to sample the interpolated curve
++ *
++ * @return The interpolated value
++ *
++ * @note Original name: cKF_KeyCalc
++ */
++s16 CWKeyframe_KeyCalc(s16 kfStart, s16 kfNum, KeyFrame* keyFrames, f32 t) {
++    KeyFrame* keyFramesOffset = &keyFrames[kfStart];
++    f32 delta;
++    s16 kf1;
++    s16 kf2;
++
++    if (t <= keyFramesOffset->frame) {
++        return keyFramesOffset->value;
++    }
++    if (keyFramesOffset[kfNum - 1].frame <= t) {
++        return keyFramesOffset[kfNum - 1].value;
++    }
++
++    kf1 = 0;
++    kf2 = 1;
++    while (true) {
++        // Search for the keyframes kf1 and kf2 such that kf1.frame <= t < kf2.frame
++        if (t < keyFramesOffset[kf2].frame) {
++            delta = keyFramesOffset[kf2].frame - keyFramesOffset[kf1].frame;
++
++            if (!IS_ZERO(delta)) {
++                // Between two keyframes, interpolate a value and round to nearest integer
++                return nearbyint(CWKeyframe_Interpolate((t - keyFramesOffset[kf1].frame) / delta, delta * (1.0f / 30),
++                                                      keyFramesOffset[kf1].value, keyFramesOffset[kf2].value,
++                                                      keyFramesOffset[kf1].velocity, keyFramesOffset[kf2].velocity));
++            } else {
++                // Close enough to a keyframe, take the specified value with no interpolation
++                return keyFramesOffset[kf1].value;
++            }
++        }
++        kf1++;
++        kf2++;
++    }
++}
++
++/**
++ * Morph interpolator for rotation.
++ *
++ * Linearly interpolates between `rot1` and `rot2` with weight `t`, choosing either signed angles or unsigned angles
++ * based on whichever choice has the smaller distance between the two.
++ *
++ * @note Original name: cKF_SkeletonInfo_subRotInterpolation
++ */
++void CWKeyframe_MorphInterpolateRotation(f32 t, s16* out, s16 rot1, s16 rot2) {
++    u16 urot1 = rot1;
++    s32 pad;
++    u16 urot2 = rot2;
++    f32 rot1f = rot1;
++    f32 signedDiff = rot2 - rot1f;
++    f32 urot1f = urot1;
++    f32 unsignedDiff = urot2 - urot1f;
++
++    if (fabsf(signedDiff) < fabsf(unsignedDiff)) {
++        *out = rot1f + signedDiff * t;
++    } else {
++        *out = urot1f + unsignedDiff * t;
++    }
++}
++
++/**
++ * Morph interpolator for translation and scale.
++ *
++ * Linearly interpolates between `jointData` and `morphData` with weight `t`, storing the result back into `jointData`.
++ *
++ * @note Original name: cKF_SkeletonInfo_morphST
++ */
++void CWKeyframe_MorphInterpolateLinear(s16* jointData, s16* morphData, f32 t) {
++    s32 i;
++
++    for (i = 0; i < 3; i++) {
++        if (*jointData != *morphData) {
++            f32 f1 = *jointData;
++            f32 f2 = *morphData;
++            *jointData = f1 + (f2 - f1) * t;
++        }
++        jointData++;
++        morphData++;
++    }
++}
++
++/**
++ * Apply morph interpolation for the provided skeleton. Morph interpolation seeks to provide interpolation between
++ * a previous animation and a new animation over a fixed period of time (morphFrames)
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_FlexMorphInterpolation(CWKFSkelAnimeFlex* kfSkelAnime) {
++    Vec3s* jointTable = kfSkelAnime->jointTable;
++    Vec3s* morphTable = kfSkelAnime->morphTable;
++    f32 t = 1.0f / fabsf(kfSkelAnime->morphFrames);
++    s32 limbIndex;
++
++    for (limbIndex = 0; limbIndex < kfSkelAnime->skeleton->limbCount; limbIndex++) {
++        Vec3s frameRot;
++        Vec3s morphRot;
++
++        // Interpolate scale
++        CWKeyframe_MorphInterpolateLinear((s16*)jointTable, (s16*)morphTable, t);
++        jointTable++;
++        morphTable++;
++
++        // Read rotation
++        frameRot.x = jointTable->x;
++        frameRot.y = jointTable->y;
++        frameRot.z = jointTable->z;
++
++        morphRot.x = morphTable->x;
++        morphRot.y = morphTable->y;
++        morphRot.z = morphTable->z;
++
++        // Interpolate rotation
++        if (frameRot.x != morphRot.x || frameRot.y != morphRot.y || frameRot.z != morphRot.z) {
++            Vec3s frameRotInv;
++            f32 norm1;
++            f32 norm2;
++
++            frameRotInv.x = 0x7FFF + frameRot.x;
++            frameRotInv.y = 0x7FFF - frameRot.y;
++            frameRotInv.z = 0x7FFF + frameRot.z;
++
++            // Compute L1 norms
++            norm1 = fabsf((f32)morphRot.x - frameRot.x) + fabsf((f32)morphRot.y - frameRot.y) +
++                    fabsf((f32)morphRot.z - frameRot.z);
++            norm2 = fabsf((f32)morphRot.x - frameRotInv.x) + fabsf((f32)morphRot.y - frameRotInv.y) +
++                    fabsf((f32)morphRot.z - frameRotInv.z);
++
++            if (norm1 < norm2) {
++                // frameRot is closer to morphRot than frameRotInv, interpolate between these two
++                CWKeyframe_MorphInterpolateRotation(t, &jointTable->x, frameRot.x, morphRot.x);
++                CWKeyframe_MorphInterpolateRotation(t, &jointTable->y, frameRot.y, morphRot.y);
++                CWKeyframe_MorphInterpolateRotation(t, &jointTable->z, frameRot.z, morphRot.z);
++            } else {
++                // frameRotInv is closer to morphRot than frameRot, interpolate between these two
++                CWKeyframe_MorphInterpolateRotation(t, &jointTable->x, frameRotInv.x, morphRot.x);
++                CWKeyframe_MorphInterpolateRotation(t, &jointTable->y, frameRotInv.y, morphRot.y);
++                CWKeyframe_MorphInterpolateRotation(t, &jointTable->z, frameRotInv.z, morphRot.z);
++            }
++        }
++        morphTable++;
++        jointTable++;
++
++        // Interpolate translation
++        CWKeyframe_MorphInterpolateLinear((s16*)jointTable, (s16*)morphTable, t);
++        jointTable++;
++        morphTable++;
++    }
++}
++
++/**
++ * Advances the current animation and updates all frame tables for flex-type keyframe skeletons.
++ *
++ * @return s32
++ *  KEYFRAME_NOT_DONE  : If the animation is still playing
++ *  KEYFRAME_DONE_ONCE : If the animation was set to play once and has finished playing
++ *  KEYFRAME_DONE_LOOP : If the animation was set to play in a loop and has finished a loop
++ *
++ * @note Original name unknown
++ */
++s32 CWKeyframe_UpdateFlex(CWKFSkelAnimeFlex* kfSkelAnime) {
++    s32 limbIndex;
++    s32 pad[2];
++    u16* bitFlags;
++    s16* outputValues;
++    s32 kfn = 0;
++    s32 fixedValueIndex = 0;
++    s32 kfStart = 0;
++    s16* fixedValues;
++    KeyFrame* keyFrames;
++    s16* kfNums;
++    u32 bit;
++    s32 i;
++    s32 j;
++
++    // If there are morph frames to process, use the morph table
++    if (kfSkelAnime->morphFrames != 0.0f) {
++        outputValues = (s16*)kfSkelAnime->morphTable;
++    } else {
++        outputValues = (s16*)kfSkelAnime->jointTable;
++    }
++
++    // Array of preset values to pull from
++    fixedValues = SEGMENTED_TO_VIRTUAL(kfSkelAnime->animation->fixedValues);
++
++    // Array of number of keyframes belonging to each limb
++    kfNums = SEGMENTED_TO_VIRTUAL(kfSkelAnime->animation->kfNums);
++
++    // Array of keyframes, ordered by frame number
++    keyFrames = SEGMENTED_TO_VIRTUAL(kfSkelAnime->animation->keyFrames);
++
++    // The bitFlags array indicates whether a transformation on an axis should interpolate a value (if the bit is set)
++    // or pull from an array of constant values (if the bit is unset) if the transformation on an axis does not change
++    // during the animtion. For the flex-type keyframe skeletons the flags for each limb are contained in 16 bits.
++    // The bitFlags layout for the flex-type keyframe skeletons is the same for all limbs:
++    //  [8] : Scale x
++    //  [7] : Scale y
++    //  [6] : Scale z
++    //  [5] : Rotate x
++    //  [4] : Rotate y
++    //  [3] : Rotate z
++    //  [2] : Translate x
++    //  [1] : Translate y
++    //  [0] : Translate z
++    bitFlags = SEGMENTED_TO_VIRTUAL(kfSkelAnime->animation->bitFlags.flex);
++
++    // For each limb
++    for (limbIndex = 0; limbIndex < kfSkelAnime->skeleton->limbCount; limbIndex++) {
++        bit = 1 << (3 * 3 - 1);
++
++        // 3 iter (scale, rotate, translate)
++        for (i = 0; i < 3; i++) {
++            // 3 iter (x, y, z)
++            for (j = 0; j < 3; j++) {
++                if (bitFlags[limbIndex] & bit) {
++                    // If the bit is set, interpolate with keyframes
++                    *outputValues = CWKeyframe_KeyCalc(kfStart, kfNums[kfn], keyFrames, kfSkelAnime->frameCtrl.curTime);
++                    kfStart += kfNums[kfn];
++                    kfn++;
++                } else {
++                    // If the bit is not set, pull from preset values
++                    *outputValues = fixedValues[fixedValueIndex];
++                    fixedValueIndex++;
++                }
++                bit >>= 1;
++
++                if (i == 1) {
++                    // For rotations, translate angle value from tenths of a degree to binang
++                    *outputValues = DEG_TO_BINANG(FMOD(*outputValues * 0.1f, 360));
++                }
++                outputValues++;
++            }
++        }
++    }
++
++    if (IS_ZERO(kfSkelAnime->morphFrames)) {
++        // No morph, just play the animation
++        return CWFrameCtrl_Update(&kfSkelAnime->frameCtrl);
++    } else if (kfSkelAnime->morphFrames > 0.0f) {
++        // Morph to first frame before playing the animation proper
++        CWKeyframe_FlexMorphInterpolation(kfSkelAnime);
++        kfSkelAnime->morphFrames -= 1.0f;
++        if (kfSkelAnime->morphFrames <= 0.0f) {
++            kfSkelAnime->morphFrames = 0.0f;
++        }
++        return KEYFRAME_NOT_DONE;
++    } else {
++        // Play the animation immediately, morphing as it plays
++        CWKeyframe_FlexMorphInterpolation(kfSkelAnime);
++        kfSkelAnime->morphFrames += 1.0f;
++        if (kfSkelAnime->morphFrames >= 0.0f) {
++            kfSkelAnime->morphFrames = 0.0f;
++        }
++        return CWFrameCtrl_Update(&kfSkelAnime->frameCtrl);
++    }
++}
++
++/**
++ * Draws the limb specified by `limbIndex` of type `CWKeyFrameFlexLimb` belonging to a flex-type keyframe skeleton to the
++ * display buffer specified by the limb's drawFlags.
++ *
++ * @param limbIndex Pointer to the index of the limb to draw
++ * @param overrideKeyframeDraw Callback for before submitting the limb to be drawn. The matrix state will not include
++ *                             the transformation for the current limb.
++ * @param postKeyframeDraw Callback for after submitting the limb to be drawn. The matrix state will include
++ *                         the transformation for the current limb.
++ * @param arg An arbitrary argument to pass to the callbacks.
++ * @param mtxStack Matrix stack for limb transformations. Should have enough room for one matrix per limb.
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_DrawFlexLimb(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, s32* limbIndex,
++                           CWOverrideKeyframeDrawScaled overrideKeyframeDraw, CWPostKeyframeDrawScaled postKeyframeDraw,
++                           void* arg, Mtx** mtxStack) {
++    CWKeyFrameFlexLimb* limb = SEGMENTED_TO_VIRTUAL(kfSkelAnime->skeleton->limbs);
++    s32 i;
++    Gfx* newDList;
++    Gfx* limbDList;
++    u8 drawFlags;
++    Vec3f scale;
++    Vec3s rot;
++    Vec3f pos;
++    Vec3s* jointData;
++
++    OPEN_DISPS(play->state.gfxCtx);
++
++    limb += *limbIndex;
++    jointData = &kfSkelAnime->jointTable[*limbIndex * 3];
++
++    scale.x = jointData->x * 0.01f;
++    scale.y = jointData->y * 0.01f;
++    scale.z = jointData->z * 0.01f;
++
++    jointData++;
++
++    rot.x = jointData->x;
++    rot.y = jointData->y;
++    rot.z = jointData->z;
++
++    jointData++;
++
++    pos.x = jointData->x;
++    pos.y = jointData->y;
++    pos.z = jointData->z;
++
++    Matrix_Push();
++
++    newDList = limbDList = limb->dList;
++    drawFlags = limb->drawFlags;
++
++    if (overrideKeyframeDraw == NULL ||
++        (overrideKeyframeDraw != NULL &&
++         overrideKeyframeDraw(play, kfSkelAnime, *limbIndex, &newDList, &drawFlags, arg, &scale, &rot, &pos))) {
++        if ((kfSkelAnime->transformCallbacks == NULL) || (limb->callbackIndex == KF_CALLBACK_INDEX_NONE) ||
++            (kfSkelAnime->transformCallbacks[limb->callbackIndex] == NULL) ||
++            kfSkelAnime->transformCallbacks[limb->callbackIndex](play, kfSkelAnime, *limbIndex, &newDList, &drawFlags,
++                                                                 arg)) {
++
++            Matrix_TranslateRotateZYX(&pos, &rot);
++
++            if (scale.x != 1.0f || scale.y != 1.0f || scale.z != 1.0f) {
++                Matrix_Scale(scale.x, scale.y, scale.z, MTXMODE_APPLY);
++            }
++
++            if (newDList != NULL) {
++                Matrix_ToMtx(*mtxStack, __FILE__, __LINE__);
++
++                if (drawFlags & KEYFRAME_DRAW_XLU) {
++                    gSPMatrix(POLY_XLU_DISP++, *mtxStack, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
++                    gSPDisplayList(POLY_XLU_DISP++, newDList);
++                } else {
++                    gSPMatrix(POLY_OPA_DISP++, *mtxStack, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
++                    gSPDisplayList(POLY_OPA_DISP++, newDList);
++                }
++
++                (*mtxStack)++;
++            } else if (limbDList != NULL) {
++                gSPMatrix(POLY_OPA_DISP++, *mtxStack, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
++                Matrix_ToMtx(*mtxStack, __FILE__, __LINE__);
++
++                (*mtxStack)++;
++            }
++        }
++    }
++
++    if (postKeyframeDraw != NULL) {
++        postKeyframeDraw(play, kfSkelAnime, *limbIndex, &newDList, &drawFlags, arg, &scale, &rot, &pos);
++    }
++
++    (*limbIndex)++;
++
++    for (i = 0; i < limb->numChildren; i++) {
++        CWKeyframe_DrawFlexLimb(play, kfSkelAnime, limbIndex, overrideKeyframeDraw, postKeyframeDraw, arg, mtxStack);
++    }
++
++    Matrix_Pop();
++    CLOSE_DISPS(play->state.gfxCtx);
++}
++
++/**
++ * Draws a flex-type keyframe skeleton in its current pose.
++ *
++ * @param mtxStack Matrix stack for limb transformations. Should have enough room for one matrix per limb.
++ * @param overrideKeyframeDraw Callback for before submitting the limb to be drawn. The matrix state will not include
++ *                             the transformation for the current limb.
++ * @param postKeyframeDraw Callback for after submitting the limb to be drawn. The matrix state will include
++ *                         the transformation for the current limb.
++ * @param arg An arbitrary argument to pass to the callbacks.
++ *
++ * @note Original name unknown
++ */
++void CWKeyframe_DrawFlex(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, Mtx* mtxStack,
++                       CWOverrideKeyframeDrawScaled overrideKeyframeDraw, CWPostKeyframeDrawScaled postKeyframeDraw,
++                       void* arg) {
++    s32 limbIndex;
++
++    if (mtxStack == NULL) {
++        return;
++    }
++
++    OPEN_DISPS(play->state.gfxCtx);
++
++    gSPSegment(POLY_OPA_DISP++, 0x0D, mtxStack);
++    gSPSegment(POLY_XLU_DISP++, 0x0D, mtxStack);
++
++    limbIndex = 0;
++    CWKeyframe_DrawFlexLimb(play, kfSkelAnime, &limbIndex, overrideKeyframeDraw, postKeyframeDraw, arg, &mtxStack);
++
++    CLOSE_DISPS(play->state.gfxCtx);
++}
++
++/**
++ * @note Original name: cKF_SkeletonInfo_R_zeroClear
++ */
++
++#endif
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossKeyframe.h b/soh/soh/Enhancements/CrossWarp/CrossKeyframe.h
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/CrossWarp/CrossKeyframe.h
+@@ -0,0 +1,172 @@
++#ifndef COMBO_CROSS_KEYFRAME_H
++#define COMBO_CROSS_KEYFRAME_H
++
++#include "global.h"
++#include "z64math.h"
++
++struct PlayState;
++
++struct CWKFSkelAnimeFlex;
++struct CWKFSkelAnime;
++
++typedef s32 (*CWOverrideKeyframeDraw)(struct PlayState* play, struct CWKFSkelAnime* kfSkelAnime, s32 limbIndex,
++                                    Gfx** dList, u8* flags, void* arg, Vec3s* rot, Vec3f* pos);
++typedef s32 (*CWPostKeyframeDraw)(struct PlayState* play, struct CWKFSkelAnime* kfSkelAnime, s32 limbIndex,
++                                Gfx** dList, u8* flags, void* arg, Vec3s* rot, Vec3f* pos);
++
++typedef s32 (*CWOverrideKeyframeDrawScaled)(struct PlayState* play, struct CWKFSkelAnimeFlex* kfSkelAnime, s32 limbIndex,
++                                          Gfx** dList, u8* flags, void* arg, Vec3f* scale, Vec3s* rot, Vec3f* pos);
++typedef s32 (*CWPostKeyframeDrawScaled)(struct PlayState* play, struct CWKFSkelAnimeFlex* kfSkelAnime, s32 limbIndex,
++                                      Gfx** dList, u8* flags, void* arg, Vec3f* scale, Vec3s* rot, Vec3f* pos);
++
++typedef s32 (*KeyframeTransformCallback)(struct PlayState* play, struct CWKFSkelAnimeFlex* kfSkelAnime, s32 limbIndex,
++                                         Gfx** dList, u8* flags, void* arg);
++
++// These flags are mutually exclusive, if XLU is set OPA is not set and vice-versa.
++#define KEYFRAME_DRAW_OPA (0 << 0)
++#define KEYFRAME_DRAW_XLU (1 << 0)
++
++typedef enum {
++    /* 0 */ KEYFRAME_NOT_DONE,
++    /* 1 */ KEYFRAME_DONE_ONCE,
++    /* 2 */ KEYFRAME_DONE_LOOP
++} CWKeyFrameDoneType;
++
++#define KF_CALLBACK_INDEX_NONE 0xFF
++
++typedef struct {
++    /* 0x00 */ Gfx* dList;     // Display list for this limb
++    /* 0x04 */ u8 numChildren; // Number of children for this limb
++    /* 0x05 */ u8 drawFlags;   // KEYFRAME_DRAW_*, determines which render layer the matrix + display list will be appended to
++    /* 0x06 */ Vec3s jointPos; // For the root limb this is the position in model space; for child limbs it is the relative position to the parent
++} CWKeyFrameStandardLimb; // size = 0xC
++
++typedef struct {
++    /* 0x00 */ u8 limbCount;                // Number of limbs in this skeleton
++    /* 0x01 */ u8 dListCount;               // Number of limbs with a non-NULL display list, used to know how many matrices to allocate for drawing
++    /* 0x04 */ CWKeyFrameStandardLimb* limbs; // Pointer to standard limb array
++} CWKeyFrameSkeleton; // Size = 0x8
++
++typedef struct {
++    /* 0x00 */ Gfx* dList;       // Display list for this limb
++    /* 0x04 */ u8 numChildren;   // Number of children for this limb
++    /* 0x05 */ u8 drawFlags;     // KEYFRAME_DRAW_*, determines which render layer the matrix + display list will be appended to
++    /* 0x06 */ u8 callbackIndex; // Transform callback function index, KF_CALLBACK_INDEX_NONE indicates no callback
++} CWKeyFrameFlexLimb; // size = 0x8
++
++typedef struct {
++    /* 0x00 */ u8 limbCount;            // Number of limbs in this skeleton
++    /* 0x01 */ u8 dListCount;           // Number of limbs with a non-NULL display list, used to know how many matrices to allocate for drawing
++    /* 0x04 */ CWKeyFrameFlexLimb* limbs; // Pointer to flex limb array
++} CWKeyFrameFlexSkeleton; // Size = 0x8
++
++typedef struct {
++    /* 0x00 */ s16 frame;    // Frame number for this keyframe
++    /* 0x02 */ s16 value;    // Value (any of translation, rotation, scale)
++    /* 0x04 */ s16 velocity; // The instantaneous rate of change of the value
++} KeyFrame; // Size = 0x6
++
++typedef struct {
++    // Array of bitflags for each limb indicating whether to do keyframe interpolation
++    // or pull from fixed values that do not change throughout the animation.
++    union {
++        // For standard the bit layout in each array element is:
++        // [5] X Translation (root limb only)
++        // [4] Y Translation (root limb only)
++        // [3] Z Translation (root limb only)
++        // [2] X Rotation (all limbs)
++        // [1] Y Rotation (all limbs)
++        // [0] Z Rotation (all limbs)
++    /* 0x00 */ u8* standard;
++        // For flex the bit layout in each array element is:
++        // [8] X Scale
++        // [7] Y Scale
++        // [6] Z Scale
++        // [5] X Rotation
++        // [4] Y Rotation
++        // [3] Z Rotation
++        // [2] X Translation
++        // [1] Y Translation
++        // [0] Z Translation
++    /* 0x00 */ u16* flex;
++    } bitFlags;
++    /* 0x04 */ KeyFrame* keyFrames; // Array of keyframes determining the motion, grouped by limb
++    /* 0x08 */ s16* kfNums;         // Array containing how many keyframes belong to each limb
++    /* 0x0C */ s16* fixedValues;    // Array of fixed rotation (standard skeleton) or scale/rotation/translation (flex skeleton) values
++    /* 0x10 */ UNK_TYPE2 unk_10;
++    /* 0x12 */ s16 frameCount;      // Length of the animation in 30fps frames
++} CWKeyFrameAnimation; // Size = 0x14
++
++typedef enum {
++    /* 0 */ KEYFRAME_ANIM_ONCE, // Play once and stop
++    /* 1 */ KEYFRAME_ANIM_LOOP  // Play in a loop
++} CWKeyFrameAnimMode;
++
++typedef struct {
++    /* 0x00 */ f32 start;      // Current animation start frame number
++    /* 0x04 */ f32 end;        // Current animation end frame number
++    /* 0x08 */ f32 frameCount; // Current animation total frame count
++    /* 0x0C */ f32 speed;      // Current play speed
++    /* 0x10 */ f32 curTime;    // Current play frame number
++    /* 0x14 */ s32 animMode;   // Current play mode (see FrameAnimMode)
++} CWFrameControl; // Size = 0x18
++
++typedef struct CWKFSkelAnime {
++    /* 0x00 */ CWFrameControl frameCtrl;       // Current play state
++    /* 0x18 */ CWKeyFrameSkeleton* skeleton;   // Skeleton to animate
++    /* 0x1C */ CWKeyFrameAnimation* animation; // Currently active animation
++    /* 0x20 */ f32 morphFrames;              // Number of frames in which to morph between the previous pose and the current animation
++    /* 0x24 */ Vec3s* jointTable;            // Array of data describing the current pose
++                                             //     size = 1 + limbCount, one root translation followed by rotations for each limb
++    /* 0x28 */ Vec3s* morphTable;            // Array of data describing the current morph pose to interpolate with
++                                             //     size = 1 + limbCount, one root translation followed by rotations for each limb
++    /* 0x2C */ Vec3s* rotOffsetsTable;       // Table of rotations to add to the current pose, may be NULL so that no additional rotations are added
++                                             //     size = limbCount
++} CWKFSkelAnime; // Size = 0x30
++
++typedef struct CWKFSkelAnimeFlex {
++    /* 0x00 */ CWFrameControl frameCtrl;                        // Current play state
++    /* 0x18 */ CWKeyFrameFlexSkeleton* skeleton;                // Skeleton to animate
++    /* 0x1C */ CWKeyFrameAnimation* animation;                  // Currently active animation
++    /* 0x20 */ KeyframeTransformCallback* transformCallbacks; // Pointer to array of limb transform callbacks, indexed by callbackIndex in CWKeyFrameFlexLimb
++    /* 0x24 */ f32 morphFrames;                               // Number of frames in which to morph between the previous pose and the current animation
++    /* 0x28 */ Vec3s* jointTable;                             // Array of data describing the current pose
++                                                              //    size = 3 * limbCount in order of (scale, rotation, translation) for each limb
++    /* 0x2C */ Vec3s* morphTable;                             // Array of data describing the current morph pose to interpolate with
++                                                              //    size = 3 * limbCount in order of (scale, rotation, translation) for each limb
++} CWKFSkelAnimeFlex; // Size = 0x30
++
++void CWFrameCtrl_Reset(CWFrameControl* frameCtrl);
++void CWFrameCtrl_Init(CWFrameControl* frameCtrl);
++void CWFrameCtrl_SetProperties(CWFrameControl* frameCtrl, f32 startTime, f32 endTime, f32 frameCount, f32 t, f32 speed,
++                             s32 animMode);
++s32 CWFrameCtrl_PassCheck(CWFrameControl* frameCtrl, f32 t, f32* remainingTime);
++s32 CWFrameCtrl_UpdateOnce(CWFrameControl* frameCtrl);
++s32 CWFrameCtrl_UpdateLoop(CWFrameControl* frameCtrl);
++s32 CWFrameCtrl_Update(CWFrameControl* frameCtrl);
++
++void CWKeyframe_ResetFlex(CWKFSkelAnimeFlex* kfSkelAnime);
++void CWKeyframe_InitFlex(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton, CWKeyFrameAnimation* animation,
++                       Vec3s* jointTable, Vec3s* morphTable, KeyframeTransformCallback* transformCallbacks);
++void CWKeyframe_DestroyFlex(CWKFSkelAnimeFlex* kfSkelAnime);
++void CWKeyframe_FlexPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation);
++void CWKeyframe_FlexPlayOnceSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed);
++void CWKeyframe_FlexMorphToPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames);
++void CWKeyframe_FlexPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation);
++void CWKeyframe_FlexPlayLoopSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed);
++void CWKeyframe_FlexMorphToPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames);
++void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton, CWKeyFrameAnimation* animation,
++                             f32 startTime, f32 endTime, f32 t, f32 speed, f32 morphFrames, s32 animMode);
++void CWKeyframe_FlexChangeAnimQuick(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation);
++f32 CWKeyframe_Interpolate(f32 t, f32 delta, f32 x0, f32 x1, f32 v0, f32 v1);
++s16 CWKeyframe_KeyCalc(s16 kfStart, s16 kfNum, KeyFrame* keyFrames, f32 t);
++void CWKeyframe_MorphInterpolateRotation(f32 t, s16* out, s16 rot1, s16 rot2);
++void CWKeyframe_MorphInterpolateLinear(s16* jointData, s16* morphData, f32 t);
++void CWKeyframe_FlexMorphInterpolation(CWKFSkelAnimeFlex* kfSkelAnime);
++s32 CWKeyframe_UpdateFlex(CWKFSkelAnimeFlex* kfSkelAnime);
++void CWKeyframe_DrawFlex(struct PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, Mtx* mtxStack,
++                       CWOverrideKeyframeDrawScaled overrideKeyframeDraw, CWPostKeyframeDrawScaled postKeyframeDraw,
++                       void* arg);
++
++
++#endif
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossOwl.c b/soh/soh/Enhancements/CrossWarp/CrossOwl.c
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/CrossWarp/CrossOwl.c
+@@ -0,0 +1,824 @@
++#ifdef COMBO_BUILD
++// Ported from MM ovl_En_Test7: native wing keyframes, feather physics and camera timing.
++// Engine adapters are confined to camera, resources, environment and the final handoff.
++#include "CrossOwl.h"
++extern void SkinMatrix_SetRotateYXZ(MtxF*, s16, s16, s16);
++extern float OTRGetAspectRatio(void);
++#include "CrossWarp.h"
++#include "MMWarpAssets.h"
++#include "soh/ResourceManagerHelpers.h"
++
++// The native MM Soaring screen wipe uses the same actor in effect-only mode.
++static void DrawSoaringWipe(CrossOwl* this, PlayState* play) {
++    Vtx* vertices=Combo_SOHWarpResource(gOceff6Vtx);
++    const int count=Combo_SOHWarpVertexCount(gOceff6Vtx);
++    if(!vertices || count<=0) return;
++    float distance=1220.0f;
++    const float aspect=OTRGetAspectRatio();
++    if(aspect>4.0f/3.0f) distance/=aspect*.85f;
++    const float z=this->timer<32 ? Math_SinS(this->timer*0x200)*distance : distance;
++    const u8 alpha=this->timer>=80 ? 12*(100-this->timer) : 255;
++    for(int i=1;i<count;i+=2) vertices[i].v.cn[3]=alpha;
++    Camera* cam=Play_GetCamera(play,play->activeCamera);
++    OPEN_DISPS(play->state.gfxCtx);
++    gSPComboRMPush(POLY_XLU_DISP++,"mm-warp");
++    Gfx_SetupDL_25Xlu(play->state.gfxCtx);
++    Matrix_Translate(cam->eye.x,cam->eye.y,cam->eye.z,MTXMODE_NEW);
++    Matrix_Scale(.1f,.1f,.1f,MTXMODE_APPLY);
++    Matrix_Mult(&play->billboardMtxF,MTXMODE_APPLY);
++    Matrix_RotateX(0x708*(M_PI/0x8000),MTXMODE_APPLY);
++    Matrix_Translate(0,0,-z,MTXMODE_APPLY);
++    gSPMatrix(POLY_XLU_DISP++,MATRIX_NEWMTX(play->state.gfxCtx),G_MTX_NOPUSH|G_MTX_LOAD|G_MTX_MODELVIEW);
++    CLOSE_DISPS(play->state.gfxCtx);
++    Combo_SOHWarpMaterial(play,ovl_Oceff_Wipe6_Matanimheader_000338,this->timer);
++    OPEN_DISPS(play->state.gfxCtx);
++    gSPDisplayList(POLY_XLU_DISP++,(Gfx*)Combo_SOHWarpResource(gOceff6DL));
++    gSPComboRMPop(POLY_XLU_DISP++);
++    CLOSE_DISPS(play->state.gfxCtx);
++    Combo_SOHRestoreWarpMaterial(play,ovl_Oceff_Wipe6_Matanimheader_000338);
++}
++void Combo_SOHStartSoaringEffect(PlayState* play) {
++    if(!Combo_SOHPrepareWarpAssets()) return;
++    Actor_Spawn(&play->actorCtx,play,ACTOR_COMBO_OWL_WARP,0,0,0,0,0,0,0x100);
++}
++static void Combo_SOHSoaringSound(int phase) {
++    static const u16 sounds[]={NA_SE_PL_MAGIC_WIND_NORMAL,NA_SE_PL_MAGIC_WIND_WARP,
++        NA_SE_EV_LINK_WARP_OUT,NA_SE_PL_MAGIC_WIND_VANISH};
++    Audio_PlaySoundGeneral(sounds[phase],&gSfxDefaultPos,4,&gSfxDefaultFreqAndVolScale,
++        &gSfxDefaultFreqAndVolScale,&gSfxDefaultReverb);
++}
++static void CWEnvironment_LerpAmbientColor(PlayState* play, Color_RGB8* color, f32 lerp) {
++    u8* rgb=(u8*)color;
++    for(int i=0;i<3;i++) play->envCtx.adjAmbientColor[i]=(rgb[i]-play->envCtx.lightSettings.ambientColor[i])*lerp;
++}
++static void CWEnvironment_LerpFogColor(PlayState* play, Color_RGB8* color, f32 lerp) {
++    u8* rgb=(u8*)color;
++    for(int i=0;i<3;i++) play->envCtx.adjFogColor[i]=(rgb[i]-play->envCtx.lightSettings.fogColor[i])*lerp;
++}
++static void CWEnvironment_LerpFog(PlayState* play, s16 nearTarget, s16 farTarget, f32 lerp) {
++    play->envCtx.adjFogNear=(nearTarget-play->envCtx.lightSettings.fogNear)*lerp;
++    play->envCtx.adjFogFar=(farTarget-play->envCtx.lightSettings.fogFar)*lerp;
++}
++
++void CrossOwl_SetupPlayerCamFunc(CrossOwl* this, CrossOwlPlayerCamFunc playerCamFunc) ;
++void CrossOwl_SetupAction(CrossOwl* this, CrossOwlActionFunc actionFunc) ;
++void CrossOwl_InitFeathers(OwlWarpFeather* feathers) ;
++void CrossOwl_AddFeather(OwlWarpFeather* feather, Vec3f* pos, s32 isPosYRand) ;
++void CrossOwl_AddAndChooseFeather(OwlWarpFeather* feathers, Vec3f* pos, s32 isPosYRand) ;
++void CrossOwl_UpdateFeatherType1(PlayState* play, OwlWarpFeather* feather) ;
++void CrossOwl_UpdateFeatherType2(PlayState* play, OwlWarpFeather* feather) ;
++void CrossOwl_UpdateFeathers(PlayState* play, OwlWarpFeather* feathers, CrossOwl* this, s32 arg3, s32 arg4) ;
++void CrossOwl_DrawFeathers(PlayState* play2, OwlWarpFeather* feathers) ;
++void CrossOwl_InitWindCapsule(OwlWarpWindCapsule* windCapsule) ;
++void CrossOwl_WarpCsPart1(CrossOwl* this, PlayState* play) ;
++void CrossOwl_UpdateGrowingWindCapsule(CrossOwl* this, PlayState* play) ;
++void CrossOwl_WarpCsPart2(CrossOwl* this, PlayState* play) ;
++void CrossOwl_WarpCsPart3(CrossOwl* this, PlayState* play) ;
++void CrossOwl_WarpCsPart4(CrossOwl* this, PlayState* play) ;
++void CrossOwl_WarpCsPart5(CrossOwl* this, PlayState* play) ;
++void CrossOwl_WarpCsPart6(CrossOwl* this, PlayState* play) ;
++void CrossOwl_WarpCsWait(CrossOwl* this, PlayState* play) ;
++void CrossOwl_UpdateSubCamWarpCs2(CrossOwl* this, PlayState* play, f32 lerp) ;
++void CrossOwl_UpdateSubCamWarpCs1(CrossOwl* this, PlayState* play, f32 lerp) ;
++void CrossOwl_SpinAndSquishPlayer(CrossOwl* this, PlayState* play, f32 lerp) ;
++void CrossOwl_PlayerAndSubCamAction(CrossOwl* this, PlayState* play) ;
++void CrossOwl_Update(Actor* thisx, PlayState* play) ;
++s32 CrossOwl_OverrideLimbDraw(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, s32 limbIndex, Gfx** dList, u8* flags,
++                             void* thisx, Vec3f* scale, Vec3s* rot, Vec3f* pos) ;
++void CrossOwl_Draw(Actor* thisx, PlayState* play) ;
++
++void CrossOwl_WarpCsWarp(CrossOwl* this, PlayState* play) {
++    Combo_SOHCompleteWarp(play, this->actor.params);
++    Actor_Kill(&this->actor);
++}
++void CrossOwl_Init(Actor* thisx, PlayState* play) {
++    if(thisx->params==0x100) return;
++    CrossOwl* this=(CrossOwl*)thisx;
++    Player* player=GET_PLAYER(play);
++    this->actor.world.rot.y=this->actor.shape.rot.y=player->actor.shape.rot.y;
++    this->playerYaw=player->actor.shape.rot.y;
++    this->playerScaleX=player->actor.scale.x; this->playerScaleZ=player->actor.scale.z;
++    this->playerDrawFunc=player->actor.draw;
++    Actor_SetScale(&this->actor, LINK_IS_ADULT ? 0.015f : 0.01f);
++    CWKeyframe_InitFlex(&this->kfSkelAnime, (void*)gGameplayKeepKFSkel_85640,
++        (void*)gGameplayKeepKFAnim_83534, this->jointTable, this->morphTable, NULL);
++    CWKeyframe_FlexPlayOnce(&this->kfSkelAnime, (void*)gGameplayKeepKFAnim_83534);
++    CrossOwl_InitFeathers(this->feathers); CrossOwl_InitWindCapsule(&this->windCapsule);
++    this->subCamId=Play_CreateSubCamera(play);
++    Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_WAIT);
++    Play_ChangeCameraStatus(play, this->subCamId, CAM_STAT_ACTIVE);
++    Play_CameraSetAtEye(play, this->subCamId, &play->mainCamera.at, &play->mainCamera.eye);
++    Play_CameraSetFov(play, this->subCamId, play->mainCamera.fov);
++    Player_SetCsActionWithHaltedActors(play, &this->actor, 8);
++    player->stateFlags1 |= PLAYER_STATE1_IN_CUTSCENE;
++    this->actionFunc=CrossOwl_WarpCsPart1;
++    this->playerCamFunc=CrossOwl_PlayerAndSubCamAction;
++    Lights_PointNoGlowSetInfo(&this->lightInfo,
++        player->actor.world.pos.x+Math_SinS(this->playerYaw)*90,
++        player->actor.world.pos.y+10, player->actor.world.pos.z+Math_CosS(this->playerYaw)*90,
++        255,255,255,255);
++    this->lightNode=LightContext_InsertLight(play, &play->lightCtx, &this->lightInfo);
++}
++void CrossOwl_Destroy(Actor* thisx, PlayState* play) {
++    if(thisx->params==0x100) return;
++    CrossOwl* this=(CrossOwl*)thisx;
++    Player* player=GET_PLAYER(play);
++    // Game handoff destroys the player category before item-action actors.
++    if(player) {
++        player->actor.draw=this->playerDrawFunc;
++        player->actor.scale.x=this->playerScaleX; player->actor.scale.z=this->playerScaleZ;
++        player->stateFlags1 &= ~PLAYER_STATE1_IN_CUTSCENE;
++        Player_SetCsAction(play, &this->actor, 7);
++    }
++    Play_ClearCamera(play, this->subCamId);
++    Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_ACTIVE);
++    LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
++
++}
++const ActorInit Combo_Owl_Warp_InitVars = {
++    ACTOR_COMBO_OWL_WARP, ACTORCAT_ITEMACTION,
++    ACTOR_FLAG_UPDATE_CULLING_DISABLED|ACTOR_FLAG_DRAW_CULLING_DISABLED|ACTOR_FLAG_UPDATE_DURING_OCARINA,
++    OBJECT_GAMEPLAY_KEEP, sizeof(CrossOwl), CrossOwl_Init, CrossOwl_Destroy, CrossOwl_Update, CrossOwl_Draw, NULL,
++};
++int Combo_SOHStartSoaring(PlayState* play, int destination) {
++    Player* player=GET_PLAYER(play);
++    return Actor_Spawn(&play->actorCtx, play, ACTOR_COMBO_OWL_WARP,
++        player->actor.world.pos.x, player->actor.world.pos.y, player->actor.world.pos.z,
++        0, player->actor.shape.rot.y, 0, destination)!=NULL;
++}
++void CrossOwl_SetupPlayerCamFunc(CrossOwl* this, CrossOwlPlayerCamFunc playerCamFunc) {
++    this->playerCamFunc = playerCamFunc;
++}
++
++void CrossOwl_SetupAction(CrossOwl* this, CrossOwlActionFunc actionFunc) {
++    this->actionFunc = actionFunc;
++}
++
++void CrossOwl_InitFeathers(OwlWarpFeather* feathers) {
++    OwlWarpFeather* feather = feathers;
++    s32 i;
++
++    for (i = 0, feather = feathers; i < OWL_WARP_NUM_FEATHERS; i++, feather++) {
++        s32 pad;
++
++        feather->type = OWL_WARP_FEATHER_TYPE_DISABLED;
++        feather->unk_04 = 0;
++        feather->pos.x = 0.0f;
++        feather->pos.y = 0.0f;
++        feather->pos.z = 0.0f;
++        feather->velocity.x = 0.0f;
++        feather->velocity.y = 0.0f;
++        feather->velocity.z = 0.0f;
++        feather->accel.x = 0.0f;
++        feather->accel.y = 0.0f;
++        feather->accel.z = 0.0f;
++        feather->scale = 0.00001f;
++        feather->rot.x = 0;
++        feather->rot.y = 0;
++        feather->rot.z = 0;
++        feather->angularVelocity.x = 0;
++        feather->angularVelocity.y = 0;
++        feather->angularVelocity.z = 0;
++    }
++}
++
++void CrossOwl_AddFeather(OwlWarpFeather* feather, Vec3f* pos, s32 isPosYRand) {
++    s16 yaw = Rand_ZeroOne() * 0xFFFF;
++    f32 velocityXZ;
++
++    feather->pos = *pos;
++
++    if (isPosYRand) {
++        feather->pos.x += Math_CosS(yaw) * 0.0f;
++        feather->pos.y += (Rand_ZeroOne() * 100.0f) - 20.0f;
++        feather->pos.z += Math_SinS(yaw) * 0.0f;
++    }
++
++    velocityXZ = (Rand_ZeroOne() * 4.0f) + 2.0f;
++
++    feather->velocity.x = Math_CosS(yaw) * velocityXZ;
++    feather->velocity.y = Rand_ZeroOne();
++    feather->velocity.z = Math_SinS(yaw) * velocityXZ;
++
++    feather->accel.x = 0.0f;
++    feather->accel.y = 0.0f;
++    feather->accel.z = 0.0f;
++
++    feather->scale = 0.25f;
++    feather->rot.x = Rand_ZeroOne() * 0x10000;
++    feather->rot.y = Rand_ZeroOne() * 0x10000;
++    feather->rot.z = Rand_ZeroOne() * 0x10000;
++    feather->unk_04 = 60;
++
++    if (Rand_ZeroOne() < 0.9f) {
++        feather->type = OWL_WARP_FEATHER_TYPE_1;
++        feather->rot.x = Rand_ZeroOne() * 0x10000;
++        feather->rot.y = Rand_ZeroOne() * 0x10000;
++        feather->rot.z = Rand_ZeroOne() * 0x10000;
++        feather->angularVelocity.x = 0;
++        feather->angularVelocity.y = 0;
++        feather->angularVelocity.z = 0;
++    } else {
++        feather->type = OWL_WARP_FEATHER_TYPE_2;
++        feather->rot.x = 0;
++        feather->rot.y = 0;
++        feather->rot.z = Rand_ZeroOne() * 5000.0f;
++        feather->angularVelocity.x = 0;
++        feather->angularVelocity.y = (Rand_ZeroOne() * 8000.0f) + 2000.0f;
++        if (Rand_ZeroOne() > 0.5f) {
++            feather->angularVelocity.y = -feather->angularVelocity.y;
++        }
++        feather->angularVelocity.z = 0;
++    }
++}
++
++void CrossOwl_AddAndChooseFeather(OwlWarpFeather* feathers, Vec3f* pos, s32 isPosYRand) {
++    static s32 sFeatherIndex = 0;
++    s32 i;
++    s32 featherAdded = false;
++    OwlWarpFeather* feather;
++    s32 featherIndex;
++
++    for (i = 0, feather = feathers; i < OWL_WARP_NUM_FEATHERS; i++, feather++) {
++        if (feather->type == OWL_WARP_FEATHER_TYPE_DISABLED) {
++            CrossOwl_AddFeather(feather, pos, isPosYRand);
++            sFeatherIndex = i;
++            featherAdded = true;
++            break;
++        }
++    }
++
++    if (!featherAdded) {
++        featherIndex = sFeatherIndex + 1;
++        if (featherIndex >= OWL_WARP_NUM_FEATHERS) {
++            featherIndex = 0;
++        }
++
++        CrossOwl_AddFeather(&feathers[featherIndex], pos, isPosYRand);
++    }
++}
++
++void CrossOwl_UpdateFeatherType1(PlayState* play, OwlWarpFeather* feather) {
++    static Vec3f sUnitVecY = { 0.0f, 1.0f, 0.0f };
++    static Vec3f sUnitVecZ = { 0.0f, 0.0f, 1.0f };
++    static MtxF sFeatherRotMf;
++    static Vec3f sFeatherAccel;
++    static Vec3f sFeatherUnused;
++    s32 swayAngleX = feather->unk_04 % 41;
++    s32 swayAngleY = (feather->unk_04 + 7000) % 41;
++    s32 sp24 = false;
++
++    SkinMatrix_SetRotateZYX(&sFeatherRotMf, feather->rot.x, feather->rot.y, feather->rot.z);
++    SkinMatrix_Vec3fMtxFMultXYZ(&sFeatherRotMf, &sUnitVecY, &sFeatherAccel);
++    SkinMatrix_Vec3fMtxFMultXYZ(&sFeatherRotMf, &sUnitVecZ, &sFeatherUnused);
++
++    if (feather->rot.x < 0x3448) {
++        feather->rot.x += 0x384;
++    } else if (feather->rot.x >= 0x4BB9) {
++        feather->rot.x -= 0x384;
++    } else {
++        feather->rot.x = (Math_SinS(((f32)swayAngleX * 0xFFFF) / 41.0f) * 2000.0f) + 0x4000;
++    }
++
++    if (feather->rot.y < -0xBB8) {
++        feather->rot.y += 0x384;
++    } else if (feather->rot.y > 0xBB8) {
++        feather->rot.y -= 0x384;
++    } else {
++        sp24 = true;
++        feather->rot.y = Math_SinS(((f32)swayAngleY * 0xFFFF) / 41.0f) * 2000.0f;
++    }
++
++    if (sp24 == true) {
++        if (sFeatherAccel.y < 0.0f) {
++            feather->velocity.x += sFeatherAccel.x * 0.5f;
++            feather->velocity.y += sFeatherAccel.y * 0.5f + 0.08f;
++            feather->velocity.z += sFeatherAccel.z * 0.5f;
++        } else {
++            feather->velocity.x += -sFeatherAccel.x * 0.5f;
++            feather->velocity.y += -sFeatherAccel.y * 0.5f + 0.08f;
++            feather->velocity.z += -sFeatherAccel.z * 0.5f;
++        }
++    } else if (sFeatherAccel.y < 0.0f) {
++        feather->velocity.x += sFeatherAccel.x * 0.2f;
++        feather->velocity.y += sFeatherAccel.y * 0.2f + 0.08f;
++        feather->velocity.z += sFeatherAccel.z * 0.2f;
++    } else {
++        feather->velocity.x += -sFeatherAccel.x * 0.2f;
++        feather->velocity.y += -sFeatherAccel.y * 0.2f + 0.08f;
++        feather->velocity.z += -sFeatherAccel.z * 0.2f;
++    }
++
++    feather->pos.x += feather->velocity.x;
++    feather->pos.y += feather->velocity.y;
++    feather->pos.z += feather->velocity.z;
++}
++
++void CrossOwl_UpdateFeatherType2(PlayState* play, OwlWarpFeather* feather) {
++    feather->rot.y += feather->angularVelocity.y;
++
++    feather->accel.x = Rand_Centered();
++    feather->accel.y = Rand_Centered() + -0.01f;
++    feather->accel.z = Rand_Centered();
++
++    feather->velocity.x += feather->accel.x;
++    feather->velocity.y += feather->accel.y;
++    feather->velocity.z += feather->accel.z;
++
++    feather->pos.x += feather->velocity.x;
++    feather->pos.y += feather->velocity.y;
++    feather->pos.z += feather->velocity.z;
++}
++
++void CrossOwl_UpdateFeathers(PlayState* play, OwlWarpFeather* feathers, CrossOwl* this, s32 arg3, s32 arg4) {
++    s32 pad;
++    s32 i;
++    f32 temp_f28;
++    f32 temp_f0;
++    f32 temp_f22;
++    f32 temp_f24;
++    f32 temp_f26;
++    f32 temp_f2;
++    Vec3f sp8C;
++    OwlWarpFeather* feather;
++    s16 phi_s1;
++
++    for (i = 0; i < OWL_WARP_NUM_FEATHERS; i++) {
++        feather = &feathers[i];
++
++        if (feather->type == OWL_WARP_FEATHER_TYPE_DISABLED) {
++            continue;
++        }
++
++        if (feather->type == OWL_WARP_FEATHER_TYPE_1) {
++            CrossOwl_UpdateFeatherType1(play, feather);
++        } else {
++            CrossOwl_UpdateFeatherType2(play, feather);
++        }
++
++        if (arg3) {
++            temp_f22 = feather->pos.x - this->actor.world.pos.x;
++            temp_f24 = feather->pos.z - this->actor.world.pos.z;
++            temp_f0 = SQ(temp_f22) + SQ(temp_f24);
++
++            phi_s1 = -0x2710;
++            if (temp_f0 > SQ(20.0f)) {
++                phi_s1 /= ((temp_f0 - SQ(20.0f)) * 0.00125f) + 1.0f;
++            }
++
++            temp_f26 = (temp_f22 * Math_CosS(phi_s1)) - (temp_f24 * Math_SinS(phi_s1));
++            temp_f28 = (temp_f22 * Math_SinS(phi_s1)) + (temp_f24 * Math_CosS(phi_s1));
++
++            feather->pos.x = this->actor.world.pos.x + temp_f26;
++            feather->pos.z = this->actor.world.pos.z + temp_f28;
++
++            temp_f22 = feather->velocity.x;
++            temp_f24 = feather->velocity.z;
++
++            feather->velocity.x = (temp_f22 * Math_CosS(phi_s1)) - (temp_f24 * Math_SinS(phi_s1));
++            feather->velocity.z = (temp_f22 * Math_SinS(phi_s1)) + (temp_f24 * Math_CosS(phi_s1));
++
++            temp_f22 = feather->accel.x;
++            temp_f24 = feather->accel.z;
++
++            feather->accel.x = (temp_f22 * Math_CosS(phi_s1)) - (temp_f24 * Math_SinS(phi_s1));
++            feather->accel.z = (temp_f22 * Math_SinS(phi_s1)) + (temp_f24 * Math_CosS(phi_s1));
++        }
++
++        if (arg4) {
++            sp8C.x = feather->pos.x - this->actor.world.pos.x;
++            sp8C.y = feather->pos.y - (this->actor.world.pos.y + 40.0f);
++            sp8C.z = feather->pos.z - this->actor.world.pos.z;
++
++            temp_f2 = 1.0f - (0.5f / ((Math3D_Vec3fMagnitude(&sp8C) / 500.0f) + 1.0f));
++
++            sp8C.x *= temp_f2;
++            sp8C.y *= temp_f2;
++            sp8C.z *= temp_f2;
++
++            feather->pos.x = this->actor.world.pos.x + sp8C.x;
++            feather->pos.y = this->actor.world.pos.y + sp8C.y + 40.0f;
++            feather->pos.z = this->actor.world.pos.z + sp8C.z;
++        }
++    }
++}
++
++void CrossOwl_DrawFeathers(PlayState* play2, OwlWarpFeather* feathers) {
++    PlayState* play = play2;
++    s32 i;
++
++    OPEN_DISPS(play->state.gfxCtx);
++
++    Gfx_SetupDL_26Opa(play->state.gfxCtx);
++
++    Matrix_Push();
++
++    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0x80, 255, 255, 255, 255);
++    gDPSetEnvColor(POLY_OPA_DISP++, 255, 255, 255, 255);
++
++    for (i = 0; i < OWL_WARP_NUM_FEATHERS; i++) {
++        Mtx* mtx;
++        MtxF sp6C;
++        OwlWarpFeather* feather = &feathers[i];
++
++        if (feather->type == OWL_WARP_FEATHER_TYPE_DISABLED) {
++            continue;
++        }
++
++        if ((feather->pos.x > 30000.0f) || (feather->pos.x < -30000.0f) || (feather->pos.y > 30000.0f) ||
++            (feather->pos.y < -30000.0f) || (feather->pos.z > 30000.0f) || (feather->pos.z < -30000.0f)) {
++            feather->type = OWL_WARP_FEATHER_TYPE_DISABLED;
++            continue;
++        }
++
++        Matrix_Translate(feather->pos.x, feather->pos.y, feather->pos.z, MTXMODE_NEW);
++
++        if (feather->type == OWL_WARP_FEATHER_TYPE_1) {
++            Matrix_RotateZYX(feather->rot.x, feather->rot.y, feather->rot.z, MTXMODE_APPLY);
++        } else {
++            SkinMatrix_SetRotateYXZ(&sp6C, feather->rot.x, feather->rot.y, feather->rot.z);
++            Matrix_Mult(&sp6C, MTXMODE_APPLY);
++        }
++
++        Matrix_Scale(feather->scale, feather->scale, feather->scale, MTXMODE_APPLY);
++        if (feather->type == OWL_WARP_FEATHER_TYPE_2) {
++            Matrix_Translate(0.0f, 30.0f, 0.0f, MTXMODE_APPLY);
++        }
++
++        mtx = MATRIX_NEWMTX(play->state.gfxCtx);
++        if (mtx == NULL) {
++            continue;
++        }
++        gSPMatrix(POLY_OPA_DISP++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
++        gSPDisplayList(POLY_OPA_DISP++, (Gfx*)Combo_SOHWarpResource(gSoaringWarpCsFeatherDL));
++    }
++
++    Matrix_Pop();
++
++    CLOSE_DISPS(play->state.gfxCtx);
++}
++
++void CrossOwl_InitWindCapsule(OwlWarpWindCapsule* windCapsule) {
++    windCapsule->unk_00 = 0.0f;
++    windCapsule->unk_04 = 0.0f;
++    windCapsule->xzScale = 1.0f;
++    windCapsule->yScale = 1.0f;
++    windCapsule->yaw = 0;
++}
++
++void CrossOwl_WarpCsPart1(CrossOwl* this, PlayState* play) {
++    Color_RGB8 fogColor = { 64, 0, 0 };
++    Color_RGB8 ambientColor = { 220, 220, 255 };
++    f32 envLerp = this->timer / (f32)(10 - 0);
++
++    CWEnvironment_LerpAmbientColor(play, &ambientColor, envLerp);
++    CWEnvironment_LerpFogColor(play, &fogColor, envLerp);
++    CWEnvironment_LerpFog(play, 2000, 4000, envLerp);
++
++    if (this->timer >= 10) {
++        Camera* subCam =
++            Play_GetCamera(play, this->subCamId);
++
++        this->subCamEye = subCam->eye;
++        this->subCamAt = subCam->at;
++        this->subCamFov = subCam->fov;
++
++        CrossOwl_SetupAction(this, CrossOwl_WarpCsPart2);
++        this->flags |= OWL_WARP_FLAGS_20;
++        Combo_SOHSoaringSound(0);
++
++    }
++}
++
++void CrossOwl_UpdateGrowingWindCapsule(CrossOwl* this, PlayState* play) {
++    this->flags |= OWL_WARP_FLAGS_DRAW_WIND_CAPSULE;
++
++    if (this->windCapsule.unk_04 < 11.0f) {
++        this->windCapsule.unk_04 += 0.3f;
++        this->windCapsule.xzScale = ((this->windCapsule.unk_00 * -0.45f) / 11.0f) + 0.7f;
++        this->windCapsule.yScale = ((this->windCapsule.unk_00 * -0.29999998f) / 11.0f) + 0.7f;
++    }
++
++    if (this->windCapsule.unk_00 < 11.0f) {
++        this->windCapsule.unk_00 += 1.0f;
++        if (this->windCapsule.unk_00 > 6.0f) {
++            Player* player = GET_PLAYER(play);
++
++            this->flags &= ~OWL_WARP_FLAGS_DRAW_WINGS;
++            player->actor.draw = NULL;
++        }
++    } else if (this->timer > 86) {
++        CrossOwl_SetupAction(this, CrossOwl_WarpCsPart4);
++        this->flags &= ~OWL_WARP_FLAGS_8;
++        this->windCapsule.yaw -= 0x2EE0;
++    } else {
++        this->windCapsule.yaw -= 0x2EE0;
++    }
++}
++
++void CrossOwl_WarpCsPart2(CrossOwl* this, PlayState* play) {
++    Vec3f featherPos;
++
++    if (CWKeyframe_UpdateFlex(&this->kfSkelAnime)) {
++        CrossOwl_SetupAction(this, CrossOwl_WarpCsPart3);
++    }
++
++    if (this->kfSkelAnime.frameCtrl.curTime > 60.0f) {
++        CrossOwl_UpdateGrowingWindCapsule(this, play);
++    }
++
++    if ((this->kfSkelAnime.frameCtrl.curTime > 20.0f) && !(this->flags & OWL_WARP_FLAGS_40)) {
++        this->flags |= OWL_WARP_FLAGS_40;
++        Combo_SOHSoaringSound(1);
++    }
++
++    if (this->kfSkelAnime.frameCtrl.curTime > 42.0f) {
++        if (!(this->flags & OWL_WARP_FLAGS_80)) {
++            this->flags |= OWL_WARP_FLAGS_80;
++            Combo_SOHSoaringSound(2);
++        }
++
++        if (Rand_ZeroOne() < 0.3f) {
++            Camera* subCam =
++                Play_GetCamera(play, this->subCamId);
++            f32 randLerp = Rand_ZeroOne();
++
++            featherPos.x = LERP(this->actor.world.pos.x, subCam->eye.x, randLerp);
++            featherPos.y = LERP(this->actor.world.pos.y, subCam->eye.y, randLerp);
++            featherPos.z = LERP(this->actor.world.pos.z, subCam->eye.z, randLerp);
++
++            CrossOwl_AddAndChooseFeather(this->feathers, &featherPos, true);
++            this->flags |= OWL_WARP_FLAGS_8;
++        }
++    } else {
++        this->flags |= OWL_WARP_FLAGS_DRAW_WINGS;
++    }
++}
++
++void CrossOwl_WarpCsPart3(CrossOwl* this, PlayState* play) {
++    Vec3f featherPos;
++    Camera* subCam;
++    f32 randLerp;
++
++    CrossOwl_UpdateGrowingWindCapsule(this, play);
++
++    if (Rand_ZeroOne() < 0.3f) {
++        subCam = Play_GetCamera(play, this->subCamId);
++        randLerp = Rand_ZeroOne();
++
++        featherPos.x = LERP(this->actor.world.pos.x, subCam->eye.x, randLerp);
++        featherPos.y = LERP(this->actor.world.pos.y, subCam->eye.y, randLerp);
++        featherPos.z = LERP(this->actor.world.pos.z, subCam->eye.z, randLerp);
++
++        CrossOwl_AddAndChooseFeather(this->feathers, &featherPos, true);
++    }
++
++    Math_Vec3f_Copy(&featherPos, &this->actor.world.pos);
++    CrossOwl_AddAndChooseFeather(this->feathers, &featherPos, true);
++    this->jointTable[1].y += 0x2EE0;
++}
++
++void CrossOwl_WarpCsPart4(CrossOwl* this, PlayState* play) {
++    s32 pad;
++    s32 temp = this->timer - 86;
++    f32 temp_f0 = temp / (f32)(96 - 86);
++    Vec3f featherPos;
++
++    this->flags |= OWL_WARP_FLAGS_10;
++
++    this->windCapsule.xzScale = (-0.15f * temp_f0) + 0.25f;
++    this->windCapsule.yScale = (-0.3f * temp_f0) + 0.4f;
++    this->windCapsule.yaw -= 0x2EE0;
++
++    this->flags |= OWL_WARP_FLAGS_DRAW_LENS_FLARE;
++
++    if (this->timer >= 96) {
++        CrossOwl_SetupAction(this, CrossOwl_WarpCsPart5);
++        this->flags &= ~OWL_WARP_FLAGS_10;
++    }
++    Math_Vec3f_Copy(&featherPos, &this->actor.world.pos);
++    CrossOwl_AddAndChooseFeather(this->feathers, &featherPos, true);
++}
++
++void CrossOwl_WarpCsPart5(CrossOwl* this, PlayState* play) {
++    s32 pad;
++    s32 temp = this->timer - 96;
++    f32 lerp = 1.0f - (temp / (f32)(100 - 96));
++    Camera* subCam;
++    f32 temp_f2;
++    f32 temp_f4;
++
++    this->windCapsule.xzScale = ((temp * -0.1f) / 4) + 0.1f;
++    this->windCapsule.yScale = ((temp * 5.9f) / 4) + 0.1f;
++    this->windCapsule.yaw -= 0x2EE0;
++
++    this->actor.world.pos.y += 100.0f;
++
++    subCam = Play_GetCamera(play, this->subCamId);
++    subCam->player = NULL;
++
++    subCam->eye.x = LERP(this->subCamEye.x, subCam->eye.x, lerp);
++    subCam->eye.y = LERP(this->subCamEye.y, subCam->eye.y, lerp);
++    subCam->eye.z = LERP(this->subCamEye.z, subCam->eye.z, lerp);
++
++    subCam->fov = LERP(this->subCamFov, subCam->fov, lerp);
++
++    if (this->timer >= 100) {
++        play->envCtx.fillScreen = true;
++        play->envCtx.screenFillColor[0] = 255;
++        play->envCtx.screenFillColor[1] = 255;
++        play->envCtx.screenFillColor[2] = 255;
++        play->envCtx.screenFillColor[3] = 255;
++        
++        this->flags &= ~OWL_WARP_FLAGS_DRAW_LENS_FLARE;
++        CrossOwl_SetupAction(this, CrossOwl_WarpCsPart6);
++    
++    }
++}
++
++void CrossOwl_WarpCsPart6(CrossOwl* this, PlayState* play) {
++    s32 sp2C = this->timer - 100;
++    f32 envLerp;
++    Color_RGB8 fogColor = { 64, 0, 0 };
++    Color_RGB8 ambientColor = { 220, 220, 255 };
++
++    if (play->envCtx.fillScreen) {
++        Combo_SOHSoaringSound(3);
++        play->envCtx.fillScreen = false;
++        play->envCtx.screenFillColor[0] = 0;
++        play->envCtx.screenFillColor[1] = 0;
++        play->envCtx.screenFillColor[2] = 0;
++        play->envCtx.screenFillColor[3] = 0;
++    }
++
++    envLerp = 1.0f - (sp2C / (f32)(110 - 100));
++    CWEnvironment_LerpAmbientColor(play, &ambientColor, envLerp);
++    CWEnvironment_LerpFogColor(play, &fogColor, envLerp);
++    CWEnvironment_LerpFog(play, 2000, 4000, envLerp);
++
++    if (this->timer >= 110) {
++        CrossOwl_SetupAction(this, CrossOwl_WarpCsWait);
++    }
++}
++
++void CrossOwl_WarpCsWait(CrossOwl* this, PlayState* play) {
++    if (this->timer >= 130) {
++        CrossOwl_SetupAction(this, CrossOwl_WarpCsWarp);
++    }
++}
++
++void CrossOwl_UpdateSubCamWarpCs2(CrossOwl* this, PlayState* play, f32 lerp) {
++    Vec3f eyeNext;
++    Vec3f* playerPos;
++    Player* player = GET_PLAYER(play);
++    Camera* subCam =
++        Play_GetCamera(play, this->subCamId);
++
++    playerPos = &player->actor.world.pos;
++    subCam->player = NULL;
++
++    eyeNext.x = playerPos->x + 180.0f * Math_SinS(this->playerYaw) * Math_CosS(0xFA0);
++    eyeNext.y = playerPos->y + 180.0f * Math_SinS(0xFA0);
++    eyeNext.z = playerPos->z + 180.0f * Math_CosS(this->playerYaw) * Math_CosS(0xFA0);
++
++    subCam->eye.x = LERP(subCam->eye.x, eyeNext.x, lerp);
++    subCam->eye.y = LERP(subCam->eye.y, eyeNext.y, lerp);
++    subCam->eye.z = LERP(subCam->eye.z, eyeNext.z, lerp);
++
++    subCam->fov = LERP(subCam->fov, this->subCamFov, lerp);
++
++    subCam->at.y += 1.4444444f;
++}
++
++void CrossOwl_UpdateSubCamWarpCs1(CrossOwl* this, PlayState* play, f32 lerp) {
++    Vec3f* playerPos;
++    Player* player = GET_PLAYER(play);
++    Camera* subCam =
++        Play_GetCamera(play, this->subCamId);
++    Vec3f eyeNext;
++
++    subCam->player = NULL;
++
++    playerPos = &player->actor.world.pos;
++
++    eyeNext.x = playerPos->x + 80.0f * Math_SinS(this->playerYaw) * Math_CosS(0xBB8);
++    eyeNext.y = playerPos->y + 80.0f * Math_SinS(0xBB8);
++    eyeNext.z = playerPos->z + 80.0f * Math_CosS(this->playerYaw) * Math_CosS(0xBB8);
++
++    subCam->eye.x = LERP(subCam->eye.x, eyeNext.x, lerp);
++    subCam->eye.y = LERP(subCam->eye.y, eyeNext.y, lerp);
++    subCam->eye.z = LERP(subCam->eye.z, eyeNext.z, lerp);
++
++    subCam->at.x = LERP(subCam->at.x, playerPos->x, lerp);
++    subCam->at.y = LERP(subCam->at.y, playerPos->y + 40.0f, lerp);
++    subCam->at.z = LERP(subCam->at.z, playerPos->z, lerp);
++
++    subCam->fov = LERP(subCam->fov, this->subCamFov, lerp);
++}
++
++void CrossOwl_SpinAndSquishPlayer(CrossOwl* this, PlayState* play, f32 lerp) {
++    Player* player = GET_PLAYER(play);
++
++    // Spin Player
++    player->actor.shape.rot.y += 0x2EE0;
++
++    // Squish Player thin
++    player->actor.scale.x = LERP(this->playerScaleX, 0.0f, lerp);
++    player->actor.scale.z = LERP(this->playerScaleZ, 0.0f, lerp);
++}
++
++void CrossOwl_PlayerAndSubCamAction(CrossOwl* this, PlayState* play) {
++    f32 lerp;
++
++    if ((this->timer >= 12) && (this->timer <= 30)) {
++        lerp = (this->timer - 12) / (f32)(30 - 12);
++        CrossOwl_UpdateSubCamWarpCs2(this, play, lerp);
++    } else if ((this->timer >= 79) && (this->timer <= 95)) {
++        lerp = (this->timer - 79) / (f32)(95 - 79);
++        CrossOwl_UpdateSubCamWarpCs1(this, play, lerp);
++    }
++
++    if ((this->timer >= 42) && (this->timer <= 68)) {
++        lerp = (this->timer - 42) / (f32)(68 - 42);
++        CrossOwl_SpinAndSquishPlayer(this, play, lerp);
++    }
++}
++
++void CrossOwl_Update(Actor* thisx, PlayState* play) {
++    CrossOwl* this=(CrossOwl*)thisx;
++    // MM's authored animation runs at 30 Hz, compared with OoT's 20 Hz.
++    this->nativeTick+=3;
++    while(this->nativeTick>=2) {
++        this->nativeTick-=2;
++        if(thisx->params==0x100) {
++            if(++this->timer>=100) { Actor_Kill(thisx); break; }
++            continue;
++        }
++        this->actionFunc(this,play);
++        if(thisx->update==NULL) break;
++        if(this->playerCamFunc) this->playerCamFunc(this,play);
++        this->timer++;
++        CrossOwl_UpdateFeathers(play,this->feathers,this,
++            (this->flags&OWL_WARP_FLAGS_8)!=0,(this->flags&OWL_WARP_FLAGS_10)!=0);
++    }
++}
++
++s32 CrossOwl_OverrideLimbDraw(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, s32 limbIndex, Gfx** dList, u8* flags,
++                             void* thisx, Vec3f* scale, Vec3s* rot, Vec3f* pos) {
++    CrossOwl* this = (CrossOwl*)thisx;
++    Vec3f featherPos;
++
++    if ((*dList != NULL) && (Rand_ZeroOne() < 0.03f)) {
++        Matrix_MultVec3f(&(Vec3f){0,0,0}, &featherPos);
++        CrossOwl_AddAndChooseFeather(this->feathers, &featherPos, false);
++    }
++    return true;
++}
++
++void CrossOwl_Draw(Actor* thisx, PlayState* play) {
++    if(thisx->params==0x100) { DrawSoaringWipe((CrossOwl*)thisx,play); return; }
++    OPEN_DISPS(play->state.gfxCtx);
++    gSPComboRMPush(POLY_OPA_DISP++, "mm-warp");
++    gSPComboRMPush(POLY_XLU_DISP++, "mm-warp");
++    CLOSE_DISPS(play->state.gfxCtx);
++    s32 pad[2];
++    CrossOwl* this = (CrossOwl*)thisx;
++    s32 sp40;
++
++    // Draw wings
++    if (this->flags & OWL_WARP_FLAGS_DRAW_WINGS) {
++        Mtx* mtxStack = Graph_Alloc(play->state.gfxCtx, this->kfSkelAnime.skeleton->dListCount * sizeof(Mtx));
++
++        if (mtxStack != NULL)
++        CWKeyframe_DrawFlex(play, &this->kfSkelAnime, mtxStack, CrossOwl_OverrideLimbDraw, NULL, &this->actor);
++    }
++
++    // Draw windCapsule encasing that surrounds player after wings
++    if (this->flags & OWL_WARP_FLAGS_DRAW_WIND_CAPSULE) {
++        Matrix_Push();
++        Matrix_Translate(0.0f, 4000.0f, 0.0f, MTXMODE_APPLY);
++        Matrix_RotateZYX(0, this->windCapsule.yaw, 0, MTXMODE_APPLY);
++        Matrix_Scale(this->windCapsule.xzScale * 100.0f, this->windCapsule.yScale * 100.0f,
++                     this->windCapsule.xzScale * 100.0f, MTXMODE_APPLY);
++        sp40 = this->windCapsule.unk_00;
++        Combo_SOHWindMaterial(play, sp40);
++        OPEN_DISPS(play->state.gfxCtx);
++        gSPMatrix(POLY_XLU_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_NOPUSH|G_MTX_LOAD|G_MTX_MODELVIEW);
++        gSPDisplayList(POLY_XLU_DISP++, (Gfx*)Combo_SOHWarpResource(gSoaringWarpCsWindCapsuleDL));
++        CLOSE_DISPS(play->state.gfxCtx);
++        Combo_SOHRestoreWarpMaterial(play,gSoaringWarpCsWindCapsuleTexAnim);
++        Matrix_Pop();
++    }
++
++    CrossOwl_DrawFeathers(play, this->feathers);
++
++    if (this->flags & OWL_WARP_FLAGS_DRAW_LENS_FLARE) {
++        Environment_DrawLensFlare(play, &play->envCtx, &play->view, play->state.gfxCtx, this->actor.world.pos, 0, 70,
++                                  5.0f, 0, false);
++    }
++    OPEN_DISPS(play->state.gfxCtx);
++    gSPComboRMPop(POLY_OPA_DISP++); gSPComboRMPop(POLY_XLU_DISP++);
++    CLOSE_DISPS(play->state.gfxCtx);
++}
++
++#endif
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossOwl.h b/soh/soh/Enhancements/CrossWarp/CrossOwl.h
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/CrossWarp/CrossOwl.h
+@@ -0,0 +1,76 @@
++#ifndef Z_EN_TEST7_H
++#define Z_EN_TEST7_H
++
++#include "global.h"
++#include "CrossKeyframe.h"
++
++struct CrossOwl;
++
++typedef void (*CrossOwlPlayerCamFunc)(struct CrossOwl*, PlayState*);
++typedef void (*CrossOwlActionFunc)(struct CrossOwl*, PlayState*);
++
++#define OWL_WARP_CS_GET_OCARINA_MODE(thisx) ((thisx)->params)
++
++#define ENTEST7_ARRIVE -1
++
++typedef struct {
++    /* 0x00 */ f32 unk_00;
++    /* 0x04 */ f32 unk_04;
++    /* 0x08 */ f32 xzScale;
++    /* 0x0C */ f32 yScale;
++    /* 0x10 */ s16 yaw;
++} OwlWarpWindCapsule; // size = 0x14
++
++typedef enum OwlWarpFeatherType {
++    /* 0 */ OWL_WARP_FEATHER_TYPE_DISABLED,
++    /* 1 */ OWL_WARP_FEATHER_TYPE_1,
++    /* 2 */ OWL_WARP_FEATHER_TYPE_2
++} OwlWarpFeatherType;
++
++typedef struct {
++    /* 0x00 */ OwlWarpFeatherType type;
++    /* 0x04 */ s32 unk_04;
++    /* 0x08 */ Vec3f pos;
++    /* 0x14 */ Vec3f velocity;
++    /* 0x20 */ Vec3f accel;
++    /* 0x2C */ f32 scale;
++    /* 0x30 */ Vec3s rot;
++    /* 0x36 */ Vec3s angularVelocity;
++} OwlWarpFeather; // size = 0x3C
++
++#define OWL_WARP_NUM_FEATHERS 100
++
++#define OWL_WARP_FLAGS_DRAW_WINGS (1 << 0)
++#define OWL_WARP_FLAGS_DRAW_WIND_CAPSULE (1 << 1)
++#define OWL_WARP_FLAGS_DRAW_LENS_FLARE (1 << 2)
++#define OWL_WARP_FLAGS_8 (1 << 3)
++#define OWL_WARP_FLAGS_10 (1 << 4)
++#define OWL_WARP_FLAGS_20 (1 << 5)
++#define OWL_WARP_FLAGS_40 (1 << 6)
++#define OWL_WARP_FLAGS_80 (1 << 7)
++
++typedef struct CrossOwl {
++    /* 0x0000 */ Actor actor;
++    /* 0x0144 */ s32 flags;
++    /* 0x0148 */ OwlWarpWindCapsule windCapsule;
++    /* 0x015C */ OwlWarpFeather feathers[OWL_WARP_NUM_FEATHERS];
++    /* 0x18CC */ CWKFSkelAnimeFlex kfSkelAnime;
++    /* 0x18FC */ Vec3s jointTable[114];
++    /* 0x1BA8 */ Vec3s morphTable[114];
++    /* 0x1E54 */ s32 timer;
++    /* 0x1E58 */ CrossOwlActionFunc actionFunc;
++    /* 0x1E5C */ CrossOwlPlayerCamFunc playerCamFunc;
++    /* 0x1E60 */ Vec3f subCamEye;
++    /* 0x1E6C */ Vec3f subCamAt;
++    /* 0x1E78 */ f32 subCamFov;
++    /* 0x1E7C */ LightNode* lightNode;
++    /* 0x1E80 */ LightInfo lightInfo;
++    /* 0x1E8E */ s16 playerYaw;
++    /* 0x1E90 */ f32 playerScaleX;
++    /* 0x1E94 */ f32 playerScaleZ;
++    /* 0x1E98 */ ActorFunc playerDrawFunc;
++    s16 subCamId;
++    int nativeTick;
++} CrossOwl; // size = 0x1E9C
++
++#endif // Z_EN_TEST7_H
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossSoaringMap.c b/soh/soh/Enhancements/CrossWarp/CrossSoaringMap.c
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/CrossWarp/CrossSoaringMap.c
+@@ -0,0 +1,1127 @@
++#ifdef COMBO_BUILD
++#include "CrossWarp.h"
++#include "MMWarpAssets.h"
++#include "soh/ResourceManagerHelpers.h"
++#ifndef COMBO_PAUSE_STATE_DEFS_H
++#define COMBO_PAUSE_STATE_DEFS_H
++
++#define PAUSE_STATE_OWLWARP_0       0x101
++#define PAUSE_STATE_OWLWARP_1       0x102
++#define PAUSE_STATE_OWLWARP_2       0x103
++#define PAUSE_STATE_OWLWARP_3       0x104
++#define PAUSE_STATE_OWLWARP_SELECT  0x106
++#define PAUSE_STATE_OWLWARP_CONFIRM 0x107
++#define PAUSE_STATE_OWLWARP_6       0x112
++
++#define PAUSE_ITEM_NONE 999
++
++#define PAUSE_CURSOR_PAGE_LEFT 10
++#define PAUSE_CURSOR_PAGE_RIGHT 11
++
++#define PAGE_BG_COLS 3
++#define PAGE_BG_ROWS 5
++#define PAGE_BG_QUADS (PAGE_BG_COLS * PAGE_BG_ROWS)
++#define PAGE_BG_QUAD_WIDTH 80
++#define PAGE_BG_QUAD_HEIGHT 32
++#define PAGE_BG_QUAD_TEX_WIDTH 80
++#define PAGE_BG_QUAD_TEX_HEIGHT 32
++
++#define TMEM_SIZE 0x1000
++
++#define WORLD_MAP_IMAGE_WIDTH 216
++#define WORLD_MAP_IMAGE_HEIGHT 128
++#define WORLD_MAP_IMAGE_FRAG_HEIGHT ((TMEM_SIZE / 2) / (WORLD_MAP_IMAGE_WIDTH * G_IM_SIZ_8b_BYTES))
++#define WORLD_MAP_IMAGE_FRAG_NUM (((WORLD_MAP_IMAGE_HEIGHT - 1) / WORLD_MAP_IMAGE_FRAG_HEIGHT) + 1)
++#define WORLD_MAP_NUM_CLOUDS 15
++
++#define VTX_PAGE_MAP_WORLD_QUADS 36  /* VTX_PAGE_MAP_WORLD */
++
++#endif
++
++
++#define PAUSE_WORLD_MAP 4
++#define VTX_PAGE_MAX 1
++#define OWL_WARP_MAX 11
++#define VTX_PAGE_MAP_WORLD 0
++#define QUAD_MAP_PAGE_WORLD_CLOUDS_FIRST 15
++#define QUAD_MAP_PAGE_WORLD_WARP_FIRST 41
++#define QUAD_MAP_PAGE_WORLD_IMAGE_FIRST 51
++#define PAUSE_QUAD_CURSOR_MAX 5
++#define PAUSE_MAIN_STATE_IDLE 0
++#define PAUSE_MAIN_STATE_IDLE_CURSOR_ON_SONG 8
++static PauseContext sSavedPause;
++static PlayState* sMapPlay;
++static uint32_t sChoices;
++static int sStick, sRepeat;
++static float sMapPageRoll;
++static float sMapVerticalOffset;
++static int sMapTick, sMapReply;
++static u16 sSavedHud;
++static s16 R_PAUSE_OWLWARP_ALPHA=120;
++extern uint32_t SOH_ForeignSongChoices(void);
++extern void SOH_ForeignSongChoose(int);
++extern void Combo_SOHMapConfirm(int source);
++extern void KaleidoScope_SetView(PauseContext*, f32, f32, f32);
++extern Gfx* KaleidoScope_DrawPageSections(Gfx*, Vtx*, void*);
++static s16 sVtxPageMapWorldQuadsX[VTX_PAGE_MAP_WORLD_QUADS] = {
++    -41,  /* mapPageVtx[60] QUAD_MAP_WORLD_CLOUDS_CLOCK_TOWN_1 */
++    9,    /* mapPageVtx[64] QUAD_MAP_WORLD_CLOUDS_CLOCK_TOWN_2 */
++    43,   /* mapPageVtx[68] QUAD_MAP_WORLD_CLOUDS_WOODFALL_1 */
++    -21,  /* mapPageVtx[72] QUAD_MAP_WORLD_CLOUDS_WOODFALL_2 */
++    -37,  /* mapPageVtx[76] QUAD_MAP_WORLD_CLOUDS_WOODFALL_3 */
++    43,   /* mapPageVtx[80] QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_1 */
++    -69,  /* mapPageVtx[84] QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_2 */
++    -69,  /* mapPageVtx[88] QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_3 */
++    -32,  /* mapPageVtx[92] QUAD_MAP_WORLD_CLOUDS_ROMANI_RANCH */
++    -109, /* mapPageVtx[96] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_1 */
++    -45,  /* mapPageVtx[100] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_2 */
++    -109, /* mapPageVtx[104] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_3 */
++    -45,  /* mapPageVtx[108] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_4 */
++    59,   /* mapPageVtx[112] QUAD_MAP_WORLD_CLOUDS_STONE_TOWER_1 */
++    -5,   /* mapPageVtx[116] QUAD_MAP_WORLD_CLOUDS_STONE_TOWER_2 */
++    -70,  /* mapPageVtx[120] QUAD_MAP_REGION_GREAT_BAY */
++    -52,  /* mapPageVtx[124] QUAD_MAP_REGION_ZORA_HALL */
++    -11,  /* mapPageVtx[128] QUAD_MAP_REGION_ROMANI_RANCH */
++    -2,   /* mapPageVtx[132] QUAD_MAP_REGION_DEKU_PALACE */
++    8,    /* mapPageVtx[136] QUAD_MAP_REGION_WOODFALL */
++    2,    /* mapPageVtx[140] QUAD_MAP_REGION_CLOCK_TOWN */
++    1,    /* mapPageVtx[144] QUAD_MAP_REGION_SNOWHEAD */
++    43,   /* mapPageVtx[148] QUAD_MAP_REGION_IKANA_GRAVEYARD */
++    52,   /* mapPageVtx[152] QUAD_MAP_REGION_IKANA_CANYON */
++    54,   /* mapPageVtx[156] QUAD_MAP_REGION_GORON_VILLAGE */
++    62,   /* mapPageVtx[160] QUAD_MAP_REGION_STONE_TOWER */
++    -80,  /* mapPageVtx[164] QUAD_MAP_OWL_WARP_GREAT_BAY_COAST */
++    -64,  /* mapPageVtx[168] QUAD_MAP_OWL_WARP_ZORA_CAPE */
++    -9,   /* mapPageVtx[172] QUAD_MAP_OWL_WARP_SNOWHEAD */
++    -3,   /* mapPageVtx[176] QUAD_MAP_OWL_WARP_MOUNTAIN_VILLAGE */
++    -7,   /* mapPageVtx[180] QUAD_MAP_OWL_WARP_CLOCK_TOWN */
++    -16,  /* mapPageVtx[184] QUAD_MAP_OWL_WARP_MILK_ROAD */
++    -1,   /* mapPageVtx[188] QUAD_MAP_OWL_WARP_WOODFALL */
++    23,   /* mapPageVtx[192] QUAD_MAP_OWL_WARP_SOUTHERN_SWAMP */
++    44,   /* mapPageVtx[196] QUAD_MAP_OWL_WARP_IKANA_CANYON */
++    54,   /* mapPageVtx[200] QUAD_MAP_OWL_WARP_STONE_TOWER */
++};
++
++static s16 gVtxPageMapWorldQuadsWidth[VTX_PAGE_MAP_WORLD_QUADS] = {
++    80,  /* mapPageVtx[60]  QUAD_MAP_WORLD_CLOUDS_CLOCK_TOWN_1 */
++    64,  /* mapPageVtx[64]  QUAD_MAP_WORLD_CLOUDS_CLOCK_TOWN_2 */
++    64,  /* mapPageVtx[68]  QUAD_MAP_WORLD_CLOUDS_WOODFALL_1 */
++    64,  /* mapPageVtx[72]  QUAD_MAP_WORLD_CLOUDS_WOODFALL_2 */
++    16,  /* mapPageVtx[76]  QUAD_MAP_WORLD_CLOUDS_WOODFALL_3 */
++    64,  /* mapPageVtx[80]  QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_1 */
++    112, /* mapPageVtx[84]  QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_2 */
++    112, /* mapPageVtx[88]  QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_3 */
++    48,  /* mapPageVtx[92]  QUAD_MAP_WORLD_CLOUDS_ROMANI_RANCH */
++    64,  /* mapPageVtx[96]  QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_1 */
++    64,  /* mapPageVtx[100] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_2 */
++    64,  /* mapPageVtx[104] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_3 */
++    64,  /* mapPageVtx[108] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_4 */
++    48,  /* mapPageVtx[112] QUAD_MAP_WORLD_CLOUDS_STONE_TOWER_1 */
++    64,  /* mapPageVtx[116] QUAD_MAP_WORLD_CLOUDS_STONE_TOWER_2 */
++    8,   /* mapPageVtx[120] QUAD_MAP_REGION_GREAT_BAY */
++    8,   /* mapPageVtx[124] QUAD_MAP_REGION_ZORA_HALL */
++    8,   /* mapPageVtx[128] QUAD_MAP_REGION_ROMANI_RANCH */
++    8,   /* mapPageVtx[132] QUAD_MAP_REGION_DEKU_PALACE */
++    8,   /* mapPageVtx[136] QUAD_MAP_REGION_WOODFALL */
++    8,   /* mapPageVtx[140] QUAD_MAP_REGION_CLOCK_TOWN */
++    8,   /* mapPageVtx[144] QUAD_MAP_REGION_SNOWHEAD */
++    8,   /* mapPageVtx[148] QUAD_MAP_REGION_IKANA_GRAVEYARD */
++    8,   /* mapPageVtx[152] QUAD_MAP_REGION_IKANA_CANYON */
++    8,   /* mapPageVtx[156] QUAD_MAP_REGION_GORON_VILLAGE */
++    8,   /* mapPageVtx[160] QUAD_MAP_REGION_STONE_TOWER */
++    24,  /* mapPageVtx[164] QUAD_MAP_OWL_WARP_GREAT_BAY_COAST */
++    24,  /* mapPageVtx[168] QUAD_MAP_OWL_WARP_ZORA_CAPE */
++    24,  /* mapPageVtx[172] QUAD_MAP_OWL_WARP_SNOWHEAD */
++    24,  /* mapPageVtx[176] QUAD_MAP_OWL_WARP_MOUNTAIN_VILLAGE */
++    24,  /* mapPageVtx[180] QUAD_MAP_OWL_WARP_CLOCK_TOWN */
++    24,  /* mapPageVtx[184] QUAD_MAP_OWL_WARP_MILK_ROAD */
++    24,  /* mapPageVtx[188] QUAD_MAP_OWL_WARP_WOODFALL */
++    24,  /* mapPageVtx[192] QUAD_MAP_OWL_WARP_SOUTHERN_SWAMP */
++    24,  /* mapPageVtx[196] QUAD_MAP_OWL_WARP_IKANA_CANYON */
++    24,  /* mapPageVtx[200] QUAD_MAP_OWL_WARP_STONE_TOWER */
++};
++static s16 sVtxPageMapWorldQuadsY[VTX_PAGE_MAP_WORLD_QUADS] = {
++    11,  /* mapPageVtx[60] QUAD_MAP_WORLD_CLOUDS_CLOCK_TOWN_1 */
++    22,  /* mapPageVtx[64] QUAD_MAP_WORLD_CLOUDS_CLOCK_TOWN_2 */
++    -16, /* mapPageVtx[68] QUAD_MAP_WORLD_CLOUDS_WOODFALL_1 */
++    -16, /* mapPageVtx[72] QUAD_MAP_WORLD_CLOUDS_WOODFALL_2 */
++    -16, /* mapPageVtx[76] QUAD_MAP_WORLD_CLOUDS_WOODFALL_3 */
++    59,  /* mapPageVtx[80] QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_1 */
++    24,  /* mapPageVtx[84] QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_2 */
++    59,  /* mapPageVtx[88] QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_3 */
++    -11, /* mapPageVtx[92] QUAD_MAP_WORLD_CLOUDS_ROMANI_RANCH */
++    -5,  /* mapPageVtx[96] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_1 */
++    -5,  /* mapPageVtx[100] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_2 */
++    59,  /* mapPageVtx[104] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_3 */
++    59,  /* mapPageVtx[108] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_4 */
++    39,  /* mapPageVtx[112] QUAD_MAP_WORLD_CLOUDS_STONE_TOWER_1 */
++    31,  /* mapPageVtx[116] QUAD_MAP_WORLD_CLOUDS_STONE_TOWER_2 */
++    -10, /* mapPageVtx[120] QUAD_MAP_REGION_GREAT_BAY */
++    -36, /* mapPageVtx[124] QUAD_MAP_REGION_ZORA_HALL */
++    -19, /* mapPageVtx[128] QUAD_MAP_REGION_ROMANI_RANCH */
++    -53, /* mapPageVtx[132] QUAD_MAP_REGION_DEKU_PALACE */
++    -27, /* mapPageVtx[136] QUAD_MAP_REGION_WOODFALL */
++    -2,  /* mapPageVtx[140] QUAD_MAP_REGION_CLOCK_TOWN */
++    41,  /* mapPageVtx[144] QUAD_MAP_REGION_SNOWHEAD */
++    11,  /* mapPageVtx[148] QUAD_MAP_REGION_IKANA_GRAVEYARD */
++    -3,  /* mapPageVtx[152] QUAD_MAP_REGION_IKANA_CANYON */
++    45,  /* mapPageVtx[156] QUAD_MAP_REGION_GORON_VILLAGE */
++    18,  /* mapPageVtx[160] QUAD_MAP_REGION_STONE_TOWER */
++    -8,  /* mapPageVtx[164] QUAD_MAP_OWL_WARP_GREAT_BAY_COAST */
++    -38, /* mapPageVtx[168] QUAD_MAP_OWL_WARP_ZORA_CAPE */
++    39,  /* mapPageVtx[172] QUAD_MAP_OWL_WARP_SNOWHEAD */
++    26,  /* mapPageVtx[176] QUAD_MAP_OWL_WARP_MOUNTAIN_VILLAGE */
++    1,   /* mapPageVtx[180] QUAD_MAP_OWL_WARP_CLOCK_TOWN */
++    -7,  /* mapPageVtx[184] QUAD_MAP_OWL_WARP_MILK_ROAD */
++    -28, /* mapPageVtx[188] QUAD_MAP_OWL_WARP_WOODFALL */
++    -27, /* mapPageVtx[192] QUAD_MAP_OWL_WARP_SOUTHERN_SWAMP */
++    -1,  /* mapPageVtx[196] QUAD_MAP_OWL_WARP_IKANA_CANYON */
++    24,  /* mapPageVtx[200] QUAD_MAP_OWL_WARP_STONE_TOWER */
++};
++static s16 gVtxPageMapWorldQuadsHeight[VTX_PAGE_MAP_WORLD_QUADS] = {
++    40, /* mapPageVtx[60] QUAD_MAP_WORLD_CLOUDS_CLOCK_TOWN_1 */
++    31, /* mapPageVtx[64] QUAD_MAP_WORLD_CLOUDS_CLOCK_TOWN_2 */
++    53, /* mapPageVtx[68] QUAD_MAP_WORLD_CLOUDS_WOODFALL_1 */
++    53, /* mapPageVtx[72] QUAD_MAP_WORLD_CLOUDS_WOODFALL_2 */
++    53, /* mapPageVtx[76] QUAD_MAP_WORLD_CLOUDS_WOODFALL_3 */
++    52, /* mapPageVtx[80] QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_1 */
++    35, /* mapPageVtx[84] QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_2 */
++    35, /* mapPageVtx[88] QUAD_MAP_WORLD_CLOUDS_SNOWHEAD_3 */
++    32, /* mapPageVtx[92] QUAD_MAP_WORLD_CLOUDS_ROMANI_RANCH */
++    64, /* mapPageVtx[96] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_1 */
++    64, /* mapPageVtx[100] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_2 */
++    64, /* mapPageVtx[104] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_3 */
++    64, /* mapPageVtx[108] QUAD_MAP_WORLD_CLOUDS_GREAT_BAY_4 */
++    82, /* mapPageVtx[112] QUAD_MAP_WORLD_CLOUDS_STONE_TOWER_1 */
++    61, /* mapPageVtx[116] QUAD_MAP_WORLD_CLOUDS_STONE_TOWER_2 */
++    8,  /* mapPageVtx[120] QUAD_MAP_REGION_GREAT_BAY */
++    8,  /* mapPageVtx[124] QUAD_MAP_REGION_ZORA_HALL */
++    8,  /* mapPageVtx[128] QUAD_MAP_REGION_ROMANI_RANCH */
++    8,  /* mapPageVtx[132] QUAD_MAP_REGION_DEKU_PALACE */
++    8,  /* mapPageVtx[136] QUAD_MAP_REGION_WOODFALL */
++    8,  /* mapPageVtx[140] QUAD_MAP_REGION_CLOCK_TOWN */
++    8,  /* mapPageVtx[144] QUAD_MAP_REGION_SNOWHEAD */
++    8,  /* mapPageVtx[148] QUAD_MAP_REGION_IKANA_GRAVEYARD */
++    8,  /* mapPageVtx[152] QUAD_MAP_REGION_IKANA_CANYON */
++    8,  /* mapPageVtx[156] QUAD_MAP_REGION_GORON_VILLAGE */
++    8,  /* mapPageVtx[160] QUAD_MAP_REGION_STONE_TOWER */
++    12, /* mapPageVtx[164] QUAD_MAP_OWL_WARP_GREAT_BAY_COAST */
++    12, /* mapPageVtx[168] QUAD_MAP_OWL_WARP_ZORA_CAPE */
++    12, /* mapPageVtx[172] QUAD_MAP_OWL_WARP_SNOWHEAD */
++    12, /* mapPageVtx[176] QUAD_MAP_OWL_WARP_MOUNTAIN_VILLAGE */
++    12, /* mapPageVtx[180] QUAD_MAP_OWL_WARP_CLOCK_TOWN */
++    12, /* mapPageVtx[184] QUAD_MAP_OWL_WARP_MILK_ROAD */
++    12, /* mapPageVtx[188] QUAD_MAP_OWL_WARP_WOODFALL */
++    12, /* mapPageVtx[192] QUAD_MAP_OWL_WARP_SOUTHERN_SWAMP */
++    12, /* mapPageVtx[196] QUAD_MAP_OWL_WARP_IKANA_CANYON */
++    12, /* mapPageVtx[200] QUAD_MAP_OWL_WARP_STONE_TOWER */
++};
++
++static s16* sVtxPageQuadsX[VTX_PAGE_MAX] = {
++    sVtxPageMapWorldQuadsX,   /* VTX_PAGE_MAP_WORLD */
++};
++
++static s16* sVtxPageQuadsWidth[VTX_PAGE_MAX] = {
++    gVtxPageMapWorldQuadsWidth,   /* VTX_PAGE_MAP_WORLD */
++};
++
++static s16* sVtxPageQuadsY[VTX_PAGE_MAX] = {
++    sVtxPageMapWorldQuadsY,   /* VTX_PAGE_MAP_WORLD */
++};
++
++static s16* sVtxPageQuadsHeight[VTX_PAGE_MAX] = {
++    gVtxPageMapWorldQuadsHeight,   /* VTX_PAGE_MAP_WORLD */
++};
++
++static const char* sCloudTextures[] = {
++    gWorldMapClockTownCloud1Tex,  // TINGLE_MAP_CLOCK_TOWN
++    gWorldMapClockTownCloud2Tex,  // TINGLE_MAP_CLOCK_TOWN
++    gWorldMapWoodfallCloud1Tex,   // TINGLE_MAP_WOODFALL
++    gWorldMapWoodfallCloud2Tex,   // TINGLE_MAP_WOODFALL
++    gWorldMapWoodfallCloud3Tex,   // TINGLE_MAP_WOODFALL
++    gWorldMapSnowheadCloud1Tex,   // TINGLE_MAP_SNOWHEAD
++    gWorldMapSnowheadCloud2Tex,   // TINGLE_MAP_SNOWHEAD
++    gWorldMapSnowheadCloud3Tex,   // TINGLE_MAP_SNOWHEAD
++    gWorldMapRomaniRanchCloudTex, // TINGLE_MAP_ROMANI_RANCH
++    gWorldMapGreatBayCloud1Tex,   // TINGLE_MAP_GREAT_BAY
++    gWorldMapGreatBayCloud2Tex,   // TINGLE_MAP_GREAT_BAY
++    gWorldMapGreatBayCloud3Tex,   // TINGLE_MAP_GREAT_BAY
++    gWorldMapGreatBayCloud4Tex,   // TINGLE_MAP_GREAT_BAY
++    gWorldMapStoneTowerCloud1Tex, // TINGLE_MAP_STONE_TOWER
++    gWorldMapStoneTowerCloud2Tex, // TINGLE_MAP_STONE_TOWER
++};
++static const char* sMapPageBgTextures[] = {
++    // Column 0
++    gPauseMap00Tex,
++    gPauseMap01Tex,
++    gPauseMap02Tex,
++    gPauseMap03Tex,
++    gPauseMap04Tex,
++    // Column 1
++    gPauseMap10ENGTex,
++    gPauseMap11Tex,
++    gPauseMap12Tex,
++    gPauseMap13Tex,
++    gPauseMap14Tex,
++    // Column 2
++    gPauseMap20Tex,
++    gPauseMap21Tex,
++    gPauseMap22Tex,
++    gPauseMap23Tex,
++    gPauseMap24Tex,
++};
++static f32 sOwlWarpWorldMapCursorsX[OWL_WARP_MAX - 1] = {
++    -50.0f, /* OWL_WARP_GREAT_BAY_COAST */
++    -38.0f, /* OWL_WARP_ZORA_CAPE */
++    6.0f,   /* OWL_WARP_SNOWHEAD */
++    11.0f,  /* OWL_WARP_MOUNTAIN_VILLAGE */
++    8.0f,   /* OWL_WARP_CLOCK_TOWN */
++    0.0f,   /* OWL_WARP_MILK_ROAD */
++    12.0f,  /* OWL_WARP_WOODFALL */
++    31.0f,  /* OWL_WARP_SOUTHERN_SWAMP */
++    48.0f,  /* OWL_WARP_IKANA_CANYON */
++    56.0f,  /* OWL_WARP_STONE_TOWER */
++};
++static f32 sOwlWarpWorldMapCursorsY[OWL_WARP_MAX - 1] = {
++    -14.0f, /* OWL_WARP_GREAT_BAY_COAST */
++    -39.0f, /* OWL_WARP_ZORA_CAPE */
++    23.0f,  /* OWL_WARP_SNOWHEAD */
++    11.0f,  /* OWL_WARP_MOUNTAIN_VILLAGE */
++    -8.0f,  /* OWL_WARP_CLOCK_TOWN */
++    -15.0f, /* OWL_WARP_MILK_ROAD */
++    -31.0f, /* OWL_WARP_WOODFALL */
++    -30.0f, /* OWL_WARP_SOUTHERN_SWAMP */
++    -10.0f, /* OWL_WARP_IKANA_CANYON */
++    11.0f,  /* OWL_WARP_STONE_TOWER */
++};
++
++static s16 sCursorPrimColorTarget[][3] = {
++    { 255, 255, 255 }, { 255, 255, 255 }, { 255, 255, 0 }, { 255, 255, 0 }, { 100, 150, 255 }, { 100, 255, 255 },
++};
++static s16 sCursorEnvColorTarget[][3] = {
++    { 0, 0, 0 }, { 170, 170, 170 }, { 0, 0, 0 }, { 255, 160, 0 }, { 0, 0, 100 }, { 0, 150, 255 },
++};
++
++static f32 sCursorX;
++static f32 sCursorY;
++static f32 sCursorWidth;
++static f32 sCursorHeight;
++static f32 sCursorShrinkRate;
++static s16 sCursorSpinPhase = 0xE000;
++static s16 sCursorPrimR = 0;
++static s16 sCursorPrimG = 0;
++static s16 sCursorPrimB = 0;
++static s16 sCursorEnvR = 0;
++static s16 sCursorEnvG = 0;
++static s16 sCursorEnvB = 0;
++static f32 sCursorCirclesX[4];
++static f32 sCursorCirclesY[4];
++
++static void KaleidoScope_DrawWorldMap(PlayState* play) {
++    s16 n;
++    s16 j;
++    s16 k;
++    s16 i;
++    PauseContext* pauseCtx = &play->pauseCtx;
++
++    void* mapImage = Combo_SOHWarpResource(gWorldMapImageTex);
++    
++    
++
++    OPEN_DISPS(play->state.gfxCtx);
++
++    /* KaleidoScope_SetCursorVtxPos(pauseCtx, pauseCtx->cursorSlot[PAUSE_MAP] * 4, pauseCtx->mapPageVtx); */
++
++    /* Draw the world map angled */
++    /* Because it is at an angle, vertices are used to place it. */
++    /* The structure of the loops here is to satisfy the constraints of both TMEM and the size of the vertex cache. */
++    /* - Each loop iteration loads 9 rows, because 9 is the largest number smaller than */
++    /*   `TMEM_SIZE / 2 / textureWidth`. */
++    /* - Each loop is at most 8 iterations long because each row uses 4 vertices and the vertex cache has size */
++    /*   `32 = 8 * 4`. */
++    /* . */
++    /* Hence there is one loop of length 8, one of length 6, and then the remaining `128 - (8 + 6) * 9 = 2` rows are */
++    /* drawn at the end. */
++
++    gDPPipeSync(POLY_OPA_DISP++);
++    gDPSetTextureFilter(POLY_OPA_DISP++, G_TF_POINT);
++    gDPLoadTLUT_pal256(POLY_OPA_DISP++, gWorldMapImageTLUT);
++    gDPSetTextureLUT(POLY_OPA_DISP++, G_TT_RGBA16);
++
++    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 255, 255, 255, pauseCtx->alpha);
++
++    /* Set the vertices for the first 8 quads attached to the world map texture. */
++    gSPVertex(POLY_OPA_DISP++, &pauseCtx->mapPageVtx[QUAD_MAP_PAGE_WORLD_IMAGE_FIRST * 4], 8 * 4, 0);
++
++    /* Process the first 72 rows of pixels for gWorldMapImageTex, 9 rows at a time over 8 iterations */
++    /* Loop over quadIndex of this loop (i), quadIndex of the entire texture (k), vtxIndex (j) */
++    for (i = 0, k = 0, j = 0; i < 8; i++, k++, j += 4) {
++        gDPLoadTextureBlock(
++            POLY_OPA_DISP++, (u8*)mapImage + k * (WORLD_MAP_IMAGE_WIDTH * WORLD_MAP_IMAGE_FRAG_HEIGHT),
++            G_IM_FMT_CI, G_IM_SIZ_8b, WORLD_MAP_IMAGE_WIDTH, WORLD_MAP_IMAGE_FRAG_HEIGHT, 0,
++            G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
++
++        gSP1Quadrangle(POLY_OPA_DISP++, j, j + 2, j + 3, j + 1, 0);
++    }
++
++    /* Set the vertices for the last 7 quads attached to the world map texture: */
++    /* 6 quads with a height of 9, 1 quad with a height of 2 */
++    gSPVertex(POLY_OPA_DISP++, &pauseCtx->mapPageVtx[(QUAD_MAP_PAGE_WORLD_IMAGE_FIRST + 8) * 4], (6 + 1) * 4, 0);
++
++    /* Process the next 54 rows of pixels for gWorldMapImageTex, 9 rows at a time over 6 iterations */
++    /* Loop over quadIndex of this loop (i), quadIndex of the entire texture (k), vtxIndex (j) */
++    for (i = 0, j = 0; i < 6; i++, k++, j += 4) {
++        gDPLoadTextureBlock(
++            POLY_OPA_DISP++, (u8*)mapImage + k * (WORLD_MAP_IMAGE_WIDTH * WORLD_MAP_IMAGE_FRAG_HEIGHT),
++            G_IM_FMT_CI, G_IM_SIZ_8b, WORLD_MAP_IMAGE_WIDTH, WORLD_MAP_IMAGE_FRAG_HEIGHT, 0,
++            G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
++
++        gSP1Quadrangle(POLY_OPA_DISP++, j, j + 2, j + 3, j + 1, 0);
++    }
++
++    /* Process the last 2 rows of pixels for gWorldMapImageTex */
++    gDPLoadTextureBlock(
++        POLY_OPA_DISP++, (u8*)mapImage + k * (WORLD_MAP_IMAGE_WIDTH * WORLD_MAP_IMAGE_FRAG_HEIGHT),
++        G_IM_FMT_CI, G_IM_SIZ_8b, WORLD_MAP_IMAGE_WIDTH, WORLD_MAP_IMAGE_HEIGHT % WORLD_MAP_IMAGE_FRAG_HEIGHT, 0,
++        G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
++
++    gSP1Quadrangle(POLY_OPA_DISP++, j, j + 2, j + 3, j + 1, 0);
++
++    Gfx_SetupDL_42Opa(play->state.gfxCtx);
++
++    gDPPipeSync(POLY_OPA_DISP++);
++
++    gDPSetTextureFilter(POLY_OPA_DISP++, G_TF_BILERP);
++
++    gDPSetCombineLERP(POLY_OPA_DISP++, PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0, PRIMITIVE,
++                      ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0);
++
++    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 215, 235, 235, pauseCtx->alpha);
++    gDPSetEnvColor(POLY_OPA_DISP++, 40, 60, 100, 0);
++
++    /* Draw clouds over the world map */
++    /* Iterate over cloud bits (n) */
++    for (n = 0; n < WORLD_MAP_NUM_CLOUDS; n++) {
++        if (!(((void)0, Combo_SOHMapClouds()) & (1 << n))) {
++
++            gSPVertex(POLY_OPA_DISP++, &pauseCtx->mapPageVtx[(QUAD_MAP_PAGE_WORLD_CLOUDS_FIRST + n) * 4], 4, 0);
++
++            gDPLoadTextureBlock(POLY_OPA_DISP++, sCloudTextures[n], G_IM_FMT_IA, G_IM_SIZ_8b, gVtxPageMapWorldQuadsWidth[n], gVtxPageMapWorldQuadsHeight[n], 0,
++                                G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD,
++                                G_TX_NOLOD);
++
++            gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
++        }
++    }
++
++    gDPPipeSync(POLY_OPA_DISP++);
++    gDPSetRenderMode(POLY_OPA_DISP++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
++    gDPSetCombineMode(POLY_OPA_DISP++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
++    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 0, 0, 0, R_PAUSE_OWLWARP_ALPHA);
++    gDPFillRectangle(POLY_OPA_DISP++, 50, 62, 270, 190);
++
++    Gfx_SetupDL_42Opa(play->state.gfxCtx);
++
++    /* Selecting an owl warp */
++    gDPPipeSync(POLY_OPA_DISP++);
++    gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
++    gDPLoadTextureBlock(POLY_OPA_DISP++, gWorldMapOwlFaceTex, G_IM_FMT_RGBA, G_IM_SIZ_32b, 24, 12, 0,
++                        G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD,
++                        G_TX_NOLOD);
++
++    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 255, 255, 255, pauseCtx->alpha);
++
++    /* Loop over OwlWarpId (i), unused vtxIndex (j), unused (k) */
++    for (i = 0, j = 0; i <= 9; i++, k++, j += 4) { /* OWL_WARP_STONE_TOWER */
++        if (pauseCtx->worldMapPoints[i]) {
++            gSPVertex(POLY_OPA_DISP++, &pauseCtx->mapPageVtx[(QUAD_MAP_PAGE_WORLD_WARP_FIRST + i) * 4], 4, 0);
++            gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
++        }
++    }
++
++    gDPPipeSync(POLY_OPA_DISP++);
++
++    CLOSE_DISPS(play->state.gfxCtx);
++}
++
++static void KaleidoScope_DrawOwlWarpInfoPanel(PlayState* play)
++{
++    static s16 sPauseLRCursorColorTargets[][4] = {
++        { 180, 210, 255, 220 },
++        { 100, 100, 150, 220 },
++    };
++    static s16 sPauseLRCursorColorTimer = 20;
++    static s16 sPauseLRCursorColorIndex = 0;
++    static s16 sPauseLRCursorRed;
++    static s16 sPauseLRCursorGreen;
++    static s16 sPauseLRCursorBlue;
++    static s16 sPauseLRCursorAlpha;
++    PauseContext* pauseCtx = &play->pauseCtx;
++    s16 stepR;
++    s16 stepG;
++    s16 stepB;
++    s16 stepA;
++    s16 y;
++    s16 i;
++    s16 j;
++
++    OPEN_DISPS(play->state.gfxCtx);
++
++    stepR =
++        ABS(sPauseLRCursorRed - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][0]) / sPauseLRCursorColorTimer;
++    stepG = ABS(sPauseLRCursorGreen - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][1]) /
++            sPauseLRCursorColorTimer;
++    stepB = ABS(sPauseLRCursorBlue - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][2]) /
++            sPauseLRCursorColorTimer;
++    stepA = ABS(sPauseLRCursorAlpha - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][3]) /
++            sPauseLRCursorColorTimer;
++
++    if (sPauseLRCursorRed >= sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][0]) {
++        sPauseLRCursorRed -= stepR;
++    } else {
++        sPauseLRCursorRed += stepR;
++    }
++
++    if (sPauseLRCursorGreen >= sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][1]) {
++        sPauseLRCursorGreen -= stepG;
++    } else {
++        sPauseLRCursorGreen += stepG;
++    }
++
++    if (sPauseLRCursorBlue >= sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][2]) {
++        sPauseLRCursorBlue -= stepB;
++    } else {
++        sPauseLRCursorBlue += stepB;
++    }
++
++    if (sPauseLRCursorAlpha >= sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][3]) {
++        sPauseLRCursorAlpha -= stepA;
++    } else {
++        sPauseLRCursorAlpha += stepA;
++    }
++
++    sPauseLRCursorColorTimer--;
++    if (sPauseLRCursorColorTimer == 0) {
++        sPauseLRCursorRed = sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][0];
++        sPauseLRCursorGreen = sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][1];
++        sPauseLRCursorBlue = sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][2];
++        sPauseLRCursorAlpha = sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][3];
++        sPauseLRCursorColorTimer = 20;
++        sPauseLRCursorColorIndex ^= 1;
++    }
++
++    y = pauseCtx->infoPanelOffsetY - 76;
++    for (j = 0, i = 0; i < 7; i++, j += 4) {
++        pauseCtx->infoPanelVtx[j + 0].v.ob[0] = pauseCtx->infoPanelVtx[j + 2].v.ob[0] = -72;
++
++        pauseCtx->infoPanelVtx[j + 1].v.ob[0] = pauseCtx->infoPanelVtx[j + 3].v.ob[0] = 0;
++
++        pauseCtx->infoPanelVtx[j + 0].v.ob[1] = pauseCtx->infoPanelVtx[j + 1].v.ob[1] = y;
++
++        pauseCtx->infoPanelVtx[j + 2].v.ob[1] = pauseCtx->infoPanelVtx[j + 3].v.ob[1] = y - 24;
++
++        pauseCtx->infoPanelVtx[j + 0].v.ob[2] = pauseCtx->infoPanelVtx[j + 1].v.ob[2] =
++            pauseCtx->infoPanelVtx[j + 2].v.ob[2] = pauseCtx->infoPanelVtx[j + 3].v.ob[2] = 0;
++
++        pauseCtx->infoPanelVtx[j + 0].v.flag = pauseCtx->infoPanelVtx[j + 1].v.flag =
++            pauseCtx->infoPanelVtx[j + 2].v.flag = pauseCtx->infoPanelVtx[j + 3].v.flag = 0;
++
++        pauseCtx->infoPanelVtx[j + 0].v.tc[0] = pauseCtx->infoPanelVtx[j + 0].v.tc[1] =
++            pauseCtx->infoPanelVtx[j + 1].v.tc[1] = pauseCtx->infoPanelVtx[j + 2].v.tc[0] = 0;
++
++        pauseCtx->infoPanelVtx[j + 1].v.tc[0] = pauseCtx->infoPanelVtx[j + 3].v.tc[0] = 72 * (1 << 5);
++
++        pauseCtx->infoPanelVtx[j + 2].v.tc[1] = pauseCtx->infoPanelVtx[j + 3].v.tc[1] = 24 * (1 << 5);
++
++        pauseCtx->infoPanelVtx[j + 0].v.cn[0] = pauseCtx->infoPanelVtx[j + 2].v.cn[0] =
++            pauseCtx->infoPanelVtx[j + 0].v.cn[1] = pauseCtx->infoPanelVtx[j + 2].v.cn[1] =
++                pauseCtx->infoPanelVtx[j + 0].v.cn[2] = pauseCtx->infoPanelVtx[j + 2].v.cn[2] =
++                    pauseCtx->infoPanelVtx[j + 1].v.cn[0] = pauseCtx->infoPanelVtx[j + 3].v.cn[0] =
++                        pauseCtx->infoPanelVtx[j + 1].v.cn[1] = pauseCtx->infoPanelVtx[j + 3].v.cn[1] =
++                            pauseCtx->infoPanelVtx[j + 1].v.cn[2] = pauseCtx->infoPanelVtx[j + 3].v.cn[2] = 200;
++
++        pauseCtx->infoPanelVtx[j + 0].v.cn[3] = pauseCtx->infoPanelVtx[j + 2].v.cn[3] =
++            pauseCtx->infoPanelVtx[j + 1].v.cn[3] = pauseCtx->infoPanelVtx[j + 3].v.cn[3] = pauseCtx->alpha;
++    }
++
++    pauseCtx->infoPanelVtx[4].v.ob[0] = pauseCtx->infoPanelVtx[6].v.ob[0] = pauseCtx->infoPanelVtx[0].v.ob[0] + 72;
++
++    pauseCtx->infoPanelVtx[5].v.ob[0] = pauseCtx->infoPanelVtx[7].v.ob[0] = pauseCtx->infoPanelVtx[4].v.ob[0] + 72;
++
++    if ((pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_LEFT) && (pauseCtx->unk_1E4 == PAUSE_MAIN_STATE_IDLE)) {
++        pauseCtx->infoPanelVtx[8].v.ob[0] = pauseCtx->infoPanelVtx[10].v.ob[0] = WREG(16);
++
++        pauseCtx->infoPanelVtx[9].v.ob[0] = pauseCtx->infoPanelVtx[11].v.ob[0] = pauseCtx->infoPanelVtx[8].v.ob[0] + 24;
++
++        pauseCtx->infoPanelVtx[8].v.ob[1] = pauseCtx->infoPanelVtx[9].v.ob[1] = 10;
++
++        pauseCtx->infoPanelVtx[10].v.ob[1] = pauseCtx->infoPanelVtx[11].v.ob[1] =
++            pauseCtx->infoPanelVtx[8].v.ob[1] - 32;
++    } else {
++        pauseCtx->infoPanelVtx[8].v.ob[0] = pauseCtx->infoPanelVtx[10].v.ob[0] = WREG(16) + 3;
++
++        pauseCtx->infoPanelVtx[9].v.ob[0] = pauseCtx->infoPanelVtx[11].v.ob[0] = pauseCtx->infoPanelVtx[8].v.ob[0] + 18;
++
++        pauseCtx->infoPanelVtx[8].v.ob[1] = pauseCtx->infoPanelVtx[9].v.ob[1] = 10 - 3;
++
++        pauseCtx->infoPanelVtx[10].v.ob[1] = pauseCtx->infoPanelVtx[11].v.ob[1] =
++            pauseCtx->infoPanelVtx[8].v.ob[1] - 26;
++    }
++
++    if ((pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_RIGHT) && (pauseCtx->unk_1E4 == PAUSE_MAIN_STATE_IDLE)) {
++        pauseCtx->infoPanelVtx[12].v.ob[0] = pauseCtx->infoPanelVtx[14].v.ob[0] = WREG(17);
++
++        pauseCtx->infoPanelVtx[13].v.ob[0] = pauseCtx->infoPanelVtx[15].v.ob[0] =
++            pauseCtx->infoPanelVtx[12].v.ob[0] + 24;
++
++        pauseCtx->infoPanelVtx[12].v.ob[1] = pauseCtx->infoPanelVtx[13].v.ob[1] = 10;
++
++        pauseCtx->infoPanelVtx[14].v.ob[1] = pauseCtx->infoPanelVtx[15].v.ob[1] =
++            pauseCtx->infoPanelVtx[12].v.ob[1] - 32;
++    } else {
++        pauseCtx->infoPanelVtx[12].v.ob[0] = pauseCtx->infoPanelVtx[14].v.ob[0] = WREG(17) + 3;
++
++        pauseCtx->infoPanelVtx[13].v.ob[0] = pauseCtx->infoPanelVtx[15].v.ob[0] =
++            pauseCtx->infoPanelVtx[12].v.ob[0] + 18;
++
++        pauseCtx->infoPanelVtx[12].v.ob[1] = pauseCtx->infoPanelVtx[13].v.ob[1] = 10 - 3;
++
++        pauseCtx->infoPanelVtx[14].v.ob[1] = pauseCtx->infoPanelVtx[15].v.ob[1] =
++            pauseCtx->infoPanelVtx[12].v.ob[1] - 26;
++    }
++
++    pauseCtx->infoPanelVtx[9].v.tc[0] = pauseCtx->infoPanelVtx[11].v.tc[0] = pauseCtx->infoPanelVtx[13].v.tc[0] =
++        pauseCtx->infoPanelVtx[15].v.tc[0] = 24 * (1 << 5);
++
++    pauseCtx->infoPanelVtx[10].v.tc[1] = pauseCtx->infoPanelVtx[11].v.tc[1] = pauseCtx->infoPanelVtx[14].v.tc[1] =
++        pauseCtx->infoPanelVtx[15].v.tc[1] = 32 * (1 << 5);
++
++    gDPSetCombineMode(POLY_OPA_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
++
++    Matrix_Translate(0.0f, 0.0f, -144.0f, MTXMODE_NEW);
++    Matrix_Scale(1.0f, 1.0f, 1.0f, MTXMODE_APPLY);
++
++    gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
++
++    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 150, 140, 90, 255);
++    gSPVertex(POLY_OPA_DISP++, &pauseCtx->infoPanelVtx[0], 16, 0);
++
++    gSPDisplayList(POLY_OPA_DISP++, (Gfx*)Combo_SOHWarpResource(gItemNamePanelDL));
++
++    if (pauseCtx->cursorSpecialPos != 0) {
++        j = (pauseCtx->cursorSpecialPos * 4) - 32;
++        pauseCtx->cursorVtx[0].v.ob[0] = pauseCtx->infoPanelVtx[j].v.ob[0];
++        pauseCtx->cursorVtx[0].v.ob[1] = pauseCtx->infoPanelVtx[j].v.ob[1];
++    }
++
++    y = pauseCtx->infoPanelOffsetY - 80;
++    pauseCtx->infoPanelVtx[16].v.ob[1] = pauseCtx->infoPanelVtx[17].v.ob[1] = y;
++
++    pauseCtx->infoPanelVtx[18].v.ob[1] = pauseCtx->infoPanelVtx[19].v.ob[1] = pauseCtx->infoPanelVtx[16].v.ob[1] - 16;
++
++    pauseCtx->infoPanelVtx[18].v.tc[1] = pauseCtx->infoPanelVtx[19].v.tc[1] = 16 * (1 << 5);
++
++    gDPPipeSync(POLY_OPA_DISP++);
++    gDPSetCombineLERP(POLY_OPA_DISP++, PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0, PRIMITIVE,
++                      ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0);
++    gDPSetEnvColor(POLY_OPA_DISP++, 20, 30, 40, 0);
++
++    if ((pauseCtx->state == PAUSE_STATE_OWLWARP_SELECT) && (pauseCtx->namedItem != PAUSE_ITEM_NONE) &&
++        (pauseCtx->nameDisplayTimer < 40)) {
++        pauseCtx->infoPanelVtx[16].v.ob[0] = pauseCtx->infoPanelVtx[18].v.ob[0] = -63;
++
++        pauseCtx->infoPanelVtx[17].v.ob[0] = pauseCtx->infoPanelVtx[19].v.ob[0] =
++            pauseCtx->infoPanelVtx[16].v.ob[0] + 128;
++
++        pauseCtx->infoPanelVtx[17].v.tc[0] = pauseCtx->infoPanelVtx[19].v.tc[0] = 128 * (1 << 5);
++
++        gSPVertex(POLY_OPA_DISP++, &pauseCtx->infoPanelVtx[16], 4, 0);
++
++        if (pauseCtx->nameColorSet == 1) { /* PAUSE_NAME_COLOR_SET_GREY */
++            gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 70, 70, 70, 255);
++        } else {
++            gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 255, 255, 255, 255);
++        }
++
++        gDPLoadTextureBlock_4b(POLY_OPA_DISP++, pauseCtx->nameSegment, G_IM_FMT_IA, 128, 16, 0, G_TX_NOMIRROR | G_TX_WRAP,
++                            G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
++
++        gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
++    }
++
++    CLOSE_DISPS(play->state.gfxCtx);
++}
++
++static void KaleidoScope_DrawCursor(PlayState* play) {
++    PauseContext* pauseCtx = &play->pauseCtx;
++    s16 i;
++    s16 stepR;
++    s16 stepG;
++    s16 stepB;
++    static s16 sCursorColorTimer = 10;
++    static s16 sCursorColorTargetIndex = 0;
++
++
++    stepR =
++        ABS(sCursorPrimR - sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) /
++        sCursorColorTimer;
++    stepG =
++        ABS(sCursorPrimG - sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1]) /
++        sCursorColorTimer;
++    stepB =
++        ABS(sCursorPrimB - sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2]) /
++        sCursorColorTimer;
++
++    if (sCursorPrimR >= sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) {
++        sCursorPrimR -= stepR;
++    } else {
++        sCursorPrimR += stepR;
++    }
++
++    if (sCursorPrimG >= sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1]) {
++        sCursorPrimG -= stepG;
++    } else {
++        sCursorPrimG += stepG;
++    }
++
++    if (sCursorPrimB >= sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2]) {
++        sCursorPrimB -= stepB;
++    } else {
++        sCursorPrimB += stepB;
++    }
++
++    stepR =
++        ABS(sCursorEnvR - sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) /
++        sCursorColorTimer;
++    stepG =
++        ABS(sCursorEnvG - sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1]) /
++        sCursorColorTimer;
++    stepB =
++        ABS(sCursorEnvB - sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2]) /
++        sCursorColorTimer;
++
++    if (sCursorEnvR >= sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) {
++        sCursorEnvR -= stepR;
++    } else {
++        sCursorEnvR += stepR;
++    }
++
++    if (sCursorEnvG >= sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1]) {
++        sCursorEnvG -= stepG;
++    } else {
++        sCursorEnvG += stepG;
++    }
++
++    if (sCursorEnvB >= sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2]) {
++        sCursorEnvB -= stepB;
++    } else {
++        sCursorEnvB += stepB;
++    }
++
++    sCursorColorTimer--;
++    if (sCursorColorTimer == 0) {
++        sCursorPrimR = sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0];
++        sCursorPrimG = sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1];
++        sCursorPrimB = sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2];
++        sCursorEnvR = sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0];
++        sCursorEnvG = sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1];
++        sCursorEnvB = sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2];
++        sCursorColorTargetIndex ^= 1;
++        sCursorColorTimer = 10;
++    }
++
++    OPEN_DISPS(play->state.gfxCtx);
++
++    if ((pauseCtx->unk_1E4 == PAUSE_MAIN_STATE_IDLE) ||
++        (pauseCtx->unk_1E4 == PAUSE_MAIN_STATE_IDLE_CURSOR_ON_SONG)) {
++        gDPPipeSync(POLY_OPA_DISP++);
++        gDPSetCombineLERP(POLY_OPA_DISP++, PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0,
++                          PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0);
++        gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, sCursorPrimR, sCursorPrimG, sCursorPrimB, 255);
++        gDPSetEnvColor(POLY_OPA_DISP++, sCursorEnvR, sCursorEnvG, sCursorEnvB, 255);
++
++        Matrix_Translate(sCursorX, sCursorY, -50.0f, MTXMODE_NEW);
++        Matrix_Scale(1.0f, 1.0f, 1.0f, MTXMODE_APPLY);
++
++        for (i = 0; i < 4; i++) {
++            Matrix_Push();
++            Matrix_Translate(sCursorCirclesX[i], sCursorCirclesY[i], -50.0f, MTXMODE_APPLY);
++            gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
++            gDPPipeSync(POLY_OPA_DISP++);
++            gDPLoadTextureBlock(POLY_OPA_DISP++, gPauseMenuCursorTex, G_IM_FMT_IA, G_IM_SIZ_8b, 16, 16, 0,
++                                G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK,
++                                G_TX_NOLOD, G_TX_NOLOD);
++            gSPVertex(POLY_OPA_DISP++, &pauseCtx->cursorVtx[0], 4, 0);
++            gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
++            Matrix_Pop();
++        }
++
++        gDPPipeSync(POLY_OPA_DISP++);
++        gDPSetEnvColor(POLY_OPA_DISP++, 0, 0, 0, 255);
++    }
++
++    CLOSE_DISPS(play->state.gfxCtx);
++}
++
++static void KaleidoScope_UpdateCursorSize(PlayState* play)
++{
++    PauseContext* pauseCtx = &play->pauseCtx;
++
++    pauseCtx->cursorVtx[0].v.ob[0] = pauseCtx->cursorVtx[2].v.ob[0] = -8;
++    pauseCtx->cursorVtx[1].v.ob[0] = pauseCtx->cursorVtx[3].v.ob[0] = pauseCtx->cursorVtx[0].v.ob[0] + 16;
++
++    pauseCtx->cursorVtx[0].v.ob[1] = pauseCtx->cursorVtx[1].v.ob[1] = 8;
++    pauseCtx->cursorVtx[2].v.ob[1] = pauseCtx->cursorVtx[3].v.ob[1] = pauseCtx->cursorVtx[0].v.ob[1] - 16;
++
++    if (pauseCtx->cursorSpecialPos == 0) {
++        sCursorX = sOwlWarpWorldMapCursorsX[pauseCtx->cursorPoint[PAUSE_WORLD_MAP]] - 4.0f;
++        sCursorY = sOwlWarpWorldMapCursorsY[pauseCtx->cursorPoint[PAUSE_WORLD_MAP]] + 4.0f;
++        sCursorHeight = 7.5f;
++        sCursorWidth = 7.5f;
++
++        /* sCursorSpinPhase += 0x300; */
++    } else {
++        if (pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_LEFT) {
++            sCursorX = -93.0f;
++        } else { /* PAUSE_CURSOR_PAGE_RIGHT */
++            sCursorX = 101.0f;
++        }
++        /* sCursorSpinPhase += 0x300; */
++        sCursorHeight = 8.0f;
++        sCursorWidth = 8.0f;
++        sCursorY = -4.0f;
++    }
++
++    if (sCursorWidth < sCursorShrinkRate) {
++        sCursorWidth = 0;
++    } else {
++        sCursorWidth -= sCursorShrinkRate;
++    }
++
++    if (sCursorHeight < sCursorShrinkRate) {
++        sCursorHeight = 0.0f;
++    } else {
++        sCursorHeight -= sCursorShrinkRate;
++    }
++
++    if (sCursorShrinkRate != 0.0f) {
++        sCursorShrinkRate -= 1.0f;
++    }
++
++    sCursorCirclesX[0] = Math_SinS(sCursorSpinPhase) * sCursorWidth;
++    sCursorCirclesX[1] = Math_SinS(sCursorSpinPhase + 0x4000) * sCursorWidth;
++    sCursorCirclesX[2] = Math_SinS(sCursorSpinPhase + 0x8000) * sCursorWidth;
++    sCursorCirclesX[3] = Math_SinS(sCursorSpinPhase + 0xC000) * sCursorWidth;
++    sCursorCirclesY[0] = Math_CosS(sCursorSpinPhase) * sCursorHeight;
++    sCursorCirclesY[1] = Math_CosS(sCursorSpinPhase + 0x4000) * sCursorHeight;
++    sCursorCirclesY[2] = Math_CosS(sCursorSpinPhase + 0x8000) * sCursorHeight;
++    sCursorCirclesY[3] = Math_CosS(sCursorSpinPhase + 0xC000) * sCursorHeight;
++}
++
++static s16 KaleidoScope_SetPageVertices(PlayState* play, Vtx* vtx, s16 vtxPage, s16 numQuads) {
++    PauseContext* pauseCtx = &play->pauseCtx;
++    s16* quadsX;
++    s16* quadsWidth;
++    s16* quadsY;
++    s16* quadsHeight;
++    s16 pageBgQuadX;
++    s16 pageBgQuadY;
++    s16 i;
++    s16 j;
++    s16 k;
++
++    /* Vertices for KaleidoScope_DrawPageSections */
++
++    pageBgQuadX = 0 - (PAGE_BG_COLS * PAGE_BG_QUAD_WIDTH) / 2 - PAGE_BG_QUAD_WIDTH;
++
++    /* For each column */
++    for (k = 0, i = 0; i < 3; i++) {
++        pageBgQuadX += PAGE_BG_QUAD_WIDTH;
++
++        /* For each row */
++        for (pageBgQuadY = (PAGE_BG_ROWS * PAGE_BG_QUAD_HEIGHT) / 2, j = 0; j < 5; j++, k += 4, pageBgQuadY -= 32) {
++            vtx[k + 0].v.ob[0] = vtx[k + 2].v.ob[0] = pageBgQuadX;
++            vtx[k + 1].v.ob[0] = vtx[k + 3].v.ob[0] = vtx[k + 0].v.ob[0] + PAGE_BG_QUAD_WIDTH;
++
++            vtx[k + 0].v.ob[1] = vtx[k + 1].v.ob[1] = pageBgQuadY + pauseCtx->offsetY;
++            vtx[k + 2].v.ob[1] = vtx[k + 3].v.ob[1] = vtx[k + 0].v.ob[1] - PAGE_BG_QUAD_HEIGHT;
++
++            vtx[k + 0].v.ob[2] = vtx[k + 1].v.ob[2] = vtx[k + 2].v.ob[2] = vtx[k + 3].v.ob[2] = 0;
++
++            vtx[k + 0].v.flag = vtx[k + 1].v.flag = vtx[k + 2].v.flag = vtx[k + 3].v.flag = 0;
++
++            vtx[k + 0].v.tc[0] = vtx[k + 0].v.tc[1] = 0;
++            vtx[k + 1].v.tc[1] = vtx[k + 2].v.tc[0] = 0;
++            vtx[k + 1].v.tc[0] = vtx[k + 3].v.tc[0] = PAGE_BG_QUAD_TEX_WIDTH * (1 << 5);
++            vtx[k + 2].v.tc[1] = vtx[k + 3].v.tc[1] = PAGE_BG_QUAD_TEX_HEIGHT * (1 << 5);
++
++            vtx[k + 0].v.cn[0] = vtx[k + 2].v.cn[0] = vtx[k + 0].v.cn[1] = vtx[k + 2].v.cn[1] = vtx[k + 0].v.cn[2] =
++                vtx[k + 2].v.cn[2] = 0;
++
++            vtx[k + 1].v.cn[0] = vtx[k + 3].v.cn[0] = vtx[k + 1].v.cn[1] = vtx[k + 3].v.cn[1] = vtx[k + 1].v.cn[2] =
++                vtx[k + 3].v.cn[2] = 0;
++
++            vtx[k + 0].v.cn[3] = vtx[k + 2].v.cn[3] = vtx[k + 1].v.cn[3] = vtx[k + 3].v.cn[3] = pauseCtx->alpha;
++        }
++    }
++
++    if (numQuads != 0) {
++        quadsX = sVtxPageMapWorldQuadsX;
++        quadsWidth = gVtxPageMapWorldQuadsWidth;
++        quadsY = sVtxPageMapWorldQuadsY;
++        quadsHeight = gVtxPageMapWorldQuadsHeight;
++
++        for (i = 0; i < numQuads; i++, k += 4) {
++            vtx[k + 2].v.ob[0] = vtx[k + 0].v.ob[0] = quadsX[i];
++
++            vtx[k + 1].v.ob[0] = vtx[k + 3].v.ob[0] = vtx[k + 0].v.ob[0] + quadsWidth[i];
++
++            vtx[k + 0].v.ob[1] = vtx[k + 1].v.ob[1] = quadsY[i] + pauseCtx->offsetY;
++
++            vtx[k + 2].v.ob[1] = vtx[k + 3].v.ob[1] = vtx[k + 0].v.ob[1] - quadsHeight[i];
++
++            vtx[k + 0].v.ob[2] = vtx[k + 1].v.ob[2] = vtx[k + 2].v.ob[2] = vtx[k + 3].v.ob[2] = 0;
++
++            vtx[k + 0].v.flag = vtx[k + 1].v.flag = vtx[k + 2].v.flag = vtx[k + 3].v.flag = 0;
++
++            vtx[k + 0].v.tc[0] = vtx[k + 0].v.tc[1] = vtx[k + 1].v.tc[1] = vtx[k + 2].v.tc[0] = 0;
++            vtx[k + 1].v.tc[0] = vtx[k + 3].v.tc[0] = quadsWidth[i] << 5;
++            vtx[k + 2].v.tc[1] = vtx[k + 3].v.tc[1] = quadsHeight[i] << 5;
++
++            vtx[k + 0].v.cn[0] = vtx[k + 2].v.cn[0] = vtx[k + 0].v.cn[1] = vtx[k + 2].v.cn[1] = vtx[k + 0].v.cn[2] =
++                vtx[k + 2].v.cn[2] = 255;
++
++            vtx[k + 1].v.cn[0] = vtx[k + 3].v.cn[0] = vtx[k + 1].v.cn[1] = vtx[k + 3].v.cn[1] = vtx[k + 1].v.cn[2] =
++                vtx[k + 3].v.cn[2] = 255;
++
++            vtx[k + 0].v.cn[3] = vtx[k + 2].v.cn[3] = vtx[k + 1].v.cn[3] = vtx[k + 3].v.cn[3] = pauseCtx->alpha;
++        }
++    }
++    return k;
++}
++
++static void KaleidoScope_SetVertices(PlayState* play, GraphicsContext* gfxCtx)
++{
++    PauseContext* pauseCtx = &play->pauseCtx;
++    s16 i;
++    s16 j;
++    s16 vtx_y;
++
++    pauseCtx->offsetY = 0;
++
++    if ((pauseCtx->state == PAUSE_STATE_OWLWARP_3) || (pauseCtx->state >= PAUSE_STATE_OWLWARP_6)) {
++        pauseCtx->offsetY = 80;
++    }
++
++    pauseCtx->mapPageVtx = Graph_Alloc(
++        gfxCtx, ((PAGE_BG_QUADS + VTX_PAGE_MAP_WORLD_QUADS + WORLD_MAP_IMAGE_FRAG_NUM) * 4) * sizeof(Vtx));
++    j = KaleidoScope_SetPageVertices(play, pauseCtx->mapPageVtx, VTX_PAGE_MAP_WORLD, VTX_PAGE_MAP_WORLD_QUADS);
++
++    for (i = 0, vtx_y = 59; i < WORLD_MAP_IMAGE_FRAG_NUM; i++, j += 4, vtx_y -= WORLD_MAP_IMAGE_FRAG_HEIGHT) {
++        pauseCtx->mapPageVtx[j + 2].v.ob[0] = 0 - (WORLD_MAP_IMAGE_WIDTH / 2) - 1;
++        pauseCtx->mapPageVtx[j + 0].v.ob[0] = pauseCtx->mapPageVtx[j + 2].v.ob[0];
++
++        pauseCtx->mapPageVtx[j + 1].v.ob[0] = pauseCtx->mapPageVtx[j + 3].v.ob[0] =
++            pauseCtx->mapPageVtx[j + 0].v.ob[0] + WORLD_MAP_IMAGE_WIDTH;
++
++        pauseCtx->mapPageVtx[j + 0].v.ob[1] = pauseCtx->mapPageVtx[j + 1].v.ob[1] = vtx_y + pauseCtx->offsetY;
++
++        pauseCtx->mapPageVtx[j + 2].v.ob[1] = pauseCtx->mapPageVtx[j + 3].v.ob[1] =
++            pauseCtx->mapPageVtx[j + 0].v.ob[1] - WORLD_MAP_IMAGE_FRAG_HEIGHT;
++
++        pauseCtx->mapPageVtx[j + 0].v.ob[2] = pauseCtx->mapPageVtx[j + 1].v.ob[2] =
++            pauseCtx->mapPageVtx[j + 2].v.ob[2] = pauseCtx->mapPageVtx[j + 3].v.ob[2] = 0;
++
++        pauseCtx->mapPageVtx[j + 0].v.flag = pauseCtx->mapPageVtx[j + 1].v.flag =
++            pauseCtx->mapPageVtx[j + 2].v.flag = pauseCtx->mapPageVtx[j + 3].v.flag = 0;
++
++        pauseCtx->mapPageVtx[j + 0].v.tc[0] = pauseCtx->mapPageVtx[j + 0].v.tc[1] =
++            pauseCtx->mapPageVtx[j + 1].v.tc[1] = pauseCtx->mapPageVtx[j + 2].v.tc[0] = 0;
++
++        pauseCtx->mapPageVtx[j + 1].v.tc[0] = pauseCtx->mapPageVtx[j + 3].v.tc[0] =
++            WORLD_MAP_IMAGE_WIDTH * (1 << 5);
++        pauseCtx->mapPageVtx[j + 2].v.tc[1] = pauseCtx->mapPageVtx[j + 3].v.tc[1] =
++            WORLD_MAP_IMAGE_FRAG_HEIGHT * (1 << 5);
++
++        pauseCtx->mapPageVtx[j + 0].v.cn[0] = pauseCtx->mapPageVtx[j + 2].v.cn[0] =
++            pauseCtx->mapPageVtx[j + 0].v.cn[1] = pauseCtx->mapPageVtx[j + 2].v.cn[1] =
++                pauseCtx->mapPageVtx[j + 0].v.cn[2] = pauseCtx->mapPageVtx[j + 2].v.cn[2] =
++                    pauseCtx->mapPageVtx[j + 1].v.cn[0] = pauseCtx->mapPageVtx[j + 3].v.cn[0] =
++                        pauseCtx->mapPageVtx[j + 1].v.cn[1] = pauseCtx->mapPageVtx[j + 3].v.cn[1] =
++                            pauseCtx->mapPageVtx[j + 1].v.cn[2] = pauseCtx->mapPageVtx[j + 3].v.cn[2] =
++                                pauseCtx->mapPageVtx[j + 0].v.cn[3] = pauseCtx->mapPageVtx[j + 2].v.cn[3] =
++                                    pauseCtx->mapPageVtx[j + 1].v.cn[3] = pauseCtx->mapPageVtx[j + 3].v.cn[3] =
++                                        pauseCtx->alpha;
++    }
++
++    pauseCtx->mapPageVtx[j - 2].v.ob[1] = pauseCtx->mapPageVtx[j - 1].v.ob[1] =
++        pauseCtx->mapPageVtx[j - 4].v.ob[1] - (WORLD_MAP_IMAGE_HEIGHT % WORLD_MAP_IMAGE_FRAG_HEIGHT);
++
++    pauseCtx->mapPageVtx[j - 2].v.tc[1] = pauseCtx->mapPageVtx[j - 1].v.tc[1] =
++        (WORLD_MAP_IMAGE_HEIGHT % WORLD_MAP_IMAGE_FRAG_HEIGHT) * (1 << 5);
++
++    pauseCtx->cursorVtx = Graph_Alloc(play->state.gfxCtx, (PAUSE_QUAD_CURSOR_MAX * 4) * sizeof(Vtx));
++
++    for (i = 0; i < (PAUSE_QUAD_CURSOR_MAX * 4); i++) {
++        pauseCtx->cursorVtx[i].v.ob[0] = pauseCtx->cursorVtx[i].v.ob[1] = pauseCtx->cursorVtx[i].v.ob[2] = 0;
++
++        pauseCtx->cursorVtx[i].v.flag = 0;
++
++        pauseCtx->cursorVtx[i].v.tc[0] = pauseCtx->cursorVtx[i].v.tc[1] = 0;
++
++        pauseCtx->cursorVtx[i].v.cn[0] = pauseCtx->cursorVtx[i].v.cn[1] = pauseCtx->cursorVtx[i].v.cn[2] =
++            pauseCtx->cursorVtx[i].v.cn[3] = 255;
++    }
++
++    /* PAUSE_QUAD_CURSOR_0 */
++    pauseCtx->cursorVtx[1].v.tc[0] = pauseCtx->cursorVtx[2].v.tc[1] = pauseCtx->cursorVtx[3].v.tc[0] =
++        pauseCtx->cursorVtx[3].v.tc[1]
++        /* PAUSE_QUAD_CURSOR_1 */
++        = pauseCtx->cursorVtx[5].v.tc[0] = pauseCtx->cursorVtx[6].v.tc[1] = pauseCtx->cursorVtx[7].v.tc[0] =
++            pauseCtx->cursorVtx[7].v.tc[1]
++        /* PAUSE_QUAD_CURSOR_2 */
++        = pauseCtx->cursorVtx[9].v.tc[0] = pauseCtx->cursorVtx[10].v.tc[1] = pauseCtx->cursorVtx[11].v.tc[0] =
++            pauseCtx->cursorVtx[11].v.tc[1]
++        /* PAUSE_QUAD_CURSOR_3 */
++        = pauseCtx->cursorVtx[13].v.tc[0] = pauseCtx->cursorVtx[14].v.tc[1] = pauseCtx->cursorVtx[15].v.tc[0] =
++            pauseCtx->cursorVtx[15].v.tc[1] = 16 * (1 << 5);
++
++    /* PAUSE_QUAD_CURSOR_4 */
++    pauseCtx->cursorVtx[17].v.tc[0] = pauseCtx->cursorVtx[18].v.tc[1] = pauseCtx->cursorVtx[19].v.tc[0] =
++        pauseCtx->cursorVtx[19].v.tc[1] = 32 * (1 << 5);
++
++    pauseCtx->infoPanelVtx = Graph_Alloc(gfxCtx, 28 * sizeof(Vtx));
++}
++
++
++static const char* sOwlNames[]={gMapPointGreatBayCoastENGTex,gMapPointZoraCapeENGTex,
++    gMapPointSnowheadENGTex,gMapPointMountainVillageENGTex,gMapPointClockTownENGTex,gMapPointMilkRoadENGTex,
++    gMapPointWoodfallENGTex,gMapPointSouthernSwampENGTex,gMapPointIkanaCanyonENGTex,gMapPointStoneTowerENGTex};
++static void SetSelection(PlayState* play, int owl) {
++    PauseContext* pauseCtx=&play->pauseCtx;
++    pauseCtx->cursorPoint[PAUSE_WORLD_MAP]=owl;
++    pauseCtx->namedItem=owl; pauseCtx->nameDisplayTimer=0;
++    pauseCtx->nameSegment=(void*)sOwlNames[owl];
++    sCursorShrinkRate=4;
++}
++int Combo_SOHSoaringMapActive(void) { return sMapPlay!=NULL; }
++int Combo_SOHSoaringMapBegin(PlayState* play, uint32_t choices) {
++    if(sMapPlay || !(choices&0xffc0) || !Combo_SOHPrepareWarpAssets()) return 0;
++    sSavedPause=play->pauseCtx; sMapPlay=play; sChoices=choices;
++    play->pauseCtx.state=PAUSE_STATE_OWLWARP_3;
++    play->pauseCtx.eye=(Vec3f){-64,0,0};
++    play->pauseCtx.alpha=0; play->pauseCtx.infoPanelOffsetY=-80;
++    play->pauseCtx.cursorSpecialPos=0; play->pauseCtx.unk_1E4=0;
++    play->pauseCtx.cursorColorSet=4; play->pauseCtx.nameColorSet=0;
++    for(int owl=0;owl<10;owl++) play->pauseCtx.worldMapPoints[owl]=(choices>>(owl+6))&1;
++    for(int owl=0;owl<10;owl++) if(choices&(1u<<(owl+6))) { SetSelection(play,owl); break; }
++    sStick=0; sRepeat=0; sMapPageRoll=320; sMapVerticalOffset=-6240;
++    sMapTick=0; sMapReply=-1; R_PAUSE_OWLWARP_ALPHA=0;
++    sSavedHud=gSaveContext.hudVisibilityMode;
++    Message_CloseTextbox(play);
++    Interface_SetDoAction(play, DO_ACTION_DECIDE);
++    Interface_LoadActionLabelB(play, DO_ACTION_STOP);
++    return 1;
++}
++void Combo_SOHSoaringMapClose(PlayState* play) {
++    if(sMapPlay!=play) return;
++    play->pauseCtx=sSavedPause; sMapPlay=NULL;
++    Interface_SetDoAction(play, DO_ACTION_NONE);
++    Interface_ChangeHudVisibilityMode(sSavedHud);
++}
++void Combo_SOHSoaringMapFinish(PlayState* play, int reply) {
++    if(sMapPlay!=play || play->pauseCtx.state==PAUSE_STATE_OWLWARP_6) return;
++    sMapReply=reply; sMapTick=0; sMapVerticalOffset=-6240;
++    play->pauseCtx.state=PAUSE_STATE_OWLWARP_6;
++    Message_CloseTextbox(play);
++}
++int Combo_SOHSoaringMapUpdate(PlayState* play) {
++    if(sMapPlay!=play) return 0;
++    if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_3 || play->pauseCtx.state==PAUSE_STATE_OWLWARP_6) {
++        // Keep MM's 30 Hz roll/fade steps when drawn in OoT's 20 Hz world.
++        sMapTick+=3;
++        while(sMapTick>=2) {
++            sMapTick-=2;
++            if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_3) {
++                sMapPageRoll-=40;
++                play->pauseCtx.alpha=MIN(play->pauseCtx.alpha+31,255);
++                play->pauseCtx.infoPanelOffsetY+=10;
++                R_PAUSE_OWLWARP_ALPHA=MIN(R_PAUSE_OWLWARP_ALPHA+20,120);
++                if(sMapPageRoll<=0) {
++                    sMapPageRoll=0; sMapVerticalOffset=0;
++                    play->pauseCtx.alpha=255; play->pauseCtx.infoPanelOffsetY=0;
++                    play->pauseCtx.state=PAUSE_STATE_OWLWARP_SELECT;
++                    break;
++                }
++            } else {
++                sMapPageRoll+=40;
++                play->pauseCtx.alpha=MAX(play->pauseCtx.alpha-63,0);
++                play->pauseCtx.infoPanelOffsetY-=10;
++                R_PAUSE_OWLWARP_ALPHA=MAX(R_PAUSE_OWLWARP_ALPHA-60,0);
++                if(sMapPageRoll>=160) {
++                    int reply=sMapReply;
++                    Combo_SOHSoaringMapClose(play);
++                    SOH_ForeignSongChoose(reply);
++                    break;
++                }
++            }
++        }
++        return 1;
++    }
++    if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_CONFIRM) { Message_Update(play); return 1; }
++    Input* input=&play->state.input[0];
++    if(input->press.button&(BTN_B|BTN_START)) { SOH_ForeignSongChoose(-1); return 1; }
++    if(input->press.button&BTN_A) {
++        input->press.button &= ~BTN_A;
++        Audio_PlaySoundGeneral(NA_SE_SY_DECIDE,&gSfxDefaultPos,4,&gSfxDefaultFreqAndVolScale,
++            &gSfxDefaultFreqAndVolScale,&gSfxDefaultReverb);
++        Combo_SOHMapConfirm(play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP]+6);
++        play->pauseCtx.state=PAUSE_STATE_OWLWARP_CONFIRM;
++        return 1;
++    }
++    int stick=input->cur.stick_x>30 ? 1 : input->cur.stick_x< -30 ? -1 : 0;
++    int direction=(input->press.button&BTN_DRIGHT) ? 1 : (input->press.button&BTN_DLEFT) ? -1 : 0;
++    if(stick) { if(stick!=sStick || --sRepeat<=0) {direction=stick; sRepeat=stick!=sStick ? 10 : 3;} }
++    sStick=stick;
++    if(direction) {
++        int current=play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP];
++        for(int step=1;step<=10;step++) {
++            int owl=(current+direction*step+10)%10;
++            if(sChoices&(1u<<(owl+6))) { SetSelection(play,owl); break; }
++        }
++        Audio_PlaySoundGeneral(NA_SE_SY_CURSOR,&gSfxDefaultPos,4,&gSfxDefaultFreqAndVolScale,
++            &gSfxDefaultFreqAndVolScale,&gSfxDefaultReverb);
++    }
++    return 1;
++}
++int Combo_SOHSoaringMapDraw(PlayState* play) {
++    if(sMapPlay!=play) return 0;
++    OPEN_DISPS(play->state.gfxCtx);
++    gSPComboRMPush(POLY_OPA_DISP++, "mm-warp");
++    KaleidoScope_SetView(&play->pauseCtx,-64,0,0);
++    KaleidoScope_SetVertices(play,play->state.gfxCtx);
++    Gfx_SetupDL_42Opa(play->state.gfxCtx);
++    gDPSetCombineLERP(POLY_OPA_DISP++,TEXEL0,0,PRIMITIVE,0,TEXEL0,0,SHADE,0,TEXEL0,0,PRIMITIVE,0,TEXEL0,0,SHADE,0);
++    gDPSetPrimColor(POLY_OPA_DISP++,0,0,180,180,120,255);
++    Matrix_RotateY(-1.57f,MTXMODE_NEW);
++    Matrix_Translate(0,sMapVerticalOffset/100,-93,MTXMODE_APPLY);
++    Matrix_Scale(.78f,.78f,.78f,MTXMODE_APPLY);
++    Matrix_RotateX(-sMapPageRoll/100,MTXMODE_APPLY);
++    gSPMatrix(POLY_OPA_DISP++,MATRIX_NEWMTX(play->state.gfxCtx),G_MTX_NOPUSH|G_MTX_LOAD|G_MTX_MODELVIEW);
++    POLY_OPA_DISP=KaleidoScope_DrawPageSections(POLY_OPA_DISP,play->pauseCtx.mapPageVtx,sMapPageBgTextures);
++    Matrix_RotateY(-1.57f,MTXMODE_NEW);
++    Matrix_Translate(0,(play->pauseCtx.state==PAUSE_STATE_OWLWARP_3 ||
++        play->pauseCtx.state==PAUSE_STATE_OWLWARP_6) ? -80.9f : -.9f,-144,MTXMODE_APPLY);
++    Matrix_RotateX(-sMapPageRoll/100,MTXMODE_APPLY);
++    gSPMatrix(POLY_OPA_DISP++,MATRIX_NEWMTX(play->state.gfxCtx),G_MTX_NOPUSH|G_MTX_LOAD|G_MTX_MODELVIEW);
++    KaleidoScope_DrawWorldMap(play);
++    Gfx_SetupDL_42Opa(play->state.gfxCtx);
++    KaleidoScope_SetView(&play->pauseCtx,0,0,64);
++    KaleidoScope_DrawOwlWarpInfoPanel(play); KaleidoScope_UpdateCursorSize(play);
++    if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_SELECT) KaleidoScope_DrawCursor(play);
++    gSPComboRMPop(POLY_OPA_DISP++);
++    CLOSE_DISPS(play->state.gfxCtx);
++    return 1;
++}
++
++#endif
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossWarp.cpp b/soh/soh/Enhancements/CrossWarp/CrossWarp.cpp
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/CrossWarp/CrossWarp.cpp
+@@ -0,0 +1,77 @@
++#ifdef COMBO_BUILD
++#include "CrossWarp.h"
++#include "MMWarpAssets.h"
++#include "menu/ComboForeignAnim.h"
++#include "ComboResolve.h"
++#include <algorithm>
++extern "C" int Combo_SOHPrepareWarpAssets() {
++    auto ensure=(int(*)())Combo_ResolveSym("2ship","MM_EnsureWarpResources");
++    if(!ensure || !ensure()) return 0;
++    const char* required[]={gGameplayKeepKFSkel_85640,gGameplayKeepKFAnim_83534,
++        gSoaringWarpCsFeatherDL,gSoaringWarpCsWindCapsuleDL,gSoaringWarpCsWindCapsuleTexAnim,
++        gOceff6DL,gOceff6Vtx,ovl_Oceff_Wipe6_Matanimheader_000338,
++        gWorldMapImageTex,gWorldMapImageTLUT,gWorldMapOwlFaceTex,gItemNamePanelDL};
++    for(const char* path:required) if(!Combo_SOHWarpResource(path)) return 0;
++    return 1;
++}
++extern "C" void* Combo_SOHWarpResource(const char* path) {
++    auto load=(void*(*)(const char*))Combo_ResolveSym("2ship","MM_LoadWarpResource");
++    return load ? load(path) : nullptr;
++}
++extern "C" uint32_t Combo_SOHMapClouds() {
++    auto clouds=(uint32_t(*)())Combo_ResolveSym("2ship","MM_GetWarpMapClouds");
++    return clouds ? clouds() : 0;
++}
++extern "C" void Combo_SOHWarpMaterial(PlayState* play,const char* path,int step) {
++    auto* mat=(const CfaMatEntry*)Combo_SOHWarpResource(path);
++    if(!mat || !mat->segment) return;
++    for(int entry=0;entry<kMaxMatEntries;entry++,mat++) {
++        const int segment=std::abs(mat->segment)+7;
++        if(mat->type==kMatTypeTwoTexScroll && mat->params) {
++            CfaDrawTwoTexScroll(play,segment,(const CfaTexScrollEntry*)mat->params,step,false);
++        } else if(mat->type==2 || mat->type==3 || mat->type==4) {
++            auto* colors=(const CfaColorParams*)mat->params;
++            if(!colors || !colors->keyFrameLength || !colors->primColors) return;
++            if(mat->type==2) CfaDrawColorIndexed(play,segment,colors,step);
++            else {
++                if(!colors->keyFrames || colors->keyFrameCount<2 || colors->keyFrameCount>kMaxKeyFrames) return;
++                if(mat->type==4) CfaDrawColorLagrange(play,segment,colors,step);
++                else {
++                    // MM AnimatedMat_DrawColorLerp, retaining its integer color conversion.
++                    const int frame=step%colors->keyFrameLength;
++                    int upper=1;
++                    while(upper<colors->keyFrameCount-1 && frame>=colors->keyFrames[upper]) ++upper;
++                    const int length=colors->keyFrames[upper]-colors->keyFrames[upper-1];
++                    const float phase=length>0 ? std::clamp(float(frame-colors->keyFrames[upper-1])/length,0.0f,1.0f) : 0.0f;
++                    CfaPrimColor prim; CfaEnvColor env;
++                    auto lerp=[phase](uint8_t a,uint8_t b) {return uint8_t(a+(b-a)*phase);};
++                    const auto& a=colors->primColors[upper-1]; const auto& b=colors->primColors[upper];
++                    prim={lerp(a.r,b.r),lerp(a.g,b.g),lerp(a.b,b.b),lerp(a.a,b.a),lerp(a.lodFrac,b.lodFrac)};
++                    if(colors->envColors) {
++                        const auto& c=colors->envColors[upper-1]; const auto& d=colors->envColors[upper];
++                        env={lerp(c.r,d.r),lerp(c.g,d.g),lerp(c.b,d.b),lerp(c.a,d.a)};
++                    }
++                    CfaSetColorSegment(play,segment,&prim,colors->envColors ? &env : nullptr);
++                }
++            }
++        } else return;
++        if(mat->segment<0) break;
++    }
++}
++extern "C" void Combo_SOHRestoreWarpMaterial(PlayState* play,const char* path) {
++    auto* mat=(const CfaMatEntry*)Combo_SOHWarpResource(path);
++    if(!mat || !mat->segment) return;
++    int32_t segments[kMaxMatEntries],count=0;
++    do { segments[count++]=std::abs(mat->segment)+7; }
++    while(mat++->segment>=0 && count<kMaxMatEntries);
++    ComboForeignTexAnim_Restore(play,segments,count,false);
++}
++
++extern "C" void Combo_SOHWindMaterial(PlayState* play,int step) {
++    Combo_SOHWarpMaterial(play,gSoaringWarpCsWindCapsuleTexAnim,step);
++}
++extern "C" int Combo_SOHWarpVertexCount(const char* path) {
++    auto count=(int(*)(const char*))Combo_ResolveSym("2ship","MM_WarpVertexCount");
++    return count ? count(path) : 0;
++}
++#endif
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossWarp.h b/soh/soh/Enhancements/CrossWarp/CrossWarp.h
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/CrossWarp/CrossWarp.h
+@@ -0,0 +1,24 @@
++#pragma once
++#include "global.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++int Combo_SOHPrepareWarpAssets(void);
++int Combo_SOHWarpVertexCount(const char*);
++void Combo_SOHWarpMaterial(PlayState*, const char*, int);
++void Combo_SOHRestoreWarpMaterial(PlayState*, const char*);
++void Combo_SOHStartSoaringEffect(PlayState*);
++void Combo_SOHWindMaterial(PlayState*, int);
++void* Combo_SOHWarpResource(const char* path);
++uint32_t Combo_SOHMapClouds(void);
++int Combo_SOHSoaringMapBegin(PlayState* play, uint32_t choices);
++int Combo_SOHSoaringMapUpdate(PlayState* play);
++int Combo_SOHSoaringMapDraw(PlayState* play);
++void Combo_SOHSoaringMapClose(PlayState* play);
++void Combo_SOHSoaringMapFinish(PlayState* play, int reply);
++int Combo_SOHSoaringMapActive(void);
++int Combo_SOHStartSoaring(PlayState* play, int destination);
++void Combo_SOHCompleteWarp(PlayState* play, int destination);
++#ifdef __cplusplus
++}
++#endif
+diff --git a/soh/soh/Enhancements/CrossWarp/MMWarpAssets.h b/soh/soh/Enhancements/CrossWarp/MMWarpAssets.h
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/CrossWarp/MMWarpAssets.h
+@@ -0,0 +1,57 @@
++#pragma once
++#include "align_asset_macro.h"
++static const ALIGN_ASSET(2) char gGameplayKeepKFAnim_83534[]="__OTR__objects/gameplay_keep/gGameplayKeepKFAnim_83534";
++static const ALIGN_ASSET(2) char gGameplayKeepKFSkel_85640[]="__OTR__objects/gameplay_keep/gGameplayKeepKFSkel_85640";
++static const ALIGN_ASSET(2) char gItemNamePanelDL[]="__OTR__icon_item_vtx_static/gItemNamePanelDL";
++static const ALIGN_ASSET(2) char gMapPointClockTownENGTex[]="__OTR__map_name_static/gMapPointClockTownENGTex";
++static const ALIGN_ASSET(2) char gMapPointGreatBayCoastENGTex[]="__OTR__map_name_static/gMapPointGreatBayCoastENGTex";
++static const ALIGN_ASSET(2) char gMapPointIkanaCanyonENGTex[]="__OTR__map_name_static/gMapPointIkanaCanyonENGTex";
++static const ALIGN_ASSET(2) char gMapPointMilkRoadENGTex[]="__OTR__map_name_static/gMapPointMilkRoadENGTex";
++static const ALIGN_ASSET(2) char gMapPointMountainVillageENGTex[]="__OTR__map_name_static/gMapPointMountainVillageENGTex";
++static const ALIGN_ASSET(2) char gMapPointSnowheadENGTex[]="__OTR__map_name_static/gMapPointSnowheadENGTex";
++static const ALIGN_ASSET(2) char gMapPointSouthernSwampENGTex[]="__OTR__map_name_static/gMapPointSouthernSwampENGTex";
++static const ALIGN_ASSET(2) char gMapPointStoneTowerENGTex[]="__OTR__map_name_static/gMapPointStoneTowerENGTex";
++static const ALIGN_ASSET(2) char gMapPointWoodfallENGTex[]="__OTR__map_name_static/gMapPointWoodfallENGTex";
++static const ALIGN_ASSET(2) char gMapPointZoraCapeENGTex[]="__OTR__map_name_static/gMapPointZoraCapeENGTex";
++static const ALIGN_ASSET(2) char gPauseMap00Tex[]="__OTR__icon_item_static_yar/gPauseMap00Tex";
++static const ALIGN_ASSET(2) char gPauseMap01Tex[]="__OTR__icon_item_static_yar/gPauseMap01Tex";
++static const ALIGN_ASSET(2) char gPauseMap02Tex[]="__OTR__icon_item_static_yar/gPauseMap02Tex";
++static const ALIGN_ASSET(2) char gPauseMap03Tex[]="__OTR__icon_item_static_yar/gPauseMap03Tex";
++static const ALIGN_ASSET(2) char gPauseMap04Tex[]="__OTR__icon_item_static_yar/gPauseMap04Tex";
++static const ALIGN_ASSET(2) char gPauseMap10ENGTex[]="__OTR__icon_item_jpn_static/gPauseMap10ENGTex";
++static const ALIGN_ASSET(2) char gPauseMap11Tex[]="__OTR__icon_item_static_yar/gPauseMap11Tex";
++static const ALIGN_ASSET(2) char gPauseMap12Tex[]="__OTR__icon_item_static_yar/gPauseMap12Tex";
++static const ALIGN_ASSET(2) char gPauseMap13Tex[]="__OTR__icon_item_static_yar/gPauseMap13Tex";
++static const ALIGN_ASSET(2) char gPauseMap14Tex[]="__OTR__icon_item_static_yar/gPauseMap14Tex";
++static const ALIGN_ASSET(2) char gPauseMap20Tex[]="__OTR__icon_item_static_yar/gPauseMap20Tex";
++static const ALIGN_ASSET(2) char gPauseMap21Tex[]="__OTR__icon_item_static_yar/gPauseMap21Tex";
++static const ALIGN_ASSET(2) char gPauseMap22Tex[]="__OTR__icon_item_static_yar/gPauseMap22Tex";
++static const ALIGN_ASSET(2) char gPauseMap23Tex[]="__OTR__icon_item_static_yar/gPauseMap23Tex";
++static const ALIGN_ASSET(2) char gPauseMap24Tex[]="__OTR__icon_item_static_yar/gPauseMap24Tex";
++static const ALIGN_ASSET(2) char gPauseMenuCursorTex[]="__OTR__icon_item_static_yar/gPauseMenuCursorTex";
++static const ALIGN_ASSET(2) char gSoaringWarpCsFeatherDL[]="__OTR__objects/gameplay_keep/gSoaringWarpCsFeatherDL";
++static const ALIGN_ASSET(2) char gSoaringWarpCsWindCapsuleDL[]="__OTR__objects/gameplay_keep/gSoaringWarpCsWindCapsuleDL";
++static const ALIGN_ASSET(2) char gWorldMapClockTownCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapClockTownCloud1Tex";
++static const ALIGN_ASSET(2) char gWorldMapClockTownCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapClockTownCloud2Tex";
++static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapGreatBayCloud1Tex";
++static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapGreatBayCloud2Tex";
++static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud3Tex[]="__OTR__icon_item_field_static/gWorldMapGreatBayCloud3Tex";
++static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud4Tex[]="__OTR__icon_item_field_static/gWorldMapGreatBayCloud4Tex";
++static const ALIGN_ASSET(2) char gWorldMapImageTLUT[]="__OTR__icon_item_field_static/gWorldMapImageTLUT";
++static const ALIGN_ASSET(2) char gWorldMapImageTex[]="__OTR__icon_item_field_static/gWorldMapImageTex";
++static const ALIGN_ASSET(2) char gWorldMapOwlFaceTex[]="__OTR__icon_item_field_static/gWorldMapOwlFaceTex";
++static const ALIGN_ASSET(2) char gWorldMapRomaniRanchCloudTex[]="__OTR__icon_item_field_static/gWorldMapRomaniRanchCloudTex";
++static const ALIGN_ASSET(2) char gWorldMapSnowheadCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapSnowheadCloud1Tex";
++static const ALIGN_ASSET(2) char gWorldMapSnowheadCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapSnowheadCloud2Tex";
++static const ALIGN_ASSET(2) char gWorldMapSnowheadCloud3Tex[]="__OTR__icon_item_field_static/gWorldMapSnowheadCloud3Tex";
++static const ALIGN_ASSET(2) char gWorldMapStoneTowerCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapStoneTowerCloud1Tex";
++static const ALIGN_ASSET(2) char gWorldMapStoneTowerCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapStoneTowerCloud2Tex";
++static const ALIGN_ASSET(2) char gWorldMapWoodfallCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapWoodfallCloud1Tex";
++static const ALIGN_ASSET(2) char gWorldMapWoodfallCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapWoodfallCloud2Tex";
++static const ALIGN_ASSET(2) char gWorldMapWoodfallCloud3Tex[]="__OTR__icon_item_field_static/gWorldMapWoodfallCloud3Tex";
++
++static const ALIGN_ASSET(2) char gSoaringWarpCsWindCapsuleTexAnim[]="__OTR__objects/gameplay_keep/gSoaringWarpCsWindCapsuleTexAnim";
++
++static const ALIGN_ASSET(2) char ovl_Oceff_Wipe6_Matanimheader_000338[]="__OTR__overlays/ovl_Oceff_Wipe6/ovl_Oceff_Wipe6_Matanimheader_000338";
++static const ALIGN_ASSET(2) char gOceff6Vtx[]="__OTR__overlays/ovl_Oceff_Wipe6/gOceff6Vtx";
++static const ALIGN_ASSET(2) char gOceff6DL[]="__OTR__overlays/ovl_Oceff_Wipe6/gOceff6DL";
+--- a/soh/soh/OTRGlobals.cpp
++++ b/soh/soh/OTRGlobals.cpp
+@@ -1,4 +1,4 @@
+-﻿#include "OTRGlobals.h"
++#include "OTRGlobals.h"
+ #include "OTRAudio.h"
+ #include "ComboExport.h"
+ #include "ComboResolve.h"
+@@ -1646,6 +1646,7 @@
+ extern "C" void (*gComboSceneSwitchCallback)(int fileNum);
+ static int sSongDeparture=-1;
+ static void ProcessForeignSongReply();
++extern "C" void Combo_SOHSoaringMapClose(PlayState*);
+ // Launcher poll: returns the next save slot backed up for a release mismatch, or -1 if none.
+ extern "C" int (*gComboOutdatedSaveNotice)();
+ // Shared Items pokes (defined with the rest of the Shared Items ABI further down).
+@@ -1831,6 +1832,9 @@
+     static bool sComboSwitchPending = false;
+     static int sComboSwitchFileNum = -1;
+ 
++    GameInteractor::Instance->RegisterGameHook<GameInteractor::OnPlayDestroy>([]() {
++        Combo_SOHSoaringMapClose(gPlayState);
++    });
+     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnSceneInit>([](int16_t sceneNum) {
+         // Cross-game OOT->MM trigger: entering the Happy Mask Shop.
+         if (sceneNum == SCENE_HAPPY_MASK_SHOP) {
+@@ -1937,6 +1941,7 @@
+     // main thread. Left in these statics / the registry, it would die during DLL-unload static
+     // destructors, where its thread pool joins workers under the loader lock and deadlocks.
+     Ship::CrossRMRegistry::Unregister("oot");
++    if(auto drop=(void(*)())Combo_ResolveSym("2ship","MM_DropWarpResources")) drop();
+     sOOTResourceManager = nullptr;
+ #endif
+ 
+@@ -2846,6 +2851,8 @@
+         *audio = gSaveContext.audioSetting;
+ }
+ 
++
++#include "soh/Enhancements/CrossWarp/CrossWarp.h"
+ #include "rando/SongTravelOOT.h"
+ #include "rando/ForeignSongs.h"
+ #include "soh/Enhancements/custom-message/CustomMessageManager.h"
+@@ -2870,6 +2877,7 @@
+ static bool sMmVisitedForSongs=false;
+ extern "C" COMBO_EXPORT void SOH_SetMmVisited(int visited) { sMmVisitedForSongs=visited!=0; }
+ extern "C" COMBO_EXPORT void SOH_SetSongTravel(const char* json) {
++    if(gPlayState) Combo_SOHSoaringMapClose(gPlayState);
+     sForeignSongRequest=-1; sForeignSongReply=-2; sForeignSongPerformed=false; sNativeSongOpen=false; sNativeSongSource=-1;
+     try { ComboRando::ActiveSongTravel()=ComboRando::SongTravelMap::parse(nlohmann::json::parse(json)); }
+     catch (...) { ComboRando::ActiveSongTravel()={}; }
+@@ -2972,9 +2980,7 @@
+     }
+     Message_ContinueTextbox(gPlayState,0x71F1);
+ }
+-static void OpenNativeSongDialogue(uint32_t choices) {
+-    int count=0,index=0;
+-    for(int i=0;i<16;i++) if(choices & (1u<<i)) { if(i==sNativeSongSource) index=count; ++count; }
++static void OpenNativeSongDialogue(uint32_t choices, bool assetError=false) {
+     const int dest=sNativeSongSource>=0 ? ComboRando::ActiveSongTravel().destination(sNativeSongSource) : -1;
+     sNativeSongOpen=true;
+     AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
+@@ -2990,73 +2996,78 @@
+             });
+         registered=true;
+     }
+-    if(!choices) {
++    if(assetError) {
++        sNativeSongText="You can't soar right now.&Restart Combo Ship to reload&Majora's Mask's warp assets.";
++        SPDLOG_ERROR("[ComboShip] Native Soaring map assets could not be loaded");
++    } else if(!choices) {
+         sNativeSongText="You haven't activated any %rowl statues%w yet.&You can't soar anywhere!";
+     } else {
+         sNativeSongText="Soar to";
+-        if(count>1) sNativeSongText+=" ("+std::to_string(index+1)+"/"+std::to_string(count)+": left/right)";
+         sNativeSongText+="&%r"+std::string(ComboRando::kSongLandingNames[dest])+"?%w&"+
+             CustomMessage::TWO_WAY_CHOICE()+"%gOK&No%w";
+     }
+     Message_StartTextbox(gPlayState,0x71F0,nullptr);
+     gPlayState->msgCtx.ocarinaMode=1;
+     Combo_SOHForeignSongDiagnostic(choices ? "confirmation" : "no-owls");
++}
++extern "C" void Combo_SOHMapConfirm(int source) {
++    sNativeSongSource=source; OpenNativeSongDialogue(1u<<source);
+ }
+ static void UpdateNativeSongDialogue() {
+     if(sForeignSongRequest.load()<0 || !gPlayState || !sForeignSongPerformed.load()) return;
+     auto& input=gPlayState->state.input[0];
+     uint32_t choices=SOH_ForeignSongChoices();
+-    if(input.press.button & BTN_B) { sForeignSongReply=-1; return; }
+-    if(!sNativeSongOpen) {
+-        // Do not let the final played note accept the confirmation, even with instant text.
++    if(Combo_SOHSoaringMapActive() && !sNativeSongOpen) return;
++    if(input.press.button & BTN_START) { sForeignSongReply=-1; return; }
++    if(input.press.button & BTN_B) {
++        if(Combo_SOHSoaringMapActive() && sNativeSongOpen) {
++            Message_CloseTextbox(gPlayState); sNativeSongOpen=false;
++            gPlayState->pauseCtx.state=0x106; // native map selection
++            input.press.button &= ~BTN_B;
++        } else sForeignSongReply=-1;
++        return;
++    }
++    if(!sNativeSongOpen && !Combo_SOHSoaringMapActive()) {
+         if(input.cur.button & (BTN_A|BTN_CUP|BTN_CDOWN|BTN_CLEFT|BTN_CRIGHT)) return;
+-        for(int i=0;i<16;i++) if(choices & (1u<<i)) { sNativeSongSource=i; break; }
+-        sNativeSongStick=0; OpenNativeSongDialogue(choices); return;
+-    }
+-    if(!choices) {
+-        auto state=Message_GetState(&gPlayState->msgCtx);
+-        if((state==TEXT_STATE_DONE || state==TEXT_STATE_EVENT) && (input.press.button & BTN_A)) {
+-            Message_ShouldAdvance(gPlayState);
+-            sForeignSongReply=-1; input.press.button &= ~BTN_A;
+-        }
+-        return;
+-    }
+-    if(Message_GetState(&gPlayState->msgCtx)!=TEXT_STATE_CHOICE) return;
+-    int stick=input.cur.stick_x>40 ? 1 : (input.cur.stick_x< -40 ? -1 : 0);
+-    int direction=(input.press.button & BTN_DRIGHT) ? 1 : (input.press.button & BTN_DLEFT) ? -1 : 0;
+-    if(stick && stick!=sNativeSongStick) direction=stick;
+-    sNativeSongStick=stick;
+-    if(direction && (choices & (choices-1))) {
+-        for(int step=1;step<=16;step++) {
+-            int next=(sNativeSongSource+direction*step+16)%16;
+-            if(choices & (1u<<next)) { sNativeSongSource=next; break; }
+-        }
+-        OpenNativeSongDialogue(choices); return;
+-    }
+-    if(input.press.button & BTN_A) {
+-        Message_ShouldAdvance(gPlayState); // native selection sound
+-        sForeignSongReply=gPlayState->msgCtx.choiceIndex==0 ? sNativeSongSource : -1;
+-        input.press.button &= ~BTN_A; // the engine must not also launch its own warp
++        if(choices && Combo_SOHSoaringMapBegin(gPlayState,choices)) return;
++        sNativeSongSource=-1; OpenNativeSongDialogue(0,choices!=0); return;
++    }
++    auto state=Message_GetState(&gPlayState->msgCtx);
++    if(sNativeSongSource<0) {
++        if((state==TEXT_STATE_DONE || state==TEXT_STATE_EVENT) && (input.press.button&BTN_A)) {
++            Message_ShouldAdvance(gPlayState); sForeignSongReply=-1; input.press.button&=~BTN_A;
++        }
++    } else if(state==TEXT_STATE_CHOICE && (input.press.button&BTN_A)) {
++        Message_ShouldAdvance(gPlayState); input.press.button&=~BTN_A;
++        if(gPlayState->msgCtx.choiceIndex==0) sForeignSongReply=sNativeSongSource;
++        else { Message_CloseTextbox(gPlayState); sNativeSongOpen=false; gPlayState->pauseCtx.state=0x106; }
+     }
+ }
+ static void ProcessForeignSongReply() {
+-    UpdateNativeSongDialogue();
++    // A reply queued when the map finishes closing must not reopen that map.
++    if(sForeignSongReply.load()==-2) UpdateNativeSongDialogue();
+     int reply=sForeignSongReply.exchange(-2);
+     if(reply==-2) return;
+     const uint32_t choices=SOH_ForeignSongChoices();
++    if(gPlayState && Combo_SOHSoaringMapActive()) {
++        sNativeSongOpen=false;
++        Combo_SOHSoaringMapFinish(gPlayState,reply);
++        return;
++    }
+     Combo_SOHForeignSongDiagnostic(reply<0 ? "cancel" : "confirmation-accepted");
+     sForeignSongRequest=-1; sForeignSongPerformed=false; sNativeSongOpen=false; sNativeSongSource=-1;
+     if(!gPlayState) return;
++    Combo_SOHSoaringMapClose(gPlayState);
+     AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
+     Message_CloseTextbox(gPlayState);
+     gPlayState->msgCtx.ocarinaMode=4; // native ocarina END mode in both games
+     if(reply<0 || reply>=16 || !(choices & (1u<<reply))) return;
+     Combo_SOHForeignSongDiagnostic("native-action");
+-    int dest=ComboRando::ActiveSongTravel().destination(reply);
+-    if(dest>=6) { sSongDeparture=dest; gPlayState->transitionTrigger=TRANS_TRIGGER_OFF; }
+-    else { gPlayState->nextEntranceIndex=ComboRando::kOotSongEntrances[dest];
+-        gSaveContext.respawnFlag=0; gSaveContext.cutsceneIndex=0;
+-        gPlayState->transitionTrigger=TRANS_TRIGGER_START; gPlayState->transitionType=TRANS_TYPE_FADE_WHITE_FAST; }
++    const int dest=ComboRando::ActiveSongTravel().destination(reply);
++    // Owls keep the Soaring departure even when entrance shuffle sends one to OoT.
++    if(!Combo_SOHStartSoaring(gPlayState,dest)) {
++        SPDLOG_ERROR("[ComboShip] Could not start native Soaring departure");
++    }
+ }
+ 
+ extern "C" uint32_t SOH_LiveIncomingSongs() {
+@@ -3066,16 +3077,44 @@
+     const bool mmAccessible=sMmVisitedForSongs || portal->Child()||portal->Adult() || (ComboRando::ActiveSongTravel().resolveLogic(SOH_GetSongSources()) & 0xffc0);
+     return ComboRando::ActiveSongTravel().resolveLogic((mmAccessible ? fn() : 0) | OotLiveSoaringSources(true)) & 63;
+ }
++extern "C" void Combo_SOHCompleteWarp(PlayState* play, int destination) {
++    if(destination<0 || destination>=16) return;
++    if(destination>=6) { sSongDeparture=destination; play->transitionTrigger=TRANS_TRIGGER_OFF; }
++    else { play->nextEntranceIndex=ComboRando::kOotSongEntrances[destination];
++        gSaveContext.respawn[RESPAWN_MODE_RETURN].entranceIndex=play->nextEntranceIndex;
++        gSaveContext.respawn[RESPAWN_MODE_RETURN].playerParams=0x5FF;
++        gSaveContext.respawn[RESPAWN_MODE_RETURN].data=destination;
++        gSaveContext.respawnFlag=-3; gSaveContext.cutsceneIndex=0;
++        play->transitionTrigger=TRANS_TRIGGER_START; play->transitionType=TRANS_TYPE_FADE_WHITE;
++        gSaveContext.nextTransitionType=TRANS_TYPE_FADE_WHITE; }
++}
+ extern "C" COMBO_EXPORT int SOH_TakeSongDeparture() { int d=sSongDeparture; sSongDeparture=-1; return d; }
+ extern "C" COMBO_EXPORT void SOH_SetSongArrival(int d) { sSongArrival=d>=0 && d<6 ? d : -1; }
+-extern "C" int SOH_ConsumeSongArrival() { int d=sSongArrival; sSongArrival=-1; if(d>=0) sMmVisitedForSongs=true; return d<0 ? -1 : ComboRando::kOotSongEntrances[d]; }
++extern "C" int SOH_ConsumeSongArrival() { int d=sSongArrival; sSongArrival=-1; if(d>=0) {
++    sMmVisitedForSongs=true;
++    gSaveContext.respawn[RESPAWN_MODE_RETURN].entranceIndex=ComboRando::kOotSongEntrances[d];
++    gSaveContext.respawn[RESPAWN_MODE_RETURN].playerParams=0x5FF;
++    gSaveContext.respawn[RESPAWN_MODE_RETURN].data=d;
++    gSaveContext.respawnFlag=-3;
++} return d<0 ? -1 : ComboRando::kOotSongEntrances[d]; }
+ extern "C" int Combo_OOTSongWarp(PlayState* play, int source) {
+-    if (!IS_RANDO || !ComboRando::ActiveSongTravel().enabled || source<0 || source>=6) return 0;
+-    const int dest=ComboRando::ActiveSongTravel().destination(source);
+-    if(dest>=6) { sSongDeparture=dest; play->transitionTrigger=TRANS_TRIGGER_OFF; }
+-    else { play->nextEntranceIndex=ComboRando::kOotSongEntrances[dest]; play->transitionTrigger=TRANS_TRIGGER_START;
+-        play->transitionType=TRANS_TYPE_FADE_WHITE_FAST; gSaveContext.respawnFlag=0; gSaveContext.cutsceneIndex=0; }
++    if(!IS_RANDO || !ComboRando::ActiveSongTravel().enabled || source<0 || source>=6) return 0;
++    Combo_SOHCompleteWarp(play,ComboRando::ActiveSongTravel().destination(source));
+     return 1;
++}
++// Native warp songs normally skip particles in randomizer. Cross routes need the
++// full departure, so only those routes opt back into the original cutscene.
++// Return native, locally extracted OoT warp messages for MM's message adapter.
++extern "C" COMBO_EXPORT int SOH_GetWarpMessage(int song,int confirmation,char* out,int capacity,int* type) {
++    if(song<0 || song>=6 || !out || capacity<1 || !type) return 0;
++    auto native=CustomMessage::LoadVanillaMessageTableEntry((confirmation ? 0x88D : 0x893)+song);
++    const auto text=native.GetEnglish(MF_ENCODE);
++    if(text.empty() || text.size()>=static_cast<size_t>(capacity)) return 0;
++    memcpy(out,text.data(),text.size()); *type=native.GetTextBoxType(); return static_cast<int>(text.size());
++}
++extern "C" int Combo_SOHFullWarpAnimation(PlayState* play) {
++    return IS_RANDO && ComboRando::ActiveSongTravel().enabled && play->msgCtx.lastPlayedSong<6 &&
++        ComboRando::ActiveSongTravel().destination(play->msgCtx.lastPlayedSong)>=6;
+ }
+ extern "C" void (*gComboSceneSwitchCallback)(int fileNum) = nullptr;
+ 
+@@ -3843,7 +3882,7 @@
+ // ComboShip (#127): OOT's pause state, read by comboui's dormant-tracker gate (a dormant game's own
+ // pause state is stale, so the foreground game's is queried across the DLL boundary).
+ extern "C" COMBO_EXPORT int SOH_IsPausedForCombo(void) {
+-    return gPlayState != nullptr && gPlayState->pauseCtx.state > 0;
++    return gPlayState != nullptr && gPlayState->pauseCtx.state > 0 && !Combo_SOHSoaringMapActive();
+ }
+ 
+ // ComboShip: Ctrl+R reset. Set when a reset should return the whole session to first-boot; read by
+--- a/soh/src/code/z_kaleido_scope_call.c
++++ b/soh/src/code/z_kaleido_scope_call.c
+@@ -1,5 +1,8 @@
+ #include "global.h"
+ #include "vt.h"
++#ifdef COMBO_BUILD
++#include "soh/Enhancements/CrossWarp/CrossWarp.h"
++#endif
+ #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
+ 
+ void (*sKaleidoScopeUpdateFunc)(PlayState* play);
+@@ -54,6 +57,9 @@
+ }
+ 
+ void KaleidoScopeCall_Update(PlayState* play) {
++#ifdef COMBO_BUILD
++    if(Combo_SOHSoaringMapUpdate(play)) return;
++#endif
+     KaleidoMgrOverlay* kaleidoScopeOvl = &gKaleidoMgrOverlayTable[KALEIDO_OVL_KALEIDO_SCOPE];
+     PauseContext* pauseCtx = &play->pauseCtx;
+ 
+@@ -124,6 +130,9 @@
+ }
+ 
+ void KaleidoScopeCall_Draw(PlayState* play) {
++#ifdef COMBO_BUILD
++    if(Combo_SOHSoaringMapDraw(play)) return;
++#endif
+     KaleidoMgrOverlay* kaleidoScopeOvl = &gKaleidoMgrOverlayTable[KALEIDO_OVL_KALEIDO_SCOPE];
+ 
+     if (R_PAUSE_MENU_MODE >= 3) {
+--- a/soh/src/code/z_message_PAL.c
++++ b/soh/src/code/z_message_PAL.c
+@@ -9,6 +9,7 @@
+ extern void Combo_SOHForeignSongPerformanceFinished(void);
+ extern void Combo_SOHForeignSongPlayedText(void);
+ extern void Combo_SOHForeignSongDiagnostic(const char* event);
++extern void Combo_SOHStartSoaringEffect(PlayState* play);
+ #endif
+ 
+ #include "textures/parameter_static/parameter_static.h"
+@@ -3660,6 +3661,10 @@
+                     msgCtx->ocarinaStaff = AudioOcarina_GetPlayingStaff();
+                     msgCtx->ocarinaStaff->pos = sOcarinaButtonIndexBufPos = 0;
+                     Message_ResetOcarinaNoteState();
++#ifdef COMBO_BUILD
++                    if (Combo_SOHForeignSongPerformanceActive()) Combo_SOHStartSoaringEffect(play);
++                    else
++#endif
+                     if (msgCtx->lastPlayedSong >= OCARINA_SONG_SARIAS &&
+                         msgCtx->lastPlayedSong < OCARINA_SONG_MEMORY_GAME) {
+                         Actor_Spawn(&play->actorCtx, play,
+--- a/soh/src/overlays/actors/ovl_Demo_Kankyo/z_demo_kankyo.c
++++ b/soh/src/overlays/actors/ovl_Demo_Kankyo/z_demo_kankyo.c
+@@ -5,6 +5,9 @@
+ #include "objects/object_toki_objects/object_toki_objects.h"
+ #include "soh/frame_interpolation.h"
+ #include <assert.h>
++#ifdef COMBO_BUILD
++extern int Combo_SOHFullWarpAnimation(PlayState*);
++#endif
+ 
+ #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+ 
+@@ -796,7 +799,11 @@
+                 this->unk_150[i].unk_23 = 0;
+ 
+                 // Skip the first part of warp song cutscenes in rando
+-                if (IS_RANDO && this->actor.params == DEMOKANKYO_WARP_OUT) {
++                if (IS_RANDO && this->actor.params == DEMOKANKYO_WARP_OUT
++#ifdef COMBO_BUILD
++                    && !Combo_SOHFullWarpAnimation(play)
++#endif
++                ) {
+                     this->unk_150[i].unk_22 = 2;
+                 } else {
+                     this->unk_150[i].unk_22++;

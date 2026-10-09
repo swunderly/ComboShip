@@ -1,0 +1,4 @@
+# A unified diff represents blank context lines with a required space prefix.
+patches/*.patch text eol=lf whitespace=-blank-at-eol,-blank-at-eof
+gradlew text eol=lf
+tools/*.sh text eol=lf

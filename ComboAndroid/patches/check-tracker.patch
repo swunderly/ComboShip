@@ -1,0 +1,1253 @@
+--- a/combo/CMakeLists.txt
++++ b/combo/CMakeLists.txt
+@@ -40,6 +40,7 @@
+     gui/ComboNotesWindow.cpp
+     gui/ComboHintTracker.cpp
+     gui/ComboTimersWindow.cpp
++    gui/ComboCheckTracker.cpp
+     gui/ComboCosmeticsSync.cpp
+ )
+ add_library(comboui SHARED ${COMBOUI_SOURCES})
+--- /dev/null
++++ b/combo/gui/ComboCheckTracker.cpp
+@@ -0,0 +1,469 @@
++#include "ComboCheckTracker.h"
++#include "ComboCheckTrackerModel.h"
++#include "ComboForeground.h"
++#include "ComboTrackerCommon.h"
++#include "ComboTrackerSwap.h"
++#include "ComboWidgetStyle.h"
++#include "ComboExport.h"
++#include <libultraship/controller/controldeck/ControlDeck.h>
++#include <ship/window/gui/GuiWindow.h>
++#include <ship/window/gui/IconsFontAwesome4.h>
++#include <imgui_internal.h>
++#include <algorithm>
++#include <mutex>
++#include <string>
++#include <vector>
++
++namespace ComboRando {
++namespace {
++using namespace ComboChecks;
++constexpr const char* kEnabled = "gCombo.CheckTracker.Enabled";
++constexpr const char* kMode = "gCombo.CheckTracker.Visibility";
++constexpr const char* kShortcut = "gCombo.CheckTracker.Shortcut";
++constexpr const char* kTitle = "Check Tracker##Combo";
++VisibilityState visibility;
++bool dirty = true;
++double lastRefresh = -1;
++int lastContext = -1, lastArea = -1, expandAll = -1, selectedCheck = -1;
++bool scrollToArea = true;
++ImGuiTextFilter search;
++ComboCheckInfo info{ 0, -1, -1 };
++struct Row {
++    int id;
++    uint32_t flags;
++    std::string name, type, reward, logic, searchable;
++};
++struct Area { int id; std::string name; std::vector<Row> rows; Totals totals; };
++std::vector<Area> areas;
++UniqueTotals totals;
++
++// Published by the render thread; Android's UI thread only sees a normalized rectangle.
++// Touches over the tracker go to ImGui instead of starting an invisible analog stick.
++std::mutex boundsMutex;
++float bounds[4]{};
++void PublishBounds(bool shown) {
++    std::lock_guard<std::mutex> lock(boundsMutex);
++    if (!shown) { std::fill(std::begin(bounds), std::end(bounds), 0.0f); return; }
++    const ImVec2 p = ImGui::GetWindowPos(), s = ImGui::GetWindowSize(), d = ImGui::GetIO().DisplaySize;
++    bounds[0] = p.x / d.x; bounds[1] = p.y / d.y;
++    bounds[2] = (p.x + s.x) / d.x; bounds[3] = (p.y + s.y) / d.y;
++}
++
++struct GameAPI { ComboCheckSnapshot snapshot = nullptr; ComboCheckSetSkipped skip = nullptr; };
++const GameAPI& API(int game) {
++    static GameAPI api[2];
++    // Retry until mapped: MM can register later than comboui during startup.
++    auto& a = api[game];
++    if (!a.snapshot) a.snapshot = reinterpret_cast<ComboCheckSnapshot>(Combo_ResolveSym(
++        game ? "2ship" : "soh", game ? "MM_ComboCheckSnapshot" : "SOH_ComboCheckSnapshot"));
++    if (!a.skip) a.skip = reinterpret_cast<ComboCheckSetSkipped>(Combo_ResolveSym(
++        game ? "2ship" : "soh", game ? "MM_ComboCheckSetSkipped" : "SOH_ComboCheckSetSkipped"));
++    return a;
++}
++void Save() {
++    Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
++    dirty = true;
++}
++bool Check(const char* label, const char* cvar, int def) {
++    bool value = CVarGetInteger(cvar, def) != 0;
++    if (!ImGui::Checkbox(label, &value)) return false;
++    CVarSetInteger(cvar, value); Save(); return true;
++}
++void Collect(const ComboCheckRow* row, void*) {
++    if (!row) return;
++    auto group = std::find_if(areas.begin(), areas.end(), [&](const Area& a) { return a.id == row->area; });
++    if (group == areas.end()) {
++        areas.push_back({ row->area, row->areaName ? row->areaName : "Other", {}, {} });
++        group = areas.end() - 1;
++    }
++    Row r{ row->id, row->flags, row->name ? row->name : "", row->type ? row->type : "",
++           row->reward ? row->reward : "", row->logic ? row->logic : "", "" };
++    r.searchable = group->name + " " + r.name + " " + r.type + " " + r.reward;
++    group->totals.Add(r.flags); totals.Add(r.id, r.flags);
++    group->rows.push_back(std::move(r));
++}
++struct Button { const char* name; uint32_t mask; };
++constexpr Button buttons[] = { {"L",0x20}, {"R",0x10}, {"Z",0x2000}, {"Start",0x1000},
++    {"A",0x8000}, {"B",0x4000}, {"Modifier 1",0x40}, {"Modifier 2",0x80},
++    {"D-Up",0x800}, {"D-Down",0x400}, {"D-Left",0x200}, {"D-Right",0x100},
++    {"C-Up",0x8}, {"C-Down",0x4}, {"C-Left",0x2}, {"C-Right",0x1} };
++std::string ShortcutLabel() {
++    const uint32_t mask = CVarGetInteger(kShortcut, 0x20);
++    std::string result;
++    for (auto b : buttons) if (b.mask & mask) { if (!result.empty()) result += " + "; result += b.name; }
++    return result.empty() ? "None selected" : result;
++}
++void Migrate() {
++    // The compact 2S2H-style side panel is the new presentation default.
++    // Existing visibility modes, shortcuts, filters and save flags are retained.
++    if (!CVarGetInteger("gCombo.CheckTracker.CompactVersion", 0)) {
++        CVarSetInteger("gCombo.CheckTracker.CompactVersion", 1);
++        CVarSetInteger("gCombo.CheckTracker.WindowType", 2);
++        Save();
++    }
++    if (CVarGetInteger("gCombo.CheckTracker.UnifiedVersion", 0)) return;
++    CVarSetInteger("gCombo.CheckTracker.UnifiedVersion", 1);
++    // Keep the user's MM toggle/chord, as it already supports both tap and hold.
++    CVarSetInteger(kMode, std::clamp(CVarGetInteger("gRando.CheckTracker.VisibilityMode", Toggle), 0, 3));
++    uint32_t mask = CVarGetInteger("gRando.CheckTracker.VisibilityBtn", 0x20) & 0xffff;
++    CVarSetInteger(kShortcut, mask ? mask : 0x20);
++    CVarSetFloat("gCombo.CheckTracker.Scale", std::clamp(CVarGetFloat("gRando.CheckTracker.Scale", 1), 0.7f, 2.5f));
++    CVarSetFloat("gCombo.CheckTracker.Opacity", std::clamp(CVarGetFloat("gRando.CheckTracker.Opacity", .75f), 0.1f, 1.0f));
++    CVarSetInteger("gCombo.CheckTracker.Collected", CVarGetInteger("gRando.CheckTracker.CollectedMode", 2) != 2);
++    CVarSetInteger("gCombo.CheckTracker.Skipped", CVarGetInteger("gRando.CheckTracker.SkippedMode", 2) != 2);
++    CVarSetInteger("gCombo.CheckTracker.CurrentArea", CVarGetInteger("gRando.CheckTracker.ShowCurrentScene", 0));
++    CVarSetInteger("gCombo.CheckTracker.AutoScroll", CVarGetInteger("gRando.CheckTracker.ScrollToCurrentScene", 1));
++    CVarSetInteger("gCombo.CheckTracker.ShowLogic", CVarGetInteger("gRando.CheckTracker.OutOfLogicMode", 1) != 0);
++    CVarSetInteger("gCombo.CheckTracker.AvailableOnly", CVarGetInteger("gRando.CheckTracker.OutOfLogicMode", 1) == 2);
++    Save();
++}
++void SuppressOldWindows() {
++    for (int g = 0; g < 2; ++g) for (int i : {2,3}) {
++        const auto& w = ComboTracker::kTrackers[g][i];
++        auto win = Ship::Context::GetRawInstance()->GetWindow()->GetGui()->GetGuiWindow(w.name);
++        if (CVarGetInteger(w.cvar, 0) || (win && win->IsVisible())) ComboTracker::SetTracker(w, false);
++    }
++}
++const char* Status(const Row& row) {
++    if (IsCollected(row.flags)) return "Collected";
++    if (IsSkipped(row.flags)) return "Skipped";
++    if (row.flags & COMBO_CHECK_SCUMMED) return "Unsaved";
++    if (row.flags & COMBO_CHECK_SEEN) return "Seen";
++    if (row.flags & COMBO_CHECK_LOGIC_KNOWN) return OutOfLogic(row.flags) ? "Unavailable" : "Available";
++    return "Unchecked";
++}
++ImVec4 Color(const Row& row) {
++    if (IsCollected(row.flags)) return { .45f, .9f, .6f, 1 };
++    if (IsSkipped(row.flags)) return { 1.0f, .4f, 1.0f, 1 };
++    if (row.flags & (COMBO_CHECK_SEEN | COMBO_CHECK_SCUMMED)) return { .55f, .8f, 1, 1 };
++    if (OutOfLogic(row.flags)) return { .6f, .63f, .68f, 1 };
++    return { .95f, .95f, .97f, 1 };
++}
++
++const char* TypeIcon(const Row& row) {
++    if (row.type == "Heart") return ICON_FA_HEART;
++    if (row.type == "Song") return ICON_FA_MUSIC;
++    if (row.type == "Shop") return ICON_FA_SHOPPING_BAG;
++    if (row.type == "Chest" || row.name.find("Chest") != std::string::npos) return ICON_FA_ARCHIVE;
++    if (row.type == "Crate" || row.type == "Barrel" || row.type == "Pot") return ICON_FA_CUBE;
++    if (row.type == "Skulltula" || row.type == "Beehive") return ICON_FA_BUG;
++    if (row.type == "Fairy" || row.type == "Wonder item") return ICON_FA_MAGIC;
++    if (row.type == "Grass" || row.type == "Tree") return ICON_FA_LEAF;
++    if (row.type == "Cow" || row.type == "Frog" || row.type == "Fish") return ICON_FA_PAW;
++    if (row.type == "Dungeon reward") return ICON_FA_STAR;
++    if (row.type == "Freestanding") return ICON_FA_DIAMOND;
++    return ICON_FA_GIFT;
++}
++
++std::string RowLabel(const Row& row) {
++    std::string label = row.name;
++    if (IsSkipped(row.flags)) label += " (Skipped)";
++    else if (IsCollected(row.flags)) label += " (" + (row.reward.empty() ? std::string("Collected") : row.reward) + ")";
++    else if (row.flags & COMBO_CHECK_SCUMMED) label += " (Unsaved)";
++    else if (row.flags & COMBO_CHECK_SEEN) label += " (Seen)";
++    return label;
++}
++
++class Window final : public Ship::GuiWindow {
++  public:
++    using GuiWindow::GuiWindow;
++    void Draw() override {
++        auto ctx = Ship::Context::GetRawInstance();
++        if (!ctx || !ctx->GetWindow() || !ctx->GetWindow()->GetGui()) return;
++        ImGui::SetCurrentContext(ctx->GetWindow()->GetGui()->GetImGuiContext());
++        SuppressOldWindows();
++        const int game = ComboUI::GetForegroundGame() == 1 ? 1 : 0;
++        const auto& api = API(game);
++        info = {0, -1, -1};
++        if (api.snapshot) api.snapshot(&info, nullptr, nullptr);
++        const int context = info.loaded ? game * 4 + info.slot : -1;
++        if (lastContext != context) {
++            areas.clear(); totals = {}; search.Clear(); selectedCheck = -1;
++            dirty = true; scrollToArea = true; lastContext = context; lastArea = -1;
++        }
++        if (lastArea != info.currentArea) { lastArea = info.currentArea; scrollToArea = true; dirty = true; }
++        auto deck = std::dynamic_pointer_cast<LUS::ControlDeck>(ctx->GetControlDeck());
++        const auto* pads = deck ? deck->GetPads() : nullptr;
++        const uint32_t held = pads ? pads[0].button : 0;
++        const int mode = std::clamp(CVarGetInteger(kMode, Toggle), 0, 3);
++        const bool menu = CVarGetInteger("gOpenWindows.Menu", 0) != 0;
++        const bool shortcutBlocked = menu || ImGui::GetIO().WantTextInput;
++        const bool show = visibility.Update(context, mode, CVarGetInteger(kShortcut, 0x20), held,
++            CVarGetInteger(kEnabled, 0), info.loaded, ComboTracker::ForegroundPaused(game), shortcutBlocked);
++        if (!show) { PublishBounds(false); return; }
++        if (dirty || ImGui::GetTime() - lastRefresh >= .3) {
++            areas.clear(); totals = {};
++            api.snapshot(&info, Collect, nullptr);
++            for (auto& area : areas) std::stable_sort(area.rows.begin(), area.rows.end(), [](const Row& a, const Row& b) {
++                if (IsCollected(a.flags) != IsCollected(b.flags)) return !IsCollected(a.flags);
++                return a.name < b.name;
++            });
++            dirty = false; lastRefresh = ImGui::GetTime();
++        }
++        const ImVec2 display = ImGui::GetIO().DisplaySize;
++        const float scale = std::clamp(CVarGetFloat("gCombo.CheckTracker.Scale", 1), .7f, 2.5f);
++        const float unit = std::max(1.0f, ImGui::GetFontSize() / 16);
++        const int style = std::clamp(CVarGetInteger("gCombo.CheckTracker.WindowType", 2), 0, 2);
++        const bool sidePanel = style == 2, overlay = style == 0;
++        if (sidePanel) DockBesideGame();
++        else {
++            ImGui::SetNextWindowDockID(0);
++            const ImVec2 size(std::min(display.x * .7f, 485 * unit), std::min(display.y * .8f, 500 * unit));
++            const ImGuiCond condition = lastStyle != style ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
++            ImGui::SetNextWindowSize(size, condition);
++            ImGui::SetNextWindowPos(ImVec2(display.x - size.x - 20, 50), condition);
++        }
++        lastStyle = style;
++        ImGui::SetNextWindowSizeConstraints(ImVec2(std::min(220 * unit, display.x * .4f), std::min(160 * unit, display.y * .5f)), display);
++        ImGui::SetNextWindowBgAlpha(sidePanel ? 1.0f : std::clamp(CVarGetFloat("gCombo.CheckTracker.Opacity", .75f), .1f, 1.0f));
++        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0,0,0,1));
++        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0,0,0,0));
++        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(.3f,.35f,.4f,.35f));
++        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(.3f,.35f,.4f,.5f));
++        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 4));
++        ImGuiWindowFlags flags = ImGuiWindowFlags_NoFocusOnAppearing;
++        if (!sidePanel) flags |= ImGuiWindowFlags_NoDocking;
++        if (overlay) flags |= ImGuiWindowFlags_NoTitleBar;
++        bool open = true;
++        if (ImGui::Begin(kTitle, &open, flags)) {
++            ImGui::SetWindowFontScale(scale);
++            PublishBounds(!menu);
++            if (overlay) {
++                ImGui::TextUnformatted("Check Tracker"); ImGui::SameLine();
++                if (ImGui::SmallButton("Close")) open = false;
++            }
++            const bool showTools = CVarGetInteger("gCombo.CheckTracker.ShowTools", 0);
++            if (showTools) {
++                ImGui::TextUnformatted(game ? "Majora's Mask" : "Ocarina of Time");
++                ImGui::Text("%d / %d collected  |  %d skipped%s", totals.collected, totals.total, totals.skipped,
++                            totals.hiddenArea ? "  (known areas)" : "");
++                ComboMenu_PushInput(ComboMenu_ThemeColor());
++                ImGui::SetNextItemWidth(-1);
++                if (ImGui::InputTextWithHint("##search", "Search checks, areas, types or known rewards", search.InputBuf, sizeof(search.InputBuf))) search.Build();
++                ComboMenu_PopInput();
++                ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
++                Check("Collected", "gCombo.CheckTracker.Collected", 0); ImGui::SameLine();
++                Check("Skipped", "gCombo.CheckTracker.Skipped", 0); ImGui::SameLine();
++                Check("Current area", "gCombo.CheckTracker.CurrentArea", 0);
++                ComboMenu_PopCheckbox();
++                ComboMenu_PushButton(ComboMenu_ThemeColor());
++                if (ImGui::Button("Expand all")) expandAll = 1;
++                ImGui::SameLine(); if (ImGui::Button("Collapse all")) expandAll = 0;
++                ImGui::SameLine(); if (ImGui::Button("Find current")) { scrollToArea = true; forceScroll = true; }
++                ComboMenu_PopButton();
++                ImGui::Separator();
++            } else if (search.IsActive()) { search.Clear(); }
++            if (ImGui::BeginChild("Checks", ImVec2(0,0), false, ImGuiWindowFlags_HorizontalScrollbar)) DrawRows(game);
++            ImGui::EndChild();
++            DrawDetails(api, display, unit);
++        } else PublishBounds(!menu);
++        ImGui::End(); ImGui::PopStyleVar(); ImGui::PopStyleColor(4);
++        if (!open) {
++            if (mode == Toggle) visibility.open = false;
++            else { CVarSetInteger(kEnabled, 0); Save(); }
++            PublishBounds(false);
++        }
++    }
++  protected:
++    void InitElement() override {}
++    void UpdateElement() override {}
++    void DrawElement() override {}
++  private:
++    bool forceScroll = false;
++    bool openDetails = false;
++    int lastStyle = -1;
++    ImGuiID sideDock = 0;
++
++    void DockBesideGame() {
++        // Split only the game's existing leaf. Other docked tools retain their layout.
++        // ImGui hides an inactive dock leaf, restoring the game's space when toggled off.
++        auto* tracker = ImGui::FindWindowByName(kTitle);
++        if (!sideDock && tracker && tracker->DockId) sideDock = tracker->DockId;
++        // A hidden tracker has no live ImGui window after a cold launch. Reuse
++        // its saved dock instead of splitting the game again and losing the divider.
++        if (!sideDock && !tracker) {
++            if (auto* settings = ImGui::FindWindowSettingsByID(ImHashStr(kTitle))) sideDock = settings->DockId;
++        }
++        if (!sideDock || !ImGui::DockBuilderGetNode(sideDock)) {
++            auto* main = ImGui::FindWindowByName("Main Game");
++            auto* node = main ? ImGui::DockBuilderGetNode(main->DockId) : nullptr;
++            if (node && !node->IsSplitNode()) {
++                const ImGuiID root = node->ID;
++                ImGuiID gameDock = 0;
++                sideDock = ImGui::DockBuilderSplitNode(root, ImGuiDir_Right, .5f, nullptr, &gameDock);
++                ImGui::DockBuilderDockWindow("Main Game", gameDock);
++                ImGui::DockBuilderDockWindow(kTitle, sideDock);
++                if (auto* panel = ImGui::DockBuilderGetNode(sideDock))
++                    panel->LocalFlags &= ~(ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_HiddenTabBar);
++                ImGui::DockBuilderFinish(root);
++            }
++        }
++        if (sideDock) ImGui::SetNextWindowDockID(sideDock);
++    }
++
++    void DrawRows(int game) {
++        const bool showCollected = CVarGetInteger("gCombo.CheckTracker.Collected", 0);
++        const bool showSkipped = CVarGetInteger("gCombo.CheckTracker.Skipped", 0);
++        const bool currentOnly = CVarGetInteger("gCombo.CheckTracker.CurrentArea", 0);
++        const bool availableOnly = CVarGetInteger("gCombo.CheckTracker.ShowLogic", 1) && CVarGetInteger("gCombo.CheckTracker.AvailableOnly", 0);
++        const bool autoScroll = CVarGetInteger("gCombo.CheckTracker.AutoScroll", 1) || forceScroll;
++        int shown = 0;
++        ImGui::PushID(game);
++        for (const auto& area : areas) {
++            if (currentOnly && area.id != info.currentArea) continue;
++            std::vector<const Row*> rows;
++            for (const auto& row : area.rows)
++                if (PassesFilters(row.flags, showCollected, showSkipped, availableOnly) && search.PassFilter(row.searchable.c_str())) rows.push_back(&row);
++            if (rows.empty()) continue;
++            ++shown;
++            ImGui::PushID(area.id);
++            ImGui::Separator();
++            const bool target = scrollToArea && autoScroll && area.id == info.currentArea && !search.IsActive();
++            if (expandAll >= 0) ImGui::SetNextItemOpen(expandAll != 0);
++            else if (target) ImGui::SetNextItemOpen(true);
++            else ImGui::SetNextItemOpen(area.id == info.currentArea, ImGuiCond_Once);
++            std::string heading = area.name + (area.totals.hiddenArea ? " (?)" :
++                " (" + std::to_string(area.totals.collected) + "/" + std::to_string(area.totals.total) + ")") + "###area";
++            const bool complete = !area.totals.hiddenArea && area.totals.collected == area.totals.total;
++            ImGui::PushStyleColor(ImGuiCol_Text, complete ? ImVec4(.4f,1,.4f,1) : ImVec4(1,1,1,1));
++            bool expanded = ImGui::CollapsingHeader(heading.c_str());
++            ImGui::PopStyleColor();
++            if (target) { ImGui::SetScrollHereY(0); scrollToArea = false; forceScroll = false; }
++            if (expanded) ImGui::Indent(ImGui::GetFontSize() * .65f);
++            if (expanded) for (const Row* row : rows) {
++                if (row->flags & COMBO_CHECK_AREA_HIDDEN) { ImGui::TextWrapped("%s", row->name.c_str()); continue; }
++                ImGui::PushID(row->id);
++                ImGui::PushStyleColor(ImGuiCol_Text, Color(*row));
++                ImGui::TextUnformatted(TypeIcon(*row)); ImGui::SameLine();
++                const std::string label = RowLabel(*row) + "##check";
++                if (ImGui::Selectable(label.c_str(), false, 0, ImVec2(0, ImGui::GetTextLineHeight() * 1.15f))) {
++                    selectedCheck = row->id; openDetails = true;
++                }
++                ImGui::PopStyleColor();
++                ImGui::PopID();
++            }
++            if (expanded) ImGui::Unindent(ImGui::GetFontSize() * .65f);
++            ImGui::PopID();
++        }
++        ImGui::PopID();
++        expandAll = -1;
++        if (!shown) ImGui::TextWrapped("No checks match these filters. Try showing collected or skipped checks, clearing search, or turning off Current area.");
++    }
++
++    void DrawDetails(const GameAPI& api, ImVec2 display, float unit) {
++        if (openDetails) { ImGui::OpenPopup("Check details"); openDetails = false; }
++        ImGui::SetNextWindowSize(ImVec2(std::min(420 * unit, display.x * .8f), 0), ImGuiCond_Appearing);
++        if (ImGui::BeginPopup("Check details")) {
++            const Row* selected = nullptr;
++            for (const auto& area : areas) for (const auto& row : area.rows)
++                if (row.id == selectedCheck) selected = &row;
++            if (!selected) ImGui::CloseCurrentPopup();
++            else {
++                ImGui::TextWrapped("%s", selected->name.c_str());
++                ImGui::TextColored(Color(*selected), "%s | %s", Status(*selected), selected->type.c_str());
++                if (!selected->reward.empty()) ImGui::TextWrapped("Reward: %s", selected->reward.c_str());
++                if (!selected->logic.empty() && ImGui::TreeNode("Logic details")) {
++                    ImGui::TextWrapped("%s", selected->logic.c_str()); ImGui::TreePop();
++                }
++                ComboMenu_PushButton(ComboMenu_ThemeColor());
++                if (!IsCollected(selected->flags) && api.skip) {
++                    if (ImGui::Button(IsSkipped(selected->flags) ? "Unskip check" : "Skip check")) {
++                        dirty = api.skip(info.slot, selected->id, !IsSkipped(selected->flags)) != 0;
++                        ImGui::CloseCurrentPopup();
++                    }
++                    ImGui::SameLine();
++                }
++                if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
++                ComboMenu_PopButton();
++            }
++            ImGui::EndPopup();
++        }
++    }
++};
++std::shared_ptr<Window> window;
++} // namespace
++
++void RegisterCheckTrackerWindow() {
++    Migrate();
++    if (!window) window = std::make_shared<Window>("", true, " Combo Check Tracker");
++    Ship::Context::GetRawInstance()->GetWindow()->GetGui()->AddGuiWindow(window);
++}
++
++void DrawUnifiedCheckTrackerSettings() {
++    const ImVec4 theme = ComboMenu_ThemeColor();
++    ComboMenu_PushCheckbox(theme);
++    Check("Enable check tracker", kEnabled, 0);
++    ComboMenu_PopCheckbox();
++    ImGui::TextWrapped("One tracker follows the game you are playing. Its layout, shortcut and filters are shared.");
++    ImGui::Spacing();
++    if (ImGui::BeginTable("##shared-check-settings", 2, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
++        ImGui::TableNextColumn();
++        ImGui::SeparatorText("Open and close");
++        int mode = std::clamp(CVarGetInteger(kMode, Toggle), 0, 3);
++        const char* modes[] = { "Always", "While paused", "Button toggle", "Button hold" };
++        ComboMenu_PushCombobox(theme);
++        if (ImGui::Combo("Visibility", &mode, modes, 4)) { CVarSetInteger(kMode, mode); Save(); }
++        ComboMenu_PopCombobox();
++        if (mode == Toggle || mode == Hold) {
++            ImGui::TextWrapped("Shortcut: %s", ShortcutLabel().c_str());
++            ImGui::TextWrapped(mode == Toggle ? "Press once to open; press again to close." : "Hold the shortcut to show the tracker.");
++            if (ImGui::CollapsingHeader("Change shortcut")) {
++                uint32_t mask = CVarGetInteger(kShortcut, 0x20);
++                ComboMenu_PushCheckbox(theme);
++                if (ImGui::BeginTable("##buttons", 2)) {
++                    for (auto b : buttons) {
++                        ImGui::TableNextColumn(); bool selected = (mask & b.mask) != 0;
++                        if (ImGui::Checkbox(b.name, &selected)) {
++                            mask = selected ? mask | b.mask : mask & ~b.mask;
++                            CVarSetInteger(kShortcut, mask); Save();
++                        }
++                    }
++                    ImGui::EndTable();
++                }
++                ComboMenu_PopCheckbox();
++                ImGui::TextWrapped("Select one button or a combination. Press all selected buttons together. These are your mapped N64 controls.");
++                if (!mask) ImGui::TextWrapped("Select at least one button to use the shortcut.");
++            }
++            if (mode == Toggle) {
++                ComboMenu_PushButton(theme);
++                if (ImGui::Button(visibility.open ? "Hide tracker now" : "Open tracker now")) {
++                    visibility.open = !visibility.open;
++                    if (visibility.open) CVarSetInteger(kEnabled, 1);
++                    Save();
++                }
++                ComboMenu_PopButton();
++            }
++        }
++        ImGui::TableNextColumn();
++        ImGui::SeparatorText("Appearance");
++        int type = CVarGetInteger("gCombo.CheckTracker.WindowType", 2);
++        const char* types[] = { "Overlay", "Floating window", "Side panel" };
++        ComboMenu_PushCombobox(theme);
++        if (ImGui::Combo("Style", &type, types, 3)) { CVarSetInteger("gCombo.CheckTracker.WindowType", type); Save(); }
++        ComboMenu_PopCombobox();
++        float scale = CVarGetFloat("gCombo.CheckTracker.Scale", 1), opacity = 100 * CVarGetFloat("gCombo.CheckTracker.Opacity", .75f);
++        ComboMenu_PushSlider(theme);
++        if (ImGui::SliderFloat("Text size", &scale, .7f, 2.5f, "%.1fx")) { CVarSetFloat("gCombo.CheckTracker.Scale", scale); Save(); }
++        if (type != 2 && ImGui::SliderFloat("Background", &opacity, 10, 100, "%.0f%%")) { CVarSetFloat("gCombo.CheckTracker.Opacity", opacity / 100); Save(); }
++        ComboMenu_PopSlider();
++        ComboMenu_PushCheckbox(theme);
++        Check("Show search and filter toolbar", "gCombo.CheckTracker.ShowTools", 0);
++        Check("Show collected checks", "gCombo.CheckTracker.Collected", 0);
++        Check("Show skipped checks", "gCombo.CheckTracker.Skipped", 0);
++        Check("Only show current area", "gCombo.CheckTracker.CurrentArea", 0);
++        Check("Follow current area", "gCombo.CheckTracker.AutoScroll", 1);
++        Check("Show availability and logic", "gCombo.CheckTracker.ShowLogic", 1);
++        if (CVarGetInteger("gCombo.CheckTracker.ShowLogic", 1)) Check("Hide unavailable checks", "gCombo.CheckTracker.AvailableOnly", 0);
++        ComboMenu_PopCheckbox();
++        ImGui::EndTable();
++    }
++    ImGui::Spacing();
++    ImGui::TextWrapped("The side panel sits beside the game. Drag the divider to resize it; toggle it off to restore the game view. Tap a check for details or to skip it. Search and filter controls can be shown above the list.");
++}
++} // namespace ComboRando
++
++extern "C" COMBO_EXPORT int ComboUI_CheckTrackerHitTest(float x, float y) {
++    std::lock_guard<std::mutex> lock(ComboRando::boundsMutex);
++    const auto* b = ComboRando::bounds;
++    return b[2] > b[0] && b[3] > b[1] && x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3];
++}
+--- /dev/null
++++ b/combo/gui/ComboCheckTracker.h
+@@ -0,0 +1,5 @@
++#pragma once
++namespace ComboRando {
++void RegisterCheckTrackerWindow();
++void DrawUnifiedCheckTrackerSettings();
++}
+--- /dev/null
++++ b/combo/gui/ComboCheckTrackerModel.h
+@@ -0,0 +1,66 @@
++#pragma once
++#include <cstdint>
++#include <unordered_set>
++#include "../menu/ComboCheckTrackerABI.h"
++
++namespace ComboChecks {
++enum Visibility { Always, Paused, Toggle, Hold };
++
++// One edge latch is shared across both games. A held chord must never retrigger
++// on a game/slot transition, after editing the binding, or while using the menu.
++struct VisibilityState {
++    bool open = false;
++    bool down = false;
++    int context = -1;
++    int mode = -1;
++    uint32_t binding = 0;
++    bool Update(int newContext, int newMode, uint32_t mask, uint32_t buttons,
++                bool enabled, bool loaded, bool paused, bool menu) {
++        const bool held = mask != 0 && (buttons & mask) == mask;
++        if (context != newContext || mode != newMode || binding != mask) {
++            down = held;
++            context = newContext;
++            mode = newMode;
++            binding = mask;
++        }
++        if (enabled && loaded && !menu && newMode == Toggle && held && !down) open = !open;
++        down = held;
++        if (!enabled || !loaded) return false;
++        if (newMode == Always) return true;
++        if (newMode == Paused) return paused;
++        if (newMode == Hold) return held && !menu;
++        return open;
++    }
++};
++
++inline bool IsCollected(uint32_t flags) { return (flags & COMBO_CHECK_COLLECTED) != 0; }
++inline bool IsSkipped(uint32_t flags) { return !IsCollected(flags) && (flags & COMBO_CHECK_SKIPPED) != 0; }
++inline bool OutOfLogic(uint32_t flags) {
++    return !IsCollected(flags) && (flags & COMBO_CHECK_LOGIC_KNOWN) && !(flags & COMBO_CHECK_AVAILABLE);
++}
++inline bool PassesFilters(uint32_t flags, bool collected, bool skipped, bool onlyAvailable) {
++    if (flags & COMBO_CHECK_AREA_HIDDEN) return !onlyAvailable;
++    if (IsCollected(flags) && !collected) return false;
++    if (IsSkipped(flags) && !skipped) return false;
++    return !onlyAvailable || !OutOfLogic(flags);
++}
++struct Totals {
++    int total = 0, collected = 0, skipped = 0;
++    bool hiddenArea = false;
++    void Add(uint32_t flags) {
++        if (flags & COMBO_CHECK_AREA_HIDDEN) { hiddenArea = true; return; }
++        ++total;
++        if (IsCollected(flags)) ++collected;
++        else if (IsSkipped(flags)) ++skipped;
++    }
++};
++// A check may be reachable from several areas (for example MM's postboxes).
++// Show it in each relevant area, but count that check only once overall.
++struct UniqueTotals : Totals {
++    std::unordered_set<int32_t> ids;
++    void Add(int32_t id, uint32_t flags) {
++        if (flags & COMBO_CHECK_AREA_HIDDEN) { hiddenArea = true; return; }
++        if (ids.insert(id).second) Totals::Add(flags);
++    }
++};
++} // namespace ComboChecks
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -11,6 +11,7 @@
+ #include "ComboAnchorRoomWindow.h"  // combo-native floating Anchor room window
+ #include "ComboNotesWindow.h"       // combo-owned cross-game Personal Notes window
+ #include "ComboHintTracker.h"       // combo-owned unified Hint Tracker (#164)
++#include "ComboCheckTracker.h"
+ #include "ComboTimersWindow.h"      // combo-owned overlay timers (#173)
+ #include "rando/ComboPlaythrough.h" // plando: ParseSpoilerPlacements + Suffix/BuildForeignArray + slot paths
+ #include <imgui.h>
+@@ -374,6 +375,16 @@
+ 
+     std::unordered_set<std::string> seen; // dedupe key: normalized cvar (or per-game name for no-cvar)
+     int matches = 0;
++    if (NormalizeSearch("Check Tracker visibility shortcut button toggle hold collected skipped search current area logic appearance text size background").find(query) != std::string::npos) {
++        if (ImGui::Button("Check Tracker settings (both games)")) {
++            mScope = "settings";
++            mHubActive = "Settings/Check Tracker";
++            mSearchBuf[0] = '\0';
++            mSearchQuery.clear();
++            return;
++        }
++        ++matches;
++    }
+     const ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
+     if (ImGui::BeginTable("##searchresults", cols, flags)) {
+         for (const auto& src : sources) {
+@@ -385,8 +396,10 @@
+                 const CwSection& sec = m->sections[s];
+                 for (int sb = 0; sb < sec.sidebarCount; ++sb) {
+                     const CwSidebar& side = sec.sidebars[sb];
++                    if (side.sidebarName && std::strcmp(side.sidebarName, "Check Tracker") == 0) continue;
+                     for (int w = 0; w < side.widgetCount; ++w) {
+                         const CwWidget& wd = side.widgets[w];
++                        if (wd.cvar && std::strstr(wd.cvar, "CheckTracker")) continue; // retired per-game controls
+                         // Non-interactive / opted-out kinds never appear in search.
+                         if (wd.kind == CW_SEPARATOR || wd.kind == CW_SEPARATOR_TEXT || wd.kind == CW_TEXT ||
+                             wd.kind == CW_CUSTOM || wd.hideInSearch)
+@@ -655,44 +668,9 @@
+     }
+ }
+ 
+-// Shared > Check Tracker: master visibility + shared window type, then both games' own
+-// check-tracker settings inline (colors/filters stay per game).
++// One check tracker and one settings model for both games.
+ void DrawCheckTrackerSharedPanel() {
+-    const ImVec4 theme = ComboRando::ComboMenu_ThemeColor();
+-    bool changed = false;
+-
+-    const ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
+-    if (ImGui::BeginTable("##checktrackercols", 2, tableFlags)) {
+-        ImGui::TableNextRow();
+-        ImGui::TableSetColumnIndex(0);
+-
+-        changed |= DrawTrackerMasterHead(ComboTracker::kSwapCheck, "Toggle Check Tracker", theme);
+-
+-        ImGui::SeparatorText("Appearance (both games)");
+-        const char* kWindowTypes[] = { "Floating (overlay)", "Window" };
+-        int wt = CVarGetInteger("gCombo.CheckTracker.WindowType", ComboTracker::kDefaultCheckWindowType);
+-        ComboRando::ComboMenu_PushCombobox(theme);
+-        if (ImGui::Combo("Window type", &wt, kWindowTypes, 2)) {
+-            CVarSetInteger("gCombo.CheckTracker.WindowType", wt);
+-            ComboTracker::SyncAppearance(); // mirrors into OOT's CVar; MM's seam reads it directly
+-            changed = true;
+-        }
+-        ComboRando::ComboMenu_PopCombobox();
+-
+-        ImGui::EndTable();
+-    }
+-
+-    // Per-game detail settings, inline (full panel width).
+-    ImGui::SeparatorText("Ocarina of Time");
+-    RenderGameTrackerBlock(0, ComboTracker::kSwapCheck, "Randomizer", "Check Tracker");
+-    ImGui::SeparatorText("Majora's Mask");
+-    RenderGameTrackerBlock(1, ComboTracker::kSwapCheck, "Rando", "Check Tracker");
+-
+-    if (changed) {
+-        if (auto ctx = Ship::Context::GetRawInstance(); ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui()) {
+-            ctx->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+-        }
+-    }
++    ComboRando::DrawUnifiedCheckTrackerSettings();
+ }
+ 
+ // Helper: seed a fixed char buffer from a string CVar for ImGui::InputText.
+@@ -1825,6 +1803,7 @@
+     // Item Tracker: shared appearance + game-swap manager (see ComboTrackerSwap.h).
+     ComboTracker::SyncAppearance();
+     ComboTracker::RegisterSwap();
++    ComboRando::RegisterCheckTrackerWindow();
+ 
+     // Combo-native floating Anchor room window (toggled from the Anchor panel).
+     ComboRando::RegisterAnchorRoomWindow();
+--- a/combo/gui/ComboTrackerSwap.cpp
++++ b/combo/gui/ComboTrackerSwap.cpp
+@@ -228,7 +228,7 @@
+     // comboui's per-module GImGui must point at the shared context (same pattern as ComboMenu).
+     ImGui::SetCurrentContext(ctx->GetWindow()->GetGui()->GetImGuiContext());
+ 
+-    for (int k = 0; k < ComboTracker::kSwapCount; ++k) {
++    for (int k = 0; k < 1; ++k) { // Item tracker only; check tracker now has one shared window.
+         Reconcile(k);
+     }
+ 
+@@ -262,7 +262,7 @@
+         // At most one tracker arms per press; overlapping bodies resolve to the topmost.
+         Peek* best = nullptr;
+         int bestOrder = -1;
+-        for (int k = 0; k < ComboTracker::kSwapCount; ++k) {
++        for (int k = 0; k < 1; ++k) { // Item tracker only; check tracker now has one shared window.
+             Peek& pk = sPeeks[k];
+             pk.holdArmed = false;
+             if (CVarGetInteger("gOpenWindows.Menu", 0)) { // fullscreen combo menu covers everything
+@@ -289,7 +289,7 @@
+             best->holdArmed = true;
+         }
+     }
+-    for (int k = 0; k < ComboTracker::kSwapCount; ++k) {
++    for (int k = 0; k < 1; ++k) { // Item tracker only; check tracker now has one shared window.
+         Peek& pk = sPeeks[k];
+         if (pk.holdArmed && !pk.held && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+             if (io.MouseDragMaxDistanceSqr[ImGuiMouseButton_Left] > kHoldDragCancelSqr) {
+--- a/combo/gui/ComboTrackerVisibility.cpp
++++ b/combo/gui/ComboTrackerVisibility.cpp
+@@ -116,13 +116,13 @@
+ 
+     // Background game: remember the user's settings-window intent, then hide its popouts. The main
+     // tracker windows are NOT touched — ComboTrackerSwap derives them every frame.
+-    for (int i = 0; i < 2; ++i) {
++    for (int i = 0; i < 1; ++i) { // Only item settings remain per game.
+         sIntent[bg][i] = CVarGetInteger(kTrackers[bg][kSettingsColumns[i]].cvar, 0);
+         SetTracker(kTrackers[bg][kSettingsColumns[i]], false);
+     }
+     // Foreground game: restore remembered intent. Skip until we've snapshotted at least once, so
+     // the game that owns the foreground at startup keeps whatever its loaded config asked for.
+-    for (int i = 0; i < 2; ++i) {
++    for (int i = 0; i < 1; ++i) { // Only item settings remain per game.
+         if (sIntent[fg][i] < 0) {
+             continue;
+         }
+@@ -158,7 +158,7 @@
+     // Only the background game's CVars are forced-hidden; the foreground game's live values already
+     // reflect the user's latest toggles (a stale snapshot would clobber them).
+     const int bg = sForegroundGame ^ 1;
+-    for (int i = 0; i < 2; ++i) {
++    for (int i = 0; i < 1; ++i) { // Only item settings remain per game.
+         if (sIntent[bg][i] >= 0) {
+             CVarSetInteger(kTrackers[bg][kSettingsColumns[i]].cvar, sIntent[bg][i]);
+         }
+--- /dev/null
++++ b/combo/menu/ComboCheckTrackerABI.h
+@@ -0,0 +1,33 @@
++#pragma once
++#include <stdint.h>
++
++// Strings belong to the game module and are valid only during the visitor call.
++// No game structs, STL containers, textures, or allocator ownership cross this ABI.
++enum ComboCheckFlags {
++    COMBO_CHECK_COLLECTED = 1,
++    COMBO_CHECK_SKIPPED = 2,
++    COMBO_CHECK_SEEN = 4,
++    COMBO_CHECK_SCUMMED = 8,
++    COMBO_CHECK_SAVED = 16,
++    COMBO_CHECK_AVAILABLE = 32,
++    COMBO_CHECK_LOGIC_KNOWN = 64,
++    COMBO_CHECK_AREA_HIDDEN = 128,
++};
++struct ComboCheckInfo {
++    int32_t loaded;
++    int32_t slot;
++    int32_t currentArea;
++};
++struct ComboCheckRow {
++    int32_t id;
++    int32_t area;
++    uint32_t flags;
++    const char* areaName;
++    const char* name;
++    const char* type;
++    const char* reward;
++    const char* logic;
++};
++typedef void (*ComboCheckVisitor)(const ComboCheckRow*, void*);
++typedef void (*ComboCheckSnapshot)(ComboCheckInfo*, ComboCheckVisitor, void*);
++typedef int (*ComboCheckSetSkipped)(int32_t slot, int32_t id, int32_t skipped);
+--- /dev/null
++++ b/combo/menu/ComboCheckTrackerMM.inc
+@@ -0,0 +1,56 @@
++// Included by the native MM tracker. Check flags continue to live in its normal save.
++#include "ComboCheckTrackerABI.h"
++#include "../ComboExport.h"
++
++static const char* ComboMmCheckType(RandoCheckType type) {
++    static constexpr const char* names[] = { "Item", "Barrel", "Butterfly", "Chest", "Cow", "Crate",
++        "Enemy drop", "Freestanding", "Frog", "Grass", "Heart", "Beehive", "Minigame", "NPC", "Owl",
++        "Pot", "Dungeon reward", "Shop", "Skulltula", "Snowball", "Song", "Fairy", "Shop", "Tree", "Wonder item" };
++    return type >= 0 && type < RCTYPE_MAX ? names[type] : "Item";
++}
++
++extern "C" COMBO_EXPORT void MM_ComboCheckSnapshot(ComboCheckInfo* info, ComboCheckVisitor visitor, void* user) {
++    if (!info) return;
++    *info = { 0, -1, -1 };
++    if (!Combo_MmIsForeground() || !gPlayState || !IS_RANDO || gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2) return;
++    *info = { 1, gSaveContext.fileNum, GetScrollTargetScene(gPlayState->sceneId) };
++    if (!visitor) return;
++    const bool wantLogic = CVarGetInteger("gCombo.CheckTracker.ShowLogic", 1);
++    if (wantLogic) RefreshChecksInLogic();
++    for (const auto scene : sortedSceneIds) {
++        if (scene == SCENE_MAX) continue;
++        const std::string areaName = GetCheckTrackerSceneName(scene);
++        for (const auto id : sceneChecks[scene]) {
++            const auto& check = RANDO_SAVE_CHECKS[id];
++            if (!check.shuffled) continue;
++            uint32_t flags = check.obtained ? COMBO_CHECK_COLLECTED : 0;
++            if (check.skipped) flags |= COMBO_CHECK_SKIPPED;
++            if (wantLogic) flags |= COMBO_CHECK_LOGIC_KNOWN;
++            if (wantLogic && checksInLogic.contains(id)) flags |= COMBO_CHECK_AVAILABLE;
++            std::string reward;
++            if (check.obtained) {
++                if (check.randoItemId == RI_COMBO_FOREIGN) {
++                    const auto* item = Rando::MiscBehavior::MM_LookupForeign(id);
++                    if (item) reward = item->displayName;
++                } else {
++                    reward = Rando::StaticData::Items[check.randoItemId].name;
++                }
++            }
++            const std::string condition = wantLogic ? accessLogicFuncs[id] : "";
++            ComboCheckRow row{ id, scene, flags, areaName.c_str(), Rando::StaticData::CheckNames[id].c_str(),
++                ComboMmCheckType(Rando::StaticData::Checks[id].randoCheckType), reward.c_str(), condition.c_str() };
++            visitor(&row, user);
++        }
++    }
++}
++
++extern "C" COMBO_EXPORT int MM_ComboCheckSetSkipped(int32_t slot, int32_t id, int32_t skipped) {
++    ComboCheckInfo info{};
++    MM_ComboCheckSnapshot(&info, nullptr, nullptr);
++    if (!info.loaded || info.slot != slot || id < 0 || id >= RC_MAX) return 0;
++    auto& check = RANDO_SAVE_CHECKS[id];
++    if (!check.shuffled || check.obtained) return 0;
++    check.skipped = skipped != 0;
++    // Matches the native tracker: persisted by the game's normal save, never forces a time-cycle save.
++    return 1;
++}
+--- /dev/null
++++ b/combo/menu/ComboCheckTrackerOOT.inc
+@@ -0,0 +1,102 @@
++// Included by the native OoT tracker so its hooks and save format remain authoritative.
++#include "ComboCheckTrackerABI.h"
++#include "../ComboExport.h"
++
++namespace CheckTracker {
++static const char* ComboCheckType(RandomizerCheckType type) {
++    switch (type) {
++        case RCTYPE_SKULL_TOKEN: return "Skulltula";
++        case RCTYPE_SHOP: case RCTYPE_MERCHANT: case RCTYPE_SCRUB: return "Shop";
++        case RCTYPE_COW: return "Cow";
++        case RCTYPE_SONG_LOCATION: return "Song";
++        case RCTYPE_POT: return "Pot";
++        case RCTYPE_CRATE: case RCTYPE_NLCRATE: case RCTYPE_SMALL_CRATE: return "Crate";
++        case RCTYPE_BEEHIVE: return "Beehive";
++        case RCTYPE_GRASS: case RCTYPE_BUSH: return "Grass";
++        case RCTYPE_FREESTANDING: return "Freestanding";
++        case RCTYPE_DUNGEON_REWARD: case RCTYPE_BOSS_HEART_OR_OTHER_REWARD: return "Dungeon reward";
++        case RCTYPE_FOUNTAIN_FAIRY: case RCTYPE_STONE_FAIRY: case RCTYPE_BEAN_FAIRY:
++        case RCTYPE_SONG_FAIRY: case RCTYPE_BUTTERFLY_FAIRY: return "Fairy";
++        case RCTYPE_TREE: case RCTYPE_NLTREE: return "Tree";
++        case RCTYPE_FISH: return "Fish";
++        case RCTYPE_WONDER_ITEM: return "Wonder item";
++        default: return "Item";
++    }
++}
++}
++
++extern "C" COMBO_EXPORT void SOH_ComboCheckSnapshot(ComboCheckInfo* info, ComboCheckVisitor visitor, void* user) {
++    using namespace CheckTracker;
++    if (!info) return;
++    *info = { 0, -1, -1 };
++    if (!Combo_OotIsForeground() || !gPlayState || !GameInteractor::IsSaveLoaded() || !initialized) return;
++    *info = { 1, static_cast<int32_t>(gSaveContext.fileNum), static_cast<int32_t>(currentArea) };
++    if (!visitor) return;
++
++    mystery = CVarGetInteger(CVAR_RANDOMIZER_ENHANCEMENT("MysteriousShuffle"), 0);
++    hideShopUnshuffledChecks = CVarGetInteger(CVAR_TRACKER_CHECK("HideUnshuffledShopChecks"), 0);
++    alwaysShowGS = CVarGetInteger(CVAR_TRACKER_CHECK("AlwaysShowGSLocs"), 0);
++    const bool wantLogic = IS_RANDO && CVarGetInteger("gCombo.CheckTracker.ShowLogic", 1);
++    if (wantLogic && !enableAvailableChecks) recalculateAvailable = true;
++    enableAvailableChecks = wantLogic;
++    if (recalculateAvailable && InternalRecalculateAvailableChecks(availableChecksStartingRegion, availableChecksStartingAgeTime)) {
++        recalculateAvailable = false;
++        availableChecksStartingRegion = RR_ROOT;
++        availableChecksStartingAgeTime = RAT_NONE;
++    }
++    for (const auto& [area, checks] : checksByArea) {
++        if (area == RCAREA_INVALID) continue;
++        const std::string areaName = RandomizerCheckObjects::GetRCAreaName(area);
++        if (!IsAreaSpoiled(area) && !CVarGetInteger(CVAR_TRACKER_CHECK("MQSpoilers"), 0)) {
++            ComboCheckRow row{ -1, area, COMBO_CHECK_AREA_HIDDEN, areaName.c_str(),
++                               "Explore this area to reveal its checks", "", "", "" };
++            visitor(&row, user);
++            continue;
++        }
++        for (auto rc : checks) {
++            if (!IsVisibleInCheckTracker(rc)) continue;
++            const auto* loc = Rando::StaticData::GetLocation(rc);
++            auto* item = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
++            const auto status = item->GetCheckStatus();
++            uint32_t flags = item->HasObtained() ? COMBO_CHECK_COLLECTED : 0;
++            if (item->GetIsSkipped()) flags |= COMBO_CHECK_SKIPPED;
++            if (status == RCSHOW_SAVED) flags |= COMBO_CHECK_SAVED;
++            if (status == RCSHOW_SCUMMED) flags |= COMBO_CHECK_SCUMMED;
++            if (status == RCSHOW_SEEN_OR_HINTED || status == RCSHOW_IDENTIFIED) flags |= COMBO_CHECK_SEEN;
++            if (wantLogic) flags |= COMBO_CHECK_LOGIC_KNOWN;
++            if (wantLogic && item->IsAvailable()) flags |= COMBO_CHECK_AVAILABLE;
++            std::string name = checkNameOverrides.contains(rc) ? checkNameOverrides[rc] : loc->GetShortName();
++            std::string reward = ComboKnownReward(rc);
++            if (reward == "Skipped") reward.clear(); // Native view's status fallback is not a reward.
++            std::string condition;
++            if (wantLogic) {
++                for (auto& access : areaTable[item->GetParentRegionKey()].locations) {
++                    if (access.GetLocation() == rc) {
++                        condition = access.GetConditionStr();
++                        if (condition == "true") condition.clear();
++                        break;
++                    }
++                }
++            }
++            ComboCheckRow row{ rc, area, flags, areaName.c_str(), name.c_str(), ComboCheckType(loc->GetRCType()),
++                               reward.c_str(), condition.c_str() };
++            visitor(&row, user);
++        }
++    }
++}
++
++extern "C" COMBO_EXPORT int SOH_ComboCheckSetSkipped(int32_t slot, int32_t id, int32_t skipped) {
++    using namespace CheckTracker;
++    ComboCheckInfo info{};
++    SOH_ComboCheckSnapshot(&info, nullptr, nullptr);
++    if (!info.loaded || slot != info.slot || id < 0 || id >= RC_MAX) return 0;
++    auto rc = static_cast<RandomizerCheck>(id);
++    if (!IsVisibleInCheckTracker(rc)) return 0;
++    auto* item = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
++    if (item->HasObtained()) return 0;
++    item->SetIsSkipped(skipped != 0);
++    UpdateOrdering(Rando::StaticData::GetLocation(rc)->GetArea());
++    UpdateInventoryChecks();
++    SaveManager::Instance->SaveSection(gSaveContext.fileNum, sectionId, true);
++    return 1;
++}
+--- a/mm/2s2h/Rando/CheckTracker/CheckTracker.cpp
++++ b/mm/2s2h/Rando/CheckTracker/CheckTracker.cpp
+@@ -96,7 +96,11 @@
+ #define CVAR_SHOW_CHECK_TRACKER CVarGetInteger(CVAR_NAME_SHOW_CHECK_TRACKER, 0)
+ #define CVAR_VISIBILITY_MODE CVarGetInteger(CVAR_NAME_VISIBILITY_MODE, CHECK_TRACKER_VISIBILITY_MODE_ALWAYS)
+ #define CVAR_VISIBILITY_BTN CVarGetInteger(CVAR_NAME_VISIBILITY_BTN, BTN_CUSTOM_MODIFIER1)
++#ifdef COMBO_BUILD
++#define CVAR_OUT_OF_LOGIC_MODE (CVarGetInteger("gCombo.CheckTracker.ShowLogic", 1) ? CHECK_MODE_COLORED : CHECK_MODE_NORMAL)
++#else
+ #define CVAR_OUT_OF_LOGIC_MODE CVarGetInteger(CVAR_NAME_OUT_OF_LOGIC_MODE, CHECK_MODE_COLORED)
++#endif
+ #define CVAR_OUT_OF_LOGIC_COLOR CVarGetColor(CVAR_NAME_OUT_OF_LOGIC_COLOR ".Value", { 255, 255, 255, 100 })
+ #define CVAR_COLLECTED_MODE CVarGetInteger(CVAR_NAME_COLLECTED_MODE, CHECK_MODE_HIDDEN)
+ #define CVAR_COLLECTED_COLOR CVarGetColor(CVAR_NAME_COLLECTED_COLOR ".Value", { 100, 255, 100, 255 })
+@@ -530,6 +534,9 @@
+ namespace CheckTracker {
+ 
+ void CheckTrackerWindow::Draw() {
++#ifdef COMBO_BUILD
++    return; // Rendering is shared; native tracking hooks and save flags remain in this module.
++#endif
+     if (!CVAR_SHOW_CHECK_TRACKER) {
+         return;
+     }
+@@ -865,3 +872,7 @@
+ } // namespace CheckTracker
+ 
+ } // namespace Rando
++
++#ifdef COMBO_BUILD
++#include "ComboCheckTrackerMM.inc"
++#endif
+--- a/soh/soh/Enhancements/randomizer/randomizer_check_tracker.cpp
++++ b/soh/soh/Enhancements/randomizer/randomizer_check_tracker.cpp
+@@ -2048,141 +2048,13 @@
+     return shopItemIdentity.enGirlAShopItem == SI_RANDOMIZED_ITEM;
+ }
+ 
+-void DrawLocation(RandomizerCheck rc) {
+-    Color_RGBA8 mainColor;
+-    Color_RGBA8 extraColor;
++// Shared by the native and combo views; retain all hint, trap-disguise and mystery rules.
++static std::string ComboKnownReward(RandomizerCheck rc) {
++    const auto* loc = Rando::StaticData::GetLocation(rc);
++    auto* itemLoc = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
++    const auto status = itemLoc->GetCheckStatus();
++    const bool skipped = itemLoc->GetIsSkipped();
+     std::string txt;
+-    Rando::Location* loc = Rando::StaticData::GetLocation(rc);
+-    Rando::ItemLocation* itemLoc = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
+-    RandomizerCheckStatus status = itemLoc->GetCheckStatus();
+-    bool skipped = itemLoc->GetIsSkipped();
+-    bool available = itemLoc->IsAvailable();
+-
+-    if (enableAvailableChecks && onlyShowAvailable && !available) {
+-        return;
+-    }
+-
+-    if (status == RCSHOW_COLLECTED) {
+-        if (!showHidden && hideCollected) {
+-            return;
+-        }
+-        mainColor =
+-            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
+-                ? Color_Collected_Extra
+-                : Color_Collected_Main;
+-        extraColor = Color_Collected_Extra;
+-    } else if (status == RCSHOW_SAVED) {
+-        if (!showHidden && hideSaved) {
+-            return;
+-        }
+-        mainColor =
+-            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
+-                ? Color_Saved_Extra
+-                : Color_Saved_Main;
+-        extraColor = Color_Saved_Extra;
+-    } else if (skipped) {
+-        if (!showHidden && hideSkipped) {
+-            return;
+-        }
+-        mainColor =
+-            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
+-                ? Color_Skipped_Extra
+-                : Color_Skipped_Main;
+-        extraColor = Color_Skipped_Extra;
+-    } else if (status == RCSHOW_SEEN_OR_HINTED || status == RCSHOW_IDENTIFIED) {
+-        if (!showHidden && hideSeen) {
+-            return;
+-        }
+-        mainColor =
+-            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
+-                ? Color_Seen_Extra
+-                : Color_Seen_Main;
+-        extraColor = Color_Seen_Extra;
+-    } else if (status == RCSHOW_SCUMMED) {
+-        if (!showHidden && hideScummed) {
+-            return;
+-        }
+-        mainColor =
+-            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
+-                ? Color_Scummed_Extra
+-                : Color_Scummed_Main;
+-        extraColor = Color_Scummed_Extra;
+-    } else if (status == RCSHOW_UNCHECKED) {
+-        if (!showHidden && hideUnchecked) {
+-            return;
+-        }
+-        mainColor =
+-            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
+-                ? Color_Unchecked_Extra
+-                : Color_Unchecked_Main;
+-        extraColor = Color_Unchecked_Extra;
+-    }
+-
+-    // Main Text
+-    if (checkNameOverrides.contains(loc->GetRandomizerCheck())) {
+-        txt = checkNameOverrides[loc->GetRandomizerCheck()];
+-    } else {
+-        txt = loc->GetShortName();
+-    }
+-
+-    if (lastLocationChecked == loc->GetRandomizerCheck()) {
+-        txt = "* " + txt;
+-    }
+-
+-    // Draw button - for Skipped/Seen/Scummed/Unchecked only
+-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4.0f, 3.0f });
+-    float sz = ImGui::GetFrameHeight();
+-    if (status == RCSHOW_UNCHECKED || status == RCSHOW_SEEN_OR_HINTED || status == RCSHOW_IDENTIFIED ||
+-        status == RCSHOW_SCUMMED || skipped) {
+-        if (UIWidgets::StateButton(std::to_string(rc).c_str(), skipped ? ICON_FA_PLUS : ICON_FA_TIMES, ImVec2(sz, sz),
+-                                   UIWidgets::ButtonOptions().Color(THEME_COLOR))) {
+-            if (skipped) {
+-                OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->SetIsSkipped(false);
+-                areaChecksGotten[loc->GetArea()]--;
+-                totalChecksGotten--;
+-                if (available) {
+-                    areaChecksAvailable[loc->GetArea()]++;
+-                    totalChecksAvailable++;
+-                }
+-            } else {
+-                OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->SetIsSkipped(true);
+-                areaChecksGotten[loc->GetArea()]++;
+-                totalChecksGotten++;
+-                if (available) {
+-                    areaChecksAvailable[loc->GetArea()]--;
+-                    totalChecksAvailable--;
+-                }
+-            }
+-            UpdateOrdering(loc->GetArea());
+-            UpdateInventoryChecks();
+-            SaveManager::Instance->SaveSection(gSaveContext.fileNum, sectionId, true);
+-        }
+-    } else {
+-        ImGui::Dummy(ImVec2(sz, sz));
+-    }
+-    ImGui::PopStyleVar();
+-
+-    ImGui::SameLine();
+-
+-    // Draw
+-    ImVec4 styleColor(mainColor.r / 255.0f, mainColor.g / 255.0f, mainColor.b / 255.0f, mainColor.a / 255.0f);
+-    if (enableAvailableChecks) {
+-        if (itemLoc->HasObtained()) {
+-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 0));
+-        } else {
+-            ImGui::PushStyleColor(ImGuiCol_Text, styleColor);
+-        }
+-        ImGui::Text("%s", available ? ICON_FA_UNLOCK : ICON_FA_LOCK);
+-        ImGui::PopStyleColor();
+-        ImGui::SameLine();
+-    }
+-
+-    ImGui::PushStyleColor(ImGuiCol_Text, styleColor);
+-    ImGui::Text("%s", txt.c_str());
+-    ImGui::PopStyleColor();
+-
+-    // Draw the extra info
+-    txt = "";
+ 
+     if (status != RCSHOW_UNCHECKED) {
+         switch (status) {
+@@ -2272,6 +2144,144 @@
+         txt = "Skipped"; // TODO language
+     }
+ 
++    return txt;
++}
++
++void DrawLocation(RandomizerCheck rc) {
++    Color_RGBA8 mainColor;
++    Color_RGBA8 extraColor;
++    std::string txt;
++    Rando::Location* loc = Rando::StaticData::GetLocation(rc);
++    Rando::ItemLocation* itemLoc = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
++    RandomizerCheckStatus status = itemLoc->GetCheckStatus();
++    bool skipped = itemLoc->GetIsSkipped();
++    bool available = itemLoc->IsAvailable();
++
++    if (enableAvailableChecks && onlyShowAvailable && !available) {
++        return;
++    }
++
++    if (status == RCSHOW_COLLECTED) {
++        if (!showHidden && hideCollected) {
++            return;
++        }
++        mainColor =
++            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
++                ? Color_Collected_Extra
++                : Color_Collected_Main;
++        extraColor = Color_Collected_Extra;
++    } else if (status == RCSHOW_SAVED) {
++        if (!showHidden && hideSaved) {
++            return;
++        }
++        mainColor =
++            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
++                ? Color_Saved_Extra
++                : Color_Saved_Main;
++        extraColor = Color_Saved_Extra;
++    } else if (skipped) {
++        if (!showHidden && hideSkipped) {
++            return;
++        }
++        mainColor =
++            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
++                ? Color_Skipped_Extra
++                : Color_Skipped_Main;
++        extraColor = Color_Skipped_Extra;
++    } else if (status == RCSHOW_SEEN_OR_HINTED || status == RCSHOW_IDENTIFIED) {
++        if (!showHidden && hideSeen) {
++            return;
++        }
++        mainColor =
++            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
++                ? Color_Seen_Extra
++                : Color_Seen_Main;
++        extraColor = Color_Seen_Extra;
++    } else if (status == RCSHOW_SCUMMED) {
++        if (!showHidden && hideScummed) {
++            return;
++        }
++        mainColor =
++            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
++                ? Color_Scummed_Extra
++                : Color_Scummed_Main;
++        extraColor = Color_Scummed_Extra;
++    } else if (status == RCSHOW_UNCHECKED) {
++        if (!showHidden && hideUnchecked) {
++            return;
++        }
++        mainColor =
++            !IsHeartPiece((GetItemID)Rando::StaticData::RetrieveItem(loc->GetVanillaItem()).GetItemID()) && !IS_RANDO
++                ? Color_Unchecked_Extra
++                : Color_Unchecked_Main;
++        extraColor = Color_Unchecked_Extra;
++    }
++
++    // Main Text
++    if (checkNameOverrides.contains(loc->GetRandomizerCheck())) {
++        txt = checkNameOverrides[loc->GetRandomizerCheck()];
++    } else {
++        txt = loc->GetShortName();
++    }
++
++    if (lastLocationChecked == loc->GetRandomizerCheck()) {
++        txt = "* " + txt;
++    }
++
++    // Draw button - for Skipped/Seen/Scummed/Unchecked only
++    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4.0f, 3.0f });
++    float sz = ImGui::GetFrameHeight();
++    if (status == RCSHOW_UNCHECKED || status == RCSHOW_SEEN_OR_HINTED || status == RCSHOW_IDENTIFIED ||
++        status == RCSHOW_SCUMMED || skipped) {
++        if (UIWidgets::StateButton(std::to_string(rc).c_str(), skipped ? ICON_FA_PLUS : ICON_FA_TIMES, ImVec2(sz, sz),
++                                   UIWidgets::ButtonOptions().Color(THEME_COLOR))) {
++            if (skipped) {
++                OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->SetIsSkipped(false);
++                areaChecksGotten[loc->GetArea()]--;
++                totalChecksGotten--;
++                if (available) {
++                    areaChecksAvailable[loc->GetArea()]++;
++                    totalChecksAvailable++;
++                }
++            } else {
++                OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->SetIsSkipped(true);
++                areaChecksGotten[loc->GetArea()]++;
++                totalChecksGotten++;
++                if (available) {
++                    areaChecksAvailable[loc->GetArea()]--;
++                    totalChecksAvailable--;
++                }
++            }
++            UpdateOrdering(loc->GetArea());
++            UpdateInventoryChecks();
++            SaveManager::Instance->SaveSection(gSaveContext.fileNum, sectionId, true);
++        }
++    } else {
++        ImGui::Dummy(ImVec2(sz, sz));
++    }
++    ImGui::PopStyleVar();
++
++    ImGui::SameLine();
++
++    // Draw
++    ImVec4 styleColor(mainColor.r / 255.0f, mainColor.g / 255.0f, mainColor.b / 255.0f, mainColor.a / 255.0f);
++    if (enableAvailableChecks) {
++        if (itemLoc->HasObtained()) {
++            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 0));
++        } else {
++            ImGui::PushStyleColor(ImGuiCol_Text, styleColor);
++        }
++        ImGui::Text("%s", available ? ICON_FA_UNLOCK : ICON_FA_LOCK);
++        ImGui::PopStyleColor();
++        ImGui::SameLine();
++    }
++
++    ImGui::PushStyleColor(ImGuiCol_Text, styleColor);
++    ImGui::Text("%s", txt.c_str());
++    ImGui::PopStyleColor();
++
++    txt = ComboKnownReward(rc);
++
+     if (txt != "") {
+         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(extraColor.r / 255.0f, extraColor.g / 255.0f, extraColor.b / 255.0f,
+                                                     extraColor.a / 255.0f));
+@@ -2463,6 +2473,9 @@
+ }
+ 
+ void CheckTrackerWindow::Draw() {
++#ifdef COMBO_BUILD
++    return; // ComboCheckTracker owns the view; InitElement still registers tracking/save hooks.
++#endif
+     if (!IsVisible()) {
+         return;
+     }
+@@ -2711,3 +2724,7 @@
+ 
+ static RegisterMenuInitFunc menuInitFunc(RegisterCheckTrackerWidgets);
+ } // namespace CheckTracker
++
++#ifdef COMBO_BUILD
++#include "ComboCheckTrackerOOT.inc"
++#endif

@@ -1,0 +1,183 @@
+--- a/combo/gui/ComboRandomizerProfiles.cpp
++++ b/combo/gui/ComboRandomizerProfiles.cpp
+@@ -22,6 +22,11 @@
+ static ComboRandomizerProfileCallbacks callbacks{};
+ static int selected=0,view=0; static bool active=false,dirty=false;
+ static std::string error; static Json snapshot,document,catalog;
++// Inspection serializes the complete native catalog and both seed placement tables.
++// Keep it out of ordinary render frames; edits and generation still refresh the view.
++static bool refreshPending=true,snapshotValid=false;
++static int snapshotSlot=-1,snapshotView=-1,lastMenuFrame=-2;
++static double lastInspection=-1;
+ static std::shared_ptr<ProfileOotPolicy::View> optionView;static std::set<std::string> mmBaseAvailable;
+ static void RefreshOptionPolicy(bool apply);
+ bool Ready(){return callbacks.version==1&&callbacks.inspect&&callbacks.setDraft&&callbacks.copySaved&&callbacks.copyDraft&&callbacks.generate&&callbacks.cancel;}
+@@ -58,8 +63,27 @@
+  if(apply&&Editable())for(const auto& value:optionView->Adjustments())*Field(value.first.c_str(),true)=value.second;
+ }
+ static std::string ReadString(const char* key){const auto* value=Field(key,false);return value&&value->is_string()?value->get<std::string>():"";}
+-void BeginFrame(){active=false;dirty=false;try{if(!Ready())return; snapshot=Json::parse(callbacks.inspect(selected));if(snapshot.contains("error"))throw std::runtime_error(snapshot["error"].get<std::string>());catalog=snapshot.at("catalog");document=snapshot.value(view==0?"draft":view==1?"savedSettings":"generatedSettings",Json());active=true;RefreshOptionPolicy(false);RefreshPoolViews();}catch(const std::exception& e){error=e.what();}}
+-void EndFrame(){if(dirty&&Editable())try{Response(callbacks.setDraft(selected,document.dump().c_str()));}catch(const std::exception& e){error=e.what();}active=false;}
++void BeginFrame(){
++ active=false;dirty=false;
++ try{
++  if(!Ready())return;
++  const int frame=ImGui::GetFrameCount();const double now=ImGui::GetTime();
++  const bool running=snapshot.is_object()&&snapshot.value("generation",Json::object()).value("running",false);
++  const bool refresh=refreshPending||frame>lastMenuFrame+1||selected!=snapshotSlot||view!=snapshotView||
++      (running&&now-lastInspection>=.25);
++  lastMenuFrame=frame;
++  if(refresh){
++   refreshPending=false;snapshotValid=false;snapshotSlot=selected;snapshotView=view;lastInspection=now;
++   auto next=Json::parse(callbacks.inspect(selected));
++   if(next.contains("error"))throw std::runtime_error(next["error"].get<std::string>());
++   snapshot=std::move(next);catalog=snapshot.at("catalog");
++   document=snapshot.value(view==0?"draft":view==1?"savedSettings":"generatedSettings",Json());
++   RefreshOptionPolicy(false);RefreshPoolViews();snapshotValid=true;
++  }
++  active=snapshotValid;
++ }catch(const std::exception& e){error=e.what();}
++}
++void EndFrame(){if(dirty&&Editable()){refreshPending=true;try{Response(callbacks.setDraft(selected,document.dump().c_str()));}catch(const std::exception& e){error=e.what();}}active=false;}
+ void DrawSelector(){
+  static const char* files[]={"File 1","File 2","File 3"};
+  ImGui::SetNextItemWidth(ImGui::GetFontSize()*5);if(ImGui::Combo("##Settings file",&selected,files,3))BeginFrame();
+@@ -70,7 +94,7 @@
+  if(ImGui::GetItemRectMax().x+ImGui::CalcTextSize("Copy").x+44.f<ImGui::GetWindowPos().x+ImGui::GetContentRegionMax().x)ImGui::SameLine();if(ImGui::Button("Copy"))ImGui::OpenPopup("Copy settings");
+  if(ImGui::BeginPopup("Copy settings")){
+   for(int destination=0;destination<3;++destination){const std::string label="To File "+std::to_string(destination+1)+" next seed";
+-   ImGui::BeginDisabled(view==2||document.is_null());if(ImGui::Selectable(label.c_str())){try{Response(view==0?callbacks.copyDraft(selected,destination):callbacks.copySaved(selected,destination));}catch(const std::exception& e){error=e.what();}}ImGui::EndDisabled();}
++   ImGui::BeginDisabled(view==2||document.is_null());if(ImGui::Selectable(label.c_str())){refreshPending=true;try{Response(view==0?callbacks.copyDraft(selected,destination):callbacks.copySaved(selected,destination));}catch(const std::exception& e){error=e.what();}}ImGui::EndDisabled();}
+   ImGui::EndPopup();
+  }
+  if(!error.empty())ImGui::TextWrapped("%s",error.c_str());
+@@ -226,7 +250,7 @@
+ }
+ void DrawGeneration(){
+  if(!active||document.is_null()){ImGui::TextUnformatted("No settings are available for this file.");return;}const auto generation=snapshot.value("generation",Json::object());const bool running=generation.value("running",false);std::string seed=document.value("seed",std::string());ImGui::BeginDisabled(!Editable()||running);if(ImGui::InputTextWithHint("Seed","(blank = random)",&seed)){document["seed"]=seed;dirty=true;}
+- if(ImGui::Button("Generate combined seed")){try{bool committed=true;if(dirty){committed=Response(callbacks.setDraft(selected,document.dump().c_str()));if(committed)dirty=false;}if(committed)Response(callbacks.generate(selected,seed.c_str()));}catch(const std::exception& e){error=e.what();}}ImGui::EndDisabled();if(running){ImGui::Text("File %d: %s (%d / %d)",generation.value("file",selected)+1,generation.value("phase",std::string()).c_str(),generation.value("placed",0),generation.value("total",0));ImGui::BeginDisabled(!generation.value("canCancel",false));if(ImGui::Button("Cancel"))Response(callbacks.cancel());ImGui::EndDisabled();}DrawAdvanced();
++ if(ImGui::Button("Generate combined seed")){refreshPending=true;try{bool committed=true;if(dirty){committed=Response(callbacks.setDraft(selected,document.dump().c_str()));if(committed)dirty=false;}if(committed)Response(callbacks.generate(selected,seed.c_str()));}catch(const std::exception& e){error=e.what();}}ImGui::EndDisabled();if(running){ImGui::Text("File %d: %s (%d / %d)",generation.value("file",selected)+1,generation.value("phase",std::string()).c_str(),generation.value("placed",0),generation.value("total",0));ImGui::BeginDisabled(!generation.value("canCancel",false));if(ImGui::Button("Cancel")){refreshPending=true;Response(callbacks.cancel());}ImGui::EndDisabled();}DrawAdvanced();
+ }
+ void DrawHome(){
+  if(!active)return;const int columns=ImGui::GetContentRegionAvail().x>=ImGui::GetFontSize()*60?3:MenuColumns(20.f);if(!ImGui::BeginTable("##CommunityPresets",columns,ImGuiTableFlags_SizingStretchSame|ImGuiTableFlags_NoSavedSettings))return;
+@@ -259,5 +283,5 @@
+  for(int game=0;game<2;++game){if(world&&world!=game+1)continue;const char* key=game==0?"gRandoSettings.EnabledTricks":"";std::vector<std::string> csv;if(game==0){std::istringstream stream(ReadString(key));std::string tag;while(std::getline(stream,tag,','))if(!tag.empty())csv.push_back(tag);}for(const auto& row:catalog.at(game==0?"oot":"mm").at("tricks")){const std::string label=row.at("label"),id=row.at("value"),help=row.value("description",std::string());bool on=game==0?std::find(csv.begin(),csv.end(),id)!=csv.end():ReadInteger(id.c_str(),0)!=0;if((state==1&&!on)||(state==2&&on)||(skill&&row.value("difficulty",0)!=skill-1)||(query[0]&&(label+help+row.value("area",std::string())+row.value("tags",std::string())).find(query)==std::string::npos))continue;ImGui::PushID(id.c_str());ImGui::BeginDisabled(!Editable());ComboMenu_PushCheckbox(ComboMenu_ThemeColor());if(ImGui::Checkbox(label.c_str(),&on)){if(game==1)WriteInteger(id.c_str(),on);else{auto found=std::find(csv.begin(),csv.end(),id);if(on)csv.push_back(id);else if(found!=csv.end())csv.erase(found);std::string text;for(const auto& tag:csv){if(!text.empty())text+=',';text+=tag;}*Field(key,true)=text;dirty=true;}}ComboMenu_PopCheckbox();ImGui::EndDisabled();Tooltip(help.c_str());ImGui::TextDisabled("%s · %s · %s",game==0?"OoT":"MM",row.value("area",std::string("General")).c_str(),row.value("tags",std::string()).c_str());if(ImGui::TreeNode("Details")){ImGui::TextWrapped("%s",help.c_str());ImGui::TreePop();}ImGui::Separator();ImGui::PopID();}}
+ }
+ } // namespace ComboRando::ProfileUI
+-extern "C" COMBO_EXPORT void ComboUI_SetRandomizerProfileStore(const ComboRandomizerProfileCallbacks* source){ComboRando::ProfileUI::callbacks=source&&source->version==1?*source:ComboRandomizerProfileCallbacks{};}
++extern "C" COMBO_EXPORT void ComboUI_SetRandomizerProfileStore(const ComboRandomizerProfileCallbacks* source){ComboRando::ProfileUI::callbacks=source&&source->version==1?*source:ComboRandomizerProfileCallbacks{};ComboRando::ProfileUI::refreshPending=true;ComboRando::ProfileUI::snapshotValid=false;}
+ extern "C" COMBO_EXPORT int ComboUI_GetSelectedSettingsFile(){return ComboRando::ProfileUI::SelectedSlot();}
+--- a/mm/2s2h/CustomItem/CustomItem.h
++++ b/mm/2s2h/CustomItem/CustomItem.h
+@@ -4,8 +4,8 @@
+ 
+ #define CUSTOM_ITEM_FLAGS (actor->home.rot.x)
+ #define CUSTOM_ITEM_PARAM (actor->home.rot.z)
+-// ComboShip (#66): spare field used to keep a foreign check id alive after CUSTOM_ITEM_PARAM is
+-// overwritten with the item id on pickup, so the held-up foreign model still resolves.
++// ComboShip: retain the original check after CUSTOM_ITEM_PARAM becomes the delivered item ID.
++// Both native tracker observations and foreign held-up models need this identity.
+ #define CUSTOM_ITEM_PARAM2 (actor->home.rot.y)
+ 
+ namespace CustomItem {
+--- a/mm/2s2h/Rando/ActorBehavior/EnGirlA.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnGirlA.cpp
+@@ -4,6 +4,7 @@
+ #include "2s2h/Rando/MiscBehavior/Traps.h"
+ #ifdef COMBO_BUILD
+ #include "2s2h/Rando/MiscBehavior/MiscBehavior.h" // ComboShip: SendForeignCheck for foreign shop items
++#include "2s2h/Rando/CheckTracker/CheckTracker.h"
+ #endif
+ 
+ extern "C" {
+@@ -27,6 +28,18 @@
+     "One of a kind, don't miss out!", "A great deal for the price!",     "On sale for a limited time!",
+     "Get it while it's hot!",         "Don't miss out on this deal!",
+ };
++
++// Inspecting the current shelf item is a direct observation. Remote stock
++// announcements below still use GetRevealedItemName's separate hint provenance.
++static std::string ShopDescriptionItemName(RandoItemId item, bool includeArticle, RandoCheckId check) {
++#ifdef COMBO_BUILD
++    const auto shown = item == RI_TRAP ? Rando::CurrentTrapItem(check) : item;
++    Rando::CheckTracker::RecordSeenItem(check, shown);
++    return Rando::StaticData::GetItemName(item, includeArticle, check, true);
++#else
++    return Rando::StaticData::GetItemName(item, includeArticle, check);
++#endif
++}
+ 
+ bool CanBePurchased(RandoSaveCheck randoSaveCheck, RandoCheckId randoCheckId) {
+ #ifdef COMBO_BUILD
+@@ -339,7 +352,7 @@
+         entry.msg = "\x01{{itemName}}: {{rupees}} Rupees\x11\x00";
+         entry.msg += '\x00';
+         CustomMessage::Replace(&entry.msg, "{{itemName}}",
+-                               Rando::StaticData::GetRevealedItemName(randoItemId, false, randoCheckId, true));
++                               ShopDescriptionItemName(randoItemId, false, randoCheckId));
+         CustomMessage::Replace(&entry.msg, "{{rupees}}", std::to_string(randoSaveCheck.price));
+ 
+         if (!CanBePurchased(randoSaveCheck, randoCheckId)) {
+@@ -370,8 +383,8 @@
+         entry.msg = "\x01{{itemName}}: {{rupees}} Rupees\x02\x11\xC2I'll buy it\x11No thanks\xBF";
+         CustomMessage::Replace(
+             &entry.msg, "{{itemName}}",
+-            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
+-                                           randoCheckId, true));
++            ShopDescriptionItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
++                                    randoCheckId));
+         CustomMessage::Replace(&entry.msg, "{{rupees}}", std::to_string(randoSaveCheck.price));
+ 
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+@@ -397,8 +410,8 @@
+         entry.msg += "I need a mushroom to make this.\x1A";
+         CustomMessage::Replace(
+             &entry.msg, "{{itemName}}",
+-            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
+-                                           randoCheckId, true));
++            ShopDescriptionItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
++                                    randoCheckId));
+         CustomMessage::Replace(&entry.msg, "{{itemPrice}}", std::to_string(randoSaveCheck.price));
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+--- a/mm/2s2h/Rando/DrawItem.cpp
++++ b/mm/2s2h/Rando/DrawItem.cpp
+@@ -657,6 +657,11 @@
+     if (!(std::isfinite(w) && w > 0 && std::isfinite(horizontalScale) && horizontalScale > 0 &&
+           projected.z >= -w && projected.z <= w &&
+           fabsf(projected.x) <= w * horizontalScale && fabsf(projected.y) <= w)) return false;
++
++    // Match OoT's shop observer: invisible shelf/counter interaction collision
++    // blocks a world ray even though the displayed stock is visible on screen.
++    // This runs only for a submitted shop-item model, after the frustum checks.
++    if (actor->id == ACTOR_EN_GIRLA) return true;
+ 
+     // A submitted model can still be behind a maze wall, floor, ceiling or moving door.
+     // Test both faces and all collision categories; camera-only tests ignore some barriers.
+--- a/mm/2s2h/Rando/MiscBehavior/CheckQueue.cpp
++++ b/mm/2s2h/Rando/MiscBehavior/CheckQueue.cpp
+@@ -282,6 +282,10 @@
+                         // overwritten with the item id on the next line). No-op if Anchor is inactive.
+                         Rando::MiscBehavior::BroadcastCheckObtainedIfFirst((RandoCheckId)CUSTOM_ITEM_PARAM,
+                                                                            randoSaveCheck.randoItemId, wasObtained);
++                        // Preserve the source check for native pickups too. Item IDs and check IDs
++                        // overlap (Ocean token and Curiosity Shop are both 51), so the held-up
++                        // model must never advertise the delivered item ID as a different check.
++                        CUSTOM_ITEM_PARAM2 = CUSTOM_ITEM_PARAM;
+ #endif
+                         CUSTOM_ITEM_PARAM = randoItemId;
+                     },
+@@ -298,11 +302,8 @@
+                                 randoItemId = (RandoItemId)CUSTOM_ITEM_PARAM;
+                             }
+ #ifdef COMBO_BUILD
+-                            // ComboShip (#66): post-pickup CUSTOM_ITEM_PARAM is the item id, but the
+-                            // foreign model resolves by check id, stashed in CUSTOM_ITEM_PARAM2.
+-                            if (randoItemId == RI_COMBO_FOREIGN) {
+-                                randoCheckId = (RandoCheckId)CUSTOM_ITEM_PARAM2;
+-                            }
++                            // The original check remains authoritative for every held-up model.
++                            randoCheckId = (RandoCheckId)CUSTOM_ITEM_PARAM2;
+ #endif
+                         } else {
+                             auto& randoSaveCheck = RANDO_SAVE_CHECKS[CUSTOM_ITEM_PARAM];

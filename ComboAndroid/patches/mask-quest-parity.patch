@@ -1,0 +1,231 @@
+diff --git a/combo/ComboRandoHeadless.cpp b/combo/ComboRandoHeadless.cpp
+--- a/combo/ComboRandoHeadless.cpp
++++ b/combo/ComboRandoHeadless.cpp
+@@ -1,3 +1,4 @@
++#include "rando/OotMaskQuest.h"
+ // combo/ComboRandoHeadless.cpp
+ // ComboShip: standalone HEADLESS cross-world seed generator/validator. Loads soh.dll + 2ship.dll and
+ // drives the rando-only headless init (SOH_InitRandoHeadless / MM_InitRandoHeadless) + the cross-world
+@@ -727,6 +728,9 @@
+             ComboRando::SynchronizeGenerationGuarantee(
+                 [&](const char* key,int fallback){return readRule ? readRule(key,fallback) : fallback;},
+                 [&](const char* key,int value){if(writeRule) writeRule(key,value);});
++            if (readRule && writeRule)
++                writeRule("gRandoSettings.CompleteMaskQuest", ComboRando::NormalizeOotMaskQuestForGeneration(
++                    readRule("gRandoSettings.CompleteMaskQuest", 2)));
+             sohDump = SOH_Dump();
+             mmDump = MM_Dump();
+             if (const auto failure = ComboRando::ParseNativePoolFailure(sohDump, mmDump)) {
+diff --git a/combo/ComboShip.cpp b/combo/ComboShip.cpp
+--- a/combo/ComboShip.cpp
++++ b/combo/ComboShip.cpp
+@@ -1,3 +1,4 @@
++#include "rando/OotMaskQuest.h"
+ // ComboShip - Unified Launcher for OOT (soh.dll) + MM (2ship.dll)
+ //
+ // Boot flow:
+@@ -2224,6 +2225,9 @@
+         ComboRando::SynchronizeGenerationGuarantee(
+             [](const char* key,int fallback){return sReadGameplayRule ? sReadGameplayRule(key,fallback) : fallback;},
+             [](const char* key,int value){if(sWriteGameplayRule) sWriteGameplayRule(key,value);});
++        if (sReadGameplayRule && sWriteGameplayRule)
++            sWriteGameplayRule("gRandoSettings.CompleteMaskQuest", ComboRando::NormalizeOotMaskQuestForGeneration(
++                sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
+         sohDump = SOH_DumpRandoStaticData();
+         std::cout << "[ComboShip] Preparing MM randomizer pool..." << std::endl;
+         mmDump = MM_DumpRandoStaticData();
+@@ -2671,6 +2675,9 @@
+                 MM_SetComboRandoSeed(seed);
+             if (SOH_SetComboStartingGame)
+                 SOH_SetComboStartingGame(mmStart ? 1 : 0);
++            if (sReadGameplayRule && sWriteGameplayRule)
++                sWriteGameplayRule("gRandoSettings.CompleteMaskQuest", ComboRando::NormalizeOotMaskQuestForGeneration(
++                    sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
+             std::string sohDump = SOH_DumpRandoStaticData();
+             std::string mmDump = MM_DumpRandoStaticData();
+             if (sohDump.empty() || mmDump.empty()) {
+@@ -2771,6 +2778,9 @@
+             MM_SetComboRandoSeed(masterSeed);
+         if (SOH_SetComboStartingGame)
+             SOH_SetComboStartingGame(mmStart ? 1 : 0);
++        if (sReadGameplayRule && sWriteGameplayRule)
++            sWriteGameplayRule("gRandoSettings.CompleteMaskQuest", ComboRando::NormalizeOotMaskQuestForGeneration(
++                sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
+         sohDump = SOH_DumpRandoStaticData();
+         mmDump = MM_DumpRandoStaticData();
+         if (sohDump.empty() || mmDump.empty()) {
+diff --git a/soh/soh/OTRGlobals.cpp b/soh/soh/OTRGlobals.cpp
+--- a/soh/soh/OTRGlobals.cpp
++++ b/soh/soh/OTRGlobals.cpp
+@@ -1,4 +1,5 @@
+ #include "../../combo/rando/BeanSourcePolicy.h"
++#include "../../combo/rando/OotMaskQuest.h"
+ #include "OTRGlobals.h"
+ #include "OTRAudio.h"
+ #include "ComboExport.h"
+@@ -4414,7 +4415,10 @@
+         const auto& key=option.GetCVarName();if(key.empty())continue;
+         data["defaults"][key]=int(option.GetMenuOptionDefault());
+         nlohmann::json choices=nlohmann::json::array();
+-        for(size_t i=0;i<option.GetOptionCount();++i)choices.push_back({{"value",i},{"label",option.GetOptionText(i)}});
++        for(size_t i=0;i<option.GetOptionCount();++i) {
++            if(option.GetKey()==RSK_MASK_QUEST && i==RO_MASK_QUEST_VANILLA)continue;
++            choices.push_back({{"value",i},{"label",option.GetOptionText(i)}});
++        }
+         data["options"][key]={{"label",option.GetName()},{"id",int(option.GetKey())},{"defaultHidden",profileDefaultHidden.count(int(option.GetKey()))!=0},{"choices",std::move(choices)}};
+     }
+     data["trialNames"]=nlohmann::json::object();for(auto* trial:Rando::Context::GetInstance()->GetTrials()->GetTrialList())data["trialNames"][std::to_string(int(trial->GetTrialKey()))]=trial->GetName().GetEnglish(MF_RAW);
+@@ -4462,6 +4466,8 @@
+             auto value=input.value(key,nlohmann::json(""));if(!value.is_string())return 0;settings[key]=std::move(value);
+         }
+         if(!apply)return 1;
++        const auto& maskKey=Rando::Settings::GetInstance()->GetOption(RSK_MASK_QUEST).GetCVarName();
++        settings[maskKey]=ComboRando::NormalizeOotMaskQuestForGeneration(settings[maskKey].get<int>());
+         for(const auto& value:settings.items()) {
+             if(value.value().is_string())CVarSetString(value.key().c_str(),value.value().get<std::string>().c_str());
+             else CVarSetInteger(value.key().c_str(),value.value().get<int>());
+@@ -4667,6 +4673,7 @@
+ // so the dump always succeeds. Caller MUST invoke this AFTER SOH_Init() returns.
+ extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
+     static std::string cached;
++
+ 
+     nlohmann::json checks = nlohmann::json::array();
+     nlohmann::json pool = nlohmann::json::array();
+diff --git a/soh/soh/Enhancements/randomizer/logic.cpp b/soh/soh/Enhancements/randomizer/logic.cpp
+--- a/soh/soh/Enhancements/randomizer/logic.cpp
++++ b/soh/soh/Enhancements/randomizer/logic.cpp
+@@ -210,6 +210,9 @@
+             return GetSaveContext()->isDoubleDefenseAcquired;
+             // Masks
+         case RG_SKULL_MASK:
++#ifdef COMBO_BUILD
++            return CheckRandoInf(RAND_INF_CHILD_TRADES_HAS_MASK_SKULL);
++#else
+             switch (ctx->GetOption(RSK_MASK_QUEST).Get()) {
+                 case RO_MASK_QUEST_VANILLA:
+                     return Get(LOGIC_BORROW_SKULL_MASK);
+@@ -221,7 +224,11 @@
+                     assert(false);
+                     return false;
+             }
++#endif
+         case RG_MASK_OF_TRUTH:
++#ifdef COMBO_BUILD
++            return CheckRandoInf(RAND_INF_CHILD_TRADES_HAS_MASK_TRUTH);
++#else
+             switch (ctx->GetOption(RSK_MASK_QUEST).Get()) {
+                 case RO_MASK_QUEST_VANILLA:
+                     return Get(LOGIC_BORROW_RIGHT_MASKS);
+@@ -233,6 +240,7 @@
+                     assert(false);
+                     return false;
+             }
++#endif
+         case RG_QUIVER_INF:
+         case RG_BOMB_BAG_INF:
+         case RG_BULLET_BAG_INF:
+diff --git a/soh/soh/Enhancements/randomizer/option.cpp b/soh/soh/Enhancements/randomizer/option.cpp
+--- a/soh/soh/Enhancements/randomizer/option.cpp
++++ b/soh/soh/Enhancements/randomizer/option.cpp
+@@ -176,6 +176,11 @@
+     contextSelection = defaultOption;
+     hidden = defaultHidden;
+     for (int i = 0; i < options.size(); i++) {
++#ifdef COMBO_BUILD
++        if (key == RSK_MASK_QUEST && i == RO_MASK_QUEST_VANILLA) {
++            continue; // Legacy saves retain ID 0; new seeds use owned masks.
++        }
++#endif
+         optionsMap.emplace(i, options[i].c_str());
+     }
+     UIWidgets::LabelPositions labelPosition;
+@@ -422,4 +427,4 @@
+         path.column = static_cast<SectionColumns>(path.column + 1);
+     }
+ }
+-} // namespace Rando
+\ No newline at end of file
++} // namespace Rando
+diff --git a/soh/soh/Enhancements/randomizer/settings.cpp b/soh/soh/Enhancements/randomizer/settings.cpp
+--- a/soh/soh/Enhancements/randomizer/settings.cpp
++++ b/soh/soh/Enhancements/randomizer/settings.cpp
+@@ -1454,7 +1454,11 @@
+             mOptions[RSK_BIG_POES_HINT].Enable();
+         }
+     });
++#ifdef COMBO_BUILD
++    OPT_U8(RSK_MASK_QUEST, "Mask Quest", {"Vanilla", "Completed", "Shuffle"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("CompleteMaskQuest"), "Shuffle places the eight OoT masks in the item pool. Completed starts with them. The Happy Mask Shop is the portal to Majora's Mask.", WIDGET_CVAR_COMBOBOX, RO_MASK_QUEST_SHUFFLE);
++#else
+     OPT_U8(RSK_MASK_QUEST, "Mask Quest", {"Vanilla", "Completed", "Shuffle"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("CompleteMaskQuest"), mOptionDescriptions[RSK_MASK_QUEST], WIDGET_CVAR_COMBOBOX, 0);
++#endif
+     OPT_U8(RSK_GOSSIP_STONE_HINTS, "Gossip Stone Hints", {"No Hints", "Need Nothing", "Mask of Truth", "Stone of Agony"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("GossipStoneHints"), mOptionDescriptions[RSK_GOSSIP_STONE_HINTS], WIDGET_CVAR_COMBOBOX, RO_GOSSIP_STONES_NEED_NOTHING, false, nullptr, IMFLAG_NONE);
+     OPT_CALLBACK(RSK_GOSSIP_STONE_HINTS, {
+         if (CVarGetInteger(CVAR_RANDOMIZER_SETTING("GossipStoneHints"), RO_GOSSIP_STONES_NEED_NOTHING) ==
+diff --git a/soh/soh/Enhancements/randomizer/3drando/starting_inventory.cpp b/soh/soh/Enhancements/randomizer/3drando/starting_inventory.cpp
+--- a/soh/soh/Enhancements/randomizer/3drando/starting_inventory.cpp
++++ b/soh/soh/Enhancements/randomizer/3drando/starting_inventory.cpp
+@@ -19,6 +19,20 @@
+     auto ctx = Rando::Context::GetInstance();
+     StartingInventory.clear();
+     Rando::Souls::AddUnshuffledStarts(StartingInventory);
++
++#ifdef COMBO_BUILD
++    // Match the eight owned masks granted by Randomizer_InitSaveFile.
++    // OoTMM models starting masks as items, without borrowing from the portal.
++    if (ctx->GetOption(RSK_MASK_QUEST).Is(RO_MASK_QUEST_COMPLETED)) {
++        for (RandomizerGet mask : { RG_KEATON_MASK, RG_SKULL_MASK, RG_SPOOKY_MASK, RG_GORON_MASK,
++                                    RG_ZORA_MASK, RG_GERUDO_MASK, RG_MASK_OF_TRUTH }) {
++            AddItemToInventory(mask);
++        }
++        if (!ctx->GetOption(RSK_STARTING_BUNNY_HOOD)) {
++            AddItemToInventory(RG_BUNNY_HOOD);
++        }
++    }
++#endif
+ 
+     if (ctx->GetOption(RSK_SHUFFLE_MAPANDCOMPASS).Is(RO_DUNGEON_ITEM_LOC_STARTWITH)) {
+         for (auto* dungeon : ctx->GetDungeons()->GetDungeonList()) {
+diff --git a/soh/soh/Enhancements/randomizer/location_access/overworld/market.cpp b/soh/soh/Enhancements/randomizer/location_access/overworld/market.cpp
+--- a/soh/soh/Enhancements/randomizer/location_access/overworld/market.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access/overworld/market.cpp
+@@ -148,6 +148,7 @@
+     });
+ 
+     areaTable[RR_MARKET_MASK_SHOP] = Region("Market Mask Shop", SCENE_HAPPY_MASK_SHOP, {
++#ifndef COMBO_BUILD
+         //Events
+         //Currently, mask swap in menu doesn't need access to the mask shop
+         //If it is forced on/a setting, a copy of these events should be added to root
+@@ -157,10 +158,13 @@
+         EVENT_ACCESS(LOGIC_BORROW_SPOOKY_MASK, ctx->GetOption(RSK_MASK_QUEST).Is(RO_MASK_QUEST_COMPLETED) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->Get(LOGIC_CAN_BORROW_MASKS)),
+         EVENT_ACCESS(LOGIC_BORROW_BUNNY_HOOD,  ctx->GetOption(RSK_MASK_QUEST).Is(RO_MASK_QUEST_COMPLETED) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->Get(LOGIC_CAN_BORROW_MASKS)),
+         EVENT_ACCESS(LOGIC_BORROW_RIGHT_MASKS, ctx->GetOption(RSK_MASK_QUEST).Is(RO_MASK_QUEST_COMPLETED) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->Get(LOGIC_CAN_BORROW_MASKS)),
+-    }, {
++#endif
++    }, {
++#ifndef COMBO_BUILD
+         //Locations
+         LOCATION(RC_MASK_SHOP_HINT,    true),
+         LOCATION(RC_MK_MASK_SHOP_SIGN, logic->CanRead()),
++#endif
+     }, {
+         //Exits
+         ENTRANCE(RR_THE_MARKET, true),
+diff --git a/combo/rando/OotMaskQuest.h b/combo/rando/OotMaskQuest.h
+new file mode 100644
+--- /dev/null
++++ b/combo/rando/OotMaskQuest.h
+@@ -0,0 +1,12 @@
++#pragma once
++
++namespace ComboRando {
++
++// OoTMM supplies all eight OoT masks as items; its Mask Shop is the game portal.
++// Preserve serialized mode IDs, but resolve legacy Vanilla requests before fill.
++// Never apply this conversion when restoring an existing seed's settings.
++constexpr int NormalizeOotMaskQuestForGeneration(int mode) {
++    return mode == 0 ? 2 : mode;
++}
++
++} // namespace ComboRando

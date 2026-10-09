@@ -1,0 +1,22 @@
+{
+  "result": "PASS",
+  "date": "2026-10-04",
+  "stableWebsiteKeys": 402,
+  "nativeKeys": 361,
+  "trickRows": 356,
+  "pairedTrickAliases": 34,
+  "combinedRuleRows": 24,
+  "structuredRows": 8,
+  "reviewedFindings": 33,
+  "checkedReferenceUrls": 1985,
+  "checkedNativeAndReportPointers": 2457,
+  "reviewedSourceHashRows": 57,
+  "nativeSourcesUnchangedAgainstAuditReceipt": true,
+  "referenceRepositoriesPinnedAndClean": true,
+  "exhaustiveBehavioralParityTested": false,
+  "productionLogicModifiedByThisAudit": false,
+  "romOrSaveDataIncluded": false,
+  "reportSha256": "2f49cffeeacc7b5b74c61b523535722f83a4eb1085bdac5e24693494f27dd2d2",
+  "coverageSha256": "17620d71667f2cf67bc7cd4d716e6a3c2840176b611a04e4b6303641b840fc78",
+  "limitation": "Verifies source-audit completeness and evidence pointers, not every runtime route or setting combination."
+}

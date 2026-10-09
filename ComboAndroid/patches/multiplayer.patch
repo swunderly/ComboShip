@@ -1,0 +1,903 @@
+--- a/combo/ComboShip.cpp
++++ b/combo/ComboShip.cpp
+@@ -41,6 +41,7 @@
+ #include "gui/ComboGenProgress.h"
+ #include "ComboExtract.h"
+ #include "ComboSettingsImport.h"
++#include "network/ComboAnchorProtocol.h"
+ 
+ // Surfaces the real exception behind a silent terminate()/exit(3). With the shared dynamic
+ // CRT, exceptions thrown in soh.dll/2ship.dll propagate across the DLL boundary to here.
+@@ -272,6 +273,8 @@
+ typedef void (*FnSetComboSaveIO)(ComboRando::FnComboReadSave, ComboRando::FnComboWriteSave);
+ static FnSetComboSaveIO SOH_SetComboSaveIO = nullptr;
+ static FnSetComboSaveIO MM_SetComboSaveIO = nullptr;
++using FnSetAnchorJournalProvider = void (*)(const char* (*)(int));
++static FnSetAnchorJournalProvider SOH_SetAnchorJournalProvider = nullptr;
+ static FnTakeStr SOH_LoadComboRando = nullptr;
+ static FnTakeStr MM_LoadComboRando = nullptr;
+ // OOT file-select "copy file": whole-container copy (both games + rando) through the launcher.
+@@ -574,6 +577,27 @@
+ 
+ // Read-modify-write the FULL container (never re-derived) so the other game's section stays intact
+ // when e.g. an Anchor MM write lands during OOT play. Malformed inbound leaves the section untouched.
++static std::set<std::string> sAppliedCrossChecks;
++static uint32_t sCrossItemDedupSeed = 0;
++static std::mutex sAppliedCrossChecksMutex;
++static std::mutex sAnchorJournalMutex;
++static nlohmann::json sAnchorEvents = nlohmann::json::object();
++static int sAnchorJournalSlot = -1;
++static uint32_t sAnchorJournalSeed = 0;
++
++// Called on OoT's game thread when it copies SaveContext for its save worker.
++// Never sample a newer journal from the worker after the inventory was captured.
++static const char* Combo_SnapshotAnchorJournal(int fileNum) {
++    thread_local std::string result;
++    std::scoped_lock lock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
++    result.clear();
++    if (sAnchorJournalSlot == fileNum) {
++        result = nlohmann::json{{"seed", sAnchorJournalSeed}, {"events", sAnchorEvents},
++                                {"crossChecks", sAppliedCrossChecks}}.dump();
++    }
++    return result.c_str();
++}
++
+ static void Combo_WriteGameSave(int game, int fileNum, const char* json) {
+     if (!json)
+         return;
+@@ -591,9 +615,29 @@
+     std::lock_guard<std::mutex> lk(g_containerMutex);
+     auto& c = LoadOrCreateContainer(fileNum);
+     const char* key = (game == ComboRando::GAME_OOT) ? "oot" : "mm";
++    nlohmann::json journal;
+     try {
+-        c[key] = nlohmann::json::parse(json);
++        auto block = nlohmann::json::parse(json);
++        if (block.is_object() && block.contains("_comboAnchorJournal")) {
++            journal = block["_comboAnchorJournal"];
++            block.erase("_comboAnchorJournal");
++        }
++        c[key] = std::move(block);
+     } catch (...) { return; }
++    if (game == ComboRando::GAME_MM && sAnchorJournalSlot == fileNum) {
++        // MM writes a complete save synchronously on the game thread.
++        std::scoped_lock journalLock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
++        journal = {{"seed", sAnchorJournalSeed}, {"events", sAnchorEvents}, {"crossChecks", sAppliedCrossChecks}};
++    }
++    const auto rando = c["combo"].value("rando", nlohmann::json::object());
++    if (journal.is_object() && journal.value("seed", 0u) == rando.value("displaySeed", rando.value("masterSeed", 0u))) {
++        ComboAnchorProtocol::CommitGameCounters(c["combo"]["anchorEvents"], journal["events"], game);
++        auto savedChecks = c["combo"].value("anchorCrossChecks", std::set<std::string>{});
++        const auto prefix = ComboAnchorProtocol::GamePrefix(game);
++        for (const auto& check : journal["crossChecks"].get<std::set<std::string>>())
++            if (check.compare(0, prefix.size(), prefix) == 0) savedChecks.insert(check);
++        c["combo"]["anchorCrossChecks"] = savedChecks;
++    }
+     FlushContainer(fileNum);
+ }
+ 
+@@ -740,6 +784,7 @@
+ static FnVoidArgless SOH_Anchor_OnDisconnected = nullptr;
+ // Bug 2: launcher-orchestrated resync, dormant-safe (see ComboAnchor::RequestFullResync below).
+ static FnVoidArgless SOH_Anchor_RequestResync = nullptr;
++static FnVoidArgless SOH_Anchor_SendSnapshot = nullptr;
+ 
+ // MM Anchor adapter exports (Phase 2). MM piggybacks on the same launcher-owned connection; it is
+ // activated/deactivated on transitions and receives inbound packets when it is the active game.
+@@ -748,6 +793,7 @@
+ static FnVoidArgless MM_Anchor_Activate = nullptr;
+ static FnVoidArgless MM_Anchor_Deactivate = nullptr;
+ static FnVoidArgless MM_Anchor_RequestResync = nullptr;
++static FnVoidArgless MM_Anchor_SendSnapshot = nullptr;
+ 
+ // A6: live dormant-game co-op sync. The launcher feeds every inbound packet to BOTH games; the active
+ // game calls the registered pump each frame so the dormant sibling applies save-affecting packets on
+@@ -857,6 +903,15 @@
+ // Finding 4: on-connect resync must run on the game thread (RequestResyncDormantSafe touches
+ // gPlayState/isDormantApply, which PumpDormant also mutates there). Set here, drained by PumpDormant.
+ static std::atomic<bool> sResyncPending{ false };
++static std::atomic<uint32_t> sSyncSeed{ 0 };
++static std::atomic<bool> sPublishPending{ false };
++static std::mutex sSyncMutex;
++static nlohmann::json sRequest;
++static std::queue<nlohmann::json> sInbound;
++static thread_local nlohmann::json* sSnapshotCapture = nullptr;
++static unsigned sPublishDelay = 0; // game-thread frames; let both engines finish applying first
++static void ReceivePacket(const std::string& packet);
++static void PumpSync();
+ 
+ // Combo-owned Anchor roster/presence. A game's Anchor only drains packets while it's the foreground
+ // game, so its per-game roster goes stale when dormant. The launcher sees every packet on this
+@@ -1022,6 +1077,12 @@
+         }
+ 
+         received.clear();
++        {
++            // A new TCP connection must start with HANDSHAKE, never queued gameplay
++            // left over from the previous socket. Full resync recovers progress.
++            std::lock_guard<std::mutex> lock(sOutMutex);
++            sOutQueue = {};
++        }
+         sConnected = true;
+         // OOT's OnConnected sends the room HANDSHAKE (establishes our client id) regardless of
+         // which game is foreground. If MM is the active game (e.g. we connected while already in
+@@ -1040,7 +1101,7 @@
+         SDLNet_TCP_AddSocket(set, socket);
+ 
+         while (sEnabled && sConnected) {
+-            int ready = SDLNet_CheckSockets(set, 0);
++            int ready = SDLNet_CheckSockets(set, 8);
+             if (ready == -1)
+                 break;
+ 
+@@ -1053,7 +1114,11 @@
+             while (!toSend.empty()) {
+                 const std::string& p = toSend.front();
+                 // Include the NUL delimiter in the framing (matches Network::SendDataToRemote).
+-                SDLNet_TCP_Send(socket, p.c_str(), (int)p.size() + 1);
++                const int size = (int)p.size() + 1;
++                if (SDLNet_TCP_Send(socket, p.c_str(), size) != size) {
++                    sConnected = false;
++                    break; // never append another message after a truncated JSON frame
++                }
+                 toSend.pop();
+             }
+ 
+@@ -1077,10 +1142,7 @@
+                 // active game drains+handles it on its tick; the dormant game applies its save-affecting
+                 // subset via PumpDormant (driven by the active game's per-frame pump call), so a
+                 // teammate's progression registers in the dormant game's save live.
+-                if (SOH_Anchor_RecvJson)
+-                    SOH_Anchor_RecvJson(packet.c_str());
+-                if (MM_Anchor_RecvJson)
+-                    MM_Anchor_RecvJson(packet.c_str());
++                ReceivePacket(packet);
+                 pos = received.find('\0');
+             }
+         }
+@@ -1121,17 +1183,153 @@
+     std::lock_guard<std::mutex> lk(sOutMutex);
+     std::queue<std::string> empty;
+     sOutQueue.swap(empty);
++    std::lock_guard<std::mutex> syncLock(sSyncMutex);
++    sInbound = {};
++    sRequest = nullptr;
++    sPublishPending = false;
+ }
+ 
+ // Registered into the game as the send callback (Network::SendDataToRemote redirects here).
+ static void Send(const char* json) {
+-    if (!json)
++    if (!json || !sConnected) return;
++    auto p = nlohmann::json::parse(json, nullptr, false);
++    if (p.is_discarded() || !p.is_object()) return;
++    const std::string type = p.value("type", "");
++    if (type == "UPDATE_TEAM_STATE") {
++        if (!sSnapshotCapture && p.contains("state") && p["state"].is_object() && p["state"].empty()) {
++            std::lock_guard<std::mutex> lock(sOutMutex);
++            sOutQueue.push(p.dump()); // explicit owner action: clear the server cache
++            return;
++        }
++        if (sSnapshotCapture) {
++            const std::string game = p.value("originGame", "oot");
++            (*sSnapshotCapture)[game] = std::move(p);
++        } else {
++            sPublishPending = true;
++        }
+         return;
++    }
++    if (type == "REQUEST_TEAM_STATE") {
++        p.erase("originGame"); // one request asks for one combined snapshot
++        std::lock_guard<std::mutex> lock(sSyncMutex);
++        sRequest = std::move(p);
++        return;
++    }
++    if (type == "HANDSHAKE") p["clientState"]["comboProtocol"] = ComboAnchorProtocol::Version;
++    if (type == "UPDATE_CLIENT_STATE") {
++        p["state"]["comboProtocol"] = ComboAnchorProtocol::Version;
++        if (p["state"].value("isSaveLoaded", false)) p["state"]["seed"] = sSyncSeed.load();
++    }
++    if (ComboAnchorProtocol::IsProgress(p)) {
++        p["comboProtocol"] = ComboAnchorProtocol::Version;
++        p["comboSeed"] = sSyncSeed.load();
++        p["addToQueue"] = true;
++        if (type == "GIVE_ITEM" || type == "COMBO_CROSS_ITEM") {
++            static const std::string stream = std::to_string(
++                std::chrono::high_resolution_clock::now().time_since_epoch().count());
++            static uint64_t sequence = 0;
++            std::lock_guard<std::mutex> journalLock(sAnchorJournalMutex);
++            p["comboStream"] = stream;
++            p["comboSequence"] = ++sequence;
++            ComboAnchorProtocol::AcceptEvent(sAnchorEvents, p);
++        }
++        sPublishPending = true; // refresh both cached saves after local progress
++    }
+     // Our own scene/room-state is broadcast OUTBOUND (never echoed inbound), so parse it here too or the
+     // self roster row would freeze at its join value.
+-    UpdateRosterFromPacket(json);
++    const std::string wire = p.dump();
++    if (type == "UPDATE_ROOM_STATE" && MM_Anchor_RecvJson) MM_Anchor_RecvJson(wire.c_str());
++    UpdateRosterFromPacket(wire);
+     std::lock_guard<std::mutex> lk(sOutMutex);
+-    sOutQueue.push(json);
++    sOutQueue.push(wire);
++}
++
++static void ReceivePacket(const std::string& packet) {
++    auto p = nlohmann::json::parse(packet, nullptr, false);
++    if (p.is_discarded() || !p.is_object()) return;
++    // Synchronization and all save access stay on the game thread.
++    std::lock_guard<std::mutex> lock(sSyncMutex);
++    sInbound.push(std::move(p));
++}
++
++static void QueueWire(const nlohmann::json& p) {
++    if (!sConnected) return;
++    std::lock_guard<std::mutex> lock(sOutMutex);
++    sOutQueue.push(p.dump());
++}
++
++static void PumpSync() {
++    std::queue<nlohmann::json> incoming;
++    nlohmann::json request;
++    {
++        std::lock_guard<std::mutex> lock(sSyncMutex);
++        incoming.swap(sInbound);
++        request.swap(sRequest);
++    }
++    if (request.is_object()) {
++        request["comboProtocol"] = ComboAnchorProtocol::Version;
++        request["comboSeed"] = sSyncSeed.load();
++        QueueWire(request);
++    }
++    while (!incoming.empty()) {
++        auto p = std::move(incoming.front());
++        incoming.pop();
++        try {
++            const auto type = p.value("type", "");
++            if (type == "REQUEST_TEAM_STATE") {
++                if (p.value("comboProtocol", 0) == ComboAnchorProtocol::Version &&
++                    p.value("comboSeed", 0u) == sSyncSeed.load()) sPublishPending = true;
++                continue;
++            }
++            if (ComboAnchorProtocol::IsProgress(p) && type != "UPDATE_TEAM_STATE" &&
++                (p.value("comboProtocol", 0) != ComboAnchorProtocol::Version ||
++                 p.value("comboSeed", 0u) != sSyncSeed.load())) continue;
++            auto packets = ComboAnchorProtocol::Expand(p, sSyncSeed.load());
++            if (type == "UPDATE_TEAM_STATE" && packets.size() >= 2 && p.contains("state")) {
++                std::scoped_lock journalLock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
++                ComboAnchorProtocol::MergeCounters(sAnchorEvents, p["state"].value("events", nlohmann::json::object()));
++                if (p["state"].contains("crossChecks") && p["state"]["crossChecks"].is_array()) {
++                    for (const auto& check : p["state"]["crossChecks"])
++                        if (check.is_string()) sAppliedCrossChecks.insert(check.get<std::string>());
++                }
++            }
++            for (auto& expanded : packets) {
++                const auto expandedType = expanded.value("type", "");
++                if (expandedType == "GIVE_ITEM" || expandedType == "COMBO_CROSS_ITEM") {
++                    std::lock_guard<std::mutex> journalLock(sAnchorJournalMutex);
++                    if (!ComboAnchorProtocol::AcceptEvent(sAnchorEvents, expanded)) continue;
++                }
++                const auto wire = expanded.dump();
++                if (SOH_Anchor_RecvJson) SOH_Anchor_RecvJson(wire.c_str());
++                if (MM_Anchor_RecvJson) MM_Anchor_RecvJson(wire.c_str());
++                if (ComboAnchorProtocol::IsProgress(expanded)) sPublishPending = true;
++            }
++        } catch (const std::exception& e) {
++            std::cerr << "[ComboShip][Anchor] Rejected sync packet: " << e.what() << std::endl;
++        }
++    }
++    if (sPublishPending.exchange(false)) sPublishDelay = 2;
++    if (sConnected && sPublishDelay > 0 && --sPublishDelay == 0) {
++        nlohmann::json capture = nlohmann::json::object();
++        try {
++            sSnapshotCapture = &capture;
++            if (SOH_Anchor_SendSnapshot) SOH_Anchor_SendSnapshot();
++            if (MM_Anchor_SendSnapshot) MM_Anchor_SendSnapshot();
++            sSnapshotCapture = nullptr;
++            if (capture.contains("oot") && capture.contains("mm")) {
++                auto packet = ComboAnchorProtocol::Combine(capture["oot"], capture["mm"], sSyncSeed.load());
++                {
++                    std::scoped_lock journalLock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
++                    packet["state"]["events"] = sAnchorEvents;
++                    packet["state"]["crossChecks"] = sAppliedCrossChecks;
++                }
++                QueueWire(packet);
++            }
++        } catch (const std::exception& e) {
++            sSnapshotCapture = nullptr;
++            std::cerr << "[ComboShip][Anchor] Snapshot unavailable: " << e.what() << std::endl;
++        }
++    }
+ }
+ 
+ // Called during launcher shutdown, BEFORE any game DLL is unloaded: the receive thread calls
+@@ -1160,10 +1358,6 @@
+ // game's foreign-check detection (local) and the active game's Anchor receive handler (network).
+ // Grants into the TARGET game's resident save via its save-only export (target is usually the
+ // dormant game, so its save isn't mutating underneath us). See docs/deviations/rando.md.
+-static std::set<std::string> sAppliedCrossChecks; // dedup: the same wire packet can reach both DLLs
+-static uint32_t sCrossItemDedupSeed = 0;          // scoped per-seed (ResetCrossItemDedupForSeed)
+-// Reset runs on the generation worker; deliver runs on the game thread — both mutate the set.
+-static std::mutex sAppliedCrossChecksMutex;
+ 
+ // Clears the dedup set whenever the active seed changes (regen/new-file), so a check name reused
+ // across seeds isn't silently dropped as a stale "already delivered" duplicate.
+@@ -1181,7 +1375,7 @@
+ static void DeliverCrossItem(int targetGame, const char* itemName, const char* srcCheckName) {
+     if (srcCheckName && srcCheckName[0] != '\0') {
+         std::lock_guard<std::mutex> lock(sAppliedCrossChecksMutex);
+-        if (!sAppliedCrossChecks.insert(srcCheckName).second) {
++        if (!sAppliedCrossChecks.insert(ComboAnchorProtocol::GamePrefix(targetGame) + srcCheckName).second) {
+             return; // already delivered for this check
+         }
+     }
+@@ -1205,6 +1399,7 @@
+ // save-affecting co-op packets to the DORMANT game on the caller's (game) thread, so a teammate's
+ // collection registers in the dormant game's save live instead of only on next entry.
+ static void PumpDormant() {
++    ComboAnchor::PumpSync();
+     // Finding 4: drain the on-connect resync here (game thread), once per connect.
+     if (ComboAnchor::sResyncPending.exchange(false)) {
+         if (SOH_Anchor_RequestResync)
+@@ -1256,6 +1451,24 @@
+         g_comboTriforceDone = comp.value("triforce", false);
+         // The goal is seed-bound: it rides the slot's baked combo.rando, not the live menu CVars.
+         auto rando = combo.value("rando", nlohmann::json::object());
++        // displaySeed also incorporates settings/placements; the typed seed alone
++        // can describe different randomizers and must not authorize save sharing.
++        ComboAnchor::sSyncSeed = rando.value("displaySeed", rando.value("masterSeed", 0u));
++        {
++            std::scoped_lock journalLock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
++            if (sAnchorJournalSlot != slot || sAnchorJournalSeed != ComboAnchor::sSyncSeed.load()) {
++                sAnchorEvents = nlohmann::json::object();
++                sAppliedCrossChecks.clear();
++            }
++            sAnchorJournalSlot = slot;
++            sAnchorJournalSeed = ComboAnchor::sSyncSeed.load();
++            sCrossItemDedupSeed = rando.value("masterSeed", 0u);
++            ComboAnchorProtocol::MergeCounters(sAnchorEvents, combo.value("anchorEvents", nlohmann::json::object()));
++            if (combo.contains("anchorCrossChecks") && combo["anchorCrossChecks"].is_array()) {
++                for (const auto& check : combo["anchorCrossChecks"])
++                    if (check.is_string()) sAppliedCrossChecks.insert(check.get<std::string>());
++            }
++        }
+         auto goal = rando.value("goal", nlohmann::json::object());
+         g_goalHunt = goal.value("type", std::string("bosses")) == "triforceHunt";
+         g_goalRequired = g_goalHunt ? goal.value("requiredPieces", 0) : 0;
+@@ -2979,6 +3192,8 @@
+     MM_Anchor_Deactivate = (FnVoidArgless)GetSym(mmModule, "MM_Anchor_Deactivate");
+     SOH_Anchor_RequestResync = (FnVoidArgless)GetSym(sohModule, "SOH_Anchor_RequestResync");
+     MM_Anchor_RequestResync = (FnVoidArgless)GetSym(mmModule, "MM_Anchor_RequestResync");
++    SOH_Anchor_SendSnapshot = (FnVoidArgless)GetSym(sohModule, "SOH_Anchor_SendSnapshot");
++    MM_Anchor_SendSnapshot = (FnVoidArgless)GetSym(mmModule, "MM_Anchor_SendSnapshot");
+     SOH_SetPumpDormant = (FnSetPumpDormant)GetSym(sohModule, "SOH_SetPumpDormant");
+     MM_SetPumpDormant = (FnSetPumpDormant)GetSym(mmModule, "MM_SetPumpDormant");
+     SOH_Anchor_PumpDormant = (FnVoidArgless)GetSym(sohModule, "SOH_Anchor_PumpDormant");
+@@ -3049,6 +3264,7 @@
+     // Cross-game erase seam (issue #1)
+     SOH_SetComboSaveIO = (FnSetComboSaveIO)GetSym(sohModule, "SOH_SetComboSaveIO");
+     MM_SetComboSaveIO = (FnSetComboSaveIO)GetSym(mmModule, "MM_SetComboSaveIO");
++    SOH_SetAnchorJournalProvider = (FnSetAnchorJournalProvider)GetSym(sohModule, "SOH_SetAnchorJournalProvider");
+     SOH_LoadComboRando = (FnTakeStr)GetSym(sohModule, "SOH_LoadComboRando");
+     MM_LoadComboRando = (FnTakeStr)GetSym(mmModule, "MM_LoadComboRando");
+     SOH_SetCopyContainer = (FnSetCopyContainer)GetSym(sohModule, "SOH_SetCopyContainer");
+@@ -3405,6 +3621,8 @@
+         SOH_SetComboSaveIO(&Combo_ReadGameSave, &Combo_WriteGameSave);
+     if (MM_SetComboSaveIO)
+         MM_SetComboSaveIO(&Combo_ReadGameSave, &Combo_WriteGameSave);
++    if (SOH_SetAnchorJournalProvider)
++        SOH_SetAnchorJournalProvider(&Combo_SnapshotAnchorJournal);
+     if (SOH_SetCopyContainer)
+         SOH_SetCopyContainer(&Combo_CopyContainer);
+     // OOT owns the shared file-select; it polls for release-evicted slots and shows the outdated-save popup.
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -623,6 +623,8 @@
+ 
+     ImGui::TextWrapped("Play OOT and MM online with teammates: items and flags are shared per team, with "
+                        "live presence and same-game teleport. Set a host, room, and name, then Enable.");
++    ImGui::TextWrapped("For shared progress, every player needs Combo Ship 0.1.14 or newer, the same seed, "
++                       "and the same team. Older builds cannot synchronize both games reliably.");
+ 
+     // Widgets in the first cell of a 2-col stretch table, so they're half-width like the other panels.
+     const ImGuiTableFlags anchorTableFlags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
+@@ -1384,7 +1386,7 @@
+         case HubEntry::COMBO_TIMERS: DrawTimersSharedPanel(); break;
+         case HubEntry::COMBO_NETWORK: DrawNetworkSharedPanel(); break;
+         case HubEntry::COMBO_ABOUT:
+-            ImGui::TextWrapped("Combo Ship for Android - 0.1.13");
++            ImGui::TextWrapped("Combo Ship for Android - 0.1.14");
+             ImGui::TextWrapped("A combined Ocarina of Time and Majora's Mask randomizer with shared menus, trackers and touch controls.");
+             ImGui::Spacing();
+             ImGui::SeparatorText("Built on community work");
+--- a/mm/2s2h/Network/Anchor/MMAnchor.cpp
++++ b/mm/2s2h/Network/Anchor/MMAnchor.cpp
+@@ -184,9 +184,15 @@
+ // MARK: - Transport
+ 
+ void MMAnchor::SendJson(nlohmann::json payload) {
+-    if (!isActive || gMMComboAnchorSend == nullptr) {
+-        return;
+-    }
++    if (!isActive) {
++        return;
++    }
++    SendSaveJson(std::move(payload));
++}
++
++// Save-only synchronization also runs while the other game is active.
++void MMAnchor::SendSaveJson(nlohmann::json payload) {
++    if (gMMComboAnchorSend == nullptr) return;
+     if (ownClientId == 0) {
+         ownClientId = (uint32_t)CVarGetInteger(kCvarLastClientId, 0); // late-cache fallback
+     }
+@@ -194,6 +200,13 @@
+     // Routing tag for the shared socket; NOT the cross-item "srcGame" int field (don't clobber it).
+     payload["originGame"] = "mm";
+     gMMComboAnchorSend(payload.dump().c_str());
++}
++
++void MMAnchor::HandlePacket_UpdateRoomState(const nlohmann::json& payload) {
++    if (!payload.contains("state") || !payload["state"].is_object()) return;
++    roomState.syncItemsAndFlags = payload["state"].value("syncItemsAndFlags", 1);
++    roomState.pvpMode = payload["state"].value("pvpMode", 0);
++    CVarSetInteger(kCvarTeleportMode, payload["state"].value("teleportMode", 1));
+ }
+ 
+ void MMAnchor::OnIncomingJson(const std::string& payload) {
+@@ -210,7 +223,8 @@
+     // Drop OOT-originated packets — their shapes collide with ours (GIVE_ITEM, UPDATE_TEAM_STATE...).
+     // Exceptions: cross-game item delivery and the room roster. No originGame (server) passes through.
+     std::string type = j["type"].get<std::string>();
+-    if (j.value("originGame", "mm") != "mm" && type != PKT_CROSS_ITEM && type != PKT_UPDATE_CLIENT_STATE) {
++    if (j.value("originGame", "mm") != "mm" && type != PKT_CROSS_ITEM &&
++        type != PKT_UPDATE_CLIENT_STATE && type != "UPDATE_ROOM_STATE") {
+         return;
+     }
+     std::lock_guard<std::mutex> lock(incomingMutex);
+@@ -228,7 +242,9 @@
+         toProcess.pop();
+         std::string type = payload["type"].get<std::string>();
+         try {
+-            if (type == PKT_ALL_CLIENT_STATE) {
++            if (type == "UPDATE_ROOM_STATE") {
++                HandlePacket_UpdateRoomState(payload);
++            } else if (type == PKT_ALL_CLIENT_STATE) {
+                 HandlePacket_AllClientState(payload);
+             } else if (type == PKT_UPDATE_CLIENT_STATE) {
+                 HandlePacket_UpdateClientState(payload);
+@@ -280,7 +296,13 @@
+         nlohmann::json payload = toProcess.front();
+         toProcess.pop();
+         try {
+-            if (payload.value("type", std::string()) == PKT_GIVE_ITEM && payload.contains("randoCheckId")) {
++            if (payload.value("type", std::string()) == "UPDATE_ROOM_STATE") {
++                HandlePacket_UpdateRoomState(payload);
++            } else if (payload.value("type", std::string()) == PKT_ALL_CLIENT_STATE) {
++                HandlePacket_AllClientState(payload);
++            } else if (payload.value("type", std::string()) == PKT_UPDATE_CLIENT_STATE) {
++                HandlePacket_UpdateClientState(payload);
++            } else if (payload.value("type", std::string()) == PKT_GIVE_ITEM && payload.contains("randoCheckId")) {
+                 SPDLOG_INFO("[MMAnchor] dormant GIVE_ITEM received: {}", payload.dump());
+                 ApplyDormantGiveItem(payload);
+             } else if (payload.value("type", std::string()) == PKT_REQUEST_TEAM_STATE) {
+@@ -309,6 +331,7 @@
+ // A6: dormant-safe variant of HandlePacket_GiveItem — marks the check obtained and grants via
+ // Combo_MM_GiveDormantResolved -> Rando::GiveItem (gPlayState==NULL). Junk resolves normally.
+ void MMAnchor::ApplyDormantGiveItem(const nlohmann::json& payload) {
++    if (!roomState.syncItemsAndFlags || !HasLoadedRandoSave()) return;
+     if (!payload.contains("randoCheckId")) {
+         return; // reject soh's GIVE_ITEM (modId shape, different item-id space)
+     }
+@@ -358,7 +381,7 @@
+     const bool saveLoaded = IsSaveLoaded();
+     if (saveLoaded) {
+         s16 rawScene = gPlayState->sceneId;
+-        p["seed"] = 0; // TODO Phase 3: MM rando seed
++        p["seed"] = gSaveContext.save.shipSaveInfo.rando.finalSeed;
+         p["isSaveLoaded"] = true;
+         p["isGameComplete"] = false;
+         // Two scene fields: namespaced "sceneNum" for OOT's roster display (so OOT shows MM peers as
+@@ -397,7 +420,9 @@
+     c.seed = s.value("seed", c.seed);
+     c.isSaveLoaded = s.value("isSaveLoaded", c.isSaveLoaded);
+     c.isGameComplete = s.value("isGameComplete", c.isGameComplete);
+-    c.sceneId = (s16)s.value("sceneId", (int32_t)c.sceneId); // RAW scene for puppet matching
++    // An OoT update must clear the last MM scene; otherwise a departed player remains visible.
++    c.sceneId = s.value("sceneNum", 0) >= MM_ANCHOR_SCENE_NAMESPACE
++                    ? (s16)s.value("sceneId", (int32_t)SCENE_MAX) : (s16)SCENE_MAX;
+     c.entrance = s.value("entrance", c.entrance);
+ }
+ 
+@@ -429,6 +454,7 @@
+     }
+     MMAnchorClient& c = clients[clientId];
+     ReadClientStateInto(c, clientId, payload["state"]);
++    shouldRefreshActors = true;
+ }
+ 
+ // MARK: - Player update (per-frame pose; canonical field set from 2S2H PR #1349)
+@@ -746,15 +772,13 @@
+ // isActive gate — the whole point is that a dormant MM must also ask teammates for a fresh state,
+ // which SendPacket_RequestTeamState (isActive-gated) can't do.
+ void MMAnchor::RequestResyncDormantSafe() {
+-    if (gMMComboAnchorSend == nullptr || !roomState.syncItemsAndFlags) {
++    if (gMMComboAnchorSend == nullptr || !roomState.syncItemsAndFlags || !HasLoadedRandoSave()) {
+         return;
+     }
+     nlohmann::json payload;
+     payload["type"] = PKT_REQUEST_TEAM_STATE;
+     payload["targetTeamId"] = CVarGetString(kCvarTeamId, "default");
+-    payload["clientId"] = ownClientId;
+-    payload["originGame"] = "mm";
+-    gMMComboAnchorSend(payload.dump().c_str());
++    SendSaveJson(std::move(payload));
+ }
+ 
+ void MMAnchor::HandlePacket_RequestTeamState(const nlohmann::json& payload) {
+@@ -803,7 +827,7 @@
+             rando["randoSaveChecksCopy"][i] = e;
+         }
+     }
+-    SendJson(payload);
++    SendSaveJson(payload);
+ }
+ 
+ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
+@@ -833,6 +857,11 @@
+     {
+         auto stuff =
+             payload["state"]["shipSaveInfo"]["rando"]["randoSaveChecksCopy"].get<std::vector<std::vector<s32>>>();
++        if (stuff.size() != RC_MAX || std::any_of(stuff.begin(), stuff.end(),
++                                                [](const auto& row) { return row.size() != 7; })) {
++            SPDLOG_WARN("[MMAnchor] Invalid check table in team snapshot");
++            return;
++        }
+         for (int i = 0; i < RC_MAX; i++) {
+             payload["state"]["shipSaveInfo"]["rando"]["randoSaveChecks"][i] = RandoSaveCheck{
+                 (RandoItemId)stuff[i][0], (bool)stuff[i][1], (bool)stuff[i][2], (bool)stuff[i][3],
+@@ -842,6 +871,25 @@
+     }
+ 
+     Save loadedData = payload["state"].get<Save>();
++
++    // Permanent equipment must not disappear when an older peer answers resync.
++    for (int i = 0; i < SLOT_BOTTLE_1; ++i) {
++        if (gSaveContext.save.saveInfo.inventory.items[i] != ITEM_NONE)
++            loadedData.saveInfo.inventory.items[i] = gSaveContext.save.saveInfo.inventory.items[i];
++    }
++    auto& localPlayer = gSaveContext.save.saveInfo.playerData;
++    auto& remotePlayer = loadedData.saveInfo.playerData;
++    remotePlayer.isMagicAcquired |= localPlayer.isMagicAcquired;
++    remotePlayer.isDoubleMagicAcquired |= localPlayer.isDoubleMagicAcquired;
++    remotePlayer.doubleDefense |= localPlayer.doubleDefense;
++    remotePlayer.magicLevel = std::max(remotePlayer.magicLevel, localPlayer.magicLevel);
++    const auto localPieces = (gSaveContext.save.saveInfo.inventory.questItems >> 28) & 0xF;
++    const auto remotePieces = (loadedData.saveInfo.inventory.questItems >> 28) & 0xF;
++    const auto pieces = localPlayer.healthCapacity > remotePlayer.healthCapacity ? localPieces :
++                        localPlayer.healthCapacity < remotePlayer.healthCapacity ? remotePieces :
++                        std::max(localPieces, remotePieces);
++    loadedData.saveInfo.inventory.questItems =
++        (loadedData.saveInfo.inventory.questItems & 0x0FFFFFFF) | (pieces << 28);
+ 
+     // ComboShip (bug 3): union not replace — a teammate's team-state can be stale/incomplete (they
+     // haven't reached a check we already have). Remember our permanently-obtained checks so the
+@@ -953,7 +1001,7 @@
+             gSaveContext.save.saveInfo.inventory.items[tradeSlots[i]] = localTradeItems[i];
+         }
+     }
+-    gSaveContext.save.saveInfo.inventory.questItems |= localQuestItems;
++    gSaveContext.save.saveInfo.inventory.questItems |= localQuestItems & 0x0FFFFFFF;
+     for (int i = 0; i < 8; i++) {
+         u32 mask = gUpgradeMasks[i];
+         u8 shift = gUpgradeShifts[i];
+@@ -1028,7 +1076,7 @@
+             continue;
+         }
+         const ComboRando::ForeignItem* fi = Rando::MiscBehavior::MM_LookupForeign(rc);
+-        if (fi && gMMComboCrossDeliver) {
++        if (fi && gMMComboCrossDeliver && !payload.value("comboSnapshot", false)) {
+             std::string checkName = Rando::StaticData::GetCheckDisplayName(rc);
+             gMMComboCrossDeliver((int)fi->itemGame, fi->itemName.c_str(), checkName.c_str());
+         }
+@@ -1184,6 +1232,14 @@
+     }
+ }
+ 
++extern "C" COMBO_EXPORT void MM_Anchor_SendSnapshot(void) {
++    try {
++        if (MMAnchor::Instance)
++            MMAnchor::Instance->SendTeamStateFromSave(CVarGetString(kCvarTeamId, "default"));
++    } catch (const std::exception& e) { SPDLOG_ERROR("[MM_Anchor_SendSnapshot] {}", e.what()); }
++    catch (...) { SPDLOG_ERROR("[MM_Anchor_SendSnapshot] unknown exception"); }
++}
++
+ // Bug 2: launcher-orchestrated resync (auto on connect + combo menu button), dormant-safe.
+ // Finding 3: never let an exception unwind across this extern "C" boundary.
+ extern "C" COMBO_EXPORT void MM_Anchor_RequestResync(void) {
+--- a/mm/2s2h/Network/Anchor/MMAnchor.h
++++ b/mm/2s2h/Network/Anchor/MMAnchor.h
+@@ -136,6 +136,8 @@
+     void RefreshClientActors();
+     nlohmann::json PrepClientState();
+     void SendJson(nlohmann::json payload);
++    void SendSaveJson(nlohmann::json payload);
++    void HandlePacket_UpdateRoomState(const nlohmann::json& payload);
+ 
+     void HandlePacket_AllClientState(const nlohmann::json& payload);
+     void HandlePacket_UpdateClientState(const nlohmann::json& payload);
+--- a/soh/soh/Network/Anchor/Anchor.cpp
++++ b/soh/soh/Network/Anchor/Anchor.cpp
+@@ -366,6 +366,14 @@
+     SendPacket_RequestTeamState();
+     isDormantApply = wasDormantApply;
+ }
++
++void Anchor::SendSnapshotDormantSafe() {
++    const bool previous = isDormantApply;
++    if (gPlayState == nullptr) isDormantApply = true;
++    try { SendPacket_UpdateTeamState(); }
++    catch (...) { isDormantApply = previous; throw; }
++    isDormantApply = previous;
++}
+ #endif
+ 
+ // MARK: - Misc/Helpers
+--- a/soh/soh/Network/Anchor/Anchor.h
++++ b/soh/soh/Network/Anchor/Anchor.h
+@@ -160,6 +160,7 @@
+     // Bug 2: request a fresh team-state from teammates regardless of active/dormant (bypasses the
+     // foreground-only assumption baked into the menu button's direct SendPacket_RequestTeamState call).
+     void RequestResyncDormantSafe();
++    void SendSnapshotDormantSafe();
+ #endif
+     void SendJsonToRemote(nlohmann::json packet);
+     bool IsSaveLoaded();
+--- a/soh/soh/Network/Anchor/Packets/UpdateTeamState.cpp
++++ b/soh/soh/Network/Anchor/Packets/UpdateTeamState.cpp
+@@ -142,6 +142,7 @@
+ #endif
+ 
+     isHandlingUpdateTeamState = true;
++    struct ResetHandling { bool& flag; ~ResetHandling() { flag = false; } } resetHandling{isHandlingUpdateTeamState};
+     // This can happen in between file select and the game starting, so we can't use this check, but we need to ensure
+     // we be careful to wrap PlayState usage in this check
+     //
+@@ -151,6 +152,23 @@
+ 
+     if (payload.contains("state")) {
+         SaveContext loadedData = payload["state"].get<SaveContext>();
++
++#ifdef COMBO_BUILD
++        // A reconnect can return an older team snapshot. Preserve permanent upgrades.
++        const auto localPieces = (gSaveContext.inventory.questItems >> 28) & 0xF;
++        const auto remotePieces = (loadedData.inventory.questItems >> 28) & 0xF;
++        const auto pieces = gSaveContext.healthCapacity > loadedData.healthCapacity ? localPieces :
++                            gSaveContext.healthCapacity < loadedData.healthCapacity ? remotePieces :
++                            std::max(localPieces, remotePieces);
++        loadedData.inventory.questItems = (loadedData.inventory.questItems & 0x0FFFFFFF) | (pieces << 28);
++        loadedData.healthCapacity = std::max(loadedData.healthCapacity, gSaveContext.healthCapacity);
++        loadedData.magicLevel = std::max(loadedData.magicLevel, gSaveContext.magicLevel);
++        loadedData.magicCapacity = std::max(loadedData.magicCapacity, gSaveContext.magicCapacity);
++        loadedData.isMagicAcquired |= gSaveContext.isMagicAcquired;
++        loadedData.isDoubleMagicAcquired |= gSaveContext.isDoubleMagicAcquired;
++        loadedData.isDoubleDefenseAcquired |= gSaveContext.isDoubleDefenseAcquired;
++        loadedData.bgsFlag |= gSaveContext.bgsFlag;
++#endif
+ 
+         gSaveContext.healthCapacity = loadedData.healthCapacity;
+         gSaveContext.magicLevel = loadedData.magicLevel;
+@@ -261,7 +279,7 @@
+         }
+ 
+         // ComboShip (bug 4/5): union the inventory — a resync must never regress owned progress.
+-        loadedData.inventory.questItems |= gSaveContext.inventory.questItems;
++        loadedData.inventory.questItems |= gSaveContext.inventory.questItems & 0x0FFFFFFF;
+         loadedData.inventory.equipment |= gSaveContext.inventory.equipment; // owned-piece bits
+         for (int i = 0; i < 8; i++) {
+             u32 mask = gUpgradeMasks[i];
+@@ -314,7 +332,8 @@
+                 // Foreign checks hold the OTHER game's item, absent from this inventory snapshot, so
+                 // deliver them cross-game (dedup-guarded). Native items are already recovered by the
+                 // inventory union above — granting here too would double-credit additive items.
+-                if (incoming >= RCSHOW_COLLECTED && localStatus < RCSHOW_COLLECTED &&
++                if (!payload.value("comboSnapshot", false) &&
++                    incoming >= RCSHOW_COLLECTED && localStatus < RCSHOW_COLLECTED &&
+                     loc->GetPlacedRandomizerGet() == RG_COMBO_FOREIGN) {
+                     const std::string checkName = Rando::StaticData::GetLocation((RandomizerCheck)i)->GetName();
+                     const ComboRando::ForeignItem* fi = OOT_LookupForeign(gSaveContext.fileNum, checkName);
+--- a/soh/soh/OTRGlobals.cpp
++++ b/soh/soh/OTRGlobals.cpp
+@@ -2901,6 +2901,13 @@
+         Anchor::Instance->PumpDormant();
+     }
+ }
++
++extern "C" COMBO_EXPORT void SOH_Anchor_SendSnapshot(void) {
++    if (!Anchor::Instance) return;
++    try { Anchor::Instance->SendSnapshotDormantSafe(); }
++    catch (const std::exception& e) { SPDLOG_ERROR("[SOH_Anchor_SendSnapshot] {}", e.what()); }
++    catch (...) { SPDLOG_ERROR("[SOH_Anchor_SendSnapshot] unknown exception"); }
++}
+ // Bug 2: launcher-orchestrated resync (auto on connect + combo menu button), dormant-safe.
+ // Finding 3: never let an exception unwind across this extern "C" boundary.
+ extern "C" COMBO_EXPORT void SOH_Anchor_RequestResync(void) {
+--- a/soh/soh/SaveManager.cpp
++++ b/soh/soh/SaveManager.cpp
+@@ -37,6 +37,7 @@
+ // the container instead of file{N}.sav; null => vendored file path. Set via SOH_SetComboSaveIO.
+ static ComboRando::FnComboReadSave gComboReadGameSave = nullptr;
+ static ComboRando::FnComboWriteSave gComboWriteGameSave = nullptr;
++static const char* (*gComboAnchorJournalProvider)(int fileNum) = nullptr;
+ // ComboShip: whole-slot copy (both games + rando) for file-select "copy file"; launcher owns it.
+ static void (*gComboCopyContainer)(int from, int to) = nullptr;
+ #endif
+@@ -1234,7 +1235,7 @@
+ 
+ // Threaded SaveFile takes copy of gSaveContext for local unmodified storage
+ 
+-void SaveManager::SaveFileThreaded(int fileNum, SaveContext* saveContext, int sectionID) {
++void SaveManager::SaveFileThreaded(int fileNum, SaveContext* saveContext, int sectionID, std::string anchorJournal) {
+     saveMtx.lock();
+     SPDLOG_INFO("Save File - fileNum: {}", fileNum);
+     // Needed for first time save, hasn't changed in forever anyway
+@@ -1280,7 +1281,12 @@
+ #ifdef COMBO_BUILD
+     if (gComboWriteGameSave) {
+         // ComboShip: route this slot's OOT block into the merged .combosav container (launcher RMW).
+-        gComboWriteGameSave(ComboRando::GAME_OOT, fileNum, saveBlock.dump().c_str());
++        auto combinedBlock = saveBlock;
++        // The journal was captured with this SaveContext, before the worker was
++        // scheduled. Partial tracker/rando writes must not advance item receipts.
++        if (sectionID == SECTION_ID_BASE && !anchorJournal.empty())
++            combinedBlock["_comboAnchorJournal"] = nlohmann::json::parse(anchorJournal);
++        gComboWriteGameSave(ComboRando::GAME_OOT, fileNum, combinedBlock.dump().c_str());
+     } else
+ #endif
+     {
+@@ -1336,10 +1342,15 @@
+     }
+     auto saveContext = new SaveContext;
+     memcpy(saveContext, &gSaveContext, sizeof(gSaveContext));
++    std::string anchorJournal;
++#ifdef COMBO_BUILD
++    if (sectionID == SECTION_ID_BASE && gComboAnchorJournalProvider)
++        anchorJournal = gComboAnchorJournalProvider(fileNum);
++#endif
+     if (threaded) {
+-        smThreadPool->detach_task(std::bind(&SaveManager::SaveFileThreaded, this, fileNum, saveContext, sectionID));
++        smThreadPool->detach_task(std::bind(&SaveManager::SaveFileThreaded, this, fileNum, saveContext, sectionID, anchorJournal));
+     } else {
+-        SaveFileThreaded(fileNum, saveContext, sectionID);
++        SaveFileThreaded(fileNum, saveContext, sectionID, anchorJournal);
+     }
+ }
+ 
+@@ -2989,6 +3000,10 @@
+     gComboWriteGameSave = w;
+ }
+ 
++extern "C" COMBO_EXPORT void SOH_SetAnchorJournalProvider(const char* (*provider)(int)) {
++    gComboAnchorJournalProvider = provider;
++}
++
+ // ComboShip: launcher registers its whole-container copy for file-select "copy file".
+ extern "C" COMBO_EXPORT void SOH_SetCopyContainer(void (*cb)(int, int)) {
+     gComboCopyContainer = cb;
+--- a/soh/soh/SaveManager.h
++++ b/soh/soh/SaveManager.h
+@@ -160,7 +160,7 @@
+     void ConvertFromUnversioned();
+     void CreateDefaultGlobal();
+ 
+-    void SaveFileThreaded(int fileNum, SaveContext* saveContext, int sectionID);
++    void SaveFileThreaded(int fileNum, SaveContext* saveContext, int sectionID, std::string anchorJournal);
+ 
+     void InitMeta(int slotNum);
+     void StartupCheckAndInitMeta(int slotNum);
+--- /dev/null
++++ b/combo/network/ComboAnchorProtocol.h
+@@ -0,0 +1,102 @@
++#pragma once
++
++#include <nlohmann/json.hpp>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++// Anchor caches one opaque state per team. Keep both games inside that state so a
++// second game's reply cannot consume the first game's waiters or replace its save.
++namespace ComboAnchorProtocol {
++using Json = nlohmann::json;
++inline constexpr int Version = 1;
++
++inline std::string GamePrefix(int game) { return game == 1 ? "mm:" : "oot:"; }
++
++inline bool AcceptEvent(Json& counters, const Json& p) {
++    const std::string stream = p.value("comboStream", "");
++    const uint64_t sequence = p.value("comboSequence", uint64_t{0});
++    if (stream.empty() || !sequence) return false;
++    const int game = p.value("type", "") == "COMBO_CROSS_ITEM"
++        ? p.value("targetGame", -1) : (p.value("originGame", "oot") == "mm" ? 1 : 0);
++    if (game < 0 || game > 1) return false;
++    const std::string key = GamePrefix(game) + stream;
++    const uint64_t previous = counters.value(key, uint64_t{0});
++    if (sequence <= previous) return false;
++    counters[key] = sequence;
++    return true;
++}
++
++// A background game's save must not commit duplicate markers for unsaved items
++// in the foreground game. Commit each journal alongside its own inventory.
++inline void CommitGameCounters(Json& saved, const Json& live, int game) {
++    if (!saved.is_object()) saved = Json::object();
++    const auto prefix = GamePrefix(game);
++    for (auto it = live.begin(); it != live.end(); ++it)
++        if (it.key().compare(0, prefix.size(), prefix) == 0) saved[it.key()] = it.value();
++}
++
++inline void MergeCounters(Json& counters, const Json& incoming) {
++    if (!incoming.is_object()) return;
++    for (auto it = incoming.begin(); it != incoming.end(); ++it) {
++        if (it.value().is_number_unsigned())
++            counters[it.key()] = std::max(counters.value(it.key(), uint64_t{0}), it.value().get<uint64_t>());
++    }
++}
++
++inline Json Combine(const Json& oot, const Json& mm, uint32_t seed) {
++    if (!oot.contains("state") || !mm.contains("state") ||
++        !oot["state"].contains("healthCapacity") || !mm["state"].contains("shipSaveInfo") ||
++        oot.value("targetTeamId", "") != mm.value("targetTeamId", "")) {
++        throw std::runtime_error("Both loaded game saves are required for combined synchronization");
++    }
++    return {{"type", "UPDATE_TEAM_STATE"}, {"clientId", oot.value("clientId", 0u)},
++            {"targetTeamId", oot.at("targetTeamId")}, {"originGame", "combo"},
++            {"state", {{"comboProtocol", Version}, {"comboSeed", seed},
++                       {"oot", oot.at("state")}, {"mm", mm.at("state")}}},
++            {"queue", Json::array()}};
++}
++
++inline bool IsProgress(const Json& p) {
++    const auto t = p.value("type", "");
++    return t == "UPDATE_TEAM_STATE" || t == "GIVE_ITEM" || t == "COMBO_CROSS_ITEM" ||
++           t == "SET_CHECK_STATUS" || t == "SET_FLAG" || t == "UNSET_FLAG" ||
++           t == "UPDATE_DUNGEON_ITEMS" || t == "UPDATE_BEANS_COUNT" || t == "ENTRANCE_DISCOVERED";
++}
++
++// The public server drops envelope fields when replying from its cache. Protocol
++// and seed belong inside state; queued packets retain their own routing tags.
++inline std::vector<Json> Expand(const Json& packet, uint32_t seed) {
++    if (packet.value("type", "") != "UPDATE_TEAM_STATE") return {packet};
++    std::vector<Json> result;
++    if (packet.contains("state") && !packet["state"].empty()) {
++        const auto& state = packet["state"];
++        if (state.value("comboProtocol", 0) != Version || state.value("comboSeed", 0u) != seed ||
++            !state.contains("oot") || !state.contains("mm") ||
++            !state["oot"].contains("healthCapacity") || !state["mm"].contains("shipSaveInfo")) {
++            return {}; // incompatible/stale cached saves must never touch this seed
++        }
++        for (const char* game : {"oot", "mm"}) {
++            auto p = packet;
++            p.erase("queue");
++            p["originGame"] = game;
++            p["state"] = state.at(game);
++            // Both inventories are present; per-game foreign backfill would grant
++            // an additive item a second time after its target inventory was merged.
++            p["comboSnapshot"] = true;
++            result.push_back(std::move(p));
++        }
++    }
++    if (packet.contains("queue") && packet["queue"].is_array()) {
++        for (const auto& item : packet["queue"]) {
++            if (!item.is_string()) continue;
++            auto p = Json::parse(item.get<std::string>(), nullptr, false);
++            if (p.is_discarded() || !p.is_object() || !IsProgress(p) ||
++                p.value("type", "") == "UPDATE_TEAM_STATE" ||
++                p.value("comboProtocol", 0) != Version || p.value("comboSeed", 0u) != seed) continue;
++            result.push_back(std::move(p));
++        }
++    }
++    return result;
++}
++} // namespace ComboAnchorProtocol

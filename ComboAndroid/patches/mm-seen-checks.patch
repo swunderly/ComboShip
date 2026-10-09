@@ -1,0 +1,665 @@
+--- a/mm/include/z64save.h
++++ b/mm/include/z64save.h
+@@ -377,6 +377,10 @@
+     bool obtained;
+     bool skipped;
+     u16 price; // Only applicable for shops/merchants
++#ifdef COMBO_BUILD
++    // The item actually shown to the player, not the hidden seed placement. Zero means unseen.
++    RandoItemId seenItemId;
++#endif
+ } RandoSaveCheck;
+ 
+ typedef struct RandoSaveInfo {
+--- a/mm/2s2h/BenJsonConversions.hpp
++++ b/mm/2s2h/BenJsonConversions.hpp
+@@ -36,6 +36,9 @@
+         { "skipped", randoSaveCheck.skipped },
+         { "price", randoSaveCheck.price },
+     };
++#ifdef COMBO_BUILD
++    if (randoSaveCheck.seenItemId != RI_UNKNOWN) j["seenItemId"] = randoSaveCheck.seenItemId;
++#endif
+ }
+ 
+ inline void from_json(const json& j, RandoSaveCheck& randoSaveCheck) {
+@@ -46,6 +49,11 @@
+     j.at("shuffled").get_to(randoSaveCheck.shuffled);
+     j.at("skipped").get_to(randoSaveCheck.skipped);
+     j.at("price").get_to(randoSaveCheck.price);
++#ifdef COMBO_BUILD
++    // Old saves have no knowledge field. Invalid IDs must never reach the item-name lookup.
++    const int seen = j.value("seenItemId", 0);
++    randoSaveCheck.seenItemId = seen > RI_UNKNOWN && seen < RI_MAX ? (RandoItemId)seen : RI_UNKNOWN;
++#endif
+ }
+ 
+ inline void to_json(json& j, const RandoSaveInfo& rando) {
+--- a/mm/2s2h/Network/Anchor/MMAnchor.cpp
++++ b/mm/2s2h/Network/Anchor/MMAnchor.cpp
+@@ -815,6 +815,8 @@
+         auto& rando = payload["state"]["shipSaveInfo"]["rando"];
+         rando.erase("randoSaveChecks");
+         rando["randoSaveChecksCopy"] = nlohmann::json::array();
++        // Optional side table keeps the seven-field wire format compatible with older clients.
++        rando["seenChecks"] = nlohmann::json::object();
+         for (int i = 0; i < RC_MAX; i++) {
+             nlohmann::json e = nlohmann::json::array();
+             e[0] = RANDO_SAVE_CHECKS[i].randoItemId;
+@@ -825,6 +827,9 @@
+             e[5] = (u8)RANDO_SAVE_CHECKS[i].skipped;
+             e[6] = RANDO_SAVE_CHECKS[i].price;
+             rando["randoSaveChecksCopy"][i] = e;
++            if (RANDO_SAVE_CHECKS[i].seenItemId != RI_UNKNOWN) {
++                rando["seenChecks"][std::to_string(i)] = RANDO_SAVE_CHECKS[i].seenItemId;
++            }
+         }
+     }
+     SendSaveJson(payload);
+@@ -867,10 +872,22 @@
+                 (RandoItemId)stuff[i][0], (bool)stuff[i][1], (bool)stuff[i][2], (bool)stuff[i][3],
+                 (bool)stuff[i][4],        (bool)stuff[i][5], (u16)stuff[i][6],
+             };
++            auto& rando = payload["state"]["shipSaveInfo"]["rando"];
++            if (rando.contains("seenChecks") && rando["seenChecks"].is_object()) {
++                rando["randoSaveChecks"][i]["seenItemId"] = rando["seenChecks"].value(std::to_string(i), 0);
++            }
+         }
+     }
+ 
+     Save loadedData = payload["state"].get<Save>();
++
++    // A stale or older client must not erase a reward this player already saw. Keep our last
++    // observed tier/disguise; otherwise accept the teammate's explicitly revealed knowledge.
++    for (int i = 0; i < RC_MAX; ++i) {
++        if (RANDO_SAVE_CHECKS[i].seenItemId != RI_UNKNOWN) {
++            loadedData.shipSaveInfo.rando.randoSaveChecks[i].seenItemId = RANDO_SAVE_CHECKS[i].seenItemId;
++        }
++    }
+ 
+     // Permanent equipment must not disappear when an older peer answers resync.
+     for (int i = 0; i < SLOT_BOTTLE_1; ++i) {
+--- a/mm/2s2h/Rando/CheckTracker/CheckTracker.h
++++ b/mm/2s2h/Rando/CheckTracker/CheckTracker.h
+@@ -10,6 +10,10 @@
+ 
+ void Init();
+ void OnFileLoad();
++#ifdef COMBO_BUILD
++// Only call for a model or an unambiguous item name actually revealed by the game.
++void RecordSeenItem(RandoCheckId check, RandoItemId shownItem);
++#endif
+ 
+ class CheckTrackerWindow : public Ship::GuiWindow {
+   public:
+--- a/mm/2s2h/Rando/CheckTracker/CheckTracker.cpp
++++ b/mm/2s2h/Rando/CheckTracker/CheckTracker.cpp
+@@ -13,6 +13,16 @@
+ #include <ship/resource/CrossRMRegistry.h>        // ComboShip: dormant-draw texture lookups need MM's RM
+ #include <ship/resource/ResourceManagerScope.h>
+ bool Combo_MmIsForeground(void); // defined in BenPort.cpp
++
++void Rando::CheckTracker::RecordSeenItem(RandoCheckId id, RandoItemId shownItem) {
++    if (!Combo_MmIsForeground() || !gPlayState || !IS_RANDO || gSaveContext.fileNum > 2 ||
++        id <= RC_UNKNOWN || id >= RC_MAX || shownItem <= RI_UNKNOWN || shownItem >= RI_MAX ||
++        shownItem == RI_TRAP) return;
++    auto& check = RANDO_SAVE_CHECKS[id];
++    if (!check.shuffled || check.obtained) return;
++    // Keep the displayed tier/disguise. Do not re-resolve it later against a different inventory.
++    check.seenItemId = shownItem;
++}
+ #endif
+ 
+ // Image Icons
+--- a/mm/2s2h/Rando/DrawItem.cpp
++++ b/mm/2s2h/Rando/DrawItem.cpp
+@@ -1,3 +1,6 @@
++#ifdef COMBO_BUILD
++#include "CheckTracker/CheckTracker.h"
++#endif
+ #include "Rando/Rando.h"
+ #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
+ #include "2s2h/ShipInit.hpp"
+@@ -525,7 +528,28 @@
+     CLOSE_DISPS(gPlayState->state.gfxCtx);
+ }
+ 
++#ifdef COMBO_BUILD
++static void RecordVisibleCheck(RandoCheckId check, RandoItemId shown, Actor* actor) {
++    if (!actor || !gPlayState) return;
++    // Draw callbacks can run outside the viewport. A model has to reach the camera first.
++    Vec3f projected;
++    float invW;
++    Vec3f pos = actor->world.pos;
++    pos.y += actor->shape.yOffset * actor->scale.y;
++    Actor_GetProjectedPos(gPlayState, &pos, &projected, &invW);
++    if (projected.z > 0 && fabsf(projected.x * invW) <= 1 && fabsf(projected.y * invW) <= 1) {
++        Rando::CheckTracker::RecordSeenItem(check, shown);
++    }
++}
++#endif
++
+ void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* actor) {
++#ifdef COMBO_BUILD
++    // Traps/junk/progressives recurse into the displayed item. Foreign models report below only
++    // on successful drawing; their fallback blue rupee must not reveal the hidden placement.
++    if (randoItemId != RI_NONE && randoItemId != RI_JUNK && randoItemId != RI_TRAP &&
++        randoItemId != RI_COMBO_FOREIGN) RecordVisibleCheck(randoCheckId, randoItemId, actor);
++#endif
+     // Apply hilites with actor world pos before drawing
+     if (actor != NULL) {
+         func_800B8118(actor, gPlayState, 0);
+@@ -714,7 +738,7 @@
+         case RI_COMBO_FOREIGN:
+             // ComboShip: this MM check holds an OOT item — render the real OOT model (sentinel blue
+             // rupee on any failure). The originating check identity is passed straight through.
+-            MM_DrawComboForeign(randoCheckId);
++            if (MM_DrawComboForeign(randoCheckId)) RecordVisibleCheck(randoCheckId, randoItemId, actor);
+             break;
+ #endif
+         default:
+--- a/mm/2s2h/Rando/StaticData/Items.cpp
++++ b/mm/2s2h/Rando/StaticData/Items.cpp
+@@ -5,6 +5,7 @@
+ #include "2s2h/Rando/Rando.h"
+ #include "2s2h_assets.h"
+ #ifdef COMBO_BUILD
++#include "2s2h/Rando/CheckTracker/CheckTracker.h"
+ #include "2s2h/Rando/MiscBehavior/MiscBehavior.h" // ComboShip: MM_LookupForeign for foreign-item name substitution
+ #endif
+ 
+@@ -733,6 +734,19 @@
+ }
+ #endif
+ 
++// Deliberately separate from GetItemName: seed generation, tracker refreshes and vague area
++// hints may inspect an item name without actually telling the player which check contains it.
++std::string GetRevealedItemName(RandoItemId randoItemId, bool includeArticle, RandoCheckId randoCheckId,
++                                bool livePreview) {
++#ifdef COMBO_BUILD
++    const auto shown = randoItemId == RI_TRAP ? Rando::CurrentTrapItem(randoCheckId) : randoItemId;
++    Rando::CheckTracker::RecordSeenItem(randoCheckId, shown);
++    return GetItemName(randoItemId, includeArticle, randoCheckId, livePreview);
++#else
++    return GetItemName(randoItemId, includeArticle, randoCheckId);
++#endif
++}
++
+ std::string GetItemName(RandoItemId randoItemId, bool includeArticle, RandoCheckId randoCheckId
+ #ifdef COMBO_BUILD
+                         ,
+@@ -784,14 +798,16 @@
+         RandoItemId trappedItemId = Rando::CurrentTrapItem(randoCheckId);
+         std::string fakeItemName;
+         auto fakeNames = fakeItemNames.find(trappedItemId);
+-        if (fakeNames != fakeItemNames.end()) {
++        if (fakeNames != fakeItemNames.end() && !fakeNames->second.empty()) {
+             fakeItemName = fakeNames->second[Ship_Random(0, fakeNames->second.size())];
+         } else {
+-            // Fallback: Double a random letter to fool the player
++            // Fallback: start with the disguise, then double a letter (never index an empty string).
++            fakeItemName = Rando::StaticData::Items[trappedItemId].name;
++            if (fakeItemName.empty()) return result;
+             auto letterIndex = Ship_Random(0, fakeItemName.length());
+             char letterToDouble = fakeItemName[letterIndex];
+             // But not spaces
+-            if (letterToDouble == ' ') {
++            if (letterToDouble == ' ' && letterIndex + 1 < fakeItemName.size()) {
+                 letterIndex++;
+                 letterToDouble = fakeItemName[letterIndex];
+             }
+--- a/mm/2s2h/Rando/StaticData/StaticData.h
++++ b/mm/2s2h/Rando/StaticData/StaticData.h
+@@ -75,6 +75,9 @@
+ #else
+ std::string GetItemName(RandoItemId randoItemId, bool includeArticle = true, RandoCheckId randoCheckId = RC_UNKNOWN);
+ #endif
++// Item names used in dialogue that explicitly identifies the associated check.
++std::string GetRevealedItemName(RandoItemId randoItemId, bool includeArticle = true,
++                                RandoCheckId randoCheckId = RC_UNKNOWN, bool livePreview = false);
+ std::string GetTrapMessage();
+ 
+ struct RandoStaticOption {
+--- a/combo/menu/ComboCheckTrackerMM.inc
++++ b/combo/menu/ComboCheckTrackerMM.inc
+@@ -25,15 +25,20 @@
+             if (!check.shuffled) continue;
+             uint32_t flags = check.obtained ? COMBO_CHECK_COLLECTED : 0;
+             if (check.skipped) flags |= COMBO_CHECK_SKIPPED;
++            if (check.seenItemId != RI_UNKNOWN) flags |= COMBO_CHECK_SEEN;
+             if (wantLogic) flags |= COMBO_CHECK_LOGIC_KNOWN;
+             if (wantLogic && checksInLogic.contains(id)) flags |= COMBO_CHECK_AVAILABLE;
+             std::string reward;
+-            if (check.obtained) {
++            if (check.obtained || check.seenItemId != RI_UNKNOWN) {
+                 if (check.randoItemId == RI_COMBO_FOREIGN) {
+                     const auto* item = Rando::MiscBehavior::MM_LookupForeign(id);
+-                    if (item) reward = item->displayName;
++                    if (item) {
++                        // A preview of a disguised trap never discloses its actual reward.
++                        reward = !check.obtained && item->HasDisguise() ? item->fakeDisplayName : item->displayName;
++                    }
+                 } else {
+-                    reward = Rando::StaticData::Items[check.randoItemId].name;
++                    const auto item = Rando::StaticData::Items.find(check.obtained ? check.randoItemId : check.seenItemId);
++                    if (item != Rando::StaticData::Items.end()) reward = item->second.name;
+                 }
+             }
+             const std::string condition = wantLogic ? accessLogicFuncs[id] : "";
+--- a/combo/gui/ComboCheckTracker.cpp
++++ b/combo/gui/ComboCheckTracker.cpp
+@@ -160,7 +160,7 @@
+     if (IsSkipped(row.flags)) label += " (Skipped)";
+     else if (IsCollected(row.flags)) label += " (" + (row.reward.empty() ? std::string("Collected") : row.reward) + ")";
+     else if (row.flags & COMBO_CHECK_SCUMMED) label += " (Unsaved)";
+-    else if (row.flags & COMBO_CHECK_SEEN) label += " (Seen)";
++    else if (row.flags & COMBO_CHECK_SEEN) label += row.reward.empty() ? " (Seen)" : " (Seen: " + row.reward + ")";
+     return label;
+ }
+ 
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -623,7 +623,7 @@
+ 
+     ImGui::TextWrapped("Play OOT and MM online with teammates: items and flags are shared per team, with "
+                        "live presence and same-game teleport. Set a host, room, and name, then Enable.");
+-    ImGui::TextWrapped("For shared progress, every player needs Combo Ship 0.1.14 or newer, the same seed, "
++    ImGui::TextWrapped("For shared progress, every player needs Combo Ship 0.1.15 or newer, the same seed, "
+                        "and the same team. Older builds cannot synchronize both games reliably.");
+ 
+     // Widgets in the first cell of a 2-col stretch table, so they're half-width like the other panels.
+@@ -1386,7 +1386,7 @@
+         case HubEntry::COMBO_TIMERS: DrawTimersSharedPanel(); break;
+         case HubEntry::COMBO_NETWORK: DrawNetworkSharedPanel(); break;
+         case HubEntry::COMBO_ABOUT:
+-            ImGui::TextWrapped("Combo Ship for Android - 0.1.14");
++            ImGui::TextWrapped("Combo Ship for Android - 0.1.15");
+             ImGui::TextWrapped("A combined Ocarina of Time and Majora's Mask randomizer with shared menus, trackers and touch controls.");
+             ImGui::Spacing();
+             ImGui::SeparatorText("Built on community work");
+--- a/mm/2s2h/Rando/MiscBehavior/BankSignHint.cpp
++++ b/mm/2s2h/Rando/MiscBehavior/BankSignHint.cpp
+@@ -26,7 +26,7 @@
+                     "-Clock Town Bank";
+ 
+         CustomMessage::Replace(&entry.msg, "{{item}}",
+-                               Rando::StaticData::GetItemName(saveCheck.randoItemId, true, randoCheckId));
++                               Rando::StaticData::GetRevealedItemName(saveCheck.randoItemId, true, randoCheckId));
+ 
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+--- a/mm/2s2h/Rando/ActorBehavior/DmChar05.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/DmChar05.cpp
+@@ -20,7 +20,7 @@
+     entry.autoFormat = false;
+     entry.msg.assign("You received {{itemName}}!\x1C\x02\x10");
+     CustomMessage::Replace(&entry.msg, "{{itemName}}",
+-                           Rando::StaticData::GetItemName(randoSaveCheck.randoItemId, true, randoCheckId));
++                           Rando::StaticData::GetRevealedItemName(randoSaveCheck.randoItemId, true, randoCheckId));
+     entry.icon = 0xFE; // No icon
+ 
+     CustomMessage::LoadCustomMessageIntoFont(entry);
+--- a/mm/2s2h/Rando/ActorBehavior/EnAkindonuts.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnAkindonuts.cpp
+@@ -26,7 +26,7 @@
+     entry.msg = "I'll sell you %g{{item}}%w for %r{{rupees}} Rupees%w!\xE0";
+ 
+     CustomMessage::Replace(&entry.msg, "{{item}}",
+-                           Rando::StaticData::GetItemName(randoSaveCheck.randoItemId, true, randoCheckId));
++                           Rando::StaticData::GetRevealedItemName(randoSaveCheck.randoItemId, true, randoCheckId));
+     CustomMessage::Replace(&entry.msg, "{{rupees}}", std::to_string(cost));
+ 
+     CustomMessage::LoadCustomMessageIntoFont(entry);
+@@ -113,7 +113,7 @@
+ 
+         CustomMessage::Replace(
+             &entry.msg, "{{item}}",
+-            Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_SOUTHERN_SWAMP_SCRUB_BEANS].randoItemId, true,
++            Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_SOUTHERN_SWAMP_SCRUB_BEANS].randoItemId, true,
+                                            RC_SOUTHERN_SWAMP_SCRUB_BEANS));
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+--- a/mm/2s2h/Rando/ActorBehavior/EnBal.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnBal.cpp
+@@ -31,10 +31,10 @@
+ 
+     CustomMessage::Replace(
+         &entry.msg, "{item1}",
+-        Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[randoCheckId1].randoItemId, false, randoCheckId1, true));
++        Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[randoCheckId1].randoItemId, false, randoCheckId1, true));
+     CustomMessage::Replace(
+         &entry.msg, "{item2}",
+-        Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[randoCheckId2].randoItemId, false, randoCheckId2, true));
++        Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[randoCheckId2].randoItemId, false, randoCheckId2, true));
+     CustomMessage::Replace(&entry.msg, "{price1}", std::to_string(RANDO_SAVE_CHECKS[randoCheckId1].price));
+     CustomMessage::Replace(&entry.msg, "{price2}", std::to_string(RANDO_SAVE_CHECKS[randoCheckId2].price));
+     CustomMessage::EnsureMessageEnd(&entry.msg);
+--- a/mm/2s2h/Rando/ActorBehavior/EnElfgrp.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnElfgrp.cpp
+@@ -23,12 +23,12 @@
+                "even %g{{item2}}%w if you are worthy."
+     };
+ 
+-    auto randoItem1Name = Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_GREAT_FAIRY].randoItemId, true,
++    auto randoItem1Name = Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_GREAT_FAIRY].randoItemId, true,
+                                                          RC_CLOCK_TOWN_GREAT_FAIRY);
+ 
+     CustomMessage::Replace(&entry.msg, "{{item1}}", randoItem1Name);
+ 
+-    auto randoItem2Name = Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_GREAT_FAIRY_ALT].randoItemId,
++    auto randoItem2Name = Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_GREAT_FAIRY_ALT].randoItemId,
+                                                          true, RC_CLOCK_TOWN_GREAT_FAIRY_ALT);
+ 
+     CustomMessage::Replace(&entry.msg, "{{item2}}", randoItem2Name);
+@@ -43,7 +43,7 @@
+     };
+     CustomMessage::Replace(
+         &entry.msg, "{{itemName}}",
+-        Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[randoCheckId].randoItemId, true, randoCheckId));
++        Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[randoCheckId].randoItemId, true, randoCheckId));
+ 
+     CustomMessage::LoadCustomMessageIntoFont(entry);
+     *loadFromMessageTable = false;
+--- a/mm/2s2h/Rando/ActorBehavior/EnGb2.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnGb2.cpp
+@@ -44,7 +44,7 @@
+         }
+ 
+         std::string checkItemName =
+-            Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART].randoItemId,
++            Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART].randoItemId,
+                                            true, RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART);
+ 
+         auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
+--- a/mm/2s2h/Rando/ActorBehavior/EnGeg.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnGeg.cpp
+@@ -29,7 +29,7 @@
+         entry.msg = "I could tell you really wanted %y{{itemName}}%w! I'm going back to Goron Village.\xE0";
+ 
+         CustomMessage::Replace(&entry.msg, "{{itemName}}",
+-                               Rando::StaticData::GetItemName(randoItemId, true, RC_MOUNTAIN_VILLAGE_DON_GERO_MASK));
++                               Rando::StaticData::GetRevealedItemName(randoItemId, true, RC_MOUNTAIN_VILLAGE_DON_GERO_MASK));
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+     });
+--- a/mm/2s2h/Rando/ActorBehavior/EnGirlA.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnGirlA.cpp
+@@ -156,7 +156,7 @@
+     auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
+     entry.msg = "Tonight's special, stolen from the Bomb Shop: %r{{itemName}}%w. Check it out!\x19\xA8";
+     CustomMessage::Replace(&entry.msg, "{{itemName}}",
+-                           Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId),
++                           Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId),
+                                                           false, randoCheckId, true));
+     CustomMessage::LoadCustomMessageIntoFont(entry);
+     *loadFromMessageTable = false;
+@@ -169,7 +169,7 @@
+     auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
+     entry.msg = "Tonight's bargain: %r{{itemName}}%w. Check it out!\x19\xA8";
+     CustomMessage::Replace(&entry.msg, "{{itemName}}",
+-                           Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId),
++                           Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId),
+                                                           false, randoCheckId, true));
+     CustomMessage::LoadCustomMessageIntoFont(entry);
+     *loadFromMessageTable = false;
+@@ -334,7 +334,7 @@
+         entry.msg = "\x01{{itemName}}: {{rupees}} Rupees\x11\x00";
+         entry.msg += '\x00';
+         CustomMessage::Replace(&entry.msg, "{{itemName}}",
+-                               Rando::StaticData::GetItemName(randoItemId, false, randoCheckId, true));
++                               Rando::StaticData::GetRevealedItemName(randoItemId, false, randoCheckId, true));
+         CustomMessage::Replace(&entry.msg, "{{rupees}}", std::to_string(randoSaveCheck.price));
+ 
+         if (!CanBePurchased(randoSaveCheck, randoCheckId)) {
+@@ -365,7 +365,7 @@
+         entry.msg = "\x01{{itemName}}: {{rupees}} Rupees\x02\x11\xC2I'll buy it\x11No thanks\xBF";
+         CustomMessage::Replace(
+             &entry.msg, "{{itemName}}",
+-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
++            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
+                                            randoCheckId, true));
+         CustomMessage::Replace(&entry.msg, "{{rupees}}", std::to_string(randoSaveCheck.price));
+ 
+@@ -392,7 +392,7 @@
+         entry.msg += "I need a mushroom to make this.\x1A";
+         CustomMessage::Replace(
+             &entry.msg, "{{itemName}}",
+-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
++            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
+                                            randoCheckId, true));
+         CustomMessage::Replace(&entry.msg, "{{itemPrice}}", std::to_string(randoSaveCheck.price));
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+@@ -412,7 +412,7 @@
+         entry.msg = "I used this to make %r{{itemName}}%w, take it!\x19";
+         CustomMessage::Replace(
+             &entry.msg, "{{itemName}}",
+-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
++            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+                                            randoCheckId, true));
+ 
+         // Mark the item as eligible for purchase
+@@ -440,7 +440,7 @@
+             "If nothing devastating happens to Mommy tonight, we should be able to sell %r{{itemName}}%w.\x19\xA8";
+         CustomMessage::Replace(
+             &entry.msg, "{{itemName}}",
+-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
++            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+                                            randoCheckId, true));
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+@@ -455,7 +455,7 @@
+         entry.msg = "Thanks to a mishap, we did not receive our %r{{itemName}}%w stock. Maybe next time...\x19\xA8";
+         CustomMessage::Replace(
+             &entry.msg, "{{itemName}}",
+-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
++            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+                                            randoCheckId, true));
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+@@ -470,7 +470,7 @@
+         entry.msg = "It's over... Now we'll never sell %r{{itemName}}%w...\x19\xA8";
+         CustomMessage::Replace(
+             &entry.msg, "{{itemName}}",
+-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
++            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+                                            randoCheckId, true));
+ 
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+@@ -487,7 +487,7 @@
+         entry.msg = "We just got some new stock: %r{{itemName}}%w.\x19\xA8";
+         CustomMessage::Replace(
+             &entry.msg, "{{itemName}}",
+-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
++            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+                                            randoCheckId, true));
+ 
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+--- a/mm/2s2h/Rando/ActorBehavior/EnGo.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnGo.cpp
+@@ -154,7 +154,7 @@
+         entry.msg += "\x19";
+ 
+         CustomMessage::Replace(&entry.msg, "{randoItem}",
+-                               Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_GORON_VILLAGE_MEDIGORON].randoItemId,
++                               Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_GORON_VILLAGE_MEDIGORON].randoItemId,
+                                                               true, RC_GORON_VILLAGE_MEDIGORON));
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+--- a/mm/2s2h/Rando/ActorBehavior/EnGs.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnGs.cpp
+@@ -251,7 +251,8 @@
+                 entry.msg = "They say %g{{item}}%w is hidden %y{{location}}%w.";
+ 
+                 CustomMessage::Replace(&entry.msg, "{{item}}",
+-                                       Rando::StaticData::GetItemName(saveCheck.randoItemId, true, randoCheckId));
++                                       (showExact ? Rando::StaticData::GetRevealedItemName(saveCheck.randoItemId, true, randoCheckId)
++                                                  : Rando::StaticData::GetItemName(saveCheck.randoItemId, true, randoCheckId)));
+                 CustomMessage::Replace(&entry.msg, "{{location}}",
+                                        Rando::StaticData::GetLocationNameForHint(randoCheckId, showExact));
+                 ComboReportStoneHint(-1, randoCheckId, showExact);
+@@ -302,7 +303,7 @@
+                     entry.msg = "Wise choice... They say %g{{item}}%w is hidden %y{{location}}%w.";
+ 
+                     CustomMessage::Replace(&entry.msg, "{{item}}",
+-                                           Rando::StaticData::GetItemName(saveCheck.randoItemId, true, randoCheckId));
++                                           Rando::StaticData::GetRevealedItemName(saveCheck.randoItemId, true, randoCheckId));
+                     CustomMessage::Replace(&entry.msg, "{{location}}",
+                                            Rando::StaticData::GetLocationNameForHint(randoCheckId, true));
+ 
+--- a/mm/2s2h/Rando/ActorBehavior/EnIn.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnIn.cpp
+@@ -22,7 +22,7 @@
+                 "\xC2%gYes\x11"
+                 "No";
+ 
+-    std::string itemName = Rando::StaticData::GetItemName(riMilkPurchase, true, RC_GORMAN_MILK_PURCHASE);
++    std::string itemName = Rando::StaticData::GetRevealedItemName(riMilkPurchase, true, RC_GORMAN_MILK_PURCHASE);
+     std::string itemPrice = std::to_string(milkPurchaseCheck.price);
+ 
+     CustomMessage::ReplaceColorChars(&entry.msg);
+--- a/mm/2s2h/Rando/ActorBehavior/EnJgameTsn.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnJgameTsn.cpp
+@@ -34,7 +34,7 @@
+         CustomMessage::Replace(&entry.msg, "{{itemName}}",
+                                randoSaveCheck.cycleObtained
+                                    ? "50 Rupees"
+-                                   : Rando::StaticData::GetItemName(randoSaveCheck.randoItemId, true,
++                                   : Rando::StaticData::GetRevealedItemName(randoSaveCheck.randoItemId, true,
+                                                                     RC_GREAT_BAY_COAST_FISHERMAN_MINIGAME));
+ 
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+--- a/mm/2s2h/Rando/ActorBehavior/EnKgy.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnKgy.cpp
+@@ -50,7 +50,7 @@
+             entry.msg = "\nIf you want %y{itemName}%w, it will cost you %p100 Rupees%w.\n\x10";
+             entry.msg += "So, do we have a deal?\n\xC2%gI'll buy it\nNo thanks\xBF";
+             CustomMessage::Replace(&entry.msg, "{itemName}",
+-                                   Rando::StaticData::GetItemName(randoRazorSwordSaveCheck.randoItemId, true,
++                                   Rando::StaticData::GetRevealedItemName(randoRazorSwordSaveCheck.randoItemId, true,
+                                                                   RC_MOUNTAIN_VILLAGE_SMITHY_RAZOR_SWORD));
+         }
+ 
+@@ -65,7 +65,7 @@
+ 
+         if (!RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].eligible) {
+             itemName =
+-                Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].randoItemId,
++                Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].randoItemId,
+                                                true, RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD);
+         }
+         entry.msg = "Want to know a secret? If you bring me some gold dust, I can offer you %r{itemName}%w.\xE0";
+@@ -131,7 +131,7 @@
+         // includeArticle=false matches the original raw .name rendering.
+         CustomMessage::Replace(
+             &entry.msg, "{itemName}",
+-            Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].randoItemId,
++            Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].randoItemId,
+                                            false, RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD));
+         CustomMessage::Replace(&entry.msg, "{location}", Rando::GetItemLocationHintName(RI_BOTTLE_GOLD_DUST, false));
+ 
+--- a/mm/2s2h/Rando/ActorBehavior/EnKujiya.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnKujiya.cpp
+@@ -23,7 +23,7 @@
+         entry.msg += "Guess all three numbers to win %p{{itemName}}%w!\x19";
+         RandoItemId randoItemId = RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_WEST_LOTTERY].randoItemId;
+         CustomMessage::Replace(&entry.msg, "{{itemName}}",
+-                               Rando::StaticData::GetItemName(randoItemId, true, RC_CLOCK_TOWN_WEST_LOTTERY));
++                               Rando::StaticData::GetRevealedItemName(randoItemId, true, RC_CLOCK_TOWN_WEST_LOTTERY));
+ 
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+@@ -34,7 +34,7 @@
+         entry.msg = "Congratulations! You win the jackpot: %p{{itemName}}%w!\x19";
+         RandoItemId randoItemId = RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_WEST_LOTTERY].randoItemId;
+         CustomMessage::Replace(&entry.msg, "{{itemName}}",
+-                               Rando::StaticData::GetItemName(randoItemId, true, RC_CLOCK_TOWN_WEST_LOTTERY));
++                               Rando::StaticData::GetRevealedItemName(randoItemId, true, RC_CLOCK_TOWN_WEST_LOTTERY));
+ 
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+--- a/mm/2s2h/Rando/ActorBehavior/EnScopenuts.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnScopenuts.cpp
+@@ -34,7 +34,7 @@
+         entry.msg = "Please! I'll sell you %y{{itemName}}%w if you just keep this place a secret...\xE0";
+ 
+         CustomMessage::Replace(&entry.msg, "{{itemName}}",
+-                               Rando::StaticData::GetItemName(randoItemId, true, RC_TERMINA_FIELD_GROTTO_SCRUB));
++                               Rando::StaticData::GetRevealedItemName(randoItemId, true, RC_TERMINA_FIELD_GROTTO_SCRUB));
+         CustomMessage::LoadCustomMessageIntoFont(entry);
+         *loadFromMessageTable = false;
+     });
+--- a/mm/2s2h/Rando/ActorBehavior/EnSsh.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnSsh.cpp
+@@ -16,7 +16,7 @@
+ 
+     CustomMessage::Replace(
+         &entry.msg, "{{item}}",
+-        Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_SWAMP_SPIDER_HOUSE_MASK_OF_TRUTH].randoItemId, true,
++        Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_SWAMP_SPIDER_HOUSE_MASK_OF_TRUTH].randoItemId, true,
+                                        RC_SWAMP_SPIDER_HOUSE_MASK_OF_TRUTH));
+ 
+     CustomMessage::LoadCustomMessageIntoFont(entry);
+@@ -29,7 +29,7 @@
+     };
+ 
+     CustomMessage::Replace(&entry.msg, "{{item}}",
+-                           Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_OCEAN_SPIDER_HOUSE_WALLET].randoItemId,
++                           Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_OCEAN_SPIDER_HOUSE_WALLET].randoItemId,
+                                                           true, RC_OCEAN_SPIDER_HOUSE_WALLET));
+ 
+     CustomMessage::LoadCustomMessageIntoFont(entry);
+--- a/mm/2s2h/Rando/ActorBehavior/EnTab.cpp
++++ b/mm/2s2h/Rando/ActorBehavior/EnTab.cpp
+@@ -36,14 +36,14 @@
+     std::string itemName1 = "Milk";
+     std::string itemPrice1 = "20";
+     if (!milkPurchaseCheck.cycleObtained) {
+-        itemName1 = Rando::StaticData::GetItemName(riMilkPurchase, false, RC_MILK_BAR_PURCHASE_MILK);
++        itemName1 = Rando::StaticData::GetRevealedItemName(riMilkPurchase, false, RC_MILK_BAR_PURCHASE_MILK);
+         itemPrice1 = std::to_string(milkPurchaseCheck.price);
+     }
+ 
+     std::string itemName2 = "Chateau Romani";
+     std::string itemPrice2 = "200";
+     if (!chateauPurchaseCheck.cycleObtained) {
+-        itemName2 = Rando::StaticData::GetItemName(riChateauPurchase, false, RC_MILK_BAR_PURCHASE_CHATEAU);
++        itemName2 = Rando::StaticData::GetRevealedItemName(riChateauPurchase, false, RC_MILK_BAR_PURCHASE_CHATEAU);
+         itemPrice2 = std::to_string(chateauPurchaseCheck.price);
+     }
+ 
+--- a/combo/menu/ComboForeignDrawMM.h
++++ b/combo/menu/ComboForeignDrawMM.h
+@@ -790,20 +790,19 @@
+ // Draw a foreign (OOT-bound) item's real OOT model at the current model matrix. Any resolution
+ // failure falls back to the sentinel blue rupee (the RI_COMBO_FOREIGN item's GID_RUPEE_BLUE), so we
+ // never draw blank. Mirrors Randomizer_DrawComboForeign (soh/.../draw.cpp).
+-inline void MM_DrawComboForeign(RandoCheckId randoCheckId) {
++inline bool MM_DrawComboForeign(RandoCheckId randoCheckId) {
+     const ComboForeignDrawInfoOOT* info =
+         (randoCheckId != RC_UNKNOWN) ? ComboResolveForeignDrawInfoOOT(randoCheckId) : nullptr;
+     if (info == nullptr) {
+         GetItem_Draw(gPlayState, GID_RUPEE_BLUE);
+-        return;
++        return false;
+     }
+ 
+     // ComboShip: animated class — combo-owned skeletal draw (any failure -> sentinel, never blank).
+     if (info->animOk) {
+-        if (!ComboForeignAnim_Draw(&info->anim, "oot", gPlayState)) {
+-            GetItem_Draw(gPlayState, GID_RUPEE_BLUE);
+-        }
+-        return;
++        const bool drawn = ComboForeignAnim_Draw(&info->anim, "oot", gPlayState);
++        if (!drawn) GetItem_Draw(gPlayState, GID_RUPEE_BLUE);
++        return drawn;
+     }
+ 
+     switch (info->drawKind) {
+@@ -872,6 +871,7 @@
+             MM_DrawForeignSimple(info);
+             break;
+     }
++    return true;
+ }
+ 
+ #undef MM_FOREIGN_PIN_OPA

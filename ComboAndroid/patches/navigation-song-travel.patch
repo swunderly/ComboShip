@@ -1,0 +1,891 @@
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -242,6 +242,8 @@
+     mScope = "randomizer";
+     mHubActive = "randomizer/Generate";
+     mSearchBuf[0] = 0;
++    mSearchQuery.clear(); mSearchReturn.Clear(); mRuleFocus.Clear();
++    mResetContentScroll = true;
+     Show();
+ }
+ 
+@@ -320,17 +322,45 @@
+                 mSectionSelection[mScope] = mHubActive;
+                 mScope = scope.id;
+                 mHubActive = mSectionSelection[mScope];
+-            }
++                mRuleFocus.Clear();
++                mSearchReturn.Clear();
++            }
++        }
++        if (FindMenuGuide(mScope)) {
++            const float need = ImGui::CalcTextSize("Guide").x + 32.0f;
++            if (ImGui::GetItemRectMax().x + need + 12.0f <
++                ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x) ImGui::SameLine();
++            if (ImGui::Button("Guide")) mHelpRequested = true;
+         }
+         ImGui::PopID();
+         ImGui::Spacing();
+-        ImGui::SetNextItemWidth(-FLT_MIN);
+-        ImGui::InputTextWithHint("##ComboSearch", "Search all settings...", mSearchBuf, sizeof(mSearchBuf));
++        const float clearWidth = ImGui::CalcTextSize("Clear").x + ImGui::GetStyle().FramePadding.x * 2.0f;
++        const bool hasSearch = mSearchBuf[0] != 0;
++        ImGui::SetNextItemWidth(hasSearch
++            ? std::max(1.0f, ImGui::GetContentRegionAvail().x - clearWidth - ImGui::GetStyle().ItemSpacing.x)
++            : -FLT_MIN);
++        if (ImGui::InputTextWithHint("##ComboSearch", "Search all settings...", mSearchBuf, sizeof(mSearchBuf)))
++            mSearchReturn.Clear();
++        if (hasSearch) {
++            ImGui::SameLine();
++            if (ImGui::Button("Clear##ComboSearch")) {
++                mSearchBuf[0] = 0; mRuleFocus.Clear(); mSearchReturn.Clear();
++            }
++        }
++        if (!mSearchBuf[0] && mSearchReturn.HasResult()) {
++            if (ImGui::Button("Back to search results", ImVec2(0, ImGui::GetFrameHeight() * 1.25f))) {
++                mScope = mSearchReturn.scope; mHubActive = mSearchReturn.hub;
++                std::snprintf(mSearchBuf, sizeof(mSearchBuf), "%s", mSearchReturn.query.c_str());
++                mSearchReturn.Clear(); mRuleFocus.Clear(); mResetContentScroll = true;
++                mLastNavSig = mScope + "|" + mHubActive;
++            }
++        }
+         ImGui::Spacing();
+         ImGui::Separator();
+         ImGui::Spacing();
+-        mSearchQuery = NormalizeSearch(mSearchBuf);
++        mSearchQuery = MenuSearchWords(mSearchBuf).empty() ? "" : mSearchBuf;
+         DrawSharedPanel();
++        DrawScopeHelp();
+         const std::string navSig = mScope + "|" + mHubActive;
+         if (navSig != mLastNavSig) {
+             if (!mLastNavSig.empty()) { mSearchBuf[0] = 0; mSearchQuery.clear(); }
+@@ -341,74 +371,114 @@
+     ImGui::End();
+ }
+ 
+-// Global search (issue #26): scans BOTH games' CwMenu models for a name+tooltip match against the
+-// pre-normalized query, rendering each hit inline via RenderWidget with an origin breadcrumb.
+-// Shared settings live in both models; dedupe by cvar|name (OOT wins) so they surface once.
++void ComboMenu::OpenSearchDestination(const std::string& scope, const std::string& page,
++                                     const char* rule, const char* trick, int targetGame) {
++    mSearchReturn.Capture(mSearchQuery, mScope, mHubActive);
++    mSectionSelection[mScope] = mHubActive;
++    mScope = scope;
++    mHubActive = scope + "/" + page;
++    mSectionSelection[mScope] = mHubActive;
++    mRuleFocus.Set(rule);
++    if (trick) FocusUnifiedTrick(trick);
++    if (targetGame >= 0 && targetGame <= 1) {
++        if (scope == "randomizer") mRandomizerGame = targetGame;
++        else mPreferenceGame = targetGame + 1;
++    }
++    mSearchBuf[0] = 0;
++    mSearchQuery.clear();
++    mResetContentScroll = true;
++}
++
++void ComboMenu::DrawScopeHelp() {
++    if (const auto* guide = FindMenuGuide(mScope); guide &&
++        (mHelpRequested || !CVarGetInteger(guide->seenKey, 0))) {
++        mGuideScope = mScope;
++        ImGui::OpenPopup("Combo Ship guide");
++        mHelpRequested = false;
++    }
++    const auto* guide = FindMenuGuide(mGuideScope);
++    if (!guide) return;
++    auto dismiss = [&]() {
++        CVarSetInteger(guide->seenKey, 1);
++        Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
++    };
++    bool open = true;
++    const float width = std::min(ImGui::GetMainViewport()->WorkSize.x * 0.82f, ImGui::GetFontSize() * 37.0f);
++    ImGui::SetNextWindowSize(ImVec2(width, 0), ImGuiCond_Appearing);
++    if (ImGui::BeginPopupModal("Combo Ship guide", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
++        ImGui::TextWrapped("%s", guide->title);
++        ImGui::Separator(); ImGui::Spacing();
++        // Keep both actions visible on a phone; longer copy scrolls separately.
++        const float copyHeight = std::max(ImGui::GetFontSize() * 3.0f,
++            std::min(ImGui::GetFontSize() * 16.0f,
++                     ImGui::GetMainViewport()->WorkSize.y * 0.85f - ImGui::GetFontSize() * 7.0f));
++        ImGui::BeginChild("##GuideCopy", ImVec2(0, copyHeight));
++        ImGui::TextWrapped("%s", guide->introduction);
++        ImGui::Spacing(); ImGui::TextWrapped("%s", guide->behavior);
++        ImGui::Spacing(); ImGui::TextWrapped("%s", guide->runWarning);
++        ImGui::EndChild();
++        ImGui::Spacing();
++        const float height = ImGui::GetFrameHeight() * 1.25f;
++        if (ImGui::Button("Got it", ImVec2(-FLT_MIN, height))) {
++            dismiss(); ImGui::CloseCurrentPopup();
++        }
++        if (ImGui::Button("Browse Gameplay rules", ImVec2(-FLT_MIN, height))) {
++            dismiss();
++            OpenSearchDestination(guide->scope, "Gameplay rules");
++            ImGui::CloseCurrentPopup();
++        }
++        ImGui::EndPopup();
++    }
++    if (!open) dismiss();
++}
++
++// Canonical rules and techniques navigate to their owning editor. Native
++// settings retain their real callbacks; shared CVars surface once (OoT wins).
+ void ComboMenu::DrawSearchResults(const std::string& query) {
+     auto& model = ComboMenuModel::Get();
+     model.EnsureLoaded();
+-
+-    struct Source {
+-        const char* label;
+-        const GameMenu* game;
++    struct Source { const char* label; const GameMenu* game; };
++    const Source sources[] = {
++        { "Ocarina of Time", &model.Oot() }, { "Majora's Mask", &model.Mm() }
+     };
+-    const Source sources[] = {
+-        { "Ocarina of Time", &model.Oot() }, // OOT first: its copy wins the dedupe
+-        { "Majora's Mask", &model.Mm() },
++    struct Hit {
++        MenuSearchKind kind;
++        int rank;
++        std::string label, scope, page, origin;
++        const GameplayRule* rule = nullptr;
++        const GameMenu* game = nullptr;
++        const CwWidget* widget = nullptr;
++        int targetGame = -1;
+     };
+-
+-    // 2-3 equal-width columns (by available width) so results read as a grid, not one tall list â€”
+-    // same stretch-table pattern as RenderSidebarWidgets. Each match fills the next cell, wrapping
+-    // rows; the narrower cell width is what keeps the controls from spanning the whole panel.
+-    const float avail = ImGui::GetContentRegionAvail().x;
+-    const int cols = avail >= ImGui::GetFontSize() * 60.0f ? 2 : 1;
+-
+-    std::unordered_set<std::string> seen; // dedupe key: normalized cvar (or per-game name for no-cvar)
+-    int matches = 0;
++    std::vector<Hit> hits;
++    auto addLink = [&](MenuSearchKind kind, const char* name, const char* keywords,
++                       const char* scope, const char* page, const char* origin = "", int canonicalBonus = 0, int targetGame = -1) {
++        int rank = MenuSearchRank(query, name, keywords, kind);
++        if (!rank) return;
++        rank += canonicalBonus;
++        if (kind == MenuSearchKind::Page) {
++            for (auto& hit : hits) if (hit.kind == kind && hit.scope == scope && hit.page == page) {
++                if (rank > hit.rank) {
++                    hit.rank = rank; hit.label = name; hit.origin = origin; hit.targetGame = targetGame;
++                }
++                return; // one link per shared feature, even with several native aliases
++            }
++        }
++        hits.push_back({kind, rank, name ? name : "", scope, page, origin, nullptr, nullptr, nullptr, targetGame});
++    };
+     for (const auto& page : kSharedPages) {
+-        if (!MenuSearchMatches(query, page.name, page.keywords)) continue;
+-        if (ImGui::Button((std::string(page.scopeLabel) + " / " + page.name).c_str(), ImVec2(-FLT_MIN, 0))) {
+-            mSectionSelection[mScope] = mHubActive;
+-            mScope = page.scope;
+-            mHubActive = std::string(page.scope) + "/" + page.name;
+-            mSearchBuf[0] = 0; mSearchQuery.clear();
+-            return;
+-        }
+-        ++matches;
+-    }
+-    for(const auto& rule : kGameplayRules) {
+-        if(NormalizeSearch(std::string(rule.label)+" "+rule.help+" enhancement logic").find(query)==std::string::npos) continue;
+-        const std::string rulePage = rule.trickGoverned ? "Tricks & glitches" : "Gameplay rules";
+-        const std::string ruleLabel = "Randomizer / " + rulePage + " / ";
+-        if(ImGui::Button((ruleLabel+rule.label).c_str(),ImVec2(-FLT_MIN,0))) {
+-            if (rule.trickGoverned) FocusUnifiedTrick(rule.label);
+-            mScope="randomizer"; mHubActive="randomizer/"+rulePage;
+-            mSearchBuf[0]=0; mSearchQuery.clear(); return;
+-        }
+-        ++matches;
+-        if (!rule.trickGoverned) {
+-            if (ImGui::Button((std::string("Enhancements / Gameplay rules / ") + rule.label).c_str(), ImVec2(-FLT_MIN, 0))) {
+-                mScope = "gameplay"; mHubActive = "gameplay/Gameplay rules";
+-                mSearchBuf[0] = 0; mSearchQuery.clear(); return;
+-            }
+-            ++matches;
+-        }
+-    }
+-    // MM technique rows belong to the shared catalogue, not a native CW widget.
+-    // Search only navigates to that catalogue; its existing checkbox owns edits.
++        addLink(MenuSearchKind::Page, page.name, page.keywords, page.scope, page.name, page.scopeLabel, 40);
++    }
++    for (const auto& rule : kGameplayRules) {
++        const auto keywords = std::string(rule.help) + " enhancement logic " + GameplayRuleSearchAliases(rule.name);
++        const int rank = MenuSearchRank(query, rule.label, keywords.c_str(), MenuSearchKind::Rule);
++        if (rank) hits.push_back({MenuSearchKind::Rule, rank, rule.label, "randomizer",
++            rule.trickGoverned ? "Tricks & glitches" : "Gameplay rules", "", &rule});
++    }
+     for (const auto& trick : kMmTricks) {
+-        const auto keywords = std::string(trick.description) + " " + trick.area + " " + trick.tags + " technique trick";
+-        if (!MenuSearchMatches(query, trick.name, keywords.c_str())) continue;
+-        if (ImGui::Button((std::string("Randomizer / Tricks & glitches / MM / ") + trick.name).c_str(), ImVec2(-FLT_MIN, 0))) {
+-            FocusUnifiedTrick(trick.name);
+-            mSectionSelection[mScope] = mHubActive;
+-            mScope = "randomizer"; mHubActive = "randomizer/Tricks & glitches";
+-            mSearchBuf[0] = 0; mSearchQuery.clear(); return;
+-        }
+-        ++matches;
+-    }
+-    // OoT supplies the same native technique metadata used by the catalogue.
+-    // Resolve lazily and read only; every edit remains on its canonical page.
++        const auto keywords = std::string(trick.description) + " " + trick.area + " " + trick.tags + " technique trick MM Majora Mask";
++        addLink(MenuSearchKind::Technique, trick.name, keywords.c_str(), "randomizer", "Tricks & glitches", "MM");
++    }
+     static Fn_ComboTricks getOotTricks = nullptr;
+     if (!getOotTricks && model.Oot().loaded)
+         getOotTricks = reinterpret_cast<Fn_ComboTricks>(Combo_ResolveSym("soh", "SOH_GetComboTricks"));
+@@ -417,31 +487,16 @@
+     for (int32_t i = 0; ootTricks && i < ootCount; ++i) {
+         const auto& trick = ootTricks[i];
+         if (!trick.name || !*trick.name) continue;
+-        std::string keywords = "technique trick";
++        std::string keywords = "technique trick OoT Ocarina Time";
+         for (const auto* value : {trick.description, trick.area, trick.tags})
+             if (value) { keywords += ' '; keywords += value; }
+-        if (!MenuSearchMatches(query, trick.name, keywords.c_str())) continue;
+-        if (ImGui::Button((std::string("Randomizer / Tricks & glitches / OoT / ") + trick.name).c_str(), ImVec2(-FLT_MIN, 0))) {
+-            FocusUnifiedTrick(trick.name);
+-            mSectionSelection[mScope] = mHubActive;
+-            mScope = "randomizer"; mHubActive = "randomizer/Tricks & glitches";
+-            mSearchBuf[0] = 0; mSearchQuery.clear(); return;
+-        }
+-        ++matches;
++        addLink(MenuSearchKind::Technique, trick.name, keywords.c_str(), "randomizer", "Tricks & glitches", "OoT");
+     }
+     for (const auto& info : kRandomizerPages) {
+-        if (!MenuSearchMatches(query, info.name, info.keywords)) continue;
+-        if (ImGui::Button((std::string("Randomizer / ") + info.name).c_str(), ImVec2(-FLT_MIN, 0))) {
+-            mSectionSelection[mScope] = mHubActive;
+-            mScope = "randomizer"; mHubActive = std::string("randomizer/") + info.name;
+-            mSearchBuf[0] = 0; mSearchQuery.clear();
+-            return;
+-        }
+-        ++matches;
+-    }
+-    const ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
+-    if (ImGui::BeginTable("##searchresults", cols, flags)) {
+-        for (const auto& src : sources) {
++        addLink(MenuSearchKind::Page, info.name, info.keywords, "randomizer", info.name, "Randomizer", 40);
++    }
++    std::unordered_set<std::string> seen;
++    for (const auto& src : sources) {
+             const GameMenu& game = *src.game;
+             if (!game.loaded || !game.menu)
+                 continue;
+@@ -450,6 +505,19 @@
+                 const CwSection& sec = m->sections[s];
+                 for (int sb = 0; sb < sec.sidebarCount; ++sb) {
+                     const CwSidebar& side = sec.sidebars[sb];
++                    const auto pageRoute = NativeSearchPageRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
++                                                               side.sidebarName ? side.sidebarName : "");
++                    if (!pageRoute.scope.empty()) {
++                        const bool oot = src.game == &model.Oot();
++                        const auto keywords = NativeSearchPageKeywords(sec.sectionLabel ? sec.sectionLabel : "",
++                            side.sidebarName ? side.sidebarName : "", pageRoute, oot);
++                        const auto label = NativeSearchPageLabel(oot, pageRoute, query);
++                        const int target = NativeSearchPageTarget(oot, pageRoute, query);
++                        const auto origin = std::string(MenuScopeLabel(pageRoute.scope)) +
++                            (target == 1 ? " / Majora's Mask" : target == 0 ? " / Ocarina of Time" : "");
++                        addLink(MenuSearchKind::Page, label.c_str(), keywords.c_str(),
++                            pageRoute.scope.c_str(), pageRoute.page.c_str(), origin.c_str(), 0, target);
++                    }
+                     const auto sidebarRoute = MenuRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
+                                                         side.sidebarName ? side.sidebarName : "");
+                     if (sidebarRoute.scope.empty()) continue;
+@@ -458,6 +526,7 @@
+                         const CwWidget& wd = side.widgets[w];
+                         const auto route = FeatureMenuRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
+                                                             side.sidebarName ? side.sidebarName : "", wd.column);
++                        if (route.scope.empty()) continue;
+                         if (wd.cvar && (std::strstr(wd.cvar, "CheckTracker") || IsRetiredNativeRuleControl(wd.cvar))) continue; // retired per-game controls
+                         const std::string name = wd.name ? wd.name : "";
+                         if (name == "Open App Files Folder" || name == "Cursor Always Visible" ||
+@@ -467,10 +536,10 @@
+                         if (wd.kind == CW_SEPARATOR || wd.kind == CW_SEPARATOR_TEXT || wd.kind == CW_TEXT ||
+                             wd.kind == CW_CUSTOM || wd.hideInSearch)
+                             continue;
+-                        std::string hay =
+-                            NormalizeSearch(std::string(wd.name ? wd.name : "") + (wd.tooltip ? wd.tooltip : ""));
+-                        if (hay.find(query) == std::string::npos)
+-                            continue;
++                        const auto keywords = std::string(wd.tooltip ? wd.tooltip : "") + " " + src.label +
++                            (src.game == &model.Oot() ? " OoT" : " MM");
++                        const int rank = MenuSearchRank(query, wd.name, keywords.c_str(), MenuSearchKind::Setting);
++                        if (!rank) continue;
+                         // Dedupe shared settings (same backing CVar) across both games. Widgets with no
+                         // CVar (buttons/window toggles) drive distinct callbacks, so scope their key per
+                         // game â€” otherwise two same-named buttons would collapse and one would vanish.
+@@ -480,27 +549,92 @@
+                         if (!seen.insert(NormalizeSearch(key)).second)
+                             continue; // a shared setting already shown from OOT
+ 
+-                        ImGui::TableNextColumn();
+-                        // Extra per-game ID scope: RenderWidget PushID(w.index) internally, and the two
+-                        // games can emit the same index â€” without this, their interaction state collides.
+-                        ImGui::PushID(src.label);
+-                        // 90px total widget-width budget split across the result columns.
+-                        RenderWidget(wd, game, 90 / cols);
+-                        ImGui::PushTextWrapPos(0.0f);
+-                        ImGui::TextColored(kBreadcrumbColor, "%s / %s", src.label, route.page.c_str());
+-                        ImGui::PopTextWrapPos();
+-                        ImGui::PopID();
+-                        ImGui::Spacing();
+-                        ++matches;
++                        hits.push_back({MenuSearchKind::Setting, rank, name, route.scope, route.page, src.label,
++                                       nullptr, &game, &wd});
+                     }
+                 }
+             }
+-        }
+-        ImGui::EndTable();
+-    }
+-
+-    if (matches == 0)
++    }
++    if (hits.empty()) {
+         ImGui::TextDisabled("No matching settings.");
++        ImGui::TextWrapped("Try fewer words, a setting name, or a topic such as warp, screen fit or check tracker.");
++        return;
++    }
++    std::stable_sort(hits.begin(), hits.end(), [](const Hit& a, const Hit& b) {
++        if (a.rank != b.rank) return a.rank > b.rank;
++        const auto an = NormalizeMenuSearch(a.label), bn = NormalizeMenuSearch(b.label);
++        return an != bn ? an < bn : a.origin < b.origin;
++    });
++    struct Group { MenuSearchKind kind; const char* title; int best = 0; int count = 0; };
++    std::vector<Group> groups = {
++        {MenuSearchKind::Rule, "Gameplay rules"}, {MenuSearchKind::Setting, "Settings"},
++        {MenuSearchKind::Technique, "Tricks & glitches"}, {MenuSearchKind::Page, "Pages"}
++    };
++    for (auto& group : groups) for (const auto& hit : hits) if (hit.kind == group.kind) {
++        group.best = std::max(group.best, hit.rank); ++group.count;
++    }
++    std::stable_sort(groups.begin(), groups.end(), [](const Group& a, const Group& b) { return a.best > b.best; });
++    ImGui::TextWrapped("%d result%s for \"%s\"", static_cast<int>(hits.size()), hits.size() == 1 ? "" : "s", query.c_str());
++    const int cols = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 60.0f ? 2 : 1;
++    const float buttonHeight = ImGui::GetFrameHeight() * 1.25f;
++    const ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
++    for (const auto& group : groups) {
++        if (!group.count) continue;
++        ImGui::PushID(static_cast<int>(group.kind));
++        ImGui::Spacing();
++        ImGui::SeparatorText((std::string(group.title) + " (" + std::to_string(group.count) + ")").c_str());
++        if (group.kind == MenuSearchKind::Rule)
++            ImGui::TextWrapped("Open Randomizer for seed logic, or Enhancements for play behavior. Opening a result changes no settings.");
++        bool navigate = false;
++        if (ImGui::BeginTable("##RankedResults", group.kind == MenuSearchKind::Rule ? 1 : cols, flags)) {
++            int id = 0;
++            for (const auto& hit : hits) {
++                if (hit.kind != group.kind) continue;
++                ImGui::TableNextColumn();
++                ImGui::PushID(id++);
++                if (hit.widget) {
++                    ImGui::PushID(hit.origin.c_str());
++                    RenderWidget(*hit.widget, *hit.game, 90 / cols);
++                    ImGui::PopID();
++                } else ImGui::TextWrapped("%s", hit.label.c_str());
++                ImGui::PushTextWrapPos(0.0f);
++                if (hit.rule) {
++                    if (hit.rule->trickGoverned) {
++                        ImGui::TextColored(kBreadcrumbColor, "Randomizer / Tricks & glitches");
++                        if (ImGui::Button("Open technique", ImVec2(-FLT_MIN, buttonHeight))) {
++                            OpenSearchDestination(hit.scope, hit.page, nullptr, hit.rule->label); navigate = true;
++                        }
++                    } else {
++                        const float pairWidth = ImGui::CalcTextSize("Open Randomizer").x +
++                            ImGui::CalcTextSize("Open Enhancements").x + ImGui::GetStyle().FramePadding.x * 4 +
++                            ImGui::GetStyle().ItemSpacing.x;
++                        const bool pairFits = ImGui::GetContentRegionAvail().x >= pairWidth;
++                        if (ImGui::Button("Open Randomizer", ImVec2(0, buttonHeight))) {
++                            OpenSearchDestination("randomizer", "Gameplay rules", hit.rule->name); navigate = true;
++                        }
++                        if (pairFits) ImGui::SameLine();
++                        if (ImGui::Button("Open Enhancements", ImVec2(0, buttonHeight))) {
++                            OpenSearchDestination("gameplay", "Gameplay rules", hit.rule->name); navigate = true;
++                        }
++                    }
++                } else {
++                    ImGui::TextColored(kBreadcrumbColor, "%s / %s", hit.origin.c_str(), hit.page.c_str());
++                    if (!hit.widget && ImGui::Button("Open", ImVec2(-FLT_MIN, buttonHeight))) {
++                        OpenSearchDestination(hit.scope, hit.page, nullptr,
++                            hit.kind == MenuSearchKind::Technique ? hit.label.c_str() : nullptr, hit.targetGame);
++                        navigate = true;
++                    }
++                }
++                ImGui::PopTextWrapPos();
++                ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
++                ImGui::PopID();
++                if (navigate) break;
++            }
++            ImGui::EndTable();
++        }
++        ImGui::PopID();
++        if (navigate) return;
++    }
+ }
+ 
+ // A feature page can draw one or both engine sources without duplicating navigation.
+@@ -1278,7 +1412,24 @@
+     }
+     return nullptr;
+ }
+-void DrawGameplayRules(bool randomizer) {
++bool DrawRuleCheckbox(const char* label, bool* enabled) {
++    const float need = ImGui::CalcTextSize(label).x + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x;
++    if (need <= ImGui::GetContentRegionAvail().x) return ImGui::Checkbox(label, enabled);
++    bool changed = ImGui::Checkbox("##RuleToggle", enabled);
++    ImGui::SameLine();
++    ImGui::TextWrapped("%s", label);
++    const ImVec2 labelStart = ImGui::GetItemRectMin(), labelEnd = ImGui::GetItemRectMax();
++    const ImVec2 afterLabel = ImGui::GetCursorScreenPos();
++    ImGui::SetCursorScreenPos(labelStart);
++    // Native button behavior toggles on release and cancels a drag released
++    // elsewhere. A disabled seed-generation control also blocks this target.
++    if (ImGui::InvisibleButton("##RuleLabel", ImVec2(labelEnd.x - labelStart.x, labelEnd.y - labelStart.y))) {
++        *enabled = !*enabled; changed = true;
++    }
++    ImGui::SetCursorScreenPos(afterLabel);
++    return changed;
++}
++void DrawGameplayRules(bool randomizer, ComboRando::MenuRuleFocus* focus = nullptr) {
+     auto& model = ComboMenuModel::Get();
+     ImGui::TextWrapped(randomizer
+         ? "Enable abilities here to include their routes in seed logic. This also enables the matching enhancement."
+@@ -1293,35 +1444,42 @@
+         if(model.Mm().applyCVarChange) model.Mm().applyCVarChange(name);
+     };
+     auto read=[](const char* name,int fallback){return CVarGetInteger(name,fallback);};
+-    for (const auto& rule : ComboRando::kGameplayRules) {
+-        if (rule.trickGoverned) continue; // restored glitches are selected only in Tricks & glitches
++    auto drawRule = [&](const ComboRando::GameplayRule& rule) {
+         ImGui::PushID(rule.name);
++        if (focus && focus->Matches(rule.name)) {
++            ImGui::TextColored(ImVec4(0.57f, 0.70f, 0.96f, 1.0f), "Selected search result");
++            if (focus->ConsumeScrollFor(rule.name)) ImGui::SetScrollHereY(0.12f);
++        }
+         const auto logical=ComboRando::LogicRuleKey(rule.name);
++        const char* label = ComboRando::GameplayRuleMenuLabel(rule.name, rule.label, randomizer);
+         int value=read(randomizer ? logical.c_str() : rule.name,randomizer ? 0 : rule.fallback);
+         bool changed=false;
+         if(rule.maximum==1) {
+             bool enabled=value!=0;
+-            changed=ImGui::Checkbox(rule.label,&enabled); value=enabled;
++            changed=DrawRuleCheckbox(label,&enabled); value=enabled;
+         } else if(rule.minimum>0) {
+             bool included=value>=rule.minimum;
+             int count=included ? value : read(rule.name,rule.fallback);
+-            if(randomizer) changed=ImGui::Checkbox(rule.label,&included);
++            if(randomizer) changed=DrawRuleCheckbox(label,&included);
++            ImGui::TextWrapped("%s", randomizer ? "Required count" : label);
+             ImGui::BeginDisabled(randomizer && !included);
+             ImGui::SetNextItemWidth(std::min(380.0f,ImGui::GetContentRegionAvail().x));
+-            changed |= ImGui::SliderInt(randomizer ? "Required count" : rule.label,&count,rule.minimum,rule.maximum,"%d",ImGuiSliderFlags_NoInput);
++            changed |= ImGui::SliderInt("##RuleCount",&count,rule.minimum,rule.maximum,"%d",ImGuiSliderFlags_NoInput);
+             ImGui::EndDisabled(); value=randomizer && !included ? 0 : count;
+         } else if(rule.maximum==2) {
+             const char* gibdo[]={"Vanilla","MM3D","No trade"};
+             const char* dog[]={"Off","With Mask of Truth","Always"};
+             const char* sticks[]={"Normal","Unbreakable","Always burning"};
+             const char** modes=std::strcmp(rule.name,"gCheats.DekuStick")==0 ? sticks : std::strcmp(rule.name,"gEnhancements.DifficultyOptions.GibdoTradeSequence")==0 ? gibdo : dog;
++            ImGui::TextWrapped("%s", label);
+             ImGui::SetNextItemWidth(std::min(380.0f,ImGui::GetContentRegionAvail().x));
+-            changed=ImGui::Combo(rule.label,&value,modes,3);
++            changed=ImGui::Combo("##RuleMode",&value,modes,3);
+         } else {
+             const char* modes[]={"Off","Ocarina of Time","Ocarina of Time + Master Sword",
+                                  "Either ocarina","Either ocarina + Master Sword"};
++            ImGui::TextWrapped("%s", label);
+             ImGui::SetNextItemWidth(std::min(380.0f,ImGui::GetContentRegionAvail().x));
+-            changed=ImGui::Combo(rule.label,&value,modes,5);
++            changed=ImGui::Combo("##RuleMode",&value,modes,5);
+         }
+         if(changed) {
+             if(randomizer) ComboRando::SetLogicRule(rule,value,apply);
+@@ -1346,7 +1504,28 @@
+             Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+         }
+         ImGui::TextWrapped("%s",rule.help);
++        if (!std::strcmp(rule.name, ComboRando::kSongTravelRuleKeys[1])) {
++            const auto playback = ComboRando::FindGameplayRule(ComboRando::kSongTravelRuleKeys[0]);
++            const auto playbackLogic = ComboRando::LogicRuleKey(ComboRando::kSongTravelRuleKeys[0]);
++            const bool enabled = playback && read(randomizer ? playbackLogic.c_str() : playback->name, 0) != 0;
++            if (!enabled) {
++                ImGui::TextWrapped("Requires Play warp songs across games on this page. These settings remain independent.");
++                if (focus && ImGui::Button("Find cross-game playback")) focus->Set(ComboRando::kSongTravelRuleKeys[0]);
++            }
++        }
+         ImGui::Spacing(); ImGui::PopID();
++    };
++    ImGui::SeparatorText("Songs & travel");
++    ImGui::TextWrapped("Cross-game playback uses a learned song and the current game's instrument and playable buttons. "
++                       "Soaring also needs activated MM owl statues; adult OoT Link needs the separate any-age option. "
++                       "Mixed destinations reuse the seed's saved song map. Select Shuffle song warp destinations in Randomizer before generating a new map.");
++    for (const auto* key : ComboRando::kSongTravelRuleKeys) {
++        const auto* rule = ComboRando::FindGameplayRule(key);
++        if (rule) drawRule(*rule);
++    }
++    ImGui::SeparatorText("Other gameplay abilities");
++    for (const auto& rule : ComboRando::kGameplayRules) {
++        if (!rule.trickGoverned && !ComboRando::IsSongTravelRule(rule.name)) drawRule(rule);
+     }
+ }
+ 
+@@ -1541,6 +1720,8 @@
+             ImGui::PushID(it->key().c_str());
+             if (ComboMenu_StyledSidebarEntry(it->label.c_str(), it == active, ImGui::GetContentRegionAvail().x)) {
+                 active = it; mHubActive = it->key();
++                mRuleFocus.Clear();
++                mSearchReturn.Clear();
+             }
+             ImGui::PopID();
+         }
+@@ -1549,6 +1730,11 @@
+     }
+     ImGui::PushID(active->key().c_str());
+     ImGui::BeginChild("##FeatureContent", ImVec2(0, 0));
++    if (mResetContentScroll || mSearchQuery != mLastSearchQuery) {
++        ImGui::SetScrollY(0.0f);
++        mResetContentScroll = false;
++    }
++    mLastSearchQuery = mSearchQuery;
+     ResolveComboGenSyms();
+     const auto* generation = sGetProgress ? sGetProgress() : nullptr;
+     const bool generating = generation && generation->running.load();
+@@ -1562,6 +1748,8 @@
+             if (ImGui::Button(label, ImVec2(-FLT_MIN, 0))) {
+                 mSectionSelection[mScope] = mHubActive;
+                 mScope = scope; mHubActive = std::string(scope) + "/" + page;
++                mRuleFocus.Clear();
++                mSearchReturn.Clear();
+             }
+         };
+         switch (active->kind) {
+@@ -1642,7 +1830,7 @@
+             break;
+         default: {
+             if (active->label == "Tricks & glitches") { ComboRando::DrawUnifiedTricks(); break; }
+-            if (active->label == "Gameplay rules") { DrawGameplayRules(mScope=="randomizer"); break; }
++            if (active->label == "Gameplay rules") { DrawGameplayRules(mScope=="randomizer", &mRuleFocus); break; }
+             if (active->label == "Screen & HUD") {
+                 if (ImGui::Button("Advanced graphics settings")) {
+                     mScope = "settings"; mHubActive = "settings/Graphics";
+--- a/combo/gui/ComboMenu.h
++++ b/combo/gui/ComboMenu.h
+@@ -9,6 +9,7 @@
+ #include <utility>
+ #include <vector>
+ #include "gui/ComboGenProgress.h"
++#include "ComboMenuSearch.h"
+ 
+ namespace ComboRando {
+ 
+@@ -35,13 +36,22 @@
+   private:
+     void DrawSharedPanel();                  // hub for the Settings + Randomizer tabs (by mScope)
+     void DrawComboPanel();                   // cross-world Generate (seed + button + progress)
+-    // Global menu search: scans BOTH games' CwMenu models for widgets whose name+tooltip match the
+-    // (normalized) query, rendering each match inline + editable (2-3 column grid) with a breadcrumb.
++    // Global menu search: ranks canonical rules, techniques, widgets and pages;
++    // native controls remain editable through their existing callbacks.
+     // Drawn in the active scope's content area, so the left navigation panel stays visible.
+     void DrawSearchResults(const std::string& query);
++    void OpenSearchDestination(const std::string& scope, const std::string& page,
++                               const char* rule = nullptr, const char* trick = nullptr, int targetGame = -1);
++    void DrawScopeHelp();
+ 
+     char mSearchBuf[256] = { 0 }; // raw global-search input; normalized into mSearchQuery each frame
+-    std::string mSearchQuery;     // normalized search text this frame ("" = not searching)
++    std::string mSearchQuery;     // raw multi-word query this frame ("" = not searching)
++    MenuRuleFocus mRuleFocus;
++    MenuSearchReturn mSearchReturn;
++    std::string mLastSearchQuery;
++    std::string mGuideScope;
++    bool mHelpRequested = false;
++    bool mResetContentScroll = false;
+     char mSeedBuf[128] = { 0 };
+     ComboGenProgress mProgress; // worker (in the exe) writes; this polls. Pointer handed across DLL.
+     std::string mStatusLine;
+diff --git a/combo/gui/ComboMenuSearch.h b/combo/gui/ComboMenuSearch.h
+new file mode 100644
+--- /dev/null
++++ b/combo/gui/ComboMenuSearch.h
+@@ -0,0 +1,130 @@
++#pragma once
++#include <algorithm>
++#include <cctype>
++#include <cstring>
++#include <string>
++#include <vector>
++
++namespace ComboRando {
++enum class MenuSearchKind { Rule, Setting, Technique, Page };
++
++// Search words independently so punctuation, word order and common plurals do
++// not force the user to know a native menu label. No CVar names are rewritten.
++inline std::string MenuSearchTerm(std::string word) {
++    for (const auto* plural : {"songs", "warps", "owls", "statues", "items", "checks", "masks",
++                              "buttons", "controls", "keys", "eggs", "tricks", "destinations"}) {
++        if (word == plural) { word.pop_back(); break; }
++    }
++    return word;
++}
++inline std::vector<std::string> MenuSearchWords(const std::string& text) {
++    std::vector<std::string> words;
++    std::string word;
++    auto finish = [&]() {
++        if (word.empty()) return;
++        word = MenuSearchTerm(word);
++        if (word != "a" && word != "an" && word != "the" && word != "and" && word != "of" &&
++            word != "to" && word != "for" && word != "in" && word != "at") words.push_back(word);
++        word.clear();
++    };
++    for (unsigned char c : text) {
++        if (std::isalnum(c) || c >= 128) word += static_cast<char>(std::tolower(c));
++        else finish();
++    }
++    finish();
++    return words;
++}
++inline std::string MenuSearchPhrase(const std::vector<std::string>& words) {
++    std::string phrase;
++    for (const auto& word : words) { if (!phrase.empty()) phrase += ' '; phrase += word; }
++    return phrase;
++}
++inline int MenuSearchWordScore(const std::string& term, const std::vector<std::string>& words) {
++    int score = 0;
++    for (const auto& word : words) {
++        if (word == term) return 35;
++        if (word.compare(0, term.size(), term) == 0) score = std::max(score, 22);
++        else if (word.find(term) != std::string::npos) score = std::max(score, 12);
++    }
++    return score;
++}
++inline int MenuSearchScore(const std::string& query, const char* name, const char* keywords) {
++    const auto terms = MenuSearchWords(query);
++    if (terms.empty()) return 0;
++    const auto title = MenuSearchWords(name ? name : "");
++    const auto aliases = MenuSearchWords(keywords ? keywords : "");
++    int score = 1;
++    bool allInTitle = true;
++    for (const auto& term : terms) {
++        const int titleScore = MenuSearchWordScore(term, title);
++        const int aliasScore = MenuSearchWordScore(term, aliases);
++        if (!titleScore && !aliasScore) return 0; // every word must match this result
++        allInTitle &= titleScore != 0;
++        score += titleScore ? titleScore * 3 : aliasScore;
++    }
++    const auto phrase = MenuSearchPhrase(terms);
++    const auto titlePhrase = MenuSearchPhrase(title);
++    if (titlePhrase == phrase) score += 900;
++    else if (titlePhrase.compare(0, phrase.size(), phrase) == 0) score += 450;
++    else if (allInTitle) score += 250;
++    else if (MenuSearchPhrase(aliases).find(phrase) != std::string::npos) score += 70;
++    return score;
++}
++inline int MenuSearchRank(const std::string& query, const char* name, const char* keywords, MenuSearchKind kind) {
++    const int score = MenuSearchScore(query, name, keywords);
++    if (!score) return 0;
++    // A concrete setting is more useful than a broad page which merely lists
++    // the word among its aliases. Exact titles still win over incidental hits.
++    return score + (kind == MenuSearchKind::Rule ? 300 : kind == MenuSearchKind::Setting ? 180 :
++                    kind == MenuSearchKind::Technique ? 120 : 0);
++}
++inline constexpr const char* kSongTravelRuleKeys[] = {
++    "gCombo.Enhancements.ForeignSongs", "gCombo.Enhancements.AgelessSoaring", "gCombo.Enhancements.SongTravel"
++};
++inline bool IsSongTravelRule(const char* name) {
++    if (!name) return false;
++    for (const auto* key : kSongTravelRuleKeys) if (!std::strcmp(name, key)) return true;
++    return false;
++}
++inline const char* GameplayRuleMenuLabel(const char* name, const char* label, bool randomizer) {
++    return randomizer && name && !std::strcmp(name, kSongTravelRuleKeys[2])
++        ? "Shuffle song warp destinations" : label;
++}
++inline const char* GameplayRuleSearchAliases(const char* name) {
++    if (!name) return "";
++    if (!std::strcmp(name, kSongTravelRuleKeys[0]))
++        return "crossgame cross game songs cross game travel cross warp transport transportation playback Requiem Spirit Desert Colossus Minuet Bolero Serenade Nocturne Prelude Song of Soaring owl";
++    if (!std::strcmp(name, kSongTravelRuleKeys[1]))
++        return "adult warp adult Link adult soaring any age cross game travel owl Song of Soaring";
++    if (!std::strcmp(name, kSongTravelRuleKeys[2]))
++        return "warp destination shuffle shuffled mixed song travel transport transportation saved map cross game travel";
++    return "";
++}
++
++// A search link scrolls only once. The visible highlight stays until the user
++// leaves the page; drawing other rule pages cannot consume the pending focus.
++class MenuRuleFocus {
++  public:
++    void Set(const char* name) { mName = name ? name : ""; mScrollPending = !mName.empty(); }
++    void Clear() { mName.clear(); mScrollPending = false; }
++    bool Matches(const char* name) const { return name && !mName.empty() && mName == name; }
++    bool ConsumeScrollFor(const char* name) {
++        if (!mScrollPending || !Matches(name)) return false;
++        mScrollPending = false;
++        return true;
++    }
++  private:
++    std::string mName;
++    bool mScrollPending = false;
++};
++
++struct MenuSearchReturn {
++    std::string query, scope, hub;
++    void Capture(const std::string& text, const std::string& sourceScope, const std::string& sourceHub) {
++        if (MenuSearchWords(text).empty()) return;
++        query = text; scope = sourceScope; hub = sourceHub;
++    }
++    bool HasResult() const { return !query.empty(); }
++    void Clear() { query.clear(); scope.clear(); hub.clear(); }
++};
++} // namespace ComboRando
+--- a/combo/gui/ComboNavigation.h
++++ b/combo/gui/ComboNavigation.h
+@@ -2,6 +2,7 @@
+ #include <algorithm>
+ #include <cctype>
+ #include <string>
++#include "ComboMenuSearch.h"
+ 
+ // Feature destinations, independent of engine ordering. Unknown pages stay reachable in Tools.
+ namespace ComboRando {
+@@ -14,17 +15,14 @@
+     return text;
+ }
+ inline bool MenuSearchMatches(const std::string& query, const char* name, const char* keywords) {
+-    const auto normalized = NormalizeMenuSearch(query);
+-    return !normalized.empty() &&
+-        NormalizeMenuSearch(std::string(name ? name : "") + " " + (keywords ? keywords : "")).find(normalized)
+-            != std::string::npos;
++    return MenuSearchScore(query, name, keywords) != 0;
+ }
+ // Combo-owned pages have no native widget metadata. Index them explicitly so search
+ // leads to the common editor or canonical setter instead of a legacy engine control.
+ struct SharedPageInfo { const char* scope; const char* scopeLabel; const char* name; const char* keywords; };
+ inline constexpr SharedPageInfo kSharedPages[] = {
+     {"settings", "Settings", "Screen & HUD",
+-     "screen fit automatic fitter screen size aspect ratio widescreen borders safe insets HUD layout edit HUD HUD placement hearts magic rupees minimap position guide reset"},
++     "screen fit automatic fitter screen size aspect ratio widescreen borders safe insets HUD layout HUD editor edit HUD HUD placement hearts magic rupees minimap position guide reset"},
+     {"settings", "Settings", "Interface", "menu scale menu size text size theme background opacity navigation"},
+     {"gameplay", "Enhancements", "Everyday", "quality of life D-pad equips unequip magic arrow equip arrow cycle autosave"},
+     {"gameplay", "Enhancements", "Gameplay rules", "enhancement only runtime ability include in logic gameplay progression rules"},
+@@ -36,6 +34,28 @@
+     {"trackers", "Trackers", "Timers", "game timer combined timer play time clock splits"},
+     {"tools", "Tools", "Multiplayer", "multiplayer co-op shared progress Anchor network host server room team port reconnect"},
+ };
++struct MenuGuideInfo {
++    const char* scope;
++    const char* seenKey;
++    const char* title;
++    const char* introduction;
++    const char* behavior;
++    const char* runWarning;
++};
++inline constexpr MenuGuideInfo kMenuGuides[] = {
++    {"randomizer", "gCombo.Menu.Help.RandomizerSeen", "Randomizer: plan a new seed",
++     "Choose items, checks, gameplay rules and optional techniques before generating. Randomizer options define the supported logic for NEW seeds.",
++     "Selecting a gameplay ability here also enables its matching enhancement. Songs & travel groups cross-game playback, adult Soaring and destination shuffle. Each option lists its prerequisites.",
++     "Changing settings in an existing run does not regenerate items or rewrite its original seed settings. Progression changes may affect whether you can finish. Save in-game to keep your changes."},
++    {"gameplay", "gCombo.Menu.Help.EnhancementsSeen", "Enhancements: change how you play",
++     "Everyday options improve controls and convenience. Gameplay rules contains abilities such as age change and cross-game songs; Restorations contains restored behavior.",
++     "Enabling an ability here does not automatically add it to seed logic. Include in logic is a separate choice. Turning off or changing an ability clears an incompatible logic choice. Existing seed settings and item placements are preserved.",
++     "Changing progression settings mid-run could affect your ability to complete it. A warning appears when you change them. Save in-game to keep run overrides. Optional techniques belong in Randomizer / Tricks & glitches."}
++};
++inline const MenuGuideInfo* FindMenuGuide(const std::string& scope) {
++    for (const auto& guide : kMenuGuides) if (scope == guide.scope) return &guide;
++    return nullptr;
++}
+ inline MenuDestination MenuRoute(bool oot, const std::string& section, const std::string& page) {
+     if (page == "Search") return {};
+     if (section == "Network") return {}; // Anchor is shared; unsupported integrations stay hidden.
+@@ -81,6 +101,52 @@
+     }
+     return {"tools", section + " / " + page};
+ }
++inline const char* MenuScopeLabel(const std::string& scope) {
++    if (scope == "randomizer") return "Randomizer";
++    if (scope == "gameplay") return "Enhancements";
++    if (scope == "trackers") return "Trackers";
++    if (scope == "settings") return "Settings";
++    if (scope == "home") return "Home";
++    return "Tools";
++}
++inline MenuDestination NativeSearchPageRoute(bool oot, const std::string& section, const std::string& page) {
++    // Discovery of HUD editing goes to the common editor. The old advanced
++    // engine pages remain reachable in the feature navigation.
++    if ((section == "Enhancements" && page == "HUD Editor") || (section == "Settings" && page == "Overlay"))
++        return {"settings", "Screen & HUD"};
++    return MenuRoute(oot, section, page);
++}
++inline std::string NativeSearchPageKeywords(const std::string& section, const std::string& sidebar,
++                                          const MenuDestination& destination, bool oot = true) {
++    auto keywords = section + " " + sidebar + " " + MenuScopeLabel(destination.scope) + " " + destination.page;
++    // Topic aliases describe this page, not every widget elsewhere in the game.
++    if (destination.scope == "settings") {
++        if (destination.page == "Audio") keywords += " sound music volume speakers both games OoT MM";
++        else if (destination.page == "Graphics") keywords += " display renderer performance frame FPS resolution both games OoT MM";
++        else if (destination.page == "Controls") keywords += " controller input mapping gamepad button bind keyboard both games OoT MM";
++    }
++    if (destination.scope == "tools" && destination.page == "Save Editor") {
++        keywords += " save inventory equipment resources cheats";
++        keywords += oot ? " OoT Ocarina Time" : " MM Majora Mask owl statues owl activation activate unlock clear destinations Soaring save flags";
++    }
++    return keywords;
++}
++inline bool IsOwlEditorSearch(bool oot, const MenuDestination& destination, const std::string& query) {
++    if (oot || destination.scope != "tools" || destination.page != "Save Editor") return false;
++    for (const auto& word : MenuSearchWords(query)) if (word == "owl" || word == "statue") return true;
++    return false;
++}
++inline std::string NativeSearchPageLabel(bool oot, const MenuDestination& destination, const std::string& query) {
++    return IsOwlEditorSearch(oot, destination, query) ? "Owl statues" : destination.page;
++}
++inline int NativeSearchPageTarget(bool oot, const MenuDestination& destination, const std::string& query) {
++    if (IsOwlEditorSearch(oot, destination, query)) return 1;
++    if (destination.scope != "tools" || destination.page != "Save Editor") return -1;
++    for (const auto& word : MenuSearchWords(query))
++        if ((oot && (word == "oot" || word == "ocarina")) || (!oot && (word == "mm" || word == "majora")))
++            return oot ? 0 : 1;
++    return -1; // unqualified feature links retain the user's current world selection
++}
+ // One catalog defines ordering, page explanations and search aliases for both engines.
+ struct RandomizerPageInfo { const char* name; const char* help; const char* keywords; };
+ inline constexpr RandomizerPageInfo kRandomizerPages[] = {
+--- a/mm/2s2h/Rando/Logic/Logic.cpp
++++ b/mm/2s2h/Rando/Logic/Logic.cpp
+@@ -231,7 +231,7 @@
+             if (currentRegion==RR_MAX && ComboRando::ActiveSongTravel().logicEnabled) {
+                 const int source=ComboRando::MmSongSource(exitId);
+                 if (source>=0) {
+-                    int destination=ComboRando::ActiveSongTravel().destination(source);
++                    int destination=ComboRando::ActiveSongTravel().logicDestination(source);
+                     if (destination<6) continue;
+                     connectedRegionId=GetRegionIdFromEntrance(ComboRando::kMmSongEntrances[destination-6]);
+                 }
+--- a/soh/soh/Enhancements/randomizer/3drando/fill.cpp
++++ b/soh/soh/Enhancements/randomizer/3drando/fill.cpp
+@@ -197,7 +197,7 @@
+         if (ComboRando::ActiveSongTravel().logicEnabled) {
+             const int source = ComboRando::OotSongSource(region->randomizerRegionKey);
+             if (source >= 0) {
+-                const int destination = ComboRando::ActiveSongTravel().destination(source);
++                const int destination = ComboRando::ActiveSongTravel().logicDestination(source);
+                 if (destination >= 6) continue; // consumed by the combined search, never the old native exit
+                 exitRegion = RegionTable(ComboRando::kOotSongRegions[destination]);
+             }
+--- a/soh/soh/OTRGlobals.cpp
++++ b/soh/soh/OTRGlobals.cpp
+@@ -2874,7 +2874,10 @@
+ }
+ extern "C" COMBO_EXPORT void SOH_SetSongArrivals(uint32_t mask) { ComboRando::OotSongArrivals()=mask & 63; }
+ extern "C" COMBO_EXPORT int SOH_SongDestination(int source) {
+-    return (ComboRando::ActiveSongTravel().enabled || ComboRando::ActiveSongTravel().foreignSongs) ? ComboRando::ActiveSongTravel().destination(source) : -1;
++    // This export is the generation oracle's route query. Gameplay uses the
++    // separate ForeignSongDestination exports and the runtime map flags.
++    const auto& map=ComboRando::ActiveSongTravel();
++    return (map.logicEnabled || map.logicForeignSongs) ? map.logicDestination(source) : -1;
+ }
+ static const RandomizerGet kWarpSongs[]={RG_MINUET_OF_FOREST,RG_BOLERO_OF_FIRE,RG_SERENADE_OF_WATER,RG_REQUIEM_OF_SPIRIT,RG_NOCTURNE_OF_SHADOW,RG_PRELUDE_OF_LIGHT};
+ static auto LiveSongLogic() {

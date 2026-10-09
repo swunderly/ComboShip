@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- SDL's optional raw BLE Steam-controller driver is gated by initializeBluetooth's
+         permission checks. This app declares no Bluetooth permission, so that driver is
+         never started. Standard Android Bluetooth gamepad events still work via SDL.
+         Lint cannot follow that initialization guard across these callback classes. -->
+    <issue id="MissingPermission">
+        <ignore path="src/main/sdl-java/org/libsdl/app/HIDDeviceBLESteamController.java" />
+        <ignore path="src/main/sdl-java/org/libsdl/app/HIDDeviceManager.java" />
+        <!-- patch_sdl.py adds an explicit runtime RECORD_AUDIO permission guard.
+             No microphone permission is declared, so capture always returns failure. -->
+        <ignore path="src/main/sdl-java/org/libsdl/app/SDLAudioManager.java" />
+    </issue>
+</lint>

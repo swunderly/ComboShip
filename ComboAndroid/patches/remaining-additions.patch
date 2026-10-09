@@ -1,0 +1,1075 @@
+--- a/combo/CMakeLists.txt
++++ b/combo/CMakeLists.txt
+@@ -70,6 +70,19 @@
+     target_link_libraries(comboui PRIVATE ${CMAKE_DL_LIBS}) # Combo_ResolveSym uses dlsym
+ endif()
+ target_compile_definitions(comboui PRIVATE COMBO_BUILD)
++
++# The Android About page uses the same public version as its APK. This does not
++# change COMBO_RELEASE_VERSION, which governs upstream save compatibility.
++if(ANDROID)
++    set(_combo_android_gradle "${CMAKE_SOURCE_DIR}/ComboAndroid/app/build.gradle")
++    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_combo_android_gradle}")
++    file(STRINGS "${_combo_android_gradle}" _combo_android_version_line REGEX "^[ \t]*versionName[ \t]+'[^']+'")
++    string(REGEX MATCH "versionName[ \t]+'([^']+)'" _combo_android_version_match "${_combo_android_version_line}")
++    if(NOT _combo_android_version_match)
++        message(FATAL_ERROR "Cannot read Android versionName for the About page")
++    endif()
++    target_compile_definitions(comboui PRIVATE COMBO_ANDROID_APP_VERSION="${CMAKE_MATCH_1}")
++endif()
+ target_include_directories(comboui PRIVATE
+     ${CMAKE_CURRENT_SOURCE_DIR}
+     ${CMAKE_CURRENT_SOURCE_DIR}/menu
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -19,6 +19,7 @@
+ #include "ComboSongTravel.h"
+ #include "ComboHudLayout.h"
+ #include "ComboTricks.h"
++#include "menu/ComboTrickABI.h"
+ #include "ComboTimersWindow.h"      // combo-owned overlay timers (#173)
+ #include "rando/ComboPlaythrough.h" // plando: ParseSpoilerPlacements + Suffix/BuildForeignArray + slot paths
+ #include <imgui.h>
+@@ -193,9 +194,7 @@
+ 
+ // Search normalization shared by the query and every widget haystack: lowercase + strip spaces.
+ static std::string NormalizeSearch(std::string s) {
+-    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+-    s.erase(std::remove(s.begin(), s.end(), ' '), s.end());
+-    return s;
++    return NormalizeMenuSearch(std::move(s));
+ }
+ static const ImVec4 kBreadcrumbColor(0.6f, 0.6f, 0.6f, 1.0f); // muted gray for the result origin line
+ 
+@@ -366,12 +365,13 @@
+ 
+     std::unordered_set<std::string> seen; // dedupe key: normalized cvar (or per-game name for no-cvar)
+     int matches = 0;
+-    if (NormalizeSearch("Check Tracker visibility shortcut button toggle hold collected skipped search current area logic appearance text size background").find(query) != std::string::npos) {
+-        if (ImGui::Button("Check Tracker settings (both games)")) {
+-            mScope = "trackers";
+-            mHubActive = "trackers/Check Tracker";
+-            mSearchBuf[0] = '\0';
+-            mSearchQuery.clear();
++    for (const auto& page : kSharedPages) {
++        if (!MenuSearchMatches(query, page.name, page.keywords)) continue;
++        if (ImGui::Button((std::string(page.scopeLabel) + " / " + page.name).c_str(), ImVec2(-FLT_MIN, 0))) {
++            mSectionSelection[mScope] = mHubActive;
++            mScope = page.scope;
++            mHubActive = std::string(page.scope) + "/" + page.name;
++            mSearchBuf[0] = 0; mSearchQuery.clear();
+             return;
+         }
+         ++matches;
+@@ -379,15 +379,58 @@
+     for(const auto& rule : kGameplayRules) {
+         if(NormalizeSearch(std::string(rule.label)+" "+rule.help+" enhancement logic").find(query)==std::string::npos) continue;
+         const std::string rulePage = rule.trickGoverned ? "Tricks & glitches" : "Gameplay rules";
+-        const std::string ruleLabel = rule.trickGoverned ? "Randomizer / Tricks & glitches / " : "Abilities & logic / ";
++        const std::string ruleLabel = "Randomizer / " + rulePage + " / ";
+         if(ImGui::Button((ruleLabel+rule.label).c_str(),ImVec2(-FLT_MIN,0))) {
++            if (rule.trickGoverned) FocusUnifiedTrick(rule.label);
+             mScope="randomizer"; mHubActive="randomizer/"+rulePage;
+             mSearchBuf[0]=0; mSearchQuery.clear(); return;
+         }
+         ++matches;
++        if (!rule.trickGoverned) {
++            if (ImGui::Button((std::string("Enhancements / Gameplay rules / ") + rule.label).c_str(), ImVec2(-FLT_MIN, 0))) {
++                mScope = "gameplay"; mHubActive = "gameplay/Gameplay rules";
++                mSearchBuf[0] = 0; mSearchQuery.clear(); return;
++            }
++            ++matches;
++        }
++    }
++    // MM technique rows belong to the shared catalogue, not a native CW widget.
++    // Search only navigates to that catalogue; its existing checkbox owns edits.
++    for (const auto& trick : kMmTricks) {
++        const auto keywords = std::string(trick.description) + " " + trick.area + " " + trick.tags + " technique trick";
++        if (!MenuSearchMatches(query, trick.name, keywords.c_str())) continue;
++        if (ImGui::Button((std::string("Randomizer / Tricks & glitches / MM / ") + trick.name).c_str(), ImVec2(-FLT_MIN, 0))) {
++            FocusUnifiedTrick(trick.name);
++            mSectionSelection[mScope] = mHubActive;
++            mScope = "randomizer"; mHubActive = "randomizer/Tricks & glitches";
++            mSearchBuf[0] = 0; mSearchQuery.clear(); return;
++        }
++        ++matches;
++    }
++    // OoT supplies the same native technique metadata used by the catalogue.
++    // Resolve lazily and read only; every edit remains on its canonical page.
++    static Fn_ComboTricks getOotTricks = nullptr;
++    if (!getOotTricks && model.Oot().loaded)
++        getOotTricks = reinterpret_cast<Fn_ComboTricks>(Combo_ResolveSym("soh", "SOH_GetComboTricks"));
++    int32_t ootCount = 0;
++    const auto* ootTricks = getOotTricks ? getOotTricks(&ootCount) : nullptr;
++    for (int32_t i = 0; ootTricks && i < ootCount; ++i) {
++        const auto& trick = ootTricks[i];
++        if (!trick.name || !*trick.name) continue;
++        std::string keywords = "technique trick";
++        for (const auto* value : {trick.description, trick.area, trick.tags})
++            if (value) { keywords += ' '; keywords += value; }
++        if (!MenuSearchMatches(query, trick.name, keywords.c_str())) continue;
++        if (ImGui::Button((std::string("Randomizer / Tricks & glitches / OoT / ") + trick.name).c_str(), ImVec2(-FLT_MIN, 0))) {
++            FocusUnifiedTrick(trick.name);
++            mSectionSelection[mScope] = mHubActive;
++            mScope = "randomizer"; mHubActive = "randomizer/Tricks & glitches";
++            mSearchBuf[0] = 0; mSearchQuery.clear(); return;
++        }
++        ++matches;
+     }
+     for (const auto& info : kRandomizerPages) {
+-        if (NormalizeSearch(std::string(info.name) + " " + info.keywords).find(query) == std::string::npos) continue;
++        if (!MenuSearchMatches(query, info.name, info.keywords)) continue;
+         if (ImGui::Button((std::string("Randomizer / ") + info.name).c_str(), ImVec2(-FLT_MIN, 0))) {
+             mSectionSelection[mScope] = mHubActive;
+             mScope = "randomizer"; mHubActive = std::string("randomizer/") + info.name;
+@@ -1565,7 +1608,11 @@
+         case HubEntry::COMBO_TIMERS: DrawTimersSharedPanel(); break;
+         case HubEntry::COMBO_NETWORK: DrawNetworkSharedPanel(); break;
+         case HubEntry::COMBO_ABOUT:
+-            ImGui::TextWrapped("Combo Ship for Android - 0.1.21");
++#ifdef COMBO_ANDROID_APP_VERSION
++            ImGui::TextWrapped("Combo Ship for Android - %s", COMBO_ANDROID_APP_VERSION);
++#else
++            ImGui::TextUnformatted("Combo Ship for Android");
++#endif
+             ImGui::TextWrapped("A combined Ocarina of Time and Majora's Mask randomizer with shared menus, trackers and touch controls.");
+             ImGui::Spacing();
+             ImGui::SeparatorText("Built on community work");
+@@ -1609,7 +1656,7 @@
+             int selectedGame = ComboUI::GetForegroundGame();
+             const bool seedOptions = mScope == "randomizer";
+             if (mScope == "gameplay") {
+-                ImGui::TextWrapped("Progression assumptions are under Gameplay rules. Other movement cheats and shortcuts are for your own use; generation does not require unaudited routes.");
++                ImGui::TextWrapped("Choose supported ability assumptions under Randomizer / Gameplay rules and techniques under Randomizer / Tricks & glitches. Enhancements can enable an ability without requiring it in logic. Other movement cheats and shortcuts are for your own use; generation does not require unaudited routes.");
+                 ImGui::Spacing();
+             }
+             if (seedOptions) {
+--- a/combo/gui/ComboNavigation.h
++++ b/combo/gui/ComboNavigation.h
+@@ -1,9 +1,41 @@
+ #pragma once
++#include <algorithm>
++#include <cctype>
+ #include <string>
+ 
+ // Feature destinations, independent of engine ordering. Unknown pages stay reachable in Tools.
+ namespace ComboRando {
+ struct MenuDestination { std::string scope, page; };
++inline std::string NormalizeMenuSearch(std::string text) {
++    std::transform(text.begin(), text.end(), text.begin(),
++        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
++    text.erase(std::remove_if(text.begin(), text.end(),
++        [](unsigned char c) { return std::isspace(c) != 0; }), text.end());
++    return text;
++}
++inline bool MenuSearchMatches(const std::string& query, const char* name, const char* keywords) {
++    const auto normalized = NormalizeMenuSearch(query);
++    return !normalized.empty() &&
++        NormalizeMenuSearch(std::string(name ? name : "") + " " + (keywords ? keywords : "")).find(normalized)
++            != std::string::npos;
++}
++// Combo-owned pages have no native widget metadata. Index them explicitly so search
++// leads to the common editor or canonical setter instead of a legacy engine control.
++struct SharedPageInfo { const char* scope; const char* scopeLabel; const char* name; const char* keywords; };
++inline constexpr SharedPageInfo kSharedPages[] = {
++    {"settings", "Settings", "Screen & HUD",
++     "screen fit automatic fitter screen size aspect ratio widescreen borders safe insets HUD layout edit HUD HUD placement hearts magic rupees minimap position guide reset"},
++    {"settings", "Settings", "Interface", "menu scale menu size text size theme background opacity navigation"},
++    {"gameplay", "Enhancements", "Everyday", "quality of life D-pad equips unequip magic arrow equip arrow cycle autosave"},
++    {"gameplay", "Enhancements", "Gameplay rules", "enhancement only runtime ability include in logic gameplay progression rules"},
++    {"gameplay", "Enhancements", "Restorations", "restoration restored behavior Shadow Door Unload stair shortcut Early Eyeball Frog trade sequence shield delay gameplay only"},
++    {"trackers", "Trackers", "Check Tracker",
++     "check tracker visibility shortcut button toggle hold collected skipped search current area logic appearance text size background side panel dock divider"},
++    {"trackers", "Trackers", "Item Tracker", "item tracker equipment inventory icons icon size icon spacing layout"},
++    {"trackers", "Trackers", "Hint Tracker", "hint tracker hinted seen known path boss event notes"},
++    {"trackers", "Trackers", "Timers", "game timer combined timer play time clock splits"},
++    {"tools", "Tools", "Multiplayer", "multiplayer co-op shared progress Anchor network host server room team port reconnect"},
++};
+ inline MenuDestination MenuRoute(bool oot, const std::string& section, const std::string& page) {
+     if (page == "Search") return {};
+     if (section == "Network") return {}; // Anchor is shared; unsupported integrations stay hidden.
+--- a/combo/gui/ComboTricks.cpp
++++ b/combo/gui/ComboTricks.cpp
+@@ -12,6 +12,7 @@
+ 
+ namespace ComboRando {
+ namespace {
++Detail::TrickCatalogueFocus sPendingFocus;
+ struct Source { Fn_ComboTricks get = nullptr; Fn_ComboSetTrick set = nullptr; };
+ std::array<Source, 2> Sources() {
+     const char* modules[] = {"soh", "2ship"};
+@@ -26,9 +27,12 @@
+ }
+ }
+ 
++void FocusUnifiedTrick(const char* name) { sPendingFocus.Set(name); }
++
+ void DrawUnifiedTricks() {
+     static char query[160] = {};
+     static int world = 0, status = 0, skill = 0;
++    sPendingFocus.Apply(query, world, status, skill);
+     const char* worlds[] = {"Both games", "Ocarina of Time", "Majora's Mask"};
+     const char* states[] = {"All techniques", "Enabled only", "Disabled only"};
+     const char* levels[] = {"All difficulties", "Novice", "Intermediate", "Advanced", "Expert", "Extreme", "Experimental"};
+@@ -48,11 +52,17 @@
+     ComboMenu_PopCombobox();
+     const auto sources = Sources();
+     int totals[] = {0, 0}, enabled = 0, visible = 0;
+-    const auto& shadowRule = *FindGameplayRule("gEnhancements.RestoreShadowDoorUnload");
+-    const auto shadow = ComboTricks::RestoredShadowDoorInfo(shadowRule.label, shadowRule.help,
+-        CVarGetInteger(LogicRuleKey(shadowRule.name).c_str(), 0) != 0);
+-    enabled += shadow.enabled ? 1 : 0;
+-    if (ComboTricks::Matches(shadow, 0, query, world, status, skill - 1)) ++visible;
++    const std::array<const GameplayRule*, 2> restoredRules = {
++        FindGameplayRule("gEnhancements.RestoreShadowDoorUnload"), FindGameplayRule("gEnhancements.EarlyEyeballFrog")};
++    const std::array<CwTrickInfo, 2> restored = {
++        ComboTricks::RestoredShadowDoorInfo(restoredRules[0]->label, restoredRules[0]->help,
++            CVarGetInteger(LogicRuleKey(restoredRules[0]->name).c_str(), 0) != 0),
++        ComboTricks::EarlyEyeballFrogInfo(restoredRules[1]->label, restoredRules[1]->help,
++            CVarGetInteger(LogicRuleKey(restoredRules[1]->name).c_str(), 0) != 0)};
++    for (const auto& row : restored) {
++        enabled += row.enabled ? 1 : 0;
++        if (ComboTricks::Matches(row, 0, query, world, status, skill - 1)) ++visible;
++    }
+     const CwTrickInfo* rows[] = {nullptr, nullptr};
+     for (int game = 0; game < 2; ++game) {
+         if (sources[game].get) rows[game] = sources[game].get(&totals[game]);
+@@ -62,18 +72,22 @@
+             if (ComboTricks::Matches(rows[game][i], game, query, world, status, skill - 1)) ++visible;
+         }
+     }
+-    ImGui::Text("%d enabled / %d techniques; %d match", enabled, totals[0] + totals[1] + 1, visible);
++    ImGui::Text("%d enabled / %d techniques; %d match", enabled,
++                totals[0] + totals[1] + static_cast<int>(restored.size()), visible);
+     ImGui::Separator();
+     const bool busy = CVarGetInteger("gGeneral.RandoGenerating", 0) || CVarGetInteger("gSettings.DisableChanges", 0);
+     ImGui::BeginDisabled(busy);
+     for (int game = 0; game < 2; ++game) {
+         if (world && world - 1 != game) continue;
+-        if (game == 0 && ComboTricks::Matches(shadow, 0, query, world, status, skill - 1)) {
+-            ImGui::PushID(shadow.id);
+-            bool on = shadow.enabled != 0;
++        if (game == 0) for (size_t i = 0; i < restored.size(); ++i) {
++            const auto& row = restored[i];
++            const auto& rule = *restoredRules[i];
++            if (!ComboTricks::Matches(row, 0, query, world, status, skill - 1)) continue;
++            ImGui::PushID(row.id);
++            bool on = row.enabled != 0;
+             ComboMenu_PushCheckbox(theme);
+-            if (ImGui::Checkbox(shadow.name, &on)) {
+-                SetTrickGovernedRule(shadowRule, on, [](const char* name, int value) {
++            if (ImGui::Checkbox(row.name, &on)) {
++                SetTrickGovernedRule(rule, on, [](const char* name, int value) {
+                     CVarSetInteger(name, value);
+                     static auto write = reinterpret_cast<void(*)(const char*, int32_t)>(
+                         Combo_ResolveSym("soh", "SOH_WriteGameplayRule"));
+@@ -87,9 +101,9 @@
+                 Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+             }
+             ComboMenu_PopCheckbox();
+-            ImGui::TextDisabled("OoT · %s · %s", shadow.area, shadow.tags);
++            ImGui::TextDisabled("OoT · %s · %s", row.area, row.tags);
+             if (ImGui::TreeNode("Details")) {
+-                ImGui::TextWrapped("%s", shadow.description);
++                ImGui::TextWrapped("%s", row.description);
+                 ImGui::TreePop();
+             }
+             ImGui::Separator();
+--- a/combo/gui/ComboTricks.h
++++ b/combo/gui/ComboTricks.h
+@@ -1,2 +1,28 @@
+ #pragma once
+-namespace ComboRando { void DrawUnifiedTricks(); }
++#include <algorithm>
++#include <string>
++
++namespace ComboRando {
++namespace Detail {
++// Search navigation carries a one-shot focus without changing any settings.
++class TrickCatalogueFocus {
++  public:
++    void Set(const char* name) { pending = name ? name : ""; }
++    template <size_t N>
++    bool Apply(char (&query)[N], int& world, int& status, int& skill) {
++        static_assert(N > 0);
++        if (pending.empty()) return false;
++        const auto length = std::min(pending.size(), N - 1);
++        std::copy_n(pending.data(), length, query);
++        query[length] = '\0';
++        world = status = skill = 0;
++        pending.clear();
++        return true;
++    }
++  private:
++    std::string pending;
++};
++}
++void FocusUnifiedTrick(const char* name);
++void DrawUnifiedTricks();
++}
+--- a/combo/gui/ComboTricksModel.h
++++ b/combo/gui/ComboTricksModel.h
+@@ -7,6 +7,10 @@
+ namespace ComboTricks {
+ inline CwTrickInfo RestoredShadowDoorInfo(const char* label, const char* description, bool enabled) {
+     return {-1000, label, description, "Graveyard", "Experimental · Glitch · restoration", 5,
++            (1u << 5) | (1u << 6), enabled ? 1 : 0};
++}
++inline CwTrickInfo EarlyEyeballFrogInfo(const char* label, const char* description, bool enabled) {
++    return {-1001, label, description, "Zora's Domain", "Experimental · Glitch · restoration", 5,
+             (1u << 5) | (1u << 6), enabled ? 1 : 0};
+ }
+ inline std::string Fold(std::string value) {
+--- a/combo/rando/ForeignSongs.h
++++ b/combo/rando/ForeignSongs.h
+@@ -20,8 +20,12 @@
+     for(int i=0;i<6;i++) if ((knownSongs & (1u<<i)) && (buttons & RequiredSongButtons(i))==RequiredSongButtons(i)) mask|=1u<<i;
+     return mask;
+ }
+-inline uint32_t ForeignSoaringSources(bool enabled, uint32_t knownOwls, bool instrument, uint32_t buttons, bool child) {
+-    return enabled && instrument && child && (buttons & RequiredSongButtons(6))==RequiredSongButtons(6) ? knownOwls & 0xffc0 : 0;
++inline uint32_t ForeignSoaringSources(bool enabled, uint32_t knownOwls, bool instrument, uint32_t buttons,
++                                      bool child, bool ageless = false) {
++    // OoTMM macros_oot.yml: child OR optional ageless Soaring; the local
++    // instrument, playable notes and learned source owl remain prerequisites.
++    return enabled && instrument && (child || ageless) &&
++        (buttons & RequiredSongButtons(6))==RequiredSongButtons(6) ? knownOwls & 0xffc0 : 0;
+ }
+ inline int RecognizeForeignSong(const uint8_t* pitches, int count, uint32_t allowed) {
+     if (!pitches || count<0 || count>8) return -1;
+--- a/combo/rando/GameplayRules.h
++++ b/combo/rando/GameplayRules.h
+@@ -26,20 +26,28 @@
+      "Unlimited surface hopping. Logic permits verified returns from Great Bay's lab exterior, cliffside and pirate ledge to the low beach with the Deku Mask; it does not assume climbing platforms or diving."},
+     {"gEnhancements.DayGravePull", "Pull ordinary graves during the day (OoT)", 0, 1,
+      "Child Link can pull ordinary Graveyard graves during the day. Logic adds Shield and Heart Piece grave access and retains strength, chest and Sun's Song requirements; Dampe's race remains age-specific."},
++    {"gEnhancements.NightGSAlwaysSpawn", "Night Skulltulas during the day (OoT)", 0, 1,
++     "Logic permits daytime collection for the verified Graveyard wall, Fountain log, Fortress roof and range, Kakariko and Ranch nighttime checks. Age, access, combat and collection equipment still apply; these checks no longer need Sun's Song when this rule is included. Unaudited spawns retain their normal night rules."},
+     {"gEnhancements.RestoreShadowDoorUnload", "Shadow Door Unload", 0, 1,
+      "After reaching the Graveyard warp pad, complete five full staircase unload/reload cycles in one visit to leave the Shadow Door unloaded. Both ages can use this shortcut without Din's Fire. Enable this technique under Randomizer / Tricks & glitches to let the seed require it. The restoration alone never adds a logic assumption. Leaving the Graveyard resets it; disabling restores the door on its next reload.", 0, true},
++    {"gEnhancements.EarlyEyeballFrog", "Early Eyeball Frog (restoration)", 0, 1,
++     "After thawing King Zora, Adult Link can hold R with a usable equipped shield and present an earlier adult-trade item to receive the randomized Eyeball Frog reward. Pocket Egg, Pocket Cucco, Cojiro, Odd Mushroom, Odd Potion, Poacher's Saw and Broken Sword qualify; empty slots and later trade items do not. Speaking to Zora and thawing requirements still apply. Select this technique under Randomizer / Tricks & glitches to let the seed require it; enabling the restoration alone does not change logic.", 0, true},
+     {"gCheats.SuperTunic", "All tunics protect against hazards (OoT)", 0, 1,
+      "All tunics protect against heat and underwater timers. Logic retains swimming, depth, boots, age and other equipment requirements."},
+     {"gCheats.DekuStick", "Deku stick behavior (OoT)", 0, 2,
+      "Only Always burning supplies its own flame on usable sticks. Logic includes audited ground torches and cow-grotto webs; distant or high fire targets still require their normal fire source."},
+     {"gEnhancements.TimeTravel", "Song of Time age change (OoT)", 0, 4,
+-     "Changes age at your current position, away from other song interactions. Requires Song of Time and the selected equipment. Logic models audited safe overworld areas, including descending the dry well as Adult Link and becoming Child Link. Unsafe interiors and dungeon shortcuts are not assumed."},
++     "Changes age at your current position, away from other song interactions. Requires Song of Time and the selected equipment. Logic models audited overworld areas and ordinary houses, shops and the laboratory, including descending the dry well as Adult Link and becoming Child Link. Unsafe interiors, underwater positions and dungeon shortcuts are not assumed."},
+     {"gEnhancements.Masks.FierceDeitysAnywhere", "Fierce Deity anywhere (MM)", 0, 1,
+      "Allows the mask outside boss rooms. Logic counts its sword, measured shallow-water traversal and magic sword beams against Big Octos when enabled and owned. Boss-room use remains available without this setting. Extra jumps and other movement shortcuts are not yet required by logic."},
+     {"gEnhancements.Masks.BremenOneChick", "Bremen Mask: one chick (MM)", 0, 1,
+      "Recruit one chick while marching to complete Grog's flock. The randomizer still requires the Bremen Mask and access to the Cucco Shack."},
++    {"gEnhancements.Songs.ZoraEggCount", "Zora eggs required for Bossa Nova (MM)", 7, 7,
++     "Choose how many distinct accessible eggs must be deposited for the lesson. Logic keeps a bottle, Zora form and the local instrument; a lower count can avoid otherwise required egg areas. Enhancement-only selection changes the quest without lowering generation's seven-egg requirement.", 1},
+     {"gCombo.Enhancements.ForeignSongs", "Play warp songs across games", 0, 1,
+-     "Play learned OoT warp songs in MM using MM's instrument and buttons. Child Link can play Soaring in OoT using OoT's instrument/buttons and activated MM owls. Enable in logic to let the seed require these routes."},
++     "Play learned OoT warp songs in MM using MM's instrument and playable song buttons. Play learned Soaring in OoT using OoT's instrument and D/L/U buttons, with activated MM owls as destinations. Soaring is Child-only unless Song of Soaring at any age is also enabled. With no owls, the song still performs and explains that there are no destinations. Enable in logic to let the seed require these routes."},
++    {"gCombo.Enhancements.AgelessSoaring", "Song of Soaring at any age (OoT)", 0, 1,
++     "Adult Link can play learned Soaring in OoT. Also requires Play warp songs across games, a usable local instrument and the D/L/U song buttons. Routes still require an activated source owl; no activated owls produces the native no-destination message. Enable both options in logic to let the seed require Adult Link's Soaring routes."},
+     {"gCombo.Enhancements.SongTravel", "Use saved mixed warp destinations", 0, 1,
+      "Use the warp-song and owl destination map saved with this seed. Randomizer creates a shuffled map for a new seed. Enhancements reuses that saved map; a seed generated without shuffling keeps ordinary destinations, and switching this on never reshuffles an existing run."},
+     {"gEnhancements.Masks.GoronRollingIgnoresMagic", "Goron rolling without magic (MM)", 0, 1,
+diff --git a/combo/rando/MmEggLogic.h b/combo/rando/MmEggLogic.h
+new file mode 100644
+--- /dev/null
++++ b/combo/rando/MmEggLogic.h
+@@ -0,0 +1,18 @@
++#pragma once
++
++namespace ComboRando {
++// Zero means the runtime enhancement is not assumed by logic. The native
++// slider permits 1..7; invalid imported values retain the seven-egg quest.
++inline constexpr int RequiredZoraEggs(int logicalCount) {
++    return logicalCount >= 1 && logicalCount <= 7 ? logicalCount : 7;
++}
++
++// Egg events count distinct reachable eggs, including their own diving,
++// combat and area prerequisites. One reusable bottle can deposit them in
++// successive trips. This is a song lesson: the reward/song and its note
++// buttons need not be owned, but Zora's local instrument must be usable.
++inline constexpr bool CanLearnNewWaveBossaNova(int logicalCount, int accessibleEggs,
++                                             bool canBeZora, bool localInstrument, bool bottle) {
++    return canBeZora && localInstrument && bottle && accessibleEggs >= RequiredZoraEggs(logicalCount);
++}
++} // namespace ComboRando
+diff --git a/combo/rando/MmTrickRoutes.h b/combo/rando/MmTrickRoutes.h
+new file mode 100644
+--- /dev/null
++++ b/combo/rando/MmTrickRoutes.h
+@@ -0,0 +1,31 @@
++#pragma once
++
++namespace ComboRando::MmTrickRoutes {
++// Route-specific permissions never replace the remaining native items, forms,
++// schedule or reward conditions. Ordinary alternatives remain valid when off.
++inline constexpr bool PinnacleRock(bool zora, bool swim, bool seahorse, bool blindRoute) {
++    return zora && swim && (seahorse || blindRoute);
++}
++inline constexpr bool PostOffice(bool bunnyHood, bool blindTiming, bool dayOneWindow,
++                                 bool letterMailed, bool dayTwoWindow) {
++    return (bunnyHood || blindTiming) && (dayOneWindow || (letterMailed && dayTwoWindow));
++}
++inline constexpr bool OceansideCode(bool bow, bool captainMask, bool guessCode) {
++    return bow && (captainMask || guessCode);
++}
++inline constexpr bool ClockTownLowerChest(bool deku, bool moonsTear, bool hookshot, bool preciseJump) {
++    return (deku && moonsTear) || hookshot || preciseJump;
++}
++inline constexpr bool DoggyChest(bool hookshot, bool usableBean, bool zora, bool preciseJump) {
++    return hookshot || usableBean || zora || preciseJump;
++}
++inline constexpr bool PalaceDoorwayClimb(bool doorwayJump) {
++    return doorwayJump; // Only this climb; upper flight/enemy gates remain in their own regions.
++}
++inline constexpr bool IkanaClimb(bool hookshot, bool usableIceArrows, bool preciseHookshot) {
++    return hookshot && (usableIceArrows || preciseHookshot);
++}
++inline constexpr bool StoneTowerClimb(bool hookshot, bool playableElegy, bool goron, bool zora, bool oneMask) {
++    return hookshot && playableElegy && ((goron && zora) || (oneMask && (goron || zora)));
++}
++} // namespace ComboRando::MmTrickRoutes
+--- a/combo/rando/MmTricks.h
++++ b/combo/rando/MmTricks.h
+@@ -20,6 +20,30 @@
+     {1, "gCombo.Tricks.MM.DarmaniWall", "Climb to Darmani without the Lens",
+      "Climb the hidden wall using its fixed collision. This reaches the graveyard; following and healing Darmani still require the Lens.",
+      "Mountain Village", "Lens, navigation", 2, 1u << 2},
++    {2, "gCombo.Tricks.MM.PinnacleNoSeahorse", "Pinnacle Rock without the Seahorse",
++     "Follow the signs through Pinnacle Rock's murky water without the guide. The Zora Mask and swimming ability remain required. Reuniting the seahorses still requires the actual Seahorse and defeating the Deep Pythons.",
++     "Pinnacle Rock", "Navigation, swimming", 2, 1u << 2},
++    {3, "gCombo.Tricks.MM.PostOfficeTiming", "Post Office timing without Bunny Hood",
++     "Stop the Postman's timer at ten seconds without seeing the timer. The game must be available during its usual day-one hours, or day-two evening after mailing the Letter to Kafei. This does not win the game automatically.",
++     "West Clock Town", "Minigames, timing", 2, 1u << 2},
++    {4, "gCombo.Tricks.MM.OceansideCode", "Guess Oceanside Spider House code",
++     "Try the colored-mask arrow sequences without learning the clues from the Stalchildren. The Bow and access to the colored-skull room remain required; the Captain's Hat is not required for this chest.",
++     "Oceanside Spider House", "Puzzle, bow", 1, 1u << 1},
++    {5, "gCombo.Tricks.MM.ClockTownLowerJump", "South Clock Town lower chest with a precise jump",
++     "Climb the roof with a precise human jump to reach the lower chest without the Deku flower or Hookshot. This applies only to the lower chest; the upper chest retains its ordinary access and final-day requirement.",
++     "South Clock Town", "Movement, precise jump", 2, 1u << 2},
++    {6, "gCombo.Tricks.MM.DoggyFenceJump", "Doggy Racetrack chest with a fence jump",
++     "Climb the fence and jump precisely to the chest as human Link without beans, the Hookshot or the Zora Mask. Reaching the racetrack remains required, and this does not affect winning the dog race.",
++     "Doggy Racetrack", "Movement, precise jump", 2, 1u << 2},
++    {7, "gCombo.Tricks.MM.PalaceBeanSkip", "Skip planting beans in Deku Palace",
++     "Backflip onto the west garden doorway and make an angled roll jump from the lower palace to the upper cell-side ledge. This removes the bean and watering requirement for that climb. Crossing the upper palace still requires the Deku Mask and its Mad Scrub combat requirements.",
++     "Deku Palace", "Movement, precise jump", 2, 1u << 2},
++    {8, "gCombo.Tricks.MM.IkanaIceSkip", "Climb Ikana Canyon without Ice Arrows",
++     "Aim the Hookshot from a precise position on the riverside to reach the first tree without making an ice platform. The Hookshot and access to lower Ikana Canyon remain required.",
++     "Ikana Canyon", "Hookshot, precise aim", 2, 1u << 2},
++    {9, "gCombo.Tricks.MM.StoneTowerOneMask", "Climb Stone Tower with one transformation mask",
++     "Use human Link's statue plus a Goron or Zora statue, and ride the moving blocks while managing Elegy statues to reach the tower's top and owl area. Requires the Hookshot and a playable Elegy of Emptiness, including its instrument and notes. A Deku Mask alone does not suffice. The temple bridge retains its ordinary two-mask requirements.",
++     "Stone Tower", "Elegy, movement", 3, 1u << 3},
+ };
+ inline const MmTrickDefinition* FindMmTrick(int32_t id) {
+     for (const auto& trick : kMmTricks) if (trick.id == id) return &trick;
+diff --git a/combo/rando/OotDaytimeSkulltulas.h b/combo/rando/OotDaytimeSkulltulas.h
+new file mode 100644
+--- /dev/null
++++ b/combo/rando/OotDaytimeSkulltulas.h
+@@ -0,0 +1,13 @@
++#pragma once
++
++namespace ComboRando {
++// The caller supplies whether this exact check has a verified daytime actor
++// for the current age. Ordinary night-time/Sun's Song policy remains intact
++// for every unverified spawn and for enhancement-only activation.
++inline constexpr bool CanCollectNightSkulltula(bool day, bool night, bool canPlaySunsSong,
++                                             bool expectSunsSong, bool logicalAlwaysSpawn,
++                                             bool verifiedDayActor) {
++    return (logicalAlwaysSpawn && verifiedDayActor && (day || night)) ||
++           (night && (canPlaySunsSong || !expectSunsSong));
++}
++} // namespace ComboRando
+diff --git a/combo/rando/OotTradeRules.h b/combo/rando/OotTradeRules.h
+new file mode 100644
+--- /dev/null
++++ b/combo/rando/OotTradeRules.h
+@@ -0,0 +1,12 @@
++#pragma once
++
++namespace ComboRando {
++// The native restoration selects the Prescription check while holding a shield
++// with an earlier adult trade item. It never thaws King Zora or supplies an item.
++inline constexpr bool CanClaimKingZoraTrade(bool adult, bool thawed, bool canSpeakZora,
++                                          bool prescription, bool earlyFrogLogic,
++                                          bool canShield, bool earlierTradeItem) {
++    return adult && thawed && canSpeakZora &&
++           (prescription || (earlyFrogLogic && canShield && earlierTradeItem));
++}
++}
+--- a/mm/2s2h/BenGui/UIWidgets.cpp
++++ b/mm/2s2h/BenGui/UIWidgets.cpp
+@@ -731,7 +731,7 @@
+         !Ship_IsCStringEmpty(options.disabledTooltip)) {
+         ImGui::SetTooltip("%s", WrappedText(options.disabledTooltip).c_str());
+     } else if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && !Ship_IsCStringEmpty(options.tooltip)) {
+-        ImGui::SetTooltip("%s\n%s", WrappedText(options.tooltip).c_str(), "Edit (Ctrl + Left Click)");
++        ImGui::SetTooltip("%s", WrappedText(options.tooltip).c_str());
+     }
+     ImGui::PopID();
+     return dirty;
+@@ -873,7 +873,7 @@
+         !Ship_IsCStringEmpty(options.disabledTooltip)) {
+         ImGui::SetTooltip("%s", WrappedText(options.disabledTooltip).c_str());
+     } else if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && !Ship_IsCStringEmpty(options.tooltip)) {
+-        ImGui::SetTooltip("%s\n%s", WrappedText(options.tooltip).c_str(), "Edit (Ctrl + Left Click)");
++        ImGui::SetTooltip("%s", WrappedText(options.tooltip).c_str());
+     }
+     ImGui::PopID();
+     return dirty;
+@@ -1424,4 +1424,4 @@
+ ImVec4 VecFromRGBA8(Color_RGBA8 color) {
+     ImVec4 vec = { color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f };
+     return vec;
+-}
+\ No newline at end of file
++}
+--- a/mm/2s2h/Rando/Logic/Logic.h
++++ b/mm/2s2h/Rando/Logic/Logic.h
+@@ -12,6 +12,7 @@
+ #include "rando/GameplayRules.h"
+ #include "rando/MmAbilities.h"
+ #include "rando/MmTricks.h"
++#include "rando/MmTrickRoutes.h"
+ #include "rando/MmEnhancementLogic.h"
+ #endif
+ 
+@@ -28,11 +29,27 @@
+     { "RANDO_LOGIC" }
+ #define COMBO_MM_TRICK(name) CVarGetInteger("gCombo.Tricks.MM." name, 0)
+ #define CAN_NAVIGATE_HIDDEN ComboRando::CanNavigateHidden(HAS_ITEM(ITEM_LENS_OF_TRUTH), HAS_MAGIC, COMBO_MM_TRICK("Lensless") != 0)
++#define CAN_CROSS_PINNACLE_ROCK ComboRando::MmTrickRoutes::PinnacleRock(CAN_BE_ZORA, CAN_USE_ABILITY(SWIM), RANDO_EVENTS[RE_ACCESS_SEAHORSE], COMBO_MM_TRICK("PinnacleNoSeahorse") != 0)
++#define CAN_WIN_POST_OFFICE ComboRando::MmTrickRoutes::PostOffice(HAS_ITEM(ITEM_MASK_BUNNY), COMBO_MM_TRICK("PostOfficeTiming") != 0, BETWEEN(TIME_DAY1_PM_03_00, TIME_NIGHT1_AM_12_00), RANDO_EVENTS[RE_MAIL_LETTER_TO_KAFEI], BETWEEN(TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_12_00))
++#define CAN_OPEN_OCEANSIDE_CODE_CHEST ComboRando::MmTrickRoutes::OceansideCode(HAS_ITEM(ITEM_BOW), HAS_ITEM(ITEM_MASK_CAPTAIN), COMBO_MM_TRICK("OceansideCode") != 0)
++#define CAN_REACH_CLOCK_TOWN_LOWER_CHEST ComboRando::MmTrickRoutes::ClockTownLowerChest(CAN_BE_DEKU, Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR), HAS_ITEM(ITEM_HOOKSHOT), COMBO_MM_TRICK("ClockTownLowerJump") != 0)
++#define CAN_REACH_DOGGY_CHEST ComboRando::MmTrickRoutes::DoggyChest(HAS_ITEM(ITEM_HOOKSHOT), CAN_USE_DAY2_RAIN_BEAN, CAN_BE_ZORA, COMBO_MM_TRICK("DoggyFenceJump") != 0)
++#define CAN_SKIP_PALACE_BEANS ComboRando::MmTrickRoutes::PalaceDoorwayClimb(COMBO_MM_TRICK("PalaceBeanSkip") != 0)
++#define CAN_CLIMB_IKANA_RIVERSIDE ComboRando::MmTrickRoutes::IkanaClimb(HAS_ITEM(ITEM_HOOKSHOT), CAN_USE_MAGIC_ARROW(ICE), COMBO_MM_TRICK("IkanaIceSkip") != 0)
++#define CAN_CLIMB_STONE_TOWER ComboRando::MmTrickRoutes::StoneTowerClimb(HAS_ITEM(ITEM_HOOKSHOT), CAN_PLAY_SONG(ELEGY), CAN_BE_GORON, CAN_BE_ZORA, COMBO_MM_TRICK("StoneTowerOneMask") != 0)
+ #else
+ #define RANDO_LOGIC_INIT_PATHS \
+     {}
+ #define COMBO_MM_TRICK(name) 0
+ #define CAN_NAVIGATE_HIDDEN (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC)
++#define CAN_CROSS_PINNACLE_ROCK (RANDO_EVENTS[RE_ACCESS_SEAHORSE] && CAN_BE_ZORA)
++#define CAN_WIN_POST_OFFICE (HAS_ITEM(ITEM_MASK_BUNNY) && (BETWEEN(TIME_DAY1_PM_03_00, TIME_NIGHT1_AM_12_00) || (RANDO_EVENTS[RE_MAIL_LETTER_TO_KAFEI] && BETWEEN(TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_12_00))))
++#define CAN_OPEN_OCEANSIDE_CODE_CHEST (HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_MASK_CAPTAIN))
++#define CAN_REACH_CLOCK_TOWN_LOWER_CHEST ((CAN_BE_DEKU && Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)) || HAS_ITEM(ITEM_HOOKSHOT))
++#define CAN_REACH_DOGGY_CHEST (HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_DAY2_RAIN_BEAN || CAN_BE_ZORA)
++#define CAN_SKIP_PALACE_BEANS false
++#define CAN_CLIMB_IKANA_RIVERSIDE (HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_MAGIC_ARROW(ICE))
++#define CAN_CLIMB_STONE_TOWER (HAS_ITEM(ITEM_HOOKSHOT) && CAN_PLAY_SONG(ELEGY) && CAN_BE_GORON && CAN_BE_ZORA)
+ #endif
+ 
+ namespace Rando {
+--- a/mm/2s2h/Rando/Logic/Regions/Central.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/Central.cpp
+@@ -219,7 +219,7 @@
+             CHECK(RC_CLOCK_TOWN_SOUTH_PLATFORM_PIECE_OF_HEART, true),
+             CHECK(RC_CLOCK_TOWN_SCRUB_DEED, Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)),
+             CHECK(RC_CLOCK_TOWN_SOUTH_CHEST_UPPER, ((CAN_BE_DEKU && Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)) || HAS_ITEM(ITEM_HOOKSHOT)) && FINAL_DAY()),
+-            CHECK(RC_CLOCK_TOWN_SOUTH_CHEST_LOWER, (CAN_BE_DEKU && Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)) || HAS_ITEM(ITEM_HOOKSHOT)),
++            CHECK(RC_CLOCK_TOWN_SOUTH_CHEST_LOWER, CAN_REACH_CLOCK_TOWN_LOWER_CHEST),
+             CHECK(RC_CLOCK_TOWN_SOUTH_OWL_STATUE, CAN_USE_SWORD),
+             CHECK(RC_CLOCK_TOWN_SOUTH_WONDER_ITEM_01, CAN_USE_PROJECTILE),
+             CHECK(RC_CLOCK_TOWN_SOUTH_WONDER_ITEM_02, CAN_USE_PROJECTILE),
+@@ -398,8 +398,8 @@
+     };
+     Regions[RR_POST_OFFICE] = RandoRegion{ .sceneId = SCENE_POSTHOUSE,
+         .checks = {
+-            // TODO: Trick for doing without the Bunny Hood
+-            CHECK(RC_CLOCK_TOWN_WEST_POSTMAN_MINIGAME, HAS_ITEM(ITEM_MASK_BUNNY) && (BETWEEN(TIME_DAY1_PM_03_00, TIME_NIGHT1_AM_12_00) || (RANDO_EVENTS[RE_MAIL_LETTER_TO_KAFEI] && BETWEEN(TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_12_00)))),
++            // Optional blind-timing technique keeps the minigame's ordinary schedule.
++            CHECK(RC_CLOCK_TOWN_WEST_POSTMAN_MINIGAME, CAN_WIN_POST_OFFICE),
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(WEST_CLOCK_TOWN, 7),              ENTRANCE(POST_OFFICE, 0), true),
+--- a/mm/2s2h/Rando/Logic/Regions/East.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/East.cpp
+@@ -160,7 +160,7 @@
+         },
+         .connections = {
+             // Octorok soul not needed; the player can also create ice platforms on the water itself.
+-            CONNECTION(RR_IKANA_CANYON_UPPER, HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_MAGIC_ARROW(ICE)),
++            CONNECTION(RR_IKANA_CANYON_UPPER, CAN_CLIMB_IKANA_RIVERSIDE),
+         },
+         .events = {
+             EVENT(RE_ACCESS_BLUE_POTION_REFILL, CUR_UPG_VALUE(UPG_WALLET) >= 1),
+@@ -473,7 +473,7 @@
+             EXIT(ENTRANCE(IKANA_CANYON, 3),                 ENTRANCE(STONE_TOWER, 0), true)
+         },
+         .connections = {
+-            CONNECTION(RR_STONE_TOWER_MIDDLE, HAS_ITEM(ITEM_HOOKSHOT) && CAN_PLAY_SONG(ELEGY) && CAN_BE_GORON && CAN_BE_ZORA),
++            CONNECTION(RR_STONE_TOWER_MIDDLE, CAN_CLIMB_STONE_TOWER),
+         },
+     };
+     Regions[RR_STONE_TOWER_INVERTED_LOWER] = RandoRegion{ .sceneId = SCENE_F41,
+@@ -527,7 +527,7 @@
+             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
+         },
+         .connections = {
+-            CONNECTION(RR_STONE_TOWER_BOTTOM, HAS_ITEM(ITEM_HOOKSHOT) && CAN_PLAY_SONG(ELEGY) && CAN_BE_GORON && CAN_BE_ZORA),
++            CONNECTION(RR_STONE_TOWER_BOTTOM, CAN_CLIMB_STONE_TOWER),
+             CONNECTION(RR_STONE_TOWER_UPPER, HAS_ITEM(ITEM_HOOKSHOT)),
+         },
+     };
+--- a/mm/2s2h/Rando/Logic/Regions/MilkRoad.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/MilkRoad.cpp
+@@ -41,9 +41,8 @@
+     };
+     Regions[RR_DOGGY_RACETRACK] = RandoRegion{ .sceneId = SCENE_F01_B,
+         .checks = {
+-            // TODO: Trick: Jumpslash to clip through (similar to Clock Town Straw).
+-            // Zora can just climb up, adding it to logic for now but if someone wants to make it a trick later feel free.
+-            CHECK(RC_DOGGY_RACETRACK_CHEST, HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_DAY2_RAIN_BEAN || CAN_BE_ZORA),
++            // Zora's ordinary climb remains available; the optional human fence jump needs no item.
++            CHECK(RC_DOGGY_RACETRACK_CHEST, CAN_REACH_DOGGY_CHEST),
+             CHECK(RC_DOGGY_RACETRACK_PIECE_OF_HEART,    CAN_WIN_DOGGY_RACE),
+             CHECK(RC_DOGGY_RACETRACK_POT_01, true),
+             CHECK(RC_DOGGY_RACETRACK_POT_02, true),
+--- a/mm/2s2h/Rando/Logic/Regions/South.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/South.cpp
+@@ -113,6 +113,7 @@
+             EXIT(ENTRANCE(GROTTOS, 12),                     ENTRANCE(DEKU_PALACE, 9), true),
+         },
+         .connections = {
++            CONNECTION(RR_DEKU_PALACE_INSIDE_UPPER_CELL_SIDE, CAN_SKIP_PALACE_BEANS),
+             CONNECTION(RR_DEKU_PALACE_OUTSIDE, true),
+         },
+     };
+@@ -126,7 +127,8 @@
+             CONNECTION(RR_DEKU_PALACE_INSIDE_LOWER, true),
+         },
+     };
+-    // TODO: There is a trick you can do to get up to the dekunut with a backflip onto the doorway and then an angled roll jump to grab the upper ledge
++    // The optional bean skip enters this west-garden ledge via the doorway jump.
++    // Deku flower flight and Mad Scrub combat still gate onward travel.
+     Regions[RR_DEKU_PALACE_INSIDE_UPPER_CELL_SIDE] = RandoRegion{ .name = "Inside, Upper", .sceneId = SCENE_22DEKUCITY,
+         .checks = {
+             CHECK(RC_ENEMY_DROP_MAD_SCRUB, CanKillEnemy(ACTOR_EN_DEKUNUTS) && CAN_BE_DEKU),
+--- a/mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp
+@@ -89,7 +89,7 @@
+             CHECK(RC_OCEAN_SKULLTULA_COLORED_SKULLS_CHANDELIER_3, CanKillEnemy(ACTOR_EN_SW)),
+             CHECK(RC_OCEAN_SKULLTULA_COLORED_SKULLS_POT, CanKillEnemy(ACTOR_EN_SW)),
+             CHECK(RC_OCEAN_SKULLTULA_COLORED_SKULLS_BEHIND_PICTURE, CanKillEnemy(ACTOR_EN_SW) && (HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)),
+-            CHECK(RC_OCEAN_SPIDER_HOUSE_CHEST_PIECE_OF_HEART, HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_MASK_CAPTAIN)),
++            CHECK(RC_OCEAN_SPIDER_HOUSE_CHEST_PIECE_OF_HEART, CAN_OPEN_OCEANSIDE_CODE_CHEST),
+             CHECK(RC_OCEAN_SPIDER_HOUSE_COLORED_SKULLS_POT_01, true),
+             CHECK(RC_OCEAN_SPIDER_HOUSE_COLORED_SKULLS_POT_02, true),
+             CHECK(RC_ENEMY_DROP_SKULLTULA, CanKillEnemy(ACTOR_EN_ST)),
+--- a/mm/2s2h/Rando/Logic/Regions/West.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/West.cpp
+@@ -2,8 +2,20 @@
+ #include "2s2h/ShipInit.hpp"
+ 
+ #include "2s2h/Rando/Logic/Logic.h"
++#ifdef COMBO_BUILD
++#include "rando/MmEggLogic.h"
++#endif
+ 
+ using namespace Rando::Logic;
++
++static bool CanLearnNewWaveBossaNova() {
++#ifdef COMBO_BUILD
++    return ComboRando::CanLearnNewWaveBossaNova(COMBO_LOGIC_RULE("gEnhancements.Songs.ZoraEggCount"),
++        RANDO_EVENTS[RE_ACCESS_ZORA_EGG], CAN_BE_ZORA, HAS_ITEM(ITEM_OCARINA_OF_TIME), HAS_BOTTLE);
++#else
++    return CAN_BE_ZORA && HAS_ITEM(ITEM_OCARINA_OF_TIME) && RANDO_EVENTS[RE_ACCESS_ZORA_EGG] >= 7;
++#endif
++}
+ 
+ // clang-format off
+ static RegisterShipInitFunc initFunc([]() {
+@@ -13,7 +25,7 @@
+         },
+         .events = {
+             // TODO: Should this be a check?
+-            EVENT(RE_ACCESS_SEAHORSE, RANDO_EVENTS[RE_ACCESS_PIRATE_PICTURE] && HAS_ITEM(ITEM_PICTOGRAPH_BOX)),
++            EVENT(RE_ACCESS_SEAHORSE, RANDO_EVENTS[RE_ACCESS_PIRATE_PICTURE] && HAS_ITEM(ITEM_PICTOGRAPH_BOX) && HAS_BOTTLE),
+         },
+     };
+     Regions[RR_GREAT_BAY_COAST_COW_GROTTO] = RandoRegion{ .name = "Great Bay Coast Cow Grotto", .sceneId = SCENE_KAKUSIANA,
+@@ -234,7 +246,7 @@
+     };
+     Regions[RR_MARINE_RESEARCH_LAB] = RandoRegion{ .sceneId = SCENE_LABO,
+         .checks = {
+-            CHECK(RC_GREAT_BAY_COAST_NEW_WAVE_BOSSA_NOVA, CAN_BE_ZORA && HAS_ITEM(ITEM_OCARINA_OF_TIME) && RANDO_EVENTS[RE_ACCESS_ZORA_EGG] >= 7),
++            CHECK(RC_GREAT_BAY_COAST_NEW_WAVE_BOSSA_NOVA, CanLearnNewWaveBossaNova()),
+             CHECK(RC_GREAT_BAY_COAST_MARINE_LAB_FISH_PIECE_OF_HEART, HAS_BOTTLE && CAN_ACCESS(FISH)),
+         },
+         .exits = { //     TO                                         FROM
+@@ -246,7 +258,7 @@
+             EXIT(ENTRANCE(GREAT_BAY_COAST, 3),              ENTRANCE(PINNACLE_ROCK, 0), true),
+         },
+         .connections = {
+-            CONNECTION(RR_PINNACLE_ROCK_INNER, RANDO_EVENTS[RE_ACCESS_SEAHORSE] && CAN_BE_ZORA)
++            CONNECTION(RR_PINNACLE_ROCK_INNER, CAN_CROSS_PINNACLE_ROCK)
+         }
+     };
+     Regions[RR_PINNACLE_ROCK_INNER] = RandoRegion{ .name = "Inner", .sceneId = SCENE_SINKAI,
+--- a/soh/soh/Enhancements/randomizer/3drando/fill.cpp
++++ b/soh/soh/Enhancements/randomizer/3drando/fill.cpp
+@@ -3,6 +3,7 @@
+ #include "rando/GameplayRules.h"
+ #include "rando/AgeTravel.h"
+ #include "rando/SongTravelOOT.h"
++#include "../age_change_areas.h"
+ extern "C" uint32_t SOH_LiveIncomingSongs();
+ #endif
+ 
+@@ -522,32 +523,10 @@
+ 
+ #ifdef COMBO_BUILD
+     // The native age hook preserves position except at Castle Grounds (which relocates).
+-    // Limit logic to audited roomy, grounded overworld areas where Link can move away
+-    // from nearby SoT blocks, song spots, the Door of Time, frogs and gossip stones.
+-    // Bosses, tiny interiors, hazardous Crater platforms and unverified dungeon rooms
+-    // are deliberately absent: no untested movement shortcut is required by generation.
+-    const bool ageSafe = [&] {
+-        switch (region->randomizerRegionKey) {
+-            case RR_KOKIRI_FOREST: case RR_KF_LINKS_PORCH: case RR_KF_BOULDER_LOOP:
+-            case RR_KF_OUTSIDE_DEKU_TREE: case RR_KF_OUTSIDE_LOST_WOODS:
+-            case RR_THE_LOST_WOODS: case RR_LW_BEYOND_MIDO: case RR_LW_BRIDGE:
+-            case RR_SFM_ENTRYWAY: case RR_SFM_MAZE: case RR_SFM_ABOVE_MAZE:
+-            case RR_SACRED_FOREST_MEADOW: case RR_HYRULE_FIELD:
+-            case RR_LAKE_HYLIA: case RR_LH_FISHING_ISLAND:
+-            case RR_GERUDO_VALLEY: case RR_GV_FORTRESS_SIDE:
+-            case RR_GF_OUTSKIRTS: case RR_GF_OUTSIDE_GATE: case RR_GF_HBA_RANGE:
+-            case RR_DESERT_COLOSSUS: case RR_DESERT_COLOSSUS_OASIS:
+-            case RR_DESERT_COLOSSUS_OUTSIDE_TEMPLE:
+-            case RR_KAKARIKO_VILLAGE: case RR_KAK_BACKYARD: case RR_KAK_BEHIND_GATE:
+-            case RR_KAK_WELL: case RR_KAK_ROOFTOP: case RR_KAK_IMPAS_ROOFTOP:
+-            case RR_THE_GRAVEYARD: case RR_GRAVEYARD_WARP_PAD_REGION:
+-            case RR_DEATH_MOUNTAIN_TRAIL: case RR_GORON_CITY:
+-            case RR_ZR_FRONT: case RR_ZORAS_RIVER: case RR_ZR_ATOP_LADDER:
+-            case RR_ZORAS_DOMAIN: case RR_ZORAS_DOMAIN_ISLAND: case RR_ZORAS_FOUNTAIN:
+-                return true;
+-            default: return false;
+-        }
+-    }();
++    // Audited ordinary interiors preserve their common collision and camera too.
++    // Bosses, hazardous Crater platforms, grotto setups and unverified dungeon
++    // positions remain absent; this does not imply unrestricted dungeon routing.
++    const bool ageSafe = SongAgeChangeAreaAllowed(region->randomizerRegionKey);
+     if (ageSafe) {
+         const bool savedChild = logic->IsChild, savedAdult = logic->IsAdult;
+         const int mode = CVarGetInteger(ComboRando::LogicRuleKey("gEnhancements.TimeTravel").c_str(), 0);
+diff --git a/soh/soh/Enhancements/randomizer/age_change_areas.h b/soh/soh/Enhancements/randomizer/age_change_areas.h
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/randomizer/age_change_areas.h
+@@ -0,0 +1,44 @@
++#pragma once
++// Include after randomizerTypes.h; the enum source intentionally supports
++// multiple macro expansions and must not be redeclared here.
++
++namespace Rando {
++// Region-level permission is intentionally narrower than the runtime ability.
++// Ordinary interiors below have common collision in all age/time headers, no
++// competing Song-of-Time actors and native ocarina permission. SwitchAge keeps
++// room/position and the static-background camera. Underwater subregions, grotto
++// setup variants, bosses and unverified dungeon positions are not interchangeable.
++inline constexpr bool SongAgeChangeAreaAllowed(RandomizerRegion region) {
++    switch (region) {
++        case RR_KOKIRI_FOREST: case RR_KF_LINKS_PORCH: case RR_KF_BOULDER_LOOP:
++        case RR_KF_OUTSIDE_DEKU_TREE: case RR_KF_OUTSIDE_LOST_WOODS:
++        case RR_THE_LOST_WOODS: case RR_LW_BEYOND_MIDO: case RR_LW_BRIDGE:
++        case RR_SFM_ENTRYWAY: case RR_SFM_MAZE: case RR_SFM_ABOVE_MAZE:
++        case RR_SACRED_FOREST_MEADOW: case RR_HYRULE_FIELD: case RR_LON_LON_RANCH:
++        case RR_LAKE_HYLIA: case RR_LH_FISHING_ISLAND:
++        case RR_GERUDO_VALLEY: case RR_GV_FORTRESS_SIDE:
++        case RR_GF_OUTSKIRTS: case RR_GF_OUTSIDE_GATE: case RR_GF_HBA_RANGE:
++        case RR_DESERT_COLOSSUS: case RR_DESERT_COLOSSUS_OASIS:
++        case RR_DESERT_COLOSSUS_OUTSIDE_TEMPLE:
++        case RR_KAKARIKO_VILLAGE: case RR_KAK_BACKYARD: case RR_KAK_BEHIND_GATE:
++        case RR_KAK_WELL: case RR_KAK_ROOFTOP: case RR_KAK_IMPAS_ROOFTOP:
++        case RR_THE_GRAVEYARD: case RR_GRAVEYARD_WARP_PAD_REGION:
++        case RR_DEATH_MOUNTAIN_TRAIL: case RR_GORON_CITY:
++        case RR_ZR_FRONT: case RR_ZORAS_RIVER: case RR_ZR_ATOP_LADDER:
++        case RR_ZORAS_DOMAIN: case RR_ZORAS_DOMAIN_ISLAND: case RR_ZORAS_FOUNTAIN:
++            return true;
++        // OoTMM's matching ordinary interior areas also permit age changes.
++        // Entry keys, checks, item usability and exits remain their native rules.
++        case RR_KF_LINKS_HOUSE: case RR_KF_MIDOS_HOUSE: case RR_KF_SARIAS_HOUSE:
++        case RR_KF_HOUSE_OF_TWINS: case RR_KF_KNOW_IT_ALL_HOUSE: case RR_KF_KOKIRI_SHOP:
++        case RR_KAK_CARPENTER_BOSS_HOUSE: case RR_KAK_HOUSE_OF_SKULLTULA:
++        case RR_KAK_IMPAS_HOUSE: case RR_KAK_IMPAS_HOUSE_BACK:
++        case RR_KAK_BAZAAR: case RR_KAK_POTION_SHOP: case RR_MARKET_BAZAAR:
++        case RR_LH_LAB: case RR_GV_CARPENTER_TENT: case RR_GC_SHOP: case RR_ZD_SHOP:
++        case RR_LLR_TALONS_HOUSE: case RR_LLR_STABLES: case RR_LLR_TOWER:
++            return true;
++        default:
++            return false;
++    }
++}
++}
+--- a/soh/soh/Enhancements/randomizer/location_access/overworld/gerudo_fortress.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access/overworld/gerudo_fortress.cpp
+@@ -112,7 +112,7 @@
+ 
+     areaTable[RR_GF_NEAR_GS] = Region("GF Near GS", SCENE_GERUDOS_FORTRESS, {}, {
+         //Locations
+-        LOCATION(RC_GF_GS_TOP_FLOOR, logic->IsAdult && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA, ED_BOMB_THROW) && logic->CanGetNightTimeGS()),
++        LOCATION(RC_GF_GS_TOP_FLOOR, logic->IsAdult && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA, ED_BOMB_THROW) && logic->CanGetNightTimeGS(RC_GF_GS_TOP_FLOOR)),
+     }, {
+         //Exits
+         ENTRANCE(RR_TH_KITCHEN_OPPOSITE_CORRIDOR, true),
+@@ -144,7 +144,7 @@
+     areaTable[RR_GF_TOP_OF_UPPER_VINES] = Region("GF Top of Upper Vines", SCENE_GERUDOS_FORTRESS, {}, {
+         //Locations
+         //if RR_GF_SLOPED_ROOF > RR_GF_TOP_OF_UPPER_VINES is ever made part of RT_UNINTUITIVE_JUMPS, climb is needed to get back up
+-        LOCATION(RC_GF_GS_TOP_FLOOR, logic->IsAdult && logic->CanGetNightTimeGS() && logic->CanKillEnemy(RE_GOLD_SKULLTULA, ED_SHORT_JUMPSLASH) && (logic->HasItem(RG_CLIMB) || logic->CanUse(RG_HOOKSHOT) || logic->CanUse(RG_BOOMERANG) || ctx->GetTrickOption(RT_UNINTUITIVE_JUMPS))),
++        LOCATION(RC_GF_GS_TOP_FLOOR, logic->IsAdult && logic->CanGetNightTimeGS(RC_GF_GS_TOP_FLOOR) && logic->CanKillEnemy(RE_GOLD_SKULLTULA, ED_SHORT_JUMPSLASH) && (logic->HasItem(RG_CLIMB) || logic->CanUse(RG_HOOKSHOT) || logic->CanUse(RG_BOOMERANG) || ctx->GetTrickOption(RT_UNINTUITIVE_JUMPS))),
+     }, {
+         //Exits
+         ENTRANCE(RR_GF_TOP_OF_LOWER_VINES,    true),
+@@ -156,7 +156,7 @@
+     areaTable[RR_GF_NEAR_CHEST] = Region("GF Near Chest", SCENE_GERUDOS_FORTRESS, {}, {
+         //Locations
+         LOCATION(RC_GF_CHEST,        logic->CanOpenLargeChest()),
+-        LOCATION(RC_GF_GS_TOP_FLOOR, logic->IsAdult && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA, ED_BOOMERANG) && logic->CanGetNightTimeGS()),
++        LOCATION(RC_GF_GS_TOP_FLOOR, logic->IsAdult && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA, ED_BOOMERANG) && logic->CanGetNightTimeGS(RC_GF_GS_TOP_FLOOR)),
+     }, {
+         //Exits
+         ENTRANCE(RR_GF_NEAR_GS,     true),
+@@ -174,7 +174,7 @@
+ 
+     areaTable[RR_GF_BELOW_GS] = Region("GF Below GS", SCENE_GERUDOS_FORTRESS, {}, {
+         //Locations
+-        LOCATION(RC_GF_GS_TOP_FLOOR, logic->IsAdult && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA, ED_LONGSHOT) && logic->CanGetNightTimeGS()),
++        LOCATION(RC_GF_GS_TOP_FLOOR, logic->IsAdult && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA, ED_LONGSHOT) && logic->CanGetNightTimeGS(RC_GF_GS_TOP_FLOOR)),
+     }, {
+         //Exits
+         ENTRANCE(RR_TH_DEAD_END_CELL,         true),
+@@ -229,7 +229,7 @@
+         //Locations
+         LOCATION(RC_GF_HBA_1000_POINTS,          logic->IsAdult && logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_GERUDO) && logic->HasItem(RG_GERUDO_MEMBERSHIP_CARD) && logic->SummonEpona() && logic->CanUse(RG_FAIRY_BOW) && logic->AtDay),
+         LOCATION(RC_GF_HBA_1500_POINTS,          logic->IsAdult && logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_GERUDO) && logic->HasItem(RG_GERUDO_MEMBERSHIP_CARD) && logic->SummonEpona() && logic->CanUse(RG_FAIRY_BOW) && logic->AtDay),
+-        LOCATION(RC_GF_HBA_RANGE_GS,             logic->IsAdult && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA, ED_BOOMERANG) && logic->CanGetNightTimeGS()),
++        LOCATION(RC_GF_HBA_RANGE_GS,             logic->IsAdult && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA, ED_BOOMERANG) && logic->CanGetNightTimeGS(RC_GF_HBA_RANGE_GS)),
+         LOCATION(RC_GF_HBA_RANGE_CRATE_1,        logic->CanBreakCrates()),
+         LOCATION(RC_GF_HBA_RANGE_CRATE_2,        logic->CanBreakCrates()),
+         LOCATION(RC_GF_HBA_RANGE_CRATE_3,        logic->CanBreakCrates()),
+--- a/soh/soh/Enhancements/randomizer/location_access/overworld/graveyard.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access/overworld/graveyard.cpp
+@@ -14,7 +14,7 @@
+         //Locations
+         LOCATION(RC_GRAVEYARD_FREESTANDING_POH,        (((logic->IsAdult && CanPlantBean(RR_THE_GRAVEYARD, RG_GRAVEYARD_BEAN_SOUL)) || logic->CanUse(RG_LONGSHOT)) && logic->CanBreakCrates()) || (ctx->GetTrickOption(RT_GY_POH) && logic->CanUse(RG_BOOMERANG))),
+         LOCATION(RC_GRAVEYARD_DAMPE_GRAVEDIGGING_TOUR, logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->IsChild && logic->AtNight), //TODO: This needs to change
+-        LOCATION(RC_GRAVEYARD_GS_WALL,                 logic->IsChild && logic->HookshotOrBoomerang() && logic->AtNight && logic->CanGetNightTimeGS()),
++        LOCATION(RC_GRAVEYARD_GS_WALL,                 logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS(RC_GRAVEYARD_GS_WALL)),
+         LOCATION(RC_GRAVEYARD_GS_BEAN_PATCH,           logic->CanSpawnSoilSkull(RG_GRAVEYARD_BEAN_SOUL) && logic->CanAttack()),
+         LOCATION(RC_GRAVEYARD_BEAN_SPROUT_FAIRY_1,     logic->IsChild && logic->CanUse(RG_MAGIC_BEAN) && logic->HasItem(RG_GRAVEYARD_BEAN_SOUL) && logic->CanUse(RG_SONG_OF_STORMS)),
+         LOCATION(RC_GRAVEYARD_BEAN_SPROUT_FAIRY_2,     logic->IsChild && logic->CanUse(RG_MAGIC_BEAN) && logic->HasItem(RG_GRAVEYARD_BEAN_SOUL) && logic->CanUse(RG_SONG_OF_STORMS)),
+--- a/soh/soh/Enhancements/randomizer/location_access/overworld/kakariko.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access/overworld/kakariko.cpp
+@@ -19,11 +19,11 @@
+         LOCATION(RC_KAK_ANJU_AS_ADULT,                     logic->IsAdult && logic->AtDay && logic->HasItem(RG_SPEAK_HYLIAN)),
+         LOCATION(RC_KAK_TRADE_POCKET_CUCCO,                logic->IsAdult && logic->AtDay && (logic->CanUse(RG_POCKET_EGG) && logic->Get(LOGIC_WAKE_UP_ADULT_TALON))),
+         //Can kill lower kak skulls with pots
+-        LOCATION(RC_KAK_GS_HOUSE_UNDER_CONSTRUCTION,       logic->IsChild && logic->CanGetNightTimeGS() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
+-        LOCATION(RC_KAK_GS_SKULLTULA_HOUSE,                logic->IsChild && logic->CanGetNightTimeGS() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
+-        LOCATION(RC_KAK_GS_GUARDS_HOUSE,                   logic->IsChild && logic->CanGetNightTimeGS() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
+-        LOCATION(RC_KAK_GS_TREE,                           logic->IsChild && logic->CanGetNightTimeGS() && logic->CanBonkTrees() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
+-        LOCATION(RC_KAK_GS_WATCHTOWER,                     logic->IsChild && logic->HasItem(RG_CLIMB) && (logic->CanKillEnemy(RE_GOLD_SKULLTULA, ED_LONGSHOT) || (ctx->GetTrickOption(RT_KAK_TOWER_GS) && logic->CanJumpslashExceptHammer())) && logic->CanGetNightTimeGS()),
++        LOCATION(RC_KAK_GS_HOUSE_UNDER_CONSTRUCTION,       logic->IsChild && logic->CanGetNightTimeGS(RC_KAK_GS_HOUSE_UNDER_CONSTRUCTION) && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
++        LOCATION(RC_KAK_GS_SKULLTULA_HOUSE,                logic->IsChild && logic->CanGetNightTimeGS(RC_KAK_GS_SKULLTULA_HOUSE) && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
++        LOCATION(RC_KAK_GS_GUARDS_HOUSE,                   logic->IsChild && logic->CanGetNightTimeGS(RC_KAK_GS_GUARDS_HOUSE) && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
++        LOCATION(RC_KAK_GS_TREE,                           logic->IsChild && logic->CanGetNightTimeGS(RC_KAK_GS_TREE) && logic->CanBonkTrees() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
++        LOCATION(RC_KAK_GS_WATCHTOWER,                     logic->IsChild && logic->HasItem(RG_CLIMB) && (logic->CanKillEnemy(RE_GOLD_SKULLTULA, ED_LONGSHOT) || (ctx->GetTrickOption(RT_KAK_TOWER_GS) && logic->CanJumpslashExceptHammer())) && logic->CanGetNightTimeGS(RC_KAK_GS_WATCHTOWER)),
+         LOCATION(RC_KAK_NEAR_POTION_SHOP_POT_1,            logic->IsChild && logic->CanBreakPots()),
+         LOCATION(RC_KAK_NEAR_POTION_SHOP_POT_2,            logic->IsChild && logic->CanBreakPots()),
+         LOCATION(RC_KAK_NEAR_POTION_SHOP_POT_3,            logic->IsChild && logic->CanBreakPots()),
+@@ -103,7 +103,7 @@
+ 
+     areaTable[RR_KAK_IMPAS_ROOFTOP] = Region("Kak Impas Rooftop", SCENE_KAKARIKO_VILLAGE, {}, {
+         //Locations
+-        LOCATION(RC_KAK_GS_ABOVE_IMPAS_HOUSE, logic->IsAdult && logic->CanGetNightTimeGS() && logic->CanKillEnemy(RE_GOLD_SKULLTULA)),
++        LOCATION(RC_KAK_GS_ABOVE_IMPAS_HOUSE, logic->IsAdult && logic->CanGetNightTimeGS(RC_KAK_GS_ABOVE_IMPAS_HOUSE) && logic->CanKillEnemy(RE_GOLD_SKULLTULA)),
+     }, {
+         //Exits
+         ENTRANCE(RR_KAK_IMPAS_LEDGE,  true),
+@@ -113,7 +113,7 @@
+     areaTable[RR_KAK_WATCHTOWER] = Region("Kak Watchtower", SCENE_KAKARIKO_VILLAGE, {}, {
+         //Locations
+         //exists for when age change is in logic.
+-        LOCATION(RC_KAK_GS_WATCHTOWER,              logic->IsChild && logic->CanUse(RG_DINS_FIRE) && logic->CanGetNightTimeGS()),
++        LOCATION(RC_KAK_GS_WATCHTOWER,              logic->IsChild && logic->CanUse(RG_DINS_FIRE) && logic->CanGetNightTimeGS(RC_KAK_GS_WATCHTOWER)),
+         LOCATION(RC_KAK_WATCHTOWER_BUTTERFLY_FAIRY, logic->IsChild && logic->AtDay && logic->CanUse(RG_STICKS)),
+     }, {
+         //Exits
+--- a/soh/soh/Enhancements/randomizer/location_access/overworld/lon_lon_ranch.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access/overworld/lon_lon_ranch.cpp
+@@ -13,9 +13,9 @@
+         //Locations
+         LOCATION(RC_SONG_FROM_MALON,     	logic->IsChild && logic->Get(LOGIC_MALON_RETURNED_FROM_CASTLE) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->HasItem(RG_FAIRY_OCARINA) && logic->AtDay),
+         LOCATION(RC_LLR_GS_TREE,         	logic->IsChild && logic->CanBonkTrees() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
+-        LOCATION(RC_LLR_GS_RAIN_SHED,    	logic->IsChild && logic->CanGetNightTimeGS() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
+-        LOCATION(RC_LLR_GS_HOUSE_WINDOW, 	logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS()),
+-        LOCATION(RC_LLR_GS_BACK_WALL,    	logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS()),
++        LOCATION(RC_LLR_GS_RAIN_SHED,    	logic->IsChild && logic->CanGetNightTimeGS(RC_LLR_GS_RAIN_SHED) && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
++        LOCATION(RC_LLR_GS_HOUSE_WINDOW, 	logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS(RC_LLR_GS_HOUSE_WINDOW)),
++        LOCATION(RC_LLR_GS_BACK_WALL,    	logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS(RC_LLR_GS_BACK_WALL)),
+         LOCATION(RC_LLR_FRONT_POT_1,     	logic->IsChild && logic->CanBreakPots()),
+         LOCATION(RC_LLR_FRONT_POT_2,     	logic->IsChild && logic->CanBreakPots()),
+         LOCATION(RC_LLR_FRONT_POT_3,     	logic->IsChild && logic->CanBreakPots()),
+--- a/soh/soh/Enhancements/randomizer/location_access/overworld/zoras_domain.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access/overworld/zoras_domain.cpp
+@@ -18,7 +18,7 @@
+         LOCATION(RC_ZD_DIVING_MINIGAME,                     logic->HasItem(RG_BRONZE_SCALE) && logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_ZORA) && logic->IsChild),
+         LOCATION(RC_ZD_CHEST,                               logic->IsChild && logic->CanUse(RG_STICKS) && logic->CanOpenLargeChest()),
+         LOCATION(RC_ZD_KING_ZORA_THAWED,                    logic->IsAdult && logic->Get(LOGIC_KING_ZORA_THAWED) && logic->HasItem(RG_SPEAK_ZORA)),
+-        LOCATION(RC_ZD_TRADE_PRESCRIPTION,                  logic->IsAdult && logic->Get(LOGIC_KING_ZORA_THAWED) && logic->CanUse(RG_PRESCRIPTION)),
++        LOCATION(RC_ZD_TRADE_PRESCRIPTION,                  logic->CanClaimKingZoraTrade()),
+         LOCATION(RC_ZD_GS_FROZEN_WATERFALL,                 logic->IsAdult && (logic->HookshotOrBoomerang() || logic->CanUse(RG_FAIRY_SLINGSHOT) || logic->CanUse(RG_FAIRY_BOW) || (logic->CanUse(RG_MAGIC_SINGLE) && (logic->CanUse(RG_MASTER_SWORD) || logic->CanUse(RG_KOKIRI_SWORD) || logic->CanUse(RG_BIGGORON_SWORD))) || (ctx->GetTrickOption(RT_ZD_GS) && logic->CanJumpslashExceptHammer())) && logic->CanGetNightTimeGS()),
+         LOCATION(RC_ZD_FISH_1,                              logic->IsChild && logic->HasBottle()),
+         LOCATION(RC_ZD_FISH_2,                              logic->IsChild && logic->HasBottle()),
+--- a/soh/soh/Enhancements/randomizer/location_access/overworld/zoras_fountain.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access/overworld/zoras_fountain.cpp
+@@ -11,7 +11,7 @@
+     }, {
+         //Locations
+         LOCATION(RC_ZF_GS_TREE,                      	  logic->IsChild && logic->CanBonkTrees() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
+-        LOCATION(RC_ZF_GS_ABOVE_THE_LOG,             	  logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS()),
++        LOCATION(RC_ZF_GS_ABOVE_THE_LOG,             	  logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS(RC_ZF_GS_ABOVE_THE_LOG)),
+         LOCATION(RC_ZF_FAIRY_GOSSIP_STONE_FAIRY,     	  logic->CallGossipFairyExceptSuns()),
+         LOCATION(RC_ZF_FAIRY_GOSSIP_STONE_FAIRY_BIG, 	  logic->CanUse(RG_SONG_OF_STORMS)),
+         LOCATION(RC_ZF_JABU_GOSSIP_STONE_FAIRY,      	  logic->CallGossipFairyExceptSuns()),
+--- a/soh/soh/Enhancements/randomizer/logic.cpp
++++ b/soh/soh/Enhancements/randomizer/logic.cpp
+@@ -16,6 +16,8 @@
+ #ifdef COMBO_BUILD
+ #include "rando/ShopHours.h"
+ #include "rando/OotCapabilityRules.h"
++#include "rando/OotTradeRules.h"
++#include "rando/OotDaytimeSkulltulas.h"
+ #endif
+ 
+ namespace Rando {
+@@ -55,6 +57,22 @@
+     return CVarGetInteger("gCombo.Logic.gCheats.SuperTunic",0)!=0;
+ #else
+     return false;
++#endif
++}
++
++bool Logic::CanClaimKingZoraTrade() {
++#ifdef COMBO_BUILD
++    const bool early = CVarGetInteger("gCombo.Logic.gEnhancements.EarlyEyeballFrog", 0) != 0;
++    // Pocket Egg also represents the hatched Pocket Cucco. The shuffled trade
++    // menu can select any retained early item; ITEM_NONE and Frog/later do not
++    // satisfy the original native inventory comparison.
++    const bool earlierTrade = HasItem(RG_POCKET_EGG) || HasItem(RG_COJIRO) ||
++        HasItem(RG_ODD_MUSHROOM) || HasItem(RG_ODD_POTION) || HasItem(RG_POACHERS_SAW) ||
++        HasItem(RG_BROKEN_SWORD);
++    return ComboRando::CanClaimKingZoraTrade(IsAdult, Get(LOGIC_KING_ZORA_THAWED),
++        HasItem(RG_SPEAK_ZORA), CanUse(RG_PRESCRIPTION), early, CanShield(), earlierTrade);
++#else
++    return IsAdult && Get(LOGIC_KING_ZORA_THAWED) && CanUse(RG_PRESCRIPTION);
+ #endif
+ }
+ 
+@@ -1702,8 +1720,38 @@
+     return CanUse(RG_SONG_OF_STORMS) && (HasItem(RG_STONE_OF_AGONY) || ctx->GetTrickOption(RT_GROTTOS_WITHOUT_AGONY));
+ }
+ 
+-bool Logic::CanGetNightTimeGS() {
++bool Logic::CanGetNightTimeGS(RandomizerCheck check) {
++#ifdef COMBO_BUILD
++    // Exact actor coverage: DaytimeGS.cpp's twelve injected night actors plus
++    // EnWood02's Kakariko tree override. Do not infer other scene spawns.
++    bool verifiedDayActor = false;
++    switch (check) {
++        case RC_GRAVEYARD_GS_WALL:
++        case RC_ZF_GS_ABOVE_THE_LOG:
++        case RC_KAK_GS_HOUSE_UNDER_CONSTRUCTION:
++        case RC_KAK_GS_SKULLTULA_HOUSE:
++        case RC_KAK_GS_GUARDS_HOUSE:
++        case RC_KAK_GS_TREE:
++        case RC_KAK_GS_WATCHTOWER:
++        case RC_LLR_GS_RAIN_SHED:
++        case RC_LLR_GS_HOUSE_WINDOW:
++        case RC_LLR_GS_BACK_WALL:
++            verifiedDayActor = IsChild;
++            break;
++        case RC_GF_GS_TOP_FLOOR:
++        case RC_GF_HBA_RANGE_GS:
++        case RC_KAK_GS_ABOVE_IMPAS_HOUSE:
++            verifiedDayActor = IsAdult;
++            break;
++        default:
++            break;
++    }
++    return ComboRando::CanCollectNightSkulltula(AtDay, AtNight, CanUse(RG_SUNS_SONG),
++        ctx->GetOption(RSK_SKULLS_SUNS_SONG).Is(RO_GENERIC_ON),
++        CVarGetInteger("gCombo.Logic.gEnhancements.NightGSAlwaysSpawn", 0) != 0, verifiedDayActor);
++#else
+     return AtNight && (CanUse(RG_SUNS_SONG) || !ctx->GetOption(RSK_SKULLS_SUNS_SONG));
++#endif
+ }
+ 
+ bool Logic::CanBreakUpperBeehives() {
+--- a/soh/soh/Enhancements/randomizer/logic.h
++++ b/soh/soh/Enhancements/randomizer/logic.h
+@@ -41,6 +41,7 @@
+     bool ShopsOpenAllHours() const;
+     bool CanPullGravesDuringDay() const;
+     bool CanUnloadShadowDoor() const;
++    bool CanClaimKingZoraTrade();
+     bool HasSuperTunic() const;
+     bool HasSelfLightingSticks();
+     bool HasProjectile(HasProjectileAge age);
+@@ -104,7 +105,7 @@
+     bool TakeDamage();
+     bool CanOpenBombGrotto();
+     bool CanOpenStormsGrotto();
+-    bool CanGetNightTimeGS();
++    bool CanGetNightTimeGS(RandomizerCheck check = RC_UNKNOWN_CHECK);
+     bool CanBreakUpperBeehives();
+     bool CanBreakLowerBeehives();
+     bool CanBreakPots(EnemyDistance distance = ED_CLOSE, bool wallOrFloor = true, bool inWater = false);
+--- a/soh/soh/OTRGlobals.cpp
++++ b/soh/soh/OTRGlobals.cpp
+@@ -2884,8 +2884,10 @@
+ static uint32_t OotSoaringSources(Rando::Logic* logic, uint32_t knowledge, bool child, bool logical=false) {
+     const RandomizerGet buttons[]={RG_OCARINA_A_BUTTON,RG_OCARINA_C_DOWN_BUTTON,RG_OCARINA_C_RIGHT_BUTTON,RG_OCARINA_C_LEFT_BUTTON,RG_OCARINA_C_UP_BUTTON};
+     uint32_t mask=0; for(int i=0;i<5;i++) if(logic->HasItem(buttons[i])) mask|=1u<<i;
++    const bool ageless=CVarGetInteger(logical ? "gCombo.Logic.gCombo.Enhancements.AgelessSoaring" :
++                                              "gCombo.Enhancements.AgelessSoaring",0)!=0;
+     return ComboRando::ForeignSoaringSources(logical ? ComboRando::ActiveSongTravel().logicForeignSongs : ComboRando::ActiveSongTravel().foreignSongs, knowledge,
+-        logic->HasItem(RG_FAIRY_OCARINA),mask,child);
++        logic->HasItem(RG_FAIRY_OCARINA),mask,child,ageless);
+ }
+ extern "C" COMBO_EXPORT uint32_t SOH_GetSongKnowledge() {
+     auto logic=OTRGlobals::Instance->gRandoContext->GetLogic();
+@@ -3786,9 +3788,13 @@
+     if (cvar) {
+         CVarSetInteger(cvar,value);
+         if(!std::strcmp(cvar,"gRandoSettings.BlueFireArrows"))
+-            { Rando::Context::GetInstance()->GetOption(RSK_BLUE_FIRE_ARROWS).Set(uint8_t(value!=0)); ShipInit::Init("gEnhancements.BlueFireArrows"); }
++            { Rando::Context::GetInstance()->GetOption(RSK_BLUE_FIRE_ARROWS).Set(uint8_t(value!=0));
++              // Headless generation has no runtime hook service; keep its option
++              // and CVar updates without registering actor hooks on a null instance.
++              if (GameInteractor::Instance) ShipInit::Init("gEnhancements.BlueFireArrows"); }
+         if(!std::strcmp(cvar,"gRandoSettings.SunlightArrows"))
+-            { Rando::Context::GetInstance()->GetOption(RSK_SUNLIGHT_ARROWS).Set(uint8_t(value!=0)); ShipInit::Init("gEnhancements.SunlightArrows"); }
++            { Rando::Context::GetInstance()->GetOption(RSK_SUNLIGHT_ARROWS).Set(uint8_t(value!=0));
++              if (GameInteractor::Instance) ShipInit::Init("gEnhancements.SunlightArrows"); }
+     }
+ }
+ 
+--- a/soh/soh/SohGui/SohMenuEnhancements.cpp
++++ b/soh/soh/SohGui/SohMenuEnhancements.cpp
+@@ -1294,7 +1294,10 @@
+         .CVar(CVAR_ENHANCEMENT("EarlyEyeballFrog"))
+         .Options(CheckboxOptions().Tooltip(
+             "Restores a bug from NTSC 1.0/1.1 that allows you to obtain the eyeball frog from King Zora "
+-            "instead of the Zora Tunic by Holding Shield."));
++            "instead of the Zora Tunic by holding a shield with an earlier adult trade item. "
++            "King Zora must be thawed. In Randomizer this awards the Prescription trade check. "
++            "To allow seed logic to require the technique, enable Early Eyeball Frog under "
++            "Randomizer / Tricks & glitches."));
+     AddWidget(path, "Get Item Manipulation", WIDGET_CVAR_COMBOBOX)
+         .CVar(CVAR_ENHANCEMENT("GetItemManipulation"))
+         .Options(ComboboxOptions()

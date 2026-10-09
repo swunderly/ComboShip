@@ -1,0 +1,444 @@
+--- a/soh/soh/Enhancements/randomizer/randomizer_check_tracker.h
++++ b/soh/soh/Enhancements/randomizer/randomizer_check_tracker.h
+@@ -3,6 +3,11 @@
+ #include <nlohmann/json.hpp>
+ #include "randomizerTypes.h"
+ #include "soh/SohGui/UIWidgets.hpp"
++
++#ifdef COMBO_BUILD
++struct Actor;
++struct GetItemEntry;
++#endif
+ 
+ namespace CheckTracker {
+ 
+@@ -61,4 +66,9 @@
+ void SpoilAreaFromCheck(RandomizerCheck rc);
+ void RecalculateAvailableChecks(RandomizerRegion startingRegion = RR_ROOT, RandoAgeTime startingAgeTime = RAT_NONE);
+ void LoadFromPreset(const nlohmann::json& info);
++#ifdef COMBO_BUILD
++// Called at the actual randomized-model draw and explicit item-hint reveal.
++void RecordObservedItem(Actor* actor, const GetItemEntry& shownItem);
++void RecordHintedItem(RandomizerCheck rc);
++#endif
+ } // namespace CheckTracker
+--- a/soh/soh/Enhancements/randomizer/randomizer_check_tracker.cpp
++++ b/soh/soh/Enhancements/randomizer/randomizer_check_tracker.cpp
+@@ -22,6 +22,7 @@
+ #include <sstream>
+ #include <vector>
+ #include <set>
++#include <mutex>
+ #include <libultraship/controller/controldeck/ControlDeck.h>
+ #include "location.h"
+ #include "item_location.h"
+@@ -31,6 +32,7 @@
+ #include "z64item.h"
+ 
+ #ifdef COMBO_BUILD
++#include "rando/TrackerKnowledge.h"
+ #include "ComboMenuSharedContext.h"        // ComboShip: per-DLL ImGui context helper (combo-owned)
+ #include <ship/resource/CrossRMRegistry.h> // ComboShip: dormant-draw resource lookups need OOT's RM
+ #include <ship/resource/ResourceManagerScope.h>
+@@ -43,6 +45,10 @@
+ #include "functions.h"
+ #include "macros.h"
+ extern PlayState* gPlayState;
++#ifdef COMBO_BUILD
++float OTRGetAspectRatio(void);
++MtxF* Matrix_GetCurrent(void);
++#endif
+ }
+ extern "C" GetItemEntry ItemTable_RetrieveEntry(s16 modIndex, s16 getItemID);
+ 
+@@ -55,6 +61,109 @@
+ using namespace UIWidgets;
+ 
+ namespace CheckTracker {
++#ifdef COMBO_BUILD
++extern int sectionId;
++static std::array<ComboRando::TrackerKnowledge,RC_MAX> sItemKnowledge{};
++static std::mutex sItemKnowledgeMutex;
++static std::string ComboKnownReward(RandomizerCheck rc, bool explicitReveal=false);
++static ComboRando::TrackerKnowledge GetKnowledge(RandomizerCheck rc) {
++    std::lock_guard<std::mutex> lock(sItemKnowledgeMutex);
++    return rc>RC_UNKNOWN_CHECK && rc<RC_MAX?sItemKnowledge[rc]:ComboRando::TrackerKnowledge{};
++}
++static void ResetKnowledge() {
++    std::lock_guard<std::mutex> lock(sItemKnowledgeMutex);
++    sItemKnowledge={};
++}
++
++// A draw call alone does not prove a reward can be seen. Use the transformed
++// model origin and reject off-screen, hidden, paused and occluded previews.
++static bool ModelVisible(Vec3f pos, float scaleX2, float scaleY2, float scaleZ2) {
++    Vec3f projected;
++    float w;
++    SkinMatrix_Vec3fMtxFMultXYZW(&gPlayState->viewProjectionMtxF,&pos,&projected,&w);
++    const bool covered=gPlayState->transitionMode!=TRANS_MODE_OFF ||
++        gPlayState->transitionTrigger!=TRANS_TRIGGER_OFF || gPlayState->envCtx.fillScreen ||
++        gPlayState->pauseCtx.state!=0;
++    if(!ComboRando::TrackerItemInView(projected.x,projected.y,projected.z,w,
++        OTRGetAspectRatio()/(4.0f/3.0f),scaleX2,scaleY2,scaleZ2,covered)) return false;
++    Vec3f eye=gPlayState->view.eye,hit;
++    CollisionPoly* poly=nullptr;
++    return !BgCheck_AnyLineTest2(&gPlayState->colCtx,&eye,&pos,&hit,&poly,true,true,true,false);
++}
++
++static bool KnowledgeEnabled() {
++    return Combo_OotIsForeground() && gPlayState && GameInteractor::IsSaveLoaded() &&
++        IS_RANDO && gSaveContext.fileNum<3;
++}
++
++static RandomizerGet ShownNativeItem(const GetItemEntry& shown) {
++    // Inspect the actual resolved draw entry. Do not resolve a progressive item
++    // again against later inventory, and do not expose an ice trap behind its model.
++    RandomizerGet result=RG_NONE;
++    for(const auto& item:Rando::StaticData::GetItemTable()) {
++        if(item.GetRandomizerGet()==RG_NONE || item.GetRandomizerGet()==RG_ICE_TRAP ||
++            item.GetRandomizerGet()==RG_COMBO_FOREIGN) continue;
++        RandomizerGet converted=RG_NONE;
++        auto entry=item.GetGIEntry(&converted);
++        if(!entry || converted!=RG_NONE || entry->drawModIndex!=shown.drawModIndex ||
++            entry->drawItemId!=shown.drawItemId || entry->gid!=shown.gid) continue;
++        if(entry->modIndex==shown.modIndex && entry->getItemId==shown.getItemId)
++            return item.GetRandomizerGet();
++        if(result==RG_NONE) result=item.GetRandomizerGet();
++    }
++    return result;
++}
++
++static bool StoreKnowledge(RandomizerCheck rc, uint8_t source, RandomizerGet item, std::string name) {
++    if(rc<=RC_UNKNOWN_CHECK || rc>=RC_MAX || item<=RG_NONE || !KnowledgeEnabled()) return false;
++    auto* location=OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
++    if(location->HasObtained()) return false;
++    std::lock_guard<std::mutex> lock(sItemKnowledgeMutex);
++    if(!ComboRando::RecordTrackerKnowledge(sItemKnowledge[rc],source,item,std::move(name))) return false;
++    if(location->GetCheckStatus()==RCSHOW_UNCHECKED) location->SetCheckStatus(RCSHOW_SEEN_OR_HINTED);
++    return true;
++}
++
++void RecordHintedItem(RandomizerCheck rc) {
++    if(!KnowledgeEnabled() || rc<=RC_UNKNOWN_CHECK || rc>=RC_MAX) return;
++    auto* location=OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
++    if(location->HasObtained() || location->GetCheckStatus()==RCSHOW_UNCHECKED) return;
++    std::string name=ComboKnownReward(rc,true);
++    if(location->CanBePurchased() && location->GetCheckStatus()==RCSHOW_IDENTIFIED) {
++        const std::string price=fmt::format(" - {}",location->GetPrice());
++        if(name.ends_with(price)) name.resize(name.size()-price.size());
++    }
++    if(StoreKnowledge(rc,2,location->GetPlacedRandomizerGet(),std::move(name)))
++        SaveManager::Instance->SaveSection(gSaveContext.fileNum,sectionId,true);
++}
++
++static bool ObserveKnownCheck(RandomizerCheck rc,const GetItemEntry& shown) {
++    if(rc<=RC_UNKNOWN_CHECK || rc>=RC_MAX || !IsCheckShuffled(rc)) return false;
++    auto* item=OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
++    if(item->HasObtained()) return false;
++    if(item->GetPlacedRandomizerGet()==RG_COMBO_FOREIGN) {
++        const auto* foreign=OOT_LookupForeign(gSaveContext.fileNum,Rando::StaticData::GetLocation(rc)->GetName());
++        return foreign && StoreKnowledge(rc,1,RG_COMBO_FOREIGN,
++            foreign->HasDisguise()?foreign->fakeDisplayName:foreign->displayName);
++    }
++    RandomizerGet named=ShownNativeItem(shown);
++    return named!=RG_NONE && StoreKnowledge(rc,1,named,
++        Rando::StaticData::RetrieveItem(named).GetName().GetForLanguage(gSaveContext.language));
++}
++
++void RecordObservedItem(Actor* actor,const GetItemEntry& shown) {
++    if(!actor || !KnowledgeEnabled() || CVarGetInteger(CVAR_RANDOMIZER_ENHANCEMENT("MysteriousShuffle"),0)) return;
++    RandomizerCheck rc=static_cast<RandomizerCheck>(shown.comboForeignCheck);
++    if(rc<=RC_UNKNOWN_CHECK || rc>=RC_MAX) return; // no arbitrary actor-to-reward guessing
++    const MtxF* model=Matrix_GetCurrent();
++    Vec3f origin{},pos; Matrix_MultVec3f(&origin,&pos);
++    if(!ModelVisible(pos,model->xx*model->xx+model->yx*model->yx+model->zx*model->zx,
++        model->xy*model->xy+model->yy*model->yy+model->zy*model->zy,
++        model->xz*model->xz+model->yz*model->yz+model->zz*model->zz)) return;
++    if(ObserveKnownCheck(rc,shown)) SaveManager::Instance->SaveSection(gSaveContext.fileNum,sectionId,true);
++}
++
++#endif
+ static WidgetInfo backgroundColorWidget;
+ static WidgetInfo windowTypeWidget;
+ static WidgetInfo dungeonSpoilerWidget;
+@@ -515,6 +624,10 @@
+ }
+ 
+ void SetShopSeen(uint32_t sceneNum, bool prices) {
++#ifdef COMBO_BUILD
++    // Shop previews are recorded only after a visible model is rendered.
++    return;
++#endif
+     RandomizerCheck start = startingShopItem.find(sceneNum)->second;
+     if (sceneNum == SCENE_POTION_SHOP_KAKARIKO && !LINK_IS_ADULT) {
+         return;
+@@ -587,6 +700,9 @@
+             loc->SetCheckStatus(RCSHOW_SEEN_OR_HINTED);
+             changed = true;
+         }
++#ifdef COMBO_BUILD
++        changed|=StoreKnowledge(rc,2,loc->GetPlacedRandomizerGet(),ComboKnownReward(rc,true));
++#endif
+     }
+     return changed;
+ }
+@@ -1022,6 +1138,9 @@
+ }
+ 
+ void InitTrackerData(bool isDebug) {
++#ifdef COMBO_BUILD
++    ResetKnowledge();
++#endif
+     TrySetAreas();
+     areasSpoiled = 0;
+ }
+@@ -1061,6 +1180,12 @@
+                 SaveManager::Instance->SaveData("randomizerCheck", check);
+                 SaveManager::Instance->SaveData("status", savedStatus);
+                 SaveManager::Instance->SaveData("skipped", isSkipped);
++#ifdef COMBO_BUILD
++                const auto knowledge=GetKnowledge(check);
++                SaveManager::Instance->SaveData("knowledgeSource",knowledge.source);
++                SaveManager::Instance->SaveData("knownItem",knowledge.item);
++                SaveManager::Instance->SaveData("knownItemName",knowledge.displayName);
++#endif
+             });
+         }
+     });
+@@ -1079,6 +1204,9 @@
+ }
+ 
+ void LoadFile() {
++#ifdef COMBO_BUILD
++    ResetKnowledge(); // loading another profile must not carry its knowledge
++#endif
+     SaveManager::Instance->LoadArray("checkStatus", RC_MAX, [](size_t i) {
+         SaveManager::Instance->LoadStruct("", [&]() {
+             RandomizerCheckStatus status;
+@@ -1087,6 +1215,18 @@
+             SaveManager::Instance->LoadData("randomizerCheck", rc, RC_UNKNOWN_CHECK);
+             SaveManager::Instance->LoadData("status", status, RCSHOW_UNCHECKED);
+             SaveManager::Instance->LoadData("skipped", skipped, false);
++#ifdef COMBO_BUILD
++            if(rc<=RC_UNKNOWN_CHECK || rc>=RC_MAX) return;
++            ComboRando::TrackerKnowledge knowledge;
++            SaveManager::Instance->LoadData("knowledgeSource",knowledge.source,(uint8_t)0);
++            SaveManager::Instance->LoadData("knownItem",knowledge.item,(int32_t)0);
++            SaveManager::Instance->LoadData("knownItemName",knowledge.displayName,std::string{});
++            if(knowledge.source>=1 && knowledge.source<=2 && knowledge.item>RG_NONE && knowledge.item<RG_MAX &&
++                !knowledge.displayName.empty() && knowledge.displayName.size()<=512) {
++                std::lock_guard<std::mutex> lock(sItemKnowledgeMutex);
++                sItemKnowledge[rc]=std::move(knowledge);
++            }
++#endif
+             OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->SetCheckStatus(status);
+             OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->SetIsSkipped(skipped);
+         });
+@@ -1097,6 +1237,9 @@
+ }
+ 
+ void Teardown() {
++#ifdef COMBO_BUILD
++    ResetKnowledge();
++#endif
+     initialized = false;
+     ClearAreaChecksAndTotals();
+     checksByArea.clear();
+@@ -2049,12 +2192,25 @@
+ }
+ 
+ // Shared by the native and combo views; retain all hint, trap-disguise and mystery rules.
+-static std::string ComboKnownReward(RandomizerCheck rc) {
++static std::string ComboKnownReward(RandomizerCheck rc, bool explicitReveal) {
+     const auto* loc = Rando::StaticData::GetLocation(rc);
+     auto* itemLoc = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
+     const auto status = itemLoc->GetCheckStatus();
+     const bool skipped = itemLoc->GetIsSkipped();
+     std::string txt;
++#ifdef COMBO_BUILD
++    const auto knowledge=GetKnowledge(rc);
++    if((status==RCSHOW_SEEN_OR_HINTED || status==RCSHOW_IDENTIFIED) && !knowledge.displayName.empty()) {
++        txt=knowledge.displayName;
++        if(itemLoc->CanBePurchased() && status==RCSHOW_IDENTIFIED)
++            txt=fmt::format("{} - {}",txt,itemLoc->GetPrice());
++        return txt;
++    }
++    // Previous versions marked every shop slot on entry and merged hints with
++    // sightings. Keep their status, but do not fabricate a reward description
++    // until a new physical preview or an explicit item hint confirms it.
++    if(!explicitReveal && (status==RCSHOW_SEEN_OR_HINTED || status==RCSHOW_IDENTIFIED)) return {};
++#endif
+ 
+     if (status != RCSHOW_UNCHECKED) {
+         switch (status) {
+@@ -2726,5 +2882,11 @@
+ } // namespace CheckTracker
+ 
+ #ifdef COMBO_BUILD
++extern "C" void Combo_OOTRecordObservedItem(Actor* actor,const GetItemEntry* shown) {
++    if(shown) CheckTracker::RecordObservedItem(actor,*shown);
++}
++#endif
++
++#ifdef COMBO_BUILD
+ #include "ComboCheckTrackerOOT.inc"
+ #endif
+--- a/soh/soh/Enhancements/randomizer/hook_handlers.cpp
++++ b/soh/soh/Enhancements/randomizer/hook_handlers.cpp
+@@ -821,6 +821,9 @@
+     func_8002EBCC(&enExItem->actor, play, 0);
+     func_8002ED80(&enExItem->actor, play, 0);
+     EnItem00_CustomItemsParticles(&enExItem->actor, play, randoGetItem);
++#ifdef COMBO_BUILD
++    CheckTracker::RecordObservedItem(&enExItem->actor,randoGetItem);
++#endif
+     GetItemEntry_Draw(play, randoGetItem);
+ }
+ 
+@@ -853,6 +856,9 @@
+     func_8002EBCC(&enItem00->actor, play, 0);
+     func_8002ED80(&enItem00->actor, play, 0);
+     EnItem00_CustomItemsParticles(&enItem00->actor, play, randoItem);
++#ifdef COMBO_BUILD
++    CheckTracker::RecordObservedItem(&enItem00->actor,randoItem);
++#endif
+     GetItemEntry_Draw(play, randoItem);
+ }
+ 
+@@ -864,6 +870,9 @@
+     func_8002EBCC(&itemBHeart->actor, play, 0);
+     func_8002ED80(&itemBHeart->actor, play, 0);
+     EnItem00_CustomItemsParticles(&itemBHeart->actor, play, randoItem);
++#ifdef COMBO_BUILD
++    CheckTracker::RecordObservedItem(&itemBHeart->actor,randoItem);
++#endif
+     GetItemEntry_Draw(play, randoItem);
+ }
+ 
+@@ -886,6 +895,9 @@
+     EnItem00_CustomItemsParticles(&itemEtcetera->actor, play, randoItem);
+     func_8002EBCC(&itemEtcetera->actor, play, 0);
+     func_8002ED80(&itemEtcetera->actor, play, 0);
++#ifdef COMBO_BUILD
++    CheckTracker::RecordObservedItem(&itemEtcetera->actor,randoItem);
++#endif
+     GetItemEntry_Draw(play, randoItem);
+ }
+ 
+@@ -1077,6 +1089,9 @@
+                     if (itemSkull_loc->GetCheckStatus() == RCSHOW_UNCHECKED) {
+                         itemSkull_loc->SetCheckStatus(RCSHOW_IDENTIFIED);
+                     }
++#ifdef COMBO_BUILD
++                    CheckTracker::RecordHintedItem(RC_DEKU_THEATER_SKULL_MASK);
++#endif
+                     reveal = RC_DEKU_THEATER_MASK_OF_TRUTH;
+                 }
+                 break;
+@@ -1109,6 +1124,9 @@
+                     if (item1000_loc->GetCheckStatus() == RCSHOW_UNCHECKED) {
+                         item1000_loc->SetCheckStatus(RCSHOW_IDENTIFIED);
+                     }
++#ifdef COMBO_BUILD
++                    CheckTracker::RecordHintedItem(RC_GF_HBA_1000_POINTS);
++#endif
+                     reveal = RC_GF_HBA_1500_POINTS;
+                 }
+                 break;
+@@ -1160,6 +1178,9 @@
+                     if (itemoot_loc->GetCheckStatus() == RCSHOW_UNCHECKED) {
+                         itemoot_loc->SetCheckStatus(RCSHOW_IDENTIFIED);
+                     }
++#ifdef COMBO_BUILD
++                    CheckTracker::RecordHintedItem(RC_HF_OCARINA_OF_TIME_ITEM);
++#endif
+                     reveal = RC_SONG_FROM_OCARINA_OF_TIME;
+                 }
+                 break;
+@@ -1182,6 +1203,9 @@
+         if (item_loc->GetCheckStatus() == RCSHOW_UNCHECKED) {
+             item_loc->SetCheckStatus(RCSHOW_IDENTIFIED);
+         }
++#ifdef COMBO_BUILD
++        CheckTracker::RecordHintedItem(reveal);
++#endif
+     }
+ }
+ 
+--- a/soh/src/overlays/actors/ovl_En_GirlA/z_en_girla.c
++++ b/soh/src/overlays/actors/ovl_En_GirlA/z_en_girla.c
+@@ -10,6 +10,10 @@
+ #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
+ #include "soh/OTRGlobals.h"
+ #include <assert.h>
++
++#ifdef COMBO_BUILD
++extern void Combo_OOTRecordObservedItem(Actor* actor, const GetItemEntry* shown);
++#endif
+ 
+ #define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+ 
+@@ -1460,6 +1464,9 @@
+                                               shopItemIdentity.identity.randomizerCheck, shopItemIdentity.ogItemId);
+ 
+         EnItem00_CustomItemsParticles(&this->actor, play, getItemEntry);
++#ifdef COMBO_BUILD
++        Combo_OOTRecordObservedItem(&this->actor, &getItemEntry);
++#endif
+         GetItemEntry_Draw(play, getItemEntry);
+         return;
+     }
+--- a/combo/menu/ComboCheckTrackerOOT.inc
++++ b/combo/menu/ComboCheckTrackerOOT.inc
+@@ -62,8 +62,10 @@
+             if (item->GetIsSkipped()) flags |= COMBO_CHECK_SKIPPED;
+             if (status == RCSHOW_SAVED) flags |= COMBO_CHECK_SAVED;
+             if (status == RCSHOW_SCUMMED) flags |= COMBO_CHECK_SCUMMED;
+-            // Native OoT merges observations and hints; do not claim a physical sighting.
+-            if (status == RCSHOW_SEEN_OR_HINTED || status == RCSHOW_IDENTIFIED) flags |= COMBO_CHECK_KNOWN;
++            if (status == RCSHOW_SEEN_OR_HINTED || status == RCSHOW_IDENTIFIED) {
++                const auto source=GetKnowledge(rc).source;
++                flags|=source==1?COMBO_CHECK_SEEN:source==2?COMBO_CHECK_HINTED:COMBO_CHECK_KNOWN;
++            }
+             if (wantLogic) flags |= COMBO_CHECK_LOGIC_KNOWN;
+             if (wantLogic && item->IsAvailable()) flags |= COMBO_CHECK_AVAILABLE;
+             std::string name = checkNameOverrides.contains(rc) ? checkNameOverrides[rc] : loc->GetShortName();
+--- /dev/null
++++ b/combo/rando/TrackerKnowledge.h
+@@ -0,0 +1,36 @@
++#pragma once
++#include <cmath>
++#include <cstdint>
++#include <string>
++#include <utility>
++
++namespace ComboRando {
++// 0 is deliberately unknown: old saves merged physical previews and hints.
++// Those records must never be retroactively advertised as a physical sighting.
++struct TrackerKnowledge {
++    uint8_t source = 0; // 1 = rendered observation, 2 = explicit item hint
++    int32_t item = 0;
++    std::string displayName;
++};
++
++inline bool RecordTrackerKnowledge(TrackerKnowledge& previous, uint8_t source, int32_t item,
++                                   std::string displayName) {
++    if ((source != 1 && source != 2) || item <= 0 || displayName.empty()) return false;
++    // Hints describe the seed item, sometimes only its progressive family.
++    // Never replace the exact tier/disguise the player has already looked at.
++    if (source == 2 && previous.source == 1) return false;
++    if (previous.source == source && previous.item == item && previous.displayName == displayName) return false;
++    previous = {source, item, std::move(displayName)};
++    return true;
++}
++
++// A submitted draw is insufficient: generous actor culling boxes extend off
++// screen. Test the rendered model origin against the actual camera frustum.
++inline bool TrackerItemInView(float x, float y, float z, float w, float horizontalScale,
++                              float scaleX2, float scaleY2, float scaleZ2, bool viewCovered) {
++    return !viewCovered && std::isfinite(w) && std::isfinite(x) && std::isfinite(y) && std::isfinite(z) &&
++        std::isfinite(horizontalScale) && w > 0 && horizontalScale > 0 &&
++        scaleX2 >= 0.000001f && scaleY2 >= 0.000001f && scaleZ2 >= 0.000001f &&
++        z >= -w && z <= w && std::fabs(x) <= w * horizontalScale && std::fabs(y) <= w;
++}
++}

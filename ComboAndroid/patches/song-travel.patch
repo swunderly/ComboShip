@@ -1,0 +1,1368 @@
+--- a/combo/ComboRandoHeadless.cpp
++++ b/combo/ComboRandoHeadless.cpp
+@@ -209,11 +209,21 @@
+                                Sym<FnOracleSetItems>(soh, "Combo_SOH_Rando_SetOwnedItems"),
+                                Sym<FnOracleGetChecks>(soh, "Combo_SOH_Rando_GetReachableChecks"),
+                                Sym<FnOraclePlaceItem>(soh, "Combo_SOH_Rando_PlaceItem"),
+-                               Sym<FnOracleGetPortalOpen>(soh, "Combo_SOH_Rando_GetPortalOpen") };
++                               Sym<FnOracleGetPortalOpen>(soh, "Combo_SOH_Rando_GetPortalOpen"),
++                               Sym<void(*)(uint32_t)>(soh,"SOH_SetSongArrivals"),
++                               Sym<uint32_t(*)()>(soh,"SOH_GetSongSources"),
++                               Sym<int(*)(int)>(soh,"SOH_SongDestination"),
++                               Sym<uint32_t(*)()>(soh,"SOH_GetSongKnowledge"),
++                               Sym<void(*)(uint32_t)>(soh,"SOH_SetForeignSongKnowledge") };
+     ComboRando::OracleFns mmO{ Sym<FnOracleVoid>(mm, "Combo_MM_Rando_Reset"),
+                                Sym<FnOracleSetItems>(mm, "Combo_MM_Rando_SetOwnedItems"),
+                                Sym<FnOracleGetChecks>(mm, "Combo_MM_Rando_GetReachableChecks"),
+-                               Sym<FnOraclePlaceItem>(mm, "Combo_MM_Rando_PlaceItem") };
++                               Sym<FnOraclePlaceItem>(mm, "Combo_MM_Rando_PlaceItem"), nullptr,
++                               Sym<void(*)(uint32_t)>(mm,"MM_SetSongArrivals"),
++                               Sym<uint32_t(*)()>(mm,"MM_GetSongSources"),
++                               Sym<int(*)(int)>(soh,"SOH_SongDestination"),
++                               Sym<uint32_t(*)()>(mm,"MM_GetSongKnowledge"),
++                               Sym<void(*)(uint32_t)>(mm,"MM_SetForeignSongKnowledge") };
+ 
+     if (!SOH_InitRandoHeadless || !MM_InitRandoHeadless || !SOH_Dump || !MM_Dump || !oot.Reset || !oot.SetOwnedItems ||
+         !oot.GetReachableChecks || !oot.PlaceItem || !oot.GetPortalOpen || !mmO.Reset || !mmO.SetOwnedItems ||
+@@ -247,6 +257,11 @@
+         flat["foreign"] = spoiler.value("foreign", nlohmann::json::array());
+         std::string label = SeedLabel(spoiler);
+         uint32_t masterSeed = spoiler.value("masterSeed", 0u);
++        const auto songRoutes=spoiler.value("songTravel",nlohmann::json()).dump();
++        auto setOotSongs=Sym<void(*)(const char*)>(soh,"SOH_SetSongTravel");
++        auto setMmSongs=Sym<void(*)(const char*)>(mm,"MM_SetSongTravel");
++        if (setOotSongs && setMmSongs) { setOotSongs(songRoutes.c_str()); setMmSongs(songRoutes.c_str()); }
++        else if (spoiler.contains("songTravel")) { std::cerr<<"Missing song-route exports\n"; return 2; }
+         // #136: the seed's own goal drives both the traversal win test and the pool shaping below.
+         ComboRando::CwGoal goal;
+         {
+--- a/combo/ComboShip.cpp
++++ b/combo/ComboShip.cpp
+@@ -387,6 +387,25 @@
+ static FnOracleGetChecks Combo_MM_Rando_GetReachableChecks = nullptr;
+ static FnOraclePlaceItem Combo_MM_Rando_PlaceItem = nullptr;
+ static FnOracleVoid Combo_MM_Rando_Restore = nullptr;
++#include "rando/SongTravel.h"
++static void (*SOH_SetSongTravel)(const char*)=nullptr, (*MM_SetSongTravel)(const char*)=nullptr;
++static void (*SOH_SetSongArrivals)(uint32_t)=nullptr, (*MM_SetSongArrivals)(uint32_t)=nullptr;
++static uint32_t (*SOH_GetSongSources)()=nullptr, (*MM_GetSongSources)()=nullptr;
++static uint32_t (*SOH_GetSongKnowledge)()=nullptr, (*MM_GetSongKnowledge)()=nullptr;
++static void (*SOH_SetForeignSongKnowledge)(uint32_t)=nullptr, (*MM_SetForeignSongKnowledge)(uint32_t)=nullptr;
++static int (*SOH_SongDestination)(int)=nullptr;
++static int (*SOH_TakeSongDeparture)()=nullptr, (*MM_TakeSongDeparture)()=nullptr;
++static void (*SOH_SetSongArrival)(int)=nullptr, (*MM_SetSongArrival)(int)=nullptr;
++static ComboRando::SongTravelMap sSongTravel;
++static void (*SOH_SetMmVisited)(int)=nullptr;
++static void InstallSongTravel(const nlohmann::json& json) {
++    auto map=ComboRando::SongTravelMap::parse(json); // reject malformed seed routes before touching either engine
++    const auto text=map.json().dump();
++    if(SOH_SetSongTravel) SOH_SetSongTravel(text.c_str());
++    if(MM_SetSongTravel) MM_SetSongTravel(text.c_str());
++    sSongTravel=map;
++}
++
+ 
+ // ComboShip (#90): OOT entrance shuffle — the combo generator never runs native Fill(), so the
+ // entrance options need this explicit headless shuffle + an informational spoiler dump.
+@@ -670,8 +689,11 @@
+ static void Combo_SetLastGame(int fileNum, int game) {
+     std::lock_guard<std::mutex> lk(g_containerMutex);
+     auto& c = LoadOrCreateContainer(fileNum);
+-    if (c.value("combo", nlohmann::json::object()).value("lastGame", -1) == game)
+-        return; // already correct — don't rewrite the container for nothing
++    const int visited=c.value("combo",nlohmann::json::object()).value("visitedGames",0) | (1<<game);
++    if(SOH_SetMmVisited) SOH_SetMmVisited(visited & 2);
++    if (c.value("combo", nlohmann::json::object()).value("lastGame", -1) == game &&
++        c["combo"].value("visitedGames",0)==visited) return;
++    c["combo"]["visitedGames"]=visited;
+     std::cout << "[ComboShip] lastGame <- " << game << " (slot " << fileNum << ")" << std::endl;
+     c["combo"]["lastGame"] = game;
+     FlushContainer(fileNum);
+@@ -1810,7 +1832,10 @@
+ 
+ // ComboShip: worker that runs the combined-logic fill (or no-logic fallback) on a background
+ // thread, reports progress via the ComboGenProgress struct, and stashes placements.
+-static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* progress) {
++static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* progress, bool retryUntilSuccess=false) try {
++    ComboRando::GenerationScope generationScope(progress);
++    ComboRando::CheckGenerationCancellation();
++    struct SongRestore { nlohmann::json previous=sSongTravel.json(); ~SongRestore(){ InstallSongTravel(previous); } } songRestore;
+     if (progress) progress->phase.store(1); // Pool preparation can take time on mobile CPUs.
+     auto fail = [&](const char* msg) {
+         if (progress) {
+@@ -1900,9 +1925,15 @@
+     // Whole-fill retries (GAP-4): each attempt re-derives the master seed, so dumps, confined placement,
+     // and prices re-roll deterministically per attempt. Budget lives in CrossWorldRando.h.
+     const int kFillAttempts = ComboRando::kFillAttempts;
+-    for (int attempt = 0; attempt < kFillAttempts && !usedCombinedFill; ++attempt) {
++    for (uint64_t attempt = 0; (retryUntilSuccess || attempt < kFillAttempts) && !usedCombinedFill; ++attempt) {
++        ComboRando::CheckGenerationCancellation();
++        if(progress) { progress->attempt=attempt+1; progress->phase=1; }
++        // Interactive generation keeps retrying; headless test runs remain bounded.
+         // Space each retry's seed far apart (golden-ratio step) so attempts don't correlate.
+-        masterSeed = baseSeed + attempt * 0x9E3779B9u;
++        masterSeed = baseSeed + uint32_t(attempt) * 0x9E3779B9u;
++        InstallSongTravel(ComboRando::SongTravelMap::generate(masterSeed,
++            sReadGameplayRule && sReadGameplayRule("gCombo.Rando.SongTravel",0)!=0,
++            sReadGameplayRule && sReadGameplayRule("gCombo.Rando.ForeignSongs",0)!=0).json());
+         ResetCrossItemDedupForSeed(masterSeed);
+         // Random's LAST attempt always resolves OOT, so Random can never hard-fail on an MM-start attempt.
+         const bool mmStart = !pinStartOot && !(startCfg == 2 && attempt + 1 == kFillAttempts) &&
+@@ -1973,9 +2004,9 @@
+ 
+         ComboRando::OracleFns ootOracle = { Combo_SOH_Rando_Reset, Combo_SOH_Rando_SetOwnedItems,
+                                             Combo_SOH_Rando_GetReachableChecks, Combo_SOH_Rando_PlaceItem,
+-                                            Combo_SOH_Rando_GetPortalOpen };
++                                            Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals, SOH_GetSongSources, SOH_SongDestination, SOH_GetSongKnowledge, SOH_SetForeignSongKnowledge };
+         ComboRando::OracleFns mmOracle = { Combo_MM_Rando_Reset, Combo_MM_Rando_SetOwnedItems,
+-                                           Combo_MM_Rando_GetReachableChecks, Combo_MM_Rando_PlaceItem };
++                                           Combo_MM_Rando_GetReachableChecks, Combo_MM_Rando_PlaceItem, nullptr, MM_SetSongArrivals, MM_GetSongSources, SOH_SongDestination, MM_GetSongKnowledge, MM_SetForeignSongKnowledge };
+ 
+         // ComboShip: honor OOT's logic/ALR settings per-game (MM stays all-reachable). The fill gates MM
+         // on the portal region via ootOracle.GetPortalOpen; NO_LOGIC bypasses it.
+@@ -2142,7 +2173,7 @@
+         // Combo_FinalizeGenerate, which the main-thread file-select poll runs once it sees done.
+         // The OOT seed-hash folds in input-seed + both settings dumps so the icons identify seed and
+         // settings (same seed+settings -> matching icons across players).
+-        uint32_t displaySeed = ComboHash((inputSeed + sohDump + mmDump + SnapshotGameplayRules().dump()).c_str());
++        uint32_t displaySeed = ComboHash((inputSeed + sohDump + mmDump + SnapshotGameplayRules().dump() + sSongTravel.json().dump()).c_str());
+         g_FinalizeOotApply = ootApply.dump();
+         g_FinalizeDisplaySeed = displaySeed;
+         g_FinalizeMasterSeed = masterSeed;
+@@ -2182,6 +2213,7 @@
+         consolidated["fileType"] = "ComboShipRandomizer";
+         consolidated["version"] = 1;
+         consolidated["gameplayRules"] = SnapshotGameplayRules();
++        consolidated["songTravel"] = sSongTravel.json();
+         consolidated["seed"] = inputSeed;
+         consolidated["masterSeed"] = masterSeed;
+         consolidated["displaySeed"] = displaySeed;
+@@ -2229,6 +2261,8 @@
+         consolidated["hints"] = usedCombinedFill ? ComboRando::Generate(masterSeed, sohDump, sohHintDump, mmDump,
+                                                                         foreignEnriched, spoiler, pareDownResult)
+                                                  : nlohmann::json{ { "version", 1 } };
++        ComboRando::CheckGenerationCancellation();
++        if(progress) progress->BeginCommit();
+         g_ConsolidatedJson = consolidated.dump(2);
+ 
+         // This seed's own spoiler, so earlier seeds survive instead of being overwritten. The CVar that
+@@ -2262,6 +2296,14 @@
+     }
+     RestoreLoadedSlotGoal();
+     g_GenerateBusy.store(false);
++} catch (const std::exception& e) {
++    if(Combo_MM_Rando_Restore) Combo_MM_Rando_Restore();
++    RestoreLoadedSlotGoal();
++    if(progress) {
++        progress->SetError(progress->CancelRequested() ? "Generation cancelled" : e.what());
++        progress->success=false; progress->done=true; progress->running=false;
++    }
++    g_GenerateBusy=false;
+ }
+ 
+ // ComboShip: headless cross-world generation TEST (COMBO_GENTEST=<count>). Runs the combined fill
+@@ -2282,9 +2324,9 @@
+     }
+     ComboRando::OracleFns ootOracle = { Combo_SOH_Rando_Reset, Combo_SOH_Rando_SetOwnedItems,
+                                         Combo_SOH_Rando_GetReachableChecks, Combo_SOH_Rando_PlaceItem,
+-                                        Combo_SOH_Rando_GetPortalOpen };
++                                        Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals, SOH_GetSongSources, SOH_SongDestination, SOH_GetSongKnowledge, SOH_SetForeignSongKnowledge };
+     ComboRando::OracleFns mmOracle = { Combo_MM_Rando_Reset, Combo_MM_Rando_SetOwnedItems,
+-                                       Combo_MM_Rando_GetReachableChecks, Combo_MM_Rando_PlaceItem };
++                                       Combo_MM_Rando_GetReachableChecks, Combo_MM_Rando_PlaceItem, nullptr, MM_SetSongArrivals, MM_GetSongSources, SOH_SongDestination, MM_GetSongKnowledge, MM_SetForeignSongKnowledge };
+ 
+     std::cout << "[GENTEST] running " << numSeeds << " cross-world generations (seedBase=" << seedBase
+               << ") — asserting every advancement item is reachable from an empty start in both games\n";
+@@ -2299,6 +2341,9 @@
+         // after one reroll, so counting it FAIL here would inflate the failure rate.
+         for (int attempt = 0; attempt < ComboRando::kFillAttempts && !result.success; ++attempt) {
+             const uint32_t seed = baseSeed + attempt * 0x9E3779B9u;
++            InstallSongTravel(ComboRando::SongTravelMap::generate(seed,
++                sReadGameplayRule && sReadGameplayRule("gCombo.Rando.SongTravel",0)!=0,
++            sReadGameplayRule && sReadGameplayRule("gCombo.Rando.ForeignSongs",0)!=0).json());
+             const bool mmStart = !pinStartOot && !(startCfg == 2 && attempt + 1 == ComboRando::kFillAttempts) &&
+                                  ResolveStartingGameMM(startCfg, seed);
+             // Seeds before the dump (shop/scrub choices are seed-derived and made inside it); forced
+@@ -2384,9 +2429,9 @@
+     }
+     ComboRando::OracleFns ootOracle = { Combo_SOH_Rando_Reset, Combo_SOH_Rando_SetOwnedItems,
+                                         Combo_SOH_Rando_GetReachableChecks, Combo_SOH_Rando_PlaceItem,
+-                                        Combo_SOH_Rando_GetPortalOpen };
++                                        Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals, SOH_GetSongSources, SOH_SongDestination, SOH_GetSongKnowledge, SOH_SetForeignSongKnowledge };
+     ComboRando::OracleFns mmOracle = { Combo_MM_Rando_Reset, Combo_MM_Rando_SetOwnedItems,
+-                                       Combo_MM_Rando_GetReachableChecks, Combo_MM_Rando_PlaceItem };
++                                       Combo_MM_Rando_GetReachableChecks, Combo_MM_Rando_PlaceItem, nullptr, MM_SetSongArrivals, MM_GetSongSources, SOH_SongDestination, MM_GetSongKnowledge, MM_SetForeignSongKnowledge };
+     std::string seedStr = inputSeed.empty() ? "1" : inputSeed;
+     const uint32_t baseSeed = ComboHash(seedStr.c_str());
+     std::string sohDump, mmDump;
+@@ -2396,7 +2441,10 @@
+     // Mirror RunComboFill including its retries — the player's seed may have come from attempt 1, and
+     // validating only attempt 0 would either report "did not generate" or log a world they never got.
+     for (int attempt = 0; attempt < ComboRando::kFillAttempts && !fill.success; ++attempt) {
+-        const uint32_t masterSeed = baseSeed + attempt * 0x9E3779B9u;
++        const uint32_t masterSeed = baseSeed + uint32_t(attempt) * 0x9E3779B9u;
++        InstallSongTravel(ComboRando::SongTravelMap::generate(masterSeed,
++            sReadGameplayRule && sReadGameplayRule("gCombo.Rando.SongTravel",0)!=0,
++            sReadGameplayRule && sReadGameplayRule("gCombo.Rando.ForeignSongs",0)!=0).json());
+         const bool mmStart = !pinStartOot && !(startCfg == 2 && attempt + 1 == ComboRando::kFillAttempts) &&
+                              ResolveStartingGameMM(startCfg, masterSeed);
+         if (SOH_SetComboRandoSeed)
+@@ -2475,7 +2523,7 @@
+     std::string seed(inputSeed ? inputSeed : "");
+     // RunComboFill clears g_GenerateBusy when it finishes; the finalize gate then blocks re-trigger
+     // until the main-thread apply runs. Call RunComboFill directly (busy is already held).
+-    g_GenerateThread = std::thread([seed]() { RunComboFill(seed, &g_ComboProgress); });
++    g_GenerateThread = std::thread([seed]() { RunComboFill(seed, &g_ComboProgress, true); });
+ }
+ 
+ // ComboShip: cross-hint Phase 3 — "hints" only contains "oot" for a seed CrossHints::Generate actually
+@@ -2529,8 +2577,11 @@
+         Combo_FinalizeGenerate();
+         return 1;
+     }
+-    // No pending finalize: resolved iff the worker is done and not still running.
+-    return (g_ComboProgress.done.load() && !g_GenerateBusy.load()) ? 1 : 0;
++    // A cancelled/failed attempt has reset the working placement tables. Existing
++    // save files keep their baked seed, but don't start a new file on stale tables.
++    const bool resolved=g_ComboProgress.done.load() && !g_GenerateBusy.load();
++    if(resolved && !g_ComboProgress.success.load() && SOH_SetSeedGenerated) SOH_SetSeedGenerated(0);
++    return resolved ? 1 : 0;
+ }
+ 
+ // ComboShip: read a candidate consolidated seed file. True only if it opens, parses and is ours.
+@@ -2660,10 +2711,12 @@
+         struct RuleRestoreGuard {
+             nlohmann::json previous = SnapshotGameplayRules();
+             int slot = sGameplayRulesSlot;
++            nlohmann::json routes=sSongTravel.json();
+             bool keep = false;
+-            ~RuleRestoreGuard() { if (!keep) RestoreGameplayRules(previous, slot); }
++            ~RuleRestoreGuard() { if (!keep) { RestoreGameplayRules(previous, slot); InstallSongTravel(routes); } }
+         } ruleGuard;
+         if (j.contains("gameplayRules")) RestoreGameplayRules(j["gameplayRules"], sGameplayRulesSlot);
++        InstallSongTravel(j.value("songTravel", nlohmann::json()));
+         uint32_t masterSeed = j.value("masterSeed", 0u);
+         ResetCrossItemDedupForSeed(masterSeed);
+         uint32_t displaySeed = j.value("displaySeed", 0u);
+@@ -2857,6 +2910,7 @@
+             FlushContainer(fileNum);
+         }
+         RestoreGameplayRules(seed.value("gameplayRules", SnapshotGameplayRules()), fileNum);
++        InstallSongTravel(seed.value("songTravel",nlohmann::json()));
+         LoadComboCompletion(fileNum); // refresh the in-memory latch + push this seed's goal into both DLLs
+         if (SOH_LoadComboRando)
+             SOH_LoadComboRando(g_ConsolidatedJson.c_str());
+@@ -2943,6 +2997,7 @@
+                 .value("gameplayRules", SnapshotGameplayRules());
+         }
+         rules = c["combo"]["gameplayRules"];
++        if(SOH_SetMmVisited) SOH_SetMmVisited((c["combo"].value("visitedGames",0)&2) || c["combo"].value("lastGame",0)==1);
+     }
+     RestoreGameplayRules(rules, fileNum);
+     LoadComboCompletion(fileNum); // refresh both-bosses-beaten flags for this slot
+@@ -2956,6 +3011,7 @@
+             if (!r.is_null())
+                 rando = r.dump();
+         }
++        InstallSongTravel(rando.empty() ? nlohmann::json() : nlohmann::json::parse(rando).value("songTravel",nlohmann::json()));
+         if (!rando.empty()) {
+             if (SOH_LoadComboRando)
+                 SOH_LoadComboRando(rando.c_str());
+@@ -3011,6 +3067,7 @@
+     std::cout << "[ComboShip] Mask Shop entered — switching to MM, slot " << fileNum << std::endl;
+     if (MM_SetComboEntryIsResume)
+         MM_SetComboEntryIsResume(0); // portal entry: always arrives in South Clock Town
++    if(MM_SetSongArrival) MM_SetSongArrival(SOH_TakeSongDeparture ? SOH_TakeSongDeparture() : -1);
+     g_PendingMMFileNum = fileNum;
+     // OOT game loop is already exiting (gGameState->running = false set by the hook).
+ }
+@@ -3020,6 +3077,7 @@
+ 
+ static void Combo_OnMMReturn(int kind) {
+     g_mmReturnKind = kind;
++    if(SOH_SetSongArrival) SOH_SetSongArrival(MM_TakeSongDeparture ? MM_TakeSongDeparture() : -1);
+     std::cout << "[ComboShip] MM returning to OOT (kind=" << kind << ")" << std::endl;
+     g_pendingOOTReturn = true;
+ }
+@@ -3311,6 +3369,22 @@
+     Combo_MM_Rando_PlaceItem = (FnOraclePlaceItem)GetSym(mmModule, "Combo_MM_Rando_PlaceItem");
+     Combo_MM_Rando_Restore = (FnOracleVoid)GetSym(mmModule, "Combo_MM_Rando_Restore");
+ 
++    SOH_SetSongTravel=(void(*)(const char*))GetSym(sohModule,"SOH_SetSongTravel");
++    MM_SetSongTravel=(void(*)(const char*))GetSym(mmModule,"MM_SetSongTravel");
++    SOH_SetSongArrivals=(void(*)(uint32_t))GetSym(sohModule,"SOH_SetSongArrivals");
++    MM_SetSongArrivals=(void(*)(uint32_t))GetSym(mmModule,"MM_SetSongArrivals");
++    SOH_SetMmVisited=(void(*)(int))GetSym(sohModule,"SOH_SetMmVisited");
++    SOH_GetSongKnowledge=(uint32_t(*)())GetSym(sohModule,"SOH_GetSongKnowledge");
++    MM_GetSongKnowledge=(uint32_t(*)())GetSym(mmModule,"MM_GetSongKnowledge");
++    SOH_SetForeignSongKnowledge=(void(*)(uint32_t))GetSym(sohModule,"SOH_SetForeignSongKnowledge");
++    MM_SetForeignSongKnowledge=(void(*)(uint32_t))GetSym(mmModule,"MM_SetForeignSongKnowledge");
++    SOH_GetSongSources=(uint32_t(*)())GetSym(sohModule,"SOH_GetSongSources");
++    MM_GetSongSources=(uint32_t(*)())GetSym(mmModule,"MM_GetSongSources");
++    SOH_SongDestination=(int(*)(int))GetSym(sohModule,"SOH_SongDestination");
++    SOH_TakeSongDeparture=(int(*)())GetSym(sohModule,"SOH_TakeSongDeparture");
++    MM_TakeSongDeparture=(int(*)())GetSym(mmModule,"MM_TakeSongDeparture");
++    SOH_SetSongArrival=(void(*)(int))GetSym(sohModule,"SOH_SetSongArrival");
++    MM_SetSongArrival=(void(*)(int))GetSym(mmModule,"MM_SetSongArrival");
+     // OOT entrance-shuffle wiring (#90)
+     SOH_ShuffleEntrancesForCombo = (FnShuffleEntrances)GetSym(sohModule, "SOH_ShuffleEntrancesForCombo");
+     SOH_DumpEntranceOverrides = (FnDumpData)GetSym(sohModule, "SOH_DumpEntranceOverrides");
+@@ -3783,6 +3857,7 @@
+     // the DLLs it touches.
+     if (g_GenerateThread.joinable()) {
+         std::cerr << "[ComboShip] shutdown: joining generate worker" << std::endl;
++        g_ComboProgress.RequestCancel();
+         g_GenerateThread.join();
+     }
+ 
+--- a/combo/gui/ComboGenProgress.h
++++ b/combo/gui/ComboGenProgress.h
+@@ -5,8 +5,29 @@
+ #include <atomic>
+ #include <cstdint>
+ #include <cstring>
++#include <chrono>
++#include <stdexcept>
+ namespace ComboRando {
++struct GenerationCancelled : std::runtime_error {
++    GenerationCancelled() : std::runtime_error("Generation cancelled") {}
++};
++inline uint64_t GenerationClockMs() {
++    return std::chrono::duration_cast<std::chrono::milliseconds>(
++        std::chrono::steady_clock::now().time_since_epoch()).count();
++}
+ struct ComboGenProgress {
++    mutable std::atomic<int> disposition{0}; // 0 working, 1 cancellation requested, 2 committing
++    std::atomic<uint64_t> attempt{0}, startedMs{0};
++    mutable std::atomic<uint64_t> nextWarningSeconds{300};
++    bool RequestCancel() const { int expected=0; return disposition.compare_exchange_strong(expected,1); }
++    bool CancelRequested() const { return disposition.load()==1; }
++    bool CanCancel() const { return disposition.load()==0; }
++    uint64_t ElapsedSeconds(uint64_t now=GenerationClockMs()) const {
++        const auto start=startedMs.load(); return now>=start ? (now-start)/1000 : 0;
++    }
++    bool WarningDue(uint64_t elapsed) const { return elapsed>=nextWarningSeconds.load(); }
++    void KeepTrying(uint64_t elapsed) const { nextWarningSeconds=elapsed+300; }
++    void BeginCommit() { int expected=0; if(!disposition.compare_exchange_strong(expected,2)) throw GenerationCancelled(); }
+     std::atomic<int> phase{ 0 }; // 0 Idle,1 Preparing,2 Placing,3 Finalizing
+     std::atomic<int> placed{ 0 };
+     std::atomic<int> total{ 0 };
+@@ -22,6 +43,8 @@
+     // blank input this is the concrete random string actually used. Written before done; read after.
+     char seedStr[128] = { 0 };
+     void Reset() {
++        disposition=0; attempt=0; startedMs=GenerationClockMs(); nextWarningSeconds=300;
++        running=false; done=false;
+         phase = 0;
+         placed = 0;
+         total = 0;
+@@ -54,4 +77,14 @@
+         }
+     }
+ };
++// Cancellation checkpoints run only in the launcher worker, outside engine C frames.
++inline thread_local ComboGenProgress* generationProgress=nullptr;
++struct GenerationScope {
++    ComboGenProgress* previous=generationProgress;
++    explicit GenerationScope(ComboGenProgress* p) { generationProgress=p; }
++    ~GenerationScope() { generationProgress=previous; }
++};
++inline void CheckGenerationCancellation() {
++    if(generationProgress && generationProgress->CancelRequested()) throw GenerationCancelled();
++}
+ } // namespace ComboRando
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -15,6 +15,7 @@
+ #include "ComboCheckTracker.h"
+ #include "rando/GameplayRules.h"
+ #include "ComboRuleWarning.h"
++#include "ComboSongTravel.h"
+ #include "ComboTimersWindow.h"      // combo-owned overlay timers (#173)
+ #include "rando/ComboPlaythrough.h" // plando: ParseSpoilerPlacements + Suffix/BuildForeignArray + slot paths
+ #include <imgui.h>
+@@ -187,6 +188,36 @@
+ static const ImVec4 kBreadcrumbColor(0.6f, 0.6f, 0.6f, 1.0f); // muted gray for the result origin line
+ 
+ void ComboMenu::Draw() {
++    if(auto ctx=Ship::Context::GetRawInstance();ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui())
++        ImGui::SetCurrentContext(ctx->GetWindow()->GetGui()->GetImGuiContext());
++    DrawSongTravel();
++    ResolveComboGenSyms();
++    const auto* generation=sGetProgress ? sGetProgress() : nullptr;
++    if(generation && generation->running && !ImGui::IsPopupOpen("Generating combined seed"))
++        ImGui::OpenPopup("Generating combined seed");
++    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(),ImGuiCond_Always,ImVec2(.5f,.5f));
++    ImGui::SetNextWindowSize(ImVec2(std::min(540.0f,ImGui::GetMainViewport()->Size.x*.9f),0),ImGuiCond_Always);
++    if(ImGui::BeginPopupModal("Generating combined seed",nullptr,ImGuiWindowFlags_AlwaysAutoResize)) {
++        if(!generation || !generation->running) ImGui::CloseCurrentPopup();
++        else {
++            const auto elapsed=generation->ElapsedSeconds();
++            ImGui::Text("Attempt %llu - %llu:%02llu",(unsigned long long)generation->attempt.load(),
++                (unsigned long long)(elapsed/60),(unsigned long long)(elapsed%60));
++            ImGui::TextUnformatted(ComboGenProgress::PhaseLabel(generation->phase));
++            const int total=generation->total.load();
++            if(total>0) ImGui::ProgressBar(float(generation->placed.load())/total,ImVec2(-1,0));
++            ImGui::TextWrapped("Invalid layouts are retried automatically. Your existing saves keep their seeds.");
++            if(generation->CancelRequested()) ImGui::TextUnformatted("Cancelling after the current step...");
++            else if(!generation->CanCancel()) ImGui::TextUnformatted("Saving the completed seed...");
++            else if(generation->WarningDue(elapsed)) {
++                ImGui::Separator();
++                ImGui::TextWrapped("Your seed may be too difficult to generate. Try changing some settings and trying again.");
++                if(ImGui::Button("Keep trying",ImVec2(-1,0))) generation->KeepTrying(elapsed);
++                if(ImGui::Button("Stop and change settings",ImVec2(-1,0))) generation->RequestCancel();
++            } else if(ImGui::Button("Cancel generation",ImVec2(-1,0))) generation->RequestCancel();
++        }
++        ImGui::EndPopup();
++    }
+     // Mirror Ship::Menu::Draw â€” skip GuiWindow::Draw's normal Begin/End wrapper so DrawElement
+     // can open its own fullscreen overlay window instead of a floating one.
+     if (!IsVisible()) {
+@@ -1466,7 +1497,7 @@
+         case HubEntry::COMBO_TIMERS: DrawTimersSharedPanel(); break;
+         case HubEntry::COMBO_NETWORK: DrawNetworkSharedPanel(); break;
+         case HubEntry::COMBO_ABOUT:
+-            ImGui::TextWrapped("Combo Ship for Android - 0.1.18");
++            ImGui::TextWrapped("Combo Ship for Android - 0.1.19");
+             ImGui::TextWrapped("A combined Ocarina of Time and Majora's Mask randomizer with shared menus, trackers and touch controls.");
+             ImGui::Spacing();
+             ImGui::SeparatorText("Built on community work");
+@@ -1644,8 +1675,10 @@
+                 ImGui::Text("OOT checks: %d", p->ootCheckCount.load());
+                 ImGui::Text("MM checks: %d", p->mmCheckCount.load());
+                 ImGui::Text("Cross-game placements: %d", p->foreignCount.load());
++            } else if(p->CancelRequested()) {
++                ImGui::TextUnformatted("Generation cancelled. Change settings or try again when ready.");
+             } else {
+-                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Error: %s", p->error);
++                ImGui::TextWrapped("Generation stopped: %s",p->error);
+             }
+         }
+     }
+@@ -1659,6 +1692,19 @@
+         ImGui::TextWrapped("Seed options are available again when generation finishes.");
+         return;
+     }
++    ImGui::SeparatorText("Cross-game song travel");
++    bool songTravel=CVarGetInteger("gCombo.Rando.SongTravel",0)!=0;
++    if(ImGui::Checkbox("Shuffle warp songs and soaring destinations together", &songTravel)) {
++        CVarSetInteger("gCombo.Rando.SongTravel",songTravel?1:0);
++        CVarSave();
++    }
++    ImGui::TextWrapped("New seeds: mix six OoT warp destinations with ten MM soaring destinations. Songs, instruments and owl unlocks remain required. The saved routes are used by gameplay, generation and the tracker.");
++    ImGui::TextWrapped("Destination shuffle is separate from playing songs across games. Existing runs keep their saved options.");
++    bool foreignSongs=CVarGetInteger("gCombo.Rando.ForeignSongs",0)!=0;
++    if (ImGui::Checkbox("Play warp songs across games", &foreignSongs)) {
++        CVarSetInteger("gCombo.Rando.ForeignSongs",foreignSongs); Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
++    }
++    ImGui::TextWrapped("Shared song knowledge: play learned OoT warp songs in MM with MM's instrument and buttons. As Child Link, play Soaring in OoT with OoT's ocarina and buttons to visit activated MM owls. The generator uses these routes. Applies to new seeds.");
+     // Goal (#136): one combined win condition; each game's piece slider decides how many it contributes.
+     const ImVec4 goalTheme = ComboRando::ComboMenu_ThemeColor();
+     ImGui::SeparatorText("Goal");
+--- /dev/null
++++ b/combo/gui/ComboSongTravel.h
+@@ -0,0 +1,72 @@
++#pragma once
++#include "ComboForeground.h"
++#include "ComboResolve.h"
++#include "rando/ForeignSongs.h"
++#include "rando/SongTravel.h"
++#include <imgui.h>
++#include <string>
++#include <vector>
++
++namespace ComboRando {
++inline void DrawSongTravel() {
++    const char* module=ComboUI::IsMmActive() ? "2ship" : "soh";
++    const char* prefix=ComboUI::IsMmActive() ? "MM_" : "SOH_";
++    auto sym=[&](const char* suffix){ return Combo_ResolveSym(module,(std::string(prefix)+suffix).c_str()); };
++    auto request=(int(*)())sym("ForeignSongRequest");
++    if (!request || request()<0) return;
++    auto choices=(uint32_t(*)())sym("ForeignSongChoices");
++    auto destination=(int(*)(int))sym("ForeignSongDestination");
++    auto choose=(void(*)(int))sym("ForeignSongChoose");
++    auto input=(uint32_t(*)())sym("ForeignSongInput");
++    if(!choices || !choose || !destination) return;
++    std::vector<int> sources;
++    uint32_t mask=choices();
++    for(int i=0;i<16;i++) if(mask & (1u<<i)) sources.push_back(i);
++    static int selected=0, previousRequest=-1, previousGame=-1;
++    static double acceptInputAfter=0;
++    int song=request(), game=ComboUI::GetForegroundGame();
++    if(song!=previousRequest || game!=previousGame || !ImGui::IsPopupOpen("Song travel")) {
++        selected=0; previousRequest=song; previousGame=game;
++        acceptInputAfter=ImGui::GetTime()+0.35; // the final A note is not a confirmation
++        ImGui::OpenPopup("Song travel");
++    }
++    const auto viewport=ImGui::GetMainViewport();
++    ImGui::SetNextWindowPos(viewport->GetCenter(),ImGuiCond_Always,ImVec2(.5f,.5f));
++    ImGui::SetNextWindowSizeConstraints(ImVec2(340,0),ImVec2(viewport->Size.x*.85f,viewport->Size.y*.8f));
++    if(ImGui::BeginPopupModal("Song travel",nullptr,ImGuiWindowFlags_AlwaysAutoResize)) {
++        ImGui::Text("You played %s",song==6 ? "Song of Soaring" : kSongNames[song]);
++        ImGui::Separator();
++        const bool ready=ImGui::GetTime()>=acceptInputAfter;
++        uint32_t pressed=ready && input ? input() : 0;
++        // Menu navigation captures controller input before the game sees it.
++        // Also read ImGui's events so A/B and the D-pad work in either mode.
++        if(ready) {
++            if(ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp,false) || ImGui::IsKeyPressed(ImGuiKey_UpArrow,false)) pressed|=0x0800;
++            if(ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown,false) || ImGui::IsKeyPressed(ImGuiKey_DownArrow,false)) pressed|=0x0400;
++            if(ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown,false) || ImGui::IsKeyPressed(ImGuiKey_Enter,false)) pressed|=0x8000;
++            if(ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight,false) || ImGui::IsKeyPressed(ImGuiKey_Escape,false)) pressed|=0x4000;
++        }
++        ImGui::BeginDisabled(!ready);
++        int count=int(sources.size());
++        if(count) {
++            if(pressed & 0x0800) selected=(selected+count-1)%count;
++            if(pressed & 0x0400) selected=(selected+1)%count;
++            selected=selected<count ? selected : 0;
++            for(int row=0;row<count;row++) {
++                int d=destination(sources[row]);
++                std::string label=std::string(d<6 ? "OoT: " : "MM: ")+kSongLandingNames[d];
++                if(ImGui::Selectable(label.c_str(),selected==row,ImGuiSelectableFlags_DontClosePopups,ImVec2(0,ImGui::GetFrameHeight()*1.4f))) selected=row;
++            }
++            if(ImGui::Button("Warp (A)",ImVec2(155,ImGui::GetFrameHeight()*1.5f)) || (pressed & 0x8000)) {
++                choose(sources[selected]); ImGui::CloseCurrentPopup();
++            }
++            ImGui::SameLine();
++        } else ImGui::TextWrapped("No available destinations.");
++        if(ImGui::Button("Cancel (B)",ImVec2(155,ImGui::GetFrameHeight()*1.5f)) || (pressed & 0x4000)) {
++            choose(-1); ImGui::CloseCurrentPopup();
++        }
++        ImGui::EndDisabled();
++        ImGui::EndPopup();
++    }
++}
++}
+--- a/combo/rando/ComboPlaythrough.h
++++ b/combo/rando/ComboPlaythrough.h
+@@ -138,6 +138,7 @@
+ }
+ 
+ inline std::unordered_set<std::string> QueryReachable(const OracleFns& o, const std::vector<std::string>& owned) {
++    CheckGenerationCancellation();
+     nlohmann::json arr = nlohmann::json::array();
+     for (auto& n : owned)
+         arr.push_back(n);
+@@ -269,10 +270,10 @@
+         return std::string(p.checkGame == GAME_OOT ? "oot:" : "mm:") + p.check;
+     };
+ 
+-    // Per-invocation reachability memo (one per oracle): the same owned-set prefixes recur across
+-    // every counterfactual replay (sphere 0 is identical in all), so caching collapses the repeats.
+-    std::unordered_map<std::string, ReachResult> ootMemo, mmMemo;
+-    static const auto kEmptyReach = std::make_shared<const std::unordered_set<std::string>>();
++    // Cache the complete two-world probe. Song access depends on BOTH inventories
++    // and whether MM is already reachable; per-engine inventory caches lose those edges.
++    struct SongReachMemo { ReachSet oot, mm; bool mmOpen; };
++    std::unordered_map<std::string, SongReachMemo> songMemo;
+ 
+     // Excludes a SET of placements from ever crediting their items, then sphere-collects everything
+     // else from empty until stable. creditedOut (optional) reports what was credited when the run
+@@ -286,10 +287,17 @@
+         // and an MM start (#135) roots MM from the beginning.
+         bool portalOpen = !portalGated || mmStart;
+         for (;;) {
+-            auto ootQ = QueryReachableMemo(ootOracle, ootOwned, ootMemo);
+-            ootReach = ootQ.reach;
+-            portalOpen = portalOpen || ootQ.portalOpen;
+-            mmReach = portalOpen ? QueryReachableMemo(mmOracle, mmOwned, mmMemo).reach : kEmptyReach;
++            CheckGenerationCancellation();
++            const std::string key=nlohmann::json::array({CanonicalOwnedKey(ootOwned),
++                CanonicalOwnedKey(mmOwned),portalOpen}).dump();
++            auto memo=songMemo.find(key);
++            if(memo==songMemo.end()) {
++                auto worlds=QuerySongWorlds(ootOracle,mmOracle,ootOwned,mmOwned,portalOpen,QueryReachable);
++                SongReachMemo value{std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.first)),
++                    std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.second)),portalOpen};
++                memo=songMemo.emplace(key,std::move(value)).first;
++            }
++            ootReach=memo->second.oot; mmReach=memo->second.mm; portalOpen=memo->second.mmOpen;
+             // Test the goal per sphere and stop at the first win: we only break when the goal IS met
+             // and never un-credit an item, so an early win is final regardless of oracle monotonicity.
+             if (goalReached(*ootReach, *mmReach, ootOwned, mmOwned)) {
+@@ -444,11 +452,9 @@
+     bool portalOpen = !portalGated || mmStart;
+     size_t sharedGiven[SF_COUNT] = { 0 };
+     for (int sphere = 0; sphere < kMaxSpheres; ++sphere) {
+-        auto ootReach = queryReachable(ootOracle, ownedOot);
+-        // Portal bit belongs to the OOT query just made; read it before crediting any MM check.
+-        portalOpen = portalOpen || OraclePortalOpen(ootOracle);
+         ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven);
+-        auto mmReach = portalOpen ? queryReachable(mmOracle, ownedMm) : std::unordered_set<std::string>{};
++        auto worlds=QuerySongWorlds(ootOracle,mmOracle,ownedOot,ownedMm,portalOpen,queryReachable);
++        auto& ootReach=worlds.first; auto& mmReach=worlds.second;
+         bool canGanon = ootReach.count(kOotGanon) > 0;
+         bool canMajora = mmReach.count(kMmWin) > 0;
+         if (goal.hunt ? CountOwnedTriforcePieces(ownedOot, ownedMm) >= goal.required : (canGanon && canMajora)) {
+@@ -508,11 +514,11 @@
+     std::vector<std::string> allOot, allMm;
+     for (auto& p : placements)
+         (p.itemGame == GAME_OOT ? allOot : allMm).push_back(p.item);
+-    auto everReachOot = queryReachable(ootOracle, allOot);
+-    bool everPortalOpen = OraclePortalOpen(ootOracle) || mmStart;
++    bool everPortalOpen = !portalGated || mmStart;
+     size_t everSharedGiven[SF_COUNT] = { 0 };
+     ApplySharedMirror(sharedMask, allOot, allMm, everSharedGiven);
+-    auto everReachMm = everPortalOpen ? queryReachable(mmOracle, allMm) : std::unordered_set<std::string>{};
++    auto everWorlds=QuerySongWorlds(ootOracle,mmOracle,allOot,allMm,everPortalOpen,queryReachable);
++    auto& everReachOot=everWorlds.first; auto& everReachMm=everWorlds.second;
+     result.ganonReachable = everReachOot.count(kOotGanon) > 0;
+     result.majoraReachable = everReachMm.count(kMmWin) > 0;
+     if (goal.hunt) {
+--- a/combo/rando/CrossWorldRando.h
++++ b/combo/rando/CrossWorldRando.h
+@@ -69,7 +69,58 @@
+     // OOT only (null for MM): is the OOT->MM portal region reachable? Valid only immediately after a
+     // GetReachableChecks call, whose owned-set it describes (the DLL piggybacks on that search).
+     uint8_t (*GetPortalOpen)(void) = nullptr;
++    void (*SetSongArrivals)(uint32_t) = nullptr;
++    uint32_t (*GetSongSources)(void) = nullptr;
++    int (*SongDestination)(int) = nullptr;
++    uint32_t (*GetSongKnowledge)() = nullptr;
++    void (*SetForeignSongKnowledge)(uint32_t) = nullptr;
+ };
++
++// The two searches exchange destination roots until stable, before crediting any check item.
++// Each query starts from EMPTY arrival masks; assumed items from a prior fill probe cannot leak.
++template<class Query>
++inline auto QuerySongWorlds(const OracleFns& oot, const OracleFns& mm,
++                           const std::vector<std::string>& ootOwned, const std::vector<std::string>& mmOwned,
++                           bool& mmOpen, Query query) {
++    CheckGenerationCancellation();
++    using Checks=std::unordered_set<std::string>;
++    std::pair<Checks,Checks> result;
++    uint32_t ootArrivals=0, mmArrivals=0;
++    // Song ownership is shared; instruments/buttons remain local. Read this probe's
++    // inventory in BOTH engines before searching, never a previous probe's inventory.
++    if (oot.GetSongKnowledge && mm.GetSongKnowledge && oot.SetForeignSongKnowledge && mm.SetForeignSongKnowledge) {
++        oot.Reset(); oot.SetOwnedItems(nlohmann::json(ootOwned).dump().c_str());
++        mm.Reset(); mm.SetOwnedItems(nlohmann::json(mmOwned).dump().c_str());
++        const auto ootKnown=oot.GetSongKnowledge(), mmKnown=mm.GetSongKnowledge();
++        oot.SetForeignSongKnowledge(mmKnown); mm.SetForeignSongKnowledge(ootKnown);
++    }
++    auto destinations=[](const OracleFns& oracle) {
++        uint32_t mask=0;
++        if (oracle.GetSongSources && oracle.SongDestination) {
++            uint32_t sources=oracle.GetSongSources();
++            for(int i=0;i<16;i++) if(sources & (1u<<i)) {
++                int d=oracle.SongDestination(i); if(d>=0 && d<16) mask |= 1u<<d;
++            }
++        }
++        return mask;
++    };
++    for (int pass=0;pass<18;pass++) {
++        if(oot.SetSongArrivals) oot.SetSongArrivals(ootArrivals);
++        result.first=query(oot,ootOwned);
++        mmOpen = mmOpen || !oot.GetPortalOpen || oot.GetPortalOpen()!=0;
++        const uint32_t fromOot=destinations(oot);
++        const uint32_t newMm=mmArrivals | (fromOot & 0xffc0);
++        mmOpen = mmOpen || newMm!=0;
++        if(mm.SetSongArrivals) mm.SetSongArrivals(newMm);
++        result.second=mmOpen ? query(mm,mmOwned) : Checks{};
++        const uint32_t fromMm=mmOpen ? destinations(mm) : 0;
++        const uint32_t newOot=ootArrivals | ((fromOot | fromMm) & 63);
++        const uint32_t allMm=newMm | (fromMm & 0xffc0);
++        if(newOot==ootArrivals && allMm==mmArrivals) return result;
++        ootArrivals=newOot; mmArrivals=allMm;
++    }
++    throw std::runtime_error("Song-route search failed to converge");
++}
+ 
+ // ---------- Data types ----------
+ 
+@@ -615,6 +666,7 @@
+     auto queryReachable = [&](const OracleFns& oracle,
+                               const std::vector<std::string>& ownedItems) -> std::unordered_set<std::string> {
+         QueryStats& stats = (&oracle == &ootOracle) ? ootStats : mmStats;
++        CheckGenerationCancellation();
+         auto t0 = std::chrono::steady_clock::now();
+         nlohmann::json arr = nlohmann::json::array();
+         for (const auto& n : ownedItems)
+@@ -646,6 +698,7 @@
+         owned.insert(owned.end(), extraOwned.begin(), extraOwned.end());
+         std::vector<bool> credited(pl.size(), false);
+         OotClosedResult r;
++        if(ootOracle.SetSongArrivals) ootOracle.SetSongArrivals(0);
+         for (;;) {
+             r.reach = queryReachable(ootOracle, owned);
+             r.portalOpen = r.portalOpen || ootOracle.GetPortalOpen == nullptr || ootOracle.GetPortalOpen() != 0;
+@@ -754,11 +807,6 @@
+         // mmOwned this call, so re-querying doesn't duplicate them as ootOwned grows.
+         size_t sharedGiven[SF_COUNT] = { 0 };
+         for (;;) {
+-            ootReachable = queryReachable(ootOracle, ootOwned);
+-            // Read the portal off THIS OOT query, before any MM check is credited below — that ordering
+-            // is what stops the fill proving the portal with an item that lives behind it.
+-            if (!portalOpen)
+-                portalOpen = ootOracle.GetPortalOpen() != 0;
+             if (effectiveSharedMask != 0) {
+                 for (int i = 0; i < SF_COUNT; ++i) {
+                     if (!(effectiveSharedMask & (1u << i)))
+@@ -774,7 +822,8 @@
+                     sharedGiven[i] = target;
+                 }
+             }
+-            mmReachable = portalOpen ? queryReachable(mmOracle, mmOwned) : std::unordered_set<std::string>{};
++            auto worlds=QuerySongWorlds(ootOracle,mmOracle,ootOwned,mmOwned,portalOpen,queryReachable);
++            ootReachable=std::move(worlds.first); mmReachable=std::move(worlds.second);
+             bool changed = false;
+             for (size_t i = 0; i < placements.size(); ++i) {
+                 if (credited[i])
+--- /dev/null
++++ b/combo/rando/ForeignSongs.h
+@@ -0,0 +1,42 @@
++#pragma once
++#include <cstdint>
++
++namespace ComboRando {
++// OoTMM mm/ocarina.c and macros_common.yml: A, down, right, left, up.
++inline constexpr uint8_t kForeignNotes[7][8] = {
++    {0,4,3,2,3,2}, {1,0,1,0,2,1,2,1}, {0,1,2,2,3},
++    {0,1,0,2,1,0}, {3,2,2,0,3,2,1}, {4,2,4,2,3,4}, {1,3,4,1,3,4}
++};
++inline constexpr int kForeignLengths[] = {6,8,5,6,7,6,6};
++inline constexpr uint8_t kSongPitches[] = {2,5,9,11,14};
++inline uint32_t RequiredSongButtons(int song) {
++    uint32_t mask=0;
++    for(int i=0;i<kForeignLengths[song];i++) mask |= 1u<<kForeignNotes[song][i];
++    return mask;
++}
++inline uint32_t ForeignWarpSources(bool enabled, uint32_t knownSongs, bool instrument, uint32_t buttons) {
++    if (!enabled || !instrument) return 0;
++    uint32_t mask=0;
++    for(int i=0;i<6;i++) if ((knownSongs & (1u<<i)) && (buttons & RequiredSongButtons(i))==RequiredSongButtons(i)) mask|=1u<<i;
++    return mask;
++}
++inline uint32_t ForeignSoaringSources(bool enabled, uint32_t knownOwls, bool instrument, uint32_t buttons, bool child) {
++    return enabled && instrument && child && (buttons & RequiredSongButtons(6))==RequiredSongButtons(6) ? knownOwls & 0xffc0 : 0;
++}
++inline int RecognizeForeignSong(const uint8_t* pitches, int count, uint32_t allowed) {
++    if (!pitches || count<0 || count>8) return -1;
++    for(int song=0;song<7;song++) {
++        if (!(allowed & (1u<<song)) || count<kForeignLengths[song]) continue;
++        bool match=true;
++        for(int i=0;i<kForeignLengths[song];i++)
++            match &= pitches[count-kForeignLengths[song]+i]==kSongPitches[kForeignNotes[song][i]];
++        if (match) return song;
++    }
++    return -1;
++}
++inline constexpr const char* kSongLandingNames[] = {
++    "Sacred Forest Meadow", "Death Mountain Crater", "Lake Hylia", "Desert Colossus",
++    "Graveyard warp pad", "Temple of Time", "Great Bay Coast", "Zora Cape", "Snowhead",
++    "Mountain Village", "Clock Town", "Milk Road", "Woodfall", "Southern Swamp", "Ikana Canyon", "Stone Tower"
++};
++}
+--- /dev/null
++++ b/combo/rando/SongTravel.h
+@@ -0,0 +1,66 @@
++#pragma once
++#include <array>
++#include <cstdint>
++#include <stdexcept>
++#include <nlohmann/json.hpp>
++
++namespace ComboRando {
++// Endpoint ordering matches each engine's native song/soaring menu. Rules/pool reference:
++// OoTMM a284b8aa: settings erWarps, solver/entrances.ts poolWarps, both _system.yml.
++// Destination shuffle and shared cross-game song playback are independent seed options.
++inline constexpr int kSongDestinations = 16;
++inline constexpr const char* kSongNames[] = {
++    "Minuet of Forest", "Bolero of Fire", "Serenade of Water", "Requiem of Spirit",
++    "Nocturne of Shadow", "Prelude of Light", "Great Bay Coast", "Zora Cape", "Snowhead",
++    "Mountain Village", "Clock Town", "Milk Road", "Woodfall", "Southern Swamp", "Ikana Canyon", "Stone Tower"
++};
++struct SongTravelMap {
++    bool enabled = false;
++    bool foreignSongs = false;
++    std::array<int, kSongDestinations> destinations{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
++    int destination(int source) const { return source >= 0 && source < kSongDestinations ? destinations[source] : -1; }
++    uint32_t resolve(uint32_t sources) const {
++        uint32_t out = 0;
++        if (enabled || foreignSongs) for (int i=0;i<kSongDestinations;i++) if (sources & (1u<<i)) out |= 1u<<destinations[i];
++        return out;
++    }
++    nlohmann::json json() const { return {{"version",1},{"enabled",enabled},{"foreignSongs",foreignSongs},{"destinations",destinations}}; }
++    static SongTravelMap parse(const nlohmann::json& j) {
++        SongTravelMap map;
++        if (j.is_null()) return map; // older seeds retain native warps
++        if (!j.is_object() || j.value("version",0)!=1 || !j.contains("enabled") || !j["enabled"].is_boolean() ||
++            !j.contains("destinations") || !j["destinations"].is_array() || j["destinations"].size()!=16)
++            throw std::invalid_argument("Invalid song travel map");
++        uint32_t seen=0;
++        for (int i=0;i<16;i++) {
++            const auto& value=j["destinations"][i];
++            if (!value.is_number_integer() || value<0 || value>=16) throw std::invalid_argument("Invalid song destination");
++            int d=value.get<int>();
++            if (seen & (1u<<d)) throw std::invalid_argument("Duplicate song destination");
++            seen |= 1u<<d; map.destinations[i]=d;
++        }
++        map.enabled=j["enabled"].get<bool>();
++        map.foreignSongs=j.value("foreignSongs",false); return map;
++    }
++    static SongTravelMap generate(uint64_t seed, bool enabled, bool foreignSongs=false) {
++        SongTravelMap map; map.enabled=enabled; map.foreignSongs=foreignSongs;
++        if (!enabled) return map;
++        // Separate stream: routes are stable and never consume the item-fill RNG.
++        uint64_t state=seed ^ UINT64_C(0x534f4e4754524156);
++        for (int i=15;i>0;--i) {
++            state=state*UINT64_C(6364136223846793005)+UINT64_C(1442695040888963407);
++            const int j=int((state>>32)%uint64_t(i+1));
++            std::swap(map.destinations[i],map.destinations[j]);
++        }
++        return map;
++    }
++};
++// The launcher installs the SAME validated seed map in both engines before searching or playing.
++inline SongTravelMap& ActiveSongTravel() { static SongTravelMap map; return map; }
++inline uint32_t& OotForeignKnowledge() { static uint32_t mask=0; return mask; }
++inline uint32_t& MmForeignKnowledge() { static uint32_t mask=0; return mask; }
++inline uint32_t& OotSongArrivals() { static uint32_t mask=0; return mask; }
++inline uint32_t& MmSongArrivals() { static uint32_t mask=0; return mask; }
++inline bool& OotSongOracle() { static bool active=false; return active; }
++inline bool& MmSongOracle() { static bool active=false; return active; }
++}
+--- /dev/null
++++ b/combo/rando/SongTravelMM.h
+@@ -0,0 +1,8 @@
++#pragma once
++#include "SongTravel.h"
++namespace ComboRando {
++inline constexpr int kMmSongEntrances[] = {ENTRANCE(GREAT_BAY_COAST,11), ENTRANCE(ZORA_CAPE,6), ENTRANCE(SNOWHEAD,3),
++    ENTRANCE(MOUNTAIN_VILLAGE_WINTER,8), ENTRANCE(SOUTH_CLOCK_TOWN,9), ENTRANCE(MILK_ROAD,4), ENTRANCE(WOODFALL,4),
++    ENTRANCE(SOUTHERN_SWAMP_POISONED,10), ENTRANCE(IKANA_CANYON,4), ENTRANCE(STONE_TOWER,3)};
++inline int MmSongSource(int entrance) { for(int i=0;i<10;i++) if(kMmSongEntrances[i]==entrance) return i+6; return -1; }
++}
+--- /dev/null
++++ b/combo/rando/SongTravelOOT.h
+@@ -0,0 +1,12 @@
++#pragma once
++#include "SongTravel.h"
++#include "soh/Enhancements/randomizer/location_access.h"
++namespace ComboRando {
++inline constexpr RandomizerRegion kOotSongRegions[] = {RR_SACRED_FOREST_MEADOW, RR_DMC_PAD_ENTRY, RR_LAKE_HYLIA,
++    RR_DESERT_COLOSSUS, RR_GRAVEYARD_WARP_PAD_REGION, RR_TEMPLE_OF_TIME};
++inline constexpr RandomizerRegion kOotSongSources[] = {RR_MINUET_OF_FOREST_WARP, RR_BOLERO_OF_FIRE_WARP,
++    RR_SERENADE_OF_WATER_WARP, RR_REQUIEM_OF_SPIRIT_WARP, RR_NOCTURNE_OF_SHADOW_WARP, RR_PRELUDE_OF_LIGHT_WARP};
++inline constexpr int kOotSongEntrances[] = {ENTR_SACRED_FOREST_MEADOW_WARP_PAD, ENTR_DEATH_MOUNTAIN_CRATER_WARP_PAD,
++    ENTR_LAKE_HYLIA_WARP_PAD, ENTR_DESERT_COLOSSUS_WARP_PAD, ENTR_GRAVEYARD_WARP_PAD, ENTR_TEMPLE_OF_TIME_WARP_PAD};
++inline int OotSongSource(RandomizerRegion region) { for(int i=0;i<6;i++) if(kOotSongSources[i]==region) return i; return -1; }
++}
+--- a/mm/2s2h/BenPort.cpp
++++ b/mm/2s2h/BenPort.cpp
+@@ -143,6 +143,9 @@
+ // ComboShip: set before MM_RunGame to reuse the OOT context. One shared libultraship.dll means
+ // Context::mContext is the same instance in every DLL, so GetInstance() already returns it.
+ static bool sComboTransitionActive = false;
++static int sSongDeparture=-1;
++static void ProcessForeignSongReply();
++static int sSongArrival=-1;
+ 
+ extern "C" COMBO_EXPORT void MM_NotifyComboTransition(void) {
+     sComboTransitionActive = true;
+@@ -1133,6 +1136,8 @@
+         }
+     });
+     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameStateMainStart>([]() {
++        ProcessForeignSongReply();
++        if (sSongDeparture>=0) sComboReturnPending=true;
+         if (!sComboReturnPending && !sComboResetReturnPending && !sComboOwlSaveQuitPending)
+             return;
+         const bool isReset = sComboResetReturnPending;
+@@ -4329,7 +4334,95 @@
+     SPDLOG_ERROR("[ComboShip] MM_TriggerTriforceCredits threw: {}", e.what());
+ } catch (...) { SPDLOG_ERROR("[ComboShip] MM_TriggerTriforceCredits threw a non-std exception"); }
+ 
++#include "rando/SongTravelMM.h"
++#include "rando/ForeignSongs.h"
++#include <atomic>
++static std::atomic<int> sForeignSongRequest{-1}, sForeignSongReply{-2};
++extern "C" COMBO_EXPORT void MM_SetSongTravel(const char* json) {
++    sForeignSongRequest=-1; sForeignSongReply=-2;
++    try { ComboRando::ActiveSongTravel()=ComboRando::SongTravelMap::parse(nlohmann::json::parse(json)); }
++    catch (...) { ComboRando::ActiveSongTravel()={}; }
++    ComboRando::MmSongArrivals()=0;
++}
++extern "C" COMBO_EXPORT void MM_SetSongArrivals(uint32_t mask) { ComboRando::MmSongArrivals()=mask & 0xffc0; }
++extern "C" COMBO_EXPORT uint32_t MM_GetSongKnowledge() {
++    return CHECK_QUEST_ITEM(QUEST_SONG_SOARING) ? uint32_t(gSaveContext.save.saveInfo.playerData.owlActivationFlags & 1023)<<6 : 0;
++}
++extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongKnowledge() { return IS_RANDO ? MM_GetSongKnowledge() : 0; }
++extern "C" COMBO_EXPORT void MM_SetForeignSongKnowledge(uint32_t mask) { ComboRando::MmForeignKnowledge()=mask; }
++static uint32_t MmForeignWarpSources(uint32_t known) {
++    uint32_t buttons=0;
++    const RandoInf infs[]={RANDO_INF_OBTAINED_OCARINA_BUTTON_A,RANDO_INF_OBTAINED_OCARINA_BUTTON_C_DOWN,
++        RANDO_INF_OBTAINED_OCARINA_BUTTON_C_RIGHT,RANDO_INF_OBTAINED_OCARINA_BUTTON_C_LEFT,RANDO_INF_OBTAINED_OCARINA_BUTTON_C_UP};
++    for(int i=0;i<5;i++) if(Flags_GetRandoInf(infs[i])) buttons|=1u<<i;
++    return ComboRando::ForeignWarpSources(ComboRando::ActiveSongTravel().foreignSongs,known,HAS_ITEM(ITEM_OCARINA_OF_TIME),buttons);
++}
++extern "C" COMBO_EXPORT uint32_t MM_GetSongSources() {
++    uint32_t native=CAN_PLAY_SONG(SOARING) ? MM_GetSongKnowledge() : 0;
++    return native | MmForeignWarpSources(ComboRando::MmForeignKnowledge());
++}
++extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongSources() {
++    if (!IS_RANDO) return 0;
++    auto fn=(uint32_t(*)())Combo_ResolveSym("soh","SOH_GetLiveSongKnowledge");
++    return (CAN_PLAY_SONG(SOARING) ? MM_GetSongKnowledge() : 0) | (fn ? MmForeignWarpSources(fn()) : 0);
++}
++
++extern "C" COMBO_EXPORT int MM_ForeignSongRequest() { return sForeignSongRequest.load(); }
++extern "C" COMBO_EXPORT uint32_t MM_ForeignSongChoices() {
++    int request=sForeignSongRequest.load();
++    if (request<0) return 0;
++    return (MM_GetLiveSongSources() & (1u<<request));
++}
++extern "C" COMBO_EXPORT int MM_ForeignSongDestination(int source) { return ComboRando::ActiveSongTravel().destination(source); }
++extern "C" COMBO_EXPORT uint32_t MM_ForeignSongInput() {
++    return gPlayState ? CONTROLLER1(&gPlayState->state)->press.button : 0;
++}
++extern "C" COMBO_EXPORT void MM_ForeignSongChoose(int source) { sForeignSongReply=source; }
++extern "C" int Combo_MMRecognizeForeignSong(const uint8_t* pitches, int count) {
++    if (!IS_RANDO || !gPlayState || !ComboRando::ActiveSongTravel().foreignSongs ||
++        gPlayState->msgCtx.ocarinaAction!=OCARINA_ACTION_FREE_PLAY || gPlayState->interfaceCtx.restrictions.songOfSoaring || sForeignSongRequest.load()>=0) return 0;
++    uint32_t allowed=MM_GetLiveSongSources() & 63;
++    int song=ComboRando::RecognizeForeignSong(pitches,count,allowed);
++    if(song<0) return 0;
++    sForeignSongReply=-2; sForeignSongRequest=song; return 1;
++}
++static void ProcessForeignSongReply() {
++    int reply=sForeignSongReply.exchange(-2);
++    if(reply==-2) return;
++    const uint32_t choices=MM_ForeignSongChoices();
++    sForeignSongRequest=-1;
++    if(!gPlayState) return;
++    AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
++    Message_CloseTextbox(gPlayState);
++    gPlayState->msgCtx.ocarinaMode=4; // native ocarina END mode in both games
++    if(reply<0 || reply>=16 || !(choices & (1u<<reply))) return;
++    int dest=ComboRando::ActiveSongTravel().destination(reply);
++    if(dest<6) { sSongDeparture=dest; gPlayState->transitionTrigger=TRANS_TRIGGER_OFF; }
++    else { gPlayState->nextEntrance=ComboRando::kMmSongEntrances[dest-6];
++        if(dest==13 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE)) gPlayState->nextEntrance=ENTRANCE(SOUTHERN_SWAMP_CLEARED,10);
++        if(dest==9 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE)) gPlayState->nextEntrance=ENTRANCE(MOUNTAIN_VILLAGE_SPRING,8);
++        gPlayState->transitionTrigger=TRANS_TRIGGER_START; gPlayState->transitionType=TRANS_TYPE_FADE_BLACK; }
++}
++
++extern "C" uint32_t MM_LiveIncomingSongs() {
++    auto fn=(uint32_t(*)())Combo_ResolveSym("soh", "SOH_GetLiveSongSources");
++    return ComboRando::ActiveSongTravel().resolve((fn ? fn() : 0) | MM_GetLiveSongSources()) & 0xffc0;
++}
++extern "C" COMBO_EXPORT int MM_TakeSongDeparture() { int d=sSongDeparture; sSongDeparture=-1; return d; }
++extern "C" COMBO_EXPORT void MM_SetSongArrival(int d) { sSongArrival=d>=6 && d<16 ? d : -1; }
++extern "C" int MM_ConsumeSongArrival() { int d=sSongArrival; sSongArrival=-1; return d<6 ? -1 : ComboRando::kMmSongEntrances[d-6]; }
++extern "C" int Combo_MMSongWarp(PlayState* play, int owl) {
++    if (!IS_RANDO || !ComboRando::ActiveSongTravel().enabled || owl<0 || owl>=10) return 0;
++    int d=ComboRando::ActiveSongTravel().destination(owl+6);
++    if(d<6) { sSongDeparture=d; play->transitionTrigger=TRANS_TRIGGER_OFF; }
++    else { play->nextEntrance=ComboRando::kMmSongEntrances[d-6];
++        if(d==13 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE)) play->nextEntrance=ENTRANCE(SOUTHERN_SWAMP_CLEARED,10);
++        if(d==9 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE)) play->nextEntrance=ENTRANCE(MOUNTAIN_VILLAGE_SPRING,8);
++        play->transitionTrigger=TRANS_TRIGGER_START; play->transitionType=TRANS_TYPE_FADE_BLACK; }
++    return 1;
++}
+ extern "C" COMBO_EXPORT const char* Combo_MM_Rando_GetReachableChecks(void) {
++    ComboRando::MmSongOracle()=true;
+     static std::string buf;
+ 
+     std::set<RandoRegionId> reachable = { RR_MAX };
+@@ -4386,6 +4479,7 @@
+         }
+     }
+ 
++    ComboRando::MmSongOracle()=false;
+     buf = out.dump();
+     return buf.c_str();
+ }
+--- a/mm/2s2h/Rando/Logic/Logic.cpp
++++ b/mm/2s2h/Rando/Logic/Logic.cpp
+@@ -2,6 +2,10 @@
+ #include "2s2h/ShipInit.hpp"
+ 
+ #include "Logic.h"
++#ifdef COMBO_BUILD
++#include "rando/SongTravelMM.h"
++extern "C" uint32_t MM_LiveIncomingSongs();
++#endif
+ 
+ namespace Rando {
+ 
+@@ -174,6 +178,20 @@
+         sourceTimeState.timeSlices = currentTime;
+     }
+ 
++#ifdef COMBO_BUILD
++    if (currentRegion == RR_MAX && (ComboRando::ActiveSongTravel().enabled || ComboRando::ActiveSongTravel().foreignSongs)) {
++        const uint32_t arrivals = ComboRando::MmSongOracle() ? ComboRando::MmSongArrivals() : MM_LiveIncomingSongs();
++        for (int i=0;i<10;i++) if (arrivals & (1u<<(i+6))) {
++            const auto target=GetRegionIdFromEntrance(ComboRando::kMmSongEntrances[i]);
++            if (target==RR_MAX) continue;
++            RegionTimeState incoming{.timeSlices=currentTime, .canStayOverTime=Regions[target].canStayOverTime};
++            if (reachableRegions.count(target) && TimeStateCovers(regionTimeStates[target],incoming)) continue;
++            reachableRegions.insert(target);
++            regionTimeStates[target]=MergeTimeStates(regionTimeStates[target],incoming);
++            FindReachableRegions(target,reachableRegions,regionTimeStates);
++        }
++    }
++#endif
+     // Explore connections
+     for (auto& [connectedRegionId, condition] : sourceRegion.connections) {
+         // Set global time for check evaluation
+@@ -209,6 +227,16 @@
+ 
+         RandoRegionId connectedRegionId = GetRegionIdFromEntrance(exitId);
+         if (regionExit.condition()) {
++#ifdef COMBO_BUILD
++            if (currentRegion==RR_MAX && ComboRando::ActiveSongTravel().enabled) {
++                const int source=ComboRando::MmSongSource(exitId);
++                if (source>=0) {
++                    int destination=ComboRando::ActiveSongTravel().destination(source);
++                    if (destination<6) continue;
++                    connectedRegionId=GetRegionIdFromEntrance(ComboRando::kMmSongEntrances[destination-6]);
++                }
++            }
++#endif
+             auto& targetRegion = Regions[connectedRegionId];
+             RegionTimeState incomingState = { .timeSlices = currentTime,
+                                               .canStayOverTime = targetRegion.canStayOverTime };
+--- a/mm/src/audio/code_8019AF00.c
++++ b/mm/src/audio/code_8019AF00.c
+@@ -2563,6 +2563,14 @@
+             sCurOcarinaSongWithoutMusicStaff[sOcarinaWithoutMusicStaffPos - 1] = sCurOcarinaPitch;
+         }
+ 
++#ifdef COMBO_BUILD
++            extern int Combo_MMRecognizeForeignSong(const u8*, int);
++            if (Combo_MMRecognizeForeignSong(sCurOcarinaSongWithoutMusicStaff, sOcarinaWithoutMusicStaffPos)) {
++                sIsOcarinaInputEnabled = false;
++                sOcarinaFlags = 0;
++                return;
++            }
++#endif
+         // This nested for-loop tests to see if the notes from the ocarina are identical
+         // to any of the songIndex from sFirstOcarinaSongIndex to sLastOcarinaSongIndex
+ 
+--- a/mm/src/code/title_setup.c
++++ b/mm/src/code/title_setup.c
+@@ -90,6 +90,17 @@
+         } else {
+             gSaveContext.save.entrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0);
+         }
++        extern int MM_ConsumeSongArrival(void);
++        const int songArrival=MM_ConsumeSongArrival();
++        if (songArrival>=0) {
++            gSaveContext.save.playerForm = PLAYER_FORM_HUMAN;
++            gSaveContext.save.equippedMask = PLAYER_MASK_NONE;
++            gSaveContext.save.entrance=songArrival;
++            if(songArrival==ENTRANCE(SOUTHERN_SWAMP_POISONED,10) && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE))
++                gSaveContext.save.entrance=ENTRANCE(SOUTHERN_SWAMP_CLEARED,10);
++            if(songArrival==ENTRANCE(MOUNTAIN_VILLAGE_WINTER,8) && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE))
++                gSaveContext.save.entrance=ENTRANCE(MOUNTAIN_VILLAGE_SPRING,8);
++        }
+         gSaveContext.save.cutsceneIndex = 0;
+         // Reset magicLevel like Sram_OpenSave does — re-arms the magic meter grow animation
+         // (Interface_Update only steps magicCapacity when magicLevel == 0).
+--- a/mm/src/overlays/actors/ovl_En_Test7/z_en_test7.c
++++ b/mm/src/overlays/actors/ovl_En_Test7/z_en_test7.c
+@@ -628,6 +628,9 @@
+     }
+ }
+ 
++#ifdef COMBO_BUILD
++extern int Combo_MMSongWarp(PlayState*, int);
++#endif
+ static u16 sOwlWarpEntrances[OWL_WARP_MAX - 1] = {
+     ENTRANCE(GREAT_BAY_COAST, 11),         // OWL_WARP_GREAT_BAY_COAST
+     ENTRANCE(ZORA_CAPE, 6),                // OWL_WARP_ZORA_CAPE
+@@ -655,6 +658,10 @@
+ 
+     this->windCapsule.yaw -= 0x2EE0;
+ 
++#ifdef COMBO_BUILD
++    if (play->sceneId != SCENE_SECOM && Combo_MMSongWarp(play,
++        OWL_WARP_CS_GET_OCARINA_MODE(&this->actor)-OCARINA_MODE_WARP_TO_GREAT_BAY_COAST)) return;
++#endif
+     if (play->sceneId == SCENE_SECOM) {
+         play->nextEntrance = ENTRANCE(IKANA_CANYON, 6);
+     } else if (OWL_WARP_CS_GET_OCARINA_MODE(&this->actor) == OCARINA_MODE_WARP_TO_ENTRANCE) {
+--- a/soh/soh/Enhancements/randomizer/3drando/fill.cpp
++++ b/soh/soh/Enhancements/randomizer/3drando/fill.cpp
+@@ -1,6 +1,8 @@
+ #include "fill.hpp"
+ #ifdef COMBO_BUILD
+ #include "rando/GameplayRules.h"
++#include "rando/SongTravelOOT.h"
++extern "C" uint32_t SOH_LiveIncomingSongs();
+ #endif
+ 
+ #include "../dungeon.h"
+@@ -188,6 +190,16 @@
+         }
+ 
+         Region* exitRegion = exit.GetConnectedRegion();
++#ifdef COMBO_BUILD
++        if (ComboRando::ActiveSongTravel().enabled) {
++            const int source = ComboRando::OotSongSource(region->randomizerRegionKey);
++            if (source >= 0) {
++                const int destination = ComboRando::ActiveSongTravel().destination(source);
++                if (destination >= 6) continue; // consumed by the combined search, never the old native exit
++                exitRegion = RegionTable(ComboRando::kOotSongRegions[destination]);
++            }
++        }
++#endif
+         // Update Time of Day Access for the exit
+         if (UpdateToDAccess(&exit, exitRegion)) {
+             gals.logicUpdated = true;
+@@ -202,7 +214,7 @@
+             // are processing the new region immediately. Maybe a reverse for loop in ProcessRegion?
+             if (!exitRegion->addedToPool) {
+                 exitRegion->addedToPool = true;
+-                gals.regionPool.push_back(exit.GetConnectedRegionKey());
++                gals.regionPool.push_back(exitRegion->randomizerRegionKey);
+             }
+ 
+             // process the region we just expanded to, to reduce looping
+@@ -522,6 +534,22 @@
+         }
+     }
+ 
++#ifdef COMBO_BUILD
++    if (region->randomizerRegionKey == RR_ROOT && (ComboRando::ActiveSongTravel().enabled || ComboRando::ActiveSongTravel().foreignSongs)) {
++        const uint32_t incoming = ComboRando::OotSongOracle() ? ComboRando::OotSongArrivals() : SOH_LiveIncomingSongs();
++        for (int i=0;i<6;i++) if (incoming & (1u<<i)) {
++            auto* target=RegionTable(ComboRando::kOotSongRegions[i]);
++            const bool expanded = (region->childDay && !target->childDay) || (region->childNight && !target->childNight) ||
++                (region->adultDay && !target->adultDay) || (region->adultNight && !target->adultNight);
++            target->childDay |= region->childDay; target->childNight |= region->childNight;
++            target->adultDay |= region->adultDay; target->adultNight |= region->adultNight;
++            if (expanded) {
++                gals.logicUpdated=true;
++                if (!target->addedToPool) { target->addedToPool=true; gals.regionPool.push_back(target->randomizerRegionKey); }
++            }
++        }
++    }
++#endif
+     ProcessExits(region, gals, ignore, stopOnBeatable, addToPlaythrough);
+ 
+     PropagateTimeTravel(gals, ignore, stopOnBeatable, addToPlaythrough);
+--- a/soh/soh/Enhancements/randomizer/randomizer_entrance.c
++++ b/soh/soh/Enhancements/randomizer/randomizer_entrance.c
+@@ -431,7 +431,13 @@
+     }
+ }
+ 
++#ifdef COMBO_BUILD
++extern int Combo_OOTSongWarp(PlayState*, int);
++#endif
+ void Entrance_SetWarpSongEntrance(void) {
++#ifdef COMBO_BUILD
++    if (Combo_OOTSongWarp(gPlayState, gPlayState->msgCtx.lastPlayedSong)) return;
++#endif
+     gPlayState->transitionTrigger = TRANS_TRIGGER_START;
+     gPlayState->transitionType = TRANS_TYPE_FADE_WHITE_FAST;
+     switch (gPlayState->msgCtx.lastPlayedSong) {
+--- a/soh/soh/OTRGlobals.cpp
++++ b/soh/soh/OTRGlobals.cpp
+@@ -1644,6 +1644,8 @@
+ 
+ // ComboShip: forward declarations — defined further down with the combo exports.
+ extern "C" void (*gComboSceneSwitchCallback)(int fileNum);
++static int sSongDeparture=-1;
++static void ProcessForeignSongReply();
+ // Launcher poll: returns the next save slot backed up for a release mismatch, or -1 if none.
+ extern "C" int (*gComboOutdatedSaveNotice)();
+ // Shared Items pokes (defined with the rest of the Shared Items ABI further down).
+@@ -1835,6 +1837,8 @@
+     });
+ 
+     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameFrameUpdate>([]() {
++        ProcessForeignSongReply();
++        if (sSongDeparture>=6) { sComboSwitchPending=true; sComboSwitchFileNum=(int)gSaveContext.fileNum; }
+         if (!sComboSwitchPending)
+             return;
+         sComboSwitchPending = false;
+@@ -2839,6 +2843,121 @@
+         *audio = gSaveContext.audioSetting;
+ }
+ 
++#include "rando/SongTravelOOT.h"
++#include "rando/ForeignSongs.h"
++#include <atomic>
++static std::atomic<int> sForeignSongRequest{-1}, sForeignSongReply{-2};
++
++static int sSongArrival=-1;
++static bool sMmVisitedForSongs=false;
++extern "C" COMBO_EXPORT void SOH_SetMmVisited(int visited) { sMmVisitedForSongs=visited!=0; }
++extern "C" COMBO_EXPORT void SOH_SetSongTravel(const char* json) {
++    sForeignSongRequest=-1; sForeignSongReply=-2;
++    try { ComboRando::ActiveSongTravel()=ComboRando::SongTravelMap::parse(nlohmann::json::parse(json)); }
++    catch (...) { ComboRando::ActiveSongTravel()={}; }
++    ComboRando::OotSongArrivals()=0;
++}
++extern "C" COMBO_EXPORT void SOH_SetSongArrivals(uint32_t mask) { ComboRando::OotSongArrivals()=mask & 63; }
++extern "C" COMBO_EXPORT int SOH_SongDestination(int source) {
++    return (ComboRando::ActiveSongTravel().enabled || ComboRando::ActiveSongTravel().foreignSongs) ? ComboRando::ActiveSongTravel().destination(source) : -1;
++}
++static const RandomizerGet kWarpSongs[]={RG_MINUET_OF_FOREST,RG_BOLERO_OF_FIRE,RG_SERENADE_OF_WATER,RG_REQUIEM_OF_SPIRIT,RG_NOCTURNE_OF_SHADOW,RG_PRELUDE_OF_LIGHT};
++static auto LiveSongLogic() {
++    auto live=std::make_shared<Rando::Logic>(); live->SetContext(OTRGlobals::Instance->gRandoContext);
++    live->SetSaveContext(&gSaveContext); live->IsChild=LINK_IS_CHILD; live->IsAdult=!LINK_IS_CHILD; return live;
++}
++static uint32_t OotSoaringSources(Rando::Logic* logic, uint32_t knowledge, bool child) {
++    const RandomizerGet buttons[]={RG_OCARINA_A_BUTTON,RG_OCARINA_C_DOWN_BUTTON,RG_OCARINA_C_RIGHT_BUTTON,RG_OCARINA_C_LEFT_BUTTON,RG_OCARINA_C_UP_BUTTON};
++    uint32_t mask=0; for(int i=0;i<5;i++) if(logic->HasItem(buttons[i])) mask|=1u<<i;
++    return ComboRando::ForeignSoaringSources(ComboRando::ActiveSongTravel().foreignSongs, knowledge,
++        logic->HasItem(RG_FAIRY_OCARINA),mask,child);
++}
++extern "C" COMBO_EXPORT uint32_t SOH_GetSongKnowledge() {
++    auto logic=OTRGlobals::Instance->gRandoContext->GetLogic();
++    uint32_t mask=0; for(int i=0;i<6;i++) if(logic->HasItem(kWarpSongs[i])) mask|=1u<<i; return mask;
++}
++extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongKnowledge() {
++    if (!IS_RANDO || gSaveContext.fileNum>=3) return 0;
++    auto logic=LiveSongLogic(); uint32_t mask=0;
++    for(int i=0;i<6;i++) if(logic->HasItem(kWarpSongs[i])) mask|=1u<<i; return mask;
++}
++extern "C" COMBO_EXPORT void SOH_SetForeignSongKnowledge(uint32_t mask) { ComboRando::OotForeignKnowledge()=mask; }
++static uint32_t OotLiveSoaringSources() {
++    auto fn=(uint32_t(*)())Combo_ResolveSym("2ship","MM_GetLiveSongKnowledge");
++    if (!IS_RANDO || !fn) return 0;
++    return OotSoaringSources(LiveSongLogic().get(),fn(),LINK_IS_CHILD);
++}
++extern "C" COMBO_EXPORT uint32_t SOH_GetSongSources() {
++    uint32_t mask=0;
++    for(int i=0;i<6;i++) { auto* r=RegionTable(ComboRando::kOotSongSources[i]); if(r->Child()||r->Adult()) mask |= 1u<<i; }
++    return mask | OotSoaringSources(OTRGlobals::Instance->gRandoContext->GetLogic().get(),ComboRando::OotForeignKnowledge(),RegionTable(RR_ROOT)->Child());
++}
++extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongSources() {
++    if (!IS_RANDO || gSaveContext.fileNum>=3 || (INV_CONTENT(ITEM_OCARINA_FAIRY)!=ITEM_OCARINA_FAIRY &&
++        INV_CONTENT(ITEM_OCARINA_FAIRY)!=ITEM_OCARINA_TIME)) return 0;
++    // Use the native CanUse checks in a save-derived Logic object, including shuffled ocarina buttons.
++    auto live=std::make_shared<Rando::Logic>();
++    live->SetContext(OTRGlobals::Instance->gRandoContext); live->SetSaveContext(&gSaveContext);
++    live->IsChild=LINK_IS_CHILD; live->IsAdult=!LINK_IS_CHILD;
++    const RandomizerGet songs[]={RG_MINUET_OF_FOREST,RG_BOLERO_OF_FIRE,RG_SERENADE_OF_WATER,RG_REQUIEM_OF_SPIRIT,RG_NOCTURNE_OF_SHADOW,RG_PRELUDE_OF_LIGHT};
++    uint32_t mask=0; for(int i=0;i<6;i++) if(live->CanUse(songs[i])) mask |= 1u<<i;
++    return mask | OotLiveSoaringSources();
++}
++
++extern "C" COMBO_EXPORT int SOH_ForeignSongRequest() { return sForeignSongRequest.load(); }
++extern "C" COMBO_EXPORT uint32_t SOH_ForeignSongChoices() {
++    int request=sForeignSongRequest.load();
++    if (request<0) return 0;
++    return OotLiveSoaringSources();
++}
++extern "C" COMBO_EXPORT int SOH_ForeignSongDestination(int source) { return ComboRando::ActiveSongTravel().destination(source); }
++extern "C" COMBO_EXPORT uint32_t SOH_ForeignSongInput() {
++    return gPlayState ? gPlayState->state.input[0].press.button : 0;
++}
++extern "C" COMBO_EXPORT void SOH_ForeignSongChoose(int source) { sForeignSongReply=source; }
++extern "C" int Combo_SOHRecognizeForeignSong(const uint8_t* pitches, int count) {
++    if (!IS_RANDO || !gPlayState || !ComboRando::ActiveSongTravel().foreignSongs ||
++        gPlayState->msgCtx.ocarinaAction!=OCARINA_ACTION_FREE_PLAY || gPlayState->interfaceCtx.restrictions.warpSongs || gPlayState->msgCtx.disableWarpSongs || sForeignSongRequest.load()>=0) return 0;
++    uint32_t allowed=OotLiveSoaringSources() ? (1u<<6) : 0;
++    int song=ComboRando::RecognizeForeignSong(pitches,count,allowed);
++    if(song<0) return 0;
++    sForeignSongReply=-2; sForeignSongRequest=song; return 1;
++}
++static void ProcessForeignSongReply() {
++    int reply=sForeignSongReply.exchange(-2);
++    if(reply==-2) return;
++    const uint32_t choices=SOH_ForeignSongChoices();
++    sForeignSongRequest=-1;
++    if(!gPlayState) return;
++    AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
++    Message_CloseTextbox(gPlayState);
++    gPlayState->msgCtx.ocarinaMode=4; // native ocarina END mode in both games
++    if(reply<0 || reply>=16 || !(choices & (1u<<reply))) return;
++    int dest=ComboRando::ActiveSongTravel().destination(reply);
++    if(dest>=6) { sSongDeparture=dest; gPlayState->transitionTrigger=TRANS_TRIGGER_OFF; }
++    else { gPlayState->nextEntranceIndex=ComboRando::kOotSongEntrances[dest];
++        gSaveContext.respawnFlag=0; gSaveContext.cutsceneIndex=0;
++        gPlayState->transitionTrigger=TRANS_TRIGGER_START; gPlayState->transitionType=TRANS_TYPE_FADE_WHITE_FAST; }
++}
++
++extern "C" uint32_t SOH_LiveIncomingSongs() {
++    auto fn=(uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetLiveSongSources");
++    if (!fn) return 0;
++    auto* portal=RegionTable(RR_MARKET_MASK_SHOP);
++    const bool mmAccessible=sMmVisitedForSongs || portal->Child()||portal->Adult() || (ComboRando::ActiveSongTravel().resolve(SOH_GetSongSources()) & 0xffc0);
++    return ComboRando::ActiveSongTravel().resolve((mmAccessible ? fn() : 0) | OotLiveSoaringSources()) & 63;
++}
++extern "C" COMBO_EXPORT int SOH_TakeSongDeparture() { int d=sSongDeparture; sSongDeparture=-1; return d; }
++extern "C" COMBO_EXPORT void SOH_SetSongArrival(int d) { sSongArrival=d>=0 && d<6 ? d : -1; }
++extern "C" int SOH_ConsumeSongArrival() { int d=sSongArrival; sSongArrival=-1; if(d>=0) sMmVisitedForSongs=true; return d<0 ? -1 : ComboRando::kOotSongEntrances[d]; }
++extern "C" int Combo_OOTSongWarp(PlayState* play, int source) {
++    if (!IS_RANDO || !ComboRando::ActiveSongTravel().enabled || source<0 || source>=6) return 0;
++    const int dest=ComboRando::ActiveSongTravel().destination(source);
++    if(dest>=6) { sSongDeparture=dest; play->transitionTrigger=TRANS_TRIGGER_OFF; }
++    else { play->nextEntranceIndex=ComboRando::kOotSongEntrances[dest]; play->transitionTrigger=TRANS_TRIGGER_START;
++        play->transitionType=TRANS_TYPE_FADE_WHITE_FAST; gSaveContext.respawnFlag=0; gSaveContext.cutsceneIndex=0; }
++    return 1;
++}
+ extern "C" void (*gComboSceneSwitchCallback)(int fileNum) = nullptr;
+ 
+ extern "C" COMBO_EXPORT void SOH_SetOnSceneSwitchCallback(void (*cb)(int fileNum)) {
+@@ -5420,7 +5539,9 @@
+ extern "C" COMBO_EXPORT const char* Combo_SOH_Rando_GetReachableChecks(void) {
+     static std::string buf;
+     auto ctx = OTRGlobals::Instance->gRandoContext;
++    ComboRando::OotSongOracle()=true;
+     auto reachable = ReachabilitySearch(ctx->allLocations);
++    ComboRando::OotSongOracle()=false;
+ #ifdef COMBO_BUILD
+     // RR_MARKET_MASK_SHOP holds no real checks, so the cross-fill gates MM on REGION access. Any age:
+     // the requirement lives in the entrance condition, so this survives entrance shuffle moving it.
+--- a/soh/src/code/code_800EC960.c
++++ b/soh/src/code/code_800EC960.c
+@@ -1822,6 +1822,14 @@
+                 sCurOcarinaSongWithoutMusicStaff[sOcarinaWithoutMusicStaffPos - 1] = sCurOcarinaPitch;
+             }
+ 
++#ifdef COMBO_BUILD
++            extern int Combo_SOHRecognizeForeignSong(const u8*, int);
++            if (Combo_SOHRecognizeForeignSong(sCurOcarinaSongWithoutMusicStaff, sOcarinaWithoutMusicStaffPos)) {
++                sIsOcarinaInputEnabled = false;
++                sOcarinaFlags = 0;
++                return;
++            }
++#endif
+             // This nested for-loop tests to see if the notes from the ocarina are identical
+             // to any of the songIndex from sFirstOcarinaSongIndex to sLastOcarinaSongIndex
+ 
+--- a/soh/src/code/title_setup.c
++++ b/soh/src/code/title_setup.c
+@@ -7,6 +7,7 @@
+ // file-select screens, load this save slot, and spawn straight into Play in the Market outside the
+ // Happy Mask Shop (the fixed arrival point for the cross-game portal return).
+ extern s32 gComboReturnFileNum;
++extern int SOH_ConsumeSongArrival(void);
+ #endif
+ 
+ void TitleSetup_InitImpl(GameState* gameState) {
+@@ -32,7 +33,8 @@
+         GameInteractor_ExecuteOnLoadGame(gSaveContext.fileNum);
+         // Must follow OnLoadGame: the rando handler's Entrance_SetSavewarpEntrance() recomputes from
+         // savedSceneNum (never set by the portal handoff) and would clobber this with Link's House.
+-        gSaveContext.entranceIndex = Entrance_OverrideNextIndex(ENTR_MARKET_DAY_OUTSIDE_HAPPY_MASK_SHOP);
++        const int songArrival=SOH_ConsumeSongArrival();
++        gSaveContext.entranceIndex = songArrival>=0 ? songArrival : Entrance_OverrideNextIndex(ENTR_MARKET_DAY_OUTSIDE_HAPPY_MASK_SHOP);
+         // A portal return is never a cutscene arrival: a never-played MM-start save still holds the
+         // pending intro (0xFFF1), which would shift Play_Init's entrance lookup onto a garbage layer.
+         gSaveContext.cutsceneIndex = 0;
+--- a/soh/src/code/z_kankyo.c
++++ b/soh/src/code/z_kankyo.c
+@@ -2525,7 +2525,13 @@
+     }
+ }
+ 
++#ifdef COMBO_BUILD
++extern int Combo_OOTSongWarp(PlayState*, int);
++#endif
+ void Environment_WarpSongLeave(PlayState* play) {
++#ifdef COMBO_BUILD
++    if (Combo_OOTSongWarp(play, play->msgCtx.lastPlayedSong)) return;
++#endif
+     gWeatherMode = 0;
+     gSaveContext.cutsceneIndex = 0;
+     gSaveContext.respawnFlag = -3;

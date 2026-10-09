@@ -1,0 +1,450 @@
+diff --git a/combo/menu/ComboCheckTrackerOOT.inc b/combo/menu/ComboCheckTrackerOOT.inc
+--- a/combo/menu/ComboCheckTrackerOOT.inc
++++ b/combo/menu/ComboCheckTrackerOOT.inc
+@@ -5,15 +5,24 @@
+ 
+ namespace CheckTracker {
+ static void UpdateComboAvailabilitySettings(bool wantLogic) {
+-    static std::vector<int> lastRuleValues;
++    static std::vector<int> lastValues;
+     std::vector<int> values;
+     for (const auto& rule : ComboRando::kGameplayRules)
+         values.push_back(ComboRando::ReadGameplayRule(rule, false, CVarGetInteger));
+-    if (wantLogic && (!enableAvailableChecks || values != lastRuleValues)) {
++    // Held supplies can change availability even when ownership does not.
++    // Ammo/magic need a refresh only when emptied/refilled; money retains its
++    // amount because each priced check can have a different affordability gate.
++    if (wantLogic) {
++        for (int slot : { SLOT_BOW, SLOT_SLINGSHOT, SLOT_BOMB, SLOT_BOMBCHU })
++            values.push_back(gSaveContext.inventory.ammo[slot] > 0);
++        values.push_back(gSaveContext.magic > 0);
++        values.push_back(gSaveContext.rupees);
++    }
++    if (wantLogic && (!enableAvailableChecks || values != lastValues)) {
+         RecalculateAvailableChecks();
+     }
+     enableAvailableChecks = wantLogic;
+-    lastRuleValues = std::move(values);
++    lastValues = std::move(values);
+ }
+ 
+ static const char* ComboCheckType(RandomizerCheckType type) {
+diff --git a/combo/rando/OotResourceSources.h b/combo/rando/OotResourceSources.h
+new file mode 100644
+--- /dev/null
++++ b/combo/rando/OotResourceSources.h
+@@ -0,0 +1,247 @@
++// OoTMM v32.3 refill events, adapted to Ship's region IDs and supported items.
++// Reference commit: 413573d22d1d53e8a81931a70927f625b73488b9.
++// See ComboAndroid/oot-resource-sources.csv for each source and adapter boundary.
++#pragma once
++
++#include "soh/Enhancements/randomizer/location_access.h"
++
++inline std::vector<EventAccess> OotGrottoResourceEvents() {
++    return {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, logic->IsChild && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, logic->IsAdult && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanCutShrubs()),
++    };
++}
++
++inline void RegisterOotResourceSources() {
++    // Fire Temple Pre-Boss
++    areaTable[RR_FIRE_TEMPLE_NEAR_BOSS_ROOM].events.insert(areaTable[RR_FIRE_TEMPLE_NEAR_BOSS_ROOM].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (logic->CanUse(RG_GORON_TUNIC)) && logic->CanBreakPots()),
++    });
++    // Gerudo Fortress Carpenter 1 Left
++    areaTable[RR_TH_1_TORCH_CELL].events.insert(areaTable[RR_TH_1_TORCH_CELL].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->IsAdult) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild) && logic->CanBreakPots()),
++    });
++    // Gerudo Fortress Carpenter 2 Bottom
++    areaTable[RR_TH_DOUBLE_CELL].events.insert(areaTable[RR_TH_DOUBLE_CELL].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++    });
++    // Gerudo Fortress Carpenter 4 Top
++    areaTable[RR_TH_STEEP_SLOPE_CELL].events.insert(areaTable[RR_TH_STEEP_SLOPE_CELL].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++    });
++    // Gerudo Fortress Break Room Bottom
++    areaTable[RR_TH_BREAK_ROOM].events.insert(areaTable[RR_TH_BREAK_ROOM].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (logic->CanUse(RG_FAIRY_BOW) || logic->CanUse(RG_HOOKSHOT) || logic->HasItem(RG_GERUDO_MEMBERSHIP_CARD)) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->IsAdult && (logic->HasItem(RG_GERUDO_MEMBERSHIP_CARD) || logic->CanUse(RG_HOOKSHOT))) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild && logic->HasItem(RG_GERUDO_MEMBERSHIP_CARD)) && logic->CanBreakPots()),
++    });
++    // Shadow Temple Pit
++    areaTable[RR_SHADOW_TEMPLE_LOWER_HUGE_PIT].events.insert(areaTable[RR_SHADOW_TEMPLE_LOWER_HUGE_PIT].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (ctx->GetTrickOption(RT_LENS_SHADOW)) && logic->CanBreakPots()),
++    });
++    // Spirit Temple
++    areaTable[RR_SPIRIT_TEMPLE_FOYER].events.insert(areaTable[RR_SPIRIT_TEMPLE_FOYER].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (true) && logic->CanBreakPots()),
++    });
++    // Shadow Temple Truth Spinner
++    areaTable[RR_SHADOW_TEMPLE_MQ_SPINNER_ROOM].events.insert(areaTable[RR_SHADOW_TEMPLE_MQ_SPINNER_ROOM].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (true) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (true) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (true) && logic->CanBreakPots()),
++    });
++    // Spirit Temple
++    areaTable[RR_SPIRIT_TEMPLE_MQ_FOYER].events.insert(areaTable[RR_SPIRIT_TEMPLE_MQ_FOYER].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (true) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (true) && logic->CanBreakPots()),
++    });
++    // Death Mountain Crater Top
++    areaTable[RR_DMC_POTS].events.insert(areaTable[RR_DMC_POTS].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (logic->CanUse(RG_GORON_TUNIC) || logic->CanUse(RG_MEGATON_HAMMER)) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->CanUse(RG_GORON_TUNIC) || logic->BlastOrSmash()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->CanUse(RG_GORON_TUNIC) || logic->BlastOrSmash()) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (logic->CanUse(RG_GORON_TUNIC) || logic->BlastOrSmash()) && logic->CanBreakPots()),
++    });
++    // Fairy Fountain Double Magic
++    areaTable[RR_DMC_GREAT_FAIRY_FOUNTAIN].events.insert(areaTable[RR_DMC_GREAT_FAIRY_FOUNTAIN].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanUse(RG_ZELDAS_LULLABY)),
++    });
++    // Death Mountain
++    areaTable[RR_DEATH_MOUNTAIN_TRAIL].events.insert(areaTable[RR_DEATH_MOUNTAIN_TRAIL].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++    });
++    // Death Mountain Cow Grotto
++    areaTable[RR_DMT_COW_GROTTO].events.insert(areaTable[RR_DMT_COW_GROTTO].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++    });
++    // Fairy Fountain Magic
++    areaTable[RR_DMT_GREAT_FAIRY_FOUNTAIN].events.insert(areaTable[RR_DMT_GREAT_FAIRY_FOUNTAIN].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanUse(RG_ZELDAS_LULLABY)),
++    });
++    // Fairy Fountain Nayru
++    areaTable[RR_COLOSSUS_GREAT_FAIRY_FOUNTAIN].events.insert(areaTable[RR_COLOSSUS_GREAT_FAIRY_FOUNTAIN].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanUse(RG_ZELDAS_LULLABY)),
++    });
++    // Gerudo Valley
++    areaTable[RR_GERUDO_VALLEY].events.insert(areaTable[RR_GERUDO_VALLEY].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (logic->IsChild) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (logic->IsChild) && logic->CanBreakPots()),
++    });
++    // Octorok Grotto
++    areaTable[RR_GV_OCTOROK_GROTTO].events.insert(areaTable[RR_GV_OCTOROK_GROTTO].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++    });
++    // Goron City
++    areaTable[RR_GORON_CITY].events.insert(areaTable[RR_GORON_CITY].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->IsAdult) && logic->CanBreakPots()),
++    });
++    // Darunia Chamber
++    areaTable[RR_GC_DARUNIAS_CHAMBER].events.insert(areaTable[RR_GC_DARUNIAS_CHAMBER].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->IsAdult),
++    });
++    // Graveyard
++    areaTable[RR_THE_GRAVEYARD].events.insert(areaTable[RR_THE_GRAVEYARD].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, logic->IsChild && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, logic->IsAdult && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanCutShrubs()),
++    });
++    // Dampe Grave
++    areaTable[RR_GRAVEYARD_DAMPES_GRAVE].events.insert(areaTable[RR_GRAVEYARD_DAMPES_GRAVE].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (true) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (true) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->IsAdult) && logic->CanBreakPots()),
++    });
++    // Hyrule Field
++    areaTable[RR_HYRULE_FIELD].events.insert(areaTable[RR_HYRULE_FIELD].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (true) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->IsAdult) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (true) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++    });
++    // Hyrule Field Grotto Near Kak
++    areaTable[RR_HF_NEAR_KAK_GROTTO].events.insert(areaTable[RR_HF_NEAR_KAK_GROTTO].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, logic->IsChild && logic->CanUse(RG_KOKIRI_SWORD)),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, logic->IsAdult && logic->CanJumpslashExceptHammer()),
++    });
++    // Hyrule Castle
++    areaTable[RR_HC_PAST_GATE].events.insert(areaTable[RR_HC_PAST_GATE].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (true) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (true) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++    });
++    // Fairy Fountain Din
++    areaTable[RR_HC_GREAT_FAIRY_FOUNTAIN].events.insert(areaTable[RR_HC_GREAT_FAIRY_FOUNTAIN].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanUse(RG_ZELDAS_LULLABY)),
++    });
++    // Hyrule Castle Grotto
++    areaTable[RR_HC_STORMS_GROTTO].events.insert(areaTable[RR_HC_STORMS_GROTTO].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->BlastOrSmash()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild && logic->BlastOrSmash()) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->IsAdult && logic->BlastOrSmash()) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (logic->CanUse(RG_MEGATON_HAMMER)) && logic->CanBreakPots()),
++    });
++    // Fairy Fountain Defense
++    areaTable[RR_OGC_GREAT_FAIRY_FOUNTAIN].events.insert(areaTable[RR_OGC_GREAT_FAIRY_FOUNTAIN].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanUse(RG_ZELDAS_LULLABY)),
++    });
++    // Kakariko
++    areaTable[RR_KAKARIKO_VILLAGE].events.insert(areaTable[RR_KAKARIKO_VILLAGE].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, logic->IsChild && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->IsAdult) && logic->CanBreakPots()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanCutShrubs()),
++    });
++    // Kokiri Forest
++    areaTable[RR_KOKIRI_FOREST].events.insert(areaTable[RR_KOKIRI_FOREST].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (true) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->IsAdult) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (true) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++    });
++    // Lake Hylia
++    areaTable[RR_LAKE_HYLIA].events.insert(areaTable[RR_LAKE_HYLIA].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, logic->IsChild && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, logic->IsAdult && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanCutShrubs()),
++    });
++    // Lon Lon Ranch
++    areaTable[RR_LON_LON_RANCH].events.insert(areaTable[RR_LON_LON_RANCH].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->IsChild),
++    });
++    // Lost Woods
++    areaTable[RR_THE_LOST_WOODS].events.insert(areaTable[RR_THE_LOST_WOODS].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, logic->IsChild && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, logic->IsAdult && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanCutShrubs()),
++    });
++    // Lost Woods Deep
++    areaTable[RR_LW_BEYOND_MIDO].events.insert(areaTable[RR_LW_BEYOND_MIDO].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, logic->IsChild && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, logic->IsAdult && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanCutShrubs()),
++    });
++    // Market
++    areaTable[RR_THE_MARKET].events.insert(areaTable[RR_THE_MARKET].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->IsChild),
++    });
++    // Market Pot House
++    areaTable[RR_MARKET_GUARD_HOUSE].events.insert(areaTable[RR_MARKET_GUARD_HOUSE].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++    });
++    // Bombchu Bowling Rewards
++    areaTable[RR_MARKET_BOMBCHU_BOWLING].events.insert(areaTable[RR_MARKET_BOMBCHU_BOWLING].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS, logic->Get(LOGIC_COULD_PLAY_BOWLING) && logic->BombchusEnabled() && GetWalletCapacity() >= 200),
++    });
++    // Sacred Meadow Entryway
++    areaTable[RR_SFM_ENTRYWAY].events.insert(areaTable[RR_SFM_ENTRYWAY].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++    });
++    // Zora Domain
++    areaTable[RR_ZORAS_DOMAIN].events.insert(areaTable[RR_ZORAS_DOMAIN].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++    });
++    // Zora Fountain
++    areaTable[RR_ZORAS_FOUNTAIN].events.insert(areaTable[RR_ZORAS_FOUNTAIN].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild) && logic->CanBreakPots()),
++    });
++    // Fairy Fountain Farore
++    areaTable[RR_ZF_GREAT_FAIRY_FOUNTAIN].events.insert(areaTable[RR_ZF_GREAT_FAIRY_FOUNTAIN].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanUse(RG_ZELDAS_LULLABY)),
++    });
++    // Zora River Front
++    areaTable[RR_ZR_FRONT].events.insert(areaTable[RR_ZR_FRONT].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, logic->IsChild && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, logic->IsAdult && logic->CanCutShrubs()),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, logic->CanCutShrubs()),
++    });
++    // Zora River
++    areaTable[RR_ZORAS_RIVER].events.insert(areaTable[RR_ZORAS_RIVER].events.end(), {
++        EVENT_ACCESS(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU, (true) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_RUPEES, true),
++        EVENT_ACCESS(LOGIC_RENEWABLE_SEEDS, (logic->IsChild) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_ARROWS, (logic->IsAdult) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++        EVENT_ACCESS(LOGIC_RENEWABLE_MAGIC, (true) && (logic->CanBreakPots() || logic->CanCutShrubs())),
++    });
++}
+diff --git a/soh/soh/Enhancements/randomizer/location_access.cpp b/soh/soh/Enhancements/randomizer/location_access.cpp
+--- a/soh/soh/Enhancements/randomizer/location_access.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access.cpp
+@@ -6,6 +6,7 @@
+ #ifdef COMBO_BUILD
+ #include "age_change_areas.h"
+ #include "rando/GameplayRules.h"
++#include "rando/OotResourceSources.h"
+ #endif
+ #include "soh/Enhancements/debugger/performanceTimer.h"
+ 
+@@ -119,16 +120,27 @@
+ }
+ 
+ uint16_t GetWalletCapacity() {
++    uint16_t capacity = 0;
+     if (logic->HasItem(RG_TYCOON_WALLET)) {
+-        return 999;
++        capacity = 999;
+     } else if (logic->HasItem(RG_GIANT_WALLET)) {
+-        return 500;
++        capacity = 500;
+     } else if (logic->HasItem(RG_ADULT_WALLET)) {
+-        return 200;
++        capacity = 200;
+     } else if (logic->HasItem(RG_CHILD_WALLET)) {
+-        return 99;
+-    }
+-    return 0;
++        capacity = 99;
++    }
++#ifdef COMBO_BUILD
++    // Generation needs a reachable refill. The live tracker can also spend
++    // money already held, capped by the actual wallet. Free checks stay free.
++    if (!logic->Get(LOGIC_RENEWABLE_RUPEES)) {
++        if (!logic->CalculatingAvailableChecks) {
++            return 0;
++        }
++        return static_cast<uint16_t>(std::clamp<int>(logic->GetSaveContext()->rupees, 0, capacity));
++    }
++#endif
++    return capacity;
+ }
+ 
+ std::set<RandomizerArea> CalculateAreas(SceneID scene) {
+@@ -990,6 +1002,10 @@
+         EVENT_ACCESS(LOGIC_BUG_ACCESS, logic->CanCutShrubs()),
+         EVENT_ACCESS(LOGIC_FISH_ACCESS, true),
+     };
++#ifdef COMBO_BUILD
++    const auto resourceEvents = OotGrottoResourceEvents();
++    grottoEvents.insert(grottoEvents.end(), resourceEvents.begin(), resourceEvents.end());
++#endif
+     // Clear the array from any previous playthrough attempts. This is important so that
+     // locations which appear in both MQ and Vanilla dungeons don't get set in both areas.
+     areaTable.fill(Region("Invalid Region", SCENE_ID_MAX, {}, {}, {}));
+@@ -1032,6 +1048,10 @@
+     RegionTable_Init_GerudoTrainingGround();
+     RegionTable_Init_GanonsCastle();
+ 
++#ifdef COMBO_BUILD
++    RegisterOotResourceSources();
++#endif
++
+     // Set parent regions
+     for (uint32_t i = RR_ROOT; i < RR_MAX; i++) {
+         areaTable[i].randomizerRegionKey = (RandomizerRegion)i;
+diff --git a/soh/soh/Enhancements/randomizer/location_access/overworld/market.cpp b/soh/soh/Enhancements/randomizer/location_access/overworld/market.cpp
+--- a/soh/soh/Enhancements/randomizer/location_access/overworld/market.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access/overworld/market.cpp
+@@ -177,7 +177,7 @@
+ 
+     areaTable[RR_MARKET_BOMBCHU_BOWLING] = Region("Market Bombchu Bowling", SCENE_BOMBCHU_BOWLING_ALLEY, {
+         //Events
+-        EVENT_ACCESS(LOGIC_COULD_PLAY_BOWLING, logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_HYLIAN)),
++        EVENT_ACCESS(LOGIC_COULD_PLAY_BOWLING, logic->HasItem(RG_CHILD_WALLET) && GetWalletCapacity() >= 30 && logic->HasItem(RG_SPEAK_HYLIAN)),
+     }, {
+         //Locations
+         LOCATION(RC_MARKET_BOMBCHU_BOWLING_FIRST_PRIZE,  logic->Get(LOGIC_COULD_PLAY_BOWLING) && logic->BombchusEnabled()),
+diff --git a/soh/soh/Enhancements/randomizer/logic.cpp b/soh/soh/Enhancements/randomizer/logic.cpp
+--- a/soh/soh/Enhancements/randomizer/logic.cpp
++++ b/soh/soh/Enhancements/randomizer/logic.cpp
+@@ -592,7 +592,12 @@
+     switch (itemName) {
+         // Magic items
+         case RG_MAGIC_SINGLE:
++#ifdef COMBO_BUILD
++            return Get(LOGIC_RENEWABLE_MAGIC) || (HasBottle() && Get(LOGIC_BUY_MAGIC_POTION)) ||
++                   (CalculatingAvailableChecks && GetSaveContext()->magic > 0);
++#else
+             return true; // AmmoCanDrop || (HasBottle() && Get(LOGIC_BUY_MAGIC_POTION))
++#endif
+         case RG_DINS_FIRE:
+         case RG_FARORES_WIND:
+         case RG_NAYRUS_LOVE:
+@@ -606,7 +611,12 @@
+         // Adult items
+         // TODO: Uncomment those if we ever implement more item usability settings
+         case RG_FAIRY_BOW:
++#ifdef COMBO_BUILD
++            return IsAdult && (Get(LOGIC_RENEWABLE_ARROWS) || Get(LOGIC_BUY_ARROW) ||
++                               (CalculatingAvailableChecks && GetAmmo(ITEM_BOW) > 0));
++#else
+             return IsAdult; // || BowAsChild && (AmmoCanDrop || Get(LOGIC_BUY_ARROW));
++#endif
+         case RG_MEGATON_HAMMER:
+             return IsAdult; // || HammerAsChild;
+         case RG_IRON_BOOTS:
+@@ -644,7 +654,12 @@
+ 
+         // Child items
+         case RG_FAIRY_SLINGSHOT:
++#ifdef COMBO_BUILD
++            return IsChild && (Get(LOGIC_RENEWABLE_SEEDS) || Get(LOGIC_BUY_SEED) ||
++                               (CalculatingAvailableChecks && GetAmmo(ITEM_SLINGSHOT) > 0));
++#else
+             return IsChild; // || SlingshotAsAdult && (AmmoCanDrop || Get(LOGIC_LOGIC_BUY_SEED));
++#endif
+         case RG_BOOMERANG:
+             return IsChild; // || BoomerangAsAdult;
+         case RG_KOKIRI_SWORD:
+@@ -657,7 +672,12 @@
+             return IsChild; // || DekuShieldAsAdult;
+         case RG_PROGRESSIVE_BOMB_BAG:
+         case RG_BOMB_BAG:
++#ifdef COMBO_BUILD
++            return Get(LOGIC_RENEWABLE_BOMBS) || Get(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU) || Get(LOGIC_BUY_BOMB) ||
++                   (CalculatingAvailableChecks && GetAmmo(ITEM_BOMB) > 0);
++#else
+             return true; // AmmoCanDrop || Get(LOGIC_BUY_BOMB)
++#endif
+         case RG_PROGRESSIVE_BOMBCHU_BAG:
+         case RG_BOMBCHU_5:
+         case RG_BOMBCHU_10:
+@@ -1551,7 +1571,13 @@
+ // TODO: Implement Ammo Drop Setting in place of bombchu drops
+ bool Logic::BombchuRefill() {
+     return Get(LOGIC_BUY_BOMBCHUS) || Get(LOGIC_COULD_PLAY_BOWLING) || Get(LOGIC_CARPET_MERCHANT) ||
++#ifdef COMBO_BUILD
++           (Get(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU) &&
++            ctx->GetOption(RSK_ENABLE_BOMBCHU_DROPS).Is(RO_AMMO_DROPS_ON)) ||
++           (CalculatingAvailableChecks && GetAmmo(ITEM_BOMBCHU) > 0);
++#else
+            (ctx->GetOption(RSK_ENABLE_BOMBCHU_DROPS).Is(RO_AMMO_DROPS_ON /*_PLUS_BOMBCHU*/));
++#endif
+ }
+ 
+ bool Logic::HookshotOrBoomerang() {
+diff --git a/soh/soh/Enhancements/randomizer/randomizerEnums/LogicVal.h b/soh/soh/Enhancements/randomizer/randomizerEnums/LogicVal.h
+--- a/soh/soh/Enhancements/randomizer/randomizerEnums/LogicVal.h
++++ b/soh/soh/Enhancements/randomizer/randomizerEnums/LogicVal.h
+@@ -338,6 +338,15 @@
+ RANDO_ENUM_ITEM(LOGIC_SHADOW_TRIAL_FIRST_CHEST)
+ RANDO_ENUM_ITEM(LOGIC_SHADOW_TRIAL_LOWER_SWITCH)
+ RANDO_ENUM_ITEM(LOGIC_SHADOW_TRIAL_RUSTED_SWITCH)
++#ifdef COMBO_BUILD
++// Derived search events only. Append to retain existing logic IDs.
++RANDO_ENUM_ITEM(LOGIC_RENEWABLE_SEEDS)
++RANDO_ENUM_ITEM(LOGIC_RENEWABLE_ARROWS)
++RANDO_ENUM_ITEM(LOGIC_RENEWABLE_BOMBS)
++RANDO_ENUM_ITEM(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU)
++RANDO_ENUM_ITEM(LOGIC_RENEWABLE_MAGIC)
++RANDO_ENUM_ITEM(LOGIC_RENEWABLE_RUPEES)
++#endif
+ RANDO_ENUM_ITEM(LOGIC_MAX)
+ RANDO_ENUM_END(LogicVal)
+ 

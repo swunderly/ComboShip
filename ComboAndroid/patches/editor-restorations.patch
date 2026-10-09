@@ -1,0 +1,875 @@
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -182,6 +182,15 @@
+ 
+ static std::shared_ptr<ComboMenu> sComboMenu;
+ 
++// OoT exports its restoration controls in the third Fixes column (index 2). Route that
++// group into the shared Restorations page while retaining every native widget.
++static MenuDestination FeatureMenuRoute(bool oot, const std::string& section,
++                                        const std::string& sidebar, int column) {
++    if (oot && section == "Enhancements" && sidebar == "Fixes" && column == 2)
++        return {"gameplay", "Restorations"};
++    return MenuRoute(oot, section, sidebar);
++}
++
+ // Search normalization shared by the query and every widget haystack: lowercase + strip spaces.
+ static std::string NormalizeSearch(std::string s) {
+     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+@@ -369,8 +378,10 @@
+     }
+     for(const auto& rule : kGameplayRules) {
+         if(NormalizeSearch(std::string(rule.label)+" "+rule.help+" enhancement logic").find(query)==std::string::npos) continue;
+-        if(ImGui::Button((std::string("Abilities & logic / ")+rule.label).c_str(),ImVec2(-FLT_MIN,0))) {
+-            mScope="randomizer"; mHubActive="randomizer/Gameplay rules";
++        const std::string rulePage = rule.trickGoverned ? "Tricks & glitches" : "Gameplay rules";
++        const std::string ruleLabel = rule.trickGoverned ? "Randomizer / Tricks & glitches / " : "Abilities & logic / ";
++        if(ImGui::Button((ruleLabel+rule.label).c_str(),ImVec2(-FLT_MIN,0))) {
++            mScope="randomizer"; mHubActive="randomizer/"+rulePage;
+             mSearchBuf[0]=0; mSearchQuery.clear(); return;
+         }
+         ++matches;
+@@ -396,12 +407,14 @@
+                 const CwSection& sec = m->sections[s];
+                 for (int sb = 0; sb < sec.sidebarCount; ++sb) {
+                     const CwSidebar& side = sec.sidebars[sb];
+-                    const auto route = MenuRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
+-                                                 side.sidebarName ? side.sidebarName : "");
+-                    if (route.scope.empty()) continue;
++                    const auto sidebarRoute = MenuRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
++                                                        side.sidebarName ? side.sidebarName : "");
++                    if (sidebarRoute.scope.empty()) continue;
+                     if (side.sidebarName && std::strcmp(side.sidebarName, "Check Tracker") == 0) continue;
+                     for (int w = 0; w < side.widgetCount; ++w) {
+                         const CwWidget& wd = side.widgets[w];
++                        const auto route = FeatureMenuRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
++                                                            side.sidebarName ? side.sidebarName : "", wd.column);
+                         if (wd.cvar && (std::strstr(wd.cvar, "CheckTracker") || IsRetiredNativeRuleControl(wd.cvar))) continue; // retired per-game controls
+                         const std::string name = wd.name ? wd.name : "";
+                         if (name == "Open App Files Folder" || name == "Cursor Always Visible" ||
+@@ -1238,6 +1251,7 @@
+     };
+     auto read=[](const char* name,int fallback){return CVarGetInteger(name,fallback);};
+     for (const auto& rule : ComboRando::kGameplayRules) {
++        if (rule.trickGoverned) continue; // restored glitches are selected only in Tricks & glitches
+         ImGui::PushID(rule.name);
+         const auto logical=ComboRando::LogicRuleKey(rule.name);
+         int value=read(randomizer ? logical.c_str() : rule.name,randomizer ? 0 : rule.fallback);
+@@ -1365,6 +1379,18 @@
+ void DrawFeatureSource(const HubEntry::Source& source, const std::string& page, int subpage = -1) {
+     CwSidebar side = *source.sidebar;
+     std::vector<CwWidget> filtered;
++    if (source.oot && side.sidebarName && std::strcmp(side.sidebarName, "Fixes") == 0 &&
++        (page == "Fixes" || page == "Restorations")) {
++        for (int i = 0; i < side.widgetCount; ++i) {
++            const auto& w = side.widgets[i];
++            if (FeatureMenuRoute(true, "Enhancements", side.sidebarName, w.column).page != page) continue;
++            filtered.push_back(w); // preserve native index, CVar and callbacks
++            if (page == "Restorations") filtered.back().column = 0;
++        }
++        side.widgets = filtered.data();
++        side.widgetCount = (int)filtered.size();
++        side.columnCount = page == "Restorations" ? 1 : 2;
++    }
+     if (page == "Startup & accessibility") {
+         // Drop desktop-only actions, obsolete native-menu preferences and engine About columns.
+         for (int i = 0; i < side.widgetCount; ++i) {
+@@ -1436,15 +1462,21 @@
+             const auto& section = game.menu->sections[s];
+             for (int b = 0; b < section.sidebarCount; ++b) {
+                 const auto& sidebar = section.sidebars[b];
+-                const auto dest = MenuRoute(g == 0, section.sectionLabel ? section.sectionLabel : "",
+-                                            sidebar.sidebarName ? sidebar.sidebarName : "");
+-                if (dest.scope != mScope) continue;
+-                auto it = std::find_if(entries.begin(), entries.end(), [&](const HubEntry& e) { return e.label == dest.page; });
+-                if (it == entries.end()) {
+-                    HubEntry entry; entry.group = dest.scope; entry.label = dest.page; entry.kind = HubEntry::ENGINE;
+-                    entries.push_back(std::move(entry)); it = entries.end() - 1;
+-                }
+-                it->sources.push_back({&game, &sidebar, g == 0});
++                const auto dest = FeatureMenuRoute(g == 0, section.sectionLabel ? section.sectionLabel : "",
++                                                  sidebar.sidebarName ? sidebar.sidebarName : "", 0);
++                auto addSource = [&](const MenuDestination& route) {
++                    if (route.scope != mScope) return;
++                    auto it = std::find_if(entries.begin(), entries.end(), [&](const HubEntry& e) { return e.label == route.page; });
++                    if (it == entries.end()) {
++                        HubEntry entry; entry.group = route.scope; entry.label = route.page; entry.kind = HubEntry::ENGINE;
++                        entries.push_back(std::move(entry)); it = entries.end() - 1;
++                    }
++                    it->sources.push_back({&game, &sidebar, g == 0});
++                };
++                addSource(dest);
++                const auto restoration = FeatureMenuRoute(g == 0, section.sectionLabel ? section.sectionLabel : "",
++                                                         sidebar.sidebarName ? sidebar.sidebarName : "", 2);
++                if (restoration.scope != dest.scope || restoration.page != dest.page) addSource(restoration);
+             }
+         }
+     }
+--- a/combo/gui/ComboTricks.cpp
++++ b/combo/gui/ComboTricks.cpp
+@@ -2,6 +2,8 @@
+ #include "ComboTricksModel.h"
+ #include "ComboWidgetStyle.h"
+ #include "ComboRuleWarning.h"
++#include "ComboMenuModel.h"
++#include "rando/GameplayRules.h"
+ #include "ComboResolve.h"
+ #include <libultraship/libultraship.h>
+ #include <imgui.h>
+@@ -46,6 +48,11 @@
+     ComboMenu_PopCombobox();
+     const auto sources = Sources();
+     int totals[] = {0, 0}, enabled = 0, visible = 0;
++    const auto& shadowRule = *FindGameplayRule("gEnhancements.RestoreShadowDoorUnload");
++    const auto shadow = ComboTricks::RestoredShadowDoorInfo(shadowRule.label, shadowRule.help,
++        CVarGetInteger(LogicRuleKey(shadowRule.name).c_str(), 0) != 0);
++    enabled += shadow.enabled ? 1 : 0;
++    if (ComboTricks::Matches(shadow, 0, query, world, status, skill - 1)) ++visible;
+     const CwTrickInfo* rows[] = {nullptr, nullptr};
+     for (int game = 0; game < 2; ++game) {
+         if (sources[game].get) rows[game] = sources[game].get(&totals[game]);
+@@ -55,12 +62,39 @@
+             if (ComboTricks::Matches(rows[game][i], game, query, world, status, skill - 1)) ++visible;
+         }
+     }
+-    ImGui::Text("%d enabled / %d techniques; %d match", enabled, totals[0] + totals[1], visible);
++    ImGui::Text("%d enabled / %d techniques; %d match", enabled, totals[0] + totals[1] + 1, visible);
+     ImGui::Separator();
+     const bool busy = CVarGetInteger("gGeneral.RandoGenerating", 0) || CVarGetInteger("gSettings.DisableChanges", 0);
+     ImGui::BeginDisabled(busy);
+     for (int game = 0; game < 2; ++game) {
+         if (world && world - 1 != game) continue;
++        if (game == 0 && ComboTricks::Matches(shadow, 0, query, world, status, skill - 1)) {
++            ImGui::PushID(shadow.id);
++            bool on = shadow.enabled != 0;
++            ComboMenu_PushCheckbox(theme);
++            if (ImGui::Checkbox(shadow.name, &on)) {
++                SetTrickGovernedRule(shadowRule, on, [](const char* name, int value) {
++                    CVarSetInteger(name, value);
++                    static auto write = reinterpret_cast<void(*)(const char*, int32_t)>(
++                        Combo_ResolveSym("soh", "SOH_WriteGameplayRule"));
++                    if (write) write(name, value);
++                    auto& model = ComboMenuModel::Get();
++                    if (model.Oot().applyCVarChange) model.Oot().applyCVarChange(name);
++                    WarnAboutRuleChange(name);
++                });
++                static auto refresh = reinterpret_cast<void(*)()>(Combo_ResolveSym("soh", "SOH_RefreshComboRules"));
++                if (refresh) refresh();
++                Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
++            }
++            ComboMenu_PopCheckbox();
++            ImGui::TextDisabled("OoT · %s · %s", shadow.area, shadow.tags);
++            if (ImGui::TreeNode("Details")) {
++                ImGui::TextWrapped("%s", shadow.description);
++                ImGui::TreePop();
++            }
++            ImGui::Separator();
++            ImGui::PopID();
++        }
+         if (!totals[game]) {
+             ImGui::TextWrapped("%s: no additional technique assumptions are available from this engine yet.", game == 0 ? "Ocarina of Time" : "Majora's Mask");
+             continue;
+@@ -89,6 +123,6 @@
+         }
+     }
+     ImGui::EndDisabled();
+-    if (!visible && totals[0] + totals[1]) ImGui::TextUnformatted("No techniques match these filters.");
++    if (!visible) ImGui::TextUnformatted("No techniques match these filters.");
+ }
+ } // namespace ComboRando
+--- a/combo/gui/ComboTricksModel.h
++++ b/combo/gui/ComboTricksModel.h
+@@ -5,6 +5,10 @@
+ #include <string>
+ 
+ namespace ComboTricks {
++inline CwTrickInfo RestoredShadowDoorInfo(const char* label, const char* description, bool enabled) {
++    return {-1000, label, description, "Graveyard", "Experimental · Glitch · restoration", 5,
++            (1u << 5) | (1u << 6), enabled ? 1 : 0};
++}
+ inline std::string Fold(std::string value) {
+     std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+     return value;
+--- a/combo/gui/ComboWidgetRender.cpp
++++ b/combo/gui/ComboWidgetRender.cpp
+@@ -180,6 +180,22 @@
+     }
+ }
+ 
++static void ApplyTrickGovernedRuntimeChange(const char* cvar) {
++    const auto* rule = FindGameplayRule(cvar);
++    if (!rule || !rule->trickGoverned || std::strcmp(cvar, rule->name)) return;
++    SetEnhancementRule(*rule, CVarGetInteger(cvar, rule->fallback),
++        [](const char* key, int fallback) { return CVarGetInteger(key, fallback); },
++        [](const char* key, int value) {
++            CVarSetInteger(key, value);
++            static auto write = reinterpret_cast<void(*)(const char*, int32_t)>(
++                Combo_ResolveSym("soh", "SOH_WriteGameplayRule"));
++            if (write) write(key, value);
++        });
++    static auto refresh = reinterpret_cast<void(*)()>(Combo_ResolveSym("soh", "SOH_RefreshComboRules"));
++    if (refresh) refresh();
++    Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
++}
++
+ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
+     // Every native rendering path must defer these paired controls to the shared pages.
+     if (IsRetiredNativeRuleControl(w.cvar)) return;
+@@ -212,6 +228,7 @@
+             ImGui::EndDisabled();
+         }
+         if (changed && w.cvar && w.cvar[0]) {
++            ApplyTrickGovernedRuntimeChange(w.cvar);
+             ComboAudio::MirrorIfVolumeCVar(w.cvar);
+             WarnAboutRuleChange(w.cvar);
+         }
+@@ -483,6 +500,7 @@
+     // 6) ComboShip: the Shared tab's audio sliders are OOT's (gSettings.Volume.*); mirror them into
+     // MM's gSettings.Audio.* so a single Shared Audio section drives both games (see ComboAudioBridge).
+     if (changed && w.cvar && w.cvar[0]) {
++        ApplyTrickGovernedRuntimeChange(w.cvar);
+         ComboAudio::MirrorIfVolumeCVar(w.cvar);
+         WarnAboutRuleChange(w.cvar);
+     }
+--- a/combo/rando/GameplayRuleSnapshots.h
++++ b/combo/rando/GameplayRuleSnapshots.h
+@@ -25,7 +25,9 @@
+         if (!HasSavedRuleValue(block, rule)) continue;
+         const int runtime = block["values"][rule.name].get<int>();
+         result["values"][rule.name] = runtime;
+-        if (block["version"] == 1) result["logicValues"][rule.name] = runtime;
++        if (block["version"] == 1) {
++            if (!rule.trickGoverned) result["logicValues"][rule.name] = runtime;
++        }
+         else if (block.contains("logicValues") && block["logicValues"].is_object()) {
+             const auto logical = block["logicValues"].find(rule.name);
+             if (logical != block["logicValues"].end() && logical->is_number_integer() &&
+--- a/combo/rando/GameplayRules.h
++++ b/combo/rando/GameplayRules.h
+@@ -8,7 +8,7 @@
+ namespace ComboRando {
+ // Explicit, versioned allowlist: loading a seed never imports arbitrary CVars or visual preferences.
+ // Only add a rule after auditing its runtime/default and documenting its current logic coverage.
+-struct GameplayRule { const char* name; const char* label; int fallback; int maximum; const char* help; int minimum = 0; };
++struct GameplayRule { const char* name; const char* label; int fallback; int maximum; const char* help; int minimum = 0; bool trickGoverned = false; };
+ inline constexpr GameplayRule kGameplayRules[] = {
+     {"gEnhancements.BlueFireArrows", "Blue Fire Arrows (OoT)", 0, 1,
+      "Ice Arrows melt red ice. Logic still requires usable Ice Arrows, a bow and magic; bottles of blue fire remain valid alternatives."},
+@@ -26,6 +26,8 @@
+      "Unlimited surface hopping. Logic permits verified returns from Great Bay's lab exterior, cliffside and pirate ledge to the low beach with the Deku Mask; it does not assume climbing platforms or diving."},
+     {"gEnhancements.DayGravePull", "Pull ordinary graves during the day (OoT)", 0, 1,
+      "Child Link can pull ordinary Graveyard graves during the day. Logic adds Shield and Heart Piece grave access and retains strength, chest and Sun's Song requirements; Dampe's race remains age-specific."},
++    {"gEnhancements.RestoreShadowDoorUnload", "Shadow Door Unload", 0, 1,
++     "After reaching the Graveyard warp pad, complete five full staircase unload/reload cycles in one visit to leave the Shadow Door unloaded. Both ages can use this shortcut without Din's Fire. Enable this technique under Randomizer / Tricks & glitches to let the seed require it. The restoration alone never adds a logic assumption. Leaving the Graveyard resets it; disabling restores the door on its next reload.", 0, true},
+     {"gCheats.SuperTunic", "All tunics protect against hazards (OoT)", 0, 1,
+      "All tunics protect against heat and underwater timers. Logic retains swimming, depth, boots, age and other equipment requirements."},
+     {"gCheats.DekuStick", "Deku stick behavior (OoT)", 0, 2,
+@@ -77,6 +79,15 @@
+     if (!value || (logic && logic!=value)) write(key.c_str(),0);
+ }
+ 
++// A restoration capability and permission to require its technique are separate.
++// Only the normal Tricks & glitches checkbox adds this assumption. Removing the
++// assumption leaves the independently selected restoration available to play.
++template<class Write> void SetTrickGovernedRule(const GameplayRule& rule,bool enabled,Write write) {
++    if (!rule.trickGoverned) return;
++    if (enabled) SetLogicRule(rule,1,write);
++    else write(LogicRuleKey(rule.name).c_str(),0);
++}
++
+ template<class Read> nlohmann::json CaptureGameplayRules(Read read) {
+     nlohmann::json values = nlohmann::json::object();
+     nlohmann::json logic = nlohmann::json::object();
+@@ -98,7 +109,7 @@
+         // Reject out-of-range values before narrowing; malformed imports cannot wrap into valid rules.
+         if (*it < rule.minimum || *it > rule.maximum) continue;
+         write(rule.name, it->get<int>());
+-        int logical=it->get<int>(); // migrate existing seeds' coupled settings
++        int logical=rule.trickGoverned ? 0 : it->get<int>(); // legacy restoration alone cannot select a trick
+         if (rules["version"]==2) {
+             logical=0;
+             if(rules.contains("logicValues") && rules["logicValues"].is_object()) {
+--- a/combo/rando/GenerationRules.h
++++ b/combo/rando/GenerationRules.h
+@@ -17,7 +17,12 @@
+     write(kNativeAllLocations, NativeAllLocationsForGuarantee(read(kCombinedGuarantee, 0), read(kNativeLogicRule, 0)));
+ }
+ inline bool IsRetiredNativeRuleControl(const char* key) {
+-    return key && (FindGameplayRule(key) || !std::strcmp(key, kNativeAllLocations));
++    if (!key) return false;
++    if (!std::strcmp(key, kNativeAllLocations)) return true;
++    const auto* rule = FindGameplayRule(key);
++    // Trick-governed restorations keep their native runtime checkbox. The
++    // logical control belongs exclusively to the normal Tricks & glitches UI.
++    return rule && !(rule->trickGoverned && !std::strcmp(key, rule->name));
+ }
+ struct NativePoolFailure { std::string error; bool retryable; };
+ // Inspect both engine results before any pool counting, forced-placement or entrance work.
+diff --git a/mm/2s2h/DeveloperTools/OwlStatueEditor.h b/mm/2s2h/DeveloperTools/OwlStatueEditor.h
+new file mode 100644
+--- /dev/null
++++ b/mm/2s2h/DeveloperTools/OwlStatueEditor.h
+@@ -0,0 +1,43 @@
++#pragma once
++
++// C-compatible destination test shared by the native song menu and editor.
++// Legacy debug "All" saves can contain reserved upper bits without real owls.
++#define MM_OWL_STATUE_COUNT 10u
++#define MM_OWL_STATUE_ACTIVATION_MASK ((1u << MM_OWL_STATUE_COUNT) - 1u)
++#define MM_HAS_ACTIVATED_OWL_STATUES(flags) (((flags) & MM_OWL_STATUE_ACTIVATION_MASK) != 0u)
++
++#ifdef __cplusplus
++#include <cstdint>
++
++namespace MmOwlEditor {
++// Native owl IDs 0..9 are activation bits. Entrance (10) and the remaining
++// upper bits are not owl destinations; editing must leave them untouched.
++inline constexpr unsigned kStatueCount = MM_OWL_STATUE_COUNT;
++inline constexpr uint16_t kStatueMask = MM_OWL_STATUE_ACTIVATION_MASK;
++
++inline constexpr bool IsActivated(uint16_t flags, unsigned owlId) {
++    return owlId < kStatueCount && (flags & (1u << owlId)) != 0;
++}
++
++inline constexpr uint16_t SetActivated(uint16_t flags, unsigned owlId, bool activated) {
++    if (owlId >= kStatueCount) {
++        return flags;
++    }
++    const uint16_t bit = static_cast<uint16_t>(1u << owlId);
++    return activated ? static_cast<uint16_t>(flags | bit) : static_cast<uint16_t>(flags & ~bit);
++}
++
++inline constexpr uint16_t SetAllActivated(uint16_t flags, bool activated) {
++    return activated ? static_cast<uint16_t>(flags | kStatueMask)
++                     : static_cast<uint16_t>(flags & ~kStatueMask);
++}
++
++inline constexpr unsigned ActivatedCount(uint16_t flags) {
++    unsigned count = 0;
++    for (unsigned owlId = 0; owlId < kStatueCount; ++owlId) {
++        count += IsActivated(flags, owlId) ? 1u : 0u;
++    }
++    return count;
++}
++} // namespace MmOwlEditor
++#endif
+--- a/mm/2s2h/DeveloperTools/SaveEditor.cpp
++++ b/mm/2s2h/DeveloperTools/SaveEditor.cpp
+@@ -1,4 +1,5 @@
+ #include "SaveEditor.h"
++#include "OwlStatueEditor.h"
+ #include "gui/ComboTouchSlider.h"
+ #include <fast/Fast3dGui.h>
+ #include "2s2h/BenGui/UIWidgets.hpp"
+@@ -399,11 +400,74 @@
+     ImGui::Columns(1);
+ }
+ 
++static void DrawOwlStatuesEditor() {
++    struct OwlStatue {
++        OwlWarpId id;
++        const char* name;
++    };
++    static constexpr OwlStatue statues[] = {
++        { OWL_WARP_CLOCK_TOWN, "Clock Town" },
++        { OWL_WARP_MILK_ROAD, "Milk Road" },
++        { OWL_WARP_SOUTHERN_SWAMP, "Southern Swamp" },
++        { OWL_WARP_WOODFALL, "Woodfall" },
++        { OWL_WARP_MOUNTAIN_VILLAGE, "Mountain Village" },
++        { OWL_WARP_SNOWHEAD, "Snowhead" },
++        { OWL_WARP_GREAT_BAY_COAST, "Great Bay Coast" },
++        { OWL_WARP_ZORA_CAPE, "Zora Cape" },
++        { OWL_WARP_IKANA_CANYON, "Ikana Canyon" },
++        { OWL_WARP_STONE_TOWER, "Stone Tower" },
++    };
++    static_assert(OWL_WARP_GREAT_BAY_COAST == 0 && OWL_WARP_ENTRANCE == MmOwlEditor::kStatueCount);
++    static_assert(ARRAY_COUNT(statues) == MmOwlEditor::kStatueCount);
++
++    const bool hasSave = gSaveContext.fileNum >= 0 && gSaveContext.fileNum < FILE_NUM_MAX;
++    if (!hasSave) {
++        ImGui::TextWrapped("Load a Majora's Mask file to edit owl statues.");
++    }
++    ImGui::BeginDisabled(!hasSave);
++    auto& flags = gSaveContext.save.saveInfo.playerData.owlActivationFlags;
++    ImGui::Text("Activated: %u / %u", MmOwlEditor::ActivatedCount(flags), MmOwlEditor::kStatueCount);
++    ImGui::TextWrapped("Choose unlocked warp destinations. Save in game to keep changes.");
++    ImGui::TextWrapped("This does not grant Song of Soaring or an instrument, or change the seed's song routes.");
++
++    const bool twoColumns = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 22.0f;
++    if (UIWidgets::Button("Activate all##owlStatues", { .size = UIWidgets::Sizes::Inline,
++                                                       .color = UIWidgets::Colors::Green })) {
++        flags = MmOwlEditor::SetAllActivated(flags, true);
++    }
++    if (twoColumns) {
++        ImGui::SameLine();
++    }
++    if (UIWidgets::Button("Clear all##owlStatues", { .size = UIWidgets::Sizes::Inline,
++                                                    .color = UIWidgets::Colors::Red })) {
++        flags = MmOwlEditor::SetAllActivated(flags, false);
++    }
++    if (ImGui::BeginTable("owlStatueDestinations", twoColumns ? 2 : 1,
++                          ImGuiTableFlags_SizingStretchSame)) {
++        for (const auto& statue : statues) {
++            ImGui::TableNextColumn();
++            bool activated = MmOwlEditor::IsActivated(flags, statue.id);
++            if (UIWidgets::Checkbox(statue.name, &activated, { .color = UIWidgets::Colors::Gray })) {
++                flags = MmOwlEditor::SetActivated(flags, statue.id, activated);
++            }
++        }
++        ImGui::EndTable();
++    }
++    ImGui::EndDisabled();
++    // Only the loaded live Save is edited. The native pause/cycle save paths
++    // persist it in the appropriate owl/newCycle page; no stale page, recorded
++    // randomizer route, song ownership, or current owl respawn is rewritten here.
++}
++
+ void DrawGeneralTab() {
+     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
+     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+     ImGui::BeginChild("generalTab", ImVec2(0, 0), true);
+ 
++    if (ImGui::CollapsingHeader("Owl Statues / Warp Destinations", ImGuiTreeNodeFlags_DefaultOpen)) {
++        DrawOwlStatuesEditor();
++    }
++    ImGui::Spacing();
+     UIWidgets::BeginCardLayout({ .columnsPerRow = 2, .minColumnWidth = 420.0f });
+ 
+     // Card 1: Player Identity
+@@ -2108,17 +2172,8 @@
+             }
+             break;
+         case OWL_ACTIVATION:
+-            if (UIWidgets::Button("All##owlActivationFlags",
+-                                  { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Gray })) {
+-                gSaveContext.save.saveInfo.playerData.owlActivationFlags = UINT16_MAX;
+-            }
+-            ImGui::SameLine();
+-            if (UIWidgets::Button("Clear##owlActivationFlags",
+-                                  { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Red })) {
+-                gSaveContext.save.saveInfo.playerData.owlActivationFlags = 0;
+-            }
+-            UIWidgets::DrawFlagTableArray16(flagTables.at(OWL_ACTIVATION),
+-                                            gSaveContext.save.saveInfo.playerData.owlActivationFlags);
++            ImGui::SeparatorText("Owl Statues / Warp Destinations");
++            DrawOwlStatuesEditor();
+             break;
+         case PERMANENT_SCENE_FLAGS:
+             ImGui::BeginGroup();
+--- a/mm/2s2h/Enhancements/Songs/PauseOwlWarp.cpp
++++ b/mm/2s2h/Enhancements/Songs/PauseOwlWarp.cpp
+@@ -3,6 +3,7 @@
+ #include "2s2h/ShipInit.hpp"
+ #include "2s2h/ShipUtils.h"
+ #include "2s2h/Rando/Logic/Logic.h"
++#include "2s2h/DeveloperTools/OwlStatueEditor.h"
+ 
+ extern "C" {
+ #include "overlays/kaleido_scope/ovl_kaleido_scope/z_kaleido_scope.h"
+@@ -23,7 +24,7 @@
+ 
+ extern "C" bool PauseOwlWarp_IsOwlWarpEnabled() {
+     return CVAR && CHECK_QUEST_ITEM(QUEST_SONG_SOARING) && INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_OF_TIME &&
+-           gSaveContext.save.saveInfo.playerData.owlActivationFlags != 0 &&
++           MM_HAS_ACTIVATED_OWL_STATUES(gSaveContext.save.saveInfo.playerData.owlActivationFlags) &&
+            gPlayState->pauseCtx.debugEditor == DEBUG_EDITOR_NONE &&
+            gPlayState->interfaceCtx.restrictions.songOfSoaring == 0 &&
+            (!IS_RANDO || Rando::Logic::canPlaySong(OCARINA_SONG_SOARING));
+--- a/mm/src/code/z_message.c
++++ b/mm/src/code/z_message.c
+@@ -7,6 +7,7 @@
+ #include "message_data_static.h"
+ #include "interface/parameter_static/parameter_static.h"
+ #include "z64save.h"
++#include "2s2h/DeveloperTools/OwlStatueEditor.h"
+ #include "BenPort.h"
+ #include "2s2h/GameInteractor/GameInteractor.h"
+ #include "assets/archives/schedule_dma_static/schedule_dma_static_yar.h"
+@@ -6025,7 +6026,7 @@
+                         play->msgCtx.ocarinaMode = OCARINA_MODE_1B;
+                         sLastPlayedSong = 0xFF;
+                     } else if (!msgCtx->ocarinaSongEffectActive) {
+-                        if (gSaveContext.save.saveInfo.playerData.owlActivationFlags != 0) {
++                        if (MM_HAS_ACTIVATED_OWL_STATUES(gSaveContext.save.saveInfo.playerData.owlActivationFlags)) {
+                             pauseCtx->unk_2C8 = pauseCtx->pageIndex;
+                             pauseCtx->unk_2CA = pauseCtx->cursorPoint[4];
+                             pauseCtx->pageIndex = PAUSE_ITEM;
+diff --git a/soh/soh/Enhancements/Restorations/ShadowDoorUnload.h b/soh/soh/Enhancements/Restorations/ShadowDoorUnload.h
+new file mode 100644
+--- /dev/null
++++ b/soh/soh/Enhancements/Restorations/ShadowDoorUnload.h
+@@ -0,0 +1,70 @@
++#ifndef SOH_RESTORATIONS_SHADOW_DOOR_UNLOAD_H
++#define SOH_RESTORATIONS_SHADOW_DOOR_UNLOAD_H
++
++/* Compatibility recreation of the N64 Graveyard stair-reload door unload.
++ * The port's heap, actor overlays and object loading differ from N64, so this
++ * implements the explicitly chosen five-trip setup without leaking memory or
++ * changing saved switches. The staircase actor owns this visit-local state.
++ */
++#define SHADOW_DOOR_UNLOAD_CYCLES 5u
++
++typedef struct ShadowDoorUnloadState {
++    signed char startRoom;
++    signed char lastRoom;
++    unsigned char cycles;
++} ShadowDoorUnloadState;
++
++static inline int ShadowDoorUnload_IsRoom(int room) {
++    return room == 0 || room == 1;
++}
++
++static inline void ShadowDoorUnload_Reset(ShadowDoorUnloadState* state, int room) {
++    state->startRoom = state->lastRoom = ShadowDoorUnload_IsRoom(room) ? (signed char)room : -1;
++    state->cycles = 0;
++}
++
++static inline int ShadowDoorUnload_IsStaircase(int scene, unsigned int params,
++                                              float x, float y, float z, int rotY) {
++    /* Actor_SpawnTransitionActors adds the transition-list index in bits 10-15. */
++    return scene == 0x53 && (params & 0x03FFu) == 0x013Fu && x == 1519.0f && y == 239.0f &&
++           z == 93.0f && rotY == 0x4000;
++}
++
++/* Called only after a real staircase room load has completed. Initial scene
++ * loads, repeated notifications and nonalternating room changes earn no trip.
++ */
++static inline void ShadowDoorUnload_RecordRoomLoad(ShadowDoorUnloadState* state, int enabled,
++                                                  int authenticStaircase, int previousRoom, int loadedRoom) {
++    if (!enabled) {
++        ShadowDoorUnload_Reset(state, loadedRoom);
++        return;
++    }
++    if (!authenticStaircase) {
++        return;
++    }
++    if (!ShadowDoorUnload_IsRoom(previousRoom) || !ShadowDoorUnload_IsRoom(loadedRoom)) {
++        ShadowDoorUnload_Reset(state, loadedRoom);
++        return;
++    }
++    if (loadedRoom == state->lastRoom) {
++        return;
++    }
++    if (previousRoom != state->lastRoom) {
++        ShadowDoorUnload_Reset(state, loadedRoom);
++        return;
++    }
++    state->lastRoom = (signed char)loadedRoom;
++    if (loadedRoom == state->startRoom && state->cycles < SHADOW_DOOR_UNLOAD_CYCLES) {
++        ++state->cycles;
++    }
++}
++
++static inline int ShadowDoorUnload_IsActive(const ShadowDoorUnloadState* state, int enabled) {
++    return enabled && state->cycles >= SHADOW_DOOR_UNLOAD_CYCLES;
++}
++
++static inline int ShadowDoorUnload_IsDoor(int scene, int room, int actorId, unsigned int params) {
++    return scene == 0x53 && room == 0 && actorId == 0x009C && (params & 0xFFu) == 0;
++}
++
++#endif
+--- a/soh/soh/Enhancements/debugger/debugSaveEditor.cpp
++++ b/soh/soh/Enhancements/debugger/debugSaveEditor.cpp
+@@ -536,6 +536,19 @@
+     }
+ }
+ 
++static std::vector<ItemMapEntry> GetLegalInventorySlotItems(InventorySlot slot) {
++    std::vector<ItemMapEntry> items;
++    // Every bottle can contain the same items even though gItemSlots maps them to bottle 1.
++    const InventorySlot canonicalSlot = slot >= SLOT_BOTTLE_1 && slot <= SLOT_BOTTLE_4 ? SLOT_BOTTLE_1 : slot;
++    for (int item = ITEM_STICK; item <= ITEM_CLAIM_CHECK; item++) {
++        if (const auto mappedItem = itemMapping.find(item);
++            gItemSlots[item] == canonicalSlot && mappedItem != itemMapping.end()) {
++            items.push_back(mappedItem->second);
++        }
++    }
++    return items;
++}
++
+ void DrawInventoryTab() {
+     static bool restrictToValid = true;
+ 
+@@ -547,6 +560,7 @@
+     Checkbox("Keep C/D-pad buttons in sync", &syncButtons,
+              checkboxOptionsBase.Tooltip("Refresh a C or D-pad button when its inventory slot is edited. Disable to "
+                                          "leave a slot and its button out of sync (e.g. to set up RBA)."));
++    ImGui::TextWrapped("Faded icons are not owned. Tap an icon to choose an item or remove it.");
+ 
+     for (int y = 0; y < 4; y++) {
+         for (int x = 0; x < 6; x++) {
+@@ -562,29 +576,43 @@
+             }
+ 
+             ItemID item = (ItemID)gSaveContext.inventory.items[index];
++            std::string textureName;
++            std::string itemName;
++            bool hasItemIcon = false;
++            if (item == ITEM_ROCS_FEATHER) {
++                textureName = itemMapping.at(RG_ROCS_FEATHER).name;
++                itemName = "Roc's Feather";
++                hasItemIcon = true;
++            } else if (const auto mappedItem = itemMapping.find(item);
++                       item != ITEM_NONE && mappedItem != itemMapping.end()) {
++                textureName = mappedItem->second.name;
++                itemName = SohUtils::GetItemName(item);
++                hasItemIcon = true;
++            } else {
++                const auto legalItems = GetLegalInventorySlotItems(index);
++                if (!legalItems.empty()) {
++                    textureName = legalItems.front().name;
++                    itemName = SohUtils::GetItemName(legalItems.front().id);
++                }
++            }
+             PushStyleButton(Colors::DarkGray);
+-            if (item == ITEM_ROCS_FEATHER) {
++            if (!textureName.empty()) {
+                 auto ret = ImGui::ImageButton(
+-                    "ROCS_FEATHER",
++                    "##inventorySlot",
+                     std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
+-                        ->GetTextureByName("ROCS_FEATHER"),
+-                    ImVec2(48.0f, 48.0f), ImVec2(0, 0), ImVec2(1, 1));
++                        ->GetTextureByName(textureName),
++                    ImVec2(IMAGE_SIZE, IMAGE_SIZE), ImVec2(0, 0), ImVec2(1, 1),
++                    ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, hasItemIcon ? 1.0f : 0.4f));
+                 if (ret) {
+                     selectedIndex = index;
+                     ImGui::OpenPopup(itemPopupPicker);
+                 }
+-            } else if (const auto mappedItem = itemMapping.find(item);
+-                       item != ITEM_NONE && mappedItem != itemMapping.end()) {
+-                const ItemMapEntry& slotEntry = mappedItem->second;
+-                auto ret = ImGui::ImageButton(
+-                    slotEntry.name.c_str(),
+-                    std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
+-                        ->GetTextureByName(slotEntry.name),
+-                    ImVec2(48.0f, 48.0f), ImVec2(0, 0), ImVec2(1, 1));
+-                if (ret) {
+-                    selectedIndex = index;
+-                    ImGui::OpenPopup(itemPopupPicker);
+-                }
++                std::string tooltip = itemName + (hasItemIcon ? " (owned)" : " (not owned)");
++                if (!hasItemIcon && item != ITEM_NONE) {
++                    tooltip = "Unsupported saved item " + std::to_string(static_cast<int>(item));
++                }
++                tooltip += "\nTap to choose an item or remove it.";
++                UIWidgets::Tooltip(tooltip.c_str());
+             } else {
+                 if (ImGui::Button("##itemNone", ImVec2(IMAGE_SIZE, IMAGE_SIZE) + ImGui::GetStyle().FramePadding * 2)) {
+                     selectedIndex = index;
+@@ -611,17 +639,7 @@
+ 
+                 std::vector<ItemMapEntry> possibleItems;
+                 if (restrictToValid) {
+-                    // Scan gItemSlots to find legal items for this slot. Bottles are a special case
+-                    for (int slotIndex = 0; slotIndex < 56; slotIndex++) {
+-                        int testIndex = (selectedIndex == SLOT_BOTTLE_1 || selectedIndex == SLOT_BOTTLE_2 ||
+-                                         selectedIndex == SLOT_BOTTLE_3 || selectedIndex == SLOT_BOTTLE_4)
+-                                            ? SLOT_BOTTLE_1
+-                                            : selectedIndex;
+-                        if (const auto mappedItem = itemMapping.find(slotIndex);
+-                            gItemSlots[slotIndex] == testIndex && mappedItem != itemMapping.end()) {
+-                            possibleItems.push_back(mappedItem->second);
+-                        }
+-                    }
++                    possibleItems = GetLegalInventorySlotItems(selectedIndex);
+                 } else {
+                     for (const auto& entry : itemMapping) {
+                         possibleItems.push_back(entry.second);
+--- a/soh/soh/Enhancements/randomizer/location_access/overworld/graveyard.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access/overworld/graveyard.cpp
+@@ -153,7 +153,7 @@
+     }, {
+         //Exits
+         ENTRANCE(RR_THE_GRAVEYARD,          true),
+-        ENTRANCE(RR_SHADOW_TEMPLE_ENTRYWAY, logic->CanUse(RG_DINS_FIRE) || (ctx->GetTrickOption(RT_GY_SHADOW_FIRE_ARROWS) && logic->IsAdult && logic->CanUse(RG_FIRE_ARROWS))),
++        ENTRANCE(RR_SHADOW_TEMPLE_ENTRYWAY, logic->CanUse(RG_DINS_FIRE) || (ctx->GetTrickOption(RT_GY_SHADOW_FIRE_ARROWS) && logic->IsAdult && logic->CanUse(RG_FIRE_ARROWS)) || logic->CanUnloadShadowDoor()),
+     });
+ 
+     // clang-format on
+--- a/soh/soh/Enhancements/randomizer/logic.cpp
++++ b/soh/soh/Enhancements/randomizer/logic.cpp
+@@ -35,6 +35,16 @@
+ bool Logic::CanPullGravesDuringDay() const {
+ #ifdef COMBO_BUILD
+     return CVarGetInteger("gCombo.Logic.gEnhancements.DayGravePull",0)!=0;
++#else
++    return false;
++#endif
++}
++
++bool Logic::CanUnloadShadowDoor() const {
++#ifdef COMBO_BUILD
++    // This models the audited five-cycle compatibility shortcut only at the
++    // existing Graveyard warp-pad gate. Runtime-only use adds no seed route.
++    return CVarGetInteger("gCombo.Logic.gEnhancements.RestoreShadowDoorUnload",0)!=0;
+ #else
+     return false;
+ #endif
+--- a/soh/soh/Enhancements/randomizer/logic.h
++++ b/soh/soh/Enhancements/randomizer/logic.h
+@@ -40,6 +40,7 @@
+     bool CanUse(RandomizerGet itemName);
+     bool ShopsOpenAllHours() const;
+     bool CanPullGravesDuringDay() const;
++    bool CanUnloadShadowDoor() const;
+     bool HasSuperTunic() const;
+     bool HasSelfLightingSticks();
+     bool HasProjectile(HasProjectileAge age);
+@@ -184,4 +185,4 @@
+     std::shared_ptr<Context> ctx;
+     bool inLogic[LOGIC_MAX];
+ }; // class Logic
+-} // namespace Rando
+\ No newline at end of file
++} // namespace Rando
+--- a/soh/soh/SohGui/SohMenuEnhancements.cpp
++++ b/soh/soh/SohGui/SohMenuEnhancements.cpp
+@@ -1262,6 +1262,13 @@
+             "Restores an unused animation of Saria when she says, \"Saria and Link will be friends forever.\""));
+ 
+     AddWidget(path, "Glitch Restorations", WIDGET_SEPARATOR_TEXT);
++    AddWidget(path, "Shadow Door Unload", WIDGET_CVAR_CHECKBOX)
++        .CVar(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"))
++        .Options(CheckboxOptions().Tooltip(
++            "Recreates the Shadow Temple door unload after five full trips up and down the Graveyard stairs. "
++            "Resets when leaving the area; disabling restores the door on its next room reload. "
++            "This restores the behavior only. To allow seed logic to require it, enable Shadow Door Unload "
++            "under Randomizer / Tricks & glitches."));
+     AddWidget(path, "Fish while Hovering", WIDGET_CVAR_CHECKBOX)
+         .CVar(CVAR_ENHANCEMENT("HoverFishing"))
+         .Options(CheckboxOptions().Tooltip(
+--- a/soh/src/overlays/actors/ovl_En_Holl/z_en_holl.c
++++ b/soh/src/overlays/actors/ovl_En_Holl/z_en_holl.c
+@@ -1,4 +1,6 @@
+ #include "z_en_holl.h"
++#include <libultraship/bridge/consolevariablebridge.h>
++#include <libultraship/log/luslog.h>
+ 
+ #define FLAGS ACTOR_FLAG_UPDATE_CULLING_DISABLED
+ 
+@@ -129,6 +131,7 @@
+     Actor_ProcessInitChain(&this->actor, sInitChain);
+     EnHoll_ChooseAction(this);
+     this->resetBgCoverAlpha = false;
++    ShadowDoorUnload_Reset(&this->shadowDoorUnload, play->roomCtx.curRoom.num);
+ }
+ 
+ void EnHoll_Destroy(Actor* thisx, PlayState* play) {
+@@ -390,9 +393,84 @@
+     }
+ }
+ 
++static int EnHoll_IsShadowStaircase(EnHoll* this, PlayState* play) {
++    return ShadowDoorUnload_IsStaircase(play->sceneNum, (u16)this->actor.params,
++                                        this->actor.home.pos.x, this->actor.home.pos.y,
++                                        this->actor.home.pos.z, this->actor.home.rot.y);
++}
++
++static void EnHoll_UnloadShadowDoor(EnHoll* this, PlayState* play) {
++    Actor* actor;
++
++    if (!EnHoll_IsShadowStaircase(this, play) ||
++        !ShadowDoorUnload_IsActive(&this->shadowDoorUnload,
++                                   CVarGetInteger(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"), 0))) {
++        return;
++    }
++
++    actor = play->actorCtx.actorLists[ACTORCAT_BG].head;
++    while (actor != NULL) {
++        if (actor->update != NULL &&
++            ShadowDoorUnload_IsDoor(play->sceneNum, actor->room, actor->id, (u16)actor->params)) {
++            // Normal actor destruction also unregisters its dynamic collision.
++            Actor_Kill(actor);
++        }
++        actor = actor->next;
++    }
++}
++
++static void EnHoll_LogGraveyardActorExhaustion(EnHoll* this, PlayState* play) {
++    s32 listed = 0;
++    s32 actual = 0;
++    s32 live = 0;
++    s32 shadowDoors = 0;
++    s32 tombstones = 0;
++    Player* player;
++
++    if (play->sceneNum != SCENE_GRAVEYARD ||
++        !CVarGetInteger(CVAR_DEVELOPER_TOOLS("ActorExhaustionDiagnostics"), 0)) {
++        return;
++    }
++
++    for (s32 i = 0; i < ACTORCAT_MAX; ++i) {
++        Actor* actor = play->actorCtx.actorLists[i].head;
++        listed += play->actorCtx.actorLists[i].length;
++        while (actor != NULL) {
++            ++actual;
++            if (actor->update != NULL) {
++                ++live;
++                if (actor->id == ACTOR_BG_SPOT02_OBJECTS) {
++                    shadowDoors += (actor->params & 0xFF) == 0;
++                    tombstones += (actor->params & 0xFF) == 2;
++                }
++            }
++            actor = actor->next;
++        }
++    }
++
++    player = GET_PLAYER(play);
++    LUSLOG_INFO("COMBO_ACTOR_EXHAUSTION scene=%d room=%d counter=%u listed=%d actual=%d live=%d "
++                "shadowDoors=%d tombstones=%d x=%.1f y=%.1f z=%.1f restored=%d cycles=%u threshold=%u "
++                "params=%04X auth=%d start=%d last=%d",
++                play->sceneNum, play->roomCtx.curRoom.num, (unsigned int)play->actorCtx.total,
++                listed, actual, live, shadowDoors, tombstones, player->actor.world.pos.x,
++                player->actor.world.pos.y, player->actor.world.pos.z,
++                CVarGetInteger(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"), 0),
++                (unsigned int)this->shadowDoorUnload.cycles, SHADOW_DOOR_UNLOAD_CYCLES,
++                (unsigned int)(u16)this->actor.params, EnHoll_IsShadowStaircase(this, play),
++                (int)this->shadowDoorUnload.startRoom, (int)this->shadowDoorUnload.lastRoom);
++}
++
+ void EnHoll_WaitRoomLoaded(EnHoll* this, PlayState* play) {
+     if (!EnHoll_IsKokiriLayer8() && play->roomCtx.status == 0) {
++        s8 previousRoom = play->roomCtx.prevRoom.num;
+         Room_FinishRoomChange(play, &play->roomCtx);
++        ShadowDoorUnload_RecordRoomLoad(&this->shadowDoorUnload,
++                                        CVarGetInteger(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"), 0),
++                                        EnHoll_IsShadowStaircase(this, play), previousRoom,
++                                        play->roomCtx.curRoom.num);
++        EnHoll_UnloadShadowDoor(this, play);
++        EnHoll_LogGraveyardActorExhaustion(this, play);
+         if (play->bgCoverAlpha == 0) {
+             this->resetBgCoverAlpha = false;
+         }
+@@ -403,6 +481,10 @@
+ void EnHoll_Update(Actor* thisx, PlayState* play) {
+     EnHoll* this = (EnHoll*)thisx;
+ 
++    if (EnHoll_IsShadowStaircase(this, play) &&
++        !CVarGetInteger(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"), 0)) {
++        ShadowDoorUnload_Reset(&this->shadowDoorUnload, play->roomCtx.curRoom.num);
++    }
+     this->actionFunc(this, play);
+ }
+ 
+--- a/soh/src/overlays/actors/ovl_En_Holl/z_en_holl.h
++++ b/soh/src/overlays/actors/ovl_En_Holl/z_en_holl.h
+@@ -3,6 +3,7 @@
+ 
+ #include <libultraship/libultra.h>
+ #include "global.h"
++#include "soh/Enhancements/Restorations/ShadowDoorUnload.h"
+ 
+ #define ENHOLL_GET_TYPE(thisx)          PARAMS_GET_U((thisx)->params, 6, 3)
+ #define ENHOLL_GET_SWITCH_FLAG(thisx)   PARAMS_GET_U((thisx)->params, 0, 6)
+@@ -43,6 +44,7 @@
+     /* 0x014E */ u8 side;
+     /* 0x014F */ u8 resetBgCoverAlpha;
+     /* 0x0150 */ EnHollActionFunc actionFunc;
+-} EnHoll; // size = 0x0154
++    /* SOH */ ShadowDoorUnloadState shadowDoorUnload;
++} EnHoll;
+ 
+ #endif

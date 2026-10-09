@@ -1,0 +1,117 @@
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -532,7 +532,7 @@
+                         if (column != wd.column) { column = wd.column; heading.clear(); }
+                         if (wd.kind == CW_SEPARATOR_TEXT) heading = wd.name ? wd.name : "";
+                         const auto route = MenuGroupRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
+-                                                            side.sidebarName ? side.sidebarName : "", wd.column, heading);
++                                                            side.sidebarName ? side.sidebarName : "", wd.column, heading, wd.cvar ? wd.cvar : "");
+                         if (route.scope.empty()) continue;
+                         if (wd.cvar && (std::strstr(wd.cvar, "CheckTracker") || IsRetiredNativeRuleControl(wd.cvar))) continue; // retired per-game controls
+                         const std::string name = wd.name ? wd.name : "";
+@@ -1566,7 +1566,7 @@
+         const auto& widget = side.widgets[i];
+         if (sourceColumn != widget.column) { sourceColumn = widget.column; currentHeading.clear(); }
+         if (widget.kind == CW_SEPARATOR_TEXT) currentHeading = widget.name ? widget.name : "";
+-        if (MenuGroupRoute(source.oot, source.section, side.sidebarName, sourceColumn, currentHeading).page == page)
++        if (MenuGroupRoute(source.oot, source.section, side.sidebarName, sourceColumn, currentHeading, widget.cvar ? widget.cvar : "").page == page)
+             grouped.push_back(widget);
+     }
+     side.widgets = grouped.data(); side.widgetCount = (int)grouped.size();
+@@ -1611,7 +1611,7 @@
+             const auto& w = side.widgets[i];
+             if (column != w.column) { column = w.column; heading.clear(); }
+             if (w.kind == CW_SEPARATOR_TEXT) heading = w.name ? w.name : "";
+-            if (RandomizerWidgetGroup(true, source.sidebar->sidebarName, w.column, heading) != subpage) continue;
++            if (RandomizerWidgetGroup(true, source.sidebar->sidebarName, w.column, heading, w.cvar ? w.cvar : "") != subpage) continue;
+             filtered.push_back(w);
+         }
+         side.widgets = filtered.data();
+@@ -1701,7 +1701,7 @@
+                     const auto& widget = sidebar.widgets[w];
+                     if (widget.column != column) { column = widget.column; heading.clear(); }
+                     if (widget.kind == CW_SEPARATOR_TEXT) heading = widget.name ? widget.name : "";
+-                    addSource(MenuGroupRoute(g == 0, section.sectionLabel, sidebar.sidebarName, column, heading));
++                    addSource(MenuGroupRoute(g == 0, section.sectionLabel, sidebar.sidebarName, column, heading, widget.cvar ? widget.cvar : ""));
+                 }
+                 const auto restoration = FeatureMenuRoute(g == 0, section.sectionLabel ? section.sectionLabel : "",
+                                                          sidebar.sidebarName ? sidebar.sidebarName : "", 2);
+--- a/combo/gui/ComboNavigation.h
++++ b/combo/gui/ComboNavigation.h
+@@ -123,8 +123,18 @@
+     return "Tools";
+ }
+ inline MenuDestination MenuGroupRoute(bool oot, const std::string& section, const std::string& page,
+-                                      int column, const std::string& heading) {
++                                      int column, const std::string& heading, const std::string& key = {}) {
+     auto route = MenuRoute(oot, section, page);
++    if (oot && section == "Randomizer" && page == "Logic/Access") {
++        if (key == "gRandoSettings.CompleteMaskQuest" || key == "gRandoSettings.ItemPool" ||
++            heading == "Item Pool Settings") return {"randomizer", "Items & checks"};
++        if (key == "gRandoSettings.StartingAge" || key == "gRandoSettings.FullWallets")
++            return {"randomizer", "Starting inventory"};
++        for (const char* rule : {"BigPoeTargetCount", "SlingBowBeehives", "SwordlessEponaItems",
++                                 "SkipChildStealth", "EarlyGrannysShop", "SkipPlantingBeans",
++                                 "SkipEponaRace", "SkipScarecrowsSong"})
++            if (key == std::string("gRandoSettings.") + rule) return {"randomizer", "Gameplay rules"};
++    }
+     if (section == "Enhancements" && (page == "Quality of Life" || page == "Gameplay")) {
+         if (heading == "Saving") return {"gameplay", "Saving"};
+         if (heading == "Controls") return {"settings", "Controls"};
+@@ -221,7 +231,10 @@
+ }
+ // A widget belongs to exactly one subpage. Indices/callbacks remain those of the native menu.
+ inline int RandomizerWidgetGroup(bool oot, const std::string& sidebar, int column,
+-                                 const std::string& heading) {
++                                 const std::string& heading, const std::string& key = {}) {
++    if (oot && sidebar == "Logic/Access" &&
++        (key == "gRandoSettings.CompleteMaskQuest" || key == "gRandoSettings.ItemPool" ||
++         heading == "Item Pool Settings")) return 1;
+     if (oot && sidebar == "Shuffles") return column < 2 ? 0 : 1;
+     if (!oot && sidebar == "Check Pool") return 0;
+     if (!oot && sidebar == "Item Pool") return 1;
+--- a/combo/gui/ComboRandomizerProfiles.cpp
++++ b/combo/gui/ComboRandomizerProfiles.cpp
+@@ -21,7 +21,7 @@
+ static ComboRandomizerProfileCallbacks callbacks{};
+ static int selected=0,view=0; static bool active=false,dirty=false;
+ static std::string error; static Json snapshot,document,catalog;
+-static std::unique_ptr<ProfileOotPolicy::View> optionView;static std::set<std::string> mmBaseAvailable;
++static std::shared_ptr<ProfileOotPolicy::View> optionView;static std::set<std::string> mmBaseAvailable;
+ static void RefreshOptionPolicy(bool apply);
+ bool Ready(){return callbacks.version==1&&callbacks.inspect&&callbacks.setDraft&&callbacks.copySaved&&callbacks.copyDraft&&callbacks.generate&&callbacks.cancel;}
+ const Json& Catalogue(){return catalog;}
+@@ -53,7 +53,7 @@
+  RefreshOptionPolicy(true);RefreshPoolViews();
+ }}
+ static void RefreshOptionPolicy(bool apply){
+- optionView=std::make_unique<ProfileOotPolicy::View>(catalog.at("oot"),ReadInteger);
++ optionView=std::make_shared<ProfileOotPolicy::View>(catalog.at("oot"),ReadInteger);
+  if(apply&&Editable())for(const auto& value:optionView->Adjustments())*Field(value.first.c_str(),true)=value.second;
+ }
+ static std::string ReadString(const char* key){const auto* value=Field(key,false);return value&&value->is_string()?value->get<std::string>():"";}
+@@ -76,7 +76,9 @@
+ }
+ static void Tooltip(const char* help){if(help&&help[0])MenuTooltip(help);}
+ void DrawWidget(const CwWidget& w,const GameMenu& game){
+- const auto* policy=optionView&&w.cvar?optionView->Find(w.cvar):nullptr;
++ // A selection refreshes optionView; retain the current choices until this widget finishes drawing.
++ const auto policyView=optionView;
++ const auto* policy=policyView&&w.cvar?policyView->Find(w.cvar):nullptr;
+  if(policy&&policy->hidden)return;
+  (void)game;ImGui::PushID(w.index);const char* label=w.name?w.name:"";const char* key=w.cvar?w.cvar:"";const auto theme=ComboMenu_ThemeColor();
+  std::string caption=label;
+--- a/soh/soh/Enhancements/randomizer/option_descriptions.cpp
++++ b/soh/soh/Enhancements/randomizer/option_descriptions.cpp
+@@ -561,9 +561,8 @@
+     mOptionDescriptions[RSK_SHUFFLE_STONE_FAIRIES] = "Shuffle fairies from gossip stone locations.";
+     mOptionDescriptions[RSK_SHUFFLE_BEAN_FAIRIES] = "Shuffle fairies from magic bean locations.";
+     mOptionDescriptions[RSK_SHUFFLE_SONG_FAIRIES] =
+-        "Shuffle fairy spots. These are spots where a big fairy is revealed by a song."
+-        "\n"
+-        "This excludes gossip stones and magic bean locations.";
++        // OoTMM fairySpotShuffleOot, packages/core/src/settings/data.ts (41a2b7c).
++        "Controls whether or not big fairies in fairy spots are shuffled (OoT). Play either Song of Storms or Sun's Song";
+     mOptionDescriptions[RSK_SHUFFLE_BUTTERFLY_FAIRIES] = "Shuffle fairies from butterfly locations.";
+     mOptionDescriptions[RSK_SHUFFLE_GRASS] = "Grass will drop a randomized item the first time it's cut and collected. "
+                                              "Grass will have a different appearance when it holds a randomized item.\n"

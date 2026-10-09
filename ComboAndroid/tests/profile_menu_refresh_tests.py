@@ -1,0 +1,86 @@
+"""Run the production menu frame functions with counted native inspection callbacks."""
+import argparse
+from pathlib import Path
+import subprocess
+
+p = argparse.ArgumentParser()
+p.add_argument('--source', type=Path, required=True)
+p.add_argument('--before', type=Path)
+p.add_argument('--json-include', type=Path, required=True)
+p.add_argument('--build-dir', type=Path, required=True)
+args = p.parse_args()
+source, out = args.source.resolve(), args.build_dir.resolve()
+out.mkdir(parents=True, exist_ok=True)
+relative = Path('combo/gui/ComboRandomizerProfiles.cpp')
+text = ((args.before or source) / relative).read_text(encoding='utf-8')
+
+def function(start):
+    pos = text.index(start)
+    opening = text.index('{', pos)
+    depth, closing = 1, opening + 1
+    while depth:
+        depth += (text[closing] == '{') - (text[closing] == '}')
+        closing += 1
+    return text[pos:closing]
+
+declarations = text[text.index('static ComboRandomizerProfileCallbacks callbacks{};'):text.index('static std::shared_ptr')]
+engine = r'''
+#include <nlohmann/json.hpp>
+#include <stdexcept>
+#include <iostream>
+#include "menu/ComboRandomizerProfileABI.h"
+namespace ImGui {
+ int frame=0;double now=0;
+ int GetFrameCount(){return frame;}double GetTime(){return now;}
+}
+using Json=nlohmann::json;
+int inspections=0,policies=0,pools=0,commits=0;
+Json current={{"catalog",Json::object()},{"draft",{{"value",0}}},{"savedSettings",{{"value",1}}},
+              {"generatedSettings",{{"value",2}}},{"generation",{{"running",false}}}};
+std::string response;
+const char* Inspect(int slot){++inspections;current["file"]=slot;response=current.dump();return response.c_str();}
+const char* SetDraft(int,const char* raw){++commits;current["draft"]=Json::parse(raw);return "{}";}
+const char* Copy(int,int){return "{}";}
+const char* Generate(int,const char*){return "{}";}
+const char* Cancel(){return "{}";}
+void RefreshOptionPolicy(bool){++policies;}void RefreshPoolViews(){++pools;}
+void Require(bool condition,const char* message){if(!condition)throw std::runtime_error(message);}
+'''
+tests = r'''
+void Frame(){++ImGui::frame;ImGui::now+=1./60;BeginFrame();}
+void Run(){
+ callbacks={1,Inspect,SetDraft,Copy,Generate,Copy,Cancel};
+ for(int i=0;i<60;++i){Frame();Require(active,"profile frame became inactive");EndFrame();}
+ std::cout<<"Native inspections across 60 idle menu frames: "<<inspections<<'\n';
+ Require(inspections==1&&policies==1&&pools==1,"idle menu repeated full seed/catalog work each frame");
+ ImGui::frame+=5;Frame();Require(inspections==2,"reopened menu did not refresh");EndFrame();
+ selected=2;Frame();Require(inspections==3&&snapshot["file"]==2,"file selection became stale");EndFrame();
+ view=1;Frame();Require(inspections==4&&document["value"]==1,"saved settings view became stale");EndFrame();
+ view=0;Frame();document["value"]=7;dirty=true;EndFrame();
+ Require(commits==1,"edited settings did not persist");
+ Frame();Require(inspections==6&&document["value"]==7,"edited settings did not refresh");EndFrame();
+ current["generation"]["running"]=true;
+ ImGui::frame+=5;Frame();const int started=inspections;EndFrame();
+ for(int i=0;i<10;++i){Frame();EndFrame();}
+ Require(inspections==started,"generation polling ran every render frame");
+ ImGui::now+=.3;Frame();Require(inspections==started+1,"generation progress stopped polling");EndFrame();
+ current["generation"]["running"]=false;current["generatedSettings"]["value"]=9;
+ ImGui::now+=.3;Frame();Require(inspections==started+2,"generation completion was missed");EndFrame();
+ for(int i=0;i<30;++i){Frame();EndFrame();}
+ Require(inspections==started+2,"completed generation kept doing heavy inspection");
+ view=2;Frame();Require(document["value"]==9,"new generated seed view became stale");EndFrame();
+}
+int main(){try{Run();std::cout<<"PASS: production menu caching, edits, file/view changes, reopening and generation refresh\n";}
+ catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}}
+'''
+cpp = out / 'profile_menu_refresh.cpp'
+cpp.write_text(engine + declarations + function('bool Ready()') + function('bool Editable()')
+               + function('static bool Response(')
+               + (function('static void RefreshSnapshot(') if 'static void RefreshSnapshot(' in text else '')
+               + function('void BeginFrame()')
+               + function('void EndFrame()') + tests, encoding='utf-8')
+exe = out / 'profile_menu_refresh.exe'
+subprocess.run(['cl', '/nologo', '/EHsc', '/std:c++17', '/W4', '/WX',
+                '/I'+str(source/'combo'), '/I'+str(args.json_include.resolve()), str(cpp),
+                '/Fe:'+str(exe), '/Fo:'+str(out/'profile_menu_refresh.obj')], check=True)
+subprocess.run([str(exe)], check=True)

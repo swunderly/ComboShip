@@ -1,0 +1,141 @@
+--- a/mm/2s2h/DeveloperTools/SaveEditor.cpp
++++ b/mm/2s2h/DeveloperTools/SaveEditor.cpp
+@@ -1,4 +1,5 @@
+ #include "SaveEditor.h"
++#include "OwlStatueEditor.h"
+ #include "gui/ComboTouchSlider.h"
+ #include <fast/Fast3dGui.h>
+ #include "2s2h/BenGui/UIWidgets.hpp"
+@@ -399,11 +400,74 @@
+     ImGui::Columns(1);
+ }
+ 
++static void DrawOwlStatuesEditor() {
++    struct OwlStatue {
++        OwlWarpId id;
++        const char* name;
++    };
++    static constexpr OwlStatue statues[] = {
++        { OWL_WARP_CLOCK_TOWN, "Clock Town" },
++        { OWL_WARP_MILK_ROAD, "Milk Road" },
++        { OWL_WARP_SOUTHERN_SWAMP, "Southern Swamp" },
++        { OWL_WARP_WOODFALL, "Woodfall" },
++        { OWL_WARP_MOUNTAIN_VILLAGE, "Mountain Village" },
++        { OWL_WARP_SNOWHEAD, "Snowhead" },
++        { OWL_WARP_GREAT_BAY_COAST, "Great Bay Coast" },
++        { OWL_WARP_ZORA_CAPE, "Zora Cape" },
++        { OWL_WARP_IKANA_CANYON, "Ikana Canyon" },
++        { OWL_WARP_STONE_TOWER, "Stone Tower" },
++    };
++    static_assert(OWL_WARP_GREAT_BAY_COAST == 0 && OWL_WARP_ENTRANCE == MmOwlEditor::kStatueCount);
++    static_assert(ARRAY_COUNT(statues) == MmOwlEditor::kStatueCount);
++
++    const bool hasSave = gSaveContext.fileNum >= 0 && gSaveContext.fileNum < FILE_NUM_MAX;
++    if (!hasSave) {
++        ImGui::TextWrapped("Load a Majora's Mask file to edit owl statues.");
++    }
++    ImGui::BeginDisabled(!hasSave);
++    auto& flags = gSaveContext.save.saveInfo.playerData.owlActivationFlags;
++    ImGui::Text("Activated: %u / %u", MmOwlEditor::ActivatedCount(flags), MmOwlEditor::kStatueCount);
++    ImGui::TextWrapped("Choose unlocked warp destinations. Save in game to keep changes.");
++    ImGui::TextWrapped("This does not grant Song of Soaring or an instrument, or change the seed's song routes.");
++
++    const bool twoColumns = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 22.0f;
++    if (UIWidgets::Button("Activate all##owlStatues", { .size = UIWidgets::Sizes::Inline,
++                                                       .color = UIWidgets::Colors::Green })) {
++        flags = MmOwlEditor::SetAllActivated(flags, true);
++    }
++    if (twoColumns) {
++        ImGui::SameLine();
++    }
++    if (UIWidgets::Button("Clear all##owlStatues", { .size = UIWidgets::Sizes::Inline,
++                                                    .color = UIWidgets::Colors::Red })) {
++        flags = MmOwlEditor::SetAllActivated(flags, false);
++    }
++    if (ImGui::BeginTable("owlStatueDestinations", twoColumns ? 2 : 1,
++                          ImGuiTableFlags_SizingStretchSame)) {
++        for (const auto& statue : statues) {
++            ImGui::TableNextColumn();
++            bool activated = MmOwlEditor::IsActivated(flags, statue.id);
++            if (UIWidgets::Checkbox(statue.name, &activated, { .color = UIWidgets::Colors::Gray })) {
++                flags = MmOwlEditor::SetActivated(flags, statue.id, activated);
++            }
++        }
++        ImGui::EndTable();
++    }
++    ImGui::EndDisabled();
++    // Only the loaded live Save is edited. The native pause/cycle save paths
++    // persist it in the appropriate owl/newCycle page; no stale page, recorded
++    // randomizer route, song ownership, or current owl respawn is rewritten here.
++}
++
+ void DrawGeneralTab() {
+     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
+     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+     ImGui::BeginChild("generalTab", ImVec2(0, 0), true);
+ 
++    if (ImGui::CollapsingHeader("Owl Statues / Warp Destinations", ImGuiTreeNodeFlags_DefaultOpen)) {
++        DrawOwlStatuesEditor();
++    }
++    ImGui::Spacing();
+     UIWidgets::BeginCardLayout({ .columnsPerRow = 2, .minColumnWidth = 420.0f });
+ 
+     // Card 1: Player Identity
+@@ -2108,17 +2172,8 @@
+             }
+             break;
+         case OWL_ACTIVATION:
+-            if (UIWidgets::Button("All##owlActivationFlags",
+-                                  { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Gray })) {
+-                gSaveContext.save.saveInfo.playerData.owlActivationFlags = UINT16_MAX;
+-            }
+-            ImGui::SameLine();
+-            if (UIWidgets::Button("Clear##owlActivationFlags",
+-                                  { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Red })) {
+-                gSaveContext.save.saveInfo.playerData.owlActivationFlags = 0;
+-            }
+-            UIWidgets::DrawFlagTableArray16(flagTables.at(OWL_ACTIVATION),
+-                                            gSaveContext.save.saveInfo.playerData.owlActivationFlags);
++            ImGui::SeparatorText("Owl Statues / Warp Destinations");
++            DrawOwlStatuesEditor();
+             break;
+         case PERMANENT_SCENE_FLAGS:
+             ImGui::BeginGroup();
+--- /dev/null
++++ b/mm/2s2h/DeveloperTools/OwlStatueEditor.h
+@@ -0,0 +1,35 @@
++#pragma once
++
++#include <cstdint>
++
++namespace MmOwlEditor {
++// Native owl IDs 0..9 are activation bits. Entrance (10) and the remaining
++// upper bits are not owl destinations; editing must leave them untouched.
++inline constexpr unsigned kStatueCount = 10;
++inline constexpr uint16_t kStatueMask = (1u << kStatueCount) - 1u;
++
++inline constexpr bool IsActivated(uint16_t flags, unsigned owlId) {
++    return owlId < kStatueCount && (flags & (1u << owlId)) != 0;
++}
++
++inline constexpr uint16_t SetActivated(uint16_t flags, unsigned owlId, bool activated) {
++    if (owlId >= kStatueCount) {
++        return flags;
++    }
++    const uint16_t bit = static_cast<uint16_t>(1u << owlId);
++    return activated ? static_cast<uint16_t>(flags | bit) : static_cast<uint16_t>(flags & ~bit);
++}
++
++inline constexpr uint16_t SetAllActivated(uint16_t flags, bool activated) {
++    return activated ? static_cast<uint16_t>(flags | kStatueMask)
++                     : static_cast<uint16_t>(flags & ~kStatueMask);
++}
++
++inline constexpr unsigned ActivatedCount(uint16_t flags) {
++    unsigned count = 0;
++    for (unsigned owlId = 0; owlId < kStatueCount; ++owlId) {
++        count += IsActivated(flags, owlId) ? 1u : 0u;
++    }
++    return count;
++}
++} // namespace MmOwlEditor

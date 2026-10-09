@@ -1,0 +1,49 @@
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -1839,6 +1839,11 @@
+                 if (ComboMenu_StyledHeaderEntry(second, choice == 1)) choice = 1;
+                 ImGui::PopID();
+             };
++            if (seedOptions && active->label == "Logic & access") {
++                ImGui::BeginDisabled(!ProfileUI::Editable());
++                DrawCombinedGoals();
++                ImGui::EndDisabled();
++            }
+             if (hasOot && hasMm) {
+                 if (seedOptions) {
+                     choiceRow("SeedWorld", "Ocarina of Time", "Majora's Mask", mRandomizerGame);
+@@ -1873,7 +1878,6 @@
+             DrawGameplayRules(seedOptions, active->label, selectedGame, &mRuleFocus);
+             ImGui::EndDisabled();
+             if(!seedOptions) DrawPairedPreferences(active->label);
+-            if (seedOptions && active->label == "Logic & access"){ImGui::BeginDisabled(!ProfileUI::Editable());DrawCombinedGoals();ImGui::EndDisabled();}
+             if (mScope == "media" && active->label == "Appearance") DrawCosmeticSync();
+             std::vector<CwWidget> widgets;
+             uint32_t columns = 1;
+--- a/combo/gui/ComboRandomizerProfiles.cpp
++++ b/combo/gui/ComboRandomizerProfiles.cpp
+@@ -79,17 +79,19 @@
+  const auto* policy=optionView&&w.cvar?optionView->Find(w.cvar):nullptr;
+  if(policy&&policy->hidden)return;
+  (void)game;ImGui::PushID(w.index);const char* label=w.name?w.name:"";const char* key=w.cvar?w.cvar:"";const auto theme=ComboMenu_ThemeColor();
++ std::string caption=label;
++ if(const auto suffix=caption.find("##");suffix!=std::string::npos)caption.resize(suffix);
+  ImGui::BeginDisabled(!Editable()||(policy&&policy->disabled));
+  switch(w.kind){
+  case CW_SEPARATOR:ImGui::Separator();break;
+- case CW_SEPARATOR_TEXT:ImGui::SeparatorText(label);break;
+- case CW_TEXT:ImGui::TextWrapped("%s",label);break;
++ case CW_SEPARATOR_TEXT:ImGui::SeparatorText(caption.c_str());break;
++ case CW_TEXT:ImGui::TextWrapped("%s",caption.c_str());break;
+  case CW_CHECKBOX:{bool value=ReadInteger(key,w.bDefault)!=0;ComboMenu_PushCheckbox(theme);if(ImGui::Checkbox(label,&value))WriteInteger(key,value);ComboMenu_PopCheckbox();break;}
+- case CW_SLIDER_INT:{int value=ReadInteger(key,w.iDefault);ComboMenu_PushSlider(theme);ImGui::TextWrapped("%s",label);ImGui::SetNextItemWidth(-FLT_MIN);if(ImGui::SliderInt("##Value",&value,w.iMin,policy?(!std::strcmp(key,"gRandoSettings.ShopsanityCount")&&ReadInteger("gRandoSettings.LogicRules",0)!=ProfileOotPolicy::RO_LOGIC_NO_LOGIC?std::min(7,int(policy->choices.size())-1):int(policy->choices.size())-1):w.iMax,policy&&!policy->choices.empty()?policy->choices[std::clamp(value,0,int(policy->choices.size())-1)].c_str():"%d",ImGuiSliderFlags_NoInput))WriteInteger(key,value);ComboMenu_PopSlider();break;}
+- case CW_COMBOBOX:{int value=ReadInteger(key,w.iDefault);std::vector<CwChoice> choices;for(int i=0;policy&&i<int(policy->choices.size());++i)choices.push_back({policy->choices[i].c_str(),i});const CwChoice* list=policy?choices.data():w.choices;const int count=policy?int(choices.size()):w.choiceCount;const char* preview="Unknown saved value";for(int i=0;i<count;++i)if(list[i].value==value)preview=list[i].label;ImGui::TextWrapped("%s",label);ComboMenu_PushCombobox(theme);ImGui::SetNextItemWidth(-FLT_MIN);if(ImGui::BeginCombo("##Choice",preview)){for(int i=0;i<count;++i)if(ImGui::Selectable(list[i].label,list[i].value==value))WriteInteger(key,list[i].value);ImGui::EndCombo();}ComboMenu_PopCombobox();break;}
++ case CW_SLIDER_INT:{int value=ReadInteger(key,w.iDefault);ComboMenu_PushSlider(theme);ImGui::TextWrapped("%s",caption.c_str());ImGui::SetNextItemWidth(-FLT_MIN);if(ImGui::SliderInt("##Value",&value,w.iMin,policy?(!std::strcmp(key,"gRandoSettings.ShopsanityCount")&&ReadInteger("gRandoSettings.LogicRules",0)!=ProfileOotPolicy::RO_LOGIC_NO_LOGIC?std::min(7,int(policy->choices.size())-1):int(policy->choices.size())-1):w.iMax,policy&&!policy->choices.empty()?policy->choices[std::clamp(value,0,int(policy->choices.size())-1)].c_str():"%d",ImGuiSliderFlags_NoInput))WriteInteger(key,value);ComboMenu_PopSlider();break;}
++ case CW_COMBOBOX:{int value=ReadInteger(key,w.iDefault);std::vector<CwChoice> choices;for(int i=0;policy&&i<int(policy->choices.size());++i)choices.push_back({policy->choices[i].c_str(),i});const CwChoice* list=policy?choices.data():w.choices;const int count=policy?int(choices.size()):w.choiceCount;const char* preview="Unknown saved value";for(int i=0;i<count;++i)if(list[i].value==value)preview=list[i].label;ImGui::TextWrapped("%s",caption.c_str());ComboMenu_PushCombobox(theme);ImGui::SetNextItemWidth(-FLT_MIN);if(ImGui::BeginCombo("##Choice",preview)){for(int i=0;i<count;++i)if(ImGui::Selectable(list[i].label,list[i].value==value))WriteInteger(key,list[i].value);ImGui::EndCombo();}ComboMenu_PopCombobox();break;}
+  case CW_INPUT_TEXT:{std::string value=ReadString(key);if(ImGui::InputText(label,&value)&&Editable()){*Field(key,true)=value;dirty=true;}break;}
+  case CW_CUSTOM:break;
+- default:ImGui::TextDisabled("%s",label);break;
++ default:ImGui::TextDisabled("%s",caption.c_str());break;
+  }
+  ImGui::EndDisabled();Tooltip(policy&&policy->disabled?policy->disabledText.c_str():w.tooltip);
+  if(view!=0&&!std::strcmp(key,"gRandoSettings.GanonTrial")){

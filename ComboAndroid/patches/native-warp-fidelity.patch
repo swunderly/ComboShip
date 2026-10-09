@@ -1,0 +1,684 @@
+diff --git a/mm/src/overlays/actors/ovl_Combo_Song_Warp/z_combo_song_warp.c b/mm/src/overlays/actors/ovl_Combo_Song_Warp/z_combo_song_warp.c
+--- a/mm/src/overlays/actors/ovl_Combo_Song_Warp/z_combo_song_warp.c
++++ b/mm/src/overlays/actors/ovl_Combo_Song_Warp/z_combo_song_warp.c
+@@ -3,15 +3,20 @@
+ #include "BenPort.h"
+ #include "align_asset_macro.h"
+ #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
+-// OoT ovl_Demo_Kankyo particle path and palette, using MM camera/player adapters.
++// OoT ovl_Demo_Kankyo's native departure, adapted only for MM engine types
++// and the final game handoff. Resources remain in the user's OoT archive.
+ extern void Combo_MMCompleteWarp(PlayState*,int);
++enum { DEMOKANKYO_WARP_OUT=15 };
+ typedef struct {
+-    Vec3f offset,pos; f32 scale,frame; s16 key,rotation; u8 phase,pulse;
+-} CWWarpParticle;
++    Vec3f unk_0,unk_C; f32 unk_18,unk_1C; s16 unk_20; u8 unk_22,unk_23; s16 unk_24;
++} CWWarpSparkle;
+ typedef struct {
+-    Actor actor; CWWarpParticle particles[30]; int count,timer; s16 subCamId;
+-    Vec3f origin; s16 yaw,camKey; f32 camFrame; int nativeTick; ActorFunc playerDraw;
++    Actor actor; u8 sparkleCounter,warpTimer; CWWarpSparkle unk_150[30];
++    int destination; s16 subCamId; Vec3f origin; s16 yaw,camKey; f32 camFrame;
++    ActorFunc playerDraw;
+ } CrossSongWarp;
++
++
+ typedef struct { s8 continueFlag; s8 cameraRoll; s16 nextPointFrame; f32 viewAngle; Vec3s pos; } CWWarpPoint;
+ static CWWarpPoint sWarpOutCameraPoints[] = {
+     { 0, 0, 8, 45.0f, { 0x0000, 0x0000, 0xFFE5 } },
+@@ -97,8 +102,8 @@
+     return ret;
+ }
+ 
+-// Native OoT child warp-out camera (gChildWarpInCS), with eye and at
+-// traversing the same spline phase. MM runs at 30 Hz; these paths run at OoT's 20 Hz.
++
++
+ static CWWarpPoint sEye[] = {
+     {0,0,30,60.324856f,{31,68,59}}, {0,0,30,60.324856f,{32,68,60}},
+     {0,0,7,60.324856f,{31,69,59}}, {0,0,7,60.324856f,{31,64,59}},
+@@ -115,10 +120,42 @@
+     return (Vec3f){this->origin.x+local.x*Math_CosS(this->yaw)+local.z*Math_SinS(this->yaw),
+         this->origin.y+local.y,this->origin.z+local.z*Math_CosS(this->yaw)-local.x*Math_SinS(this->yaw)};
+ }
+-static const Color_RGB8 sWarpColors[]={{0,200,0},{255,50,0},{0,150,255},{255,150,0},{200,50,255},{200,255,0}};
++static const Color_RGB8 sWarpSparkleEnvColors[]={{0,200,0},{255,50,0},{0,150,255},{255,150,0},{200,50,255},{200,255,0}};
+ static const ALIGN_ASSET(2) char sFlashDL[]="__OTR__@oot:objects/gameplay_keep/gEffFlash1DL";
++
++
++void CWWarp_Vec3fCopy(Vec3f* src, Vec3f* dst) {
++    dst->x = src->x;
++    dst->y = src->y;
++    dst->z = src->z;
++}
++
++Vec3f* CWWarp_Vec3fAddVecSph(Vec3f* dst, Vec3f* vec, VecGeo* sph) {
++    Vec3f result;
++    Vec3f sphVec;
++
++    sphVec = OLib_VecGeoToVec3f(sph);
++    result.x = vec->x + sphVec.x;
++    result.y = vec->y + sphVec.y;
++    result.z = vec->z + sphVec.z;
++    *dst = result;
++    return dst;
++}
++
++void CWWarp_Vec3fAddPosRot(PosRot* posRot, Vec3f* vec, Vec3f* dst) {
++    VecGeo sph;
++    Vec3f vecCopy;
++
++    CWWarp_Vec3fCopy(vec, &vecCopy);
++    sph = OLib_Vec3fToVecGeo(&vecCopy);
++    sph.yaw += posRot->rot.y;
++    CWWarp_Vec3fAddVecSph(dst, &posRot->pos, &sph);
++}
++
+ static void CrossSongWarp_Init(Actor* actor, PlayState* play) {
+     CrossSongWarp* this=(CrossSongWarp*)actor; Player* player=GET_PLAYER(play);
++    this->destination=actor->params; actor->params=DEMOKANKYO_WARP_OUT;
++    this->warpTimer=35;
+     this->origin=player->actor.world.pos; this->yaw=player->actor.shape.rot.y;
+     this->playerDraw=player->actor.draw;
+     Camera* main=Play_GetCamera(play,CAM_ID_MAIN);
+@@ -127,10 +164,11 @@
+     Play_SetCameraFov(play,this->subCamId,main->fov);
+     Play_ChangeCameraStatus(play,CAM_ID_MAIN,CAM_STATUS_WAIT);
+     Play_ChangeCameraStatus(play,this->subCamId,CAM_STATUS_ACTIVE);
+-    Player_SetCsActionWithHaltedActors(play,actor,PLAYER_CSACTION_10);
++    Player_SetCsActionWithHaltedActors(play,actor,PLAYER_CSACTION_WAIT);
+     player->stateFlags1|=PLAYER_STATE1_20000000;
+     Audio_PlaySfx(NA_SE_EV_LINK_WARP);
+ }
++
+ static void CrossSongWarp_Destroy(Actor* actor, PlayState* play) {
+     CrossSongWarp* this=(CrossSongWarp*)actor; Player* player=GET_PLAYER(play);
+     if(player) {
+@@ -141,34 +179,23 @@
+     play->envCtx.fillScreen=false;
+     Play_ClearCamera(play,this->subCamId); Play_ChangeCameraStatus(play,CAM_ID_MAIN,CAM_STATUS_ACTIVE);
+ }
++
+ static void CrossSongWarp_Update(Actor* actor, PlayState* play) {
+     CrossSongWarp* this=(CrossSongWarp*)actor; Player* player=GET_PLAYER(play);
+-    // Keep the original animation duration and particle density in a 30 Hz world.
+-    this->nativeTick+=2;
+-    if(this->nativeTick<3) return;
+-    this->nativeTick-=3;
+-    if(this->count<30) this->count+=2;
+-    for(int i=this->count-1;i>=0;i--) {
+-        CWWarpParticle* p=&this->particles[i]; float taper=1.0f-i/(float)this->count;
+-        if(!p->phase) {
+-            p->offset=(Vec3f){(Rand_ZeroOne()-.5f)*16*taper,(Rand_ZeroOne()-.5f)*16*taper,(Rand_ZeroOne()-.5f)*16*taper};
+-            p->phase=1;
+-        }
+-        if(p->phase==1) {
+-            Vec3f pos; float roll,fov;
+-            if(CWWarpSplineStep(&pos,&roll,&fov,sWarpOutCameraPoints,&p->key,&p->frame)) p->phase=2;
+-            else {
+-                p->pos.x=this->origin.x+pos.x*Math_CosS(this->yaw)+pos.z*Math_SinS(this->yaw);
+-                p->pos.y=this->origin.y+pos.y;
+-                p->pos.z=this->origin.z+pos.z*Math_CosS(this->yaw)-pos.x*Math_SinS(this->yaw);
+-            }
+-        }
+-        if(!p->pulse) {p->scale=Rand_ZeroOne();p->pulse=1;}
+-        if(p->pulse==1) {Math_SmoothStepToF(&p->scale,1,.5f,.4f,.2f); if(p->scale>=1) p->pulse=2;}
+-        else {Math_SmoothStepToF(&p->scale,0,.5f,.3f,.2f); if(p->scale<=0) p->pulse=1;}
+-        p->rotation+=0x190;
+-    }
+-    if(this->timer>=34) {
++    // OoT DemoKankyo_SetupType: the native white flash and disappearance.
++    const int remaining=this->warpTimer;
++    play->envCtx.fillScreen=false;
++    play->envCtx.screenFillColor[0]=play->envCtx.screenFillColor[1]=play->envCtx.screenFillColor[2]=255;
++    if(remaining<21 && remaining>=15) {
++        play->envCtx.fillScreen=true; play->envCtx.screenFillColor[3]=255-255*(remaining-15.0f)/5.0f;
++    }
++    if(remaining<15 && remaining>=4) {
++        play->envCtx.fillScreen=true; play->envCtx.screenFillColor[3]=255*(remaining-4.0f)/10.0f;
++    }
++    if(remaining==15 && player) player->actor.draw=NULL;
++    if(this->warpTimer) this->warpTimer--;
++    if(this->warpTimer<=1) {
++        // gChildWarpInCS eye/at splines, beginning at the native flash end.
+         Vec3f eye,at; float roll,fov;
+         s16 key=this->camKey; f32 frame=this->camFrame;
+         CWWarpSplineStep(&eye,&roll,&fov,sEye,&key,&frame);
+@@ -176,42 +203,121 @@
+         eye=RelativeToPlayer(this,eye); at=RelativeToPlayer(this,at);
+         Play_SetCameraAtEye(play,this->subCamId,&at,&eye); Play_SetCameraFov(play,this->subCamId,fov);
+     }
+-    // Original white flash wraps the player disappearing, then fades back while
+-    // the colored particles follow their ascending native spline.
+-    play->envCtx.fillScreen=false;
+-    play->envCtx.screenFillColor[0]=play->envCtx.screenFillColor[1]=play->envCtx.screenFillColor[2]=255;
+-    int remaining=35-this->timer;
+-    if(remaining<21 && remaining>=15) {
+-        play->envCtx.fillScreen=true; play->envCtx.screenFillColor[3]=255-255*(remaining-15)/5;
+-    } else if(remaining<15 && remaining>=4) {
+-        play->envCtx.fillScreen=true; play->envCtx.screenFillColor[3]=255*(remaining-4)/10;
+-    }
+-    if(++this->timer==20) player->actor.draw=NULL;
+-    if(this->particles[0].phase==2) {
+-        Combo_MMCompleteWarp(play,actor->params); Actor_Kill(actor);
+-    }
+-}
+-static void CrossSongWarp_Draw(Actor* actor, PlayState* play) {
+-    CrossSongWarp* this=(CrossSongWarp*)actor;
++}
++
++
++static void CrossSongWarp_Draw(Actor* thisx, PlayState* play) {
++    static f32 sWarpRoll;
++    static f32 sWarpFoV;
++    // the following 2 vars are unused
++    static Vec3f D_8098CF98;
++
++    s16 i;
++    f32 temp_f22;
++    CrossSongWarp* this = (CrossSongWarp*)thisx;
++    Gfx* disp;
++    Player* player = GET_PLAYER(play);
++    Vec3f camPos;
++    f32 translateX;
++    f32 translateY;
++    f32 translateZ;
++    PosRot posRot;
++
+     OPEN_DISPS(play->state.gfxCtx);
+-    Gfx_SetupDL25_Xlu(play->state.gfxCtx);
+-    Color_RGB8 color=sWarpColors[play->msgCtx.songPlayed<6 ? play->msgCtx.songPlayed : 0];
+-    for(int i=this->count-1;i>=0;i--) {
+-        CWWarpParticle* p=&this->particles[i];
+-        if(p->phase!=1) continue;
+-        FrameInterpolation_RecordOpenChild("Cross Song Warp",i);
+-        float scale=p->scale*(.018f*(1.0f-i/(float)this->count));
+-        Matrix_Translate(p->pos.x+p->offset.x,p->pos.y+p->offset.y,p->pos.z+p->offset.z,MTXMODE_NEW);
+-        Matrix_Scale(scale,scale,scale,MTXMODE_APPLY);
+-        Matrix_Mult(&play->billboardMtxF,MTXMODE_APPLY); Matrix_RotateZF(DEG_TO_RAD(p->rotation),MTXMODE_APPLY);
+-        gDPSetPrimColor(POLY_XLU_DISP++,0,0x80,255,255,255,255);
+-        gDPSetEnvColor(POLY_XLU_DISP++,color.r,color.g,color.b,255);
+-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++,play->state.gfxCtx);
+-        gSPDisplayList(POLY_XLU_DISP++,sFlashDL);
++
++    if (this->sparkleCounter < 30) {
++        this->sparkleCounter += 2;
++    }
++    for (i = this->sparkleCounter - 1; i >= 0; i--) {
++        FrameInterpolation_RecordOpenChild("Kankyo Warp Sparkles", i);
++
++        temp_f22 = 1.0f - (i / (f32)this->sparkleCounter);
++
++        switch (this->unk_150[i].unk_22) {
++            case 0:
++                this->unk_150[i].unk_20 = 0;
++                this->unk_150[i].unk_1C = 0;
++                this->unk_150[i].unk_0.x = (s16)((Rand_ZeroOne() - 0.5f) * 16.0f * temp_f22);
++                this->unk_150[i].unk_0.y = (s16)((Rand_ZeroOne() - 0.5f) * 16.0f * temp_f22);
++                this->unk_150[i].unk_0.z = (s16)((Rand_ZeroOne() - 0.5f) * 16.0f * temp_f22);
++                this->unk_150[i].unk_23 = 0;
++
++                this->unk_150[i].unk_22++;
++
++            case 1:
++                if (this->actor.params == DEMOKANKYO_WARP_OUT) {
++                    if (CWWarpSplineStep(&camPos, &sWarpRoll, &sWarpFoV, sWarpOutCameraPoints, &this->unk_150[i].unk_20,
++                                      &this->unk_150[i].unk_1C) != 0) {
++                        this->unk_150[i].unk_22++;
++                    }
++                }
++                posRot = Actor_GetWorld(&player->actor);
++                CWWarp_Vec3fAddPosRot(&posRot, &camPos, &D_8098CF98);
++                break;
++            case 2:
++                if (this->actor.params == DEMOKANKYO_WARP_OUT) {
++                    if (i == 0) {
++                        Combo_MMCompleteWarp(play,this->destination);
++                        Actor_Kill(&this->actor);
++                        this->unk_150[i].unk_22++;
++                    }
++                }
++                break;
++        }
++
++        this->unk_150[i].unk_C.x = D_8098CF98.x;
++        this->unk_150[i].unk_C.y = D_8098CF98.y;
++        this->unk_150[i].unk_C.z = D_8098CF98.z;
++
++        switch (this->unk_150[i].unk_23) {
++            case 0:
++                this->unk_150[i].unk_18 = Rand_ZeroOne();
++                this->unk_150[i].unk_23++;
++            case 1:
++                Math_SmoothStepToF(&this->unk_150[i].unk_18, 1.0f, 0.5f, 0.4f, 0.2f);
++                if (this->unk_150[i].unk_18 >= 1.0f) {
++                    this->unk_150[i].unk_23 = 2;
++                }
++                break;
++            case 2:
++                Math_SmoothStepToF(&this->unk_150[i].unk_18, 0.0f, 0.5f, 0.3f, 0.2f);
++                if (this->unk_150[i].unk_18 <= 0.0f) {
++                    this->unk_150[i].unk_0.x = (s16)((Rand_ZeroOne() - 0.5f) * 16.0f * temp_f22);
++                    this->unk_150[i].unk_0.y = (s16)((Rand_ZeroOne() - 0.5f) * 16.0f * temp_f22);
++                    this->unk_150[i].unk_0.z = (s16)((Rand_ZeroOne() - 0.5f) * 16.0f * temp_f22);
++                    this->unk_150[i].unk_18 = 0.0f;
++                    this->unk_150[i].unk_23 = 1;
++                }
++                break;
++        }
++
++        translateX = this->unk_150[i].unk_C.x + this->unk_150[i].unk_0.x;
++        translateY = this->unk_150[i].unk_C.y + this->unk_150[i].unk_0.y;
++        translateZ = this->unk_150[i].unk_C.z + this->unk_150[i].unk_0.z;
++
++        if (this->unk_150[i].unk_22 < 2) {
++            disp = (Gfx*)sFlashDL;
++            Matrix_Translate(translateX, translateY, translateZ, MTXMODE_NEW);
++            Matrix_Scale(this->unk_150[i].unk_18 * (0.018f * temp_f22), this->unk_150[i].unk_18 * (0.018f * temp_f22),
++                         this->unk_150[i].unk_18 * (0.018f * temp_f22), MTXMODE_APPLY);
++            gDPSetPrimColor(POLY_XLU_DISP++, 0, 0x80, 255, 255, 255, 255);
++            gDPSetEnvColor(POLY_XLU_DISP++, sWarpSparkleEnvColors[play->msgCtx.songPlayed].r,
++                           sWarpSparkleEnvColors[play->msgCtx.songPlayed].g,
++                           sWarpSparkleEnvColors[play->msgCtx.songPlayed].b, 255);
++            Gfx_SetupDL25_Xlu(play->state.gfxCtx);
++            Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
++            Matrix_RotateZF(DEG_TO_RAD(this->unk_150[i].unk_24), MTXMODE_APPLY);
++            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
++            gSPDisplayList(POLY_XLU_DISP++, disp);
++            this->unk_150[i].unk_24 += 0x190;
++        }
++
+         FrameInterpolation_RecordCloseChild();
+     }
++
+     CLOSE_DISPS(play->state.gfxCtx);
+ }
++
+ ActorProfile Combo_Song_Warp_Profile={ACTOR_COMBO_SONG_WARP,ACTORCAT_ITEMACTION,
+     ACTOR_FLAG_UPDATE_CULLING_DISABLED|ACTOR_FLAG_DRAW_CULLING_DISABLED|ACTOR_FLAG_UPDATE_DURING_OCARINA,
+     GAMEPLAY_KEEP,sizeof(CrossSongWarp),CrossSongWarp_Init,CrossSongWarp_Destroy,CrossSongWarp_Update,CrossSongWarp_Draw};
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossOwl.c b/soh/soh/Enhancements/CrossWarp/CrossOwl.c
+--- a/soh/soh/Enhancements/CrossWarp/CrossOwl.c
++++ b/soh/soh/Enhancements/CrossWarp/CrossOwl.c
+@@ -4,9 +4,36 @@
+ #include "CrossOwl.h"
+ extern void SkinMatrix_SetRotateYXZ(MtxF*, s16, s16, s16);
+ extern float OTRGetAspectRatio(void);
++extern u32 OTRGetGameRenderWidth(void);
++extern u32 OTRGetGameRenderHeight(void);
+ #include "CrossWarp.h"
+ #include "MMWarpAssets.h"
+ #include "soh/ResourceManagerHelpers.h"
++#include "soh/framebuffer_effects.h"
++
++// The framebuffer calls are the same ones used by MM's Play_DrawMotionBlur.
++// Keep the history private to this departure and reset it after a resize.
++static void CrossOwl_DrawMotionBlur(CrossOwl* this, PlayState* play) {
++    if (this->timer <= 10 || this->timer > 100) return;
++    const u32 width = OTRGetGameRenderWidth();
++    const u32 height = OTRGetGameRenderHeight();
++    OPEN_DISPS(play->state.gfxCtx);
++    Gfx* head = POLY_OPA_DISP;
++    Gfx* gfx = Graph_GfxPlusOne(head);
++    gSPDisplayList(OVERLAY_DISP++, gfx);
++    if (this->blurReady && this->blurWidth == width && this->blurHeight == height) {
++        FB_DrawFromFramebuffer(&gfx, gBlurFrameBuffer, 120);
++    }
++    this->blurReady = true;
++    this->blurWidth = width;
++    this->blurHeight = height;
++    this->blurCopied = false;
++    FB_CopyToFramebuffer(&gfx, 0, gBlurFrameBuffer, true, &this->blurCopied);
++    gSPEndDisplayList(gfx++);
++    Graph_BranchDlist(head, gfx);
++    POLY_OPA_DISP = gfx;
++    CLOSE_DISPS(play->state.gfxCtx);
++}
+ 
+ // The native MM Soaring screen wipe uses the same actor in effect-only mode.
+ static void DrawSoaringWipe(CrossOwl* this, PlayState* play) {
+@@ -91,6 +118,14 @@
+     Combo_SOHCompleteWarp(play, this->actor.params);
+     Actor_Kill(&this->actor);
+ }
++int Combo_SOHSoaringCutsceneActive(PlayState* play) {
++    // Native MM's soaringCsOrSoTCsPlaying covers departure ticks 0..99.
++    for (Actor* actor=play->actorCtx.actorLists[ACTORCAT_ITEMACTION].head; actor; actor=actor->next) {
++        if (actor->id==ACTOR_COMBO_OWL_WARP && actor->params!=0x100 && actor->update &&
++            ((CrossOwl*)actor)->timer<100) return 1;
++    }
++    return 0;
++}
+ void CrossOwl_Init(Actor* thisx, PlayState* play) {
+     if(thisx->params==0x100) return;
+     CrossOwl* this=(CrossOwl*)thisx;
+@@ -99,16 +134,28 @@
+     this->playerYaw=player->actor.shape.rot.y;
+     this->playerScaleX=player->actor.scale.x; this->playerScaleZ=player->actor.scale.z;
+     this->playerDrawFunc=player->actor.draw;
++    this->savedHud=gSaveContext.hudVisibilityMode;
++    Interface_ChangeHudVisibilityMode(HUD_VISIBILITY_NOTHING);
+     Actor_SetScale(&this->actor, LINK_IS_ADULT ? 0.015f : 0.01f);
+     CWKeyframe_InitFlex(&this->kfSkelAnime, (void*)gGameplayKeepKFSkel_85640,
+         (void*)gGameplayKeepKFAnim_83534, this->jointTable, this->morphTable, NULL);
+     CWKeyframe_FlexPlayOnce(&this->kfSkelAnime, (void*)gGameplayKeepKFAnim_83534);
+     CrossOwl_InitFeathers(this->feathers); CrossOwl_InitWindCapsule(&this->windCapsule);
++    // End OoT's instrument camera before taking over, as MM's cutscene
++    // manager does. Player cleanup must not reactivate it during departure.
++    Camera* previous=GET_ACTIVE_CAM(play);
++    const Vec3f initialEye=previous->eye, initialAt=previous->at;
++    const f32 initialFov=previous->fov;
++    if (player->subCamId!=SUBCAM_NONE) {
++        Play_ClearCamera(play,player->subCamId);
++        player->subCamId=SUBCAM_NONE;
++    }
+     this->subCamId=Play_CreateSubCamera(play);
+     Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_WAIT);
+     Play_ChangeCameraStatus(play, this->subCamId, CAM_STAT_ACTIVE);
+-    Play_CameraSetAtEye(play, this->subCamId, &play->mainCamera.at, &play->mainCamera.eye);
+-    Play_CameraSetFov(play, this->subCamId, play->mainCamera.fov);
++    this->subCamEye=initialEye; this->subCamAt=initialAt;
++    Play_CameraSetAtEye(play, this->subCamId, &this->subCamAt, &this->subCamEye);
++    Play_CameraSetFov(play, this->subCamId, initialFov);
+     Player_SetCsActionWithHaltedActors(play, &this->actor, 8);
+     player->stateFlags1 |= PLAYER_STATE1_IN_CUTSCENE;
+     this->actionFunc=CrossOwl_WarpCsPart1;
+@@ -132,6 +179,7 @@
+     }
+     Play_ClearCamera(play, this->subCamId);
+     Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_ACTIVE);
++    Interface_ChangeHudVisibilityMode(this->savedHud);
+     LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
+ 
+ }
+@@ -746,21 +794,22 @@
+ 
+ void CrossOwl_Update(Actor* thisx, PlayState* play) {
+     CrossOwl* this=(CrossOwl*)thisx;
+-    // MM's authored animation runs at 30 Hz, compared with OoT's 20 Hz.
+-    this->nativeTick+=3;
+-    while(this->nativeTick>=2) {
+-        this->nativeTick-=2;
+-        if(thisx->params==0x100) {
+-            if(++this->timer>=100) { Actor_Kill(thisx); break; }
+-            continue;
+-        }
+-        this->actionFunc(this,play);
+-        if(thisx->update==NULL) break;
+-        if(this->playerCamFunc) this->playerCamFunc(this,play);
+-        this->timer++;
+-        CrossOwl_UpdateFeathers(play,this->feathers,this,
+-            (this->flags&OWL_WARP_FLAGS_8)!=0,(this->flags&OWL_WARP_FLAGS_10)!=0);
+-    }
++    if(thisx->params==0x100) {
++        if(this->timer<100) this->timer++;
++        else Actor_Kill(thisx);
++        return;
++    }
++    // En_Test7 updates once per gameplay tick in MM and OoT alike.
++    this->actionFunc(this,play);
++    if(thisx->update==NULL) return;
++    if(this->playerCamFunc) this->playerCamFunc(this,play);
++    Camera* camera=Play_GetCamera(play,this->subCamId);
++    Play_CameraSetAtEye(play,this->subCamId,&camera->at,&camera->eye);
++    Play_ChangeCameraStatus(play,CAM_ID_MAIN,CAM_STAT_WAIT);
++    Play_ChangeCameraStatus(play,this->subCamId,CAM_STAT_ACTIVE);
++    this->timer++;
++    CrossOwl_UpdateFeathers(play,this->feathers,this,
++        (this->flags&OWL_WARP_FLAGS_8)!=0,(this->flags&OWL_WARP_FLAGS_10)!=0);
+ }
+ 
+ s32 CrossOwl_OverrideLimbDraw(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, s32 limbIndex, Gfx** dList, u8* flags,
+@@ -819,6 +868,7 @@
+     OPEN_DISPS(play->state.gfxCtx);
+     gSPComboRMPop(POLY_OPA_DISP++); gSPComboRMPop(POLY_XLU_DISP++);
+     CLOSE_DISPS(play->state.gfxCtx);
++    CrossOwl_DrawMotionBlur(this, play);
+ }
+ 
+ #endif
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossOwl.h b/soh/soh/Enhancements/CrossWarp/CrossOwl.h
+--- a/soh/soh/Enhancements/CrossWarp/CrossOwl.h
++++ b/soh/soh/Enhancements/CrossWarp/CrossOwl.h
+@@ -70,7 +70,11 @@
+     /* 0x1E94 */ f32 playerScaleZ;
+     /* 0x1E98 */ ActorFunc playerDrawFunc;
+     s16 subCamId;
+-    int nativeTick;
++    s16 savedHud;
++    u8 blurReady;
++    u8 blurCopied;
++    u32 blurWidth;
++    u32 blurHeight;
+ } CrossOwl; // size = 0x1E9C
+ 
+ #endif // Z_EN_TEST7_H
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossSoaringMap.c b/soh/soh/Enhancements/CrossWarp/CrossSoaringMap.c
+--- a/soh/soh/Enhancements/CrossWarp/CrossSoaringMap.c
++++ b/soh/soh/Enhancements/CrossWarp/CrossSoaringMap.c
+@@ -55,7 +55,8 @@
+ static int sStick, sRepeat;
+ static float sMapPageRoll;
+ static float sMapVerticalOffset;
+-static int sMapTick, sMapReply;
++static int sMapReply;
++static s16 sSavedUpdateRate;
+ static u16 sSavedHud;
+ static s16 R_PAUSE_OWLWARP_ALPHA=120;
+ extern uint32_t SOH_ForeignSongChoices(void);
+@@ -774,21 +775,21 @@
+     pauseCtx->cursorVtx[2].v.ob[1] = pauseCtx->cursorVtx[3].v.ob[1] = pauseCtx->cursorVtx[0].v.ob[1] - 16;
+ 
+     if (pauseCtx->cursorSpecialPos == 0) {
+-        sCursorX = sOwlWarpWorldMapCursorsX[pauseCtx->cursorPoint[PAUSE_WORLD_MAP]] - 4.0f;
+-        sCursorY = sOwlWarpWorldMapCursorsY[pauseCtx->cursorPoint[PAUSE_WORLD_MAP]] + 4.0f;
+-        sCursorHeight = 7.5f;
+-        sCursorWidth = 7.5f;
+-
+-        /* sCursorSpinPhase += 0x300; */
++        sCursorX = sOwlWarpWorldMapCursorsX[pauseCtx->cursorPoint[PAUSE_WORLD_MAP]];
++        sCursorY = sOwlWarpWorldMapCursorsY[pauseCtx->cursorPoint[PAUSE_WORLD_MAP]];
++        sCursorHeight = 15.0f;
++        sCursorWidth = 15.0f;
++
++        sCursorSpinPhase += 0x300;
+     } else {
+         if (pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_LEFT) {
+             sCursorX = -93.0f;
+         } else { /* PAUSE_CURSOR_PAGE_RIGHT */
+             sCursorX = 101.0f;
+         }
+-        /* sCursorSpinPhase += 0x300; */
+-        sCursorHeight = 8.0f;
+-        sCursorWidth = 8.0f;
++        sCursorSpinPhase += 0x300;
++        sCursorHeight = 16.0f;
++        sCursorWidth = 16.0f;
+         sCursorY = -4.0f;
+     }
+ 
+@@ -1007,7 +1008,13 @@
+ int Combo_SOHSoaringMapActive(void) { return sMapPlay!=NULL; }
+ int Combo_SOHSoaringMapBegin(PlayState* play, uint32_t choices) {
+     if(sMapPlay || !(choices&0xffc0) || !Combo_SOHPrepareWarpAssets()) return 0;
++    // MM waits for Oceff_Wipe6 to finish before pausing the world. Otherwise
++    // the actor stops updating and its last screen wipe stays behind the map.
++    for(Actor* actor=play->actorCtx.actorLists[ACTORCAT_ITEMACTION].head; actor; actor=actor->next) {
++        if(actor->id==ACTOR_COMBO_OWL_WARP && actor->params==0x100 && actor->update) return 1;
++    }
+     sSavedPause=play->pauseCtx; sMapPlay=play; sChoices=choices;
++    sSavedUpdateRate=R_UPDATE_RATE; R_UPDATE_RATE=2;
+     play->pauseCtx.state=PAUSE_STATE_OWLWARP_3;
+     play->pauseCtx.eye=(Vec3f){-64,0,0};
+     play->pauseCtx.alpha=0; play->pauseCtx.infoPanelOffsetY=-80;
+@@ -1016,7 +1023,7 @@
+     for(int owl=0;owl<10;owl++) play->pauseCtx.worldMapPoints[owl]=(choices>>(owl+6))&1;
+     for(int owl=0;owl<10;owl++) if(choices&(1u<<(owl+6))) { SetSelection(play,owl); break; }
+     sStick=0; sRepeat=0; sMapPageRoll=320; sMapVerticalOffset=-6240;
+-    sMapTick=0; sMapReply=-1; R_PAUSE_OWLWARP_ALPHA=0;
++    sMapReply=-1; R_PAUSE_OWLWARP_ALPHA=0;
+     sSavedHud=gSaveContext.hudVisibilityMode;
+     Message_CloseTextbox(play);
+     Interface_SetDoAction(play, DO_ACTION_DECIDE);
+@@ -1025,23 +1032,21 @@
+ }
+ void Combo_SOHSoaringMapClose(PlayState* play) {
+     if(sMapPlay!=play) return;
+-    play->pauseCtx=sSavedPause; sMapPlay=NULL;
++    play->pauseCtx=sSavedPause; sMapPlay=NULL; R_UPDATE_RATE=sSavedUpdateRate;
+     Interface_SetDoAction(play, DO_ACTION_NONE);
+     Interface_ChangeHudVisibilityMode(sSavedHud);
+ }
+ void Combo_SOHSoaringMapFinish(PlayState* play, int reply) {
+     if(sMapPlay!=play || play->pauseCtx.state==PAUSE_STATE_OWLWARP_6) return;
+-    sMapReply=reply; sMapTick=0; sMapVerticalOffset=-6240;
++    sMapReply=reply; sMapVerticalOffset=-6240;
+     play->pauseCtx.state=PAUSE_STATE_OWLWARP_6;
+     Message_CloseTextbox(play);
+ }
+ int Combo_SOHSoaringMapUpdate(PlayState* play) {
+     if(sMapPlay!=play) return 0;
+     if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_3 || play->pauseCtx.state==PAUSE_STATE_OWLWARP_6) {
+-        // Keep MM's 30 Hz roll/fade steps when drawn in OoT's 20 Hz world.
+-        sMapTick+=3;
+-        while(sMapTick>=2) {
+-            sMapTick-=2;
++        // Native MM page counters, once per 30 Hz pause tick.
++        {
+             if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_3) {
+                 sMapPageRoll-=40;
+                 play->pauseCtx.alpha=MIN(play->pauseCtx.alpha+31,255);
+@@ -1051,7 +1056,6 @@
+                     sMapPageRoll=0; sMapVerticalOffset=0;
+                     play->pauseCtx.alpha=255; play->pauseCtx.infoPanelOffsetY=0;
+                     play->pauseCtx.state=PAUSE_STATE_OWLWARP_SELECT;
+-                    break;
+                 }
+             } else {
+                 sMapPageRoll+=40;
+@@ -1062,7 +1066,6 @@
+                     int reply=sMapReply;
+                     Combo_SOHSoaringMapClose(play);
+                     SOH_ForeignSongChoose(reply);
+-                    break;
+                 }
+             }
+         }
+diff --git a/soh/soh/Enhancements/CrossWarp/CrossWarp.h b/soh/soh/Enhancements/CrossWarp/CrossWarp.h
+--- a/soh/soh/Enhancements/CrossWarp/CrossWarp.h
++++ b/soh/soh/Enhancements/CrossWarp/CrossWarp.h
+@@ -17,6 +17,7 @@
+ void Combo_SOHSoaringMapClose(PlayState* play);
+ void Combo_SOHSoaringMapFinish(PlayState* play, int reply);
+ int Combo_SOHSoaringMapActive(void);
++int Combo_SOHSoaringCutsceneActive(PlayState* play);
+ int Combo_SOHStartSoaring(PlayState* play, int destination);
+ void Combo_SOHCompleteWarp(PlayState* play, int destination);
+ #ifdef __cplusplus
+diff --git a/soh/src/code/z_actor.c b/soh/src/code/z_actor.c
+--- a/soh/src/code/z_actor.c
++++ b/soh/src/code/z_actor.c
+@@ -3046,6 +3046,10 @@
+     s32 i;
+ 
+     invisibleActorCounter = 0;
++#ifdef COMBO_BUILD
++    extern int Combo_SOHSoaringCutsceneActive(PlayState*);
++    const int soaringCutscene=Combo_SOHSoaringCutsceneActive(play);
++#endif
+ 
+     OPEN_DISPS(play->state.gfxCtx);
+ 
+@@ -3100,6 +3104,9 @@
+ 
+             if ((HREG(64) != 1) || ((HREG(65) != -1) && (HREG(65) != HREG(66))) || (HREG(71) == 0)) {
+                 if ((actor->init == NULL) && (actor->draw != NULL) &&
++#ifdef COMBO_BUILD
++                    (!soaringCutscene || actor->category==ACTORCAT_PLAYER || actor->id==ACTOR_COMBO_OWL_WARP) &&
++#endif
+                     ((actor->flags & (ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_INSIDE_CULLING_VOLUME)) ||
+                      shipShouldDraw)) {
+                     // #endregion
+@@ -3122,11 +3129,19 @@
+         }
+     }
+ 
+-    if ((HREG(64) != 1) || (HREG(73) != 0)) {
++    if (
++#ifdef COMBO_BUILD
++        !soaringCutscene &&
++#endif
++        ((HREG(64) != 1) || (HREG(73) != 0))) {
+         Effect_DrawAll(play->state.gfxCtx);
+     }
+ 
+-    if ((HREG(64) != 1) || (HREG(74) != 0)) {
++    if (
++#ifdef COMBO_BUILD
++        !soaringCutscene &&
++#endif
++        ((HREG(64) != 1) || (HREG(74) != 0))) {
+         EffectSs_DrawAll(play);
+     }
+ 
+@@ -3141,7 +3156,11 @@
+ 
+     Actor_DrawFaroresWindPointer(play);
+ 
+-    if (IREG(32) == 0) {
++    if (
++#ifdef COMBO_BUILD
++        !soaringCutscene &&
++#endif
++        IREG(32) == 0) {
+         Lights_DrawGlow(play);
+     }
+ 
+diff --git a/soh/src/code/z_play.c b/soh/src/code/z_play.c
+--- a/soh/src/code/z_play.c
++++ b/soh/src/code/z_play.c
+@@ -13,6 +13,9 @@
+ #include "soh/ResourceManagerHelpers.h"
+ #include "soh/SaveManager.h"
+ #include "soh/framebuffer_effects.h"
++#ifdef COMBO_BUILD
++#include "soh/Enhancements/CrossWarp/CrossWarp.h"
++#endif
+ 
+ #include <time.h>
+ #include <assert.h>
+@@ -1371,6 +1374,13 @@
+     gSPSegment(POLY_XLU_DISP++, 0x02, play->sceneSegment);
+     gSPSegment(OVERLAY_DISP++, 0x02, play->sceneSegment);
+ 
++#ifdef COMBO_BUILD
++    const int soaringCutscene=Combo_SOHSoaringCutsceneActive(play);
++    if (soaringCutscene) {
++        // MM clears to fog color and hides the room during its wing sequence.
++        Gfx_SetupFrame(gfxCtx,play->lightCtx.fogColor[0],play->lightCtx.fogColor[1],play->lightCtx.fogColor[2]);
++    } else
++#endif
+     Gfx_SetupFrame(gfxCtx, 0, 0, 0);
+ 
+     if ((HREG(80) != 10) || (HREG(82) != 0)) {
+@@ -1477,6 +1487,9 @@
+             goto Play_Draw_DrawOverlayElements;
+         }
+ 
++#ifdef COMBO_BUILD
++        if (!soaringCutscene) {
++#endif
+         if ((HREG(80) != 10) || (HREG(83) != 0)) {
+             if (play->skyboxId && (play->skyboxId != SKYBOX_UNSET_1D) && !play->envCtx.skyboxDisabled) {
+                 if ((play->skyboxId == SKYBOX_NORMAL_SKY) || (play->skyboxId == SKYBOX_CUTSCENE_MAP)) {
+@@ -1539,6 +1552,9 @@
+         if (play->envCtx.unk_EE[1] != 0) {
+             Environment_DrawRain(play, &play->view, gfxCtx);
+         }
++#ifdef COMBO_BUILD
++        }
++#endif
+ 
+         if ((HREG(80) != 10) || (HREG(84) != 0)) {
+             Environment_FillScreen(gfxCtx, 0, 0, 0, play->bgCoverAlpha, FILL_SCREEN_OPA);

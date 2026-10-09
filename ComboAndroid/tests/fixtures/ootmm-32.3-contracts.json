@@ -1,0 +1,58 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "sources": {
+    "data/world/mm/overworld/clock_town.yml": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/data/world/mm/overworld/clock_town.yml",
+      "sha256": "fbbf8725e73b1fcc1434d2ff8ebb6a2c76cb3434de898fb3c73666a57971af05"
+    },
+    "data/macros/macros_oot.yml": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/data/macros/macros_oot.yml",
+      "sha256": "3180b88c4865e0815526d20cda96f7807fe11078f354849f6221507077b0ec2b"
+    },
+    "data/macros/macros_mm.yml": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/data/macros/macros_mm.yml",
+      "sha256": "c0e1d62e704563649d44ac11ad719fa22846163be8c6fcb242365c8880d933a6"
+    },
+    "data/world/mm/overworld/termina_field.yml": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/data/world/mm/overworld/termina_field.yml",
+      "sha256": "b02e3d03bd3c43ba777323029e96f1e34eb6bc4d3bf45d2945e57342d3c9ca9a"
+    },
+    "data/world/mm/overworld/southern_swamp.yml": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/data/world/mm/overworld/southern_swamp.yml",
+      "sha256": "f7b2203ece274d751db57524a6f5f08c177ae89cb6da6c62944249c2c4909489"
+    },
+    "data/world/mm/overworld/woodfall.yml": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/data/world/mm/overworld/woodfall.yml",
+      "sha256": "6d19c9b6420063f1f8748dcb5f553776524d21e8e451bbbea01cd681329bf1cf"
+    }
+  },
+  "doors": {
+    "Milk Bar": "(between(DAY1_AM_10_00, NIGHT1_PM_09_00) || between(DAY2_AM_10_00, NIGHT2_PM_09_00) || between(DAY3_AM_10_00, NIGHT3_PM_09_00) || (has(MASK_ROMANI) && (between(NIGHT1_PM_10_00, NIGHT1_AM_05_00) || between(NIGHT2_PM_10_00, NIGHT2_AM_05_00) || after(NIGHT3_PM_10_00)))) && rusty_key(RUSTY_KEY_MILK_BAR)",
+    "Stock Pot Inn": "(has(ROOM_KEY) || between(DAY1_AM_08_00, NIGHT1_PM_08_00) || between(DAY2_AM_08_00, NIGHT2_PM_08_00) || after(DAY3_AM_08_00)) && rusty_key(RUSTY_KEY_STOCK_POT_INN)"
+  },
+  "walletMacros": {
+    "has_rupees": "event(RUPEES) || (setting(sharedWallets) && event(MM_RUPEES))",
+    "has_wallet(n)": "cond(setting(childWallets), has(WALLET, n) || has(SHARED_WALLET, n), has(WALLET, n - 1) || has(SHARED_WALLET, n - 1))",
+    "can_use_wallet(n)": "has_rupees && has_wallet(n)",
+    "wallet_price(range, id)": "price(range, id, 0) || (has_rupees && ((price(range, id, 99) && has_wallet(1)) || (price(range, id, 200) && has_wallet(2)) || (price(range, id, 500) && has_wallet(3)) || (setting(colossalWallets) && price(range, id, 999) && has_wallet(4)) || (setting(bottomlessWallets) && price(range, id, 9999) && has_wallet(5))))"
+  },
+  "mmResourceContracts": {
+    "has_rupees": "event(RUPEES)",
+    "has_magic": "(has(MAGIC_UPGRADE) || has(SHARED_MAGIC_UPGRADE)) && (event(MAGIC) || has_magic_jar || has_green_potion || has_blue_potion || has_chateau)",
+    "has_arrows": "has_bow && (event(ARROWS) || renewable(ARROWS_10) || renewable(ARROWS_30) || renewable(ARROWS_40) || renewable(SHARED_ARROWS_5) || renewable(SHARED_ARROWS_10) || renewable(SHARED_ARROWS_30) || renewable(SHARED_ARROWS_40))",
+    "fieldRupees": "true",
+    "fieldArrows": "true",
+    "fieldBombs": "true",
+    "fieldMagic": "soul_enemy(SOUL_ENEMY_CHUCHU)",
+    "fieldSticks": "can_kill_baba_both_sticks",
+    "swampSticks": "true",
+    "swampMagic": "true",
+    "woodfallSticks": "true",
+    "woodfallNuts": "true",
+    "honeyDay3": "soul_honey_darling && (has_bow || can_use_deku_bubble) && is_day3",
+    "honeyAllDays": "can_use_wallet(1) && has_bow && event(HD_REWARD_1) && event(HD_REWARD_2) && event(HD_REWARD_3)",
+    "bombchu_license": "((setting(bombchuBehaviorMm, free) || setting(bombchuBehaviorMm, bombBag)) && has_bomb_bag) || bombchu_license_bag",
+    "bombchu_source": "event(BOMBCHU) || bombchu_drops || renewable(BOMBCHU) || renewable(BOMBCHU_5) || renewable(BOMBCHU_10) || renewable(BOMBCHU_20) || (setting(sharedBombchu) && (event(OOT_BOMBCHU) || renewable(SHARED_BOMBCHU) || renewable(SHARED_BOMBCHU_5) || renewable(SHARED_BOMBCHU_10) || renewable(SHARED_BOMBCHU_20)))",
+    "has_bombchu": "bombchu_source && bombchu_license"
+  }
+}

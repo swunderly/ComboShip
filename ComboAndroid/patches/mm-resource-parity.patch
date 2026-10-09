@@ -1,0 +1,1343 @@
+diff --git a/combo/rando/MmResourceAccess.h b/combo/rando/MmResourceAccess.h
+new file mode 100644
+--- /dev/null
++++ b/combo/rando/MmResourceAccess.h
+@@ -0,0 +1,42 @@
++#pragma once
++
++#include <cstdint>
++
++namespace ComboRando {
++
++// OoTMM v32.3 macros_mm.yml: possession and renewable supply are separate.
++// Search-local state deliberately stays out of the persistent save structure.
++enum MmResource : uint32_t {
++    MmRupees = 1u << 0, MmArrows = 1u << 1, MmBombs = 1u << 2,
++    MmMagic = 1u << 3, MmSticks = 1u << 4, MmNuts = 1u << 5,
++    MmBombchus = 1u << 6,
++};
++
++struct MmResourceAccess {
++    uint32_t sources = 0;
++    bool active = false;
++
++    bool Add(uint32_t incoming) {
++        const auto previous = sources;
++        sources |= incoming;
++        return sources != previous;
++    }
++    bool Has(MmResource resource) const { return !active || (sources & resource) != 0; }
++    bool CanPay(unsigned price, unsigned capacity) const {
++        return price == 0 || (price <= capacity && Has(MmRupees));
++    }
++    bool CanUse(bool owned, MmResource resource) const { return owned && Has(resource); }
++};
++
++inline thread_local MmResourceAccess mmResourceAccess;
++
++class MmResourceScope {
++    MmResourceAccess previous;
++public:
++    MmResourceScope() : previous(mmResourceAccess) { mmResourceAccess = {0, true}; }
++    ~MmResourceScope() { mmResourceAccess = previous; }
++    MmResourceScope(const MmResourceScope&) = delete;
++    MmResourceScope& operator=(const MmResourceScope&) = delete;
++};
++
++} // namespace ComboRando
+diff --git a/mm/2s2h/BenPort.cpp b/mm/2s2h/BenPort.cpp
+--- a/mm/2s2h/BenPort.cpp
++++ b/mm/2s2h/BenPort.cpp
+@@ -3332,18 +3332,17 @@
+     std::vector<RandoItemId> itemPool;
+     Rando::Logic::GeneratePools(saveInfo, checkPool, itemPool);
+ 
+-    // Capture the prices GeneratePools rolled into this (otherwise discarded) saveInfo. It rolls one per
+-    // shuffled check, not just purchaseable ones (upstream), so only shops/tingle reach the spoiler.
++    // Capture only randomized purchase prices. Upstream also rolls unused prices
++    // on ordinary checks and vanilla shelves; those are not part of the seed.
+     sMMComboCheckPrices.clear();
+     for (auto& [id, chk] : Rando::StaticData::Checks) {
++        if (std::find(checkPool.begin(), checkPool.end(), id) == checkPool.end() ||
++            (chk.randoCheckType != RCTYPE_SHOP && chk.randoCheckType != RCTYPE_TINGLE_SHOP)) continue;
+         uint16_t p = saveInfo.randoSaveChecks[id].price;
+         if (p == 0) {
+             continue;
+         }
+         sMMComboCheckPrices[id] = p;
+-        if (chk.randoCheckType != RCTYPE_SHOP && chk.randoCheckType != RCTYPE_TINGLE_SHOP) {
+-            continue;
+-        }
+         const std::string& cn = Rando::StaticData::GetCheckDisplayName(id); // ComboShip: friendly name
+         if (!cn.empty())
+             prices[cn] = p;
+@@ -4039,6 +4038,18 @@
+     // The memset wiped check prices too; re-apply the rolled/spoiler set or every CAN_AFFORD gate
+     // evaluates price==0 and shops/Tingle maps are free to the oracle.
+     Combo_MM_ApplyCheckPrices();
++    // GeneratePools leaves these shelves at their vanilla items when shops are
++    // not shuffled. They still supply renewable ammo to the real game; clearing
++    // them here must not erase those sources from generation's search.
++    if (RANDO_SAVE_OPTIONS[RO_SHUFFLE_SHOPS] == RO_GENERIC_NO) {
++        for (const auto& [id, check] : Rando::StaticData::Checks) {
++            if (check.randoCheckType == RCTYPE_SHOP && id != RC_CURIOSITY_SHOP_SPECIAL_ITEM &&
++                id != RC_BOMB_SHOP_ITEM_03 && id != RC_BOMB_SHOP_ITEM_04_OR_CURIOSITY_SHOP_ITEM) {
++                RANDO_SAVE_CHECKS[id].randoItemId = check.randoItemId;
++                RANDO_SAVE_CHECKS[id].price = 0;
++            }
++        }
++    }
+ }
+ 
+ // ComboShip: name->id lookup maps for the oracle hot path, replacing per-name linear scans over
+@@ -4654,6 +4665,7 @@
+     std::set<RandoRegionId> reachable = { RR_MAX };
+     auto timeStates = Rando::Logic::InitializeRegionTimeStates(RR_MAX);
+ 
++    ComboRando::MmResourceScope resources;
+     // ComboShip: mirror GlitchlessLogic's reachability fixpoint (Rando/Logic/GlitchlessLogic.cpp).
+     // Crawling region connections alone isn't enough — MM's logic is event-gated (raising Woodfall,
+     // opening dungeon entrances, cutscenes). Those events must be applied (RANDO_EVENTS[event]++) as
+@@ -4670,6 +4682,7 @@
+         }
+         if (reachable.size() != prevSize)
+             changed = true;
++        changed |= Rando::Logic::UpdateResourceSources(reachable, timeStates);
+ 
+         for (RandoRegionId regionId : reachable) {
+             auto regIt = Rando::Logic::Regions.find(regionId);
+diff --git a/mm/2s2h/Rando/CheckTracker/CheckTracker.cpp b/mm/2s2h/Rando/CheckTracker/CheckTracker.cpp
+--- a/mm/2s2h/Rando/CheckTracker/CheckTracker.cpp
++++ b/mm/2s2h/Rando/CheckTracker/CheckTracker.cpp
+@@ -321,6 +321,7 @@
+ #endif
+ #ifdef COMBO_BUILD
+     Rando::Logic::LiveTrackerRuleScope ruleScope;
++    ComboRando::MmResourceScope resources;
+ #endif
+     checksInLogic.clear();
+ 
+@@ -349,6 +350,9 @@
+             Rando::Logic::FindReachableRegions(regionId, reachableRegions, regionTimeStates);
+         }
+ 
++#ifdef COMBO_BUILD
++        changed |= Rando::Logic::UpdateResourceSources(reachableRegions, regionTimeStates);
++#endif
+         // Trigger events for newly discovered regions
+         for (RandoRegionId regionId : reachableRegions) {
+             auto& randoRegion = Rando::Logic::Regions[regionId];
+diff --git a/mm/2s2h/Rando/Logic/GlitchlessLogic.cpp b/mm/2s2h/Rando/Logic/GlitchlessLogic.cpp
+--- a/mm/2s2h/Rando/Logic/GlitchlessLogic.cpp
++++ b/mm/2s2h/Rando/Logic/GlitchlessLogic.cpp
+@@ -17,6 +17,9 @@
+ 
+ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std::vector<RandoItemId>& itemPool) {
+     uint64_t tick = GetUnixTimestamp();
++#ifdef COMBO_BUILD
++    ComboRando::MmResourceScope resources;
++#endif
+ 
+     SaveContext copiedSaveContext;
+     memcpy(&copiedSaveContext, &gSaveContext, sizeof(SaveContext));
+@@ -77,6 +80,9 @@
+             regionsInLogicChanged = true;
+         }
+ 
++#ifdef COMBO_BUILD
++        eventsInLogicChanged |= UpdateResourceSources(regionsInLogic, regionTimeStates);
++#endif
+         for (RandoRegionId regionId : regionsInLogic) {
+             auto& randoRegion = Regions[regionId];
+ 
+@@ -223,6 +229,10 @@
+             SPDLOG_DEBUG("Item Replaced Junk: {}:{}", Rando::StaticData::Checks[checkWithJunk].name,
+                          Rando::StaticData::Items[newRandoItemId].spoilerName);
+ 
++#ifdef COMBO_BUILD
++            // A failed placement must not retain a source requiring the removed item.
++            ComboRando::mmResourceAccess.sources = 0;
++#endif
+             RemoveItem(oldRandoItemId);
+             GiveItem(ConvertItem(newRandoItemId));
+ 
+diff --git a/mm/2s2h/Rando/Logic/Logic.cpp b/mm/2s2h/Rando/Logic/Logic.cpp
+--- a/mm/2s2h/Rando/Logic/Logic.cpp
++++ b/mm/2s2h/Rando/Logic/Logic.cpp
+@@ -14,6 +14,96 @@
+ std::map<RandoRegionId, RandoRegion> Regions = {};
+ 
+ uint64_t gCurrentRegionTime = 0;
++
++#ifdef COMBO_BUILD
++namespace {
++uint32_t RefillResource(RandoItemId item) {
++    using namespace ComboRando;
++    switch (item) {
++        case RI_ARROWS_10: case RI_ARROWS_30: case RI_ARROWS_50: return MmArrows;
++        case RI_BOMBS_5: case RI_BOMBS_10: return MmBombs;
++        case RI_BOMBCHU: case RI_BOMBCHU_5: case RI_BOMBCHU_10: return MmBombchus;
++        case RI_DEKU_STICK: case RI_DEKU_STICKS_5: return MmSticks;
++        case RI_DEKU_NUT: case RI_DEKU_NUTS_5: case RI_DEKU_NUTS_10: return MmNuts;
++        case RI_MAGIC_JAR_SMALL: case RI_MAGIC_JAR_BIG: return MmMagic;
++        case RI_GREEN_POTION_REFILL: case RI_BLUE_POTION_REFILL: case RI_CHATEAU_ROMANI_REFILL:
++            return HAS_BOTTLE ? MmMagic : 0;
++        default: return 0; // One-time equipment and foreign deliveries are not refills.
++    }
++}
++
++uint32_t OutdoorResources(RandoRegionId region) {
++    using namespace ComboRando;
++    uint32_t result = 0;
++    // Pinned OoTMM v32.3 world/mm/overworld. These sources dominate the other
++    // MM refill events while ordinary MM entrances remain unshuffled.
++    switch (region) {
++        case RR_TERMINA_FIELD:
++            result = MmRupees | MmArrows | MmBombs;
++            if (HaveEnemySoul(ACTOR_EN_SLIME)) result |= MmMagic;
++            if (HaveEnemySoul(ACTOR_EN_DEKUBABA) && (CAN_USE_SWORD || CAN_BE_DEKU)) result |= MmSticks;
++            break;
++        case RR_SOUTHERN_SWAMP_NORTH:
++            result = MmRupees | MmArrows | MmBombs | MmMagic | MmSticks;
++            break;
++        case RR_CLOCK_TOWN_NORTH: result = MmRupees; break;
++        case RR_CLOCK_TOWN_LAUNDRY: result = MmMagic; break;
++        case RR_WOODFALL_OWL_STATUE_PLATFORM: result = MmSticks | MmNuts; break;
++        default: return 0;
++    }
++    if ((region == RR_TERMINA_FIELD || region == RR_SOUTHERN_SWAMP_NORTH) &&
++        HaveEnemySoul(ACTOR_EN_DEKUBABA) &&
++        (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU ||
++         HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_EXPLOSIVE || CAN_USE_BOW)) {
++        result |= MmNuts;
++    }
++    return result;
++}
++} // namespace
++
++bool UpdateResourceSources(const std::set<RandoRegionId>& reached,
++                          std::unordered_map<RandoRegionId, RegionTimeState>& times) {
++    bool changed = false;
++    struct RestoreTime {
++        uint64_t previous = gCurrentRegionTime;
++        ~RestoreTime() { gCurrentRegionTime = previous; }
++    } restoreTime;
++    for (auto id : reached) {
++        const auto time = times.find(id);
++        const auto region = Regions.find(id);
++        if (time == times.end() || !time->second.timeSlices || region == Regions.end()) continue;
++        changed |= ComboRando::mmResourceAccess.Add(OutdoorResources(id));
++        gCurrentRegionTime = time->second.timeSlices;
++        for (const auto& [check, predicate] : region->second.checks) {
++            const auto definition = Rando::StaticData::Checks.find(check);
++            if (definition == Rando::StaticData::Checks.end() ||
++                definition->second.randoCheckType != RCTYPE_SHOP) continue;
++            const auto refill = RefillResource(RANDO_SAVE_CHECKS[check].randoItemId);
++            if (!refill || ComboRando::mmResourceAccess.Has(static_cast<ComboRando::MmResource>(refill))) continue;
++            // Vanilla refill shelves are paid even though RandoSaveCheck.price
++            // is zero for unshuffled stock. All use the base wallet except
++            // Chateau (200). Shuffled shelves use their rolled price instead.
++            if (!RANDO_SAVE_CHECKS[check].shuffled &&
++                !CAN_PAY(check == RC_MILK_BAR_PURCHASE_CHATEAU ? 200 : 1)) continue;
++            // Old pool dumps also rolled unused prices for vanilla shelves.
++            // Native purchases ignore those prices; evaluate the shelf with
++            // its real wallet gate above, then restore the save unchanged.
++            auto& checkSave = RANDO_SAVE_CHECKS[check];
++            struct RestorePrice {
++                decltype(checkSave.price)& destination;
++                decltype(checkSave.price) previous;
++                ~RestorePrice() { destination = previous; }
++            } restorePrice{checkSave.price, checkSave.price};
++            if (!RANDO_SAVE_CHECKS[check].shuffled) RANDO_SAVE_CHECKS[check].price = 0;
++            const bool available = TimeLogic::EvaluateConditionTimes(predicate.first, gCurrentRegionTime);
++            if (available) {
++                changed |= ComboRando::mmResourceAccess.Add(refill);
++            }
++        }
++    }
++    return changed;
++}
++#endif
+ 
+ // GROTTOS
+ // grottos are a bit weird, 15 of them share entrances with other grottos, so we have to check an extra field to
+diff --git a/mm/2s2h/Rando/Logic/Logic.h b/mm/2s2h/Rando/Logic/Logic.h
+--- a/mm/2s2h/Rando/Logic/Logic.h
++++ b/mm/2s2h/Rando/Logic/Logic.h
+@@ -11,6 +11,7 @@
+ #ifdef COMBO_BUILD
+ #include "rando/GameplayRules.h"
+ #include "rando/MmAbilities.h"
++#include "rando/MmResourceAccess.h"
+ #include "rando/MmTricks.h"
+ #include "rando/MmTrickRoutes.h"
+ #include "rando/MmEnhancementLogic.h"
+@@ -31,7 +32,7 @@
+ #define CAN_NAVIGATE_HIDDEN ComboRando::CanNavigateHidden(HAS_ITEM(ITEM_LENS_OF_TRUTH), HAS_MAGIC, COMBO_MM_TRICK("Lensless") != 0)
+ #define CAN_CROSS_PINNACLE_ROCK ComboRando::MmTrickRoutes::PinnacleRock(CAN_BE_ZORA, CAN_USE_ABILITY(SWIM), RANDO_EVENTS[RE_ACCESS_SEAHORSE], COMBO_MM_TRICK("PinnacleNoSeahorse") != 0)
+ #define CAN_WIN_POST_OFFICE ComboRando::MmTrickRoutes::PostOffice(HAS_ITEM(ITEM_MASK_BUNNY), COMBO_MM_TRICK("PostOfficeTiming") != 0, BETWEEN(TIME_DAY1_PM_03_00, TIME_NIGHT1_AM_12_00), RANDO_EVENTS[RE_MAIL_LETTER_TO_KAFEI], BETWEEN(TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_12_00))
+-#define CAN_OPEN_OCEANSIDE_CODE_CHEST ComboRando::MmTrickRoutes::OceansideCode(HAS_ITEM(ITEM_BOW), HAS_ITEM(ITEM_MASK_CAPTAIN), COMBO_MM_TRICK("OceansideCode") != 0)
++#define CAN_OPEN_OCEANSIDE_CODE_CHEST ComboRando::MmTrickRoutes::OceansideCode(CAN_USE_BOW, HAS_ITEM(ITEM_MASK_CAPTAIN), COMBO_MM_TRICK("OceansideCode") != 0)
+ #define CAN_REACH_CLOCK_TOWN_LOWER_CHEST ComboRando::MmTrickRoutes::ClockTownLowerChest(CAN_BE_DEKU, Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR), HAS_ITEM(ITEM_HOOKSHOT), COMBO_MM_TRICK("ClockTownLowerJump") != 0)
+ #define CAN_REACH_DOGGY_CHEST ComboRando::MmTrickRoutes::DoggyChest(HAS_ITEM(ITEM_HOOKSHOT), CAN_USE_DAY2_RAIN_BEAN, CAN_BE_ZORA, COMBO_MM_TRICK("DoggyFenceJump") != 0)
+ #define CAN_SKIP_PALACE_BEANS ComboRando::MmTrickRoutes::PalaceDoorwayClimb(COMBO_MM_TRICK("PalaceBeanSkip") != 0)
+@@ -44,7 +45,7 @@
+ #define CAN_NAVIGATE_HIDDEN (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC)
+ #define CAN_CROSS_PINNACLE_ROCK (RANDO_EVENTS[RE_ACCESS_SEAHORSE] && CAN_BE_ZORA)
+ #define CAN_WIN_POST_OFFICE (HAS_ITEM(ITEM_MASK_BUNNY) && (BETWEEN(TIME_DAY1_PM_03_00, TIME_NIGHT1_AM_12_00) || (RANDO_EVENTS[RE_MAIL_LETTER_TO_KAFEI] && BETWEEN(TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_12_00))))
+-#define CAN_OPEN_OCEANSIDE_CODE_CHEST (HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_MASK_CAPTAIN))
++#define CAN_OPEN_OCEANSIDE_CODE_CHEST (CAN_USE_BOW && HAS_ITEM(ITEM_MASK_CAPTAIN))
+ #define CAN_REACH_CLOCK_TOWN_LOWER_CHEST ((CAN_BE_DEKU && Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)) || HAS_ITEM(ITEM_HOOKSHOT))
+ #define CAN_REACH_DOGGY_CHEST (HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_DAY2_RAIN_BEAN || CAN_BE_ZORA)
+ #define CAN_SKIP_PALACE_BEANS false
+@@ -214,6 +215,11 @@
+ // ============================================================================
+ // TIME LOGIC NAMESPACE
+ // ============================================================================
++#ifdef COMBO_BUILD
++bool UpdateResourceSources(const std::set<RandoRegionId>& reached,
++                          std::unordered_map<RandoRegionId, RegionTimeState>& times);
++#endif
++
+ namespace TimeLogic {
+ // Preserve the time restrictions of a native boolean route predicate.
+ uint64_t EvaluateConditionTimes(const std::function<bool()>& condition, uint64_t timeSlices);
+@@ -246,6 +252,22 @@
+ #define CHECK_MAX_HP(TARGET_HP) ((TARGET_HP * 16) <= gSaveContext.save.saveInfo.playerData.healthCapacity)
+ #define HAS_MAGIC (gSaveContext.save.saveInfo.playerData.isMagicAcquired)
+ #ifdef COMBO_BUILD
++#undef HAS_MAGIC
++#define HAS_MAGIC ComboRando::mmResourceAccess.CanUse(gSaveContext.save.saveInfo.playerData.isMagicAcquired, ComboRando::MmMagic)
++#define CAN_USE_BOW ComboRando::mmResourceAccess.CanUse(HAS_ITEM(ITEM_BOW), ComboRando::MmArrows)
++#define CAN_USE_BOMBS ComboRando::mmResourceAccess.CanUse(HAS_ITEM(ITEM_BOMB), ComboRando::MmBombs)
++#define CAN_USE_BOMBCHUS (ComboRando::mmResourceAccess.active ? \
++    ComboRando::mmResourceAccess.CanUse(CUR_UPG_VALUE(UPG_BOMB_BAG) != 0, ComboRando::MmBombchus) : HAS_ITEM(ITEM_BOMBCHU))
++#define CAN_USE_STICKS (ComboRando::mmResourceAccess.active ? ComboRando::mmResourceAccess.Has(ComboRando::MmSticks) : HAS_ITEM(ITEM_DEKU_STICK))
++#define CAN_USE_NUTS (ComboRando::mmResourceAccess.active ? ComboRando::mmResourceAccess.Has(ComboRando::MmNuts) : HAS_ITEM(ITEM_DEKU_NUT))
++#else
++#define CAN_USE_BOW HAS_ITEM(ITEM_BOW)
++#define CAN_USE_BOMBS HAS_ITEM(ITEM_BOMB)
++#define CAN_USE_BOMBCHUS HAS_ITEM(ITEM_BOMBCHU)
++#define CAN_USE_STICKS HAS_ITEM(ITEM_DEKU_STICK)
++#define CAN_USE_NUTS HAS_ITEM(ITEM_DEKU_NUT)
++#endif
++#ifdef COMBO_BUILD
+ #define CAN_HOOK_SCARECROW \
+     (HAS_ITEM(ITEM_OCARINA_OF_TIME) && HAS_ITEM(ITEM_HOOKSHOT) && canPlaySong(OCARINA_SONG_SCARECROW_SPAWN) && \
+      (RANDO_EVENTS[RE_LEARN_SCARECROW_SONG] || CHECK_WEEKEVENTREG(WEEKEVENTREG_79_08) || \
+@@ -255,7 +277,7 @@
+     (HAS_ITEM(ITEM_OCARINA_OF_TIME) && HAS_ITEM(ITEM_HOOKSHOT) && canPlaySong(OCARINA_SONG_SCARECROW_SPAWN))
+ #endif
+ #define CAN_USE_EXPLOSIVE                             \
+-    (HAS_ITEM(ITEM_BOMB) || HAS_ITEM(ITEM_BOMBCHU) || \
++    (CAN_USE_BOMBS || CAN_USE_BOMBCHUS || \
+      (HAS_ITEM(ITEM_MASK_BLAST) && GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) > EQUIP_VALUE_SHIELD_NONE))
+ #define CAN_USE_HUMAN_SWORD (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) >= EQUIP_VALUE_SWORD_KOKIRI)
+ #ifdef COMBO_BUILD
+@@ -303,7 +325,7 @@
+ #define HAS_BOTTLE_ITEM(item) (Inventory_HasItemInBottle(item))
+ // TODO: Maybe not reliable because of theif bird stealing bottle
+ #define HAS_BOTTLE (INV_CONTENT(ITEM_BOTTLE) != ITEM_NONE)
+-#define CAN_USE_PROJECTILE (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || (CAN_BE_DEKU && HAS_MAGIC) || CAN_BE_ZORA)
++#define CAN_USE_PROJECTILE (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || (CAN_BE_DEKU && HAS_MAGIC) || CAN_BE_ZORA)
+ #define CAN_ACCESS(access) (RANDO_EVENTS[RE_ACCESS_##access])
+ #define CAN_GROW_BEAN_PLANT        \
+     (HAS_ITEM(ITEM_MAGIC_BEANS) && \
+@@ -312,15 +334,20 @@
+ // Rain only occurs Day 2 from 7:00 AM to 5:30 PM (not Night 2)
+ // Requires magic beans and (Day 2 OR manual watering)
+ #define CAN_USE_DAY2_RAIN_BEAN (CAN_GROW_BEAN_PLANT || (HAS_ITEM(ITEM_MAGIC_BEANS) && CLOCK_DAY2()))
+-#define CAN_USE_MAGIC_ARROW(arrowType) (HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_ARROW_##arrowType) && HAS_MAGIC)
+-#define CAN_LIGHT_TORCH_NEAR_ANOTHER (HAS_ITEM(ITEM_DEKU_STICK) || CAN_USE_MAGIC_ARROW(FIRE))
++#define CAN_USE_MAGIC_ARROW(arrowType) (CAN_USE_BOW && HAS_ITEM(ITEM_ARROW_##arrowType) && HAS_MAGIC)
++#define CAN_LIGHT_TORCH_NEAR_ANOTHER (CAN_USE_STICKS || CAN_USE_MAGIC_ARROW(FIRE))
+ #define KEY_COUNT(dungeon) (gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys[DUNGEON_SCENE_INDEX_##dungeon])
+ // Match the native TycoonWallet hook (5000), including headless searches where
+ // its display hook has not run. The ordinary fourth capacity is still 500.
+-#define CAN_AFFORD(rc) \
+-    (RANDO_SAVE_CHECKS[rc].price <= (CUR_UPG_VALUE(UPG_WALLET) >= 3 && \
+-        RANDO_SAVE_OPTIONS[RO_SHUFFLE_TYCOON_WALLET] == RO_GENERIC_YES ? 5000 : \
+-        CUR_UPG_VALUE(UPG_WALLET) >= 2 ? 500 : CUR_UPG_VALUE(UPG_WALLET) == 1 ? 200 : 99))
++#define MM_WALLET_CAPACITY (CUR_UPG_VALUE(UPG_WALLET) >= 3 && \
++    RANDO_SAVE_OPTIONS[RO_SHUFFLE_TYCOON_WALLET] == RO_GENERIC_YES ? 5000 : \
++    CUR_UPG_VALUE(UPG_WALLET) >= 2 ? 500 : CUR_UPG_VALUE(UPG_WALLET) == 1 ? 200 : 99)
++#ifdef COMBO_BUILD
++#define CAN_PAY(price) ComboRando::mmResourceAccess.CanPay((price), MM_WALLET_CAPACITY)
++#else
++#define CAN_PAY(price) ((price) <= MM_WALLET_CAPACITY)
++#endif
++#define CAN_AFFORD(rc) CAN_PAY(RANDO_SAVE_CHECKS[rc].price)
+ #define HAS_ENOUGH_STRAY_FAIRIES(dungeonIndex) \
+     (gSaveContext.save.saveInfo.inventory.strayFairies[dungeonIndex] >= RANDO_SAVE_OPTIONS[RO_STRAY_FAIRIES_REQUIRED])
+ #define FOUND_ALL_FROGS                                                                  \
+@@ -706,7 +733,7 @@
+ inline bool CanDefeatMajora() {
+     return ComboRando::CanDefeatMajora(
+         RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_YES,
+-        Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_MAJORA), HAS_ITEM(ITEM_BOW),
++        Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_MAJORA), CAN_USE_BOW,
+         CAN_BE_ZORA, CAN_BE_DEITY, HAS_MAGIC, CAN_USE_HUMAN_SWORD, HAS_ITEM(ITEM_SWORD_GREAT_FAIRY));
+ }
+ #endif
+@@ -724,7 +751,7 @@
+                    (Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_ODOLWA) ||
+                     RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_NO);
+         case ACTOR_BOSS_02: // Twinmold
+-            return (HAS_ITEM(ITEM_BOW) || (HAS_ITEM(ITEM_MASK_GIANT) && HAS_MAGIC && CAN_USE_HUMAN_SWORD)) &&
++            return (CAN_USE_BOW || (HAS_ITEM(ITEM_MASK_GIANT) && HAS_MAGIC && CAN_USE_HUMAN_SWORD)) &&
+                    (Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_TWINMOLD) ||
+                     RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_NO);
+         case ACTOR_BOSS_03: // Gyorg
+@@ -732,7 +759,7 @@
+                    (Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_GYORG) ||
+                     RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_NO);
+         case ACTOR_BOSS_04: // Wart
+-            return (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA);
++            return (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA);
+         case ACTOR_BOSS_HAKUGIN: // Goht
+             return (CAN_USE_MAGIC_ARROW(FIRE)) && (Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_GOHT) ||
+                                                    RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_NO);
+@@ -743,39 +770,39 @@
+         case ACTOR_EN_KAIZOKU: // Fighter Pirate
+             return (CAN_USE_SWORD || CAN_BE_ZORA);
+         case ACTOR_EN_PAMETFROG: // Woodfall Temple Gekko (and Snapper)
+-            return (HAS_ITEM(ITEM_BOW) && CanKillEnemy(ACTOR_EN_BIGPAMET));
++            return (CAN_USE_BOW && CanKillEnemy(ACTOR_EN_BIGPAMET));
+         case ACTOR_EN_BIGSLIME: // Great Bay Temple Gekko
+             return (CAN_USE_MAGIC_ARROW(ICE));
+         case ACTOR_EN_SW: // Gold Skulltula & Skullwalltula
+             return (CAN_USE_PROJECTILE || CAN_BE_DEKU || CAN_BE_GORON || CAN_USE_SWORD || CAN_USE_EXPLOSIVE);
+         case ACTOR_EN_DINOFOS: // Dinolfos
+-            return (CAN_USE_SWORD || CAN_BE_GORON || HAS_ITEM(ITEM_BOW) || (CAN_BE_DEKU && HAS_MAGIC));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_BOW || (CAN_BE_DEKU && HAS_MAGIC));
+         case ACTOR_EN_WIZ: // Wizrobe
+-            return (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_SWORD || CAN_BE_GORON);
++            return (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_SWORD || CAN_BE_GORON);
+         case ACTOR_EN_WF: // Wolfos
+             return (CAN_USE_SWORD || (CAN_BE_DEKU && HAS_MAGIC) || CAN_BE_GORON || CAN_BE_ZORA);
+         case ACTOR_EN_JSO: // Garo
+-            return (HAS_ITEM(ITEM_MASK_GARO) && (HAS_ITEM(ITEM_BOW) || CAN_BE_GORON || CAN_USE_SWORD));
++            return (HAS_ITEM(ITEM_MASK_GARO) && (CAN_USE_BOW || CAN_BE_GORON || CAN_USE_SWORD));
+         case ACTOR_EN_JSO2: // Garo Master
+-            return (HAS_ITEM(ITEM_BOW) || CAN_BE_GORON || CAN_USE_SWORD);
++            return (CAN_USE_BOW || CAN_BE_GORON || CAN_USE_SWORD);
+         case ACTOR_EN_IK: // Iron Knuckle
+             return (CAN_USE_SWORD || CAN_BE_GORON);
+         case ACTOR_EN_GRASSHOPPER: // Dragonfly
+-            return ((CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_NUT) || CAN_USE_SWORD ||
++            return ((CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_EXPLOSIVE || CAN_USE_NUTS || CAN_USE_SWORD ||
+                     CAN_BE_ZORA);
+         case ACTOR_EN_MKK: // Boe
+-            return ((CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_NUT) || CAN_USE_SWORD ||
++            return ((CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_EXPLOSIVE || CAN_USE_NUTS || CAN_USE_SWORD ||
+                     CAN_BE_ZORA || CAN_BE_GORON);
+         case ACTOR_EN_BIGPAMET: // Snapper
+             return (CAN_BE_DEKU || CAN_USE_EXPLOSIVE || CAN_BE_GORON);
+         case ACTOR_EN_ST: // Large Skulltula
+             return (CAN_USE_SWORD || CAN_USE_PROJECTILE || CAN_BE_GORON || CAN_USE_EXPLOSIVE);
+         case ACTOR_EN_BAT: // Bad Bat
+-            return (CAN_USE_SWORD || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_BOW) || CAN_USE_EXPLOSIVE ||
++            return (CAN_USE_SWORD || HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_BOW || CAN_USE_EXPLOSIVE ||
+                     CAN_BE_GORON || CAN_BE_ZORA);
+         case ACTOR_EN_DEKUBABA: // Neck bending Deku Baba
+-            return (CAN_USE_SWORD || CAN_BE_DEKU || CAN_BE_GORON || CAN_BE_ZORA || HAS_ITEM(ITEM_BOW) ||
+-                    CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK));
++            return (CAN_USE_SWORD || CAN_BE_DEKU || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_BOW ||
++                    CAN_USE_EXPLOSIVE || CAN_USE_STICKS);
+         case ACTOR_OBJ_SNOWBALL: // Large Snowball
+             return (CAN_USE_EXPLOSIVE || CAN_BE_GORON || CAN_USE_MAGIC_ARROW(FIRE));
+         case ACTOR_EN_AM: // Armos
+@@ -784,7 +811,7 @@
+             return (CAN_USE_EXPLOSIVE);
+         case ACTOR_EN_BB:     // Blue Bubble
+         case ACTOR_EN_BBFALL: // Red Bubble
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_DEKU_STICK));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_BOW || CAN_USE_STICKS);
+         case ACTOR_EN_RAT:       // Real Bombchu
+         case ACTOR_EN_TUBO_TRAP: // Flying Pot
+             return true;
+@@ -794,43 +821,43 @@
+             return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC));
+         case ACTOR_EN_FLOORMAS: // Floormaster
+         case ACTOR_EN_WALLMAS:  // Wallmaster
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || HAS_ITEM(ITEM_BOW) ||
+-                    HAS_ITEM(ITEM_DEKU_STICK));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_BOW ||
++                    CAN_USE_STICKS);
+         case ACTOR_EN_FZ: // Freezard
+             return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_MAGIC_ARROW(FIRE) ||
+                     HAS_ITEM(ITEM_HOOKSHOT));
+         case ACTOR_EN_CROW: // Guay (Generic, excludes the one circling Clock Town En_Ruppecrow)
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || HAS_ITEM(ITEM_BOW) ||
+-                    HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_HOOKSHOT));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW ||
++                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT));
+         case ACTOR_EN_FIREFLY: // Keese
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || HAS_ITEM(ITEM_BOW) ||
+-                    HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_HOOKSHOT));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW ||
++                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT));
+         case ACTOR_EN_RR: // Like Like
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || HAS_ITEM(ITEM_BOW) ||
+-                    HAS_ITEM(ITEM_DEKU_STICK));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_BOW ||
++                    CAN_USE_STICKS);
+         case ACTOR_EN_DEKUNUTS: // Mad Scrub
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || HAS_ITEM(ITEM_BOW) ||
+-                    HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_HOOKSHOT));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW ||
++                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT));
+         case ACTOR_EN_KAREBABA: // Wilted/Mini Babas
+             return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU);
+         case ACTOR_EN_PEEHAT: // Peahat
+-            return ((CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || HAS_ITEM(ITEM_DEKU_STICK)) &&
++            return ((CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_STICKS) &&
+                     IS_DAY());
+         case ACTOR_EN_RD: // Redead & Gibdos
+-            return (CAN_USE_SWORD || CAN_BE_DEKU || CAN_BE_GORON || CAN_BE_ZORA || HAS_ITEM(ITEM_DEKU_STICK));
++            return (CAN_USE_SWORD || CAN_BE_DEKU || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_STICKS);
+         case ACTOR_EN_BSB: // Captain Keeta (May be possible without bow, but the window is tight. Requiring for now)
+-            return (HAS_ITEM(ITEM_BOW) &&
+-                    (CAN_USE_SWORD || HAS_ITEM(ITEM_DEKU_STICK) || CAN_USE_EXPLOSIVE || CAN_BE_GORON || CAN_BE_ZORA));
++            return (CAN_USE_BOW &&
++                    (CAN_USE_SWORD || CAN_USE_STICKS || CAN_USE_EXPLOSIVE || CAN_BE_GORON || CAN_BE_ZORA));
+         case ACTOR_EN_SKB: // Stalchild
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || HAS_ITEM(ITEM_BOW) ||
+-                    HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_HOOKSHOT));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_BOW ||
++                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT));
+         case ACTOR_EN_TITE: // Tektite
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || HAS_ITEM(ITEM_BOW));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_BOW);
+         case ACTOR_EN_SLIME: // Chuchus
+-            return (CAN_USE_SWORD || CAN_BE_ZORA || CAN_BE_DEKU || HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_DEKU_STICK));
++            return (CAN_USE_SWORD || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW || CAN_USE_STICKS);
+         case ACTOR_EN_SNOWMAN: // Eeno
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || HAS_ITEM(ITEM_BOW) ||
+-                    HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_HOOKSHOT));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_BOW ||
++                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT));
+         case ACTOR_EN_WDHAND: // Dexihand (Basic kill method, seems like a pain to require other things)
+             return (CAN_BE_ZORA && HAS_MAGIC);
+         case ACTOR_EN_KAME: // Snapper (non Gekko Miniboss)
+@@ -841,11 +868,11 @@
+         case ACTOR_EN_BAGUO: // Nejiron
+             return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || HAS_ITEM(ITEM_HOOKSHOT));
+         case ACTOR_EN_NEO_REEBA: // Leever
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || HAS_ITEM(ITEM_BOW) ||
+-                    HAS_ITEM(ITEM_DEKU_STICK));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_BOW ||
++                    CAN_USE_STICKS);
+         case ACTOR_EN_PP: // Hiploop
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || HAS_ITEM(ITEM_BOW) ||
+-                    HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_HOOKSHOT));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_BOW ||
++                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT));
+         case ACTOR_EN_PR:  // Desbreko
+         case ACTOR_EN_PR2: // Skull fish
+         case ACTOR_EN_SB:  // Shellblade
+@@ -853,22 +880,22 @@
+         case ACTOR_BOSS_05: // Bio Deku Baba
+             return CAN_BE_ZORA && CAN_USE_ABILITY(SWIM);
+         case ACTOR_EN_BEE: // Giant Bee
+-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || HAS_ITEM(ITEM_DEKU_STICK) ||
+-                    CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_NUT));
++            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_STICKS ||
++                    CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_NUTS);
+         case ACTOR_EN_DRAGON: // Deep Python
+             return (CAN_BE_ZORA && HAS_MAGIC);
+         case ACTOR_EN_BIGPO:
+-            return HAS_ITEM(ITEM_BOW);
++            return CAN_USE_BOW;
+         case ACTOR_EN_PO_SISTERS:
+             // The first three sisters can be damaged with almost anything, but Meg requires ranged attacks. Not using
+             // CAN_USE_EXPLOSIVE here, as the Blast Mask cannot reach, and the Powder Keg can only be used once.
+-            return (CAN_USE_PROJECTILE || HAS_ITEM(ITEM_BOMB) || HAS_ITEM(ITEM_BOMBCHU));
++            return (CAN_USE_PROJECTILE || CAN_USE_BOMBS || CAN_USE_BOMBCHUS);
+         case ACTOR_EN_INVADEPOH: // Them
+-            return HAS_ITEM(ITEM_BOW);
++            return CAN_USE_BOW;
+         case ACTOR_EN_THIEFBIRD: // Takkuri
+             return (CAN_USE_PROJECTILE || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_EXPLOSIVE || CAN_USE_SWORD);
+         case ACTOR_EN_DEATH: // Gomess
+-            return (CAN_USE_SWORD || HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || CAN_BE_GORON ||
++            return (CAN_USE_SWORD || CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || CAN_BE_GORON ||
+                     (CAN_BE_DEKU && HAS_MAGIC));
+         default: // Incorrect actor ID inputed.
+             assert(false);
+diff --git a/mm/2s2h/Rando/Logic/Regions/BeneathTheWell.cpp b/mm/2s2h/Rando/Logic/Regions/BeneathTheWell.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/BeneathTheWell.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/BeneathTheWell.cpp
+@@ -75,7 +75,7 @@
+         .events = {
+             EVENT(RE_ACCESS_SPRING_WATER, true),
+             EVENT(RE_ACCESS_FISH, true),
+-            EVENT(RE_ACCESS_HOT_SPRING_WATER, HAS_ITEM(ITEM_BOW))
++            EVENT(RE_ACCESS_HOT_SPRING_WATER, CAN_USE_BOW)
+         },
+     };
+     Regions[RR_BENEATH_THE_WELL_ENTRANCE] = RandoRegion{ .name = "Entrance", .sceneId = SCENE_REDEAD,
+@@ -138,7 +138,7 @@
+     Regions[RR_BENEATH_THE_WELL_MIRROR_SHIELD_ROOM] = RandoRegion{ .name = "Mirror Shield Room", .sceneId = SCENE_REDEAD,
+         .checks = {
+             // In cases where the player comes from the exit. The flame is accessed two rooms back(RR_BENEATH_THE_WELL_BABA_AND_POTS_ROOM) and the door locks on the way out, so we also need to factor the requirements to get back into this room.
+-            CHECK(RC_BENEATH_THE_WELL_MIRROR_SHIELD, (CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(BIG_POE) && CAN_ACCESS(MILK_REFILL)) && HAS_ITEM(ITEM_DEKU_STICK)) || CAN_USE_MAGIC_ARROW(FIRE))
++            CHECK(RC_BENEATH_THE_WELL_MIRROR_SHIELD, (CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(BIG_POE) && CAN_ACCESS(MILK_REFILL)) && CAN_USE_STICKS) || CAN_USE_MAGIC_ARROW(FIRE))
+         },
+         .connections = {
+             CONNECTION(RR_BENEATH_THE_WELL_FOUR_SPIKED_BARS, true),
+@@ -155,11 +155,11 @@
+         },
+         .connections = {
+             CONNECTION(RR_BENEATH_THE_WELL_FREEZARD_ROOM, true),
+-            CONNECTION(RR_BENEATH_THE_WELL_BIG_POE_ROOM, CAN_PASS_GIBDO(HAS_ITEM(ITEM_BOMB))),
++            CONNECTION(RR_BENEATH_THE_WELL_BIG_POE_ROOM, CAN_PASS_GIBDO(CAN_USE_BOMBS)),
+             CONNECTION(RR_BENEATH_THE_WELL_COW_ROOM, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER)))
+         },
+         .events = {
+-            EVENT(RE_ACCESS_BUGS, HAS_ITEM(ITEM_BOW)),
++            EVENT(RE_ACCESS_BUGS, CAN_USE_BOW),
+         }
+     };
+     Regions[RR_BENEATH_THE_WELL_SKULLTULA_ROOM] = RandoRegion{ .name = "Skulltula Room", .sceneId = SCENE_REDEAD,
+diff --git a/mm/2s2h/Rando/Logic/Regions/Central.cpp b/mm/2s2h/Rando/Logic/Regions/Central.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/Central.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/Central.cpp
+@@ -98,12 +98,12 @@
+             CHECK(RC_CLOCK_TOWN_EAST_UPPER_CHEST,    true),
+             CHECK(RC_CLOCK_TOWN_BOMBERS_NOTEBOOK,    RANDO_EVENTS[RE_BOMBER_CODE]),
+             CHECK(RC_CLOCK_TOWN_POSTBOX,             HAS_ITEM(ITEM_MASK_POSTMAN)),
+-            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_01, CAN_USE_SWORD || CAN_USE_PROJECTILE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_02, CAN_USE_SWORD || CAN_USE_PROJECTILE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_03, CAN_USE_SWORD || CAN_USE_PROJECTILE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_04, CAN_USE_SWORD || CAN_USE_PROJECTILE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_05, CAN_USE_SWORD || CAN_USE_PROJECTILE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_06, CAN_USE_SWORD || CAN_USE_PROJECTILE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
++            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_01, CAN_USE_SWORD || CAN_USE_PROJECTILE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_02, CAN_USE_SWORD || CAN_USE_PROJECTILE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_03, CAN_USE_SWORD || CAN_USE_PROJECTILE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_04, CAN_USE_SWORD || CAN_USE_PROJECTILE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_05, CAN_USE_SWORD || CAN_USE_PROJECTILE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_06, CAN_USE_SWORD || CAN_USE_PROJECTILE || CAN_USE_STICKS || CAN_USE_NUTS),
+             CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_07, true),
+             CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_08, true),
+             CHECK(RC_CLOCK_TOWN_EAST_WONDER_ITEM_09, true),
+@@ -192,7 +192,7 @@
+             // Refer to z_en_suttari's damage table for more info. Damage effect 0xF stops him nonlethally, while 0xE kills.
+             // FD sword beams can also kill him, but currently FD is not logically considered.
+             EVENT(RE_SAVE_BOMB_SHOP_LADY, (CAN_USE_SWORD || CAN_BE_ZORA || CAN_BE_GORON) && AT(TIME_NIGHT1_AM_12_00)),
+-            EVENT(RE_KILL_SAKON, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || CAN_USE_EXPLOSIVE) && AT(TIME_NIGHT1_AM_12_00)),
++            EVENT(RE_KILL_SAKON, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || CAN_USE_EXPLOSIVE) && AT(TIME_NIGHT1_AM_12_00)),
+             // Hide and seek events
+             EVENT(RE_HIDE_SEEK_DAY1, CAN_USE_PROJECTILE && FIRST_DAY()),
+             EVENT(RE_HIDE_SEEK_DAY2, CAN_USE_PROJECTILE && SECOND_DAY()),
+@@ -298,16 +298,17 @@
+     };
+     Regions[RR_HONEY_AND_DARLING] = RandoRegion{ .sceneId = SCENE_BOWLING,
+         .checks = {
+-            CHECK(RC_CLOCK_TOWN_EAST_HONEY_DARLING_ALL_DAYS, RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY1] && RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY2] && RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY3]),
+-            CHECK(RC_CLOCK_TOWN_EAST_HONEY_DARLING_ANY_DAY, (RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY1] || RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY2] || RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY3])),
++            CHECK(RC_CLOCK_TOWN_EAST_HONEY_DARLING_ALL_DAYS, CAN_PAY(10) && HAS_ITEM(ITEM_BOW) && RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY1] && RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY2] && RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY3]),
++            CHECK(RC_CLOCK_TOWN_EAST_HONEY_DARLING_ANY_DAY, CAN_PAY(10) && (RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY1] || RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY2] || RANDO_EVENTS[RE_HONEY_DARLING_REWARD_DAY3])),
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(EAST_CLOCK_TOWN, 6),              ENTRANCE(HONEY_AND_DARLINGS_SHOP, 0), true),
+         },
+         .events = {
++            // These games supply their ammunition (OoTMM HD_REWARD_*).
+             EVENT(RE_HONEY_DARLING_REWARD_DAY1, (HAS_ITEM(ITEM_BOMB) || HAS_ITEM(ITEM_BOMBCHU)) && BEFORE(TIME_NIGHT1_PM_10_00)),
+             EVENT(RE_HONEY_DARLING_REWARD_DAY2, HAS_ITEM(ITEM_BOMB) && BETWEEN(TIME_DAY2_AM_06_00, TIME_NIGHT2_PM_10_00)),
+-            EVENT(RE_HONEY_DARLING_REWARD_DAY3, HAS_ITEM(ITEM_BOW) && IS_DAY3()),
++            EVENT(RE_HONEY_DARLING_REWARD_DAY3, (HAS_ITEM(ITEM_BOW) || (CAN_BE_DEKU && HAS_MAGIC)) && IS_DAY3()),
+         },
+     };
+     Regions[RR_INN] = RandoRegion{ .sceneId = SCENE_YADOYA,
+@@ -354,10 +355,10 @@
+     };
+     Regions[RR_LOTTERY_SHOP] = RandoRegion{ .sceneId = SCENE_TAKARAKUJI,
+         .checks = {
+-            CHECK(RC_CLOCK_TOWN_WEST_LOTTERY, 
+-                  (IS_DAY1() && CLOCK_NIGHT1()) || 
+-                  (IS_DAY2() && CLOCK_NIGHT2()) || 
+-                  (IS_DAY3() && CLOCK_NIGHT3())),
++            CHECK(RC_CLOCK_TOWN_WEST_LOTTERY, CAN_PAY(10) && (
++                  (IS_DAY1() && CLOCK_NIGHT1()) ||
++                  (IS_DAY2() && CLOCK_NIGHT2()) ||
++                  (IS_DAY3() && CLOCK_NIGHT3()))),
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(WEST_CLOCK_TOWN, 8),              ENTRANCE(LOTTERY_SHOP, 0), true),
+@@ -413,14 +414,14 @@
+     };
+     Regions[RR_SWORDSMAN_SCHOOL] = RandoRegion{ .sceneId = SCENE_DOUJOU,
+         .checks = {
+-            CHECK(RC_SWORDSMAN_SCHOOL_PIECE_OF_HEART, CAN_USE_HUMAN_SWORD && BEFORE(TIME_NIGHT3_PM_11_00)),
++            CHECK(RC_SWORDSMAN_SCHOOL_PIECE_OF_HEART, CAN_PAY(20) && CAN_USE_HUMAN_SWORD && BEFORE(TIME_NIGHT3_PM_11_00)),
+             CHECK(RC_SWORDSMAN_SCHOOL_POT_01, CAN_USE_HUMAN_SWORD && AFTER(TIME_NIGHT3_AM_12_00)),
+             CHECK(RC_SWORDSMAN_SCHOOL_POT_02, CAN_USE_HUMAN_SWORD && AFTER(TIME_NIGHT3_AM_12_00)),
+             CHECK(RC_SWORDSMAN_SCHOOL_POT_03, CAN_USE_HUMAN_SWORD && AFTER(TIME_NIGHT3_AM_12_00)),
+             CHECK(RC_SWORDSMAN_SCHOOL_POT_04, CAN_USE_HUMAN_SWORD && AFTER(TIME_NIGHT3_AM_12_00)),
+             CHECK(RC_SWORDSMAN_SCHOOL_POT_05, CAN_USE_HUMAN_SWORD && AFTER(TIME_NIGHT3_AM_12_00)),
+             CHECK(RC_SWORDSMAN_SCHOOL_WONDER_ITEM, (CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_SWORD ||
+-                                                    HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_BOW)) &&
++                                                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_BOW) &&
+                                                     BEFORE(TIME_NIGHT3_PM_11_00)),
+         },
+         .exits = { //     TO                                         FROM
+@@ -432,8 +433,8 @@
+     };
+     Regions[RR_TOWN_DEKU_PLAYGROUND] = RandoRegion{ .sceneId = SCENE_DEKUTES,
+         .checks = {
+-            CHECK(RC_DEKU_PLAYGROUND_ALL_DAYS, CAN_BE_DEKU && RANDO_EVENTS[RE_DEKU_PLAYGROUND_1] && RANDO_EVENTS[RE_DEKU_PLAYGROUND_2] && RANDO_EVENTS[RE_DEKU_PLAYGROUND_3]),
+-            CHECK(RC_DEKU_PLAYGROUND_ANY_DAY, CAN_BE_DEKU),
++            CHECK(RC_DEKU_PLAYGROUND_ALL_DAYS, CAN_PAY(10) && CAN_BE_DEKU && RANDO_EVENTS[RE_DEKU_PLAYGROUND_1] && RANDO_EVENTS[RE_DEKU_PLAYGROUND_2] && RANDO_EVENTS[RE_DEKU_PLAYGROUND_3]),
++            CHECK(RC_DEKU_PLAYGROUND_ANY_DAY, CAN_PAY(10) && CAN_BE_DEKU),
+             CHECK(RC_DEKU_PLAYGROUND_DAY_1_RUPEE_01, RANDO_EVENTS[RE_DEKU_PLAYGROUND_1]),
+             CHECK(RC_DEKU_PLAYGROUND_DAY_1_RUPEE_02, RANDO_EVENTS[RE_DEKU_PLAYGROUND_1]),
+             CHECK(RC_DEKU_PLAYGROUND_DAY_1_RUPEE_03, RANDO_EVENTS[RE_DEKU_PLAYGROUND_1]),
+@@ -464,8 +465,8 @@
+     };
+     Regions[RR_TOWN_SHOOTING_GALLERY] = RandoRegion{ .sceneId = SCENE_SYATEKI_MIZU,
+         .checks = {
+-            CHECK(RC_CLOCK_TOWN_EAST_SHOOTING_GALLERY_HIGH_SCORE, HAS_ITEM(ITEM_BOW)),
+-            CHECK(RC_CLOCK_TOWN_EAST_SHOOTING_GALLERY_PERFECT_SCORE, HAS_ITEM(ITEM_BOW)),
++            CHECK(RC_CLOCK_TOWN_EAST_SHOOTING_GALLERY_HIGH_SCORE, HAS_ITEM(ITEM_BOW) && CAN_PAY(20)),
++            CHECK(RC_CLOCK_TOWN_EAST_SHOOTING_GALLERY_PERFECT_SCORE, HAS_ITEM(ITEM_BOW) && CAN_PAY(20)),
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(EAST_CLOCK_TOWN, 8),              ENTRANCE(TOWN_SHOOTING_GALLERY, 0), true),
+@@ -508,10 +509,10 @@
+     };
+     Regions[RR_TREASURE_SHOP] = RandoRegion{ .sceneId = SCENE_TAKARAYA,
+         .checks = {
+-            CHECK(RC_CLOCK_TOWN_EAST_TREASURE_CHEST_GAME_DEKU,  CAN_BE_DEKU && BEFORE(TIME_NIGHT3_PM_06_00)),
+-            CHECK(RC_CLOCK_TOWN_EAST_TREASURE_CHEST_GAME_GORON, CAN_BE_GORON && BEFORE(TIME_NIGHT3_PM_06_00)),
+-            CHECK(RC_CLOCK_TOWN_EAST_TREASURE_CHEST_GAME_HUMAN, BEFORE(TIME_NIGHT3_PM_06_00)), // can be human
+-            CHECK(RC_CLOCK_TOWN_EAST_TREASURE_CHEST_GAME_ZORA,  CAN_BE_ZORA && BEFORE(TIME_NIGHT3_PM_06_00)),
++            CHECK(RC_CLOCK_TOWN_EAST_TREASURE_CHEST_GAME_DEKU,  CAN_PAY(1) && CAN_BE_DEKU && BEFORE(TIME_NIGHT3_PM_06_00)),
++            CHECK(RC_CLOCK_TOWN_EAST_TREASURE_CHEST_GAME_GORON, CAN_PAY(1) && CAN_BE_GORON && BEFORE(TIME_NIGHT3_PM_06_00)),
++            CHECK(RC_CLOCK_TOWN_EAST_TREASURE_CHEST_GAME_HUMAN, CAN_PAY(1) && BEFORE(TIME_NIGHT3_PM_06_00)), // can be human
++            CHECK(RC_CLOCK_TOWN_EAST_TREASURE_CHEST_GAME_ZORA,  CAN_PAY(1) && CAN_BE_ZORA && BEFORE(TIME_NIGHT3_PM_06_00)),
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(EAST_CLOCK_TOWN, 4),              ENTRANCE(TREASURE_CHEST_SHOP, 0), true),
+diff --git a/mm/2s2h/Rando/Logic/Regions/East.cpp b/mm/2s2h/Rando/Logic/Regions/East.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/East.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/East.cpp
+@@ -100,7 +100,7 @@
+     };
+     Regions[RR_GHOST_HUT] = RandoRegion{ .sceneId = SCENE_TOUGITES,
+         .checks = {
+-            CHECK(RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART, CHECK_MAX_HP(4) && CanKillEnemy(ACTOR_EN_PO_SISTERS)),
++            CHECK(RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART, CAN_PAY(1) && CHECK_MAX_HP(4) && CanKillEnemy(ACTOR_EN_PO_SISTERS)),
+             CHECK(RC_ENEMY_DROP_POE_SISTER, CHECK_MAX_HP(4) && CanKillEnemy(ACTOR_EN_PO_SISTERS)),
+         },
+         .exits = { //     TO                                         FROM
+@@ -408,7 +408,7 @@
+             EXIT(ENTRANCE(IKANA_CANYON, 12),                ENTRANCE(SECRET_SHRINE, 0), true),
+         },
+         .connections = {
+-            CONNECTION(RR_SECRET_SHRINE, HAS_MAGIC && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_ITEM(ITEM_BOW))
++            CONNECTION(RR_SECRET_SHRINE, HAS_MAGIC && HAS_ITEM(ITEM_ARROW_LIGHT) && CAN_USE_BOW)
+         }
+     };
+     Regions[RR_SECRET_SHRINE] = RandoRegion{ .sceneId = SCENE_RANDOM,
+@@ -478,7 +478,7 @@
+     };
+     Regions[RR_STONE_TOWER_INVERTED_LOWER] = RandoRegion{ .sceneId = SCENE_F41,
+         .exits = { //     TO                                         FROM
+-            EXIT(ENTRANCE(STONE_TOWER, 1),                  ENTRANCE(STONE_TOWER_INVERTED, 0), HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
++            EXIT(ENTRANCE(STONE_TOWER, 1),                  ENTRANCE(STONE_TOWER_INVERTED, 0), CAN_USE_BOW && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
+         },
+         .connections = {
+             CONNECTION(RR_STONE_TOWER_INVERTED_UPPER, CAN_GROW_BEAN_PLANT),
+@@ -542,7 +542,7 @@
+             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
+         },
+         .exits = { //     TO                                         FROM
+-            EXIT(ENTRANCE(STONE_TOWER_INVERTED, 0),         ENTRANCE(STONE_TOWER, 1), CAN_PLAY_SONG(ELEGY) && HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
++            EXIT(ENTRANCE(STONE_TOWER_INVERTED, 0),         ENTRANCE(STONE_TOWER, 1), CAN_PLAY_SONG(ELEGY) && CAN_USE_BOW && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
+             EXIT(ENTRANCE(STONE_TOWER_TEMPLE, 0),           ENTRANCE(STONE_TOWER, 2), CAN_BE_ZORA && CAN_BE_GORON && CAN_PLAY_SONG(ELEGY))
+         },
+         .connections = {
+diff --git a/mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp b/mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp
+@@ -336,7 +336,7 @@
+     };
+     Regions[RR_GREAT_BAY_TEMPLE_WATER_WHEEL_ROOM] = RandoRegion{ .sceneId = SCENE_SEA,
+         .checks = {
+-            CHECK(RC_GREAT_BAY_TEMPLE_SF_WATER_WHEEL_PLATFORM,           (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_MASK_GREAT_FAIRY))),
++            CHECK(RC_GREAT_BAY_TEMPLE_SF_WATER_WHEEL_PLATFORM,           (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (CAN_USE_BOW && HAS_ITEM(ITEM_MASK_GREAT_FAIRY))),
+             CHECK(RC_GREAT_BAY_TEMPLE_SF_WATER_WHEEL_SKULLTULA,          true),
+             CHECK(RC_GREAT_BAY_TEMPLE_WATER_WHEEL_FREESTANDING_RUPEE_01, true),
+             CHECK(RC_GREAT_BAY_TEMPLE_WATER_WHEEL_FREESTANDING_RUPEE_02, true),
+diff --git a/mm/2s2h/Rando/Logic/Regions/IkanaCastle.cpp b/mm/2s2h/Rando/Logic/Regions/IkanaCastle.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/IkanaCastle.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/IkanaCastle.cpp
+@@ -148,15 +148,15 @@
+     };
+     Regions[RR_IKANA_CASTLE_SKULLTULA_ROOM] = RandoRegion{ .name = "Skulltula Room", .sceneId = SCENE_CASTLE,
+         .checks = {
+-            CHECK(RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_01, CAN_BE_DEKU || HAS_ITEM(ITEM_BOW)),
+-            CHECK(RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_02, CAN_BE_DEKU || HAS_ITEM(ITEM_BOW)),
+-            CHECK(RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_03, CAN_BE_DEKU || HAS_ITEM(ITEM_BOW)),
+-            CHECK(RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_04, CAN_BE_DEKU || HAS_ITEM(ITEM_BOW)),
++            CHECK(RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_01, CAN_BE_DEKU || CAN_USE_BOW),
++            CHECK(RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_02, CAN_BE_DEKU || CAN_USE_BOW),
++            CHECK(RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_03, CAN_BE_DEKU || CAN_USE_BOW),
++            CHECK(RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_04, CAN_BE_DEKU || CAN_USE_BOW),
+             CHECK(RC_ENEMY_DROP_SKULLTULA, CanKillEnemy(ACTOR_EN_ST)),
+         },
+         .connections = {
+             CONNECTION(RR_IKANA_CASTLE_CEILING_ROOM, CAN_USE_SWORD || CAN_USE_PROJECTILE),
+-            CONNECTION(RR_IKANA_CASTLE_BUBBLE_ROOM, CAN_NAVIGATE_HIDDEN && CAN_BE_DEKU && (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_BOMB)))
++            CONNECTION(RR_IKANA_CASTLE_BUBBLE_ROOM, CAN_NAVIGATE_HIDDEN && CAN_BE_DEKU && (CAN_USE_BOW || CAN_USE_BOMBS))
+         },
+     };
+     Regions[RR_IKANA_CASTLE_THRONE_ROOM] = RandoRegion{ .name = "Throne Room", .sceneId = SCENE_IKNINSIDE,
+diff --git a/mm/2s2h/Rando/Logic/Regions/MilkRoad.cpp b/mm/2s2h/Rando/Logic/Regions/MilkRoad.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/MilkRoad.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/MilkRoad.cpp
+@@ -23,12 +23,12 @@
+             CHECK(RC_CUCCO_SHACK_LARGE_CRATE_02, true),
+             CHECK(RC_CUCCO_SHACK_LARGE_CRATE_03, true),
+             CHECK(RC_CUCCO_SHACK_TREE, true),
+-            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_01, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_02, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_03, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_04, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_05, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_06, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
++            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_01, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_02, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_03, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_04, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_05, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_CUCCO_SHACK_WONDER_ITEM_06, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_STICKS || CAN_USE_NUTS),
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(ROMANI_RANCH, 4),                 ENTRANCE(CUCCO_SHACK, 0), true),
+@@ -43,7 +43,7 @@
+         .checks = {
+             // Zora's ordinary climb remains available; the optional human fence jump needs no item.
+             CHECK(RC_DOGGY_RACETRACK_CHEST, CAN_REACH_DOGGY_CHEST),
+-            CHECK(RC_DOGGY_RACETRACK_PIECE_OF_HEART,    CAN_WIN_DOGGY_RACE),
++            CHECK(RC_DOGGY_RACETRACK_PIECE_OF_HEART,    CAN_PAY(10) && CAN_WIN_DOGGY_RACE),
+             CHECK(RC_DOGGY_RACETRACK_POT_01, true),
+             CHECK(RC_DOGGY_RACETRACK_POT_02, true),
+             CHECK(RC_DOGGY_RACETRACK_POT_03, true),
+diff --git a/mm/2s2h/Rando/Logic/Regions/Moon.cpp b/mm/2s2h/Rando/Logic/Regions/Moon.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/Moon.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/Moon.cpp
+@@ -52,7 +52,7 @@
+             CHECK(RC_MOON_TRIAL_LINK_POT_06, true),
+             CHECK(RC_MOON_TRIAL_LINK_POT_07, true),
+             CHECK(RC_MOON_TRIAL_LINK_POT_08, true),
+-            CHECK(RC_MOON_TRIAL_LINK_PIECE_OF_HEART, HAS_ITEM(ITEM_HOOKSHOT) && HAS_ITEM(ITEM_BOMBCHU) && HAS_ITEM(ITEM_BOW)),
++            CHECK(RC_MOON_TRIAL_LINK_PIECE_OF_HEART, HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_BOMBCHUS && CAN_USE_BOW),
+             CHECK(RC_ENEMY_DROP_IRON_KNUCKLE, CanKillEnemy(ACTOR_EN_IK)),
+             CHECK(RC_ENEMY_DROP_GARO_MASTER, CanKillEnemy(ACTOR_EN_JSO2)),
+             CHECK(RC_ENEMY_DROP_WIZROBE, CanKillEnemy(ACTOR_EN_WIZ)),
+@@ -60,7 +60,7 @@
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(THE_MOON, 0),                     ENTRANCE(MOON_LINK_TRIAL, 0), true),
+-            EXIT(ENTRANCE(THE_MOON, 0),                              ONE_WAY_EXIT, HAS_ITEM(ITEM_HOOKSHOT) && HAS_ITEM(ITEM_BOMBCHU) && HAS_ITEM(ITEM_BOW)), // Exit from Mask NPC
++            EXIT(ENTRANCE(THE_MOON, 0),                              ONE_WAY_EXIT, HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_BOMBCHUS && CAN_USE_BOW), // Exit from Mask NPC
+         },
+     };
+     Regions[RR_MOON_MAJORAS_LAIR] = RandoRegion{ .sceneId = SCENE_LAST_BS,
+diff --git a/mm/2s2h/Rando/Logic/Regions/North.cpp b/mm/2s2h/Rando/Logic/Regions/North.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/North.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/North.cpp
+@@ -40,7 +40,7 @@
+         },
+         .events = {
+             // Can either play the song for the Goron child to light torches then use sticks, or shoot the chandelier with fire arrows to skip needing the song(or I guess the small torches themselves, same result)
+-            EVENT(RE_SPAWN_SIRLOIN, ((CAN_PLAY_SONG(LULLABY) && HAS_ITEM(ITEM_DEKU_STICK) || CAN_USE_MAGIC_ARROW(FIRE))) && CAN_GORON_SPIKE_ROLL),
++            EVENT(RE_SPAWN_SIRLOIN, ((CAN_PLAY_SONG(LULLABY) && CAN_USE_STICKS || CAN_USE_MAGIC_ARROW(FIRE))) && CAN_GORON_SPIKE_ROLL),
+         },
+     };
+     Regions[RR_GORON_RACETRACK] = RandoRegion{ .sceneId = SCENE_GORONRACE,
+@@ -274,15 +274,15 @@
+             CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_28, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+             CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_29, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+             CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_30, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_01, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_02, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_03, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_04, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_05, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_06, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_07, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_08, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_09, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
++            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_01, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && CAN_USE_STICKS),
++            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_02, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && CAN_USE_STICKS),
++            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_03, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && CAN_USE_STICKS),
++            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_04, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && CAN_USE_STICKS),
++            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_05, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && CAN_USE_STICKS),
++            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_06, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && CAN_USE_STICKS),
++            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_07, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && CAN_USE_STICKS),
++            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_08, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && CAN_USE_STICKS),
++            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_09, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && CAN_USE_STICKS),
+             CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_01, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+             CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_02, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+             CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_03, (FIRST_DAY() || SECOND_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL)), // Goron Elder inside on Final Day
+diff --git a/mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp b/mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp
+@@ -18,7 +18,7 @@
+             EXIT(ENTRANCE(PIRATES_FORTRESS, 2),             ENTRANCE(PIRATES_FORTRESS_INTERIOR, 1), true),
+         },
+         .events = {
+-            EVENT(RE_PIRATE_FORTRESS_BEEHIVE_HIT, (HAS_ITEM(ITEM_BOW) || (CAN_BE_DEKU && HAS_MAGIC))),
++            EVENT(RE_PIRATE_FORTRESS_BEEHIVE_HIT, (CAN_USE_BOW || (CAN_BE_DEKU && HAS_MAGIC))),
+         },
+     };
+     Regions[RR_PIRATES_FORTRESS_CAPTAIN_ROOM] = RandoRegion{ .name = "Captain Room", .sceneId = SCENE_PIRATE,
+@@ -284,7 +284,7 @@
+             CONNECTION(RR_PIRATES_FORTRESS_PLAZA_RIGHT, HAS_ITEM(ITEM_HOOKSHOT)),
+             // Outside of using Stones Mask you have to deal with this guard in some way.
+             CONNECTION(RR_PIRATES_FORTRESS_PLAZA_TOWER, (
+-                (HAS_ITEM(ITEM_DEKU_NUT) || HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_STONE)) ||
++                (CAN_USE_NUTS || CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_STONE)) ||
+                 (CAN_BE_DEKU && HAS_MAGIC) || CAN_BE_ZORA
+             )),
+         },
+@@ -318,7 +318,7 @@
+             EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 3),             ONE_WAY_EXIT, CAN_USE_ABILITY(SWIM))
+         },
+         .connections = {
+-            CONNECTION(RR_PIRATES_FORTRESS_TELESCOPE_ROOM, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA) && CAN_USE_ABILITY(SWIM))
++            CONNECTION(RR_PIRATES_FORTRESS_TELESCOPE_ROOM, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA) && CAN_USE_ABILITY(SWIM))
+         }
+     };
+     Regions[RR_PIRATES_FORTRESS_SEWERS_PREGATE] = RandoRegion{ .name = "Sewers Pregate", .sceneId = SCENE_PIRATE,
+@@ -357,7 +357,7 @@
+             EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 3),             ONE_WAY_EXIT, true)
+         },
+         .connections = {
+-            CONNECTION(RR_PIRATES_FORTRESS_SEWERS_POSTGATE, HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)
++            CONNECTION(RR_PIRATES_FORTRESS_SEWERS_POSTGATE, CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)
+         }
+     };
+     Regions[RR_PIRATES_FORTRESS_TELESCOPE_ROOM] = RandoRegion{ .name = "Telescope Room", .sceneId = SCENE_PIRATE,
+diff --git a/mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp b/mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp
+@@ -130,7 +130,7 @@
+             CONNECTION(RR_SNOWHEAD_TEMPLE_BLOCK_ROOM,           true),
+             CONNECTION(RR_SNOWHEAD_TEMPLE_BRIDGE_ROOM_AFTER,    true),
+             CONNECTION(RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_BOTTOM,  true),
+-            CONNECTION(RR_SNOWHEAD_TEMPLE_ENTRANCE_AFTER_BLOCK, HAS_ITEM(ITEM_BOW)),
++            CONNECTION(RR_SNOWHEAD_TEMPLE_ENTRANCE_AFTER_BLOCK, CAN_USE_BOW),
+             CONNECTION(RR_SNOWHEAD_TEMPLE_PILLARS_ROOM_UPPER,         CAN_USE_MAGIC_ARROW(FIRE)),
+             CONNECTION(RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SCARECROW_FLOOR, CAN_HOOK_SCARECROW)
+         },
+@@ -228,7 +228,7 @@
+             CHECK(RC_SNOWHEAD_TEMPLE_DUAL_SWITCHES_ROOM_LARGE_CRATE_02, true),
+             CHECK(RC_SNOWHEAD_TEMPLE_DUAL_SWITCHES_POT_01, true),
+             CHECK(RC_SNOWHEAD_TEMPLE_DUAL_SWITCHES_POT_02, true),
+-            CHECK(RC_SNOWHEAD_TEMPLE_SF_DUAL_SWITCHES, ((CAN_NAVIGATE_HIDDEN && HAS_ITEM(ITEM_MASK_GREAT_FAIRY)) && ((HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT)) || CAN_BE_DEKU))),
++            CHECK(RC_SNOWHEAD_TEMPLE_SF_DUAL_SWITCHES, ((CAN_NAVIGATE_HIDDEN && HAS_ITEM(ITEM_MASK_GREAT_FAIRY)) && ((CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT)) || CAN_BE_DEKU))),
+             CHECK(RC_ENEMY_DROP_BOE, CanKillEnemy(ACTOR_EN_MKK)),
+         },
+         .connections = {
+@@ -305,7 +305,7 @@
+     };
+     Regions[RR_SNOWHEAD_TEMPLE_MAP_ROOM_UPPER] = RandoRegion{ .sceneId = SCENE_HAKUGIN,
+         .checks = {
+-            CHECK(RC_SNOWHEAD_TEMPLE_MAP_ALCOVE_CHEST, (CAN_NAVIGATE_HIDDEN && HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_ARROW_FIRE))),
++            CHECK(RC_SNOWHEAD_TEMPLE_MAP_ALCOVE_CHEST, (CAN_NAVIGATE_HIDDEN && CAN_USE_BOW && HAS_ITEM(ITEM_ARROW_FIRE))),
+             CHECK(RC_ENEMY_DROP_FREEZARD, CanKillEnemy(ACTOR_EN_FZ)),
+         },
+         .connections = {
+diff --git a/mm/2s2h/Rando/Logic/Regions/South.cpp b/mm/2s2h/Rando/Logic/Regions/South.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/South.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/South.cpp
+@@ -70,10 +70,10 @@
+             CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_GRASS_10, true),
+             CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_GRASS_11, true),
+             CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_GRASS_12, true),
+-            CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_01, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_02, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_03, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_04, HAS_ITEM(ITEM_DEKU_STICK)),
++            CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_01, CAN_USE_STICKS),
++            CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_02, CAN_USE_STICKS),
++            CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_03, CAN_USE_STICKS),
++            CHECK(RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_04, CAN_USE_STICKS),
+             // TODO: Bean salesman check
+         },
+         .exits = { //     TO                                         FROM
+@@ -263,7 +263,7 @@
+     };
+     Regions[RR_ROAD_TO_SOUTHERN_SWAMP] = RandoRegion{ .sceneId = SCENE_24KEMONOMITI,
+         .checks = {
+-            CHECK(RC_ROAD_TO_SOUTHERN_SWAMP_PIECE_OF_HEART, CanKillEnemy(ACTOR_EN_BAT) && (CAN_USE_PROJECTILE || HAS_ITEM(ITEM_BOMBCHU))),
++            CHECK(RC_ROAD_TO_SOUTHERN_SWAMP_PIECE_OF_HEART, CanKillEnemy(ACTOR_EN_BAT) && (CAN_USE_PROJECTILE || CAN_USE_BOMBCHUS)),
+             CHECK(RC_ROAD_TO_SOUTHERN_SWAMP_TINGLE_MAP_01, CAN_USE_PROJECTILE && CAN_AFFORD(RC_ROAD_TO_SOUTHERN_SWAMP_TINGLE_MAP_01)),
+             CHECK(RC_ROAD_TO_SOUTHERN_SWAMP_TINGLE_MAP_02, CAN_USE_PROJECTILE && CAN_AFFORD(RC_ROAD_TO_SOUTHERN_SWAMP_TINGLE_MAP_02)),
+             CHECK(RC_ROAD_TO_SOUTHERN_SWAMP_GRASS_01, true),
+@@ -380,7 +380,7 @@
+         .events = {
+             EVENT(RE_ACCESS_SPRING_WATER, true),
+             EVENT(RE_ACCESS_BEANS_REFILL, CAN_BE_DEKU && HAS_ITEM(ITEM_MAGIC_BEANS)),
+-            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC))),
++            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC))),
+             EVENT(RE_ACCESS_PICTOGRAPH_SWAMP_GENERIC, HAS_ITEM(ITEM_PICTOGRAPH_BOX)),
+         },
+         .oneWayEntrances = {
+@@ -403,7 +403,7 @@
+             // Any form but Deku can bottle water here. Human can do it from a lilypad before it sinks.
+             // If human is ever shuffled, revisit this.
+             EVENT(RE_ACCESS_SPRING_WATER, true),
+-            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC))),
++            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC))),
+             EVENT(RE_ACCESS_PICTOGRAPH_SWAMP_GENERIC, HAS_ITEM(ITEM_PICTOGRAPH_BOX)),
+         },
+     };
+@@ -507,8 +507,8 @@
+     };
+     Regions[RR_SWAMP_SHOOTING_GALLERY] = RandoRegion{ .sceneId = SCENE_SYATEKI_MORI,
+         .checks = {
+-            CHECK(RC_SWAMP_SHOOTING_GALLERY_HIGH_SCORE, HAS_ITEM(ITEM_BOW)),
+-            CHECK(RC_SWAMP_SHOOTING_GALLERY_PERFECT_SCORE, HAS_ITEM(ITEM_BOW)),
++            CHECK(RC_SWAMP_SHOOTING_GALLERY_HIGH_SCORE, HAS_ITEM(ITEM_BOW) && CAN_PAY(20)),
++            CHECK(RC_SWAMP_SHOOTING_GALLERY_PERFECT_SCORE, HAS_ITEM(ITEM_BOW) && CAN_PAY(20)),
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(ROAD_TO_SOUTHERN_SWAMP, 2),       ENTRANCE(SWAMP_SHOOTING_GALLERY, 0), true),
+diff --git a/mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp b/mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp
+@@ -30,9 +30,9 @@
+             CHECK(RC_OCEAN_SPIDER_HOUSE_WONDER_ITEM_04, CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE),
+             CHECK(RC_OCEAN_SPIDER_HOUSE_WONDER_ITEM_05, CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE),
+             CHECK(RC_OCEAN_SPIDER_HOUSE_WONDER_ITEM_06, CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE),
+-            CHECK(RC_OCEAN_SPIDER_HOUSE_WONDER_ITEM_07, CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_OCEAN_SPIDER_HOUSE_WONDER_ITEM_08, CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_OCEAN_SPIDER_HOUSE_WONDER_ITEM_09, CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_NUT)),
++            CHECK(RC_OCEAN_SPIDER_HOUSE_WONDER_ITEM_07, CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_NUTS),
++            CHECK(RC_OCEAN_SPIDER_HOUSE_WONDER_ITEM_08, CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_NUTS),
++            CHECK(RC_OCEAN_SPIDER_HOUSE_WONDER_ITEM_09, CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_NUTS),
+         },
+         .connections = {
+             CONNECTION(RR_OCEAN_SPIDER_HOUSE_ENTRANCE_LOWER, HAS_ITEM(ITEM_HOOKSHOT)),
+@@ -234,7 +234,7 @@
+             CHECK(RC_SWAMP_SPIDER_HOUSE_GOLD_ROOM_BEEHIVE_02, CAN_USE_PROJECTILE),
+             CHECK(RC_SWAMP_SPIDER_HOUSE_GOLD_ROOM_BEEHIVE_03, CAN_USE_PROJECTILE),
+             CHECK(RC_SWAMP_SKULLTULA_GOLD_ROOM_PILLAR, CanKillEnemy(ACTOR_EN_SW)),
+-            CHECK(RC_SWAMP_SKULLTULA_GOLD_ROOM_WALL, CanKillEnemy(ACTOR_EN_SW) && ((RANDO_EVENTS[RE_SWAMP_SPIDER_HOUSE_GOLD_ROOM_LADDER] && CAN_USE_PROJECTILE || HAS_ITEM(ITEM_BOMBCHU)) || (HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA))),
++            CHECK(RC_SWAMP_SKULLTULA_GOLD_ROOM_WALL, CanKillEnemy(ACTOR_EN_SW) && ((RANDO_EVENTS[RE_SWAMP_SPIDER_HOUSE_GOLD_ROOM_LADDER] && CAN_USE_PROJECTILE || CAN_USE_BOMBCHUS) || (HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA))),
+             CHECK(RC_SWAMP_SPIDER_HOUSE_GOLD_ROOM_LOWER_POT_01, true),
+             CHECK(RC_SWAMP_SPIDER_HOUSE_GOLD_ROOM_LOWER_POT_02, true),
+         },
+diff --git a/mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp b/mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp
+@@ -13,7 +13,7 @@
+             CHECK(RC_STONE_TOWER_TEMPLE_ENTRANCE_GRASS_01, true),
+             CHECK(RC_STONE_TOWER_TEMPLE_ENTRANCE_GRASS_02, true),
+             CHECK(RC_STONE_TOWER_TEMPLE_ENTRANCE_GRASS_03, true),
+-            CHECK(RC_STONE_TOWER_TEMPLE_ENTRANCE_CHEST, HAS_ITEM(ITEM_BOW)),
++            CHECK(RC_STONE_TOWER_TEMPLE_ENTRANCE_CHEST, CAN_USE_BOW),
+             CHECK(RC_STONE_TOWER_TEMPLE_ENTRANCE_SMALL_CRATE_01, true),
+             CHECK(RC_STONE_TOWER_TEMPLE_ENTRANCE_SMALL_CRATE_02, true),
+             CHECK(RC_STONE_TOWER_TEMPLE_ENTRANCE_SWITCH_CHEST, RANDO_EVENTS[RE_STONE_TOWER_TEMPLE_ENTRANCE_SWITCH_CHEST]),
+@@ -321,7 +321,7 @@
+         },
+         .connections = {
+             CONNECTION(RR_STONE_TOWER_TEMPLE_INVERTED_POE_ROOM, true),
+-            CONNECTION(RR_STONE_TOWER_TEMPLE_INVERTED_PATH_TO_GOMESS, CAN_BE_DEKU && (HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_BOW) || CAN_BE_ZORA)), // Deku bubbles can work with TIGHT aim, prob better to not consider that in logic
++            CONNECTION(RR_STONE_TOWER_TEMPLE_INVERTED_PATH_TO_GOMESS, CAN_BE_DEKU && (HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_BOW || CAN_BE_ZORA)), // Deku bubbles can work with TIGHT aim, prob better to not consider that in logic
+             CONNECTION(RR_STONE_TOWER_TEMPLE_INVERTED_SIDE_OF_ENTRANCE, true)
+         }
+     };
+diff --git a/mm/2s2h/Rando/Logic/Regions/TerminaField.cpp b/mm/2s2h/Rando/Logic/Regions/TerminaField.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/TerminaField.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/TerminaField.cpp
+@@ -20,7 +20,7 @@
+             EXIT(ENTRANCE(PATH_TO_MOUNTAIN_VILLAGE, 0),     ENTRANCE(TERMINA_FIELD, 3), true),
+         },
+         .connections = {
+-            CONNECTION(RR_TERMINA_FIELD, HAS_ITEM(ITEM_BOW)),
++            CONNECTION(RR_TERMINA_FIELD, CAN_USE_BOW),
+         },
+     };
+     Regions[RR_TERMINA_FIELD_BIO_BABA_GROTTO] = RandoRegion{ .name = "Termina Field Bio Baba", .sceneId = SCENE_KAKUSIANA,
+@@ -112,9 +112,9 @@
+             CHECK(RC_TERMINA_FIELD_COW_GROTTO_GRASS_70, true),
+             CHECK(RC_TERMINA_FIELD_COW_GROTTO_GRASS_71, true),
+             CHECK(RC_TERMINA_FIELD_COW_GROTTO_GRASS_72, true),
+-            CHECK(RC_TERMINA_FIELD_COW_GROTTO_BUTTERFLY_01, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_TERMINA_FIELD_COW_GROTTO_BUTTERFLY_02, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_TERMINA_FIELD_COW_GROTTO_BUTTERFLY_03, HAS_ITEM(ITEM_DEKU_STICK)),
++            CHECK(RC_TERMINA_FIELD_COW_GROTTO_BUTTERFLY_01, CAN_USE_STICKS),
++            CHECK(RC_TERMINA_FIELD_COW_GROTTO_BUTTERFLY_02, CAN_USE_STICKS),
++            CHECK(RC_TERMINA_FIELD_COW_GROTTO_BUTTERFLY_03, CAN_USE_STICKS),
+             CHECK(RC_ENEMY_DROP_GIANT_BEE, CAN_USE_PROJECTILE && CanKillEnemy(ACTOR_EN_BEE)), // In a beehive
+             CHECK(RC_TERMINA_FIELD_COW_GROTTO_BEEHIVE, CAN_USE_PROJECTILE),
+         },
+@@ -159,8 +159,8 @@
+             CHECK(RC_TERMINA_FIELD_GOSSIP_STONE_GROTTO_3_GRASS_03, true),
+             CHECK(RC_TERMINA_FIELD_GOSSIP_STONE_GROTTO_3_GRASS_04, true),
+             CHECK(RC_TERMINA_FIELD_GOSSIP_STONE_GROTTO_3_GRASS_05, true),
+-            CHECK(RC_TERMINA_FIELD_GOSSIP_STONE_GROTTO_3_BUTTERFLY_01, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_TERMINA_FIELD_GOSSIP_STONE_GROTTO_3_BUTTERFLY_02, HAS_ITEM(ITEM_DEKU_STICK)),
++            CHECK(RC_TERMINA_FIELD_GOSSIP_STONE_GROTTO_3_BUTTERFLY_01, CAN_USE_STICKS),
++            CHECK(RC_TERMINA_FIELD_GOSSIP_STONE_GROTTO_3_BUTTERFLY_02, CAN_USE_STICKS),
+             CHECK(RC_ENEMY_DROP_GIANT_BEE, CAN_USE_PROJECTILE && CanKillEnemy(ACTOR_EN_BEE)), // In a beehive
+             CHECK(RC_TERMINA_FIELD_GOSSIP_STONE_GROTTO_3_BEEHIVE, CAN_USE_PROJECTILE),
+         },
+@@ -522,12 +522,12 @@
+             CHECK(RC_TERMINA_FIELD_WONDER_ITEM_09, CAN_GORON_SPIKE_ROLL),
+             CHECK(RC_TERMINA_FIELD_WONDER_ITEM_10, CAN_GORON_SPIKE_ROLL),
+             CHECK(RC_TERMINA_FIELD_WONDER_ITEM_11, CAN_GORON_SPIKE_ROLL),
+-            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_12, CAN_USE_PROJECTILE || HAS_ITEM(ITEM_BOMBCHU)),
+-            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_13, CAN_USE_PROJECTILE || HAS_ITEM(ITEM_BOMBCHU)),
+-            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_14, CAN_USE_PROJECTILE || HAS_ITEM(ITEM_BOMBCHU)),
+-            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_15, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_16, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
+-            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_17, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_DEKU_STICK) || HAS_ITEM(ITEM_DEKU_NUT)),
++            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_12, CAN_USE_PROJECTILE || CAN_USE_BOMBCHUS),
++            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_13, CAN_USE_PROJECTILE || CAN_USE_BOMBCHUS),
++            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_14, CAN_USE_PROJECTILE || CAN_USE_BOMBCHUS),
++            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_15, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_16, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_STICKS || CAN_USE_NUTS),
++            CHECK(RC_TERMINA_FIELD_WONDER_ITEM_17, CAN_USE_SWORD || CAN_BE_GORON || CAN_USE_PROJECTILE || CAN_USE_EXPLOSIVE || CAN_USE_STICKS || CAN_USE_NUTS),
+             CHECK(RC_TERMINA_FIELD_WONDER_ITEM_18, true),
+             CHECK(RC_TERMINA_FIELD_WONDER_ITEM_19, true),
+             CHECK(RC_TERMINA_FIELD_WONDER_ITEM_20, true),
+@@ -556,8 +556,8 @@
+             CHECK(RC_ENEMY_DROP_EENO, CanKillEnemy(ACTOR_EN_SNOWMAN) && IS_NIGHT()), // Night only
+             CHECK(RC_ENEMY_DROP_BAD_BAT, CanKillEnemy(ACTOR_EN_BAT)),
+             CHECK(RC_ENEMY_DROP_TAKKURI, CanKillEnemy(ACTOR_EN_THIEFBIRD)),
+-            CHECK(RC_TERMINA_FIELD_BUTTERFLY_01, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_TERMINA_FIELD_BUTTERFLY_02, HAS_ITEM(ITEM_DEKU_STICK)),
++            CHECK(RC_TERMINA_FIELD_BUTTERFLY_01, CAN_USE_STICKS),
++            CHECK(RC_TERMINA_FIELD_BUTTERFLY_02, CAN_USE_STICKS),
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(GROTTOS, 0),                      ENTRANCE(TERMINA_FIELD, 0), CAN_USE_EXPLOSIVE || CAN_BE_GORON), // Gossip Stone #3
+@@ -580,7 +580,7 @@
+             EXIT(ENTRANCE(NORTH_CLOCK_TOWN, 0),             ENTRANCE(TERMINA_FIELD, 8), true),
+         },
+         .connections = {
+-            CONNECTION(RR_TERMINA_FIELD_BEFORE_PATH_TO_MOUNTAIN_VILLAGE, HAS_ITEM(ITEM_BOW)),
++            CONNECTION(RR_TERMINA_FIELD_BEFORE_PATH_TO_MOUNTAIN_VILLAGE, CAN_USE_BOW),
+             CONNECTION(RR_TERMINA_FIELD_BEFORE_GREAT_BAY_COAST, CAN_PLAY_SONG(EPONA)),
+             CONNECTION(RR_ASTRAL_OBSERVATORY_OUTSIDE, CAN_BE_DEKU),
+         },
+diff --git a/mm/2s2h/Rando/Logic/Regions/West.cpp b/mm/2s2h/Rando/Logic/Regions/West.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/West.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/West.cpp
+@@ -104,9 +104,9 @@
+             CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_GRASS_70, true),
+             CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_GRASS_71, true),
+             CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_GRASS_72, true),
+-            CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_BUTTERFLY_01, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_BUTTERFLY_02, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_BUTTERFLY_03, HAS_ITEM(ITEM_DEKU_STICK)),
++            CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_BUTTERFLY_01, CAN_USE_STICKS),
++            CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_BUTTERFLY_02, CAN_USE_STICKS),
++            CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_BUTTERFLY_03, CAN_USE_STICKS),
+             CHECK(RC_ENEMY_DROP_GIANT_BEE, CAN_USE_PROJECTILE && CanKillEnemy(ACTOR_EN_BEE)), // In a beehive
+             CHECK(RC_GREAT_BAY_COAST_COW_GROTTO_BEEHIVE, CAN_USE_PROJECTILE),
+         },
+@@ -147,8 +147,8 @@
+             CHECK(RC_GREAT_BAY_COAST_GRASS_03, true),
+             CHECK(RC_GREAT_BAY_COAST_GRASS_04, true),
+             CHECK(RC_GREAT_BAY_COAST_GRASS_05, true),
+-            CHECK(RC_GREAT_BAY_COAST_BUTTERFLY_01, HAS_ITEM(ITEM_DEKU_STICK)),
+-            CHECK(RC_GREAT_BAY_COAST_BUTTERFLY_02, HAS_ITEM(ITEM_DEKU_STICK)),
++            CHECK(RC_GREAT_BAY_COAST_BUTTERFLY_01, CAN_USE_STICKS),
++            CHECK(RC_GREAT_BAY_COAST_BUTTERFLY_02, CAN_USE_STICKS),
+             CHECK(RC_GREAT_BAY_COAST_TREE_02, true),
+             CHECK(RC_GREAT_BAY_COAST_TREE_03, true),
+             CHECK(RC_GREAT_BAY_COAST_TREE_04, true),
+@@ -179,8 +179,8 @@
+             CHECK(RC_GREAT_BAY_COAST_POT_10, true),
+             CHECK(RC_GREAT_BAY_COAST_POT_11, true),
+             CHECK(RC_GREAT_BAY_COAST_POT_12, true),
+-            CHECK(RC_GREAT_BAY_COAST_TINGLE_MAP_01, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT)) && CAN_AFFORD(RC_GREAT_BAY_COAST_TINGLE_MAP_01)),
+-            CHECK(RC_GREAT_BAY_COAST_TINGLE_MAP_02, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT)) && CAN_AFFORD(RC_GREAT_BAY_COAST_TINGLE_MAP_02)),
++            CHECK(RC_GREAT_BAY_COAST_TINGLE_MAP_01, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT)) && CAN_AFFORD(RC_GREAT_BAY_COAST_TINGLE_MAP_01)),
++            CHECK(RC_GREAT_BAY_COAST_TINGLE_MAP_02, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT)) && CAN_AFFORD(RC_GREAT_BAY_COAST_TINGLE_MAP_02)),
+         },
+         .exits = { //     TO                                         FROM
+             EXIT(ENTRANCE(MARINE_RESEARCH_LAB, 0),          ENTRANCE(GREAT_BAY_COAST, 7), true),
+@@ -197,7 +197,7 @@
+     };
+     Regions[RR_GREAT_BAY_COAST_MINIGAME_PLATFORMS] = RandoRegion{ .sceneId = SCENE_30GYOSON,
+         .checks = {
+-            CHECK(RC_GREAT_BAY_COAST_FISHERMAN_MINIGAME, RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE] && (HAS_ITEM(ITEM_HOOKSHOT)) && (BETWEEN(TIME_DAY1_AM_07_00, TIME_NIGHT1_AM_04_00) || BETWEEN(TIME_DAY2_AM_07_00, TIME_NIGHT2_AM_04_00) || BETWEEN(TIME_DAY3_AM_07_00, TIME_NIGHT3_AM_04_00))),
++            CHECK(RC_GREAT_BAY_COAST_FISHERMAN_MINIGAME, CAN_PAY(20) && RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE] && (HAS_ITEM(ITEM_HOOKSHOT)) && (BETWEEN(TIME_DAY1_AM_07_00, TIME_NIGHT1_AM_04_00) || BETWEEN(TIME_DAY2_AM_07_00, TIME_NIGHT2_AM_04_00) || BETWEEN(TIME_DAY3_AM_07_00, TIME_NIGHT3_AM_04_00))),
+             CHECK(RC_GREAT_BAY_COAST_TREE_01, true),
+         },
+         .connections = {
+diff --git a/mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp b/mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp
+--- a/mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp
++++ b/mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp
+@@ -143,8 +143,8 @@
+             CONNECTION(RR_WOODFALL_TEMPLE_DARK_ROOM, true),
+         },
+         .events = {
+-            EVENT(RE_WOODFALL_LIGHT_CORNER_TORCH, HAS_ITEM(ITEM_BOW) && RANDO_EVENTS[RE_WOODFALL_LIGHT_MIDDLE_TORCH]),
+-            EVENT(RE_WOODFALL_LIGHT_MIDDLE_TORCH, HAS_ITEM(ITEM_BOW)),
++            EVENT(RE_WOODFALL_LIGHT_CORNER_TORCH, CAN_USE_BOW && RANDO_EVENTS[RE_WOODFALL_LIGHT_MIDDLE_TORCH]),
++            EVENT(RE_WOODFALL_LIGHT_MIDDLE_TORCH, CAN_USE_BOW),
+         },
+     };
+     Regions[RR_WOODFALL_TEMPLE_MAIN_ROOM] = RandoRegion{ .name = "Main Room", .sceneId = SCENE_MITURIN,
+@@ -159,7 +159,7 @@
+             CHECK(RC_WOODFALL_TEMPLE_MAIN_ROOM_LOWER_POT_06, true),
+             CHECK(RC_WOODFALL_TEMPLE_SF_MAIN_POT, true),
+             CHECK(RC_WOODFALL_TEMPLE_SF_MAIN_DEKU_BABA, CanKillEnemy(ACTOR_EN_DEKUBABA)),
+-            CHECK(RC_WOODFALL_TEMPLE_SF_MAIN_BUBBLE, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT))),
++            CHECK(RC_WOODFALL_TEMPLE_SF_MAIN_BUBBLE, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT))),
+             CHECK(RC_ENEMY_DROP_DEKU_BABA, CanKillEnemy(ACTOR_EN_DEKUBABA)),
+         },
+         .connections = {
+@@ -212,20 +212,20 @@
+             CHECK(RC_WOODFALL_TEMPLE_SF_PRE_BOSS_BOTTOM_RIGHT, CAN_BE_DEKU),
+             CHECK(RC_WOODFALL_TEMPLE_SF_PRE_BOSS_LEFT, CAN_BE_DEKU),
+             CHECK(RC_WOODFALL_TEMPLE_SF_PRE_BOSS_TOP_RIGHT, CAN_BE_DEKU),
+-            CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_POT_01, CAN_BE_DEKU && HAS_ITEM(ITEM_BOW)),
+-            CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_POT_02, CAN_BE_DEKU && HAS_ITEM(ITEM_BOW)),
+-            CHECK(RC_WOODFALL_TEMPLE_SF_PRE_BOSS_PILLAR, CAN_BE_DEKU && HAS_ITEM(ITEM_BOW)),
++            CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_POT_01, CAN_BE_DEKU && CAN_USE_BOW),
++            CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_POT_02, CAN_BE_DEKU && CAN_USE_BOW),
++            CHECK(RC_WOODFALL_TEMPLE_SF_PRE_BOSS_PILLAR, CAN_BE_DEKU && CAN_USE_BOW),
+             CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_FREESTANDING_RUPEE_01, CAN_BE_DEKU || CAN_BE_ZORA),
+             CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_FREESTANDING_RUPEE_02, CAN_BE_DEKU || CAN_BE_ZORA),
+             CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_FREESTANDING_RUPEE_03, CAN_BE_DEKU || CAN_BE_ZORA),
+             CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_FREESTANDING_RUPEE_04, CAN_BE_DEKU || CAN_BE_ZORA),
+-            CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_FREESTANDING_RUPEE_05, CAN_BE_DEKU && HAS_ITEM(ITEM_BOW) || CAN_BE_ZORA || CAN_USE_EXPLOSIVE),
++            CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_FREESTANDING_RUPEE_05, CAN_BE_DEKU && CAN_USE_BOW || CAN_BE_ZORA || CAN_USE_EXPLOSIVE),
+             CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_FREESTANDING_RUPEE_06, CAN_BE_DEKU && (CAN_BE_ZORA || CAN_USE_EXPLOSIVE)),
+             CHECK(RC_ENEMY_DROP_SKULLTULA, CAN_BE_DEKU && CanKillEnemy(ACTOR_EN_ST)),
+             CHECK(RC_ENEMY_DROP_DRAGONFLY, CanKillEnemy(ACTOR_EN_GRASSHOPPER)),
+         },
+         .exits = { //     TO                                         FROM
+-            EXIT(ENTRANCE(ODOLWAS_LAIR, 0),                          ONE_WAY_EXIT, CAN_BE_DEKU && HAS_ITEM(ITEM_BOW) && CHECK_DUNGEON_ITEM(DUNGEON_BOSS_KEY, DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE)),
++            EXIT(ENTRANCE(ODOLWAS_LAIR, 0),                          ONE_WAY_EXIT, CAN_BE_DEKU && CAN_USE_BOW && CHECK_DUNGEON_ITEM(DUNGEON_BOSS_KEY, DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE)),
+         },
+         .connections = {
+             CONNECTION(RR_WOODFALL_TEMPLE_MAIN_ROOM_UPPER, CAN_BE_DEKU),
+@@ -241,7 +241,7 @@
+         .connections = {
+             CONNECTION(RR_WOODFALL_TEMPLE_WATER_ROOM, true),
+             CONNECTION(RR_WOODFALL_TEMPLE_BOW_ROOM, true),
+-            CONNECTION(RR_WOODFALL_TEMPLE_BOSS_KEY_ROOM, HAS_ITEM(ITEM_BOW) && CAN_BE_DEKU),
++            CONNECTION(RR_WOODFALL_TEMPLE_BOSS_KEY_ROOM, CAN_USE_BOW && CAN_BE_DEKU),
+             CONNECTION(RR_WOODFALL_TEMPLE_MAIN_ROOM_UPPER, true),
+         },
+     };
+@@ -254,13 +254,13 @@
+                 // Can they break it, leaving the fairy up high? // TODO: Trick for bombs & chus here
+                 ((HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA) && HAS_ITEM(ITEM_MASK_GREAT_FAIRY)) ||
+                 // Can they break it, making it drop into the water? --- Only if you make the item drop if not it will float
+-                (HAS_ITEM(ITEM_BOW) || (CAN_BE_DEKU && HAS_MAGIC))
++                (CAN_USE_BOW || (CAN_BE_DEKU && HAS_MAGIC))
+             )),
+         },
+         .connections = {
+             CONNECTION(RR_WOODFALL_TEMPLE_MAIN_ROOM, true),
+             CONNECTION(RR_WOODFALL_TEMPLE_MAP_ROOM, CAN_BE_DEKU),
+-            CONNECTION(RR_WOODFALL_TEMPLE_WATER_ROOM_UPPER, HAS_ITEM(ITEM_BOW) && CAN_BE_DEKU),
++            CONNECTION(RR_WOODFALL_TEMPLE_WATER_ROOM_UPPER, CAN_USE_BOW && CAN_BE_DEKU),
+         },
+     };
+ }, RANDO_LOGIC_INIT_PATHS);
+diff --git a/soh/soh/Enhancements/randomizer/location_access.cpp b/soh/soh/Enhancements/randomizer/location_access.cpp
+--- a/soh/soh/Enhancements/randomizer/location_access.cpp
++++ b/soh/soh/Enhancements/randomizer/location_access.cpp
+@@ -133,7 +133,7 @@
+ #ifdef COMBO_BUILD
+     // OoTMM can_use_wallet / wallet_price: reachable rupees and wallet capacity.
+     // Logical availability never depends on the player's current balance.
+-    if (!logic->Get(LOGIC_RENEWABLE_RUPEES)) {
++    if (!logic->HasItem(RG_WALLET_INF) && !logic->Get(LOGIC_RENEWABLE_RUPEES)) {
+         return 0;
+     }
+ #endif
+diff --git a/soh/soh/Enhancements/randomizer/logic.cpp b/soh/soh/Enhancements/randomizer/logic.cpp
+--- a/soh/soh/Enhancements/randomizer/logic.cpp
++++ b/soh/soh/Enhancements/randomizer/logic.cpp
+@@ -221,6 +221,14 @@
+                     assert(false);
+                     return false;
+             }
++        case RG_QUIVER_INF:
++        case RG_BOMB_BAG_INF:
++        case RG_BULLET_BAG_INF:
++        case RG_STICK_UPGRADE_INF:
++        case RG_NUT_UPGRADE_INF:
++        case RG_MAGIC_INF:
++        case RG_BOMBCHU_INF:
++        case RG_WALLET_INF:
+         case RG_POWER_BRACELET:
+         case RG_CHILD_WALLET:
+         case RG_FISHING_POLE:
+@@ -593,8 +601,7 @@
+         // Magic items
+         case RG_MAGIC_SINGLE:
+ #ifdef COMBO_BUILD
+-            return Get(LOGIC_RENEWABLE_MAGIC) || (HasBottle() && Get(LOGIC_BUY_MAGIC_POTION)) ||
+-                   (CalculatingAvailableChecks && GetSaveContext()->magic > 0);
++            return HasItem(RG_MAGIC_INF) || Get(LOGIC_RENEWABLE_MAGIC) || (HasBottle() && Get(LOGIC_BUY_MAGIC_POTION));
+ #else
+             return true; // AmmoCanDrop || (HasBottle() && Get(LOGIC_BUY_MAGIC_POTION))
+ #endif
+@@ -612,8 +619,7 @@
+         // TODO: Uncomment those if we ever implement more item usability settings
+         case RG_FAIRY_BOW:
+ #ifdef COMBO_BUILD
+-            return IsAdult && (Get(LOGIC_RENEWABLE_ARROWS) || Get(LOGIC_BUY_ARROW) ||
+-                               (CalculatingAvailableChecks && GetAmmo(ITEM_BOW) > 0));
++            return IsAdult && (HasItem(RG_QUIVER_INF) || Get(LOGIC_RENEWABLE_ARROWS) || Get(LOGIC_BUY_ARROW));
+ #else
+             return IsAdult; // || BowAsChild && (AmmoCanDrop || Get(LOGIC_BUY_ARROW));
+ #endif
+@@ -655,8 +661,7 @@
+         // Child items
+         case RG_FAIRY_SLINGSHOT:
+ #ifdef COMBO_BUILD
+-            return IsChild && (Get(LOGIC_RENEWABLE_SEEDS) || Get(LOGIC_BUY_SEED) ||
+-                               (CalculatingAvailableChecks && GetAmmo(ITEM_SLINGSHOT) > 0));
++            return IsChild && (HasItem(RG_BULLET_BAG_INF) || Get(LOGIC_RENEWABLE_SEEDS) || Get(LOGIC_BUY_SEED));
+ #else
+             return IsChild; // || SlingshotAsAdult && (AmmoCanDrop || Get(LOGIC_LOGIC_BUY_SEED));
+ #endif
+@@ -665,16 +670,15 @@
+         case RG_KOKIRI_SWORD:
+             return IsChild; // || KokiriSwordAsAdult;
+         case RG_NUTS:
+-            return Get(LOGIC_NUT_ACCESS);
++            return HasItem(RG_NUT_UPGRADE_INF) || Get(LOGIC_NUT_ACCESS);
+         case RG_STICKS:
+-            return IsChild /* || StickAsAdult;*/ && Get(LOGIC_STICK_ACCESS);
++            return IsChild /* || StickAsAdult;*/ && (HasItem(RG_STICK_UPGRADE_INF) || Get(LOGIC_STICK_ACCESS));
+         case RG_DEKU_SHIELD:
+             return IsChild; // || DekuShieldAsAdult;
+         case RG_PROGRESSIVE_BOMB_BAG:
+         case RG_BOMB_BAG:
+ #ifdef COMBO_BUILD
+-            return Get(LOGIC_RENEWABLE_BOMBS) || Get(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU) || Get(LOGIC_BUY_BOMB) ||
+-                   (CalculatingAvailableChecks && GetAmmo(ITEM_BOMB) > 0);
++            return HasItem(RG_BOMB_BAG_INF) || Get(LOGIC_RENEWABLE_BOMBS) || Get(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU) || Get(LOGIC_BUY_BOMB);
+ #else
+             return true; // AmmoCanDrop || Get(LOGIC_BUY_BOMB)
+ #endif
+@@ -1574,7 +1578,7 @@
+ #ifdef COMBO_BUILD
+            (Get(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU) &&
+             ctx->GetOption(RSK_ENABLE_BOMBCHU_DROPS).Is(RO_AMMO_DROPS_ON)) ||
+-           (CalculatingAvailableChecks && GetAmmo(ITEM_BOMBCHU) > 0);
++           HasItem(RG_BOMBCHU_INF);
+ #else
+            (ctx->GetOption(RSK_ENABLE_BOMBCHU_DROPS).Is(RO_AMMO_DROPS_ON /*_PLUS_BOMBCHU*/));
+ #endif
