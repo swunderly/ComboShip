@@ -3,6 +3,7 @@
 #include "2s2h/Rando/FaroresWind.h"
 #endif
 #include "z64horse.h"
+#include "libc/assert.h"
 #include "overlays/gamestates/ovl_file_choose/z_file_select.h"
 #include <string.h>
 #include "BenPort.h"
@@ -417,6 +418,11 @@ s32 gFlashSaveSizes[] = {
     offsetof(SaveContext, fileNum), // size = 0x3CA0 - File 3 Owl Save
     offsetof(SaveContext, fileNum), // size = 0x3CA0 - File 3 Owl Save Backup
 };
+
+// ComboShip: the new-cycle save is copied into the upper half of saveBuf and the owl save into all of it, so growth of
+// Save (e.g. per-check randomizer fields) must never push either past the end of the buffer.
+static_assert(sizeof(Save) <= SAVE_BUFFER_SIZE_HALF, "Save no longer fits in the upper half of saveBuf");
+static_assert(offsetof(SaveContext, fileNum) <= SAVE_BUFFER_SIZE, "The owl save no longer fits in saveBuf");
 
 // Bit Flag array in which sBitFlags8[n] is (1 << n)
 u8 sBitFlags8[] = {
