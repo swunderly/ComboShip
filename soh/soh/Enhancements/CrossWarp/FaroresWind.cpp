@@ -21,7 +21,7 @@ void WriteDungeon() {
         sWriteDungeon(gSaveContext.fileNum, &gSaveContext.ship.faroresWind.sharedCurrentDungeon);
 }
 
-constexpr int kCross = 0xfffd;
+constexpr int kCross = COMBO_FW_CROSS_ENTRANCE;
 bool sCross = false, sCrossAge = false;
 ComboFaroreGetMmDestination sMmDestination = nullptr;
 ComboFaroreSyncMmPoint sSyncMm = nullptr;
@@ -289,7 +289,7 @@ extern "C" COMBO_EXPORT int SOH_TakeDungeonDeparture(int* age, int* entrance) {
 }
 extern "C" COMBO_EXPORT int SOH_SetDungeonArrival(int fileNum, int age, int entrance) {
     sDungeonArrivalFile = sDungeonArrivalAge = sDungeonArrivalEntrance = -1;
-    if (fileNum < 0 || fileNum > 2 || age < 0 || age > 1 || entrance < 0 || entrance == 0xfffd)
+    if (fileNum < 0 || fileNum > 2 || age < 0 || age > 1 || entrance < 0 || entrance == kCross)
         return 0;
     sDungeonArrivalFile = fileNum;
     sDungeonArrivalAge = age;
