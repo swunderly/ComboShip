@@ -459,6 +459,12 @@ static FaroreDeparture SOH_TakeDungeonDeparture = nullptr, MM_TakeDungeonDepartu
 static FaroreArrival SOH_SetDungeonArrival = nullptr, MM_SetDungeonArrival = nullptr;
 static void (*SOH_ConfigureFaroreRules)(int, int) = nullptr;
 static void (*MM_ConfigureFaroreRules)(int, int, int) = nullptr;
+static int (*MM_AdultRuntimeReady)() = nullptr;
+// A seed's Cross Age needs MM's adult runtime. While it is unavailable the MM save, pool and oracle keep
+// RO_MM_CROSS_AGE off, so every consumer of the seed's crossAge uses this one effective value.
+static bool EffectiveCrossAge(const ComboRando::FaroreRules& rules) {
+    return rules.crossAge && MM_AdultRuntimeReady && MM_AdultRuntimeReady();
+}
 static void (*SOH_SetSongArrival)(int) = nullptr, (*MM_SetSongArrival)(int) = nullptr;
 static int (*MM_SetNativeSpellIntegrationReady)(int, void (*)()) = nullptr;
 static void InvalidateNativeSpellIntegration() {
@@ -483,10 +489,11 @@ static void InstallFaroreRules(const nlohmann::json& j) {
     const bool valid = ComboRando::ReadFaroreRules(j, parsed);
     sFaroreRules = valid ? parsed : ComboRando::FaroreRules{};
     const bool ready = valid && ComboRando::ComboFaroreIntegrationReady;
+    const bool crossAge = ready && EffectiveCrossAge(parsed);
     if (SOH_ConfigureFaroreRules)
-        SOH_ConfigureFaroreRules(ready && parsed.crossGameFw, ready && parsed.crossAge);
+        SOH_ConfigureFaroreRules(ready && parsed.crossGameFw, crossAge);
     if (MM_ConfigureFaroreRules)
-        MM_ConfigureFaroreRules(ready && parsed.spellWindMm, ready && parsed.crossGameFw, ready && parsed.crossAge);
+        MM_ConfigureFaroreRules(ready && parsed.spellWindMm, ready && parsed.crossGameFw, crossAge);
 }
 static ComboRando::SongTravelMap sSongTravel;
 static void (*SOH_SetMmVisited)(int) = nullptr;
@@ -3838,7 +3845,7 @@ static int Combo_PreflightEntranceDeparture(int fileNum, int source, int destina
         (source == 1 && g_pendingOOTReturn))
         return 0;
     // The immutable saved seed owns cross-age policy; the caller cannot enable it
-    // through a resource-readiness latch, current QoL CVar or a song destination.
+    // through a current QoL CVar or a song destination. MM adult readiness can only turn it off.
     bool savedCrossAge = false;
     try {
         std::lock_guard<std::mutex> lock(g_containerMutex);
@@ -3847,7 +3854,7 @@ static int Combo_PreflightEntranceDeparture(int fileNum, int source, int destina
         ComboRando::FaroreRules rules;
         if (!seed.is_null() && !ComboRando::ReadFaroreRules(seed.value("faroreRules", nlohmann::json()), rules))
             return 0;
-        savedCrossAge = rules.crossAge;
+        savedCrossAge = EffectiveCrossAge(rules);
     } catch (...) { return 0; }
     if (bool(crossAge) != savedCrossAge)
         return 0;
@@ -4334,6 +4341,7 @@ int main(int argc, char** argv) {
     MM_SetFaroreArrivalEntrance = (FaroreArrival)GetSym(mmModule, "MM_SetFaroreArrivalEntrance");
     SOH_ConfigureFaroreRules = (void (*)(int, int))GetSym(sohModule, "SOH_ConfigureFaroreRules");
     MM_ConfigureFaroreRules = (void (*)(int, int, int))GetSym(mmModule, "MM_ConfigureFaroreRules");
+    MM_AdultRuntimeReady = (int (*)())GetSym(mmModule, "MM_AdultRuntimeReady");
     if (auto set = (void (*)(FaroreDestination, FaroreSync))GetSym(sohModule, "SOH_SetFaroreBridge"))
         set(Combo_FaroreMmDestination, Combo_FaroreSyncMm);
     if (auto set = (void (*)(int (*)(int), FaroreDestination))GetSym(mmModule, "MM_SetFaroreBridge"))
