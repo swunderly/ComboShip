@@ -223,7 +223,8 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_MOUNTAIN_SMITHY] = RandoRegion{ .sceneId = SCENE_KAJIYA,
         .checks = {
             CHECK(RC_MOUNTAIN_VILLAGE_SMITHY_RAZOR_SWORD, CAN_ACCESS(SMITHY) && GET_CUR_UPG_VALUE(UPG_WALLET) >= 1),
-            CHECK(RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_BLACKSMITHS) && CAN_ACCESS(SMITHY) && HAS_BOTTLE && HAS_BOTTLE_ITEM(ITEM_GOLD_DUST) && (GET_CUR_UPG_VALUE(UPG_WALLET) >= 1)),
+            // Unlike OoTMM, a cycle reset empties Gold Dust, so only the race refill (EnGk.cpp) is renewable.
+            CHECK(RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_BLACKSMITHS) && CAN_ACCESS(SMITHY) && HAS_BOTTLE && CAN_ACCESS(GOLD_DUST) && (GET_CUR_UPG_VALUE(UPG_WALLET) >= 1)),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 1),      ENTRANCE(MOUNTAIN_SMITHY, 0), true),

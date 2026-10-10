@@ -17,7 +17,7 @@ assert grant, 'Production new-bottle grant block missing'
 grant = grant.group().rsplit('// Dungeon items',1)[0]
 regions=(a.source/'mm/2s2h/Rando/Logic/Regions/North.cpp').read_text()
 smithyGate=re.search(r'CHECK\(RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD, (.*?)\),',regions).group(1)
-assert 'CAN_ACCESS(GOLD_DUST)' not in smithyGate, 'Reachable shuffled reward cannot imply owned Gold Dust'
+assert 'CAN_ACCESS(GOLD_DUST)' in smithyGate and 'HAS_BOTTLE_ITEM(ITEM_GOLD_DUST)' not in smithyGate, 'Cycle reset empties a one-time Gold Dust bottle; only the race refill is renewable'
 playthrough=(a.source/'combo/rando/ComboPlaythrough.h').read_text()
 collection=re.search(r'            for \(size_t i = 0; i < placements.size\(\); \+\+i\) \{\n                if \(credited\[i\] \|\| excludeIdx.count\(i\)\).*?\n            \}',playthrough,re.S).group()
 
@@ -32,7 +32,7 @@ code = r'''
 constexpr int SLOT_BOTTLE_1=0, SLOT_BOTTLE_6=5;
 constexpr int ITEM_NONE=255, ITEM_BOTTLE=1, ITEM_GOLD_DUST=2;
 struct { struct { struct { struct { int items[6]; } inventory; } saveInfo; } save; } gSaveContext;
-bool timeSong=false, smithy=false, blacksmithSoul=true; int wallet=0;
+bool timeSong=false, smithy=false, raceRefill=false, blacksmithSoul=true; int wallet=0;
 constexpr int ITEM_POTION_RED=3;
 enum { RI_BOTTLE_EMPTY,RI_BOTTLE_CHATEAU_ROMANI,RI_BOTTLE_MILK,RI_BOTTLE_GOLD_DUST,RI_BOTTLE_RED_POTION };
 namespace Rando { namespace ExpandedSoul { constexpr int NPC_BLACKSMITHS=0; }
@@ -42,7 +42,9 @@ struct Item { int itemId; } Items[]={{ITEM_BOTTLE},{4},{5},{ITEM_GOLD_DUST},{6}}
 } }
 #define SLOT(x) SLOT_BOTTLE_1
 #define CAN_PLAY_SONG(x) timeSong
-#define CAN_ACCESS(x) smithy
+#define CAN_ACCESS(x) CAN_ACCESS_##x
+#define CAN_ACCESS_SMITHY smithy
+#define CAN_ACCESS_GOLD_DUST raceRefill
 #define GET_CUR_UPG_VALUE(x) wallet
 #define HAS_BOTTLE HasUsableBottle()
 #define HAS_BOTTLE_ITEM(x) (std::find(gSaveContext.save.saveInfo.inventory.items,gSaveContext.save.saveInfo.inventory.items+6,x)!=gSaveContext.save.saveInfo.inventory.items+6)
@@ -88,10 +90,11 @@ int main() {
     std::fill(slots,slots+6,ITEM_NONE);
     smithy=true; wallet=1;
     Grant(RI_BOTTLE_EMPTY);
-    assert(!Gilded()); // Race is reachable; randomized reward is not owned.
+    assert(!Gilded()); // No renewable Gold Dust source.
     CollectFixed(false); assert(!Gilded()); // Inaccessible fixed reward supplies nothing.
     CollectFixed(true); // Actual production fixed/placed reward collection loop and oracle grant.
-    assert(Gilded()); // A collected fixed/placed reward now supplies ownership.
+    assert(!Gilded()); // A one-time Gold Dust bottle is emptied by the native cycle reset.
+    raceRefill=true; assert(Gilded()); // The race refills Gold Dust every cycle.
     blacksmithSoul=false; assert(!Gilded()); blacksmithSoul=true;
     smithy=false; assert(!Gilded()); smithy=true;
     wallet=0; assert(!Gilded()); wallet=1;
