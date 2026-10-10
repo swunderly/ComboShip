@@ -1248,7 +1248,7 @@ class View {
         }
     }
 #undef CVAR_RANDOMIZER_SETTING
-    // Copy of SOH_RefreshComboStartingGameUI: an explicit MM start forces both Mask Shop exclusions.
+    // The combo Starting Game rule for the menu: an explicit MM start forces both Mask Shop exclusions.
     // Under Random they stay editable; the force is silent when MM rolls.
     void RefreshComboStartingGameUI() {
         const bool mmStart = CVarGetInteger("gCombo.Rando.StartingGame", 0) == 1;
