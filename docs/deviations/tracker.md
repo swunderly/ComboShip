@@ -123,11 +123,12 @@ state while dormant).
 
 **Why:** Trackers were foreground-follow with a per-tracker game-swap; the user wants both games'
 trackers visible together, one master enable, and a single customization home in the Combo menu.
-The combo layer carries the model (`ComboTrackerSwap` rewritten to a per-frame reconcile of derived
-per-game CVars: master enable + per-kind HideBackground + hold-to-peek; `ComboTrackerVisibility`
-now follows only the settings popouts; both Shared tracker panels inline the games' own settings
-sidebars with a divider). The old ShownGame/TrueIntent/HoldMomentary CVars are migrated + cleared
-on boot.
+The combo layer carries the model (`ComboTrackerControls` and `ComboCheckTracker` own both
+trackers' visibility and keep the native tracker windows hidden; `ComboTrackerSwap` only clears the
+retired swap-era CVars, seeds the combo enables once from an existing config's per-game CVars, and
+draws the combined Triforce overlay; `ComboTrackerVisibility` now follows only the settings
+popouts; both Shared tracker panels inline the games' own settings sidebars with a divider). The
+old ShownGame/TrueIntent/HoldMomentary CVars are migrated + cleared on boot.
 
 **Vendored (`COMBO_BUILD`-guarded, additive):**
 - `mm/2s2h/Enhancements/Trackers/ItemTracker/ItemTracker.cpp` + `mm/2s2h/Rando/CheckTracker/CheckTracker.cpp`
