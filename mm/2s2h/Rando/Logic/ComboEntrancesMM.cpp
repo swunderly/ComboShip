@@ -13,11 +13,11 @@
 #include "rando/entrances/NativeArrival.h"
 extern "C" int MM_GetEffectiveHumanAge(int fileNum);
 extern "C" int MM_CanEntranceArrival(int fileNum, uint32_t logicalId, int age, int crossAge);
+extern "C" void Combo_MMFaroreEndCycle(void);
 #include <spdlog/spdlog.h>
 
 namespace CE = ComboRando::Entrances;
 namespace {
-CE::SaveContexts sMmEntranceSaves;
 CE::MmMarkedSourceTransition sMmMarkedSource;
 CE::MmMixedMarkedTransition sMmMixedSource;
 std::string_view SourceForRegion(RandoRegionId region) {
@@ -48,7 +48,6 @@ extern "C" COMBO_EXPORT int MM_ApplyEntranceExpansionForCombo(const char* seedJs
     CE::ActiveMmOrdinaryAssumptions().reset();
     CE::ActiveMmGrottoAssumptions().reset();
     CE::ActiveMmMixedAssumptions().reset();
-    sMmEntranceSaves = {};
     try {
         if (!seedJson)
             throw std::invalid_argument("Missing seed JSON");
@@ -298,11 +297,13 @@ extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
     const auto scene = play->sceneId == SCENE_DANPEI2TEST ? CE::SceneContext::MmDampe
                        : play->sceneId == SCENE_REDEAD    ? CE::SceneContext::MmBeneathWell
                                                           : CE::SceneContext::Unknown;
-    const auto arrival =
-        CE::ActiveMmWallmasters().capture(scene, static_cast<uint8_t>(actor->room), CE::OotAge::Child,
-                                          static_cast<CE::MmForm>(gSaveContext.save.playerForm), sMmEntranceSaves);
+    const auto arrival = CE::ActiveMmWallmasters().capture(scene, static_cast<uint8_t>(actor->room), CE::OotAge::Child,
+                                                           static_cast<CE::MmForm>(gSaveContext.save.playerForm));
     if (!arrival)
         return 0;
+    // Pinned EnWallmas_TakePlayerEr clears the dungeon-entrance respawn so the next dungeon records
+    // its own ingress. The end-of-cycle reset clears exactly that, in both the local and shared copies.
+    Combo_MMFaroreEndCycle();
     // Full alias destination was checked at seed load; this profile has only real MM entrances.
     play->nextEntrance = static_cast<uint16_t>(arrival->destination.id);
     gSaveContext.respawnFlag = 0;

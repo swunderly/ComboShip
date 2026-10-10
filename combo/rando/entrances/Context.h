@@ -56,14 +56,6 @@ struct Arrival {
     std::optional<RespawnAnchor> farore;
     bool alreadyResolved = false; // Cross-game arrival must not re-enter source ER lookup.
 };
-struct SaveContexts {
-    // Optional extension only; absent in old seeds/saves means disabled.
-    std::optional<RespawnAnchor> dungeonIngress;
-    std::array<std::optional<RespawnAnchor>, 2> farore;
-    void clearDungeonIngress() {
-        dungeonIngress.reset();
-    }
-};
 inline uint32_t EncodeWireId(Game source, Key destination) {
     if (destination.id & 0x80000000u)
         throw std::invalid_argument("Logical ID overlaps foreign-game bit");

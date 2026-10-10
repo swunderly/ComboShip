@@ -166,17 +166,14 @@ class MmWallmasterLayout {
             return std::nullopt;
         return static_cast<uint16_t>(destinationIds[it - kMmWallmasterSources.begin()]);
     }
-    std::optional<Arrival> capture(SceneContext scene, uint8_t room, OotAge age, MmForm form,
-                                   SaveContexts& saves) const {
+    // The caller clears the real dungeon ingress when this returns a route.
+    std::optional<Arrival> capture(SceneContext scene, uint8_t room, OotAge age, MmForm form) const {
         const auto* src = WallmasterSource(Game::Mm, scene, room);
         if (!src)
             return std::nullopt;
         const auto dst = destination(src->name);
         if (!dst)
             return std::nullopt;
-        // Upstream clears only the custom dungeon ingress; per-age Farore
-        // context remains available. MM capture keeps current native form.
-        saves.clearDungeonIngress();
         return Arrival{ { Game::Mm, *dst }, ArrivalReason::Entrance, age, form, {}, {}, true };
     }
 };
