@@ -691,7 +691,7 @@ void KaleidoScope_UpdateMaskCursor(PlayState* play) {
                         return;
                     }
 
-                    // Pinned custom form restrictions: Adult Mask is usable only as human.
+                    // OoTMM 41a2b7c0 custom form restrictions: Adult Mask is usable only as human.
                     if (cursorItem == 0xbc && GET_PLAYER_FORM != PLAYER_FORM_HUMAN)
                         return;
                     // Equip item to the C buttons

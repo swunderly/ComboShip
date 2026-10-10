@@ -1,5 +1,6 @@
 #pragma once
-// Pinned trade.c kMmFierceDeityAdult and item_add.c addItemFierceDeityAdult.
+// trade.c kMmFierceDeityAdult and item_add.c addItemFierceDeityAdult from OoTMM development commit 41a2b7c0
+// (not in v32.3).
 // Native constants are supplied by the MM engine. No unrelated slot is occupied.
 namespace ComboAdultMaskInventory {
 constexpr u8 AdultItem = 0xbc;

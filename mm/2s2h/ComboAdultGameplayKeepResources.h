@@ -1,5 +1,6 @@
 #pragma once
-// Exact pinned Scene_ApplyHumanAgeGameplayKeep edits adapted to native typed resources.
+// Exact Scene_ApplyHumanAgeGameplayKeep edits from OoTMM development commit 41a2b7c0 (not in v32.3),
+// adapted to native typed resources.
 // Artist vertices/matrix are prepared locally; native MM keep remains owned by MM RM.
 #include <fast/lus_gbi.h>
 #include "2s2h/resource/type/Array.h"
@@ -73,7 +74,7 @@ inline bool LoadAdultKeep() {
     sAdultChargingDL = std::move(dl);
     sChildChargingFirst = sAdultChargingDL->Instructions[0];
     sAdultMaskMatrix = std::move(matrix);
-    // Pinned wrapper: PipeSync; modelview multiply/no-push matrix; EndDL.
+    // 41a2b7c0 wrapper: PipeSync; modelview multiply/no-push matrix; EndDL.
     Gfx wrapper[] = { gsDPPipeSync(),
                       gsSPMatrix(sAdultMaskMatrix->GetPointer(), G_MTX_NOPUSH | G_MTX_MUL | G_MTX_MODELVIEW),
                       gsSPEndDisplayList() };

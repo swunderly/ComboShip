@@ -1,6 +1,7 @@
 #pragma once
-// Exact capability/resource seams. No success stubs: final Adult port must implement these
-// before linking/enabling this overlay; incomplete source must not be merged as a feature.
+// Exact capability/resource seams, all defined (BenPort.cpp and the native include headers). The Adult MM
+// feature is gated at runtime by Combo_MM_AdultResourcesReady() (hard off through
+// kAdultMmGameplayIntegrationComplete) and save.shipSaveInfo.adultMm.enabled.
 int Combo_MM_AdultResourcesReady(void);
 int Combo_MM_IsAdult(void);
 int Combo_MM_AdultMaskAction(void);

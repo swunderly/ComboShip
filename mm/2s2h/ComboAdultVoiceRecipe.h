@@ -3,12 +3,13 @@
 #include <vector>
 #include <cstdint>
 namespace ComboAdultMM {
-// Exact OOT_ADULT_EFFECTS from pinned custom/index.ts; preserves MM font0 and aligns foreign block64.
+// Exact OOT_ADULT_EFFECTS from OoTMM 41a2b7c0 custom/index.ts (not in v32.3); preserves MM font0 and aligns
+// foreign block64.
 inline constexpr std::array<unsigned, 46> AdultVoiceEffects = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
                                                                 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
                                                                 24, 25, 26, 27, 55, 56, 60, 61, 67, 77, 78, 79,
                                                                 80, 81, 82, 83, 84, 85, 86, 87, 88, 134 };
-// NOTE array extent must exactly match the pinned set; the contract rejects accidental padding.
+// NOTE array extent must exactly match the upstream set; the contract rejects accidental padding.
 template <class Effect>
 bool BuildAdultVoiceEffects(const Effect* mm, size_t mmCount, const Effect* oot, size_t ootCount,
                             std::vector<Effect>& out, size_t& adultBase) {

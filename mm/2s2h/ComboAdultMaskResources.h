@@ -1,5 +1,6 @@
 #pragma once
-// Native typed imports of the exact pinned artist Adult Mask objects.
+// Native typed imports of the exact artist Adult Mask objects from OoTMM development commit 41a2b7c0
+// (not in v32.3).
 namespace ComboAdultMM {
 static std::shared_ptr<Ship::ResourceManager> sAdultMaskOwner;
 static std::array<std::shared_ptr<Fast::DisplayList>, 4> sAdultMaskResources{};

@@ -1,9 +1,10 @@
 #pragma once
-// Port of pinned OoTMM adultmask.c; included after native player overlay definitions.
-// Resource/age seams below intentionally remain unresolved until exact extractor resources exist.
+// Port of OoTMM adultmask.c from development commit 41a2b7c0 (not in v32.3); included after native player
+// overlay definitions. The seams are defined (BenPort.cpp and the native include headers); the feature stays
+// off until Combo_MM_AdultResourcesReady() reports the resources and integration ready.
 #include "ComboAdultMMSeams.h"
 #include "2s2h_assets.h"
-int Combo_MM_AdultMaskAction(void) { return 0x5b; } // Exact pinned PLAYER_CUSTOM_IA_MASK_ADULT.
+int Combo_MM_AdultMaskAction(void) { return 0x5b; } // Exact 41a2b7c0 PLAYER_CUSTOM_IA_MASK_ADULT.
 #define ADULT_MASK_SKIP_BUTTONS (BTN_A | BTN_B | BTN_CUP | BTN_CLEFT | BTN_CDOWN | BTN_CRIGHT)
 static PlayerAgeProperties sAdultMaskChildProperties;
 static PlayerAnimationHeader* sAdultMaskChildDoorA[PLAYER_ANIMTYPE_MAX];
@@ -720,7 +721,7 @@ void AdultMask_StartCsItem(Player* player, PlayState* play)
 void Combo_MM_ApplyAdultOverlayAge(int adult){AdultMask_ApplyNativeOverlayAge(adult);}
 
 extern Gfx* Combo_MM_GetAdultMaskBinding(int index);
-// Exact pinned hand/face transforms, using decoded native MM display lists and owners.
+// Exact 41a2b7c0 hand/face transforms, using decoded native MM display lists and owners.
 void Combo_MM_DrawAdultMask(PlayState* play, Player* player, int mode) {
     Gfx* dl;
     if(mode<0||mode>2||!Combo_MM_AdultResourcesReady())return;

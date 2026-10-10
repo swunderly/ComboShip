@@ -68,8 +68,9 @@ inline void InitializeLoadouts(ComboAdultMmSave& state) {
         }
     }
 }
-// Save-only counterpart of pinned Age_SwapEquipmentMm. Call only from a complete age transition.
-// Native MM lacks these fields; appended saved custom equipment preserves pinned age ownership.
+// Save-only counterpart of Age_SwapEquipmentMm from OoTMM development commit 41a2b7c0 (not in v32.3).
+// Call only from a complete age transition. Native MM lacks these fields; appended saved custom equipment
+// preserves its age ownership.
 inline bool SwapHumanLoadout(Save& save, u8 age) {
     auto& state = save.shipSaveInfo.adultMm;
     if (!state.enabled || age > 1 || save.linkAge > 1)

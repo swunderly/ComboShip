@@ -1027,7 +1027,7 @@ u8 sActionModelGroups[PLAYER_IA_MAX] = {
 
 int Combo_MM_AdultMaskAction(void);
 PlayerModelGroup Player_ActionToModelGroup(Player* player, PlayerItemAction itemAction) {
-    // Pinned custom Adult Mask uses the native default model group.
+    // OoTMM 41a2b7c0 (not in v32.3): the custom Adult Mask uses the native default model group.
     if ((int)itemAction == Combo_MM_AdultMaskAction())
         return PLAYER_MODELGROUP_DEFAULT;
     PlayerModelGroup modelGroup = sActionModelGroups[itemAction];
@@ -4370,7 +4370,7 @@ static void Combo_Player_PostLimbDrawGameplayNative(PlayState* play, s32 limbInd
 #include "ComboAdultModelTablesNative.h"
 #endif
 
-// Exact pinned Player_PostLimbDrawGameplayWrapper Adult Mask branches.
+// Exact Player_PostLimbDrawGameplayWrapper Adult Mask branches from OoTMM 41a2b7c0 (not in v32.3).
 s32 AdultMask_IsPuttingOn(void);
 s32 AdultMask_IsTakeOffTransform(void);
 s32 AdultMask_IsTakeOffChild(void);

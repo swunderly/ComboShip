@@ -3177,7 +3177,7 @@ s8 sItemItemActions[] = {
     PLAYER_IA_SWORD_TWO_HANDED,        // ITEM_SWORD_DEITY,
 };
 
-// Pinned custom Adult Mask identity/action: items.h 0xbc, asm_defs.h 0x5b.
+// OoTMM 41a2b7c0 (not in v32.3) custom Adult Mask identity/action: items.h 0xbc, asm_defs.h 0x5b.
 int Combo_MM_AdultMaskAction(void);
 s32 AdultMask_TryUse(Player* player, PlayState* play, s32 itemAction);
 void AdultMask_StartCsItem(Player* player, PlayState* play);
@@ -3590,7 +3590,7 @@ void Player_InitItemAction(PlayState* play, Player* this, PlayerItemAction itemA
     this->unk_B0C = 0.0f;
     this->unk_B28 = 0;
 
-    // Pinned custom-mask initialization bypasses the native indexed action table.
+    // OoTMM 41a2b7c0 custom-mask initialization bypasses the native indexed action table.
     if ((int)itemAction != Combo_MM_AdultMaskAction())
         sItemActionInitFuncs[itemAction](play, this);
     Player_SetModelGroup(this, this->modelGroup);
@@ -4294,7 +4294,7 @@ void func_808309CC(PlayState* play, Player* this) {
         Player_FinishItemChange(play, this);
     }
 
-    // Custom Adult Mask preserves its current upper action, as pinned Player.c does.
+    // Custom Adult Mask preserves its current upper action, as OoTMM 41a2b7c0 Player.c does.
     if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
         Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
     this->unk_ACC = 0;
@@ -8117,7 +8117,7 @@ s32 Player_ActionHandler_13(Player* this, PlayState* play) {
                     return true;
                 }
 #endif
-                // Pinned Player_StartCsItem custom Adult Mask branch precedes native masks.
+                // OoTMM 41a2b7c0 Player_StartCsItem custom Adult Mask branch precedes native masks.
                 if ((int)this->itemAction == Combo_MM_AdultMaskAction()) {
                     AdultMask_StartCsItem(this, play);
                     return true;
@@ -14495,7 +14495,7 @@ s32 Player_UpperAction_ChangeHeldItem(Player* this, PlayState* play) {
                                                                (this->heldItemAction != PLAYER_IA_DEKU_STICK) &&
                                                                (play->bButtonAmmoPlusOne == 0),
                                                            this))))) {
-        // Custom Adult Mask preserves its current upper action, as pinned Player.c does.
+        // Custom Adult Mask preserves its current upper action, as OoTMM 41a2b7c0 Player.c does.
         if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
             Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
         this->unk_ACC = 0;
@@ -14548,7 +14548,7 @@ s32 Player_UpperAction_4(Player* this, PlayState* play) {
 s32 Player_UpperAction_5(Player* this, PlayState* play) {
     sPlayerUseHeldItem = sPlayerHeldItemButtonIsHeldDown;
     if (sPlayerUseHeldItem || PlayerAnimation_Update(play, &this->skelAnimeUpper)) {
-        // Custom Adult Mask preserves its current upper action, as pinned Player.c does.
+        // Custom Adult Mask preserves its current upper action, as OoTMM 41a2b7c0 Player.c does.
         if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
             Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
         PlayerAnimation_PlayLoop(play, &this->skelAnimeUpper, D_8085BE84[PLAYER_ANIMGROUP_wait][this->modelAnimType]);

@@ -1,7 +1,8 @@
 #pragma once
 #include "ComboAdultMM.h"
 // Save-only seed bootstrap. Runtime caller must preflight full resources before calling.
-// Pinned startingAgeMm is independent of adultMaskMm; raw ages0adult/1child.
+// OoTMM development commit 41a2b7c0 (not in v32.3): startingAgeMm is independent of adultMaskMm;
+// raw ages 0 adult/1 child.
 namespace ComboAdultMM {
 inline bool ConfigureSeedAge(Save& save, int startingAge, bool maskEnabled, bool crossAge, bool gearEnabled = false) {
     if (startingAge < 0 || startingAge > 1)
@@ -18,7 +19,7 @@ inline bool ConfigureSeedAge(Save& save, int startingAge, bool maskEnabled, bool
         state.maskEnabled = maskEnabled;
         return true;
     }
-    // Normalize legacy MM's raw0/child semantics before pinned equipment swap.
+    // Normalize legacy MM's raw0/child semantics before the 41a2b7c0 equipment swap.
     save.linkAge = 1;
     state.enabled = 1;
     state.maskEnabled = maskEnabled;

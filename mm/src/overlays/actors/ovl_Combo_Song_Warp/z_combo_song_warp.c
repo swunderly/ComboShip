@@ -252,7 +252,6 @@ static void CrossSongWarp_HideHud(PlayState* play) {
 static void CrossSongWarp_Draw(Actor* thisx, PlayState* play) {
     static f32 sWarpRoll;
     static f32 sWarpFoV;
-    // the following 2 vars are unused
     static Vec3f D_8098CF98;
 
     s16 i;
