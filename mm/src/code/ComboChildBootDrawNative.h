@@ -1,15 +1,16 @@
 #pragma once
 // MIT pinned OoTMM Player.c child boot geometry, commit41a2b7c0.
 // MM limb matrices/vertices copied exactly; borrowed textures resolve from owning user archive.
-const char gComboChildIronBootTex[] = "__OTR__@oot:objects/object_link_boy/gComboChildIronBootTex";
-const char gComboChildIronBootTLUT[] = "__OTR__@oot:objects/object_link_boy/object_link_boyTLUT_00CB40";
+static const ALIGN_ASSET(2) char gComboChildIronBootTex[] = "__OTR__@oot:objects/object_link_boy/gLinkAdultIronBootTex";
+static const ALIGN_ASSET(2) char gComboChildIronBootTLUT[] =
+    "__OTR__@oot:objects/object_link_boy/object_link_boyTLUT_00CB40";
 
 const Vtx sComboChildIronBootsVtx[87] = {
 #include "sIronBootsVtx.vtx.inc"
 };
 
 const Gfx gComboChildLeftIronBootDL[] = {
-    gsSPMatrix(0x0D000180, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
+    gsSPMatrix(0x0D000180 | 1, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_RGBA16),
     gsSPTexture(0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON),
@@ -20,7 +21,7 @@ const Gfx gComboChildLeftIronBootDL[] = {
     gsDPSetRenderMode(G_RM_FOG_SHADE_A, G_RM_AA_ZB_OPA_SURF2),
     gsSPClearGeometryMode(G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR),
     gsSPSetGeometryMode(G_FOG | G_LIGHTING),
-    gsSPDisplayList(0x0C000000),
+    gsSPDisplayList(0x0C000000 | 1),
     gsDPSetPrimColor(0, 0, 255, 255, 255, 255),
     gsSPVertex(&sComboChildIronBootsVtx[0], 32, 0),
     gsSP2Triangles(0, 1, 2, 0, 2, 1, 3, 0),
@@ -43,7 +44,7 @@ const Gfx gComboChildLeftIronBootDL[] = {
 };
 
 const Gfx gComboChildRightIronBootDL[] = {
-    gsSPMatrix(0x0D0000C0, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
+    gsSPMatrix(0x0D0000C0 | 1, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_RGBA16),
     gsSPTexture(0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON),
@@ -54,7 +55,7 @@ const Gfx gComboChildRightIronBootDL[] = {
     gsDPSetRenderMode(G_RM_FOG_SHADE_A, G_RM_AA_ZB_OPA_SURF2),
     gsSPClearGeometryMode(G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR),
     gsSPSetGeometryMode(G_FOG | G_LIGHTING),
-    gsSPDisplayList(0x0C000000),
+    gsSPDisplayList(0x0C000000 | 1),
     gsDPSetPrimColor(0, 0, 255, 255, 255, 255),
     gsSPVertex(&sComboChildIronBootsVtx[43], 32, 0),
     gsSP2Triangles(0, 1, 2, 0, 3, 1, 0, 0),
@@ -76,16 +77,19 @@ const Gfx gComboChildRightIronBootDL[] = {
     gsSPEndDisplayList(),
 };
 
-const char gComboChildHoverHeelTex[] = "__OTR__@oot:objects/object_link_boy/gComboChildHoverHeelTex";
-const char gComboChildHoverJetTex[] = "__OTR__@oot:objects/object_link_boy/gComboChildHoverJetTex";
-const char gComboChildHoverFeatherTex[] = "__OTR__@oot:objects/object_link_boy/gComboChildHoverFeatherTex";
+static const ALIGN_ASSET(2) char gComboChildHoverHeelTex[] =
+    "__OTR__@oot:objects/object_link_boy/gLinkAdultHoverBootsHeelTex";
+static const ALIGN_ASSET(2) char gComboChildHoverJetTex[] =
+    "__OTR__@oot:objects/object_link_boy/gLinkAdultHoverBootsJetTex";
+static const ALIGN_ASSET(2) char gComboChildHoverFeatherTex[] =
+    "__OTR__@oot:objects/object_link_boy/gLinkAdultHoverBootsFeatherTex";
 
 const Vtx sComboChildHoverBootsVtx[154] = {
 #include "sHoverBootsVtx.vtx.inc"
 };
 
 const Gfx gComboChildLeftHoverBootDL[] = {
-    gsSPMatrix(0x0D000180, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
+    gsSPMatrix(0x0D000180 | 1, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_NONE),
     gsSPTexture(0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON),
@@ -95,7 +99,7 @@ const Gfx gComboChildLeftHoverBootDL[] = {
     gsDPSetRenderMode(G_RM_FOG_SHADE_A, G_RM_AA_ZB_OPA_SURF2),
     gsSPClearGeometryMode(G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR),
     gsSPSetGeometryMode(G_FOG | G_LIGHTING),
-    gsSPDisplayList(0x0C000000),
+    gsSPDisplayList(0x0C000000 | 1),
     gsDPSetPrimColor(0, 0, 255, 255, 255, 255),
     gsSPVertex(&sComboChildHoverBootsVtx[0], 32, 0),
     gsSP2Triangles(0, 1, 2, 0, 0, 2, 3, 0),
@@ -138,7 +142,7 @@ const Gfx gComboChildLeftHoverBootDL[] = {
 };
 
 const Gfx gComboChildRightHoverBootDL[] = {
-    gsSPMatrix(0x0D0000C0, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
+    gsSPMatrix(0x0D0000C0 | 1, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW),
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_NONE),
     gsSPTexture(0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON),
@@ -148,7 +152,7 @@ const Gfx gComboChildRightHoverBootDL[] = {
     gsDPSetRenderMode(G_RM_FOG_SHADE_A, G_RM_AA_ZB_OPA_SURF2),
     gsSPClearGeometryMode(G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR),
     gsSPSetGeometryMode(G_FOG | G_LIGHTING),
-    gsSPDisplayList(0x0C000000),
+    gsSPDisplayList(0x0C000000 | 1),
     gsDPSetPrimColor(0, 0, 255, 255, 255, 255),
     gsSPVertex(&sComboChildHoverBootsVtx[77], 32, 0),
     gsSP2Triangles(0, 1, 2, 0, 3, 0, 2, 0),

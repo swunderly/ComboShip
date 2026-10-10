@@ -5,8 +5,9 @@ const Vtx sHoverBootsCircleVtx[] = {
 #include "sHoverBootsCircleVtx.vtx.inc"
 };
 
-const char gComboHoverCircleTex[]="__OTR__@oot:objects/gameplay_keep/gEffUnknown13Tex";
-const char gComboHoverCircleDetailTex[]="__OTR__@mm:objects/gameplay_keep/gameplay_keep_Tex_01AAB0";
+static const ALIGN_ASSET(2) char gComboHoverCircleTex[] = "__OTR__@oot:objects/gameplay_keep/gEffUnknown13Tex";
+static const ALIGN_ASSET(2) char gComboHoverCircleDetailTex[] =
+    "__OTR__@mm:objects/gameplay_keep/gameplay_keep_Tex_01AAB0";
 
 const Gfx gComboHoverBootsCircleDL[] = {
     gsDPPipeSync(),
@@ -20,7 +21,7 @@ const Gfx gComboHoverBootsCircleDL[] = {
                        COMBINED, 0, PRIMITIVE, 0),
     gsDPSetRenderMode(G_RM_PASS, G_RM_ZB_CLD_SURF2),
     gsSPClearGeometryMode(G_CULL_BACK | G_FOG | G_LIGHTING | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR),
-    gsSPDisplayList(0x09000000),
+    gsSPDisplayList(0x09000000 | 1),
     gsSPVertex(sHoverBootsCircleVtx, 13, 0),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 2, 0),
     gsSP2Triangles(5, 6, 2, 0, 7, 8, 2, 0),
