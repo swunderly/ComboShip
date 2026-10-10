@@ -999,6 +999,27 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
     // Pending cross-world traps are receiver-local; a teammate's count must not clobber ours.
     loadedData.shipSaveInfo.rando.pendingTrapCount = gSaveContext.save.shipSaveInfo.rando.pendingTrapCount;
 #endif
+    // This player's own position (pause-save entrance, respawn, grotto return, Farore's Wind points) and
+    // equipment (adult loadouts, boots/tunic/mask, bomb arrows) must not follow a teammate's; only the
+    // ownership bits among them are team progress, and a resync may only add those.
+    const auto& localShip = gSaveContext.save.shipSaveInfo;
+    auto& mergedShip = loadedData.shipSaveInfo;
+    mergedShip.pauseSaveEntrance = localShip.pauseSaveEntrance;
+    memcpy(mergedShip.respawn, localShip.respawn, sizeof(mergedShip.respawn));
+    mergedShip.grottoPreviousSceneValid = localShip.grottoPreviousSceneValid;
+    mergedShip.grottoPreviousScene = localShip.grottoPreviousScene;
+    mergedShip.bombArrowsEquipped = localShip.bombArrowsEquipped;
+    const u8 faroreOwned = mergedShip.faroresWind.owned | localShip.faroresWind.owned;
+    mergedShip.faroresWind = localShip.faroresWind;
+    mergedShip.faroresWind.owned = faroreOwned;
+    ComboAdultMmSave adultMm = localShip.adultMm;
+    adultMm.maskOwnedBits |= mergedShip.adultMm.maskOwnedBits;
+    adultMm.gearTrade2Bits |= mergedShip.adultMm.gearTrade2Bits;
+    adultMm.gearTrade3Bits |= mergedShip.adultMm.gearTrade3Bits;
+    mergedShip.adultMm = adultMm;
+    mergedShip.spellFireOwned |= localShip.spellFireOwned;
+    mergedShip.spellLoveOwned |= localShip.spellLoveOwned;
+    mergedShip.rando.ocarinaOwnedBits |= localShip.rando.ocarinaOwnedBits;
 
     // Commit only the two progression sub-structs; top-level Save fields (scene/entrance/time/day/
     // playerForm/cycle) are intentionally left untouched so the receiver isn't relocated.
