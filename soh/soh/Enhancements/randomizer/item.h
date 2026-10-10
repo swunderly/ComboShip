@@ -75,6 +75,7 @@ class Item {
     const HintText& GetHint() const;
 #ifdef COMBO_BUILD
     // For items with no hint text table entry of their own; GetHint returns it instead.
+    // Callers give clear text only, so Ambiguous and Obscure clarity also name the item (OoTMM has no clarity).
     void SetHintText(HintText hintText_);
 #endif
     GetItemCategory GetCategory();
