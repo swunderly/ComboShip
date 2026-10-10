@@ -22,9 +22,6 @@ inline std::optional<MmGrottoAssumptions>& ActiveMmGrottoAssumptions() {
     static thread_local std::optional<MmGrottoAssumptions> value;
     return value;
 }
-inline bool IsMmGrottoClockTowerReservation(std::string_view src, std::string_view dst) {
-    return src == "MM_CLOCK_TOWER_FROM_CLOCK_TOWN" && dst == "MM_CLOCK_TOWN_FROM_CLOCK_TOWER";
-}
 inline MmGrottoAssumptions BuildMmGrottoAssumptions(const Overrides& rows, const Pools& pools,
                                                     const Settings& settings) {
     MmGrottoAssumptions result;

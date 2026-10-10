@@ -9,8 +9,11 @@ inline nlohmann::json EncodeMmOrdinaryExtension(const Overrides& overrides) {
                              { "upstreamCommit", kUpstreamCommit },
                              { "registrySha256", kRegistrySourceSha256 },
                              { "overrides", nlohmann::json::array() } };
-    for (const auto& [src, dst] : overrides)
+    for (const auto& [src, dst] : overrides) {
+        if (IsMmGrottoClockTowerReservation(src, dst))
+            continue;
         value["overrides"].push_back({ { "source", src }, { "destination", dst } });
+    }
     MmOrdinaryLayout proof;
     proof.install(value);
     return value;

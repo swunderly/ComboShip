@@ -1,6 +1,7 @@
 #pragma once
 #include "MmOrdinaryBindings.h"
 #include "rando/entrances/Context.h"
+#include "rando/entrances/Shuffle.h"
 #include <map>
 #include <nlohmann/json.hpp>
 namespace ComboRando::Entrances {
@@ -60,6 +61,9 @@ class MmOrdinaryLayout {
                 !row.contains("destination") || !row["destination"].is_string())
                 throw std::invalid_argument("Malformed MM ordinary override");
             auto src = row["source"].get<std::string>(), dst = row["destination"].get<std::string>();
+            // Older seeds saved this row; ignoring it keeps the Clock Tower door the link to OoT.
+            if (IsMmGrottoClockTowerReservation(src, dst))
+                continue;
             auto a = Find(src), b = Find(dst);
             if (!a || !b || a->game != Game::Mm || b->game != Game::Mm || a->id > 0xffff || b->id > 0xffff ||
                 !MmOrdinaryBound(src) || !MmOrdinaryBound(dst) || a->reverse.empty() || b->reverse.empty())

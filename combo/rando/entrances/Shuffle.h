@@ -481,4 +481,9 @@ class Shuffler {
         throw ShuffleError("Unreachable entrance retry state");
     }
 };
+// The MM-only reservation above loops the Clock Tower door back to Clock Town. In ComboShip that
+// door is the native MM->OoT link, so the native MM layouts never store or model this row.
+inline bool IsMmGrottoClockTowerReservation(std::string_view src, std::string_view dst) {
+    return src == "MM_CLOCK_TOWER_FROM_CLOCK_TOWN" && dst == "MM_CLOCK_TOWN_FROM_CLOCK_TOWER";
+}
 } // namespace ComboRando::Entrances

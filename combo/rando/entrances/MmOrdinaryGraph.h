@@ -23,8 +23,11 @@ inline MmOrdinaryAssumptions BuildMmOrdinaryAssumptions(const Overrides& overrid
             if (row.name == source)
                 result.routes[row.physicalId].insert(b->id);
     };
-    for (const auto& [src, dst] : overrides)
+    for (const auto& [src, dst] : overrides) {
+        if (IsMmGrottoClockTowerReservation(src, dst))
+            continue;
         bind(src, dst);
+    }
     for (const auto& pool : pools) {
         // Pin solver/entrances.ts:279 and pathfind.ts:849: synthetic ASSUMED starts
         // unconditionally at OOT SPAWN day1; its null stay expands all future MM times.
