@@ -62,7 +62,9 @@ public final class MainActivity extends Activity {
         execute("Preparing your ComboShip folder…",()->{
             root=StorageLocations.initialize(this);
             try(DataLock ignored=new DataLock(root)) {
-                supportReady=DataFiles.supportVersion(this).equals(getPreferences(MODE_PRIVATE).getString(supportKey(),null));
+                // Only an older APK writes the versionCode key, so finding it means that build has installed its own files since.
+                supportReady=!getPreferences(MODE_PRIVATE).contains(legacySupportKey()) &&
+                    DataFiles.supportVersion(this).equals(getPreferences(MODE_PRIVATE).getString(supportKey(),null));
                 if(!supportReady) {
                     DataFiles.installSupport(this,root);
                     supportInstalled();
@@ -90,11 +92,12 @@ public final class MainActivity extends Activity {
     }
 
     private String supportKey() {return "support-manifest:"+root.getAbsolutePath();}
+    private String legacySupportKey() {return "support-version:"+root.getAbsolutePath();}
     private void supportInstalled() throws IOException {
         // Keyed on the bundled files, not versionCode: a same-version rebuild can change them. The old
         // versionCode key is dropped so a downgraded APK also reinstalls its own files.
         getPreferences(MODE_PRIVATE).edit().putString(supportKey(),DataFiles.supportVersion(this))
-            .remove("support-version:"+root.getAbsolutePath()).apply();
+            .remove(legacySupportKey()).apply();
         supportReady=true;
     }
     private boolean startupFailed() {return new File(root,"last-startup-error.txt").isFile();}
