@@ -385,13 +385,16 @@ RandoRegionId GetRegionIdFromEntrance(s32 entrance) {
     }
     if (TypedMmGrottoSourceActive(65548u) && entrance == ENTRANCE(IKANA_CANYON, 12))
         return RR_MM_GROTTO_IKANA_SHRINE_BANK;
+    // The pinned Stone Tower graph leaves the temple at its front; the legacy graph at its top.
+    if (MM_LOGIC_STONE_TOWER_PINNED && entrance == ENTRANCE(STONE_TOWER, 2))
+        return RR_MM_STONE_TOWER_FRONT_OF_TEMPLE;
 #endif
 
     static std::map<s32, RandoRegionId> entranceToRegionId;
     if (entranceToRegionId.empty()) {
         for (auto& [randoRegionId, randoRegion] : Regions) {
 #ifdef COMBO_BUILD
-            if (randoRegionId >= RR_MM_GROTTO_WOODS_BANK)
+            if (randoRegionId >= RR_MM_GROTTO_WOODS_BANK || randoRegionId == RR_MM_STONE_TOWER_FRONT_OF_TEMPLE)
                 continue;
 #endif
             for (auto& [_, regionExit] : randoRegion.exits) {
