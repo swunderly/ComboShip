@@ -27,6 +27,7 @@ extern char** fontMap;
 extern size_t fontMapSize;
 u8 AudioSeq_ScriptReadU8(SeqScriptState* state);
 s16 AudioSeq_ScriptReadS16(SeqScriptState* state);
+bool AudioCollection_HasSequenceNum(uint16_t seqId);
 }
 
 namespace {
@@ -156,8 +157,16 @@ extern "C" void Combo_SOHInitWarpAudio() {
             }
         }
 
-        // Preserve native/custom slots, including the existing 15 spare slots.
-        const size_t sequenceBase = sequenceMapSize + 15;
+        // Preserve native/custom slots, including the existing 15 spare slots, and skip ids
+        // AudioCollection owns, as upstream does for custom sequences: font changes look the
+        // playing id up in the Audio Editor, and a swapped instrument (130..135) has no sequence.
+        size_t sequenceBase = sequenceMapSize + 15;
+        while (sequenceBase + sequences.size() <= 0xFFFF &&
+               (AudioCollection_HasSequenceNum(sequenceBase) || AudioCollection_HasSequenceNum(sequenceBase + 1) ||
+                AudioCollection_HasSequenceNum(sequenceBase + 2)))
+            ++sequenceBase;
+        if (sequenceBase + sequences.size() > 0xFFFF)
+            return;
         const size_t nextSequenceSize = sequenceBase + sequences.size();
         const size_t nextFontSize = fontMapSize + fonts.size();
         auto freeMemory = [](void* memory) { std::free(memory); };
