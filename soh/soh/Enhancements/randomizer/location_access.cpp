@@ -5,7 +5,6 @@
 #include "soh/Enhancements/randomizer/entrance.h"
 #ifdef COMBO_BUILD
 #include "age_change_areas.h"
-#include "rando/GameplayRules.h"
 #include "rando/OotResourceSources.h"
 #endif
 #include "soh/Enhancements/debugger/performanceTimer.h"
@@ -809,13 +808,10 @@ bool SpiritShared(RandomizerRegion region, ConditionFn condition, bool anyAge, R
     // it must not turn an ambiguous minimum-key path into a guaranteed route.
     if ((ChildCertainAccess || AdultCertainAccess) && (areaTable[region].Child() || areaTable[region].Adult()) &&
         Rando::SongAgeChangeAreaAllowed(region)) {
-        const int mode = logic->GameplayRuleValue("gEnhancements.TimeTravel");
         auto canChange = [&](bool child) {
             logic->IsChild = child;
             logic->IsAdult = !child;
-            return ComboRando::CanChangeAgeWithSong(mode, logic->CanUse(RG_SONG_OF_TIME),
-                                                    logic->HasItem(RG_OCARINA_OF_TIME),
-                                                    logic->HasItem(RG_MASTER_SWORD));
+            return logic->CanUseSongAgeChange();
         };
         if ((ChildCertainAccess && canChange(true)) || (AdultCertainAccess && canChange(false)))
             ChildCertainAccess = AdultCertainAccess = true;
