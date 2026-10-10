@@ -233,14 +233,24 @@ static nlohmann::json ProfileComboCatalog(){
     }
     return {{"presets",presets}}; // The menu lays out its own combo options; only presets are read.
 }
+// Start Randomizer prepares the file (the name-entry seed-hash icons need it) and confirming the name
+// prepares it again. Reuse the first preparation while nothing has replaced what it left: the same file,
+// the same pending seed and no context change since (g_ComboContextEpoch).
+static int sProfilePreparedSlot=-1;
+static uint64_t sProfilePreparedEpoch=0;
+static nlohmann::json sProfilePreparedSeed;
 static int ProfilePrepareSave(int slot) {
     try {
         if(!sProfiles)return 1; // Callback not installed before initialization.
         ComboRando::Profiles::RequireSlot(slot);
         if(g_GenerateBusy.load()||g_ComboPendingFinalize.load()||sProfileAttempt)return 0;
-        const auto seed=sProfiles->view().pendingSeed(slot);
+        auto seed=sProfiles->view().pendingSeed(slot);
         if(!ComboRando::Profiles::SeedDocument(seed))return 0;
-        return Combo_OnReloadRequestImpl(nullptr,&seed);
+        if(slot==sProfilePreparedSlot&&g_ComboContextEpoch.load()==sProfilePreparedEpoch&&seed==sProfilePreparedSeed)return 1;
+        sProfilePreparedSlot=-1;sProfilePreparedSeed=nullptr;
+        if(!Combo_OnReloadRequestImpl(nullptr,&seed))return 0;
+        sProfilePreparedSlot=slot;sProfilePreparedEpoch=g_ComboContextEpoch.load();sProfilePreparedSeed=std::move(seed);
+        return 1;
     }catch(const std::exception& e){std::cerr<<"[ComboShip] Profile save preparation rejected: "<<e.what()<<'\n';return 0;}
 }
 static int ProfilePendingReady(int slot){

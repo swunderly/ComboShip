@@ -1095,6 +1095,10 @@ static uint32_t g_FinalizeMasterSeed = 0; // #169: the gen-roll latch keys off t
 // Consolidated spoiler JSON for the just-generated seed. The worker writes the pending file from it;
 // Combo_OnOOTSaveInit bakes it into the slot's container and pushes it into both DLLs at Start.
 static std::string g_ConsolidatedJson;
+// Bumped by everything that replaces the OoT rando context, g_ConsolidatedJson or the MM settings a
+// reload stashes for save creation (a seed reload, a generation, a save load or creation), so a profile
+// save preparation can tell that what it left is still in place (ProfilePrepareSave).
+static std::atomic<uint64_t> g_ComboContextEpoch{ 0 };
 
 // ---------- ComboShip-owned Anchor connection (Phase 1) ----------
 // The persistent socket + receive thread live HERE (launcher) so the connection survives OOT<->MM
@@ -2240,6 +2244,7 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
             g_GenerateBusy.store(false);
         }
     } publish{ progress };
+    ++g_ComboContextEpoch; // the fill rebuilds the OoT rando context
     ComboRando::GenerationScope generationScope(progress);
     ComboRando::KokiriSeedRevisionScope kokiriRevision(SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision,
                                                        ComboRando::kKokiriModernRevision);
@@ -3129,6 +3134,7 @@ static nlohmann::json ComboHintsJsonFrom(const std::string& consolidatedJson) {
 // Combo_PollFinalize on the main thread once the worker has stashed its result. NEVER call from the
 // worker thread (that race crashed the prior threaded attempt).
 static void Combo_FinalizeGenerate() {
+    ++g_ComboContextEpoch;
     std::unique_ptr<ComboRando::KokiriSeedRevisionScope> kokiriRevision;
     std::unique_ptr<ComboRando::KokiriGrassCatalogRevisionScope> grassRevision;
     try {
@@ -3298,6 +3304,7 @@ static std::filesystem::path FindNewestComboSeed(nlohmann::json& out) {
 // placements, and keeps the consolidated JSON in memory so "Start Randomizer" writes the per-slot
 // file. Returns 1 on success. The hash string is recomputed from displaySeed for the per-slot name.
 static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* profileSeed = nullptr) {
+    ++g_ComboContextEpoch;
     if (g_GenerateBusy.load() || g_ComboPendingFinalize.load()) {
         std::cerr << "[ComboShip] reload: skipped — a generation is in flight\n";
         return 0; // a generation is in flight — don't race it
@@ -3564,6 +3571,9 @@ static bool ApplyMmRandoSettingsForSave(const std::string& settings) {
 }
 
 static void Combo_OnOOTSaveInit(int fileNum) {
+    // Creation consumes the reload's stashed MM settings, and with them the profile preparation.
+    ++g_ComboContextEpoch;
+    sProfilePreparedSeed = nullptr;
     // A new file starts in OOT. Explicit because not every delete path clears the container
     // (DeleteFileOnDeath calls DeleteZeldaFile directly), so a stale MM could otherwise survive here.
     Combo_SetLastGame(fileNum, ComboRando::GAME_OOT);
@@ -3691,6 +3701,7 @@ static void Combo_ResumeMMIfLastSavedThere(int fileNum);
 // memory so the combo tracker peek shows real MM items before MM is visited. Skipped when that
 // slot's MM save is already live in memory — reloading from disk would clobber newer progress.
 static void Combo_OnOOTSaveLoad(int fileNum) {
+    ++g_ComboContextEpoch; // loading the save recreated the OoT rando context
     if (!ComboIsValidSlot(fileNum))
         return;
     nlohmann::json rules;
