@@ -505,7 +505,9 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
 
     auto parsePool = [&](Game game, const std::string& dumpJson) {
         auto d = nlohmann::json::parse(dumpJson);
-        for (const auto& source : d.value("beanSources", nlohmann::json::object()).items()) {
+        // items() refers into its json; a temporary from value() would die before the loop body runs.
+        const auto beanSourceDump = d.value("beanSources", nlohmann::json::object());
+        for (const auto& source : beanSourceDump.items()) {
             if (!source.value().is_object() || !source.value().at("license").is_boolean() ||
                 !source.value().at("renewable").is_boolean())
                 throw std::runtime_error("Malformed bean donor metadata");
