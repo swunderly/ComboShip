@@ -466,6 +466,19 @@ void ComboMenu::DrawScopeHelp() {
         dismiss();
 }
 
+// The profile catalog stays null until a file inspection first succeeds, and
+// search runs before the profile pages' availability check.
+static const nlohmann::json* CatalogueList(const char* game, const char* list) {
+    const auto& catalog = ProfileUI::Catalogue();
+    if (!catalog.is_object())
+        return nullptr;
+    const auto section = catalog.find(game);
+    if (section == catalog.end() || !section->is_object())
+        return nullptr;
+    const auto rows = section->find(list);
+    return rows != section->end() && rows->is_array() ? &*rows : nullptr;
+}
+
 // Canonical rules and techniques navigate to their owning editor. Native
 // settings retain their real callbacks; shared CVars surface once (OoT wins).
 void ComboMenu::DrawSearchResults(const std::string& query) {
@@ -552,10 +565,12 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
             std::string(trick.description) + " " + trick.area + " " + trick.tags + " technique trick MM Majora Mask";
         addLink(MenuSearchKind::Technique, trick.name, keywords.c_str(), "randomizer", "Tricks & glitches", "MM");
     }
-    if (ProfileUI::Ready())
-        for (const auto& row : ProfileUI::Catalogue().at("oot").at("tricks")) {
-            const auto name = row.at("label").get<std::string>();
-            const auto keywords = row.at("description").get<std::string>() + " " + row.value("area", std::string()) +
+    if (const auto* tricks = CatalogueList("oot", "tricks"))
+        for (const auto& row : *tricks) {
+            if (!row.is_object())
+                continue;
+            const auto name = row.value("label", std::string());
+            const auto keywords = row.value("description", std::string()) + " " + row.value("area", std::string()) +
                                   " " + row.value("tags", std::string()) + " technique trick OoT";
             addLink(MenuSearchKind::Technique, name.c_str(), keywords.c_str(), "randomizer", "Tricks & glitches",
                     "OoT");
