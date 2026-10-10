@@ -15,9 +15,6 @@
 #include <spdlog/spdlog.h>
 #include "rando/CrossForeign.h" // ComboShip: GameId
 #include "rando/SharedItems.h"  // same public readiness as the shared menu
-#include "rando/FaroreRules.h"
-#include "2s2h/Rando/FaroresWind.h"
-#include "2s2h/Rando/Spells.h"
 // ComboShip (issue #3): immediate cross-game delivery seam (defined in BenPort.cpp).
 extern "C" void (*gMMComboCrossDeliver)(int targetGame, const char* itemName, const char* srcCheckName);
 #endif
@@ -166,28 +163,6 @@ static bool IsNativeAdultDiagnosticQueueAvailable(RandoItemId item) {
 #else
     return false;
 #endif
-}
-
-static bool IsNativeSpellDiagnosticQueueAvailable(RandoItemId item) {
-#ifdef COMBO_BUILD
-    if (CVarGetInteger("gDeveloperTools.ComboNativeSpellGiTest", 0) != 1 || !ComboRando::ComboFaroreIntegrationReady ||
-        !gPlayState || gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2 ||
-        gSaveContext.save.shipSaveInfo.saveType != SAVETYPE_RANDO) {
-        return false;
-    }
-    const auto& options = gSaveContext.save.shipSaveInfo.rando.randoSaveOptions;
-    switch (item) {
-        case RI_FARORES_WIND:
-            return options[RO_MM_SPELL_WIND] && Combo_MMFarorePrepareResources();
-        case RI_NAYRUS_LOVE:
-            return options[RO_MM_SPELL_LOVE] && Combo_MMSpellPrepareResources(1);
-        case RI_DINS_FIRE:
-            return options[RO_MM_SPELL_FIRE] && Combo_MMSpellPrepareResources(2);
-        default:
-            break;
-    }
-#endif
-    return false;
 }
 
 void initSafeItemsForInventorySlot() {
@@ -1195,7 +1170,6 @@ void DrawItemsAndMasksTab() {
 
         for (auto& [randoItemId, randoStaticItem] : Rando::StaticData::Items) {
             if (!IsRandomizerItemGivePubliclyAvailable(randoItemId) &&
-                !IsNativeSpellDiagnosticQueueAvailable(randoItemId) &&
                 !IsNativeAdultDiagnosticQueueAvailable(randoItemId)) {
                 continue;
             }
