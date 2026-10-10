@@ -29,7 +29,13 @@ int GeneralIndex(RandomizerGet item) {
             return row.index;
     return -1;
 }
+// These settings have no Randomizer menu entry yet, but a settings profile, seed or CVar can still
+// carry them. Keep them off until the feature is published, so a stale value can never stop NPCs and
+// enemies from spawning or add soul items to a seed.
+constexpr bool kGeneralSoulsPublished = false;
 GeneralOotSoulOptions Options() {
+    if (!kGeneralSoulsPublished)
+        return {};
     auto ctx = Context::GetInstance();
     return { bool(ctx->GetOption(RSK_COMPLETE_OOT_SOULS).Get()), bool(ctx->GetOption(RSK_SHUFFLE_ENEMY_SOULS).Get()),
              bool(ctx->GetOption(RSK_SHUFFLE_NPC_SOULS).Get()), bool(ctx->GetOption(RSK_SHUFFLE_ANIMAL_SOULS).Get()),
