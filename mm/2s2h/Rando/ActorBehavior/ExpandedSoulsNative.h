@@ -199,10 +199,4 @@ template <class Options> inline void AddExpandedSoulPool(const Options& options,
         if (ExpandedSoulOption(options, i))
             pool.push_back(expandedSoulItems[i]);
 }
-template <class Options>
-inline void AddUnshuffledExpandedSouls(const Options& options, std::vector<RandoItemId>& starts) {
-    for (unsigned i = 0; i < 59; ++i)
-        if (!ExpandedSoulOption(options, i))
-            starts.push_back(expandedSoulItems[i]);
-}
 } // namespace Rando

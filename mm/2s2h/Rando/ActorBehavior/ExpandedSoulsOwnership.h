@@ -9,13 +9,6 @@ using ExpandedSoulsOwnership = std::array<uint8_t, 8>;
 inline bool ExpandedSoulOwned(const ExpandedSoulsOwnership& owned, unsigned index) {
     return index < 59 && (owned[index >> 3] & (1u << (index & 7))) != 0;
 }
-inline bool GrantExpandedSoul(ExpandedSoulsOwnership& owned, unsigned index) {
-    if (index >= 59)
-        return false;
-    const bool added = !ExpandedSoulOwned(owned, index);
-    owned[index >> 3] |= 1u << (index & 7);
-    return added;
-}
 inline ExpandedSoulsOwnership RestoreExpandedSouls(const nlohmann::json& savedRando) {
     ExpandedSoulsOwnership owned{};
     if (!savedRando.contains("expandedSoulsOwned"))

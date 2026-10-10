@@ -3,7 +3,6 @@
 #include <stdexcept>
 #include <nlohmann/json.hpp>
 namespace Rando {
-inline constexpr unsigned MissingMmSoulCount = 6;
 inline bool MissingMmSoulOwned(uint8_t owned, unsigned index) {
     return index < 6 && (owned & (1u << index));
 }

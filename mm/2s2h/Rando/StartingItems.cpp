@@ -75,7 +75,6 @@ std::vector<RandoItemId> GetComputedStartingItems(RandoSaveInfo& randoSaveInfo) 
         }
     }
 
-    AddUnshuffledExpandedSouls(randoSaveInfo.randoSaveOptions, startingItems);
     AddUnshuffledMissingMmSouls(randoSaveInfo.randoSaveOptions, startingItems);
 
     // Doesn't necessarily mean they can play them just sets the infs's for completeness
