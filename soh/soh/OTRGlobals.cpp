@@ -2908,8 +2908,8 @@ extern "C" COMBO_EXPORT void SOH_SetSongArrivals(uint32_t mask) {
     ComboRando::OotSongAgeArrivals() = {};
 }
 extern "C" COMBO_EXPORT int SOH_SongDestination(int source) {
-    // This export is the generation oracle's route query. Gameplay uses the
-    // separate ForeignSongDestination exports and the runtime map flags.
+    // Nothing resolves this export: the launcher binds its generation-oracle route query
+    // to SOH_SongLogicDestination, whose body this must keep matching.
     const auto& map = ComboRando::ActiveSongTravel();
     return (map.logicEnabled || map.logicForeignSongs) ? map.logicDestination(source) : -1;
 }
