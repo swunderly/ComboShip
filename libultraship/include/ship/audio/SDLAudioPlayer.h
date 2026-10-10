@@ -43,7 +43,7 @@ class SDLAudioPlayer final : public AudioPlayer {
 
     /**
      * @brief Queues interleaved PCM samples to the SDL audio device.
-     * @param buf Interleaved sample data (stereo: L,R,Ã¢â‚¬Â¦ or surround: FL,FR,C,LFE,SL,SR,Ã¢â‚¬Â¦).
+     * @param buf Interleaved sample data (stereo: L,R,… or surround: FL,FR,C,LFE,SL,SR,…).
      * @param len Length of @p buf in bytes.
      */
     void DoPlay(const uint8_t* buf, size_t len) override;

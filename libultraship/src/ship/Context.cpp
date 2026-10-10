@@ -43,7 +43,7 @@ void Context::DestroyInstance() {
 
 Context::~Context() {
     SPDLOG_TRACE("destruct context");
-    // ComboShip: null-guarded â€” a CreateUninitializedInstance() Context that never got Init*()
+    // ComboShip: null-guarded — a CreateUninitializedInstance() Context that never got Init*()
     // has no Window/Config, and destroying one segfaulted here.
     if (GetWindow() != nullptr) {
         GetWindow()->SaveWindowToConfig();
@@ -459,7 +459,7 @@ std::shared_ptr<ResourceManager> Context::GetResourceManager() const {
 }
 
 // ComboShip: swap the active ResourceManager (e.g. OOT<->MM on a game switch). The previous one is
-// NOT destroyed here â€” the caller keeps a reference so its archives/resource cache stay loaded, which
+// NOT destroyed here — the caller keeps a reference so its archives/resource cache stay loaded, which
 // lets each game keep its resources resident and avoids freeing data other globals still point into.
 void Context::SetResourceManager(std::shared_ptr<ResourceManager> resourceManager) {
     mResourceManager = resourceManager;
