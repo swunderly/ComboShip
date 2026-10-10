@@ -1,6 +1,7 @@
 # Combo Ship Android docs
 
 - [CHANGELOG.md](CHANGELOG.md): one short section per build, newest first (0.3.9 down to 0.1.0), with the date, the main changes and how each build was tested. Start here.
+- [ROADMAP.md](ROADMAP.md): the remaining authorized work, in build order, and what is not authorized.
 - [history/](history/): the detailed notes written during development (September 25 to October 8, 2026). They describe each release as it was at the time; later releases supersede them. Only relative links were updated when they moved here.
 
 The build guide ([BUILDING.md](../BUILDING.md)), the phone test checklist ([DEVICE_TESTS.md](../DEVICE_TESTS.md)) and the port [README](../README.md) stay in the `ComboAndroid/` folder.
