@@ -4909,8 +4909,13 @@ extern "C" COMBO_EXPORT void MM_SetComboGoalType(int type, int required, int pie
     MM_SetComboGoal(type == 1, required, pieces);
     gMMComboGoalType = std::clamp(type, 0, 5);
 }
+// ComboShip: nothing when no rando save is loaded (SaveManager_MarkNoSaveLoaded after a failed load), so
+// the combined Triforce overlay never counts the previous slot's MM pieces.
+static bool Combo_MM_RandoSaveLoaded() {
+    return gSaveContext.fileNum != 0xFF && gSaveContext.save.shipSaveInfo.saveType == SAVETYPE_RANDO;
+}
 extern "C" COMBO_EXPORT int MM_GetNamedTriforceMask(void) {
-    return gSaveContext.save.shipSaveInfo.rando.namedTriforceMask;
+    return Combo_MM_RandoSaveLoaded() ? gSaveContext.save.shipSaveInfo.rando.namedTriforceMask : 0;
 }
 // ComboShip: Shared Items (OoTMM-style) — see combo/rando/SharedItems.h. MM has no gen-time settings
 // that depend on the mask (only OOT's wallet force does), so only the runtime tier ABI lives here.
@@ -5175,7 +5180,7 @@ extern "C" COMBO_EXPORT void MM_SetSharedTickCb(void (*cb)(void)) {
 }
 
 extern "C" COMBO_EXPORT int MM_GetTriforcePieceCount(void) {
-    return gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces;
+    return Combo_MM_RandoSaveLoaded() ? gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces : 0;
 }
 // The OTHER game's piece count, so pickup messages can show the combined progress.
 extern "C" int (*gMMComboOtherTriforceCount)(void) = nullptr;
