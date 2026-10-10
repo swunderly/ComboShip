@@ -1,6 +1,6 @@
 #ifdef COMBO_BUILD
 #include "CheckTracker/CheckTracker.h"
-#include <cmath>
+#include "rando/TrackerKnowledge.h"
 #endif
 #include "Rando/Rando.h"
 #include "Rando/FaroresWind.h"
@@ -660,27 +660,24 @@ void DrawTycoonWallet() {
 static bool IsCheckModelVisible(Actor* actor) {
     if (!actor || !gPlayState)
         return false;
-    // The camera can sweep past a reward while a scene fade or pause overlay hides the view.
-    if (gPlayState->transitionMode != TRANS_MODE_OFF || gPlayState->transitionTrigger != TRANS_TRIGGER_OFF ||
-        gPlayState->envCtx.fillScreen || gPlayState->pauseCtx.state != 0)
-        return false;
-    // Some rewards keep drawing with zero scale until their reveal animation.
-    const MtxF* model = Matrix_GetCurrent();
-    if (model->xx * model->xx + model->yx * model->yx + model->zx * model->zx < 0.000001f ||
-        model->xy * model->xy + model->yy * model->yy + model->zy * model->zy < 0.000001f ||
-        model->xz * model->xz + model->yz * model->yz + model->zz * model->zz < 0.000001f)
-        return false;
-
     // Use the translated model origin, not the actor's feet or its generous culling volume.
     Vec3f pos;
     Matrix_MultZero(&pos);
     Vec3f projected;
     float w;
     SkinMatrix_Vec3fMtxFMultXYZW(&gPlayState->viewProjectionMtxF, &pos, &projected, &w);
-    // Match Fast3D's horizontal aspect correction, including narrow phone viewports.
-    const float horizontalScale = OTRGetAspectRatio() / (4.0f / 3.0f);
-    if (!(std::isfinite(w) && w > 0 && std::isfinite(horizontalScale) && horizontalScale > 0 && projected.z >= -w &&
-          projected.z <= w && fabsf(projected.x) <= w * horizontalScale && fabsf(projected.y) <= w))
+    // Some rewards keep drawing with zero scale until their reveal animation.
+    const MtxF* model = Matrix_GetCurrent();
+    const float scaleX2 = model->xx * model->xx + model->yx * model->yx + model->zx * model->zx;
+    const float scaleY2 = model->xy * model->xy + model->yy * model->yy + model->zy * model->zy;
+    const float scaleZ2 = model->xz * model->xz + model->yz * model->yz + model->zz * model->zz;
+    // The camera can sweep past a reward while a scene fade or pause overlay hides the view.
+    const bool covered = gPlayState->transitionMode != TRANS_MODE_OFF ||
+                         gPlayState->transitionTrigger != TRANS_TRIGGER_OFF || gPlayState->envCtx.fillScreen ||
+                         gPlayState->pauseCtx.state != 0;
+    // Same frustum test as OoT's tracker, with Fast3D's horizontal aspect correction (narrow phone viewports).
+    if (!ComboRando::TrackerItemInView(projected.x, projected.y, projected.z, w, OTRGetAspectRatio() / (4.0f / 3.0f),
+                                       scaleX2, scaleY2, scaleZ2, covered))
         return false;
 
     // Match OoT's shop observer: invisible shelf/counter interaction collision

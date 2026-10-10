@@ -22,6 +22,7 @@ fixtures = r'''
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include "rando/TrackerKnowledge.h"
 struct Vec3f { float x, y, z; };
 struct MtxF { float xx=1, yx=0, zx=0, xy=0, yy=1, zy=0, xz=0, yz=0, zz=1; } testModel;
 // id selects the shop-shelf exception (covered by mm_shop_observation_tests.py); this actor is not a shelf.
@@ -127,5 +128,5 @@ int main() {
 '''
 cpp = out/'mm_check_visibility.cpp'
 cpp.write_text(fixtures + gate + tests, encoding='utf-8')
-exe = hostcxx.build(args.compiler, cpp, std='c++17', werror=True)
+exe = hostcxx.build(args.compiler, cpp, std='c++17', includes=[args.source/'combo'], werror=True)
 subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
