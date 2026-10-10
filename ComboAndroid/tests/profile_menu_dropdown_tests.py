@@ -100,6 +100,11 @@ int main(){
  assert(document["oot"]["settings"][bfa]==1);
  WriteInteger(bfa,0);assert(document["oot"]["settings"][bfa]==0);
  std::cout << "Upgraded a legacy rule block and mirrored Blue Fire Arrows logic\n";
+ // A malformed song travel map cannot be derived from; reading the menu must keep the block's own values.
+ document["gameplayRules"]={{"values",{{"gEnhancements.OpenAllHours",1}}}};document["songTravel"]={{"version",9}};
+ assert(ReadInteger("gEnhancements.OpenAllHours",0)==1&&document["gameplayRules"]["version"]==2);
+ document.erase("songTravel");
+ std::cout << "Read a rule block next to a malformed song travel map\n";
  ImGui::DestroyContext();std::cout << "PASS: production dropdown selection/refresh remains valid\n";
 }
 '''

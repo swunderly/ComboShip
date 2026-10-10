@@ -65,7 +65,13 @@ static Json& RuleBlock() {
     auto& block = document["gameplayRules"];
     if (IsGameplayRuleBlock(block) && block["version"] == 2)
         return block;
-    auto rules = GameplayRulesForSeed(document);
+    Json rules;
+    try {
+        rules = GameplayRulesForSeed(document);
+    } catch (const std::exception&) {
+        // A malformed song travel map: keep the block's own values without deriving from it.
+        rules = NormalizeGameplayRuleSnapshot(block);
+    }
     if (block.is_object() && !IsGameplayRuleBlock(block)) {
         for (const char* field : { "values", "logicValues", "mmTricks" })
             if (block.contains(field) && block[field].is_object())
