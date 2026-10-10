@@ -327,7 +327,9 @@ typedef enum ItemId {
     /* 0xB2 */ ITEM_MAP_POINT_MILK_ROAD,
     /* 0xB3 */ ITEM_MAP_POINT_ZORA_CAPE,
     /* 0xB4 */ ITEM_SHIP, // 2S2H [Enhancement] Added to enable custom item gives
-    ITEM_COMBO_FARORES_WIND = 0xAE, // pinned custom item gap; 0xB5..0xB7 are native magic-arrow equip states
+    // Pinned; deliberately reuses the value of ITEM_MAP_POINT_STONE_TOWER. No clash: map-point items are only
+    // name and texture offsets, never inventory items. 0xB5..0xB7 are native magic-arrow equip states.
+    ITEM_COMBO_FARORES_WIND = 0xAE,
     ITEM_COMBO_NAYRUS_LOVE = 0xB8,
     ITEM_COMBO_DINS_FIRE = 0xB9,
     /* 0xB8 */ ITEM_B8 = 0xB8,
