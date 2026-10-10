@@ -14,10 +14,11 @@ void RegionTable_Init_DeathMountainTrail() {
         LOCATION(RC_DMT_FREESTANDING_POH,         	  logic->TakeDamage() || logic->CanUse(RG_HOVER_BOOTS) || (logic->IsAdult && CanPlantBean(RR_DEATH_MOUNTAIN_TRAIL, RG_DEATH_MOUNTAIN_TRAIL_BEAN_SOUL) && (logic->HasExplosives() || logic->HasItem(RG_GORONS_BRACELET)))),
         LOCATION(RC_DMT_GS_BEAN_PATCH,            	  logic->CanSpawnSoilSkull(RG_DEATH_MOUNTAIN_TRAIL_BEAN_SOUL) && (logic->HasExplosives() || logic->HasItem(RG_GORONS_BRACELET) || (ctx->GetTrickOption(RT_DMT_SOIL_GS) && (logic->TakeDamage() || logic->CanUse(RG_HOVER_BOOTS)) && logic->CanUse(RG_BOOMERANG)))),
 #ifdef COMBO_BUILD
-        LOCATION(RC_DMT_GS_NEAR_KAK,                    logic->HasExplosives() ||
+        LOCATION(RC_DMT_GS_NEAR_KAK,                    (logic->HasExplosives() ||
                  (logic->CanUse(RG_MEGATON_HAMMER) && (logic->CanUse(RG_STICKS) ||
                   logic->CanUse(RG_MASTER_SWORD) || logic->CanUse(RG_BIGGORON_SWORD) ||
-                  logic->CanUseProjectile() || logic->CanUse(RG_DINS_FIRE)))),
+                  logic->CanUseProjectile() || logic->CanUse(RG_DINS_FIRE)))) &&
+                 (logic->HasItem(RG_CLIMB) || logic->CanUse(RG_HOOKSHOT) || logic->CanUse(RG_BOOMERANG))),
 #else
         LOCATION(RC_DMT_GS_NEAR_KAK,              	  logic->BlastOrSmash() && (logic->HasItem(RG_CLIMB) || logic->CanUse(RG_HOOKSHOT) || logic->CanUse(RG_BOOMERANG))),
 #endif

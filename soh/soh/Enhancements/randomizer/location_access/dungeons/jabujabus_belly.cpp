@@ -384,7 +384,8 @@ void RegionTable_Init_JabuJabusBelly() {
         LOCATION(RC_JABU_JABUS_BELLY_MQ_BOOMERANG_ROOM_SMALL_CHEST, logic->HasItem(RG_OPEN_CHEST)),
 #ifdef COMBO_BUILD
         LOCATION(RC_JABU_JABUS_BELLY_MQ_BOOMERANG_CHEST,
-                 logic->Get(LOGIC_JABU_MQ_WATER_SWITCH_LIFT_ACCESS) && logic->CanOpenLargeChest()),
+                 (logic->IsAdult || logic->HasItem(RG_CLIMB)) && logic->Get(LOGIC_JABU_MQ_WATER_SWITCH_LIFT_ACCESS) &&
+                 logic->CanOpenLargeChest()),
 #else
         LOCATION(RC_JABU_JABUS_BELLY_MQ_BOOMERANG_CHEST,            (logic->IsAdult || logic->HasItem(RG_CLIMB)) && logic->CanKillEnemy(RE_LIZALFOS) && logic->CanOpenLargeChest()),
 #endif
