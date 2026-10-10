@@ -33,7 +33,7 @@ engine = r'''
 #include "menu/ComboRandomizerProfileABI.h"
 namespace ImGui {
  int frame=0;double now=0;
- int GetFrameCount(){return frame;}double GetTime(){return now;}
+ int GetFrameCount(){return frame;}double GetTime(){return now;}bool itemActive=false;bool IsAnyItemActive(){return itemActive;}
 }
 using Json=nlohmann::json;
 int inspections=0,policies=0,pools=0,commits=0;
@@ -61,6 +61,16 @@ void Run(){
  view=0;Frame();document["value"]=7;dirty=true;EndFrame();
  Require(commits==1,"edited settings did not persist");
  Frame();Require(inspections==6&&document["value"]==7,"edited settings did not refresh");EndFrame();
+ // A slider drag edits every frame; the store is written and re-inspected once, after release.
+ ImGui::itemActive=true;
+ for(int i=0;i<30;++i){Frame();document["value"]=10+i;dirty=true;EndFrame();}
+ Require(commits==1&&inspections==6,"a slider drag committed or re-inspected every frame");
+ ImGui::itemActive=false;Frame();EndFrame();Require(commits==2,"the drag's last value was not committed");
+ Frame();Require(inspections==7&&document["value"]==39,"the committed drag value did not refresh");EndFrame();
+ // A waiting edit is committed to its own file before the selector shows another view.
+ ImGui::itemActive=true;Frame();document["value"]=50;dirty=true;EndFrame();
+ view=1;Frame();Require(commits==3&&document["value"]==1,"a waiting edit was lost on a view change");EndFrame();
+ ImGui::itemActive=false;view=0;Frame();Require(document["value"]==50,"a waiting edit reached the wrong view");EndFrame();
  current["generation"]["running"]=true;
  ImGui::frame+=5;Frame();const int started=inspections;EndFrame();
  for(int i=0;i<10;++i){Frame();EndFrame();}
@@ -79,6 +89,7 @@ cpp = out / 'profile_menu_refresh.cpp'
 cpp.write_text(engine + declarations + function('bool Ready()') + function('bool Editable()')
                + function('static bool Response(')
                + (function('static void RefreshSnapshot(') if 'static void RefreshSnapshot(' in text else '')
+               + (function('static void CommitDraft(') if 'static void CommitDraft(' in text else '')
                + function('void BeginFrame()')
                + function('void EndFrame()') + tests, encoding='utf-8')
 exe = hostcxx.build(args.compiler, cpp, std='c++17', werror=True, includes=[source/'combo', args.json_include])

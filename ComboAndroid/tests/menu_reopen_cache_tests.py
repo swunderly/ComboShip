@@ -32,7 +32,7 @@ code=r'''
 #include <stdexcept>
 #include "menu/ComboRandomizerProfileABI.h"
 #include "ComboRandomizerProfileRepository.h"
-namespace ImGui {int frame=0;double now=0;int GetFrameCount(){return frame;}double GetTime(){return now;}}
+namespace ImGui {int frame=0;double now=0;int GetFrameCount(){return frame;}double GetTime(){return now;}bool IsAnyItemActive(){return false;}}
 using Json=nlohmann::json;
 int inspections=0,policies=0,pools=0,commits=0;
 uint64_t nativeRevision=1;
@@ -52,6 +52,7 @@ void RefreshOptionPolicy(bool){++policies;}void RefreshPoolViews(){++pools;}
 '''
 code+=declarations+function('bool Ready()')+function('bool Editable()')+function('static bool Response(')
 if 'static void RefreshSnapshot(' in text:code+=function('static void RefreshSnapshot(')
+if 'static void CommitDraft(' in text:code+=function('static void CommitDraft(')
 code+=function('void BeginFrame()')+function('void EndFrame()')+'}\n'
 code+=function('extern "C" COMBO_EXPORT void ComboUI_SetRandomizerProfileStore(')
 code+='#define TEST_REVISION_CALLBACK '+str(int('static void RefreshSnapshot(' in text))+'\n'

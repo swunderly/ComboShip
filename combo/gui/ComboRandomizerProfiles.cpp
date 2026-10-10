@@ -173,21 +173,36 @@ static void RefreshSnapshot(double now, uint64_t revision) {
     snapshotRevision = revision;
     snapshotValid = true;
 }
+// Each commit rewrites the whole profile store and refreshes the snapshot, so EndFrame waits while a
+// slider or text field is in use. The document belongs to the inspected file and view.
+static void CommitDraft() {
+    if (!dirty)
+        return;
+    dirty = false;
+    if (snapshotView != 0 || !document.is_object())
+        return;
+    refreshPending = true;
+    try {
+        Response(callbacks.setDraft(snapshotSlot, document.dump().c_str()));
+    } catch (const std::exception& e) { error = e.what(); }
+}
 void BeginFrame() {
     active = false;
-    dirty = false;
     try {
         if (!Ready())
             return;
+        if (selected != snapshotSlot || view != snapshotView)
+            CommitDraft();
         const int frame = ImGui::GetFrameCount();
         const double now = ImGui::GetTime();
         const bool versioned = callbacks.version >= 2 && callbacks.revision;
         const uint64_t revision = versioned ? callbacks.revision() : 0;
         const bool running =
             snapshot.is_object() && snapshot.value("generation", Json::object()).value("running", false);
-        const bool refresh = refreshPending || !snapshotValid || (!versioned && frame > lastMenuFrame + 1) ||
-                             (versioned && revision != snapshotRevision) || selected != snapshotSlot ||
-                             view != snapshotView || (running && now - lastInspection >= .25);
+        // An uncommitted edit lives only in the document; refresh after it is committed.
+        const bool refresh = !dirty && (refreshPending || !snapshotValid || (!versioned && frame > lastMenuFrame + 1) ||
+                                        (versioned && revision != snapshotRevision) || selected != snapshotSlot ||
+                                        view != snapshotView || (running && now - lastInspection >= .25));
         lastMenuFrame = frame;
         if (refresh)
             RefreshSnapshot(now, revision);
@@ -195,12 +210,8 @@ void BeginFrame() {
     } catch (const std::exception& e) { error = e.what(); }
 }
 void EndFrame() {
-    if (dirty && Editable()) {
-        refreshPending = true;
-        try {
-            Response(callbacks.setDraft(selected, document.dump().c_str()));
-        } catch (const std::exception& e) { error = e.what(); }
-    }
+    if (active && !ImGui::IsAnyItemActive())
+        CommitDraft();
     active = false;
 }
 bool DrawUnavailableSettings() {
