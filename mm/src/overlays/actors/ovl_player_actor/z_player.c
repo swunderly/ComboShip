@@ -6199,7 +6199,11 @@ s32 Player_UpdateBodyBurn(PlayState* play, Player* this) {
             func_80834140(play, this, &gPlayerAnim_link_derth_rebirth);
         }
     } else {
+#ifdef COMBO_BUILD
+        if (Combo_MM_IsGoronOrGoronTunic(this)) {
+#else
         if (this->transformation == PLAYER_FORM_GORON) {
+#endif
             var_v1 = 20;
         } else {
             var_v1 = (s32)(this->speedXZ * 0.4f) + 1;
@@ -6395,12 +6399,7 @@ s32 func_80834600(Player* this, PlayState* play) {
         s32 var_v1_2;
         s32 pad48;
 
-        if ((sp58 < 0) || (!isSurfaceWallDamage &&
-#ifdef COMBO_BUILD
-                           Combo_MM_IsGoronOrGoronTunic(this) &&
-#else
-                           (this->transformation == PLAYER_FORM_GORON) &&
-#endif
+        if ((sp58 < 0) || (!isSurfaceWallDamage && (this->transformation == PLAYER_FORM_GORON) &&
                            !(this->actor.depthInWater > 0.0f))) {
             var_a1 = (this->actor.wallPoly != NULL) &&
                      SurfaceType_IsWallDamage(&play->colCtx, this->actor.wallPoly, this->actor.wallBgId);
