@@ -3,12 +3,6 @@
 #include "rando/entrances/MmGrottoLayout.h"
 #include "rando/entrances/Shuffle.h"
 namespace ComboRando::Entrances {
-inline std::optional<Key> MmGrottoGraphSource(std::string_view region, uint32_t exit) {
-    for (const auto& row : kMmGrottoGraphBindings)
-        if (row.sourceRegion == region && row.sourceExit == exit)
-            return Key{ Game::Mm, row.logicalId };
-    return std::nullopt;
-}
 inline uint32_t MmGrottoLogicArrival(uint32_t destination) {
     for (const auto& row : kMmGrottoGraphBindings)
         if (row.logicalId == destination)

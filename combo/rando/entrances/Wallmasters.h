@@ -1,4 +1,4 @@
-// Source routing adapted from OoTMM En/En_Wallmas.c in each game.
+// Source routing adapted from OoTMM mm/actors/En/En_Wallmas.c.
 // See LICENSE.OoTMM. Unsupported contexts preserve the vanilla action.
 #pragma once
 #include "Context.h"
@@ -10,85 +10,27 @@
 namespace ComboRando::Entrances {
 enum class SceneContext : uint8_t {
     Unknown,
-    OotForest,
-    OotShadow,
-    OotSpirit,
-    OotBottomWell,
-    OotGtg,
-    OotGanonCastle,
     MmDampe,
     MmBeneathWell,
 };
-inline const Record* WallmasterSource(Game game, SceneContext scene, uint8_t room) {
+inline const Record* WallmasterSource(SceneContext scene, uint8_t room) {
     std::string_view name;
-    if (game == Game::Mm) {
-        if (scene == SceneContext::MmDampe)
-            name = "MM_WALLMASTER_DAMPE";
-        if (scene == SceneContext::MmBeneathWell)
-            switch (room) {
-                case 1:
-                    name = "MM_WALLMASTER_BTW_ENTRANCE";
-                    break;
-                case 5:
-                    name = "MM_WALLMASTER_BTW_FOUNTAIN";
-                    break;
-                case 7:
-                    name = "MM_WALLMASTER_BTW_EXIT";
-                    break;
-                default:
-                    break;
-            }
-    } else {
-        switch (scene) {
-            case SceneContext::OotForest:
-                name = room == 0x14 ? "OOT_WALLMASTER_FOREST_CORRIDOR_EAST" : "OOT_WALLMASTER_FOREST_CORRIDOR_WEST";
+    if (scene == SceneContext::MmDampe)
+        name = "MM_WALLMASTER_DAMPE";
+    if (scene == SceneContext::MmBeneathWell)
+        switch (room) {
+            case 1:
+                name = "MM_WALLMASTER_BTW_ENTRANCE";
                 break;
-            case SceneContext::OotShadow:
-                name = "OOT_WALLMASTER_SHADOW";
+            case 5:
+                name = "MM_WALLMASTER_BTW_FOUNTAIN";
                 break;
-            case SceneContext::OotSpirit:
-                switch (room) {
-                    case 0x02:
-                        name = "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES";
-                        break;
-                    case 0x05:
-                        name = "OOT_WALLMASTER_SPIRIT_STATUE";
-                        break;
-                    case 0x08:
-                        name = "OOT_WALLMASTER_SPIRIT_CHILD_SUN";
-                        break;
-                    case 0x0f:
-                        name = "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB";
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case SceneContext::OotBottomWell:
-                switch (room) {
-                    case 0:
-                        name = "OOT_WALLMASTER_BOTW_MAIN";
-                        break;
-                    case 1:
-                        name = "OOT_WALLMASTER_BOTW_BASEMENT";
-                        break;
-                    case 3:
-                        name = "OOT_WALLMASTER_BOTW_PIT";
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case SceneContext::OotGtg:
-                name = "OOT_WALLMASTER_GTG";
-                break;
-            case SceneContext::OotGanonCastle:
-                name = room == 0x0a ? "OOT_WALLMASTER_GANON_LIGHT" : "OOT_WALLMASTER_GANON_SPIRIT";
+            case 7:
+                name = "MM_WALLMASTER_BTW_EXIT";
                 break;
             default:
                 break;
         }
-    }
     return Find(name);
 }
 
@@ -167,14 +109,11 @@ class MmWallmasterLayout {
         return static_cast<uint16_t>(destinationIds[it - kMmWallmasterSources.begin()]);
     }
     // The caller clears the real dungeon ingress when this returns a route.
-    std::optional<Arrival> capture(SceneContext scene, uint8_t room, OotAge age, MmForm form) const {
-        const auto* src = WallmasterSource(Game::Mm, scene, room);
+    std::optional<uint16_t> capture(SceneContext scene, uint8_t room) const {
+        const auto* src = WallmasterSource(scene, room);
         if (!src)
             return std::nullopt;
-        const auto dst = destination(src->name);
-        if (!dst)
-            return std::nullopt;
-        return Arrival{ { Game::Mm, *dst }, ArrivalReason::Entrance, age, form, {}, {}, true };
+        return destination(src->name);
     }
 };
 inline MmWallmasterLayout& ActiveMmWallmasters() {

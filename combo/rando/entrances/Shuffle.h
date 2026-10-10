@@ -442,22 +442,6 @@ class Shuffler {
                         settings.games == Games::Both ? "OOT_MARKET_FROM_MASK_SHOP" : "MM_CLOCK_TOWN_FROM_CLOCK_TOWER");
         }
     }
-    Pools preview() const {
-        return anyActive ? makePools() : Pools{};
-    }
-    void plando(std::string_view src, std::string_view dst) {
-        if (!anyActive)
-            throw std::invalid_argument("Enable entrance profile before entrance plando");
-        if (!available.contains(src) || !available.contains(dst) || usedSrc.contains(src) || usedDst.contains(dst))
-            return;
-        if (!bindings.sourceSupported(*Find(src)) || !bindings.destinationSupported(*Find(dst)))
-            throw std::invalid_argument("Unsupported native entrance plando");
-        reserve(Find(src)->name, Find(dst)->name);
-        const auto* a = coupledReverse(src);
-        const auto* b = coupledReverse(dst);
-        if (a && b)
-            reserve(b->name, a->name);
-    }
     Overrides run() {
         if (!anyActive)
             return {};

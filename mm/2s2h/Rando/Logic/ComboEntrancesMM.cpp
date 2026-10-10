@@ -123,9 +123,6 @@ extern "C" COMBO_EXPORT void MM_ClearEntranceExpansionAssumptionsForCombo() {
     CE::ActiveMmGrottoAssumptions().reset();
     CE::ActiveMmMixedAssumptions().reset();
 }
-extern "C" COMBO_EXPORT int MM_EntranceExpansionActive() {
-    return CE::ActiveMmWallmasters().active() ? 1 : 0;
-}
 namespace {
 CE::MmPreviousScene GrottoPreviousScene() {
     const auto& ship = gSaveContext.save.shipSaveInfo;
@@ -297,15 +294,14 @@ extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
     const auto scene = play->sceneId == SCENE_DANPEI2TEST ? CE::SceneContext::MmDampe
                        : play->sceneId == SCENE_REDEAD    ? CE::SceneContext::MmBeneathWell
                                                           : CE::SceneContext::Unknown;
-    const auto arrival = CE::ActiveMmWallmasters().capture(scene, static_cast<uint8_t>(actor->room), CE::OotAge::Child,
-                                                           static_cast<CE::MmForm>(gSaveContext.save.playerForm));
-    if (!arrival)
+    const auto destination = CE::ActiveMmWallmasters().capture(scene, static_cast<uint8_t>(actor->room));
+    if (!destination)
         return 0;
     // Pinned EnWallmas_TakePlayerEr clears the dungeon-entrance respawn so the next dungeon records
     // its own ingress. The end-of-cycle reset clears exactly that, in both the local and shared copies.
     Combo_MMFaroreEndCycle();
     // Full alias destination was checked at seed load; this profile has only real MM entrances.
-    play->nextEntrance = static_cast<uint16_t>(arrival->destination.id);
+    play->nextEntrance = *destination;
     gSaveContext.respawnFlag = 0;
     play->transitionTrigger = TRANS_TRIGGER_START;
     play->transitionType = TRANS_TYPE_FADE_BLACK;
