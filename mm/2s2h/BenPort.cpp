@@ -5262,7 +5262,7 @@ static uint32_t MmForeignWarpSources(uint32_t known, bool logical = false) {
             buttons |= 1u << i;
     return ComboRando::ForeignWarpSources(logical ? ComboRando::ActiveSongTravel().logicForeignSongs
                                                   : ComboRando::ActiveSongTravel().foreignSongs,
-                                          known, HAS_ITEM(ITEM_OCARINA_OF_TIME), buttons);
+                                          known, HAS_PLAYABLE_OCARINA, buttons);
 }
 extern "C" COMBO_EXPORT uint32_t MM_GetSongSources() {
     uint32_t native = CAN_PLAY_SONG(SOARING) ? MM_GetSongKnowledge() : 0;
