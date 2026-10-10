@@ -1042,9 +1042,11 @@ unchanged: `mmAdvUnreachable > 0` is already fatal in every mode, so a closed po
 
 **`combo/rando/ComboPlaythrough.h`:** the same latched gate in `RunPlaythrough` (sphere trace + the
 full-inventory "ever reachable" pass) and in `PareDownPlaythrough`'s `winsWithout`, or the
-`--playthrough` validator would keep certifying these seeds beatable. The reachability memo now caches
-the portal bit next to the set (`ReachResult`): a memo hit runs no search, so reading the DLL's bit
-afterwards would be stale.
+`--playthrough` validator would keep certifying these seeds beatable. Both now query the two worlds
+together through `QuerySongWorlds`, which latches the portal bit. `PareDownPlaythrough` caches whole
+two-world song queries (`songMemo`, keyed on both owned sets, `portalOpen`, the excluded stock-sensitive
+placements and bean renewal) together with the latched portal bit: a memo hit runs no search, so
+reading the DLL's bit afterwards would be stale.
 
 **`soh/.../3drando/fill.cpp` (`ComboFillConfined`):** the Mask Shop Key is filled within
 `ctx->allLocations` (OOT-only), which keeps it out of the cross-world pool. The `RSK_COMBO_FORCE_MASK_SHOP_KEY`
