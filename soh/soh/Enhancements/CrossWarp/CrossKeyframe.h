@@ -7,12 +7,6 @@
 struct PlayState;
 
 struct CWKFSkelAnimeFlex;
-struct CWKFSkelAnime;
-
-typedef s32 (*CWOverrideKeyframeDraw)(struct PlayState* play, struct CWKFSkelAnime* kfSkelAnime, s32 limbIndex,
-                                      Gfx** dList, u8* flags, void* arg, Vec3s* rot, Vec3f* pos);
-typedef s32 (*CWPostKeyframeDraw)(struct PlayState* play, struct CWKFSkelAnime* kfSkelAnime, s32 limbIndex, Gfx** dList,
-                                  u8* flags, void* arg, Vec3s* rot, Vec3f* pos);
 
 typedef s32 (*CWOverrideKeyframeDrawScaled)(struct PlayState* play, struct CWKFSkelAnimeFlex* kfSkelAnime,
                                             s32 limbIndex, Gfx** dList, u8* flags, void* arg, Vec3f* scale, Vec3s* rot,
@@ -34,22 +28,6 @@ typedef enum {
 } CWKeyFrameDoneType;
 
 #define KF_CALLBACK_INDEX_NONE 0xFF
-
-typedef struct {
-    /* 0x00 */ Gfx* dList;     // Display list for this limb
-    /* 0x04 */ u8 numChildren; // Number of children for this limb
-    /* 0x05 */ u8
-        drawFlags; // KEYFRAME_DRAW_*, determines which render layer the matrix + display list will be appended to
-    /* 0x06 */ Vec3s jointPos; // For the root limb this is the position in model space; for child limbs it is the
-                               // relative position to the parent
-} CWKeyFrameStandardLimb;      // size = 0xC
-
-typedef struct {
-    /* 0x00 */ u8 limbCount;  // Number of limbs in this skeleton
-    /* 0x01 */ u8 dListCount; // Number of limbs with a non-NULL display list, used to know how many matrices to
-                              // allocate for drawing
-    /* 0x04 */ CWKeyFrameStandardLimb* limbs; // Pointer to standard limb array
-} CWKeyFrameSkeleton;                         // Size = 0x8
 
 typedef struct {
     /* 0x00 */ Gfx* dList;     // Display list for this limb
@@ -118,21 +96,6 @@ typedef struct {
     /* 0x14 */ s32 animMode;   // Current play mode (see FrameAnimMode)
 } CWFrameControl;              // Size = 0x18
 
-typedef struct CWKFSkelAnime {
-    /* 0x00 */ CWFrameControl frameCtrl;       // Current play state
-    /* 0x18 */ CWKeyFrameSkeleton* skeleton;   // Skeleton to animate
-    /* 0x1C */ CWKeyFrameAnimation* animation; // Currently active animation
-    /* 0x20 */ f32
-        morphFrames; // Number of frames in which to morph between the previous pose and the current animation
-    /* 0x24 */ Vec3s* jointTable; // Array of data describing the current pose
-                                  //     size = 1 + limbCount, one root translation followed by rotations for each limb
-    /* 0x28 */ Vec3s* morphTable; // Array of data describing the current morph pose to interpolate with
-                                  //     size = 1 + limbCount, one root translation followed by rotations for each limb
-    /* 0x2C */ Vec3s* rotOffsetsTable; // Table of rotations to add to the current pose, may be NULL so that no
-                                       // additional rotations are added
-                                       //     size = limbCount
-} CWKFSkelAnime;                       // Size = 0x30
-
 typedef struct CWKFSkelAnimeFlex {
     /* 0x00 */ CWFrameControl frameCtrl;                      // Current play state
     /* 0x18 */ CWKeyFrameFlexSkeleton* skeleton;              // Skeleton to animate
@@ -160,17 +123,10 @@ void CWKeyframe_ResetFlex(CWKFSkelAnimeFlex* kfSkelAnime);
 void CWKeyframe_InitFlex(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton,
                          CWKeyFrameAnimation* animation, Vec3s* jointTable, Vec3s* morphTable,
                          KeyframeTransformCallback* transformCallbacks);
-void CWKeyframe_DestroyFlex(CWKFSkelAnimeFlex* kfSkelAnime);
 void CWKeyframe_FlexPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation);
-void CWKeyframe_FlexPlayOnceSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed);
-void CWKeyframe_FlexMorphToPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames);
-void CWKeyframe_FlexPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation);
-void CWKeyframe_FlexPlayLoopSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed);
-void CWKeyframe_FlexMorphToPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames);
 void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton,
                                CWKeyFrameAnimation* animation, f32 startTime, f32 endTime, f32 t, f32 speed,
                                f32 morphFrames, s32 animMode);
-void CWKeyframe_FlexChangeAnimQuick(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation);
 f32 CWKeyframe_Interpolate(f32 t, f32 delta, f32 x0, f32 x1, f32 v0, f32 v1);
 s16 CWKeyframe_KeyCalc(s16 kfStart, s16 kfNum, KeyFrame* keyFrames, f32 t);
 void CWKeyframe_MorphInterpolateRotation(f32 t, s16* out, s16 rot1, s16 rot2);

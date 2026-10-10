@@ -1,5 +1,5 @@
-#ifndef Z_EN_TEST7_H
-#define Z_EN_TEST7_H
+#ifndef COMBO_CROSS_OWL_H
+#define COMBO_CROSS_OWL_H
 
 #include "global.h"
 #include "CrossKeyframe.h"
@@ -8,10 +8,6 @@ struct CrossOwl;
 
 typedef void (*CrossOwlPlayerCamFunc)(struct CrossOwl*, PlayState*);
 typedef void (*CrossOwlActionFunc)(struct CrossOwl*, PlayState*);
-
-#define OWL_WARP_CS_GET_OCARINA_MODE(thisx) ((thisx)->params)
-
-#define ENTEST7_ARRIVE -1
 
 typedef struct {
     /* 0x00 */ f32 unk_00;
@@ -78,4 +74,4 @@ typedef struct CrossOwl {
     u32 blurHeight;
 } CrossOwl; // size = 0x1E9C
 
-#endif // Z_EN_TEST7_H
+#endif // COMBO_CROSS_OWL_H

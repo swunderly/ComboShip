@@ -1,5 +1,10 @@
 #pragma once
 #include "global.h"
+// MM's owl-warp pause states, shared by the OoT soaring map and its song replies.
+#define PAUSE_STATE_OWLWARP_3 0x104
+#define PAUSE_STATE_OWLWARP_SELECT 0x106
+#define PAUSE_STATE_OWLWARP_CONFIRM 0x107
+#define PAUSE_STATE_OWLWARP_6 0x112
 #ifdef __cplusplus
 extern "C" {
 #endif

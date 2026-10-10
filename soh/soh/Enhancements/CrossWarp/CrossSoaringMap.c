@@ -2,16 +2,6 @@
 #include "CrossWarp.h"
 #include "MMWarpAssets.h"
 #include "soh/ResourceManagerHelpers.h"
-#ifndef COMBO_PAUSE_STATE_DEFS_H
-#define COMBO_PAUSE_STATE_DEFS_H
-
-#define PAUSE_STATE_OWLWARP_0 0x101
-#define PAUSE_STATE_OWLWARP_1 0x102
-#define PAUSE_STATE_OWLWARP_2 0x103
-#define PAUSE_STATE_OWLWARP_3 0x104
-#define PAUSE_STATE_OWLWARP_SELECT 0x106
-#define PAUSE_STATE_OWLWARP_CONFIRM 0x107
-#define PAUSE_STATE_OWLWARP_6 0x112
 
 #define PAUSE_ITEM_NONE 999
 
@@ -36,10 +26,7 @@
 
 #define VTX_PAGE_MAP_WORLD_QUADS 36 /* VTX_PAGE_MAP_WORLD */
 
-#endif
-
 #define PAUSE_WORLD_MAP 4
-#define VTX_PAGE_MAX 1
 #define OWL_WARP_MAX 11
 #define VTX_PAGE_MAP_WORLD 0
 #define QUAD_MAP_PAGE_WORLD_CLOUDS_FIRST 15
@@ -215,22 +202,6 @@ static s16 gVtxPageMapWorldQuadsHeight[VTX_PAGE_MAP_WORLD_QUADS] = {
     12, /* mapPageVtx[192] QUAD_MAP_OWL_WARP_SOUTHERN_SWAMP */
     12, /* mapPageVtx[196] QUAD_MAP_OWL_WARP_IKANA_CANYON */
     12, /* mapPageVtx[200] QUAD_MAP_OWL_WARP_STONE_TOWER */
-};
-
-static s16* sVtxPageQuadsX[VTX_PAGE_MAX] = {
-    sVtxPageMapWorldQuadsX, /* VTX_PAGE_MAP_WORLD */
-};
-
-static s16* sVtxPageQuadsWidth[VTX_PAGE_MAX] = {
-    gVtxPageMapWorldQuadsWidth, /* VTX_PAGE_MAP_WORLD */
-};
-
-static s16* sVtxPageQuadsY[VTX_PAGE_MAX] = {
-    sVtxPageMapWorldQuadsY, /* VTX_PAGE_MAP_WORLD */
-};
-
-static s16* sVtxPageQuadsHeight[VTX_PAGE_MAX] = {
-    gVtxPageMapWorldQuadsHeight, /* VTX_PAGE_MAP_WORLD */
 };
 
 static const char* sCloudTextures[] = {

@@ -94,7 +94,6 @@ static void CWEnvironment_LerpFog(PlayState* play, s16 nearTarget, s16 farTarget
     play->envCtx.adjFogFar = (farTarget - play->envCtx.lightSettings.fogFar) * lerp;
 }
 
-void CrossOwl_SetupPlayerCamFunc(CrossOwl* this, CrossOwlPlayerCamFunc playerCamFunc);
 void CrossOwl_SetupAction(CrossOwl* this, CrossOwlActionFunc actionFunc);
 void CrossOwl_InitFeathers(OwlWarpFeather* feathers);
 void CrossOwl_AddFeather(OwlWarpFeather* feather, Vec3f* pos, s32 isPosYRand);
@@ -241,10 +240,6 @@ int Combo_SOHStartSoaring(PlayState* play, int destination) {
                        player->actor.world.pos.y, player->actor.world.pos.z, 0, player->actor.shape.rot.y, 0,
                        destination) != NULL;
 }
-void CrossOwl_SetupPlayerCamFunc(CrossOwl* this, CrossOwlPlayerCamFunc playerCamFunc) {
-    this->playerCamFunc = playerCamFunc;
-}
-
 void CrossOwl_SetupAction(CrossOwl* this, CrossOwlActionFunc actionFunc) {
     this->actionFunc = actionFunc;
 }

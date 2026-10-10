@@ -179,7 +179,7 @@ void CWKeyframe_InitFlex(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton*
                          CWKeyFrameAnimation* animation, Vec3s* jointTable, Vec3s* morphTable,
                          KeyframeTransformCallback* transformCallbacks) {
     if (ResourceMgr_OTRSigCheck(skeleton)) {
-        skeleton = (CWKeyFrameSkeleton*)Combo_SOHWarpResource(skeleton);
+        skeleton = (CWKeyFrameFlexSkeleton*)Combo_SOHWarpResource(skeleton);
     }
     if (ResourceMgr_OTRSigCheck(animation)) {
         animation = (CWKeyFrameAnimation*)Combo_SOHWarpResource(animation);
@@ -192,14 +192,6 @@ void CWKeyframe_InitFlex(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton*
     kfSkelAnime->jointTable = jointTable;
     kfSkelAnime->morphTable = morphTable;
     kfSkelAnime->transformCallbacks = transformCallbacks;
-}
-
-/**
- * Destroys a flex-type keyframe skeleton.
- *
- * @note Original name unknown
- */
-void CWKeyframe_DestroyFlex(CWKFSkelAnimeFlex* kfSkelAnime) {
 }
 
 void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton,
@@ -217,83 +209,6 @@ void CWKeyframe_FlexPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation
     CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
                               ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f, 0.0f,
                               KEYFRAME_ANIM_ONCE);
-}
-
-/**
- * Immediately changes to an animation that plays once from start to end at the specified speed.
- *
- * @param animation Animation data to switch to
- * @param speed Playback speed
- *
- * @note Original name unknown
- */
-void CWKeyframe_FlexPlayOnceSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed) {
-    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, speed, 0.0f,
-                              KEYFRAME_ANIM_ONCE);
-}
-
-/**
- * Smoothly transitions to an animation that plays once from start to end at the default speed, specifying the number of
- * frames for the transition.
- *
- * @param animation Animation data to switch to
- * @param morphFrames Number of frames to take to transition from the previous pose to the new animation. Positive morph
- *                    frames morph from the current pose to the start pose of the new animation, then start the new
- *                    animation. Negative morph frames start the new animation immediately, modified by the pose
- *                    immediately before the animation change.
- *
- * @note Original name unknown
- */
-void CWKeyframe_FlexMorphToPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames) {
-    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f,
-                              morphFrames, KEYFRAME_ANIM_ONCE);
-}
-
-/**
- * Immediately changes to an animation that loops over start to end at the default speed.
- *
- * @param animation Animation data to switch to
- *
- * @note Original name unknown
- */
-void CWKeyframe_FlexPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation) {
-    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f, 0.0f,
-                              KEYFRAME_ANIM_LOOP);
-}
-
-/**
- * Immediately changes to an animation that loops over start to end at the specified speed.
- *
- * @param animation Animation data to switch to
- * @param speed Playback speed
- *
- * @note Original name unknown
- */
-void CWKeyframe_FlexPlayLoopSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed) {
-    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, speed, 0.0f,
-                              KEYFRAME_ANIM_LOOP);
-}
-
-/**
- * Smoothly transitions to an animation that loops over start to end at the default speed, specifying the number of
- * frames for the transition.
- *
- * @param animation Animation data to switch to
- * @param morphFrames Number of frames to take to transition from the previous pose to the new animation. Positive morph
- *                    frames morph from the current pose to the start pose of the new animation, then start the new
- *                    animation. Negative morph frames start the new animation immediately, modified by the pose
- *                    immediately before the animation change.
- *
- * @note Original name unknown
- */
-void CWKeyframe_FlexMorphToPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames) {
-    CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f,
-                              morphFrames, KEYFRAME_ANIM_LOOP);
 }
 
 /**
@@ -340,18 +255,6 @@ void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSke
 
     CWFrameCtrl_SetProperties(&kfSkelAnime->frameCtrl, startTime, endTime, kfSkelAnime->animation->frameCount, t, speed,
                               animMode);
-}
-
-/**
- * Switches to a new animation without changing any of the playback parameters.
- *
- * @param animation The animation to switch to
- *
- * @note Original name unknown
- */
-void CWKeyframe_FlexChangeAnimQuick(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation) {
-    kfSkelAnime->animation = SEGMENTED_TO_VIRTUAL(animation);
-    kfSkelAnime->frameCtrl.frameCount = kfSkelAnime->animation->frameCount;
 }
 
 /**
@@ -776,9 +679,5 @@ void CWKeyframe_DrawFlex(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, Mtx* m
 
     CLOSE_DISPS(play->state.gfxCtx);
 }
-
-/**
- * @note Original name: cKF_SkeletonInfo_R_zeroClear
- */
 
 #endif
