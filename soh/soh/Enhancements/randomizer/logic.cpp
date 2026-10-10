@@ -27,7 +27,16 @@ namespace Rando {
 
 int Logic::GameplayRuleValue(const char* runtime) const {
 #ifdef COMBO_BUILD
-    const auto* rule = ComboRando::FindGameplayRule(runtime);
+    // Hot predicates (FireTimer, night GS, ...) ask on every evaluation, and FindGameplayRule builds a
+    // string for each rule it passes. The rule table never changes, so look each name up once per
+    // thread; the value itself is still read every time.
+    thread_local std::vector<std::pair<std::string, const ComboRando::GameplayRule*>> found;
+    if (!runtime)
+        return 0;
+    auto known = std::find_if(found.begin(), found.end(), [&](const auto& entry) { return entry.first == runtime; });
+    if (known == found.end())
+        known = found.emplace(found.end(), runtime, ComboRando::FindGameplayRule(runtime));
+    const auto* rule = known->second;
     return rule ? ComboRando::ReadGameplayRule(*rule, !CalculatingAvailableChecks, CVarGetInteger) : 0;
 #else
     return CVarGetInteger(runtime, 0);

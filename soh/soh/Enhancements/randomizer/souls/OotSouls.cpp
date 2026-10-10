@@ -23,7 +23,11 @@ const NativeSoul generalSouls[] = {
 #include "OotSoulData.inc"
 #undef OOT_SOUL_ITEM
 };
+// HasItem asks for every item, so skip the scan outside the contiguous soul block.
+static_assert(RG_SOUL_MISC_GS - RG_SOUL_ENEMY_POE + 1 == std::size(generalSouls));
 int GeneralIndex(RandomizerGet item) {
+    if (item < RG_SOUL_ENEMY_POE || item > RG_SOUL_MISC_GS)
+        return -1;
     for (const auto& row : generalSouls)
         if (row.item == item)
             return row.index;
