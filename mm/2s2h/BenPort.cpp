@@ -3048,6 +3048,8 @@ extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(int fileNum, const char* placem
             }
         }
         // The bound seed overrides generation preferences only when creating its native MM save.
+        // RO_MM_SPELL_FIRE, RO_MM_SPELL_LOVE and RO_MM_CROSS_AGE are unreleased (no CVar, see
+        // StaticData/Options.cpp): ApplyToSaveContext ignores their entries and saves the defaults.
         if (sMMSeedFaroreRulesBound) {
             options[Rando::StaticData::Options[RO_MM_SPELL_WIND].name] = uint32_t(sMMSeedFaroreRules.spellWindMm);
             options[Rando::StaticData::Options[RO_MM_SPELL_FIRE].name] = uint32_t(sMMSeedSpellRules.spellFireMm);
