@@ -5206,7 +5206,7 @@ extern "C" COMBO_EXPORT void MM_TriggerTriforceCredits(int dormant) try {
 static std::atomic<int> sForeignSongRequest{ -1 }, sForeignSongReply{ -2 };
 static std::atomic<bool> sForeignSongPerformed{ false };
 static bool sNativeSongOpen = false;
-static int sNativeSongSource = -1, sNativeSongStick = 0;
+static int sNativeSongSource = -1;
 static std::string sNativeSongText;
 extern "C" void Combo_MMForeignSongDiagnostic(const char* event) {
     if (!CVarGetInteger("gCombo.Debug.SongPerformance", 0))
@@ -5410,14 +5410,7 @@ extern "C" void Combo_MMForeignSongPlayedText() {
     CustomMessage::SetActiveCustomMessage(native.msg, native);
     Message_ContinueTextbox(gPlayState, CUSTOM_MESSAGE_ID);
 }
-static void OpenNativeSongDialogue(uint32_t choices) {
-    int count = 0, index = 0;
-    for (int i = 0; i < 16; i++)
-        if (choices & (1u << i)) {
-            if (i == sNativeSongSource)
-                index = count;
-            ++count;
-        }
+static void OpenNativeSongDialogue() {
     const int dest = ComboRando::ActiveSongTravel().destination(sNativeSongSource);
     sNativeSongOpen = true;
     AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
@@ -5429,7 +5422,7 @@ static void OpenNativeSongDialogue(uint32_t choices) {
     }
     CustomMessage::StartTextbox(native.msg, native);
     gPlayState->msgCtx.ocarinaMode = 1;
-    Combo_MMForeignSongDiagnostic(choices ? "confirmation" : "no-owls");
+    Combo_MMForeignSongDiagnostic("confirmation");
 }
 static void UpdateNativeSongDialogue() {
     if (sForeignSongRequest.load() < 0 || !gPlayState || !sForeignSongPerformed.load())
@@ -5449,28 +5442,11 @@ static void UpdateNativeSongDialogue() {
                 sNativeSongSource = i;
                 break;
             }
-        sNativeSongStick = 0;
-        OpenNativeSongDialogue(choices);
+        OpenNativeSongDialogue();
         return;
     }
     if (Message_GetState(&gPlayState->msgCtx) != TEXT_STATE_CHOICE)
         return;
-    int stick = input.cur.stick_x > 40 ? 1 : (input.cur.stick_x < -40 ? -1 : 0);
-    int direction = (input.press.button & BTN_DRIGHT) ? 1 : (input.press.button & BTN_DLEFT) ? -1 : 0;
-    if (stick && stick != sNativeSongStick)
-        direction = stick;
-    sNativeSongStick = stick;
-    if (direction && (choices & (choices - 1))) {
-        for (int step = 1; step <= 16; step++) {
-            int next = (sNativeSongSource + direction * step + 16) % 16;
-            if (choices & (1u << next)) {
-                sNativeSongSource = next;
-                break;
-            }
-        }
-        OpenNativeSongDialogue(choices);
-        return;
-    }
     if (input.press.button & BTN_A) {
         Message_ShouldAdvance(gPlayState); // native selection sound
         sForeignSongReply = gPlayState->msgCtx.choiceIndex == 0 ? sNativeSongSource : -1;
@@ -5549,9 +5525,6 @@ extern "C" int Combo_MMSongWarp(PlayState* play, int owl) {
 }
 extern "C" COMBO_EXPORT void MM_SetOracleEntryAges(uint8_t mask) {
     sAdultOracleEntryAges = mask & 3;
-}
-extern "C" COMBO_EXPORT uint8_t MM_GetOracleReachedAges(void) {
-    return sAdultOracleReachedAges;
 }
 extern "C" COMBO_EXPORT const char* Combo_MM_Rando_GetReachableChecks(void) {
     if (sMM_OracleExternalBeans && INV_CONTENT(ITEM_MAGIC_BEANS) == ITEM_MAGIC_BEANS)
