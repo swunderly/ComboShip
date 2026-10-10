@@ -1361,9 +1361,10 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
             }
 
             if (candidates.size() < batch.size()) {
-                // BEATABLE_ONLY: a single OOT advancement item with no reachable check may strand
-                // off-path — move it to the junk fast-fill and continue (already removed from
-                // toPlace/ootRemaining above). MM items and ALL_REACHABLE always retry instead.
+                // BEATABLE_ONLY: a single advancement item from either game with no reachable check may
+                // strand off-path — move it to the junk fast-fill and continue (already removed from
+                // toPlace and ootRemaining/mmRemaining above). ALL_REACHABLE and NO_LOGIC (whose
+                // assumed fill holds only MM items) put it back and retry instead.
                 if (batch.size() == 1 && ootAccess == OotAccess::BEATABLE_ONLY) {
                     relaxedToJunk.push_back(batch.front());
                     continue;
@@ -1403,8 +1404,9 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         if (deadEnd)
             continue;
 
-        // Phase B: fast-fill the remaining checks — zero oracle calls. Holds junk AND relaxed OOT
-        // advancement, placed without logic and tolerated-if-unreachable by the validation below.
+        // Phase B: fast-fill the remaining checks — zero oracle calls. Holds junk, relaxed advancement
+        // (either game) and NO_LOGIC's OOT advancement, placed without logic and tolerated-if-unreachable
+        // by the validation below.
         std::vector<CwItem> fastFillItems = junkItems;
         if (ootAccess == OotAccess::NO_LOGIC) {
             for (const auto& it : advRest)
