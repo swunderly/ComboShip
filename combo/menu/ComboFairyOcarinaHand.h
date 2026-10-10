@@ -45,12 +45,14 @@ extern "C" Gfx* Combo_MM_FairyOcarinaHand(PlayState* play, Gfx* nativeHand) {
     const char* instrument = Combo_FairyInstrumentPath();
     if (!instrument)
         return nullptr;
-    Gfx* list = (Gfx*)GRAPH_ALLOC(play->state.gfxCtx, sizeof(Gfx) * 2);
+    Gfx* list = (Gfx*)GRAPH_ALLOC(play->state.gfxCtx, sizeof(Gfx) * 3);
     if (!list)
         return nullptr;
     Gfx* d = list;
     gSPDisplayList(d++, nativeHand);
-    // Routed path branch: the stripped copy's texture/vertex hashes must resolve in OoT's RM.
-    gDma1p(d++, G_DL_OTR_FILEPATH, instrument, 0, G_DL_NOPUSH);
+    // Routed path call: the stripped copy's texture/vertex hashes must resolve in OoT's RM. A route
+    // that fails to resolve is skipped, so the list still ends here instead of past its allocation.
+    gDma1p(d++, G_DL_OTR_FILEPATH, instrument, 0, G_DL_PUSH);
+    gSPEndDisplayList(d++);
     return list; // native hand + stripped instrument, same limb matrix, no fabricated transform
 }
