@@ -43,7 +43,8 @@ inline nlohmann::json NormalizeGameplayRuleSnapshot(const nlohmann::json& input)
     if (block.contains("mmTricks") && block["mmTricks"].is_object()) {
         for (const auto& trick : kMmTricks) {
             const auto value = block["mmTricks"].find(trick.key);
-            if (value != block["mmTricks"].end() && value->is_number_integer() && (*value == 0 || *value == 1))
+            if (trick.publicOption && value != block["mmTricks"].end() && value->is_number_integer() &&
+                (*value == 0 || *value == 1))
                 result["mmTricks"][trick.key] = value->get<int>();
         }
     }

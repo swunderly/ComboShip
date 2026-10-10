@@ -196,7 +196,7 @@ int main() {
     for (int id = 2; id < int(std::size(kMmTricks)); ++id) assert(CVarGetInteger(FindMmTrick(id)->key, 9) == 0);
     assert(seed.dump() == original);
     ApplyGameplayRules(GameplayRulesForRun(seed, nlohmann::json()), write);
-    for (const auto& row : kMmTricks) assert(CVarGetInteger(row.key, 0) == 1);
+    for (const auto& row : kMmTricks) assert(CVarGetInteger(row.key, 0) == int(row.publicOption));
     auto oldSeed = seed;
     for (int id = 2; id < int(std::size(kMmTricks)); ++id) oldSeed["gameplayRules"]["mmTricks"].erase(FindMmTrick(id)->key);
     ApplyGameplayRules(GameplayRulesForRun(oldSeed, nlohmann::json()), write);
@@ -209,5 +209,16 @@ int main() {
         assert(CVarGetInteger(FindMmTrick(id)->key, 9) == 0);
     }
     assert(seed.dump() == original);
+    // A shared seed or profile cannot switch on a hidden trick, which no menu could switch off again.
+    auto imported = rules;
+    for (const auto& row : kMmTricks) imported["mmTricks"][row.key] = 1;
+    ApplyGameplayRules(imported, write);
+    for (const auto& row : kMmTricks) {
+        assert(CVarGetInteger(row.key, 9) == int(row.publicOption) && IsHiddenMmTrick(row.key) == !row.publicOption);
+        cvars[row.key] = 1;
+        assert(CaptureGameplayRules(read)["mmTricks"][row.key] == int(row.publicOption));
+        assert(NormalizeGameplayRuleSnapshot(imported)["mmTricks"][row.key] == int(row.publicOption));
+    }
+    assert(!IsHiddenMmTrick("gUnrelated.Cheat"));
     std::cout << "PASS: " << cases << " production MM trick macro cases, region bindings, neighboring gates, stable IDs and immutable seed/run snapshots\n";
 }

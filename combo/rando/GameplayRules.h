@@ -218,7 +218,7 @@ template <class Read> nlohmann::json CaptureGameplayRules(Read read) {
     }
     nlohmann::json tricks = nlohmann::json::object();
     for (const auto& trick : kMmTricks)
-        tricks[trick.key] = int(read(trick.key, 0) != 0);
+        tricks[trick.key] = int(trick.publicOption && read(trick.key, 0) != 0); // see IsHiddenMmTrick
     return { { "version", 2 }, { "values", values }, { "logicValues", logic }, { "mmTricks", tricks } };
 }
 template <class Write> void ApplyGameplayRules(const nlohmann::json& input, Write write) {
@@ -257,7 +257,7 @@ template <class Write> void ApplyGameplayRules(const nlohmann::json& input, Writ
             if (it != rules["mmTricks"].end() && it->is_number_integer() && (*it == 0 || *it == 1))
                 enabled = it->get<int>();
         }
-        write(trick.key, enabled);
+        write(trick.key, trick.publicOption ? enabled : 0); // a hidden trick is cleared, never imported
     }
 }
 
