@@ -25,6 +25,15 @@ void Rando::CheckTracker::RecordSeenItem(RandoCheckId id, RandoItemId shownItem,
     // Keep the displayed tier/disguise. Do not re-resolve it later against a different inventory.
     ComboRando::RecordTrackerItemKnowledge(check.knowledgeSource, check.seenItemId, source, shownItem);
 }
+
+bool Rando::CheckTracker::NeedsSighting(RandoCheckId id, RandoItemId shownItem) {
+    // RecordSeenItem's filters, plus RecordTrackerItemKnowledge's "same sighting already stored".
+    if (!Combo_MmIsForeground() || !gPlayState || !IS_RANDO || gSaveContext.fileNum > 2 || id <= RC_UNKNOWN ||
+        id >= RC_MAX || shownItem <= RI_UNKNOWN || shownItem >= RI_MAX || shownItem == RI_TRAP)
+        return false;
+    const auto& check = RANDO_SAVE_CHECKS[id];
+    return check.shuffled && !check.obtained && !(check.knowledgeSource == 1 && check.seenItemId == shownItem);
+}
 #endif
 
 // Image Icons

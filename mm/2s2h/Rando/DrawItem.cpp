@@ -705,10 +705,27 @@ static void RecordVisibleCheck(RandoCheckId check, RandoItemId shown, Actor* act
 
 void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* actor) {
 #ifdef COMBO_BUILD
-    // Traps/junk/progressives recurse into the displayed item. Foreign models report below only
-    // on successful drawing; their fallback blue rupee must not reveal the hidden placement.
-    if (randoItemId != RI_NONE && randoItemId != RI_JUNK && randoItemId != RI_TRAP && randoItemId != RI_COMBO_FOREIGN)
-        RecordVisibleCheck(randoCheckId, randoItemId, actor);
+    // Traps/junk/progressives recurse into the displayed item, which records itself. Foreign models report
+    // below only on successful drawing; their fallback blue rupee must not reveal the hidden placement.
+    // The visibility ray test runs only while the sighting would still change the tracker.
+    switch (randoItemId) {
+        case RI_NONE:
+        case RI_JUNK:
+        case RI_TRAP:
+        case RI_COMBO_FOREIGN:
+        case RI_PROGRESSIVE_OCARINA:
+        case RI_PROGRESSIVE_LULLABY:
+        case RI_PROGRESSIVE_MAGIC:
+        case RI_PROGRESSIVE_BOW:
+        case RI_PROGRESSIVE_BOMB_BAG:
+        case RI_PROGRESSIVE_SWORD:
+        case RI_PROGRESSIVE_WALLET:
+            break;
+        default:
+            if (Rando::CheckTracker::NeedsSighting(randoCheckId, randoItemId))
+                RecordVisibleCheck(randoCheckId, randoItemId, actor);
+            break;
+    }
 #endif
     // Apply hilites with actor world pos before drawing
     if (actor != NULL) {
@@ -946,7 +963,8 @@ void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* 
             // ComboShip: this MM check holds an OOT item — render the real OOT model (sentinel blue
             // rupee on any failure). The originating check identity is passed straight through.
             // Foreign drawing changes the model matrix, so sample visibility before it runs.
-            const bool visible = IsCheckModelVisible(actor);
+            const bool visible =
+                Rando::CheckTracker::NeedsSighting(randoCheckId, randoItemId) && IsCheckModelVisible(actor);
             if (MM_DrawComboForeign(randoCheckId) && visible)
                 Rando::CheckTracker::RecordSeenItem(randoCheckId, randoItemId);
             break;
