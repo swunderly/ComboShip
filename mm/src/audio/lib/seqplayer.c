@@ -1927,9 +1927,6 @@ void AudioScript_SequencePlayerProcessSequence(SequencePlayer* seqPlayer) {
 
         while (true) {
             cmd = AudioScript_ScriptReadU8(seqScript);
-#ifdef COMBO_BUILD
-            Combo_MMTraceWarpSequence(seqPlayer->seqId, seqPlayer->seqData);
-#endif
 
             // 0xF2 and above are "flow control" commands, including termination.
             if (cmd >= 0xF2) {

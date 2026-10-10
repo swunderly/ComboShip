@@ -662,6 +662,9 @@ s32 AudioLoad_SyncInitSeqPlayerInternal(s32 playerIndex, s32 seqId, s32 arg2) {
     seqPlayer->delay = 0;
     seqPlayer->finished = false;
     seqPlayer->playerIndex = playerIndex;
+#ifdef COMBO_BUILD
+    Combo_MMTraceWarpSequence(seqPlayer->seqId, seqPlayer->seqData);
+#endif
 
     GameInteractor_ExecuteOnSeqPlayerInit(playerIndex, seqId);
 
