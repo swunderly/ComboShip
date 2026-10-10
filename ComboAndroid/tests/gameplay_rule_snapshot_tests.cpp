@@ -145,6 +145,24 @@ int main() {
     assert(Logical(game, "gEnhancements.Player.InfiniteDekuHopping") == 0);
     assert(game.ootTricks == "historical_csv" && game.read(kMmTricks[0].key) == 0);
     assert(game.read("gUnrelated.Cheat") == 9);
+    // A vanilla file, or a save from before rules were stored, adopts the player's own settings
+    // (taken before any slot restored rules) instead of switching enhancements back to defaults.
+    // Whatever the seed records still wins, and a seed with stored rules ignores the baseline.
+    RunningGame player;
+    player.cvars["gEnhancements.TimeTravel"] = 3;
+    player.cvars["gCheats.SuperTunic"] = 1;
+    player.ootTricks = "player_technique";
+    const auto baseline = player.snapshot();
+    const auto vanilla = GameplayRulesForRun(json::object(), json(), baseline);
+    assert(vanilla["values"]["gEnhancements.TimeTravel"] == 3 && vanilla["values"]["gCheats.SuperTunic"] == 1);
+    assert(vanilla["ootTricks"] == "player_technique");
+    const auto legacy = GameplayRulesForRun(slotB, json(), baseline);
+    assert(legacy["values"]["gEnhancements.TimeTravel"] == 3 && legacy["values"]["gCheats.SuperTunic"] == 1);
+    assert(legacy["values"]["gEnhancements.BlueFireArrows"] == 1 && legacy["values"]["gEnhancements.SunlightArrows"] == 0);
+    assert(legacy["values"]["gCombo.Enhancements.ForeignSongs"] == 1);
+    assert(legacy["ootTricks"] == "slot_b_technique,slot_b_second");
+    assert(GameplayRulesForRun(slotA, json(), baseline) == GameplayRulesForRun(slotA, json()));
+    assert(GameplayRulesForRun(json::object(), json())["values"]["gEnhancements.TimeTravel"] == 0);
     auto unknownVersion = corruptSeed;
     unknownVersion["gameplayRules"]["version"] = 999;
     game.load(slotA);

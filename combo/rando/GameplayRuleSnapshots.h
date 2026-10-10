@@ -53,10 +53,22 @@ inline nlohmann::json NormalizeGameplayRuleSnapshot(const nlohmann::json& input)
     return result;
 }
 
-inline nlohmann::json GameplayRulesForSeed(const nlohmann::json& seed) {
+// baseline (optional): the player's own settings, captured before any slot restored its rules this
+// session. A vanilla file, or a save from before rules were stored with the seed, adopts it once in
+// place of the fallbacks, so loading it does not switch the player's enhancements back to their
+// defaults. What the seed itself records (song map, arrow settings, trick list) still wins.
+inline nlohmann::json GameplayRulesForSeed(const nlohmann::json& seed,
+                                           const nlohmann::json& baseline = nlohmann::json()) {
     const auto saved = seed.value("gameplayRules", nlohmann::json());
     const bool captured = IsGameplayRuleBlock(saved);
-    auto rules = captured ? saved : CaptureGameplayRules([](const char*, int fallback) { return fallback; });
+    const bool adopt = !captured && IsGameplayRuleBlock(baseline);
+    if (adopt && seed.empty())
+        return NormalizeGameplayRuleSnapshot(baseline); // nothing else to take rules from
+    auto rules = captured ? saved
+                 : adopt  ? UpgradeGameplayRules(baseline)
+                          : CaptureGameplayRules([](const char*, int fallback) { return fallback; });
+    if (adopt)
+        rules.erase("ootTricks"); // the seed's own trick list, below
     if (!captured || rules["version"] == 1) {
         const auto map = SongTravelMap::parse(seed.value("songTravel", nlohmann::json()));
         for (const auto& pair : { std::pair{ "gCombo.Enhancements.ForeignSongs", map.foreignSongs },
@@ -103,8 +115,9 @@ inline nlohmann::json GameplayRulesForSeed(const nlohmann::json& seed) {
     return NormalizeGameplayRuleSnapshot(rules);
 }
 
-inline nlohmann::json GameplayRulesForRun(const nlohmann::json& seed, const nlohmann::json& savedRun) {
-    const auto original = GameplayRulesForSeed(seed);
+inline nlohmann::json GameplayRulesForRun(const nlohmann::json& seed, const nlohmann::json& savedRun,
+                                          const nlohmann::json& baseline = nlohmann::json()) {
+    const auto original = GameplayRulesForSeed(seed, baseline);
     if (!IsGameplayRuleBlock(savedRun))
         return original;
     auto rules = NormalizeGameplayRuleSnapshot(savedRun);
