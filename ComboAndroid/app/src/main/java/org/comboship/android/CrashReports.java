@@ -57,6 +57,12 @@ final class CrashReports {
                         }
                     }
                 }
+                // A native session that crashed never writes its own startup error. Record one so setup
+                // shows the recovery message instead of starting the same crash again automatically.
+                if(reason!=ApplicationExitInfo.REASON_LOW_MEMORY && new File(root,".running").isFile())
+                    try(PrintWriter out=writer(new File(root,"last-startup-error.txt"))){
+                        out.println("The game stopped unexpectedly (Android exit reason "+reason+"). See android-last-exit.txt and native.log.");
+                    }
                 prefs.edit().putLong("last-exit",exit.getTimestamp()).apply();break;
             }
         }catch(IOException|RuntimeException error){Log.w("ComboShip","Previous-exit report unavailable",error);}
