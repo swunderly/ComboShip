@@ -227,6 +227,7 @@ void ComboMenu::Draw() {
     // Mirror Ship::Menu::Draw — skip GuiWindow::Draw's normal Begin/End wrapper so DrawElement
     // can open its own fullscreen overlay window instead of a floating one.
     if (!IsVisible()) {
+        ProfileUI::Flush();
         return;
     }
     DrawElement();

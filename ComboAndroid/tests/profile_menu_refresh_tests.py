@@ -71,6 +71,10 @@ void Run(){
  ImGui::itemActive=true;Frame();document["value"]=50;dirty=true;EndFrame();
  view=1;Frame();Require(commits==3&&document["value"]==1,"a waiting edit was lost on a view change");EndFrame();
  ImGui::itemActive=false;view=0;Frame();Require(document["value"]==50,"a waiting edit reached the wrong view");EndFrame();
+ // Hiding the menu mid-edit stops its frames: the hidden menu commits the waiting edit itself.
+ ImGui::itemActive=true;Frame();document["value"]=60;dirty=true;EndFrame();Require(commits==3,"an edit committed mid-drag");
+ Flush();Require(commits==4&&current["draft"]["value"]==60,"a waiting edit was lost when the menu was hidden");
+ Flush();Require(commits==4,"a hidden menu committed an unchanged draft");ImGui::itemActive=false;
  current["generation"]["running"]=true;
  ImGui::frame+=5;Frame();const int started=inspections;EndFrame();
  for(int i=0;i<10;++i){Frame();EndFrame();}
@@ -91,6 +95,7 @@ cpp.write_text(engine + declarations + function('bool Ready()') + function('bool
                + (function('static void RefreshSnapshot(') if 'static void RefreshSnapshot(' in text else '')
                + (function('static void CommitDraft(') if 'static void CommitDraft(' in text else '')
                + function('void BeginFrame()')
-               + function('void EndFrame()') + tests, encoding='utf-8')
+               + function('void EndFrame()')
+               + (function('void Flush()') if 'void Flush()' in text else 'void Flush(){}\n') + tests, encoding='utf-8')
 exe = hostcxx.build(args.compiler, cpp, std='c++17', werror=True, includes=[source/'combo', args.json_include])
 subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

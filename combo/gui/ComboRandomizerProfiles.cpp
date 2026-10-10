@@ -221,6 +221,10 @@ void EndFrame() {
         CommitDraft();
     active = false;
 }
+// A hidden menu never releases its slider or text field, so commit the edit still waiting for it.
+void Flush() {
+    CommitDraft();
+}
 bool DrawUnavailableSettings() {
     if (active && document.is_object())
         return false;

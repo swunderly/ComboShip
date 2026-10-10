@@ -9,6 +9,7 @@ namespace ComboRando::ProfileUI {
 void DrawSelector();
 void BeginFrame();
 void EndFrame();
+void Flush();
 bool Active();
 bool Editable();
 bool Ready();
