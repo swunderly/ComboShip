@@ -143,7 +143,9 @@ inline const GameplayRule* FindGameplayRule(const char* name) {
     return nullptr;
 }
 
-template <class Read> int ReadGameplayRule(const GameplayRule& rule, bool logical, Read read) {
+// logicalKey is LogicRuleKey(rule.name), read when logical. A caller that reads the same rule on every
+// logic evaluation can keep it instead of building the string each time.
+template <class Read> int ReadGameplayRule(const GameplayRule& rule, bool logical, const char* logicalKey, Read read) {
     if (logical && rule.runtimeOnly)
         return 0;
     int fallback = logical ? 0 : rule.fallback;
@@ -153,8 +155,12 @@ template <class Read> int ReadGameplayRule(const GameplayRule& rule, bool logica
         if (read(legacy, 0) == 1)
             fallback = 1;
     }
-    return std::clamp(int(read(logical ? LogicRuleKey(rule.name).c_str() : rule.name, fallback)),
-                      logical ? 0 : rule.minimum, rule.maximum);
+    return std::clamp(int(read(logical ? logicalKey : rule.name, fallback)), logical ? 0 : rule.minimum, rule.maximum);
+}
+template <class Read> int ReadGameplayRule(const GameplayRule& rule, bool logical, Read read) {
+    if (logical && rule.runtimeOnly)
+        return 0;
+    return ReadGameplayRule(rule, logical, logical ? LogicRuleKey(rule.name).c_str() : nullptr, read);
 }
 // Convert the old one-chick toggle only when no count was saved. Explicit new counts win.
 inline nlohmann::json UpgradeGameplayRules(nlohmann::json block) {
