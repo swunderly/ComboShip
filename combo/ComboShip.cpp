@@ -4579,9 +4579,6 @@ int main(int argc, char** argv) {
                                                         GetSym(sohModule, "SOH_SetSharedDungeonBridge"));
     std::cout << "[ComboShip] Native spell integration ready=" << int(ComboRando::ComboFaroreIntegrationReady)
               << std::endl;
-    if (auto adultReady = (int (*)(void))GetSym(mmModule, "MM_DebugAdultResourcesReady")) {
-        std::cout << "[ComboShip] Private Adult MM actual resource preflight ready=" << adultReady() << std::endl;
-    }
 
     // Private integration diagnostic: actual cold-load preflights after eager boot.
     if (const char* probeFlag = std::getenv("COMBO_NATIVE_SPELL_RESOURCE_PROBE");
