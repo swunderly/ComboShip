@@ -1567,7 +1567,8 @@ void KaleidoScope_UpdateItemEquip(PlayState* play) {
         offsetY = ABS_ALT(pauseCtx->equipAnimY - cButtonPosY) / sEquipAnimTimer;
     }
 
-    if ((pauseCtx->equipTargetItem >= 0xB5) && (pauseCtx->equipAnimAlpha < 254)) {
+    if (((pauseCtx->equipTargetItem >= 0xB5) && (pauseCtx->equipTargetItem <= 0xB7)) &&
+        (pauseCtx->equipAnimAlpha < 254)) {
         pauseCtx->equipAnimAlpha += 14;
         if (pauseCtx->equipAnimAlpha > 255) {
             pauseCtx->equipAnimAlpha = 254;

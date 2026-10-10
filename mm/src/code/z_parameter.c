@@ -6794,7 +6794,7 @@ void Interface_DrawPauseMenuEquippingIcons(PlayState* play) {
         ItemId equipAnimDrawItem = pauseCtx->equipTargetItem;
         if (GameInteractor_Should(VB_KALEIDO_DRAW_EQUIP_ANIM_ICON, true, &equipAnimDrawItem)) {
 
-            if (pauseCtx->equipTargetItem < 0xB5) {
+            if (!((pauseCtx->equipTargetItem >= 0xB5) && (pauseCtx->equipTargetItem <= 0xB7))) {
                 // Normal Equip (icon goes from the inventory slot to the C button when equipping it)
                 gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, pauseCtx->equipAnimAlpha);
                 gSPVertex(OVERLAY_DISP++, &pauseCtx->cursorVtx[16], 4, 0);
