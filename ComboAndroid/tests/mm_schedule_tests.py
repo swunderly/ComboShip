@@ -139,6 +139,11 @@ int main() {
     assert(TimeLogic::EvaluateConditionTimes([]{return IS_DAY1() || IS_DAY3();},TIME_ALL_SLICES)==
            (GetHalfDayTimeMask(0)|GetHalfDayTimeMask(4)));
     assert(TimeLogic::EvaluateConditionTimes([]{return true;},0)==0);
+    int calls=0; // A predicate that never reads the time is evaluated once for every slice.
+    assert(TimeLogic::EvaluateConditionTimes([&]{++calls;return true;},TIME_ALL_SLICES)==TIME_ALL_SLICES && calls==1);
+    calls=0;
+    assert(TimeLogic::EvaluateConditionTimes([&]{++calls;return IS_DAY1();},TIME_ALL_SLICES)==GetHalfDayTimeMask(0));
+    assert(calls==1+TIME_SLICE_COUNT);
     try {TimeLogic::EvaluateConditionTimes([]()->bool{throw std::runtime_error("input failure");},Bit(TIME_DAY1_AM_06_00));}
     catch(const std::runtime_error&) {}
     assert(gCurrentRegionTime==TIME_ALL_SLICES);

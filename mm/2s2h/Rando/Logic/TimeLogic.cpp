@@ -14,35 +14,50 @@ uint64_t EvaluateConditionTimes(const std::function<bool()>& condition, uint64_t
         uint64_t previous = gCurrentRegionTime;
         ~RestoreTime() {
             gCurrentRegionTime = previous;
+            // An enclosing evaluation cannot tell which times this one read.
+            gCurrentRegionTimeRead = true;
         }
     } restore;
-    uint64_t allowed = 0;
+    struct Result {
+        uint64_t allowed = 0;
 #ifdef COMBO_BUILD
-    bool anyDomain = false;
-    auto domain = ComboRando::Entrances::mmFlagSource;
+        bool anyDomain = false;
+        ComboRando::Entrances::MmFlagDomain domain = ComboRando::Entrances::mmFlagSource;
 #endif
-    for (int slice = 0; slice < TIME_SLICE_COUNT; ++slice) {
-        const uint64_t bit = TIME_BIT_ONE << slice;
-        if (!(timeSlices & bit))
-            continue;
-        gCurrentRegionTime = bit;
+    } result;
+    const auto evaluate = [&](uint64_t times) {
+        gCurrentRegionTime = times;
 #ifdef COMBO_BUILD
         if (NativeMmErContextsEnabled()) {
             const auto evaluated = ComboRando::Entrances::EvaluateMmFlags(condition);
             if (evaluated.allowed) {
-                allowed |= bit;
-                domain = anyDomain ? ComboRando::Entrances::Merge(domain, evaluated.domain) : evaluated.domain;
-                anyDomain = true;
+                result.allowed |= times;
+                result.domain =
+                    result.anyDomain ? ComboRando::Entrances::Merge(result.domain, evaluated.domain) : evaluated.domain;
+                result.anyDomain = true;
             }
         } else
 #endif
             if (condition())
-            allowed |= bit;
+            result.allowed |= times;
+    };
+    // Most predicates never read the time: one evaluation with every slice then
+    // stands for each slice. Only a predicate that read it is evaluated per slice.
+    gCurrentRegionTimeRead = false;
+    if (timeSlices & TIME_ALL_SLICES)
+        evaluate(timeSlices & TIME_ALL_SLICES);
+    if (gCurrentRegionTimeRead) {
+        result = {};
+        for (int slice = 0; slice < TIME_SLICE_COUNT; ++slice) {
+            const uint64_t bit = TIME_BIT_ONE << slice;
+            if (timeSlices & bit)
+                evaluate(bit);
+        }
     }
 #ifdef COMBO_BUILD
-    ComboRando::Entrances::mmFlagResult = anyDomain ? domain : ComboRando::Entrances::mmFlagSource;
+    ComboRando::Entrances::mmFlagResult = result.anyDomain ? result.domain : ComboRando::Entrances::mmFlagSource;
 #endif
-    return allowed;
+    return result.allowed;
 }
 
 // Core expansion function - expands accessible time forward with stay restrictions

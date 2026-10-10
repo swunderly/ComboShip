@@ -188,6 +188,8 @@ struct RegionTimeState {
 #endif
 };
 
+// Set by every read of gCurrentRegionTime, so time-independent predicates are evaluated once.
+inline thread_local bool gCurrentRegionTimeRead = false;
 extern uint64_t gCurrentRegionTime;
 #ifdef COMBO_BUILD
 bool NativeMmErContextsEnabled();
@@ -858,10 +860,12 @@ inline bool OwnsHalfDayForMode(int halfDayIndex) {
 // ============================================================================
 
 inline bool RawAt(TimeSlice slice) {
+    gCurrentRegionTimeRead = true;
     return (gCurrentRegionTime & (TIME_BIT_ONE << slice)) != 0;
 }
 
 inline bool RawBefore(TimeSlice slice) {
+    gCurrentRegionTimeRead = true;
     if (slice == 0)
         return false;
     uint64_t mask = (TIME_BIT_ONE << slice) - 1;
@@ -869,11 +873,13 @@ inline bool RawBefore(TimeSlice slice) {
 }
 
 inline bool RawAfter(TimeSlice slice) {
+    gCurrentRegionTimeRead = true;
     uint64_t mask = ~((TIME_BIT_ONE << slice) - 1) & TIME_ALL_SLICES;
     return (gCurrentRegionTime & mask) != 0;
 }
 
 inline bool RawBetween(TimeSlice start, TimeSlice end) {
+    gCurrentRegionTimeRead = true;
     uint64_t mask = ((TIME_BIT_ONE << end) - 1) & ~((TIME_BIT_ONE << start) - 1);
     return (gCurrentRegionTime & mask) != 0;
 }
