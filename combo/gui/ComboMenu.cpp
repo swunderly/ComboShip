@@ -404,7 +404,7 @@ void ComboMenu::OpenSearchDestination(const std::string& scope, const std::strin
     mSectionSelection[mScope] = mHubActive;
     mRuleFocus.Set(rule);
     if (trick)
-        FocusUnifiedTrick(trick);
+        FocusTrick(trick);
     if (targetGame >= 0 && targetGame <= 1) {
         if (scope == "randomizer")
             mRandomizerGame = targetGame;

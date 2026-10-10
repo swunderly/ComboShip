@@ -5,6 +5,7 @@
 #include "ComboExport.h"
 #include "ComboWidgetStyle.h"
 #include "ComboMenuLayout.h"
+#include "ComboTricks.h"
 #include "ComboTricksModel.h"
 #include "ComboRuleWarning.h"
 #include "rando/GameplayRules.h"
@@ -1088,6 +1089,7 @@ void DrawAdvanced() {
 void DrawTricks() {
     static char query[160] = {};
     static int world = 0, state = 0, skill = 0;
+    ApplyTrickFocus(query, world, state, skill);
     ImGui::InputTextWithHint("##TechniqueSearch", "Search techniques", query, sizeof(query));
     const char* names[] = { "Both games", "Ocarina of Time", "Majora's Mask" };
     for (int i = 0; i < 3; ++i) {

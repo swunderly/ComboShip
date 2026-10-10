@@ -26,6 +26,7 @@ class TrickCatalogueFocus {
     std::string pending;
 };
 } // namespace Detail
-void FocusUnifiedTrick(const char* name);
-void DrawUnifiedTricks();
+// Global search hands the Tricks & glitches page one technique to filter for.
+void FocusTrick(const char* name);
+bool ApplyTrickFocus(char (&query)[160], int& world, int& status, int& skill);
 } // namespace ComboRando
