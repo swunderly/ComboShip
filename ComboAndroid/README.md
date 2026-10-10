@@ -1,11 +1,10 @@
 # Combo Ship for Android
 
-Version **0.2.16** preserves discovered OoT item names across game returns, Return to Spawn, and subsequent saves/restarts. It retains the older-MM-save compatibility fix from 0.2.15. See [changes](FIXES-0.2.16.md) and [validation](VALIDATION-0.2.16.md).
+Current version: **0.3.9**. What changed in each release is in [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
+This repository is a fork of Varuuna/ComboShip (forked at 94eb185e4abcc2d568aa8241fa02c43cdd86c439) with the Android port and its randomizer additions committed directly to the source tree. This directory holds the Android app, its build tools and tests. The port keeps the real two-game runtime and combined randomizer rather than wrapping two standalone apps.
 
-This directory is a source integration overlay for Varuuna/ComboShip at 94eb185e4abcc2d568aa8241fa02c43cdd86c439. It keeps the real two-game runtime and combined randomizer rather than wrapping two standalone apps.
-
-**Status: 0.2.16.** Shared progression controls connect Randomizer and Enhancements, with explicit enhancement-only choices. Native foreign-song performances, adult Soaring, saved mixed destinations, a unified techniques catalogue, bounded sliders, a common HUD editor, combined generation guarantees, saved rule/technique snapshots, boss/event paths and distinct tracker knowledge are retained. The [previous completion audit](RELEASE-AUDIT-0.2.0.md) reconciles the earlier feature list. The full source comparison covers 402 stable OoTMM settings; it records differences rather than claiming complete equivalence.
+Shared progression controls connect Randomizer and Enhancements, with explicit enhancement-only choices. Native foreign-song performances, adult Soaring, saved mixed destinations, a unified techniques catalogue, bounded sliders, a common HUD editor, combined generation guarantees, saved rule/technique snapshots, boss/event paths and distinct tracker knowledge are retained. The [previous completion audit](docs/history/RELEASE-AUDIT-0.2.0.md) reconciles the earlier feature list. The full source comparison covers 402 stable OoTMM settings; it records differences rather than claiming complete equivalence.
 
 Earlier audio, visible-folder storage, combined multiplayer, compact check tracker, movable Menu button, invisible sticks, two-ROM setup and single-task startup fixes are retained. All co-op players need the same build and combined seed. Android 9+, ARM64 and OpenGL ES 3.0 are required. Automated tests and emulator checks do not establish a full physical-device playthrough or complete QoL/ROM-hack parity.
 
@@ -15,7 +14,7 @@ The app identity is `org.comboship.android`, separate from `com.twoshipfork.mm`.
 
 The top tabs are **Home**, **Enhancements**, **Randomizer**, **Video & Audio**, **Trackers**, **Settings** and **Tools**. Home contains Default, Beginner and Allsanity adaptations from [OoTMM's preset definitions](https://github.com/OoTMM/OoTMM/blob/master/packages/generator/lib/combo/presets.ts). Apply a preset at file select, fine-tune its settings, then use **Randomizer → Generate**. These adapt supported options; they are not identical to the ROM randomizer's presets.
 
-**Randomizer** configures the next seed. **Items & checks**, **Shared items**, **Warps & travel** and **Gameplay rules** have distinct pages. Gameplay rules includes MM's logic-affecting quest requirements. Randomizer enables an ability and its generation assumption. **Enhancements** enables gameplay changes, with optional **Include in logic** for supported abilities. The short **Guide** is available on request; settings explain themselves through hover, focus or touch tooltips. Mid-run progression changes show a small temporary warning. **Video & Audio → Camera** contains both games' camera settings.
+**Randomizer** configures the next seed. **Items & checks**, **Shared items**, **Warps & travel** and **Gameplay rules** have distinct pages. Gameplay rules includes MM's logic-affecting quest requirements. Randomizer enables an ability and its generation assumption; the matching enhancement is then checked and greyed out. **Enhancements** can enable the same ability alone, without affecting logic. The short **Guide** is available on request; settings explain themselves through hover, focus or touch tooltips. Mid-run progression changes show a small temporary warning. **Video & Audio → Camera** contains both games' camera settings.
 
 **Warps & travel** has one cross-game song toggle for both Child and Adult Link. Playing a song still requires knowledge of that song, a local instrument and playable buttons; Soaring needs an activated source owl. **Enhancements → Difficulty** contains OoT's minigames and MM's runtime-only **1–10 chicks** slider for Bremen Mask. Old one-chick settings and saved seeds retain their quest counts without adding a logic assumption.
 
@@ -50,11 +49,9 @@ To move Menu, pause the game, hold **Menu → Move controls**, and drag the butt
 
 Reference sources: [ComboShip](https://github.com/Varuuna/ComboShip/tree/94eb185e4abcc2d568aa8241fa02c43cdd86c439), [user's 2S2H Android fork](https://github.com/swunderly/2ship2harkinian-Android/tree/11d8fb3c067c397ac038d6372fde0cdb436b097b), [Grandma fix](https://github.com/swunderly/2ship2harkinian-Android/commit/c3e2886c638af11b7514e52455b1f3d8b9789aed), [save-editor touch fix](https://github.com/swunderly/2ship2harkinian-Android/commit/9031e2d7b85d999782e8083a391ad52572e1d511), and [Shipwright Android](https://github.com/linkzenic/Shipwright-Android/tree/94e8d7af3fb3a2e21fb5bf1d250cd0a63a5dd09d).
 
-Build instructions are in [BUILDING.md](BUILDING.md), completed checks in [VALIDATION.md](VALIDATION.md), and outstanding phone/gameplay checks in [DEVICE_TESTS.md](DEVICE_TESTS.md).
+Build instructions are in [BUILDING.md](BUILDING.md), completed checks in [VALIDATION.md](docs/history/VALIDATION.md), and outstanding phone/gameplay checks in [DEVICE_TESTS.md](DEVICE_TESTS.md). The release history is in [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
-Version 0.1.1 fixes Android extraction's temporary directory, text entry, Back/menu handling, MM save initialization and cross-game name encoding. It also removes disabled diagnostic timer overhead from seed generation. Local ROMs, extracted archives, test saves and logs are kept outside the source package and APK.
-
-Use `python3 ComboAndroid/tools/apply_port.py /path/to/fresh/pinned/ComboShip` to stage the overlay and apply checked Android-specific patches. It refuses a wrong revision, tracked edits, or an already-patched tree.
+Local ROMs, extracted archives, test saves and logs are kept outside the repository and APK.
 
 Source licenses remain those of each upstream component. Added port-specific code is available under MIT; this does not relicense the upstream games, engine, or dependencies.
 

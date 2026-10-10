@@ -49,7 +49,7 @@ Physical-device performance and GPU compatibility, audible gameplay, hardware co
 
 An earlier Android 11/API 30 emulator's ARM translator stopped on instruction `0x5ea1b821` before rendering. Android 15 completed the tests above. This does not establish compatibility or incompatibility on a physical Android 11 device.
 
-Development builds from a different machine or CI may use a different debug signing key. Export a save backup before changing signing identity. No signing key is included in the source archive. See [DEVICE_TESTS.md](DEVICE_TESTS.md) for the remaining device checklist.
+Development builds from a different machine or CI may use a different debug signing key. Export a save backup before changing signing identity. No signing key is included in the source archive. See [DEVICE_TESTS.md](../../DEVICE_TESTS.md) for the remaining device checklist.
 
 ## 0.1.10 shared check tracker validation
 
