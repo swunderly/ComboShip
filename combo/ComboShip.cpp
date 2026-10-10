@@ -2154,6 +2154,26 @@ static void WriteComboPlaythrough(const std::string& spoilerJson, const ComboRan
 // thread, reports progress via the ComboGenProgress struct, and stashes placements.
 static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* progress,
                          bool retryUntilSuccess = false) try {
+    // Declared first, so destroyed last: done, the pending finalize and busy are published only after
+    // every restore scope below has put the SOH/MM state back, so the main-thread finalize never races
+    // them. An exception escaping the body publishes from the handler at the end instead.
+    struct PublishResult {
+        ComboRando::ComboGenProgress* progress;
+        int result = 0; // 0 none yet, 1 failed, 2 succeeded
+        ~PublishResult() {
+            if (!result)
+                return;
+            if (progress) {
+                progress->success.store(result == 2);
+                if (result == 1)
+                    progress->running.store(false);
+                progress->done.store(true);
+            }
+            if (result == 2)
+                g_ComboPendingFinalize.store(true);
+            g_GenerateBusy.store(false);
+        }
+    } publish{ progress };
     ComboRando::GenerationScope generationScope(progress);
     ComboRando::KokiriSeedRevisionScope kokiriRevision(SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision,
                                                        ComboRando::kKokiriModernRevision);
@@ -2170,15 +2190,11 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     if (progress)
         progress->phase.store(1); // Pool preparation can take time on mobile CPUs.
     auto fail = [&](const char* msg) {
-        if (progress) {
+        if (progress)
             progress->SetError(msg);
-            progress->success.store(false);
-            progress->done.store(true);
-            progress->running.store(false);
-        }
         std::cerr << "[ComboShip] RunComboFill: " << msg << "\n";
         RestoreLoadedSlotGoal(); // a bailed generation must not leave the menu goal in the DLLs
-        g_GenerateBusy.store(false);
+        publish.result = 1;
     };
 
     if (!SOH_DumpRandoStaticData || !MM_DumpRandoStaticData) {
@@ -2742,16 +2758,13 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                 progress->mmCheckCount.store(
                     static_cast<int>(nlohmann::json::parse(mmDump).value("checks", nlohmann::json::array()).size()));
             } catch (...) {}
-            progress->success.store(true);
-            progress->done.store(true);
         }
-        g_ComboPendingFinalize.store(true);
     } catch (const std::exception& e) {
         fail((std::string("post-fill exception: ") + e.what()).c_str());
         return;
     }
     RestoreLoadedSlotGoal();
-    g_GenerateBusy.store(false);
+    publish.result = 2;
 } catch (const std::exception& e) {
     if (Combo_MM_Rando_Restore)
         Combo_MM_Rando_Restore();
