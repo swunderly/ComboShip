@@ -229,7 +229,8 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 1),      ENTRANCE(MOUNTAIN_SMITHY, 0), true),
         },
         .events = {
-            EVENT(RE_ACCESS_SMITHY, NativeMmNorthSpring() || BlacksmithCanThaw()),
+            // Unlike OoTMM, the native smiths refuse to work on Day 3 (En_Kgy/En_Kbt text 0xC39).
+            EVENT(RE_ACCESS_SMITHY, (NativeMmNorthSpring() || BlacksmithCanThaw()) && (FIRST_DAY() || SECOND_DAY())),
         },
     };
     Regions[RR_MOUNTAIN_VILLAGE_TUNNEL_GROTTO] = RandoRegion{ .name = "Mountain Village Tunnel Grotto", .sceneId = SCENE_KAKUSIANA,
