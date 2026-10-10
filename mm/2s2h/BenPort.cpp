@@ -2940,6 +2940,25 @@ extern "C" int gMMComboGoalHunt;
 extern "C" int gMMComboGoalRequired;
 extern "C" int gMMComboGoalPieces;
 
+// The adult/gear options have no menu, but profile or seed JSON and raw CVars can still set them, and
+// SaveManager refuses every save that carries them while the adult runtime is unavailable. Keep them at
+// their defaults (0) wherever options are gathered, so the pool, the oracle and the new save agree.
+extern "C" int Combo_MM_AdultResourcesReady(void);
+static constexpr RandoOptionId kComboHiddenAdultMmOptions[] = {
+    RO_MM_ADULT_MASK,  RO_MM_STARTING_AGE, RO_MM_CROSS_AGE,  RO_MM_BOOTS_IRON,
+    RO_MM_BOOTS_HOVER, RO_MM_TUNIC_GORON,  RO_MM_TUNIC_ZORA,
+};
+static bool Combo_MM_IsHiddenAdultOption(RandoOptionId id) {
+    return std::find(std::begin(kComboHiddenAdultMmOptions), std::end(kComboHiddenAdultMmOptions), id) !=
+           std::end(kComboHiddenAdultMmOptions);
+}
+extern "C" void Combo_MM_ClearHiddenAdultOptions(u32* options) {
+    if (Combo_MM_AdultResourcesReady())
+        return;
+    for (const auto id : kComboHiddenAdultMmOptions)
+        options[id] = 0;
+}
+
 // Combo master seed for MM's RNG, mirroring OOT's SOH_SetComboRandoSeed so confined placement
 // (PreplaceConfinedItems, via Ship_Random) is reproducible per seed.
 static ComboRando::SpellRules sMMSeedSpellRules;
@@ -3036,6 +3055,10 @@ extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(int fileNum, const char* placem
             options[Rando::StaticData::Options[RO_CROSS_GAME_FARORE].name] = uint32_t(sMMSeedFaroreRules.crossGameFw);
             options[Rando::StaticData::Options[RO_MM_CROSS_AGE].name] = uint32_t(sMMSeedFaroreRules.crossAge);
         }
+        // After the seed override above, which can otherwise bring Cross Age back.
+        if (!Combo_MM_AdultResourcesReady())
+            for (const auto id : kComboHiddenAdultMmOptions)
+                options[Rando::StaticData::Options[id].name] = uint32_t(0);
         spoiler["options"] = options;
         spoiler["startingItems"] = nlohmann::json::array();
         // ComboShip: mirror native OnFileCreate's use of the player's configured priority list.
@@ -3590,7 +3613,8 @@ static int MM_ApplyProfileRandoSettingsImpl(const char* raw, bool apply) {
             if (!value.is_number_integer() || value.get<int64_t>() < 0 ||
                 value.get<uint64_t>() > (id == RO_CLOCK_TERMINAL_TIME ? uint64_t(INT32_MAX) : uint64_t(UINT8_MAX)))
                 return 0;
-            settings[option.cvar] = value;
+            const bool hidden = Combo_MM_IsHiddenAdultOption(id) && !Combo_MM_AdultResourcesReady();
+            settings[option.cvar] = hidden ? nlohmann::json(option.defaultValue) : value;
         }
         for (const auto& trick : ComboRando::kMmTricks) {
             auto value = input.value(trick.key, nlohmann::json(0));
@@ -3691,6 +3715,9 @@ extern "C" COMBO_EXPORT void MM_RestoreRandoSettings(const char* json) {
             else
                 CVarSetInteger(it.key().c_str(), it.value().get<int>());
         }
+        if (!Combo_MM_AdultResourcesReady())
+            for (const auto id : kComboHiddenAdultMmOptions)
+                CVarClear(Rando::StaticData::Options[id].cvar);
     } catch (...) {}
 }
 
@@ -3764,6 +3791,7 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
     saveInfo.randoSaveOptions[RO_SHARED_SPELL_WIND] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_WIND)) != 0;
     saveInfo.randoSaveOptions[RO_SHARED_SPELL_FIRE] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_FIRE)) != 0;
     saveInfo.randoSaveOptions[RO_SHARED_SPELL_LOVE] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_LOVE)) != 0;
+    Combo_MM_ClearHiddenAdultOptions(saveInfo.randoSaveOptions);
     Rando::Logic::GeneratePools(saveInfo, checkPool, itemPool);
 
     // Capture only randomized purchase prices. Upstream also rolls unused prices
@@ -4592,6 +4620,7 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
         (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_FIRE)) != 0;
     gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_SPELL_LOVE] =
         (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_LOVE)) != 0;
+    Combo_MM_ClearHiddenAdultOptions(gSaveContext.save.shipSaveInfo.rando.randoSaveOptions);
     // ComboShip (#136): combo owns the goal, so the hidden CVars above must not decide it here either.
     gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHUFFLE_TRIFORCE_PIECES] =
         gMMComboGoalHunt ? RO_GENERIC_YES : RO_GENERIC_NO;

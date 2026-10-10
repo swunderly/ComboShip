@@ -368,7 +368,8 @@ static int SaveManager_LoadFailedForCombo(int code) {
 // ComboShip: loading never creates or persists. A missing/broken MM half used to be replaced with a
 // fresh SAVETYPE_VANILLA save, permanently poisoning the slot; now every failure just returns a code,
 // loudly. Only the known missing combo file marker is repaired in memory. 0 ok, -1 missing, -2 unreadable, -3 migrate,
-// -4 no usable save page (neither key, or owlSave unparseable with no newCycleSave), -5 parse.
+// -4 no usable save page (neither key, or owlSave unparseable with no newCycleSave), -5 parse, -7 adult MM state
+// unavailable (-6 is Combo_LoadMMSaveFile's "not a rando save").
 #ifdef COMBO_BUILD
 extern "C" int Combo_MM_AdultPrepareLoadedSave(Save* save);
 #endif
@@ -415,7 +416,7 @@ int SaveManager_LoadSaveFile(int mmFileNum) {
             SaveManager_RepairComboMarker(sc.save);
             if (!Combo_MM_AdultPrepareLoadedSave(&sc.save)) {
                 SPDLOG_ERROR("[ComboShip] Adult MM owl state unavailable; refusing before live save mutation");
-                return SaveManager_LoadFailedForCombo(-6);
+                return SaveManager_LoadFailedForCombo(-7);
             }
             sc.save.saveInfo.checksum = 0;
             sc.save.saveInfo.checksum = Sram_CalcChecksum(&sc, offsetof(SaveContext, fileNum));
@@ -445,7 +446,7 @@ int SaveManager_LoadSaveFile(int mmFileNum) {
         SaveManager_RepairComboMarker(save);
         if (!Combo_MM_AdultPrepareLoadedSave(&save)) {
             SPDLOG_ERROR("[ComboShip] Adult MM cycle state unavailable; refusing before live save mutation");
-            return SaveManager_LoadFailedForCombo(-6);
+            return SaveManager_LoadFailedForCombo(-7);
         }
 #endif
         save.saveInfo.checksum = 0;
