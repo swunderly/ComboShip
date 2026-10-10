@@ -47,11 +47,15 @@ struct Item { int itemId; } Items[]={{ITEM_BOTTLE},{4},{5},{ITEM_GOLD_DUST},{6}}
 #define HAS_BOTTLE HasUsableBottle()
 #define HAS_BOTTLE_ITEM(x) (std::find(gSaveContext.save.saveInfo.inventory.items,gSaveContext.save.saveInfo.inventory.items+6,x)!=gSaveContext.save.saveInfo.inventory.items+6)
 '''+match.group()+'\nvoid Grant(int ri) { switch(ri) {\n'+grant+'\n} }\nbool Gilded() { return '+smithyGate+'; }\n'+r'''
+// CrossWorldRando.h CreditPlacedItem owns every item that is not an MM Magic Bean.
+struct Credit { bool owned, renewal; };
+Credit CreditPlacedItem(int, const std::string&, int, const std::string&, int) { return { true, false }; }
 void CollectFixed(bool accessible) {
  constexpr int GAME_OOT=0;
  struct Placement { int checkGame,itemGame; std::string check,item; };
  std::vector<Placement> placements={{1,1,"race","Gold Dust"}};
  std::vector<char> credited(1,0); std::unordered_set<size_t> excludeIdx;
+ int beanSources=0; bool beanRenewal=false;
  auto ootReach=std::make_shared<std::unordered_set<std::string>>();
  auto mmReach=std::make_shared<std::unordered_set<std::string>>();
  if(accessible)mmReach->insert("race");
