@@ -2,9 +2,9 @@
 // Port of pinned OoTMM adultmask.c; included after native player overlay definitions.
 // Resource/age seams below intentionally remain unresolved until exact extractor resources exist.
 #include "ComboAdultMMSeams.h"
+#include "2s2h_assets.h"
 int Combo_MM_AdultMaskAction(void) { return 0x5b; } // Exact pinned PLAYER_CUSTOM_IA_MASK_ADULT.
 #define ADULT_MASK_SKIP_BUTTONS (BTN_A | BTN_B | BTN_CUP | BTN_CLEFT | BTN_CDOWN | BTN_CRIGHT)
-#define ADULT_MASK_ITEM_ICON_SIZE 0x1000
 static PlayerAgeProperties sAdultMaskChildProperties;
 static PlayerAnimationHeader* sAdultMaskChildDoorA[PLAYER_ANIMTYPE_MAX];
 static PlayerAnimationHeader* sAdultMaskChildDoorB[PLAYER_ANIMTYPE_MAX];
@@ -129,8 +129,7 @@ static void AdultMask_RefreshButtonIcons(PlayState* play)
         if (item != ITEM_NONE && item != 0xff) {
             Interface_LoadItemIconImpl(play, button);
         } else {
-            u8* iconBuffer = (u8*)play->interfaceCtx.iconItemSegment + button * ADULT_MASK_ITEM_ICON_SIZE;
-            memset(iconBuffer, 0, ADULT_MASK_ITEM_ICON_SIZE);
+            play->interfaceCtx.iconItemSegment[button] = gEmptyTexture;
         }
     }
 }
