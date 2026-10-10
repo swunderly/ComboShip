@@ -275,6 +275,7 @@ bool fishsanityAgeSplit;
 bool initialized;
 bool doAreaScroll;
 bool previousShowHidden = false;
+// Native-only settings: the combo tracker lists only the seed's shuffled checks and hides their widgets.
 bool hideShopUnshuffledChecks = false;
 bool alwaysShowGS = false;
 
@@ -1374,8 +1375,10 @@ void CheckTrackerWindow::DrawElement() {
     enableAvailableChecks = CVarGetInteger(CVAR_TRACKER_CHECK("EnableAvailableChecks"), 0);
     onlyShowAvailable = CVarGetInteger(CVAR_TRACKER_CHECK("OnlyShowAvailable"), 0);
 
+#ifndef COMBO_BUILD
     hideShopUnshuffledChecks = CVarGetInteger(CVAR_TRACKER_CHECK("HideUnshuffledShopChecks"), 0);
     alwaysShowGS = CVarGetInteger(CVAR_TRACKER_CHECK("AlwaysShowGSLocs"), 0);
+#endif
 #ifdef COMBO_BUILD
     // ComboShip: pause/button state is stale while dormant (tracker swapped in) — always show.
     if (!Combo_OotIsForeground())
