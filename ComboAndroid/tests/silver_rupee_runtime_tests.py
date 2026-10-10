@@ -56,7 +56,7 @@ Save gSaveContext;
 struct Player {uint32_t stateFlags1=0;};
 struct PlayState {int sceneNum=0,msgCtx=0;struct {struct {int num=0;}curRoom;}roomCtx;Player player;};
 #define GET_PLAYER(play) (&(play)->player)
-struct Actor {int room=0;bool parent=false,killed=false;void(*draw)(Actor*,PlayState*)=nullptr;};
+struct Actor {int room=0;float xyzDistToPlayerSq=10000.0f;bool killed=false;void(*draw)(Actor*,PlayState*)=nullptr;};
 struct EnGSwitch {Actor actor;int type=0;uint16_t silverRandoId=0;uint8_t silverRandomized=0;};
 struct GetItemEntry {int check=0;};
 namespace Rando {struct Context;}
@@ -88,13 +88,11 @@ struct Context {std::map<int,Option> options;Dungeons dungeons;std::vector<int> 
 struct Logic {Save save;Save* GetSaveContext(){return &save;}};
 }
 namespace RandomizerCheckObjects {bool AreaIsOverworld(int area){return area==0;}bool AreaIsDungeon(int area){return area>0&&area!=RCAREA_INVALID;}}
-bool enabled=true;int grants=0,lastCheck=-1,rupees=0,tempClear=0;std::map<int,bool> collected;std::vector<int> switches;
+bool enabled=true;int rupees=0,tempClear=0;std::map<int,bool> collected;std::vector<int> switches;
 int Combo_SilverShuffleEnabled(){return enabled;}
 bool Flags_GetRandomizerInf(int inf){auto it=collected.find(inf);return it!=collected.end()&&it->second;}
 void Flags_SetRandomizerInf(int inf){collected[inf]=true;}
 void Actor_Kill(Actor* actor){actor->killed=true;}
-bool Actor_HasParent(Actor* actor,PlayState*){return actor->parent;}
-void GiveItemEntryFromActor(Actor*,PlayState*,GetItemEntry entry,float,float){++grants;lastCheck=entry.check;}
 void Rupees_ChangeBy(int amount){rupees+=amount;}
 int Message_GetState(int* state){return *state;}
 void Flags_SetSwitch(PlayState*,int flag){switches.push_back(flag);}
@@ -121,8 +119,9 @@ int main(){
  Combo_SilverGive(nullptr,RG_POUCH_SILVER_BOTW);assert(gSaveContext.ship.quest.data.randomizer.silverRupeeCounts[1]==5&&rupees==25&&collected.empty());
  assert(gSaveContext.sceneFlags[8].swch==(1u<<31));
  assert(Combo_SilverActorInit(&actor,&play)&&actor.silverRandomized&&!actor.actor.killed&&actor.silverRandoId==5);
- assert(Combo_SilverActorIdle(&actor,&play)&&grants==1&&lastCheck==RC_BOTTOM_OF_THE_WELL_SILVER_RUPEE_1&&collected.empty());
- actor.actor.parent=true;Combo_SilverActorIdle(&actor,&play);assert(actor.actor.killed&&collected[RAND_INF_BOTTOM_OF_THE_WELL_SILVER_RUPEE_1]);
+ // Out of the native touch range nothing happens; touching only sets the flag, which queues the check.
+ assert(Combo_SilverActorIdle(&actor,&play)&&!actor.actor.killed&&collected.empty());
+ actor.actor.xyzDistToPlayerSq=899.0f;assert(Combo_SilverActorIdle(&actor,&play)&&actor.actor.killed&&collected.size()==1&&collected[RAND_INF_BOTTOM_OF_THE_WELL_SILVER_RUPEE_1]);
  Combo_SilverResetRoom();EnGSwitch again;again.type=1;Combo_SilverActorInit(&again,&play);assert(again.actor.killed&&roomSpawnIndex==1);
  EnGSwitch second;second.type=1;Combo_SilverActorInit(&second,&play);assert(!second.actor.killed&&second.silverRandoId==6); // A solved puzzle must not hide the other four rewards.
  Combo_SilverGive(nullptr,RG_POUCH_SILVER_BOTW);assert(rupees==50&&gSaveContext.ship.quest.data.randomizer.silverRupeeCounts[1]==5);

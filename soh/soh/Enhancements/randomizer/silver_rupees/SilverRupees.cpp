@@ -220,20 +220,17 @@ extern "C" int Combo_SilverActorInit(void* actor, void* context) {
 extern "C" int Combo_SilverActorIdle(void* actor, void* context) {
     using namespace Rando::SilverRupees;
     auto silver = static_cast<EnGSwitch*>(actor);
-    auto play = static_cast<PlayState*>(context);
     if (!silver->silverRandomized)
         return 0;
-    for (const auto& row : nativeChecks)
-        if (row.id == silver->silverRandoId) {
-            if (Actor_HasParent(&silver->actor, play)) {
+    // OoTMM keeps the native touch range, which also works midair and on fences. The flag queues the
+    // check like other RandomizerInf checks, and the queue gives the item once Link can receive it.
+    if (silver->actor.xyzDistToPlayerSq < 900.0f)
+        for (const auto& row : nativeChecks)
+            if (row.id == silver->silverRandoId) {
                 Flags_SetRandomizerInf(row.inf);
                 Actor_Kill(&silver->actor);
-            } else
-                GiveItemEntryFromActor(
-                    &silver->actor, play,
-                    OTRGlobals::Instance->gRandomizer->GetItemFromKnownCheck(row.check, GI_RUPEE_BLUE), 30.0f, 50.0f);
-            break;
-        }
+                break;
+            }
     return 1;
 }
 extern "C" int Combo_SilverGive(void* context, int item) {
