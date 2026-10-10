@@ -4234,7 +4234,7 @@ extern "C" COMBO_EXPORT void SOH_ResumeGame(void) {
 
     // 4. Hand off to OOT's boot path: capture the save slot, reset the frame state machine, and let
     //    TitleSetup jump straight to Play at the Mido's-House door (mirrors FileChoose + MM title_setup).
-    //    The save itself is loaded by TitleSetup via Sram_OpenSave, exactly like normal file select.
+    //    The save itself is loaded by TitleSetup via Sram_TryOpenSave, exactly like normal file select.
     // ComboShip: on a reset return, leave gComboReturnFileNum < 0 so TitleSetup boots to the title
     // sequence (first-boot) instead of jumping straight back into Play on the saved slot.
     gComboReturnFileNum = sComboResetPending ? -1 : (s32)gSaveContext.fileNum;

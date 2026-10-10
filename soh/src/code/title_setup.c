@@ -46,7 +46,7 @@ void TitleSetup_InitImpl(GameState* gameState) {
         gSaveContext.magicFillTarget = gSaveContext.magic;
         gSaveContext.magic = 0;
         gSaveContext.magicLevel = 0;
-        // Fire the exit/load hook pair a real quit+load runs: Save_LoadFile (inside Sram_OpenSave)
+        // Fire the exit/load hook pair a real quit+load runs: Save_TryLoadFile (inside Sram_TryOpenSave)
         // recreated gRandoContext, and consumers like the check tracker must tear down + re-init.
         GameInteractor_ExecuteOnExitGame(gSaveContext.fileNum);
         GameInteractor_ExecuteOnLoadGame(gSaveContext.fileNum);

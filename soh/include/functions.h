@@ -1378,9 +1378,10 @@ void SkinMatrix_SetTranslateRotateZYX(MtxF* dest, s16 rotX, s16 rotY, s16 rotZ, 
                                       f32 translateZ);
 Mtx* SkinMatrix_MtxFToNewMtx(GraphicsContext* gfxCtx, MtxF* src);
 void SkinMatrix_SetRotateAxis(MtxF* mf, s16 angle, f32 axisX, f32 axisY, f32 axisZ);
-void Sram_OpenSave();
 #ifdef COMBO_BUILD
 int Sram_TryOpenSave(int fileNum, int initializeFullContext);
+#else
+void Sram_OpenSave();
 #endif
 int Sram_InitSave(FileChooseContext* fileChoose);
 void Sram_InitSram(GameState* gameState);

@@ -1329,12 +1329,16 @@ void SaveManager::SaveFileThreaded(int fileNum, SaveContext* saveContext, int se
 #ifdef COMBO_BUILD
     if (gComboWriteGameSave) {
         // ComboShip: route this slot's OOT block into the merged .combosav container (launcher RMW).
-        auto combinedBlock = saveBlock;
         // The journal was captured with this SaveContext, before the worker was
         // scheduled. Partial tracker/rando writes must not advance item receipts.
-        if (sectionID == SECTION_ID_BASE && !anchorJournal.empty())
+        // Only a journaled base save needs a copy; saveBlock itself must never keep the journal.
+        if (sectionID == SECTION_ID_BASE && !anchorJournal.empty()) {
+            auto combinedBlock = saveBlock;
             combinedBlock["_comboAnchorJournal"] = nlohmann::json::parse(anchorJournal);
-        gComboWriteGameSave(ComboRando::GAME_OOT, fileNum, combinedBlock.dump().c_str());
+            gComboWriteGameSave(ComboRando::GAME_OOT, fileNum, combinedBlock.dump().c_str());
+        } else {
+            gComboWriteGameSave(ComboRando::GAME_OOT, fileNum, saveBlock.dump().c_str());
+        }
     } else
 #endif
     {
@@ -3072,11 +3076,8 @@ extern "C" int Save_TryLoadFile(int fileNum, int initializeFullContext) {
         return 0;
     return SaveManager::Instance->LoadFile(fileNum, initializeFullContext != 0) ? 1 : 0;
 }
-#endif
-extern "C" void Save_LoadFile(void) {
-#ifdef COMBO_BUILD
-    (void)Save_TryLoadFile(gSaveContext.fileNum, 0);
 #else
+extern "C" void Save_LoadFile(void) {
     // Handle vanilla context reset
     OTRGlobals::Instance->gRandoContext->GetLogic()->SetContext(nullptr);
     Rando::Settings::GetInstance()->ClearContext();
@@ -3086,8 +3087,8 @@ extern "C" void Save_LoadFile(void) {
     Rando::Settings::GetInstance()->AssignContext(OTRGlobals::Instance->gRandoContext);
     OTRGlobals::Instance->gRandoContext->AddExcludedOptions();
     SaveManager::Instance->LoadFile(gSaveContext.fileNum);
-#endif
 }
+#endif
 
 extern "C" void Save_AddLoadFunction(char* name, int version, SaveManager::LoadFunc func) {
     SaveManager::Instance->AddLoadFunction(name, version, func);

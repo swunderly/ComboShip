@@ -17,9 +17,9 @@ extern void (*gComboSaveInitCallback)(int fileNum);
 // ComboShip: fired before questType is read so the combo generator can run and call
 // SOH_ApplyRandoPlacements before Randomizer_InitSaveFile consumes the placements.
 extern void (*gComboGenerateCallback)(int fileNum);
-#endif
-
+#else
 void Save_LoadFile(void);
+#endif
 
 void BossRush_InitSave(void);
 
@@ -238,15 +238,12 @@ int Sram_TryOpenSave(int fileNum, int initializeFullContext) {
     Sram_StageOpenedSave();
     return 1;
 }
-#endif
-void Sram_OpenSave(void) {
-#ifdef COMBO_BUILD
-    (void)Sram_TryOpenSave(gSaveContext.fileNum, 0);
 #else
+void Sram_OpenSave(void) {
     Save_LoadFile();
     Sram_StageOpenedSave();
-#endif
 }
+#endif
 
 int Sram_InitSave(FileChooseContext* fileChooseCtx) {
 #ifdef COMBO_BUILD

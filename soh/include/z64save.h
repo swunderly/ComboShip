@@ -1,8 +1,5 @@
 #ifndef Z64SAVE_H
 #define Z64SAVE_H
-#ifdef COMBO_BUILD
-#include "rando/SharedDungeon.h"
-#endif
 
 #include <libultraship/libultra.h>
 #include "z64math.h"
