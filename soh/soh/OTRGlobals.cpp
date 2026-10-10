@@ -6206,6 +6206,17 @@ extern "C" COMBO_EXPORT uint8_t SOH_IsOnFileSelect(void) {
 extern "C" COMBO_EXPORT uint8_t SOH_CanGenerateComboSeed(void) {
     return SOH_IsOnFileSelect() && FileChoose_CanGenerateComboSeed(gGameState);
 }
+// ComboShip: the file-select cursor's file (buttonIndex FS_BTN_MAIN_FILE_1..3 = 0-2), or -1 off file
+// select or when the cursor is on another button. On the main file-select menu that is the highlighted
+// file, not only a chosen one; on the first frame it is File 1, because FileChoose_Init zeroes
+// buttonIndex. The launcher uses it so native Generate and seed imports target the same file whose
+// readiness (gComboProfilePendingReady) and creation (gComboProfilePrepareSave) already use buttonIndex.
+extern "C" COMBO_EXPORT int SOH_GetFileSelectSlot(void) {
+    if (!SOH_IsOnFileSelect())
+        return -1;
+    const int slot = ((FileChooseContext*)gGameState)->buttonIndex;
+    return slot >= 0 && slot < 3 ? slot : -1;
+}
 
 // ComboShip (#89): leave OOT's game loop before its first Play frame so the launcher can enter MM.
 // Clearing init is what ends RunFrame's `while (nextOvl)` (FileChoose queued Play_Init); no save and no
