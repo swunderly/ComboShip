@@ -113,14 +113,14 @@ public final class DataFiles {
         File config=child(staging,"comboship.json");
         if(!config.isFile())return;
         try {
-            JSONObject data;
+            String text;
             try(InputStream in=new FileInputStream(config)) {
-                data=new JSONObject(new String(readLimited(in,64L*1024*1024),java.nio.charset.StandardCharsets.UTF_8));
+                text=new String(readLimited(in,64L*1024*1024),java.nio.charset.StandardCharsets.UTF_8);
             }
-            if(rebase(data,source.getCanonicalPath(),target.getCanonicalPath())) {
-                byte[] updated=data.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8);
-                atomicCopy(new ByteArrayInputStream(updated),config,null,64L*1024*1024);
-            }
+            new JSONObject(text); // Unreadable settings must not be published.
+            String updated=rebase(text,source.getCanonicalPath(),target.getCanonicalPath());
+            if(updated!=null)
+                atomicCopy(new ByteArrayInputStream(updated.getBytes(java.nio.charset.StandardCharsets.UTF_8)),config,null,64L*1024*1024);
         }catch(JSONException error){throw new IOException("Could not read game settings for migration. The original files were preserved.",error);}
     }
     private static String rebasedPath(Object value,String oldRoot,String newRoot) {
@@ -132,28 +132,24 @@ public final class DataFiles {
         }catch(IOException ignored){} // Non-path text is left untouched.
         return null;
     }
-    private static boolean rebase(Object node,String oldRoot,String newRoot)throws JSONException {
-        boolean changed=false;
-        if(node instanceof JSONObject) {
-            JSONObject object=(JSONObject)node;
-            for(Iterator<String> keys=object.keys();keys.hasNext();) {
-                String key=keys.next();Object value=object.get(key);
-                String path=rebasedPath(value,oldRoot,newRoot);
-                if(path!=null) {
-                    object.put(key,path);changed=true;
-                }else changed|=rebase(value,oldRoot,newRoot);
-            }
-        }else if(node instanceof JSONArray) {
-            JSONArray array=(JSONArray)node;
-            for(int i=0;i<array.length();i++) {
-                Object value=array.get(i);
-                String path=rebasedPath(value,oldRoot,newRoot);
-                if(path!=null) {
-                    array.put(i,path);changed=true;
-                }else changed|=rebase(value,oldRoot,newRoot);
-            }
+    /** Rewrites only the string values that move, or returns null if none do. Every other token keeps its
+     *  exact text: org.json would print a whole-number float such as 2.0 as 2, which then loads as an
+     *  integer CVar that CVarGetFloat ignores. */
+    private static String rebase(String text,String oldRoot,String newRoot)throws JSONException {
+        StringBuilder out=new StringBuilder(text.length());int copied=0;
+        for(int start=text.indexOf('"');start>=0;start=text.indexOf('"',start)) {
+            int end=start+1;
+            while(end<text.length() && text.charAt(end)!='"')end+=text.charAt(end)=='\\'?2:1;
+            if(end>=text.length())throw new JSONException("Unterminated string");
+            int next=end+1;
+            while(next<text.length() && Character.isWhitespace(text.charAt(next)))next++;
+            // Object keys are left as they are; only values hold remembered paths.
+            String path=next<text.length() && text.charAt(next)==':'?null:
+                rebasedPath(new JSONTokener(text.substring(start,end+1)).nextValue(),oldRoot,newRoot);
+            if(path!=null){out.append(text,copied,start).append(JSONObject.quote(path));copied=end+1;}
+            start=end+1;
         }
-        return changed;
+        return copied==0?null:out.append(text,copied,text.length()).toString();
     }
     public static File createBackup(Context context,File root)throws IOException {
         File folder=child(root,"Backups");
