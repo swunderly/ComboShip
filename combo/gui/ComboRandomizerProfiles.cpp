@@ -6,6 +6,7 @@
 #include "ComboWidgetStyle.h"
 #include "ComboMenuLayout.h"
 #include "ComboTricksModel.h"
+#include "ComboRuleWarning.h"
 #include "rando/GameplayRules.h"
 #include "rando/GenerationRules.h"
 #include <libultraship/libultraship.h>
@@ -102,6 +103,10 @@ static void RefreshPoolViews() {
 }
 void WriteInteger(const char* key, int value) {
     if (Editable()) {
+        // ProfileSetDraft also applies a draft's rules to the run loaded from the same file.
+        if (const auto* rule = FindGameplayRule(key); rule && !rule->runtimeOnly && !rule->trickGoverned)
+            if (const auto* old = Field(key, false); !old || *old != value)
+                WarnAboutRuleChange(key, selected);
         *Field(key, true) = value;
         dirty = true;
         if (!std::strcmp(key, "gRando.Options.RO_LOGIC") && value == 3)

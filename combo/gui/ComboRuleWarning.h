@@ -7,7 +7,8 @@
 
 namespace ComboRando {
 inline double sRuleWarningUntil = 0;
-inline void WarnAboutRuleChange(const char* name) {
+// A slot limits the warning to edits for that file's run (next-seed drafts reach only that run).
+inline void WarnAboutRuleChange(const char* name, int slot = -1) {
     if (!name)
         return;
     if (const auto* rule = FindGameplayRule(name); rule && rule->runtimeOnly)
@@ -27,7 +28,7 @@ inline void WarnAboutRuleChange(const char* name) {
         oot(&a, nullptr, nullptr);
     if (mm)
         mm(&b, nullptr, nullptr);
-    if (a.loaded || b.loaded)
+    if ((a.loaded && (slot < 0 || a.slot == slot)) || (b.loaded && (slot < 0 || b.slot == slot)))
         sRuleWarningUntil = ImGui::GetTime() + 8.0;
 }
 inline void DrawRuleChangeWarning() {
