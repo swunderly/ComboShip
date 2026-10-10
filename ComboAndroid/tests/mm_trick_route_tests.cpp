@@ -8,6 +8,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <type_traits>
 
 // The build extracts these eight definitions from the production COMBO_BUILD
 // branch of Logic.h. Exercise their actual item/event/time wiring with controlled
@@ -36,7 +37,8 @@ static int CVarGetInteger(const char* key, int fallback) {
 #define Flags_GetRandoInf(flag) moonsTear
 #define RANDO_EVENTS events
 #define BETWEEN(start, end) ((start) == TIME_DAY1_PM_03_00 ? dayOneWindow : dayTwoWindow)
-#define COMBO_MM_TRICK(name) CVarGetInteger("gCombo.Tricks.MM." name, 0)
+// Same as Logic.h: a hidden trick reads as off whatever its CVar holds.
+#define COMBO_MM_TRICK(name) (std::bool_constant<ComboRando::IsHiddenMmTrick("gCombo.Tricks.MM." name)>::value ? 0 : CVarGetInteger("gCombo.Tricks.MM." name, 0))
 #include "MmTrickProductionMacros.h"
 
 static std::string Source(const char* file) {
