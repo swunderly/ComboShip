@@ -2,11 +2,12 @@
 from pathlib import Path
 import argparse
 import subprocess
+import hostcxx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
 parser.add_argument('--build-dir', type=Path, required=True)
-parser.add_argument('--compiler', default='cl')
+parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
 source = args.source.resolve()
 work = args.build_dir.resolve()
@@ -113,7 +114,5 @@ int main() {
 '''
 test = work/'headless_rule_writer.cpp'
 test.write_text(prelude + read + write + tests, encoding='utf-8')
-exe = work/'headless_rule_writer.exe'
-subprocess.run([args.compiler, '/nologo', '/EHsc', '/std:c++20', '/W4', '/WX', '/UNDEBUG',
-                str(test), '/Fe:'+str(exe), '/Fo:'+str(work/'headless_rule_writer.obj')], check=True)
-subprocess.run([str(exe)], check=True)
+exe = hostcxx.build(args.compiler, test, werror=True)
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

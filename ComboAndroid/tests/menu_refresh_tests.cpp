@@ -94,7 +94,7 @@ int main() {
         assert(std::string(gear.key)==privateGearKeys[i]);
         assert(std::string(gear.ootName)==privateGearNames[i] && std::string(gear.mmName)==privateGearNames[i]);
     }
-    assert(!SharedFamilyByIndex(SF_SPELL_WIND).publicOption);
+    assert(SharedFamilyByIndex(SF_SPELL_WIND).publicOption); // public since 0.3.9 (Farore's Wind settings)
     std::set<std::string> presetNames;
     for (const auto& preset:kCommunityPresets) {
         assert(presetNames.insert(preset.name).second);

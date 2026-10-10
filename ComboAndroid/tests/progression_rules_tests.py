@@ -1,23 +1,29 @@
-"""Exercise production well propagation, FD sword predicate and Bremen recruitment with engine stubs."""
+"""Exercise the production FD sword predicate and Bremen recruitment with engine stubs.
+
+The Kakariko Well age-propagation case this file used to extract no longer
+exists: 0.3.9 replaced it with the generic SongAgeChangeAreaAllowed() block in
+fill.cpp, which song_age_area_tests.py exercises for every native area.
+"""
 import argparse
 from pathlib import Path
 import re
 import subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--json-include', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
-p.add_argument('--compiler', default='cl')
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 source = a.source.resolve()
 out = a.build_dir.resolve()
 out.mkdir(parents=True, exist_ok=True)
-fill = (source/'soh/soh/Enhancements/randomizer/3drando/fill.cpp').read_text(encoding='utf-8')
-well = fill[fill.index('    if (region->randomizerRegionKey == RR_KAK_WELL'):]
-well = well[:well.index('\n#endif')]
 logic = (source/'mm/2s2h/Rando/Logic/Logic.h').read_text(encoding='utf-8')
-sword = re.search(r'#define CAN_USE_SWORD .*?(?=\n#define|\n\n)', logic, re.S).group()
+def macro(name):
+    # First (COMBO_BUILD) definition, including clang-format's continuation lines.
+    return re.search(r'^#define ' + name + r'\b(?:[^\n]*\\\n)*[^\n]*', logic, re.M).group() + '\n'
+sword = macro('CAN_USE_DEITY_OUTSIDE_BOSS') + macro('CAN_USE_SWORD')
 chicks = (source/'mm/src/overlays/actors/ovl_En_Nwc/z_en_nwc.c').read_text(encoding='utf-8')
 def function(name):
     text = chicks[chicks.index(name+'('):]
@@ -29,35 +35,25 @@ recruit = 'void '+function('EnNwc_CheckFound')
 prelude = r'''
 #define COMBO_BUILD 1
 #include "rando/GameplayRules.h"
+#include "rando/MmAbilities.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <string>
-int ageMode = 0, deityAnywhere = 0, oneChick = 0, chickCount = -1;
+int deityAnywhere = 0, oneChick = 0, chickCount = -1;
 int CVarGetInteger(const char* key, int fallback) {
     const std::string name(key);
-    return name == "gEnhancements.TimeTravel" ? ageMode :
-        name == "gEnhancements.Masks.FierceDeitysAnywhere" ? deityAnywhere :
+    return name == "gEnhancements.Masks.FierceDeitysAnywhere" ? deityAnywhere :
         name == "gEnhancements.DifficultyOptions.BremenChickCount" ? (chickCount < 0 ? fallback : chickCount) : oneChick;
 }
-enum { RR_KAK_WELL = 1, RG_SONG_OF_TIME = 2, RG_OCARINA_OF_TIME = 3, RG_MASTER_SWORD = 4 };
-struct TestLogic {
-    bool IsChild = true, IsAdult = false, song = true, oot = true, sword = true;
-    bool CanUse(int item) { assert(item == RG_SONG_OF_TIME && IsAdult && !IsChild); return song; }
-    bool HasItem(int item) { return item == RG_OCARINA_OF_TIME ? oot : sword; }
-};
-struct Region {
-    int randomizerRegionKey = RR_KAK_WELL;
-    bool childDay = false, childNight = false, adultDay = false, adultNight = false;
-    bool Adult() { return adultDay || adultNight; }
-};
-struct Search { bool logicUpdated = false, resetSphere = false; };
 bool humanSword = false, fairySword = false, deityForm = false, deityMask = false;
 #define CAN_USE_HUMAN_SWORD humanSword
 #define ITEM_SWORD_GREAT_FAIRY 1
-#define HAS_ITEM(item) fairySword
+#define ITEM_MASK_FIERCE_DEITY 2
+#define HAS_ITEM(item) ((item) == ITEM_SWORD_GREAT_FAIRY ? fairySword : (item) == ITEM_MASK_FIERCE_DEITY && deityMask)
 #define IS_DEITY deityForm
 #define CAN_BE_DEITY (deityForm || deityMask)
+#define COMBO_LOGIC_RULE(name) CVarGetInteger(name, 0) // the seed's rule value
 using u8 = uint8_t;
 struct Rotation { int x = 0, z = 0; };
 struct Home { Rotation rot; };
@@ -76,31 +72,14 @@ void Audio_PlaySfx_AtPosWithAllChannelsIO(int*, int, int) {}
 '''
 tests = r'''
 int main() {
-    TestLogic l;
-    for (int mode = 0; mode <= 4; ++mode) {
-        for (int time = 0; time < 2; ++time) {
-            Region r; Search g;
-            r.adultDay = time == 0; r.adultNight = time == 1;
-            ageMode = mode;
-            Propagate(&r, &l, g, true);
-            assert(r.childDay == (mode != 0 && time == 0));
-            assert(r.childNight == (mode != 0 && time == 1));
-            assert(g.logicUpdated == (mode != 0) && g.resetSphere == (mode != 0));
-            assert(l.IsChild && !l.IsAdult);
-        }
-    }
-    for (int missing = 0; missing < 4; ++missing) {
-        Region r; Search g; ageMode = 2; l = TestLogic{};
-        r.adultDay = missing != 0; l.song = missing != 1; l.oot = missing != 2; l.sword = missing != 3;
-        Propagate(&r, &l, g, false);
-        assert(!r.childDay && !r.childNight && !g.logicUpdated && !g.resetSphere);
-    }
     assert(!CanSword());
     deityMask = true;
     assert(!CanSword()); // mask possession alone is not a field sword
     deityAnywhere = 1; assert(CanSword());
     deityMask = false; assert(!CanSword());
-    deityForm = true; deityAnywhere = 0; assert(CanSword()); // already transformed in a boss arena
+    // Since combined-logic-guarantees, seed logic ignores the current form:
+    // only the owned mask plus the Fierce Deity's Anywhere rule count.
+    deityForm = true; deityAnywhere = 0; assert(!CanSword());
     deityForm = false; humanSword = true; assert(CanSword());
     humanSword = false; fairySword = true; assert(CanSword());
     Grog grog; PlayState play; EnNwc chick; chick.grog = &grog;
@@ -134,15 +113,11 @@ int main() {
         EnNwc extra; extra.grog = &grog; extra.actor.xzDistToPlayer = 10;
         EnNwc_CheckFound(&extra, &play); assert(extra.state == 0);
     }
-    std::cout << "Production well age propagation, FD sword gating and Bremen recruitment passed\n";
+    std::cout << "Production FD sword gating and Bremen recruitment passed\n";
 }
 '''
 cpp = out/'progression_rules.cpp'
 cpp.write_text(prelude + '\n' + sword + '\nbool CanSword() { return CAN_USE_SWORD; }\n' +
-               'void Propagate(Region* region, TestLogic* logic, Search& gals, bool addToPlaythrough) {\n' +
-               well + '\n}\n' + found + '\n' + recruit + '\n' + tests, encoding='utf-8')
-exe = out/'progression_rules.exe'
-subprocess.run([a.compiler, '/nologo', '/EHsc', '/std:c++17', '/W4', '/WX', '/UNDEBUG',
-                '/I'+str(source/'combo'), '/I'+str(a.json_include.resolve()), str(cpp),
-                '/Fe:'+str(exe), '/Fo:'+str(out/'progression_rules.obj')], check=True)
-subprocess.run([str(exe)], check=True)
+               found + '\n' + recruit + '\n' + tests, encoding='utf-8')
+exe = hostcxx.build(a.compiler, cpp, std='c++17', werror=True, includes=[source/'combo', a.json_include])
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

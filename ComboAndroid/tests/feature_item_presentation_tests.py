@@ -1,10 +1,11 @@
 """Compile production item recipes/draw bodies; assert pinned models, colors and aliases."""
 from pathlib import Path
 import argparse,re,subprocess
-p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',default='cl');a=p.parse_args()
+import hostcxx
+p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',default=hostcxx.DEFAULT_COMPILER);a=p.parse_args()
 s=a.source.resolve();w=a.build_dir.resolve();w.mkdir(parents=True,exist_ok=True)
 def function(text,sig):
-    begin=text.index(sig);at=text.index('{',begin)+1;depth=1
+    begin=hostcxx.find(text,sig);at=text.index('{',begin)+1;depth=1
     while depth:
         depth+=(text[at]=='{')-(text[at]=='}');at+=1
     return text[begin:at]+'\n'
@@ -45,7 +46,7 @@ code+=function(native,'void DrawSilver(')
 inventory=(s/'mm/src/code/z_inventory.c').read_text()
 # Keep the real aligned declarations used by the sparse initializer. Copying
 # only the initializer would either fail to compile or miss its alignment ABI.
-aligned_assets=dict(re.findall(r'(static const ALIGN_ASSET\(2\) char (sCombo\w+Icon)\[\] = "[^"\n]+";)',inventory))
+aligned_assets=dict(re.findall(r'(static const ALIGN_ASSET\(2\) char (sCombo\w+Icon)\[\]\s*=\s*"[^"\n]+";)',inventory))
 aligned_names=set(aligned_assets.values())
 assert len(aligned_names)==4
 code+='#include "'+(s/'mm/include/align_asset_macro.h').as_posix()+'"\n'
@@ -107,8 +108,4 @@ int main(){
 }
 """
 test=w/'feature-item-presentation.cpp';test.write_text(code)
-exe=w/'feature-item-presentation.exe'
-cmd=[a.compiler,'/nologo','/std:c++20','/EHsc','/UNDEBUG',str(test),'/Fe:'+str(exe),'/Fo:'+str(w/'feature-item-presentation.obj')]
-r=subprocess.run(cmd,capture_output=True,text=True);(w/'compile.log').write_text(r.stdout+r.stderr)
-if r.returncode:print(r.stdout+r.stderr)
-r.check_returncode();subprocess.run([str(exe)],check=True)
+subprocess.run([str(hostcxx.build(a.compiler,test,warnings=False))],check=True, timeout=hostcxx.RUN_TIMEOUT)

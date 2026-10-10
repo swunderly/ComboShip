@@ -7,12 +7,13 @@ from pathlib import Path
 import argparse
 import re
 import subprocess
+import hostcxx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
 parser.add_argument('--json-include', type=Path, required=True)
 parser.add_argument('--build-dir', type=Path, required=True)
-parser.add_argument('--compiler', default='cl')
+parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
 source = args.source.resolve()
 work = args.build_dir.resolve()
@@ -20,7 +21,7 @@ work.mkdir(parents=True, exist_ok=True)
 
 
 def function(text, signature):
-    start = text.index(signature)
+    start = hostcxx.find(text, signature)
     opening = text.index('{', start)
     depth = 1
     end = opening + 1
@@ -31,7 +32,8 @@ def function(text, signature):
 
 
 def routing_block(text, prefix):
-    return prefix + text.split(prefix, 1)[1].split('\n#endif', 1)[0]
+    start = hostcxx.find(text, prefix)
+    return text[start:text.index('\n#endif', start)]
 
 
 oot = (source/'soh/soh/Enhancements/randomizer/3drando/fill.cpp').read_text(encoding='utf-8')
@@ -48,10 +50,10 @@ mm_runtime = function(mm_port, 'extern "C" COMBO_EXPORT int MM_ForeignSongDestin
 # Bind the exercised export to the real launcher resolver. The legacy export
 # is also tested so consumers cannot accidentally revive a runtime flag leak.
 launcher = (source/'combo/ComboShip.cpp').read_text(encoding='utf-8')
-assert 'SOH_SongDestination=(int(*)(int))GetSym(sohModule,"SOH_SongLogicDestination");' in launcher
-assert 'map.logicEnabled || map.logicForeignSongs' in logical_oracle
-assert '.destination(source)' in oot_runtime and '.logicDestination' not in oot_runtime
-assert '.destination(source)' in mm_runtime and '.logicDestination' not in mm_runtime
+assert hostcxx.contains(launcher, 'SOH_SongDestination=(int(*)(int))GetSym(sohModule,"SOH_SongLogicDestination");')
+assert hostcxx.contains(logical_oracle, 'map.logicEnabled || map.logicForeignSongs')
+assert hostcxx.contains(oot_runtime, '.destination(source)') and '.logicDestination' not in oot_runtime
+assert hostcxx.contains(mm_runtime, '.destination(source)') and '.logicDestination' not in mm_runtime
 
 oot_header = (source/'combo/rando/SongTravelOOT.h').read_text(encoding='utf-8')
 oot_tables = '\n'.join(re.findall(
@@ -71,8 +73,8 @@ entrance_macro = next(line for line in scene.splitlines() if line.startswith('#d
 # flags. This existing behavior must survive the routing correction.
 title = (source/'mm/src/code/title_setup.c').read_text(encoding='utf-8')
 arrival_block = function(title, 'if (songArrival>=0) {')
-assert 'gSaveContext.save.playerForm = PLAYER_FORM_HUMAN' in arrival_block
-assert 'gSaveContext.save.equippedMask = PLAYER_MASK_NONE' in arrival_block
+assert hostcxx.contains(arrival_block, 'gSaveContext.save.playerForm = PLAYER_FORM_HUMAN')
+assert hostcxx.contains(arrival_block, 'gSaveContext.save.equippedMask = PLAYER_MASK_NONE')
 
 prelude = r'''
 #define COMBO_EXPORT
@@ -188,15 +190,9 @@ generated = prelude + scene_enum + entrance_macro + '\nnamespace ComboRando {\n'
 generated += oracle + logical_oracle + oot_runtime + mm_runtime + storage + oot_block + oot_tail + mm_block + mm_tail + arrival_block + tests
 test = work/'song_native_mapping.cpp'
 test.write_text(generated, encoding='utf-8')
-exe = work/'song_native_mapping.exe'
-compiled = subprocess.run([args.compiler, '/nologo', '/EHsc', '/std:c++20', '/Zc:preprocessor', '/W4', '/WX', '/UNDEBUG',
-    '/I'+str(source/'combo'), '/I'+str(source/'soh'), '/I'+str(args.json_include.resolve()),
-    str(test), '/Fe:'+str(exe), '/Fo:'+str(work/'song_native_mapping.obj')], capture_output=True, text=True)
-(work/'compile.log').write_text(compiled.stdout + compiled.stderr, encoding='utf-8')
-if compiled.returncode:
-    print('\n'.join((compiled.stdout + compiled.stderr).splitlines()[:30]))
-compiled.check_returncode()
-run = subprocess.run([str(exe)], capture_output=True, text=True)
+exe = hostcxx.build(args.compiler, test, werror=True, msvc=['/Zc:preprocessor'],
+                    includes=[source/'combo', source/'soh', args.json_include.resolve()])
+run = subprocess.run([str(exe)], capture_output=True, text=True, timeout=hostcxx.RUN_TIMEOUT)
 (work/'result.txt').write_text(run.stdout + run.stderr, encoding='utf-8')
 print(run.stdout + run.stderr, end='')
 run.check_returncode()

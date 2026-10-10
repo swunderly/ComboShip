@@ -3,12 +3,13 @@ import argparse
 from pathlib import Path
 import re
 import subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--before', type=Path)
 p.add_argument('--build-dir', type=Path, required=True)
-p.add_argument('--compiler', default='cl')
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = p.parse_args()
 source, out = args.source.resolve(), args.build_dir.resolve()
 out.mkdir(parents=True, exist_ok=True)
@@ -18,7 +19,7 @@ def read(relative):
     return (candidate if candidate.exists() else source / relative).read_text(encoding='utf-8')
 
 def body(text, start):
-    pos = text.index(start)
+    pos = hostcxx.find(text, start)
     opening = text.index('{', pos)
     depth = 1
     closing = opening + 1
@@ -162,9 +163,6 @@ cpp = out / 'mm_shop_observation.cpp'
 cpp.write_text(stubs + record + '\n' + visible + '\n' + shop + '\n'
                + 'void FinishNativePickup(Actor* actor,RandoItemId randoItemId) {\n' + assignments + '\n}\n'
                + 'auto QueueDraw = ' + draw + ';\n' + shop_test + tests, encoding='utf-8')
-exe = out / 'mm_shop_observation.exe'
-command = [args.compiler, '/nologo', '/EHsc', '/std:c++17', '/W4', '/wd4100', '/WX',
-           '/I'+str(source/'mm'), '/I'+str(source/'combo'), str(cpp),
-           '/Fe:'+str(exe), '/Fo:'+str(out/'mm_shop_observation.obj')]
-subprocess.run(command, check=True)
-subprocess.run([str(exe)], check=True)
+exe = hostcxx.build(args.compiler, cpp, std='c++17', werror=True, includes=[source/'mm', source/'combo'],
+                    msvc=['/wd4100'], gnu=['-Wno-unused-parameter'])
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

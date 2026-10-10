@@ -2,11 +2,13 @@
 from pathlib import Path
 import argparse
 import subprocess
+import hostcxx
 
 p=argparse.ArgumentParser()
 p.add_argument('--source',type=Path,required=True)
 p.add_argument('--json-include',type=Path,required=True)
 p.add_argument('--build-dir',type=Path,required=True)
+p.add_argument('--compiler',default=hostcxx.DEFAULT_COMPILER)
 a=p.parse_args(); root=a.source.resolve(); work=a.build_dir.resolve(); work.mkdir(parents=True,exist_ok=True)
 def function(text, signature):
     start=text.index(signature); opening=text.index('{',start); end=opening+1; depth=1
@@ -183,12 +185,6 @@ int main() {
 }
 '''
 test=work/'logic_parity.cpp';test.write_text(code)
-exe=work/'logic_parity.exe'
-compiled=subprocess.run(['cl','/nologo','/EHsc','/std:c++20','/W4','/WX','/UNDEBUG',
-    '/I'+str(root/'combo'),'/I'+str(a.json_include.resolve()),str(test),
-    '/Fe:'+str(exe),'/Fo:'+str(work/'logic_parity.obj')],capture_output=True,text=True)
-(work/'compile.log').write_text(compiled.stdout+compiled.stderr)
-if compiled.returncode:print(compiled.stdout+compiled.stderr)
-compiled.check_returncode()
-run=subprocess.run([str(exe)],capture_output=True,text=True)
+exe=hostcxx.build(a.compiler,test,werror=True,includes=[root/'combo',a.json_include])
+run=subprocess.run([str(exe)],capture_output=True,text=True, timeout=hostcxx.RUN_TIMEOUT)
 (work/'result.txt').write_text(run.stdout+run.stderr);print(run.stdout+run.stderr,end='');run.check_returncode()

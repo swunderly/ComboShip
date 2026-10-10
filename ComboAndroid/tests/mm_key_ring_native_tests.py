@@ -3,10 +3,11 @@ Only engine storage and scene/check metadata are supplied by the harness.
 """
 from pathlib import Path
 import argparse, subprocess
+import hostcxx
 p=argparse.ArgumentParser()
 p.add_argument('--source',type=Path,required=True)
 p.add_argument('--build-dir',type=Path,required=True)
-p.add_argument('--compiler',default='cl')
+p.add_argument('--compiler',default=hostcxx.DEFAULT_COMPILER)
 a=p.parse_args(); source=a.source.resolve(); work=a.build_dir.resolve();work.mkdir(parents=True,exist_ok=True)
 def function(text,signature):
     start=text.index(signature); begin=text.index('{',start); end=begin+1;depth=1
@@ -114,11 +115,5 @@ int main() {
     std::cout << "Native runtime/oracle ring dispatch and own-dungeon restrictions passed.\\n";
 }
 '''
-f=work/'mm-key-ring-native.cpp';f.write_text(code,encoding='utf-8');exe=work/'mm-key-ring-native.exe'
-if Path(a.compiler).stem.lower() in ('cl','clang-cl'):
-    cmd=[a.compiler,'/nologo','/std:c++20','/EHsc','/W4','/UNDEBUG','/I'+str(r),str(f),'/Fe:'+str(exe),'/Fo:'+str(work/'mm-key-ring-native.obj')]
-else:
-    cmd=[a.compiler,'-std=c++20','-Wall','-Wextra','-UNDEBUG','-I'+str(r),str(f),'-o',str(exe)]
-run=subprocess.run(cmd,capture_output=True,text=True);(work/'compile.log').write_text(run.stdout+run.stderr,encoding='utf-8')
-if run.returncode: print(run.stdout+run.stderr)
-run.check_returncode();subprocess.run([str(exe)],check=True)
+f=work/'mm-key-ring-native.cpp';f.write_text(code,encoding='utf-8')
+subprocess.run([str(hostcxx.build(a.compiler,f,includes=[r]))],check=True, timeout=hostcxx.RUN_TIMEOUT)

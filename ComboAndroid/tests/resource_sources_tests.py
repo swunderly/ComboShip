@@ -4,10 +4,12 @@ import argparse
 import re
 import subprocess
 import json
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 root = a.source.resolve()
 work = a.build_dir.resolve()
@@ -262,14 +264,8 @@ int main() {
 '''
 test = work / 'resource_sources.cpp'
 test.write_text(code)
-exe = work / 'resource_sources.exe'
-compiled = subprocess.run(['cl', '/nologo', '/EHsc', '/std:c++20', '/W4', '/WX', '/UNDEBUG',
-    str(test), '/Fe:' + str(exe), '/Fo:' + str(work / 'resource_sources.obj')], capture_output=True, text=True)
-(work / 'compile.log').write_text(compiled.stdout + compiled.stderr)
-if compiled.returncode:
-    print(compiled.stdout + compiled.stderr)
-compiled.check_returncode()
-run = subprocess.run([str(exe)], capture_output=True, text=True)
+exe = hostcxx.build(a.compiler, test, werror=True)
+run = subprocess.run([str(exe)], capture_output=True, text=True, timeout=hostcxx.RUN_TIMEOUT)
 (work / 'result.txt').write_text(run.stdout + run.stderr)
 print(run.stdout + run.stderr, end='')
 run.check_returncode()

@@ -3,11 +3,12 @@ from pathlib import Path
 import argparse
 import re
 import subprocess
+import hostcxx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
 parser.add_argument('--build-dir', type=Path, required=True)
-parser.add_argument('--compiler', default='cl')
+parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
 source = args.source.resolve()
 work = args.build_dir.resolve()
@@ -148,8 +149,5 @@ int main() {
 '''
 test = work/'early_frog_rules.cpp'
 test.write_text(prelude + method + native + tests, encoding='utf-8')
-exe = work/'early_frog_rules.exe'
-subprocess.run([args.compiler, '/nologo', '/EHsc', '/std:c++20', '/W4', '/WX', '/UNDEBUG',
-                '/I'+str(source/'combo'), '/I'+str(source/'soh'), str(test),
-                '/Fe:'+str(exe), '/Fo:'+str(work/'early_frog_rules.obj')], check=True)
-subprocess.run([str(exe)], check=True)
+exe = hostcxx.build(args.compiler, test, werror=True, includes=[source/'combo', source/'soh'])
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

@@ -7,6 +7,7 @@ from pathlib import Path
 import argparse
 import re
 import subprocess
+import hostcxx
 
 
 def braced(text, signature):
@@ -33,8 +34,8 @@ def read(root, relative):
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
 parser.add_argument('--build-dir', type=Path, required=True)
-parser.add_argument('--compiler', default='cl')
-parser.add_argument('--json-include', type=Path)
+parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
+parser.add_argument('--json-include', type=Path, required=True)
 args = parser.parse_args()
 root, work = args.source.resolve(), args.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
@@ -96,14 +97,8 @@ assert len(mask_options) == 2, 'Keep separate Combo and standalone mask defaults
 combo_default, standalone_default = (
     re.search(r',\s*(\w+)\);$', option.strip()).group(1) for option in mask_options)
 
-json_include = args.json_include
-if json_include is None:
-    candidates = (root.parent/'build-android/_deps/nlohmann_json-src/include',
-                  root.parent/'build-assets/_deps/nlohmann_json-src/include')
-    json_include = next((path for path in candidates if (path/'nlohmann/json.hpp').exists()), None)
-assert json_include and (json_include/'nlohmann/json.hpp').exists(), \
-    'Supply --json-include with the production nlohmann header directory'
-json_include = json_include.resolve()
+json_include = args.json_include.resolve()
+assert (json_include/'nlohmann/json.hpp').exists(), 'Supply --json-include with the production nlohmann header directory'
 
 prelude = r'''
 #include <algorithm>
@@ -370,14 +365,5 @@ int main() {
 
 file = work / 'oot-mask-quest.cpp'
 file.write_text(code, encoding='utf-8')
-binary = work / 'oot-mask-quest.exe'
-compiler = Path(args.compiler).name.lower()
-if compiler in ('cl', 'cl.exe'):
-    command = [args.compiler, '/nologo', '/EHsc', '/std:c++20', '/W4', '/WX', '/UNDEBUG',
-               '/I' + str(root/'combo'), '/I' + str(json_include),
-               str(file), '/Fo:' + str(work / 'oot-mask-quest.obj'), '/Fe:' + str(binary)]
-else:
-    command = [args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Werror', '-UNDEBUG',
-               '-I' + str(root/'combo'), '-I' + str(json_include), str(file), '-o', str(binary)]
-subprocess.run(command, check=True, cwd=work)
-subprocess.run([str(binary)], check=True, cwd=work)
+binary = hostcxx.build(args.compiler, file, werror=True, includes=[root/'combo', json_include])
+subprocess.run([str(binary)], check=True, cwd=work, timeout=hostcxx.RUN_TIMEOUT)

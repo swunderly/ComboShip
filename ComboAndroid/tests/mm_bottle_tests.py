@@ -1,10 +1,12 @@
 """Exercise the production bottle predicate, including occupied Gold Dust."""
 from pathlib import Path
 import argparse, re, subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 text = (a.source/'mm/2s2h/Rando/Logic/Logic.cpp').read_text(encoding='utf-8')
 match = re.search(r'bool HasUsableBottle\(\) \{.*?\n\}', text, re.S)
@@ -103,7 +105,5 @@ int main() {
 '''
 a.build_dir.mkdir(parents=True,exist_ok=True)
 source=a.build_dir/'bottles.cpp'; source.write_text(code)
-binary=a.build_dir/'bottles.exe'
-subprocess.run(['cl','/nologo','/EHsc','/std:c++20','/W4','/WX','/UNDEBUG',str(source),
-                '/Fo'+str(a.build_dir/'bottles.obj'),'/Fe'+str(binary)],check=True,cwd=a.build_dir)
-subprocess.run([str(binary)],check=True)
+binary=hostcxx.build(a.compiler,source,werror=True)
+subprocess.run([str(binary)],check=True, timeout=hostcxx.RUN_TIMEOUT)

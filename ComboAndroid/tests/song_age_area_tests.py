@@ -2,12 +2,13 @@
 from pathlib import Path
 import argparse
 import subprocess
+import hostcxx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
 parser.add_argument('--json-include', type=Path, required=True)
 parser.add_argument('--build-dir', type=Path, required=True)
-parser.add_argument('--compiler', default='cl')
+parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
 source = args.source.resolve()
 work = args.build_dir.resolve()
@@ -157,15 +158,9 @@ int main() {
 test = work/'song_age_areas.cpp'
 test.write_text(prelude + 'void Propagate(Region* region,TestLogic* logic,Search& gals,bool addToPlaythrough) {\n' +
                 block + '\n}\n' + tests, encoding='utf-8')
-exe = work/'song_age_areas.exe'
-compiled = subprocess.run([args.compiler, '/nologo', '/EHsc', '/std:c++20', '/Zc:preprocessor', '/W4', '/WX', '/UNDEBUG',
-                '/I'+str(source/'combo'), '/I'+str(source/'soh'), '/I'+str(args.json_include.resolve()),
-                str(test), '/Fe:'+str(exe), '/Fo:'+str(work/'song_age_areas.obj')], capture_output=True, text=True)
-(work/'compile.log').write_text(compiled.stdout + compiled.stderr, encoding='utf-8')
-if compiled.returncode:
-    print('\n'.join((compiled.stdout+compiled.stderr).splitlines()[:20]))
-compiled.check_returncode()
-run = subprocess.run([str(exe)], capture_output=True, text=True)
+exe = hostcxx.build(args.compiler, test, werror=True, msvc=['/Zc:preprocessor'],
+                    includes=[source/'combo', source/'soh', args.json_include])
+run = subprocess.run([str(exe)], capture_output=True, text=True, timeout=hostcxx.RUN_TIMEOUT)
 (work/'result.txt').write_text(run.stdout + run.stderr, encoding='utf-8')
 print(run.stdout + run.stderr, end='')
 run.check_returncode()

@@ -3,11 +3,13 @@ import argparse
 import subprocess
 import uuid
 from pathlib import Path
+import hostcxx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
 parser.add_argument('--build-dir', type=Path, required=True)
 parser.add_argument('--json-include', type=Path, required=True)
+parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
 args.build_dir.mkdir(parents=True, exist_ok=True)
 adapter = (args.source / 'combo/ComboRandomizerProfileNative.inc').read_text(encoding='utf-8')
@@ -20,12 +22,14 @@ harness = r'''
 #include "ComboRandomizerProfileRepository.h"
 #include "rando/CrossWorldRando.h"
 #include "rando/GameplayRuleSnapshots.h"
+#include <atomic>
 #include <cassert>
 #include <memory>
 #include <map>
 using Json=nlohmann::json;
 static std::unique_ptr<ComboRando::Profiles::Repository> sProfiles;
 static ComboRando::ComboGenProgress g_ComboProgress;
+static std::atomic<uint64_t> g_profileSavedSeedRevision{1}; // read by the extracted ProfileRevision()
 static int sGameplayRulesSlot=0,refreshes=0,applies=0;
 static std::map<std::string,int> runtime;
 static int Read(const char* key,int fallback){auto it=runtime.find(key);return it==runtime.end()?fallback:it->second;}
@@ -80,11 +84,8 @@ int main(int argc,char** argv){
 }
 '''
 (args.build_dir / 'draft_adapter.cpp').write_text(harness, encoding='utf-8')
-executable = (args.build_dir / 'draft_adapter.exe').resolve()
-command = ['cl', '/nologo', '/std:c++20', '/Zc:preprocessor', '/EHsc', '/UNDEBUG', '/utf-8',
-           '/I' + str((args.source / 'combo').resolve()), '/I' + str(args.json_include.resolve()),
-           str((args.build_dir / 'draft_adapter.cpp').resolve()), '/Fe:' + str(executable)]
-subprocess.run(command, cwd=args.build_dir, check=True)
+executable = hostcxx.build(args.compiler, args.build_dir / 'draft_adapter.cpp', warnings=False,
+                           includes=[args.source / 'combo', args.json_include], msvc=['/Zc:preprocessor', '/utf-8'])
 run = args.build_dir / ('run-' + str(uuid.uuid4()))
 run.mkdir(exist_ok=True)
-subprocess.run([str(executable), str(run.resolve())], cwd=args.build_dir, check=True)
+subprocess.run([str(executable), str(run.resolve())], cwd=args.build_dir, check=True, timeout=hostcxx.RUN_TIMEOUT)

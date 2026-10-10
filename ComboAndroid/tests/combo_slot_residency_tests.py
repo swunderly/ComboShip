@@ -1,10 +1,11 @@
 """Execute production dormant MM getter/reconciliation functions with slot fixtures."""
 from pathlib import Path
 import argparse, subprocess
-p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',default='cl');p.add_argument('--json-include',type=Path,required=True);a=p.parse_args()
+import hostcxx
+p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',default=hostcxx.DEFAULT_COMPILER);p.add_argument('--json-include',type=Path,required=True);a=p.parse_args()
 text=(a.source/'combo/ComboShip.cpp').read_text(); work=a.build_dir;work.mkdir(parents=True,exist_ok=True)
 def function(signature):
-    start=text.index(signature);opening=text.index('{',start);end=opening+1;depth=1
+    start=hostcxx.find(text,signature);opening=text.index('{',start);end=opening+1;depth=1
     while depth:depth+=(text[end]=='{')-(text[end]=='}');end+=1
     if text[end:].startswith(' catch'):
         # Keep actual exception handling on the function-try-block.
@@ -45,12 +46,11 @@ int main(){
  std::cout<<"PASS production unbound/failed/mismatched/matched MM slot isolation\n";
 }
 '''
-cpp=work/'residency.cpp';cpp.write_text(source);exe=work/'residency.exe'
-subprocess.run([a.compiler,'/nologo','/EHsc','/std:c++20','/UNDEBUG','/I'+str(a.source/'combo'),'/I'+str(a.json_include),str(cpp),'/Fe:'+str(exe),'/Fo:'+str(work/'residency.obj')],check=True)
-subprocess.run([str(exe)],check=True)
+cpp=work/'residency.cpp';cpp.write_text(source)
+subprocess.run([str(hostcxx.build(a.compiler,cpp,warnings=False,includes=[a.source/'combo',a.json_include]))],check=True, timeout=hostcxx.RUN_TIMEOUT)
 # Bind path must clear residency before a potentially failed native load/create.
-assert text.index('g_MmSaveInMemorySlot = -1; // Failure') < text.index('if (MM_LoadSaveForCombo(fileNum) == 0)')
-assert 'if (mmInitResult == 0) g_MmSaveInMemorySlot = fileNum;' in text
-progress=text[text.index('static void Combo_OnTriforceProgress(int game, int fileNum) try'):]
-assert progress.index('if (g_MmSaveInMemorySlot != fileNum)') < progress.index('const int total =')
+assert hostcxx.find(text,'g_MmSaveInMemorySlot = -1; // Failure') < hostcxx.find(text,'if (MM_LoadSaveForCombo(fileNum) == 0)')
+assert hostcxx.contains(text,'if (mmInitResult == 0) g_MmSaveInMemorySlot = fileNum;')
+progress=text[hostcxx.find(text,'static void Combo_OnTriforceProgress(int game, int fileNum) try'):]
+assert hostcxx.find(progress,'if (g_MmSaveInMemorySlot != fileNum)') < hostcxx.find(progress,'const int total =')
 

@@ -4,10 +4,12 @@ import argparse
 import subprocess
 import re
 import json
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 root = a.source.resolve()
 work = a.build_dir.resolve()
@@ -196,9 +198,6 @@ int main() {
 # Inn needs its real flag input; no copied opening predicate is substituted.
 code = code.replace('Flags_GetRandoInf(RANDO_INF_OBTAINED_ROOM_KEY)', 'roomKey')
 (work/'mm_schedules.cpp').write_text(code,encoding='utf-8')
-result=subprocess.run(['cl','/nologo','/std:c++20','/EHsc','/W4','/WX','/wd4018','/UNDEBUG',
-                      str(work/'mm_schedules.cpp'),'/Fe:'+str(work/'mm_schedules.exe'),
-                      '/Fo:'+str(work/'mm_schedules.obj')],capture_output=True,text=True)
-(work/'compile.log').write_text(result.stdout+result.stderr)
-assert result.returncode==0,result.stdout+result.stderr
-subprocess.run([str(work/'mm_schedules.exe')],check=True)
+# Signed/unsigned comparisons (MSVC C4018) stay allowed, as before.
+exe=hostcxx.build(a.compiler,work/'mm_schedules.cpp',werror=True,msvc=['/wd4018'],gnu=['-Wno-sign-compare'])
+subprocess.run([str(exe)],check=True, timeout=hostcxx.RUN_TIMEOUT)

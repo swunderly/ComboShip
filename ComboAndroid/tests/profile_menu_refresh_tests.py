@@ -2,12 +2,14 @@
 import argparse
 from pathlib import Path
 import subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--before', type=Path)
 p.add_argument('--json-include', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = p.parse_args()
 source, out = args.source.resolve(), args.build_dir.resolve()
 out.mkdir(parents=True, exist_ok=True)
@@ -15,7 +17,7 @@ relative = Path('combo/gui/ComboRandomizerProfiles.cpp')
 text = ((args.before or source) / relative).read_text(encoding='utf-8')
 
 def function(start):
-    pos = text.index(start)
+    pos = hostcxx.find(text, start)
     opening = text.index('{', pos)
     depth, closing = 1, opening + 1
     while depth:
@@ -49,7 +51,7 @@ void Require(bool condition,const char* message){if(!condition)throw std::runtim
 tests = r'''
 void Frame(){++ImGui::frame;ImGui::now+=1./60;BeginFrame();}
 void Run(){
- callbacks={1,Inspect,SetDraft,Copy,Generate,Copy,Cancel};
+ callbacks={1,Inspect,SetDraft,Copy,Generate,Copy,Cancel,nullptr}; // version 1: no revision callback
  for(int i=0;i<60;++i){Frame();Require(active,"profile frame became inactive");EndFrame();}
  std::cout<<"Native inspections across 60 idle menu frames: "<<inspections<<'\n';
  Require(inspections==1&&policies==1&&pools==1,"idle menu repeated full seed/catalog work each frame");
@@ -79,8 +81,5 @@ cpp.write_text(engine + declarations + function('bool Ready()') + function('bool
                + (function('static void RefreshSnapshot(') if 'static void RefreshSnapshot(' in text else '')
                + function('void BeginFrame()')
                + function('void EndFrame()') + tests, encoding='utf-8')
-exe = out / 'profile_menu_refresh.exe'
-subprocess.run(['cl', '/nologo', '/EHsc', '/std:c++17', '/W4', '/WX',
-                '/I'+str(source/'combo'), '/I'+str(args.json_include.resolve()), str(cpp),
-                '/Fe:'+str(exe), '/Fo:'+str(out/'profile_menu_refresh.obj')], check=True)
-subprocess.run([str(exe)], check=True)
+exe = hostcxx.build(args.compiler, cpp, std='c++17', werror=True, includes=[source/'combo', args.json_include])
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

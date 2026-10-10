@@ -2,12 +2,13 @@
 from pathlib import Path
 import argparse
 import subprocess
+import hostcxx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
 parser.add_argument('--build-dir', type=Path, required=True)
 parser.add_argument('--json-include', type=Path, required=True)
-parser.add_argument('--compiler', default='cl')
+parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
 source = args.source.resolve()
 work = args.build_dir.resolve()
@@ -185,8 +186,6 @@ for name in ('GetKnowledge','ResetKnowledge','InitTrackerData','SaveTrackerData'
     code += function(tracker, signature) + '\n'
 path = work/'tracker_persistence.cpp'
 path.write_text(code+tests,encoding='utf-8')
-exe = work/'tracker_persistence.exe'
-subprocess.run([args.compiler,'/nologo','/std:c++20','/Zc:preprocessor','/EHsc','/utf-8','/UNDEBUG',
-    '/I'+str(source/'combo'),'/I'+str(source/'soh'),'/I'+str(args.json_include.resolve()),str(path),
-    '/Fo'+str(work/'tracker_persistence.obj'),'/Fe'+str(exe)],check=True,cwd=work)
-subprocess.run([str(exe)],check=True)
+exe = hostcxx.build(args.compiler, path, warnings=False, msvc=['/Zc:preprocessor', '/utf-8'],
+                    includes=[source/'combo', source/'soh', args.json_include])
+subprocess.run([str(exe)],check=True, timeout=hostcxx.RUN_TIMEOUT)

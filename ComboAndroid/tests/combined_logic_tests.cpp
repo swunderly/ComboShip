@@ -73,7 +73,9 @@ int main(){
         assert(o.size()==1 && m.size()==1); // singleton mirroring cannot invent a second pickup
         const auto ootStart=nlohmann::json{{"sharedStartingItems",{def.ootName}},{"sharedButtonsEnabled",true}};
         auto mmStart=nlohmann::json{{"sharedStartingItems",{def.mmName}},{"sharedButtonsEnabled",true}};
-        const char* extension = family == SF_SPELL_FIRE ? "RO_MM_SPELL_FIRE" :
+        // Since 0.3.9 Shared Farore's Wind is public and, as in OoTMM, needs spellWindMm.
+        const char* extension = family == SF_SPELL_WIND ? "RO_MM_SPELL_WIND" :
+            family == SF_SPELL_FIRE ? "RO_MM_SPELL_FIRE" :
             family == SF_SPELL_LOVE ? "RO_MM_SPELL_LOVE" :
             family == SF_BOOTS_IRON ? "RO_MM_BOOTS_IRON" :
             family == SF_BOOTS_HOVER ? "RO_MM_BOOTS_HOVER" :
@@ -138,7 +140,9 @@ int main(){
         if (family == SF_OCARINA) continue; // tiered instruments have separate native pool tests
         const auto& def=SharedFamilyByIndex(family);
         auto o=confinedStartingOot, m=startingMm;
-        const char* extension = family == SF_SPELL_FIRE ? "RO_MM_SPELL_FIRE" :
+        // Since 0.3.9 Shared Farore's Wind is public and, as in OoTMM, needs spellWindMm.
+        const char* extension = family == SF_SPELL_WIND ? "RO_MM_SPELL_WIND" :
+            family == SF_SPELL_FIRE ? "RO_MM_SPELL_FIRE" :
             family == SF_SPELL_LOVE ? "RO_MM_SPELL_LOVE" :
             family == SF_BOOTS_IRON ? "RO_MM_BOOTS_IRON" :
             family == SF_BOOTS_HOVER ? "RO_MM_BOOTS_HOVER" :

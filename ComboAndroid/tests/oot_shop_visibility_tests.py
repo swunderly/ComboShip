@@ -7,20 +7,21 @@ import argparse
 from pathlib import Path
 import re
 import subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--before', type=Path)
 p.add_argument('--json-include', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
-p.add_argument('--compiler', default='cl')
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 source, out = a.source.resolve(), a.build_dir.resolve()
 out.mkdir(parents=True, exist_ok=True)
 base = source / 'soh/soh/Enhancements/randomizer'
 
 def extract(text, signature):
-    start = text.index(signature)
+    start = hostcxx.find(text, signature)
     end = text.index('{', start) + 1
     depth = 1
     while depth:
@@ -181,9 +182,9 @@ void Run() {
 }
 int main(){try{Run();}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}}
 '''
-cpp, exe = out/'oot_shop_visibility.cpp', out/'oot_shop_visibility.exe'
+cpp = out/'oot_shop_visibility.cpp'
 cpp.write_text(code, encoding='utf-8')
-subprocess.run([a.compiler,'/nologo','/EHsc','/std:c++20','/W4','/wd4100','/WX',
-                '/I'+str(a.json_include.resolve()),str(cpp),
-                '/Fe:'+str(exe),'/Fo:'+str(out/'oot_shop_visibility.obj')],check=True)
-subprocess.run([str(exe)],check=True)
+exe = hostcxx.build(a.compiler, cpp, werror=True, includes=[a.json_include],
+                    # The extracted tracker filter mixes && and || without parentheses.
+                    msvc=['/wd4100'], gnu=['-Wno-unused-parameter', '-Wno-parentheses'])
+subprocess.run([str(exe)],check=True, timeout=hostcxx.RUN_TIMEOUT)

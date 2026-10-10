@@ -2,78 +2,147 @@ cmake_minimum_required(VERSION 3.16)
 project(ComboAndroidTests LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 find_package(Threads REQUIRED)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
 enable_testing()
-if(COMBO_SOURCE_DIR)
-    find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    add_test(NAME oot_silver_native_routes_and_coverage COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/silver_route_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/silver-routes-native"
-        --compiler "${CMAKE_CXX_COMPILER}")
-    set(COMBO_PRESENTATION_TEST_COMPILER "${CMAKE_CXX_COMPILER}" CACHE FILEPATH
-        "Host C++ compiler for extracted native cross-warp presentation tests")
-    add_test(NAME cross_warp_native_presentation_and_skips COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/song_presentation_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/song-presentation-native"
-        --compiler "${COMBO_PRESENTATION_TEST_COMPILER}")
-    add_test(NAME cross_warp_native_audio_and_dialect COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/warp_audio_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/warp-audio-native"
-        --compiler "${COMBO_PRESENTATION_TEST_COMPILER}")
+
+# run_tests.py (next to this file) configures, builds and runs everything below
+# with one command. The tests live in the repository they exercise, so the
+# production sources default to this checkout.
+get_filename_component(COMBO_DEFAULT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../combo" ABSOLUTE)
+set(COMBO_SOURCE_DIR "${COMBO_DEFAULT_SOURCE_DIR}" CACHE PATH "Production combo/ directory under test")
+set(COMBO_JSON_INCLUDE_DIR "" CACHE PATH
+    "nlohmann json include directory, e.g. <build>/_deps/nlohmann_json-src/include (imgui-src and spdlog-src are found beside it)")
+set(COMBO_HARNESS_COMPILER "${CMAKE_CXX_COMPILER}" CACHE FILEPATH
+    "Host C++ compiler (cl, clang-cl, c++, g++ or clang++) for the Python harnesses that compile extracted production code")
+if(MSVC)
+    set(COMBO_DEFAULT_BLOCK_COMPILER "")
+else()
+    set(COMBO_DEFAULT_BLOCK_COMPILER "${CMAKE_CXX_COMPILER}")
 endif()
-if(MSVC AND COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
-    find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    add_test(NAME profile_gameplay_rules_sync_and_file_isolation COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/profile_gameplay_rule_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/profile-gameplay-rules"
-        --json-include "${COMBO_JSON_INCLUDE_DIR}")
-    get_filename_component(COMBO_PROFILE_TEST_IMGUI "${COMBO_JSON_INCLUDE_DIR}/../../imgui-src" ABSOLUTE)
-    if(EXISTS "${COMBO_PROFILE_TEST_IMGUI}/imgui.cpp")
-        add_test(NAME profile_menu_dropdown_refresh_memory_safety COMMAND "${Python3_EXECUTABLE}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/profile_menu_dropdown_tests.py"
-            --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/profile-menu-dropdown"
-            --json-include "${COMBO_JSON_INCLUDE_DIR}" --imgui "${COMBO_PROFILE_TEST_IMGUI}")
+set(COMBO_BLOCK_TEST_CLANG "${COMBO_DEFAULT_BLOCK_COMPILER}" CACHE FILEPATH
+    "GNU-style compiler (clang, or gcc on Linux) with FMA support for the contracted-math collision regression")
+set(COMBO_SDL_DIR "" CACHE PATH "SDL2 prefix with include/SDL2/SDL.h and lib/ for the audio latency harness")
+if(NOT COMBO_SDL_DIR AND NOT WIN32)
+    find_path(COMBO_SDL2_HEADER_DIR SDL2/SDL.h)
+    if(COMBO_SDL2_HEADER_DIR)
+        get_filename_component(COMBO_SDL_DIR "${COMBO_SDL2_HEADER_DIR}/.." ABSOLUTE)
     endif()
-    add_test(NAME combo_dormant_mm_slot_isolation COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/combo_slot_residency_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/combo-slot-residency" --json-include "${COMBO_JSON_INCLUDE_DIR}"
-        --compiler "${CMAKE_CXX_COMPILER}")
-    add_test(NAME oot_early_frog_native_predicate_and_reward COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/early_frog_rules_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/early-frog-native")
-    add_test(NAME oot_song_age_native_area_propagation COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/song_age_area_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --json-include "${COMBO_JSON_INCLUDE_DIR}"
-        --build-dir "${CMAKE_BINARY_DIR}/song-age-native")
-    add_test(NAME oot_tracker_transition_reachability_refresh COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tracker_transition_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --json-include "${COMBO_JSON_INCLUDE_DIR}"
-        --build-dir "${CMAKE_BINARY_DIR}/tracker-transition-native")
-    set(COMBO_BLOCK_TEST_CLANG "" CACHE FILEPATH "Clang with x86 FMA support for collision regression")
-    if(COMBO_BLOCK_TEST_CLANG)
-        add_test(NAME oot_push_block_permanent_collision COMMAND "${Python3_EXECUTABLE}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/block_persistence_tests.py"
-            --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/push-block-native"
-            --compiler "${COMBO_BLOCK_TEST_CLANG}")
-    endif()
-    add_test(NAME oot_tracker_knowledge_save_lifecycle COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tracker_persistence_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --json-include "${COMBO_JSON_INCLUDE_DIR}"
-        --build-dir "${CMAKE_BINARY_DIR}/tracker-persistence-native")
-    add_test(NAME logic_parity_prices_scarecrow_and_live_rules COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/logic_parity_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --json-include "${COMBO_JSON_INCLUDE_DIR}"
-        --build-dir "${CMAKE_BINARY_DIR}/logic-parity-native")
-    add_test(NAME oot_native_renewable_resource_sources COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/resource_sources_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/resource-sources-native")
-    add_test(NAME oot_headless_gameplay_rule_writer_abi COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/headless_rule_writer_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/headless-rule-writer-native")
-    add_test(NAME song_native_search_mapping_and_oracle_flags COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/song_native_mapping_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --json-include "${COMBO_JSON_INCLUDE_DIR}"
-        --build-dir "${CMAKE_BINARY_DIR}/song-native-mapping")
 endif()
+get_filename_component(COMBO_REPO_DIR "${COMBO_SOURCE_DIR}/.." ABSOLUTE)
+
+# A test that cannot run on this host is still registered, so ctest reports it
+# as skipped with the reason instead of it silently disappearing.
+function(combo_skipped_test name reason)
+    add_test(NAME ${name} COMMAND "${CMAKE_COMMAND}" -E echo "SKIPPED: ${reason}")
+    set_tests_properties(${name} PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+endfunction()
+set(COMBO_NEEDS_JSON "needs COMBO_JSON_INCLUDE_DIR (nlohmann json headers)")
+
+# combo_python_test(<name> <script> [args...]) runs a Python check on this checkout.
+function(combo_python_test name script)
+    add_test(NAME ${name} COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/${script}"
+        --source "${COMBO_REPO_DIR}" ${ARGN})
+    set_tests_properties(${name} PROPERTIES ENVIRONMENT PYTHONDONTWRITEBYTECODE=1)
+endfunction()
+# A harness writes one C++ file from production functions plus engine stubs,
+# compiles it with COMBO_HARNESS_COMPILER in its own directory, and runs it.
+function(combo_harness_test name script)
+    combo_python_test(${name} ${script} --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/${name}"
+        --compiler "${COMBO_HARNESS_COMPILER}" ${ARGN})
+endfunction()
+function(combo_json_harness_test name script)
+    if(COMBO_JSON_INCLUDE_DIR)
+        combo_harness_test(${name} ${script} --json-include "${COMBO_JSON_INCLUDE_DIR}" ${ARGN})
+    else()
+        combo_skipped_test(${name} "${COMBO_NEEDS_JSON}")
+    endif()
+endfunction()
+
+# Python harnesses (any host C++ compiler).
+combo_json_harness_test(oot_silver_native_routes_and_coverage silver_route_tests.py)
+combo_harness_test(cross_warp_native_presentation_and_skips song_presentation_tests.py)
+combo_harness_test(cross_warp_native_audio_and_dialect warp_audio_tests.py)
+combo_harness_test(oot_early_frog_native_predicate_and_reward early_frog_rules_tests.py)
+combo_harness_test(oot_native_renewable_resource_sources resource_sources_tests.py)
+combo_harness_test(oot_headless_gameplay_rule_writer_abi headless_rule_writer_tests.py)
+combo_harness_test(silver_rupee_native_actor_grant_pool_and_persistence silver_rupee_runtime_tests.py)
+combo_harness_test(feature_item_native_and_foreign_presentation feature_item_presentation_tests.py)
+combo_harness_test(mm_key_ring_native_runtime_oracle_and_placement mm_key_ring_native_tests.py)
+combo_harness_test(mm_native_resource_propagation mm_resource_tests.py)
+combo_harness_test(mm_native_schedule_propagation mm_schedule_tests.py)
+combo_harness_test(mm_native_usable_bottles mm_bottle_tests.py)
+combo_harness_test(mm_native_scenery_requirements mm_scenery_tests.py)
+combo_harness_test(oot_enabled_tricks_survive_finalization oot_trick_finalize_tests.py)
+combo_harness_test(texture_signature_pointer_tag_guard check_pointer_guards.py)
+combo_harness_test(mm_check_visibility_observation_gate mm_check_visibility_tests.py)
+combo_harness_test(mm_shop_observation_and_pickup_identity mm_shop_observation_tests.py)
+combo_json_harness_test(profile_gameplay_rules_sync_and_file_isolation profile_gameplay_rule_tests.py)
+combo_json_harness_test(combo_dormant_mm_slot_isolation combo_slot_residency_tests.py)
+combo_json_harness_test(oot_song_age_native_area_propagation song_age_area_tests.py)
+combo_json_harness_test(oot_tracker_transition_reachability_refresh tracker_transition_tests.py)
+combo_json_harness_test(oot_tracker_knowledge_save_lifecycle tracker_persistence_tests.py)
+combo_json_harness_test(logic_parity_prices_scarecrow_and_live_rules logic_parity_tests.py)
+combo_json_harness_test(song_native_search_mapping_and_oracle_flags song_native_mapping_tests.py)
+combo_json_harness_test(oot_masks_owned_and_generation_modes oot_mask_quest_tests.py)
+combo_json_harness_test(oot_shop_visibility_pool_and_oracle oot_shop_visibility_tests.py)
+combo_json_harness_test(mm_check_knowledge_persistence_and_merge mm_check_knowledge_tests.py)
+combo_json_harness_test(mm_fierce_deity_sword_and_bremen_recruitment progression_rules_tests.py)
+combo_json_harness_test(menu_navigation_cache_and_profile_empty_states menu_polish_tests.py)
+combo_json_harness_test(profile_menu_reopen_cache_and_revisions menu_reopen_cache_tests.py)
+combo_json_harness_test(profile_menu_frame_refresh profile_menu_refresh_tests.py)
+get_filename_component(COMBO_PROFILE_TEST_IMGUI "${COMBO_JSON_INCLUDE_DIR}/../../imgui-src" ABSOLUTE)
+if(COMBO_JSON_INCLUDE_DIR AND EXISTS "${COMBO_PROFILE_TEST_IMGUI}/imgui.cpp")
+    combo_json_harness_test(profile_menu_dropdown_refresh_memory_safety profile_menu_dropdown_tests.py
+        --imgui "${COMBO_PROFILE_TEST_IMGUI}")
+else()
+    combo_skipped_test(profile_menu_dropdown_refresh_memory_safety
+        "needs Dear ImGui sources at COMBO_JSON_INCLUDE_DIR/../../imgui-src")
+endif()
+if(COMBO_BLOCK_TEST_CLANG)
+    combo_python_test(oot_push_block_permanent_collision block_persistence_tests.py
+        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/oot_push_block_permanent_collision"
+        --compiler "${COMBO_BLOCK_TEST_CLANG}" --linker "${CMAKE_CXX_COMPILER}")
+else()
+    combo_skipped_test(oot_push_block_permanent_collision
+        "needs COMBO_BLOCK_TEST_CLANG (clang with FMA; MSVC cannot contract floating-point math)")
+endif()
+if(COMBO_SDL_DIR)
+    combo_harness_test(audio_mobile_queue_conversion_and_batching audio_latency_tests.py --sdl "${COMBO_SDL_DIR}")
+else()
+    combo_skipped_test(audio_mobile_queue_conversion_and_batching
+        "needs COMBO_SDL_DIR (an SDL2 development prefix; SDL2-static.lib on Windows)")
+endif()
+combo_python_test(community_preset_native_option_mapping preset_native_mapping_tests.py)
+
+# Plain-Java app classes (no Android dependencies), compiled with javac directly.
+find_package(Java 16 COMPONENTS Development QUIET)
+function(combo_java_test name class)
+    if(Java_FOUND)
+        combo_python_test(${name} java_tests.py --build-dir "${CMAKE_CURRENT_BINARY_DIR}/java/${class}"
+            --javac "${Java_JAVAC_EXECUTABLE}" --java "${Java_JAVA_EXECUTABLE}" --test ${class})
+    else()
+        combo_skipped_test(${name} "needs a JDK 16 or newer (set JAVA_HOME)")
+    endif()
+endfunction()
+combo_java_test(java_rom_import_and_data_lock RomImporterTest)
+combo_java_test(java_storage_copy_migration StorageCopyTest)
+
+# Linked into every test executable: on Windows a failed assert() or crash
+# prints to stderr and exits at once instead of opening a blocking dialog.
+add_library(combo_no_crash_dialogs OBJECT support/no_crash_dialogs.cpp)
+link_libraries(combo_no_crash_dialogs)
+# Self-check: a deliberately failing assert, built like the real tests, must
+# report expression/file/line and exit nonzero within seconds (also checked
+# for harness-built programs).
+add_executable(failing_assert support/failing_assert.cpp)
+if(MSVC)
+    target_compile_options(failing_assert PRIVATE /W4 /WX /UNDEBUG)
+else()
+    target_compile_options(failing_assert PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+endif()
+combo_harness_test(selfcheck_failed_assert_reports_and_exits selfcheck_tests.py --exe $<TARGET_FILE:failing_assert>)
+
+# C++ tests that include production headers directly.
 if(COMBO_SOURCE_DIR)
     add_executable(hud_layout_tests ComboHudLayoutTests.cpp)
     target_include_directories(hud_layout_tests PRIVATE "${COMBO_SOURCE_DIR}")
@@ -107,18 +176,6 @@ if(COMBO_SOURCE_DIR)
         target_compile_options(silver_rupee_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     endif()
     add_test(NAME silver_rupee_identity_counts_and_layouts COMMAND silver_rupee_tests)
-    add_test(NAME silver_rupee_native_actor_grant_pool_and_persistence COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/silver_rupee_runtime_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/silver-rupee-native"
-        --compiler "${COMBO_PRESENTATION_TEST_COMPILER}")
-    add_test(NAME feature_item_native_and_foreign_presentation COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/feature_item_presentation_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/feature-item-presentation"
-        --compiler "${COMBO_PRESENTATION_TEST_COMPILER}")
-    add_test(NAME mm_key_ring_native_runtime_oracle_and_placement COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/mm_key_ring_native_tests.py"
-        --source "${COMBO_SOURCE_DIR}/.." --build-dir "${CMAKE_BINARY_DIR}/mm-key-ring-native"
-        --compiler "${COMBO_PRESENTATION_TEST_COMPILER}")
     if(COMBO_JSON_INCLUDE_DIR)
         add_executable(mm_save_compatibility_tests mm_save_compatibility_tests.cpp)
         target_compile_definitions(mm_save_compatibility_tests PRIVATE COMBO_BUILD _CRT_SECURE_NO_WARNINGS)
@@ -176,6 +233,11 @@ if(COMBO_SOURCE_DIR)
             target_compile_options(multiplayer_protocol_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
         endif()
         add_test(NAME multiplayer_protocol COMMAND multiplayer_protocol_tests)
+    else()
+        foreach(test mm_native_save_backward_compatibility cross_game_song_routes gameplay_rules
+                gameplay_rule_slot_snapshots shadow_door_native_logic_route multiplayer_protocol)
+            combo_skipped_test(${test} "${COMBO_NEEDS_JSON}")
+        endforeach()
     endif()
     add_executable(generation_control_tests generation_control_tests.cpp)
     target_compile_definitions(generation_control_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
@@ -254,6 +316,9 @@ if(UNIX)
     target_link_libraries(native_tests PRIVATE Threads::Threads)
     target_compile_options(native_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     add_test(NAME native_paths_input_and_session_lock COMMAND native_tests)
+else()
+    combo_skipped_test(native_paths_input_and_session_lock
+        "POSIX only: RuntimePaths.cpp and the test use fcntl record locks, fork and mkdtemp")
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
@@ -267,6 +332,8 @@ if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
         target_compile_options(combined_logic_tests PRIVATE -Wall -Wextra -UNDEBUG)
     endif()
     add_test(NAME combined_reachability_and_native_abilities COMMAND combined_logic_tests)
+else()
+    combo_skipped_test(combined_reachability_and_native_abilities "${COMBO_NEEDS_JSON}")
 endif()
 
 if(COMBO_SOURCE_DIR)
@@ -301,20 +368,18 @@ if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
         CAN_OPEN_OCEANSIDE_CODE_CHEST CAN_REACH_CLOCK_TOWN_LOWER_CHEST
         CAN_REACH_DOGGY_CHEST CAN_SKIP_PALACE_BEANS
         CAN_CLIMB_IKANA_RIVERSIDE CAN_CLIMB_STONE_TOWER)
-    file(STRINGS "${COMBO_MM_LOGIC_DIR}/Logic.h" mm_logic_lines)
+    file(READ "${COMBO_MM_LOGIC_DIR}/Logic.h" mm_logic_text)
+    string(REPLACE "\r" "" mm_logic_text "${mm_logic_text}")
     set(mm_trick_header "#pragma once\n")
     foreach(macro IN LISTS mm_trick_macros)
-        set(found_macro FALSE)
-        foreach(line IN LISTS mm_logic_lines)
-            if(line MATCHES "^#define ${macro} ")
-                string(APPEND mm_trick_header "${line}\n")
-                set(found_macro TRUE)
-                break()
-            endif()
-        endforeach()
-        if(NOT found_macro)
+        # clang-format continues long definitions over several lines.
+        string(REGEX MATCH "\n#define ${macro} ([^\n]*\\\\\n)*[^\n]*" definition "${mm_logic_text}")
+        if(NOT definition)
             message(FATAL_ERROR "Missing production MM trick macro: ${macro}")
         endif()
+        string(REGEX REPLACE "\\\\\n" " " definition "${definition}")
+        string(STRIP "${definition}" definition)
+        string(APPEND mm_trick_header "${definition}\n")
     endforeach()
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/MmTrickProductionMacros.h" "${mm_trick_header}")
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${COMBO_MM_LOGIC_DIR}/Logic.h")
@@ -328,6 +393,8 @@ if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
         target_compile_options(mm_trick_route_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     endif()
     add_test(NAME mm_native_trick_routes_and_snapshots COMMAND mm_trick_route_tests)
+else()
+    combo_skipped_test(mm_native_trick_routes_and_snapshots "${COMBO_NEEDS_JSON}")
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
@@ -339,6 +406,8 @@ if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
         target_compile_options(mm_zora_egg_logic_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     endif()
     add_test(NAME mm_zora_egg_rule_and_song_snapshot_defaults COMMAND mm_zora_egg_logic_tests)
+else()
+    combo_skipped_test(mm_zora_egg_rule_and_song_snapshot_defaults "${COMBO_NEEDS_JSON}")
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
@@ -350,6 +419,8 @@ if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
         target_compile_options(night_skulltula_logic_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     endif()
     add_test(NAME oot_night_skulltula_time_rule COMMAND night_skulltula_logic_tests)
+else()
+    combo_skipped_test(oot_night_skulltula_time_rule "${COMBO_NEEDS_JSON}")
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
@@ -377,13 +448,13 @@ if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
         target_compile_options(menu_refresh_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     endif()
     add_test(NAME menu_refresh_counts_migration_and_presets COMMAND menu_refresh_tests)
-    find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    add_test(NAME community_preset_native_option_mapping COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/preset_native_mapping_tests.py" --source "${COMBO_SOURCE_DIR}/..")
+else()
+    foreach(test kokiri_seed_catalog_compatibility unified_menu_search_navigation menu_refresh_counts_migration_and_presets)
+        combo_skipped_test(${test} "${COMBO_NEEDS_JSON}")
+    endforeach()
 endif()
 
-if(COMBO_SOURCE_DIR)
-    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
     add_executable(mm_combat_tests mm_combat_tests.cpp)
     target_include_directories(mm_combat_tests PRIVATE "${COMBO_SOURCE_DIR}" "${COMBO_JSON_INCLUDE_DIR}")
     if(MSVC)
@@ -393,24 +464,6 @@ if(COMBO_SOURCE_DIR)
     endif()
     add_test(NAME mm_imported_ootmm_combat_predicates COMMAND mm_combat_tests
         "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/ootmm-32.3-combat.json")
-    add_test(NAME mm_native_resource_propagation COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/mm_resource_tests.py" --source "${COMBO_SOURCE_DIR}/.."
-        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/mm-resources")
-    add_test(NAME mm_native_schedule_propagation COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/mm_schedule_tests.py" --source "${COMBO_SOURCE_DIR}/.."
-        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/mm-schedules")
-    add_test(NAME mm_native_usable_bottles COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/mm_bottle_tests.py" --source "${COMBO_SOURCE_DIR}/.."
-        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/mm-bottles")
-    add_test(NAME mm_native_scenery_requirements COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/mm_scenery_tests.py" --source "${COMBO_SOURCE_DIR}/.."
-        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/mm-scenery")
-    add_test(NAME oot_enabled_tricks_survive_finalization COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/oot_trick_finalize_tests.py" --source "${COMBO_SOURCE_DIR}/.."
-        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/oot-tricks")
-    add_test(NAME oot_masks_owned_and_generation_modes COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/oot_mask_quest_tests.py" --source "${COMBO_SOURCE_DIR}/.."
-        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/oot-masks" --json-include "${COMBO_JSON_INCLUDE_DIR}")
     add_executable(mm_oracle_stock_tests mm_oracle_stock_tests.cpp)
     target_compile_features(mm_oracle_stock_tests PRIVATE cxx_std_20)
     target_include_directories(mm_oracle_stock_tests PRIVATE "${COMBO_SOURCE_DIR}" "${COMBO_JSON_INCLUDE_DIR}")
@@ -420,5 +473,13 @@ if(COMBO_SOURCE_DIR)
         target_compile_options(mm_oracle_stock_tests PRIVATE -UNDEBUG)
     endif()
     add_test(NAME mm_renewable_stock_survives_oracle_reset COMMAND mm_oracle_stock_tests)
+else()
+    foreach(test mm_imported_ootmm_combat_predicates mm_renewable_stock_survives_oracle_reset)
+        combo_skipped_test(${test} "${COMBO_NEEDS_JSON}")
+    endforeach()
 endif()
 
+# Every test gets a timeout, so a hang fails instead of blocking the run.
+set(COMBO_TEST_TIMEOUT 300 CACHE STRING "Default per-test timeout in seconds")
+get_property(combo_all_tests DIRECTORY PROPERTY TESTS)
+set_tests_properties(${combo_all_tests} PROPERTIES TIMEOUT ${COMBO_TEST_TIMEOUT})

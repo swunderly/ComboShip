@@ -2,6 +2,7 @@
 import argparse
 import subprocess
 from pathlib import Path
+import hostcxx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
@@ -9,6 +10,7 @@ parser.add_argument('--build-dir', type=Path, required=True)
 parser.add_argument('--json-include', type=Path, required=True)
 parser.add_argument('--imgui', type=Path, required=True)
 parser.add_argument('--profile-source', type=Path)
+parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
 args.build_dir.mkdir(parents=True, exist_ok=True)
 source = args.profile_source or args.source / 'combo/gui/ComboRandomizerProfiles.cpp'
@@ -67,11 +69,10 @@ int main(){
 (args.build_dir / 'profile_widget.cpp').write_text(harness, encoding='utf-8')
 includes = [args.source / 'combo/gui', args.source / 'combo', args.source / 'combo/menu',
             args.json_include, args.imgui]
-command = ['cl', '/nologo', '/std:c++20', '/Zc:preprocessor', '/EHsc', '/UNDEBUG', '/utf-8', '/Zi', '/fsanitize=address']
-command += ['/I' + str(path.resolve()) for path in includes]
-command += [str((args.build_dir / 'profile_widget.cpp').resolve())]
-command += [str((args.imgui / file).resolve()) for file in
-            ['imgui.cpp','imgui_draw.cpp','imgui_tables.cpp','imgui_widgets.cpp','misc/cpp/imgui_stdlib.cpp']]
-command += ['/Fe:' + str((args.build_dir / 'profile_widget.exe').resolve()), '/link', '/INCREMENTAL:NO']
-subprocess.run(command, cwd=args.build_dir, check=True)
-subprocess.run([str((args.build_dir / 'profile_widget.exe').resolve())], cwd=args.build_dir, check=True)
+# Built with AddressSanitizer: the test guards memory safety across the popup's refresh.
+exe = hostcxx.build(args.compiler, args.build_dir / 'profile_widget.cpp', warnings=False, includes=includes,
+                    sources=[args.imgui / file for file in
+                             ['imgui.cpp', 'imgui_draw.cpp', 'imgui_tables.cpp', 'imgui_widgets.cpp', 'misc/cpp/imgui_stdlib.cpp']],
+                    msvc=['/Zc:preprocessor', '/utf-8', '/Zi', '/fsanitize=address'], gnu=['-g', '-fsanitize=address'],
+                    link=['/INCREMENTAL:NO'] if hostcxx.msvc_style(args.compiler) else [])
+subprocess.run([str(exe)], cwd=args.build_dir, check=True, timeout=hostcxx.RUN_TIMEOUT)

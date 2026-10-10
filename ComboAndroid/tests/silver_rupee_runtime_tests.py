@@ -1,15 +1,16 @@
 """Compile native Silver adapters and tracker filters, including saved-rule cold-load cases."""
 from pathlib import Path
 import argparse,re,subprocess,json
-p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',default='cl');p.add_argument('--silver-source',type=Path);a=p.parse_args()
+import hostcxx
+p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',default=hostcxx.DEFAULT_COMPILER);p.add_argument('--silver-source',type=Path);a=p.parse_args()
 source=a.source.resolve();work=a.build_dir.resolve();work.mkdir(parents=True,exist_ok=True)
 base=source/'soh/soh/Enhancements/randomizer';text=(a.silver_source or base/'silver_rupees/SilverRupees.cpp').read_text()
 def extract(sig,original=None):
  original=text if original is None else original
- start=original.index(sig);at=original.index('{',start)+1;depth=1
+ start=hostcxx.find(original,sig);at=original.index('{',start)+1;depth=1
  while depth:
   depth+=(original[at]=='{')-(original[at]=='}');at+=1
- if sig.startswith('const '):at+=1
+ if sig.startswith(('const ','struct ')):at+=1 # keep the declaration's ';'
  return original[start:at]+'\n'
 seed=(base/'SeedContext.cpp').read_text()
 tracker=(base/'randomizer_check_tracker.cpp').read_text()
@@ -103,9 +104,6 @@ void DrawPhysical(Actor*,PlayState*){}
 """
 code+=extract('struct NativeItem')+extract('const NativeItem nativeItems[]')
 code+=extract('struct NativeCheck')+extract('const NativeCheck nativeChecks[]')
-# Struct extraction omits the trailing semicolon.
-code=code.replace('const char* name; };\n','const char* name; };\n')
-code=code.replace('const char* name; }\n','const char* name; };\n')
 code+='unsigned roomSpawnIndex=0;\n'
 for sig in ['const NativeItem* FindItem','const NativeCheck* FindCheck','bool IsCheck(', 'bool IsShuffledCheck(', 'bool IsMQ','bool HasPuzzle','void LogicDelta','void AddPool']:code+=extract(sig)
 code+='}\n'
@@ -185,9 +183,4 @@ int main(){
 }
 """
 file=work/'silver-runtime.cpp';file.write_text(code)
-exe=work/'silver-runtime.exe';inc=base/'silver_rupees'
-if Path(a.compiler).stem.lower() in ('cl','clang-cl'):args=[a.compiler,'/nologo','/std:c++20','/EHsc','/W4','/UNDEBUG','/I'+str(inc),str(file),'/Fe:'+str(exe),'/Fo:'+str(work/'silver-runtime.obj')]
-else:args=[a.compiler,'-std=c++20','-Wall','-Wextra','-UNDEBUG','-I'+str(inc),str(file),'-o',str(exe)]
-r=subprocess.run(args,capture_output=True,text=True);(work/'compile.log').write_text(r.stdout+r.stderr)
-if r.returncode:print(r.stdout+r.stderr)
-r.check_returncode();subprocess.run([str(exe)],check=True)
+subprocess.run([str(hostcxx.build(a.compiler,file,includes=[base/'silver_rupees']))],check=True, timeout=hostcxx.RUN_TIMEOUT)

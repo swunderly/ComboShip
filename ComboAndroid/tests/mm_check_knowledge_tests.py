@@ -7,12 +7,13 @@ import argparse
 from pathlib import Path
 import re
 import subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--json-include', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
-p.add_argument('--compiler', default='c++')
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = p.parse_args()
 source = args.source.resolve()
 out = args.build_dir.resolve()
@@ -140,16 +141,11 @@ int main() {
 '''
 cpp = out/'mm_check_knowledge.cpp'
 cpp.write_text('#define COMBO_BUILD 1\n#include <cstdint>\n#include <nlohmann/json.hpp>\n'
-               '#include "2s2h/Rando/Types.h"\nusing u16 = uint16_t;\nusing u8 = uint8_t;\nusing json = nlohmann::json;\n'
+               '#include "2s2h/Rando/Types.h"\n#include "rando/TrackerKnowledge.h"\n'
+               'using u16 = uint16_t;\nusing u8 = uint8_t;\nusing json = nlohmann::json;\n'
                + struct + '\n' + conversions + engine_stubs + record + network_harness + test, encoding='utf-8')
-msvc = Path(args.compiler).stem.lower() == 'cl'
-exe = out/('mm_check_knowledge.exe' if msvc else 'mm_check_knowledge')
-if msvc:
-    command = [args.compiler, '/nologo', '/EHsc', '/std:c++17', '/W4', '/WX', '/UNDEBUG',
-               '/I'+str(source/'mm'), '/I'+str(args.json_include.resolve()), str(cpp),
-               '/Fe:'+str(exe), '/Fo:'+str(out/'mm_check_knowledge.obj')]
-else:
-    command = [args.compiler, '-std=c++17', '-Wall', '-Wextra', '-Werror', '-UNDEBUG',
-               '-I'+str(source/'mm'), '-I'+str(args.json_include.resolve()), str(cpp), '-o', str(exe)]
-subprocess.run(command, check=True)
-subprocess.run([str(exe)], check=True)
+# MMAnchor's compact unpack initializes the 7 networked fields of RandoSaveCheck and
+# leaves the knowledge fields to the separate merge (-Wmissing-field-initializers).
+exe = hostcxx.build(args.compiler, cpp, std='c++17', werror=True, includes=[source/'mm', source/'combo', args.json_include],
+                    gnu=['-Wno-missing-field-initializers'])
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

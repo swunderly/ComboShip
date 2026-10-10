@@ -3,11 +3,13 @@ The hardware queue is simulated; SDL's streaming resampler is real.
 This does not measure a phone's acoustic output latency.
 """
 from pathlib import Path
-import argparse, subprocess
+import argparse, os, subprocess
+import hostcxx
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--source',type=Path,required=True)
-p.add_argument('--sdl',type=Path,required=True)
+p.add_argument('--sdl',type=Path,required=True,help='SDL2 prefix with include/SDL2/SDL.h and lib/')
 p.add_argument('--build-dir',type=Path,required=True)
+p.add_argument('--compiler',default=hostcxx.DEFAULT_COMPILER)
 a=p.parse_args();a.build_dir.mkdir(parents=True,exist_ok=True)
 def function(text, signature):
     start=text.index(signature);brace=text.index('{',start);depth=1;end=brace+1
@@ -169,10 +171,12 @@ int main(){
 }
 '''
 source=a.build_dir/'audio_latency.cpp';source.write_text(cpp)
-libs=['SDL2-static.lib','winmm.lib','imm32.lib','version.lib','setupapi.lib','user32.lib','gdi32.lib','shell32.lib','ole32.lib','oleaut32.lib','uuid.lib','advapi32.lib']
+sdl=a.sdl.resolve()
+if hostcxx.msvc_style(a.compiler):
+    link=['/LIBPATH:'+str(sdl/'lib'),'SDL2-static.lib','winmm.lib','imm32.lib','version.lib','setupapi.lib','user32.lib','gdi32.lib','shell32.lib','ole32.lib','oleaut32.lib','uuid.lib','advapi32.lib']
+else:
+    link=['-L'+str(sdl/'lib'),'-lSDL2','-lm']
 for android in [True,False]:
-    exe=a.build_dir/('mobile.exe' if android else 'desktop.exe')
-    args=['cl','/nologo','/std:c++20','/EHsc','/MD','/W4','/I'+str(a.sdl/'include'),str(source),'/Fe:'+str(exe),'/Fo:'+str(a.build_dir/'audio_latency.obj')]
-    if android:args+=['/D__ANDROID__','/DCOMBO_BUILD']
-    subprocess.run(args+['/link','/LIBPATH:'+str(a.sdl/'lib')]+libs,check=True)
-    subprocess.run([str(exe)],check=True)
+    exe=hostcxx.build(a.compiler,source,exe=a.build_dir/(('mobile' if android else 'desktop')+('.exe' if os.name=='nt' else '')),includes=[sdl/'include'],
+                      defines=['__ANDROID__','COMBO_BUILD'] if android else [],msvc=['/MD'],link=link)
+    subprocess.run([str(exe)],check=True, timeout=hostcxx.RUN_TIMEOUT)

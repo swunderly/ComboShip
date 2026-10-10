@@ -5,11 +5,12 @@ Complements live scene testing: the engine adapters are fixtures, not a GPU visi
 import argparse
 from pathlib import Path
 import subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
-p.add_argument('--compiler', default='c++')
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = p.parse_args()
 out = args.build_dir.resolve()
 out.mkdir(parents=True, exist_ok=True)
@@ -23,10 +24,11 @@ fixtures = r'''
 #include <limits>
 struct Vec3f { float x, y, z; };
 struct MtxF { float xx=1, yx=0, zx=0, xy=0, yy=1, zy=0, xz=0, yz=0, zz=1; } testModel;
-struct Actor { Vec3f worldPos = {900, 900, 900}; } testActor;
+// id selects the shop-shelf exception (covered by mm_shop_observation_tests.py); this actor is not a shelf.
+struct Actor { int id = 0; Vec3f worldPos = {900, 900, 900}; } testActor;
 struct CollisionContext {};
 struct CollisionPoly {};
-constexpr int TRANS_MODE_OFF=0, TRANS_TRIGGER_OFF=0;
+constexpr int TRANS_MODE_OFF=0, TRANS_TRIGGER_OFF=0, ACTOR_EN_GIRLA=42;
 struct PlayState { int transitionMode=0, transitionTrigger=0; struct { bool fillScreen=false; } envCtx; struct { int state=0; } pauseCtx; MtxF viewProjectionMtxF; struct { Vec3f eye; } view; CollisionContext colCtx; } play;
 PlayState* gPlayState = &play;
 using RandoCheckId = int;
@@ -125,10 +127,5 @@ int main() {
 '''
 cpp = out/'mm_check_visibility.cpp'
 cpp.write_text(fixtures + gate + tests, encoding='utf-8')
-msvc = Path(args.compiler).stem.lower() == 'cl'
-exe = out/('mm_check_visibility.exe' if msvc else 'mm_check_visibility')
-command = ([args.compiler, '/nologo', '/EHsc', '/std:c++17', '/W4', '/WX', '/UNDEBUG', str(cpp),
-            '/Fe:'+str(exe), '/Fo:'+str(out/'mm_check_visibility.obj')] if msvc else
-           [args.compiler, '-std=c++17', '-Wall', '-Wextra', '-Werror', '-UNDEBUG', str(cpp), '-o', str(exe)])
-subprocess.run(command, check=True)
-subprocess.run([str(exe)], check=True)
+exe = hostcxx.build(args.compiler, cpp, std='c++17', werror=True)
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

@@ -1,7 +1,10 @@
 """Exercise native collision/blockstop code with contracted and N64-style math."""
 from pathlib import Path
-import argparse, subprocess, re
-p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',required=True);a=p.parse_args()
+import argparse, os, platform, subprocess, re
+import hostcxx
+p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True)
+p.add_argument('--compiler',required=True,help='GNU-style clang or gcc; MSVC cannot reproduce FMA contraction')
+p.add_argument('--linker',default='cl',help='Windows only: links the MSVC-ABI objects');a=p.parse_args()
 s=a.source.resolve();w=a.build_dir.resolve();w.mkdir(parents=True,exist_ok=True)
 def function(text,signature):
     start=text.index(signature);opening=text.index(') {',start)+2;end=opening+1;depth=1
@@ -125,9 +128,23 @@ int main(int argc,char**){
 # C actor source calls its local variable 'this', a reserved C++ keyword.
 code=re.sub(r'\bthis\b','self',code)
 h=w/'block.cpp';h.write_text(code)
+# x86 needs -mfma to emit fused multiply-adds; arm64 always has them.
+fma=['-mfma'] if platform.machine().lower() in ('x86_64','amd64','i386','i686') else []
+support=w/'no_crash_dialogs.obj'
+if os.name=='nt':
+    subprocess.run([a.compiler,'--target=x86_64-pc-windows-msvc','-O2','-c',str(hostcxx.NO_CRASH_DIALOGS),'-o',str(support)],
+                   check=True,timeout=hostcxx.COMPILE_TIMEOUT)
 for kind,options in [('baseline',['-ffp-contract=fast']),('fixed',['-fno-fast-math','-ffp-contract=off'])]:
-    exe=w/(kind+'.exe');obj=w/(kind+'.obj');cmd=[a.compiler,'--target=x86_64-pc-windows-msvc','-O2','-mfma',*options,'-c',str(h),'-o',str(obj)]
-    subprocess.run(cmd,check=True);subprocess.run(['cl','/nologo',str(obj),'/Fe:'+str(exe),'/link','libcmt.lib','libucrt.lib','libvcruntime.lib','kernel32.lib'],check=True);subprocess.run([str(exe)]+(['baseline'] if kind=='baseline' else []),check=True)
+    exe=w/(kind+('.exe' if os.name=='nt' else ''));obj=w/(kind+'.obj')
+    if os.name=='nt':
+        subprocess.run([a.compiler,'--target=x86_64-pc-windows-msvc','-O2',*fma,*options,'-c',str(h),'-o',str(obj)],
+                       check=True,timeout=hostcxx.COMPILE_TIMEOUT)
+        subprocess.run([a.linker,'/nologo',str(obj),str(support),'/Fe:'+str(exe),'/link','libcmt.lib','libucrt.lib','libvcruntime.lib','kernel32.lib'],
+                       check=True,timeout=hostcxx.COMPILE_TIMEOUT)
+    else:
+        subprocess.run([a.compiler,'-O2',*fma,*options,str(h),str(hostcxx.NO_CRASH_DIALOGS),'-o',str(exe),'-lm'],
+                       check=True,timeout=hostcxx.COMPILE_TIMEOUT)
+    subprocess.run([str(exe)]+(['baseline'] if kind=='baseline' else []),check=True,timeout=hostcxx.RUN_TIMEOUT)
 cmake=(s/'soh/CMakeLists.txt').read_text(encoding='utf-8');assert 'target_compile_options(${PROJECT_NAME} PRIVATE -fno-fast-math -ffp-contract=off' in cmake
 print('Android OoT target uses the verified non-contracting flags.')
 

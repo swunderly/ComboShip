@@ -7,18 +7,19 @@ from pathlib import Path
 import argparse
 import re
 import subprocess
+import hostcxx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
 parser.add_argument('--build-dir', type=Path, required=True)
-parser.add_argument('--compiler', default='cl')
+parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
 source, work = args.source.resolve(), args.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
 
 
 def function(text, signature):
-    start = text.index(signature)
+    start = hostcxx.find(text, signature)
     brace = text.index('{', start)
     depth = 1
     end = brace + 1
@@ -37,7 +38,7 @@ conditions = []
 for begin, end in [('MSGMODE_SETUP_DISPLAY_SONG_PLAYED', 'MSGMODE_SONG_DEMONSTRATION_SELECT_INSTRUMENT'),
                    ('MSGMODE_DISPLAY_SONG_PLAYED_TEXT_BEGIN', 'MSGMODE_DISPLAY_SONG_PLAYED_TEXT')]:
     section = message.split('case ' + begin + ':', 1)[1].split('case ' + end + ':', 1)[0]
-    setting = section.index('CVarGetInteger(CVAR_ENHANCEMENT("FastOcarinaPlayback")')
+    setting = hostcxx.find(section, 'CVarGetInteger(CVAR_ENHANCEMENT("FastOcarinaPlayback")')
     start = section.rfind('if (', 0, setting) + len('if (')
     depth, end_pos = 1, start
     while depth:
@@ -137,12 +138,12 @@ code += function(owl, 'void Combo_SOHStartSoaringEffect(')
 code += function(owl, 'int Combo_SOHStartSoaring(')
 code += function(owl, 'static void CrossOwl_HideHud(')
 owl_draw = function(owl, 'void CrossOwl_Draw(Actor* thisx, PlayState* play) {')
-assert owl_draw.index('if(thisx->params==0x100)') < owl_draw.index('CrossOwl_HideHud(play);')
+assert hostcxx.find(owl_draw, 'if(thisx->params==0x100)') < hostcxx.find(owl_draw, 'CrossOwl_HideHud(play);')
 code += function(skip, 'static void SkipSoaringCutscene(')
 code += function(warp, 'static void CrossSongWarp_Init(')
 code += function(warp, 'static void CrossSongWarp_Destroy(')
 code += function(warp, 'static void CrossSongWarp_HideHud(')
-assert 'CrossSongWarp_HideHud(play);' in function(warp, 'static void CrossSongWarp_Draw(')
+assert hostcxx.contains(function(warp, 'static void CrossSongWarp_Draw('), 'CrossSongWarp_HideHud(play);')
 code += function(bridge, 'extern "C" int MM_ConsumeSongArrival(')
 # The native actors are C. Only rename C's legal `this` identifier when
 # compiling their unmodified bodies alongside the C++ enhancement hook.
@@ -236,15 +237,4 @@ int main() {
 '''
 test = work/'song-presentation.cpp'
 test.write_text(code, encoding='utf-8')
-exe = work/'song-presentation.exe'
-if Path(args.compiler).stem.lower() in ('cl', 'clang-cl'):
-    command = [args.compiler, '/nologo', '/std:c++20', '/EHsc', '/W4', '/UNDEBUG',
-               str(test), '/Fe:'+str(exe), '/Fo:'+str(work/'song-presentation.obj')]
-else:
-    command = [args.compiler, '-std=c++20', '-Wall', '-Wextra', '-UNDEBUG', str(test), '-o', str(exe)]
-compiled = subprocess.run(command, capture_output=True, text=True)
-(work/'compile.log').write_text(compiled.stdout+compiled.stderr, encoding='utf-8')
-if compiled.returncode:
-    print(compiled.stdout+compiled.stderr)
-compiled.check_returncode()
-subprocess.run([str(exe)], check=True)
+subprocess.run([str(hostcxx.build(args.compiler, test))], check=True, timeout=hostcxx.RUN_TIMEOUT)

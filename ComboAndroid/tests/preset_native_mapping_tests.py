@@ -18,7 +18,7 @@ for kind,body in re.findall(r'OPT_(BOOL|U8)\((.*?)\);',oot,re.S):
         maximum=int(numbers.group(2)) if numbers else len(re.findall(r'"(?:[^"\\]|\\.)*"',choices.group(1)))-1
     native[key.group(1)]=maximum
 count=0
-for key,value in re.findall(r'\{"([^"]+)",\s*(\d+)\}',header):
+for key,value in re.findall(r'\{\s*"([^"]+)",\s*(\d+)\s*\}',header):
     value=int(value)
     if key.startswith('gRandoSettings.'):
         suffix=key.removeprefix('gRandoSettings.')

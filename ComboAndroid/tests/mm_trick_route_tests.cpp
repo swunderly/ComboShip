@@ -1,6 +1,7 @@
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/MmTrickRoutes.h"
 #include <cassert>
+#include <cctype>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -51,8 +52,14 @@ static std::string Region(const std::string& source, const std::string& id) {
     const auto end = source.find("Regions[", start + 8);
     return source.substr(start, end == std::string::npos ? source.size() - start : end - start);
 }
+// The regions are clang-formatted, so compare without whitespace.
+static std::string Squash(const std::string& text) {
+    std::string result;
+    for (char c : text) if (!std::isspace(static_cast<unsigned char>(c))) result += c;
+    return result;
+}
 static void Has(const std::string& source, const std::string& expression) {
-    assert(source.find(expression) != std::string::npos);
+    assert(Squash(source).find(Squash(expression)) != std::string::npos);
 }
 static void SetItem(int item, bool owned) {
     if (owned) items.insert(item); else items.erase(item);

@@ -9,11 +9,12 @@ import re
 import subprocess
 import struct
 import zipfile
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
-p.add_argument('--compiler', default='cl')
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 p.add_argument('--mm-archive', type=Path, help='Optional local archive: reproduce the native Soaring null-drum request')
 a = p.parse_args()
 source, work = a.source.resolve(), a.build_dir.resolve()
@@ -232,7 +233,7 @@ void test(){
     assert(D_80130520[0xBD-0xB0]==0xC2);
     assert(sSeqInstructionArgsTable[0xA8-0xA0]==D_80130520[0xBD-0xB0]);
     assert(sSeqInstructionArgsTable[0xBD-0xA0]==0x81);
-    assert(sSeqInstructionArgsTable[0xBE-0xA0]==0x01);
+    assert(sSeqInstructionArgsTable[0xBE - 0xA0]==0x01); // 0xBE-0xA0 lexes as one pp-number (E-) in GCC/Clang
     sSequenceBase=sFontId=-1;sFont=nullptr;
     assert(!Combo_MMIsOotWarpSequence(200));assert(!Combo_MMWarpAudioCache(FONT_TABLE,-1));
 }
@@ -297,13 +298,5 @@ int main(){
 }
 '''
 test=work/'warp-audio.cpp';test.write_text(code,encoding='utf-8')
-exe=work/'warp-audio.exe'
-if Path(a.compiler).stem.lower() in ('cl','clang-cl'):
-    command=[a.compiler,'/nologo','/std:c++20','/EHsc','/W4','/UNDEBUG',str(test),'/Fe:'+str(exe),'/Fo:'+str(work/'warp-audio.obj')]
-else:
-    command=[a.compiler,'-std=c++20','-Wall','-Wextra','-UNDEBUG',str(test),'-o',str(exe)]
-compiled=subprocess.run(command,capture_output=True,text=True)
-(work/'compile.log').write_text(compiled.stdout+compiled.stderr,encoding='utf-8')
-if compiled.returncode: print(compiled.stdout+compiled.stderr)
-compiled.check_returncode()
-subprocess.run([str(exe)],check=True)
+exe=hostcxx.build(a.compiler,test)
+subprocess.run([str(exe)],check=True, timeout=hostcxx.RUN_TIMEOUT)

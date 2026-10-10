@@ -1,13 +1,16 @@
 """Exercise the production texture signature guard with Android ARM64 pointer tags.
 
-Run from an x64 Visual Studio developer shell (or pass --cxx clang++/g++).
+Registered with ctest (--source/--build-dir/--compiler); the original form
+`check_pointer_guards.py UPSTREAM [--cxx clang++]` still works.
 The resource manager stub records the original pointer without dereferencing fake
 addresses, so every Android tag can be checked safely on a desktop host.
 """
 import argparse
+import os
 from pathlib import Path
 import subprocess
 import tempfile
+import hostcxx
 
 
 def function(source, signature):
@@ -21,7 +24,7 @@ def function(source, signature):
     return source[start:end]
 
 
-def run(root, compiler):
+def run(root, compiler, build_dir=None):
     source = (root / 'libultraship/src/fast/interpreter.cpp').read_text(encoding='utf-8')
     helper = ''
     if 'static bool IsPlausibleStringAddress(' in source:
@@ -69,26 +72,26 @@ int main() {
 }
 '''
     with tempfile.TemporaryDirectory(prefix='combo-pointer-tests-') as directory:
-        work = Path(directory)
+        work = Path(build_dir or directory)
+        work.mkdir(parents=True, exist_ok=True)
         test = work / 'pointer_test.cpp'
         test.write_text(harness, encoding='utf-8')
         for android in (True, False):
-            output = work / ('android.exe' if android else 'desktop.exe')
-            msvc = Path(compiler).name.lower() in ('cl', 'cl.exe')
-            if msvc:
-                command = [compiler, '/nologo', '/std:c++17', '/EHsc', '/W4', '/WX', str(test), '/Fe:'+str(output)]
-                if android: command += ['/D__ANDROID__', '/D__aarch64__']
-            else:
-                command = [compiler, '-std=c++17', '-Wall', '-Wextra', '-Werror', str(test), '-o', str(output)]
-                if android: command += ['-D__ANDROID__', '-D__aarch64__']
-            subprocess.run(command, cwd=work, check=True)
+            name = ('android' if android else 'desktop') + ('.exe' if os.name == 'nt' else '')
+            output = hostcxx.build(compiler, test, std='c++17', werror=True, exe=work / name,
+                                   defines=['__ANDROID__', '__aarch64__'] if android else [])
             print('Android ARM64' if android else 'Desktop', flush=True)
-            subprocess.run([str(output)], cwd=work, check=True)
+            subprocess.run([str(output)], cwd=work, check=True, timeout=hostcxx.RUN_TIMEOUT)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('upstream', type=Path)
-    parser.add_argument('--cxx', default='cl.exe')
+    parser.add_argument('upstream', type=Path, nargs='?')
+    parser.add_argument('--source', type=Path, help='Same as UPSTREAM')
+    parser.add_argument('--build-dir', type=Path, help='Keep the generated files here (default: temporary)')
+    parser.add_argument('--compiler', '--cxx', dest='compiler', default=hostcxx.DEFAULT_COMPILER)
     args = parser.parse_args()
-    run(args.upstream.resolve(), args.cxx)
+    root = args.source or args.upstream
+    if not root:
+        parser.error('pass --source (or UPSTREAM)')
+    run(root.resolve(), args.compiler, args.build_dir.resolve() if args.build_dir else None)

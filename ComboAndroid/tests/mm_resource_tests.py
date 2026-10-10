@@ -1,10 +1,12 @@
 """Compile unchanged production MM resource propagation against explicit inputs."""
 from pathlib import Path
 import argparse, hashlib, json, re, subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 root, work = a.source.resolve(), a.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
@@ -179,7 +181,8 @@ int main() {
     }
     // A paid shelf cannot supply its own starting money. A future valid visit
     // can supply refills; the live hour is irrelevant and must be restored.
-    constexpr int room=-20,check=-21;
+    // static: the captureless lambdas below index maps by reference (odr-use).
+    static constexpr int room=-20,check=-21;
     Regions[room].checks[check]={[](){return mmResourceAccess.CanPay(20,99) && gCurrentRegionTime==2;},"paid"};
     Rando::StaticData::Checks[check]={RCTYPE_SHOP};saved[check]={RI_DEKU_NUTS_5};
     Regions[RR_CLOCK_TOWN_NORTH]={};
@@ -297,10 +300,5 @@ int main() {
 '''
 target=work/'mm_resource.cpp'
 target.write_text(code,encoding='utf-8')
-exe=work/'mm_resource.exe'
-compiled=subprocess.run(['cl','/nologo','/EHsc','/std:c++20','/W4','/WX','/UNDEBUG',str(target),
-    '/Fe:'+str(exe),'/Fo:'+str(work/'mm_resource.obj')],capture_output=True,text=True)
-(work/'compile.log').write_text(compiled.stdout+compiled.stderr)
-if compiled.returncode: print(compiled.stdout+compiled.stderr)
-compiled.check_returncode()
-subprocess.run([str(exe)],check=True)
+exe=hostcxx.build(a.compiler,target,werror=True)
+subprocess.run([str(exe)],check=True, timeout=hostcxx.RUN_TIMEOUT)

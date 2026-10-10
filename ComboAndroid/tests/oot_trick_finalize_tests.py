@@ -2,10 +2,12 @@
 from pathlib import Path
 import argparse
 import subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 root, work = a.source.resolve(), a.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
@@ -57,6 +59,5 @@ int main() {
 '''
 file = work/'oot-tricks.cpp'
 file.write_text(code, encoding='utf-8')
-exe = work/'oot-tricks.exe'
-subprocess.run(['cl','/nologo','/std:c++20','/EHsc','/W4','/UNDEBUG',str(file),'/Fe:'+str(exe),'/Fo:'+str(work/'oot-tricks.obj')], check=True)
-subprocess.run([str(exe)], check=True)
+exe = hostcxx.build(a.compiler, file)
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

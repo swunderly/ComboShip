@@ -1,7 +1,8 @@
 """Compile the production silver route registrar and all pinned predicates."""
 from pathlib import Path
 import argparse,json,re,subprocess
-p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',default='cl');a=p.parse_args()
+import hostcxx
+p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',default=hostcxx.DEFAULT_COMPILER);p.add_argument('--json-include',type=Path,required=True);a=p.parse_args()
 r=a.source.resolve()/'soh/soh/Enhancements/randomizer';d=r/'silver_rupees';work=a.build_dir.resolve();work.mkdir(parents=True,exist_ok=True)
 up=json.loads((d/'upstream-access.json').read_text())['access'];receipt=json.loads((d/'native-route-map.json').read_text())['access'];inc=(d/'SilverRoutes.inc').read_text()
 assert len(up)==len(receipt)==188
@@ -98,7 +99,7 @@ assert(!access(RR_GERUDO_TRAINING_GROUND_HAMMER_ROOM,RR_SR_GERUDO_TRAINING_GROUN
 Rando::Souls::ChangeGeneralOotSoul(Rando::Souls::routeSouls,Rando::Souls::GeneralOotSoulIndex(Rando::Souls::OotSoul::ENEMY_TORCH_SLUG),true);
 assert(access(RR_GERUDO_TRAINING_GROUND_HAMMER_ROOM,RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_CENTER));
 return 0;}'''
-cpp=work/'silver_routes.cpp';cpp.write_text(code);exe=work/'silver_routes.exe'
-cmd=[a.compiler,'/nologo','/std:c++17','/EHsc','/UNDEBUG','/I'+str(d),'/I'+str(a.source.resolve()/'soh/include'),'/I'+str(a.source.resolve()/'soh'),'/I'+str(a.source.resolve().parent/'build-android/_deps/nlohmann_json-src/single_include'),str(cpp),'/Fe:'+str(exe)]
-subprocess.run(cmd,cwd=work,check=True);subprocess.run([str(exe.resolve())],check=True)
+cpp=work/'silver_routes.cpp';cpp.write_text(code)
+exe=hostcxx.build(a.compiler,cpp,std='c++17',warnings=False,includes=[d,a.source/'soh/include',a.source/'soh',a.json_include])
+subprocess.run([str(exe)],check=True, timeout=hostcxx.RUN_TIMEOUT)
 print('188 pinned alternatives / 154 unique owners / 39 source regions: production registrar predicates passed')

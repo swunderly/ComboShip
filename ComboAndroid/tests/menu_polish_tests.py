@@ -2,17 +2,19 @@
 import argparse
 from pathlib import Path
 import subprocess
+import hostcxx
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
 p.add_argument('--json-include', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
+p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 source, out = a.source.resolve(), a.build_dir.resolve()
 out.mkdir(parents=True, exist_ok=True)
 text = (source / 'combo/gui/ComboRandomizerProfiles.cpp').read_text(encoding='utf-8')
 def function(signature):
-    start = text.index(signature)
+    start = hostcxx.find(text, signature)
     end = text.index('{', start) + 1
     depth = 1
     while depth:
@@ -88,9 +90,8 @@ void Navigation(){
 }
 int main(){Profiles();Navigation();std::cout<<"PASS: missing/saved/draft profiles and pouch controls at narrow/wide widths\n";}
 '''
-cpp, exe = out / 'menu_polish.cpp', out / 'menu_polish.exe'
+cpp = out / 'menu_polish.cpp'
 cpp.write_text(code, encoding='utf-8')
-subprocess.run(['cl', '/nologo', '/EHsc', '/std:c++17', '/W4', '/WX', '/UNDEBUG',
-                '/I'+str(source/'combo'), '/I'+str(source/'combo/menu'), '/I'+str(a.json_include.resolve()),
-                str(cpp), '/Fe:'+str(exe), '/Fo:'+str(out/'menu_polish.obj')], check=True)
-subprocess.run([str(exe)], check=True)
+exe = hostcxx.build(a.compiler, cpp, std='c++17', werror=True,
+                    includes=[source/'combo', source/'combo/menu', a.json_include])
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
