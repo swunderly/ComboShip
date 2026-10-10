@@ -91,8 +91,9 @@ inline const MmTrickDefinition* FindMmTrick(int32_t id) {
     return nullptr;
 }
 // Hidden rows are not validated in play yet: no seed, profile or saved CVar may switch one on, and
-// the menus offer no way to switch it off again. Only making the row public enables it.
-inline bool IsHiddenMmTrick(std::string_view key) {
+// the menus offer no way to switch it off again. Only making the row public enables it. constexpr,
+// so a literal key (MM logic's trick macro) can be decided at compile time.
+inline constexpr bool IsHiddenMmTrick(std::string_view key) {
     for (const auto& trick : kMmTricks)
         if (key == trick.key)
             return !trick.publicOption;

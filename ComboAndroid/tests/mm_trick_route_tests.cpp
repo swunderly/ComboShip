@@ -220,5 +220,8 @@ int main() {
         assert(NormalizeGameplayRuleSnapshot(imported)["mmTricks"][row.key] == int(row.publicOption));
     }
     assert(!IsHiddenMmTrick("gUnrelated.Cheat"));
+    // MM logic's trick macro passes a literal key, so the check must not cost a scan per oracle query.
+    static_assert(IsHiddenMmTrick("gCombo.Tricks.MM.ZoraHallScrubNoDeku") &&
+                  !IsHiddenMmTrick("gCombo.Tricks.MM.Lensless"));
     std::cout << "PASS: " << cases << " production MM trick macro cases, region bindings, neighboring gates, stable IDs and immutable seed/run snapshots\n";
 }
