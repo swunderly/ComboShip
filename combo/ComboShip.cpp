@@ -545,6 +545,20 @@ static bool ComboIsValidSlot(int fileNum) {
     return fileNum >= 0 && fileNum <= 2;
 }
 
+// Hold g_containerMutex. The settings page inspects every frame while a value changes; an uncached
+// container on disk only changes by erase (which bumps g_profileSavedSeedRevision) or by becoming
+// cached, so keep the last parse per slot for the current revision instead of re-reading the file.
+static const nlohmann::json& Combo_ReadContainerFileReadonly(int fileNum) {
+    static std::map<int, std::pair<uint64_t, nlohmann::json>> parsed; // slot -> (revision, container)
+    auto& entry = parsed[fileNum];
+    const uint64_t revision = g_profileSavedSeedRevision.load();
+    if (entry.first != revision) {
+        entry.second = ComboRando::Profiles::ReadSavedContainerFile(ComboContainerPath(fileNum));
+        entry.first = revision;
+    }
+    return entry.second;
+}
+
 // Inspection intentionally bypasses LoadOrCreateContainer: that routine may
 // migrate, rename or create a save. Cached saves are copied while locked; disk
 // saves are opened read-only. Viewing a profile cannot change gameplay data.
@@ -552,19 +566,17 @@ static nlohmann::json Combo_ReadSavedSeedReadonly(int fileNum) {
     ComboRando::Profiles::RequireSlot(fileNum);
     std::lock_guard<std::mutex> lock(g_containerMutex);
     const auto cached = g_containerCache.find(fileNum);
-    if (cached != g_containerCache.end()) {
-        ComboRando::Profiles::ValidateSavedCatalogs(cached->second);
-        return ComboRando::Profiles::SeedFromContainer(cached->second);
-    }
-    return ComboRando::Profiles::ReadSavedSeedFile(ComboContainerPath(fileNum));
+    const auto& container =
+        cached != g_containerCache.end() ? cached->second : Combo_ReadContainerFileReadonly(fileNum);
+    ComboRando::Profiles::ValidateSavedCatalogs(container);
+    return container.is_null() ? nlohmann::json() : ComboRando::Profiles::SeedFromContainer(container);
 }
 static nlohmann::json Combo_ReadNativeSeedRulesReadonly(int fileNum) {
     ComboRando::Profiles::RequireSlot(fileNum);
     std::lock_guard<std::mutex> lock(g_containerMutex);
     const auto cached = g_containerCache.find(fileNum);
     return ComboRando::Profiles::NativeSeedRulesFromContainer(
-        cached != g_containerCache.end() ? cached->second
-                                         : ComboRando::Profiles::ReadSavedContainerFile(ComboContainerPath(fileNum)));
+        cached != g_containerCache.end() ? cached->second : Combo_ReadContainerFileReadonly(fileNum));
 }
 
 // Save compat is gated on major.minor only: patch releases must never change save-affecting behavior.
