@@ -25,7 +25,13 @@ void RegionTable_Init_CastleGrounds() {
         //Events
         EVENT_ACCESS(LOGIC_FAIRY_ACCESS, logic->CallGossipFairy() || logic->CanUse(RG_STICKS)),
         EVENT_ACCESS(LOGIC_BUG_ACCESS,   logic->HasItem(RG_POWER_BRACELET)),
+#ifdef COMBO_BUILD
+        // OoTMM's MALON event requires meeting her at the castle. Collecting
+        // her unrestricted reward sends her home even if the egg is shuffled.
+        EVENT_ACCESS(LOGIC_MALON_RETURNED_FROM_CASTLE, logic->IsChild && logic->HasItem(RG_SPEAK_HYLIAN)),
+#else
         EVENT_ACCESS(LOGIC_MALON_RETURNED_FROM_CASTLE, logic->Get(LOGIC_TALON_RETURNED_FROM_CASTLE) && logic->HasItem(RG_SPEAK_HYLIAN)),
+#endif
     }, {
         //Locations
         LOCATION(RC_HC_MALON_EGG,      logic->HasItem(RG_SPEAK_HYLIAN)),
@@ -38,7 +44,7 @@ void RegionTable_Init_CastleGrounds() {
         //Exits
         ENTRANCE(RR_CASTLE_GROUNDS, true),
         ENTRANCE(RR_HC_ABOVE_VINE,  logic->HasItem(RG_CLIMB) || logic->CanUse(RG_HOOKSHOT)),
-        ENTRANCE(RR_HC_PAST_GATE,   logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_HYLIAN)),
+        ENTRANCE(RR_HC_PAST_GATE,   (logic->HasItem(RG_CHILD_WALLET) && GetWalletCapacity() >= 10) && logic->HasItem(RG_SPEAK_HYLIAN)),
     });
 
     areaTable[RR_HC_ABOVE_VINE] = Region("Hyrule Castle Above Vine", SCENE_HYRULE_CASTLE, {
@@ -67,7 +73,11 @@ void RegionTable_Init_CastleGrounds() {
         LOCATION(RC_HC_NEAR_GUARDS_TREE_4,                logic->CanBonkTrees()),
         LOCATION(RC_HC_NEAR_GUARDS_TREE_5,                logic->CanBonkTrees()),
         LOCATION(RC_HC_NEAR_GUARDS_TREE_6,                logic->CanBonkTrees()),
+#ifdef COMBO_BUILD
+        LOCATION(RC_HC_NL_TREE_1,                         logic->CanBonkTrees()),
+#else
         LOCATION(RC_HC_NL_TREE_1,                         false),
+#endif
         LOCATION(RC_HC_NL_TREE_2,                         false),
         LOCATION(RC_HC_NEAR_WALL_BUTTERFLY_FAIRY,         logic->CanUse(RG_STICKS)),
         LOCATION(RC_HC_NEAR_STAIRS_BUTTERFLY_FAIRY,       logic->CanUse(RG_STICKS)),
@@ -132,7 +142,7 @@ void RegionTable_Init_CastleGrounds() {
 
     areaTable[RR_HC_GARDEN] = Region("HC Garden", SCENE_CASTLE_COURTYARD_ZELDA, {
         //Events
-        EVENT_ACCESS(LOGIC_MET_ZELDA, logic->HasItem(RG_SPEAK_HYLIAN)),
+        EVENT_ACCESS(LOGIC_MET_ZELDA, (logic->HasItem(RG_SPEAK_HYLIAN)) && (!Rando::Souls::Enabled() || Rando::Souls::Has(logic.get(),Rando::Souls::OotSoul::NPC_ZELDA))),
     }, {
         //Locations
         LOCATION(RC_HC_ZELDAS_LETTER,                 logic->Get(LOGIC_MET_ZELDA)),
@@ -199,7 +209,18 @@ void RegionTable_Init_CastleGrounds() {
         EVENT_ACCESS(LOGIC_BUILD_RAINBOW_BRIDGE, logic->CanBuildRainbowBridge()),
     }, {
         //Locations
-        LOCATION(RC_OGC_GS,               logic->HookshotOrBoomerang() || ((logic->CanJumpslashExceptHammer() || logic->CanUseProjectile() || (logic->CanShield() && logic->CanUse(RG_MEGATON_HAMMER)) || logic->CanUse(RG_DINS_FIRE)) && ctx->GetTrickOption(RT_VOIDOUT_COLLECTION))) ,
+#ifdef COMBO_BUILD
+        // OoTMM's Castle GS permits the ordinary ranged-weapon or sword route.
+        LOCATION(RC_OGC_GS, logic->HookshotOrBoomerang() || logic->CanUse(RG_FAIRY_BOW) ||
+                 logic->CanUse(RG_FAIRY_SLINGSHOT) || logic->CanUseSword() ||
+                 (((logic->CanShield() && logic->CanUse(RG_MEGATON_HAMMER)) || logic->CanUse(RG_DINS_FIRE)) &&
+                  ctx->GetTrickOption(RT_VOIDOUT_COLLECTION))),
+#else
+        LOCATION(RC_OGC_GS, logic->HookshotOrBoomerang() ||
+                 ((logic->CanJumpslashExceptHammer() || logic->CanUseProjectile() ||
+                   (logic->CanShield() && logic->CanUse(RG_MEGATON_HAMMER)) || logic->CanUse(RG_DINS_FIRE)) &&
+                  ctx->GetTrickOption(RT_VOIDOUT_COLLECTION))),
+#endif
         LOCATION(RC_OGC_BRONZE_BOULDER_1, logic->CanUse(RG_MEGATON_HAMMER)),
         LOCATION(RC_OGC_BRONZE_BOULDER_2, logic->CanUse(RG_MEGATON_HAMMER)),
         LOCATION(RC_OGC_BRONZE_BOULDER_3, logic->CanUse(RG_MEGATON_HAMMER)),

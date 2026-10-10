@@ -2,6 +2,10 @@
 #include "static_data.h"
 #include <assert.h>
 #include "option.h"
+#ifdef COMBO_BUILD
+#include "SeedContext.h"
+#include "KokiriRupeePolicy.h"
+#endif
 
 RandomizerCheck Rando::Location::GetRandomizerCheck() const {
     return rc;
@@ -20,6 +24,10 @@ RandomizerCheckArea Rando::Location::GetArea() const {
 }
 
 RandomizerCheckType Rando::Location::GetRCType() const {
+#ifdef COMBO_BUILD
+    const auto ctx = Context::GetInstance(); // Nullable before static-data/context creation; never creates a context.
+    if (ctx) return KokiriEffectiveType(rc, checkType, ctx->GetKokiriSeedRevision());
+#endif
     return checkType;
 }
 
@@ -61,6 +69,18 @@ bool Rando::Location::IsDungeon() const {
 
 bool Rando::Location::IsOverworld() const {
     return !IsDungeon();
+}
+
+bool Rando::Location::IsDungeonForCollectibleShuffle() const {
+#ifdef COMBO_BUILD
+    // Pinned DUNGEON_SCENES includes Thieves' Hideout. This is a shuffle
+    // policy only: its physical Gerudo Fortress area is not a dungeon table.
+    if (scene == SCENE_THIEVES_HIDEOUT &&
+        (checkType == RCTYPE_POT || checkType == RCTYPE_CRATE || checkType == RCTYPE_WONDER_ITEM)) {
+        return true;
+    }
+#endif
+    return IsDungeon();
 }
 
 bool Rando::Location::IsShop() const {

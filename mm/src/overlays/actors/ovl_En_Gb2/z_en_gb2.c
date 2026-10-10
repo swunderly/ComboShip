@@ -5,6 +5,14 @@
  */
 
 #include "z_en_gb2.h"
+#ifdef COMBO_BUILD
+#include "rando/MmGhostHutRules.h"
+#define ENGB2_HAS_ENOUGH_HEALTH \
+    ComboMmGhostHutHasHealth(gSaveContext.save.saveInfo.playerData.health, \
+                            gSaveContext.save.shipSaveInfo.saveType == SAVETYPE_RANDO)
+#else
+#define ENGB2_HAS_ENOUGH_HEALTH (gSaveContext.save.saveInfo.playerData.health > 0x30)
+#endif
 
 #define FLAGS                                                                                  \
     (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
@@ -160,7 +168,7 @@ u16 func_80B0F7FC(EnGb2* this) {
                 return 0x14E4;
             }
 
-            if (gSaveContext.save.saveInfo.playerData.health > 0x30) {
+            if (ENGB2_HAS_ENOUGH_HEALTH) {
                 return 0x14D2;
             }
 
@@ -168,7 +176,7 @@ u16 func_80B0F7FC(EnGb2* this) {
             return 0x14D3;
 
         case 0x14E4:
-            if (gSaveContext.save.saveInfo.playerData.health > 0x30) {
+            if (ENGB2_HAS_ENOUGH_HEALTH) {
                 return 0x14D2;
             }
 
@@ -518,7 +526,7 @@ void func_80B10344(EnGb2* this, PlayState* play) {
         }
     }
 
-    if (gSaveContext.save.saveInfo.playerData.health <= 0x30) {
+    if (!ENGB2_HAS_ENOUGH_HEALTH) {
         gSaveContext.timerStates[TIMER_ID_MINIGAME_1] = TIMER_STATE_STOP;
         SET_EVENTINF(EVENTINF_46);
         SET_EVENTINF(EVENTINF_45);

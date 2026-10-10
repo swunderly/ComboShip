@@ -2811,7 +2811,14 @@ std::string GetLocationNameForHint(RandoCheckId randoCheckId, bool exact) {
                         continue;
                     }
                 }
-                sceneId = Rando::Logic::Regions[connectedRegionId].sceneId;
+                // Hint metadata must not default-insert an uninitialized logic
+                // context. Saved entrance layouts are installed before the first
+                // pool dump; their context regions are built by the solver later.
+                const auto parent = Rando::Logic::Regions.find(connectedRegionId);
+                if (parent == Rando::Logic::Regions.end()) {
+                    continue;
+                }
+                sceneId = parent->second.sceneId;
             }
             for (auto& [regionRandoCheckId, _] : staticRegion.checks) {
                 checkLocationHints[regionRandoCheckId] = Ship_GetSceneName(sceneId);

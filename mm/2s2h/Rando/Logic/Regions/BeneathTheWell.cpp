@@ -24,16 +24,16 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_BENEATH_THE_WELL_FREEZARD_ROOM, true),
-            CONNECTION(RR_BENEATH_THE_WELL_SKULLTULA_ROOM, HAS_BOTTLE && CAN_ACCESS(BUGS) && HAS_ITEM(ITEM_MASK_GIBDO)),
-            CONNECTION(RR_BENEATH_THE_WELL_FOUR_SPIKED_BARS, HAS_BOTTLE && CAN_ACCESS(BIG_POE) && HAS_ITEM(ITEM_MASK_GIBDO))
+            CONNECTION(RR_BENEATH_THE_WELL_SKULLTULA_ROOM, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(BUGS))),
+            CONNECTION(RR_BENEATH_THE_WELL_FOUR_SPIKED_BARS, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(BIG_POE)))
         },
     };
     Regions[RR_BENEATH_THE_WELL_BACK_EXIT] = RandoRegion{ .name = "Back Exit", .sceneId = SCENE_REDEAD,
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(IKANA_CASTLE, 0),                 ENTRANCE(BENEATH_THE_WELL, 1), true),
+            EXIT(ENTRANCE(IKANA_CASTLE, 0),                 ENTRANCE(BENEATH_THE_WELL, 1), CAN_RESET_TIME && (true)),
         },
         .connections = {
-            CONNECTION(RR_BENEATH_THE_WELL_MIRROR_SHIELD_ROOM, CAN_USE_MAGIC_ARROW(LIGHT)),
+            CONNECTION(RR_BENEATH_THE_WELL_MIRROR_SHIELD_ROOM, CAN_RESET_TIME_DUNGEON && CAN_USE_MAGIC_ARROW(LIGHT)),
         },
     };
     Regions[RR_BENEATH_THE_WELL_BIG_POE_ROOM] = RandoRegion{ .name = "Big Poe Room", .sceneId = SCENE_REDEAD,
@@ -62,7 +62,7 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_BENEATH_THE_WELL_RIGHT_FIRE_KEESE, true),
         },
         .events = {
-            EVENT(RE_ACCESS_MILK_REFILL, CAN_PLAY_SONG(EPONA)),
+            EVENT(RE_ACCESS_MILK_REFILL, Rando::HaveExpandedSoul(Rando::ExpandedSoul::ANIMAL_COW) && CAN_PLAY_SONG(EPONA)),
         }
     };
     Regions[RR_BENEATH_THE_WELL_DEXIHAND_ROOM] = RandoRegion{ .name = "Dexihand Room", .sceneId = SCENE_REDEAD,
@@ -75,16 +75,16 @@ static RegisterShipInitFunc initFunc([]() {
         .events = {
             EVENT(RE_ACCESS_SPRING_WATER, true),
             EVENT(RE_ACCESS_FISH, true),
-            EVENT(RE_ACCESS_HOT_SPRING_WATER, HAS_ITEM(ITEM_BOW))
+            EVENT(RE_ACCESS_HOT_SPRING_WATER, CAN_USE_BOW)
         },
     };
     Regions[RR_BENEATH_THE_WELL_ENTRANCE] = RandoRegion{ .name = "Entrance", .sceneId = SCENE_REDEAD,
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(IKANA_CANYON, 5),                 ENTRANCE(BENEATH_THE_WELL, 0), true),
+            EXIT(ENTRANCE(IKANA_CANYON, 5),                 ENTRANCE(BENEATH_THE_WELL, 0), CAN_RESET_TIME && (true)),
         },
         .connections = {
-            CONNECTION(RR_BENEATH_THE_WELL_THREE_SPIKED_BARS, HAS_BOTTLE && CAN_ACCESS(BLUE_POTION_REFILL) && HAS_ITEM(ITEM_MASK_GIBDO)),
-            CONNECTION(RR_BENEATH_THE_WELL_FREEZARD_ROOM, RANDO_EVENTS[RE_ACCESS_BEANS_REFILL] && HAS_ITEM(ITEM_MASK_GIBDO))
+            CONNECTION(RR_BENEATH_THE_WELL_THREE_SPIKED_BARS, CAN_RESET_TIME_DUNGEON && CAN_PASS_GIBDO(CAN_SUPPLY_GIBDO_POTION)),
+            CONNECTION(RR_BENEATH_THE_WELL_FREEZARD_ROOM, CAN_RESET_TIME_DUNGEON && CAN_PASS_GIBDO(RANDO_EVENTS[RE_ACCESS_BEANS_REFILL]))
         },
     };
     Regions[RR_BENEATH_THE_WELL_FAIRY_FOUNTAIN] = RandoRegion{ .name = "Fairy Fountain", .sceneId = SCENE_REDEAD,
@@ -104,7 +104,7 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_BENEATH_THE_WELL_BABA_AND_POTS_ROOM, true),
-            CONNECTION(RR_BENEATH_THE_WELL_MIRROR_SHIELD_ROOM, HAS_BOTTLE && CAN_ACCESS(MILK_REFILL) && HAS_ITEM(ITEM_MASK_GIBDO))
+            CONNECTION(RR_BENEATH_THE_WELL_MIRROR_SHIELD_ROOM, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(MILK_REFILL)))
         },
         .events = {
             EVENT(RE_ACCESS_BUGS, CAN_LIGHT_TORCH_NEAR_ANOTHER && HAS_BOTTLE),
@@ -118,8 +118,8 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_BENEATH_THE_WELL_ENTRANCE, true),
-            CONNECTION(RR_BENEATH_THE_WELL_RIGHT_FIRE_KEESE, HAS_ITEM(ITEM_MASK_GIBDO)),
-            CONNECTION(RR_BENEATH_THE_WELL_BABA_AND_POTS_ROOM, HAS_BOTTLE && CAN_ACCESS(FISH) && HAS_ITEM(ITEM_MASK_GIBDO)),
+            CONNECTION(RR_BENEATH_THE_WELL_RIGHT_FIRE_KEESE, CAN_PASS_GIBDO(true)),
+            CONNECTION(RR_BENEATH_THE_WELL_BABA_AND_POTS_ROOM, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(FISH))),
         },
         .events = {
             EVENT(RE_ACCESS_SPRING_WATER, true),
@@ -127,7 +127,7 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_BENEATH_THE_WELL_LEFT_FIRE_KEESE] = RandoRegion{ .name = "Left Fire Keese Room", .sceneId = SCENE_REDEAD,
         .checks = {
-            CHECK(RC_BENEATH_THE_WELL_KEESE_CHEST, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
+            CHECK(RC_BENEATH_THE_WELL_KEESE_CHEST, CAN_NAVIGATE_HIDDEN),
             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
             CHECK(RC_ENEMY_DROP_WALLMASTER, CanKillEnemy(ACTOR_EN_WALLMAS)),
         },
@@ -138,7 +138,7 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_BENEATH_THE_WELL_MIRROR_SHIELD_ROOM] = RandoRegion{ .name = "Mirror Shield Room", .sceneId = SCENE_REDEAD,
         .checks = {
             // In cases where the player comes from the exit. The flame is accessed two rooms back(RR_BENEATH_THE_WELL_BABA_AND_POTS_ROOM) and the door locks on the way out, so we also need to factor the requirements to get back into this room.
-            CHECK(RC_BENEATH_THE_WELL_MIRROR_SHIELD, (HAS_BOTTLE && CAN_ACCESS(BIG_POE) && HAS_ITEM(ITEM_MASK_GIBDO) && CAN_ACCESS(MILK_REFILL) && HAS_ITEM(ITEM_DEKU_STICK)) || CAN_USE_MAGIC_ARROW(FIRE))
+            CHECK(RC_BENEATH_THE_WELL_MIRROR_SHIELD, (CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(BIG_POE) && CAN_ACCESS(MILK_REFILL)) && CAN_USE_STICKS) || CAN_USE_MAGIC_ARROW(FIRE))
         },
         .connections = {
             CONNECTION(RR_BENEATH_THE_WELL_FOUR_SPIKED_BARS, true),
@@ -155,11 +155,11 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_BENEATH_THE_WELL_FREEZARD_ROOM, true),
-            CONNECTION(RR_BENEATH_THE_WELL_BIG_POE_ROOM, HAS_ITEM(ITEM_BOMB) && HAS_ITEM(ITEM_MASK_GIBDO)),
-            CONNECTION(RR_BENEATH_THE_WELL_COW_ROOM, HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER) && HAS_ITEM(ITEM_MASK_GIBDO))
+            CONNECTION(RR_BENEATH_THE_WELL_BIG_POE_ROOM, CAN_PASS_GIBDO(CAN_USE_BOMBS)),
+            CONNECTION(RR_BENEATH_THE_WELL_COW_ROOM, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER)))
         },
         .events = {
-            EVENT(RE_ACCESS_BUGS, HAS_ITEM(ITEM_BOW)),
+            EVENT(RE_ACCESS_BUGS, CAN_USE_BOW),
         }
     };
     Regions[RR_BENEATH_THE_WELL_SKULLTULA_ROOM] = RandoRegion{ .name = "Skulltula Room", .sceneId = SCENE_REDEAD,
@@ -174,8 +174,8 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_BENEATH_THE_WELL_THREE_SPIKED_BARS] = RandoRegion{ .name = "Three Spikes Room", .sceneId = SCENE_REDEAD,
         .connections = {
             CONNECTION(RR_BENEATH_THE_WELL_ENTRANCE, true),
-            CONNECTION(RR_BENEATH_THE_WELL_TWO_SPIKED_BARS, HAS_BOTTLE && (CAN_ACCESS(SPRING_WATER) || CAN_ACCESS(HOT_SPRING_WATER)) && HAS_ITEM(ITEM_MASK_GIBDO)),
-            CONNECTION(RR_BENEATH_THE_WELL_DEXIHAND_ROOM, HAS_BOTTLE && CAN_ACCESS(FISH) && HAS_ITEM(ITEM_MASK_GIBDO))
+            CONNECTION(RR_BENEATH_THE_WELL_TWO_SPIKED_BARS, CAN_PASS_GIBDO(HAS_BOTTLE && (CAN_ACCESS(SPRING_WATER) || CAN_ACCESS(HOT_SPRING_WATER)))),
+            CONNECTION(RR_BENEATH_THE_WELL_DEXIHAND_ROOM, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(FISH)))
         },
         .events = {
             EVENT(RE_ACCESS_SPRING_WATER, true),
@@ -195,8 +195,8 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_BENEATH_THE_WELL_THREE_SPIKED_BARS, true),
-            CONNECTION(RR_BENEATH_THE_WELL_FAIRY_FOUNTAIN, HAS_BOTTLE && CAN_ACCESS(BUGS) && HAS_ITEM(ITEM_MASK_GIBDO)),
-            CONNECTION(RR_BENEATH_THE_WELL_LEFT_FIRE_KEESE, HAS_BOTTLE && CAN_ACCESS(BUGS) && HAS_ITEM(ITEM_MASK_GIBDO)),
+            CONNECTION(RR_BENEATH_THE_WELL_FAIRY_FOUNTAIN, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(BUGS))),
+            CONNECTION(RR_BENEATH_THE_WELL_LEFT_FIRE_KEESE, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(BUGS))),
         },
         .events = {
             EVENT(RE_ACCESS_BUGS, CAN_LIGHT_TORCH_NEAR_ANOTHER),

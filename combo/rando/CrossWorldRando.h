@@ -1,3 +1,4 @@
+#include "BeanSourcePolicy.h"
 // combo/rando/CrossWorldRando.h
 // ComboShip: combined cross-world randomizer generator.
 // Header-only, deterministic. No game source touched.
@@ -8,6 +9,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <iostream>
@@ -69,15 +71,116 @@ struct OracleFns {
     // OOT only (null for MM): is the OOT->MM portal region reachable? Valid only immediately after a
     // GetReachableChecks call, whose owned-set it describes (the DLL piggybacks on that search).
     uint8_t (*GetPortalOpen)(void) = nullptr;
+    void (*SetSongArrivals)(uint32_t) = nullptr;
+    uint32_t (*GetSongSources)(void) = nullptr;
+    int (*SongDestination)(int) = nullptr;
+    uint32_t (*GetSongKnowledge)() = nullptr;
+    void (*SetForeignSongKnowledge)(uint32_t) = nullptr;
+    uint8_t (*GetPortalAges)() = nullptr;
+    void (*SetEntryAges)(uint8_t) = nullptr;
+    uint8_t (*GetDefaultEntryAges)() = nullptr;
+    uint32_t (*GetSongSourcesForAge)(int) = nullptr;
+    void (*SetSongAgeArrivals)(uint32_t,uint32_t) = nullptr;
+    bool (*UseCrossAgeOracle)() = nullptr;
+    int (*SetExternalBeanRenewal)(uint8_t) = nullptr;
 };
+
+// Pinned exits preserve age; no all-age destination union is permitted.
+template<class Query>
+inline auto QueryAgeSongWorlds(const OracleFns& oot,const OracleFns& mm,
+    const std::vector<std::string>& ootOwned,const std::vector<std::string>& mmOwned,
+    bool& mmOpen,Query query,bool mmRootAtStart){
+    using Checks=std::unordered_set<std::string>;
+    struct ClearProbeArrivals{const OracleFns& oot;const OracleFns& mm;~ClearProbeArrivals(){
+        if(oot.SetSongArrivals)oot.SetSongArrivals(0);
+        if(mm.SetSongArrivals)mm.SetSongArrivals(0);
+    }} clear{oot,mm};
+    std::pair<Checks,Checks> result;
+    std::array<uint32_t,2> ootArrivals{},mmArrivals{};
+    uint8_t portalAges=0;
+    const uint8_t baseAges=mmRootAtStart?(mm.GetDefaultEntryAges()&3):0;
+    auto destinations=[](const OracleFns& oracle,int age){uint32_t mask=0;
+        const auto sources=oracle.GetSongSourcesForAge(age);
+        for(int i=0;i<16;++i)if(sources&(1u<<i)){const int destination=oracle.SongDestination(i);if(destination>=0&&destination<16)mask|=1u<<destination;}
+        return mask;
+    };
+    for(int pass=0;pass<70;++pass){CheckGenerationCancellation();
+        oot.SetSongAgeArrivals(ootArrivals[0],ootArrivals[1]);
+        result.first=query(oot,ootOwned);
+        const uint8_t previousPortal=portalAges;
+        portalAges|=oot.GetPortalAges()&3;
+        std::array<uint32_t,2> fromOot{destinations(oot,0),destinations(oot,1)};
+        std::array<uint32_t,2> newMm{mmArrivals[0]|(fromOot[0]&0xffc0),mmArrivals[1]|(fromOot[1]&0xffc0)};
+        const uint8_t entryAges=baseAges|portalAges|(newMm[0]?1:0)|(newMm[1]?2:0);
+        mm.SetEntryAges(entryAges);
+        mm.SetSongAgeArrivals(newMm[0],newMm[1]);
+        mmOpen|=entryAges!=0;
+        result.second=entryAges?query(mm,mmOwned):Checks{};
+        std::array<uint32_t,2> allOot=ootArrivals,allMm=newMm;
+        for(int age=0;age<2;++age){const auto fromMm=entryAges?destinations(mm,age):0;
+            allOot[age]|=(fromOot[age]|fromMm)&63;allMm[age]|=fromMm&0xffc0;
+        }
+        if(allOot==ootArrivals&&allMm==mmArrivals&&portalAges==previousPortal)return result;
+        ootArrivals=allOot;mmArrivals=allMm;
+    }
+    throw std::runtime_error("Age-bearing song-route search failed to converge");
+}
+
+// The two searches exchange destination roots until stable, before crediting any check item.
+// Each query starts from EMPTY arrival masks; assumed items from a prior fill probe cannot leak.
+template<class Query>
+inline auto QuerySongWorlds(const OracleFns& oot, const OracleFns& mm,
+                           const std::vector<std::string>& ootOwned, const std::vector<std::string>& mmOwned,
+                           bool& mmOpen, Query query, bool mmRootAtStart=false) {
+    CheckGenerationCancellation();
+    using Checks=std::unordered_set<std::string>;
+    std::pair<Checks,Checks> result;
+    uint32_t ootArrivals=0, mmArrivals=0;
+    // Song ownership is shared; instruments/buttons remain local. Read this probe's
+    // inventory in BOTH engines before searching, never a previous probe's inventory.
+    if (oot.GetSongKnowledge && mm.GetSongKnowledge && oot.SetForeignSongKnowledge && mm.SetForeignSongKnowledge) {
+        oot.Reset(); oot.SetOwnedItems(nlohmann::json(ootOwned).dump().c_str());
+        mm.Reset(); mm.SetOwnedItems(nlohmann::json(mmOwned).dump().c_str());
+        const auto ootKnown=oot.GetSongKnowledge(), mmKnown=mm.GetSongKnowledge();
+        oot.SetForeignSongKnowledge(mmKnown); mm.SetForeignSongKnowledge(ootKnown);
+    }
+    if(mm.UseCrossAgeOracle&&mm.UseCrossAgeOracle()&&oot.SetSongArrivals&&mm.SetSongArrivals&&oot.GetPortalAges&&mm.SetEntryAges&&mm.GetDefaultEntryAges&&
+       oot.GetSongSourcesForAge&&mm.GetSongSourcesForAge&&oot.SetSongAgeArrivals&&mm.SetSongAgeArrivals&&oot.SongDestination&&mm.SongDestination)
+        return QueryAgeSongWorlds(oot,mm,ootOwned,mmOwned,mmOpen,query,mmRootAtStart);
+    auto destinations=[](const OracleFns& oracle) {
+        uint32_t mask=0;
+        if (oracle.GetSongSources && oracle.SongDestination) {
+            uint32_t sources=oracle.GetSongSources();
+            for(int i=0;i<16;i++) if(sources & (1u<<i)) {
+                int d=oracle.SongDestination(i); if(d>=0 && d<16) mask |= 1u<<d;
+            }
+        }
+        return mask;
+    };
+    for (int pass=0;pass<18;pass++) {
+        if(oot.SetSongArrivals) oot.SetSongArrivals(ootArrivals);
+        result.first=query(oot,ootOwned);
+        mmOpen = mmOpen || !oot.GetPortalOpen || oot.GetPortalOpen()!=0;
+        const uint32_t fromOot=destinations(oot);
+        const uint32_t newMm=mmArrivals | (fromOot & 0xffc0);
+        mmOpen = mmOpen || newMm!=0;
+        if(mm.SetSongArrivals) mm.SetSongArrivals(newMm);
+        result.second=mmOpen ? query(mm,mmOwned) : Checks{};
+        const uint32_t fromMm=mmOpen ? destinations(mm) : 0;
+        const uint32_t newOot=ootArrivals | ((fromOot | fromMm) & 63);
+        const uint32_t allMm=newMm | (fromMm & 0xffc0);
+        if(newOot==ootArrivals && allMm==mmArrivals) return result;
+        ootArrivals=newOot; mmArrivals=allMm;
+    }
+    throw std::runtime_error("Song-route search failed to converge");
+}
 
 // ---------- Data types ----------
 
-// Per-game OOT accessibility, mapped from OOT's RSK_LOGIC_RULES + RSK_ALL_LOCATIONS_REACHABLE.
-// MM is always ALL_REACHABLE. See CrossWorldCombinedFill for the per-mode fill/validation behavior.
-//   ALL_REACHABLE  every OOT advancement item lands reachable (default; unchanged behavior)
-//   BEATABLE_ONLY  OOT progression may strand off-path, but the seed stays beatable (ALR-off)
-//   NO_LOGIC       OOT items land anywhere; only MM stays fully reachable
+// Combined accessibility. The historical OotAccess type is retained for ABI/caller compatibility.
+// ALL_REACHABLE: every shuffled AND confined placement in BOTH games is reachable from the start.
+// BEATABLE_ONLY: off-path items may be inaccessible in either game; the selected combined goal is proved.
+// NO_LOGIC retains its explicit legacy semantics and makes no combined completion promise.
 enum class OotAccess { ALL_REACHABLE, BEATABLE_ONLY, NO_LOGIC };
 
 // Maps the OOT dump's "accessibility" block to a mode: No Logic wins; else ALR-off => BEATABLE_ONLY;
@@ -102,7 +205,60 @@ struct CwGoal {
     bool hunt = false;
     int required = 0;
     int total = -1; // combined pieces placed; -1 = unset (seed predates the combo-owned total)
+    enum Type { BOTH = 0, HUNT = 1, EITHER = 2, GANON = 3, MAJORA = 4, QUEST = 5 } type = BOTH;
 };
+
+inline CwGoal::Type CwGoalType(const CwGoal& goal) { return goal.hunt ? CwGoal::HUNT : goal.type; }
+inline const char* CwGoalName(const CwGoal& goal) {
+    switch (CwGoalType(goal)) {
+        case CwGoal::HUNT: return "triforceHunt";
+        case CwGoal::EITHER: return "either";
+        case CwGoal::GANON: return "ganon";
+        case CwGoal::MAJORA: return "majora";
+        case CwGoal::QUEST: return "triforceQuest";
+        default: return "bosses";
+    }
+}
+inline CwGoal CwGoalFromJson(const nlohmann::json& json) {
+    CwGoal goal;
+    const auto name = json.value("type", std::string("bosses"));
+    if (name == "triforceHunt") goal.type = CwGoal::HUNT;
+    else if (name == "either") goal.type = CwGoal::EITHER;
+    else if (name == "ganon") goal.type = CwGoal::GANON;
+    else if (name == "majora") goal.type = CwGoal::MAJORA;
+    else if (name == "triforceQuest") goal.type = CwGoal::QUEST;
+    else if (name != "bosses" && name != "both") throw std::runtime_error("Unknown combined victory goal: " + name);
+    goal.hunt = goal.type == CwGoal::HUNT;
+    goal.required = goal.hunt ? json.value("requiredPieces", 0) : 0;
+    goal.total = json.value("totalPieces", -1);
+    return goal;
+}
+inline nlohmann::json CwGoalJson(const CwGoal& goal) {
+    return {{"type", CwGoalName(goal)}, {"requiredPieces", goal.required}, {"totalPieces", goal.total}};
+}
+inline constexpr const char* kNamedTriforcePieces[] = {"Triforce of Power", "Triforce of Courage", "Triforce of Wisdom"};
+inline unsigned CwNamedTriforceMask(const std::vector<std::string>& oot, const std::vector<std::string>& mm) {
+    unsigned mask = 0;
+    for (const auto* items : {&oot, &mm}) for (const auto& item : *items)
+        for (unsigned i = 0; i < 3; ++i) if (item == kNamedTriforcePieces[i]) mask |= 1u << i;
+    return mask;
+}
+inline bool CwGoalReached(const CwGoal& goal, bool ganon, bool majora, int pieces = 0, unsigned named = 0) {
+    switch (CwGoalType(goal)) {
+        case CwGoal::HUNT: return goal.required > 0 && pieces >= goal.required;
+        case CwGoal::EITHER: return ganon || majora;
+        case CwGoal::GANON: return ganon;
+        case CwGoal::MAJORA: return majora;
+        case CwGoal::QUEST: return (named & 7u) == 7u;
+        default: return ganon && majora;
+    }
+}
+inline bool CwGoalReached(const CwGoal& goal, bool ganon, bool majora,
+                          const std::vector<std::string>& oot, const std::vector<std::string>& mm) {
+    const int pieces = static_cast<int>(std::count(oot.begin(), oot.end(), kOotTriforcePiece) +
+                       std::count(mm.begin(), mm.end(), kMmTriforcePiece));
+    return CwGoalReached(goal, ganon, majora, pieces, CwNamedTriforceMask(oot, mm));
+}
 
 // Even split of the combined total across the two pools; OOT takes the odd piece. -1 passes through
 // so each game keeps its own slider (old seeds).
@@ -127,6 +283,7 @@ inline int CountPoolTriforcePieces(const std::string& sohDumpJson, const std::st
         int n = 0;
         try {
             auto d = nlohmann::json::parse(dump);
+
             for (const auto& it : d.value("pool", nlohmann::json::array()))
                 n += CwIsTriforcePiece(g, it.value("name", std::string())) ? 1 : 0;
         } catch (...) {}
@@ -200,6 +357,7 @@ struct CwItem {
     std::string name;
     bool advancement;
     CwCat cat = CwCat::UNKNOWN;
+    bool criticalRenewable = false;
     // Only native-JUNK may absorb a surplus, and never if it gates logic: OOT files bombchus and
     // Buy Blue Fire/Arrows as ITEM_CATEGORY_JUNK with advancement=true (item_list.cpp:278-325).
     bool discardable() const {
@@ -263,6 +421,21 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
     if (progress)
         progress->phase.store(1); // Preparing pools
 
+    // A native confined fill must never masquerade as a valid junk-padded pool.
+    // Preserve the engine's retryable failure before any checks/items are accepted.
+    for (const auto* dumpJson : { &sohDumpJson, &mmDumpJson }) {
+        try {
+            auto native = nlohmann::json::parse(*dumpJson);
+            if (native.contains("error")) {
+                result.error = native.at("error").get<std::string>();
+                return result;
+            }
+        } catch (const std::exception& e) {
+            result.error = std::string("Pool parse error: ") + e.what();
+            return result;
+        }
+    }
+
     // --- Parse pools (single pass per dump) ---
     // Checks from "checks", items from the real "pool" (split by advancement), confined
     // pre-placements from "fixed". Falls back to per-check vanillaItem if an old DLL omits "pool".
@@ -270,6 +443,8 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
     // MM's own pickup-rotation names, for the cross-placed junk bake below.
     std::vector<std::string> mmJunkNames;
     std::vector<CwCheck> allChecks;
+    std::unordered_map<std::string, std::string> questRegions;
+    std::unordered_map<std::string,BeanSources::Source> beanSources;
     std::vector<CwPlacement> lockedPlacements; // confined pre-placements (own-dungeon keys, etc.)
 
     // Set when a dump carries pool[] but no category — a stale DLL, which would otherwise surface as an
@@ -278,12 +453,21 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
 
     auto parsePool = [&](Game game, const std::string& dumpJson) {
         auto d = nlohmann::json::parse(dumpJson);
+        for(const auto& source:d.value("beanSources",nlohmann::json::object()).items()){
+            if(!source.value().is_object()||!source.value().at("license").is_boolean()||!source.value().at("renewable").is_boolean())throw std::runtime_error("Malformed bean donor metadata");
+            beanSources[(game==GAME_MM?"MM:":"OOT:")+source.key()]={source.value().at("license").get<bool>(),source.value().at("renewable").get<bool>()};
+        }
 
         // Fillable checks (name only; the pool below feeds the items).
         for (auto& c : d.value("checks", nlohmann::json::array())) {
             std::string name = c.value("name", "");
-            if (!name.empty())
+            if (!name.empty()) {
                 allChecks.push_back({ game, name });
+                const auto prefix = game == GAME_OOT ? "oot:" : "mm:";
+                std::string region = c.value("area", std::string());
+                if (region.empty() && d.contains("locationHints")) region = d["locationHints"].value(name, std::string());
+                if (!region.empty()) questRegions[std::string(prefix) + name] = std::string(prefix) + region;
+            }
         }
 
         // Item pool: the game's real generated pool, split into advancement/junk.
@@ -297,7 +481,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                 CwCat cat = CwCatFromName(it.value("category", std::string{}));
                 ++parsed;
                 withCategory += (cat != CwCat::UNKNOWN) ? 1 : 0;
-                (adv ? advItems : junkItems).push_back({ game, name, adv, cat });
+                (adv ? advItems : junkItems).push_back({ game, name, adv, cat, it.value("criticalRenewable", false) });
             }
             if (parsed > 0 && withCategory == 0)
                 missingCategory = (game == GAME_OOT ? "soh.dll" : "2ship.dll");
@@ -434,6 +618,9 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
     // Shared Items (OoTMM-style): trim MM's copies of each effective family; the fixpoint below
     // mirrors the OOT-owned count back onto MM's oracle. See deviations/rando.md.
     uint32_t effectiveSharedMask = 0;
+    const bool fairyOcarinaMm = nlohmann::json::parse(mmDumpJson).value("fairyOcarinaMm", false);
+    const auto requestedSharedStarts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
+    const bool sharedButtonsEnabled = nlohmann::json::parse(sohDumpJson).value("sharedButtonsEnabled", false) && nlohmann::json::parse(mmDumpJson).value("sharedButtonsEnabled", false);
     if (sharedMask != 0) {
         bool maskQuestShuffle = false;
         try {
@@ -444,7 +631,32 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         for (int i = 0; i < SF_COUNT; ++i) {
             if (!(sharedMask & (1u << i)))
                 continue;
+            if (i == SF_OCARINA) {
+                // Pinned shared transform retains the two OOT tiers and removes MM's instrument copies.
+                // MM-native Fairy duplication applies only to the non-shared pool path.
+                bool has = false;
+                for (const auto& item : advItems) if (item.game == GAME_OOT && IsOcarinaName(item.name)) has = true;
+                for (const auto& placement : lockedPlacements)
+                    if (placement.item.game == GAME_OOT && IsOcarinaName(placement.item.name)) has = true;
+                const auto od = nlohmann::json::parse(sohDumpJson), md = nlohmann::json::parse(mmDumpJson);
+                auto os = od.value("sharedStartingItems", std::vector<std::string>{});
+                auto ms = md.value("sharedStartingItems", std::vector<std::string>{});
+                if (!has && !OwnedOcarinaTier(os) && !OwnedOcarinaTier(ms)) continue;
+                advItems.erase(std::remove_if(advItems.begin(), advItems.end(), [](const CwItem& item) {
+                    return item.game == GAME_MM && IsOcarinaName(item.name);
+                }), advItems.end());
+                int inheritedStart = std::max(0, OwnedOcarinaTier(ms) - OwnedOcarinaTier(os));
+                for (auto it = advItems.begin(); it != advItems.end() && inheritedStart;) {
+                    if (it->game == GAME_OOT && IsOcarinaName(it->name)) { it = advItems.erase(it); --inheritedStart; }
+                    else ++it;
+                }
+                effectiveSharedMask |= 1u << SF_OCARINA;
+                continue;
+            }
+            if (!SharedExtraSpellEnabled(i,nlohmann::json::parse(mmDumpJson))) continue;
             const auto& def = SharedFamilyByIndex(i);
+            if (def.requiresButtons && !sharedButtonsEnabled) continue;
+            const bool startsShared = i >= SF_OCARINA_BUTTON_A && std::find(requestedSharedStarts.first.begin(), requestedSharedStarts.first.end(), def.ootName) != requestedSharedStarts.first.end();
             if (def.isMask && !maskQuestShuffle) {
                 std::cout << "[ComboShip] Shared " << def.key << ": skipped (OOT Mask Quest is not Shuffle)\n";
                 continue;
@@ -456,7 +668,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
             for (const auto& p : lockedPlacements)
                 if (p.item.game == GAME_OOT && p.item.name == def.ootName)
                     ++ootCopies;
-            if (ootCopies == 0) {
+            if (ootCopies == 0 && !startsShared) {
                 std::cout << "[ComboShip] Shared " << def.key << ": OOT pool has none, left MM copies alone\n";
                 continue;
             }
@@ -477,7 +689,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                 kept.push_back(std::move(it));
             }
             advItems = std::move(kept);
-            if (removed == 0) {
+            if (removed == 0 && !startsShared) {
                 // Name drift between the two games' pools (see deviations/rando.md) — not fatal, but
                 // loud: this is exactly the bug class that shipped twice during implementation.
                 std::cout << "[ComboShip] Shared " << def.key << ": MM pool has none of '" << def.mmName
@@ -485,10 +697,34 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                 continue;
             }
             effectiveSharedMask |= (1u << i);
+            if (startsShared) {
+                advItems.erase(std::remove_if(advItems.begin(), advItems.end(), [&](const CwItem& item) {
+                    return item.game == GAME_OOT && item.name == def.ootName;
+                }), advItems.end());
+                // Restricted native song preparation may already have confined this
+                // shared starting possession. Keep its check confined, but give it
+                // same-game filler rather than another copy of the owned item.
+                for (auto& placement : lockedPlacements) {
+                    const auto& name = placement.item.game == GAME_OOT ? def.ootName : def.mmName;
+                    if (placement.item.name != name) continue;
+                    const auto filler = std::find_if(junkItems.begin(), junkItems.end(), [&](const CwItem& item) {
+                        return item.game == placement.item.game && item.discardable();
+                    });
+                    if (filler == junkItems.end()) {
+                        result.error = "cannot replace confined shared starting item: no same-game junk";
+                        return result;
+                    }
+                    placement.item = *filler;
+                }
+            }
             std::cout << "[ComboShip] Shared " << def.key << ": trimmed " << removed << " MM '" << def.mmName
                       << "' (balancer will pad with junk)\n";
         }
     }
+
+    const auto sharedStarts = SharedStartingInventories(effectiveSharedMask, sohDumpJson, mmDumpJson);
+    ootForcedOwned.insert(ootForcedOwned.end(), sharedStarts.first.begin(), sharedStarts.first.end());
+    mmForcedOwned.insert(mmForcedOwned.end(), sharedStarts.second.begin(), sharedStarts.second.end());
 
     // --- Balance each game's pool against its checks: P_g == C_g ---
     // Both generators over-supply on purpose and the over-supply is PROGRESSION, so only junk may be
@@ -591,15 +827,23 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
             std::cout << "[ComboShip] CrossWorldCombinedFill:     trimmed " << n << "\n";
     }
 
+    if (CwGoalType(goal) == CwGoal::QUEST) {
+        // Extra items replace three discardable rewards. Keep these out of assumed fill:
+        // they are placed after the normal progression, using its actual spheres.
+        for (const auto* name : kNamedTriforcePieces) {
+            auto filler = std::find_if(junkItems.begin(), junkItems.end(), [](const CwItem& i) { return i.discardable(); });
+            if (filler == junkItems.end()) { result.error = "Triforce Quest needs three replaceable junk rewards"; return result; }
+            *filler = {GAME_OOT, name, true, CwCat::MAJOR};
+        }
+    }
     CwRng rng(masterSeed);
     cwShuffle(allChecks, rng);
 
     // OOT and MM check names are distinct namespaces; key fill bookkeeping by game+name.
     auto checkKey = [](const CwCheck& c) { return std::string(c.game == GAME_OOT ? "oot:" : "mm:") + c.name; };
 
-    // Locked (fixed) checks are each game's OWN vanilla/confined placements, already guaranteed
-    // reachable by that game's own fill; the cross-fill neither shuffles nor re-validates them (the
-    // oracles under-model some — e.g. vanilla GS spots — so they'd falsely fail validation).
+    // Fixed vanilla/confined placements remain in their original locations. The collected-inventory
+    // fixed point and final combined guarantee validate them along with the shuffled checks.
     std::unordered_set<std::string> lockedCheckKeys;
     for (const auto& lp : lockedPlacements)
         lockedCheckKeys.insert(checkKey(lp.check));
@@ -612,15 +856,31 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
     };
     QueryStats ootStats, mmStats;
 
+    std::vector<CwPlacement> placements;
+    bool externalMmBeanRenewal=false;
     auto queryReachable = [&](const OracleFns& oracle,
                               const std::vector<std::string>& ownedItems) -> std::unordered_set<std::string> {
         QueryStats& stats = (&oracle == &ootOracle) ? ootStats : mmStats;
+        CheckGenerationCancellation();
         auto t0 = std::chrono::steady_clock::now();
         nlohmann::json arr = nlohmann::json::array();
         for (const auto& n : ownedItems)
             arr.push_back(n);
         oracle.Reset();
         oracle.SetOwnedItems(arr.dump().c_str());
+        // Reset clears MM's simulated shelves. Reinstall the current placement
+        // map before its resource search; owned equipment alone cannot describe
+        // which reachable shops/cows supply renewable potions and Bombchus.
+        if (&oracle == &mmOracle && oracle.PlaceItem) {
+            for (const auto& p : placements) {
+                if (p.check.game == GAME_MM) {
+                    oracle.PlaceItem(p.check.name.c_str(), p.item.game == GAME_MM ? p.item.name.c_str() : "");
+                }
+            }
+        }
+        if(&oracle==&mmOracle&&externalMmBeanRenewal){
+            if(!oracle.SetExternalBeanRenewal||!oracle.SetExternalBeanRenewal(1))throw std::runtime_error("MM bean renewal oracle unavailable");
+        }
         std::string raw = oracle.GetReachableChecks();
         std::unordered_set<std::string> out;
         try {
@@ -646,6 +906,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         owned.insert(owned.end(), extraOwned.begin(), extraOwned.end());
         std::vector<bool> credited(pl.size(), false);
         OotClosedResult r;
+        if(ootOracle.SetSongArrivals) ootOracle.SetSongArrivals(0);
         for (;;) {
             r.reach = queryReachable(ootOracle, owned);
             r.portalOpen = r.portalOpen || ootOracle.GetPortalOpen == nullptr || ootOracle.GetPortalOpen() != 0;
@@ -733,12 +994,12 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
     // CHECK became reachable to the ITEM's game's owned set, until nothing changes. This spans
     // both games because an MM item at an OOT check (or vice versa) can open progress anywhere,
     // including the portal itself — so portal openness is re-evaluated every iteration.
-    std::vector<CwPlacement> placements;
     // ootReachable/mmReachable = reachable checks at the fixpoint; ootOwned = OOT items collected along
     // the way (drives the BEATABLE_ONLY boss-key goal check without a second traversal).
     struct FixResult {
         std::unordered_set<std::string> ootReachable, mmReachable;
-        std::vector<std::string> ootOwned;
+        std::vector<std::string> ootOwned, mmOwned;
+        std::unordered_map<std::string, int> spheres;
     };
     auto reachableFixpoint = [&](const std::vector<std::string>& ootBase,
                                  const std::vector<std::string>& mmBase) -> FixResult {
@@ -746,6 +1007,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         // Forced placements (Link's Pocket etc.) are granted at save creation → owned from the start.
         ootOwned.insert(ootOwned.end(), ootForcedOwned.begin(), ootForcedOwned.end());
         mmOwned.insert(mmOwned.end(), mmForcedOwned.begin(), mmForcedOwned.end());
+        externalMmBeanRenewal=false;
         std::vector<bool> credited(placements.size(), false);
         std::unordered_set<std::string> ootReachable, mmReachable;
         // Latched: once OOT can reach the portal it stays open. An MM start roots MM immediately (#135).
@@ -753,28 +1015,33 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         // Shared Items mirror: how many copies of each effective family have already been pushed onto
         // mmOwned this call, so re-querying doesn't duplicate them as ootOwned grows.
         size_t sharedGiven[SF_COUNT] = { 0 };
+        std::unordered_map<std::string, int> spheres;
+        int sphere = 1;
         for (;;) {
-            ootReachable = queryReachable(ootOracle, ootOwned);
-            // Read the portal off THIS OOT query, before any MM check is credited below — that ordering
-            // is what stops the fill proving the portal with an item that lives behind it.
-            if (!portalOpen)
-                portalOpen = ootOracle.GetPortalOpen() != 0;
             if (effectiveSharedMask != 0) {
+                MirrorSharedSingletons(effectiveSharedMask, ootOwned, mmOwned);
+                if (effectiveSharedMask & (1u << SF_OCARINA)) MirrorSharedOcarina(ootOwned, mmOwned, fairyOcarinaMm);
                 for (int i = 0; i < SF_COUNT; ++i) {
                     if (!(effectiveSharedMask & (1u << i)))
                         continue;
+                    if (i == SF_OCARINA) continue;
                     const auto& def = SharedFamilyByIndex(i);
                     if (!def.mmHasItem)
                         continue; // nothing to push; MM logic doesn't need it
                     size_t k =
                         static_cast<size_t>(std::count(ootOwned.begin(), ootOwned.end(), std::string(def.ootName)));
                     size_t target = std::min<size_t>(k, static_cast<size_t>(def.mmTierCap));
-                    for (size_t n = sharedGiven[i]; n < target; ++n)
+                    for (size_t n = std::max(sharedGiven[i], static_cast<size_t>(std::count(mmOwned.begin(), mmOwned.end(), std::string(def.mmName)))); n < target; ++n)
                         mmOwned.push_back(def.mmName);
                     sharedGiven[i] = target;
                 }
             }
-            mmReachable = portalOpen ? queryReachable(mmOracle, mmOwned) : std::unordered_set<std::string>{};
+            auto worlds=QuerySongWorlds(ootOracle,mmOracle,ootOwned,mmOwned,portalOpen,queryReachable,mmStart||!portalGated);
+            ootReachable=std::move(worlds.first); mmReachable=std::move(worlds.second);
+            for (const auto& check : allChecks)
+                if ((check.game == GAME_OOT ? ootReachable : mmReachable).count(check.name))
+                    spheres.emplace(checkKey(check), sphere);
+            ++sphere;
             bool changed = false;
             for (size_t i = 0; i < placements.size(); ++i) {
                 if (credited[i])
@@ -782,13 +1049,22 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                 const auto& reach = placements[i].check.game == GAME_OOT ? ootReachable : mmReachable;
                 if (reach.count(placements[i].check.name)) {
                     auto& owned = placements[i].item.game == GAME_OOT ? ootOwned : mmOwned;
-                    owned.push_back(placements[i].item.name);
+                    const bool bean=placements[i].item.game==GAME_MM&&placements[i].item.name=="Magic Bean";
+                    auto source=BeanSources::ForNativeCheck(placements[i].check.game==GAME_MM,placements[i].check.name);
+                    const auto key=(placements[i].check.game==GAME_MM?"MM:":"OOT:")+placements[i].check.name;
+                    if(auto it=beanSources.find(key);it!=beanSources.end())source=it->second;
+                    // Items from repeatable shops do not become licenses merely
+                    // because the check was reached. Starting/assumed inventory is
+                    // licensed separately; cows and ordinary rewards grant licenses.
+                    const auto credit=BeanSources::CreditPlacement(bean,source);
+                    if(credit.owned)owned.push_back(placements[i].item.name);
+                    if(credit.renewal)externalMmBeanRenewal=true;
                     credited[i] = true;
                     changed = true;
                 }
             }
             if (!changed)
-                return { std::move(ootReachable), std::move(mmReachable), std::move(ootOwned) };
+                return { std::move(ootReachable), std::move(mmReachable), std::move(ootOwned), std::move(mmOwned), std::move(spheres) };
         }
     };
 
@@ -898,8 +1174,21 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         } else {
             toPlace = advRest;
         }
-        std::vector<CwItem> relaxedToJunk; // OOT adv stranded off-path under BEATABLE_ONLY dead-ends
+        std::vector<CwItem> relaxedToJunk; // advancement stranded off-path under completion-only
         cwShuffle(toPlace, rng);
+        // OoTMM solve.ts preserves critical renewable consumables in the
+        // required pool and puts their first copy at a repeatable source.
+        // Place those first so subsequent inventory queries can inspect actual
+        // stock, rather than pretending a one-time refill is renewable.
+        std::stable_partition(toPlace.begin(), toPlace.end(),
+                              [](const CwItem& item) { return !item.criticalRenewable; });
+        std::unordered_set<std::string> renewablePlaced;
+        for (const auto& p : placements) {
+            if (p.item.game != GAME_MM || p.check.game != GAME_MM) continue;
+            auto source = BeanSources::ForNativeCheck(true, p.check.name);
+            if (auto it = beanSources.find("MM:" + p.check.name); it != beanSources.end()) source = it->second;
+            if (source.renewable) renewablePlaced.insert(p.item.name);
+        }
         std::vector<std::string> ootRemaining, mmRemaining;
         for (const auto& it : toPlace)
             (it.game == GAME_OOT ? ootRemaining : mmRemaining).push_back(it.name);
@@ -922,6 +1211,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         bool deadEnd = false;
         while (!toPlace.empty()) {
             size_t k = std::min({ batchCap, std::max<size_t>(1, toPlace.size() / 4), toPlace.size() });
+            if (toPlace.back().criticalRenewable) k = 1;
 
             std::vector<CwItem> batch;
             batch.reserve(k);
@@ -940,6 +1230,14 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                 if (filledChecks.count(checkKey(allChecks[ci])))
                     continue;
                 const auto& reach = allChecks[ci].game == GAME_OOT ? ootReachable : mmReachable;
+                if (batch.front().criticalRenewable && !renewablePlaced.count(batch.front().name)) {
+                    // Cross-game deliveries are one-time rewards in this
+                    // engine; only native MM stock can be bought repeatedly.
+                    if (allChecks[ci].game != GAME_MM) continue;
+                    auto source = BeanSources::ForNativeCheck(true, allChecks[ci].name);
+                    if (auto it = beanSources.find("MM:" + allChecks[ci].name); it != beanSources.end()) source = it->second;
+                    if (!source.renewable) continue;
+                }
                 if (reach.count(allChecks[ci].name))
                     candidates.push_back(ci);
             }
@@ -948,7 +1246,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                 // BEATABLE_ONLY: a single OOT advancement item with no reachable check may strand
                 // off-path — move it to the junk fast-fill and continue (already removed from
                 // toPlace/ootRemaining above). MM items and ALL_REACHABLE always retry instead.
-                if (batch.size() == 1 && ootAccess == OotAccess::BEATABLE_ONLY && batch.front().game == GAME_OOT) {
+                if (batch.size() == 1 && ootAccess == OotAccess::BEATABLE_ONLY) {
                     relaxedToJunk.push_back(batch.front());
                     continue;
                 }
@@ -976,6 +1274,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                 candidates.pop_back();
                 placements.push_back({ allChecks[pick], item });
                 filledChecks.insert(checkKey(allChecks[pick]));
+                if (item.criticalRenewable) renewablePlaced.insert(item.name);
             }
             if (progress)
                 // Count advancement placed (placements started at lockedPlacements), so placed/total is
@@ -1080,86 +1379,91 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
             }
         }
 
-        // Validation: with nothing assumed, sphere-collecting placed items must reach every
-        // ADVANCEMENT check (the assumed-fill guarantee). Junk-holding checks may legitimately be
-        // oracle-unreachable (oracles under-model, e.g. MM with zeroed save options) — count and log
-        // those, don't fail.
+        // OoTMM solver/solve.ts at 41a2b7c0d7dbbb53fed928652f8271bc336c113f.
+        // Upstream MIT notice: TriforceQuest-LICENSE.txt.
+        if (CwGoalType(goal) == CwGoal::QUEST) {
+            auto baseline = reachableFixpoint({}, {});
+            std::vector<size_t> extras, candidates;
+            std::vector<int> depths;
+            for (size_t i = 0; i < placements.size(); ++i) {
+                const auto& p = placements[i];
+                if (CwNamedTriforceMask({p.item.name}, {}) != 0) extras.push_back(i);
+                const auto key = checkKey(p.check);
+                if ((p.item.discardable() || CwNamedTriforceMask({p.item.name}, {}) != 0) &&
+                    !lockedCheckKeys.count(key) && baseline.spheres.count(key) && questRegions.count(key)) {
+                    candidates.push_back(i);
+                    depths.push_back(ootAccess == OotAccess::NO_LOGIC ? 1 : baseline.spheres.at(key));
+                }
+            }
+            if (extras.size() != 3 || depths.empty()) { lastPassError = "Triforce Quest has no eligible regions"; continue; }
+            std::sort(depths.begin(), depths.end());
+            const int median = depths[depths.size() / 2];
+            std::vector<size_t> weighted;
+            for (size_t i : candidates) {
+                int depth = ootAccess == OotAccess::NO_LOGIC ? 1 : baseline.spheres.at(checkKey(placements[i].check));
+                if (depth >= median) for (int n = 0; n < depth; ++n) weighted.push_back(i);
+            }
+            cwShuffle(weighted, rng);
+            cwShuffle(extras, rng);
+            std::vector<size_t> selected;
+            while (selected.size() < 3 && !weighted.empty()) {
+                const auto pick = weighted.back(); weighted.pop_back(); selected.push_back(pick);
+                const auto region = questRegions.at(checkKey(placements[pick].check));
+                weighted.erase(std::remove_if(weighted.begin(), weighted.end(), [&](size_t i) {
+                    return questRegions.at(checkKey(placements[i].check)) == region;
+                }), weighted.end());
+            }
+            if (selected.size() != 3) { lastPassError = "Triforce Quest needs three distinct late-sphere regions"; continue; }
+            // First park each named piece at its selected check, retaining the exact item multiset.
+            for (size_t n = 0; n < 3; ++n) {
+                const auto name = kNamedTriforcePieces[n];
+                const auto current = std::find_if(placements.begin(), placements.end(), [&](const CwPlacement& p) { return p.item.name == name; });
+                std::swap(current->item, placements[selected[n]].item);
+            }
+        }
+
+        // Validate the actual sphere fixed point, with no assumed inventory. A confined or junk
+        // reward is still a check: Every check reachable has no exceptions for either game.
         auto vf = reachableFixpoint({}, {});
         auto& ootFinal = vf.ootReachable;
         auto& mmFinal = vf.mmReachable;
-        // Classify unreachable advancement by ITEM game: MM adv unreachable is always fatal (MM must
-        // stay all-reachable); OOT adv unreachable is fatal only under ALL_REACHABLE, tolerated under
-        // the relaxed modes (it was placed off-logic on purpose).
         size_t mmAdvUnreachable = 0, ootAdvUnreachable = 0, junkUnreachable = 0, junkUnreachableOot = 0;
+        size_t missingOot = 0, missingMm = 0;
+        std::string missingOotNames, missingMmNames;
         for (const auto& p : placements) {
-            // Locked placements are the game's own guaranteed-reachable vanilla/confined items — not
-            // the cross-fill's responsibility, and the oracles under-model some. Don't validate them.
-            if (lockedCheckKeys.count(checkKey(p.check)))
-                continue;
             const auto& reach = p.check.game == GAME_OOT ? ootFinal : mmFinal;
-            if (reach.count(p.check.name))
-                continue;
-            if (p.item.advancement) {
-                (p.item.game == GAME_MM ? mmAdvUnreachable : ootAdvUnreachable)++;
-            } else {
-                ++junkUnreachable;
-                if (p.check.game == GAME_OOT)
-                    ++junkUnreachableOot;
-            }
+            if (reach.count(p.check.name)) continue;
+            (p.check.game == GAME_OOT ? missingOot : missingMm)++;
+            auto& names=p.check.game == GAME_OOT ? missingOotNames : missingMmNames;
+            if (names.size() < 900)
+                names += (names.empty() ? "" : ", ") + p.check.name;
+            if (p.item.advancement) (p.item.game == GAME_MM ? mmAdvUnreachable : ootAdvUnreachable)++;
+            else { ++junkUnreachable; if (p.check.game == GAME_OOT) ++junkUnreachableOot; }
         }
-        // BEATABLE_ONLY additionally requires the win still holds (mirrors DefaultGanonMajoraGoal;
-        // duplicated here to keep this header free of ComboPlaythrough.h). NO_LOGIC accepts an
-        // OOT-unbeatable seed; MM stays reachable+beatable regardless.
-        // RC_GANON reachable = OOT beatable: its region logic gates on bridge + boss key (placed OR
-        // force-granted), correct for every GBK/bridge mode — unlike the old tower-chest proxy (held a
-        // random item, could be unreachable). Names are the friendly forms the OOT/MM oracles return.
         const bool ootWin = ootFinal.count("Ganon") > 0;
-        const bool mmWin = mmFinal.count("Moon Majora Pot 01") > 0;
-        // Triforce Hunt (#136): the win is `required` pieces from either pool, so count the pieces
-        // sitting on reachable checks instead of the two boss markers.
+        const bool mmWin = mmFinal.count("Defeat Majora") > 0;
         int reachablePieces = 0;
         if (goal.hunt) {
-            for (const auto& p : placements) {
+            // Reachable placements are credited once by the fix point, so this is collected
+            // inventory, not an assumption that an inaccessible piece can be obtained.
+            for (const auto& p : placements)
                 if (CwIsTriforcePiece(p.item.game, p.item.name) &&
-                    (p.check.game == GAME_OOT ? ootFinal : mmFinal).count(p.check.name)) {
-                    ++reachablePieces;
-                }
-            }
+                    (p.check.game == GAME_OOT ? ootFinal : mmFinal).count(p.check.name)) ++reachablePieces;
         }
-        bool goalOk = (ootAccess != OotAccess::BEATABLE_ONLY) ||
-                      (goal.hunt ? reachablePieces >= goal.required : (ootWin && mmWin));
-        bool needRetry = mmAdvUnreachable > 0 || (ootAccess == OotAccess::ALL_REACHABLE && ootAdvUnreachable > 0) ||
-                         (ootAccess == OotAccess::BEATABLE_ONLY && !goalOk);
+        const bool goalOk = CwGoalReached(goal, ootWin, mmWin, vf.ootOwned, vf.mmOwned);
+        const bool everyCheck = ootAccess == OotAccess::ALL_REACHABLE;
+        const bool needRetry = (ootAccess != OotAccess::NO_LOGIC && !goalOk) ||
+            (everyCheck && (missingOot || missingMm)) ||
+            (ootAccess == OotAccess::NO_LOGIC && mmAdvUnreachable);
         if (needRetry) {
-            // On UNBEATABLE, name which side blocked (ganon/majora) so a future win-marker rename or
-            // logic regression is self-diagnosing instead of a silent all-passes-fail.
-            std::string goalStr = ootAccess != OotAccess::BEATABLE_ONLY ? ""
-                                  : goalOk                              ? " goal=ok"
-                                  : goal.hunt ? " goal=UNBEATABLE(pieces=" + std::to_string(reachablePieces) + "/" +
-                                                    std::to_string(goal.required) + ")"
-                                              : " goal=UNBEATABLE(ganon=" + std::to_string(ootWin) +
-                                                    " majora=" + std::to_string(mmWin) + ")";
-            lastPassError = "validation failed — mmAdvUnreachable=" + std::to_string(mmAdvUnreachable) +
-                            " ootAdvUnreachable=" + std::to_string(ootAdvUnreachable) + goalStr +
-                            (mmAdvUnreachable > 0 ? " (MM items stranded: the portal closed mid-fill)" : "");
-            std::cerr << "[ComboShip] CrossWorldCombinedFill: validation failed — mmAdvUnreachable=" << mmAdvUnreachable
-                      << " ootAdvUnreachable=" << ootAdvUnreachable << goalStr << " (pass " << pass << ", " << passMs()
-                      << " ms) — retrying\n";
+            lastPassError = "Combined " + std::string(everyCheck ? "Every check reachable" : "completion") +
+                " validation failed: OOT=" + std::to_string(missingOot) + " MM=" + std::to_string(missingMm) +
+                "; goal=" + (goalOk ? "reachable" : "unreachable") +
+                (goal.hunt ? " (pieces " + std::to_string(reachablePieces) + "/" + std::to_string(goal.required) + ")"
+                           : " (Ganon " + std::to_string(ootWin) + ", Majora " + std::to_string(mmWin) + ")") +
+                "; missing OOT: " + missingOotNames + "; missing MM: " + missingMmNames;
+            std::cerr << "[ComboShip] " << lastPassError << " (pass " << pass << ") — retrying\n";
             continue;
-        }
-        // ALL_REACHABLE covers every check, not just advancement ones: a junk-holding check the oracle
-        // can't reach still violates it. Entrance shuffle is what makes this reachable in practice, and
-        // it's layout-driven (the same seed strands the same checks under a completely different item
-        // distribution), so re-placing items can't fix it — bail to the caller's seed reroll rather
-        // than burn the remaining passes. MM is excluded: its oracle under-models 3 checks on every
-        // seed, so enforcing there would fail everything.
-        if (ootAccess == OotAccess::ALL_REACHABLE && junkUnreachableOot > 0) {
-            std::cerr << "[ComboShip] CrossWorldCombinedFill: " << junkUnreachableOot
-                      << " OOT check(s) unreachable under All Locations Reachable (pass " << pass
-                      << ") — rerolling seed\n";
-            result.error = "OOT All Locations Reachable violated (" + std::to_string(junkUnreachableOot) +
-                           " unreachable checks) — reroll for a new entrance layout";
-            return result;
         }
         // #135: MM start frees the OOT root, so mmAdvUnreachable can't catch a portal that A0's fallback
         // paths left unopenable. Check directly: a strayed itemless player must always be able to walk back in.
@@ -1169,12 +1473,10 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                       << passMs() << " ms) — retrying\n";
             continue;
         }
-        if (ootAdvUnreachable > 0)
-            std::cout << "[ComboShip] CrossWorldCombinedFill: " << ootAdvUnreachable
-                      << " OOT advancement item(s) on unreachable checks — tolerated (relaxed OOT mode)\n";
-
-        std::cout << "[ComboShip] CrossWorldCombinedFill: all " << advItems.size()
-                  << " advancement items reachable from scratch (pass " << pass << ", " << passMs() << " ms; "
+        std::cout << "[ComboShip] CrossWorldCombinedFill: "
+                  << (everyCheck ? "Every check reachable" : (ootAccess == OotAccess::NO_LOGIC ? "No logic" : "Only completion guaranteed"))
+                  << " satisfied (unreachable checks OOT=" << missingOot << " MM=" << missingMm
+                  << "; pass " << pass << ", " << passMs() << " ms; " << advItems.size() << " advancement items, "
                   << junkItems.size() << " junk, " << junkUnreachable
                   << " junk on oracle-unreachable checks [oot=" << junkUnreachableOot
                   << " mm=" << (junkUnreachable - junkUnreachableOot) << "]; pool balanced: " << trimmedTotal
@@ -1234,6 +1536,8 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
     spoiler["mode"] = "combined-logic assumed-fill";
     spoiler["startingGame"] = mmStart ? "MM" : "OOT"; // #135
     // poolTrimmed/poolPadded let a shipped spoiler self-report that it came from a balanced fill.
+    spoiler["accessibility"] = {{"policy", ootAccess == OotAccess::ALL_REACHABLE ? "all" :
+        ootAccess == OotAccess::BEATABLE_ONLY ? "completion" : "none"}, {"scope", "both-games"}};
     spoiler["fillStats"] = { { "advancementItems", static_cast<uint32_t>(advItems.size()) },
                              { "junkItems", static_cast<uint32_t>(junkItems.size()) },
                              { "poolTrimmed", static_cast<uint32_t>(trimmedTotal) },

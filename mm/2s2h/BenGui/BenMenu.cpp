@@ -821,6 +821,10 @@ void BenMenu::AddEnhancements() {
         .Options(CheckboxOptions().Tooltip(
             "Fixes the camera snap that occurs when you are moving and press the targeting button."));
     AddWidget(path, "First Person", WIDGET_SEPARATOR_TEXT);
+    AddWidget(path, "Targetable Hookshot Reticle", WIDGET_CVAR_CHECKBOX)
+        .CVar("gEnhancements.HookshotableReticle")
+        .Options(CheckboxOptions().Tooltip(
+            "Turns the Hookshot aiming dot green on hookshotable surfaces. Shared with OoT."));
     AddWidget(path, "Disable Auto-Centering", WIDGET_CVAR_CHECKBOX)
         .CVar("gEnhancements.Camera.FirstPerson.DisableFirstPersonAutoCenterView")
         .PreFunc([](WidgetInfo& info) {
@@ -2670,6 +2674,7 @@ int32_t BenMenu::EvalDisabledByIndex(int32_t i, const char** outReason) {
         w->ResetDisables();
     }
     w->preFunc(*w);
+    if (w->isHidden) return 2;
     bool d = (w->options && w->options->disabled);
     if (d && outReason) {
         *outReason = w->options->disabledTooltip; // MM: const char* (no .c_str())
@@ -2729,16 +2734,8 @@ int32_t BenMenu::DrawWidgetByIndex(int32_t i, int32_t width) {
     bool hasCvar = (w->cVar && w->cVar[0]);
     int32_t beforeI = hasCvar ? CVarGetInteger(w->cVar, 0) : 0;
     float beforeF = hasCvar ? CVarGetFloat(w->cVar, 0.0f) : 0.0f;
-    // MM's content area uses fontMonoLarger (mirrors MM DrawElement); push it so delegation matches
-    // regardless of comboui's active font.
-    ImFont* contentFont = OTRGlobals::Instance ? OTRGlobals::Instance->fontMonoLarger : nullptr;
-    if (contentFont) {
-        ImGui::PushFont(contentFont);
-    }
+    // Combo Ship owns typography for both engines; inherit its active font.
     MenuDrawItem(*w, (uint32_t)(width > 0 ? width : 90), GetMenuThemeColor());
-    if (contentFont) {
-        ImGui::PopFont();
-    }
     if (!hasCvar) {
         return 0;
     }

@@ -34,7 +34,7 @@ void Rando::ActorBehavior::InitEnJgameTsnBehavior() {
         CustomMessage::Replace(&entry.msg, "{{itemName}}",
                                randoSaveCheck.cycleObtained
                                    ? "50 Rupees"
-                                   : Rando::StaticData::GetItemName(randoSaveCheck.randoItemId, true,
+                                   : Rando::StaticData::GetRevealedItemName(randoSaveCheck.randoItemId, true,
                                                                     RC_GREAT_BAY_COAST_FISHERMAN_MINIGAME));
 
         CustomMessage::LoadCustomMessageIntoFont(entry);

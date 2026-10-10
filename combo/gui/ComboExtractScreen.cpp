@@ -192,8 +192,12 @@ extern "C" COMBO_EXPORT int ComboUI_RunExtraction(const ComboExtractCallbacks* c
         // (a new player's window can launch small/square before any resolution is persisted).
         const float kMargin = 20.0f;
         float panelW = vp->WorkSize.x - kMargin * 2.0f;
-        if (panelW > 680.0f) {
-            panelW = 680.0f;
+        float preferredW = 680.0f;
+#ifdef __ANDROID__
+        preferredW *= ImGui::GetIO().FontGlobalScale;
+#endif
+        if (panelW > preferredW) {
+            panelW = preferredW;
         }
         float panelMaxH = vp->WorkSize.y - kMargin * 2.0f;
         ImGui::SetNextWindowPos(vp->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
@@ -248,6 +252,14 @@ extern "C" COMBO_EXPORT int ComboUI_RunExtraction(const ComboExtractCallbacks* c
                     }
                 }
 
+#ifdef __ANDROID__
+                ImGui::TextWrapped("Your imported Ocarina of Time and Majora's Mask ROMs are checked automatically. "
+                                   "Choose Extract when both are valid.");
+                if (!slots[0].valid || !slots[1].valid) {
+                    ImGui::TextWrapped("If an imported ROM is missing or unsupported, choose Quit to return to "
+                                       "setup, import a supported copy, and reopen the game.");
+                }
+#else
                 ImGui::TextWrapped("ComboShip needs both an Ocarina of Time ROM and a Majora's Mask ROM. "
                                    "Select each ROM below or drag and drop ROM files onto this window, "
                                    "then click Extract. Both are required.");
@@ -259,6 +271,7 @@ extern "C" COMBO_EXPORT int ComboUI_RunExtraction(const ComboExtractCallbacks* c
                                        "drag and drop your ROM files onto this window instead.");
                     ImGui::PopStyleColor();
                 }
+#endif
                 ImGui::Spacing();
 
                 for (int i = 0; i < 2; i++) {
@@ -270,6 +283,7 @@ extern "C" COMBO_EXPORT int ComboUI_RunExtraction(const ComboExtractCallbacks* c
                         ImGui::TextColored(kGreen, "(already extracted)");
                     } else {
                         ImGui::TextWrapped("%s", s.path.empty() ? "(no ROM selected)" : s.path.c_str());
+#ifndef __ANDROID__
                         ComboMenu_PushButton(theme);
                         if (!PickerAvailable()) {
                             ImGui::BeginDisabled();
@@ -286,6 +300,7 @@ extern "C" COMBO_EXPORT int ComboUI_RunExtraction(const ComboExtractCallbacks* c
                         }
                         ComboMenu_PopButton();
                         ImGui::SameLine();
+#endif
                         if (s.path.empty()) {
                             ImGui::TextDisabled("required");
                         } else if (s.valid) {
@@ -388,8 +403,10 @@ extern "C" COMBO_EXPORT int ComboUI_RunExtraction(const ComboExtractCallbacks* c
                     }
                 }
             } else { // FAILED
-                ImGui::TextColored(kRed, "Extraction failed. Check that your ROM is a supported, uncompressed "
-                                         "copy, then relaunch.");
+                ImGui::PushStyleColor(ImGuiCol_Text, kRed);
+                ImGui::TextWrapped("Extraction failed. Check that your ROM is a supported, uncompressed "
+                                   "copy, then relaunch. Export logs from setup for details.");
+                ImGui::PopStyleColor();
                 ImGui::Spacing();
                 ComboMenu_PushButton(theme);
                 if (ImGui::Button("Quit", ImVec2(150.0f, 0.0f))) {

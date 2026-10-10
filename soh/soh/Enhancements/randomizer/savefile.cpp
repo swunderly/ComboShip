@@ -1,3 +1,4 @@
+#include "souls/OotSouls.h"
 #include "savefile.h"
 #include "soh/OTRGlobals.h"
 #include "soh/ResourceManagerHelpers.h"
@@ -133,6 +134,7 @@ void GiveLinksPocketItem() {
 }
 
 void SetStartingItems() {
+    Rando::Souls::InitStartingOwnership();
     int startingAge = OTRGlobals::Instance->gRandoContext->GetOption(RSK_SELECTED_STARTING_AGE).Get();
     if (Randomizer_GetSettingValue(RSK_STARTING_KOKIRI_SWORD))
         Item_Give(NULL, ITEM_SWORD_KOKIRI);
@@ -430,6 +432,25 @@ void SetStartingItems() {
     }
 }
 
+// Old Combo seeds serialized Vanilla but replaced the mask shop with the portal
+// and omitted every OoT mask from the pool. Preserve their placements/progress;
+// grant the native owned-mask starts instead of inventing a borrowing quest.
+extern "C" void Randomizer_RepairLegacyMaskInventory() {
+#ifdef COMBO_BUILD
+    if (!IS_RANDO || Randomizer_GetSettingValue(RSK_MASK_QUEST) != RO_MASK_QUEST_VANILLA) {
+        return;
+    }
+    for (RandomizerInf flag : { RAND_INF_CHILD_TRADES_HAS_MASK_KEATON, RAND_INF_CHILD_TRADES_HAS_MASK_SKULL,
+                               RAND_INF_CHILD_TRADES_HAS_MASK_SPOOKY, RAND_INF_CHILD_TRADES_HAS_MASK_BUNNY,
+                               RAND_INF_CHILD_TRADES_HAS_MASK_GORON, RAND_INF_CHILD_TRADES_HAS_MASK_ZORA,
+                               RAND_INF_CHILD_TRADES_HAS_MASK_GERUDO, RAND_INF_CHILD_TRADES_HAS_MASK_TRUTH }) {
+        if (!Flags_GetRandomizerInf(flag)) {
+            Flags_SetRandomizerInf(flag);
+        }
+    }
+#endif
+}
+
 extern "C" void Randomizer_InitSaveFile() {
     auto ctx = Rando::Context::GetInstance();
     ctx->GetLogic()->SetSaveContext(&gSaveContext);
@@ -624,11 +645,13 @@ extern "C" void Randomizer_InitSaveFile() {
         Flags_UnsetRandomizerInf(RAND_INF_CHILD_TRADES_HAS_LETTER_ZELDA);
     }
 
+#ifndef COMBO_BUILD
     if (Randomizer_GetSettingValue(RSK_SHUFFLE_MASTER_SWORD) && startingAge == RO_AGE_ADULT) {
         GetItemEntry getItemEntry = Randomizer_GetItemFromKnownCheck(RC_TOT_MASTER_SWORD, GI_NONE);
         StartingItemGive(getItemEntry, RC_TOT_MASTER_SWORD);
         Flags_SetRandomizerInf(RAND_INF_TOT_MASTER_SWORD);
     }
+#endif
 
     HIGH_SCORE(HS_POE_POINTS) = 1000 - (100 * Randomizer_GetSettingValue(RSK_BIG_POE_COUNT));
 
@@ -707,4 +730,5 @@ extern "C" void Randomizer_InitSaveFile() {
         gSaveContext.itemGetInf[3] |= 0x800;  // Bunny Hood related
         gSaveContext.itemGetInf[3] |= 0x8000; // Obtained Mask of Truth
     }
+    Randomizer_RepairLegacyMaskInventory();
 }

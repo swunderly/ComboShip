@@ -24,7 +24,6 @@ extern "C" void MMAnchor_BroadcastCrossItem(int targetGame, const char* itemName
 extern "C" {
 #include "variables.h"
 #include <functions.h>
-extern TexturePtr gItemIcons[131];
 extern s16 D_801CFF94[250];
 }
 
@@ -138,7 +137,7 @@ void Rando::MiscBehavior::CheckQueue() {
                 .showGetItemCutscene =
 #ifdef COMBO_BUILD
                     // Foreign checks decide by the foreign item's home-game importance.
-                (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN)
+                (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN && !randoSaveCheck.obtained)
                     ? Rando::MiscBehavior::ShouldShowForeignCutscene(randoCheckId)
                     :
 #endif
@@ -151,9 +150,9 @@ void Rando::MiscBehavior::CheckQueue() {
                         // ComboShip: this MM check holds an item belonging to OOT. Present it like a
                         // native item (real name + get-item cutscene when important at home; the
                         // held-up model is drawn by the drawItem lambda -> MM_DrawComboForeign), then
-                        // deliver it cross-game instead of granting locally. Branch on the raw stored
-                        // id (before ConvertItem) so the sentinel is matched directly.
-                        if (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN) {
+                        // deliver it cross-game instead of granting locally. An already-obtained
+                        // check follows normal conversion to junk, including its model and message.
+                        if (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN && !randoSaveCheck.obtained) {
                             RandoCheckId cid = (RandoCheckId)CUSTOM_ITEM_PARAM;
                             const ComboRando::ForeignItem* fi = Rando::MiscBehavior::MM_LookupForeign(cid);
                             // A foreign trap fires on the FINDER, like a native RI_TRAP: MM's own trap
@@ -283,6 +282,10 @@ void Rando::MiscBehavior::CheckQueue() {
                         // overwritten with the item id on the next line). No-op if Anchor is inactive.
                         Rando::MiscBehavior::BroadcastCheckObtainedIfFirst((RandoCheckId)CUSTOM_ITEM_PARAM,
                                                                            randoSaveCheck.randoItemId, wasObtained);
+                        // Preserve the source check for native pickups too. Item IDs and check IDs
+                        // overlap (Ocean token and Curiosity Shop are both 51), so the held-up
+                        // model must never advertise the delivered item ID as a different check.
+                        CUSTOM_ITEM_PARAM2 = CUSTOM_ITEM_PARAM;
 #endif
                         CUSTOM_ITEM_PARAM = randoItemId;
                     },
@@ -299,11 +302,8 @@ void Rando::MiscBehavior::CheckQueue() {
                                 randoItemId = (RandoItemId)CUSTOM_ITEM_PARAM;
                             }
 #ifdef COMBO_BUILD
-                            // ComboShip (#66): post-pickup CUSTOM_ITEM_PARAM is the item id, but the
-                            // foreign model resolves by check id, stashed in CUSTOM_ITEM_PARAM2.
-                            if (randoItemId == RI_COMBO_FOREIGN) {
-                                randoCheckId = (RandoCheckId)CUSTOM_ITEM_PARAM2;
-                            }
+                            // The original check remains authoritative for every held-up model.
+                            randoCheckId = (RandoCheckId)CUSTOM_ITEM_PARAM2;
 #endif
                         } else {
                             auto& randoSaveCheck = RANDO_SAVE_CHECKS[CUSTOM_ITEM_PARAM];

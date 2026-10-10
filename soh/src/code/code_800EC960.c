@@ -7,6 +7,21 @@
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 #include "soh/Enhancements/savestate_serialize.h"
 
+#ifdef COMBO_BUILD
+extern int Combo_SOHForeignSongPerformanceActive(void);
+// Native MM Soaring melody; a dedicated table preserves OoT's warp songs.
+static OcarinaNote sComboSoaringNotes[20] = {
+
+        { OCARINA_PITCH_F4, 18, 84, 0, 0, 0 },
+        { OCARINA_PITCH_B4, 18, 80, 0, 0, 0 },
+        { OCARINA_PITCH_D5, 36, 94, 0, 0, 0 },
+        { OCARINA_PITCH_F4, 18, 73, 0, 0, 0 },
+        { OCARINA_PITCH_B4, 18, 76, 0, 0, 0 },
+        { OCARINA_PITCH_D5, 108, 96, 2, 0, 0 },
+        { OCARINA_PITCH_NONE, 0, 90, 0, 0, 0 },
+};
+#endif
+
 // TODO: can these macros be shared between files? code_800F9280 seems to use
 // versions without any casts...
 #define Audio_DisableSeq(playerIdx, fadeOut) Audio_QueueCmdS32(0x83000000 | ((u8)playerIdx << 16), fadeOut)
@@ -1822,6 +1837,15 @@ void AudioOcarina_CheckSongsWithoutMusicStaff(void) {
                 sCurOcarinaSongWithoutMusicStaff[sOcarinaWithoutMusicStaffPos - 1] = sCurOcarinaPitch;
             }
 
+#ifdef COMBO_BUILD
+            extern int Combo_SOHRecognizeForeignSong(const u8*, int);
+            if (Combo_SOHRecognizeForeignSong(sCurOcarinaSongWithoutMusicStaff, sOcarinaWithoutMusicStaffPos)) {
+                sPlayedOcarinaSongIndexPlusOne = OCARINA_SONG_MINUET + 1;
+                sIsOcarinaInputEnabled = false;
+                sOcarinaFlags = 0;
+                return;
+            }
+#endif
             // This nested for-loop tests to see if the notes from the ocarina are identical
             // to any of the songIndex from sFirstOcarinaSongIndex to sLastOcarinaSongIndex
 
@@ -2037,6 +2061,12 @@ void AudioOcarina_SetPlaybackSong(s8 songIndexPlusOne, s8 playbackState) {
         sPlaybackSong = sScarecrowsLongSongNotes;
     }
 
+#ifdef COMBO_BUILD
+    if (Combo_SOHForeignSongPerformanceActive() && songIndexPlusOne == OCARINA_SONG_MINUET + 1) {
+        sPlaybackSong = sComboSoaringNotes;
+    }
+#endif
+
     sPlaybackState = playbackState;
     sPlaybackNoteTimer = 0;
     sPlaybackPitch = OCARINA_PITCH_NONE;
@@ -2089,7 +2119,11 @@ void AudioOcarina_PlaybackSong(void) {
                 }
                 return;
             } else {
-                sPlaybackNoteTimer -= nextNoteTimerStep;
+                // The graph thread may miss several audio tasks. Excess elapsed ticks
+                // must not wrap the unsigned next-note timer into a multi-year wait.
+                sPlaybackNoteTimer = nextNoteTimerStep < sPlaybackNoteTimer
+                                         ? sPlaybackNoteTimer - nextNoteTimerStep
+                                         : 0;
             }
 
             // Update volume

@@ -100,6 +100,7 @@ class Location {
     const std::string& GetName() const;
     const std::string& GetShortName() const;
     bool IsDungeon() const;
+    bool IsDungeonForCollectibleShuffle() const;
     bool IsOverworld() const;
     bool IsShop() const;
     bool IsVanillaCompletion() const;

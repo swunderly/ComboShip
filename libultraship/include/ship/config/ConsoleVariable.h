@@ -59,6 +59,9 @@ class ConsoleVariable {
      */
     std::shared_ptr<CVar> Get(const char* name);
 
+    /** Copy currently registered values without persisting or changing runtime state. */
+    nlohmann::json SnapshotPrefix(std::string_view prefix) const;
+
     /**
      * @brief Returns the integer value of a CVar, or the default if not found or wrong type.
      * @param name         CVar name.

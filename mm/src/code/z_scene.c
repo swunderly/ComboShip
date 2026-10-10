@@ -187,7 +187,9 @@ void Scene_CommandSpawnList(PlayState* play, SceneCmd* cmd) {
 }
 
 // SceneTableEntry Header Command 0x01: Actor List
+extern void MM_MissingSoulRoomReset(PlayState* play);
 void Scene_CommandActorList(PlayState* play, SceneCmd* cmd) {
+    MM_MissingSoulRoomReset(play);
     play->numSetupActors = cmd->actorList.num;
     play->setupActorList = Lib_SegmentedToVirtual(cmd->actorList.segment);
     play->actorCtx.halfDaysBit = 0;

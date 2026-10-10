@@ -366,6 +366,7 @@ int32_t SohMenu::EvalDisabledByIndex(int32_t i, const char** outReason) {
         w->ResetDisables();
     }
     w->preFunc(*w);
+    if (w->isHidden) return 2;
     bool d = (w->options && w->options->disabled);
     if (d && outReason) {
         *outReason = w->options->disabledTooltip.c_str();

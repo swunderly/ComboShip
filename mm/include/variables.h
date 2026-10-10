@@ -134,11 +134,11 @@ extern u8 gUpgradeShifts[8];
 extern u16 gUpgradeCapacities[][4];
 extern u32 gGsFlagsMask[];
 extern u32 gGsFlagsShift[];
-extern TexturePtr gItemIcons[131];
-extern u8 gItemSlots[77];
+extern TexturePtr gItemIcons[256];
+extern u8 gItemSlots[256];
 extern s16 gItemPrices[];
 extern u16 gSceneIdsPerRegion[11][27];
-extern u8 gPlayerFormItemRestrictions[PLAYER_FORM_MAX][114];
+extern u8 gPlayerFormItemRestrictions[PLAYER_FORM_MAX][256];
 
 extern s16 gPlayerFormObjectIds[PLAYER_FORM_MAX];
 extern ObjectId gObjectTableSize;

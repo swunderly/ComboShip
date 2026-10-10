@@ -91,6 +91,10 @@ void SohFileSelect_DismissPresetModal() {
 }
 
 void SohFileSelect_ShowPresetModal() {
+#if defined(__ANDROID__) && defined(COMBO_BUILD)
+    // New Android files go straight to name entry; presets remain optional in the menu.
+    return;
+#else
     if (CVarGetInteger(CVAR_GENERAL("HasSeenPresetModal"), 0)) {
         return;
     }
@@ -110,4 +114,5 @@ void SohFileSelect_ShowPresetModal() {
                              "Cool, show me the presets!", "Got it, just let me play!", SohFileSelect_ShowPresetMenu,
                              SohFileSelect_DismissPresetModal);
     }
+#endif
 }

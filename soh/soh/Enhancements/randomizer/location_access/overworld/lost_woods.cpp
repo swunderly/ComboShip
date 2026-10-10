@@ -59,7 +59,18 @@ void RegionTable_Init_LostWoods() {
         ENTRANCE(RR_GC_WOODS_WARP,            true),
         ENTRANCE(RR_LW_BRIDGE,                (logic->IsAdult && (CanPlantBean(RR_THE_LOST_WOODS, RG_LOST_WOODS_BRIDGE_BEAN_SOUL) || ctx->GetTrickOption(RT_LW_BRIDGE))) || logic->CanUse(RG_HOVER_BOOTS) || logic->CanUse(RG_LONGSHOT)),
         ENTRANCE(RR_ZR_FROM_SHORTCUT,         logic->HasItem(RG_SILVER_SCALE) || logic->CanUse(RG_IRON_BOOTS) || (ctx->GetTrickOption(RT_LOST_WOOD_NAVI_DIVE) && logic->IsChild && logic->HasItem(RG_BRONZE_SCALE) && logic->CanJumpslash())),
-        ENTRANCE(RR_LW_BEYOND_MIDO,           logic->IsChild || logic->CanUse(RG_SARIAS_SONG) || ctx->GetTrickOption(RT_LW_MIDO_BACKFLIP)),
+        ENTRANCE(RR_LW_BEYOND_MIDO,           logic->IsChild || logic->CanUse(RG_SARIAS_SONG) ||
+#ifdef COMBO_BUILD
+                 // OoTMM v32.3 trick_mido requires a first-person item for
+                 // the backflip setup; ammo and magic are not required.
+                 (ctx->GetTrickOption(RT_LW_MIDO_BACKFLIP) &&
+                  (logic->HasItem(RG_FAIRY_BOW) || logic->HasItem(RG_HOOKSHOT) ||
+                   logic->HasItem(RG_LONGSHOT) || logic->HasItem(RG_FIRE_ARROWS) ||
+                   logic->HasItem(RG_LIGHT_ARROWS)))
+#else
+                 ctx->GetTrickOption(RT_LW_MIDO_BACKFLIP)
+#endif
+        ),
         ENTRANCE(RR_LW_NEAR_SHORTCUTS_GROTTO, AnyAgeTime([]{return logic->BlastOrSmash();})),
     });   
     

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.26.0 FATAL_ERROR)
 
-set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
+if(WIN32)
+    set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
+endif()
 
 project(2ship LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard to use")
@@ -178,6 +180,13 @@ set(ALL_FILES
 ################################################################################
 add_library(${PROJECT_NAME} SHARED ${ALL_FILES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE MM_BUILD_DLL)
+# Private validation only; omitted from normal/public builds and all C translation units.
+option(COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS "Compile private default-off Adult MM runtime probes" OFF)
+if(COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS=1>)
+endif()
+
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
@@ -615,10 +624,26 @@ else()
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     
     find_package(Threads REQUIRED)
+    if(ANDROID)
+        find_package(Ogg CONFIG REQUIRED)
+    else()
     find_package(Ogg REQUIRED)
+    endif()
+    if(ANDROID)
+        find_package(Vorbis CONFIG REQUIRED)
+    else()
     find_package(Vorbis REQUIRED)
+    endif()
+    if(ANDROID)
+        find_package(Opus CONFIG REQUIRED)
+    else()
     find_package(Opus REQUIRED)
+    endif()
+    if(ANDROID)
+        find_package(OpusFile CONFIG REQUIRED)
+    else()
     find_package(OpusFile REQUIRED)
+    endif()
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
         "libultraship;"
 		"ZAPDLib;"
@@ -698,4 +723,9 @@ wut_create_wuhb(${PROJECT_NAME}
 
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/2s2h.rpx ${CMAKE_CURRENT_BINARY_DIR}/2s2h.wuhb DESTINATION . COMPONENT 2s2h)
 
+endif()
+
+if(ANDROID)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types;-Wno-int-conversion;-Wno-implicit-int>)
 endif()

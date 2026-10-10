@@ -43,7 +43,7 @@ void Context::DestroyInstance() {
 
 Context::~Context() {
     SPDLOG_TRACE("destruct context");
-    // ComboShip: null-guarded — a CreateUninitializedInstance() Context that never got Init*()
+    // ComboShip: null-guarded â€” a CreateUninitializedInstance() Context that never got Init*()
     // has no Window/Config, and destroying one segfaulted here.
     if (GetWindow() != nullptr) {
         GetWindow()->SaveWindowToConfig();
@@ -332,6 +332,14 @@ bool Context::InitAudio(AudioSettings settings) {
         return true;
     }
 
+#if defined(__ANDROID__) && defined(COMBO_BUILD)
+    // Both engines share this device. Target 48 ms of game PCM (including
+    // conversion history); MM additionally submits one game frame per wake.
+    // Use small SDL output blocks at the device's native rate. The desktop
+    // 4096-frame reservoir plus two 1024-frame OpenSL blocks delayed every SFX.
+    settings.SampleLength = 256;
+    settings.DesiredBuffered = 1536;
+#endif
     mAudio = std::make_shared<Audio>(settings);
 
     if (GetAudio() == nullptr) {
@@ -451,7 +459,7 @@ std::shared_ptr<ResourceManager> Context::GetResourceManager() const {
 }
 
 // ComboShip: swap the active ResourceManager (e.g. OOT<->MM on a game switch). The previous one is
-// NOT destroyed here — the caller keeps a reference so its archives/resource cache stay loaded, which
+// NOT destroyed here â€” the caller keeps a reference so its archives/resource cache stay loaded, which
 // lets each game keep its resources resident and avoids freeing data other globals still point into.
 void Context::SetResourceManager(std::shared_ptr<ResourceManager> resourceManager) {
     mResourceManager = resourceManager;
@@ -504,6 +512,10 @@ std::string Context::GetShortName() const {
 }
 
 std::string Context::GetAppBundlePath() {
+#if defined(__ANDROID__) && defined(COMBO_BUILD)
+    const char* comboRoot = std::getenv("COMBOSHIP_DATA_DIR");
+    if (comboRoot && comboRoot[0] == '/') return comboRoot;
+#endif
 #if defined(__ANDROID__)
     const char* externaldir = SDL_AndroidGetExternalStoragePath();
     if (externaldir != NULL) {
@@ -567,6 +579,10 @@ std::string Context::GetAppBundlePath() {
 }
 
 std::string Context::GetAppDirectoryPath(const std::string& appName) {
+#if defined(__ANDROID__) && defined(COMBO_BUILD)
+    const char* comboRoot = std::getenv("COMBOSHIP_DATA_DIR");
+    if (comboRoot && comboRoot[0] == '/') return comboRoot;
+#endif
 #if defined(__ANDROID__)
     const char* externaldir = SDL_AndroidGetExternalStoragePath();
     if (externaldir != NULL) {

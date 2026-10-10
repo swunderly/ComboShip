@@ -135,7 +135,9 @@ void SOH_TriggerComboGenerate(void);
 int SOH_PollComboFinalize(void);
 int SOH_GetComboGenPercent(void);
 int SOH_GetComboGenPhase(void);
+int SOH_GetComboGenResult(void); // 0 pending/none, 1 ready in both games, -1 failed
 uint8_t SOH_IsOnFileSelect(void);
+uint8_t SOH_CanGenerateComboSeed(void);
 // Open the combo menu on the Randomizer tab (file-select "Open Randomizer Settings").
 void SOH_OpenComboRandoSettings(void);
 // Reload a consolidated seed file (null/empty path = the remembered pending file). Returns 1 if loaded.

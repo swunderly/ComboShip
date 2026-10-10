@@ -24,6 +24,7 @@ void DrawChuchu();
 void DrawDeathArmos();
 void DrawDeepPython();
 void DrawDekuBaba();
+void DrawBioBabaSoul();
 void DrawDexihand();
 void DrawDinolfos();
 void DrawDodongo();

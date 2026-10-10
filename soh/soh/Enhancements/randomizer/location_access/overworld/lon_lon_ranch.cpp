@@ -7,15 +7,15 @@ void RegionTable_Init_LonLonRanch() {
     // clang-format off
     areaTable[RR_LON_LON_RANCH] = Region("Lon Lon Ranch", SCENE_LON_LON_RANCH, {
         //Events
-        EVENT_ACCESS(LOGIC_FREED_EPONA, logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->CanUse(RG_EPONAS_SONG) && logic->IsAdult && logic->AtDay),
-        EVENT_ACCESS(LOGIC_LINKS_COW,   logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->CanUse(RG_EPONAS_SONG) && logic->IsAdult && logic->AtDay),
+        EVENT_ACCESS(LOGIC_FREED_EPONA, (logic->HasItem(RG_CHILD_WALLET) && GetWalletCapacity() >= 50) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->CanUse(RG_EPONAS_SONG) && logic->IsAdult && logic->AtDay),
+        EVENT_ACCESS(LOGIC_LINKS_COW,   (logic->HasItem(RG_CHILD_WALLET) && GetWalletCapacity() >= 50) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->CanUse(RG_EPONAS_SONG) && logic->IsAdult && logic->AtDay),
     }, {
         //Locations
         LOCATION(RC_SONG_FROM_MALON,     	logic->IsChild && logic->Get(LOGIC_MALON_RETURNED_FROM_CASTLE) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->HasItem(RG_FAIRY_OCARINA) && logic->AtDay),
         LOCATION(RC_LLR_GS_TREE,         	logic->IsChild && logic->CanBonkTrees() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
-        LOCATION(RC_LLR_GS_RAIN_SHED,    	logic->IsChild && logic->CanGetNightTimeGS() && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
-        LOCATION(RC_LLR_GS_HOUSE_WINDOW, 	logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS()),
-        LOCATION(RC_LLR_GS_BACK_WALL,    	logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS()),
+        LOCATION(RC_LLR_GS_RAIN_SHED,    	logic->IsChild && logic->CanGetNightTimeGS(RC_LLR_GS_RAIN_SHED) && (logic->HasItem(RG_POWER_BRACELET) || logic->CanKillEnemy(RE_GOLD_SKULLTULA))),
+        LOCATION(RC_LLR_GS_HOUSE_WINDOW, 	logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS(RC_LLR_GS_HOUSE_WINDOW)),
+        LOCATION(RC_LLR_GS_BACK_WALL,    	logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS(RC_LLR_GS_BACK_WALL)),
         LOCATION(RC_LLR_FRONT_POT_1,     	logic->IsChild && logic->CanBreakPots()),
         LOCATION(RC_LLR_FRONT_POT_2,     	logic->IsChild && logic->CanBreakPots()),
         LOCATION(RC_LLR_FRONT_POT_3,     	logic->IsChild && logic->CanBreakPots()),
@@ -25,8 +25,8 @@ void RegionTable_Init_LonLonRanch() {
         LOCATION(RC_LLR_RAIN_SHED_POT_3, 	logic->IsChild && logic->CanBreakPots()),
         LOCATION(RC_LLR_NEAR_TREE_CRATE, 	logic->IsChild && logic->CanBreakCrates()),
         LOCATION(RC_LLR_TREE,            	logic->IsChild && logic->CanBonkTrees()),
-        LOCATION(RC_LLR_WONDER_BIG_FENCE,   logic->IsAdult && logic->CanUse(RG_EPONAS_SONG) && (logic->HasItem(RG_CHILD_WALLET) || logic->Get(LOGIC_FREED_EPONA))),
-        LOCATION(RC_LLR_WONDER_SMALL_FENCE, logic->IsAdult && logic->CanUse(RG_EPONAS_SONG) && (logic->HasItem(RG_CHILD_WALLET) || logic->Get(LOGIC_FREED_EPONA))),
+        LOCATION(RC_LLR_WONDER_BIG_FENCE,   logic->IsAdult && logic->CanUse(RG_EPONAS_SONG) && ((logic->HasItem(RG_CHILD_WALLET) && GetWalletCapacity() >= 10) || logic->Get(LOGIC_FREED_EPONA))),
+        LOCATION(RC_LLR_WONDER_SMALL_FENCE, logic->IsAdult && logic->CanUse(RG_EPONAS_SONG) && ((logic->HasItem(RG_CHILD_WALLET) && GetWalletCapacity() >= 10) || logic->Get(LOGIC_FREED_EPONA))),
     }, {
         //Exits
         ENTRANCE(RR_HYRULE_FIELD,     true),
@@ -38,7 +38,7 @@ void RegionTable_Init_LonLonRanch() {
 
     areaTable[RR_LLR_TALONS_HOUSE] = Region("LLR Talons House", SCENE_LON_LON_BUILDINGS, {}, {
         //Locations
-        LOCATION(RC_LLR_TALONS_CHICKENS,    logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->IsChild && logic->AtDay && logic->Get(LOGIC_TALON_RETURNED_FROM_CASTLE) && logic->HasItem(RG_POWER_BRACELET)),
+        LOCATION(RC_LLR_TALONS_CHICKENS,    (logic->HasItem(RG_CHILD_WALLET) && GetWalletCapacity() >= 10) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->IsChild && logic->AtDay && logic->Get(LOGIC_TALON_RETURNED_FROM_CASTLE) && logic->HasItem(RG_POWER_BRACELET)),
         LOCATION(RC_LLR_TALONS_HOUSE_POT_1, logic->CanBreakPots()),
         LOCATION(RC_LLR_TALONS_HOUSE_POT_2, logic->CanBreakPots()),
         LOCATION(RC_LLR_TALONS_HOUSE_POT_3, logic->CanBreakPots()),

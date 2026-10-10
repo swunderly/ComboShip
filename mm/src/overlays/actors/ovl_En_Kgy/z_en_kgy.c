@@ -5,6 +5,9 @@
  */
 
 #include "z_en_kgy.h"
+#ifdef COMBO_BUILD
+extern u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+#endif
 #include "objects/gameplay_keep/gameplay_keep.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
@@ -544,6 +547,9 @@ void func_80B41A48(EnKgy* this, PlayState* play) {
         this->unk_2E4--;
     } else {
         play->nextEntrance = play->setupExitList[ENKGY_GET_1F(&this->actor)];
+#ifdef COMBO_BUILD
+            play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+#endif
         play->transitionTrigger = TRANS_TRIGGER_START;
     }
 }

@@ -5,6 +5,11 @@
  */
 
 #include "z_en_bji_01.h"
+#ifdef COMBO_BUILD
+u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+int Combo_MMOrdinaryEntranceActive(void);
+int Combo_MMOrdinarySourceConfigured(u16 entrance);
+#endif
 #include "2s2h/GameInteractor/GameInteractor.h"
 
 #define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
@@ -344,6 +349,16 @@ void func_809CD634(EnBji01* this, PlayState* play) {
     AudioSfx_MuteBanks((1 << BANK_PLAYER) | (1 << BANK_ITEM) | (1 << BANK_ENV) | (1 << BANK_ENEMY) |
                        (1 << BANK_OCARINA) | (1 << BANK_VOICE));
     SEQCMD_DISABLE_PLAY_SEQUENCES(true);
+#ifdef COMBO_BUILD
+    // Pinned EnBji01_TelescopeER is an ordinary entrance, not a respawn.
+    if (Combo_MMOrdinarySourceConfigured(ENTRANCE(TERMINA_FIELD, 10))) {
+        play->nextEntrance = Combo_MMOrdinaryExitOverride(ENTRANCE(TERMINA_FIELD, 10));
+        play->transitionTrigger = TRANS_TRIGGER_START;
+        play->transitionType = TRANS_TYPE_FADE_BLACK;
+        this->actionFunc = EnBji01_DoNothing;
+        return;
+    }
+#endif
     play->nextEntrance = ENTRANCE(TERMINA_FIELD, 10); /* Telescope entrance */
     gSaveContext.respawn[RESPAWN_MODE_DOWN].entrance = play->nextEntrance;
     func_80169EFC(play); /* Load new entrance? */

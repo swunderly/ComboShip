@@ -46,6 +46,9 @@ typedef enum {
 #ifdef __cplusplus
 
 #include <map>
+#ifdef COMBO_BUILD
+#include <atomic>
+#endif
 #include <string>
 #include <functional>
 #include <vector>
@@ -81,11 +84,14 @@ class SaveManager {
 
     void Init();
     void InitFile(bool isDebug);
+#ifdef COMBO_BUILD
+    void InitNewFile(bool isDebug);
+#endif
     void SaveFile(int fileNum);
     void SaveSection(int fileNum, int sectionID, bool threaded);
     int GetSaveSectionID(std::string& name);
     void SaveGlobal();
-    void LoadFile(int fileNum);
+    bool LoadFile(int fileNum, bool initializeFullContext = false);
     bool SaveFile_Exist(int fileNum);
     void ThreadPoolWait();
 
@@ -153,6 +159,10 @@ class SaveManager {
     std::array<SaveFileMetaInfo, MaxFiles> fileMetaInfo;
 
   private:
+#ifdef COMBO_BUILD
+    enum class ComboLoadState { Ready, Loading, Blocked };
+    std::atomic<ComboLoadState> comboLoadState{ComboLoadState::Ready};
+#endif
     std::filesystem::path GetFileName(int fileNum);
     std::filesystem::path GetFileTempName(int fileNum);
     nlohmann::json saveBlock;
@@ -160,7 +170,7 @@ class SaveManager {
     void ConvertFromUnversioned();
     void CreateDefaultGlobal();
 
-    void SaveFileThreaded(int fileNum, SaveContext* saveContext, int sectionID);
+    void SaveFileThreaded(int fileNum, SaveContext* saveContext, int sectionID, std::string anchorJournal);
 
     void InitMeta(int slotNum);
     void StartupCheckAndInitMeta(int slotNum);
@@ -215,4 +225,15 @@ SaveFileMetaInfo* Save_GetSaveMetaInfo(int fileNum);
 void Save_CopyFile(int from, int to);
 void Save_DeleteFile(int fileNum);
 bool Save_Exist(int fileNum);
+#endif
+
+#ifdef COMBO_BUILD
+#ifdef __cplusplus
+extern "C" {
+#endif
+// Explicit result belongs to this attempted slot; no sticky last-success query.
+int Save_TryLoadFile(int fileNum, int initializeFullContext);
+#ifdef __cplusplus
+}
+#endif
 #endif

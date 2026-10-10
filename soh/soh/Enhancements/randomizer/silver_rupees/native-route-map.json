@@ -1,0 +1,1709 @@
+{
+  "revision": "41a2b7c0d7dbbb53fed928652f8271bc336c113f",
+  "access": [
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 1",
+      "condition": "true",
+      "nativeRegion": "RR_BOTW_B3_OOZE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_BOTTOM_OF_THE_WELL_SILVER_RUPEE_1"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 2",
+      "condition": "true",
+      "nativeRegion": "RR_BOTW_B3_OOZE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_BOTTOM_OF_THE_WELL_SILVER_RUPEE_2"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 3",
+      "condition": "true",
+      "nativeRegion": "RR_BOTW_B3_OOZE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_BOTTOM_OF_THE_WELL_SILVER_RUPEE_3"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 4",
+      "condition": "true",
+      "nativeRegion": "RR_BOTW_B3_OOZE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_BOTTOM_OF_THE_WELL_SILVER_RUPEE_4"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 5",
+      "condition": "true",
+      "nativeRegion": "RR_BOTW_B3_OOZE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_BOTTOM_OF_THE_WELL_SILVER_RUPEE_5"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Alcove Right",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_LIGHT_TRIAL_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_LIGHT_ALCOVE_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Alcove Left",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_LIGHT_TRIAL_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_LIGHT_ALCOVE_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Center Top",
+      "condition": "can_hookshot || climb_anywhere",
+      "nativeRegion": "RR_GANONS_CASTLE_LIGHT_TRIAL_BOULDER_ROOM",
+      "cpp": "logic->CanUse(RG_HOOKSHOT) || false",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_LIGHT_CENTER_TOP"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Center Right",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_LIGHT_TRIAL_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_LIGHT_CENTER_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Center Left",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_LIGHT_TRIAL_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_LIGHT_CENTER_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Center Right",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_FOREST_TRIAL_BEAMOS_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FOREST_CENTER_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Front",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_FOREST_TRIAL_BEAMOS_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FOREST_FRONT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Back Right",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_FOREST_TRIAL_BEAMOS_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FOREST_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Back Middle",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_FOREST_TRIAL_BEAMOS_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FOREST_BACK_MIDDLE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Center Left",
+      "condition": "is_adult || climb_anywhere || can_hookshot",
+      "nativeRegion": "RR_GANONS_CASTLE_FOREST_TRIAL_BEAMOS_ROOM",
+      "cpp": "logic->IsAdult || false || logic->CanUse(RG_HOOKSHOT)",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FOREST_CENTER_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Back Right",
+      "condition": "has_tunic_goron",
+      "nativeRegion": "RR_GANONS_CASTLE_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "(logic->CanUse(RG_GORON_TUNIC) || ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS))",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FIRE_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Left",
+      "condition": "has_tunic_goron",
+      "nativeRegion": "RR_GANONS_CASTLE_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "(logic->CanUse(RG_GORON_TUNIC) || ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS))",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FIRE_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Far Right",
+      "condition": "has_tunic_goron_strict && (can_lift_gold || climb_anywhere || hookshot_anywhere || glitch_megaflip)",
+      "nativeRegion": "RR_GANONS_CASTLE_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "logic->CanUse(RG_GORON_TUNIC) && (logic->CanUse(RG_GOLDEN_GAUNTLETS) || false || false || false)",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FIRE_FAR_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Front Right",
+      "condition": "has_tunic_goron",
+      "nativeRegion": "RR_GANONS_CASTLE_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "(logic->CanUse(RG_GORON_TUNIC) || ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS))",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FIRE_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Black Pillar",
+      "condition": "has_tunic_goron && can_lift_gold",
+      "nativeRegion": "RR_GANONS_CASTLE_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "(logic->CanUse(RG_GORON_TUNIC) || ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS)) && logic->CanUse(RG_GOLDEN_GAUNTLETS)",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_FIRE_BLACK_PILLAR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Center Midair",
+      "condition": "can_hookshot",
+      "nativeRegion": "RR_GANONS_CASTLE_SPIRIT_TRIAL_BEAMOS_ROOM",
+      "cpp": "logic->CanUse(RG_HOOKSHOT)",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_SPIRIT_CENTER_MIDAIR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Front Right",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_SPIRIT_TRIAL_BEAMOS_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_SPIRIT_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Center Bottom",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_SPIRIT_TRIAL_BEAMOS_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_SPIRIT_CENTER_BOTTOM"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Back Left",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_SPIRIT_TRIAL_BEAMOS_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_SPIRIT_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Back Right",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_SPIRIT_TRIAL_BEAMOS_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GANON_CASTLE_SILVER_RUPEE_SPIRIT_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Front Right",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPE_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Front Left",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPE_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Front Above",
+      "condition": "(is_adult && can_hookshot) || can_longshot",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM",
+      "cpp": "(logic->IsAdult && logic->CanUse(RG_HOOKSHOT)) || logic->CanUse(RG_LONGSHOT)",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPE_FRONT_ABOVE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Center",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPE_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Back",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPE_BACK"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Front Left",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_LAVA_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Front Right",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_LAVA_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Back Left",
+      "condition": "has_hover_boots || can_play_time || climb_anywhere || hookshot_anywhere || is_child",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_LAVA_ROOM",
+      "cpp": "logic->CanUse(RG_HOVER_BOOTS) || logic->CanUse(RG_SONG_OF_TIME) || false || false || logic->IsChild",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Back Center",
+      "condition": "(can_hookshot && (can_longshot || has_hover_boots || can_play_time || hookshot_anywhere || is_child)) || climb_anywhere",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_LAVA_ROOM",
+      "cpp": "(logic->CanUse(RG_HOOKSHOT) && (logic->CanUse(RG_LONGSHOT) || logic->CanUse(RG_HOVER_BOOTS) || logic->CanUse(RG_SONG_OF_TIME) || false || logic->IsChild)) || false",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Back Right",
+      "condition": "can_longshot || has_hover_boots || can_play_time || is_child || climb_anywhere || hookshot_anywhere",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_LAVA_ROOM",
+      "cpp": "logic->CanUse(RG_LONGSHOT) || logic->CanUse(RG_HOVER_BOOTS) || logic->CanUse(RG_SONG_OF_TIME) || logic->IsChild || false || false",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Maze Side",
+      "check": "Gerudo Training Grounds SR Lava Back Center",
+      "condition": "can_hookshot",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_CENTRAL_MAZE_RIGHT",
+      "cpp": "logic->CanUse(RG_HOOKSHOT)",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Maze Side",
+      "check": "Gerudo Training Grounds SR Lava Back Right",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_CENTRAL_MAZE_RIGHT",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 1",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_UNDERWATER",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_WATER_1"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 2",
+      "condition": "can_swim || can_hookshot",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_UNDERWATER",
+      "cpp": "logic->HasItem(RG_BRONZE_SCALE) || logic->CanUse(RG_HOOKSHOT)",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_WATER_2"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 3",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_UNDERWATER",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_WATER_3"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 4",
+      "condition": "can_swim || can_hookshot",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_UNDERWATER",
+      "cpp": "logic->HasItem(RG_BRONZE_SCALE) || logic->CanUse(RG_HOOKSHOT)",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_WATER_4"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 5",
+      "condition": "can_swim || hookshot_anywhere",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_UNDERWATER",
+      "cpp": "logic->HasItem(RG_BRONZE_SCALE) || false",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_WATER_5"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Hammer",
+      "check": "Gerudo Training Grounds SR Lava Back Center",
+      "condition": "soul_keese && soul_enemy(SOUL_ENEMY_TORCH_SLUG) && (can_use_sword || can_use_sticks || can_hammer || can_use_bow) && can_hookshot",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_HAMMER_ROOM",
+      "cpp": "true && true && (logic->CanUseSword() || logic->CanUse(RG_STICKS) || logic->CanUse(RG_MEGATON_HAMMER) || logic->CanUse(RG_FAIRY_BOW)) && logic->CanUse(RG_HOOKSHOT)",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Hammer",
+      "check": "Gerudo Training Grounds SR Lava Back Right",
+      "condition": "soul_keese && soul_enemy(SOUL_ENEMY_TORCH_SLUG) && (can_use_sword || can_use_sticks || can_hammer || can_use_bow) && can_hookshot",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_HAMMER_ROOM",
+      "cpp": "true && true && (logic->CanUseSword() || logic->CanUse(RG_STICKS) || logic->CanUse(RG_MEGATON_HAMMER) || logic->CanUse(RG_FAIRY_BOW)) && logic->CanUse(RG_HOOKSHOT)",
+      "virtualRegion": "RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Left",
+      "condition": "break_icicle_ice_cavern",
+      "nativeRegion": "RR_ICE_CAVERN_HUB",
+      "cpp": "(logic->CanUseSword() || logic->BlastOrSmash())",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_SCYTHE_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Center Left",
+      "condition": "true",
+      "nativeRegion": "RR_ICE_CAVERN_HUB",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_SCYTHE_CENTER_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Back",
+      "condition": "true",
+      "nativeRegion": "RR_ICE_CAVERN_HUB",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_SCYTHE_BACK"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Center Right",
+      "condition": "true",
+      "nativeRegion": "RR_ICE_CAVERN_HUB",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_SCYTHE_CENTER_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Midair",
+      "condition": "is_adult || climb_anywhere || hookshot_anywhere",
+      "nativeRegion": "RR_ICE_CAVERN_HUB",
+      "cpp": "logic->IsAdult || false || false",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_SCYTHE_MIDAIR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Back Left",
+      "condition": "true",
+      "nativeRegion": "RR_ICE_CAVERN_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_BLOCKS_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Back Right",
+      "condition": "true",
+      "nativeRegion": "RR_ICE_CAVERN_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_BLOCKS_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Center",
+      "condition": "true",
+      "nativeRegion": "RR_ICE_CAVERN_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_BLOCKS_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Alcove",
+      "condition": "has_blue_fire",
+      "nativeRegion": "RR_ICE_CAVERN_BLOCK_ROOM",
+      "cpp": "logic->BlueFire()",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_BLOCKS_ALCOVE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Front Left",
+      "condition": "true",
+      "nativeRegion": "RR_ICE_CAVERN_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_ICE_CAVERN_SILVER_RUPEE_BLOCKS_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 1",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_SPINNING_BLADES",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_1"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 2",
+      "condition": "can_hookshot || (is_adult && has_hover_boots) || climb_anywhere",
+      "nativeRegion": "RR_SHADOW_TEMPLE_SPINNING_BLADES",
+      "cpp": "logic->CanUse(RG_HOOKSHOT) || (logic->IsAdult && logic->CanUse(RG_HOVER_BOOTS)) || false",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_2"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 3",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_SPINNING_BLADES",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_3"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 4",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_SPINNING_BLADES",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_4"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 5",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_SPINNING_BLADES",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_5"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 1",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_LOWER_HUGE_PIT",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_PIT_1"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 2",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_LOWER_HUGE_PIT",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_PIT_2"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 3",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_LOWER_HUGE_PIT",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_PIT_3"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 4",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_LOWER_HUGE_PIT",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_PIT_4"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 5",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_LOWER_HUGE_PIT",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_PIT_5"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Back Left",
+      "condition": "has_lens && (can_hookshot || climb_anywhere)",
+      "nativeRegion": "RR_SHADOW_TEMPLE_INVISIBLE_SPIKES",
+      "cpp": "logic->CanUse(RG_LENS_OF_TRUTH) && (logic->CanUse(RG_HOOKSHOT) || false)",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Right",
+      "condition": "can_hookshot || climb_anywhere",
+      "nativeRegion": "RR_SHADOW_TEMPLE_INVISIBLE_SPIKES",
+      "cpp": "logic->CanUse(RG_HOOKSHOT) || false",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Center",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_INVISIBLE_SPIKES",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Front Left",
+      "condition": "can_hookshot || climb_anywhere",
+      "nativeRegion": "RR_SHADOW_TEMPLE_INVISIBLE_SPIKES",
+      "cpp": "logic->CanUse(RG_HOOKSHOT) || false",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Midair",
+      "condition": "has_lens && (can_hookshot || climb_anywhere) && (can_use_sword || can_use_sticks || can_hammer || has_hover_boots || longshot_anywhere)",
+      "nativeRegion": "RR_SHADOW_TEMPLE_INVISIBLE_SPIKES",
+      "cpp": "logic->CanUse(RG_LENS_OF_TRUTH) && (logic->CanUse(RG_HOOKSHOT) || false) && (logic->CanUseSword() || logic->CanUse(RG_STICKS) || logic->CanUse(RG_MEGATON_HAMMER) || logic->CanUse(RG_HOVER_BOOTS) || false)",
+      "virtualRegion": "RR_SR_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_MIDAIR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 1",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_NORTH",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_CHILD_1"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 2",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_NORTH",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_CHILD_2"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 3",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_NORTH",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_CHILD_3"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 4",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_NORTH",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_CHILD_4"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 5",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_NORTH",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_CHILD_5"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 1",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_SUN_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_SUN_1"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 2",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_SUN_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_SUN_2"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 3",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_SUN_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_SUN_3"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 4",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_SUN_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_SUN_4"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 5",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_SUN_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_SUN_5"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 1",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_BOULDERS",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_BOULDERS_1"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 2",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_BOULDERS",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_BOULDERS_2"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 3",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_BOULDERS",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_BOULDERS_3"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 4",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_BOULDERS",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_BOULDERS_4"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 5",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_BOULDERS",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_SPIRIT_TEMPLE_SILVER_RUPEE_BOULDERS_5"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Lower",
+      "check": "MQ Dodongo Cavern SR Beamos",
+      "condition": "true",
+      "nativeRegion": "RR_DODONGOS_CAVERN_MQ_STAIRS_LOWER",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_DODONGO_CAVERN_SILVER_RUPEE_BEAMOS"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Lower",
+      "check": "MQ Dodongo Cavern SR Crate",
+      "condition": "true",
+      "nativeRegion": "RR_DODONGOS_CAVERN_MQ_STAIRS_LOWER",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_DODONGO_CAVERN_SILVER_RUPEE_CRATE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Upper",
+      "check": "MQ Dodongo Cavern SR Upper Corner Low",
+      "condition": "true",
+      "nativeRegion": "RR_DODONGOS_CAVERN_MQ_STAIRS_UPPER",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_DODONGO_CAVERN_SILVER_RUPEE_UPPER_CORNER_LOW"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Upper",
+      "check": "MQ Dodongo Cavern SR Vines",
+      "condition": "true",
+      "nativeRegion": "RR_DODONGOS_CAVERN_MQ_STAIRS_UPPER",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_DODONGO_CAVERN_SILVER_RUPEE_VINES"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Upper",
+      "check": "MQ Dodongo Cavern SR Upper Corner High",
+      "condition": "true",
+      "nativeRegion": "RR_DODONGOS_CAVERN_MQ_STAIRS_UPPER",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_DODONGO_CAVERN_SILVER_RUPEE_UPPER_CORNER_HIGH"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire Under Pillar",
+      "condition": "event(GANON_MQ_FIRE_MONOLITH)",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "logic->Get(LOGIC_SR_GANON_MQ_FIRE_MONOLITH)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_UNDER_PILLAR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire Center-Left",
+      "condition": "has_tunic_goron_strict",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "logic->CanUse(RG_GORON_TUNIC)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_CENTER_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire Back-Left",
+      "condition": "has_tunic_goron_strict",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "logic->CanUse(RG_GORON_TUNIC)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire High Above Lava",
+      "condition": "has_tunic_goron",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "(logic->CanUse(RG_GORON_TUNIC) || ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS))",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_HIGH_ABOVE_LAVA"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire Front-Left",
+      "condition": "has_tunic_goron_strict",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_OPEN",
+      "cpp": "logic->CanUse(RG_GORON_TUNIC)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire Under Pillar",
+      "condition": "longshot_anywhere && has_tunic_goron_strict && can_lift_gold",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_BARRED",
+      "cpp": "false && logic->CanUse(RG_GORON_TUNIC) && logic->CanUse(RG_GOLDEN_GAUNTLETS)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_UNDER_PILLAR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire Center-Left",
+      "condition": "longshot_anywhere && has_tunic_goron_strict",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_BARRED",
+      "cpp": "false && logic->CanUse(RG_GORON_TUNIC)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_CENTER_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire Back-Left",
+      "condition": "longshot_anywhere && has_tunic_goron_strict",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_BARRED",
+      "cpp": "false && logic->CanUse(RG_GORON_TUNIC)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire High Above Lava",
+      "condition": "longshot_anywhere && has_tunic_goron_strict",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_BARRED",
+      "cpp": "false && logic->CanUse(RG_GORON_TUNIC)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_HIGH_ABOVE_LAVA"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire Front-Left",
+      "condition": "longshot_anywhere && has_tunic_goron_strict",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_FIRE_TRIAL_FROM_BARRED",
+      "cpp": "false && logic->CanUse(RG_GORON_TUNIC)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_FIRE_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Shallow Hole",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_WATER_TRIAL_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_WATER_SHALLOW_HOLE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Above Ground",
+      "condition": "is_adult || climb_anywhere || hookshot_anywhere",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_WATER_TRIAL_BLOCK_ROOM",
+      "cpp": "logic->IsAdult || false || false",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_WATER_ABOVE_GROUND"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Alcove",
+      "condition": "has_blue_fire && (is_adult || climb_anywhere || hookshot_anywhere)",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_WATER_TRIAL_BLOCK_ROOM",
+      "cpp": "logic->BlueFire() && (logic->IsAdult || false || false)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_WATER_ALCOVE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Deep Hole",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_WATER_TRIAL_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_WATER_DEEP_HOLE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Under Alcove",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_WATER_TRIAL_BLOCK_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_WATER_UNDER_ALCOVE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Entrance Side",
+      "check": "MQ Ganon Castle SR Shadow Front-Right",
+      "condition": "event(GANON_MQ_SHADOW_PROGRESSION_FROM_ENTRANCE)",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_SHADOW_TRIAL_STARTING_LEDGE",
+      "cpp": "logic->Get(LOGIC_SR_GANON_MQ_SHADOW_PROGRESSION_FROM_ENTRANCE)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_SHADOW_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Entrance Side",
+      "check": "MQ Ganon Castle SR Shadow Front-Center",
+      "condition": "event(GANON_MQ_SHADOW_PROGRESSION_FROM_ENTRANCE)",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_SHADOW_TRIAL_STARTING_LEDGE",
+      "cpp": "logic->Get(LOGIC_SR_GANON_MQ_SHADOW_PROGRESSION_FROM_ENTRANCE)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_SHADOW_FRONT_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 1",
+      "check": "MQ Ganon Castle SR Shadow Middle",
+      "condition": "true",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_SHADOW_TRIAL_BEAMOS_TORCH",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_SHADOW_MIDDLE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 1",
+      "check": "MQ Ganon Castle SR Shadow Front-Right",
+      "condition": "has_lens || longshot_anywhere",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_SHADOW_TRIAL_BEAMOS_TORCH",
+      "cpp": "logic->CanUse(RG_LENS_OF_TRUTH) || false",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_SHADOW_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 1",
+      "check": "MQ Ganon Castle SR Shadow Front-Center",
+      "condition": "has_lens",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_SHADOW_TRIAL_BEAMOS_TORCH",
+      "cpp": "logic->CanUse(RG_LENS_OF_TRUTH)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_SHADOW_FRONT_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 2",
+      "check": "MQ Ganon Castle SR Shadow Back-Left",
+      "condition": "has_lens || hookshot_anywhere",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_SHADOW_TRIAL_FAR_SIDE",
+      "cpp": "logic->CanUse(RG_LENS_OF_TRUTH) || false",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_SHADOW_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 2",
+      "check": "MQ Ganon Castle SR Shadow Back-Center",
+      "condition": "has_lens",
+      "nativeRegion": "RR_GANONS_CASTLE_MQ_SHADOW_TRIAL_FAR_SIDE",
+      "cpp": "logic->CanUse(RG_LENS_OF_TRUTH)",
+      "virtualRegion": "RR_SR_MQ_GANON_CASTLE_SILVER_RUPEE_SHADOW_BACK_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Center",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Front",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_PLATFORMS_UNLIT_TORCH",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_PLATFORMS_UNLIT_TORCH",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Center",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_PLATFORMS_UNLIT_TORCH",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_PLATFORMS_UNLIT_TORCH",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_PLATFORMS_UNLIT_TORCH",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Front",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_PLATFORMS_UNLIT_TORCH",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_LEDGE_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_LEDGE_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Center",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_LEDGE_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_LEDGE_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_LEDGE_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_LEDGE_SIDE_PLATFORMS",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_SWITCH_LEDGE",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_SWITCH_LEDGE",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Center",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_SWITCH_LEDGE",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_SWITCH_LEDGE",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_SWITCH_LEDGE",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_SWITCH_LEDGE",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_FRONT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Water Room",
+      "check": "MQ Gerudo Training Grounds SR Water Top-Left",
+      "condition": "has_iron_boots && (can_swim || can_hookshot) && has_tunic_zora && has_fire",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_UNDERWATER",
+      "cpp": "logic->CanUse(RG_IRON_BOOTS) && (logic->HasItem(RG_BRONZE_SCALE) || logic->CanUse(RG_HOOKSHOT)) && (logic->CanUse(RG_ZORA_TUNIC) || ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS)) && logic->HasFireSource()",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_WATER_TOP_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Water Room",
+      "check": "MQ Gerudo Training Grounds SR Water Center",
+      "condition": "has_iron_boots && (can_swim || longshot_anywhere) && has_tunic_zora && has_fire",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_UNDERWATER",
+      "cpp": "logic->CanUse(RG_IRON_BOOTS) && (logic->HasItem(RG_BRONZE_SCALE) || false) && (logic->CanUse(RG_ZORA_TUNIC) || ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS)) && logic->HasFireSource()",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_WATER_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Water Room",
+      "check": "MQ Gerudo Training Grounds SR Water Bottom-Right",
+      "condition": "has_iron_boots && (can_swim || can_hookshot) && has_tunic_zora && has_fire",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_UNDERWATER",
+      "cpp": "logic->CanUse(RG_IRON_BOOTS) && (logic->HasItem(RG_BRONZE_SCALE) || logic->CanUse(RG_HOOKSHOT)) && (logic->CanUse(RG_ZORA_TUNIC) || ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS)) && logic->HasFireSource()",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_WATER_BOTTOM_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Top Right",
+      "condition": "event(GTG_MQ_SLOPES_STALAGMITES)",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_BOULDER_ROOM",
+      "cpp": "logic->Get(LOGIC_SR_GTG_MQ_SLOPES_STALAGMITES)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPES_TOP_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Middle",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPES_MIDDLE"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Front",
+      "condition": "can_longshot",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_BOULDER_ROOM",
+      "cpp": "logic->CanUse(RG_LONGSHOT)",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPES_FRONT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Front-Left",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPES_FRONT_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Front-Right",
+      "condition": "true",
+      "nativeRegion": "RR_GERUDO_TRAINING_GROUND_MQ_BOULDER_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_SLOPES_FRONT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 1",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_B2_SPINNING_BLADE_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_1"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 2",
+      "condition": "can_hookshot || (is_adult && has_hover_boots) || climb_anywhere",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_B2_SPINNING_BLADE_ROOM",
+      "cpp": "logic->CanUse(RG_HOOKSHOT) || (logic->IsAdult && logic->CanUse(RG_HOVER_BOOTS)) || false",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_2"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 3",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_B2_SPINNING_BLADE_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_3"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 4",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_B2_SPINNING_BLADE_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_4"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 5",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_B2_SPINNING_BLADE_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SCYTHE_5"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 1",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_GROUND_1"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 2",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_GROUND_2"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 3",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_GROUND_3"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 4",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_GROUND_4"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 5",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_GROUND_5"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 6",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_GROUND_6"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 7",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_GROUND_7"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 8",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_GROUND_8"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 9",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_GROUND_9"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Time Block",
+      "condition": "(can_play_time && is_adult) || hookshot_anywhere || (is_child && climb_anywhere)",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_INVISIBLE_BLADES_ROOM",
+      "cpp": "(logic->CanUse(RG_SONG_OF_TIME) && logic->IsAdult) || false || (logic->IsChild && false)",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_INVISIBLE_BLADES_TIME_BLOCK"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Back",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_LOWER_HUGE_PIT",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_PIT_BACK"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Midair Low",
+      "condition": "can_longshot",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_LOWER_HUGE_PIT",
+      "cpp": "logic->CanUse(RG_LONGSHOT)",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_PIT_MIDAIR_LOW"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Midair High",
+      "condition": "can_longshot",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_LOWER_HUGE_PIT",
+      "cpp": "logic->CanUse(RG_LONGSHOT)",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_PIT_MIDAIR_HIGH"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Right",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_LOWER_HUGE_PIT",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_PIT_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Front",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_LOWER_HUGE_PIT",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_PIT_FRONT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Northwest Corner",
+      "condition": "(has_lens && can_hookshot) || hookshot_anywhere || climb_anywhere",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "(logic->CanUse(RG_LENS_OF_TRUTH) && logic->CanUse(RG_HOOKSHOT)) || false || false",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_NORTHWEST_CORNER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Southwest Wall",
+      "condition": "can_hookshot || climb_anywhere",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "logic->CanUse(RG_HOOKSHOT) || false",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_SOUTHWEST_WALL"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes West Midair",
+      "condition": "(can_hookshot && has_lens) || longshot_anywhere",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "(logic->CanUse(RG_HOOKSHOT) && logic->CanUse(RG_LENS_OF_TRUTH)) || false",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_WEST_MIDAIR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Ceiling",
+      "condition": "(is_adult && (((has_lens && can_hookshot) && (event(SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_ICE_PLATFORMS) || event(SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_REDEADS_CLEAR))) || hookshot_anywhere)) || can_longshot",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "(logic->IsAdult && (((logic->CanUse(RG_LENS_OF_TRUTH) && logic->CanUse(RG_HOOKSHOT)) && (logic->Get(LOGIC_SR_SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_ICE_PLATFORMS) || logic->Get(LOGIC_SR_SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_REDEADS_CLEAR))) || false)) || logic->CanUse(RG_LONGSHOT)",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_CEILING"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Center Ground",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_CENTER_GROUND"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Center Midair",
+      "condition": "(is_adult && can_hookshot) || can_longshot",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "(logic->IsAdult && logic->CanUse(RG_HOOKSHOT)) || logic->CanUse(RG_LONGSHOT)",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_CENTER_MIDAIR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes South Midair",
+      "condition": "(is_adult && can_hookshot) || can_longshot",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "(logic->IsAdult && logic->CanUse(RG_HOOKSHOT)) || logic->CanUse(RG_LONGSHOT)",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_SOUTH_MIDAIR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes East Ground",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_EAST_GROUND"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Northeast Wall",
+      "condition": "hookshot_anywhere || (has_lens && can_longshot)",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "false || (logic->CanUse(RG_LENS_OF_TRUTH) && logic->CanUse(RG_LONGSHOT))",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_NORTHEAST_WALL"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes East Wall",
+      "condition": "can_hookshot || climb_anywhere",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_ROOM",
+      "cpp": "logic->CanUse(RG_HOOKSHOT) || false",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_EAST_WALL"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes West Midair",
+      "condition": "true",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_PLATFORM",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_WEST_MIDAIR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes Ceiling",
+      "condition": "(has_lens && can_hookshot) || hookshot_anywhere",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_PLATFORM",
+      "cpp": "(logic->CanUse(RG_LENS_OF_TRUTH) && logic->CanUse(RG_HOOKSHOT)) || false",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_CEILING"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes Center Midair",
+      "condition": "can_hookshot",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_PLATFORM",
+      "cpp": "logic->CanUse(RG_HOOKSHOT)",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_CENTER_MIDAIR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes South Midair",
+      "condition": "can_hookshot && event(SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_ICE_PLATFORMS)",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_PLATFORM",
+      "cpp": "logic->CanUse(RG_HOOKSHOT) && logic->Get(LOGIC_SR_SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_ICE_PLATFORMS)",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_SOUTH_MIDAIR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes Northeast Wall",
+      "condition": "has_hover_boots || can_jump_slash || glitch_megaflip",
+      "nativeRegion": "RR_SHADOW_TEMPLE_MQ_FLOOR_SPIKES_PLATFORM",
+      "cpp": "logic->CanUse(RG_HOVER_BOOTS) || (logic->CanUseSword() || logic->CanUse(RG_STICKS) || logic->CanUse(RG_MEGATON_HAMMER)) || false",
+      "virtualRegion": "RR_SR_MQ_SHADOW_TEMPLE_SILVER_RUPEE_SPIKES_NORTHEAST_WALL"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple",
+      "check": "MQ Spirit Temple SR Lobby Rock Right",
+      "condition": "has_explosives_or_hammer",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_FOYER",
+      "cpp": "logic->BlastOrSmash()",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_LOBBY_ROCK_RIGHT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple",
+      "check": "MQ Spirit Temple SR Lobby Rock Left",
+      "condition": "has_explosives_or_hammer",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_FOYER",
+      "cpp": "logic->BlastOrSmash()",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_LOBBY_ROCK_LEFT"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Lower",
+      "check": "MQ Spirit Temple SR Lobby In Water",
+      "condition": "can_hammer",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_BEHIND_GEYSER",
+      "cpp": "logic->CanUse(RG_MEGATON_HAMMER)",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_LOBBY_IN_WATER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Lower",
+      "check": "MQ Spirit Temple SR Lobby After Water Near Stairs",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_BEHIND_GEYSER",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_LOBBY_AFTER_WATER_NEAR_STAIRS"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Lower",
+      "check": "MQ Spirit Temple SR Lobby After Water Near Door",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_BEHIND_GEYSER",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_LOBBY_AFTER_WATER_NEAR_DOOR"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Bottom",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_BIG_WALL_BASE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_ADULT_BOTTOM"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Bottom-Center",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_BIG_WALL_BASE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_ADULT_BOTTOM_CENTER"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Center-Top",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_BIG_WALL_BASE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_ADULT_CENTER_TOP"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Top",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_BIG_WALL_BASE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_ADULT_TOP"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Skulltula",
+      "condition": "true",
+      "nativeRegion": "RR_SPIRIT_TEMPLE_MQ_BIG_WALL_BASE",
+      "cpp": "true",
+      "virtualRegion": "RR_SR_MQ_SPIRIT_TEMPLE_SILVER_RUPEE_ADULT_SKULLTULA"
+    }
+  ],
+  "excludedCapabilities": [
+    "climb_anywhere",
+    "hookshot_anywhere",
+    "longshot_anywhere",
+    "glitch_megaflip",
+    "OOT_MQ_GTG_FLAMES",
+    "OOT_ICE_CAVERN_ICICLES_STICKS"
+  ],
+  "notes": [
+    "Enemy soul shuffle is unavailable in the APK; source soul requirements resolve true with that upstream setting disabled.",
+    "MQ Ganon Shadow Area1 is native Beamos Torch ledge: MOVING-to-BEAMOS is unconditional; front rupees need lens for return to moving platform; EyeSwitchChest anchors Area2 to native FAR_SIDE. Enabled exits explicitly port source events; native disabled exits retained."
+  ]
+}

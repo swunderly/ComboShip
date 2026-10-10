@@ -3,6 +3,7 @@
 
 #include <libultraship/libultra.h>
 #include "global.h"
+#include "soh/Enhancements/Restorations/ShadowDoorUnload.h"
 
 #define ENHOLL_GET_TYPE(thisx)          PARAMS_GET_U((thisx)->params, 6, 3)
 #define ENHOLL_GET_SWITCH_FLAG(thisx)   PARAMS_GET_U((thisx)->params, 0, 6)
@@ -43,6 +44,7 @@ typedef struct EnHoll {
     /* 0x014E */ u8 side;
     /* 0x014F */ u8 resetBgCoverAlpha;
     /* 0x0150 */ EnHollActionFunc actionFunc;
-} EnHoll; // size = 0x0154
+    /* SOH */ ShadowDoorUnloadState shadowDoorUnload;
+} EnHoll;
 
 #endif

@@ -37,6 +37,11 @@ void Grotto_ForceRegularVoidOut(void);
 void Grotto_SanitizeEntranceType(void);
 s16 Grotto_GetRenamedGrottoIndexFromOriginal(s8 content, s8 scene);
 s8 Grotto_CurrentGrotto();
+#ifdef COMBO_BUILD
+// Read-only native identity preflight, then explicit in-memory tracking commit.
+int Grotto_GetComboNativeLoadInfo(int offset,GrottoLoadInfo* out);
+int Grotto_SetComboNativeArrival(int offset,int returning);
+#endif
 #ifdef __cplusplus
 };
 #endif

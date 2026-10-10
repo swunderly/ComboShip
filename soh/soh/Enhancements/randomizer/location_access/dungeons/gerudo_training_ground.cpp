@@ -1,4 +1,5 @@
 #include "soh/Enhancements/randomizer/location_access.h"
+#include "soh/Enhancements/randomizer/silver_rupees/SilverLogic.h"
 #include "soh/Enhancements/randomizer/entrance.h"
 #include "soh/Enhancements/randomizer/dungeon.h"
 
@@ -40,7 +41,7 @@ void RegionTable_Init_GerudoTrainingGround() {
 
     areaTable[RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM] = Region("Gerudo Training Ground Boulder Room", SCENE_GERUDO_TRAINING_GROUND, {}, {}, {
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_SAND_ROOM,        true),
-        ENTRANCE(RR_GERUDO_TRAINING_GROUND_HEAVY_BLOCK_ROOM, AnyAgeTime([]{return logic->CanUse(logic->IsAdult ? RG_HOOKSHOT : RG_LONGSHOT) || ctx->GetTrickOption(RT_GTG_WITHOUT_HOOKSHOT);})),
+        ENTRANCE(RR_GERUDO_TRAINING_GROUND_HEAVY_BLOCK_ROOM, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_SLOPES, AnyAgeTime([]{return logic->CanUse(logic->IsAdult ? RG_HOOKSHOT : RG_LONGSHOT) || ctx->GetTrickOption(RT_GTG_WITHOUT_HOOKSHOT);}))),
     });
 
     areaTable[RR_GERUDO_TRAINING_GROUND_CENTRAL_MAZE] = Region("Gerudo Training Ground Central Maze", SCENE_GERUDO_TRAINING_GROUND, {}, {
@@ -148,7 +149,7 @@ void RegionTable_Init_GerudoTrainingGround() {
     });
 
     areaTable[RR_GERUDO_TRAINING_GROUND_LAVA_ROOM] = Region("Gerudo Training Ground Lava Room", SCENE_GERUDO_TRAINING_GROUND, {
-        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, logic->CanUse(RG_HOOKSHOT) && (logic->CanUse(RG_HOVER_BOOTS) || logic->CanUse(RG_SONG_OF_TIME) || logic->IsChild)),
+        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_LAVA, logic->CanUse(RG_HOOKSHOT) && (logic->CanUse(RG_HOVER_BOOTS) || logic->CanUse(RG_SONG_OF_TIME) || logic->IsChild))),
     }, {}, {
         //Exits
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_DINALFOS,              true),
@@ -165,7 +166,7 @@ void RegionTable_Init_GerudoTrainingGround() {
 
     areaTable[RR_GERUDO_TRAINING_GROUND_UNDERWATER] = Region("Gerudo Training Ground Underwater", SCENE_GERUDO_TRAINING_GROUND, {}, {
         //Locations
-        LOCATION(RC_GERUDO_TRAINING_GROUND_UNDERWATER_SILVER_RUPEE_CHEST, logic->CanUse(RG_SONG_OF_TIME) && logic->CanUse(RG_IRON_BOOTS) && logic->HasItem(RG_BRONZE_SCALE) && logic->WaterTimer() >= 24 && logic->HasItem(RG_OPEN_CHEST)),
+        LOCATION(RC_GERUDO_TRAINING_GROUND_UNDERWATER_SILVER_RUPEE_CHEST, (SilverLogic::Enabled() ? (SilverLogic::Puzzle(RG_RUPEE_SILVER_GTG_WATER) && logic->HasItem(RG_OPEN_CHEST)) : (logic->CanUse(RG_SONG_OF_TIME) && logic->CanUse(RG_IRON_BOOTS) && logic->HasItem(RG_BRONZE_SCALE) && logic->WaterTimer() >= 24 && logic->HasItem(RG_OPEN_CHEST)))),
     }, {
         //Exits
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_LAVA_ROOM, true),
@@ -263,7 +264,7 @@ void RegionTable_Init_GerudoTrainingGround() {
         }, {
         //Exits
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_SAND_ROOM,    true),
-        ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_STALFOS_ROOM, AnyAgeTime([]{return logic->CanUse(RG_LONGSHOT) || ctx->GetTrickOption(RT_GTG_MQ_WITHOUT_HOOKSHOT) || (ctx->GetTrickOption(RT_GTG_MQ_WITH_HOOKSHOT) && logic->IsAdult && logic->CanJumpslash() && logic->CanUse(RG_HOOKSHOT));})),
+        ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_STALFOS_ROOM, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_SLOPES, AnyAgeTime([]{return logic->CanUse(RG_LONGSHOT) || ctx->GetTrickOption(RT_GTG_MQ_WITHOUT_HOOKSHOT) || (ctx->GetTrickOption(RT_GTG_MQ_WITH_HOOKSHOT) && logic->IsAdult && logic->CanJumpslash() && logic->CanUse(RG_HOOKSHOT));}))),
     });
 
     areaTable[RR_GERUDO_TRAINING_GROUND_MQ_STALFOS_ROOM] = Region("Gerudo Training Ground MQ Stalfos Room", SCENE_GERUDO_TRAINING_GROUND, {
@@ -290,7 +291,13 @@ void RegionTable_Init_GerudoTrainingGround() {
     areaTable[RR_GERUDO_TRAINING_GROUND_MQ_ROOM_BEHIND_BLOCK] = Region("Gerudo Training Ground MQ Room Behind Block", SCENE_GERUDO_TRAINING_GROUND, {}, {
         //Locations
         //implies logic->CanKillEnemy(RE_SPIKE)
+#ifdef COMBO_BUILD
+        LOCATION(RC_GERUDO_TRAINING_GROUND_MQ_HEAVY_BLOCK_CHEST,
+                 (logic->CanUse(RG_MASTER_SWORD) || logic->CanUse(RG_BIGGORON_SWORD)) &&
+                 logic->CanKillEnemy(RE_FREEZARD) && logic->CanKillEnemy(RE_SPIKE) && logic->HasItem(RG_OPEN_CHEST)),
+#else
         LOCATION(RC_GERUDO_TRAINING_GROUND_MQ_HEAVY_BLOCK_CHEST, logic->CanKillEnemy(RE_FREEZARD) && logic->HasItem(RG_OPEN_CHEST)),
+#endif
     }, {
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_BEHIND_BLOCK, true),
     });
@@ -338,14 +345,18 @@ void RegionTable_Init_GerudoTrainingGround() {
         LOCATION(RC_GERUDO_TRAINING_GROUND_MQ_FLAME_CIRCLE_CHEST,        logic->CanHitSwitch(ED_BOMB_THROW) && logic->HasItem(RG_OPEN_CHEST)),
     }, {
         //Exits
-        ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_STATUE_ROOM,  AnyAgeTime([]{return logic->CanKillEnemy(RE_IRON_KNUCKLE);})),
-        ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_SWITCH_LEDGE, AnyAgeTime([]{return logic->CanKillEnemy(RE_IRON_KNUCKLE);})),
+        ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_STATUE_ROOM,  AnyAgeTime([]{return logic->CanKillEnemy(RE_IRON_KNUCKLE) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_TORCH_SLUG));})),
+        ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_SWITCH_LEDGE, AnyAgeTime([]{return logic->CanKillEnemy(RE_IRON_KNUCKLE) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_TORCH_SLUG));})),
     });
 
     areaTable[RR_GERUDO_TRAINING_GROUND_MQ_SWITCH_LEDGE] = Region("Gerudo Training Ground MQ Switch Ledge", SCENE_GERUDO_TRAINING_GROUND, {
         //Events
         EVENT_ACCESS(LOGIC_GTG_MQ_RIGHT_SIDE_SWITCH,   logic->CanUse(RG_MEGATON_HAMMER)),
-        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, logic->CanUse(RG_FIRE_ARROWS) && logic->CanUse(RG_HOVER_BOOTS)),
+#ifdef COMBO_BUILD
+        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_LAVA, logic->CanUse(RG_FIRE_ARROWS) && (logic->IsAdult || logic->CanUse(RG_HOVER_BOOTS)))),
+#else
+        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_LAVA, logic->CanUse(RG_FIRE_ARROWS) && logic->CanUse(RG_HOVER_BOOTS))),
+#endif
     }, {}, {
         //Exits
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_LEDGE_SIDE_PLATFORMS,  logic->CanUse(RG_FIRE_ARROWS)),
@@ -375,7 +386,7 @@ void RegionTable_Init_GerudoTrainingGround() {
 
     areaTable[RR_GERUDO_TRAINING_GROUND_MQ_PLATFORMS_UNLIT_TORCH] = Region("Gerudo Training Ground MQ Platforms Unlit Torch", SCENE_GERUDO_TRAINING_GROUND, {
         //Events
-        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, logic->HasFireSource() && logic->CanUse(RG_HOVER_BOOTS)),
+        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_LAVA, logic->HasFireSource() && logic->CanUse(RG_HOVER_BOOTS))),
     }, {}, {
         //Exits
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_UNDERWATER,           logic->Get(LOGIC_GTG_PLATFORM_SILVER_RUPEES)),
@@ -387,7 +398,7 @@ void RegionTable_Init_GerudoTrainingGround() {
     areaTable[RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SIDE_PLATFORMS] = Region("Gerudo Training Ground MQ Torch Side Platforms", SCENE_GERUDO_TRAINING_GROUND, {
         //Events
         //this torch shot is possible as child but tight and obtuse enough to be a trick
-        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, ((logic->CanUse(RG_FAIRY_BOW) && logic->IsAdult) || logic->CanUse(RG_FIRE_ARROWS)) && logic->CanUse(RG_HOVER_BOOTS)),
+        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_LAVA, ((logic->CanUse(RG_FAIRY_BOW) && logic->IsAdult) || logic->CanUse(RG_FIRE_ARROWS)) && logic->CanUse(RG_HOVER_BOOTS))),
     }, {}, {
         //Exits
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_LEDGE_SIDE_PLATFORMS,  ((logic->CanUse(RG_FAIRY_BOW) && logic->IsAdult) || logic->CanUse(RG_FIRE_ARROWS)) && (logic->CanUse(RG_HOVER_BOOTS) || (logic->IsAdult && ctx->GetTrickOption(RT_GTG_LAVA_JUMP)) || (ctx->GetTrickOption(RT_DAMAGE_BOOST_SIMPLE) && logic->CanUse(RG_BOMB_BAG) && logic->TakeDamage()))),
@@ -399,7 +410,7 @@ void RegionTable_Init_GerudoTrainingGround() {
     areaTable[RR_GERUDO_TRAINING_GROUND_MQ_UNDERWATER] = Region("Gerudo Training Ground MQ Underwater", SCENE_GERUDO_TRAINING_GROUND, {}, {
         //Locations
         //it is possible to snipe the stingers with bow or sling before dropping in, or just get really lucky, and avoid needing to take damage, but that might be trick worthy
-        LOCATION(RC_GERUDO_TRAINING_GROUND_MQ_UNDERWATER_SILVER_RUPEE_CHEST, (logic->HasFireSource() && logic->CanUse(RG_IRON_BOOTS) && logic->WaterTimer() >= 24 && logic->HasItem(RG_BRONZE_SCALE) && logic->TakeDamage()) && logic->HasItem(RG_OPEN_CHEST)),
+        LOCATION(RC_GERUDO_TRAINING_GROUND_MQ_UNDERWATER_SILVER_RUPEE_CHEST, (SilverLogic::Enabled() ? (SilverLogic::Puzzle(RG_RUPEE_SILVER_GTG_WATER) && logic->HasItem(RG_OPEN_CHEST)) : ((logic->HasFireSource() && logic->CanUse(RG_IRON_BOOTS) && logic->WaterTimer() >= 24 && logic->HasItem(RG_BRONZE_SCALE) && logic->TakeDamage()) && logic->HasItem(RG_OPEN_CHEST)))),
     }, {
         //Exits
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_PLATFORMS_UNLIT_TORCH, true),
@@ -408,7 +419,7 @@ void RegionTable_Init_GerudoTrainingGround() {
 
     areaTable[RR_GERUDO_TRAINING_GROUND_MQ_MAZE_RIGHT] = Region("Gerudo Training Ground MQ Maze Right", SCENE_GERUDO_TRAINING_GROUND, {
         //Events
-        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, logic->CanUse(RG_FIRE_ARROWS) && logic->CanUse(RG_HOVER_BOOTS)),
+        EVENT_ACCESS(LOGIC_GTG_PLATFORM_SILVER_RUPEES, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_LAVA, logic->CanUse(RG_FIRE_ARROWS) && logic->CanUse(RG_HOVER_BOOTS))),
     }, {
         //Locations
         LOCATION(RC_GERUDO_TRAINING_GROUND_MQ_MAZE_RIGHT_CENTRAL_CHEST, logic->HasItem(RG_OPEN_CHEST)),
@@ -431,14 +442,29 @@ void RegionTable_Init_GerudoTrainingGround() {
         //is logic->CanKillEnemy(RE_DINOLFOS, ED_CLOSE, true, 2, true) && logic->CanKillEnemy(RE_ARMOS, ED_CLOSE, true, 1, true) broken down to exclude sticks, as it takes too many to clear the room
         //Proper enemy kill room ammo logic is needed to handle this room
         //some combinations may be impossible without taking damage, keep an eye out for issues here
+#ifdef COMBO_BUILD
+        LOCATION(RC_GERUDO_TRAINING_GROUND_MQ_DINOLFOS_CHEST,
+                 (logic->CanUse(RG_MASTER_SWORD) || logic->CanUse(RG_BIGGORON_SWORD)) &&
+                 logic->CanKillEnemy(RE_DINOLFOS) && logic->CanKillEnemy(RE_ARMOS) &&
+                 logic->CanKillEnemy(RE_DODONGO) && logic->HasItem(RG_OPEN_CHEST)),
+#else
         LOCATION(RC_GERUDO_TRAINING_GROUND_MQ_DINOLFOS_CHEST,       (logic->CanUse(RG_MASTER_SWORD) || logic->CanUse(RG_BIGGORON_SWORD) || logic->CanUse(RG_MEGATON_HAMMER) || logic->CanUse(RG_FAIRY_BOW) || ((logic->CanUse(RG_NUTS) || logic->CanUse(RG_HOOKSHOT) || logic->CanUse(RG_BOOMERANG)) && (logic->CanUse(RG_KOKIRI_SWORD) || logic->CanUse(RG_FAIRY_SLINGSHOT)))) && logic->HasItem(RG_OPEN_CHEST)),
+#endif
         LOCATION(RC_GERUDO_TRAINING_GROUND_MQ_WONDER_DINOLFOS_ROOM, logic->CanUse(RG_FAIRY_BOW)),
     }, {
         //Exits
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_LOBBY,                true),
+#ifdef COMBO_BUILD
+        ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SIDE_PLATFORMS, AnyAgeTime([]{
+                 return (logic->CanUse(RG_MASTER_SWORD) || logic->CanUse(RG_BIGGORON_SWORD)) &&
+                        logic->CanKillEnemy(RE_DINOLFOS) && logic->CanKillEnemy(RE_ARMOS) &&
+                        logic->CanKillEnemy(RE_DODONGO);})),
+#else
         ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SIDE_PLATFORMS, AnyAgeTime([]{return logic->CanUse(RG_MASTER_SWORD) || logic->CanUse(RG_BIGGORON_SWORD) || logic->CanUse(RG_MEGATON_HAMMER) || logic->CanUse(RG_FAIRY_BOW) || ((logic->CanUse(RG_NUTS) || logic->CanUse(RG_HOOKSHOT) || logic->CanUse(RG_BOOMERANG)) && (logic->CanUse(RG_KOKIRI_SWORD) || logic->CanUse(RG_FAIRY_SLINGSHOT)));})),
+#endif
     });
 
 #pragma endregion
     // clang-format on
+    SilverLogic::RegisterRoutes(SCENE_GERUDO_TRAINING_GROUND);
 }

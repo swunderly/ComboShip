@@ -5,6 +5,10 @@
  */
 
 #include "z_dm_char08.h"
+#ifdef COMBO_BUILD
+u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+int Combo_MMOrdinaryEntranceActive(void);
+#endif
 #include "objects/object_kamejima/object_kamejima.h"
 #include "2s2h/BenPort.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
@@ -367,6 +371,17 @@ void func_80AAF8F4(DmChar08* this, PlayState* play) {
 }
 
 void func_80AAFA18(DmChar08* this, PlayState* play) {
+#ifdef COMBO_BUILD
+    // Pinned DmChar08_WarpToTemple bypasses the vanilla cutscene arrival.
+    if (Combo_MMOrdinaryEntranceActive()) {
+        play->nextEntrance = Combo_MMOrdinaryExitOverride(ENTRANCE(GREAT_BAY_TEMPLE, 0));
+        play->transitionTrigger = TRANS_TRIGGER_START;
+        play->transitionType = TRANS_TYPE_FADE_BLACK;
+        this->actionFunc = DmChar08_DoNothing;
+        return;
+    }
+#endif
+
     s16 nextCsId;
     s16 nextCsId2;
     s16 nextCsId1;
@@ -403,6 +418,9 @@ void func_80AAFB04(DmChar08* this, PlayState* play) {
 
     if ((fabsf(this->dyna.actor.xzDistToPlayer) < 200.0f) && (player->actor.world.pos.y > 0.0f)) {
         play->nextEntrance = ENTRANCE(ZORA_CAPE, 7);
+#ifdef COMBO_BUILD
+        play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+#endif
         play->transitionTrigger = TRANS_TRIGGER_START;
         Scene_SetExitFade(play);
         this->actionFunc = func_80AAFB94;

@@ -176,6 +176,11 @@ Option::Option(size_t key_, std::string name_, std::vector<std::string> options_
     contextSelection = defaultOption;
     hidden = defaultHidden;
     for (int i = 0; i < options.size(); i++) {
+#ifdef COMBO_BUILD
+        if (key == RSK_MASK_QUEST && i == RO_MASK_QUEST_VANILLA) {
+            continue; // Legacy saves retain ID 0; new seeds use owned masks.
+        }
+#endif
         optionsMap.emplace(i, options[i].c_str());
     }
     UIWidgets::LabelPositions labelPosition;

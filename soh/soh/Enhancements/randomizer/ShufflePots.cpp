@@ -73,7 +73,7 @@ uint8_t ObjTsubo_RandomizerHoldsItem(ObjTsubo* potActor, PlayState* play) {
     }
 
     RandomizerCheck rc = potIdentity->randomizerCheck;
-    uint8_t isDungeon = Rando::StaticData::GetLocation(rc)->IsDungeon();
+    uint8_t isDungeon = Rando::StaticData::GetLocation(rc)->IsDungeonForCollectibleShuffle();
     auto potSetting = RAND_GET_OPTION(RSK_SHUFFLE_POTS);
 
     // Don't pull randomized item if pot isn't randomized or is already checked

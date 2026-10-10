@@ -1,6 +1,7 @@
 #pragma once
 
 #include "randomizerTypes.h"
+#include "KokiriGrassPolicy.h"
 #include "z64save.h"
 #include "item_override.h"
 #include "hint.h"
@@ -38,6 +39,34 @@ class Context {
     Context();
     static std::shared_ptr<Context> CreateInstance();
     static std::shared_ptr<Context> GetInstance();
+#ifdef COMBO_BUILD
+    int GetKokiriSeedRevision() const { return mKokiriSeedRevision; }
+    bool SetKokiriSeedRevision(int revision) {
+        if (revision != 0 && revision != 1) return false;
+        mKokiriSeedRevision = revision;
+        return true;
+    }
+#endif
+    int GetKokiriGrassCatalogRevision() const {
+#ifdef COMBO_BUILD
+        return mKokiriGrassCatalogRevision;
+#else
+        return 0;
+#endif
+    }
+#ifdef COMBO_BUILD
+    bool SetKokiriGrassCatalogRevision(int revision) {
+        if (revision != 0 && revision != 1) return false;
+        mKokiriGrassCatalogRevision = revision;
+        return true;
+    }
+#endif
+    bool IsLocationInCurrentCatalog(RandomizerCheck rc) const {
+        return KokiriGrassCatalogCheckActive(rc, GetKokiriGrassCatalogRevision());
+    }
+    bool KokiriSharedGrassAgeAllowed(bool child, bool adult) const {
+        return Rando::KokiriSharedGrassAgeAllowed(child, adult, GetKokiriGrassCatalogRevision());
+    }
     void InitStaticData();
     Hint* GetHint(RandomizerHint hintKey);
     void AddHint(const RandomizerHint hintId, const Hint hint);
@@ -183,6 +212,10 @@ class Context {
 
   private:
     static std::weak_ptr<Context> mContext;
+#ifdef COMBO_BUILD
+    int mKokiriGrassCatalogRevision = 0;
+    int mKokiriSeedRevision = 0; // Each context/file starts in legacy mode until an explicit seed binds.
+#endif
     std::array<Hint, RH_MAX> hintTable = {};
     std::array<ItemLocation, RC_MAX> itemLocationTable = {};
     std::array<OptionValue, RSK_MAX> mOptions;

@@ -5,6 +5,10 @@
  */
 
 #include "z_en_warp_uzu.h"
+#ifdef COMBO_BUILD
+extern u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+extern int Combo_MMOrdinarySourceConfigured(u16 entrance);
+#endif
 #include "objects/object_warp_uzu/object_warp_uzu.h"
 
 #define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
@@ -102,6 +106,15 @@ void func_80A66278(EnWarpUzu* this, PlayState* play) {
 }
 
 void func_80A66384(EnWarpUzu* this, PlayState* play) {
+#ifdef COMBO_BUILD
+    if (Combo_MMOrdinarySourceConfigured(ENTRANCE(PIRATES_FORTRESS, 10))) {
+        play->nextEntrance = Combo_MMOrdinaryExitOverride(ENTRANCE(PIRATES_FORTRESS, 10));
+        play->transitionTrigger = TRANS_TRIGGER_START;
+        play->transitionType = TRANS_TYPE_FADE_BLACK;
+        this->actionFunc = EnWarpUzu_DoNothing;
+        return;
+    }
+#endif
     play->nextEntrance = ENTRANCE(PIRATES_FORTRESS, 10);
     gSaveContext.respawn[RESPAWN_MODE_DOWN].entrance = play->nextEntrance;
     func_80169EFC(play);

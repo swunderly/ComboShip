@@ -15,6 +15,9 @@
 #include "ship/window/gui/Fonts.h"
 #include "ship/window/gui/resource/GuiTextureFactory.h"
 #include "ship/window/gui/resource/GuiTexture.h"
+#ifdef __ANDROID__
+#include "ship/port/mobile/MobileImpl.h"
+#endif
 
 namespace Ship {
 #define TOGGLE_BTN ImGuiKey_F1
@@ -244,12 +247,18 @@ void Gui::DrawMenu() {
 
     ImGui::DockSpace(dockId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_NoDockingInCentralNode);
 
-    if (ImGui::IsKeyPressed(TOGGLE_BTN, false) || ImGui::IsKeyPressed(ImGuiKey_Escape, false) ||
+    const bool androidMenuRequest =
+#ifdef __ANDROID__
+        Mobile::ConsumeMenuRequest();
+#else
+        false;
+#endif
+    if (androidMenuRequest || ImGui::IsKeyPressed(TOGGLE_BTN, false) || ImGui::IsKeyPressed(ImGuiKey_Escape, false) ||
         (ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false) &&
          Ship::Context::GetRawInstance()->GetConsoleVariables()->GetInteger(CVAR_IMGUI_CONTROLLER_NAV, 0))) {
-        if ((ImGui::IsKeyPressed(ImGuiKey_Escape, false) || ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false)) && GetMenu()) {
+        if ((androidMenuRequest || ImGui::IsKeyPressed(ImGuiKey_Escape, false) || ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false)) && GetMenu()) {
             GetMenu()->ToggleVisibility();
-        } else if ((ImGui::IsKeyPressed(TOGGLE_BTN, false) || ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false)) &&
+        } else if ((androidMenuRequest || ImGui::IsKeyPressed(TOGGLE_BTN, false) || ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false)) &&
                    GetMenuBar()) {
             GetMenuBar()->ToggleVisibility();
         }
@@ -285,6 +294,9 @@ void Gui::DrawMenu() {
         windowIter.second->Draw();
     }
 
+#ifdef __ANDROID__
+    Mobile::UpdateMenuState(GetMenuOrMenubarVisible() || ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel));
+#endif
     ImGui::End();
 }
 
@@ -306,6 +318,9 @@ void Gui::StartFrame() {
     HandleMouseCapture();
     ImGuiBackendNewFrame();
     ImGuiWMNewFrame();
+#ifdef __ANDROID__
+    Mobile::ApplyMenuScale();
+#endif
     ImGui::NewFrame();
 }
 

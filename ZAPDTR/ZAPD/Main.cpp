@@ -199,6 +199,9 @@ extern "C" int zapd_report(int argc, char* argv[], std::atomic<size_t>* extractC
 
 	std::string buildMode = argv[1];
 	ZFileMode fileMode = ParseFileMode(buildMode, exporterSet);
+	// File extraction does not allocate directory workers. Use global segment/reference state.
+	if (fileMode == ZFileMode::Extract || fileMode == ZFileMode::BuildSourceFile)
+		Globals::Instance->singleThreaded = true;
 
 	if (fileMode == ZFileMode::Invalid)
 	{
@@ -727,6 +730,13 @@ int HandleExtract(ZFileMode fileMode, ExporterSet* exporterSet, std::atomic<size
 		}
 	}
 
+	// Directory extraction is handled above; file modes must also process their requested input.
+	if (!procFileModeSuccess &&
+	    (fileMode == ZFileMode::Extract || fileMode == ZFileMode::BuildSourceFile)) {
+		if (!Parse(Globals::Instance->inputPath, Globals::Instance->baseRomPath,
+		           Globals::Instance->outputPath, fileMode, 0))
+			return 1;
+	}
 	return 0;
 }
 

@@ -4,6 +4,11 @@
 #include "randomizerTypes.h"
 #include "soh/SohGui/UIWidgets.hpp"
 
+#ifdef COMBO_BUILD
+struct Actor;
+struct GetItemEntry;
+#endif
+
 namespace CheckTracker {
 
 class CheckTrackerSettingsWindow final : public Ship::GuiWindow {
@@ -61,4 +66,9 @@ void RecalculateAllAreaTotals();
 void SpoilAreaFromCheck(RandomizerCheck rc);
 void RecalculateAvailableChecks(RandomizerRegion startingRegion = RR_ROOT, RandoAgeTime startingAgeTime = RAT_NONE);
 void LoadFromPreset(const nlohmann::json& info);
+#ifdef COMBO_BUILD
+// Called at the actual randomized-model draw and explicit item-hint reveal.
+void RecordObservedItem(Actor* actor, const GetItemEntry& shownItem);
+void RecordHintedItem(RandomizerCheck rc);
+#endif
 } // namespace CheckTracker

@@ -25,6 +25,31 @@ void ObjOshihiki_Push(ObjOshihiki* this, PlayState* play);
 void ObjOshihiki_SetupFall(ObjOshihiki* this, PlayState* play);
 void ObjOshihiki_Fall(ObjOshihiki* this, PlayState* play);
 
+static s32 ObjOshihiki_IsFireTempleHoleBlock(ObjOshihiki* this, PlayState* play) {
+    // The original room-4 block has no switch or blockstop actor. Retain only
+    // this puzzle's landed position, without changing other push-block puzzles.
+    return play->sceneNum == SCENE_FIRE_TEMPLE && this->dyna.actor.room == 4 &&
+           (u16)this->dyna.actor.params == 0xFF42 && !ResourceMgr_IsSceneMasterQuest(play->sceneNum);
+}
+
+static s32 ObjOshihiki_IsFireTempleBlockSeatedPosition(ObjOshihiki* this, PlayState* play, Vec3f* pos);
+
+static void ObjOshihiki_RestoreFireTempleBlock(ObjOshihiki* this, PlayState* play) {
+    Vec3f* pos = &gSaveContext.ship.fireTempleBlockPos;
+    if (ObjOshihiki_IsFireTempleHoleBlock(this, play) && gSaveContext.ship.fireTempleBlockSeated == 1 &&
+        ObjOshihiki_IsFireTempleBlockSeatedPosition(this, play, pos)) {
+        this->dyna.actor.world.pos = this->dyna.actor.home.pos = *pos;
+    }
+}
+
+static void ObjOshihiki_SaveFireTempleBlock(ObjOshihiki* this, PlayState* play) {
+    if (ObjOshihiki_IsFireTempleHoleBlock(this, play) &&
+        ObjOshihiki_IsFireTempleBlockSeatedPosition(this, play, &this->dyna.actor.world.pos)) {
+        gSaveContext.ship.fireTempleBlockPos = this->dyna.actor.world.pos;
+        gSaveContext.ship.fireTempleBlockSeated = 1;
+    }
+}
+
 const ActorInit Obj_Oshihiki_InitVars = {
     ACTOR_OBJ_OSHIHIKI,
     ACTORCAT_PROP,
@@ -71,6 +96,44 @@ static Vec3f sColCheckPoints[5] = {
     { 29.99f, 1.01f, -29.99f }, { -29.99f, 1.01f, -29.99f }, { -29.99f, 1.01f, 29.99f },
     { 29.99f, 1.01f, 29.99f },  { 0.0f, 1.01f, 0.0f },
 };
+
+static s32 ObjOshihiki_IsFireTempleBlockSeatedPosition(ObjOshihiki* this, PlayState* play, Vec3f* pos) {
+    f32 sn;
+    f32 cs;
+    s32 i;
+
+    // Original Fire room 4: the lower floor spans x2340..2580/z280..400
+    // at y2080; the starting platform is y2260. Validate the actual native
+    // five probes, including triangle-edge tolerances, rather than accepting
+    // arbitrary positions below the starting platform.
+    if (!isfinite(pos->x) || !isfinite(pos->y) || !isfinite(pos->z) ||
+        fabsf(pos->y - 2080.0f) >= 0.001f || pos->x < 2340.0f || pos->x > 2580.0f ||
+        pos->z < 280.0f || pos->z > 400.0f) {
+        return 0;
+    }
+    sn = Math_SinS(this->dyna.actor.world.rot.y);
+    cs = Math_CosS(this->dyna.actor.world.rot.y);
+    for (i = 0; i < ARRAY_COUNT(sColCheckPoints); i++) {
+        CollisionPoly* floorPoly = NULL;
+        s32 floorBgId = BGCHECK_SCENE;
+        Vec3f offset;
+        Vec3f probe;
+        f32 floorHeight;
+        offset.x = sColCheckPoints[i].x * (this->dyna.actor.scale.x * 10.0f);
+        offset.y = sColCheckPoints[i].y * (this->dyna.actor.scale.y * 10.0f);
+        offset.z = sColCheckPoints[i].z * (this->dyna.actor.scale.z * 10.0f);
+        probe.x = pos->x + (offset.z * sn) + (offset.x * cs);
+        probe.y = 2260.0f + offset.y;
+        probe.z = pos->z + (offset.z * cs) - (offset.x * sn);
+        floorHeight = BgCheck_EntityRaycastFloor6(&play->colCtx, &floorPoly, &floorBgId,
+                                                &this->dyna.actor, &probe, 0.0f);
+        if (floorBgId != BGCHECK_SCENE || floorPoly == NULL || !isfinite(floorHeight) ||
+            fabsf(floorHeight - 2080.0f) >= 0.001f) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 static Vec2f sFaceVtx[] = {
     { -30.0f, 0.0f },
@@ -303,6 +366,7 @@ void ObjOshihiki_Init(Actor* thisx, PlayState* play2) {
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     this->dyna.actor.colChkInfo.mass = MASS_IMMOVABLE;
     ObjOshihiki_SetColor(this, play);
+    ObjOshihiki_RestoreFireTempleBlock(this, play);
     ObjOshihiki_ResetFloors(this);
     ObjOshihiki_SetupOnActor(this, play);
     // "(dungeon keep push-pull block)"
@@ -616,6 +680,7 @@ void ObjOshihiki_Fall(ObjOshihiki* this, PlayState* play) {
     }
     Actor_MoveXZGravity(&this->dyna.actor);
     if (ObjOshihiki_CheckGround(this, play)) {
+        ObjOshihiki_SaveFireTempleBlock(this, play);
         if (this->floorBgIds[this->highestFloor] == BGCHECK_SCENE) {
             ObjOshihiki_SetupOnScene(this, play);
         } else {

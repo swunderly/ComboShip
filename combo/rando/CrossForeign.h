@@ -287,7 +287,7 @@ inline nlohmann::json BuildForeignArray(const nlohmann::json& foreignArray, uint
         // suffix is the only thing that tells the player why.
         // Shared Items: the marker is an OOT item whose name is an effective family's ootName — the
         // family carries no suffix anywhere, disguise included (decision 3).
-        bool shared = false;
+        bool shared = (sharedMask & (1u << SF_OCARINA)) && IsOcarinaName(itemName);
         if (sharedMask != 0 && itemGame == "oot") {
             for (int i = 0; i < SF_COUNT; ++i) {
                 if ((sharedMask & (1u << i)) && itemName == SharedFamilyByIndex(i).ootName) {

@@ -4,6 +4,9 @@
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 #include "soh/Enhancements/randomizer/randomizer_entrance.h"
 #include "soh/ShipInit.hpp"
+#ifdef COMBO_BUILD
+#include "soh/SaveManager.h"
+#endif
 
 extern "C" {
 extern PlayState* gPlayState;
@@ -116,25 +119,55 @@ void HandleSaveMenu(bool* should, PlayState* play) {
                         YREG(8) = static_cast<int16_t>(pauseCtx->unk_204);
                         func_800F64E0(0);
                         break;
-                    case 1:
+                    case 1: {
                         // Reset (Dungeon) / Return to Spawn (Overworld)
                         Audio_PlaySoundGeneral(NA_SE_SY_PIECE_OF_HEART, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
                                                &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
                         Play_SaveSceneFlags(play);
+#ifdef COMBO_BUILD
+                        if (!Sram_TryOpenSave(gSaveContext.fileNum, 0)) {
+                            // Rejected same-slot disk data must not be overwritten by
+                            // later gameplay/autosave. Cancel the fade/restart and reopen
+                            // file select, with no exit/load/arrival hook for this attempt.
+                            pauseCtx->state = 0;
+                            R_UPDATE_RATE = 3;
+                            R_PAUSE_MENU_MODE = 0;
+                            play->state.running = false;
+                            SET_NEXT_GAMESTATE(&play->state, FileChoose_Init, FileChooseContext);
+                            return;
+                        }
+#else
                         Sram_OpenSave();
+#endif
                         pauseCtx->promptChoice = 0;
                         pauseCtx->unk_1EC = 7;
                         break;
-                    case 2:
+                    }
+                    case 2: {
                         // Reset to Spawn (Dungeon)
                         Audio_PlaySoundGeneral(NA_SE_SY_PIECE_OF_HEART, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
                                                &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
                         Play_SaveSceneFlags(play);
+#ifdef COMBO_BUILD
+                        if (!Sram_TryOpenSave(gSaveContext.fileNum, 0)) {
+                            // Rejected same-slot disk data must not be overwritten by
+                            // later gameplay/autosave. Cancel the fade/restart and reopen
+                            // file select, with no exit/load/arrival hook for this attempt.
+                            pauseCtx->state = 0;
+                            R_UPDATE_RATE = 3;
+                            R_PAUSE_MENU_MODE = 0;
+                            play->state.running = false;
+                            SET_NEXT_GAMESTATE(&play->state, FileChoose_Init, FileChooseContext);
+                            return;
+                        }
+#else
                         Sram_OpenSave();
+#endif
                         gSaveContext.ship.resetToSpawn = 1;
                         pauseCtx->promptChoice = 0;
                         pauseCtx->unk_1EC = 7;
                         break;
+                    }
                 }
             }
             break;

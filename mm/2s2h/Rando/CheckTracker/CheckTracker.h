@@ -10,6 +10,10 @@ namespace CheckTracker {
 
 void Init();
 void OnFileLoad();
+#ifdef COMBO_BUILD
+// Only call for a model or an unambiguous item name actually revealed by the game.
+void RecordSeenItem(RandoCheckId check, RandoItemId shownItem, uint8_t source = 1);
+#endif
 
 class CheckTrackerWindow : public Ship::GuiWindow {
   public:

@@ -6,6 +6,9 @@
 
 #include <libultraship/libultra.h>
 #include "global.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/CrossWarp/FaroresWind.h"
+#endif
 
 #include "overlays/actors/ovl_Bg_Heavy_Block/z_bg_heavy_block.h"
 #include "overlays/actors/ovl_Door_Shutter/z_door_shutter.h"
@@ -6000,6 +6003,9 @@ s32 Player_ActionHandler_13(Player* this, PlayState* play) {
 
         if (!Player_StartCsAction(play, this)) {
             if (this->unk_6AD == 4) {
+#ifdef COMBO_BUILD
+                if(this->itemAction==PLAYER_IA_FARORES_WIND)Combo_OotFaroreValidate();
+#endif
                 sp2C = Player_ActionToMagicSpell(this, this->itemAction);
                 if (sp2C >= 0) {
                     if ((sp2C != 3) || (gSaveContext.respawn[RESPAWN_MODE_TOP].data <= 0)) {
@@ -7370,7 +7376,12 @@ s32 Player_ActionHandler_2(Player* this, PlayState* play) {
             }
         } else if (CHECK_BTN_ALL(sControlInput->press.button, BTN_A) &&
                    !(this->stateFlags1 & PLAYER_STATE1_CARRYING_ACTOR) &&
-                   !(this->stateFlags2 & PLAYER_STATE2_UNDERWATER)) {
+                   (!(this->stateFlags2 & PLAYER_STATE2_UNDERWATER)
+#ifdef COMBO_BUILD
+                    // Match OoTMM Player.S: Iron Boots allow opening sunken chests.
+                    || (this->getItemId < GI_NONE && this->currentBoots == PLAYER_BOOTS_IRON)
+#endif
+                   )) {
             if (this->getItemId != GI_NONE) {
                 if (GameInteractor_Should(VB_OPEN_CHEST, true, interactedActor)) {
                     GetItemEntry giEntry;
@@ -10997,7 +11008,11 @@ void Player_UpdateInterface(PlayState* play, Player* this) {
                 } else if ((!(this->stateFlags1 & PLAYER_STATE1_CARRYING_ACTOR) || (heldActor == NULL)) &&
                            (interactRangeActor != NULL) &&
                            ((!sp1C && (this->getItemId == GI_NONE)) ||
-                            (this->getItemId < 0 && !(this->stateFlags1 & PLAYER_STATE1_IN_WATER)))) {
+                            (this->getItemId < 0
+#ifndef COMBO_BUILD
+                             && !(this->stateFlags1 & PLAYER_STATE1_IN_WATER)
+#endif
+                            ))) {
                     if (this->getItemId < 0) {
                         doAction = DO_ACTION_OPEN;
                     } else if ((interactRangeActor->id == ACTOR_BG_TOKI_SWD) && LINK_IS_ADULT) {
@@ -15162,6 +15177,9 @@ void Player_Action_8085063C(Player* this, PlayState* play) {
         s32 respawnData = gSaveContext.respawn[RESPAWN_MODE_TOP].data;
 
         if (play->msgCtx.choiceIndex == 0) { // Returns to FW
+#ifdef COMBO_BUILD
+            if(Combo_OotFaroreReturn(play))return;
+#endif
             gSaveContext.respawnFlag = 3;
             play->transitionTrigger = TRANS_TRIGGER_START;
             play->nextEntranceIndex = gSaveContext.respawn[RESPAWN_MODE_TOP].entranceIndex;
@@ -15173,6 +15191,9 @@ void Player_Action_8085063C(Player* this, PlayState* play) {
         if (play->msgCtx.choiceIndex == 1) { // Unsets FW
             gSaveContext.respawn[RESPAWN_MODE_TOP].data = -respawnData;
             gSaveContext.fw.set = 0;
+#ifdef COMBO_BUILD
+            Combo_OotFaroreDispel();
+#endif
             Sfx_PlaySfxAtPos(&gSaveContext.respawn[RESPAWN_MODE_TOP].pos, NA_SE_PL_MAGIC_WIND_VANISH);
         }
 
@@ -15288,6 +15309,9 @@ void Player_Action_808507F4(Player* this, PlayState* play) {
                 gSaveContext.fw.roomIndex = gSaveContext.respawn[RESPAWN_MODE_DOWN].roomIndex;
                 gSaveContext.fw.tempSwchFlags = gSaveContext.respawn[RESPAWN_MODE_DOWN].tempSwchFlags;
                 gSaveContext.fw.tempCollectFlags = gSaveContext.respawn[RESPAWN_MODE_DOWN].tempCollectFlags;
+#ifdef COMBO_BUILD
+                Combo_OotFaroreStorePoint(play);
+#endif
                 this->av2.actionVar2 = 2;
             }
         } else if (this->av1.actionVar1 >= 0) {
@@ -16643,3 +16667,13 @@ void Player_StartTalking(PlayState* play, Actor* actor) {
     F(sHeldItemButtonIsHeldDown)
 
 SHIP_SAVESTATE_DEFINE(Player, PLAYER_SHIP_SAVESTATE_FIELDS)
+
+#ifdef COMBO_BUILD
+void Combo_OotFaroreCancelReturn(PlayState* play) {
+ Player* player=GET_PLAYER(play);
+ play->transitionTrigger=TRANS_TRIGGER_OFF;
+ func_80853080(player,play);
+ func_8005B1A4(Play_GetCamera(play,0));
+ Audio_PlaySoundGeneral(NA_SE_SY_ERROR,&gSfxDefaultPos,4,&gSfxDefaultFreqAndVolScale,&gSfxDefaultFreqAndVolScale,&gSfxDefaultReverb);
+}
+#endif

@@ -3,6 +3,7 @@
 #include "ComboForeground.h"    // foreground game gates the OOT-only rows
 #include "ComboTrackerCommon.h" // OotActiveSlot + the SetTracker CVar/window lever
 #include "ComboWidgetStyle.h"
+#include "ComboMenuLayout.h"
 #include <fast/Fast3dGui.h> // the games' digit/icon textures live in the shared Fast3d cache
 #include <imgui.h>
 #include <libultraship/libultraship.h> // CVar bridge
@@ -368,7 +369,7 @@ void DrawTimersSharedPanel() {
             changed = true;
         }
         ComboMenu_PopButton();
-        ImGui::TextDisabled("One overlay for both games. Play time is each game's own saved time, added up.");
+        MenuTooltip("One overlay for both games. Play time is each game's own saved time, added up.");
 
         ImGui::SeparatorText("Rows");
         ComboMenu_PushCheckbox(theme);
@@ -400,13 +401,13 @@ void DrawTimersSharedPanel() {
             changed = true;
         }
         ComboMenu_PopCheckbox();
-        ImGui::TextDisabled("Hidden while Majora's Mask is the active game.");
+        MenuTooltip("OoT-only rows are hidden while Majora's Mask is the active game.");
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SeparatorText("Appearance");
         float scale = CVarGetFloat(kCvarScale, 1.0f);
         ComboMenu_PushSlider(theme);
-        if (ImGui::SliderFloat("Scale", &scale, 1.0f, 5.0f, "%.1fx")) {
+        if (ImGui::SliderFloat("Scale", &scale, 1.0f, 5.0f, "%.1fx", ImGuiSliderFlags_NoInput)) {
             CVarSetFloat(kCvarScale, std::clamp(scale, 1.0f, 5.0f));
             changed = true;
         }

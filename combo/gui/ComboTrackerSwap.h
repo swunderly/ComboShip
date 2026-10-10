@@ -1,12 +1,7 @@
 // combo/gui/ComboTrackerSwap.h
 //
-// ComboShip-owned: per-frame reconcile of the both-games tracker model. Each tracker kind has a
-// master enable (both games' windows show, each with its own ImGui identity/rect) and a
-// HideBackground option (only the foreground game's window draws). In HideBackground mode a
-// click-hold on the visible tracker's body momentarily also shows the dormant game's tracker
-// (peek; reverts on release). Per-game visibility CVars are DERIVED from this model every frame —
-// nothing here needs crash recovery. Reconciliation runs from the registered logic-only window
-// (drawn before either tracker — name-ordered Gui map).
+// Legacy enable migration and combined Triforce overlay. Main tracker visibility
+// and Android touch access are managed by ComboTrackerControls.
 #pragma once
 
 namespace ComboTracker {

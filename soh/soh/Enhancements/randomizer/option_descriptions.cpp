@@ -561,9 +561,8 @@ void Settings::CreateOptionDescriptions() {
     mOptionDescriptions[RSK_SHUFFLE_STONE_FAIRIES] = "Shuffle fairies from gossip stone locations.";
     mOptionDescriptions[RSK_SHUFFLE_BEAN_FAIRIES] = "Shuffle fairies from magic bean locations.";
     mOptionDescriptions[RSK_SHUFFLE_SONG_FAIRIES] =
-        "Shuffle fairy spots. These are spots where a big fairy is revealed by a song."
-        "\n"
-        "This excludes gossip stones and magic bean locations.";
+        // OoTMM fairySpotShuffleOot, packages/core/src/settings/data.ts (41a2b7c).
+        "Controls whether or not big fairies in fairy spots are shuffled (OoT). Play either Song of Storms or Sun's Song";
     mOptionDescriptions[RSK_SHUFFLE_BUTTERFLY_FAIRIES] = "Shuffle fairies from butterfly locations.";
     mOptionDescriptions[RSK_SHUFFLE_GRASS] = "Grass will drop a randomized item the first time it's cut and collected. "
                                              "Grass will have a different appearance when it holds a randomized item.\n"

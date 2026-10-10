@@ -5,6 +5,10 @@
  */
 
 #include "z_en_trt.h"
+#ifdef COMBO_BUILD
+extern u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+extern int Combo_MMOrdinarySourceConfigured(u16 entrance);
+#endif
 #include "objects/object_trt/object_trt.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
@@ -1097,6 +1101,9 @@ void EnTrt_ShopkeeperGone(EnTrt* this, PlayState* play) {
         } else {
             play->nextEntrance = ENTRANCE(SOUTHERN_SWAMP_POISONED, 5);
         }
+#ifdef COMBO_BUILD
+        play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+#endif
         play->transitionType = TRANS_TYPE_64;
         gSaveContext.nextTransitionType = TRANS_TYPE_64;
         play->transitionTrigger = TRANS_TRIGGER_START;

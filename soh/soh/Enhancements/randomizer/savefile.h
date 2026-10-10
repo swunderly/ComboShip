@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 void Randomizer_InitSaveFile();
+void Randomizer_RepairLegacyMaskInventory();
 
 #ifdef __cplusplus
 }

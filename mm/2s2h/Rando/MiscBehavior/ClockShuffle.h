@@ -33,6 +33,9 @@ void OnFileLoad();
 void SetTimeToHalfDayStart(int halfDayIndex);
 
 bool IsTimeOwnedForClockShuffle(s32 day, u16 time);
+// Selector steps skip unavailable half-days; reverse movement cannot pass its
+// starting time. Normalized ticks use 6 AM as zero, matching OoTMM.
+u32 SelectOwnedTime(u32 original, u32 current, u32 proposed, bool forward);
 std::string GetTimeDescriptionForMessage(s32 day, u16 time);
 
 } // namespace ClockShuffle

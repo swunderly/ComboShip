@@ -13,7 +13,7 @@
 #include <windows.h>
 #include <commdlg.h>
 #pragma comment(lib, "comdlg32") // GetOpenFileNameA — comboui doesn't otherwise link comdlg32
-#else
+#elif !defined(__ANDROID__)
 #include "portable-file-dialogs.h"
 #include <cstdlib>
 #endif
@@ -26,6 +26,8 @@ namespace ComboFilePicker {
 inline bool Available() {
 #ifdef _WIN32
     return true;
+#elif defined(__ANDROID__)
+    return false; // Setup uses the Android document picker.
 #else
     static const bool sAvailable = pfd::settings::available();
     return sAvailable;
@@ -49,6 +51,9 @@ inline std::string PickFile(const char* title, const char* winFilter, const std:
         return std::string(file);
     }
     return std::string();
+#elif defined(__ANDROID__)
+    (void)title; (void)winFilter; (void)pfdFilters;
+    return {};
 #else
     (void)winFilter;
     pfd::open_file dlg(title, "", pfdFilters);

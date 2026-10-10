@@ -29,6 +29,7 @@ class SohInputEditorWindow final : public Ship::GuiWindow {
     void DrawInputChip(const char* buttonName, ImVec4 color);
     void DrawAnalogPreview(const char* label, ImVec2 stick, float deadzone = 0, bool gyro = false);
     void DrawControllerSchema();
+    void DrawCameraControlPanel();
     bool TestingRumble();
 
   protected:
@@ -67,7 +68,6 @@ class SohInputEditorWindow final : public Ship::GuiWindow {
     void addButtonName(N64ButtonMask mask, const char* name);
     void DrawMapping(CustomButtonMap& mapping, float labelWidth, N64ButtonMask excludedButtons);
     void DrawOcarinaControlPanel();
-    void DrawCameraControlPanel();
     void DrawDpadControlPanel();
 
     int32_t mGameInputBlockTimer;

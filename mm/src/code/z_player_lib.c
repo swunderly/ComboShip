@@ -4,9 +4,19 @@
  */
 
 #include "global.h"
+static f32 sMeleeWeaponLengths[PLAYER_MELEEWEAPON_MAX] = {
+                    0.0f,    // PLAYER_MELEEWEAPON_NONE
+                    3000.0f, // PLAYER_MELEEWEAPON_SWORD_KOKIRI
+                    3000.0f, // PLAYER_MELEEWEAPON_SWORD_RAZOR
+                    4000.0f, // PLAYER_MELEEWEAPON_SWORD_GILDED
+                    5500.0f, // PLAYER_MELEEWEAPON_SWORD_TWO_HANDED
+                    -1.0f,   // PLAYER_MELEEWEAPON_DEKU_STICK
+                    2500.0f, // PLAYER_MELEEWEAPON_ZORA_BOOMERANG
+                };
 #include "2s2h/GameInteractor/GameInteractor.h"
 
 #include "objects/gameplay_keep/gameplay_keep.h"
+#include "2s2h/Enhancements/Graphics/HookshotReticle.h"
 
 // Assets for each player form
 #include "objects/object_link_boy/object_link_boy.h"
@@ -14,6 +24,7 @@
 #include "objects/object_link_zora/object_link_zora.h"
 #include "objects/object_link_nuts/object_link_nuts.h"
 #include "objects/object_link_child/object_link_child.h"
+static Gfx* D_801C0D94 = object_link_child_DL_017818;
 
 // Assets for each mask
 #include "objects/object_mask_truth/object_mask_truth.h"
@@ -597,6 +608,10 @@ s16 D_801BFE14[PLAYER_BOOTS_MAX][18] = {
     },
 };
 
+#ifdef COMBO_BUILD
+#include "ComboAdultBootsNative.h"
+#endif
+
 // OoT's Player_SetBootData
 void func_80123140(PlayState* play, Player* player) {
     s16* bootRegs;
@@ -654,6 +669,9 @@ void func_80123140(PlayState* play, Player* player) {
     }
 
     Actor_SetScale(&player->actor, scale);
+#ifdef COMBO_BUILD
+    Combo_MM_AdultCheckBoots(play);
+#endif
 }
 
 // #region 2S2H [Port] Determine if we're using a custom model for link
@@ -1000,9 +1018,17 @@ u8 sActionModelGroups[PLAYER_IA_MAX] = {
     PLAYER_MODELGROUP_DEFAULT,        // PLAYER_IA_MASK_ZORA
     PLAYER_MODELGROUP_DEFAULT,        // PLAYER_IA_MASK_DEKU
     PLAYER_MODELGROUP_DEFAULT,        // PLAYER_IA_LENS_OF_TRUTH
+#ifdef COMBO_BUILD
+    PLAYER_MODELGROUP_DEFAULT, // PLAYER_IA_COMBO_FARORES_WIND
+    PLAYER_MODELGROUP_DEFAULT, // PLAYER_IA_COMBO_NAYRUS_LOVE
+    PLAYER_MODELGROUP_DEFAULT, // PLAYER_IA_COMBO_DINS_FIRE
+#endif
 };
 
+int Combo_MM_AdultMaskAction(void);
 PlayerModelGroup Player_ActionToModelGroup(Player* player, PlayerItemAction itemAction) {
+    // Pinned custom Adult Mask uses the native default model group.
+    if ((int)itemAction == Combo_MM_AdultMaskAction()) return PLAYER_MODELGROUP_DEFAULT;
     PlayerModelGroup modelGroup = sActionModelGroups[itemAction];
 
     if ((modelGroup == PLAYER_MODELGROUP_ONE_HAND_SWORD) && Player_IsGoronOrDeku(player)) {
@@ -1795,6 +1821,9 @@ bool func_801242B4(Player* player) {
     return (player->stateFlags1 & PLAYER_STATE1_8000000) && (player->currentBoots < PLAYER_BOOTS_ZORA_UNDERWATER);
 }
 
+#ifdef COMBO_BUILD
+extern s32 Combo_MM_GetCustomBoots(Player* player);
+#endif
 s32 Player_GetEnvironmentalHazard(PlayState* play) {
     Player* player = GET_PLAYER(play);
     EnvHazardTextTriggerEntry* triggerEntry;
@@ -1803,6 +1832,12 @@ s32 Player_GetEnvironmentalHazard(PlayState* play) {
     if (play->roomCtx.curRoom.environmentType == ROOM_ENV_HOT) {
         envHazard = PLAYER_ENV_HAZARD_HOTROOM - 1;
     } else if ((player->transformation != PLAYER_FORM_ZORA) && (player->underwaterTimer > 80)) {
+#ifdef COMBO_BUILD
+        // Pinned no-scales branch: Iron Boots while grounded uses underwater-floor hazard.
+        if(Combo_MM_GetCustomBoots(player)==1&&(player->actor.bgCheckFlags&BGCHECKFLAG_GROUND))
+            envHazard=PLAYER_ENV_HAZARD_UNDERWATER_FLOOR-1;
+        else
+#endif
         envHazard = PLAYER_ENV_HAZARD_UNDERWATER_FREE - 1;
     } else if (player->stateFlags1 & PLAYER_STATE1_8000000) {
         if ((player->transformation == PLAYER_FORM_ZORA) && (player->currentBoots >= PLAYER_BOOTS_ZORA_UNDERWATER) &&
@@ -2053,6 +2088,16 @@ PlayerFaceIndices sPlayerFaces[PLAYER_FACE_MAX] = {
 
 // Note the correct pointer to pass as the jointTable is the jointTable pointer from the SkelAnime struct, not the
 // buffer from the Player struct itself since that one may be misaligned.
+#ifdef COMBO_BUILD
+#include "ComboAdultTunicColorsNative.h"
+extern int Combo_MM_IsAdult(void);
+extern s32 Combo_MM_GetCustomBoots(Player* player);
+#include "ComboChildBootDrawNative.h"
+#include "ComboHoverCircleDrawNative.h"
+extern int Combo_MM_ChildBootResourcesReady(void);
+extern const char* Combo_MM_GetAdultBootDrawPath(int index);
+extern int Combo_MM_AdultResourcesReady(void);
+#endif
 void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dListCount, s32 lod,
                      PlayerTransformation playerForm, s32 boots, s32 face, OverrideLimbDrawFlex overrideLimbDraw,
                      PostLimbDrawFlex postLimbDraw, Actor* actor) {
@@ -2112,8 +2157,30 @@ void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dL
         lod = 0;
     }
     sPlayerLod = lod;
+#ifdef COMBO_BUILD
+    if(playerForm==PLAYER_FORM_HUMAN&&gSaveContext.save.shipSaveInfo.adultMm.enabled&&Combo_MM_AdultResourcesReady()){
+        const Color_RGB8* color=Combo_MM_GetSavedTunicColor(gSaveContext.save.shipSaveInfo.adultMm.tunic);
+        gDPSetEnvColor(POLY_OPA_DISP++,color->r,color->g,color->b,255);
+    }
+#endif
     SkelAnime_DrawFlexLod(play, skeleton, jointTable, dListCount, overrideLimbDraw, postLimbDraw, actor, lod);
-
+#ifdef COMBO_BUILD
+    if(playerForm==PLAYER_FORM_HUMAN&&Combo_MM_AdultResourcesReady()&&
+       overrideLimbDraw!=Player_OverrideLimbDrawGameplayFirstPerson&&gSaveContext.gameMode!=GAMEMODE_END_CREDITS){
+        const s32 boots=Combo_MM_GetCustomBoots((Player*)actor);
+        if(boots==1||boots==2){const s32 index=(boots-1)*2;
+            const char* left=Combo_MM_GetAdultBootDrawPath(index),*right=Combo_MM_GetAdultBootDrawPath(index+1);
+            if(Combo_MM_IsAdult()){if(left&&right){gSPDisplayList(POLY_OPA_DISP++,left);gSPDisplayList(POLY_OPA_DISP++,right);}}
+            else if(Combo_MM_ChildBootResourcesReady()){
+                gSPDisplayList(POLY_OPA_DISP++,boots==1?gComboChildLeftIronBootDL:gComboChildLeftHoverBootDL);
+                gSPDisplayList(POLY_OPA_DISP++,boots==1?gComboChildRightIronBootDL:gComboChildRightHoverBootDL);
+            }
+        }
+    }
+#endif
+#ifdef COMBO_BUILD
+    Combo_MM_DrawHoverCircle(play,(Player*)actor);
+#endif
     CLOSE_DISPS(play->state.gfxCtx);
 }
 
@@ -2276,7 +2343,7 @@ void Player_DrawHookshotReticle(PlayState* play, Player* player, f32 hookshotDis
             MATRIX_FINALIZE_AND_LOAD(OVERLAY_DISP++, play->state.gfxCtx);
 
             gSPSegment(OVERLAY_DISP++, 0x06, play->objectCtx.slots[player->actor.objectSlot].segment);
-            gSPDisplayList(OVERLAY_DISP++, gHookshotReticleDL);
+            gSPDisplayList(OVERLAY_DISP++, MM_GetHookshotReticleDisplayList(play, player, poly, bgId));
 
             CLOSE_DISPS(play->state.gfxCtx);
         }
@@ -2699,6 +2766,16 @@ s32 Player_OverrideLimbDrawGameplayDefault(PlayState* play, s32 limbIndex, Gfx**
                 }
 
                 *dList = rightHandDLists[sPlayerLod];
+#ifdef COMBO_BUILD
+                // Pinned Player_CustomHandEq: human native open hand + stripped Fairy instrument.
+                if (player->transformation == PLAYER_FORM_HUMAN &&
+                    player->rightHandType == PLAYER_MODELTYPE_RH_INSTRUMENT &&
+                    INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_FAIRY) {
+                    extern Gfx* Combo_MM_FairyOcarinaHand(PlayState*, Gfx*);
+                    Gfx* fairyHand = Combo_MM_FairyOcarinaHand(play, gPlayerRightHandOpenDLs[D_801F59E0 + sPlayerLod]);
+                    if (fairyHand != NULL) *dList = fairyHand;
+                }
+#endif
                 if (BEN_ANIM_EQUAL(player->skelAnime.animation, gPlayerAnim_pg_punchB)) {
                     func_80125CE0(player, D_801C0784, pos, rot);
                 }
@@ -2758,6 +2835,13 @@ s32 Player_OverrideLimbDrawGameplayFirstPerson(PlayState* play, s32 limbIndex, G
         }
     }
 
+#ifdef COMBO_BUILD
+    // Pinned Player_OverrideLimbDrawGameplayDefault_Custom runs after the native override.
+    if (limbIndex == PLAYER_LIMB_ROOT && (player->stateFlags3 & PLAYER_STATE3_20000000) &&
+        Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady()) {
+        pos->y += 1280.0f;
+    }
+#endif
     return false;
 }
 
@@ -3798,7 +3882,7 @@ void Player_SetFeetPos(PlayState* play, Player* player, s32 limbIndex) {
     Actor_SetFeetPos(&player->actor, limbIndex, PLAYER_LIMB_LEFT_FOOT, footPos, PLAYER_LIMB_RIGHT_FOOT, footPos);
 }
 
-void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, Vec3s* rot, Actor* actor) {
+static void Combo_Player_PostLimbDrawGameplayNative(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, Vec3s* rot, Actor* actor) {
     Player* player = (Player*)actor;
 
     if (*dList2 != NULL) {
@@ -3840,15 +3924,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                         player->actor.shape.rot.y + player->leftHandWorld.rot.y;
                 }
             } else {
-                static f32 sMeleeWeaponLengths[PLAYER_MELEEWEAPON_MAX] = {
-                    0.0f,    // PLAYER_MELEEWEAPON_NONE
-                    3000.0f, // PLAYER_MELEEWEAPON_SWORD_KOKIRI
-                    3000.0f, // PLAYER_MELEEWEAPON_SWORD_RAZOR
-                    4000.0f, // PLAYER_MELEEWEAPON_SWORD_GILDED
-                    5500.0f, // PLAYER_MELEEWEAPON_SWORD_TWO_HANDED
-                    -1.0f,   // PLAYER_MELEEWEAPON_DEKU_STICK
-                    2500.0f, // PLAYER_MELEEWEAPON_ZORA_BOOMERANG
-                };
+
 
                 if ((player->transformation == PLAYER_FORM_FIERCE_DEITY) ||
                     ((player->transformation != PLAYER_FORM_ZORA) &&
@@ -3874,7 +3950,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
 
         if (*dList1 != NULL) {
             if (player->rightHandType == PLAYER_MODELTYPE_RH_BOW) {
-                static Gfx* D_801C0D94 = object_link_child_DL_017818;
+
                 static Vec3f D_801C0D98 = { -35.0f, -395.0f, 0.0f };
                 // Unused
                 static s32 D_801C0DA4 = 0;
@@ -4279,4 +4355,41 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
     GameInteractor_ExecuteOnPlayerPostLimbDraw(player, limbIndex);
 
     func_8012536C();
+}
+
+#ifdef COMBO_BUILD
+#include "ComboAdultModelTablesNative.h"
+#endif
+
+// Exact pinned Player_PostLimbDrawGameplayWrapper Adult Mask branches.
+s32 AdultMask_IsPuttingOn(void);
+s32 AdultMask_IsTakeOffTransform(void);
+s32 AdultMask_IsTakeOffChild(void);
+s32 AdultMask_GetTimer(void);
+s32 AdultMask_ShouldDrawTransformFace(void);
+void AdultMask_DrawMaskInHand(PlayState*, Player*);
+void AdultMask_DrawTransformationMaskOnFace(PlayState*, Player*);
+void AdultMask_DrawMaskOnFaceNativeLike(PlayState*, Player*);
+void AdultMask_DrawTransformRing(PlayState*, Player*);
+void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, Vec3s* rot, Actor* actor) {
+    Player* player=(Player*)actor;
+    Combo_Player_PostLimbDrawGameplayNative(play,limbIndex,dList1,dList2,rot,actor);
+    if(AdultMask_IsPuttingOn()) {
+        s32 timer=AdultMask_GetTimer();
+        s32 ending=BEN_ANIM_EQUAL(player->skelAnime.animation,gPlayerAnim_cl_setmaskend);
+        if(timer>=0&&timer<11&&!ending&&limbIndex==PLAYER_LIMB_LEFT_HAND)
+            AdultMask_DrawMaskInHand(play,player);
+        if(limbIndex==PLAYER_LIMB_HEAD) {
+            if(AdultMask_ShouldDrawTransformFace()) {
+                AdultMask_DrawTransformationMaskOnFace(play,player);
+                AdultMask_DrawTransformRing(play,player);
+            } else if(timer>=12&&!ending) AdultMask_DrawMaskOnFaceNativeLike(play,player);
+        }
+    } else if(AdultMask_IsTakeOffTransform()) {
+        if(limbIndex==PLAYER_LIMB_HEAD) AdultMask_DrawTransformRing(play,player);
+    } else if(AdultMask_IsTakeOffChild()) {
+        s32 timer=AdultMask_GetTimer();
+        if(timer>=0&&timer<0x7fff&&!BEN_ANIM_EQUAL(player->skelAnime.animation,gPlayerAnim_cl_setmaskend)&&limbIndex==PLAYER_LIMB_LEFT_HAND)
+            AdultMask_DrawMaskInHand(play,player);
+    }
 }

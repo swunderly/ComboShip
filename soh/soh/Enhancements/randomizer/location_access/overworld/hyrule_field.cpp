@@ -270,7 +270,7 @@ void RegionTable_Init_HyruleField() {
     areaTable[RR_HF_COW_GROTTO] = Region("HF Cow Grotto", SCENE_GROTTOS, {}, {}, {
         //Exits
         ENTRANCE(RR_HYRULE_FIELD,              true),
-        ENTRANCE(RR_HF_COW_GROTTO_BEHIND_WEBS, logic->HasFireSource()),
+        ENTRANCE(RR_HF_COW_GROTTO_BEHIND_WEBS, (logic->HasFireSource() || logic->HasSelfLightingSticks())),
     });
 
     areaTable[RR_HF_COW_GROTTO_BEHIND_WEBS] = Region("HF Cow Grotto Behind Webs", SCENE_GROTTOS, {

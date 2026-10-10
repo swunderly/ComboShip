@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.26.0 FATAL_ERROR)
 
-set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
+if(WIN32)
+    set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
+endif()
 
 project(soh LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard to use")
@@ -712,10 +714,26 @@ else()
     find_package(SDL2)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
+    if(ANDROID)
+        find_package(Ogg CONFIG REQUIRED)
+    else()
     find_package(Ogg REQUIRED)
+    endif()
+    if(ANDROID)
+        find_package(Vorbis CONFIG REQUIRED)
+    else()
     find_package(Vorbis REQUIRED)
+    endif()
+    if(ANDROID)
+        find_package(Opus CONFIG REQUIRED)
+    else()
     find_package(Opus REQUIRED)
+    endif()
+    if(ANDROID)
+        find_package(OpusFile CONFIG REQUIRED)
+    else()
     find_package(OpusFile REQUIRED)
+    endif()
      set(ADDITIONAL_LIBRARY_DEPENDENCIES
     "libultraship;"
         "ZAPDLib;"
@@ -821,4 +839,11 @@ wut_create_wuhb(${PROJECT_NAME}
 
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/soh.rpx ${CMAKE_CURRENT_BINARY_DIR}/soh.wuhb DESTINATION . COMPONENT ship)
 
+endif()
+
+if(ANDROID)
+    # Match the original N64 arithmetic. Fused multiply-add can miss the exact
+    # collision boundary that records permanent push-block puzzle switches.
+    target_compile_options(${PROJECT_NAME} PRIVATE -fno-fast-math -ffp-contract=off
+        $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types;-Wno-int-conversion;-Wno-implicit-int>)
 endif()

@@ -70,7 +70,11 @@ static void ExporterParseFileMode(const std::string& buildMode, ZFileMode& fileM
         for (auto item : lst)
         {
             auto fileData = DiskFile::ReadAllBytes(item);
-            archive->AddFile(StringHelper::Split(item, "Extract/")[1], fileData.data(), fileData.size());
+            // libzip borrows this buffer until archive close; retain BOTR inputs.
+            auto key = StringHelper::Split(item, "Extract/")[1];
+            files[key].resize(fileData.size());
+            if (!fileData.empty()) memcpy(files[key].data(), fileData.data(), fileData.size());
+            archive->AddFile(key, files[key].data(), files[key].size());
         }
     }
 }
@@ -174,6 +178,8 @@ static void ExporterProgramEnd()
         archive = nullptr;
     }
 
+    // Close BOTR before releasing buffers borrowed by zip_source_buffer.
+    archive = nullptr;
     delete fileWriter;
     files.clear();
 

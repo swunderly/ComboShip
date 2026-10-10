@@ -1,4 +1,5 @@
 #include "ClockShuffle.h"
+#include "rando/MmClockRules.h"
 #include "Rando/Rando.h"
 #include "Rando/Logic/Logic.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
@@ -14,6 +15,10 @@ void ObjTokeiStep_SetupOpen(ObjTokeiStep* thisx);
 void ObjTokeiStep_DrawOpen(Actor* thisx, PlayState* play);
 void ObjTokeiStep_DoNothing(ObjTokeiStep* thisx, PlayState* play);
 }
+
+// Hooks are registered once on startup, before a slot's baked options exist.
+// Refresh the native selector after every file load so clock seeds enable it.
+void RegisterBetterSongOfDoubleTime();
 
 static constexpr u16 DAWN_TIME = CLOCK_TIME(6, 0);
 static constexpr u16 DUSK_TIME = CLOCK_TIME(18, 0);
@@ -107,23 +112,15 @@ static bool IsNight(u16 time) {
     return (time < DAWN_TIME) || (time >= DUSK_TIME);
 }
 
+// Legacy option RO_CLOCK_TERMINAL_TIME remains in the save ABI. OoTMM's clocks
+// have no unconditional final-hours exception: exhaustion ends the cycle.
 static u16 GetConfiguredTerminalTime() {
-    int terminalMinutes = RANDO_SAVE_OPTIONS[RO_CLOCK_TERMINAL_TIME];
-    return CLOCK_TIME(0, terminalMinutes);
+    return DAWN_TIME;
 }
 
 static bool IsInTerminalRange(s32 day, u16 time) {
-    if (day != 3) {
-        return false;
-    }
-
-    u16 terminalTime = GetConfiguredTerminalTime();
-
-    if (terminalTime >= DUSK_TIME) {
-        return (time >= terminalTime) || (time < DAWN_TIME);
-    } else {
-        return (time >= terminalTime && time < DAWN_TIME);
-    }
+    const auto mask = Rando::ClockItems::GetAllOwnedHalfDaysMask();
+    return ComboRando::MmClockRules::IsMoonCrash(mask, day, time);
 }
 
 static int GetHalfDayIndexFromTime(s32 day, u16 time) {
@@ -189,11 +186,6 @@ static bool CheckSkippedTime(u8* day, u16* time) {
         return false;
     }
 
-    // Terminal state is always accessible regardless of Night 3 ownership
-    if (IsInTerminalRange(*day, *time)) {
-        return false;
-    }
-
     int currentHalfDay = (*day < 1) ? 0 : ((*day - 1) * 2 + (IsNight(*time) ? 1 : 0));
 
     if (Rando::Logic::OwnsClockHalfDay(currentHalfDay)) {
@@ -209,7 +201,7 @@ static bool CheckSkippedTime(u8* day, u16* time) {
     }
 
     if (nextHalfDay == Rando::ClockItems::TERMINAL_STATE) {
-        *day = 3;
+        *day = 4;
         *time = GetConfiguredTerminalTime();
     } else {
         *day = (nextHalfDay / 2) + 1;
@@ -235,6 +227,13 @@ static bool CheckAndSkipUnownedTime(Actor* timeActor) {
     if (day < 4 && CheckSkippedTime(&day, &time)) {
         gSaveContext.save.day = day;
         gSaveContext.save.time = time;
+
+        if (day == 4) {
+            Interface_StartMoonCrash(gPlayState);
+            Actor_Kill(timeActor);
+            SET_EVENTINF(EVENTINF_17);
+            return true;
+        }
 
         if (SceneNeedsReloadForTimeSkip(gPlayState->sceneId)) {
             ForceSceneReload();
@@ -299,18 +298,15 @@ static bool CheckAndSkipUnownedTime(Actor* timeActor) {
 }
 
 bool Rando::ClockShuffle::IsTimeOwnedForClockShuffle(s32 day, u16 time) {
-    if (!RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) {
-        return true;
-    }
-    if (day < 1 || day > 3) {
-        return true;
-    }
-    if (IsInTerminalRange(day, time)) {
-        return true;
-    }
+    if (!RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) return true;
+    if (day < 1 || day > 3) return false;
+    return ComboRando::MmClockRules::OwnsTime(ClockItems::GetAllOwnedHalfDaysMask(), day, time);
+}
 
-    int halfDayIndex = GetHalfDayIndexFromTime(day, time);
-    return Rando::Logic::OwnsClockHalfDay(halfDayIndex);
+u32 Rando::ClockShuffle::SelectOwnedTime(u32 original, u32 current, u32 proposed, bool forward) {
+    if (!IS_RANDO || !RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) return proposed;
+    return ComboRando::MmClockRules::SelectOwnedTime(
+        ClockItems::GetAllOwnedHalfDaysMask(), original, current, proposed, forward);
 }
 
 std::string Rando::ClockShuffle::GetTimeDescriptionForMessage(s32 day, u16 time) {
@@ -349,7 +345,7 @@ static void ProcessClockShuffleMessage(u16* textId, bool* loadFromMessageTable, 
 
     std::string destinationText;
     if (targetHalfDay == Rando::ClockItems::TERMINAL_STATE) {
-        destinationText = "%rFinal Hours%w";
+        destinationText = "%rthe end of this cycle%w";
     } else {
         int targetDay = (targetHalfDay / 2) + 1;
         bool isNight = (targetHalfDay & 1);
@@ -422,7 +418,7 @@ static void EnforceOwnedTime() {
         }
     } else {
         // Terminal State
-        gSaveContext.save.day = 3;
+        gSaveContext.save.day = 4;
         gSaveContext.save.time = GetConfiguredTerminalTime();
     }
 
@@ -433,9 +429,17 @@ static void EnforceOwnedTime() {
 }
 
 void Rando::ClockShuffle::OnFileLoad() {
+    RegisterBetterSongOfDoubleTime();
     bool shouldRegister = IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE];
 
     if (shouldRegister) {
+        // OoTMM common/save.c gracePeriod: reopening a save at its last owned
+        // boundary leaves a short grace period to reset rather than crashing
+        // during the loading screen.
+        const u32 linear = ComboRando::MmClockRules::ResumeGrace(
+            ClockItems::GetAllOwnedHalfDaysMask(), gSaveContext.save.day, gSaveContext.save.time);
+        gSaveContext.save.day = linear >> 16;
+        gSaveContext.save.time = static_cast<u16>(linear + DAWN_TIME);
         EnforceOwnedTime();
     }
 
@@ -476,17 +480,6 @@ void Rando::ClockShuffle::OnFileLoad() {
             if (ownedHalfDaysMask & (1 << halfDayIndex)) {
                 totalHours += 12;
             }
-        }
-
-        bool shouldIncludeTerminalHours = (GetCurrentHalfDayIndex() == Rando::ClockItems::TERMINAL_STATE) ||
-                                          !Rando::Logic::OwnsClockHalfDay(Rando::ClockItems::HALF_DAY3_NIGHT);
-
-        if (shouldIncludeTerminalHours) {
-            u16 terminalTime = GetConfiguredTerminalTime();
-            u32 terminalZeroed = ZERO_DAY_START(terminalTime);
-            u32 timeDiff = (DAY_LENGTH - terminalZeroed) % DAY_LENGTH;
-            u32 terminalHours = (timeDiff + CLOCK_TIME_HOUR - 1) / CLOCK_TIME_HOUR;
-            totalHours += terminalHours;
         }
 
         u32 ownedTime = totalHours * CLOCK_TIME_HOUR;

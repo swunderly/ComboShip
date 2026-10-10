@@ -1,4 +1,5 @@
 #include "debugSaveEditor.h"
+#include "gui/ComboTouchSlider.h"
 #include "soh/Enhancements/randomizer/randomizerTypes.h"
 #include "soh/Enhancements/randomizer/randomizer.h"
 #include "soh/util.h"
@@ -272,16 +273,13 @@ void DrawInfoTab() {
         ImGui::EndDisabled();
     }
 
-    // Use an intermediary to keep the health from updating (and potentially killing the player)
-    // until it is done being edited
-    int16_t healthIntermediary = gSaveContext.healthCapacity;
+    // Edit whole hearts with a positive lower bound; touch users never need a numeric keyboard.
+    int healthIntermediary = gSaveContext.healthCapacity / 16;
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Max Health", ImGuiDataType_S16, &healthIntermediary);
+    if (ImGui::SliderInt("Max Health", &healthIntermediary, 1, 20, "%d hearts", ImGuiSliderFlags_NoInput))
+        gSaveContext.healthCapacity = static_cast<int16_t>(healthIntermediary * 16);
     PopStyleInput();
-    if (ImGui::IsItemDeactivated()) {
-        gSaveContext.healthCapacity = healthIntermediary;
-    }
-    Tooltip("Maximum health. 16 units per full heart");
+    Tooltip("Maximum health in whole hearts");
     if (gSaveContext.health > gSaveContext.healthCapacity) {
         gSaveContext.health = gSaveContext.healthCapacity; // Clamp health to new max
     }
@@ -319,11 +317,15 @@ void DrawInfoTab() {
     }
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Rupees", ImGuiDataType_S16, &gSaveContext.rupees);
+    int rupees = gSaveContext.rupees;
+    if (ImGui::SliderInt("Rupees", &rupees, 0, CUR_CAPACITY(UPG_WALLET), "%d", ImGuiSliderFlags_NoInput))
+        gSaveContext.rupees = static_cast<int16_t>(rupees);
     Tooltip("Current rupees");
     PopStyleInput();
 
-    SliderInt("Time", (int32_t*)&gSaveContext.dayTime, intSliderOptionsBase.Min(0).Max(0xFFFF).Tooltip("Time of day"));
+    int32_t dayTime = gSaveContext.dayTime;
+    if (SliderInt("Time", &dayTime, intSliderOptionsBase.Min(0).Max(0xFFFF).Tooltip("Time of day")))
+        gSaveContext.dayTime = static_cast<uint16_t>(dayTime);
     if (Button("Dawn", buttonOptionsBase)) {
         gSaveContext.dayTime = 0x4000;
     }
@@ -341,12 +343,12 @@ void DrawInfoTab() {
     }
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Total Days", ImGuiDataType_S32, &gSaveContext.totalDays);
+    ComboTouch::Count("Total Days", &gSaveContext.totalDays, 0, 1000);
     Tooltip("Total number of days elapsed since the start of the game");
     PopStyleInput();
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Deaths", ImGuiDataType_U16, &gSaveContext.deaths);
+    ComboTouch::Count("Deaths", &gSaveContext.deaths, 0, 65535);
     Tooltip("Total number of deaths");
     PopStyleInput();
 
@@ -354,12 +356,12 @@ void DrawInfoTab() {
              checkboxOptionsBase.Tooltip("Is Biggoron sword unlocked? Replaces Giant's knife"));
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Sword Health", ImGuiDataType_U16, &gSaveContext.swordHealth);
+    ComboTouch::Count("Sword Health", &gSaveContext.swordHealth, 0, 255);
     Tooltip("Giant's knife health. Default is 8. Must be >0 for Biggoron sword to work");
     PopStyleInput();
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Bgs Day Count", ImGuiDataType_S32, &gSaveContext.bgsDayCount);
+    ComboTouch::Count("Bgs Day Count", &gSaveContext.bgsDayCount, 0, 1000);
     Tooltip("Total number of days elapsed since receiving claim check from Biggoron");
     PopStyleInput();
 
@@ -374,27 +376,27 @@ void DrawInfoTab() {
     PopStyleInput();
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Navi Timer", ImGuiDataType_U16, &gSaveContext.naviTimer);
+    ComboTouch::Count("Navi Timer", &gSaveContext.naviTimer, 0, 3000);
     Tooltip("Navi wants to talk at 600 units, decides not to at 3000.");
     PopStyleInput();
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Timer State", ImGuiDataType_S16, &gSaveContext.timerState);
+    ComboTouch::Count("Timer State", &gSaveContext.timerState, 0, 16);
     Tooltip("Heat timer, race timer, etc. Has white font");
     PopStyleInput();
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Timer Seconds", ImGuiDataType_S16, &gSaveContext.timerSeconds, &one, NULL);
+    ComboTouch::Count("Timer Seconds", &gSaveContext.timerSeconds, 0, 32767);
     Tooltip("Time, in seconds");
     PopStyleInput();
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Sub-Timer State", ImGuiDataType_S16, &gSaveContext.subTimerState);
+    ComboTouch::Count("Sub-Timer State", &gSaveContext.subTimerState, 0, 16);
     Tooltip("Trade timer, Ganon collapse timer, etc. Has yellow font");
     PopStyleInput();
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Sub-Timer Seconds", ImGuiDataType_S16, &gSaveContext.subTimerSeconds, &one, NULL);
+    ComboTouch::Count("Sub-Timer Seconds", &gSaveContext.subTimerSeconds, 0, 32767);
     Tooltip("Time, in seconds");
     PopStyleInput();
 
@@ -408,8 +410,7 @@ void DrawInfoTab() {
 
     if (IS_RANDO && (OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_TRIFORCE_HUNT_PIECES_TOTAL) > 0)) {
         PushStyleInput(THEME_COLOR);
-        ImGui::InputScalar("Triforce Pieces", ImGuiDataType_U8,
-                           &gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected);
+        ComboTouch::Count("Triforce Pieces", &gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected, 0, 255);
         Tooltip("Currently obtained Triforce Pieces. For Triforce Hunt.");
         PopStyleInput();
     }
@@ -425,7 +426,7 @@ void DrawInfoTab() {
             if (i == 2 && ImGui::TreeNode("Fishing")) { // fishing has a few more flags to it
                 u8 fishSize = gSaveContext.highScores[i] & 0x7F;
                 PushStyleInput(THEME_COLOR);
-                if (ImGui::InputScalar("Child Size Record", ImGuiDataType_U8, &fishSize)) {
+                if (ComboTouch::Count("Child Size Record", &fishSize, 0, 127)) {
                     gSaveContext.highScores[i] &= ~0x7F;
                     gSaveContext.highScores[i] |= fishSize & 0x7F;
                 }
@@ -441,7 +442,7 @@ void DrawInfoTab() {
                 }
                 fishSize = (gSaveContext.highScores[i] & 0x7F000000) >> 0x18;
                 PushStyleInput(THEME_COLOR);
-                if (ImGui::InputScalar("Adult Size Record", ImGuiDataType_U8, &fishSize)) {
+                if (ComboTouch::Count("Adult Size Record", &fishSize, 0, 127)) {
                     gSaveContext.highScores[i] &= ~0x7F000000;
                     gSaveContext.highScores[i] |= (fishSize & 0x7F) << 0x18;
                 }
@@ -489,7 +490,7 @@ void DrawInfoTab() {
                 }
                 fishSize = (gSaveContext.highScores[i] & 0xFF0000) >> 16;
                 PushStyleInput(THEME_COLOR);
-                if (ImGui::InputScalar("Times Played", ImGuiDataType_U8, &fishSize)) {
+                if (ComboTouch::Count("Times Played", &fishSize, 0, 255)) {
                     gSaveContext.highScores[i] &= ~0xFF0000;
                     gSaveContext.highScores[i] |= (fishSize) << 16;
                 }
@@ -505,7 +506,7 @@ void DrawInfoTab() {
             }
             std::string minigameLbl = minigameHS[i];
             PushStyleInput(THEME_COLOR);
-            ImGui::InputScalar(minigameLbl.c_str(), ImGuiDataType_S32, &gSaveContext.highScores[i], &one, NULL);
+            ComboTouch::Count(minigameLbl.c_str(), &gSaveContext.highScores[i], 0, i == 1 ? 1000 : 99999);
             PopStyleInput();
         }
 
@@ -535,6 +536,19 @@ static void SyncButtonItemsForSlot(uint8_t slot) {
     }
 }
 
+static std::vector<ItemMapEntry> GetLegalInventorySlotItems(InventorySlot slot) {
+    std::vector<ItemMapEntry> items;
+    // Every bottle can contain the same items even though gItemSlots maps them to bottle 1.
+    const InventorySlot canonicalSlot = slot >= SLOT_BOTTLE_1 && slot <= SLOT_BOTTLE_4 ? SLOT_BOTTLE_1 : slot;
+    for (int item = ITEM_STICK; item <= ITEM_CLAIM_CHECK; item++) {
+        if (const auto mappedItem = itemMapping.find(item);
+            gItemSlots[item] == canonicalSlot && mappedItem != itemMapping.end()) {
+            items.push_back(mappedItem->second);
+        }
+    }
+    return items;
+}
+
 void DrawInventoryTab() {
     static bool restrictToValid = true;
 
@@ -546,6 +560,7 @@ void DrawInventoryTab() {
     Checkbox("Keep C/D-pad buttons in sync", &syncButtons,
              checkboxOptionsBase.Tooltip("Refresh a C or D-pad button when its inventory slot is edited. Disable to "
                                          "leave a slot and its button out of sync (e.g. to set up RBA)."));
+    ImGui::TextWrapped("Faded icons are not owned. Tap an icon to choose an item or remove it.");
 
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 6; x++) {
@@ -561,29 +576,43 @@ void DrawInventoryTab() {
             }
 
             ItemID item = (ItemID)gSaveContext.inventory.items[index];
-            PushStyleButton(Colors::DarkGray);
+            std::string textureName;
+            std::string itemName;
+            bool hasItemIcon = false;
             if (item == ITEM_ROCS_FEATHER) {
-                auto ret = ImGui::ImageButton(
-                    "ROCS_FEATHER",
-                    std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
-                        ->GetTextureByName("ROCS_FEATHER"),
-                    ImVec2(48.0f, 48.0f), ImVec2(0, 0), ImVec2(1, 1));
-                if (ret) {
-                    selectedIndex = index;
-                    ImGui::OpenPopup(itemPopupPicker);
-                }
+                textureName = itemMapping.at(RG_ROCS_FEATHER).name;
+                itemName = "Roc's Feather";
+                hasItemIcon = true;
             } else if (const auto mappedItem = itemMapping.find(item);
                        item != ITEM_NONE && mappedItem != itemMapping.end()) {
-                const ItemMapEntry& slotEntry = mappedItem->second;
+                textureName = mappedItem->second.name;
+                itemName = SohUtils::GetItemName(item);
+                hasItemIcon = true;
+            } else {
+                const auto legalItems = GetLegalInventorySlotItems(index);
+                if (!legalItems.empty()) {
+                    textureName = legalItems.front().name;
+                    itemName = SohUtils::GetItemName(legalItems.front().id);
+                }
+            }
+            PushStyleButton(Colors::DarkGray);
+            if (!textureName.empty()) {
                 auto ret = ImGui::ImageButton(
-                    slotEntry.name.c_str(),
+                    "##inventorySlot",
                     std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
-                        ->GetTextureByName(slotEntry.name),
-                    ImVec2(48.0f, 48.0f), ImVec2(0, 0), ImVec2(1, 1));
+                        ->GetTextureByName(textureName),
+                    ImVec2(IMAGE_SIZE, IMAGE_SIZE), ImVec2(0, 0), ImVec2(1, 1),
+                    ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, hasItemIcon ? 1.0f : 0.4f));
                 if (ret) {
                     selectedIndex = index;
                     ImGui::OpenPopup(itemPopupPicker);
                 }
+                std::string tooltip = itemName + (hasItemIcon ? " (owned)" : " (not owned)");
+                if (!hasItemIcon && item != ITEM_NONE) {
+                    tooltip = "Unsupported saved item " + std::to_string(static_cast<int>(item));
+                }
+                tooltip += "\nTap to choose an item or remove it.";
+                UIWidgets::Tooltip(tooltip.c_str());
             } else {
                 if (ImGui::Button("##itemNone", ImVec2(IMAGE_SIZE, IMAGE_SIZE) + ImGui::GetStyle().FramePadding * 2)) {
                     selectedIndex = index;
@@ -610,17 +639,7 @@ void DrawInventoryTab() {
 
                 std::vector<ItemMapEntry> possibleItems;
                 if (restrictToValid) {
-                    // Scan gItemSlots to find legal items for this slot. Bottles are a special case
-                    for (int slotIndex = 0; slotIndex < 56; slotIndex++) {
-                        int testIndex = (selectedIndex == SLOT_BOTTLE_1 || selectedIndex == SLOT_BOTTLE_2 ||
-                                         selectedIndex == SLOT_BOTTLE_3 || selectedIndex == SLOT_BOTTLE_4)
-                                            ? SLOT_BOTTLE_1
-                                            : selectedIndex;
-                        if (const auto mappedItem = itemMapping.find(slotIndex);
-                            gItemSlots[slotIndex] == testIndex && mappedItem != itemMapping.end()) {
-                            possibleItems.push_back(mappedItem->second);
-                        }
-                    }
+                    possibleItems = GetLegalInventorySlotItems(selectedIndex);
                 } else {
                     for (const auto& entry : itemMapping) {
                         possibleItems.push_back(entry.second);
@@ -677,7 +696,7 @@ void DrawInventoryTab() {
                     ->GetTextureByName(itemMapping[item].name),
                 ImVec2(IMAGE_SIZE, IMAGE_SIZE));
             PushStyleInput(THEME_COLOR);
-            ImGui::InputScalar("##ammoInput", ImGuiDataType_S8, &AMMO(item));
+            ComboTouch::Count("##ammoInput", &AMMO(item), 0, 99);
             PopStyleInput();
 
             ImGui::EndGroup();
@@ -1557,7 +1576,9 @@ void DrawQuestStatusTab() {
     }
 
     PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("GS Count", ImGuiDataType_S16, &gSaveContext.inventory.gsTokens);
+    int tokens = gSaveContext.inventory.gsTokens;
+    if (ImGui::SliderInt("Gold Skulltula tokens", &tokens, 0, 100, "%d", ImGuiSliderFlags_NoInput))
+        gSaveContext.inventory.gsTokens = static_cast<int16_t>(tokens);
     PopStyleInput();
     InsertHelpHoverText("Number of gold skulltula tokens aquired");
 
@@ -1627,8 +1648,7 @@ void DrawQuestStatusTab() {
                     ImVec2(lineHeight, lineHeight));
                 ImGui::SameLine();
                 PushStyleInput(THEME_COLOR);
-                if (ImGui::InputScalar("##Keys", ImGuiDataType_S8,
-                                       gSaveContext.inventory.dungeonKeys + dungeonItemsScene)) {
+                if (ComboTouch::Count("##Keys", gSaveContext.inventory.dungeonKeys + dungeonItemsScene, -1, 20)) {
                     gSaveContext.ship.stats.dungeonKeys[dungeonItemsScene] =
                         gSaveContext.inventory.dungeonKeys[dungeonItemsScene];
                 };
@@ -1734,9 +1754,9 @@ void DrawPlayerTab() {
                 ImGui::Text("Link's Rotation");
                 InsertHelpHoverText("For Link's rotation in relation to the world");
                 ImGui::PushItemWidth(ImGui::GetFontSize() * 12);
-                ImGui::InputScalar("X##Rot", ImGuiDataType_S16, &player->actor.world.rot.x);
-                ImGui::InputScalar("Y##Rot", ImGuiDataType_S16, &player->actor.world.rot.y);
-                ImGui::InputScalar("Z##Rot", ImGuiDataType_S16, &player->actor.world.rot.z);
+                ComboTouch::Count("X##Rot", &player->actor.world.rot.x, -32768, 32767);
+                ComboTouch::Count("Y##Rot", &player->actor.world.rot.y, -32768, 32767);
+                ComboTouch::Count("Z##Rot", &player->actor.world.rot.z, -32768, 32767);
                 ImGui::PopItemWidth();
             },
             "Link's Rotation");
@@ -1746,9 +1766,9 @@ void DrawPlayerTab() {
                 ImGui::Text("Link's Model Rotation");
                 InsertHelpHoverText("For Link's actual model");
                 ImGui::PushItemWidth(ImGui::GetFontSize() * 12);
-                ImGui::InputScalar("X##ModRot", ImGuiDataType_S16, &player->actor.shape.rot.x);
-                ImGui::InputScalar("Y##ModRot", ImGuiDataType_S16, &player->actor.shape.rot.y);
-                ImGui::InputScalar("Z##ModRot", ImGuiDataType_S16, &player->actor.shape.rot.z);
+                ComboTouch::Count("X##ModRot", &player->actor.shape.rot.x, -32768, 32767);
+                ComboTouch::Count("Y##ModRot", &player->actor.shape.rot.y, -32768, 32767);
+                ComboTouch::Count("Z##ModRot", &player->actor.shape.rot.z, -32768, 32767);
                 ImGui::PopItemWidth();
             },
             "Link's Model Rotation");
@@ -1762,7 +1782,7 @@ void DrawPlayerTab() {
         ImGui::InputScalar("Wall Height", ImGuiDataType_Float, &player->yDistToLedge);
         InsertHelpHoverText("Height used to determine whether Link can climb or grab a ledge at the top");
 
-        ImGui::InputScalar("Invincibility Timer", ImGuiDataType_S8, &player->invincibilityTimer);
+        ComboTouch::Count("Invincibility Timer", &player->invincibilityTimer, -128, 127);
         InsertHelpHoverText("Can't take damage while this is nonzero");
 
         ImGui::InputScalar("Gravity", ImGuiDataType_Float, &player->actor.gravity);

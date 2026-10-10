@@ -154,7 +154,7 @@ void Rando::ActorBehavior::InitEnGoBehavior() {
         entry.msg += "\x19";
 
         CustomMessage::Replace(&entry.msg, "{randoItem}",
-                               Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_GORON_VILLAGE_MEDIGORON].randoItemId,
+                               Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_GORON_VILLAGE_MEDIGORON].randoItemId,
                                                               true, RC_GORON_VILLAGE_MEDIGORON));
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;

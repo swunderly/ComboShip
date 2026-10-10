@@ -1,3 +1,4 @@
+#include "2s2h/Rando/ActorBehavior/BeanSources.h"
 #include "Logic.h"
 #include "2s2h/Rando/Types.h"
 
@@ -17,6 +18,10 @@ namespace Logic {
 
 void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std::vector<RandoItemId>& itemPool) {
     uint64_t tick = GetUnixTimestamp();
+#ifdef COMBO_BUILD
+    ComboRando::MmResourceScope resources;
+    Rando::Logic::MmAccessScope access;
+#endif
 
     SaveContext copiedSaveContext;
     memcpy(&copiedSaveContext, &gSaveContext, sizeof(SaveContext));
@@ -28,6 +33,23 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
     // Initialize time states using shared function
     std::unordered_map<RandoRegionId, RegionTimeState> regionTimeStates = InitializeRegionTimeStates(RR_MAX);
 
+    // Capped ring grants cannot be undone by subtracting the dungeon maximum:
+    // a trial may have started with some collected or spent keys. Only fill owns
+    // these snapshots; runtime grants never accumulate a global undo history.
+    KeyRingTrialSnapshot trialKeys;
+    bool trialBeanActive=false;u8 trialBeanSlot=ITEM_NONE;int trialBeanAmmo=0;
+    const auto grantsBeanLicense=[](RandoCheckId check){
+#ifdef COMBO_BUILD
+        const auto& source=StaticData::Checks.at(check);return BeanSourceForCheck(check,source.randoCheckType).license;
+#else
+        return true;
+#endif
+    };
+    bool trialOcarinaActive = false;
+    u8 trialOcarinaItem = ITEM_NONE, trialOcarinaBits = 0;
+    decltype(gSaveContext.save.saveInfo.equips) trialOcarinaEquips;
+    decltype(gSaveContext.save.shipSaveInfo.dpadEquips) trialOcarinaDpad;
+    const auto isOcarina = [](RandoItemId item) { return item == RI_OCARINA || item == RI_OCARINA_FAIRY || item == RI_PROGRESSIVE_OCARINA; };
     RandoCheckId checkWithJunk = RC_UNKNOWN;
     std::set<RandoItemId> nonJunkItemsThatWeHaveTried;
     std::vector<RandoCheckId> checksWithJunk;
@@ -77,6 +99,10 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
             regionsInLogicChanged = true;
         }
 
+#ifdef COMBO_BUILD
+        eventsInLogicChanged |= UpdateMmAccess();
+        eventsInLogicChanged |= UpdateResourceSources(regionsInLogic, regionTimeStates);
+#endif
         for (RandoRegionId regionId : regionsInLogic) {
             auto& randoRegion = Regions[regionId];
 
@@ -85,7 +111,7 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
 
             // Apply any new events
             for (auto& randoEvent : randoRegion.events) {
-                if (!eventsInLogic.contains(&randoEvent) && randoEvent.second()) {
+                if (!eventsInLogic.contains(&randoEvent) && TimeLogic::EvaluateConditionTimes(randoEvent.second, gCurrentRegionTime)) {
                     RANDO_EVENTS[randoEvent.first]++;
                     eventsInLogic.insert(&randoEvent);
                     eventsInLogicChanged = true;
@@ -94,7 +120,7 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
 
             // Apply any new checks
             for (auto& [randoCheckId, checkLogic] : randoRegion.checks) {
-                if (!checksInLogic.contains(randoCheckId) && checkLogic.first()) {
+                if (!checksInLogic.contains(randoCheckId) && TimeLogic::EvaluateConditionTimes(checkLogic.first, gCurrentRegionTime)) {
                     // VALIDATION: Verify check is reachable with owned time
                     TimeLogic::ValidateRegionTimeOwnership(regionId, randoCheckId,
                                                            regionTimeStates[regionId].timeSlices, "Glitchless");
@@ -131,7 +157,7 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
                         }
                     }
 
-                    GiveItem(ConvertItem(randoItemId));
+                    if(randoItemId!=RI_MAGIC_BEAN||grantsBeanLicense(randoCheckId))GiveItem(ConvertItem(randoItemId));
 
                     // Update time states for all regions when time items are obtained
                     if (randoItemId >= RI_TIME_DAY_1 && randoItemId <= RI_TIME_PROGRESSIVE) {
@@ -140,14 +166,12 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
                         if (regionTimeStates.find(RR_MAX) != regionTimeStates.end()) {
                             regionTimeStates[RR_MAX].timeSlices = newTimeSlices;
                         }
-                        // Update existing region time states to reflect new owned time
+                        // New clocks expand root access. Recompute room times through their
+                        // entrances; owning a clock must not bypass a locked or closed door.
                         for (auto& [regionId, timeState] : regionTimeStates) {
-                            timeState.timeSlices = newTimeSlices;
-                            // Expand time forward based on region's stay restrictions
-                            if (timeState.canStayOverTime) {
-                                timeState.timeSlices = TimeLogic::ExpandTimeForward(newTimeSlices, Regions[regionId]);
-                            }
+                            timeState.timeSlices = regionId == RR_MAX ? newTimeSlices : 0;
                         }
+                        SetCurrentRegionTime(regionTimeStates, regionId);
                     }
 
                     checksInLogicChanged = true;
@@ -212,6 +236,9 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
                              Rando::StaticData::Checks[checkWithJunk].name,
                              Rando::StaticData::Items[RANDO_SAVE_CHECKS[checkWithJunk].randoItemId].spoilerName);
                 checkWithJunk = RC_UNKNOWN;
+                trialKeys.active = false;
+            trialBeanActive=false;
+                trialOcarinaActive = false;
                 nonJunkItemsThatWeHaveTried.clear();
                 continue;
             }
@@ -225,8 +252,38 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
             SPDLOG_DEBUG("Item Replaced Junk: {}:{}", Rando::StaticData::Checks[checkWithJunk].name,
                          Rando::StaticData::Items[newRandoItemId].spoilerName);
 
-            RemoveItem(oldRandoItemId);
-            GiveItem(ConvertItem(newRandoItemId));
+#ifdef COMBO_BUILD
+            // A failed placement must not retain a source requiring the removed item.
+            ComboRando::mmResourceAccess.sources = 0;
+#endif
+            if(oldRandoItemId==RI_MAGIC_BEAN&&trialBeanActive){
+                INV_CONTENT(ITEM_MAGIC_BEANS)=trialBeanSlot;AMMO(ITEM_MAGIC_BEANS)=trialBeanAmmo;
+            } else if (isOcarina(oldRandoItemId) && trialOcarinaActive) {
+                INV_CONTENT(ITEM_OCARINA_OF_TIME) = trialOcarinaItem;
+                gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits = trialOcarinaBits;
+                gSaveContext.save.saveInfo.equips = trialOcarinaEquips;
+                gSaveContext.save.shipSaveInfo.dpadEquips = trialOcarinaDpad;
+            } else if (FindKeyRing(oldRandoItemId) && trialKeys.active) {
+                trialKeys.Restore(gSaveContext.save.saveInfo.inventory.dungeonKeys,
+                                  gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys);
+            } else {
+                RemoveItem(oldRandoItemId);
+            }
+            trialBeanActive=newRandoItemId==RI_MAGIC_BEAN;
+            if(trialBeanActive){trialBeanSlot=INV_CONTENT(ITEM_MAGIC_BEANS);trialBeanAmmo=AMMO(ITEM_MAGIC_BEANS);}
+            trialKeys.active = FindKeyRing(newRandoItemId) != nullptr;
+            if (trialKeys.active) {
+                trialKeys.Capture(gSaveContext.save.saveInfo.inventory.dungeonKeys,
+                                  gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys);
+            }
+            trialOcarinaActive = isOcarina(newRandoItemId);
+            if (trialOcarinaActive) {
+                trialOcarinaItem = INV_CONTENT(ITEM_OCARINA_OF_TIME);
+                trialOcarinaBits = gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits;
+                trialOcarinaEquips = gSaveContext.save.saveInfo.equips;
+                trialOcarinaDpad = gSaveContext.save.shipSaveInfo.dpadEquips;
+            }
+            if(newRandoItemId!=RI_MAGIC_BEAN||grantsBeanLicense(checkWithJunk))GiveItem(ConvertItem(newRandoItemId));
 
             itemPool.erase(itemPool.begin() + indexInPool);
             itemPool.push_back(oldRandoItemId);
@@ -242,6 +299,8 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
                              Rando::StaticData::Items[RANDO_SAVE_CHECKS[checkWithJunk].randoItemId].spoilerName);
             }
             checkWithJunk = RC_UNKNOWN;
+            trialKeys.active = false;
+                trialOcarinaActive = false;
             nonJunkItemsThatWeHaveTried.clear();
 
             // Shuffle the item pool

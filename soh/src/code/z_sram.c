@@ -78,12 +78,10 @@ static s16 sDungeonEntrances[] = {
  *  - Give and equip master sword if player is adult and doesnt have kokiri sword (bug?)
  *  - Revert any trade items that spoil
  */
-void Sram_OpenSave() {
+static void Sram_StageOpenedSave(void) {
     u16 i;
     u16 j;
     u8* ptr;
-
-    Save_LoadFile();
 
     switch (gSaveContext.savedSceneNum) {
         case SCENE_DEKU_TREE:
@@ -233,7 +231,27 @@ void Sram_OpenSave() {
     gSaveContext.magicLevel = 0;
 }
 
-void Sram_InitSave(FileChooseContext* fileChooseCtx) {
+#ifdef COMBO_BUILD
+int Sram_TryOpenSave(int fileNum, int initializeFullContext) {
+    if (!Save_TryLoadFile(fileNum, initializeFullContext)) return 0;
+    Sram_StageOpenedSave();
+    return 1;
+}
+#endif
+void Sram_OpenSave(void) {
+#ifdef COMBO_BUILD
+    (void)Sram_TryOpenSave(gSaveContext.fileNum, 0);
+#else
+    Save_LoadFile();
+    Sram_StageOpenedSave();
+#endif
+}
+
+int Sram_InitSave(FileChooseContext* fileChooseCtx) {
+#ifdef COMBO_BUILD
+    extern int (*gComboProfilePrepareSave)(int);
+    if (gComboProfilePrepareSave && !gComboProfilePrepareSave(fileChooseCtx->buttonIndex)) return 0;
+#endif
     u16 offset;
     u16 j;
     u16* ptr;
@@ -291,6 +309,7 @@ void Sram_InitSave(FileChooseContext* fileChooseCtx) {
         gComboSaveInitCallback((int)gSaveContext.fileNum);
     }
 #endif
+    return 1;
 }
 
 void Sram_InitSram(GameState* gameState) {

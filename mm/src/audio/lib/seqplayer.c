@@ -17,6 +17,9 @@
 #include <ship/utils/binarytools/endianness.h>
 #include "global.h"
 #include "BenPort.h"
+#ifdef COMBO_BUILD
+#include "2s2h/Enhancements/Songs/CrossWarpAudio.h"
+#endif
 #include "2s2h/Enhancements/Audio/AudioEditor.h"
 
 #define PROCESS_SCRIPT_END -1
@@ -1231,6 +1234,14 @@ void AudioScript_SequenceChannelProcessScript(SequenceChannel* channel) {
         u8* seqData = seqPlayer->seqData;
         u32 new_var2;
 
+        // OoT's random-range instruction moved from BD to A8 in MM. Select
+        // its original argument widths before decoding the unmodified score.
+#ifdef COMBO_BUILD
+        if (Combo_MMIsOotWarpSequence(seqPlayer->seqId)) {
+            if (cmd == 0xBD) cmd = 0xA8;
+            else if (cmd == 0xBE || (cmd >= 0xA0 && cmd < 0xB0)) continue;
+        }
+#endif
         // Commands 0xA0 - 0xFF
         if (cmd >= 0xA0) {
             highBits = sSeqInstructionArgsTable[cmd - 0xA0];
@@ -1914,6 +1925,9 @@ void AudioScript_SequencePlayerProcessSequence(SequencePlayer* seqPlayer) {
 
         while (true) {
             cmd = AudioScript_ScriptReadU8(seqScript);
+#ifdef COMBO_BUILD
+            Combo_MMTraceWarpSequence(seqPlayer->seqId, seqPlayer->seqData);
+#endif
 
             // 0xF2 and above are "flow control" commands, including termination.
             if (cmd >= 0xF2) {

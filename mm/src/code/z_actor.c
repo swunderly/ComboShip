@@ -4,6 +4,9 @@
  */
 
 #include "z64actor.h"
+#ifdef COMBO_BUILD
+#include "2s2h/Rando/FaroresWind.h"
+#endif
 #include "z64door.h"
 
 #include "prevent_bss_reordering.h"
@@ -871,7 +874,9 @@ s32 Flags_GetClear(PlayState* play, s32 roomNumber) {
 /**
  * Sets a current scene clear flag.
  */
+extern s32 MM_MissingSoulRoomCanClear(PlayState* play,s32 room);
 void Flags_SetClear(PlayState* play, s32 roomNumber) {
+    if(!MM_MissingSoulRoomCanClear(play,roomNumber)) return;
     u8 previouslyOff = !Flags_GetClear(play, roomNumber);
     play->actorCtx.sceneFlags.clearedRoom |= (1 << roomNumber);
     if (previouslyOff) {
@@ -1496,6 +1501,10 @@ void Actor_SetControlStickData(PlayState* play, Input* input, f32 controlStickMa
     input->rel.stick_y = input->cur.stick_y;
 }
 
+#ifdef COMBO_BUILD
+extern int Combo_MM_IsAdult(void);
+extern int Combo_MM_AdultResourcesReady(void);
+#endif
 f32 Player_GetHeight(Player* player) {
     f32 extraHeight;
 
@@ -1520,6 +1529,9 @@ f32 Player_GetHeight(Player* player) {
             return extraHeight + 36.0f;
 
         case PLAYER_FORM_HUMAN:
+#ifdef COMBO_BUILD
+            if(Combo_MM_AdultResourcesReady() && Combo_MM_IsAdult())return extraHeight + 68.0f;
+#endif
             return extraHeight + 44.0f;
     }
 }
@@ -3477,6 +3489,10 @@ void Actor_DrawAll(PlayState* play, ActorContext* actorCtx) {
     TitleCard_Draw(&play->state, &actorCtx->titleCtx);
 
     CLOSE_DISPS(play->state.gfxCtx);
+
+#ifdef COMBO_BUILD
+    Combo_MMFaroreDrawPointer(play);
+#endif
 }
 
 /**
@@ -3726,6 +3742,12 @@ ActorProfile* Actor_LoadOverlay(ActorContext* actorCtx, s16 index) {
     return profile;
 }
 
+// Isolated expanded-soul bridge; must be linked before this patch is integrated.
+extern void MM_MissingSoulRoomReset(PlayState* play);
+extern void MM_MissingSoulRoomBlock(PlayState* play);
+extern s32 MM_MissingSoulRoomCanClear(PlayState* play,s32 room);
+extern s32 MM_ExpandedSoulPreSpawn(PlayState* play, s16 actorId, s32* params);
+
 Actor* Actor_SpawnAsChildAndCutscene(ActorContext* actorCtx, PlayState* play, s16 index, f32 x, f32 y, f32 z, s16 rotX,
                                      s16 rotY, s16 rotZ, s32 params, u32 csId, u32 halfDaysBits, Actor* parent) {
     s32 pad;
@@ -3733,6 +3755,12 @@ Actor* Actor_SpawnAsChildAndCutscene(ActorContext* actorCtx, PlayState* play, s1
     ActorProfile* profile;
     s32 objectSlot;
     ActorOverlay* overlayEntry;
+
+    const s32 soulSpawn=MM_ExpandedSoulPreSpawn(play,index,&params);
+    if (soulSpawn <= 0) {
+        if(soulSpawn==0) MM_MissingSoulRoomBlock(play);
+        return NULL; // Before overlay load/allocation/init; optional missing souls do not clear rooms.
+    }
 
     if (actorCtx->totalLoadedActors >= 255) {
         return NULL;

@@ -1626,6 +1626,7 @@ void SohInputEditorWindow::DrawLinkTab() {
             DrawOcarinaControlPanel();
         }
 
+#ifndef COMBO_BUILD
         if (ImGui::CollapsingHeader("Camera Controls")) {
             ImGui::PopStyleColor();
             ImGui::PopStyleColor();
@@ -1635,6 +1636,7 @@ void SohInputEditorWindow::DrawLinkTab() {
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
         }
+#endif
 
         if (ImGui::CollapsingHeader("D-Pad Controls")) {
             ImGui::PopStyleColor();

@@ -43,12 +43,18 @@ class SDLAudioPlayer final : public AudioPlayer {
 
     /**
      * @brief Queues interleaved PCM samples to the SDL audio device.
-     * @param buf Interleaved sample data (stereo: L,R,… or surround: FL,FR,C,LFE,SL,SR,…).
+     * @param buf Interleaved sample data (stereo: L,R,Ã¢â‚¬Â¦ or surround: FL,FR,C,LFE,SL,SR,Ã¢â‚¬Â¦).
      * @param len Length of @p buf in bytes.
      */
     void DoPlay(const uint8_t* buf, size_t len) override;
 
   private:
+#if defined(__ANDROID__) && defined(COMBO_BUILD)
+    SDL_AudioStream* mConversion = nullptr;
+    int mOutputRate = 32000;
+    uint64_t mSourceFrames = 0;
+    uint64_t mConvertedSourceFrames = 0;
+#endif
     SDL_AudioDeviceID mDevice = 0; ///< Handle to the opened SDL audio device.
     int32_t mNumChannels = 2;      ///< Number of output channels (2 for stereo, 6 for 5.1).
 };

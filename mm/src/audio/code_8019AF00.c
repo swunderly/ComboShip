@@ -6,6 +6,87 @@
 #include <libultraship/bridge/consolevariablebridge.h>
 #include <libultraship/bridge/audiobridge.h>
 
+#ifdef COMBO_BUILD
+extern int Combo_MMForeignSongPerformanceActive(void);
+extern int Combo_MMForeignSongPlayback(void);
+
+// Use the original OoT note timings, rests, dynamics and bends. Keep these
+// separate from MM's native song table so native songs and scarecrow recording
+// are never overwritten by a cross-game performance.
+static OcarinaNote sComboWarpSongNotes[6][20] = {
+    // OCARINA_SONG_MINUET
+    {
+        { OCARINA_PITCH_D4, 18, 86, 0, 0, 0 },
+        { OCARINA_PITCH_D5, 18, 92, 0, 0, 0 },
+        { OCARINA_PITCH_B4, 72, 86, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 18, 80, 0, 0, 0 },
+        { OCARINA_PITCH_B4, 18, 88, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 144, 86, 0, 0, 0 },
+        { OCARINA_PITCH_NONE, 0, 86, 0, 0, 0 },
+    },
+
+    // OCARINA_SONG_BOLERO
+    {
+        { OCARINA_PITCH_F4, 15, 80, 0, 0, 0 },
+        { OCARINA_PITCH_D4, 15, 72, 0, 0, 0 },
+        { OCARINA_PITCH_F4, 15, 84, 0, 0, 0 },
+        { OCARINA_PITCH_D4, 15, 76, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 15, 84, 0, 0, 0 },
+        { OCARINA_PITCH_F4, 15, 74, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 15, 78, 0, 0, 0 },
+        { OCARINA_PITCH_F4, 135, 66, 0, 0, 0 },
+        { OCARINA_PITCH_NONE, 0, 66, 0, 0, 0 },
+    },
+
+    // OCARINA_SONG_SERENADE
+    {
+        { OCARINA_PITCH_D4, 36, 60, 0, 0, 0 },
+        { OCARINA_PITCH_F4, 36, 78, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 33, 82, 0, 0, 0 },
+        { OCARINA_PITCH_NONE, 3, 82, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 36, 84, 0, 0, 0 },
+        { OCARINA_PITCH_B4, 144, 90, 0, 0, 0 },
+        { OCARINA_PITCH_NONE, 0, 90, 0, 0, 0 },
+    },
+
+    // OCARINA_SONG_REQUIEM
+    {
+        { OCARINA_PITCH_D4, 45, 88, 0, 0, 0 },
+        { OCARINA_PITCH_F4, 23, 86, 0, 0, 0 },
+        { OCARINA_PITCH_D4, 22, 84, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 45, 86, 0, 0, 0 },
+        { OCARINA_PITCH_F4, 45, 94, 0, 0, 0 },
+        { OCARINA_PITCH_D4, 180, 94, 0, 0, 0 },
+        { OCARINA_PITCH_NONE, 0, 94, 0, 0, 0 },
+    },
+
+    // OCARINA_SONG_NOCTURNE
+    {
+        { OCARINA_PITCH_B4, 36, 88, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 33, 84, 0, 0, 0 },
+        { OCARINA_PITCH_NONE, 3, 84, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 18, 82, 0, 0, 0 },
+        { OCARINA_PITCH_D4, 18, 60, 0, 0, 0 },
+        { OCARINA_PITCH_B4, 18, 90, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 18, 88, 0, 0, 0 },
+        { OCARINA_PITCH_F4, 144, 96, 0, 0, 0 },
+        { OCARINA_PITCH_NONE, 0, 96, 0, 0, 0 },
+    },
+
+    // OCARINA_SONG_PRELUDE
+    {
+        { OCARINA_PITCH_D5, 15, 84, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 45, 88, 0, 0, 0 },
+        { OCARINA_PITCH_D5, 15, 88, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 15, 82, 0, 0, 0 },
+        { OCARINA_PITCH_B4, 15, 86, 0, 0, 0 },
+        { OCARINA_PITCH_D5, 60, 90, 0, 0, 0 },
+        { OCARINA_PITCH_NONE, 75, 90, 0, 0, 0 },
+        { OCARINA_PITCH_NONE, 0, 90, 0, 0, 0 },
+    },
+};
+#endif
+
 typedef struct {
     /* 0x0 */ s8 x;
     /* 0x1 */ s8 y;
@@ -2563,6 +2644,18 @@ void AudioOcarina_CheckSongsWithoutMusicStaff(void) {
             sCurOcarinaSongWithoutMusicStaff[sOcarinaWithoutMusicStaffPos - 1] = sCurOcarinaPitch;
         }
 
+#ifdef COMBO_BUILD
+            extern int Combo_MMRecognizeForeignSong(const u8*, int);
+            if (Combo_MMRecognizeForeignSong(sCurOcarinaSongWithoutMusicStaff, sOcarinaWithoutMusicStaffPos)) {
+                // Publish a valid native recognition result. Leaving this unset
+                // produces staff state 0xFF, which the message engine treats as
+                // a failed performance and plays the ocarina error sound.
+                sPlayedOcarinaSongIndexPlusOne = OCARINA_SONG_SOARING + 1;
+                sIsOcarinaInputEnabled = false;
+                sOcarinaFlags = 0;
+                return;
+            }
+#endif
         // This nested for-loop tests to see if the notes from the ocarina are identical
         // to any of the songIndex from sFirstOcarinaSongIndex to sLastOcarinaSongIndex
 
@@ -2814,6 +2907,15 @@ void AudioOcarina_SetPlaybackSong(s8 songIndexPlusOne, u8 playbackState) {
     } else {
         sPlaybackSong = sScarecrowsLongSongNotes;
     }
+
+#ifdef COMBO_BUILD
+    if (Combo_MMForeignSongPerformanceActive() && songIndexPlusOne == OCARINA_SONG_SOARING + 1) {
+        int foreignSong = Combo_MMForeignSongPlayback();
+        if (foreignSong >= 0 && foreignSong < 6) {
+            sPlaybackSong = sComboWarpSongNotes[foreignSong];
+        }
+    }
+#endif
 
     sPlaybackNotePos = 0;
     if (playbackState & 0x80) {

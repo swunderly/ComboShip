@@ -1,9 +1,11 @@
 // combo/gui/ComboHintTracker.cpp — see ComboHintTracker.h
 #include "ComboHintTracker.h"
+#include "ComboTrackerControls.h"
 #include "ComboExport.h"
 #include "ComboForeground.h"  // foreground game for the OnlyPaused gate
 #include "ComboTrackerSwap.h" // ForegroundPaused (shared with the icon trackers)
 #include "ComboWidgetStyle.h"
+#include "ComboMenuLayout.h"
 #include <imgui.h>
 #include <libultraship/libultraship.h> // CVar bridge
 #include <ship/Context.h>
@@ -24,12 +26,9 @@ namespace ComboRando {
 namespace {
 
 constexpr const char* kCvarEnabled = "gCombo.HintTracker.Enabled";
-constexpr const char* kCvarWindowType = "gCombo.HintTracker.WindowType";
-constexpr const char* kCvarOnlyPaused = "gCombo.HintTracker.OnlyPaused";
 constexpr const char* kCvarShowUnrevealed = "gCombo.HintTracker.ShowUnrevealed";
 constexpr const char* kCvarShowJunk = "gCombo.HintTracker.ShowJunk";
 constexpr const char* kCvarHideRead = "gCombo.HintTracker.HideRead";
-constexpr int kDefaultWindowType = 1; // 1 = normal window (the hint list is text-heavy)
 
 // Launcher push side. The launcher owns/reuses its buffers and can call from a game DLL's thread,
 // so the strings are COPIED under this mutex; parsing happens on the draw thread via sDirty.
@@ -272,6 +271,8 @@ void Rebuild(const std::string& hintsJson, const std::string& readJson) {
         en.read = readOot.count(en.key) != 0;
         Group& grp = sGroups[OotGroupForType(e.value("type", std::string()))];
         en.label = LabelForOotKey(en.key, static_cast<int>(grp.entries.size()) + 1);
+        const std::string target = e.value("pathTarget", std::string());
+        if (en.read && !target.empty()) en.label = "Path to " + target;
         grp.entries.push_back(std::move(en));
     });
 
@@ -285,6 +286,8 @@ void Rebuild(const std::string& hintsJson, const std::string& readJson) {
         en.label = "Pool Hint #" + std::to_string(idx + 1);
         en.text = g.value("text", std::string());
         en.read = readPool.count(idx) != 0;
+        const std::string target = g.value("pathTarget", std::string());
+        if (en.read && !target.empty()) en.label = "Path to " + target;
         pool.entries.push_back(std::move(en));
     });
     sGroups.push_back(std::move(pool));
@@ -366,10 +369,12 @@ void ComboHintTrackerWindow::DrawElement() {
         return;
     }
 
-    ComboMenu_PushInput(theme);
-    ImGui::SetNextItemWidth(-1.0f);
-    ImGui::InputTextWithHint("##hintsearch", "Search hints...", sSearchBuf, sizeof(sSearchBuf));
-    ComboMenu_PopInput();
+    if (CVarGetInteger("gCombo.HintTracker.ShowTools", 0)) {
+        ComboMenu_PushInput(theme);
+        ImGui::SetNextItemWidth(-1.0f);
+        ImGui::InputTextWithHint("##hintsearch", "Search hints...", sSearchBuf, sizeof(sSearchBuf));
+        ComboMenu_PopInput();
+    } else sSearchBuf[0] = 0;
     const std::string query = ToLower(sSearchBuf);
 
     int total = 0, read = 0;
@@ -385,8 +390,9 @@ void ComboHintTrackerWindow::DrawElement() {
     ImGui::TextDisabled("Revealed %d / %d", read, total);
     ImGui::Separator();
 
-    const ImVec4 kReadColor(0.6f, 0.6f, 0.6f, 1.0f);
     const ImVec4 kHiddenColor(0.5f, 0.5f, 0.5f, 1.0f);
+    static std::string selectedLabel, selectedText;
+    static int selectedSlot = -1;
     int shownTotal = 0;
     for (const Group& g : sGroups) {
         if (g.junk && !showJunk) {
@@ -415,70 +421,58 @@ void ComboHintTrackerWindow::DrawElement() {
         shownTotal += static_cast<int>(shown.size());
         // "###<title>" pins the ImGui ID to the title so the live count in the label can't reset the
         // collapse state on every search keystroke or reveal.
-        std::string header = g.title + " (" + std::to_string(shown.size()) + ")###" + g.title;
+        int revealed = 0;
+        for (const auto& e : g.entries) revealed += e.read;
+        ImGui::Separator();
+        std::string header = g.title + " (" + std::to_string(revealed) + "/" + std::to_string(g.entries.size()) + ")###" + g.title;
         if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
             continue;
         }
         for (const Entry* e : shown) {
+            ImGui::PushID(g.title.c_str());
             ImGui::PushID(e->key.c_str());
-            ImGui::TextColored(e->read ? kReadColor : theme, "%s %s", e->read ? ICON_FA_CHECK : ICON_FA_QUESTION,
-                               e->label.c_str());
-            ImGui::Indent();
-            if (e->read || showUnrevealed) {
-                ImGui::PushStyleColor(ImGuiCol_Text, e->read ? kReadColor : ImGui::GetStyleColorVec4(ImGuiCol_Text));
-                ImGui::TextWrapped("%s", e->text.c_str());
-                ImGui::PopStyleColor();
-            } else {
-                ImGui::TextColored(kHiddenColor, "???");
+            ImGui::PushStyleColor(ImGuiCol_Text,e->read ? ImVec4(.55f,.8f,1,1) : kHiddenColor);
+            ImGui::TextUnformatted(e->read ? ICON_FA_COMMENT : ICON_FA_QUESTION); ImGui::SameLine();
+            const std::string row = e->label + (e->read ? "" : " (Unrevealed)") + "##hint";
+            if (ImGui::Selectable(row.c_str(),false,0,ImVec2(0,ImGui::GetTextLineHeight()*1.15f))) {
+                selectedLabel=e->label;
+                selectedText=e->read || showUnrevealed ? e->text : "This hint has not been revealed yet.";
+                selectedSlot=sSlot;
+                ImGui::PopID(); ImGui::PopID();
+                ImGui::OpenPopup("Hint details");
+                ImGui::PushID(g.title.c_str()); ImGui::PushID(e->key.c_str());
             }
-            ImGui::Unindent();
+            ImGui::PopStyleColor();
+            ImGui::PopID();
             ImGui::PopID();
         }
     }
     if (shownTotal == 0) {
         ImGui::TextDisabled("Nothing to show with the current filters.");
     }
+    const auto display = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowSize(ImVec2(std::min(ImGui::GetFontSize()*30,display.x*.8f),0),ImGuiCond_Appearing);
+    if (ImGui::BeginPopup("Hint details")) {
+        if (selectedSlot != sSlot) ImGui::CloseCurrentPopup();
+        else {
+            ImGui::TextWrapped("%s",selectedLabel.c_str()); ImGui::Separator();
+            ImGui::TextWrapped("%s",selectedText.c_str());
+            ComboMenu_PushButton(theme);
+            if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
+            ComboMenu_PopButton();
+        }
+        ImGui::EndPopup();
+    }
 }
 
 void ComboHintTrackerWindow::Draw() {
-    if (!IsVisible()) {
-        return;
-    }
     auto ctx = Ship::Context::GetRawInstance();
-    if (!ctx || !ctx->GetWindow() || !ctx->GetWindow()->GetGui()) {
-        return;
-    }
-    // comboui's per-module GImGui must point at the shared context (same pattern as ComboMenu).
+    if (!ctx || !ctx->GetWindow() || !ctx->GetWindow()->GetGui()) return;
     ImGui::SetCurrentContext(ctx->GetWindow()->GetGui()->GetImGuiContext());
-
-    const bool floating = CVarGetInteger(kCvarWindowType, kDefaultWindowType) == 0;
-    // OnlyPaused follows the FOREGROUND game's pause state (the dormant game's is stale), and only
-    // applies to the floating overlay — a real window the player opened stays open.
-    if (floating && CVarGetInteger(kCvarOnlyPaused, 0) != 0 &&
-        !ComboTracker::ForegroundPaused(ComboUI::GetForegroundGame())) {
-        SyncVisibilityConsoleVariable();
-        return;
-    }
-
-    ImGuiWindowFlags flags = 0;
-    // Only the real window gets a close box (mirrors GuiWindow::Draw); the chrome-less overlay has no
-    // title bar to put one in, so it stays nullptr there.
-    bool* pOpen = &mIsVisible;
-    if (floating) {
-        ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(420.0f, 480.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowBgAlpha(0.65f);
-        flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-        pOpen = nullptr;
-    } else {
-        ImGui::SetNextWindowSize(ImVec2(500.0f, 600.0f), ImGuiCond_FirstUseEver);
-    }
-    // Distinct ImGui/Gui-map identity from OOT's native "Hint Tracker"; the "##" tail is not displayed.
-    if (ImGui::Begin("Hint Tracker##Combo", pOpen, flags)) {
-        DrawElement();
-    }
-    ImGui::End();
-    SyncVisibilityConsoleVariable();
+    PollPush();
+    if (!ComboTrackerUI::Visible(ComboTrackerUI::Hint)) return;
+    if (ComboTrackerUI::Begin(ComboTrackerUI::Hint)) DrawElement();
+    ComboTrackerUI::End(ComboTrackerUI::Hint);
 }
 
 void RegisterHintTrackerWindow() {
@@ -487,87 +481,27 @@ void RegisterHintTrackerWindow() {
         return;
     }
     if (!sWindow) {
-        sWindow = std::make_shared<ComboHintTrackerWindow>(kCvarEnabled, "Hint Tracker##Combo");
+        ComboTrackerUI::Migrate(ComboTrackerUI::Hint);
+        sWindow = std::make_shared<ComboHintTrackerWindow>("", true, " Combo Hint Tracker");
     }
     ctx->GetWindow()->GetGui()->AddGuiWindow(sWindow);
 }
 
 void DrawHintTrackerSharedPanel() {
-    const ImVec4 theme = ComboMenu_ThemeColor();
-    bool changed = false;
-
-    const ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
-    if (ImGui::BeginTable("##hinttrackercols", 2, tableFlags)) {
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-
-        const bool shown = CVarGetInteger(kCvarEnabled, 0) != 0;
-        std::string txt =
-            std::string(shown ? ICON_FA_WINDOW_CLOSE : ICON_FA_EXTERNAL_LINK_SQUARE) + " Toggle Hint Tracker";
-        ComboMenu_PushButton(theme);
-        if (ImGui::Button(txt.c_str())) {
-            CVarSetInteger(kCvarEnabled, shown ? 0 : 1);
-            if (auto ctx = Ship::Context::GetRawInstance(); ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui()) {
-                if (auto win = ctx->GetWindow()->GetGui()->GetGuiWindow("Hint Tracker##Combo")) {
-                    if (shown) {
-                        win->Hide();
-                    } else {
-                        win->Show();
-                    }
-                }
-            }
-            changed = true;
-        }
-        ComboMenu_PopButton();
-        ImGui::TextDisabled("One window for both games' combo-generated hints.");
-
-        ImGui::SeparatorText("Appearance");
-        const char* kWindowTypes[] = { "Floating (overlay)", "Window" };
-        int wt = CVarGetInteger(kCvarWindowType, kDefaultWindowType);
-        ComboMenu_PushCombobox(theme);
-        if (ImGui::Combo("Window type", &wt, kWindowTypes, 2)) {
-            CVarSetInteger(kCvarWindowType, wt);
-            changed = true;
-        }
-        ComboMenu_PopCombobox();
-
-        ComboMenu_PushCheckbox(theme);
-        bool onlyPaused = CVarGetInteger(kCvarOnlyPaused, 0) != 0;
-        if (ImGui::Checkbox("Only show while paused", &onlyPaused)) {
-            CVarSetInteger(kCvarOnlyPaused, onlyPaused ? 1 : 0);
-            changed = true;
-        }
-        if (onlyPaused && wt != 0) {
-            ImGui::TextDisabled("Only applies to the floating overlay.");
-        }
-
-        ImGui::SeparatorText("Filters");
-        bool showUnrevealed = CVarGetInteger(kCvarShowUnrevealed, 0) != 0;
-        if (ImGui::Checkbox("Spoil unrevealed hints", &showUnrevealed)) {
-            CVarSetInteger(kCvarShowUnrevealed, showUnrevealed ? 1 : 0);
-            changed = true;
-        }
-        bool hideRead = CVarGetInteger(kCvarHideRead, 0) != 0;
-        if (ImGui::Checkbox("Hide hints already read", &hideRead)) {
-            CVarSetInteger(kCvarHideRead, hideRead ? 1 : 0);
-            changed = true;
-        }
-        bool showJunk = CVarGetInteger(kCvarShowJunk, 0) != 0;
-        if (ImGui::Checkbox("Show junk hints", &showJunk)) {
-            CVarSetInteger(kCvarShowJunk, showJunk ? 1 : 0);
-            changed = true;
-        }
+    using namespace ComboTrackerUI;
+    DrawEnabled(Hint);
+    if (ImGui::BeginTable("##hint-settings",2,ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
+        ImGui::TableNextColumn(); DrawOpenControls(Hint);
+        ImGui::TableNextColumn(); DrawAppearance(Hint);
+        ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
+        Checkbox("Show search toolbar","gCombo.HintTracker.ShowTools");
+        Checkbox("Hide hints already read",kCvarHideRead);
+        MenuTooltip("Read state belongs to the save slot. Regenerating the slot clears it.");
+        Checkbox("Show junk hints",kCvarShowJunk);
+        Checkbox("Spoil unrevealed hints",kCvarShowUnrevealed);
+        MenuTooltip("Off by default: unrevealed hint contents cannot appear in rows or search results. Enable only if you want spoilers.");
         ComboMenu_PopCheckbox();
-
         ImGui::EndTable();
-    }
-
-    ImGui::TextDisabled("Read state is stored per save slot and resets when the slot is regenerated.");
-
-    if (changed) {
-        if (auto ctx = Ship::Context::GetRawInstance(); ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui()) {
-            ctx->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
-        }
     }
 }
 

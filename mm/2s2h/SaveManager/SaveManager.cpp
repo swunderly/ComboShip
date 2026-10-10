@@ -196,16 +196,36 @@ int SaveManager_ReadSaveFile(const std::filesystem::path& fileName, nlohmann::js
 // ComboShip (#182): the slot whose owlSave blob populated gSaveContext, so the writers below know
 // whether the blob is still current (refresh it) or has been overtaken by live state (drop it).
 extern "C" int gComboOwlBlobSlot = -1;
+
+// Earlier combo-created saves skipped the file-select step that stamps ZELDA3.
+// Repair only that known all-zero marker in a parsed randomizer container. Never
+// repair in the flash writers: their invalid markers intentionally erase saves.
+static void SaveManager_RepairComboMarker(Save& save) {
+    if (gComboReadGameSave == nullptr || save.shipSaveInfo.saveType != SAVETYPE_RANDO) {
+        return;
+    }
+    for (unsigned char value : save.saveInfo.playerData.newf) {
+        if (value != 0) {
+            return;
+        }
+    }
+    memcpy(save.saveInfo.playerData.newf, "ZELDA3", sizeof(save.saveInfo.playerData.newf));
+    SPDLOG_INFO("[ComboShip] Repaired missing MM file marker in loaded randomizer save");
+}
 #endif
 
 void SaveManager_InitNewSaveForSlot(int mmFileNum, const unsigned char* ootName8) {
     Sram_InitNewSave();
 #ifdef COMBO_BUILD
-    // ComboShip: carry the OOT-entered file name over (same font codes in both games; anything
-    // outside the shared 0x00-0x3F range, e.g. JP glyphs, becomes a space).
+    // Combo bypasses MM file select, which normally stamps the valid-file marker.
+    // Without it, pause/owl saves take the flash writer's file-deletion path.
+    memcpy(gSaveContext.save.saveInfo.playerData.newf, "ZELDA3",
+           sizeof(gSaveContext.save.saveInfo.playerData.newf));
+    // SOH_GetCurrentPlayerName normalizes the OOT name to MM/PAL font codes.
+    // 0x40 is a period; unsupported glyphs become spaces (0x3E).
     if (ootName8 != nullptr) {
         for (int i = 0; i < 8; i++) {
-            gSaveContext.save.saveInfo.playerData.playerName[i] = (ootName8[i] <= 0x3F) ? ootName8[i] : 0x3E;
+            gSaveContext.save.saveInfo.playerData.playerName[i] = (ootName8[i] <= 0x40) ? ootName8[i] : 0x3E;
         }
     }
     // ComboShip: a fresh MM save is always entered mid-playthrough from OOT, never via MM's title/intro.
@@ -290,6 +310,9 @@ void SaveManager_SaveCurrentForCombo() {
                 j["owlSave"]["save"]["shipSaveInfo"]["pauseSaveEntrance"] =
                     keep.at("shipSaveInfo").at("pauseSaveEntrance");
                 j["owlSave"]["save"]["shipSaveInfo"]["respawn"] = keep.at("shipSaveInfo").at("respawn");
+                // Typed grotto identity belongs to the same preserved native respawn snapshot.
+                j["owlSave"]["save"]["shipSaveInfo"]["grottoPreviousSceneValid"] = keep.at("shipSaveInfo").value("grottoPreviousSceneValid",0);
+                j["owlSave"]["save"]["shipSaveInfo"]["grottoPreviousScene"] = keep.at("shipSaveInfo").value("grottoPreviousScene",0);
                 if (comboDeadForSave) {
                     j["owlSave"]["save"]["saveInfo"]["playerData"]["health"] = 0x30;
                 }
@@ -343,8 +366,11 @@ static int SaveManager_LoadFailedForCombo(int code) {
 
 // ComboShip: loading never creates or persists. A missing/broken MM half used to be replaced with a
 // fresh SAVETYPE_VANILLA save, permanently poisoning the slot; now every failure just returns a code,
-// loudly. Nothing repairs the slot — re-create the file. 0 ok, -1 missing, -2 unreadable, -3 migrate,
+// loudly. Only the known missing combo file marker is repaired in memory. 0 ok, -1 missing, -2 unreadable, -3 migrate,
 // -4 no usable save page (neither key, or owlSave unparseable with no newCycleSave), -5 parse.
+#ifdef COMBO_BUILD
+extern "C" int Combo_MM_AdultPrepareLoadedSave(Save* save);
+#endif
 int SaveManager_LoadSaveFile(int mmFileNum) {
     std::string fileName = SaveManager_GetFileName(mmFileNum);
     nlohmann::json j;
@@ -385,6 +411,11 @@ int SaveManager_LoadSaveFile(int mmFileNum) {
             // Whole SaveContext, unlike newCycleSave's bare Save — it carries the live cycle state
             // (eventInf, bottle timers, pictoPhotoI5). Mirrors SaveManager_SysFlashrom_ReadData's owl branch.
             SaveContext sc = j["owlSave"];
+            SaveManager_RepairComboMarker(sc.save);
+            if(!Combo_MM_AdultPrepareLoadedSave(&sc.save)) {
+                SPDLOG_ERROR("[ComboShip] Adult MM owl state unavailable; refusing before live save mutation");
+                return SaveManager_LoadFailedForCombo(-6);
+            }
             sc.save.saveInfo.checksum = 0;
             sc.save.saveInfo.checksum = Sram_CalcChecksum(&sc, offsetof(SaveContext, fileNum));
             memcpy(&gSaveContext, &sc, offsetof(SaveContext, fileNum));
@@ -409,6 +440,13 @@ int SaveManager_LoadSaveFile(int mmFileNum) {
 #endif
     try {
         Save save = j["newCycleSave"]["save"];
+#ifdef COMBO_BUILD
+        SaveManager_RepairComboMarker(save);
+        if(!Combo_MM_AdultPrepareLoadedSave(&save)) {
+            SPDLOG_ERROR("[ComboShip] Adult MM cycle state unavailable; refusing before live save mutation");
+            return SaveManager_LoadFailedForCombo(-6);
+        }
+#endif
         save.saveInfo.checksum = 0;
         save.saveInfo.checksum = Sram_CalcChecksum(&save, sizeof(Save));
         gSaveContext.save = save;
@@ -921,6 +959,9 @@ extern "C" s32 SaveManager_SysFlashrom_ReadData(void* saveBuffer, u32 pageNum, u
 
         try {
             SaveContext saveContext = j["owlSave"];
+#ifdef COMBO_BUILD
+            if(!Combo_MM_AdultPrepareLoadedSave(&saveContext.save))return -1;
+#endif
 
             // Recompute the checksum in case the save was edited externally or a migration changed it
             // By doing this we sacrifice "real" checksum verification of the save,
@@ -947,6 +988,9 @@ extern "C" s32 SaveManager_SysFlashrom_ReadData(void* saveBuffer, u32 pageNum, u
 
         try {
             Save save = j["newCycleSave"]["save"];
+#ifdef COMBO_BUILD
+            if(!Combo_MM_AdultPrepareLoadedSave(&save))return -1;
+#endif
 
             // Recompute the checksum, see message above
             save.saveInfo.checksum = 0;

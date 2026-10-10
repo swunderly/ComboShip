@@ -1,4 +1,7 @@
 #include <unordered_set>
+#include <algorithm>
+#include <sstream>
+#include <vector>
 #include "SohMenu.h"
 #include "soh/Enhancements/enhancementTypes.h"
 #include "soh/Enhancements/randomizer/randomizer_check_objects.h"
@@ -8,6 +11,10 @@
 #include "soh/OTRGlobals.h"
 #include "soh/ShipUtils.h"
 #include "soh/SohGui/SohGui.hpp"
+#ifdef COMBO_BUILD
+#include "ComboExport.h"
+#include "menu/ComboTrickABI.h"
+#endif
 
 extern "C" {
 #include "variables.h"
@@ -47,6 +54,95 @@ void SaveEnabledTricks() {
     tricksDirty = false;
     return;
 }
+
+#ifdef COMBO_BUILD
+namespace {
+std::set<std::string> ReadComboTrickNames() {
+    std::set<std::string> result;
+    std::stringstream stream(CVarGetString(CVAR_RANDOMIZER_SETTING("EnabledTricks"), ""));
+    std::string name;
+    while (std::getline(stream, name, ',')) if (!name.empty()) result.insert(name);
+    return result;
+}
+}
+
+extern "C" COMBO_EXPORT const CwTrickInfo* SOH_GetComboTricks(int32_t* count) {
+    static std::vector<CwTrickInfo> rows;
+    static std::vector<std::string> labels;
+    auto settings = Rando::Settings::GetInstance();
+    if (rows.empty()) {
+        rows.reserve(RT_MAX);
+        labels.reserve(RT_MAX);
+        for (int i = 0; i < RT_MAX; ++i) {
+            auto& option = settings->GetTrickSetting(static_cast<RandomizerTrick>(i));
+            // Empty slots are unimplemented or disabled upstream techniques.
+            if (option.GetName().empty() || option.GetNameTag().empty()) continue;
+            std::string tags;
+            uint32_t mask = 0;
+            int difficulty = 0;
+            for (auto tag : option.GetTags()) {
+                if (!tags.empty()) tags += ", ";
+                tags += Rando::Tricks::GetTagName(tag);
+                const int bit = static_cast<int>(tag);
+                mask |= 1U << bit;
+                if (bit < 6) difficulty = std::max(difficulty, bit);
+            }
+            labels.push_back(tags);
+            rows.push_back({i, option.GetName().c_str(), option.GetDescription().c_str(),
+                            Rando::Tricks::GetAreaName(option.GetArea()).c_str(), labels.back().c_str(),
+                            difficulty, mask, 0});
+        }
+    }
+    const auto enabled = ReadComboTrickNames();
+    for (auto& row : rows)
+        row.enabled = enabled.count(settings->GetTrickSetting(static_cast<RandomizerTrick>(row.id)).GetNameTag()) ? 1 : 0;
+    if (count) *count = static_cast<int32_t>(rows.size());
+    return rows.empty() ? nullptr : rows.data();
+}
+
+// Called when a run's saved trick list is restored/overridden. Generation still
+// reads the exact same native list in GenerateRando; live tracker queries read
+// the context array updated here.
+extern "C" COMBO_EXPORT void SOH_ApplyComboTricks() {
+    if (!IS_RANDO) return;
+    auto settings = Rando::Settings::GetInstance();
+    auto context = Rando::Context::GetInstance();
+    const auto enabled = ReadComboTrickNames();
+    for (int i = 0; i < RT_MAX; ++i) {
+        const auto id = static_cast<RandomizerTrick>(i);
+        context->GetTrickOption(id).Set(enabled.count(settings->GetTrickSetting(id).GetNameTag()) ? 1 : 0);
+    }
+}
+
+extern "C" COMBO_EXPORT const char* SOH_GetComboTricksCsv() {
+    return CVarGetString(CVAR_RANDOMIZER_SETTING("EnabledTricks"), "");
+}
+
+extern "C" COMBO_EXPORT void SOH_SetComboTricksCsv(const char* csv) {
+    if (csv && *csv) CVarSetString(CVAR_RANDOMIZER_SETTING("EnabledTricks"), csv);
+    else CVarClear(CVAR_RANDOMIZER_SETTING("EnabledTricks"));
+    tricksDirty = true;
+    SOH_ApplyComboTricks();
+}
+
+extern "C" COMBO_EXPORT int32_t SOH_SetComboTrick(int32_t id, int32_t enabled) {
+    if (id < 0 || id >= RT_MAX || CVarGetInteger(CVAR_GENERAL("RandoGenerating"), 0) ||
+        CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) return 0;
+    auto& option = Rando::Settings::GetInstance()->GetTrickSetting(static_cast<RandomizerTrick>(id));
+    if (option.GetName().empty() || option.GetNameTag().empty()) return 0;
+    auto names = ReadComboTrickNames();
+    if (enabled) names.insert(option.GetNameTag());
+    else names.erase(option.GetNameTag());
+    std::string serialized;
+    for (const auto& name : names) { if (!serialized.empty()) serialized += ','; serialized += name; }
+    if (serialized.empty()) CVarClear(CVAR_RANDOMIZER_SETTING("EnabledTricks"));
+    else CVarSetString(CVAR_RANDOMIZER_SETTING("EnabledTricks"), serialized.c_str());
+    tricksDirty = true;
+    SOH_ApplyComboTricks();
+    Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+    return 1;
+}
+#endif
 
 void SaveExcludedLocations() {
     // todo: this efficiently when we build out cvar array support

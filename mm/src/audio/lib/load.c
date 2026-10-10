@@ -76,6 +76,9 @@ void AudioLoad_RelocateFontAndPreloadSamples(s32 fontId, SoundFontData* fontData
 s32 AudioLoad_ProcessSamplePreloads(s32 resetStatus);
 
 SequenceData ResourceMgr_LoadSeqByName(const char* path);
+#ifdef COMBO_BUILD
+#include "2s2h/Enhancements/Songs/CrossWarpAudio.h"
+#endif
 SoundFont* ResourceMgr_LoadAudioSoundFontByName(const char* path);
 SoundFont* ResourceMgr_LoadAudioSoundFontByCRC(uint64_t crc);
 
@@ -850,7 +853,7 @@ void* AudioLoad_SyncLoad(s32 tableType, u32 id, s32* didAllocate) {
                 size -= 0x10;
             }
 
-            memcpy(ramAddr, romAddr, size);
+            memcpy((void*)ramAddr, (const void*)romAddr, size);
         } else if (medium2 == mediumUnk) {
             AudioLoad_SyncDmaUnkMedium(romAddr, ramAddr, size, (s16)table->unkMediumParam);
         } else {
@@ -976,7 +979,7 @@ s32 AudioLoad_Dma(OSIoMesg* mesg, u32 priority, s32 direction, uintptr_t devAddr
     if (gAudioCtx.resetTimer > 0x10) {
         return -1;
     }
-    memcpy(ramAddr, devAddr, size);
+    memcpy((void*)ramAddr, (const void*)devAddr, size);
     return 0;
 }
 
@@ -1346,6 +1349,9 @@ void AudioLoad_Init(void* heap, size_t heapSize) {
 
     free(customSeqList);
 
+#ifdef COMBO_BUILD
+    Combo_MMInitWarpAudio();
+#endif
     numFonts = fntListSize;
 
     // #end region
@@ -1791,7 +1797,7 @@ void AudioLoad_AsyncDmaRamUnloaded(AudioAsyncLoad* asyncLoad, size_t size) {
     size = ALIGN16(size);
     Audio_InvalDCache(asyncLoad->curRamAddr, size);
     osCreateMesgQueue(&asyncLoad->msgQueue, &asyncLoad->msg, 1);
-    memcpy(asyncLoad->curRamAddr, asyncLoad->curDevAddr, size);
+    memcpy((void*)asyncLoad->curRamAddr, (const void*)asyncLoad->curDevAddr, size);
     osSendMesg(&asyncLoad->msgQueue, OS_MESG_PTR(NULL), OS_MESG_NOBLOCK);
 }
 

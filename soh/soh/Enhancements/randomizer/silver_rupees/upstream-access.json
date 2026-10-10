@@ -1,0 +1,1134 @@
+{
+  "revision": "41a2b7c0d7dbbb53fed928652f8271bc336c113f",
+  "license": "MIT",
+  "access": [
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 1",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 2",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 3",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 4",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\bottom_of_the_well.yml",
+      "region": "Bottom of the Well Main",
+      "check": "Bottom of the Well SR 5",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Alcove Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Alcove Left",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Center Top",
+      "condition": "can_hookshot || climb_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Center Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Light 2",
+      "check": "Ganon Castle SR Light Center Left",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Center Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Front",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Back Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Back Middle",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Forest 2",
+      "check": "Ganon Castle SR Forest Center Left",
+      "condition": "is_adult || climb_anywhere || can_hookshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Back Right",
+      "condition": "has_tunic_goron"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Left",
+      "condition": "has_tunic_goron"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Far Right",
+      "condition": "has_tunic_goron_strict && (can_lift_gold || climb_anywhere || hookshot_anywhere || glitch_megaflip)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Front Right",
+      "condition": "has_tunic_goron"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Fire",
+      "check": "Ganon Castle SR Fire Black Pillar",
+      "condition": "has_tunic_goron && can_lift_gold"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Center Midair",
+      "condition": "can_hookshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Front Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Center Bottom",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Back Left",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ganon_castle.yml",
+      "region": "Ganon Castle Spirit",
+      "check": "Ganon Castle SR Spirit Back Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Front Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Front Left",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Front Above",
+      "condition": "(is_adult && can_hookshot) || can_longshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Center",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "Gerudo Training Grounds SR Slope Back",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Front Left",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Front Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Back Left",
+      "condition": "has_hover_boots || can_play_time || climb_anywhere || hookshot_anywhere || is_child"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Back Center",
+      "condition": "(can_hookshot && (can_longshot || has_hover_boots || can_play_time || hookshot_anywhere || is_child)) || climb_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Lava",
+      "check": "Gerudo Training Grounds SR Lava Back Right",
+      "condition": "can_longshot || has_hover_boots || can_play_time || is_child || climb_anywhere || hookshot_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Maze Side",
+      "check": "Gerudo Training Grounds SR Lava Back Center",
+      "condition": "can_hookshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Maze Side",
+      "check": "Gerudo Training Grounds SR Lava Back Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 1",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 2",
+      "condition": "can_swim || can_hookshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 3",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 4",
+      "condition": "can_swim || can_hookshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Underwater",
+      "check": "Gerudo Training Grounds SR Water 5",
+      "condition": "can_swim || hookshot_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Hammer",
+      "check": "Gerudo Training Grounds SR Lava Back Center",
+      "condition": "soul_keese && soul_enemy(SOUL_ENEMY_TORCH_SLUG) && (can_use_sword || can_use_sticks || can_hammer || can_use_bow) && can_hookshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\gerudo_training_grounds.yml",
+      "region": "Gerudo Training Grounds Hammer",
+      "check": "Gerudo Training Grounds SR Lava Back Right",
+      "condition": "soul_keese && soul_enemy(SOUL_ENEMY_TORCH_SLUG) && (can_use_sword || can_use_sticks || can_hammer || can_use_bow) && can_hookshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Left",
+      "condition": "break_icicle_ice_cavern"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Center Left",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Back",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Center Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Scythe",
+      "check": "Ice Cavern SR Scythe Midair",
+      "condition": "is_adult || climb_anywhere || hookshot_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Back Left",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Back Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Center",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Alcove",
+      "condition": "has_blue_fire"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\ice_cavern.yml",
+      "region": "Ice Cavern Block Room",
+      "check": "Ice Cavern SR Blocks Front Left",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 1",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 2",
+      "condition": "can_hookshot || (is_adult && has_hover_boots) || climb_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 3",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 4",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Scythe Silver Rupees",
+      "check": "Shadow Temple SR Scythe 5",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 1",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 2",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 3",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 4",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Open",
+      "check": "Shadow Temple SR Pit 5",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Back Left",
+      "condition": "has_lens && (can_hookshot || climb_anywhere)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Right",
+      "condition": "can_hookshot || climb_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Center",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Front Left",
+      "condition": "can_hookshot || climb_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\shadow_temple.yml",
+      "region": "Shadow Temple Invisible Spikes",
+      "check": "Shadow Temple SR Spikes Midair",
+      "condition": "has_lens && (can_hookshot || climb_anywhere) && (can_use_sword || can_use_sticks || can_hammer || has_hover_boots || longshot_anywhere)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 1",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 2",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 3",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 4",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Back Right",
+      "check": "Spirit Temple SR Child 5",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 1",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 2",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 3",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 4",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Child Upper",
+      "check": "Spirit Temple SR Sun 5",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 1",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 2",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 3",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 4",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons\\spirit_temple.yml",
+      "region": "Spirit Temple Adult Boulders",
+      "check": "Spirit Temple SR Boulders 5",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Lower",
+      "check": "MQ Dodongo Cavern SR Beamos",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Lower",
+      "check": "MQ Dodongo Cavern SR Crate",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Upper",
+      "check": "MQ Dodongo Cavern SR Upper Corner Low",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Upper",
+      "check": "MQ Dodongo Cavern SR Vines",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\dodongo_cavern_mq.yml",
+      "region": "Dodongo Cavern Staircase Room Upper",
+      "check": "MQ Dodongo Cavern SR Upper Corner High",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire Under Pillar",
+      "condition": "event(GANON_MQ_FIRE_MONOLITH)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire Center-Left",
+      "condition": "has_tunic_goron_strict"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire Back-Left",
+      "condition": "has_tunic_goron_strict"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire High Above Lava",
+      "condition": "has_tunic_goron"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Entrance Ledge",
+      "check": "MQ Ganon Castle SR Fire Front-Left",
+      "condition": "has_tunic_goron_strict"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire Under Pillar",
+      "condition": "longshot_anywhere && has_tunic_goron_strict && can_lift_gold"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire Center-Left",
+      "condition": "longshot_anywhere && has_tunic_goron_strict"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire Back-Left",
+      "condition": "longshot_anywhere && has_tunic_goron_strict"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire High Above Lava",
+      "condition": "longshot_anywhere && has_tunic_goron_strict"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Fire Trial Ending Ledge",
+      "check": "MQ Ganon Castle SR Fire Front-Left",
+      "condition": "longshot_anywhere && has_tunic_goron_strict"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Shallow Hole",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Above Ground",
+      "condition": "is_adult || climb_anywhere || hookshot_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Alcove",
+      "condition": "has_blue_fire && (is_adult || climb_anywhere || hookshot_anywhere)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Deep Hole",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Water Trial Silver Rupee Room",
+      "check": "MQ Ganon Castle SR Water Under Alcove",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Entrance Side",
+      "check": "MQ Ganon Castle SR Shadow Front-Right",
+      "condition": "event(GANON_MQ_SHADOW_PROGRESSION_FROM_ENTRANCE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Entrance Side",
+      "check": "MQ Ganon Castle SR Shadow Front-Center",
+      "condition": "event(GANON_MQ_SHADOW_PROGRESSION_FROM_ENTRANCE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 1",
+      "check": "MQ Ganon Castle SR Shadow Middle",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 1",
+      "check": "MQ Ganon Castle SR Shadow Front-Right",
+      "condition": "has_lens || longshot_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 1",
+      "check": "MQ Ganon Castle SR Shadow Front-Center",
+      "condition": "has_lens"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 2",
+      "check": "MQ Ganon Castle SR Shadow Back-Left",
+      "condition": "has_lens || hookshot_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\ganon_castle_mq.yml",
+      "region": "Ganon Castle Shadow Trial Middle Beamos Area 2",
+      "check": "MQ Ganon Castle SR Shadow Back-Center",
+      "condition": "has_lens"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Center",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Near Beginning",
+      "check": "MQ Gerudo Training Grounds SR Lava Front",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_ENTRANCE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Center",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Ledge Before Water Room",
+      "check": "MQ Gerudo Training Grounds SR Lava Front",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_WATER_SIDE)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Center",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Maze Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Back-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Center",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Right",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front-Left",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Lava Room Deep Side Ledge",
+      "check": "MQ Gerudo Training Grounds SR Lava Front",
+      "condition": "event(GTG_MQ_LAVA_TORCH_COMMON_PLATFORMS_FAR)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Water Room",
+      "check": "MQ Gerudo Training Grounds SR Water Top-Left",
+      "condition": "has_iron_boots && (can_swim || can_hookshot) && has_tunic_zora && has_fire"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Water Room",
+      "check": "MQ Gerudo Training Grounds SR Water Center",
+      "condition": "has_iron_boots && (can_swim || longshot_anywhere) && has_tunic_zora && has_fire"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Water Room",
+      "check": "MQ Gerudo Training Grounds SR Water Bottom-Right",
+      "condition": "has_iron_boots && (can_swim || can_hookshot) && has_tunic_zora && has_fire"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Top Right",
+      "condition": "event(GTG_MQ_SLOPES_STALAGMITES)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Middle",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Front",
+      "condition": "can_longshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Front-Left",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\gerudo_training_grounds_mq.yml",
+      "region": "Gerudo Training Grounds Slopes",
+      "check": "MQ Gerudo Training Grounds SR Slopes Front-Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 1",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 2",
+      "condition": "can_hookshot || (is_adult && has_hover_boots) || climb_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 3",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 4",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Scythe Room",
+      "check": "MQ Shadow Temple SR Scythe 5",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 1",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 2",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 3",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 4",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 5",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 6",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 7",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 8",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Ground 9",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Scythe Room",
+      "check": "MQ Shadow Temple SR Invisible Blades Time Block",
+      "condition": "(can_play_time && is_adult) || hookshot_anywhere || (is_child && climb_anywhere)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Back",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Midair Low",
+      "condition": "can_longshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Midair High",
+      "condition": "can_longshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Right",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Lower Huge Pit",
+      "check": "MQ Shadow Temple SR Pit Front",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Northwest Corner",
+      "condition": "(has_lens && can_hookshot) || hookshot_anywhere || climb_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Southwest Wall",
+      "condition": "can_hookshot || climb_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes West Midair",
+      "condition": "(can_hookshot && has_lens) || longshot_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Ceiling",
+      "condition": "(is_adult && (((has_lens && can_hookshot) && (event(SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_ICE_PLATFORMS) || event(SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_REDEADS_CLEAR))) || hookshot_anywhere)) || can_longshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Center Ground",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Center Midair",
+      "condition": "(is_adult && can_hookshot) || can_longshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes South Midair",
+      "condition": "(is_adult && can_hookshot) || can_longshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes East Ground",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes Northeast Wall",
+      "condition": "hookshot_anywhere || (has_lens && can_longshot)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "check": "MQ Shadow Temple SR Spikes East Wall",
+      "condition": "can_hookshot || climb_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes West Midair",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes Ceiling",
+      "condition": "(has_lens && can_hookshot) || hookshot_anywhere"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes Center Midair",
+      "condition": "can_hookshot"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes South Midair",
+      "condition": "can_hookshot && event(SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_ICE_PLATFORMS)"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\shadow_temple_mq.yml",
+      "region": "Shadow Temple Invisible Spike Floors Room Upper Ledge Before Door",
+      "check": "MQ Shadow Temple SR Spikes Northeast Wall",
+      "condition": "has_hover_boots || can_jump_slash || glitch_megaflip"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple",
+      "check": "MQ Spirit Temple SR Lobby Rock Right",
+      "condition": "has_explosives_or_hammer"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple",
+      "check": "MQ Spirit Temple SR Lobby Rock Left",
+      "condition": "has_explosives_or_hammer"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Lower",
+      "check": "MQ Spirit Temple SR Lobby In Water",
+      "condition": "can_hammer"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Lower",
+      "check": "MQ Spirit Temple SR Lobby After Water Near Stairs",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Lower",
+      "check": "MQ Spirit Temple SR Lobby After Water Near Door",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Bottom",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Bottom-Center",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Center-Top",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Top",
+      "condition": "true"
+    },
+    {
+      "file": "data\\world\\oot\\dungeons_mq\\spirit_temple_mq.yml",
+      "region": "Spirit Temple Adult Climb",
+      "check": "MQ Spirit Temple SR Adult Skulltula",
+      "condition": "true"
+    }
+  ]
+}

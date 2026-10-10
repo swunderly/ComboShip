@@ -26,7 +26,7 @@ void Rando::MiscBehavior::BankSignHint() {
                     "-Clock Town Bank";
 
         CustomMessage::Replace(&entry.msg, "{{item}}",
-                               Rando::StaticData::GetItemName(saveCheck.randoItemId, true, randoCheckId));
+                               Rando::StaticData::GetRevealedItemName(saveCheck.randoItemId, true, randoCheckId));
 
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;

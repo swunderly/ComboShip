@@ -1,4 +1,6 @@
 #include "SaveEditor.h"
+#include "OwlStatueEditor.h"
+#include "gui/ComboTouchSlider.h"
 #include <fast/Fast3dGui.h>
 #include "2s2h/BenGui/UIWidgets.hpp"
 #include "2s2h/GameInteractor/GameInteractor.h"
@@ -12,6 +14,10 @@
 #ifdef COMBO_BUILD
 #include <spdlog/spdlog.h>
 #include "rando/CrossForeign.h" // ComboShip: GameId
+#include "rando/SharedItems.h" // same public readiness as the shared menu
+#include "rando/FaroreRules.h"
+#include "2s2h/Rando/FaroresWind.h"
+#include "2s2h/Rando/Spells.h"
 // ComboShip (issue #3): immediate cross-game delivery seam (defined in BenPort.cpp).
 extern "C" void (*gMMComboCrossDeliver)(int targetGame, const char* itemName, const char* srcCheckName);
 #endif
@@ -33,9 +39,7 @@ extern "C" {
 
 extern PlayState* gPlayState;
 extern SaveContext gSaveContext;
-extern TexturePtr gItemIcons[131];
 extern s16 D_801CFF94[250];
-extern u8 gItemSlots[77];
 void Interface_LoadItemIconImpl(PlayState* play, u8 btn);
 void Interface_NewDay(PlayState* play, s32 day);
 extern RegEditor* gRegEditor;
@@ -55,11 +59,28 @@ void EnTest4_GetBellTimeAndShrinkScreenBeforeDay3(EnTest4* thisx, PlayState* pla
 }
 
 bool safeMode = true;
+#if defined(__ANDROID__)
+// Large touch targets for the Save Editor on phones/tablets.
+// Row height deliberately reserves space BELOW an ammo-bearing icon so the
+// numeric input can never overlap the icon in the following row.
+constexpr float INV_GRID_WIDTH = 136.0f;
+constexpr float INV_GRID_HEIGHT = 180.0f;
+constexpr float INV_GRID_ICON_SIZE = 120.0f;
+constexpr float INV_GRID_PADDING = 16.0f;
+constexpr float INV_GRID_TOP_MARGIN = 28.0f;
+constexpr float INV_GRID_AMMO_WIDTH = 60.0f;
+constexpr float INV_GRID_AMMO_PADDING = 8.0f;
+constexpr int INV_PICKER_COLUMNS = 5;
+#else
 constexpr float INV_GRID_WIDTH = 46.0f;
 constexpr float INV_GRID_HEIGHT = 58.0f;
 constexpr float INV_GRID_ICON_SIZE = 40.0f;
 constexpr float INV_GRID_PADDING = 10.0f;
 constexpr float INV_GRID_TOP_MARGIN = 20.0f;
+constexpr float INV_GRID_AMMO_WIDTH = 24.0f;
+constexpr float INV_GRID_AMMO_PADDING = 4.0f;
+constexpr int INV_PICKER_COLUMNS = 8;
+#endif
 constexpr uint16_t HEART_COUNT_MIN = 3;
 constexpr uint16_t HEART_COUNT_MAX = 20;
 constexpr int16_t S16_ZERO = 0;
@@ -83,6 +104,81 @@ std::vector<ItemId> safeItemsForInventorySlot[SLOT_MASK_FIERCE_DEITY + 1] = {};
 
 using namespace UIWidgets;
 
+// Public availability is independent of startup resource readiness and saved RO flags.
+// These families stay unavailable until actual native gameplay is validated.
+static bool IsInventoryItemPubliclyAvailable(ItemId item) {
+#ifdef COMBO_BUILD
+    switch (item) {
+        case (ItemId)0xbc: // Adult Mask is private until full gameplay validation.
+        case ITEM_COMBO_BOOTS_IRON:
+        case ITEM_COMBO_BOOTS_HOVER:
+        case ITEM_COMBO_TUNIC_GORON:
+        case ITEM_COMBO_TUNIC_ZORA: return false;
+        case ITEM_COMBO_FARORES_WIND: return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_WIND).publicOption;
+        case ITEM_COMBO_DINS_FIRE: return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_FIRE).publicOption;
+        case ITEM_COMBO_NAYRUS_LOVE: return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_LOVE).publicOption;
+        default: break;
+    }
+#endif
+    return true;
+}
+
+static bool IsRandomizerItemGivePubliclyAvailable(RandoItemId item) {
+#ifdef COMBO_BUILD
+    switch (item) {
+        case RI_MASK_ADULT:
+        case RI_BOOTS_IRON:
+        case RI_BOOTS_HOVER:
+        case RI_TUNIC_GORON:
+        case RI_TUNIC_ZORA: return false;
+        case RI_FARORES_WIND: return IsInventoryItemPubliclyAvailable(ITEM_COMBO_FARORES_WIND);
+        case RI_DINS_FIRE: return IsInventoryItemPubliclyAvailable(ITEM_COMBO_DINS_FIRE);
+        case RI_NAYRUS_LOVE: return IsInventoryItemPubliclyAvailable(ITEM_COMBO_NAYRUS_LOVE);
+        default: break;
+    }
+#endif
+    return true;
+}
+
+// Explicit private runtime test only. It queues the unmodified native GI action;
+// it never edits ownership, magic, equipment, point state or the public readiness gate.
+#if defined(COMBO_BUILD) && defined(COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS)
+extern "C" int MM_DebugAdultResourcesReady(void);
+#endif
+// Private build AND runtime switch AND typed owning resources; no option/ownership writes.
+static bool IsNativeAdultDiagnosticQueueAvailable(RandoItemId item) {
+#if defined(COMBO_BUILD) && defined(COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS)
+    if (item != RI_MASK_ADULT || !gPlayState || gSaveContext.fileNum < 0 ||
+        gSaveContext.fileNum > 2 || gSaveContext.save.shipSaveInfo.saveType != SAVETYPE_RANDO ||
+        !gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_ADULT_MASK]) return false;
+    return MM_DebugAdultResourcesReady() != 0;
+#else
+    return false;
+#endif
+}
+
+static bool IsNativeSpellDiagnosticQueueAvailable(RandoItemId item) {
+#ifdef COMBO_BUILD
+    if (CVarGetInteger("gDeveloperTools.ComboNativeSpellGiTest", 0) != 1 ||
+        !ComboRando::ComboFaroreIntegrationReady || !gPlayState ||
+        gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2 ||
+        gSaveContext.save.shipSaveInfo.saveType != SAVETYPE_RANDO) {
+        return false;
+    }
+    const auto& options = gSaveContext.save.shipSaveInfo.rando.randoSaveOptions;
+    switch (item) {
+        case RI_FARORES_WIND:
+            return options[RO_MM_SPELL_WIND] && Combo_MMFarorePrepareResources();
+        case RI_NAYRUS_LOVE:
+            return options[RO_MM_SPELL_LOVE] && Combo_MMSpellPrepareResources(1);
+        case RI_DINS_FIRE:
+            return options[RO_MM_SPELL_FIRE] && Combo_MMSpellPrepareResources(2);
+        default: break;
+    }
+#endif
+    return false;
+}
+
 void initSafeItemsForInventorySlot() {
     // Idempotent: the Item Tracker also primes this (combo: the Save Editor window that used to be the
     // sole caller can be rejected as a duplicate name, so its InitElement never runs). Re-running would
@@ -93,7 +189,14 @@ void initSafeItemsForInventorySlot() {
     }
     sInitialized = true;
     for (int i = 0; i < sizeof(gItemSlots); i++) {
+        if (!IsInventoryItemPubliclyAvailable(static_cast<ItemId>(i))) {
+            continue;
+        }
         InventorySlot slot = static_cast<InventorySlot>(gItemSlots[i]);
+        // Expanded item table uses SLOT_NONE for non-inventory/custom gaps.
+        if (slot < SLOT_OCARINA || slot > SLOT_MASK_FIERCE_DEITY) {
+            continue;
+        }
         switch (slot) {
             case SLOT_BOTTLE_1:
                 if (i != ITEM_LONGSHOT) { // No longshot in bottles
@@ -381,11 +484,74 @@ void DrawTempleClears() {
     ImGui::Columns(1);
 }
 
+static void DrawOwlStatuesEditor() {
+    struct OwlStatue {
+        OwlWarpId id;
+        const char* name;
+    };
+    static constexpr OwlStatue statues[] = {
+        { OWL_WARP_CLOCK_TOWN, "Clock Town" },
+        { OWL_WARP_MILK_ROAD, "Milk Road" },
+        { OWL_WARP_SOUTHERN_SWAMP, "Southern Swamp" },
+        { OWL_WARP_WOODFALL, "Woodfall" },
+        { OWL_WARP_MOUNTAIN_VILLAGE, "Mountain Village" },
+        { OWL_WARP_SNOWHEAD, "Snowhead" },
+        { OWL_WARP_GREAT_BAY_COAST, "Great Bay Coast" },
+        { OWL_WARP_ZORA_CAPE, "Zora Cape" },
+        { OWL_WARP_IKANA_CANYON, "Ikana Canyon" },
+        { OWL_WARP_STONE_TOWER, "Stone Tower" },
+    };
+    static_assert(OWL_WARP_GREAT_BAY_COAST == 0 && OWL_WARP_ENTRANCE == MmOwlEditor::kStatueCount);
+    static_assert(ARRAY_COUNT(statues) == MmOwlEditor::kStatueCount);
+
+    const bool hasSave = gSaveContext.fileNum >= 0 && gSaveContext.fileNum < FILE_NUM_MAX;
+    if (!hasSave) {
+        ImGui::TextWrapped("Load a Majora's Mask file to edit owl statues.");
+    }
+    ImGui::BeginDisabled(!hasSave);
+    auto& flags = gSaveContext.save.saveInfo.playerData.owlActivationFlags;
+    ImGui::Text("Activated: %u / %u", MmOwlEditor::ActivatedCount(flags), MmOwlEditor::kStatueCount);
+    ImGui::TextWrapped("Choose unlocked warp destinations. Save in game to keep changes.");
+    ImGui::TextWrapped("This does not grant Song of Soaring or an instrument, or change the seed's song routes.");
+
+    const bool twoColumns = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 22.0f;
+    if (UIWidgets::Button("Activate all##owlStatues", { .size = UIWidgets::Sizes::Inline,
+                                                       .color = UIWidgets::Colors::Green })) {
+        flags = MmOwlEditor::SetAllActivated(flags, true);
+    }
+    if (twoColumns) {
+        ImGui::SameLine();
+    }
+    if (UIWidgets::Button("Clear all##owlStatues", { .size = UIWidgets::Sizes::Inline,
+                                                    .color = UIWidgets::Colors::Red })) {
+        flags = MmOwlEditor::SetAllActivated(flags, false);
+    }
+    if (ImGui::BeginTable("owlStatueDestinations", twoColumns ? 2 : 1,
+                          ImGuiTableFlags_SizingStretchSame)) {
+        for (const auto& statue : statues) {
+            ImGui::TableNextColumn();
+            bool activated = MmOwlEditor::IsActivated(flags, statue.id);
+            if (UIWidgets::Checkbox(statue.name, &activated, { .color = UIWidgets::Colors::Gray })) {
+                flags = MmOwlEditor::SetActivated(flags, statue.id, activated);
+            }
+        }
+        ImGui::EndTable();
+    }
+    ImGui::EndDisabled();
+    // Only the loaded live Save is edited. The native pause/cycle save paths
+    // persist it in the appropriate owl/newCycle page; no stale page, recorded
+    // randomizer route, song ownership, or current owl respawn is rewritten here.
+}
+
 void DrawGeneralTab() {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
     ImGui::BeginChild("generalTab", ImVec2(0, 0), true);
 
+    if (ImGui::CollapsingHeader("Owl Statues / Warp Destinations", ImGuiTreeNodeFlags_DefaultOpen)) {
+        DrawOwlStatuesEditor();
+    }
+    ImGui::Spacing();
     UIWidgets::BeginCardLayout({ .columnsPerRow = 2, .minColumnWidth = 420.0f });
 
     // Card 1: Player Identity
@@ -437,7 +603,7 @@ void DrawGeneralTab() {
     std::string timeString = hours + ":" + minutes + ampm + " (0x%x)";
 
     u16 gameTime = CURRENT_TIME;
-    if (ImGui::SliderScalar("##timeInput", ImGuiDataType_U16, &gameTime, &minTime, &maxTime, timeString.c_str())) {
+    if (ImGui::SliderScalar("##timeInput", ImGuiDataType_U16, &gameTime, &minTime, &maxTime, timeString.c_str(), ImGuiSliderFlags_NoInput)) {
         UpdateGameTime(gameTime);
     }
     UIWidgets::PopStyleSlider();
@@ -462,7 +628,7 @@ void DrawGeneralTab() {
     UIWidgets::PushStyleSlider();
     static s32 minDay = 0;
     static s32 maxDay = 4;
-    if (ImGui::SliderScalar("##dayInput", ImGuiDataType_S32, &gSaveContext.save.day, &minDay, &maxDay, "Day: %d")) {
+    if (ImGui::SliderScalar("##dayInput", ImGuiDataType_S32, &gSaveContext.save.day, &minDay, &maxDay, "Day: %d", ImGuiSliderFlags_NoInput)) {
         gSaveContext.save.eventDayCount = CURRENT_DAY;
 
         if (gPlayState != nullptr) {
@@ -489,7 +655,7 @@ void DrawGeneralTab() {
     }
     std::string timeSpeedString = "Time Speed: " + std::to_string(gSaveContext.save.timeSpeedOffset + 3) + extraText;
     ImGui::SliderScalar("##timeSpeedInput", ImGuiDataType_S32, &gSaveContext.save.timeSpeedOffset, &minSpeed, &maxSpeed,
-                        timeSpeedString.c_str());
+                        timeSpeedString.c_str(), ImGuiSliderFlags_NoInput);
     UIWidgets::PopStyleSlider();
     UIWidgets::EndCard();
 
@@ -511,17 +677,17 @@ void DrawGeneralTab() {
     UIWidgets::PushStyleSlider(UIWidgets::Colors::Green);
     u8 currentWalletLevel = CUR_UPG_VALUE(UPG_WALLET);
     if (ImGui::SliderScalar("##walletLevelSlider", ImGuiDataType_U8, &currentWalletLevel, &U8_ZERO, &walletLevelMax,
-                            WALLET_LEVEL_NAMES[currentWalletLevel])) {
+                            WALLET_LEVEL_NAMES[currentWalletLevel], ImGuiSliderFlags_NoInput)) {
         Inventory_ChangeUpgrade(UPG_WALLET, currentWalletLevel);
         gSaveContext.save.saveInfo.playerData.rupees =
             MIN(gSaveContext.save.saveInfo.playerData.rupees, CUR_CAPACITY(UPG_WALLET));
     }
     s16 walletCapacity = CUR_CAPACITY(UPG_WALLET);
     ImGui::SliderScalar("##rupeesSlider", ImGuiDataType_S16, &gSaveContext.save.saveInfo.playerData.rupees, &S16_ZERO,
-                        &walletCapacity, "Rupees: %d");
+                        &walletCapacity, "Rupees: %d", ImGuiSliderFlags_NoInput);
 
     int bankedRupees = HS_GET_BANK_RUPEES();
-    if (ImGui::SliderInt("##setBank", &bankedRupees, 0, 5000, "Banked Rupees: %d")) {
+    if (ImGui::SliderInt("##setBank", &bankedRupees, 0, 5000, "Banked Rupees: %d", ImGuiSliderFlags_NoInput)) {
         HS_SET_BANK_RUPEES(bankedRupees);
     }
     UIWidgets::Tooltip("To receive the rewards, set the bank to 199, 999, or 4,999 then deposit a single rupee");
@@ -556,13 +722,13 @@ void DrawGeneralTab() {
     UIWidgets::PushStyleSlider(UIWidgets::Colors::DarkRed);
     int16_t heartCount = (int16_t)gSaveContext.save.saveInfo.playerData.healthCapacity / 16;
     if (ImGui::SliderScalar("##heartCountSlider", ImGuiDataType_U16, &heartCount, &HEART_COUNT_MIN, &HEART_COUNT_MAX,
-                            "Max Hearts: %d")) {
+                            "Max Hearts: %d", ImGuiSliderFlags_NoInput)) {
         gSaveContext.save.saveInfo.playerData.healthCapacity = heartCount * 16;
         gSaveContext.save.saveInfo.playerData.health =
             MIN(gSaveContext.save.saveInfo.playerData.health, gSaveContext.save.saveInfo.playerData.healthCapacity);
     }
     ImGui::SliderScalar("##healthSlider", ImGuiDataType_S16, &gSaveContext.save.saveInfo.playerData.health, &S16_ZERO,
-                        &gSaveContext.save.saveInfo.playerData.healthCapacity, "Health: %d");
+                        &gSaveContext.save.saveInfo.playerData.healthCapacity, "Health: %d", ImGuiSliderFlags_NoInput);
     UIWidgets::PopStyleSlider();
     UIWidgets::EndCard();
 
@@ -603,7 +769,7 @@ void DrawGeneralTab() {
     UIWidgets::PushStyleSlider(UIWidgets::Colors::DarkGreen);
     if (ImGui::SliderScalar("##magicLevelSlider", ImGuiDataType_S8, &gSaveContext.save.saveInfo.playerData.magicLevel,
                             &S8_ZERO, &MAGIC_LEVEL_MAX,
-                            MAGIC_LEVEL_NAMES[gSaveContext.save.saveInfo.playerData.magicLevel])) {
+                            MAGIC_LEVEL_NAMES[gSaveContext.save.saveInfo.playerData.magicLevel], ImGuiSliderFlags_NoInput)) {
         gSaveContext.magicCapacity = gSaveContext.save.saveInfo.playerData.magicLevel * MAGIC_NORMAL_METER;
         gSaveContext.save.saveInfo.playerData.magic =
             MIN(gSaveContext.save.saveInfo.playerData.magic, gSaveContext.magicCapacity);
@@ -625,7 +791,7 @@ void DrawGeneralTab() {
         }
     }
     ImGui::SliderScalar("##magicSlider", ImGuiDataType_S8, &gSaveContext.save.saveInfo.playerData.magic, &S8_ZERO,
-                        &gSaveContext.magicCapacity, "Magic: %d");
+                        &gSaveContext.magicCapacity, "Magic: %d", ImGuiSliderFlags_NoInput);
     UIWidgets::PopStyleSlider();
     UIWidgets::EndCard();
 
@@ -649,14 +815,17 @@ void DrawAmmoInput(InventorySlot slot) {
     int y = ((int)floor(slot / 6) % 4);
     ItemId currentItemId = static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]);
 
+    const float ammoXOffset = (INV_GRID_ICON_SIZE - INV_GRID_AMMO_WIDTH) * 0.5f;
+    const float ammoYOffset = INV_GRID_ICON_SIZE + 6.0f;
     ImGui::SetCursorPos(
-        ImVec2(x * INV_GRID_WIDTH + INV_GRID_PADDING + 7.0f,
-               y * INV_GRID_HEIGHT + INV_GRID_TOP_MARGIN + INV_GRID_PADDING + (INV_GRID_ICON_SIZE - 2.0f)));
-    ImGui::PushItemWidth(24.0f);
+        ImVec2(x * INV_GRID_WIDTH + INV_GRID_PADDING + ammoXOffset,
+               y * INV_GRID_HEIGHT + INV_GRID_TOP_MARGIN + INV_GRID_PADDING + ammoYOffset));
+    ImGui::PushItemWidth(INV_GRID_AMMO_WIDTH);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, UIWidgets::ColorValues.at(UIWidgets::Colors::Gray));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 4.0f));
-    if (ImGui::InputScalar("##ammoInput", ImGuiDataType_S8, &AMMO(currentItemId))) {
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
+                        ImVec2(INV_GRID_AMMO_PADDING, INV_GRID_AMMO_PADDING));
+    if (ComboTouch::Count("##ammoInput", &AMMO(currentItemId), 0, 99)) {
         // Crashes when < 0 and graphical issues when > 99
         AMMO(currentItemId) = MAX(0, MIN(AMMO(currentItemId), 99));
     }
@@ -754,6 +923,9 @@ void NextItemInSlot(InventorySlot slot) {
 }
 
 void DrawSlot(InventorySlot slot) {
+    if (!IsInventoryItemPubliclyAvailable(static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]))) {
+        return;
+    }
     int x = slot % 6;
     int y = ((int)floor(slot / 6) % 4);
     ItemId currentItemId = static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]);
@@ -827,11 +999,14 @@ void DrawSlot(InventorySlot slot) {
 
         size_t availableItems = safeMode ? safeItemsForInventorySlot[selectedInventorySlot].size() : ITEM_FISHING_ROD;
         for (int32_t pickerIndex = 0; pickerIndex < availableItems; pickerIndex++) {
-            if (((pickerIndex + 1) % 8) != 0) {
+            if (((pickerIndex + 1) % INV_PICKER_COLUMNS) != 0) {
                 ImGui::SameLine();
             }
             ItemId id = safeMode ? safeItemsForInventorySlot[selectedInventorySlot][pickerIndex]
                                  : static_cast<ItemId>(pickerIndex);
+            if (!IsInventoryItemPubliclyAvailable(id)) {
+                continue;
+            }
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
             bool buttonPressed = ImGui::ImageButton(
                 (const char*)gItemIcons[id],
@@ -862,7 +1037,12 @@ void DrawItemsAndMasksTab() {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
     // Group left side in a child for a scroll bar
+#if defined(__ANDROID__)
+    const float gridPanelHeight = ImGui::GetContentRegionAvail().y * 0.75f;
+    ImGui::BeginChild("leftSide##items", ImVec2(0, gridPanelHeight), ImGuiChildFlags_Border);
+#else
     ImGui::BeginChild("leftSide##items", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX);
+#endif
     ImGui::BeginGroup();
     ImGui::BeginChild("itemsBox",
                       ImVec2(INV_GRID_WIDTH * 6 + INV_GRID_PADDING * 2,
@@ -889,7 +1069,11 @@ void DrawItemsAndMasksTab() {
     ImGui::EndGroup();
     ImGui::EndChild();
 
+#if defined(__ANDROID__)
+    ImGui::Spacing();
+#else
     ImGui::SameLine();
+#endif
     ImGui::BeginChild("equipsBox", ImVec2(0, 0), true);
     if (UIWidgets::Button("Give All##items")) {
         for (int32_t i = 0; i <= SLOT_MASK_FIERCE_DEITY; i++) {
@@ -999,6 +1183,11 @@ void DrawItemsAndMasksTab() {
         std::string riFilterString(riFilter.InputBuf);
 
         for (auto& [randoItemId, randoStaticItem] : Rando::StaticData::Items) {
+            if (!IsRandomizerItemGivePubliclyAvailable(randoItemId) &&
+                !IsNativeSpellDiagnosticQueueAvailable(randoItemId) &&
+                !IsNativeAdultDiagnosticQueueAvailable(randoItemId)) {
+                continue;
+            }
             if (!riFilter.PassFilter(randoStaticItem.name)) {
                 continue;
             }
@@ -1360,11 +1549,11 @@ void DrawQuestStatusTab() {
     int SwampSkullTokens = Inventory_GetSkullTokenCount(SCENE_KINSTA1);
     UIWidgets::PushStyleSlider();
     ImGui::PushItemWidth(ImGui::GetWindowWidth());
-    if (ImGui::SliderInt("##swampSkulltulas", &SwampSkullTokens, 0, 30, "Swamp Tokens: %d")) {
+    if (ImGui::SliderInt("##swampSkulltulas", &SwampSkullTokens, 0, 30, "Swamp Tokens: %d", ImGuiSliderFlags_NoInput)) {
         gSaveContext.save.saveInfo.skullTokenCount =
             ((int)(SwampSkullTokens & 0xFFFF) << 0x10) | (gSaveContext.save.saveInfo.skullTokenCount & 0xFFFF);
     }
-    if (ImGui::SliderInt("##oceanSkulltulas", &OceanSkullTokens, 0, 30, "Ocean Tokens: %d")) {
+    if (ImGui::SliderInt("##oceanSkulltulas", &OceanSkullTokens, 0, 30, "Ocean Tokens: %d", ImGuiSliderFlags_NoInput)) {
         gSaveContext.save.saveInfo.skullTokenCount =
             (gSaveContext.save.saveInfo.skullTokenCount & 0xFFFF0000) | (OceanSkullTokens & 0xFFFF);
     }
@@ -1458,7 +1647,7 @@ void DrawDungeonItemTab() {
             int currentStrays = gSaveContext.save.saveInfo.inventory.strayFairies[dungeonId];
             ImGui::PushItemWidth(ImGui::GetFontSize() * 12.0f);
             if (ImGui::SliderScalar("##strayCount", ImGuiDataType_S32, &currentStrays, &minStray, &maxStray,
-                                    "Strays: %d")) {
+                                    "Strays: %d", ImGuiSliderFlags_NoInput)) {
                 gSaveContext.save.saveInfo.inventory.strayFairies[dungeonId] = currentStrays;
             }
             ImGui::PopItemWidth();
@@ -1472,7 +1661,7 @@ void DrawDungeonItemTab() {
             int currentKeys = gSaveContext.save.saveInfo.inventory.dungeonKeys[dungeonId];
             ImGui::PushItemWidth(ImGui::GetFontSize() * 12.0f);
             if (ImGui::SliderScalar("##sKeyCount", ImGuiDataType_S32, &currentKeys, &minKey, &maxKey,
-                                    "Small Keys: %d")) {
+                                    "Small Keys: %d", ImGuiSliderFlags_NoInput)) {
                 gSaveContext.save.saveInfo.inventory.dungeonKeys[dungeonId] = currentKeys;
             }
             ImGui::PopItemWidth();
@@ -1575,7 +1764,7 @@ void DrawPlayerTab() {
         ImGui::InputScalar("XZ Speed", ImGuiDataType_Float, &player->speedXZ);
         ImGui::InputScalar("Y Velocity", ImGuiDataType_Float, &player->actor.velocity.y);
         ImGui::InputScalar("Ledge Height", ImGuiDataType_Float, &player->yDistToLedge);
-        ImGui::InputScalar("Invincibility Timer", ImGuiDataType_S16, &player->invincibilityTimer);
+        ComboTouch::Count("Invincibility Timer", &player->invincibilityTimer, -32768, 32767);
         ImGui::InputScalar("Gravity", ImGuiDataType_Float, &player->actor.gravity);
         ImGui::PopItemWidth();
         UIWidgets::PopStyleCombobox();
@@ -1593,11 +1782,11 @@ void DrawPlayerTab() {
         ImGui::SameLine();
         ImGui::InputScalar("Z Pos", ImGuiDataType_Float, &player->actor.world.pos.z);
         ImGui::Text("Rotation:");
-        ImGui::InputScalar("X Rot", ImGuiDataType_S16, &player->actor.world.rot.x);
+        ComboTouch::Count("X Rot", &player->actor.world.rot.x, -32768, 32767);
         ImGui::SameLine();
-        ImGui::InputScalar("Y Rot", ImGuiDataType_S16, &player->actor.world.rot.y);
+        ComboTouch::Count("Y Rot", &player->actor.world.rot.y, -32768, 32767);
         ImGui::SameLine();
-        ImGui::InputScalar("Z Rot", ImGuiDataType_S16, &player->actor.world.rot.z);
+        ComboTouch::Count("Z Rot", &player->actor.world.rot.z, -32768, 32767);
         ImGui::PopItemWidth();
         UIWidgets::PopStyleCombobox();
         UIWidgets::EndCard();
@@ -1785,8 +1974,8 @@ std::unordered_map<s16, const char*> sceneList = {
 void DrawRegEditorTab() {
     UIWidgets::PushStyleSlider();
     ImGui::SliderScalar("Reg Group", ImGuiDataType_U8, &gRegEditor->regGroup, &S8_ZERO, &REG_GROUPS_MAX,
-                        regGroupNames[gRegEditor->regGroup]);
-    ImGui::SliderScalar("Reg Page", ImGuiDataType_U8, &gRegEditor->regPage, &S8_ZERO, &REG_PAGES_MAX, "%d");
+                        regGroupNames[gRegEditor->regGroup], ImGuiSliderFlags_NoInput);
+    ImGui::SliderScalar("Reg Page", ImGuiDataType_U8, &gRegEditor->regPage, &S8_ZERO, &REG_PAGES_MAX, "%d", ImGuiSliderFlags_NoInput);
     UIWidgets::PopStyleSlider();
 
     ImGui::BeginChild("regSliders", ImVec2(0, 0), ImGuiChildFlags_Border);
@@ -2078,17 +2267,8 @@ void DrawFlagsTab() {
             }
             break;
         case OWL_ACTIVATION:
-            if (UIWidgets::Button("All##owlActivationFlags",
-                                  { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Gray })) {
-                gSaveContext.save.saveInfo.playerData.owlActivationFlags = UINT16_MAX;
-            }
-            ImGui::SameLine();
-            if (UIWidgets::Button("Clear##owlActivationFlags",
-                                  { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Red })) {
-                gSaveContext.save.saveInfo.playerData.owlActivationFlags = 0;
-            }
-            UIWidgets::DrawFlagTableArray16(flagTables.at(OWL_ACTIVATION),
-                                            gSaveContext.save.saveInfo.playerData.owlActivationFlags);
+            ImGui::SeparatorText("Owl Statues / Warp Destinations");
+            DrawOwlStatuesEditor();
             break;
         case PERMANENT_SCENE_FLAGS:
             ImGui::BeginGroup();
@@ -2451,6 +2631,12 @@ void DrawRandoTab() {
 }
 
 void SaveEditorWindow::DrawElement() {
+#ifdef COMBO_BUILD
+    if (gSaveContext.fileNum >= 3 || !IS_RANDO) {
+        ImGui::TextWrapped("MM save is not loaded. Reload your profile before editing.");
+        return;
+    }
+#endif
     UIWidgets::PushStyleTabs(UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5)));
     if (ImGui::BeginTabBar("SaveContextTabBar", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton)) {
         if (ImGui::BeginTabItem("General")) {

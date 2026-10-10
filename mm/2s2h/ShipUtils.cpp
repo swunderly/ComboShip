@@ -23,13 +23,13 @@
 extern "C" {
 #include "z64.h"
 #include "functions.h"
+#include "variables.h"
 #include "macros.h"
 
 extern float OTRGetAspectRatio();
 
 extern f32 sNESFontWidths[160];
 extern const char* fontTbl[156];
-extern TexturePtr gItemIcons[131];
 extern TexturePtr gQuestIcons[14];
 extern TexturePtr gBombersNotebookPhotos[24];
 }
@@ -158,6 +158,10 @@ std::unordered_map<uint32_t, ImVec4> randoItemColorMap = {
     { RI_OCARINA_BUTTON_C_RIGHT, ImVec4(0.84f, 0.768f, 0.089f, 1) },
     { RI_OCARINA_BUTTON_C_UP, ImVec4(0.84f, 0.768f, 0.089f, 1) },
     { RI_CLOCK_TOWN_STRAY_FAIRY, ImVec4(1.0f, 0.9f, 0.5f, 0.4f) },
+    { RI_WOODFALL_KEY_RING, ImVec4(0.9f, 0.33f, 0.56f, 0.4f) },
+    { RI_SNOWHEAD_KEY_RING, ImVec4(0.1f, 0.54f, 0.16f, 0.4f) },
+    { RI_GREAT_BAY_KEY_RING, ImVec4(0.61f, 0.04f, 0.86f, 0.4f) },
+    { RI_STONE_TOWER_KEY_RING, ImVec4(0.58f, 0.65f, 0.15f, 0.4f) },
     { RI_WOODFALL_SMALL_KEY, ImVec4(0.9f, 0.33f, 0.56f, 0.4f) },
     { RI_SNOWHEAD_SMALL_KEY, ImVec4(0.1f, 0.54f, 0.16f, 0.4f) },
     { RI_GREAT_BAY_SMALL_KEY, ImVec4(0.61f, 0.04f, 0.86f, 0.4f) },
@@ -351,6 +355,11 @@ extern uint32_t Ship_Hash(std::string str) {
 void LoadGuiTextures() {
     for (const TexturePtr entry : gItemIcons) {
         auto path = static_cast<const char*>(entry);
+        // Custom item IDs leave gaps in the native table. A gap has no icon
+        // to register; passing it to LoadGuiTexture constructs a null string.
+        if (!path) {
+            continue;
+        }
         std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
             ->LoadGuiTexture(path, path, "", ImVec4(1, 1, 1, 1));
     }

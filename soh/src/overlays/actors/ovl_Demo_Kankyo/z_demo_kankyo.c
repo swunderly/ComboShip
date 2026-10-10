@@ -5,6 +5,9 @@
 #include "objects/object_toki_objects/object_toki_objects.h"
 #include "soh/frame_interpolation.h"
 #include <assert.h>
+#ifdef COMBO_BUILD
+extern int Combo_SOHFullWarpAnimation(PlayState*);
+#endif
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
 
@@ -796,7 +799,11 @@ void DemoKankyo_DrawWarpSparkles(Actor* thisx, PlayState* play) {
                 this->unk_150[i].unk_23 = 0;
 
                 // Skip the first part of warp song cutscenes in rando
-                if (IS_RANDO && this->actor.params == DEMOKANKYO_WARP_OUT) {
+                if (IS_RANDO && this->actor.params == DEMOKANKYO_WARP_OUT
+#ifdef COMBO_BUILD
+                    && !Combo_SOHFullWarpAnimation(play)
+#endif
+                ) {
                     this->unk_150[i].unk_22 = 2;
                 } else {
                     this->unk_150[i].unk_22++;

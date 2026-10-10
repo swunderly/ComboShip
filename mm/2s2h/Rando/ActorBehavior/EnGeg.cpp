@@ -29,7 +29,7 @@ void Rando::ActorBehavior::InitEnGegBehavior() {
         entry.msg = "I could tell you really wanted %y{{itemName}}%w! I'm going back to Goron Village.\xE0";
 
         CustomMessage::Replace(&entry.msg, "{{itemName}}",
-                               Rando::StaticData::GetItemName(randoItemId, true, RC_MOUNTAIN_VILLAGE_DON_GERO_MASK));
+                               Rando::StaticData::GetRevealedItemName(randoItemId, true, RC_MOUNTAIN_VILLAGE_DON_GERO_MASK));
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;
     });

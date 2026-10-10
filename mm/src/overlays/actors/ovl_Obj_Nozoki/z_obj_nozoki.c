@@ -5,6 +5,11 @@
  */
 
 #include "z_obj_nozoki.h"
+#ifdef COMBO_BUILD
+u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+int Combo_MMOrdinaryEntranceActive(void);
+int Combo_MMOrdinarySourceConfigured(u16 entrance);
+#endif
 #include "objects/object_secom_obj/object_secom_obj.h"
 #include "objects/object_gi_mssa/object_gi_mssa.h"
 
@@ -433,6 +438,9 @@ void func_80BA3230(ObjNozoki* this, PlayState* play) {
     }
 }
 
+#ifdef COMBO_BUILD
+static void ComboObjNozokiNoop(ObjNozoki* this, PlayState* play){(void)this;(void)play;}
+#endif
 void func_80BA3344(ObjNozoki* this, PlayState* play) {
     if ((play->curSpawn == 3) && !CHECK_WEEKEVENTREG(WEEKEVENTREG_64_40)) {
         if (Actor_TextboxIsClosing(&this->dyna.actor, play)) {
@@ -442,6 +450,13 @@ void func_80BA3344(ObjNozoki* this, PlayState* play) {
         }
     } else if ((this->dyna.actor.textId == 0) || Actor_TextboxIsClosing(&this->dyna.actor, play)) {
         play->nextEntrance = ENTRANCE(CURIOSITY_SHOP, 2);
+#ifdef COMBO_BUILD
+        if (Combo_MMOrdinarySourceConfigured(play->nextEntrance)) {
+            play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+            play->transitionType = TRANS_TYPE_FADE_BLACK;
+            this->actionFunc = ComboObjNozokiNoop;
+        }
+#endif
         play->transitionTrigger = TRANS_TRIGGER_START;
     }
 }

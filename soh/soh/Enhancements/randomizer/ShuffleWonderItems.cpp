@@ -148,7 +148,7 @@ uint8_t EnWonderItem_RandomizerHoldsItem(EnWonderItem* wonderActor, PlayState* p
         }
     }
     RandomizerCheck rc = wonderIdentity->randomizerCheck;
-    uint8_t isDungeon = Rando::StaticData::GetLocation(rc)->IsDungeon();
+    uint8_t isDungeon = Rando::StaticData::GetLocation(rc)->IsDungeonForCollectibleShuffle();
     auto wonderSetting = RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS);
     if (!IS_RANDO || (wonderSetting.Is(RO_SHUFFLE_WONDER_ITEMS_OVERWORLD) && isDungeon) ||
         (wonderSetting.Is(RO_SHUFFLE_WONDER_ITEMS_DUNGEONS) && !isDungeon) ||

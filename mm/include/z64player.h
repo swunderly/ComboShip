@@ -190,6 +190,11 @@ typedef enum PlayerItemAction {
     /* 0x51 */ PLAYER_IA_MASK_DEKU,
     /* 0x51 */ PLAYER_IA_MASK_MAX = PLAYER_IA_MASK_DEKU,
     /* 0x52 */ PLAYER_IA_LENS_OF_TRUTH,
+#ifdef COMBO_BUILD
+    PLAYER_IA_COMBO_FARORES_WIND, // append without renumbering existing actions
+    PLAYER_IA_COMBO_NAYRUS_LOVE,
+    PLAYER_IA_COMBO_DINS_FIRE,
+#endif
     /* 0x53 */ PLAYER_IA_MAX
 } PlayerItemAction;
 

@@ -1,5 +1,8 @@
 #include "global.h"
 #include "audio/effects.h"
+#ifdef COMBO_BUILD
+#include "2s2h/Enhancements/Songs/CrossWarpAudio.h"
+#endif
 
 void* AudioHeap_SearchRegularCaches(s32 tableType, s32 cache, s32 id);
 void AudioHeap_InitSampleCaches(size_t persistentSampleCacheSize, size_t temporarySampleCacheSize);
@@ -653,6 +656,10 @@ void* AudioHeap_AllocCached(s32 tableType, size_t size, s32 cache, s32 id) {
 
 void* AudioHeap_SearchCaches(s32 tableType, s32 cache, s32 id) {
     void* addr;
+#ifdef COMBO_BUILD
+    addr = Combo_MMWarpAudioCache(tableType, id);
+    if (addr != NULL) return addr;
+#endif
 
     // Always search the permanent cache in addition to the regular ones.
     addr = AudioHeap_SearchPermanentCache(tableType, id);

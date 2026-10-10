@@ -1,4 +1,7 @@
+#include "Rando/ActorBehavior/MissingMmSouls.h"
+#include "Rando/ActorBehavior/ExpandedSoulsNative.h"
 #include "Logic.h"
+#include "Rando/Ocarinas.h"
 #include "Rando/MiscBehavior/ClockShuffle.h"
 #include <libultraship/bridge/consolevariablebridge.h>
 
@@ -8,7 +11,9 @@ extern "C" {
 }
 
 #ifdef COMBO_BUILD
+#include "rando/CrossWorldRando.h"
 extern "C" int gMMComboGoalHunt;
+extern "C" int gMMComboGoalType;
 extern "C" int gMMComboGoalRequired;
 extern "C" int gMMComboGoalPieces;
 #endif
@@ -73,8 +78,14 @@ void GeneratePools(RandoSaveInfo& saveInfo, std::vector<RandoCheckId>& checkPool
                 continue;
             }
 
-            // TODO: We may never shuffle these 2 pots, leaving this decision for later
-            if (randoStaticCheck.sceneId == SCENE_LAST_BS) {
+            // Pinned filterChecksPots removes Majora's pots only for Triforce goals.
+            // The saved native hunt option is owned by the Combo launcher above.
+            if (randoStaticCheck.sceneId == SCENE_LAST_BS
+#ifdef COMBO_BUILD
+                && (saveInfo.randoSaveOptions[RO_SHUFFLE_TRIFORCE_PIECES] == RO_GENERIC_YES ||
+                    gMMComboGoalType == ComboRando::CwGoal::QUEST)
+#endif
+            ) {
                 continue;
             }
 
@@ -187,6 +198,11 @@ void GeneratePools(RandoSaveInfo& saveInfo, std::vector<RandoCheckId>& checkPool
                 }
             }
 
+            // Pinned En_In.c treats Gorman milk as a fixed 50-rupee NPC purchase.
+            // The native actor reads this saved price for both text and payment.
+            if (randoCheckId == RC_GORMAN_MILK_PURCHASE)
+                saveInfo.randoSaveChecks[randoCheckId].price = 50;
+
             // Excluded checks are always left out of the check pool, but what happens to them depends on what their
             // vanilla item is worth. A check whose vanilla item is junk (grass, pots, snowballs...) has nothing worth
             // preserving, so it stays unshuffled and behaves exactly like it does in vanilla, and its item never enters
@@ -215,6 +231,15 @@ void GeneratePools(RandoSaveInfo& saveInfo, std::vector<RandoCheckId>& checkPool
     itemPool.push_back(RI_PROGRESSIVE_SWORD);
     itemPool.push_back(RI_SHIELD_HERO);
 
+    // Pinned world/transform.ts adds exactly one Adult Mask; the native pool balancer handles junk.
+    if(saveInfo.randoSaveOptions[RO_MM_ADULT_MASK]==RO_GENERIC_YES) itemPool.push_back(RI_MASK_ADULT);
+    // Pinned world/transform.ts independent MM equipment: exactly one each; shared replacement is separate.
+    if(saveInfo.randoSaveOptions[RO_MM_BOOTS_IRON]==RO_GENERIC_YES)itemPool.push_back(RI_BOOTS_IRON);
+    if(saveInfo.randoSaveOptions[RO_MM_BOOTS_HOVER]==RO_GENERIC_YES)itemPool.push_back(RI_BOOTS_HOVER);
+    if(saveInfo.randoSaveOptions[RO_MM_TUNIC_GORON]==RO_GENERIC_YES)itemPool.push_back(RI_TUNIC_GORON);
+    if(saveInfo.randoSaveOptions[RO_MM_TUNIC_ZORA]==RO_GENERIC_YES)itemPool.push_back(RI_TUNIC_ZORA);
+
+
     // Add other items that don't have a vanilla location like Sun's Song or Song of Double Time
 
     // Boss Souls
@@ -234,6 +259,9 @@ void GeneratePools(RandoSaveInfo& saveInfo, std::vector<RandoCheckId>& checkPool
         }
     }
 
+    AddExpandedSoulPool(saveInfo.randoSaveOptions, itemPool);
+    AddMissingMmSoulPool(saveInfo.randoSaveOptions,itemPool);
+
     // Shuffle Time
     if (saveInfo.randoSaveOptions[RO_CLOCK_SHUFFLE] == RO_GENERIC_YES) {
         auto clockShuffleMode = saveInfo.randoSaveOptions[RO_CLOCK_SHUFFLE_PROGRESSIVE];
@@ -246,7 +274,7 @@ void GeneratePools(RandoSaveInfo& saveInfo, std::vector<RandoCheckId>& checkPool
             itemPool.push_back(RI_TIME_DAY_3);
             itemPool.push_back(RI_TIME_NIGHT_3);
         } else {
-            for (int i = 0; i < ClockItems::HALF_COUNT; ++i) {
+            for (int i = 0; i < ClockItems::HALF_COUNT - 1; ++i) {
                 itemPool.push_back(RI_TIME_PROGRESSIVE);
             }
         }
@@ -333,6 +361,14 @@ void GeneratePools(RandoSaveInfo& saveInfo, std::vector<RandoCheckId>& checkPool
             }
         }
     }
+
+    ReplaceKeyRingPool(saveInfo.randoSaveOptions, startingItems, itemPool);
+    Ocarinas::ReplaceNativePool(saveInfo.randoSaveOptions[RO_FAIRY_OCARINA_MM] != 0,
+                               saveInfo.randoSaveOptions[RO_SHARED_OCARINA] != 0, startingItems, itemPool);
+
+    if (saveInfo.randoSaveOptions[RO_MM_SPELL_WIND]) itemPool.push_back(RI_FARORES_WIND);
+    if (saveInfo.randoSaveOptions[RO_MM_SPELL_FIRE]) itemPool.push_back(RI_DINS_FIRE);
+    if (saveInfo.randoSaveOptions[RO_MM_SPELL_LOVE]) itemPool.push_back(RI_NAYRUS_LOVE);
 
     // Remove starting items from the pool (but only one per entry in startingItems)
     for (RandoItemId startingItem : startingItems) {

@@ -1,4 +1,6 @@
+#include "souls/OotSouls.h"
 #include "randomizer.h"
+#include "silver_rupees/SilverRupees.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <variables.h>
@@ -1147,6 +1149,11 @@ extern "C" u16 Randomizer_Item_Give(PlayState* play, GetItemEntry giEntry) {
     }
 
     RandomizerGet item = (RandomizerGet)giEntry.getItemId;
+    if (Combo_OotSoulGive(play,item)) return Return_Item_Entry(giEntry,RG_NONE);
+    if (Combo_SilverGive(play, item)) {
+        Randomizer_GameplayStats_SetTimestamp(item);
+        return Return_Item_Entry(giEntry, RG_NONE);
+    }
 
 #ifdef COMBO_BUILD
     // ComboShip: a foreign check's item belongs to the OTHER game. After the normal get-item
@@ -1408,6 +1415,14 @@ extern "C" u16 Randomizer_Item_Give(PlayState* play, GetItemEntry giEntry) {
             break;
         case RG_TRIFORCE:
             GameInteractor_SetTriforceHuntCreditsWarpActive(true);
+            break;
+        case RG_TRIFORCE_POWER:
+        case RG_TRIFORCE_COURAGE:
+        case RG_TRIFORCE_WISDOM:
+            gSaveContext.ship.quest.data.randomizer.namedTriforceMask |= 1u << (item - RG_TRIFORCE_POWER);
+#ifdef COMBO_BUILD
+            if (gComboTriforceProgress != NULL) gComboTriforceProgress(0, gSaveContext.fileNum);
+#endif
             break;
         case RG_TRIFORCE_PIECE:
             gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected++;

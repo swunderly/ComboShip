@@ -1,5 +1,9 @@
 #include "SeedContext.h"
+#ifdef COMBO_BUILD
+#include "rando/KokiriSeedRevision.h"
+#endif
 #include "static_data.h"
+#include "silver_rupees/SilverRupees.h"
 #include "soh/OTRGlobals.h"
 #include "soh/Enhancements/item-tables/ItemTableManager.h"
 #include "dungeon.h"
@@ -155,6 +159,7 @@ void Context::AddLocations(const Container& locations, std::vector<RandomizerChe
 }
 
 bool Context::IsQuestOfLocationActive(RandomizerCheck rc) {
+    if (!IsLocationInCurrentCatalog(rc)) return false;
     const auto loc = Rando::StaticData::GetLocation(rc);
     return loc->GetQuest() == RCQUEST_BOTH ||
            loc->GetQuest() == RCQUEST_MQ && mDungeons->GetDungeonFromScene(loc->GetScene())->IsMQ() ||
@@ -172,9 +177,11 @@ void Context::GenerateLocationPool() {
         dungeon->locations.clear();
     }
     for (Location& location : StaticData::GetLocationTable()) {
+        if (!IsLocationInCurrentCatalog(location.GetRandomizerCheck())) continue;
         // skip RCs that shouldn't be in the pool for any reason (i.e. settings, unsupported check type, etc.)
         // TODO: Exclude checks for some of the older shuffles from the pool too i.e. Frog Songs, Scrubs, etc.)
-        if (location.GetRandomizerCheck() == RC_UNKNOWN_CHECK ||
+        if ((SilverRupees::IsCheck(location.GetRandomizerCheck()) && !mOptions[RSK_SHUFFLE_SILVER_RUPEES].Get()) ||
+            location.GetRandomizerCheck() == RC_UNKNOWN_CHECK ||
             location.GetRandomizerCheck() == RC_WINCON || // already in pool
             (location.GetRandomizerCheck() == RC_GANONS_BOSS_KEY && mGBKCondition == RO_CHECK_TRIGGER_NONE) ||
             (location.GetRandomizerCheck() == RC_GANON_SOUL && mGanonsSoulCondition == RO_CHECK_TRIGGER_NONE) ||
@@ -224,6 +231,21 @@ void Context::GenerateLocationPool() {
             (location.GetRCType() == RCTYPE_BEEHIVE && !mOptions[RSK_SHUFFLE_BEEHIVES])) {
             continue;
         }
+#ifdef COMBO_BUILD
+        // Apply the pinned Hideout collectible policy without indexing a
+        // nonexistent physical dungeon or changing saved area/quest metadata.
+        if (location.IsOverworld() && location.IsDungeonForCollectibleShuffle()) {
+            if (location.GetQuest() != RCQUEST_BOTH ||
+                (location.GetRCType() == RCTYPE_POT && mOptions[RSK_SHUFFLE_POTS].Is(RO_SHUFFLE_POTS_OVERWORLD)) ||
+                (location.GetRCType() == RCTYPE_CRATE && mOptions[RSK_SHUFFLE_CRATES].Is(RO_SHUFFLE_CRATES_OVERWORLD)) ||
+                (location.GetRCType() == RCTYPE_WONDER_ITEM && mOptions[RSK_SHUFFLE_WONDER_ITEMS].Is(RO_SHUFFLE_WONDER_ITEMS_OVERWORLD))) {
+                continue;
+            }
+            AddLocation(location.GetRandomizerCheck(), &overworldLocations);
+            AddLocation(location.GetRandomizerCheck());
+            continue;
+        }
+#endif
         if (location.IsOverworld()) {
             // Skip stuff that is shuffled to dungeon only, i.e. tokens, pots, etc., or other checks that
             // should not have a shuffled item.
@@ -303,7 +325,9 @@ void Context::AddExcludedOptions() {
 std::vector<RandomizerCheck> Context::GetLocations(const std::vector<RandomizerCheck>& locationPool,
                                                    const RandomizerCheckType checkType) {
     std::vector<RandomizerCheck> locationsOfType;
+    const auto catalog = Context::GetInstance();
     for (RandomizerCheck locKey : locationPool) {
+        if (catalog && !catalog->IsLocationInCurrentCatalog(locKey)) continue;
         if (StaticData::GetLocation(locKey)->GetRCType() == checkType) {
             locationsOfType.push_back(locKey);
         }
@@ -422,6 +446,10 @@ GetItemEntry Context::GetFinalGIEntry(const RandomizerCheck rc, const bool check
 }
 
 void Context::ParseSpoiler(const char* spoilerFileName) {
+#ifdef COMBO_BUILD
+    const int previousKokiriRevision = GetKokiriSeedRevision();
+    const int previousGrassRevision = GetKokiriGrassCatalogRevision();
+#endif
     std::ifstream spoilerFileStream(SohUtils::Sanitize(spoilerFileName));
     if (!spoilerFileStream) {
         return;
@@ -432,6 +460,11 @@ void Context::ParseSpoiler(const char* spoilerFileName) {
         nlohmann::json spoilerFileJson;
         spoilerFileStream >> spoilerFileJson;
         spoilerFileStream.close();
+#ifdef COMBO_BUILD
+        const auto catalog = ComboRando::ReadKokiriCatalogRevisions(spoilerFileJson);
+        SetKokiriSeedRevision(catalog.invisibleRupees);
+        SetKokiriGrassCatalogRevision(catalog.grass);
+#endif
         ParseHashIconIndexesJson(spoilerFileJson);
         Rando::Settings::GetInstance()->ParseJson(spoilerFileJson);
         ParseItemLocationsJson(spoilerFileJson);
@@ -442,7 +475,13 @@ void Context::ParseSpoiler(const char* spoilerFileName) {
         mTrials->ParseJson(spoilerFileJson);
         mSpoilerLoaded = true;
         mSeedGenerated = false;
-    } catch (...) { LUSLOG_ERROR("Failed to load Spoiler File: %s", spoilerFileName); }
+    } catch (...) {
+#ifdef COMBO_BUILD
+        SetKokiriSeedRevision(previousKokiriRevision);
+        SetKokiriGrassCatalogRevision(previousGrassRevision);
+#endif
+        LUSLOG_ERROR("Failed to load Spoiler File: %s", spoilerFileName);
+    }
 }
 
 void Context::ParseHashIconIndexesJson(const nlohmann::json& spoilerFileJson) {

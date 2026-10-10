@@ -125,7 +125,7 @@ void ResolutionCustomWidget(WidgetInfo& info) {
         if ((aspectRatioX > 0.0f) && (aspectRatioY > 0.0f)) {
             // So basically we're "faking" this one by setting aspectRatioX instead.
             UIWidgets::PushStyleInput(THEME_COLOR);
-            if (ImGui::InputInt("Horiz. Pixel Count", &horizontalPixelCount, 8, 320)) {
+            if (ImGui::SliderInt("Horiz. Pixel Count", &horizontalPixelCount, 320, 7680, "%d px", ImGuiSliderFlags_NoInput)) {
                 item_aspectRatio = default_aspectRatio;
                 if (horizontalPixelCount < SCREEN_WIDTH) {
                     horizontalPixelCount = SCREEN_WIDTH;
@@ -154,7 +154,7 @@ void ResolutionCustomWidget(WidgetInfo& info) {
 
     // Vertical Resolution part 2
     UIWidgets::PushStyleInput(THEME_COLOR);
-    if (ImGui::InputInt("Vertical Pixel Count", &verticalPixelCount, 8, 240)) {
+    if (ImGui::SliderInt("Vertical Pixel Count", &verticalPixelCount, 240, 4320, "%d px", ImGuiSliderFlags_NoInput)) {
         item_pixelCount = default_pixelCount;
         update[UPDATE_verticalPixelCount] = true;
         // Account for the natural instinct to enter horizontal first.

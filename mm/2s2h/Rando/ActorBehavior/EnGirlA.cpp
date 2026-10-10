@@ -4,6 +4,7 @@
 #include "2s2h/Rando/MiscBehavior/Traps.h"
 #ifdef COMBO_BUILD
 #include "2s2h/Rando/MiscBehavior/MiscBehavior.h" // ComboShip: SendForeignCheck for foreign shop items
+#include "2s2h/Rando/CheckTracker/CheckTracker.h"
 #endif
 
 extern "C" {
@@ -28,7 +29,24 @@ static const std::vector<std::string> flavorTexts = {
     "Get it while it's hot!",         "Don't miss out on this deal!",
 };
 
+// Inspecting the current shelf item is a direct observation. Remote stock
+// announcements below still use GetRevealedItemName's separate hint provenance.
+static std::string ShopDescriptionItemName(RandoItemId item, bool includeArticle, RandoCheckId check) {
+#ifdef COMBO_BUILD
+    const auto shown = item == RI_TRAP ? Rando::CurrentTrapItem(check) : item;
+    Rando::CheckTracker::RecordSeenItem(check, shown);
+    return Rando::StaticData::GetItemName(item, includeArticle, check, true);
+#else
+    return Rando::StaticData::GetItemName(item, includeArticle, check);
+#endif
+}
+
 bool CanBePurchased(RandoSaveCheck randoSaveCheck, RandoCheckId randoCheckId) {
+#ifdef COMBO_BUILD
+    // Check original stock before conversion; an unavailable bean must not
+    // turn into a buyable Heart and license a repeatable shelf.
+    if(randoSaveCheck.randoItemId==RI_MAGIC_BEAN&&INV_CONTENT(ITEM_MAGIC_BEANS)!=ITEM_MAGIC_BEANS)return false;
+#endif
     RandoItemId randoItemId = Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId);
     return Rando::IsItemObtainable(randoItemId, randoCheckId) &&
            !(randoItemId >= RI_RUPEE_BLUE && randoItemId <= RI_RUPEE_SILVER &&
@@ -89,7 +107,7 @@ void EnGirlA_RandoBuyFunc(PlayState* play, EnGirlA* enGirlA) {
     Rupees_ChangeBy(-play->msgCtx.unk1206C);
 #ifdef COMBO_BUILD
     // ComboShip: OOT-bound item — deliver cross-game instead of granting locally (mirrors CheckQueue).
-    if (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN) {
+    if (randoSaveCheck.randoItemId == RI_COMBO_FOREIGN && !wasObtained) {
         if (!wasObtained) {
             // ComboShip: the shelf draws for a few more frames, so freeze it before the cross-grant.
             Rando::LatchComboForeign(randoCheckId);
@@ -156,7 +174,7 @@ void renameStolenBombBag(u16* textId, bool* loadFromMessageTable) {
     auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
     entry.msg = "Tonight's special, stolen from the Bomb Shop: %r{{itemName}}%w. Check it out!\x19\xA8";
     CustomMessage::Replace(&entry.msg, "{{itemName}}",
-                           Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId),
+                           Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId),
                                                           false, randoCheckId, true));
     CustomMessage::LoadCustomMessageIntoFont(entry);
     *loadFromMessageTable = false;
@@ -169,7 +187,7 @@ void renameSpecialBargain(u16* textId, bool* loadFromMessageTable) {
     auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
     entry.msg = "Tonight's bargain: %r{{itemName}}%w. Check it out!\x19\xA8";
     CustomMessage::Replace(&entry.msg, "{{itemName}}",
-                           Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId),
+                           Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId),
                                                           false, randoCheckId, true));
     CustomMessage::LoadCustomMessageIntoFont(entry);
     *loadFromMessageTable = false;
@@ -334,7 +352,7 @@ void Rando::ActorBehavior::InitEnGirlABehavior() {
         entry.msg = "\x01{{itemName}}: {{rupees}} Rupees\x11\x00";
         entry.msg += '\x00';
         CustomMessage::Replace(&entry.msg, "{{itemName}}",
-                               Rando::StaticData::GetItemName(randoItemId, false, randoCheckId, true));
+                               ShopDescriptionItemName(randoItemId, false, randoCheckId));
         CustomMessage::Replace(&entry.msg, "{{rupees}}", std::to_string(randoSaveCheck.price));
 
         if (!CanBePurchased(randoSaveCheck, randoCheckId)) {
@@ -365,8 +383,8 @@ void Rando::ActorBehavior::InitEnGirlABehavior() {
         entry.msg = "\x01{{itemName}}: {{rupees}} Rupees\x02\x11\xC2I'll buy it\x11No thanks\xBF";
         CustomMessage::Replace(
             &entry.msg, "{{itemName}}",
-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
-                                           randoCheckId, true));
+            ShopDescriptionItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
+                                    randoCheckId));
         CustomMessage::Replace(&entry.msg, "{{rupees}}", std::to_string(randoSaveCheck.price));
 
         CustomMessage::LoadCustomMessageIntoFont(entry);
@@ -392,8 +410,8 @@ void Rando::ActorBehavior::InitEnGirlABehavior() {
         entry.msg += "I need a mushroom to make this.\x1A";
         CustomMessage::Replace(
             &entry.msg, "{{itemName}}",
-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
-                                           randoCheckId, true));
+            ShopDescriptionItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), false,
+                                    randoCheckId));
         CustomMessage::Replace(&entry.msg, "{{itemPrice}}", std::to_string(randoSaveCheck.price));
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;
@@ -412,7 +430,7 @@ void Rando::ActorBehavior::InitEnGirlABehavior() {
         entry.msg = "I used this to make %r{{itemName}}%w, take it!\x19";
         CustomMessage::Replace(
             &entry.msg, "{{itemName}}",
-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
                                            randoCheckId, true));
 
         // Mark the item as eligible for purchase
@@ -440,7 +458,7 @@ void Rando::ActorBehavior::InitEnGirlABehavior() {
             "If nothing devastating happens to Mommy tonight, we should be able to sell %r{{itemName}}%w.\x19\xA8";
         CustomMessage::Replace(
             &entry.msg, "{{itemName}}",
-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
                                            randoCheckId, true));
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;
@@ -455,7 +473,7 @@ void Rando::ActorBehavior::InitEnGirlABehavior() {
         entry.msg = "Thanks to a mishap, we did not receive our %r{{itemName}}%w stock. Maybe next time...\x19\xA8";
         CustomMessage::Replace(
             &entry.msg, "{{itemName}}",
-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
                                            randoCheckId, true));
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;
@@ -470,7 +488,7 @@ void Rando::ActorBehavior::InitEnGirlABehavior() {
         entry.msg = "It's over... Now we'll never sell %r{{itemName}}%w...\x19\xA8";
         CustomMessage::Replace(
             &entry.msg, "{{itemName}}",
-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
                                            randoCheckId, true));
 
         CustomMessage::LoadCustomMessageIntoFont(entry);
@@ -487,7 +505,7 @@ void Rando::ActorBehavior::InitEnGirlABehavior() {
         entry.msg = "We just got some new stock: %r{{itemName}}%w.\x19\xA8";
         CustomMessage::Replace(
             &entry.msg, "{{itemName}}",
-            Rando::StaticData::GetItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
+            Rando::StaticData::GetRevealedItemName(Rando::ConvertItem(randoSaveCheck.randoItemId, randoCheckId), true,
                                            randoCheckId, true));
 
         CustomMessage::LoadCustomMessageIntoFont(entry);

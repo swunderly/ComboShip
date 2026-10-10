@@ -387,9 +387,19 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
     // WotH counts only HINTABLE required checks (fill.cpp:767) — a confined boss key can't make its own
     // area "way of the hero". areaHasMajor stays unfiltered (native barren counts majors regardless).
     std::unordered_set<std::string> areaHasHintableRequired;
+    std::unordered_map<std::string, std::vector<std::string>> hintablePaths;
     for (auto& c : candidates)
         if (c.hintable && c.required && !c.areaKey.empty())
             areaHasHintableRequired.insert(c.areaKey);
+    for (const auto& c : candidates) {
+        if (!c.hintable || c.areaKey.empty() || c.areaKey.find("Unknown") != std::string::npos) continue;
+        const std::string key = (c.checkGame == GAME_OOT ? "oot:" : "mm:") + c.checkName;
+        auto found = pareDown.pathsByCheck.find(key);
+        if (found == pareDown.pathsByCheck.end()) continue;
+        auto& labels = hintablePaths[c.areaKey];
+        for (const auto& label : found->second)
+            if (std::find(labels.begin(), labels.end(), label) == labels.end()) labels.push_back(label);
+    }
     std::vector<std::string> requiredAreas, foolishAreas;
     for (auto& entry : pareDown.areaHasRequired) {
         const std::string& key = entry.first;
@@ -399,6 +409,12 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
             requiredAreas.push_back(key);
         else if (!areaHasMajor.count(key)) // barren only if no WotH AND no major item (native parity)
             foolishAreas.push_back(key);
+    }
+    for (auto& [area, labels] : hintablePaths) {
+        std::sort(labels.begin(), labels.end());
+        if (std::find(requiredAreas.begin(), requiredAreas.end(), area) == requiredAreas.end())
+            requiredAreas.push_back(area);
+        foolishAreas.erase(std::remove(foolishAreas.begin(), foolishAreas.end(), area), foolishAreas.end());
     }
     // Stable order (unordered_map iteration feeds the RNG picks) — sort so determinism never
     // depends on the STL's bucket layout.
@@ -702,6 +718,7 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
             Tri msg;
             bool placed = false;
             std::string usedKey;
+            std::string pathTarget;
 
             if (cat == "WotH" || cat == "Foolish") {
                 auto& pool = (cat == "WotH") ? requiredAreas : foolishAreas;
@@ -713,6 +730,11 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
                     usedKey = pool[pick];
                     msg = PickTemplate(tmpl(cat == "WotH" ? "RHT_WAY_OF_THE_HERO" : "RHT_FOOLISH"), hintClarity, rng);
                     ReplacePlaceholder(msg, 1, areaText(usedKey));
+                    auto paths = hintablePaths.find(usedKey);
+                    if (cat == "WotH" && paths != hintablePaths.end() && !paths->second.empty()) {
+                        pathTarget = paths->second[rng.below(static_cast<uint32_t>(paths->second.size()))];
+                        msg = EnglishOnly("They say that " + areaText(usedKey).en + " is on the path to " + pathTarget + ".");
+                    }
                     usedAreaKeys.insert(usedKey);
                     placed = true;
                 }
@@ -774,6 +796,10 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
             ootHints.push_back({ { "checkName", "__STONE__" + std::to_string(producedHints) },
                                  { "type", cat },
                                  { "messages", { { { "en", msg.en }, { "de", msg.de }, { "fr", msg.fr } } } } });
+            if (!pathTarget.empty()) {
+                ootHints.back()["pathTarget"] = pathTarget;
+                ootHints.back()["pathArea"] = usedKey;
+            }
             ++producedHints;
             --totalStones;
         }
@@ -804,6 +830,18 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
         Tri area = areaText(c.areaKey);
         std::string text = itemName.en + " can be found " + (c.dungeon ? "hoarded in " : "at ") + area.en + " (OOT)";
         mmGossipPool.push_back({ { "weight", c.required ? 3 : 1 }, { "text", text } });
+    }
+    // Area-only paths give both games the same kind of guidance. A path never names
+    // the hidden reward, and entering its area does not reveal or mark any check.
+    std::vector<std::string> pathAreas;
+    for (const auto& [area, labels] : hintablePaths) if (!labels.empty()) pathAreas.push_back(area);
+    std::sort(pathAreas.begin(), pathAreas.end());
+    for (const auto& area : pathAreas) {
+        const auto& labels = hintablePaths.at(area);
+        const std::string target = labels[rng.below(static_cast<uint32_t>(labels.size()))];
+        mmGossipPool.push_back({{"weight", 3},
+            {"text", "They say that " + areaText(area).en + " is on the path to " + target + "."},
+            {"pathTarget", target}, {"pathArea", area}});
     }
 
     out["oot"] = std::move(ootHints);

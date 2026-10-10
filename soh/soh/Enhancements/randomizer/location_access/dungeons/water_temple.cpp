@@ -397,7 +397,7 @@ void RegionTable_Init_WaterTemple() {
         EVENT_ACCESS(LOGIC_WATER_COULD_MIDDLE, true),
     }, {
         //Locations
-        LOCATION(RC_WATER_TEMPLE_GS_CENTRAL_PILLAR, logic->CanUse(RG_LONGSHOT);),
+        LOCATION(RC_WATER_TEMPLE_GS_CENTRAL_PILLAR, logic->CanUse(RG_LONGSHOT)),
     }, {
         //Exits
         ENTRANCE(RR_WATER_TEMPLE_2F_CENTRAL_LM, true),
@@ -595,7 +595,12 @@ void RegionTable_Init_WaterTemple() {
     }, {
         //Exits
         //Child can enter the water without jumping to have just enough time to make it with just swim, but it's a trick
+#ifdef COMBO_BUILD
+        // OoTMM River -> Dragon Room Ledge also permits the child's eye shot.
+        ENTRANCE(RR_WATER_TEMPLE_ABOVE_DRAGON, logic->CanHitEyeTargets()),
+#else
         ENTRANCE(RR_WATER_TEMPLE_ABOVE_DRAGON, logic->CanHitEyeTargets() && (logic->IsAdult || logic->CanUse(RG_HOVER_BOOTS) || logic->CanUse(RG_HOOKSHOT))),
+#endif
         ENTRANCE(RR_WATER_TEMPLE_RIVER,        logic->CanUse(RG_IRON_BOOTS) && logic->HasItem(RG_BRONZE_SCALE)),
     });
 
@@ -746,7 +751,11 @@ void RegionTable_Init_WaterTemple() {
     areaTable[RR_WATER_TEMPLE_MQ_HIGH_EMBLEM] = Region("Water Temple MQ High Emblem", SCENE_WATER_TEMPLE, {
         //Events
         EVENT_ACCESS(LOGIC_WATER_SCARECROW, logic->ScarecrowsSong()),
+#ifdef COMBO_BUILD
+        EVENT_ACCESS(LOGIC_WATER_HIGH,      logic->CanUse(RG_ZELDAS_LULLABY)),
+#else
         EVENT_ACCESS(LOGIC_WATER_HIGH,      true),
+#endif
     }, {}, {
         //Exits
         ENTRANCE(RR_WATER_TEMPLE_MQ_3F_CENTRAL_A, true),
@@ -1387,7 +1396,11 @@ void RegionTable_Init_WaterTemple() {
         ENTRANCE(RR_WATER_TEMPLE_MQ_CANAL_ALCOVE,               logic->SmallKeys(SCENE_WATER_TEMPLE, 2)),
         ENTRANCE(RR_WATER_TEMPLE_MQ_3_JETS_ROOM_NO_SWITCH_SIDE, logic->CanHitSwitch()),
         // No Switch Side requires CanHitSwitch(ED_BOOMERANG) to get to this entrance. This is covered by No Switch -> Switch entrance.
+#ifdef COMBO_BUILD
+        ENTRANCE(RR_WATER_TEMPLE_MQ_DODONGO_ROOM,               logic->CanHitEyeTargets() && logic->HasFireSource()),
+#else
         ENTRANCE(RR_WATER_TEMPLE_MQ_DODONGO_ROOM,               logic->CanHitSwitch(ED_BOOMERANG) && logic->HasFireSource()),
+#endif
     });
 
     areaTable[RR_WATER_TEMPLE_MQ_3_JETS_ROOM_NO_SWITCH_SIDE] = Region("Water Temple MQ 3 Jets Room No Switch Side", SCENE_WATER_TEMPLE, {}, {

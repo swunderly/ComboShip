@@ -1,5 +1,8 @@
 #ifndef Z64SAVE_H
 #define Z64SAVE_H
+#ifdef COMBO_BUILD
+#include "rando/SharedDungeon.h"
+#endif
 
 #include <libultraship/libultra.h>
 #include "z64math.h"
@@ -226,7 +229,12 @@ typedef struct {
 
 typedef struct ShipRandomizerSaveContextData {
     u8 triforcePiecesCollected;
+    u8 namedTriforceMask; // Power/Courage/Wisdom, distinct from generic Hunt count
     u8 bombchuUpgradeLevel;
+    // Received puzzle items, independent of physical silver-rupee check flags.
+    u16 silverRupeeCounts[18];
+    // General souls append without altering existing randomizerInf flag IDs.
+    u8 ootExpandedSoulsOwned[12];
 } ShipRandomizerSaveContextData;
 
 typedef struct ShipBossRushSaveContextData {
@@ -244,6 +252,14 @@ typedef struct ShipQuestSaveContextData {
     ShipQuestSpecificSaveContextData data;
 } ShipQuestSaveContextData;
 
+#include "rando/SharedDungeon.h"
+typedef struct ComboOotFaroreSaveInfo {
+    RespawnData top[2];
+    RespawnData dungeon[2];
+    RespawnData currentDungeon;
+    ComboSharedDungeon sharedDungeon[2],sharedCurrentDungeon;
+} ComboOotFaroreSaveInfo;
+
 typedef struct ShipSaveContextData {
     u16 pendingSale;
     u16 pendingSaleMod;
@@ -256,6 +272,9 @@ typedef struct ShipSaveContextData {
     //TODO: Move non-rando specific flags to a new sohInf and move the remaining randomizerInf to ShipRandomizerSaveContextData
     u16 randomizerInf[(RAND_INF_MAX + 15) / 16];
     u8 resetToSpawn;
+    ComboOotFaroreSaveInfo faroresWind; // appended; existing fw and backupFW remain authoritative
+    Vec3f fireTempleBlockPos;
+    u8 fireTempleBlockSeated;
 } ShipSaveContextData;
 
 #pragma endregion

@@ -2,8 +2,33 @@
 #include "2s2h/ShipInit.hpp"
 
 #include "2s2h/Rando/Logic/Logic.h"
+#ifdef COMBO_BUILD
+#include "rando/MmAdultWorldRoutes.h"
+#endif
 
+#include "Rando/ActorBehavior/ExpandedSoulsRoutes.h"
 using namespace Rando::Logic;
+
+// Pinned Blacksmith cold-water alternatives; distant water requires its owl.
+// The unsupported ER hot-water shortcut is not inferred from ordinary Wind.
+static bool BlacksmithCanThaw() {
+#ifdef COMBO_BUILD
+    const bool hotWater = HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER) &&
+        (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) ||
+         (CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE) && (CAN_PLAY_SONG(SOARING) || CAN_USE_FARORE)));
+    return CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_DINS_FIRE || hotWater;
+#else
+    return CAN_USE_MAGIC_ARROW(FIRE) || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH);
+#endif
+}
+
+
+#ifdef COMBO_BUILD
+#define COMBO_WORLD53_ENABLED (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA])
+#define COMBO_WORLD53_SELECT(legacy, pinned) (COMBO_WORLD53_ENABLED ? (pinned) : (legacy))
+#else
+#define COMBO_WORLD53_SELECT(legacy, pinned) (legacy)
+#endif
 
 // clang-format off
 static RegisterShipInitFunc initFunc([]() {
@@ -15,13 +40,14 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 3),      ENTRANCE(GORON_GRAVERYARD, 0), true),
         },
         .events = {
+            EVENT(RE_GORON_GRAVE_FARORE, CAN_USE_FARORE),
             EVENT(RE_ACCESS_HOT_SPRING_WATER, CAN_BE_GORON),
             EVENT(RE_ACCESS_SPRING_WATER, CAN_BE_GORON),
         },
     };
     Regions[RR_GORON_SHRINE] = RandoRegion{ .sceneId = SCENE_16GORON_HOUSE,
         .checks = {
-            CHECK(RC_GORON_SHRINE_FULL_LULLABY, CAN_BE_GORON && (CAN_PLAY_SONG(LULLABY) || CAN_PLAY_SONG(LULLABY_INTRO))),
+            CHECK(RC_GORON_SHRINE_FULL_LULLABY, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_PLAY_SONG(LULLABY) || CAN_PLAY_SONG(LULLABY_INTRO)))),
             CHECK(RC_GORON_SHRINE_POT_01, true),
             CHECK(RC_GORON_SHRINE_POT_02, true),
             CHECK(RC_GORON_SHRINE_POT_03, true),
@@ -40,12 +66,12 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .events = {
             // Can either play the song for the Goron child to light torches then use sticks, or shoot the chandelier with fire arrows to skip needing the song(or I guess the small torches themselves, same result)
-            EVENT(RE_SPAWN_SIRLOIN, ((CAN_PLAY_SONG(LULLABY) && HAS_ITEM(ITEM_DEKU_STICK) || CAN_USE_MAGIC_ARROW(FIRE))) && CAN_BE_GORON && HAS_MAGIC),
+            EVENT(RE_SPAWN_SIRLOIN, Rando::ExpandedGoronFoodTorches(CAN_USE_MAGIC_ARROW(FIRE), CAN_PLAY_SONG(LULLABY) && CAN_USE_STICKS) && CAN_GORON_SPIKE_ROLL),
         },
     };
     Regions[RR_GORON_RACETRACK] = RandoRegion{ .sceneId = SCENE_GORONRACE,
         .checks = {
-            CHECK(RC_GORON_RACETRACK_GOLD_DUST, CAN_BE_GORON && HAS_MAGIC && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+            CHECK(RC_GORON_RACETRACK_GOLD_DUST, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_GORON_CHILD) && CAN_GORON_SPIKE_ROLL && NativeMmNorthSpring())),
             CHECK(RC_GORON_RACETRACK_POT_01, true),
             CHECK(RC_GORON_RACETRACK_POT_02, true),
             CHECK(RC_GORON_RACETRACK_POT_03, true),
@@ -91,7 +117,7 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 2),     ENTRANCE(GORON_RACETRACK, 0), true),
         },
         .events = {
-            EVENT(RE_ACCESS_GOLD_DUST, CAN_BE_GORON && HAS_MAGIC && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+            EVENT(RE_ACCESS_GOLD_DUST, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_GORON_CHILD) && CAN_GORON_SPIKE_ROLL && NativeMmNorthSpring()),
         }
     };
     Regions[RR_GORON_SHOP] = RandoRegion{ .sceneId = SCENE_GORONSHOP,
@@ -107,38 +133,42 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_GORON_VILLAGE] = RandoRegion{ .sceneId = SCENE_11GORONNOSATO,
         .checks = {
             CHECK(RC_GORON_VILLAGE_PIECE_OF_HEART, Flags_GetRandoInf(RANDO_INF_OBTAINED_DEED_SWAMP) && CAN_BE_DEKU),
-            CHECK(RC_GORON_VILLAGE_LARGE_CRATE, CAN_USE_MAGIC_ARROW(FIRE) || RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+            CHECK(RC_GORON_VILLAGE_LARGE_CRATE, CAN_USE_MAGIC_ARROW(FIRE) || NativeMmNorthSpring()),
             // FIXME: Update logic for Entrance Rando to account for being able to access the Racetrack Boulder
-            CHECK(RC_GORON_VILLAGE_MEDIGORON, (CAN_USE_MAGIC_ARROW(FIRE) || RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]) && CAN_BE_GORON),
+            CHECK(RC_GORON_VILLAGE_MEDIGORON, (CAN_USE_MAGIC_ARROW(FIRE) || NativeMmNorthSpring()) && CAN_BE_GORON && (RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] != RO_GENERIC_YES || RANDO_EVENTS[RE_EXPANDED_TRIAL_BOULDER])),
             CHECK(RC_GORON_VILLAGE_SCRUB_BOMB_BAG, (GET_CUR_UPG_VALUE(UPG_WALLET) >= 1) && CAN_BE_GORON),
             CHECK(RC_GORON_VILLAGE_SCRUB_DEED, Flags_GetRandoInf(RANDO_INF_OBTAINED_DEED_SWAMP) && CAN_BE_DEKU),
-            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_01, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_02, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_03, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_04, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_05, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_06, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_07, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_08, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_09, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_01, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_02, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_03, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_04, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_05, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_06, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_07, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_08, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_09, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_10, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_11, true),
-            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_12, true),
+            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_05, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_06, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_07, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_08, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_09, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_05, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_06, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_07, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_08, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_09, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_10, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_11, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_GORON_VILLAGE_SMALL_SNOWBALL_12, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
             CHECK(RC_ENEMY_DROP_TEKTITE, CanKillEnemy(ACTOR_EN_TITE)),
+        },
+        .events = {
+            EVENT(RE_EXPANDED_POWDER_KEG_TRIAL, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MEDIGORON) && (NativeMmNorthSpring() || CAN_USE_MAGIC_ARROW(FIRE)) && CAN_BE_GORON),
+            EVENT(RE_EXPANDED_BUY_KEG, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MEDIGORON) && (NativeMmNorthSpring() || CAN_USE_MAGIC_ARROW(FIRE)) && RANDO_EVENTS[RE_EXPANDED_TRIAL_BOULDER] && HAS_ITEM(ITEM_POWDER_KEG) && CAN_PAY(100)),
         },
         .exits = { //     TO                                         FROM
             // During First Day a NPC Goron can open the door to the the Shrine
             EXIT(ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 1),     ENTRANCE(GORON_VILLAGE_WINTER, 0), true),
-            EXIT(ENTRANCE(GORON_SHRINE, 0),                     ENTRANCE(GORON_VILLAGE_WINTER, 2), FIRST_DAY() || CAN_BE_GORON),
+            EXIT(ENTRANCE(GORON_SHRINE, 0),                     ENTRANCE(GORON_VILLAGE_WINTER, 2), Rando::ExpandedGoronShrineDoor(FIRST_DAY(), CAN_BE_GORON)),
         },
         .connections = {
             CONNECTION(RR_LONE_PEAK_SHRINE_ENTRANCE, true)
@@ -149,14 +179,14 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(GROTTOS, 16),               ENTRANCE(GORON_VILLAGE_WINTER, 3), true)
         },
         .connections = {
-            CONNECTION(RR_GORON_VILLAGE, HAS_MAGIC && HAS_ITEM(ITEM_LENS_OF_TRUTH))
+            CONNECTION(RR_GORON_VILLAGE, CAN_NAVIGATE_HIDDEN)
         }
     };
     Regions[RR_LONE_PEAK_SHRINE] = RandoRegion{ .name = "Lone Peak", .sceneId = SCENE_KAKUSIANA,
         // Lone Peak Shrine behaves differently from Grottos despite sharing a map. Seems okay to add here.
         .checks = {
             CHECK(RC_LONE_PEAK_SHRINE_BOULDER_CHEST, CAN_USE_EXPLOSIVE),
-            CHECK(RC_LONE_PEAK_SHRINE_INVISIBLE_CHEST, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
+            CHECK(RC_LONE_PEAK_SHRINE_INVISIBLE_CHEST, CAN_NAVIGATE_HIDDEN),
             CHECK(RC_LONE_PEAK_SHRINE_LENS_CHEST, true),
             CHECK(RC_LONE_PEAK_SHRINE_GRASS_01, true),
             CHECK(RC_LONE_PEAK_SHRINE_GRASS_02, true),
@@ -191,13 +221,13 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_MOUNTAIN_SMITHY] = RandoRegion{ .sceneId = SCENE_KAJIYA,
         .checks = {
             CHECK(RC_MOUNTAIN_VILLAGE_SMITHY_RAZOR_SWORD, CAN_ACCESS(SMITHY) && GET_CUR_UPG_VALUE(UPG_WALLET) >= 1),
-            CHECK(RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD, CAN_ACCESS(SMITHY) && HAS_BOTTLE && CAN_ACCESS(GOLD_DUST) && (GET_CUR_UPG_VALUE(UPG_WALLET) >= 1)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_BLACKSMITHS) && CAN_ACCESS(SMITHY) && HAS_BOTTLE && HAS_BOTTLE_ITEM(ITEM_GOLD_DUST) && (GET_CUR_UPG_VALUE(UPG_WALLET) >= 1)),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 1),      ENTRANCE(MOUNTAIN_SMITHY, 0), true),
         },
         .events = {
-            EVENT(RE_ACCESS_SMITHY, (RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] || CAN_USE_MAGIC_ARROW(FIRE) || (HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER))) && (FIRST_DAY() || SECOND_DAY())),
+            EVENT(RE_ACCESS_SMITHY, NativeMmNorthSpring() || BlacksmithCanThaw()),
         },
     };
     Regions[RR_MOUNTAIN_VILLAGE_TUNNEL_GROTTO] = RandoRegion{ .name = "Mountain Village Tunnel Grotto", .sceneId = SCENE_KAKUSIANA,
@@ -225,92 +255,104 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_MOUNTAIN_VILLAGE] = RandoRegion{ .sceneId = SCENE_10YUKIYAMANOMURA,
         .checks = {
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_01, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_02, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_03, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_04, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_05, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_06, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_07, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_08, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_09, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_WONDER_ITEM, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && CAN_FULLY_CUT_KEATON_GRASS),
-            CHECK(RC_KEATON_QUIZ,                                   HAS_ITEM(ITEM_MASK_KEATON)),
-            CHECK(RC_MOUNTAIN_VILLAGE_DON_GERO_MASK,                RANDO_EVENTS[RE_SPAWN_SIRLOIN]), // TODO: For entrance rando we need to find a way to ensure the Rock Sirloin can be "walked" here
-            CHECK(RC_MOUNTAIN_VILLAGE_FROG_CHOIR,                   HAS_ITEM(ITEM_MASK_DON_GERO) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && FOUND_ALL_FROGS),
-            CHECK(RC_MOUNTAIN_VILLAGE_OWL_STATUE,                   CAN_USE_SWORD),
-            CHECK(RC_MOUNTAIN_VILLAGE_WATERFALL_CHEST,              RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_01, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_02, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring() && CAN_CUT_KEATON_GRASS_EASY)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_03, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring() && CAN_CUT_KEATON_GRASS_EASY)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_04, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring() && CAN_CUT_KEATON_GRASS_EASY)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_05, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring() && CAN_CUT_KEATON_GRASS_EASY)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_06, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring() && CAN_CUT_KEATON_GRASS_HARD)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_07, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring() && CAN_CUT_KEATON_GRASS_HARD)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_08, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring() && CAN_CUT_KEATON_GRASS_HARD)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_09, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring() && CAN_CUT_KEATON_GRASS_HARD)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_KEATON_GRASS_WONDER_ITEM, NativeMmNorthSpring() && CAN_FULLY_CUT_KEATON_GRASS),
+            CHECK(RC_KEATON_QUIZ, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (HAS_ITEM(ITEM_MASK_KEATON))),
+            CHECK(RC_MOUNTAIN_VILLAGE_DON_GERO_MASK, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (RANDO_EVENTS[RE_SPAWN_SIRLOIN])), // TODO: For entrance rando we need to find a way to ensure the Rock Sirloin can be "walked" here
+            CHECK(RC_MOUNTAIN_VILLAGE_FROG_CHOIR, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (HAS_ITEM(ITEM_MASK_DON_GERO) && NativeMmNorthSpring() && FOUND_ENOUGH_CHOIR_FROGS)),
+            CHECK(RC_MOUNTAIN_VILLAGE_OWL_STATUE,                   CAN_ACTIVATE_OWL),
+#ifdef COMBO_BUILD
+            CHECK(RC_MOUNTAIN_VILLAGE_WATERFALL_CHEST,
+                (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] ||
+                 RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
+                    ? ComboRando::MmAdultWorldRoutes::MountainVillageWaterfall(
+                        NativeMmNorthSpring(), CAN_NAVIGATE_HIDDEN,
+                        true, // Pinned can_enter_water: scalesMm/bronzeScale are absent here.
+                        HAS_ITEM(ITEM_MASK_ZORA), HAS_ITEM(ITEM_MASK_DEKU), MM_LOGIC_HAS_HOVER_BOOTS,
+                        HAS_ITEM(ITEM_HOOKSHOT), false, false) // No short-hook/anywhere settings.
+                    : (NativeMmNorthSpring() && CAN_NAVIGATE_HIDDEN)),
+#else
+            CHECK(RC_MOUNTAIN_VILLAGE_WATERFALL_CHEST,              NativeMmNorthSpring() && CAN_NAVIGATE_HIDDEN),
+#endif
             CHECK(RC_MOUNTAIN_VILLAGE_WINTER_POT,                   CAN_HOOK_SCARECROW),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_POT,                   CAN_HOOK_SCARECROW && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BEEHIVE,               CAN_USE_PROJECTILE && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_FREESTANDING_RUPEE_01, CAN_BE_GORON && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_01, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_02, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_03, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_04, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_05, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_06, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_07, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_08, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_09, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_10, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_11, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_12, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_13, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_14, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_15, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_16, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_17, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_18, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_19, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_20, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_21, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_22, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_23, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_24, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_25, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_26, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_27, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_28, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_29, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_30, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_01, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_02, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_03, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_04, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_05, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_06, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_07, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_08, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
-            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_09, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && IS_DAY() && HAS_ITEM(ITEM_DEKU_STICK)),
-            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_01, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_02, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_03, (FIRST_DAY() || SECOND_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL)), // Goron Elder inside on Final Day
-            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_04, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_05, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_01, true),
-            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_02, true),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_POT,                   CAN_HOOK_SCARECROW && NativeMmNorthSpring()),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BEEHIVE, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_USE_PROJECTILE && NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_FREESTANDING_RUPEE_01, CAN_BE_GORON && NativeMmNorthSpring()),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_01, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_02, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_03, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_04, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_05, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_06, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_07, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_08, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_09, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_10, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_11, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_12, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_13, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_14, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_15, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_16, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_17, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_18, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_19, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_20, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_21, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_22, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_23, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_24, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_25, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_26, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_27, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_28, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_29, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_GRASS_30, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_01, NativeMmNorthSpring() && IS_DAY() && CAN_USE_STICKS),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_02, NativeMmNorthSpring() && IS_DAY() && CAN_USE_STICKS),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_03, NativeMmNorthSpring() && IS_DAY() && CAN_USE_STICKS),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_04, NativeMmNorthSpring() && IS_DAY() && CAN_USE_STICKS),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_05, NativeMmNorthSpring() && IS_DAY() && CAN_USE_STICKS),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_06, NativeMmNorthSpring() && IS_DAY() && CAN_USE_STICKS),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_07, NativeMmNorthSpring() && IS_DAY() && CAN_USE_STICKS),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_08, NativeMmNorthSpring() && IS_DAY() && CAN_USE_STICKS),
+            CHECK(RC_MOUNTAIN_VILLAGE_SPRING_BUTTERFLY_09, NativeMmNorthSpring() && IS_DAY() && CAN_USE_STICKS),
+            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && ((FIRST_DAY() || SECOND_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL))), // Goron Elder inside on Final Day
+            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_05, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
             CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_03, true),
-            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_04, true),
-            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_05, true),
+            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_05, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
             CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_06, true),
             CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_07, true),
             CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_08, true),
             CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_09, true),
-            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_10, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
-            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_11, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
-            CHECK(RC_ENEMY_DROP_GUAY, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && CanKillEnemy(ACTOR_EN_CROW)),
-            CHECK(RC_ENEMY_DROP_GIANT_BEE, CanKillEnemy(ACTOR_EN_BEE) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_ENEMY_DROP_BOE, CanKillEnemy(ACTOR_EN_MKK) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_10, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC)),
+            CHECK(RC_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_11, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC)),
+            CHECK(RC_ENEMY_DROP_GUAY, NativeMmNorthSpring() && CanKillEnemy(ACTOR_EN_CROW)),
+            CHECK(RC_ENEMY_DROP_GIANT_BEE, CanKillEnemy(ACTOR_EN_BEE) && NativeMmNorthSpring()),
+            CHECK(RC_ENEMY_DROP_BOE, CanKillEnemy(ACTOR_EN_MKK) && NativeMmNorthSpring()),
             CHECK(RC_ENEMY_DROP_TEKTITE, CanKillEnemy(ACTOR_OBJ_SNOWBALL) && CanKillEnemy(ACTOR_EN_TITE) && (FIRST_DAY() || FINAL_DAY())), // Day 1 and 3 only
             CHECK(RC_ENEMY_DROP_WOLFOS, CanKillEnemy(ACTOR_OBJ_SNOWBALL) && CanKillEnemy(ACTOR_EN_WF) && SECOND_DAY()), // Day 2 only
         },
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(GROTTOS, 23),                     ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 0), RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
+            EXIT(ENTRANCE(GROTTOS, 23),                     ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 0), NativeMmNorthSpring()),
             EXIT(ENTRANCE(MOUNTAIN_SMITHY, 0),              ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 1), true),
             EXIT(ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 2), true),
             // TODO: When it's spring you need goron mask or zora mask instead?
-            EXIT(ENTRANCE(GORON_GRAVERYARD, 0),             ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 3), HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC),
+            EXIT(ENTRANCE(GORON_GRAVERYARD, 0),             ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 3), (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC) || COMBO_MM_TRICK("DarmaniWall") || RANDO_EVENTS[RE_GORON_GRAVE_FARORE]),
             EXIT(ENTRANCE(PATH_TO_SNOWHEAD, 0),             ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 4), true),
             EXIT(ENTRANCE(PATH_TO_MOUNTAIN_VILLAGE, 1),     ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 6), true),
         },
@@ -355,79 +397,80 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_PATH_TO_GORON_VILLAGE] = RandoRegion{ .sceneId = SCENE_17SETUGEN,
         .checks = {
             // TODO : Add Spring only checks.
-            CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, CAN_BE_GORON && (CAN_USE_MAGIC_ARROW(FIRE) || (CAN_ACCESS(HOT_SPRING_WATER) && HAS_BOTTLE))),
+            CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_MAGIC_ARROW(FIRE) || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE)))),
             CHECK(RC_TWIN_ISLANDS_TINGLE_MAP_01,          CAN_USE_PROJECTILE && CAN_AFFORD(RC_TWIN_ISLANDS_TINGLE_MAP_01)),
             CHECK(RC_TWIN_ISLANDS_TINGLE_MAP_02,          CAN_USE_PROJECTILE && CAN_AFFORD(RC_TWIN_ISLANDS_TINGLE_MAP_02)),
-            CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_01,    CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_02,    CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_01, CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_02, CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_03, CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_04, CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_01, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_02, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_03, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_04, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_05, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_06, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_07, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_08, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_09, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_10, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_11, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_12, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_01, (FIRST_DAY() || FINAL_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL)), // Goron inside on Second Day
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_02, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_03, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_04, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_05, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_06, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_07, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_08, (SECOND_DAY() || FINAL_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL)), // Goron inside on First Day
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_09, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_10, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_11, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_12, (FIRST_DAY() || FINAL_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL)), // Does not exist on Second Day
+            CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_01, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_02, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_01, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_02, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_03, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_04, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_01, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_02, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_03, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_04, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_05, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_06, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_07, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_08, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_09, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_10, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_11, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_12, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && ((FIRST_DAY() || FINAL_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL))), // Goron inside on Second Day
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_05, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_06, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_07, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_08, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && ((SECOND_DAY() || FINAL_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL))), // Goron inside on First Day
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_09, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_10, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_11, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_12, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && ((FIRST_DAY() || FINAL_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL))), // Does not exist on Second Day
             CHECK(RC_TWIN_ISLANDS_LARGE_SNOWBALL_13, (FIRST_DAY() || FINAL_DAY()) && CanKillEnemy(ACTOR_OBJ_SNOWBALL)), // Goron inside on Second Day
-            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_01, true),
-            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_02, true),
-            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_03, true),
-            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_04, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT)),
-            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_05, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT)),
-            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_06, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT)),
-            CHECK(RC_TWIN_ISLANDS_SPRING_TREE_01, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_TREE_02, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]),
-            CHECK(RC_TWIN_ISLANDS_SPRING_TREE_03, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && (CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT))),
-            CHECK(RC_TWIN_ISLANDS_TREE_01, true),
-            CHECK(RC_TWIN_ISLANDS_TREE_02, true),
-            CHECK(RC_TWIN_ISLANDS_TREE_03, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT)),
-            CHECK(RC_ENEMY_DROP_GUAY, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] && CanKillEnemy(ACTOR_EN_CROW)),
+            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT))),
+            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_05, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT))),
+            CHECK(RC_TWIN_ISLANDS_SMALL_SNOWBALL_06, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT))),
+            CHECK(RC_TWIN_ISLANDS_SPRING_TREE_01, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_TREE_02, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
+            CHECK(RC_TWIN_ISLANDS_SPRING_TREE_03, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring() && (CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT)))),
+            CHECK(RC_TWIN_ISLANDS_TREE_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_TWIN_ISLANDS_TREE_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_TWIN_ISLANDS_TREE_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT))),
+            CHECK(RC_ENEMY_DROP_GUAY, NativeMmNorthSpring() && CanKillEnemy(ACTOR_EN_CROW)),
             CHECK(RC_ENEMY_DROP_WOLFOS, CanKillEnemy(ACTOR_EN_WF)),
             CHECK(RC_ENEMY_DROP_TEKTITE, CanKillEnemy(ACTOR_EN_TITE)),
             CHECK(RC_ENEMY_DROP_SNAPPER, CanKillEnemy(ACTOR_OBJ_SNOWBALL) && CanKillEnemy(ACTOR_EN_KAME)),
         },
         .exits = { //     TO                                     FROM
-            EXIT(ENTRANCE(GROTTOS, 5),                  ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE] || CAN_USE_MAGIC_ARROW(FIRE)),
+            EXIT(ENTRANCE(GROTTOS, 5),                  ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_MAGIC_ARROW(FIRE) || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH)),
             // TODO: This can be reached in entrance rando if coming from Goron Racetrack
             EXIT(ENTRANCE(GROTTOS, 24),                 ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), CAN_USE_EXPLOSIVE && (CAN_BE_GORON || CAN_HOOK_SCARECROW)),
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 2),  ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), true),
             EXIT(ENTRANCE(GORON_VILLAGE_WINTER, 0),     ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 1), true),
             // This could also be opened by completing Medigoron's test without actually getting the Powder Keg as a item. Not sure what the flag for that is however.
-            EXIT(ENTRANCE(GORON_RACETRACK, 0),          ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 2), HAS_ITEM(ITEM_POWDER_KEG) && CAN_BE_GORON),
+            EXIT(ENTRANCE(GORON_RACETRACK, 0),          ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 2), RANDO_EVENTS[RE_EXPANDED_TRIAL_BOULDER]),
         },
         .events = {
-            EVENT(RE_ACCESS_PICTOGRAPH_TINGLE, HAS_ITEM(ITEM_PICTOGRAPH_BOX)),
+            EVENT(RE_EXPANDED_TRIAL_BOULDER, CAN_USE_POWDER_KEG || RANDO_EVENTS[RE_EXPANDED_POWDER_KEG_TRIAL]),
+            EVENT(RE_ACCESS_PICTOGRAPH_TINGLE, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_TINGLE) && (HAS_ITEM(ITEM_PICTOGRAPH_BOX))),
         },
     };
     Regions[RR_PATH_TO_MOUNTAIN_VILLAGE_LOWER] = RandoRegion{ .name = "Lower", .sceneId = SCENE_13HUBUKINOMITI,
         .checks = {
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_01, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_02, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_03, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_04, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_01, true),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_02, true),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_03, true),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
             CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_TREE_01, true),
             CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_TREE_02, true),
             CHECK(RC_ENEMY_DROP_TEKTITE, CanKillEnemy(ACTOR_EN_TITE)),
@@ -444,14 +487,14 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_PATH_TO_MOUNTAIN_VILLAGE_UPPER] = RandoRegion{ .name = "Upper", .sceneId = SCENE_13HUBUKINOMITI,
         .checks = {
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_05, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_06, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_07, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_08, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_09, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_10, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_11, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_04, true),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_05, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_06, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_07, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_08, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_09, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_10, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_LARGE_SNOWBALL_11, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_SMALL_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (true)),
             CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_TREE_03, true),
             CHECK(RC_PATH_TO_MOUNTAIN_VILLAGE_TREE_04, true),
             CHECK(RC_ENEMY_DROP_BOE, CanKillEnemy(ACTOR_EN_MKK) && IS_NIGHT()), // Night only
@@ -497,25 +540,25 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 4),      ENTRANCE(PATH_TO_SNOWHEAD, 0), true),
         },
         .connections = {
-            CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_BE_GORON && HAS_MAGIC),
+            CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL),
         },
     };
     Regions[RR_PATH_TO_SNOWHEAD_MIDDLE] = RandoRegion{ .sceneId = SCENE_14YUKIDAMANOMITI,
         .checks = {
-            CHECK(RC_PATH_TO_SNOWHEAD_PIECE_OF_HEART, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC && CAN_HOOK_SCARECROW),
-            CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_01, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_02, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+            CHECK(RC_PATH_TO_SNOWHEAD_PIECE_OF_HEART, CAN_NAVIGATE_HIDDEN && CAN_HOOK_SCARECROW),
+            CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
         },
         .connections = {
-            CONNECTION(RR_PATH_TO_SNOWHEAD_LOWER, CAN_BE_GORON && HAS_MAGIC),
-            CONNECTION(RR_PATH_TO_SNOWHEAD_UPPER, CAN_BE_GORON && HAS_MAGIC),
+            CONNECTION(RR_PATH_TO_SNOWHEAD_LOWER, CAN_GORON_SPIKE_ROLL),
+            CONNECTION(RR_PATH_TO_SNOWHEAD_UPPER, CAN_GORON_SPIKE_ROLL),
         },
     };
     Regions[RR_PATH_TO_SNOWHEAD_UPPER] = RandoRegion{ .sceneId = SCENE_14YUKIDAMANOMITI,
         .checks = {
-            CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_03, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_04, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+            CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_PATH_TO_SNOWHEAD_LARGE_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
             CHECK(RC_PATH_TO_SNOWHEAD_SMALL_SNOWBALL_01, true),
             CHECK(RC_PATH_TO_SNOWHEAD_SMALL_SNOWBALL_02, true),
             CHECK(RC_PATH_TO_SNOWHEAD_SMALL_SNOWBALL_03, true),
@@ -528,7 +571,7 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(GROTTOS, 25),                     ENTRANCE(PATH_TO_SNOWHEAD, 1), CAN_USE_EXPLOSIVE),
         },
         .connections = {
-            CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_BE_GORON && HAS_MAGIC),
+            CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL),
         },
     };
     Regions[RR_SNOWHEAD_GREAT_FAIRY_FOUNTAIN] = RandoRegion{ .sceneId = SCENE_YOUSEI_IZUMI,
@@ -541,7 +584,7 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_SNOWHEAD_NEAR_PATH] = RandoRegion{ .sceneId = SCENE_12HAKUGINMAE,
         .checks = {
-            CHECK(RC_SNOWHEAD_OWL_STATUE, CAN_USE_SWORD),
+            CHECK(RC_SNOWHEAD_OWL_STATUE, CAN_ACTIVATE_OWL),
             CHECK(RC_SNOWHEAD_SMALL_SNOWBALL_01, true),
             CHECK(RC_SNOWHEAD_SMALL_SNOWBALL_02, true),
             CHECK(RC_SNOWHEAD_SMALL_SNOWBALL_03, true),
@@ -551,7 +594,14 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(PATH_TO_SNOWHEAD, 1),             ENTRANCE(SNOWHEAD, 0), true),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE,
+                (CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) && CAN_BE_GORON) ||
+                (MM_LOGIC_HAS_IRON_BOOTS && HAS_MAGIC && HAS_ITEM(ITEM_MASK_GORON) &&
+                 COMBO_MM_TRICK("LullabySkipIrons"))),
+#else
             CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) && CAN_BE_GORON),
+#endif
         },
         .oneWayEntrances = {
             ENTRANCE(SNOWHEAD, 3), // From Song of Soaring
@@ -559,12 +609,12 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_SNOWHEAD_NEAR_TEMPLE] = RandoRegion{ .sceneId = SCENE_12HAKUGINMAE,
         .checks = {
-            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_01, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_02, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_03, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_04, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_05, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
-            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_06, CanKillEnemy(ACTOR_OBJ_SNOWBALL)),
+            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_02, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_03, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_04, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_05, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
+            CHECK(RC_SNOWHEAD_LARGE_SNOWBALL_06, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
             CHECK(RC_ENEMY_DROP_WOLFOS, CanKillEnemy(ACTOR_EN_WF)),
             CHECK(RC_ENEMY_DROP_BOE, CanKillEnemy(ACTOR_EN_MKK) && IS_NIGHT()), // Night only
@@ -580,7 +630,11 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(FAIRY_FOUNTAIN, 2),               ENTRANCE(SNOWHEAD, 2), true),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) || MM_LOGIC_HAS_IRON_BOOTS),
+#else
             CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE)),
+#endif
             // CONNECTION(RR_SNOWHEAD_NEAR_PATH, true), // can void out to this RR
         },
     };
@@ -589,7 +643,11 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(SNOWHEAD_TEMPLE, 0),              ENTRANCE(SNOWHEAD, 1), true),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) || MM_LOGIC_HAS_IRON_BOOTS),
+#else
             CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE)),
+#endif
             // CONNECTION(RR_SNOWHEAD_NEAR_PATH, true), // can void out to this RR
         },
     };

@@ -1,5 +1,8 @@
 #include <soh/OTRGlobals.h>
 #include "soh/Enhancements/randomizer/randomizer.h"
+#ifdef COMBO_BUILD
+#include "KokiriRupeePolicy.h"
+#endif
 
 extern "C" {
 #include "variables.h"
@@ -8,8 +11,27 @@ extern PlayState* gPlayState;
 
 extern void EnItem00_DrawRandomizedItem(EnItem00* enItem00, PlayState* play);
 
+static bool Item00FamilyEnabled(const Rando::Location* loc) {
+    auto freestanding = RAND_GET_OPTION(RSK_SHUFFLE_FREESTANDING);
+    const auto rc = loc->GetRandomizerCheck();
+    if (rc == RC_UNKNOWN_CHECK) return false;
+#ifdef COMBO_BUILD
+    if (Rando::IsKokiriInvisibleRupee(rc))
+        return Rando::KokiriItem00Enabled(rc, Rando::Context::GetInstance()->GetKokiriSeedRevision(),
+            freestanding.Get(), RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS).Get());
+#endif
+    return freestanding &&
+        !(freestanding.Is(RO_SHUFFLE_FREESTANDING_OVERWORLD) && loc->IsDungeon()) &&
+        !(freestanding.Is(RO_SHUFFLE_FREESTANDING_DUNGEONS) && !loc->IsDungeon());
+}
+
 void RegisterShuffleFreestanding() {
     bool shouldRegister = IS_RANDO && RAND_GET_OPTION(RSK_SHUFFLE_FREESTANDING);
+#ifdef COMBO_BUILD
+    shouldRegister = shouldRegister || (IS_RANDO && Rando::Context::GetInstance()->GetKokiriSeedRevision() == 1 &&
+        (RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS).Is(RO_SHUFFLE_WONDER_ITEMS_OVERWORLD) ||
+         RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS).Is(RO_SHUFFLE_WONDER_ITEMS_ALL)));
+#endif
 
     COND_VB_SHOULD(VB_ITEM00_DESPAWN, shouldRegister, {
         EnItem00* item00 = va_arg(args, EnItem00*);
@@ -26,13 +48,8 @@ void RegisterShuffleFreestanding() {
         if (Rando::Context::GetInstance()->GetItemLocation(randomizerCheck)->HasObtained()) {
             return;
         }
-        uint8_t isDungeon = loc->IsDungeon();
-        auto freestandingSetting = RAND_GET_OPTION(RSK_SHUFFLE_FREESTANDING);
-
-        // Don't change to randomized item if current freestanding item isn't shuffled or already obtained.
-        if ((freestandingSetting.Is(RO_SHUFFLE_FREESTANDING_OVERWORLD) && isDungeon) ||
-            (freestandingSetting.Is(RO_SHUFFLE_FREESTANDING_DUNGEONS) && !isDungeon) ||
-            randomizerCheck == RC_UNKNOWN_CHECK) {
+        // The seed's effective family selects its option; the physical reward stays EnItem00.
+        if (!Item00FamilyEnabled(loc)) {
             return;
         }
 

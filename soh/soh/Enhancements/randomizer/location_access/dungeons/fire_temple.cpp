@@ -194,7 +194,12 @@ void RegionTable_Init_FireTemple() {
     areaTable[RR_FIRE_TEMPLE_BOULDER_MAZE_LOWER] = Region("Fire Temple Boulder Maze Lower", SCENE_FIRE_TEMPLE, {}, {
         //Locations
         LOCATION(RC_FIRE_TEMPLE_BOULDER_MAZE_LOWER_CHEST, logic->HasItem(RG_OPEN_CHEST)),
-        LOCATION(RC_FIRE_TEMPLE_GS_BOULDER_MAZE,          logic->HasExplosives() && (logic->IsAdult || logic->HookshotOrBoomerang() || logic->CanGroundJumpslash())),
+#ifdef COMBO_BUILD
+        LOCATION(RC_FIRE_TEMPLE_GS_BOULDER_MAZE, logic->HasExplosives() && logic->HookshotOrBoomerang()),
+#else
+        LOCATION(RC_FIRE_TEMPLE_GS_BOULDER_MAZE, logic->HasExplosives() &&
+                 (logic->IsAdult || logic->HookshotOrBoomerang() || logic->CanGroundJumpslash())),
+#endif
     }, {
         //Exits
         ENTRANCE(RR_FIRE_TEMPLE_SHORTCUT_ROOM,      true),
@@ -591,7 +596,11 @@ void RegionTable_Init_FireTemple() {
         ENTRANCE(RR_FIRE_TEMPLE_MQ_BIG_LAVA_BLOCKED_DOOR, logic->FireTimer() >= 48 && (logic->CanUse(RG_HOOKSHOT) || ((logic->IsAdult || logic->CanGroundJump()) && ctx->GetTrickOption(RT_FIRE_MQ_BLOCKED_CHEST)))),
         // Fewer tunic requirements ends here
         ENTRANCE(RR_FIRE_TEMPLE_MQ_LAVA_GEYSER_1F,        logic->CanUse(RG_GORON_TUNIC) && logic->SmallKeys(SCENE_FIRE_TEMPLE, 2)),
+#ifdef COMBO_BUILD
+        ENTRANCE(RR_FIRE_TEMPLE_MQ_TORCH_FIREWALL_ROOM,   logic->HasFireSource() && logic->CanUse(RG_GORON_TUNIC) && logic->CanUse(RG_HOOKSHOT)),
+#else
         ENTRANCE(RR_FIRE_TEMPLE_MQ_TORCH_FIREWALL_ROOM,   logic->HasFireSource() && ((logic->CanUse(RG_FAIRY_BOW) && logic->FireTimer() >= 32) || (ctx->GetTrickOption(RT_FIRE_MQ_BK_CHEST) && logic->FireTimer() >= 56)) && (logic->CanUse(RG_HOOKSHOT) || (logic->IsAdult && ctx->GetTrickOption(RT_FIRE_SOT)))),
+#endif
     });
 
     //Tunic timers from other doors are handled on entry from RR_FIRE_TEMPLE_MQ_BIG_LAVA_ROOM
@@ -695,7 +704,11 @@ void RegionTable_Init_FireTemple() {
     areaTable[RR_FIRE_TEMPLE_MQ_SHORTCUT_ROOM_MID] = Region("Fire Temple MQ Shortcut Room Middle", SCENE_FIRE_TEMPLE, {}, {}, {
         //Exits
         ENTRANCE(RR_FIRE_TEMPLE_MQ_SHORTCUT_ROOM_LOWER, true),
+#ifdef COMBO_BUILD
+        ENTRANCE(RR_FIRE_TEMPLE_MQ_SHORTCUT_ROOM_3F,    logic->CanUse(RG_HOOKSHOT)),
+#else
         ENTRANCE(RR_FIRE_TEMPLE_MQ_SHORTCUT_ROOM_3F,    logic->HasItem(RG_CLIMB) || logic->CanUse(RG_HOOKSHOT)),
+#endif
     });
 
     areaTable[RR_FIRE_TEMPLE_MQ_SHORTCUT_ROOM_3F] = Region("Fire Temple MQ Shortcut Room 3F", SCENE_FIRE_TEMPLE, {}, {}, {
@@ -713,7 +726,13 @@ void RegionTable_Init_FireTemple() {
         //Explosives can also reach this room. Chus is relatively simple, they need to detonate on the first horizontal bar up from the floor while horizontally near the switch, but bombs are much harder
         ENTRANCE(RR_FIRE_TEMPLE_MQ_MAZE_CRATE_CAGE,     AnyAgeTime([]{return logic->CanJumpslash();})),
         //it's possible to make the RT_FIRE_MQ_MAZE_HOVERS as child using bunny hood jumps, but not adult as adult bonks
+#ifdef COMBO_BUILD
+        // OoTMM permits the upper switch-cage ledge and tower hookshot routes.
+        ENTRANCE(RR_FIRE_TEMPLE_MQ_UPPER_LIZALFOS_MAZE, logic->CanUse(RG_HOOKSHOT)),
+        ENTRANCE(RR_FIRE_TEMPLE_MQ_ABOVE_MAZE,          logic->CanUse(RG_LONGSHOT)),
+#else
         ENTRANCE(RR_FIRE_TEMPLE_MQ_UPPER_LIZALFOS_MAZE, (logic->HasExplosives() || ctx->GetTrickOption(RT_VISIBLE_COLLISION)) && logic->CanUse(RG_MEGATON_HAMMER) && logic->CanUse(RG_HOOKSHOT)),
+#endif
         ENTRANCE(RR_FIRE_TEMPLE_MQ_MAZE_SWITCH_DOOR,    logic->HasExplosives() && ctx->GetTrickOption(RT_FIRE_MQ_MAZE_SIDE_ROOM)),
         ENTRANCE(RR_FIRE_TEMPLE_MQ_NARROW_PATH_ROOM,    false),
     });

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.26.0 FATAL_ERROR)
 
-set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
+if(WIN32)
+    set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
+endif()
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard to use")
 set(CMAKE_C_STANDARD 23 CACHE STRING "The C standard to use")
 
@@ -251,6 +253,8 @@ set(SPDLOG_LEVEL_ERROR 4)
 set(SPDLOG_LEVEL_CRITICAL 5)
 set(SPDLOG_LEVEL_OFF 6)
 
+include("${CMAKE_SOURCE_DIR}/ComboAndroid/cmake/AndroidDependencies.cmake")
+
 # Shared libultraship (in Combo directory)
 add_subdirectory(libultraship ${CMAKE_BINARY_DIR}/libultraship)
 target_compile_options(libultraship PRIVATE "${WARNING_OVERRIDE}")
@@ -261,6 +265,9 @@ add_subdirectory(ZAPDTR/ZAPD ${CMAKE_BINARY_DIR}/ZAPD)
 
 # Shared OTRExporter (in Combo directory)
 add_subdirectory(OTRExporter ${CMAKE_BINARY_DIR}/OTRExporter)
+find_package(PNG REQUIRED)
+# Exporter consumes engine XML/ZIP headers; inherit actual target dependencies.
+target_link_libraries(OTRExporter PUBLIC libultraship PNG::PNG)
 # OTRExporter blanks CMAKE_CXX_FLAGS in its own scope, which drops the inherited dynamic-CRT
 # default; force the runtime library on the target so it links the dynamic CRT like everything
 # else (otherwise OTRExporter.lib triggers LNK2038/LNK2005 CRT mismatch in soh.dll / 2ship.dll).

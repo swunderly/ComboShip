@@ -1,3 +1,5 @@
+#include "Rando/ActorBehavior/MissingMmSouls.h"
+#include "Rando/ActorBehavior/ExpandedSoulsNative.h"
 #include "Rando.h"
 #include "2s2h/Rando/StaticData/StaticData.h"
 #include "2s2h/ShipUtils.h"
@@ -29,10 +31,10 @@ std::vector<RandoItemId> GetComputedStartingItems(RandoSaveInfo& randoSaveInfo) 
     }
 
     if (randoSaveInfo.randoSaveOptions[RO_PLACEMENT_SMALL_KEYS] == RO_DUNGEON_ITEM_START_WITH) {
-        startingItems.insert(startingItems.end(), 1, RI_WOODFALL_SMALL_KEY);
-        startingItems.insert(startingItems.end(), 3, RI_SNOWHEAD_SMALL_KEY);
-        startingItems.insert(startingItems.end(), 1, RI_GREAT_BAY_SMALL_KEY);
-        startingItems.insert(startingItems.end(), 4, RI_STONE_TOWER_SMALL_KEY);
+        for (const auto& ring : keyRings) {
+            if (randoSaveInfo.randoSaveOptions[ring.option]) startingItems.push_back(ring.ring);
+            else startingItems.insert(startingItems.end(), ring.maximum, ring.key);
+        }
     }
 
     if (randoSaveInfo.randoSaveOptions[RO_PLACEMENT_BOSS_KEYS] == RO_DUNGEON_ITEM_START_WITH) {
@@ -71,6 +73,9 @@ std::vector<RandoItemId> GetComputedStartingItems(RandoSaveInfo& randoSaveInfo) 
         }
     }
 
+    AddUnshuffledExpandedSouls(randoSaveInfo.randoSaveOptions, startingItems);
+    AddUnshuffledMissingMmSouls(randoSaveInfo.randoSaveOptions,startingItems);
+
     // Doesn't necessarily mean they can play them just sets the infs's for completeness
     if (randoSaveInfo.randoSaveOptions[RO_SHUFFLE_SONG_DOUBLE_TIME] != RO_GENERIC_YES) {
         startingItems.push_back(RI_SONG_DOUBLE_TIME);
@@ -89,13 +94,16 @@ std::vector<RandoItemId> GetComputedStartingItems(RandoSaveInfo& randoSaveInfo) 
                 break;
             }
         }
-        if (!hasTimeItem) {
-            if (randoSaveInfo.randoSaveOptions[RO_CLOCK_SHUFFLE_PROGRESSIVE] == RO_CLOCK_SHUFFLE_RANDOM) {
+        const auto mode = randoSaveInfo.randoSaveOptions[RO_CLOCK_SHUFFLE_PROGRESSIVE];
+        if (mode == RO_CLOCK_SHUFFLE_RANDOM) {
+            if (!hasTimeItem) {
                 Ship_Random_Seed(randoSaveInfo.finalSeed);
                 startingItems.push_back((RandoItemId)(RI_TIME_DAY_1 + Ship_Random(0, 6)));
-            } else {
-                startingItems.push_back(RI_TIME_PROGRESSIVE);
             }
+        } else {
+            // OoTMM save.c grants the first half-day independently of configured
+            // starting progressive clocks; those are additional pool removals.
+            startingItems.push_back(mode == RO_CLOCK_SHUFFLE_DESCENDING ? RI_TIME_NIGHT_3 : RI_TIME_DAY_1);
         }
     }
 
@@ -106,7 +114,9 @@ void GrantStartingItems() {
     std::vector<RandoItemId> startingItems = Rando::GetStartingItemsFromSave(gSaveContext.save.shipSaveInfo.rando);
     std::vector<RandoItemId> computedStartingItems =
         Rando::GetComputedStartingItems(gSaveContext.save.shipSaveInfo.rando);
-    startingItems.insert(startingItems.end(), computedStartingItems.begin(), computedStartingItems.end());
+    // Grant the built-in ascending/descending boundary before any configured
+    // progressive copies, so a selected copy unlocks the next half-day.
+    startingItems.insert(startingItems.begin(), computedStartingItems.begin(), computedStartingItems.end());
 
     for (RandoItemId startingItem : startingItems) {
         Rando::GiveItem(Rando::ConvertItem(startingItem));

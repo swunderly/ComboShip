@@ -1,3 +1,4 @@
+#include "souls/OotSouls.h"
 #include "soh_assets.h"
 #include "static_data.h"
 #include "SeedContext.h"
@@ -6,6 +7,7 @@
 #include "z64object.h"
 #include "soh/Enhancements/custom-message/CustomMessageTypes.h"
 #include "draw.h"
+#include "silver_rupees/SilverRupees.h"
 
 using namespace Rando;
 
@@ -15,6 +17,10 @@ using namespace Rando;
 // ComboItemDrawMM.h include, in the opposite direction.
 #include "ComboItemDrawOOT.h"
 #endif
+
+static void ComboDrawNamedTriforce(PlayState* play, GetItemEntry* entry) {
+    if (entry != nullptr) Randomizer_DrawTriforcePiece(play, *entry);
+}
 
 std::array<Item, RG_MAX> Rando::StaticData::itemTable;
 std::unordered_map<std::string, RandomizerGet> Rando::StaticData::itemNameToEnum;
@@ -460,6 +466,11 @@ void Rando::StaticData::InitItemTable() {
     itemTable[RG_MAGIC_SINGLE] =                        Item(RG_MAGIC_SINGLE,                     Text{ "Magic Meter", "Jauge de Magie", "Magisches Maß" },                                                                            ITEMTYPE_ITEM,              0x8A,                 true,  LOGIC_PROGRESSIVE_MAGIC,            RHT_MAGIC_SINGLE,                      RG_MAGIC_SINGLE,                      OBJECT_GI_MAGICPOT,     GID_MAGIC_SMALL,      0xE4,                        0x80, CHEST_ANIM_LONG,  ITEM_CATEGORY_MAJOR,  MOD_RANDOMIZER, {"the ", "la ", "das "}).CustomIcon(gQuestIconMagicJarSmallTex, ICON_SIZE_24);
     itemTable[RG_MAGIC_DOUBLE] =                        Item(RG_MAGIC_DOUBLE,                     Text{ "Enhanced Magic Meter", "Jauge de Magie améliorée", "Verbessertes Magisches Maß" },                                            ITEMTYPE_ITEM,              0x8A,                 true,  LOGIC_PROGRESSIVE_MAGIC,            RHT_MAGIC_DOUBLE,                      RG_MAGIC_DOUBLE,                      OBJECT_GI_MAGICPOT,     GID_MAGIC_LARGE,      0xE8,                        0x80, CHEST_ANIM_LONG,  ITEM_CATEGORY_LESSER, MOD_RANDOMIZER, {"the ", "la ", "das "}).CustomIcon(gQuestIconMagicJarBigTex, ICON_SIZE_24);
     itemTable[RG_TRIFORCE_PIECE] =                      Item(RG_TRIFORCE_PIECE,                   Text{ "Triforce Piece", "Morceau de Triforce", "Triforce-Fragment" },                                                                ITEMTYPE_ITEM,              0xDF,                 true,  LOGIC_NONE,                         RHT_TRIFORCE_PIECE,                    RG_TRIFORCE_PIECE,                    OBJECT_GI_BOMB_2,       GID_TRIFORCE_PIECE,   TEXT_RANDOMIZER_CUSTOM_ITEM, 0x80, CHEST_ANIM_LONG,  ITEM_CATEGORY_MAJOR,  MOD_RANDOMIZER, {"a ", "un ", "ein "}).CustomIcon(gTriforcePieceTex);
+    itemTable[RG_TRIFORCE_POWER] =                      Item(RG_TRIFORCE_POWER,                   Text{ "Triforce of Power", "Triforce of Power", "Triforce of Power" },                                                                ITEMTYPE_ITEM,              0xDF,                 true,  LOGIC_NONE,                         RHT_TRIFORCE_PIECE,                    RG_TRIFORCE_POWER,                    OBJECT_GI_BOMB_2,       GID_TRIFORCE_PIECE,   TEXT_RANDOMIZER_CUSTOM_ITEM, 0x80, CHEST_ANIM_LONG,  ITEM_CATEGORY_MAJOR,  MOD_RANDOMIZER, {"a ", "un ", "ein "}).CustomIcon(gTriforcePieceTex);
+    itemTable[RG_TRIFORCE_COURAGE] =                      Item(RG_TRIFORCE_COURAGE,                   Text{ "Triforce of Courage", "Triforce of Courage", "Triforce of Courage" },                                                                ITEMTYPE_ITEM,              0xDF,                 true,  LOGIC_NONE,                         RHT_TRIFORCE_PIECE,                    RG_TRIFORCE_COURAGE,                    OBJECT_GI_BOMB_2,       GID_TRIFORCE_PIECE,   TEXT_RANDOMIZER_CUSTOM_ITEM, 0x80, CHEST_ANIM_LONG,  ITEM_CATEGORY_MAJOR,  MOD_RANDOMIZER, {"a ", "un ", "ein "}).CustomIcon(gTriforcePieceTex);
+    itemTable[RG_TRIFORCE_WISDOM] =                      Item(RG_TRIFORCE_WISDOM,                   Text{ "Triforce of Wisdom", "Triforce of Wisdom", "Triforce of Wisdom" },                                                                ITEMTYPE_ITEM,              0xDF,                 true,  LOGIC_NONE,                         RHT_TRIFORCE_PIECE,                    RG_TRIFORCE_WISDOM,                    OBJECT_GI_BOMB_2,       GID_TRIFORCE_PIECE,   TEXT_RANDOMIZER_CUSTOM_ITEM, 0x80, CHEST_ANIM_LONG,  ITEM_CATEGORY_MAJOR,  MOD_RANDOMIZER, {"a ", "un ", "ein "}).CustomIcon(gTriforcePieceTex);
+    for (auto id : {RG_TRIFORCE_POWER, RG_TRIFORCE_COURAGE, RG_TRIFORCE_WISDOM})
+        itemTable[id].SetCustomDrawFunc(ComboDrawNamedTriforce);
     itemTable[RG_ROCS_FEATHER] =                        Item(RG_ROCS_FEATHER,                     Text{ "Roc's Feather", "Plume de Roc", "Grefenfeider" },                                                                             ITEMTYPE_ITEM,              0xE0,                 true,  LOGIC_ROCS_FEATHER,                 RHT_ROCS_FEATHER,                      RG_ROCS_FEATHER,                      OBJECT_GI_BOMB_2,       GID_STONE_OF_AGONY,   TEXT_RANDOMIZER_CUSTOM_ITEM, 0x80, CHEST_ANIM_LONG,  ITEM_CATEGORY_MAJOR,  MOD_RANDOMIZER, {"a ", "la ", "ein "}).CustomIcon(gRocsFeatherTex);
     itemTable[RG_ROCS_FEATHER].SetCustomDrawFunc(Randomizer_DrawRocsFeather);
 
@@ -476,6 +487,8 @@ void Rando::StaticData::InitItemTable() {
 
     // clang-format on
 
+    SilverRupees::RegisterItems(itemTable);
+    Souls::RegisterItems(itemTable);
     // Init itemNameToEnum
     for (auto& item : itemTable) {
         // Easiest way to filter out all the empty values from the array, since we still technically want the 0/RG_NONE

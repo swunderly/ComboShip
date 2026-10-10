@@ -12,7 +12,18 @@
 #include "ComboMenuSharedContext.h"               // ComboShip: per-DLL ImGui context helper (combo-owned)
 #include <ship/resource/CrossRMRegistry.h>        // ComboShip: dormant-draw texture lookups need MM's RM
 #include <ship/resource/ResourceManagerScope.h>
+#include "../../../../combo/rando/TrackerKnowledge.h"
 bool Combo_MmIsForeground(void); // defined in BenPort.cpp
+
+void Rando::CheckTracker::RecordSeenItem(RandoCheckId id, RandoItemId shownItem, uint8_t source) {
+    if (!Combo_MmIsForeground() || !gPlayState || !IS_RANDO || gSaveContext.fileNum > 2 ||
+        id <= RC_UNKNOWN || id >= RC_MAX || shownItem <= RI_UNKNOWN || shownItem >= RI_MAX ||
+        shownItem == RI_TRAP) return;
+    auto& check = RANDO_SAVE_CHECKS[id];
+    if (!check.shuffled || check.obtained) return;
+    // Keep the displayed tier/disguise. Do not re-resolve it later against a different inventory.
+    ComboRando::RecordTrackerItemKnowledge(check.knowledgeSource, check.seenItemId, source, shownItem);
+}
 #endif
 
 // Image Icons
@@ -96,7 +107,11 @@ static bool sCheckTrackerBtnState = false;
 #define CVAR_SHOW_CHECK_TRACKER CVarGetInteger(CVAR_NAME_SHOW_CHECK_TRACKER, 0)
 #define CVAR_VISIBILITY_MODE CVarGetInteger(CVAR_NAME_VISIBILITY_MODE, CHECK_TRACKER_VISIBILITY_MODE_ALWAYS)
 #define CVAR_VISIBILITY_BTN CVarGetInteger(CVAR_NAME_VISIBILITY_BTN, BTN_CUSTOM_MODIFIER1)
+#ifdef COMBO_BUILD
+#define CVAR_OUT_OF_LOGIC_MODE (CVarGetInteger("gCombo.CheckTracker.ShowLogic", 1) ? CHECK_MODE_COLORED : CHECK_MODE_NORMAL)
+#else
 #define CVAR_OUT_OF_LOGIC_MODE CVarGetInteger(CVAR_NAME_OUT_OF_LOGIC_MODE, CHECK_MODE_COLORED)
+#endif
 #define CVAR_OUT_OF_LOGIC_COLOR CVarGetColor(CVAR_NAME_OUT_OF_LOGIC_COLOR ".Value", { 255, 255, 255, 100 })
 #define CVAR_COLLECTED_MODE CVarGetInteger(CVAR_NAME_COLLECTED_MODE, CHECK_MODE_HIDDEN)
 #define CVAR_COLLECTED_COLOR CVarGetColor(CVAR_NAME_COLLECTED_COLOR ".Value", { 100, 255, 100, 255 })
@@ -304,6 +319,11 @@ void RefreshChecksInLogic() {
 #ifdef COMBO_BUILD
 comboPeekRefresh:;
 #endif
+#ifdef COMBO_BUILD
+    Rando::Logic::LiveTrackerRuleScope ruleScope;
+    ComboRando::MmResourceScope resources;
+    Rando::Logic::MmAccessScope access;
+#endif
     checksInLogic.clear();
 
     // Clear all events so they're re-evaluated fresh each refresh
@@ -331,13 +351,17 @@ comboPeekRefresh:;
             Rando::Logic::FindReachableRegions(regionId, reachableRegions, regionTimeStates);
         }
 
+#ifdef COMBO_BUILD
+        changed |= Rando::Logic::UpdateMmAccess();
+        changed |= Rando::Logic::UpdateResourceSources(reachableRegions, regionTimeStates);
+#endif
         // Trigger events for newly discovered regions
         for (RandoRegionId regionId : reachableRegions) {
             auto& randoRegion = Rando::Logic::Regions[regionId];
             Rando::Logic::SetCurrentRegionTime(regionTimeStates, regionId);
 
             for (auto& event : randoRegion.events) {
-                if (!RANDO_EVENTS[event.first] && event.second()) {
+                if (!RANDO_EVENTS[event.first] && Rando::Logic::TimeLogic::EvaluateConditionTimes(event.second, Rando::Logic::gCurrentRegionTime)) {
                     RANDO_EVENTS[event.first]++;
                     changed = true;
                 }
@@ -357,7 +381,7 @@ comboPeekRefresh:;
         for (auto& [randoCheckId, accessLogicFunc] : randoRegion.checks) {
             auto& randoStaticCheck = Rando::StaticData::Checks[randoCheckId];
             auto& randoSaveCheck = RANDO_SAVE_CHECKS[randoCheckId];
-            if (randoSaveCheck.shuffled && !randoSaveCheck.obtained && accessLogicFunc.first()) {
+            if (randoSaveCheck.shuffled && !randoSaveCheck.obtained && Rando::Logic::TimeLogic::EvaluateConditionTimes(accessLogicFunc.first, Rando::Logic::gCurrentRegionTime)) {
                 checksInLogic.insert({ randoCheckId, true });
             }
         }
@@ -530,6 +554,9 @@ namespace Rando {
 namespace CheckTracker {
 
 void CheckTrackerWindow::Draw() {
+#ifdef COMBO_BUILD
+    return; // Rendering is shared; native tracking hooks and save flags remain in this module.
+#endif
     if (!CVAR_SHOW_CHECK_TRACKER) {
         return;
     }
@@ -865,3 +892,7 @@ void OnFileLoad() {
 } // namespace CheckTracker
 
 } // namespace Rando
+
+#ifdef COMBO_BUILD
+#include "ComboCheckTrackerMM.inc"
+#endif

@@ -1,6 +1,8 @@
 #include "2s2h/resource/importer/AnimationFactory.h"
 #include "2s2h/resource/type/Animation.h"
 #include "2s2h/resource/importer/PlayerAnimationFactory.h"
+#include "2s2h/resource/type/PlayerAnimation.h"
+#include <ship/resource/CrossRMRegistry.h>
 #include <ship/Context.h>
 #include <ship/resource/ResourceManager.h>
 
@@ -88,18 +90,18 @@ ResourceFactoryBinaryAnimationV0::ReadResource(std::shared_ptr<Ship::File> file,
 
         // Read the segment pointer (always 32 bit, doesn't adjust for system pointer size)
         std::string path = reader->ReadString();
-        auto animData = std::static_pointer_cast<Animation>(
-            Ship::Context::GetRawInstance()->GetResourceManager()->LoadResourceProcess(path.c_str()));
+        // A Link header owns MM frame data even when OOT is the foreground game.
+        auto owner = Ship::CrossRMRegistry::GetOrActive("mm");
+        auto animData = owner ? std::dynamic_pointer_cast<PlayerAnimation>(owner->LoadResourceProcess(path.c_str())) : nullptr;
 
         // If direct load failed and alt assets are enabled, try with alt/ prefix
-        if (animData == nullptr && Ship::Context::GetRawInstance()->GetResourceManager()->IsAltAssetsEnabled()) {
+        if (animData == nullptr && owner && owner->IsAltAssetsEnabled()) {
             std::string altPath = path;
             if (altPath.find("__OTR__") == 0) {
                 altPath = altPath.substr(7); // Strip __OTR__
             }
             altPath = "alt/" + altPath;
-            animData = std::static_pointer_cast<Animation>(
-                Ship::Context::GetRawInstance()->GetResourceManager()->LoadResourceProcess(altPath.c_str()));
+            animData = std::dynamic_pointer_cast<PlayerAnimation>(owner->LoadResourceProcess(altPath.c_str()));
         }
 
         if (animData != nullptr) {

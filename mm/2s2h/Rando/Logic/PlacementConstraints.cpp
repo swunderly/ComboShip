@@ -28,21 +28,25 @@ int SceneIdToDungeon(SceneId sceneId) {
 int RandoItemIdToDungeon(RandoItemId itemId) {
     int dungeon = -1;
     switch (itemId) {
+        case RI_WOODFALL_KEY_RING:
         case RI_WOODFALL_SMALL_KEY:
         case RI_WOODFALL_BOSS_KEY:
         case RI_WOODFALL_STRAY_FAIRY:
             dungeon = DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE;
             break;
+        case RI_SNOWHEAD_KEY_RING:
         case RI_SNOWHEAD_SMALL_KEY:
         case RI_SNOWHEAD_BOSS_KEY:
         case RI_SNOWHEAD_STRAY_FAIRY:
             dungeon = DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE;
             break;
+        case RI_GREAT_BAY_KEY_RING:
         case RI_GREAT_BAY_SMALL_KEY:
         case RI_GREAT_BAY_BOSS_KEY:
         case RI_GREAT_BAY_STRAY_FAIRY:
             dungeon = DUNGEON_SCENE_INDEX_GREAT_BAY_TEMPLE;
             break;
+        case RI_STONE_TOWER_KEY_RING:
         case RI_STONE_TOWER_SMALL_KEY:
         case RI_STONE_TOWER_BOSS_KEY:
         case RI_STONE_TOWER_STRAY_FAIRY:

@@ -1,4 +1,8 @@
+#include "../souls/OotSouls.h"
 #include "starting_inventory.hpp"
+#ifdef COMBO_BUILD
+#include "rando/OotMaskQuest.h"
+#endif
 
 #include "../dungeon.h"
 #include "../SeedContext.h"
@@ -17,6 +21,21 @@ static void AddItemToInventory(RandomizerGet item, size_t count = 1) {
 void GenerateStartingInventory() {
     auto ctx = Rando::Context::GetInstance();
     StartingInventory.clear();
+    Rando::Souls::AddUnshuffledStarts(StartingInventory);
+
+#ifdef COMBO_BUILD
+    // Match Completed starts and the compatibility repair for old Vanilla seeds.
+    // OoTMM models starting masks as items, without borrowing from the portal.
+    if (ComboRando::OotMaskQuestHasStartingMasks(ctx->GetOption(RSK_MASK_QUEST).Get())) {
+        for (RandomizerGet mask : { RG_KEATON_MASK, RG_SKULL_MASK, RG_SPOOKY_MASK, RG_GORON_MASK,
+                                    RG_ZORA_MASK, RG_GERUDO_MASK, RG_MASK_OF_TRUTH }) {
+            AddItemToInventory(mask);
+        }
+        if (!ctx->GetOption(RSK_STARTING_BUNNY_HOOD)) {
+            AddItemToInventory(RG_BUNNY_HOOD);
+        }
+    }
+#endif
 
     if (ctx->GetOption(RSK_SHUFFLE_MAPANDCOMPASS).Is(RO_DUNGEON_ITEM_LOC_STARTWITH)) {
         for (auto* dungeon : ctx->GetDungeons()->GetDungeonList()) {

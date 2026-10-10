@@ -1,4 +1,5 @@
 #include "global.h"
+#include "soh/Enhancements/randomizer/silver_rupees/SilverRupees.h"
 #include "vt.h"
 #include "soh/ActorDB.h"
 #include <assert.h>
@@ -211,7 +212,10 @@ void Scene_CommandSpawnList(PlayState* play, SceneCmd* cmd) {
     Object_Spawn(&play->objectCtx, linkObjectId);
 }
 
+extern void Combo_OotSoulResetRoom(void*);
 void Scene_CommandActorList(PlayState* play, SceneCmd* cmd) {
+    Combo_OotSoulResetRoom(play);
+    Combo_SilverResetRoom();
     play->numSetupActors = cmd->actorList.num;
     play->setupActorList = SEGMENTED_TO_VIRTUAL(cmd->actorList.segment);
 }

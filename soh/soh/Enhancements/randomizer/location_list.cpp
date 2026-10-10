@@ -2,6 +2,7 @@
 #include "z64save.h"
 #include "SeedContext.h"
 #include "dungeon.h"
+#include "silver_rupees/SilverRupees.h"
 
 std::array<Rando::Location, RC_MAX> Rando::StaticData::locationTable;
 std::multimap<std::tuple<s16, s16, s32>, RandomizerCheck> Rando::StaticData::CheckFromActorMultimap;
@@ -1007,6 +1008,7 @@ void Rando::StaticData::InitLocationTable() {
     locationTable[RC_GANON_SOUL] =                                                Location::Base(RC_GANON_SOUL,                                            RCQUEST_BOTH,    RCTYPE_STANDARD,                    RCAREA_GANONS_CASTLE,                ACTOR_ID_MAX,         SCENE_ID_MAX,                       0x00,                               "Ganon's Soul",       "Ganon's Soul",        RHT_NONE,                                                        RG_NONE);
     // clang-format on
 
+    SilverRupees::RegisterLocations(locationTable);
     // Init locationNameToEnum
     locationNameToEnum["Invalid Location"] = RC_UNKNOWN_CHECK;
     locationNameToEnum["Link's Pocket"] = RC_LINKS_POCKET;

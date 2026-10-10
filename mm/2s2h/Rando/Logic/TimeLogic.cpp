@@ -9,81 +9,62 @@ namespace Rando {
 namespace Logic {
 namespace TimeLogic {
 
+uint64_t EvaluateConditionTimes(const std::function<bool()>& condition, uint64_t timeSlices) {
+    struct RestoreTime {
+        uint64_t previous = gCurrentRegionTime;
+        ~RestoreTime() { gCurrentRegionTime = previous; }
+    } restore;
+    uint64_t allowed = 0;
+#ifdef COMBO_BUILD
+    bool anyDomain=false;
+    auto domain=ComboRando::Entrances::mmFlagSource;
+#endif
+    for (int slice = 0; slice < TIME_SLICE_COUNT; ++slice) {
+        const uint64_t bit = TIME_BIT_ONE << slice;
+        if (!(timeSlices & bit)) continue;
+        gCurrentRegionTime = bit;
+#ifdef COMBO_BUILD
+        if(NativeMmErContextsEnabled()) {
+            const auto evaluated=ComboRando::Entrances::EvaluateMmFlags(condition);
+            if(evaluated.allowed){allowed|=bit;domain=anyDomain?ComboRando::Entrances::Merge(domain,evaluated.domain):evaluated.domain;anyDomain=true;}
+        } else
+#endif
+        if (condition()) allowed |= bit;
+    }
+#ifdef COMBO_BUILD
+    ComboRando::Entrances::mmFlagResult=anyDomain?domain:ComboRando::Entrances::mmFlagSource;
+#endif
+    return allowed;
+}
+
 // Core expansion function - expands accessible time forward with stay restrictions
 // Implements sequential expansion: if a stay restriction fails, expansion stops permanently
 // For unrestricted regions without Clock Shuffle: fast bitwise fill across all time slices (O(1))
 // For Clock Shuffle or restricted regions: sequential expansion respecting boundaries
 uint64_t ExpandTimeForward(uint64_t timeSlices, const RandoRegion& region) {
-    // Fast path: unrestricted time expansion using bitwise fill (only when Clock Shuffle is off)
-    if (region.timeStayRestrictions.empty() && !SettingClocks()) {
-        uint64_t expanded = timeSlices;
-
-        // Non-Clock Shuffle: expand across ALL time slices using bitwise fill
-        expanded |= (expanded << 1);
-        expanded |= (expanded << 2);
-        expanded |= (expanded << 4);
-        expanded |= (expanded << 8);
-        expanded |= (expanded << 16);
-        expanded |= (expanded << 32);
-        expanded &= TIME_ALL_SLICES;
-
-        return expanded;
-    }
-
-    // Slow path: restricted time expansion with sequential checking
-    // In Clock Shuffle, filter input to only owned time
-    uint64_t filteredTimeSlices = timeSlices;
-    if (SettingClocks()) {
-        filteredTimeSlices &= GetOwnedTimeSlices();
-    }
-
-    uint64_t expanded = filteredTimeSlices;
+    const uint64_t owned = GetOwnedTimeSlices();
+    uint64_t expanded = timeSlices & owned;
     bool canWait = false;
-
-    for (int i = 0; i < TIME_SLICE_COUNT; ++i) {
-        uint64_t mask = (TIME_BIT_ONE << i);
-
-        if (filteredTimeSlices & mask) {
-            // We can be at this time
+    for (int slice = 0; slice < TIME_SLICE_COUNT; ++slice) {
+        const uint64_t bit = TIME_BIT_ONE << slice;
+        if (timeSlices & bit) {
             canWait = true;
-            expanded |= mask;
         } else if (canWait) {
-            // During Clock Shuffle, check if this time slice is owned
-            if (SettingClocks() && !IsTimeSliceOwned(static_cast<TimeSlice>(i))) {
-                canWait = false; // Can't expand into unowned time period
-                continue;
-            }
-
-            // Check if we can wait to this time
-            auto it = region.timeStayRestrictions.find(static_cast<TimeSlice>(i));
-            if (it != region.timeStayRestrictions.end()) {
-                if (it->second()) {
-                    expanded |= mask; // Condition passed, add time
-                } else {
-                    canWait = false; // Kicked out, STOP expansion
-                }
+            // OoTMM pathfind.ts propagates future time; macros_mm.yml filters
+            // check/exit predicates by the clocks owned. A missing clock is a
+            // skipped interval, so its closed-door stay restriction cannot
+            // prevent waiting into a later owned clock.
+            if (!(owned & bit)) continue;
+            const auto restriction = region.timeStayRestrictions.find(static_cast<TimeSlice>(slice));
+            if (restriction != region.timeStayRestrictions.end() &&
+                !EvaluateConditionTimes(restriction->second, bit)) {
+                canWait = false;
             } else {
-                // No restriction = default true, can stay
-                expanded |= mask;
+                expanded |= bit;
             }
         }
     }
-
-    // In Clock Shuffle, expanded time must never exceed owned time. Enforce the invariant by clamping
-    // rather than asserting: a rare edge in the sequential expansion would otherwise abort generation.
-    // For every seed that already satisfies the invariant this is a no-op; for a violating one it drops
-    // the stray unowned slices (you can't be at an unowned time), keeping reachability correct.
-    if (SettingClocks()) {
-        uint64_t ownedTimeSlices = GetOwnedTimeSlices();
-        if ((expanded & ~ownedTimeSlices) != 0) {
-            SPDLOG_WARN("[ComboShip] ExpandTimeForward: clamped time expansion to owned half-days "
-                        "(expanded=0x{:X}, owned=0x{:X})",
-                        expanded, ownedTimeSlices);
-            expanded &= ownedTimeSlices;
-        }
-    }
-
-    return expanded;
+    return expanded & owned;
 }
 
 // Owned time calculation - aggregates all owned half-day time slices
@@ -99,8 +80,9 @@ uint64_t GetOwnedTimeSlices() {
         }
     }
 
-    // If no clocks are owned, ensure we at least have access to the start of the game (Day 1 6 AM)
-    return timeSlices ? timeSlices : (TIME_BIT_ONE << TIME_DAY1_AM_06_00);
+    // No invented Day 1 capability. Generation grants one initial clock;
+    // a malformed/empty clock inventory has no reachable half-day.
+    return timeSlices;
 }
 
 // Validation helper for clock ownership during logic generation

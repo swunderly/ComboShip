@@ -1,4 +1,9 @@
+#include "Rando/ActorBehavior/MissingMmSouls.h"
+#include "Rando/ActorBehavior/ExpandedSoulsNative.h"
 #include "Rando/Rando.h"
+#include "Rando/FaroresWind.h"
+#include "Rando/Spells.h"
+#include "Rando/Ocarinas.h"
 #include "Rando/ActorBehavior/Souls.h"
 #include "Rando/MiscBehavior/MiscBehavior.h"
 #include "Rando/MiscBehavior/ClockShuffle.h"
@@ -18,8 +23,60 @@ extern "C" void (*gMMComboSharedChanged)(int game, int fileNum);
 extern "C" int Combo_MM_BombchuBagShared(void);
 #endif
 
+extern "C" int MM_GrantAdultMaskItem(int fileNum);
+extern "C" int MM_GrantAdultGearItem(int fileNum,int item);
+extern "C" int MM_GrantFierceDeityAdultVariant(int fileNum,int variant);
 void Rando::GiveItem(RandoItemId randoItemId) {
+    if (GrantMissingMmSoul(randoItemId)) return;
+    if (GrantExpandedSoulItem(randoItemId)) return;
     switch (randoItemId) {
+        case RI_DINS_FIRE: Combo_MMSpellGrantItem(2); break;
+        case RI_NAYRUS_LOVE: Combo_MMSpellGrantItem(1); break;
+        case RI_BOOTS_IRON: MM_GrantAdultGearItem(gSaveContext.fileNum,ITEM_COMBO_BOOTS_IRON); break;
+        case RI_BOOTS_HOVER: MM_GrantAdultGearItem(gSaveContext.fileNum,ITEM_COMBO_BOOTS_HOVER); break;
+        case RI_TUNIC_GORON: MM_GrantAdultGearItem(gSaveContext.fileNum,ITEM_COMBO_TUNIC_GORON); break;
+        case RI_TUNIC_ZORA: MM_GrantAdultGearItem(gSaveContext.fileNum,ITEM_COMBO_TUNIC_ZORA); break;
+        case RI_MASK_ADULT:
+            MM_GrantAdultMaskItem(gSaveContext.fileNum);
+            break;
+        case RI_MASK_FIERCE_DEITY:
+            MM_GrantFierceDeityAdultVariant(gSaveContext.fileNum,0);
+            break;
+        case RI_FARORES_WIND:
+            // item_add.c addItemTradeMm2: install only into an empty Trade2 slot.
+            Combo_MMFaroreGrantItem();
+            break;
+        case RI_PROGRESSIVE_OCARINA:
+            GiveItem(ConvertItem(randoItemId));
+            return;
+        case RI_OCARINA_FAIRY:
+        case RI_OCARINA: {
+            Ocarinas::Grant(gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits,
+                            INV_CONTENT(ITEM_OCARINA_OF_TIME), randoItemId == RI_OCARINA ? 2 : 1);
+            // Extend native equipped-slot reload to the port's D-pad inventory.
+            for (int button = 0; button < 4; ++button) {
+                if (DPAD_GET_CUR_FORM_BTN_SLOT(button) == SLOT_OCARINA) {
+                    DPAD_GET_CUR_FORM_BTN_ITEM(button) = INV_CONTENT(ITEM_OCARINA_OF_TIME);
+                    bool live = gPlayState != nullptr;
+#ifdef COMBO_BUILD
+                    live = live && !gComboDormantGive;
+#endif
+                    if (live) Interface_Dpad_LoadItemIconImpl(gPlayState, button);
+                }
+            }
+            // Pinned reloadSlotEquipsMm refreshes the human instrument row only.
+            for (int button = 1; button <= 3; ++button) {
+                if (gSaveContext.save.saveInfo.equips.cButtonSlots[0][button] == SLOT_OCARINA) {
+                    gSaveContext.save.saveInfo.equips.buttonItems[0][button] = INV_CONTENT(ITEM_OCARINA_OF_TIME);
+                    bool live = gPlayState != nullptr;
+#ifdef COMBO_BUILD
+                    live = live && !gComboDormantGive;
+#endif
+                    if (live) Interface_LoadItemIconImpl(gPlayState, button);
+                }
+            }
+            break;
+        }
         case RI_CLOCK_TOWN_STRAY_FAIRY:
             SET_WEEKEVENTREG(WEEKEVENTREG_08_80);
             break;
@@ -61,6 +118,12 @@ void Rando::GiveItem(RandoItemId randoItemId) {
         case RI_WOODFALL_COMPASS:
             SET_DUNGEON_ITEM(Rando::StaticData::Items[randoItemId].itemId - ITEM_KEY_BOSS,
                              DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE);
+            break;
+        case RI_WOODFALL_KEY_RING:
+        case RI_SNOWHEAD_KEY_RING:
+        case RI_GREAT_BAY_KEY_RING:
+        case RI_STONE_TOWER_KEY_RING:
+            Rando::GiveKeyRing(randoItemId);
             break;
         case RI_WOODFALL_SMALL_KEY:
             Rando::AddSmallKey(DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE);
@@ -106,6 +169,14 @@ void Rando::GiveItem(RandoItemId randoItemId) {
             }
             break;
         }
+        case RI_TRIFORCE_POWER:
+        case RI_TRIFORCE_COURAGE:
+        case RI_TRIFORCE_WISDOM:
+            gSaveContext.save.shipSaveInfo.rando.namedTriforceMask |= 1u << (randoItemId - RI_TRIFORCE_POWER);
+#ifdef COMBO_BUILD
+            if (gMMComboTriforceProgress != NULL) gMMComboTriforceProgress(1, gSaveContext.fileNum);
+#endif
+            break;
         case RI_TRIFORCE_PIECE:
         case RI_TRIFORCE_PIECE_PREVIOUS:
             gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces++;

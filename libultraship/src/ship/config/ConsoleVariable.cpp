@@ -25,6 +25,23 @@ std::shared_ptr<CVar> ConsoleVariable::Get(const char* name) {
     return it != mVariables.end() ? it->second : nullptr;
 }
 
+nlohmann::json ConsoleVariable::SnapshotPrefix(std::string_view prefix) const {
+    nlohmann::json values = nlohmann::json::object();
+    for (const auto& [name, value] : mVariables) {
+        if (!value || std::string_view(name).substr(0, prefix.size()) != prefix) continue;
+        switch (value->Type) {
+            case ConsoleVariableType::Integer: values[name] = value->Integer; break;
+            case ConsoleVariableType::Float: values[name] = value->Float; break;
+            case ConsoleVariableType::String: values[name] = value->String ? value->String : ""; break;
+            case ConsoleVariableType::Color:
+                values[name] = {{"Type", "Color"}, {"R",value->Color.r}, {"G",value->Color.g}, {"B",value->Color.b}, {"A",value->Color.a}}; break;
+            case ConsoleVariableType::Color24:
+                values[name] = {{"Type", "Color24"}, {"R",value->Color24.r}, {"G",value->Color24.g}, {"B",value->Color24.b}}; break;
+        }
+    }
+    return values;
+}
+
 int32_t ConsoleVariable::GetInteger(const char* name, int32_t defaultValue) {
     auto variable = Get(name);
 

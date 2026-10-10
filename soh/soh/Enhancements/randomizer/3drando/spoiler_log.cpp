@@ -354,6 +354,10 @@ void SpoilerLog_Write() {
     jsonData["git_commit"] = (char*)gGitCommitHash;
     jsonData["seed"] = ctx->GetSeedString();
     jsonData["finalSeed"] = ctx->GetSeed();
+#ifdef COMBO_BUILD
+    jsonData["kokiriInvisibleRupeeRevision"] = ctx->GetKokiriSeedRevision();
+    jsonData["kokiriGrassCatalogRevision"] = ctx->GetKokiriGrassCatalogRevision();
+#endif
 
     // Write Hash
     int index = 0;

@@ -5,6 +5,9 @@
  */
 
 #include "z_en_wallmas.h"
+#ifdef COMBO_BUILD
+int Combo_MMWallmasterTransport(PlayState* play, Actor* actor);
+#endif
 #include "overlays/actors/ovl_En_Clear_Tag/z_en_clear_tag.h"
 #include "overlays/actors/ovl_En_Encount1/z_en_encount1.h"
 #include "overlays/actors/ovl_Obj_Ice_Poly/z_obj_ice_poly.h"
@@ -499,6 +502,9 @@ void EnWallmas_TakePlayer(EnWallmas* this, PlayState* play) {
 
     if (this->timer == 30) {
         Audio_PlaySfx(NA_SE_OC_ABYSS);
+#ifdef COMBO_BUILD
+        if (!Combo_MMWallmasterTransport(play, &this->actor))
+#endif
         func_80169FDC(play);
     }
 }

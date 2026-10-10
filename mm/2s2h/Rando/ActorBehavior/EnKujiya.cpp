@@ -23,7 +23,7 @@ void Rando::ActorBehavior::InitEnKujiyaBehavior() {
         entry.msg += "Guess all three numbers to win %p{{itemName}}%w!\x19";
         RandoItemId randoItemId = RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_WEST_LOTTERY].randoItemId;
         CustomMessage::Replace(&entry.msg, "{{itemName}}",
-                               Rando::StaticData::GetItemName(randoItemId, true, RC_CLOCK_TOWN_WEST_LOTTERY));
+                               Rando::StaticData::GetRevealedItemName(randoItemId, true, RC_CLOCK_TOWN_WEST_LOTTERY));
 
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;
@@ -34,7 +34,7 @@ void Rando::ActorBehavior::InitEnKujiyaBehavior() {
         entry.msg = "Congratulations! You win the jackpot: %p{{itemName}}%w!\x19";
         RandoItemId randoItemId = RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_WEST_LOTTERY].randoItemId;
         CustomMessage::Replace(&entry.msg, "{{itemName}}",
-                               Rando::StaticData::GetItemName(randoItemId, true, RC_CLOCK_TOWN_WEST_LOTTERY));
+                               Rando::StaticData::GetRevealedItemName(randoItemId, true, RC_CLOCK_TOWN_WEST_LOTTERY));
 
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;

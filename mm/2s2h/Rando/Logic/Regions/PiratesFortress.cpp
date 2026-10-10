@@ -4,6 +4,25 @@
 #include "2s2h/Rando/Logic/Logic.h"
 
 using namespace Rando::Logic;
+#ifdef COMBO_BUILD
+#define COMBO_WORLD37_ENABLED (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA])
+#endif
+static bool ExpandedPirateFighterPresent() {
+    return RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] != RO_GENERIC_YES || HaveEnemySoul(ACTOR_EN_KAIZOKU);
+}
+static bool ExpandedPirateGuardPresent() {
+    return Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_THIEVES);
+}
+
+
+#ifdef COMBO_BUILD
+#define COMBO_WORLD52_SELECT(legacy, pinned) (COMBO_WORLD37_ENABLED ? (pinned) : (legacy))
+#define COMBO_WORLD52_RANGE (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_ZORA) || (HAS_ITEM(ITEM_MASK_DEKU) && HAS_MAGIC))
+#define COMBO_WORLD52_CRYSTAL (CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_MASK_GORON) || CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_DEKU) || HAS_ITEM(ITEM_MASK_ZORA) || CAN_USE_STICKS)
+#define COMBO_WORLD52_GATE (COMBO_WORLD52_RANGE || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_WORLD52_CRYSTAL))
+#else
+#define COMBO_WORLD52_SELECT(legacy, pinned) (legacy)
+#endif
 
 // clang-format off
 static RegisterShipInitFunc initFunc([]() {
@@ -18,7 +37,7 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(PIRATES_FORTRESS, 2),             ENTRANCE(PIRATES_FORTRESS_INTERIOR, 1), true),
         },
         .events = {
-            EVENT(RE_PIRATE_FORTRESS_BEEHIVE_HIT, (HAS_ITEM(ITEM_BOW) || (CAN_BE_DEKU && HAS_MAGIC))),
+            EVENT(RE_PIRATE_FORTRESS_BEEHIVE_HIT, (CAN_USE_BOW || (CAN_BE_DEKU && HAS_MAGIC))),
         },
     };
     Regions[RR_PIRATES_FORTRESS_CAPTAIN_ROOM] = RandoRegion{ .name = "Captain Room", .sceneId = SCENE_PIRATE,
@@ -50,7 +69,7 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_PIRATES_FORTRESS_INSIDE_PURPLE_GUARD, true),
         },
         .events = {
-            EVENT(RE_ACCESS_PIRATE_PICTURE, true),
+            EVENT(RE_ACCESS_PIRATE_PICTURE, ExpandedPirateGuardPresent()),
         },
     };
     Regions[RR_PIRATES_FORTRESS_INSIDE_CHEST_EGG_ROOM] = RandoRegion{ .name = "Chest Egg Room", .sceneId = SCENE_PIRATE,
@@ -81,7 +100,10 @@ static RegisterShipInitFunc initFunc([]() {
         .connections = {
             CONNECTION(RR_PIRATES_FORTRESS_INSIDE_MAZE_GUARD, CanKillEnemy(ACTOR_EN_KAIZOKU)),
             CONNECTION(RR_PIRATES_FORTRESS_RIGHT_CLAM_EGG_ROOM, CanKillEnemy(ACTOR_EN_KAIZOKU)),
-        }
+        },
+        .events = {
+            EVENT(RE_ACCESS_PIRATE_PICTURE, RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] == RO_GENERIC_YES && ExpandedPirateFighterPresent()),
+        },
     };
     Regions[RR_PIRATES_FORTRESS_INSIDE_LINE_GUARD] = RandoRegion{ .name = "Line Guard Room", .sceneId = SCENE_PIRATE,
         .exits = { //     TO                                         FROM
@@ -91,7 +113,7 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_PIRATES_FORTRESS_INSIDE_ORANGE_GUARD, true),
         },
         .events = {
-            EVENT(RE_ACCESS_PIRATE_PICTURE, true),
+            EVENT(RE_ACCESS_PIRATE_PICTURE, ExpandedPirateGuardPresent()),
         },
     };
     Regions[RR_PIRATES_FORTRESS_INSIDE_MAZE_GUARD] = RandoRegion{ .name = "Maze Room", .sceneId = SCENE_PIRATE,
@@ -102,7 +124,7 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_PIRATES_FORTRESS_INSIDE_GREEN_GUARD, true),
         },
         .events = {
-            EVENT(RE_ACCESS_PIRATE_PICTURE, true),
+            EVENT(RE_ACCESS_PIRATE_PICTURE, ExpandedPirateGuardPresent() || ExpandedPirateFighterPresent()),
         },
     };
     Regions[RR_PIRATES_FORTRESS_INSIDE_ORANGE_GUARD] = RandoRegion{ .name = "Orange Guard Room", .sceneId = SCENE_PIRATE,
@@ -112,7 +134,10 @@ static RegisterShipInitFunc initFunc([]() {
         .connections = {
             CONNECTION(RR_PIRATES_FORTRESS_INSIDE_LINE_GUARD, CanKillEnemy(ACTOR_EN_KAIZOKU)),
             CONNECTION(RR_PIRATES_FORTRESS_INSIDE_CHEST_EGG_ROOM, CanKillEnemy(ACTOR_EN_KAIZOKU)),
-        }
+        },
+        .events = {
+            EVENT(RE_ACCESS_PIRATE_PICTURE, RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] == RO_GENERIC_YES && ExpandedPirateFighterPresent()),
+        },
     };
     Regions[RR_PIRATES_FORTRESS_INSIDE_PURPLE_GUARD] = RandoRegion{ .name = "Purple Guard Room", .sceneId = SCENE_PIRATE,
         .checks = {
@@ -121,7 +146,10 @@ static RegisterShipInitFunc initFunc([]() {
         .connections = {
             CONNECTION(RR_PIRATES_FORTRESS_INSIDE_3_GUARD_ROOM, CanKillEnemy(ACTOR_EN_KAIZOKU)),
             CONNECTION(RR_PIRATES_FORTRESS_LEFT_CLAM_EGG_ROOM, CanKillEnemy(ACTOR_EN_KAIZOKU)),
-        }
+        },
+        .events = {
+            EVENT(RE_ACCESS_PIRATE_PICTURE, RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] == RO_GENERIC_YES && ExpandedPirateFighterPresent()),
+        },
     };
     Regions[RR_PIRATES_FORTRESS_LEFT_CLAM_EGG_ROOM] = RandoRegion{ .name = "Left Clam Room", .sceneId = SCENE_PIRATE,
         .checks = {
@@ -163,19 +191,19 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_PIRATES_FORTRESS_MOAT_LOWER] = RandoRegion{ .name = "Lower", .sceneId = SCENE_TORIDE,
         .checks = {
-            CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_01, CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
-            CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_02, CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
-            CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_03, CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
+            CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_01, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_02, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_03, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),
         },
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(GREAT_BAY_COAST, 5),              ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0), CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
-            EXIT(ENTRANCE(PIRATES_FORTRESS_INTERIOR, 9),    ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2), CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && CAN_BE_GORON),
+            EXIT(ENTRANCE(GREAT_BAY_COAST, 5),              ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0), CAN_RESET_TIME && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),
+            EXIT(ENTRANCE(PIRATES_FORTRESS_INTERIOR, 9),    ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2), COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && CAN_BE_GORON, MM_LOGIC_UNDERWATER_WALKING_STRICT && HAS_ITEM(ITEM_MASK_GORON))),
         },
         .connections = {
             CONNECTION(RR_PIRATES_FORTRESS_MOAT_HIGHER, HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_ABILITY(SWIM)),
         },
         .events = {
-            EVENT(RE_ACCESS_PIRATE_PICTURE, true),
+            EVENT(RE_ACCESS_PIRATE_PICTURE, ExpandedPirateGuardPresent()),
         },
         .oneWayEntrances = {
             ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 3), // Two steams in "RR_PIRATES_FORTRESS_SEWERS_PREGATE" and "RR_PIRATES_FORTRESS_SEWERS_POSTGATE"
@@ -213,9 +241,21 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_PIRATES_FORTRESS_PLAZA_LEFT_UPPER] = RandoRegion{ .name = "Plaza Left Upper", .sceneId = SCENE_KAIZOKU,
         .checks = {
             CHECK(RC_PIRATE_FORTRESS_PLAZA_BARREL,  true),
+#ifdef COMBO_BUILD
+            CHECK(RC_PIRATE_FORTRESS_PLAZA_FREESTANDING_HEART_01, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS) : true),
+#else
             CHECK(RC_PIRATE_FORTRESS_PLAZA_FREESTANDING_HEART_01, true),
+#endif
+#ifdef COMBO_BUILD
+            CHECK(RC_PIRATE_FORTRESS_PLAZA_FREESTANDING_HEART_02, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS) : true),
+#else
             CHECK(RC_PIRATE_FORTRESS_PLAZA_FREESTANDING_HEART_02, true),
+#endif
+#ifdef COMBO_BUILD
+            CHECK(RC_PIRATE_FORTRESS_PLAZA_FREESTANDING_HEART_03, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS) : true),
+#else
             CHECK(RC_PIRATE_FORTRESS_PLAZA_FREESTANDING_HEART_03, true),
+#endif
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(PIRATES_FORTRESS_INTERIOR, 2),    ENTRANCE(PIRATES_FORTRESS, 3), true),
@@ -225,7 +265,7 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_PIRATES_FORTRESS_PLAZA_LEFT_LOWER, HAS_ITEM(ITEM_HOOKSHOT))
         },
         .events = {
-            EVENT(RE_ACCESS_PIRATE_PICTURE, true),
+            EVENT(RE_ACCESS_PIRATE_PICTURE, ExpandedPirateGuardPresent()),
         },
     };
     Regions[RR_PIRATES_FORTRESS_PLAZA_RIGHT_EXIT] = RandoRegion{ .name = "Right Side Exit", .sceneId = SCENE_KAIZOKU,
@@ -261,11 +301,16 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_PIRATES_FORTRESS_PLAZA, true),
         },
         .events = {
-            EVENT(RE_ACCESS_PIRATE_PICTURE, true),
+            EVENT(RE_ACCESS_PIRATE_PICTURE, ExpandedPirateGuardPresent()),
         },
     };
     Regions[RR_PIRATES_FORTRESS_PLAZA] = RandoRegion{ .name = "Plaza", .sceneId = SCENE_KAIZOKU,
         .checks = {
+#ifdef COMBO_BUILD
+            CHECK(RC_PIRATE_FORTRESS_PLAZA_FREESTANDING_HEART_01, COMBO_WORLD37_ENABLED && (HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS)),
+            CHECK(RC_PIRATE_FORTRESS_PLAZA_FREESTANDING_HEART_02, COMBO_WORLD37_ENABLED && (HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS)),
+            CHECK(RC_PIRATE_FORTRESS_PLAZA_FREESTANDING_HEART_03, COMBO_WORLD37_ENABLED && (HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS)),
+#endif
             CHECK(RC_PIRATE_FORTRESS_PLAZA_LARGE_CRATE_01,  true),
             CHECK(RC_PIRATE_FORTRESS_PLAZA_LOWER_CHEST,     true),
             CHECK(RC_PIRATE_FORTRESS_PLAZA_WONDER_ITEM_01,  CAN_USE_PROJECTILE),
@@ -280,16 +325,20 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 1),    ENTRANCE(PIRATES_FORTRESS, 0), true),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_PIRATES_FORTRESS_LEFT_PLATFORM, COMBO_WORLD37_ENABLED && MM_LOGIC_HAS_HOVER_BOOTS),
+            CONNECTION(RR_PIRATES_FORTRESS_PLAZA_RIGHT_EXIT, COMBO_WORLD37_ENABLED && HAS_ITEM(ITEM_HOOKSHOT) && MM_LOGIC_HAS_HOVER_BOOTS),
+#endif
             CONNECTION(RR_PIRATES_FORTRESS_PLAZA_LEFT_LOWER, HAS_ITEM(ITEM_HOOKSHOT)),
             CONNECTION(RR_PIRATES_FORTRESS_PLAZA_RIGHT, HAS_ITEM(ITEM_HOOKSHOT)),
             // Outside of using Stones Mask you have to deal with this guard in some way.
             CONNECTION(RR_PIRATES_FORTRESS_PLAZA_TOWER, (
-                (HAS_ITEM(ITEM_DEKU_NUT) || HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_STONE)) ||
+                (CAN_USE_NUTS || CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_STONE)) ||
                 (CAN_BE_DEKU && HAS_MAGIC) || CAN_BE_ZORA
             )),
         },
         .events = {
-            EVENT(RE_ACCESS_PIRATE_PICTURE, true),
+            EVENT(RE_ACCESS_PIRATE_PICTURE, ExpandedPirateGuardPresent()),
         },
     };
     Regions[RR_PIRATES_FORTRESS_RIGHT_CLAM_EGG_ROOM] = RandoRegion{ .name = "Right Clam Room", .sceneId = SCENE_PIRATE,
@@ -311,21 +360,21 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_PIRATES_FORTRESS_SEWERS_POSTGATE] = RandoRegion{ .name = "Sewers Postgate", .sceneId = SCENE_PIRATE,
         .checks = {
-            CHECK(RC_PIRATE_FORTRESS_SEWERS_WATERWAY_POT_01, CAN_USE_ABILITY(SWIM)),
-            CHECK(RC_PIRATE_FORTRESS_SEWERS_WATERWAY_POT_02, CAN_USE_ABILITY(SWIM)),
+            CHECK(RC_PIRATE_FORTRESS_SEWERS_WATERWAY_POT_01, COMBO_WORLD52_SELECT(CAN_USE_ABILITY(SWIM), true)),
+            CHECK(RC_PIRATE_FORTRESS_SEWERS_WATERWAY_POT_02, COMBO_WORLD52_SELECT(CAN_USE_ABILITY(SWIM), true)),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 3),             ONE_WAY_EXIT, CAN_USE_ABILITY(SWIM))
         },
         .connections = {
-            CONNECTION(RR_PIRATES_FORTRESS_TELESCOPE_ROOM, (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA) && CAN_USE_ABILITY(SWIM))
+            CONNECTION(RR_PIRATES_FORTRESS_TELESCOPE_ROOM, COMBO_WORLD52_SELECT((CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA) && CAN_USE_ABILITY(SWIM), COMBO_WORLD52_RANGE || CAN_USE_BOMBS || CAN_USE_BOMBCHUS))
         }
     };
     Regions[RR_PIRATES_FORTRESS_SEWERS_PREGATE] = RandoRegion{ .name = "Sewers Pregate", .sceneId = SCENE_PIRATE,
         .checks = {
-            CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_01,                       CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
-            CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_02,                       CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
-            CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_03,                       CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
+            CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_01, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_02, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_03, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),
             CHECK(RC_PIRATE_FORTRESS_SEWERS_HEART_PIECE_ROOM_POT_01,                 true),
             CHECK(RC_PIRATE_FORTRESS_SEWERS_HEART_PIECE_ROOM_POT_02,                 true),
             CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_PIECE_OF_HEART,                true),
@@ -357,9 +406,16 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 3),             ONE_WAY_EXIT, true)
         },
         .connections = {
-            CONNECTION(RR_PIRATES_FORTRESS_SEWERS_POSTGATE, HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)
+            CONNECTION(RR_PIRATES_FORTRESS_SEWERS_POSTGATE, COMBO_WORLD52_SELECT(CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA, COMBO_WORLD52_GATE))
         }
     };
+#ifdef COMBO_BUILD
+    // Pinned Telescope and Telescope Exit contain no checks; this is the view,
+    // while the historical TELESCOPE_ROOM below is source Sewers End.
+    Regions[RR_PIRATES_FORTRESS_TELESCOPE_VIEW] = RandoRegion{ .sceneId = SCENE_PIRATE,
+        .exits = { EXIT(ENTRANCE(PIRATES_FORTRESS_INTERIOR, 8), ENTRANCE(PIRATES_FORTRESS, 10), true) },
+    };
+#endif
     Regions[RR_PIRATES_FORTRESS_TELESCOPE_ROOM] = RandoRegion{ .name = "Telescope Room", .sceneId = SCENE_PIRATE,
         .checks = {
             CHECK(RC_PIRATE_FORTRESS_SEWERS_END_BARREL_01,             true),
@@ -375,11 +431,31 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_PIRATE_FORTRESS_SEWERS_END_POT_03,                 true),
         },
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 6),    ENTRANCE(PIRATES_FORTRESS_INTERIOR, 10), CAN_USE_PROJECTILE)
+            EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 6),    ENTRANCE(PIRATES_FORTRESS_INTERIOR, 10), COMBO_WORLD52_SELECT(CAN_USE_PROJECTILE, COMBO_WORLD52_GATE)),
+#ifdef COMBO_BUILD
+            EXIT(ENTRANCE(PIRATES_FORTRESS, 10), ENTRANCE(PIRATES_FORTRESS_INTERIOR, 8), true),
+#endif
         },
         .connections = {
-            CONNECTION(RR_PIRATES_FORTRESS_SEWERS_POSTGATE, CAN_USE_ABILITY(SWIM))
+            CONNECTION(RR_PIRATES_FORTRESS_SEWERS_POSTGATE, COMBO_WORLD52_SELECT(CAN_USE_ABILITY(SWIM), true))
         }
     };
+#ifdef COMBO_BUILD
+    // Native Pregate formerly merged source Sewers and Sewers Cage Room.
+    // The first chest stays before the one-way gate; the cage and its return
+    // are reached through their precise source reset/movement predicates.
+    auto& cage = Regions[RR_PIRATES_FORTRESS_SEWERS_PREGATE];
+    auto& entry = Regions[RR_PIRATES_FORTRESS_SEWERS_ENTRY];
+    entry.name = "Sewers entry";
+    entry.sceneId = cage.sceneId;
+    entry.canStayOverTime = cage.canStayOverTime;
+    entry.checks.insert(cage.checks.extract(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_01));
+    entry.exits.insert(cage.exits.extract(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2)));
+    entry.exits.at(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2)).condition = [] { return CAN_RESET_TIME && CAN_BE_ZORA; };
+    entry.exits.at(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2)).conditionString = "can_reset_time && has_mask_zora";
+    entry.connections[RR_PIRATES_FORTRESS_SEWERS_PREGATE] = {
+        [] { return CAN_RESET_TIME && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM); }, "can_reset_time && has_mask_zora && can_swim"};
+    cage.connections[RR_PIRATES_FORTRESS_SEWERS_ENTRY] = {[] { return CAN_BE_ZORA; }, "has_mask_zora"};
+#endif
 }, RANDO_LOGIC_INIT_PATHS);
 // clang-format on

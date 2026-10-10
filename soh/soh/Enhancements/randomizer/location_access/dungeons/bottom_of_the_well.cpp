@@ -1,4 +1,5 @@
 #include "soh/Enhancements/randomizer/location_access.h"
+#include "soh/Enhancements/randomizer/silver_rupees/SilverLogic.h"
 #include "soh/Enhancements/randomizer/entrance.h"
 #include "soh/Enhancements/randomizer/dungeon.h"
 
@@ -478,4 +479,5 @@ void RegionTable_Init_BottomOfTheWell() {
 
 #pragma endregion
     // clang-format on
+    SilverLogic::RegisterRoutes(SCENE_BOTTOM_OF_THE_WELL);
 }

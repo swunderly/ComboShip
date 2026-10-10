@@ -8,6 +8,8 @@
 #include "soh/Enhancements/randomizer/randomizerTypes.h"
 #include "soh/Enhancements/randomizer/SeedContext.h"
 #include "soh/Enhancements/randomizer/logic.h"
+#include "soh/Enhancements/randomizer/souls/OotSoulChecks.h"
+#include "soh/Enhancements/randomizer/souls/OotSoulEvents.h"
 #include "soh/Enhancements/randomizer/dungeon.h"
 
 #define TIME_PASSES true
@@ -23,7 +25,7 @@ class Region;
 
 #define EVENT_ACCESS(event, condition) \
     EventAccess(                       \
-        event, #event, [] { return condition; }, CleanConditionString(#condition))
+        event, #event, [] { return (condition) && Rando::Souls::EventPrerequisite(logic.get(),event); }, CleanConditionString(#condition))
 
 class EventAccess {
   public:
@@ -69,7 +71,7 @@ std::string CleanConditionString(std::string condition);
 
 #define LOCATION(check, condition) \
     LocationAccess(                \
-        check, [] { return condition; }, CleanConditionString(#condition))
+        check, [] { return (condition) && Rando::Souls::CheckPrerequisite(logic.get(),check); }, CleanConditionString(#condition))
 
 // this class is meant to hold an item location with a boolean function to determine its accessibility from a specific
 // area

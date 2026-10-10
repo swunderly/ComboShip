@@ -99,7 +99,14 @@ void RegionTable_Init_GoronCity() {
 
     areaTable[RR_GC_MEDIGORON] = Region("GC Medigoron", SCENE_GORON_CITY, {
         //Events
+#ifdef COMBO_BUILD
+        EVENT_ACCESS(LOGIC_MEDIGORON, (ctx->GetOption(RSK_SHUFFLE_MERCHANTS).Is(RO_SHUFFLE_MERCHANTS_OFF) ||
+                     ctx->GetOption(RSK_SHUFFLE_MERCHANTS).Is(RO_SHUFFLE_MERCHANTS_BEANS_ONLY)) &&
+                     logic->IsAdult && logic->HasItem(RG_ADULT_WALLET) &&
+                     GetCheckPrice(RC_GC_MEDIGORON) <= GetWalletCapacity() && logic->HasItem(RG_SPEAK_GORON)),
+#else
         EVENT_ACCESS(LOGIC_MEDIGORON, logic->IsAdult && logic->HasItem(RG_ADULT_WALLET) && GetCheckPrice(RC_GC_MEDIGORON) <= GetWalletCapacity() && logic->HasItem(RG_SPEAK_GORON)),
+#endif
     }, {
         //Locations
         LOCATION(RC_GC_MEDIGORON,                        logic->IsAdult && logic->HasItem(RG_SPEAK_GORON) && GetCheckPrice() <= GetWalletCapacity()),
@@ -133,7 +140,12 @@ void RegionTable_Init_GoronCity() {
     }, {
         //Exits
         ENTRANCE(RR_GORON_CITY,      true),
+#ifdef COMBO_BUILD
+        // OoTMM Darunia Chamber -> Crater Bottom; the statue checks age, not strength.
+        ENTRANCE(RR_DMC_POTS_ENTRY,  logic->IsAdult),
+#else
         ENTRANCE(RR_DMC_POTS_ENTRY,  logic->IsAdult && logic->HasItem(RG_POWER_BRACELET)),
+#endif
     });
 
     areaTable[RR_GC_GROTTO_PLATFORM] = Region("GC Grotto Platform", SCENE_GORON_CITY, {}, {}, {

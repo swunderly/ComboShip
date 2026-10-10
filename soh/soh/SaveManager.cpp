@@ -1,10 +1,13 @@
+#include "soh/Enhancements/randomizer/souls/OotSoulState.h"
 #include "SaveManager.h"
 #ifdef COMBO_BUILD
 #include "ComboExport.h"
+#include "rando/KokiriSeedRevision.h"
 #endif
 #include "OTRGlobals.h"
 #include "Enhancements/game-interactor/GameInteractor.h"
 #include "Enhancements/randomizer/SeedContext.h"
+#include "Enhancements/randomizer/savefile.h"
 #include "Enhancements/randomizer/entrance.h"
 #include "Enhancements/randomizer/dungeon.h"
 #include "Enhancements/randomizer/trial.h"
@@ -37,6 +40,7 @@ using namespace std::string_literals;
 // the container instead of file{N}.sav; null => vendored file path. Set via SOH_SetComboSaveIO.
 static ComboRando::FnComboReadSave gComboReadGameSave = nullptr;
 static ComboRando::FnComboWriteSave gComboWriteGameSave = nullptr;
+static const char* (*gComboAnchorJournalProvider)(int fileNum) = nullptr;
 // ComboShip: whole-slot copy (both games + rando) for file-select "copy file"; launcher owns it.
 static void (*gComboCopyContainer)(int from, int to) = nullptr;
 #endif
@@ -118,6 +122,9 @@ std::vector<RandomizerHint> Rando::StaticData::oldVerHintOrder{
 
 uint16_t Rando::StaticData::oldVerGossipStoneStart = 706;
 
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/CrossWarp/FaroresWind.h"
+#endif
 SaveManager::SaveManager() {
     coreSectionIDsByName["base"] = SECTION_ID_BASE;
     coreSectionIDsByName["randomizer"] = SECTION_ID_RANDOMIZER;
@@ -130,6 +137,10 @@ SaveManager::SaveManager() {
     AddLoadFunction("base", 3, LoadBaseVersion3);
     AddLoadFunction("base", 4, LoadBaseVersion4);
     AddSaveFunction("base", 4, SaveBase, true, SECTION_PARENT_NONE);
+#ifdef COMBO_BUILD
+    AddLoadFunction("comboFaroresWind",1,Combo_OotFaroreLoad);
+    AddSaveFunction("comboFaroresWind",1,Combo_OotFaroreSave,true,SECTION_PARENT_NONE);
+#endif
 
     AddLoadFunction("randomizer", 1, LoadRandomizer);
     AddSaveFunction("randomizer", 1, SaveRandomizer, true, SECTION_PARENT_NONE);
@@ -173,6 +184,11 @@ void SaveManager::LoadRandomizer() {
     }
 
     auto randoContext = Rando::Context::GetInstance();
+#ifdef COMBO_BUILD
+    const auto catalog = ComboRando::ReadKokiriCatalogRevisions(*SaveManager::Instance->currentJsonContext);
+    randoContext->SetKokiriSeedRevision(catalog.invisibleRupees);
+    randoContext->SetKokiriGrassCatalogRevision(catalog.grass);
+#endif
     SaveManager::Instance->LoadArray("itemLocations", RC_MAX, [&](size_t i) {
         SaveManager::Instance->LoadStruct("", [&]() {
             SaveManager::Instance->LoadData("rgID", randoContext->GetItemLocation(i)->RefPlacedItem());
@@ -264,8 +280,16 @@ void SaveManager::LoadRandomizer() {
 
     SaveManager::Instance->LoadData("triforcePiecesCollected",
                                     gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected);
+    SaveManager::Instance->LoadData("namedTriforceMask", gSaveContext.ship.quest.data.randomizer.namedTriforceMask);
     SaveManager::Instance->LoadData("bombchuUpgradeLevel", gSaveContext.ship.quest.data.randomizer.bombchuUpgradeLevel);
+    std::fill(std::begin(gSaveContext.ship.quest.data.randomizer.silverRupeeCounts),
+              std::end(gSaveContext.ship.quest.data.randomizer.silverRupeeCounts), 0);
+    SaveManager::Instance->LoadArray("silverRupeeCounts", 18, [&](size_t i) {
+        SaveManager::Instance->LoadData("", gSaveContext.ship.quest.data.randomizer.silverRupeeCounts[i]);
+    });
 
+    const auto ownedSouls=Rando::Souls::RestoreGeneralOotSouls(*SaveManager::Instance->currentJsonContext);
+    std::copy(ownedSouls.begin(),ownedSouls.end(),gSaveContext.ship.quest.data.randomizer.ootExpandedSoulsOwned);
     SaveManager::Instance->LoadData("pendingIceTrapCount", gSaveContext.ship.pendingIceTrapCount);
 
     std::shared_ptr<Randomizer> randomizer = OTRGlobals::Instance->gRandomizer;
@@ -300,6 +324,10 @@ void SaveManager::SaveRandomizer(SaveContext* saveContext, int sectionID, bool f
     }
 
     auto randoContext = Rando::Context::GetInstance();
+#ifdef COMBO_BUILD
+    SaveManager::Instance->SaveData(ComboRando::kKokiriSeedRevision, randoContext->GetKokiriSeedRevision());
+    SaveManager::Instance->SaveData(ComboRando::kKokiriGrassCatalogRevision, randoContext->GetKokiriGrassCatalogRevision());
+#endif
 
     SaveManager::Instance->SaveArray("itemLocations", RC_MAX, [&](size_t i) {
         SaveManager::Instance->SaveStruct("", [&]() {
@@ -438,9 +466,14 @@ void SaveManager::SaveRandomizer(SaveContext* saveContext, int sectionID, bool f
         });
     });
 
+    SaveManager::Instance->SaveData("namedTriforceMask", saveContext->ship.quest.data.randomizer.namedTriforceMask);
     SaveManager::Instance->SaveData("triforcePiecesCollected",
                                     saveContext->ship.quest.data.randomizer.triforcePiecesCollected);
     SaveManager::Instance->SaveData("bombchuUpgradeLevel", saveContext->ship.quest.data.randomizer.bombchuUpgradeLevel);
+    SaveManager::Instance->SaveArray("ootExpandedSoulsOwned",12,[&](size_t i){SaveManager::Instance->SaveData("",saveContext->ship.quest.data.randomizer.ootExpandedSoulsOwned[i]);});
+    SaveManager::Instance->SaveArray("silverRupeeCounts", 18, [&](size_t i) {
+        SaveManager::Instance->SaveData("", saveContext->ship.quest.data.randomizer.silverRupeeCounts[i]);
+    });
 
     SaveManager::Instance->SaveData("pendingIceTrapCount", saveContext->ship.pendingIceTrapCount);
 
@@ -744,6 +777,14 @@ void SaveManager::InitFile(bool isDebug) {
         func(isDebug);
     }
 }
+#ifdef COMBO_BUILD
+void SaveManager::InitNewFile(bool isDebug) {
+    InitFile(isDebug);
+    // Only the explicit native new-file/debug entry point recovers a failed load.
+    // LoadFile's own InitFile call cannot authorize a partial context to save.
+    comboLoadState.store(ComboLoadState::Ready);
+}
+#endif
 
 void SaveManager::InitFileImpl(bool isDebug) {
     if (isDebug) {
@@ -754,6 +795,8 @@ void SaveManager::InitFileImpl(bool isDebug) {
 }
 
 void SaveManager::InitFileNormal() {
+    gSaveContext.ship.fireTempleBlockPos = {};
+    gSaveContext.ship.fireTempleBlockSeated = 0;
     gSaveContext.totalDays = 0;
     gSaveContext.bgsDayCount = 0;
 
@@ -895,6 +938,9 @@ void SaveManager::InitFileNormal() {
 
     // SoH specific
     gSaveContext.ship.backupFW = gSaveContext.fw;
+#ifdef COMBO_BUILD
+    gSaveContext.ship.faroresWind={};
+#endif
     gSaveContext.ship.pendingSale = ITEM_NONE;
     gSaveContext.ship.pendingSaleMod = MOD_NONE;
     gSaveContext.ship.pendingIceTrapCount = 0;
@@ -1234,7 +1280,7 @@ int copy_file(const char* src, const char* dst) {
 
 // Threaded SaveFile takes copy of gSaveContext for local unmodified storage
 
-void SaveManager::SaveFileThreaded(int fileNum, SaveContext* saveContext, int sectionID) {
+void SaveManager::SaveFileThreaded(int fileNum, SaveContext* saveContext, int sectionID, std::string anchorJournal) {
     saveMtx.lock();
     SPDLOG_INFO("Save File - fileNum: {}", fileNum);
     // Needed for first time save, hasn't changed in forever anyway
@@ -1280,7 +1326,12 @@ void SaveManager::SaveFileThreaded(int fileNum, SaveContext* saveContext, int se
 #ifdef COMBO_BUILD
     if (gComboWriteGameSave) {
         // ComboShip: route this slot's OOT block into the merged .combosav container (launcher RMW).
-        gComboWriteGameSave(ComboRando::GAME_OOT, fileNum, saveBlock.dump().c_str());
+        auto combinedBlock = saveBlock;
+        // The journal was captured with this SaveContext, before the worker was
+        // scheduled. Partial tracker/rando writes must not advance item receipts.
+        if (sectionID == SECTION_ID_BASE && !anchorJournal.empty())
+            combinedBlock["_comboAnchorJournal"] = nlohmann::json::parse(anchorJournal);
+        gComboWriteGameSave(ComboRando::GAME_OOT, fileNum, combinedBlock.dump().c_str());
     } else
 #endif
     {
@@ -1325,6 +1376,11 @@ void SaveManager::SaveFileThreaded(int fileNum, SaveContext* saveContext, int se
 // SaveSection creates a copy of gSaveContext to prevent mid-save data modification, and passes its reference to
 // SaveFileThreaded This should never be called with threaded == false except during file creation
 void SaveManager::SaveSection(int fileNum, int sectionID, bool threaded) {
+#ifdef COMBO_BUILD
+    // Reject before snapshot/enqueue, including explicit SaveFile(target) callers.
+    if (comboLoadState.load() != ComboLoadState::Ready || fileNum < 0 || fileNum >= MaxFiles ||
+        gSaveContext.fileNum != fileNum) return;
+#endif
     // Don't save in Boss rush.
     if (fileNum == 0xFF || fileNum == 0xFE) {
         return;
@@ -1336,10 +1392,15 @@ void SaveManager::SaveSection(int fileNum, int sectionID, bool threaded) {
     }
     auto saveContext = new SaveContext;
     memcpy(saveContext, &gSaveContext, sizeof(gSaveContext));
+    std::string anchorJournal;
+#ifdef COMBO_BUILD
+    if (sectionID == SECTION_ID_BASE && gComboAnchorJournalProvider)
+        anchorJournal = gComboAnchorJournalProvider(fileNum);
+#endif
     if (threaded) {
-        smThreadPool->detach_task(std::bind(&SaveManager::SaveFileThreaded, this, fileNum, saveContext, sectionID));
+        smThreadPool->detach_task(std::bind(&SaveManager::SaveFileThreaded, this, fileNum, saveContext, sectionID, anchorJournal));
     } else {
-        SaveFileThreaded(fileNum, saveContext, sectionID);
+        SaveFileThreaded(fileNum, saveContext, sectionID, anchorJournal);
     }
 }
 
@@ -1361,38 +1422,71 @@ void SaveManager::SaveGlobal() {
     output << std::setw(1) << globalBlock << std::endl;
 }
 
-void SaveManager::LoadFile(int fileNum) {
-    saveMtx.lock();
+bool SaveManager::LoadFile(int fileNum, bool initializeFullContext) {
+#ifdef COMBO_BUILD
+    if (fileNum < 0 || fileNum >= MaxFiles) return false;
+    // Suppress fresh snapshots before draining already queued previous-file writes.
+    // Rejected same-slot reloads cannot later overwrite their unsupported disk data.
+    comboLoadState.store(ComboLoadState::Blocked);
+    ThreadPoolWait();
+#endif
+    std::unique_lock<std::mutex> lock(saveMtx);
     SPDLOG_INFO("Load File - fileNum: {}", fileNum);
     std::filesystem::path fileName = GetFileName(fileNum);
-#ifdef COMBO_BUILD
-    // ComboShip: source the OOT block from the merged container; empty => no save present.
-    std::string comboJson;
-    if (gComboReadGameSave) {
-        comboJson = gComboReadGameSave(ComboRando::GAME_OOT, fileNum);
-        if (comboJson.empty()) {
-            saveMtx.unlock();
-            return;
-        }
-    } else
-#endif
-        assert(std::filesystem::exists(fileName));
-    InitFile(false);
-
     std::ifstream input(fileName);
-
+#ifdef COMBO_BUILD
+    bool applying = false;
+#else
+    assert(std::filesystem::exists(fileName));
+    InitFile(false);
+#endif
     try {
-        saveBlock = nlohmann::json::object();
+        nlohmann::json parsedSave;
 #ifdef COMBO_BUILD
         if (gComboReadGameSave) {
-            saveBlock = nlohmann::json::parse(comboJson);
-        } else
-#endif
-            input >> saveBlock;
+            const char* raw = gComboReadGameSave(ComboRando::GAME_OOT, fileNum);
+            if (!raw || !raw[0]) return false;
+            parsedSave = nlohmann::json::parse(raw);
+        } else {
+            if (!std::filesystem::exists(fileName)) return false;
+            input >> parsedSave;
+        }
         input.close();
+        // This catches only an invalid named revision in otherwise parsed JSON.
+        // Syntax/structural errors retain the native corruption handler below.
+        try {
+            ComboRando::ReadKokiriSaveRevision(parsedSave);
+        } catch (const ComboRando::UnsupportedKokiriSeedRevision& error) {
+            SPDLOG_ERROR("Kokiri seed revision rejected slot {}: {}", fileNum, error.what());
+            SohGui::RegisterPopup("Unsupported seed revision", "The save in slot " +
+                std::to_string(fileNum + 1) + " uses an unsupported Kokiri check catalog revision.");
+            return false;
+        }
+        // No fileNum, SaveContext or owning randomizer Context changes precede preflight.
+        comboLoadState.store(ComboLoadState::Loading);
+        applying = true;
+        if (initializeFullContext) SaveContext_Init();
+        gSaveContext.fileNum = fileNum;
+        OTRGlobals::Instance->gRandoContext->GetLogic()->SetContext(nullptr);
+        Rando::Settings::GetInstance()->ClearContext();
+        OTRGlobals::Instance->gRandoContext.reset();
+        OTRGlobals::Instance->gRandoContext = Rando::Context::CreateInstance();
+        OTRGlobals::Instance->gRandoContext->GetLogic()->SetSaveContext(&gSaveContext);
+        Rando::Settings::GetInstance()->AssignContext(OTRGlobals::Instance->gRandoContext);
+        OTRGlobals::Instance->gRandoContext->AddExcludedOptions();
+        InitFile(false); // Loading state stays blocked throughout section application.
+#else
+        input >> parsedSave;
+        input.close();
+#endif
+        saveBlock = std::move(parsedSave); // Apply precisely the bytes already preflighted.
         if (!saveBlock.contains("version")) {
             SPDLOG_ERROR("Save at " + fileName.string() + " contains no version");
+#ifdef COMBO_BUILD
+            throw std::runtime_error("Save contains no version");
+#else
             assert(false);
+#endif
         }
         if (saveBlock.contains("fileType") && saveBlock["fileType"] == FILE_TYPE_SAVE_RANDO) {
             gSaveContext.ship.quest.id = QUEST_RANDOMIZER;
@@ -1420,8 +1514,12 @@ void SaveManager::LoadFile(int fileNum) {
                         // TODO report in a more noticeable manner
                         SPDLOG_ERROR("Save " + GetFileName(fileNum).string() + " contains section " + sectionName +
                                      " with an unloadable version " + std::to_string(sectionVersion));
+#ifdef COMBO_BUILD
+                        throw std::runtime_error("Save section has an unloadable version");
+#else
                         assert(false);
                         continue;
+#endif
                     }
                     currentJsonContext = &block.value()["data"];
                     if (currentJsonContext->empty()) {
@@ -1433,13 +1531,30 @@ void SaveManager::LoadFile(int fileNum) {
             default:
                 SPDLOG_ERROR("Unrecognized save version " + std::to_string(saveBlock["version"].get<int>()) + " in " +
                              GetFileName(fileNum).string());
+#ifdef COMBO_BUILD
+                throw std::runtime_error("Unrecognized save version");
+#else
                 assert(false);
                 break;
+#endif
         }
+        // All native sections, including owned flags and seed settings, are now
+        // loaded. Reapply missing legacy mask starts before the tracker binds.
+        Randomizer_RepairLegacyMaskInventory();
         InitMeta(fileNum);
         GameInteractor::Instance->ExecuteHooks<GameInteractor::OnLoadFile>(fileNum);
+#ifdef COMBO_BUILD
+        comboLoadState.store(ComboLoadState::Ready);
+#endif
+        return true;
     } catch ([[maybe_unused]] const std::exception& e) {
         input.close();
+#ifdef COMBO_BUILD
+        if (applying) {
+            comboLoadState.store(ComboLoadState::Blocked);
+            gSaveContext.fileNum = 0xFF; // Partial state is never a bound previous or target file.
+        }
+#endif
         std::string newFileName =
             Ship::Context::GetPathRelativeToAppDirectory("Save") +
             ("/file" + std::to_string(fileNum + 1) + "-" + std::to_string(GetUnixTimestamp()) + ".bak");
@@ -1457,7 +1572,7 @@ void SaveManager::LoadFile(int fileNum) {
                                                              ".\nSave file corruption is suspected.\n" +
                                                              "The file has been renamed to prevent further issues.");
     }
-    saveMtx.unlock();
+    return false;
 }
 
 void SaveManager::ThreadPoolWait() {
@@ -2276,6 +2391,12 @@ void SaveManager::LoadBaseVersion4() {
     SaveManager::Instance->LoadData("dogParams", gSaveContext.dogParams);
     SaveManager::Instance->LoadData("filenameLanguage", gSaveContext.ship.filenameLanguage);
     SaveManager::Instance->LoadData("maskMemory", gSaveContext.ship.maskMemory);
+    SaveManager::Instance->LoadData("fireTempleBlockSeated", gSaveContext.ship.fireTempleBlockSeated);
+    SaveManager::Instance->LoadStruct("fireTempleBlockPos", []() {
+        SaveManager::Instance->LoadData("x", gSaveContext.ship.fireTempleBlockPos.x);
+        SaveManager::Instance->LoadData("y", gSaveContext.ship.fireTempleBlockPos.y);
+        SaveManager::Instance->LoadData("z", gSaveContext.ship.fireTempleBlockPos.z);
+    });
 }
 
 void SaveManager::SaveBase(SaveContext* saveContext, int sectionID, bool fullSave) {
@@ -2442,6 +2563,12 @@ void SaveManager::SaveBase(SaveContext* saveContext, int sectionID, bool fullSav
     SaveManager::Instance->SaveData("dogParams", saveContext->dogParams);
     SaveManager::Instance->SaveData("filenameLanguage", saveContext->ship.filenameLanguage);
     SaveManager::Instance->SaveData("maskMemory", saveContext->ship.maskMemory);
+    SaveManager::Instance->SaveData("fireTempleBlockSeated", saveContext->ship.fireTempleBlockSeated);
+    SaveManager::Instance->SaveStruct("fireTempleBlockPos", [&]() {
+        SaveManager::Instance->SaveData("x", saveContext->ship.fireTempleBlockPos.x);
+        SaveManager::Instance->SaveData("y", saveContext->ship.fireTempleBlockPos.y);
+        SaveManager::Instance->SaveData("z", saveContext->ship.fireTempleBlockPos.z);
+    });
 }
 
 // Load a string into a char array based on size and ensuring it is null terminated when overflowed
@@ -2888,6 +3015,11 @@ void SaveManager::ConvertFromUnversioned() {
             static SaveContext saveContextSave = gSaveContext;
             InitFile(false);
             CopyV0Save(*file, gSaveContext);
+#ifdef COMBO_BUILD
+            // Native SRAM conversion owns this temporary context, then restores the
+            // previous context below; bind the target before its synchronous write.
+            gSaveContext.fileNum = fileNum;
+#endif
             SaveSection(fileNum, SECTION_ID_BASE, false);
             InitMeta(fileNum);
             gSaveContext = saveContextSave;
@@ -2905,7 +3037,11 @@ extern "C" void Save_Init(void) {
 }
 
 extern "C" void Save_InitFile(int isDebug) {
+#ifdef COMBO_BUILD
+    SaveManager::Instance->InitNewFile(isDebug != 0);
+#else
     SaveManager::Instance->InitFile(isDebug != 0);
+#endif
 }
 
 extern "C" void Save_SaveFile(void) {
@@ -2920,24 +3056,17 @@ extern "C" void Save_SaveGlobal(void) {
     SaveManager::Instance->SaveGlobal();
 }
 
+#ifdef COMBO_BUILD
+extern "C" int Save_TryLoadFile(int fileNum, int initializeFullContext) {
+    if (fileNum < 0 || fileNum >= SaveManager::MaxFiles ||
+        (initializeFullContext != 0 && initializeFullContext != 1)) return 0;
+    return SaveManager::Instance->LoadFile(fileNum, initializeFullContext != 0) ? 1 : 0;
+}
+#endif
 extern "C" void Save_LoadFile(void) {
 #ifdef COMBO_BUILD
-    // ComboShip (tracker wipe): drain queued threaded saves BEFORE recreating gRandoContext —
-    // SaveTrackerData reads the LIVE context from the pool thread, and reload paths (BetterSaveMenu
-    // Reset/Return-to-Spawn, portal return via title_setup.c) reach here before OnExitGame's
-    // ThreadPoolWait, so a queued save would persist an all-UNCHECKED "checkStatus".
-    SaveManager::Instance->ThreadPoolWait();
-    // Missing OOT block: LoadFile would return early AFTER the reset, leaving an all-unchecked
-    // context that the next save persists. Keep the current context instead.
-    if (gComboReadGameSave) {
-        const char* comboJson = gComboReadGameSave(ComboRando::GAME_OOT, gSaveContext.fileNum);
-        if (comboJson == nullptr || comboJson[0] == '\0') {
-            SPDLOG_ERROR("Save_LoadFile: no OOT save block for slot {} - keeping current rando context",
-                         gSaveContext.fileNum);
-            return;
-        }
-    }
-#endif
+    (void)Save_TryLoadFile(gSaveContext.fileNum, 0);
+#else
     // Handle vanilla context reset
     OTRGlobals::Instance->gRandoContext->GetLogic()->SetContext(nullptr);
     Rando::Settings::GetInstance()->ClearContext();
@@ -2947,6 +3076,7 @@ extern "C" void Save_LoadFile(void) {
     Rando::Settings::GetInstance()->AssignContext(OTRGlobals::Instance->gRandoContext);
     OTRGlobals::Instance->gRandoContext->AddExcludedOptions();
     SaveManager::Instance->LoadFile(gSaveContext.fileNum);
+#endif
 }
 
 extern "C" void Save_AddLoadFunction(char* name, int version, SaveManager::LoadFunc func) {
@@ -2987,6 +3117,10 @@ extern "C" COMBO_EXPORT void SOH_DeleteSaveFile(int fileNum) {
 extern "C" COMBO_EXPORT void SOH_SetComboSaveIO(ComboRando::FnComboReadSave r, ComboRando::FnComboWriteSave w) {
     gComboReadGameSave = r;
     gComboWriteGameSave = w;
+}
+
+extern "C" COMBO_EXPORT void SOH_SetAnchorJournalProvider(const char* (*provider)(int)) {
+    gComboAnchorJournalProvider = provider;
 }
 
 // ComboShip: launcher registers its whole-container copy for file-select "copy file".

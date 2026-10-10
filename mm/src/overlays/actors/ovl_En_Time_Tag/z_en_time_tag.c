@@ -9,6 +9,10 @@
  */
 
 #include "z_en_time_tag.h"
+#ifdef COMBO_BUILD
+extern u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+extern int Combo_MMOrdinarySourceConfigured(u16 entrance);
+#endif
 #include "overlays/actors/ovl_En_Elf/z_en_elf.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
@@ -288,6 +292,26 @@ void EnTimeTag_KickOut_DoNothing(EnTimeTag* this, PlayState* play) {
 void EnTimeTag_KickOut_Transition(EnTimeTag* this, PlayState* play) {
     if (Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) {
         play->nextEntrance = play->setupExitList[TIMETAG_KICKOUT_GET_EXIT_INDEX(&this->actor)];
+#ifdef COMBO_BUILD
+        // Pinned Gorman timed kicks return through the entrance used to enter,
+        // including the race/minigame variant spawn indexes.
+        if (play->sceneId == SCENE_KOEPONARACE) {
+            u16 ordinaryReturn = play->nextEntrance;
+            switch (gSaveContext.save.entrance) {
+                case ENTRANCE(GORMAN_TRACK, 0):
+                case ENTRANCE(GORMAN_TRACK, 1):
+                case ENTRANCE(GORMAN_TRACK, 2):
+                    ordinaryReturn = ENTRANCE(MILK_ROAD, 3); break;
+                case ENTRANCE(GORMAN_TRACK, 3):
+                case ENTRANCE(GORMAN_TRACK, 4):
+                case ENTRANCE(GORMAN_TRACK, 5):
+                    ordinaryReturn = ENTRANCE(MILK_ROAD, 2); break;
+            }
+            if (Combo_MMOrdinarySourceConfigured(ordinaryReturn))
+                play->nextEntrance = ordinaryReturn;
+        }
+        play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+#endif
         play->transitionTrigger = TRANS_TRIGGER_START;
         if (TIMETAG_GET_TYPE(&this->actor) == TIMETAG_KICKOUT_DOOR) {
             Actor_PlaySfx(&this->actor, NA_SE_OC_DOOR_OPEN);

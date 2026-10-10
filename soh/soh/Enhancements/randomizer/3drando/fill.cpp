@@ -1,4 +1,13 @@
+#include "rando/NativeConfinedSongPreparation.h"
 #include "fill.hpp"
+#include "../silver_rupees/SilverRupees.h"
+#ifdef COMBO_BUILD
+#include "rando/GameplayRules.h"
+#include "rando/AgeTravel.h"
+#include "rando/SongTravelOOT.h"
+#include "../age_change_areas.h"
+extern "C" uint32_t SOH_LiveIncomingSongs();
+#endif
 
 #include "../dungeon.h"
 #include "../SeedContext.h"
@@ -15,6 +24,7 @@
 #include <vector>
 #include <list>
 #include <set>
+#include <stdexcept>
 #include <spdlog/spdlog.h>
 
 using namespace Rando;
@@ -185,6 +195,16 @@ void ProcessExits(Region* region, GetAccessibleLocationsStruct& gals, Randomizer
         }
 
         Region* exitRegion = exit.GetConnectedRegion();
+#ifdef COMBO_BUILD
+        if (ComboRando::ActiveSongTravel().logicEnabled) {
+            const int source = ComboRando::OotSongSource(region->randomizerRegionKey);
+            if (source >= 0) {
+                const int destination = ComboRando::ActiveSongTravel().logicDestination(source);
+                if (destination >= 6) continue; // consumed by the combined search, never the old native exit
+                exitRegion = RegionTable(ComboRando::kOotSongRegions[destination]);
+            }
+        }
+#endif
         // Update Time of Day Access for the exit
         if (UpdateToDAccess(&exit, exitRegion)) {
             gals.logicUpdated = true;
@@ -199,7 +219,7 @@ void ProcessExits(Region* region, GetAccessibleLocationsStruct& gals, Randomizer
             // are processing the new region immediately. Maybe a reverse for loop in ProcessRegion?
             if (!exitRegion->addedToPool) {
                 exitRegion->addedToPool = true;
-                gals.regionPool.push_back(exit.GetConnectedRegionKey());
+                gals.regionPool.push_back(exitRegion->randomizerRegionKey);
             }
 
             // process the region we just expanded to, to reduce looping
@@ -325,7 +345,11 @@ void ResetLogic(std::shared_ptr<Context>& ctx, GetAccessibleLocationsStruct& gal
     gals.foundTempleOfTime = true;
     gals.validatedStartingRegion = true;
     gals.sphereZeroComplete = true;
-    if (applyInventory) {
+    if (applyInventory
+#ifdef COMBO_BUILD
+        && !ComboRando::OotSongOracle()
+#endif
+    ) {
         ApplyStartingInventory();
     }
     Regions::AccessReset();
@@ -410,10 +434,18 @@ bool AddCheckToLogic(LocationAccess& locPair, GetAccessibleLocationsStruct& gals
         !logic->ShopItemNotForSale(loc)) {
         location->AddToPool();
 
-        if (locItem == RG_NONE || logic->CalculatingAvailableChecks) {
+        if (locItem == RG_NONE || logic->CalculatingAvailableChecks
+#ifdef COMBO_BUILD
+            || ComboRando::OotSongOracle()
+#endif
+        ) {
             gals.accessibleLocations.push_back(loc); // Empty location, consider for placement
         }
-        if (locItem != RG_NONE) {
+        if (locItem != RG_NONE
+#ifdef COMBO_BUILD
+            && !ComboRando::OotSongOracle()
+#endif
+        ) {
             // If ignore has a value, we want to check if the item location should be considered or not
             // This is necessary due to the below preprocessing for playthrough generation
             if (ignore != RG_NONE) {
@@ -491,6 +523,36 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
         }
     }
 
+#ifdef COMBO_BUILD
+    // The native age hook preserves position except at Castle Grounds (which relocates).
+    // Audited ordinary interiors preserve their common collision and camera too.
+    // Bosses, grotto setups and unverified underwater positions
+    // positions remain absent; this does not imply unrestricted dungeon routing.
+    const bool ageSafe = SongAgeChangeAreaAllowed(region->randomizerRegionKey);
+    if (ageSafe) {
+        const bool savedChild = logic->IsChild, savedAdult = logic->IsAdult;
+        // The tracker plans around the player's active abilities. Generation
+        // continues to use the seed's separately selected logic assumptions.
+        auto allowed = [&](bool asChild) {
+            logic->IsChild = asChild; logic->IsAdult = !asChild;
+            return logic->CanUseSongAgeChange();
+        };
+        ComboRando::AgeTimeAccess access{region->childDay,region->childNight,region->adultDay,region->adultNight};
+        const bool childCanChange=region->Child() && allowed(true);
+        const bool adultCanChange=region->Adult() && allowed(false);
+        logic->IsChild=savedChild; logic->IsAdult=savedAdult;
+        if (ComboRando::ExpandSongAgeAccess(access,childCanChange,adultCanChange)) {
+            region->childDay=access.childDay; region->childNight=access.childNight;
+            region->adultDay=access.adultDay; region->adultNight=access.adultNight;
+            // Save warp is legal after the age transition; it uses the new age's root.
+            auto* root=RegionTable(RR_ROOT);
+            root->childDay |= access.childDay; root->childNight |= access.childNight;
+            root->adultDay |= access.adultDay; root->adultNight |= access.adultNight;
+            gals.logicUpdated=true;
+            if (addToPlaythrough) gals.resetSphere=true;
+        }
+    }
+#endif
     if (region->UpdateEvents()) {
         gals.logicUpdated = true;
         // if we are working in spheres, reset the sphere on an event being enabled to avoid sphere skipping
@@ -499,6 +561,31 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
         }
     }
 
+#ifdef COMBO_BUILD
+    if (region->randomizerRegionKey == RR_ROOT && (ComboRando::ActiveSongTravel().logicEnabled || ComboRando::ActiveSongTravel().logicForeignSongs)) {
+        const auto& ageArrivals=ComboRando::OotSongAgeArrivals();
+        const bool ageAware=ComboRando::OotSongOracle()&&ageArrivals.active;
+        const uint32_t incoming = ageAware?(ageArrivals.masks[0]|ageArrivals.masks[1]):
+            (ComboRando::OotSongOracle()?ComboRando::OotSongArrivals():SOH_LiveIncomingSongs());
+        for (int i=0;i<6;i++) if (incoming & (1u<<i)) {
+            auto* target=RegionTable(ComboRando::kOotSongRegions[i]);
+            const bool day=region->childDay||region->adultDay,night=region->childNight||region->adultNight;
+            const bool child=ageAware?(ageArrivals.masks[1]&(1u<<i))!=0:true;
+            const bool adult=ageAware?(ageArrivals.masks[0]&(1u<<i))!=0:true;
+            const bool childDay=ageAware?(child&&day):region->childDay;
+            const bool childNight=ageAware?(child&&night):region->childNight;
+            const bool adultDay=ageAware?(adult&&day):region->adultDay;
+            const bool adultNight=ageAware?(adult&&night):region->adultNight;
+            const bool expanded=(childDay&&!target->childDay)||(childNight&&!target->childNight)||(adultDay&&!target->adultDay)||(adultNight&&!target->adultNight);
+            target->childDay|=childDay;target->childNight|=childNight;
+            target->adultDay|=adultDay;target->adultNight|=adultNight;
+            if (expanded) {
+                gals.logicUpdated=true;
+                if (!target->addedToPool) { target->addedToPool=true; gals.regionPool.push_back(target->randomizerRegionKey); }
+            }
+        }
+    }
+#endif
     ProcessExits(region, gals, ignore, stopOnBeatable, addToPlaythrough);
 
     PropagateTimeTravel(gals, ignore, stopOnBeatable, addToPlaythrough);
@@ -1107,6 +1194,14 @@ static void RandomizeOwnDungeon(const Rando::DungeonInfo* dungeon) {
     });
 
     // Add specific items that need be randomized within this dungeon
+    if (ctx->GetOption(RSK_SHUFFLE_SILVER_RUPEES).Get() == 1) {
+        auto silverItems = FilterAndEraseFromPool(itemPool, [dungeon, ctx](RandomizerGet item) {
+            const int slot = Rando::SilverRupees::PuzzleForItem(item);
+            return slot >= 0 && ctx->GetDungeons()->GetDungeonFromScene(
+                static_cast<SceneID>(Rando::SilverRupees::Vanilla[slot].scene)) == dungeon;
+        });
+        SohUtils::AppendVector(dungeonItems, silverItems);
+    }
     if (ctx->GetOption(RSK_KEYSANITY).Is(RO_DUNGEON_ITEM_LOC_OWN_DUNGEON) && dungeon->GetSmallKey() != RG_NONE) {
         std::vector<RandomizerGet> dungeonSmallKeys =
             FilterAndEraseFromPool(itemPool, [dungeon](const RandomizerGet i) {
@@ -1557,7 +1652,10 @@ extern void Combo_SnapshotMinShopItems(); // OTRGlobals.cpp — cache min-set pl
 // ComboShip: run only Fill()'s confined-placement steps (skip entrances/Link's Pocket/free fill),
 // leaving confined items placed in ctx and the free pool in itemPool. See UPSTREAM_MERGES.md.
 void ComboFillConfined() {
+    ComboRando::NativeConfinedSongPreparation songPreparation;
     auto ctx = Rando::Context::GetInstance();
+    placementFailure = false;
+    ctx->LocationReset();
     RegionTable_Init();
     ctx->ItemReset();
     ctx->GenerateLocationPool();
@@ -1610,5 +1708,8 @@ void ComboFillConfined() {
     // Guard: Buy items are shop-only (placed above, never pooled); strip any that leak into itemPool.
     std::erase_if(itemPool,
                   [](const auto item) { return Rando::StaticData::RetrieveItem(item).GetItemType() == ITEMTYPE_SHOP; });
+    if (placementFailure) {
+        throw std::runtime_error("Native confined fill failed: OoT dungeon items, rewards or songs could not be placed; retry this seed attempt");
+    }
 }
 #endif

@@ -4,6 +4,7 @@
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/ShipInit.hpp"
 #include "2s2h/Rando/MiscBehavior/ClockShuffle.h"
+#include "rando/MmClockRules.h"
 #include "2s2h/CustomMessage/CustomMessage.h"
 
 extern "C" {
@@ -17,7 +18,7 @@ extern "C" {
 }
 
 #define CVAR_NAME "gEnhancements.Songs.BetterSongOfDoubleTime"
-#define CVAR CVarGetInteger(CVAR_NAME, 0)
+#define CVAR (CVarGetInteger(CVAR_NAME, 0) || (IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]))
 
 // Normalize's time so that 6am is considered 0, and anything before rolls over u16
 #define CLOCK_TIME_NORMALIZED(time) ((u16)(time - CLOCK_TIME(6, 0)))
@@ -117,7 +118,12 @@ void OnPlayerUpdate(Actor* actor) {
     // Pressing A should confirm the song
     if (CHECK_BTN_ALL(input->press.button, BTN_A) && gPlayState->msgCtx.msgMode == MSGMODE_NONE) {
         // Check if the selected time is owned in ClockShuffle mode
-        if (!Rando::ClockShuffle::IsTimeOwnedForClockShuffle(sSelectedDay, sSelectedTime)) {
+        const bool shuffledClocks = IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE];
+        const u32 target = (sSelectedDay - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(sSelectedTime);
+        const bool targetOwned = shuffledClocks
+            ? ComboRando::MmClockRules::OwnsSelectorTarget(Rando::ClockItems::GetAllOwnedHalfDaysMask(), target)
+            : Rando::ClockShuffle::IsTimeOwnedForClockShuffle(sSelectedDay, sSelectedTime);
+        if (!targetOwned) {
             // Play error sound
             Audio_PlaySfx(NA_SE_SY_OCARINA_ERROR);
 
@@ -130,6 +136,11 @@ void OnPlayerUpdate(Actor* actor) {
             return;
         }
 
+        if (shuffledClocks) {
+            const u32 landed = ComboRando::MmClockRules::FinalSelectorTarget(target);
+            sSelectedDay = (landed >> 16) + 1;
+            sSelectedTime = static_cast<u16>(landed + CLOCK_TIME(6, 0));
+        }
         Audio_PlaySfx_MessageDecide();
         gPlayState->msgCtx.ocarinaMode = OCARINA_MODE_APPLY_DOUBLE_SOT;
         sActivelyChangingTime = false;
@@ -224,6 +235,8 @@ void OnPlayerUpdate(Actor* actor) {
         interval *= 2;
     }
 
+    const s32 previousDay = sSelectedDay;
+    const u16 previousTime = sSelectedTime;
     if (adjustMode == ADJUST_DIRECTION_FORWARD) { // Advance time
         u16 newTime = sSelectedTime + interval;
         if (sSelectedDay == 3 && sSelectedTime < CLOCK_TIME(6, 0) && newTime > CLOCK_TIME(6, 0) - CLOCK_TIME_HOUR) {
@@ -251,6 +264,16 @@ void OnPlayerUpdate(Actor* actor) {
             sSelectedDay = CLAMP(sSelectedDay - 1, sOriginalDay, 3);
         }
         sSelectedTime = newTime;
+    }
+
+    if (IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE] && adjustMode != ADJUST_DIRECTION_NONE) {
+        const u32 original = (sOriginalDay - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(sOriginalTime);
+        const u32 previous = (previousDay - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(previousTime);
+        const u32 proposed = (sSelectedDay - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(sSelectedTime);
+        const u32 selected = Rando::ClockShuffle::SelectOwnedTime(
+            original, previous, proposed, adjustMode == ADJUST_DIRECTION_FORWARD);
+        sSelectedDay = (selected >> 16) + 1;
+        sSelectedTime = static_cast<u16>(selected + CLOCK_TIME(6, 0));
     }
 }
 
@@ -373,7 +396,10 @@ void RegisterBetterSongOfDoubleTime() {
     COND_VB_SHOULD(VB_DISPLAY_SONG_OF_DOUBLE_TIME_PROMPT, CVAR, {
         *should = false;
 
-        if (gSaveContext.save.day >= 4) {
+        const bool exhaustedSelector = IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE] &&
+            (gSaveContext.save.day - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(CURRENT_TIME) >=
+                ComboRando::MmClockRules::MaxSelectorTicks;
+        if (gSaveContext.save.day >= 4 || exhaustedSelector) {
             // On 4th day and beyond, just display the "can't go further" text
             Message_StartTextbox(gPlayState, 0x1B94, NULL);
             gPlayState->msgCtx.ocarinaMode = OCARINA_MODE_END;

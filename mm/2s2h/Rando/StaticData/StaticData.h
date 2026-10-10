@@ -75,6 +75,9 @@ std::string GetItemName(RandoItemId randoItemId, bool includeArticle = true, Ran
 #else
 std::string GetItemName(RandoItemId randoItemId, bool includeArticle = true, RandoCheckId randoCheckId = RC_UNKNOWN);
 #endif
+// Item names used in dialogue that explicitly identifies the associated check.
+std::string GetRevealedItemName(RandoItemId randoItemId, bool includeArticle = true,
+                                RandoCheckId randoCheckId = RC_UNKNOWN, bool livePreview = false);
 std::string GetTrapMessage();
 
 struct RandoStaticOption {

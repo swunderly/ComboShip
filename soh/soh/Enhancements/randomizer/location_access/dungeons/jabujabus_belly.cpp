@@ -77,7 +77,7 @@ void RegionTable_Init_JabuJabusBelly() {
 
     areaTable[RR_JABU_JABUS_BELLY_WATER_SWITCH_ROOM_NORTH] = Region("Jabu Jabus Belly Water Switch Room North", SCENE_JABU_JABU, {
         //Events
-        EVENT_ACCESS(LOGIC_JABU_RUTO_IN_1F, (logic->IsAdult || logic->HasItem(RG_BRONZE_SCALE)) && logic->HasItem(RG_SPEAK_ZORA) && logic->HasItem(RG_POWER_BRACELET)),
+        EVENT_ACCESS(LOGIC_JABU_RUTO_IN_1F, ((logic->IsAdult || logic->HasItem(RG_BRONZE_SCALE)) && logic->HasItem(RG_SPEAK_ZORA) && logic->HasItem(RG_POWER_BRACELET)) && (!Rando::Souls::Enabled() || Rando::Souls::Has(logic.get(),Rando::Souls::OotSoul::NPC_RUTO))),
     }, {
         //Locations
         LOCATION(RC_JABU_JABUS_BELLY_GS_WATER_SWITCH_ROOM, logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA, ED_BOOMERANG)),
@@ -170,7 +170,7 @@ void RegionTable_Init_JabuJabusBelly() {
     }, {}, {
         //Exits
         //implied logic->CanKillEnemy(RE_BARI)
-        ENTRANCE(RR_JABU_JABUS_BELLY_TO_FORK_NORTH, logic->Get(LOGIC_JABU_NORTH_TENTACLE)),
+        ENTRANCE(RR_JABU_JABUS_BELLY_TO_FORK_NORTH, logic->Get(LOGIC_JABU_NORTH_TENTACLE) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_BIRI_BARI))),
     });
 
     // this handles spawning in tentacle
@@ -283,7 +283,7 @@ void RegionTable_Init_JabuJabusBelly() {
 
     areaTable[RR_JABU_JABUS_BELLY_MQ_LIFT_ROOM] = Region("Jabu Jabus Belly MQ Lift Room", SCENE_JABU_JABU, {
         //Events
-        EVENT_ACCESS(LOGIC_JABU_MQ_LIFT_ROOM_COW, logic->CanUse(RG_FAIRY_SLINGSHOT)),
+        EVENT_ACCESS(LOGIC_JABU_MQ_LIFT_ROOM_COW, logic->CanUse(RG_FAIRY_SLINGSHOT) && (!Rando::Souls::Enabled() || Rando::Souls::Has(logic.get(),Rando::Souls::OotSoul::ANIMAL_COW))),
     }, {
         //Locations
         LOCATION(RC_JABU_JABUS_BELLY_MQ_SECOND_ROOM_LOWER_CHEST, logic->HasItem(RG_OPEN_CHEST)),
@@ -371,11 +371,23 @@ void RegionTable_Init_JabuJabusBelly() {
 
     areaTable[RR_JABU_JABUS_BELLY_MQ_WATER_SWITCH_ROOM] = Region("Jabu Jabus Belly MQ Water Switch Room", SCENE_JABU_JABU, {
         //Events
+#ifdef COMBO_BUILD
+        // OoTMM JABU_MQ_WATER_SPOUTS is a sword-based full room clear.
+        EVENT_ACCESS(LOGIC_JABU_MQ_WATER_SWITCH_LIFT_ACCESS,
+                     logic->CanUseSword() && logic->CanKillEnemy(RE_LIZALFOS) &&
+                     logic->CanKillEnemy(RE_LIKE_LIKE) && logic->CanKillEnemy(RE_STINGER)),
+#else
         EVENT_ACCESS(LOGIC_JABU_MQ_WATER_SWITCH_LIFT_ACCESS, logic->CanKillEnemy(RE_LIZALFOS)),
+#endif
     }, {
         //Locations
         LOCATION(RC_JABU_JABUS_BELLY_MQ_BOOMERANG_ROOM_SMALL_CHEST, logic->HasItem(RG_OPEN_CHEST)),
+#ifdef COMBO_BUILD
+        LOCATION(RC_JABU_JABUS_BELLY_MQ_BOOMERANG_CHEST,
+                 logic->Get(LOGIC_JABU_MQ_WATER_SWITCH_LIFT_ACCESS) && logic->CanOpenLargeChest()),
+#else
         LOCATION(RC_JABU_JABUS_BELLY_MQ_BOOMERANG_CHEST,            (logic->IsAdult || logic->HasItem(RG_CLIMB)) && logic->CanKillEnemy(RE_LIZALFOS) && logic->CanOpenLargeChest()),
+#endif
         LOCATION(RC_JABU_JABUS_BELLY_MQ_GS_BOOMERANG_CHEST_ROOM,    (logic->CanUse(RG_SONG_OF_TIME) && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA)) || (ctx->GetTrickOption(RT_JABU_MQ_SOT_GS) && logic->CanUse(RG_BOOMERANG))),
         LOCATION(RC_JABU_JABUS_BELLY_MQ_TIME_BLOCK_POT_1,           logic->CanBreakPots()),
         LOCATION(RC_JABU_JABUS_BELLY_MQ_TIME_BLOCK_POT_2,           logic->CanBreakPots()),

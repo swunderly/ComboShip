@@ -20,7 +20,7 @@ void replaceGetItemText(RandoCheckId randoCheckId, u16* textId, bool* loadFromMe
     entry.autoFormat = false;
     entry.msg.assign("You received {{itemName}}!\x1C\x02\x10");
     CustomMessage::Replace(&entry.msg, "{{itemName}}",
-                           Rando::StaticData::GetItemName(randoSaveCheck.randoItemId, true, randoCheckId));
+                           Rando::StaticData::GetRevealedItemName(randoSaveCheck.randoItemId, true, randoCheckId));
     entry.icon = 0xFE; // No icon
 
     CustomMessage::LoadCustomMessageIntoFont(entry);

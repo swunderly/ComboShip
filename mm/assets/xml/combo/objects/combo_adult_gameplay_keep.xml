@@ -1,0 +1,14 @@
+<Root>
+  <File Name="mm_adult_link_spin_attack_vtx_1.bin" OutName="combo_adult_gameplay_keep" Segment="6" Game="MM">
+    <Array Name="gComboAdultSpinVtx1" Count="52" Offset="0x0"><Vtx /></Array>
+  </File>
+  <File Name="mm_adult_link_spin_attack_vtx_2.bin" OutName="combo_adult_gameplay_keep" Segment="6" Game="MM">
+    <Array Name="gComboAdultSpinVtx2" Count="52" Offset="0x0"><Vtx /></Array>
+  </File>
+  <File Name="mm_adult_link_spin_attack_vtx_3.bin" OutName="combo_adult_gameplay_keep" Segment="6" Game="MM">
+    <Array Name="gComboAdultSpinVtx3" Count="14" Offset="0x0"><Vtx /></Array>
+  </File>
+  <File Name="mm_adult_link_mask_mtx.bin" OutName="combo_adult_gameplay_keep" Segment="6" Game="MM">
+    <Mtx Name="gComboAdultMaskMtx" Offset="0x0" />
+  </File>
+</Root>

@@ -5,6 +5,7 @@
 #include "soh/OTRGlobals.h"
 #include <soh/GameVersions.h>
 #include "soh/ResourceManagerHelpers.h"
+#include "soh/Enhancements/controls/SohInputEditorWindow.h"
 #include "UIWidgets.hpp"
 #include <ship/controller/controldeck/ControlDeck.h>
 
@@ -480,8 +481,22 @@ void SohMenu::AddMenuSettings() {
         });
 #endif
 
+#ifdef COMBO_BUILD
+    path.sidebarName = "Camera";
+    path.column = SECTION_COLUMN_1;
+    AddSidebarEntry("Settings", path.sidebarName, 1);
+    AddWidget(path, "Camera controls", WIDGET_CUSTOM)
+        .RaceDisable(false)
+        .CustomFunction([](WidgetInfo&) {
+            auto gui = Ship::Context::GetRawInstance()->GetWindow()->GetGui();
+            auto editor = std::dynamic_pointer_cast<SohInputEditorWindow>(gui->GetGuiWindow("Configure Controller"));
+            if (editor) editor->DrawCameraControlPanel();
+        });
+#endif
+
     // Input Viewer
     path.sidebarName = "Input Viewer";
+    path.column = SECTION_COLUMN_1;
     AddSidebarEntry("Settings", path.sidebarName, 3);
     AddWidget(path, "Input Viewer", WIDGET_SEPARATOR_TEXT);
     AddWidget(path, "Toggle Input Viewer", WIDGET_WINDOW_BUTTON)

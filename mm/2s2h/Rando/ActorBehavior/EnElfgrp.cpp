@@ -23,12 +23,12 @@ void ApplyClockTownGreatFairyHint(u16* textId, bool* loadFromMessageTable) {
                "even %g{{item2}}%w if you are worthy."
     };
 
-    auto randoItem1Name = Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_GREAT_FAIRY].randoItemId, true,
+    auto randoItem1Name = Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_GREAT_FAIRY].randoItemId, true,
                                                          RC_CLOCK_TOWN_GREAT_FAIRY);
 
     CustomMessage::Replace(&entry.msg, "{{item1}}", randoItem1Name);
 
-    auto randoItem2Name = Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_GREAT_FAIRY_ALT].randoItemId,
+    auto randoItem2Name = Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_GREAT_FAIRY_ALT].randoItemId,
                                                          true, RC_CLOCK_TOWN_GREAT_FAIRY_ALT);
 
     CustomMessage::Replace(&entry.msg, "{{item2}}", randoItem2Name);
@@ -43,7 +43,7 @@ void ApplyGreatFairyHint(u16* textId, bool* loadFromMessageTable, RandoCheckId r
     };
     CustomMessage::Replace(
         &entry.msg, "{{itemName}}",
-        Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[randoCheckId].randoItemId, true, randoCheckId));
+        Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[randoCheckId].randoItemId, true, randoCheckId));
 
     CustomMessage::LoadCustomMessageIntoFont(entry);
     *loadFromMessageTable = false;

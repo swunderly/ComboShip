@@ -13,8 +13,8 @@ void RegionTable_Init_Graveyard() {
     }, {
         //Locations
         LOCATION(RC_GRAVEYARD_FREESTANDING_POH,        (((logic->IsAdult && CanPlantBean(RR_THE_GRAVEYARD, RG_GRAVEYARD_BEAN_SOUL)) || logic->CanUse(RG_LONGSHOT)) && logic->CanBreakCrates()) || (ctx->GetTrickOption(RT_GY_POH) && logic->CanUse(RG_BOOMERANG))),
-        LOCATION(RC_GRAVEYARD_DAMPE_GRAVEDIGGING_TOUR, logic->HasItem(RG_CHILD_WALLET) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->IsChild && logic->AtNight), //TODO: This needs to change
-        LOCATION(RC_GRAVEYARD_GS_WALL,                 logic->IsChild && logic->HookshotOrBoomerang() && logic->AtNight && logic->CanGetNightTimeGS()),
+        LOCATION(RC_GRAVEYARD_DAMPE_GRAVEDIGGING_TOUR, (logic->HasItem(RG_CHILD_WALLET) && GetWalletCapacity() >= 10) && logic->HasItem(RG_SPEAK_HYLIAN) && logic->IsChild && logic->AtNight), //TODO: This needs to change
+        LOCATION(RC_GRAVEYARD_GS_WALL,                 logic->IsChild && logic->HookshotOrBoomerang() && logic->CanGetNightTimeGS(RC_GRAVEYARD_GS_WALL)),
         LOCATION(RC_GRAVEYARD_GS_BEAN_PATCH,           logic->CanSpawnSoilSkull(RG_GRAVEYARD_BEAN_SOUL) && logic->CanAttack()),
         LOCATION(RC_GRAVEYARD_BEAN_SPROUT_FAIRY_1,     logic->IsChild && logic->CanUse(RG_MAGIC_BEAN) && logic->HasItem(RG_GRAVEYARD_BEAN_SOUL) && logic->CanUse(RG_SONG_OF_STORMS)),
         LOCATION(RC_GRAVEYARD_BEAN_SPROUT_FAIRY_2,     logic->IsChild && logic->CanUse(RG_MAGIC_BEAN) && logic->HasItem(RG_GRAVEYARD_BEAN_SOUL) && logic->CanUse(RG_SONG_OF_STORMS)),
@@ -41,9 +41,9 @@ void RegionTable_Init_Graveyard() {
         LOCATION(RC_GY_ROYAL_TOMB_GRAVE,               logic->CanRead() || logic->CanUse(RG_ZELDAS_LULLABY)),
     }, {
         //Exits
-        ENTRANCE(RR_GRAVEYARD_SHIELD_GRAVE,       (logic->IsAdult || logic->AtNight) && logic->HasItem(RG_POWER_BRACELET)),
+        ENTRANCE(RR_GRAVEYARD_SHIELD_GRAVE,       (logic->IsAdult || logic->AtNight || logic->CanPullGravesDuringDay()) && logic->HasItem(RG_POWER_BRACELET)),
         ENTRANCE(RR_GRAVEYARD_COMPOSERS_GRAVE,    logic->CanUse(RG_ZELDAS_LULLABY)),
-        ENTRANCE(RR_GRAVEYARD_HEART_PIECE_GRAVE,  (logic->IsAdult || logic->AtNight) && logic->HasItem(RG_POWER_BRACELET)),
+        ENTRANCE(RR_GRAVEYARD_HEART_PIECE_GRAVE,  (logic->IsAdult || logic->AtNight || logic->CanPullGravesDuringDay()) && logic->HasItem(RG_POWER_BRACELET)),
         ENTRANCE(RR_GRAVEYARD_DAMPES_GRAVE,       logic->IsAdult && logic->HasItem(RG_POWER_BRACELET)),
         ENTRANCE(RR_GRAVEYARD_DAMPES_HOUSE,       logic->IsAdult && logic->HasItem(RG_DAMPES_HUT_KEY) /*|| logic->AtDampeTime*/), //TODO: This needs to be handled in ToD rework
         ENTRANCE(RR_KAKARIKO_VILLAGE,             true),
@@ -84,7 +84,7 @@ void RegionTable_Init_Graveyard() {
 
     areaTable[RR_GRAVEYARD_COMPOSERS_GRAVE] = Region("Graveyard Composers Grave", SCENE_ROYAL_FAMILYS_TOMB, {}, {
         //Locations
-        LOCATION(RC_GRAVEYARD_ROYAL_FAMILYS_TOMB_CHEST,     logic->HasFireSource() && logic->HasItem(RG_OPEN_CHEST)),
+        LOCATION(RC_GRAVEYARD_ROYAL_FAMILYS_TOMB_CHEST,     (logic->HasFireSource() || logic->HasSelfLightingSticks()) && logic->HasItem(RG_OPEN_CHEST)),
         LOCATION(RC_SONG_FROM_ROYAL_FAMILYS_TOMB,           logic->CanUseProjectile() || logic->CanJumpslash()),
         LOCATION(RC_GRAVEYARD_ROYAL_FAMILYS_TOMB_SUN_FAIRY, logic->CanUse(RG_SUNS_SONG)),
     }, {
@@ -131,7 +131,7 @@ void RegionTable_Init_Graveyard() {
     }, {
         //Exits
         ENTRANCE(RR_THE_GRAVEYARD,      true),
-        ENTRANCE(RR_KAK_WINDMILL_UPPER, (logic->IsAdult && logic->CanUse(RG_SONG_OF_TIME)) || (logic->IsChild && logic->CanGroundJump()), false),
+        ENTRANCE(RR_KAK_WINDMILL_UPPER, (logic->IsAdult && logic->CanUse(RG_SONG_OF_TIME) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::NPC_DAMPE))) || (logic->IsChild && logic->CanGroundJump()), false),
     });
 
     areaTable[RR_GRAVEYARD_DAMPES_HOUSE] = Region("Graveyard Dampes House", SCENE_GRAVEKEEPERS_HUT, {}, {
@@ -153,7 +153,7 @@ void RegionTable_Init_Graveyard() {
     }, {
         //Exits
         ENTRANCE(RR_THE_GRAVEYARD,          true),
-        ENTRANCE(RR_SHADOW_TEMPLE_ENTRYWAY, logic->CanUse(RG_DINS_FIRE) || (ctx->GetTrickOption(RT_GY_SHADOW_FIRE_ARROWS) && logic->IsAdult && logic->CanUse(RG_FIRE_ARROWS))),
+        ENTRANCE(RR_SHADOW_TEMPLE_ENTRYWAY, logic->CanUse(RG_DINS_FIRE) || (ctx->GetTrickOption(RT_GY_SHADOW_FIRE_ARROWS) && logic->IsAdult && logic->CanUse(RG_FIRE_ARROWS)) || logic->CanUnloadShadowDoor()),
     });
 
     // clang-format on

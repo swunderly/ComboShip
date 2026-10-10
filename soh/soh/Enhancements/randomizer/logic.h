@@ -38,6 +38,13 @@ class Logic {
     SaveContext* mSaveContext = nullptr;
     Logic();
     bool CanUse(RandomizerGet itemName);
+    int GameplayRuleValue(const char* runtime) const;
+    bool ShopsOpenAllHours() const;
+    bool CanPullGravesDuringDay() const;
+    bool CanUnloadShadowDoor() const;
+    bool CanClaimKingZoraTrade();
+    bool HasSuperTunic() const;
+    bool HasSelfLightingSticks();
     bool HasProjectile(HasProjectileAge age);
     bool HasItem(RandomizerGet itemName);
     bool ItemUseAllowed(RandomizerGet itemName);
@@ -96,10 +103,11 @@ class Logic {
     uint8_t DungeonCount();
     uint8_t FireTimer();
     uint8_t WaterTimer();
+    bool CanUseSongAgeChange();
     bool TakeDamage();
     bool CanOpenBombGrotto();
     bool CanOpenStormsGrotto();
-    bool CanGetNightTimeGS();
+    bool CanGetNightTimeGS(RandomizerCheck check = RC_UNKNOWN_CHECK);
     bool CanBreakUpperBeehives();
     bool CanBreakLowerBeehives();
     bool CanBreakPots(EnemyDistance distance = ED_CLOSE, bool wallOrFloor = true, bool inWater = false);

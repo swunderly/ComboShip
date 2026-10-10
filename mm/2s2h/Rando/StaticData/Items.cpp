@@ -5,6 +5,7 @@
 #include "2s2h/Rando/Rando.h"
 #include "2s2h_assets.h"
 #ifdef COMBO_BUILD
+#include "2s2h/Rando/CheckTracker/CheckTracker.h"
 #include "2s2h/Rando/MiscBehavior/MiscBehavior.h" // ComboShip: MM_LookupForeign for foreign-item name substitution
 #endif
 
@@ -29,6 +30,89 @@ namespace StaticData {
 
 // clang-format off
 std::map<RandoItemId, RandoStaticItem> Items = {
+    RI(RI_BOOTS_IRON, "the", "Iron Boots", RITYPE_MAJOR, ITEM_COMBO_BOOTS_IRON, GI_NONE, GID_NONE),
+    RI(RI_BOOTS_HOVER, "the", "Hover Boots", RITYPE_MAJOR, ITEM_COMBO_BOOTS_HOVER, GI_NONE, GID_NONE),
+    RI(RI_TUNIC_GORON, "the", "Goron Tunic", RITYPE_MAJOR, ITEM_COMBO_TUNIC_GORON, GI_NONE, GID_NONE),
+    RI(RI_TUNIC_ZORA, "the", "Zora Tunic", RITYPE_MAJOR, ITEM_COMBO_TUNIC_ZORA, GI_NONE, GID_NONE),
+
+    RI(RI_MASK_ADULT, "the", "Adult Mask", RITYPE_MAJOR, (ItemId)0xbc, GI_NONE, GID_NONE),
+    RI(RI_SOUL_BOSS_IGOS, "the", "Soul of Igos du Ikana", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_ENEMY_BIO_BABA, "the", "Soul of Bio Deku Babas", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_ENEMY_FLOORMASTER, "the", "Soul of Floormasters", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_ENEMY_FLYING_POT, "the", "Soul of Flying Pots", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_ENEMY_REAL_BOMBCHU, "the", "Soul of Real Bombchus", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_ENEMY_SKULLWALLTULA, "the", "Soul of Skullwalltulas", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_FARORES_WIND, "", "Farore's Wind", RITYPE_MAJOR, ITEM_COMBO_FARORES_WIND, GI_NONE, GID_NONE),
+    RI(RI_DINS_FIRE, "", "Din's Fire", RITYPE_MAJOR, ITEM_COMBO_DINS_FIRE, GI_NONE, GID_NONE),
+    RI(RI_NAYRUS_LOVE, "", "Nayru's Love", RITYPE_MAJOR, ITEM_COMBO_NAYRUS_LOVE, GI_NONE, GID_NONE),
+    // Custom GI_NONE uses the native 0xFE randomizer get-item animation; DrawItem supplies the real Fairy recipe.
+    RI(RI_OCARINA_FAIRY, "the", "Fairy Ocarina", RITYPE_MAJOR, ITEM_OCARINA_FAIRY, GI_NONE, GID_NONE),
+    RI(RI_PROGRESSIVE_OCARINA, "a", "Progressive Ocarina", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_NONE),
+    RI(RI_SOUL_ANIMAL_BUTTERFLY, "the", "Soul of Butterflies", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_ANIMAL_COW, "the", "Soul of Cows", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_ANIMAL_CUCCO, "the", "Soul of Cuccos", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_ANIMAL_DOG, "the", "Soul of Dogs", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_MISC_BUSINESS_SCRUB, "the", "Soul of Business Scrubs", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_MISC_GS, "the", "Soul of Gold Skulltulas", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_ANJU, "the", "Soul of Anju", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_AROMA, "the", "Soul of Madame Aroma", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_ASTRONOMER, "the", "Soul of Astronomer", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_BANKER, "the", "Soul of the Banker", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_BAZAAR_SHOPKEEPER, "the", "Soul of Swamp Archery Owner", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_BEAN_SALESMAN, "the", "Soul of the Bean Salesman", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_BIGGORON, "the", "Soul of Biggoron", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_BLACKSMITHS, "the", "Soul of Blacksmiths", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_BOMBCHU_BOWLING_LADY, "the", "Soul of Chest Game Lady", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_BOMBCHU_SHOPKEEPER, "the", "Soul of Bombs Shopkeeper", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_BOMBERS, "the", "Soul of Bombers' Kids", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_BUTLER_DEKU, "the", "Soul of Deku Butler", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_CARPENTERS, "the", "Soul of Carpenters", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_CARPET_MAN, "the", "Soul of Swordsman", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_CHEST_GAME_OWNER, "the", "Soul of Fisherman", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_CITIZEN, "the", "Soul of Citizens", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_COMPOSER_BROS, "the", "Soul of Composer Bros", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_DAMPE, "the", "Soul of Dampe", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_DEKU_KING, "the", "Soul of Deku King", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_DEKU_PRINCESS, "the", "Soul of Deku Princess", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_DOG_LADY, "the", "Soul of the Dog Lady", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_FISHING_POND_OWNER, "the", "Soul of Trading Post Owner", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_GORMAN, "the", "Soul of Gorman & Bros.", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_GORON, "the", "Soul of Gorons", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_GORON_CHILD, "the", "Soul of Baby Goron", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_GORON_ELDER, "the", "Soul of Goron Elder", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_GORON_SHOPKEEPER, "the", "Soul of Goron Shopkeeper", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_GROG, "the", "Soul of Grog", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_GURU_GURU, "the", "Soul of Guru-Guru", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_HONEY_DARLING, "the", "Soul of Honey & Darling", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_KAFEI, "the", "Soul of Kafei", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_KEATON, "the", "Soul of Keaton", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_KOUME_KOTAKE, "the", "Soul of Koume & Kotake", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_MALON, "the", "Soul of Romani/Cremia", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_MAYOR_DOTOUR, "the", "Soul of Mayor Dotour", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_MEDIGORON, "the", "Soul of Keg Trial Goron", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_MOON_CHILDREN, "the", "Soul of Moon Children", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_OLD_HAG, "the", "Soul of Anju's Grandmother", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_PLAYGROUND_SCRUBS, "the", "Soul of Playground Scrubs", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_POE_COLLECTOR, "the", "Soul of Poe Hut Owner", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_ROOFTOP_MAN, "the", "Soul of the Part-Timer", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_RUTO, "the", "Soul of Lulu", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_SCIENTIST, "the", "Soul of the Scientist", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_SHOOTING_GALLERY_OWNER, "the", "Soul of Town Archery Owner", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_TALON, "the", "Soul of Mr. Barten", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_THIEVES, "the", "Soul of Patrolling Pirates and their Chief", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_TINGLE, "the", "Soul of Tingle", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_TOILET_HAND, "the", "Soul of Toilet Hand", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_TOTO, "the", "Soul of Toto", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_TOURIST_CENTER, "the", "Soul of Boat Cruise Man", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_ZORA, "the", "Soul of Zoras", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_ZORA_MUSICIANS, "the", "Soul of Zora Musicians", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+    RI(RI_SOUL_NPC_ZORA_SHOPKEEPER, "the", "Soul of Zora Shopkeeper", RITYPE_MAJOR, ITEM_NONE, GI_NONE, GID_POE),
+
+    RI(RI_WOODFALL_KEY_RING, "the", "Woodfall Key Ring", RITYPE_SMALL_KEY, ITEM_KEY_SMALL, GI_KEY_SMALL, GID_KEY_SMALL),
+    RI(RI_SNOWHEAD_KEY_RING, "the", "Snowhead Key Ring", RITYPE_SMALL_KEY, ITEM_KEY_SMALL, GI_KEY_SMALL, GID_KEY_SMALL),
+    RI(RI_GREAT_BAY_KEY_RING, "the", "Great Bay Key Ring", RITYPE_SMALL_KEY, ITEM_KEY_SMALL, GI_KEY_SMALL, GID_KEY_SMALL),
+    RI(RI_STONE_TOWER_KEY_RING, "the", "Stone Tower Key Ring", RITYPE_SMALL_KEY, ITEM_KEY_SMALL, GI_KEY_SMALL, GID_KEY_SMALL),
+
     RI(RI_UNKNOWN,                    "",     "Unknown",                    RITYPE_JUNK,            ITEM_NONE,                       GI_NONE,                     GID_NONE),
     RI(RI_ABILITY_SWIM,               "the",  "Ability to Swim",            RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
     RI(RI_ARROW_FIRE,                 "",     "Fire Arrows",                RITYPE_MAJOR,           ITEM_ARROW_FIRE,                 GI_ARROW_FIRE,               GID_ARROW_FIRE),
@@ -244,13 +328,13 @@ std::map<RandoItemId, RandoStaticItem> Items = {
     RI(RI_SWORD_GILDED,               "the",  "Gilded Sword",               RITYPE_LESSER,          ITEM_SWORD_GILDED,               GI_SWORD_GILDED,             GID_SWORD_GILDED),
     RI(RI_SWORD_KOKIRI,               "the",  "Kokiri Sword",               RITYPE_MAJOR,           ITEM_SWORD_KOKIRI,               GI_SWORD_KOKIRI,             GID_SWORD_KOKIRI),
     RI(RI_SWORD_RAZOR,                "the",  "Razor Sword",                RITYPE_LESSER,          ITEM_SWORD_RAZOR,                GI_SWORD_RAZOR,              GID_SWORD_RAZOR),
-    RI(RI_TIME_DAY_1,                 "",     "Time (Day 1)",               RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
-    RI(RI_TIME_DAY_2,                 "",     "Time (Day 2)",               RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
-    RI(RI_TIME_DAY_3,                 "",     "Time (Day 3)",               RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
-    RI(RI_TIME_NIGHT_1,               "",     "Time (Night 1)",             RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
-    RI(RI_TIME_NIGHT_2,               "",     "Time (Night 2)",             RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
-    RI(RI_TIME_NIGHT_3,               "",     "Time (Night 3)",             RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
-    RI(RI_TIME_PROGRESSIVE,           "",     "Progressive Time",           RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TIME_DAY_1,                 "",     "Clock (Day 1)",               RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TIME_DAY_2,                 "",     "Clock (Day 2)",               RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TIME_DAY_3,                 "",     "Clock (Day 3)",               RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TIME_NIGHT_1,               "",     "Clock (Night 1)",             RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TIME_NIGHT_2,               "",     "Clock (Night 2)",             RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TIME_NIGHT_3,               "",     "Clock (Night 3)",             RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TIME_PROGRESSIVE,           "",     "Progressive Clock",           RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
     RI(RI_TINGLE_MAP_CLOCK_TOWN,      "",     "Tingle's Clock Town Map",    RITYPE_LESSER,          ITEM_TINGLE_MAP,                 GI_TINGLE_MAP_CLOCK_TOWN,    GID_TINGLE_MAP),
     RI(RI_TINGLE_MAP_GREAT_BAY,       "",     "Tingle's Great Bay Map",     RITYPE_LESSER,          ITEM_TINGLE_MAP,                 GI_TINGLE_MAP_GREAT_BAY,     GID_TINGLE_MAP),
     RI(RI_TINGLE_MAP_ROMANI_RANCH,    "",     "Tingle's Romani Ranch Map",  RITYPE_LESSER,          ITEM_TINGLE_MAP,                 GI_TINGLE_MAP_ROMANI_RANCH,  GID_TINGLE_MAP),
@@ -260,6 +344,9 @@ std::map<RandoItemId, RandoStaticItem> Items = {
     RI(RI_TRAP,                       "a",    "Knockoff Item",              RITYPE_LESSER,          ITEM_NONE,                       GI_NONE,                     GID_NONE),
     RI(RI_TRIFORCE_PIECE_PREVIOUS,    "a",    "Piece of the Triforce",      RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE), // This only exists to aid in the drawing of unique models, it has no use outside of that.
     RI(RI_TRIFORCE_PIECE,             "a",    "Piece of the Triforce",      RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TRIFORCE_POWER,             "a",    "Triforce of Power",      RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TRIFORCE_COURAGE,             "a",    "Triforce of Courage",      RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
+    RI(RI_TRIFORCE_WISDOM,             "a",    "Triforce of Wisdom",      RITYPE_MAJOR,           ITEM_NONE,                       GI_NONE,                     GID_NONE),
     RI(RI_WALLET_ADULT,               "the",  "Adult's Wallet",             RITYPE_MAJOR,           ITEM_WALLET_ADULT,               GI_WALLET_ADULT,             GID_WALLET_ADULT),
     RI(RI_WALLET_GIANT,               "the",  "Giant's Wallet",             RITYPE_LESSER,          ITEM_WALLET_GIANT,               GI_WALLET_GIANT,             GID_WALLET_GIANT),
     RI(RI_WALLET_TYCOON,              "the",  "Tycoon's Wallet",            RITYPE_LESSER,          ITEM_NONE,                       GI_NONE,                     GID_WALLET_GIANT),
@@ -302,6 +389,7 @@ std::map<StartingItemCategory, std::vector<RandoItemId>> StartingItemsMap = {
         } },
     { STARTING_ITEMS_MISC, 
         { RI_SOUL_BOSS_GOHT, RI_SOUL_BOSS_GYORG,  RI_SOUL_BOSS_MAJORA, RI_SOUL_BOSS_ODOLWA, RI_SOUL_BOSS_TWINMOLD,
+          RI_WOODFALL_KEY_RING, RI_SNOWHEAD_KEY_RING, RI_GREAT_BAY_KEY_RING, RI_STONE_TOWER_KEY_RING,
           RI_FROG_BLUE, RI_FROG_CYAN,   RI_FROG_PINK,   RI_FROG_WHITE,
           RI_TIME_DAY_1, RI_TIME_NIGHT_1, RI_TIME_DAY_2, RI_TIME_NIGHT_2, RI_TIME_DAY_3, RI_TIME_NIGHT_3, RI_TIME_PROGRESSIVE,
           RI_OCARINA_BUTTON_A, RI_OCARINA_BUTTON_C_DOWN, RI_OCARINA_BUTTON_C_RIGHT, RI_OCARINA_BUTTON_C_LEFT, RI_OCARINA_BUTTON_C_UP,
@@ -311,11 +399,25 @@ std::map<StartingItemCategory, std::vector<RandoItemId>> StartingItemsMap = {
 std::map<RandoItemId, u8> MaxStartingItemsMap = {
     { RI_PROGRESSIVE_SWORD, 3 }, { RI_PROGRESSIVE_BOMB_BAG, 3 }, { RI_PROGRESSIVE_WALLET, 2 },
     { RI_PROGRESSIVE_BOW, 3 },   { RI_PROGRESSIVE_LULLABY, 2 },  { RI_PROGRESSIVE_MAGIC, 2 },
-    { RI_TIME_PROGRESSIVE, 6 },
+    { RI_TIME_PROGRESSIVE, 5 },
+    { RI_OCARINA_FAIRY, 1 }, { RI_PROGRESSIVE_OCARINA, 2 },
+    { RI_MASK_ADULT, 1 },
 };
 // clang-format on
 
 RandoItemId GetItemIdFromName(const char* name) {
+    if (!name) return RI_UNKNOWN;
+    static const std::pair<const char*, RandoItemId> clocks[] = {
+        {"MM_CLOCK1", RI_TIME_DAY_1}, {"MM_CLOCK2", RI_TIME_NIGHT_1},
+        {"MM_CLOCK3", RI_TIME_DAY_2}, {"MM_CLOCK4", RI_TIME_NIGHT_2},
+        {"MM_CLOCK5", RI_TIME_DAY_3}, {"MM_CLOCK6", RI_TIME_NIGHT_3},
+        {"MM_CLOCK", RI_TIME_PROGRESSIVE},
+        {"Time (Day 1)", RI_TIME_DAY_1}, {"Time (Night 1)", RI_TIME_NIGHT_1},
+        {"Time (Day 2)", RI_TIME_DAY_2}, {"Time (Night 2)", RI_TIME_NIGHT_2},
+        {"Time (Day 3)", RI_TIME_DAY_3}, {"Time (Night 3)", RI_TIME_NIGHT_3},
+        {"Progressive Time", RI_TIME_PROGRESSIVE},
+    };
+    for (const auto& clock : clocks) if (strcmp(name, clock.first) == 0) return clock.second;
     for (auto& [randoItemId, randoStaticItem] : Items) {
         if (strcmp(name, randoStaticItem.spoilerName) == 0) {
             return randoItemId;
@@ -359,6 +461,8 @@ const std::string& GetItemDisplayName(RandoItemId id) {
 }
 
 RandoItemId GetItemIdFromDisplayName(const char* name) {
+    const auto clockAlias = GetItemIdFromName(name);
+    if (clockAlias != RI_UNKNOWN) return clockAlias;
     if (!name)
         return RI_UNKNOWN;
     static const std::unordered_map<std::string, RandoItemId> inv = [] {
@@ -421,6 +525,18 @@ u8 GetIconForZMessage(RandoItemId randoItemId) {
 
 const char* GetIconTexturePath(RandoItemId randoItemId) {
     switch (randoItemId) {
+        case RI_BOOTS_IRON: return "__OTR__@oot:textures/icon_item_static/gItemIconBootsIronTex";
+        case RI_BOOTS_HOVER: return "__OTR__@oot:textures/icon_item_static/gItemIconBootsHoverTex";
+        case RI_TUNIC_GORON: return "__OTR__@oot:textures/icon_item_static/gItemIconTunicGoronTex";
+        case RI_TUNIC_ZORA: return "__OTR__@oot:textures/icon_item_static/gItemIconTunicZoraTex";
+        case RI_FARORES_WIND: return "__OTR__@oot:textures/icon_item_static/gItemIconFaroresWindTex";
+        case RI_DINS_FIRE: return "__OTR__@oot:textures/icon_item_static/gItemIconDinsFireTex";
+        case RI_NAYRUS_LOVE: return "__OTR__@oot:textures/icon_item_static/gItemIconNayrusLoveTex";
+        case RI_PROGRESSIVE_OCARINA:
+            return GetIconTexturePath(Rando::ConvertItem(randoItemId));
+        case RI_OCARINA_FAIRY:
+            return (const char*)gItemIcons[ITEM_OCARINA_FAIRY];
+
         case RI_BOMBCHU:
         case RI_BOMBCHU_5:
             return (const char*)gItemIcons[ITEM_BOMBCHU];
@@ -476,6 +592,65 @@ const char* GetIconTexturePath(RandoItemId randoItemId) {
         case RI_SOUL_BOSS_TWINMOLD:
             return (const char*)gItemIcons[ITEM_REMAINS_TWINMOLD];
         case RI_SOUL_BOSS_MAJORA:
+        case RI_SOUL_ANIMAL_BUTTERFLY:
+        case RI_SOUL_ANIMAL_COW:
+        case RI_SOUL_ANIMAL_CUCCO:
+        case RI_SOUL_ANIMAL_DOG:
+        case RI_SOUL_MISC_BUSINESS_SCRUB:
+        case RI_SOUL_MISC_GS:
+        case RI_SOUL_NPC_ANJU:
+        case RI_SOUL_NPC_AROMA:
+        case RI_SOUL_NPC_ASTRONOMER:
+        case RI_SOUL_NPC_BANKER:
+        case RI_SOUL_NPC_BAZAAR_SHOPKEEPER:
+        case RI_SOUL_NPC_BEAN_SALESMAN:
+        case RI_SOUL_NPC_BIGGORON:
+        case RI_SOUL_NPC_BLACKSMITHS:
+        case RI_SOUL_NPC_BOMBCHU_BOWLING_LADY:
+        case RI_SOUL_NPC_BOMBCHU_SHOPKEEPER:
+        case RI_SOUL_NPC_BOMBERS:
+        case RI_SOUL_NPC_BUTLER_DEKU:
+        case RI_SOUL_NPC_CARPENTERS:
+        case RI_SOUL_NPC_CARPET_MAN:
+        case RI_SOUL_NPC_CHEST_GAME_OWNER:
+        case RI_SOUL_NPC_CITIZEN:
+        case RI_SOUL_NPC_COMPOSER_BROS:
+        case RI_SOUL_NPC_DAMPE:
+        case RI_SOUL_NPC_DEKU_KING:
+        case RI_SOUL_NPC_DEKU_PRINCESS:
+        case RI_SOUL_NPC_DOG_LADY:
+        case RI_SOUL_NPC_FISHING_POND_OWNER:
+        case RI_SOUL_NPC_GORMAN:
+        case RI_SOUL_NPC_GORON:
+        case RI_SOUL_NPC_GORON_CHILD:
+        case RI_SOUL_NPC_GORON_ELDER:
+        case RI_SOUL_NPC_GORON_SHOPKEEPER:
+        case RI_SOUL_NPC_GROG:
+        case RI_SOUL_NPC_GURU_GURU:
+        case RI_SOUL_NPC_HONEY_DARLING:
+        case RI_SOUL_NPC_KAFEI:
+        case RI_SOUL_NPC_KEATON:
+        case RI_SOUL_NPC_KOUME_KOTAKE:
+        case RI_SOUL_NPC_MALON:
+        case RI_SOUL_NPC_MAYOR_DOTOUR:
+        case RI_SOUL_NPC_MEDIGORON:
+        case RI_SOUL_NPC_MOON_CHILDREN:
+        case RI_SOUL_NPC_OLD_HAG:
+        case RI_SOUL_NPC_PLAYGROUND_SCRUBS:
+        case RI_SOUL_NPC_POE_COLLECTOR:
+        case RI_SOUL_NPC_ROOFTOP_MAN:
+        case RI_SOUL_NPC_RUTO:
+        case RI_SOUL_NPC_SCIENTIST:
+        case RI_SOUL_NPC_SHOOTING_GALLERY_OWNER:
+        case RI_SOUL_NPC_TALON:
+        case RI_SOUL_NPC_THIEVES:
+        case RI_SOUL_NPC_TINGLE:
+        case RI_SOUL_NPC_TOILET_HAND:
+        case RI_SOUL_NPC_TOTO:
+        case RI_SOUL_NPC_TOURIST_CENTER:
+        case RI_SOUL_NPC_ZORA:
+        case RI_SOUL_NPC_ZORA_MUSICIANS:
+        case RI_SOUL_NPC_ZORA_SHOPKEEPER:
         case RI_SOUL_ENEMY_ALIEN:
         case RI_SOUL_ENEMY_ARMOS:
         case RI_SOUL_ENEMY_BAD_BAT:
@@ -522,6 +697,12 @@ const char* GetIconTexturePath(RandoItemId randoItemId) {
         case RI_SOUL_ENEMY_WALLMASTER:
         case RI_SOUL_ENEMY_WART:
         case RI_SOUL_ENEMY_WIZROBE:
+        case RI_SOUL_BOSS_IGOS:
+        case RI_SOUL_ENEMY_BIO_BABA:
+        case RI_SOUL_ENEMY_FLOORMASTER:
+        case RI_SOUL_ENEMY_FLYING_POT:
+        case RI_SOUL_ENEMY_REAL_BOMBCHU:
+        case RI_SOUL_ENEMY_SKULLWALLTULA:
         case RI_SOUL_ENEMY_WOLFOS:
             return (const char*)gDungeonMapSkullTex;
         case RI_FROG_BLUE:
@@ -549,6 +730,9 @@ const char* GetIconTexturePath(RandoItemId randoItemId) {
             return (const char*)gItemIconTingleMapTex;
         case RI_SKELETON_KEY:
             return (const char*)gItemIcons[ITEM_KEY_SMALL];
+        case RI_TRIFORCE_POWER:
+        case RI_TRIFORCE_COURAGE:
+        case RI_TRIFORCE_WISDOM:
         case RI_TRIFORCE_PIECE:
             return (const char*)gTriforcePieceTex;
         case RI_OCARINA_BUTTON_A:
@@ -668,7 +852,7 @@ const std::map<RandoItemId, std::vector<std::string>> fakeItemNames = {
     { RI_OCARINA_BUTTON_C_RIGHT, { "C East Button", "C Wright Button", "Play Button" } },
     { RI_OCARINA_BUTTON_C_LEFT, { "C West Button", "Sea Left Button", "C Lift Button", "Rewind Button" } },
     { RI_OCARINA_BUTTON_C_UP, { "C North Button", "C App Button", "Sup Button" } },
-    { RI_OCARINA, { "Fairy Ocarina", "Flute", "Majora's Ocarina" } },
+    { RI_OCARINA, { "Flute", "Majora's Ocarina" } },
     { RI_PENDANT_OF_MEMORIES, { "Necklace of Memories", "Forget-Me-Not" } },
     { RI_PICTOGRAPH_BOX, { "Camera", "Gallery Device" } },
     { RI_POWDER_KEG, { "Giant Bomb", "Powder Barrel" } },
@@ -733,6 +917,19 @@ std::vector<std::string> GetTrickNames(RandoItemId id) {
 }
 #endif
 
+// Deliberately separate from GetItemName: seed generation, tracker refreshes and vague area
+// hints may inspect an item name without actually telling the player which check contains it.
+std::string GetRevealedItemName(RandoItemId randoItemId, bool includeArticle, RandoCheckId randoCheckId,
+                                bool livePreview) {
+#ifdef COMBO_BUILD
+    const auto shown = randoItemId == RI_TRAP ? Rando::CurrentTrapItem(randoCheckId) : randoItemId;
+    Rando::CheckTracker::RecordSeenItem(randoCheckId, shown, 2);
+    return GetItemName(randoItemId, includeArticle, randoCheckId, livePreview);
+#else
+    return GetItemName(randoItemId, includeArticle, randoCheckId);
+#endif
+}
+
 std::string GetItemName(RandoItemId randoItemId, bool includeArticle, RandoCheckId randoCheckId
 #ifdef COMBO_BUILD
                         ,
@@ -784,14 +981,16 @@ std::string GetItemName(RandoItemId randoItemId, bool includeArticle, RandoCheck
         RandoItemId trappedItemId = Rando::CurrentTrapItem(randoCheckId);
         std::string fakeItemName;
         auto fakeNames = fakeItemNames.find(trappedItemId);
-        if (fakeNames != fakeItemNames.end()) {
+        if (fakeNames != fakeItemNames.end() && !fakeNames->second.empty()) {
             fakeItemName = fakeNames->second[Ship_Random(0, fakeNames->second.size())];
         } else {
-            // Fallback: Double a random letter to fool the player
+            // Fallback: start with the disguise, then double a letter (never index an empty string).
+            fakeItemName = Rando::StaticData::Items[trappedItemId].name;
+            if (fakeItemName.empty()) return result;
             auto letterIndex = Ship_Random(0, fakeItemName.length());
             char letterToDouble = fakeItemName[letterIndex];
             // But not spaces
-            if (letterToDouble == ' ') {
+            if (letterToDouble == ' ' && letterIndex + 1 < fakeItemName.size()) {
                 letterIndex++;
                 letterToDouble = fakeItemName[letterIndex];
             }

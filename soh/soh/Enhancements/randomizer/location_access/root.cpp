@@ -28,7 +28,13 @@ void RegionTable_Init_Root() {
         LOCATION(RC_SONG_FROM_IMPA,     ctx->GetOption(RSK_STARTING_ZELDAS_LETTER) && !ctx->GetOption(RSK_SHUFFLE_ZELDAS_LETTER)),
         LOCATION(RC_HC_MALON_EGG,       ctx->GetOption(RSK_SHUFFLE_WEIRD_EGG).Is(RO_WEIRD_EGG_SKIP_TALON)),
         LOCATION(RC_HC_ZELDAS_LETTER,   ctx->GetOption(RSK_STARTING_ZELDAS_LETTER) && !ctx->GetOption(RSK_SHUFFLE_ZELDAS_LETTER)),
+#ifndef COMBO_BUILD
         LOCATION(RC_TOT_MASTER_SWORD,   (bool)ctx->GetOption(RSK_SELECTED_STARTING_AGE).Is(RO_AGE_ADULT)),
+#else
+        // OoTMM transformed fortress-open world puts the fixed card at SPAWN.
+        // The Master Sword remains at its actual child/door-gated pedestal.
+        LOCATION(RC_TH_FREED_CARPENTERS, ctx->GetOption(RSK_GERUDO_FORTRESS).Is(RO_GF_CARPENTERS_FREE)),
+#endif
     }, {
         //Exits
         ENTRANCE(RR_ROOT_EXITS, true),

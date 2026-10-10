@@ -1,0 +1,8 @@
+<Root>
+  <File Name="adult_mask_icon.bin" OutName="combo_adult_mask_icons" Segment="6" Game="MM">
+    <Texture Name="gComboAdultMaskIconTex" Format="rgba32" Width="32" Height="32" Offset="0x0" />
+  </File>
+  <File Name="adult_mask_text.bin" OutName="combo_adult_mask_names" Segment="6" Game="MM">
+    <Texture Name="gComboAdultMaskNameTex" Format="ia4" Width="128" Height="16" Offset="0x0" />
+  </File>
+</Root>

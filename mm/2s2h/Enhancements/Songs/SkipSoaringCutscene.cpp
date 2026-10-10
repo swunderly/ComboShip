@@ -6,6 +6,9 @@
 extern "C" {
 #include "variables.h"
 #include "overlays/actors/ovl_En_Test7/z_en_test7.h"
+#ifdef COMBO_BUILD
+int Combo_MMSongWarp(PlayState*, int);
+#endif
 }
 
 #define CVAR_NAME "gEnhancements.Songs.SkipSoaringCutscene"
@@ -18,6 +21,15 @@ static void SkipSoaringCutscene(Actor* actor, bool* should) {
     }
 
     *should = false;
+
+#ifdef COMBO_BUILD
+    // Resolve the same seed route as EnTest7_WarpCsWarp. The fast path must
+    // not silently replace mixed/cross-game owl destinations with vanilla ones.
+    if (gPlayState->sceneId != SCENE_SECOM &&
+        Combo_MMSongWarp(gPlayState, ocarinaMode - OCARINA_MODE_WARP_TO_GREAT_BAY_COAST)) {
+        return;
+    }
+#endif
 
     if (gPlayState->sceneId == SCENE_SECOM) {
         gPlayState->nextEntrance = ENTRANCE(IKANA_CANYON, 6);

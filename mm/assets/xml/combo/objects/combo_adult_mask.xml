@@ -1,0 +1,12 @@
+<Root>
+  <File Name="object_gi_maskadult.zobj" OutName="combo_adult_mask_gi" Segment="6" Game="MM">
+    <DList Name="gComboAdultMaskGiOpaqueDL" Offset="0x9B0" />
+    <DList Name="gComboAdultMaskGiTranslucentDL" Offset="0xB90" />
+  </File>
+  <File Name="object_mask_adult.zobj" OutName="combo_adult_mask_transform" Segment="10" Game="MM">
+    <DList Name="gComboAdultMaskTransformDL" Offset="0x900" />
+  </File>
+  <File Name="adult_mask_equipment_standalone.zobj" OutName="combo_adult_mask_equipment" Segment="10" Game="MM">
+    <DList Name="gComboAdultMaskEquipmentDL" Offset="0x920" />
+  </File>
+</Root>

@@ -26,9 +26,12 @@ endif()
 # ─── comboui.dll: combo-owned unified settings menu (links libultraship + ImGui) ───
 set(COMBOUI_SOURCES
     gui/ComboMenu.cpp
+    gui/ComboRandomizerProfiles.cpp
     gui/ComboMenuModel.cpp
     gui/ComboWidgetRender.cpp
     gui/ComboResolutionEditor.cpp
+    gui/ComboHudLayout.cpp
+    gui/ComboTricks.cpp
     gui/ComboWidgetStyle.cpp
     gui/ComboExtractScreen.cpp
     gui/ComboSettingsImportScreen.cpp
@@ -40,6 +43,8 @@ set(COMBOUI_SOURCES
     gui/ComboNotesWindow.cpp
     gui/ComboHintTracker.cpp
     gui/ComboTimersWindow.cpp
+    gui/ComboTrackerControls.cpp
+    gui/ComboCheckTracker.cpp
     gui/ComboCosmeticsSync.cpp
 )
 add_library(comboui SHARED ${COMBOUI_SOURCES})
@@ -67,6 +72,19 @@ if (NOT MSVC)
     target_link_libraries(comboui PRIVATE ${CMAKE_DL_LIBS}) # Combo_ResolveSym uses dlsym
 endif()
 target_compile_definitions(comboui PRIVATE COMBO_BUILD)
+
+# The Android About page uses the same public version as its APK. This does not
+# change COMBO_RELEASE_VERSION, which governs upstream save compatibility.
+if(ANDROID)
+    set(_combo_android_gradle "${CMAKE_SOURCE_DIR}/ComboAndroid/app/build.gradle")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_combo_android_gradle}")
+    file(STRINGS "${_combo_android_gradle}" _combo_android_version_line REGEX "^[ \t]*versionName[ \t]+'[^']+'")
+    string(REGEX MATCH "versionName[ \t]+'([^']+)'" _combo_android_version_match "${_combo_android_version_line}")
+    if(NOT _combo_android_version_match)
+        message(FATAL_ERROR "Cannot read Android versionName for the About page")
+    endif()
+    target_compile_definitions(comboui PRIVATE COMBO_ANDROID_APP_VERSION="${CMAKE_MATCH_1}")
+endif()
 target_include_directories(comboui PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/menu
@@ -84,7 +102,19 @@ set(COMBO_SOURCES
 )
 
 # Create executable
-add_executable(ComboShip ${COMBO_SOURCES})
+if(ANDROID)
+    add_library(ComboShip SHARED ${COMBO_SOURCES}
+        ${CMAKE_SOURCE_DIR}/ComboAndroid/app/src/main/cpp/AndroidEntry.cpp
+        ${CMAKE_SOURCE_DIR}/ComboAndroid/app/src/main/cpp/RuntimePaths.cpp)
+    set_target_properties(ComboShip PROPERTIES OUTPUT_NAME comboship)
+    set_target_properties(comboui PROPERTIES PREFIX "lib")
+    target_link_libraries(ComboShip PRIVATE libultraship android log)
+    target_link_options(ComboShip PRIVATE "-Wl,-z,global")
+    target_link_options(libultraship PRIVATE "-Wl,-z,global")
+    target_include_directories(ComboShip PRIVATE ${CMAKE_SOURCE_DIR}/ComboAndroid/app/src/main/cpp)
+else()
+    add_executable(ComboShip ${COMBO_SOURCES})
+endif()
 
 # Portable relative-include fix: MSVC VS generator implicitly adds the source file's directory,
 # but Ninja/Unix builds do not. Explicitly add the combo source dir so that includes like
@@ -156,7 +186,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         target_link_options(ComboShip PRIVATE
             $<$<CONFIG:Release>:/SUBSYSTEM:WINDOWS;/ENTRY:mainCRTStartup>)
     endif()
-else()
+elseif(NOT ANDROID)
     # ComboShip Linux/macOS: the games' shared objects land in their own build dirs; mirror the
     # Windows single-deploy-dir layout by symlinking them beside the launcher, whose loader dlopens
     # ./libsoh.so etc. from its own directory (cwd == exe dir at runtime). Symlinks, not copies:
@@ -184,6 +214,7 @@ endif()
     # fails on ("Raw data size: 0x0", reached EOF). Clearing makes the source tree authoritative each
     # build. (The user's ROM/port archives live in the dir root, NOT under assets/, so this is safe.)
     # See docs/merges/2026-06-20.md.
+    if(NOT ANDROID)
     add_custom_command(TARGET ComboShip POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E rm -rf $<TARGET_FILE_DIR:ComboShip>/assets
         COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -220,6 +251,8 @@ endif()
     else()
         message(STATUS "ComboShip: mm/2ship.o2r not found — skipping .o2r deploy (run Generate2ShipOtr to produce it).")
     endif()
+
+    endif() # NOT ANDROID: Android assets are staged by stage_runtime.py.
 
 # Install
 install(TARGETS ComboShip DESTINATION . COMPONENT combo)

@@ -124,7 +124,7 @@ uint8_t ObjKibako2_RandomizerHoldsItem(ObjKibako2* crateActor, PlayState* play) 
     }
 
     RandomizerCheck rc = crateIdentity->randomizerCheck;
-    uint8_t isDungeon = Rando::StaticData::GetLocation(rc)->IsDungeon();
+    uint8_t isDungeon = Rando::StaticData::GetLocation(rc)->IsDungeonForCollectibleShuffle();
     auto crateSetting = RAND_GET_OPTION(RSK_SHUFFLE_CRATES);
 
     // Don't pull randomized item if crate isn't randomized or is already checked
@@ -144,7 +144,7 @@ uint8_t ObjKibako_RandomizerHoldsItem(ObjKibako* smallCrateActor, PlayState* pla
     }
 
     RandomizerCheck rc = crateIdentity->randomizerCheck;
-    uint8_t isDungeon = Rando::StaticData::GetLocation(rc)->IsDungeon();
+    uint8_t isDungeon = Rando::StaticData::GetLocation(rc)->IsDungeonForCollectibleShuffle();
     auto crateSetting = RAND_GET_OPTION(RSK_SHUFFLE_CRATES);
 
     // Don't pull randomized item if crate isn't randomized or is already checked

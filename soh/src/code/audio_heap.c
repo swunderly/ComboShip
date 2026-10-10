@@ -1,5 +1,8 @@
 #include <libultraship/libultra.h>
 #include "global.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/CrossWarp/CrossWarpAudio.h"
+#endif
 
 void AudioHeap_InitSampleCaches(u32 persistentSize, u32 temporarySize);
 SampleCacheEntry* AudioHeap_AllocTemporarySampleCacheEntry(size_t size);
@@ -563,6 +566,10 @@ void* AudioHeap_AllocCached(s32 tableType, ptrdiff_t size, s32 cache, s32 id) {
 
 void* AudioHeap_SearchCaches(s32 tableType, s32 cache, s32 id) {
     void* ret;
+#ifdef COMBO_BUILD
+    ret = Combo_SOHWarpAudioCache(tableType, id);
+    if (ret != NULL) return ret;
+#endif
 
     // Always search the permanent cache in addition to the regular ones.
     ret = AudioHeap_SearchPermanentCache(tableType, id);

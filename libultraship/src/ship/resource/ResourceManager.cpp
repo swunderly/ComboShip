@@ -1,6 +1,7 @@
 #include "ship/resource/ResourceManager.h"
 #include <spdlog/spdlog.h>
 #include "ship/resource/File.h"
+#include "ship/resource/CrossRMRegistry.h"
 #include "ship/resource/archive/Archive.h"
 #include <algorithm>
 #include <thread>
@@ -104,6 +105,22 @@ std::shared_ptr<IResource> ResourceManager::LoadResourceProcess(const ResourceId
     if (OtrSignatureCheck(identifier.Path.c_str())) {
         const auto newFilePath = identifier.Path.substr(7);
         return LoadResourceProcess({ newFilePath, identifier.Owner, identifier.Parent }, false, initData);
+    }
+
+    // Explicit foreign assets retain their owning game's factory and cache. This also
+    // covers textures loaded directly by the HUD or GUI, outside a display-list bracket.
+    if (identifier.Path.starts_with('@')) {
+        const auto colon = identifier.Path.find(':');
+        if (colon == std::string::npos || colon == 1 || colon + 1 == identifier.Path.size()) {
+            SPDLOG_ERROR("Invalid cross-game resource path: {}", identifier.Path);
+            return nullptr;
+        }
+        auto owner = CrossRMRegistry::Get(identifier.Path.substr(1, colon - 1));
+        if (!owner) {
+            SPDLOG_ERROR("No owner registered for cross-game resource: {}", identifier.Path);
+            return nullptr;
+        }
+        return owner->LoadResourceProcess(identifier.Path.substr(colon + 1), loadExact, initData);
     }
 
     // Cache the starts_with check to avoid repeated string comparisons

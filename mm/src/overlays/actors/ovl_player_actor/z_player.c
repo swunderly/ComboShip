@@ -5,6 +5,20 @@
  */
 
 #include "global.h"
+#ifdef COMBO_BUILD
+extern u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+extern int Combo_MMOrdinarySourceConfigured(u16 entrance);
+#endif
+#ifdef COMBO_BUILD
+#include "2s2h/Rando/FaroresWind.h"
+u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+void Combo_MMFaroreUseItem(Player*, PlayState*);
+void Combo_MMFaroreStart(Player*, PlayState*);
+void Combo_MMFaroreAfterInit(Player*, PlayState*);
+void Combo_MMSpellUseItem(Player*, PlayState*,int);
+void Combo_MMSpellStart(Player*, PlayState*,int);
+void Combo_MMSpellAfterInit(Player*, PlayState*);
+#endif
 #include "z64horse.h"
 #include "z64malloc.h"
 #include "z64quake.h"
@@ -1791,7 +1805,43 @@ void Player_AnimSfx_PlayFloor(Player* this, u16 sfxId) {
     Player_PlaySfx(this, Player_GetFloorSfx(this, sfxId));
 }
 
+#ifdef COMBO_BUILD
+int Combo_MM_AdultResourcesReady(void);
+#endif
+#ifdef COMBO_BUILD
+#define COMBO_HOVER_TIMER(p) ((p)->unk_734[0])
+s32 Combo_MM_GetCustomBoots(Player* player) {
+    if(!gSaveContext.save.shipSaveInfo.adultMm.enabled||!Combo_MM_AdultResourcesReady()||player->actor.id!=ACTOR_PLAYER||player->transformation!=PLAYER_FORM_HUMAN)return -1;
+    return player->currentBoots==6?1:player->currentBoots==0?2:-1;
+}
+// Exact pinned Player_IsFloorSlippery predicate, including its literal (1 < 27).
+static s32 Combo_MM_IsFloorSlippery(Player* player,s32 floorType){
+    if(Combo_MM_GetCustomBoots(player)==2 && !(player->stateFlags1 & ((1 < 27) | (1 << 29))))return 1;
+    return (player->actor.bgCheckFlags&BGCHECKFLAG_GROUND)&&floorType==FLOOR_TYPE_5&&player->currentBoots<PLAYER_BOOTS_ZORA_UNDERWATER;
+}
+static f32 Combo_MM_EnvironmentWind(PlayState* play){return Combo_MM_GetCustomBoots(GET_PLAYER(play))==1?0.0f:play->envCtx.windSpeed;}
+static s32 Combo_MM_IsBeingPushed(Player* player,PlayState* play){return player->pushedSpeed!=0.0f||(Combo_MM_GetCustomBoots(player)!=1&&(player->windSpeed!=0.0f||play->envCtx.windSpeed>=50.0f));}
+static s32 Combo_MM_IsGoronOrGoronTunic(Player* player){return player->transformation==PLAYER_FORM_GORON||(gSaveContext.save.shipSaveInfo.adultMm.enabled&&Combo_MM_AdultResourcesReady()&&gSaveContext.save.shipSaveInfo.adultMm.tunic==2);}
+static s32 Combo_MM_ShouldTakeFloorDamage(Player* player,s32 wall,s32 floorType,s32 floorDamage){
+    if(floorDamage||wall||player->actor.depthInWater>0.0f){player->floorTypeTimer=0;player->actor.colChkInfo.damage=4;return 1;}
+    if(floorType<0||floorType>1)return 0;
+    const u8 delays[2]={120,60};
+    if(gSaveContext.save.shipSaveInfo.adultMm.tunic!=2||player->floorTypeTimer>=delays[floorType]){player->floorTypeTimer=0;player->actor.colChkInfo.damage=4;return 1;}
+    return 0;
+}
+
+#endif
+
+#ifdef COMBO_BUILD
+#define COMBO_EFFECTIVE_WIND(play) Combo_MM_EnvironmentWind(play)
+#else
+#define COMBO_EFFECTIVE_WIND(play) ((play)->envCtx.windSpeed)
+#endif
+
 u16 Player_GetFloorSfxByAge(Player* this, u16 sfxId) {
+#ifdef COMBO_BUILD
+    if(Combo_MM_GetCustomBoots(this)==1&&(sfxId==0x800||sfxId==0x810||sfxId==0x820))return 0x28DC;
+#endif
     return sfxId + this->floorSfxOffset + this->ageProperties->surfaceSfxIdOffset;
 }
 
@@ -3026,7 +3076,7 @@ s8 sItemItemActions[] = {
     PLAYER_IA_BOW_FIRE,                // ITEM_ARROW_FIRE,
     PLAYER_IA_BOW_ICE,                 // ITEM_ARROW_ICE,
     PLAYER_IA_BOW_LIGHT,               // ITEM_ARROW_LIGHT,
-    PLAYER_IA_PICTOGRAPH_BOX,          // ITEM_OCARINA_FAIRY,
+    PLAYER_IA_OCARINA,                 // ITEM_OCARINA_FAIRY,
     PLAYER_IA_BOMB,                    // ITEM_BOMB,
     PLAYER_IA_BOMBCHU,                 // ITEM_BOMBCHU,
     PLAYER_IA_DEKU_STICK,              // ITEM_DEKU_STICK,
@@ -3104,7 +3154,18 @@ s8 sItemItemActions[] = {
     PLAYER_IA_SWORD_TWO_HANDED,        // ITEM_SWORD_DEITY,
 };
 
+// Pinned custom Adult Mask identity/action: items.h 0xbc, asm_defs.h 0x5b.
+int Combo_MM_AdultMaskAction(void);
+s32 AdultMask_TryUse(Player* player, PlayState* play, s32 itemAction);
+void AdultMask_StartCsItem(Player* player, PlayState* play);
+void AdultMask_AfterStart(Player* player);
 PlayerItemAction Player_ItemToItemAction(Player* this, ItemId item) {
+#ifdef COMBO_BUILD
+    if (item == ITEM_COMBO_FARORES_WIND) return PLAYER_IA_COMBO_FARORES_WIND;
+    if (item == ITEM_COMBO_DINS_FIRE) return PLAYER_IA_COMBO_DINS_FIRE;
+    if (item == ITEM_COMBO_NAYRUS_LOVE) return PLAYER_IA_COMBO_NAYRUS_LOVE;
+#endif
+    if ((int)item == 0xbc) return (PlayerItemAction)Combo_MM_AdultMaskAction();
     if (item >= ITEM_FD) {
         return PLAYER_IA_NONE;
     } else if (item == ITEM_FC) {
@@ -3202,6 +3263,11 @@ PlayerUpperActionFunc sItemActionUpdateFuncs[PLAYER_IA_MAX] = {
     Player_UpperAction_0,          // PLAYER_IA_MASK_ZORA
     Player_UpperAction_0,          // PLAYER_IA_MASK_DEKU
     Player_UpperAction_0,          // PLAYER_IA_LENS_OF_TRUTH
+#ifdef COMBO_BUILD
+    Player_UpperAction_0, // PLAYER_IA_COMBO_FARORES_WIND
+    Player_UpperAction_0, // PLAYER_IA_COMBO_NAYRUS_LOVE
+    Player_UpperAction_0, // PLAYER_IA_COMBO_DINS_FIRE
+#endif
 };
 
 typedef void (*PlayerItemActionInitFunc)(PlayState*, Player*);
@@ -3290,6 +3356,11 @@ PlayerItemActionInitFunc sItemActionInitFuncs[PLAYER_IA_MAX] = {
     Player_InitDefaultIA,       // PLAYER_IA_MASK_ZORA
     Player_InitDefaultIA,       // PLAYER_IA_MASK_DEKU
     Player_InitDefaultIA,       // PLAYER_IA_LENS_OF_TRUTH
+#ifdef COMBO_BUILD
+    Player_InitDefaultIA, // PLAYER_IA_COMBO_FARORES_WIND
+    Player_InitDefaultIA, // PLAYER_IA_COMBO_NAYRUS_LOVE
+    Player_InitDefaultIA, // PLAYER_IA_COMBO_DINS_FIRE
+#endif
 };
 
 void Player_InitDefaultIA(PlayState* play, Player* this) {
@@ -3490,7 +3561,8 @@ void Player_InitItemAction(PlayState* play, Player* this, PlayerItemAction itemA
     this->unk_B0C = 0.0f;
     this->unk_B28 = 0;
 
-    sItemActionInitFuncs[itemAction](play, this);
+    // Pinned custom-mask initialization bypasses the native indexed action table.
+    if ((int)itemAction != Combo_MM_AdultMaskAction()) sItemActionInitFuncs[itemAction](play, this);
     Player_SetModelGroup(this, this->modelGroup);
 }
 
@@ -4192,7 +4264,9 @@ void func_808309CC(PlayState* play, Player* this) {
         Player_FinishItemChange(play, this);
     }
 
-    Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
+    // Custom Adult Mask preserves its current upper action, as pinned Player.c does.
+    if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
+        Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
     this->unk_ACC = 0;
     this->idleType = PLAYER_IDLE_DEFAULT;
     Player_DetachHeldActor(play, this);
@@ -4623,8 +4697,13 @@ void func_80831944(PlayState* play, Player* this) {
     // #endregion
 }
 
+#include "ComboAdultGearUseNative.h"
+
 void Player_UseItem(PlayState* play, Player* this, ItemId item) {
+    if(Combo_MM_AdultTryUseGear(play,this,item))return;
     PlayerItemAction itemAction = Player_ItemToItemAction(this, item);
+
+    if (AdultMask_TryUse(this, play, itemAction)) return;
 
     if ((((this->heldItemAction == this->itemAction) &&
           (!(this->stateFlags1 & PLAYER_STATE1_400000) ||
@@ -4642,6 +4721,11 @@ void Player_UseItem(PlayState* play, Player* this, ItemId item) {
         s32 sp58;
         f32 sp54;
         PlayerExplosive explosiveType;
+#ifdef COMBO_BUILD
+        if (item == ITEM_COMBO_FARORES_WIND) { Combo_MMFaroreUseItem(this, play); return; }
+        if (item == ITEM_COMBO_NAYRUS_LOVE) { Combo_MMSpellUseItem(this, play,1); return; }
+        if (item == ITEM_COMBO_DINS_FIRE) { Combo_MMSpellUseItem(this, play,2); return; }
+#endif
 
         if (var_v1 || (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_TALK) && (itemAction != PLAYER_IA_NONE)) ||
             (itemAction == PLAYER_IA_OCARINA) ||
@@ -6272,7 +6356,12 @@ s32 func_80834600(Player* this, PlayState* play) {
         s32 var_v1_2;
         s32 pad48;
 
-        if ((sp58 < 0) || (!isSurfaceWallDamage && (this->transformation == PLAYER_FORM_GORON) &&
+        if ((sp58 < 0) || (!isSurfaceWallDamage &&
+#ifdef COMBO_BUILD
+                           Combo_MM_IsGoronOrGoronTunic(this) &&
+#else
+                           (this->transformation == PLAYER_FORM_GORON) &&
+#endif
                            !(this->actor.depthInWater > 0.0f))) {
             var_a1 = (this->actor.wallPoly != NULL) &&
                      SurfaceType_IsWallDamage(&play->colCtx, this->actor.wallPoly, this->actor.wallBgId);
@@ -6287,6 +6376,9 @@ s32 func_80834600(Player* this, PlayState* play) {
              (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (this->actor.depthInWater < -30.0f))) {
             func_80834534(play, this);
         } else {
+#ifdef COMBO_BUILD
+            if(gSaveContext.save.shipSaveInfo.adultMm.enabled&&Combo_MM_AdultResourcesReady()&&!Combo_MM_ShouldTakeFloorDamage(this,var_a1,sp58,isSurfaceWallDamage))goto label;
+#endif
             this->actor.colChkInfo.damage = 4;
             func_80833B18(play, this, (var_v1_2 == BGCHECK_SCENE) ? 0 : 1, 4.0f, 5.0f,
                           var_a1 ? this->actor.wallYaw : this->actor.shape.rot.y, 20);
@@ -6490,12 +6582,21 @@ u8 sReturnEntranceGroupIndices[] = {
 };
 
 // subfunction of OoT's func_80839034
+#ifdef COMBO_BUILD
+extern int Combo_MMGrottoExit(PlayState* play);
+extern int Combo_MMGrottoEnter(PlayState* play);
+#endif
 void func_808354A4(PlayState* play, s32 exitIndex, s32 arg2) {
     play->nextEntrance = play->setupExitList[exitIndex];
 
     if (play->nextEntrance == 0xFFFF) {
-        gSaveContext.respawnFlag = 4;
-        play->nextEntrance = gSaveContext.respawn[RESPAWN_MODE_UNK_3].entrance;
+#ifdef COMBO_BUILD
+        if (!Combo_MMGrottoExit(play))
+#endif
+        {
+            gSaveContext.respawnFlag = 4;
+            play->nextEntrance = gSaveContext.respawn[RESPAWN_MODE_UNK_3].entrance;
+        }
         play->transitionType = TRANS_TYPE_FADE_WHITE;
         gSaveContext.nextTransitionType = TRANS_TYPE_FADE_WHITE;
     } else if (play->nextEntrance >= 0xFE00) {
@@ -6510,6 +6611,10 @@ void func_808354A4(PlayState* play, s32 exitIndex, s32 arg2) {
             gSaveContext.respawnFlag = -2;
         }
 
+#ifdef COMBO_BUILD
+        if (!Combo_MMGrottoEnter(play))
+            play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+#endif
         gSaveContext.retainWeatherMode = true;
         Scene_SetExitFade(play);
     }
@@ -7651,6 +7756,9 @@ void func_8083827C(Player* this, PlayState* play) {
             return;
         }
 
+#ifdef COMBO_BUILD
+        if(Combo_MM_GetCustomBoots(this)==2&&COMBO_HOVER_TIMER(this)!=0){this->actor.velocity.y=1.0f;sPrevFloorProperty=FLOOR_PROPERTY_9;return;}
+#endif
         temp_t0 = BINANG_SUB(this->yaw, this->actor.shape.rot.y);
         Player_SetAction(play, this, Player_Action_25, 1);
         func_8082DD2C(play, this);
@@ -7701,6 +7809,9 @@ void func_8083827C(Player* this, PlayState* play) {
     }
 }
 
+#ifdef COMBO_BUILD
+extern int Combo_MM_IsAdult(void);
+#endif
 s32 func_8083868C(PlayState* play, Player* this) {
     s32 camMode;
     Camera* camera;
@@ -7708,7 +7819,15 @@ s32 func_8083868C(PlayState* play, Player* this) {
     if (this->unk_AA5 == PLAYER_UNKAA5_3) {
         if (func_800B7118(this)) {
             if (this->transformation == PLAYER_FORM_HUMAN) {
+#ifdef COMBO_BUILD
+                // Pinned Player_GetItemCamMode: swimming Hookshot or Adult human uses Bow mode.
+                camMode = ((this->heldItemAction == PLAYER_IA_HOOKSHOT &&
+                            (this->stateFlags1 & PLAYER_STATE1_8000000)) ||
+                           (Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady()))
+                              ? CAM_MODE_BOWARROW : CAM_MODE_SLINGSHOT;
+#else
                 camMode = CAM_MODE_SLINGSHOT;
+#endif
             } else if (this->transformation == PLAYER_FORM_DEKU) {
                 camMode = CAM_MODE_DEKUSHOOT;
             } else {
@@ -7912,6 +8031,11 @@ u8 D_8085D1A4[PLAYER_IA_MAX] = {
     GI_MASK_ZORA,           // PLAYER_IA_MASK_ZORA
     GI_MASK_DEKU,           // PLAYER_IA_MASK_DEKU
     GI_LENS_OF_TRUTH,       // PLAYER_IA_LENS_OF_TRUTH
+#ifdef COMBO_BUILD
+    GI_NONE, // PLAYER_IA_COMBO_FARORES_WIND
+    GI_NONE, // PLAYER_IA_COMBO_NAYRUS_LOVE
+    GI_NONE, // PLAYER_IA_COMBO_DINS_FIRE
+#endif
 };
 
 PlayerAnimationHeader* D_8085D1F8[] = {
@@ -7932,6 +8056,17 @@ s32 Player_ActionHandler_13(Player* this, PlayState* play) {
         }
         if (!Player_StartCsAction(play, this)) {
             if (this->unk_AA5 == PLAYER_UNKAA5_5) {
+#ifdef COMBO_BUILD
+                if (this->itemAction == PLAYER_IA_COMBO_FARORES_WIND) { Combo_MMFaroreStart(this, play); return true; }
+                if (this->itemAction == PLAYER_IA_COMBO_NAYRUS_LOVE) { Combo_MMSpellStart(this, play,1); return true; }
+                if (this->itemAction == PLAYER_IA_COMBO_DINS_FIRE) { Combo_MMSpellStart(this, play,2); return true; }
+#endif
+                // Pinned Player_StartCsItem custom Adult Mask branch precedes native masks.
+                if ((int)this->itemAction == Combo_MM_AdultMaskAction()) {
+                    AdultMask_StartCsItem(this, play);
+                    AdultMask_AfterStart(this);
+                    return true;
+                }
                 if ((this->itemAction >= PLAYER_IA_MASK_MIN) && (this->itemAction <= PLAYER_IA_MASK_MAX)) {
                     PlayerMask maskId = GET_MASK_FROM_IA(this->itemAction);
 
@@ -8775,8 +8910,16 @@ void func_8083A98C(Actor* thisx, PlayState* play2) {
                 gSaveContext.respawn[RESPAWN_MODE_DOWN].entrance = entrance;
             }
 
-            func_80169EFC(play);
-            gSaveContext.respawnFlag = -2;
+#ifdef COMBO_BUILD
+            if (Combo_MMOrdinarySourceConfigured(gSaveContext.respawn[RESPAWN_MODE_DOWN].entrance)) {
+                play->nextEntrance = Combo_MMOrdinaryExitOverride(gSaveContext.respawn[RESPAWN_MODE_DOWN].entrance);
+                play->transitionTrigger = TRANS_TRIGGER_START;
+            } else
+#endif
+            {
+                func_80169EFC(play);
+                gSaveContext.respawnFlag = -2;
+            }
             play->transitionType = TRANS_TYPE_CIRCLE;
         }
     }
@@ -11137,9 +11280,17 @@ void Player_StartMode_Owl(PlayState* play, Player* this) {
         Player_SetAction(play, this, Player_Action_Idle, 0);
         Player_Anim_PlayLoopMorph(play, this, D_8085BE84[PLAYER_ANIMGROUP_nwait][this->modelAnimType]);
         this->stateFlags1 |= PLAYER_STATE1_20000000;
-        this->stateFlags2 |= PLAYER_STATE2_20000000;
-        Actor_Spawn(&play->actorCtx, play, ACTOR_EN_TEST7, this->actor.world.pos.x, this->actor.world.pos.y,
-                    this->actor.world.pos.z, 0, 0, 0, ENTEST7_ARRIVE);
+#ifdef COMBO_BUILD
+        // Pinned OoTMM Player.S suppresses the Soaring arrival actor. Farore owns respawn8 presentation.
+        // EnTest7 would capture the NULL draw pointer installed by Combo_MMFaroreAfterInit.
+        if (gSaveContext.respawnFlag != 8) {
+#endif
+            this->stateFlags2 |= PLAYER_STATE2_20000000;
+            Actor_Spawn(&play->actorCtx, play, ACTOR_EN_TEST7, this->actor.world.pos.x, this->actor.world.pos.y,
+                        this->actor.world.pos.z, 0, 0, 0, ENTEST7_ARRIVE);
+#ifdef COMBO_BUILD
+        }
+#endif
     }
 }
 
@@ -11253,6 +11404,16 @@ Color_RGBA8 D_8085D338 = { 0, 0, 15, 100 };
 // sTireMarkOtherColor ?
 Color_RGBA8 D_8085D33C = { 0, 0, 0, 150 };
 
+#ifdef COMBO_BUILD
+extern int Combo_MM_IsAdult(void);
+extern int Combo_MM_AdultResourcesReady(void);
+extern void Combo_MM_ApplyAdultGearInventoryResources(int enabled);
+extern void Combo_MM_ApplyAdultOverlayAge(int adult);
+extern void Combo_MM_ApplyAdultModelTables(int adult);
+extern void Combo_MM_ApplyAdultGameplayKeep(PlayState* play,int adult);
+extern void Combo_MM_ApplyAdultMaskInventoryResources(int enabled);
+#endif
+
 void Player_Init(Actor* thisx, PlayState* play) {
     s32 pad;
     Player* this = (Player*)thisx;
@@ -11338,6 +11499,18 @@ void Player_Init(Actor* thisx, PlayState* play) {
         }
     }
 
+#ifdef COMBO_BUILD
+    // Commit exact human model/property resources before native equipment and skeleton init.
+    // Other forms retain their original tables; legacy saves remain native child MM.
+    {
+        int adult=Combo_MM_IsAdult()&&Combo_MM_AdultResourcesReady();
+        Combo_MM_ApplyAdultOverlayAge(adult);
+        Combo_MM_ApplyAdultModelTables(adult);
+        Combo_MM_ApplyAdultGameplayKeep(play,adult);
+        Combo_MM_ApplyAdultMaskInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady());
+        Combo_MM_ApplyAdultGearInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady());
+    }
+#endif
     this->ageProperties = &sPlayerAgeProperties[this->transformation];
 
     this->itemAction = PLAYER_IA_NONE;
@@ -11417,6 +11590,9 @@ void Player_Init(Actor* thisx, PlayState* play) {
     this->lightNode = LightContext_InsertLight(play, &play->lightCtx, &this->lightInfo);
     Play_AssignPlayerCsIdsFromScene(play, this->actor.csId);
 
+#ifdef COMBO_BUILD
+    Combo_MMFaroreBeforePlayerInit(play);
+#endif
     respawnFlag = gSaveContext.respawnFlag;
     if (respawnFlag != 0) {
         if (respawnFlag == -3) {
@@ -11512,6 +11688,10 @@ void Player_Init(Actor* thisx, PlayState* play) {
 
     Map_SetAreaEntrypoint(play);
     func_80841A50(play, this);
+#ifdef COMBO_BUILD
+    Combo_MMFaroreAfterInit(this, play);
+    Combo_MMSpellAfterInit(this, play);
+#endif
     this->unk_3CF = 0;
     R_PLAY_FILL_SCREEN_ON = 0;
 }
@@ -11783,7 +11963,7 @@ void Player_UpdateInterface(PlayState* play, Player* this) {
     }
 }
 
-s32 func_808430E0(Player* this) {
+static s32 Combo_MM_NativeFloorUpdate(Player* this) {
     if ((this->transformation == PLAYER_FORM_DEKU) && (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
         func_8083784C(this)) {
         this->actor.bgCheckFlags &= ~BGCHECKFLAG_GROUND;
@@ -11799,6 +11979,78 @@ s32 func_808430E0(Player* this) {
     this->floorPitchAlt = 0;
     sFloorPitchShape = 0;
     return true;
+}
+
+#ifdef COMBO_BUILD
+static void Combo_MM_IncrementFloorTypeTimer(Player* this, s32* sPlayerFloorTypePtr)
+{
+    if (this->prevFloorType == *sPlayerFloorTypePtr)
+    {
+        this->floorTypeTimer++;
+    }
+    else
+    {
+        this->prevFloorType = *sPlayerFloorTypePtr;
+        this->floorTypeTimer = 0;
+    }
+}
+
+s32 Combo_MM_UpdateHoverBoots(Player* this)
+{
+    s32* sPlayerFloorTypePtr=(s32*)&sPlayerFloorType;
+    s16* sFloorPitchShapePtr=&sFloorPitchShape;
+    s32 canHoverOnGround;
+
+    if (this->transformation == PLAYER_FORM_DEKU && this->actor.bgCheckFlags & BGCHECKFLAG_GROUND && func_8083784C(this))
+    {
+        this->actor.bgCheckFlags &= ~BGCHECKFLAG_GROUND;
+    }
+
+    if ((Combo_MM_GetCustomBoots(this) == 2) && (COMBO_HOVER_TIMER(this) != 0))
+    {
+        COMBO_HOVER_TIMER(this)--;
+    }
+    else
+    {
+        COMBO_HOVER_TIMER(this) = 0;
+    }
+
+    canHoverOnGround =
+        (Combo_MM_GetCustomBoots(this) == 2) &&
+        ((this->actor.depthInWater >= 0.0f) || (func_808340AC(*sPlayerFloorTypePtr) >= 0) || func_808340D4(*sPlayerFloorTypePtr));
+
+    if (canHoverOnGround && (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (COMBO_HOVER_TIMER(this) != 0))
+    {
+        this->actor.bgCheckFlags &= ~BGCHECKFLAG_GROUND;
+    }
+
+    if (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND)
+    {
+        if (!canHoverOnGround) {
+            COMBO_HOVER_TIMER(this) = 19;
+        }
+
+        Combo_MM_IncrementFloorTypeTimer(this, sPlayerFloorTypePtr);
+        return 0;
+    }
+
+    if (!(this->stateFlags1 & 0x8000000)) /* PLAYER_STATE1_8000000 // Swimming */
+    {
+        *sPlayerFloorTypePtr = 0; /* FLOOR_TYPE_0; */
+    }
+    this->floorPitch = this->floorPitchAlt = *sFloorPitchShapePtr = 0;
+
+    Combo_MM_IncrementFloorTypeTimer(this, sPlayerFloorTypePtr);
+
+    return 1;
+}
+#endif
+
+s32 func_808430E0(Player* this) {
+#ifdef COMBO_BUILD
+    if(gSaveContext.save.shipSaveInfo.adultMm.enabled&&Combo_MM_AdultResourcesReady())return Combo_MM_UpdateHoverBoots(this);
+#endif
+    return Combo_MM_NativeFloorUpdate(this);
 }
 
 /**
@@ -12425,8 +12677,14 @@ void func_80844784(PlayState* play, Player* this) {
     s16 temp_v0;
     f32 temp_fv0_2;
 
-    if ((this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (sPlayerFloorType == FLOOR_TYPE_5) &&
-        (this->currentBoots < PLAYER_BOOTS_ZORA_UNDERWATER)) {
+    if (
+#ifdef COMBO_BUILD
+        Combo_MM_IsFloorSlippery(this,sPlayerFloorType)
+#else
+        (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (sPlayerFloorType == FLOOR_TYPE_5) &&
+        (this->currentBoots < PLAYER_BOOTS_ZORA_UNDERWATER)
+#endif
+    ) {
         var_a3 = this->yaw;
         var_fv0 = this->speedXZ;
         temp_v0 = this->actor.world.rot.y - var_a3;
@@ -12458,7 +12716,13 @@ void func_80844784(PlayState* play, Player* this) {
     Actor_UpdateVelocityWithGravity(&this->actor);
     D_80862B3C = 0.0f;
     if ((gSaveContext.save.saveInfo.playerData.health != 0) &&
-        ((this->pushedSpeed != 0.0f) || (this->windSpeed != 0.0f) || (play->envCtx.windSpeed >= 50.0f)) &&
+        (
+#ifdef COMBO_BUILD
+        Combo_MM_IsBeingPushed(this,play)
+#else
+        ((this->pushedSpeed != 0.0f) || (this->windSpeed != 0.0f) || (play->envCtx.windSpeed >= 50.0f))
+#endif
+        ) &&
         (!Player_InCsMode(play)) &&
         !(this->stateFlags1 & (PLAYER_STATE1_4 | PLAYER_STATE1_2000 | PLAYER_STATE1_4000 | PLAYER_STATE1_200000)) &&
         !(this->stateFlags3 & PLAYER_STATE3_100) && (Player_Action_33 != this->actionFunc) &&
@@ -13106,7 +13370,13 @@ s32 Player_UpdateNoclip(Player* this, PlayState* play) {
     return true;
 }
 
+#ifdef COMBO_BUILD
+extern void Combo_MM_AdultUpdateVoiceRouting(Player* player);
+#endif
 void Player_Update(Actor* thisx, PlayState* play) {
+#ifdef COMBO_BUILD
+    Combo_MM_AdultUpdateVoiceRouting((Player*)thisx);
+#endif
     static Vec3f sDogSpawnPos;
     Player* this = (Player*)thisx;
     s32 dogParams;
@@ -13502,6 +13772,9 @@ void Player_Draw(Actor* thisx, PlayState* play) {
 }
 
 void Player_Destroy(Actor* thisx, PlayState* play) {
+#ifdef COMBO_BUILD
+    Combo_MMFaroreDestroyPointer(play);
+#endif
     Player* this = (Player*)thisx;
 
     Effect_Destroy(play, this->meleeWeaponEffectIndex[0]);
@@ -14165,6 +14438,8 @@ s32 Player_UpperAction_ChangeHeldItem(Player* this, PlayState* play) {
                                                                (this->heldItemAction != PLAYER_IA_DEKU_STICK) &&
                                                                (play->bButtonAmmoPlusOne == 0),
                                                            this))))) {
+        // Custom Adult Mask preserves its current upper action, as pinned Player.c does.
+    if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
         Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
         this->unk_ACC = 0;
         this->idleType = PLAYER_IDLE_DEFAULT;
@@ -14216,6 +14491,8 @@ s32 Player_UpperAction_4(Player* this, PlayState* play) {
 s32 Player_UpperAction_5(Player* this, PlayState* play) {
     sPlayerUseHeldItem = sPlayerHeldItemButtonIsHeldDown;
     if (sPlayerUseHeldItem || PlayerAnimation_Update(play, &this->skelAnimeUpper)) {
+        // Custom Adult Mask preserves its current upper action, as pinned Player.c does.
+    if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
         Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
         PlayerAnimation_PlayLoop(play, &this->skelAnimeUpper, D_8085BE84[PLAYER_ANIMGROUP_wait][this->modelAnimType]);
         this->idleType = PLAYER_IDLE_DEFAULT;
@@ -15531,7 +15808,13 @@ AnimSfxEntry D_8085D60C[] = {
 };
 
 void Player_Action_24(Player* this, PlayState* play) {
-    if ((this->transformation != PLAYER_FORM_GORON) && (this->actor.depthInWater <= 0.0f)) {
+    if (
+#ifdef COMBO_BUILD
+        !Combo_MM_IsGoronOrGoronTunic(this)
+#else
+        (this->transformation != PLAYER_FORM_GORON)
+#endif
+        && (this->actor.depthInWater <= 0.0f)) {
         if ((play->roomCtx.curRoom.environmentType == ROOM_ENV_HOT) || (sPlayerFloorType == FLOOR_TYPE_9) ||
             ((func_808340AC(sPlayerFloorType) >= 0) &&
              !SurfaceType_IsWallDamage(&play->colCtx, this->actor.floorPoly, this->actor.floorBgId))) {
@@ -21740,3 +22023,10 @@ s32 func_8085B930(PlayState* play, PlayerAnimationHeader* talkAnim, AnimationMod
                            PLAYER_ANIM_ADJUSTED_SPEED, 0.0f, Animation_GetLastFrame(talkAnim), animMode, -6.0f);
     return true;
 }
+
+#include "ComboFarorePlayer.inc.h"
+#include "ComboSpellPlayer.inc.h"
+
+#ifdef COMBO_BUILD
+#include "ComboAdultMaskNative.h"
+#endif

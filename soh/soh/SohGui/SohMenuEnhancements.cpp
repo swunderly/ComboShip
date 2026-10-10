@@ -1262,6 +1262,13 @@ void SohMenu::AddMenuEnhancements() {
             "Restores an unused animation of Saria when she says, \"Saria and Link will be friends forever.\""));
 
     AddWidget(path, "Glitch Restorations", WIDGET_SEPARATOR_TEXT);
+    AddWidget(path, "Shadow Door Unload", WIDGET_CVAR_CHECKBOX)
+        .CVar(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"))
+        .Options(CheckboxOptions().Tooltip(
+            "Recreates the Shadow Temple door unload after five full trips up and down the Graveyard stairs. "
+            "Resets when leaving the area; disabling restores the door on its next room reload. "
+            "This restores the behavior only. To allow seed logic to require it, enable Shadow Door Unload "
+            "under Randomizer / Tricks & glitches."));
     AddWidget(path, "Fish while Hovering", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_ENHANCEMENT("HoverFishing"))
         .Options(CheckboxOptions().Tooltip(
@@ -1287,7 +1294,10 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_ENHANCEMENT("EarlyEyeballFrog"))
         .Options(CheckboxOptions().Tooltip(
             "Restores a bug from NTSC 1.0/1.1 that allows you to obtain the eyeball frog from King Zora "
-            "instead of the Zora Tunic by Holding Shield."));
+            "instead of the Zora Tunic by holding a shield with an earlier adult trade item. "
+            "King Zora must be thawed. In Randomizer this awards the Prescription trade check. "
+            "To allow seed logic to require the technique, enable Early Eyeball Frog under "
+            "Randomizer / Tricks & glitches."));
     AddWidget(path, "Get Item Manipulation", WIDGET_CVAR_COMBOBOX)
         .CVar(CVAR_ENHANCEMENT("GetItemManipulation"))
         .Options(ComboboxOptions()

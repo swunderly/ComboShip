@@ -1,4 +1,12 @@
+#ifdef COMBO_BUILD
+#include "CheckTracker/CheckTracker.h"
+#include <cmath>
+#endif
 #include "Rando/Rando.h"
+#include "Rando/FaroresWind.h"
+#include "Rando/Spells.h"
+#include "Rando/ActorBehavior/ExpandedSoulsNative.h"
+namespace Rando { bool DrawExpandedSoulItem(RandoItemId); }
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 #include "2s2h/ShipInit.hpp"
 #include "2s2h/Rando/DrawFuncs.h"
@@ -20,6 +28,9 @@ extern "C" {
 #include "assets/objects/object_gi_purse/object_gi_purse.h"
 
 Gfx* ResourceMgr_LoadGfxByName(const char* path);
+#ifdef COMBO_BUILD
+float OTRGetAspectRatio(void);
+#endif
 }
 
 #ifdef COMBO_BUILD
@@ -29,6 +40,14 @@ Gfx* ResourceMgr_LoadGfxByName(const char* path);
 // after the engine headers above (outside the extern "C" block — it is C++). Mirror of soh's
 // Randomizer_DrawComboForeign.
 #include "ComboForeignDrawMM.h"
+
+namespace Rando {
+    bool DrawComboForeignRenewable(const char* name) { return MM_DrawComboForeignNamed(name); }
+    bool CanDrawComboForeignRenewable(const char* name) {
+        ComboForeignDrawInfoOOT info{};
+        return name && name[0] && ComboFillForeignDrawInfoOOT(RC_UNKNOWN, info, name) == ComboForeignResolveOOT::Ok;
+    }
+}
 
 void Rando::LatchComboForeign(RandoCheckId randoCheckId) {
     ComboLatchForeignDrawOOT(randoCheckId);
@@ -224,18 +243,22 @@ void DrawSmallKey(RandoItemId randoItemId) {
 
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     switch (randoItemId) {
+        case RI_WOODFALL_KEY_RING:
         case RI_WOODFALL_SMALL_KEY:
             gDPSetPrimColor(POLY_OPA_DISP++, 0, 0x80, 255, 255, 255, 255);
             gDPSetEnvColor(POLY_OPA_DISP++, 236, 120, 186, 255);
             break;
+        case RI_SNOWHEAD_KEY_RING:
         case RI_SNOWHEAD_SMALL_KEY:
             gDPSetPrimColor(POLY_OPA_DISP++, 0, 0x80, 255, 255, 255, 255);
             gDPSetEnvColor(POLY_OPA_DISP++, 129, 173, 70, 255);
             break;
+        case RI_GREAT_BAY_KEY_RING:
         case RI_GREAT_BAY_SMALL_KEY:
             gDPSetPrimColor(POLY_OPA_DISP++, 0, 0x80, 255, 255, 255, 255);
             gDPSetEnvColor(POLY_OPA_DISP++, 99, 90, 183, 255);
             break;
+        case RI_STONE_TOWER_KEY_RING:
         case RI_STONE_TOWER_SMALL_KEY:
             gDPSetPrimColor(POLY_OPA_DISP++, 0, 0x80, 255, 255, 255, 255);
             gDPSetEnvColor(POLY_OPA_DISP++, 177, 165, 83, 255);
@@ -365,7 +388,9 @@ void DrawTriforcePiece(RandoItemId randoItemId) {
     Matrix_Scale(0.03f, 0.03f, 0.03f, MTXMODE_APPLY);
 
     MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, gPlayState->state.gfxCtx);
-    if (currentTriforcePieces >= RANDO_SAVE_OPTIONS[RO_TRIFORCE_PIECES_REQUIRED]) {
+    if (randoItemId >= RI_TRIFORCE_POWER && randoItemId <= RI_TRIFORCE_WISDOM) {
+        gSPDisplayList(POLY_XLU_DISP++, (Gfx*)triforcePieceModels[randoItemId - RI_TRIFORCE_POWER]);
+    } else if (currentTriforcePieces >= RANDO_SAVE_OPTIONS[RO_TRIFORCE_PIECES_REQUIRED]) {
         gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gTriforcePieceCompletedDL);
     } else {
         if (randoItemId == RI_TRIFORCE_PIECE_PREVIOUS) {
@@ -393,6 +418,83 @@ void DrawAbilityItem(RandoItemId randoItemId, Actor* actor) {
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 }
 
+#ifdef COMBO_BUILD
+// Bit zero is reserved for segmented addresses by the native GBI bridge.
+static const ALIGN_ASSET(2) char sComboSpellDiamondDL[] = "__OTR__@oot:objects/object_gi_goddess/gGiMagicSpellDiamondDL";
+static const ALIGN_ASSET(2) char sComboFaroresWindColorDL[] = "__OTR__@oot:objects/object_gi_goddess/gGiFaroresWindColorDL";
+static const ALIGN_ASSET(2) char sComboSpellOrbDL[] = "__OTR__@oot:objects/object_gi_goddess/gGiMagicSpellOrbDL";
+static const ALIGN_ASSET(2) char sComboNayrusLoveColorDL[] = "__OTR__@oot:objects/object_gi_goddess/gGiNayrusLoveColorDL";
+static const ALIGN_ASSET(2) char sComboDinsFireColorDL[] = "__OTR__@oot:objects/object_gi_goddess/gGiDinsFireColorDL";
+// Native Fairy pickup/world rendering copies OOT's exact OPA0/XLU1 recipe.
+extern "C" int Combo_MM_AdultMaskResourcesReady(void);
+extern "C" Gfx* Combo_MM_GetAdultMaskBinding(int index);
+extern "C" int Combo_MM_AdultGearGiReady(void);
+#include "rando/AdultGearDrawRecipe.h"
+static void DrawAdultGearItem(int kind){
+    const auto* recipe=ComboRando::AdultGearRecipe(kind);
+    if(!recipe||!Combo_MM_AdultGearGiReady())return;
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++,gPlayState->state.gfxCtx);
+    const int opaCount=recipe->xlu<0?recipe->count:recipe->xlu;
+    for(int i=0;i<opaCount;++i)gSPDisplayList(POLY_OPA_DISP++,(Gfx*)recipe->paths[i]);
+    if(recipe->xlu>=0){Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++,gPlayState->state.gfxCtx);for(int i=recipe->xlu;i<recipe->count;++i)gSPDisplayList(POLY_XLU_DISP++,(Gfx*)recipe->paths[i]);}
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+static void DrawAdultMaskItem() {
+    if(!Combo_MM_AdultMaskResourcesReady())return;
+    Gfx* first=Combo_MM_GetAdultMaskBinding(1);
+    Gfx* second=Combo_MM_GetAdultMaskBinding(0);
+    if(!first||!second)return;
+    // Exact pinned drawgi.yml MASK_ADULT: Opa01, params MASK_ADULT_1 then MASK_ADULT_0.
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++,gPlayState->state.gfxCtx);
+    gSPDisplayList(POLY_OPA_DISP++,first);
+    gSPDisplayList(POLY_OPA_DISP++,second);
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+static void DrawFaroresWindItem() {
+    if(!Combo_MMFarorePrepareResources())return;
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    gSPSegment(POLY_XLU_DISP++,0x08,(uintptr_t)Gfx_TwoTexScrollEx(gPlayState->state.gfxCtx,0,
+      gPlayState->state.frames*2,-(gPlayState->state.frames*6),32,32,1,
+      gPlayState->state.frames,-(gPlayState->state.frames*2),32,32,2,-6,1,-2));
+    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++,gPlayState->state.gfxCtx);
+    gSPDisplayList(POLY_XLU_DISP++,(Gfx*)sComboSpellDiamondDL);
+    gSPDisplayList(POLY_XLU_DISP++,(Gfx*)sComboFaroresWindColorDL);
+    gSPDisplayList(POLY_XLU_DISP++,(Gfx*)sComboSpellOrbDL);
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    const int32_t segs[]={0x08};MM_RestoreForeignSegs(segs,1);
+}
+static void DrawExtraSpellItem(int spell) {
+    if(!Combo_MMSpellPrepareResources(spell))return;
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    gSPSegment(POLY_XLU_DISP++,0x08,(uintptr_t)Gfx_TwoTexScrollEx(gPlayState->state.gfxCtx,0,
+      gPlayState->state.frames*2,-(gPlayState->state.frames*6),32,32,1,
+      gPlayState->state.frames,-(gPlayState->state.frames*2),32,32,2,-6,1,-2));
+    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++,gPlayState->state.gfxCtx);
+    gSPDisplayList(POLY_XLU_DISP++,(Gfx*)sComboSpellDiamondDL);
+    gSPDisplayList(POLY_XLU_DISP++,(Gfx*)(spell==1?sComboNayrusLoveColorDL:sComboDinsFireColorDL));
+    gSPDisplayList(POLY_XLU_DISP++,(Gfx*)sComboSpellOrbDL);
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    const int32_t segs[]={0x08};MM_RestoreForeignSegs(segs,1);
+}
+
+static void DrawFairyOcarinaItem() {
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, gPlayState->state.gfxCtx);
+    gSPDisplayList(POLY_OPA_DISP++, (Gfx*)"__OTR__@oot:objects/object_gi_ocarina_0/gGiOcarinaFairyDL");
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, gPlayState->state.gfxCtx);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)"__OTR__@oot:objects/object_gi_ocarina_0/gGiOcarinaFairyHolesDL");
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+#endif
+
 void DrawOcarinaButtonItem(RandoItemId randoItemId, Actor* actor) {
     Gfx* ocarinaButtonModel[5] = {
         (Gfx*)gOcarinaAButtonDL,     (Gfx*)gOcarinaCDownButtonDL, (Gfx*)gOcarinaCRightButtonDL,
@@ -410,6 +512,13 @@ void DrawOcarinaButtonItem(RandoItemId randoItemId, Actor* actor) {
 
 // clang-format off
 std::unordered_map<RandoItemId, std::function<void()>> soulDrawMap = {
+    { RI_SOUL_BOSS_IGOS, DrawIgosDuIkana },
+    { RI_SOUL_ENEMY_BIO_BABA, DrawBioBabaSoul },
+    { RI_SOUL_ENEMY_FLOORMASTER, DrawWallmaster },
+    { RI_SOUL_ENEMY_FLYING_POT, DrawFlyingPot },
+    { RI_SOUL_ENEMY_REAL_BOMBCHU, DrawRealBombchu },
+    { RI_SOUL_ENEMY_SKULLWALLTULA, DrawSkulltula },
+
     { RI_SOUL_ENEMY_ALIEN,          DrawAlien },
     { RI_SOUL_ENEMY_ARMOS,          DrawArmos },
     { RI_SOUL_ENEMY_BAD_BAT,        DrawBat },
@@ -525,20 +634,88 @@ void DrawTycoonWallet() {
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 }
 
+#ifdef COMBO_BUILD
+static bool IsCheckModelVisible(Actor* actor) {
+    if (!actor || !gPlayState) return false;
+    // The camera can sweep past a reward while a scene fade or pause overlay hides the view.
+    if (gPlayState->transitionMode != TRANS_MODE_OFF || gPlayState->transitionTrigger != TRANS_TRIGGER_OFF ||
+        gPlayState->envCtx.fillScreen || gPlayState->pauseCtx.state != 0) return false;
+    // Some rewards keep drawing with zero scale until their reveal animation.
+    const MtxF* model = Matrix_GetCurrent();
+    if (model->xx * model->xx + model->yx * model->yx + model->zx * model->zx < 0.000001f ||
+        model->xy * model->xy + model->yy * model->yy + model->zy * model->zy < 0.000001f ||
+        model->xz * model->xz + model->yz * model->yz + model->zz * model->zz < 0.000001f) return false;
+
+    // Use the translated model origin, not the actor's feet or its generous culling volume.
+    Vec3f pos;
+    Matrix_MultZero(&pos);
+    Vec3f projected;
+    float w;
+    SkinMatrix_Vec3fMtxFMultXYZW(&gPlayState->viewProjectionMtxF, &pos, &projected, &w);
+    // Match Fast3D's horizontal aspect correction, including narrow phone viewports.
+    const float horizontalScale = OTRGetAspectRatio() / (4.0f / 3.0f);
+    if (!(std::isfinite(w) && w > 0 && std::isfinite(horizontalScale) && horizontalScale > 0 &&
+          projected.z >= -w && projected.z <= w &&
+          fabsf(projected.x) <= w * horizontalScale && fabsf(projected.y) <= w)) return false;
+
+    // Match OoT's shop observer: invisible shelf/counter interaction collision
+    // blocks a world ray even though the displayed stock is visible on screen.
+    // This runs only for a submitted shop-item model, after the frustum checks.
+    if (actor->id == ACTOR_EN_GIRLA) return true;
+
+    // A submitted model can still be behind a maze wall, floor, ceiling or moving door.
+    // Test both faces and all collision categories; camera-only tests ignore some barriers.
+    Vec3f eye = gPlayState->view.eye;
+    Vec3f hit;
+    CollisionPoly* poly = nullptr;
+    return !BgCheck_AnyLineTest2(&gPlayState->colCtx, &eye, &pos, &hit, &poly, true, true, true, false);
+}
+
+static void RecordVisibleCheck(RandoCheckId check, RandoItemId shown, Actor* actor) {
+    if (IsCheckModelVisible(actor)) Rando::CheckTracker::RecordSeenItem(check, shown);
+}
+#endif
+
 void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* actor) {
+#ifdef COMBO_BUILD
+    // Traps/junk/progressives recurse into the displayed item. Foreign models report below only
+    // on successful drawing; their fallback blue rupee must not reveal the hidden placement.
+    if (randoItemId != RI_NONE && randoItemId != RI_JUNK && randoItemId != RI_TRAP &&
+        randoItemId != RI_COMBO_FOREIGN) RecordVisibleCheck(randoCheckId, randoItemId, actor);
+#endif
     // Apply hilites with actor world pos before drawing
     if (actor != NULL) {
         func_800B8118(actor, gPlayState, 0);
         func_800B8050(actor, gPlayState, 0);
     }
 
+    if (Rando::ExpandedSoulIndex(randoItemId) >= 0 && Rando::DrawExpandedSoulItem(randoItemId)) return;
+
     switch (randoItemId) {
+#ifdef COMBO_BUILD
+        case RI_BOOTS_IRON: DrawAdultGearItem(0); break;
+        case RI_BOOTS_HOVER: DrawAdultGearItem(1); break;
+        case RI_TUNIC_GORON: DrawAdultGearItem(2); break;
+        case RI_TUNIC_ZORA: DrawAdultGearItem(3); break;
+        case RI_MASK_ADULT: DrawAdultMaskItem(); break;
+        case RI_FARORES_WIND: DrawFaroresWindItem(); break;
+        case RI_DINS_FIRE: DrawExtraSpellItem(2); break;
+        case RI_NAYRUS_LOVE: DrawExtraSpellItem(1); break;
+        case RI_OCARINA_FAIRY:
+            DrawFairyOcarinaItem();
+            break;
+#endif
+
         case RI_JUNK:
             Rando::DrawItem(Rando::CurrentJunkItem(randoCheckId), randoCheckId, actor);
             break;
+        case RI_GREAT_BAY_KEY_RING:
         case RI_GREAT_BAY_SMALL_KEY:
+        case RI_SNOWHEAD_KEY_RING:
         case RI_SNOWHEAD_SMALL_KEY:
+        case RI_STONE_TOWER_KEY_RING:
         case RI_STONE_TOWER_SMALL_KEY:
+        case RI_WOODFALL_KEY_RING:
         case RI_WOODFALL_SMALL_KEY:
             DrawSmallKey(randoItemId);
             break;
@@ -606,6 +783,7 @@ void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* 
         case RI_WALLET_TYCOON:
             DrawTycoonWallet();
             break;
+        case RI_PROGRESSIVE_OCARINA:
         case RI_PROGRESSIVE_LULLABY:
         case RI_PROGRESSIVE_MAGIC:
         case RI_PROGRESSIVE_BOW:
@@ -660,6 +838,12 @@ void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* 
         case RI_SOUL_ENEMY_WALLMASTER:
         case RI_SOUL_ENEMY_WART:
         case RI_SOUL_ENEMY_WIZROBE:
+        case RI_SOUL_BOSS_IGOS:
+        case RI_SOUL_ENEMY_BIO_BABA:
+        case RI_SOUL_ENEMY_FLOORMASTER:
+        case RI_SOUL_ENEMY_FLYING_POT:
+        case RI_SOUL_ENEMY_REAL_BOMBCHU:
+        case RI_SOUL_ENEMY_SKULLWALLTULA:
         case RI_SOUL_ENEMY_WOLFOS:
             DrawSoul(randoItemId);
             break;
@@ -687,6 +871,9 @@ void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* 
         case RI_ABILITY_SWIM:
             DrawAbilityItem(randoItemId, actor);
             break;
+        case RI_TRIFORCE_POWER:
+        case RI_TRIFORCE_COURAGE:
+        case RI_TRIFORCE_WISDOM:
         case RI_TRIFORCE_PIECE_PREVIOUS:
         case RI_TRIFORCE_PIECE:
             DrawTriforcePiece(randoItemId);
@@ -711,11 +898,15 @@ void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* 
         case RI_UNKNOWN:
             break;
 #ifdef COMBO_BUILD
-        case RI_COMBO_FOREIGN:
+        case RI_COMBO_FOREIGN: {
             // ComboShip: this MM check holds an OOT item — render the real OOT model (sentinel blue
             // rupee on any failure). The originating check identity is passed straight through.
-            MM_DrawComboForeign(randoCheckId);
+            // Foreign drawing changes the model matrix, so sample visibility before it runs.
+            const bool visible = IsCheckModelVisible(actor);
+            if (MM_DrawComboForeign(randoCheckId) && visible)
+                Rando::CheckTracker::RecordSeenItem(randoCheckId, randoItemId);
             break;
+        }
 #endif
         default:
             GetItem_Draw(gPlayState, Rando::StaticData::Items[randoItemId].drawId);

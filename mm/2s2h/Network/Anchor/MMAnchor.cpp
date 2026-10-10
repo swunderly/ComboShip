@@ -184,9 +184,15 @@ void MMAnchor::RegisterHooks() {
 // MARK: - Transport
 
 void MMAnchor::SendJson(nlohmann::json payload) {
-    if (!isActive || gMMComboAnchorSend == nullptr) {
+    if (!isActive) {
         return;
     }
+    SendSaveJson(std::move(payload));
+}
+
+// Save-only synchronization also runs while the other game is active.
+void MMAnchor::SendSaveJson(nlohmann::json payload) {
+    if (gMMComboAnchorSend == nullptr) return;
     if (ownClientId == 0) {
         ownClientId = (uint32_t)CVarGetInteger(kCvarLastClientId, 0); // late-cache fallback
     }
@@ -194,6 +200,13 @@ void MMAnchor::SendJson(nlohmann::json payload) {
     // Routing tag for the shared socket; NOT the cross-item "srcGame" int field (don't clobber it).
     payload["originGame"] = "mm";
     gMMComboAnchorSend(payload.dump().c_str());
+}
+
+void MMAnchor::HandlePacket_UpdateRoomState(const nlohmann::json& payload) {
+    if (!payload.contains("state") || !payload["state"].is_object()) return;
+    roomState.syncItemsAndFlags = payload["state"].value("syncItemsAndFlags", 1);
+    roomState.pvpMode = payload["state"].value("pvpMode", 0);
+    CVarSetInteger(kCvarTeleportMode, payload["state"].value("teleportMode", 1));
 }
 
 void MMAnchor::OnIncomingJson(const std::string& payload) {
@@ -210,7 +223,8 @@ void MMAnchor::OnIncomingJson(const std::string& payload) {
     // Drop OOT-originated packets — their shapes collide with ours (GIVE_ITEM, UPDATE_TEAM_STATE...).
     // Exceptions: cross-game item delivery and the room roster. No originGame (server) passes through.
     std::string type = j["type"].get<std::string>();
-    if (j.value("originGame", "mm") != "mm" && type != PKT_CROSS_ITEM && type != PKT_UPDATE_CLIENT_STATE) {
+    if (j.value("originGame", "mm") != "mm" && type != PKT_CROSS_ITEM &&
+        type != PKT_UPDATE_CLIENT_STATE && type != "UPDATE_ROOM_STATE") {
         return;
     }
     std::lock_guard<std::mutex> lock(incomingMutex);
@@ -228,7 +242,9 @@ void MMAnchor::ProcessIncomingPacketQueue() {
         toProcess.pop();
         std::string type = payload["type"].get<std::string>();
         try {
-            if (type == PKT_ALL_CLIENT_STATE) {
+            if (type == "UPDATE_ROOM_STATE") {
+                HandlePacket_UpdateRoomState(payload);
+            } else if (type == PKT_ALL_CLIENT_STATE) {
                 HandlePacket_AllClientState(payload);
             } else if (type == PKT_UPDATE_CLIENT_STATE) {
                 HandlePacket_UpdateClientState(payload);
@@ -280,7 +296,13 @@ void MMAnchor::PumpDormant() {
         nlohmann::json payload = toProcess.front();
         toProcess.pop();
         try {
-            if (payload.value("type", std::string()) == PKT_GIVE_ITEM && payload.contains("randoCheckId")) {
+            if (payload.value("type", std::string()) == "UPDATE_ROOM_STATE") {
+                HandlePacket_UpdateRoomState(payload);
+            } else if (payload.value("type", std::string()) == PKT_ALL_CLIENT_STATE) {
+                HandlePacket_AllClientState(payload);
+            } else if (payload.value("type", std::string()) == PKT_UPDATE_CLIENT_STATE) {
+                HandlePacket_UpdateClientState(payload);
+            } else if (payload.value("type", std::string()) == PKT_GIVE_ITEM && payload.contains("randoCheckId")) {
                 SPDLOG_INFO("[MMAnchor] dormant GIVE_ITEM received: {}", payload.dump());
                 ApplyDormantGiveItem(payload);
             } else if (payload.value("type", std::string()) == PKT_REQUEST_TEAM_STATE) {
@@ -309,6 +331,7 @@ void MMAnchor::PumpDormant() {
 // A6: dormant-safe variant of HandlePacket_GiveItem — marks the check obtained and grants via
 // Combo_MM_GiveDormantResolved -> Rando::GiveItem (gPlayState==NULL). Junk resolves normally.
 void MMAnchor::ApplyDormantGiveItem(const nlohmann::json& payload) {
+    if (!roomState.syncItemsAndFlags || !HasLoadedRandoSave()) return;
     if (!payload.contains("randoCheckId")) {
         return; // reject soh's GIVE_ITEM (modId shape, different item-id space)
     }
@@ -358,7 +381,7 @@ nlohmann::json MMAnchor::PrepClientState() {
     const bool saveLoaded = IsSaveLoaded();
     if (saveLoaded) {
         s16 rawScene = gPlayState->sceneId;
-        p["seed"] = 0; // TODO Phase 3: MM rando seed
+        p["seed"] = gSaveContext.save.shipSaveInfo.rando.finalSeed;
         p["isSaveLoaded"] = true;
         p["isGameComplete"] = false;
         // Two scene fields: namespaced "sceneNum" for OOT's roster display (so OOT shows MM peers as
@@ -397,7 +420,9 @@ static void ReadClientStateInto(MMAnchorClient& c, uint32_t clientId, const nloh
     c.seed = s.value("seed", c.seed);
     c.isSaveLoaded = s.value("isSaveLoaded", c.isSaveLoaded);
     c.isGameComplete = s.value("isGameComplete", c.isGameComplete);
-    c.sceneId = (s16)s.value("sceneId", (int32_t)c.sceneId); // RAW scene for puppet matching
+    // An OoT update must clear the last MM scene; otherwise a departed player remains visible.
+    c.sceneId = s.value("sceneNum", 0) >= MM_ANCHOR_SCENE_NAMESPACE
+                    ? (s16)s.value("sceneId", (int32_t)SCENE_MAX) : (s16)SCENE_MAX;
     c.entrance = s.value("entrance", c.entrance);
 }
 
@@ -429,6 +454,7 @@ void MMAnchor::HandlePacket_UpdateClientState(const nlohmann::json& payload) {
     }
     MMAnchorClient& c = clients[clientId];
     ReadClientStateInto(c, clientId, payload["state"]);
+    shouldRefreshActors = true;
 }
 
 // MARK: - Player update (per-frame pose; canonical field set from 2S2H PR #1349)
@@ -746,15 +772,13 @@ void MMAnchor::SendPacket_RequestTeamState() {
 // isActive gate — the whole point is that a dormant MM must also ask teammates for a fresh state,
 // which SendPacket_RequestTeamState (isActive-gated) can't do.
 void MMAnchor::RequestResyncDormantSafe() {
-    if (gMMComboAnchorSend == nullptr || !roomState.syncItemsAndFlags) {
+    if (gMMComboAnchorSend == nullptr || !roomState.syncItemsAndFlags || !HasLoadedRandoSave()) {
         return;
     }
     nlohmann::json payload;
     payload["type"] = PKT_REQUEST_TEAM_STATE;
     payload["targetTeamId"] = CVarGetString(kCvarTeamId, "default");
-    payload["clientId"] = ownClientId;
-    payload["originGame"] = "mm";
-    gMMComboAnchorSend(payload.dump().c_str());
+    SendSaveJson(std::move(payload));
 }
 
 void MMAnchor::HandlePacket_RequestTeamState(const nlohmann::json& payload) {
@@ -791,6 +815,8 @@ void MMAnchor::SendTeamStateFromSave(const std::string& targetTeamId) {
         auto& rando = payload["state"]["shipSaveInfo"]["rando"];
         rando.erase("randoSaveChecks");
         rando["randoSaveChecksCopy"] = nlohmann::json::array();
+        // Optional side table keeps the seven-field wire format compatible with older clients.
+        rando["seenChecks"] = nlohmann::json::object();
         for (int i = 0; i < RC_MAX; i++) {
             nlohmann::json e = nlohmann::json::array();
             e[0] = RANDO_SAVE_CHECKS[i].randoItemId;
@@ -801,9 +827,13 @@ void MMAnchor::SendTeamStateFromSave(const std::string& targetTeamId) {
             e[5] = (u8)RANDO_SAVE_CHECKS[i].skipped;
             e[6] = RANDO_SAVE_CHECKS[i].price;
             rando["randoSaveChecksCopy"][i] = e;
+            if (RANDO_SAVE_CHECKS[i].seenItemId != RI_UNKNOWN) {
+                rando["seenChecks"][std::to_string(i)] = RANDO_SAVE_CHECKS[i].seenItemId;
+                rando["knowledgeSources"][std::to_string(i)] = RANDO_SAVE_CHECKS[i].knowledgeSource;
+            }
         }
     }
-    SendJson(payload);
+    SendSaveJson(payload);
 }
 
 void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
@@ -833,15 +863,54 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
     {
         auto stuff =
             payload["state"]["shipSaveInfo"]["rando"]["randoSaveChecksCopy"].get<std::vector<std::vector<s32>>>();
+        if (stuff.size() != RC_MAX || std::any_of(stuff.begin(), stuff.end(),
+                                                [](const auto& row) { return row.size() != 7; })) {
+            SPDLOG_WARN("[MMAnchor] Invalid check table in team snapshot");
+            return;
+        }
         for (int i = 0; i < RC_MAX; i++) {
             payload["state"]["shipSaveInfo"]["rando"]["randoSaveChecks"][i] = RandoSaveCheck{
                 (RandoItemId)stuff[i][0], (bool)stuff[i][1], (bool)stuff[i][2], (bool)stuff[i][3],
                 (bool)stuff[i][4],        (bool)stuff[i][5], (u16)stuff[i][6],
             };
+            auto& rando = payload["state"]["shipSaveInfo"]["rando"];
+            if (rando.contains("seenChecks") && rando["seenChecks"].is_object()) {
+                rando["randoSaveChecks"][i]["seenItemId"] = rando["seenChecks"].value(std::to_string(i), 0);
+                if (rando.contains("knowledgeSources") && rando["knowledgeSources"].is_object())
+                    rando["randoSaveChecks"][i]["knowledgeSource"] = rando["knowledgeSources"].value(std::to_string(i), 0);
+            }
         }
     }
 
     Save loadedData = payload["state"].get<Save>();
+
+    // A stale or older client must not erase a reward this player already saw. Keep our last
+    // observed tier/disguise; otherwise accept the teammate's explicitly revealed knowledge.
+    for (int i = 0; i < RC_MAX; ++i) {
+        if (RANDO_SAVE_CHECKS[i].seenItemId != RI_UNKNOWN) {
+            loadedData.shipSaveInfo.rando.randoSaveChecks[i].seenItemId = RANDO_SAVE_CHECKS[i].seenItemId;
+            loadedData.shipSaveInfo.rando.randoSaveChecks[i].knowledgeSource = RANDO_SAVE_CHECKS[i].knowledgeSource;
+        }
+    }
+
+    // Permanent equipment must not disappear when an older peer answers resync.
+    for (int i = 0; i < SLOT_BOTTLE_1; ++i) {
+        if (gSaveContext.save.saveInfo.inventory.items[i] != ITEM_NONE)
+            loadedData.saveInfo.inventory.items[i] = gSaveContext.save.saveInfo.inventory.items[i];
+    }
+    auto& localPlayer = gSaveContext.save.saveInfo.playerData;
+    auto& remotePlayer = loadedData.saveInfo.playerData;
+    remotePlayer.isMagicAcquired |= localPlayer.isMagicAcquired;
+    remotePlayer.isDoubleMagicAcquired |= localPlayer.isDoubleMagicAcquired;
+    remotePlayer.doubleDefense |= localPlayer.doubleDefense;
+    remotePlayer.magicLevel = std::max(remotePlayer.magicLevel, localPlayer.magicLevel);
+    const auto localPieces = (gSaveContext.save.saveInfo.inventory.questItems >> 28) & 0xF;
+    const auto remotePieces = (loadedData.saveInfo.inventory.questItems >> 28) & 0xF;
+    const auto pieces = localPlayer.healthCapacity > remotePlayer.healthCapacity ? localPieces :
+                        localPlayer.healthCapacity < remotePlayer.healthCapacity ? remotePieces :
+                        std::max(localPieces, remotePieces);
+    loadedData.saveInfo.inventory.questItems =
+        (loadedData.saveInfo.inventory.questItems & 0x0FFFFFFF) | (pieces << 28);
 
     // ComboShip (bug 3): union not replace — a teammate's team-state can be stale/incomplete (they
     // haven't reached a check we already have). Remember our permanently-obtained checks so the
@@ -868,6 +937,10 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
     memcpy(localPermSceneFlags, gSaveContext.save.saveInfo.permanentSceneFlags, sizeof(localPermSceneFlags));
 #ifdef COMBO_BUILD
     // #136: the shipSaveInfo replace would regress the Triforce count against a stale peer.
+    u8 localExpandedSouls[8];
+    std::copy_n(gSaveContext.save.shipSaveInfo.rando.expandedSoulsOwned,8,localExpandedSouls);
+    u8 localMissingMmSouls = gSaveContext.save.shipSaveInfo.rando.mmMissingSoulsOwned;
+    u8 localNamedTriforceMask = gSaveContext.save.shipSaveInfo.rando.namedTriforceMask;
     u16 localTriforcePieces = gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces;
 #endif
     // Issue #130: randoInf (obtained trade items/souls/purchases) is monotonic — snapshot to OR back.
@@ -953,7 +1026,7 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
             gSaveContext.save.saveInfo.inventory.items[tradeSlots[i]] = localTradeItems[i];
         }
     }
-    gSaveContext.save.saveInfo.inventory.questItems |= localQuestItems;
+    gSaveContext.save.saveInfo.inventory.questItems |= localQuestItems & 0x0FFFFFFF;
     for (int i = 0; i < 8; i++) {
         u32 mask = gUpgradeMasks[i];
         u8 shift = gUpgradeShifts[i];
@@ -1007,6 +1080,9 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
         gSaveContext.save.saveInfo.inventory.dungeonItems[i] |= localDungeonItems[i];
     }
 #ifdef COMBO_BUILD
+    gSaveContext.save.shipSaveInfo.rando.mmMissingSoulsOwned |= localMissingMmSouls;
+    gSaveContext.save.shipSaveInfo.rando.namedTriforceMask |= localNamedTriforceMask;
+    for (unsigned i=0;i<8;++i) gSaveContext.save.shipSaveInfo.rando.expandedSoulsOwned[i] |= localExpandedSouls[i];
     if (localTriforcePieces > gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces) {
         gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces = localTriforcePieces;
     }
@@ -1028,7 +1104,7 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
             continue;
         }
         const ComboRando::ForeignItem* fi = Rando::MiscBehavior::MM_LookupForeign(rc);
-        if (fi && gMMComboCrossDeliver) {
+        if (fi && gMMComboCrossDeliver && !payload.value("comboSnapshot", false)) {
             std::string checkName = Rando::StaticData::GetCheckDisplayName(rc);
             gMMComboCrossDeliver((int)fi->itemGame, fi->itemName.c_str(), checkName.c_str());
         }
@@ -1182,6 +1258,14 @@ extern "C" COMBO_EXPORT void MM_Anchor_PumpDormant(void) {
     if (MMAnchor::Instance) {
         MMAnchor::Instance->PumpDormant();
     }
+}
+
+extern "C" COMBO_EXPORT void MM_Anchor_SendSnapshot(void) {
+    try {
+        if (MMAnchor::Instance)
+            MMAnchor::Instance->SendTeamStateFromSave(CVarGetString(kCvarTeamId, "default"));
+    } catch (const std::exception& e) { SPDLOG_ERROR("[MM_Anchor_SendSnapshot] {}", e.what()); }
+    catch (...) { SPDLOG_ERROR("[MM_Anchor_SendSnapshot] unknown exception"); }
 }
 
 // Bug 2: launcher-orchestrated resync (auto on connect + combo menu button), dormant-safe.

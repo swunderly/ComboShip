@@ -1,7 +1,7 @@
 // combo/rando/ComboPlaythrough.h
 // ComboShip: forward "playthrough" simulation over a finished cross-world seed. Starting from an empty
 // collected set, it repeatedly asks each game's reachability oracle what's reachable, collects the items
-// on newly-reachable checks, and loops until the win is reachable (BEATABLE) or nothing new opens (stuck).
+// on newly-reachable checks, and loops until nothing new opens, recording the first winning sphere.
 // Shared by the in-game generator (ComboShip.cpp) and the headless validator (ComboRandoHeadless.cpp) so
 // the two never diverge. The oracle's logic mode / tricks are controlled by the caller before running.
 #pragma once
@@ -26,19 +26,22 @@ namespace ComboRando {
 
 // Shared Items mirror: pushes newly-owed mmOwned copies per ootOwned's count; `given` tracks what's
 // already pushed so repeat calls don't duplicate.
-inline void ApplySharedMirror(uint32_t sharedMask, const std::vector<std::string>& ootOwned,
-                              std::vector<std::string>& mmOwned, size_t (&given)[SF_COUNT]) {
+inline void ApplySharedMirror(uint32_t sharedMask, std::vector<std::string>& ootOwned,
+                              std::vector<std::string>& mmOwned, size_t (&given)[SF_COUNT], bool fairyOcarinaMm = false) {
     if (sharedMask == 0)
         return;
+    MirrorSharedSingletons(sharedMask, ootOwned, mmOwned);
+    if (sharedMask & (1u << SF_OCARINA)) MirrorSharedOcarina(ootOwned, mmOwned, fairyOcarinaMm);
     for (int i = 0; i < SF_COUNT; ++i) {
         if (!(sharedMask & (1u << i)))
             continue;
+        if (i == SF_OCARINA) continue;
         const auto& def = SharedFamilyByIndex(i);
         if (!def.mmHasItem)
             continue; // nothing to push; MM logic doesn't need it
         size_t k = static_cast<size_t>(std::count(ootOwned.begin(), ootOwned.end(), std::string(def.ootName)));
         size_t target = std::min<size_t>(k, static_cast<size_t>(def.mmTierCap));
-        for (size_t n = given[i]; n < target; ++n)
+        for (size_t n = std::max(given[i], static_cast<size_t>(std::count(mmOwned.begin(), mmOwned.end(), std::string(def.mmName)))); n < target; ++n)
             mmOwned.push_back(def.mmName);
         given[i] = target;
     }
@@ -138,6 +141,7 @@ inline std::vector<CwPlacedItem> ParseSpoilerPlacements(const std::string& spoil
 }
 
 inline std::unordered_set<std::string> QueryReachable(const OracleFns& o, const std::vector<std::string>& owned) {
+    CheckGenerationCancellation();
     nlohmann::json arr = nlohmann::json::array();
     for (auto& n : owned)
         arr.push_back(n);
@@ -148,6 +152,25 @@ inline std::unordered_set<std::string> QueryReachable(const OracleFns& o, const 
         for (auto& n : nlohmann::json::parse(o.GetReachableChecks()))
             out.insert(n.get<std::string>());
     } catch (...) {}
+    return out;
+}
+
+inline std::unordered_set<std::string> QueryReachableWithMmStock(
+    const OracleFns& o, const std::vector<std::string>& owned, bool isMm,
+    const std::vector<CwPlacedItem>& placements, const std::unordered_set<size_t>& excluded = {}) {
+    CheckGenerationCancellation();
+    o.Reset();
+    o.SetOwnedItems(nlohmann::json(owned).dump().c_str());
+    if (isMm && o.PlaceItem) {
+        for (size_t i = 0; i < placements.size(); ++i) {
+            const auto& p = placements[i];
+            if (p.checkGame == GAME_MM) {
+                o.PlaceItem(p.check.c_str(), !excluded.count(i) && p.itemGame == GAME_MM ? p.item.c_str() : "");
+            }
+        }
+    }
+    std::unordered_set<std::string> out;
+    for (const auto& name : nlohmann::json::parse(o.GetReachableChecks())) out.insert(name.get<std::string>());
     return out;
 }
 
@@ -192,7 +215,7 @@ inline ReachResult QueryReachableMemo(const OracleFns& o, const std::vector<std:
     return r;
 }
 
-// Default win condition: RC_GANON reachable (OOT) AND MM's in-lair check (Majora).
+// Default win condition: RC_GANON reachable (OOT) AND actual Majora defeat reachable (MM).
 // A pluggable goal so another goal (e.g. Triforce hunt) can be swapped in without touching the
 // traversal machinery below. The owned vectors let a goal test collected items, not just reachability.
 using GoalPredicate =
@@ -204,7 +227,7 @@ inline bool DefaultGanonMajoraGoal(const std::unordered_set<std::string>& ootRea
                                    const std::vector<std::string>& /*ownedMm*/) {
     // RC_GANON reachable = OOT beatable (bridge + boss key, placed or force-granted); see CrossWorldRando.h.
     static const char* kOotGanon = "Ganon";
-    static const char* kMmWin = "Moon Majora Pot 01"; // ComboShip: friendly form of RC_MOON_MAJORA_POT_01
+    static const char* kMmWin = "Defeat Majora";
     return ootReach.count(kOotGanon) > 0 && mmReach.count(kMmWin) > 0;
 }
 
@@ -215,7 +238,7 @@ inline bool MmOnlyMajoraGoal(const std::unordered_set<std::string>& /*ootReach*/
                              const std::unordered_set<std::string>& mmReach,
                              const std::vector<std::string>& /*ownedOot*/,
                              const std::vector<std::string>& /*ownedMm*/) {
-    static const char* kMmWin = "Moon Majora Pot 01"; // friendly name the MM oracle returns (not raw RC_)
+    static const char* kMmWin = "Defeat Majora"; // friendly name the MM oracle returns (not raw RC_)
     return mmReach.count(kMmWin) > 0;
 }
 
@@ -238,11 +261,51 @@ inline GoalPredicate MakeTriforceHuntGoal(int required) {
     };
 }
 
+inline GoalPredicate MakeCombinedGoal(CwGoal goal) {
+    return [goal](const std::unordered_set<std::string>& oot, const std::unordered_set<std::string>& mm,
+                  const std::vector<std::string>& ownedOot, const std::vector<std::string>& ownedMm) {
+        return CwGoalReached(goal, oot.count("Ganon") != 0, mm.count("Defeat Majora") != 0, ownedOot, ownedMm);
+    };
+}
+
+struct PathTarget {
+    GameId game;
+    const char* check;
+    const char* label;
+    bool namedItem = false;
+};
+
+// These markers are native defeat checks, not entering a boss room. A target is
+// hinted only if a collected-inventory baseline actually reaches it.
+inline const std::vector<PathTarget>& HintPathTargets() {
+    static const std::vector<PathTarget> targets = {
+        {GAME_OOT, "Queen Gohma", "Queen Gohma"}, {GAME_OOT, "King Dodongo", "King Dodongo"},
+        {GAME_OOT, "Barinade", "Barinade"}, {GAME_OOT, "Phantom Ganon", "Phantom Ganon"},
+        {GAME_OOT, "Volvagia", "Volvagia"}, {GAME_OOT, "Morpha", "Morpha"},
+        {GAME_OOT, "Twinrova", "Twinrova"}, {GAME_OOT, "Bongo Bongo", "Bongo Bongo"},
+        {GAME_OOT, "Ganon", "Ganon"},
+        {GAME_MM, "Woodfall Temple Boss Warp", "Odolwa"},
+        {GAME_MM, "Snowhead Temple Boss Warp", "Goht"},
+        {GAME_MM, "Great Bay Temple Boss Warp", "Gyorg"},
+        {GAME_MM, "Stone Tower Temple Inverted Boss Warp", "Twinmold"},
+        {GAME_MM, "Defeat Majora", "Majora"},
+        {GAME_OOT, "Ocarina of Time Item", "Zelda's escape"},
+        {GAME_OOT, kNamedTriforcePieces[0], "Triforce of Power", true},
+        {GAME_OOT, kNamedTriforcePieces[1], "Triforce of Courage", true},
+        {GAME_OOT, kNamedTriforcePieces[2], "Triforce of Wisdom", true},
+    };
+    return targets;
+}
+
 struct RequirednessResult {
     // "oot:<check>"/"mm:<check>" -> required (WotH, true) or foolish-candidate (false).
     std::unordered_map<std::string, bool> requiredByCheck;
     // "oot:<area>"/"mm:<area>" -> true once ANY advancement item placed there is required.
     std::unordered_map<std::string, bool> areaHasRequired;
+    // An area/item may be required for an optional boss even if it is not required
+    // for the chosen victory condition (e.g. Triforce hunt). Labels contain no reward.
+    std::unordered_map<std::string, std::vector<std::string>> pathsByCheck;
+    std::unordered_map<std::string, std::vector<std::string>> pathsByArea;
     int candidateCount = 0;
     int replayedCount = 0; // per-item counterfactual fixpoint replays actually run (cache misses)
     int64_t ms = 0;
@@ -251,7 +314,8 @@ struct RequirednessResult {
 // Requiredness pare-down over the COMBINED world: for each placed advancement item, tentatively
 // remove it (check stays, item not credited) and re-run the sphere-collect from empty; still-reachable
 // goal => NOT required (foolish), else required (WotH). Tested individually (no monotonicity assumed),
-// restricted to the winning playthrough's checks. mmRestore resets the MM oracle snapshot afterward.
+// restricted to actually collected checks. Boss/event paths are scored in the same replays.
+// mmRestore resets the MM oracle snapshot afterward.
 // ootCheckAreas/mmCheckAreas (checkName -> area) roll results up into per-area classification.
 // progress (optional) is write-only reporting for the UI; it never influences the result.
 inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, const OracleFns& ootOracle,
@@ -261,7 +325,7 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
                                               const std::unordered_map<std::string, std::string>& mmCheckAreas = {},
                                               GoalPredicate goalReached = DefaultGanonMajoraGoal,
                                               bool portalGated = true, bool mmStart = false,
-                                              ComboGenProgress* progress = nullptr) {
+                                              ComboGenProgress* progress = nullptr, uint32_t sharedMask = 0) {
     RequirednessResult result;
     auto placements = ParseSpoilerPlacements(spoilerJson, sohDumpJson, mmDumpJson);
 
@@ -269,32 +333,70 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
         return std::string(p.checkGame == GAME_OOT ? "oot:" : "mm:") + p.check;
     };
 
-    // Per-invocation reachability memo (one per oracle): the same owned-set prefixes recur across
-    // every counterfactual replay (sphere 0 is identical in all), so caching collapses the repeats.
-    std::unordered_map<std::string, ReachResult> ootMemo, mmMemo;
-    static const auto kEmptyReach = std::make_shared<const std::unordered_set<std::string>>();
+    // Cache the complete two-world probe. Song access depends on BOTH inventories
+    // and whether MM is already reachable; per-engine inventory caches lose those edges.
+    struct SongReachMemo { ReachSet oot, mm; bool mmOpen; };
+    std::unordered_map<std::string, SongReachMemo> songMemo;
+    std::unordered_set<size_t> stockSensitive;
+    const auto sourceMetadata = nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson)
+                                    .value("beanSources", nlohmann::json::object());
+    for (size_t i = 0; i < placements.size(); ++i) {
+        if (placements[i].checkGame != GAME_MM) continue;
+        const auto source = sourceMetadata.find(placements[i].check);
+        // Without metadata, keep the conservative cache separation. With a
+        // native dump, only renewable stock can change the resource search;
+        // excluding ordinary rewards is already reflected in owned inventory.
+        if (source == sourceMetadata.end() || source->value("renewable", false)) stockSensitive.insert(i);
+    }
 
     // Excludes a SET of placements from ever crediting their items, then sphere-collects everything
-    // else from empty until stable. creditedOut (optional) reports what was credited when the run
-    // ended (at a win: exactly what was collected strictly before the goal first held).
-    auto winsWithout = [&](const std::unordered_set<size_t>& excludeIdx, std::vector<char>* creditedOut) {
-        std::vector<std::string> ootOwned, mmOwned;
+    // else from empty until stable. Latch the first win but continue collecting to distinguish
+    // optional boss paths from items required for the seed's selected victory condition.
+    auto winsWithout = [&](const std::unordered_set<size_t>& excludeIdx, std::vector<char>* creditedOut,
+                           uint64_t* pathsOut) {
+        std::vector<size_t> excludedKey;
+        for (const auto index : excludeIdx) if (stockSensitive.count(index)) excludedKey.push_back(index);
+        std::sort(excludedKey.begin(), excludedKey.end());
+        auto queryWithStock = [&](const OracleFns& o, const std::vector<std::string>& owned) {
+            return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements, excludeIdx);
+        };
+        const auto starts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
+        std::vector<std::string> ootOwned = starts.first, mmOwned = starts.second;
         std::vector<char> credited(placements.size(), 0);
         ReachSet ootReach, mmReach;
         bool won = false;
+        uint64_t paths = 0;
+        size_t sharedGiven[SF_COUNT] = {0};
         // Latched: MM stays open once OOT can reach the Happy Mask Shop. Ungated (NO_LOGIC) = open,
         // and an MM start (#135) roots MM from the beginning.
         bool portalOpen = !portalGated || mmStart;
         for (;;) {
-            auto ootQ = QueryReachableMemo(ootOracle, ootOwned, ootMemo);
-            ootReach = ootQ.reach;
-            portalOpen = portalOpen || ootQ.portalOpen;
-            mmReach = portalOpen ? QueryReachableMemo(mmOracle, mmOwned, mmMemo).reach : kEmptyReach;
-            // Test the goal per sphere and stop at the first win: we only break when the goal IS met
-            // and never un-credit an item, so an early win is final regardless of oracle monotonicity.
-            if (goalReached(*ootReach, *mmReach, ootOwned, mmOwned)) {
-                won = true;
-                break;
+            CheckGenerationCancellation();
+            ApplySharedMirror(sharedMask, ootOwned, mmOwned, sharedGiven, nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+            const std::string key=nlohmann::json::array({CanonicalOwnedKey(ootOwned),
+                CanonicalOwnedKey(mmOwned),portalOpen,excludedKey}).dump();
+            auto memo=songMemo.find(key);
+            if(memo==songMemo.end()) {
+                // Requiredness probes share prefixes, but unique counterfactual inventories
+                // must not retain full two-world reachability sets for every candidate.
+                // Eviction only repeats the identical oracle query; it changes no rule.
+                constexpr size_t kMaxSongReachMemoEntries = 128;
+                if (songMemo.size() >= kMaxSongReachMemoEntries) songMemo.clear();
+                auto worlds=QuerySongWorlds(ootOracle,mmOracle,ootOwned,mmOwned,portalOpen,queryWithStock);
+                SongReachMemo value{std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.first)),
+                    std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.second)),portalOpen};
+                memo=songMemo.emplace(key,std::move(value)).first;
+            }
+            ootReach=memo->second.oot; mmReach=memo->second.mm; portalOpen=memo->second.mmOpen;
+            won |= goalReached(*ootReach, *mmReach, ootOwned, mmOwned);
+            const auto& targets = HintPathTargets();
+            for (size_t i = 0; i < targets.size(); ++i) {
+                const auto& reach = targets[i].game == GAME_OOT ? *ootReach : *mmReach;
+                const bool reached = targets[i].namedItem
+                    ? (std::find(ootOwned.begin(), ootOwned.end(), targets[i].check) != ootOwned.end() ||
+                       std::find(mmOwned.begin(), mmOwned.end(), targets[i].check) != mmOwned.end())
+                    : reach.count(targets[i].check) != 0;
+                if (reached) paths |= uint64_t{1} << i;
             }
             bool changed = false;
             for (size_t i = 0; i < placements.size(); ++i) {
@@ -315,6 +417,7 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
             won = goalReached(*ootReach, *mmReach, ootOwned, mmOwned);
         if (creditedOut)
             *creditedOut = std::move(credited);
+        if (pathsOut) *pathsOut = paths;
         return won;
     };
 
@@ -327,14 +430,14 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
 
     std::vector<signed char> classified(placements.size(), -1); // -1 unknown, 0 not-required, 1 required
 
-    // Baseline win (nothing excluded) yields the winning playthrough's collected set. We pare only
-    // those checks: blanking a check the winning path never collected cannot break that path, so an
-    // off-playthrough advancement item is not required regardless of monotonicity — no test needed.
+    // The baseline yields only legitimately collected checks. Never grant unreachable items
+    // to prove an optional path or make a self-locked item look accessible.
     std::vector<char> baseCredited;
+    uint64_t basePaths = 0;
     ++result.replayedCount;
-    bool baseWon = winsWithout({}, &baseCredited);
+    bool baseWon = winsWithout({}, &baseCredited, &basePaths);
 
-    // Candidates = advancement checks on the winning path. A stuck baseline can never win, so blanking
+    // Candidates = collected advancement checks. A stuck baseline can never win, so blanking
     // any one item still can't win: every advancement item is required, tested none.
     std::vector<size_t> cand;
     if (baseWon) {
@@ -359,7 +462,21 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
     // assumption (unlike the old group-test binary split, which our cross-game oracle broke).
     for (size_t i : cand) {
         ++result.replayedCount;
-        classified[i] = winsWithout({ i }, nullptr) ? 0 : 1;
+        uint64_t remainingPaths = 0;
+        classified[i] = winsWithout({ i }, nullptr, &remainingPaths) ? 0 : 1;
+        auto lostPaths = basePaths & ~remainingPaths;
+        for (size_t t = 0; t < HintPathTargets().size(); ++t) {
+            if (!(lostPaths & (uint64_t{1} << t))) continue;
+            const std::string label = HintPathTargets()[t].label;
+            const auto& p = placements[i];
+            result.pathsByCheck[checkKey(p)].push_back(label);
+            const auto& areas = p.checkGame == GAME_OOT ? ootCheckAreas : mmCheckAreas;
+            auto area = areas.find(p.check);
+            if (area != areas.end()) {
+                auto& labels = result.pathsByArea[(p.checkGame == GAME_OOT ? "oot:" : "mm:") + area->second];
+                if (std::find(labels.begin(), labels.end(), label) == labels.end()) labels.push_back(label);
+            }
+        }
         if (progress)
             progress->placed.fetch_add(1);
     }
@@ -393,8 +510,8 @@ struct PlaythroughResult {
     int beatableSphere = -1;
     size_t reachableOot = 0, unreachableOot = 0;
     size_t reachableMm = 0, unreachableMm = 0;
-    // Win-side reachability at FULL placed inventory — names which side blocks a stuck seed
-    // (Ganon = OOT tower-top + Boss Key; Majora = MM lair). Under a Triforce Hunt both mirror the
+    // Win-side reachability at the collected fixed point — names which side blocks a stuck seed
+    // (Ganon = OOT tower-top + Boss Key; Majora = combat-capable MM lair). Under a Triforce Hunt both mirror the
     // combined piece count, so every shared verdict path works without a goal branch.
     bool ganonReachable = false, majoraReachable = false;
     bool hunt = false;
@@ -403,7 +520,7 @@ struct PlaythroughResult {
 
 // Endgame proxies the oracles actually emit (see ComboShip.cpp for the rationale — the literal "Ganon"
 // check needs CanUse(RG_MASTER_SWORD), an equip flag the headless engine doesn't model, so we use
-// tower-top + Boss Key owned; MM uses the in-lair check which already encodes the remains/masks gate).
+// tower-top + Boss Key owned; MM adds the actual combat requirements in its virtual defeat marker).
 // sohDumpJson/mmDumpJson (optional): static-data dumps whose pool[]/fixed[] advancement flags let the
 // text log show only progression items; unknown names default to advancement so nothing is hidden.
 // progressionOnly also drops junk from playthroughOut — for the spoiler. Leave it false for validation:
@@ -415,7 +532,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
                                         bool progressionOnly = false, CwGoal goal = {}, bool mmStart = false,
                                         uint32_t sharedMask = 0) {
     static const char* kOotGanon = "Ganon";           // RC_GANON reachable = OOT beatable (see CrossWorldRando.h)
-    static const char* kMmWin = "Moon Majora Pot 01"; // ComboShip: friendly form of RC_MOON_MAJORA_POT_01
+    static const char* kMmWin = "Defeat Majora";
 
     PlaythroughResult result;
     result.hunt = goal.hunt;
@@ -424,17 +541,19 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
     using Placed = CwPlacedItem;
     std::vector<Placed> placements = ParseSpoilerPlacements(spoilerJson, sohDumpJson, mmDumpJson);
 
-    auto queryReachable = QueryReachable;
+    auto queryReachable = [&](const OracleFns& o, const std::vector<std::string>& owned) {
+        return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements);
+    };
 
-    std::vector<std::string> ownedOot, ownedMm;
+    const auto starts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
+    std::vector<std::string> ownedOot = starts.first, ownedMm = starts.second;
     std::unordered_set<std::string> collected; // "<cg>:<cn>"
     std::ostringstream log;
     log << "Cross-world playthrough - seed '" << seedLabel << "'\n";
     if (goal.hunt) {
         log << "Beatable when: " << goal.required << " Triforce Pieces collected across both games.\n\n";
     } else {
-        log << "Beatable when: Ganon reachable (OOT: RC_GANON, i.e. bridge + boss key)"
-            << " AND Majora's Lair reachable (MM).\n\n";
+        log << "Beatable when the combined goal is reached: " << CwGoalName(goal) << ".\n\n";
     }
 
     int beatableSphere = -1;
@@ -444,16 +563,15 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
     bool portalOpen = !portalGated || mmStart;
     size_t sharedGiven[SF_COUNT] = { 0 };
     for (int sphere = 0; sphere < kMaxSpheres; ++sphere) {
-        auto ootReach = queryReachable(ootOracle, ownedOot);
-        // Portal bit belongs to the OOT query just made; read it before crediting any MM check.
-        portalOpen = portalOpen || OraclePortalOpen(ootOracle);
-        ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven);
-        auto mmReach = portalOpen ? queryReachable(mmOracle, ownedMm) : std::unordered_set<std::string>{};
+        ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven, nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+        auto worlds=QuerySongWorlds(ootOracle,mmOracle,ownedOot,ownedMm,portalOpen,queryReachable);
+        auto& ootReach=worlds.first; auto& mmReach=worlds.second;
         bool canGanon = ootReach.count(kOotGanon) > 0;
         bool canMajora = mmReach.count(kMmWin) > 0;
-        if (goal.hunt ? CountOwnedTriforcePieces(ownedOot, ownedMm) >= goal.required : (canGanon && canMajora)) {
-            beatableSphere = sphere;
-            break;
+        if (CwGoalReached(goal, canGanon, canMajora, ownedOot, ownedMm)) {
+            if (beatableSphere < 0) beatableSphere = sphere;
+            // Continue collecting to a fixed point. Winning does not prove optional
+            // checks accessible, and assuming all placed items would hide circular locks.
         }
 
         std::vector<Placed> newly;
@@ -466,7 +584,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
                 newly.push_back(p);
         }
         if (newly.empty()) {
-            log << "Sphere " << sphere << ": (stuck — nothing new reachable, not yet beatable)\n";
+            log << "Sphere " << sphere << (beatableSphere < 0 ? ": (stuck before the goal)\n" : ": (collected fixed point after the goal)\n");
             break;
         }
         size_t newlyAdv = 0;
@@ -503,16 +621,11 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
             playthroughOut->push_back({ { "sphere", sphere }, { "steps", std::move(sphereSteps) } });
     }
 
-    // True "ever reachable" sets — full placed-item inventory yields the maximal (monotonic) reachable
-    // set. Differs from `collected`, which stops at the beatable sphere. Runs before the MM restore.
-    std::vector<std::string> allOot, allMm;
-    for (auto& p : placements)
-        (p.itemGame == GAME_OOT ? allOot : allMm).push_back(p.item);
-    auto everReachOot = queryReachable(ootOracle, allOot);
-    bool everPortalOpen = OraclePortalOpen(ootOracle) || mmStart;
-    size_t everSharedGiven[SF_COUNT] = { 0 };
-    ApplySharedMirror(sharedMask, allOot, allMm, everSharedGiven);
-    auto everReachMm = everPortalOpen ? queryReachable(mmOracle, allMm) : std::unordered_set<std::string>{};
+    // Reachability after collecting only checks that actually opened from the empty start.
+    // Never grant the contents of inaccessible checks to prove those same checks accessible.
+    ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven, nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+    auto everWorlds=QuerySongWorlds(ootOracle,mmOracle,ownedOot,ownedMm,portalOpen,queryReachable);
+    auto& everReachOot=everWorlds.first; auto& everReachMm=everWorlds.second;
     result.ganonReachable = everReachOot.count(kOotGanon) > 0;
     result.majoraReachable = everReachMm.count(kMmWin) > 0;
     if (goal.hunt) {
@@ -522,7 +635,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
                 ++result.piecesReachable;
             }
         }
-        result.ganonReachable = result.majoraReachable = result.piecesReachable >= goal.required;
+
     }
 
     if (mmRestore)
@@ -532,7 +645,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
         log << "\nBEATABLE at sphere " << beatableSphere << ": " << goal.required
             << " Triforce Pieces collected. Seed is completable.\n";
     } else if (beatableSphere >= 0) {
-        log << "\nBEATABLE at sphere " << beatableSphere << ": Ganon AND Majora both reachable. Seed is completable.\n";
+        log << "\nBEATABLE at sphere " << beatableSphere << ": combined goal " << CwGoalName(goal) << " reached. Seed is completable.\n";
     } else {
         log << "\nNOT proven beatable within " << kMaxSpheres << " spheres (see stuck note above).\n";
     }
@@ -574,7 +687,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
     std::cout << "[PLAYTHROUGH] seed '" << seedLabel << "' - " << (beatableSphere >= 0 ? "BEATABLE" : "NOT beatable")
               << (beatableSphere >= 0 ? (" at sphere " + std::to_string(beatableSphere)) : "") << "\n";
     std::cout << "[PLAYTHROUGH] collected " << collected.size() << " items across "
-              << (beatableSphere >= 0 ? beatableSphere : kMaxSpheres) << " spheres before the win\n";
+              << (beatableSphere >= 0 ? beatableSphere : kMaxSpheres) << " spheres through the reachability fixed point\n";
 
     result.beatable = beatableSphere >= 0;
     result.beatableSphere = beatableSphere;

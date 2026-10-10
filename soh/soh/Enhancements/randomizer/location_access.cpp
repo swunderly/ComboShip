@@ -3,6 +3,11 @@
 #include "soh/Enhancements/randomizer/static_data.h"
 #include "soh/Enhancements/randomizer/SeedContext.h"
 #include "soh/Enhancements/randomizer/entrance.h"
+#ifdef COMBO_BUILD
+#include "age_change_areas.h"
+#include "rando/GameplayRules.h"
+#include "rando/OotResourceSources.h"
+#endif
 #include "soh/Enhancements/debugger/performanceTimer.h"
 
 #include <fstream>
@@ -78,7 +83,7 @@ static uint16_t GetMinimumPrice(const Rando::Location* loc) {
             return ctx->GetOption(priceSettings.fixedPrice).Get() * 5;
         case RO_PRICE_RANGE: {
             uint16_t range1 = ctx->GetOption(priceSettings.range1).Get() * 5;
-            uint16_t range2 = ctx->GetOption(priceSettings.range1).Get() * 5;
+            uint16_t range2 = ctx->GetOption(priceSettings.range2).Get() * 5;
             return range1 < range2 ? range1 : range2;
         }
         case RO_PRICE_SET_BY_WALLET: {
@@ -115,16 +120,24 @@ uint16_t GetCheckPrice(RandomizerCheck check /* = RC_UNKNOWN_CHECK */) {
 }
 
 uint16_t GetWalletCapacity() {
+    uint16_t capacity = 0;
     if (logic->HasItem(RG_TYCOON_WALLET)) {
-        return 999;
+        capacity = 999;
     } else if (logic->HasItem(RG_GIANT_WALLET)) {
-        return 500;
+        capacity = 500;
     } else if (logic->HasItem(RG_ADULT_WALLET)) {
-        return 200;
+        capacity = 200;
     } else if (logic->HasItem(RG_CHILD_WALLET)) {
-        return 99;
+        capacity = 99;
     }
-    return 0;
+#ifdef COMBO_BUILD
+    // OoTMM can_use_wallet / wallet_price: reachable rupees and wallet capacity.
+    // Logical availability never depends on the player's current balance.
+    if (!logic->HasItem(RG_WALLET_INF) && !logic->Get(LOGIC_RENEWABLE_RUPEES)) {
+        return 0;
+    }
+#endif
+    return capacity;
 }
 
 std::set<RandomizerArea> CalculateAreas(SceneID scene) {
@@ -790,6 +803,26 @@ bool SpiritShared(RandomizerRegion region, ConditionFn condition, bool anyAge, R
     logic->IsAdult = true;
 
     bool AdultCertainAccess = SpiritCertainAccess(region);
+#ifdef COMBO_BUILD
+    // Spirit's key analysis deliberately distinguishes potential and certain
+    // room access. Local age change shares CERTAIN access between the ages;
+    // it must not turn an ambiguous minimum-key path into a guaranteed route.
+    if ((ChildCertainAccess || AdultCertainAccess) &&
+        (areaTable[region].Child() || areaTable[region].Adult()) &&
+        Rando::SongAgeChangeAreaAllowed(region)) {
+        const int mode = logic->GameplayRuleValue("gEnhancements.TimeTravel");
+        auto canChange = [&](bool child) {
+            logic->IsChild = child;
+            logic->IsAdult = !child;
+            return ComboRando::CanChangeAgeWithSong(mode, logic->CanUse(RG_SONG_OF_TIME),
+                logic->HasItem(RG_OCARINA_OF_TIME), logic->HasItem(RG_MASTER_SWORD));
+        };
+        if ((ChildCertainAccess && canChange(true)) || (AdultCertainAccess && canChange(false)))
+            ChildCertainAccess = AdultCertainAccess = true;
+    }
+    logic->IsChild = false;
+    logic->IsAdult = true;
+#endif
     // If we are AnyAge and have any CertainAccess, then we can check those ages
     // we don't need to check ambiguity here as if this fails, then 1 of the ages has failed
     if (anyAge && (ChildCertainAccess || AdultCertainAccess)) {
@@ -966,6 +999,10 @@ void RegionTable_Init() {
         EVENT_ACCESS(LOGIC_BUG_ACCESS, logic->CanCutShrubs()),
         EVENT_ACCESS(LOGIC_FISH_ACCESS, true),
     };
+#ifdef COMBO_BUILD
+    const auto resourceEvents = OotGrottoResourceEvents();
+    grottoEvents.insert(grottoEvents.end(), resourceEvents.begin(), resourceEvents.end());
+#endif
     // Clear the array from any previous playthrough attempts. This is important so that
     // locations which appear in both MQ and Vanilla dungeons don't get set in both areas.
     areaTable.fill(Region("Invalid Region", SCENE_ID_MAX, {}, {}, {}));
@@ -1007,6 +1044,10 @@ void RegionTable_Init() {
     RegionTable_Init_IceCavern();
     RegionTable_Init_GerudoTrainingGround();
     RegionTable_Init_GanonsCastle();
+
+#ifdef COMBO_BUILD
+    RegisterOotResourceSources();
+#endif
 
     // Set parent regions
     for (uint32_t i = RR_ROOT; i < RR_MAX; i++) {

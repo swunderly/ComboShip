@@ -1115,6 +1115,11 @@ void Settings::CreateOptions() {
         }
     });
     OPT_BOOL(RSK_SHUFFLE_BEAN_SOULS, "Shuffle Bean Souls", CVAR_RANDOMIZER_SETTING("ShuffleBeanSouls"), mOptionDescriptions[RSK_SHUFFLE_BEAN_SOULS], IMFLAG_SEPARATOR_BOTTOM, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
+    OPT_BOOL(RSK_COMPLETE_OOT_SOULS, "Complete OoT Soul Compatibility", CVAR_RANDOMIZER_SETTING("CompleteOotSouls"), mOptionDescriptions[RSK_COMPLETE_OOT_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
+    OPT_BOOL(RSK_SHUFFLE_ENEMY_SOULS, "Shuffle Enemy Souls", CVAR_RANDOMIZER_SETTING("ShuffleEnemySouls"), mOptionDescriptions[RSK_SHUFFLE_ENEMY_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
+    OPT_BOOL(RSK_SHUFFLE_NPC_SOULS, "Shuffle NPC Souls", CVAR_RANDOMIZER_SETTING("ShuffleNpcSouls"), mOptionDescriptions[RSK_SHUFFLE_NPC_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
+    OPT_BOOL(RSK_SHUFFLE_ANIMAL_SOULS, "Shuffle Animal Souls", CVAR_RANDOMIZER_SETTING("ShuffleAnimalSouls"), mOptionDescriptions[RSK_SHUFFLE_ANIMAL_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
+    OPT_BOOL(RSK_SHUFFLE_MISC_SOULS, "Shuffle Misc Souls", CVAR_RANDOMIZER_SETTING("ShuffleMiscSouls"), mOptionDescriptions[RSK_SHUFFLE_MISC_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
     OPT_U8(RSK_SHUFFLE_BOSS_SOULS, "Shuffle Boss Souls", {"Off", "On"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("ShuffleBossSouls"), mOptionDescriptions[RSK_SHUFFLE_BOSS_SOULS], WIDGET_CVAR_COMBOBOX);
     OPT_BOOL(RSK_SHUFFLE_DEKU_STICK_BAG, "Shuffle Deku Stick Bag", CVAR_RANDOMIZER_SETTING("ShuffleDekuStickBag"), mOptionDescriptions[RSK_SHUFFLE_DEKU_STICK_BAG], IMFLAG_SEPARATOR_BOTTOM, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
     OPT_CALLBACK(RSK_SHUFFLE_DEKU_STICK_BAG, {
@@ -1132,6 +1137,30 @@ void Settings::CreateOptions() {
             mOptions[RSK_STARTING_NUTS].Enable();
         }
     });
+    OPT_U8(RSK_SHUFFLE_SILVER_RUPEES, "Silver Rupee Shuffle", {"Vanilla", "Own Dungeon", "Anywhere"}, OptionCategory::Setting,
+           CVAR_RANDOMIZER_SETTING("SilverRupeeShuffle"), "Shuffle the received puzzle items independently of their physical checks.", WIDGET_CVAR_COMBOBOX, 0);
+    OPT_BOOL(RSK_SILVER_POUCH_BOTW, "Silver Pouch: Bottom of the Well", CVAR_RANDOMIZER_SETTING("SilverPouchBOTW"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_DC, "Silver Pouch: Dodongo's Cavern (MQ)", CVAR_RANDOMIZER_SETTING("SilverPouchDC"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_GANON_FIRE, "Silver Pouch: Ganon Fire", CVAR_RANDOMIZER_SETTING("SilverPouchGANON_FIRE"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_GANON_FOREST, "Silver Pouch: Ganon Forest", CVAR_RANDOMIZER_SETTING("SilverPouchGANON_FOREST"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_GANON_LIGHT, "Silver Pouch: Ganon Light", CVAR_RANDOMIZER_SETTING("SilverPouchGANON_LIGHT"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_GANON_SHADOW, "Silver Pouch: Ganon Shadow", CVAR_RANDOMIZER_SETTING("SilverPouchGANON_SHADOW"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_GANON_SPIRIT, "Silver Pouch: Ganon Spirit", CVAR_RANDOMIZER_SETTING("SilverPouchGANON_SPIRIT"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_GANON_WATER, "Silver Pouch: Ganon Water", CVAR_RANDOMIZER_SETTING("SilverPouchGANON_WATER"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_GTG_LAVA, "Silver Pouch: Training Ground Lava", CVAR_RANDOMIZER_SETTING("SilverPouchGTG_LAVA"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_GTG_SLOPES, "Silver Pouch: Training Ground Slopes", CVAR_RANDOMIZER_SETTING("SilverPouchGTG_SLOPES"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_GTG_WATER, "Silver Pouch: Training Ground Underwater", CVAR_RANDOMIZER_SETTING("SilverPouchGTG_WATER"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_IC_BLOCK, "Silver Pouch: Ice Cavern Push Block", CVAR_RANDOMIZER_SETTING("SilverPouchIC_BLOCK"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_IC_SCYTHE, "Silver Pouch: Ice Cavern Spinning Blade", CVAR_RANDOMIZER_SETTING("SilverPouchIC_SCYTHE"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_SHADOW_BLADES, "Silver Pouch: Shadow Blades", CVAR_RANDOMIZER_SETTING("SilverPouchSHADOW_BLADES"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_SHADOW_PIT, "Silver Pouch: Shadow Pit", CVAR_RANDOMIZER_SETTING("SilverPouchSHADOW_PIT"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_SHADOW_SCYTHE, "Silver Pouch: Shadow Scythe", CVAR_RANDOMIZER_SETTING("SilverPouchSHADOW_SCYTHE"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_SHADOW_SPIKES, "Silver Pouch: Shadow Spikes", CVAR_RANDOMIZER_SETTING("SilverPouchSHADOW_SPIKES"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_SPIRIT_ADULT, "Silver Pouch: Spirit Adult Section (MQ)", CVAR_RANDOMIZER_SETTING("SilverPouchSPIRIT_ADULT"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_SPIRIT_BOULDERS, "Silver Pouch: Spirit Boulders", CVAR_RANDOMIZER_SETTING("SilverPouchSPIRIT_BOULDERS"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_SPIRIT_CHILD, "Silver Pouch: Spirit Child", CVAR_RANDOMIZER_SETTING("SilverPouchSPIRIT_CHILD"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_SPIRIT_LOBBY, "Silver Pouch: Spirit Lobby (MQ)", CVAR_RANDOMIZER_SETTING("SilverPouchSPIRIT_LOBBY"), "Replace this puzzle set with one pouch; retain all physical checks.");
+    OPT_BOOL(RSK_SILVER_POUCH_SPIRIT_SUN, "Silver Pouch: Spirit Sun", CVAR_RANDOMIZER_SETTING("SilverPouchSPIRIT_SUN"), "Replace this puzzle set with one pouch; retain all physical checks.");
     OPT_U8(RSK_SHUFFLE_FREESTANDING, "Shuffle Freestanding Items", {"Off", "Dungeons", "Overworld", "All Items"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("ShuffleFreestanding"), mOptionDescriptions[RSK_SHUFFLE_FREESTANDING], WIDGET_CVAR_COMBOBOX, RO_SHUFFLE_FREESTANDING_OFF);
     OPT_U8(RSK_SHUFFLE_WONDER_ITEMS, "Shuffle Wonder Items", {"Off", "Dungeons", "Overworld", "All Items"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("ShuffleWonderItems"), mOptionDescriptions[RSK_SHUFFLE_WONDER_ITEMS], WIDGET_CVAR_COMBOBOX, RO_SHUFFLE_WONDER_ITEMS_OFF);
     OPT_U8(RSK_FISHSANITY, "Fishsanity", {"Off", "Shuffle only Hyrule Loach", "Shuffle Fishing Pond", "Shuffle Overworld Fish", "Shuffle Both"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("Fishsanity"), mOptionDescriptions[RSK_FISHSANITY], WIDGET_CVAR_COMBOBOX, RO_FISHSANITY_OFF);
@@ -1425,7 +1454,11 @@ void Settings::CreateOptions() {
             mOptions[RSK_BIG_POES_HINT].Enable();
         }
     });
+#ifdef COMBO_BUILD
+    OPT_U8(RSK_MASK_QUEST, "Mask Quest", {"Vanilla", "Completed", "Shuffle"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("CompleteMaskQuest"), "Shuffle places the eight OoT masks in the item pool. Completed starts with them. The Happy Mask Shop is the portal to Majora's Mask.", WIDGET_CVAR_COMBOBOX, RO_MASK_QUEST_SHUFFLE);
+#else
     OPT_U8(RSK_MASK_QUEST, "Mask Quest", {"Vanilla", "Completed", "Shuffle"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("CompleteMaskQuest"), mOptionDescriptions[RSK_MASK_QUEST], WIDGET_CVAR_COMBOBOX, 0);
+#endif
     OPT_U8(RSK_GOSSIP_STONE_HINTS, "Gossip Stone Hints", {"No Hints", "Need Nothing", "Mask of Truth", "Stone of Agony"}, OptionCategory::Setting, CVAR_RANDOMIZER_SETTING("GossipStoneHints"), mOptionDescriptions[RSK_GOSSIP_STONE_HINTS], WIDGET_CVAR_COMBOBOX, RO_GOSSIP_STONES_NEED_NOTHING, false, nullptr, IMFLAG_NONE);
     OPT_CALLBACK(RSK_GOSSIP_STONE_HINTS, {
         if (CVarGetInteger(CVAR_RANDOMIZER_SETTING("GossipStoneHints"), RO_GOSSIP_STONES_NEED_NOTHING) ==
@@ -2105,6 +2138,30 @@ void Settings::CreateOptions() {
                                   &mOptions[RSK_FISHSANITY_POND_COUNT],
                                   &mOptions[RSK_FISHSANITY_AGE_SPLIT],
                                   &mOptions[RSK_SHUFFLE_FREESTANDING],
+                                   &mOptions[RSK_SHUFFLE_SILVER_RUPEES],
+                                   &mOptions[RSK_SILVER_POUCH_BOTW],
+                                   &mOptions[RSK_SILVER_POUCH_DC],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_FIRE],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_FOREST],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_LIGHT],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_SHADOW],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_SPIRIT],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_WATER],
+                                   &mOptions[RSK_SILVER_POUCH_GTG_LAVA],
+                                   &mOptions[RSK_SILVER_POUCH_GTG_SLOPES],
+                                   &mOptions[RSK_SILVER_POUCH_GTG_WATER],
+                                   &mOptions[RSK_SILVER_POUCH_IC_BLOCK],
+                                   &mOptions[RSK_SILVER_POUCH_IC_SCYTHE],
+                                   &mOptions[RSK_SILVER_POUCH_SHADOW_BLADES],
+                                   &mOptions[RSK_SILVER_POUCH_SHADOW_PIT],
+                                   &mOptions[RSK_SILVER_POUCH_SHADOW_SCYTHE],
+                                   &mOptions[RSK_SILVER_POUCH_SHADOW_SPIKES],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_ADULT],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_BOULDERS],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_CHILD],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_LOBBY],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_SUN],
+
                                   &mOptions[RSK_SHUFFLE_WONDER_ITEMS],
                                   &mOptions[RSK_SHUFFLE_BEEHIVES],
                                   &mOptions[RSK_SHUFFLE_COWS],
@@ -2388,6 +2445,30 @@ void Settings::CreateOptions() {
                                             &mOptions[RSK_SHUFFLE_DEKU_STICK_BAG],
                                             &mOptions[RSK_SHUFFLE_DEKU_NUT_BAG],
                                             &mOptions[RSK_SHUFFLE_FREESTANDING],
+                                   &mOptions[RSK_SHUFFLE_SILVER_RUPEES],
+                                   &mOptions[RSK_SILVER_POUCH_BOTW],
+                                   &mOptions[RSK_SILVER_POUCH_DC],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_FIRE],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_FOREST],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_LIGHT],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_SHADOW],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_SPIRIT],
+                                   &mOptions[RSK_SILVER_POUCH_GANON_WATER],
+                                   &mOptions[RSK_SILVER_POUCH_GTG_LAVA],
+                                   &mOptions[RSK_SILVER_POUCH_GTG_SLOPES],
+                                   &mOptions[RSK_SILVER_POUCH_GTG_WATER],
+                                   &mOptions[RSK_SILVER_POUCH_IC_BLOCK],
+                                   &mOptions[RSK_SILVER_POUCH_IC_SCYTHE],
+                                   &mOptions[RSK_SILVER_POUCH_SHADOW_BLADES],
+                                   &mOptions[RSK_SILVER_POUCH_SHADOW_PIT],
+                                   &mOptions[RSK_SILVER_POUCH_SHADOW_SCYTHE],
+                                   &mOptions[RSK_SILVER_POUCH_SHADOW_SPIKES],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_ADULT],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_BOULDERS],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_CHILD],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_LOBBY],
+                                   &mOptions[RSK_SILVER_POUCH_SPIRIT_SUN],
+
                                             &mOptions[RSK_SHUFFLE_WONDER_ITEMS],
                                             &mOptions[RSK_SHUFFLE_FOUNTAIN_FAIRIES],
                                             &mOptions[RSK_SHUFFLE_STONE_FAIRIES],

@@ -1,7 +1,18 @@
+#include "2s2h/Rando/ActorBehavior/BeanSources.h"
+#include "Rando/ActorBehavior/ExpandedSoulsReadiness.h"
+#ifdef COMBO_BUILD
+extern "C" int gMMComboSharedMask;
+#endif
+#include "Rando/ActorBehavior/MissingMmSouls.h"
+#include "Rando/Ocarinas.h"
+#include "Rando/ActorBehavior/ExpandedSoulsNative.h"
 #include "BenPort.h"
+#include "ComboAdultMaskInventory.h"
+#include "ComboAdultGearInventory.h"
 #ifdef COMBO_BUILD
 #include "ComboExport.h"
 #include "ComboResolve.h"
+#include "2s2h/Enhancements/Songs/CrossWarpAudio.h"
 #endif
 #include <iostream>
 #include <algorithm>
@@ -67,6 +78,10 @@ CrowdControl* CrowdControl::Instance;
 #ifdef COMBO_BUILD
 #include "ComboMenuSharedContext.h"               // ComboShip: shared per-DLL ImGui context helper (combo-owned)
 #include "rando/SharedItems.h"                    // ComboShip: Shared Items family table
+#include "rando/FaroreRules.h"
+#include "2s2h/Rando/FaroresWind.h"
+#include "2s2h/Rando/Spells.h"
+#include "rando/SpellRules.h"
 #include "2s2h/Rando/MiscBehavior/MiscBehavior.h" // ComboShip: MM_LoadComboRando cache invalidation + ComboRando types
 #endif
 
@@ -143,6 +158,12 @@ AudioCollection* AudioCollection::Instance;
 // ComboShip: set before MM_RunGame to reuse the OOT context. One shared libultraship.dll means
 // Context::mContext is the same instance in every DLL, so GetInstance() already returns it.
 static bool sComboTransitionActive = false;
+extern "C" int MM_FaroreDeparturePending(void);
+extern "C" int MM_DispatchNativeDeparture(PlayState*);
+extern "C" void MM_CancelNativeDeparture(void);
+static int sSongDeparture=-1;
+static void ProcessForeignSongReply();
+static int sSongArrival=-1;
 
 extern "C" COMBO_EXPORT void MM_NotifyComboTransition(void) {
     sComboTransitionActive = true;
@@ -739,6 +760,12 @@ void OTRGlobals::Initialize() {
     if (std::filesystem::exists(mmPath)) {
         context->GetResourceManager()->GetArchiveManager()->AddArchive(mmPath);
     }
+#ifdef COMBO_BUILD
+    // Locally prepared resources from the user's imported ROMs. Never APK/bundle data.
+    const auto adultLocal=Ship::Context::LocateFileAcrossAppDirs("combo_adult_mm.local.o2r",appShortName);
+    if(std::filesystem::exists(adultLocal))context->GetResourceManager()->GetArchiveManager()->AddArchive(adultLocal);
+#endif
+
 
     std::unordered_set<uint32_t> validHashes = { MM_NTSC_US_10, MM_NTSC_US_GC };
 
@@ -1133,6 +1160,8 @@ extern "C" void InitOTR(int argc, char* argv[]) {
         }
     });
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameStateMainStart>([]() {
+        ProcessForeignSongReply();
+        if (sSongDeparture>=0 || MM_FaroreDeparturePending()) sComboReturnPending=true;
         if (!sComboReturnPending && !sComboResetReturnPending && !sComboOwlSaveQuitPending)
             return;
         const bool isReset = sComboResetReturnPending;
@@ -1157,8 +1186,12 @@ extern "C" void InitOTR(int argc, char* argv[]) {
         if (!isOwlSaveQuit && (!isReset || CVarGetInteger("gEnhancements.Saving.Autosave", 0)) &&
             gSaveContext.gameMode == GAMEMODE_NORMAL)
             SaveManager_SaveCurrentForCombo();
-        if (gComboReturnCallback)
-            gComboReturnCallback(isOwlSaveQuit ? 2 : (isReset ? 1 : 0));
+        if(MM_FaroreDeparturePending()&&!isReset&&!isOwlSaveQuit) {
+            if(!MM_DispatchNativeDeparture(gPlayState))return;
+        } else {
+            if(isReset||isOwlSaveQuit)MM_CancelNativeDeparture();
+            if(gComboReturnCallback)gComboReturnCallback(isOwlSaveQuit?2:(isReset?1:0));
+        }
         if (auto fast3d = std::dynamic_pointer_cast<Fast::Fast3dWindow>(Ship::Context::GetRawInstance()->GetWindow())) {
             fast3d->SetIsRunning(false);
         }
@@ -1173,6 +1206,24 @@ extern "C" void InitOTR(int argc, char* argv[]) {
     Rando::Init();
     GfxPatcher_ApplyNecessaryAuthenticPatches();
     DebugConsole_Init();
+#if defined(COMBO_BUILD) && defined(COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS)
+    GameInteractor::Instance->RegisterGameHookForID<GameInteractor::OnActorUpdate>(ACTOR_PLAYER, [](Actor* actor) {
+        static unsigned snapshotFrames=0;
+        if(!CVarGetInteger("gCombo.Debug.AdultMmRuntimeValidation",0)||!gPlayState||gSaveContext.fileNum>2||!actor)return;
+        Player* player=reinterpret_cast<Player*>(actor);
+        Camera* camera=GET_ACTIVE_CAM(gPlayState);
+        if(!camera||!player->ageProperties||!player->skelAnime.jointTable)return;
+        if(snapshotFrames++>=5&&snapshotFrames%300!=0)return;
+        const Vec3s root=player->skelAnime.jointTable[0],head=player->skelAnime.jointTable[PLAYER_LIMB_HEAD];
+        SPDLOG_INFO("[ComboShip AdultReadonly] form={} scale={}/{}/{} height={} propertyHeight={} effectiveAge={} rawAge={} enabled={} eye={}/{}/{} at={}/{}/{} cameraDist={} skeleton={} humanTable={} jointsRoot={}/{}/{} jointsHead={}/{}/{}",
+            int(player->transformation),player->actor.scale.x,player->actor.scale.y,player->actor.scale.z,
+            Player_GetHeight(player),player->ageProperties->unk_34,
+            int(gSaveContext.save.shipSaveInfo.adultMm.enabled?(gSaveContext.save.linkAge==0?0:1):1),int(gSaveContext.save.linkAge),int(gSaveContext.save.shipSaveInfo.adultMm.enabled),
+            camera->eye.x,camera->eye.y,camera->eye.z,camera->at.x,camera->at.y,camera->at.z,camera->dist,
+            static_cast<const void*>(player->skelAnime.skeleton),static_cast<const void*>(gPlayerSkeletons[PLAYER_FORM_HUMAN]),
+            root.x,root.y,root.z,head.x,head.y,head.z);
+    });
+#endif
     GameInteractor::Instance->RegisterOwnHooks();
     CustomItem::RegisterHooks();
     CustomMessage::RegisterHooks();
@@ -1237,12 +1288,14 @@ extern "C" void DeinitOTR() {
 
     OTRGlobals::Instance->context = nullptr;
     delete AudioCollection::Instance;
-#ifdef COMBO_BUILD
+#if defined(COMBO_BUILD) && !defined(__ANDROID__)
     // ComboShip: this DLL's module-local GImGui still points at the shared ImGui context, which is
     // freed when soh's DeinitOTR releases the last Context ref right after this returns. A later
     // 2ship static destructor calling ImGui::MemFree would then touch freed memory. Null it now.
     ImGui::SetCurrentContext(nullptr);
 #endif
+    // Android resolves ImGui through shared libultraship. Clearing its context here would make
+    // the subsequent SOH_Deinit crash in ImGui_ImplSDL2_Shutdown; SOH destroys it after both games.
 }
 
 #ifdef COMBO_BUILD
@@ -1925,11 +1978,27 @@ extern "C" Mtx* ResourceMgr_LoadMtxByName(char* path) {
 
 // ComboShip: audio loads pinned to MM's own RM — the audio thread races active-RM swaps
 // (ResourceManagerScope) made on other threads.
+#ifdef COMBO_BUILD
+extern "C" SequenceData* Combo_MM_AdultSequenceForPath(const char* path);
+extern "C" SoundFont* Combo_MM_AdultFontForPath(const char* path);
+#endif
 extern "C" SequenceData ResourceMgr_LoadSeqByName(const char* path) {
+#ifdef COMBO_BUILD
+    if(auto* adult=Combo_MM_AdultSequenceForPath(path))return *adult;
+#endif
+#ifdef COMBO_BUILD
+    if (auto* foreign = Combo_MMWarpAudioResource(path)) return *static_cast<SequenceData*>(foreign);
+#endif
     SequenceData* sequence = (SequenceData*)Ship::CrossRMRegistry::GetOrActive("mm")->GetResourceRawPointer(path);
     return *sequence;
 }
 extern "C" SequenceData* ResourceMgr_LoadSeqPtrByName(const char* path) {
+#ifdef COMBO_BUILD
+    if(auto* adult=Combo_MM_AdultSequenceForPath(path))return adult;
+#endif
+#ifdef COMBO_BUILD
+    if (auto* foreign = Combo_MMWarpAudioResource(path)) return static_cast<SequenceData*>(foreign);
+#endif
     SequenceData* sequence = (SequenceData*)Ship::CrossRMRegistry::GetOrActive("mm")->GetResourceRawPointer(path);
     return sequence;
 }
@@ -2004,6 +2073,12 @@ extern "C" SoundFontSample* ResourceMgr_LoadAudioSample(const char* path) {
 #endif
 
 extern "C" SoundFont* ResourceMgr_LoadAudioSoundFontByName(const char* path) {
+#ifdef COMBO_BUILD
+    if(auto* adult=Combo_MM_AdultFontForPath(path))return adult;
+#endif
+#ifdef COMBO_BUILD
+    if (auto* foreign = Combo_MMWarpAudioResource(path)) return static_cast<SoundFont*>(foreign);
+#endif
     return (SoundFont*)Ship::CrossRMRegistry::GetOrActive("mm")->GetResourceRawPointer(path);
 }
 
@@ -2588,6 +2663,9 @@ extern "C" COMBO_EXPORT void MM_InitArchives() {
         archivePaths.push_back(shipO2R);
     }
 
+    const auto adultLocal=Ship::Context::LocateFileAcrossAppDirs("combo_adult_mm.local.o2r",appShortName);
+    if(std::filesystem::exists(adultLocal))archivePaths.push_back(adultLocal);
+
     if (!archivePaths.empty()) {
         printf("[2ship] MM_InitArchives: opening %zu archive(s):\n", archivePaths.size());
         for (const auto& p : archivePaths) {
@@ -2600,6 +2678,54 @@ extern "C" COMBO_EXPORT void MM_InitArchives() {
         printf("[2ship] MM_InitArchives: no archives found — MM will remain unloaded.\n");
     }
 }
+
+// Read-only foreign presentation assets. This RM is isolated from both running
+// engines and does not replace their archives, factories, save state or audio.
+extern "C" COMBO_EXPORT int MM_EnsureWarpResources() {
+    if(Ship::CrossRMRegistry::Get("mm-warp")) return 1;
+    auto path=Ship::Context::LocateFileAcrossAppDirs("mm.o2r",appShortName);
+    if(!std::filesystem::exists(path)) path=Ship::Context::LocateFileAcrossAppDirs("mm.otr",appShortName);
+    if(!std::filesystem::exists(path)) path=Ship::Context::LocateFileAcrossAppDirs("mm.zip",appShortName);
+    if(!std::filesystem::exists(path)) return 0;
+    auto rm=std::make_shared<Ship::ResourceManager>();
+    rm->Init({path}, {}, 1);
+    auto loader=rm->GetResourceLoader();
+    loader->RegisterResourceFactory(std::make_shared<Fast::ResourceFactoryBinaryTextureV0>(), RESOURCE_FORMAT_BINARY,
+        "Texture",static_cast<uint32_t>(Fast::ResourceType::Texture),0);
+    loader->RegisterResourceFactory(std::make_shared<Fast::ResourceFactoryBinaryTextureV1>(), RESOURCE_FORMAT_BINARY,
+        "Texture",static_cast<uint32_t>(Fast::ResourceType::Texture),1);
+    loader->RegisterResourceFactory(std::make_shared<Fast::ResourceFactoryBinaryVertexV0>(), RESOURCE_FORMAT_BINARY,
+        "Vertex",static_cast<uint32_t>(Fast::ResourceType::Vertex),0);
+    loader->RegisterResourceFactory(std::make_shared<Fast::ResourceFactoryBinaryDisplayListV0>(), RESOURCE_FORMAT_BINARY,
+        "DisplayList",static_cast<uint32_t>(Fast::ResourceType::DisplayList),0);
+    loader->RegisterResourceFactory(std::make_shared<Ship::ResourceFactoryBinaryBlobV0>(), RESOURCE_FORMAT_BINARY,
+        "Blob",static_cast<uint32_t>(Ship::ResourceType::Blob),0);
+    loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryArrayV0>(), RESOURCE_FORMAT_BINARY,
+        "Array",static_cast<uint32_t>(SOH::ResourceType::SOH_Array),0);
+    loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryTextureAnimationV0>(), RESOURCE_FORMAT_BINARY,
+        "TextureAnimation",static_cast<uint32_t>(SOH::ResourceType::TSH_TexAnim),0);
+    loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryKeyFrameAnim>(), RESOURCE_FORMAT_BINARY,
+        "KeyFrameAnim",static_cast<uint32_t>(SOH::ResourceType::TSH_CKeyFrameAnim),0);
+    loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryKeyFrameSkel>(), RESOURCE_FORMAT_BINARY,
+        "KeyFrameSkel",static_cast<uint32_t>(SOH::ResourceType::TSH_CKeyFrameSkel),0);
+    Ship::CrossRMRegistry::Register("mm-warp",rm);
+    return 1;
+}
+extern "C" COMBO_EXPORT void* MM_LoadWarpResource(const char* path) {
+    if(!path || !MM_EnsureWarpResources()) return nullptr;
+    Ship::OwnRMScope scope("mm-warp"); // Keyframe factories load their limb DLs recursively.
+    return Ship::CrossRMRegistry::Get("mm-warp")->GetResourceRawPointer(path);
+}
+extern "C" COMBO_EXPORT int MM_WarpVertexCount(const char* path) {
+    if(!path || !MM_EnsureWarpResources()) return 0;
+    Ship::OwnRMScope scope("mm-warp");
+    auto resource=Ship::CrossRMRegistry::Get("mm-warp")->LoadResource(path);
+    return resource ? static_cast<int>(resource->GetPointerSize()/sizeof(Vtx)) : 0;
+}
+extern "C" COMBO_EXPORT uint32_t MM_GetWarpMapClouds() {
+    return gSaveContext.save.saveInfo.worldMapCloudVisibility;
+}
+extern "C" COMBO_EXPORT void MM_DropWarpResources() { Ship::CrossRMRegistry::Unregister("mm-warp"); }
 
 // ComboShip: -1 = normal MM boot; >= 0 = game-switch: skip title/file-select and load this slot.
 // extern "C" so title_setup.c (a C file) can link to it without name mangling.
@@ -2787,6 +2913,9 @@ extern "C" int gMMComboGoalPieces;
 
 // Combo master seed for MM's RNG, mirroring OOT's SOH_SetComboRandoSeed so confined placement
 // (PreplaceConfinedItems, via Ship_Random) is reproducible per seed.
+static ComboRando::SpellRules sMMSeedSpellRules;
+static ComboRando::FaroreRules sMMSeedFaroreRules;
+static bool sMMSeedFaroreRulesBound=false;
 static uint64_t sMMComboRandoSeed = 0;
 static bool sMMComboRandoSeedSet = false;
 extern "C" COMBO_EXPORT void MM_SetComboRandoSeed(uint64_t seed) {
@@ -2851,6 +2980,12 @@ extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(int fileNum, const char* placem
         for (auto& [id, opt] : Rando::StaticData::Options) {
             options[opt.name] = (uint32_t)CVarGetInteger(opt.cvar, opt.defaultValue);
         }
+        options[Rando::StaticData::Options[RO_SHARED_OCARINA].name] =
+            uint32_t((gMMComboSharedMask & (1u << ComboRando::SF_OCARINA)) != 0);
+        options[Rando::StaticData::Options[RO_SHARED_SPELL_WIND].name] =
+            uint32_t((gMMComboSharedMask & (1u << ComboRando::SF_SPELL_WIND)) != 0);
+        options[Rando::StaticData::Options[RO_SHARED_SPELL_FIRE].name] = uint32_t((gMMComboSharedMask & (1u << ComboRando::SF_SPELL_FIRE)) != 0);
+        options[Rando::StaticData::Options[RO_SHARED_SPELL_LOVE].name] = uint32_t((gMMComboSharedMask & (1u << ComboRando::SF_SPELL_LOVE)) != 0);
         // ComboShip (#136): combo owns the goal and MM's own toggle is hidden, so the CVar loop above
         // would save hunt=off — leaving Majora killable pre-completion and the tracker row missing.
         options[Rando::StaticData::Options[RO_SHUFFLE_TRIFORCE_PIECES].name] =
@@ -2861,6 +2996,14 @@ extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(int fileNum, const char* placem
             if (gMMComboGoalPieces >= 0) {
                 options[Rando::StaticData::Options[RO_TRIFORCE_PIECES_MAX].name] = (uint32_t)gMMComboGoalPieces;
             }
+        }
+        // The bound seed overrides generation preferences only when creating its native MM save.
+        if(sMMSeedFaroreRulesBound) {
+            options[Rando::StaticData::Options[RO_MM_SPELL_WIND].name]=uint32_t(sMMSeedFaroreRules.spellWindMm);
+            options[Rando::StaticData::Options[RO_MM_SPELL_FIRE].name]=uint32_t(sMMSeedSpellRules.spellFireMm);
+            options[Rando::StaticData::Options[RO_MM_SPELL_LOVE].name]=uint32_t(sMMSeedSpellRules.spellLoveMm);
+            options[Rando::StaticData::Options[RO_CROSS_GAME_FARORE].name]=uint32_t(sMMSeedFaroreRules.crossGameFw);
+            options[Rando::StaticData::Options[RO_MM_CROSS_AGE].name]=uint32_t(sMMSeedFaroreRules.crossAge);
         }
         spoiler["options"] = options;
         spoiler["startingItems"] = nlohmann::json::array();
@@ -2999,6 +3142,12 @@ extern "C" COMBO_EXPORT void MM_SetComboSaveIO(ComboRando::FnComboReadSave r, Co
 // ComboShip: receive the consolidated combo spoiler (foreign map + cross-hints), pushed once per
 // save-load; store the blob and invalidate MM's lookup caches so they rebuild from it. Idempotent.
 extern "C" COMBO_EXPORT void MM_LoadComboRando(const char* json) {
+    sMMSeedSpellRules={};sMMSeedFaroreRules={};sMMSeedFaroreRulesBound=true;
+    try {
+        const auto seed=nlohmann::json::parse(json?json:"{}");
+        ComboRando::ReadFaroreRules(seed.value("faroreRules",nlohmann::json()),sMMSeedFaroreRules);
+        ComboRando::ReadSpellRules(seed.value("spellRules",nlohmann::json()),sMMSeedSpellRules);
+    } catch(...) { }
     ComboRando::Combo_SetForeignJson(json);
     Rando::MiscBehavior::InvalidateComboForeignCache();
 }
@@ -3089,7 +3238,13 @@ extern "C" COMBO_EXPORT int MM_StartExtraction(const char* romPath) {
                 std::string exportPath = Ship::Context::GetAppDirectoryPath(appShortName);
                 ok = extract.CallZapd(installPath, exportPath, &gComboMMExtractCount, &gComboMMExtractTotal);
             }
-        } catch (...) { ok = false; }
+        } catch (const std::exception& error) {
+            fprintf(stderr, "MM extraction failed: %s\n", error.what());
+            ok = false;
+        } catch (...) {
+            fprintf(stderr, "MM extraction failed with an unknown error.\n");
+            ok = false;
+        }
         gComboMMExtractSuccess = ok;
         gComboMMExtractDone = true;
     });
@@ -3118,6 +3273,24 @@ extern "C" COMBO_EXPORT void MM_GetExtractionProgress(unsigned long long* count,
 // CVars actually shuffle are emitted, so the cross-world fill sees the same pool MM's own generator
 // would. Recomputes every call since the result depends on live CVar state. Caller MUST invoke this
 // after SOH_Init() returns (so the shared Context, logger, and CVars exist).
+#include "../../combo/menu/ComboTrickABI.h"
+#include "../../combo/rando/MmTricks.h"
+extern "C" COMBO_EXPORT const CwTrickInfo* MM_GetComboTricks(int32_t* count) {
+    static CwTrickInfo rows[std::size(ComboRando::kMmTricks)];
+    size_t used=0;
+    for(const auto& d:ComboRando::kMmTricks) {
+        if(!d.publicOption)continue;
+        rows[used++]={d.id,d.name,d.description,d.area,d.tags,d.difficulty,d.tagMask,int32_t(CVarGetInteger(d.key,0)!=0)};
+    }
+    if(count) *count=int32_t(used);
+    return rows;
+}
+extern "C" COMBO_EXPORT int32_t MM_SetComboTrick(int32_t id,int32_t enabled) {
+    auto d=ComboRando::FindMmTrick(id); if(!d || !d->publicOption) return 0;
+    CVarSetInteger(d->key,enabled!=0);
+    Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+    return 1;
+}
 // ComboShip: snapshot every MM rando option as {cvar: value} for the consolidated spoiler, so a
 // dropped/reloaded seed reproduces MM's settings on any machine (MM options are CVar-backed;
 // MM_InitRandoSaveFile reads these CVars, so MM_RestoreRandoSettings writes them back before save
@@ -3148,9 +3321,168 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings(void) {
             si.push_back(name);
     }
     j["gRando.StartingItems"] = si;
+    auto priority=nlohmann::json::array();for(auto id:Rando::GetDefaultSariaPriorityItems())priority.push_back(Rando::StaticData::Items.at(id).spoilerName);
+    const auto config=Ship::Context::GetRawInstance()->GetConfig()->GetNestedJson();
+    if(config.contains("CVars")&&config["CVars"].contains("gRando")&&config["CVars"]["gRando"].contains("SariaPriorityItems")){
+        const auto& saved=config["CVars"]["gRando"]["SariaPriorityItems"];if(saved.is_array())priority=saved;else if(saved.is_null())priority=nlohmann::json::array();
+    }
+    j["gRando.SariaPriorityItems"]=std::move(priority);
+    for(const auto& trick:ComboRando::kMmTricks) j[trick.key]=int(CVarGetInteger(trick.key,0)!=0);
     cached = j.dump();
     return cached.c_str();
 }
+
+// Read only source-owned tables/defaults. Never calls GeneratePools, reads
+// active save inventory, or reads enabled-state CVars for profile inspection.
+void MM_AppendProfileMenuMetadata(nlohmann::json&);
+// Optional catalog assets may have no native icon; JSON cannot construct a string from nullptr.
+static const char* MM_ProfileCatalogText(const char* value) { return value ? value : ""; }
+extern "C" COMBO_EXPORT const char* MM_DumpProfileCatalog(void) {
+    static std::string result;
+    nlohmann::json data={{"defaults",nlohmann::json::object()},{"tricks",nlohmann::json::array()},{"checks",nlohmann::json::array()},{"startingItems",nlohmann::json::array()}};
+    for(const auto& [id,option]:Rando::StaticData::Options)if(option.cvar&&option.cvar[0])data["defaults"][option.cvar]=option.defaultValue;
+    data["defaults"]["gRando.StartingItems"]=nlohmann::json::array();
+    data["defaults"]["gRando.ExcludedChecks"]=nlohmann::json::array();
+    data["defaults"]["gRando.SariaPriorityItems"]=nlohmann::json::array();for(auto id:Rando::GetDefaultSariaPriorityItems())data["defaults"]["gRando.SariaPriorityItems"].push_back(MM_ProfileCatalogText(Rando::StaticData::Items.at(id).spoilerName));
+    for(auto id:Rando::GetSariaPriorityItemCandidates()){const auto& item=Rando::StaticData::Items.at(id);data["sariaCandidates"].push_back({{"value",MM_ProfileCatalogText(item.spoilerName)},{"label",Rando::StaticData::GetItemDisplayName(id)},{"texture",MM_ProfileCatalogText(Rando::StaticData::GetIconTexturePath(id))}});}
+
+    for(const auto& trick:ComboRando::kMmTricks){data["defaults"][MM_ProfileCatalogText(trick.key)]=0;if(trick.publicOption)data["tricks"].push_back({{"value",MM_ProfileCatalogText(trick.key)},{"label",MM_ProfileCatalogText(trick.name)},{"description",MM_ProfileCatalogText(trick.description)},{"area",MM_ProfileCatalogText(trick.area)},{"tags",MM_ProfileCatalogText(trick.tags)},{"difficulty",trick.difficulty}});}
+    for(const auto& [id,check]:Rando::StaticData::Checks)if(id>RC_UNKNOWN&&id<RC_MAX&&check.name&&check.name[0])
+        data["checks"].push_back({{"value",check.name},{"label",Rando::StaticData::GetCheckDisplayName(id)}});
+    auto tierItem = [](RandoItemId item, int count) {
+        const int tier = std::max(1, count) - 1;
+        switch (item) {
+            case RI_PROGRESSIVE_SWORD: {
+                constexpr RandoItemId tiers[] = {RI_SWORD_KOKIRI, RI_SWORD_RAZOR, RI_SWORD_GILDED};
+                return tiers[std::min(tier, 2)];
+            }
+            case RI_PROGRESSIVE_BOMB_BAG: {
+                constexpr RandoItemId tiers[] = {RI_BOMB_BAG_20, RI_BOMB_BAG_30, RI_BOMB_BAG_40};
+                return tiers[std::min(tier, 2)];
+            }
+            case RI_PROGRESSIVE_BOW: {
+                constexpr RandoItemId tiers[] = {RI_BOW, RI_QUIVER_40, RI_QUIVER_50};
+                return tiers[std::min(tier, 2)];
+            }
+            case RI_PROGRESSIVE_WALLET: {
+                constexpr RandoItemId tiers[] = {RI_WALLET_ADULT, RI_WALLET_GIANT, RI_WALLET_TYCOON};
+                return tiers[std::min(tier, 2)];
+            }
+            case RI_PROGRESSIVE_MAGIC: return tier ? RI_DOUBLE_MAGIC : RI_SINGLE_MAGIC;
+            case RI_PROGRESSIVE_LULLABY: return tier ? RI_SONG_LULLABY : RI_SONG_LULLABY_INTRO;
+            default: return item;
+        }
+    };
+    // Native quest page slot order (QUEST_SONG_SONATA through QUEST_SONG_SUN).
+    // Double/Inverted Time are extra shuffled songs without native quest slots.
+    constexpr RandoItemId startingSongs[] = {
+        RI_SONG_SONATA, RI_PROGRESSIVE_LULLABY, RI_SONG_NOVA, RI_SONG_ELEGY, RI_SONG_OATH, RI_SONG_SARIA,
+        RI_SONG_TIME, RI_SONG_HEALING, RI_SONG_EPONA, RI_SONG_SOARING, RI_SONG_STORMS, RI_SONG_SUN,
+        RI_SONG_DOUBLE_TIME, RI_SONG_INVERTED_TIME
+    };
+    // Exact prim colors from z_kaleido_collect.c's sQuestSongsPrim* arrays.
+    constexpr int startingSongColors[][3] = {
+        {150, 255, 100}, {255, 80, 40}, {100, 150, 255},
+        {255, 160, 0}, {255, 100, 255}, {255, 240, 100}
+    };
+    std::set<RandoItemId> items;
+    for(const auto& [category,list]:Rando::StaticData::StartingItemsMap)items.insert(list.begin(),list.end());
+    // Existing combo instrument tier picker owns these two supported identities.
+    items.insert(RI_OCARINA_FAIRY);items.insert(RI_PROGRESSIVE_OCARINA);
+    for(unsigned i=0;i<59;++i)if(Rando::ExpandedSoulAvailable(i))items.insert(Rando::expandedSoulItems[i]);
+    for(auto id:items){const auto& item=Rando::StaticData::Items.at(id);const auto cap=Rando::StaticData::MaxStartingItemsMap.find(id);
+        auto tiers=nlohmann::json::array();
+        const int maximum=cap==Rando::StaticData::MaxStartingItemsMap.end()?1:int(cap->second);
+        for(int tier=1;tier<=std::max(maximum,3);++tier){const auto display=tierItem(id,tier);tiers.push_back({{"texture",MM_ProfileCatalogText(Rando::StaticData::GetIconTexturePath(display))},{"label",Rando::StaticData::GetItemDisplayName(display)}});}
+        const bool song=(id>=RI_SONG_DOUBLE_TIME&&id<=RI_SONG_TIME)||id==RI_PROGRESSIVE_LULLABY;
+        std::string category="Other";
+        for(const auto& [group,list]:Rando::StaticData::StartingItemsMap)if(std::find(list.begin(),list.end(),id)!=list.end()){
+            category=group==STARTING_ITEMS_MASK?"Masks":group==STARTING_ITEMS_INVENTORY||group==STARTING_ITEMS_TRADE?"Items":song?"Songs":"Other";break;}
+        for(auto equipment:{RI_PROGRESSIVE_SWORD,RI_SHIELD_HERO,RI_SHIELD_MIRROR,RI_PROGRESSIVE_MAGIC,RI_DOUBLE_DEFENSE,RI_PROGRESSIVE_WALLET})if(id==equipment)category="Equipment";
+        nlohmann::json row={{"value",MM_ProfileCatalogText(item.spoilerName)},{"label",Rando::StaticData::GetItemDisplayName(id)},{"maximum",maximum},{"category",category},{"song",song},{"tiers",std::move(tiers)}};
+        if (song) {
+            const auto slot = std::find(std::begin(startingSongs), std::end(startingSongs), id);
+            if (slot != std::end(startingSongs)) {
+                const int index = int(slot - std::begin(startingSongs));
+                row["songSlot"] = index;
+                row["tint"] = index < 6 ? nlohmann::json::array({startingSongColors[index][0] / 255.f,
+                    startingSongColors[index][1] / 255.f, startingSongColors[index][2] / 255.f, 1.f})
+                    : nlohmann::json::array({1.f, 1.f, 1.f, 1.f});
+            }
+        }
+        auto gate=[&](RandoOptionId option){row["poolKey"]=MM_ProfileCatalogText(Rando::StaticData::Options.at(option).cvar);};
+        if(id==RI_PROGRESSIVE_SWORD||id==RI_SHIELD_HERO)row["alwaysPool"]=true;
+        if(id>=RI_SOUL_BOSS_GOHT&&id<=RI_SOUL_BOSS_TWINMOLD)gate(RO_SHUFFLE_BOSS_SOULS);
+        if(id>=RI_OCARINA_BUTTON_A&&id<=RI_OCARINA_BUTTON_C_UP)gate(RO_SHUFFLE_OCARINA_BUTTONS);
+        if(id==RI_SONG_SUN)gate(RO_SHUFFLE_SONG_SUN);if(id==RI_SONG_DOUBLE_TIME)gate(RO_SHUFFLE_SONG_DOUBLE_TIME);
+        if(id==RI_SONG_INVERTED_TIME)gate(RO_SHUFFLE_SONG_INVERTED_TIME);if(id==RI_SONG_SARIA)gate(RO_SHUFFLE_SONG_SARIA);
+        if(id==RI_WOODFALL_KEY_RING)gate(RO_KEY_RING_WOODFALL);if(id==RI_SNOWHEAD_KEY_RING)gate(RO_KEY_RING_SNOWHEAD);
+        if(id==RI_GREAT_BAY_KEY_RING)gate(RO_KEY_RING_GREAT_BAY);if(id==RI_STONE_TOWER_KEY_RING)gate(RO_KEY_RING_STONE_TOWER);
+        if(id>=RI_TIME_DAY_1&&id<=RI_TIME_NIGHT_3||id==RI_TIME_PROGRESSIVE){gate(RO_CLOCK_SHUFFLE);row["category"]="Clocks (MM)";row["progressiveClock"]=id==RI_TIME_PROGRESSIVE;if(id!=RI_TIME_PROGRESSIVE)row["nightClock"]=id==RI_TIME_NIGHT_1||id==RI_TIME_NIGHT_2||id==RI_TIME_NIGHT_3;}
+        if(id==RI_OCARINA_FAIRY||id==RI_PROGRESSIVE_OCARINA){gate(RO_FAIRY_OCARINA_MM);row["category"]="Items";}
+        const int soulIndex=Rando::ExpandedSoulIndex(id);
+        if(soulIndex>=0){
+            gate(soulIndex<4?RO_SHUFFLE_ANIMAL_SOULS:soulIndex<6?RO_SHUFFLE_MISC_SOULS:RO_SHUFFLE_NPC_SOULS);
+            row["category"]=soulIndex<4?"Animal Souls":soulIndex<6?"Misc. Souls":"NPC Souls";
+        }
+        if(id==RI_SOUL_BOSS_MAJORA)row["excludeHunt"]=true;
+        data["startingItems"].push_back(std::move(row));
+    }
+    for(int preset=0;preset<3;++preset){
+        std::vector<RandoItemId> starting={RI_PROGRESSIVE_SWORD,RI_SHIELD_HERO,RI_OCARINA,RI_SONG_TIME};
+        if(preset==1){starting.push_back(RI_PROGRESSIVE_SWORD);starting.push_back(RI_SONG_SOARING);}
+        auto names=nlohmann::json::array();for(auto id:starting)names.push_back(MM_ProfileCatalogText(Rando::StaticData::Items.at(id).spoilerName));
+        data["presetStartingItems"][std::to_string(preset)]=std::move(names);
+    }
+    data["defaults"]["gRando.StartingItems"]=data["presetStartingItems"]["0"];
+    MM_AppendProfileMenuMetadata(data);
+    result=data.dump();return result.c_str();
+}
+
+// Transient profile setup: do not call the existing config setters because
+// they Save() the complete app config. Inspection/copy never invokes this export.
+static int MM_ApplyProfileRandoSettingsImpl(const char* raw, bool apply) {
+    try {
+        const auto input=nlohmann::json::parse(raw?raw:"null");if(!input.is_object())return 0;
+        nlohmann::json settings=nlohmann::json::object();
+        for(const auto& [id,option]:Rando::StaticData::Options) {
+            if(!option.cvar||!option.cvar[0])continue;
+            const auto value=input.value(option.cvar,nlohmann::json(option.defaultValue));
+            // Legacy terminal time is persisted as u32, read through signed integer CVars;
+            // its source default is 350. Do not truncate it to an 8-bit option.
+            if(!value.is_number_integer()||value.get<int64_t>()<0||value.get<uint64_t>()>(id==RO_CLOCK_TERMINAL_TIME?uint64_t(INT32_MAX):uint64_t(UINT8_MAX)))return 0;
+            settings[option.cvar]=value;
+        }
+        for(const auto& trick:ComboRando::kMmTricks) {
+            auto value=input.value(trick.key,nlohmann::json(0));
+            if(!value.is_number_integer()||(value!=0&&value!=1))return 0;settings[trick.key]=std::move(value);
+        }
+        auto excluded=input.value("gRando.ExcludedChecks",nlohmann::json::array());
+        auto defaultStarting=nlohmann::json::array();for(auto id:{RI_PROGRESSIVE_SWORD,RI_SHIELD_HERO,RI_OCARINA,RI_SONG_TIME})defaultStarting.push_back(Rando::StaticData::Items.at(id).spoilerName);
+        auto starting=input.value("gRando.StartingItems",defaultStarting);
+        if(!excluded.is_array()||!starting.is_array())return 0;
+        for(const auto& value:excluded) {
+            if(!value.is_string())return 0;
+            auto id=Rando::StaticData::GetCheckIdFromName(value.get<std::string>().c_str());if(id<=RC_UNKNOWN||id>=RC_MAX)return 0;
+        }
+        for(const auto& value:starting) {
+            if(!value.is_string())return 0;
+            auto id=Rando::StaticData::GetItemIdFromName(value.get<std::string>().c_str());if(id<=RI_UNKNOWN||id>=RI_MAX)return 0;
+        }
+        auto priority=input.value("gRando.SariaPriorityItems",nlohmann::json::array());if(!priority.is_array()||priority.size()>16)return 0;
+        for(const auto& value:priority){if(!value.is_string())return 0;auto id=Rando::StaticData::GetItemIdFromName(value.get<std::string>().c_str());if(id<=RI_UNKNOWN||id>=RI_MAX)return 0;}
+        if(!apply)return 1;
+        for(const auto& value:settings.items())CVarSetInteger(value.key().c_str(),value.value().get<int>());
+        auto config=Ship::Context::GetRawInstance()->GetConfig();
+        config->SetBlock("CVars.gRando.ExcludedChecks",excluded);
+        config->SetBlock("CVars.gRando.StartingItems",starting);
+        config->SetBlock("CVars.gRando.SariaPriorityItems",priority);
+        return 1;
+    } catch(...) {return 0;}
+}
+
+extern "C" COMBO_EXPORT int MM_ApplyProfileRandoSettings(const char* raw) {return MM_ApplyProfileRandoSettingsImpl(raw,true);}
+extern "C" COMBO_EXPORT int MM_ValidateProfileRandoSettings(const char* raw) {return MM_ApplyProfileRandoSettingsImpl(raw,false);}
 
 // ComboShip: restore MM rando settings from a {cvar:value} snapshot. The reload/drop path calls this
 // BEFORE MM_InitRandoSaveFile (which reads these CVars), so a dropped seed builds its MM save with the
@@ -3160,6 +3492,7 @@ extern "C" COMBO_EXPORT void MM_RestoreRandoSettings(const char* json) {
         return;
     try {
         auto j = nlohmann::json::parse(json);
+        for(const auto& trick:ComboRando::kMmTricks) CVarSetInteger(trick.key,0);
         // Excluded checks: authoritative RC_-name array from the seed (skipped in the loop below). The
         // snapshot wins outright, so an absent list clears local exclusions (pre-GAP-7 spoilers).
         std::vector<RandoCheckId> excluded;
@@ -3181,8 +3514,9 @@ extern "C" COMBO_EXPORT void MM_RestoreRandoSettings(const char* json) {
             }
             Rando::SetStartingItemsInConfig(items);
         }
+        if(j.contains("gRando.SariaPriorityItems")&&j["gRando.SariaPriorityItems"].is_array())Ship::Context::GetRawInstance()->GetConfig()->SetBlock("CVars.gRando.SariaPriorityItems",j["gRando.SariaPriorityItems"]);
         for (auto it = j.begin(); it != j.end(); ++it) {
-            if (it.key() == "gRando.StartingItems" || it.key() == "gRando.ExcludedChecks")
+            if (it.key() == "gRando.StartingItems" || it.key() == "gRando.ExcludedChecks" || it.key()=="gRando.SariaPriorityItems")
                 continue;
             if (it.value().is_string())
                 CVarSetString(it.key().c_str(), it.value().get<std::string>().c_str());
@@ -3228,6 +3562,11 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
 
     nlohmann::json checks = nlohmann::json::array();
     nlohmann::json pool = nlohmann::json::array();
+    auto beanSources=nlohmann::json::object();
+    for(const auto& [id,check]:Rando::StaticData::Checks){
+        if(id==RC_UNKNOWN)continue;const auto source=Rando::BeanSourceForCheck(id,check.randoCheckType);
+        beanSources[Rando::StaticData::GetCheckDisplayName(id)]={{"license",source.license},{"renewable",source.renewable}};
+    }
     nlohmann::json fixed = nlohmann::json::array();
     nlohmann::json items = nlohmann::json::array();
     nlohmann::json prices = nlohmann::json::object();
@@ -3250,20 +3589,23 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
 
     std::vector<RandoCheckId> checkPool;
     std::vector<RandoItemId> itemPool;
+    saveInfo.randoSaveOptions[RO_SHARED_OCARINA] = (gMMComboSharedMask & (1u << ComboRando::SF_OCARINA)) != 0;
+    saveInfo.randoSaveOptions[RO_SHARED_SPELL_WIND] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_WIND)) != 0;
+    saveInfo.randoSaveOptions[RO_SHARED_SPELL_FIRE] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_FIRE)) != 0;
+    saveInfo.randoSaveOptions[RO_SHARED_SPELL_LOVE] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_LOVE)) != 0;
     Rando::Logic::GeneratePools(saveInfo, checkPool, itemPool);
 
-    // Capture the prices GeneratePools rolled into this (otherwise discarded) saveInfo. It rolls one per
-    // shuffled check, not just purchaseable ones (upstream), so only shops/tingle reach the spoiler.
+    // Capture only randomized purchase prices. Upstream also rolls unused prices
+    // on ordinary checks and vanilla shelves; those are not part of the seed.
     sMMComboCheckPrices.clear();
     for (auto& [id, chk] : Rando::StaticData::Checks) {
+        if (std::find(checkPool.begin(), checkPool.end(), id) == checkPool.end() ||
+            (chk.randoCheckType != RCTYPE_SHOP && chk.randoCheckType != RCTYPE_TINGLE_SHOP)) continue;
         uint16_t p = saveInfo.randoSaveChecks[id].price;
         if (p == 0) {
             continue;
         }
         sMMComboCheckPrices[id] = p;
-        if (chk.randoCheckType != RCTYPE_SHOP && chk.randoCheckType != RCTYPE_TINGLE_SHOP) {
-            continue;
-        }
         const std::string& cn = Rando::StaticData::GetCheckDisplayName(id); // ComboShip: friendly name
         if (!cn.empty())
             prices[cn] = p;
@@ -3354,10 +3696,11 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
     // them shuffled=true with their own token in the (discarded) local saveInfo and drops them from
     // checkPool. Emit them as fixed so the oracle credits the tokens and the apply stamps them like
     // native (shuffled=true, so they stay hintable, mirroring native).
-    if (saveInfo.randoSaveOptions[RO_SHUFFLE_GOLD_SKULLTULAS] == RO_GENERIC_YES) {
+    const bool vanillaTokens = saveInfo.randoSaveOptions[RO_SHUFFLE_GOLD_SKULLTULAS] == RO_GENERIC_NO;
+    if (vanillaTokens || saveInfo.randoSaveOptions[RO_SHUFFLE_GOLD_SKULLTULAS] == RO_GENERIC_YES) {
         for (auto& [id, chk] : Rando::StaticData::Checks) {
-            if (chk.randoCheckType != RCTYPE_SKULL_TOKEN || !saveInfo.randoSaveChecks[id].shuffled ||
-                stillFillable.count(id))
+            if (chk.randoCheckType != RCTYPE_SKULL_TOKEN ||
+                (!vanillaTokens && !saveInfo.randoSaveChecks[id].shuffled) || stillFillable.count(id))
                 continue;
             auto iit = Rando::StaticData::Items.find(chk.randoItemId);
             if (iit == Rando::StaticData::Items.end() || !iit->second.spoilerName || iit->second.spoilerName[0] == '\0')
@@ -3365,7 +3708,35 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
             fixed.push_back({ { "check", Rando::StaticData::GetCheckDisplayName(id) },
                               { "item", Rando::StaticData::GetItemDisplayName(iit->first) },
                               { "advancement", isAdvancement(iit->second) },
-                              { "hintable", true } });
+                              { "hintable", !vanillaTokens } });
+        }
+    }
+
+    // Vanilla returned frogs are progression too. Credit each only after its own check is
+    // reachable; never grant all frogs merely because the reward is present in the pool.
+    if (saveInfo.randoSaveOptions[RO_SHUFFLE_FROGS] == RO_GENERIC_NO) {
+        for (const auto& [id, chk] : Rando::StaticData::Checks) {
+            if (chk.randoCheckType != RCTYPE_FROG || !chk.name || !chk.name[0]) continue;
+            const auto item = Rando::StaticData::Items.find(chk.randoItemId);
+            if (item == Rando::StaticData::Items.end() || !item->second.spoilerName ||
+                !item->second.spoilerName[0]) continue;
+            fixed.push_back({ { "check", Rando::StaticData::GetCheckDisplayName(id) },
+                              { "item", Rando::StaticData::GetItemDisplayName(item->first) },
+                              { "advancement", true }, { "hintable", false } });
+        }
+    }
+
+    // Vanilla owl activations unlock actual Soaring sources, including sources whose
+    // destinations belong to OoT in a mixed map. Credit each only after its statue check.
+    if (saveInfo.randoSaveOptions[RO_SHUFFLE_OWL_STATUES] == RO_GENERIC_NO) {
+        for (const auto& [id, chk] : Rando::StaticData::Checks) {
+            if (chk.randoCheckType != RCTYPE_OWL || !chk.name || !chk.name[0]) continue;
+            const auto item = Rando::StaticData::Items.find(chk.randoItemId);
+            if (item == Rando::StaticData::Items.end() || !item->second.spoilerName ||
+                !item->second.spoilerName[0]) continue;
+            fixed.push_back({ { "check", Rando::StaticData::GetCheckDisplayName(id) },
+                              { "item", Rando::StaticData::GetItemDisplayName(item->first) },
+                              { "advancement", true }, { "hintable", false } });
         }
     }
 
@@ -3380,14 +3751,33 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
         checks.push_back({ { "name", cn } });
     }
 
+    // OoTMM transform.ts counts consumables originally supplied by randomized
+    // renewable locations; solve.ts protects those copies from junk filling.
+    // Keep the native IDs here and export the resulting placement constraint.
+    auto criticalRenewable = [](RandoItemId id) {
+        return id == RI_BOMBCHU_10 || id == RI_RED_POTION_REFILL ||
+               id == RI_BLUE_POTION_REFILL || id == RI_MILK_REFILL;
+    };
+    std::unordered_map<RandoItemId, size_t> renewableJunks;
+    for (const auto id : checkPool) {
+        const auto& check = Rando::StaticData::Checks.at(id);
+        if (criticalRenewable(check.randoItemId) &&
+            Rando::BeanSourceForCheck(id, check.randoCheckType).renewable) {
+            ++renewableJunks[check.randoItemId];
+        }
+    }
+
     // Pool = the real free item pool (every settings-added item; confined items already removed).
     for (RandoItemId iid : itemPool) {
         auto it = Rando::StaticData::Items.find(iid);
         if (it == Rando::StaticData::Items.end() || !it->second.spoilerName || it->second.spoilerName[0] == '\0')
             continue;
         // ComboShip: friendly item name for the normalized combo spoiler.
+        const bool renewable = renewableJunks[iid] > 0;
+        if (renewable) --renewableJunks[iid];
         pool.push_back({ { "name", Rando::StaticData::GetItemDisplayName(iid) },
-                         { "advancement", isAdvancement(it->second) },
+                         { "advancement", isAdvancement(it->second) || renewable },
+                         { "criticalRenewable", renewable },
                          { "category", categoryName(it->second) } });
     }
 
@@ -3401,6 +3791,7 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
         // ComboShip: "trickNames" are MM's curated fake names, so a foreign trap disguised as this
         // item can lie with a real near-miss name instead of a letter-doubled one.
         nlohmann::json entry = { { "name", Rando::StaticData::GetItemDisplayName(id) },
+                                 { "id", static_cast<int>(id) },
                                  { "advancement", isAdvancement(item) },
                                  { "trap", id == RI_TRAP },
                                  { "trickNames", Rando::StaticData::GetTrickNames(id) } };
@@ -3423,16 +3814,32 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
     // ComboShip: per-check hint-safe location name (GetLocationNameForHint(rc,false)) — the combo
     // hint layer's cross-game text composition needs the same "region" phrasing MM's own hints use.
     nlohmann::json locationHints = nlohmann::json::object();
+    nlohmann::json checkMetadata = nlohmann::json::object();
     for (auto& [id, chk] : Rando::StaticData::Checks) {
         const std::string& cn = Rando::StaticData::GetCheckDisplayName(id); // ComboShip: friendly name
         if (cn.empty())
             continue;
         locationHints[cn] = Rando::StaticData::GetLocationNameForHint(id, false);
+        checkMetadata[cn] = {{ "id", static_cast<int>(id) }, { "enum", chk.name },
+                             { "scene", static_cast<int>(chk.sceneId) },
+                             { "type", static_cast<int>(chk.randoCheckType) },
+                             { "flagType", static_cast<int>(chk.flagType) }, { "flag", chk.flag },
+                             { "vanillaItem", static_cast<int>(chk.randoItemId) }};
     }
 
     // ComboShip: the two hint options that decide whether the combo hint layer's cross gossip pool is
     // even consumed (EnGs.cpp) — lets the pare-down gate skip requiredness work when both are off.
     nlohmann::json options = {
+        { "RO_MM_SPELL_WIND", (uint32_t)saveInfo.randoSaveOptions[RO_MM_SPELL_WIND] },
+        { "RO_MM_SPELL_FIRE", (uint32_t)saveInfo.randoSaveOptions[RO_MM_SPELL_FIRE] },
+        { "RO_MM_SPELL_LOVE", (uint32_t)saveInfo.randoSaveOptions[RO_MM_SPELL_LOVE] },
+        { "RO_MM_BOOTS_IRON", (uint32_t)saveInfo.randoSaveOptions[RO_MM_BOOTS_IRON] },
+        { "RO_MM_BOOTS_HOVER", (uint32_t)saveInfo.randoSaveOptions[RO_MM_BOOTS_HOVER] },
+        { "RO_MM_TUNIC_GORON", (uint32_t)saveInfo.randoSaveOptions[RO_MM_TUNIC_GORON] },
+        { "RO_MM_TUNIC_ZORA", (uint32_t)saveInfo.randoSaveOptions[RO_MM_TUNIC_ZORA] },
+
+        { "RO_CROSS_GAME_FARORE", (uint32_t)saveInfo.randoSaveOptions[RO_CROSS_GAME_FARORE] },
+        { "RO_MM_CROSS_AGE", (uint32_t)saveInfo.randoSaveOptions[RO_MM_CROSS_AGE] },
         { "RO_HINTS_GOSSIP_STONES", (uint32_t)saveInfo.randoSaveOptions[RO_HINTS_GOSSIP_STONES] },
         { "RO_HINTS_PURCHASEABLE", (uint32_t)saveInfo.randoSaveOptions[RO_HINTS_PURCHASEABLE] }
     };
@@ -3444,10 +3851,18 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
         junkPool.push_back(Rando::StaticData::GetItemDisplayName(id));
     }
 
+    nlohmann::json sharedStartingItems = nlohmann::json::array();
+    // These seven single-item families use explicit starting inventory. Computed
+    // clock/key starts are unrelated and must not consume the generator RNG here.
+    for (const auto item : startingItems) sharedStartingItems.push_back(Rando::StaticData::GetItemDisplayName(item));
     cached = nlohmann::json{
+        { "sharedStartingItems", std::move(sharedStartingItems) },
+        { "sharedButtonsEnabled", saveInfo.randoSaveOptions[RO_SHUFFLE_OCARINA_BUTTONS] != 0 },
+        { "fairyOcarinaMm", saveInfo.randoSaveOptions[RO_FAIRY_OCARINA_MM] != 0 },
         { "checks", std::move(checks) },   { "pool", std::move(pool) },
-        { "fixed", std::move(fixed) },     { "items", std::move(items) },
+        { "fixed", std::move(fixed) }, {"beanSources",std::move(beanSources)}, { "items", std::move(items) },
         { "prices", std::move(prices) },   { "locationHints", std::move(locationHints) },
+        { "checkMetadata", std::move(checkMetadata) },
         { "options", std::move(options) }, { "junkPool", std::move(junkPool) }
     }.dump();
     return cached.c_str();
@@ -3458,10 +3873,12 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
 
 static SaveContext sMM_OracleSavedContext;
 static uint64_t sMM_OracleSavedRegionTime;
+static ComboRando::Entrances::MmFlagDomain sMM_OracleSavedRegionalFlags;
 // ComboShip: Reset runs once PER REACHABILITY QUERY (dozens per fill) but Restore only once at the
 // end of the whole fill. Without this flag the second Reset snapshots the already-zeroed context,
 // so Restore would write garbage (zeros) back into MM's live save after generation.
 static bool sMM_OracleActive = false;
+static bool sMM_OracleExternalBeans = false;
 static bool sMM_OracleInventorySweepDone = false;
 using Rando::Logic::gCurrentRegionTime;
 
@@ -3481,7 +3898,35 @@ static void ComboGrantTradeSlot(u8 itemId) {
 // Covers the save-context mutations that logic conditions read (INV_CONTENT, equipment,
 // quest items, rando flags, dungeon items, week event regs). Derived from GiveItem.cpp.
 static void GiveItemForOracle(RandoItemId ri) {
+    int gearItem=ri==RI_BOOTS_IRON?ITEM_COMBO_BOOTS_IRON:ri==RI_BOOTS_HOVER?ITEM_COMBO_BOOTS_HOVER:ri==RI_TUNIC_GORON?ITEM_COMBO_TUNIC_GORON:ri==RI_TUNIC_ZORA?ITEM_COMBO_TUNIC_ZORA:-1;
+    if(gearItem>=0){auto& state=gSaveContext.save.shipSaveInfo.adultMm;const int group=ComboAdultGearInventory::Group(unsigned(gearItem));ComboAdultGearInventory::Grant(group==2?state.gearTrade2Bits:state.gearTrade3Bits,gSaveContext.save.saveInfo.inventory.items[group==2?SLOT_TRADE_KEY_MAMA:SLOT_TRADE_COUPLE],unsigned(gearItem));return;}
+
+    if (ri == RI_MASK_ADULT || ri == RI_MASK_FIERCE_DEITY) {
+        ComboAdultMaskInventory::Grant(gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits,
+                                      INV_CONTENT(ITEM_MASK_FIERCE_DEITY), ri == RI_MASK_ADULT ? 1 : 0);
+        return;
+    }
+    if (ri == RI_FARORES_WIND) { Combo_MMFaroreGrantItem(); return; }
+    if (ri == RI_DINS_FIRE) { Combo_MMSpellGrantItem(2); return; }
+    if (ri == RI_NAYRUS_LOVE) { Combo_MMSpellGrantItem(1); return; }
+    if (ri == RI_PROGRESSIVE_OCARINA) {
+        GiveItemForOracle(Rando::ConvertItem(ri));
+        return;
+    }
+    if (ri == RI_OCARINA || ri == RI_OCARINA_FAIRY) {
+        Rando::Ocarinas::Grant(gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits,
+                               INV_CONTENT(ITEM_OCARINA_OF_TIME), ri == RI_OCARINA ? 2 : 1);
+        return;
+    }
+
+    if (Rando::GrantMissingMmSoul(ri)) return;
+    if (Rando::GrantExpandedSoulItem(ri)) return;
     switch (ri) {
+        case RI_TRIFORCE_POWER:
+        case RI_TRIFORCE_COURAGE:
+        case RI_TRIFORCE_WISDOM:
+            gSaveContext.save.shipSaveInfo.rando.namedTriforceMask |= 1u << (ri - RI_TRIFORCE_POWER);
+            break;
         case RI_JUNK:
         case RI_NONE:
         case RI_TRAP:
@@ -3527,6 +3972,20 @@ static void GiveItemForOracle(RandoItemId ri) {
             break;
         }
 
+        // Bow tiers mirror ConvertItem -> Item_Give: duplicate/lower tiers become junk.
+        // The oracle grants owned items directly, so never lower an already-owned quiver.
+        case RI_BOW:
+        case RI_QUIVER_40:
+        case RI_QUIVER_50: {
+            int tier = ri == RI_BOW ? 1 : ri == RI_QUIVER_40 ? 2 : 3;
+            if (CUR_UPG_VALUE(UPG_QUIVER) < tier) {
+                Inventory_ChangeUpgrade(UPG_QUIVER, tier);
+                INV_CONTENT(ITEM_BOW) = ITEM_BOW;
+                AMMO(ITEM_BOW) = CAPACITY(UPG_QUIVER, tier);
+            }
+            break;
+        }
+
         // Bomb bags — set upgrade + inventory. Chu grant left unconditional: gen-time mask is the
         // loaded slot's, not the seed's, and MM logic never gates on chus alone (see GiveItem.cpp).
         case RI_BOMB_BAG_20:
@@ -3567,11 +4026,18 @@ static void GiveItemForOracle(RandoItemId ri) {
             gSaveContext.save.saveInfo.playerData.healthCapacity += 0x10;
             break;
 
-        // Bottle
+        // New bottles occupy a free slot, just like Item_Give. Writing the
+        // generic inventory slot would replace an existing empty bottle with
+        // Gold Dust and make reachability depend on the order of item grants.
+        case RI_BOTTLE_EMPTY:
+        case RI_BOTTLE_CHATEAU_ROMANI:
+        case RI_BOTTLE_MILK:
+        case RI_BOTTLE_GOLD_DUST:
         case RI_BOTTLE_RED_POTION: {
             for (int i = SLOT(ITEM_BOTTLE); i < SLOT(ITEM_BOTTLE) + 6; i++) {
                 if (gSaveContext.save.saveInfo.inventory.items[i] == ITEM_NONE) {
-                    gSaveContext.save.saveInfo.inventory.items[i] = ITEM_POTION_RED;
+                    gSaveContext.save.saveInfo.inventory.items[i] =
+                        ri == RI_BOTTLE_RED_POTION ? ITEM_POTION_RED : Rando::StaticData::Items[ri].itemId;
                     break;
                 }
             }
@@ -3604,6 +4070,12 @@ static void GiveItemForOracle(RandoItemId ri) {
         // Small keys. ComboShip: logic's KEY_COUNT reads rando.foundDungeonKeys, NOT inventory.dungeonKeys
         // (DUNGEON_KEY_COUNT), so bump both like the real GiveItem — else every KEY_COUNT gate stays 0 and
         // key-locked dungeon rooms (Stone Tower/Snowhead/Great Bay deep) are unreachable.
+        case RI_WOODFALL_KEY_RING:
+        case RI_SNOWHEAD_KEY_RING:
+        case RI_GREAT_BAY_KEY_RING:
+        case RI_STONE_TOWER_KEY_RING:
+            Rando::GiveKeyRing(ri);
+            break;
         case RI_WOODFALL_SMALL_KEY:
             Rando::AddSmallKey(DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE);
             break;
@@ -3831,11 +4303,8 @@ static void GiveItemForOracle(RandoItemId ri) {
                 break;
             }
             // Standard items: set the save-state that HAS_ITEM / CHECK_QUEST_ITEM read.
-            // ComboShip: INV_CONTENT(item) indexes gItemSlots[item], defined only for the 77
-            // inventory-slot items (itemId 0x00..0x4C). Songs, shields, remains, etc. have higher
-            // itemIds not stored in items[], so writing INV_CONTENT for them reads gItemSlots out of
-            // bounds and corrupts a real slot (e.g. ITEM_SONG_HEALING clobbered the ocarina, breaking
-            // every song gate). Route songs to their quest flag; only write INV_CONTENT for real slots.
+            // The expanded table explicitly maps only native inventory items and custom spells.
+            // Songs/remains use quest flags; all other non-inventory IDs must stay SLOT_NONE.
             auto it = Rando::StaticData::Items.find(ri);
             if (it != Rando::StaticData::Items.end()) {
                 u8 itemId = it->second.itemId;
@@ -3856,15 +4325,29 @@ static void GiveItemForOracle(RandoItemId ri) {
     }
 }
 
+// Scoped search input only; live saves and inventory are never changed by this setter.
+extern "C" COMBO_EXPORT int MM_SetOracleExternalBeanRenewal(uint8_t value){
+    if(!sMM_OracleActive||value>1)return 0;sMM_OracleExternalBeans=value!=0;return 1;
+}
 extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
+    sMM_OracleExternalBeans=false;
     // ComboShip: MM's region graph + static data are built by the eager boot
     // (MM_BootForCombo -> ShipInit::InitAll), so the oracle needs no lazy init here.
     if (!sMM_OracleActive) { // snapshot the REAL live context only on the first Reset of a fill
         memcpy(&sMM_OracleSavedContext, &gSaveContext, sizeof(SaveContext));
         sMM_OracleSavedRegionTime = gCurrentRegionTime;
+        sMM_OracleSavedRegionalFlags = ComboRando::Entrances::mmFlagSource;
         sMM_OracleActive = true;
     }
     memset(&gSaveContext, 0, sizeof(SaveContext));
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_OCARINA] =
+        sMM_OracleSavedContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_OCARINA];
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_FAIRY_OCARINA_MM] =
+        sMM_OracleSavedContext.save.shipSaveInfo.rando.randoSaveOptions[RO_FAIRY_OCARINA_MM];
+    // Zero is Fierce Deity in MM. A blank oracle must start as Human Link, not gain a free sword.
+    gSaveContext.save.playerForm=PLAYER_FORM_HUMAN;
+    gSaveContext.save.saveInfo.playerData.healthCapacity=0x30;
+    gSaveContext.save.saveInfo.playerData.health=0x30;
     // Empty inventory slots are ITEM_NONE (0xFF), not 0: ITEM_OCARINA_OF_TIME is item id 0, so a
     // zeroed slot makes HAS_ITEM (an equality compare) report the ocarina owned and every song playable.
     memset(gSaveContext.save.saveInfo.inventory.items, ITEM_NONE, sizeof(gSaveContext.save.saveInfo.inventory.items));
@@ -3892,6 +4375,12 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
         gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[id] =
             (uint32_t)CVarGetInteger(opt.cvar, opt.defaultValue);
     }
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_OCARINA] =
+        (gMMComboSharedMask & (1u << ComboRando::SF_OCARINA)) != 0;
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_SPELL_WIND] =
+        (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_WIND)) != 0;
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_SPELL_FIRE] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_FIRE)) != 0;
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_SPELL_LOVE] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_LOVE)) != 0;
     // ComboShip (#136): combo owns the goal, so the hidden CVars above must not decide it here either.
     gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHUFFLE_TRIFORCE_PIECES] =
         gMMComboGoalHunt ? RO_GENERIC_YES : RO_GENERIC_NO;
@@ -3905,6 +4394,13 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
         }
     }
 
+    // Headless logic age has no model dependency. Full SaveContext snapshot/restore
+    // above owns this state; the native runtime remains separately capability-gated.
+    gSaveContext.save.linkAge = gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_STARTING_AGE] ? 0 : 1;
+    gSaveContext.save.shipSaveInfo.adultMm.maskEnabled = gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_ADULT_MASK] != 0;
+    gSaveContext.save.shipSaveInfo.adultMm.enabled = gSaveContext.save.shipSaveInfo.adultMm.maskEnabled ||
+        gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE] != 0 || gSaveContext.save.linkAge == 0;
+
     // ComboShip: grant the seed's STARTING ITEMS into the oracle inventory. These aren't in the
     // shuffled pool (so SetOwnedItems never grants them), but logic depends on them: the default kit
     // (sword, shield, ocarina, Song of Time, plus computed buttons/swim/maps/souls). Without the
@@ -3917,7 +4413,7 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
         auto startingItems = Rando::GetStartingItemsFromConfig();
         Rando::SetStartingItemsInSave(gSaveContext.save.shipSaveInfo.rando, startingItems);
         auto computed = Rando::GetComputedStartingItems(gSaveContext.save.shipSaveInfo.rando);
-        startingItems.insert(startingItems.end(), computed.begin(), computed.end());
+        startingItems.insert(startingItems.begin(), computed.begin(), computed.end());
         for (RandoItemId si : startingItems) {
             GiveItemForOracle(Rando::ConvertItem(si));
         }
@@ -3926,6 +4422,26 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
     // The memset wiped check prices too; re-apply the rolled/spoiler set or every CAN_AFFORD gate
     // evaluates price==0 and shops/Tingle maps are free to the oracle.
     Combo_MM_ApplyCheckPrices();
+    // GeneratePools leaves these shelves at their vanilla items when shops are
+    // not shuffled. They still supply renewable ammo to the real game; clearing
+    // them here must not erase those sources from generation's search.
+    // Restore shelf shuffle identity erased by the oracle save reset. Native
+    // potion events must not mistake randomized stock for its vanilla refill.
+    for (const auto& [id, check] : Rando::StaticData::Checks) {
+        if (check.randoCheckType == RCTYPE_SHOP && id != RC_CURIOSITY_SHOP_SPECIAL_ITEM &&
+            id != RC_BOMB_SHOP_ITEM_03 && id != RC_BOMB_SHOP_ITEM_04_OR_CURIOSITY_SHOP_ITEM) {
+            RANDO_SAVE_CHECKS[id].shuffled = RANDO_SAVE_OPTIONS[RO_SHUFFLE_SHOPS] != RO_GENERIC_NO;
+        }
+    }
+    if (RANDO_SAVE_OPTIONS[RO_SHUFFLE_SHOPS] == RO_GENERIC_NO) {
+        for (const auto& [id, check] : Rando::StaticData::Checks) {
+            if (check.randoCheckType == RCTYPE_SHOP && id != RC_CURIOSITY_SHOP_SPECIAL_ITEM &&
+                id != RC_BOMB_SHOP_ITEM_03 && id != RC_BOMB_SHOP_ITEM_04_OR_CURIOSITY_SHOP_ITEM) {
+                RANDO_SAVE_CHECKS[id].randoItemId = check.randoItemId;
+                RANDO_SAVE_CHECKS[id].price = 0;
+            }
+        }
+    }
 }
 
 // ComboShip: name->id lookup maps for the oracle hot path, replacing per-name linear scans over
@@ -3941,6 +4457,12 @@ static const std::unordered_map<std::string, RandoItemId>& Combo_MM_SpoilerNameT
             if (!n.empty())
                 m.emplace(n, id);
         }
+        // Earlier .combosav placements and pinned OoTMM IDs remain resolvable
+        // after changing only the human label from Time to Clock.
+        const char* aliases[] = {"Time (Day 1)", "Time (Night 1)", "Time (Day 2)", "Time (Night 2)",
+                                 "Time (Day 3)", "Time (Night 3)", "Progressive Time",
+                                 "MM_CLOCK1", "MM_CLOCK2", "MM_CLOCK3", "MM_CLOCK4", "MM_CLOCK5", "MM_CLOCK6", "MM_CLOCK"};
+        for (const char* alias : aliases) m.emplace(alias, Rando::StaticData::GetItemIdFromName(alias));
         return m;
     }();
     return map;
@@ -4116,14 +4638,23 @@ extern "C" COMBO_EXPORT void MM_SetFinalBossDefeatedCb(int (*cb)(int, int)) {
 // ComboShip (#136): Triforce Hunt is ONE combined goal across both games, owned by the launcher.
 // hunt=0 means the normal both-bosses goal; required is the combined piece count.
 extern "C" int gMMComboGoalHunt = 0;
+extern "C" int gMMComboGoalType = 0;
 extern "C" int gMMComboGoalRequired = 0;
 // This game's share of the combined piece total, forced at every save-option build site.
 // -1 = unset (old seed), so MM's own slider decides.
 extern "C" int gMMComboGoalPieces = -1;
 extern "C" COMBO_EXPORT void MM_SetComboGoal(int hunt, int required, int pieces) {
     gMMComboGoalHunt = hunt ? 1 : 0;
+    gMMComboGoalType = gMMComboGoalHunt;
     gMMComboGoalRequired = gMMComboGoalHunt ? required : 0;
     gMMComboGoalPieces = pieces < 0 ? -1 : (pieces > 100 ? 100 : pieces); // same 0..100 cap as OOT's
+}
+extern "C" COMBO_EXPORT void MM_SetComboGoalType(int type, int required, int pieces) {
+    MM_SetComboGoal(type == 1, required, pieces);
+    gMMComboGoalType = std::clamp(type, 0, 5);
+}
+extern "C" COMBO_EXPORT int MM_GetNamedTriforceMask(void) {
+    return gSaveContext.save.shipSaveInfo.rando.namedTriforceMask;
 }
 // ComboShip: Shared Items (OoTMM-style) — see combo/rando/SharedItems.h. MM has no gen-time settings
 // that depend on the mask (only OOT's wallet force does), so only the runtime tier ABI lives here.
@@ -4133,6 +4664,12 @@ extern "C" COMBO_EXPORT void MM_SetComboGoal(int hunt, int required, int pieces)
 extern "C" int gMMComboSharedMask = 0;
 extern "C" COMBO_EXPORT void MM_SetComboSharedItems(uint32_t mask) {
     gMMComboSharedMask = static_cast<int>(mask);
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_OCARINA] =
+        (mask & (1u << ComboRando::SF_OCARINA)) != 0;
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_SPELL_WIND] =
+        (mask & (1u << ComboRando::SF_SPELL_WIND)) != 0;
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_SPELL_FIRE] = (mask & (1u << ComboRando::SF_SPELL_FIRE)) != 0;
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_SPELL_LOVE] = (mask & (1u << ComboRando::SF_SPELL_LOVE)) != 0;
 }
 extern "C" int Combo_MM_BombchuBagShared(void) {
     return (gMMComboSharedMask >> ComboRando::SF_BOMBCHU_BAG) & 1;
@@ -4142,6 +4679,17 @@ extern "C" COMBO_EXPORT int MM_GetSharedTier(int family) try {
     if (family < 0 || family >= ComboRando::SF_COUNT)
         return 0;
     switch (static_cast<ComboRando::SharedFamily>(family)) {
+        case ComboRando::SF_BOOTS_IRON: return ComboAdultGearInventory::Has(gSaveContext.save.shipSaveInfo.adultMm.gearTrade2Bits,ITEM_COMBO_BOOTS_IRON);
+        case ComboRando::SF_BOOTS_HOVER: return ComboAdultGearInventory::Has(gSaveContext.save.shipSaveInfo.adultMm.gearTrade3Bits,ITEM_COMBO_BOOTS_HOVER);
+        case ComboRando::SF_TUNIC_GORON: return ComboAdultGearInventory::Has(gSaveContext.save.shipSaveInfo.adultMm.gearTrade2Bits,ITEM_COMBO_TUNIC_GORON);
+        case ComboRando::SF_TUNIC_ZORA: return ComboAdultGearInventory::Has(gSaveContext.save.shipSaveInfo.adultMm.gearTrade3Bits,ITEM_COMBO_TUNIC_ZORA);
+        case ComboRando::SF_SPELL_WIND:
+            return gSaveContext.save.shipSaveInfo.faroresWind.owned != 0;
+        case ComboRando::SF_SPELL_FIRE: return gSaveContext.save.shipSaveInfo.spellFireOwned!=0;
+        case ComboRando::SF_SPELL_LOVE: return gSaveContext.save.shipSaveInfo.spellLoveOwned!=0;
+        case ComboRando::SF_OCARINA:
+            return INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_OF_TIME ? 2 :
+                   (INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_FAIRY ? 1 : 0);
         case ComboRando::SF_BOW:
             return CUR_UPG_VALUE(UPG_QUIVER);
         case ComboRando::SF_BOMB_BAG:
@@ -4177,6 +4725,20 @@ extern "C" COMBO_EXPORT int MM_GetSharedTier(int family) try {
             return INV_CONTENT(ITEM_MASK_BUNNY) != ITEM_NONE ? 1 : 0;
         case ComboRando::SF_MASK_OF_TRUTH:
             return INV_CONTENT(ITEM_MASK_TRUTH) != ITEM_NONE ? 1 : 0;
+        case ComboRando::SF_OCARINA_BUTTON_A:
+            return Flags_GetRandoInf(RANDO_INF_OBTAINED_OCARINA_BUTTON_A) ? 1 : 0;
+        case ComboRando::SF_OCARINA_BUTTON_C_DOWN:
+            return Flags_GetRandoInf(RANDO_INF_OBTAINED_OCARINA_BUTTON_C_DOWN) ? 1 : 0;
+        case ComboRando::SF_OCARINA_BUTTON_C_RIGHT:
+            return Flags_GetRandoInf(RANDO_INF_OBTAINED_OCARINA_BUTTON_C_RIGHT) ? 1 : 0;
+        case ComboRando::SF_OCARINA_BUTTON_C_LEFT:
+            return Flags_GetRandoInf(RANDO_INF_OBTAINED_OCARINA_BUTTON_C_LEFT) ? 1 : 0;
+        case ComboRando::SF_OCARINA_BUTTON_C_UP:
+            return Flags_GetRandoInf(RANDO_INF_OBTAINED_OCARINA_BUTTON_C_UP) ? 1 : 0;
+        case ComboRando::SF_SONG_OF_TIME:
+            return CHECK_QUEST_ITEM(QUEST_SONG_TIME) ? 1 : 0;
+        case ComboRando::SF_MIRROR_SHIELD:
+            return GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) == EQUIP_VALUE_SHIELD_MIRROR ? 1 : 0;
         default:
             return 0;
     }
@@ -4191,6 +4753,14 @@ extern "C" COMBO_EXPORT int MM_GetSharedTier(int family) try {
 extern "C" COMBO_EXPORT void MM_RaiseSharedTier(int family, int tier) try {
     if (family < 0 || family >= ComboRando::SF_COUNT)
         return;
+    if (family == ComboRando::SF_OCARINA) {
+        if (tier <= MM_GetSharedTier(family)) return;
+        if (tier == 1 && !gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_FAIRY_OCARINA_MM]) return;
+        const RandoItemId rid = tier >= 2 ? RI_OCARINA : RI_OCARINA_FAIRY;
+        if (gPlayState == NULL) Combo_MM_GiveDormantResolved(rid);
+        else { Rando::GiveItem(rid); SaveManager_SaveCurrentForCombo(); }
+        return;
+    }
     const auto& def = ComboRando::SharedFamilyByIndex(family);
     tier = std::min(tier, def.mmTierCap);
     for (;;) {
@@ -4209,6 +4779,10 @@ extern "C" COMBO_EXPORT void MM_RaiseSharedTier(int family, int tier) try {
         }
         RandoItemId base = RI_JUNK;
         switch (static_cast<ComboRando::SharedFamily>(family)) {
+            case ComboRando::SF_BOOTS_IRON: base=RI_BOOTS_IRON; break;
+            case ComboRando::SF_BOOTS_HOVER: base=RI_BOOTS_HOVER; break;
+            case ComboRando::SF_TUNIC_GORON: base=RI_TUNIC_GORON; break;
+            case ComboRando::SF_TUNIC_ZORA: base=RI_TUNIC_ZORA; break;
             case ComboRando::SF_BOW:
                 base = RI_PROGRESSIVE_BOW;
                 break;
@@ -4257,6 +4831,24 @@ extern "C" COMBO_EXPORT void MM_RaiseSharedTier(int family, int tier) try {
             case ComboRando::SF_MASK_OF_TRUTH:
                 base = RI_MASK_TRUTH;
                 break;
+            case ComboRando::SF_OCARINA_BUTTON_A:
+                base = RI_OCARINA_BUTTON_A; break;
+            case ComboRando::SF_OCARINA_BUTTON_C_DOWN:
+                base = RI_OCARINA_BUTTON_C_DOWN; break;
+            case ComboRando::SF_OCARINA_BUTTON_C_RIGHT:
+                base = RI_OCARINA_BUTTON_C_RIGHT; break;
+            case ComboRando::SF_OCARINA_BUTTON_C_LEFT:
+                base = RI_OCARINA_BUTTON_C_LEFT; break;
+            case ComboRando::SF_OCARINA_BUTTON_C_UP:
+                base = RI_OCARINA_BUTTON_C_UP; break;
+            case ComboRando::SF_SONG_OF_TIME:
+                base = RI_SONG_TIME; break;
+            case ComboRando::SF_MIRROR_SHIELD:
+                base = RI_SHIELD_MIRROR; break;
+            case ComboRando::SF_SPELL_WIND:
+                base = RI_FARORES_WIND; break;
+            case ComboRando::SF_SPELL_FIRE: base=RI_DINS_FIRE; break;
+            case ComboRando::SF_SPELL_LOVE: base=RI_NAYRUS_LOVE; break;
             default:
                 break;
         }
@@ -4321,65 +4913,290 @@ extern "C" COMBO_EXPORT void MM_TriggerTriforceCredits(int dormant) try {
     SPDLOG_ERROR("[ComboShip] MM_TriggerTriforceCredits threw: {}", e.what());
 } catch (...) { SPDLOG_ERROR("[ComboShip] MM_TriggerTriforceCredits threw a non-std exception"); }
 
-extern "C" COMBO_EXPORT const char* Combo_MM_Rando_GetReachableChecks(void) {
-    static std::string buf;
+#include "rando/SongTravelMM.h"
+#include "rando/ForeignSongs.h"
+#include "2s2h/CustomMessage/CustomMessage.h"
+#include <atomic>
+static std::atomic<int> sForeignSongRequest{-1}, sForeignSongReply{-2};
+static std::atomic<bool> sForeignSongPerformed{false};
+static bool sNativeSongOpen=false;
+static int sNativeSongSource=-1, sNativeSongStick=0;
+static std::string sNativeSongText;
+extern "C" void Combo_MMForeignSongDiagnostic(const char* event) {
+    if(!CVarGetInteger("gCombo.Debug.SongPerformance",0)) return;
+    const auto* msg=gPlayState ? &gPlayState->msgCtx : nullptr;
+    SPDLOG_INFO("[ComboShip SongPerformance] MM {} source={} performed={} action={} message={} ocarina={} staff={} nativeOpen={}",
+        event,sForeignSongRequest.load(),sForeignSongPerformed.load(),
+        msg ? (int)msg->ocarinaAction : -1,msg ? (int)msg->msgMode : -1,
+        msg ? (int)msg->ocarinaMode : -1,msg && msg->ocarinaStaff ? (int)msg->ocarinaStaff->state : -1,
+        sNativeSongOpen);
+}
 
-    std::set<RandoRegionId> reachable = { RR_MAX };
-    auto timeStates = Rando::Logic::InitializeRegionTimeStates(RR_MAX);
+extern "C" COMBO_EXPORT void MM_SetSongTravel(const char* json) {
+    sForeignSongRequest=-1; sForeignSongReply=-2; sForeignSongPerformed=false; sNativeSongOpen=false; sNativeSongSource=-1;
+    try { ComboRando::ActiveSongTravel()=ComboRando::SongTravelMap::parse(nlohmann::json::parse(json)); }
+    catch (...) { ComboRando::ActiveSongTravel()={}; }
+    ComboRando::MmSongArrivals()=0;
+}
+static uint8_t sAdultOracleEntryAges=0,sAdultOracleReachedAges=0;
+extern "C" COMBO_EXPORT void MM_SetSongArrivals(uint32_t mask) { ComboRando::MmSongArrivals()=mask & 0xffc0; ComboRando::MmSongAgeArrivals()={};sAdultOracleEntryAges=0; }
+extern "C" COMBO_EXPORT uint32_t MM_GetSongKnowledge() {
+    return CHECK_QUEST_ITEM(QUEST_SONG_SOARING) ? uint32_t(gSaveContext.save.saveInfo.playerData.owlActivationFlags & 1023)<<6 : 0;
+}
+extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongKnowledge() { return IS_RANDO ? MM_GetSongKnowledge() : 0; }
+// Song ownership and unlocked landing sites are different facts. A learned
+// Soaring song still has its normal performance when no owl has been unlocked.
+extern "C" COMBO_EXPORT int MM_HasLiveSoaringSong() { return IS_RANDO && CHECK_QUEST_ITEM(QUEST_SONG_SOARING); }
+extern "C" COMBO_EXPORT void MM_SetForeignSongKnowledge(uint32_t mask) { ComboRando::MmForeignKnowledge()=mask; }
+static uint32_t MmForeignWarpSources(uint32_t known,bool logical=false) {
+    uint32_t buttons=0;
+    const RandoInf infs[]={RANDO_INF_OBTAINED_OCARINA_BUTTON_A,RANDO_INF_OBTAINED_OCARINA_BUTTON_C_DOWN,
+        RANDO_INF_OBTAINED_OCARINA_BUTTON_C_RIGHT,RANDO_INF_OBTAINED_OCARINA_BUTTON_C_LEFT,RANDO_INF_OBTAINED_OCARINA_BUTTON_C_UP};
+    for(int i=0;i<5;i++) if(Flags_GetRandoInf(infs[i])) buttons|=1u<<i;
+    return ComboRando::ForeignWarpSources(logical ? ComboRando::ActiveSongTravel().logicForeignSongs : ComboRando::ActiveSongTravel().foreignSongs,known,HAS_ITEM(ITEM_OCARINA_OF_TIME),buttons);
+}
+extern "C" COMBO_EXPORT uint32_t MM_GetSongSources() {
+    uint32_t native=CAN_PLAY_SONG(SOARING) ? MM_GetSongKnowledge() : 0;
+    return native | MmForeignWarpSources(ComboRando::MmForeignKnowledge(),true);
+}
+static uint32_t MmLiveSongSources(bool logical) {
+    if (!IS_RANDO) return 0;
+    auto fn=(uint32_t(*)())Combo_ResolveSym("soh","SOH_GetLiveSongKnowledge");
+    return (CAN_PLAY_SONG(SOARING) ? MM_GetSongKnowledge() : 0) | (fn ? MmForeignWarpSources(fn(),logical) : 0);
+}
 
-    // ComboShip: mirror GlitchlessLogic's reachability fixpoint (Rando/Logic/GlitchlessLogic.cpp).
-    // Crawling region connections alone isn't enough — MM's logic is event-gated (raising Woodfall,
-    // opening dungeon entrances, cutscenes). Those events must be applied (RANDO_EVENTS[event]++) as
-    // their regions become reachable, which then unlocks the connections and checks that depend on
-    // them. Without it the oracle saw only the event-free overworld and the fill dead-ended. Loop
-    // until regions and events both stabilize (each can unlock the other).
-    std::set<std::pair<RandoEvent, std::function<bool()>>*> eventsInLogic;
-    bool changed = true;
-    while (changed) {
-        changed = false;
-        size_t prevSize = reachable.size();
-        for (auto regionId : std::set<RandoRegionId>(reachable)) {
-            Rando::Logic::FindReachableRegions(regionId, reachable, timeStates);
+extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongSources() { return MmLiveSongSources(false); }
+extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongLogicSources() { return MmLiveSongSources(true); }
+extern "C" COMBO_EXPORT int MM_ForeignSongRequest() { return sForeignSongRequest.load(); }
+extern "C" COMBO_EXPORT uint32_t MM_ForeignSongChoices() {
+    int request=sForeignSongRequest.load();
+    if (request<0) return 0;
+    return (MM_GetLiveSongSources() & (1u<<request));
+}
+extern "C" COMBO_EXPORT int MM_ForeignSongDestination(int source) { return ComboRando::ActiveSongTravel().destination(source); }
+extern "C" COMBO_EXPORT uint32_t MM_ForeignSongInput() {
+    return gPlayState ? CONTROLLER1(&gPlayState->state)->press.button : 0;
+}
+extern "C" COMBO_EXPORT void MM_ForeignSongChoose(int source) { sForeignSongReply=source; }
+extern "C" int Combo_MMRecognizeForeignSong(const uint8_t* pitches, int count) {
+    if (!IS_RANDO || !gPlayState || !ComboRando::ActiveSongTravel().foreignSongs ||
+        gPlayState->msgCtx.ocarinaAction!=OCARINA_ACTION_FREE_PLAY || gPlayState->interfaceCtx.restrictions.songOfSoaring || sForeignSongRequest.load()>=0) return 0;
+    uint32_t allowed=MM_GetLiveSongSources() & 63;
+    int song=ComboRando::RecognizeForeignSong(pitches,count,allowed);
+    if(song<0) return 0;
+    sForeignSongReply=-2; sForeignSongPerformed=false; sForeignSongRequest=song; Combo_MMForeignSongDiagnostic("recognized"); return 1;
+}
+extern "C" int Combo_MMForeignSongPerformanceActive() {
+    return sForeignSongRequest.load()>=0 && !sForeignSongPerformed.load();
+}
+extern "C" int Combo_MMForeignSongPlayback() { return sForeignSongRequest.load(); }
+extern "C" void Combo_MMForeignSongPerformanceFinished() { sForeignSongPerformed=true; Combo_MMForeignSongDiagnostic("performance-finished"); }
+static bool LoadOOTWarpMessage(int song, bool confirmation, CustomMessage::Entry& entry) {
+    auto load=(int(*)(int,int,char*,int,int*))Combo_ResolveSym("soh","SOH_GetWarpMessage");
+    char source[1024]; int type=0;
+    const int size=load ? load(song,confirmation,source,sizeof(source),&type) : 0;
+    if(size<=0) return false;
+    std::string text;
+    // The engines use different text control bytes. Preserve the native OoT
+    // message's wording, spacing, colors and choices without interpreting it as MM text.
+    static constexpr unsigned char colors[]={0,1,2,3,5,6,4,7};
+    for(int i=0;i<size;i++) {
+        const auto ch=static_cast<unsigned char>(source[i]);
+        switch(ch) {
+            case 0x01: text.push_back(0x11); break; // newline
+            case 0x02: text.push_back(char(0xBF)); i=size; break; // end
+            case 0x04: text.push_back(0x10); break; // box break
+            case 0x05: // color
+                if(++i>=size || static_cast<unsigned char>(source[i])<0x40 ||
+                   static_cast<unsigned char>(source[i])>0x47) return false;
+                text.push_back(char(colors[static_cast<unsigned char>(source[i])-0x40])); break;
+            case 0x06: // horizontal shift
+                if(++i>=size) return false;
+                text.push_back(0x14); text.push_back(source[i]); break;
+            case 0x08: text.push_back(0x17); break; // quick text
+            case 0x09: text.push_back(0x18); break;
+            case 0x0A: text.push_back(0x1A); break;
+            case 0x0B: text.push_back(0x19); break;
+            case 0x0E: // fade
+                if(++i>=size) return false;
+                text.push_back(0x1C); text.push_back(source[i]); break;
+            case 0x1A: break; // native MM messages cannot be skipped by default
+            case 0x1B: text.push_back(char(0xC2)); break; // two choices
+            default:
+                if(ch<0x20) return false;
+                text.push_back(source[i]); break;
         }
-        if (reachable.size() != prevSize)
-            changed = true;
+    }
+    entry.msg=std::move(text); entry.textboxType=type; entry.autoFormat=false;
+    return true;
+}
+extern "C" void Combo_MMForeignSongPlayedText() {
+    static constexpr const char* names[]={"Minuet of Forest","Bolero of Fire","Serenade of Water",
+        "Requiem of Spirit","Nocturne of Shadow","Prelude of Light"};
+    int song=sForeignSongRequest.load();
+    if(song<0 || song>=6 || !gPlayState) return;
+    CustomMessage::Entry native;
+    if(!LoadOOTWarpMessage(song,false,native)) {
+        native=CustomMessage::LoadVanillaMessageTableEntry(0x1B7B);
+        native.autoFormat=false;
+        CustomMessage::Replace(&native.msg,"Song of Soaring",names[song]);
+    }
+    CustomMessage::SetActiveCustomMessage(native.msg,native);
+    Message_ContinueTextbox(gPlayState,CUSTOM_MESSAGE_ID);
+}
+static void OpenNativeSongDialogue(uint32_t choices) {
+    int count=0,index=0;
+    for(int i=0;i<16;i++) if(choices & (1u<<i)) { if(i==sNativeSongSource) index=count; ++count; }
+    const int dest=ComboRando::ActiveSongTravel().destination(sNativeSongSource);
+    sNativeSongOpen=true;
+    AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
+    CustomMessage::Entry native;
+    if(dest!=sForeignSongRequest.load() || !LoadOOTWarpMessage(sForeignSongRequest.load(),true,native)) {
+        native=CustomMessage::LoadVanillaMessageTableEntry(0x1B93);
+        native.autoFormat=false;
+        CustomMessage::Replace(&native.msg,std::string(1,char(0xD4)),ComboRando::kSongLandingNames[dest]);
+    }
+    CustomMessage::StartTextbox(native.msg,native);
+    gPlayState->msgCtx.ocarinaMode=1;
+    Combo_MMForeignSongDiagnostic(choices ? "confirmation" : "no-owls");
+}
+static void UpdateNativeSongDialogue() {
+    if(sForeignSongRequest.load()<0 || !gPlayState || !sForeignSongPerformed.load()) return;
+    auto& input=*CONTROLLER1(&gPlayState->state);
+    uint32_t choices=MM_ForeignSongChoices();
+    if(!choices || (input.press.button & BTN_B)) { sForeignSongReply=-1; return; }
+    if(!sNativeSongOpen) {
+        // Do not let the final played note accept the confirmation, even with instant text.
+        if(input.cur.button & (BTN_A|BTN_CUP|BTN_CDOWN|BTN_CLEFT|BTN_CRIGHT)) return;
+        for(int i=0;i<16;i++) if(choices & (1u<<i)) { sNativeSongSource=i; break; }
+        sNativeSongStick=0; OpenNativeSongDialogue(choices); return;
+    }
+    if(Message_GetState(&gPlayState->msgCtx)!=TEXT_STATE_CHOICE) return;
+    int stick=input.cur.stick_x>40 ? 1 : (input.cur.stick_x< -40 ? -1 : 0);
+    int direction=(input.press.button & BTN_DRIGHT) ? 1 : (input.press.button & BTN_DLEFT) ? -1 : 0;
+    if(stick && stick!=sNativeSongStick) direction=stick;
+    sNativeSongStick=stick;
+    if(direction && (choices & (choices-1))) {
+        for(int step=1;step<=16;step++) {
+            int next=(sNativeSongSource+direction*step+16)%16;
+            if(choices & (1u<<next)) { sNativeSongSource=next; break; }
+        }
+        OpenNativeSongDialogue(choices); return;
+    }
+    if(input.press.button & BTN_A) {
+        Message_ShouldAdvance(gPlayState); // native selection sound
+        sForeignSongReply=gPlayState->msgCtx.choiceIndex==0 ? sNativeSongSource : -1;
+        input.press.button &= ~BTN_A; // the engine must not also launch its own warp
+    }
+}
+extern "C" int Combo_MMStartWarp(PlayState*,int,int);
+static void ProcessForeignSongReply() {
+    UpdateNativeSongDialogue();
+    int reply=sForeignSongReply.exchange(-2);
+    if(reply==-2) return;
+    const uint32_t choices=MM_ForeignSongChoices();
+    const int song=sForeignSongRequest.load();
+    Combo_MMForeignSongDiagnostic(reply<0 ? "cancel" : "confirmation-accepted");
+    sForeignSongRequest=-1; sForeignSongPerformed=false; sNativeSongOpen=false; sNativeSongSource=-1;
+    if(!gPlayState) return;
+    AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
+    Message_CloseTextbox(gPlayState);
+    gPlayState->msgCtx.ocarinaMode=4; // native ocarina END mode in both games
+    if(reply<0 || reply>=16 || !(choices & (1u<<reply))) return;
+    Combo_MMForeignSongDiagnostic("native-action");
+    const int dest=ComboRando::ActiveSongTravel().destination(reply);
+    if(!Combo_MMStartWarp(gPlayState,dest,song)) SPDLOG_ERROR("[ComboShip] Could not start OoT warp departure");
+}
 
-        for (RandoRegionId regionId : reachable) {
-            auto regIt = Rando::Logic::Regions.find(regionId);
-            if (regIt == Rando::Logic::Regions.end())
-                continue;
-            Rando::Logic::SetCurrentRegionTime(timeStates, regionId);
-            for (auto& randoEvent : regIt->second.events) {
-                if (!eventsInLogic.contains(&randoEvent) && randoEvent.second()) {
-                    RANDO_EVENTS[randoEvent.first]++;
-                    eventsInLogic.insert(&randoEvent);
-                    changed = true;
+extern "C" uint32_t MM_LiveIncomingSongs() {
+    auto fn=(uint32_t(*)())Combo_ResolveSym("soh", "SOH_GetLiveSongLogicSources");
+    return ComboRando::ActiveSongTravel().resolveLogic((fn ? fn() : 0) | MM_GetLiveSongLogicSources()) & 0xffc0;
+}
+extern "C" COMBO_EXPORT int MM_TakeSongDeparture() { int d=sSongDeparture; sSongDeparture=-1; return d; }
+extern "C" COMBO_EXPORT void MM_SetSongArrival(int d) { sSongArrival=d>=6 && d<16 ? d : -1; }
+extern "C" int MM_ConsumeSongArrival() {
+    const int d=sSongArrival;
+    sSongArrival=-1;
+    if(d<6 || d>=16) return -1;
+    // A song landing uses the owl entrance's native arrival, not the idle
+    // start mode that Player_Init selects when resuming a saved location.
+    gSaveContext.save.shipSaveInfo.pauseSaveEntrance=-1;
+    return ComboRando::kMmSongEntrances[d-6];
+}
+extern "C" void Combo_MMCompleteWarp(PlayState* play,int d) {
+    if(d<0 || d>=16) return;
+    if(d<6) {sSongDeparture=d;play->transitionTrigger=TRANS_TRIGGER_OFF;}
+    else {play->nextEntrance=ComboRando::kMmSongEntrances[d-6];
+        if(d==13 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE)) play->nextEntrance=ENTRANCE(SOUTHERN_SWAMP_CLEARED,10);
+        if(d==9 && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE)) play->nextEntrance=ENTRANCE(MOUNTAIN_VILLAGE_SPRING,8);
+        play->transitionTrigger=TRANS_TRIGGER_START;play->transitionType=TRANS_TYPE_FADE_BLACK;}
+}
+extern "C" int Combo_MMSongWarp(PlayState* play,int owl) {
+    if(!IS_RANDO || !ComboRando::ActiveSongTravel().enabled || owl<0 || owl>=10) return 0;
+    Combo_MMCompleteWarp(play,ComboRando::ActiveSongTravel().destination(owl+6));return 1;
+}
+extern "C" COMBO_EXPORT void MM_SetOracleEntryAges(uint8_t mask){sAdultOracleEntryAges=mask&3;}
+extern "C" COMBO_EXPORT uint8_t MM_GetOracleReachedAges(void){return sAdultOracleReachedAges;}
+extern "C" COMBO_EXPORT const char* Combo_MM_Rando_GetReachableChecks(void) {
+    if(sMM_OracleExternalBeans&&INV_CONTENT(ITEM_MAGIC_BEANS)==ITEM_MAGIC_BEANS)
+        RANDO_EVENTS[RE_ACCESS_BEANS_REFILL]=true;
+    ComboRando::MmSongOracle()=true;
+    static std::string buf;
+    struct RestoreOracleAge{u8 age;~RestoreOracleAge(){gSaveContext.save.linkAge=age;}} restoreAge{gSaveContext.save.linkAge};
+    const bool cross=gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE]!=0;
+    const bool clone=cross&&(gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits&2);
+    uint8_t ages=(cross&&sAdultOracleEntryAges)?sAdultOracleEntryAges:(gSaveContext.save.linkAge<=1?uint8_t(1u<<gSaveContext.save.linkAge):uint8_t(0));
+    if(clone&&ages)ages=3;
+    sAdultOracleReachedAges=ages;
+    using Times=decltype(Rando::Logic::InitializeRegionTimeStates(RR_MAX));
+    struct Frontier{std::set<RandoRegionId> reachable;Times times;};
+    std::map<u8,Frontier> frontiers;
+    for(u8 age=0;age<2;++age)if(ages&(1u<<age))frontiers.emplace(age,Frontier{{RR_MAX},Rando::Logic::InitializeRegionTimeStates(RR_MAX)});
+    ComboRando::MmResourceScope resources;
+    Rando::Logic::MmAccessScope access;
+    std::set<std::pair<RandoEvent,std::function<bool()>>*> eventsInLogic;
+    bool changed=true;
+    while(changed){
+        changed=false;
+        for(auto& [age,frontier]:frontiers){
+            gSaveContext.save.linkAge=age;
+            auto& reachable=frontier.reachable;auto& timeStates=frontier.times;
+            const size_t previous=reachable.size();
+            for(auto region:std::set<RandoRegionId>(reachable))Rando::Logic::FindReachableRegions(region,reachable,timeStates);
+            changed|=reachable.size()!=previous;
+            changed|=Rando::Logic::UpdateMmAccess();
+            changed|=Rando::Logic::UpdateResourceSources(reachable,timeStates);
+            for(auto region:reachable){
+                auto it=Rando::Logic::Regions.find(region);if(it==Rando::Logic::Regions.end())continue;
+                Rando::Logic::SetCurrentRegionTime(timeStates,region);
+                for(auto& event:it->second.events)if(!eventsInLogic.contains(&event)&&Rando::Logic::TimeLogic::EvaluateConditionTimes(event.second,Rando::Logic::gCurrentRegionTime)){
+                    RANDO_EVENTS[event.first]++;eventsInLogic.insert(&event);changed=true;
                 }
             }
         }
-    }
-
-    nlohmann::json out = nlohmann::json::array();
-    for (RandoRegionId regionId : reachable) {
-        auto regIt = Rando::Logic::Regions.find(regionId);
-        if (regIt == Rando::Logic::Regions.end())
-            continue;
-        auto& region = regIt->second;
-
-        Rando::Logic::SetCurrentRegionTime(timeStates, regionId);
-
-        for (auto& [checkId, checkLogic] : region.checks) {
-            if (checkLogic.first()) {
-                // ComboShip: emit the friendly combo-spoiler name the fill/oracle key on.
-                const std::string& n = Rando::StaticData::GetCheckDisplayName(checkId);
-                if (!n.empty())
-                    out.push_back(n);
+        // Pinned Adult Mask clones reached areas and their time state, not merely checks.
+        if(clone)for(auto& [age,dst]:frontiers){const auto& src=frontiers.at(1-age);
+            for(auto region:src.reachable){changed|=dst.reachable.insert(region).second;
+                auto it=src.times.find(region);if(it==src.times.end())continue;
+                auto existing=dst.times.find(region);
+                if(existing==dst.times.end()){dst.times.emplace(region,it->second);changed=true;}
+                else{auto merged=Rando::Logic::MergeTimeStates(existing->second,it->second);
+                    if(merged.timeSlices!=existing->second.timeSlices||merged.canStayOverTime!=existing->second.canStayOverTime){existing->second=merged;changed=true;}}
             }
         }
     }
-
-    buf = out.dump();
-    return buf.c_str();
+    std::set<std::string> accessible;
+    for(auto& [age,frontier]:frontiers){gSaveContext.save.linkAge=age;
+        for(auto region:frontier.reachable){auto it=Rando::Logic::Regions.find(region);if(it==Rando::Logic::Regions.end())continue;
+            Rando::Logic::SetCurrentRegionTime(frontier.times,region);
+            for(auto& [check,condition]:it->second.checks)if(Rando::Logic::TimeLogic::EvaluateConditionTimes(condition.first,Rando::Logic::gCurrentRegionTime)){
+                const auto& name=Rando::StaticData::GetCheckDisplayName(check);if(!name.empty())accessible.insert(name);
+            }
+        }
+        if(frontier.reachable.contains(RR_MOON_MAJORAS_LAIR)&&Rando::Logic::CanDefeatMajora())accessible.insert("Defeat Majora");
+    }
+    nlohmann::json out=nlohmann::json::array();for(const auto& name:accessible)out.push_back(name);
+    ComboRando::MmSongOracle()=false;buf=out.dump();return buf.c_str();
 }
 
 extern "C" COMBO_EXPORT void Combo_MM_Rando_PlaceItem(const char* checkName, const char* itemName) {
@@ -4390,18 +5207,27 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_PlaceItem(const char* checkName, con
     if (chkIt == Combo_MM_CheckNameToCheckId().end())
         return;
     auto itemIt = Combo_MM_SpoilerNameToItemId().find(itemName);
-    if (itemIt == Combo_MM_SpoilerNameToItemId().end())
+    if (itemIt == Combo_MM_SpoilerNameToItemId().end()) {
+        // Empty is an oracle-only foreign reward. Do not let its original
+        // vanilla stock masquerade as a local renewable potion or ammo source.
+        if (!itemName[0] && sMM_OracleActive) {
+            RANDO_SAVE_CHECKS[chkIt->second].randoItemId = RI_COMBO_FOREIGN;
+            RANDO_SAVE_CHECKS[chkIt->second].shuffled = true;
+        }
         return;
+    }
     RANDO_SAVE_CHECKS[chkIt->second].randoItemId = itemIt->second;
     RANDO_SAVE_CHECKS[chkIt->second].shuffled = true;
 }
 
 extern "C" COMBO_EXPORT void Combo_MM_Rando_Restore(void) {
+    sMM_OracleExternalBeans=false;
     if (!sMM_OracleActive) {
         return; // nothing snapshotted (double Restore / Restore without Reset)
     }
     memcpy(&gSaveContext, &sMM_OracleSavedContext, sizeof(SaveContext));
     gCurrentRegionTime = sMM_OracleSavedRegionTime;
+    ComboRando::Entrances::mmFlagSource = sMM_OracleSavedRegionalFlags;
     sMM_OracleActive = false;
 }
 #endif // COMBO_BUILD — combo-only region opened above MM_LoadSaveForCombo
@@ -4569,8 +5395,16 @@ extern "C" COMBO_EXPORT void MM_MenuDrawCustom(int32_t i) {
     }
 }
 
-// Draws widget i via MM's real MenuDrawItem (UIWidgets) into comboui's current window/cell. Same
-// context/RM/Init+Update contract as MM_MenuDrawCustom. Returns 1 if the CVar changed this frame.
+// Reset the MM lists which are stored in native JSON rather than scalar CVars.
+extern "C" COMBO_EXPORT void MM_ApplyComboCommunityPreset(int preset) {
+    std::vector<RandoItemId> starting = { RI_PROGRESSIVE_SWORD, RI_SHIELD_HERO, RI_OCARINA, RI_SONG_TIME };
+    if (preset == 1) { starting.push_back(RI_PROGRESSIVE_SWORD); starting.push_back(RI_SONG_SOARING); }
+    Rando::SetStartingItemsInConfig(starting);
+    std::vector<RandoCheckId> excluded;
+    Rando::SetExcludedChecksInConfig(excluded);
+    ShipInit::Init("gRando.ExcludedChecks");
+}
+
 extern "C" COMBO_EXPORT int32_t MM_MenuDrawWidget(int32_t i, int32_t width) {
     ComboMenuContext::UseSharedImGuiContext();
     Ship::ResourceManagerScope rmScope(Ship::CrossRMRegistry::Get("mm"));
@@ -4603,3 +5437,266 @@ extern "C" bool Ship_HandleConsoleCrashAsReset() {
 
     return true;
 }
+
+#ifdef COMBO_BUILD
+extern "C" void Combo_MM_LoadFairyOcarinaPauseText(PlayState* play) {
+    if (play != gPlayState || !gPlayState) return;
+    auto entry = CustomMessage::LoadVanillaMessageTableEntry(0x1700);
+    entry.icon = 0x4C; // pinned kaleido_scope.c uses the Ocarina-of-Time message icon
+    entry.autoFormat = false;
+    // Exact pinned MM Fairy description/control bytes, including the clear-color NUL.
+    static constexpr char text[] =
+        "\x01" "Fairy Ocarina\x11" "\x00"
+        "This is a memento from\x11Saria.\x11\x12"
+        "Play it with \xB0 and the four \xB2\x11"
+        "Buttons. Press \xB1 to stop.\xBF";
+    entry.msg.assign(text, sizeof(text) - 1);
+    CustomMessage::LoadCustomMessageIntoFont(entry);
+}
+#endif
+
+#ifdef COMBO_BUILD
+#include "ComboFairyOcarinaHand.h"
+#endif
+
+
+#ifdef COMBO_BUILD
+#include "ComboAdultMM.h"
+#include "ComboAdultSettings.h"
+#endif
+
+#ifdef COMBO_BUILD
+extern "C" void Combo_MM_CopyAdultProperties(PlayerAgeProperties* out) { *out=ComboAdultMM::BuildAdultProperties(); }
+extern "C" int Combo_MM_IsAdult(void) { return ComboAdultMM::IsAdult(gSaveContext.save); }
+#endif
+
+#ifdef COMBO_BUILD
+#include "ComboAdultVoiceRecipe.h"
+#endif
+
+#ifdef COMBO_BUILD
+#include "ComboAdultVoiceResources.h"
+#endif
+
+#ifdef COMBO_BUILD
+// Native imported cl_maskoff is already the exact pinned10-frame header and player frame data.
+extern "C" PlayerAnimationHeader* Combo_MM_AdultMaskOffAnimation(void) {
+    return (PlayerAnimationHeader*)&gPlayerAnim_cl_maskoff;
+}
+extern "C" int Combo_MM_AdultResourcesReady(void);
+using ComboAdultAgeCallback=int(*)(int,int);
+static ComboAdultAgeCallback sAdultCanSetOotAge=nullptr,sAdultSetOotAge=nullptr;
+extern "C" COMBO_EXPORT void MM_SetAdultCrossAgeBridge(ComboAdultAgeCallback canSet,ComboAdultAgeCallback set){sAdultCanSetOotAge=canSet;sAdultSetOotAge=set;}
+extern "C" int Combo_MM_AdultCanSwapAge(void){
+ const auto& save=gSaveContext.save;const int file=gSaveContext.fileNum;
+ if(file<0||file>2||!save.shipSaveInfo.adultMm.enabled||save.linkAge>1||!Combo_MM_AdultResourcesReady())return 0;
+ if(!save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE])return 1;
+ return sAdultCanSetOotAge&&sAdultSetOotAge&&sAdultCanSetOotAge(file,1-save.linkAge);
+}
+extern "C" int Combo_MM_AdultSwapAge(PlayState* play) {
+ (void)play;
+ if(!Combo_MM_AdultCanSwapAge())return 0;
+ const int file=gSaveContext.fileNum,age=1-gSaveContext.save.linkAge;
+ const Save before=gSaveContext.save;
+ if(!ComboAdultMM::SwapHumanLoadout(gSaveContext.save,age))return 0;
+ if(gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE]&&!sAdultSetOotAge(file,age)){gSaveContext.save=before;return 0;}
+ return 1;
+}
+#endif
+
+#ifdef COMBO_BUILD
+extern "C" int Combo_MM_AdultResourcesReady(void);
+extern "C" SequenceData* Combo_MM_AdultSequenceForPath(const char* path) {
+    if(!Combo_MM_AdultResourcesReady()||!path||!gSequenceMapSize||!gSequenceMap||!gSequenceMap[0]||strcmp(path,gSequenceMap[0]))return nullptr;
+    return ComboAdultMM::BuildAdultHybridSequence();
+}
+extern "C" SoundFont* Combo_MM_AdultFontForPath(const char* path) {
+    if(!Combo_MM_AdultResourcesReady()||!path||!gFontMapSize||!gFontMap||!gFontMap[0]||strcmp(path,gFontMap[0]))return nullptr;
+    if(!ComboAdultMM::BuildAdultHybridSequence())return nullptr;
+    return ComboAdultMM::BuildAdultHybridFont();
+}
+extern "C" void Combo_MM_AdultUpdateVoiceRouting(Player* player) {
+    if(Combo_MM_AdultResourcesReady())ComboAdultMM::UpdateAdultVoiceRouting(player,Combo_MM_IsAdult());
+}
+#endif
+
+#ifdef COMBO_BUILD
+#include "ComboAdultModelResources.h"
+#endif
+
+#ifdef COMBO_BUILD
+extern "C" void Combo_MM_ApplyAdultOverlayAge(int adult);
+extern "C" COMBO_EXPORT int MM_GetEffectiveHumanAge(int fileNum){
+    if(fileNum<0||fileNum>2||fileNum!=gSaveContext.fileNum)return -1;
+    const auto& save=gSaveContext.save;
+    if(!save.shipSaveInfo.adultMm.enabled)return 1;
+    if(save.linkAge>1)return -1;
+    if(save.linkAge==0&&!Combo_MM_AdultResourcesReady())return -1;
+    return save.linkAge;
+}
+extern "C" COMBO_EXPORT int MM_CanFaroreTransitionAge(int fileNum,int age){
+    if(age<0||age>1||fileNum<0||fileNum>2||fileNum!=gSaveContext.fileNum)return 0;
+    const auto& state=gSaveContext.save.shipSaveInfo.adultMm;
+    // Native legacy MM stores linkAge0 while using child human assets.
+    if(!state.enabled)return age==1;
+    if(gSaveContext.save.linkAge>1)return 0;
+    if(age==1&&gSaveContext.save.linkAge==1)return 1;
+    // The complete capability gate includes model/mask/spin/equipment callbacks, not just geometry.
+    return Combo_MM_AdultResourcesReady()&&ComboAdultMM::BuildAdultHybridSequence()!=nullptr;
+}
+extern "C" COMBO_EXPORT int MM_ApplyFaroreTransitionAge(int fileNum,int age){
+    if(!MM_CanFaroreTransitionAge(fileNum,age))return 0;
+    auto& save=gSaveContext.save;
+    if(!save.shipSaveInfo.adultMm.enabled)return 1;
+    if(save.linkAge!=age&&!ComboAdultMM::SwapHumanLoadout(save,age))return 0;
+    Combo_MM_ApplyAdultModelTables(age==0);
+    Combo_MM_ApplyAdultOverlayAge(age==0);
+    // Player initialization consumes the new saved age/tables; voice pointers route on its update.
+    return 1;
+}
+#endif
+
+#ifdef COMBO_BUILD
+// Shared Farore backend owns the age-specific native points; do not duplicate their save schema.
+extern "C" int Combo_MMFaroreRefreshHumanRespawn(void);
+extern "C" void Combo_MM_AdultRestoreFaroreRespawn(void){
+    Combo_MMFaroreRefreshHumanRespawn();
+}
+#endif
+
+#include "ComboAdultGameplayKeepResources.h"
+
+// Farore's pinned mode selection uses CFG_MM_MASK_ADULT, independent of startingAgeMm.
+// Resource readiness controls transitions, never the saved age-mode policy.
+extern "C" COMBO_EXPORT int MM_IsHumanAgeModeEnabled(int fileNum) {
+    if (fileNum < 0 || fileNum > 2 || gSaveContext.fileNum != fileNum) return -1;
+    return gSaveContext.save.shipSaveInfo.adultMm.maskEnabled ? 1 : 0;
+}
+
+#include "ComboAdultEponaResources.h"
+
+#include "ComboAdultMaskResources.h"
+
+#include "ComboAdultMaskInventory.h"
+extern "C" COMBO_EXPORT int MM_GrantAdultMaskItem(int fileNum) {
+    if(fileNum<0||fileNum>2||fileNum!=gSaveContext.fileNum)return 0;
+    return ComboAdultMaskInventory::Grant(gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits,
+        gSaveContext.save.saveInfo.inventory.items[SLOT_MASK_FIERCE_DEITY],1);
+}
+
+extern "C" COMBO_EXPORT int MM_GrantFierceDeityAdultVariant(int fileNum,int variant) {
+    if(fileNum<0||fileNum>2||fileNum!=gSaveContext.fileNum||variant<0||variant>1)return 0;
+    return ComboAdultMaskInventory::Grant(gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits,
+        gSaveContext.save.saveInfo.inventory.items[SLOT_MASK_FIERCE_DEITY],unsigned(variant));
+}
+
+#include "ComboAdultMaskIconResources.h"
+
+#include "ComboAdultMaskPauseNative.h"
+
+#include "ComboAdultBootDrawResources.h"
+#include "ComboHoverCircleResources.h"
+#include "ComboAdultGearInventory.h"
+#include "ComboAdultGearIconResources.h"
+#include "ComboAdultGearGiResources.h"
+#include "ComboAdultGearPauseNative.h"
+#include "ComboAdultGearExtraIconNative.h"
+extern "C" COMBO_EXPORT int MM_GrantAdultGearItem(int fileNum,int item) {
+    if(fileNum<0||fileNum>2||fileNum!=gSaveContext.fileNum)return 0;
+    const int group=ComboAdultGearInventory::Group(unsigned(item));
+    if(!group)return 0;
+    auto& age=gSaveContext.save.shipSaveInfo.adultMm;
+    return ComboAdultGearInventory::Grant(group==2?age.gearTrade2Bits:age.gearTrade3Bits,
+        gSaveContext.save.saveInfo.inventory.items[group==2?SLOT_TRADE_KEY_MAMA:SLOT_TRADE_COUPLE],unsigned(item));
+}
+
+
+extern "C" void Combo_MM_ClearCustomMask(void){gSaveContext.save.shipSaveInfo.adultMm.customMask=0;}
+
+#ifdef COMBO_BUILD
+// Geometry presence cannot authorize unfinished player/equipment/logic integration.
+static constexpr bool kAdultMmGameplayIntegrationComplete = false;
+extern "C" int Combo_MM_AdultResourcesReady(void) {
+    if (!kAdultMmGameplayIntegrationComplete) {
+#ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
+        // Private validation requires an explicitly compiled diagnostic build AND a default-off runtime switch.
+        if (!CVarGetInteger("gCombo.Debug.AdultMmRuntimeValidation", 0)) return 0;
+#else
+        return 0;
+#endif
+    }
+    return Combo_MM_AdultModelResourcesReady() && Combo_MM_AdultMaskResourcesReady() &&
+        Combo_MM_AdultMaskIconsReady() && Combo_MM_AdultGameplayKeepResourcesReady() &&
+        Combo_MM_AdultEponaResourcesReady() && Combo_MM_AdultBootDrawResourcesReady() && Combo_MM_ChildBootResourcesReady() && Combo_MM_HoverCircleResourcesReady() && Combo_MM_AdultGearIconsReady() && Combo_MM_AdultGearGiReady() && ComboAdultMM::BuildAdultHybridSequence();
+}
+// Eligibility is checked before any legacy normalization or loadout mutation.
+extern "C" int Combo_MM_AdultConfigureBoundSeed(int fileNum) {
+    if (fileNum < 0 || fileNum > 2 || fileNum != gSaveContext.fileNum) return 0;
+    auto& save = gSaveContext.save;
+    const auto& options = save.shipSaveInfo.rando.randoSaveOptions;
+    const int age = options[RO_MM_STARTING_AGE] ? 0 : 1;
+    const bool mask = options[RO_MM_ADULT_MASK] != 0;
+    const bool cross = options[RO_MM_CROSS_AGE] != 0;
+    const bool gear=options[RO_MM_BOOTS_IRON]||options[RO_MM_BOOTS_HOVER]||options[RO_MM_TUNIC_GORON]||options[RO_MM_TUNIC_ZORA];
+    if ((mask || cross || gear || age == 0 || save.shipSaveInfo.adultMm.enabled) &&
+        !Combo_MM_AdultResourcesReady()) return 0;
+    return ComboAdultMM::ConfigureSeedAge(save, age, mask, cross,gear);
+}
+#ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
+// No options/grants are injected: root must supply an explicitly private bound seed fixture.
+extern "C" COMBO_EXPORT int MM_DebugAdultConfigureBoundSeed(int fileNum) {
+    if (!Combo_MM_AdultResourcesReady()) return 0;
+    return Combo_MM_AdultConfigureBoundSeed(fileNum);
+}
+extern "C" COMBO_EXPORT int MM_DebugAdultResourcesReady(void) {
+    return Combo_MM_AdultResourcesReady();
+}
+#endif
+#endif
+
+#ifdef COMBO_BUILD
+extern "C" int Combo_MM_AdultValidateLoadedSave(const Save* save){
+    if(!save)return 0;
+    const auto& state=save->shipSaveInfo.adultMm;
+    if(!state.enabled)return 1;
+    return save->linkAge<=1&&state.boots<=2&&(state.tunic==0||state.tunic==2||state.tunic==3)&&
+        state.maskEnabled<=1&&state.maskOwnedBits<=3&&!((state.gearTrade2Bits|state.gearTrade3Bits)&~6u)&&Combo_MM_AdultResourcesReady();
+}
+#endif
+
+#ifdef COMBO_BUILD
+// Called with the parsed local page, before assigning live SaveContext.
+extern "C" int Combo_MM_AdultPrepareLoadedSave(Save* save){
+    if(!save)return 0;
+    const auto& options=save->shipSaveInfo.rando.randoSaveOptions;
+    const bool mask=options[RO_MM_ADULT_MASK]!=0,cross=options[RO_MM_CROSS_AGE]!=0;
+    const bool gear=options[RO_MM_BOOTS_IRON]||options[RO_MM_BOOTS_HOVER]||options[RO_MM_TUNIC_GORON]||options[RO_MM_TUNIC_ZORA];
+    const int age=options[RO_MM_STARTING_AGE]?0:1;
+    if(!save->shipSaveInfo.adultMm.enabled&&(mask||cross||gear||age==0)) {
+        if(!Combo_MM_AdultResourcesReady())return 0;
+        if(!ComboAdultMM::ConfigureSeedAge(*save,age,mask,cross,gear))return 0;
+    }
+    return Combo_MM_AdultValidateLoadedSave(save);
+}
+#endif
+
+#ifdef COMBO_BUILD
+extern "C" COMBO_EXPORT uint32_t MM_GetOracleSongSourcesForAge(int age){
+    if(age<0||age>1||!(sAdultOracleReachedAges&(1u<<age)))return 0;
+    struct RestoreAge{u8 age;~RestoreAge(){gSaveContext.save.linkAge=age;}} restore{gSaveContext.save.linkAge};
+    gSaveContext.save.linkAge=(u8)age;
+    return MM_GetSongSources();
+}
+#endif
+
+#ifdef COMBO_BUILD
+extern "C" COMBO_EXPORT void MM_SetOracleSongAgeArrivals(uint32_t adult,uint32_t child){
+    ComboRando::MmSongAgeArrivals()={true,{adult&0xffc0,child&0xffc0}};
+}
+extern "C" COMBO_EXPORT uint8_t MM_GetOracleDefaultEntryAges(void){
+    return gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_STARTING_AGE]?1:2;
+}
+extern "C" COMBO_EXPORT bool MM_UseCrossAgeOracle(void){
+    return gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE]&&Combo_MM_AdultResourcesReady();
+}
+#endif

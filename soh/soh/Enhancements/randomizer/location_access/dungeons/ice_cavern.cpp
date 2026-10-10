@@ -1,4 +1,5 @@
 #include "soh/Enhancements/randomizer/location_access.h"
+#include "soh/Enhancements/randomizer/silver_rupees/SilverLogic.h"
 #include "soh/Enhancements/randomizer/entrance.h"
 #include "soh/Enhancements/randomizer/dungeon.h"
 
@@ -61,7 +62,7 @@ void RegionTable_Init_IceCavern() {
         //Exits
         ENTRANCE(RR_ICE_CAVERN_BEGINNING,    true),
         //child can make this with a ground jump for the first step, and a glitchless jump for the second, but it's a separate trick
-        ENTRANCE(RR_ICE_CAVERN_MAP_ROOM,     (logic->IsAdult /*|| logic->CanGroundJump()*/) && logic->CanClearStalagmite()),
+        ENTRANCE(RR_ICE_CAVERN_MAP_ROOM, (SilverLogic::Enabled() ? (logic->IsAdult && SilverLogic::Puzzle(RG_RUPEE_SILVER_IC_SCYTHE) && logic->CanClearStalagmite()) : ((logic->IsAdult /*|| logic->CanGroundJump()*/) && logic->CanClearStalagmite()))),
         ENTRANCE(RR_ICE_CAVERN_COMPASS_ROOM, AnyAgeTime([]{return logic->BlueFire();})),
         ENTRANCE(RR_ICE_CAVERN_BLOCK_ROOM,   AnyAgeTime([]{return logic->BlueFire();}) && (logic->CanClearStalagmite() || ctx->GetTrickOption(RT_ICE_STALAGMITE_CLIP))),
     });
@@ -149,7 +150,7 @@ void RegionTable_Init_IceCavern() {
         //Exits
         ENTRANCE(RR_ICE_CAVERN_HUB,                  logic->CanClearStalagmite() || ctx->GetTrickOption(RT_ICE_STALAGMITE_CLIP)),
         ENTRANCE(RR_ICE_CAVERN_BLOCK_ROOM_BLUE_FIRE, logic->HasItem(RG_POWER_BRACELET) || (logic->IsAdult && (logic->CanGroundJump() || ctx->GetTrickOption(RT_SLIDE_JUMP)))),
-        ENTRANCE(RR_ICE_CAVERN_AFTER_BLOCK_ROOM,     (logic->HasItem(RG_POWER_BRACELET) || (logic->IsAdult && (logic->CanGroundJump() || ctx->GetTrickOption(RT_SLIDE_JUMP)))) && AnyAgeTime([]{return logic->BlueFire();})),
+        ENTRANCE(RR_ICE_CAVERN_AFTER_BLOCK_ROOM, SilverLogic::Gate(RG_RUPEE_SILVER_IC_BLOCK, (logic->HasItem(RG_POWER_BRACELET) || (logic->IsAdult && (logic->CanGroundJump() || ctx->GetTrickOption(RT_SLIDE_JUMP)))) && AnyAgeTime([]{return logic->BlueFire();}))),
     });
 
     areaTable[RR_ICE_CAVERN_BLOCK_ROOM_BLUE_FIRE] = Region("Ice Cavern Block Room Blue Fire", SCENE_ICE_CAVERN, {
@@ -375,4 +376,5 @@ void RegionTable_Init_IceCavern() {
 
 #pragma endregion
     // clang-format on
+    SilverLogic::RegisterRoutes(SCENE_ICE_CAVERN);
 }

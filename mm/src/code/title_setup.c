@@ -1,6 +1,7 @@
 #include "z_title_setup.h"
 #include "overlays/gamestates/ovl_title/z_title.h"
 #ifdef COMBO_BUILD
+#include <libultraship/bridge/consolevariablebridge.h>
 #include "global.h"
 #include "BenPort.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
@@ -67,17 +68,17 @@ void Setup_InitImpl(SetupState* this) {
         Combo_AdoptOOTGlobalOptions();
         // Set flashSaveAvailable so Sram_Alloc allocates saveBuf (normally set by the title screen).
         gSaveContext.flashSaveAvailable = true;
-        // Load the MM save that matches the OOT slot (OOT slot N → MM file N+1). ComboShip never blocks
+        // Load the MM save that matches the OOT slot (OOT slot N â†’ MM file N+1). ComboShip never blocks
         // entry: a nonzero result is logged inside and leaves the fail-closed sentinel, and play proceeds.
         Combo_LoadMMSaveFile(gComboStartFileNum + 1);
         // ComboShip (#182): an owl save is the newest state whenever it exists, so it wins on both
-        // entry kinds — but only a resume follows it to where it was saved.
+        // entry kinds â€” but only a resume follows it to where it was saved.
         loadedOwlSave = (gComboOwlBlobSlot == gComboStartFileNum + 1);
         if (loadedOwlSave) {
             Combo_ApplyOwlSaveOpen(gComboEntryIsResume);
             if (!gComboEntryIsResume) {
                 // Arriving in South Clock Town runs neither owl-arrival path, so clear isOwlSave here
-                // or it sticks — and then owl-save write timing stays armed for the whole session.
+                // or it sticks â€” and then owl-save write timing stays armed for the whole session.
                 gSaveContext.save.isOwlSave = false;
                 gSaveContext.save.entrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0);
             }
@@ -89,8 +90,31 @@ void Setup_InitImpl(SetupState* this) {
         } else {
             gSaveContext.save.entrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0);
         }
+        extern int MM_ConsumeFaroreArrival(void);
+        extern int MM_ConsumeDungeonArrival(void);
+        extern int MM_ConsumeEntranceArrival(void);
+        const int entranceArrival=MM_ConsumeEntranceArrival();
+        const int dungeonArrival=MM_ConsumeDungeonArrival();
+        const int faroreArrival=MM_ConsumeFaroreArrival();
+        extern int MM_ConsumeSongArrival(void);
+        const int songArrival=MM_ConsumeSongArrival();
+        if(entranceArrival>=0) {gSaveContext.save.isOwlSave=false;gSaveContext.save.entrance=entranceArrival;}
+        else if(dungeonArrival>=0) {gSaveContext.save.isOwlSave=false;gSaveContext.save.entrance=dungeonArrival;}
+        else if(faroreArrival>=0) {
+            gSaveContext.save.isOwlSave=false;
+            gSaveContext.save.entrance=faroreArrival;
+        } else if (songArrival>=0) {
+            gSaveContext.save.isOwlSave = false;
+            gSaveContext.save.playerForm = PLAYER_FORM_HUMAN;
+            gSaveContext.save.equippedMask = PLAYER_MASK_NONE;
+            gSaveContext.save.entrance=songArrival;
+            if(songArrival==ENTRANCE(SOUTHERN_SWAMP_POISONED,10) && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE))
+                gSaveContext.save.entrance=ENTRANCE(SOUTHERN_SWAMP_CLEARED,10);
+            if(songArrival==ENTRANCE(MOUNTAIN_VILLAGE_WINTER,8) && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE))
+                gSaveContext.save.entrance=ENTRANCE(MOUNTAIN_VILLAGE_SPRING,8);
+        }
         gSaveContext.save.cutsceneIndex = 0;
-        // Reset magicLevel like Sram_OpenSave does — re-arms the magic meter grow animation
+        // Reset magicLevel like Sram_OpenSave does â€” re-arms the magic meter grow animation
         // (Interface_Update only steps magicCapacity when magicLevel == 0).
         gSaveContext.save.saveInfo.playerData.magicLevel = 0;
         // Copy permanent flags into cycle flags, the same way Sram_OpenSave does.

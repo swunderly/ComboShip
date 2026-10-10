@@ -37,6 +37,10 @@ const int kMaxVert = 4320; // 8K
 const int kDefaultMaxScale = 6;
 
 void Save() {
+#ifdef __ANDROID__
+    // An explicit advanced-resolution edit is a manual framing choice.
+    CVarSetInteger("gCombo.Display.AutoFit", 0);
+#endif
     auto ctx = Ship::Context::GetRawInstance();
     if (ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui()) {
         ctx->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
@@ -150,11 +154,11 @@ void RenderAspect() {
         float x = CVarGetFloat(CV_ADVRES ".AspectRatioX", 16.0f);
         float y = CVarGetFloat(CV_ADVRES ".AspectRatioY", 9.0f);
         ComboMenu_PushSlider(theme);
-        if (ImGui::SliderFloat("X", &x, 0.1f, 32.0f, "%.3f")) {
+        if (ImGui::SliderFloat("X", &x, 0.1f, 32.0f, "%.3f", ImGuiSliderFlags_NoInput)) {
             CVarSetFloat(CV_ADVRES ".AspectRatioX", x);
             Save();
         }
-        if (ImGui::SliderFloat("Y", &y, 0.1f, 24.0f, "%.3f")) {
+        if (ImGui::SliderFloat("Y", &y, 0.1f, 24.0f, "%.3f", ImGuiSliderFlags_NoInput)) {
             CVarSetFloat(CV_ADVRES ".AspectRatioY", y);
             Save();
         }
@@ -203,7 +207,7 @@ void RenderMore() {
 
     int vpc = CVarGetInteger(CV_ADVRES ".VerticalPixelCount", 480);
     ComboMenu_PushInput(theme);
-    if (ImGui::InputInt("Vertical Pixel Count", &vpc, 8, 240)) {
+    if (ImGui::SliderInt("Vertical Pixel Count", &vpc, 240, 4320, "%d px", ImGuiSliderFlags_NoInput)) {
         if (vpc < kMinVert) {
             vpc = kMinVert;
         } else if (vpc > kMaxVert) {
@@ -237,7 +241,7 @@ void RenderMore() {
         }
         ComboMenu_PushSlider(theme);
         ImGui::BeginDisabled(!ppm || fitAuto);
-        if (ImGui::SliderInt("Integer scale factor", &factor, 1, maxFactor)) {
+        if (ImGui::SliderInt("Integer scale factor", &factor, 1, maxFactor, "%d", ImGuiSliderFlags_NoInput)) {
             CVarSetInteger(CV_ADVRES ".IntegerScale.Factor", factor);
             Save();
         }

@@ -44,8 +44,14 @@ void RegionTable_Init_DeathMountainCrater() {
                                          ((logic->FireTimer() >= 48  || logic->Hearts() >= 9) && logic->DMCUpperToPad())),
         ENTRANCE(RR_DMC_CENTRAL,         ((logic->FireTimer() >= 64 || logic->Hearts() >= 12) && logic->DMCUpperToPots() && logic->DMCPotsToPad()) ||
                                          ((logic->FireTimer() >= 48 || logic->Hearts() >= 9) && logic->DMCUpperToPad())),
+#ifdef COMBO_BUILD
+        // OoTMM v32.3 Death Mountain Crater Top -> Bottom Adult Rupees.
+        // Adult Link can drop directly from the summit; no scarecrow is required.
+        ENTRANCE(RR_DMC_FAR_PLATFORM, logic->IsAdult),
+#else
         ENTRANCE(RR_DMC_FAR_PLATFORM,    (logic->IsAdult && (logic->FireTimer() >= 72 || logic->Hearts() >= 14) && logic->DMCUpperToPots() && logic->DMCPotsToPad() && logic->ReachDistantScarecrow()) ||
                                          (logic->FireTimer() >= 24 || logic->Hearts() >= 5) && logic->TakeDamage() && ctx->GetTrickOption(RT_UNINTUITIVE_JUMPS)),
+#endif
         ENTRANCE(RR_DMC_TEMPLE_EXIT,     (logic->IsAdult || (ctx->GetOption(RSK_SHUFFLE_DUNGEON_ENTRANCES).IsNot(RO_DUNGEON_ENTRANCE_SHUFFLE_OFF))) &&
                                          (((logic->FireTimer() >= 72 || logic->Hearts() >= 14) && logic->DMCUpperToPots() && logic->DMCPotsToPad()) ||
                                           ((logic->FireTimer() >= 48 || logic->Hearts() >= 9) && logic->DMCUpperToPad()))),
@@ -126,6 +132,11 @@ void RegionTable_Init_DeathMountainCrater() {
                                                   (logic->IsAdult && (logic->FireTimer() >= 32 || logic->Hearts() >= 6) && logic->DMCPotsToPad() && CanPlantBean(RR_DMC_CENTRAL, RG_DEATH_MOUNTAIN_CRATER_BEAN_SOUL))),
     }, {
         //Exits
+#ifdef COMBO_BUILD
+        // OoTMM Crater Bottom -> Top: Adult Link can climb out without a tunic.
+        // Keep Ship's separately shuffled climbing ability when that feature is enabled.
+        ENTRANCE(RR_DMC_UPPER_ENTRY,     logic->IsAdult && logic->CanClimbLadder()),
+#endif
         ENTRANCE(RR_DMC_CRATE,           (logic->FireTimer() >= 32 || logic->Hearts() >= 6) && logic->CanClimbLadder() ||
                                          (logic->IsAdult && (logic->FireTimer() >= 48 || logic->Hearts() >= 9) && logic->DMCPotsToPad() && CanPlantBean(RR_DMC_CENTRAL, RG_DEATH_MOUNTAIN_CRATER_BEAN_SOUL)) ||
                                          ((logic->FireTimer() >= 24 || logic->Hearts() >= 5) && ctx->GetTrickOption(RT_DMC_HOVER_BEAN_POH) && logic->CanUse(RG_HOVER_BOOTS) && logic->CanUse(RG_LONGSHOT))),
@@ -274,6 +285,21 @@ void RegionTable_Init_DeathMountainCrater() {
 
     areaTable[RR_DMC_ROCK_GROTTO] = Region("DMC Rock Grotto", SCENE_DEATH_MOUNTAIN_CRATER, {}, {
         //Locations
+#ifdef COMBO_BUILD
+        LOCATION(RC_DMC_CIRCLE_ROCK_1, logic->CanBreakRocks()),
+        LOCATION(RC_DMC_CIRCLE_ROCK_2, logic->CanBreakRocks()),
+        LOCATION(RC_DMC_CIRCLE_ROCK_3, logic->CanBreakRocks()),
+        LOCATION(RC_DMC_CIRCLE_ROCK_4, logic->CanBreakRocks()),
+        LOCATION(RC_DMC_CIRCLE_ROCK_5, logic->CanBreakRocks()),
+        LOCATION(RC_DMC_CIRCLE_ROCK_6, logic->CanBreakRocks()),
+        LOCATION(RC_DMC_CIRCLE_ROCK_7, logic->CanBreakRocks()),
+        LOCATION(RC_DMC_CIRCLE_ROCK_8, logic->CanBreakRocks()),
+        //Boulders 1 and 2 are a bit separate, but are in 8 seconds from upper entry and closer or the same distance
+        //from all ways to reach upper grotto otherwise, so it works
+        LOCATION(RC_DMC_BOULDER_1,     logic->BlastOrSmash()),
+        LOCATION(RC_DMC_BOULDER_2,     logic->BlastOrSmash()),
+        LOCATION(RC_DMC_BOULDER_3,     logic->BlastOrSmash()),
+#else
         LOCATION(RC_DMC_CIRCLE_ROCK_1, logic->FireTimer() >= 8 && logic->CanBreakRocks()),
         LOCATION(RC_DMC_CIRCLE_ROCK_2, logic->FireTimer() >= 8 && logic->CanBreakRocks()),
         LOCATION(RC_DMC_CIRCLE_ROCK_3, logic->FireTimer() >= 8 && logic->CanBreakRocks()),
@@ -287,6 +313,7 @@ void RegionTable_Init_DeathMountainCrater() {
         LOCATION(RC_DMC_BOULDER_1,     logic->FireTimer() >= 8 && logic->BlastOrSmash()),
         LOCATION(RC_DMC_BOULDER_2,     logic->FireTimer() >= 8 && logic->BlastOrSmash()),
         LOCATION(RC_DMC_BOULDER_3,     logic->FireTimer() >= 8 && logic->BlastOrSmash()),
+#endif
     }, {
         //Exits
         ENTRANCE(RR_DMC_UPPER_GROTTO, AnyAgeTime([]{return logic->BlastOrSmash();})),

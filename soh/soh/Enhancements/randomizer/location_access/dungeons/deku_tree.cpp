@@ -63,8 +63,8 @@ void RegionTable_Init_DekuTree() {
 
     areaTable[RR_DEKU_TREE_2F_MIDDLE_ROOM] = Region("Deku Tree 2F Middle Room", SCENE_DEKU_TREE, {}, {}, {
         //Exits
-        ENTRANCE(RR_DEKU_TREE_LOBBY_2F,       AnyAgeTime([]{return logic->CanReflectNuts() || logic->CanUse(RG_MEGATON_HAMMER);})),
-        ENTRANCE(RR_DEKU_TREE_SLINGSHOT_ROOM, AnyAgeTime([]{return logic->CanReflectNuts() || logic->CanUse(RG_MEGATON_HAMMER);})),
+        ENTRANCE(RR_DEKU_TREE_LOBBY_2F,       AnyAgeTime([]{return (logic->CanReflectNuts() || logic->CanUse(RG_MEGATON_HAMMER)) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_DEKU_SCRUB));})),
+        ENTRANCE(RR_DEKU_TREE_SLINGSHOT_ROOM, AnyAgeTime([]{return (logic->CanReflectNuts() || logic->CanUse(RG_MEGATON_HAMMER)) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_DEKU_SCRUB));})),
     });
 
     areaTable[RR_DEKU_TREE_SLINGSHOT_ROOM] = Region("Deku Tree Slingshot Room", SCENE_DEKU_TREE, {}, {
@@ -213,7 +213,7 @@ void RegionTable_Init_DekuTree() {
     }, {
         //Exits
         ENTRANCE(RR_DEKU_TREE_BASEMENT_UPPER, logic->HasItem(RG_CLIMB) && (logic->HasItem(RG_BRONZE_SCALE) || logic->CanUse(RG_HOOKSHOT))),
-        ENTRANCE(RR_DEKU_TREE_BOSS_ENTRYWAY,  AnyAgeTime([]{return logic->CanReflectNuts();})),
+        ENTRANCE(RR_DEKU_TREE_BOSS_ENTRYWAY,  AnyAgeTime([]{return logic->CanReflectNuts() && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_DEKU_SCRUB));})),
     });
 
 #pragma endregion
@@ -419,8 +419,8 @@ void RegionTable_Init_DekuTree() {
     }, {
         //Exits
         //both imply CanKillEnemy(RE_GOHMA_LARVA)
-        ENTRANCE(RR_DEKU_TREE_MQ_BASEMENT_GRAVE_ROOM,      AnyAgeTime([]{return logic->CanKillEnemy(RE_MAD_SCRUB) && logic->CanKillEnemy(RE_KEESE);})),
-        ENTRANCE(RR_DEKU_TREE_MQ_BASEMENT_WATER_ROOM_BACK, AnyAgeTime([]{return logic->CanKillEnemy(RE_MAD_SCRUB) && logic->CanKillEnemy(RE_KEESE);})),
+        ENTRANCE(RR_DEKU_TREE_MQ_BASEMENT_GRAVE_ROOM,      AnyAgeTime([]{return logic->CanKillEnemy(RE_MAD_SCRUB) && logic->CanKillEnemy(RE_KEESE) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_GOHMA_LARVA));})),
+        ENTRANCE(RR_DEKU_TREE_MQ_BASEMENT_WATER_ROOM_BACK, AnyAgeTime([]{return logic->CanKillEnemy(RE_MAD_SCRUB) && logic->CanKillEnemy(RE_KEESE) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_GOHMA_LARVA));})),
     });
 
     areaTable[RR_DEKU_TREE_MQ_BASEMENT_GRAVE_ROOM] = Region("Deku Tree MQ Basement Grave Room", SCENE_DEKU_TREE, {

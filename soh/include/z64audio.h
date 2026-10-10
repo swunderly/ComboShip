@@ -417,6 +417,18 @@ typedef struct SequenceChannel {
     /* 0xD0 */ Stereo stereo;
 } SequenceChannel; // size = 0xD4
 
+#ifdef COMBO_BUILD
+typedef struct ComboMmVibratoParameters {
+    /* 0x0 */ u16 vibratoRateStart;
+    /* 0x2 */ u16 vibratoDepthStart;
+    /* 0x4 */ u16 vibratoRateTarget;
+    /* 0x6 */ u16 vibratoDepthTarget;
+    /* 0x8 */ u16 vibratoRateChangeDelay;
+    /* 0xA */ u16 vibratoDepthChangeDelay;
+    /* 0xC */ u16 vibratoDelay;
+} ComboMmVibratoParameters;
+#endif
+
 // Might also be known as a Track, according to sm64 debug strings (?).
 typedef struct SequenceLayer {
     /* 0x00 */ u8 enabled : 1;
@@ -457,7 +469,34 @@ typedef struct SequenceLayer {
     /* 0x50 */ SequenceChannel* channel;
     /* 0x54 */ SeqScriptState scriptState;
     /* 0x70 */ AudioListItem listItem;
-} SequenceLayer; // size = 0x80
+#ifdef COMBO_BUILD
+    u8 comboMmDialect;
+    u8 comboMmSurroundEffectIndex;
+    u8 comboMmTargetReverbVol;
+    union {
+        struct {
+            /* 0x0A */ u16 bit_0 : 1;
+            /* 0x0A */ u16 bit_1 : 1;
+            /* 0x0A */ u16 bit_2 : 1;
+            /* 0x0A */ u16 useVibrato : 1;
+            /* 0x0A */ u16 bit_4 : 1;
+            /* 0x0A */ u16 bit_5 : 1;
+            /* 0x0A */ u16 bit_6 : 1;
+            /* 0x0A */ u16 bit_7 : 1;
+            /* 0x0A */ u16 bit_8 : 1;
+            /* 0x0A */ u16 bit_9 : 1;
+            /* 0x0A */ u16 bit_A : 1;
+            /* 0x0A */ u16 bit_B : 1;
+            /* 0x0A */ u16 bit_C : 1;
+            /* 0x0A */ u16 bit_D : 1;
+            /* 0x0A */ u16 bit_E : 1;
+            /* 0x0A */ u16 bit_F : 1;
+        } s;
+        /* 0x0A */ u16 asByte;
+    } comboMmFlags;
+    ComboMmVibratoParameters comboMmVibrato;
+#endif
+} SequenceLayer; // native non-Combo layout 0x80
 
 typedef struct {
     /* 0x0000 */ s16 adpcmdecState[0x10];
@@ -501,7 +540,10 @@ typedef struct {
     /* 0x16 */ u16 rateChangeTimer;
     /* 0x18 */ u16 extentChangeTimer;
     /* 0x1A */ u16 delay;
-} VibratoState; // size = 0x1C
+#ifdef COMBO_BUILD
+    ComboMmVibratoParameters* comboMmSubVib;
+#endif
+} VibratoState; // native non-Combo layout 0x1C
 
 typedef struct {
     /* 0x00 */ u8 priority;

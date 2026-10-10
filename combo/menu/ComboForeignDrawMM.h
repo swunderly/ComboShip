@@ -87,9 +87,9 @@ inline const char* ComboInternRoutedPathOOT(const std::string& s) {
 // not resident, OOT's rando context null while dormant), which must NEVER be negative-cached.
 enum class ComboForeignResolveOOT { Ok, Unknown, NotReady };
 
-inline ComboForeignResolveOOT ComboFillForeignDrawInfoOOT(RandoCheckId rc, ComboForeignDrawInfoOOT& info) {
-    const ComboRando::ForeignItem* fi = Rando::MiscBehavior::MM_LookupForeign(rc);
-    if (fi == nullptr || fi->itemGame != ComboRando::GAME_OOT) {
+inline ComboForeignResolveOOT ComboFillForeignDrawInfoOOT(RandoCheckId rc, ComboForeignDrawInfoOOT& info, const char* explicitName = nullptr) {
+    const ComboRando::ForeignItem* fi = explicitName ? nullptr : Rando::MiscBehavior::MM_LookupForeign(rc);
+    if (!explicitName && (fi == nullptr || fi->itemGame != ComboRando::GAME_OOT)) {
         return ComboForeignResolveOOT::Unknown;
     }
 
@@ -103,7 +103,7 @@ inline ComboForeignResolveOOT ComboFillForeignDrawInfoOOT(RandoCheckId rc, Combo
     }
     // A disguised trap must draw the item it pretends to be. Same namespace, so the itemGame dispatch
     // above is unaffected. Not state-dependent: like OOT, the disguise holds until the get-item cutscene.
-    const char* drawName = fi->HasDisguise() ? fi->fakeItemName.c_str() : fi->itemName.c_str();
+    const char* drawName = explicitName ? explicitName : (fi->HasDisguise() ? fi->fakeItemName.c_str() : fi->itemName.c_str());
     CwItemDrawInfo raw{};
     int32_t rcStatic = sGetItemDrawInfo(drawName, &raw);
     if (rcStatic == CW_DRAW_NOT_READY) {
@@ -790,20 +790,17 @@ inline void MM_DrawForeignBronzeScale(const ComboForeignDrawInfoOOT* info) {
 // Draw a foreign (OOT-bound) item's real OOT model at the current model matrix. Any resolution
 // failure falls back to the sentinel blue rupee (the RI_COMBO_FOREIGN item's GID_RUPEE_BLUE), so we
 // never draw blank. Mirrors Randomizer_DrawComboForeign (soh/.../draw.cpp).
-inline void MM_DrawComboForeign(RandoCheckId randoCheckId) {
-    const ComboForeignDrawInfoOOT* info =
-        (randoCheckId != RC_UNKNOWN) ? ComboResolveForeignDrawInfoOOT(randoCheckId) : nullptr;
+inline bool MM_DrawForeignResolvedOOT(const ComboForeignDrawInfoOOT* info) {
     if (info == nullptr) {
         GetItem_Draw(gPlayState, GID_RUPEE_BLUE);
-        return;
+        return false;
     }
 
     // ComboShip: animated class — combo-owned skeletal draw (any failure -> sentinel, never blank).
     if (info->animOk) {
-        if (!ComboForeignAnim_Draw(&info->anim, "oot", gPlayState)) {
-            GetItem_Draw(gPlayState, GID_RUPEE_BLUE);
-        }
-        return;
+        const bool drawn = ComboForeignAnim_Draw(&info->anim, "oot", gPlayState);
+        if (!drawn) GetItem_Draw(gPlayState, GID_RUPEE_BLUE);
+        return drawn;
     }
 
     switch (info->drawKind) {
@@ -872,6 +869,17 @@ inline void MM_DrawComboForeign(RandoCheckId randoCheckId) {
             MM_DrawForeignSimple(info);
             break;
     }
+    return true;
+}
+
+inline bool MM_DrawComboForeign(RandoCheckId rc) {
+    return MM_DrawForeignResolvedOOT(rc != RC_UNKNOWN ? ComboResolveForeignDrawInfoOOT(rc) : nullptr);
+}
+inline bool MM_DrawComboForeignNamed(const char* name) {
+    if (!name || !name[0]) return false;
+    ComboForeignDrawInfoOOT info{};
+    if (ComboFillForeignDrawInfoOOT(RC_UNKNOWN, info, name) != ComboForeignResolveOOT::Ok) return false;
+    return MM_DrawForeignResolvedOOT(&info);
 }
 
 #undef MM_FOREIGN_PIN_OPA

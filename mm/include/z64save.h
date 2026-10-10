@@ -1,5 +1,8 @@
 #ifndef Z64SAVE_H
 #define Z64SAVE_H
+#ifdef COMBO_BUILD
+#include "rando/SharedDungeon.h"
+#endif
 
 #include "ultra64.h"
 #include "PR/os.h"
@@ -377,6 +380,11 @@ typedef struct RandoSaveCheck {
     bool obtained;
     bool skipped;
     u16 price; // Only applicable for shops/merchants
+#ifdef COMBO_BUILD
+    // The item actually shown to the player, not the hidden seed placement. Zero means unseen.
+    RandoItemId seenItemId;
+    u8 knowledgeSource; // 0: legacy/unspecified, 1: visible model, 2: hint or explicit dialogue
+#endif
 } RandoSaveCheck;
 
 typedef struct RandoSaveInfo {
@@ -388,15 +396,49 @@ typedef struct RandoSaveInfo {
     u16 randoStartingItems[256]; // Max 256 starting items, using u16 in case we add more than 255 items
     s8 foundDungeonKeys[9]; // Tracks the number of dungeon keys found, opposed to the number of keys in the inventory
     u16 foundTriforcePieces;
+    u8 mmMissingSoulsOwned; // Six new identities; separate from legacy RandoInf and 59 expanded souls.
+    u8 expandedSoulsOwned[8]; // Dedicated persistent NPC/animal/misc ownership.
+    u8 namedTriforceMask; // Power/Courage/Wisdom; old saves default to zero
     u8 sariaHintsAvailable;
     u16 sariaPriorityItems[16];
 #ifdef COMBO_BUILD
     u8 pendingTrapCount; // ComboShip: cross-world traps granted while MM was dormant; drained on activation
 #endif
+    u8 ocarinaOwnedBits; // appended; bit 0 Fairy, bit 1 Time, old JSON defaults to zero
 } RandoSaveInfo;
 
 // These are values added by 2S2H that we need to be persisted to the save file
 // See `ShipSaveContext` for values on the SaveContext that aren't persisted.
+#include "rando/SharedDungeon.h"
+typedef struct ComboFaroreSaveInfo {
+    u8 owned;
+    RespawnData point[2];
+    RespawnData top[2];
+    RespawnData dungeon[2];
+    RespawnData currentDungeon;
+    ComboSharedDungeon sharedDungeon[2],sharedCurrentDungeon;
+} ComboFaroreSaveInfo;
+
+// Adult-MM state is opt-in; legacy native linkAge=0 must never imply an adult model.
+typedef struct ComboHumanAgeLoadout {
+    u8 buttonItems[4];
+    u8 cButtonSlots[4];
+    u8 dpadItems[4];
+    u8 dpadSlots[4];
+    u8 boots;
+    u8 tunic;
+} ComboHumanAgeLoadout;
+typedef struct ComboAdultMmSave {
+    u8 enabled;
+    u8 initialized;
+    ComboHumanAgeLoadout loadouts[2]; // pinned AGE_ADULT=0, AGE_CHILD=1
+    u8 maskOwnedBits; // pinned fierceDeityAdult: bit0 Fierce Deity, bit1 Adult Mask
+    u8 maskEnabled; // CFG_MM_MASK_ADULT; independent of fixed startingAgeMm
+    u8 boots; // pinned custom equipment:0 Kokiri,1 Iron,2 Hover
+    u8 tunic; // pinned0 default,2 Goron,3 Zora
+    u8 customMask; // pinned PLAYER_CUSTOM_MASK_NONE=0; future custom masks1..3
+    u8 gearTrade2Bits, gearTrade3Bits; // pinned trade params1 Iron/Hover,2 Goron/Zora; bits1/2 only
+} ComboAdultMmSave;
 typedef struct ShipSaveInfo {
     DpadSaveInfo dpadEquips;
     s32 pauseSaveEntrance;
@@ -408,6 +450,11 @@ typedef struct ShipSaveInfo {
     char commitHash[8];
     RandoSaveInfo rando;
     u8 bombArrowsEquipped;
+    ComboFaroreSaveInfo faroresWind; // appended; old JSON defaults empty
+    u8 spellFireOwned,spellLoveOwned; // trade1/trade3 extra ownership, default absent
+    ComboAdultMmSave adultMm; // appended; disabled for legacy saves
+    u8 grottoPreviousSceneValid; // append-only context; missing old JSON is inactive
+    u16 grottoPreviousScene; // actual native scene ID, not guessed from entrance
 } ShipSaveInfo;
 // #endregion
 

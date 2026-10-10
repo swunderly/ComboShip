@@ -495,7 +495,12 @@ void RegionTable_Init_ForestTemple() {
 
     areaTable[RR_FOREST_TEMPLE_MQ_BLOCK_PUZZLE_FLOOR] = Region("Forest Temple MQ Block Puzzle Floor", SCENE_FOREST_TEMPLE, {
         //Events
+#ifdef COMBO_BUILD
+        // OoTMM: FOREST_MQ_CLIMBING_BLOCK_ROOM_ICE_PLATFORM_SHORTCUT.
+        EVENT_ACCESS(LOGIC_FOREST_MQ_BLOCK_ROOM_TARGETS, logic->CanUse(RG_BOMBCHU_5)),
+#else
         EVENT_ACCESS(LOGIC_FOREST_MQ_BLOCK_ROOM_TARGETS, (ctx->GetTrickOption(RT_FOREST_MQ_BLOCK_PUZZLE) && logic->CanUse(RG_BOMBCHU_5))),
+#endif
         //It is barely possible to get this as child with master + hovers, but it's tight without bunny speed
         EVENT_ACCESS(LOGIC_FOREST_CAN_TWIST_HALLWAY,     (ctx->GetTrickOption(RT_FOREST_MQ_RANG_HALLWAY_SWITCH) && logic->CanUse(RG_BOOMERANG)) || (ctx->GetTrickOption(RT_FOREST_MQ_HOOKSHOT_HALLWAY_SWITCH) && logic->CanUse(RG_HOOKSHOT))),
     }, {

@@ -651,7 +651,11 @@ void CreateStoneHints() {
     if (ctx->GetOption(RSK_STARTING_ZELDAS_LETTER) && !ctx->GetOption(RSK_SHUFFLE_ZELDAS_LETTER)) {
         ctx->GetItemLocation(RC_SONG_FROM_IMPA)->SetHintAccesible();
     }
+#ifdef COMBO_BUILD
+    if (!ctx->GetOption(RSK_SHUFFLE_MASTER_SWORD)) {
+#else
     if (ctx->GetOption(RSK_SELECTED_STARTING_AGE).Is(RO_AGE_ADULT) || !ctx->GetOption(RSK_SHUFFLE_MASTER_SWORD)) {
+#endif
         ctx->GetItemLocation(RC_TOT_MASTER_SWORD)->SetHintAccesible();
     }
 

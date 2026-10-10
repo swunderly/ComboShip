@@ -6,17 +6,20 @@
 //
 // DESIGN NOTE: NO ResourceManager usage here. RM scoping for invoke callbacks is GAME-SIDE
 // (inside each game's own invoke/draw/eval export). comboui only calls game.evalDisabled,
-// game.invokeCallback and game.drawCustom by index — no shared_ptr crosses the boundary.
+// game.invokeCallback and game.drawCustom by index â€” no shared_ptr crosses the boundary.
 //
 // KNOWN ISSUE (docs/KNOWN_ISSUES.md): settings whose effect depends on a registered per-page
-// MenuUpdate function (e.g. SoH's Advanced Resolution editor — local-var bindings translated to
+// MenuUpdate function (e.g. SoH's Advanced Resolution editor â€” local-var bindings translated to
 // effective CVars by UpdateResolutionVars) do NOT apply through this generic CVar-write path.
 // Toggling them here writes the UI CVars but not the effective ones, so the viewport never changes.
 #include "ComboWidgetRender.h"
+#include "ComboRuleWarning.h"
 #include "ComboMenuModel.h"        // GameMenu (resolved export fn-ptrs)
 #include "ComboWidgetStyle.h"      // combo-owned replication of OOT UIWidgets menu styling
 #include "ComboAudioBridge.h"      // Shared-tab audio -> MM mirror
 #include "ComboResolutionEditor.h" // combo-owned Advanced Resolution editor (intercepts broken widgets)
+#include "ComboMenuLayout.h"
+#include "rando/GenerationRules.h"
 
 #include <libultraship/libultraship.h>         // ImGui-adjacent + CVar bridge (CVarGet/Set*) + color.h
 #include <ship/window/gui/IconsFontAwesome4.h> // ICON_FA_* for the window-toggle button (matches SoH)
@@ -27,7 +30,7 @@
 namespace ComboRando {
 
 namespace {
-// Human-readable backend names — mirror soh/.../MenuTypes.h windowBackendsMap / audioBackendsMap
+// Human-readable backend names â€” mirror soh/.../MenuTypes.h windowBackendsMap / audioBackendsMap
 // (those live per-DLL and aren't linkable from comboui). Window ids are Fast::WindowBackend values.
 const char* WindowBackendName(int32_t id) {
     switch (id) {
@@ -56,7 +59,7 @@ const char* AudioBackendName(Ship::AudioBackend b) {
     }
 }
 
-// CW_VIDEO_BACKEND: render-API selector. Mirrors SoH's WIDGET_VIDEO_BACKEND — writes the config
+// CW_VIDEO_BACKEND: render-API selector. Mirrors SoH's WIDGET_VIDEO_BACKEND â€” writes the config
 // and saves; the change takes effect on relaunch (hence the native "Needs reload" label).
 void RenderVideoBackend(const CwWidget& w, const ImVec4& themeColor) {
     auto ctx = Ship::Context::GetRawInstance();
@@ -107,7 +110,7 @@ void RenderVideoBackend(const CwWidget& w, const ImVec4& themeColor) {
         ImGui::EndDisabled();
 }
 
-// CW_AUDIO_BACKEND: audio-API selector. Mirrors SoH's WIDGET_AUDIO_BACKEND — applies live.
+// CW_AUDIO_BACKEND: audio-API selector. Mirrors SoH's WIDGET_AUDIO_BACKEND â€” applies live.
 void RenderAudioBackend(const CwWidget& w, const ImVec4& themeColor) {
     auto ctx = Ship::Context::GetRawInstance();
     if (!ctx || !ctx->GetAudio()) {
@@ -118,13 +121,13 @@ void RenderAudioBackend(const CwWidget& w, const ImVec4& themeColor) {
     auto avail = audio->GetAvailableAudioBackends();
     const Ship::AudioBackend cur = audio->GetCurrentAudioBackend();
     // SoH's MenuDrawItem hardcodes "Audio API" (ignores the widget's "(Needs reload)" name, since
-    // the audio backend applies live) — match that rather than using w.name.
+    // the audio backend applies live) â€” match that rather than using w.name.
     const char* label = "Audio API";
     const bool only = !avail || avail->size() <= 1;
     if (only)
         ImGui::BeginDisabled(true);
     // Label above the combo (matches SoH), then a hidden-label combo sized to fit the widest option
-    // (so "Windows Audio Session API" isn't clipped) — mirrors SoH's CalcComboWidth.
+    // (so "Windows Audio Session API" isn't clipped) â€” mirrors SoH's CalcComboWidth.
     ImGui::TextUnformatted(label);
     ComboMenu_PushCombobox(themeColor);
     const ImGuiStyle& st = ImGui::GetStyle();
@@ -166,7 +169,7 @@ static bool DelegatesToGame(CwKind k) {
         case CW_SLIDER_INT:
         case CW_SLIDER_FLOAT:
         case CW_COMBOBOX:
-        case CW_BTN_SELECTOR:
+        // Button combinations use comboui's shared named-button control below.
         // CW_INPUT_TEXT (OOT) and CW_COLOR (MM) are intentionally NOT delegated: the respective
         // game's MenuDrawItem has no case for them, so they'd draw nothing. Left on the raw path.
         case CW_SEPARATOR:
@@ -178,9 +181,40 @@ static bool DelegatesToGame(CwKind k) {
     }
 }
 
+static void ApplyTrickGovernedRuntimeChange(const char* cvar) {
+    const auto* rule = FindGameplayRule(cvar);
+    if (!rule || !rule->trickGoverned || std::strcmp(cvar, rule->name)) return;
+    SetEnhancementRule(*rule, CVarGetInteger(cvar, rule->fallback),
+        [](const char* key, int fallback) { return CVarGetInteger(key, fallback); },
+        [](const char* key, int value) {
+            CVarSetInteger(key, value);
+            static auto write = reinterpret_cast<void(*)(const char*, int32_t)>(
+                Combo_ResolveSym("soh", "SOH_WriteGameplayRule"));
+            if (write) write(key, value);
+        });
+    static auto refresh = reinterpret_cast<void(*)()>(Combo_ResolveSym("soh", "SOH_RefreshComboRules"));
+    if (refresh) refresh();
+    Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+}
+
+static bool IsMmSharedReticle(const CwWidget& w, const GameMenu& game) {
+    return w.cvar && std::strcmp(w.cvar, "gEnhancements.HookshotableReticle") == 0 &&
+           game.menu && game.menu == ComboMenuModel::Get().Mm().menu;
+}
+
+static void RefreshSharedReticlePeer(const CwWidget& w, const GameMenu& game) {
+    if (!IsMmSharedReticle(w, game)) return;
+    const auto& oot = ComboMenuModel::Get().Oot();
+    if (oot.applyCVarChange) oot.applyCVarChange(w.cvar);
+}
+
 void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
+    // Every native rendering path must defer these paired controls to the shared pages.
+    if (IsRetiredNativeRuleControl(w.cvar)) return;
     // Unique id namespace per widget so two widgets sharing a display label don't collide.
     ImGui::PushID(w.index);
+    const int state = w.hasPreFunc && game.evalDisabled ? game.evalDisabled(w.index, nullptr) : 0;
+    if (state == 2) { ImGui::PopID(); return; } // hidden by the owning menu
 
     // ComboShip: SoH's Advanced Resolution editor doesn't survive the flat C-ABI (dynamic names,
     // ValuePointer combo, custom-draw, per-page MenuUpdate). Intercept those widgets and render a
@@ -192,10 +226,11 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
 
     // ComboShip: draw declarative/CVar kinds through the owning game's real MenuDrawItem/UIWidgets.
     // The game applies the change (its own callback + ShipInit) internally, so we must NOT re-invoke
-    // those here — only the cross-game audio mirror stays comboui's concern. Falls through to the
+    // those here â€” only the cross-game audio mirror stays comboui's concern. Falls through to the
     // raw path below when the export is absent (older DLL).
-    if (game.drawWidget && DelegatesToGame(w.kind)) {
-        // Enforce the widget's preFunc disable at the comboui level (wrap in BeginDisabled) — same as
+    const bool sharedCombo = w.kind == CW_COMBOBOX && w.cvar && *w.cvar && w.choiceCount > 0;
+    if (w.index >= 0 && game.drawWidget && DelegatesToGame(w.kind) && !sharedCombo) {
+        // Enforce the widget's preFunc disable at the comboui level (wrap in BeginDisabled) â€” same as
         // the raw path below. The game's MenuDrawItem also applies it internally, but wrapping here is
         // what reliably makes a preFunc-gated control non-interactive (e.g. "Cull Glitch Useful
         // Actors", gated on "Widescreen Actor Culling").
@@ -208,8 +243,16 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
             ImGui::EndDisabled();
         }
         if (changed && w.cvar && w.cvar[0]) {
+            // Native draw already refreshed its owner; notify only the shared reticle peer.
+            RefreshSharedReticlePeer(w, game);
+            ApplyTrickGovernedRuntimeChange(w.cvar);
             ComboAudio::MirrorIfVolumeCVar(w.cvar);
+            WarnAboutRuleChange(w.cvar);
         }
+        // MM's checkbox already shows this help on hover, keyboard focus and touch hold.
+        // Appending Combo's tooltip would draw the same sentence twice.
+        const bool nativeReticleTooltip = w.kind == CW_CHECKBOX && IsMmSharedReticle(w, game);
+        if (!nativeReticleTooltip && (ImGui::IsItemFocused() || ImGui::IsItemActive())) MenuTooltip(w.tooltip);
         ImGui::PopID();
         return;
     }
@@ -268,11 +311,11 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
             // vsnprintf as a bogus format.
             if (w.name && (std::strstr(w.name, "%d") || std::strstr(w.name, "%i"))) {
                 ImGui::SetNextItemWidth(-FLT_MIN);
-                if (ImGui::SliderInt("##v", &v, w.iMin, w.iMax, w.name)) {
+                if (ImGui::SliderInt("##v", &v, w.iMin, w.iMax, w.name, ImGuiSliderFlags_NoInput)) {
                     CVarSetInteger(w.cvar, v);
                     changed = true;
                 }
-            } else if (ImGui::SliderInt(label, &v, w.iMin, w.iMax)) {
+            } else if (ImGui::SliderInt(label, &v, w.iMin, w.iMax, "%d", ImGuiSliderFlags_NoInput)) {
                 CVarSetInteger(w.cvar, v);
                 changed = true;
             }
@@ -286,11 +329,11 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
             if (w.name && (std::strstr(w.name, "%f") || std::strstr(w.name, "%.") || std::strstr(w.name, "%g") ||
                            std::strstr(w.name, "%e"))) {
                 ImGui::SetNextItemWidth(-FLT_MIN);
-                if (ImGui::SliderFloat("##v", &v, w.fMin, w.fMax, w.name)) {
+                if (ImGui::SliderFloat("##v", &v, w.fMin, w.fMax, w.name, ImGuiSliderFlags_NoInput)) {
                     CVarSetFloat(w.cvar, v);
                     changed = true;
                 }
-            } else if (ImGui::SliderFloat(label, &v, w.fMin, w.fMax)) {
+            } else if (ImGui::SliderFloat(label, &v, w.fMin, w.fMax, "%.3f", ImGuiSliderFlags_NoInput)) {
                 CVarSetFloat(w.cvar, v);
                 changed = true;
             }
@@ -298,7 +341,11 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
             break;
         }
         case CW_COMBOBOX: {
-            int v = CVarGetInteger(w.cvar, 0);
+            ImGui::BeginGroup();
+            std::string displayLabel = label;
+            if (const auto suffix = displayLabel.find("##"); suffix != std::string::npos) displayLabel.resize(suffix);
+            ImGui::TextWrapped("%s", displayLabel.c_str());
+            int v = CVarGetInteger(w.cvar, w.iDefault);
             const char* curLabel = "";
             for (int i = 0; i < w.choiceCount; ++i) {
                 if (w.choices[i].value == v) {
@@ -307,7 +354,8 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
                 }
             }
             ComboMenu_PushCombobox(themeColor);
-            if (ImGui::BeginCombo(label, curLabel)) {
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::BeginCombo("##Choice", curLabel)) {
                 for (int i = 0; i < w.choiceCount; ++i) {
                     const CwChoice& c = w.choices[i];
                     bool sel = (c.value == v);
@@ -322,24 +370,39 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
                 ImGui::EndCombo();
             }
             ComboMenu_PopCombobox();
+            ImGui::EndGroup();
             break;
         }
         case CW_BTN_SELECTOR: {
-            // Simplified rendering: the game owns the exact cycle semantics (wrap-around,
-            // label set). Here we expose the backing CVar as an overflow-safe int stepper —
-            // functional and clamped at >= 0. The post-change callback (routed below) lets
-            // the game react if it needs to. Themed with the frame-input style so the field +
-            // +/- steppers pick up the menu accent color.
+            // These values are controller button masks, not ordinary numbers. Offer
+            // the same named buttons in both engines instead of a numeric keyboard.
             int v = CVarGetInteger(w.cvar, w.iDefault);
-            ComboMenu_PushInput(themeColor);
-            if (ImGui::InputInt(label, &v)) {
-                if (v < 0) {
-                    v = 0;
+            ImGui::TextWrapped("%s", label);
+            struct Button { const char* name; int mask; };
+            static const Button buttons[] = {
+                {"A", 0x8000}, {"B", 0x4000}, {"Z", 0x2000}, {"Start", 0x1000},
+                {"L", 0x0020}, {"R", 0x0010}, {"C up", 0x0008}, {"C down", 0x0004},
+                {"C left", 0x0002}, {"C right", 0x0001}, {"D up", 0x0800},
+                {"D down", 0x0400}, {"D left", 0x0200}, {"D right", 0x0100},
+            };
+            ComboMenu_PushCheckbox(themeColor);
+            for (int i = 0; i < IM_ARRAYSIZE(buttons); ++i) {
+                bool enabled = (v & buttons[i].mask) != 0;
+                if (ImGui::Checkbox(buttons[i].name, &enabled)) {
+                    v = enabled ? v | buttons[i].mask : v & ~buttons[i].mask;
+                    changed = true;
                 }
-                CVarSetInteger(w.cvar, v);
-                changed = true;
+                if ((i + 1) % 4 != 0 && i + 1 < IM_ARRAYSIZE(buttons) &&
+                    ImGui::GetContentRegionAvail().x > ImGui::GetFrameHeight() + ImGui::CalcTextSize(buttons[i + 1].name).x + 30)
+                    ImGui::SameLine();
             }
-            ComboMenu_PopInput();
+            ComboMenu_PopCheckbox();
+            ComboMenu_PushButton(themeColor);
+            if (ImGui::Button("Reset shortcut")) { v = w.iDefault; changed = true; }
+            ComboMenu_PopButton();
+            if (changed) {
+                CVarSetInteger(w.cvar, v);
+            }
             break;
         }
         case CW_INPUT_TEXT: {
@@ -362,7 +425,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
                 Color_RGBA8 def = { 255, 255, 255, 255 };
                 Color_RGBA8 c = CVarGetColor(w.cvar, def);
                 float col[4] = { c.r / 255.0f, c.g / 255.0f, c.b / 255.0f, c.a / 255.0f };
-                if (ImGui::ColorEdit4(label, col)) {
+                if (ImGui::ColorEdit4(label, col, ImGuiColorEditFlags_NoInputs)) {
                     c.r = (uint8_t)(col[0] * 255.0f + 0.5f);
                     c.g = (uint8_t)(col[1] * 255.0f + 0.5f);
                     c.b = (uint8_t)(col[2] * 255.0f + 0.5f);
@@ -374,7 +437,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
                 Color_RGB8 def = { 255, 255, 255 };
                 Color_RGB8 c = CVarGetColor24(w.cvar, def);
                 float col[3] = { c.r / 255.0f, c.g / 255.0f, c.b / 255.0f };
-                if (ImGui::ColorEdit3(label, col)) {
+                if (ImGui::ColorEdit3(label, col, ImGuiColorEditFlags_NoInputs)) {
                     c.r = (uint8_t)(col[0] * 255.0f + 0.5f);
                     c.g = (uint8_t)(col[1] * 255.0f + 0.5f);
                     c.b = (uint8_t)(col[2] * 255.0f + 0.5f);
@@ -445,9 +508,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
     }
 
     // 3) tooltip on hover (applies to the widget item just drawn).
-    if (w.tooltip && w.tooltip[0] && ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", w.tooltip);
-    }
+    MenuTooltip(disabled && reason && *reason ? reason : w.tooltip);
 
     // 4) post-change callback, routed by index into the owning game.
     if (changed && w.hasCallback && game.invokeCallback) {
@@ -460,11 +521,16 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
     if (changed && w.cvar && w.cvar[0] && game.applyCVarChange) {
         game.applyCVarChange(w.cvar);
     }
+    // This visual toggle is shared, but OoT installs its conditional hook on ShipInit.
+    // A change through an MM widget (including search) must refresh that owner too.
+    if (changed) RefreshSharedReticlePeer(w, game);
 
     // 6) ComboShip: the Shared tab's audio sliders are OOT's (gSettings.Volume.*); mirror them into
     // MM's gSettings.Audio.* so a single Shared Audio section drives both games (see ComboAudioBridge).
     if (changed && w.cvar && w.cvar[0]) {
+        ApplyTrickGovernedRuntimeChange(w.cvar);
         ComboAudio::MirrorIfVolumeCVar(w.cvar);
+        WarnAboutRuleChange(w.cvar);
     }
 
     if (disabled) {
@@ -474,7 +540,8 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
 }
 
 void RenderSidebarWidgets(const CwSidebar& side, const GameMenu& game) {
-    const uint32_t cols = side.columnCount > 0 ? side.columnCount : 1;
+    const uint32_t desired = std::min<uint32_t>(2, side.columnCount > 0 ? side.columnCount : 1);
+    const uint32_t cols = ImGui::GetContentRegionAvail().x < ImGui::GetFontSize() * 20.0f * desired ? 1 : desired;
     const int widthBudget = 90 / (int)cols; // label WrappedText budget, matching the native menu
     if (cols <= 1) {
         for (int i = 0; i < side.widgetCount; ++i) {
@@ -482,17 +549,16 @@ void RenderSidebarWidgets(const CwSidebar& side, const GameMenu& game) {
         }
         return;
     }
-    // Per-column child windows (mirrors the native menu): each column scrolls INDEPENDENTLY within
-    // the section height, so a long column (e.g. Menu Settings) gets its own scrollbar while a short
-    // one (About) does not — instead of one scrollbar for the whole section. Widgets are flattened
-    // column-major (ComboMenuExport.h) and carry CwWidget.column.
-    const ImGuiStyle& st = ImGui::GetStyle();
-    const float sectionW = ImGui::GetContentRegionAvail().x;
-    const float colH = ImGui::GetContentRegionAvail().y;
-    const float colW = (sectionW - st.ItemSpacing.x * (cols - 1)) / (float)cols;
+    // One scrolling body matches the MM cards and lets preceding shared controls
+    // grow naturally. Separate fill-height children can leave native options in
+    // a tiny viewport when the shared controls take most of the available height.
+    if (!ImGui::BeginTable("##NativeOptions", cols,
+        ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) return;
+    ImGui::TableNextRow();
     for (uint32_t c = 0; c < cols; ++c) {
+        ImGui::TableSetColumnIndex(c);
         ImGui::PushID((int)c);
-        ImGui::BeginChild("##seccol", ImVec2(colW, colH), 0, ImGuiWindowFlags_NoTitleBar);
+        ImGui::BeginGroup();
         for (int i = 0; i < side.widgetCount; ++i) {
             int wc = side.widgets[i].column;
             if (wc < 0) {
@@ -504,12 +570,10 @@ void RenderSidebarWidgets(const CwSidebar& side, const GameMenu& game) {
                 RenderWidget(side.widgets[i], game, widthBudget);
             }
         }
-        ImGui::EndChild();
+        ImGui::EndGroup();
         ImGui::PopID();
-        if (c + 1 < cols) {
-            ImGui::SameLine();
-        }
     }
+    ImGui::EndTable();
 }
 
 } // namespace ComboRando

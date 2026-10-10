@@ -1,7 +1,7 @@
 #include "CrashHandler.h"
 #include <ship/utils/StringHelper.h>
 
-#if __has_include(<unistd.h>)
+#if __has_include(<unistd.h>) && !defined(__ANDROID__)
 #define HAS_POSIX 1
 #else
 #define HAS_POSIX 0

@@ -286,6 +286,12 @@ void Audio_ProcessNotes(void) {
                 }
                 subAttrs.reverbVol = channel->reverb;
                 subAttrs.unk_1 = channel->unk_0C;
+#ifdef COMBO_BUILD
+                if(layer->comboMmDialect) {
+                    if(!layer->comboMmFlags.s.bit_2)subAttrs.reverbVol=layer->comboMmTargetReverbVol;
+                    if(!layer->comboMmFlags.s.bit_9)subAttrs.unk_1=0;
+                }
+#endif
                 subAttrs.filter = channel->filter;
                 subAttrs.unk_14 = channel->unk_0F;
                 subAttrs.unk_16 = channel->unk_20;
@@ -479,6 +485,12 @@ void Audio_SeqLayerDecayRelease(SequenceLayer* layer, s32 target) {
             chan = layer->channel;
             attrs->reverb = chan->reverb;
             attrs->unk_1 = chan->unk_0C;
+#ifdef COMBO_BUILD
+            if(layer->comboMmDialect) {
+                if(!layer->comboMmFlags.s.bit_2)attrs->reverb=layer->comboMmTargetReverbVol;
+                if(!layer->comboMmFlags.s.bit_9)attrs->unk_1=0;
+            }
+#endif
             attrs->filter = chan->filter;
 
             if (attrs->filter != NULL) {

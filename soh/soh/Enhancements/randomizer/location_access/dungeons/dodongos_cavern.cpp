@@ -1,4 +1,5 @@
 #include "soh/Enhancements/randomizer/location_access.h"
+#include "soh/Enhancements/randomizer/silver_rupees/SilverLogic.h"
 #include "soh/Enhancements/randomizer/entrance.h"
 #include "soh/Enhancements/randomizer/dungeon.h"
 
@@ -28,7 +29,7 @@ void RegionTable_Init_DodongosCavern() {
         EVENT_ACCESS(LOGIC_DC_EYES_LIT,  ctx->GetTrickOption(RT_DC_EYES_CHU) && logic->CanUse(RG_BOMBCHU_5)),
     }, {
         //Locations
-        LOCATION(RC_DODONGOS_CAVERN_MAP_CHEST,              (logic->CanBreakMudWalls() || logic->HasItem(RG_GORONS_BRACELET)) && logic->CanOpenLargeChest();),
+        LOCATION(RC_DODONGOS_CAVERN_MAP_CHEST,              (logic->CanBreakMudWalls() || logic->HasItem(RG_GORONS_BRACELET)) && logic->CanOpenLargeChest()),
         LOCATION(RC_DODONGOS_CAVERN_DEKU_SCRUB_LOBBY,       (logic->CanStunDeku() || logic->HasItem(RG_GORONS_BRACELET)) && logic->HasItem(RG_SPEAK_DEKU) && GetCheckPrice() <= GetWalletCapacity()),
         LOCATION(RC_DODONGOS_CAVERN_GOSSIP_STONE_FAIRY,     AnyAgeTime([]{return logic->CanBreakMudWalls() || logic->HasItem(RG_GORONS_BRACELET); }) && logic->CallGossipFairy()),
         LOCATION(RC_DODONGOS_CAVERN_GOSSIP_STONE_FAIRY_BIG, AnyAgeTime([]{return logic->CanBreakMudWalls() || logic->HasItem(RG_GORONS_BRACELET); }) && logic->CanUse(RG_SONG_OF_STORMS)),
@@ -55,7 +56,11 @@ void RegionTable_Init_DodongosCavern() {
 
     areaTable[RR_DODONGOS_CAVERN_SE_CORRIDOR] = Region("Dodongos Cavern SE Corridor", SCENE_DODONGOS_CAVERN, {}, {
         //Locations
+#ifdef COMBO_BUILD
+        LOCATION(RC_DODONGOS_CAVERN_GS_SCARECROW,    logic->ReachScarecrow() || (ctx->GetTrickOption(RT_DC_SCARECROW_GS) && logic->HasItem(RG_POWER_BRACELET) && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA))),
+#else
         LOCATION(RC_DODONGOS_CAVERN_GS_SCARECROW,    logic->ReachScarecrow() || (logic->IsAdult && logic->CanUse(RG_LONGSHOT)) || (ctx->GetTrickOption(RT_DC_SCARECROW_GS) && logic->HasItem(RG_POWER_BRACELET) && logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA))),
+#endif
         LOCATION(RC_DODONGOS_CAVERN_SIDE_ROOM_POT_1, logic->CanBreakPots()),
         LOCATION(RC_DODONGOS_CAVERN_SIDE_ROOM_POT_2, logic->CanBreakPots()),
         LOCATION(RC_DODONGOS_CAVERN_SIDE_ROOM_POT_3, logic->CanBreakPots()),
@@ -378,7 +383,7 @@ void RegionTable_Init_DodongosCavern() {
 
     areaTable[RR_DODONGOS_CAVERN_MQ_STAIRS_UPPER] = Region("Dodongos Cavern MQ Stairs Upper", SCENE_DODONGOS_CAVERN, {
         //Events
-        EVENT_ACCESS(LOGIC_DC_MQ_STAIRS_SILVER_RUPEES, logic->HasItem(RG_CLIMB)),
+        EVENT_ACCESS(LOGIC_DC_MQ_STAIRS_SILVER_RUPEES, SilverLogic::Gate(RG_RUPEE_SILVER_DC, logic->HasItem(RG_CLIMB))),
     }, {
         //Locations
         //Jump from vines can reach stairs without climb
@@ -690,4 +695,5 @@ void RegionTable_Init_DodongosCavern() {
     });
 
     // clang-format on
+    SilverLogic::RegisterRoutes(SCENE_DODONGOS_CAVERN);
 }

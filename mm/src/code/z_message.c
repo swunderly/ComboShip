@@ -7,6 +7,7 @@
 #include "message_data_static.h"
 #include "interface/parameter_static/parameter_static.h"
 #include "z64save.h"
+#include "2s2h/DeveloperTools/OwlStatueEditor.h"
 #include "BenPort.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "assets/archives/schedule_dma_static/schedule_dma_static_yar.h"
@@ -15,6 +16,15 @@
 #include "assets/interface/message_static/message_static.h"
 #include "assets/interface/message_texture_static/message_texture_static.h"
 #include <string.h>
+
+#ifdef COMBO_BUILD
+#include "2s2h/Enhancements/Songs/CrossWarpAudio.h"
+extern int Combo_MMForeignSongPerformanceActive(void);
+extern int Combo_MMForeignSongPlayback(void);
+extern void Combo_MMForeignSongPerformanceFinished(void);
+extern void Combo_MMForeignSongPlayedText(void);
+extern void Combo_MMForeignSongDiagnostic(const char* event);
+#endif
 
 #include "2s2h_assets.h"
 #include <libultraship/bridge/consolevariablebridge.h>
@@ -2102,15 +2112,15 @@ void func_8014CCB4(PlayState* play, s16* decodedBufPos, s32* offset, f32* arg3) 
     s32 k = *offset;
     f32 f = *arg3;
 
-    Font_LoadChar(play, 0x838B, k); // 0x838B = ル in JISX0213
+    Font_LoadChar(play, 0x838B, k); // 0x838B = ãƒ« in JISX0213
     k += FONT_CHAR_TEX_SIZE;
     msgCtx->decodedBuffer.wchar[t] = 0x838B;
     t++;
-    Font_LoadChar(play, 0x8373, k); // 0x8373 = ピ in JISX0213
+    Font_LoadChar(play, 0x8373, k); // 0x8373 = ãƒ” in JISX0213
     k += FONT_CHAR_TEX_SIZE;
     msgCtx->decodedBuffer.wchar[t] = 0x8373;
     t++;
-    Font_LoadChar(play, 0x815C, k); // 0x815C = ― in JISX0213
+    Font_LoadChar(play, 0x815C, k); // 0x815C = â€• in JISX0213
     k += FONT_CHAR_TEX_SIZE;
     msgCtx->decodedBuffer.wchar[t] = 0x815C;
 
@@ -2136,7 +2146,7 @@ void Message_GetTimerDigits(OSTime time, s16 digits[8]) {
     digits[1] = t / SECONDS_TO_TIMER(60);
     t -= digits[1] * SECONDS_TO_TIMER(60);
 
-    digits[2] = 0x135B; // 0x135B + 0x824F = 分 (minutes) in S-JIS
+    digits[2] = 0x135B; // 0x135B + 0x824F = åˆ† (minutes) in S-JIS
 
     // 10 seconds
     digits[3] = t / SECONDS_TO_TIMER(10);
@@ -2146,7 +2156,7 @@ void Message_GetTimerDigits(OSTime time, s16 digits[8]) {
     digits[4] = t / SECONDS_TO_TIMER(1);
     t -= digits[4] * SECONDS_TO_TIMER(1);
 
-    digits[5] = 0x1313; // 0x1313 + 0x824F = 秒 (seconds) in S-JIS
+    digits[5] = 0x1313; // 0x1313 + 0x824F = ç§’ (seconds) in S-JIS
 
     // 100 milliseconds
     digits[6] = t / SECONDS_TO_TIMER_PRECISE(0, 10);
@@ -2239,7 +2249,7 @@ void Message_LoadTime(PlayState* play, u16 curChar, s32* offset, f32* arg3, s16*
         msgCtx->decodedBuffer.wchar[p] = digits[i] + 0x824F;
         p++;
         if (i == 1) {
-            // Hours (時間)
+            // Hours (æ™‚é–“)
             Font_LoadChar(play, 0x8E9E, o);
             o += FONT_CHAR_TEX_SIZE;
             msgCtx->decodedBuffer.wchar[p] = 0x8E9E;
@@ -2249,7 +2259,7 @@ void Message_LoadTime(PlayState* play, u16 curChar, s32* offset, f32* arg3, s16*
             msgCtx->decodedBuffer.wchar[p] = 0x8E9E;
             p++;
         } else if (i == 3) {
-            // Minutes (分)
+            // Minutes (åˆ†)
             Font_LoadChar(play, 0x95AA, o);
             o += FONT_CHAR_TEX_SIZE;
             msgCtx->decodedBuffer.wchar[p] = 0x95AA;
@@ -3464,7 +3474,14 @@ void Message_OpenText(PlayState* play, u16 textId) {
     }
 }
 
+#ifdef COMBO_BUILD
+extern void Combo_MM_LoadFairyOcarinaPauseText(PlayState* play);
+#endif
 void func_801514B0(PlayState* play, u16 arg1, u8 arg2) {
+#ifdef COMBO_BUILD
+    const s32 fairyOcarinaDescription = arg1 == 0x1700 + ITEM_OCARINA_FAIRY;
+    if (fairyOcarinaDescription) arg1 = 0x1700 + ITEM_OCARINA_OF_TIME;
+#endif
     MessageContext* msgCtx = &play->msgCtx;
     Font* font = &msgCtx->font;
     Player* player = GET_PLAYER(play);
@@ -3548,6 +3565,12 @@ void func_801514B0(PlayState* play, u16 arg1, u8 arg2) {
     play->msgCtx.ocarinaMode = OCARINA_MODE_NONE;
     msgCtx->unk120D2 = 0xFF;
     msgCtx->unk120CE = msgCtx->unk120D0 = msgCtx->unk120D2;
+#ifdef COMBO_BUILD
+    if (fairyOcarinaDescription) {
+        Combo_MM_LoadFairyOcarinaPauseText(play);
+        msgCtx->currentTextId = 0x1700 + ITEM_OCARINA_FAIRY;
+    }
+#endif
 }
 
 void Message_StartTextbox(PlayState* play, u16 textId, Actor* actor) {
@@ -4058,6 +4081,11 @@ s16 sOcarinaEffectActorIds[] = {
 s32 sOcarinaEffectActorParams[] = { 0, 1, 2, 3, 4, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0 };
 
 void Message_SpawnSongEffect(PlayState* play) {
+#ifdef COMBO_BUILD
+    // OoT warp songs have no Soaring screen wipe. Their native particles start
+    // only after the destination confirmation is accepted.
+    if (Combo_MMForeignSongPerformanceActive()) return;
+#endif
     MessageContext* msgCtx = &play->msgCtx;
     Player* player = GET_PLAYER(play);
 
@@ -4642,6 +4670,11 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
                         vanillaOwnedSongCheck || CHECK_QUEST_ITEM(QUEST_SONG_SONATA + msgCtx->ocarinaStaff->state);
                 }
 
+#ifdef COMBO_BUILD
+                if (Combo_MMForeignSongPerformanceActive()) {
+                    vanillaOwnedSongCheck = true;
+                }
+#endif
                 if (msgCtx->ocarinaStaff->state <= OCARINA_SONG_SCARECROW_SPAWN) {
                     if (msgCtx->ocarinaStaff->state == OCARINA_SONG_EVAN_PART1) {
                         AudioOcarina_ResetAndReadInput();
@@ -4663,6 +4696,9 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
                             if ((msgCtx->ocarinaStaff->state <= OCARINA_SONG_SARIAS) ||
                                 (msgCtx->ocarinaStaff->state == OCARINA_SONG_SCARECROW_SPAWN)) {
                                 AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
+#ifdef COMBO_BUILD
+                                if (Combo_MMForeignSongPerformanceActive()) Combo_MMForeignSongDiagnostic("failed-song");
+#endif
                                 Audio_PlaySfx(NA_SE_SY_OCARINA_ERROR);
                                 msgCtx->msgMode = MSGMODE_OCARINA_STARTING;
                             } else {
@@ -4676,6 +4712,9 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
                         } else if (msgCtx->ocarinaAction == OCARINA_ACTION_CHECK_SCARECROW_SPAWN) {
                             if (msgCtx->ocarinaStaff->state <= OCARINA_SONG_STORMS) {
                                 AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
+#ifdef COMBO_BUILD
+                                if (Combo_MMForeignSongPerformanceActive()) Combo_MMForeignSongDiagnostic("failed-song");
+#endif
                                 Audio_PlaySfx(NA_SE_SY_OCARINA_ERROR);
                                 msgCtx->stateTimer = 10;
                                 msgCtx->msgMode = MSGMODE_OCARINA_FAIL;
@@ -4699,6 +4738,9 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
                         Interface_SetHudVisibility(HUD_VISIBILITY_NONE);
                     } else {
                         AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
+#ifdef COMBO_BUILD
+                        if (Combo_MMForeignSongPerformanceActive()) Combo_MMForeignSongDiagnostic("failed-song");
+#endif
                         Audio_PlaySfx(NA_SE_SY_OCARINA_ERROR);
                         msgCtx->msgMode = MSGMODE_OCARINA_STARTING;
                     }
@@ -4711,6 +4753,9 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
                 } else if (msgCtx->ocarinaStaff->state == 0xFF) {
                     if (!CHECK_WEEKEVENTREG(WEEKEVENTREG_52_10)) {
                         AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
+#ifdef COMBO_BUILD
+                        if (Combo_MMForeignSongPerformanceActive()) Combo_MMForeignSongDiagnostic("failed-song");
+#endif
                         Audio_PlaySfx(NA_SE_SY_OCARINA_ERROR);
                         msgCtx->stateTimer = 10;
                         msgCtx->msgMode = MSGMODE_OCARINA_FAIL;
@@ -4818,6 +4863,9 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
                 break;
 
             case MSGMODE_SETUP_DISPLAY_SONG_PLAYED:
+#ifdef COMBO_BUILD
+                if (Combo_MMForeignSongPerformanceActive()) Combo_MMForeignSongDiagnostic("performance-start");
+#endif
                 Message_DrawText(play, &gfx);
                 AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_DEFAULT);
 
@@ -4828,6 +4876,11 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
                 } else {
                     AudioOcarina_SetInstrument(sPlayerFormOcarinaInstruments[CUR_FORM]);
                     AudioOcarina_SetPlaybackSong((u8)msgCtx->songPlayed + 1, 1);
+#ifdef COMBO_BUILD
+                    if (Combo_MMForeignSongPerformanceActive()) {
+                        Combo_MMPlayWarpFanfare(Combo_MMForeignSongPlayback());
+                    } else
+#endif
                     if (msgCtx->songPlayed != OCARINA_SONG_SCARECROW_SPAWN) {
                         Audio_PlayFanfareWithPlayerIOPort7((u16)sOcarinaSongFanfares[msgCtx->songPlayed],
                                                            (u8)sOcarinaSongFanfareIoData[CUR_FORM]);
@@ -4846,6 +4899,11 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
                 break;
 
             case MSGMODE_DISPLAY_SONG_PLAYED_TEXT_BEGIN:
+#ifdef COMBO_BUILD
+                if (Combo_MMForeignSongPerformanceActive()) {
+                    Combo_MMForeignSongPlayedText();
+                } else
+#endif
                 if (msgCtx->songPlayed == OCARINA_SONG_SCARECROW_SPAWN) {
                     Message_ContinueTextbox(play, 0x1B6B);
                 } else {
@@ -4876,6 +4934,18 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
             case MSGMODE_18:
                 msgCtx->stateTimer--;
                 if (msgCtx->stateTimer == 0) {
+#ifdef COMBO_BUILD
+                    if (Combo_MMForeignSongPerformanceActive()) {
+                        // The normal performance has finished. Delay the warp
+                        // prompt until now and prevent Soaring's native owl-map
+                        // action from consuming this foreign warp song.
+                        sLastPlayedSong = 0xFF;
+                        Message_CloseTextbox(play);
+                        msgCtx->ocarinaMode = OCARINA_MODE_ACTIVE;
+                        Combo_MMForeignSongPerformanceFinished();
+                        break;
+                    }
+#endif
                     Message_CloseTextbox(play);
                     if (msgCtx->songPlayed == OCARINA_SONG_EPONAS) {
                         gHorsePlayedEponasSong = true;
@@ -5977,7 +6047,7 @@ void Message_Update(PlayState* play) {
                         play->msgCtx.ocarinaMode = OCARINA_MODE_1B;
                         sLastPlayedSong = 0xFF;
                     } else if (!msgCtx->ocarinaSongEffectActive) {
-                        if (gSaveContext.save.saveInfo.playerData.owlActivationFlags != 0) {
+                        if (MM_HAS_ACTIVATED_OWL_STATUES(gSaveContext.save.saveInfo.playerData.owlActivationFlags)) {
                             pauseCtx->unk_2C8 = pauseCtx->pageIndex;
                             pauseCtx->unk_2CA = pauseCtx->cursorPoint[4];
                             pauseCtx->pageIndex = PAUSE_ITEM;

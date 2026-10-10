@@ -131,7 +131,10 @@ inline ComboForeignResolve ComboFillForeignDrawInfo(RandomizerCheck rc, int slot
         if (p == nullptr || strncmp(p, kOtrPrefix, sizeof(kOtrPrefix) - 1) != 0) {
             return ComboForeignResolve::Unknown; // not an OTR path literal — can't route it
         }
-        info.dls[i] = ComboInternRoutedPath(std::string("__OTR__@mm:") + (p + sizeof(kOtrPrefix) - 1));
+        // A MM-owned item may deliberately reuse OOT assets (Fairy Ocarina).
+        // Preserve the recipe's explicit owner instead of creating @mm:@oot nesting.
+        info.dls[i] = ComboInternRoutedPath(p[sizeof(kOtrPrefix) - 1] == '@' ? std::string(p) :
+                                         std::string("__OTR__@mm:") + (p + sizeof(kOtrPrefix) - 1));
     }
     info.count = n;
     info.xluStart = raw.xluStartIndex;

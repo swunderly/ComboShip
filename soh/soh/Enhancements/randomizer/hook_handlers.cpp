@@ -1,5 +1,6 @@
 ﻿#include "soh/OTRGlobals.h"
 #include "soh/ResourceManagerHelpers.h"
+#include "silver_rupees/SilverRupees.h"
 #ifdef COMBO_BUILD
 #include "ComboExport.h"
 #endif
@@ -821,6 +822,9 @@ void EnExItem_DrawRandomizedItem(EnExItem* enExItem, PlayState* play) {
     func_8002EBCC(&enExItem->actor, play, 0);
     func_8002ED80(&enExItem->actor, play, 0);
     EnItem00_CustomItemsParticles(&enExItem->actor, play, randoGetItem);
+#ifdef COMBO_BUILD
+    CheckTracker::RecordObservedItem(&enExItem->actor,randoGetItem);
+#endif
     GetItemEntry_Draw(play, randoGetItem);
 }
 
@@ -853,6 +857,9 @@ void EnItem00_DrawRandomizedItem(EnItem00* enItem00, PlayState* play) {
     func_8002EBCC(&enItem00->actor, play, 0);
     func_8002ED80(&enItem00->actor, play, 0);
     EnItem00_CustomItemsParticles(&enItem00->actor, play, randoItem);
+#ifdef COMBO_BUILD
+    CheckTracker::RecordObservedItem(&enItem00->actor,randoItem);
+#endif
     GetItemEntry_Draw(play, randoItem);
 }
 
@@ -864,6 +871,9 @@ void ItemBHeart_DrawRandomizedItem(ItemBHeart* itemBHeart, PlayState* play) {
     func_8002EBCC(&itemBHeart->actor, play, 0);
     func_8002ED80(&itemBHeart->actor, play, 0);
     EnItem00_CustomItemsParticles(&itemBHeart->actor, play, randoItem);
+#ifdef COMBO_BUILD
+    CheckTracker::RecordObservedItem(&itemBHeart->actor,randoItem);
+#endif
     GetItemEntry_Draw(play, randoItem);
 }
 
@@ -886,6 +896,9 @@ void ItemEtcetera_DrawRandomizedItem(ItemEtcetera* itemEtcetera, PlayState* play
     EnItem00_CustomItemsParticles(&itemEtcetera->actor, play, randoItem);
     func_8002EBCC(&itemEtcetera->actor, play, 0);
     func_8002ED80(&itemEtcetera->actor, play, 0);
+#ifdef COMBO_BUILD
+    CheckTracker::RecordObservedItem(&itemEtcetera->actor,randoItem);
+#endif
     GetItemEntry_Draw(play, randoItem);
 }
 
@@ -1077,6 +1090,9 @@ void RandomizerOnDialogMessageHandler() {
                     if (itemSkull_loc->GetCheckStatus() == RCSHOW_UNCHECKED) {
                         itemSkull_loc->SetCheckStatus(RCSHOW_IDENTIFIED);
                     }
+#ifdef COMBO_BUILD
+                    CheckTracker::RecordHintedItem(RC_DEKU_THEATER_SKULL_MASK);
+#endif
                     reveal = RC_DEKU_THEATER_MASK_OF_TRUTH;
                 }
                 break;
@@ -1109,6 +1125,9 @@ void RandomizerOnDialogMessageHandler() {
                     if (item1000_loc->GetCheckStatus() == RCSHOW_UNCHECKED) {
                         item1000_loc->SetCheckStatus(RCSHOW_IDENTIFIED);
                     }
+#ifdef COMBO_BUILD
+                    CheckTracker::RecordHintedItem(RC_GF_HBA_1000_POINTS);
+#endif
                     reveal = RC_GF_HBA_1500_POINTS;
                 }
                 break;
@@ -1160,6 +1179,9 @@ void RandomizerOnDialogMessageHandler() {
                     if (itemoot_loc->GetCheckStatus() == RCSHOW_UNCHECKED) {
                         itemoot_loc->SetCheckStatus(RCSHOW_IDENTIFIED);
                     }
+#ifdef COMBO_BUILD
+                    CheckTracker::RecordHintedItem(RC_HF_OCARINA_OF_TIME_ITEM);
+#endif
                     reveal = RC_SONG_FROM_OCARINA_OF_TIME;
                 }
                 break;
@@ -1182,6 +1204,9 @@ void RandomizerOnDialogMessageHandler() {
         if (item_loc->GetCheckStatus() == RCSHOW_UNCHECKED) {
             item_loc->SetCheckStatus(RCSHOW_IDENTIFIED);
         }
+#ifdef COMBO_BUILD
+        CheckTracker::RecordHintedItem(reveal);
+#endif
     }
 }
 
@@ -1340,11 +1365,21 @@ void RandomizerOnVanillaBehaviorHandler(GIVanillaBehavior id, bool* should, va_l
             }
             break;
         case VB_MALON_RETURN_FROM_CASTLE:
+#ifdef COMBO_BUILD
+            // OoTMM En_Ma1.S moves Malon after her castle reward, independently
+            // of the shuffled egg used to wake Talon.
+            *should = Flags_GetEventChkInf(EVENTCHKINF_OBTAINED_POCKET_EGG);
+#else
             *should = Flags_GetEventChkInf(EVENTCHKINF_TALON_RETURNED_FROM_CASTLE) &&
                       Flags_GetEventChkInf(EVENTCHKINF_OBTAINED_POCKET_EGG);
+#endif
             break;
         case VB_SEND_MALON_HOME:
+#ifdef COMBO_BUILD
+            *should = Flags_GetEventChkInf(EVENTCHKINF_OBTAINED_POCKET_EGG);
+#else
             *should = Flags_GetRandomizerInf(RAND_INF_TALON_SENT_MALON_HOME);
+#endif
             break;
         case VB_MIDO_CONSIDER_DEKU_TREE_DEAD:
             *should = Flags_GetEventChkInf(EVENTCHKINF_OBTAINED_KOKIRI_EMERALD_DEKU_TREE_DEAD);
@@ -2503,6 +2538,9 @@ void EnSi_DrawRandomizedItem(EnSi* enSi, PlayState* play) {
     func_8002ED80(&enSi->actor, play, 0);
     func_8002EBCC(&enSi->actor, play, 0);
     EnItem00_CustomItemsParticles(&enSi->actor, play, randoItem);
+#ifdef COMBO_BUILD
+    CheckTracker::RecordObservedItem(&enSi->actor, randoItem);
+#endif
     GetItemEntry_Draw(play, randoItem);
 }
 
@@ -3044,6 +3082,7 @@ std::unordered_map<s32, SpecialRespawnInfo> swimSpecialRespawnInfo = {
 f32 triforcePieceScale;
 
 void RandomizerOnPlayerUpdateHandler() {
+    Combo_SilverUpdate(gPlayState);
     if ((GET_PLAYER(gPlayState)->stateFlags1 & PLAYER_STATE1_IN_WATER) && !Flags_GetRandomizerInf(RAND_INF_CAN_SWIM) &&
         CUR_EQUIP_VALUE(EQUIP_TYPE_BOOTS) != EQUIP_VALUE_BOOTS_IRON &&
         gPlayState->transitionTrigger == TRANS_TRIGGER_OFF) {

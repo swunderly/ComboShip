@@ -159,8 +159,19 @@ u8 gMaskPlayerFormSlotRestrictions[PLAYER_FORM_MAX][MASK_NUM_SLOTS] = {
 
 #define SET_MOON_MASK_BIT(masksGivenOnMoonIndex, masksGivenOnMoonFlag) \
     ((masksGivenOnMoonIndex) << 8 | (masksGivenOnMoonFlag))
-#define CHECK_GIVEN_MASK_ON_MOON(maskIndex) \
+#define COMBO_RAW_GIVEN_MASK_ON_MOON(maskIndex) \
     (gSaveContext.masksGivenOnMoon[sMasksGivenOnMoonBits[maskIndex] >> 8] & (u8)sMasksGivenOnMoonBits[maskIndex])
+
+extern int Combo_MM_AdultMaskVisibleItem(int maskIndex,int item,int given);
+extern void Combo_MM_DrawAdultMaskExtraIcon(PlayState* play,int maskIndex,int item,int given,const Vtx* source);
+extern int Combo_MM_AdultMaskIsGiven(int maskIndex,int item,int given);
+extern int Combo_MM_AdultMaskPauseTick(PlayState* play,int maskIndex,int given);
+#ifdef COMBO_BUILD
+#define CHECK_GIVEN_MASK_ON_MOON(maskIndex) Combo_MM_AdultMaskIsGiven((maskIndex), \
+    gSaveContext.save.saveInfo.inventory.items[(maskIndex)+ITEM_NUM_SLOTS],COMBO_RAW_GIVEN_MASK_ON_MOON(maskIndex))
+#else
+#define CHECK_GIVEN_MASK_ON_MOON(maskIndex) COMBO_RAW_GIVEN_MASK_ON_MOON(maskIndex)
+#endif
 
 u16 sMasksGivenOnMoonBits[] = {
     SET_MOON_MASK_BIT(1, 0x1),  // SLOT_MASK_POSTMAN
@@ -279,12 +290,17 @@ void KaleidoScope_DrawMaskSelect(PlayState* play) {
                 gSPVertex(POLY_OPA_DISP++, &pauseCtx->maskVtx[j + 0], 4, 0);
                 KaleidoScope_DrawTexQuadRGBA32(
                     play->state.gfxCtx,
-                    gItemIcons[((void)0, gSaveContext.save.saveInfo.inventory.items[i + ITEM_NUM_SLOTS])], 32, 32, 0);
+                    gItemIcons[Combo_MM_AdultMaskVisibleItem(i,gSaveContext.save.saveInfo.inventory.items[i + ITEM_NUM_SLOTS],COMBO_RAW_GIVEN_MASK_ON_MOON(i))], 32, 32, 0);
             }
         }
     }
 
     CLOSE_DISPS(play->state.gfxCtx);
+#ifdef COMBO_BUILD
+    const int adultIndex=SLOT_MASK_FIERCE_DEITY-ITEM_NUM_SLOTS;
+    Combo_MM_DrawAdultMaskExtraIcon(play,adultIndex,gSaveContext.save.saveInfo.inventory.items[SLOT_MASK_FIERCE_DEITY],
+        COMBO_RAW_GIVEN_MASK_ON_MOON(adultIndex),&pauseCtx->maskVtx[adultIndex*4]);
+#endif
 }
 
 u8 sMaskPlayerFormItems[PLAYER_FORM_MAX] = {
@@ -522,6 +538,9 @@ void KaleidoScope_UpdateMaskCursor(PlayState* play) {
             }
 
             cursorSlot = pauseCtx->cursorPoint[PAUSE_MASK];
+#ifdef COMBO_BUILD
+            Combo_MM_AdultMaskPauseTick(play,cursorSlot,COMBO_RAW_GIVEN_MASK_ON_MOON(cursorSlot));
+#endif
             pauseCtx->cursorColorSet = PAUSE_CURSOR_COLOR_SET_YELLOW;
 
             if (moveCursorResult == PAUSE_CURSOR_RESULT_SLOT) {
@@ -665,6 +684,8 @@ void KaleidoScope_UpdateMaskCursor(PlayState* play) {
                         return;
                     }
 
+                    // Pinned custom form restrictions: Adult Mask is usable only as human.
+                    if(cursorItem==0xbc && GET_PLAYER_FORM!=PLAYER_FORM_HUMAN)return;
                     // Equip item to the C buttons
                     pauseCtx->equipTargetItem = cursorItem;
                     pauseCtx->equipTargetSlot = cursorSlot + ITEM_NUM_SLOTS;
@@ -1093,7 +1114,7 @@ void KaleidoScope_UpdateMaskEquip(PlayState* play) {
         offsetY = ABS_ALT(pauseCtx->equipAnimY - maskCButtonPosY) / sMaskEquipAnimTimer;
     }
 
-    if ((pauseCtx->equipTargetItem >= 0xB5) && (pauseCtx->equipAnimAlpha < 254)) {
+    if (((pauseCtx->equipTargetItem >= 0xB5) && (pauseCtx->equipTargetItem <= 0xB7)) && (pauseCtx->equipAnimAlpha < 254)) {
         pauseCtx->equipAnimAlpha += 14;
         if (pauseCtx->equipAnimAlpha > 255) {
             pauseCtx->equipAnimAlpha = 254;

@@ -52,6 +52,10 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(IKANA_GRAVEYARD, 3),              ENTRANCE(BENEATH_THE_GRAVERYARD, 1), true),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            // Pinned Night 1/2 Exchange: Hover; unsupported anywhere-hook remains absent.
+            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_BEFORE_PIT, MM_LOGIC_HAS_HOVER_BOOTS),
+#endif
             CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_1_BOSS, CAN_LIGHT_TORCH_NEAR_ANOTHER),
         },
     };
@@ -74,7 +78,7 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_BOSS, CAN_USE_EXPLOSIVE),
-            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_BEFORE_PIT, HAS_MAGIC && HAS_ITEM(ITEM_LENS_OF_TRUTH)),
+            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_BEFORE_PIT, CAN_NAVIGATE_HIDDEN),
         },
     };
     Regions[RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_BEFORE_PIT] = RandoRegion{ .name = "Night 2 Grave Before Pit", .sceneId = SCENE_HAKASHITA,
@@ -95,13 +99,17 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(IKANA_GRAVEYARD, 2),              ENTRANCE(BENEATH_THE_GRAVERYARD, 0), true),
         },
         .connections = {
-            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_AFTER_PIT, HAS_MAGIC && HAS_ITEM(ITEM_LENS_OF_TRUTH)),
+#ifdef COMBO_BUILD
+            // Pinned Night 1/2 Exchange: Hover; unsupported anywhere-hook remains absent.
+            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_1_GRAVE, MM_LOGIC_HAS_HOVER_BOOTS),
+#endif
+            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_AFTER_PIT, CAN_NAVIGATE_HIDDEN),
         },
     };
     Regions[RR_GHOST_HUT] = RandoRegion{ .sceneId = SCENE_TOUGITES,
         .checks = {
-            CHECK(RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART, CHECK_MAX_HP(4) && CanKillEnemy(ACTOR_EN_PO_SISTERS)),
-            CHECK(RC_ENEMY_DROP_POE_SISTER, CHECK_MAX_HP(4) && CanKillEnemy(ACTOR_EN_PO_SISTERS)),
+            CHECK(RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART, CAN_PAY(1) && CHECK_MAX_HP(COMBO_MM_GHOST_HUT_MIN_HEARTS) && CanKillEnemy(ACTOR_EN_PO_SISTERS)),
+            CHECK(RC_ENEMY_DROP_POE_SISTER, CHECK_MAX_HP(COMBO_MM_GHOST_HUT_MIN_HEARTS) && CanKillEnemy(ACTOR_EN_PO_SISTERS)),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(IKANA_CANYON, 1),                 ENTRANCE(GHOST_HUT, 0), true),
@@ -160,10 +168,18 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             // Octorok soul not needed; the player can also create ice platforms on the water itself.
-            CONNECTION(RR_IKANA_CANYON_UPPER, HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_MAGIC_ARROW(ICE)),
+            #ifdef COMBO_BUILD
+            // Pinned ikana_valley.yml: Iron Boots + Hookshot bypass the ice platform.
+            CONNECTION(RR_IKANA_CANYON_UPPER, CAN_CLIMB_IKANA_RIVERSIDE ||
+                (MM_LOGIC_HAS_IRON_BOOTS && HAS_ITEM(ITEM_HOOKSHOT))),
+#else
+            CONNECTION(RR_IKANA_CANYON_UPPER, CAN_CLIMB_IKANA_RIVERSIDE),
+#endif
         },
         .events = {
-            EVENT(RE_ACCESS_BLUE_POTION_REFILL, CUR_UPG_VALUE(UPG_WALLET) >= 1),
+#ifndef COMBO_BUILD
+            EVENT(RE_ACCESS_BLUE_POTION_REFILL, Rando::HaveExpandedSoul(Rando::ExpandedSoul::MISC_BUSINESS_SCRUB) && CUR_UPG_VALUE(UPG_WALLET) >= 1),
+#endif // COMBO_BUILD: actual saved renewable stock is resolved centrally.
         },
     };
     Regions[RR_IKANA_CANYON_UPPER] = RandoRegion{ .name = "Upper", .sceneId = SCENE_IKANA,
@@ -172,7 +188,7 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_IKANA_CANYON_GRASS_02, true),
             CHECK(RC_IKANA_CANYON_GRASS_03, true),
             CHECK(RC_IKANA_CANYON_GRASS_04, true),
-            CHECK(RC_IKANA_CANYON_OWL_STATUE, CAN_USE_SWORD),
+            CHECK(RC_IKANA_CANYON_OWL_STATUE, CAN_ACTIVATE_OWL),
             CHECK(RC_IKANA_CANYON_TINGLE_MAP_01, CAN_USE_PROJECTILE && CAN_AFFORD(RC_IKANA_CANYON_TINGLE_MAP_01)),
             CHECK(RC_IKANA_CANYON_TINGLE_MAP_02, CAN_USE_PROJECTILE && CAN_AFFORD(RC_IKANA_CANYON_TINGLE_MAP_02)),
             CHECK(RC_ENEMY_DROP_GUAY, CanKillEnemy(ACTOR_EN_CROW) && IS_DAY()), // Day only
@@ -191,7 +207,7 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_IKANA_CANYON_LOWER, true),
         },
         .events = {
-            EVENT(RE_ACCESS_PICTOGRAPH_TINGLE, HAS_ITEM(ITEM_PICTOGRAPH_BOX)),
+            EVENT(RE_ACCESS_PICTOGRAPH_TINGLE, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_TINGLE) && (HAS_ITEM(ITEM_PICTOGRAPH_BOX))),
         },
         .oneWayEntrances = {
             ENTRANCE(IKANA_CANYON, 4), // From Song of Soaring
@@ -247,6 +263,10 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_IKANA_GRAVEYARD_WONDER_ITEM_07, true),
             CHECK(RC_IKANA_GRAVEYARD_WONDER_ITEM_08, true),
             CHECK(RC_IKANA_GRAVEYARD_WONDER_ITEM_09, true),
+            CHECK(RC_IKANA_GRAVEYARD_WONDER_ITEM_10, CAN_USE_PROJECTILE),
+            CHECK(RC_IKANA_GRAVEYARD_WONDER_ITEM_11, CAN_USE_PROJECTILE),
+            CHECK(RC_IKANA_GRAVEYARD_WONDER_ITEM_12, CAN_USE_PROJECTILE),
+
             CHECK(RC_ENEMY_DROP_STALCHILD, CanKillEnemy(ACTOR_EN_SKB) && IS_NIGHT()), // Night only
             CHECK(RC_ENEMY_DROP_BAD_BAT, CanKillEnemy(ACTOR_EN_BAT) && IS_DAY()), // Day only
         },
@@ -318,7 +338,7 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_ROAD_TO_IKANA_FIELD_SIDE, CAN_RIDE_EPONA),
-            CONNECTION(RR_ROAD_TO_IKANA_ABOVE_LEDGE, HAS_ITEM(ITEM_HOOKSHOT) && (HAS_ITEM(ITEM_MASK_GARO) || HAS_ITEM(ITEM_MASK_GIBDO))),
+            CONNECTION(RR_ROAD_TO_IKANA_ABOVE_LEDGE, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_POE_COLLECTOR) && HAS_ITEM(ITEM_HOOKSHOT) && (HAS_ITEM(ITEM_MASK_GARO) || HAS_ITEM(ITEM_MASK_GIBDO))),
         },
     };
     Regions[RR_ROAD_TO_IKANA_FIELD_SIDE] = RandoRegion{ .name = "Field Side", .sceneId = SCENE_IKANAMAE,
@@ -405,10 +425,10 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_SECRET_SHRINE_POT_03, true),
         },
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(IKANA_CANYON, 12),                ENTRANCE(SECRET_SHRINE, 0), true),
+            EXIT(ENTRANCE(IKANA_CANYON, 12),                ENTRANCE(SECRET_SHRINE, 0), CAN_RESET_TIME && (true)),
         },
         .connections = {
-            CONNECTION(RR_SECRET_SHRINE, HAS_MAGIC && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_ITEM(ITEM_BOW))
+            CONNECTION(RR_SECRET_SHRINE, HAS_MAGIC && HAS_ITEM(ITEM_ARROW_LIGHT) && CAN_USE_BOW)
         }
     };
     Regions[RR_SECRET_SHRINE] = RandoRegion{ .sceneId = SCENE_RANDOM,
@@ -473,12 +493,12 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(IKANA_CANYON, 3),                 ENTRANCE(STONE_TOWER, 0), true)
         },
         .connections = {
-            CONNECTION(RR_STONE_TOWER_MIDDLE, HAS_ITEM(ITEM_HOOKSHOT) && CAN_PLAY_SONG(ELEGY) && CAN_BE_GORON && CAN_BE_ZORA),
+            CONNECTION(RR_STONE_TOWER_MIDDLE, CAN_CLIMB_STONE_TOWER),
         },
     };
     Regions[RR_STONE_TOWER_INVERTED_LOWER] = RandoRegion{ .sceneId = SCENE_F41,
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(STONE_TOWER, 1),                  ENTRANCE(STONE_TOWER_INVERTED, 0), HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
+            EXIT(ENTRANCE(STONE_TOWER, 1),                  ENTRANCE(STONE_TOWER_INVERTED, 0), CAN_USE_BOW && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
         },
         .connections = {
             CONNECTION(RR_STONE_TOWER_INVERTED_UPPER, CAN_GROW_BEAN_PLANT),
@@ -511,30 +531,30 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_STONE_TOWER_MIDDLE] = RandoRegion{ .name = "Middle", .sceneId = SCENE_F40,
         .checks = {
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_01, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_02, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_03, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_04, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_05, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_06, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_07, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_08, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_09, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_10, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_11, CAN_HOOK_SCARECROW),
-            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_12, CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_01, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_02, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_03, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_04, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_05, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_06, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_07, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_08, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_09, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_10, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_11, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_12, CAN_BE_GORON || CAN_BE_ZORA || CAN_HOOK_SCARECROW),
             CHECK(RC_ENEMY_DROP_BEAMOS, CanKillEnemy(ACTOR_EN_VM)),
             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
         },
         .connections = {
-            CONNECTION(RR_STONE_TOWER_BOTTOM, HAS_ITEM(ITEM_HOOKSHOT) && CAN_PLAY_SONG(ELEGY) && CAN_BE_GORON && CAN_BE_ZORA),
+            CONNECTION(RR_STONE_TOWER_BOTTOM, true),
             CONNECTION(RR_STONE_TOWER_UPPER, HAS_ITEM(ITEM_HOOKSHOT)),
         },
     };
     // TODO: Probably need to split this up to account for entrance rando later
     Regions[RR_STONE_TOWER_TOP] = RandoRegion{ .name = "Top", .sceneId = SCENE_F40,
         .checks = {
-            CHECK(RC_STONE_TOWER_OWL_STATUE, CAN_USE_SWORD),
+            CHECK(RC_STONE_TOWER_OWL_STATUE, CAN_ACTIVATE_OWL),
             CHECK(RC_STONE_TOWER_OWL_STATUE_POT_01, true),
             CHECK(RC_STONE_TOWER_OWL_STATUE_POT_02, true),
             CHECK(RC_STONE_TOWER_OWL_STATUE_POT_03, true),
@@ -542,11 +562,16 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
         },
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(STONE_TOWER_INVERTED, 0),         ENTRANCE(STONE_TOWER, 1), CAN_PLAY_SONG(ELEGY) && HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
-            EXIT(ENTRANCE(STONE_TOWER_TEMPLE, 0),           ENTRANCE(STONE_TOWER, 2), CAN_BE_ZORA && CAN_BE_GORON && CAN_PLAY_SONG(ELEGY))
+            EXIT(ENTRANCE(STONE_TOWER_INVERTED, 0),         ENTRANCE(STONE_TOWER, 1), CAN_PLAY_SONG(ELEGY) && CAN_USE_BOW && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
+            // OoTMM distinguishes climbing the tower from crossing the bridge
+            // after arriving at its top (including by Soaring).
+            EXIT(ENTRANCE(STONE_TOWER_TEMPLE, 0),           ENTRANCE(STONE_TOWER, 2), CAN_PLAY_SONG(ELEGY))
         },
         .connections = {
             CONNECTION(RR_STONE_TOWER_UPPER, HAS_ITEM(ITEM_HOOKSHOT)),
+            // OoTMM permits dropping to the lower ledge as Goron, or as Zora
+            // after using Elegy to cross to the temple front.
+            CONNECTION(RR_STONE_TOWER_MIDDLE, CAN_BE_GORON || (CAN_PLAY_SONG(ELEGY) && CAN_BE_ZORA)),
         },
         .oneWayEntrances = {
             ENTRANCE(STONE_TOWER, 3), // From Song of Soaring
@@ -571,5 +596,82 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_STONE_TOWER_TOP, HAS_ITEM(ITEM_HOOKSHOT))
         },
     };
+#ifdef COMBO_BUILD
+    // Pinned stone_tower.yml: separate the temple front from the Soaring top.
+    // The legacy collapsed graph remains unchanged when neither added family is enabled.
+    if (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) {
+        Regions[RR_STONE_TOWER_BOTTOM].connections = {
+            CONNECTION(RR_STONE_TOWER_TOP, CAN_CLIMB_STONE_TOWER),
+            CONNECTION(RR_STONE_TOWER_MIDDLE, CAN_PLAY_SONG(ELEGY) &&
+                (HAS_ITEM(ITEM_MASK_ZORA) || HAS_ITEM(ITEM_MASK_GORON)) && CAN_HOOK_SCARECROW &&
+                ((HAS_ITEM(ITEM_MASK_ZORA) && HAS_ITEM(ITEM_MASK_GORON)) || COMBO_MM_TRICK("StoneTowerOneMask"))),
+            CONNECTION(RR_STONE_TOWER_UPPER, CAN_CLIMB_STONE_TOWER),
+        };
+        Regions[RR_STONE_TOWER_TOP].exits = {
+            EXIT(ENTRANCE(STONE_TOWER_INVERTED, 0), ENTRANCE(STONE_TOWER, 1),
+                 CAN_PLAY_SONG(ELEGY) && CAN_USE_BOW && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
+        };
+        Regions[RR_STONE_TOWER_TOP].connections = {
+            CONNECTION(RR_STONE_TOWER_BOTTOM, true),
+            CONNECTION(RR_MM_STONE_TOWER_FRONT_OF_TEMPLE, CAN_PLAY_SONG(ELEGY)),
+            CONNECTION(RR_STONE_TOWER_MIDDLE, HAS_ITEM(ITEM_MASK_GORON) || CAN_HOOK_SCARECROW),
+            // has_weapon's supported sword family; native MM Hammer is not yet implemented.
+            CONNECTION(RR_STONE_TOWER_UPPER, CAN_HOOK_SCARECROW ||
+                (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY)))),
+        };
+        Regions[RR_MM_STONE_TOWER_FRONT_OF_TEMPLE] = RandoRegion{ .name = "Front of Temple", .sceneId = SCENE_F40,
+            .exits = {
+                EXIT(ENTRANCE(STONE_TOWER_TEMPLE, 0), ENTRANCE(STONE_TOWER, 2), true),
+            },
+            .connections = {
+                CONNECTION(RR_STONE_TOWER_BOTTOM, true),
+                CONNECTION(RR_STONE_TOWER_TOP, (CAN_PLAY_SONG(ELEGY) && HAS_ITEM(ITEM_MASK_ZORA) &&
+                    HAS_ITEM(ITEM_MASK_GORON)) || HAS_ITEM(ITEM_HOOKSHOT)),
+                CONNECTION(RR_STONE_TOWER_MIDDLE, HAS_ITEM(ITEM_MASK_GORON) || MM_LOGIC_IS_TALL ||
+                    CAN_HOOK_SCARECROW || MM_LOGIC_HAS_HOVER_BOOTS),
+                CONNECTION(RR_STONE_TOWER_UPPER, CAN_HOOK_SCARECROW),
+            },
+        };
+    Regions[RR_STONE_TOWER_MIDDLE] = RandoRegion{ .name = "Middle", .sceneId = SCENE_F40,
+        .checks = {
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_01, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_02, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_03, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_04, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_05, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_06, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_07, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_08, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_09, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_10, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_11, true),
+            CHECK(RC_STONE_TOWER_LOWER_SCARECROW_POT_12, true),
+            CHECK(RC_ENEMY_DROP_BEAMOS, CanKillEnemy(ACTOR_EN_VM)),
+            CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
+        },
+        .connections = {
+            CONNECTION(RR_STONE_TOWER_BOTTOM, true),
+        },
+    };
+    Regions[RR_STONE_TOWER_UPPER] = RandoRegion{ .name = "Upper", .sceneId = SCENE_F40,
+        .checks = {
+            CHECK(RC_STONE_TOWER_HIGHER_SCARECROW_POT_01, true),
+            CHECK(RC_STONE_TOWER_HIGHER_SCARECROW_POT_02, true),
+            CHECK(RC_STONE_TOWER_HIGHER_SCARECROW_POT_03, true),
+            CHECK(RC_STONE_TOWER_HIGHER_SCARECROW_POT_04, true),
+            CHECK(RC_STONE_TOWER_HIGHER_SCARECROW_POT_05, true),
+            CHECK(RC_STONE_TOWER_HIGHER_SCARECROW_POT_06, true),
+            CHECK(RC_STONE_TOWER_HIGHER_SCARECROW_POT_07, true),
+            CHECK(RC_STONE_TOWER_HIGHER_SCARECROW_POT_08, true),
+            CHECK(RC_STONE_TOWER_HIGHER_SCARECROW_POT_09, true),
+            CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
+            CHECK(RC_ENEMY_DROP_REDEAD, CanKillEnemy(ACTOR_EN_RD)),
+        },
+        .connections = {
+            CONNECTION(RR_STONE_TOWER_BOTTOM, true)
+        },
+    };    }
+#endif
+
 }, RANDO_LOGIC_INIT_PATHS);
 // clang-format on

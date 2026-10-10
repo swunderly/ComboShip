@@ -56,6 +56,8 @@ typedef struct EnGSwitch {
     /* 0x0178 */ s8 objIndex;
     /* 0x017C */ ColliderCylinder collider;
     /* 0x01C8 */ EnGSwitchEffect effects[100];
+    u16 silverRandoId;
+    u8 silverRandomized;
 } EnGSwitch; // size = 0x12F8
 
 #endif

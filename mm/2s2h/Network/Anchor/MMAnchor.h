@@ -136,6 +136,8 @@ class MMAnchor {
     void RefreshClientActors();
     nlohmann::json PrepClientState();
     void SendJson(nlohmann::json payload);
+    void SendSaveJson(nlohmann::json payload);
+    void HandlePacket_UpdateRoomState(const nlohmann::json& payload);
 
     void HandlePacket_AllClientState(const nlohmann::json& payload);
     void HandlePacket_UpdateClientState(const nlohmann::json& payload);

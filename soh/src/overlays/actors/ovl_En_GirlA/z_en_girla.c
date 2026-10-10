@@ -11,6 +11,10 @@
 #include "soh/OTRGlobals.h"
 #include <assert.h>
 
+#ifdef COMBO_BUILD
+extern void Combo_OOTRecordObservedItem(Actor* actor, const GetItemEntry* shown);
+#endif
+
 #define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
 
 void EnGirlA_Init(Actor* thisx, PlayState* play);
@@ -1460,9 +1464,24 @@ void EnGirlA_Draw(Actor* thisx, PlayState* play) {
                                               shopItemIdentity.identity.randomizerCheck, shopItemIdentity.ogItemId);
 
         EnItem00_CustomItemsParticles(&this->actor, play, getItemEntry);
+#ifdef COMBO_BUILD
+        Combo_OOTRecordObservedItem(&this->actor, &getItemEntry);
+#endif
         GetItemEntry_Draw(play, getItemEntry);
         return;
     }
 
+#ifdef COMBO_BUILD
+    if (IS_RANDO && this->randoSlotIndex != 0 && this->actor.params != SI_SOLD_OUT) {
+        ShopItemIdentity identity = Randomizer_IdentifyShopItem(play->sceneNum, this->randoSlotIndex);
+        GetItemEntry shown = Randomizer_GetItemFromKnownCheckWithoutObtainabilityCheck(
+            identity.identity.randomizerCheck, identity.ogItemId);
+        // Observe only the model this ordinary shop actor actually draws.
+        if (shown.gid == this->giDrawId) {
+            shown.comboForeignCheck = identity.identity.randomizerCheck;
+            Combo_OOTRecordObservedItem(&this->actor, &shown);
+        }
+    }
+#endif
     GetItem_Draw(play, this->giDrawId);
 }

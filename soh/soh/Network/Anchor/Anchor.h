@@ -160,6 +160,7 @@ class Anchor : public Network {
     // Bug 2: request a fresh team-state from teammates regardless of active/dormant (bypasses the
     // foreground-only assumption baked into the menu button's direct SendPacket_RequestTeamState call).
     void RequestResyncDormantSafe();
+    void SendSnapshotDormantSafe();
 #endif
     void SendJsonToRemote(nlohmann::json packet);
     bool IsSaveLoaded();

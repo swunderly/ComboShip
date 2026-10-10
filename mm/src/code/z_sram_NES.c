@@ -1,4 +1,7 @@
 #include "global.h"
+#ifdef COMBO_BUILD
+#include "2s2h/Rando/FaroresWind.h"
+#endif
 #include "z64horse.h"
 #include "overlays/gamestates/ovl_file_choose/z_file_select.h"
 #include <string.h>
@@ -458,6 +461,9 @@ void Sram_ClearFlagsAtDawnOfTheFirstDay(void) {
  * Used by Song of Time (when clicking "Yes") and (indirectly) by the "Dawn of the New Day" cutscene
  */
 void Sram_SaveEndOfCycle(PlayState* play) {
+#ifdef COMBO_BUILD
+    Combo_MMFaroreEndCycle();
+#endif
     GameInteractor_ExecuteBeforeEndOfCycleSave();
     s16 sceneId;
     s32 j;
@@ -650,7 +656,9 @@ void Sram_SaveEndOfCycle(PlayState* play) {
     SET_STOLEN_ITEM_1(STOLEN_ITEM_NONE);
     SET_STOLEN_ITEM_2(STOLEN_ITEM_NONE);
 
-    Inventory_DeleteItem(ITEM_OCARINA_FAIRY, SLOT_TRADE_DEED);
+    // Item 5 is now a real Ocarina. Clear the unused trade slot without unequipping Fairy.
+    // The following native trade-item loop still clears equipped cycle trade items.
+    gSaveContext.save.saveInfo.inventory.items[SLOT_TRADE_DEED] = ITEM_NONE;
     Inventory_DeleteItem(ITEM_SLINGSHOT, SLOT_TRADE_KEY_MAMA);
     Inventory_DeleteItem(ITEM_LONGSHOT, SLOT_TRADE_COUPLE);
 
@@ -1266,6 +1274,24 @@ void Sram_ResetSaveFromMoonCrash(SramContext* sramCtx) {
     if (gSaveContext.fileNum != 0xFF) {
         memset(sramCtx->saveBuf, 0, SAVE_BUFFER_SIZE);
 
+#ifdef COMBO_BUILD
+        s32 readResult=SysFlashrom_ReadData(sramCtx->saveBuf,
+            gFlashSaveStartPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER],
+            gFlashSaveNumPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER]);
+        if(readResult!=0)readResult=SysFlashrom_ReadData(sramCtx->saveBuf,
+            gFlashSaveStartPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER+FLASH_SAVE_BACKUP_OFFSET],
+            gFlashSaveNumPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER+FLASH_SAVE_BACKUP_OFFSET]);
+        if(readResult!=0)return; // Failed pages must never erase the live typed age/loadouts.
+        Save loadedSave;
+        memcpy(&loadedSave,sramCtx->saveBuf,sizeof(Save));
+        if(CHECK_NEWF(loadedSave.saveInfo.playerData.newf)){
+            if(SysFlashrom_ReadData(sramCtx->saveBuf,
+                gFlashSaveStartPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER+FLASH_SAVE_BACKUP_OFFSET],
+                gFlashSaveNumPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER+FLASH_SAVE_BACKUP_OFFSET])!=0)return;
+            memcpy(&loadedSave,sramCtx->saveBuf,sizeof(Save));
+        }
+        gSaveContext.save=loadedSave;
+#else
         if (SysFlashrom_ReadData(sramCtx->saveBuf,
                                  gFlashSaveStartPages[gSaveContext.fileNum * FLASH_SAVE_MAIN_MULTIPLIER],
                                  gFlashSaveNumPages[gSaveContext.fileNum * FLASH_SAVE_MAIN_MULTIPLIER]) != 0) {
@@ -1283,6 +1309,7 @@ void Sram_ResetSaveFromMoonCrash(SramContext* sramCtx) {
             // ComboShip: the backup read fills the save, not the whole SaveContext (matches the read above).
             memcpy(&gSaveContext.save, sramCtx->saveBuf, sizeof(Save));
         }
+#endif
     }
     gSaveContext.save.cutsceneIndex = cutsceneIndex;
 

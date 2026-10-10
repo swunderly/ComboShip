@@ -116,13 +116,13 @@ extern "C" COMBO_EXPORT void ComboUI_OnForegroundGame(int game) {
 
     // Background game: remember the user's settings-window intent, then hide its popouts. The main
     // tracker windows are NOT touched — ComboTrackerSwap derives them every frame.
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 1; ++i) { // Only item settings remain per game.
         sIntent[bg][i] = CVarGetInteger(kTrackers[bg][kSettingsColumns[i]].cvar, 0);
         SetTracker(kTrackers[bg][kSettingsColumns[i]], false);
     }
     // Foreground game: restore remembered intent. Skip until we've snapshotted at least once, so
     // the game that owns the foreground at startup keeps whatever its loaded config asked for.
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 1; ++i) { // Only item settings remain per game.
         if (sIntent[fg][i] < 0) {
             continue;
         }
@@ -158,7 +158,7 @@ extern "C" COMBO_EXPORT void ComboUI_RestoreTrackerIntent(void) {
     // Only the background game's CVars are forced-hidden; the foreground game's live values already
     // reflect the user's latest toggles (a stale snapshot would clobber them).
     const int bg = sForegroundGame ^ 1;
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 1; ++i) { // Only item settings remain per game.
         if (sIntent[bg][i] >= 0) {
             CVarSetInteger(kTrackers[bg][kSettingsColumns[i]].cvar, sIntent[bg][i]);
         }

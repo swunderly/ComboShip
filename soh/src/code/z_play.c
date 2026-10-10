@@ -1,4 +1,8 @@
 #include "global.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/CrossWarp/FaroresWind.h"
+#include "rando/CrossEntrance.h"
+#endif
 #include "vt.h"
 
 #include <string.h>
@@ -13,6 +17,9 @@
 #include "soh/ResourceManagerHelpers.h"
 #include "soh/SaveManager.h"
 #include "soh/framebuffer_effects.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/CrossWarp/CrossWarp.h"
+#endif
 
 #include <time.h>
 #include <assert.h>
@@ -621,6 +628,9 @@ void Play_Init(GameState* thisx) {
     gSaveContext.natureAmbienceId = play->sequenceCtx.natureAmbienceId;
     Actor_InitPlayerHorse(play, GET_PLAYER(play));
     AnimationContext_Update(play, &play->animationCtx);
+#ifdef COMBO_BUILD
+    Combo_OotFaroreCaptureDungeon(play);
+#endif
     gSaveContext.respawnFlag = 0;
 
     // #region SOH [Stats]
@@ -908,6 +918,9 @@ void Play_Update(PlayState* play) {
                                 play->transitionMode = TRANS_MODE_OFF;
                             }
                         } else if (play->transitionTrigger != TRANS_TRIGGER_END) {
+#ifdef COMBO_BUILD
+                            if(Combo_OotFinishEntranceDeparture(play)) {play->state.running=false;play->state.init=NULL;return;}
+#endif
                             play->state.running = false;
 
                             if (gSaveContext.gameMode != GAMEMODE_FILE_SELECT) {
@@ -964,6 +977,9 @@ void Play_Update(PlayState* play) {
                     play->envCtx.screenFillColor[3] = (sTransitionFillTimer / 20.0f) * 255.0f;
 
                     if (sTransitionFillTimer >= 20) {
+                        #ifdef COMBO_BUILD
+                        if(Combo_OotFinishEntranceDeparture(play)) {play->state.running=false;play->state.init=NULL;return;}
+                        #endif
                         play->state.running = false;
                         SET_NEXT_GAMESTATE(&play->state, Play_Init, PlayState);
                         gSaveContext.entranceIndex = play->nextEntranceIndex;
@@ -1006,6 +1022,9 @@ void Play_Update(PlayState* play) {
 
                 case TRANS_MODE_INSTANT:
                     if (play->transitionTrigger != TRANS_TRIGGER_END) {
+                        #ifdef COMBO_BUILD
+                        if(Combo_OotFinishEntranceDeparture(play)) {play->state.running=false;play->state.init=NULL;return;}
+                        #endif
                         play->state.running = 0;
                         SET_NEXT_GAMESTATE(&play->state, Play_Init, PlayState);
                         gSaveContext.entranceIndex = play->nextEntranceIndex;
@@ -1054,6 +1073,9 @@ void Play_Update(PlayState* play) {
                         }
                     } else {
                         if (play->envCtx.sandstormEnvA == 255) {
+                            #ifdef COMBO_BUILD
+                            if(Combo_OotFinishEntranceDeparture(play)) {play->state.running=false;play->state.init=NULL;return;}
+                            #endif
                             play->state.running = false;
                             SET_NEXT_GAMESTATE(&play->state, Play_Init, PlayState);
                             gSaveContext.entranceIndex = play->nextEntranceIndex;
@@ -1371,6 +1393,13 @@ void Play_Draw(PlayState* play) {
     gSPSegment(POLY_XLU_DISP++, 0x02, play->sceneSegment);
     gSPSegment(OVERLAY_DISP++, 0x02, play->sceneSegment);
 
+#ifdef COMBO_BUILD
+    const int soaringCutscene=Combo_SOHSoaringCutsceneActive(play);
+    if (soaringCutscene) {
+        // MM clears to fog color and hides the room during its wing sequence.
+        Gfx_SetupFrame(gfxCtx,play->lightCtx.fogColor[0],play->lightCtx.fogColor[1],play->lightCtx.fogColor[2]);
+    } else
+#endif
     Gfx_SetupFrame(gfxCtx, 0, 0, 0);
 
     if ((HREG(80) != 10) || (HREG(82) != 0)) {
@@ -1477,6 +1506,9 @@ void Play_Draw(PlayState* play) {
             goto Play_Draw_DrawOverlayElements;
         }
 
+#ifdef COMBO_BUILD
+        if (!soaringCutscene) {
+#endif
         if ((HREG(80) != 10) || (HREG(83) != 0)) {
             if (play->skyboxId && (play->skyboxId != SKYBOX_UNSET_1D) && !play->envCtx.skyboxDisabled) {
                 if ((play->skyboxId == SKYBOX_NORMAL_SKY) || (play->skyboxId == SKYBOX_CUTSCENE_MAP)) {
@@ -1539,6 +1571,9 @@ void Play_Draw(PlayState* play) {
         if (play->envCtx.unk_EE[1] != 0) {
             Environment_DrawRain(play, &play->view, gfxCtx);
         }
+#ifdef COMBO_BUILD
+        }
+#endif
 
         if ((HREG(80) != 10) || (HREG(84) != 0)) {
             Environment_FillScreen(gfxCtx, 0, 0, 0, play->bgCoverAlpha, FILL_SCREEN_OPA);
@@ -2138,6 +2173,9 @@ void Play_LoadToLastEntrance(PlayState* play) {
 void Play_TriggerRespawn(PlayState* play) {
     Play_SetupRespawnPoint(play, RESPAWN_MODE_DOWN, 0xDFF);
     Play_LoadToLastEntrance(play);
+#ifdef COMBO_BUILD
+    Combo_OotFaroreDeathWarp(play);
+#endif
 }
 
 s32 Play_CamIsNotFixed(PlayState* play) {

@@ -8,6 +8,9 @@
  */
 
 #include "z_en_nwc.h"
+#ifdef COMBO_BUILD
+#include <libultraship/bridge/consolevariablebridge.h>
+#endif
 #include "overlays/actors/ovl_En_Niw/z_en_niw.h"
 #include "objects/object_nwc/object_nwc.h"
 
@@ -159,6 +162,12 @@ s32 EnNwc_IsFound(EnNwc* this, PlayState* play) {
         return false;
     }
 
+#ifdef COMBO_BUILD
+    // Once the single chick joins, other chicks must not take follower indices past the
+    // fixed ten-chick coordinate array. Leave the recruited chick at its original index.
+    if (this->grog->actor.home.rot.z >= 20)
+        return false;
+#endif
     if ((player->stateFlags3 & PLAYER_STATE3_20000000) && (this->actor.xzDistToPlayer < 100.0f)) {
         return true;
     }
@@ -222,7 +231,7 @@ void EnNwc_ToggleState(EnNwc* this) {
 
 void EnNwc_CheckFound(EnNwc* this, PlayState* play) {
     if (EnNwc_IsFound(this, play)) {
-        u8 currentChickCount = (this->grog->actor.home.rot.z / 2);
+        u8 currentChickCount = (u8)(this->grog->actor.home.rot.z / 2);
 
         if (currentChickCount > 9) {
             currentChickCount = 9;
@@ -236,6 +245,18 @@ void EnNwc_CheckFound(EnNwc* this, PlayState* play) {
             this->grog->actor.home.rot.z += 2;
         }
 
+#ifdef COMBO_BUILD
+        int required = CVarGetInteger("gEnhancements.DifficultyOptions.BremenChickCount",
+                                       CVarGetInteger("gEnhancements.Masks.BremenOneChick", 0) ? 1 : 10);
+        required = required < 1 ? 1 : required > 10 ? 10 : required;
+        const int recruited = this->grog->actor.home.rot.z / 2;
+        if (recruited >= required && recruited < 10) {
+            // Finish the normal growth animation for the recruited chicks. Credit only
+            // the absent ones, so the quest completes after the final real chick grows.
+            this->grog->actor.home.rot.z = 20;
+            this->grog->actor.home.rot.x = (10 - recruited) * 2;
+        }
+#endif
         EnNwc_ChangeState(this, NWC_STATE_FOLLOWING);
         Audio_PlaySfx_AtPosWithAllChannelsIO(&gSfxDefaultPos, NA_SE_SY_CHICK_JOIN_CHIME, currentChickCount);
     }

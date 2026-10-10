@@ -9,6 +9,7 @@
 #include "fast/resource/type/Texture.h"
 #include "ship/window/gui/resource/GuiTextureFactory.h"
 #include "ship/resource/File.h"
+#include "ship/window/gui/ScreenFit.h"
 
 #ifdef __APPLE__
 #include <SDL_hints.h>
@@ -344,6 +345,16 @@ void Fast3dGui::CalculateGameViewport() {
     mainPos.x -= mTemporaryWindowPos.x;
     mainPos.y -= mTemporaryWindowPos.y;
     ImVec2 size = ImGui::GetContentRegionAvail();
+#ifdef __ANDROID__
+    auto cvars = Ship::Context::GetRawInstance()->GetConsoleVariables();
+    if (size.x > 0 && size.y > 0 && cvars->GetInteger("gCombo.Display.AutoFit", -1) < 0) {
+        // Keep an existing explicit resolution setup. Fresh/default installs fit automatically.
+        const bool manual = cvars->GetInteger(CVAR_PREFIX_ADVANCED_RESOLUTION ".Enabled", 0) ||
+                            cvars->GetInteger(CVAR_LOW_RES_MODE, 0);
+        cvars->SetInteger("gCombo.Display.AutoFit", manual ? 0 : 1);
+        SaveConsoleVariablesNextFrame();
+    }
+#endif
     const auto interpreter = mInterpreter.lock().get();
     interpreter->mCurDimensions.width = (uint32_t)(size.x * mInterpreter.lock()->mCurDimensions.internal_mul);
     interpreter->mCurDimensions.height = (uint32_t)(size.y * mInterpreter.lock()->mCurDimensions.internal_mul);
@@ -381,6 +392,17 @@ void Fast3dGui::CalculateGameViewport() {
         }
     }
 
+#ifdef __ANDROID__
+    const int fitMode = cvars->GetInteger("gCombo.Display.AutoFit", 0);
+    if (fitMode > 0 && size.x > 0 && size.y > 0) {
+        const auto fit = Ship::ScreenFit::Fit(size.x, size.y, fitMode);
+        const float maxFactor = std::min(8096.0f / fit.width, 4320.0f / fit.height);
+        const float factor = std::clamp(interpreter->mCurDimensions.internal_mul,
+            std::min(240.0f / fit.height, maxFactor), maxFactor);
+        interpreter->mCurDimensions.width = static_cast<uint32_t>(std::round(fit.width * factor));
+        interpreter->mCurDimensions.height = static_cast<uint32_t>(std::round(fit.height * factor));
+    }
+#endif
     ImGui::End();
 }
 
@@ -403,11 +425,19 @@ void Fast3dGui::DrawGame() {
     ImVec2 pos = ImVec2(0, 0);
     const auto interpreter = mInterpreter.lock().get();
 
+#ifdef __ANDROID__
+    const int fitMode = Ship::Context::GetRawInstance()->GetConsoleVariables()->GetInteger("gCombo.Display.AutoFit", 0);
+    if (fitMode > 0) {
+        const auto fit = Ship::ScreenFit::Fit(size.x, size.y, fitMode);
+        pos = ImVec2(fit.x, fit.y);
+        size = ImVec2(fit.width, fit.height);
+    } else
+#endif
     if (Ship::Context::GetRawInstance()->GetConsoleVariables()->GetInteger(CVAR_LOW_RES_MODE, 0) ==
         1) { // N64 Mode takes priority
-        const float sw = size.y * 320.0f / 240.0f;
-        pos = ImVec2(floor(size.x / 2 - sw / 2), 0);
-        size = ImVec2(sw, size.y);
+        const auto fit = Ship::ScreenFit::Fit(size.x, size.y, 3);
+        pos = ImVec2(fit.x, fit.y);
+        size = ImVec2(fit.width, fit.height);
     } else if (Ship::Context::GetRawInstance()->GetConsoleVariables()->GetInteger(
                    CVAR_PREFIX_ADVANCED_RESOLUTION ".Enabled", 0)) {
         if (!Ship::Context::GetRawInstance()->GetConsoleVariables()->GetInteger(
@@ -780,9 +810,12 @@ void Fast3dGui::LoadGuiTexture(const std::string& name, const Fast::Texture& res
 
 void Fast3dGui::LoadGuiTexture(const std::string& name, const std::string& path, const std::string& palettePath,
                                const ImVec4& tint) {
-    const auto res = static_cast<Fast::Texture*>(
-        Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(path, true).get());
-
+    const auto res = std::dynamic_pointer_cast<Fast::Texture>(
+        Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(path, true));
+    if (!res || !res->ImageData) {
+        SPDLOG_ERROR("GUI texture could not be loaded: {}", path);
+        return;
+    }
     LoadGuiTexture(name, *res, palettePath, tint);
 }
 

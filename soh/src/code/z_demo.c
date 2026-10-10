@@ -1,4 +1,7 @@
 #include "global.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/CrossWarp/FaroresWind.h"
+#endif
 #include "z64camera.h"
 
 #include <string.h>
@@ -627,7 +630,11 @@ void Cutscene_Command_Terminator(PlayState* play, CutsceneContext* csCtx, CsCmdB
                 play->transitionType = TRANS_TYPE_INSTANT;
                 break;
             case 8:
-                if (CVarGetInteger(CVAR_ENHANCEMENT("BetterFarore"), 0)) {
+                if (CVarGetInteger(CVAR_ENHANCEMENT("BetterFarore"), 0)
+#ifdef COMBO_BUILD
+                    || Combo_OotFaroreCrossEnabled()
+#endif
+                ) {
                     FaroresWindData tempFW = gSaveContext.ship.backupFW;
                     gSaveContext.ship.backupFW = gSaveContext.fw;
                     gSaveContext.fw = tempFW;

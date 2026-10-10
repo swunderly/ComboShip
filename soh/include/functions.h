@@ -61,9 +61,9 @@ u32 func_80001F8C(void);
 u32 Locale_IsRegionNative(void);
 #ifdef __WIIU__
 void _assert(const char* exp, const char* file, s32 line);
-#elif defined(__linux__)
+#elif defined(__linux__) && !defined(__ANDROID__)
 void __assert(const char* exp, const char* file, s32 line) __THROW;
-#elif !defined(__APPLE__) && !defined(__SWITCH__) && !defined(__OpenBSD__)
+#elif !defined(__APPLE__) && !defined(__SWITCH__) && !defined(__OpenBSD__) && !defined(__ANDROID__)
 void __assert(const char* exp, const char* file, s32 line);
 #endif
 #if defined(__APPLE__) && defined(NDEBUG)
@@ -1379,7 +1379,10 @@ void SkinMatrix_SetTranslateRotateZYX(MtxF* dest, s16 rotX, s16 rotY, s16 rotZ, 
 Mtx* SkinMatrix_MtxFToNewMtx(GraphicsContext* gfxCtx, MtxF* src);
 void SkinMatrix_SetRotateAxis(MtxF* mf, s16 angle, f32 axisX, f32 axisY, f32 axisZ);
 void Sram_OpenSave();
-void Sram_InitSave(FileChooseContext* fileChoose);
+#ifdef COMBO_BUILD
+int Sram_TryOpenSave(int fileNum, int initializeFullContext);
+#endif
+int Sram_InitSave(FileChooseContext* fileChoose);
 void Sram_InitSram(GameState* gameState);
 void SsSram_ReadWrite(uintptr_t addr, void* dramAddr, size_t size, s32 direction);
 void func_800A9F30(PadMgr*, s32);

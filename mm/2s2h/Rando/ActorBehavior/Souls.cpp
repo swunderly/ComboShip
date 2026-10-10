@@ -1,5 +1,7 @@
+#include "Rando/ActorBehavior/MissingMmSouls.h"
 #include "ActorBehavior.h"
 #include "Souls.h"
+#include "ExpandedSoulsNative.h"
 #include <libultraship/bridge/consolevariablebridge.h>
 #include "Rando/DrawFuncs.h"
 #include "Rando/Logic/Logic.h"
@@ -98,6 +100,10 @@ std::unordered_map<int16_t, RandoItemId> enemySoulMap = {
 // clang-format on
 
 bool HaveEnemySoul(ActorId enemyId) {
+    if (RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) {
+        const int index = Rando::MissingMmSoulForActor(enemyId,0);
+        if(index>=0) return Rando::HaveMissingMmSoul(index);
+    }
     auto findSoulFlag = enemySoulMap.find(enemyId);
     if (findSoulFlag != enemySoulMap.end()) {
         RandoItemId randoItemId = findSoulFlag->second;
@@ -135,6 +141,21 @@ void SetEnemyInjureGrayscale(bool enable) {
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 }
 
+// Gold Skulltulas belong to misc souls when that family is enabled. Preserve
+// legacy enemy-Skulltula behavior for old seeds and non-gold wall Skulltulas.
+static bool HaveActorEnemySoul(const Actor* actor) {
+    if(RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) {
+        if(actor->id==ACTOR_EN_SW && (actor->params&3)) return Rando::HaveExpandedSoul(Rando::ExpandedSoul::MISC_GS);
+        const int index=Rando::MissingMmSoulForActor(actor->id,actor->params);
+        if(index>=0) return Rando::HaveMissingMmSoul(index);
+    }
+    if (actor->id == ACTOR_EN_SW && (actor->params & 3) != 0 &&
+        RANDO_SAVE_OPTIONS[RO_SHUFFLE_MISC_SOULS] == RO_GENERIC_YES) {
+        return Rando::HaveExpandedSoul(Rando::ExpandedSoul::MISC_GS);
+    }
+    return HaveEnemySoul((ActorId)actor->id);
+}
+
 void Rando::ActorBehavior::InitSoulsBehavior() {
     bool shouldBossRegister = IS_RANDO && RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_YES;
     bool shouldEnemyInjure = IS_RANDO && RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] == RO_GENERIC_YES;
@@ -142,7 +163,7 @@ void Rando::ActorBehavior::InitSoulsBehavior() {
     COND_VB_SHOULD(VB_PERFORM_AC_COLLISION, shouldEnemyInjure, {
         Collider* at = va_arg(args, Collider*);
         Collider* ac = va_arg(args, Collider*);
-        *should = HaveEnemySoul((ActorId)ac->actor->id);
+        *should = HaveActorEnemySoul(ac->actor);
     });
 
     // ShouldActorDraw & ShouldActorUpdate for Boss Souls
@@ -209,7 +230,7 @@ void Rando::ActorBehavior::InitSoulsBehavior() {
         ActorId actorId = (ActorId)refActor->id;
         // ACTOR_EN_INVADEPOH represents multiple actors, including Romani and the dog. The aliens cannot be targeted
         // anyway, so just don't draw this arrow if the actor is ACTOR_EN_INVADEPOH.
-        if (actorId != ACTOR_EN_INVADEPOH && !HaveEnemySoul(actorId)) {
+        if (actorId != ACTOR_EN_INVADEPOH && !HaveActorEnemySoul(refActor)) {
             DrawEnLight({ 155, 0, 0 }, { 1.0f, 1.0f, 1.0f });
             *should = false;
         }
@@ -217,14 +238,14 @@ void Rando::ActorBehavior::InitSoulsBehavior() {
 
     COND_HOOK(ShouldActorDraw, shouldEnemyInjure, [](Actor* actor, bool* should) {
         ActorId actorId = (ActorId)actor->id;
-        if (actorId != ACTOR_EN_INVADEPOH && !HaveEnemySoul(actorId)) {
+        if (actorId != ACTOR_EN_INVADEPOH && !HaveActorEnemySoul(actor)) {
             SetEnemyInjureGrayscale(true);
         }
     });
 
     COND_HOOK(OnActorDraw, shouldEnemyInjure, [](Actor* actor) {
         ActorId actorId = (ActorId)actor->id;
-        if (actorId != ACTOR_EN_INVADEPOH && !HaveEnemySoul(actorId)) {
+        if (actorId != ACTOR_EN_INVADEPOH && !HaveActorEnemySoul(actor)) {
             SetEnemyInjureGrayscale(false);
         }
     });

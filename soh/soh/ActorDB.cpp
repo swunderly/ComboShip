@@ -462,6 +462,9 @@ static constexpr std::pair<u16, const char*> actorDescriptionData[] = {
     { ACTOR_EN_MM2, "Running Man (Adult Era)" },
     { ACTOR_BG_JYA_BLOCK, "Silver Block (Child Era)" },
     { ACTOR_OBJ_WARP2BLOCK, "Navi Infospot (Green, Time Block)" },
+#ifdef COMBO_BUILD
+    { ACTOR_COMBO_OWL_WARP, "Song of Soaring Warp" },
+#endif
 };
 static std::unordered_map<u16, const char*> actorDescriptions =
     std::unordered_map<u16, const char*>(std::begin(actorDescriptionData), std::end(actorDescriptionData));

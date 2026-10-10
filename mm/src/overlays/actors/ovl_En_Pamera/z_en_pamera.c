@@ -5,6 +5,9 @@
  */
 
 #include "z_en_pamera.h"
+#ifdef COMBO_BUILD
+extern u16 Combo_MMOrdinaryExitOverride(u16 entrance);
+#endif
 #include "overlays/actors/ovl_En_Bom/z_en_bom.h"
 #include "overlays/actors/ovl_En_Door/z_en_door.h"
 
@@ -711,6 +714,9 @@ void func_80BD9B4C(EnPamera* this, PlayState* play) {
 
 void func_80BD9C70(EnPamera* this, PlayState* play) {
     play->nextEntrance = ENTRANCE(IKANA_CANYON, 2);
+#ifdef COMBO_BUILD
+            play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+#endif
     play->transitionTrigger = TRANS_TRIGGER_START;
     play->transitionType = TRANS_TYPE_70;
     gSaveContext.nextTransitionType = TRANS_TYPE_FADE_BLACK;

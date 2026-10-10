@@ -703,3 +703,13 @@
 /* 0x2AF */ DEFINE_ACTOR(         En_Invisible_Ruppe,  ACTOR_EN_INVISIBLE_RUPPE,  ALLOCTYPE_NORMAL,    "En_Invisible_Ruppe",  "Invisible Ruppe")
 /* 0x2B0 */ DEFINE_ACTOR(         Obj_Ending,          ACTOR_OBJ_ENDING,          ALLOCTYPE_NORMAL,    "Obj_Ending",          "Stump/Lighting (credits end)")
 /* 0x2B1 */ DEFINE_ACTOR(         En_Rsn,              ACTOR_EN_RSN,              ALLOCTYPE_NORMAL,    "En_Rsn",              "Bomb Shop Man (credits)")
+
+#ifdef COMBO_BUILD
+DEFINE_ACTOR(Combo_Song_Warp, ACTOR_COMBO_SONG_WARP, ALLOCTYPE_NORMAL, "Combo_Song_Warp", "Cross-game warp particles")
+DEFINE_ACTOR(Combo_Magic_Wind, ACTOR_COMBO_MAGIC_WIND, ALLOCTYPE_NORMAL, "Combo_Magic_Wind", "Farore spell cylinder")
+#endif
+
+#ifdef COMBO_BUILD
+DEFINE_ACTOR(Combo_Magic_Fire, ACTOR_COMBO_MAGIC_FIRE, ALLOCTYPE_NORMAL, "Combo_Magic_Fire", "Din's Fire")
+DEFINE_ACTOR(Combo_Magic_Dark, ACTOR_COMBO_MAGIC_DARK, ALLOCTYPE_NORMAL, "Combo_Magic_Dark", "Nayru's Love")
+#endif

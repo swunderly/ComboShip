@@ -98,13 +98,25 @@ void RegionTable_Init_LakeHylia() {
     areaTable[RR_LH_FROM_SHORTCUT] = Region("LH From Shortcut", SCENE_LAKE_HYLIA, TIME_DOESNT_PASS, {RA_LAKE_HYLIA}, {}, {}, {
         //Exits
         ENTRANCE(RR_LAKE_HYLIA,   logic->Hearts() > 1 || logic->HasItem(RG_BOTTLE_WITH_FAIRY) || logic->HasItem(RG_BRONZE_SCALE) || logic->CanUse(RG_IRON_BOOTS)),
-        ENTRANCE(RR_ZORAS_DOMAIN, logic->IsChild && (logic->HasItem(RG_SILVER_SCALE) || logic->CanUse(RG_IRON_BOOTS))),
+        // OoTMM Lake Hylia Near Shortcut: age change supplies access to the
+        // child pipe from the drained lake without requiring a diving scale.
+        ENTRANCE(RR_ZORAS_DOMAIN, (logic->IsChild && (logic->HasItem(RG_SILVER_SCALE) || logic->CanUse(RG_IRON_BOOTS))) ||
+            (logic->CanUseSongAgeChange() && logic->HasItem(RG_BRONZE_SCALE))),
     });
 
     areaTable[RR_LH_FROM_WATER_TEMPLE] = Region("LH From Water Temple", SCENE_LAKE_HYLIA, TIME_DOESNT_PASS, {RA_LAKE_HYLIA}, {}, {}, {
         //Exits
         ENTRANCE(RR_LAKE_HYLIA,            logic->HasItem(RG_BRONZE_SCALE) || logic->HasItem(RG_BOTTLE_WITH_FAIRY) || logic->CanUse(RG_IRON_BOOTS)),
-        ENTRANCE(RR_WATER_TEMPLE_ENTRYWAY, logic->CanUse(RG_HOOKSHOT) && ((logic->CanUse(RG_IRON_BOOTS) || (ctx->GetTrickOption(RT_LH_WATER_HOOKSHOT) && logic->HasItem(RG_GOLDEN_SCALE))) || (logic->IsAdult && logic->CanUse(RG_LONGSHOT) && logic->HasItem(RG_GOLDEN_SCALE)))),
+#ifdef COMBO_BUILD
+        ENTRANCE(RR_WATER_TEMPLE_ENTRYWAY, logic->CanUse(RG_HOOKSHOT) &&
+                 (logic->CanUse(RG_IRON_BOOTS) ||
+                  (ctx->GetTrickOption(RT_LH_WATER_HOOKSHOT) && logic->HasItem(RG_GOLDEN_SCALE)))),
+#else
+        ENTRANCE(RR_WATER_TEMPLE_ENTRYWAY, logic->CanUse(RG_HOOKSHOT) &&
+                 (logic->CanUse(RG_IRON_BOOTS) ||
+                  (ctx->GetTrickOption(RT_LH_WATER_HOOKSHOT) && logic->HasItem(RG_GOLDEN_SCALE)) ||
+                  (logic->IsAdult && logic->CanUse(RG_LONGSHOT) && logic->HasItem(RG_GOLDEN_SCALE)))),
+#endif
     });
 
     areaTable[RR_LH_FISHING_ISLAND] = Region("LH Fishing Island", SCENE_LAKE_HYLIA, {}, {

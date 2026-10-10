@@ -3,6 +3,7 @@
 
 #include "StaticData/StaticData.h"
 #include "Types.h"
+#include "KeyRings.h"
 #include "variables.h"
 
 #define IS_RANDO (gSaveContext.save.shipSaveInfo.saveType == SAVETYPE_RANDO)
@@ -34,6 +35,15 @@ inline void AddSmallKey(s32 dungeonSceneIndex) {
     inventory = (s8)((inventory < 0 ? 0 : inventory) + 1);
     mirror = (s8)((mirror < 0 ? 0 : mirror) + 1);
 }
+inline bool GiveKeyRing(RandoItemId item) {
+    const auto* ring = FindKeyRing(item);
+    if (!ring) return false;
+    GrantKeyRingCounters(DUNGEON_KEY_COUNT(ring->dungeon),
+                        gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys[ring->dungeon], ring->maximum);
+    return true;
+}
+static_assert(DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE == 0 && DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE == 1 &&
+              DUNGEON_SCENE_INDEX_GREAT_BAY_TEMPLE == 2 && DUNGEON_SCENE_INDEX_STONE_TOWER_TEMPLE == 3);
 // ComboShip: Skeleton Key's per-dungeon small-key maxima, shared with the headless oracle give.
 struct SkeletonKeyCount {
     s32 dungeonSceneIndex;

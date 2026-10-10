@@ -7,6 +7,9 @@
 #include "prevent_bss_reordering.h"
 #include "z_en_test7.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
+#ifdef COMBO_BUILD
+#include <libultraship/log/luslog.h>
+#endif
 
 #define FLAGS                                                                                              \
     (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_FREEZE_EXCEPTION | \
@@ -394,6 +397,9 @@ void EnTest7_Init(Actor* thisx, PlayState* play2) {
     } else {
         EnTest7_SetupAction(this, EnTest7_StartWarpCs);
         EnTest7_SetupPlayerCamFunc(this, EnTest7_PlayerAndSubCamAction);
+#ifdef COMBO_BUILD
+        LUSLOG_INFO("[ComboShip] Native MM Soaring baseline begin (audio errors 0x%x)", gAudioCtx.audioErrorFlags);
+#endif
         Audio_PlayBgm_StorePrevBgm(NA_BGM_SONG_OF_SOARING);
     }
 
@@ -412,6 +418,10 @@ void EnTest7_Init(Actor* thisx, PlayState* play2) {
 
 void EnTest7_Destroy(Actor* thisx, PlayState* play) {
     EnTest7* this = (EnTest7*)thisx;
+#ifdef COMBO_BUILD
+    LUSLOG_INFO("[ComboShip] Native MM Soaring baseline end (arrival %d, audio errors 0x%x)",
+                OWL_WARP_CS_GET_OCARINA_MODE(&this->actor) == ENTEST7_ARRIVE, gAudioCtx.audioErrorFlags);
+#endif
 
     CutsceneManager_Stop(play->playerCsIds[PLAYER_CS_ID_SONG_WARP]);
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
@@ -628,6 +638,9 @@ void EnTest7_WarpCsWait(EnTest7* this, PlayState* play) {
     }
 }
 
+#ifdef COMBO_BUILD
+extern int Combo_MMSongWarp(PlayState*, int);
+#endif
 static u16 sOwlWarpEntrances[OWL_WARP_MAX - 1] = {
     ENTRANCE(GREAT_BAY_COAST, 11),         // OWL_WARP_GREAT_BAY_COAST
     ENTRANCE(ZORA_CAPE, 6),                // OWL_WARP_ZORA_CAPE
@@ -655,6 +668,10 @@ void EnTest7_WarpCsWarp(EnTest7* this, PlayState* play) {
 
     this->windCapsule.yaw -= 0x2EE0;
 
+#ifdef COMBO_BUILD
+    if (play->sceneId != SCENE_SECOM && Combo_MMSongWarp(play,
+        OWL_WARP_CS_GET_OCARINA_MODE(&this->actor)-OCARINA_MODE_WARP_TO_GREAT_BAY_COAST)) return;
+#endif
     if (play->sceneId == SCENE_SECOM) {
         play->nextEntrance = ENTRANCE(IKANA_CANYON, 6);
     } else if (OWL_WARP_CS_GET_OCARINA_MODE(&this->actor) == OCARINA_MODE_WARP_TO_ENTRANCE) {

@@ -25,6 +25,23 @@
 #include "soh/ResourceManagerHelpers.h"
 #include "soh/ShipUtils.h"
 
+static int FileChoose_ProfilePendingReady(FileChooseContext* this) {
+#ifdef COMBO_BUILD
+    extern int (*gComboProfilePendingReady)(int);
+    if(gComboProfilePendingReady) return gComboProfilePendingReady(this->buttonIndex);
+#endif
+    return Randomizer_IsSeedGenerated() || Randomizer_IsSpoilerLoaded();
+}
+static int FileChoose_PrepareProfileSeed(FileChooseContext* this) {
+#ifdef COMBO_BUILD
+    extern int (*gComboProfilePrepareSave)(int);
+    if(gComboProfilePrepareSave) return gComboProfilePrepareSave(this->buttonIndex);
+#endif
+    return 1;
+}
+
+
+
 #ifdef COMBO_BUILD
 // ComboShip: the combo build is randomizer-only. Lock the quest-select carousel to the Randomizer
 // option so Normal / Master Quest / Boss Rush are never shown or selectable (init seeds questType
@@ -369,6 +386,14 @@ bool fileSelectSpoilerFileLoaded = false;
 // ComboShip: one combo seed auto-reload attempt per file-select entry (file IO, so never per frame);
 // FileChoose_Init clears it so a failure or a save-load context reset gets another try on re-entry.
 static u8 sComboReloadTried = 0;
+
+// A generation must finish before a save can be named, loaded, copied or erased.
+// These two screens also have a place to display its progress and result.
+int FileChoose_CanGenerateComboSeed(GameState* state) {
+    FileChooseContext* this = (FileChooseContext*)state;
+    return this->menuMode == FS_MENU_MODE_CONFIG &&
+           (this->configMode == CM_MAIN_MENU || this->configMode == CM_RANDOMIZER_SETTINGS_MENU);
+}
 #endif
 
 void FileChoose_UpdateRandomizer() {
@@ -377,7 +402,11 @@ void FileChoose_UpdateRandomizer() {
         Audio_PlaySequenceWithSeqPlayerIO(SEQ_PLAYER_BGM_MAIN, NA_BGM_HORSE, 0, 7, 1);
         return;
     } else if (CVarGetInteger(CVAR_GENERAL("RandoGenerating"), 0) == 0 && generating) {
-        if (Randomizer_IsSeedGenerated()) {
+        if (Randomizer_IsSeedGenerated()
+#ifdef COMBO_BUILD
+            && SOH_GetComboGenResult() == 1
+#endif
+        ) {
             Audio_PlayFanfare(NA_BGM_HORSE_GOAL);
             retries = 0;
         } else {
@@ -464,13 +493,28 @@ void FileChoose_UpdateMainMenu(GameState* thisx) {
 
     FileChoose_UpdateRandomizer();
 
+#ifdef COMBO_BUILD
+    if (generating) return;
+#endif
+
     if (CHECK_BTN_ALL(input->press.button, BTN_START) || CHECK_BTN_ALL(input->press.button, BTN_A)) {
         if (this->buttonIndex <= FS_BTN_MAIN_FILE_3) {
             if (!Save_GetSaveMetaInfo(this->buttonIndex)->valid) {
                 Audio_PlaySoundGeneral(NA_SE_SY_FSEL_DECIDE_L, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
                                        &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
                 this->prevConfigMode = this->configMode;
+#ifdef COMBO_BUILD
+                // There is only one quest in ComboShip. Open its setup directly;
+                // a carousel with arrows falsely suggests other games/modes exist.
+                this->questType[this->buttonIndex] = QUEST_RANDOMIZER;
+                gSaveContext.ship.quest.id = QUEST_RANDOMIZER;
+                GameInteractor_ExecuteOnUpdateFileQuestSelection(QUEST_RANDOMIZER);
+                this->windowRot = 628.0f;
+                this->randomizerUIAlpha = 0;
+                this->configMode = CM_START_RANDOMIZER_SETTINGS_MENU;
+#else
                 this->configMode = CM_ROTATE_TO_QUEST_MENU;
+#endif
                 this->logoAlpha = 0;
             } else if (!FileChoose_IsSaveCompatible(Save_GetSaveMetaInfo(this->buttonIndex))) {
                 Audio_PlaySoundGeneral(NA_SE_SY_FSEL_ERROR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
@@ -807,13 +851,20 @@ void FileChoose_UpdateRandomizerMenu(GameState* thisx) {
     }
 
     if (CHECK_BTN_ALL(input->press.button, BTN_B)) {
+#ifdef COMBO_BUILD
+        // Return to the file list, bypassing the single-option quest carousel.
+        this->windowRot = 0.0f;
+        this->configMode = CM_MAIN_MENU;
+        sLastFileChooseButtonIndex = -1;
+#else
         this->configMode = CM_RANDOMIZER_SETTINGS_MENU_TO_QUEST;
+#endif
         return;
     }
 
     if (CHECK_BTN_ALL(input->press.button, BTN_A)) {
         if (this->randomizerIndex == RSM_START_RANDOMIZER) {
-            if (Randomizer_IsSeedGenerated() || Randomizer_IsSpoilerLoaded()) {
+            if (FileChoose_ProfilePendingReady(this) && FileChoose_PrepareProfileSeed(this)) {
                 SohFileSelect_ShowPresetModal();
                 Audio_PlaySoundGeneral(NA_SE_SY_FSEL_DECIDE_L, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
                                        &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
@@ -1879,7 +1930,7 @@ void FileChoose_DrawWindowContents(GameState* thisx) {
 
             // If no randomizer is loaded and text is "start randomizer" or when a seed is generating, make all options
             // gray.
-            if ((index == RSM_START_RANDOMIZER && !Randomizer_IsSeedGenerated() && !Randomizer_IsSpoilerLoaded()) ||
+            if ((index == RSM_START_RANDOMIZER && !FileChoose_ProfilePendingReady(this)) ||
                 generating) {
                 textColorR = textColorG = textColorB = 100;
             }
@@ -1900,17 +1951,40 @@ void FileChoose_DrawWindowContents(GameState* thisx) {
 #ifdef COMBO_BUILD
             // ComboShip: live combo-generation progress (worker thread keeps the main loop running).
             {
-                char comboPct[16];
-                snprintf(comboPct, sizeof(comboPct), "%d%%", SOH_GetComboGenPercent());
+                char comboPct[64];
+                if (SOH_GetComboGenPhase() == 3)
+                    snprintf(comboPct, sizeof(comboPct), "Building hints. Please wait...");
+                else
+                    snprintf(comboPct, sizeof(comboPct), "%d%% - OoT + MM", SOH_GetComboGenPercent());
                 Interface_DrawTextLine(this->state.gfxCtx, comboPct, 70, (80 + 80), 255, 255, 255, textAlpha, 0.8f,
                                        true);
             }
 #endif
         }
 
+#ifdef COMBO_BUILD
+        if (!generating) {
+            int result = SOH_GetComboGenResult();
+            if (result < 0) {
+                Interface_DrawTextLine(this->state.gfxCtx, "Generation failed. Open settings", 70, 144,
+                                       240, 80, 80, textAlpha, 0.7f, true);
+                Interface_DrawTextLine(this->state.gfxCtx, "for details, then try again.", 70, 160,
+                                       240, 80, 80, textAlpha, 0.7f, true);
+            } else if (FileChoose_ProfilePendingReady(this)) {
+                Interface_DrawTextLine(this->state.gfxCtx, "Seed ready for OoT + MM", 70, 144,
+                                       150, 240, 180, textAlpha, 0.8f, true);
+                Interface_DrawTextLine(this->state.gfxCtx, "Select Start Randomizer to play.", 70, 160,
+                                       255, 255, 255, textAlpha, 0.7f, true);
+            }
+        }
+#endif
+
         // If no randomizer is generated and "start randomizer" is selected, show text to explain why user can't start
         // the randomizer.
-        if (!Randomizer_IsSeedGenerated() && !Randomizer_IsSpoilerLoaded() &&
+        if (!generating && !FileChoose_ProfilePendingReady(this) &&
+#ifdef COMBO_BUILD
+            SOH_GetComboGenResult() >= 0 &&
+#endif
             this->randomizerIndex == RSM_START_RANDOMIZER) {
             Interface_DrawTextLine(this->state.gfxCtx,
                                    SohFileSelect_GetSettingText(RSM_NO_RANDOMIZER_GENERATED, language), 70, (80 + 64),
@@ -2571,7 +2645,20 @@ void FileChoose_LoadGame(GameState* thisx) {
 
     Audio_PlaySoundGeneral(NA_SE_SY_FSEL_DECIDE_L, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
                            &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
+#ifdef COMBO_BUILD
+    if (this->buttonIndex != 0xFF && this->buttonIndex != 0xFE) {
+        if (!Sram_TryOpenSave(this->buttonIndex, 0)) {
+            // Reopen file select; never leave SM_LOAD_GAME retrying each frame.
+            this->state.running = false;
+            SET_NEXT_GAMESTATE(&this->state, FileChoose_Init, FileChooseContext);
+            return;
+        }
+    } else {
+        gSaveContext.fileNum = this->buttonIndex; // Genuine debug/boss-rush initialization below.
+    }
+#else
     gSaveContext.fileNum = this->buttonIndex;
+#endif
     gSaveContext.gameMode = GAMEMODE_NORMAL;
 
     if ((this->buttonIndex == FS_BTN_SELECT_FILE_1 && CVarGetInteger(CVAR_DEVELOPER_TOOLS("DebugEnabled"), 0)) ||
@@ -2579,14 +2666,18 @@ void FileChoose_LoadGame(GameState* thisx) {
         if (this->buttonIndex == 0xFF) {
             Sram_InitDebugSave();
         } else {
+#ifndef COMBO_BUILD
             Sram_OpenSave();
+#endif
         }
         SET_NEXT_GAMESTATE(&this->state, Select_Init, SelectContext);
     } else {
         if (this->buttonIndex == 0xFE) {
             Sram_InitBossRushSave();
         } else {
+#ifndef COMBO_BUILD
             Sram_OpenSave();
+#endif
         }
         SET_NEXT_GAMESTATE(&this->state, Play_Init, PlayState);
     }

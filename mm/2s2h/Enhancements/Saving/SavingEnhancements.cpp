@@ -65,6 +65,8 @@ extern "C" void SavingEnhancements_PersistSaveEntranceInfo() {
 extern "C" void SavingEnhancements_ClearSaveEntranceInfo() {
     gSaveContext.save.shipSaveInfo.pauseSaveEntrance = -1;
     memset(&gSaveContext.save.shipSaveInfo.respawn, 0, sizeof(gSaveContext.save.shipSaveInfo.respawn));
+    gSaveContext.save.shipSaveInfo.grottoPreviousSceneValid=0;
+    gSaveContext.save.shipSaveInfo.grottoPreviousScene=0;
 }
 
 extern "C" bool SavingEnhancements_CanSave() {

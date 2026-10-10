@@ -5,6 +5,7 @@
  */
 
 #include "z_en_g_switch.h"
+#include "soh/Enhancements/randomizer/silver_rupees/SilverRupees.h"
 #include "vt.h"
 #include "overlays/actors/ovl_En_Syateki_Itm/z_en_syateki_itm.h"
 #include "overlays/effects/ovl_Effect_Ss_Kakera/z_eff_ss_kakera.h"
@@ -119,7 +120,10 @@ void EnGSwitch_Init(Actor* thisx, PlayState* play) {
             Collider_SetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
             this->actor.draw = EnGSwitch_DrawRupee;
             this->actor.shape.yOffset = 700.0f;
-            if (Flags_GetSwitch(play, this->switchFlag)) {
+            if (Combo_SilverActorInit(this, play)) {
+                Actor_SetScale(&this->actor, 0.03f);
+                this->actionFunc = EnGSwitch_SilverRupeeIdle;
+            } else if (Flags_GetSwitch(play, this->switchFlag)) {
                 osSyncPrintf(VT_FGCOL(GREEN) "☆☆☆☆☆ Ｙｏｕ ａｒｅ Ｓｈｏｃｋ！  ☆☆☆☆☆ %d\n" VT_RST, this->switchFlag);
                 Actor_Kill(&this->actor);
             } else {
@@ -240,6 +244,7 @@ void EnGSwitch_SilverRupeeIdle(EnGSwitch* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
     this->actor.shape.rot.y += 0x800;
+    if (Combo_SilverActorIdle(this, play)) return;
     if (this->actor.xyzDistToPlayerSq < 900.0f) {
         Rupees_ChangeBy(5);
         sCollectedCount++;

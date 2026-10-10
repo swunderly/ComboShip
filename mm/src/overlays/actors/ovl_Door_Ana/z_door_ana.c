@@ -17,6 +17,9 @@ void DoorAna_Update(Actor* thisx, PlayState* play);
 void DoorAna_Draw(Actor* thisx, PlayState* play);
 
 void DoorAna_WaitClosed(DoorAna* this, PlayState* play);
+#ifdef COMBO_BUILD
+extern int Combo_MMGrottoEnter(PlayState* play);
+#endif
 void DoorAna_WaitOpen(DoorAna* this, PlayState* play);
 void DoorAna_GrabLink(DoorAna* this, PlayState* play);
 
@@ -156,6 +159,9 @@ void DoorAna_WaitOpen(DoorAna* this, PlayState* play) {
                 play->nextEntrance = sEntrances[destinationIdx];
             }
 
+#ifdef COMBO_BUILD
+            Combo_MMGrottoEnter(play); // after actual native respawn/data setup
+#endif
             DoorAna_SetupAction(this, DoorAna_GrabLink);
 
         } else if (!Play_InCsMode(play) && !(player->stateFlags1 & (PLAYER_STATE1_8000000 | PLAYER_STATE1_800000)) &&

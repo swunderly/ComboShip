@@ -1,4 +1,6 @@
+#include "../souls/OotSouls.h"
 #include "item_pool.hpp"
+#include "../silver_rupees/SilverRupees.h"
 
 #include "../dungeon.h"
 #include "fill.hpp"
@@ -115,7 +117,7 @@ static void PlaceItemsForType(RandomizerCheckType rctype, bool overworldActive =
         auto loc = Rando::StaticData::GetLocation(rc);
 
         // If item is in the overworld and shuffled, add its item to the pool
-        if (loc->IsOverworld()) {
+        if (!loc->IsDungeonForCollectibleShuffle()) {
             if (overworldActive) {
                 AddFixedItemToPool(loc->GetVanillaItem(), 1, false);
             }
@@ -780,6 +782,8 @@ void GenerateItemPool() {
     bool dungeonFreeStandingActive = ctx->GetOption(RSK_SHUFFLE_FREESTANDING).Is(RO_SHUFFLE_FREESTANDING_DUNGEONS) ||
                                      ctx->GetOption(RSK_SHUFFLE_FREESTANDING).Is(RO_SHUFFLE_FREESTANDING_ALL);
     PlaceItemsForType(RCTYPE_FREESTANDING, overworldFreeStandingActive, dungeonFreeStandingActive);
+    Rando::SilverRupees::AddPool(itemPool);
+    Rando::Souls::AddPool(itemPool);
 
     // Dungeon pools
     if (ctx->GetDungeon(Rando::DEKU_TREE)->IsMQ()) {

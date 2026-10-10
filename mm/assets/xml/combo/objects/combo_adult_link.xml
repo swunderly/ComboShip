@@ -1,0 +1,97 @@
+<Root>
+  <File Name="mm_adult_link.zobj" OutName="combo_adult_link" Segment="6" Game="MM">
+    <Skeleton Name="gComboAdultMmSkel" Type="Flex" LimbType="LOD" Offset="0x122C4" />
+    <DList Name="gComboAdultMmBinding_1" Offset="0xbb00" />
+    <DList Name="gComboAdultMmBinding_2" Offset="0x1c0c0" />
+    <DList Name="gComboAdultMmBinding_3" Offset="0x1c0d0" />
+    <DList Name="gComboAdultMmBinding_4" Offset="0x1c130" />
+    <DList Name="gComboAdultMmBinding_5" Offset="0x1bfe8" />
+    <DList Name="gComboAdultMmBinding_6" Offset="0x1bff8" />
+    <DList Name="gComboAdultMmBinding_7" Offset="0x1c008" />
+    <DList Name="gComboAdultMmBinding_8" Offset="0x1c028" />
+    <DList Name="gComboAdultMmBinding_9" Offset="0x1c048" />
+    <DList Name="gComboAdultMmBinding_10" Offset="0x1bfc8" />
+    <DList Name="gComboAdultMmBinding_11" Offset="0x1bfa8" />
+    <DList Name="gComboAdultMmBinding_12" Offset="0x1bec8" />
+    <DList Name="gComboAdultMmBinding_13" Offset="0x1c0b0" />
+    <DList Name="gComboAdultMmBinding_14" Offset="0x10000" />
+    <DList Name="gComboAdultMmBinding_15" Offset="0xae40" />
+    <DList Name="gComboAdultMmBinding_17" Offset="0x1c068" />
+    <DList Name="gComboAdultMmBinding_18" Offset="0x1c080" />
+    <DList Name="gComboAdultMmBinding_19" Offset="0x1c098" />
+    <DList Name="gComboAdultMmBinding_20" Offset="0x10d50" />
+    <DList Name="gComboAdultMmBinding_21" Offset="0xb3f0" />
+    <DList Name="gComboAdultMmBinding_22" Offset="0x1c0f0" />
+    <DList Name="gComboAdultMmBinding_23" Offset="0x1c100" />
+    <DList Name="gComboAdultMmBinding_24" Offset="0x1c0e0" />
+    <DList Name="gComboAdultMmBinding_25" Offset="0xa8e8" />
+    <DList Name="gComboAdultMmBinding_26" Offset="0x103d8" />
+    <DList Name="gComboAdultMmBinding_27" Offset="0x1c120" />
+    <DList Name="gComboAdultMmBinding_28" Offset="0x1c110" />
+    <DList Name="gComboAdultMmBinding_29" Offset="0x1be60" />
+    <DList Name="gComboAdultMmNestedDL_009DB0" Offset="0x9db0" />
+    <DList Name="gComboAdultMmNestedDL_00A508" Offset="0xa508" />
+    <DList Name="gComboAdultMmNestedDL_00BF10" Offset="0xbf10" />
+    <DList Name="gComboAdultMmNestedDL_00C538" Offset="0xc538" />
+    <DList Name="gComboAdultMmNestedDL_00CA20" Offset="0xca20" />
+    <DList Name="gComboAdultMmNestedDL_00CD08" Offset="0xcd08" />
+    <DList Name="gComboAdultMmNestedDL_00D2F0" Offset="0xd2f0" />
+    <DList Name="gComboAdultMmNestedDL_00D7E8" Offset="0xd7e8" />
+    <DList Name="gComboAdultMmNestedDL_00E8D0" Offset="0xe8d0" />
+    <DList Name="gComboAdultMmNestedDL_00F108" Offset="0xf108" />
+    <DList Name="gComboAdultMmNestedDL_00F350" Offset="0xf350" />
+    <DList Name="gComboAdultMmNestedDL_00F698" Offset="0xf698" />
+    <DList Name="gComboAdultMmNestedDL_00FA00" Offset="0xfa00" />
+    <DList Name="gComboAdultMmNestedDL_010750" Offset="0x10750" />
+    <DList Name="gComboAdultMmNestedDL_010FE8" Offset="0x10fe8" />
+    <DList Name="gComboAdultMmNestedDL_011B78" Offset="0x11b78" />
+    <DList Name="gComboAdultMmNestedDL_019D20" Offset="0x19d20" />
+    <DList Name="gComboAdultMmNestedDL_019E90" Offset="0x19e90" />
+    <DList Name="gComboAdultMmNestedDL_01A158" Offset="0x1a158" />
+    <DList Name="gComboAdultMmNestedDL_01A440" Offset="0x1a440" />
+    <DList Name="gComboAdultMmNestedDL_01A558" Offset="0x1a558" />
+    <DList Name="gComboAdultMmNestedDL_01A800" Offset="0x1a800" />
+    <DList Name="gComboAdultMmNestedDL_01A920" Offset="0x1a920" />
+    <DList Name="gComboAdultMmNestedDL_01A9C0" Offset="0x1a9c0" />
+    <DList Name="gComboAdultMmNestedDL_01AA60" Offset="0x1aa60" />
+    <DList Name="gComboAdultMmNestedDL_01AB00" Offset="0x1ab00" />
+    <DList Name="gComboAdultMmNestedDL_01ABA0" Offset="0x1aba0" />
+    <DList Name="gComboAdultMmNestedDL_01ABC8" Offset="0x1abc8" />
+    <DList Name="gComboAdultMmNestedDL_01ACB0" Offset="0x1acb0" />
+    <DList Name="gComboAdultMmNestedDL_01AD80" Offset="0x1ad80" />
+    <DList Name="gComboAdultMmNestedDL_01AE38" Offset="0x1ae38" />
+    <DList Name="gComboAdultMmNestedDL_01AF60" Offset="0x1af60" />
+    <DList Name="gComboAdultMmNestedDL_01AFF0" Offset="0x1aff0" />
+    <DList Name="gComboAdultMmNestedDL_01B080" Offset="0x1b080" />
+    <DList Name="gComboAdultMmNestedDL_01B0B8" Offset="0x1b0b8" />
+    <DList Name="gComboAdultMmNestedDL_01B148" Offset="0x1b148" />
+    <DList Name="gComboAdultMmNestedDL_01B1D8" Offset="0x1b1d8" />
+    <DList Name="gComboAdultMmNestedDL_01B378" Offset="0x1b378" />
+    <DList Name="gComboAdultMmNestedDL_01B398" Offset="0x1b398" />
+    <DList Name="gComboAdultMmNestedDL_01B4E8" Offset="0x1b4e8" />
+    <DList Name="gComboAdultMmNestedDL_01B5D8" Offset="0x1b5d8" />
+    <DList Name="gComboAdultMmNestedDL_01B6B0" Offset="0x1b6b0" />
+    <DList Name="gComboAdultMmNestedDL_01B778" Offset="0x1b778" />
+    <DList Name="gComboAdultMmNestedDL_01B7A0" Offset="0x1b7a0" />
+    <DList Name="gComboAdultMmNestedDL_01B850" Offset="0x1b850" />
+    <DList Name="gComboAdultMmNestedDL_01B860" Offset="0x1b860" />
+    <DList Name="gComboAdultMmNestedDL_01B9D0" Offset="0x1b9d0" />
+    <DList Name="gComboAdultMmNestedDL_01BA78" Offset="0x1ba78" />
+    <DList Name="gComboAdultMmNestedDL_01BB28" Offset="0x1bb28" />
+    <DList Name="gComboAdultMmNestedDL_01BBD8" Offset="0x1bbd8" />
+    <DList Name="gComboAdultMmNestedDL_01BC88" Offset="0x1bc88" />
+    <DList Name="gComboAdultMmNestedDL_01BE40" Offset="0x1be40" />
+    <DList Name="gComboAdultMmNestedDL_01BE80" Offset="0x1be80" />
+    <DList Name="gComboAdultMmNestedDL_01BE88" Offset="0x1be88" />
+    <DList Name="gComboAdultMmNestedDL_01BEA8" Offset="0x1bea8" />
+    <DList Name="gComboAdultMmNestedDL_01BEE8" Offset="0x1bee8" />
+    <DList Name="gComboAdultMmNestedDL_01BF08" Offset="0x1bf08" />
+    <DList Name="gComboAdultMmNestedDL_01BF28" Offset="0x1bf28" />
+    <DList Name="gComboAdultMmNestedDL_01BF48" Offset="0x1bf48" />
+    <DList Name="gComboAdultMmNestedDL_01BF68" Offset="0x1bf68" />
+    <DList Name="gComboAdultMmNestedDL_01BF88" Offset="0x1bf88" />
+    <Texture Name="gComboAdultMmTex_005C00" Format="ci4" Width="16" Height="32" Offset="0x5c00" TlutOffset="0x8760" />
+    <Texture Name="gComboAdultMmTex_006600" Format="ci8" Width="16" Height="16" Offset="0x6600" TlutOffset="0x87f8" />
+    <Texture Name="gComboAdultMmTex_008080" Format="i4" Width="16" Height="16" Offset="0x8080" />
+  </File>
+</Root>

@@ -1,5 +1,8 @@
 #include "global.h"
 #include "vt.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/CrossWarp/CrossWarp.h"
+#endif
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 
 void (*sKaleidoScopeUpdateFunc)(PlayState* play);
@@ -54,6 +57,9 @@ void KaleidoScopeCall_Destroy(PlayState* play) {
 }
 
 void KaleidoScopeCall_Update(PlayState* play) {
+#ifdef COMBO_BUILD
+    if(Combo_SOHSoaringMapUpdate(play)) return;
+#endif
     KaleidoMgrOverlay* kaleidoScopeOvl = &gKaleidoMgrOverlayTable[KALEIDO_OVL_KALEIDO_SCOPE];
     PauseContext* pauseCtx = &play->pauseCtx;
 
@@ -124,6 +130,9 @@ void KaleidoScopeCall_Update(PlayState* play) {
 }
 
 void KaleidoScopeCall_Draw(PlayState* play) {
+#ifdef COMBO_BUILD
+    if(Combo_SOHSoaringMapDraw(play)) return;
+#endif
     KaleidoMgrOverlay* kaleidoScopeOvl = &gKaleidoMgrOverlayTable[KALEIDO_OVL_KALEIDO_SCOPE];
 
     if (R_PAUSE_MENU_MODE >= 3) {

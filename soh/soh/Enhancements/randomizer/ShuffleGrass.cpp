@@ -4,6 +4,7 @@
 #include "item_category_adj.h"
 #include "soh/ObjectExtension/ObjectExtension.h"
 #include "soh/Enhancements/randomizer/randomizer.h"
+#include "KokiriGrassPolicy.h"
 #include "soh/Enhancements/randomizer/RCToRandInf.h"
 
 extern "C" {
@@ -172,8 +173,10 @@ static CheckIdentity IdentifyGrass(s32 sceneNum, s32 posX, s32 posZ, s32 respawn
         OTRGlobals::Instance->gRandomizer->GetCheckObjectFromActor(ACTOR_EN_KUSA, sceneNum, respawnData);
 
     if (location->GetRandomizerCheck() != RC_UNKNOWN_CHECK) {
-        grassIdentity.randomizerInf = rcToRandomizerInf[location->GetRandomizerCheck()];
-        grassIdentity.randomizerCheck = location->GetRandomizerCheck();
+        const auto canonical = Rando::KokiriCanonicalGrassCheck(location->GetRandomizerCheck(),
+            Rando::Context::GetInstance()->GetKokiriGrassCatalogRevision());
+        grassIdentity.randomizerInf = rcToRandomizerInf[canonical];
+        grassIdentity.randomizerCheck = canonical;
     }
 
     return grassIdentity;

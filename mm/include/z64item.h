@@ -327,6 +327,9 @@ typedef enum ItemId {
     /* 0xB2 */ ITEM_MAP_POINT_MILK_ROAD,
     /* 0xB3 */ ITEM_MAP_POINT_ZORA_CAPE,
     /* 0xB4 */ ITEM_SHIP, // 2S2H [Enhancement] Added to enable custom item gives
+    ITEM_COMBO_FARORES_WIND = 0xAE, // pinned custom item gap; 0xB5..0xB7 are native magic-arrow equip states
+    ITEM_COMBO_NAYRUS_LOVE = 0xB8,
+    ITEM_COMBO_DINS_FIRE = 0xB9,
     /* 0xB8 */ ITEM_B8 = 0xB8,
     /* 0xB9 */ ITEM_B9,
     /* 0xBA */ ITEM_BA,
@@ -339,10 +342,14 @@ typedef enum ItemId {
     /* 0xC1 */ ITEM_C1,
     /* 0xC2 */ ITEM_C2,
     /* 0xC3 */ ITEM_C3,
-    /* 0xC4 */ ITEM_C4,
-    /* 0xC5 */ ITEM_C5,
-    /* 0xC6 */ ITEM_C6,
-    /* 0xC7 */ ITEM_C7,
+    /* 0xC4 */ ITEM_COMBO_BOOTS_IRON,
+    ITEM_C4 = ITEM_COMBO_BOOTS_IRON, // preserve native message-table aliases
+    /* 0xC5 */ ITEM_COMBO_BOOTS_HOVER,
+    ITEM_C5 = ITEM_COMBO_BOOTS_HOVER, // preserve native message-table aliases
+    /* 0xC6 */ ITEM_COMBO_TUNIC_GORON,
+    ITEM_C6 = ITEM_COMBO_TUNIC_GORON, // preserve native message-table aliases
+    /* 0xC7 */ ITEM_COMBO_TUNIC_ZORA,
+    ITEM_C7 = ITEM_COMBO_TUNIC_ZORA, // preserve native message-table aliases
     /* 0xC8 */ ITEM_C8,
     /* 0xC9 */ ITEM_C9,
     /* 0xCA */ ITEM_CA,

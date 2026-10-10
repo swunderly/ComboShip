@@ -75,6 +75,23 @@ std::stack<std::string> currentDir;
 
 namespace Fast {
 
+// Validate the address portion only. Android ARM64 heap pointers carry a TBI/MTE
+// tag in their top byte; the original pointer must keep that tag for every access.
+static bool IsPlausibleStringAddress(uintptr_t address) {
+#if defined(__ANDROID__) && defined(__aarch64__)
+    address &= 0x00FFFFFFFFFFFFFFull;
+#endif
+    if (address < 0x10000) {
+        return false;
+    }
+#if UINTPTR_MAX > 0xFFFFFFFFu
+    if (address > 0x0000FFFFFFFFFFFFull) {
+        return false;
+    }
+#endif
+    return true;
+}
+
 static UcodeHandlers ucode_handler_index = ucode_f3dex2;
 
 const static uint32_t f3dex2AttrHandler[] = {
@@ -3238,7 +3255,7 @@ void Interpreter::Gfxs2dexBg1cyc(F3DuObjBg* bg) {
     GfxDpSetTextureImage(bg->b.imageFmt, bg->b.imageSiz, bg->b.imageW >> 2, nullptr, texFlags, rawTexMetadata,
                          (void*)data);
     GfxDpSetTile(bg->b.imageFmt, bg->b.imageSiz, 0, 0, G_TX_LOADTILE, 0, 0, 0, 0, 0, 0, 0);
-    GfxDpLoadBlock(G_TX_LOADTILE, 0, 0, (bg->b.imageW * bg->b.imageH >> 4) - 1, 0);
+    GfxDpLoadBlock(G_TX_LOADTILE, 0, 0, ((bg->b.imageW >> 2) * (bg->b.imageH >> 2)) - 1, 0);
     GfxDpSetTile(bg->b.imageFmt, bg->b.imageSiz, (((lrs - uls) * bg->b.imageSiz) + 7) >> 3, 0, G_TX_RENDERTILE,
                  bg->b.imagePal, 0, 0, 0, 0, 0, 0);
     GfxDpSetTileSize(G_TX_RENDERTILE, 0, 0, bg->b.imageW, bg->b.imageH);
@@ -5100,12 +5117,7 @@ static void gfx_step() {
             opcode == OTR_G_DL_OTR_FILEPATH || opcode == OTR_G_PUSHCD || opcode == OTR_G_MTX_OTR_FILEPATH ||
             opcode == OTR_G_COMBO_RM_PUSH) {
             uintptr_t w1 = (uintptr_t)cmd->words.w1;
-            if (w1 < 0x10000
-#if UINTPTR_MAX > 0xFFFFFFFFu
-                // On 64-bit: filter kernel/sentinel addresses.
-                || w1 > 0x0000FFFFFFFFFFFFull
-#endif
-            ) {
+            if (!IsPlausibleStringAddress(w1)) {
                 ++g_exec_stack.currCmd();
                 return;
             }
@@ -5540,16 +5552,9 @@ int32_t gfx_check_image_signature(const char* imgData) {
 
     // Filter addresses that are obviously not valid string pointers before
     // attempting to dereference for the "__OTR__" check.
-    if (i == 0 || i < 0x10000) {
+    if (!IsPlausibleStringAddress(i)) {
         return 0;
     }
-#if UINTPTR_MAX > 0xFFFFFFFFu
-    // On 64-bit: filter kernel/sentinel addresses. Upper bound covers all
-    // user-space layouts (x86_64 47-bit canonical, ARM64 48-bit VA, etc.).
-    if (i > 0x0000FFFFFFFFFFFFull) {
-        return 0;
-    }
-#endif
 
     return ActiveResMgr()->OtrSignatureCheck(imgData);
 }

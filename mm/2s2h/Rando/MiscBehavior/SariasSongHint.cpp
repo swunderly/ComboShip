@@ -146,6 +146,9 @@ std::vector<RandoItemId> Rando::GetSariaPriorityItemCandidates() {
 static int playedSariasSongState = 0;
 
 RandoCheckId GetProgressiveCheckInLogic() {
+#ifdef COMBO_BUILD
+    Rando::Logic::MmAccessScope access;
+#endif
     std::vector<RandoItemId> priorityItems = Rando::GetSariaPriorityItemsFromSave(gSaveContext.save.shipSaveInfo.rando);
 
     std::unordered_map<RandoRegionId, Rando::Logic::RegionTimeState> regionTimeStates =

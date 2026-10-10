@@ -3,6 +3,7 @@
 #include "2s2h/ShipInit.hpp"
 #include "2s2h/ShipUtils.h"
 #include "2s2h/Rando/Logic/Logic.h"
+#include "2s2h/DeveloperTools/OwlStatueEditor.h"
 
 extern "C" {
 #include "overlays/kaleido_scope/ovl_kaleido_scope/z_kaleido_scope.h"
@@ -23,7 +24,7 @@ extern bool BetterOwlWarp_NextCursorPoint(s16* cursorPoint, PauseContext* pauseC
 
 extern "C" bool PauseOwlWarp_IsOwlWarpEnabled() {
     return CVAR && CHECK_QUEST_ITEM(QUEST_SONG_SOARING) && INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_OF_TIME &&
-           gSaveContext.save.saveInfo.playerData.owlActivationFlags != 0 &&
+           MM_HAS_ACTIVATED_OWL_STATUES(gSaveContext.save.saveInfo.playerData.owlActivationFlags) &&
            gPlayState->pauseCtx.debugEditor == DEBUG_EDITOR_NONE &&
            gPlayState->interfaceCtx.restrictions.songOfSoaring == 0 &&
            (!IS_RANDO || Rando::Logic::canPlaySong(OCARINA_SONG_SOARING));

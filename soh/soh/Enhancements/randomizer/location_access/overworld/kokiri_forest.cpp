@@ -8,7 +8,7 @@ void RegionTable_Init_KokiriForest() {
     areaTable[RR_KOKIRI_FOREST] = Region("Kokiri Forest", SCENE_KOKIRI_FOREST, {
         //Events
         EVENT_ACCESS(LOGIC_FAIRY_ACCESS,                 logic->CallGossipFairyExceptSuns() || (logic->IsChild && logic->CanUse(RG_MAGIC_BEAN) && logic->HasItem(RG_KOKIRI_FOREST_BEAN_SOUL) && logic->CanUse(RG_SONG_OF_STORMS))),
-        EVENT_ACCESS(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD, logic->IsChild && logic->HasItem(RG_SPEAK_KOKIRI) && logic->CanUse(RG_KOKIRI_SWORD) && logic->CanUse(RG_DEKU_SHIELD)),
+        EVENT_ACCESS(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD, (logic->IsChild && logic->HasItem(RG_SPEAK_KOKIRI) && logic->CanUse(RG_KOKIRI_SWORD) && logic->CanUse(RG_DEKU_SHIELD)) && (!Rando::Souls::Enabled() || Rando::Souls::Has(logic.get(),Rando::Souls::OotSoul::NPC_MIDO))),
     }, {
         //Locations
         LOCATION(RC_KF_GS_KNOW_IT_ALL_HOUSE,                  logic->IsChild && logic->CanKillEnemy(RE_GOLD_SKULLTULA, ED_CLOSE) && logic->CanGetNightTimeGS()),
@@ -39,8 +39,8 @@ void RegionTable_Init_KokiriForest() {
         LOCATION(RC_KF_CHILD_GRASS_2,                         logic->IsChild && logic->CanCutShrubs()),
         LOCATION(RC_KF_CHILD_GRASS_3,                         logic->IsChild && logic->CanCutShrubs()),
         LOCATION(RC_KF_CHILD_GRASS_4,                         logic->IsChild && logic->CanCutShrubs()),
-        LOCATION(RC_KF_CHILD_GRASS_5,                         logic->IsChild && logic->CanCutShrubs()),
-        LOCATION(RC_KF_CHILD_GRASS_6,                         logic->IsChild && logic->CanCutShrubs()),
+        LOCATION(RC_KF_CHILD_GRASS_5,                         ctx->KokiriSharedGrassAgeAllowed(logic->IsChild, logic->IsAdult) && logic->CanCutShrubs()),
+        LOCATION(RC_KF_CHILD_GRASS_6,                         ctx->KokiriSharedGrassAgeAllowed(logic->IsChild, logic->IsAdult) && logic->CanCutShrubs()),
         LOCATION(RC_KF_CHILD_GRASS_7,                         logic->IsChild && logic->CanCutShrubs()),
         LOCATION(RC_KF_CHILD_GRASS_8,                         logic->IsChild && logic->CanCutShrubs()),
         LOCATION(RC_KF_CHILD_GRASS_9,                         logic->IsChild && logic->CanCutShrubs()),
@@ -96,7 +96,11 @@ void RegionTable_Init_KokiriForest() {
         LOCATION(RC_KF_WONDER_TRAINING_1,       			  logic->IsChild),
         LOCATION(RC_KF_WONDER_TRAINING_2,       			  logic->IsChild),
         LOCATION(RC_KF_WONDER_TRAINING_3,       			  logic->IsChild),
+#ifdef COMBO_BUILD
+        LOCATION(RC_KF_WONDER_SIGN, logic->IsChild && logic->CanUseSword()),
+#else
         LOCATION(RC_KF_WONDER_SIGN,             			  logic->IsChild && logic->CanJumpslashExceptHammer()),
+#endif
         LOCATION(RC_KF_WONDER_PLATFORMS_1,      			  logic->IsChild),
         LOCATION(RC_KF_WONDER_PLATFORMS_2,      			  logic->IsChild),
         //Technically bad logic, because we can move Mido out of logic, but then we already have KSword...
@@ -112,7 +116,7 @@ void RegionTable_Init_KokiriForest() {
         ENTRANCE(RR_KF_HOUSE_OF_TWINS,     true),
         ENTRANCE(RR_KF_KNOW_IT_ALL_HOUSE,  true),
         ENTRANCE(RR_KF_KOKIRI_SHOP,        true),
-        ENTRANCE(RR_KF_OUTSIDE_DEKU_TREE,  (logic->IsAdult && (logic->CanPassEnemy(RE_BIG_SKULLTULA) || logic->Get(LOGIC_FOREST_TEMPLE_CLEAR))) || logic->Get(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD)),
+        ENTRANCE(RR_KF_OUTSIDE_DEKU_TREE,  (logic->IsAdult && (logic->CanPassEnemy(RE_BIG_SKULLTULA) || logic->Get(LOGIC_FOREST_TEMPLE_CLEAR))) || logic->Get(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD) || (Souls::Enabled() && (logic->IsAdult || (logic->IsChild && logic->CanUse(RG_KOKIRI_SWORD) && logic->CanUse(RG_DEKU_SHIELD))))),
         ENTRANCE(RR_KF_OUTSIDE_LOST_WOODS, logic->HasItem(RG_CLIMB) || logic->CanUse(RG_HOOKSHOT) || (logic->IsAdult && (CanPlantBean(RR_KOKIRI_FOREST, RG_KOKIRI_FOREST_BEAN_SOUL) || ctx->GetTrickOption(RT_UNINTUITIVE_JUMPS)))),
         ENTRANCE(RR_KF_RUPEE_ALCOVE,       logic->IsAdult && CanPlantBean(RR_KOKIRI_FOREST, RG_KOKIRI_FOREST_BEAN_SOUL)),
         ENTRANCE(RR_LW_BRIDGE_FROM_FOREST, logic->IsAdult || ctx->GetOption(RSK_FOREST).IsNot(RO_CLOSED_FOREST_ON) || logic->Get(LOGIC_DEKU_TREE_CLEAR)),
@@ -174,7 +178,7 @@ void RegionTable_Init_KokiriForest() {
         EVENT_ACCESS(LOGIC_STICK_ACCESS,                 logic->CanGetDekuBabaSticks()),
         EVENT_ACCESS(LOGIC_NUT_ACCESS,                   logic->CanGetDekuBabaNuts()),
         EVENT_ACCESS(LOGIC_FAIRY_ACCESS,                 logic->CallGossipFairyExceptSuns()),
-        EVENT_ACCESS(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD, logic->IsChild && logic->HasItem(RG_SPEAK_KOKIRI) && logic->CanUse(RG_KOKIRI_SWORD) && logic->CanUse(RG_DEKU_SHIELD)),
+        EVENT_ACCESS(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD, (logic->IsChild && logic->HasItem(RG_SPEAK_KOKIRI) && logic->CanUse(RG_KOKIRI_SWORD) && logic->CanUse(RG_DEKU_SHIELD)) && (!Rando::Souls::Enabled() || Rando::Souls::Has(logic.get(),Rando::Souls::OotSoul::NPC_MIDO))),
     }, {
         //Locations
         LOCATION(RC_KF_DEKU_TREE_LEFT_GOSSIP_STONE_FAIRY,      logic->CallGossipFairyExceptSuns()),

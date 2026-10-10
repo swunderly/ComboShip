@@ -11,6 +11,9 @@
 #include "soh/ResourceManagerHelpers.h"
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 #include <stdio.h>
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/CrossWarp/CrossWarpAudio.h"
+#endif
 #ifdef _MSC_VER
 #define strdup _strdup
 #endif
@@ -849,6 +852,12 @@ u32 AudioLoad_GetRealTableIndex(s32 tableType, u32 id) {
 
 void* AudioLoad_SearchCaches(s32 tableType, s32 id) {
     void* ret;
+#ifdef COMBO_BUILD
+    // Foreign scores/samples are owned by their private resource manager; they
+    // already reside in RAM and must not exhaust the N64 permanent audio pool.
+    ret = Combo_SOHWarpAudioCache(tableType, id);
+    if (ret != NULL) return ret;
+#endif
 
     ret = AudioHeap_SearchPermanentCache(tableType, id);
     if (ret != NULL) {
@@ -987,7 +996,7 @@ s32 AudioLoad_Dma(OSIoMesg* mesg, u32 priority, s32 direction, uintptr_t devAddr
         return -1;
     }
 
-    memcpy(ramAddr, devAddr, size);
+    memcpy((void*)ramAddr, (const void*)devAddr, size);
 
     return 0;
 }
@@ -1462,7 +1471,10 @@ void AudioLoad_Init(void* heap, size_t heapSize) {
     }
     free(customSeqList);
 
-    numFonts = fntListSize;
+#ifdef COMBO_BUILD
+    Combo_SOHInitWarpAudio();
+#endif
+    numFonts = fontMapSize;
 
     // #end region
     gAudioContext.soundFonts = AudioHeap_Alloc(&gAudioContext.audioInitPool, numFonts * sizeof(SoundFont));

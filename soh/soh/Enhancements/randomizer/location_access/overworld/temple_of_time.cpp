@@ -43,7 +43,7 @@ void RegionTable_Init_TempleOfTime() {
 
     areaTable[RR_TOT_BEYOND_DOOR_OF_TIME] = Region("Beyond Door of Time", SCENE_TEMPLE_OF_TIME, {}, {
         //Locations
-        LOCATION(RC_TOT_MASTER_SWORD, logic->IsAdult),
+        LOCATION(RC_TOT_MASTER_SWORD, logic->IsChild && (ctx->GetOption(RSK_DOOR_OF_TIME).Is(RO_DOOROFTIME_OPEN) || (logic->CanUse(RG_SONG_OF_TIME) && (ctx->GetOption(RSK_DOOR_OF_TIME).Is(RO_DOOROFTIME_SONGONLY) || (logic->StoneCount() == 3 && logic->HasItem(RG_OCARINA_OF_TIME)))))),
         LOCATION(RC_GIFT_FROM_RAURU,  logic->IsAdult),
         LOCATION(RC_SHEIK_AT_TEMPLE,  logic->IsAdult && logic->HasItem(RG_FOREST_MEDALLION)),
     }, {

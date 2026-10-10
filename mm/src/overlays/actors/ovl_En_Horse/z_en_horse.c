@@ -153,6 +153,16 @@ static f32 sPlaybackSpeeds[ENHORSE_ANIM_MAX] = {
     2.0f / 3.0f, // ENHORSE_ANIM_HIGH_JUMP
 };
 
+#ifdef COMBO_BUILD
+extern int Combo_MM_IsAdult(void);
+extern int Combo_MM_AdultResourcesReady(void);
+extern int Combo_MM_AdultEponaResourcesReady(void);
+extern void* Combo_MM_GetAdultEponaBinding(int index);
+void Combo_MM_ApplyEponaVariantTables(int adult);
+int Combo_MM_IsAdultEponaVariantApplied(void);
+#endif
+static TexturePtr D_80889204[] = {gEponaEyeOpenTex,gEponaEyeHalfTex,gEponaEyeClosedTex};
+
 static SkeletonHeader* sSkeletonHeaders[HORSE_TYPE_MAX] = {
     NULL,        // HORSE_TYPE_EPONA
     NULL,        // HORSE_TYPE_HNI
@@ -719,6 +729,10 @@ void EnHorse_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
     EnHorse* this = (EnHorse*)thisx;
     Skin* skin = &this->skin;
+
+#ifdef COMBO_BUILD
+    Combo_MM_ApplyEponaVariantTables(Combo_MM_IsAdult()&&Combo_MM_AdultResourcesReady());
+#endif
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     EnHorse_ClearDustFlags(&this->dustFlags);
@@ -4204,7 +4218,12 @@ void EnHorse_Update(Actor* thisx, PlayState* play2) {
     Player* player = GET_PLAYER(play);
 
     if (this->type == HORSE_TYPE_2) {
+#ifdef COMBO_BUILD
+        // Exact pinned BBDE LUI/ORI bits: 3C23562E, preserving the original low half.
+        Actor_SetScale(&this->actor,Combo_MM_IsAdultEponaVariantApplied()?0.009969277307391167f:0.00648f);
+#else
         Actor_SetScale(&this->actor, 0.00648f);
+#endif
     } else if (this->type == HORSE_TYPE_DONKEY) {
         Actor_SetScale(&this->actor, 0.008f);
     } else {
@@ -4484,7 +4503,12 @@ void EnHorse_PostDraw(Actor* thisx, PlayState* play, Skin* skin) {
     f32 sp34;
 
     if (!(this->stateFlags & ENHORSE_CALC_RIDER_POS)) {
-        if (this->type == HORSE_TYPE_2) {
+        // Exact pinned C8AC branch: adult skin uses limb-30 offset, not child vertex 120.
+        if ((this->type == HORSE_TYPE_2)
+#ifdef COMBO_BUILD
+            && !Combo_MM_IsAdultEponaVariantApplied()
+#endif
+        ) {
             Skin_GetVertexPos(skin, 5, 120, &this->riderPos);
             this->riderPos.y += 13.0f;
         } else {
@@ -4666,11 +4690,6 @@ void EnHorse_PostDraw(Actor* thisx, PlayState* play, Skin* skin) {
 }
 
 s32 EnHorse_OverrideLimbDraw(Actor* thisx, PlayState* play, s32 limbIndex, Skin* skin) {
-    static TexturePtr D_80889204[] = {
-        gEponaEyeOpenTex,
-        gEponaEyeHalfTex,
-        gEponaEyeClosedTex,
-    };
     static u8 D_80889210[] = { 0, 1, 2, 1 };
     EnHorse* this = (EnHorse*)thisx;
     s32 drawOriginalLimb = true;
@@ -4729,3 +4748,9 @@ void EnHorse_Draw(Actor* thisx, PlayState* play) {
         }
     }
 }
+
+#ifdef COMBO_BUILD
+#include "ComboAdultEponaNative.h"
+#endif
+
+#include "ComboAdultEponaTablesNative.h"

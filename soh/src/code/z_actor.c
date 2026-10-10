@@ -763,7 +763,9 @@ s32 Flags_GetClear(PlayState* play, s32 flag) {
 /**
  * Sets current scene clear flag.
  */
+extern int Combo_OotSoulCanClear(void*,int);
 void Flags_SetClear(PlayState* play, s32 flag) {
+    if(!Combo_OotSoulCanClear(play,flag))return;
     u8 previouslyOff = !Flags_GetClear(play, flag);
     play->actorCtx.flags.clear |= (1 << flag);
     if (previouslyOff) {
@@ -2373,7 +2375,7 @@ void Actor_DrawFaroresWindPointer(PlayState* play) {
 
     params = gSaveContext.respawn[RESPAWN_MODE_TOP].data;
 
-    if (params) {
+    if (params && gSaveContext.respawn[RESPAWN_MODE_TOP].entranceIndex != 0xfffd) {
         f32 yOffset = LINK_IS_ADULT ? 80.0f : 60.0f;
         f32 ratio = 1.0f;
         s32 alpha = 255;
@@ -3046,6 +3048,10 @@ void Actor_DrawAll(PlayState* play, ActorContext* actorCtx) {
     s32 i;
 
     invisibleActorCounter = 0;
+#ifdef COMBO_BUILD
+    extern int Combo_SOHSoaringCutsceneActive(PlayState*);
+    const int soaringCutscene=Combo_SOHSoaringCutsceneActive(play);
+#endif
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -3100,6 +3106,9 @@ void Actor_DrawAll(PlayState* play, ActorContext* actorCtx) {
 
             if ((HREG(64) != 1) || ((HREG(65) != -1) && (HREG(65) != HREG(66))) || (HREG(71) == 0)) {
                 if ((actor->init == NULL) && (actor->draw != NULL) &&
+#ifdef COMBO_BUILD
+                    (!soaringCutscene || actor->category==ACTORCAT_PLAYER || actor->id==ACTOR_COMBO_OWL_WARP) &&
+#endif
                     ((actor->flags & (ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_INSIDE_CULLING_VOLUME)) ||
                      shipShouldDraw)) {
                     // #endregion
@@ -3122,11 +3131,19 @@ void Actor_DrawAll(PlayState* play, ActorContext* actorCtx) {
         }
     }
 
-    if ((HREG(64) != 1) || (HREG(73) != 0)) {
+    if (
+#ifdef COMBO_BUILD
+        !soaringCutscene &&
+#endif
+        ((HREG(64) != 1) || (HREG(73) != 0))) {
         Effect_DrawAll(play->state.gfxCtx);
     }
 
-    if ((HREG(64) != 1) || (HREG(74) != 0)) {
+    if (
+#ifdef COMBO_BUILD
+        !soaringCutscene &&
+#endif
+        ((HREG(64) != 1) || (HREG(74) != 0))) {
         EffectSs_DrawAll(play);
     }
 
@@ -3141,7 +3158,11 @@ void Actor_DrawAll(PlayState* play, ActorContext* actorCtx) {
 
     Actor_DrawFaroresWindPointer(play);
 
-    if (IREG(32) == 0) {
+    if (
+#ifdef COMBO_BUILD
+        !soaringCutscene &&
+#endif
+        IREG(32) == 0) {
         Lights_DrawGlow(play);
     }
 
@@ -3319,12 +3340,14 @@ void Actor_FreeOverlay(ActorDBEntry* dbEntry) {
 //      array to spawn An example of what this fixes, is that it allows hookshot to be used as child
 int gMapLoading = 0;
 
+extern int Combo_OotSoulPreSpawn(void*,int,unsigned);
 Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 posX, f32 posY, f32 posZ, s16 rotX,
                    s16 rotY, s16 rotZ, s16 params) {
     Actor* actor;
     s32 objBankIndex;
     u32 temp;
 
+    if(Combo_OotSoulPreSpawn(play,actorId,(u16)params)<=0)return NULL;
     ActorDBEntry* dbEntry = ActorDB_Retrieve(actorId);
 
     assert(dbEntry->valid);

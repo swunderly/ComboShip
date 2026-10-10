@@ -5,8 +5,29 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
+#include <chrono>
+#include <stdexcept>
 namespace ComboRando {
+struct GenerationCancelled : std::runtime_error {
+    GenerationCancelled() : std::runtime_error("Generation cancelled") {}
+};
+inline uint64_t GenerationClockMs() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
 struct ComboGenProgress {
+    mutable std::atomic<int> disposition{0}; // 0 working, 1 cancellation requested, 2 committing
+    std::atomic<uint64_t> attempt{0}, startedMs{0};
+    mutable std::atomic<uint64_t> nextWarningSeconds{300};
+    bool RequestCancel() const { int expected=0; return disposition.compare_exchange_strong(expected,1); }
+    bool CancelRequested() const { return disposition.load()==1; }
+    bool CanCancel() const { return disposition.load()==0; }
+    uint64_t ElapsedSeconds(uint64_t now=GenerationClockMs()) const {
+        const auto start=startedMs.load(); return now>=start ? (now-start)/1000 : 0;
+    }
+    bool WarningDue(uint64_t elapsed) const { return elapsed>=nextWarningSeconds.load(); }
+    void KeepTrying(uint64_t elapsed) const { nextWarningSeconds=elapsed+300; }
+    void BeginCommit() { int expected=0; if(!disposition.compare_exchange_strong(expected,2)) throw GenerationCancelled(); }
     std::atomic<int> phase{ 0 }; // 0 Idle,1 Preparing,2 Placing,3 Finalizing
     std::atomic<int> placed{ 0 };
     std::atomic<int> total{ 0 };
@@ -22,6 +43,8 @@ struct ComboGenProgress {
     // blank input this is the concrete random string actually used. Written before done; read after.
     char seedStr[128] = { 0 };
     void Reset() {
+        disposition=0; attempt=0; startedMs=GenerationClockMs(); nextWarningSeconds=300;
+        running=false; done=false;
         phase = 0;
         placed = 0;
         total = 0;
@@ -54,4 +77,14 @@ struct ComboGenProgress {
         }
     }
 };
+// Cancellation checkpoints run only in the launcher worker, outside engine C frames.
+inline thread_local ComboGenProgress* generationProgress=nullptr;
+struct GenerationScope {
+    ComboGenProgress* previous=generationProgress;
+    explicit GenerationScope(ComboGenProgress* p) { generationProgress=p; }
+    ~GenerationScope() { generationProgress=previous; }
+};
+inline void CheckGenerationCancellation() {
+    if(generationProgress && generationProgress->CancelRequested()) throw GenerationCancelled();
+}
 } // namespace ComboRando
