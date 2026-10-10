@@ -324,6 +324,9 @@ static int balanceStatus = 0; // 0 = Able to balance, 1 = Unlikely to balance, 2
 static std::set<RandoItemId> setOfItemsInPool;
 static std::set<RandoCheckId> setOfChecksInPool;
 static uint32_t checkPoolGeneration = 0;
+#ifdef COMBO_BUILD
+extern "C" void Combo_MM_ClearHiddenAdultOptions(u32* options);
+#endif
 void RefreshMetrics() {
     setOfItemsInPool.clear();
     setOfChecksInPool.clear();
@@ -338,6 +341,10 @@ void RefreshMetrics() {
     }
     auto startingItems = Rando::GetStartingItemsFromConfig();
     Rando::SetStartingItemsInSave(randoSaveInfo, startingItems);
+#ifdef COMBO_BUILD
+    // Same hidden adult/gear defaults as generation (BenPort.cpp), so the counts match the seed.
+    Combo_MM_ClearHiddenAdultOptions(randoSaveInfo.randoSaveOptions);
+#endif
 
     Rando::Logic::GeneratePools(randoSaveInfo, checkPool, itemPool);
 
