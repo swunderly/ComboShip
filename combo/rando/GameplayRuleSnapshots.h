@@ -57,6 +57,9 @@ inline nlohmann::json NormalizeGameplayRuleSnapshot(const nlohmann::json& input)
 // session. A vanilla file, or a save from before rules were stored with the seed, adopts it once in
 // place of the fallbacks, so loading it does not switch the player's enhancements back to their
 // defaults. What the seed itself records (song map, arrow settings, trick list) still wins.
+// Limitation: a baseline read from the live CVars at startup is what comboship.json holds, and menus
+// that save every CVar also store the rules a slot restored in an earlier session, so it can be that
+// slot's rules rather than the player's own. A baseline only the Enhancements menu writes avoids this.
 inline nlohmann::json GameplayRulesForSeed(const nlohmann::json& seed,
                                            const nlohmann::json& baseline = nlohmann::json()) {
     const auto saved = seed.value("gameplayRules", nlohmann::json());
