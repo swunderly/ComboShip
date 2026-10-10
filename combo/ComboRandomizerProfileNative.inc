@@ -59,10 +59,19 @@ static void ProfileApplyNative(const nlohmann::json& requested) {
     // ProfileEditableSetup derives setupCVars for legacy seeds from their own goal/start/shared choices.
     const auto& combo=setup.at("setupCVars");
     if(!sProfileApplyCombo(combo.dump().c_str()))throw std::invalid_argument("Invalid shared settings profile");
-    RestoreGameplayRules(setup.value("gameplayRules",nlohmann::json::object()),sGameplayRulesSlot);
+    const auto rules=setup.value("gameplayRules",nlohmann::json::object());
+    RestoreGameplayRules(rules,sGameplayRulesSlot);
     InstallSongTravel(setup.value("songTravel",nlohmann::json()));
+    // The two arrow rules are also native OoT options, applied after the rules: generate with the rule
+    // the menu shows even where an older draft's oot.settings diverged from it.
+    auto ootSettings=setup.value("oot",nlohmann::json::object()).value("settings",nlohmann::json::object());
+    if(ComboRando::IsGameplayRuleBlock(rules)){
+        const auto logic=ComboRando::NormalizeGameplayRuleSnapshot(rules).at("logicValues");
+        for(const char* runtime:{"gEnhancements.BlueFireArrows","gEnhancements.SunlightArrows"})
+            ootSettings[ComboRando::LogicRuleKey(runtime)]=logic.value(runtime,0);
+    }
     // Native trick fields are authoritative after gameplayRules' legacy CSV.
-    if(!sProfileApplyOot(setup.value("oot",nlohmann::json::object()).value("settings",nlohmann::json::object()).dump().c_str())||
+    if(!sProfileApplyOot(ootSettings.dump().c_str())||
        !sProfileApplyMm(setup.value("mm",nlohmann::json::object()).value("settings",nlohmann::json::object()).dump().c_str()))
         throw std::invalid_argument("Invalid native settings profile");
 }
