@@ -269,7 +269,7 @@ extern "C" void Combo_SilverUpdate(void* context) {
         auto puzzle = GetPuzzle(i, IsMQ(i));
         if (puzzle.count && puzzle.scene == play->sceneNum && counts[i] >= puzzle.count) {
             Flags_SetSwitch(play, puzzle.flag);
-            if (i == 11 && play->roomCtx.curRoom.num == 2)
+            if (i == GtgSlopesSlot && play->roomCtx.curRoom.num == 2)
                 Flags_SetTempClear(play, 2);
         }
     }
