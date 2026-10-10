@@ -1749,7 +1749,7 @@ void DrawPlayerTab() {
         ImGui::InputScalar("XZ Speed", ImGuiDataType_Float, &player->speedXZ);
         ImGui::InputScalar("Y Velocity", ImGuiDataType_Float, &player->actor.velocity.y);
         ImGui::InputScalar("Ledge Height", ImGuiDataType_Float, &player->yDistToLedge);
-        ComboTouch::Count("Invincibility Timer", &player->invincibilityTimer, -32768, 32767);
+        ComboTouch::Count("Invincibility Timer", &player->invincibilityTimer, -128, 127);
         ImGui::InputScalar("Gravity", ImGuiDataType_Float, &player->actor.gravity);
         ImGui::PopItemWidth();
         UIWidgets::PopStyleCombobox();
