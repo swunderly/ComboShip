@@ -9,7 +9,6 @@ namespace {
 ComboNativeDepartureCommit sNativeDepartureCommit = nullptr;
 ComboReadSharedDungeon sReadDungeon = nullptr;
 ComboWriteSharedDungeon sWriteDungeon = nullptr;
-bool sSharedDungeonEnabled = false;
 int sDungeonDepartureAge = -1, sDungeonDepartureEntrance = -1, sDungeonArrivalFile = -1, sDungeonArrivalAge = -1,
     sDungeonArrivalEntrance = -1;
 void ReadDungeon() {
@@ -266,7 +265,7 @@ extern "C" COMBO_EXPORT int SOH_DispatchNativeDeparture(PlayState* play) {
     SOH_CancelNativeDeparture();
     if (!accepted && play) {
         if (dungeon)
-            play->transitionTrigger = TRANS_TRIGGER_START; // retain the displaced native death/Soar fallback
+            play->transitionTrigger = TRANS_TRIGGER_START; // keep the native death respawn (Play_TriggerRespawn)
         else
             Combo_OotFaroreCancelReturn(play); // textbox closed; release the native spell action/camera
     }
@@ -275,9 +274,6 @@ extern "C" COMBO_EXPORT int SOH_DispatchNativeDeparture(PlayState* play) {
 extern "C" COMBO_EXPORT int SOH_FaroreDeparturePending() {
     return (ValidAge(sDepartureAge) && sDepartureEntrance >= 0) ||
            (sDungeonDepartureAge >= 0 && sDungeonDepartureEntrance >= 0);
-}
-extern "C" COMBO_EXPORT void SOH_ConfigureSharedDungeonRules(int enabled) {
-    sSharedDungeonEnabled = enabled != 0;
 }
 extern "C" COMBO_EXPORT void SOH_SetSharedDungeonBridge(ComboReadSharedDungeon read, ComboWriteSharedDungeon write) {
     sReadDungeon = read;
@@ -349,7 +345,7 @@ extern "C" COMBO_EXPORT int SOH_ConsumeFaroreArrival() {
     return entrance;
 }
 extern "C" void Combo_OotFaroreCaptureDungeon(PlayState* play) {
-    if (!sCross && !sSharedDungeonEnabled)
+    if (!sCross)
         return;
     ReadDungeon();
     switch (play->sceneNum) {
@@ -401,7 +397,7 @@ extern "C" void Combo_OotFaroreCaptureDungeon(PlayState* play) {
     WriteDungeon();
 }
 extern "C" void Combo_OotFaroreDeathWarp(PlayState* play) {
-    if (!sCross && !sSharedDungeonEnabled)
+    if (!sCross)
         return;
     ReadDungeon();
     const auto& shared = gSaveContext.ship.faroresWind.sharedCurrentDungeon;
