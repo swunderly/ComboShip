@@ -745,9 +745,14 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
                 std::vector<std::string> keys(candidates.size());
                 for (size_t i = 0; i < candidates.size(); ++i) {
                     keys[i] = (candidates[i].checkGame == GAME_OOT ? "oot:" : "mm:") + candidates[i].checkName;
-                    bool eligible = candidates[i].hintable && ((cat == "Song" && candidates[i].song) ||
-                                                               (cat == "Overworld" && candidates[i].overworld) ||
-                                                               (cat == "Dungeon" && candidates[i].dungeon));
+                    // An OoT check without a location sentence (pool hint NONE, e.g. silver rupees) is
+                    // never named by a location hint, as in OoTMM.
+                    bool eligible =
+                        candidates[i].hintable &&
+                        (candidates[i].checkGame != GAME_OOT ||
+                         !candidates[i].locationHint.value("clear", nlohmann::json::object()).empty()) &&
+                        ((cat == "Song" && candidates[i].song) || (cat == "Overworld" && candidates[i].overworld) ||
+                         (cat == "Dungeon" && candidates[i].dungeon));
                     if (eligible)
                         idxs.push_back(i);
                 }
