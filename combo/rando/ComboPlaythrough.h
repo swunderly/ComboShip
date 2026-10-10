@@ -145,10 +145,12 @@ inline std::vector<CwPlacedItem> ParseSpoilerPlacements(const std::string& spoil
     return placements;
 }
 
+// beanRenewal: a collected Magic Bean renews (CreditPlacedItem), as the fill tells the MM oracle.
 inline std::unordered_set<std::string> QueryReachableWithMmStock(const OracleFns& o,
                                                                  const std::vector<std::string>& owned, bool isMm,
                                                                  const std::vector<CwPlacedItem>& placements,
-                                                                 const std::unordered_set<size_t>& excluded = {}) {
+                                                                 const std::unordered_set<size_t>& excluded = {},
+                                                                 bool beanRenewal = false) {
     CheckGenerationCancellation();
     o.Reset();
     o.SetOwnedItems(nlohmann::json(owned).dump().c_str());
@@ -160,6 +162,8 @@ inline std::unordered_set<std::string> QueryReachableWithMmStock(const OracleFns
             }
         }
     }
+    if (isMm && beanRenewal && (!o.SetExternalBeanRenewal || !o.SetExternalBeanRenewal(1)))
+        throw std::runtime_error("MM bean renewal oracle unavailable");
     std::unordered_set<std::string> out;
     for (const auto& name : nlohmann::json::parse(o.GetReachableChecks()))
         out.insert(name.get<std::string>());
@@ -306,6 +310,10 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
     const auto sourceMetadata = mmDump.value("beanSources", nlohmann::json::object());
     const bool fairyOcarinaMm = mmDump.value("fairyOcarinaMm", false);
     const auto sharedStarts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
+    // Beans are credited by the fill's own rule, so requiredness agrees with what the fill assumed.
+    BeanSourceMap beanSources;
+    ParseBeanSources(GAME_OOT, nlohmann::json::parse(sohDumpJson.empty() ? "{}" : sohDumpJson), beanSources);
+    ParseBeanSources(GAME_MM, mmDump, beanSources);
     for (size_t i = 0; i < placements.size(); ++i) {
         if (placements[i].checkGame != GAME_MM)
             continue;
@@ -330,8 +338,9 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
             if (stockSensitive.count(index))
                 excludedKey.push_back(index);
         std::sort(excludedKey.begin(), excludedKey.end());
+        bool beanRenewal = false;
         auto queryWithStock = [&](const OracleFns& o, const std::vector<std::string>& owned) {
-            return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements, excludeIdx);
+            return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements, excludeIdx, beanRenewal);
         };
         std::vector<std::string> ootOwned = sharedStarts.first, mmOwned = sharedStarts.second;
         std::vector<char> credited(placements.size(), 0);
@@ -346,7 +355,7 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
             CheckGenerationCancellation();
             ApplySharedMirror(sharedMask, ootOwned, mmOwned, sharedGiven, fairyOcarinaMm);
             const std::string key = nlohmann::json::array({ CanonicalOwnedKey(ootOwned), CanonicalOwnedKey(mmOwned),
-                                                            portalOpen, excludedKey })
+                                                            portalOpen, excludedKey, beanRenewal })
                                         .dump();
             auto memo = songMemo.find(key);
             if (memo == songMemo.end()) {
@@ -385,7 +394,10 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
                 const auto& p = placements[i];
                 const auto& reach = (p.checkGame == GAME_OOT) ? *ootReach : *mmReach;
                 if (reach.count(p.check)) {
-                    (p.itemGame == GAME_OOT ? ootOwned : mmOwned).push_back(p.item);
+                    const auto credit = CreditPlacedItem(p.checkGame, p.check, p.itemGame, p.item, beanSources);
+                    if (credit.owned)
+                        (p.itemGame == GAME_OOT ? ootOwned : mmOwned).push_back(p.item);
+                    beanRenewal |= credit.renewal;
                     credited[i] = true;
                     changed = true;
                 }
@@ -525,14 +537,19 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
     using Placed = CwPlacedItem;
     std::vector<Placed> placements = ParseSpoilerPlacements(spoilerJson, sohDumpJson, mmDumpJson);
 
+    // Beans are credited by the fill's own rule, so the spoiler and the validator agree with the fill.
+    const auto mmDump = nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson);
+    BeanSourceMap beanSources;
+    ParseBeanSources(GAME_OOT, nlohmann::json::parse(sohDumpJson.empty() ? "{}" : sohDumpJson), beanSources);
+    ParseBeanSources(GAME_MM, mmDump, beanSources);
+    bool beanRenewal = false;
     auto queryReachable = [&](const OracleFns& o, const std::vector<std::string>& owned) {
-        return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements);
+        return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements, {}, beanRenewal);
     };
 
     const auto starts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
     std::vector<std::string> ownedOot = starts.first, ownedMm = starts.second;
-    const bool fairyOcarinaMm =
-        nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false);
+    const bool fairyOcarinaMm = mmDump.value("fairyOcarinaMm", false);
     std::unordered_set<std::string> collected; // "<cg>:<cn>"
     std::ostringstream log;
     log << "Cross-world playthrough - seed '" << seedLabel << "'\n";
@@ -594,7 +611,10 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
         for (auto& p : newly) {
             std::string key = (p.checkGame == GAME_OOT ? "oot:" : "mm:") + p.check;
             collected.insert(key);
-            (p.itemGame == GAME_OOT ? ownedOot : ownedMm).push_back(p.item);
+            const auto credit = CreditPlacedItem(p.checkGame, p.check, p.itemGame, p.item, beanSources);
+            if (credit.owned)
+                (p.itemGame == GAME_OOT ? ownedOot : ownedMm).push_back(p.item);
+            beanRenewal |= credit.renewal;
             if (recordSteps && (p.advancement || !progressionOnly)) {
                 nlohmann::json step = { { "game", p.checkGame == GAME_OOT ? "oot" : "mm" },
                                         { "check", p.check },

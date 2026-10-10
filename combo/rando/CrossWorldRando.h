@@ -427,6 +427,40 @@ struct CwPlacement {
     CwItem item;
 };
 
+// ---------- Bean donor rules (shared by the fill, the playthrough and the pare-down) ----------
+
+using BeanSourceMap = std::unordered_map<std::string, BeanSources::Source>;
+
+// A dump's "beanSources" (check -> {license, renewable}), keyed "OOT:<check>"/"MM:<check>". An older
+// dump without it adds nothing, and the policy table then answers for every check.
+inline void ParseBeanSources(Game game, const nlohmann::json& dump, BeanSourceMap& out) {
+    // items() refers into its json; a temporary from value() would die before the loop body runs.
+    const auto beanSourceDump = dump.value("beanSources", nlohmann::json::object());
+    for (const auto& source : beanSourceDump.items()) {
+        if (!source.value().is_object() || !source.value().at("license").is_boolean() ||
+            !source.value().at("renewable").is_boolean())
+            throw std::runtime_error("Malformed bean donor metadata");
+        out[(game == GAME_MM ? "MM:" : "OOT:") + source.key()] = { source.value().at("license").get<bool>(),
+                                                                   source.value().at("renewable").get<bool>() };
+    }
+}
+
+// What reaching a check credits. Items from repeatable shops do not become licenses merely because
+// the check was reached; starting/assumed inventory is licensed separately; cows and ordinary rewards
+// grant licenses. Only native MM stock renews an MM Magic Bean: cross-game deliveries are one-time
+// rewards in this engine (a randomized OoT shop slot sells out, a shuffled OoT cow gives once), even
+// where OoTMM's table calls the OoT location renewable.
+inline BeanSources::Credit CreditPlacedItem(Game checkGame, const std::string& check, Game itemGame,
+                                            const std::string& item, const BeanSourceMap& sources) {
+    const bool bean = itemGame == GAME_MM && item == "Magic Bean";
+    auto source = BeanSources::ForNativeCheck(checkGame == GAME_MM, check);
+    if (auto it = sources.find((checkGame == GAME_MM ? "MM:" : "OOT:") + check); it != sources.end())
+        source = it->second;
+    if (checkGame != GAME_MM)
+        source.renewable = false;
+    return BeanSources::CreditPlacement(bean, source);
+}
+
 // ---------- Combined assumed fill ----------
 
 struct CombinedFillResult {
@@ -496,7 +530,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
     std::vector<std::string> mmJunkNames;
     std::vector<CwCheck> allChecks;
     std::unordered_map<std::string, std::string> questRegions;
-    std::unordered_map<std::string, BeanSources::Source> beanSources;
+    BeanSourceMap beanSources;
     std::vector<CwPlacement> lockedPlacements; // confined pre-placements (own-dungeon keys, etc.)
 
     // Set when a dump carries pool[] but no category — a stale DLL, which would otherwise surface as an
@@ -505,16 +539,7 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
 
     auto parsePool = [&](Game game, const std::string& dumpJson) {
         auto d = nlohmann::json::parse(dumpJson);
-        // items() refers into its json; a temporary from value() would die before the loop body runs.
-        const auto beanSourceDump = d.value("beanSources", nlohmann::json::object());
-        for (const auto& source : beanSourceDump.items()) {
-            if (!source.value().is_object() || !source.value().at("license").is_boolean() ||
-                !source.value().at("renewable").is_boolean())
-                throw std::runtime_error("Malformed bean donor metadata");
-            beanSources[(game == GAME_MM ? "MM:" : "OOT:") + source.key()] = {
-                source.value().at("license").get<bool>(), source.value().at("renewable").get<bool>()
-            };
-        }
+        ParseBeanSources(game, d, beanSources);
 
         // Fillable checks (name only; the pool below feeds the items).
         for (auto& c : d.value("checks", nlohmann::json::array())) {
@@ -1138,16 +1163,8 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                 const auto& reach = placements[i].check.game == GAME_OOT ? ootReachable : mmReachable;
                 if (reach.count(placements[i].check.name)) {
                     auto& owned = placements[i].item.game == GAME_OOT ? ootOwned : mmOwned;
-                    const bool bean = placements[i].item.game == GAME_MM && placements[i].item.name == "Magic Bean";
-                    auto source =
-                        BeanSources::ForNativeCheck(placements[i].check.game == GAME_MM, placements[i].check.name);
-                    const auto key = (placements[i].check.game == GAME_MM ? "MM:" : "OOT:") + placements[i].check.name;
-                    if (auto it = beanSources.find(key); it != beanSources.end())
-                        source = it->second;
-                    // Items from repeatable shops do not become licenses merely
-                    // because the check was reached. Starting/assumed inventory is
-                    // licensed separately; cows and ordinary rewards grant licenses.
-                    const auto credit = BeanSources::CreditPlacement(bean, source);
+                    const auto credit = CreditPlacedItem(placements[i].check.game, placements[i].check.name,
+                                                         placements[i].item.game, placements[i].item.name, beanSources);
                     if (credit.owned)
                         owned.push_back(placements[i].item.name);
                     if (credit.renewal)

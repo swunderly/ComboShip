@@ -305,6 +305,18 @@ int main(){
     }
     assert(sawPath);
     assert(hints==Generate(77,"{}",hintDump.dump(),"{}",nlohmann::json::array(),pathSpoiler.dump(),paths));
+    // An MM bean delivered by an OoT check is a one-time reward: OoT shop slots sell out and shuffled
+    // cows give once, so only native MM stock renews. Licenses keep the donor table's answer.
+    BeanSourceMap beanDump;
+    ParseBeanSources(GAME_OOT,{{"beanSources",{{"KF Shop Item 1",{{"license",false},{"renewable",true}}},
+        {"KF Links House Cow",{{"license",true},{"renewable",true}}}}}},beanDump);
+    auto ootShopBean=CreditPlacedItem(GAME_OOT,"KF Shop Item 1",GAME_MM,"Magic Bean",beanDump);
+    auto ootCowBean=CreditPlacedItem(GAME_OOT,"KF Links House Cow",GAME_MM,"Magic Bean",beanDump);
+    auto ootScrubBean=CreditPlacedItem(GAME_OOT,"LW Deku Scrub Near Bridge",GAME_MM,"Magic Bean",beanDump);
+    auto mmScrubBean=CreditPlacedItem(GAME_MM,"Southern Swamp Scrub Beans",GAME_MM,"Magic Bean",beanDump);
+    assert(!ootShopBean.owned && !ootShopBean.renewal && ootCowBean.owned && !ootCowBean.renewal);
+    assert(!ootScrubBean.owned && !ootScrubBean.renewal && !mmScrubBean.owned && mmScrubBean.renewal);
+    assert(CreditPlacedItem(GAME_OOT,"KF Shop Item 1",GAME_OOT,"Deku Shield",beanDump).owned);
     assert(!CanNavigateHidden(false,false,false));assert(!CanNavigateHidden(true,false,false));
     assert(CanNavigateHidden(true,true,false));assert(CanNavigateHidden(false,false,true));
     assert(FindMmTrick(0) && FindMmTrick(1) && !FindMmTrick(-1));
