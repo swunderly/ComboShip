@@ -7,9 +7,6 @@
 #include "prevent_bss_reordering.h"
 #include "z_en_test7.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
-#ifdef COMBO_BUILD
-#include <libultraship/log/luslog.h>
-#endif
 
 #define FLAGS                                                                                              \
     (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_FREEZE_EXCEPTION | \
@@ -397,9 +394,6 @@ void EnTest7_Init(Actor* thisx, PlayState* play2) {
     } else {
         EnTest7_SetupAction(this, EnTest7_StartWarpCs);
         EnTest7_SetupPlayerCamFunc(this, EnTest7_PlayerAndSubCamAction);
-#ifdef COMBO_BUILD
-        LUSLOG_INFO("[ComboShip] Native MM Soaring baseline begin (audio errors 0x%x)", gAudioCtx.audioErrorFlags);
-#endif
         Audio_PlayBgm_StorePrevBgm(NA_BGM_SONG_OF_SOARING);
     }
 
@@ -418,10 +412,6 @@ void EnTest7_Init(Actor* thisx, PlayState* play2) {
 
 void EnTest7_Destroy(Actor* thisx, PlayState* play) {
     EnTest7* this = (EnTest7*)thisx;
-#ifdef COMBO_BUILD
-    LUSLOG_INFO("[ComboShip] Native MM Soaring baseline end (arrival %d, audio errors 0x%x)",
-                OWL_WARP_CS_GET_OCARINA_MODE(&this->actor) == ENTEST7_ARRIVE, gAudioCtx.audioErrorFlags);
-#endif
 
     CutsceneManager_Stop(play->playerCsIds[PLAYER_CS_ID_SONG_WARP]);
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
