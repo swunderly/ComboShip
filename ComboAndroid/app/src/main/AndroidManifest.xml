@@ -22,7 +22,7 @@
         <activity android:name=".GameActivity" android:exported="false" android:process=":game"
             android:launchMode="singleTop"
             android:screenOrientation="sensorLandscape" android:resizeableActivity="true"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|layoutDirection|locale|fontScale|navigation"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|layoutDirection|locale|fontScale|navigation|fontWeightAdjustment|colorMode|touchscreen|mcc|mnc|grammaticalGender"
             android:theme="@style/GameTheme"/>
     </application>
 </manifest>

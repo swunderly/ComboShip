@@ -147,7 +147,9 @@ public final class GameActivity extends SDLActivity {
         uiHandler.removeCallbacks(updateControls);if(overlay!=null)overlay.release(); super.onDestroy();
         // SDL has now joined its native thread and released the data lock before setup can edit files.
         if(finish && returnToOptions)startActivity(new android.content.Intent(this,MainActivity.class).putExtra(MainActivity.MANAGE,true));
-        // Only this activity's :game process, never setup or the standalone 2S2H app.
-        if(finish)android.os.Process.killProcess(android.os.Process.myPid());
+        // Only this activity's :game process, never setup or the standalone 2S2H app. Also when the
+        // activity is only being recreated: SDL has ended this session, and a second one must not
+        // start in a process that still holds the first one's native state.
+        android.os.Process.killProcess(android.os.Process.myPid());
     }
 }
