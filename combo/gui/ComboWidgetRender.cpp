@@ -220,7 +220,10 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
         return;
     // Unique id namespace per widget so two widgets sharing a display label don't collide.
     ImGui::PushID(w.index);
-    const int state = w.hasPreFunc && game.evalDisabled ? game.evalDisabled(w.index, nullptr) : 0;
+    // The game owns the preFunc predicate and re-evaluates its whole disable map per call, so ask
+    // once per frame: 2 = hidden by the owning menu, 1 = disabled with `reason`.
+    const char* reason = "";
+    const int state = w.hasPreFunc && game.evalDisabled ? game.evalDisabled(w.index, &reason) : 0;
     if (state == 2) {
         ImGui::PopID();
         return;
@@ -244,7 +247,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
         // the raw path below. The game's MenuDrawItem also applies it internally, but wrapping here is
         // what reliably makes a preFunc-gated control non-interactive (e.g. "Cull Glitch Useful
         // Actors", gated on "Widescreen Actor Culling").
-        const bool dis = w.hasPreFunc && game.evalDisabled && game.evalDisabled(w.index, nullptr) != 0;
+        const bool dis = state != 0;
         if (dis) {
             ImGui::BeginDisabled(true);
         }
@@ -274,12 +277,8 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
         ImGui::SameLine();
     }
 
-    // 1) preFunc disable eval (per frame): the game owns the predicate; we call it by index.
-    bool disabled = false;
-    const char* reason = "";
-    if (w.hasPreFunc && game.evalDisabled) {
-        disabled = game.evalDisabled(w.index, &reason) != 0;
-    }
+    // 1) preFunc disable state, evaluated above.
+    const bool disabled = state != 0;
     if (disabled) {
         ImGui::BeginDisabled(true);
     }

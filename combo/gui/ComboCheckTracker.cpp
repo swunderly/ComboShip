@@ -1,5 +1,6 @@
 #include "ComboCheckTracker.h"
 #include "ComboCheckTrackerModel.h"
+#include "ComboCheckSnapshot.h"
 #include "ComboTrackerControls.h"
 #include "ComboForeground.h"
 #include "ComboTrackerCommon.h"
@@ -49,9 +50,7 @@ const GameAPI& API(int game) {
     static GameAPI api[2];
     // Retry until mapped: MM can register later than comboui during startup.
     auto& a = api[game];
-    if (!a.snapshot)
-        a.snapshot = reinterpret_cast<ComboCheckSnapshot>(
-            Combo_ResolveSym(game ? "2ship" : "soh", game ? "MM_ComboCheckSnapshot" : "SOH_ComboCheckSnapshot"));
+    a.snapshot = Snapshot(game);
     if (!a.skip)
         a.skip = reinterpret_cast<ComboCheckSetSkipped>(
             Combo_ResolveSym(game ? "2ship" : "soh", game ? "MM_ComboCheckSetSkipped" : "SOH_ComboCheckSetSkipped"));
@@ -62,11 +61,9 @@ void Save() {
     dirty = true;
 }
 bool Check(const char* label, const char* cvar, int def) {
-    bool value = CVarGetInteger(cvar, def) != 0;
-    if (!ImGui::Checkbox(label, &value))
+    if (!ComboTrackerUI::Checkbox(label, cvar, def))
         return false;
-    CVarSetInteger(cvar, value);
-    Save();
+    dirty = true;
     return true;
 }
 void Collect(const ComboCheckRow* row, void*) {

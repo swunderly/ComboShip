@@ -1,6 +1,5 @@
 #pragma once
-#include "ComboResolve.h"
-#include "menu/ComboCheckTrackerABI.h"
+#include "ComboCheckSnapshot.h"
 #include "rando/GameplayRules.h"
 #include <imgui.h>
 #include <cstring>
@@ -21,8 +20,7 @@ inline void WarnAboutRuleChange(const char* name, int slot = -1) {
         rule |= std::strcmp(name, entry.name) == 0 || LogicRuleKey(entry.name) == name;
     if (!rule)
         return;
-    static auto oot = (ComboCheckSnapshot)Combo_ResolveSym("soh", "SOH_ComboCheckSnapshot");
-    static auto mm = (ComboCheckSnapshot)Combo_ResolveSym("2ship", "MM_ComboCheckSnapshot");
+    const auto oot = ComboChecks::Snapshot(0), mm = ComboChecks::Snapshot(1);
     ComboCheckInfo a{}, b{};
     if (oot)
         oot(&a, nullptr, nullptr);

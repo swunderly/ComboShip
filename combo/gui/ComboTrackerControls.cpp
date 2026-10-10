@@ -1,4 +1,5 @@
 #include "ComboTrackerControls.h"
+#include "ComboCheckSnapshot.h"
 #include "ComboForeground.h"
 #include "ComboTrackerSwap.h"
 #include "ComboTrackerCommon.h"
@@ -166,13 +167,9 @@ void Migrate(Kind kind) {
 }
 bool Visible(Kind kind) {
     const int game = ComboUI::GetForegroundGame() == 1 ? 1 : 0;
-    static ComboCheckSnapshot snapshot[2]{};
-    if (!snapshot[game])
-        snapshot[game] = reinterpret_cast<ComboCheckSnapshot>(
-            Combo_ResolveSym(game ? "2ship" : "soh", game ? "MM_ComboCheckSnapshot" : "SOH_ComboCheckSnapshot"));
     ComboCheckInfo info{ 0, -1, -1 };
-    if (snapshot[game])
-        snapshot[game](&info, nullptr, nullptr);
+    if (const auto snapshot = Snapshot(game))
+        snapshot(&info, nullptr, nullptr);
     auto deck = std::dynamic_pointer_cast<LUS::ControlDeck>(Ship::Context::GetRawInstance()->GetControlDeck());
     const auto* pads = deck ? deck->GetPads() : nullptr;
     const bool menu = CVarGetInteger("gOpenWindows.Menu", 0) || ImGui::GetIO().WantTextInput;
