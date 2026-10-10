@@ -112,6 +112,8 @@ void Setup_InitImpl(SetupState* this) {
             gSaveContext.save.playerForm = PLAYER_FORM_HUMAN;
             gSaveContext.save.equippedMask = PLAYER_MASK_NONE;
             gSaveContext.save.entrance = songArrival;
+            // Same owl-statue fix-up as Sram_OpenSave/Combo_ApplyOwlSaveOpen; Play_Init's 0xFFEF block
+            // still remaps the other cleared-temple scenes (Woodfall, Ikana Canyon, Great Bay, Zora Cape).
             if (songArrival == ENTRANCE(SOUTHERN_SWAMP_POISONED, 10) &&
                 CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE))
                 gSaveContext.save.entrance = ENTRANCE(SOUTHERN_SWAMP_CLEARED, 10);
