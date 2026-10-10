@@ -6119,6 +6119,11 @@ extern "C" int Combo_MM_AdultResourcesReady(void) {
            Combo_MM_ChildBootResourcesReady() && Combo_MM_HoverCircleResourcesReady() &&
            Combo_MM_AdultGearIconsReady() && Combo_MM_AdultGearGiReady() && ComboAdultMM::BuildAdultHybridSequence();
 }
+// The combo layer ANDs a seed's faroreRules.crossAge with this before configuring either engine's Farore
+// runtime or preflighting an entrance, so they agree with the MM save and oracle (RO_MM_CROSS_AGE kept off).
+extern "C" COMBO_EXPORT int MM_AdultRuntimeReady(void) {
+    return Combo_MM_AdultResourcesReady();
+}
 // Eligibility is checked before any legacy normalization or loadout mutation.
 extern "C" int Combo_MM_AdultConfigureBoundSeed(int fileNum) {
     if (fileNum < 0 || fileNum > 2 || fileNum != gSaveContext.fileNum)
