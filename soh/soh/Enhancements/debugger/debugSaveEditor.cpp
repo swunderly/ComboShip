@@ -580,7 +580,7 @@ void DrawInventoryTab() {
             std::string itemName;
             bool hasItemIcon = false;
             if (item == ITEM_ROCS_FEATHER) {
-                textureName = itemMapping.at(RG_ROCS_FEATHER).name;
+                textureName = "ROCS_FEATHER";
                 itemName = "Roc's Feather";
                 hasItemIcon = true;
             } else if (const auto mappedItem = itemMapping.find(item);
