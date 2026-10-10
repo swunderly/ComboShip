@@ -87,6 +87,18 @@ int main(){
   assert(ReadInteger(mask,-1)==stored);
   std::cout << "Selected Mask Quest value " << stored << "\n";
  }
+ // Settings of a pre-0.3.9 seed have no rule block: edits must produce a block the readers accept,
+ // keep values already written into a partial block, and mirror the native OoT logic option.
+ const char* bfa="gRandoSettings.BlueFireArrows";
+ document["gameplayRules"]={{"values",{{"gEnhancements.OpenAllHours",1}}}};document["oot"]["settings"][bfa]=0;
+ assert(ReadInteger("gEnhancements.OpenAllHours",0)==1);
+ WriteInteger(bfa,1);WriteInteger("gEnhancements.BlueFireArrows",1);
+ assert(IsGameplayRuleBlock(document["gameplayRules"])&&document["gameplayRules"]["version"]==2);
+ const auto rules=NormalizeGameplayRuleSnapshot(document["gameplayRules"]);
+ assert(rules["logicValues"]["gEnhancements.BlueFireArrows"]==1&&rules["values"]["gEnhancements.OpenAllHours"]==1);
+ assert(document["oot"]["settings"][bfa]==1);
+ WriteInteger(bfa,0);assert(document["oot"]["settings"][bfa]==0);
+ std::cout << "Upgraded a legacy rule block and mirrored Blue Fire Arrows logic\n";
  ImGui::DestroyContext();std::cout << "PASS: production dropdown selection/refresh remains valid\n";
 }
 '''

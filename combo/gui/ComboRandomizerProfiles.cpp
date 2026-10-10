@@ -8,6 +8,7 @@
 #include "ComboTricksModel.h"
 #include "ComboRuleWarning.h"
 #include "rando/GameplayRules.h"
+#include "rando/GameplayRuleSnapshots.h"
 #include "rando/GenerationRules.h"
 #include <libultraship/libultraship.h>
 #include <fast/Fast3dGui.h>
@@ -55,22 +56,37 @@ static bool Response(const char* raw) {
     error = reply.value("error", std::string());
     return error.empty();
 }
+// Runtime application and generation read only a versioned rule block. Settings of seeds saved
+// before 0.3.9 have none, and version 1 derives logic from the runtime values, so give the
+// document a complete version 2 block derived from its own fields (never from another file's
+// CVars), keeping any rule values already written into a partial block.
+static Json& RuleBlock() {
+    auto& block = document["gameplayRules"];
+    if (IsGameplayRuleBlock(block) && block["version"] == 2)
+        return block;
+    auto rules = GameplayRulesForSeed(document);
+    if (block.is_object() && !IsGameplayRuleBlock(block)) {
+        for (const char* field : { "values", "logicValues", "mmTricks" })
+            if (block.contains(field) && block[field].is_object())
+                for (const auto& value : block[field].items())
+                    rules[field][value.key()] = value.value();
+        if (block.contains("ootTricks") && block["ootTricks"].is_string())
+            rules["ootTricks"] = block["ootTricks"];
+    }
+    block = std::move(rules);
+    return block;
+}
 static Json* Field(const char* key, bool create) {
     if (!document.is_object())
         return nullptr;
     for (const auto& rule : kGameplayRules) {
-        if (LogicRuleKey(rule.name) == key) {
-            auto& values = document["gameplayRules"]["logicValues"];
-            if (create && !values.is_object())
-                values = Json::object();
-            return create || values.contains(rule.name) ? &values[rule.name] : nullptr;
-        }
-        if (!std::strcmp(key, rule.name)) {
-            auto& values = document["gameplayRules"]["values"];
-            if (create && !values.is_object())
-                values = Json::object();
-            return create || values.contains(key) ? &values[key] : nullptr;
-        }
+        const bool logic = LogicRuleKey(rule.name) == key;
+        if (!logic && std::strcmp(key, rule.name))
+            continue;
+        auto& values = RuleBlock()[logic ? "logicValues" : "values"];
+        if (create && !values.is_object())
+            values = Json::object();
+        return create || values.contains(rule.name) ? &values[rule.name] : nullptr;
     }
     const bool oot = std::strncmp(key, "gRandoSettings.", 15) == 0,
                mm = std::strncmp(key, "gRando.", 7) == 0 || std::strncmp(key, "gCombo.Tricks.MM.", 17) == 0;
@@ -109,6 +125,11 @@ void WriteInteger(const char* key, int value) {
                 WarnAboutRuleChange(key, selected);
         *Field(key, true) = value;
         dirty = true;
+        // Two logic keys are also native OoT options, which generation applies after the rules.
+        for (const auto& rule : kGameplayRules)
+            if (const auto native = LogicRuleKey(rule.name); native.rfind("gRandoSettings.", 0) == 0)
+                if (const auto* logic = Field(native.c_str(), false); logic && logic->is_number_integer())
+                    document["oot"]["settings"][native] = *logic;
         if (!std::strcmp(key, "gRando.Options.RO_LOGIC") && value == 3)
             for (const auto& clear : catalog.at("mm").at("vanillaIncompatible"))
                 *Field(clear.get<std::string>().c_str(), true) = 0;
