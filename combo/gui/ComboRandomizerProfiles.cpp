@@ -1147,8 +1147,10 @@ void DrawAdvanced() {
             dumpedView = view;
             raw = InspectedSeed().dump(2);
         }
-        // Unwrapped text lets ImGui skip the lines outside the window.
+        // Unwrapped text lets ImGui skip the lines outside the window; long lines scroll sideways.
+        ImGui::BeginChild("##SeedDump", ImVec2(0, ImGui::GetFontSize() * 20), 0, ImGuiWindowFlags_HorizontalScrollbar);
         ImGui::TextUnformatted(raw.c_str(), raw.c_str() + raw.size());
+        ImGui::EndChild();
     }
 }
 void DrawTricks() {
