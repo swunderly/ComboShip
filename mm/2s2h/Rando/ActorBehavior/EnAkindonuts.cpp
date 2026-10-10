@@ -281,12 +281,6 @@ void EnAkindonuts_ReplaceNotEligibleMessage(RandoInf randoInf, u16* textId, bool
 void EnAkindonuts_IsEligible(RandoCheckId randoCheckId, RandoInf randoInf, bool* should) {
     auto& randoSaveCheck = RANDO_SAVE_CHECKS[randoCheckId];
 
-#ifdef COMBO_BUILD
-    if (randoSaveCheck.randoItemId == RI_MAGIC_BEAN && INV_CONTENT(ITEM_MAGIC_BEANS) != ITEM_MAGIC_BEANS) {
-        *should = false;
-        return;
-    }
-#endif
     if (!randoSaveCheck.shuffled || Flags_GetRandoInf(randoInf)) {
         return;
     }
@@ -408,6 +402,14 @@ void Rando::ActorBehavior::InitEnAkindonutsBehavior() {
                                                loadFromMessageTable);
     });
 
+#ifdef COMBO_BUILD
+    // The bean scrub's "can't buy" result (pinned En_Akindonuts_DisplayTextBox 0x15ee)
+    COND_ID_HOOK(OnOpenText, 0x15EE, IS_RANDO, [](u16* textId, bool* loadFromMessageTable) {
+        EnAkindonuts_ReplaceNotEligibleMessage(RANDO_INF_PURCHASED_BEANS_FROM_SOUTHERN_SWAMP_SCRUB, textId,
+                                               loadFromMessageTable);
+    });
+#endif
+
     COND_VB_SHOULD(VB_AKINDONUTS_CONSIDER_ELIGIBLE_FOR_POTION_REFILL, IS_RANDO, {
         EnAkindonuts* enAkindonuts = va_arg(args, EnAkindonuts*);
         switch (ENAKINDONUTS_GET_3(&enAkindonuts->actor)) {
@@ -481,11 +483,17 @@ void Rando::ActorBehavior::InitEnAkindonutsBehavior() {
 
     // What? You already have a Big Bomb Bag?...
     COND_ID_HOOK(OnOpenText, 0x1601, IS_RANDO, [](u16* textId, bool* loadFromMessageTable) {
+#ifdef COMBO_BUILD
+        // COMBO's Goron scrub keeps selling recovery hearts, so this is its "can't buy" result (pinned 0x1601)
+        EnAkindonuts_ReplaceNotEligibleMessage(RANDO_INF_PURCHASED_BOMB_BAG_FROM_GORON_VILLAGE_SCRUB, textId,
+                                               loadFromMessageTable);
+#else
         if (RANDO_SAVE_CHECKS[RC_GORON_VILLAGE_SCRUB_BOMB_BAG].shuffled) {
             auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
             entry.msg = "What? You already bought that from me, Only one purchase per customer allowed!\xE0";
             CustomMessage::LoadCustomMessageIntoFont(entry);
             *loadFromMessageTable = false;
         }
+#endif
     });
 }
