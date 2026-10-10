@@ -32,7 +32,7 @@ static Json snapshot, document, catalog;
 static bool refreshPending = true, snapshotValid = false;
 static int snapshotSlot = -1, snapshotView = -1, lastMenuFrame = -2;
 static double lastInspection = -1;
-static uint64_t snapshotRevision = 0;
+static uint64_t snapshotRevision = 0, snapshotSerial = 0; // serial: changes with every inspection
 static std::shared_ptr<ProfileOotPolicy::View> optionView;
 static std::set<std::string> mmBaseAvailable;
 static void RefreshOptionPolicy(bool apply);
@@ -166,6 +166,7 @@ static void RefreshSnapshot(double now, uint64_t revision) {
     if (next.contains("error"))
         throw std::runtime_error(next["error"].get<std::string>());
     snapshot = std::move(next);
+    ++snapshotSerial;
     catalog = snapshot.at("catalog");
     document = snapshot.value(view == 0 ? "draft" : view == 1 ? "savedSettings" : "generatedSettings", Json());
     RefreshOptionPolicy(false);
@@ -284,6 +285,12 @@ static void Tooltip(const char* help) {
     if (help && help[0])
         MenuTooltip(help);
 }
+// Borrow the inspected seed: a copy would duplicate both placement tables every frame.
+static const Json& InspectedSeed() {
+    static const Json none;
+    const auto seed = snapshot.find(view == 1 ? "savedSeed" : "generatedSeed");
+    return seed != snapshot.end() ? *seed : none;
+}
 void DrawWidget(const CwWidget& w, const GameMenu& game) {
     if (!active || !document.is_object()) {
         ImGui::TextDisabled("No settings for this file and view.");
@@ -381,9 +388,9 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
     ImGui::EndDisabled();
     Tooltip(policy && policy->disabled ? policy->disabledText.c_str() : w.tooltip);
     if (view != 0 && !std::strcmp(key, "gRandoSettings.GanonTrial")) {
-        const auto seed = snapshot.value(view == 1 ? "savedSeed" : "generatedSeed", Json());
+        const auto& seed = InspectedSeed();
         if (seed.is_object() && seed.contains("oot") && seed["oot"].contains("resolvedSeedRules")) {
-            const auto& trials = seed["oot"]["resolvedSeedRules"]["requiredTrials"];
+            const auto trials = seed["oot"]["resolvedSeedRules"].value("requiredTrials", Json::array());
             std::string text;
             for (const auto& id : trials) {
                 if (!text.empty())
@@ -1066,35 +1073,72 @@ void DrawHome() {
     ImGui::EndTable();
 }
 void DrawSavedPlacements() {
-    const auto seed = snapshot.value(view == 1 ? "savedSeed" : "generatedSeed", Json());
+    const auto& seed = InspectedSeed();
     if (!seed.is_object()) {
         ImGui::TextUnformatted("No seed placements are available for this file.");
         return;
     }
-    for (const char* game : { "oot", "mm" }) {
-        ImGui::SeparatorText(game[0] == 'o' ? "Ocarina of Time" : "Majora's Mask");
-        if (!seed.contains(game) || !seed[game].contains("placements"))
+    // A seed holds thousands of placements: list them once per inspection and draw only visible rows.
+    static std::vector<std::pair<std::string, std::string>> rows[2];
+    static uint64_t listed = 0;
+    static int listedView = -1;
+    if (listed != snapshotSerial || listedView != view) {
+        listed = snapshotSerial;
+        listedView = view;
+        for (int i = 0; i < 2; ++i) {
+            rows[i].clear();
+            const Json* placements = nullptr;
+            if (const auto game = seed.find(i == 0 ? "oot" : "mm"); game != seed.end() && game->is_object())
+                if (const auto found = game->find("placements"); found != game->end() && found->is_object())
+                    placements = &*found;
+            if (!placements)
+                continue;
+            for (const auto& row : placements->items())
+                rows[i].emplace_back(row.key(),
+                                     row.value().is_string() ? row.value().get<std::string>() : row.value().dump());
+        }
+    }
+    for (int i = 0; i < 2; ++i) {
+        ImGui::SeparatorText(i == 0 ? "Ocarina of Time" : "Majora's Mask");
+        if (rows[i].empty())
             continue;
-        if (ImGui::BeginTable(game, 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+        ImGui::PushID(i);
+        ImGui::BeginChild("##Placements", ImVec2(0, ImGui::GetFontSize() * 20));
+        if (ImGui::BeginTable("##Rows", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
             ImGui::TableSetupColumn("Check");
             ImGui::TableSetupColumn("Item");
             ImGui::TableHeadersRow();
-            for (const auto& row : seed[game]["placements"].items()) {
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn();
-                ImGui::TextWrapped("%s", row.key().c_str());
-                ImGui::TableNextColumn();
-                const auto label = row.value().is_string() ? row.value().get<std::string>() : row.value().dump();
-                ImGui::TextWrapped("%s", label.c_str());
-            }
+            ImGuiListClipper clipper;
+            clipper.Begin(int(rows[i].size()));
+            while (clipper.Step())
+                for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row) {
+                    const auto& [check, item] = rows[i][row];
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(check.c_str());
+                    Tooltip(check.c_str());
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(item.c_str());
+                    Tooltip(item.c_str());
+                }
             ImGui::EndTable();
         }
+        ImGui::EndChild();
+        ImGui::PopID();
     }
 }
 void DrawAdvanced() {
     if (ImGui::CollapsingHeader("Advanced seed inspection")) {
-        const auto raw = snapshot.value(view == 1 ? "savedSeed" : "generatedSeed", Json());
-        ImGui::TextWrapped("%s", raw.dump(2).c_str());
+        static std::string raw;
+        static uint64_t dumped = 0;
+        static int dumpedView = -1;
+        if (dumped != snapshotSerial || dumpedView != view) {
+            dumped = snapshotSerial;
+            dumpedView = view;
+            raw = InspectedSeed().dump(2);
+        }
+        // Unwrapped text lets ImGui skip the lines outside the window.
+        ImGui::TextUnformatted(raw.c_str(), raw.c_str() + raw.size());
     }
 }
 void DrawTricks() {
