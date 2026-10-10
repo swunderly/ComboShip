@@ -1129,6 +1129,7 @@ void DrawTricks() {
             ImGui::Separator();
             ImGui::PopID();
         }
+    const auto folded = ComboTricks::Fold(query);
     for (int game = 0; game < 2; ++game) {
         if (world && world != game + 1)
             continue;
@@ -1146,9 +1147,9 @@ void DrawTricks() {
                               help = row.value("description", std::string());
             bool on = game == 0 ? std::find(csv.begin(), csv.end(), id) != csv.end() : ReadInteger(id.c_str(), 0) != 0;
             if ((state == 1 && !on) || (state == 2 && on) || (skill && row.value("difficulty", 0) != skill - 1) ||
-                (query[0] &&
-                 (label + help + row.value("area", std::string()) + row.value("tags", std::string())).find(query) ==
-                     std::string::npos))
+                (query[0] && ComboTricks::Fold(label + ' ' + help + ' ' + row.value("area", std::string()) + ' ' +
+                                               row.value("tags", std::string()))
+                                     .find(folded) == std::string::npos))
                 continue;
             ImGui::PushID(id.c_str());
             ImGui::BeginDisabled(!Editable());
