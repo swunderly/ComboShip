@@ -13,239 +13,239 @@ inline bool ExpandedSoulCheckPrerequisite(RandoCheckId check) {
         case RC_STOCK_POT_INN_TOILET_HAND:
             return HaveExpandedSoul(ExpandedSoul::NPC_TOILET_HAND);
         case RC_BENEATH_THE_WELL_COW:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
         case RC_MOON_FIERCE_DEITY_MASK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(42));
+            return HaveExpandedSoul(ExpandedSoul::NPC_MOON_CHILDREN);
         case RC_OCEAN_SPIDER_HOUSE_WALLET:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(21));
+            return HaveExpandedSoul(ExpandedSoul::NPC_CITIZEN);
         case RC_OCEAN_SKULLTULA_ENTRANCE_RIGHT_WALL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_ENTRANCE_LEFT_WALL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_ENTRANCE_WEB:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_2ND_ROOM_CEILING_EDGE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_2ND_ROOM_CEILING_PLANK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_2ND_ROOM_JAR:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_2ND_ROOM_WEBBED_HOLE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_2ND_ROOM_BEHIND_SKULL_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_2ND_ROOM_BEHIND_SKULL_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_2ND_ROOM_WEBBED_POT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_2ND_ROOM_UPPER_POT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_2ND_ROOM_LOWER_POT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_LIBRARY_HOLE_BEHIND_PICTURE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_LIBRARY_HOLE_BEHIND_CABINET:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_LIBRARY_ON_CORNER_BOOKSHELF:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_LIBRARY_BEHIND_PICTURE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_LIBRARY_BEHIND_BOOKCASE_1:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_LIBRARY_BEHIND_BOOKCASE_2:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_LIBRARY_CEILING_EDGE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_COLORED_SKULLS_CHANDELIER_1:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_COLORED_SKULLS_CHANDELIER_2:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_COLORED_SKULLS_CHANDELIER_3:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_COLORED_SKULLS_BEHIND_PICTURE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_COLORED_SKULLS_POT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_COLORED_SKULLS_CEILING_EDGE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_STORAGE_ROOM_BEHIND_BOAT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_STORAGE_ROOM_CEILING_WEB:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_STORAGE_ROOM_BEHIND_CRATE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_STORAGE_ROOM_CRATE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_OCEAN_SKULLTULA_STORAGE_ROOM_JAR:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SECRET_SHRINE_PIECE_OF_HEART_CHEST:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(45));
+            return HaveExpandedSoul(ExpandedSoul::NPC_POE_COLLECTOR);
         case RC_SWAMP_SPIDER_HOUSE_MASK_OF_TRUTH:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(21));
+            return HaveExpandedSoul(ExpandedSoul::NPC_CITIZEN);
         case RC_SWAMP_SKULLTULA_MAIN_ROOM_NEAR_CEILING:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MAIN_ROOM_LOWER_RIGHT_SOFT_SOIL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MAIN_ROOM_LOWER_LEFT_SOFT_SOIL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MAIN_ROOM_UPPER_SOFT_SOIL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MAIN_ROOM_UPPER_PILLAR:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MAIN_ROOM_PILLAR:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MAIN_ROOM_WATER:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MAIN_ROOM_JAR:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_GOLD_ROOM_HIVE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_GOLD_ROOM_NEAR_CEILING:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_GOLD_ROOM_PILLAR:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_GOLD_ROOM_WALL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_TREE_ROOM_HIVE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_TREE_ROOM_GRASS_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_TREE_ROOM_GRASS_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_TREE_ROOM_TREE_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_TREE_ROOM_TREE_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_TREE_ROOM_TREE_03:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MONUMENT_ROOM_LOWER_WALL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MONUMENT_ROOM_ON_MONUMENT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MONUMENT_ROOM_CRATE_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MONUMENT_ROOM_CRATE_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_MONUMENT_ROOM_TORCH:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_POT_ROOM_HIVE_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_POT_ROOM_HIVE_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_POT_ROOM_BEHIND_VINES:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_POT_ROOM_POT_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_POT_ROOM_POT_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_POT_ROOM_JAR:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_SWAMP_SKULLTULA_POT_ROOM_WALL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(5));
+            return HaveExpandedSoul(ExpandedSoul::MISC_GS);
         case RC_CLOCK_TOWN_SCRUB_DEED:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RC_KEATON_QUIZ:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(37));
+            return HaveExpandedSoul(ExpandedSoul::NPC_KEATON);
         case RC_CLOCK_TOWN_WEST_BANK_ADULTS_WALLET:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(9));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BANKER);
         case RC_CLOCK_TOWN_WEST_BANK_INTEREST:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(9));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BANKER);
         case RC_CLOCK_TOWN_WEST_BANK_PIECE_OF_HEART:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(9));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BANKER);
         case RC_CLOCK_TOWN_WEST_SISTERS_PIECE_OF_HEART:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(21));
+            return HaveExpandedSoul(ExpandedSoul::NPC_CITIZEN);
         case RC_CLOCK_TOWN_LAUNDRY_GURU_GURU:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(34));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GURU_GURU);
         case RC_BOMB_SHOP_ITEM_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(15));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BOMBCHU_SHOPKEEPER);
         case RC_BOMB_SHOP_ITEM_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(15));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BOMBCHU_SHOPKEEPER);
         case RC_BOMB_SHOP_ITEM_03:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(15));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BOMBCHU_SHOPKEEPER);
         case RC_CLOCK_TOWN_WEST_POSTMAN_MINIGAME:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(21));
+            return HaveExpandedSoul(ExpandedSoul::NPC_CITIZEN);
         case RC_SWORDSMAN_SCHOOL_PIECE_OF_HEART:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(19));
+            return HaveExpandedSoul(ExpandedSoul::NPC_CARPET_MAN);
         case RC_MAYORS_OFFICE_PIECE_OF_HEART:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(40));
+            return HaveExpandedSoul(ExpandedSoul::NPC_MAYOR_DOTOUR);
         case RC_MAYORS_OFFICE_KAFEIS_MASK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(7));
+            return HaveExpandedSoul(ExpandedSoul::NPC_AROMA);
         case RC_MILK_BAR_CIRCUS_LEADER_MASK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(28)) && HaveExpandedSoul(static_cast<ExpandedSoul>(54));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORMAN) && HaveExpandedSoul(ExpandedSoul::NPC_TOTO);
         case RC_MILK_BAR_MADAME_AROMA:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(7));
+            return HaveExpandedSoul(ExpandedSoul::NPC_AROMA);
         case RC_MILK_BAR_PURCHASE_MILK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(50));
+            return HaveExpandedSoul(ExpandedSoul::NPC_TALON);
         case RC_MILK_BAR_PURCHASE_CHATEAU:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(50));
+            return HaveExpandedSoul(ExpandedSoul::NPC_TALON);
         case RC_CLOCK_TOWN_EAST_SHOOTING_GALLERY_HIGH_SCORE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(49));
+            return HaveExpandedSoul(ExpandedSoul::NPC_SHOOTING_GALLERY_OWNER);
         case RC_CLOCK_TOWN_EAST_SHOOTING_GALLERY_PERFECT_SCORE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(49));
+            return HaveExpandedSoul(ExpandedSoul::NPC_SHOOTING_GALLERY_OWNER);
         case RC_CLOCK_TOWN_EAST_TREASURE_CHEST_GAME_GORON:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(14));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BOMBCHU_BOWLING_LADY);
         case RC_STOCK_POT_INN_ROOM_KEY:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(6));
+            return HaveExpandedSoul(ExpandedSoul::NPC_ANJU);
         case RC_STOCK_POT_INN_GRANDMA_SHORT_STORY:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(43));
+            return HaveExpandedSoul(ExpandedSoul::NPC_OLD_HAG);
         case RC_STOCK_POT_INN_GRANDMA_LONG_STORY:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(43));
+            return HaveExpandedSoul(ExpandedSoul::NPC_OLD_HAG);
         case RC_GORON_VILLAGE_SCRUB_DEED:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RC_GORON_VILLAGE_SCRUB_BOMB_BAG:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RC_GORON_VILLAGE_MEDIGORON:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(41));
+            return HaveExpandedSoul(ExpandedSoul::NPC_MEDIGORON);
         case RC_GORON_SHRINE_FULL_LULLABY:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(30));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORON_CHILD);
         case RC_GORON_SHOP_ITEM_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(32));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORON_SHOPKEEPER);
         case RC_GORON_SHOP_ITEM_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(32));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORON_SHOPKEEPER);
         case RC_GORON_SHOP_ITEM_03:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(32));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORON_SHOPKEEPER);
         case RC_GREAT_BAY_COAST_FISHERMAN_MINIGAME:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(20));
+            return HaveExpandedSoul(ExpandedSoul::NPC_CHEST_GAME_OWNER);
         case RC_GREAT_BAY_COAST_COW_FRONT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
         case RC_GREAT_BAY_COAST_COW_BACK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
         case RC_GREAT_BAY_COAST_NEW_WAVE_BOSSA_NOVA:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(48));
+            return HaveExpandedSoul(ExpandedSoul::NPC_SCIENTIST);
         case RC_BENEATH_THE_GRAVEYARD_SONG_OF_STORMS:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(22));
+            return HaveExpandedSoul(ExpandedSoul::NPC_COMPOSER_BROS);
         case RC_IKANA_CANYON_SCRUB_HUGE_RUPEE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RC_IKANA_CANYON_SCRUB_POTION_REFILL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(45));
+            return HaveExpandedSoul(ExpandedSoul::NPC_POE_COLLECTOR);
         case RC_GORMAN_TRACK_GARO_MASK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(28));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORMAN);
         case RC_GORMAN_MILK_PURCHASE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(28));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORMAN);
         case RC_MOUNTAIN_VILLAGE_DON_GERO_MASK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(29));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORON);
         case RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(31));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORON_ELDER);
         case RC_MOUNTAIN_VILLAGE_SMITHY_RAZOR_SWORD:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(13));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BLACKSMITHS);
         case RC_SWAMP_SHOOTING_GALLERY_HIGH_SCORE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(10));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BAZAAR_SHOPKEEPER);
         case RC_SWAMP_SHOOTING_GALLERY_PERFECT_SCORE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(10));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BAZAAR_SHOPKEEPER);
         case RC_ROMANI_RANCH_EPONAS_SONG:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(39));
+            return HaveExpandedSoul(ExpandedSoul::NPC_MALON);
         case RC_ROMANI_RANCH_GROG:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(2)) && HaveExpandedSoul(static_cast<ExpandedSoul>(33));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_CUCCO) && HaveExpandedSoul(ExpandedSoul::NPC_GROG);
         case RC_DOGGY_RACETRACK_PIECE_OF_HEART:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(3)) && HaveExpandedSoul(static_cast<ExpandedSoul>(26));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_DOG) && HaveExpandedSoul(ExpandedSoul::NPC_DOG_LADY);
         case RC_ROMANI_RANCH_BARN_COW_LEFT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
         case RC_ROMANI_RANCH_BARN_COW_MIDDLE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
         case RC_ROMANI_RANCH_BARN_COW_RIGHT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
         case RC_ROMANI_RANCH_FIELD_COW_ENTRANCE:
             return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
         case RC_ROMANI_RANCH_FIELD_COW_NEAR_HOUSE_BACK:
@@ -277,45 +277,45 @@ inline bool ExpandedSoulCheckPrerequisite(RandoCheckId check) {
         case RC_IKANA_CANYON_TINGLE_MAP_02:
             return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
         case RC_SOUTHERN_SWAMP_SCRUB_DEED:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RC_SOUTHERN_SWAMP_SCRUB_BEANS:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RC_TOURIST_INFORMATION_GOOD_PHOTO:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(55));
+            return HaveExpandedSoul(ExpandedSoul::NPC_TOURIST_CENTER);
         case RC_HAGS_POTION_SHOP_ITEM_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(38));
+            return HaveExpandedSoul(ExpandedSoul::NPC_KOUME_KOTAKE);
         case RC_HAGS_POTION_SHOP_ITEM_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(38));
+            return HaveExpandedSoul(ExpandedSoul::NPC_KOUME_KOTAKE);
         case RC_HAGS_POTION_SHOP_ITEM_03:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(38));
+            return HaveExpandedSoul(ExpandedSoul::NPC_KOUME_KOTAKE);
         case RC_TERMINA_FIELD_KAMARO_MASK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(21));
+            return HaveExpandedSoul(ExpandedSoul::NPC_CITIZEN);
         case RC_TERMINA_FIELD_COW_FRONT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
         case RC_TERMINA_FIELD_COW_BACK:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
         case RC_TERMINA_FIELD_COW_GROTTO_BUTTERFLY_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(0));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_BUTTERFLY);
         case RC_TERMINA_FIELD_COW_GROTTO_BUTTERFLY_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(0));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_BUTTERFLY);
         case RC_TERMINA_FIELD_COW_GROTTO_BUTTERFLY_03:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(0));
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_BUTTERFLY);
         case RC_GORON_RACETRACK_GOLD_DUST:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(30));
+            return HaveExpandedSoul(ExpandedSoul::NPC_GORON_CHILD);
         case RC_ZORA_HALL_SCENE_LIGHTS:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(56));
+            return HaveExpandedSoul(ExpandedSoul::NPC_ZORA);
         case RC_ZORA_SHOP_ITEM_01:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(58));
+            return HaveExpandedSoul(ExpandedSoul::NPC_ZORA_SHOPKEEPER);
         case RC_ZORA_SHOP_ITEM_02:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(58));
+            return HaveExpandedSoul(ExpandedSoul::NPC_ZORA_SHOPKEEPER);
         case RC_ZORA_SHOP_ITEM_03:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(58));
+            return HaveExpandedSoul(ExpandedSoul::NPC_ZORA_SHOPKEEPER);
         case RC_ZORA_HALL_EVANS_PIECE_OF_HEART:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(57));
+            return HaveExpandedSoul(ExpandedSoul::NPC_ZORA_MUSICIANS);
         case RC_ZORA_HALL_SCRUB_POTION_REFILL:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RC_ZORA_HALL_SCRUB_DEED:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_01:
             return HaveExpandedSoul(ExpandedSoul::ANIMAL_BUTTERFLY);
         case RC_DEKU_PALACE_BEAN_SALESMAN_GROTTO_BUTTERFLY_02:
@@ -367,49 +367,49 @@ inline bool ExpandedSoulCheckPrerequisite(RandoCheckId check) {
 inline bool ExpandedSoulEventPrerequisite(RandoEvent event) {
     switch (event) {
         case RE_HIDE_SEEK_DAY1:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(16));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BOMBERS);
         case RE_HIDE_SEEK_DAY2:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(16));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BOMBERS);
         case RE_HIDE_SEEK_DAY3:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(16));
+            return HaveExpandedSoul(ExpandedSoul::NPC_BOMBERS);
         case RE_MEET_KAFEI:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(36));
+            return HaveExpandedSoul(ExpandedSoul::NPC_KAFEI);
         case RE_POSTMAN_FREEDOM:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(21));
+            return HaveExpandedSoul(ExpandedSoul::NPC_CITIZEN);
         case RE_HONEY_DARLING_REWARD_DAY1:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(35));
+            return HaveExpandedSoul(ExpandedSoul::NPC_HONEY_DARLING);
         case RE_HONEY_DARLING_REWARD_DAY2:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(35));
+            return HaveExpandedSoul(ExpandedSoul::NPC_HONEY_DARLING);
         case RE_HONEY_DARLING_REWARD_DAY3:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(35));
+            return HaveExpandedSoul(ExpandedSoul::NPC_HONEY_DARLING);
         case RE_SETUP_MEET_ANJU:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(6));
+            return HaveExpandedSoul(ExpandedSoul::NPC_ANJU);
         case RE_ANJU_MIDNIGHT_MEETING:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(6));
+            return HaveExpandedSoul(ExpandedSoul::NPC_ANJU);
         case RE_DELIVER_PENDANT:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(6));
+            return HaveExpandedSoul(ExpandedSoul::NPC_ANJU);
         case RE_DEKU_PLAYGROUND_1:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(44));
+            return HaveExpandedSoul(ExpandedSoul::NPC_PLAYGROUND_SCRUBS);
         case RE_DEKU_PLAYGROUND_2:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(44));
+            return HaveExpandedSoul(ExpandedSoul::NPC_PLAYGROUND_SCRUBS);
         case RE_DEKU_PLAYGROUND_3:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(44));
+            return HaveExpandedSoul(ExpandedSoul::NPC_PLAYGROUND_SCRUBS);
         case RE_TERMINA_FIELD_SCRUB_ENTERED_GROTTO:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
+            return HaveExpandedSoul(ExpandedSoul::MISC_BUSINESS_SCRUB);
         case RE_ACCESS_DEKU_PRINCESS:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(25));
+            return HaveExpandedSoul(ExpandedSoul::NPC_DEKU_PRINCESS);
         case RE_ACCESS_PICTOGRAPH_DEKU_KING:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(24));
+            return HaveExpandedSoul(ExpandedSoul::NPC_DEKU_KING);
         case RE_RETURN_DEKU_PRINCESS:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(24));
+            return HaveExpandedSoul(ExpandedSoul::NPC_DEKU_KING);
         case RE_ACCESS_SEAHORSE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(20));
+            return HaveExpandedSoul(ExpandedSoul::NPC_CHEST_GAME_OWNER);
         case RE_BREAK_SHARP_CURSE:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(22));
+            return HaveExpandedSoul(ExpandedSoul::NPC_COMPOSER_BROS);
         case RE_COWS_FROM_ALIENS:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(39));
+            return HaveExpandedSoul(ExpandedSoul::NPC_MALON);
         case RE_SAVED_KOUME:
-            return HaveExpandedSoul(static_cast<ExpandedSoul>(38));
+            return HaveExpandedSoul(ExpandedSoul::NPC_KOUME_KOTAKE);
         default:
             return true;
     }
