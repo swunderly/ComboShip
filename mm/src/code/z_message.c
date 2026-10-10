@@ -2112,15 +2112,15 @@ void func_8014CCB4(PlayState* play, s16* decodedBufPos, s32* offset, f32* arg3) 
     s32 k = *offset;
     f32 f = *arg3;
 
-    Font_LoadChar(play, 0x838B, k); // 0x838B = ãƒ« in JISX0213
+    Font_LoadChar(play, 0x838B, k); // 0x838B = ル in JISX0213
     k += FONT_CHAR_TEX_SIZE;
     msgCtx->decodedBuffer.wchar[t] = 0x838B;
     t++;
-    Font_LoadChar(play, 0x8373, k); // 0x8373 = ãƒ” in JISX0213
+    Font_LoadChar(play, 0x8373, k); // 0x8373 = ピ in JISX0213
     k += FONT_CHAR_TEX_SIZE;
     msgCtx->decodedBuffer.wchar[t] = 0x8373;
     t++;
-    Font_LoadChar(play, 0x815C, k); // 0x815C = â€• in JISX0213
+    Font_LoadChar(play, 0x815C, k); // 0x815C = ― in JISX0213
     k += FONT_CHAR_TEX_SIZE;
     msgCtx->decodedBuffer.wchar[t] = 0x815C;
 
@@ -2146,7 +2146,7 @@ void Message_GetTimerDigits(OSTime time, s16 digits[8]) {
     digits[1] = t / SECONDS_TO_TIMER(60);
     t -= digits[1] * SECONDS_TO_TIMER(60);
 
-    digits[2] = 0x135B; // 0x135B + 0x824F = åˆ† (minutes) in S-JIS
+    digits[2] = 0x135B; // 0x135B + 0x824F = 分 (minutes) in S-JIS
 
     // 10 seconds
     digits[3] = t / SECONDS_TO_TIMER(10);
@@ -2156,7 +2156,7 @@ void Message_GetTimerDigits(OSTime time, s16 digits[8]) {
     digits[4] = t / SECONDS_TO_TIMER(1);
     t -= digits[4] * SECONDS_TO_TIMER(1);
 
-    digits[5] = 0x1313; // 0x1313 + 0x824F = ç§’ (seconds) in S-JIS
+    digits[5] = 0x1313; // 0x1313 + 0x824F = 秒 (seconds) in S-JIS
 
     // 100 milliseconds
     digits[6] = t / SECONDS_TO_TIMER_PRECISE(0, 10);
@@ -2249,7 +2249,7 @@ void Message_LoadTime(PlayState* play, u16 curChar, s32* offset, f32* arg3, s16*
         msgCtx->decodedBuffer.wchar[p] = digits[i] + 0x824F;
         p++;
         if (i == 1) {
-            // Hours (æ™‚é–“)
+            // Hours (時間)
             Font_LoadChar(play, 0x8E9E, o);
             o += FONT_CHAR_TEX_SIZE;
             msgCtx->decodedBuffer.wchar[p] = 0x8E9E;
@@ -2259,7 +2259,7 @@ void Message_LoadTime(PlayState* play, u16 curChar, s32* offset, f32* arg3, s16*
             msgCtx->decodedBuffer.wchar[p] = 0x8E9E;
             p++;
         } else if (i == 3) {
-            // Minutes (åˆ†)
+            // Minutes (分)
             Font_LoadChar(play, 0x95AA, o);
             o += FONT_CHAR_TEX_SIZE;
             msgCtx->decodedBuffer.wchar[p] = 0x95AA;
