@@ -257,7 +257,7 @@ static void DrawGeneralOotSoul(PlayState* play, GetItemEntry* item) {
     if (index < 0)
         return;
     const unsigned colors[4][3] = { { 255, 0, 0 }, { 0, 255, 0 }, { 34, 34, 255 }, { 136, 136, 136 } };
-    unsigned family = index < 43 ? 0 : index < 89 ? 1 : index < 93 ? 2 : 3;
+    unsigned family = Rando::Souls::GeneralOotSoulFamily(index);
     const auto& c = colors[family];
     auto skull = SoulTokenList(play, gGiSkulltulaTokenDL, 5, 6, 255, 255, 255, 170, 170, 170);
     auto flame = SoulTokenList(play, gGiSkulltulaTokenFlameDL, 32, 33, c[0], c[1], c[2], c[0], c[1], c[2]);
