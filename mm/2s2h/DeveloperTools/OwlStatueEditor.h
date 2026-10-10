@@ -1,10 +1,10 @@
 #pragma once
 
-// C-compatible destination test shared by the native song menu and editor.
-// Legacy debug "All" saves can contain reserved upper bits without real owls.
+// C-compatible Soaring test used by native Soaring and the pause owl warp. Like vanilla, any set bit opens
+// the owl map: bit 15 alone is the index-warp state PauseOwlWarp handles. The 10-bit mask is for the editor.
 #define MM_OWL_STATUE_COUNT 10u
 #define MM_OWL_STATUE_ACTIVATION_MASK ((1u << MM_OWL_STATUE_COUNT) - 1u)
-#define MM_HAS_ACTIVATED_OWL_STATUES(flags) (((flags) & MM_OWL_STATUE_ACTIVATION_MASK) != 0u)
+#define MM_HAS_ACTIVATED_OWL_STATUES(flags) ((flags) != 0u)
 
 #ifdef __cplusplus
 #include <cstdint>
