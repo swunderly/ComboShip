@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 /** First run asks for the two games; maintenance tools live in App options. */
 public final class MainActivity extends Activity {
     static final String MANAGE="app-options";
-    private static final int OOT=10, MM=11, MOD_OOT=12, MOD_MM=13, BACKUP=14, FILE_ACCESS=15, ADULT_RESOURCES=16;
+    private static final int OOT=10, MM=11, MOD_OOT=12, MOD_MM=13, BACKUP=14, FILE_ACCESS=15;
     private static final int BACKGROUND=0xFF0E1922, PANEL=0xFF192A36, BORDER=0xFF2D4352;
     private static final int TEXT=0xFFF5F4EF, MUTED=0xFFAABDC8, GOLD=0xFFE8C77A, GREEN=0xFF95D8B5;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
@@ -252,8 +252,8 @@ public final class MainActivity extends Activity {
                 case 0:new AlertDialog.Builder(this).setTitle("Manage ROMs")
                     .setItems(new String[]{"Choose Ocarina of Time ROM","Choose Majora’s Mask ROM"},(d,w)->pick(w==0?OOT:MM)).setNegativeButton("Close",null).show();break;
                 case 1:new AlertDialog.Builder(this).setTitle("Mods and recovery")
-                    .setItems(new String[]{"Import an OoT mod archive","Import an MM mod archive","Play without mods","Import PC-prepared Adult resources"},(d,w)->{
-                        if(w==2)launch(true);else if(w==3)new AlertDialog.Builder(this).setTitle("Prepared Adult resources").setMessage("Choose the archive prepared on your PC from your imported OoT and MM ROMs. Existing resources are replaced only after validation. Gameplay support remains separately checked.").setPositiveButton("Choose archive",(a,b)->pick(ADULT_RESOURCES)).setNegativeButton("Cancel",null).show();else pick(w==0?MOD_OOT:MOD_MM);
+                    .setItems(new String[]{"Import an OoT mod archive","Import an MM mod archive","Play without mods"},(d,w)->{
+                        if(w==2)launch(true);else pick(w==0?MOD_OOT:MOD_MM);
                     }).setNegativeButton("Close",null).show();break;
                 case 2:backup();break;
                 case 3:chooseStorage();break;
@@ -414,10 +414,6 @@ public final class MainActivity extends Activity {
             execute("Importing the selected mod…",()->{
                 try(InputStream in=getContentResolver().openInputStream(uri)){DataFiles.importMod(in,root,request==MOD_OOT?"soh":"2ship",name);}
             },"Mod imported.");
-        }else if(request==ADULT_RESOURCES) {
-            execute("Validating prepared Adult resources…",()->{
-                try(InputStream in=getContentResolver().openInputStream(uri)){AdultResourceImporter.importArchive(in,root); }
-            },"Prepared resources imported. The game checks native readiness on the next launch.");
         }else if(request==BACKUP) {
             execute("Backing up saves and settings…",()->{
                 try(OutputStream out=getContentResolver().openOutputStream(uri,"w")){DataFiles.exportBackup(this,root,out);}
