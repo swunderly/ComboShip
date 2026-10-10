@@ -231,7 +231,7 @@ inline GoalPredicate MakeCombinedGoal(CwGoal goal) {
 struct PathTarget {
     GameId game;
     const char* check;
-    const char* label; // OoTMM boss.ts name; the hint tracker shows "Path to <label>"
+    const char* label; // OoTMM boss.ts name, stored as a hint's pathTarget
     const char* path;  // OoTMM hint.c path name, as the hint text says it
     bool namedItem = false;
 };

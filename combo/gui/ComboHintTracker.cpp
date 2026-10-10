@@ -4,6 +4,7 @@
 #include "ComboExport.h"
 #include "ComboWidgetStyle.h"
 #include "ComboMenuLayout.h"
+#include "rando/ComboPlaythrough.h" // PathHintName
 #include <imgui.h>
 #include <libultraship/libultraship.h> // CVar bridge
 #include <ship/Context.h>
@@ -270,7 +271,7 @@ void Rebuild(const std::string& hintsJson, const std::string& readJson) {
         en.label = LabelForOotKey(en.key, static_cast<int>(grp.entries.size()) + 1);
         const std::string target = e.value("pathTarget", std::string());
         if (en.read && !target.empty())
-            en.label = "Path to " + target;
+            en.label = ComboRando::PathHintName(target);
         grp.entries.push_back(std::move(en));
     });
 
@@ -286,7 +287,7 @@ void Rebuild(const std::string& hintsJson, const std::string& readJson) {
         en.read = readPool.count(idx) != 0;
         const std::string target = g.value("pathTarget", std::string());
         if (en.read && !target.empty())
-            en.label = "Path to " + target;
+            en.label = ComboRando::PathHintName(target);
         pool.entries.push_back(std::move(en));
     });
     sGroups.push_back(std::move(pool));
