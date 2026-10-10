@@ -494,8 +494,8 @@ struct PlaythroughResult {
     size_t reachableOot = 0, unreachableOot = 0;
     size_t reachableMm = 0, unreachableMm = 0;
     // Win-side reachability at the collected fixed point — names which side blocks a stuck seed
-    // (Ganon = OOT tower-top + Boss Key; Majora = combat-capable MM lair). Under a Triforce Hunt both mirror the
-    // combined piece count, so every shared verdict path works without a goal branch.
+    // (Ganon = OOT tower-top + Boss Key; Majora = combat-capable MM lair). Under a Triforce Hunt these
+    // stay the bosses; piecesReachable counts the pieces on checks reached at that fixed point.
     bool ganonReachable = false, majoraReachable = false;
     bool hunt = false;
     int piecesReachable = 0, piecesRequired = 0;
@@ -506,8 +506,9 @@ struct PlaythroughResult {
 // tower-top + Boss Key owned; MM adds the actual combat requirements in its virtual defeat marker).
 // sohDumpJson/mmDumpJson (optional): static-data dumps whose pool[]/fixed[] advancement flags let the
 // text log show only progression items; unknown names default to advancement so nothing is hidden.
-// progressionOnly also drops junk from playthroughOut — for the spoiler. Leave it false for validation:
-// the affordability check needs every step, including junk sitting in a priced shop slot.
+// progressionOnly also drops junk from playthroughOut and ends it at the winning sphere — for the
+// spoiler, which lists the route to the goal. Leave it false for validation: the affordability check
+// needs every step of every sphere, including junk sitting in a priced shop slot.
 inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const OracleFns& ootOracle,
                                         const OracleFns& mmOracle, const std::string& seedLabel, void (*mmRestore)(),
                                         nlohmann::json* playthroughOut = nullptr, const std::string& sohDumpJson = "",
@@ -541,7 +542,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
         log << "Beatable when the combined goal is reached: " << CwGoalName(goal) << ".\n\n";
     }
 
-    int beatableSphere = -1;
+    int beatableSphere = -1, spheresWalked = 0;
     const int kMaxSpheres = 200;
     // Latched: MM stays open once OOT can reach the Happy Mask Shop. Ungated (NO_LOGIC) = open, and an
     // MM start (#135) roots MM from the beginning, as it does in the fill.
@@ -561,6 +562,8 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
             // Continue collecting to a fixed point. Winning does not prove optional
             // checks accessible, and assuming all placed items would hide circular locks.
         }
+        // The spoiler's route ends where the goal is reached; spheres after it are not on it.
+        const bool recordSteps = playthroughOut && !(progressionOnly && beatableSphere >= 0);
 
         std::vector<Placed> newly;
         for (auto& p : placements) {
@@ -576,6 +579,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
                 << (beatableSphere < 0 ? ": (stuck before the goal)\n" : ": (collected fixed point after the goal)\n");
             break;
         }
+        ++spheresWalked;
         size_t newlyAdv = 0;
         for (auto& p : newly)
             newlyAdv += p.advancement ? 1 : 0;
@@ -591,7 +595,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
             std::string key = (p.checkGame == GAME_OOT ? "oot:" : "mm:") + p.check;
             collected.insert(key);
             (p.itemGame == GAME_OOT ? ownedOot : ownedMm).push_back(p.item);
-            if (playthroughOut && (p.advancement || !progressionOnly)) {
+            if (recordSteps && (p.advancement || !progressionOnly)) {
                 nlohmann::json step = { { "game", p.checkGame == GAME_OOT ? "oot" : "mm" },
                                         { "check", p.check },
                                         { "item", p.item },
@@ -606,7 +610,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
             log << "    [" << (p.checkGame == GAME_OOT ? "OOT" : "MM ") << "] " << p.check << "  <-  " << p.item
                 << (p.checkGame != p.itemGame ? (p.itemGame == GAME_OOT ? "  (OOT item)" : "  (MM item)") : "") << "\n";
         }
-        if (playthroughOut)
+        if (recordSteps)
             playthroughOut->push_back({ { "sphere", sphere }, { "steps", std::move(sphereSteps) } });
     }
 
@@ -676,8 +680,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
 
     std::cout << "[PLAYTHROUGH] seed '" << seedLabel << "' - " << (beatableSphere >= 0 ? "BEATABLE" : "NOT beatable")
               << (beatableSphere >= 0 ? (" at sphere " + std::to_string(beatableSphere)) : "") << "\n";
-    std::cout << "[PLAYTHROUGH] collected " << collected.size() << " items across "
-              << (beatableSphere >= 0 ? beatableSphere : kMaxSpheres)
+    std::cout << "[PLAYTHROUGH] collected " << collected.size() << " items across " << spheresWalked
               << " spheres through the reachability fixed point\n";
 
     result.beatable = beatableSphere >= 0;

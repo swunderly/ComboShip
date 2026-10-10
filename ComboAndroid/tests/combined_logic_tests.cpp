@@ -267,6 +267,15 @@ int main(){
     assert(result.beatable && result.beatableSphere==0);
     assert(result.reachableOot==2 && result.unreachableOot==1); // winning still traverses optional checks; no circular assumption
     assert(result.reachableMm==1 && result.unreachableMm==0);
+    // The spoiler's route stops at the winning sphere; validation still walks every sphere.
+    nlohmann::json routeSpoiler={{"oot",{{"Oot start",kOotTriforcePiece},{"Oot optional","Filler"}}},
+        {"mm",{{"Mm start","Open optional"}}},
+        {"foreign",nlohmann::json::array({{{"checkGame","mm"},{"checkName","Mm start"},
+            {"itemGame","oot"},{"itemName","Open optional"},{"advancement",true}}})}};
+    nlohmann::json route=nlohmann::json::array(),walk=nlohmann::json::array();
+    auto routed=RunPlaythrough(routeSpoiler.dump(),oot,mm,"route",nullptr,&route,"","",true,true,CwGoal{true,1});
+    RunPlaythrough(routeSpoiler.dump(),oot,mm,"walk",nullptr,&walk,"","",true,false,CwGoal{true,1});
+    assert(routed.beatableSphere==1 && route.size()==1 && walk.size()==2);
     nlohmann::json pathSpoiler={{"oot",{{"Oot start","Open optional"},{"Oot optional","Gyorg route"}}},
         {"mm",{{"Mm start","Filler"}}},
         {"foreign",nlohmann::json::array({{{"checkGame","oot"},{"checkName","Oot optional"},
