@@ -20,7 +20,6 @@ ComboNativeDepartureCommit sNativeDepartureCommit = nullptr;
 ComboFaroreSaveInfo& State();
 ComboReadSharedDungeon sReadDungeon = nullptr;
 ComboWriteSharedDungeon sWriteDungeon = nullptr;
-bool sSharedDungeonEnabled = false;
 int sDungeonDepartureAge = -1, sDungeonDepartureEntrance = -1, sDungeonArrivalFile = -1, sDungeonArrivalAge = -1,
     sDungeonArrivalEntrance = -1;
 void ReadDungeon() {
@@ -255,9 +254,6 @@ extern "C" void Combo_MMFaroreDispel() {
     Audio_PlaySfx_AtPos(&fw.pos, NA_SE_PL_MAGIC_WIND_VANISH);
     SyncOot(age);
 }
-extern "C" COMBO_EXPORT void MM_ConfigureSharedDungeonRules(int enabled) {
-    sSharedDungeonEnabled = enabled != 0;
-}
 extern "C" COMBO_EXPORT void MM_SetSharedDungeonBridge(ComboReadSharedDungeon read, ComboWriteSharedDungeon write) {
     sReadDungeon = read;
     sWriteDungeon = write;
@@ -411,7 +407,7 @@ extern "C" void Combo_MMFarorePrepareArrival() {
     State().point[fwAge].pos = *pos;
 }
 extern "C" void Combo_MMFaroreCaptureDungeon(PlayState* play) {
-    if (!sEnabled && !sSharedDungeonEnabled)
+    if (!sEnabled)
         return;
     ReadDungeon();
     switch (play->sceneId) {
@@ -463,7 +459,7 @@ extern "C" void Combo_MMFaroreCaptureDungeon(PlayState* play) {
     WriteDungeon();
 }
 extern "C" void Combo_MMFaroreDeathWarp(PlayState* play) {
-    if (!sEnabled && !sSharedDungeonEnabled)
+    if (!sEnabled)
         return;
     // Pinned save.c DeathWarpWrapper, same-engine full typed restore.
     ReadDungeon();
