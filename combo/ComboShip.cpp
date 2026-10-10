@@ -746,10 +746,13 @@ static nlohmann::json sAnchorEvents = nlohmann::json::object();
 static int sAnchorJournalSlot = -1;
 static uint32_t sAnchorJournalSeed = 0;
 
+static void CaptureSaveRules(int fileNum);
+
 // Called on OoT's game thread when it copies SaveContext for its save worker.
 // Never sample a newer journal from the worker after the inventory was captured.
 static const char* Combo_SnapshotAnchorJournal(int fileNum) {
     thread_local std::string result;
+    CaptureSaveRules(fileNum); // the worker persists these rules; it must never read CVars itself
     std::scoped_lock lock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
     result.clear();
     if (sAnchorJournalSlot == fileNum) {
@@ -786,6 +789,20 @@ static void RestoreGameplayRules(const nlohmann::json& rules, int slot) {
     if (sSetOotTricksCsv)
         sSetOotTricksCsv(rules.value("ootTricks", std::string()).c_str());
     sGameplayRulesSlot = slot;
+}
+// OoT's save worker must not read CVars: the store is unlocked, and setting a string frees the old
+// buffer while the main thread rewrites rules on every load. Game-thread code captures the loaded
+// slot's live rules here (slot bind, each OoT save snapshot, each MM save); the worker copies them.
+static std::mutex sSaveRulesMutex;
+static int sSaveRulesSlot = -1;
+static nlohmann::json sSaveRules;
+static void CaptureSaveRules(int fileNum) {
+    if (fileNum != sGameplayRulesSlot)
+        return;
+    auto rules = SnapshotGameplayRules();
+    std::lock_guard<std::mutex> lock(sSaveRulesMutex);
+    sSaveRulesSlot = fileNum;
+    sSaveRules = std::move(rules);
 }
 
 // A saved song map is immutable seed data; these flags are intentional per-run overrides.
@@ -855,8 +872,11 @@ static void Combo_WriteGameSave(int game, int fileNum, const char* json) {
         }
         c[key] = std::move(block);
         // Per-run edits remain allowed. Save them separately from the original generated rules.
-        if (sGameplayRulesSlot == fileNum && c["combo"].contains("gameplayRules"))
-            c["combo"]["gameplayRules"] = SnapshotGameplayRules();
+        if (game == ComboRando::GAME_MM)
+            CaptureSaveRules(fileNum); // MM saves synchronously on the game thread
+        std::lock_guard<std::mutex> rulesLock(sSaveRulesMutex);
+        if (sSaveRulesSlot == fileNum && c["combo"].contains("gameplayRules"))
+            c["combo"]["gameplayRules"] = sSaveRules;
     } catch (...) { return; }
     if (game == ComboRando::GAME_MM && sAnchorJournalSlot == fileNum) {
         // MM writes a complete save synchronously on the game thread.
@@ -3535,6 +3555,7 @@ static void Combo_OnOOTSaveInit(int fileNum) {
             FlushContainer(fileNum);
         }
         RestoreGameplayRules(SeedGameplayRules(seed), fileNum);
+        CaptureSaveRules(fileNum);
         InstallSongTravel(seed.value("songTravel", nlohmann::json()));
         RefreshGameplayRuntime();
         LoadComboCompletion(fileNum); // refresh the in-memory latch + push this seed's goal into both DLLs
@@ -3629,6 +3650,7 @@ static void Combo_OnOOTSaveLoad(int fileNum) {
             SOH_SetMmVisited((c["combo"].value("visitedGames", 0) & 2) || c["combo"].value("lastGame", 0) == 1);
     }
     RestoreGameplayRules(rules, fileNum);
+    CaptureSaveRules(fileNum);
     LoadComboCompletion(fileNum); // refresh both-bosses-beaten flags for this slot
     // Push the slot's baked combo rando (foreign map + cross-hints) into both DLLs, once per load.
     {
