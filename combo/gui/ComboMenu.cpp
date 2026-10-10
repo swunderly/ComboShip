@@ -1411,9 +1411,10 @@ bool DrawRuleCheckbox(const char* label, bool* enabled) {
 void DrawGameplayRules(bool randomizer, const std::string& page, int world,
                        ComboRando::MenuRuleFocus* focus = nullptr) {
     auto& model = ComboMenuModel::Get();
+    // Randomizer edits the selected file's next seed. Enhancements change the running game: its
+    // live rules, which the save keeps per run, and its logic locks restored from the loaded seed.
     auto apply = [&](const char* name, int value) {
-        const auto* rule = FindGameplayRule(name);
-        if (randomizer || (ProfileUI::Active() && rule && !rule->runtimeOnly)) {
+        if (randomizer) {
             ProfileUI::WriteInteger(name, value);
             return;
         }
@@ -1428,10 +1429,7 @@ void DrawGameplayRules(bool randomizer, const std::string& page, int world,
             model.Mm().applyCVarChange(name);
     };
     auto read = [randomizer](const char* name, int fallback) {
-        const auto* rule = FindGameplayRule(name);
-        return randomizer || (ProfileUI::Active() && rule && !rule->runtimeOnly)
-                   ? ProfileUI::ReadInteger(name, fallback)
-                   : CVarGetInteger(name, fallback);
+        return randomizer ? ProfileUI::ReadInteger(name, fallback) : CVarGetInteger(name, fallback);
     };
     std::vector<const GameplayRule*> rules;
     for (const auto& rule : kGameplayRules) {
@@ -1466,8 +1464,7 @@ void DrawGameplayRules(bool randomizer, const std::string& page, int world,
         const int required = !randomizer && !rule.runtimeOnly ? ReadGameplayRule(rule, true, read) : 0;
         if (required)
             value = required;
-        ImGui::BeginDisabled(required ||
-                             (!randomizer && !rule.runtimeOnly && ProfileUI::Active() && !ProfileUI::Editable()));
+        ImGui::BeginDisabled(required);
         bool changed = false;
         if (rule.maximum == 1) {
             bool enabled = value != 0;
