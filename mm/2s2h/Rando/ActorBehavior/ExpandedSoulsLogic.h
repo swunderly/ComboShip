@@ -246,6 +246,36 @@ inline bool ExpandedSoulCheckPrerequisite(RandoCheckId check) {
             return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
         case RC_ROMANI_RANCH_BARN_COW_RIGHT:
             return HaveExpandedSoul(static_cast<ExpandedSoul>(1));
+        case RC_ROMANI_RANCH_FIELD_COW_ENTRANCE:
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
+        case RC_ROMANI_RANCH_FIELD_COW_NEAR_HOUSE_BACK:
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
+        case RC_ROMANI_RANCH_FIELD_COW_NEAR_HOUSE_FRONT:
+            return HaveExpandedSoul(ExpandedSoul::ANIMAL_COW);
+        case RC_CLOCK_TOWN_NORTH_TINGLE_MAP_01:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_CLOCK_TOWN_NORTH_TINGLE_MAP_02:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_ROAD_TO_SOUTHERN_SWAMP_TINGLE_MAP_01:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_ROAD_TO_SOUTHERN_SWAMP_TINGLE_MAP_02:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_TWIN_ISLANDS_TINGLE_MAP_01:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_TWIN_ISLANDS_TINGLE_MAP_02:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_MILK_ROAD_TINGLE_MAP_01:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_MILK_ROAD_TINGLE_MAP_02:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_GREAT_BAY_COAST_TINGLE_MAP_01:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_GREAT_BAY_COAST_TINGLE_MAP_02:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_IKANA_CANYON_TINGLE_MAP_01:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
+        case RC_IKANA_CANYON_TINGLE_MAP_02:
+            return HaveExpandedSoul(ExpandedSoul::NPC_TINGLE);
         case RC_SOUTHERN_SWAMP_SCRUB_DEED:
             return HaveExpandedSoul(static_cast<ExpandedSoul>(4));
         case RC_SOUTHERN_SWAMP_SCRUB_BEANS:
