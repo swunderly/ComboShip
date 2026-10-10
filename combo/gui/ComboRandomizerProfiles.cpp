@@ -1249,6 +1249,7 @@ extern "C" COMBO_EXPORT void ComboUI_SetRandomizerProfileStore(const ComboRandom
     callbacks = {};
     refreshPending = true;
     snapshotValid = false;
+    dirty = false; // an edit still waiting for EndFrame belongs to the replaced store
     if (!source || (source->version != 1 && source->version != 2))
         return;
     // Copy the version-1 prefix without reading beyond an older caller's struct.
