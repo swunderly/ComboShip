@@ -10352,6 +10352,15 @@ void func_8083EA44(Player* this, f32 arg1) {
         arg1 = 7.25f;
     }
 
+#ifdef COMBO_BUILD
+    // OoTMM v32.3 Player_PlayHoverSound (0x8083EA48): hovering hums instead of playing footsteps.
+    if ((Combo_MM_GetCustomBoots(this) == 2) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
+        (COMBO_HOVER_TIMER(this) != 0)) {
+        Actor_PlaySfx_FlaggedCentered1(&this->actor, NA_SE_PL_HOBBERBOOTS_LV - SFX_FLAG);
+        return;
+    }
+#endif
+
     sp24 = func_8083E9C4(this->unk_B38, arg1, 29.0f, 10.0f);
 
     if (sp24 || func_8083E9C4(this->unk_B38, arg1, 29.0f, 24.0f)) {
@@ -12797,7 +12806,7 @@ void func_80844784(PlayState* play, Player* this) {
                 Math_Vec3f_Copy(this->unk_AF0, &this->actor.world.pos);
             }
 
-            if (play->envCtx.windSpeed >= 50.0f) {
+            if (COMBO_EFFECTIVE_WIND(play) >= 50.0f) {
                 temp_fa0 = play->envCtx.windDirection.x;
                 temp_fa1 = play->envCtx.windDirection.y;
                 temp_ft4 = play->envCtx.windDirection.z;
