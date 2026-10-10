@@ -1114,15 +1114,17 @@ int Combo_SOHSoaringMapUpdate(PlayState* play) {
     sStick = stick;
     if (direction) {
         int current = play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP];
-        for (int step = 1; step <= 10; step++) {
+        // MM restarts the shrink on any tilt, but sounds only when another owl is chosen.
+        sCursorShrinkRate = 4;
+        for (int step = 1; step < 10; step++) {
             int owl = (current + direction * step + 10) % 10;
             if (sChoices & (1u << (owl + 6))) {
                 SetSelection(play, owl);
+                Audio_PlaySoundGeneral(NA_SE_SY_CURSOR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
+                                       &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
                 break;
             }
         }
-        Audio_PlaySoundGeneral(NA_SE_SY_CURSOR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
-                               &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
     }
     return 1;
 }
