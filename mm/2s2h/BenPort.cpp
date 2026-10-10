@@ -3363,6 +3363,10 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings(void) {
         if (opt.cvar && opt.cvar[0])
             j[opt.cvar] = (int)CVarGetInteger(opt.cvar, opt.defaultValue);
     }
+    // The snapshot travels with seeds; keep it matching their pools (kComboHiddenAdultMmOptions).
+    if (!Combo_MM_AdultResourcesReady())
+        for (const auto id : kComboHiddenAdultMmOptions)
+            j[Rando::StaticData::Options[id].cvar] = 0;
     // Excluded checks are a JSON-array config block of RC_ names (upstream #1817) outside the options
     // walk; GeneratePools reads them, so a replayed spoiler must carry them or local exclusions leak
     // in (GAP-7 mirror).
