@@ -69,6 +69,14 @@ void SyncMm() {
         sSyncMm(gSaveContext.fileNum, gSaveContext.linkAge, p.set, p.entranceIndex);
     }
 }
+// The MM point's sentinel is not an OoT entrance. When it cannot be followed into
+// MM, release the spell rather than let the native return warp to it.
+int CancelSentinelReturn(PlayState* play) {
+    if ((u16)gSaveContext.respawn[RESPAWN_MODE_TOP].entranceIndex != kCross)
+        return 0;
+    Combo_OotFaroreCancelReturn(play);
+    return 1;
+}
 nlohmann::json RespawnJson(const RespawnData& p) {
     return { { "pos", { { "x", p.pos.x }, { "y", p.pos.y }, { "z", p.pos.z } } },
              { "yaw", p.yaw },
@@ -196,8 +204,14 @@ extern "C" COMBO_EXPORT int SOH_SyncFaroreFromMm(int fileNum, int age, int marke
     return 1;
 }
 extern "C" void Combo_OotFaroreValidate() {
-    if (!sCross || gSaveContext.fw.set <= 0 || gSaveContext.fw.entranceIndex != kCross)
+    if (gSaveContext.fw.set <= 0 || gSaveContext.fw.entranceIndex != kCross)
         return;
+    // Cross-game FW is off this session: keep the saved MM point, but cast as if no
+    // point were set, since its sentinel is not an OoT entrance.
+    if (!sCross) {
+        gSaveContext.respawn[RESPAWN_MODE_TOP].data = 0;
+        return;
+    }
     int entrance;
     if (!sMmDestination || !sMmDestination(gSaveContext.fileNum, gSaveContext.linkAge, &entrance)) {
         gSaveContext.fw.set = 0;
@@ -218,11 +232,11 @@ extern "C" void Combo_OotFaroreStorePoint(PlayState*) {
 extern "C" int Combo_OotFaroreReturn(PlayState* play) {
     const int age = gSaveContext.linkAge;
     if (!sCross || !ValidAge(age))
-        return 0;
+        return CancelSentinelReturn(play);
     if (sCross && gSaveContext.fw.entranceIndex == kCross) {
         int entrance;
         if (!sMmDestination || !sMmDestination(gSaveContext.fileNum, age, &entrance))
-            return 0;
+            return CancelSentinelReturn(play);
         sDepartureAge = age;
         sDepartureEntrance = entrance;
         play->transitionTrigger = TRANS_TRIGGER_OFF;
@@ -231,7 +245,7 @@ extern "C" int Combo_OotFaroreReturn(PlayState* play) {
     gSaveContext.ship.faroresWind.currentDungeon = gSaveContext.ship.faroresWind.dungeon[age];
     gSaveContext.ship.faroresWind.sharedCurrentDungeon = gSaveContext.ship.faroresWind.sharedDungeon[age];
     WriteDungeon();
-    return 0;
+    return CancelSentinelReturn(play);
 }
 extern "C" void Combo_OotFaroreDispel() {
     SyncMm();
