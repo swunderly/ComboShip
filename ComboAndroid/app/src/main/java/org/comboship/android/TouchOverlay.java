@@ -52,7 +52,7 @@ public final class TouchOverlay extends View {
         showPad=preferences.getBoolean("show",true);
         stickMode=preferences.getInt("stick-mode",STICKS_INVISIBLE);
         if(stickMode<STICKS_INVISIBLE || stickMode>STICKS_FLOATING_LEFT)stickMode=STICKS_INVISIBLE;
-        opacity=preferences.getFloat("opacity",.48f);scale=preferences.getFloat("scale",1f);
+        opacity=clamp(preferences.getFloat("opacity",.48f),0f,1f);scale=preferences.getFloat("scale",1f);
         faceLayout=preferences.getInt("face-layout",0);
         setContentDescription("Touch gamepad. Drag the left side to move and the right side for the right stick. Tap Menu for game settings; hold Menu for touch options.");setFocusable(false);
     }
@@ -226,8 +226,15 @@ public final class TouchOverlay extends View {
         if(kind<0 || kind>2)return;
         preferences.edit().putFloat(profile+"."+(CT+kind)+".size",clamp(value,.6f,2f)).apply();build();
     }
-    public void changeScale(){scale=scale>=1.3f?.8f:scale+.15f;preferences.edit().putFloat("scale",scale).apply();build();}
-    public void changeOpacity(){opacity=opacity>=.85f?.25f:opacity+.2f;preferences.edit().putFloat("opacity",opacity).apply();invalidate();}
+    // Fixed steps that include the defaults (1 and .48), so cycling always comes back to them.
+    private static final float[] SCALES={.8f,.9f,1f,1.15f,1.3f,1.45f}, OPACITIES={.25f,.35f,.48f,.65f,.85f,1f};
+    private static float nextStep(float[] steps,float value){
+        int nearest=0; // Values saved by the old step-and-wrap cycle snap to the closest step.
+        for(int i=1;i<steps.length;i++)if(Math.abs(steps[i]-value)<Math.abs(steps[nearest]-value))nearest=i;
+        return steps[(nearest+1)%steps.length];
+    }
+    public void changeScale(){scale=nextStep(SCALES,scale);preferences.edit().putFloat("scale",scale).apply();build();}
+    public void changeOpacity(){opacity=nextStep(OPACITIES,opacity);preferences.edit().putFloat("opacity",opacity).apply();invalidate();}
     private void saveLayout(){
         SharedPreferences.Editor editor=preferences.edit();
         for(Control c:controls){editor.putFloat(profile+"."+c.id+".x",c.x);editor.putFloat(profile+"."+c.id+".y",c.y);}editor.apply();
