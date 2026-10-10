@@ -25,12 +25,18 @@ extern "C" int Combo_SOHPrepareWarpAssets() {
             return 0;
     return 1;
 }
+// These run per draw. 2ship stays loaded for the whole process, so each MM
+// export is resolved once it is found.
 extern "C" void* Combo_SOHWarpResource(const char* path) {
-    auto load = (void* (*)(const char*))Combo_ResolveSym("2ship", "MM_LoadWarpResource");
+    static void* (*load)(const char*) = nullptr;
+    if (!load)
+        load = (void* (*)(const char*))Combo_ResolveSym("2ship", "MM_LoadWarpResource");
     return load ? load(path) : nullptr;
 }
 extern "C" uint32_t Combo_SOHMapClouds() {
-    auto clouds = (uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetWarpMapClouds");
+    static uint32_t (*clouds)() = nullptr;
+    if (!clouds)
+        clouds = (uint32_t (*)())Combo_ResolveSym("2ship", "MM_GetWarpMapClouds");
     return clouds ? clouds() : 0;
 }
 extern "C" void Combo_SOHWarpMaterial(PlayState* play, const char* path, int step) {
@@ -98,7 +104,9 @@ extern "C" void Combo_SOHWindMaterial(PlayState* play, int step) {
     Combo_SOHWarpMaterial(play, gSoaringWarpCsWindCapsuleTexAnim, step);
 }
 extern "C" int Combo_SOHWarpVertexCount(const char* path) {
-    auto count = (int (*)(const char*))Combo_ResolveSym("2ship", "MM_WarpVertexCount");
+    static int (*count)(const char*) = nullptr;
+    if (!count)
+        count = (int (*)(const char*))Combo_ResolveSym("2ship", "MM_WarpVertexCount");
     return count ? count(path) : 0;
 }
 #endif

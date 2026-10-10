@@ -496,6 +496,7 @@ void CrossOwl_UpdateFeathers(PlayState* play, OwlWarpFeather* feathers, CrossOwl
 void CrossOwl_DrawFeathers(PlayState* play2, OwlWarpFeather* feathers) {
     PlayState* play = play2;
     s32 i;
+    Gfx* featherDL = (Gfx*)Combo_SOHWarpResource(gSoaringWarpCsFeatherDL);
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -540,7 +541,7 @@ void CrossOwl_DrawFeathers(PlayState* play2, OwlWarpFeather* feathers) {
             continue;
         }
         gSPMatrix(POLY_OPA_DISP++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-        gSPDisplayList(POLY_OPA_DISP++, (Gfx*)Combo_SOHWarpResource(gSoaringWarpCsFeatherDL));
+        gSPDisplayList(POLY_OPA_DISP++, featherDL);
     }
 
     Matrix_Pop();
