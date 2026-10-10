@@ -464,6 +464,14 @@ extern "C" void Randomizer_InitSaveFile() {
     // Reset Bombchu Bag Upgrade
     gSaveContext.ship.quest.data.randomizer.bombchuUpgradeLevel = 0;
 
+    // Reset named triforces, silver rupees and souls, which the previously loaded file may have left behind.
+    // Starting items below add to these.
+    gSaveContext.ship.quest.data.randomizer.namedTriforceMask = 0;
+    std::fill(std::begin(gSaveContext.ship.quest.data.randomizer.silverRupeeCounts),
+              std::end(gSaveContext.ship.quest.data.randomizer.silverRupeeCounts), 0);
+    std::fill(std::begin(gSaveContext.ship.quest.data.randomizer.ootExpandedSoulsOwned),
+              std::end(gSaveContext.ship.quest.data.randomizer.ootExpandedSoulsOwned), 0);
+
     SetStartingItems();
 
     // Set Cutscene flags and texts to skip them.
