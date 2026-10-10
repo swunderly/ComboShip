@@ -1,9 +1,10 @@
 // combo/gui/ComboTrackerVisibility.cpp
-// ComboShip-owned: makes the per-game SETTINGS popouts and the toast/notification window follow the
-// active game across transitions. The MAIN tracker windows are derived every frame from the
-// both-games master model (ComboTrackerSwap); this module only snapshots/restores the settings-window
-// intents. Notifications need a different lever than trackers (map presence via RemoveGuiWindow, not
-// Hide()) — rationale + the 0xCD re-registration hazard: see docs/deviations/tracker.md.
+// ComboShip-owned: makes the per-game item tracker SETTINGS popout and the toast/notification window
+// follow the active game across transitions. The main trackers are combo windows
+// (ComboTrackerControls, ComboCheckTracker) that keep the native ones hidden; this module only
+// snapshots/restores the settings-window intent. Notifications need a different lever than trackers
+// (map presence via RemoveGuiWindow, not Hide()) — rationale + the 0xCD re-registration hazard: see
+// docs/deviations/tracker.md.
 // Lives in comboui.dll (links libultraship, stays mapped); the launcher calls the exports per transition.
 // OOT trackers use gOpenWindows.* + plain names; MM uses gWindows.* + "##MM"-suffixed names.
 
@@ -22,18 +23,16 @@ namespace {
 // Cached foreground game (0 = OOT, 1 = MM), updated by ComboUI_OnForegroundGame. Defaults to OOT,
 // the foreground game at startup after the eager MM boot. Read via ComboUI::GetForegroundGame.
 int sForegroundGame = 0;
-bool sMmEverForeground = false;
 
 using ComboTracker::kTrackers;
 using ComboTracker::SetTracker;
 
-// The settings popouts still follow the foreground game (the main trackers are reconciled by
-// ComboTrackerSwap instead). kTrackers columns of the two settings windows.
-constexpr int kSettingsColumns[2] = { 1, 3 };
+// The item tracker settings popout still follows the foreground game. Its kTrackers column.
+constexpr int kSettingsColumn = 1;
 
-// Remembered user intent per settings window. -1 = not snapshotted yet (so the foreground pass
-// leaves the loaded config value untouched on the very first call).
-int sIntent[2][2] = { { -1, -1 }, { -1, -1 } };
+// Remembered user intent per game. -1 = not snapshotted yet (so the foreground pass leaves the
+// loaded config value untouched on the very first call).
+int sIntent[2] = { -1, -1 };
 
 // Notification windows: OOT registers the plain name; MM appends "##MM" (BenGui.cpp). Indexed by
 // game: 0 = OOT, 1 = MM. These are gated by Gui-map presence, NOT visibility — see the file header.
@@ -91,10 +90,6 @@ int ComboUI::GetForegroundGame() {
     return sForegroundGame;
 }
 
-bool ComboUI::MmEverForeground() {
-    return sMmEverForeground;
-}
-
 // C-ABI variant so the game DLLs can query the foreground game (0 = OOT, 1 = MM) across the DLL
 // boundary — MM uses it to gate its live-world dev viewers (Actor/Collision/Message) from drawing
 // against dormant/swapped play state when its tab is opened while OOT is foreground.
@@ -110,23 +105,15 @@ extern "C" COMBO_EXPORT void ComboUI_OnForegroundGame(int game) {
     const int fg = game;
     const int bg = game ^ 1;
     sForegroundGame = fg;
-    if (fg == 1) {
-        sMmEverForeground = true;
-    }
 
-    // Background game: remember the user's settings-window intent, then hide its popouts. The main
-    // tracker windows are NOT touched — ComboTrackerSwap derives them every frame.
-    for (int i = 0; i < 1; ++i) { // Only item settings remain per game.
-        sIntent[bg][i] = CVarGetInteger(kTrackers[bg][kSettingsColumns[i]].cvar, 0);
-        SetTracker(kTrackers[bg][kSettingsColumns[i]], false);
-    }
+    // Background game: remember the user's settings-window intent, then hide its popout. The main
+    // tracker windows are combo windows and are not touched here.
+    sIntent[bg] = CVarGetInteger(kTrackers[bg][kSettingsColumn].cvar, 0);
+    SetTracker(kTrackers[bg][kSettingsColumn], false);
     // Foreground game: restore remembered intent. Skip until we've snapshotted at least once, so
     // the game that owns the foreground at startup keeps whatever its loaded config asked for.
-    for (int i = 0; i < 1; ++i) { // Only item settings remain per game.
-        if (sIntent[fg][i] < 0) {
-            continue;
-        }
-        SetTracker(kTrackers[fg][kSettingsColumns[i]], sIntent[fg][i] != 0);
+    if (sIntent[fg] >= 0) {
+        SetTracker(kTrackers[fg][kSettingsColumn], sIntent[fg] != 0);
     }
 
     // Notification window follows the active game too (so MM's toasts show only while MM is foreground
@@ -142,25 +129,22 @@ extern "C" COMBO_EXPORT void ComboUI_OnForegroundGame(int game) {
         ReloadMmControls();
     }
 
-    // Re-assert shared tracker appearance (per-game edits made while dormant lose). A sticky swap
-    // re-applies itself next frame via the swap window's reconcile.
+    // Re-assert shared tracker appearance (per-game edits made while dormant lose).
     ComboTracker::SyncAppearance();
 
     // ComboShip (#165): persist any pending note text at the transition.
     ComboNotes::FlushPending();
 }
 
-// Launcher, just before shutdown: restore the backgrounded game's settings-window CVars so they
-// don't persist as "off" (main tracker CVars are derived and recomputed on next boot).
+// Launcher, just before shutdown: restore the backgrounded game's settings-window CVar so it doesn't
+// persist as "off" (the native main tracker CVars are kept off by the combo trackers anyway).
 extern "C" COMBO_EXPORT void ComboUI_RestoreTrackerIntent(void) {
     // ComboShip (#165): the launcher calls this pre-shutdown, so a just-typed note still lands.
     ComboNotes::FlushPending();
     // Only the background game's CVars are forced-hidden; the foreground game's live values already
     // reflect the user's latest toggles (a stale snapshot would clobber them).
     const int bg = sForegroundGame ^ 1;
-    for (int i = 0; i < 1; ++i) { // Only item settings remain per game.
-        if (sIntent[bg][i] >= 0) {
-            CVarSetInteger(kTrackers[bg][kSettingsColumns[i]].cvar, sIntent[bg][i]);
-        }
+    if (sIntent[bg] >= 0) {
+        CVarSetInteger(kTrackers[bg][kSettingsColumn].cvar, sIntent[bg]);
     }
 }

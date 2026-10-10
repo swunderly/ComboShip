@@ -1,13 +1,9 @@
 // combo/gui/ComboTrackerSwap.cpp — see ComboTrackerSwap.h for rationale.
 #include "ComboTrackerSwap.h"
 #include "ComboTrackerCommon.h"
-#include "ComboTrackerBridge.h" // canonical window-type defaults
-#include "ComboForeground.h"
 #include "ComboWidgetStyle.h"
 #include <libultraship/libultraship.h>
-#include <ship/resource/CrossRMRegistry.h>
-#include <imgui_internal.h> // FindWindowByName / SetWindowPos / ImGuiWindow rects
-#include "ComboResolve.h"   // Combo_ResolveSym (lazy MM save load for dormant draws)
+#include "ComboResolve.h" // Combo_ResolveSym (Triforce counts and pause state)
 
 namespace {
 
@@ -119,15 +115,6 @@ bool ComboTracker::ForegroundPaused(int fg) {
     return true;
 }
 
-bool ComboTracker::GetMasterVisible(int tracker) {
-    return CVarGetInteger(kKinds[tracker].enabledCvar, 0) != 0;
-}
-
-void ComboTracker::SetMasterVisible(int tracker, bool visible) {
-    CVarSetInteger(kKinds[tracker].enabledCvar, visible ? 1 : 0);
-    // The reconcile window applies it next frame.
-}
-
 void ComboTracker::RegisterSwap() {
     auto ctx = Ship::Context::GetRawInstance();
     if (!ctx || !ctx->GetWindow() || !ctx->GetWindow()->GetGui()) {
@@ -153,7 +140,7 @@ void ComboTracker::RegisterSwap() {
         }
         CVarClear((pre + "ShownGame").c_str());
         CVarClear((pre + "HoldMomentary").c_str());
-        // Master enable seeds from the per-game CVars an existing config carries.
+        // The combo enable seeds from the per-game CVars an existing config carries.
         bool on = CVarGetInteger(kTrackers[0][kKinds[k].column].cvar, 0) != 0 ||
                   CVarGetInteger(kTrackers[1][kKinds[k].column].cvar, 0) != 0;
         if (CVarGetInteger(kKinds[k].enabledCvar, -1) < 0) {

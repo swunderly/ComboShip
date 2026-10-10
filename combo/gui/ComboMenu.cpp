@@ -12,7 +12,7 @@
 #include "ComboWidgetStyle.h"
 #include "ComboForeground.h" // dormant-game gate for inline tracker popout buttons
 #include "ComboTrackerBridge.h"
-#include "ComboTrackerCommon.h" // kKinds (HideBackground CVars for the tracker panels)
+#include "ComboTrackerCommon.h" // OotActiveSlot
 #include "ComboTrackerSwap.h"
 #include "ComboAnchorRoomWindow.h"  // combo-native floating Anchor room window
 #include "ComboNotesWindow.h"       // combo-owned cross-game Personal Notes window
@@ -2088,7 +2088,7 @@ extern "C" COMBO_EXPORT void ComboUI_Register(void) {
     ComboRando::sComboMenu = std::make_shared<ComboRando::ComboMenu>("gOpenWindows.Menu", "Combo Menu");
     gui->SetMenu(ComboRando::sComboMenu);
 
-    // Item Tracker: shared appearance + game-swap manager (see ComboTrackerSwap.h).
+    // Trackers: legacy setting migration, shared appearance, Triforce overlay and the combo windows.
     ComboTrackerUI::Migrate(ComboTrackerUI::Item);
     ComboTrackerUI::Migrate(ComboTrackerUI::Hint);
     ComboTracker::SyncAppearance();

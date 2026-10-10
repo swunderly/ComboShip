@@ -31,8 +31,8 @@ struct Win {
     const char* name; // registered GuiWindow name (map key in the shared Gui)
 };
 
-// [game][window]: 0 = OOT, 1 = MM. The swap touches the kItemTracker and kCheckTracker columns
-// (main tracker windows); the settings windows are foreground-followed only.
+// [game][window]: 0 = OOT, 1 = MM. ComboTrackerControls and ComboCheckTracker draw the trackers
+// and keep these native windows hidden; the item settings window follows the foreground game.
 inline constexpr Win kTrackers[2][4] = {
     {
         { "gOpenWindows.ItemTracker", "Item Tracker" },
@@ -51,26 +51,17 @@ inline constexpr Win kTrackers[2][4] = {
 inline constexpr int kItemTracker = 0;
 inline constexpr int kCheckTracker = 2;
 
-// One tracker kind under the both-games model: a master enable shows BOTH games' windows (each
-// with its own ImGui identity/rect); HideBackground restricts drawing to the foreground game.
-// The ImGui::Begin identities equal the Gui-map names in kTrackers[game][column].
+// The item and check trackers' combo enable CVars, which RegisterSwap's one-shot migration seeds
+// from the per-game window CVars of older configs.
 struct Kind {
-    int column;               // kTrackers column of the main tracker window
-    const char* enabledCvar;  // master on/off, spans both games
-    const char* hideBgCvar;   // 1 = only the foreground game's window draws (peek shows the other)
-    const char* mmPlacedCvar; // latch: MM's window was placed next to OOT's on its first show
+    int column;              // kTrackers column of the native main tracker window
+    const char* enabledCvar; // combo tracker on/off, spans both games
 };
 
 inline constexpr Kind kKinds[2] = {
-    { kItemTracker, "gCombo.Tracker.Enabled", "gCombo.Tracker.HideBackground", "gCombo.Tracker.MmPlaced" },
-    { kCheckTracker, "gCombo.CheckTracker.Enabled", "gCombo.CheckTracker.HideBackground",
-      "gCombo.CheckTracker.MmPlaced" },
+    { kItemTracker, "gCombo.Tracker.Enabled" },
+    { kCheckTracker, "gCombo.CheckTracker.Enabled" },
 };
-
-// ImGui::Begin identity of a kind's main tracker window for a game (== its Gui-map name).
-inline const char* KindWindowName(const Kind& kind, int game) {
-    return kTrackers[game][kind.column].name;
-}
 
 // Write the CVar (covers MM's CheckTracker, whose Draw() reads it directly) and mirror it onto
 // the window object so mIsVisible-gated Draws react this same frame.

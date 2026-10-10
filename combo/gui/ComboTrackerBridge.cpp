@@ -42,7 +42,8 @@ void ComboTracker::SyncAppearance() {
     bg.a = (uint8_t)(op * 255.0f + 0.5f);
     CVarSetColor("gTrackers.ItemTracker.BgColor.Value", bg);
 
-    // Window type (0 = floating overlay, 1 = docked window) — same enum in both games.
+    // Window type. The combo windows read gCombo.Tracker.WindowType themselves (0 overlay, 1 floating,
+    // 2 side panel); this legacy mirror reaches only the native windows the combo trackers keep hidden.
     int wt = CVarGetInteger("gCombo.Tracker.WindowType", kDefaultWindowType);
     CVarSetInteger("gTrackers.ItemTracker.WindowType", wt);
     CVarSetInteger("gSettings.ItemTracker.WindowType", wt);

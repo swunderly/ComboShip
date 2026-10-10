@@ -2,8 +2,6 @@
 #include "ComboHintTracker.h"
 #include "ComboTrackerControls.h"
 #include "ComboExport.h"
-#include "ComboForeground.h"  // foreground game for the OnlyPaused gate
-#include "ComboTrackerSwap.h" // ForegroundPaused (shared with the icon trackers)
 #include "ComboWidgetStyle.h"
 #include "ComboMenuLayout.h"
 #include <imgui.h>
@@ -25,7 +23,6 @@ namespace ComboRando {
 
 namespace {
 
-constexpr const char* kCvarEnabled = "gCombo.HintTracker.Enabled";
 constexpr const char* kCvarShowUnrevealed = "gCombo.HintTracker.ShowUnrevealed";
 constexpr const char* kCvarShowJunk = "gCombo.HintTracker.ShowJunk";
 constexpr const char* kCvarHideRead = "gCombo.HintTracker.HideRead";
