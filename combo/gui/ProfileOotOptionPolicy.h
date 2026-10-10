@@ -1248,6 +1248,19 @@ class View {
         }
     }
 #undef CVAR_RANDOMIZER_SETTING
+    // Copy of SOH_RefreshComboStartingGameUI: an explicit MM start forces both Mask Shop exclusions.
+    // Under Random they stay editable; the force is silent when MM rolls.
+    void RefreshComboStartingGameUI() {
+        const bool mmStart = CVarGetInteger("gCombo.Rando.StartingGame", 0) == 1;
+        for (const RandomizerSettingKey key : { RSK_EXCLUDE_MASK_SHOP_KEY, RSK_EXCLUDE_MASK_SHOP_ENTRANCE }) {
+            if (mmStart) {
+                mOptions[key].Disable("Starting Game is Majora's Mask");
+            } else {
+                mOptions[key].Enable();
+            }
+        }
+    }
+
   public:
     std::map<int, Option> mOptions;
     View(const nlohmann::json& catalog, std::function<int(const char*, int)> getter) : read(std::move(getter)) {
@@ -1318,6 +1331,7 @@ class View {
         callbacks[RSK_LOGIC_RULES] = [this] { Callback_RSK_LOGIC_RULES(); };
         for (const auto& row : callbacks)
             row.second();
+        RefreshComboStartingGameUI();
     }
     const Option* Find(const char* key) const {
         for (const auto& row : mOptions)
