@@ -1758,7 +1758,8 @@ static void LoadComboCompletion(int slot) {
         g_comboCompletion[0] = comp.value("oot", false);
         g_comboCompletion[1] = comp.value("mm", false);
         g_comboTriforceDone = comp.value("triforce", false);
-        g_comboGoalWon = comp.value("victory", g_comboTriforceDone);
+        // A latched Triforce win is a win even if a later boss kill stored victory=false over it.
+        g_comboGoalWon = comp.value("victory", g_comboTriforceDone) || g_comboTriforceDone;
         // The goal is seed-bound: it rides the slot's baked combo.rando, not the live menu CVars.
         auto rando = combo.value("rando", nlohmann::json::object());
         // displaySeed also incorporates settings/placements; the typed seed alone
@@ -1965,9 +1966,12 @@ static int Combo_OnFinalBossDefeated(int game, int fileNum) {
         ComboRando::CwGoal goal;
         goal.type = g_goalType;
         goal.required = g_goalRequired;
-        g_comboGoalWon = ComboRando::CwGoalReached(goal, g_comboCompletion[0], g_comboCompletion[1],
-                                                   Combo_GetOotTriforceCount() + Combo_GetMmTriforceCount(),
-                                                   Combo_GetNamedTriforceMask());
+        // Latched: a hunt/quest win counted while MM was resident must survive a later kill
+        // that sees MM's pieces as 0.
+        g_comboGoalWon =
+            g_comboGoalWon || ComboRando::CwGoalReached(goal, g_comboCompletion[0], g_comboCompletion[1],
+                                                        Combo_GetOotTriforceCount() + Combo_GetMmTriforceCount(),
+                                                        Combo_GetNamedTriforceMask());
         SaveComboCompletion(fileNum);
         std::cout << "[ComboShip] Final boss defeated: game=" << game << " slot=" << fileNum
                   << " both=" << (g_comboCompletion[0] && g_comboCompletion[1]) << std::endl;
