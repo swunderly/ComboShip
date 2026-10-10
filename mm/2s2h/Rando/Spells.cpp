@@ -116,10 +116,11 @@ extern "C" COMBO_EXPORT int MM_PrepareNativeSpellsForCombo() {
     return mask;
 }
 // Process startup/teardown only. Save rules and actual ownership remain independent.
+// Readiness needs only Farore's Wind; Love and Fire check their own resources wherever they are used.
 extern "C" COMBO_EXPORT int MM_SetNativeSpellIntegrationReady(int enable, void (*invalidate)()) {
     ComboRando::ComboFaroreIntegrationReady = false;
     sInvalidateIntegration = enable ? invalidate : nullptr;
-    if (enable && Combo_MMFaroreBridgeReady() && MM_PrepareNativeSpellsForCombo() == 7)
+    if (enable && Combo_MMFaroreBridgeReady() && (MM_PrepareNativeSpellsForCombo() & 1))
         ComboRando::ComboFaroreIntegrationReady = true;
     return ComboRando::ComboFaroreIntegrationReady ? 1 : 0;
 }

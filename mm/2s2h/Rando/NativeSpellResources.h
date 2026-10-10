@@ -22,7 +22,13 @@ inline bool Texture(const std::shared_ptr<Ship::IResource>& r, Fast::TextureType
     if (!Typed(r, static_cast<uint32_t>(Fast::ResourceType::Texture)))
         return false;
     const auto texture = std::dynamic_pointer_cast<Fast::Texture>(r);
-    return texture && texture->Type == type && texture->Width == width && texture->Height == height &&
+    if (!texture)
+        return false;
+    // Alt/HD replacements keep their real format and size; the interpreter scales them when drawn by path.
+    if ((texture->Flags & (TEX_FLAG_LOAD_AS_RAW | TEX_FLAG_LOAD_AS_IMG)) || texture->HByteScale != 1.0f ||
+        texture->VPixelScale != 1.0f)
+        return texture->Width && texture->Height;
+    return texture->Type == type && texture->Width == width && texture->Height == height &&
            texture->GetPointerSize() >= bytes;
 }
 inline bool Valid(const std::shared_ptr<Ship::IResource>& r, const char* path,
