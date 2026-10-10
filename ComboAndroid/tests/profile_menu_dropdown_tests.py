@@ -63,6 +63,30 @@ int main(){
   assert(optionView->Find(key)->choices.size()==3);
   std::cout << "Selected Bombchu Bag " << selection << " and completed the popup frame\n";
  }
+ // Mask Quest omits Vanilla, so each choice must store its catalog value, not its position.
+ const char* mask="gRandoSettings.CompleteMaskQuest";
+ catalog["oot"]["options"][mask]={{"id",ProfileOotPolicy::RSK_MASK_QUEST},
+  {"choices",Json::array({Json{{"value",1},{"label","Completed"}},Json{{"value",2},{"label","Shuffle"}}})}};
+ document["oot"]["settings"][mask]=2;RefreshOptionPolicy(true);
+ widget.name="Mask Quest##Randomizer";widget.cvar=mask;widget.index=6;
+ for(int stored : {1,2}){
+  auto pick=[&](bool open){
+   ImGui::NewFrame();ImGui::SetNextWindowPos(ImVec2(0,0));ImGui::SetNextWindowSize(ImVec2(640,480));
+   ImGui::Begin("Profile menu");
+   ImGui::PushID(widget.index);auto popupId=ImHashStr("##ComboPopup",0,ImGui::GetID("##Choice"));ImGui::PopID();
+   if(open)ImGui::OpenPopupEx(popupId);
+   else{
+    auto* popup=ImGui::FindWindowByName("##Combo_00");assert(popup);
+    const auto id=popup->GetID(stored==1?"Completed":"Shuffle");
+    auto& context=*ImGui::GetCurrentContext();context.NavWindow=popup;context.NavId=id;
+    context.NavActivateId=id;context.NavActivateDownId=id;context.NavActivatePressedId=id;
+   }
+   DrawWidget(widget,game);ImGui::End();ImGui::Render();
+  };
+  pick(true);pick(true);pick(false);
+  assert(ReadInteger(mask,-1)==stored);
+  std::cout << "Selected Mask Quest value " << stored << "\n";
+ }
  ImGui::DestroyContext();std::cout << "PASS: production dropdown selection/refresh remains valid\n";
 }
 '''

@@ -24,6 +24,8 @@ struct Option {
     std::string key, disabledText;
     bool hidden = false, disabled = false;
     std::vector<std::string> choices;
+    // Stored value of each choice; the catalog can omit one (Mask Quest has no Vanilla entry).
+    std::vector<int> choiceValues;
     void Hide() {
         hidden = true;
     }
@@ -52,6 +54,9 @@ struct Option {
         if (current && update && current() >= int(values.size()))
             update(static_cast<uint8_t>(values.size() - 1));
         choices = std::move(values);
+        choiceValues.resize(choices.size());
+        for (size_t i = 0; i < choices.size(); ++i)
+            choiceValues[i] = int(i);
     }
 };
 class View {
@@ -1253,8 +1258,10 @@ class View {
             option.current = [this, key] { return CVarGetInteger(key.c_str(), 0); };
             option.update = [this, key](int value) { CVarSetInteger(key.c_str(), value); };
             option.hidden = field.value().value("defaultHidden", false);
-            for (const auto& choice : field.value().at("choices"))
+            for (const auto& choice : field.value().at("choices")) {
+                option.choiceValues.push_back(choice.value("value", int(option.choices.size())));
                 option.choices.push_back(choice.at("label"));
+            }
             mOptions.emplace(field.value().at("id").get<int>(), std::move(option));
         }
         std::map<int, std::function<void()>> callbacks;

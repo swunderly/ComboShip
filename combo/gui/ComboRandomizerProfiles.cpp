@@ -307,7 +307,7 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
             int value = ReadInteger(key, w.iDefault);
             std::vector<CwChoice> choices;
             for (int i = 0; policy && i < int(policy->choices.size()); ++i)
-                choices.push_back({ policy->choices[i].c_str(), i });
+                choices.push_back({ policy->choices[i].c_str(), policy->choiceValues[i] });
             const CwChoice* list = policy ? choices.data() : w.choices;
             const int count = policy ? int(choices.size()) : w.choiceCount;
             const char* preview = "Unknown saved value";
