@@ -2610,9 +2610,19 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         // MUST run on the main thread — the worker only computes. Stash their inputs for
         // Combo_FinalizeGenerate, which the main-thread file-select poll runs once it sees done.
         // The OOT seed-hash folds in input-seed + both settings dumps so the icons identify seed and
-        // settings (same seed+settings -> matching icons across players).
-        uint32_t displaySeed = ComboHash(
-            (inputSeed + sohDump + mmDump + SnapshotGameplayRules().dump() + sSongTravel.json().dump()).c_str());
+        // settings (same seed+settings -> matching icons across players). Only the rule and song-map
+        // parts that shape logic count: per-run enhancement values (e.g. Shorter Ballad) must not
+        // change the icons or the Anchor sync seed for players of the same seed.
+        const auto rules = SnapshotGameplayRules();
+        const auto songs = sSongTravel.json();
+        const nlohmann::json logicRules = { { "logicValues", rules.at("logicValues") },
+                                            { "mmTricks", rules.at("mmTricks") },
+                                            { "ootTricks", rules.at("ootTricks") } };
+        const nlohmann::json logicSongs = { { "logicEnabled", songs.at("logicEnabled") },
+                                            { "logicForeignSongs", songs.at("logicForeignSongs") },
+                                            { "destinations", songs.at("destinations") } };
+        uint32_t displaySeed =
+            ComboHash((inputSeed + sohDump + mmDump + logicRules.dump() + logicSongs.dump()).c_str());
         g_FinalizeOotApply = ootApply.dump();
         g_FinalizeDisplaySeed = displaySeed;
         g_FinalizeMasterSeed = masterSeed;
