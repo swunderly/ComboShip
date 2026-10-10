@@ -1918,6 +1918,8 @@ void FileChoose_DrawWindowContents(GameState* thisx) {
     } else if (this->configMode == CM_RANDOMIZER_SETTINGS_MENU) {
         uint8_t language = (gSaveContext.language == LANGUAGE_JPN) ? LANGUAGE_ENG : gSaveContext.language;
         uint8_t textAlpha = this->randomizerUIAlpha;
+        // Queried once per frame: in combo builds the readiness check inspects the slot's whole pending seed.
+        const int pendingReady = FileChoose_ProfilePendingReady(this);
 
         for (uint8_t index = 0; index <= RSM_OPEN_RANDOMIZER_SETTINGS; index++) {
             uint8_t textColorR = 255;
@@ -1931,7 +1933,7 @@ void FileChoose_DrawWindowContents(GameState* thisx) {
 
             // If no randomizer is loaded and text is "start randomizer" or when a seed is generating, make all options
             // gray.
-            if ((index == RSM_START_RANDOMIZER && !FileChoose_ProfilePendingReady(this)) || generating) {
+            if ((index == RSM_START_RANDOMIZER && !pendingReady) || generating) {
                 textColorR = textColorG = textColorB = 100;
             }
 
@@ -1970,7 +1972,7 @@ void FileChoose_DrawWindowContents(GameState* thisx) {
                                        textAlpha, 0.7f, true);
                 Interface_DrawTextLine(this->state.gfxCtx, "for details, then try again.", 70, 160, 240, 80, 80,
                                        textAlpha, 0.7f, true);
-            } else if (FileChoose_ProfilePendingReady(this)) {
+            } else if (pendingReady) {
                 Interface_DrawTextLine(this->state.gfxCtx, "Seed ready for OoT + MM", 70, 144, 150, 240, 180, textAlpha,
                                        0.8f, true);
                 Interface_DrawTextLine(this->state.gfxCtx, "Select Start Randomizer to play.", 70, 160, 255, 255, 255,
@@ -1981,7 +1983,7 @@ void FileChoose_DrawWindowContents(GameState* thisx) {
 
         // If no randomizer is generated and "start randomizer" is selected, show text to explain why user can't start
         // the randomizer.
-        if (!generating && !FileChoose_ProfilePendingReady(this) &&
+        if (!generating && !pendingReady &&
 #ifdef COMBO_BUILD
             SOH_GetComboGenResult() >= 0 &&
 #endif
