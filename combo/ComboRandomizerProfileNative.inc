@@ -41,6 +41,9 @@ static nlohmann::json ProfileEditableSetup(nlohmann::json setup){
     for(const char* game:{"oot","mm"})if(sProfileCatalog.contains(game)){
         auto& settings=setup[game]["settings"];for(const auto& field:sProfileCatalog[game]["defaults"].items())if(!settings.contains(field.key()))settings[field.key()]=field.value();
     }
+    // Last, so the arrow rules derive from the final oot.settings: an unedited legacy draft is shown,
+    // applied and generated with the same version 2 rule block the menu gives it once edited.
+    setup["gameplayRules"]=ComboRando::ProfileGameplayRules(setup);
     return setup;
 }
 static void ProfileValidateNative(const nlohmann::json& requested) {
@@ -120,8 +123,9 @@ static const char* ProfileSetDraft(int slot,const char* input){return ProfileRes
     sProfiles->setDraft(slot,setup);
     // Drafts for another file must not change the run currently being played.
     if(!g_ComboProgress.running.load() && (sGameplayRulesSlot<0 || sGameplayRulesSlot==slot)) {
-        const auto before=ComboRando::NormalizeGameplayRuleSnapshot(previous.value("gameplayRules",nlohmann::json::object())).at("values");
-        const auto rules=ComboRando::NormalizeGameplayRuleSnapshot(setup.value("gameplayRules",nlohmann::json::object()));
+        // Both sides as generation reads them, so a legacy draft's first edit pushes only real changes.
+        const auto before=ComboRando::NormalizeGameplayRuleSnapshot(ComboRando::ProfileGameplayRules(previous)).at("values");
+        const auto rules=ComboRando::NormalizeGameplayRuleSnapshot(ComboRando::ProfileGameplayRules(setup));
         const auto values=rules.value("values",nlohmann::json::object());
         const auto logic=rules.value("logicValues",nlohmann::json::object());
         bool changed=false;

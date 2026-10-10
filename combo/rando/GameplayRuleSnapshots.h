@@ -136,4 +136,31 @@ inline nlohmann::json GameplayRulesForRun(const nlohmann::json& seed, const nloh
         rules["ootTricks"] = original["ootTricks"];
     return rules;
 }
+
+// The rule block a settings profile is shown, applied and generated with. Runtime application and
+// generation read only a versioned block. Settings of seeds saved before 0.3.9 have none, and version 1
+// derives logic from the runtime values, so a profile without a version 2 block gets one derived from
+// its own fields (never from another file's CVars), keeping any rule values already written into a
+// partial block. Only the returned copy is new; the stored profile stays as it is.
+inline nlohmann::json ProfileGameplayRules(const nlohmann::json& profile) {
+    const auto block = profile.is_object() ? profile.value("gameplayRules", nlohmann::json()) : nlohmann::json();
+    if (IsGameplayRuleBlock(block) && block["version"] == 2)
+        return block;
+    nlohmann::json rules;
+    try {
+        rules = GameplayRulesForSeed(profile);
+    } catch (const std::exception&) {
+        // A malformed song travel map: keep the block's own values without deriving from it.
+        rules = NormalizeGameplayRuleSnapshot(block);
+    }
+    if (block.is_object() && !IsGameplayRuleBlock(block)) {
+        for (const char* field : { "values", "logicValues", "mmTricks" })
+            if (block.contains(field) && block[field].is_object())
+                for (const auto& value : block[field].items())
+                    rules[field][value.key()] = value.value();
+        if (block.contains("ootTricks") && block["ootTricks"].is_string())
+            rules["ootTricks"] = block["ootTricks"];
+    }
+    return rules;
+}
 } // namespace ComboRando

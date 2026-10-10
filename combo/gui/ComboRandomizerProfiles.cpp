@@ -57,30 +57,12 @@ static bool Response(const char* raw) {
     error = reply.value("error", std::string());
     return error.empty();
 }
-// Runtime application and generation read only a versioned rule block. Settings of seeds saved
-// before 0.3.9 have none, and version 1 derives logic from the runtime values, so give the
-// document a complete version 2 block derived from its own fields (never from another file's
-// CVars), keeping any rule values already written into a partial block.
+// Give the document the complete version 2 rule block that runtime application and generation read
+// (ProfileGameplayRules), the same one the launcher derives for an unedited document.
 static Json& RuleBlock() {
     auto& block = document["gameplayRules"];
-    if (IsGameplayRuleBlock(block) && block["version"] == 2)
-        return block;
-    Json rules;
-    try {
-        rules = GameplayRulesForSeed(document);
-    } catch (const std::exception&) {
-        // A malformed song travel map: keep the block's own values without deriving from it.
-        rules = NormalizeGameplayRuleSnapshot(block);
-    }
-    if (block.is_object() && !IsGameplayRuleBlock(block)) {
-        for (const char* field : { "values", "logicValues", "mmTricks" })
-            if (block.contains(field) && block[field].is_object())
-                for (const auto& value : block[field].items())
-                    rules[field][value.key()] = value.value();
-        if (block.contains("ootTricks") && block["ootTricks"].is_string())
-            rules["ootTricks"] = block["ootTricks"];
-    }
-    block = std::move(rules);
+    if (!IsGameplayRuleBlock(block) || block["version"] != 2)
+        block = ProfileGameplayRules(document);
     return block;
 }
 static Json* Field(const char* key, bool create) {
