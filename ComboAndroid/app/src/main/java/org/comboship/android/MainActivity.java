@@ -369,7 +369,7 @@ public final class MainActivity extends Activity {
         if(root!=null && !destination.equals(root) && StorageLocations.partlyDeleted(destination)){removeCopy(destination);return;}
         boolean existing=StorageLocations.hasData(destination);
         AlertDialog.Builder dialog=new AlertDialog.Builder(this).setTitle(existing?"Use existing Combo Ship data?":"Copy data to this storage?")
-            .setMessage((existing?"This folder's saves will become the active copy. Other copies will be preserved.":
+            .setMessage((existing?"This folder's saves will become the active copy. Using this folder keeps other copies.":
                 "Saves, settings, ROMs, and mods will be copied and verified. The current copy will be preserved.")+"\n\n"+destination)
             .setPositiveButton(existing?"Use existing":"Copy and switch",(d,w)->execute("Preparing data location…",()->{
                 // Only a copy needs the old location, so a removed SD card cannot block switching to existing data.
