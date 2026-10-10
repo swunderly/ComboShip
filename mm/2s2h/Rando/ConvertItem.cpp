@@ -733,6 +733,22 @@ bool Rando::IsItemObtainable(RandoItemId randoItemId, RandoCheckId randoCheckId)
             ItemId itemId = StaticData::Items[randoItemId].itemId;
             return INV_CONTENT(itemId) != itemId;
         }
+        // These only enter the pool with their option on. A starting item or placement that names one while the
+        // save has it off (e.g. from a shared profile or seed) becomes junk, as the complete-souls items do.
+        case RI_DINS_FIRE:
+            return RANDO_SAVE_OPTIONS[RO_MM_SPELL_FIRE];
+        case RI_NAYRUS_LOVE:
+            return RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE];
+        case RI_MASK_ADULT:
+            return RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] == RO_GENERIC_YES;
+        case RI_BOOTS_IRON:
+            return RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] == RO_GENERIC_YES;
+        case RI_BOOTS_HOVER:
+            return RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] == RO_GENERIC_YES;
+        case RI_TUNIC_GORON:
+            return RANDO_SAVE_OPTIONS[RO_MM_TUNIC_GORON] == RO_GENERIC_YES;
+        case RI_TUNIC_ZORA:
+            return RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA] == RO_GENERIC_YES;
 #ifdef COMBO_BUILD
         // ComboShip: foreign item is obtainable until its check is taken (keeps shops out of stock after buying).
         case RI_COMBO_FOREIGN:
