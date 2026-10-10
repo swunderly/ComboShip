@@ -1056,6 +1056,17 @@ static int (*sProfileValidateMm)(const char*) = nullptr;
 static uint8_t (*sProfileCanGenerate)() = nullptr;
 static int (*sProfileTrigger)(const char*) = nullptr;
 static int (*sProfileSelected)() = nullptr;
+static int (*sFileSelectSlot)() = nullptr; // the native file-select cursor's file, -1 off that screen
+// Native file-select actions (Generate, a dropped seed, the silent pending-seed load) belong to the file
+// under that screen's cursor, which also decides readiness and save creation. On the screen's first frame
+// the cursor is on File 1, so the first-frame silent reload loads File 1's pending seed. That is harmless:
+// ProfilePrepareSave reloads the chosen file's pending seed when its save is created, and Generate and an
+// explicit import need CanGenerate. The comboui settings selector only drives its own page, and is the
+// fallback when the native screen is not showing.
+static int ProfileNativeSlot() {
+    const int slot = sFileSelectSlot ? sFileSelectSlot() : -1;
+    return slot >= 0 && slot < 3 ? slot : sProfileSelected ? sProfileSelected() : 0;
+}
 static void ProfileBeginGeneration(int, const char*);
 static void ProfileRestoreGenerationSetup();
 static void ProfileCompleteGeneration();
@@ -3057,7 +3068,7 @@ static void Combo_OnGenerateThreaded(const char* inputSeed) {
     std::string profileSeed;
     if (sProfiles && !sProfileAttempt) {
         try {
-            const int slot = sProfileSelected ? sProfileSelected() : 0;
+            const int slot = ProfileNativeSlot();
             profileSeed = sProfiles->view().draft(slot, Combo_ReadSavedSeedReadonly(slot)).value("seed", std::string());
             ProfileBeginGeneration(slot, profileSeed.c_str());
             inputSeed = profileSeed.c_str();
@@ -4674,6 +4685,7 @@ int main(int argc, char** argv) {
     sProfileCanGenerate = (uint8_t(*)())GetSym(sohModule, "SOH_CanGenerateComboSeed");
     sProfileTrigger = (int (*)(const char*))GetSym(sohModule, "SOH_TriggerProfileGenerate");
     sProfileSelected = (int (*)())GetSym(comboUIModule, "ComboUI_GetSelectedSettingsFile");
+    sFileSelectSlot = (int (*)())GetSym(sohModule, "SOH_GetFileSelectSlot");
     auto profileUi =
         (void (*)(const ComboRandomizerProfileCallbacks*))GetSym(comboUIModule, "ComboUI_SetRandomizerProfileStore");
     auto profilePrecreate = (void (*)(int (*)(int)))GetSym(sohModule, "SOH_SetProfileSavePreparation");

@@ -239,7 +239,7 @@ static int Combo_OnReloadRequest(const char* path){
     const bool explicitImport=path&&path[0];
     try {
         if(g_GenerateBusy.load()||g_ComboPendingFinalize.load()||sProfileAttempt)return 0;
-        const int slot=sProfileSelected?sProfileSelected():0;
+        const int slot=ProfileNativeSlot();
         nlohmann::json seed;
         if(explicitImport){
             if(!sProfileCanGenerate||!sProfileCanGenerate())return 0;
