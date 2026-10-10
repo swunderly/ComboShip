@@ -224,9 +224,15 @@ void Rando::ActorBehavior::InitEnJsBehavior() {
     });
 
     COND_ID_HOOK(OnSceneInit, SCENE_SOUGEN, IS_RANDO, [](s8 sceneId, s8 spawnNum) {
+        // Without the Moon Children soul the soul gate refuses the spawn, so this child is absent
+        if (!Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MOON_CHILDREN)) {
+            return;
+        }
         u32 params = 8;
         Actor* actor = Actor_Spawn(&gPlayState->actorCtx, gPlayState, ACTOR_EN_JS, -150, 40, 50, 0, -15000, 0, params);
-        actor->draw = EnJs_Draw_NoMask;
+        if (actor != NULL) {
+            actor->draw = EnJs_Draw_NoMask;
+        }
     });
 
     COND_ID_HOOK(OnActorInit, ACTOR_EN_JS, IS_RANDO, [](Actor* actor) {
