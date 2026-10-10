@@ -3635,8 +3635,6 @@ static void Combo_OnOOTSaveLoad(int fileNum) {
                 MM_LoadComboRando(rando.c_str());
         }
     }
-    if (sSetOotTricksCsv)
-        sSetOotTricksCsv(rules.value("ootTricks", std::string()).c_str());
     Combo_PushHintTrackerData(fileNum); // #164: this slot's hints + persisted read state
     if (!MM_LoadSaveForCombo || g_MmSaveInMemorySlot == fileNum) {
         Combo_OnTriforceProgress(0, fileNum);
