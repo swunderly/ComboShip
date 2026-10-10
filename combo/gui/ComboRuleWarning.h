@@ -1,10 +1,11 @@
 #pragma once
-#include "ComboCheckSnapshot.h"
 #include "rando/GameplayRules.h"
 #include <imgui.h>
 #include <cstring>
 
 namespace ComboRando {
+// The file slot of the run the foreground game has loaded, or -1 on the title and file screens.
+int LoadedRunSlot();
 inline double sRuleWarningUntil = 0;
 // A slot limits the warning to edits for that file's run (next-seed drafts reach only that run).
 inline void WarnAboutRuleChange(const char* name, int slot = -1) {
@@ -20,13 +21,8 @@ inline void WarnAboutRuleChange(const char* name, int slot = -1) {
         rule |= std::strcmp(name, entry.name) == 0 || LogicRuleKey(entry.name) == name;
     if (!rule)
         return;
-    const auto oot = ComboChecks::Snapshot(0), mm = ComboChecks::Snapshot(1);
-    ComboCheckInfo a{}, b{};
-    if (oot)
-        oot(&a, nullptr, nullptr);
-    if (mm)
-        mm(&b, nullptr, nullptr);
-    if ((a.loaded && (slot < 0 || a.slot == slot)) || (b.loaded && (slot < 0 || b.slot == slot)))
+    const int loaded = LoadedRunSlot();
+    if (loaded >= 0 && (slot < 0 || loaded == slot))
         sRuleWarningUntil = ImGui::GetTime() + 8.0;
 }
 inline void DrawRuleChangeWarning() {

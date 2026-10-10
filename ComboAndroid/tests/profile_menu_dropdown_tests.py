@@ -32,6 +32,7 @@ void ComboMenu_PushCombobox(const ImVec4&){} void ComboMenu_PopCombobox(){}
 void ComboMenu_PushSlider(const ImVec4&){} void ComboMenu_PopSlider(){}
 void ComboMenu_PushButton(const ImVec4&){} void ComboMenu_PopButton(){}
 bool ComboMenu_StyledHeaderEntry(const char* label,bool){return ImGui::Button(label);}
+int LoadedRunSlot(){return -1;}
 }
 int main(){
  using namespace ComboRando; using namespace ComboRando::ProfileUI;

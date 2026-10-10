@@ -18,6 +18,7 @@
 #include "ComboNotesWindow.h"       // combo-owned cross-game Personal Notes window
 #include "ComboHintTracker.h"       // combo-owned unified Hint Tracker (#164)
 #include "ComboCheckTracker.h"
+#include "ComboCheckSnapshot.h"
 #include "rando/GameplayRules.h"
 #include "rando/GenerationRules.h"
 #include "ComboRuleWarning.h"
@@ -1342,6 +1343,16 @@ void DrawComboPlandoPanel() {
 }
 } // namespace
 
+// MM is foreground only inside a loaded file, but its snapshot reports randomizer runs only, so
+// any other MM run takes the combo-wide save slot.
+int LoadedRunSlot() {
+    const int game = ComboUI::GetForegroundGame() == 1 ? 1 : 0;
+    ComboCheckInfo info{ 0, -1, -1 };
+    if (const auto snapshot = ComboChecks::Snapshot(game))
+        snapshot(&info, nullptr, nullptr);
+    return info.loaded ? info.slot : game ? ComboTracker::OotActiveSlot() : -1;
+}
+
 namespace {
 const CwWidget* FindPreference(const GameMenu& game, const char* cvar) {
     if (!game.loaded || !game.menu)
@@ -1375,13 +1386,6 @@ bool DrawRuleCheckbox(const char* label, bool* enabled) {
     }
     ImGui::SetCursorScreenPos(afterLabel);
     return changed;
-}
-// The file slot of the run the foreground game has loaded, or -1 on the title and file screens.
-int LoadedRunSlot() {
-    ComboCheckInfo info{ 0, -1, -1 };
-    if (const auto snapshot = ComboChecks::Snapshot(ComboUI::GetForegroundGame() == 1 ? 1 : 0))
-        snapshot(&info, nullptr, nullptr);
-    return info.loaded ? info.slot : -1;
 }
 void DrawGameplayRules(bool randomizer, const std::string& page, int world,
                        ComboRando::MenuRuleFocus* focus = nullptr) {

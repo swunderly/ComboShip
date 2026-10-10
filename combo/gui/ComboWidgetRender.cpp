@@ -19,6 +19,7 @@
 #include "ComboAudioBridge.h"      // Shared-tab audio -> MM mirror
 #include "ComboResolutionEditor.h" // combo-owned Advanced Resolution editor (intercepts broken widgets)
 #include "ComboMenuLayout.h"
+#include "ComboResolve.h"
 #include "rando/GenerationRules.h"
 
 #include <libultraship/libultraship.h>         // ImGui-adjacent + CVar bridge (CVarGet/Set*) + color.h
