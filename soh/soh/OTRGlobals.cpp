@@ -2872,7 +2872,7 @@ extern "C" COMBO_EXPORT void SOH_GetGlobalOptions(int* zTarget, int* audio) {
 static std::atomic<int> sForeignSongRequest{ -1 }, sForeignSongReply{ -2 };
 static std::atomic<bool> sForeignSongPerformed{ false };
 static bool sNativeSongOpen = false;
-static int sNativeSongSource = -1, sNativeSongStick = 0;
+static int sNativeSongSource = -1;
 static std::string sNativeSongText;
 
 static int sSongArrival = -1;
