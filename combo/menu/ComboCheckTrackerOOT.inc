@@ -55,8 +55,6 @@ extern "C" COMBO_EXPORT void SOH_ComboCheckSnapshot(ComboCheckInfo* info, ComboC
     if (!visitor) return;
 
     mystery = CVarGetInteger(CVAR_RANDOMIZER_ENHANCEMENT("MysteriousShuffle"), 0);
-    hideShopUnshuffledChecks = CVarGetInteger(CVAR_TRACKER_CHECK("HideUnshuffledShopChecks"), 0);
-    alwaysShowGS = CVarGetInteger(CVAR_TRACKER_CHECK("AlwaysShowGSLocs"), 0);
     const bool wantLogic = IS_RANDO && CVarGetInteger("gCombo.CheckTracker.ShowLogic", 1);
     UpdateComboAvailabilitySettings(wantLogic);
     if (recalculateAvailable && InternalRecalculateAvailableChecks(availableChecksStartingRegion, availableChecksStartingAgeTime)) {
