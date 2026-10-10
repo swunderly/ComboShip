@@ -1535,6 +1535,14 @@ void BenMenu::AddEnhancements() {
     AddWidget(path, "Ocarina", WIDGET_SEPARATOR_TEXT);
     AddWidget(path, "Better Song of Double Time", WIDGET_CVAR_CHECKBOX)
         .CVar("gEnhancements.Songs.BetterSongOfDoubleTime")
+        .PreFunc([](WidgetInfo& info) {
+            // Clocks as Items forces the selector on for that save (BetterSongOfDoubleTime.cpp);
+            // the player's own setting is kept for other saves.
+            if (IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) {
+                info.options->disabled = true;
+                info.options->disabledTooltip = "Always on with Clocks as Items (MM).";
+            }
+        })
         .Options(CheckboxOptions().Tooltip(
             "When playing the Song of Double Time, you can now choose the exact time you want to go "
             "to, similar to the 3DS version.\n\n"
