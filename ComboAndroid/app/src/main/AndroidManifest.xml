@@ -19,6 +19,9 @@
             <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts"/>
         </activity>
+        <!-- Own task: the launcher clears a shortcut's task, which must never be the game's. -->
+        <activity android:name=".OptionsShortcut" android:exported="true" android:taskAffinity=""
+            android:excludeFromRecents="true" android:noHistory="true" android:theme="@android:style/Theme.NoDisplay"/>
         <activity android:name=".GameActivity" android:exported="false" android:process=":game"
             android:launchMode="singleTop"
             android:screenOrientation="sensorLandscape" android:resizeableActivity="true"

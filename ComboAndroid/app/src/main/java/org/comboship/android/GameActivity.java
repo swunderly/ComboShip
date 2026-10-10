@@ -127,6 +127,11 @@ public final class GameActivity extends SDLActivity {
                 .setPositiveButton(options?"Open options":"Exit",(dialog,which)->{returnToOptions=options;nativeQuit();})
                 .setNegativeButton("Keep playing",null).show();
     }
+    // The App options launcher shortcut while playing (see OptionsShortcut).
+    @Override protected void onNewIntent(android.content.Intent intent){
+        super.onNewIntent(intent);
+        if(librariesReady && intent.getBooleanExtra(MainActivity.MANAGE,false))confirmExit(true);
+    }
     @Override public void onBackPressed(){if(librariesReady)nativeMenu();else super.onBackPressed();}
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         // SDL's surface consumes keyboard Back before Activity.onBackPressed.

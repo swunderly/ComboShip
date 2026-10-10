@@ -3,8 +3,6 @@
     <shortcut android:shortcutId="app-options" android:enabled="true"
         android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/app_options">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="org.comboship.android"
-            android:targetClass="org.comboship.android.MainActivity">
-            <extra android:name="app-options" android:value="true"/>
-        </intent>
+            android:targetClass="org.comboship.android.OptionsShortcut"/>
     </shortcut>
 </shortcuts>
