@@ -2272,8 +2272,10 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     }
 
     // Whole-fill retries (GAP-4): each attempt re-derives the master seed, so dumps, confined placement,
-    // and prices re-roll deterministically per attempt. Budget lives in CrossWorldRando.h.
+    // and prices re-roll deterministically per attempt. Budget lives in CrossWorldRando.h; interactive
+    // generation (retryUntilSuccess) keeps going past it, so headless only reproduces seeds found within it.
     const int kFillAttempts = ComboRando::kFillAttempts;
+    const std::string attemptBudget = retryUntilSuccess ? "" : "/" + std::to_string(kFillAttempts);
     for (uint64_t attempt = 0; (retryUntilSuccess || attempt < kFillAttempts) && !usedCombinedFill; ++attempt) {
         ComboRando::CheckGenerationCancellation();
         if (progress) {
@@ -2286,7 +2288,8 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         InstallSongTravel(SongMapForGeneration(masterSeed));
         ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, nlohmann::json::object());
         ResetCrossItemDedupForSeed(masterSeed);
-        // Random's LAST attempt always resolves OOT, so Random can never hard-fail on an MM-start attempt.
+        // Random's last budgeted attempt resolves OOT, so bounded runs never hard-fail on an MM start.
+        // Unbounded retries after it may roll MM again; they cannot hard-fail anyway.
         const bool mmStart = !pinStartOot && !(startCfg == 2 && attempt + 1 == kFillAttempts) &&
                              ResolveStartingGameMM(startCfg, masterSeed);
 
@@ -2372,7 +2375,7 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
             // to the settings; the post-loop check reports it if every attempt fails. Mirrors the loop
             // tail's MM restore, which this skips.
             lastFillError = "OOT entrance shuffle found no valid layout — relax the entrance settings";
-            std::cout << "[ComboShip] RunComboFill: attempt " << (attempt + 1) << "/" << kFillAttempts
+            std::cout << "[ComboShip] RunComboFill: attempt " << (attempt + 1) << attemptBudget
                       << " failed: " << lastFillError << "\n";
             if (mmStart && startCfg == 2)
                 pinStartOot = true;
@@ -2481,7 +2484,7 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                                   goal, mmStart, sharedMask);
         } else {
             lastFillError = result.error;
-            std::cout << "[ComboShip] RunComboFill: attempt " << (attempt + 1) << "/" << kFillAttempts
+            std::cout << "[ComboShip] RunComboFill: attempt " << (attempt + 1) << attemptBudget
                       << " failed: " << lastFillError << "\n";
             if (mmStart && startCfg == 2)
                 pinStartOot = true;
