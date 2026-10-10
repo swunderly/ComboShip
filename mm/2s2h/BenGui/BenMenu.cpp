@@ -1540,7 +1540,8 @@ void BenMenu::AddEnhancements() {
             // the player's own setting is kept for other saves.
             if (IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) {
                 info.options->disabled = true;
-                info.options->disabledTooltip = "Always on with Clocks as Items (MM).";
+                info.options->disabledTooltip = "This setting is forcefully enabled because a randomized save file "
+                                                "with the option \"Clocks as Items (MM)\" is currently loaded.";
             }
         })
         .Options(CheckboxOptions().Tooltip(
