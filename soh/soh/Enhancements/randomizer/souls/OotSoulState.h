@@ -20,7 +20,8 @@ inline constexpr unsigned GeneralOotSoulFamily(unsigned index) {
 static_assert(generalOotSoulItems[42] == OotSoul::ENEMY_THIEVES && generalOotSoulItems[43] == OotSoul::NPC_OLD_HAG &&
               generalOotSoulItems[88] == OotSoul::NPC_THIEVES && generalOotSoulItems[89] == OotSoul::ANIMAL_CUCCO &&
               generalOotSoulItems[92] == OotSoul::ANIMAL_BUTTERFLY &&
-              generalOotSoulItems[93] == OotSoul::MISC_BUSINESS_SCRUB);
+              generalOotSoulItems[93] == OotSoul::MISC_BUSINESS_SCRUB &&
+              generalOotSoulItems[GeneralOotSoulCount - 1] == OotSoul::MISC_GS);
 inline int GeneralOotSoulIndex(OotSoul soul) {
     for (unsigned i = 0; i < GeneralOotSoulCount; ++i)
         if (generalOotSoulItems[i] == soul)
