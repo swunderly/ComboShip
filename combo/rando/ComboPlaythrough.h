@@ -368,6 +368,9 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
             stockSensitive.insert(i);
     }
 
+    // The same MM search root the fill uses; kept apart from portalOpen, which each search overwrites.
+    const bool mmRoot = !portalGated || mmStart;
+
     // Excludes a SET of placements from ever crediting their items, then sphere-collects everything
     // else from empty until stable. Latch the first win but continue collecting to distinguish
     // optional boss paths from items required for the seed's selected victory condition.
@@ -389,7 +392,7 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
         size_t sharedGiven[SF_COUNT] = { 0 };
         // Latched: MM stays open once OOT can reach the Happy Mask Shop. Ungated (NO_LOGIC) = open,
         // and an MM start (#135) roots MM from the beginning.
-        bool portalOpen = !portalGated || mmStart;
+        bool portalOpen = mmRoot;
         for (;;) {
             CheckGenerationCancellation();
             ApplySharedMirror(sharedMask, ootOwned, mmOwned, sharedGiven, fairyOcarinaMm);
@@ -404,7 +407,8 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
                 constexpr size_t kMaxSongReachMemoEntries = 128;
                 if (songMemo.size() >= kMaxSongReachMemoEntries)
                     songMemo.clear();
-                auto worlds = QuerySongWorlds(ootOracle, mmOracle, ootOwned, mmOwned, portalOpen, queryWithStock);
+                auto worlds =
+                    QuerySongWorlds(ootOracle, mmOracle, ootOwned, mmOwned, portalOpen, queryWithStock, mmRoot);
                 SongReachMemo value{ std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.first)),
                                      std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.second)),
                                      portalOpen };
@@ -591,12 +595,13 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
     int beatableSphere = -1;
     const int kMaxSpheres = 200;
     // Latched: MM stays open once OOT can reach the Happy Mask Shop. Ungated (NO_LOGIC) = open, and an
-    // MM start (#135) roots MM from the beginning.
-    bool portalOpen = !portalGated || mmStart;
+    // MM start (#135) roots MM from the beginning, as it does in the fill.
+    const bool mmRoot = !portalGated || mmStart;
+    bool portalOpen = mmRoot;
     size_t sharedGiven[SF_COUNT] = { 0 };
     for (int sphere = 0; sphere < kMaxSpheres; ++sphere) {
         ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven, fairyOcarinaMm);
-        auto worlds = QuerySongWorlds(ootOracle, mmOracle, ownedOot, ownedMm, portalOpen, queryReachable);
+        auto worlds = QuerySongWorlds(ootOracle, mmOracle, ownedOot, ownedMm, portalOpen, queryReachable, mmRoot);
         auto& ootReach = worlds.first;
         auto& mmReach = worlds.second;
         bool canGanon = ootReach.count(kOotGanon) > 0;
@@ -659,7 +664,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
     // Reachability after collecting only checks that actually opened from the empty start.
     // Never grant the contents of inaccessible checks to prove those same checks accessible.
     ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven, fairyOcarinaMm);
-    auto everWorlds = QuerySongWorlds(ootOracle, mmOracle, ownedOot, ownedMm, portalOpen, queryReachable);
+    auto everWorlds = QuerySongWorlds(ootOracle, mmOracle, ownedOot, ownedMm, portalOpen, queryReachable, mmRoot);
     auto& everReachOot = everWorlds.first;
     auto& everReachMm = everWorlds.second;
     result.ganonReachable = everReachOot.count(kOotGanon) > 0;
