@@ -53,20 +53,8 @@ static void ProfileValidateNative(const nlohmann::json& requested) {
 static void ProfileApplyNative(const nlohmann::json& requested) {
     ProfileValidateNative(requested);
     const auto setup=ProfileEditableSetup(requested);
-    auto combo=setup.value("setupCVars",nlohmann::json::object());
-    // Legacy seeds predate the complete CVar setup envelope. Derive serialized
-    // shared/goal/start choices from their own seed, never another file's CVars.
-    if(!setup.contains("setupCVars")) {
-        const auto goal=ComboRando::CwGoalFromJson(setup.value("goal",nlohmann::json::object()));
-        combo["gCombo.Rando.Goal"]=ComboRando::CwGoalType(goal);
-        combo["gCombo.Rando.TriforceHunt"]=goal.hunt?1:0;
-        combo["gCombo.Rando.TriforceRequired"]=goal.required;
-        combo["gCombo.Rando.TriforceTotal"]=goal.total;
-        const auto world=setup.value("startingGame",std::string("OOT"));
-        combo["gCombo.Rando.StartingGame"]=world=="Random"?2:world=="MM"?1:0;
-        const auto mask=ComboRando::SharedMaskFromKeys(setup.value("sharedItems",nlohmann::json::array()));
-        for(int i=0;i<ComboRando::SF_COUNT;++i)combo[ComboRando::SharedFamilyByIndex(i).cvar]=(mask&(1u<<i))?1:0;
-    }
+    // ProfileEditableSetup derives setupCVars for legacy seeds from their own goal/start/shared choices.
+    const auto& combo=setup.at("setupCVars");
     if(!sProfileApplyCombo(combo.dump().c_str()))throw std::invalid_argument("Invalid shared settings profile");
     RestoreGameplayRules(setup.value("gameplayRules",nlohmann::json::object()),sGameplayRulesSlot);
     InstallSongTravel(setup.value("songTravel",nlohmann::json()));
