@@ -3190,6 +3190,9 @@ PlayerItemAction Player_ItemToItemAction(Player* this, ItemId item) {
         return PLAYER_IA_COMBO_DINS_FIRE;
     if (item == ITEM_COMBO_NAYRUS_LOVE)
         return PLAYER_IA_COMBO_NAYRUS_LOVE;
+    // Adult gear is consumed by Combo_MM_AdultTryUseGear and has no item action; keep it out of sItemItemActions.
+    if ((item >= ITEM_COMBO_BOOTS_IRON) && (item <= ITEM_COMBO_TUNIC_ZORA))
+        return PLAYER_IA_NONE;
 #endif
     if ((int)item == 0xbc)
         return (PlayerItemAction)Combo_MM_AdultMaskAction();
@@ -22045,6 +22048,13 @@ PlayerItemAction func_8085B854(PlayState* play, Player* this, ItemId itemId) {
     if ((itemAction <= PLAYER_IA_NONE) || (itemAction >= PLAYER_IA_MAX)) {
         return PLAYER_IA_MINUS1;
     }
+#ifdef COMBO_BUILD
+    // Spells are not exchange items (as in OoT) and have no get-item entry to hold up.
+    if ((itemAction == PLAYER_IA_COMBO_FARORES_WIND) || (itemAction == PLAYER_IA_COMBO_NAYRUS_LOVE) ||
+        (itemAction == PLAYER_IA_COMBO_DINS_FIRE)) {
+        return PLAYER_IA_MINUS1;
+    }
+#endif
 
     this->itemAction = PLAYER_IA_NONE;
     this->actionFunc = NULL;
