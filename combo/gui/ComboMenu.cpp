@@ -1484,7 +1484,9 @@ void DrawGameplayRules(bool randomizer, const std::string& page, int world,
             ImGui::SetScrollHereY(.15f);
         MenuTooltip(rule.help);
         if (changed) {
-            if (randomizer)
+            if (randomizer && value == 0)
+                ClearLogicRule(rule, apply); // the standalone enhancement stays as the player set it
+            else if (randomizer)
                 SetLogicRule(rule, value, apply);
             else
                 SetEnhancementRule(rule, value, read, apply);

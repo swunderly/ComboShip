@@ -1060,8 +1060,9 @@ void DrawHome() {
                     ++it;
             }
             document["oot"]["settings"]["gRandoSettings.EnabledTricks"] = "";
+            // Presets only drop logic assumptions; the player's own enhancements stay as they are.
             for (const auto& rule : kGameplayRules)
-                SetLogicRule(rule, 0, WriteInteger);
+                ClearLogicRule(rule, WriteInteger);
             for (const char* game : { "oot", "mm" })
                 for (const auto& value : catalog.at(game).at("defaults").items())
                     document[game]["settings"][value.key()] = value.value();
@@ -1069,8 +1070,8 @@ void DrawHome() {
                 WriteInteger(write.key().c_str(), write.value());
             document["mm"]["settings"]["gRando.StartingItems"] =
                 catalog.at("mm").at("presetStartingItems").at(std::to_string(preset.at("id").get<int>()));
-            SetLogicRule(*FindGameplayRule("gCombo.Enhancements.ForeignSongs"), preset.at("id").get<int>() != 0,
-                         WriteInteger);
+            if (preset.at("id").get<int>() != 0) // the loop above cleared it otherwise
+                SetLogicRule(*FindGameplayRule("gCombo.Enhancements.ForeignSongs"), 1, WriteInteger);
             SynchronizeGenerationGuarantee(ReadInteger, WriteInteger);
             RefreshOptionPolicy(true);
             dirty = true;
