@@ -394,13 +394,22 @@ void Fast3dGui::CalculateGameViewport() {
 
 #ifdef __ANDROID__
     const int fitMode = cvars->GetInteger("gCombo.Display.AutoFit", 0);
-    if (fitMode > 0 && size.x > 0 && size.y > 0) {
+    const int lowResMode = cvars->GetInteger(CVAR_LOW_RES_MODE, 0);
+    // N64 Mode keeps its 320x240 frame (DrawGame shows it at 4:3). The widescreen low-res modes
+    // keep their line count, at the fitted view's aspect so the fit does not stretch them.
+    if (fitMode > 0 && lowResMode != 1 && size.x > 0 && size.y > 0) {
         const auto fit = Ship::ScreenFit::Fit(size.x, size.y, fitMode);
-        const float maxFactor = std::min(8096.0f / fit.width, 4320.0f / fit.height);
-        const float factor = std::clamp(interpreter->mCurDimensions.internal_mul,
-            std::min(240.0f / fit.height, maxFactor), maxFactor);
-        interpreter->mCurDimensions.width = static_cast<uint32_t>(std::round(fit.width * factor));
-        interpreter->mCurDimensions.height = static_cast<uint32_t>(std::round(fit.height * factor));
+        if (lowResMode == 2 || lowResMode == 3) {
+            const float vertRes = lowResMode == 2 ? 240.0f : 480.0f;
+            interpreter->mCurDimensions.width = static_cast<uint32_t>(std::round(vertRes * fit.width / fit.height));
+            interpreter->mCurDimensions.height = static_cast<uint32_t>(vertRes);
+        } else {
+            const float maxFactor = std::min(8096.0f / fit.width, 4320.0f / fit.height);
+            const float factor = std::clamp(interpreter->mCurDimensions.internal_mul,
+                                            std::min(240.0f / fit.height, maxFactor), maxFactor);
+            interpreter->mCurDimensions.width = static_cast<uint32_t>(std::round(fit.width * factor));
+            interpreter->mCurDimensions.height = static_cast<uint32_t>(std::round(fit.height * factor));
+        }
     }
 #endif
     ImGui::End();
@@ -427,7 +436,8 @@ void Fast3dGui::DrawGame() {
 
 #ifdef __ANDROID__
     const int fitMode = Ship::Context::GetRawInstance()->GetConsoleVariables()->GetInteger("gCombo.Display.AutoFit", 0);
-    if (fitMode > 0) {
+    // N64 Mode keeps its priority over automatic fit, as it has over every other framing below.
+    if (fitMode > 0 && Ship::Context::GetRawInstance()->GetConsoleVariables()->GetInteger(CVAR_LOW_RES_MODE, 0) != 1) {
         const auto fit = Ship::ScreenFit::Fit(size.x, size.y, fitMode);
         pos = ImVec2(fit.x, fit.y);
         size = ImVec2(fit.width, fit.height);
