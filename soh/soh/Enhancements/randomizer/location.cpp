@@ -76,7 +76,10 @@ bool Rando::Location::IsDungeonForCollectibleShuffle() const {
 #ifdef COMBO_BUILD
     // Pinned DUNGEON_SCENES includes Thieves' Hideout. This is a shuffle
     // policy only: its physical Gerudo Fortress area is not a dungeon table.
-    if (scene == SCENE_THIEVES_HIDEOUT &&
+    // It shipped together with the modern Kokiri seed revision, which every seed
+    // and save binds, so seeds generated before it keep the upstream overworld rule.
+    const auto ctx = Context::GetInstance();
+    if (scene == SCENE_THIEVES_HIDEOUT && ctx && ctx->GetKokiriSeedRevision() != 0 &&
         (checkType == RCTYPE_POT || checkType == RCTYPE_CRATE || checkType == RCTYPE_WONDER_ITEM)) {
         return true;
     }
