@@ -41,14 +41,10 @@ std::array<SequenceData*, 3> sSequences{};
 std::array<SoundFont*, 3> sFonts{};
 int sSequenceBase = -1, sFontBase = -1;
 bool sPlaying = false;
-u32 sPreviousAudioErrors = 0;
 u16 sPreviousMain = NA_BGM_DISABLED, sPreviousSub = NA_BGM_DISABLED;
 // MM AudioSfx_ResetSfxChannelState, with the native centered, non-positional
 // values used by En_Test7's wing cues. Only bytes 8..13 are read by its score.
 std::array<std::array<std::atomic<u8>, 16>, 16> sSfxState{};
-std::array<bool, 0x100> sDialectSeen{};
-std::array<bool, 3> sSequenceExecuting{};
-std::atomic<u32> sDialectFailures{ 0 };
 
 // SfxChannelState's native float bytes are little endian in the Android runtime.
 // Keep the same indexed state seen by A0..A3 and BE, with atomic graph/audio access.
@@ -94,9 +90,6 @@ void DropResources() {
     sFonts = {};
     sResources.reset();
     sPlaying = false;
-    sDialectSeen = {};
-    sSequenceExecuting = {};
-    sDialectFailures.store(0);
 }
 
 // Teardown listeners fire at shutdown, first from MM_Deinit, while OoT's audio
@@ -257,8 +250,6 @@ extern "C" void Combo_SOHSoaringAudioBegin() {
     if (sSequenceBase < 0 || sPlaying)
         return;
     sPlaying = true;
-    sPreviousAudioErrors = gAudioContext.audioErrorFlags;
-    SPDLOG_INFO("[ComboShip] Native Soaring audio prior errors {:#x}", sPreviousAudioErrors);
     sPreviousMain = func_800FA0B4(SEQ_PLAYER_BGM_MAIN);
     sPreviousSub = func_800FA0B4(SEQ_PLAYER_BGM_SUB);
     Audio_SetSequenceMode(SEQ_MODE_IGNORE);
@@ -267,7 +258,6 @@ extern "C" void Combo_SOHSoaringAudioBegin() {
     Audio_SetGameVolume(SEQ_PLAYER_BGM_SUB, CVarGetInteger(CVAR_SETTING("Volume.SFX"), 100) / 100.0f);
     // MM's General SFX native layout 0 assigns channels 0..2 to the player bank.
     Audio_QueueCmdS8(0x46000000 | (SEQ_PLAYER_BGM_SUB << 16), 0);
-    SPDLOG_INFO("[ComboShip] Native Soaring audio begin");
 }
 
 extern "C" void Combo_SOHSoaringSound(int phase) {
@@ -288,7 +278,6 @@ extern "C" void Combo_SOHSoaringSound(int phase) {
     Audio_QueueCmdS8(0x06000000 | target | 0, 1);
     Audio_QueueCmdS8(0x06000000 | target | 4, sfxId & 0xFF);
     Audio_QueueCmdS8(0x06000000 | target | 5, ((sfxId & 0x300) >> 7) + ((sfxId & 0xFF) >> 7));
-    SPDLOG_INFO("[ComboShip] Native Soaring wing cue {:#x} (channel {})", sfxId, channel);
 }
 
 extern "C" void Combo_SOHSoaringFanfare() {
@@ -301,7 +290,6 @@ extern "C" void Combo_SOHSoaringFanfare() {
     // Audio_PlayFanfareWithPlayerIOPort7: human Link's native MM ocarina.
     Audio_QueueSeqCmd(0x70000000 | (SEQ_PLAYER_FANFARE << 24) | (7 << 16) | 0x35);
     Audio_SetSfxBanksMute(0x20);
-    SPDLOG_INFO("[ComboShip] Native MM Soaring playback fanfare");
 }
 
 extern "C" int Combo_SOHIsMmAudioSequence(void* rawPlayer) {
@@ -331,24 +319,9 @@ extern "C" int Combo_SOHMmAudioLayerCommand(void* rawLayer, int command) {
 }
 extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
     auto* channel = static_cast<SequenceChannel*>(rawChannel);
-    bool foreign = false;
-    for (size_t index = 0; index < sSequences.size(); ++index) {
-        const auto* sequence = sSequences[index];
-        if (sequence && reinterpret_cast<u8*>(sequence->seqData) == channel->seqPlayer->seqData) {
-            foreign = true;
-            if (!sSequenceExecuting[index]) {
-                sSequenceExecuting[index] = true;
-                SPDLOG_INFO("[ComboShip] Native MM score executing {} (player {})", kSequences[index],
-                            channel->seqPlayer->playerIdx);
-            }
-        }
-    }
-    if (!foreign || !((command >= 0xA0 && command <= 0xA8) || command == 0xBD || command == 0xBE))
+    if (!Combo_SOHIsMmAudioSequence(channel->seqPlayer) ||
+        !((command >= 0xA0 && command <= 0xA8) || command == 0xBD || command == 0xBE))
         return 0;
-    if (!sDialectSeen[command]) {
-        sDialectSeen[command] = true;
-        SPDLOG_INFO("[ComboShip] MM audio dialect command {:#x}", command);
-    }
 
     // These are the MM-only channel instructions from AudioScript_SequenceChannelProcessScript.
     // Dispatch before OoT decodes them: MM BD is one s16, while OoT BD takes
@@ -374,14 +347,11 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
             }
             break;
         }
-        case 0xA4: {
-            const u8 surround = AudioSeq_ScriptReadU8(state);
+        case 0xA4:
             // The imported native scores do not request a surround override.
             // OoT's Android mixer uses the standard stereo pan supplied by SFX.
-            if (surround != 0xFF && !(sDialectFailures.fetch_or(1) & 1))
-                SPDLOG_ERROR("[ComboShip] MM warp audio validation FAILED: unsupported surround {}", surround);
+            AudioSeq_ScriptReadU8(state);
             break;
-        }
         case 0xA5:
             state->value += channelIndex;
             break;
@@ -407,13 +377,10 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
             channel->unk_22 = (((channel->unk_22 / 0x100) + 0x80) << 8) | (channel->unk_22 % 0x100);
             break;
         }
-        case 0xBD: {
-            const u16 start = AudioSeq_ScriptReadS16(state);
+        case 0xBD:
             // Native wing cues start at sample zero, which is OoT's default.
-            if (start != 0 && !(sDialectFailures.fetch_or(2) & 2))
-                SPDLOG_ERROR("[ComboShip] MM warp audio validation FAILED: unsupported sample start {}", start);
+            AudioSeq_ScriptReadS16(state);
             break;
-        }
         case 0xBE: {
             const u8 function = AudioSeq_ScriptReadU8(state);
             // MM registers AudioSfx_SetFreqAndStereoBits in slot zero.
@@ -432,34 +399,22 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
     return 1;
 }
 
+// Debug trace only. The native MM Soaring score requests a drum its font leaves
+// empty (MM reports the same audio error), so this is not logged as an error.
 extern "C" void Combo_SOHTraceMmAudioLayer(void* rawLayer, int command, int missingDrum) {
     auto* layer = static_cast<SequenceLayer*>(rawLayer);
-    if (!layer || !layer->channel || !layer->channel->seqPlayer)
+    if (!missingDrum || !layer || !layer->channel || !Combo_SOHIsMmAudioSequence(layer->channel->seqPlayer))
         return;
-    const auto* player = layer->channel->seqPlayer;
-    for (const auto* sequence : sSequences) {
-        if (!sequence || reinterpret_cast<u8*>(sequence->seqData) != player->seqData)
-            continue;
-        const auto offset = layer->scriptState.pc - player->seqData;
-        if (missingDrum) {
-            SPDLOG_ERROR("[ComboShip] Native MM score missing drum {} font {} pc {} layer instrument {} channel "
-                         "instrument {} transpose {}/{}",
-                         command, layer->channel->fontId, offset, layer->instOrWave, layer->channel->instOrWave,
-                         layer->transposition, layer->channel->transposition);
-        } else if ((command == 0xF0 || command == 0xF1) && !sDialectSeen[command]) {
-            sDialectSeen[command] = true;
-            SPDLOG_WARN("[ComboShip] Native MM layer dialect command {:#x} pc {}", command, offset);
-        }
-        return;
-    }
+    SPDLOG_DEBUG("[ComboShip] Native MM score missing drum {} font {} pc {} layer instrument {} channel instrument {} "
+                 "transpose {}/{}",
+                 command, layer->channel->fontId, layer->scriptState.pc - layer->channel->seqPlayer->seqData,
+                 layer->instOrWave, layer->channel->instOrWave, layer->transposition, layer->channel->transposition);
 }
 
 extern "C" void Combo_SOHSoaringAudioEnd(int departed) {
     if (!sPlaying)
         return;
     sPlaying = false;
-    SPDLOG_INFO("[ComboShip] Native Soaring audio end (audio errors {:#x}, dialect failures {:#x})",
-                gAudioContext.audioErrorFlags, sDialectFailures.load());
     Audio_SetGameVolume(SEQ_PLAYER_BGM_SUB, CVarGetInteger(CVAR_SETTING("Volume.SubMusic"), 100) / 100.0f);
     // After a departure the next scene starts its own music, as with MM's warp.
     for (const auto& entry :

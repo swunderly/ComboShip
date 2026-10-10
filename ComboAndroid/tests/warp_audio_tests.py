@@ -116,11 +116,7 @@ struct SequenceData {char* seqData=nullptr;};
 struct {int seqToPlay[4]{},seqReplaced[4]{},audioErrorFlags=0;} gAudioContext;
 std::array<SequenceData*,3> sSequences{};
 std::array<std::array<std::atomic<u8>,16>,16> sSfxState{};
-std::array<bool,256> sDialectSeen{};
-std::array<bool,3> sSequenceExecuting{};
-std::atomic<u32> sDialectFailures{0};
 int sSequenceBase=-1;bool sPlaying=false;
-u32 sPreviousAudioErrors=0;
 u16 sPreviousMain=NA_BGM_DISABLED,sPreviousSub=NA_BGM_DISABLED;
 int active[4]={66,NA_BGM_DISABLED,0,NA_BGM_DISABLED};
 std::vector<std::pair<u32,int>> commands;
@@ -142,7 +138,8 @@ u32 Audio_NextRandom(){return 0x12345678;}
 '''
 for signature in ['void StoreMmSfxFloat(', 'float LoadMmSfxFrequency(', 'void UseResidentSampleStorage(', 'void StartForeignSequence(', 'extern "C" void Combo_SOHSoaringAudioBegin(',
                   'extern "C" void Combo_SOHSoaringSound(', 'extern "C" void Combo_SOHSoaringAudioEnd(',
-                  'extern "C" void Combo_SOHSoaringFanfare(', 'extern "C" int Combo_SOHMmAudioChannelCommand(']:
+                  'extern "C" void Combo_SOHSoaringFanfare(', 'extern "C" int Combo_SOHIsMmAudioSequence(',
+                  'extern "C" int Combo_SOHMmAudioChannelCommand(']:
     code += function(signature)
 # Execute the production synthesis storage branch. A CART-tagged archive sample
 # must be reclassified after the resource factory allocates its host bytes;
@@ -250,7 +247,7 @@ int main(){
     assert(commands.back().first==0x71070035); // MM human-form native playback IO7
     gAudioContext.audioErrorFlags=0x1234;
     commands.clear();Combo_SOHSoaringAudioBegin();Combo_SOHSoaringAudioBegin();
-    assert(sPreviousAudioErrors==0x1234&&gAudioContext.audioErrorFlags==0x1234);
+    assert(gAudioContext.audioErrorFlags==0x1234);
     assert(starts.size()==2&&starts[0]==std::make_pair(0,200)&&starts[1]==std::make_pair(3,201));
     assert(mode==SEQ_MODE_IGNORE&&volumes[3]>0.719f&&volumes[3]<0.721f);
     commands.clear();Combo_SOHSoaringSound(-1);Combo_SOHSoaringSound(4);assert(commands.empty());
@@ -287,16 +284,13 @@ int main(){
     arguments[0]=0;channel.scriptState.pc=arguments;channel.scriptState.value=0;channel.stereo.asByte=255;channel.freqScale=0;
     StoreMmSfxFloat(0,4,0.75f);sSfxState[0][10]=0x40;
     Combo_SOHMmAudioChannelCommand(&channel,0xBE);assert(channel.stereo.asByte==0x40&&channel.freqScale==0.75f&&channel.changes.s.freqScale);
-    assert(!Combo_SOHMmAudioChannelCommand(&channel,0xC6));assert(errors==0);
-    assert(sSequenceExecuting[1]&&!sSequenceExecuting[0]&&!sSequenceExecuting[2]);
-    // Unsupported requests are explicit failures, latched even after subsequent
-    // supported instructions, and only reported once per kind.
+    assert(!Combo_SOHMmAudioChannelCommand(&channel,0xC6));
+    // Requests the native scores never make still consume exactly their arguments.
     arguments[0]=0;arguments[1]=1;channel.scriptState.pc=arguments;
-    Combo_SOHMmAudioChannelCommand(&channel,0xBD);assert(sDialectFailures==2&&errors==1);
-    channel.scriptState.pc=arguments;Combo_SOHMmAudioChannelCommand(&channel,0xBD);assert(errors==1);
-    arguments[1]=0;channel.scriptState.pc=arguments;
-    Combo_SOHMmAudioChannelCommand(&channel,0xBD);assert(sDialectFailures==2&&errors==1);
-    channel.scriptState.pc=arguments;Combo_SOHMmAudioChannelCommand(&channel,0xA4);assert(sDialectFailures==3&&errors==2);
+    assert(Combo_SOHMmAudioChannelCommand(&channel,0xBD)&&channel.scriptState.pc==arguments+2);
+    arguments[0]=0x40;channel.scriptState.pc=arguments;
+    assert(Combo_SOHMmAudioChannelCommand(&channel,0xA4)&&channel.scriptState.pc==arguments+1);
+    assert(errors==0);
     Reverse::test();
     puts("Native wing cues, both-game fanfares, volume restoration, resident caches and isolated sequence dialects passed.");
 }
