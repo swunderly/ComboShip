@@ -19,6 +19,7 @@
 
 #include <set>
 #include <cassert>
+#include <type_traits>
 #ifdef COMBO_BUILD
 #include "rando/GameplayRules.h"
 #include "rando/MmAbilities.h"
@@ -45,7 +46,12 @@ extern "C" {
 // their updatePaths; standalone builds get {} (behavior unchanged).
 #define RANDO_LOGIC_INIT_PATHS \
     { "RANDO_LOGIC" }
-#define COMBO_MM_TRICK(name) CVarGetInteger("gCombo.Tricks.MM." name, 0)
+// Hidden MM tricks (ComboRando::IsHiddenMmTrick) never count in logic, whatever a seed, profile or CVar
+// says. bool_constant decides it at compile time, so a public trick is the plain CVar read.
+#define COMBO_MM_TRICK(name)                                                          \
+    (std::bool_constant<ComboRando::IsHiddenMmTrick("gCombo.Tricks.MM." name)>::value \
+         ? 0                                                                          \
+         : CVarGetInteger("gCombo.Tricks.MM." name, 0))
 #define CAN_RESET_TIME Rando::Logic::NativeMmCanResetTime()
 #define CAN_RESET_TIME_DUNGEON Rando::Logic::NativeMmCanResetTimeDungeon()
 #define CAN_ACTIVATE_OWL (CAN_USE_SWORD || CAN_USE_STICKS)

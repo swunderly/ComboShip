@@ -3400,7 +3400,7 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings(void) {
     }
     j["gRando.SariaPriorityItems"] = std::move(priority);
     for (const auto& trick : ComboRando::kMmTricks)
-        j[trick.key] = int(CVarGetInteger(trick.key, 0) != 0);
+        j[trick.key] = int(trick.publicOption && CVarGetInteger(trick.key, 0) != 0); // see IsHiddenMmTrick
     cached = j.dump();
     return cached.c_str();
 }
@@ -3624,7 +3624,8 @@ static int MM_ApplyProfileRandoSettingsImpl(const char* raw, bool apply) {
             auto value = input.value(trick.key, nlohmann::json(0));
             if (!value.is_number_integer() || (value != 0 && value != 1))
                 return 0;
-            settings[trick.key] = std::move(value);
+            // A hidden trick still validates (old profiles list it) but is always stored off.
+            settings[trick.key] = trick.publicOption ? std::move(value) : nlohmann::json(0);
         }
         auto excluded = input.value("gRando.ExcludedChecks", nlohmann::json::array());
         auto defaultStarting = nlohmann::json::array();
@@ -3713,6 +3714,9 @@ extern "C" COMBO_EXPORT void MM_RestoreRandoSettings(const char* json) {
         for (auto it = j.begin(); it != j.end(); ++it) {
             if (it.key() == "gRando.StartingItems" || it.key() == "gRando.ExcludedChecks" ||
                 it.key() == "gRando.SariaPriorityItems")
+                continue;
+            // Hidden tricks stay at the 0 written above, whatever the seed's snapshot says.
+            if (ComboRando::IsHiddenMmTrick(it.key()))
                 continue;
             if (it.value().is_string())
                 CVarSetString(it.key().c_str(), it.value().get<std::string>().c_str());
