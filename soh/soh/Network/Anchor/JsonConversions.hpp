@@ -8,6 +8,7 @@
 extern "C" {
 #include "z64.h"
 }
+#include "soh/Enhancements/randomizer/souls/OotSoulState.h"
 
 using json = nlohmann::json;
 
@@ -109,6 +110,8 @@ inline void to_json(json& j, const ShipRandomizerSaveContextData& shipRandomizer
         { "triforcePiecesCollected", shipRandomizerSaveContextData.triforcePiecesCollected },
         { "namedTriforceMask", shipRandomizerSaveContextData.namedTriforceMask },
         { "bombchuUpgradeLevel", shipRandomizerSaveContextData.bombchuUpgradeLevel },
+        { "silverRupeeCounts", shipRandomizerSaveContextData.silverRupeeCounts },
+        { "ootExpandedSoulsOwned", shipRandomizerSaveContextData.ootExpandedSoulsOwned },
     };
 }
 
@@ -116,6 +119,14 @@ inline void from_json(const json& j, ShipRandomizerSaveContextData& shipRandomiz
     j.at("triforcePiecesCollected").get_to(shipRandomizerSaveContextData.triforcePiecesCollected);
     shipRandomizerSaveContextData.namedTriforceMask = j.value("namedTriforceMask", uint8_t{ 0 }) & 7;
     j.at("bombchuUpgradeLevel").get_to(shipRandomizerSaveContextData.bombchuUpgradeLevel);
+    // Older peers and cached team snapshots lack these; read them as the save loader does.
+    std::fill(std::begin(shipRandomizerSaveContextData.silverRupeeCounts),
+              std::end(shipRandomizerSaveContextData.silverRupeeCounts), uint16_t{ 0 });
+    if (j.contains("silverRupeeCounts")) {
+        j.at("silverRupeeCounts").get_to(shipRandomizerSaveContextData.silverRupeeCounts);
+    }
+    const auto ownedSouls = Rando::Souls::RestoreGeneralOotSouls(j);
+    std::copy(ownedSouls.begin(), ownedSouls.end(), shipRandomizerSaveContextData.ootExpandedSoulsOwned);
 }
 
 inline void to_json(json& j, const ShipQuestSpecificSaveContextData& shipQuestSpecificSaveContextData) {

@@ -190,12 +190,24 @@ void Anchor::HandlePacket_UpdateTeamState(nlohmann::json payload) {
         // stale peer; a resync may only ever add.
         const uint8_t localNamedTriforceMask = gSaveContext.ship.quest.data.randomizer.namedTriforceMask;
         const uint8_t localTriforcePieces = gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected;
+        // Received silver rupees and souls have no check flag to rebuild them from; same rule.
+        const ShipRandomizerSaveContextData localRandomizer = gSaveContext.ship.quest.data.randomizer;
 #endif
         gSaveContext.ship.quest = loadedData.ship.quest;
 #ifdef COMBO_BUILD
         gSaveContext.ship.quest.data.randomizer.namedTriforceMask |= localNamedTriforceMask;
         if (localTriforcePieces > gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected) {
             gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected = localTriforcePieces;
+        }
+        if (IS_RANDO) {
+            auto& randomizer = gSaveContext.ship.quest.data.randomizer;
+            for (int i = 0; i < ARRAY_COUNT(randomizer.silverRupeeCounts); i++) {
+                randomizer.silverRupeeCounts[i] =
+                    std::max(randomizer.silverRupeeCounts[i], localRandomizer.silverRupeeCounts[i]);
+            }
+            for (int i = 0; i < ARRAY_COUNT(randomizer.ootExpandedSoulsOwned); i++) {
+                randomizer.ootExpandedSoulsOwned[i] |= localRandomizer.ootExpandedSoulsOwned[i];
+            }
         }
 #endif
 
