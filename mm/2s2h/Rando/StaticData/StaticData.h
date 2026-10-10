@@ -83,7 +83,7 @@ std::string GetTrapMessage();
 struct RandoStaticOption {
     RandoOptionId randoOptionId;
     const char* name;
-    const char* cvar;
+    const char* cvar; // "" for an unreleased option, which always keeps defaultValue
     u32 defaultValue;
 };
 

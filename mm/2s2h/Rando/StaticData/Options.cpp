@@ -15,26 +15,35 @@ namespace StaticData {
         }                                                \
     }
 
+// Unreleased features have no CVar, so no profile, seed or config can switch them on: generation
+// reads the default and ApplyToSaveContext saves it. Use RO() once the feature is released.
+#define RO_UNRELEASED(id, defaultValue) \
+    {                                   \
+        id, {                           \
+            id, #id, "", defaultValue   \
+        }                               \
+    }
+
 // clang-format off
 std::map<RandoOptionId, RandoStaticOption> Options = {
-    RO(RO_MM_COMPLETE_SOULS, RO_GENERIC_NO), // Internal only; no UI enable before linked validation.
+    RO_UNRELEASED(RO_MM_COMPLETE_SOULS, RO_GENERIC_NO), // Internal only; no UI enable before linked validation.
     RO(RO_MM_SPELL_WIND, RO_GENERIC_NO),
     RO(RO_CROSS_GAME_FARORE, RO_GENERIC_NO),
-    RO(RO_MM_CROSS_AGE, RO_GENERIC_NO),
-    RO(RO_MM_ADULT_MASK, RO_GENERIC_NO),
-    RO(RO_MM_BOOTS_IRON, RO_GENERIC_NO),
-    RO(RO_MM_BOOTS_HOVER, RO_GENERIC_NO),
-    RO(RO_MM_TUNIC_GORON, RO_GENERIC_NO),
-    RO(RO_MM_TUNIC_ZORA, RO_GENERIC_NO),
+    RO_UNRELEASED(RO_MM_CROSS_AGE, RO_GENERIC_NO),
+    RO_UNRELEASED(RO_MM_ADULT_MASK, RO_GENERIC_NO),
+    RO_UNRELEASED(RO_MM_BOOTS_IRON, RO_GENERIC_NO),
+    RO_UNRELEASED(RO_MM_BOOTS_HOVER, RO_GENERIC_NO),
+    RO_UNRELEASED(RO_MM_TUNIC_GORON, RO_GENERIC_NO),
+    RO_UNRELEASED(RO_MM_TUNIC_ZORA, RO_GENERIC_NO),
 
-    RO(RO_MM_STARTING_AGE, 0),
+    RO_UNRELEASED(RO_MM_STARTING_AGE, 0),
     RO(RO_SHARED_SPELL_WIND, RO_GENERIC_NO),
-    RO(RO_MM_SPELL_FIRE, RO_GENERIC_NO),
-    RO(RO_MM_SPELL_LOVE, RO_GENERIC_NO),
+    RO_UNRELEASED(RO_MM_SPELL_FIRE, RO_GENERIC_NO),
+    RO_UNRELEASED(RO_MM_SPELL_LOVE, RO_GENERIC_NO),
     RO(RO_SHARED_SPELL_FIRE, RO_GENERIC_NO),
     RO(RO_SHARED_SPELL_LOVE, RO_GENERIC_NO),
     RO(RO_SHARED_OCARINA, RO_GENERIC_NO), // internal effective-seed mask, no UI row
-    RO(RO_FAIRY_OCARINA_MM, RO_GENERIC_NO), // internal draft, no option-group/UI row
+    RO_UNRELEASED(RO_FAIRY_OCARINA_MM, RO_GENERIC_NO), // internal draft, no option-group/UI row
 
     RO(RO_SHUFFLE_NPC_SOULS, RO_GENERIC_NO),
     RO(RO_SHUFFLE_ANIMAL_SOULS, RO_GENERIC_NO),

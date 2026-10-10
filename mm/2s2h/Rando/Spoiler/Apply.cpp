@@ -15,8 +15,11 @@ void ApplyToSaveContext(nlohmann::json spoiler) {
     gSaveContext.save.shipSaveInfo.rando.finalSeed = spoiler["finalSeed"].get<uint32_t>();
 
     for (auto& [randoOptionId, randoStaticOption] : Rando::StaticData::Options) {
+        // An unreleased option (no CVar) keeps its default whatever the seed or spoiler file says.
         RANDO_SAVE_OPTIONS[randoOptionId] =
-            spoiler["options"].value(randoStaticOption.name, (uint32_t)randoStaticOption.defaultValue);
+            randoStaticOption.cvar[0]
+                ? spoiler["options"].value(randoStaticOption.name, (uint32_t)randoStaticOption.defaultValue)
+                : randoStaticOption.defaultValue;
     }
 
     if (!RANDO_SAVE_OPTIONS[RO_SHUFFLE_GOLD_SKULLTULAS]) {
