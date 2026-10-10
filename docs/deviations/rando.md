@@ -1508,10 +1508,11 @@ Both force-branches are `else`-chained onto #134's force-clears, so parent-off s
 `RSK_WINCON`, the spoiler's `oot.settings` blob records the player's CVars, not the forced values; the
 authoritative record is top-level `startingGame`.
 
-**UI.** `SOH_RefreshComboStartingGameUI` greys out those three options with the tooltip "Starting Game
-is Majora's Mask" — only under an *explicit* MM start. Under Random they stay editable and the force is
-silent when MM rolls. `HandleStartingAgeUI` owns `RSK_STARTING_AGE` in both directions (it re-applies
-the MM disable at its end), so the refresh can't undo its own unbeatable-config disable.
+**UI.** The profile editor's option policy (`combo/gui/ProfileOotOptionPolicy.h`) greys out those three
+options with the tooltip "Starting Game is Majora's Mask" — only under an *explicit* MM start. Under
+Random they stay editable and the force is silent when MM rolls. `RefreshComboStartingGameUI` handles
+the two Mask Shop exclusions; `HandleStartingAgeUI` owns `RSK_STARTING_AGE` in both directions (it
+re-applies the MM disable at its end), so the refresh can't undo its own unbeatable-config disable.
 
 **Fill.** `CrossWorldCombinedFill` takes `GameId startingGame`; the whole reachability change is
 `portalOpen = !portalGated || mmStart` in `reachableFixpoint`. MM's logic already roots at South Clock
