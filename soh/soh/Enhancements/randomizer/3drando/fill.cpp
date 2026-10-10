@@ -574,9 +574,12 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
         (ComboRando::ActiveSongTravel().logicEnabled || ComboRando::ActiveSongTravel().logicForeignSongs)) {
         const auto& ageArrivals = ComboRando::OotSongAgeArrivals();
         const bool ageAware = ComboRando::OotSongOracle() && ageArrivals.active;
-        const uint32_t incoming =
-            ageAware ? (ageArrivals.masks[0] | ageArrivals.masks[1])
-                     : (ComboRando::OotSongOracle() ? ComboRando::OotSongArrivals() : SOH_LiveIncomingSongs());
+        // Live arrivals read the loaded saves, so only the tracker may use them. Entrance validation,
+        // beatable and playthrough searches must depend on the seed alone.
+        const uint32_t incoming = ageAware ? (ageArrivals.masks[0] | ageArrivals.masks[1])
+                                           : (ComboRando::OotSongOracle()
+                                                  ? ComboRando::OotSongArrivals()
+                                                  : (logic->CalculatingAvailableChecks ? SOH_LiveIncomingSongs() : 0u));
         for (int i = 0; i < 6; i++)
             if (incoming & (1u << i)) {
                 auto* target = RegionTable(ComboRando::kOotSongRegions[i]);
