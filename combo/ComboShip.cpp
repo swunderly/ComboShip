@@ -2234,17 +2234,11 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     nlohmann::json profileResolvedRules;
     bool usedCombinedFill = false;
     nlohmann::json entranceExpansion, ordinaryEntranceExpansion, grottoEntranceExpansion, mixedEntranceExpansion;
-    // Private native validation controls; no public entrance option is enabled here.
-    const auto ordinarySettings = ComboRando::Entrances::MmOrdinaryGenerationSettings(
-        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryIndoors", 0) != 0,
-        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryTelescopes", 0) != 0,
-        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryOverworld", 0) != 0,
-        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryDungeons", 0) != 0);
-    const bool nativeMmMixed =
-        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmMixed", 0) != 0; // private validation only
-    const bool nativeMmGrottos =
-        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmGrottos", 0) != 0; // private validation only
-    const bool nativeMmWallmasters = sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmWallmasters", 0) != 0;
+    // The MM entrance generators are unfinished and have no Randomizer-menu option yet, so in-game
+    // generation keeps them off. They are never read from the gCombo.Rando.NativeMm* CVars, which profile
+    // setupCVars, imported seeds and old configs can carry; the headless tool's --mm-* flags validate them.
+    const auto ordinarySettings = ComboRando::Entrances::MmOrdinaryGenerationSettings(false, false, false, false);
+    const bool nativeMmMixed = false, nativeMmGrottos = false, nativeMmWallmasters = false;
     nlohmann::json playthroughJson = nlohmann::json::array(); // structured sphere playthrough (combined-fill only)
     ComboRando::RequirednessResult pareDownResult;            // cross-hint Phase 3 WotH/foolish classification
     // ComboShip: checkName -> OOT area, computed once from sohHintDump right after the winning attempt's
