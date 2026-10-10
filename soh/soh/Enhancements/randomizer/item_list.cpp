@@ -487,6 +487,13 @@ void Rando::StaticData::InitItemTable() {
 #endif
 
     // clang-format on
+#ifdef COMBO_BUILD
+    // Hints name each Triforce as pinned gi.yml does ("the Triforce of Power"), not as a Triforce Piece.
+    for (const auto rg : { RG_TRIFORCE_POWER, RG_TRIFORCE_COURAGE, RG_TRIFORCE_WISDOM }) {
+        const std::string hint = "the " + itemTable[rg].GetName().GetEnglish();
+        itemTable[rg].SetHintText(HintText(CustomMessage(hint, hint, hint)));
+    }
+#endif
 
     SilverRupees::RegisterItems(itemTable);
     Souls::RegisterItems(itemTable);

@@ -515,8 +515,19 @@ RandomizerHintTextKey Item::GetHintKey() const {
 }
 
 const HintText& Item::GetHint() const {
+#ifdef COMBO_BUILD
+    if (hintText) {
+        return *hintText;
+    }
+#endif
     return StaticData::hintTextTable[hintKey];
 }
+
+#ifdef COMBO_BUILD
+void Item::SetHintText(HintText hintText_) {
+    hintText = std::make_shared<const HintText>(std::move(hintText_));
+}
+#endif
 
 GetItemCategory Item::GetCategory() {
     return category;

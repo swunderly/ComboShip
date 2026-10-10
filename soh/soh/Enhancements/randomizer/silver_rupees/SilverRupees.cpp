@@ -134,6 +134,9 @@ void RegisterItems(std::array<Item, RG_MAX>& items) {
                  row.item, row.pouch ? OBJECT_GI_PURSE : OBJECT_GI_RUPY, row.pouch ? GID_WALLET_ADULT : GID_RUPEE_BLUE,
                  TEXT_RANDOMIZER_CUSTOM_ITEM, 0x80, CHEST_ANIM_LONG, ITEM_CATEGORY_MAJOR, MOD_RANDOMIZER);
         items[row.item].SetCustomDrawFunc(DrawSilver);
+        // Hints name the item as pinned gi.yml does ("a Silver Rupee (Well)", "the Silver Pouch (Well)").
+        const std::string hint = (row.pouch ? "the " : "a ") + std::string(row.name);
+        items[row.item].SetHintText(HintText(CustomMessage(hint, hint, hint)));
     }
 }
 void RegisterLocations(std::array<Location, RC_MAX>& locations) {

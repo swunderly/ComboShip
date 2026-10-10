@@ -138,6 +138,13 @@ bool FilterOverworldLocations(RandomizerCheck loc) {
 
 bool FilterDungeonLocations(RandomizerCheck loc) {
     auto ctx = Rando::Context::GetInstance();
+#ifdef COMBO_BUILD
+    // Dungeon hints read the check's own sentence. Silver rupee checks have none (OoTMM pool hint
+    // NONE), so like OoTMM they are never named by a location hint.
+    if (Rando::StaticData::GetLocation(loc)->GetHintKey() == RHT_NONE) {
+        return false;
+    }
+#endif
     return Rando::StaticData::GetLocation(loc)->IsDungeon();
 }
 

@@ -73,6 +73,10 @@ class Item {
     bool IsShieldOrTunic() const;
     RandomizerHintTextKey GetHintKey() const;
     const HintText& GetHint() const;
+#ifdef COMBO_BUILD
+    // For items with no hint text table entry of their own; GetHint returns it instead.
+    void SetHintText(HintText hintText_);
+#endif
     GetItemCategory GetCategory();
     bool operator==(const Item& right) const;
     bool operator!=(const Item& right) const;
@@ -98,5 +102,8 @@ class Item {
     std::shared_ptr<GetItemEntry> giEntry;
     const char* customIcon = nullptr;
     CustomIconSize iconSize = ICON_SIZE_32;
+#ifdef COMBO_BUILD
+    std::shared_ptr<const HintText> hintText;
+#endif
 };
 } // namespace Rando
