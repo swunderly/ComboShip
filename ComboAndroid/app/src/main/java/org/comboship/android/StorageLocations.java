@@ -103,7 +103,24 @@ public final class StorageLocations {
             StorageCopy.prepare(source,target,staging->DataFiles.rebaseSettings(staging,source,target));
             mark(target);saveSelection(context,target);
         }
-        // The old copy is deliberately preserved until the user has tested the new storage.
+        // The old copy is kept. Once the game has run from the new folder, Data location offers to delete it.
+    }
+    /** Deletes a marked data folder that is not the active one, such as the copy a move leaves behind. */
+    public static void removeCopy(Context context,File requested) throws IOException {
+        File target=allowed(context,requested),active=current(context);requireAccess(context,target);
+        if(!hasData(target) || target.toPath().startsWith(active.toPath()) || active.toPath().startsWith(target.toPath()))
+            throw new IOException("Only a Combo Ship data folder that is not in use can be deleted.");
+        // A running game holds this lock for its whole session; a leftover .running file is not a session.
+        try(DataLock ignored=new DataLock(target)) {
+            // Unmark first, so a partly deleted folder can never be chosen as existing data.
+            Files.delete(new File(target,MARKER).toPath());
+            StorageCopy.removeTree(target.toPath());
+        }
+    }
+    static long size(File folder) throws IOException {
+        try(java.util.stream.Stream<Path> files=Files.walk(folder.toPath())) {
+            return files.filter(path->Files.isRegularFile(path,LinkOption.NOFOLLOW_LINKS)).mapToLong(path->path.toFile().length()).sum();
+        }
     }
     private static File allowed(Context context,File requested)throws IOException {
         File target=requested.getCanonicalFile();

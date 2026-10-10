@@ -363,7 +363,7 @@ public final class MainActivity extends Activity {
             }
         }catch(IOException error){showError(error);return;}
         boolean existing=StorageLocations.hasData(destination);
-        new AlertDialog.Builder(this).setTitle(existing?"Use existing Combo Ship data?":"Copy data to this storage?")
+        AlertDialog.Builder dialog=new AlertDialog.Builder(this).setTitle(existing?"Use existing Combo Ship data?":"Copy data to this storage?")
             .setMessage((existing?"This folder's saves will become the active copy. Other copies will be preserved.":
                 "Saves, settings, ROMs, and mods will be copied and verified. The current copy will be preserved.")+"\n\n"+destination)
             .setPositiveButton(existing?"Use existing":"Copy and switch",(d,w)->execute("Preparing data location…",()->{
@@ -374,7 +374,25 @@ public final class MainActivity extends Activity {
                     DataFiles.installSupport(this,root);supportInstalled();
                 }
             },"Data location changed.",true,null,false))
-            .setNegativeButton("Cancel",null).show();
+            .setNegativeButton("Cancel",null);
+        // A copy left behind by a move can go once the game has run and closed normally from the active folder.
+        if(existing && root!=null && !destination.equals(root) && activeFolderTested())
+            dialog.setNeutralButton("Delete this copy",(d,w)->removeCopy(destination));
+        dialog.show();
+    }
+    private boolean activeFolderTested() {
+        long launched=getPreferences(MODE_PRIVATE).getLong("launched:"+root.getAbsolutePath(),0);
+        return launched>0 && new File(root,"native.log").lastModified()>=launched &&
+            !new File(root,".running").exists() && !startupFailed();
+    }
+    private void removeCopy(File copy) {
+        final long[] size=new long[1];
+        execute("Checking the old copy…",()->size[0]=StorageLocations.size(copy),"",false,()->
+            new AlertDialog.Builder(this).setTitle("Delete this copy?")
+                .setMessage(copy+"\n\nEverything in this folder will be deleted ("+android.text.format.Formatter.formatFileSize(this,size[0])+
+                    "), including its saves. Your active data in "+root+" is not affected.")
+                .setPositiveButton("Delete",(d,w)->execute("Deleting the old copy…",()->StorageLocations.removeCopy(this,copy),"Old copy deleted."))
+                .setNegativeButton("Cancel",null).show());
     }
     private String displayName(Uri uri) {
         try(Cursor cursor=getContentResolver().query(uri,new String[]{OpenableColumns.DISPLAY_NAME},null,null,null)) {
@@ -427,6 +445,8 @@ public final class MainActivity extends Activity {
         if(withoutMods)try(DataLock ignored=new DataLock(root)){}catch(IOException error){showError(error);return;}
         Intent game=new Intent(this,GameActivity.class);game.putExtra("without-mods",withoutMods);
         game.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        // Lets Data location tell when this folder has run the game (see activeFolderTested).
+        getPreferences(MODE_PRIVATE).edit().putLong("launched:"+root.getAbsolutePath(),System.currentTimeMillis()).apply();
         launched=true;startActivity(game);finish();
     }
     private void showError(Exception error) {

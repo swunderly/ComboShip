@@ -64,8 +64,8 @@ public final class StorageCopy {
             if(!committed && emptyTarget && !Files.exists(to))Files.createDirectory(to);
         }
     }
-    /** Deletes a staging tree; symbolic links inside it are removed, never followed. */
-    private static void removeTree(Path root)throws IOException {
+    /** Deletes a directory tree; symbolic links inside it are removed, never followed. */
+    static void removeTree(Path root)throws IOException {
         Files.walkFileTree(root,new SimpleFileVisitor<Path>() {
             @Override public FileVisitResult visitFile(Path file,BasicFileAttributes attrs)throws IOException {
                 Files.delete(file);return FileVisitResult.CONTINUE;
