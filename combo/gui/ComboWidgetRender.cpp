@@ -6,10 +6,10 @@
 //
 // DESIGN NOTE: NO ResourceManager usage here. RM scoping for invoke callbacks is GAME-SIDE
 // (inside each game's own invoke/draw/eval export). comboui only calls game.evalDisabled,
-// game.invokeCallback and game.drawCustom by index â€” no shared_ptr crosses the boundary.
+// game.invokeCallback and game.drawCustom by index — no shared_ptr crosses the boundary.
 //
 // KNOWN ISSUE (docs/KNOWN_ISSUES.md): settings whose effect depends on a registered per-page
-// MenuUpdate function (e.g. SoH's Advanced Resolution editor â€” local-var bindings translated to
+// MenuUpdate function (e.g. SoH's Advanced Resolution editor — local-var bindings translated to
 // effective CVars by UpdateResolutionVars) do NOT apply through this generic CVar-write path.
 // Toggling them here writes the UI CVars but not the effective ones, so the viewport never changes.
 #include "ComboWidgetRender.h"
@@ -30,7 +30,7 @@
 namespace ComboRando {
 
 namespace {
-// Human-readable backend names â€” mirror soh/.../MenuTypes.h windowBackendsMap / audioBackendsMap
+// Human-readable backend names — mirror soh/.../MenuTypes.h windowBackendsMap / audioBackendsMap
 // (those live per-DLL and aren't linkable from comboui). Window ids are Fast::WindowBackend values.
 const char* WindowBackendName(int32_t id) {
     switch (id) {
@@ -59,7 +59,7 @@ const char* AudioBackendName(Ship::AudioBackend b) {
     }
 }
 
-// CW_VIDEO_BACKEND: render-API selector. Mirrors SoH's WIDGET_VIDEO_BACKEND â€” writes the config
+// CW_VIDEO_BACKEND: render-API selector. Mirrors SoH's WIDGET_VIDEO_BACKEND — writes the config
 // and saves; the change takes effect on relaunch (hence the native "Needs reload" label).
 void RenderVideoBackend(const CwWidget& w, const ImVec4& themeColor) {
     auto ctx = Ship::Context::GetRawInstance();
@@ -110,7 +110,7 @@ void RenderVideoBackend(const CwWidget& w, const ImVec4& themeColor) {
         ImGui::EndDisabled();
 }
 
-// CW_AUDIO_BACKEND: audio-API selector. Mirrors SoH's WIDGET_AUDIO_BACKEND â€” applies live.
+// CW_AUDIO_BACKEND: audio-API selector. Mirrors SoH's WIDGET_AUDIO_BACKEND — applies live.
 void RenderAudioBackend(const CwWidget& w, const ImVec4& themeColor) {
     auto ctx = Ship::Context::GetRawInstance();
     if (!ctx || !ctx->GetAudio()) {
@@ -121,13 +121,13 @@ void RenderAudioBackend(const CwWidget& w, const ImVec4& themeColor) {
     auto avail = audio->GetAvailableAudioBackends();
     const Ship::AudioBackend cur = audio->GetCurrentAudioBackend();
     // SoH's MenuDrawItem hardcodes "Audio API" (ignores the widget's "(Needs reload)" name, since
-    // the audio backend applies live) â€” match that rather than using w.name.
+    // the audio backend applies live) — match that rather than using w.name.
     const char* label = "Audio API";
     const bool only = !avail || avail->size() <= 1;
     if (only)
         ImGui::BeginDisabled(true);
     // Label above the combo (matches SoH), then a hidden-label combo sized to fit the widest option
-    // (so "Windows Audio Session API" isn't clipped) â€” mirrors SoH's CalcComboWidth.
+    // (so "Windows Audio Session API" isn't clipped) — mirrors SoH's CalcComboWidth.
     ImGui::TextUnformatted(label);
     ComboMenu_PushCombobox(themeColor);
     const ImGuiStyle& st = ImGui::GetStyle();
@@ -236,11 +236,11 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
 
     // ComboShip: draw declarative/CVar kinds through the owning game's real MenuDrawItem/UIWidgets.
     // The game applies the change (its own callback + ShipInit) internally, so we must NOT re-invoke
-    // those here â€” only the cross-game audio mirror stays comboui's concern. Falls through to the
+    // those here — only the cross-game audio mirror stays comboui's concern. Falls through to the
     // raw path below when the export is absent (older DLL).
     const bool sharedCombo = w.kind == CW_COMBOBOX && w.cvar && *w.cvar && w.choiceCount > 0;
     if (w.index >= 0 && game.drawWidget && DelegatesToGame(w.kind) && !sharedCombo) {
-        // Enforce the widget's preFunc disable at the comboui level (wrap in BeginDisabled) â€” same as
+        // Enforce the widget's preFunc disable at the comboui level (wrap in BeginDisabled) — same as
         // the raw path below. The game's MenuDrawItem also applies it internally, but wrapping here is
         // what reliably makes a preFunc-gated control non-interactive (e.g. "Cull Glitch Useful
         // Actors", gated on "Widescreen Actor Culling").

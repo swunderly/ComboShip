@@ -425,7 +425,7 @@ class View {
     }
     void Callback_RSK_TRIFORCE_HUNT_PIECES_TOTAL() {
         uint8_t triforceTotal = CVarGetInteger(CVAR_RANDOMIZER_SETTING("TriforceHuntTotalPieces"), 0);
-        // ComboShip: the cross-world fill can't honor a dungeon/overworld restriction â€” forced Anywhere.
+        // ComboShip: the cross-world fill can't honor a dungeon/overworld restriction — forced Anywhere.
         if (triforceTotal == 0 || kComboOwnsWincon) {
             mOptions[RSK_TRIFORCE_HUNT_PIECES_LOCATION].Hide();
         } else {

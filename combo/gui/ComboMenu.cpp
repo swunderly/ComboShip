@@ -62,7 +62,7 @@ void ResolveComboGenSyms() {
         sRefreshStartingGameUI = (FnRefreshStartingGameUI)Combo_ResolveSym("soh", "SOH_RefreshComboStartingGameUI");
 }
 
-// Bug 2: Anchor resync exports, one per game DLL â€” resolved the same way as the combo-gen syms
+// Bug 2: Anchor resync exports, one per game DLL — resolved the same way as the combo-gen syms
 // above. The button calls both so a resync pulls the peer's OOT AND MM team-state.
 typedef void (*FnRequestResync)(void);
 FnRequestResync sSohRequestResync = nullptr;
@@ -97,7 +97,7 @@ void ResolveAnchorResyncSyms() {
         sMmRequestResync = (FnRequestResync)Combo_ResolveSym("2ship", "MM_Anchor_RequestResync");
 }
 
-// Shared Anchor config CVar keys (process-global libultraship store; both game DLLs read these â€” see
+// Shared Anchor config CVar keys (process-global libultraship store; both game DLLs read these — see
 // MMAnchor.cpp). comboui has no access to soh's CVAR_REMOTE_ANCHOR macro, so the literals live here.
 namespace AnchorCVar {
 constexpr const char* Host = "gRemote.Anchor.Host";
@@ -242,7 +242,7 @@ void ComboMenu::Draw() {
         }
         ImGui::EndPopup();
     }
-    // Mirror Ship::Menu::Draw â€” skip GuiWindow::Draw's normal Begin/End wrapper so DrawElement
+    // Mirror Ship::Menu::Draw — skip GuiWindow::Draw's normal Begin/End wrapper so DrawElement
     // can open its own fullscreen overlay window instead of a floating one.
     if (!IsVisible()) {
         return;
@@ -265,7 +265,7 @@ void ComboMenu::OpenAtRandomizer() {
 void ComboMenu::DrawElement() {
     // ImGui's GImGui (current-context) is a per-module global; comboui.dll has its own,
     // separate from libultraship.dll where the context actually lives. Point it at the shared
-    // context before any ImGui call here (same pattern soh.dll/2ship.dll use) â€” otherwise
+    // context before any ImGui call here (same pattern soh.dll/2ship.dll use) — otherwise
     // ImGui::BeginTabBar dereferences a null context and crashes.
     auto ctx = Ship::Context::GetRawInstance();
     if (ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui()) {
@@ -657,7 +657,7 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                         continue;
                     // Dedupe shared settings (same backing CVar) across both games. Widgets with no
                     // CVar (buttons/window toggles) drive distinct callbacks, so scope their key per
-                    // game â€” otherwise two same-named buttons would collapse and one would vanish.
+                    // game — otherwise two same-named buttons would collapse and one would vanish.
                     std::string cvar = wd.cvar ? wd.cvar : "";
                     std::string key = cvar.empty() ? (std::string(src.label) + "|" + (wd.name ? wd.name : ""))
                                                    : NormalizeSearch(cvar);
@@ -996,7 +996,7 @@ void DrawNetworkSharedPanel() {
         MenuTooltip("Shows every teammate's game and area, with same-game teleport.");
     }
 
-    // --- Room settings (owner-only, non-global) â€” second column ---
+    // --- Room settings (owner-only, non-global) — second column ---
     ImGui::TableSetColumnIndex(1);
     // ownerInfo bit0=isOwner, bit1=isGlobalRoom; 0 unless connected. Mirrors soh's AnchorAdminMenu gate.
     int ownerInfo = sSohAnchorGetOwnerInfo ? sSohAnchorGetOwnerInfo() : 0;
@@ -1077,7 +1077,7 @@ void PlandoBuildItems() {
     add(sPlando.mmDump, ComboRando::GAME_MM, " (MM)");
 }
 
-// Load the current pending/slot consolidated spoiler into the editable model (the #73 fix â€” the
+// Load the current pending/slot consolidated spoiler into the editable model (the #73 fix — the
 // vendored OOT plando can't parse the consolidated schema). Flattens oot/mm.placements + foreign[]
 // into the shape ParseSpoilerPlacements expects, resolving foreign checks to their real cross-game item.
 void PlandoLoad() {
@@ -1202,7 +1202,7 @@ void PlandoSavePlay() {
             foreignRaw.push_back(std::move(marker));
         }
     }
-    // Shared Items: the loaded seed's own effective mask â€” plando doesn't change which families are
+    // Shared Items: the loaded seed's own effective mask — plando doesn't change which families are
     // shared, only where items land.
     const uint32_t plandoSharedMask = ComboRando::SharedMaskFromKeys(j.value("sharedItems", nlohmann::json::array()));
     // Native cross-game name collisions get their own-game suffix; foreign checks are skipped (their
@@ -2223,7 +2223,7 @@ void ComboMenu::DrawComboPanel() {
             if (p->success.load()) {
                 ImGui::TextUnformatted("Seed ready for OoT + MM. Start Randomizer on a new file.");
                 // Show the reproducible seed token (the input string, not the internal masterSeed
-                // hash). Paste it into the Seed field + same settings to reproduce â€” shareable
+                // hash). Paste it into the Seed field + same settings to reproduce — shareable
                 // without sharing a save file.
                 ImGui::Text("Seed: %s", p->seedStr);
                 ImGui::SameLine();
@@ -2289,7 +2289,7 @@ extern "C" COMBO_EXPORT void ComboUI_Register(void) {
     ComboNotes::RegisterWindow();
 
     // Combo-owned unified Hint Tracker (#164). OOT's native one is unreachable now that its sidebar is
-    // hidden, so force it shut here â€” a config that persisted gOpenWindows.HintTracker=1 would
+    // hidden, so force it shut here — a config that persisted gOpenWindows.HintTracker=1 would
     // otherwise keep showing a window with no settings and no combo hint content.
     ComboRando::RegisterHintTrackerWindow();
     for (const auto& [cvar, name] : { std::pair{ "gOpenWindows.HintTracker", "Hint Tracker" },
