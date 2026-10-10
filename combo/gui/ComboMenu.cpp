@@ -1574,7 +1574,6 @@ void DrawPairedPreferences(const std::string& page) {
     }
 }
 void DrawCombinedGoals() {
-    auto save = [] {};
     const char* guarantees[] = { "All checks reachable", "Beatable seed" };
     int guarantee = std::clamp(ProfileUI::ReadInteger(kCombinedGuarantee, 0), 0, 1);
     ImGui::SetNextItemWidth(-FLT_MIN);
@@ -1582,7 +1581,6 @@ void DrawCombinedGoals() {
         ProfileUI::WriteInteger(kCombinedGuarantee, guarantee);
         SynchronizeGenerationGuarantee([](const char* k, int v) { return ProfileUI::ReadInteger(k, v); },
                                        [](const char* k, int v) { ProfileUI::WriteInteger(k, v); });
-        save();
     }
     MenuTooltip("All checks reachable includes every enabled, non-excluded check. Beatable seed requires the selected "
                 "victory goal. No Logic disables these guarantees.");
@@ -1591,8 +1589,6 @@ void DrawCombinedGoals() {
     ImGui::SetNextItemWidth(-FLT_MIN);
     if (ImGui::Combo("##StartingWorld", &world, worlds, 3)) {
         ProfileUI::WriteInteger("gCombo.Rando.StartingGame", world);
-
-        save();
     }
     MenuTooltip("Choose the world where the new file starts. Both worlds remain part of the seed.");
     const char* goals[] = { "Both final bosses", "Triforce Hunt", "Either final boss",
@@ -1605,7 +1601,6 @@ void DrawCombinedGoals() {
     if (ImGui::Combo("##VictoryCondition", &goal, goals, 6)) {
         ProfileUI::WriteInteger("gCombo.Rando.Goal", goal);
         ProfileUI::WriteInteger("gCombo.Rando.TriforceHunt", goal == 1);
-        save();
     }
     MenuTooltip("Choose the goal for new seeds. Triforce Quest requires Power, Courage and Wisdom, placed in later "
                 "progression spheres in different regions.");
@@ -1624,14 +1619,12 @@ void DrawCombinedGoals() {
                 total = required;
                 ProfileUI::WriteInteger("gCombo.Rando.TriforceTotal", total);
             }
-            save();
         }
         ImGui::TextUnformatted("Pieces in the pool");
         ImGui::SetNextItemWidth(-FLT_MIN);
         if (ImGui::SliderInt("##TotalPieces", &total, required, kMaxComboTriforcePieces, "%d",
                              ImGuiSliderFlags_NoInput)) {
             ProfileUI::WriteInteger("gCombo.Rando.TriforceTotal", total);
-            save();
         }
     }
     ImGui::SeparatorText("World access");
@@ -1641,7 +1634,6 @@ void DrawCombinedGoals() {
     ImGui::BeginDisabled(!windMm);
     if (DrawRuleCheckbox("Cross-Games Farore's Wind", &crossFw)) {
         ProfileUI::WriteInteger("gRando.Options.RO_CROSS_GAME_FARORE", crossFw);
-        save();
     }
     ImGui::EndDisabled();
     MenuTooltip(windMm ? "Controls whether you can use Farore's Wind to warp between OoT and MM."
