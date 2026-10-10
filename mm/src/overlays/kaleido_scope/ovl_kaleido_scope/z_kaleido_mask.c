@@ -542,9 +542,6 @@ void KaleidoScope_UpdateMaskCursor(PlayState* play) {
             }
 
             cursorSlot = pauseCtx->cursorPoint[PAUSE_MASK];
-#ifdef COMBO_BUILD
-            Combo_MM_AdultMaskPauseTick(play, cursorSlot, COMBO_RAW_GIVEN_MASK_ON_MOON(cursorSlot));
-#endif
             pauseCtx->cursorColorSet = PAUSE_CURSOR_COLOR_SET_YELLOW;
 
             if (moveCursorResult == PAUSE_CURSOR_RESULT_SLOT) {
@@ -578,6 +575,12 @@ void KaleidoScope_UpdateMaskCursor(PlayState* play) {
                 Interface_SetHudVisibility(HUD_VISIBILITY_ALL);
             }
 
+#ifdef COMBO_BUILD
+            // After the native colour/item selection, as on the item page, so its blue cursor is kept.
+            // The tick only ever selects a mask that is not given on the moon.
+            if (Combo_MM_AdultMaskPauseTick(play, cursorSlot, COMBO_RAW_GIVEN_MASK_ON_MOON(cursorSlot)))
+                cursorItem = gSaveContext.save.saveInfo.inventory.items[cursorSlot + ITEM_NUM_SLOTS];
+#endif
             pauseCtx->cursorItem[PAUSE_MASK] = cursorItem;
             pauseCtx->cursorSlot[PAUSE_MASK] = cursorSlot;
             if (cursorItem != PAUSE_ITEM_NONE) {
