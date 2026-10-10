@@ -117,9 +117,8 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_CLOCK_TOWN_EAST_SMALL_CRATE_01, true),
             CHECK(RC_CLOCK_TOWN_EAST_SMALL_CRATE_02, true),
             CHECK(RC_CLOCK_TOWN_EAST_POSTMAN_HAT, RANDO_EVENTS[RE_POSTMAN_FREEDOM] && BETWEEN(TIME_NIGHT3_PM_06_00, TIME_NIGHT3_AM_05_00)),
-            // OoTMM's town-fairy location is the daytime Laundry Pool route.
-            // Keep the physical night spawn, but use the same conservative
-            // clock-item logic as its pinned clock_town.yml location.
+            // RC_CLOCK_TOWN_STRAY_FAIRY: the night Deku route here is deliberately not in logic; OoTMM
+            // clock_town.yml models it as is_day in the Laundry Pool (see RR_CLOCK_TOWN_LAUNDRY).
             CHECK(RC_CLOCK_TOWN_EAST_UPPER_CHEST,    true),
             CHECK(RC_CLOCK_TOWN_BOMBERS_NOTEBOOK,    RANDO_EVENTS[RE_BOMBER_CODE]),
             CHECK(RC_CLOCK_TOWN_POSTBOX,             HAS_ITEM(ITEM_MASK_POSTMAN)),
