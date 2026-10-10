@@ -3715,6 +3715,9 @@ extern "C" COMBO_EXPORT void MM_RestoreRandoSettings(const char* json) {
             if (it.key() == "gRando.StartingItems" || it.key() == "gRando.ExcludedChecks" ||
                 it.key() == "gRando.SariaPriorityItems")
                 continue;
+            // "" is the no-CVar sentinel of unreleased options (RO_UNRELEASED); never create that CVar.
+            if (it.key().empty())
+                continue;
             // Hidden tricks stay at the 0 written above, whatever the seed's snapshot says.
             if (ComboRando::IsHiddenMmTrick(it.key()))
                 continue;
