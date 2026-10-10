@@ -5503,7 +5503,9 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoHintData(void) {
                   { "dungeon", loc->IsDungeon() },
                   { "overworld", loc->IsOverworld() },
                   { "song", loc->GetRCType() == RCTYPE_SONG_LOCATION },
-                  { "locationHint", Combo_HintTextToJson(*loc->GetHint()) } });
+                  // RHT_NONE (e.g. silver rupees) has no location sentence; export none rather than "No Hint".
+                  { "locationHint", loc->GetHintKey() == RHT_NONE ? nlohmann::json::object()
+                                                                  : Combo_HintTextToJson(*loc->GetHint()) } });
         }
         out["checks"] = std::move(checks);
 
