@@ -55,6 +55,19 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
     const auto isOcarina = [](RandoItemId item) {
         return item == RI_OCARINA || item == RI_OCARINA_FAIRY || item == RI_PROGRESSIVE_OCARINA;
     };
+    // RemoveItem cannot undo the spell, mask and adult gear grants, which also set ownership outside
+    // their inventory slot; a trial restores everything they write instead.
+    bool trialComboActive = false;
+    decltype(gSaveContext.save.shipSaveInfo.adultMm) trialComboAdult;
+    decltype(gSaveContext.save.shipSaveInfo.faroresWind) trialComboFarore;
+    u8 trialComboFire = 0, trialComboLove = 0;
+    constexpr int comboSlots[] = { SLOT_TRADE_DEED, SLOT_TRADE_KEY_MAMA, SLOT_TRADE_COUPLE, SLOT_MASK_FIERCE_DEITY };
+    u8 trialComboSlots[ARRAY_COUNT(comboSlots)];
+    const auto isComboGrant = [](RandoItemId item) {
+        return item == RI_FARORES_WIND || item == RI_DINS_FIRE || item == RI_NAYRUS_LOVE || item == RI_MASK_ADULT ||
+               item == RI_MASK_FIERCE_DEITY || item == RI_BOOTS_IRON || item == RI_BOOTS_HOVER ||
+               item == RI_TUNIC_GORON || item == RI_TUNIC_ZORA;
+    };
     RandoCheckId checkWithJunk = RC_UNKNOWN;
     std::set<RandoItemId> nonJunkItemsThatWeHaveTried;
     std::vector<RandoCheckId> checksWithJunk;
@@ -247,6 +260,7 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
                 trialKeys.active = false;
                 trialBeanActive = false;
                 trialOcarinaActive = false;
+                trialComboActive = false;
                 nonJunkItemsThatWeHaveTried.clear();
                 continue;
             }
@@ -272,6 +286,14 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
                 gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits = trialOcarinaBits;
                 gSaveContext.save.saveInfo.equips = trialOcarinaEquips;
                 gSaveContext.save.shipSaveInfo.dpadEquips = trialOcarinaDpad;
+            } else if (isComboGrant(oldRandoItemId) && trialComboActive) {
+                gSaveContext.save.shipSaveInfo.adultMm = trialComboAdult;
+                gSaveContext.save.shipSaveInfo.faroresWind = trialComboFarore;
+                gSaveContext.save.shipSaveInfo.spellFireOwned = trialComboFire;
+                gSaveContext.save.shipSaveInfo.spellLoveOwned = trialComboLove;
+                for (size_t i = 0; i < ARRAY_COUNT(comboSlots); i++) {
+                    gSaveContext.save.saveInfo.inventory.items[comboSlots[i]] = trialComboSlots[i];
+                }
             } else if (FindKeyRing(oldRandoItemId) && trialKeys.active) {
                 trialKeys.Restore(gSaveContext.save.saveInfo.inventory.dungeonKeys,
                                   gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys);
@@ -295,6 +317,21 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
                 trialOcarinaEquips = gSaveContext.save.saveInfo.equips;
                 trialOcarinaDpad = gSaveContext.save.shipSaveInfo.dpadEquips;
             }
+            trialComboActive = isComboGrant(newRandoItemId);
+            if (trialComboActive) {
+                trialComboAdult = gSaveContext.save.shipSaveInfo.adultMm;
+                trialComboFarore = gSaveContext.save.shipSaveInfo.faroresWind;
+                trialComboFire = gSaveContext.save.shipSaveInfo.spellFireOwned;
+                trialComboLove = gSaveContext.save.shipSaveInfo.spellLoveOwned;
+                for (size_t i = 0; i < ARRAY_COUNT(comboSlots); i++) {
+                    trialComboSlots[i] = gSaveContext.save.saveInfo.inventory.items[comboSlots[i]];
+                }
+            }
+#ifdef COMBO_BUILD
+            // Rebuild the sources without either item first, so the next pass counts only what the
+            // new item adds as progress, not the sources that were just cleared.
+            while (UpdateResourceSources(regionsInLogic, regionTimeStates)) {}
+#endif
             if (newRandoItemId != RI_MAGIC_BEAN || grantsBeanLicense(checkWithJunk))
                 GiveItem(ConvertItem(newRandoItemId));
 
@@ -314,6 +351,7 @@ void ApplyGlitchlessLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std
             checkWithJunk = RC_UNKNOWN;
             trialKeys.active = false;
             trialOcarinaActive = false;
+            trialComboActive = false;
             nonJunkItemsThatWeHaveTried.clear();
 
             // Shuffle the item pool
