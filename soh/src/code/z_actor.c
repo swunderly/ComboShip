@@ -2376,7 +2376,8 @@ void Actor_DrawFaroresWindPointer(PlayState* play) {
 
     params = gSaveContext.respawn[RESPAWN_MODE_TOP].data;
 
-    if (params && gSaveContext.respawn[RESPAWN_MODE_TOP].entranceIndex != 0xfffd) {
+    // ComboShip: no pointer or light for a cross-game point; the s16 field holds the marker's low 16 bits.
+    if (params && (u16)gSaveContext.respawn[RESPAWN_MODE_TOP].entranceIndex != COMBO_FW_CROSS_ENTRANCE) {
         f32 yOffset = LINK_IS_ADULT ? 80.0f : 60.0f;
         f32 ratio = 1.0f;
         s32 alpha = 255;

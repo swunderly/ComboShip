@@ -250,6 +250,8 @@ typedef struct ShipQuestSaveContextData {
 } ShipQuestSaveContextData;
 
 #include "rando/SharedDungeon.h"
+// ComboShip: fw/respawn entranceIndex of a Farore's Wind point that was set in MM (cross-game Farore's Wind).
+#define COMBO_FW_CROSS_ENTRANCE 0xFFFD
 typedef struct ComboOotFaroreSaveInfo {
     RespawnData top[2];
     RespawnData dungeon[2];
