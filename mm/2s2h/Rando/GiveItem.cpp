@@ -54,7 +54,10 @@ void Rando::GiveItem(RandoItemId randoItemId) {
             MM_GrantAdultMaskItem(gSaveContext.fileNum);
             break;
         case RI_MASK_FIERCE_DEITY:
-            MM_GrantFierceDeityAdultVariant(gSaveContext.fileNum, 0);
+            // The slot-preserving grant replaces Item_Give, so run Item_Give's hooks around it.
+            if (GameInteractor_ShouldItemGive(ITEM_MASK_FIERCE_DEITY) &&
+                MM_GrantFierceDeityAdultVariant(gSaveContext.fileNum, 0))
+                GameInteractor_ExecuteOnItemGive(ITEM_MASK_FIERCE_DEITY);
             break;
         case RI_FARORES_WIND:
             // item_add.c addItemTradeMm2: install only into an empty Trade2 slot.
