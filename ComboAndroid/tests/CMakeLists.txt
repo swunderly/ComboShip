@@ -113,6 +113,7 @@ else()
         "needs COMBO_SDL_DIR (an SDL2 development prefix; SDL2-static.lib on Windows)")
 endif()
 combo_python_test(community_preset_native_option_mapping preset_native_mapping_tests.py)
+combo_python_test(profile_option_policy_matches_native_callbacks profile_policy_parity_tests.py)
 
 # Plain-Java app classes (no Android dependencies), compiled with javac directly.
 find_package(Java 16 COMPONENTS Development QUIET)
