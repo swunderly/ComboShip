@@ -245,7 +245,7 @@ static int ProfilePrepareSave(int slot) {
 }
 static int ProfilePendingReady(int slot){
     try{return sProfiles&&!g_GenerateBusy.load()&&!g_ComboPendingFinalize.load()&&!sProfileAttempt&&
-        ComboRando::Profiles::SeedDocument(sProfiles->view().pendingSeed(slot));}catch(...){return 0;}
+        sProfiles->view().hasPendingSeed(slot);}catch(...){return 0;}
 }
 static int Combo_OnReloadRequest(const char* path){
     if(!sProfiles)return Combo_OnReloadRequestImpl(path);

@@ -211,6 +211,11 @@ class Store {
         RequireSlot(slot);
         return document["files"][slot]["generated"];
     }
+    // Readiness without copying the slot's whole seed. Every record has "generated" (EmptyRecord, restore).
+    bool hasPendingSeed(int slot) const {
+        RequireSlot(slot);
+        return SeedDocument(document["files"][slot]["generated"]);
+    }
     void importSeed(int slot, const Json& seed, bool copyToDraft) {
         RequireSlot(slot);
         if (running)
