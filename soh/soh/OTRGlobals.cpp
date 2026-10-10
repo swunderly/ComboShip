@@ -2874,16 +2874,6 @@ static std::atomic<bool> sForeignSongPerformed{ false };
 static bool sNativeSongOpen = false;
 static int sNativeSongSource = -1, sNativeSongStick = 0;
 static std::string sNativeSongText;
-extern "C" void Combo_SOHForeignSongDiagnostic(const char* event) {
-    if (!CVarGetInteger("gCombo.Debug.SongPerformance", 0))
-        return;
-    const auto* msg = gPlayState ? &gPlayState->msgCtx : nullptr;
-    SPDLOG_INFO("[ComboShip SongPerformance] OoT {} source={} performed={} action={} message={} ocarina={} staff={} "
-                "nativeOpen={}",
-                event, sForeignSongRequest.load(), sForeignSongPerformed.load(), msg ? (int)msg->ocarinaAction : -1,
-                msg ? (int)msg->msgMode : -1, msg ? (int)msg->ocarinaMode : -1,
-                msg && msg->ocarinaStaff ? (int)msg->ocarinaStaff->state : -1, sNativeSongOpen);
-}
 
 static int sSongArrival = -1;
 static bool sMmVisitedForSongs = false;
@@ -3025,7 +3015,6 @@ extern "C" int Combo_SOHRecognizeForeignSong(const uint8_t* pitches, int count) 
     sForeignSongReply = -2;
     sForeignSongPerformed = false;
     sForeignSongRequest = song;
-    Combo_SOHForeignSongDiagnostic("recognized");
     return 1;
 }
 extern "C" int Combo_SOHForeignSongPerformanceActive() {
@@ -3033,7 +3022,6 @@ extern "C" int Combo_SOHForeignSongPerformanceActive() {
 }
 extern "C" void Combo_SOHForeignSongPerformanceFinished() {
     sForeignSongPerformed = true;
-    Combo_SOHForeignSongDiagnostic("performance-finished");
 }
 extern "C" void Combo_SOHForeignSongPlayedText() {
     static bool registered = false;
@@ -3080,7 +3068,6 @@ static void OpenNativeSongDialogue(uint32_t choices, bool assetError = false) {
     }
     Message_StartTextbox(gPlayState, 0x71F0, nullptr);
     gPlayState->msgCtx.ocarinaMode = 1;
-    Combo_SOHForeignSongDiagnostic(choices ? "confirmation" : "no-owls");
 }
 extern "C" void Combo_SOHMapConfirm(int source) {
     sNativeSongSource = source;
@@ -3148,7 +3135,6 @@ static void ProcessForeignSongReply() {
         Combo_SOHSoaringMapFinish(gPlayState, reply);
         return;
     }
-    Combo_SOHForeignSongDiagnostic(reply < 0 ? "cancel" : "confirmation-accepted");
     sForeignSongRequest = -1;
     sForeignSongPerformed = false;
     sNativeSongOpen = false;
@@ -3161,7 +3147,6 @@ static void ProcessForeignSongReply() {
     gPlayState->msgCtx.ocarinaMode = 4; // native ocarina END mode in both games
     if (reply < 0 || reply >= 16 || !(choices & (1u << reply)))
         return;
-    Combo_SOHForeignSongDiagnostic("native-action");
     const int dest = ComboRando::ActiveSongTravel().destination(reply);
     // Owls keep the Soaring departure even when entrance shuffle sends one to OoT.
     if (!Combo_SOHStartSoaring(gPlayState, dest)) {

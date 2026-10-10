@@ -9,7 +9,6 @@
 extern int Combo_SOHForeignSongPerformanceActive(void);
 extern void Combo_SOHForeignSongPerformanceFinished(void);
 extern void Combo_SOHForeignSongPlayedText(void);
-extern void Combo_SOHForeignSongDiagnostic(const char* event);
 extern void Combo_SOHStartSoaringEffect(PlayState* play);
 #endif
 
@@ -3455,10 +3454,6 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                             if (msgCtx->ocarinaStaff->state < OCARINA_SONG_SARIAS ||
                                 msgCtx->ocarinaStaff->state == OCARINA_SONG_SCARECROW_SPAWN) {
                                 AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
-#ifdef COMBO_BUILD
-                                if (Combo_SOHForeignSongPerformanceActive())
-                                    Combo_SOHForeignSongDiagnostic("failed-song");
-#endif
                                 Audio_PlaySoundGeneral(NA_SE_SY_OCARINA_ERROR, &gSfxDefaultPos, 4,
                                                        &gSfxDefaultFreqAndVolScale, &gSfxDefaultFreqAndVolScale,
                                                        &gSfxDefaultReverb);
@@ -3478,10 +3473,6 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                         } else if (msgCtx->ocarinaAction == OCARINA_ACTION_CHECK_SCARECROW) {
                             if (msgCtx->ocarinaStaff->state < OCARINA_SONG_SCARECROW_SPAWN) {
                                 AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
-#ifdef COMBO_BUILD
-                                if (Combo_SOHForeignSongPerformanceActive())
-                                    Combo_SOHForeignSongDiagnostic("failed-song");
-#endif
                                 Audio_PlaySoundGeneral(NA_SE_SY_OCARINA_ERROR, &gSfxDefaultPos, 4,
                                                        &gSfxDefaultFreqAndVolScale, &gSfxDefaultFreqAndVolScale,
                                                        &gSfxDefaultReverb);
@@ -3517,20 +3508,12 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                         Interface_ChangeHudVisibilityMode(1);
                     } else {
                         AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
-#ifdef COMBO_BUILD
-                        if (Combo_SOHForeignSongPerformanceActive())
-                            Combo_SOHForeignSongDiagnostic("failed-song");
-#endif
                         Audio_PlaySoundGeneral(NA_SE_SY_OCARINA_ERROR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
                                                &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
                         msgCtx->msgMode = MSGMODE_OCARINA_STARTING;
                     }
                 } else if (msgCtx->ocarinaStaff->state == 0xFF) {
                     AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
-#ifdef COMBO_BUILD
-                    if (Combo_SOHForeignSongPerformanceActive())
-                        Combo_SOHForeignSongDiagnostic("failed-song");
-#endif
                     Audio_PlaySoundGeneral(NA_SE_SY_OCARINA_ERROR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
                                            &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
                     msgCtx->stateTimer = 10;
@@ -3681,10 +3664,6 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                 }
                 break;
             case MSGMODE_SETUP_DISPLAY_SONG_PLAYED:
-#ifdef COMBO_BUILD
-                if (Combo_SOHForeignSongPerformanceActive())
-                    Combo_SOHForeignSongDiagnostic("performance-start");
-#endif
                 if (CVarGetInteger(CVAR_ENHANCEMENT("FastOcarinaPlayback"), 0) == 0 ||
                     play->msgCtx.lastPlayedSong == OCARINA_SONG_TIME ||
                     play->msgCtx.lastPlayedSong == OCARINA_SONG_STORMS ||
