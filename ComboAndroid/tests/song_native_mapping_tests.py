@@ -42,17 +42,13 @@ oot_block = routing_block(oot, '        if (ComboRando::ActiveSongTravel().logic
 mm_block = function(mm, '            if (currentRegion==RR_MAX && ComboRando::ActiveSongTravel().logicEnabled) {')
 globals_cpp = (source/'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
 mm_port = (source/'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8')
-oracle = function(globals_cpp, 'extern "C" COMBO_EXPORT int SOH_SongDestination(')
 logical_oracle = function(globals_cpp, 'extern "C" COMBO_EXPORT int SOH_SongLogicDestination(')
-oot_runtime = function(globals_cpp, 'extern "C" COMBO_EXPORT int SOH_ForeignSongDestination(')
 mm_runtime = function(mm_port, 'extern "C" COMBO_EXPORT int MM_ForeignSongDestination(')
 
-# Bind the exercised export to the real launcher resolver. The legacy export
-# is also tested so consumers cannot accidentally revive a runtime flag leak.
+# Bind the exercised export to the real launcher resolver.
 launcher = (source/'combo/ComboShip.cpp').read_text(encoding='utf-8')
 assert hostcxx.contains(launcher, 'SOH_SongDestination=(int(*)(int))GetSym(sohModule,"SOH_SongLogicDestination");')
 assert hostcxx.contains(logical_oracle, 'map.logicEnabled || map.logicForeignSongs')
-assert hostcxx.contains(oot_runtime, '.destination(source)') and '.logicDestination' not in oot_runtime
 assert hostcxx.contains(mm_runtime, '.destination(source)') and '.logicDestination' not in mm_runtime
 
 oot_header = (source/'combo/rando/SongTravelOOT.h').read_text(encoding='utf-8')
@@ -133,11 +129,9 @@ int main() {
             const int logicalDestination=map.logicEnabled ? (source+rotation)%16 : source;
             const int runtimeDestination=map.enabled ? (source+rotation)%16 : source;
             const int oracleExpected=map.logicEnabled||map.logicForeignSongs ? logicalDestination : -1;
-            assert(SOH_SongDestination(source)==oracleExpected);
             assert(SOH_SongLogicDestination(source)==oracleExpected);
-            assert(SOH_ForeignSongDestination(source)==runtimeDestination);
             assert(MM_ForeignSongDestination(source)==runtimeDestination);
-            oracleQueries+=4;
+            oracleQueries+=2;
             if (source<6) {
                 const int fallback=ComboRando::kOotSongRegions[source];
                 const int expected=logicalDestination>=6 ? -1 : ComboRando::kOotSongRegions[logicalDestination];
@@ -155,9 +149,7 @@ int main() {
         assert(OotRoute(RR_ROOT,RR_LAKE_HYLIA)==RR_LAKE_HYLIA);
         assert(MmRoute(true,ENTRANCE(SOUTH_CLOCK_TOWN,0),12345)==12345);
         for(int invalid:{-1,16}) {
-            assert(SOH_SongDestination(invalid)==-1);
             assert(SOH_SongLogicDestination(invalid)==-1);
-            assert(SOH_ForeignSongDestination(invalid)==-1);
             assert(MM_ForeignSongDestination(invalid)==-1);
         }
     }
@@ -187,7 +179,7 @@ int main() {
 }
 '''
 generated = prelude + scene_enum + entrance_macro + '\nnamespace ComboRando {\n' + oot_tables + '\n' + oot_source + mm_tables + '\n' + mm_source + '}\n'
-generated += oracle + logical_oracle + oot_runtime + mm_runtime + storage + oot_block + oot_tail + mm_block + mm_tail + arrival_block + tests
+generated += logical_oracle + mm_runtime + storage + oot_block + oot_tail + mm_block + mm_tail + arrival_block + tests
 test = work/'song_native_mapping.cpp'
 test.write_text(generated, encoding='utf-8')
 exe = hostcxx.build(args.compiler, test, werror=True, msvc=['/Zc:preprocessor'],

@@ -2897,12 +2897,6 @@ extern "C" COMBO_EXPORT void SOH_SetSongArrivals(uint32_t mask) {
     ComboRando::OotSongArrivals() = mask & 63;
     ComboRando::OotSongAgeArrivals() = {};
 }
-extern "C" COMBO_EXPORT int SOH_SongDestination(int source) {
-    // Nothing resolves this export: the launcher binds its generation-oracle route query
-    // to SOH_SongLogicDestination, whose body this must keep matching.
-    const auto& map = ComboRando::ActiveSongTravel();
-    return (map.logicEnabled || map.logicForeignSongs) ? map.logicDestination(source) : -1;
-}
 static const RandomizerGet kWarpSongs[] = { RG_MINUET_OF_FOREST,  RG_BOLERO_OF_FIRE,     RG_SERENADE_OF_WATER,
                                             RG_REQUIEM_OF_SPIRIT, RG_NOCTURNE_OF_SHADOW, RG_PRELUDE_OF_LIGHT };
 static auto LiveSongLogic() {
@@ -2958,7 +2952,7 @@ extern "C" COMBO_EXPORT uint32_t SOH_GetSongSources() {
     return mask | OotSoaringSources(OTRGlobals::Instance->gRandoContext->GetLogic().get(),
                                     ComboRando::OotForeignKnowledge(), RegionTable(RR_ROOT)->Child(), true);
 }
-static uint32_t OotLiveSongSources(bool logical) {
+static uint32_t OotLiveSongSources() {
     if (!IS_RANDO || gSaveContext.fileNum >= 3 ||
         (INV_CONTENT(ITEM_OCARINA_FAIRY) != ITEM_OCARINA_FAIRY && INV_CONTENT(ITEM_OCARINA_FAIRY) != ITEM_OCARINA_TIME))
         return 0;
@@ -2968,33 +2962,20 @@ static uint32_t OotLiveSongSources(bool logical) {
     for (int i = 0; i < 6; i++)
         if (live->CanUse(kWarpSongs[i]))
             mask |= 1u << i;
-    return mask | OotLiveSoaringSources(logical);
-}
-
-extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongSources() {
-    return OotLiveSongSources(false);
+    return mask | OotLiveSoaringSources(true);
 }
 extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongLogicSources() {
-    return OotLiveSongSources(true);
+    return OotLiveSongSources();
 }
 extern "C" COMBO_EXPORT int SOH_SongLogicDestination(int source) {
     const auto& map = ComboRando::ActiveSongTravel();
     return (map.logicEnabled || map.logicForeignSongs) ? map.logicDestination(source) : -1;
-}
-extern "C" COMBO_EXPORT int SOH_ForeignSongRequest() {
-    return sForeignSongRequest.load();
 }
 extern "C" COMBO_EXPORT uint32_t SOH_ForeignSongChoices() {
     int request = sForeignSongRequest.load();
     if (request < 0)
         return 0;
     return OotLiveSoaringSources();
-}
-extern "C" COMBO_EXPORT int SOH_ForeignSongDestination(int source) {
-    return ComboRando::ActiveSongTravel().destination(source);
-}
-extern "C" COMBO_EXPORT uint32_t SOH_ForeignSongInput() {
-    return gPlayState ? gPlayState->state.input[0].press.button : 0;
 }
 extern "C" COMBO_EXPORT void SOH_ForeignSongChoose(int source) {
     sForeignSongReply = source;
@@ -3643,23 +3624,6 @@ extern "C" COMBO_EXPORT void SOH_SetComboStartingGame(int mmStart) {
 extern "C" COMBO_EXPORT int SOH_ReadComboStartingGameCVar(void) {
     return CVarGetInteger("gCombo.Rando.StartingGame", 0);
 }
-// An explicit MM start forces these three, so grey them out. Under Random they stay editable — the
-// force is silent when MM rolls. HandleStartingAgeUI owns RSK_STARTING_AGE in both directions.
-extern "C" COMBO_EXPORT void SOH_RefreshComboStartingGameUI(void) {
-    auto settings = Rando::Settings::GetInstance();
-    if (settings == nullptr) {
-        return;
-    }
-    settings->HandleStartingAgeUI();
-    const bool mmStart = CVarGetInteger("gCombo.Rando.StartingGame", 0) == 1;
-    for (const RandomizerSettingKey key : { RSK_EXCLUDE_MASK_SHOP_KEY, RSK_EXCLUDE_MASK_SHOP_ENTRANCE }) {
-        if (mmStart) {
-            settings->GetOption(key).Disable("Starting Game is Majora's Mask");
-        } else {
-            settings->GetOption(key).Enable();
-        }
-    }
-}
 
 // ComboShip: Shared Items (OoTMM-style) — see combo/rando/SharedItems.h. gComboSharedMask shapes the
 // gen-time wallet force (settings.cpp); the ABI below reconciles tiers between OOT and MM at runtime.
@@ -4061,17 +4025,6 @@ extern "C" COMBO_EXPORT void SOH_WriteGameplayRule(const char* cvar, int32_t val
             if (GameInteractor::Instance)
                 ShipInit::Init("gEnhancements.SunlightArrows");
         }
-    }
-}
-
-extern void Draw_Placements();
-extern "C" COMBO_EXPORT void SOH_DrawHudPlacement() {
-    ComboMenuContext::UseSharedImGuiContext();
-    Ship::ResourceManagerScope rmScope(Ship::CrossRMRegistry::Get("oot"));
-    if (auto menu = SohGui::GetSohMenu()) {
-        menu->Init();
-        menu->Update();
-        Draw_Placements();
     }
 }
 

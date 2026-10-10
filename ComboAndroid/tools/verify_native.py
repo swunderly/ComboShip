@@ -18,7 +18,7 @@ EXPORTS = {
         'Java_org_comboship_android_GameActivity_nativeToggleTracker',
         'Java_org_comboship_android_GameActivity_nativeMenuScale'},
     'libsoh.so': {'SOH_Init', 'SOH_RunMain', 'SOH_ResumeGame', 'SOH_StartExtraction',
-        'SOH_ComboCheckSnapshot', 'SOH_ComboCheckSetSkipped', 'SOH_DrawHudPlacement',
+        'SOH_ComboCheckSnapshot', 'SOH_ComboCheckSetSkipped',
         'SOH_ReadGameplayRule', 'SOH_WriteGameplayRule', 'SOH_ComboItemTrackerDrawContents'},
     'lib2ship.so': {'MM_InitArchives', 'MM_RunGame', 'MM_ResumeGame', 'MM_StartExtraction',
         'MM_ComboCheckSnapshot', 'MM_ComboCheckSetSkipped', 'MM_ComboItemTrackerDrawContents'},
@@ -28,12 +28,13 @@ EXPORTS = {
 
 for library, prefix in [('libsoh.so','SOH_'), ('lib2ship.so','MM_')]:
     EXPORTS[library].update(prefix+name for name in (
-        'ForeignSongRequest','ForeignSongChoices','ForeignSongDestination','ForeignSongInput','ForeignSongChoose',
-        'GetLiveSongKnowledge','GetLiveSongSources','GetSongKnowledge','SetForeignSongKnowledge'))
-    EXPORTS[library].update(prefix+name for name in ('GetLiveSongLogicSources','GetComboTricks','SetComboTrick'))
+        'ForeignSongChoices','GetLiveSongKnowledge','GetSongKnowledge','SetForeignSongKnowledge',
+        'GetLiveSongLogicSources'))
+EXPORTS['libsoh.so'].add('SOH_ForeignSongChoose')
+EXPORTS['lib2ship.so'].update({'MM_ForeignSongDestination', 'MM_GetLiveSongSources'})
 EXPORTS['libsoh.so'].update({'SOH_GetComboTricksCsv','SOH_SetComboTricksCsv','SOH_ApplyComboTricks',
     'SOH_SetComboRuleRefresh','SOH_RefreshComboRules','SOH_SongLogicDestination'})
-EXPORTS['lib2ship.so'].update({'MM_HasLiveSoaringSong', 'MM_ApplyComboCommunityPreset'})
+EXPORTS['lib2ship.so'].add('MM_HasLiveSoaringSong')
 EXPORTS['libsoh.so'].update({'SOH_QueryScrubRenewable', 'SOH_GrantScrubRenewable'})
 EXPORTS['lib2ship.so'].add('MM_SetScrubStockBridge')
 
