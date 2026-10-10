@@ -2923,6 +2923,13 @@ static auto LiveSongLogic() {
     live->IsAdult = !LINK_IS_CHILD;
     return live;
 }
+static uint32_t WarpSongMask(Rando::Logic* logic) {
+    uint32_t mask = 0;
+    for (int i = 0; i < 6; i++)
+        if (logic->HasItem(kWarpSongs[i]))
+            mask |= 1u << i;
+    return mask;
+}
 static uint32_t OotSoaringSources(Rando::Logic* logic, uint32_t knowledge, bool child, bool logical = false) {
     const RandomizerGet buttons[] = { RG_OCARINA_A_BUTTON, RG_OCARINA_C_DOWN_BUTTON, RG_OCARINA_C_RIGHT_BUTTON,
                                       RG_OCARINA_C_LEFT_BUTTON, RG_OCARINA_C_UP_BUTTON };
@@ -2935,22 +2942,12 @@ static uint32_t OotSoaringSources(Rando::Logic* logic, uint32_t knowledge, bool 
                                              knowledge, logic->HasItem(RG_FAIRY_OCARINA), mask, child);
 }
 extern "C" COMBO_EXPORT uint32_t SOH_GetSongKnowledge() {
-    auto logic = OTRGlobals::Instance->gRandoContext->GetLogic();
-    uint32_t mask = 0;
-    for (int i = 0; i < 6; i++)
-        if (logic->HasItem(kWarpSongs[i]))
-            mask |= 1u << i;
-    return mask;
+    return WarpSongMask(OTRGlobals::Instance->gRandoContext->GetLogic().get());
 }
 extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongKnowledge() {
     if (!IS_RANDO || gSaveContext.fileNum >= 3)
         return 0;
-    auto logic = LiveSongLogic();
-    uint32_t mask = 0;
-    for (int i = 0; i < 6; i++)
-        if (logic->HasItem(kWarpSongs[i]))
-            mask |= 1u << i;
-    return mask;
+    return WarpSongMask(LiveSongLogic().get());
 }
 extern "C" COMBO_EXPORT void SOH_SetForeignSongKnowledge(uint32_t mask) {
     ComboRando::OotForeignKnowledge() = mask;
@@ -2976,16 +2973,10 @@ static uint32_t OotLiveSongSources(bool logical) {
         (INV_CONTENT(ITEM_OCARINA_FAIRY) != ITEM_OCARINA_FAIRY && INV_CONTENT(ITEM_OCARINA_FAIRY) != ITEM_OCARINA_TIME))
         return 0;
     // Use the native CanUse checks in a save-derived Logic object, including shuffled ocarina buttons.
-    auto live = std::make_shared<Rando::Logic>();
-    live->SetContext(OTRGlobals::Instance->gRandoContext);
-    live->SetSaveContext(&gSaveContext);
-    live->IsChild = LINK_IS_CHILD;
-    live->IsAdult = !LINK_IS_CHILD;
-    const RandomizerGet songs[] = { RG_MINUET_OF_FOREST,  RG_BOLERO_OF_FIRE,     RG_SERENADE_OF_WATER,
-                                    RG_REQUIEM_OF_SPIRIT, RG_NOCTURNE_OF_SHADOW, RG_PRELUDE_OF_LIGHT };
+    auto live = LiveSongLogic();
     uint32_t mask = 0;
     for (int i = 0; i < 6; i++)
-        if (live->CanUse(songs[i]))
+        if (live->CanUse(kWarpSongs[i]))
             mask |= 1u << i;
     return mask | OotLiveSoaringSources(logical);
 }
@@ -3231,8 +3222,6 @@ extern "C" int Combo_OOTSongWarp(PlayState* play, int source) {
     Combo_SOHCompleteWarp(play, ComboRando::ActiveSongTravel().destination(source));
     return 1;
 }
-// Native warp songs normally skip particles in randomizer. Cross routes need the
-// full departure, so only those routes opt back into the original cutscene.
 // Return native, locally extracted OoT warp messages for MM's message adapter.
 extern "C" COMBO_EXPORT int SOH_GetWarpMessage(int song, int confirmation, char* out, int capacity, int* type) {
     if (song < 0 || song >= 6 || !out || capacity < 1 || !type)
@@ -3245,6 +3234,8 @@ extern "C" COMBO_EXPORT int SOH_GetWarpMessage(int song, int confirmation, char*
     *type = native.GetTextBoxType();
     return static_cast<int>(text.size());
 }
+// Native warp songs normally skip particles in randomizer. Cross routes need the
+// full departure, so only those routes opt back into the original cutscene.
 extern "C" int Combo_SOHFullWarpAnimation(PlayState* play) {
     return IS_RANDO && ComboRando::ActiveSongTravel().enabled && play->msgCtx.lastPlayedSong < 6 &&
            ComboRando::ActiveSongTravel().destination(play->msgCtx.lastPlayedSong) >= 6;
