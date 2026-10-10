@@ -2161,12 +2161,10 @@ void func_80169F78(PlayState* this) {
     this->nextEntrance = gSaveContext.respawn[RESPAWN_MODE_TOP].entrance;
     gSaveContext.respawnFlag = -1;
     func_80169ECC(this);
-#ifdef COMBO_BUILD
-    /* Shared dungeon queue applied after the displaced transition setup below. */
-#endif
     this->transitionTrigger = TRANS_TRIGGER_START;
     this->transitionType = TRANS_TYPE_FADE_BLACK;
 #ifdef COMBO_BUILD
+    // Farore's Wind / shared-dungeon death warp; runs after the transition setup because it can cancel it.
     Combo_MMFaroreDeathWarp(this);
 #endif
 }

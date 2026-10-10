@@ -3744,7 +3744,7 @@ ActorProfile* Actor_LoadOverlay(ActorContext* actorCtx, s16 index) {
     return profile;
 }
 
-// Isolated expanded-soul bridge; must be linked before this patch is integrated.
+// Soul-shuffle spawn gating and the room-clear guard for souls not yet owned (2s2h/Rando/ActorBehavior).
 extern void MM_MissingSoulRoomReset(PlayState* play);
 extern void MM_MissingSoulRoomBlock(PlayState* play);
 extern s32 MM_MissingSoulRoomCanClear(PlayState* play, s32 room);
