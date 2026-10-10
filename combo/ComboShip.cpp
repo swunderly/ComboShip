@@ -4585,13 +4585,6 @@ int main(int argc, char** argv) {
     std::cout << "[ComboShip] Native spell integration ready=" << int(ComboRando::ComboFaroreIntegrationReady)
               << std::endl;
 
-    // Private integration diagnostic: actual cold-load preflights after eager boot.
-    if (const char* probeFlag = std::getenv("COMBO_NATIVE_SPELL_RESOURCE_PROBE");
-        probeFlag && std::strcmp(probeFlag, "1") == 0) {
-        auto prepare = (int (*)())GetSym(mmModule, "MM_PrepareNativeSpellsForCombo");
-        std::cout << "[ComboShip] Native spell resource preflight mask=" << (prepare ? prepare() : -1) << std::endl;
-    }
-
     // ComboShip: OOT owns the foreground at startup — hide MM's (now-registered) tracker windows so
     // only OOT's Check/Item trackers can show. See combo/gui/ComboTrackerVisibility.cpp.
     Combo_SetForegroundGame(ComboRando::GAME_OOT);
