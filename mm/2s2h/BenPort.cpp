@@ -5227,16 +5227,6 @@ static std::atomic<bool> sForeignSongPerformed{ false };
 static bool sNativeSongOpen = false;
 static int sNativeSongSource = -1;
 static std::string sNativeSongText;
-extern "C" void Combo_MMForeignSongDiagnostic(const char* event) {
-    if (!CVarGetInteger("gCombo.Debug.SongPerformance", 0))
-        return;
-    const auto* msg = gPlayState ? &gPlayState->msgCtx : nullptr;
-    SPDLOG_INFO("[ComboShip SongPerformance] MM {} source={} performed={} action={} message={} ocarina={} staff={} "
-                "nativeOpen={}",
-                event, sForeignSongRequest.load(), sForeignSongPerformed.load(), msg ? (int)msg->ocarinaAction : -1,
-                msg ? (int)msg->msgMode : -1, msg ? (int)msg->ocarinaMode : -1,
-                msg && msg->ocarinaStaff ? (int)msg->ocarinaStaff->state : -1, sNativeSongOpen);
-}
 
 extern "C" COMBO_EXPORT void MM_SetSongTravel(const char* json) {
     sForeignSongRequest = -1;
@@ -5330,7 +5320,6 @@ extern "C" int Combo_MMRecognizeForeignSong(const uint8_t* pitches, int count) {
     sForeignSongReply = -2;
     sForeignSongPerformed = false;
     sForeignSongRequest = song;
-    Combo_MMForeignSongDiagnostic("recognized");
     return 1;
 }
 extern "C" int Combo_MMForeignSongPerformanceActive() {
@@ -5341,7 +5330,6 @@ extern "C" int Combo_MMForeignSongPlayback() {
 }
 extern "C" void Combo_MMForeignSongPerformanceFinished() {
     sForeignSongPerformed = true;
-    Combo_MMForeignSongDiagnostic("performance-finished");
 }
 static bool LoadOOTWarpMessage(int song, bool confirmation, CustomMessage::Entry& entry) {
     auto load = (int (*)(int, int, char*, int, int*))Combo_ResolveSym("soh", "SOH_GetWarpMessage");
@@ -5441,7 +5429,6 @@ static void OpenNativeSongDialogue() {
     }
     CustomMessage::StartTextbox(native.msg, native);
     gPlayState->msgCtx.ocarinaMode = 1;
-    Combo_MMForeignSongDiagnostic("confirmation");
 }
 static void UpdateNativeSongDialogue() {
     if (sForeignSongRequest.load() < 0 || !gPlayState || !sForeignSongPerformed.load())
@@ -5480,7 +5467,6 @@ static void ProcessForeignSongReply() {
         return;
     const uint32_t choices = MM_ForeignSongChoices();
     const int song = sForeignSongRequest.load();
-    Combo_MMForeignSongDiagnostic(reply < 0 ? "cancel" : "confirmation-accepted");
     sForeignSongRequest = -1;
     sForeignSongPerformed = false;
     sNativeSongOpen = false;
@@ -5492,7 +5478,6 @@ static void ProcessForeignSongReply() {
     gPlayState->msgCtx.ocarinaMode = 4; // native ocarina END mode in both games
     if (reply < 0 || reply >= 16 || !(choices & (1u << reply)))
         return;
-    Combo_MMForeignSongDiagnostic("native-action");
     const int dest = ComboRando::ActiveSongTravel().destination(reply);
     if (!Combo_MMStartWarp(gPlayState, dest, song))
         SPDLOG_ERROR("[ComboShip] Could not start OoT warp departure");
