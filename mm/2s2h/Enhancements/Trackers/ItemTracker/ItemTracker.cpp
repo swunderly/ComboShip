@@ -100,19 +100,15 @@ TrackerImageObject GetImageObject(TrackerItemType itemType, u32 itemId) {
                 case RI_GS_TOKEN_OCEAN: {
                     itemObtained = Inventory_GetSkullTokenCount(SCENE_KINDAN2) > 0;
                 } break;
-                case RI_WOODFALL_KEY_RING:
                 case RI_WOODFALL_SMALL_KEY: {
                     itemObtained = DUNGEON_KEY_COUNT(DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE) > 0;
                 } break;
-                case RI_SNOWHEAD_KEY_RING:
                 case RI_SNOWHEAD_SMALL_KEY: {
                     itemObtained = DUNGEON_KEY_COUNT(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) > 0;
                 } break;
-                case RI_GREAT_BAY_KEY_RING:
                 case RI_GREAT_BAY_SMALL_KEY: {
                     itemObtained = DUNGEON_KEY_COUNT(DUNGEON_SCENE_INDEX_GREAT_BAY_TEMPLE) > 0;
                 } break;
-                case RI_STONE_TOWER_KEY_RING:
                 case RI_STONE_TOWER_SMALL_KEY: {
                     itemObtained = DUNGEON_KEY_COUNT(DUNGEON_SCENE_INDEX_STONE_TOWER_TEMPLE) > 0;
                 } break;
@@ -301,25 +297,21 @@ std::string GetItemCounts(TrackerItemType itemType, u32 itemId) {
                         gSaveContext.save.saveInfo.inventory.strayFairies[DUNGEON_SCENE_INDEX_STONE_TOWER_TEMPLE];
                     countStr = fmt::format(FORMAT_COUNT, count, max);
                 } break;
-                case RI_WOODFALL_KEY_RING:
                 case RI_WOODFALL_SMALL_KEY: {
                     auto count = DUNGEON_KEY_COUNT(DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE);
                     if (count > 0)
                         countStr = fmt::format(FORMAT_COUNT, count, 1);
                 } break;
-                case RI_SNOWHEAD_KEY_RING:
                 case RI_SNOWHEAD_SMALL_KEY: {
                     auto count = DUNGEON_KEY_COUNT(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE);
                     if (count > 0)
                         countStr = fmt::format(FORMAT_COUNT, count, 3);
                 } break;
-                case RI_GREAT_BAY_KEY_RING:
                 case RI_GREAT_BAY_SMALL_KEY: {
                     auto count = DUNGEON_KEY_COUNT(DUNGEON_SCENE_INDEX_GREAT_BAY_TEMPLE);
                     if (count > 0)
                         countStr = fmt::format(FORMAT_COUNT, count, 1);
                 } break;
-                case RI_STONE_TOWER_KEY_RING:
                 case RI_STONE_TOWER_SMALL_KEY: {
                     auto count = DUNGEON_KEY_COUNT(DUNGEON_SCENE_INDEX_STONE_TOWER_TEMPLE);
                     if (count > 0)
