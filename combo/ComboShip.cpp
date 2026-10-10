@@ -1038,6 +1038,14 @@ static int (*sProfileValidateMm)(const char*) = nullptr;
 static uint8_t (*sProfileCanGenerate)() = nullptr;
 static int (*sProfileTrigger)(const char*) = nullptr;
 static int (*sProfileSelected)() = nullptr;
+static int (*sFileSelectSlot)() = nullptr; // the native file select's chosen file, -1 when none
+// Native file-select actions (Generate, a dropped seed, the silent pending-seed load) belong to the file
+// picked on that screen, which also decides readiness and save creation. The comboui settings selector
+// only drives its own page, and is the fallback when the native screen has no file chosen.
+static int ProfileNativeSlot() {
+    const int slot = sFileSelectSlot ? sFileSelectSlot() : -1;
+    return slot >= 0 && slot < 3 ? slot : sProfileSelected ? sProfileSelected() : 0;
+}
 static void ProfileBeginGeneration(int, const char*);
 static void ProfileRestoreGenerationSetup();
 static void ProfileCompleteGeneration();
@@ -3039,7 +3047,7 @@ static void Combo_OnGenerateThreaded(const char* inputSeed) {
     std::string profileSeed;
     if (sProfiles && !sProfileAttempt) {
         try {
-            const int slot = sProfileSelected ? sProfileSelected() : 0;
+            const int slot = ProfileNativeSlot();
             profileSeed = sProfiles->view().draft(slot, Combo_ReadSavedSeedReadonly(slot)).value("seed", std::string());
             ProfileBeginGeneration(slot, profileSeed.c_str());
             inputSeed = profileSeed.c_str();
@@ -4648,6 +4656,7 @@ int main(int argc, char** argv) {
     sProfileCanGenerate = (uint8_t(*)())GetSym(sohModule, "SOH_CanGenerateComboSeed");
     sProfileTrigger = (int (*)(const char*))GetSym(sohModule, "SOH_TriggerProfileGenerate");
     sProfileSelected = (int (*)())GetSym(comboUIModule, "ComboUI_GetSelectedSettingsFile");
+    sFileSelectSlot = (int (*)())GetSym(sohModule, "SOH_GetFileSelectSlot");
     auto profileUi =
         (void (*)(const ComboRandomizerProfileCallbacks*))GetSym(comboUIModule, "ComboUI_SetRandomizerProfileStore");
     auto profilePrecreate = (void (*)(int (*)(int)))GetSym(sohModule, "SOH_SetProfileSavePreparation");
