@@ -804,12 +804,13 @@ static void RestoreGameplayRules(const nlohmann::json& rules, int slot) {
 }
 // OoT's save worker must not read CVars: the store is unlocked, and setting a string frees the old
 // buffer while the main thread rewrites rules on every load. Game-thread code captures the loaded
-// slot's live rules here (slot bind, each OoT save snapshot, each MM save); the worker copies them.
+// slot's live rules here (slot bind, each rule edit, each OoT base save snapshot, each MM save); the
+// worker copies them, so partial tracker saves keep the latest edit too.
 static std::mutex sSaveRulesMutex;
 static int sSaveRulesSlot = -1;
 static nlohmann::json sSaveRules;
 static void CaptureSaveRules(int fileNum) {
-    if (fileNum != sGameplayRulesSlot)
+    if (fileNum < 0 || fileNum != sGameplayRulesSlot)
         return;
     auto rules = SnapshotGameplayRules();
     std::lock_guard<std::mutex> lock(sSaveRulesMutex);
@@ -818,6 +819,9 @@ static void CaptureSaveRules(int fileNum) {
 }
 
 // A saved song map is immutable seed data; these flags are intentional per-run overrides.
+// The menu's rule and trick edits end here (SOH_RefreshComboRules), as does a draft pushed into the
+// loaded file (ProfileSetDraft), so capture the run's rules for its next save. Not at file select: the
+// live rules there can be a seed's being generated or imported, and loading the file captures again.
 static void RefreshGameplayRuntime() {
     auto map = sSongTravel;
     auto read = [](const char* key, int fallback) {
@@ -828,6 +832,8 @@ static void RefreshGameplayRuntime() {
     map.logicEnabled = read("gCombo.Rando.SongTravel", map.logicEnabled) != 0;
     map.logicForeignSongs = read("gCombo.Rando.ForeignSongs", map.logicForeignSongs) != 0;
     InstallSongTravel(map.json());
+    if (SOH_IsOnFileSelect && !SOH_IsOnFileSelect())
+        CaptureSaveRules(sGameplayRulesSlot);
 }
 static nlohmann::json SeedGameplayRules(const nlohmann::json& seed) {
     return ComboRando::GameplayRulesForSeed(seed);
