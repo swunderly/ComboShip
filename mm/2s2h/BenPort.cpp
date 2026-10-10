@@ -3331,29 +3331,7 @@ extern "C" COMBO_EXPORT void MM_GetExtractionProgress(unsigned long long* count,
 // CVars actually shuffle are emitted, so the cross-world fill sees the same pool MM's own generator
 // would. Recomputes every call since the result depends on live CVar state. Caller MUST invoke this
 // after SOH_Init() returns (so the shared Context, logger, and CVars exist).
-#include "../../combo/menu/ComboTrickABI.h"
 #include "../../combo/rando/MmTricks.h"
-extern "C" COMBO_EXPORT const CwTrickInfo* MM_GetComboTricks(int32_t* count) {
-    static CwTrickInfo rows[std::size(ComboRando::kMmTricks)];
-    size_t used = 0;
-    for (const auto& d : ComboRando::kMmTricks) {
-        if (!d.publicOption)
-            continue;
-        rows[used++] = { d.id,   d.name,       d.description, d.area,
-                         d.tags, d.difficulty, d.tagMask,     int32_t(CVarGetInteger(d.key, 0) != 0) };
-    }
-    if (count)
-        *count = int32_t(used);
-    return rows;
-}
-extern "C" COMBO_EXPORT int32_t MM_SetComboTrick(int32_t id, int32_t enabled) {
-    auto d = ComboRando::FindMmTrick(id);
-    if (!d || !d->publicOption)
-        return 0;
-    CVarSetInteger(d->key, enabled != 0);
-    Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
-    return 1;
-}
 // ComboShip: snapshot every MM rando option as {cvar: value} for the consolidated spoiler, so a
 // dropped/reloaded seed reproduces MM's settings on any machine (MM options are CVar-backed;
 // MM_InitRandoSaveFile reads these CVars, so MM_RestoreRandoSettings writes them back before save
@@ -5290,9 +5268,6 @@ extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongSources() {
 extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongLogicSources() {
     return MmLiveSongSources(true);
 }
-extern "C" COMBO_EXPORT int MM_ForeignSongRequest() {
-    return sForeignSongRequest.load();
-}
 extern "C" COMBO_EXPORT uint32_t MM_ForeignSongChoices() {
     int request = sForeignSongRequest.load();
     if (request < 0)
@@ -5301,12 +5276,6 @@ extern "C" COMBO_EXPORT uint32_t MM_ForeignSongChoices() {
 }
 extern "C" COMBO_EXPORT int MM_ForeignSongDestination(int source) {
     return ComboRando::ActiveSongTravel().destination(source);
-}
-extern "C" COMBO_EXPORT uint32_t MM_ForeignSongInput() {
-    return gPlayState ? CONTROLLER1(&gPlayState->state)->press.button : 0;
-}
-extern "C" COMBO_EXPORT void MM_ForeignSongChoose(int source) {
-    sForeignSongReply = source;
 }
 extern "C" int Combo_MMRecognizeForeignSong(const uint8_t* pitches, int count) {
     if (!IS_RANDO || !gPlayState || !ComboRando::ActiveSongTravel().foreignSongs ||
@@ -5833,19 +5802,6 @@ extern "C" COMBO_EXPORT void MM_MenuDrawCustom(int32_t i) {
         menu->Update();
         menu->DrawCustomByIndex(i);
     }
-}
-
-// Reset the MM lists which are stored in native JSON rather than scalar CVars.
-extern "C" COMBO_EXPORT void MM_ApplyComboCommunityPreset(int preset) {
-    std::vector<RandoItemId> starting = { RI_PROGRESSIVE_SWORD, RI_SHIELD_HERO, RI_OCARINA, RI_SONG_TIME };
-    if (preset == 1) {
-        starting.push_back(RI_PROGRESSIVE_SWORD);
-        starting.push_back(RI_SONG_SOARING);
-    }
-    Rando::SetStartingItemsInConfig(starting);
-    std::vector<RandoCheckId> excluded;
-    Rando::SetExcludedChecksInConfig(excluded);
-    ShipInit::Init("gRando.ExcludedChecks");
 }
 
 extern "C" COMBO_EXPORT int32_t MM_MenuDrawWidget(int32_t i, int32_t width) {
