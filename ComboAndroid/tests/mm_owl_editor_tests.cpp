@@ -10,11 +10,14 @@ int main() {
     static_assert(kStatueMask == 0x03FF);
     const uint16_t unrelated = 0xA400;
     // The old editor wrote 0xFFFF. Clearing the real statues must leave its
-    // reserved bits intact while sending native Soaring to the no-owls branch.
+    // reserved bits intact. Like vanilla, any stored bit opens the owl map;
+    // bit 15 alone is the index-warp state PauseOwlWarp handles.
     const auto clearedLegacyAll = SetAllActivated(0xFFFF, false);
     assert(clearedLegacyAll == 0xFC00);
-    assert(!MM_HAS_ACTIVATED_OWL_STATUES(clearedLegacyAll));
-    assert(!MM_HAS_ACTIVATED_OWL_STATUES(1u << 15));
+    assert(ActivatedCount(clearedLegacyAll) == 0);
+    assert(MM_HAS_ACTIVATED_OWL_STATUES(clearedLegacyAll));
+    assert(MM_HAS_ACTIVATED_OWL_STATUES(1u << 15));
+    assert(!MM_HAS_ACTIVATED_OWL_STATUES(0u));
     for (unsigned id = 0; id < kStatueCount; ++id) {
         const auto activated = SetActivated(unrelated, id, true);
         assert(MM_HAS_ACTIVATED_OWL_STATUES(activated));
@@ -40,8 +43,8 @@ int main() {
         assert(ActivatedCount(all) == 10);
         assert(ActivatedCount(none) == 0);
         assert(MM_HAS_ACTIVATED_OWL_STATUES(all));
-        assert(!MM_HAS_ACTIVATED_OWL_STATUES(none));
-        assert(MM_HAS_ACTIVATED_OWL_STATUES(flags) == (ActivatedCount(flags) != 0));
+        assert(MM_HAS_ACTIVATED_OWL_STATUES(none) == (none != 0));
+        assert(MM_HAS_ACTIVATED_OWL_STATUES(flags) == (flags != 0));
         assert(SetAllActivated(all, true) == all);
         assert(SetAllActivated(none, false) == none);
         for (unsigned id = 0; id < kStatueCount; ++id) {
@@ -54,5 +57,5 @@ int main() {
             assert(SetActivated(flags, invalid, false) == flags);
         }
     }
-    std::cout << "All ten statue bits, all 65536 flag values, invalid IDs, and legacy upper-only no-owl flags passed.\n";
+    std::cout << "All ten statue bits, all 65536 flag values, invalid IDs, and legacy upper-only flags passed.\n";
 }
