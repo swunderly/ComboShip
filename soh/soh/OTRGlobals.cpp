@@ -4511,7 +4511,6 @@ extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void) {
                             { "tricks", nlohmann::json::array() },
                             { "checks", nlohmann::json::array() } };
     auto settings = Rando::Settings::GetInstance();
-#include "ProfileOotHiddenDefaults.inc"
     for (const auto& option : settings->GetAllOptions()) {
         const auto& key = option.GetCVarName();
         if (key.empty())
@@ -4525,7 +4524,7 @@ extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void) {
         }
         data["options"][key] = { { "label", option.GetName() },
                                  { "id", int(option.GetKey()) },
-                                 { "defaultHidden", profileDefaultHidden.count(int(option.GetKey())) != 0 },
+                                 { "defaultHidden", option.IsDefaultHidden() },
                                  { "choices", std::move(choices) } };
     }
     data["trialNames"] = nlohmann::json::object();

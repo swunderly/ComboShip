@@ -256,6 +256,10 @@ class Option {
      */
 
     bool IsHidden() const;
+    // ComboShip: the hidden state this Option was constructed with, before any callback reveals it.
+    bool IsDefaultHidden() const {
+        return defaultHidden;
+    }
     /**
      * @brief Replaces the `options` vector for this Option with a new one.
      * If the new vector is smaller than the old one and the current selected
