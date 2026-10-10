@@ -5,8 +5,8 @@ inline constexpr bool ExpandedSoulsIntegrationReady = true;
 inline constexpr bool AnimalSoulsIntegrationReady = true;
 inline constexpr bool MiscSoulsIntegrationReady = true;
 inline constexpr bool ExpandedSoulAvailable(unsigned index) {
-    return index < 4 ? AnimalSoulsIntegrationReady : index < 6 ? MiscSoulsIntegrationReady
-        : index < 59 && ExpandedSoulsIntegrationReady;
+    return index < 4   ? AnimalSoulsIntegrationReady
+           : index < 6 ? MiscSoulsIntegrationReady
+                       : index < 59 && ExpandedSoulsIntegrationReady;
 }
-}
-
+} // namespace Rando

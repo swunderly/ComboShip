@@ -51,15 +51,32 @@ extern "C" {
 #define CAN_RESET_TIME_ON_MOON Rando::Logic::NativeMmCanResetTimeOnMoon()
 #define CAN_ACTIVATE_OWL (CAN_USE_SWORD || CAN_USE_STICKS)
 #define CAN_FIGHT_WITH_STICKS (CAN_USE_STICKS && COMBO_MM_TRICK("DekuStickFighting"))
-#define CAN_NAVIGATE_HIDDEN ComboRando::CanNavigateHidden(HAS_ITEM(ITEM_LENS_OF_TRUTH), HAS_MAGIC, COMBO_MM_TRICK("Lensless") != 0)
-#define CAN_CROSS_PINNACLE_ROCK ComboRando::MmTrickRoutes::PinnacleRock(CAN_BE_ZORA, CAN_USE_ABILITY(SWIM), RANDO_EVENTS[RE_ACCESS_SEAHORSE], COMBO_MM_TRICK("PinnacleNoSeahorse") != 0)
-#define CAN_WIN_POST_OFFICE ComboRando::MmTrickRoutes::PostOffice(HAS_ITEM(ITEM_MASK_BUNNY), COMBO_MM_TRICK("PostOfficeTiming") != 0, BETWEEN(TIME_DAY1_PM_03_00, TIME_NIGHT1_AM_12_00), RANDO_EVENTS[RE_MAIL_LETTER_TO_KAFEI], BETWEEN(TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_12_00))
-#define CAN_OPEN_OCEANSIDE_CODE_CHEST ComboRando::MmTrickRoutes::OceansideCode(CAN_USE_BOW, HAS_ITEM(ITEM_MASK_CAPTAIN), COMBO_MM_TRICK("OceansideCode") != 0)
-#define CAN_REACH_CLOCK_TOWN_LOWER_CHEST ComboRando::MmTrickRoutes::ClockTownLowerChest(CAN_BE_DEKU, Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR), HAS_ITEM(ITEM_HOOKSHOT), COMBO_MM_TRICK("ClockTownLowerJump") != 0)
-#define CAN_REACH_DOGGY_CHEST ComboRando::MmTrickRoutes::DoggyChest(HAS_ITEM(ITEM_HOOKSHOT), CAN_USE_DAY2_RAIN_BEAN, CAN_BE_ZORA, COMBO_MM_TRICK("DoggyFenceJump") != 0)
+#define CAN_NAVIGATE_HIDDEN \
+    ComboRando::CanNavigateHidden(HAS_ITEM(ITEM_LENS_OF_TRUTH), HAS_MAGIC, COMBO_MM_TRICK("Lensless") != 0)
+#define CAN_CROSS_PINNACLE_ROCK                                                                                   \
+    ComboRando::MmTrickRoutes::PinnacleRock(CAN_BE_ZORA, CAN_USE_ABILITY(SWIM), RANDO_EVENTS[RE_ACCESS_SEAHORSE], \
+                                            COMBO_MM_TRICK("PinnacleNoSeahorse") != 0)
+#define CAN_WIN_POST_OFFICE                                                                                   \
+    ComboRando::MmTrickRoutes::PostOffice(HAS_ITEM(ITEM_MASK_BUNNY), COMBO_MM_TRICK("PostOfficeTiming") != 0, \
+                                          BETWEEN(TIME_DAY1_PM_03_00, TIME_NIGHT1_AM_12_00),                  \
+                                          RANDO_EVENTS[RE_MAIL_LETTER_TO_KAFEI],                              \
+                                          BETWEEN(TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_12_00))
+#define CAN_OPEN_OCEANSIDE_CODE_CHEST                                                  \
+    ComboRando::MmTrickRoutes::OceansideCode(CAN_USE_BOW, HAS_ITEM(ITEM_MASK_CAPTAIN), \
+                                             COMBO_MM_TRICK("OceansideCode") != 0)
+#define CAN_REACH_CLOCK_TOWN_LOWER_CHEST                                                                          \
+    ComboRando::MmTrickRoutes::ClockTownLowerChest(CAN_BE_DEKU, Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR), \
+                                                   HAS_ITEM(ITEM_HOOKSHOT), COMBO_MM_TRICK("ClockTownLowerJump") != 0)
+#define CAN_REACH_DOGGY_CHEST                                                                           \
+    ComboRando::MmTrickRoutes::DoggyChest(HAS_ITEM(ITEM_HOOKSHOT), CAN_USE_DAY2_RAIN_BEAN, CAN_BE_ZORA, \
+                                          COMBO_MM_TRICK("DoggyFenceJump") != 0)
 #define CAN_SKIP_PALACE_BEANS ComboRando::MmTrickRoutes::PalaceDoorwayClimb(COMBO_MM_TRICK("PalaceBeanSkip") != 0)
-#define CAN_CLIMB_IKANA_RIVERSIDE ComboRando::MmTrickRoutes::IkanaClimb(HAS_ITEM(ITEM_HOOKSHOT), CAN_USE_MAGIC_ARROW(ICE), COMBO_MM_TRICK("IkanaIceSkip") != 0)
-#define CAN_CLIMB_STONE_TOWER ComboRando::MmTrickRoutes::StoneTowerClimb(HAS_ITEM(ITEM_HOOKSHOT), CAN_PLAY_SONG(ELEGY), CAN_BE_GORON, CAN_BE_ZORA, COMBO_MM_TRICK("StoneTowerOneMask") != 0)
+#define CAN_CLIMB_IKANA_RIVERSIDE                                                            \
+    ComboRando::MmTrickRoutes::IkanaClimb(HAS_ITEM(ITEM_HOOKSHOT), CAN_USE_MAGIC_ARROW(ICE), \
+                                          COMBO_MM_TRICK("IkanaIceSkip") != 0)
+#define CAN_CLIMB_STONE_TOWER                                                                               \
+    ComboRando::MmTrickRoutes::StoneTowerClimb(HAS_ITEM(ITEM_HOOKSHOT), CAN_PLAY_SONG(ELEGY), CAN_BE_GORON, \
+                                               CAN_BE_ZORA, COMBO_MM_TRICK("StoneTowerOneMask") != 0)
 #else
 #define RANDO_LOGIC_INIT_PATHS \
     {}
@@ -71,9 +88,13 @@ extern "C" {
 #define CAN_FIGHT_WITH_STICKS CAN_USE_STICKS
 #define CAN_NAVIGATE_HIDDEN (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC)
 #define CAN_CROSS_PINNACLE_ROCK (RANDO_EVENTS[RE_ACCESS_SEAHORSE] && CAN_BE_ZORA)
-#define CAN_WIN_POST_OFFICE (HAS_ITEM(ITEM_MASK_BUNNY) && (BETWEEN(TIME_DAY1_PM_03_00, TIME_NIGHT1_AM_12_00) || (RANDO_EVENTS[RE_MAIL_LETTER_TO_KAFEI] && BETWEEN(TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_12_00))))
+#define CAN_WIN_POST_OFFICE                                \
+    (HAS_ITEM(ITEM_MASK_BUNNY) &&                          \
+     (BETWEEN(TIME_DAY1_PM_03_00, TIME_NIGHT1_AM_12_00) || \
+      (RANDO_EVENTS[RE_MAIL_LETTER_TO_KAFEI] && BETWEEN(TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_12_00))))
 #define CAN_OPEN_OCEANSIDE_CODE_CHEST (CAN_USE_BOW && HAS_ITEM(ITEM_MASK_CAPTAIN))
-#define CAN_REACH_CLOCK_TOWN_LOWER_CHEST ((CAN_BE_DEKU && Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)) || HAS_ITEM(ITEM_HOOKSHOT))
+#define CAN_REACH_CLOCK_TOWN_LOWER_CHEST \
+    ((CAN_BE_DEKU && Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)) || HAS_ITEM(ITEM_HOOKSHOT))
 #define CAN_REACH_DOGGY_CHEST (HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_DAY2_RAIN_BEAN || CAN_BE_ZORA)
 #define CAN_SKIP_PALACE_BEANS false
 #define CAN_CLIMB_IKANA_RIVERSIDE (HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_MAGIC_ARROW(ICE))
@@ -149,12 +170,9 @@ struct HalfDayRange {
 // Map half-day indices to their time slice ranges
 // Index 0-5 correspond to HALF_DAY1_DAY through HALF_DAY3_NIGHT
 constexpr HalfDayRange HALF_DAY_TIME_RANGES[6] = {
-    { TIME_DAY1_AM_06_00, TIME_DAY1_PM_04_00 },
-    { TIME_NIGHT1_PM_06_00, TIME_NIGHT1_AM_05_00 },
-    { TIME_DAY2_AM_06_00, TIME_DAY2_PM_04_00 },
-    { TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_05_30 },
-    { TIME_DAY3_AM_06_00, TIME_DAY3_PM_01_00 },
-    { TIME_NIGHT3_PM_06_00, TIME_NIGHT3_AM_05_00 },
+    { TIME_DAY1_AM_06_00, TIME_DAY1_PM_04_00 }, { TIME_NIGHT1_PM_06_00, TIME_NIGHT1_AM_05_00 },
+    { TIME_DAY2_AM_06_00, TIME_DAY2_PM_04_00 }, { TIME_NIGHT2_PM_06_00, TIME_NIGHT2_AM_05_30 },
+    { TIME_DAY3_AM_06_00, TIME_DAY3_PM_01_00 }, { TIME_NIGHT3_PM_06_00, TIME_NIGHT3_AM_05_00 },
 };
 
 // Game time constants for day/night transitions
@@ -173,18 +191,48 @@ struct RegionTimeState {
 extern uint64_t gCurrentRegionTime;
 #ifdef COMBO_BUILD
 bool NativeMmErContextsEnabled();
-inline bool NativeMmNorthWinter(){return NativeMmErContextsEnabled()?ComboRando::Entrances::MmRegionalCursed(1):!RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE];}
-inline bool NativeMmNorthSpring(){return NativeMmErContextsEnabled()?ComboRando::Entrances::MmRegionalCleared(1,RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]):bool(RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]);}
-inline bool NativeMmSwampPoisoned(){return NativeMmErContextsEnabled()?ComboRando::Entrances::MmRegionalCursed(0):!RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE];}
-inline bool NativeMmSwampCleared(){return NativeMmErContextsEnabled()?ComboRando::Entrances::MmRegionalCleared(0,RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE]):bool(RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE]);}
-inline bool NativeMmOceanCleared(){return NativeMmErContextsEnabled()?ComboRando::Entrances::MmRegionalCleared(2,RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE]):bool(RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE]);}
+inline bool NativeMmNorthWinter() {
+    return NativeMmErContextsEnabled() ? ComboRando::Entrances::MmRegionalCursed(1)
+                                       : !RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE];
+}
+inline bool NativeMmNorthSpring() {
+    return NativeMmErContextsEnabled()
+               ? ComboRando::Entrances::MmRegionalCleared(1, RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE])
+               : bool(RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE]);
+}
+inline bool NativeMmSwampPoisoned() {
+    return NativeMmErContextsEnabled() ? ComboRando::Entrances::MmRegionalCursed(0)
+                                       : !RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE];
+}
+inline bool NativeMmSwampCleared() {
+    return NativeMmErContextsEnabled()
+               ? ComboRando::Entrances::MmRegionalCleared(0, RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE])
+               : bool(RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE]);
+}
+inline bool NativeMmOceanCleared() {
+    return NativeMmErContextsEnabled()
+               ? ComboRando::Entrances::MmRegionalCleared(2, RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE])
+               : bool(RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE]);
+}
 #else
-inline bool NativeMmErContextsEnabled(){return false;}
-inline bool NativeMmNorthWinter(){return !RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE];}
-inline bool NativeMmNorthSpring(){return RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE];}
-inline bool NativeMmSwampPoisoned(){return !RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE];}
-inline bool NativeMmSwampCleared(){return RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE];}
-inline bool NativeMmOceanCleared(){return RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE];}
+inline bool NativeMmErContextsEnabled() {
+    return false;
+}
+inline bool NativeMmNorthWinter() {
+    return !RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE];
+}
+inline bool NativeMmNorthSpring() {
+    return RANDO_EVENTS[RE_CLEARED_SNOWHEAD_TEMPLE];
+}
+inline bool NativeMmSwampPoisoned() {
+    return !RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE];
+}
+inline bool NativeMmSwampCleared() {
+    return RANDO_EVENTS[RE_CLEARED_WOODFALL_TEMPLE];
+}
+inline bool NativeMmOceanCleared() {
+    return RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE];
+}
 #endif
 
 #ifdef COMBO_BUILD
@@ -192,9 +240,14 @@ inline bool NativeMmOceanCleared(){return RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMP
 inline thread_local bool evaluatingLiveTracker = false;
 class LiveTrackerRuleScope {
     bool previous;
-public:
-    LiveTrackerRuleScope() : previous(evaluatingLiveTracker) { evaluatingLiveTracker = true; }
-    ~LiveTrackerRuleScope() { evaluatingLiveTracker = previous; }
+
+  public:
+    LiveTrackerRuleScope() : previous(evaluatingLiveTracker) {
+        evaluatingLiveTracker = true;
+    }
+    ~LiveTrackerRuleScope() {
+        evaluatingLiveTracker = previous;
+    }
     LiveTrackerRuleScope(const LiveTrackerRuleScope&) = delete;
     LiveTrackerRuleScope& operator=(const LiveTrackerRuleScope&) = delete;
 };
@@ -220,7 +273,8 @@ class MmAccessScope {
     uint64_t previousIngress;
     bool previousAccess;
     bool previousChanged;
-public:
+
+  public:
     MmAccessScope();
     ~MmAccessScope();
     MmAccessScope(const MmAccessScope&) = delete;
@@ -291,7 +345,7 @@ extern std::map<RandoRegionId, RandoRegion> Regions;
 // ============================================================================
 #ifdef COMBO_BUILD
 bool UpdateResourceSources(const std::set<RandoRegionId>& reached,
-                          std::unordered_map<RandoRegionId, RegionTimeState>& times);
+                           std::unordered_map<RandoRegionId, RegionTimeState>& times);
 #endif
 
 namespace TimeLogic {
@@ -319,20 +373,34 @@ bool HasUsableBottle();
 #define IS_DEITY (GET_PLAYER_FORM == PLAYER_FORM_FIERCE_DEITY)
 #define IS_GORON (GET_PLAYER_FORM == PLAYER_FORM_GORON)
 #define IS_HUMAN (GET_PLAYER_FORM == PLAYER_FORM_HUMAN)
-#define HAS_ITEM(item) (ComboAdultGearInventory::Group(item) ? ComboAdultGearInventory::Has(ComboAdultGearInventory::Group(item)==2?gSaveContext.save.shipSaveInfo.adultMm.gearTrade2Bits:gSaveContext.save.shipSaveInfo.adultMm.gearTrade3Bits,item) : ((item)==ITEM_MASK_FIERCE_DEITY ? ComboAdultMaskInventory::HasFierceDeity(gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits, INV_CONTENT(ITEM_MASK_FIERCE_DEITY)) : (INV_CONTENT(item) == item)))
+#define HAS_ITEM(item)                                                                                          \
+    (ComboAdultGearInventory::Group(item)                                                                       \
+         ? ComboAdultGearInventory::Has(ComboAdultGearInventory::Group(item) == 2                               \
+                                            ? gSaveContext.save.shipSaveInfo.adultMm.gearTrade2Bits             \
+                                            : gSaveContext.save.shipSaveInfo.adultMm.gearTrade3Bits,            \
+                                        item)                                                                   \
+         : ((item) == ITEM_MASK_FIERCE_DEITY                                                                    \
+                ? ComboAdultMaskInventory::HasFierceDeity(gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits, \
+                                                          INV_CONTENT(ITEM_MASK_FIERCE_DEITY))                  \
+                : (INV_CONTENT(item) == item)))
 #ifdef COMBO_BUILD
-#define MM_HAS_ADULT_MASK ((gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits&2)!=0)
-#define MM_LOGIC_STARTING_AGE (RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE]?0:1)
-#define MM_LOGIC_IS_CHILD ComboRando::MmAgeLogic::IsChild(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]!=0,gSaveContext.save.linkAge,MM_LOGIC_STARTING_AGE,MM_HAS_ADULT_MASK)
-#define MM_LOGIC_IS_ADULT ComboRando::MmAgeLogic::IsAdult(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]!=0,gSaveContext.save.linkAge,MM_LOGIC_STARTING_AGE,MM_HAS_ADULT_MASK)
-#define MM_LOGIC_IS_TALL ComboRando::MmAgeLogic::IsTall(HAS_ITEM(ITEM_MASK_ZORA),MM_LOGIC_IS_ADULT)
-#define MM_LOGIC_IS_SHORT ComboRando::MmAgeLogic::IsShort(HAS_ITEM(ITEM_MASK_DEKU),MM_LOGIC_IS_CHILD)
+#define MM_HAS_ADULT_MASK ((gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits & 2) != 0)
+#define MM_LOGIC_STARTING_AGE (RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] ? 0 : 1)
+#define MM_LOGIC_IS_CHILD                                                                                \
+    ComboRando::MmAgeLogic::IsChild(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, gSaveContext.save.linkAge, \
+                                    MM_LOGIC_STARTING_AGE, MM_HAS_ADULT_MASK)
+#define MM_LOGIC_IS_ADULT                                                                                \
+    ComboRando::MmAgeLogic::IsAdult(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, gSaveContext.save.linkAge, \
+                                    MM_LOGIC_STARTING_AGE, MM_HAS_ADULT_MASK)
+#define MM_LOGIC_IS_TALL ComboRando::MmAgeLogic::IsTall(HAS_ITEM(ITEM_MASK_ZORA), MM_LOGIC_IS_ADULT)
+#define MM_LOGIC_IS_SHORT ComboRando::MmAgeLogic::IsShort(HAS_ITEM(ITEM_MASK_DEKU), MM_LOGIC_IS_CHILD)
 // Pinned macros_mm.yml70..75: MM equipment ownership is effective only with its option.
 #define MM_LOGIC_HAS_IRON_BOOTS (RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] && HAS_ITEM(ITEM_COMBO_BOOTS_IRON))
 #define MM_LOGIC_HAS_HOVER_BOOTS (RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] && HAS_ITEM(ITEM_COMBO_BOOTS_HOVER))
 #define MM_LOGIC_HAS_GORON_TUNIC_STRICT (RANDO_SAVE_OPTIONS[RO_MM_TUNIC_GORON] && HAS_ITEM(ITEM_COMBO_TUNIC_GORON))
 #define MM_LOGIC_HAS_ZORA_TUNIC_STRICT (RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA] && HAS_ITEM(ITEM_COMBO_TUNIC_ZORA))
-#define MM_LOGIC_UNDERWATER_WALKING_STRICT (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT))
+#define MM_LOGIC_UNDERWATER_WALKING_STRICT \
+    (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT))
 
 #endif
 
@@ -347,13 +415,20 @@ bool HasUsableBottle();
 #define HAS_MAGIC (gSaveContext.save.saveInfo.playerData.isMagicAcquired)
 #ifdef COMBO_BUILD
 #undef HAS_MAGIC
-#define HAS_MAGIC ComboRando::mmResourceAccess.CanUse(gSaveContext.save.saveInfo.playerData.isMagicAcquired, ComboRando::MmMagic)
+#define HAS_MAGIC \
+    ComboRando::mmResourceAccess.CanUse(gSaveContext.save.saveInfo.playerData.isMagicAcquired, ComboRando::MmMagic)
 #define CAN_USE_BOW ComboRando::mmResourceAccess.CanUse(HAS_ITEM(ITEM_BOW), ComboRando::MmArrows)
 #define CAN_USE_BOMBS ComboRando::mmResourceAccess.CanUse(HAS_ITEM(ITEM_BOMB), ComboRando::MmBombs)
-#define CAN_USE_BOMBCHUS (ComboRando::mmResourceAccess.active ? \
-    ComboRando::mmResourceAccess.CanUse(CUR_UPG_VALUE(UPG_BOMB_BAG) != 0, ComboRando::MmBombchus) : HAS_ITEM(ITEM_BOMBCHU))
-#define CAN_USE_STICKS (ComboRando::mmResourceAccess.active ? ComboRando::mmResourceAccess.Has(ComboRando::MmSticks) : HAS_ITEM(ITEM_DEKU_STICK))
-#define CAN_USE_NUTS (ComboRando::mmResourceAccess.active ? ComboRando::mmResourceAccess.Has(ComboRando::MmNuts) : HAS_ITEM(ITEM_DEKU_NUT))
+#define CAN_USE_BOMBCHUS                                                                                 \
+    (ComboRando::mmResourceAccess.active                                                                 \
+         ? ComboRando::mmResourceAccess.CanUse(CUR_UPG_VALUE(UPG_BOMB_BAG) != 0, ComboRando::MmBombchus) \
+         : HAS_ITEM(ITEM_BOMBCHU))
+#define CAN_USE_STICKS                                                                            \
+    (ComboRando::mmResourceAccess.active ? ComboRando::mmResourceAccess.Has(ComboRando::MmSticks) \
+                                         : HAS_ITEM(ITEM_DEKU_STICK))
+#define CAN_USE_NUTS                                                                            \
+    (ComboRando::mmResourceAccess.active ? ComboRando::mmResourceAccess.Has(ComboRando::MmNuts) \
+                                         : HAS_ITEM(ITEM_DEKU_NUT))
 #else
 #define CAN_USE_BOW HAS_ITEM(ITEM_BOW)
 #define CAN_USE_BOMBS HAS_ITEM(ITEM_BOMB)
@@ -362,9 +437,9 @@ bool HasUsableBottle();
 #define CAN_USE_NUTS HAS_ITEM(ITEM_DEKU_NUT)
 #endif
 #ifdef COMBO_BUILD
-#define CAN_HOOK_SCARECROW \
+#define CAN_HOOK_SCARECROW                                                                           \
     (HAS_PLAYABLE_OCARINA && HAS_ITEM(ITEM_HOOKSHOT) && canPlaySong(OCARINA_SONG_SCARECROW_SPAWN) && \
-     (RANDO_EVENTS[RE_LEARN_SCARECROW_SONG] || CHECK_WEEKEVENTREG(WEEKEVENTREG_79_08) || \
+     (RANDO_EVENTS[RE_LEARN_SCARECROW_SONG] || CHECK_WEEKEVENTREG(WEEKEVENTREG_79_08) ||             \
       COMBO_LOGIC_RULE("gEnhancements.Playback.SkipScarecrowSong")))
 #else
 #define CAN_HOOK_SCARECROW \
@@ -374,28 +449,51 @@ bool HasUsableBottle();
 // OoTMM has_explosives: the Blast Mask works without a shield (it deals damage).
 #define CAN_USE_EXPLOSIVE (CAN_USE_BOMBS || CAN_USE_BOMBCHUS || HAS_ITEM(ITEM_MASK_BLAST))
 #else
-#define CAN_USE_EXPLOSIVE                             \
+#define CAN_USE_EXPLOSIVE                 \
     (CAN_USE_BOMBS || CAN_USE_BOMBCHUS || \
      (HAS_ITEM(ITEM_MASK_BLAST) && GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) > EQUIP_VALUE_SHIELD_NONE))
 #endif
 #define CAN_USE_HUMAN_SWORD (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) >= EQUIP_VALUE_SWORD_KOKIRI)
 #ifdef COMBO_BUILD
 #define COMBO_LOGIC_RULE(name) Rando::Logic::GameplayRuleValue(name)
-#define CAN_USE_DEITY_OUTSIDE_BOSS ComboRando::CanUseDeityOutsideBoss(    HAS_ITEM(ITEM_MASK_FIERCE_DEITY), COMBO_LOGIC_RULE("gEnhancements.Masks.FierceDeitysAnywhere"))
-#define CAN_WADE_SHALLOW_WATER ComboRando::CanTraverseWaistWater(CAN_USE_ABILITY(SWIM), CAN_BE_DEKU, CAN_BE_ZORA, CAN_BE_GORON, CAN_USE_DEITY_OUTSIDE_BOSS)
-#define CAN_GORON_SPIKE_ROLL ComboRando::CanSpikeRoll(CAN_BE_GORON, HAS_MAGIC,     COMBO_LOGIC_RULE("gEnhancements.Masks.GoronRollingIgnoresMagic"))
-#define CAN_USE_POWDER_KEG ComboRando::CanUsePowderKeg(CAN_BE_GORON, (HAS_ITEM(ITEM_POWDER_KEG) && (RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] != RO_GENERIC_YES || RANDO_EVENTS[RE_EXPANDED_BUY_KEG])),     HAS_ITEM(ITEM_MASK_BLAST), COMBO_LOGIC_RULE("gEnhancements.Masks.BlastMaskKeg"))
-#define CAN_PASS_GIBDO(resource) ComboRando::CanPassGibdoDoor(COMBO_LOGIC_RULE("gEnhancements.DifficultyOptions.GibdoTradeSequence"), HAS_ITEM(ITEM_MASK_GIBDO), (resource))
-#define CAN_SUPPLY_GIBDO_POTION ComboRando::CanSupplyGibdoPotion(COMBO_LOGIC_RULE("gEnhancements.DifficultyOptions.GibdoTradeSequence"), HAS_BOTTLE, CAN_ACCESS(BLUE_POTION_REFILL), CAN_ACCESS(RED_POTION_REFILL))
-#define FOUND_ENOUGH_CHOIR_FROGS ComboRando::HasEnoughChoirFrogs(COMBO_LOGIC_RULE("gEnhancements.DifficultyOptions.FrogChoirCount"), CHECK_WEEKEVENTREG(WEEKEVENTREG_32_40), CHECK_WEEKEVENTREG(WEEKEVENTREG_32_80), CHECK_WEEKEVENTREG(WEEKEVENTREG_33_01), CHECK_WEEKEVENTREG(WEEKEVENTREG_33_02))
-#define CAN_CROSS_OPEN_WATER_SURFACE ComboRando::CanCrossOpenWaterSurface(CAN_USE_ABILITY(SWIM), CAN_BE_DEKU, COMBO_LOGIC_RULE("gEnhancements.Player.InfiniteDekuHopping") != 0)
-#define CAN_WIN_DOGGY_RACE ComboRando::CanWinDoggyRace(COMBO_LOGIC_RULE("gEnhancements.Minigames.AlwaysWinDoggyRace"), HAS_ITEM(ITEM_MASK_TRUTH))
+#define CAN_USE_DEITY_OUTSIDE_BOSS                                       \
+    ComboRando::CanUseDeityOutsideBoss(HAS_ITEM(ITEM_MASK_FIERCE_DEITY), \
+                                       COMBO_LOGIC_RULE("gEnhancements.Masks.FierceDeitysAnywhere"))
+#define CAN_WADE_SHALLOW_WATER                                                                       \
+    ComboRando::CanTraverseWaistWater(CAN_USE_ABILITY(SWIM), CAN_BE_DEKU, CAN_BE_ZORA, CAN_BE_GORON, \
+                                      CAN_USE_DEITY_OUTSIDE_BOSS)
+#define CAN_GORON_SPIKE_ROLL \
+    ComboRando::CanSpikeRoll(CAN_BE_GORON, HAS_MAGIC, COMBO_LOGIC_RULE("gEnhancements.Masks.GoronRollingIgnoresMagic"))
+#define CAN_USE_POWDER_KEG                                                                                   \
+    ComboRando::CanUsePowderKeg(                                                                             \
+        CAN_BE_GORON,                                                                                        \
+        (HAS_ITEM(ITEM_POWDER_KEG) &&                                                                        \
+         (RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] != RO_GENERIC_YES || RANDO_EVENTS[RE_EXPANDED_BUY_KEG])), \
+        HAS_ITEM(ITEM_MASK_BLAST), COMBO_LOGIC_RULE("gEnhancements.Masks.BlastMaskKeg"))
+#define CAN_PASS_GIBDO(resource)                                                                         \
+    ComboRando::CanPassGibdoDoor(COMBO_LOGIC_RULE("gEnhancements.DifficultyOptions.GibdoTradeSequence"), \
+                                 HAS_ITEM(ITEM_MASK_GIBDO), (resource))
+#define CAN_SUPPLY_GIBDO_POTION                                                                              \
+    ComboRando::CanSupplyGibdoPotion(COMBO_LOGIC_RULE("gEnhancements.DifficultyOptions.GibdoTradeSequence"), \
+                                     HAS_BOTTLE, CAN_ACCESS(BLUE_POTION_REFILL), CAN_ACCESS(RED_POTION_REFILL))
+#define FOUND_ENOUGH_CHOIR_FROGS                                                                                    \
+    ComboRando::HasEnoughChoirFrogs(COMBO_LOGIC_RULE("gEnhancements.DifficultyOptions.FrogChoirCount"),             \
+                                    CHECK_WEEKEVENTREG(WEEKEVENTREG_32_40), CHECK_WEEKEVENTREG(WEEKEVENTREG_32_80), \
+                                    CHECK_WEEKEVENTREG(WEEKEVENTREG_33_01), CHECK_WEEKEVENTREG(WEEKEVENTREG_33_02))
+#define CAN_CROSS_OPEN_WATER_SURFACE                                         \
+    ComboRando::CanCrossOpenWaterSurface(CAN_USE_ABILITY(SWIM), CAN_BE_DEKU, \
+                                         COMBO_LOGIC_RULE("gEnhancements.Player.InfiniteDekuHopping") != 0)
+#define CAN_WIN_DOGGY_RACE                                                                      \
+    ComboRando::CanWinDoggyRace(COMBO_LOGIC_RULE("gEnhancements.Minigames.AlwaysWinDoggyRace"), \
+                                HAS_ITEM(ITEM_MASK_TRUTH))
 #else
 #define COMBO_LOGIC_RULE(name) CVarGetInteger(name, 0)
 #define CAN_USE_DEITY_OUTSIDE_BOSS (CAN_BE_DEITY && CVarGetInteger("gEnhancements.Masks.FierceDeitysAnywhere", 0))
 #define CAN_WADE_SHALLOW_WATER (CAN_USE_ABILITY(SWIM) || CAN_BE_DEKU || CAN_BE_ZORA || CAN_BE_GORON)
 #define CAN_GORON_SPIKE_ROLL (CAN_BE_GORON && HAS_MAGIC)
-#define CAN_USE_POWDER_KEG (CAN_BE_GORON && HAS_ITEM(ITEM_POWDER_KEG) && (RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] != RO_GENERIC_YES || RANDO_EVENTS[RE_EXPANDED_BUY_KEG]))
+#define CAN_USE_POWDER_KEG                        \
+    (CAN_BE_GORON && HAS_ITEM(ITEM_POWDER_KEG) && \
+     (RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] != RO_GENERIC_YES || RANDO_EVENTS[RE_EXPANDED_BUY_KEG]))
 #define CAN_PASS_GIBDO(resource) (HAS_ITEM(ITEM_MASK_GIBDO) && (resource))
 #define CAN_SUPPLY_GIBDO_POTION (HAS_BOTTLE && CAN_ACCESS(BLUE_POTION_REFILL))
 #define FOUND_ENOUGH_CHOIR_FROGS FOUND_ALL_FROGS
@@ -407,10 +505,9 @@ bool HasUsableBottle();
 // OoTMM v32.3 keaton_grass_easy / keaton_grass_hard. The first
 // patch is free; later patches must be cut before the ring retreats.
 #define CAN_CUT_KEATON_GRASS_EASY (CAN_USE_SWORD && HAS_MAGIC)
-#define CAN_CUT_KEATON_GRASS_HARD                                               \
-    (CAN_CUT_KEATON_GRASS_EASY &&                                              \
-     (CHECK_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_GREAT_SPIN_ATTACK) ||             \
-      HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) ||                                      \
+#define CAN_CUT_KEATON_GRASS_HARD                                                                        \
+    (CAN_CUT_KEATON_GRASS_EASY &&                                                                        \
+     (CHECK_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_GREAT_SPIN_ATTACK) || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || \
       GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) >= EQUIP_VALUE_SWORD_GILDED))
 #else
 #define CAN_CUT_KEATON_GRASS_EASY true
@@ -421,11 +518,12 @@ bool HasUsableBottle();
      CHECK_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_GREAT_SPIN_ATTACK))
 // Be careful here, as some checks require you to play the song as a specific form
 // Exact pinned macros_mm.yml has_ocarina gate, using the persisted seed options.
-#define HAS_PLAYABLE_OCARINA Rando::Ocarinas::CanPlay( \
-    RANDO_SAVE_OPTIONS[RO_SHARED_OCARINA] != 0, RANDO_SAVE_OPTIONS[RO_FAIRY_OCARINA_MM] != 0, \
-    INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_OF_TIME ? 2 : \
-    (INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_FAIRY ? 1 : 0))
-#define CAN_PLAY_SONG(song)                                                   \
+#define HAS_PLAYABLE_OCARINA                                                                                           \
+    Rando::Ocarinas::CanPlay(RANDO_SAVE_OPTIONS[RO_SHARED_OCARINA] != 0, RANDO_SAVE_OPTIONS[RO_FAIRY_OCARINA_MM] != 0, \
+                             INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_OF_TIME                                 \
+                                 ? 2                                                                                   \
+                                 : (INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_FAIRY ? 1 : 0))
+#define CAN_PLAY_SONG(song)                                         \
     (HAS_PLAYABLE_OCARINA && CHECK_QUEST_ITEM(QUEST_SONG_##song) && \
      Rando::Logic::canPlaySong((QUEST_SONG_##song - QUEST_SONG_SONATA) + OCARINA_SONG_SONATA))
 #define CAN_RIDE_EPONA (CAN_PLAY_SONG(EPONA))
@@ -442,7 +540,9 @@ bool HasUsableBottle();
 #define HAS_BOTTLE_ITEM(item) (Inventory_HasItemInBottle(item))
 #ifdef COMBO_BUILD
 #define HAS_BOTTLE (Rando::Logic::HasUsableBottle())
-#define CAN_SUPPLY_CHATEAU (HAS_BOTTLE && (HAS_BOTTLE_ITEM(ITEM_CHATEAU) || (ComboRando::mmResourceAccess.active && ComboRando::mmResourceAccess.Has(ComboRando::MmChateau))))
+#define CAN_SUPPLY_CHATEAU                           \
+    (HAS_BOTTLE && (HAS_BOTTLE_ITEM(ITEM_CHATEAU) || \
+                    (ComboRando::mmResourceAccess.active && ComboRando::mmResourceAccess.Has(ComboRando::MmChateau))))
 #else
 #define HAS_BOTTLE (INV_CONTENT(ITEM_BOTTLE) != ITEM_NONE)
 #endif
@@ -451,19 +551,31 @@ bool HasUsableBottle();
 #ifdef COMBO_BUILD
 // OoTMM macros_mm.yml has_hot_water_mtn / has_hot_water_distance. Ordinary
 // Farore is available only when its persisted seed option, item and magic are present.
-#define CAN_USE_DINS_FIRE ComboRando::SpellOracle::CanUse(RANDO_SAVE_OPTIONS[RO_MM_SPELL_FIRE],HAS_MAGIC,RANDO_SAVE_OPTIONS[RO_SHARED_SPELL_FIRE],gSaveContext.save.shipSaveInfo.spellFireOwned,gSaveContext.save.shipSaveInfo.spellFireOwned)
-#define CAN_USE_NAYRUS_LOVE ComboRando::SpellOracle::CanUse(RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE],HAS_MAGIC,RANDO_SAVE_OPTIONS[RO_SHARED_SPELL_LOVE],gSaveContext.save.shipSaveInfo.spellLoveOwned,gSaveContext.save.shipSaveInfo.spellLoveOwned)
-#define CAN_USE_FARORE ComboRando::FaroreOracle::CanUse(RANDO_SAVE_OPTIONS[RO_MM_SPELL_WIND], HAS_MAGIC, RANDO_SAVE_OPTIONS[RO_SHARED_SPELL_WIND], gSaveContext.save.shipSaveInfo.faroresWind.owned, gSaveContext.save.shipSaveInfo.faroresWind.owned)
+#define CAN_USE_DINS_FIRE                                                                          \
+    ComboRando::SpellOracle::CanUse(                                                               \
+        RANDO_SAVE_OPTIONS[RO_MM_SPELL_FIRE], HAS_MAGIC, RANDO_SAVE_OPTIONS[RO_SHARED_SPELL_FIRE], \
+        gSaveContext.save.shipSaveInfo.spellFireOwned, gSaveContext.save.shipSaveInfo.spellFireOwned)
+#define CAN_USE_NAYRUS_LOVE                                                                        \
+    ComboRando::SpellOracle::CanUse(                                                               \
+        RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE], HAS_MAGIC, RANDO_SAVE_OPTIONS[RO_SHARED_SPELL_LOVE], \
+        gSaveContext.save.shipSaveInfo.spellLoveOwned, gSaveContext.save.shipSaveInfo.spellLoveOwned)
+#define CAN_USE_FARORE                                                                             \
+    ComboRando::FaroreOracle::CanUse(                                                              \
+        RANDO_SAVE_OPTIONS[RO_MM_SPELL_WIND], HAS_MAGIC, RANDO_SAVE_OPTIONS[RO_SHARED_SPELL_WIND], \
+        gSaveContext.save.shipSaveInfo.faroresWind.owned, gSaveContext.save.shipSaveInfo.faroresWind.owned)
 // Shared and local Wind pickups converge into the same native owned byte through GiveItem.
-#define CAN_USE_GBT_GEYSER ComboRando::FaroreOracle::GbtGeyser(COMBO_MM_TRICK("GbtCentralGeyser"), CAN_USE_MAGIC_ARROW(FIRE), CAN_USE_MAGIC_ARROW(ICE), CAN_USE_DINS_FIRE, CAN_USE_FARORE, CAN_USE_NAYRUS_LOVE)
-#define CAN_BRING_HOT_WATER_NORTH \
-    (CAN_ACCESS(HOT_SPRING_WATER) && \
+#define CAN_USE_GBT_GEYSER                                                                             \
+    ComboRando::FaroreOracle::GbtGeyser(COMBO_MM_TRICK("GbtCentralGeyser"), CAN_USE_MAGIC_ARROW(FIRE), \
+                                        CAN_USE_MAGIC_ARROW(ICE), CAN_USE_DINS_FIRE, CAN_USE_FARORE,   \
+                                        CAN_USE_NAYRUS_LOVE)
+#define CAN_BRING_HOT_WATER_NORTH                                      \
+    (CAN_ACCESS(HOT_SPRING_WATER) &&                                   \
      (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) || \
       (CAN_PLAY_SONG(SOARING) && CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE)) || CAN_USE_FARORE))
 #else
 #define CAN_BRING_HOT_WATER_NORTH CAN_ACCESS(HOT_SPRING_WATER)
 #endif
-#define CAN_GROW_BEAN_PLANT        \
+#define CAN_GROW_BEAN_PLANT      \
     (CAN_ACCESS(BEANS_REFILL) && \
      (CAN_PLAY_SONG(STORMS) || (HAS_BOTTLE && (CAN_ACCESS(SPRING_WATER) || CAN_ACCESS(HOT_SPRING_WATER)))))
 // Bean patches that auto-water on Day 2 (Doggy Racetrack, Deku Palace Upper)
@@ -475,9 +587,11 @@ bool HasUsableBottle();
 #define KEY_COUNT(dungeon) (gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys[DUNGEON_SCENE_INDEX_##dungeon])
 // Match the native TycoonWallet hook (5000), including headless searches where
 // its display hook has not run. The ordinary fourth capacity is still 500.
-#define MM_WALLET_CAPACITY (CUR_UPG_VALUE(UPG_WALLET) >= 3 && \
-    RANDO_SAVE_OPTIONS[RO_SHUFFLE_TYCOON_WALLET] == RO_GENERIC_YES ? 5000 : \
-    CUR_UPG_VALUE(UPG_WALLET) >= 2 ? 500 : CUR_UPG_VALUE(UPG_WALLET) == 1 ? 200 : 99)
+#define MM_WALLET_CAPACITY                                                                                   \
+    (CUR_UPG_VALUE(UPG_WALLET) >= 3 && RANDO_SAVE_OPTIONS[RO_SHUFFLE_TYCOON_WALLET] == RO_GENERIC_YES ? 5000 \
+     : CUR_UPG_VALUE(UPG_WALLET) >= 2                                                                 ? 500  \
+     : CUR_UPG_VALUE(UPG_WALLET) == 1                                                                 ? 200  \
+                                                                                                      : 99)
 #ifdef COMBO_BUILD
 #define CAN_PAY(price) ComboRando::mmResourceAccess.CanPay((price), MM_WALLET_CAPACITY)
 #else
@@ -493,8 +607,8 @@ bool HasUsableBottle();
 #define HAS_ENOUGH_SKULLTULA_TOKENS(sceneId) \
     (Inventory_GetSkullTokenCount(sceneId) >= RANDO_SAVE_OPTIONS[RO_SKULLTULA_TOKENS_REQUIRED])
 
-#define EVENT(randoEvent, condition)         \
-    {                                        \
+#define EVENT(randoEvent, condition)                                                               \
+    {                                                                                              \
         randoEvent, [] { return (condition) && Rando::ExpandedSoulEventPrerequisite(randoEvent); } \
     }
 #define EXIT(toEntrance, fromEntrance, condition)                           \
@@ -509,11 +623,11 @@ bool HasUsableBottle();
             [] { return condition; }, LogicString(#condition) \
         }                                                     \
     }
-#define CHECK(check, condition)                               \
-    {                                                         \
-        check, {                                              \
+#define CHECK(check, condition)                                                                                \
+    {                                                                                                          \
+        check, {                                                                                               \
             [] { return (condition) && Rando::ExpandedSoulCheckPrerequisite(check); }, LogicString(#condition) \
-        }                                                     \
+        }                                                                                                      \
     }
 // STAY macro for region time restrictions - defines when player can stay in a region over time
 // Usage in region definitions: .timeStayRestrictions = { STAY(TIME_NIGHT1_PM_08_00, !HAS_ROOM_KEY) }
@@ -775,11 +889,14 @@ inline constexpr uint64_t GetHalfDayTimeMask(int halfDayIndex) {
 
 // Merge two time states (bitwise OR on time slices)
 inline RegionTimeState MergeTimeStates(const RegionTimeState& a, const RegionTimeState& b) {
-    if(!a.timeSlices)return b;
-    if(!b.timeSlices)return a;
-    RegionTimeState result{.timeSlices=a.timeSlices|b.timeSlices,.canStayOverTime=a.canStayOverTime||b.canStayOverTime};
+    if (!a.timeSlices)
+        return b;
+    if (!b.timeSlices)
+        return a;
+    RegionTimeState result{ .timeSlices = a.timeSlices | b.timeSlices,
+                            .canStayOverTime = a.canStayOverTime || b.canStayOverTime };
 #ifdef COMBO_BUILD
-    result.regionalFlags=ComboRando::Entrances::Merge(a.regionalFlags,b.regionalFlags);
+    result.regionalFlags = ComboRando::Entrances::Merge(a.regionalFlags, b.regionalFlags);
 #endif
     return result;
 }
@@ -788,9 +905,9 @@ inline RegionTimeState MergeTimeStates(const RegionTimeState& a, const RegionTim
 inline bool TimeStateCovers(const RegionTimeState& a, const RegionTimeState& b) {
     return (a.timeSlices | b.timeSlices) == a.timeSlices
 #ifdef COMBO_BUILD
-        && ComboRando::Entrances::Covers(a.regionalFlags,b.regionalFlags)
+           && ComboRando::Entrances::Covers(a.regionalFlags, b.regionalFlags)
 #endif
-    ;
+        ;
 }
 
 // ============================================================================
@@ -883,105 +1000,166 @@ inline bool ClockFilter() {
 
 #ifdef COMBO_BUILD
 inline bool CanDefeatMajora() {
-    return ComboRando::CanDefeatMajora(
-        RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_YES,
-        Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_MAJORA), CAN_USE_BOW,
-        CAN_BE_ZORA, CAN_BE_DEITY, HAS_MAGIC, CAN_USE_HUMAN_SWORD, HAS_ITEM(ITEM_SWORD_GREAT_FAIRY));
+    return ComboRando::CanDefeatMajora(RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_YES,
+                                       Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_MAJORA), CAN_USE_BOW,
+                                       CAN_BE_ZORA, CAN_BE_DEITY, HAS_MAGIC, CAN_USE_HUMAN_SWORD,
+                                       HAS_ITEM(ITEM_SWORD_GREAT_FAIRY));
 }
 #endif
 
-inline bool CanKillEnemy(ActorId EnemyId, unsigned actorParams=0) {
-    if(RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) {
-        const int index=Rando::MissingMmSoulForActor(EnemyId,actorParams);
-        if(index>=0 && !Rando::HaveMissingMmSoul(index)) return false;
+inline bool CanKillEnemy(ActorId EnemyId, unsigned actorParams = 0) {
+    if (RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) {
+        const int index = Rando::MissingMmSoulForActor(EnemyId, actorParams);
+        if (index >= 0 && !Rando::HaveMissingMmSoul(index))
+            return false;
     }
     // If enemy souls are shuffled, and the relevant soul is not obtained, we cannot kill that enemy.
     if (RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] &&
-        !(RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS] && (Rando::MissingMmSoulForActor(EnemyId,actorParams)>=0 || (EnemyId==ACTOR_EN_SW && (actorParams&3)))) &&
+        !(RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS] &&
+          (Rando::MissingMmSoulForActor(EnemyId, actorParams) >= 0 || (EnemyId == ACTOR_EN_SW && (actorParams & 3)))) &&
         !HaveEnemySoul(EnemyId)) {
         return false;
     }
 
 #ifdef COMBO_BUILD
-    const ComboRando::MmCombatCapabilities combat{
-        CAN_USE_SWORD, CAN_BE_DEKU, CAN_BE_GORON, CAN_BE_ZORA, CAN_BE_DEITY,
-        HAS_ITEM(ITEM_MASK_GIANT), HAS_MAGIC, CAN_USE_BOW, HAS_ITEM(ITEM_HOOKSHOT),
-        CAN_USE_BOMBS || CAN_USE_BOMBCHUS || HAS_ITEM(ITEM_MASK_BLAST),
-        CAN_USE_NUTS, CAN_FIGHT_WITH_STICKS, CAN_USE_MAGIC_ARROW(FIRE),
-        CAN_USE_MAGIC_ARROW(ICE), CAN_USE_MAGIC_ARROW(LIGHT),
-        GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR,
-        CAN_USE_ABILITY(SWIM), IS_DAY(), COMBO_MM_TRICK("TwinmoldBow") != 0,
-        COMBO_MM_TRICK("TwinmoldFireIce") != 0, CAN_USE_DINS_FIRE
-    };
+    const ComboRando::MmCombatCapabilities combat{ CAN_USE_SWORD,
+                                                   CAN_BE_DEKU,
+                                                   CAN_BE_GORON,
+                                                   CAN_BE_ZORA,
+                                                   CAN_BE_DEITY,
+                                                   HAS_ITEM(ITEM_MASK_GIANT),
+                                                   HAS_MAGIC,
+                                                   CAN_USE_BOW,
+                                                   HAS_ITEM(ITEM_HOOKSHOT),
+                                                   CAN_USE_BOMBS || CAN_USE_BOMBCHUS || HAS_ITEM(ITEM_MASK_BLAST),
+                                                   CAN_USE_NUTS,
+                                                   CAN_FIGHT_WITH_STICKS,
+                                                   CAN_USE_MAGIC_ARROW(FIRE),
+                                                   CAN_USE_MAGIC_ARROW(ICE),
+                                                   CAN_USE_MAGIC_ARROW(LIGHT),
+                                                   GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR,
+                                                   CAN_USE_ABILITY(SWIM),
+                                                   IS_DAY(),
+                                                   COMBO_MM_TRICK("TwinmoldBow") != 0,
+                                                   COMBO_MM_TRICK("TwinmoldFireIce") != 0,
+                                                   CAN_USE_DINS_FIRE };
     // Expressions are imported from OoTMM. Keep actor-specific soul gates here.
     switch (EnemyId) {
         case ACTOR_BOSS_01:
-            return ComboRando::can_kill_odolwa(combat) &&
-                   (!RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] || Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_ODOLWA));
+            return ComboRando::can_kill_odolwa(combat) && (!RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] ||
+                                                           Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_ODOLWA));
         case ACTOR_BOSS_02:
             return ComboRando::can_kill_twinmold(combat) &&
-                   (!RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] || Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_TWINMOLD));
+                   (!RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] ||
+                    Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_TWINMOLD));
         case ACTOR_BOSS_03:
-            return ComboRando::can_kill_gyorg(combat) &&
-                   (!RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] || Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_GYORG));
+            return ComboRando::can_kill_gyorg(combat) && (!RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] ||
+                                                          Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_GYORG));
         case ACTOR_BOSS_HAKUGIN:
-            return ComboRando::can_kill_goht(combat) &&
-                   (!RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] || Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_GOHT));
+            return ComboRando::can_kill_goht(combat) && (!RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] ||
+                                                         Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_GOHT));
         // Remaining imported actor cases are generated below.
-        case ACTOR_BOSS_04: return ComboRando::can_kill_warts(combat);
-        case ACTOR_EN_KNIGHT: return ComboRando::can_kill_igos(combat);
-        case ACTOR_EN_KAIZOKU: return ComboRando::can_fight_pirates(combat);
-        case ACTOR_EN_PAMETFROG: return ComboRando::can_kill_gekko_wft(combat);
-        case ACTOR_EN_BIGSLIME: return ComboRando::can_kill_gekko_gbt(combat);
-        case ACTOR_EN_DINOFOS: return ComboRando::can_kill_lizalfos_dinolfos(combat);
-        case ACTOR_EN_WIZ: return ComboRando::can_kill_wizzrobe_close(combat);
-        case ACTOR_EN_WF: return ComboRando::can_kill_wolfos(combat);
-        case ACTOR_EN_JSO: return ComboRando::can_kill_garo(combat);
-        case ACTOR_EN_JSO2: return ComboRando::can_kill_garo_master(combat);
-        case ACTOR_EN_GRASSHOPPER: return ComboRando::can_kill_dragonflies(combat);
-        case ACTOR_EN_MKK: return ComboRando::can_kill_boes(combat);
-        case ACTOR_EN_BIGPAMET: return ComboRando::can_kill_snappers_flowers(combat);
-        case ACTOR_EN_ST: return ComboRando::can_kill_skulltulas(combat);
-        case ACTOR_EN_BAT: return ComboRando::can_kill_bad_bats_single(combat);
-        case ACTOR_EN_DEKUBABA: return ComboRando::can_kill_baba_nuts(combat);
-        case ACTOR_EN_AM: return ComboRando::can_kill_armos(combat);
-        case ACTOR_EN_VM: return ComboRando::can_kill_beamos(combat);
-        case ACTOR_EN_BB: return ComboRando::can_kill_bubbles(combat);
-        case ACTOR_EN_BBFALL: return ComboRando::can_kill_bubbles(combat);
-        case ACTOR_EN_FAMOS: return ComboRando::can_kill_eyegore_distance(combat);
-        case ACTOR_EN_DODONGO: return ComboRando::can_kill_dodongos(combat);
-        case ACTOR_EN_FLOORMAS: return ComboRando::can_kill_floormasters(combat);
-        case ACTOR_EN_WALLMAS: return ComboRando::can_kill_wallmasters(combat);
-        case ACTOR_EN_FZ: return ComboRando::can_kill_freezard_short_range(combat);
-        case ACTOR_EN_CROW: return ComboRando::can_kill_guays(combat);
-        case ACTOR_EN_FIREFLY: return ComboRando::can_kill_keese_close(combat);
-        case ACTOR_EN_RR: return ComboRando::can_kill_like_like(combat);
-        case ACTOR_EN_DEKUNUTS: return ComboRando::can_kill_scrubs_anywhere(combat);
-        case ACTOR_EN_PEEHAT: return ComboRando::can_kill_peahats(combat);
-        case ACTOR_EN_BSB: return ComboRando::can_kill_keeta(combat);
-        case ACTOR_EN_SKB: return ComboRando::can_kill_stalchildren(combat);
-        case ACTOR_EN_TITE: return ComboRando::can_kill_tektites(combat);
-        case ACTOR_EN_SLIME: return ComboRando::can_kill_chuchu(combat);
-        case ACTOR_EN_WDHAND: return ComboRando::can_kill_dexihands(combat);
-        case ACTOR_EN_KAME: return ComboRando::can_kill_snappers_any(combat);
-        case ACTOR_EN_OKUTA: return ComboRando::can_kill_octoroks(combat);
-        case ACTOR_EN_EGOL: return ComboRando::can_kill_eyegore(combat);
-        case ACTOR_EN_NEO_REEBA: return ComboRando::can_kill_leevers(combat);
-        case ACTOR_EN_SB: return ComboRando::can_kill_shell_blades_underwater(combat);
-        case ACTOR_BOSS_05: return ComboRando::can_kill_bio_babas(combat);
-        case ACTOR_EN_DRAGON: return ComboRando::can_kill_deep_python(combat);
-        case ACTOR_EN_BIGPO: return ComboRando::can_kill_big_poe(combat);
-        case ACTOR_EN_PO_SISTERS: return ComboRando::can_kill_poe_sisters(combat);
-        case ACTOR_EN_INVADEPOH: return ComboRando::can_kill_aliens(combat);
-        case ACTOR_EN_DEATH: return ComboRando::can_kill_gomess(combat);
-        default: break;
+        case ACTOR_BOSS_04:
+            return ComboRando::can_kill_warts(combat);
+        case ACTOR_EN_KNIGHT:
+            return ComboRando::can_kill_igos(combat);
+        case ACTOR_EN_KAIZOKU:
+            return ComboRando::can_fight_pirates(combat);
+        case ACTOR_EN_PAMETFROG:
+            return ComboRando::can_kill_gekko_wft(combat);
+        case ACTOR_EN_BIGSLIME:
+            return ComboRando::can_kill_gekko_gbt(combat);
+        case ACTOR_EN_DINOFOS:
+            return ComboRando::can_kill_lizalfos_dinolfos(combat);
+        case ACTOR_EN_WIZ:
+            return ComboRando::can_kill_wizzrobe_close(combat);
+        case ACTOR_EN_WF:
+            return ComboRando::can_kill_wolfos(combat);
+        case ACTOR_EN_JSO:
+            return ComboRando::can_kill_garo(combat);
+        case ACTOR_EN_JSO2:
+            return ComboRando::can_kill_garo_master(combat);
+        case ACTOR_EN_GRASSHOPPER:
+            return ComboRando::can_kill_dragonflies(combat);
+        case ACTOR_EN_MKK:
+            return ComboRando::can_kill_boes(combat);
+        case ACTOR_EN_BIGPAMET:
+            return ComboRando::can_kill_snappers_flowers(combat);
+        case ACTOR_EN_ST:
+            return ComboRando::can_kill_skulltulas(combat);
+        case ACTOR_EN_BAT:
+            return ComboRando::can_kill_bad_bats_single(combat);
+        case ACTOR_EN_DEKUBABA:
+            return ComboRando::can_kill_baba_nuts(combat);
+        case ACTOR_EN_AM:
+            return ComboRando::can_kill_armos(combat);
+        case ACTOR_EN_VM:
+            return ComboRando::can_kill_beamos(combat);
+        case ACTOR_EN_BB:
+            return ComboRando::can_kill_bubbles(combat);
+        case ACTOR_EN_BBFALL:
+            return ComboRando::can_kill_bubbles(combat);
+        case ACTOR_EN_FAMOS:
+            return ComboRando::can_kill_eyegore_distance(combat);
+        case ACTOR_EN_DODONGO:
+            return ComboRando::can_kill_dodongos(combat);
+        case ACTOR_EN_FLOORMAS:
+            return ComboRando::can_kill_floormasters(combat);
+        case ACTOR_EN_WALLMAS:
+            return ComboRando::can_kill_wallmasters(combat);
+        case ACTOR_EN_FZ:
+            return ComboRando::can_kill_freezard_short_range(combat);
+        case ACTOR_EN_CROW:
+            return ComboRando::can_kill_guays(combat);
+        case ACTOR_EN_FIREFLY:
+            return ComboRando::can_kill_keese_close(combat);
+        case ACTOR_EN_RR:
+            return ComboRando::can_kill_like_like(combat);
+        case ACTOR_EN_DEKUNUTS:
+            return ComboRando::can_kill_scrubs_anywhere(combat);
+        case ACTOR_EN_PEEHAT:
+            return ComboRando::can_kill_peahats(combat);
+        case ACTOR_EN_BSB:
+            return ComboRando::can_kill_keeta(combat);
+        case ACTOR_EN_SKB:
+            return ComboRando::can_kill_stalchildren(combat);
+        case ACTOR_EN_TITE:
+            return ComboRando::can_kill_tektites(combat);
+        case ACTOR_EN_SLIME:
+            return ComboRando::can_kill_chuchu(combat);
+        case ACTOR_EN_WDHAND:
+            return ComboRando::can_kill_dexihands(combat);
+        case ACTOR_EN_KAME:
+            return ComboRando::can_kill_snappers_any(combat);
+        case ACTOR_EN_OKUTA:
+            return ComboRando::can_kill_octoroks(combat);
+        case ACTOR_EN_EGOL:
+            return ComboRando::can_kill_eyegore(combat);
+        case ACTOR_EN_NEO_REEBA:
+            return ComboRando::can_kill_leevers(combat);
+        case ACTOR_EN_SB:
+            return ComboRando::can_kill_shell_blades_underwater(combat);
+        case ACTOR_BOSS_05:
+            return ComboRando::can_kill_bio_babas(combat);
+        case ACTOR_EN_DRAGON:
+            return ComboRando::can_kill_deep_python(combat);
+        case ACTOR_EN_BIGPO:
+            return ComboRando::can_kill_big_poe(combat);
+        case ACTOR_EN_PO_SISTERS:
+            return ComboRando::can_kill_poe_sisters(combat);
+        case ACTOR_EN_INVADEPOH:
+            return ComboRando::can_kill_aliens(combat);
+        case ACTOR_EN_DEATH:
+            return ComboRando::can_kill_gomess(combat);
+        default:
+            break;
     }
 #endif
 
     switch (EnemyId) {
         case ACTOR_BOSS_01: // Odolwa
-            return (CAN_USE_SWORD || CAN_BE_DEITY || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_EXPLOSIVE || CAN_USE_MAGIC_ARROW(FIRE) ||
-                    CAN_USE_MAGIC_ARROW(LIGHT)) &&
+            return (CAN_USE_SWORD || CAN_BE_DEITY || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_EXPLOSIVE ||
+                    CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_MAGIC_ARROW(LIGHT)) &&
                    (Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_BOSS_ODOLWA) ||
                     RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_NO);
         case ACTOR_BOSS_02: // Twinmold
@@ -1022,21 +1200,20 @@ inline bool CanKillEnemy(ActorId EnemyId, unsigned actorParams=0) {
         case ACTOR_EN_IK: // Iron Knuckle
             return (CAN_USE_SWORD || CAN_BE_GORON);
         case ACTOR_EN_GRASSHOPPER: // Dragonfly
-            return ((CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_EXPLOSIVE || CAN_USE_NUTS || CAN_USE_SWORD ||
-                    CAN_BE_ZORA);
+            return ((CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_EXPLOSIVE || CAN_USE_NUTS || CAN_USE_SWORD || CAN_BE_ZORA);
         case ACTOR_EN_MKK: // Boe
-            return ((CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_EXPLOSIVE || CAN_USE_NUTS || CAN_USE_SWORD ||
-                    CAN_BE_ZORA || CAN_BE_GORON);
+            return ((CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_EXPLOSIVE || CAN_USE_NUTS || CAN_USE_SWORD || CAN_BE_ZORA ||
+                    CAN_BE_GORON);
         case ACTOR_EN_BIGPAMET: // Snapper
             return (CAN_BE_DEKU || CAN_USE_EXPLOSIVE || CAN_BE_GORON);
         case ACTOR_EN_ST: // Large Skulltula
             return (CAN_USE_SWORD || CAN_USE_PROJECTILE || CAN_BE_GORON || CAN_USE_EXPLOSIVE);
         case ACTOR_EN_BAT: // Bad Bat
-            return (CAN_USE_SWORD || HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_BOW || CAN_USE_EXPLOSIVE ||
-                    CAN_BE_GORON || CAN_BE_ZORA);
+            return (CAN_USE_SWORD || HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_BOW || CAN_USE_EXPLOSIVE || CAN_BE_GORON ||
+                    CAN_BE_ZORA);
         case ACTOR_EN_DEKUBABA: // Neck bending Deku Baba
-            return (CAN_USE_SWORD || CAN_BE_DEKU || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_BOW ||
-                    CAN_USE_EXPLOSIVE || CAN_USE_STICKS);
+            return (CAN_USE_SWORD || CAN_BE_DEKU || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_BOW || CAN_USE_EXPLOSIVE ||
+                    CAN_USE_STICKS);
         case ACTOR_OBJ_SNOWBALL: // Large Snowball
             return (CAN_USE_EXPLOSIVE || CAN_BE_GORON || CAN_USE_MAGIC_ARROW(FIRE));
         case ACTOR_EN_AM: // Armos
@@ -1061,22 +1238,23 @@ inline bool CanKillEnemy(ActorId EnemyId, unsigned actorParams=0) {
             return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_MAGIC_ARROW(FIRE) ||
                     HAS_ITEM(ITEM_HOOKSHOT));
         case ACTOR_EN_CROW: // Guay (Generic, excludes the one circling Clock Town En_Ruppecrow)
-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW ||
-                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT));
+            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW || CAN_USE_STICKS ||
+                    HAS_ITEM(ITEM_HOOKSHOT));
         case ACTOR_EN_FIREFLY: // Keese
-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW ||
-                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT));
+            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW || CAN_USE_STICKS ||
+                    HAS_ITEM(ITEM_HOOKSHOT));
         case ACTOR_EN_RR: // Like Like
             return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || (CAN_BE_DEKU && HAS_MAGIC) || CAN_USE_BOW ||
                     CAN_USE_STICKS);
         case ACTOR_EN_DEKUNUTS: // Mad Scrub
-            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW ||
-                    CAN_USE_STICKS || HAS_ITEM(ITEM_HOOKSHOT));
+            return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW || CAN_USE_STICKS ||
+                    HAS_ITEM(ITEM_HOOKSHOT));
         case ACTOR_EN_KAREBABA: // Wilted/Mini Babas
             return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU);
         case ACTOR_EN_PEEHAT: // Peahat
-            return ((CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW || CAN_FIGHT_WITH_STICKS) &&
-                    IS_DAY());
+            return (
+                (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_BOW || CAN_FIGHT_WITH_STICKS) &&
+                IS_DAY());
         case ACTOR_EN_RD: // Redead & Gibdos
             return (CAN_USE_SWORD || CAN_BE_DEKU || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_STICKS);
         case ACTOR_EN_BSB: // Captain Keeta (May be possible without bow, but the window is tight. Requiring for now)

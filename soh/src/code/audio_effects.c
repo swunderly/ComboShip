@@ -126,7 +126,7 @@ f32 Audio_GetVibratoFreqScale(VibratoState* vib) {
     //! @bug this probably meant to compare with gAudioContext.sequenceChannelNone.
     //! -1 isn't used as a channel pointer anywhere else.
 #ifdef COMBO_BUILD
-    ComboMmVibratoParameters* subVib=vib->comboMmSubVib;
+    ComboMmVibratoParameters* subVib = vib->comboMmSubVib;
     if (subVib != NULL) {
         if ((u32)vib->extentChangeTimer != 0) {
             if (vib->extentChangeTimer == 1) {
@@ -155,10 +155,9 @@ f32 Audio_GetVibratoFreqScale(VibratoState* vib) {
                 vib->rate = (s32)subVib->vibratoRateTarget;
             }
         }
-    }
-    else
+    } else
 #endif
-    if (channel != ((SequenceChannel*)(-1))) {
+        if (channel != ((SequenceChannel*)(-1))) {
         if (vib->extentChangeTimer) {
             if (vib->extentChangeTimer == 1) {
                 vib->extent = (s32)channel->vibratoExtentTarget;
@@ -229,16 +228,16 @@ void Audio_NoteVibratoInit(Note* note) {
     vib->channel = note->playbackState.parentLayer->channel;
     channel = vib->channel;
 #ifdef COMBO_BUILD
-    SequenceLayer* layer=note->playbackState.parentLayer;
-    vib->comboMmSubVib=NULL;
-    if(layer->comboMmDialect && !layer->comboMmFlags.s.useVibrato) {
-        ComboMmVibratoParameters* params=&layer->comboMmVibrato;
-        vib->comboMmSubVib=params;
-        vib->extentChangeTimer=params->vibratoDepthChangeDelay;
-        vib->extent=vib->extentChangeTimer?params->vibratoDepthStart:params->vibratoDepthTarget;
-        vib->rateChangeTimer=params->vibratoRateChangeDelay;
-        vib->rate=vib->rateChangeTimer?params->vibratoRateStart:params->vibratoRateTarget;
-        vib->delay=params->vibratoDelay;
+    SequenceLayer* layer = note->playbackState.parentLayer;
+    vib->comboMmSubVib = NULL;
+    if (layer->comboMmDialect && !layer->comboMmFlags.s.useVibrato) {
+        ComboMmVibratoParameters* params = &layer->comboMmVibrato;
+        vib->comboMmSubVib = params;
+        vib->extentChangeTimer = params->vibratoDepthChangeDelay;
+        vib->extent = vib->extentChangeTimer ? params->vibratoDepthStart : params->vibratoDepthTarget;
+        vib->rateChangeTimer = params->vibratoRateChangeDelay;
+        vib->rate = vib->rateChangeTimer ? params->vibratoRateStart : params->vibratoRateTarget;
+        vib->delay = params->vibratoDelay;
         return;
     }
 #endif

@@ -51,7 +51,7 @@ void Rando::ActorBehavior::InitEnKgyBehavior() {
             entry.msg += "So, do we have a deal?\n\xC2%gI'll buy it\nNo thanks\xBF";
             CustomMessage::Replace(&entry.msg, "{itemName}",
                                    Rando::StaticData::GetRevealedItemName(randoRazorSwordSaveCheck.randoItemId, true,
-                                                                  RC_MOUNTAIN_VILLAGE_SMITHY_RAZOR_SWORD));
+                                                                          RC_MOUNTAIN_VILLAGE_SMITHY_RAZOR_SWORD));
         }
 
         CustomMessage::LoadCustomMessageIntoFont(entry);
@@ -64,9 +64,9 @@ void Rando::ActorBehavior::InitEnKgyBehavior() {
         std::string itemName = "40 Rupees";
 
         if (!RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].eligible) {
-            itemName =
-                Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].randoItemId,
-                                               true, RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD);
+            itemName = Rando::StaticData::GetRevealedItemName(
+                RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].randoItemId, true,
+                RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD);
         }
         entry.msg = "Want to know a secret? If you bring me some gold dust, I can offer you %r{itemName}%w.\xE0";
         CustomMessage::Replace(&entry.msg, "{itemName}", itemName);
@@ -129,10 +129,10 @@ void Rando::ActorBehavior::InitEnKgyBehavior() {
         // ComboShip: route through GetItemName (like the 0xc3b/0xc3d hooks above) so a foreign
         // (OOT-bound) item shows its real name; GetItemName's combo-guarded chokepoint handles it.
         // includeArticle=false matches the original raw .name rendering.
-        CustomMessage::Replace(
-            &entry.msg, "{itemName}",
-            Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].randoItemId,
-                                           false, RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD));
+        CustomMessage::Replace(&entry.msg, "{itemName}",
+                               Rando::StaticData::GetRevealedItemName(
+                                   RANDO_SAVE_CHECKS[RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD].randoItemId, false,
+                                   RC_MOUNTAIN_VILLAGE_SMITHY_GILDED_SWORD));
         CustomMessage::Replace(&entry.msg, "{location}", Rando::GetItemLocationHintName(RI_BOTTLE_GOLD_DUST, false));
 
         CustomMessage::LoadCustomMessageIntoFont(entry);

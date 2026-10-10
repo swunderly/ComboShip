@@ -35,7 +35,7 @@ void Rando::ActorBehavior::InitEnJgameTsnBehavior() {
                                randoSaveCheck.cycleObtained
                                    ? "50 Rupees"
                                    : Rando::StaticData::GetRevealedItemName(randoSaveCheck.randoItemId, true,
-                                                                    RC_GREAT_BAY_COAST_FISHERMAN_MINIGAME));
+                                                                            RC_GREAT_BAY_COAST_FISHERMAN_MINIGAME));
 
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;

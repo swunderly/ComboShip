@@ -101,8 +101,9 @@ std::unordered_map<int16_t, RandoItemId> enemySoulMap = {
 
 bool HaveEnemySoul(ActorId enemyId) {
     if (RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) {
-        const int index = Rando::MissingMmSoulForActor(enemyId,0);
-        if(index>=0) return Rando::HaveMissingMmSoul(index);
+        const int index = Rando::MissingMmSoulForActor(enemyId, 0);
+        if (index >= 0)
+            return Rando::HaveMissingMmSoul(index);
     }
     auto findSoulFlag = enemySoulMap.find(enemyId);
     if (findSoulFlag != enemySoulMap.end()) {
@@ -144,10 +145,12 @@ void SetEnemyInjureGrayscale(bool enable) {
 // Gold Skulltulas belong to misc souls when that family is enabled. Preserve
 // legacy enemy-Skulltula behavior for old seeds and non-gold wall Skulltulas.
 static bool HaveActorEnemySoul(const Actor* actor) {
-    if(RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) {
-        if(actor->id==ACTOR_EN_SW && (actor->params&3)) return Rando::HaveExpandedSoul(Rando::ExpandedSoul::MISC_GS);
-        const int index=Rando::MissingMmSoulForActor(actor->id,actor->params);
-        if(index>=0) return Rando::HaveMissingMmSoul(index);
+    if (RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) {
+        if (actor->id == ACTOR_EN_SW && (actor->params & 3))
+            return Rando::HaveExpandedSoul(Rando::ExpandedSoul::MISC_GS);
+        const int index = Rando::MissingMmSoulForActor(actor->id, actor->params);
+        if (index >= 0)
+            return Rando::HaveMissingMmSoul(index);
     }
     if (actor->id == ACTOR_EN_SW && (actor->params & 3) != 0 &&
         RANDO_SAVE_OPTIONS[RO_SHUFFLE_MISC_SOULS] == RO_GENERIC_YES) {

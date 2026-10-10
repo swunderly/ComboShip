@@ -173,8 +173,8 @@ static CheckIdentity IdentifyGrass(s32 sceneNum, s32 posX, s32 posZ, s32 respawn
         OTRGlobals::Instance->gRandomizer->GetCheckObjectFromActor(ACTOR_EN_KUSA, sceneNum, respawnData);
 
     if (location->GetRandomizerCheck() != RC_UNKNOWN_CHECK) {
-        const auto canonical = Rando::KokiriCanonicalGrassCheck(location->GetRandomizerCheck(),
-            Rando::Context::GetInstance()->GetKokiriGrassCatalogRevision());
+        const auto canonical = Rando::KokiriCanonicalGrassCheck(
+            location->GetRandomizerCheck(), Rando::Context::GetInstance()->GetKokiriGrassCatalogRevision());
         grassIdentity.randomizerInf = rcToRandomizerInf[canonical];
         grassIdentity.randomizerCheck = canonical;
     }

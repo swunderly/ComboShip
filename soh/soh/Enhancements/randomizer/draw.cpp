@@ -398,7 +398,8 @@ extern "C" void Randomizer_DrawTriforcePiece(PlayState* play, GetItemEntry getIt
               G_MTX_MODELVIEW | G_MTX_LOAD);
 
     const auto id = getItemEntry.getItemId;
-    if (id >= RG_TRIFORCE_POWER && id <= RG_TRIFORCE_WISDOM) current = id - RG_TRIFORCE_POWER;
+    if (id >= RG_TRIFORCE_POWER && id <= RG_TRIFORCE_WISDOM)
+        current = id - RG_TRIFORCE_POWER;
     Gfx* triforcePieceDL = Randomizer_GetTriforcePieceDL(current % 3);
 
     gSPDisplayList(POLY_XLU_DISP++, triforcePieceDL);

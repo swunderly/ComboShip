@@ -436,7 +436,8 @@ extern int Combo_OOTSongWarp(PlayState*, int);
 #endif
 void Entrance_SetWarpSongEntrance(void) {
 #ifdef COMBO_BUILD
-    if (Combo_OOTSongWarp(gPlayState, gPlayState->msgCtx.lastPlayedSong)) return;
+    if (Combo_OOTSongWarp(gPlayState, gPlayState->msgCtx.lastPlayedSong))
+        return;
 #endif
     gPlayState->transitionTrigger = TRANS_TRIGGER_START;
     gPlayState->transitionType = TRANS_TYPE_FADE_WHITE_FAST;

@@ -58,7 +58,8 @@ void KaleidoScopeCall_Destroy(PlayState* play) {
 
 void KaleidoScopeCall_Update(PlayState* play) {
 #ifdef COMBO_BUILD
-    if(Combo_SOHSoaringMapUpdate(play)) return;
+    if (Combo_SOHSoaringMapUpdate(play))
+        return;
 #endif
     KaleidoMgrOverlay* kaleidoScopeOvl = &gKaleidoMgrOverlayTable[KALEIDO_OVL_KALEIDO_SCOPE];
     PauseContext* pauseCtx = &play->pauseCtx;
@@ -131,7 +132,8 @@ void KaleidoScopeCall_Update(PlayState* play) {
 
 void KaleidoScopeCall_Draw(PlayState* play) {
 #ifdef COMBO_BUILD
-    if(Combo_SOHSoaringMapDraw(play)) return;
+    if (Combo_SOHSoaringMapDraw(play))
+        return;
 #endif
     KaleidoMgrOverlay* kaleidoScopeOvl = &gKaleidoMgrOverlayTable[KALEIDO_OVL_KALEIDO_SCOPE];
 

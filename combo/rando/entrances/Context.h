@@ -17,7 +17,10 @@ struct Key {
     uint32_t id = 0; // Full logical ID; MM grotto IDs may exceed u16.
     friend bool operator==(const Key&, const Key&) = default;
 };
-struct Position { float x = 0, y = 0, z = 0; friend bool operator==(const Position&, const Position&) = default; };
+struct Position {
+    float x = 0, y = 0, z = 0;
+    friend bool operator==(const Position&, const Position&) = default;
+};
 struct OotRespawn {
     Position pos;
     int16_t yaw = 0, playerParams = 0;
@@ -57,15 +60,17 @@ struct SaveContexts {
     // Optional extension only; absent in old seeds/saves means disabled.
     std::optional<RespawnAnchor> dungeonIngress;
     std::array<std::optional<RespawnAnchor>, 2> farore;
-    void clearDungeonIngress() { dungeonIngress.reset(); }
+    void clearDungeonIngress() {
+        dungeonIngress.reset();
+    }
 };
 inline uint32_t EncodeWireId(Game source, Key destination) {
-    if (destination.id & 0x80000000u) throw std::invalid_argument("Logical ID overlaps foreign-game bit");
+    if (destination.id & 0x80000000u)
+        throw std::invalid_argument("Logical ID overlaps foreign-game bit");
     return destination.id | (source != destination.game ? 0x80000000u : 0);
 }
 inline Key DecodeWireId(Game source, uint32_t value) {
-    return {(value & 0x80000000u) ? (source == Game::Oot ? Game::Mm : Game::Oot) : source,
-            value & 0x7fffffffu};
+    return { (value & 0x80000000u) ? (source == Game::Oot ? Game::Mm : Game::Oot) : source, value & 0x7fffffffu };
 }
 inline bool ShouldOverride(ArrivalReason reason) {
     return reason == ArrivalReason::Entrance || reason == ArrivalReason::Portal || reason == ArrivalReason::Song;

@@ -25,7 +25,7 @@ SOFTWARE.
 #ifdef COMBO_BUILD
 #include "z_combo_magic_fire.h"
 #include "assets/objects/gameplay_keep/gameplay_keep.h"
-static const ALIGN_ASSET(2) char sComboFireTexture[]="__OTR__@oot:overlays/ovl_Magic_Fire/sTex";
+static const ALIGN_ASSET(2) char sComboFireTexture[] = "__OTR__@oot:overlays/ovl_Magic_Fire/sTex";
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
 
@@ -137,9 +137,11 @@ static u8 sVertexIndices[] = {
     14, 20, 21, 23, 28, 30, 33, 34, 40, 41, 43, 48, 50, 55, 57, 62, 64, 65, 73, 74,
 };
 
-void ComboMagicFire_Init(Actor_CustomMagicFire* this, PlayState* play)
-{
-    if (!Combo_MMSpellPrepareResources(2)) { Actor_Kill(&this->actor); return; }
+void ComboMagicFire_Init(Actor_CustomMagicFire* this, PlayState* play) {
+    if (!Combo_MMSpellPrepareResources(2)) {
+        Actor_Kill(&this->actor);
+        return;
+    }
     Actor_ProcessInitChain(&this->actor, sInitChain);
     this->action = 0;
     this->screenTintBehaviour = 0;
@@ -154,13 +156,11 @@ void ComboMagicFire_Init(Actor_CustomMagicFire* this, PlayState* play)
     this->actor.room = -1;
 }
 
-void ComboMagicFire_Destroy(Actor_CustomMagicFire* this, PlayState* play)
-{
+void ComboMagicFire_Destroy(Actor_CustomMagicFire* this, PlayState* play) {
     Magic_Reset(play);
 }
 
-void ComboMagicFire_Update(Actor_CustomMagicFire* this, PlayState* play)
-{
+void ComboMagicFire_Update(Actor_CustomMagicFire* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
     this->actor.world.pos = player->actor.world.pos;
@@ -168,7 +168,8 @@ void ComboMagicFire_Update(Actor_CustomMagicFire* this, PlayState* play)
     /* See `ACTOROVL_ALLOC_ABSOLUTE` */
     /*! @bug This condition is too broad, the actor will also be killed by warp songs. But warp songs do not use an */
     /*! actor which uses `ACTOROVL_ALLOC_ABSOLUTE`. There is no reason to kill the actor in this case. */
-    /* if ((play->msgCtx.msgMode == MSGMODE_OCARINA_CORRECT_PLAYBACK) || (play->msgCtx.msgMode == MSGMODE_SONG_PLAYED)) { */
+    /* if ((play->msgCtx.msgMode == MSGMODE_OCARINA_CORRECT_PLAYBACK) || (play->msgCtx.msgMode == MSGMODE_SONG_PLAYED))
+     * { */
     /*     Actor_Kill(&this->actor); */
     /*     return; */
     /* } */
@@ -252,39 +253,35 @@ void ComboMagicFire_Update(Actor_CustomMagicFire* this, PlayState* play)
     }
 }
 
-void ComboMagicFire_UpdateBeforeCast(Actor_CustomMagicFire* this, PlayState* play)
-{
+void ComboMagicFire_UpdateBeforeCast(Actor_CustomMagicFire* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
     /* See `ACTOROVL_ALLOC_ABSOLUTE` */
     /*! @bug This condition is too broad, the actor will also be killed by warp songs. But warp songs do not use an */
     /*! actor which uses `ACTOROVL_ALLOC_ABSOLUTE`. There is no reason to kill the actor in this case. */
-    /* if ((play->msgCtx.msgMode == MSGMODE_OCARINA_CORRECT_PLAYBACK) || (play->msgCtx.msgMode == MSGMODE_SONG_PLAYED)) { */
+    /* if ((play->msgCtx.msgMode == MSGMODE_OCARINA_CORRECT_PLAYBACK) || (play->msgCtx.msgMode == MSGMODE_SONG_PLAYED))
+     * { */
     /*     Actor_Kill(&this->actor); */
     /*     return; */
     /* } */
 
-    if (this->actionTimer > 0)
-    {
+    if (this->actionTimer > 0) {
         this->actionTimer--;
-    }
-    else
-    {
+    } else {
         this->actor.update = (ActorFunc)ComboMagicFire_Update;
         Player_PlaySfx(player, NA_SE_PL_MAGIC_FIRE);
     }
     this->actor.world.pos = player->actor.world.pos;
 }
 
-void ComboMagicFire_Draw(Actor_CustomMagicFire* this, PlayState* play)
-{
+void ComboMagicFire_Draw(Actor_CustomMagicFire* this, PlayState* play) {
     u32 gameplayFrames = play->gameplayFrames;
     s32 i;
     u8 alpha;
 
     if (this->action > 0) {
         OPEN_DISPS(play->state.gfxCtx);
-        
+
         POLY_XLU_DISP = Gfx_SetupDL57(POLY_XLU_DISP);
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, (u8)(s32)(60 * this->screenTintIntensity),
                         (u8)(s32)(20 * this->screenTintIntensity), (u8)(s32)(0 * this->screenTintIntensity),
@@ -296,13 +293,12 @@ void ComboMagicFire_Draw(Actor_CustomMagicFire* this, PlayState* play)
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 128, 255, 200, 0, (u8)(this->alphaMultiplier * 255));
         gDPSetEnvColor(POLY_XLU_DISP++, 255, 0, 0, (u8)(this->alphaMultiplier * 255));
         Matrix_Scale(0.15f, 0.15f, 0.15f, MTXMODE_APPLY);
-        gSPMatrix(POLY_XLU_DISP++, Matrix_Finalize(play->state.gfxCtx),
-                  G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_Finalize(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gDPPipeSync(POLY_XLU_DISP++);
         gSPTexture(POLY_XLU_DISP++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
         gDPSetTextureLUT(POLY_XLU_DISP++, G_TT_NONE);
-        gDPLoadTextureBlock(POLY_XLU_DISP++, sComboFireTexture, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0, G_TX_NOMIRROR | G_TX_WRAP,
-                            G_TX_NOMIRROR | G_TX_WRAP, 6, 6, 15, G_TX_NOLOD);
+        gDPLoadTextureBlock(POLY_XLU_DISP++, sComboFireTexture, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0,
+                            G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, 6, 6, 15, G_TX_NOLOD);
         gDPSetTile(POLY_XLU_DISP++, G_IM_FMT_I, G_IM_SIZ_8b, 8, 0, 1, 0, G_TX_NOMIRROR | G_TX_WRAP, 6, 14,
                    G_TX_NOMIRROR | G_TX_WRAP, 6, 14);
         gDPSetTileSize(POLY_XLU_DISP++, 1, 0, 0, 63 << 2, 63 << 2);
@@ -337,8 +333,5 @@ ActorProfile Combo_Magic_Fire_Profile = {
     (ActorFunc)ComboMagicFire_Update,
     (ActorFunc)ComboMagicFire_Draw,
 };
-
-
-
 
 #endif

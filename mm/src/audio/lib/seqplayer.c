@@ -1238,8 +1238,10 @@ void AudioScript_SequenceChannelProcessScript(SequenceChannel* channel) {
         // its original argument widths before decoding the unmodified score.
 #ifdef COMBO_BUILD
         if (Combo_MMIsOotWarpSequence(seqPlayer->seqId)) {
-            if (cmd == 0xBD) cmd = 0xA8;
-            else if (cmd == 0xBE || (cmd >= 0xA0 && cmd < 0xB0)) continue;
+            if (cmd == 0xBD)
+                cmd = 0xA8;
+            else if (cmd == 0xBE || (cmd >= 0xA0 && cmd < 0xB0))
+                continue;
         }
 #endif
         // Commands 0xA0 - 0xFF

@@ -1,57 +1,76 @@
 #pragma once
 #include "align_asset_macro.h"
-static const ALIGN_ASSET(2) char gGameplayKeepKFAnim_83534[]="__OTR__objects/gameplay_keep/gGameplayKeepKFAnim_83534";
-static const ALIGN_ASSET(2) char gGameplayKeepKFSkel_85640[]="__OTR__objects/gameplay_keep/gGameplayKeepKFSkel_85640";
-static const ALIGN_ASSET(2) char gItemNamePanelDL[]="__OTR__icon_item_vtx_static/gItemNamePanelDL";
-static const ALIGN_ASSET(2) char gMapPointClockTownENGTex[]="__OTR__map_name_static/gMapPointClockTownENGTex";
-static const ALIGN_ASSET(2) char gMapPointGreatBayCoastENGTex[]="__OTR__map_name_static/gMapPointGreatBayCoastENGTex";
-static const ALIGN_ASSET(2) char gMapPointIkanaCanyonENGTex[]="__OTR__map_name_static/gMapPointIkanaCanyonENGTex";
-static const ALIGN_ASSET(2) char gMapPointMilkRoadENGTex[]="__OTR__map_name_static/gMapPointMilkRoadENGTex";
-static const ALIGN_ASSET(2) char gMapPointMountainVillageENGTex[]="__OTR__map_name_static/gMapPointMountainVillageENGTex";
-static const ALIGN_ASSET(2) char gMapPointSnowheadENGTex[]="__OTR__map_name_static/gMapPointSnowheadENGTex";
-static const ALIGN_ASSET(2) char gMapPointSouthernSwampENGTex[]="__OTR__map_name_static/gMapPointSouthernSwampENGTex";
-static const ALIGN_ASSET(2) char gMapPointStoneTowerENGTex[]="__OTR__map_name_static/gMapPointStoneTowerENGTex";
-static const ALIGN_ASSET(2) char gMapPointWoodfallENGTex[]="__OTR__map_name_static/gMapPointWoodfallENGTex";
-static const ALIGN_ASSET(2) char gMapPointZoraCapeENGTex[]="__OTR__map_name_static/gMapPointZoraCapeENGTex";
-static const ALIGN_ASSET(2) char gPauseMap00Tex[]="__OTR__icon_item_static_yar/gPauseMap00Tex";
-static const ALIGN_ASSET(2) char gPauseMap01Tex[]="__OTR__icon_item_static_yar/gPauseMap01Tex";
-static const ALIGN_ASSET(2) char gPauseMap02Tex[]="__OTR__icon_item_static_yar/gPauseMap02Tex";
-static const ALIGN_ASSET(2) char gPauseMap03Tex[]="__OTR__icon_item_static_yar/gPauseMap03Tex";
-static const ALIGN_ASSET(2) char gPauseMap04Tex[]="__OTR__icon_item_static_yar/gPauseMap04Tex";
-static const ALIGN_ASSET(2) char gPauseMap10ENGTex[]="__OTR__icon_item_jpn_static/gPauseMap10ENGTex";
-static const ALIGN_ASSET(2) char gPauseMap11Tex[]="__OTR__icon_item_static_yar/gPauseMap11Tex";
-static const ALIGN_ASSET(2) char gPauseMap12Tex[]="__OTR__icon_item_static_yar/gPauseMap12Tex";
-static const ALIGN_ASSET(2) char gPauseMap13Tex[]="__OTR__icon_item_static_yar/gPauseMap13Tex";
-static const ALIGN_ASSET(2) char gPauseMap14Tex[]="__OTR__icon_item_static_yar/gPauseMap14Tex";
-static const ALIGN_ASSET(2) char gPauseMap20Tex[]="__OTR__icon_item_static_yar/gPauseMap20Tex";
-static const ALIGN_ASSET(2) char gPauseMap21Tex[]="__OTR__icon_item_static_yar/gPauseMap21Tex";
-static const ALIGN_ASSET(2) char gPauseMap22Tex[]="__OTR__icon_item_static_yar/gPauseMap22Tex";
-static const ALIGN_ASSET(2) char gPauseMap23Tex[]="__OTR__icon_item_static_yar/gPauseMap23Tex";
-static const ALIGN_ASSET(2) char gPauseMap24Tex[]="__OTR__icon_item_static_yar/gPauseMap24Tex";
-static const ALIGN_ASSET(2) char gPauseMenuCursorTex[]="__OTR__icon_item_static_yar/gPauseMenuCursorTex";
-static const ALIGN_ASSET(2) char gSoaringWarpCsFeatherDL[]="__OTR__objects/gameplay_keep/gSoaringWarpCsFeatherDL";
-static const ALIGN_ASSET(2) char gSoaringWarpCsWindCapsuleDL[]="__OTR__objects/gameplay_keep/gSoaringWarpCsWindCapsuleDL";
-static const ALIGN_ASSET(2) char gWorldMapClockTownCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapClockTownCloud1Tex";
-static const ALIGN_ASSET(2) char gWorldMapClockTownCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapClockTownCloud2Tex";
-static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapGreatBayCloud1Tex";
-static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapGreatBayCloud2Tex";
-static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud3Tex[]="__OTR__icon_item_field_static/gWorldMapGreatBayCloud3Tex";
-static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud4Tex[]="__OTR__icon_item_field_static/gWorldMapGreatBayCloud4Tex";
-static const ALIGN_ASSET(2) char gWorldMapImageTLUT[]="__OTR__icon_item_field_static/gWorldMapImageTLUT";
-static const ALIGN_ASSET(2) char gWorldMapImageTex[]="__OTR__icon_item_field_static/gWorldMapImageTex";
-static const ALIGN_ASSET(2) char gWorldMapOwlFaceTex[]="__OTR__icon_item_field_static/gWorldMapOwlFaceTex";
-static const ALIGN_ASSET(2) char gWorldMapRomaniRanchCloudTex[]="__OTR__icon_item_field_static/gWorldMapRomaniRanchCloudTex";
-static const ALIGN_ASSET(2) char gWorldMapSnowheadCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapSnowheadCloud1Tex";
-static const ALIGN_ASSET(2) char gWorldMapSnowheadCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapSnowheadCloud2Tex";
-static const ALIGN_ASSET(2) char gWorldMapSnowheadCloud3Tex[]="__OTR__icon_item_field_static/gWorldMapSnowheadCloud3Tex";
-static const ALIGN_ASSET(2) char gWorldMapStoneTowerCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapStoneTowerCloud1Tex";
-static const ALIGN_ASSET(2) char gWorldMapStoneTowerCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapStoneTowerCloud2Tex";
-static const ALIGN_ASSET(2) char gWorldMapWoodfallCloud1Tex[]="__OTR__icon_item_field_static/gWorldMapWoodfallCloud1Tex";
-static const ALIGN_ASSET(2) char gWorldMapWoodfallCloud2Tex[]="__OTR__icon_item_field_static/gWorldMapWoodfallCloud2Tex";
-static const ALIGN_ASSET(2) char gWorldMapWoodfallCloud3Tex[]="__OTR__icon_item_field_static/gWorldMapWoodfallCloud3Tex";
+static const ALIGN_ASSET(2) char gGameplayKeepKFAnim_83534[] = "__OTR__objects/gameplay_keep/gGameplayKeepKFAnim_83534";
+static const ALIGN_ASSET(2) char gGameplayKeepKFSkel_85640[] = "__OTR__objects/gameplay_keep/gGameplayKeepKFSkel_85640";
+static const ALIGN_ASSET(2) char gItemNamePanelDL[] = "__OTR__icon_item_vtx_static/gItemNamePanelDL";
+static const ALIGN_ASSET(2) char gMapPointClockTownENGTex[] = "__OTR__map_name_static/gMapPointClockTownENGTex";
+static const ALIGN_ASSET(2) char gMapPointGreatBayCoastENGTex[] = "__OTR__map_name_static/gMapPointGreatBayCoastENGTex";
+static const ALIGN_ASSET(2) char gMapPointIkanaCanyonENGTex[] = "__OTR__map_name_static/gMapPointIkanaCanyonENGTex";
+static const ALIGN_ASSET(2) char gMapPointMilkRoadENGTex[] = "__OTR__map_name_static/gMapPointMilkRoadENGTex";
+static const ALIGN_ASSET(2) char gMapPointMountainVillageENGTex[] =
+    "__OTR__map_name_static/gMapPointMountainVillageENGTex";
+static const ALIGN_ASSET(2) char gMapPointSnowheadENGTex[] = "__OTR__map_name_static/gMapPointSnowheadENGTex";
+static const ALIGN_ASSET(2) char gMapPointSouthernSwampENGTex[] = "__OTR__map_name_static/gMapPointSouthernSwampENGTex";
+static const ALIGN_ASSET(2) char gMapPointStoneTowerENGTex[] = "__OTR__map_name_static/gMapPointStoneTowerENGTex";
+static const ALIGN_ASSET(2) char gMapPointWoodfallENGTex[] = "__OTR__map_name_static/gMapPointWoodfallENGTex";
+static const ALIGN_ASSET(2) char gMapPointZoraCapeENGTex[] = "__OTR__map_name_static/gMapPointZoraCapeENGTex";
+static const ALIGN_ASSET(2) char gPauseMap00Tex[] = "__OTR__icon_item_static_yar/gPauseMap00Tex";
+static const ALIGN_ASSET(2) char gPauseMap01Tex[] = "__OTR__icon_item_static_yar/gPauseMap01Tex";
+static const ALIGN_ASSET(2) char gPauseMap02Tex[] = "__OTR__icon_item_static_yar/gPauseMap02Tex";
+static const ALIGN_ASSET(2) char gPauseMap03Tex[] = "__OTR__icon_item_static_yar/gPauseMap03Tex";
+static const ALIGN_ASSET(2) char gPauseMap04Tex[] = "__OTR__icon_item_static_yar/gPauseMap04Tex";
+static const ALIGN_ASSET(2) char gPauseMap10ENGTex[] = "__OTR__icon_item_jpn_static/gPauseMap10ENGTex";
+static const ALIGN_ASSET(2) char gPauseMap11Tex[] = "__OTR__icon_item_static_yar/gPauseMap11Tex";
+static const ALIGN_ASSET(2) char gPauseMap12Tex[] = "__OTR__icon_item_static_yar/gPauseMap12Tex";
+static const ALIGN_ASSET(2) char gPauseMap13Tex[] = "__OTR__icon_item_static_yar/gPauseMap13Tex";
+static const ALIGN_ASSET(2) char gPauseMap14Tex[] = "__OTR__icon_item_static_yar/gPauseMap14Tex";
+static const ALIGN_ASSET(2) char gPauseMap20Tex[] = "__OTR__icon_item_static_yar/gPauseMap20Tex";
+static const ALIGN_ASSET(2) char gPauseMap21Tex[] = "__OTR__icon_item_static_yar/gPauseMap21Tex";
+static const ALIGN_ASSET(2) char gPauseMap22Tex[] = "__OTR__icon_item_static_yar/gPauseMap22Tex";
+static const ALIGN_ASSET(2) char gPauseMap23Tex[] = "__OTR__icon_item_static_yar/gPauseMap23Tex";
+static const ALIGN_ASSET(2) char gPauseMap24Tex[] = "__OTR__icon_item_static_yar/gPauseMap24Tex";
+static const ALIGN_ASSET(2) char gPauseMenuCursorTex[] = "__OTR__icon_item_static_yar/gPauseMenuCursorTex";
+static const ALIGN_ASSET(2) char gSoaringWarpCsFeatherDL[] = "__OTR__objects/gameplay_keep/gSoaringWarpCsFeatherDL";
+static const ALIGN_ASSET(2) char gSoaringWarpCsWindCapsuleDL[] =
+    "__OTR__objects/gameplay_keep/gSoaringWarpCsWindCapsuleDL";
+static const ALIGN_ASSET(2) char gWorldMapClockTownCloud1Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapClockTownCloud1Tex";
+static const ALIGN_ASSET(2) char gWorldMapClockTownCloud2Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapClockTownCloud2Tex";
+static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud1Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapGreatBayCloud1Tex";
+static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud2Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapGreatBayCloud2Tex";
+static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud3Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapGreatBayCloud3Tex";
+static const ALIGN_ASSET(2) char gWorldMapGreatBayCloud4Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapGreatBayCloud4Tex";
+static const ALIGN_ASSET(2) char gWorldMapImageTLUT[] = "__OTR__icon_item_field_static/gWorldMapImageTLUT";
+static const ALIGN_ASSET(2) char gWorldMapImageTex[] = "__OTR__icon_item_field_static/gWorldMapImageTex";
+static const ALIGN_ASSET(2) char gWorldMapOwlFaceTex[] = "__OTR__icon_item_field_static/gWorldMapOwlFaceTex";
+static const ALIGN_ASSET(2) char gWorldMapRomaniRanchCloudTex[] =
+    "__OTR__icon_item_field_static/gWorldMapRomaniRanchCloudTex";
+static const ALIGN_ASSET(2) char gWorldMapSnowheadCloud1Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapSnowheadCloud1Tex";
+static const ALIGN_ASSET(2) char gWorldMapSnowheadCloud2Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapSnowheadCloud2Tex";
+static const ALIGN_ASSET(2) char gWorldMapSnowheadCloud3Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapSnowheadCloud3Tex";
+static const ALIGN_ASSET(2) char gWorldMapStoneTowerCloud1Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapStoneTowerCloud1Tex";
+static const ALIGN_ASSET(2) char gWorldMapStoneTowerCloud2Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapStoneTowerCloud2Tex";
+static const ALIGN_ASSET(2) char gWorldMapWoodfallCloud1Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapWoodfallCloud1Tex";
+static const ALIGN_ASSET(2) char gWorldMapWoodfallCloud2Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapWoodfallCloud2Tex";
+static const ALIGN_ASSET(2) char gWorldMapWoodfallCloud3Tex[] =
+    "__OTR__icon_item_field_static/gWorldMapWoodfallCloud3Tex";
 
-static const ALIGN_ASSET(2) char gSoaringWarpCsWindCapsuleTexAnim[]="__OTR__objects/gameplay_keep/gSoaringWarpCsWindCapsuleTexAnim";
+static const ALIGN_ASSET(2) char gSoaringWarpCsWindCapsuleTexAnim[] =
+    "__OTR__objects/gameplay_keep/gSoaringWarpCsWindCapsuleTexAnim";
 
-static const ALIGN_ASSET(2) char ovl_Oceff_Wipe6_Matanimheader_000338[]="__OTR__overlays/ovl_Oceff_Wipe6/ovl_Oceff_Wipe6_Matanimheader_000338";
-static const ALIGN_ASSET(2) char gOceff6Vtx[]="__OTR__overlays/ovl_Oceff_Wipe6/gOceff6Vtx";
-static const ALIGN_ASSET(2) char gOceff6DL[]="__OTR__overlays/ovl_Oceff_Wipe6/gOceff6DL";
+static const ALIGN_ASSET(2) char ovl_Oceff_Wipe6_Matanimheader_000338[] =
+    "__OTR__overlays/ovl_Oceff_Wipe6/ovl_Oceff_Wipe6_Matanimheader_000338";
+static const ALIGN_ASSET(2) char gOceff6Vtx[] = "__OTR__overlays/ovl_Oceff_Wipe6/gOceff6Vtx";
+static const ALIGN_ASSET(2) char gOceff6DL[] = "__OTR__overlays/ovl_Oceff_Wipe6/gOceff6DL";

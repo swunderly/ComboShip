@@ -250,9 +250,10 @@ void Rando::ActorBehavior::InitEnGsBehavior() {
 
                 entry.msg = "They say %g{{item}}%w is hidden %y{{location}}%w.";
 
-                CustomMessage::Replace(&entry.msg, "{{item}}",
-                                       (showExact ? Rando::StaticData::GetRevealedItemName(saveCheck.randoItemId, true, randoCheckId)
-                                                  : Rando::StaticData::GetItemName(saveCheck.randoItemId, true, randoCheckId)));
+                CustomMessage::Replace(
+                    &entry.msg, "{{item}}",
+                    (showExact ? Rando::StaticData::GetRevealedItemName(saveCheck.randoItemId, true, randoCheckId)
+                               : Rando::StaticData::GetItemName(saveCheck.randoItemId, true, randoCheckId)));
                 CustomMessage::Replace(&entry.msg, "{{location}}",
                                        Rando::StaticData::GetLocationNameForHint(randoCheckId, showExact));
                 ComboReportStoneHint(-1, randoCheckId, showExact);
@@ -302,8 +303,9 @@ void Rando::ActorBehavior::InitEnGsBehavior() {
 
                     entry.msg = "Wise choice... They say %g{{item}}%w is hidden %y{{location}}%w.";
 
-                    CustomMessage::Replace(&entry.msg, "{{item}}",
-                                           Rando::StaticData::GetRevealedItemName(saveCheck.randoItemId, true, randoCheckId));
+                    CustomMessage::Replace(
+                        &entry.msg, "{{item}}",
+                        Rando::StaticData::GetRevealedItemName(saveCheck.randoItemId, true, randoCheckId));
                     CustomMessage::Replace(&entry.msg, "{{location}}",
                                            Rando::StaticData::GetLocationNameForHint(randoCheckId, true));
 

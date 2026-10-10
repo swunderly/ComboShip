@@ -138,8 +138,8 @@ SaveManager::SaveManager() {
     AddLoadFunction("base", 4, LoadBaseVersion4);
     AddSaveFunction("base", 4, SaveBase, true, SECTION_PARENT_NONE);
 #ifdef COMBO_BUILD
-    AddLoadFunction("comboFaroresWind",1,Combo_OotFaroreLoad);
-    AddSaveFunction("comboFaroresWind",1,Combo_OotFaroreSave,true,SECTION_PARENT_NONE);
+    AddLoadFunction("comboFaroresWind", 1, Combo_OotFaroreLoad);
+    AddSaveFunction("comboFaroresWind", 1, Combo_OotFaroreSave, true, SECTION_PARENT_NONE);
 #endif
 
     AddLoadFunction("randomizer", 1, LoadRandomizer);
@@ -288,8 +288,8 @@ void SaveManager::LoadRandomizer() {
         SaveManager::Instance->LoadData("", gSaveContext.ship.quest.data.randomizer.silverRupeeCounts[i]);
     });
 
-    const auto ownedSouls=Rando::Souls::RestoreGeneralOotSouls(*SaveManager::Instance->currentJsonContext);
-    std::copy(ownedSouls.begin(),ownedSouls.end(),gSaveContext.ship.quest.data.randomizer.ootExpandedSoulsOwned);
+    const auto ownedSouls = Rando::Souls::RestoreGeneralOotSouls(*SaveManager::Instance->currentJsonContext);
+    std::copy(ownedSouls.begin(), ownedSouls.end(), gSaveContext.ship.quest.data.randomizer.ootExpandedSoulsOwned);
     SaveManager::Instance->LoadData("pendingIceTrapCount", gSaveContext.ship.pendingIceTrapCount);
 
     std::shared_ptr<Randomizer> randomizer = OTRGlobals::Instance->gRandomizer;
@@ -326,7 +326,8 @@ void SaveManager::SaveRandomizer(SaveContext* saveContext, int sectionID, bool f
     auto randoContext = Rando::Context::GetInstance();
 #ifdef COMBO_BUILD
     SaveManager::Instance->SaveData(ComboRando::kKokiriSeedRevision, randoContext->GetKokiriSeedRevision());
-    SaveManager::Instance->SaveData(ComboRando::kKokiriGrassCatalogRevision, randoContext->GetKokiriGrassCatalogRevision());
+    SaveManager::Instance->SaveData(ComboRando::kKokiriGrassCatalogRevision,
+                                    randoContext->GetKokiriGrassCatalogRevision());
 #endif
 
     SaveManager::Instance->SaveArray("itemLocations", RC_MAX, [&](size_t i) {
@@ -470,7 +471,9 @@ void SaveManager::SaveRandomizer(SaveContext* saveContext, int sectionID, bool f
     SaveManager::Instance->SaveData("triforcePiecesCollected",
                                     saveContext->ship.quest.data.randomizer.triforcePiecesCollected);
     SaveManager::Instance->SaveData("bombchuUpgradeLevel", saveContext->ship.quest.data.randomizer.bombchuUpgradeLevel);
-    SaveManager::Instance->SaveArray("ootExpandedSoulsOwned",12,[&](size_t i){SaveManager::Instance->SaveData("",saveContext->ship.quest.data.randomizer.ootExpandedSoulsOwned[i]);});
+    SaveManager::Instance->SaveArray("ootExpandedSoulsOwned", 12, [&](size_t i) {
+        SaveManager::Instance->SaveData("", saveContext->ship.quest.data.randomizer.ootExpandedSoulsOwned[i]);
+    });
     SaveManager::Instance->SaveArray("silverRupeeCounts", 18, [&](size_t i) {
         SaveManager::Instance->SaveData("", saveContext->ship.quest.data.randomizer.silverRupeeCounts[i]);
     });
@@ -939,7 +942,7 @@ void SaveManager::InitFileNormal() {
     // SoH specific
     gSaveContext.ship.backupFW = gSaveContext.fw;
 #ifdef COMBO_BUILD
-    gSaveContext.ship.faroresWind={};
+    gSaveContext.ship.faroresWind = {};
 #endif
     gSaveContext.ship.pendingSale = ITEM_NONE;
     gSaveContext.ship.pendingSaleMod = MOD_NONE;
@@ -1379,7 +1382,8 @@ void SaveManager::SaveSection(int fileNum, int sectionID, bool threaded) {
 #ifdef COMBO_BUILD
     // Reject before snapshot/enqueue, including explicit SaveFile(target) callers.
     if (comboLoadState.load() != ComboLoadState::Ready || fileNum < 0 || fileNum >= MaxFiles ||
-        gSaveContext.fileNum != fileNum) return;
+        gSaveContext.fileNum != fileNum)
+        return;
 #endif
     // Don't save in Boss rush.
     if (fileNum == 0xFF || fileNum == 0xFE) {
@@ -1398,7 +1402,8 @@ void SaveManager::SaveSection(int fileNum, int sectionID, bool threaded) {
         anchorJournal = gComboAnchorJournalProvider(fileNum);
 #endif
     if (threaded) {
-        smThreadPool->detach_task(std::bind(&SaveManager::SaveFileThreaded, this, fileNum, saveContext, sectionID, anchorJournal));
+        smThreadPool->detach_task(
+            std::bind(&SaveManager::SaveFileThreaded, this, fileNum, saveContext, sectionID, anchorJournal));
     } else {
         SaveFileThreaded(fileNum, saveContext, sectionID, anchorJournal);
     }
@@ -1424,7 +1429,8 @@ void SaveManager::SaveGlobal() {
 
 bool SaveManager::LoadFile(int fileNum, bool initializeFullContext) {
 #ifdef COMBO_BUILD
-    if (fileNum < 0 || fileNum >= MaxFiles) return false;
+    if (fileNum < 0 || fileNum >= MaxFiles)
+        return false;
     // Suppress fresh snapshots before draining already queued previous-file writes.
     // Rejected same-slot reloads cannot later overwrite their unsupported disk data.
     comboLoadState.store(ComboLoadState::Blocked);
@@ -1445,10 +1451,12 @@ bool SaveManager::LoadFile(int fileNum, bool initializeFullContext) {
 #ifdef COMBO_BUILD
         if (gComboReadGameSave) {
             const char* raw = gComboReadGameSave(ComboRando::GAME_OOT, fileNum);
-            if (!raw || !raw[0]) return false;
+            if (!raw || !raw[0])
+                return false;
             parsedSave = nlohmann::json::parse(raw);
         } else {
-            if (!std::filesystem::exists(fileName)) return false;
+            if (!std::filesystem::exists(fileName))
+                return false;
             input >> parsedSave;
         }
         input.close();
@@ -1458,14 +1466,16 @@ bool SaveManager::LoadFile(int fileNum, bool initializeFullContext) {
             ComboRando::ReadKokiriSaveRevision(parsedSave);
         } catch (const ComboRando::UnsupportedKokiriSeedRevision& error) {
             SPDLOG_ERROR("Kokiri seed revision rejected slot {}: {}", fileNum, error.what());
-            SohGui::RegisterPopup("Unsupported seed revision", "The save in slot " +
-                std::to_string(fileNum + 1) + " uses an unsupported Kokiri check catalog revision.");
+            SohGui::RegisterPopup("Unsupported seed revision",
+                                  "The save in slot " + std::to_string(fileNum + 1) +
+                                      " uses an unsupported Kokiri check catalog revision.");
             return false;
         }
         // No fileNum, SaveContext or owning randomizer Context changes precede preflight.
         comboLoadState.store(ComboLoadState::Loading);
         applying = true;
-        if (initializeFullContext) SaveContext_Init();
+        if (initializeFullContext)
+            SaveContext_Init();
         gSaveContext.fileNum = fileNum;
         OTRGlobals::Instance->gRandoContext->GetLogic()->SetContext(nullptr);
         Rando::Settings::GetInstance()->ClearContext();
@@ -3058,8 +3068,8 @@ extern "C" void Save_SaveGlobal(void) {
 
 #ifdef COMBO_BUILD
 extern "C" int Save_TryLoadFile(int fileNum, int initializeFullContext) {
-    if (fileNum < 0 || fileNum >= SaveManager::MaxFiles ||
-        (initializeFullContext != 0 && initializeFullContext != 1)) return 0;
+    if (fileNum < 0 || fileNum >= SaveManager::MaxFiles || (initializeFullContext != 0 && initializeFullContext != 1))
+        return 0;
     return SaveManager::Instance->LoadFile(fileNum, initializeFullContext != 0) ? 1 : 0;
 }
 #endif

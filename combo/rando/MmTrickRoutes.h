@@ -6,8 +6,8 @@ namespace ComboRando::MmTrickRoutes {
 inline constexpr bool PinnacleRock(bool zora, bool swim, bool seahorse, bool blindRoute) {
     return zora && swim && (seahorse || blindRoute);
 }
-inline constexpr bool PostOffice(bool bunnyHood, bool blindTiming, bool dayOneWindow,
-                                 bool letterMailed, bool dayTwoWindow) {
+inline constexpr bool PostOffice(bool bunnyHood, bool blindTiming, bool dayOneWindow, bool letterMailed,
+                                 bool dayTwoWindow) {
     return (bunnyHood || blindTiming) && (dayOneWindow || (letterMailed && dayTwoWindow));
 }
 inline constexpr bool OceansideCode(bool bow, bool captainMask, bool guessCode) {

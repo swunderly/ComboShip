@@ -807,15 +807,15 @@ bool SpiritShared(RandomizerRegion region, ConditionFn condition, bool anyAge, R
     // Spirit's key analysis deliberately distinguishes potential and certain
     // room access. Local age change shares CERTAIN access between the ages;
     // it must not turn an ambiguous minimum-key path into a guaranteed route.
-    if ((ChildCertainAccess || AdultCertainAccess) &&
-        (areaTable[region].Child() || areaTable[region].Adult()) &&
+    if ((ChildCertainAccess || AdultCertainAccess) && (areaTable[region].Child() || areaTable[region].Adult()) &&
         Rando::SongAgeChangeAreaAllowed(region)) {
         const int mode = logic->GameplayRuleValue("gEnhancements.TimeTravel");
         auto canChange = [&](bool child) {
             logic->IsChild = child;
             logic->IsAdult = !child;
             return ComboRando::CanChangeAgeWithSong(mode, logic->CanUse(RG_SONG_OF_TIME),
-                logic->HasItem(RG_OCARINA_OF_TIME), logic->HasItem(RG_MASTER_SWORD));
+                                                    logic->HasItem(RG_OCARINA_OF_TIME),
+                                                    logic->HasItem(RG_MASTER_SWORD));
         };
         if ((ChildCertainAccess && canChange(true)) || (AdultCertainAccess && canChange(false)))
             ChildCertainAccess = AdultCertainAccess = true;

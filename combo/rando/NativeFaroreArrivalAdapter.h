@@ -7,11 +7,11 @@
 // Respawn arguments share one engine type: no cross-engine byte copying.
 namespace ComboFarore {
 
-template<class Point, class Respawn, class Flag, class SpawnMarker>
-void RestoreNativeOotArrival(const Point& point, const Respawn& dungeonBackup,
-                             Respawn& top, Respawn& dungeon,
+template <class Point, class Respawn, class Flag, class SpawnMarker>
+void RestoreNativeOotArrival(const Point& point, const Respawn& dungeonBackup, Respawn& top, Respawn& dungeon,
                              Flag& respawnFlag, SpawnMarker& isFwSpawn) {
-    if (!isFwSpawn) return;
+    if (!isFwSpawn)
+        return;
     respawnFlag = 3;
     isFwSpawn = 0;
     dungeon = dungeonBackup;
@@ -35,12 +35,11 @@ void RestoreNativeOotArrival(const Point& point, const Respawn& dungeonBackup,
     }
 }
 
-template<class Respawn, class Flag, class SpawnMarker>
-void RestoreNativeMmArrival(const Respawn& point, const Respawn& topBackup,
-                            const Respawn& dungeonBackup, Respawn& human,
-                            Respawn& top, Respawn& dungeon,
-                            Flag& respawnFlag, SpawnMarker& isFwSpawn) {
-    if (!isFwSpawn) return;
+template <class Respawn, class Flag, class SpawnMarker>
+void RestoreNativeMmArrival(const Respawn& point, const Respawn& topBackup, const Respawn& dungeonBackup,
+                            Respawn& human, Respawn& top, Respawn& dungeon, Flag& respawnFlag, SpawnMarker& isFwSpawn) {
+    if (!isFwSpawn)
+        return;
     respawnFlag = 8;
     top = topBackup;
     dungeon = dungeonBackup;
@@ -54,4 +53,4 @@ void RestoreNativeMmArrival(const Respawn& point, const Respawn& topBackup,
         human.pos.z = 0.0f;
     }
 }
-}
+} // namespace ComboFarore

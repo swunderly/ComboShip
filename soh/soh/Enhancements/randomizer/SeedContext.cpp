@@ -159,7 +159,8 @@ void Context::AddLocations(const Container& locations, std::vector<RandomizerChe
 }
 
 bool Context::IsQuestOfLocationActive(RandomizerCheck rc) {
-    if (!IsLocationInCurrentCatalog(rc)) return false;
+    if (!IsLocationInCurrentCatalog(rc))
+        return false;
     const auto loc = Rando::StaticData::GetLocation(rc);
     return loc->GetQuest() == RCQUEST_BOTH ||
            loc->GetQuest() == RCQUEST_MQ && mDungeons->GetDungeonFromScene(loc->GetScene())->IsMQ() ||
@@ -177,7 +178,8 @@ void Context::GenerateLocationPool() {
         dungeon->locations.clear();
     }
     for (Location& location : StaticData::GetLocationTable()) {
-        if (!IsLocationInCurrentCatalog(location.GetRandomizerCheck())) continue;
+        if (!IsLocationInCurrentCatalog(location.GetRandomizerCheck()))
+            continue;
         // skip RCs that shouldn't be in the pool for any reason (i.e. settings, unsupported check type, etc.)
         // TODO: Exclude checks for some of the older shuffles from the pool too i.e. Frog Songs, Scrubs, etc.)
         if ((SilverRupees::IsCheck(location.GetRandomizerCheck()) && !mOptions[RSK_SHUFFLE_SILVER_RUPEES].Get()) ||
@@ -237,8 +239,10 @@ void Context::GenerateLocationPool() {
         if (location.IsOverworld() && location.IsDungeonForCollectibleShuffle()) {
             if (location.GetQuest() != RCQUEST_BOTH ||
                 (location.GetRCType() == RCTYPE_POT && mOptions[RSK_SHUFFLE_POTS].Is(RO_SHUFFLE_POTS_OVERWORLD)) ||
-                (location.GetRCType() == RCTYPE_CRATE && mOptions[RSK_SHUFFLE_CRATES].Is(RO_SHUFFLE_CRATES_OVERWORLD)) ||
-                (location.GetRCType() == RCTYPE_WONDER_ITEM && mOptions[RSK_SHUFFLE_WONDER_ITEMS].Is(RO_SHUFFLE_WONDER_ITEMS_OVERWORLD))) {
+                (location.GetRCType() == RCTYPE_CRATE &&
+                 mOptions[RSK_SHUFFLE_CRATES].Is(RO_SHUFFLE_CRATES_OVERWORLD)) ||
+                (location.GetRCType() == RCTYPE_WONDER_ITEM &&
+                 mOptions[RSK_SHUFFLE_WONDER_ITEMS].Is(RO_SHUFFLE_WONDER_ITEMS_OVERWORLD))) {
                 continue;
             }
             AddLocation(location.GetRandomizerCheck(), &overworldLocations);
@@ -327,7 +331,8 @@ std::vector<RandomizerCheck> Context::GetLocations(const std::vector<RandomizerC
     std::vector<RandomizerCheck> locationsOfType;
     const auto catalog = Context::GetInstance();
     for (RandomizerCheck locKey : locationPool) {
-        if (catalog && !catalog->IsLocationInCurrentCatalog(locKey)) continue;
+        if (catalog && !catalog->IsLocationInCurrentCatalog(locKey))
+            continue;
         if (StaticData::GetLocation(locKey)->GetRCType() == checkType) {
             locationsOfType.push_back(locKey);
         }

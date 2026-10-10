@@ -14,17 +14,19 @@ using namespace Rando::Logic;
 static bool BlacksmithCanThaw() {
 #ifdef COMBO_BUILD
     const bool hotWater = HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER) &&
-        (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) ||
-         (CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE) && (CAN_PLAY_SONG(SOARING) || CAN_USE_FARORE)));
+                          (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) ||
+                           (CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE) && (CAN_PLAY_SONG(SOARING) || CAN_USE_FARORE)));
     return CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_DINS_FIRE || hotWater;
 #else
     return CAN_USE_MAGIC_ARROW(FIRE) || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH);
 #endif
 }
 
-
 #ifdef COMBO_BUILD
-#define COMBO_WORLD53_ENABLED (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA])
+#define COMBO_WORLD53_ENABLED                                                          \
+    (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || \
+     RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] ||    \
+     RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA])
 #define COMBO_WORLD53_SELECT(legacy, pinned) (COMBO_WORLD53_ENABLED ? (pinned) : (legacy))
 #else
 #define COMBO_WORLD53_SELECT(legacy, pinned) (legacy)

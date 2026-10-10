@@ -562,8 +562,8 @@ static void DrawSeedHealthStrip() {
     ImGui::SameLine();
     ImGui::TextColored(statusTextColor, ICON_FA_CIRCLE " %s", statusText);
     ImGui::PushStyleColor(ImGuiCol_Text, DIM_TEXT_COLOR);
-    ImGui::TextWrapped("%d checks  |  %d important items  |  %d junk fill  |  %d excluded",
-                       checksInPool, importantItems, junkInPool, (int)checkExclusionList.size());
+    ImGui::TextWrapped("%d checks  |  %d important items  |  %d junk fill  |  %d excluded", checksInPool,
+                       importantItems, junkInPool, (int)checkExclusionList.size());
     ImGui::PopStyleColor();
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
@@ -642,8 +642,8 @@ static void DrawGeneralTab() {
 
 static void DrawLogicConditionsTab() {
     UIWidgets::BeginCardLayout({ .columnsPerRow = 2,
-                                .minColumnWidth = ImGui::GetFontSize() * 28.0f,
-                                .childFlags = ImGuiChildFlags_AutoResizeY });
+                                 .minColumnWidth = ImGui::GetFontSize() * 28.0f,
+                                 .childFlags = ImGuiChildFlags_AutoResizeY });
     UIWidgets::BeginCard("randoLogicColumn1");
     if (UIWidgets::CVarCombobox("Logic", Rando::StaticData::Options[RO_LOGIC].cvar, &logicOptions)) {
         ClearIncompatibleSetting();
@@ -782,7 +782,8 @@ static void DrawCheckPoolTab() {
 
     UIWidgets::BeginCard("checkPoolScenery");
     ImGui::SeparatorText("Scenery Drops");
-    UIWidgets::Tooltip("These groups add many scenery checks, making room for a larger item pool or an allsanity seed.");
+    UIWidgets::Tooltip(
+        "These groups add many scenery checks, making room for a larger item pool or an allsanity seed.");
     if (Button("All On", ButtonOptions({ { .tooltip = "Enable every scenery drop group" } })
                              .Size(UIWidgets::Sizes::Inline)
                              .Color(Colors::Green))) {
@@ -1017,9 +1018,10 @@ static void DrawItemPoolTab(int section = 0) {
                          1);
         if (CVarGetInteger(Rando::StaticData::Options[RO_SHUFFLE_SONG_SARIA].cvar, 0)) {
             ImGui::SameLine();
-            if (Button(ICON_FA_COG,
-                       ButtonOptions({ { .tooltip = "Configure the Priority Items list used by the Saria's Song hint" } })
-                           .Size(ImVec2(0, 0)))) {
+            if (Button(
+                    ICON_FA_COG,
+                    ButtonOptions({ { .tooltip = "Configure the Priority Items list used by the Saria's Song hint" } })
+                        .Size(ImVec2(0, 0)))) {
                 ImGui::OpenPopup("PriorityItemsPopup");
             }
             ImGui::SetNextWindowSize(ImVec2(400.0f, 520.0f), ImGuiCond_Always);
@@ -1043,16 +1045,20 @@ static void DrawItemPoolTab(int section = 0) {
                          "immune to damage until its corresponding soul has been obtained.",
                          RI_SOUL_ENEMY_WOLFOS - RI_SOUL_ENEMY_ALIEN + 1);
         if constexpr (Rando::ExpandedSoulsIntegrationReady) {
-            ItemPoolCheckbox("NPC Souls", RO_SHUFFLE_NPC_SOULS,
-                             "Add Souls for MM NPCs into the item pool. They won't spawn unless their Soul is obtained.", 53);
+            ItemPoolCheckbox(
+                "NPC Souls", RO_SHUFFLE_NPC_SOULS,
+                "Add Souls for MM NPCs into the item pool. They won't spawn unless their Soul is obtained.", 53);
         }
         if constexpr (Rando::AnimalSoulsIntegrationReady) {
-            ItemPoolCheckbox("Animal Souls", RO_SHUFFLE_ANIMAL_SOULS,
-                             "Add Souls for MM animals into the item pool. They won't spawn unless their Soul is obtained.", 4);
+            ItemPoolCheckbox(
+                "Animal Souls", RO_SHUFFLE_ANIMAL_SOULS,
+                "Add Souls for MM animals into the item pool. They won't spawn unless their Soul is obtained.", 4);
         }
         if constexpr (Rando::MiscSoulsIntegrationReady) {
             ItemPoolCheckbox("Misc. Souls", RO_SHUFFLE_MISC_SOULS,
-                             "Add Souls for MM Business Scrubs and Gold Skulltulas into the item pool. They won't spawn unless their Soul is obtained.", 2);
+                             "Add Souls for MM Business Scrubs and Gold Skulltulas into the item pool. They won't "
+                             "spawn unless their Soul is obtained.",
+                             2);
         }
         UIWidgets::EndCard();
 
@@ -1065,7 +1071,8 @@ static void DrawItemPoolTab(int section = 0) {
                          "access unowned time redirects to the next owned half-day.",
                          CVarGetInteger(Rando::StaticData::Options[RO_CLOCK_SHUFFLE_PROGRESSIVE].cvar,
                                         RO_CLOCK_SHUFFLE_RANDOM) == RO_CLOCK_SHUFFLE_RANDOM
-                             ? Rando::ClockItems::HALF_COUNT : Rando::ClockItems::HALF_COUNT - 1);
+                             ? Rando::ClockItems::HALF_COUNT
+                             : Rando::ClockItems::HALF_COUNT - 1);
         // Only show time progression options when shuffle time is enabled
         if (CVarGetInteger(Rando::StaticData::Options[RO_CLOCK_SHUFFLE].cvar, 0)) {
             static std::unordered_map<int32_t, const char*> clockModeOptions = {
@@ -1075,14 +1082,13 @@ static void DrawItemPoolTab(int section = 0) {
             };
             {
                 UIWidgets::CVarCombobox(
-                    "Clocks", Rando::StaticData::Options[RO_CLOCK_SHUFFLE_PROGRESSIVE].cvar,
-                    &clockModeOptions,
+                    "Clocks", Rando::StaticData::Options[RO_CLOCK_SHUFFLE_PROGRESSIVE].cvar, &clockModeOptions,
                     UIWidgets::ComboboxOptions().Tooltip(
                         "Separate: six independent clock items. Starts with a random clock unless one is selected.\n\n"
                         "Ascending: Day 1 starts unlocked; five progressive clocks unlock the remaining half-days.\n\n"
-                        "Descending: Night 3 starts unlocked; five progressive clocks unlock the remaining half-days in reverse order."));
+                        "Descending: Night 3 starts unlocked; five progressive clocks unlock the remaining half-days "
+                        "in reverse order."));
             }
-
         }
         UIWidgets::EndCard();
 
@@ -1108,21 +1114,21 @@ static void DrawItemPoolTab(int section = 0) {
                               .Max(CVarGetInteger(Rando::StaticData::Options[RO_TRIFORCE_PIECES_MAX].cvar,
                                                   DEFAULT_TRIFORCE_PIECES_MAX))
                               .DefaultValue(DEFAULT_TRIFORCE_PIECES_MAX));
-            if (CVarSliderInt("Shuffled Triforce Pieces", Rando::StaticData::Options[RO_TRIFORCE_PIECES_MAX].cvar,
-                              IntSliderOptions()
-                                  .Format("%d Pieces in Pool")
-                                  .LabelPosition(UIWidgets::LabelPosition::None)
-                                  .Min(1)
-                                  .Max(1000)
-                                  .DefaultValue(DEFAULT_TRIFORCE_PIECES_MAX)
-                                  .Tooltip("If the maximum amount of placeable pieces exceeds what will allow the seed to "
-                                           "generate, the amount will be adjusted automatically."))) {
+            if (CVarSliderInt(
+                    "Shuffled Triforce Pieces", Rando::StaticData::Options[RO_TRIFORCE_PIECES_MAX].cvar,
+                    IntSliderOptions()
+                        .Format("%d Pieces in Pool")
+                        .LabelPosition(UIWidgets::LabelPosition::None)
+                        .Min(1)
+                        .Max(1000)
+                        .DefaultValue(DEFAULT_TRIFORCE_PIECES_MAX)
+                        .Tooltip("If the maximum amount of placeable pieces exceeds what will allow the seed to "
+                                 "generate, the amount will be adjusted automatically."))) {
                 ClampRequiredToMax(RO_TRIFORCE_PIECES_REQUIRED, RO_TRIFORCE_PIECES_MAX, DEFAULT_TRIFORCE_PIECES_MAX);
             }
         }
         UIWidgets::EndCard();
 #endif
-
     }
     if (section == 0 || section == 2) {
         UIWidgets::BeginCard("itemPoolDungeonItems");
@@ -1135,13 +1141,17 @@ static void DrawItemPoolTab(int section = 0) {
                 "Own Dungeon - Each dungeon's small keys are only found within that dungeon.\n\n"
                 "Start With - You begin with every dungeon's small keys, and none are added to the item pool."));
         ItemPoolCheckbox("Woodfall Key Ring", RO_KEY_RING_WOODFALL,
-                         "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate rings do not refill spent keys.");
+                         "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate "
+                         "rings do not refill spent keys.");
         ItemPoolCheckbox("Snowhead Key Ring", RO_KEY_RING_SNOWHEAD,
-                         "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate rings do not refill spent keys.");
+                         "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate "
+                         "rings do not refill spent keys.");
         ItemPoolCheckbox("Great Bay Key Ring", RO_KEY_RING_GREAT_BAY,
-                         "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate rings do not refill spent keys.");
+                         "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate "
+                         "rings do not refill spent keys.");
         ItemPoolCheckbox("Stone Tower Key Ring", RO_KEY_RING_STONE_TOWER,
-                         "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate rings do not refill spent keys.");
+                         "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate "
+                         "rings do not refill spent keys.");
         UIWidgets::CVarCombobox(
             "Boss Keys", Rando::StaticData::Options[RO_PLACEMENT_BOSS_KEYS].cvar, &dungeonItemPlacementOptions,
             UIWidgets::ComboboxOptions().Tooltip(
@@ -1158,16 +1168,16 @@ static void DrawItemPoolTab(int section = 0) {
                 "Start With - You begin with every dungeon's Stray Fairies, and none are added to the item pool."));
         if (CVarGetInteger(Rando::StaticData::Options[RO_PLACEMENT_STRAY_FAIRIES].cvar, RO_DUNGEON_ITEM_ANYWHERE) !=
             RO_DUNGEON_ITEM_START_WITH) {
-            CVarSliderInt(
-                "Required Stray Fairies", Rando::StaticData::Options[RO_STRAY_FAIRIES_REQUIRED].cvar,
-                IntSliderOptions()
-                    .Tooltip("Minimum Stray Fairies needed to obtain the corresponding Great Fairy check.\n"
-                             "Does not affect the Clock Town fairy.")
-                    .LabelPosition(UIWidgets::LabelPosition::None)
-                    .Min(1)
-                    .Format("%d Fairies Required")
-                    .Max(CVarGetInteger(Rando::StaticData::Options[RO_STRAY_FAIRIES_MAX].cvar, STRAY_FAIRY_SCATTERED_TOTAL))
-                    .DefaultValue(STRAY_FAIRY_SCATTERED_TOTAL));
+            CVarSliderInt("Required Stray Fairies", Rando::StaticData::Options[RO_STRAY_FAIRIES_REQUIRED].cvar,
+                          IntSliderOptions()
+                              .Tooltip("Minimum Stray Fairies needed to obtain the corresponding Great Fairy check.\n"
+                                       "Does not affect the Clock Town fairy.")
+                              .LabelPosition(UIWidgets::LabelPosition::None)
+                              .Min(1)
+                              .Format("%d Fairies Required")
+                              .Max(CVarGetInteger(Rando::StaticData::Options[RO_STRAY_FAIRIES_MAX].cvar,
+                                                  STRAY_FAIRY_SCATTERED_TOTAL))
+                              .DefaultValue(STRAY_FAIRY_SCATTERED_TOTAL));
             if (CVarSliderInt("Stray Fairies in Pool", Rando::StaticData::Options[RO_STRAY_FAIRIES_MAX].cvar,
                               IntSliderOptions()
                                   .Tooltip("Maximum Stray Fairies that can appear in the item pool, per dungeon.")
@@ -1180,7 +1190,6 @@ static void DrawItemPoolTab(int section = 0) {
             }
         }
         UIWidgets::EndCard();
-
     }
     if (section == 0 || section == 1) {
         UIWidgets::BeginCard("itemPoolModifiers");
@@ -1209,10 +1218,11 @@ static void DrawItemPoolTab(int section = 0) {
             UIWidgets::CVarCombobox(
                 "Trap Behavior", "gRando.TrapItems", &trapItemsOptions,
                 UIWidgets::ComboboxOptions(
-                    { { .tooltip = "Default (Dynamic): Trap items will change dynamically as you progress, ensuring they "
-                                   "are an item you have not obtained yet for maximum trickery.\n\nStatic: Trap items "
-                                   "will be static, according to the randomizer seed.\n\nNot tied to the seed - can be "
-                                   "changed at any time." } }));
+                    { { .tooltip =
+                            "Default (Dynamic): Trap items will change dynamically as you progress, ensuring they "
+                            "are an item you have not obtained yet for maximum trickery.\n\nStatic: Trap items "
+                            "will be static, according to the randomizer seed.\n\nNot tied to the seed - can be "
+                            "changed at any time." } }));
             ImGui::Spacing();
             ImGui::PushStyleColor(ImGuiCol_Text, DIM_TEXT_COLOR);
             ImGui::SeparatorText("Trap Types");
@@ -1243,7 +1253,6 @@ static void DrawItemPoolTab(int section = 0) {
             }
         }
         UIWidgets::EndCard();
-
     }
     UIWidgets::EndCardLayout();
 }
@@ -1259,29 +1268,32 @@ static void DrawStartingItemsTab() {
         const int tier = std::max(1, count) - 1;
         switch (item) {
             case RI_PROGRESSIVE_SWORD: {
-                constexpr RandoItemId tiers[] = {RI_SWORD_KOKIRI, RI_SWORD_RAZOR, RI_SWORD_GILDED};
+                constexpr RandoItemId tiers[] = { RI_SWORD_KOKIRI, RI_SWORD_RAZOR, RI_SWORD_GILDED };
                 return tiers[std::min(tier, 2)];
             }
             case RI_PROGRESSIVE_BOMB_BAG: {
-                constexpr RandoItemId tiers[] = {RI_BOMB_BAG_20, RI_BOMB_BAG_30, RI_BOMB_BAG_40};
+                constexpr RandoItemId tiers[] = { RI_BOMB_BAG_20, RI_BOMB_BAG_30, RI_BOMB_BAG_40 };
                 return tiers[std::min(tier, 2)];
             }
             case RI_PROGRESSIVE_BOW: {
-                constexpr RandoItemId tiers[] = {RI_BOW, RI_QUIVER_40, RI_QUIVER_50};
+                constexpr RandoItemId tiers[] = { RI_BOW, RI_QUIVER_40, RI_QUIVER_50 };
                 return tiers[std::min(tier, 2)];
             }
             case RI_PROGRESSIVE_WALLET: {
-                constexpr RandoItemId tiers[] = {RI_WALLET_ADULT, RI_WALLET_GIANT, RI_WALLET_TYCOON};
+                constexpr RandoItemId tiers[] = { RI_WALLET_ADULT, RI_WALLET_GIANT, RI_WALLET_TYCOON };
                 return tiers[std::min(tier, 2)];
             }
-            case RI_PROGRESSIVE_MAGIC: return tier ? RI_DOUBLE_MAGIC : RI_SINGLE_MAGIC;
-            case RI_PROGRESSIVE_LULLABY: return tier ? RI_SONG_LULLABY : RI_SONG_LULLABY_INTRO;
-            default: return item;
+            case RI_PROGRESSIVE_MAGIC:
+                return tier ? RI_DOUBLE_MAGIC : RI_SINGLE_MAGIC;
+            case RI_PROGRESSIVE_LULLABY:
+                return tier ? RI_SONG_LULLABY : RI_SONG_LULLABY_INTRO;
+            default:
+                return item;
         }
     };
     auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
     const bool progressiveClock = CVarGetInteger(Rando::StaticData::Options[RO_CLOCK_SHUFFLE_PROGRESSIVE].cvar,
-                                                RO_CLOCK_SHUFFLE_RANDOM) != RO_CLOCK_SHUFFLE_RANDOM;
+                                                 RO_CLOCK_SHUFFLE_RANDOM) != RO_CLOCK_SHUFFLE_RANDOM;
     auto selectCount = [&](RandoItemId item, int count) {
         starting.erase(std::remove(starting.begin(), starting.end(), item), starting.end());
         starting.insert(starting.end(), count, item);
@@ -1295,19 +1307,26 @@ static void DrawStartingItemsTab() {
         const int count = std::count(starting.begin(), starting.end(), item);
         const auto display = tierItem(item, count);
         const auto texture = gui->GetTextureByName(Rando::StaticData::GetIconTexturePath(display));
-        int maxCount = Rando::StaticData::MaxStartingItemsMap.count(item)
-                           ? Rando::StaticData::MaxStartingItemsMap.at(item) : 1;
-        if (item == RI_PROGRESSIVE_WALLET && CVarGetInteger(Rando::StaticData::Options[RO_SHUFFLE_TYCOON_WALLET].cvar, 0))
+        int maxCount =
+            Rando::StaticData::MaxStartingItemsMap.count(item) ? Rando::StaticData::MaxStartingItemsMap.at(item) : 1;
+        if (item == RI_PROGRESSIVE_WALLET &&
+            CVarGetInteger(Rando::StaticData::Options[RO_SHUFFLE_TYCOON_WALLET].cvar, 0))
             maxCount = 3;
         ImVec4 tint = Ship_GetItemColorTint(item == RI_PROGRESSIVE_LULLABY ? ITEM_SONG_LULLABY : data.itemId);
         std::string tooltip = data.name;
         ApplyClockItemRendering(item, tint, tooltip, progressiveClock);
-        if (!count) { tint.x *= .35f; tint.y *= .35f; tint.z *= .35f; }
+        if (!count) {
+            tint.x *= .35f;
+            tint.y *= .35f;
+            tint.z *= .35f;
+        }
         ImGui::PushID(static_cast<int>(item));
         PushStyleButton(Colors::DarkGray);
         if (ImGui::ImageButton("##Item", texture, size, ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
-            if (maxCount > 1) ImGui::OpenPopup("##StartingTier");
-            else selectCount(item, count ? 0 : 1);
+            if (maxCount > 1)
+                ImGui::OpenPopup("##StartingTier");
+            else
+                selectCount(item, count ? 0 : 1);
         }
         PopStyleButton();
         if (count && maxCount > 1) {
@@ -1321,7 +1340,8 @@ static void DrawStartingItemsTab() {
             PushStyleButton(Colors::DarkGray);
             const auto buttonSize = size + ImGui::GetStyle().FramePadding * 2;
             if (ImGui::Button("##None", buttonSize)) {
-                selectCount(item, 0); ImGui::CloseCurrentPopup();
+                selectCount(item, 0);
+                ImGui::CloseCurrentPopup();
             }
             Tooltip("None");
             for (int tier = 1; tier <= maxCount; ++tier) {
@@ -1330,7 +1350,8 @@ static void DrawStartingItemsTab() {
                 const auto path = Rando::StaticData::GetIconTexturePath(choice);
                 ImGui::PushID(tier);
                 if (ImGui::ImageButton("##Tier", gui->GetTextureByName(path), size, ImVec2(0, 0), ImVec2(1, 1))) {
-                    selectCount(item, tier); ImGui::CloseCurrentPopup();
+                    selectCount(item, tier);
+                    ImGui::CloseCurrentPopup();
                 }
                 if (item == RI_TIME_PROGRESSIVE) {
                     const auto badge = std::to_string(tier);
@@ -1339,7 +1360,8 @@ static void DrawStartingItemsTab() {
                     ImGui::GetWindowDrawList()->AddText(at, IM_COL32(255, 255, 255, 255), badge.c_str());
                 }
                 std::string label = Rando::StaticData::Items.at(choice).name;
-                if (item == RI_TIME_PROGRESSIVE) label += " " + std::to_string(tier);
+                if (item == RI_TIME_PROGRESSIVE)
+                    label += " " + std::to_string(tier);
                 Tooltip(label.c_str());
                 ImGui::PopID();
             }
@@ -1350,25 +1372,34 @@ static void DrawStartingItemsTab() {
     };
     auto grid = [&](const char* heading, const std::vector<RandoItemId>& items, bool songs = false) {
         std::vector<RandoItemId> available;
-        for (auto item : items) if (setOfItemsInPool.count(item)) available.push_back(item);
-        if (available.empty()) return;
+        for (auto item : items)
+            if (setOfItemsInPool.count(item))
+                available.push_back(item);
+        if (available.empty())
+            return;
         ImGui::SeparatorText(heading);
-        const float cell = (songs ? 32.0f : 48.0f) + ImGui::GetStyle().FramePadding.x * 2 + ImGui::GetStyle().ItemSpacing.x;
+        const float cell =
+            (songs ? 32.0f : 48.0f) + ImGui::GetStyle().FramePadding.x * 2 + ImGui::GetStyle().ItemSpacing.x;
         const int columns = std::clamp(int(ImGui::GetContentRegionAvail().x / cell), 1, 6);
         if (ImGui::BeginTable(heading, columns, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings)) {
-            for (int i = 0; i < columns; ++i) ImGui::TableSetupColumn("##Item", ImGuiTableColumnFlags_WidthFixed, cell);
-            for (auto item : available) { ImGui::TableNextColumn(); icon(item); }
+            for (int i = 0; i < columns; ++i)
+                ImGui::TableSetupColumn("##Item", ImGuiTableColumnFlags_WidthFixed, cell);
+            for (auto item : available) {
+                ImGui::TableNextColumn();
+                icon(item);
+            }
             ImGui::EndTable();
         }
     };
-    const std::vector<RandoItemId> equipment = {RI_PROGRESSIVE_SWORD, RI_SHIELD_HERO, RI_SHIELD_MIRROR,
-        RI_PROGRESSIVE_MAGIC, RI_DOUBLE_DEFENSE, RI_PROGRESSIVE_WALLET};
+    const std::vector<RandoItemId> equipment = { RI_PROGRESSIVE_SWORD, RI_SHIELD_HERO,    RI_SHIELD_MIRROR,
+                                                 RI_PROGRESSIVE_MAGIC, RI_DOUBLE_DEFENSE, RI_PROGRESSIVE_WALLET };
     std::vector<RandoItemId> items = Rando::StaticData::StartingItemsMap.at(STARTING_ITEMS_INVENTORY);
     const auto& trade = Rando::StaticData::StartingItemsMap.at(STARTING_ITEMS_TRADE);
     items.insert(items.end(), trade.begin(), trade.end());
     std::vector<RandoItemId> songs, other;
     for (auto item : Rando::StaticData::StartingItemsMap.at(STARTING_ITEMS_QUEST)) {
-        if (std::find(equipment.begin(), equipment.end(), item) != equipment.end()) continue;
+        if (std::find(equipment.begin(), equipment.end(), item) != equipment.end())
+            continue;
         (isSong(item) ? songs : other).push_back(item);
     }
     const auto& misc = Rando::StaticData::StartingItemsMap.at(STARTING_ITEMS_MISC);
@@ -1377,20 +1408,21 @@ static void DrawStartingItemsTab() {
     grid("Items", items);
     grid("Masks", Rando::StaticData::StartingItemsMap.at(STARTING_ITEMS_MASK));
     grid("Songs", songs, true);
-    const std::vector<RandoItemId> clockItems = progressiveClock
-        ? std::vector<RandoItemId>{RI_TIME_PROGRESSIVE}
-        : std::vector<RandoItemId>{RI_TIME_DAY_1, RI_TIME_NIGHT_1, RI_TIME_DAY_2,
-                                  RI_TIME_NIGHT_2, RI_TIME_DAY_3, RI_TIME_NIGHT_3};
-    other.erase(std::remove_if(other.begin(), other.end(), [](RandoItemId item) {
-        return Rando::ClockItems::IsClockItem(item);
-    }), other.end());
+    const std::vector<RandoItemId> clockItems =
+        progressiveClock ? std::vector<RandoItemId>{ RI_TIME_PROGRESSIVE }
+                         : std::vector<RandoItemId>{ RI_TIME_DAY_1,   RI_TIME_NIGHT_1, RI_TIME_DAY_2,
+                                                     RI_TIME_NIGHT_2, RI_TIME_DAY_3,   RI_TIME_NIGHT_3 };
+    other.erase(std::remove_if(other.begin(), other.end(),
+                               [](RandoItemId item) { return Rando::ClockItems::IsClockItem(item); }),
+                other.end());
     grid("Clocks (MM)", clockItems);
     grid("Other", other);
     {
         std::vector<RandoItemId> npc, animals, miscSouls;
-        for (unsigned i=0; i<59; ++i) {
-            if (!Rando::ExpandedSoulAvailable(i)) continue;
-            (i<4 ? animals : i<6 ? miscSouls : npc).push_back(Rando::expandedSoulItems[i]);
+        for (unsigned i = 0; i < 59; ++i) {
+            if (!Rando::ExpandedSoulAvailable(i))
+                continue;
+            (i < 4 ? animals : i < 6 ? miscSouls : npc).push_back(Rando::expandedSoulItems[i]);
         }
         grid("NPC Souls", npc);
         grid("Animal Souls", animals);
@@ -1403,7 +1435,12 @@ static void DrawStartingItemsTab() {
     CVarCheckbox("Maps and Compasses", Rando::StaticData::Options[RO_STARTING_MAPS_AND_COMPASSES].cvar,
                  CheckboxOptions().Tooltip("Start with dungeon maps and compasses."));
     CVarSliderInt("Starting Hearts", Rando::StaticData::Options[RO_STARTING_HEALTH].cvar,
-                  IntSliderOptions().Min(1).Max(20).DefaultValue(3).Format("%d").LabelPosition(LabelPosition::Near)
+                  IntSliderOptions()
+                      .Min(1)
+                      .Max(20)
+                      .DefaultValue(3)
+                      .Format("%d")
+                      .LabelPosition(LabelPosition::Near)
                       .Color(Colors(CVarGetInteger("gSettings.Menu.Theme", LightBlue))));
 }
 
@@ -1725,11 +1762,13 @@ void Rando::RegisterMenu() {
     mBenMenu->AddSidebarEntry("Rando", "Dungeon Items", 1);
     path.sidebarName = "Dungeon Items";
     mBenMenu->AddWidget(path, "Dungeon Items", WIDGET_CUSTOM)
-        .CustomFunction([](WidgetInfo&) { DrawItemPoolTab(2); }).HideInSearch(true);
+        .CustomFunction([](WidgetInfo&) { DrawItemPoolTab(2); })
+        .HideInSearch(true);
     mBenMenu->AddSidebarEntry("Rando", "Traps", 1);
     path.sidebarName = "Traps";
     mBenMenu->AddWidget(path, "Traps", WIDGET_CUSTOM)
-        .CustomFunction([](WidgetInfo&) { DrawItemPoolTab(3); }).HideInSearch(true);
+        .CustomFunction([](WidgetInfo&) { DrawItemPoolTab(3); })
+        .HideInSearch(true);
 #endif
     mBenMenu->AddSidebarEntry("Rando", "Starting Items", 1);
     path.sidebarName = "Starting Items";
@@ -1783,24 +1822,40 @@ static RegisterMenuInitFunc initFunc(Rando::RegisterMenu);
 
 // Captured once by the launcher; viewing a profile never calls game widgets.
 void MM_AppendProfileMenuMetadata(nlohmann::json& data) {
-    const auto profileText=[](const char* value) { return value ? value : ""; };
-    #include "../ProfileMmLayout.inc"
-    #include "../ProfileMmCheckEligibility.inc"
-    for(const auto& group:GetCheckFilterGroups()){
-        auto checks=nlohmann::json::array();for(auto id:group.checks)checks.push_back(profileText(Rando::StaticData::Checks.at(id).name));
-        data["checkGroups"].push_back({{"label",group.label},{"tooltip",group.tooltip},{"checks",checks}});
+    const auto profileText = [](const char* value) { return value ? value : ""; };
+#include "../ProfileMmLayout.inc"
+#include "../ProfileMmCheckEligibility.inc"
+    for (const auto& group : GetCheckFilterGroups()) {
+        auto checks = nlohmann::json::array();
+        for (auto id : group.checks)
+            checks.push_back(profileText(Rando::StaticData::Checks.at(id).name));
+        data["checkGroups"].push_back({ { "label", group.label }, { "tooltip", group.tooltip }, { "checks", checks } });
     }
-    data["globalTrapEffects"].push_back({{"label","Freeze"},{"key","gRando.Traps.Freeze"},{"tooltip","Freezes Link in place."}});
-    data["globalTrapEffects"].push_back({{"label","Blast"},{"key","gRando.Traps.Blast"},{"tooltip","Link explodes with Powder Keg force."}});
-    data["globalTrapEffects"].push_back({{"label","Shock"},{"key","gRando.Traps.Shock"},{"tooltip","Shocks Link for a few seconds."}});
-    data["globalTrapEffects"].push_back({{"label","Jinx"},{"key","gRando.Traps.Jinx"},{"tooltip","Afflicts Link with Jinx."}});
-    data["globalTrapEffects"].push_back({{"label","Wallet"},{"key","gRando.Traps.Wallet"},{"tooltip","Links rupees scatter around him."}});
-    data["globalTrapEffects"].push_back({{"label","Like Like"},{"key","gRando.Traps.Enemy"},{"tooltip","Spawns a Like Like on top of Link."}});
-    data["globalTrapEffects"].push_back({{"label","Time"},{"key","gRando.Traps.Time"},{"tooltip","Advances Time 90 Minutes (Game Time)."}});
-    data["globalTrapEffects"].push_back({{"label","Fire"},{"key","gRando.Traps.Fire"},{"tooltip","Deals Fire to Link."}});
-    data["globalTrapEffects"].push_back({{"label","Knockback"},{"key","gRando.Traps.Knockback"},{"tooltip","Knocks Link back."}});
-    data["vanillaIncompatible"]=nlohmann::json::array();
-    for(auto id:{RO_PLENTIFUL_ITEMS,RO_SHUFFLE_BOSS_SOULS,RO_SHUFFLE_SWIM,RO_CLOCK_SHUFFLE,RO_SHUFFLE_TYCOON_WALLET})data["vanillaIncompatible"].push_back(profileText(Rando::StaticData::Options.at(id).cvar));
-    for(auto id:incompatibleWithVanilla)data["disabledInVanilla"].push_back(profileText(Rando::StaticData::Options.at((RandoOptionId)id).cvar));
+    data["globalTrapEffects"].push_back(
+        { { "label", "Freeze" }, { "key", "gRando.Traps.Freeze" }, { "tooltip", "Freezes Link in place." } });
+    data["globalTrapEffects"].push_back({ { "label", "Blast" },
+                                          { "key", "gRando.Traps.Blast" },
+                                          { "tooltip", "Link explodes with Powder Keg force." } });
+    data["globalTrapEffects"].push_back(
+        { { "label", "Shock" }, { "key", "gRando.Traps.Shock" }, { "tooltip", "Shocks Link for a few seconds." } });
+    data["globalTrapEffects"].push_back(
+        { { "label", "Jinx" }, { "key", "gRando.Traps.Jinx" }, { "tooltip", "Afflicts Link with Jinx." } });
+    data["globalTrapEffects"].push_back(
+        { { "label", "Wallet" }, { "key", "gRando.Traps.Wallet" }, { "tooltip", "Links rupees scatter around him." } });
+    data["globalTrapEffects"].push_back({ { "label", "Like Like" },
+                                          { "key", "gRando.Traps.Enemy" },
+                                          { "tooltip", "Spawns a Like Like on top of Link." } });
+    data["globalTrapEffects"].push_back({ { "label", "Time" },
+                                          { "key", "gRando.Traps.Time" },
+                                          { "tooltip", "Advances Time 90 Minutes (Game Time)." } });
+    data["globalTrapEffects"].push_back(
+        { { "label", "Fire" }, { "key", "gRando.Traps.Fire" }, { "tooltip", "Deals Fire to Link." } });
+    data["globalTrapEffects"].push_back(
+        { { "label", "Knockback" }, { "key", "gRando.Traps.Knockback" }, { "tooltip", "Knocks Link back." } });
+    data["vanillaIncompatible"] = nlohmann::json::array();
+    for (auto id :
+         { RO_PLENTIFUL_ITEMS, RO_SHUFFLE_BOSS_SOULS, RO_SHUFFLE_SWIM, RO_CLOCK_SHUFFLE, RO_SHUFFLE_TYCOON_WALLET })
+        data["vanillaIncompatible"].push_back(profileText(Rando::StaticData::Options.at(id).cvar));
+    for (auto id : incompatibleWithVanilla)
+        data["disabledInVanilla"].push_back(profileText(Rando::StaticData::Options.at((RandoOptionId)id).cvar));
 }
-

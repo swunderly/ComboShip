@@ -52,7 +52,9 @@ inline std::string PickFile(const char* title, const char* winFilter, const std:
     }
     return std::string();
 #elif defined(__ANDROID__)
-    (void)title; (void)winFilter; (void)pfdFilters;
+    (void)title;
+    (void)winFilter;
+    (void)pfdFilters;
     return {};
 #else
     (void)winFilter;

@@ -874,9 +874,10 @@ s32 Flags_GetClear(PlayState* play, s32 roomNumber) {
 /**
  * Sets a current scene clear flag.
  */
-extern s32 MM_MissingSoulRoomCanClear(PlayState* play,s32 room);
+extern s32 MM_MissingSoulRoomCanClear(PlayState* play, s32 room);
 void Flags_SetClear(PlayState* play, s32 roomNumber) {
-    if(!MM_MissingSoulRoomCanClear(play,roomNumber)) return;
+    if (!MM_MissingSoulRoomCanClear(play, roomNumber))
+        return;
     u8 previouslyOff = !Flags_GetClear(play, roomNumber);
     play->actorCtx.sceneFlags.clearedRoom |= (1 << roomNumber);
     if (previouslyOff) {
@@ -1530,7 +1531,8 @@ f32 Player_GetHeight(Player* player) {
 
         case PLAYER_FORM_HUMAN:
 #ifdef COMBO_BUILD
-            if(Combo_MM_AdultResourcesReady() && Combo_MM_IsAdult())return extraHeight + 68.0f;
+            if (Combo_MM_AdultResourcesReady() && Combo_MM_IsAdult())
+                return extraHeight + 68.0f;
 #endif
             return extraHeight + 44.0f;
     }
@@ -3745,7 +3747,7 @@ ActorProfile* Actor_LoadOverlay(ActorContext* actorCtx, s16 index) {
 // Isolated expanded-soul bridge; must be linked before this patch is integrated.
 extern void MM_MissingSoulRoomReset(PlayState* play);
 extern void MM_MissingSoulRoomBlock(PlayState* play);
-extern s32 MM_MissingSoulRoomCanClear(PlayState* play,s32 room);
+extern s32 MM_MissingSoulRoomCanClear(PlayState* play, s32 room);
 extern s32 MM_ExpandedSoulPreSpawn(PlayState* play, s16 actorId, s32* params);
 
 Actor* Actor_SpawnAsChildAndCutscene(ActorContext* actorCtx, PlayState* play, s16 index, f32 x, f32 y, f32 z, s16 rotX,
@@ -3756,9 +3758,10 @@ Actor* Actor_SpawnAsChildAndCutscene(ActorContext* actorCtx, PlayState* play, s1
     s32 objectSlot;
     ActorOverlay* overlayEntry;
 
-    const s32 soulSpawn=MM_ExpandedSoulPreSpawn(play,index,&params);
+    const s32 soulSpawn = MM_ExpandedSoulPreSpawn(play, index, &params);
     if (soulSpawn <= 0) {
-        if(soulSpawn==0) MM_MissingSoulRoomBlock(play);
+        if (soulSpawn == 0)
+            MM_MissingSoulRoomBlock(play);
         return NULL; // Before overlay load/allocation/init; optional missing souls do not clear rooms.
     }
 

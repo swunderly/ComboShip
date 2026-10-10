@@ -35,4 +35,4 @@ inline bool Garo(bool sword, bool goron, bool bubble, bool arrows) {
 inline bool IronKnuckle(bool sword, bool goron, bool bombs, bool bombchus, bool blastMask, unsigned masks) {
     return sword || goron || bombs || bombchus || (blastMask && masks >= 5);
 }
-}
+} // namespace ComboRando::MmMoonTrialRules

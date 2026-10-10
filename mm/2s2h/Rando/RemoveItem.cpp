@@ -13,8 +13,10 @@ extern "C" {
 #define CLEAR_OWL_WARP(owlId) (gSaveContext.save.saveInfo.playerData.owlActivationFlags &= ~(1 << owlId))
 
 void Rando::RemoveItem(RandoItemId randoItemId) {
-    if (RemoveMissingMmSoul(randoItemId)) return;
-    if (RemoveExpandedSoulItem(randoItemId)) return;
+    if (RemoveMissingMmSoul(randoItemId))
+        return;
+    if (RemoveExpandedSoulItem(randoItemId))
+        return;
     if (FindKeyRing(randoItemId)) {
         throw std::logic_error("Key ring removal requires the fill-local key snapshot");
     }

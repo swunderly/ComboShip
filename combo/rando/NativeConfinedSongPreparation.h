@@ -7,13 +7,16 @@ namespace ComboRando {
 // map before combined fill and its original-rule every-check certification.
 class NativeConfinedSongPreparation {
     SongTravelMap saved;
-public:
+
+  public:
     NativeConfinedSongPreparation() : saved(ActiveSongTravel()) {
         ActiveSongTravel().logicEnabled = false;
         ActiveSongTravel().logicForeignSongs = false;
     }
-    ~NativeConfinedSongPreparation() { ActiveSongTravel() = saved; }
+    ~NativeConfinedSongPreparation() {
+        ActiveSongTravel() = saved;
+    }
     NativeConfinedSongPreparation(const NativeConfinedSongPreparation&) = delete;
     NativeConfinedSongPreparation& operator=(const NativeConfinedSongPreparation&) = delete;
 };
-}
+} // namespace ComboRando

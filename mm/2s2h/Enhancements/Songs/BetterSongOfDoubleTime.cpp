@@ -120,9 +120,10 @@ void OnPlayerUpdate(Actor* actor) {
         // Check if the selected time is owned in ClockShuffle mode
         const bool shuffledClocks = IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE];
         const u32 target = (sSelectedDay - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(sSelectedTime);
-        const bool targetOwned = shuffledClocks
-            ? ComboRando::MmClockRules::OwnsSelectorTarget(Rando::ClockItems::GetAllOwnedHalfDaysMask(), target)
-            : Rando::ClockShuffle::IsTimeOwnedForClockShuffle(sSelectedDay, sSelectedTime);
+        const bool targetOwned =
+            shuffledClocks
+                ? ComboRando::MmClockRules::OwnsSelectorTarget(Rando::ClockItems::GetAllOwnedHalfDaysMask(), target)
+                : Rando::ClockShuffle::IsTimeOwnedForClockShuffle(sSelectedDay, sSelectedTime);
         if (!targetOwned) {
             // Play error sound
             Audio_PlaySfx(NA_SE_SY_OCARINA_ERROR);
@@ -270,8 +271,8 @@ void OnPlayerUpdate(Actor* actor) {
         const u32 original = (sOriginalDay - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(sOriginalTime);
         const u32 previous = (previousDay - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(previousTime);
         const u32 proposed = (sSelectedDay - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(sSelectedTime);
-        const u32 selected = Rando::ClockShuffle::SelectOwnedTime(
-            original, previous, proposed, adjustMode == ADJUST_DIRECTION_FORWARD);
+        const u32 selected =
+            Rando::ClockShuffle::SelectOwnedTime(original, previous, proposed, adjustMode == ADJUST_DIRECTION_FORWARD);
         sSelectedDay = (selected >> 16) + 1;
         sSelectedTime = static_cast<u16>(selected + CLOCK_TIME(6, 0));
     }
@@ -397,8 +398,8 @@ void RegisterBetterSongOfDoubleTime() {
         *should = false;
 
         const bool exhaustedSelector = IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE] &&
-            (gSaveContext.save.day - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(CURRENT_TIME) >=
-                ComboRando::MmClockRules::MaxSelectorTicks;
+                                       (gSaveContext.save.day - 1) * 0x10000u + CLOCK_TIME_NORMALIZED(CURRENT_TIME) >=
+                                           ComboRando::MmClockRules::MaxSelectorTicks;
         if (gSaveContext.save.day >= 4 || exhaustedSelector) {
             // On 4th day and beyond, just display the "can't go further" text
             Message_StartTextbox(gPlayState, 0x1B94, NULL);

@@ -394,9 +394,8 @@ void EnHoll_HorizontalBgCoverSwitchFlag(EnHoll* this, PlayState* play) {
 }
 
 static int EnHoll_IsShadowStaircase(EnHoll* this, PlayState* play) {
-    return ShadowDoorUnload_IsStaircase(play->sceneNum, (u16)this->actor.params,
-                                        this->actor.home.pos.x, this->actor.home.pos.y,
-                                        this->actor.home.pos.z, this->actor.home.rot.y);
+    return ShadowDoorUnload_IsStaircase(play->sceneNum, (u16)this->actor.params, this->actor.home.pos.x,
+                                        this->actor.home.pos.y, this->actor.home.pos.z, this->actor.home.rot.y);
 }
 
 static void EnHoll_UnloadShadowDoor(EnHoll* this, PlayState* play) {
@@ -427,8 +426,7 @@ static void EnHoll_LogGraveyardActorExhaustion(EnHoll* this, PlayState* play) {
     s32 tombstones = 0;
     Player* player;
 
-    if (play->sceneNum != SCENE_GRAVEYARD ||
-        !CVarGetInteger(CVAR_DEVELOPER_TOOLS("ActorExhaustionDiagnostics"), 0)) {
+    if (play->sceneNum != SCENE_GRAVEYARD || !CVarGetInteger(CVAR_DEVELOPER_TOOLS("ActorExhaustionDiagnostics"), 0)) {
         return;
     }
 
@@ -452,10 +450,9 @@ static void EnHoll_LogGraveyardActorExhaustion(EnHoll* this, PlayState* play) {
     LUSLOG_INFO("COMBO_ACTOR_EXHAUSTION scene=%d room=%d counter=%u listed=%d actual=%d live=%d "
                 "shadowDoors=%d tombstones=%d x=%.1f y=%.1f z=%.1f restored=%d cycles=%u threshold=%u "
                 "params=%04X auth=%d start=%d last=%d",
-                play->sceneNum, play->roomCtx.curRoom.num, (unsigned int)play->actorCtx.total,
-                listed, actual, live, shadowDoors, tombstones, player->actor.world.pos.x,
-                player->actor.world.pos.y, player->actor.world.pos.z,
-                CVarGetInteger(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"), 0),
+                play->sceneNum, play->roomCtx.curRoom.num, (unsigned int)play->actorCtx.total, listed, actual, live,
+                shadowDoors, tombstones, player->actor.world.pos.x, player->actor.world.pos.y,
+                player->actor.world.pos.z, CVarGetInteger(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"), 0),
                 (unsigned int)this->shadowDoorUnload.cycles, SHADOW_DOOR_UNLOAD_CYCLES,
                 (unsigned int)(u16)this->actor.params, EnHoll_IsShadowStaircase(this, play),
                 (int)this->shadowDoorUnload.startRoom, (int)this->shadowDoorUnload.lastRoom);
@@ -467,8 +464,7 @@ void EnHoll_WaitRoomLoaded(EnHoll* this, PlayState* play) {
         Room_FinishRoomChange(play, &play->roomCtx);
         ShadowDoorUnload_RecordRoomLoad(&this->shadowDoorUnload,
                                         CVarGetInteger(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"), 0),
-                                        EnHoll_IsShadowStaircase(this, play), previousRoom,
-                                        play->roomCtx.curRoom.num);
+                                        EnHoll_IsShadowStaircase(this, play), previousRoom, play->roomCtx.curRoom.num);
         EnHoll_UnloadShadowDoor(this, play);
         EnHoll_LogGraveyardActorExhaustion(this, play);
         if (play->bgCoverAlpha == 0) {
@@ -481,8 +477,7 @@ void EnHoll_WaitRoomLoaded(EnHoll* this, PlayState* play) {
 void EnHoll_Update(Actor* thisx, PlayState* play) {
     EnHoll* this = (EnHoll*)thisx;
 
-    if (EnHoll_IsShadowStaircase(this, play) &&
-        !CVarGetInteger(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"), 0)) {
+    if (EnHoll_IsShadowStaircase(this, play) && !CVarGetInteger(CVAR_ENHANCEMENT("RestoreShadowDoorUnload"), 0)) {
         ShadowDoorUnload_Reset(&this->shadowDoorUnload, play->roomCtx.curRoom.num);
     }
     this->actionFunc(this, play);

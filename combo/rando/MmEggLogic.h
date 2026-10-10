@@ -11,8 +11,8 @@ inline constexpr int RequiredZoraEggs(int logicalCount) {
 // combat and area prerequisites. One reusable bottle can deposit them in
 // successive trips. This is a song lesson: the reward/song and its note
 // buttons need not be owned, but Zora's local instrument must be usable.
-inline constexpr bool CanLearnNewWaveBossaNova(int logicalCount, int accessibleEggs,
-                                             bool canBeZora, bool localInstrument, bool bottle) {
+inline constexpr bool CanLearnNewWaveBossaNova(int logicalCount, int accessibleEggs, bool canBeZora,
+                                               bool localInstrument, bool bottle) {
     return canBeZora && localInstrument && bottle && accessibleEggs >= RequiredZoraEggs(logicalCount);
 }
 } // namespace ComboRando

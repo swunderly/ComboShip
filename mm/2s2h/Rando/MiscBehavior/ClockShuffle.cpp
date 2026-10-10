@@ -298,15 +298,18 @@ static bool CheckAndSkipUnownedTime(Actor* timeActor) {
 }
 
 bool Rando::ClockShuffle::IsTimeOwnedForClockShuffle(s32 day, u16 time) {
-    if (!RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) return true;
-    if (day < 1 || day > 3) return false;
+    if (!RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE])
+        return true;
+    if (day < 1 || day > 3)
+        return false;
     return ComboRando::MmClockRules::OwnsTime(ClockItems::GetAllOwnedHalfDaysMask(), day, time);
 }
 
 u32 Rando::ClockShuffle::SelectOwnedTime(u32 original, u32 current, u32 proposed, bool forward) {
-    if (!IS_RANDO || !RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) return proposed;
-    return ComboRando::MmClockRules::SelectOwnedTime(
-        ClockItems::GetAllOwnedHalfDaysMask(), original, current, proposed, forward);
+    if (!IS_RANDO || !RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE])
+        return proposed;
+    return ComboRando::MmClockRules::SelectOwnedTime(ClockItems::GetAllOwnedHalfDaysMask(), original, current, proposed,
+                                                     forward);
 }
 
 std::string Rando::ClockShuffle::GetTimeDescriptionForMessage(s32 day, u16 time) {
@@ -436,8 +439,8 @@ void Rando::ClockShuffle::OnFileLoad() {
         // OoTMM common/save.c gracePeriod: reopening a save at its last owned
         // boundary leaves a short grace period to reset rather than crashing
         // during the loading screen.
-        const u32 linear = ComboRando::MmClockRules::ResumeGrace(
-            ClockItems::GetAllOwnedHalfDaysMask(), gSaveContext.save.day, gSaveContext.save.time);
+        const u32 linear = ComboRando::MmClockRules::ResumeGrace(ClockItems::GetAllOwnedHalfDaysMask(),
+                                                                 gSaveContext.save.day, gSaveContext.save.time);
         gSaveContext.save.day = linear >> 16;
         gSaveContext.save.time = static_cast<u16>(linear + DAWN_TIME);
         EnforceOwnedTime();

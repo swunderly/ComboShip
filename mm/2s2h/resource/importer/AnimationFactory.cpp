@@ -92,7 +92,8 @@ ResourceFactoryBinaryAnimationV0::ReadResource(std::shared_ptr<Ship::File> file,
         std::string path = reader->ReadString();
         // A Link header owns MM frame data even when OOT is the foreground game.
         auto owner = Ship::CrossRMRegistry::GetOrActive("mm");
-        auto animData = owner ? std::dynamic_pointer_cast<PlayerAnimation>(owner->LoadResourceProcess(path.c_str())) : nullptr;
+        auto animData =
+            owner ? std::dynamic_pointer_cast<PlayerAnimation>(owner->LoadResourceProcess(path.c_str())) : nullptr;
 
         // If direct load failed and alt assets are enabled, try with alt/ prefix
         if (animData == nullptr && owner && owner->IsAltAssetsEnabled()) {

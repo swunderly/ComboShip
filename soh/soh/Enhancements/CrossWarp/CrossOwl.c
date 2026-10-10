@@ -16,7 +16,8 @@ extern void func_80082850(PlayState*, s16);
 // The framebuffer calls are the same ones used by MM's Play_DrawMotionBlur.
 // Keep the history private to this departure and reset it after a resize.
 static void CrossOwl_DrawMotionBlur(CrossOwl* this, PlayState* play) {
-    if (this->timer <= 10 || this->timer > 100) return;
+    if (this->timer <= 10 || this->timer > 100)
+        return;
     const u32 width = OTRGetGameRenderWidth();
     const u32 height = OTRGetGameRenderHeight();
     OPEN_DISPS(play->state.gfxCtx);
@@ -39,79 +40,86 @@ static void CrossOwl_DrawMotionBlur(CrossOwl* this, PlayState* play) {
 
 // The native MM Soaring screen wipe uses the same actor in effect-only mode.
 static void DrawSoaringWipe(CrossOwl* this, PlayState* play) {
-    Vtx* vertices=Combo_SOHWarpResource(gOceff6Vtx);
-    const int count=Combo_SOHWarpVertexCount(gOceff6Vtx);
-    if(!vertices || count<=0) return;
-    float distance=1220.0f;
-    const float aspect=OTRGetAspectRatio();
-    if(aspect>4.0f/3.0f) distance/=aspect*.85f;
-    const float z=this->timer<32 ? Math_SinS(this->timer*0x200)*distance : distance;
-    const u8 alpha=this->timer>=80 ? 12*(100-this->timer) : 255;
-    for(int i=1;i<count;i+=2) vertices[i].v.cn[3]=alpha;
-    Camera* cam=Play_GetCamera(play,play->activeCamera);
+    Vtx* vertices = Combo_SOHWarpResource(gOceff6Vtx);
+    const int count = Combo_SOHWarpVertexCount(gOceff6Vtx);
+    if (!vertices || count <= 0)
+        return;
+    float distance = 1220.0f;
+    const float aspect = OTRGetAspectRatio();
+    if (aspect > 4.0f / 3.0f)
+        distance /= aspect * .85f;
+    const float z = this->timer < 32 ? Math_SinS(this->timer * 0x200) * distance : distance;
+    const u8 alpha = this->timer >= 80 ? 12 * (100 - this->timer) : 255;
+    for (int i = 1; i < count; i += 2)
+        vertices[i].v.cn[3] = alpha;
+    Camera* cam = Play_GetCamera(play, play->activeCamera);
     OPEN_DISPS(play->state.gfxCtx);
-    gSPComboRMPush(POLY_XLU_DISP++,"mm-warp");
+    gSPComboRMPush(POLY_XLU_DISP++, "mm-warp");
     Gfx_SetupDL_25Xlu(play->state.gfxCtx);
-    Matrix_Translate(cam->eye.x,cam->eye.y,cam->eye.z,MTXMODE_NEW);
-    Matrix_Scale(.1f,.1f,.1f,MTXMODE_APPLY);
-    Matrix_Mult(&play->billboardMtxF,MTXMODE_APPLY);
-    Matrix_RotateX(0x708*(M_PI/0x8000),MTXMODE_APPLY);
-    Matrix_Translate(0,0,-z,MTXMODE_APPLY);
-    gSPMatrix(POLY_XLU_DISP++,MATRIX_NEWMTX(play->state.gfxCtx),G_MTX_NOPUSH|G_MTX_LOAD|G_MTX_MODELVIEW);
+    Matrix_Translate(cam->eye.x, cam->eye.y, cam->eye.z, MTXMODE_NEW);
+    Matrix_Scale(.1f, .1f, .1f, MTXMODE_APPLY);
+    Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
+    Matrix_RotateX(0x708 * (M_PI / 0x8000), MTXMODE_APPLY);
+    Matrix_Translate(0, 0, -z, MTXMODE_APPLY);
+    gSPMatrix(POLY_XLU_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     CLOSE_DISPS(play->state.gfxCtx);
-    Combo_SOHWarpMaterial(play,ovl_Oceff_Wipe6_Matanimheader_000338,this->timer);
+    Combo_SOHWarpMaterial(play, ovl_Oceff_Wipe6_Matanimheader_000338, this->timer);
     OPEN_DISPS(play->state.gfxCtx);
-    gSPDisplayList(POLY_XLU_DISP++,(Gfx*)Combo_SOHWarpResource(gOceff6DL));
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)Combo_SOHWarpResource(gOceff6DL));
     gSPComboRMPop(POLY_XLU_DISP++);
     CLOSE_DISPS(play->state.gfxCtx);
-    Combo_SOHRestoreWarpMaterial(play,ovl_Oceff_Wipe6_Matanimheader_000338);
+    Combo_SOHRestoreWarpMaterial(play, ovl_Oceff_Wipe6_Matanimheader_000338);
 }
 void Combo_SOHStartSoaringEffect(PlayState* play) {
     // Match the originating game's playback preference. A skipped performance
     // must not leave its 100-tick screen wipe over the map or departure.
-    if (CVarGetInteger(CVAR_ENHANCEMENT("FastOcarinaPlayback"), 0)) return;
-    if(!Combo_SOHPrepareWarpAssets()) return;
-    Actor_Spawn(&play->actorCtx,play,ACTOR_COMBO_OWL_WARP,0,0,0,0,0,0,0x100);
+    if (CVarGetInteger(CVAR_ENHANCEMENT("FastOcarinaPlayback"), 0))
+        return;
+    if (!Combo_SOHPrepareWarpAssets())
+        return;
+    Actor_Spawn(&play->actorCtx, play, ACTOR_COMBO_OWL_WARP, 0, 0, 0, 0, 0, 0, 0x100);
 }
 static void CWEnvironment_LerpAmbientColor(PlayState* play, Color_RGB8* color, f32 lerp) {
-    u8* rgb=(u8*)color;
-    for(int i=0;i<3;i++) play->envCtx.adjAmbientColor[i]=(rgb[i]-play->envCtx.lightSettings.ambientColor[i])*lerp;
+    u8* rgb = (u8*)color;
+    for (int i = 0; i < 3; i++)
+        play->envCtx.adjAmbientColor[i] = (rgb[i] - play->envCtx.lightSettings.ambientColor[i]) * lerp;
 }
 static void CWEnvironment_LerpFogColor(PlayState* play, Color_RGB8* color, f32 lerp) {
-    u8* rgb=(u8*)color;
-    for(int i=0;i<3;i++) play->envCtx.adjFogColor[i]=(rgb[i]-play->envCtx.lightSettings.fogColor[i])*lerp;
+    u8* rgb = (u8*)color;
+    for (int i = 0; i < 3; i++)
+        play->envCtx.adjFogColor[i] = (rgb[i] - play->envCtx.lightSettings.fogColor[i]) * lerp;
 }
 static void CWEnvironment_LerpFog(PlayState* play, s16 nearTarget, s16 farTarget, f32 lerp) {
-    play->envCtx.adjFogNear=(nearTarget-play->envCtx.lightSettings.fogNear)*lerp;
-    play->envCtx.adjFogFar=(farTarget-play->envCtx.lightSettings.fogFar)*lerp;
+    play->envCtx.adjFogNear = (nearTarget - play->envCtx.lightSettings.fogNear) * lerp;
+    play->envCtx.adjFogFar = (farTarget - play->envCtx.lightSettings.fogFar) * lerp;
 }
 
-void CrossOwl_SetupPlayerCamFunc(CrossOwl* this, CrossOwlPlayerCamFunc playerCamFunc) ;
-void CrossOwl_SetupAction(CrossOwl* this, CrossOwlActionFunc actionFunc) ;
-void CrossOwl_InitFeathers(OwlWarpFeather* feathers) ;
-void CrossOwl_AddFeather(OwlWarpFeather* feather, Vec3f* pos, s32 isPosYRand) ;
-void CrossOwl_AddAndChooseFeather(OwlWarpFeather* feathers, Vec3f* pos, s32 isPosYRand) ;
-void CrossOwl_UpdateFeatherType1(PlayState* play, OwlWarpFeather* feather) ;
-void CrossOwl_UpdateFeatherType2(PlayState* play, OwlWarpFeather* feather) ;
-void CrossOwl_UpdateFeathers(PlayState* play, OwlWarpFeather* feathers, CrossOwl* this, s32 arg3, s32 arg4) ;
-void CrossOwl_DrawFeathers(PlayState* play2, OwlWarpFeather* feathers) ;
-void CrossOwl_InitWindCapsule(OwlWarpWindCapsule* windCapsule) ;
-void CrossOwl_WarpCsPart1(CrossOwl* this, PlayState* play) ;
-void CrossOwl_UpdateGrowingWindCapsule(CrossOwl* this, PlayState* play) ;
-void CrossOwl_WarpCsPart2(CrossOwl* this, PlayState* play) ;
-void CrossOwl_WarpCsPart3(CrossOwl* this, PlayState* play) ;
-void CrossOwl_WarpCsPart4(CrossOwl* this, PlayState* play) ;
-void CrossOwl_WarpCsPart5(CrossOwl* this, PlayState* play) ;
-void CrossOwl_WarpCsPart6(CrossOwl* this, PlayState* play) ;
-void CrossOwl_WarpCsWait(CrossOwl* this, PlayState* play) ;
-void CrossOwl_UpdateSubCamWarpCs2(CrossOwl* this, PlayState* play, f32 lerp) ;
-void CrossOwl_UpdateSubCamWarpCs1(CrossOwl* this, PlayState* play, f32 lerp) ;
-void CrossOwl_SpinAndSquishPlayer(CrossOwl* this, PlayState* play, f32 lerp) ;
-void CrossOwl_PlayerAndSubCamAction(CrossOwl* this, PlayState* play) ;
-void CrossOwl_Update(Actor* thisx, PlayState* play) ;
+void CrossOwl_SetupPlayerCamFunc(CrossOwl* this, CrossOwlPlayerCamFunc playerCamFunc);
+void CrossOwl_SetupAction(CrossOwl* this, CrossOwlActionFunc actionFunc);
+void CrossOwl_InitFeathers(OwlWarpFeather* feathers);
+void CrossOwl_AddFeather(OwlWarpFeather* feather, Vec3f* pos, s32 isPosYRand);
+void CrossOwl_AddAndChooseFeather(OwlWarpFeather* feathers, Vec3f* pos, s32 isPosYRand);
+void CrossOwl_UpdateFeatherType1(PlayState* play, OwlWarpFeather* feather);
+void CrossOwl_UpdateFeatherType2(PlayState* play, OwlWarpFeather* feather);
+void CrossOwl_UpdateFeathers(PlayState* play, OwlWarpFeather* feathers, CrossOwl* this, s32 arg3, s32 arg4);
+void CrossOwl_DrawFeathers(PlayState* play2, OwlWarpFeather* feathers);
+void CrossOwl_InitWindCapsule(OwlWarpWindCapsule* windCapsule);
+void CrossOwl_WarpCsPart1(CrossOwl* this, PlayState* play);
+void CrossOwl_UpdateGrowingWindCapsule(CrossOwl* this, PlayState* play);
+void CrossOwl_WarpCsPart2(CrossOwl* this, PlayState* play);
+void CrossOwl_WarpCsPart3(CrossOwl* this, PlayState* play);
+void CrossOwl_WarpCsPart4(CrossOwl* this, PlayState* play);
+void CrossOwl_WarpCsPart5(CrossOwl* this, PlayState* play);
+void CrossOwl_WarpCsPart6(CrossOwl* this, PlayState* play);
+void CrossOwl_WarpCsWait(CrossOwl* this, PlayState* play);
+void CrossOwl_UpdateSubCamWarpCs2(CrossOwl* this, PlayState* play, f32 lerp);
+void CrossOwl_UpdateSubCamWarpCs1(CrossOwl* this, PlayState* play, f32 lerp);
+void CrossOwl_SpinAndSquishPlayer(CrossOwl* this, PlayState* play, f32 lerp);
+void CrossOwl_PlayerAndSubCamAction(CrossOwl* this, PlayState* play);
+void CrossOwl_Update(Actor* thisx, PlayState* play);
 s32 CrossOwl_OverrideLimbDraw(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, s32 limbIndex, Gfx** dList, u8* flags,
-                             void* thisx, Vec3f* scale, Vec3s* rot, Vec3f* pos) ;
-void CrossOwl_Draw(Actor* thisx, PlayState* play) ;
+                              void* thisx, Vec3f* scale, Vec3s* rot, Vec3f* pos);
+void CrossOwl_Draw(Actor* thisx, PlayState* play);
 
 void CrossOwl_WarpCsWarp(CrossOwl* this, PlayState* play) {
     Combo_SOHCompleteWarp(play, this->actor.params);
@@ -119,62 +127,68 @@ void CrossOwl_WarpCsWarp(CrossOwl* this, PlayState* play) {
 }
 int Combo_SOHSoaringCutsceneActive(PlayState* play) {
     // Native MM's soaringCsOrSoTCsPlaying covers departure ticks 0..99.
-    for (Actor* actor=play->actorCtx.actorLists[ACTORCAT_ITEMACTION].head; actor; actor=actor->next) {
-        if (actor->id==ACTOR_COMBO_OWL_WARP && actor->params!=0x100 && actor->update &&
-            ((CrossOwl*)actor)->timer<100) return 1;
+    for (Actor* actor = play->actorCtx.actorLists[ACTORCAT_ITEMACTION].head; actor; actor = actor->next) {
+        if (actor->id == ACTOR_COMBO_OWL_WARP && actor->params != 0x100 && actor->update &&
+            ((CrossOwl*)actor)->timer < 100)
+            return 1;
     }
     return 0;
 }
 void CrossOwl_Init(Actor* thisx, PlayState* play) {
-    if(thisx->params==0x100) return;
-    CrossOwl* this=(CrossOwl*)thisx;
-    Player* player=GET_PLAYER(play);
-    this->actor.world.rot.y=this->actor.shape.rot.y=player->actor.shape.rot.y;
-    this->playerYaw=player->actor.shape.rot.y;
-    this->playerScaleX=player->actor.scale.x; this->playerScaleZ=player->actor.scale.z;
-    this->playerDrawFunc=player->actor.draw;
-    this->savedHud=gSaveContext.hudVisibilityMode;
+    if (thisx->params == 0x100)
+        return;
+    CrossOwl* this = (CrossOwl*)thisx;
+    Player* player = GET_PLAYER(play);
+    this->actor.world.rot.y = this->actor.shape.rot.y = player->actor.shape.rot.y;
+    this->playerYaw = player->actor.shape.rot.y;
+    this->playerScaleX = player->actor.scale.x;
+    this->playerScaleZ = player->actor.scale.z;
+    this->playerDrawFunc = player->actor.draw;
+    this->savedHud = gSaveContext.hudVisibilityMode;
     Interface_ChangeHudVisibilityMode(HUD_VISIBILITY_NOTHING);
     Actor_SetScale(&this->actor, LINK_IS_ADULT ? 0.015f : 0.01f);
-    CWKeyframe_InitFlex(&this->kfSkelAnime, (void*)gGameplayKeepKFSkel_85640,
-        (void*)gGameplayKeepKFAnim_83534, this->jointTable, this->morphTable, NULL);
+    CWKeyframe_InitFlex(&this->kfSkelAnime, (void*)gGameplayKeepKFSkel_85640, (void*)gGameplayKeepKFAnim_83534,
+                        this->jointTable, this->morphTable, NULL);
     CWKeyframe_FlexPlayOnce(&this->kfSkelAnime, (void*)gGameplayKeepKFAnim_83534);
-    CrossOwl_InitFeathers(this->feathers); CrossOwl_InitWindCapsule(&this->windCapsule);
+    CrossOwl_InitFeathers(this->feathers);
+    CrossOwl_InitWindCapsule(&this->windCapsule);
     // End OoT's instrument camera before taking over, as MM's cutscene
     // manager does. Player cleanup must not reactivate it during departure.
-    Camera* previous=GET_ACTIVE_CAM(play);
-    const Vec3f initialEye=previous->eye, initialAt=previous->at;
-    const f32 initialFov=previous->fov;
-    if (player->subCamId!=SUBCAM_NONE) {
-        Play_ClearCamera(play,player->subCamId);
-        player->subCamId=SUBCAM_NONE;
+    Camera* previous = GET_ACTIVE_CAM(play);
+    const Vec3f initialEye = previous->eye, initialAt = previous->at;
+    const f32 initialFov = previous->fov;
+    if (player->subCamId != SUBCAM_NONE) {
+        Play_ClearCamera(play, player->subCamId);
+        player->subCamId = SUBCAM_NONE;
     }
-    this->subCamId=Play_CreateSubCamera(play);
+    this->subCamId = Play_CreateSubCamera(play);
     Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_WAIT);
     Play_ChangeCameraStatus(play, this->subCamId, CAM_STAT_ACTIVE);
-    this->subCamEye=initialEye; this->subCamAt=initialAt;
+    this->subCamEye = initialEye;
+    this->subCamAt = initialAt;
     Play_CameraSetAtEye(play, this->subCamId, &this->subCamAt, &this->subCamEye);
     Play_CameraSetFov(play, this->subCamId, initialFov);
     Player_SetCsActionWithHaltedActors(play, &this->actor, 8);
     player->stateFlags1 |= PLAYER_STATE1_IN_CUTSCENE;
-    this->actionFunc=CrossOwl_WarpCsPart1;
-    this->playerCamFunc=CrossOwl_PlayerAndSubCamAction;
+    this->actionFunc = CrossOwl_WarpCsPart1;
+    this->playerCamFunc = CrossOwl_PlayerAndSubCamAction;
     Combo_SOHSoaringAudioBegin();
-    Lights_PointNoGlowSetInfo(&this->lightInfo,
-        player->actor.world.pos.x+Math_SinS(this->playerYaw)*90,
-        player->actor.world.pos.y+10, player->actor.world.pos.z+Math_CosS(this->playerYaw)*90,
-        255,255,255,255);
-    this->lightNode=LightContext_InsertLight(play, &play->lightCtx, &this->lightInfo);
+    Lights_PointNoGlowSetInfo(&this->lightInfo, player->actor.world.pos.x + Math_SinS(this->playerYaw) * 90,
+                              player->actor.world.pos.y + 10,
+                              player->actor.world.pos.z + Math_CosS(this->playerYaw) * 90, 255, 255, 255, 255);
+    this->lightNode = LightContext_InsertLight(play, &play->lightCtx, &this->lightInfo);
 }
 void CrossOwl_Destroy(Actor* thisx, PlayState* play) {
-    if(thisx->params==0x100) return;
+    if (thisx->params == 0x100)
+        return;
     Combo_SOHSoaringAudioEnd();
-    CrossOwl* this=(CrossOwl*)thisx;
-    Player* player=GET_PLAYER(play);
+    CrossOwl* this = (CrossOwl*)thisx;
+    Player* player = GET_PLAYER(play);
     // Game handoff destroys the player category before item-action actors.
-    if(player) {
-        player->actor.draw=this->playerDrawFunc;
-        player->actor.scale.x=this->playerScaleX; player->actor.scale.z=this->playerScaleZ;
+    if (player) {
+        player->actor.draw = this->playerDrawFunc;
+        player->actor.scale.x = this->playerScaleX;
+        player->actor.scale.z = this->playerScaleZ;
         player->stateFlags1 &= ~PLAYER_STATE1_IN_CUTSCENE;
         Player_SetCsAction(play, &this->actor, 7);
     }
@@ -182,25 +196,32 @@ void CrossOwl_Destroy(Actor* thisx, PlayState* play) {
     Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_ACTIVE);
     Interface_ChangeHudVisibilityMode(this->savedHud);
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
-
 }
 const ActorInit Combo_Owl_Warp_InitVars = {
-    ACTOR_COMBO_OWL_WARP, ACTORCAT_ITEMACTION,
-    ACTOR_FLAG_UPDATE_CULLING_DISABLED|ACTOR_FLAG_DRAW_CULLING_DISABLED|ACTOR_FLAG_UPDATE_DURING_OCARINA,
-    OBJECT_GAMEPLAY_KEEP, sizeof(CrossOwl), CrossOwl_Init, CrossOwl_Destroy, CrossOwl_Update, CrossOwl_Draw, NULL,
+    ACTOR_COMBO_OWL_WARP,
+    ACTORCAT_ITEMACTION,
+    ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA,
+    OBJECT_GAMEPLAY_KEEP,
+    sizeof(CrossOwl),
+    CrossOwl_Init,
+    CrossOwl_Destroy,
+    CrossOwl_Update,
+    CrossOwl_Draw,
+    NULL,
 };
 int Combo_SOHStartSoaring(PlayState* play, int destination) {
-    if (destination < 0 || destination >= 16) return 0;
+    if (destination < 0 || destination >= 16)
+        return 0;
     // This is MM's Soaring departure even when played in OoT. Keep the selected
     // route and native arrival when its dedicated cutscene skip is enabled.
     if (CVarGetInteger("gEnhancements.Songs.SkipSoaringCutscene", 0)) {
         Combo_SOHCompleteWarp(play, destination);
         return 1;
     }
-    Player* player=GET_PLAYER(play);
-    return Actor_Spawn(&play->actorCtx, play, ACTOR_COMBO_OWL_WARP,
-        player->actor.world.pos.x, player->actor.world.pos.y, player->actor.world.pos.z,
-        0, player->actor.shape.rot.y, 0, destination)!=NULL;
+    Player* player = GET_PLAYER(play);
+    return Actor_Spawn(&play->actorCtx, play, ACTOR_COMBO_OWL_WARP, player->actor.world.pos.x,
+                       player->actor.world.pos.y, player->actor.world.pos.z, 0, player->actor.shape.rot.y, 0,
+                       destination) != NULL;
 }
 void CrossOwl_SetupPlayerCamFunc(CrossOwl* this, CrossOwlPlayerCamFunc playerCamFunc) {
     this->playerCamFunc = playerCamFunc;
@@ -532,8 +553,7 @@ void CrossOwl_WarpCsPart1(CrossOwl* this, PlayState* play) {
     CWEnvironment_LerpFog(play, 2000, 4000, envLerp);
 
     if (this->timer >= 10) {
-        Camera* subCam =
-            Play_GetCamera(play, this->subCamId);
+        Camera* subCam = Play_GetCamera(play, this->subCamId);
 
         this->subCamEye = subCam->eye;
         this->subCamAt = subCam->at;
@@ -542,7 +562,6 @@ void CrossOwl_WarpCsPart1(CrossOwl* this, PlayState* play) {
         CrossOwl_SetupAction(this, CrossOwl_WarpCsPart2);
         this->flags |= OWL_WARP_FLAGS_20;
         Combo_SOHSoaringSound(0);
-
     }
 }
 
@@ -595,8 +614,7 @@ void CrossOwl_WarpCsPart2(CrossOwl* this, PlayState* play) {
         }
 
         if (Rand_ZeroOne() < 0.3f) {
-            Camera* subCam =
-                Play_GetCamera(play, this->subCamId);
+            Camera* subCam = Play_GetCamera(play, this->subCamId);
             f32 randLerp = Rand_ZeroOne();
 
             featherPos.x = LERP(this->actor.world.pos.x, subCam->eye.x, randLerp);
@@ -685,10 +703,9 @@ void CrossOwl_WarpCsPart5(CrossOwl* this, PlayState* play) {
         play->envCtx.screenFillColor[1] = 255;
         play->envCtx.screenFillColor[2] = 255;
         play->envCtx.screenFillColor[3] = 255;
-        
+
         this->flags &= ~OWL_WARP_FLAGS_DRAW_LENS_FLARE;
         CrossOwl_SetupAction(this, CrossOwl_WarpCsPart6);
-    
     }
 }
 
@@ -727,8 +744,7 @@ void CrossOwl_UpdateSubCamWarpCs2(CrossOwl* this, PlayState* play, f32 lerp) {
     Vec3f eyeNext;
     Vec3f* playerPos;
     Player* player = GET_PLAYER(play);
-    Camera* subCam =
-        Play_GetCamera(play, this->subCamId);
+    Camera* subCam = Play_GetCamera(play, this->subCamId);
 
     playerPos = &player->actor.world.pos;
     subCam->player = NULL;
@@ -749,8 +765,7 @@ void CrossOwl_UpdateSubCamWarpCs2(CrossOwl* this, PlayState* play, f32 lerp) {
 void CrossOwl_UpdateSubCamWarpCs1(CrossOwl* this, PlayState* play, f32 lerp) {
     Vec3f* playerPos;
     Player* player = GET_PLAYER(play);
-    Camera* subCam =
-        Play_GetCamera(play, this->subCamId);
+    Camera* subCam = Play_GetCamera(play, this->subCamId);
     Vec3f eyeNext;
 
     subCam->player = NULL;
@@ -801,32 +816,36 @@ void CrossOwl_PlayerAndSubCamAction(CrossOwl* this, PlayState* play) {
 }
 
 void CrossOwl_Update(Actor* thisx, PlayState* play) {
-    CrossOwl* this=(CrossOwl*)thisx;
-    if(thisx->params==0x100) {
-        if(this->timer<100) this->timer++;
-        else Actor_Kill(thisx);
+    CrossOwl* this = (CrossOwl*)thisx;
+    if (thisx->params == 0x100) {
+        if (this->timer < 100)
+            this->timer++;
+        else
+            Actor_Kill(thisx);
         return;
     }
     // En_Test7 updates once per gameplay tick in MM and OoT alike.
-    this->actionFunc(this,play);
-    if(thisx->update==NULL) return;
-    if(this->playerCamFunc) this->playerCamFunc(this,play);
-    Camera* camera=Play_GetCamera(play,this->subCamId);
-    Play_CameraSetAtEye(play,this->subCamId,&camera->at,&camera->eye);
-    Play_ChangeCameraStatus(play,CAM_ID_MAIN,CAM_STAT_WAIT);
-    Play_ChangeCameraStatus(play,this->subCamId,CAM_STAT_ACTIVE);
+    this->actionFunc(this, play);
+    if (thisx->update == NULL)
+        return;
+    if (this->playerCamFunc)
+        this->playerCamFunc(this, play);
+    Camera* camera = Play_GetCamera(play, this->subCamId);
+    Play_CameraSetAtEye(play, this->subCamId, &camera->at, &camera->eye);
+    Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_WAIT);
+    Play_ChangeCameraStatus(play, this->subCamId, CAM_STAT_ACTIVE);
     this->timer++;
-    CrossOwl_UpdateFeathers(play,this->feathers,this,
-        (this->flags&OWL_WARP_FLAGS_8)!=0,(this->flags&OWL_WARP_FLAGS_10)!=0);
+    CrossOwl_UpdateFeathers(play, this->feathers, this, (this->flags & OWL_WARP_FLAGS_8) != 0,
+                            (this->flags & OWL_WARP_FLAGS_10) != 0);
 }
 
 s32 CrossOwl_OverrideLimbDraw(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, s32 limbIndex, Gfx** dList, u8* flags,
-                             void* thisx, Vec3f* scale, Vec3s* rot, Vec3f* pos) {
+                              void* thisx, Vec3f* scale, Vec3s* rot, Vec3f* pos) {
     CrossOwl* this = (CrossOwl*)thisx;
     Vec3f featherPos;
 
     if ((*dList != NULL) && (Rand_ZeroOne() < 0.03f)) {
-        Matrix_MultVec3f(&(Vec3f){0,0,0}, &featherPos);
+        Matrix_MultVec3f(&(Vec3f){ 0, 0, 0 }, &featherPos);
         CrossOwl_AddAndChooseFeather(this->feathers, &featherPos, false);
     }
     return true;
@@ -841,7 +860,10 @@ static void CrossOwl_HideHud(PlayState* play) {
 }
 
 void CrossOwl_Draw(Actor* thisx, PlayState* play) {
-    if(thisx->params==0x100) { DrawSoaringWipe((CrossOwl*)thisx,play); return; }
+    if (thisx->params == 0x100) {
+        DrawSoaringWipe((CrossOwl*)thisx, play);
+        return;
+    }
     CrossOwl_HideHud(play);
     OPEN_DISPS(play->state.gfxCtx);
     gSPComboRMPush(POLY_OPA_DISP++, "mm-warp");
@@ -856,7 +878,7 @@ void CrossOwl_Draw(Actor* thisx, PlayState* play) {
         Mtx* mtxStack = Graph_Alloc(play->state.gfxCtx, this->kfSkelAnime.skeleton->dListCount * sizeof(Mtx));
 
         if (mtxStack != NULL)
-        CWKeyframe_DrawFlex(play, &this->kfSkelAnime, mtxStack, CrossOwl_OverrideLimbDraw, NULL, &this->actor);
+            CWKeyframe_DrawFlex(play, &this->kfSkelAnime, mtxStack, CrossOwl_OverrideLimbDraw, NULL, &this->actor);
     }
 
     // Draw windCapsule encasing that surrounds player after wings
@@ -869,10 +891,10 @@ void CrossOwl_Draw(Actor* thisx, PlayState* play) {
         sp40 = this->windCapsule.unk_00;
         Combo_SOHWindMaterial(play, sp40);
         OPEN_DISPS(play->state.gfxCtx);
-        gSPMatrix(POLY_XLU_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_NOPUSH|G_MTX_LOAD|G_MTX_MODELVIEW);
+        gSPMatrix(POLY_XLU_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, (Gfx*)Combo_SOHWarpResource(gSoaringWarpCsWindCapsuleDL));
         CLOSE_DISPS(play->state.gfxCtx);
-        Combo_SOHRestoreWarpMaterial(play,gSoaringWarpCsWindCapsuleTexAnim);
+        Combo_SOHRestoreWarpMaterial(play, gSoaringWarpCsWindCapsuleTexAnim);
         Matrix_Pop();
     }
 
@@ -883,7 +905,8 @@ void CrossOwl_Draw(Actor* thisx, PlayState* play) {
                                   5.0f, 0, false);
     }
     OPEN_DISPS(play->state.gfxCtx);
-    gSPComboRMPop(POLY_OPA_DISP++); gSPComboRMPop(POLY_XLU_DISP++);
+    gSPComboRMPop(POLY_OPA_DISP++);
+    gSPComboRMPop(POLY_XLU_DISP++);
     CLOSE_DISPS(play->state.gfxCtx);
     CrossOwl_DrawMotionBlur(this, play);
 }

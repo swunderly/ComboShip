@@ -244,7 +244,8 @@ void EnGSwitch_SilverRupeeIdle(EnGSwitch* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
     this->actor.shape.rot.y += 0x800;
-    if (Combo_SilverActorIdle(this, play)) return;
+    if (Combo_SilverActorIdle(this, play))
+        return;
     if (this->actor.xyzDistToPlayerSq < 900.0f) {
         Rupees_ChangeBy(5);
         sCollectedCount++;

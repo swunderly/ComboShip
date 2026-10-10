@@ -296,13 +296,25 @@ extern const char* Combo_MMSpellItemName(int item);
 extern const char* Combo_MM_AdultMaskItemName(void);
 extern const char* Combo_MM_AdultGearItemName(int item);
 void Kaleido_LoadItemNameStatic(void** segment, u32 texIndex) {
-    if(texIndex>=ITEM_COMBO_BOOTS_IRON&&texIndex<=ITEM_COMBO_TUNIC_ZORA){*segment=(void*)Combo_MM_AdultGearItemName(texIndex);return;}
+    if (texIndex >= ITEM_COMBO_BOOTS_IRON && texIndex <= ITEM_COMBO_TUNIC_ZORA) {
+        *segment = (void*)Combo_MM_AdultGearItemName(texIndex);
+        return;
+    }
 #ifdef COMBO_BUILD
-    if(texIndex==0xbc) {*segment=(void*)Combo_MM_AdultMaskItemName();return;}
+    if (texIndex == 0xbc) {
+        *segment = (void*)Combo_MM_AdultMaskItemName();
+        return;
+    }
 #endif
 #ifdef COMBO_BUILD
-    if(texIndex==ITEM_COMBO_FARORES_WIND) {*segment=(void*)Combo_MMFaroreItemName();return;}
-    if(texIndex==ITEM_COMBO_DINS_FIRE||texIndex==ITEM_COMBO_NAYRUS_LOVE) {*segment=(void*)Combo_MMSpellItemName(texIndex);return;}
+    if (texIndex == ITEM_COMBO_FARORES_WIND) {
+        *segment = (void*)Combo_MMFaroreItemName();
+        return;
+    }
+    if (texIndex == ITEM_COMBO_DINS_FIRE || texIndex == ITEM_COMBO_NAYRUS_LOVE) {
+        *segment = (void*)Combo_MMSpellItemName(texIndex);
+        return;
+    }
 #endif
     static const char* gItemNameStatics[] = {
         gItemNameOcarinaOfTimeENGTex,

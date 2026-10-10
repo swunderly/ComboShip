@@ -6,4 +6,4 @@ namespace ComboRando {
 inline constexpr bool ShopsOpenAllHours(bool logicEnabled, bool lockedOverworldDoors) {
     return logicEnabled && !lockedOverworldDoors;
 }
-}
+} // namespace ComboRando

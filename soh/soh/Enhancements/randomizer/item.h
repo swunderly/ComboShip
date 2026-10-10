@@ -60,7 +60,9 @@ class Item {
     GetItemEntry GetGIEntry_Copy() const;
 #ifdef COMBO_BUILD
     // Renewable selection precedes progressive resolution in the pinned item override pipeline.
-    GetItemEntry GetRawGIEntry_Copy() const { return giEntry ? *giEntry : GetItemEntry{}; }
+    GetItemEntry GetRawGIEntry_Copy() const {
+        return giEntry ? *giEntry : GetItemEntry{};
+    }
 #endif
     void SetPrice(uint16_t price_);
     void SetAsPlaythrough();

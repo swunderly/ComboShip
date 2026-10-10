@@ -585,7 +585,8 @@ extern "C" Vtx* ResourceMgr_LoadVtxByName(char* path) {
 
 extern "C" SequenceData ResourceMgr_LoadSeqByName(const char* path) {
 #ifdef COMBO_BUILD
-    if (auto* foreign = Combo_SOHWarpAudioResource(path)) return *static_cast<SequenceData*>(foreign);
+    if (auto* foreign = Combo_SOHWarpAudioResource(path))
+        return *static_cast<SequenceData*>(foreign);
 #endif
     SequenceData* sequence = (SequenceData*)COMBO_OWN_RM()->GetResourceRawPointer(path);
     return *sequence;
@@ -593,7 +594,8 @@ extern "C" SequenceData ResourceMgr_LoadSeqByName(const char* path) {
 
 extern "C" SequenceData* ResourceMgr_LoadSeqPtrByName(const char* path) {
 #ifdef COMBO_BUILD
-    if (auto* foreign = Combo_SOHWarpAudioResource(path)) return static_cast<SequenceData*>(foreign);
+    if (auto* foreign = Combo_SOHWarpAudioResource(path))
+        return static_cast<SequenceData*>(foreign);
 #endif
     SequenceData* sequence = (SequenceData*)COMBO_OWN_RM()->GetResourceRawPointer(path);
     return sequence;
@@ -605,7 +607,8 @@ extern "C" SoundFontSample* ResourceMgr_LoadAudioSample(const char* path) {
 
 extern "C" SoundFont* ResourceMgr_LoadAudioSoundFontByName(const char* path) {
 #ifdef COMBO_BUILD
-    if (auto* foreign = Combo_SOHWarpAudioResource(path)) return static_cast<SoundFont*>(foreign);
+    if (auto* foreign = Combo_SOHWarpAudioResource(path))
+        return static_cast<SoundFont*>(foreign);
 #endif
     return (SoundFont*)COMBO_OWN_RM()->GetResourceRawPointer(path);
 }

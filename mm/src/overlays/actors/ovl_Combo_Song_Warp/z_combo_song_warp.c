@@ -5,37 +5,47 @@
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 // OoT ovl_Demo_Kankyo's native departure, adapted only for MM engine types
 // and the final game handoff. Resources remain in the user's OoT archive.
-extern void Combo_MMCompleteWarp(PlayState*,int);
-extern void Interface_UpdateHudAlphas(PlayState*,s16);
-enum { DEMOKANKYO_WARP_OUT=15 };
+extern void Combo_MMCompleteWarp(PlayState*, int);
+extern void Interface_UpdateHudAlphas(PlayState*, s16);
+enum { DEMOKANKYO_WARP_OUT = 15 };
 typedef struct {
-    Vec3f unk_0,unk_C; f32 unk_18,unk_1C; s16 unk_20; u8 unk_22,unk_23; s16 unk_24;
+    Vec3f unk_0, unk_C;
+    f32 unk_18, unk_1C;
+    s16 unk_20;
+    u8 unk_22, unk_23;
+    s16 unk_24;
 } CWWarpSparkle;
 typedef struct {
-    Actor actor; u8 sparkleCounter,warpTimer; CWWarpSparkle unk_150[30];
-    int destination; s16 subCamId; Vec3f origin; s16 yaw,camKey; f32 camFrame;
-    ActorFunc playerDraw; u16 savedHud;
+    Actor actor;
+    u8 sparkleCounter, warpTimer;
+    CWWarpSparkle unk_150[30];
+    int destination;
+    s16 subCamId;
+    Vec3f origin;
+    s16 yaw, camKey;
+    f32 camFrame;
+    ActorFunc playerDraw;
+    u16 savedHud;
 } CrossSongWarp;
 
-
-typedef struct { s8 continueFlag; s8 cameraRoll; s16 nextPointFrame; f32 viewAngle; Vec3s pos; } CWWarpPoint;
+typedef struct {
+    s8 continueFlag;
+    s8 cameraRoll;
+    s16 nextPointFrame;
+    f32 viewAngle;
+    Vec3s pos;
+} CWWarpPoint;
 static CWWarpPoint sWarpOutCameraPoints[] = {
-    { 0, 0, 8, 45.0f, { 0x0000, 0x0000, 0xFFE5 } },
-    { 0, 0, 8, 45.0f, { 0x0000, 0x0000, 0xFFE5 } },
-    { 0, 0, 8, 45.0f, { 0xFFE6, 0x0000, 0x0000 } },
-    { 0, 0, 8, 45.0f, { 0x0000, 0x0017, 0x0024 } },
-    { 0, 0, 8, 45.0f, { 0x001C, 0x0032, 0xFFFF } },
-    { 0, 0, 8, 45.0f, { 0x0001, 0x0018, 0xFFD9 } },
-    { 0, 0, 8, 45.0f, { 0xFFE6, 0xFFFA, 0x0003 } },
-    { 0, 0, 8, 45.0f, { 0x0000, 0x0025, 0x0037 } },
-    { 0, 0, 8, 45.0f, { 0x004F, 0x0066, 0x0029 } },
-    { 0, 0, 8, 45.0f, { 0x00A6, 0x00AD, 0x0006 } },
-    { 0, 0, 5, 45.0f, { 0x010D, 0x015A, 0xFF4C } },
-    { 0, 0, 5, 45.0f, { 0x019F, 0x0245, 0xFE35 } },
-    { -1, 0, 5, 45.0f, { 0x01CE, 0x036F, 0xFCC2 } },
-    { -1, 0, 5, 45.0f, { 0x01CE, 0x036F, 0xFCC2 } },
+    { 0, 0, 8, 45.0f, { 0x0000, 0x0000, 0xFFE5 } },  { 0, 0, 8, 45.0f, { 0x0000, 0x0000, 0xFFE5 } },
+    { 0, 0, 8, 45.0f, { 0xFFE6, 0x0000, 0x0000 } },  { 0, 0, 8, 45.0f, { 0x0000, 0x0017, 0x0024 } },
+    { 0, 0, 8, 45.0f, { 0x001C, 0x0032, 0xFFFF } },  { 0, 0, 8, 45.0f, { 0x0001, 0x0018, 0xFFD9 } },
+    { 0, 0, 8, 45.0f, { 0xFFE6, 0xFFFA, 0x0003 } },  { 0, 0, 8, 45.0f, { 0x0000, 0x0025, 0x0037 } },
+    { 0, 0, 8, 45.0f, { 0x004F, 0x0066, 0x0029 } },  { 0, 0, 8, 45.0f, { 0x00A6, 0x00AD, 0x0006 } },
+    { 0, 0, 5, 45.0f, { 0x010D, 0x015A, 0xFF4C } },  { 0, 0, 5, 45.0f, { 0x019F, 0x0245, 0xFE35 } },
+    { -1, 0, 5, 45.0f, { 0x01CE, 0x036F, 0xFCC2 } }, { -1, 0, 5, 45.0f, { 0x01CE, 0x036F, 0xFCC2 } },
 };
-void CWWarpSplineCalc(f32 u, Vec3f* pos, f32* roll, f32* viewAngle, f32* point0, f32* point1, f32* point2, f32* point3) {
+void CWWarpSplineCalc(f32 u, Vec3f* pos, f32* roll, f32* viewAngle, f32* point0, f32* point1, f32* point2,
+                      f32* point3) {
     f32 coeff[4];
 
     u = CLAMP_MAX(u, 1.0f);
@@ -103,27 +113,26 @@ s32 CWWarpSplineStep(Vec3f* pos, f32* roll, f32* fov, CWWarpPoint* point, s16* k
     return ret;
 }
 
-
-
 static CWWarpPoint sEye[] = {
-    {0,0,30,60.324856f,{31,68,59}}, {0,0,30,60.324856f,{32,68,60}},
-    {0,0,7,60.324856f,{31,69,59}}, {0,0,7,60.324856f,{31,64,59}},
-    {0,0,30,60.324856f,{31,64,59}}, {0,0,1000,60.324856f,{31,64,59}},
-    {0,0,30,60.324856f,{31,64,59}}, {-1,0,30,60.324856f,{31,64,59}},
+    { 0, 0, 30, 60.324856f, { 31, 68, 59 } }, { 0, 0, 30, 60.324856f, { 32, 68, 60 } },
+    { 0, 0, 7, 60.324856f, { 31, 69, 59 } },  { 0, 0, 7, 60.324856f, { 31, 64, 59 } },
+    { 0, 0, 30, 60.324856f, { 31, 64, 59 } }, { 0, 0, 1000, 60.324856f, { 31, 64, 59 } },
+    { 0, 0, 30, 60.324856f, { 31, 64, 59 } }, { -1, 0, 30, 60.324856f, { 31, 64, 59 } },
 };
 static CWWarpPoint sAt[] = {
-    {0,0,30,60.324856f,{12,40,22}}, {0,0,30,60.324856f,{11,38,22}},
-    {0,0,7,60.324856f,{11,39,22}}, {0,0,7,60.324856f,{57,86,21}},
-    {0,0,30,60.324856f,{57,86,21}}, {0,0,1000,60.324856f,{57,86,21}},
-    {0,0,30,60.324856f,{57,86,21}}, {-1,0,30,60.324856f,{57,86,21}},
+    { 0, 0, 30, 60.324856f, { 12, 40, 22 } }, { 0, 0, 30, 60.324856f, { 11, 38, 22 } },
+    { 0, 0, 7, 60.324856f, { 11, 39, 22 } },  { 0, 0, 7, 60.324856f, { 57, 86, 21 } },
+    { 0, 0, 30, 60.324856f, { 57, 86, 21 } }, { 0, 0, 1000, 60.324856f, { 57, 86, 21 } },
+    { 0, 0, 30, 60.324856f, { 57, 86, 21 } }, { -1, 0, 30, 60.324856f, { 57, 86, 21 } },
 };
 static Vec3f RelativeToPlayer(CrossSongWarp* this, Vec3f local) {
-    return (Vec3f){this->origin.x+local.x*Math_CosS(this->yaw)+local.z*Math_SinS(this->yaw),
-        this->origin.y+local.y,this->origin.z+local.z*Math_CosS(this->yaw)-local.x*Math_SinS(this->yaw)};
+    return (Vec3f){ this->origin.x + local.x * Math_CosS(this->yaw) + local.z * Math_SinS(this->yaw),
+                    this->origin.y + local.y,
+                    this->origin.z + local.z * Math_CosS(this->yaw) - local.x * Math_SinS(this->yaw) };
 }
-static const Color_RGB8 sWarpSparkleEnvColors[]={{0,200,0},{255,50,0},{0,150,255},{255,150,0},{200,50,255},{200,255,0}};
-static const ALIGN_ASSET(2) char sFlashDL[]="__OTR__@oot:objects/gameplay_keep/gEffFlash1DL";
-
+static const Color_RGB8 sWarpSparkleEnvColors[] = { { 0, 200, 0 },   { 255, 50, 0 },   { 0, 150, 255 },
+                                                    { 255, 150, 0 }, { 200, 50, 255 }, { 200, 255, 0 } };
+static const ALIGN_ASSET(2) char sFlashDL[] = "__OTR__@oot:objects/gameplay_keep/gEffFlash1DL";
 
 void CWWarp_Vec3fCopy(Vec3f* src, Vec3f* dst) {
     dst->x = src->x;
@@ -154,69 +163,82 @@ void CWWarp_Vec3fAddPosRot(PosRot* posRot, Vec3f* vec, Vec3f* dst) {
 }
 
 static void CrossSongWarp_Init(Actor* actor, PlayState* play) {
-    CrossSongWarp* this=(CrossSongWarp*)actor; Player* player=GET_PLAYER(play);
-    this->destination=actor->params; actor->params=DEMOKANKYO_WARP_OUT;
+    CrossSongWarp* this = (CrossSongWarp*)actor;
+    Player* player = GET_PLAYER(play);
+    this->destination = actor->params;
+    actor->params = DEMOKANKYO_WARP_OUT;
     actor->room = -1;
-    this->warpTimer=35;
-    this->origin=player->actor.world.pos; this->yaw=player->actor.shape.rot.y;
-    this->playerDraw=player->actor.draw;
+    this->warpTimer = 35;
+    this->origin = player->actor.world.pos;
+    this->yaw = player->actor.shape.rot.y;
+    this->playerDraw = player->actor.draw;
     // Native Player_Action_63 releases the instrument cutscene before starting
     // a departure. Otherwise its camera can override this actor's subcamera.
-    Camera* previous=GET_ACTIVE_CAM(play);
-    const Vec3f eye=previous->eye, at=previous->at;
-    const f32 fov=previous->fov;
+    Camera* previous = GET_ACTIVE_CAM(play);
+    const Vec3f eye = previous->eye, at = previous->at;
+    const f32 fov = previous->fov;
     CutsceneManager_Stop(play->playerCsIds[PLAYER_CS_ID_ITEM_OCARINA]);
     play->interfaceCtx.bButtonInterfaceDoActionActive = false;
     player->actor.flags &= ~ACTOR_FLAG_OCARINA_INTERACTION;
-    this->savedHud=gSaveContext.hudVisibility;
+    this->savedHud = gSaveContext.hudVisibility;
     Interface_SetHudVisibility(HUD_VISIBILITY_NONE);
-    this->subCamId=Play_CreateSubCamera(play);
-    Play_SetCameraAtEye(play,this->subCamId,&at,&eye);
-    Play_SetCameraFov(play,this->subCamId,fov);
-    Play_ChangeCameraStatus(play,CAM_ID_MAIN,CAM_STATUS_WAIT);
-    Play_ChangeCameraStatus(play,this->subCamId,CAM_STATUS_ACTIVE);
-    Player_SetCsActionWithHaltedActors(play,actor,PLAYER_CSACTION_WAIT);
-    player->stateFlags1|=PLAYER_STATE1_20000000;
+    this->subCamId = Play_CreateSubCamera(play);
+    Play_SetCameraAtEye(play, this->subCamId, &at, &eye);
+    Play_SetCameraFov(play, this->subCamId, fov);
+    Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STATUS_WAIT);
+    Play_ChangeCameraStatus(play, this->subCamId, CAM_STATUS_ACTIVE);
+    Player_SetCsActionWithHaltedActors(play, actor, PLAYER_CSACTION_WAIT);
+    player->stateFlags1 |= PLAYER_STATE1_20000000;
     Audio_PlaySfx(NA_SE_EV_LINK_WARP_IN);
 }
 
 static void CrossSongWarp_Destroy(Actor* actor, PlayState* play) {
-    CrossSongWarp* this=(CrossSongWarp*)actor; Player* player=GET_PLAYER(play);
-    if(player) {
-        player->actor.draw=this->playerDraw;
+    CrossSongWarp* this = (CrossSongWarp*)actor;
+    Player* player = GET_PLAYER(play);
+    if (player) {
+        player->actor.draw = this->playerDraw;
         player->stateFlags1 &= ~PLAYER_STATE1_20000000;
-        Player_SetCsAction(play,actor,PLAYER_CSACTION_END);
+        Player_SetCsAction(play, actor, PLAYER_CSACTION_END);
     }
-    play->envCtx.fillScreen=false;
-    Play_ClearCamera(play,this->subCamId); Play_ChangeCameraStatus(play,CAM_ID_MAIN,CAM_STATUS_ACTIVE);
+    play->envCtx.fillScreen = false;
+    Play_ClearCamera(play, this->subCamId);
+    Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STATUS_ACTIVE);
     Interface_SetHudVisibility(this->savedHud);
 }
 
 static void CrossSongWarp_Update(Actor* actor, PlayState* play) {
-    CrossSongWarp* this=(CrossSongWarp*)actor; Player* player=GET_PLAYER(play);
+    CrossSongWarp* this = (CrossSongWarp*)actor;
+    Player* player = GET_PLAYER(play);
     // OoT DemoKankyo_SetupType: the native white flash and disappearance.
-    const int remaining=this->warpTimer;
-    play->envCtx.fillScreen=false;
-    play->envCtx.screenFillColor[0]=play->envCtx.screenFillColor[1]=play->envCtx.screenFillColor[2]=255;
-    if(remaining<21 && remaining>=15) {
-        play->envCtx.fillScreen=true; play->envCtx.screenFillColor[3]=255-255*(remaining-15.0f)/5.0f;
+    const int remaining = this->warpTimer;
+    play->envCtx.fillScreen = false;
+    play->envCtx.screenFillColor[0] = play->envCtx.screenFillColor[1] = play->envCtx.screenFillColor[2] = 255;
+    if (remaining < 21 && remaining >= 15) {
+        play->envCtx.fillScreen = true;
+        play->envCtx.screenFillColor[3] = 255 - 255 * (remaining - 15.0f) / 5.0f;
     }
-    if(remaining<15 && remaining>=4) {
-        play->envCtx.fillScreen=true; play->envCtx.screenFillColor[3]=255*(remaining-4.0f)/10.0f;
+    if (remaining < 15 && remaining >= 4) {
+        play->envCtx.fillScreen = true;
+        play->envCtx.screenFillColor[3] = 255 * (remaining - 4.0f) / 10.0f;
     }
-    if(remaining==15 && player) player->actor.draw=NULL;
-    if(this->warpTimer) this->warpTimer--;
-    if(this->warpTimer<=1) {
+    if (remaining == 15 && player)
+        player->actor.draw = NULL;
+    if (this->warpTimer)
+        this->warpTimer--;
+    if (this->warpTimer <= 1) {
         // gChildWarpInCS eye/at splines, beginning at the native flash end.
-        Vec3f eye,at; float roll,fov;
-        s16 key=this->camKey; f32 frame=this->camFrame;
-        CWWarpSplineStep(&eye,&roll,&fov,sEye,&key,&frame);
-        CWWarpSplineStep(&at,&roll,&fov,sAt,&this->camKey,&this->camFrame);
-        eye=RelativeToPlayer(this,eye); at=RelativeToPlayer(this,at);
-        Play_SetCameraAtEye(play,this->subCamId,&at,&eye); Play_SetCameraFov(play,this->subCamId,fov);
+        Vec3f eye, at;
+        float roll, fov;
+        s16 key = this->camKey;
+        f32 frame = this->camFrame;
+        CWWarpSplineStep(&eye, &roll, &fov, sEye, &key, &frame);
+        CWWarpSplineStep(&at, &roll, &fov, sAt, &this->camKey, &this->camFrame);
+        eye = RelativeToPlayer(this, eye);
+        at = RelativeToPlayer(this, at);
+        Play_SetCameraAtEye(play, this->subCamId, &at, &eye);
+        Play_SetCameraFov(play, this->subCamId, fov);
     }
 }
-
 
 static void CrossSongWarp_HideHud(PlayState* play) {
     // Message/interface updates run after actors and can restore the instrument
@@ -224,7 +246,7 @@ static void CrossSongWarp_HideHud(PlayState* play) {
     play->interfaceCtx.bButtonInterfaceDoActionActive = false;
     Interface_SetHudVisibility(HUD_VISIBILITY_NONE);
     gSaveContext.nextHudVisibility = HUD_VISIBILITY_NONE;
-    Interface_UpdateHudAlphas(play,0);
+    Interface_UpdateHudAlphas(play, 0);
 }
 
 static void CrossSongWarp_Draw(Actor* thisx, PlayState* play) {
@@ -269,7 +291,7 @@ static void CrossSongWarp_Draw(Actor* thisx, PlayState* play) {
             case 1:
                 if (this->actor.params == DEMOKANKYO_WARP_OUT) {
                     if (CWWarpSplineStep(&camPos, &sWarpRoll, &sWarpFoV, sWarpOutCameraPoints, &this->unk_150[i].unk_20,
-                                      &this->unk_150[i].unk_1C) != 0) {
+                                         &this->unk_150[i].unk_1C) != 0) {
                         this->unk_150[i].unk_22++;
                     }
                 }
@@ -279,7 +301,7 @@ static void CrossSongWarp_Draw(Actor* thisx, PlayState* play) {
             case 2:
                 if (this->actor.params == DEMOKANKYO_WARP_OUT) {
                     if (i == 0) {
-                        Combo_MMCompleteWarp(play,this->destination);
+                        Combo_MMCompleteWarp(play, this->destination);
                         // Native DemoKankyo keeps the departure actor alive until
                         // scene teardown. Killing it here restores the hidden player,
                         // camera and HUD in the final MM frame before game handoff.
@@ -342,15 +364,24 @@ static void CrossSongWarp_Draw(Actor* thisx, PlayState* play) {
     CLOSE_DISPS(play->state.gfxCtx);
 }
 
-ActorProfile Combo_Song_Warp_Profile={ACTOR_COMBO_SONG_WARP,ACTORCAT_ITEMACTION,
-    ACTOR_FLAG_UPDATE_CULLING_DISABLED|ACTOR_FLAG_DRAW_CULLING_DISABLED|ACTOR_FLAG_UPDATE_DURING_OCARINA|
-    ACTOR_FLAG_FREEZE_EXCEPTION|ACTOR_FLAG_UPDATE_DURING_SOARING_AND_SOT_CS,
-    GAMEPLAY_KEEP,sizeof(CrossSongWarp),CrossSongWarp_Init,CrossSongWarp_Destroy,CrossSongWarp_Update,CrossSongWarp_Draw};
-int Combo_MMStartWarp(PlayState* play,int destination,int song) {
-    if(destination<0 || destination>=16 || song<0 || song>=6) return 0;
-    Player* player=GET_PLAYER(play); play->msgCtx.songPlayed=song;
-    return Actor_Spawn(&play->actorCtx,play,ACTOR_COMBO_SONG_WARP,
-        player->actor.world.pos.x,player->actor.world.pos.y,player->actor.world.pos.z,0,0,0,destination)!=NULL;
+ActorProfile Combo_Song_Warp_Profile = { ACTOR_COMBO_SONG_WARP,
+                                         ACTORCAT_ITEMACTION,
+                                         ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED |
+                                             ACTOR_FLAG_UPDATE_DURING_OCARINA | ACTOR_FLAG_FREEZE_EXCEPTION |
+                                             ACTOR_FLAG_UPDATE_DURING_SOARING_AND_SOT_CS,
+                                         GAMEPLAY_KEEP,
+                                         sizeof(CrossSongWarp),
+                                         CrossSongWarp_Init,
+                                         CrossSongWarp_Destroy,
+                                         CrossSongWarp_Update,
+                                         CrossSongWarp_Draw };
+int Combo_MMStartWarp(PlayState* play, int destination, int song) {
+    if (destination < 0 || destination >= 16 || song < 0 || song >= 6)
+        return 0;
+    Player* player = GET_PLAYER(play);
+    play->msgCtx.songPlayed = song;
+    return Actor_Spawn(&play->actorCtx, play, ACTOR_COMBO_SONG_WARP, player->actor.world.pos.x,
+                       player->actor.world.pos.y, player->actor.world.pos.z, 0, 0, 0, destination) != NULL;
 }
 
 #endif

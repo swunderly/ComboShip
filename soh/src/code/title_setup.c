@@ -54,11 +54,16 @@ void TitleSetup_InitImpl(GameState* gameState) {
         // savedSceneNum (never set by the portal handoff) and would clobber this with Link's House.
         extern int SOH_ConsumeDungeonArrival(void);
         extern int SOH_ConsumeEntranceArrival(void);
-        const int entranceArrival=SOH_ConsumeEntranceArrival();
-        const int dungeonArrival=SOH_ConsumeDungeonArrival();
-        const int faroreArrival=SOH_ConsumeFaroreArrival();
-        const int songArrival=SOH_ConsumeSongArrival();
-        gSaveContext.entranceIndex = entranceArrival>=0 ? entranceArrival : dungeonArrival>=0 ? dungeonArrival : faroreArrival>=0 ? faroreArrival : songArrival>=0 ? songArrival : Entrance_OverrideNextIndex(ENTR_MARKET_DAY_OUTSIDE_HAPPY_MASK_SHOP);
+        const int entranceArrival = SOH_ConsumeEntranceArrival();
+        const int dungeonArrival = SOH_ConsumeDungeonArrival();
+        const int faroreArrival = SOH_ConsumeFaroreArrival();
+        const int songArrival = SOH_ConsumeSongArrival();
+        gSaveContext.entranceIndex = entranceArrival >= 0  ? entranceArrival
+                                     : dungeonArrival >= 0 ? dungeonArrival
+                                     : faroreArrival >= 0  ? faroreArrival
+                                     : songArrival >= 0
+                                         ? songArrival
+                                         : Entrance_OverrideNextIndex(ENTR_MARKET_DAY_OUTSIDE_HAPPY_MASK_SHOP);
         // A portal return is never a cutscene arrival: a never-played MM-start save still holds the
         // pending intro (0xFFF1), which would shift Play_Init's entrance lookup onto a garbage layer.
         gSaveContext.cutsceneIndex = 0;

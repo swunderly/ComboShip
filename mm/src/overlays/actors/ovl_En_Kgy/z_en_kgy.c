@@ -548,7 +548,7 @@ void func_80B41A48(EnKgy* this, PlayState* play) {
     } else {
         play->nextEntrance = play->setupExitList[ENKGY_GET_1F(&this->actor)];
 #ifdef COMBO_BUILD
-            play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+        play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
 #endif
         play->transitionTrigger = TRANS_TRIGGER_START;
     }

@@ -192,7 +192,8 @@ void MMAnchor::SendJson(nlohmann::json payload) {
 
 // Save-only synchronization also runs while the other game is active.
 void MMAnchor::SendSaveJson(nlohmann::json payload) {
-    if (gMMComboAnchorSend == nullptr) return;
+    if (gMMComboAnchorSend == nullptr)
+        return;
     if (ownClientId == 0) {
         ownClientId = (uint32_t)CVarGetInteger(kCvarLastClientId, 0); // late-cache fallback
     }
@@ -203,7 +204,8 @@ void MMAnchor::SendSaveJson(nlohmann::json payload) {
 }
 
 void MMAnchor::HandlePacket_UpdateRoomState(const nlohmann::json& payload) {
-    if (!payload.contains("state") || !payload["state"].is_object()) return;
+    if (!payload.contains("state") || !payload["state"].is_object())
+        return;
     roomState.syncItemsAndFlags = payload["state"].value("syncItemsAndFlags", 1);
     roomState.pvpMode = payload["state"].value("pvpMode", 0);
     CVarSetInteger(kCvarTeleportMode, payload["state"].value("teleportMode", 1));
@@ -223,8 +225,8 @@ void MMAnchor::OnIncomingJson(const std::string& payload) {
     // Drop OOT-originated packets — their shapes collide with ours (GIVE_ITEM, UPDATE_TEAM_STATE...).
     // Exceptions: cross-game item delivery and the room roster. No originGame (server) passes through.
     std::string type = j["type"].get<std::string>();
-    if (j.value("originGame", "mm") != "mm" && type != PKT_CROSS_ITEM &&
-        type != PKT_UPDATE_CLIENT_STATE && type != "UPDATE_ROOM_STATE") {
+    if (j.value("originGame", "mm") != "mm" && type != PKT_CROSS_ITEM && type != PKT_UPDATE_CLIENT_STATE &&
+        type != "UPDATE_ROOM_STATE") {
         return;
     }
     std::lock_guard<std::mutex> lock(incomingMutex);
@@ -331,7 +333,8 @@ void MMAnchor::PumpDormant() {
 // A6: dormant-safe variant of HandlePacket_GiveItem — marks the check obtained and grants via
 // Combo_MM_GiveDormantResolved -> Rando::GiveItem (gPlayState==NULL). Junk resolves normally.
 void MMAnchor::ApplyDormantGiveItem(const nlohmann::json& payload) {
-    if (!roomState.syncItemsAndFlags || !HasLoadedRandoSave()) return;
+    if (!roomState.syncItemsAndFlags || !HasLoadedRandoSave())
+        return;
     if (!payload.contains("randoCheckId")) {
         return; // reject soh's GIVE_ITEM (modId shape, different item-id space)
     }
@@ -421,8 +424,8 @@ static void ReadClientStateInto(MMAnchorClient& c, uint32_t clientId, const nloh
     c.isSaveLoaded = s.value("isSaveLoaded", c.isSaveLoaded);
     c.isGameComplete = s.value("isGameComplete", c.isGameComplete);
     // An OoT update must clear the last MM scene; otherwise a departed player remains visible.
-    c.sceneId = s.value("sceneNum", 0) >= MM_ANCHOR_SCENE_NAMESPACE
-                    ? (s16)s.value("sceneId", (int32_t)SCENE_MAX) : (s16)SCENE_MAX;
+    c.sceneId = s.value("sceneNum", 0) >= MM_ANCHOR_SCENE_NAMESPACE ? (s16)s.value("sceneId", (int32_t)SCENE_MAX)
+                                                                    : (s16)SCENE_MAX;
     c.entrance = s.value("entrance", c.entrance);
 }
 
@@ -863,8 +866,8 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
     {
         auto stuff =
             payload["state"]["shipSaveInfo"]["rando"]["randoSaveChecksCopy"].get<std::vector<std::vector<s32>>>();
-        if (stuff.size() != RC_MAX || std::any_of(stuff.begin(), stuff.end(),
-                                                [](const auto& row) { return row.size() != 7; })) {
+        if (stuff.size() != RC_MAX ||
+            std::any_of(stuff.begin(), stuff.end(), [](const auto& row) { return row.size() != 7; })) {
             SPDLOG_WARN("[MMAnchor] Invalid check table in team snapshot");
             return;
         }
@@ -877,7 +880,8 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
             if (rando.contains("seenChecks") && rando["seenChecks"].is_object()) {
                 rando["randoSaveChecks"][i]["seenItemId"] = rando["seenChecks"].value(std::to_string(i), 0);
                 if (rando.contains("knowledgeSources") && rando["knowledgeSources"].is_object())
-                    rando["randoSaveChecks"][i]["knowledgeSource"] = rando["knowledgeSources"].value(std::to_string(i), 0);
+                    rando["randoSaveChecks"][i]["knowledgeSource"] =
+                        rando["knowledgeSources"].value(std::to_string(i), 0);
             }
         }
     }
@@ -906,11 +910,11 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
     remotePlayer.magicLevel = std::max(remotePlayer.magicLevel, localPlayer.magicLevel);
     const auto localPieces = (gSaveContext.save.saveInfo.inventory.questItems >> 28) & 0xF;
     const auto remotePieces = (loadedData.saveInfo.inventory.questItems >> 28) & 0xF;
-    const auto pieces = localPlayer.healthCapacity > remotePlayer.healthCapacity ? localPieces :
-                        localPlayer.healthCapacity < remotePlayer.healthCapacity ? remotePieces :
-                        std::max(localPieces, remotePieces);
-    loadedData.saveInfo.inventory.questItems =
-        (loadedData.saveInfo.inventory.questItems & 0x0FFFFFFF) | (pieces << 28);
+    const auto pieces = localPlayer.healthCapacity > remotePlayer.healthCapacity ? localPieces
+                        : localPlayer.healthCapacity < remotePlayer.healthCapacity
+                            ? remotePieces
+                            : std::max(localPieces, remotePieces);
+    loadedData.saveInfo.inventory.questItems = (loadedData.saveInfo.inventory.questItems & 0x0FFFFFFF) | (pieces << 28);
 
     // ComboShip (bug 3): union not replace — a teammate's team-state can be stale/incomplete (they
     // haven't reached a check we already have). Remember our permanently-obtained checks so the
@@ -938,7 +942,7 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
 #ifdef COMBO_BUILD
     // #136: the shipSaveInfo replace would regress the Triforce count against a stale peer.
     u8 localExpandedSouls[8];
-    std::copy_n(gSaveContext.save.shipSaveInfo.rando.expandedSoulsOwned,8,localExpandedSouls);
+    std::copy_n(gSaveContext.save.shipSaveInfo.rando.expandedSoulsOwned, 8, localExpandedSouls);
     u8 localMissingMmSouls = gSaveContext.save.shipSaveInfo.rando.mmMissingSoulsOwned;
     u8 localNamedTriforceMask = gSaveContext.save.shipSaveInfo.rando.namedTriforceMask;
     u16 localTriforcePieces = gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces;
@@ -1082,7 +1086,8 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
 #ifdef COMBO_BUILD
     gSaveContext.save.shipSaveInfo.rando.mmMissingSoulsOwned |= localMissingMmSouls;
     gSaveContext.save.shipSaveInfo.rando.namedTriforceMask |= localNamedTriforceMask;
-    for (unsigned i=0;i<8;++i) gSaveContext.save.shipSaveInfo.rando.expandedSoulsOwned[i] |= localExpandedSouls[i];
+    for (unsigned i = 0; i < 8; ++i)
+        gSaveContext.save.shipSaveInfo.rando.expandedSoulsOwned[i] |= localExpandedSouls[i];
     if (localTriforcePieces > gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces) {
         gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces = localTriforcePieces;
     }
@@ -1264,8 +1269,9 @@ extern "C" COMBO_EXPORT void MM_Anchor_SendSnapshot(void) {
     try {
         if (MMAnchor::Instance)
             MMAnchor::Instance->SendTeamStateFromSave(CVarGetString(kCvarTeamId, "default"));
-    } catch (const std::exception& e) { SPDLOG_ERROR("[MM_Anchor_SendSnapshot] {}", e.what()); }
-    catch (...) { SPDLOG_ERROR("[MM_Anchor_SendSnapshot] unknown exception"); }
+    } catch (const std::exception& e) { SPDLOG_ERROR("[MM_Anchor_SendSnapshot] {}", e.what()); } catch (...) {
+        SPDLOG_ERROR("[MM_Anchor_SendSnapshot] unknown exception");
+    }
 }
 
 // Bug 2: launcher-orchestrated resync (auto on connect + combo menu button), dormant-safe.

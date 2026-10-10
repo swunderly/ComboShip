@@ -37,7 +37,8 @@ bool ComboTriforceProgress(int& have, int& need) {
     if (sType && sType() == 5 && sOotNamed && sMmNamed) {
         const unsigned mask = (sOotNamed() | sMmNamed()) & 7;
         sNamedTriforceMask = static_cast<int>(mask);
-        have = (mask & 1) + ((mask >> 1) & 1) + ((mask >> 2) & 1); need = 3;
+        have = (mask & 1) + ((mask >> 1) & 1) + ((mask >> 2) & 1);
+        need = 3;
         return true;
     }
     if (!sOot || !sMm || !sGoal || !sGoal(&need) || need <= 0) {
@@ -76,7 +77,8 @@ void SwapWindow::Draw() {
     // Combined Triforce progress (#136) — neither game's own tracker can show it (each counts only
     // its own pieces). Draggable overlay; ImGui persists the position.
     int have = 0, need = 0;
-    if (OotActiveSlot() >= 0 && CVarGetInteger("gCombo.Rando.TriforceCounter", 1) && ComboTriforceProgress(have, need)) {
+    if (OotActiveSlot() >= 0 && CVarGetInteger("gCombo.Rando.TriforceCounter", 1) &&
+        ComboTriforceProgress(have, need)) {
         // Themed like the combo menu's frames (ComboWidgetStyle) so the overlay matches the rest of the UI.
         const ImVec4 theme = ComboRando::ComboMenu_ThemeColor();
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(theme.x, theme.y, theme.z, 0.45f));
@@ -89,15 +91,13 @@ void SwapWindow::Draw() {
             ImGui::Text("Triforce: %d / %d", have, need);
             if (sNamedTriforceMask >= 0) {
                 ImGui::Text("Power %s   Courage %s   Wisdom %s", (sNamedTriforceMask & 1) ? "+" : "-",
-                    (sNamedTriforceMask & 2) ? "+" : "-", (sNamedTriforceMask & 4) ? "+" : "-");
+                            (sNamedTriforceMask & 2) ? "+" : "-", (sNamedTriforceMask & 4) ? "+" : "-");
             }
         }
         ImGui::End();
         ImGui::PopStyleVar(2);
         ImGui::PopStyleColor(2);
     }
-
-
 }
 
 } // namespace
@@ -156,10 +156,10 @@ void ComboTracker::RegisterSwap() {
         // Master enable seeds from the per-game CVars an existing config carries.
         bool on = CVarGetInteger(kTrackers[0][kKinds[k].column].cvar, 0) != 0 ||
                   CVarGetInteger(kTrackers[1][kKinds[k].column].cvar, 0) != 0;
-        if (CVarGetInteger(kKinds[k].enabledCvar,-1) < 0) {
-            const bool fresh = CVarGetInteger(kTrackers[0][kKinds[k].column].cvar,-1) < 0 &&
-                               CVarGetInteger(kTrackers[1][kKinds[k].column].cvar,-1) < 0;
-            CVarSetInteger(kKinds[k].enabledCvar,(on || (fresh && k == kSwapCheck)) ? 1 : 0);
+        if (CVarGetInteger(kKinds[k].enabledCvar, -1) < 0) {
+            const bool fresh = CVarGetInteger(kTrackers[0][kKinds[k].column].cvar, -1) < 0 &&
+                               CVarGetInteger(kTrackers[1][kKinds[k].column].cvar, -1) < 0;
+            CVarSetInteger(kKinds[k].enabledCvar, (on || (fresh && k == kSwapCheck)) ? 1 : 0);
         }
     }
     if (!sSwapWindow) {

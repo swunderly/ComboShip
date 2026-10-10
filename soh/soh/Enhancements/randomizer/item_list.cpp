@@ -19,7 +19,8 @@ using namespace Rando;
 #endif
 
 static void ComboDrawNamedTriforce(PlayState* play, GetItemEntry* entry) {
-    if (entry != nullptr) Randomizer_DrawTriforcePiece(play, *entry);
+    if (entry != nullptr)
+        Randomizer_DrawTriforcePiece(play, *entry);
 }
 
 std::array<Item, RG_MAX> Rando::StaticData::itemTable;

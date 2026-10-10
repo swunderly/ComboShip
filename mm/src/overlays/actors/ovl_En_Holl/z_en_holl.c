@@ -193,7 +193,7 @@ void EnHoll_VisibleIdle(EnHoll* this, PlayState* play) {
             } else if (this->type == EN_HOLL_TYPE_SCENE_CHANGER) {
                 play->nextEntrance = play->setupExitList[EN_HOLL_GET_EXIT_LIST_INDEX(&this->actor)];
 #ifdef COMBO_BUILD
-            play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+                play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
 #endif
                 gSaveContext.retainWeatherMode = true;
                 Scene_SetExitFade(play);

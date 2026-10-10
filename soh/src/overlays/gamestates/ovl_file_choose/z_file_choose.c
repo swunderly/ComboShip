@@ -28,19 +28,19 @@
 static int FileChoose_ProfilePendingReady(FileChooseContext* this) {
 #ifdef COMBO_BUILD
     extern int (*gComboProfilePendingReady)(int);
-    if(gComboProfilePendingReady) return gComboProfilePendingReady(this->buttonIndex);
+    if (gComboProfilePendingReady)
+        return gComboProfilePendingReady(this->buttonIndex);
 #endif
     return Randomizer_IsSeedGenerated() || Randomizer_IsSpoilerLoaded();
 }
 static int FileChoose_PrepareProfileSeed(FileChooseContext* this) {
 #ifdef COMBO_BUILD
     extern int (*gComboProfilePrepareSave)(int);
-    if(gComboProfilePrepareSave) return gComboProfilePrepareSave(this->buttonIndex);
+    if (gComboProfilePrepareSave)
+        return gComboProfilePrepareSave(this->buttonIndex);
 #endif
     return 1;
 }
-
-
 
 #ifdef COMBO_BUILD
 // ComboShip: the combo build is randomizer-only. Lock the quest-select carousel to the Randomizer
@@ -494,7 +494,8 @@ void FileChoose_UpdateMainMenu(GameState* thisx) {
     FileChoose_UpdateRandomizer();
 
 #ifdef COMBO_BUILD
-    if (generating) return;
+    if (generating)
+        return;
 #endif
 
     if (CHECK_BTN_ALL(input->press.button, BTN_START) || CHECK_BTN_ALL(input->press.button, BTN_A)) {
@@ -1930,8 +1931,7 @@ void FileChoose_DrawWindowContents(GameState* thisx) {
 
             // If no randomizer is loaded and text is "start randomizer" or when a seed is generating, make all options
             // gray.
-            if ((index == RSM_START_RANDOMIZER && !FileChoose_ProfilePendingReady(this)) ||
-                generating) {
+            if ((index == RSM_START_RANDOMIZER && !FileChoose_ProfilePendingReady(this)) || generating) {
                 textColorR = textColorG = textColorB = 100;
             }
 
@@ -1966,15 +1966,15 @@ void FileChoose_DrawWindowContents(GameState* thisx) {
         if (!generating) {
             int result = SOH_GetComboGenResult();
             if (result < 0) {
-                Interface_DrawTextLine(this->state.gfxCtx, "Generation failed. Open settings", 70, 144,
-                                       240, 80, 80, textAlpha, 0.7f, true);
-                Interface_DrawTextLine(this->state.gfxCtx, "for details, then try again.", 70, 160,
-                                       240, 80, 80, textAlpha, 0.7f, true);
+                Interface_DrawTextLine(this->state.gfxCtx, "Generation failed. Open settings", 70, 144, 240, 80, 80,
+                                       textAlpha, 0.7f, true);
+                Interface_DrawTextLine(this->state.gfxCtx, "for details, then try again.", 70, 160, 240, 80, 80,
+                                       textAlpha, 0.7f, true);
             } else if (FileChoose_ProfilePendingReady(this)) {
-                Interface_DrawTextLine(this->state.gfxCtx, "Seed ready for OoT + MM", 70, 144,
-                                       150, 240, 180, textAlpha, 0.8f, true);
-                Interface_DrawTextLine(this->state.gfxCtx, "Select Start Randomizer to play.", 70, 160,
-                                       255, 255, 255, textAlpha, 0.7f, true);
+                Interface_DrawTextLine(this->state.gfxCtx, "Seed ready for OoT + MM", 70, 144, 150, 240, 180, textAlpha,
+                                       0.8f, true);
+                Interface_DrawTextLine(this->state.gfxCtx, "Select Start Randomizer to play.", 70, 160, 255, 255, 255,
+                                       textAlpha, 0.7f, true);
             }
         }
 #endif

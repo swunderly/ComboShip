@@ -406,18 +406,20 @@ std::map<RandoItemId, u8> MaxStartingItemsMap = {
 // clang-format on
 
 RandoItemId GetItemIdFromName(const char* name) {
-    if (!name) return RI_UNKNOWN;
+    if (!name)
+        return RI_UNKNOWN;
     static const std::pair<const char*, RandoItemId> clocks[] = {
-        {"MM_CLOCK1", RI_TIME_DAY_1}, {"MM_CLOCK2", RI_TIME_NIGHT_1},
-        {"MM_CLOCK3", RI_TIME_DAY_2}, {"MM_CLOCK4", RI_TIME_NIGHT_2},
-        {"MM_CLOCK5", RI_TIME_DAY_3}, {"MM_CLOCK6", RI_TIME_NIGHT_3},
-        {"MM_CLOCK", RI_TIME_PROGRESSIVE},
-        {"Time (Day 1)", RI_TIME_DAY_1}, {"Time (Night 1)", RI_TIME_NIGHT_1},
-        {"Time (Day 2)", RI_TIME_DAY_2}, {"Time (Night 2)", RI_TIME_NIGHT_2},
-        {"Time (Day 3)", RI_TIME_DAY_3}, {"Time (Night 3)", RI_TIME_NIGHT_3},
-        {"Progressive Time", RI_TIME_PROGRESSIVE},
+        { "MM_CLOCK1", RI_TIME_DAY_1 },        { "MM_CLOCK2", RI_TIME_NIGHT_1 },
+        { "MM_CLOCK3", RI_TIME_DAY_2 },        { "MM_CLOCK4", RI_TIME_NIGHT_2 },
+        { "MM_CLOCK5", RI_TIME_DAY_3 },        { "MM_CLOCK6", RI_TIME_NIGHT_3 },
+        { "MM_CLOCK", RI_TIME_PROGRESSIVE },   { "Time (Day 1)", RI_TIME_DAY_1 },
+        { "Time (Night 1)", RI_TIME_NIGHT_1 }, { "Time (Day 2)", RI_TIME_DAY_2 },
+        { "Time (Night 2)", RI_TIME_NIGHT_2 }, { "Time (Day 3)", RI_TIME_DAY_3 },
+        { "Time (Night 3)", RI_TIME_NIGHT_3 }, { "Progressive Time", RI_TIME_PROGRESSIVE },
     };
-    for (const auto& clock : clocks) if (strcmp(name, clock.first) == 0) return clock.second;
+    for (const auto& clock : clocks)
+        if (strcmp(name, clock.first) == 0)
+            return clock.second;
     for (auto& [randoItemId, randoStaticItem] : Items) {
         if (strcmp(name, randoStaticItem.spoilerName) == 0) {
             return randoItemId;
@@ -462,7 +464,8 @@ const std::string& GetItemDisplayName(RandoItemId id) {
 
 RandoItemId GetItemIdFromDisplayName(const char* name) {
     const auto clockAlias = GetItemIdFromName(name);
-    if (clockAlias != RI_UNKNOWN) return clockAlias;
+    if (clockAlias != RI_UNKNOWN)
+        return clockAlias;
     if (!name)
         return RI_UNKNOWN;
     static const std::unordered_map<std::string, RandoItemId> inv = [] {
@@ -525,13 +528,20 @@ u8 GetIconForZMessage(RandoItemId randoItemId) {
 
 const char* GetIconTexturePath(RandoItemId randoItemId) {
     switch (randoItemId) {
-        case RI_BOOTS_IRON: return "__OTR__@oot:textures/icon_item_static/gItemIconBootsIronTex";
-        case RI_BOOTS_HOVER: return "__OTR__@oot:textures/icon_item_static/gItemIconBootsHoverTex";
-        case RI_TUNIC_GORON: return "__OTR__@oot:textures/icon_item_static/gItemIconTunicGoronTex";
-        case RI_TUNIC_ZORA: return "__OTR__@oot:textures/icon_item_static/gItemIconTunicZoraTex";
-        case RI_FARORES_WIND: return "__OTR__@oot:textures/icon_item_static/gItemIconFaroresWindTex";
-        case RI_DINS_FIRE: return "__OTR__@oot:textures/icon_item_static/gItemIconDinsFireTex";
-        case RI_NAYRUS_LOVE: return "__OTR__@oot:textures/icon_item_static/gItemIconNayrusLoveTex";
+        case RI_BOOTS_IRON:
+            return "__OTR__@oot:textures/icon_item_static/gItemIconBootsIronTex";
+        case RI_BOOTS_HOVER:
+            return "__OTR__@oot:textures/icon_item_static/gItemIconBootsHoverTex";
+        case RI_TUNIC_GORON:
+            return "__OTR__@oot:textures/icon_item_static/gItemIconTunicGoronTex";
+        case RI_TUNIC_ZORA:
+            return "__OTR__@oot:textures/icon_item_static/gItemIconTunicZoraTex";
+        case RI_FARORES_WIND:
+            return "__OTR__@oot:textures/icon_item_static/gItemIconFaroresWindTex";
+        case RI_DINS_FIRE:
+            return "__OTR__@oot:textures/icon_item_static/gItemIconDinsFireTex";
+        case RI_NAYRUS_LOVE:
+            return "__OTR__@oot:textures/icon_item_static/gItemIconNayrusLoveTex";
         case RI_PROGRESSIVE_OCARINA:
             return GetIconTexturePath(Rando::ConvertItem(randoItemId));
         case RI_OCARINA_FAIRY:
@@ -986,7 +996,8 @@ std::string GetItemName(RandoItemId randoItemId, bool includeArticle, RandoCheck
         } else {
             // Fallback: start with the disguise, then double a letter (never index an empty string).
             fakeItemName = Rando::StaticData::Items[trappedItemId].name;
-            if (fakeItemName.empty()) return result;
+            if (fakeItemName.empty())
+                return result;
             auto letterIndex = Ship_Random(0, fakeItemName.length());
             char letterToDouble = fakeItemName[letterIndex];
             // But not spaces

@@ -200,7 +200,8 @@ void ProcessExits(Region* region, GetAccessibleLocationsStruct& gals, Randomizer
             const int source = ComboRando::OotSongSource(region->randomizerRegionKey);
             if (source >= 0) {
                 const int destination = ComboRando::ActiveSongTravel().logicDestination(source);
-                if (destination >= 6) continue; // consumed by the combined search, never the old native exit
+                if (destination >= 6)
+                    continue; // consumed by the combined search, never the old native exit
                 exitRegion = RegionTable(ComboRando::kOotSongRegions[destination]);
             }
         }
@@ -534,22 +535,29 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
         // The tracker plans around the player's active abilities. Generation
         // continues to use the seed's separately selected logic assumptions.
         auto allowed = [&](bool asChild) {
-            logic->IsChild = asChild; logic->IsAdult = !asChild;
+            logic->IsChild = asChild;
+            logic->IsAdult = !asChild;
             return logic->CanUseSongAgeChange();
         };
-        ComboRando::AgeTimeAccess access{region->childDay,region->childNight,region->adultDay,region->adultNight};
-        const bool childCanChange=region->Child() && allowed(true);
-        const bool adultCanChange=region->Adult() && allowed(false);
-        logic->IsChild=savedChild; logic->IsAdult=savedAdult;
-        if (ComboRando::ExpandSongAgeAccess(access,childCanChange,adultCanChange)) {
-            region->childDay=access.childDay; region->childNight=access.childNight;
-            region->adultDay=access.adultDay; region->adultNight=access.adultNight;
+        ComboRando::AgeTimeAccess access{ region->childDay, region->childNight, region->adultDay, region->adultNight };
+        const bool childCanChange = region->Child() && allowed(true);
+        const bool adultCanChange = region->Adult() && allowed(false);
+        logic->IsChild = savedChild;
+        logic->IsAdult = savedAdult;
+        if (ComboRando::ExpandSongAgeAccess(access, childCanChange, adultCanChange)) {
+            region->childDay = access.childDay;
+            region->childNight = access.childNight;
+            region->adultDay = access.adultDay;
+            region->adultNight = access.adultNight;
             // Save warp is legal after the age transition; it uses the new age's root.
-            auto* root=RegionTable(RR_ROOT);
-            root->childDay |= access.childDay; root->childNight |= access.childNight;
-            root->adultDay |= access.adultDay; root->adultNight |= access.adultNight;
-            gals.logicUpdated=true;
-            if (addToPlaythrough) gals.resetSphere=true;
+            auto* root = RegionTable(RR_ROOT);
+            root->childDay |= access.childDay;
+            root->childNight |= access.childNight;
+            root->adultDay |= access.adultDay;
+            root->adultNight |= access.adultNight;
+            gals.logicUpdated = true;
+            if (addToPlaythrough)
+                gals.resetSphere = true;
         }
     }
 #endif
@@ -562,28 +570,37 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
     }
 
 #ifdef COMBO_BUILD
-    if (region->randomizerRegionKey == RR_ROOT && (ComboRando::ActiveSongTravel().logicEnabled || ComboRando::ActiveSongTravel().logicForeignSongs)) {
-        const auto& ageArrivals=ComboRando::OotSongAgeArrivals();
-        const bool ageAware=ComboRando::OotSongOracle()&&ageArrivals.active;
-        const uint32_t incoming = ageAware?(ageArrivals.masks[0]|ageArrivals.masks[1]):
-            (ComboRando::OotSongOracle()?ComboRando::OotSongArrivals():SOH_LiveIncomingSongs());
-        for (int i=0;i<6;i++) if (incoming & (1u<<i)) {
-            auto* target=RegionTable(ComboRando::kOotSongRegions[i]);
-            const bool day=region->childDay||region->adultDay,night=region->childNight||region->adultNight;
-            const bool child=ageAware?(ageArrivals.masks[1]&(1u<<i))!=0:true;
-            const bool adult=ageAware?(ageArrivals.masks[0]&(1u<<i))!=0:true;
-            const bool childDay=ageAware?(child&&day):region->childDay;
-            const bool childNight=ageAware?(child&&night):region->childNight;
-            const bool adultDay=ageAware?(adult&&day):region->adultDay;
-            const bool adultNight=ageAware?(adult&&night):region->adultNight;
-            const bool expanded=(childDay&&!target->childDay)||(childNight&&!target->childNight)||(adultDay&&!target->adultDay)||(adultNight&&!target->adultNight);
-            target->childDay|=childDay;target->childNight|=childNight;
-            target->adultDay|=adultDay;target->adultNight|=adultNight;
-            if (expanded) {
-                gals.logicUpdated=true;
-                if (!target->addedToPool) { target->addedToPool=true; gals.regionPool.push_back(target->randomizerRegionKey); }
+    if (region->randomizerRegionKey == RR_ROOT &&
+        (ComboRando::ActiveSongTravel().logicEnabled || ComboRando::ActiveSongTravel().logicForeignSongs)) {
+        const auto& ageArrivals = ComboRando::OotSongAgeArrivals();
+        const bool ageAware = ComboRando::OotSongOracle() && ageArrivals.active;
+        const uint32_t incoming =
+            ageAware ? (ageArrivals.masks[0] | ageArrivals.masks[1])
+                     : (ComboRando::OotSongOracle() ? ComboRando::OotSongArrivals() : SOH_LiveIncomingSongs());
+        for (int i = 0; i < 6; i++)
+            if (incoming & (1u << i)) {
+                auto* target = RegionTable(ComboRando::kOotSongRegions[i]);
+                const bool day = region->childDay || region->adultDay, night = region->childNight || region->adultNight;
+                const bool child = ageAware ? (ageArrivals.masks[1] & (1u << i)) != 0 : true;
+                const bool adult = ageAware ? (ageArrivals.masks[0] & (1u << i)) != 0 : true;
+                const bool childDay = ageAware ? (child && day) : region->childDay;
+                const bool childNight = ageAware ? (child && night) : region->childNight;
+                const bool adultDay = ageAware ? (adult && day) : region->adultDay;
+                const bool adultNight = ageAware ? (adult && night) : region->adultNight;
+                const bool expanded = (childDay && !target->childDay) || (childNight && !target->childNight) ||
+                                      (adultDay && !target->adultDay) || (adultNight && !target->adultNight);
+                target->childDay |= childDay;
+                target->childNight |= childNight;
+                target->adultDay |= adultDay;
+                target->adultNight |= adultNight;
+                if (expanded) {
+                    gals.logicUpdated = true;
+                    if (!target->addedToPool) {
+                        target->addedToPool = true;
+                        gals.regionPool.push_back(target->randomizerRegionKey);
+                    }
+                }
             }
-        }
     }
 #endif
     ProcessExits(region, gals, ignore, stopOnBeatable, addToPlaythrough);
@@ -1198,7 +1215,7 @@ static void RandomizeOwnDungeon(const Rando::DungeonInfo* dungeon) {
         auto silverItems = FilterAndEraseFromPool(itemPool, [dungeon, ctx](RandomizerGet item) {
             const int slot = Rando::SilverRupees::PuzzleForItem(item);
             return slot >= 0 && ctx->GetDungeons()->GetDungeonFromScene(
-                static_cast<SceneID>(Rando::SilverRupees::Vanilla[slot].scene)) == dungeon;
+                                    static_cast<SceneID>(Rando::SilverRupees::Vanilla[slot].scene)) == dungeon;
         });
         SohUtils::AppendVector(dungeonItems, silverItems);
     }
@@ -1709,7 +1726,8 @@ void ComboFillConfined() {
     std::erase_if(itemPool,
                   [](const auto item) { return Rando::StaticData::RetrieveItem(item).GetItemType() == ITEMTYPE_SHOP; });
     if (placementFailure) {
-        throw std::runtime_error("Native confined fill failed: OoT dungeon items, rewards or songs could not be placed; retry this seed attempt");
+        throw std::runtime_error("Native confined fill failed: OoT dungeon items, rewards or songs could not be "
+                                 "placed; retry this seed attempt");
     }
 }
 #endif

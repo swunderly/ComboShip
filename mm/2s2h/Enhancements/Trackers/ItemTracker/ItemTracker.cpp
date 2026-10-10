@@ -250,7 +250,8 @@ std::string GetItemCounts(TrackerItemType itemType, u32 itemId) {
     std::string countStr = "";
     if (itemType == TRACKER_ITEM_RANDO) {
         if (const auto* ring = Rando::FindKeyRing(static_cast<RandoItemId>(itemId))) {
-            return fmt::format(FORMAT_COUNT, std::max(0, static_cast<int>(DUNGEON_KEY_COUNT(ring->dungeon))), ring->maximum);
+            return fmt::format(FORMAT_COUNT, std::max(0, static_cast<int>(DUNGEON_KEY_COUNT(ring->dungeon))),
+                               ring->maximum);
         }
     }
 
@@ -503,7 +504,8 @@ float GetItemTrackerGroupScale(const TrackerGroup& trackerGroup) {
     float global = CVarGetFloat("gSettings.ItemTracker.Scale", 1.0f);
     bool split = CVarGetInteger("gSettings.ItemTracker.WindowGroup", 0) != 0;
 #ifdef COMBO_BUILD
-    if (CVarGetInteger("gCombo.Tracker.ControlsVersion",0)) return global;
+    if (CVarGetInteger("gCombo.Tracker.ControlsVersion", 0))
+        return global;
     return split ? global * trackerGroup.scale : global;
 #else
     return split ? trackerGroup.scale : global;
@@ -527,8 +529,9 @@ void DrawItemTrackerGroup(TrackerGroup& trackerGroup) {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
         for (auto& [itemType, itemId] : trackerGroup.items) {
-            if (itemType == TRACKER_ITEM_RANDO && itemId == RI_SOUL_ENEMY_IGOS_DU_IKANA &&
-                IS_RANDO && RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) continue;
+            if (itemType == TRACKER_ITEM_RANDO && itemId == RI_SOUL_ENEMY_IGOS_DU_IKANA && IS_RANDO &&
+                RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS])
+                continue;
             ImGui::TableNextColumn();
             DrawItemTrackerSlot(itemType, itemId, scale, false);
         }
@@ -545,29 +548,39 @@ void DrawItemTrackerGroup(TrackerGroup& trackerGroup) {
 extern "C" COMBO_EXPORT void MM_ComboItemTrackerDrawContents() {
     ComboMenuContext::UseSharedImGuiContext();
     Ship::ResourceManagerScope rmScope(Ship::CrossRMRegistry::Get("mm"));
-    const float size = std::clamp(CVarGetInteger("gCombo.Tracker.IconSize",36),16,128);
-    const float pitch = size + std::clamp(CVarGetInteger("gCombo.Tracker.IconSpacing",12),0,50);
+    const float size = std::clamp(CVarGetInteger("gCombo.Tracker.IconSize", 36), 16, 128);
+    const float pitch = size + std::clamp(CVarGetInteger("gCombo.Tracker.IconSpacing", 12), 0, 50);
     for (const auto& source : itemTrackerGroups) {
-        if (source.items.empty()) continue;
-        const char* key = source.name == "Inventory" ? "gCombo.Tracker.Inventory" :
-            source.name == "Masks" ? "gCombo.Tracker.Equipment" : source.name == "Songs" ? "gCombo.Tracker.Songs" :
-            source.name == "Dungeon" ? "gCombo.Tracker.Dungeons" : "gCombo.Tracker.Quest";
-        if (!CVarGetInteger(key,1)) continue;
-        const char* title = source.name == "Inventory" ? "Items" : source.name == "Quest" ? "Quest items" :
-                            source.name == "Dungeon" ? "Dungeon items" : source.name.c_str();
+        if (source.items.empty())
+            continue;
+        const char* key = source.name == "Inventory" ? "gCombo.Tracker.Inventory"
+                          : source.name == "Masks"   ? "gCombo.Tracker.Equipment"
+                          : source.name == "Songs"   ? "gCombo.Tracker.Songs"
+                          : source.name == "Dungeon" ? "gCombo.Tracker.Dungeons"
+                                                     : "gCombo.Tracker.Quest";
+        if (!CVarGetInteger(key, 1))
+            continue;
+        const char* title = source.name == "Inventory" ? "Items"
+                            : source.name == "Quest"   ? "Quest items"
+                            : source.name == "Dungeon" ? "Dungeon items"
+                                                       : source.name.c_str();
         ImGui::Separator();
-        if (!ImGui::CollapsingHeader(title,ImGuiTreeNodeFlags_DefaultOpen)) continue;
-        const int columns = std::clamp(static_cast<int>(ImGui::GetContentRegionAvail().x/pitch),1,6);
+        if (!ImGui::CollapsingHeader(title, ImGuiTreeNodeFlags_DefaultOpen))
+            continue;
+        const int columns = std::clamp(static_cast<int>(ImGui::GetContentRegionAvail().x / pitch), 1, 6);
         ImGui::PushID(source.name.c_str());
-        if (ImGui::BeginTable("##icons",columns,ImGuiTableFlags_SizingFixedFit)) {
-            for (int c=0;c<columns;++c) ImGui::TableSetupColumn("",ImGuiTableColumnFlags_WidthFixed,pitch);
-            for (const auto& [itemType,itemId] : source.items) {
-                if (itemType == TRACKER_ITEM_RANDO && itemId == RI_SOUL_ENEMY_IGOS_DU_IKANA &&
-                    IS_RANDO && RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) continue;
+        if (ImGui::BeginTable("##icons", columns, ImGuiTableFlags_SizingFixedFit)) {
+            for (int c = 0; c < columns; ++c)
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, pitch);
+            for (const auto& [itemType, itemId] : source.items) {
+                if (itemType == TRACKER_ITEM_RANDO && itemId == RI_SOUL_ENEMY_IGOS_DU_IKANA && IS_RANDO &&
+                    RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS])
+                    continue;
                 ImGui::TableNextColumn();
                 const auto start = ImGui::GetCursorPos();
-                DrawItemTrackerSlot(itemType,itemId,size/ITEM_TEXTURE_SIZE,false);
-                ImGui::SetCursorPos(start); ImGui::Dummy(ImVec2(size,pitch));
+                DrawItemTrackerSlot(itemType, itemId, size / ITEM_TEXTURE_SIZE, false);
+                ImGui::SetCursorPos(start);
+                ImGui::Dummy(ImVec2(size, pitch));
             }
             ImGui::EndTable();
         }

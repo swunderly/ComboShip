@@ -1275,22 +1275,28 @@ void Sram_ResetSaveFromMoonCrash(SramContext* sramCtx) {
         memset(sramCtx->saveBuf, 0, SAVE_BUFFER_SIZE);
 
 #ifdef COMBO_BUILD
-        s32 readResult=SysFlashrom_ReadData(sramCtx->saveBuf,
-            gFlashSaveStartPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER],
-            gFlashSaveNumPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER]);
-        if(readResult!=0)readResult=SysFlashrom_ReadData(sramCtx->saveBuf,
-            gFlashSaveStartPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER+FLASH_SAVE_BACKUP_OFFSET],
-            gFlashSaveNumPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER+FLASH_SAVE_BACKUP_OFFSET]);
-        if(readResult!=0)return; // Failed pages must never erase the live typed age/loadouts.
+        s32 readResult = SysFlashrom_ReadData(sramCtx->saveBuf,
+                                              gFlashSaveStartPages[gSaveContext.fileNum * FLASH_SAVE_MAIN_MULTIPLIER],
+                                              gFlashSaveNumPages[gSaveContext.fileNum * FLASH_SAVE_MAIN_MULTIPLIER]);
+        if (readResult != 0)
+            readResult = SysFlashrom_ReadData(
+                sramCtx->saveBuf,
+                gFlashSaveStartPages[gSaveContext.fileNum * FLASH_SAVE_MAIN_MULTIPLIER + FLASH_SAVE_BACKUP_OFFSET],
+                gFlashSaveNumPages[gSaveContext.fileNum * FLASH_SAVE_MAIN_MULTIPLIER + FLASH_SAVE_BACKUP_OFFSET]);
+        if (readResult != 0)
+            return; // Failed pages must never erase the live typed age/loadouts.
         Save loadedSave;
-        memcpy(&loadedSave,sramCtx->saveBuf,sizeof(Save));
-        if(CHECK_NEWF(loadedSave.saveInfo.playerData.newf)){
-            if(SysFlashrom_ReadData(sramCtx->saveBuf,
-                gFlashSaveStartPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER+FLASH_SAVE_BACKUP_OFFSET],
-                gFlashSaveNumPages[gSaveContext.fileNum*FLASH_SAVE_MAIN_MULTIPLIER+FLASH_SAVE_BACKUP_OFFSET])!=0)return;
-            memcpy(&loadedSave,sramCtx->saveBuf,sizeof(Save));
+        memcpy(&loadedSave, sramCtx->saveBuf, sizeof(Save));
+        if (CHECK_NEWF(loadedSave.saveInfo.playerData.newf)) {
+            if (SysFlashrom_ReadData(
+                    sramCtx->saveBuf,
+                    gFlashSaveStartPages[gSaveContext.fileNum * FLASH_SAVE_MAIN_MULTIPLIER + FLASH_SAVE_BACKUP_OFFSET],
+                    gFlashSaveNumPages[gSaveContext.fileNum * FLASH_SAVE_MAIN_MULTIPLIER + FLASH_SAVE_BACKUP_OFFSET]) !=
+                0)
+                return;
+            memcpy(&loadedSave, sramCtx->saveBuf, sizeof(Save));
         }
-        gSaveContext.save=loadedSave;
+        gSaveContext.save = loadedSave;
 #else
         if (SysFlashrom_ReadData(sramCtx->saveBuf,
                                  gFlashSaveStartPages[gSaveContext.fileNum * FLASH_SAVE_MAIN_MULTIPLIER],

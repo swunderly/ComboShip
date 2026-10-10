@@ -431,7 +431,10 @@ void Graph_ThreadEntry(void* arg0) {
         RunFrame();
 #ifdef COMBO_BUILD
         extern int MM_ConsumeFinishedEntranceDeparture(void);
-        if(!runFrameContext.nextOvl&&MM_ConsumeFinishedEntranceDeparture()) {WindowClose();break;}
+        if (!runFrameContext.nextOvl && MM_ConsumeFinishedEntranceDeparture()) {
+            WindowClose();
+            break;
+        }
 #endif
     }
 }

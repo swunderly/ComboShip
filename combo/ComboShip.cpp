@@ -161,7 +161,8 @@ static DllHandle LoadDll(const char* name) {
     // with hidden visibility so only the combo ABI lands in the global namespace.
 #ifdef __ANDROID__
     const char* directory = std::getenv("COMBOSHIP_NATIVE_LIB_DIR");
-    if (!directory || std::strchr(name, '/')) return nullptr;
+    if (!directory || std::strchr(name, '/'))
+        return nullptr;
     std::string path = std::string(directory) + "/" + name;
 #else
     std::string path = std::strchr(name, '/') ? name : std::string("./") + name;
@@ -401,7 +402,7 @@ static FnOracleGetPortalOpen Combo_SOH_Rando_GetPortalOpen = nullptr;
 
 static FnOracleVoid Combo_MM_Rando_Reset = nullptr;
 static FnOracleSetItems Combo_MM_Rando_SetOwnedItems = nullptr;
-static int (*MM_SetOracleExternalBeanRenewal)(uint8_t)=nullptr;
+static int (*MM_SetOracleExternalBeanRenewal)(uint8_t) = nullptr;
 static FnOracleGetChecks Combo_MM_Rando_GetReachableChecks = nullptr;
 static FnOraclePlaceItem Combo_MM_Rando_PlaceItem = nullptr;
 static FnOracleVoid Combo_MM_Rando_Restore = nullptr;
@@ -412,85 +413,92 @@ static bool InstallEntranceSeed(const nlohmann::json& seed) {
         return true;
     } catch (const std::exception& error) {
         std::cerr << "[ComboShip] Entrance seed rejected: " << error.what() << "\n";
-        if (sEntranceNative.applySeed) sEntranceNative.applySeed("{}");
+        if (sEntranceNative.applySeed)
+            sEntranceNative.applySeed("{}");
         return false;
     }
 }
 #include "rando/SongTravel.h"
-static void (*SOH_SetSongTravel)(const char*)=nullptr, (*MM_SetSongTravel)(const char*)=nullptr;
-static ComboRando::OracleFns sAdultOotAgeOracle{},sAdultMmAgeOracle{};
-static void AttachAdultAgeOracle(ComboRando::OracleFns& oot,ComboRando::OracleFns& mm){
-    oot.GetPortalAges=sAdultOotAgeOracle.GetPortalAges;
-    oot.GetSongSourcesForAge=sAdultOotAgeOracle.GetSongSourcesForAge;
-    oot.SetSongAgeArrivals=sAdultOotAgeOracle.SetSongAgeArrivals;
-    mm.SetEntryAges=sAdultMmAgeOracle.SetEntryAges;
-    mm.GetDefaultEntryAges=sAdultMmAgeOracle.GetDefaultEntryAges;
-    mm.GetSongSourcesForAge=sAdultMmAgeOracle.GetSongSourcesForAge;
-    mm.SetSongAgeArrivals=sAdultMmAgeOracle.SetSongAgeArrivals;
-    mm.UseCrossAgeOracle=sAdultMmAgeOracle.UseCrossAgeOracle;
+static void (*SOH_SetSongTravel)(const char*) = nullptr, (*MM_SetSongTravel)(const char*) = nullptr;
+static ComboRando::OracleFns sAdultOotAgeOracle{}, sAdultMmAgeOracle{};
+static void AttachAdultAgeOracle(ComboRando::OracleFns& oot, ComboRando::OracleFns& mm) {
+    oot.GetPortalAges = sAdultOotAgeOracle.GetPortalAges;
+    oot.GetSongSourcesForAge = sAdultOotAgeOracle.GetSongSourcesForAge;
+    oot.SetSongAgeArrivals = sAdultOotAgeOracle.SetSongAgeArrivals;
+    mm.SetEntryAges = sAdultMmAgeOracle.SetEntryAges;
+    mm.GetDefaultEntryAges = sAdultMmAgeOracle.GetDefaultEntryAges;
+    mm.GetSongSourcesForAge = sAdultMmAgeOracle.GetSongSourcesForAge;
+    mm.SetSongAgeArrivals = sAdultMmAgeOracle.SetSongAgeArrivals;
+    mm.UseCrossAgeOracle = sAdultMmAgeOracle.UseCrossAgeOracle;
 }
-static void (*SOH_SetSongArrivals)(uint32_t)=nullptr, (*MM_SetSongArrivals)(uint32_t)=nullptr;
-static uint32_t (*SOH_GetSongSources)()=nullptr, (*MM_GetSongSources)()=nullptr;
-static uint32_t (*SOH_GetSongKnowledge)()=nullptr, (*MM_GetSongKnowledge)()=nullptr;
-static void (*SOH_SetForeignSongKnowledge)(uint32_t)=nullptr, (*MM_SetForeignSongKnowledge)(uint32_t)=nullptr;
-static int (*SOH_SongDestination)(int)=nullptr;
-static int (*SOH_TakeSongDeparture)()=nullptr, (*MM_TakeSongDeparture)()=nullptr;
+static void (*SOH_SetSongArrivals)(uint32_t) = nullptr, (*MM_SetSongArrivals)(uint32_t) = nullptr;
+static uint32_t (*SOH_GetSongSources)() = nullptr, (*MM_GetSongSources)() = nullptr;
+static uint32_t (*SOH_GetSongKnowledge)() = nullptr, (*MM_GetSongKnowledge)() = nullptr;
+static void (*SOH_SetForeignSongKnowledge)(uint32_t) = nullptr, (*MM_SetForeignSongKnowledge)(uint32_t) = nullptr;
+static int (*SOH_SongDestination)(int) = nullptr;
+static int (*SOH_TakeSongDeparture)() = nullptr, (*MM_TakeSongDeparture)() = nullptr;
 #include "rando/SharedDungeonJson.h"
 #include "rando/FaroreRules.h"
 #include "rando/SpellRules.h"
 #include "rando/CrossArrival.h"
 #include "rando/CrossEntrance.h"
-using EntranceArrival=int(*)(int,uint32_t,int,int);
-static EntranceArrival SOH_CanEntranceArrival=nullptr,MM_CanEntranceArrival=nullptr;
-static EntranceArrival SOH_ArmEntranceArrival=nullptr,MM_ArmEntranceArrival=nullptr;
-static void (*SOH_CancelEntranceFlight)()=nullptr,(*MM_CancelEntranceFlight)()=nullptr;
-using FaroreDestination=int(*)(int,int,int*);
-using FaroreSync=int(*)(int,int,int,int);
-using FaroreDeparture=int(*)(int*,int*);
-using FaroreArrival=int(*)(int,int,int);
-static int (*SOH_GetFaroreAge)(int)=nullptr;
-static FaroreDestination SOH_GetFaroreDestination=nullptr,MM_GetFaroreDestination=nullptr;
-static FaroreSync SOH_SyncFaroreFromMm=nullptr,MM_SyncFaroreFromOot=nullptr;
-static FaroreDeparture SOH_TakeFaroreDeparture=nullptr,MM_TakeFaroreDeparture=nullptr;
-static FaroreArrival SOH_SetFaroreArrivalEntrance=nullptr,MM_SetFaroreArrivalEntrance=nullptr;
-static FaroreDeparture SOH_TakeDungeonDeparture=nullptr,MM_TakeDungeonDeparture=nullptr;
-static FaroreArrival SOH_SetDungeonArrival=nullptr,MM_SetDungeonArrival=nullptr;
-static void (*SOH_ConfigureFaroreRules)(int,int)=nullptr;
-static void (*MM_ConfigureFaroreRules)(int,int,int)=nullptr;
-static void (*SOH_SetSongArrival)(int)=nullptr, (*MM_SetSongArrival)(int)=nullptr;
-static int (*MM_SetNativeSpellIntegrationReady)(int,void(*)())=nullptr;
+using EntranceArrival = int (*)(int, uint32_t, int, int);
+static EntranceArrival SOH_CanEntranceArrival = nullptr, MM_CanEntranceArrival = nullptr;
+static EntranceArrival SOH_ArmEntranceArrival = nullptr, MM_ArmEntranceArrival = nullptr;
+static void (*SOH_CancelEntranceFlight)() = nullptr, (*MM_CancelEntranceFlight)() = nullptr;
+using FaroreDestination = int (*)(int, int, int*);
+using FaroreSync = int (*)(int, int, int, int);
+using FaroreDeparture = int (*)(int*, int*);
+using FaroreArrival = int (*)(int, int, int);
+static int (*SOH_GetFaroreAge)(int) = nullptr;
+static FaroreDestination SOH_GetFaroreDestination = nullptr, MM_GetFaroreDestination = nullptr;
+static FaroreSync SOH_SyncFaroreFromMm = nullptr, MM_SyncFaroreFromOot = nullptr;
+static FaroreDeparture SOH_TakeFaroreDeparture = nullptr, MM_TakeFaroreDeparture = nullptr;
+static FaroreArrival SOH_SetFaroreArrivalEntrance = nullptr, MM_SetFaroreArrivalEntrance = nullptr;
+static FaroreDeparture SOH_TakeDungeonDeparture = nullptr, MM_TakeDungeonDeparture = nullptr;
+static FaroreArrival SOH_SetDungeonArrival = nullptr, MM_SetDungeonArrival = nullptr;
+static void (*SOH_ConfigureFaroreRules)(int, int) = nullptr;
+static void (*MM_ConfigureFaroreRules)(int, int, int) = nullptr;
+static void (*SOH_SetSongArrival)(int) = nullptr, (*MM_SetSongArrival)(int) = nullptr;
+static int (*MM_SetNativeSpellIntegrationReady)(int, void (*)()) = nullptr;
 static void InvalidateNativeSpellIntegration() {
- ComboRando::ComboFaroreIntegrationReady=false;
- if(MM_SetNativeSpellIntegrationReady)MM_SetNativeSpellIntegrationReady(0,nullptr);
+    ComboRando::ComboFaroreIntegrationReady = false;
+    if (MM_SetNativeSpellIntegrationReady)
+        MM_SetNativeSpellIntegrationReady(0, nullptr);
 }
-static void InitializeNativeSpellIntegration(bool eagerBooted,bool ootBridgeAbi) {
- InvalidateNativeSpellIntegration();
- const bool bridge=ootBridgeAbi&&SOH_GetFaroreAge&&SOH_GetFaroreDestination&&MM_GetFaroreDestination&&
-  SOH_SyncFaroreFromMm&&MM_SyncFaroreFromOot&&SOH_TakeFaroreDeparture&&MM_TakeFaroreDeparture&&
-  SOH_SetFaroreArrivalEntrance&&MM_SetFaroreArrivalEntrance&&SOH_TakeDungeonDeparture&&MM_TakeDungeonDeparture&&
-  SOH_SetDungeonArrival&&MM_SetDungeonArrival&&SOH_ConfigureFaroreRules&&MM_ConfigureFaroreRules;
- if(eagerBooted&&bridge&&MM_SetNativeSpellIntegrationReady&&MM_SetNativeSpellIntegrationReady(1,InvalidateNativeSpellIntegration)==1)
-  ComboRando::ComboFaroreIntegrationReady=true;
+static void InitializeNativeSpellIntegration(bool eagerBooted, bool ootBridgeAbi) {
+    InvalidateNativeSpellIntegration();
+    const bool bridge = ootBridgeAbi && SOH_GetFaroreAge && SOH_GetFaroreDestination && MM_GetFaroreDestination &&
+                        SOH_SyncFaroreFromMm && MM_SyncFaroreFromOot && SOH_TakeFaroreDeparture &&
+                        MM_TakeFaroreDeparture && SOH_SetFaroreArrivalEntrance && MM_SetFaroreArrivalEntrance &&
+                        SOH_TakeDungeonDeparture && MM_TakeDungeonDeparture && SOH_SetDungeonArrival &&
+                        MM_SetDungeonArrival && SOH_ConfigureFaroreRules && MM_ConfigureFaroreRules;
+    if (eagerBooted && bridge && MM_SetNativeSpellIntegrationReady &&
+        MM_SetNativeSpellIntegrationReady(1, InvalidateNativeSpellIntegration) == 1)
+        ComboRando::ComboFaroreIntegrationReady = true;
 }
 static ComboRando::FaroreRules sFaroreRules;
 static void InstallFaroreRules(const nlohmann::json& j) {
- ComboRando::FaroreRules parsed;
- const bool valid=ComboRando::ReadFaroreRules(j,parsed);
- sFaroreRules=valid?parsed:ComboRando::FaroreRules{};
- const bool ready=valid&&ComboRando::ComboFaroreIntegrationReady;
- if(SOH_ConfigureFaroreRules)SOH_ConfigureFaroreRules(ready&&parsed.crossGameFw,ready&&parsed.crossAge);
- if(MM_ConfigureFaroreRules)MM_ConfigureFaroreRules(ready&&parsed.spellWindMm,ready&&parsed.crossGameFw,ready&&parsed.crossAge);
+    ComboRando::FaroreRules parsed;
+    const bool valid = ComboRando::ReadFaroreRules(j, parsed);
+    sFaroreRules = valid ? parsed : ComboRando::FaroreRules{};
+    const bool ready = valid && ComboRando::ComboFaroreIntegrationReady;
+    if (SOH_ConfigureFaroreRules)
+        SOH_ConfigureFaroreRules(ready && parsed.crossGameFw, ready && parsed.crossAge);
+    if (MM_ConfigureFaroreRules)
+        MM_ConfigureFaroreRules(ready && parsed.spellWindMm, ready && parsed.crossGameFw, ready && parsed.crossAge);
 }
 static ComboRando::SongTravelMap sSongTravel;
-static void (*SOH_SetMmVisited)(int)=nullptr;
+static void (*SOH_SetMmVisited)(int) = nullptr;
 static void InstallSongTravel(const nlohmann::json& json) {
-    auto map=ComboRando::SongTravelMap::parse(json); // reject malformed seed routes before touching either engine
-    const auto text=map.json().dump();
-    if(SOH_SetSongTravel) SOH_SetSongTravel(text.c_str());
-    if(MM_SetSongTravel) MM_SetSongTravel(text.c_str());
-    sSongTravel=map;
+    auto map = ComboRando::SongTravelMap::parse(json); // reject malformed seed routes before touching either engine
+    const auto text = map.json().dump();
+    if (SOH_SetSongTravel)
+        SOH_SetSongTravel(text.c_str());
+    if (MM_SetSongTravel)
+        MM_SetSongTravel(text.c_str());
+    sSongTravel = map;
 }
-
 
 // ComboShip (#90): OOT entrance shuffle — the combo generator never runs native Fill(), so the
 // entrance options need this explicit headless shuffle + an informational spoiler dump.
@@ -509,7 +517,7 @@ static FnDumpData SOH_DumpEntranceOverrides = nullptr;
 static std::mutex g_containerMutex;
 static std::map<int, nlohmann::json> g_containerCache;
 // Saved settings change on file creation/copy/erase, not ordinary progress saves.
-static std::atomic<uint64_t> g_profileSavedSeedRevision{1};
+static std::atomic<uint64_t> g_profileSavedSeedRevision{ 1 };
 // Slots whose container was backed up for a COMBO_RELEASE_VERSION mismatch; guarded by g_containerMutex.
 // OOT drains it on the main thread (Combo_TakeEvictionNotice) to surface a popup.
 static std::vector<int> g_evictedSlots;
@@ -550,11 +558,13 @@ static nlohmann::json Combo_ReadSavedSeedReadonly(int fileNum) {
     }
     return ComboRando::Profiles::ReadSavedSeedFile(ComboContainerPath(fileNum));
 }
-static nlohmann::json Combo_ReadNativeSeedRulesReadonly(int fileNum){
-    ComboRando::Profiles::RequireSlot(fileNum);std::lock_guard<std::mutex> lock(g_containerMutex);
-    const auto cached=g_containerCache.find(fileNum);
-    return ComboRando::Profiles::NativeSeedRulesFromContainer(cached!=g_containerCache.end()?cached->second:
-        ComboRando::Profiles::ReadSavedContainerFile(ComboContainerPath(fileNum)));
+static nlohmann::json Combo_ReadNativeSeedRulesReadonly(int fileNum) {
+    ComboRando::Profiles::RequireSlot(fileNum);
+    std::lock_guard<std::mutex> lock(g_containerMutex);
+    const auto cached = g_containerCache.find(fileNum);
+    return ComboRando::Profiles::NativeSeedRulesFromContainer(
+        cached != g_containerCache.end() ? cached->second
+                                         : ComboRando::Profiles::ReadSavedContainerFile(ComboContainerPath(fileNum)));
 }
 
 // Save compat is gated on major.minor only: patch releases must never change save-affecting behavior.
@@ -701,15 +711,17 @@ static const char* Combo_ReadGameSave(int game, int fileNum) {
         nlohmann::json inspected;
         try {
             const auto cached = g_containerCache.find(fileNum);
-            inspected = cached != g_containerCache.end() ? cached->second :
-                ComboRando::Profiles::ReadSavedContainerFile(ComboContainerPath(fileNum));
+            inspected = cached != g_containerCache.end()
+                            ? cached->second
+                            : ComboRando::Profiles::ReadSavedContainerFile(ComboContainerPath(fileNum));
             ComboRando::Profiles::ValidateSavedCatalogs(inspected);
         } catch (const ComboRando::UnsupportedKokiriSeedRevision& error) {
             // Return a transient native-page copy. SOH raises the typed error
             // locally before any save/context binding; no DLL exception crosses
             // this C callback and no container migration/cache/write is entered.
             auto page = inspected.value("oot", nlohmann::json::object());
-            if (!page.is_object()) page = nlohmann::json::object();
+            if (!page.is_object())
+                page = nlohmann::json::object();
             page[ComboRando::kKokiriNativePreflightError] = error.what();
             buf = page.dump();
             return buf.c_str();
@@ -741,8 +753,9 @@ static const char* Combo_SnapshotAnchorJournal(int fileNum) {
     std::scoped_lock lock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
     result.clear();
     if (sAnchorJournalSlot == fileNum) {
-        result = nlohmann::json{{"seed", sAnchorJournalSeed}, {"events", sAnchorEvents},
-                                {"crossChecks", sAppliedCrossChecks}}.dump();
+        result = nlohmann::json{
+            { "seed", sAnchorJournalSeed }, { "events", sAnchorEvents }, { "crossChecks", sAppliedCrossChecks }
+        }.dump();
     }
     return result.c_str();
 }
@@ -755,7 +768,7 @@ static void (*sApplyMmRule)(const char*) = nullptr;
 static const char* (*sGetOotTricksCsv)() = nullptr;
 static void (*sSetOotTricksCsv)(const char*) = nullptr;
 static nlohmann::json SnapshotGameplayRules() {
-    auto rules= ComboRando::CaptureGameplayRules([](const char* name, int fallback) {
+    auto rules = ComboRando::CaptureGameplayRules([](const char* name, int fallback) {
         return sReadGameplayRule ? sReadGameplayRule(name, fallback) : fallback;
     });
     rules["ootTricks"] = sGetOotTricksCsv ? sGetOotTricksCsv() : "";
@@ -763,37 +776,46 @@ static nlohmann::json SnapshotGameplayRules() {
 }
 static void RestoreGameplayRules(const nlohmann::json& rules, int slot) {
     ComboRando::ApplyGameplayRules(rules, [](const char* name, int value) {
-        if (sWriteGameplayRule) sWriteGameplayRule(name, value);
-        if (sApplyOotRule) sApplyOotRule(name);
-        if (sApplyMmRule) sApplyMmRule(name);
+        if (sWriteGameplayRule)
+            sWriteGameplayRule(name, value);
+        if (sApplyOotRule)
+            sApplyOotRule(name);
+        if (sApplyMmRule)
+            sApplyMmRule(name);
     });
-    if(sSetOotTricksCsv) sSetOotTricksCsv(rules.value("ootTricks",std::string()).c_str());
+    if (sSetOotTricksCsv)
+        sSetOotTricksCsv(rules.value("ootTricks", std::string()).c_str());
     sGameplayRulesSlot = slot;
 }
 
 // A saved song map is immutable seed data; these flags are intentional per-run overrides.
 static void RefreshGameplayRuntime() {
-    auto map=sSongTravel;
-    auto read=[](const char* key,int fallback){return sReadGameplayRule ? sReadGameplayRule(key,fallback) : fallback;};
-    map.enabled=read("gCombo.Enhancements.SongTravel",map.enabled)!=0;
-    map.foreignSongs=read("gCombo.Enhancements.ForeignSongs",map.foreignSongs)!=0;
-    map.logicEnabled=read("gCombo.Rando.SongTravel",map.logicEnabled)!=0;
-    map.logicForeignSongs=read("gCombo.Rando.ForeignSongs",map.logicForeignSongs)!=0;
+    auto map = sSongTravel;
+    auto read = [](const char* key, int fallback) {
+        return sReadGameplayRule ? sReadGameplayRule(key, fallback) : fallback;
+    };
+    map.enabled = read("gCombo.Enhancements.SongTravel", map.enabled) != 0;
+    map.foreignSongs = read("gCombo.Enhancements.ForeignSongs", map.foreignSongs) != 0;
+    map.logicEnabled = read("gCombo.Rando.SongTravel", map.logicEnabled) != 0;
+    map.logicForeignSongs = read("gCombo.Rando.ForeignSongs", map.logicForeignSongs) != 0;
     InstallSongTravel(map.json());
 }
 static nlohmann::json SeedGameplayRules(const nlohmann::json& seed) {
     return ComboRando::GameplayRulesForSeed(seed);
 }
 static nlohmann::json SongMapForGeneration(uint32_t seed) {
-    auto read=[](const char* name){return sReadGameplayRule ? sReadGameplayRule(name,0)!=0 : false;};
-    auto map=ComboRando::SongTravelMap::generateForRules(seed,read("gCombo.Enhancements.SongTravel"),read("gCombo.Enhancements.ForeignSongs"),
-        read("gCombo.Rando.SongTravel"),read("gCombo.Rando.ForeignSongs"));
+    auto read = [](const char* name) { return sReadGameplayRule ? sReadGameplayRule(name, 0) != 0 : false; };
+    auto map = ComboRando::SongTravelMap::generateForRules(
+        seed, read("gCombo.Enhancements.SongTravel"), read("gCombo.Enhancements.ForeignSongs"),
+        read("gCombo.Rando.SongTravel"), read("gCombo.Rando.ForeignSongs"));
     return map.json();
 }
 static ComboRando::OotAccess CombinedAccessForGeneration(const std::string& dump) {
-    if(ComboRando::OotAccessFromDump(dump)==ComboRando::OotAccess::NO_LOGIC) return ComboRando::OotAccess::NO_LOGIC;
-    return sReadGameplayRule && sReadGameplayRule("gCombo.Rando.Reachability",0)!=0
-        ? ComboRando::OotAccess::BEATABLE_ONLY : ComboRando::OotAccess::ALL_REACHABLE;
+    if (ComboRando::OotAccessFromDump(dump) == ComboRando::OotAccess::NO_LOGIC)
+        return ComboRando::OotAccess::NO_LOGIC;
+    return sReadGameplayRule && sReadGameplayRule("gCombo.Rando.Reachability", 0) != 0
+               ? ComboRando::OotAccess::BEATABLE_ONLY
+               : ComboRando::OotAccess::ALL_REACHABLE;
 }
 
 // Borrow metadata while the caller holds g_containerMutex. Seed placement data can
@@ -839,7 +861,9 @@ static void Combo_WriteGameSave(int game, int fileNum, const char* json) {
     if (game == ComboRando::GAME_MM && sAnchorJournalSlot == fileNum) {
         // MM writes a complete save synchronously on the game thread.
         std::scoped_lock journalLock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
-        journal = {{"seed", sAnchorJournalSeed}, {"events", sAnchorEvents}, {"crossChecks", sAppliedCrossChecks}};
+        journal = { { "seed", sAnchorJournalSeed },
+                    { "events", sAnchorEvents },
+                    { "crossChecks", sAppliedCrossChecks } };
     }
     const auto& rando = Combo_JsonFieldOrEmptyObject(c["combo"], "rando");
     if (journal.is_object() && journal.value("seed", 0u) == rando.value("displaySeed", rando.value("masterSeed", 0u))) {
@@ -847,7 +871,8 @@ static void Combo_WriteGameSave(int game, int fileNum, const char* json) {
         auto savedChecks = c["combo"].value("anchorCrossChecks", std::set<std::string>{});
         const auto prefix = ComboAnchorProtocol::GamePrefix(game);
         for (const auto& check : journal["crossChecks"].get<std::set<std::string>>())
-            if (check.compare(0, prefix.size(), prefix) == 0) savedChecks.insert(check);
+            if (check.compare(0, prefix.size(), prefix) == 0)
+                savedChecks.insert(check);
         c["combo"]["anchorCrossChecks"] = savedChecks;
     }
     FlushContainer(fileNum);
@@ -860,11 +885,12 @@ static void Combo_SetLastGame(int fileNum, int game) {
     std::lock_guard<std::mutex> lk(g_containerMutex);
     auto& c = LoadOrCreateContainer(fileNum);
     const auto& combo = Combo_JsonFieldOrEmptyObject(c, "combo");
-    const int visited=combo.value("visitedGames",0) | (1<<game);
-    if(SOH_SetMmVisited) SOH_SetMmVisited(visited & 2);
-    if (combo.value("lastGame", -1) == game &&
-        c["combo"].value("visitedGames",0)==visited) return;
-    c["combo"]["visitedGames"]=visited;
+    const int visited = combo.value("visitedGames", 0) | (1 << game);
+    if (SOH_SetMmVisited)
+        SOH_SetMmVisited(visited & 2);
+    if (combo.value("lastGame", -1) == game && c["combo"].value("visitedGames", 0) == visited)
+        return;
+    c["combo"]["visitedGames"] = visited;
     std::cout << "[ComboShip] lastGame <- " << game << " (slot " << fileNum << ")" << std::endl;
     c["combo"]["lastGame"] = game;
     FlushContainer(fileNum);
@@ -977,22 +1003,22 @@ static ComboRando::ComboGenProgress g_ComboProgress;
 static std::atomic<bool> g_ComboPendingFinalize{ false }; // worker succeeded, main-thread apply not yet run
 static std::unique_ptr<ComboRando::Profiles::Repository> sProfiles;
 static std::optional<ComboRando::Profiles::Attempt> sProfileAttempt;
-static nlohmann::json sProfileOriginalSetup,sProfileCatalog;
-static int sProfileOriginalRuleSlot=-1;
-static bool sProfileLegacyPendingMigration=false;
-static FnDumpData sProfileDumpCombo=nullptr;
-static FnDumpData sProfileLegacySeed=nullptr;
-static FnDumpData sProfileResolvedRules=nullptr;
-static int (*sProfileApplyResolvedRules)(const char*)=nullptr;
-static int (*sProfileApplyCombo)(const char*)=nullptr;
-static int (*sProfileApplyOot)(const char*)=nullptr;
-static int (*sProfileApplyMm)(const char*)=nullptr;
-static int (*sProfileValidateOot)(const char*)=nullptr;
-static int (*sProfileValidateMm)(const char*)=nullptr;
-static uint8_t (*sProfileCanGenerate)()=nullptr;
-static int (*sProfileTrigger)(const char*)=nullptr;
-static int (*sProfileSelected)()=nullptr;
-static void ProfileBeginGeneration(int,const char*);
+static nlohmann::json sProfileOriginalSetup, sProfileCatalog;
+static int sProfileOriginalRuleSlot = -1;
+static bool sProfileLegacyPendingMigration = false;
+static FnDumpData sProfileDumpCombo = nullptr;
+static FnDumpData sProfileLegacySeed = nullptr;
+static FnDumpData sProfileResolvedRules = nullptr;
+static int (*sProfileApplyResolvedRules)(const char*) = nullptr;
+static int (*sProfileApplyCombo)(const char*) = nullptr;
+static int (*sProfileApplyOot)(const char*) = nullptr;
+static int (*sProfileApplyMm)(const char*) = nullptr;
+static int (*sProfileValidateOot)(const char*) = nullptr;
+static int (*sProfileValidateMm)(const char*) = nullptr;
+static uint8_t (*sProfileCanGenerate)() = nullptr;
+static int (*sProfileTrigger)(const char*) = nullptr;
+static int (*sProfileSelected)() = nullptr;
+static void ProfileBeginGeneration(int, const char*);
 static void ProfileRestoreGenerationSetup();
 static void ProfileCompleteGeneration();
 // Main-thread finalize inputs stashed by the worker (consumed by Combo_FinalizeGenerate).
@@ -1047,10 +1073,10 @@ static FnVoidArgless MM_Anchor_PumpDormant = nullptr;
 typedef void (*FnSetCrossRoute)(void (*)(int, const char*));
 // Deliver callback carries srcCheckName too (bug 3: keys the launcher-side receive dedup below).
 #include "menu/ComboRenewableStockABI.h"
-using FnSetScrubStockBridge=void(*)(FnScrubStockQuery,FnScrubStockGrant);
-static FnScrubStockQuery SOH_QueryScrubRenewable=nullptr;
-static FnScrubStockGrant SOH_GrantScrubRenewable=nullptr;
-static FnSetScrubStockBridge MM_SetScrubStockBridge=nullptr;
+using FnSetScrubStockBridge = void (*)(FnScrubStockQuery, FnScrubStockGrant);
+static FnScrubStockQuery SOH_QueryScrubRenewable = nullptr;
+static FnScrubStockGrant SOH_GrantScrubRenewable = nullptr;
+static FnSetScrubStockBridge MM_SetScrubStockBridge = nullptr;
 typedef void (*FnSetCrossDeliver)(void (*)(int, const char*, const char*));
 typedef void (*FnGrantCrossItem)(const char*);
 static FnSetCrossDeliver SOH_SetCrossDeliver = nullptr;
@@ -1437,9 +1463,11 @@ static void Disconnect() {
 
 // Registered into the game as the send callback (Network::SendDataToRemote redirects here).
 static void Send(const char* json) {
-    if (!json || !sConnected) return;
+    if (!json || !sConnected)
+        return;
     auto p = nlohmann::json::parse(json, nullptr, false);
-    if (p.is_discarded() || !p.is_object()) return;
+    if (p.is_discarded() || !p.is_object())
+        return;
     const std::string type = p.value("type", "");
     if (type == "UPDATE_TEAM_STATE") {
         if (!sSnapshotCapture && p.contains("state") && p["state"].is_object() && p["state"].empty()) {
@@ -1461,18 +1489,20 @@ static void Send(const char* json) {
         sRequest = std::move(p);
         return;
     }
-    if (type == "HANDSHAKE") p["clientState"]["comboProtocol"] = ComboAnchorProtocol::Version;
+    if (type == "HANDSHAKE")
+        p["clientState"]["comboProtocol"] = ComboAnchorProtocol::Version;
     if (type == "UPDATE_CLIENT_STATE") {
         p["state"]["comboProtocol"] = ComboAnchorProtocol::Version;
-        if (p["state"].value("isSaveLoaded", false)) p["state"]["seed"] = sSyncSeed.load();
+        if (p["state"].value("isSaveLoaded", false))
+            p["state"]["seed"] = sSyncSeed.load();
     }
     if (ComboAnchorProtocol::IsProgress(p)) {
         p["comboProtocol"] = ComboAnchorProtocol::Version;
         p["comboSeed"] = sSyncSeed.load();
         p["addToQueue"] = true;
         if (type == "GIVE_ITEM" || type == "COMBO_CROSS_ITEM") {
-            static const std::string stream = std::to_string(
-                std::chrono::high_resolution_clock::now().time_since_epoch().count());
+            static const std::string stream =
+                std::to_string(std::chrono::high_resolution_clock::now().time_since_epoch().count());
             static uint64_t sequence = 0;
             std::lock_guard<std::mutex> journalLock(sAnchorJournalMutex);
             p["comboStream"] = stream;
@@ -1484,7 +1514,8 @@ static void Send(const char* json) {
     // Our own scene/room-state is broadcast OUTBOUND (never echoed inbound), so parse it here too or the
     // self roster row would freeze at its join value.
     const std::string wire = p.dump();
-    if (type == "UPDATE_ROOM_STATE" && MM_Anchor_RecvJson) MM_Anchor_RecvJson(wire.c_str());
+    if (type == "UPDATE_ROOM_STATE" && MM_Anchor_RecvJson)
+        MM_Anchor_RecvJson(wire.c_str());
     UpdateRosterFromPacket(wire);
     std::lock_guard<std::mutex> lk(sOutMutex);
     sOutQueue.push(wire);
@@ -1492,14 +1523,16 @@ static void Send(const char* json) {
 
 static void ReceivePacket(const std::string& packet) {
     auto p = nlohmann::json::parse(packet, nullptr, false);
-    if (p.is_discarded() || !p.is_object()) return;
+    if (p.is_discarded() || !p.is_object())
+        return;
     // Synchronization and all save access stay on the game thread.
     std::lock_guard<std::mutex> lock(sSyncMutex);
     sInbound.push(std::move(p));
 }
 
 static void QueueWire(const nlohmann::json& p) {
-    if (!sConnected) return;
+    if (!sConnected)
+        return;
     std::lock_guard<std::mutex> lock(sOutMutex);
     sOutQueue.push(p.dump());
 }
@@ -1524,43 +1557,53 @@ static void PumpSync() {
             const auto type = p.value("type", "");
             if (type == "REQUEST_TEAM_STATE") {
                 if (p.value("comboProtocol", 0) == ComboAnchorProtocol::Version &&
-                    p.value("comboSeed", 0u) == sSyncSeed.load()) sPublishPending = true;
+                    p.value("comboSeed", 0u) == sSyncSeed.load())
+                    sPublishPending = true;
                 continue;
             }
             if (ComboAnchorProtocol::IsProgress(p) && type != "UPDATE_TEAM_STATE" &&
                 (p.value("comboProtocol", 0) != ComboAnchorProtocol::Version ||
-                 p.value("comboSeed", 0u) != sSyncSeed.load())) continue;
+                 p.value("comboSeed", 0u) != sSyncSeed.load()))
+                continue;
             auto packets = ComboAnchorProtocol::Expand(p, sSyncSeed.load());
             if (type == "UPDATE_TEAM_STATE" && packets.size() >= 2 && p.contains("state")) {
                 std::scoped_lock journalLock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
                 ComboAnchorProtocol::MergeCounters(sAnchorEvents, p["state"].value("events", nlohmann::json::object()));
                 if (p["state"].contains("crossChecks") && p["state"]["crossChecks"].is_array()) {
                     for (const auto& check : p["state"]["crossChecks"])
-                        if (check.is_string()) sAppliedCrossChecks.insert(check.get<std::string>());
+                        if (check.is_string())
+                            sAppliedCrossChecks.insert(check.get<std::string>());
                 }
             }
             for (auto& expanded : packets) {
                 const auto expandedType = expanded.value("type", "");
                 if (expandedType == "GIVE_ITEM" || expandedType == "COMBO_CROSS_ITEM") {
                     std::lock_guard<std::mutex> journalLock(sAnchorJournalMutex);
-                    if (!ComboAnchorProtocol::AcceptEvent(sAnchorEvents, expanded)) continue;
+                    if (!ComboAnchorProtocol::AcceptEvent(sAnchorEvents, expanded))
+                        continue;
                 }
                 const auto wire = expanded.dump();
-                if (SOH_Anchor_RecvJson) SOH_Anchor_RecvJson(wire.c_str());
-                if (MM_Anchor_RecvJson) MM_Anchor_RecvJson(wire.c_str());
-                if (ComboAnchorProtocol::IsProgress(expanded)) sPublishPending = true;
+                if (SOH_Anchor_RecvJson)
+                    SOH_Anchor_RecvJson(wire.c_str());
+                if (MM_Anchor_RecvJson)
+                    MM_Anchor_RecvJson(wire.c_str());
+                if (ComboAnchorProtocol::IsProgress(expanded))
+                    sPublishPending = true;
             }
         } catch (const std::exception& e) {
             std::cerr << "[ComboShip][Anchor] Rejected sync packet: " << e.what() << std::endl;
         }
     }
-    if (sPublishPending.exchange(false)) sPublishDelay = 2;
+    if (sPublishPending.exchange(false))
+        sPublishDelay = 2;
     if (sConnected && sPublishDelay > 0 && --sPublishDelay == 0) {
         nlohmann::json capture = nlohmann::json::object();
         try {
             sSnapshotCapture = &capture;
-            if (SOH_Anchor_SendSnapshot) SOH_Anchor_SendSnapshot();
-            if (MM_Anchor_SendSnapshot) MM_Anchor_SendSnapshot();
+            if (SOH_Anchor_SendSnapshot)
+                SOH_Anchor_SendSnapshot();
+            if (MM_Anchor_SendSnapshot)
+                MM_Anchor_SendSnapshot();
             sSnapshotCapture = nullptr;
             if (capture.contains("oot") && capture.contains("mm")) {
                 auto packet = ComboAnchorProtocol::Combine(capture["oot"], capture["mm"], sSyncSeed.load());
@@ -1618,15 +1661,20 @@ static void ResetCrossItemDedupForSeed(uint32_t seed) {
 // ComboShip (#136): defined below; the cross-grant re-evaluates the combined goal (see DeliverCrossItem).
 static void Combo_OnTriforceProgress(int game, int fileNum);
 
-static int QueryScrubOwnerStock(int fileNum,const char* product,ComboRenewableStock* out) {
-    if(!out) return 0;
-    *out={};
-    if(fileNum<0 || fileNum>2 || fileNum!=g_comboCompletionSlot || ComboAnchor::sActiveGame.load()!=1 || !SOH_QueryScrubRenewable) return 0;
-    return SOH_QueryScrubRenewable(fileNum,product,out);
+static int QueryScrubOwnerStock(int fileNum, const char* product, ComboRenewableStock* out) {
+    if (!out)
+        return 0;
+    *out = {};
+    if (fileNum < 0 || fileNum > 2 || fileNum != g_comboCompletionSlot || ComboAnchor::sActiveGame.load() != 1 ||
+        !SOH_QueryScrubRenewable)
+        return 0;
+    return SOH_QueryScrubRenewable(fileNum, product, out);
 }
-static int GrantScrubOwnerStock(int fileNum,int nativeGi) {
-    if(fileNum<0 || fileNum>2 || fileNum!=g_comboCompletionSlot || ComboAnchor::sActiveGame.load()!=1 || !SOH_GrantScrubRenewable) return 0;
-    return SOH_GrantScrubRenewable(fileNum,nativeGi);
+static int GrantScrubOwnerStock(int fileNum, int nativeGi) {
+    if (fileNum < 0 || fileNum > 2 || fileNum != g_comboCompletionSlot || ComboAnchor::sActiveGame.load() != 1 ||
+        !SOH_GrantScrubRenewable)
+        return 0;
+    return SOH_GrantScrubRenewable(fileNum, nativeGi);
 }
 
 static void DeliverCrossItem(int targetGame, const char* itemName, const char* srcCheckName) {
@@ -1648,7 +1696,7 @@ static void DeliverCrossItem(int targetGame, const char* itemName, const char* s
     // cross-grant (local collection in either game, Anchor receive, resync backfill) passes through —
     // with the launcher's loaded slot. Latched in Combo_OnTriforceProgress, so extra pokes are free.
     if (itemName && (ComboRando::CwIsTriforcePiece((ComboRando::GameId)targetGame, itemName) ||
-        ComboRando::CwNamedTriforceMask({itemName}, {}) != 0)) {
+                     ComboRando::CwNamedTriforceMask({ itemName }, {}) != 0)) {
         Combo_OnTriforceProgress(targetGame, g_comboCompletionSlot);
     }
 }
@@ -1728,7 +1776,8 @@ static void LoadComboCompletion(int slot) {
             ComboAnchorProtocol::MergeCounters(sAnchorEvents, combo.value("anchorEvents", nlohmann::json::object()));
             if (combo.contains("anchorCrossChecks") && combo["anchorCrossChecks"].is_array()) {
                 for (const auto& check : combo["anchorCrossChecks"])
-                    if (check.is_string()) sAppliedCrossChecks.insert(check.get<std::string>());
+                    if (check.is_string())
+                        sAppliedCrossChecks.insert(check.get<std::string>());
             }
         }
         auto goal = rando.value("goal", nlohmann::json::object());
@@ -1741,16 +1790,18 @@ static void LoadComboCompletion(int slot) {
         g_startingGameMM = rando.value("startingGame", std::string("OOT")) == "MM";
         // Shared Items: absent key = mask 0 = feature off (old seeds unaffected).
         g_sharedMask = ComboRando::SharedMaskFromKeys(rando.value("sharedItems", nlohmann::json::array()));
-        faroreRules=rando.value("faroreRules",nlohmann::json());
+        faroreRules = rando.value("faroreRules", nlohmann::json());
     }
     InstallFaroreRules(faroreRules);
     // Push outside the container lock — the DLL setters must never re-enter the sidecar.
     if (SOH_SetComboGoal)
         SOH_SetComboGoal(g_goalHunt ? 1 : 0, g_goalRequired, ComboRando::CwOotPieces(g_goalTotal));
-    if (SOH_SetComboGoalType) SOH_SetComboGoalType(g_goalType, g_goalRequired, ComboRando::CwOotPieces(g_goalTotal));
+    if (SOH_SetComboGoalType)
+        SOH_SetComboGoalType(g_goalType, g_goalRequired, ComboRando::CwOotPieces(g_goalTotal));
     if (MM_SetComboGoal)
         MM_SetComboGoal(g_goalHunt ? 1 : 0, g_goalRequired, ComboRando::CwMmPieces(g_goalTotal));
-    if (MM_SetComboGoalType) MM_SetComboGoalType(g_goalType, g_goalRequired, ComboRando::CwMmPieces(g_goalTotal));
+    if (MM_SetComboGoalType)
+        MM_SetComboGoalType(g_goalType, g_goalRequired, ComboRando::CwMmPieces(g_goalTotal));
     if (SOH_SetComboStartingGame)
         SOH_SetComboStartingGame(g_startingGameMM ? 1 : 0);
     if (SOH_SetComboSharedItems)
@@ -1758,7 +1809,8 @@ static void LoadComboCompletion(int slot) {
     if (MM_SetComboSharedItems)
         MM_SetComboSharedItems(g_sharedMask);
     if (!g_comboGoalWon) {
-        ComboRando::CwGoal restoredGoal; restoredGoal.type = g_goalType;
+        ComboRando::CwGoal restoredGoal;
+        restoredGoal.type = g_goalType;
         g_comboGoalWon = ComboRando::CwGoalReached(restoredGoal, g_comboCompletion[0], g_comboCompletion[1]);
     }
     if (ComboUI_SetComboComplete)
@@ -1773,10 +1825,12 @@ static void RestoreLoadedSlotGoal() {
         return;
     if (SOH_SetComboGoal)
         SOH_SetComboGoal(g_goalHunt ? 1 : 0, g_goalRequired, ComboRando::CwOotPieces(g_goalTotal));
-    if (SOH_SetComboGoalType) SOH_SetComboGoalType(g_goalType, g_goalRequired, ComboRando::CwOotPieces(g_goalTotal));
+    if (SOH_SetComboGoalType)
+        SOH_SetComboGoalType(g_goalType, g_goalRequired, ComboRando::CwOotPieces(g_goalTotal));
     if (MM_SetComboGoal)
         MM_SetComboGoal(g_goalHunt ? 1 : 0, g_goalRequired, ComboRando::CwMmPieces(g_goalTotal));
-    if (MM_SetComboGoalType) MM_SetComboGoalType(g_goalType, g_goalRequired, ComboRando::CwMmPieces(g_goalTotal));
+    if (MM_SetComboGoalType)
+        MM_SetComboGoalType(g_goalType, g_goalRequired, ComboRando::CwMmPieces(g_goalTotal));
     if (SOH_SetComboStartingGame)
         SOH_SetComboStartingGame(g_startingGameMM ? 1 : 0);
     if (SOH_SetComboSharedItems)
@@ -1895,7 +1949,9 @@ static int Combo_GetOotTriforceCount();
 static int Combo_GetMmTriforceCount();
 static unsigned Combo_GetNamedTriforceMask() {
     return (SOH_GetNamedTriforceMask ? SOH_GetNamedTriforceMask() : 0) |
-           (g_comboCompletionSlot >= 0 && g_MmSaveInMemorySlot == g_comboCompletionSlot && MM_GetNamedTriforceMask ? MM_GetNamedTriforceMask() : 0);
+           (g_comboCompletionSlot >= 0 && g_MmSaveInMemorySlot == g_comboCompletionSlot && MM_GetNamedTriforceMask
+                ? MM_GetNamedTriforceMask()
+                : 0);
 }
 static int Combo_OnFinalBossDefeated(int game, int fileNum) {
     if ((game != 0 && game != 1) || !ComboIsValidSlot(fileNum))
@@ -1906,16 +1962,24 @@ static int Combo_OnFinalBossDefeated(int game, int fileNum) {
     // first report for this slot so we don't thrash the sidecar. Repeats just return the cached answer.
     if (!g_comboCompletion[game]) {
         g_comboCompletion[game] = true;
-        ComboRando::CwGoal goal; goal.type = g_goalType; goal.required = g_goalRequired;
+        ComboRando::CwGoal goal;
+        goal.type = g_goalType;
+        goal.required = g_goalRequired;
         g_comboGoalWon = ComboRando::CwGoalReached(goal, g_comboCompletion[0], g_comboCompletion[1],
-            Combo_GetOotTriforceCount() + Combo_GetMmTriforceCount(), Combo_GetNamedTriforceMask());
+                                                   Combo_GetOotTriforceCount() + Combo_GetMmTriforceCount(),
+                                                   Combo_GetNamedTriforceMask());
         SaveComboCompletion(fileNum);
         std::cout << "[ComboShip] Final boss defeated: game=" << game << " slot=" << fileNum
                   << " both=" << (g_comboCompletion[0] && g_comboCompletion[1]) << std::endl;
     }
-    ComboRando::CwGoal goal; goal.type = g_goalType; goal.required = g_goalRequired;
+    ComboRando::CwGoal goal;
+    goal.type = g_goalType;
+    goal.required = g_goalRequired;
     return ComboRando::CwGoalReached(goal, g_comboCompletion[0], g_comboCompletion[1],
-        Combo_GetOotTriforceCount() + Combo_GetMmTriforceCount(), Combo_GetNamedTriforceMask()) ? 1 : 0;
+                                     Combo_GetOotTriforceCount() + Combo_GetMmTriforceCount(),
+                                     Combo_GetNamedTriforceMask())
+               ? 1
+               : 0;
 }
 
 // ComboShip (#136): each game's piece-count getter, handed to the OTHER game so its pickup messages
@@ -1924,7 +1988,9 @@ static int Combo_GetOotTriforceCount() {
     return SOH_GetTriforcePieceCount ? SOH_GetTriforcePieceCount() : 0;
 }
 static int Combo_GetMmTriforceCount() {
-    return g_comboCompletionSlot >= 0 && g_MmSaveInMemorySlot == g_comboCompletionSlot && MM_GetTriforcePieceCount ? MM_GetTriforcePieceCount() : 0;
+    return g_comboCompletionSlot >= 0 && g_MmSaveInMemorySlot == g_comboCompletionSlot && MM_GetTriforcePieceCount
+               ? MM_GetTriforcePieceCount()
+               : 0;
 }
 
 // Poked after every Triforce Piece grant (own or dormant) and every Anchor team-state merge: sums both
@@ -1940,15 +2006,18 @@ static void Combo_OnTriforceProgress(int game, int fileNum) try {
     if ((g_goalType != ComboRando::CwGoal::HUNT && g_goalType != ComboRando::CwGoal::QUEST) || g_comboTriforceDone)
         return;
     const int total = Combo_GetOotTriforceCount() + Combo_GetMmTriforceCount();
-    ComboRando::CwGoal goal; goal.type = g_goalType; goal.required = g_goalRequired;
-    if (!ComboRando::CwGoalReached(goal, g_comboCompletion[0], g_comboCompletion[1], total, Combo_GetNamedTriforceMask()))
+    ComboRando::CwGoal goal;
+    goal.type = g_goalType;
+    goal.required = g_goalRequired;
+    if (!ComboRando::CwGoalReached(goal, g_comboCompletion[0], g_comboCompletion[1], total,
+                                   Combo_GetNamedTriforceMask()))
         return;
     g_comboTriforceDone = true;
     g_comboGoalWon = true;
     SaveComboCompletion(fileNum);
     const bool mmActive = ComboAnchor::sActiveGame.load() == 1;
-    std::cout << "[ComboShip] " << ComboRando::CwGoalName(goal) << " complete: " << total << "/" << g_goalRequired << " slot=" << fileNum
-              << " active=" << (mmActive ? "mm" : "oot") << std::endl;
+    std::cout << "[ComboShip] " << ComboRando::CwGoalName(goal) << " complete: " << total << "/" << g_goalRequired
+              << " slot=" << fileNum << " active=" << (mmActive ? "mm" : "oot") << std::endl;
     if (SOH_TriggerTriforceCredits)
         SOH_TriggerTriforceCredits(mmActive ? 1 : 0);
     if (MM_TriggerTriforceCredits)
@@ -2079,16 +2148,23 @@ static void WriteComboPlaythrough(const std::string& spoilerJson, const ComboRan
 
 // ComboShip: worker that runs the combined-logic fill (or no-logic fallback) on a background
 // thread, reports progress via the ComboGenProgress struct, and stashes placements.
-static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* progress, bool retryUntilSuccess=false) try {
+static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* progress,
+                         bool retryUntilSuccess = false) try {
     ComboRando::GenerationScope generationScope(progress);
     ComboRando::KokiriSeedRevisionScope kokiriRevision(SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision,
-        ComboRando::kKokiriModernRevision);
+                                                       ComboRando::kKokiriModernRevision);
     ComboRando::KokiriGrassCatalogRevisionScope grassRevision(SOH_GetKokiriGrassRevision, SOH_SetKokiriGrassRevision,
-        ComboRando::kKokiriGrassModernRevision);
+                                                              ComboRando::kKokiriGrassModernRevision);
     ComboRando::Entrances::NativeScope entranceRestore(sEntranceNative);
     ComboRando::CheckGenerationCancellation();
-    struct SongRestore { nlohmann::json previous=sSongTravel.json(); ~SongRestore(){ InstallSongTravel(previous); } } songRestore;
-    if (progress) progress->phase.store(1); // Pool preparation can take time on mobile CPUs.
+    struct SongRestore {
+        nlohmann::json previous = sSongTravel.json();
+        ~SongRestore() {
+            InstallSongTravel(previous);
+        }
+    } songRestore;
+    if (progress)
+        progress->phase.store(1); // Pool preparation can take time on mobile CPUs.
     auto fail = [&](const char* msg) {
         if (progress) {
             progress->SetError(msg);
@@ -2116,7 +2192,9 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     if (SOH_ReadComboGoalCVars) {
         int required = 0, total = -1;
         goal.hunt = SOH_ReadComboGoalCVars(&required, &total) != 0;
-        goal.type = SOH_ReadComboGoalTypeCVars ? static_cast<ComboRando::CwGoal::Type>(SOH_ReadComboGoalTypeCVars(&required, &total)) : (goal.hunt ? ComboRando::CwGoal::HUNT : ComboRando::CwGoal::BOTH);
+        goal.type = SOH_ReadComboGoalTypeCVars
+                        ? static_cast<ComboRando::CwGoal::Type>(SOH_ReadComboGoalTypeCVars(&required, &total))
+                        : (goal.hunt ? ComboRando::CwGoal::HUNT : ComboRando::CwGoal::BOTH);
         goal.hunt = goal.type == ComboRando::CwGoal::HUNT;
         goal.required = goal.hunt ? required : 0;
         goal.total = total; // kept even for bosses, so each game's own piece slider is forced to 0
@@ -2135,15 +2213,17 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     std::string sohDump, mmDump, spoiler, lastFillError, sohHintDump;
     nlohmann::json profileResolvedRules;
     bool usedCombinedFill = false;
-    nlohmann::json entranceExpansion,ordinaryEntranceExpansion,grottoEntranceExpansion,mixedEntranceExpansion;
+    nlohmann::json entranceExpansion, ordinaryEntranceExpansion, grottoEntranceExpansion, mixedEntranceExpansion;
     // Private native validation controls; no public entrance option is enabled here.
-    const auto ordinarySettings=ComboRando::Entrances::MmOrdinaryGenerationSettings(
-        sReadGameplayRule&&sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryIndoors",0)!=0,
-        sReadGameplayRule&&sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryTelescopes",0)!=0,
-        sReadGameplayRule&&sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryOverworld",0)!=0,
-        sReadGameplayRule&&sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryDungeons",0)!=0);
-    const bool nativeMmMixed=sReadGameplayRule&&sReadGameplayRule("gCombo.Rando.NativeMmMixed",0)!=0; // private validation only
-    const bool nativeMmGrottos=sReadGameplayRule&&sReadGameplayRule("gCombo.Rando.NativeMmGrottos",0)!=0; // private validation only
+    const auto ordinarySettings = ComboRando::Entrances::MmOrdinaryGenerationSettings(
+        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryIndoors", 0) != 0,
+        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryTelescopes", 0) != 0,
+        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryOverworld", 0) != 0,
+        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmOrdinaryDungeons", 0) != 0);
+    const bool nativeMmMixed =
+        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmMixed", 0) != 0; // private validation only
+    const bool nativeMmGrottos =
+        sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmGrottos", 0) != 0; // private validation only
     const bool nativeMmWallmasters = sReadGameplayRule && sReadGameplayRule("gCombo.Rando.NativeMmWallmasters", 0) != 0;
     nlohmann::json playthroughJson = nlohmann::json::array(); // structured sphere playthrough (combined-fill only)
     ComboRando::RequirednessResult pareDownResult;            // cross-hint Phase 3 WotH/foolish classification
@@ -2192,7 +2272,10 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     const int kFillAttempts = ComboRando::kFillAttempts;
     for (uint64_t attempt = 0; (retryUntilSuccess || attempt < kFillAttempts) && !usedCombinedFill; ++attempt) {
         ComboRando::CheckGenerationCancellation();
-        if(progress) { progress->attempt=attempt+1; progress->phase=1; }
+        if (progress) {
+            progress->attempt = attempt + 1;
+            progress->phase = 1;
+        }
         // Interactive generation keeps retrying; headless test runs remain bounded.
         // Space each retry's seed far apart (golden-ratio step) so attempts don't correlate.
         masterSeed = baseSeed + uint32_t(attempt) * 0x9E3779B9u;
@@ -2213,25 +2296,34 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         // (wincon, Majora soul removal, piece count) from the goal.
         if (SOH_SetComboGoal)
             SOH_SetComboGoal(goal.hunt ? 1 : 0, goal.required, ComboRando::CwOotPieces(goal.total));
-        if (SOH_SetComboGoalType) SOH_SetComboGoalType(ComboRando::CwGoalType(goal), goal.required, ComboRando::CwOotPieces(goal.total));
+        if (SOH_SetComboGoalType)
+            SOH_SetComboGoalType(ComboRando::CwGoalType(goal), goal.required, ComboRando::CwOotPieces(goal.total));
         if (MM_SetComboGoal)
             MM_SetComboGoal(goal.hunt ? 1 : 0, goal.required, ComboRando::CwMmPieces(goal.total));
-        if (MM_SetComboGoalType) MM_SetComboGoalType(ComboRando::CwGoalType(goal), goal.required, ComboRando::CwMmPieces(goal.total));
+        if (MM_SetComboGoalType)
+            MM_SetComboGoalType(ComboRando::CwGoalType(goal), goal.required, ComboRando::CwMmPieces(goal.total));
         // Same reason (#135): an MM start forces OOT's age/forest/exclusions, which shape its pool.
         if (SOH_SetComboStartingGame)
             SOH_SetComboStartingGame(mmStart ? 1 : 0);
         // Shared Items: shapes OOT's wallet force before the dump (settings.cpp reads gComboSharedMask).
         if (SOH_SetComboSharedItems)
             SOH_SetComboSharedItems(sharedMask);
-        if (MM_SetComboSharedItems) MM_SetComboSharedItems(sharedMask);
+        if (MM_SetComboSharedItems)
+            MM_SetComboSharedItems(sharedMask);
 
         std::cout << "[ComboShip] Preparing OOT randomizer pool (attempt " << attempt + 1 << ")..." << std::endl;
         ComboRando::SynchronizeGenerationGuarantee(
-            [](const char* key,int fallback){return sReadGameplayRule ? sReadGameplayRule(key,fallback) : fallback;},
-            [](const char* key,int value){if(sWriteGameplayRule) sWriteGameplayRule(key,value);});
+            [](const char* key, int fallback) {
+                return sReadGameplayRule ? sReadGameplayRule(key, fallback) : fallback;
+            },
+            [](const char* key, int value) {
+                if (sWriteGameplayRule)
+                    sWriteGameplayRule(key, value);
+            });
         if (sReadGameplayRule && sWriteGameplayRule)
-            sWriteGameplayRule("gRandoSettings.CompleteMaskQuest", ComboRando::NormalizeOotMaskQuestForGeneration(
-                sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
+            sWriteGameplayRule("gRandoSettings.CompleteMaskQuest",
+                               ComboRando::NormalizeOotMaskQuestForGeneration(
+                                   sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
         sohDump = SOH_DumpRandoStaticData();
         std::cout << "[ComboShip] Preparing MM randomizer pool..." << std::endl;
         mmDump = MM_DumpRandoStaticData();
@@ -2245,8 +2337,8 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                 fail(lastFillError.c_str());
                 return;
             }
-            std::cout << "[ComboShip] Native pool preparation attempt " << (attempt + 1)
-                      << " failed: " << lastFillError << "\n";
+            std::cout << "[ComboShip] Native pool preparation attempt " << (attempt + 1) << " failed: " << lastFillError
+                      << "\n";
             if (Combo_MM_Rando_Restore)
                 Combo_MM_Rando_Restore();
             continue;
@@ -2287,36 +2379,50 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         if (!haveOracles)
             break; // no oracles -> no-logic fallback below; the dumps are still needed
 
-        ComboRando::OracleFns ootOracle = { Combo_SOH_Rando_Reset, Combo_SOH_Rando_SetOwnedItems,
-                                            Combo_SOH_Rando_GetReachableChecks, Combo_SOH_Rando_PlaceItem,
-                                            Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals, SOH_GetSongSources, SOH_SongDestination, SOH_GetSongKnowledge, SOH_SetForeignSongKnowledge };
-        ComboRando::OracleFns mmOracle = { Combo_MM_Rando_Reset, Combo_MM_Rando_SetOwnedItems,
-                                           Combo_MM_Rando_GetReachableChecks, Combo_MM_Rando_PlaceItem, nullptr, MM_SetSongArrivals, MM_GetSongSources, SOH_SongDestination, MM_GetSongKnowledge, MM_SetForeignSongKnowledge };
-        mmOracle.SetExternalBeanRenewal=MM_SetOracleExternalBeanRenewal;
-        AttachAdultAgeOracle(ootOracle,mmOracle);
+        ComboRando::OracleFns ootOracle = {
+            Combo_SOH_Rando_Reset,      Combo_SOH_Rando_SetOwnedItems, Combo_SOH_Rando_GetReachableChecks,
+            Combo_SOH_Rando_PlaceItem,  Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals,
+            SOH_GetSongSources,         SOH_SongDestination,           SOH_GetSongKnowledge,
+            SOH_SetForeignSongKnowledge
+        };
+        ComboRando::OracleFns mmOracle = { Combo_MM_Rando_Reset,
+                                           Combo_MM_Rando_SetOwnedItems,
+                                           Combo_MM_Rando_GetReachableChecks,
+                                           Combo_MM_Rando_PlaceItem,
+                                           nullptr,
+                                           MM_SetSongArrivals,
+                                           MM_GetSongSources,
+                                           SOH_SongDestination,
+                                           MM_GetSongKnowledge,
+                                           MM_SetForeignSongKnowledge };
+        mmOracle.SetExternalBeanRenewal = MM_SetOracleExternalBeanRenewal;
+        AttachAdultAgeOracle(ootOracle, mmOracle);
 
-        entranceExpansion = ComboRando::Entrances::GenerateNativeMmWallmasters(nativeMmWallmasters, masterSeed,
-            sEntranceNative, sohDump, mmDump, forcedOot, ootOracle, mmOracle, mmStart, goal);
+        entranceExpansion = ComboRando::Entrances::GenerateNativeMmWallmasters(
+            nativeMmWallmasters, masterSeed, sEntranceNative, sohDump, mmDump, forcedOot, ootOracle, mmOracle, mmStart,
+            goal);
 
-        if(nativeMmMixed){
-            mixedEntranceExpansion=ComboRando::Entrances::GenerateNativeMmMixed(
-                ComboRando::Entrances::MmMixedGenerationSettings(ordinarySettings,nativeMmGrottos),masterSeed,
-                sEntranceNative,sohDump,mmDump,forcedOot,ootOracle,mmOracle,mmStart,goal);
-            ComboRando::Entrances::ApplyNativeMmMixed(sEntranceNative,mixedEntranceExpansion);
-        }else {
-        ordinaryEntranceExpansion=ComboRando::Entrances::GenerateNativeMmOrdinary(ordinarySettings,masterSeed,
-            sEntranceNative,sohDump,mmDump,forcedOot,ootOracle,mmOracle,mmStart,goal);
-        if(!ordinaryEntranceExpansion.is_null())
-            ComboRando::Entrances::ApplyNativeMmOrdinary(sEntranceNative,ordinaryEntranceExpansion);
+        if (nativeMmMixed) {
+            mixedEntranceExpansion = ComboRando::Entrances::GenerateNativeMmMixed(
+                ComboRando::Entrances::MmMixedGenerationSettings(ordinarySettings, nativeMmGrottos), masterSeed,
+                sEntranceNative, sohDump, mmDump, forcedOot, ootOracle, mmOracle, mmStart, goal);
+            ComboRando::Entrances::ApplyNativeMmMixed(sEntranceNative, mixedEntranceExpansion);
+        } else {
+            ordinaryEntranceExpansion =
+                ComboRando::Entrances::GenerateNativeMmOrdinary(ordinarySettings, masterSeed, sEntranceNative, sohDump,
+                                                                mmDump, forcedOot, ootOracle, mmOracle, mmStart, goal);
+            if (!ordinaryEntranceExpansion.is_null())
+                ComboRando::Entrances::ApplyNativeMmOrdinary(sEntranceNative, ordinaryEntranceExpansion);
 
-        if(nativeMmGrottos){
-            ComboRando::Entrances::Settings settings;settings.games=ComboRando::Entrances::Games::Mm;
-            settings.erGrottos=ComboRando::Entrances::Mode::OwnGame;
-            grottoEntranceExpansion=ComboRando::Entrances::GenerateNativeMmGrottos(settings,masterSeed,
-                sEntranceNative,sohDump,mmDump,forcedOot,ootOracle,mmOracle,mmStart,goal);
-            ComboRando::Entrances::ApplyNativeMmGrottos(sEntranceNative,grottoEntranceExpansion);
-        }
-
+            if (nativeMmGrottos) {
+                ComboRando::Entrances::Settings settings;
+                settings.games = ComboRando::Entrances::Games::Mm;
+                settings.erGrottos = ComboRando::Entrances::Mode::OwnGame;
+                grottoEntranceExpansion = ComboRando::Entrances::GenerateNativeMmGrottos(
+                    settings, masterSeed, sEntranceNative, sohDump, mmDump, forcedOot, ootOracle, mmOracle, mmStart,
+                    goal);
+                ComboRando::Entrances::ApplyNativeMmGrottos(sEntranceNative, grottoEntranceExpansion);
+            }
         }
         // ComboShip: honor OOT's logic/ALR settings per-game (MM stays all-reachable). The fill gates MM
         // on the portal region via ootOracle.GetPortalOpen; NO_LOGIC bypasses it.
@@ -2336,9 +2442,10 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
             if (SOH_DumpRandoHintData) {
                 sohHintDump = SOH_DumpRandoHintData();
             }
-            if(sProfileAttempt&&sProfileResolvedRules){
-                profileResolvedRules=nlohmann::json::parse(sProfileResolvedRules());
-                if(profileResolvedRules.contains("error"))throw std::runtime_error(profileResolvedRules["error"].get<std::string>());
+            if (sProfileAttempt && sProfileResolvedRules) {
+                profileResolvedRules = nlohmann::json::parse(sProfileResolvedRules());
+                if (profileResolvedRules.contains("error"))
+                    throw std::runtime_error(profileResolvedRules["error"].get<std::string>());
             }
             ootCheckAreasCache = buildOotCheckAreas(sohHintDump); // parsed once, reused below and after the loop
             // ComboShip: requiredness pare-down (Phase 3) — needs the STILL-LIVE oracle session, so it
@@ -2352,11 +2459,13 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                 std::cout << "[ComboShip] RunComboFill: pare-down skipped (No Logic + Triforce Hunt)\n";
             } else if (ComboRando::NeedsRequirednessPareDown(sohHintDump, mmDump)) {
                 // NO_LOGIC: gate requiredness on MM only (OOT may be unbeatable by design).
-                pareDownResult =
-                    ComboRando::PareDownPlaythrough(result.spoilerJson, ootOracle, mmOracle, nullptr, sohDump, mmDump,
-                                                    ootCheckAreasCache, buildMmCheckAreas(mmDump),
-                                                    (noLogic && ComboRando::CwGoalType(goal) == ComboRando::CwGoal::BOTH) ? ComboRando::GoalPredicate(ComboRando::MmOnlyMajoraGoal) : ComboRando::MakeCombinedGoal(goal),
-                                                    !noLogic, mmStart, progress, sharedMask);
+                pareDownResult = ComboRando::PareDownPlaythrough(
+                    result.spoilerJson, ootOracle, mmOracle, nullptr, sohDump, mmDump, ootCheckAreasCache,
+                    buildMmCheckAreas(mmDump),
+                    (noLogic && ComboRando::CwGoalType(goal) == ComboRando::CwGoal::BOTH)
+                        ? ComboRando::GoalPredicate(ComboRando::MmOnlyMajoraGoal)
+                        : ComboRando::MakeCombinedGoal(goal),
+                    !noLogic, mmStart, progress, sharedMask);
             } else {
                 std::cout << "[ComboShip] RunComboFill: pare-down skipped (no enabled hint surface needs "
                              "requiredness)\n";
@@ -2485,7 +2594,8 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         // Combo_FinalizeGenerate, which the main-thread file-select poll runs once it sees done.
         // The OOT seed-hash folds in input-seed + both settings dumps so the icons identify seed and
         // settings (same seed+settings -> matching icons across players).
-        uint32_t displaySeed = ComboHash((inputSeed + sohDump + mmDump + SnapshotGameplayRules().dump() + sSongTravel.json().dump()).c_str());
+        uint32_t displaySeed = ComboHash(
+            (inputSeed + sohDump + mmDump + SnapshotGameplayRules().dump() + sSongTravel.json().dump()).c_str());
         g_FinalizeOotApply = ootApply.dump();
         g_FinalizeDisplaySeed = displaySeed;
         g_FinalizeMasterSeed = masterSeed;
@@ -2527,13 +2637,21 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         consolidated["gameplayRules"] = SnapshotGameplayRules();
         consolidated["faroreRules"] = ComboRando::FaroreRulesFromMmDump(nlohmann::json::parse(mmDump)).json();
         consolidated["spellRules"] = ComboRando::SpellRulesFromMmDump(nlohmann::json::parse(mmDump)).json();
-        consolidated["accessibility"]={{"version",1},{"mode",CombinedAccessForGeneration(sohDump)==ComboRando::OotAccess::NO_LOGIC ? "noLogic" :
-            CombinedAccessForGeneration(sohDump)==ComboRando::OotAccess::BEATABLE_ONLY ? "completion" : "everyCheck"}};
+        consolidated["accessibility"] = {
+            { "version", 1 },
+            { "mode", CombinedAccessForGeneration(sohDump) == ComboRando::OotAccess::NO_LOGIC        ? "noLogic"
+                      : CombinedAccessForGeneration(sohDump) == ComboRando::OotAccess::BEATABLE_ONLY ? "completion"
+                                                                                                     : "everyCheck" }
+        };
         consolidated["songTravel"] = sSongTravel.json();
-        if (!entranceExpansion.is_null()) consolidated["entranceExpansion"] = entranceExpansion;
-        if (!ordinaryEntranceExpansion.is_null()) consolidated["ordinaryEntranceExpansion"] = ordinaryEntranceExpansion;
-        if (!grottoEntranceExpansion.is_null()) consolidated["grottoEntranceExpansion"] = grottoEntranceExpansion;
-        if (!mixedEntranceExpansion.is_null()) consolidated["mixedEntranceExpansion"] = mixedEntranceExpansion;
+        if (!entranceExpansion.is_null())
+            consolidated["entranceExpansion"] = entranceExpansion;
+        if (!ordinaryEntranceExpansion.is_null())
+            consolidated["ordinaryEntranceExpansion"] = ordinaryEntranceExpansion;
+        if (!grottoEntranceExpansion.is_null())
+            consolidated["grottoEntranceExpansion"] = grottoEntranceExpansion;
+        if (!mixedEntranceExpansion.is_null())
+            consolidated["mixedEntranceExpansion"] = mixedEntranceExpansion;
         consolidated["seed"] = inputSeed;
         consolidated["masterSeed"] = masterSeed;
         consolidated["displaySeed"] = displaySeed;
@@ -2555,9 +2673,10 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         consolidated["mm"] = { { "settings", parseOrEmpty(MM_DumpRandoSettings) },
                                { "placements", mmSpoiler },
                                { "prices", pricesOf(mmDump) } };
-        if(sProfileAttempt&&sProfileResolvedRules){
-            if(!profileResolvedRules.is_object())throw std::runtime_error("Missing winning seed trial rules");
-            consolidated["oot"]["resolvedSeedRules"]=profileResolvedRules;
+        if (sProfileAttempt && sProfileResolvedRules) {
+            if (!profileResolvedRules.is_object())
+                throw std::runtime_error("Missing winning seed trial rules");
+            consolidated["oot"]["resolvedSeedRules"] = profileResolvedRules;
         }
         auto foreignEnriched = ComboRando::BuildForeignArray(foreignArr, effectiveSharedMask);
         consolidated["foreign"] = foreignEnriched;
@@ -2586,9 +2705,13 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                                                                         foreignEnriched, spoiler, pareDownResult)
                                                  : nlohmann::json{ { "version", 1 } };
         ComboRando::CheckGenerationCancellation();
-        if(progress) progress->BeginCommit();
-        if(sProfileAttempt)consolidated["comboProfile"]={{"version",1},{"file",sProfileAttempt->slot},
-            {"revision",sProfileAttempt->revision},{"settings",sProfileAttempt->setup}};
+        if (progress)
+            progress->BeginCommit();
+        if (sProfileAttempt)
+            consolidated["comboProfile"] = { { "version", 1 },
+                                             { "file", sProfileAttempt->slot },
+                                             { "revision", sProfileAttempt->revision },
+                                             { "settings", sProfileAttempt->setup } };
         g_ConsolidatedJson = consolidated.dump(2);
 
         // This seed's own spoiler, so earlier seeds survive instead of being overwritten. The CVar that
@@ -2623,13 +2746,16 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     RestoreLoadedSlotGoal();
     g_GenerateBusy.store(false);
 } catch (const std::exception& e) {
-    if(Combo_MM_Rando_Restore) Combo_MM_Rando_Restore();
+    if (Combo_MM_Rando_Restore)
+        Combo_MM_Rando_Restore();
     RestoreLoadedSlotGoal();
-    if(progress) {
+    if (progress) {
         progress->SetError(progress->CancelRequested() ? "Generation cancelled" : e.what());
-        progress->success=false; progress->done=true; progress->running=false;
+        progress->success = false;
+        progress->done = true;
+        progress->running = false;
     }
-    g_GenerateBusy=false;
+    g_GenerateBusy = false;
 }
 
 // ComboShip: headless cross-world generation TEST (COMBO_GENTEST=<count>). Runs the combined fill
@@ -2648,12 +2774,23 @@ static int RunComboGenTest(int numSeeds, uint32_t seedBase) {
         std::cerr << "[GENTEST] dump functions not resolved — cannot run\n";
         return -1;
     }
-    ComboRando::OracleFns ootOracle = { Combo_SOH_Rando_Reset, Combo_SOH_Rando_SetOwnedItems,
-                                        Combo_SOH_Rando_GetReachableChecks, Combo_SOH_Rando_PlaceItem,
-                                        Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals, SOH_GetSongSources, SOH_SongDestination, SOH_GetSongKnowledge, SOH_SetForeignSongKnowledge };
-    ComboRando::OracleFns mmOracle = { Combo_MM_Rando_Reset, Combo_MM_Rando_SetOwnedItems,
-                                       Combo_MM_Rando_GetReachableChecks, Combo_MM_Rando_PlaceItem, nullptr, MM_SetSongArrivals, MM_GetSongSources, SOH_SongDestination, MM_GetSongKnowledge, MM_SetForeignSongKnowledge };
-        mmOracle.SetExternalBeanRenewal=MM_SetOracleExternalBeanRenewal;
+    ComboRando::OracleFns ootOracle = {
+        Combo_SOH_Rando_Reset,      Combo_SOH_Rando_SetOwnedItems, Combo_SOH_Rando_GetReachableChecks,
+        Combo_SOH_Rando_PlaceItem,  Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals,
+        SOH_GetSongSources,         SOH_SongDestination,           SOH_GetSongKnowledge,
+        SOH_SetForeignSongKnowledge
+    };
+    ComboRando::OracleFns mmOracle = { Combo_MM_Rando_Reset,
+                                       Combo_MM_Rando_SetOwnedItems,
+                                       Combo_MM_Rando_GetReachableChecks,
+                                       Combo_MM_Rando_PlaceItem,
+                                       nullptr,
+                                       MM_SetSongArrivals,
+                                       MM_GetSongSources,
+                                       SOH_SongDestination,
+                                       MM_GetSongKnowledge,
+                                       MM_SetForeignSongKnowledge };
+    mmOracle.SetExternalBeanRenewal = MM_SetOracleExternalBeanRenewal;
 
     std::cout << "[GENTEST] running " << numSeeds << " cross-world generations (seedBase=" << seedBase
               << ") — asserting every advancement item is reachable from an empty start in both games\n";
@@ -2680,8 +2817,9 @@ static int RunComboGenTest(int numSeeds, uint32_t seedBase) {
             if (SOH_SetComboStartingGame)
                 SOH_SetComboStartingGame(mmStart ? 1 : 0);
             if (sReadGameplayRule && sWriteGameplayRule)
-                sWriteGameplayRule("gRandoSettings.CompleteMaskQuest", ComboRando::NormalizeOotMaskQuestForGeneration(
-                    sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
+                sWriteGameplayRule("gRandoSettings.CompleteMaskQuest",
+                                   ComboRando::NormalizeOotMaskQuestForGeneration(
+                                       sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
             std::string sohDump = SOH_DumpRandoStaticData();
             std::string mmDump = MM_DumpRandoStaticData();
             if (sohDump.empty() || mmDump.empty()) {
@@ -2756,12 +2894,23 @@ static void RunComboPlaythrough(const std::string& inputSeed) {
         std::cerr << "[PLAYTHROUGH] dump functions not resolved\n";
         return;
     }
-    ComboRando::OracleFns ootOracle = { Combo_SOH_Rando_Reset, Combo_SOH_Rando_SetOwnedItems,
-                                        Combo_SOH_Rando_GetReachableChecks, Combo_SOH_Rando_PlaceItem,
-                                        Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals, SOH_GetSongSources, SOH_SongDestination, SOH_GetSongKnowledge, SOH_SetForeignSongKnowledge };
-    ComboRando::OracleFns mmOracle = { Combo_MM_Rando_Reset, Combo_MM_Rando_SetOwnedItems,
-                                       Combo_MM_Rando_GetReachableChecks, Combo_MM_Rando_PlaceItem, nullptr, MM_SetSongArrivals, MM_GetSongSources, SOH_SongDestination, MM_GetSongKnowledge, MM_SetForeignSongKnowledge };
-        mmOracle.SetExternalBeanRenewal=MM_SetOracleExternalBeanRenewal;
+    ComboRando::OracleFns ootOracle = {
+        Combo_SOH_Rando_Reset,      Combo_SOH_Rando_SetOwnedItems, Combo_SOH_Rando_GetReachableChecks,
+        Combo_SOH_Rando_PlaceItem,  Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals,
+        SOH_GetSongSources,         SOH_SongDestination,           SOH_GetSongKnowledge,
+        SOH_SetForeignSongKnowledge
+    };
+    ComboRando::OracleFns mmOracle = { Combo_MM_Rando_Reset,
+                                       Combo_MM_Rando_SetOwnedItems,
+                                       Combo_MM_Rando_GetReachableChecks,
+                                       Combo_MM_Rando_PlaceItem,
+                                       nullptr,
+                                       MM_SetSongArrivals,
+                                       MM_GetSongSources,
+                                       SOH_SongDestination,
+                                       MM_GetSongKnowledge,
+                                       MM_SetForeignSongKnowledge };
+    mmOracle.SetExternalBeanRenewal = MM_SetOracleExternalBeanRenewal;
     std::string seedStr = inputSeed.empty() ? "1" : inputSeed;
     const uint32_t baseSeed = ComboHash(seedStr.c_str());
     std::string sohDump, mmDump;
@@ -2783,8 +2932,9 @@ static void RunComboPlaythrough(const std::string& inputSeed) {
         if (SOH_SetComboStartingGame)
             SOH_SetComboStartingGame(mmStart ? 1 : 0);
         if (sReadGameplayRule && sWriteGameplayRule)
-            sWriteGameplayRule("gRandoSettings.CompleteMaskQuest", ComboRando::NormalizeOotMaskQuestForGeneration(
-                sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
+            sWriteGameplayRule("gRandoSettings.CompleteMaskQuest",
+                               ComboRando::NormalizeOotMaskQuestForGeneration(
+                                   sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
         sohDump = SOH_DumpRandoStaticData();
         mmDump = MM_DumpRandoStaticData();
         if (sohDump.empty() || mmDump.empty()) {
@@ -2843,11 +2993,17 @@ static void Combo_OnGenerateRequest(const char* inputSeed, ComboRando::ComboGenP
 // std::thread object. The gSaveContext apply happens later on the main thread (Combo_PollFinalize).
 static void Combo_OnGenerateThreaded(const char* inputSeed) {
     std::string profileSeed;
-    if(sProfiles&&!sProfileAttempt) {
-        try{const int slot=sProfileSelected?sProfileSelected():0;
-            profileSeed=sProfiles->view().draft(slot,Combo_ReadSavedSeedReadonly(slot)).value("seed",std::string());
-            ProfileBeginGeneration(slot,profileSeed.c_str());inputSeed=profileSeed.c_str();}
-        catch(const std::exception& e){g_ComboProgress.SetError(e.what());g_ComboProgress.done.store(true);return;}
+    if (sProfiles && !sProfileAttempt) {
+        try {
+            const int slot = sProfileSelected ? sProfileSelected() : 0;
+            profileSeed = sProfiles->view().draft(slot, Combo_ReadSavedSeedReadonly(slot)).value("seed", std::string());
+            ProfileBeginGeneration(slot, profileSeed.c_str());
+            inputSeed = profileSeed.c_str();
+        } catch (const std::exception& e) {
+            g_ComboProgress.SetError(e.what());
+            g_ComboProgress.done.store(true);
+            return;
+        }
     }
     // Reject if a worker is running OR a finalize is still pending (apply not yet run on main thread).
     if (g_ComboPendingFinalize.load() || g_GenerateBusy.exchange(true)) {
@@ -2885,19 +3041,24 @@ static void Combo_FinalizeGenerate() {
     try {
         const auto seed = nlohmann::json::parse(g_ConsolidatedJson);
         const auto catalog = ComboRando::ReadKokiriCatalogRevisions(seed.value("oot", nlohmann::json::object()));
-        kokiriRevision = std::make_unique<ComboRando::KokiriSeedRevisionScope>(SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision, catalog.invisibleRupees);
-        grassRevision = std::make_unique<ComboRando::KokiriGrassCatalogRevisionScope>(SOH_GetKokiriGrassRevision, SOH_SetKokiriGrassRevision, catalog.grass);
+        kokiriRevision = std::make_unique<ComboRando::KokiriSeedRevisionScope>(
+            SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision, catalog.invisibleRupees);
+        grassRevision = std::make_unique<ComboRando::KokiriGrassCatalogRevisionScope>(
+            SOH_GetKokiriGrassRevision, SOH_SetKokiriGrassRevision, catalog.grass);
         if (!InstallEntranceSeed(seed)) {
             g_ComboProgress.SetError("Generated MM entrance layout could not be installed");
             g_ComboProgress.success.store(false);
             g_ComboProgress.running.store(false);
-            if (SOH_SetSeedGenerated) SOH_SetSeedGenerated(0);
+            if (SOH_SetSeedGenerated)
+                SOH_SetSeedGenerated(0);
             return;
         }
     } catch (const std::exception& error) {
-        g_ComboProgress.SetError(error.what()); g_ComboProgress.success.store(false);
+        g_ComboProgress.SetError(error.what());
+        g_ComboProgress.success.store(false);
         g_ComboProgress.running.store(false);
-        if (SOH_SetSeedGenerated) SOH_SetSeedGenerated(0);
+        if (SOH_SetSeedGenerated)
+            SOH_SetSeedGenerated(0);
         return;
     }
     nlohmann::json hints = ComboHintsJsonFrom(g_ConsolidatedJson);
@@ -2912,7 +3073,7 @@ static void Combo_FinalizeGenerate() {
     }
     if (SOH_SetComboSeedHash)
         SOH_SetComboSeedHash(g_FinalizeDisplaySeed);
-    ProfileRestoreGenerationSetup(); // Never persist a transient file draft into global CVars.
+    ProfileRestoreGenerationSetup();             // Never persist a transient file draft into global CVars.
     RememberComboSpoiler(g_FinalizeSpoilerPath); // worker wrote the file; the CVar is ours to set
     g_FinalizeSpoilerPath.clear();
     if (hintsPresent && SOH_ApplyComboHints)
@@ -2937,14 +3098,26 @@ static void Combo_FinalizeGenerate() {
 static int Combo_PollFinalize() {
     if (g_ComboPendingFinalize.exchange(false)) {
         Combo_FinalizeGenerate();
-        try{ProfileCompleteGeneration();}catch(const std::exception& e){g_ComboProgress.SetError(e.what());return 0;}
+        try {
+            ProfileCompleteGeneration();
+        } catch (const std::exception& e) {
+            g_ComboProgress.SetError(e.what());
+            return 0;
+        }
         return 1;
     }
     // A cancelled/failed attempt has reset the working placement tables. Existing
     // save files keep their baked seed, but don't start a new file on stale tables.
-    const bool resolved=g_ComboProgress.done.load() && !g_GenerateBusy.load();
-    if(resolved&&sProfileAttempt)try{ProfileCompleteGeneration();}catch(const std::exception& e){g_ComboProgress.SetError(e.what());return 0;}
-    if(resolved && !g_ComboProgress.success.load() && SOH_SetSeedGenerated) SOH_SetSeedGenerated(0);
+    const bool resolved = g_ComboProgress.done.load() && !g_GenerateBusy.load();
+    if (resolved && sProfileAttempt)
+        try {
+            ProfileCompleteGeneration();
+        } catch (const std::exception& e) {
+            g_ComboProgress.SetError(e.what());
+            return 0;
+        }
+    if (resolved && !g_ComboProgress.success.load() && SOH_SetSeedGenerated)
+        SOH_SetSeedGenerated(0);
     return resolved ? 1 : 0;
 }
 
@@ -2961,10 +3134,18 @@ static bool TryLoadComboSeedFile(const std::filesystem::path& p, nlohmann::json&
             return false;
         }
         ComboRando::Entrances::ValidateMmMixedSeed(j);
-        if(j.contains("ordinaryEntranceExpansion")){ComboRando::Entrances::MmOrdinaryLayout proof;proof.install(j.at("ordinaryEntranceExpansion"));}
-        if(j.contains("grottoEntranceExpansion")){ComboRando::Entrances::MmGrottoLayout proof;proof.install(j.at("grottoEntranceExpansion"));}
+        if (j.contains("ordinaryEntranceExpansion")) {
+            ComboRando::Entrances::MmOrdinaryLayout proof;
+            proof.install(j.at("ordinaryEntranceExpansion"));
+        }
+        if (j.contains("grottoEntranceExpansion")) {
+            ComboRando::Entrances::MmGrottoLayout proof;
+            proof.install(j.at("grottoEntranceExpansion"));
+        }
         ComboRando::Entrances::DecodeMmWallmasterSeed(j);
-        if ((j.contains("entranceExpansion")||j.contains("ordinaryEntranceExpansion")||j.contains("grottoEntranceExpansion")||j.contains("mixedEntranceExpansion")) && !sEntranceNative.applySeed)
+        if ((j.contains("entranceExpansion") || j.contains("ordinaryEntranceExpansion") ||
+             j.contains("grottoEntranceExpansion") || j.contains("mixedEntranceExpansion")) &&
+            !sEntranceNative.applySeed)
             throw std::runtime_error("MM entrance expansion export unavailable");
         out = std::move(j);
         return true;
@@ -3023,7 +3204,7 @@ static std::filesystem::path FindNewestComboSeed(nlohmann::json& out) {
 // settings, runs the pool prep, re-applies the saved OOT placements + seed-hash, stashes the MM
 // placements, and keeps the consolidated JSON in memory so "Start Randomizer" writes the per-slot
 // file. Returns 1 on success. The hash string is recomputed from displaySeed for the per-slot name.
-static int Combo_OnReloadRequestImpl(const char* path,const nlohmann::json* profileSeed=nullptr) {
+static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* profileSeed = nullptr) {
     if (g_GenerateBusy.load() || g_ComboPendingFinalize.load()) {
         std::cerr << "[ComboShip] reload: skipped — a generation is in flight\n";
         return 0; // a generation is in flight — don't race it
@@ -3036,8 +3217,9 @@ static int Combo_OnReloadRequestImpl(const char* path,const nlohmann::json* prof
     // The resolve/scan below touches the filesystem and may throw (path conversion, bad_alloc); this
     // runs under a C-ABI callback, so nothing may unwind past it.
     try {
-        if(profileSeed) {j=*profileSeed;}
-        else if (!isSilentAutoLoad) {
+        if (profileSeed) {
+            j = *profileSeed;
+        } else if (!isSilentAutoLoad) {
             // An explicit drop never falls back to another seed: a failed drop is a real error.
             auto dropped = ResolveComboSeedPath(path);
             if (!TryLoadComboSeedFile(dropped, j)) {
@@ -3079,18 +3261,26 @@ static int Combo_OnReloadRequestImpl(const char* path,const nlohmann::json* prof
     }
     try {
         const auto catalog = ComboRando::ReadKokiriCatalogRevisions(j.value("oot", nlohmann::json::object()));
-        ComboRando::KokiriSeedRevisionScope kokiriRevision(SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision, catalog.invisibleRupees);
-        ComboRando::KokiriGrassCatalogRevisionScope grassRevision(SOH_GetKokiriGrassRevision, SOH_SetKokiriGrassRevision, catalog.grass);
+        ComboRando::KokiriSeedRevisionScope kokiriRevision(SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision,
+                                                           catalog.invisibleRupees);
+        ComboRando::KokiriGrassCatalogRevisionScope grassRevision(SOH_GetKokiriGrassRevision,
+                                                                  SOH_SetKokiriGrassRevision, catalog.grass);
         // Reproducing entrances must use the seed's own gameplay rules too. Silent startup
         // restores the menu's choices afterwards; a failed import always restores them.
         struct RuleRestoreGuard {
             nlohmann::json previous = SnapshotGameplayRules();
             int slot = sGameplayRulesSlot;
-            nlohmann::json routes=sSongTravel.json();
+            nlohmann::json routes = sSongTravel.json();
             bool keep = false;
-            ~RuleRestoreGuard() { if (!keep) { RestoreGameplayRules(previous, slot); InstallSongTravel(routes); } }
+            ~RuleRestoreGuard() {
+                if (!keep) {
+                    RestoreGameplayRules(previous, slot);
+                    InstallSongTravel(routes);
+                }
+            }
         } ruleGuard;
-        if (j.contains("gameplayRules")) RestoreGameplayRules(j["gameplayRules"], sGameplayRulesSlot);
+        if (j.contains("gameplayRules"))
+            RestoreGameplayRules(j["gameplayRules"], sGameplayRulesSlot);
         InstallSongTravel(j.value("songTravel", nlohmann::json()));
         uint32_t masterSeed = j.value("masterSeed", 0u);
         ResetCrossItemDedupForSeed(masterSeed);
@@ -3108,8 +3298,10 @@ static int Combo_OnReloadRequestImpl(const char* path,const nlohmann::json* prof
                 SOH_SetComboGoal(hunt, required, ComboRando::CwOotPieces(total));
             if (MM_SetComboGoal)
                 MM_SetComboGoal(hunt, required, ComboRando::CwMmPieces(total));
-            if (SOH_SetComboGoalType) SOH_SetComboGoalType(ComboRando::CwGoalType(typedGoal), required, ComboRando::CwOotPieces(total));
-            if (MM_SetComboGoalType) MM_SetComboGoalType(ComboRando::CwGoalType(typedGoal), required, ComboRando::CwMmPieces(total));
+            if (SOH_SetComboGoalType)
+                SOH_SetComboGoalType(ComboRando::CwGoalType(typedGoal), required, ComboRando::CwOotPieces(total));
+            if (MM_SetComboGoalType)
+                MM_SetComboGoalType(ComboRando::CwGoalType(typedGoal), required, ComboRando::CwMmPieces(total));
             // Log-only sanity check: a hand-edited/plandomized spoiler could ask for more pieces than it
             // actually places, which is unwinnable. Loud, but the load still proceeds (the file is the
             // player's own artifact and the rest of it may be perfectly fine).
@@ -3176,8 +3368,9 @@ static int Combo_OnReloadRequestImpl(const char* path,const nlohmann::json* prof
             MM_SetComboRandoSeed(masterSeed);
         if (SOH_PrepRandoContext)
             SOH_PrepRandoContext();
-        if(oot.contains("resolvedSeedRules")&&(!sProfileApplyResolvedRules||
-            !sProfileApplyResolvedRules(oot["resolvedSeedRules"].dump().c_str())))return 0;
+        if (oot.contains("resolvedSeedRules") &&
+            (!sProfileApplyResolvedRules || !sProfileApplyResolvedRules(oot["resolvedSeedRules"].dump().c_str())))
+            return 0;
         // Same deterministic call as generation — reproduces (or clears) this seed's entrance layout.
         if (SOH_ShuffleEntrancesForCombo && !SOH_ShuffleEntrancesForCombo(masterSeed)) {
             std::cerr << "[ComboShip] reload: OOT entrance shuffle failed to re-derive — aborting\n";
@@ -3222,14 +3415,16 @@ static int Combo_OnReloadRequestImpl(const char* path,const nlohmann::json* prof
         if (!isSilentAutoLoad && MM_RestoreRandoSettings)
             MM_RestoreRandoSettings(mmSettings.c_str());
 
-        if (!InstallEntranceSeed(j)) return 0;
+        if (!InstallEntranceSeed(j))
+            return 0;
         // Keep the loaded seed so Start binds it to the chosen slot; recompute the hash-icon filename.
         g_ConsolidatedJson = j.dump(2);
         g_FinalizeDisplaySeed = displaySeed;
         // Remember it so it survives a restart before Start. Re-filed under its hash name so the
         // remembered path always holds the content just loaded, never a same-named older spoiler.
-        if(!profileSeed)RememberComboSpoiler(j.contains("file_hash") ? WriteComboSpoiler(j["file_hash"], g_ConsolidatedJson)
-                                                     : std::filesystem::path(file));
+        if (!profileSeed)
+            RememberComboSpoiler(j.contains("file_hash") ? WriteComboSpoiler(j["file_hash"], g_ConsolidatedJson)
+                                                         : std::filesystem::path(file));
         // Populate the shared progress so the comboui Generate panel shows the remembered seed
         // (seed string, per-game check counts, cross-game count) just like a fresh generation.
         g_ComboProgress.Reset();
@@ -3301,7 +3496,7 @@ static void Combo_OnOOTSaveInit(int fileNum) {
             FlushContainer(fileNum);
         }
         RestoreGameplayRules(SeedGameplayRules(seed), fileNum);
-        InstallSongTravel(seed.value("songTravel",nlohmann::json()));
+        InstallSongTravel(seed.value("songTravel", nlohmann::json()));
         RefreshGameplayRuntime();
         LoadComboCompletion(fileNum); // refresh the in-memory latch + push this seed's goal into both DLLs
         if (SOH_LoadComboRando)
@@ -3336,12 +3531,15 @@ static void Combo_OnOOTSaveInit(int fileNum) {
         // A reloaded seed's MM settings only get written here (MM_InitRandoSaveFile is where MM reads
         // them) — never at reload time, so they can't leak into comboship.json before a slot is bound.
         if (!g_PendingMMSettingsJson.empty()) {
-            if(sProfiles&&sProfileApplyMm)sProfileApplyMm(g_PendingMMSettingsJson.c_str());
-            else if(MM_RestoreRandoSettings)MM_RestoreRandoSettings(g_PendingMMSettingsJson.c_str());
+            if (sProfiles && sProfileApplyMm)
+                sProfileApplyMm(g_PendingMMSettingsJson.c_str());
+            else if (MM_RestoreRandoSettings)
+                MM_RestoreRandoSettings(g_PendingMMSettingsJson.c_str());
         }
         g_MmSaveInMemorySlot = -1;
         const int mmInitResult = MM_InitRandoSaveFile(fileNum, mmPlacements.c_str(), playerName);
-        if (mmInitResult == 0) g_MmSaveInMemorySlot = fileNum;
+        if (mmInitResult == 0)
+            g_MmSaveInMemorySlot = fileNum;
         if (mmInitResult != 0) {
             std::cerr << "[ComboShip] ERROR: MM rando save creation FAILED for slot " << fileNum
                       << " — this slot's MM save has no placements. Re-create it." << std::endl;
@@ -3357,8 +3555,10 @@ static void Combo_OnOOTSaveInit(int fileNum) {
         // Silent auto-load: the save now has the seed's settings baked in — return the CVars to the
         // user's config. An explicit drop leaves the seed's settings as the new persisted baseline.
         if (g_ComboReloadRestoreUserMM && !g_UserMMSettingsSnapshot.empty()) {
-            if(sProfiles&&sProfileApplyMm)sProfileApplyMm(g_UserMMSettingsSnapshot.c_str());
-            else if(MM_RestoreRandoSettings)MM_RestoreRandoSettings(g_UserMMSettingsSnapshot.c_str());
+            if (sProfiles && sProfileApplyMm)
+                sProfileApplyMm(g_UserMMSettingsSnapshot.c_str());
+            else if (MM_RestoreRandoSettings)
+                MM_RestoreRandoSettings(g_UserMMSettingsSnapshot.c_str());
         }
         g_PendingMMSettingsJson.clear();
         g_UserMMSettingsSnapshot.clear();
@@ -3385,16 +3585,17 @@ static void Combo_ResumeMMIfLastSavedThere(int fileNum);
 // memory so the combo tracker peek shows real MM items before MM is visited. Skipped when that
 // slot's MM save is already live in memory — reloading from disk would clobber newer progress.
 static void Combo_OnOOTSaveLoad(int fileNum) {
-    if (!ComboIsValidSlot(fileNum)) return;
+    if (!ComboIsValidSlot(fileNum))
+        return;
     nlohmann::json rules;
     {
         std::lock_guard<std::mutex> lk(g_containerMutex);
         auto& c = LoadOrCreateContainer(fileNum);
         const auto originalSeed = c["combo"].value("rando", nlohmann::json::object());
-        rules = ComboRando::GameplayRulesForRun(originalSeed,
-            c["combo"].value("gameplayRules", nlohmann::json()));
+        rules = ComboRando::GameplayRulesForRun(originalSeed, c["combo"].value("gameplayRules", nlohmann::json()));
         c["combo"]["gameplayRules"] = rules; // persisted migration, separate from immutable seed data
-        if(SOH_SetMmVisited) SOH_SetMmVisited((c["combo"].value("visitedGames",0)&2) || c["combo"].value("lastGame",0)==1);
+        if (SOH_SetMmVisited)
+            SOH_SetMmVisited((c["combo"].value("visitedGames", 0) & 2) || c["combo"].value("lastGame", 0) == 1);
     }
     RestoreGameplayRules(rules, fileNum);
     LoadComboCompletion(fileNum); // refresh both-bosses-beaten flags for this slot
@@ -3409,10 +3610,16 @@ static void Combo_OnOOTSaveLoad(int fileNum) {
                 rando = r.dump();
         }
         nlohmann::json seedForEntrances = nlohmann::json::object();
-        try { if (!rando.empty()) seedForEntrances = nlohmann::json::parse(rando); }
-        catch (const std::exception& error) { std::cerr << "[ComboShip] Invalid slot seed: " << error.what() << "\n"; return; }
-        if (!InstallEntranceSeed(seedForEntrances)) return;
-        InstallSongTravel(rando.empty() ? nlohmann::json() : seedForEntrances.value("songTravel",nlohmann::json()));
+        try {
+            if (!rando.empty())
+                seedForEntrances = nlohmann::json::parse(rando);
+        } catch (const std::exception& error) {
+            std::cerr << "[ComboShip] Invalid slot seed: " << error.what() << "\n";
+            return;
+        }
+        if (!InstallEntranceSeed(seedForEntrances))
+            return;
+        InstallSongTravel(rando.empty() ? nlohmann::json() : seedForEntrances.value("songTravel", nlohmann::json()));
         RefreshGameplayRuntime();
         if (!rando.empty()) {
             if (SOH_LoadComboRando)
@@ -3421,7 +3628,8 @@ static void Combo_OnOOTSaveLoad(int fileNum) {
                 MM_LoadComboRando(rando.c_str());
         }
     }
-    if(sSetOotTricksCsv) sSetOotTricksCsv(rules.value("ootTricks",std::string()).c_str());
+    if (sSetOotTricksCsv)
+        sSetOotTricksCsv(rules.value("ootTricks", std::string()).c_str());
     Combo_PushHintTrackerData(fileNum); // #164: this slot's hints + persisted read state
     if (!MM_LoadSaveForCombo || g_MmSaveInMemorySlot == fileNum) {
         Combo_OnTriforceProgress(0, fileNum);
@@ -3468,118 +3676,161 @@ static void Combo_ResumeMMIfLastSavedThere(int fileNum) {
 }
 
 static bool FaroreSlot(int fileNum) {
-    return ComboIsValidSlot(fileNum)&&fileNum==g_comboCompletionSlot;
+    return ComboIsValidSlot(fileNum) && fileNum == g_comboCompletionSlot;
 }
-static int Combo_FaroreReadDungeon(int fileNum,ComboSharedDungeon* out) {
-    if(!out||!FaroreSlot(fileNum))return 0;
+static int Combo_FaroreReadDungeon(int fileNum, ComboSharedDungeon* out) {
+    if (!out || !FaroreSlot(fileNum))
+        return 0;
     std::lock_guard<std::mutex> lock(g_containerMutex);
-    const auto& c=LoadOrCreateContainer(fileNum);
-    try {*out=c.at("combo").value("dungeonIngress",ComboSharedDungeon{});return 1;}catch(...){return 0;}
+    const auto& c = LoadOrCreateContainer(fileNum);
+    try {
+        *out = c.at("combo").value("dungeonIngress", ComboSharedDungeon{});
+        return 1;
+    } catch (...) { return 0; }
 }
-static int Combo_FaroreWriteDungeon(int fileNum,const ComboSharedDungeon* point) {
-    if(!point||!FaroreSlot(fileNum)||point->valid>1||
-       (point->valid&&(point->game>1||point->age>1||point->form>4)))return 0;
+static int Combo_FaroreWriteDungeon(int fileNum, const ComboSharedDungeon* point) {
+    if (!point || !FaroreSlot(fileNum) || point->valid > 1 ||
+        (point->valid && (point->game > 1 || point->age > 1 || point->form > 4)))
+        return 0;
     // This metadata mutation shares the exact full-save atomic mutex and flush path.
     // It never serializes dormant SaveContext or promotes an owl blob.
     std::lock_guard<std::mutex> lock(g_containerMutex);
-    auto& c=LoadOrCreateContainer(fileNum);c["combo"]["dungeonIngress"]=*point;
-    FlushContainer(fileNum);return 1;
+    auto& c = LoadOrCreateContainer(fileNum);
+    c["combo"]["dungeonIngress"] = *point;
+    FlushContainer(fileNum);
+    return 1;
 }
 static int Combo_FaroreOotAge(int fileNum) {
-    if(!FaroreSlot(fileNum))return -1;
-    return SOH_GetFaroreAge?SOH_GetFaroreAge(fileNum):-1;
+    if (!FaroreSlot(fileNum))
+        return -1;
+    return SOH_GetFaroreAge ? SOH_GetFaroreAge(fileNum) : -1;
 }
 static bool BindDormantMmFarore(int fileNum) {
-    if(!FaroreSlot(fileNum))return false;
-    if(ComboAnchor::sActiveGame.load()==1)return g_MmSaveInMemorySlot==fileNum;
-    if(g_MmSaveInMemorySlot==fileNum)return true;
+    if (!FaroreSlot(fileNum))
+        return false;
+    if (ComboAnchor::sActiveGame.load() == 1)
+        return g_MmSaveInMemorySlot == fileNum;
+    if (g_MmSaveInMemorySlot == fileNum)
+        return true;
     // Probe the same-slot save service first. It never creates a phantom sentinel slot.
-    const char* page=Combo_ReadGameSave(ComboRando::GAME_MM,fileNum);
-    if(!page||!*page||!MM_LoadSaveForCombo)return false;
-    g_MmSaveInMemorySlot=-1;
-    if(MM_LoadSaveForCombo(fileNum)!=0)return false;
-    g_MmSaveInMemorySlot=fileNum;return true;
+    const char* page = Combo_ReadGameSave(ComboRando::GAME_MM, fileNum);
+    if (!page || !*page || !MM_LoadSaveForCombo)
+        return false;
+    g_MmSaveInMemorySlot = -1;
+    if (MM_LoadSaveForCombo(fileNum) != 0)
+        return false;
+    g_MmSaveInMemorySlot = fileNum;
+    return true;
 }
-static int Combo_FaroreOotDestination(int fileNum,int age,int* entrance) {
-    return FaroreSlot(fileNum)&&SOH_GetFaroreDestination
-        ? SOH_GetFaroreDestination(fileNum,age,entrance):0;
+static int Combo_FaroreOotDestination(int fileNum, int age, int* entrance) {
+    return FaroreSlot(fileNum) && SOH_GetFaroreDestination ? SOH_GetFaroreDestination(fileNum, age, entrance) : 0;
 }
-static int Combo_FaroreMmDestination(int fileNum,int age,int* entrance) {
-    return BindDormantMmFarore(fileNum)&&MM_GetFaroreDestination
-        ? MM_GetFaroreDestination(fileNum,age,entrance):0;
+static int Combo_FaroreMmDestination(int fileNum, int age, int* entrance) {
+    return BindDormantMmFarore(fileNum) && MM_GetFaroreDestination ? MM_GetFaroreDestination(fileNum, age, entrance)
+                                                                   : 0;
 }
-static int Combo_FaroreSyncOot(int fileNum,int age,int marker,int entrance) {
+static int Combo_FaroreSyncOot(int fileNum, int age, int marker, int entrance) {
     // MM is the origin. Refuse an active foreign engine or a different loaded OoT slot.
-    if(!FaroreSlot(fileNum)||ComboAnchor::sActiveGame.load()!=1||!SOH_SyncFaroreFromMm)return 0;
-    return SOH_SyncFaroreFromMm(fileNum,age,marker,entrance);
+    if (!FaroreSlot(fileNum) || ComboAnchor::sActiveGame.load() != 1 || !SOH_SyncFaroreFromMm)
+        return 0;
+    return SOH_SyncFaroreFromMm(fileNum, age, marker, entrance);
 }
-static int Combo_FaroreSyncMm(int fileNum,int age,int marker,int entrance) {
-    if(ComboAnchor::sActiveGame.load()!=0||!BindDormantMmFarore(fileNum)||!MM_SyncFaroreFromOot)return 0;
-    return MM_SyncFaroreFromOot(fileNum,age,marker,entrance);
+static int Combo_FaroreSyncMm(int fileNum, int age, int marker, int entrance) {
+    if (ComboAnchor::sActiveGame.load() != 0 || !BindDormantMmFarore(fileNum) || !MM_SyncFaroreFromOot)
+        return 0;
+    return MM_SyncFaroreFromOot(fileNum, age, marker, entrance);
 }
 static int g_mmReturnKind = 0;
-static int Combo_PreflightEntranceDeparture(int fileNum,int source,int destination,uint32_t id,int age,int crossAge) {
-    if(!FaroreSlot(fileNum)||source<0||source>1||destination!=1-source||
-       ComboAnchor::sActiveGame.load()!=source||id>=0x80000000u||age<0||age>1||
-       (crossAge!=0&&crossAge!=1)||!SOH_CanEntranceArrival||!MM_CanEntranceArrival||
-       !SOH_ArmEntranceArrival||!MM_ArmEntranceArrival||
-       (source==0&&g_PendingMMFileNum>=0)||(source==1&&g_pendingOOTReturn))return 0;
+static int Combo_PreflightEntranceDeparture(int fileNum, int source, int destination, uint32_t id, int age,
+                                            int crossAge) {
+    if (!FaroreSlot(fileNum) || source < 0 || source > 1 || destination != 1 - source ||
+        ComboAnchor::sActiveGame.load() != source || id >= 0x80000000u || age < 0 || age > 1 ||
+        (crossAge != 0 && crossAge != 1) || !SOH_CanEntranceArrival || !MM_CanEntranceArrival ||
+        !SOH_ArmEntranceArrival || !MM_ArmEntranceArrival || (source == 0 && g_PendingMMFileNum >= 0) ||
+        (source == 1 && g_pendingOOTReturn))
+        return 0;
     // The immutable saved seed owns cross-age policy; the caller cannot enable it
     // through a resource-readiness latch, current QoL CVar or a song destination.
-    bool savedCrossAge=false;
+    bool savedCrossAge = false;
     try {
         std::lock_guard<std::mutex> lock(g_containerMutex);
-        const auto& c=LoadOrCreateContainer(fileNum);
-        const auto seed=c.at("combo").value("rando",nlohmann::json());
+        const auto& c = LoadOrCreateContainer(fileNum);
+        const auto seed = c.at("combo").value("rando", nlohmann::json());
         ComboRando::FaroreRules rules;
-        if(!seed.is_null()&&!ComboRando::ReadFaroreRules(seed.value("faroreRules",nlohmann::json()),rules))return 0;
-        savedCrossAge=rules.crossAge;
-    } catch(...) {return 0;}
-    if(bool(crossAge)!=savedCrossAge)return 0;
-    if(destination==1) {
-        if(!BindDormantMmFarore(fileNum))return 0;
-        return MM_CanEntranceArrival(fileNum,id,age,crossAge);
+        if (!seed.is_null() && !ComboRando::ReadFaroreRules(seed.value("faroreRules", nlohmann::json()), rules))
+            return 0;
+        savedCrossAge = rules.crossAge;
+    } catch (...) { return 0; }
+    if (bool(crossAge) != savedCrossAge)
+        return 0;
+    if (destination == 1) {
+        if (!BindDormantMmFarore(fileNum))
+            return 0;
+        return MM_CanEntranceArrival(fileNum, id, age, crossAge);
     }
-    const char* page=Combo_ReadGameSave(ComboRando::GAME_OOT,fileNum);
-    return page&&*page&&SOH_CanEntranceArrival(fileNum,id,age,crossAge);
+    const char* page = Combo_ReadGameSave(ComboRando::GAME_OOT, fileNum);
+    return page && *page && SOH_CanEntranceArrival(fileNum, id, age, crossAge);
 }
-static int Combo_CommitEntranceDeparture(int fileNum,int source,int destination,uint32_t id,int age,int crossAge) {
-    if(!Combo_PreflightEntranceDeparture(fileNum,source,destination,id,age,crossAge))return 0;
-    auto arm=destination==1?MM_ArmEntranceArrival:SOH_ArmEntranceArrival;
-    if(!arm(fileNum,id,age,crossAge))return 0;
-    if(destination==1) {
-        if(MM_SetSongArrival)MM_SetSongArrival(-1);
-        if(MM_SetComboEntryIsResume)MM_SetComboEntryIsResume(0);
-        g_PendingMMFileNum=fileNum;
+static int Combo_CommitEntranceDeparture(int fileNum, int source, int destination, uint32_t id, int age, int crossAge) {
+    if (!Combo_PreflightEntranceDeparture(fileNum, source, destination, id, age, crossAge))
+        return 0;
+    auto arm = destination == 1 ? MM_ArmEntranceArrival : SOH_ArmEntranceArrival;
+    if (!arm(fileNum, id, age, crossAge))
+        return 0;
+    if (destination == 1) {
+        if (MM_SetSongArrival)
+            MM_SetSongArrival(-1);
+        if (MM_SetComboEntryIsResume)
+            MM_SetComboEntryIsResume(0);
+        g_PendingMMFileNum = fileNum;
     } else {
-        if(SOH_SetSongArrival)SOH_SetSongArrival(-1);
-        g_mmReturnKind=0;g_pendingOOTReturn=true;
+        if (SOH_SetSongArrival)
+            SOH_SetSongArrival(-1);
+        g_mmReturnKind = 0;
+        g_pendingOOTReturn = true;
     }
     return 1;
 }
-static int Combo_CommitNativeDeparture(int fileNum,int destination,int reason,int age,int entrance) {
-    if(!FaroreSlot(fileNum)||age<0||age>1||entrance<0||entrance==0xfffd||
-       destination<0||destination>1||ComboAnchor::sActiveGame.load()==destination)return 0;
-    FaroreArrival arm=nullptr;
-    if(reason==COMBO_ARRIVAL_FARORE) {
-        int actual=-1;
-        if(destination==1) {if(!Combo_FaroreMmDestination(fileNum,age,&actual))return 0;arm=MM_SetFaroreArrivalEntrance;}
-        else {if(!Combo_FaroreOotDestination(fileNum,age,&actual))return 0;arm=SOH_SetFaroreArrivalEntrance;}
-        if(actual!=entrance)return 0;
-    } else if(reason==COMBO_ARRIVAL_DUNGEON) {
+static int Combo_CommitNativeDeparture(int fileNum, int destination, int reason, int age, int entrance) {
+    if (!FaroreSlot(fileNum) || age < 0 || age > 1 || entrance < 0 || entrance == 0xfffd || destination < 0 ||
+        destination > 1 || ComboAnchor::sActiveGame.load() == destination)
+        return 0;
+    FaroreArrival arm = nullptr;
+    if (reason == COMBO_ARRIVAL_FARORE) {
+        int actual = -1;
+        if (destination == 1) {
+            if (!Combo_FaroreMmDestination(fileNum, age, &actual))
+                return 0;
+            arm = MM_SetFaroreArrivalEntrance;
+        } else {
+            if (!Combo_FaroreOotDestination(fileNum, age, &actual))
+                return 0;
+            arm = SOH_SetFaroreArrivalEntrance;
+        }
+        if (actual != entrance)
+            return 0;
+    } else if (reason == COMBO_ARRIVAL_DUNGEON) {
         ComboSharedDungeon d{};
-        if(!Combo_FaroreReadDungeon(fileNum,&d)||!d.valid||!d.playerParams||d.game!=destination||d.entrance!=entrance)return 0;
-        arm=destination==1?MM_SetDungeonArrival:SOH_SetDungeonArrival;
-    } else return 0;
-    if(!arm||!arm(fileNum,age,entrance))return 0;
+        if (!Combo_FaroreReadDungeon(fileNum, &d) || !d.valid || !d.playerParams || d.game != destination ||
+            d.entrance != entrance)
+            return 0;
+        arm = destination == 1 ? MM_SetDungeonArrival : SOH_SetDungeonArrival;
+    } else
+        return 0;
+    if (!arm || !arm(fileNum, age, entrance))
+        return 0;
     // Only commit foreground loop state after destination validation and arming succeed.
-    if(destination==1) {
-        if(MM_SetSongArrival)MM_SetSongArrival(-1);
-        if(MM_SetComboEntryIsResume)MM_SetComboEntryIsResume(0);
-        g_PendingMMFileNum=fileNum;
+    if (destination == 1) {
+        if (MM_SetSongArrival)
+            MM_SetSongArrival(-1);
+        if (MM_SetComboEntryIsResume)
+            MM_SetComboEntryIsResume(0);
+        g_PendingMMFileNum = fileNum;
     } else {
-        if(SOH_SetSongArrival)SOH_SetSongArrival(-1);
-        g_mmReturnKind=0;g_pendingOOTReturn=true;
+        if (SOH_SetSongArrival)
+            SOH_SetSongArrival(-1);
+        g_mmReturnKind = 0;
+        g_pendingOOTReturn = true;
     }
     return 1;
 }
@@ -3587,42 +3838,53 @@ static void Combo_OnOOTSceneSwitch(int fileNum) {
     std::cout << "[ComboShip] Mask Shop entered — switching to MM, slot " << fileNum << std::endl;
     if (MM_SetComboEntryIsResume)
         MM_SetComboEntryIsResume(0); // portal entry: always arrives in South Clock Town
-    int faroreAge=-1,faroreEntrance=-1;
-    const bool dungeon=SOH_TakeDungeonDeparture&&SOH_TakeDungeonDeparture(&faroreAge,&faroreEntrance);
-    const bool farore=!dungeon&&SOH_TakeFaroreDeparture&&SOH_TakeFaroreDeparture(&faroreAge,&faroreEntrance);
-    if(dungeon) {
-        if(MM_SetSongArrival)MM_SetSongArrival(-1);
-        if(!FaroreSlot(fileNum)||!MM_SetDungeonArrival||!MM_SetDungeonArrival(fileNum,faroreAge,faroreEntrance))return;
-        g_PendingMMFileNum=fileNum;return;
+    int faroreAge = -1, faroreEntrance = -1;
+    const bool dungeon = SOH_TakeDungeonDeparture && SOH_TakeDungeonDeparture(&faroreAge, &faroreEntrance);
+    const bool farore = !dungeon && SOH_TakeFaroreDeparture && SOH_TakeFaroreDeparture(&faroreAge, &faroreEntrance);
+    if (dungeon) {
+        if (MM_SetSongArrival)
+            MM_SetSongArrival(-1);
+        if (!FaroreSlot(fileNum) || !MM_SetDungeonArrival || !MM_SetDungeonArrival(fileNum, faroreAge, faroreEntrance))
+            return;
+        g_PendingMMFileNum = fileNum;
+        return;
     }
-    if(farore) {
-        if(MM_SetSongArrival)MM_SetSongArrival(-1);
-        if(!FaroreSlot(fileNum)||!MM_SetFaroreArrivalEntrance||
-           !MM_SetFaroreArrivalEntrance(fileNum,faroreAge,faroreEntrance))return;
-    } else if(MM_SetSongArrival)MM_SetSongArrival(SOH_TakeSongDeparture?SOH_TakeSongDeparture():-1);
+    if (farore) {
+        if (MM_SetSongArrival)
+            MM_SetSongArrival(-1);
+        if (!FaroreSlot(fileNum) || !MM_SetFaroreArrivalEntrance ||
+            !MM_SetFaroreArrivalEntrance(fileNum, faroreAge, faroreEntrance))
+            return;
+    } else if (MM_SetSongArrival)
+        MM_SetSongArrival(SOH_TakeSongDeparture ? SOH_TakeSongDeparture() : -1);
     g_PendingMMFileNum = fileNum;
     // OOT game loop is already exiting (gGameState->running = false set by the hook).
 }
 
 // Why MM handed control back: 0 = portal, 1 = Ctrl+R reset, 2 = owl-save quit (see BenPort.cpp).
 
-
 static void Combo_OnMMReturn(int kind) {
     g_mmReturnKind = kind;
-    int faroreAge=-1,faroreEntrance=-1;
-    const bool dungeon=MM_TakeDungeonDeparture&&MM_TakeDungeonDeparture(&faroreAge,&faroreEntrance);
-    const bool farore=!dungeon&&MM_TakeFaroreDeparture&&MM_TakeFaroreDeparture(&faroreAge,&faroreEntrance);
-    if(dungeon) {
-        if(SOH_SetSongArrival)SOH_SetSongArrival(-1);
-        if(kind!=0||!FaroreSlot(g_MmSaveInMemorySlot)||!SOH_SetDungeonArrival||
-           !SOH_SetDungeonArrival(g_MmSaveInMemorySlot,faroreAge,faroreEntrance))return;
-        g_pendingOOTReturn=true;return;
+    int faroreAge = -1, faroreEntrance = -1;
+    const bool dungeon = MM_TakeDungeonDeparture && MM_TakeDungeonDeparture(&faroreAge, &faroreEntrance);
+    const bool farore = !dungeon && MM_TakeFaroreDeparture && MM_TakeFaroreDeparture(&faroreAge, &faroreEntrance);
+    if (dungeon) {
+        if (SOH_SetSongArrival)
+            SOH_SetSongArrival(-1);
+        if (kind != 0 || !FaroreSlot(g_MmSaveInMemorySlot) || !SOH_SetDungeonArrival ||
+            !SOH_SetDungeonArrival(g_MmSaveInMemorySlot, faroreAge, faroreEntrance))
+            return;
+        g_pendingOOTReturn = true;
+        return;
     }
-    if(farore) {
-        if(SOH_SetSongArrival)SOH_SetSongArrival(-1);
-        if(kind!=0||!FaroreSlot(g_MmSaveInMemorySlot)||!SOH_SetFaroreArrivalEntrance||
-           !SOH_SetFaroreArrivalEntrance(g_MmSaveInMemorySlot,faroreAge,faroreEntrance))return;
-    } else if(SOH_SetSongArrival)SOH_SetSongArrival(MM_TakeSongDeparture?MM_TakeSongDeparture():-1);
+    if (farore) {
+        if (SOH_SetSongArrival)
+            SOH_SetSongArrival(-1);
+        if (kind != 0 || !FaroreSlot(g_MmSaveInMemorySlot) || !SOH_SetFaroreArrivalEntrance ||
+            !SOH_SetFaroreArrivalEntrance(g_MmSaveInMemorySlot, faroreAge, faroreEntrance))
+            return;
+    } else if (SOH_SetSongArrival)
+        SOH_SetSongArrival(MM_TakeSongDeparture ? MM_TakeSongDeparture() : -1);
     std::cout << "[ComboShip] MM returning to OOT (kind=" << kind << ")" << std::endl;
     g_pendingOOTReturn = true;
 }
@@ -3752,9 +4014,10 @@ int main(int argc, char** argv) {
     // Resolve soh.dll exports
     sApplyOotRule = (void (*)(const char*))GetSym(sohModule, "SOH_MenuApplyCVarChange");
     sApplyMmRule = (void (*)(const char*))GetSym(mmModule, "MM_MenuApplyCVarChange");
-    sReadGameplayRule = (int32_t (*)(const char*, int32_t))GetSym(sohModule, "SOH_ReadGameplayRule");
+    sReadGameplayRule = (int32_t(*)(const char*, int32_t))GetSym(sohModule, "SOH_ReadGameplayRule");
     sWriteGameplayRule = (void (*)(const char*, int32_t))GetSym(sohModule, "SOH_WriteGameplayRule");
-    if(auto setRefresh=(void(*)(void(*)()))GetSym(sohModule,"SOH_SetComboRuleRefresh")) setRefresh(RefreshGameplayRuntime);
+    if (auto setRefresh = (void (*)(void (*)()))GetSym(sohModule, "SOH_SetComboRuleRefresh"))
+        setRefresh(RefreshGameplayRuntime);
     SOH_Init = (FnVoid)GetSym(sohModule, "SOH_Init");
     SOH_RunMain = (FnRunMain)GetSym(sohModule, "SOH_RunMain");
     SOH_Extract = (FnExtract)GetSym(sohModule, "SOH_Extract");
@@ -3793,8 +4056,8 @@ int main(int argc, char** argv) {
     MM_DumpRandoStaticData = (FnDumpData)GetSym(mmModule, "MM_DumpRandoStaticData");
     SOH_DumpRandoSettings = (FnDumpData)GetSym(sohModule, "SOH_DumpRandoSettings");
     SOH_DumpEnabledTricks = (FnDumpData)GetSym(sohModule, "SOH_DumpEnabledTricks");
-    sGetOotTricksCsv=(const char*(*)())GetSym(sohModule,"SOH_GetComboTricksCsv");
-    sSetOotTricksCsv=(void(*)(const char*))GetSym(sohModule,"SOH_SetComboTricksCsv");
+    sGetOotTricksCsv = (const char* (*)())GetSym(sohModule, "SOH_GetComboTricksCsv");
+    sSetOotTricksCsv = (void (*)(const char*))GetSym(sohModule, "SOH_SetComboTricksCsv");
     MM_DumpRandoSettings = (FnDumpData)GetSym(mmModule, "MM_DumpRandoSettings");
     SOH_DumpRandoHintData = (FnDumpData)GetSym(sohModule, "SOH_DumpRandoHintData");
     SOH_ApplyComboHints = (FnApplyHints)GetSym(sohModule, "SOH_ApplyComboHints");
@@ -3807,8 +4070,10 @@ int main(int argc, char** argv) {
     SOH_RestoreRandoSettings = (FnTakeStr)GetSym(sohModule, "SOH_RestoreRandoSettings");
     SOH_GetKokiriSeedRevision = (ComboRando::FnGetKokiriSeedRevision)GetSym(sohModule, "SOH_GetKokiriSeedRevision");
     SOH_SetKokiriSeedRevision = (ComboRando::FnSetKokiriSeedRevision)GetSym(sohModule, "SOH_SetKokiriSeedRevision");
-    SOH_GetKokiriGrassRevision = (ComboRando::FnGetKokiriSeedRevision)GetSym(sohModule, "SOH_GetKokiriGrassCatalogRevision");
-    SOH_SetKokiriGrassRevision = (ComboRando::FnSetKokiriSeedRevision)GetSym(sohModule, "SOH_SetKokiriGrassCatalogRevision");
+    SOH_GetKokiriGrassRevision =
+        (ComboRando::FnGetKokiriSeedRevision)GetSym(sohModule, "SOH_GetKokiriGrassCatalogRevision");
+    SOH_SetKokiriGrassRevision =
+        (ComboRando::FnSetKokiriSeedRevision)GetSym(sohModule, "SOH_SetKokiriGrassCatalogRevision");
     MM_RestoreRandoSettings = (FnTakeStr)GetSym(mmModule, "MM_RestoreRandoSettings");
     SOH_SetCheckPrices = (FnTakeStr)GetSym(sohModule, "SOH_SetCheckPrices");
     MM_SetCheckPrices = (FnTakeStr)GetSym(mmModule, "MM_SetCheckPrices");
@@ -3866,9 +4131,9 @@ int main(int argc, char** argv) {
     // Cross-game item delivery seam (issue #3)
     SOH_SetCrossDeliver = (FnSetCrossDeliver)GetSym(sohModule, "SOH_SetCrossDeliver");
     MM_SetCrossDeliver = (FnSetCrossDeliver)GetSym(mmModule, "MM_SetCrossDeliver");
-    SOH_QueryScrubRenewable=(FnScrubStockQuery)GetSym(sohModule,"SOH_QueryScrubRenewable");
-    SOH_GrantScrubRenewable=(FnScrubStockGrant)GetSym(sohModule,"SOH_GrantScrubRenewable");
-    MM_SetScrubStockBridge=(FnSetScrubStockBridge)GetSym(mmModule,"MM_SetScrubStockBridge");
+    SOH_QueryScrubRenewable = (FnScrubStockQuery)GetSym(sohModule, "SOH_QueryScrubRenewable");
+    SOH_GrantScrubRenewable = (FnScrubStockGrant)GetSym(sohModule, "SOH_GrantScrubRenewable");
+    MM_SetScrubStockBridge = (FnSetScrubStockBridge)GetSym(mmModule, "MM_SetScrubStockBridge");
     SOH_GrantCrossItem = (FnGrantCrossItem)GetSym(sohModule, "SOH_GrantCrossItem");
     MM_GrantCrossItem = (FnGrantCrossItem)GetSym(mmModule, "MM_GrantCrossItem");
     SOH_SetMarkForeignObtained = (FnSetCrossRoute)GetSym(sohModule, "SOH_SetMarkForeignObtained");
@@ -3928,90 +4193,98 @@ int main(int argc, char** argv) {
     Combo_MM_Rando_GetReachableChecks = (FnOracleGetChecks)GetSym(mmModule, "Combo_MM_Rando_GetReachableChecks");
     Combo_MM_Rando_PlaceItem = (FnOraclePlaceItem)GetSym(mmModule, "Combo_MM_Rando_PlaceItem");
     Combo_MM_Rando_Restore = (FnOracleVoid)GetSym(mmModule, "Combo_MM_Rando_Restore");
-    sEntranceNative = {
-        (int(*)(const char*))GetSym(mmModule, "MM_ApplyEntranceExpansionForCombo"),
-        (int(*)(const char*))GetSym(mmModule, "MM_SetEntranceExpansionAssumptionsForCombo"),
-        (void(*)())GetSym(mmModule, "MM_ClearEntranceExpansionAssumptionsForCombo"),
-        (const char*(*)())GetSym(mmModule, "MM_DumpEntranceExpansionForCombo")
-    };
+    sEntranceNative = { (int (*)(const char*))GetSym(mmModule, "MM_ApplyEntranceExpansionForCombo"),
+                        (int (*)(const char*))GetSym(mmModule, "MM_SetEntranceExpansionAssumptionsForCombo"),
+                        (void (*)())GetSym(mmModule, "MM_ClearEntranceExpansionAssumptionsForCombo"),
+                        (const char* (*)())GetSym(mmModule, "MM_DumpEntranceExpansionForCombo") };
 
-    SOH_SetSongTravel=(void(*)(const char*))GetSym(sohModule,"SOH_SetSongTravel");
-    MM_SetSongTravel=(void(*)(const char*))GetSym(mmModule,"MM_SetSongTravel");
-    SOH_SetSongArrivals=(void(*)(uint32_t))GetSym(sohModule,"SOH_SetSongArrivals");
-    MM_SetSongArrivals=(void(*)(uint32_t))GetSym(mmModule,"MM_SetSongArrivals");
-    MM_SetOracleExternalBeanRenewal=(int(*)(uint8_t))GetSym(mmModule,"MM_SetOracleExternalBeanRenewal");
-    sAdultOotAgeOracle.GetPortalAges=(uint8_t(*)())GetSym(sohModule,"SOH_GetOraclePortalAges");
-    sAdultOotAgeOracle.GetSongSourcesForAge=(uint32_t(*)(int))GetSym(sohModule,"SOH_GetOracleSongSourcesForAge");
-    sAdultOotAgeOracle.SetSongAgeArrivals=(void(*)(uint32_t,uint32_t))GetSym(sohModule,"SOH_SetOracleSongAgeArrivals");
-    sAdultMmAgeOracle.SetEntryAges=(void(*)(uint8_t))GetSym(mmModule,"MM_SetOracleEntryAges");
-    sAdultMmAgeOracle.GetDefaultEntryAges=(uint8_t(*)())GetSym(mmModule,"MM_GetOracleDefaultEntryAges");
-    sAdultMmAgeOracle.GetSongSourcesForAge=(uint32_t(*)(int))GetSym(mmModule,"MM_GetOracleSongSourcesForAge");
-    sAdultMmAgeOracle.SetSongAgeArrivals=(void(*)(uint32_t,uint32_t))GetSym(mmModule,"MM_SetOracleSongAgeArrivals");
-    sAdultMmAgeOracle.UseCrossAgeOracle=(bool(*)())GetSym(mmModule,"MM_UseCrossAgeOracle");
-    SOH_SetMmVisited=(void(*)(int))GetSym(sohModule,"SOH_SetMmVisited");
-    SOH_GetSongKnowledge=(uint32_t(*)())GetSym(sohModule,"SOH_GetSongKnowledge");
-    MM_GetSongKnowledge=(uint32_t(*)())GetSym(mmModule,"MM_GetSongKnowledge");
-    SOH_SetForeignSongKnowledge=(void(*)(uint32_t))GetSym(sohModule,"SOH_SetForeignSongKnowledge");
-    MM_SetForeignSongKnowledge=(void(*)(uint32_t))GetSym(mmModule,"MM_SetForeignSongKnowledge");
-    SOH_GetSongSources=(uint32_t(*)())GetSym(sohModule,"SOH_GetSongSources");
-    MM_GetSongSources=(uint32_t(*)())GetSym(mmModule,"MM_GetSongSources");
-    SOH_SongDestination=(int(*)(int))GetSym(sohModule,"SOH_SongLogicDestination");
-    SOH_TakeSongDeparture=(int(*)())GetSym(sohModule,"SOH_TakeSongDeparture");
-    MM_TakeSongDeparture=(int(*)())GetSym(mmModule,"MM_TakeSongDeparture");
-    SOH_SetSongArrival=(void(*)(int))GetSym(sohModule,"SOH_SetSongArrival");
-    MM_SetSongArrival=(void(*)(int))GetSym(mmModule,"MM_SetSongArrival");
-    SOH_TakeDungeonDeparture=(FaroreDeparture)GetSym(sohModule,"SOH_TakeDungeonDeparture");
-    MM_TakeDungeonDeparture=(FaroreDeparture)GetSym(mmModule,"MM_TakeDungeonDeparture");
-    SOH_SetDungeonArrival=(FaroreArrival)GetSym(sohModule,"SOH_SetDungeonArrival");
-    MM_SetDungeonArrival=(FaroreArrival)GetSym(mmModule,"MM_SetDungeonArrival");
-    if(auto configure=(void(*)(int))GetSym(sohModule,"SOH_ConfigureSharedDungeonRules"))configure(0);
-    if(auto configure=(void(*)(int))GetSym(mmModule,"MM_ConfigureSharedDungeonRules"))configure(0);
-    if(auto set=(void(*)(ComboReadSharedDungeon,ComboWriteSharedDungeon))GetSym(sohModule,"SOH_SetSharedDungeonBridge"))
-        set(Combo_FaroreReadDungeon,Combo_FaroreWriteDungeon);
-    if(auto set=(void(*)(ComboReadSharedDungeon,ComboWriteSharedDungeon))GetSym(mmModule,"MM_SetSharedDungeonBridge"))
-        set(Combo_FaroreReadDungeon,Combo_FaroreWriteDungeon);
-    SOH_GetFaroreAge=(int(*)(int))GetSym(sohModule,"SOH_GetFaroreAge");
-    SOH_GetFaroreDestination=(FaroreDestination)GetSym(sohModule,"SOH_GetFaroreDestination");
-    MM_GetFaroreDestination=(FaroreDestination)GetSym(mmModule,"MM_GetFaroreDestination");
-    SOH_SyncFaroreFromMm=(FaroreSync)GetSym(sohModule,"SOH_SyncFaroreFromMm");
-    MM_SyncFaroreFromOot=(FaroreSync)GetSym(mmModule,"MM_SyncFaroreFromOot");
-    SOH_TakeFaroreDeparture=(FaroreDeparture)GetSym(sohModule,"SOH_TakeFaroreDeparture");
-    MM_TakeFaroreDeparture=(FaroreDeparture)GetSym(mmModule,"MM_TakeFaroreDeparture");
-    SOH_SetFaroreArrivalEntrance=(FaroreArrival)GetSym(sohModule,"SOH_SetFaroreArrivalEntrance");
-    MM_SetFaroreArrivalEntrance=(FaroreArrival)GetSym(mmModule,"MM_SetFaroreArrivalEntrance");
-    SOH_ConfigureFaroreRules=(void(*)(int,int))GetSym(sohModule,"SOH_ConfigureFaroreRules");
-    MM_ConfigureFaroreRules=(void(*)(int,int,int))GetSym(mmModule,"MM_ConfigureFaroreRules");
-    if(auto set=(void(*)(FaroreDestination,FaroreSync))GetSym(sohModule,"SOH_SetFaroreBridge"))
-        set(Combo_FaroreMmDestination,Combo_FaroreSyncMm);
-    if(auto set=(void(*)(int(*)(int),FaroreDestination))GetSym(mmModule,"MM_SetFaroreBridge"))
-        set(Combo_FaroreOotAge,Combo_FaroreOotDestination);
-    if(auto set=(void(*)(FaroreSync))GetSym(mmModule,"MM_SetFaroreSyncOot"))set(Combo_FaroreSyncOot);
-    if(auto set=(void(*)(int(*)(int),int(*)(int,int),int(*)(int,int)))GetSym(mmModule,"MM_SetFaroreAgeBridge")) {
+    SOH_SetSongTravel = (void (*)(const char*))GetSym(sohModule, "SOH_SetSongTravel");
+    MM_SetSongTravel = (void (*)(const char*))GetSym(mmModule, "MM_SetSongTravel");
+    SOH_SetSongArrivals = (void (*)(uint32_t))GetSym(sohModule, "SOH_SetSongArrivals");
+    MM_SetSongArrivals = (void (*)(uint32_t))GetSym(mmModule, "MM_SetSongArrivals");
+    MM_SetOracleExternalBeanRenewal = (int (*)(uint8_t))GetSym(mmModule, "MM_SetOracleExternalBeanRenewal");
+    sAdultOotAgeOracle.GetPortalAges = (uint8_t(*)())GetSym(sohModule, "SOH_GetOraclePortalAges");
+    sAdultOotAgeOracle.GetSongSourcesForAge = (uint32_t(*)(int))GetSym(sohModule, "SOH_GetOracleSongSourcesForAge");
+    sAdultOotAgeOracle.SetSongAgeArrivals =
+        (void (*)(uint32_t, uint32_t))GetSym(sohModule, "SOH_SetOracleSongAgeArrivals");
+    sAdultMmAgeOracle.SetEntryAges = (void (*)(uint8_t))GetSym(mmModule, "MM_SetOracleEntryAges");
+    sAdultMmAgeOracle.GetDefaultEntryAges = (uint8_t(*)())GetSym(mmModule, "MM_GetOracleDefaultEntryAges");
+    sAdultMmAgeOracle.GetSongSourcesForAge = (uint32_t(*)(int))GetSym(mmModule, "MM_GetOracleSongSourcesForAge");
+    sAdultMmAgeOracle.SetSongAgeArrivals =
+        (void (*)(uint32_t, uint32_t))GetSym(mmModule, "MM_SetOracleSongAgeArrivals");
+    sAdultMmAgeOracle.UseCrossAgeOracle = (bool (*)())GetSym(mmModule, "MM_UseCrossAgeOracle");
+    SOH_SetMmVisited = (void (*)(int))GetSym(sohModule, "SOH_SetMmVisited");
+    SOH_GetSongKnowledge = (uint32_t(*)())GetSym(sohModule, "SOH_GetSongKnowledge");
+    MM_GetSongKnowledge = (uint32_t(*)())GetSym(mmModule, "MM_GetSongKnowledge");
+    SOH_SetForeignSongKnowledge = (void (*)(uint32_t))GetSym(sohModule, "SOH_SetForeignSongKnowledge");
+    MM_SetForeignSongKnowledge = (void (*)(uint32_t))GetSym(mmModule, "MM_SetForeignSongKnowledge");
+    SOH_GetSongSources = (uint32_t(*)())GetSym(sohModule, "SOH_GetSongSources");
+    MM_GetSongSources = (uint32_t(*)())GetSym(mmModule, "MM_GetSongSources");
+    SOH_SongDestination = (int (*)(int))GetSym(sohModule, "SOH_SongLogicDestination");
+    SOH_TakeSongDeparture = (int (*)())GetSym(sohModule, "SOH_TakeSongDeparture");
+    MM_TakeSongDeparture = (int (*)())GetSym(mmModule, "MM_TakeSongDeparture");
+    SOH_SetSongArrival = (void (*)(int))GetSym(sohModule, "SOH_SetSongArrival");
+    MM_SetSongArrival = (void (*)(int))GetSym(mmModule, "MM_SetSongArrival");
+    SOH_TakeDungeonDeparture = (FaroreDeparture)GetSym(sohModule, "SOH_TakeDungeonDeparture");
+    MM_TakeDungeonDeparture = (FaroreDeparture)GetSym(mmModule, "MM_TakeDungeonDeparture");
+    SOH_SetDungeonArrival = (FaroreArrival)GetSym(sohModule, "SOH_SetDungeonArrival");
+    MM_SetDungeonArrival = (FaroreArrival)GetSym(mmModule, "MM_SetDungeonArrival");
+    if (auto configure = (void (*)(int))GetSym(sohModule, "SOH_ConfigureSharedDungeonRules"))
+        configure(0);
+    if (auto configure = (void (*)(int))GetSym(mmModule, "MM_ConfigureSharedDungeonRules"))
+        configure(0);
+    if (auto set =
+            (void (*)(ComboReadSharedDungeon, ComboWriteSharedDungeon))GetSym(sohModule, "SOH_SetSharedDungeonBridge"))
+        set(Combo_FaroreReadDungeon, Combo_FaroreWriteDungeon);
+    if (auto set =
+            (void (*)(ComboReadSharedDungeon, ComboWriteSharedDungeon))GetSym(mmModule, "MM_SetSharedDungeonBridge"))
+        set(Combo_FaroreReadDungeon, Combo_FaroreWriteDungeon);
+    SOH_GetFaroreAge = (int (*)(int))GetSym(sohModule, "SOH_GetFaroreAge");
+    SOH_GetFaroreDestination = (FaroreDestination)GetSym(sohModule, "SOH_GetFaroreDestination");
+    MM_GetFaroreDestination = (FaroreDestination)GetSym(mmModule, "MM_GetFaroreDestination");
+    SOH_SyncFaroreFromMm = (FaroreSync)GetSym(sohModule, "SOH_SyncFaroreFromMm");
+    MM_SyncFaroreFromOot = (FaroreSync)GetSym(mmModule, "MM_SyncFaroreFromOot");
+    SOH_TakeFaroreDeparture = (FaroreDeparture)GetSym(sohModule, "SOH_TakeFaroreDeparture");
+    MM_TakeFaroreDeparture = (FaroreDeparture)GetSym(mmModule, "MM_TakeFaroreDeparture");
+    SOH_SetFaroreArrivalEntrance = (FaroreArrival)GetSym(sohModule, "SOH_SetFaroreArrivalEntrance");
+    MM_SetFaroreArrivalEntrance = (FaroreArrival)GetSym(mmModule, "MM_SetFaroreArrivalEntrance");
+    SOH_ConfigureFaroreRules = (void (*)(int, int))GetSym(sohModule, "SOH_ConfigureFaroreRules");
+    MM_ConfigureFaroreRules = (void (*)(int, int, int))GetSym(mmModule, "MM_ConfigureFaroreRules");
+    if (auto set = (void (*)(FaroreDestination, FaroreSync))GetSym(sohModule, "SOH_SetFaroreBridge"))
+        set(Combo_FaroreMmDestination, Combo_FaroreSyncMm);
+    if (auto set = (void (*)(int (*)(int), FaroreDestination))GetSym(mmModule, "MM_SetFaroreBridge"))
+        set(Combo_FaroreOotAge, Combo_FaroreOotDestination);
+    if (auto set = (void (*)(FaroreSync))GetSym(mmModule, "MM_SetFaroreSyncOot"))
+        set(Combo_FaroreSyncOot);
+    if (auto set =
+            (void (*)(int (*)(int), int (*)(int, int), int (*)(int, int)))GetSym(mmModule, "MM_SetFaroreAgeBridge")) {
         // Each native export preflights exact model, property, equipment and voice eligibility.
-        set((int(*)(int))GetSym(mmModule,"MM_GetEffectiveHumanAge"),
-            (int(*)(int,int))GetSym(mmModule,"MM_CanFaroreTransitionAge"),
-            (int(*)(int,int))GetSym(mmModule,"MM_ApplyFaroreTransitionAge"));
+        set((int (*)(int))GetSym(mmModule, "MM_GetEffectiveHumanAge"),
+            (int (*)(int, int))GetSym(mmModule, "MM_CanFaroreTransitionAge"),
+            (int (*)(int, int))GetSym(mmModule, "MM_ApplyFaroreTransitionAge"));
     }
     // Pinned Adult Mask cross-age propagation changes saved OoT equipment/FW only.
     // Nullable bindings preserve legacy engines; the MM preflight rejects missing callbacks.
-    if(auto set=(void(*)(int(*)(int,int),int(*)(int,int)))GetSym(mmModule,"MM_SetAdultCrossAgeBridge"))
-        set((int(*)(int,int))GetSym(sohModule,"SOH_CanApplySavedHumanAge"),
-            (int(*)(int,int))GetSym(sohModule,"SOH_ApplySavedHumanAge"));
-    if(auto set=(void(*)(int(*)(int)))GetSym(mmModule,"MM_SetFaroreAgeModeBridge"))
-        set((int(*)(int))GetSym(mmModule,"MM_IsHumanAgeModeEnabled"));
-    if(auto set=(void(*)(ComboNativeDepartureCommit))GetSym(sohModule,"SOH_SetNativeDepartureCommit"))set(Combo_CommitNativeDeparture);
-    if(auto set=(void(*)(ComboNativeDepartureCommit))GetSym(mmModule,"MM_SetNativeDepartureCommit"))set(Combo_CommitNativeDeparture);
-    SOH_CanEntranceArrival=(EntranceArrival)GetSym(sohModule,"SOH_CanEntranceArrival");
-    MM_CanEntranceArrival=(EntranceArrival)GetSym(mmModule,"MM_CanEntranceArrival");
-    SOH_ArmEntranceArrival=(EntranceArrival)GetSym(sohModule,"SOH_ArmEntranceArrival");
-    MM_ArmEntranceArrival=(EntranceArrival)GetSym(mmModule,"MM_ArmEntranceArrival");
-    SOH_CancelEntranceFlight=(void(*)())GetSym(sohModule,"SOH_CancelEntranceFlight");
-    MM_CancelEntranceFlight=(void(*)())GetSym(mmModule,"MM_CancelEntranceFlight");
-    if(auto set=(void(*)(ComboEntrancePreflight,ComboEntranceCommit))GetSym(sohModule,"SOH_SetEntranceBridge"))
-        set(Combo_PreflightEntranceDeparture,Combo_CommitEntranceDeparture);
-    if(auto set=(void(*)(ComboEntrancePreflight,ComboEntranceCommit))GetSym(mmModule,"MM_SetEntranceBridge"))
-        set(Combo_PreflightEntranceDeparture,Combo_CommitEntranceDeparture);
-    MM_SetNativeSpellIntegrationReady=(int(*)(int,void(*)()))GetSym(mmModule,"MM_SetNativeSpellIntegrationReady");
+    if (auto set = (void (*)(int (*)(int, int), int (*)(int, int)))GetSym(mmModule, "MM_SetAdultCrossAgeBridge"))
+        set((int (*)(int, int))GetSym(sohModule, "SOH_CanApplySavedHumanAge"),
+            (int (*)(int, int))GetSym(sohModule, "SOH_ApplySavedHumanAge"));
+    if (auto set = (void (*)(int (*)(int)))GetSym(mmModule, "MM_SetFaroreAgeModeBridge"))
+        set((int (*)(int))GetSym(mmModule, "MM_IsHumanAgeModeEnabled"));
+    if (auto set = (void (*)(ComboNativeDepartureCommit))GetSym(sohModule, "SOH_SetNativeDepartureCommit"))
+        set(Combo_CommitNativeDeparture);
+    if (auto set = (void (*)(ComboNativeDepartureCommit))GetSym(mmModule, "MM_SetNativeDepartureCommit"))
+        set(Combo_CommitNativeDeparture);
+    SOH_CanEntranceArrival = (EntranceArrival)GetSym(sohModule, "SOH_CanEntranceArrival");
+    MM_CanEntranceArrival = (EntranceArrival)GetSym(mmModule, "MM_CanEntranceArrival");
+    SOH_ArmEntranceArrival = (EntranceArrival)GetSym(sohModule, "SOH_ArmEntranceArrival");
+    MM_ArmEntranceArrival = (EntranceArrival)GetSym(mmModule, "MM_ArmEntranceArrival");
+    SOH_CancelEntranceFlight = (void (*)())GetSym(sohModule, "SOH_CancelEntranceFlight");
+    MM_CancelEntranceFlight = (void (*)())GetSym(mmModule, "MM_CancelEntranceFlight");
+    if (auto set = (void (*)(ComboEntrancePreflight, ComboEntranceCommit))GetSym(sohModule, "SOH_SetEntranceBridge"))
+        set(Combo_PreflightEntranceDeparture, Combo_CommitEntranceDeparture);
+    if (auto set = (void (*)(ComboEntrancePreflight, ComboEntranceCommit))GetSym(mmModule, "MM_SetEntranceBridge"))
+        set(Combo_PreflightEntranceDeparture, Combo_CommitEntranceDeparture);
+    MM_SetNativeSpellIntegrationReady = (int (*)(int, void (*)()))GetSym(mmModule, "MM_SetNativeSpellIntegrationReady");
     // Saved seed rules remain the activation input; native startup preflights readiness.
     InstallFaroreRules(nlohmann::json());
     // OOT entrance-shuffle wiring (#90)
@@ -4186,9 +4459,9 @@ int main(int argc, char** argv) {
         SOH_SetCrossDeliver(DeliverCrossItem);
     if (MM_SetCrossDeliver)
         MM_SetCrossDeliver(DeliverCrossItem);
-    if(MM_SetScrubStockBridge) MM_SetScrubStockBridge(
-        SOH_QueryScrubRenewable&&SOH_GrantScrubRenewable?QueryScrubOwnerStock:nullptr,
-        SOH_QueryScrubRenewable&&SOH_GrantScrubRenewable?GrantScrubOwnerStock:nullptr);
+    if (MM_SetScrubStockBridge)
+        MM_SetScrubStockBridge(SOH_QueryScrubRenewable && SOH_GrantScrubRenewable ? QueryScrubOwnerStock : nullptr,
+                               SOH_QueryScrubRenewable && SOH_GrantScrubRenewable ? GrantScrubOwnerStock : nullptr);
     if (SOH_SetMarkForeignObtained)
         SOH_SetMarkForeignObtained(MarkForeignObtained);
     if (MM_SetMarkForeignObtained)
@@ -4301,22 +4574,20 @@ int main(int argc, char** argv) {
         std::cerr << "[ComboShip] Eager MM boot: required exports missing — oracle will be unavailable" << std::endl;
     }
 
-    InitializeNativeSpellIntegration(mmEagerBooted,
-        GetSym(sohModule,"SOH_SetFaroreBridge")&&GetSym(sohModule,"SOH_SetNativeDepartureCommit")&&
-        GetSym(sohModule,"SOH_SetSharedDungeonBridge"));
-    std::cout << "[ComboShip] Native spell integration ready=" << int(ComboRando::ComboFaroreIntegrationReady) << std::endl;
-    if (auto adultReady = (int(*)(void))GetSym(mmModule,"MM_DebugAdultResourcesReady")) {
-        std::cout << "[ComboShip] Private Adult MM actual resource preflight ready="
-                  << adultReady() << std::endl;
+    InitializeNativeSpellIntegration(mmEagerBooted, GetSym(sohModule, "SOH_SetFaroreBridge") &&
+                                                        GetSym(sohModule, "SOH_SetNativeDepartureCommit") &&
+                                                        GetSym(sohModule, "SOH_SetSharedDungeonBridge"));
+    std::cout << "[ComboShip] Native spell integration ready=" << int(ComboRando::ComboFaroreIntegrationReady)
+              << std::endl;
+    if (auto adultReady = (int (*)(void))GetSym(mmModule, "MM_DebugAdultResourcesReady")) {
+        std::cout << "[ComboShip] Private Adult MM actual resource preflight ready=" << adultReady() << std::endl;
     }
 
-
     // Private integration diagnostic: actual cold-load preflights after eager boot.
-    if (const char* probeFlag=std::getenv("COMBO_NATIVE_SPELL_RESOURCE_PROBE");
-        probeFlag && std::strcmp(probeFlag,"1")==0) {
-        auto prepare=(int(*)())GetSym(mmModule,"MM_PrepareNativeSpellsForCombo");
-        std::cout << "[ComboShip] Native spell resource preflight mask="
-                  << (prepare?prepare():-1) << std::endl;
+    if (const char* probeFlag = std::getenv("COMBO_NATIVE_SPELL_RESOURCE_PROBE");
+        probeFlag && std::strcmp(probeFlag, "1") == 0) {
+        auto prepare = (int (*)())GetSym(mmModule, "MM_PrepareNativeSpellsForCombo");
+        std::cout << "[ComboShip] Native spell resource preflight mask=" << (prepare ? prepare() : -1) << std::endl;
     }
 
     // ComboShip: OOT owns the foreground at startup — hide MM's (now-registered) tracker windows so
@@ -4324,32 +4595,50 @@ int main(int argc, char** argv) {
     Combo_SetForegroundGame(ComboRando::GAME_OOT);
 
     // --- 5. Register OOT callbacks ---
-    sProfileDumpCombo=(FnDumpData)GetSym(sohModule,"SOH_DumpComboSetupCVars");
-    sProfileLegacySeed=(FnDumpData)GetSym(sohModule,"SOH_ReadProfileLegacySeed");
-    sProfileResolvedRules=(FnDumpData)GetSym(sohModule,"SOH_DumpProfileResolvedSeedRules");
-    sProfileApplyResolvedRules=(int(*)(const char*))GetSym(sohModule,"SOH_ApplyProfileResolvedSeedRules");
-    sProfileApplyCombo=(int(*)(const char*))GetSym(sohModule,"SOH_ApplyProfileComboSettings");
-    sProfileApplyOot=(int(*)(const char*))GetSym(sohModule,"SOH_ApplyProfileRandoSettings");
-    sProfileApplyMm=(int(*)(const char*))GetSym(mmModule,"MM_ApplyProfileRandoSettings");
-    sProfileValidateOot=(int(*)(const char*))GetSym(sohModule,"SOH_ValidateProfileRandoSettings");
-    sProfileValidateMm=(int(*)(const char*))GetSym(mmModule,"MM_ValidateProfileRandoSettings");
-    sProfileCanGenerate=(uint8_t(*)())GetSym(sohModule,"SOH_CanGenerateComboSeed");
-    sProfileTrigger=(int(*)(const char*))GetSym(sohModule,"SOH_TriggerProfileGenerate");
-    sProfileSelected=(int(*)())GetSym(comboUIModule,"ComboUI_GetSelectedSettingsFile");
-    auto profileUi=(void(*)(const ComboRandomizerProfileCallbacks*))GetSym(comboUIModule,"ComboUI_SetRandomizerProfileStore");
-    auto profilePrecreate=(void(*)(int(*)(int)))GetSym(sohModule,"SOH_SetProfileSavePreparation");
-    auto profileReady=(void(*)(int(*)(int)))GetSym(sohModule,"SOH_SetProfilePendingReady");
-    auto ootCatalog=(FnDumpData)GetSym(sohModule,"SOH_DumpProfileCatalog");
-    auto mmCatalog=(FnDumpData)GetSym(mmModule,"MM_DumpProfileCatalog");
-    if(mmEagerBooted&&sProfileDumpCombo&&sProfileApplyCombo&&sProfileApplyOot&&sProfileApplyMm&&sProfileValidateOot&&sProfileValidateMm&&
-       sProfileCanGenerate&&sProfileTrigger&&sProfileSelected&&profileUi&&profilePrecreate&&profileReady&&ootCatalog&&mmCatalog&&sProfileResolvedRules&&sProfileApplyResolvedRules)try{
-        sProfileCatalog={{"oot",nlohmann::json::parse(ootCatalog())},{"mm",nlohmann::json::parse(mmCatalog())},{"combo",ProfileComboCatalog()}};
-        const auto profilePath=ComboRando::ConsolidatedDir()/"settings-profiles.json";
-        sProfiles=std::make_unique<ComboRando::Profiles::Repository>(profilePath,ProfileNativeSnapshot());
-        sProfileLegacyPendingMigration=!sProfiles->view().json().value("legacyPendingMigrationComplete",false);
-        static const ComboRandomizerProfileCallbacks callbacks{2,ProfileInspect,ProfileSetDraft,ProfileCopySaved,ProfileGenerate,ProfileCopyDraft,ProfileCancel,ProfileRevision};
-        profilePrecreate(ProfilePrepareSave);profileReady(ProfilePendingReady);profileUi(&callbacks);
-    }catch(const std::exception& e){sProfiles.reset();std::cerr<<"[ComboShip] Settings profiles unavailable: "<<e.what()<<'\n';}
+    sProfileDumpCombo = (FnDumpData)GetSym(sohModule, "SOH_DumpComboSetupCVars");
+    sProfileLegacySeed = (FnDumpData)GetSym(sohModule, "SOH_ReadProfileLegacySeed");
+    sProfileResolvedRules = (FnDumpData)GetSym(sohModule, "SOH_DumpProfileResolvedSeedRules");
+    sProfileApplyResolvedRules = (int (*)(const char*))GetSym(sohModule, "SOH_ApplyProfileResolvedSeedRules");
+    sProfileApplyCombo = (int (*)(const char*))GetSym(sohModule, "SOH_ApplyProfileComboSettings");
+    sProfileApplyOot = (int (*)(const char*))GetSym(sohModule, "SOH_ApplyProfileRandoSettings");
+    sProfileApplyMm = (int (*)(const char*))GetSym(mmModule, "MM_ApplyProfileRandoSettings");
+    sProfileValidateOot = (int (*)(const char*))GetSym(sohModule, "SOH_ValidateProfileRandoSettings");
+    sProfileValidateMm = (int (*)(const char*))GetSym(mmModule, "MM_ValidateProfileRandoSettings");
+    sProfileCanGenerate = (uint8_t(*)())GetSym(sohModule, "SOH_CanGenerateComboSeed");
+    sProfileTrigger = (int (*)(const char*))GetSym(sohModule, "SOH_TriggerProfileGenerate");
+    sProfileSelected = (int (*)())GetSym(comboUIModule, "ComboUI_GetSelectedSettingsFile");
+    auto profileUi =
+        (void (*)(const ComboRandomizerProfileCallbacks*))GetSym(comboUIModule, "ComboUI_SetRandomizerProfileStore");
+    auto profilePrecreate = (void (*)(int (*)(int)))GetSym(sohModule, "SOH_SetProfileSavePreparation");
+    auto profileReady = (void (*)(int (*)(int)))GetSym(sohModule, "SOH_SetProfilePendingReady");
+    auto ootCatalog = (FnDumpData)GetSym(sohModule, "SOH_DumpProfileCatalog");
+    auto mmCatalog = (FnDumpData)GetSym(mmModule, "MM_DumpProfileCatalog");
+    if (mmEagerBooted && sProfileDumpCombo && sProfileApplyCombo && sProfileApplyOot && sProfileApplyMm &&
+        sProfileValidateOot && sProfileValidateMm && sProfileCanGenerate && sProfileTrigger && sProfileSelected &&
+        profileUi && profilePrecreate && profileReady && ootCatalog && mmCatalog && sProfileResolvedRules &&
+        sProfileApplyResolvedRules)
+        try {
+            sProfileCatalog = { { "oot", nlohmann::json::parse(ootCatalog()) },
+                                { "mm", nlohmann::json::parse(mmCatalog()) },
+                                { "combo", ProfileComboCatalog() } };
+            const auto profilePath = ComboRando::ConsolidatedDir() / "settings-profiles.json";
+            sProfiles = std::make_unique<ComboRando::Profiles::Repository>(profilePath, ProfileNativeSnapshot());
+            sProfileLegacyPendingMigration = !sProfiles->view().json().value("legacyPendingMigrationComplete", false);
+            static const ComboRandomizerProfileCallbacks callbacks{ 2,
+                                                                    ProfileInspect,
+                                                                    ProfileSetDraft,
+                                                                    ProfileCopySaved,
+                                                                    ProfileGenerate,
+                                                                    ProfileCopyDraft,
+                                                                    ProfileCancel,
+                                                                    ProfileRevision };
+            profilePrecreate(ProfilePrepareSave);
+            profileReady(ProfilePendingReady);
+            profileUi(&callbacks);
+        } catch (const std::exception& e) {
+            sProfiles.reset();
+            std::cerr << "[ComboShip] Settings profiles unavailable: " << e.what() << '\n';
+        }
     // Note: MM_InitArchives (dormant archive pre-load) is skipped — Ship::ArchiveManager::Init
     // requires a live context which doesn't exist until MM_RunMain runs InitOTR().
     // Archives are loaded correctly when MM_RunGame is called after OOT exits.
@@ -4468,7 +4757,8 @@ int main(int argc, char** argv) {
                     SOH_ResumeGame();
             }
             if (g_PendingMMFileNum >= 0 && MM_RunGame) {
-                if(SOH_CancelEntranceFlight)SOH_CancelEntranceFlight();
+                if (SOH_CancelEntranceFlight)
+                    SOH_CancelEntranceFlight();
                 if (SOH_PrepareForTransition)
                     SOH_PrepareForTransition();
                 if (MM_NotifyComboTransition)
@@ -4497,7 +4787,8 @@ int main(int argc, char** argv) {
                     MM_ResumeGame(g_PendingMMFileNum);
             }
             if (g_pendingOOTReturn) {
-                if(MM_CancelEntranceFlight)MM_CancelEntranceFlight();
+                if (MM_CancelEntranceFlight)
+                    MM_CancelEntranceFlight();
                 if (MM_PrepareForTransition)
                     MM_PrepareForTransition();
                 if (SOH_NotifyComboReturn)
@@ -4530,8 +4821,10 @@ int main(int argc, char** argv) {
     // the window). All thread-owners must be joined before the FreeDll calls (joining under the loader
     // lock deadlocks). std::cerr markers: spdlog dies mid-teardown. See docs/deviations/boot-shutdown.md.
 
-    if(SOH_CancelEntranceFlight)SOH_CancelEntranceFlight();
-    if(MM_CancelEntranceFlight)MM_CancelEntranceFlight();
+    if (SOH_CancelEntranceFlight)
+        SOH_CancelEntranceFlight();
+    if (MM_CancelEntranceFlight)
+        MM_CancelEntranceFlight();
 
     // Join the generate worker before unloading any game DLL it calls into — a still-joinable
     // std::thread would std::terminate() at static destruction, and the worker must not run past

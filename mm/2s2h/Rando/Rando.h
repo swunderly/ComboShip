@@ -37,9 +37,10 @@ inline void AddSmallKey(s32 dungeonSceneIndex) {
 }
 inline bool GiveKeyRing(RandoItemId item) {
     const auto* ring = FindKeyRing(item);
-    if (!ring) return false;
+    if (!ring)
+        return false;
     GrantKeyRingCounters(DUNGEON_KEY_COUNT(ring->dungeon),
-                        gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys[ring->dungeon], ring->maximum);
+                         gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys[ring->dungeon], ring->maximum);
     return true;
 }
 static_assert(DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE == 0 && DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE == 1 &&

@@ -6004,7 +6004,8 @@ s32 Player_ActionHandler_13(Player* this, PlayState* play) {
         if (!Player_StartCsAction(play, this)) {
             if (this->unk_6AD == 4) {
 #ifdef COMBO_BUILD
-                if(this->itemAction==PLAYER_IA_FARORES_WIND)Combo_OotFaroreValidate();
+                if (this->itemAction == PLAYER_IA_FARORES_WIND)
+                    Combo_OotFaroreValidate();
 #endif
                 sp2C = Player_ActionToMagicSpell(this, this->itemAction);
                 if (sp2C >= 0) {
@@ -7381,7 +7382,7 @@ s32 Player_ActionHandler_2(Player* this, PlayState* play) {
                     // Match OoTMM Player.S: Iron Boots allow opening sunken chests.
                     || (this->getItemId < GI_NONE && this->currentBoots == PLAYER_BOOTS_IRON)
 #endif
-                   )) {
+                        )) {
             if (this->getItemId != GI_NONE) {
                 if (GameInteractor_Should(VB_OPEN_CHEST, true, interactedActor)) {
                     GetItemEntry giEntry;
@@ -11007,12 +11008,11 @@ void Player_UpdateInterface(PlayState* play, Player* this) {
                     doAction = DO_ACTION_OPEN;
                 } else if ((!(this->stateFlags1 & PLAYER_STATE1_CARRYING_ACTOR) || (heldActor == NULL)) &&
                            (interactRangeActor != NULL) &&
-                           ((!sp1C && (this->getItemId == GI_NONE)) ||
-                            (this->getItemId < 0
+                           ((!sp1C && (this->getItemId == GI_NONE)) || (this->getItemId < 0
 #ifndef COMBO_BUILD
-                             && !(this->stateFlags1 & PLAYER_STATE1_IN_WATER)
+                                                                        && !(this->stateFlags1 & PLAYER_STATE1_IN_WATER)
 #endif
-                            ))) {
+                                                                            ))) {
                     if (this->getItemId < 0) {
                         doAction = DO_ACTION_OPEN;
                     } else if ((interactRangeActor->id == ACTOR_BG_TOKI_SWD) && LINK_IS_ADULT) {
@@ -15178,7 +15178,8 @@ void Player_Action_8085063C(Player* this, PlayState* play) {
 
         if (play->msgCtx.choiceIndex == 0) { // Returns to FW
 #ifdef COMBO_BUILD
-            if(Combo_OotFaroreReturn(play))return;
+            if (Combo_OotFaroreReturn(play))
+                return;
 #endif
             gSaveContext.respawnFlag = 3;
             play->transitionTrigger = TRANS_TRIGGER_START;
@@ -16670,10 +16671,11 @@ SHIP_SAVESTATE_DEFINE(Player, PLAYER_SHIP_SAVESTATE_FIELDS)
 
 #ifdef COMBO_BUILD
 void Combo_OotFaroreCancelReturn(PlayState* play) {
- Player* player=GET_PLAYER(play);
- play->transitionTrigger=TRANS_TRIGGER_OFF;
- func_80853080(player,play);
- func_8005B1A4(Play_GetCamera(play,0));
- Audio_PlaySoundGeneral(NA_SE_SY_ERROR,&gSfxDefaultPos,4,&gSfxDefaultFreqAndVolScale,&gSfxDefaultFreqAndVolScale,&gSfxDefaultReverb);
+    Player* player = GET_PLAYER(play);
+    play->transitionTrigger = TRANS_TRIGGER_OFF;
+    func_80853080(player, play);
+    func_8005B1A4(Play_GetCamera(play, 0));
+    Audio_PlaySoundGeneral(NA_SE_SY_ERROR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale, &gSfxDefaultFreqAndVolScale,
+                           &gSfxDefaultReverb);
 }
 #endif

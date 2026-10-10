@@ -60,7 +60,8 @@ inline void from_json(const json& j, RandoSaveCheck& randoSaveCheck) {
     const int seen = j.value("seenItemId", 0);
     randoSaveCheck.seenItemId = seen > RI_UNKNOWN && seen < RI_MAX ? (RandoItemId)seen : RI_UNKNOWN;
     const int source = j.value("knowledgeSource", 0);
-    randoSaveCheck.knowledgeSource = randoSaveCheck.seenItemId != RI_UNKNOWN && source >= 1 && source <= 2 ? static_cast<u8>(source) : 0;
+    randoSaveCheck.knowledgeSource =
+        randoSaveCheck.seenItemId != RI_UNKNOWN && source >= 1 && source <= 2 ? static_cast<u8>(source) : 0;
 #endif
 }
 
@@ -97,12 +98,13 @@ inline void from_json(const json& j, RandoSaveInfo& rando) {
     // reject partial grotto98/99 independently of the advancing current count.
     const auto& savedEvents = j.at("randoEvents");
     if (!savedEvents.is_array() || savedEvents.size() < RE_LEARN_SCARECROW_SONG ||
-        (savedEvents.size() > RE_MAX || (savedEvents.size() > RE_MM_SWAMP_OCTO_LEFT &&
-                                       savedEvents.size() < RE_MM_SNOWHEAD_PUSH_BLOCK))) {
+        (savedEvents.size() > RE_MAX ||
+         (savedEvents.size() > RE_MM_SWAMP_OCTO_LEFT && savedEvents.size() < RE_MM_SNOWHEAD_PUSH_BLOCK))) {
         throw std::runtime_error("Unsupported MM logic event array length");
     }
     u8 events[RE_MAX] = {};
-    for (size_t i = 0; i < savedEvents.size(); ++i) savedEvents.at(i).get_to(events[i]);
+    for (size_t i = 0; i < savedEvents.size(); ++i)
+        savedEvents.at(i).get_to(events[i]);
     std::copy(std::begin(events), std::end(events), std::begin(rando.randoEvents));
 #else
     j.at("randoEvents").get_to(rando.randoEvents);
@@ -113,11 +115,16 @@ inline void from_json(const json& j, RandoSaveInfo& rando) {
     // Only completed historical option schemas and current ABI;85 precedes Adult/gear options.
     const auto& savedOptions = j.at("randoSaveOptions");
     if (!savedOptions.is_array() ||
-        (savedOptions.size() != RO_TRIFORCE_PIECES_REQUIRED && savedOptions.size() != RO_KEY_RING_WOODFALL && savedOptions.size() != RO_KEY_RING_STONE_TOWER + 1 && savedOptions.size() != RO_SHUFFLE_NPC_SOULS && savedOptions.size() != RO_MM_COMPLETE_SOULS && savedOptions.size() != RO_MM_SPELL_WIND && savedOptions.size() != RO_SHARED_SPELL_WIND && savedOptions.size() != RO_MM_SPELL_FIRE && savedOptions.size() != RO_MM_ADULT_MASK && savedOptions.size() != RO_MAX)) {
+        (savedOptions.size() != RO_TRIFORCE_PIECES_REQUIRED && savedOptions.size() != RO_KEY_RING_WOODFALL &&
+         savedOptions.size() != RO_KEY_RING_STONE_TOWER + 1 && savedOptions.size() != RO_SHUFFLE_NPC_SOULS &&
+         savedOptions.size() != RO_MM_COMPLETE_SOULS && savedOptions.size() != RO_MM_SPELL_WIND &&
+         savedOptions.size() != RO_SHARED_SPELL_WIND && savedOptions.size() != RO_MM_SPELL_FIRE &&
+         savedOptions.size() != RO_MM_ADULT_MASK && savedOptions.size() != RO_MAX)) {
         throw std::runtime_error("Unsupported MM randomizer option array length");
     }
     u32 options[RO_MAX] = {};
-    for (size_t i = 0; i < savedOptions.size(); ++i) savedOptions.at(i).get_to(options[i]);
+    for (size_t i = 0; i < savedOptions.size(); ++i)
+        savedOptions.at(i).get_to(options[i]);
     std::copy(std::begin(options), std::end(options), std::begin(rando.randoSaveOptions));
 #else
     j.at("randoSaveOptions").get_to(rando.randoSaveOptions);
@@ -128,8 +135,8 @@ inline void from_json(const json& j, RandoSaveInfo& rando) {
     rando.mmMissingSoulsOwned = Rando::RestoreMissingMmSouls(j);
     const auto souls = Rando::RestoreExpandedSouls(j);
     std::copy(souls.begin(), souls.end(), std::begin(rando.expandedSoulsOwned));
-    rando.namedTriforceMask = j.value("namedTriforceMask", uint8_t{0}) & 7;
-    rando.ocarinaOwnedBits = j.value("ocarinaOwnedBits", uint8_t{0}) & 3;
+    rando.namedTriforceMask = j.value("namedTriforceMask", uint8_t{ 0 }) & 7;
+    rando.ocarinaOwnedBits = j.value("ocarinaOwnedBits", uint8_t{ 0 }) & 3;
     j.at("sariaHintsAvailable").get_to(rando.sariaHintsAvailable);
     j.at("sariaPriorityItems").get_to(rando.sariaPriorityItems);
 #ifdef COMBO_BUILD
@@ -177,54 +184,91 @@ inline void from_json(const json& j, RespawnData& respawnData) {
     j.at("tempCollectFlags").get_to(respawnData.tempCollectFlags);
 }
 
-
 #include "rando/SharedDungeonJson.h"
-inline void to_json(json& j,const ComboFaroreSaveInfo& fw) {
-    j={{"owned",fw.owned},{"point",fw.point},{"top",fw.top},{"dungeon",fw.dungeon},
-       {"currentDungeon",fw.currentDungeon},{"sharedDungeon",fw.sharedDungeon},{"sharedCurrentDungeon",fw.sharedCurrentDungeon}};
+inline void to_json(json& j, const ComboFaroreSaveInfo& fw) {
+    j = { { "owned", fw.owned },
+          { "point", fw.point },
+          { "top", fw.top },
+          { "dungeon", fw.dungeon },
+          { "currentDungeon", fw.currentDungeon },
+          { "sharedDungeon", fw.sharedDungeon },
+          { "sharedCurrentDungeon", fw.sharedCurrentDungeon } };
 }
-inline void from_json(const json& j,ComboFaroreSaveInfo& fw) {
+inline void from_json(const json& j, ComboFaroreSaveInfo& fw) {
     // Absence is handled by ShipSaveInfo. Present malformed data must throw.
     ComboFaroreSaveInfo restored{};
     j.at("owned").get_to(restored.owned);
-    j.at("point").get_to(restored.point);j.at("top").get_to(restored.top);
-    j.at("dungeon").get_to(restored.dungeon);j.at("currentDungeon").get_to(restored.currentDungeon);
-    if(j.contains("sharedDungeon"))j.at("sharedDungeon").get_to(restored.sharedDungeon);
-    if(j.contains("sharedCurrentDungeon"))j.at("sharedCurrentDungeon").get_to(restored.sharedCurrentDungeon);
-    fw=restored;
+    j.at("point").get_to(restored.point);
+    j.at("top").get_to(restored.top);
+    j.at("dungeon").get_to(restored.dungeon);
+    j.at("currentDungeon").get_to(restored.currentDungeon);
+    if (j.contains("sharedDungeon"))
+        j.at("sharedDungeon").get_to(restored.sharedDungeon);
+    if (j.contains("sharedCurrentDungeon"))
+        j.at("sharedCurrentDungeon").get_to(restored.sharedCurrentDungeon);
+    fw = restored;
 }
 
-inline u8 ComboAdultJsonByte(const json& j,const char* key,int max) {
-    const auto value=j.value(key,json(0));
-    if(!value.is_number_integer()||value<0||value>max)throw std::runtime_error("Invalid Adult MM equipment field");
+inline u8 ComboAdultJsonByte(const json& j, const char* key, int max) {
+    const auto value = j.value(key, json(0));
+    if (!value.is_number_integer() || value < 0 || value > max)
+        throw std::runtime_error("Invalid Adult MM equipment field");
     return value.get<u8>();
 }
 inline void to_json(json& j, const ComboHumanAgeLoadout& x) {
-    j=json{{"buttonItems",x.buttonItems},{"cButtonSlots",x.cButtonSlots},{"dpadItems",x.dpadItems},{"dpadSlots",x.dpadSlots},{"boots",x.boots},{"tunic",x.tunic}};
+    j = json{ { "buttonItems", x.buttonItems },
+              { "cButtonSlots", x.cButtonSlots },
+              { "dpadItems", x.dpadItems },
+              { "dpadSlots", x.dpadSlots },
+              { "boots", x.boots },
+              { "tunic", x.tunic } };
 }
 inline void from_json(const json& j, ComboHumanAgeLoadout& x) {
-    for(const char* field:{"buttonItems","cButtonSlots","dpadItems","dpadSlots"})
-        if(!j.at(field).is_array()||j.at(field).size()!=4)throw std::runtime_error("Invalid Adult MM loadout length");
-    j.at("buttonItems").get_to(x.buttonItems);j.at("cButtonSlots").get_to(x.cButtonSlots);
-    j.at("dpadItems").get_to(x.dpadItems);j.at("dpadSlots").get_to(x.dpadSlots);
-    x.boots=ComboAdultJsonByte(j,"boots",2);x.tunic=ComboAdultJsonByte(j,"tunic",3);
+    for (const char* field : { "buttonItems", "cButtonSlots", "dpadItems", "dpadSlots" })
+        if (!j.at(field).is_array() || j.at(field).size() != 4)
+            throw std::runtime_error("Invalid Adult MM loadout length");
+    j.at("buttonItems").get_to(x.buttonItems);
+    j.at("cButtonSlots").get_to(x.cButtonSlots);
+    j.at("dpadItems").get_to(x.dpadItems);
+    j.at("dpadSlots").get_to(x.dpadSlots);
+    x.boots = ComboAdultJsonByte(j, "boots", 2);
+    x.tunic = ComboAdultJsonByte(j, "tunic", 3);
 }
 inline void to_json(json& j, const ComboAdultMmSave& x) {
-    j=json{{"enabled",x.enabled},{"initialized",x.initialized},{"loadouts",x.loadouts},{"maskOwnedBits",x.maskOwnedBits},{"maskEnabled",x.maskEnabled},{"boots",x.boots},{"tunic",x.tunic},{"customMask",x.customMask},{"gearTrade2Bits",x.gearTrade2Bits},{"gearTrade3Bits",x.gearTrade3Bits}};
+    j = json{ { "enabled", x.enabled },
+              { "initialized", x.initialized },
+              { "loadouts", x.loadouts },
+              { "maskOwnedBits", x.maskOwnedBits },
+              { "maskEnabled", x.maskEnabled },
+              { "boots", x.boots },
+              { "tunic", x.tunic },
+              { "customMask", x.customMask },
+              { "gearTrade2Bits", x.gearTrade2Bits },
+              { "gearTrade3Bits", x.gearTrade3Bits } };
 }
 inline void from_json(const json& j, ComboAdultMmSave& x) {
-    if(!j.at("loadouts").is_array()||j.at("loadouts").size()!=2)throw std::runtime_error("Invalid Adult MM age loadouts");
-    x.enabled=ComboAdultJsonByte(j,"enabled",1);x.initialized=ComboAdultJsonByte(j,"initialized",1);j.at("loadouts").get_to(x.loadouts);
-    const auto bits=j.value("maskOwnedBits",json(0));
-    if(!bits.is_number_integer()||bits<0||bits>3)throw std::runtime_error("Invalid Adult MM mask ownership");
+    if (!j.at("loadouts").is_array() || j.at("loadouts").size() != 2)
+        throw std::runtime_error("Invalid Adult MM age loadouts");
+    x.enabled = ComboAdultJsonByte(j, "enabled", 1);
+    x.initialized = ComboAdultJsonByte(j, "initialized", 1);
+    j.at("loadouts").get_to(x.loadouts);
+    const auto bits = j.value("maskOwnedBits", json(0));
+    if (!bits.is_number_integer() || bits < 0 || bits > 3)
+        throw std::runtime_error("Invalid Adult MM mask ownership");
     bits.get_to(x.maskOwnedBits);
-    const auto maskMode=j.value("maskEnabled",json(0));
-    if(!maskMode.is_number_integer()||maskMode<0||maskMode>1)throw std::runtime_error("Invalid Adult MM mask mode");
+    const auto maskMode = j.value("maskEnabled", json(0));
+    if (!maskMode.is_number_integer() || maskMode < 0 || maskMode > 1)
+        throw std::runtime_error("Invalid Adult MM mask mode");
     maskMode.get_to(x.maskEnabled);
-    x.boots=ComboAdultJsonByte(j,"boots",2);x.tunic=ComboAdultJsonByte(j,"tunic",3);x.customMask=ComboAdultJsonByte(j,"customMask",3);
-    x.gearTrade2Bits=ComboAdultJsonByte(j,"gearTrade2Bits",6);x.gearTrade3Bits=ComboAdultJsonByte(j,"gearTrade3Bits",6);
-    if((x.gearTrade2Bits|x.gearTrade3Bits)&~6u)throw std::runtime_error("Invalid Adult MM gear trade ownership");
-    if(x.enabled>1||x.initialized>1)throw std::runtime_error("Invalid Adult MM save flags");
+    x.boots = ComboAdultJsonByte(j, "boots", 2);
+    x.tunic = ComboAdultJsonByte(j, "tunic", 3);
+    x.customMask = ComboAdultJsonByte(j, "customMask", 3);
+    x.gearTrade2Bits = ComboAdultJsonByte(j, "gearTrade2Bits", 6);
+    x.gearTrade3Bits = ComboAdultJsonByte(j, "gearTrade3Bits", 6);
+    if ((x.gearTrade2Bits | x.gearTrade3Bits) & ~6u)
+        throw std::runtime_error("Invalid Adult MM gear trade ownership");
+    if (x.enabled > 1 || x.initialized > 1)
+        throw std::runtime_error("Invalid Adult MM save flags");
 }
 inline void to_json(json& j, const ShipSaveInfo& shipSaveInfo) {
     uint8_t commitHash[8];
@@ -253,7 +297,8 @@ inline void to_json(json& j, const ShipSaveInfo& shipSaveInfo) {
 inline void from_json(const json& j, ShipSaveInfo& shipSaveInfo) {
     j.at("dpadEquips").get_to(shipSaveInfo.dpadEquips);
     shipSaveInfo.adultMm = {};
-    if(j.contains("adultMm"))j.at("adultMm").get_to(shipSaveInfo.adultMm);
+    if (j.contains("adultMm"))
+        j.at("adultMm").get_to(shipSaveInfo.adultMm);
     j.at("pauseSaveEntrance").get_to(shipSaveInfo.pauseSaveEntrance);
     j.at("saveType").get_to(shipSaveInfo.saveType);
     j.at("fileCreatedAt").get_to(shipSaveInfo.fileCreatedAt);
@@ -261,8 +306,8 @@ inline void from_json(const json& j, ShipSaveInfo& shipSaveInfo) {
     j.at("filePlaytime").get_to(shipSaveInfo.filePlaytime);
     j.at("respawn").get_to(shipSaveInfo.respawn);
     shipSaveInfo.faroresWind = j.value("faroresWind", ComboFaroreSaveInfo{});
-    shipSaveInfo.spellFireOwned = j.value("spellFireOwned",uint8_t(0));
-    shipSaveInfo.spellLoveOwned = j.value("spellLoveOwned",uint8_t(0));
+    shipSaveInfo.spellFireOwned = j.value("spellFireOwned", uint8_t(0));
+    shipSaveInfo.spellLoveOwned = j.value("spellLoveOwned", uint8_t(0));
     j.at("commitHash").get_to(shipSaveInfo.commitHash);
 
     if (shipSaveInfo.saveType == SAVETYPE_RANDO) {

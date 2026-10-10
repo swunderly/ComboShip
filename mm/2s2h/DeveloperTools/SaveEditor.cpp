@@ -14,7 +14,7 @@
 #ifdef COMBO_BUILD
 #include <spdlog/spdlog.h>
 #include "rando/CrossForeign.h" // ComboShip: GameId
-#include "rando/SharedItems.h" // same public readiness as the shared menu
+#include "rando/SharedItems.h"  // same public readiness as the shared menu
 #include "rando/FaroreRules.h"
 #include "2s2h/Rando/FaroresWind.h"
 #include "2s2h/Rando/Spells.h"
@@ -113,11 +113,16 @@ static bool IsInventoryItemPubliclyAvailable(ItemId item) {
         case ITEM_COMBO_BOOTS_IRON:
         case ITEM_COMBO_BOOTS_HOVER:
         case ITEM_COMBO_TUNIC_GORON:
-        case ITEM_COMBO_TUNIC_ZORA: return false;
-        case ITEM_COMBO_FARORES_WIND: return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_WIND).publicOption;
-        case ITEM_COMBO_DINS_FIRE: return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_FIRE).publicOption;
-        case ITEM_COMBO_NAYRUS_LOVE: return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_LOVE).publicOption;
-        default: break;
+        case ITEM_COMBO_TUNIC_ZORA:
+            return false;
+        case ITEM_COMBO_FARORES_WIND:
+            return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_WIND).publicOption;
+        case ITEM_COMBO_DINS_FIRE:
+            return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_FIRE).publicOption;
+        case ITEM_COMBO_NAYRUS_LOVE:
+            return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_LOVE).publicOption;
+        default:
+            break;
     }
 #endif
     return true;
@@ -130,11 +135,16 @@ static bool IsRandomizerItemGivePubliclyAvailable(RandoItemId item) {
         case RI_BOOTS_IRON:
         case RI_BOOTS_HOVER:
         case RI_TUNIC_GORON:
-        case RI_TUNIC_ZORA: return false;
-        case RI_FARORES_WIND: return IsInventoryItemPubliclyAvailable(ITEM_COMBO_FARORES_WIND);
-        case RI_DINS_FIRE: return IsInventoryItemPubliclyAvailable(ITEM_COMBO_DINS_FIRE);
-        case RI_NAYRUS_LOVE: return IsInventoryItemPubliclyAvailable(ITEM_COMBO_NAYRUS_LOVE);
-        default: break;
+        case RI_TUNIC_ZORA:
+            return false;
+        case RI_FARORES_WIND:
+            return IsInventoryItemPubliclyAvailable(ITEM_COMBO_FARORES_WIND);
+        case RI_DINS_FIRE:
+            return IsInventoryItemPubliclyAvailable(ITEM_COMBO_DINS_FIRE);
+        case RI_NAYRUS_LOVE:
+            return IsInventoryItemPubliclyAvailable(ITEM_COMBO_NAYRUS_LOVE);
+        default:
+            break;
     }
 #endif
     return true;
@@ -148,9 +158,10 @@ extern "C" int MM_DebugAdultResourcesReady(void);
 // Private build AND runtime switch AND typed owning resources; no option/ownership writes.
 static bool IsNativeAdultDiagnosticQueueAvailable(RandoItemId item) {
 #if defined(COMBO_BUILD) && defined(COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS)
-    if (item != RI_MASK_ADULT || !gPlayState || gSaveContext.fileNum < 0 ||
-        gSaveContext.fileNum > 2 || gSaveContext.save.shipSaveInfo.saveType != SAVETYPE_RANDO ||
-        !gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_ADULT_MASK]) return false;
+    if (item != RI_MASK_ADULT || !gPlayState || gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2 ||
+        gSaveContext.save.shipSaveInfo.saveType != SAVETYPE_RANDO ||
+        !gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_ADULT_MASK])
+        return false;
     return MM_DebugAdultResourcesReady() != 0;
 #else
     return false;
@@ -159,9 +170,8 @@ static bool IsNativeAdultDiagnosticQueueAvailable(RandoItemId item) {
 
 static bool IsNativeSpellDiagnosticQueueAvailable(RandoItemId item) {
 #ifdef COMBO_BUILD
-    if (CVarGetInteger("gDeveloperTools.ComboNativeSpellGiTest", 0) != 1 ||
-        !ComboRando::ComboFaroreIntegrationReady || !gPlayState ||
-        gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2 ||
+    if (CVarGetInteger("gDeveloperTools.ComboNativeSpellGiTest", 0) != 1 || !ComboRando::ComboFaroreIntegrationReady ||
+        !gPlayState || gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2 ||
         gSaveContext.save.shipSaveInfo.saveType != SAVETYPE_RANDO) {
         return false;
     }
@@ -173,7 +183,8 @@ static bool IsNativeSpellDiagnosticQueueAvailable(RandoItemId item) {
             return options[RO_MM_SPELL_LOVE] && Combo_MMSpellPrepareResources(1);
         case RI_DINS_FIRE:
             return options[RO_MM_SPELL_FIRE] && Combo_MMSpellPrepareResources(2);
-        default: break;
+        default:
+            break;
     }
 #endif
     return false;
@@ -515,19 +526,18 @@ static void DrawOwlStatuesEditor() {
     ImGui::TextWrapped("This does not grant Song of Soaring or an instrument, or change the seed's song routes.");
 
     const bool twoColumns = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 22.0f;
-    if (UIWidgets::Button("Activate all##owlStatues", { .size = UIWidgets::Sizes::Inline,
-                                                       .color = UIWidgets::Colors::Green })) {
+    if (UIWidgets::Button("Activate all##owlStatues",
+                          { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Green })) {
         flags = MmOwlEditor::SetAllActivated(flags, true);
     }
     if (twoColumns) {
         ImGui::SameLine();
     }
-    if (UIWidgets::Button("Clear all##owlStatues", { .size = UIWidgets::Sizes::Inline,
-                                                    .color = UIWidgets::Colors::Red })) {
+    if (UIWidgets::Button("Clear all##owlStatues",
+                          { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Red })) {
         flags = MmOwlEditor::SetAllActivated(flags, false);
     }
-    if (ImGui::BeginTable("owlStatueDestinations", twoColumns ? 2 : 1,
-                          ImGuiTableFlags_SizingStretchSame)) {
+    if (ImGui::BeginTable("owlStatueDestinations", twoColumns ? 2 : 1, ImGuiTableFlags_SizingStretchSame)) {
         for (const auto& statue : statues) {
             ImGui::TableNextColumn();
             bool activated = MmOwlEditor::IsActivated(flags, statue.id);
@@ -603,7 +613,8 @@ void DrawGeneralTab() {
     std::string timeString = hours + ":" + minutes + ampm + " (0x%x)";
 
     u16 gameTime = CURRENT_TIME;
-    if (ImGui::SliderScalar("##timeInput", ImGuiDataType_U16, &gameTime, &minTime, &maxTime, timeString.c_str(), ImGuiSliderFlags_NoInput)) {
+    if (ImGui::SliderScalar("##timeInput", ImGuiDataType_U16, &gameTime, &minTime, &maxTime, timeString.c_str(),
+                            ImGuiSliderFlags_NoInput)) {
         UpdateGameTime(gameTime);
     }
     UIWidgets::PopStyleSlider();
@@ -628,7 +639,8 @@ void DrawGeneralTab() {
     UIWidgets::PushStyleSlider();
     static s32 minDay = 0;
     static s32 maxDay = 4;
-    if (ImGui::SliderScalar("##dayInput", ImGuiDataType_S32, &gSaveContext.save.day, &minDay, &maxDay, "Day: %d", ImGuiSliderFlags_NoInput)) {
+    if (ImGui::SliderScalar("##dayInput", ImGuiDataType_S32, &gSaveContext.save.day, &minDay, &maxDay, "Day: %d",
+                            ImGuiSliderFlags_NoInput)) {
         gSaveContext.save.eventDayCount = CURRENT_DAY;
 
         if (gPlayState != nullptr) {
@@ -769,7 +781,8 @@ void DrawGeneralTab() {
     UIWidgets::PushStyleSlider(UIWidgets::Colors::DarkGreen);
     if (ImGui::SliderScalar("##magicLevelSlider", ImGuiDataType_S8, &gSaveContext.save.saveInfo.playerData.magicLevel,
                             &S8_ZERO, &MAGIC_LEVEL_MAX,
-                            MAGIC_LEVEL_NAMES[gSaveContext.save.saveInfo.playerData.magicLevel], ImGuiSliderFlags_NoInput)) {
+                            MAGIC_LEVEL_NAMES[gSaveContext.save.saveInfo.playerData.magicLevel],
+                            ImGuiSliderFlags_NoInput)) {
         gSaveContext.magicCapacity = gSaveContext.save.saveInfo.playerData.magicLevel * MAGIC_NORMAL_METER;
         gSaveContext.save.saveInfo.playerData.magic =
             MIN(gSaveContext.save.saveInfo.playerData.magic, gSaveContext.magicCapacity);
@@ -817,14 +830,12 @@ void DrawAmmoInput(InventorySlot slot) {
 
     const float ammoXOffset = (INV_GRID_ICON_SIZE - INV_GRID_AMMO_WIDTH) * 0.5f;
     const float ammoYOffset = INV_GRID_ICON_SIZE + 6.0f;
-    ImGui::SetCursorPos(
-        ImVec2(x * INV_GRID_WIDTH + INV_GRID_PADDING + ammoXOffset,
-               y * INV_GRID_HEIGHT + INV_GRID_TOP_MARGIN + INV_GRID_PADDING + ammoYOffset));
+    ImGui::SetCursorPos(ImVec2(x * INV_GRID_WIDTH + INV_GRID_PADDING + ammoXOffset,
+                               y * INV_GRID_HEIGHT + INV_GRID_TOP_MARGIN + INV_GRID_PADDING + ammoYOffset));
     ImGui::PushItemWidth(INV_GRID_AMMO_WIDTH);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, UIWidgets::ColorValues.at(UIWidgets::Colors::Gray));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
-                        ImVec2(INV_GRID_AMMO_PADDING, INV_GRID_AMMO_PADDING));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(INV_GRID_AMMO_PADDING, INV_GRID_AMMO_PADDING));
     if (ComboTouch::Count("##ammoInput", &AMMO(currentItemId), 0, 99)) {
         // Crashes when < 0 and graphical issues when > 99
         AMMO(currentItemId) = MAX(0, MIN(AMMO(currentItemId), 99));
@@ -1660,8 +1671,8 @@ void DrawDungeonItemTab() {
             s32 maxKey = smallKeyCounts[dungeonId];
             int currentKeys = gSaveContext.save.saveInfo.inventory.dungeonKeys[dungeonId];
             ImGui::PushItemWidth(ImGui::GetFontSize() * 12.0f);
-            if (ImGui::SliderScalar("##sKeyCount", ImGuiDataType_S32, &currentKeys, &minKey, &maxKey,
-                                    "Small Keys: %d", ImGuiSliderFlags_NoInput)) {
+            if (ImGui::SliderScalar("##sKeyCount", ImGuiDataType_S32, &currentKeys, &minKey, &maxKey, "Small Keys: %d",
+                                    ImGuiSliderFlags_NoInput)) {
                 gSaveContext.save.saveInfo.inventory.dungeonKeys[dungeonId] = currentKeys;
             }
             ImGui::PopItemWidth();
@@ -1975,7 +1986,8 @@ void DrawRegEditorTab() {
     UIWidgets::PushStyleSlider();
     ImGui::SliderScalar("Reg Group", ImGuiDataType_U8, &gRegEditor->regGroup, &S8_ZERO, &REG_GROUPS_MAX,
                         regGroupNames[gRegEditor->regGroup], ImGuiSliderFlags_NoInput);
-    ImGui::SliderScalar("Reg Page", ImGuiDataType_U8, &gRegEditor->regPage, &S8_ZERO, &REG_PAGES_MAX, "%d", ImGuiSliderFlags_NoInput);
+    ImGui::SliderScalar("Reg Page", ImGuiDataType_U8, &gRegEditor->regPage, &S8_ZERO, &REG_PAGES_MAX, "%d",
+                        ImGuiSliderFlags_NoInput);
     UIWidgets::PopStyleSlider();
 
     ImGui::BeginChild("regSliders", ImVec2(0, 0), ImGuiChildFlags_Border);

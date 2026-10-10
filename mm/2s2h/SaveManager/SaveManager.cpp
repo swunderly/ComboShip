@@ -219,8 +219,7 @@ void SaveManager_InitNewSaveForSlot(int mmFileNum, const unsigned char* ootName8
 #ifdef COMBO_BUILD
     // Combo bypasses MM file select, which normally stamps the valid-file marker.
     // Without it, pause/owl saves take the flash writer's file-deletion path.
-    memcpy(gSaveContext.save.saveInfo.playerData.newf, "ZELDA3",
-           sizeof(gSaveContext.save.saveInfo.playerData.newf));
+    memcpy(gSaveContext.save.saveInfo.playerData.newf, "ZELDA3", sizeof(gSaveContext.save.saveInfo.playerData.newf));
     // SOH_GetCurrentPlayerName normalizes the OOT name to MM/PAL font codes.
     // 0x40 is a period; unsupported glyphs become spaces (0x3E).
     if (ootName8 != nullptr) {
@@ -311,8 +310,10 @@ void SaveManager_SaveCurrentForCombo() {
                     keep.at("shipSaveInfo").at("pauseSaveEntrance");
                 j["owlSave"]["save"]["shipSaveInfo"]["respawn"] = keep.at("shipSaveInfo").at("respawn");
                 // Typed grotto identity belongs to the same preserved native respawn snapshot.
-                j["owlSave"]["save"]["shipSaveInfo"]["grottoPreviousSceneValid"] = keep.at("shipSaveInfo").value("grottoPreviousSceneValid",0);
-                j["owlSave"]["save"]["shipSaveInfo"]["grottoPreviousScene"] = keep.at("shipSaveInfo").value("grottoPreviousScene",0);
+                j["owlSave"]["save"]["shipSaveInfo"]["grottoPreviousSceneValid"] =
+                    keep.at("shipSaveInfo").value("grottoPreviousSceneValid", 0);
+                j["owlSave"]["save"]["shipSaveInfo"]["grottoPreviousScene"] =
+                    keep.at("shipSaveInfo").value("grottoPreviousScene", 0);
                 if (comboDeadForSave) {
                     j["owlSave"]["save"]["saveInfo"]["playerData"]["health"] = 0x30;
                 }
@@ -412,7 +413,7 @@ int SaveManager_LoadSaveFile(int mmFileNum) {
             // (eventInf, bottle timers, pictoPhotoI5). Mirrors SaveManager_SysFlashrom_ReadData's owl branch.
             SaveContext sc = j["owlSave"];
             SaveManager_RepairComboMarker(sc.save);
-            if(!Combo_MM_AdultPrepareLoadedSave(&sc.save)) {
+            if (!Combo_MM_AdultPrepareLoadedSave(&sc.save)) {
                 SPDLOG_ERROR("[ComboShip] Adult MM owl state unavailable; refusing before live save mutation");
                 return SaveManager_LoadFailedForCombo(-6);
             }
@@ -442,7 +443,7 @@ int SaveManager_LoadSaveFile(int mmFileNum) {
         Save save = j["newCycleSave"]["save"];
 #ifdef COMBO_BUILD
         SaveManager_RepairComboMarker(save);
-        if(!Combo_MM_AdultPrepareLoadedSave(&save)) {
+        if (!Combo_MM_AdultPrepareLoadedSave(&save)) {
             SPDLOG_ERROR("[ComboShip] Adult MM cycle state unavailable; refusing before live save mutation");
             return SaveManager_LoadFailedForCombo(-6);
         }
@@ -960,7 +961,8 @@ extern "C" s32 SaveManager_SysFlashrom_ReadData(void* saveBuffer, u32 pageNum, u
         try {
             SaveContext saveContext = j["owlSave"];
 #ifdef COMBO_BUILD
-            if(!Combo_MM_AdultPrepareLoadedSave(&saveContext.save))return -1;
+            if (!Combo_MM_AdultPrepareLoadedSave(&saveContext.save))
+                return -1;
 #endif
 
             // Recompute the checksum in case the save was edited externally or a migration changed it
@@ -989,7 +991,8 @@ extern "C" s32 SaveManager_SysFlashrom_ReadData(void* saveBuffer, u32 pageNum, u
         try {
             Save save = j["newCycleSave"]["save"];
 #ifdef COMBO_BUILD
-            if(!Combo_MM_AdultPrepareLoadedSave(&save))return -1;
+            if (!Combo_MM_AdultPrepareLoadedSave(&save))
+                return -1;
 #endif
 
             // Recompute the checksum, see message above

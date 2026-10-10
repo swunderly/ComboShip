@@ -209,44 +209,65 @@ static int32_t MM_FillSongDrawInfo(RandoItemId id, CwItemDrawInfo* out) {
 static std::shared_ptr<Ship::IResource> sMMColoredKeySource;
 static std::weak_ptr<Ship::ResourceManager> sMMColoredKeyOwner;
 static bool sMMColoredKeyListener;
-static void MM_DropColoredKeySource() { sMMColoredKeySource.reset();sMMColoredKeyOwner.reset(); }
+static void MM_DropColoredKeySource() {
+    sMMColoredKeySource.reset();
+    sMMColoredKeyOwner.reset();
+}
 static const char* MM_ColorlessKeyPath() {
-    auto rm=Ship::CrossRMRegistry::GetOrActive("mm");
-    if(!rm) return nullptr;
-    if(sMMColoredKeyOwner.lock()!=rm) {
-        auto source=std::dynamic_pointer_cast<Fast::DisplayList>(rm->LoadResource(gGiSmallKeyDL+7));
-        if(!source || source->Instructions.size()<7) return nullptr;
-        auto copy=std::make_shared<Fast::DisplayList>(source->GetInitData());
-        copy->Instructions=source->Instructions;copy->UCode=source->UCode;
+    auto rm = Ship::CrossRMRegistry::GetOrActive("mm");
+    if (!rm)
+        return nullptr;
+    if (sMMColoredKeyOwner.lock() != rm) {
+        auto source = std::dynamic_pointer_cast<Fast::DisplayList>(rm->LoadResource(gGiSmallKeyDL + 7));
+        if (!source || source->Instructions.size() < 7)
+            return nullptr;
+        auto copy = std::make_shared<Fast::DisplayList>(source->GetInitData());
+        copy->Instructions = source->Instructions;
+        copy->UCode = source->UCode;
         // Exactly the native DrawSmallKey copy: remove only its color commands.
-        copy->Instructions[5]=gsDPNoOp();copy->Instructions[6]=gsDPNoOp();
-        rm->CacheExternalResource("combo/runtime/colorless_small_key",copy);
-        sMMColoredKeySource=source;sMMColoredKeyOwner=rm;
-        if(!sMMColoredKeyListener) {
+        copy->Instructions[5] = gsDPNoOp();
+        copy->Instructions[6] = gsDPNoOp();
+        rm->CacheExternalResource("combo/runtime/colorless_small_key", copy);
+        sMMColoredKeySource = source;
+        sMMColoredKeyOwner = rm;
+        if (!sMMColoredKeyListener) {
             Ship::CrossRMRegistry::RegisterTeardownListener(MM_DropColoredKeySource);
-            sMMColoredKeyListener=true;
+            sMMColoredKeyListener = true;
         }
     }
     return "__OTR__combo/runtime/colorless_small_key";
 }
 
 static int32_t MM_FillRingDrawInfo(RandoItemId id, CwItemDrawInfo* out) {
-    int key=-1;
-    switch(id) {
-        case RI_WOODFALL_KEY_RING:key=0;break;
-        case RI_SNOWHEAD_KEY_RING:key=1;break;
-        case RI_GREAT_BAY_KEY_RING:key=2;break;
-        case RI_STONE_TOWER_KEY_RING:key=3;break;
-        default:break;
+    int key = -1;
+    switch (id) {
+        case RI_WOODFALL_KEY_RING:
+            key = 0;
+            break;
+        case RI_SNOWHEAD_KEY_RING:
+            key = 1;
+            break;
+        case RI_GREAT_BAY_KEY_RING:
+            key = 2;
+            break;
+        case RI_STONE_TOWER_KEY_RING:
+            key = 3;
+            break;
+        default:
+            break;
     }
-    if(key>=0) {
-        const char* path=MM_ColorlessKeyPath();if(!path)return CW_DRAW_NOT_READY;
-        static const uint8_t colors[4][3]={{236,120,186},{129,173,70},{99,90,183},{177,165,83}};
-        out->drawKind=CW_DRAW_KIND_OPS;
-        MM_Op(out,CW_OP_SETUP_OPA);MM_Op(out,CW_OP_LOAD_MATRIX);
-        MM_OpColor(out,CW_OP_PRIM_COLOR,255,255,255,255,128);
-        MM_OpColor(out,CW_OP_ENV_COLOR,colors[key][0],colors[key][1],colors[key][2],255,0);
-        MM_OpDL(out,path);return 1;
+    if (key >= 0) {
+        const char* path = MM_ColorlessKeyPath();
+        if (!path)
+            return CW_DRAW_NOT_READY;
+        static const uint8_t colors[4][3] = { { 236, 120, 186 }, { 129, 173, 70 }, { 99, 90, 183 }, { 177, 165, 83 } };
+        out->drawKind = CW_DRAW_KIND_OPS;
+        MM_Op(out, CW_OP_SETUP_OPA);
+        MM_Op(out, CW_OP_LOAD_MATRIX);
+        MM_OpColor(out, CW_OP_PRIM_COLOR, 255, 255, 255, 255, 128);
+        MM_OpColor(out, CW_OP_ENV_COLOR, colors[key][0], colors[key][1], colors[key][2], 255, 0);
+        MM_OpDL(out, path);
+        return 1;
     }
     return 0;
 }
@@ -374,8 +395,10 @@ static int32_t MM_FillSimpleDrawInfo(RandoItemId id, CwItemDrawInfo* out) {
         case RI_TRIFORCE_POWER:
         case RI_TRIFORCE_COURAGE:
         case RI_TRIFORCE_WISDOM: {
-            static const char* namedShards[3] = {gTriforcePiece0DL, gTriforcePiece1DL, gTriforcePiece2DL};
-            dl = namedShards[id - RI_TRIFORCE_POWER]; xlu = true; scale = 0.03f;
+            static const char* namedShards[3] = { gTriforcePiece0DL, gTriforcePiece1DL, gTriforcePiece2DL };
+            dl = namedShards[id - RI_TRIFORCE_POWER];
+            xlu = true;
+            scale = 0.03f;
             break;
         }
         case RI_TRIFORCE_PIECE: // DrawTriforcePiece: shard cycles with the collected count
@@ -928,21 +951,37 @@ static int32_t MM_FillItemDrawInfo(RandoItemId id, CwItemDrawInfo* out) {
     if (it == Rando::StaticData::Items.end()) {
         return 0;
     }
-    const int gearKind=id==RI_BOOTS_IRON?0:id==RI_BOOTS_HOVER?1:id==RI_TUNIC_GORON?2:id==RI_TUNIC_ZORA?3:-1;
-    if(gearKind>=0){
-        const auto* recipe=ComboRando::AdultGearRecipe(gearKind);
-        if(!Combo_MM_AdultGearGiReady())return CW_DRAW_NOT_READY;
-        out->dlistCount=recipe->count;out->xluStartIndex=recipe->xlu;out->scale=1.0f;
-        for(int i=0;i<recipe->count;++i)out->dlists[i]=recipe->paths[i];
-        out->drawKind=CW_DRAW_KIND_SIMPLE;out->setupDlOpa=nullptr;out->setupDlXlu=nullptr;return 1;
+    const int gearKind = id == RI_BOOTS_IRON    ? 0
+                         : id == RI_BOOTS_HOVER ? 1
+                         : id == RI_TUNIC_GORON ? 2
+                         : id == RI_TUNIC_ZORA  ? 3
+                                                : -1;
+    if (gearKind >= 0) {
+        const auto* recipe = ComboRando::AdultGearRecipe(gearKind);
+        if (!Combo_MM_AdultGearGiReady())
+            return CW_DRAW_NOT_READY;
+        out->dlistCount = recipe->count;
+        out->xluStartIndex = recipe->xlu;
+        out->scale = 1.0f;
+        for (int i = 0; i < recipe->count; ++i)
+            out->dlists[i] = recipe->paths[i];
+        out->drawKind = CW_DRAW_KIND_SIMPLE;
+        out->setupDlOpa = nullptr;
+        out->setupDlXlu = nullptr;
+        return 1;
     }
     if (id == RI_MASK_ADULT) {
         // Exact pinned GetItem_DrawOpa01: list1 then list0, both OPA, owning MM RM.
-        if(!Combo_MM_AdultMaskResourcesReady())return CW_DRAW_NOT_READY;
-        out->dlists[0]="__OTR__objects/combo_adult_mask_gi/gComboAdultMaskGiTranslucentDL";
-        out->dlists[1]="__OTR__objects/combo_adult_mask_gi/gComboAdultMaskGiOpaqueDL";
-        out->dlistCount=2;out->xluStartIndex=-1;out->scale=1.0f;
-        out->drawKind=CW_DRAW_KIND_SIMPLE;out->setupDlOpa=nullptr;out->setupDlXlu=nullptr;
+        if (!Combo_MM_AdultMaskResourcesReady())
+            return CW_DRAW_NOT_READY;
+        out->dlists[0] = "__OTR__objects/combo_adult_mask_gi/gComboAdultMaskGiTranslucentDL";
+        out->dlists[1] = "__OTR__objects/combo_adult_mask_gi/gComboAdultMaskGiOpaqueDL";
+        out->dlistCount = 2;
+        out->xluStartIndex = -1;
+        out->scale = 1.0f;
+        out->drawKind = CW_DRAW_KIND_SIMPLE;
+        out->setupDlOpa = nullptr;
+        out->setupDlXlu = nullptr;
         return 1;
     }
     if (id == RI_OCARINA_FAIRY) {
@@ -960,8 +999,9 @@ static int32_t MM_FillItemDrawInfo(RandoItemId id, CwItemDrawInfo* out) {
     if (MM_FillSongDrawInfo(id, out)) {
         return 1; // songs: tinted note, no table row
     }
-    const int ring=MM_FillRingDrawInfo(id,out);
-    if(ring)return ring;
+    const int ring = MM_FillRingDrawInfo(id, out);
+    if (ring)
+        return ring;
     if (MM_FillOpsDrawInfo(id, out)) {
         return 1; // clock / owl / skeleton key / double defense / tycoon wallet
     }
@@ -1030,8 +1070,9 @@ extern "C" COMBO_EXPORT int32_t MM_GetItemDrawInfo(const char* itemName, CwItemD
             return 0; // the animated ABI serves the skeletal class (enemy souls, minifrogs)
         }
         *out = CwItemDrawInfo{};
-        const int result=MM_FillItemDrawInfo(id, out);
-        if(result<=0)return result;
+        const int result = MM_FillItemDrawInfo(id, out);
+        if (result <= 0)
+            return result;
         out->stateDependent = (MM_IsProgressiveItem(id) || MM_IsStateDependentDraw(id)) ? 1 : 0;
         return 1;
     } catch (...) { return 0; }

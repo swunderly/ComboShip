@@ -669,8 +669,9 @@ void EnTest7_WarpCsWarp(EnTest7* this, PlayState* play) {
     this->windCapsule.yaw -= 0x2EE0;
 
 #ifdef COMBO_BUILD
-    if (play->sceneId != SCENE_SECOM && Combo_MMSongWarp(play,
-        OWL_WARP_CS_GET_OCARINA_MODE(&this->actor)-OCARINA_MODE_WARP_TO_GREAT_BAY_COAST)) return;
+    if (play->sceneId != SCENE_SECOM &&
+        Combo_MMSongWarp(play, OWL_WARP_CS_GET_OCARINA_MODE(&this->actor) - OCARINA_MODE_WARP_TO_GREAT_BAY_COAST))
+        return;
 #endif
     if (play->sceneId == SCENE_SECOM) {
         play->nextEntrance = ENTRANCE(IKANA_CANYON, 6);

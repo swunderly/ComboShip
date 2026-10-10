@@ -161,7 +161,7 @@ extern void* Combo_MM_GetAdultEponaBinding(int index);
 void Combo_MM_ApplyEponaVariantTables(int adult);
 int Combo_MM_IsAdultEponaVariantApplied(void);
 #endif
-static TexturePtr D_80889204[] = {gEponaEyeOpenTex,gEponaEyeHalfTex,gEponaEyeClosedTex};
+static TexturePtr D_80889204[] = { gEponaEyeOpenTex, gEponaEyeHalfTex, gEponaEyeClosedTex };
 
 static SkeletonHeader* sSkeletonHeaders[HORSE_TYPE_MAX] = {
     NULL,        // HORSE_TYPE_EPONA
@@ -731,7 +731,7 @@ void EnHorse_Init(Actor* thisx, PlayState* play2) {
     Skin* skin = &this->skin;
 
 #ifdef COMBO_BUILD
-    Combo_MM_ApplyEponaVariantTables(Combo_MM_IsAdult()&&Combo_MM_AdultResourcesReady());
+    Combo_MM_ApplyEponaVariantTables(Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady());
 #endif
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
@@ -4220,7 +4220,7 @@ void EnHorse_Update(Actor* thisx, PlayState* play2) {
     if (this->type == HORSE_TYPE_2) {
 #ifdef COMBO_BUILD
         // Exact pinned BBDE LUI/ORI bits: 3C23562E, preserving the original low half.
-        Actor_SetScale(&this->actor,Combo_MM_IsAdultEponaVariantApplied()?0.009969277307391167f:0.00648f);
+        Actor_SetScale(&this->actor, Combo_MM_IsAdultEponaVariantApplied() ? 0.009969277307391167f : 0.00648f);
 #else
         Actor_SetScale(&this->actor, 0.00648f);
 #endif

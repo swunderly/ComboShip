@@ -505,7 +505,7 @@ void EnWallmas_TakePlayer(EnWallmas* this, PlayState* play) {
 #ifdef COMBO_BUILD
         if (!Combo_MMWallmasterTransport(play, &this->actor))
 #endif
-        func_80169FDC(play);
+            func_80169FDC(play);
     }
 }
 

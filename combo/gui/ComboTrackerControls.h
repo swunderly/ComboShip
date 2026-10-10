@@ -15,4 +15,4 @@ bool Begin(Kind kind);
 void End(Kind kind);
 void RegisterItemWindow();
 void DrawItemSettings();
-}
+} // namespace ComboTrackerUI

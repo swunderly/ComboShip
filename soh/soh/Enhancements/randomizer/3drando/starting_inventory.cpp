@@ -27,8 +27,8 @@ void GenerateStartingInventory() {
     // Match Completed starts and the compatibility repair for old Vanilla seeds.
     // OoTMM models starting masks as items, without borrowing from the portal.
     if (ComboRando::OotMaskQuestHasStartingMasks(ctx->GetOption(RSK_MASK_QUEST).Get())) {
-        for (RandomizerGet mask : { RG_KEATON_MASK, RG_SKULL_MASK, RG_SPOOKY_MASK, RG_GORON_MASK,
-                                    RG_ZORA_MASK, RG_GERUDO_MASK, RG_MASK_OF_TRUTH }) {
+        for (RandomizerGet mask : { RG_KEATON_MASK, RG_SKULL_MASK, RG_SPOOKY_MASK, RG_GORON_MASK, RG_ZORA_MASK,
+                                    RG_GERUDO_MASK, RG_MASK_OF_TRUTH }) {
             AddItemToInventory(mask);
         }
         if (!ctx->GetOption(RSK_STARTING_BUNNY_HOOD)) {

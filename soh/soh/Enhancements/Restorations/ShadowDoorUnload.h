@@ -23,18 +23,17 @@ static inline void ShadowDoorUnload_Reset(ShadowDoorUnloadState* state, int room
     state->cycles = 0;
 }
 
-static inline int ShadowDoorUnload_IsStaircase(int scene, unsigned int params,
-                                              float x, float y, float z, int rotY) {
+static inline int ShadowDoorUnload_IsStaircase(int scene, unsigned int params, float x, float y, float z, int rotY) {
     /* Actor_SpawnTransitionActors adds the transition-list index in bits 10-15. */
-    return scene == 0x53 && (params & 0x03FFu) == 0x013Fu && x == 1519.0f && y == 239.0f &&
-           z == 93.0f && rotY == 0x4000;
+    return scene == 0x53 && (params & 0x03FFu) == 0x013Fu && x == 1519.0f && y == 239.0f && z == 93.0f &&
+           rotY == 0x4000;
 }
 
 /* Called only after a real staircase room load has completed. Initial scene
  * loads, repeated notifications and nonalternating room changes earn no trip.
  */
-static inline void ShadowDoorUnload_RecordRoomLoad(ShadowDoorUnloadState* state, int enabled,
-                                                  int authenticStaircase, int previousRoom, int loadedRoom) {
+static inline void ShadowDoorUnload_RecordRoomLoad(ShadowDoorUnloadState* state, int enabled, int authenticStaircase,
+                                                   int previousRoom, int loadedRoom) {
     if (!enabled) {
         ShadowDoorUnload_Reset(state, loadedRoom);
         return;

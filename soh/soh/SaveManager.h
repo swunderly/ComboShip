@@ -161,7 +161,7 @@ class SaveManager {
   private:
 #ifdef COMBO_BUILD
     enum class ComboLoadState { Ready, Loading, Blocked };
-    std::atomic<ComboLoadState> comboLoadState{ComboLoadState::Ready};
+    std::atomic<ComboLoadState> comboLoadState{ ComboLoadState::Ready };
 #endif
     std::filesystem::path GetFileName(int fileNum);
     std::filesystem::path GetFileTempName(int fileNum);

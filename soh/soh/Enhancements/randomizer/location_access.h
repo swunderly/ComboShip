@@ -23,9 +23,10 @@ extern std::shared_ptr<Rando::Logic> logic;
 
 class Region;
 
-#define EVENT_ACCESS(event, condition) \
-    EventAccess(                       \
-        event, #event, [] { return (condition) && Rando::Souls::EventPrerequisite(logic.get(),event); }, CleanConditionString(#condition))
+#define EVENT_ACCESS(event, condition)                                                                    \
+    EventAccess(                                                                                          \
+        event, #event, [] { return (condition) && Rando::Souls::EventPrerequisite(logic.get(), event); }, \
+        CleanConditionString(#condition))
 
 class EventAccess {
   public:
@@ -69,9 +70,10 @@ class EventAccess {
 
 std::string CleanConditionString(std::string condition);
 
-#define LOCATION(check, condition) \
-    LocationAccess(                \
-        check, [] { return (condition) && Rando::Souls::CheckPrerequisite(logic.get(),check); }, CleanConditionString(#condition))
+#define LOCATION(check, condition)                                                                \
+    LocationAccess(                                                                               \
+        check, [] { return (condition) && Rando::Souls::CheckPrerequisite(logic.get(), check); }, \
+        CleanConditionString(#condition))
 
 // this class is meant to hold an item location with a boolean function to determine its accessibility from a specific
 // area

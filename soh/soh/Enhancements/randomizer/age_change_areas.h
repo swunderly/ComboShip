@@ -18,41 +18,90 @@ inline constexpr bool SongAgeChangeAreaAllowed(RandomizerRegion region) {
         return true;
     }
     switch (region) {
-        case RR_KOKIRI_FOREST: case RR_KF_LINKS_PORCH: case RR_KF_BOULDER_LOOP:
-        case RR_KF_OUTSIDE_DEKU_TREE: case RR_KF_OUTSIDE_LOST_WOODS:
-        case RR_THE_LOST_WOODS: case RR_LW_BEYOND_MIDO: case RR_LW_BRIDGE:
-        case RR_SFM_ENTRYWAY: case RR_SFM_MAZE: case RR_SFM_ABOVE_MAZE:
-        case RR_SACRED_FOREST_MEADOW: case RR_HYRULE_FIELD: case RR_LON_LON_RANCH:
-        case RR_LAKE_HYLIA: case RR_LH_FISHING_ISLAND:
-        case RR_GERUDO_VALLEY: case RR_GV_FORTRESS_SIDE:
-        case RR_GF_OUTSKIRTS: case RR_GF_OUTSIDE_GATE: case RR_GF_HBA_RANGE:
-        case RR_DESERT_COLOSSUS: case RR_DESERT_COLOSSUS_OASIS:
+        case RR_KOKIRI_FOREST:
+        case RR_KF_LINKS_PORCH:
+        case RR_KF_BOULDER_LOOP:
+        case RR_KF_OUTSIDE_DEKU_TREE:
+        case RR_KF_OUTSIDE_LOST_WOODS:
+        case RR_THE_LOST_WOODS:
+        case RR_LW_BEYOND_MIDO:
+        case RR_LW_BRIDGE:
+        case RR_SFM_ENTRYWAY:
+        case RR_SFM_MAZE:
+        case RR_SFM_ABOVE_MAZE:
+        case RR_SACRED_FOREST_MEADOW:
+        case RR_HYRULE_FIELD:
+        case RR_LON_LON_RANCH:
+        case RR_LAKE_HYLIA:
+        case RR_LH_FISHING_ISLAND:
+        case RR_GERUDO_VALLEY:
+        case RR_GV_FORTRESS_SIDE:
+        case RR_GF_OUTSKIRTS:
+        case RR_GF_OUTSIDE_GATE:
+        case RR_GF_HBA_RANGE:
+        case RR_DESERT_COLOSSUS:
+        case RR_DESERT_COLOSSUS_OASIS:
         case RR_DESERT_COLOSSUS_OUTSIDE_TEMPLE:
-        case RR_WASTELAND_NEAR_FORTRESS: case RR_WASTELAND_NEAR_COLOSSUS:
+        case RR_WASTELAND_NEAR_FORTRESS:
+        case RR_WASTELAND_NEAR_COLOSSUS:
         case RR_HAUNTED_WASTELAND:
-        case RR_KAKARIKO_VILLAGE: case RR_KAK_BACKYARD: case RR_KAK_BEHIND_GATE:
-        case RR_KAK_WELL: case RR_KAK_ROOFTOP: case RR_KAK_IMPAS_ROOFTOP:
-        case RR_THE_GRAVEYARD: case RR_GRAVEYARD_WARP_PAD_REGION:
-        case RR_DEATH_MOUNTAIN_TRAIL: case RR_GORON_CITY:
+        case RR_KAKARIKO_VILLAGE:
+        case RR_KAK_BACKYARD:
+        case RR_KAK_BEHIND_GATE:
+        case RR_KAK_WELL:
+        case RR_KAK_ROOFTOP:
+        case RR_KAK_IMPAS_ROOFTOP:
+        case RR_THE_GRAVEYARD:
+        case RR_GRAVEYARD_WARP_PAD_REGION:
+        case RR_DEATH_MOUNTAIN_TRAIL:
+        case RR_GORON_CITY:
         case RR_GC_DARUNIAS_CHAMBER:
-        case RR_DMC_UPPER_ENTRY: case RR_DMC_ROCKS_GROTTO_ENTRY:
-        case RR_DMC_CRACKED_WALL: case RR_DMC_POTS_ENTRY: case RR_DMC_BLOCKED_ENTRY:
-        case RR_DMC_POT_GROTTO_ENTRY: case RR_DMC_PAD_ENTRY: case RR_DMC_TEMPLE_ENTRY:
-        case RR_DMC_CRATE: case RR_DMC_ROCK_GROTTO: case RR_DMC_SCRUB:
-        case RR_DMC_POTS: case RR_DMC_CENTRAL: case RR_DMC_FAR_PLATFORM:
-        case RR_DMC_BLOCKED_EXIT: case RR_DMC_POT_GROTTO_EXIT: case RR_DMC_TEMPLE_EXIT:
-        case RR_ZR_FRONT: case RR_ZORAS_RIVER: case RR_ZR_ATOP_LADDER:
-        case RR_ZORAS_DOMAIN: case RR_ZORAS_DOMAIN_ISLAND: case RR_ZORAS_FOUNTAIN:
+        case RR_DMC_UPPER_ENTRY:
+        case RR_DMC_ROCKS_GROTTO_ENTRY:
+        case RR_DMC_CRACKED_WALL:
+        case RR_DMC_POTS_ENTRY:
+        case RR_DMC_BLOCKED_ENTRY:
+        case RR_DMC_POT_GROTTO_ENTRY:
+        case RR_DMC_PAD_ENTRY:
+        case RR_DMC_TEMPLE_ENTRY:
+        case RR_DMC_CRATE:
+        case RR_DMC_ROCK_GROTTO:
+        case RR_DMC_SCRUB:
+        case RR_DMC_POTS:
+        case RR_DMC_CENTRAL:
+        case RR_DMC_FAR_PLATFORM:
+        case RR_DMC_BLOCKED_EXIT:
+        case RR_DMC_POT_GROTTO_EXIT:
+        case RR_DMC_TEMPLE_EXIT:
+        case RR_ZR_FRONT:
+        case RR_ZORAS_RIVER:
+        case RR_ZR_ATOP_LADDER:
+        case RR_ZORAS_DOMAIN:
+        case RR_ZORAS_DOMAIN_ISLAND:
+        case RR_ZORAS_FOUNTAIN:
             return true;
         // OoTMM's matching ordinary interior areas also permit age changes.
         // Entry keys, checks, item usability and exits remain their native rules.
-        case RR_KF_LINKS_HOUSE: case RR_KF_MIDOS_HOUSE: case RR_KF_SARIAS_HOUSE:
-        case RR_KF_HOUSE_OF_TWINS: case RR_KF_KNOW_IT_ALL_HOUSE: case RR_KF_KOKIRI_SHOP:
-        case RR_KAK_CARPENTER_BOSS_HOUSE: case RR_KAK_HOUSE_OF_SKULLTULA:
-        case RR_KAK_IMPAS_HOUSE: case RR_KAK_IMPAS_HOUSE_BACK:
-        case RR_KAK_BAZAAR: case RR_KAK_POTION_SHOP: case RR_MARKET_BAZAAR:
-        case RR_LH_LAB: case RR_GV_CARPENTER_TENT: case RR_GC_SHOP: case RR_ZD_SHOP:
-        case RR_LLR_TALONS_HOUSE: case RR_LLR_STABLES: case RR_LLR_TOWER:
+        case RR_KF_LINKS_HOUSE:
+        case RR_KF_MIDOS_HOUSE:
+        case RR_KF_SARIAS_HOUSE:
+        case RR_KF_HOUSE_OF_TWINS:
+        case RR_KF_KNOW_IT_ALL_HOUSE:
+        case RR_KF_KOKIRI_SHOP:
+        case RR_KAK_CARPENTER_BOSS_HOUSE:
+        case RR_KAK_HOUSE_OF_SKULLTULA:
+        case RR_KAK_IMPAS_HOUSE:
+        case RR_KAK_IMPAS_HOUSE_BACK:
+        case RR_KAK_BAZAAR:
+        case RR_KAK_POTION_SHOP:
+        case RR_MARKET_BAZAAR:
+        case RR_LH_LAB:
+        case RR_GV_CARPENTER_TENT:
+        case RR_GC_SHOP:
+        case RR_ZD_SHOP:
+        case RR_LLR_TALONS_HOUSE:
+        case RR_LLR_STABLES:
+        case RR_LLR_TOWER:
             return true;
         // Shuffled child-only entrances can lead to Water Temple. Its dry
         // entrance/ledge has common collision for both ages and no competing
@@ -61,7 +110,8 @@ inline constexpr bool SongAgeChangeAreaAllowed(RandomizerRegion region) {
         case RR_WATER_TEMPLE_ENTRYWAY:
         case RR_WATER_TEMPLE_ENTRANCE_LEDGE:
         case RR_WATER_TEMPLE_MQ_ENTRANCE_LEDGE:
-        case RR_WATER_TEMPLE_RIVER: case RR_WATER_TEMPLE_RIVER_POTS:
+        case RR_WATER_TEMPLE_RIVER:
+        case RR_WATER_TEMPLE_RIVER_POTS:
         case RR_WATER_TEMPLE_ABOVE_DRAGON:
             return true;
         // Dry target rooms use the same scene collision for both ages. Age
@@ -182,4 +232,4 @@ inline constexpr bool SongAgeChangeAreaAllowed(RandomizerRegion region) {
             return false;
     }
 }
-}
+} // namespace Rando

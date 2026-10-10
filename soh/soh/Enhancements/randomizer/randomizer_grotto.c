@@ -394,13 +394,19 @@ s8 Grotto_CurrentGrotto() {
 }
 
 #ifdef COMBO_BUILD
-int Grotto_GetComboNativeLoadInfo(int offset,GrottoLoadInfo* out){
- if(!out||offset<0||offset>=NUM_GROTTOS)return 0;
- *out=grottoLoadTable[offset];return 1;
+int Grotto_GetComboNativeLoadInfo(int offset, GrottoLoadInfo* out) {
+    if (!out || offset < 0 || offset >= NUM_GROTTOS)
+        return 0;
+    *out = grottoLoadTable[offset];
+    return 1;
 }
-int Grotto_SetComboNativeArrival(int offset,int returning){
- if(offset<0||offset>=NUM_GROTTOS||(returning!=0&&returning!=1))return 0;
- grottoId=offset;lastEntranceType=returning?GROTTO_RETURN:NOT_GROTTO;
- overridingNextEntrance=true;grottoEnteredViaDoorAna=false;return 1;
+int Grotto_SetComboNativeArrival(int offset, int returning) {
+    if (offset < 0 || offset >= NUM_GROTTOS || (returning != 0 && returning != 1))
+        return 0;
+    grottoId = offset;
+    lastEntranceType = returning ? GROTTO_RETURN : NOT_GROTTO;
+    overridingNextEntrance = true;
+    grottoEnteredViaDoorAna = false;
+    return 1;
 }
 #endif

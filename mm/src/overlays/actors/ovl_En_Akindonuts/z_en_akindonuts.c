@@ -335,7 +335,8 @@ s32 func_80BED140(PlayState* play) {
 s32 func_80BED208(EnAkindonuts* this) {
 #ifdef COMBO_BUILD
     s32 repeat = Combo_MM_ScrubRepeatPrecond(this);
-    if (repeat >= 0) return repeat;
+    if (repeat >= 0)
+        return repeat;
 #endif
     if (!GameInteractor_Should(VB_AKINDONUTS_CONSIDER_ELIGIBLE_FOR_BEAN_REFILL,
                                !((u32)INV_CONTENT(ITEM_MAGIC_BEANS) != ITEM_MAGIC_BEANS), this)) {
@@ -358,7 +359,8 @@ s32 func_80BED208(EnAkindonuts* this) {
 s32 func_80BED27C(EnAkindonuts* this) {
 #ifdef COMBO_BUILD
     s32 repeat = Combo_MM_ScrubRepeatPrecond(this);
-    if (repeat >= 0) return repeat;
+    if (repeat >= 0)
+        return repeat;
 #endif
     if (GameInteractor_Should(VB_AKINDONUTS_CONSIDER_BOMB_BAG_PURCHASED, GET_CUR_UPG_VALUE(UPG_BOMB_BAG) == 3, this)) {
         return 2;
@@ -381,7 +383,8 @@ s32 func_80BED27C(EnAkindonuts* this) {
 s32 func_80BED2FC(EnAkindonuts* this) {
 #ifdef COMBO_BUILD
     s32 repeat = Combo_MM_ScrubRepeatPrecond(this);
-    if (repeat >= 0) return repeat;
+    if (repeat >= 0)
+        return repeat;
 #endif
     if (!GameInteractor_Should(VB_AKINDONUTS_CONSIDER_ELIGIBLE_FOR_POTION_REFILL, Inventory_HasEmptyBottle(), this)) {
         return 2;
@@ -399,7 +402,8 @@ s32 func_80BED2FC(EnAkindonuts* this) {
 s32 func_80BED35C(EnAkindonuts* this) {
 #ifdef COMBO_BUILD
     s32 repeat = Combo_MM_ScrubRepeatPrecond(this);
-    if (repeat >= 0) return repeat;
+    if (repeat >= 0)
+        return repeat;
 #endif
     if (!GameInteractor_Should(VB_AKINDONUTS_CONSIDER_ELIGIBLE_FOR_POTION_REFILL, Inventory_HasEmptyBottle(), this)) {
         return 2;

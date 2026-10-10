@@ -106,9 +106,8 @@ static s32 ObjOshihiki_IsFireTempleBlockSeatedPosition(ObjOshihiki* this, PlaySt
     // at y2080; the starting platform is y2260. Validate the actual native
     // five probes, including triangle-edge tolerances, rather than accepting
     // arbitrary positions below the starting platform.
-    if (!isfinite(pos->x) || !isfinite(pos->y) || !isfinite(pos->z) ||
-        fabsf(pos->y - 2080.0f) >= 0.001f || pos->x < 2340.0f || pos->x > 2580.0f ||
-        pos->z < 280.0f || pos->z > 400.0f) {
+    if (!isfinite(pos->x) || !isfinite(pos->y) || !isfinite(pos->z) || fabsf(pos->y - 2080.0f) >= 0.001f ||
+        pos->x < 2340.0f || pos->x > 2580.0f || pos->z < 280.0f || pos->z > 400.0f) {
         return 0;
     }
     sn = Math_SinS(this->dyna.actor.world.rot.y);
@@ -125,8 +124,8 @@ static s32 ObjOshihiki_IsFireTempleBlockSeatedPosition(ObjOshihiki* this, PlaySt
         probe.x = pos->x + (offset.z * sn) + (offset.x * cs);
         probe.y = 2260.0f + offset.y;
         probe.z = pos->z + (offset.z * cs) - (offset.x * sn);
-        floorHeight = BgCheck_EntityRaycastFloor6(&play->colCtx, &floorPoly, &floorBgId,
-                                                &this->dyna.actor, &probe, 0.0f);
+        floorHeight =
+            BgCheck_EntityRaycastFloor6(&play->colCtx, &floorPoly, &floorBgId, &this->dyna.actor, &probe, 0.0f);
         if (floorBgId != BGCHECK_SCENE || floorPoly == NULL || !isfinite(floorHeight) ||
             fabsf(floorHeight - 2080.0f) >= 0.001f) {
             return 0;

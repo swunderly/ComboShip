@@ -15,8 +15,8 @@ u16 Combo_MMOrdinaryExitOverride(u16 entrance);
 void Combo_MMFaroreUseItem(Player*, PlayState*);
 void Combo_MMFaroreStart(Player*, PlayState*);
 void Combo_MMFaroreAfterInit(Player*, PlayState*);
-void Combo_MMSpellUseItem(Player*, PlayState*,int);
-void Combo_MMSpellStart(Player*, PlayState*,int);
+void Combo_MMSpellUseItem(Player*, PlayState*, int);
+void Combo_MMSpellStart(Player*, PlayState*, int);
 void Combo_MMSpellAfterInit(Player*, PlayState*);
 #endif
 #include "z64horse.h"
@@ -1811,22 +1811,44 @@ int Combo_MM_AdultResourcesReady(void);
 #ifdef COMBO_BUILD
 #define COMBO_HOVER_TIMER(p) ((p)->unk_734[0])
 s32 Combo_MM_GetCustomBoots(Player* player) {
-    if(!gSaveContext.save.shipSaveInfo.adultMm.enabled||!Combo_MM_AdultResourcesReady()||player->actor.id!=ACTOR_PLAYER||player->transformation!=PLAYER_FORM_HUMAN)return -1;
-    return player->currentBoots==6?1:player->currentBoots==0?2:-1;
+    if (!gSaveContext.save.shipSaveInfo.adultMm.enabled || !Combo_MM_AdultResourcesReady() ||
+        player->actor.id != ACTOR_PLAYER || player->transformation != PLAYER_FORM_HUMAN)
+        return -1;
+    return player->currentBoots == 6 ? 1 : player->currentBoots == 0 ? 2 : -1;
 }
 // Exact pinned Player_IsFloorSlippery predicate, including its literal (1 < 27).
-static s32 Combo_MM_IsFloorSlippery(Player* player,s32 floorType){
-    if(Combo_MM_GetCustomBoots(player)==2 && !(player->stateFlags1 & ((1 < 27) | (1 << 29))))return 1;
-    return (player->actor.bgCheckFlags&BGCHECKFLAG_GROUND)&&floorType==FLOOR_TYPE_5&&player->currentBoots<PLAYER_BOOTS_ZORA_UNDERWATER;
+static s32 Combo_MM_IsFloorSlippery(Player* player, s32 floorType) {
+    if (Combo_MM_GetCustomBoots(player) == 2 && !(player->stateFlags1 & ((1 < 27) | (1 << 29))))
+        return 1;
+    return (player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && floorType == FLOOR_TYPE_5 &&
+           player->currentBoots < PLAYER_BOOTS_ZORA_UNDERWATER;
 }
-static f32 Combo_MM_EnvironmentWind(PlayState* play){return Combo_MM_GetCustomBoots(GET_PLAYER(play))==1?0.0f:play->envCtx.windSpeed;}
-static s32 Combo_MM_IsBeingPushed(Player* player,PlayState* play){return player->pushedSpeed!=0.0f||(Combo_MM_GetCustomBoots(player)!=1&&(player->windSpeed!=0.0f||play->envCtx.windSpeed>=50.0f));}
-static s32 Combo_MM_IsGoronOrGoronTunic(Player* player){return player->transformation==PLAYER_FORM_GORON||(gSaveContext.save.shipSaveInfo.adultMm.enabled&&Combo_MM_AdultResourcesReady()&&gSaveContext.save.shipSaveInfo.adultMm.tunic==2);}
-static s32 Combo_MM_ShouldTakeFloorDamage(Player* player,s32 wall,s32 floorType,s32 floorDamage){
-    if(floorDamage||wall||player->actor.depthInWater>0.0f){player->floorTypeTimer=0;player->actor.colChkInfo.damage=4;return 1;}
-    if(floorType<0||floorType>1)return 0;
-    const u8 delays[2]={120,60};
-    if(gSaveContext.save.shipSaveInfo.adultMm.tunic!=2||player->floorTypeTimer>=delays[floorType]){player->floorTypeTimer=0;player->actor.colChkInfo.damage=4;return 1;}
+static f32 Combo_MM_EnvironmentWind(PlayState* play) {
+    return Combo_MM_GetCustomBoots(GET_PLAYER(play)) == 1 ? 0.0f : play->envCtx.windSpeed;
+}
+static s32 Combo_MM_IsBeingPushed(Player* player, PlayState* play) {
+    return player->pushedSpeed != 0.0f ||
+           (Combo_MM_GetCustomBoots(player) != 1 && (player->windSpeed != 0.0f || play->envCtx.windSpeed >= 50.0f));
+}
+static s32 Combo_MM_IsGoronOrGoronTunic(Player* player) {
+    return player->transformation == PLAYER_FORM_GORON ||
+           (gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady() &&
+            gSaveContext.save.shipSaveInfo.adultMm.tunic == 2);
+}
+static s32 Combo_MM_ShouldTakeFloorDamage(Player* player, s32 wall, s32 floorType, s32 floorDamage) {
+    if (floorDamage || wall || player->actor.depthInWater > 0.0f) {
+        player->floorTypeTimer = 0;
+        player->actor.colChkInfo.damage = 4;
+        return 1;
+    }
+    if (floorType < 0 || floorType > 1)
+        return 0;
+    const u8 delays[2] = { 120, 60 };
+    if (gSaveContext.save.shipSaveInfo.adultMm.tunic != 2 || player->floorTypeTimer >= delays[floorType]) {
+        player->floorTypeTimer = 0;
+        player->actor.colChkInfo.damage = 4;
+        return 1;
+    }
     return 0;
 }
 
@@ -1840,7 +1862,8 @@ static s32 Combo_MM_ShouldTakeFloorDamage(Player* player,s32 wall,s32 floorType,
 
 u16 Player_GetFloorSfxByAge(Player* this, u16 sfxId) {
 #ifdef COMBO_BUILD
-    if(Combo_MM_GetCustomBoots(this)==1&&(sfxId==0x800||sfxId==0x810||sfxId==0x820))return 0x28DC;
+    if (Combo_MM_GetCustomBoots(this) == 1 && (sfxId == 0x800 || sfxId == 0x810 || sfxId == 0x820))
+        return 0x28DC;
 #endif
     return sfxId + this->floorSfxOffset + this->ageProperties->surfaceSfxIdOffset;
 }
@@ -3161,11 +3184,15 @@ void AdultMask_StartCsItem(Player* player, PlayState* play);
 void AdultMask_AfterStart(Player* player);
 PlayerItemAction Player_ItemToItemAction(Player* this, ItemId item) {
 #ifdef COMBO_BUILD
-    if (item == ITEM_COMBO_FARORES_WIND) return PLAYER_IA_COMBO_FARORES_WIND;
-    if (item == ITEM_COMBO_DINS_FIRE) return PLAYER_IA_COMBO_DINS_FIRE;
-    if (item == ITEM_COMBO_NAYRUS_LOVE) return PLAYER_IA_COMBO_NAYRUS_LOVE;
+    if (item == ITEM_COMBO_FARORES_WIND)
+        return PLAYER_IA_COMBO_FARORES_WIND;
+    if (item == ITEM_COMBO_DINS_FIRE)
+        return PLAYER_IA_COMBO_DINS_FIRE;
+    if (item == ITEM_COMBO_NAYRUS_LOVE)
+        return PLAYER_IA_COMBO_NAYRUS_LOVE;
 #endif
-    if ((int)item == 0xbc) return (PlayerItemAction)Combo_MM_AdultMaskAction();
+    if ((int)item == 0xbc)
+        return (PlayerItemAction)Combo_MM_AdultMaskAction();
     if (item >= ITEM_FD) {
         return PLAYER_IA_NONE;
     } else if (item == ITEM_FC) {
@@ -3562,7 +3589,8 @@ void Player_InitItemAction(PlayState* play, Player* this, PlayerItemAction itemA
     this->unk_B28 = 0;
 
     // Pinned custom-mask initialization bypasses the native indexed action table.
-    if ((int)itemAction != Combo_MM_AdultMaskAction()) sItemActionInitFuncs[itemAction](play, this);
+    if ((int)itemAction != Combo_MM_AdultMaskAction())
+        sItemActionInitFuncs[itemAction](play, this);
     Player_SetModelGroup(this, this->modelGroup);
 }
 
@@ -4700,10 +4728,12 @@ void func_80831944(PlayState* play, Player* this) {
 #include "ComboAdultGearUseNative.h"
 
 void Player_UseItem(PlayState* play, Player* this, ItemId item) {
-    if(Combo_MM_AdultTryUseGear(play,this,item))return;
+    if (Combo_MM_AdultTryUseGear(play, this, item))
+        return;
     PlayerItemAction itemAction = Player_ItemToItemAction(this, item);
 
-    if (AdultMask_TryUse(this, play, itemAction)) return;
+    if (AdultMask_TryUse(this, play, itemAction))
+        return;
 
     if ((((this->heldItemAction == this->itemAction) &&
           (!(this->stateFlags1 & PLAYER_STATE1_400000) ||
@@ -4722,9 +4752,18 @@ void Player_UseItem(PlayState* play, Player* this, ItemId item) {
         f32 sp54;
         PlayerExplosive explosiveType;
 #ifdef COMBO_BUILD
-        if (item == ITEM_COMBO_FARORES_WIND) { Combo_MMFaroreUseItem(this, play); return; }
-        if (item == ITEM_COMBO_NAYRUS_LOVE) { Combo_MMSpellUseItem(this, play,1); return; }
-        if (item == ITEM_COMBO_DINS_FIRE) { Combo_MMSpellUseItem(this, play,2); return; }
+        if (item == ITEM_COMBO_FARORES_WIND) {
+            Combo_MMFaroreUseItem(this, play);
+            return;
+        }
+        if (item == ITEM_COMBO_NAYRUS_LOVE) {
+            Combo_MMSpellUseItem(this, play, 1);
+            return;
+        }
+        if (item == ITEM_COMBO_DINS_FIRE) {
+            Combo_MMSpellUseItem(this, play, 2);
+            return;
+        }
 #endif
 
         if (var_v1 || (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_TALK) && (itemAction != PLAYER_IA_NONE)) ||
@@ -6377,7 +6416,9 @@ s32 func_80834600(Player* this, PlayState* play) {
             func_80834534(play, this);
         } else {
 #ifdef COMBO_BUILD
-            if(gSaveContext.save.shipSaveInfo.adultMm.enabled&&Combo_MM_AdultResourcesReady()&&!Combo_MM_ShouldTakeFloorDamage(this,var_a1,sp58,isSurfaceWallDamage))goto label;
+            if (gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady() &&
+                !Combo_MM_ShouldTakeFloorDamage(this, var_a1, sp58, isSurfaceWallDamage))
+                goto label;
 #endif
             this->actor.colChkInfo.damage = 4;
             func_80833B18(play, this, (var_v1_2 == BGCHECK_SCENE) ? 0 : 1, 4.0f, 5.0f,
@@ -7757,7 +7798,11 @@ void func_8083827C(Player* this, PlayState* play) {
         }
 
 #ifdef COMBO_BUILD
-        if(Combo_MM_GetCustomBoots(this)==2&&COMBO_HOVER_TIMER(this)!=0){this->actor.velocity.y=1.0f;sPrevFloorProperty=FLOOR_PROPERTY_9;return;}
+        if (Combo_MM_GetCustomBoots(this) == 2 && COMBO_HOVER_TIMER(this) != 0) {
+            this->actor.velocity.y = 1.0f;
+            sPrevFloorProperty = FLOOR_PROPERTY_9;
+            return;
+        }
 #endif
         temp_t0 = BINANG_SUB(this->yaw, this->actor.shape.rot.y);
         Player_SetAction(play, this, Player_Action_25, 1);
@@ -7821,10 +7866,11 @@ s32 func_8083868C(PlayState* play, Player* this) {
             if (this->transformation == PLAYER_FORM_HUMAN) {
 #ifdef COMBO_BUILD
                 // Pinned Player_GetItemCamMode: swimming Hookshot or Adult human uses Bow mode.
-                camMode = ((this->heldItemAction == PLAYER_IA_HOOKSHOT &&
-                            (this->stateFlags1 & PLAYER_STATE1_8000000)) ||
-                           (Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady()))
-                              ? CAM_MODE_BOWARROW : CAM_MODE_SLINGSHOT;
+                camMode =
+                    ((this->heldItemAction == PLAYER_IA_HOOKSHOT && (this->stateFlags1 & PLAYER_STATE1_8000000)) ||
+                     (Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady()))
+                        ? CAM_MODE_BOWARROW
+                        : CAM_MODE_SLINGSHOT;
 #else
                 camMode = CAM_MODE_SLINGSHOT;
 #endif
@@ -8057,9 +8103,18 @@ s32 Player_ActionHandler_13(Player* this, PlayState* play) {
         if (!Player_StartCsAction(play, this)) {
             if (this->unk_AA5 == PLAYER_UNKAA5_5) {
 #ifdef COMBO_BUILD
-                if (this->itemAction == PLAYER_IA_COMBO_FARORES_WIND) { Combo_MMFaroreStart(this, play); return true; }
-                if (this->itemAction == PLAYER_IA_COMBO_NAYRUS_LOVE) { Combo_MMSpellStart(this, play,1); return true; }
-                if (this->itemAction == PLAYER_IA_COMBO_DINS_FIRE) { Combo_MMSpellStart(this, play,2); return true; }
+                if (this->itemAction == PLAYER_IA_COMBO_FARORES_WIND) {
+                    Combo_MMFaroreStart(this, play);
+                    return true;
+                }
+                if (this->itemAction == PLAYER_IA_COMBO_NAYRUS_LOVE) {
+                    Combo_MMSpellStart(this, play, 1);
+                    return true;
+                }
+                if (this->itemAction == PLAYER_IA_COMBO_DINS_FIRE) {
+                    Combo_MMSpellStart(this, play, 2);
+                    return true;
+                }
 #endif
                 // Pinned Player_StartCsItem custom Adult Mask branch precedes native masks.
                 if ((int)this->itemAction == Combo_MM_AdultMaskAction()) {
@@ -11410,7 +11465,7 @@ extern int Combo_MM_AdultResourcesReady(void);
 extern void Combo_MM_ApplyAdultGearInventoryResources(int enabled);
 extern void Combo_MM_ApplyAdultOverlayAge(int adult);
 extern void Combo_MM_ApplyAdultModelTables(int adult);
-extern void Combo_MM_ApplyAdultGameplayKeep(PlayState* play,int adult);
+extern void Combo_MM_ApplyAdultGameplayKeep(PlayState* play, int adult);
 extern void Combo_MM_ApplyAdultMaskInventoryResources(int enabled);
 #endif
 
@@ -11503,12 +11558,14 @@ void Player_Init(Actor* thisx, PlayState* play) {
     // Commit exact human model/property resources before native equipment and skeleton init.
     // Other forms retain their original tables; legacy saves remain native child MM.
     {
-        int adult=Combo_MM_IsAdult()&&Combo_MM_AdultResourcesReady();
+        int adult = Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady();
         Combo_MM_ApplyAdultOverlayAge(adult);
         Combo_MM_ApplyAdultModelTables(adult);
-        Combo_MM_ApplyAdultGameplayKeep(play,adult);
-        Combo_MM_ApplyAdultMaskInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady());
-        Combo_MM_ApplyAdultGearInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady());
+        Combo_MM_ApplyAdultGameplayKeep(play, adult);
+        Combo_MM_ApplyAdultMaskInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled &&
+                                                  Combo_MM_AdultResourcesReady());
+        Combo_MM_ApplyAdultGearInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled &&
+                                                  Combo_MM_AdultResourcesReady());
     }
 #endif
     this->ageProperties = &sPlayerAgeProperties[this->transformation];
@@ -11982,50 +12039,40 @@ static s32 Combo_MM_NativeFloorUpdate(Player* this) {
 }
 
 #ifdef COMBO_BUILD
-static void Combo_MM_IncrementFloorTypeTimer(Player* this, s32* sPlayerFloorTypePtr)
-{
-    if (this->prevFloorType == *sPlayerFloorTypePtr)
-    {
+static void Combo_MM_IncrementFloorTypeTimer(Player* this, s32* sPlayerFloorTypePtr) {
+    if (this->prevFloorType == *sPlayerFloorTypePtr) {
         this->floorTypeTimer++;
-    }
-    else
-    {
+    } else {
         this->prevFloorType = *sPlayerFloorTypePtr;
         this->floorTypeTimer = 0;
     }
 }
 
-s32 Combo_MM_UpdateHoverBoots(Player* this)
-{
-    s32* sPlayerFloorTypePtr=(s32*)&sPlayerFloorType;
-    s16* sFloorPitchShapePtr=&sFloorPitchShape;
+s32 Combo_MM_UpdateHoverBoots(Player* this) {
+    s32* sPlayerFloorTypePtr = (s32*)&sPlayerFloorType;
+    s16* sFloorPitchShapePtr = &sFloorPitchShape;
     s32 canHoverOnGround;
 
-    if (this->transformation == PLAYER_FORM_DEKU && this->actor.bgCheckFlags & BGCHECKFLAG_GROUND && func_8083784C(this))
-    {
+    if (this->transformation == PLAYER_FORM_DEKU && this->actor.bgCheckFlags & BGCHECKFLAG_GROUND &&
+        func_8083784C(this)) {
         this->actor.bgCheckFlags &= ~BGCHECKFLAG_GROUND;
     }
 
-    if ((Combo_MM_GetCustomBoots(this) == 2) && (COMBO_HOVER_TIMER(this) != 0))
-    {
+    if ((Combo_MM_GetCustomBoots(this) == 2) && (COMBO_HOVER_TIMER(this) != 0)) {
         COMBO_HOVER_TIMER(this)--;
-    }
-    else
-    {
+    } else {
         COMBO_HOVER_TIMER(this) = 0;
     }
 
-    canHoverOnGround =
-        (Combo_MM_GetCustomBoots(this) == 2) &&
-        ((this->actor.depthInWater >= 0.0f) || (func_808340AC(*sPlayerFloorTypePtr) >= 0) || func_808340D4(*sPlayerFloorTypePtr));
+    canHoverOnGround = (Combo_MM_GetCustomBoots(this) == 2) &&
+                       ((this->actor.depthInWater >= 0.0f) || (func_808340AC(*sPlayerFloorTypePtr) >= 0) ||
+                        func_808340D4(*sPlayerFloorTypePtr));
 
-    if (canHoverOnGround && (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (COMBO_HOVER_TIMER(this) != 0))
-    {
+    if (canHoverOnGround && (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (COMBO_HOVER_TIMER(this) != 0)) {
         this->actor.bgCheckFlags &= ~BGCHECKFLAG_GROUND;
     }
 
-    if (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND)
-    {
+    if (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) {
         if (!canHoverOnGround) {
             COMBO_HOVER_TIMER(this) = 19;
         }
@@ -12048,7 +12095,8 @@ s32 Combo_MM_UpdateHoverBoots(Player* this)
 
 s32 func_808430E0(Player* this) {
 #ifdef COMBO_BUILD
-    if(gSaveContext.save.shipSaveInfo.adultMm.enabled&&Combo_MM_AdultResourcesReady())return Combo_MM_UpdateHoverBoots(this);
+    if (gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady())
+        return Combo_MM_UpdateHoverBoots(this);
 #endif
     return Combo_MM_NativeFloorUpdate(this);
 }
@@ -12679,7 +12727,7 @@ void func_80844784(PlayState* play, Player* this) {
 
     if (
 #ifdef COMBO_BUILD
-        Combo_MM_IsFloorSlippery(this,sPlayerFloorType)
+        Combo_MM_IsFloorSlippery(this, sPlayerFloorType)
 #else
         (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && (sPlayerFloorType == FLOOR_TYPE_5) &&
         (this->currentBoots < PLAYER_BOOTS_ZORA_UNDERWATER)
@@ -12718,11 +12766,11 @@ void func_80844784(PlayState* play, Player* this) {
     if ((gSaveContext.save.saveInfo.playerData.health != 0) &&
         (
 #ifdef COMBO_BUILD
-        Combo_MM_IsBeingPushed(this,play)
+            Combo_MM_IsBeingPushed(this, play)
 #else
-        ((this->pushedSpeed != 0.0f) || (this->windSpeed != 0.0f) || (play->envCtx.windSpeed >= 50.0f))
+            ((this->pushedSpeed != 0.0f) || (this->windSpeed != 0.0f) || (play->envCtx.windSpeed >= 50.0f))
 #endif
-        ) &&
+                ) &&
         (!Player_InCsMode(play)) &&
         !(this->stateFlags1 & (PLAYER_STATE1_4 | PLAYER_STATE1_2000 | PLAYER_STATE1_4000 | PLAYER_STATE1_200000)) &&
         !(this->stateFlags3 & PLAYER_STATE3_100) && (Player_Action_33 != this->actionFunc) &&
@@ -14439,8 +14487,8 @@ s32 Player_UpperAction_ChangeHeldItem(Player* this, PlayState* play) {
                                                                (play->bButtonAmmoPlusOne == 0),
                                                            this))))) {
         // Custom Adult Mask preserves its current upper action, as pinned Player.c does.
-    if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
-        Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
+        if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
+            Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
         this->unk_ACC = 0;
         this->idleType = PLAYER_IDLE_DEFAULT;
         sPlayerHeldItemButtonIsHeldDown = sPlayerUseHeldItem;
@@ -14492,8 +14540,8 @@ s32 Player_UpperAction_5(Player* this, PlayState* play) {
     sPlayerUseHeldItem = sPlayerHeldItemButtonIsHeldDown;
     if (sPlayerUseHeldItem || PlayerAnimation_Update(play, &this->skelAnimeUpper)) {
         // Custom Adult Mask preserves its current upper action, as pinned Player.c does.
-    if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
-        Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
+        if ((int)this->heldItemAction != Combo_MM_AdultMaskAction())
+            Player_SetUpperAction(play, this, sItemActionUpdateFuncs[this->heldItemAction]);
         PlayerAnimation_PlayLoop(play, &this->skelAnimeUpper, D_8085BE84[PLAYER_ANIMGROUP_wait][this->modelAnimType]);
         this->idleType = PLAYER_IDLE_DEFAULT;
         this->upperActionFunc(this, play);

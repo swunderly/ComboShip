@@ -392,13 +392,16 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
         if (c.hintable && c.required && !c.areaKey.empty())
             areaHasHintableRequired.insert(c.areaKey);
     for (const auto& c : candidates) {
-        if (!c.hintable || c.areaKey.empty() || c.areaKey.find("Unknown") != std::string::npos) continue;
+        if (!c.hintable || c.areaKey.empty() || c.areaKey.find("Unknown") != std::string::npos)
+            continue;
         const std::string key = (c.checkGame == GAME_OOT ? "oot:" : "mm:") + c.checkName;
         auto found = pareDown.pathsByCheck.find(key);
-        if (found == pareDown.pathsByCheck.end()) continue;
+        if (found == pareDown.pathsByCheck.end())
+            continue;
         auto& labels = hintablePaths[c.areaKey];
         for (const auto& label : found->second)
-            if (std::find(labels.begin(), labels.end(), label) == labels.end()) labels.push_back(label);
+            if (std::find(labels.begin(), labels.end(), label) == labels.end())
+                labels.push_back(label);
     }
     std::vector<std::string> requiredAreas, foolishAreas;
     for (auto& entry : pareDown.areaHasRequired) {
@@ -733,7 +736,8 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
                     auto paths = hintablePaths.find(usedKey);
                     if (cat == "WotH" && paths != hintablePaths.end() && !paths->second.empty()) {
                         pathTarget = paths->second[rng.below(static_cast<uint32_t>(paths->second.size()))];
-                        msg = EnglishOnly("They say that " + areaText(usedKey).en + " is on the path to " + pathTarget + ".");
+                        msg = EnglishOnly("They say that " + areaText(usedKey).en + " is on the path to " + pathTarget +
+                                          ".");
                     }
                     usedAreaKeys.insert(usedKey);
                     placed = true;
@@ -834,14 +838,18 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
     // Area-only paths give both games the same kind of guidance. A path never names
     // the hidden reward, and entering its area does not reveal or mark any check.
     std::vector<std::string> pathAreas;
-    for (const auto& [area, labels] : hintablePaths) if (!labels.empty()) pathAreas.push_back(area);
+    for (const auto& [area, labels] : hintablePaths)
+        if (!labels.empty())
+            pathAreas.push_back(area);
     std::sort(pathAreas.begin(), pathAreas.end());
     for (const auto& area : pathAreas) {
         const auto& labels = hintablePaths.at(area);
         const std::string target = labels[rng.below(static_cast<uint32_t>(labels.size()))];
-        mmGossipPool.push_back({{"weight", 3},
-            {"text", "They say that " + areaText(area).en + " is on the path to " + target + "."},
-            {"pathTarget", target}, {"pathArea", area}});
+        mmGossipPool.push_back(
+            { { "weight", 3 },
+              { "text", "They say that " + areaText(area).en + " is on the path to " + target + "." },
+              { "pathTarget", target },
+              { "pathArea", area } });
     }
 
     out["oot"] = std::move(ootHints);

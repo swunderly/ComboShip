@@ -2674,7 +2674,8 @@ int32_t BenMenu::EvalDisabledByIndex(int32_t i, const char** outReason) {
         w->ResetDisables();
     }
     w->preFunc(*w);
-    if (w->isHidden) return 2;
+    if (w->isHidden)
+        return 2;
     bool d = (w->options && w->options->disabled);
     if (d && outReason) {
         *outReason = w->options->disabledTooltip; // MM: const char* (no .c_str())

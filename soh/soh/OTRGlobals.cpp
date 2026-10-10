@@ -1650,7 +1650,7 @@ bool VerifyArchiveVersion(OTRVersion version) {
 extern "C" void (*gComboSceneSwitchCallback)(int fileNum);
 extern "C" int SOH_FaroreDeparturePending(void);
 extern "C" int SOH_DispatchNativeDeparture(PlayState*);
-static int sSongDeparture=-1;
+static int sSongDeparture = -1;
 static void ProcessForeignSongReply();
 extern "C" void Combo_SOHSoaringMapClose(PlayState*);
 // Launcher poll: returns the next save slot backed up for a release mismatch, or -1 if none.
@@ -1838,9 +1838,8 @@ static void Combo_FinishInit() {
     static bool sComboSwitchPending = false;
     static int sComboSwitchFileNum = -1;
 
-    GameInteractor::Instance->RegisterGameHook<GameInteractor::OnPlayDestroy>([]() {
-        Combo_SOHSoaringMapClose(gPlayState);
-    });
+    GameInteractor::Instance->RegisterGameHook<GameInteractor::OnPlayDestroy>(
+        []() { Combo_SOHSoaringMapClose(gPlayState); });
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnSceneInit>([](int16_t sceneNum) {
         // Cross-game OOT->MM trigger: entering the Happy Mask Shop.
         if (sceneNum == SCENE_HAPPY_MASK_SHOP) {
@@ -1849,17 +1848,22 @@ static void Combo_FinishInit() {
         }
     });
 
-    GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameStateMainStart>([]() { ProcessForeignSongReply(); });
+    GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameStateMainStart>(
+        []() { ProcessForeignSongReply(); });
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameFrameUpdate>([]() {
-        if (sSongDeparture>=6 || SOH_FaroreDeparturePending()) { sComboSwitchPending=true; sComboSwitchFileNum=(int)gSaveContext.fileNum; }
+        if (sSongDeparture >= 6 || SOH_FaroreDeparturePending()) {
+            sComboSwitchPending = true;
+            sComboSwitchFileNum = (int)gSaveContext.fileNum;
+        }
         if (!sComboSwitchPending)
             return;
         sComboSwitchPending = false;
         SaveManager::Instance->SaveFile(sComboSwitchFileNum);
         SaveManager::Instance->ThreadPoolWait();
-        if(SOH_FaroreDeparturePending()) {
-            if(!SOH_DispatchNativeDeparture(gPlayState))return;
-        } else if(gComboSceneSwitchCallback) {
+        if (SOH_FaroreDeparturePending()) {
+            if (!SOH_DispatchNativeDeparture(gPlayState))
+                return;
+        } else if (gComboSceneSwitchCallback) {
             gComboSceneSwitchCallback(sComboSwitchFileNum);
         }
         if (gGameState) {
@@ -1949,7 +1953,8 @@ extern "C" void DeinitOTR() {
     // main thread. Left in these statics / the registry, it would die during DLL-unload static
     // destructors, where its thread pool joins workers under the loader lock and deadlocks.
     Ship::CrossRMRegistry::Unregister("oot");
-    if(auto drop=(void(*)())Combo_ResolveSym("2ship","MM_DropWarpResources")) drop();
+    if (auto drop = (void (*)())Combo_ResolveSym("2ship", "MM_DropWarpResources"))
+        drop();
     sOOTResourceManager = nullptr;
 #endif
 
@@ -2859,270 +2864,390 @@ extern "C" COMBO_EXPORT void SOH_GetGlobalOptions(int* zTarget, int* audio) {
         *audio = gSaveContext.audioSetting;
 }
 
-
 #include "soh/Enhancements/CrossWarp/CrossWarp.h"
 #include "rando/SongTravelOOT.h"
 #include "rando/ForeignSongs.h"
 #include "soh/Enhancements/custom-message/CustomMessageManager.h"
 #include <atomic>
-static std::atomic<int> sForeignSongRequest{-1}, sForeignSongReply{-2};
-static std::atomic<bool> sForeignSongPerformed{false};
-static bool sNativeSongOpen=false;
-static int sNativeSongSource=-1, sNativeSongStick=0;
+static std::atomic<int> sForeignSongRequest{ -1 }, sForeignSongReply{ -2 };
+static std::atomic<bool> sForeignSongPerformed{ false };
+static bool sNativeSongOpen = false;
+static int sNativeSongSource = -1, sNativeSongStick = 0;
 static std::string sNativeSongText;
 extern "C" void Combo_SOHForeignSongDiagnostic(const char* event) {
-    if(!CVarGetInteger("gCombo.Debug.SongPerformance",0)) return;
-    const auto* msg=gPlayState ? &gPlayState->msgCtx : nullptr;
-    SPDLOG_INFO("[ComboShip SongPerformance] OoT {} source={} performed={} action={} message={} ocarina={} staff={} nativeOpen={}",
-        event,sForeignSongRequest.load(),sForeignSongPerformed.load(),
-        msg ? (int)msg->ocarinaAction : -1,msg ? (int)msg->msgMode : -1,
-        msg ? (int)msg->ocarinaMode : -1,msg && msg->ocarinaStaff ? (int)msg->ocarinaStaff->state : -1,
-        sNativeSongOpen);
+    if (!CVarGetInteger("gCombo.Debug.SongPerformance", 0))
+        return;
+    const auto* msg = gPlayState ? &gPlayState->msgCtx : nullptr;
+    SPDLOG_INFO("[ComboShip SongPerformance] OoT {} source={} performed={} action={} message={} ocarina={} staff={} "
+                "nativeOpen={}",
+                event, sForeignSongRequest.load(), sForeignSongPerformed.load(), msg ? (int)msg->ocarinaAction : -1,
+                msg ? (int)msg->msgMode : -1, msg ? (int)msg->ocarinaMode : -1,
+                msg && msg->ocarinaStaff ? (int)msg->ocarinaStaff->state : -1, sNativeSongOpen);
 }
 
-
-static int sSongArrival=-1;
-static bool sMmVisitedForSongs=false;
-extern "C" COMBO_EXPORT void SOH_SetMmVisited(int visited) { sMmVisitedForSongs=visited!=0; }
+static int sSongArrival = -1;
+static bool sMmVisitedForSongs = false;
+extern "C" COMBO_EXPORT void SOH_SetMmVisited(int visited) {
+    sMmVisitedForSongs = visited != 0;
+}
 extern "C" COMBO_EXPORT void SOH_SetSongTravel(const char* json) {
-    if(gPlayState) Combo_SOHSoaringMapClose(gPlayState);
-    sForeignSongRequest=-1; sForeignSongReply=-2; sForeignSongPerformed=false; sNativeSongOpen=false; sNativeSongSource=-1;
-    try { ComboRando::ActiveSongTravel()=ComboRando::SongTravelMap::parse(nlohmann::json::parse(json)); }
-    catch (...) { ComboRando::ActiveSongTravel()={}; }
-    ComboRando::OotSongArrivals()=0;
+    if (gPlayState)
+        Combo_SOHSoaringMapClose(gPlayState);
+    sForeignSongRequest = -1;
+    sForeignSongReply = -2;
+    sForeignSongPerformed = false;
+    sNativeSongOpen = false;
+    sNativeSongSource = -1;
+    try {
+        ComboRando::ActiveSongTravel() = ComboRando::SongTravelMap::parse(nlohmann::json::parse(json));
+    } catch (...) { ComboRando::ActiveSongTravel() = {}; }
+    ComboRando::OotSongArrivals() = 0;
 }
-extern "C" COMBO_EXPORT void SOH_SetSongArrivals(uint32_t mask) { ComboRando::OotSongArrivals()=mask & 63; ComboRando::OotSongAgeArrivals()={}; }
+extern "C" COMBO_EXPORT void SOH_SetSongArrivals(uint32_t mask) {
+    ComboRando::OotSongArrivals() = mask & 63;
+    ComboRando::OotSongAgeArrivals() = {};
+}
 extern "C" COMBO_EXPORT int SOH_SongDestination(int source) {
     // This export is the generation oracle's route query. Gameplay uses the
     // separate ForeignSongDestination exports and the runtime map flags.
-    const auto& map=ComboRando::ActiveSongTravel();
+    const auto& map = ComboRando::ActiveSongTravel();
     return (map.logicEnabled || map.logicForeignSongs) ? map.logicDestination(source) : -1;
 }
-static const RandomizerGet kWarpSongs[]={RG_MINUET_OF_FOREST,RG_BOLERO_OF_FIRE,RG_SERENADE_OF_WATER,RG_REQUIEM_OF_SPIRIT,RG_NOCTURNE_OF_SHADOW,RG_PRELUDE_OF_LIGHT};
+static const RandomizerGet kWarpSongs[] = { RG_MINUET_OF_FOREST,  RG_BOLERO_OF_FIRE,     RG_SERENADE_OF_WATER,
+                                            RG_REQUIEM_OF_SPIRIT, RG_NOCTURNE_OF_SHADOW, RG_PRELUDE_OF_LIGHT };
 static auto LiveSongLogic() {
-    auto live=std::make_shared<Rando::Logic>(); live->SetContext(OTRGlobals::Instance->gRandoContext);
-    live->SetSaveContext(&gSaveContext); live->IsChild=LINK_IS_CHILD; live->IsAdult=!LINK_IS_CHILD; return live;
+    auto live = std::make_shared<Rando::Logic>();
+    live->SetContext(OTRGlobals::Instance->gRandoContext);
+    live->SetSaveContext(&gSaveContext);
+    live->IsChild = LINK_IS_CHILD;
+    live->IsAdult = !LINK_IS_CHILD;
+    return live;
 }
-static uint32_t OotSoaringSources(Rando::Logic* logic, uint32_t knowledge, bool child, bool logical=false) {
-    const RandomizerGet buttons[]={RG_OCARINA_A_BUTTON,RG_OCARINA_C_DOWN_BUTTON,RG_OCARINA_C_RIGHT_BUTTON,RG_OCARINA_C_LEFT_BUTTON,RG_OCARINA_C_UP_BUTTON};
-    uint32_t mask=0; for(int i=0;i<5;i++) if(logic->HasItem(buttons[i])) mask|=1u<<i;
-    return ComboRando::ForeignSoaringSources(logical ? ComboRando::ActiveSongTravel().logicForeignSongs : ComboRando::ActiveSongTravel().foreignSongs, knowledge,
-        logic->HasItem(RG_FAIRY_OCARINA),mask,child);
+static uint32_t OotSoaringSources(Rando::Logic* logic, uint32_t knowledge, bool child, bool logical = false) {
+    const RandomizerGet buttons[] = { RG_OCARINA_A_BUTTON, RG_OCARINA_C_DOWN_BUTTON, RG_OCARINA_C_RIGHT_BUTTON,
+                                      RG_OCARINA_C_LEFT_BUTTON, RG_OCARINA_C_UP_BUTTON };
+    uint32_t mask = 0;
+    for (int i = 0; i < 5; i++)
+        if (logic->HasItem(buttons[i]))
+            mask |= 1u << i;
+    return ComboRando::ForeignSoaringSources(logical ? ComboRando::ActiveSongTravel().logicForeignSongs
+                                                     : ComboRando::ActiveSongTravel().foreignSongs,
+                                             knowledge, logic->HasItem(RG_FAIRY_OCARINA), mask, child);
 }
 extern "C" COMBO_EXPORT uint32_t SOH_GetSongKnowledge() {
-    auto logic=OTRGlobals::Instance->gRandoContext->GetLogic();
-    uint32_t mask=0; for(int i=0;i<6;i++) if(logic->HasItem(kWarpSongs[i])) mask|=1u<<i; return mask;
+    auto logic = OTRGlobals::Instance->gRandoContext->GetLogic();
+    uint32_t mask = 0;
+    for (int i = 0; i < 6; i++)
+        if (logic->HasItem(kWarpSongs[i]))
+            mask |= 1u << i;
+    return mask;
 }
 extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongKnowledge() {
-    if (!IS_RANDO || gSaveContext.fileNum>=3) return 0;
-    auto logic=LiveSongLogic(); uint32_t mask=0;
-    for(int i=0;i<6;i++) if(logic->HasItem(kWarpSongs[i])) mask|=1u<<i; return mask;
+    if (!IS_RANDO || gSaveContext.fileNum >= 3)
+        return 0;
+    auto logic = LiveSongLogic();
+    uint32_t mask = 0;
+    for (int i = 0; i < 6; i++)
+        if (logic->HasItem(kWarpSongs[i]))
+            mask |= 1u << i;
+    return mask;
 }
-extern "C" COMBO_EXPORT void SOH_SetForeignSongKnowledge(uint32_t mask) { ComboRando::OotForeignKnowledge()=mask; }
-static uint32_t OotLiveSoaringSources(bool logical=false) {
-    auto fn=(uint32_t(*)())Combo_ResolveSym("2ship","MM_GetLiveSongKnowledge");
-    if (!IS_RANDO || !fn) return 0;
-    return OotSoaringSources(LiveSongLogic().get(),fn(),LINK_IS_CHILD,logical);
+extern "C" COMBO_EXPORT void SOH_SetForeignSongKnowledge(uint32_t mask) {
+    ComboRando::OotForeignKnowledge() = mask;
+}
+static uint32_t OotLiveSoaringSources(bool logical = false) {
+    auto fn = (uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetLiveSongKnowledge");
+    if (!IS_RANDO || !fn)
+        return 0;
+    return OotSoaringSources(LiveSongLogic().get(), fn(), LINK_IS_CHILD, logical);
 }
 extern "C" COMBO_EXPORT uint32_t SOH_GetSongSources() {
-    uint32_t mask=0;
-    for(int i=0;i<6;i++) { auto* r=RegionTable(ComboRando::kOotSongSources[i]); if(r->Child()||r->Adult()) mask |= 1u<<i; }
-    return mask | OotSoaringSources(OTRGlobals::Instance->gRandoContext->GetLogic().get(),ComboRando::OotForeignKnowledge(),RegionTable(RR_ROOT)->Child(),true);
+    uint32_t mask = 0;
+    for (int i = 0; i < 6; i++) {
+        auto* r = RegionTable(ComboRando::kOotSongSources[i]);
+        if (r->Child() || r->Adult())
+            mask |= 1u << i;
+    }
+    return mask | OotSoaringSources(OTRGlobals::Instance->gRandoContext->GetLogic().get(),
+                                    ComboRando::OotForeignKnowledge(), RegionTable(RR_ROOT)->Child(), true);
 }
 static uint32_t OotLiveSongSources(bool logical) {
-    if (!IS_RANDO || gSaveContext.fileNum>=3 || (INV_CONTENT(ITEM_OCARINA_FAIRY)!=ITEM_OCARINA_FAIRY &&
-        INV_CONTENT(ITEM_OCARINA_FAIRY)!=ITEM_OCARINA_TIME)) return 0;
+    if (!IS_RANDO || gSaveContext.fileNum >= 3 ||
+        (INV_CONTENT(ITEM_OCARINA_FAIRY) != ITEM_OCARINA_FAIRY && INV_CONTENT(ITEM_OCARINA_FAIRY) != ITEM_OCARINA_TIME))
+        return 0;
     // Use the native CanUse checks in a save-derived Logic object, including shuffled ocarina buttons.
-    auto live=std::make_shared<Rando::Logic>();
-    live->SetContext(OTRGlobals::Instance->gRandoContext); live->SetSaveContext(&gSaveContext);
-    live->IsChild=LINK_IS_CHILD; live->IsAdult=!LINK_IS_CHILD;
-    const RandomizerGet songs[]={RG_MINUET_OF_FOREST,RG_BOLERO_OF_FIRE,RG_SERENADE_OF_WATER,RG_REQUIEM_OF_SPIRIT,RG_NOCTURNE_OF_SHADOW,RG_PRELUDE_OF_LIGHT};
-    uint32_t mask=0; for(int i=0;i<6;i++) if(live->CanUse(songs[i])) mask |= 1u<<i;
+    auto live = std::make_shared<Rando::Logic>();
+    live->SetContext(OTRGlobals::Instance->gRandoContext);
+    live->SetSaveContext(&gSaveContext);
+    live->IsChild = LINK_IS_CHILD;
+    live->IsAdult = !LINK_IS_CHILD;
+    const RandomizerGet songs[] = { RG_MINUET_OF_FOREST,  RG_BOLERO_OF_FIRE,     RG_SERENADE_OF_WATER,
+                                    RG_REQUIEM_OF_SPIRIT, RG_NOCTURNE_OF_SHADOW, RG_PRELUDE_OF_LIGHT };
+    uint32_t mask = 0;
+    for (int i = 0; i < 6; i++)
+        if (live->CanUse(songs[i]))
+            mask |= 1u << i;
     return mask | OotLiveSoaringSources(logical);
 }
 
-extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongSources() { return OotLiveSongSources(false); }
-extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongLogicSources() { return OotLiveSongSources(true); }
+extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongSources() {
+    return OotLiveSongSources(false);
+}
+extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongLogicSources() {
+    return OotLiveSongSources(true);
+}
 extern "C" COMBO_EXPORT int SOH_SongLogicDestination(int source) {
-    const auto& map=ComboRando::ActiveSongTravel();
+    const auto& map = ComboRando::ActiveSongTravel();
     return (map.logicEnabled || map.logicForeignSongs) ? map.logicDestination(source) : -1;
 }
-extern "C" COMBO_EXPORT int SOH_ForeignSongRequest() { return sForeignSongRequest.load(); }
+extern "C" COMBO_EXPORT int SOH_ForeignSongRequest() {
+    return sForeignSongRequest.load();
+}
 extern "C" COMBO_EXPORT uint32_t SOH_ForeignSongChoices() {
-    int request=sForeignSongRequest.load();
-    if (request<0) return 0;
+    int request = sForeignSongRequest.load();
+    if (request < 0)
+        return 0;
     return OotLiveSoaringSources();
 }
-extern "C" COMBO_EXPORT int SOH_ForeignSongDestination(int source) { return ComboRando::ActiveSongTravel().destination(source); }
+extern "C" COMBO_EXPORT int SOH_ForeignSongDestination(int source) {
+    return ComboRando::ActiveSongTravel().destination(source);
+}
 extern "C" COMBO_EXPORT uint32_t SOH_ForeignSongInput() {
     return gPlayState ? gPlayState->state.input[0].press.button : 0;
 }
-extern "C" COMBO_EXPORT void SOH_ForeignSongChoose(int source) { sForeignSongReply=source; }
+extern "C" COMBO_EXPORT void SOH_ForeignSongChoose(int source) {
+    sForeignSongReply = source;
+}
 extern "C" int Combo_SOHRecognizeForeignSong(const uint8_t* pitches, int count) {
     if (!IS_RANDO || !gPlayState || !ComboRando::ActiveSongTravel().foreignSongs ||
-        gPlayState->msgCtx.ocarinaAction!=OCARINA_ACTION_FREE_PLAY || gPlayState->interfaceCtx.restrictions.warpSongs || gPlayState->msgCtx.disableWarpSongs || sForeignSongRequest.load()>=0) return 0;
-    auto hasSong=(int(*)())Combo_ResolveSym("2ship","MM_HasLiveSoaringSong");
+        gPlayState->msgCtx.ocarinaAction != OCARINA_ACTION_FREE_PLAY ||
+        gPlayState->interfaceCtx.restrictions.warpSongs || gPlayState->msgCtx.disableWarpSongs ||
+        sForeignSongRequest.load() >= 0)
+        return 0;
+    auto hasSong = (int (*)())Combo_ResolveSym("2ship", "MM_HasLiveSoaringSong");
     // Test song + local instrument/buttons independently of owl activation.
-    const bool playable=hasSong && hasSong() &&
-        OotSoaringSources(LiveSongLogic().get(),1u<<6,LINK_IS_CHILD);
-    uint32_t allowed=playable ? (1u<<6) : 0;
-    int song=ComboRando::RecognizeForeignSong(pitches,count,allowed);
-    if(song<0) return 0;
-    sForeignSongReply=-2; sForeignSongPerformed=false; sForeignSongRequest=song; Combo_SOHForeignSongDiagnostic("recognized"); return 1;
+    const bool playable = hasSong && hasSong() && OotSoaringSources(LiveSongLogic().get(), 1u << 6, LINK_IS_CHILD);
+    uint32_t allowed = playable ? (1u << 6) : 0;
+    int song = ComboRando::RecognizeForeignSong(pitches, count, allowed);
+    if (song < 0)
+        return 0;
+    sForeignSongReply = -2;
+    sForeignSongPerformed = false;
+    sForeignSongRequest = song;
+    Combo_SOHForeignSongDiagnostic("recognized");
+    return 1;
 }
 extern "C" int Combo_SOHForeignSongPerformanceActive() {
-    return sForeignSongRequest.load()>=0 && !sForeignSongPerformed.load();
+    return sForeignSongRequest.load() >= 0 && !sForeignSongPerformed.load();
 }
-extern "C" void Combo_SOHForeignSongPerformanceFinished() { sForeignSongPerformed=true; Combo_SOHForeignSongDiagnostic("performance-finished"); }
+extern "C" void Combo_SOHForeignSongPerformanceFinished() {
+    sForeignSongPerformed = true;
+    Combo_SOHForeignSongDiagnostic("performance-finished");
+}
 extern "C" void Combo_SOHForeignSongPlayedText() {
-    static bool registered=false;
-    if(!registered) {
-        GameInteractor::Instance->RegisterGameHookForID<GameInteractor::OnOpenText>(0x71F1,
-            [](uint16_t*,bool* load) {
-                if(sForeignSongRequest.load()<0) return;
-                auto native=CustomMessage::LoadVanillaMessageTableEntry(0x893);
-                native.Replace("Minuet of Forest","Song of Soaring");
-                native.LoadIntoFont(); *load=false;
-            });
-        registered=true;
+    static bool registered = false;
+    if (!registered) {
+        GameInteractor::Instance->RegisterGameHookForID<GameInteractor::OnOpenText>(0x71F1, [](uint16_t*, bool* load) {
+            if (sForeignSongRequest.load() < 0)
+                return;
+            auto native = CustomMessage::LoadVanillaMessageTableEntry(0x893);
+            native.Replace("Minuet of Forest", "Song of Soaring");
+            native.LoadIntoFont();
+            *load = false;
+        });
+        registered = true;
     }
-    Message_ContinueTextbox(gPlayState,0x71F1);
+    Message_ContinueTextbox(gPlayState, 0x71F1);
 }
-static void OpenNativeSongDialogue(uint32_t choices, bool assetError=false) {
-    const int dest=sNativeSongSource>=0 ? ComboRando::ActiveSongTravel().destination(sNativeSongSource) : -1;
-    sNativeSongOpen=true;
+static void OpenNativeSongDialogue(uint32_t choices, bool assetError = false) {
+    const int dest = sNativeSongSource >= 0 ? ComboRando::ActiveSongTravel().destination(sNativeSongSource) : -1;
+    sNativeSongOpen = true;
     AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
-    static bool registered=false;
-    if(!registered) {
-        GameInteractor::Instance->RegisterGameHookForID<GameInteractor::OnOpenText>(0x71F0,
-            [](uint16_t*, bool* load) {
-                if(!sNativeSongOpen) return;
-                auto native=CustomMessage::LoadVanillaMessageTableEntry(0x88D);
-                CustomMessage msg(sNativeSongText,sNativeSongText,sNativeSongText,
-                                  native.GetTextBoxType(),native.GetTextBoxPosition());
-                msg.AutoFormat(); msg.LoadIntoFont(); *load=false;
-            });
-        registered=true;
+    static bool registered = false;
+    if (!registered) {
+        GameInteractor::Instance->RegisterGameHookForID<GameInteractor::OnOpenText>(0x71F0, [](uint16_t*, bool* load) {
+            if (!sNativeSongOpen)
+                return;
+            auto native = CustomMessage::LoadVanillaMessageTableEntry(0x88D);
+            CustomMessage msg(sNativeSongText, sNativeSongText, sNativeSongText, native.GetTextBoxType(),
+                              native.GetTextBoxPosition());
+            msg.AutoFormat();
+            msg.LoadIntoFont();
+            *load = false;
+        });
+        registered = true;
     }
-    if(assetError) {
-        sNativeSongText="You can't soar right now.&Restart Combo Ship to reload&Majora's Mask's warp assets.";
+    if (assetError) {
+        sNativeSongText = "You can't soar right now.&Restart Combo Ship to reload&Majora's Mask's warp assets.";
         SPDLOG_ERROR("[ComboShip] Native Soaring map assets could not be loaded");
-    } else if(!choices) {
-        sNativeSongText="You haven't activated any %rowl statues%w yet.&You can't soar anywhere!";
+    } else if (!choices) {
+        sNativeSongText = "You haven't activated any %rowl statues%w yet.&You can't soar anywhere!";
     } else {
-        sNativeSongText="Soar to";
-        sNativeSongText+="&%r"+std::string(ComboRando::kSongLandingNames[dest])+"?%w&"+
-            CustomMessage::TWO_WAY_CHOICE()+"%gOK&No%w";
+        sNativeSongText = "Soar to";
+        sNativeSongText += "&%r" + std::string(ComboRando::kSongLandingNames[dest]) + "?%w&" +
+                           CustomMessage::TWO_WAY_CHOICE() + "%gOK&No%w";
     }
-    Message_StartTextbox(gPlayState,0x71F0,nullptr);
-    gPlayState->msgCtx.ocarinaMode=1;
+    Message_StartTextbox(gPlayState, 0x71F0, nullptr);
+    gPlayState->msgCtx.ocarinaMode = 1;
     Combo_SOHForeignSongDiagnostic(choices ? "confirmation" : "no-owls");
 }
 extern "C" void Combo_SOHMapConfirm(int source) {
-    sNativeSongSource=source; OpenNativeSongDialogue(1u<<source);
+    sNativeSongSource = source;
+    OpenNativeSongDialogue(1u << source);
 }
 static void UpdateNativeSongDialogue() {
-    if(sForeignSongRequest.load()<0 || !gPlayState || !sForeignSongPerformed.load()) return;
-    auto& input=gPlayState->state.input[0];
-    uint32_t choices=SOH_ForeignSongChoices();
-    if(Combo_SOHSoaringMapActive() && !sNativeSongOpen) return;
-    if(input.press.button & BTN_START) { sForeignSongReply=-1; return; }
-    if(input.press.button & BTN_B) {
-        if(Combo_SOHSoaringMapActive() && sNativeSongOpen) {
-            Message_CloseTextbox(gPlayState); sNativeSongOpen=false;
-            gPlayState->pauseCtx.state=0x106; // native map selection
-            input.press.button &= ~BTN_B;
-        } else sForeignSongReply=-1;
+    if (sForeignSongRequest.load() < 0 || !gPlayState || !sForeignSongPerformed.load())
+        return;
+    auto& input = gPlayState->state.input[0];
+    uint32_t choices = SOH_ForeignSongChoices();
+    if (Combo_SOHSoaringMapActive() && !sNativeSongOpen)
+        return;
+    if (input.press.button & BTN_START) {
+        sForeignSongReply = -1;
         return;
     }
-    if(!sNativeSongOpen && !Combo_SOHSoaringMapActive()) {
-        if(input.cur.button & (BTN_A|BTN_CUP|BTN_CDOWN|BTN_CLEFT|BTN_CRIGHT)) return;
-        if(choices && Combo_SOHSoaringMapBegin(gPlayState,choices)) return;
-        sNativeSongSource=-1; OpenNativeSongDialogue(0,choices!=0); return;
+    if (input.press.button & BTN_B) {
+        if (Combo_SOHSoaringMapActive() && sNativeSongOpen) {
+            Message_CloseTextbox(gPlayState);
+            sNativeSongOpen = false;
+            gPlayState->pauseCtx.state = 0x106; // native map selection
+            input.press.button &= ~BTN_B;
+        } else
+            sForeignSongReply = -1;
+        return;
     }
-    auto state=Message_GetState(&gPlayState->msgCtx);
-    if(sNativeSongSource<0) {
-        if((state==TEXT_STATE_DONE || state==TEXT_STATE_EVENT) && (input.press.button&BTN_A)) {
-            Message_ShouldAdvance(gPlayState); sForeignSongReply=-1; input.press.button&=~BTN_A;
+    if (!sNativeSongOpen && !Combo_SOHSoaringMapActive()) {
+        if (input.cur.button & (BTN_A | BTN_CUP | BTN_CDOWN | BTN_CLEFT | BTN_CRIGHT))
+            return;
+        if (choices && Combo_SOHSoaringMapBegin(gPlayState, choices))
+            return;
+        sNativeSongSource = -1;
+        OpenNativeSongDialogue(0, choices != 0);
+        return;
+    }
+    auto state = Message_GetState(&gPlayState->msgCtx);
+    if (sNativeSongSource < 0) {
+        if ((state == TEXT_STATE_DONE || state == TEXT_STATE_EVENT) && (input.press.button & BTN_A)) {
+            Message_ShouldAdvance(gPlayState);
+            sForeignSongReply = -1;
+            input.press.button &= ~BTN_A;
         }
-    } else if(state==TEXT_STATE_CHOICE && (input.press.button&BTN_A)) {
-        Message_ShouldAdvance(gPlayState); input.press.button&=~BTN_A;
-        if(gPlayState->msgCtx.choiceIndex==0) sForeignSongReply=sNativeSongSource;
-        else { Message_CloseTextbox(gPlayState); sNativeSongOpen=false; gPlayState->pauseCtx.state=0x106; }
+    } else if (state == TEXT_STATE_CHOICE && (input.press.button & BTN_A)) {
+        Message_ShouldAdvance(gPlayState);
+        input.press.button &= ~BTN_A;
+        if (gPlayState->msgCtx.choiceIndex == 0)
+            sForeignSongReply = sNativeSongSource;
+        else {
+            Message_CloseTextbox(gPlayState);
+            sNativeSongOpen = false;
+            gPlayState->pauseCtx.state = 0x106;
+        }
     }
 }
 static void ProcessForeignSongReply() {
     // A reply queued when the map finishes closing must not reopen that map.
-    if(sForeignSongReply.load()==-2) UpdateNativeSongDialogue();
-    int reply=sForeignSongReply.exchange(-2);
-    if(reply==-2) return;
-    const uint32_t choices=SOH_ForeignSongChoices();
-    if(gPlayState && Combo_SOHSoaringMapActive()) {
-        sNativeSongOpen=false;
-        Combo_SOHSoaringMapFinish(gPlayState,reply);
+    if (sForeignSongReply.load() == -2)
+        UpdateNativeSongDialogue();
+    int reply = sForeignSongReply.exchange(-2);
+    if (reply == -2)
+        return;
+    const uint32_t choices = SOH_ForeignSongChoices();
+    if (gPlayState && Combo_SOHSoaringMapActive()) {
+        sNativeSongOpen = false;
+        Combo_SOHSoaringMapFinish(gPlayState, reply);
         return;
     }
-    Combo_SOHForeignSongDiagnostic(reply<0 ? "cancel" : "confirmation-accepted");
-    sForeignSongRequest=-1; sForeignSongPerformed=false; sNativeSongOpen=false; sNativeSongSource=-1;
-    if(!gPlayState) return;
+    Combo_SOHForeignSongDiagnostic(reply < 0 ? "cancel" : "confirmation-accepted");
+    sForeignSongRequest = -1;
+    sForeignSongPerformed = false;
+    sNativeSongOpen = false;
+    sNativeSongSource = -1;
+    if (!gPlayState)
+        return;
     Combo_SOHSoaringMapClose(gPlayState);
     AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
     Message_CloseTextbox(gPlayState);
-    gPlayState->msgCtx.ocarinaMode=4; // native ocarina END mode in both games
-    if(reply<0 || reply>=16 || !(choices & (1u<<reply))) return;
+    gPlayState->msgCtx.ocarinaMode = 4; // native ocarina END mode in both games
+    if (reply < 0 || reply >= 16 || !(choices & (1u << reply)))
+        return;
     Combo_SOHForeignSongDiagnostic("native-action");
-    const int dest=ComboRando::ActiveSongTravel().destination(reply);
+    const int dest = ComboRando::ActiveSongTravel().destination(reply);
     // Owls keep the Soaring departure even when entrance shuffle sends one to OoT.
-    if(!Combo_SOHStartSoaring(gPlayState,dest)) {
+    if (!Combo_SOHStartSoaring(gPlayState, dest)) {
         SPDLOG_ERROR("[ComboShip] Could not start native Soaring departure");
     }
 }
 
 extern "C" uint32_t SOH_LiveIncomingSongs() {
-    auto fn=(uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetLiveSongLogicSources");
-    if (!fn) return 0;
-    auto* portal=RegionTable(RR_MARKET_MASK_SHOP);
-    const bool mmAccessible=sMmVisitedForSongs || portal->Child()||portal->Adult() || (ComboRando::ActiveSongTravel().resolveLogic(SOH_GetSongSources()) & 0xffc0);
+    auto fn = (uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetLiveSongLogicSources");
+    if (!fn)
+        return 0;
+    auto* portal = RegionTable(RR_MARKET_MASK_SHOP);
+    const bool mmAccessible = sMmVisitedForSongs || portal->Child() || portal->Adult() ||
+                              (ComboRando::ActiveSongTravel().resolveLogic(SOH_GetSongSources()) & 0xffc0);
     return ComboRando::ActiveSongTravel().resolveLogic((mmAccessible ? fn() : 0) | OotLiveSoaringSources(true)) & 63;
 }
 extern "C" void Combo_SOHCompleteWarp(PlayState* play, int destination) {
-    if(destination<0 || destination>=16) return;
-    if(destination>=6) { sSongDeparture=destination; play->transitionTrigger=TRANS_TRIGGER_OFF; }
-    else { play->nextEntranceIndex=ComboRando::kOotSongEntrances[destination];
-        gSaveContext.respawn[RESPAWN_MODE_RETURN].entranceIndex=play->nextEntranceIndex;
-        gSaveContext.respawn[RESPAWN_MODE_RETURN].playerParams=0x5FF;
-        gSaveContext.respawn[RESPAWN_MODE_RETURN].data=destination;
-        gSaveContext.respawnFlag=-3; gSaveContext.cutsceneIndex=0;
-        play->transitionTrigger=TRANS_TRIGGER_START; play->transitionType=TRANS_TYPE_FADE_WHITE;
-        gSaveContext.nextTransitionType=TRANS_TYPE_FADE_WHITE; }
+    if (destination < 0 || destination >= 16)
+        return;
+    if (destination >= 6) {
+        sSongDeparture = destination;
+        play->transitionTrigger = TRANS_TRIGGER_OFF;
+    } else {
+        play->nextEntranceIndex = ComboRando::kOotSongEntrances[destination];
+        gSaveContext.respawn[RESPAWN_MODE_RETURN].entranceIndex = play->nextEntranceIndex;
+        gSaveContext.respawn[RESPAWN_MODE_RETURN].playerParams = 0x5FF;
+        gSaveContext.respawn[RESPAWN_MODE_RETURN].data = destination;
+        gSaveContext.respawnFlag = -3;
+        gSaveContext.cutsceneIndex = 0;
+        play->transitionTrigger = TRANS_TRIGGER_START;
+        play->transitionType = TRANS_TYPE_FADE_WHITE;
+        gSaveContext.nextTransitionType = TRANS_TYPE_FADE_WHITE;
+    }
 }
-extern "C" COMBO_EXPORT int SOH_TakeSongDeparture() { int d=sSongDeparture; sSongDeparture=-1; return d; }
-extern "C" COMBO_EXPORT void SOH_SetSongArrival(int d) { sSongArrival=d>=0 && d<6 ? d : -1; }
-extern "C" int SOH_ConsumeSongArrival() { int d=sSongArrival; sSongArrival=-1; if(d>=0) {
-    sMmVisitedForSongs=true;
-    gSaveContext.respawn[RESPAWN_MODE_RETURN].entranceIndex=ComboRando::kOotSongEntrances[d];
-    gSaveContext.respawn[RESPAWN_MODE_RETURN].playerParams=0x5FF;
-    gSaveContext.respawn[RESPAWN_MODE_RETURN].data=d;
-    gSaveContext.respawnFlag=-3;
-} return d<0 ? -1 : ComboRando::kOotSongEntrances[d]; }
+extern "C" COMBO_EXPORT int SOH_TakeSongDeparture() {
+    int d = sSongDeparture;
+    sSongDeparture = -1;
+    return d;
+}
+extern "C" COMBO_EXPORT void SOH_SetSongArrival(int d) {
+    sSongArrival = d >= 0 && d < 6 ? d : -1;
+}
+extern "C" int SOH_ConsumeSongArrival() {
+    int d = sSongArrival;
+    sSongArrival = -1;
+    if (d >= 0) {
+        sMmVisitedForSongs = true;
+        gSaveContext.respawn[RESPAWN_MODE_RETURN].entranceIndex = ComboRando::kOotSongEntrances[d];
+        gSaveContext.respawn[RESPAWN_MODE_RETURN].playerParams = 0x5FF;
+        gSaveContext.respawn[RESPAWN_MODE_RETURN].data = d;
+        gSaveContext.respawnFlag = -3;
+    }
+    return d < 0 ? -1 : ComboRando::kOotSongEntrances[d];
+}
 extern "C" int Combo_OOTSongWarp(PlayState* play, int source) {
-    if(!IS_RANDO || !ComboRando::ActiveSongTravel().enabled || source<0 || source>=6) return 0;
-    Combo_SOHCompleteWarp(play,ComboRando::ActiveSongTravel().destination(source));
+    if (!IS_RANDO || !ComboRando::ActiveSongTravel().enabled || source < 0 || source >= 6)
+        return 0;
+    Combo_SOHCompleteWarp(play, ComboRando::ActiveSongTravel().destination(source));
     return 1;
 }
 // Native warp songs normally skip particles in randomizer. Cross routes need the
 // full departure, so only those routes opt back into the original cutscene.
 // Return native, locally extracted OoT warp messages for MM's message adapter.
-extern "C" COMBO_EXPORT int SOH_GetWarpMessage(int song,int confirmation,char* out,int capacity,int* type) {
-    if(song<0 || song>=6 || !out || capacity<1 || !type) return 0;
-    auto native=CustomMessage::LoadVanillaMessageTableEntry((confirmation ? 0x88D : 0x893)+song);
-    const auto text=native.GetEnglish(MF_ENCODE);
-    if(text.empty() || text.size()>=static_cast<size_t>(capacity)) return 0;
-    memcpy(out,text.data(),text.size()); *type=native.GetTextBoxType(); return static_cast<int>(text.size());
+extern "C" COMBO_EXPORT int SOH_GetWarpMessage(int song, int confirmation, char* out, int capacity, int* type) {
+    if (song < 0 || song >= 6 || !out || capacity < 1 || !type)
+        return 0;
+    auto native = CustomMessage::LoadVanillaMessageTableEntry((confirmation ? 0x88D : 0x893) + song);
+    const auto text = native.GetEnglish(MF_ENCODE);
+    if (text.empty() || text.size() >= static_cast<size_t>(capacity))
+        return 0;
+    memcpy(out, text.data(), text.size());
+    *type = native.GetTextBoxType();
+    return static_cast<int>(text.size());
 }
 extern "C" int Combo_SOHFullWarpAnimation(PlayState* play) {
-    return IS_RANDO && ComboRando::ActiveSongTravel().enabled && play->msgCtx.lastPlayedSong<6 &&
-        ComboRando::ActiveSongTravel().destination(play->msgCtx.lastPlayedSong)>=6;
+    return IS_RANDO && ComboRando::ActiveSongTravel().enabled && play->msgCtx.lastPlayedSong < 6 &&
+           ComboRando::ActiveSongTravel().destination(play->msgCtx.lastPlayedSong) >= 6;
 }
 extern "C" void (*gComboSceneSwitchCallback)(int fileNum) = nullptr;
 
@@ -3195,10 +3320,13 @@ extern "C" COMBO_EXPORT void SOH_Anchor_PumpDormant(void) {
 }
 
 extern "C" COMBO_EXPORT void SOH_Anchor_SendSnapshot(void) {
-    if (!Anchor::Instance) return;
-    try { Anchor::Instance->SendSnapshotDormantSafe(); }
-    catch (const std::exception& e) { SPDLOG_ERROR("[SOH_Anchor_SendSnapshot] {}", e.what()); }
-    catch (...) { SPDLOG_ERROR("[SOH_Anchor_SendSnapshot] unknown exception"); }
+    if (!Anchor::Instance)
+        return;
+    try {
+        Anchor::Instance->SendSnapshotDormantSafe();
+    } catch (const std::exception& e) { SPDLOG_ERROR("[SOH_Anchor_SendSnapshot] {}", e.what()); } catch (...) {
+        SPDLOG_ERROR("[SOH_Anchor_SendSnapshot] unknown exception");
+    }
 }
 // Bug 2: launcher-orchestrated resync (auto on connect + combo menu button), dormant-safe.
 // Finding 3: never let an exception unwind across this extern "C" boundary.
@@ -3493,7 +3621,9 @@ extern "C" COMBO_EXPORT void SOH_SetComboGoalType(int type, int required, int pi
     SOH_SetComboGoal(type == 1, required, pieces);
     gComboGoalType = std::clamp(type, 0, 5);
 }
-extern "C" COMBO_EXPORT int SOH_GetComboGoalType(void) { return gComboGoalType; }
+extern "C" COMBO_EXPORT int SOH_GetComboGoalType(void) {
+    return gComboGoalType;
+}
 extern "C" COMBO_EXPORT int SOH_GetNamedTriforceMask(void) {
     return gSaveContext.ship.quest.data.randomizer.namedTriforceMask;
 }
@@ -3523,7 +3653,8 @@ extern "C" COMBO_EXPORT int SOH_ReadComboGoalCVars(int* required, int* total) {
 extern "C" COMBO_EXPORT int SOH_ReadComboGoalTypeCVars(int* required, int* total) {
     const int legacy = SOH_ReadComboGoalCVars(required, total);
     const int type = std::clamp(CVarGetInteger("gCombo.Rando.Goal", legacy), 0, 5);
-    if (required && type != 1) *required = 0;
+    if (required && type != 1)
+        *required = 0;
     return type;
 }
 // ComboShip (#135): which game a new file starts in. The launcher resolves OOT/MM/Random per seed and
@@ -3574,17 +3705,24 @@ extern "C" COMBO_EXPORT int SOH_GetSharedTier(int family) try {
     if (family < 0 || family >= ComboRando::SF_COUNT)
         return 0;
     switch (static_cast<ComboRando::SharedFamily>(family)) {
-        case ComboRando::SF_BOOTS_IRON: return CHECK_OWNED_EQUIP(EQUIP_TYPE_BOOTS,EQUIP_INV_BOOTS_IRON) ? 1 : 0;
-        case ComboRando::SF_BOOTS_HOVER: return CHECK_OWNED_EQUIP(EQUIP_TYPE_BOOTS,EQUIP_INV_BOOTS_HOVER) ? 1 : 0;
-        case ComboRando::SF_TUNIC_GORON: return CHECK_OWNED_EQUIP(EQUIP_TYPE_TUNIC,EQUIP_INV_TUNIC_GORON) ? 1 : 0;
-        case ComboRando::SF_TUNIC_ZORA: return CHECK_OWNED_EQUIP(EQUIP_TYPE_TUNIC,EQUIP_INV_TUNIC_ZORA) ? 1 : 0;
+        case ComboRando::SF_BOOTS_IRON:
+            return CHECK_OWNED_EQUIP(EQUIP_TYPE_BOOTS, EQUIP_INV_BOOTS_IRON) ? 1 : 0;
+        case ComboRando::SF_BOOTS_HOVER:
+            return CHECK_OWNED_EQUIP(EQUIP_TYPE_BOOTS, EQUIP_INV_BOOTS_HOVER) ? 1 : 0;
+        case ComboRando::SF_TUNIC_GORON:
+            return CHECK_OWNED_EQUIP(EQUIP_TYPE_TUNIC, EQUIP_INV_TUNIC_GORON) ? 1 : 0;
+        case ComboRando::SF_TUNIC_ZORA:
+            return CHECK_OWNED_EQUIP(EQUIP_TYPE_TUNIC, EQUIP_INV_TUNIC_ZORA) ? 1 : 0;
         case ComboRando::SF_SPELL_WIND:
             return INV_CONTENT(ITEM_FARORES_WIND) == ITEM_FARORES_WIND ? 1 : 0;
-        case ComboRando::SF_SPELL_FIRE: return INV_CONTENT(ITEM_DINS_FIRE)==ITEM_DINS_FIRE;
-        case ComboRando::SF_SPELL_LOVE: return INV_CONTENT(ITEM_NAYRUS_LOVE)==ITEM_NAYRUS_LOVE;
+        case ComboRando::SF_SPELL_FIRE:
+            return INV_CONTENT(ITEM_DINS_FIRE) == ITEM_DINS_FIRE;
+        case ComboRando::SF_SPELL_LOVE:
+            return INV_CONTENT(ITEM_NAYRUS_LOVE) == ITEM_NAYRUS_LOVE;
         case ComboRando::SF_OCARINA:
-            return INV_CONTENT(ITEM_OCARINA_TIME) == ITEM_OCARINA_TIME ? 2 :
-                   (INV_CONTENT(ITEM_OCARINA_TIME) == ITEM_OCARINA_FAIRY ? 1 : 0);
+            return INV_CONTENT(ITEM_OCARINA_TIME) == ITEM_OCARINA_TIME
+                       ? 2
+                       : (INV_CONTENT(ITEM_OCARINA_TIME) == ITEM_OCARINA_FAIRY ? 1 : 0);
         case ComboRando::SF_BOW:
             return CUR_UPG_VALUE(UPG_QUIVER);
         case ComboRando::SF_BOMB_BAG:
@@ -3659,12 +3797,21 @@ extern "C" COMBO_EXPORT void SOH_RaiseSharedTier(int family, int tier) try {
             return;
         RandomizerGet rg = RG_NONE;
         switch (fam) {
-            case ComboRando::SF_BOOTS_IRON: rg=RG_IRON_BOOTS; break;
-            case ComboRando::SF_BOOTS_HOVER: rg=RG_HOVER_BOOTS; break;
-            case ComboRando::SF_TUNIC_GORON: rg=RG_GORON_TUNIC; break;
-            case ComboRando::SF_TUNIC_ZORA: rg=RG_ZORA_TUNIC; break;
+            case ComboRando::SF_BOOTS_IRON:
+                rg = RG_IRON_BOOTS;
+                break;
+            case ComboRando::SF_BOOTS_HOVER:
+                rg = RG_HOVER_BOOTS;
+                break;
+            case ComboRando::SF_TUNIC_GORON:
+                rg = RG_GORON_TUNIC;
+                break;
+            case ComboRando::SF_TUNIC_ZORA:
+                rg = RG_ZORA_TUNIC;
+                break;
             case ComboRando::SF_OCARINA:
-                rg = tier >= 2 ? RG_OCARINA_OF_TIME : RG_FAIRY_OCARINA; break;
+                rg = tier >= 2 ? RG_OCARINA_OF_TIME : RG_FAIRY_OCARINA;
+                break;
             case ComboRando::SF_BOW:
                 rg = cur == 0 ? RG_FAIRY_BOW : cur == 1 ? RG_BIG_QUIVER : RG_BIGGEST_QUIVER;
                 break;
@@ -3714,23 +3861,35 @@ extern "C" COMBO_EXPORT void SOH_RaiseSharedTier(int family, int tier) try {
                 rg = RG_MASK_OF_TRUTH;
                 break;
             case ComboRando::SF_OCARINA_BUTTON_A:
-                rg = RG_OCARINA_A_BUTTON; break;
+                rg = RG_OCARINA_A_BUTTON;
+                break;
             case ComboRando::SF_OCARINA_BUTTON_C_DOWN:
-                rg = RG_OCARINA_C_DOWN_BUTTON; break;
+                rg = RG_OCARINA_C_DOWN_BUTTON;
+                break;
             case ComboRando::SF_OCARINA_BUTTON_C_RIGHT:
-                rg = RG_OCARINA_C_RIGHT_BUTTON; break;
+                rg = RG_OCARINA_C_RIGHT_BUTTON;
+                break;
             case ComboRando::SF_OCARINA_BUTTON_C_LEFT:
-                rg = RG_OCARINA_C_LEFT_BUTTON; break;
+                rg = RG_OCARINA_C_LEFT_BUTTON;
+                break;
             case ComboRando::SF_OCARINA_BUTTON_C_UP:
-                rg = RG_OCARINA_C_UP_BUTTON; break;
+                rg = RG_OCARINA_C_UP_BUTTON;
+                break;
             case ComboRando::SF_SONG_OF_TIME:
-                rg = RG_SONG_OF_TIME; break;
+                rg = RG_SONG_OF_TIME;
+                break;
             case ComboRando::SF_MIRROR_SHIELD:
-                rg = RG_MIRROR_SHIELD; break;
+                rg = RG_MIRROR_SHIELD;
+                break;
             case ComboRando::SF_SPELL_WIND:
-                rg = RG_FARORES_WIND; break;
-            case ComboRando::SF_SPELL_FIRE: rg=RG_DINS_FIRE; break;
-            case ComboRando::SF_SPELL_LOVE: rg=RG_NAYRUS_LOVE; break;
+                rg = RG_FARORES_WIND;
+                break;
+            case ComboRando::SF_SPELL_FIRE:
+                rg = RG_DINS_FIRE;
+                break;
+            case ComboRando::SF_SPELL_LOVE:
+                rg = RG_NAYRUS_LOVE;
+                break;
             default:
                 break;
         }
@@ -3899,23 +4058,33 @@ extern "C" COMBO_EXPORT void SOH_MenuApplyCVarChange(const char* cvar) {
 
 // The launcher uses a versioned allowlist, and accesses the shared store through the game ABI
 // so the Windows launcher does not need a second libultraship context or static CVar instance.
-static void (*sComboRuleRefresh)()=nullptr;
-extern "C" COMBO_EXPORT void SOH_SetComboRuleRefresh(void (*cb)()) { sComboRuleRefresh=cb; }
-extern "C" COMBO_EXPORT void SOH_RefreshComboRules() { if(sComboRuleRefresh) sComboRuleRefresh(); CheckTracker::RecalculateAvailableChecks(); }
+static void (*sComboRuleRefresh)() = nullptr;
+extern "C" COMBO_EXPORT void SOH_SetComboRuleRefresh(void (*cb)()) {
+    sComboRuleRefresh = cb;
+}
+extern "C" COMBO_EXPORT void SOH_RefreshComboRules() {
+    if (sComboRuleRefresh)
+        sComboRuleRefresh();
+    CheckTracker::RecalculateAvailableChecks();
+}
 extern "C" COMBO_EXPORT int32_t SOH_ReadGameplayRule(const char* cvar, int32_t fallback) {
     return cvar ? CVarGetInteger(cvar, fallback) : fallback;
 }
 extern "C" COMBO_EXPORT void SOH_WriteGameplayRule(const char* cvar, int32_t value) {
     if (cvar) {
-        CVarSetInteger(cvar,value);
-        if(!std::strcmp(cvar,"gRandoSettings.BlueFireArrows"))
-            { Rando::Context::GetInstance()->GetOption(RSK_BLUE_FIRE_ARROWS).Set(uint8_t(value!=0));
-              // Headless generation has no runtime hook service; keep its option
-              // and CVar updates without registering actor hooks on a null instance.
-              if (GameInteractor::Instance) ShipInit::Init("gEnhancements.BlueFireArrows"); }
-        if(!std::strcmp(cvar,"gRandoSettings.SunlightArrows"))
-            { Rando::Context::GetInstance()->GetOption(RSK_SUNLIGHT_ARROWS).Set(uint8_t(value!=0));
-              if (GameInteractor::Instance) ShipInit::Init("gEnhancements.SunlightArrows"); }
+        CVarSetInteger(cvar, value);
+        if (!std::strcmp(cvar, "gRandoSettings.BlueFireArrows")) {
+            Rando::Context::GetInstance()->GetOption(RSK_BLUE_FIRE_ARROWS).Set(uint8_t(value != 0));
+            // Headless generation has no runtime hook service; keep its option
+            // and CVar updates without registering actor hooks on a null instance.
+            if (GameInteractor::Instance)
+                ShipInit::Init("gEnhancements.BlueFireArrows");
+        }
+        if (!std::strcmp(cvar, "gRandoSettings.SunlightArrows")) {
+            Rando::Context::GetInstance()->GetOption(RSK_SUNLIGHT_ARROWS).Set(uint8_t(value != 0));
+            if (GameInteractor::Instance)
+                ShipInit::Init("gEnhancements.SunlightArrows");
+        }
     }
 }
 
@@ -4408,76 +4577,136 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoSettings(void) {
 // This does not run a pool, read enabled CVars, or call a game widget callback.
 extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void) {
     static std::string result;
-    nlohmann::json data={{"defaults",nlohmann::json::object()},{"options",nlohmann::json::object()},{"tricks",nlohmann::json::array()},{"checks",nlohmann::json::array()}};
-    auto settings=Rando::Settings::GetInstance();
-    #include "ProfileOotHiddenDefaults.inc"
-    for(const auto& option:settings->GetAllOptions()) {
-        const auto& key=option.GetCVarName();if(key.empty())continue;
-        data["defaults"][key]=int(option.GetMenuOptionDefault());
-        nlohmann::json choices=nlohmann::json::array();
-        for(size_t i=0;i<option.GetOptionCount();++i) {
-            if(option.GetKey()==RSK_MASK_QUEST && i==RO_MASK_QUEST_VANILLA)continue;
-            choices.push_back({{"value",i},{"label",option.GetOptionText(i)}});
+    nlohmann::json data = { { "defaults", nlohmann::json::object() },
+                            { "options", nlohmann::json::object() },
+                            { "tricks", nlohmann::json::array() },
+                            { "checks", nlohmann::json::array() } };
+    auto settings = Rando::Settings::GetInstance();
+#include "ProfileOotHiddenDefaults.inc"
+    for (const auto& option : settings->GetAllOptions()) {
+        const auto& key = option.GetCVarName();
+        if (key.empty())
+            continue;
+        data["defaults"][key] = int(option.GetMenuOptionDefault());
+        nlohmann::json choices = nlohmann::json::array();
+        for (size_t i = 0; i < option.GetOptionCount(); ++i) {
+            if (option.GetKey() == RSK_MASK_QUEST && i == RO_MASK_QUEST_VANILLA)
+                continue;
+            choices.push_back({ { "value", i }, { "label", option.GetOptionText(i) } });
         }
-        data["options"][key]={{"label",option.GetName()},{"id",int(option.GetKey())},{"defaultHidden",profileDefaultHidden.count(int(option.GetKey()))!=0},{"choices",std::move(choices)}};
+        data["options"][key] = { { "label", option.GetName() },
+                                 { "id", int(option.GetKey()) },
+                                 { "defaultHidden", profileDefaultHidden.count(int(option.GetKey())) != 0 },
+                                 { "choices", std::move(choices) } };
     }
-    data["trialNames"]=nlohmann::json::object();for(auto* trial:Rando::Context::GetInstance()->GetTrials()->GetTrialList())data["trialNames"][std::to_string(int(trial->GetTrialKey()))]=trial->GetName().GetEnglish(MF_RAW);
-    #include "ProfileOotStartingLayout.inc"
-    for(auto& row:data["startingLayout"]){
-        const auto& key=row["key"];
-        for(const auto& pair:std::initializer_list<std::pair<RandomizerSettingKey,RandomizerSettingKey>>{{RSK_STARTING_STRENGTH,RSK_SHUFFLE_GRAB},{RSK_STARTING_SCALE,RSK_SHUFFLE_SWIM},{RSK_STARTING_STICKS,RSK_SHUFFLE_DEKU_STICK_BAG},{RSK_STARTING_NUTS,RSK_SHUFFLE_DEKU_NUT_BAG},{RSK_STARTING_WALLET,RSK_SHUFFLE_CHILD_WALLET}})
-            if(key==settings->GetOption(pair.first).GetCVarName())row["disabledBy"]=settings->GetOption(pair.second).GetCVarName();
-        if(key==settings->GetOption(RSK_STARTING_WEIRD_EGG).GetCVarName()){row["requiresKey"]=settings->GetOption(RSK_SHUFFLE_WEIRD_EGG).GetCVarName();row["requiresValue"]=RO_WEIRD_EGG_SHUFFLED;}
-        if(key==settings->GetOption(RSK_STARTING_BOMBCHU_BAG).GetCVarName()){row["modeKey"]=settings->GetOption(RSK_BOMBCHU_BAG).GetCVarName();row["noneMode"]=RO_BOMBCHU_BAG_NONE;row["singleMode"]=RO_BOMBCHU_BAG_SINGLE;}
-        if(key==settings->GetOption(RSK_LINKS_POCKET_REWARD).GetCVarName()){row["visibleKey"]=settings->GetOption(RSK_LINKS_POCKET).GetCVarName();row["visibleValue"]=RO_LINKS_POCKET_DUNGEON_REWARD;}
+    data["trialNames"] = nlohmann::json::object();
+    for (auto* trial : Rando::Context::GetInstance()->GetTrials()->GetTrialList())
+        data["trialNames"][std::to_string(int(trial->GetTrialKey()))] = trial->GetName().GetEnglish(MF_RAW);
+#include "ProfileOotStartingLayout.inc"
+    for (auto& row : data["startingLayout"]) {
+        const auto& key = row["key"];
+        for (const auto& pair : std::initializer_list<std::pair<RandomizerSettingKey, RandomizerSettingKey>>{
+                 { RSK_STARTING_STRENGTH, RSK_SHUFFLE_GRAB },
+                 { RSK_STARTING_SCALE, RSK_SHUFFLE_SWIM },
+                 { RSK_STARTING_STICKS, RSK_SHUFFLE_DEKU_STICK_BAG },
+                 { RSK_STARTING_NUTS, RSK_SHUFFLE_DEKU_NUT_BAG },
+                 { RSK_STARTING_WALLET, RSK_SHUFFLE_CHILD_WALLET } })
+            if (key == settings->GetOption(pair.first).GetCVarName())
+                row["disabledBy"] = settings->GetOption(pair.second).GetCVarName();
+        if (key == settings->GetOption(RSK_STARTING_WEIRD_EGG).GetCVarName()) {
+            row["requiresKey"] = settings->GetOption(RSK_SHUFFLE_WEIRD_EGG).GetCVarName();
+            row["requiresValue"] = RO_WEIRD_EGG_SHUFFLED;
+        }
+        if (key == settings->GetOption(RSK_STARTING_BOMBCHU_BAG).GetCVarName()) {
+            row["modeKey"] = settings->GetOption(RSK_BOMBCHU_BAG).GetCVarName();
+            row["noneMode"] = RO_BOMBCHU_BAG_NONE;
+            row["singleMode"] = RO_BOMBCHU_BAG_SINGLE;
+        }
+        if (key == settings->GetOption(RSK_LINKS_POCKET_REWARD).GetCVarName()) {
+            row["visibleKey"] = settings->GetOption(RSK_LINKS_POCKET).GetCVarName();
+            row["visibleValue"] = RO_LINKS_POCKET_DUNGEON_REWARD;
+        }
     }
 
-    data["defaults"][CVAR_RANDOMIZER_SETTING("ExcludedLocations")]="";
-    data["defaults"][CVAR_RANDOMIZER_SETTING("EnabledTricks")]="";
-    for(int i=0;i<RT_MAX;++i) {
-        const auto& trick=settings->GetTrickSetting(static_cast<RandomizerTrick>(i));
-        if(trick.GetName().empty()||trick.GetNameTag().empty())continue;
-        std::string tags;int difficulty=0;
-        for(auto tag:trick.GetTags()){if(!tags.empty())tags+=", ";tags+=Rando::Tricks::GetTagName(tag);if(int(tag)<6)difficulty=std::max(difficulty,int(tag));}
-        data["tricks"].push_back({{"value",trick.GetNameTag()},{"label",trick.GetName()},{"description",trick.GetDescription()},{"area",Rando::Tricks::GetAreaName(trick.GetArea())},{"tags",tags},{"difficulty",difficulty}});
+    data["defaults"][CVAR_RANDOMIZER_SETTING("ExcludedLocations")] = "";
+    data["defaults"][CVAR_RANDOMIZER_SETTING("EnabledTricks")] = "";
+    for (int i = 0; i < RT_MAX; ++i) {
+        const auto& trick = settings->GetTrickSetting(static_cast<RandomizerTrick>(i));
+        if (trick.GetName().empty() || trick.GetNameTag().empty())
+            continue;
+        std::string tags;
+        int difficulty = 0;
+        for (auto tag : trick.GetTags()) {
+            if (!tags.empty())
+                tags += ", ";
+            tags += Rando::Tricks::GetTagName(tag);
+            if (int(tag) < 6)
+                difficulty = std::max(difficulty, int(tag));
+        }
+        data["tricks"].push_back({ { "value", trick.GetNameTag() },
+                                   { "label", trick.GetName() },
+                                   { "description", trick.GetDescription() },
+                                   { "area", Rando::Tricks::GetAreaName(trick.GetArea()) },
+                                   { "tags", tags },
+                                   { "difficulty", difficulty } });
     }
-    for(const auto& area:settings->GetExcludeLocationsOptions())for(const auto* option:area) {
-        if(!option||option->GetName().empty())continue;
-        const auto* location=static_cast<const Rando::LocationOption*>(option);
-        data["checks"].push_back({{"value",std::to_string(int(location->GetKey()))},{"label",location->GetName()}});
-    }
-    result=data.dump();return result.c_str();
+    for (const auto& area : settings->GetExcludeLocationsOptions())
+        for (const auto* option : area) {
+            if (!option || option->GetName().empty())
+                continue;
+            const auto* location = static_cast<const Rando::LocationOption*>(option);
+            data["checks"].push_back(
+                { { "value", std::to_string(int(location->GetKey())) }, { "label", location->GetName() } });
+        }
+    result = data.dump();
+    return result.c_str();
 }
 
 // Profile generation uses a validated transient setup, never the saved-file
 // renderer. Missing legacy options use source defaults, not another file's CVars.
 static int SOH_ApplyProfileRandoSettingsImpl(const char* raw, bool apply) {
     try {
-        const auto input=nlohmann::json::parse(raw?raw:"null");
-        if(!input.is_object())return 0;
-        nlohmann::json settings=nlohmann::json::object();
-        for(const auto& option:Rando::Settings::GetInstance()->GetAllOptions()) {
-            const auto& key=option.GetCVarName();if(key.empty())continue;
-            const auto value=input.value(key,nlohmann::json(int(option.GetMenuOptionDefault())));
-            if(!value.is_number_integer()||value.get<int64_t>()<0||value.get<uint64_t>()>=option.GetOptionCount())return 0;
-            settings[key]=value;
+        const auto input = nlohmann::json::parse(raw ? raw : "null");
+        if (!input.is_object())
+            return 0;
+        nlohmann::json settings = nlohmann::json::object();
+        for (const auto& option : Rando::Settings::GetInstance()->GetAllOptions()) {
+            const auto& key = option.GetCVarName();
+            if (key.empty())
+                continue;
+            const auto value = input.value(key, nlohmann::json(int(option.GetMenuOptionDefault())));
+            if (!value.is_number_integer() || value.get<int64_t>() < 0 ||
+                value.get<uint64_t>() >= option.GetOptionCount())
+                return 0;
+            settings[key] = value;
         }
-        for(const char* key:{CVAR_RANDOMIZER_SETTING("ExcludedLocations"),CVAR_RANDOMIZER_SETTING("EnabledTricks")}) {
-            auto value=input.value(key,nlohmann::json(""));if(!value.is_string())return 0;settings[key]=std::move(value);
+        for (const char* key :
+             { CVAR_RANDOMIZER_SETTING("ExcludedLocations"), CVAR_RANDOMIZER_SETTING("EnabledTricks") }) {
+            auto value = input.value(key, nlohmann::json(""));
+            if (!value.is_string())
+                return 0;
+            settings[key] = std::move(value);
         }
-        if(!apply)return 1;
-        const auto& maskKey=Rando::Settings::GetInstance()->GetOption(RSK_MASK_QUEST).GetCVarName();
-        settings[maskKey]=ComboRando::NormalizeOotMaskQuestForGeneration(settings[maskKey].get<int>());
-        for(const auto& value:settings.items()) {
-            if(value.value().is_string())CVarSetString(value.key().c_str(),value.value().get<std::string>().c_str());
-            else CVarSetInteger(value.key().c_str(),value.value().get<int>());
+        if (!apply)
+            return 1;
+        const auto& maskKey = Rando::Settings::GetInstance()->GetOption(RSK_MASK_QUEST).GetCVarName();
+        settings[maskKey] = ComboRando::NormalizeOotMaskQuestForGeneration(settings[maskKey].get<int>());
+        for (const auto& value : settings.items()) {
+            if (value.value().is_string())
+                CVarSetString(value.key().c_str(), value.value().get<std::string>().c_str());
+            else
+                CVarSetInteger(value.key().c_str(), value.value().get<int>());
         }
         return 1;
-    } catch(...) {return 0;}
+    } catch (...) { return 0; }
 }
 
-extern "C" COMBO_EXPORT int SOH_ApplyProfileRandoSettings(const char* raw) {return SOH_ApplyProfileRandoSettingsImpl(raw,true);}
-extern "C" COMBO_EXPORT int SOH_ValidateProfileRandoSettings(const char* raw) {return SOH_ApplyProfileRandoSettingsImpl(raw,false);}
+extern "C" COMBO_EXPORT int SOH_ApplyProfileRandoSettings(const char* raw) {
+    return SOH_ApplyProfileRandoSettingsImpl(raw, true);
+}
+extern "C" COMBO_EXPORT int SOH_ValidateProfileRandoSettings(const char* raw) {
+    return SOH_ApplyProfileRandoSettingsImpl(raw, false);
+}
 
 // ComboShip: restore OOT rando settings from a {cvarName:value} snapshot (written by
 // SOH_DumpRandoSettings into the consolidated spoiler). Used by the reload/drop path so a seed plays
@@ -4674,16 +4903,19 @@ extern "C" COMBO_EXPORT int SOH_ApplyEntranceOverridesForCombo(const char* json)
 extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
     static std::string cached;
 
-
     nlohmann::json checks = nlohmann::json::array();
     nlohmann::json pool = nlohmann::json::array();
-    auto beanSources=nlohmann::json::object();
-    for(int id=1;id<RC_MAX;++id){const auto* location=Rando::StaticData::GetLocation(static_cast<RandomizerCheck>(id));
-        if(!location||location->GetName().empty())continue;
-        auto source=ComboRando::BeanSources::ForNativeCheck(false,location->GetName());
-        if(location->IsShop())source={false,true};
-        if(location->GetRCType()==RCTYPE_COW)source={true,true};
-        beanSources[location->GetName()]={{"license",source.license},{"renewable",source.renewable}};
+    auto beanSources = nlohmann::json::object();
+    for (int id = 1; id < RC_MAX; ++id) {
+        const auto* location = Rando::StaticData::GetLocation(static_cast<RandomizerCheck>(id));
+        if (!location || location->GetName().empty())
+            continue;
+        auto source = ComboRando::BeanSources::ForNativeCheck(false, location->GetName());
+        if (location->IsShop())
+            source = { false, true };
+        if (location->GetRCType() == RCTYPE_COW)
+            source = { true, true };
+        beanSources[location->GetName()] = { { "license", source.license }, { "renewable", source.renewable } };
     }
     nlohmann::json fixed = nlohmann::json::array();
     nlohmann::json items = nlohmann::json::array();
@@ -4804,7 +5036,9 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
             const auto* pedestal = Rando::StaticData::GetLocation(RC_TOT_MASTER_SWORD);
             fixed.push_back({ { "check", pedestal->GetName() },
                               { "item", Rando::StaticData::RetrieveItem(RG_MASTER_SWORD).GetName().GetEnglish() },
-                              { "advancement", true }, { "major", true }, { "hintable", false } });
+                              { "advancement", true },
+                              { "major", true },
+                              { "hintable", false } });
         }
 
         // Pool = the real free item pool (every settings-added item, confined items already removed).
@@ -4896,8 +5130,8 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
 #endif
     } catch (...) {
 #ifdef COMBO_BUILD
-        cached = nlohmann::json({ { "error", "Unknown native pool preparation failure" },
-                                  { "retryable", false } }).dump();
+        cached =
+            nlohmann::json({ { "error", "Unknown native pool preparation failure" }, { "retryable", false } }).dump();
         return cached.c_str();
 #else
         SPDLOG_WARN("[ComboShip] SOH_DumpRandoStaticData: RegionTable_Init/GenerateLocationPool threw unknown "
@@ -4953,13 +5187,16 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
     }
 
     nlohmann::json sharedStartingItems = nlohmann::json::array();
-    for (const auto item : StartingInventory) sharedStartingItems.push_back(Rando::StaticData::RetrieveItem(item).GetName().GetEnglish());
+    for (const auto item : StartingInventory)
+        sharedStartingItems.push_back(Rando::StaticData::RetrieveItem(item).GetName().GetEnglish());
     cached = nlohmann::json{
         { "sharedStartingItems", std::move(sharedStartingItems) },
-        { "sharedButtonsEnabled", OTRGlobals::Instance->gRandoContext->GetOption(RSK_SHUFFLE_OCARINA_BUTTONS).Get() != 0 },
+        { "sharedButtonsEnabled",
+          OTRGlobals::Instance->gRandoContext->GetOption(RSK_SHUFFLE_OCARINA_BUTTONS).Get() != 0 },
         { "checks", std::move(checks) },
         { "pool", std::move(pool) },
-        { "fixed", std::move(fixed) }, {"beanSources",std::move(beanSources)},
+        { "fixed", std::move(fixed) },
+        { "beanSources", std::move(beanSources) },
         { "items", std::move(items) },
         { "prices", std::move(prices) },
         { "iceTrapModels", std::move(iceTrapModels) },
@@ -5256,29 +5493,34 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoHintData(void) {
             if (!loc || loc->GetName().empty())
                 continue;
             const auto collection = loc->GetCollectionCheck();
-            checks.push_back({ { "id", i }, { "scene", static_cast<int>(loc->GetScene()) },
-                               { "type", static_cast<int>(loc->GetRCType()) },
-                               { "catalogActive", ctx->IsLocationInCurrentCatalog(static_cast<RandomizerCheck>(i)) },
-                               { "canonicalCheckId", static_cast<int>(Rando::KokiriCanonicalGrassCheck(static_cast<RandomizerCheck>(i), ctx->GetKokiriGrassCatalogRevision())) },
-                               { "quest", static_cast<int>(loc->GetQuest()) },
-                               { "vanillaItem", static_cast<int>(loc->GetVanillaItem()) },
-                               { "actorId", static_cast<int>(loc->GetActorID()) },
-                               { "actorParams", loc->GetActorParams() },
-                               { "collectionType", static_cast<int>(collection.type) },
-                               { "collectionScene", collection.scene }, { "collectionFlag", collection.flag },
-                               { "name", loc->GetName() },
-                               { "area", RandomizerCheckObjects::GetRCAreaName(loc->GetArea()) },
-                               { "dungeon", loc->IsDungeon() },
-                               { "overworld", loc->IsOverworld() },
-                               { "song", loc->GetRCType() == RCTYPE_SONG_LOCATION },
-                               { "locationHint", Combo_HintTextToJson(*loc->GetHint()) } });
+            checks.push_back(
+                { { "id", i },
+                  { "scene", static_cast<int>(loc->GetScene()) },
+                  { "type", static_cast<int>(loc->GetRCType()) },
+                  { "catalogActive", ctx->IsLocationInCurrentCatalog(static_cast<RandomizerCheck>(i)) },
+                  { "canonicalCheckId", static_cast<int>(Rando::KokiriCanonicalGrassCheck(
+                                            static_cast<RandomizerCheck>(i), ctx->GetKokiriGrassCatalogRevision())) },
+                  { "quest", static_cast<int>(loc->GetQuest()) },
+                  { "vanillaItem", static_cast<int>(loc->GetVanillaItem()) },
+                  { "actorId", static_cast<int>(loc->GetActorID()) },
+                  { "actorParams", loc->GetActorParams() },
+                  { "collectionType", static_cast<int>(collection.type) },
+                  { "collectionScene", collection.scene },
+                  { "collectionFlag", collection.flag },
+                  { "name", loc->GetName() },
+                  { "area", RandomizerCheckObjects::GetRCAreaName(loc->GetArea()) },
+                  { "dungeon", loc->IsDungeon() },
+                  { "overworld", loc->IsOverworld() },
+                  { "song", loc->GetRCType() == RCTYPE_SONG_LOCATION },
+                  { "locationHint", Combo_HintTextToJson(*loc->GetHint()) } });
         }
         out["checks"] = std::move(checks);
 
         nlohmann::json eligible = nlohmann::json::array();
         for (const auto rc : ctx->allLocations) {
             const auto* loc = Rando::StaticData::GetLocation(rc);
-            if (loc && !loc->GetName().empty()) eligible.push_back(loc->GetName());
+            if (loc && !loc->GetName().empty())
+                eligible.push_back(loc->GetName());
         }
         out["eligibleChecks"] = std::move(eligible);
         out["kokiriGrassCatalogRevision"] = ctx->GetKokiriGrassCatalogRevision();
@@ -5860,33 +6102,47 @@ extern "C" COMBO_EXPORT uint8_t SOH_CanGenerateComboSeed(void);
 // Saved-file inspection and copy read their immutable documents instead.
 extern "C" COMBO_EXPORT const char* SOH_DumpComboSetupCVars(void) {
     static std::string result;
-    auto values=Ship::Context::GetRawInstance()->GetConsoleVariables()->SnapshotPrefix("gCombo.Rando.");
+    auto values = Ship::Context::GetRawInstance()->GetConsoleVariables()->SnapshotPrefix("gCombo.Rando.");
     values.erase("gCombo.Rando.SyncCosmetics"); // app-global appearance
-    result=values.dump();return result.c_str();
+    result = values.dump();
+    return result.c_str();
 }
 
 extern "C" COMBO_EXPORT int SOH_ApplyProfileComboSettings(const char* raw) {
     try {
-        const auto values=nlohmann::json::parse(raw?raw:"null");if(!values.is_object())return 0;
-        for(const auto& value:values.items()) {
-            if(value.key().rfind("gCombo.Rando.",0)!=0||value.key()=="gCombo.Rando.SyncCosmetics")return 0;
-            if(value.value().is_string())continue;
-            if(value.value().is_number_float()) {
-                const double number=value.value().get<double>();
-                if(!std::isfinite(number)||std::abs(number)>std::numeric_limits<float>::max())return 0;
-            } else if(value.value().is_number_unsigned()) {
-                if(value.value().get<uint64_t>()>INT32_MAX)return 0;
-            } else if(!value.value().is_number_integer()||value.value().get<int64_t>()<INT32_MIN||value.value().get<int64_t>()>INT32_MAX)return 0;
+        const auto values = nlohmann::json::parse(raw ? raw : "null");
+        if (!values.is_object())
+            return 0;
+        for (const auto& value : values.items()) {
+            if (value.key().rfind("gCombo.Rando.", 0) != 0 || value.key() == "gCombo.Rando.SyncCosmetics")
+                return 0;
+            if (value.value().is_string())
+                continue;
+            if (value.value().is_number_float()) {
+                const double number = value.value().get<double>();
+                if (!std::isfinite(number) || std::abs(number) > std::numeric_limits<float>::max())
+                    return 0;
+            } else if (value.value().is_number_unsigned()) {
+                if (value.value().get<uint64_t>() > INT32_MAX)
+                    return 0;
+            } else if (!value.value().is_number_integer() || value.value().get<int64_t>() < INT32_MIN ||
+                       value.value().get<int64_t>() > INT32_MAX)
+                return 0;
         }
-        const auto previous=Ship::Context::GetRawInstance()->GetConsoleVariables()->SnapshotPrefix("gCombo.Rando.");
-        for(const auto& value:previous.items())if(value.key()!="gCombo.Rando.SyncCosmetics")CVarClear(value.key().c_str());
-        for(const auto& value:values.items()) {
-            if(value.value().is_string())CVarSetString(value.key().c_str(),value.value().get<std::string>().c_str());
-            else if(value.value().is_number_float())CVarSetFloat(value.key().c_str(),value.value().get<float>());
-            else CVarSetInteger(value.key().c_str(),value.value().get<int>());
+        const auto previous = Ship::Context::GetRawInstance()->GetConsoleVariables()->SnapshotPrefix("gCombo.Rando.");
+        for (const auto& value : previous.items())
+            if (value.key() != "gCombo.Rando.SyncCosmetics")
+                CVarClear(value.key().c_str());
+        for (const auto& value : values.items()) {
+            if (value.value().is_string())
+                CVarSetString(value.key().c_str(), value.value().get<std::string>().c_str());
+            else if (value.value().is_number_float())
+                CVarSetFloat(value.key().c_str(), value.value().get<float>());
+            else
+                CVarSetInteger(value.key().c_str(), value.value().get<int>());
         }
         return 1;
-    } catch(...) {return 0;}
+    } catch (...) { return 0; }
 }
 
 extern "C" COMBO_EXPORT void SOH_TriggerComboGenerate(void) {
@@ -5900,35 +6156,51 @@ extern "C" COMBO_EXPORT void SOH_TriggerComboGenerate(void) {
     CVarSetInteger(CVAR_GENERAL("RandoGenerating"), 1);
     gComboGenerateRequestCallback(seed);
 }
-extern "C" int (*gComboProfilePrepareSave)(int)=nullptr;
-extern "C" int (*gComboProfilePendingReady)(int)=nullptr;
-extern "C" COMBO_EXPORT void SOH_SetProfileSavePreparation(int(*callback)(int)){gComboProfilePrepareSave=callback;}
-extern "C" COMBO_EXPORT void SOH_SetProfilePendingReady(int(*callback)(int)){gComboProfilePendingReady=callback;}
+extern "C" int (*gComboProfilePrepareSave)(int) = nullptr;
+extern "C" int (*gComboProfilePendingReady)(int) = nullptr;
+extern "C" COMBO_EXPORT void SOH_SetProfileSavePreparation(int (*callback)(int)) {
+    gComboProfilePrepareSave = callback;
+}
+extern "C" COMBO_EXPORT void SOH_SetProfilePendingReady(int (*callback)(int)) {
+    gComboProfilePendingReady = callback;
+}
 extern "C" COMBO_EXPORT int SOH_TriggerProfileGenerate(const char* seed) {
-    if(!SOH_CanGenerateComboSeed()||CVarGetInteger(CVAR_GENERAL("RandoGenerating"),0)||!gComboGenerateRequestCallback)return 0;
-    CVarSetInteger(CVAR_GENERAL("RandoGenerating"),1);
-    gComboGenerateRequestCallback(seed?seed:"");
+    if (!SOH_CanGenerateComboSeed() || CVarGetInteger(CVAR_GENERAL("RandoGenerating"), 0) ||
+        !gComboGenerateRequestCallback)
+        return 0;
+    CVarSetInteger(CVAR_GENERAL("RandoGenerating"), 1);
+    gComboGenerateRequestCallback(seed ? seed : "");
     return 1;
 }
-extern "C" COMBO_EXPORT const char* SOH_ReadProfileLegacySeed(){return CVarGetString(CVAR_GENERAL("ComboSeed"),"");}
-extern "C" COMBO_EXPORT const char* SOH_DumpProfileResolvedSeedRules(){
+extern "C" COMBO_EXPORT const char* SOH_ReadProfileLegacySeed() {
+    return CVarGetString(CVAR_GENERAL("ComboSeed"), "");
+}
+extern "C" COMBO_EXPORT const char* SOH_DumpProfileResolvedSeedRules() {
     static std::string result;
-    try{
-        auto ctx=OTRGlobals::Instance->gRandoContext;
-        auto rows=nlohmann::json::array();for(auto* trial:ctx->GetTrials()->GetTrialList())if(trial->IsRequired())rows.push_back(int(trial->GetTrialKey()));
-        nlohmann::json rules={{"version",1},{"trialCount",ctx->GetOption(RSK_TRIAL_COUNT).Get()},{"requiredTrials",rows}};
-        ComboRando::Profiles::ValidateTrialBinding(rules,TK_MAX);result=rules.dump();
-    }catch(const std::exception& e){result=nlohmann::json{{"error",e.what()}}.dump();}
+    try {
+        auto ctx = OTRGlobals::Instance->gRandoContext;
+        auto rows = nlohmann::json::array();
+        for (auto* trial : ctx->GetTrials()->GetTrialList())
+            if (trial->IsRequired())
+                rows.push_back(int(trial->GetTrialKey()));
+        nlohmann::json rules = { { "version", 1 },
+                                 { "trialCount", ctx->GetOption(RSK_TRIAL_COUNT).Get() },
+                                 { "requiredTrials", rows } };
+        ComboRando::Profiles::ValidateTrialBinding(rules, TK_MAX);
+        result = rules.dump();
+    } catch (const std::exception& e) { result = nlohmann::json{ { "error", e.what() } }.dump(); }
     return result.c_str();
 }
-extern "C" COMBO_EXPORT int SOH_ApplyProfileResolvedSeedRules(const char* raw){
-    try{
-        const auto rows=ComboRando::Profiles::ValidateTrialBinding(nlohmann::json::parse(raw?raw:"null"),TK_MAX);
-        auto ctx=OTRGlobals::Instance->gRandoContext;
-        ctx->GetTrials()->SkipAll();for(int id:rows)ctx->GetTrial(static_cast<TrialKey>(id))->SetAsRequired();
+extern "C" COMBO_EXPORT int SOH_ApplyProfileResolvedSeedRules(const char* raw) {
+    try {
+        const auto rows = ComboRando::Profiles::ValidateTrialBinding(nlohmann::json::parse(raw ? raw : "null"), TK_MAX);
+        auto ctx = OTRGlobals::Instance->gRandoContext;
+        ctx->GetTrials()->SkipAll();
+        for (int id : rows)
+            ctx->GetTrial(static_cast<TrialKey>(id))->SetAsRequired();
         ctx->GetOption(RSK_TRIAL_COUNT).Set(rows.size());
         return 1;
-    }catch(...){return 0;}
+    } catch (...) { return 0; }
 }
 
 // ComboShip: true when the active OOT gamestate is the file-select screen. The combo Generate action
@@ -6018,8 +6290,10 @@ extern "C" COMBO_EXPORT void Combo_SOH_Rando_SetOwnedItems(const char* itemNames
                 auto logic = ctx->GetLogic();
                 const bool needsTime = it->second == RG_OCARINA_OF_TIME;
                 auto& progressive = Rando::StaticData::RetrieveItem(RG_PROGRESSIVE_OCARINA);
-                if (!logic->HasItem(RG_FAIRY_OCARINA)) progressive.ApplyEffect();
-                if (needsTime && !logic->HasItem(RG_OCARINA_OF_TIME)) progressive.ApplyEffect();
+                if (!logic->HasItem(RG_FAIRY_OCARINA))
+                    progressive.ApplyEffect();
+                if (needsTime && !logic->HasItem(RG_OCARINA_OF_TIME))
+                    progressive.ApplyEffect();
                 continue;
             }
             Rando::Item& item = Rando::StaticData::RetrieveItem(it->second);
@@ -6036,17 +6310,18 @@ static bool sComboPortalOpen = false;
 extern "C" COMBO_EXPORT const char* Combo_SOH_Rando_GetReachableChecks(void) {
     static std::string buf;
     auto ctx = OTRGlobals::Instance->gRandoContext;
-    ComboRando::OotSongOracle()=true;
+    ComboRando::OotSongOracle() = true;
     auto candidates = ctx->allLocations;
     candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
-        [&](RandomizerCheck rc) { return !ctx->IsLocationInCurrentCatalog(rc); }), candidates.end());
+                                    [&](RandomizerCheck rc) { return !ctx->IsLocationInCurrentCatalog(rc); }),
+                     candidates.end());
     if (ctx->GetOption(RSK_SHUFFLE_MASTER_SWORD).Is(RO_GENERIC_OFF))
         candidates.push_back(RC_TOT_MASTER_SWORD);
     // Fixed card reachability is separate from randomized-pool/tracker eligibility.
     if (std::find(candidates.begin(), candidates.end(), RC_TH_FREED_CARPENTERS) == candidates.end())
         candidates.push_back(RC_TH_FREED_CARPENTERS);
     auto reachable = ReachabilitySearch(candidates);
-    ComboRando::OotSongOracle()=false;
+    ComboRando::OotSongOracle() = false;
 #ifdef COMBO_BUILD
     // RR_MARKET_MASK_SHOP holds no real checks, so the cross-fill gates MM on REGION access. Any age:
     // the requirement lives in the entrance condition, so this survives entrance shuffle moving it.
@@ -6237,25 +6512,29 @@ bool SoH_HandleConfigDrop(char* filePath) {
 
 #ifdef COMBO_BUILD
 // Exact last native search region age states; raw adult0/child1 maps to bits0/1.
-extern "C" COMBO_EXPORT uint8_t SOH_GetOraclePortalAges(void){
-    auto* portal=RegionTable(RR_MARKET_MASK_SHOP);
-    return (portal->Adult()?1:0)|(portal->Child()?2:0);
+extern "C" COMBO_EXPORT uint8_t SOH_GetOraclePortalAges(void) {
+    auto* portal = RegionTable(RR_MARKET_MASK_SHOP);
+    return (portal->Adult() ? 1 : 0) | (portal->Child() ? 2 : 0);
 }
-extern "C" COMBO_EXPORT uint32_t SOH_GetOracleSongSourcesForAge(int age){
-    if(age<0||age>1)return 0;
-    uint32_t mask=0;
-    for(int i=0;i<6;++i){auto* region=RegionTable(ComboRando::kOotSongSources[i]);
-        if(age==0?region->Adult():region->Child())mask|=1u<<i;
+extern "C" COMBO_EXPORT uint32_t SOH_GetOracleSongSourcesForAge(int age) {
+    if (age < 0 || age > 1)
+        return 0;
+    uint32_t mask = 0;
+    for (int i = 0; i < 6; ++i) {
+        auto* region = RegionTable(ComboRando::kOotSongSources[i]);
+        if (age == 0 ? region->Adult() : region->Child())
+            mask |= 1u << i;
     }
-    auto* root=RegionTable(RR_ROOT);
-    if(age==0?root->Adult():root->Child())mask|=OotSoaringSources(
-        OTRGlobals::Instance->gRandoContext->GetLogic().get(),ComboRando::OotForeignKnowledge(),age==1,true);
+    auto* root = RegionTable(RR_ROOT);
+    if (age == 0 ? root->Adult() : root->Child())
+        mask |= OotSoaringSources(OTRGlobals::Instance->gRandoContext->GetLogic().get(),
+                                  ComboRando::OotForeignKnowledge(), age == 1, true);
     return mask;
 }
 #endif
 
 #ifdef COMBO_BUILD
-extern "C" COMBO_EXPORT void SOH_SetOracleSongAgeArrivals(uint32_t adult,uint32_t child){
-    ComboRando::OotSongAgeArrivals()={true,{adult&63,child&63}};
+extern "C" COMBO_EXPORT void SOH_SetOracleSongAgeArrivals(uint32_t adult, uint32_t child) {
+    ComboRando::OotSongAgeArrivals() = { true, { adult & 63, child & 63 } };
 }
 #endif

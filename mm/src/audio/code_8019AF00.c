@@ -2645,16 +2645,16 @@ void AudioOcarina_CheckSongsWithoutMusicStaff(void) {
         }
 
 #ifdef COMBO_BUILD
-            extern int Combo_MMRecognizeForeignSong(const u8*, int);
-            if (Combo_MMRecognizeForeignSong(sCurOcarinaSongWithoutMusicStaff, sOcarinaWithoutMusicStaffPos)) {
-                // Publish a valid native recognition result. Leaving this unset
-                // produces staff state 0xFF, which the message engine treats as
-                // a failed performance and plays the ocarina error sound.
-                sPlayedOcarinaSongIndexPlusOne = OCARINA_SONG_SOARING + 1;
-                sIsOcarinaInputEnabled = false;
-                sOcarinaFlags = 0;
-                return;
-            }
+        extern int Combo_MMRecognizeForeignSong(const u8*, int);
+        if (Combo_MMRecognizeForeignSong(sCurOcarinaSongWithoutMusicStaff, sOcarinaWithoutMusicStaffPos)) {
+            // Publish a valid native recognition result. Leaving this unset
+            // produces staff state 0xFF, which the message engine treats as
+            // a failed performance and plays the ocarina error sound.
+            sPlayedOcarinaSongIndexPlusOne = OCARINA_SONG_SOARING + 1;
+            sIsOcarinaInputEnabled = false;
+            sOcarinaFlags = 0;
+            return;
+        }
 #endif
         // This nested for-loop tests to see if the notes from the ocarina are identical
         // to any of the songIndex from sFirstOcarinaSongIndex to sLastOcarinaSongIndex

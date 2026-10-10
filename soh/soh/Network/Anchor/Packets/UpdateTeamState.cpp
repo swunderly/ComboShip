@@ -142,7 +142,12 @@ void Anchor::HandlePacket_UpdateTeamState(nlohmann::json payload) {
 #endif
 
     isHandlingUpdateTeamState = true;
-    struct ResetHandling { bool& flag; ~ResetHandling() { flag = false; } } resetHandling{isHandlingUpdateTeamState};
+    struct ResetHandling {
+        bool& flag;
+        ~ResetHandling() {
+            flag = false;
+        }
+    } resetHandling{ isHandlingUpdateTeamState };
     // This can happen in between file select and the game starting, so we can't use this check, but we need to ensure
     // we be careful to wrap PlayState usage in this check
     //
@@ -157,9 +162,10 @@ void Anchor::HandlePacket_UpdateTeamState(nlohmann::json payload) {
         // A reconnect can return an older team snapshot. Preserve permanent upgrades.
         const auto localPieces = (gSaveContext.inventory.questItems >> 28) & 0xF;
         const auto remotePieces = (loadedData.inventory.questItems >> 28) & 0xF;
-        const auto pieces = gSaveContext.healthCapacity > loadedData.healthCapacity ? localPieces :
-                            gSaveContext.healthCapacity < loadedData.healthCapacity ? remotePieces :
-                            std::max(localPieces, remotePieces);
+        const auto pieces = gSaveContext.healthCapacity > loadedData.healthCapacity ? localPieces
+                            : gSaveContext.healthCapacity < loadedData.healthCapacity
+                                ? remotePieces
+                                : std::max(localPieces, remotePieces);
         loadedData.inventory.questItems = (loadedData.inventory.questItems & 0x0FFFFFFF) | (pieces << 28);
         loadedData.healthCapacity = std::max(loadedData.healthCapacity, gSaveContext.healthCapacity);
         loadedData.magicLevel = std::max(loadedData.magicLevel, gSaveContext.magicLevel);
@@ -334,9 +340,8 @@ void Anchor::HandlePacket_UpdateTeamState(nlohmann::json payload) {
                 // Foreign checks hold the OTHER game's item, absent from this inventory snapshot, so
                 // deliver them cross-game (dedup-guarded). Native items are already recovered by the
                 // inventory union above — granting here too would double-credit additive items.
-                if (!payload.value("comboSnapshot", false) &&
-                    incoming >= RCSHOW_COLLECTED && localStatus < RCSHOW_COLLECTED &&
-                    loc->GetPlacedRandomizerGet() == RG_COMBO_FOREIGN) {
+                if (!payload.value("comboSnapshot", false) && incoming >= RCSHOW_COLLECTED &&
+                    localStatus < RCSHOW_COLLECTED && loc->GetPlacedRandomizerGet() == RG_COMBO_FOREIGN) {
                     const std::string checkName = Rando::StaticData::GetLocation((RandomizerCheck)i)->GetName();
                     const ComboRando::ForeignItem* fi = OOT_LookupForeign(gSaveContext.fileNum, checkName);
                     if (fi && gComboCrossDeliver) {

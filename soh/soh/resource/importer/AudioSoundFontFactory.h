@@ -5,14 +5,18 @@
 #include <ship/resource/ResourceFactoryXML.h>
 #include "soh/resource/type/AudioSoundFont.h"
 
-namespace Ship { class ResourceManager; }
+namespace Ship {
+class ResourceManager;
+}
 
 namespace SOH {
 class ResourceFactoryBinaryAudioSoundFontV2 final : public Ship::ResourceFactoryBinary {
   public:
-    explicit ResourceFactoryBinaryAudioSoundFontV2(std::weak_ptr<Ship::ResourceManager> owner = {}) : mOwner(owner) {}
+    explicit ResourceFactoryBinaryAudioSoundFontV2(std::weak_ptr<Ship::ResourceManager> owner = {}) : mOwner(owner) {
+    }
     std::shared_ptr<Ship::IResource> ReadResource(std::shared_ptr<Ship::File> file,
                                                   std::shared_ptr<Ship::ResourceInitData> initData) override;
+
   private:
     std::weak_ptr<Ship::ResourceManager> mOwner;
 };

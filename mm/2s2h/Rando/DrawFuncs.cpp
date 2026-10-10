@@ -441,12 +441,12 @@ extern void DrawDeepPython() {
 extern void DrawBioBabaSoul() {
     SETUP_DRAW(BIO_DEKU_BABA_HEAD_LIMB_MAX);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
-    Matrix_Scale(0.02f,0.02f,0.02f,MTXMODE_APPLY);
-    SETUP_FLEX_SKEL(BIO_DEKU_BABA_HEAD_LIMB_MAX,gBioDekuBabaHeadSkel,gBioDekuBabaHeadChompAnim);
-    AnimatedMat_Draw(gPlayState,(AnimatedMaterial*)gBioDekuBabaHeadEyeFlashTexAnim);
-    SkelAnime_DrawFlexOpa(gPlayState,skelAnime.skeleton,skelAnime.jointTable,skelAnime.dListCount,NULL,NULL,NULL);
+    Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
+    SETUP_FLEX_SKEL(BIO_DEKU_BABA_HEAD_LIMB_MAX, gBioDekuBabaHeadSkel, gBioDekuBabaHeadChompAnim);
+    AnimatedMat_Draw(gPlayState, (AnimatedMaterial*)gBioDekuBabaHeadEyeFlashTexAnim);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
     CLOSE_DISPS(gPlayState->state.gfxCtx);
-    DrawEnLight({155,155,155},{6.0f,6.0f,6.0f});
+    DrawEnLight({ 155, 155, 155 }, { 6.0f, 6.0f, 6.0f });
 }
 
 extern void DrawDekuBaba() {

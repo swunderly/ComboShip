@@ -3028,7 +3028,10 @@ typedef enum {
     RI_DINS_FIRE,
     RI_NAYRUS_LOVE,
     RI_MASK_ADULT, // appended isolated Adult MM identity; merge by symbol after concurrent items
-    RI_BOOTS_IRON, RI_BOOTS_HOVER, RI_TUNIC_GORON, RI_TUNIC_ZORA, // isolated symbols; merge append order by symbol
+    RI_BOOTS_IRON,
+    RI_BOOTS_HOVER,
+    RI_TUNIC_GORON,
+    RI_TUNIC_ZORA, // isolated symbols; merge append order by symbol
     RI_MAX,
 } RandoItemId;
 
@@ -3364,15 +3367,25 @@ typedef enum {
 #ifdef COMBO_BUILD
     // Append new grotto refinements after every currently integrated region ID.
     RR_MM_GROTTO_WOODS_BANK,
-    RR_MM_GROTTO_TWIN_RAMP, RR_MM_TWIN_NEAR_RACE,
+    RR_MM_GROTTO_TWIN_RAMP,
+    RR_MM_TWIN_NEAR_RACE,
     RR_MM_GROTTO_IKANA_SHRINE_BANK,
-    RR_MM_SWAMP_WATER_TOURIST, RR_MM_SWAMP_WATER_WITCH, RR_MM_SWAMP_WATER_FROG,
-    RR_MM_SWAMP_WATER_PALACE, RR_MM_SWAMP_WATER_SPIDER, RR_MM_SWAMP_NEAR_FROG,
-    RR_MM_SWAMP_NEAR_SPIDER, RR_MM_GROTTO_SWAMP_LEDGE, RR_MM_SWAMP_CANOPY_FRONT, RR_MM_SWAMP_BOAT_RIDE,
-    RR_MM_GROTTO_BEANS_BANK, RR_MM_GRAVE_NIGHT3_FAKE_EXIT,
+    RR_MM_SWAMP_WATER_TOURIST,
+    RR_MM_SWAMP_WATER_WITCH,
+    RR_MM_SWAMP_WATER_FROG,
+    RR_MM_SWAMP_WATER_PALACE,
+    RR_MM_SWAMP_WATER_SPIDER,
+    RR_MM_SWAMP_NEAR_FROG,
+    RR_MM_SWAMP_NEAR_SPIDER,
+    RR_MM_GROTTO_SWAMP_LEDGE,
+    RR_MM_SWAMP_CANOPY_FRONT,
+    RR_MM_SWAMP_BOAT_RIDE,
+    RR_MM_GROTTO_BEANS_BANK,
+    RR_MM_GRAVE_NIGHT3_FAKE_EXIT,
 #endif
 #ifdef COMBO_BUILD
-    RR_COMBO_WF_PRE_BOSS_FAR, RR_COMBO_WF_PRE_BOSS_RUPEES,
+    RR_COMBO_WF_PRE_BOSS_FAR,
+    RR_COMBO_WF_PRE_BOSS_RUPEES,
 #endif
 } RandoRegionId;
 
@@ -3449,12 +3462,12 @@ typedef enum {
     RO_KEY_RING_GREAT_BAY,
     RO_KEY_RING_STONE_TOWER,
     RO_FAIRY_OCARINA_MM, // internal draft only; no UI exposure
-    RO_SHARED_OCARINA, // internal seed mirror; pending combined adapter
+    RO_SHARED_OCARINA,   // internal seed mirror; pending combined adapter
     RO_SHUFFLE_NPC_SOULS,
     RO_SHUFFLE_ANIMAL_SOULS,
     RO_SHUFFLE_MISC_SOULS,
     RO_MM_COMPLETE_SOULS, // Internal version switch; absent legacy saves/seeds stay zero.
-    RO_MM_SPELL_WIND, // dormant until complete launcher/equip integration
+    RO_MM_SPELL_WIND,     // dormant until complete launcher/equip integration
     RO_CROSS_GAME_FARORE,
     RO_MM_CROSS_AGE,
     RO_SHARED_SPELL_WIND, // append-only private effective seed mask
@@ -3462,9 +3475,12 @@ typedef enum {
     RO_MM_SPELL_LOVE,
     RO_SHARED_SPELL_FIRE,
     RO_SHARED_SPELL_LOVE,
-    RO_MM_ADULT_MASK, // internal only; no UI while native feature is incomplete
+    RO_MM_ADULT_MASK,   // internal only; no UI while native feature is incomplete
     RO_MM_STARTING_AGE, // resolved seed age:0 child(default),1 adult
-    RO_MM_BOOTS_IRON, RO_MM_BOOTS_HOVER, RO_MM_TUNIC_GORON, RO_MM_TUNIC_ZORA, // hidden pinned MM equipment settings
+    RO_MM_BOOTS_IRON,
+    RO_MM_BOOTS_HOVER,
+    RO_MM_TUNIC_GORON,
+    RO_MM_TUNIC_ZORA, // hidden pinned MM equipment settings
     RO_MAX,
 } RandoOptionId;
 

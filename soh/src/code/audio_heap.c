@@ -568,7 +568,8 @@ void* AudioHeap_SearchCaches(s32 tableType, s32 cache, s32 id) {
     void* ret;
 #ifdef COMBO_BUILD
     ret = Combo_SOHWarpAudioCache(tableType, id);
-    if (ret != NULL) return ret;
+    if (ret != NULL)
+        return ret;
 #endif
 
     // Always search the permanent cache in addition to the regular ones.

@@ -32,8 +32,10 @@ std::vector<RandoItemId> GetComputedStartingItems(RandoSaveInfo& randoSaveInfo) 
 
     if (randoSaveInfo.randoSaveOptions[RO_PLACEMENT_SMALL_KEYS] == RO_DUNGEON_ITEM_START_WITH) {
         for (const auto& ring : keyRings) {
-            if (randoSaveInfo.randoSaveOptions[ring.option]) startingItems.push_back(ring.ring);
-            else startingItems.insert(startingItems.end(), ring.maximum, ring.key);
+            if (randoSaveInfo.randoSaveOptions[ring.option])
+                startingItems.push_back(ring.ring);
+            else
+                startingItems.insert(startingItems.end(), ring.maximum, ring.key);
         }
     }
 
@@ -74,7 +76,7 @@ std::vector<RandoItemId> GetComputedStartingItems(RandoSaveInfo& randoSaveInfo) 
     }
 
     AddUnshuffledExpandedSouls(randoSaveInfo.randoSaveOptions, startingItems);
-    AddUnshuffledMissingMmSouls(randoSaveInfo.randoSaveOptions,startingItems);
+    AddUnshuffledMissingMmSouls(randoSaveInfo.randoSaveOptions, startingItems);
 
     // Doesn't necessarily mean they can play them just sets the infs's for completeness
     if (randoSaveInfo.randoSaveOptions[RO_SHUFFLE_SONG_DOUBLE_TIME] != RO_GENERIC_YES) {

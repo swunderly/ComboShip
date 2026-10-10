@@ -823,7 +823,7 @@ void EnExItem_DrawRandomizedItem(EnExItem* enExItem, PlayState* play) {
     func_8002ED80(&enExItem->actor, play, 0);
     EnItem00_CustomItemsParticles(&enExItem->actor, play, randoGetItem);
 #ifdef COMBO_BUILD
-    CheckTracker::RecordObservedItem(&enExItem->actor,randoGetItem);
+    CheckTracker::RecordObservedItem(&enExItem->actor, randoGetItem);
 #endif
     GetItemEntry_Draw(play, randoGetItem);
 }
@@ -858,7 +858,7 @@ void EnItem00_DrawRandomizedItem(EnItem00* enItem00, PlayState* play) {
     func_8002ED80(&enItem00->actor, play, 0);
     EnItem00_CustomItemsParticles(&enItem00->actor, play, randoItem);
 #ifdef COMBO_BUILD
-    CheckTracker::RecordObservedItem(&enItem00->actor,randoItem);
+    CheckTracker::RecordObservedItem(&enItem00->actor, randoItem);
 #endif
     GetItemEntry_Draw(play, randoItem);
 }
@@ -872,7 +872,7 @@ void ItemBHeart_DrawRandomizedItem(ItemBHeart* itemBHeart, PlayState* play) {
     func_8002ED80(&itemBHeart->actor, play, 0);
     EnItem00_CustomItemsParticles(&itemBHeart->actor, play, randoItem);
 #ifdef COMBO_BUILD
-    CheckTracker::RecordObservedItem(&itemBHeart->actor,randoItem);
+    CheckTracker::RecordObservedItem(&itemBHeart->actor, randoItem);
 #endif
     GetItemEntry_Draw(play, randoItem);
 }
@@ -897,7 +897,7 @@ void ItemEtcetera_DrawRandomizedItem(ItemEtcetera* itemEtcetera, PlayState* play
     func_8002EBCC(&itemEtcetera->actor, play, 0);
     func_8002ED80(&itemEtcetera->actor, play, 0);
 #ifdef COMBO_BUILD
-    CheckTracker::RecordObservedItem(&itemEtcetera->actor,randoItem);
+    CheckTracker::RecordObservedItem(&itemEtcetera->actor, randoItem);
 #endif
     GetItemEntry_Draw(play, randoItem);
 }

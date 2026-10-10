@@ -9,10 +9,12 @@
 #include "Rando/ActorBehavior/ExpandedSoulsRoutes.h"
 using namespace Rando::Logic;
 #ifdef COMBO_BUILD
-#define COMBO_WORLD45_ENABLED (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
-#define COMBO_WORLD45_SELECT(legacy,pinned) (COMBO_WORLD45_ENABLED ? (pinned) : (legacy))
+#define COMBO_WORLD45_ENABLED                                                          \
+    (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || \
+     RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
+#define COMBO_WORLD45_SELECT(legacy, pinned) (COMBO_WORLD45_ENABLED ? (pinned) : (legacy))
 #else
-#define COMBO_WORLD45_SELECT(legacy,pinned) (legacy)
+#define COMBO_WORLD45_SELECT(legacy, pinned) (legacy)
 #endif
 
 #define CAN_TRAVERSE_WAIST_DEEP_WATER CAN_WADE_SHALLOW_WATER

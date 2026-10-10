@@ -38,9 +38,8 @@ bool Logic::ShopsOpenAllHours() const {
 #ifdef COMBO_BUILD
     // An enhancement-only choice cannot add routes to the seed's oracle.
     // Runtime OpenAllHours deliberately leaves locked overworld doors alone.
-    return ComboRando::ShopsOpenAllHours(
-        GameplayRuleValue("gEnhancements.OpenAllHours")!=0,
-        ctx->GetOption(RSK_LOCK_OVERWORLD_DOORS).Is(RO_GENERIC_ON));
+    return ComboRando::ShopsOpenAllHours(GameplayRuleValue("gEnhancements.OpenAllHours") != 0,
+                                         ctx->GetOption(RSK_LOCK_OVERWORLD_DOORS).Is(RO_GENERIC_ON));
 #else
     return false;
 #endif
@@ -48,7 +47,7 @@ bool Logic::ShopsOpenAllHours() const {
 
 bool Logic::CanPullGravesDuringDay() const {
 #ifdef COMBO_BUILD
-    return GameplayRuleValue("gEnhancements.DayGravePull")!=0;
+    return GameplayRuleValue("gEnhancements.DayGravePull") != 0;
 #else
     return false;
 #endif
@@ -58,7 +57,7 @@ bool Logic::CanUnloadShadowDoor() const {
 #ifdef COMBO_BUILD
     // This models the audited five-cycle compatibility shortcut only at the
     // existing Graveyard warp-pad gate. Runtime-only use adds no seed route.
-    return GameplayRuleValue("gEnhancements.RestoreShadowDoorUnload")!=0;
+    return GameplayRuleValue("gEnhancements.RestoreShadowDoorUnload") != 0;
 #else
     return false;
 #endif
@@ -66,7 +65,7 @@ bool Logic::CanUnloadShadowDoor() const {
 
 bool Logic::HasSuperTunic() const {
 #ifdef COMBO_BUILD
-    return GameplayRuleValue("gCheats.SuperTunic")!=0;
+    return GameplayRuleValue("gCheats.SuperTunic") != 0;
 #else
     return false;
 #endif
@@ -74,8 +73,8 @@ bool Logic::HasSuperTunic() const {
 
 bool Logic::CanUseSongAgeChange() {
 #ifdef COMBO_BUILD
-    return ComboRando::CanChangeAgeWithSong(GameplayRuleValue("gEnhancements.TimeTravel"),
-        CanUse(RG_SONG_OF_TIME), HasItem(RG_OCARINA_OF_TIME), HasItem(RG_MASTER_SWORD));
+    return ComboRando::CanChangeAgeWithSong(GameplayRuleValue("gEnhancements.TimeTravel"), CanUse(RG_SONG_OF_TIME),
+                                            HasItem(RG_OCARINA_OF_TIME), HasItem(RG_MASTER_SWORD));
 #else
     return false;
 #endif
@@ -87,11 +86,10 @@ bool Logic::CanClaimKingZoraTrade() {
     // Pocket Egg also represents the hatched Pocket Cucco. The shuffled trade
     // menu can select any retained early item; ITEM_NONE and Frog/later do not
     // satisfy the original native inventory comparison.
-    const bool earlierTrade = HasItem(RG_POCKET_EGG) || HasItem(RG_COJIRO) ||
-        HasItem(RG_ODD_MUSHROOM) || HasItem(RG_ODD_POTION) || HasItem(RG_POACHERS_SAW) ||
-        HasItem(RG_BROKEN_SWORD);
-    return ComboRando::CanClaimKingZoraTrade(IsAdult, Get(LOGIC_KING_ZORA_THAWED),
-        HasItem(RG_SPEAK_ZORA), CanUse(RG_PRESCRIPTION), early, CanShield(), earlierTrade);
+    const bool earlierTrade = HasItem(RG_POCKET_EGG) || HasItem(RG_COJIRO) || HasItem(RG_ODD_MUSHROOM) ||
+                              HasItem(RG_ODD_POTION) || HasItem(RG_POACHERS_SAW) || HasItem(RG_BROKEN_SWORD);
+    return ComboRando::CanClaimKingZoraTrade(IsAdult, Get(LOGIC_KING_ZORA_THAWED), HasItem(RG_SPEAK_ZORA),
+                                             CanUse(RG_PRESCRIPTION), early, CanShield(), earlierTrade);
 #else
     return IsAdult && Get(LOGIC_KING_ZORA_THAWED) && CanUse(RG_PRESCRIPTION);
 #endif
@@ -99,15 +97,15 @@ bool Logic::CanClaimKingZoraTrade() {
 
 bool Logic::HasSelfLightingSticks() {
 #ifdef COMBO_BUILD
-    return ComboRando::SelfLightingSticks(
-        GameplayRuleValue("gCheats.DekuStick"),CanUse(RG_STICKS));
+    return ComboRando::SelfLightingSticks(GameplayRuleValue("gCheats.DekuStick"), CanUse(RG_STICKS));
 #else
     return false;
 #endif
 }
 
 bool Logic::HasItem(RandomizerGet itemName) {
-    if(Souls::GeneralIndex(itemName)>=0)return Souls::HasItem(this,itemName);
+    if (Souls::GeneralIndex(itemName) >= 0)
+        return Souls::HasItem(this, itemName);
     switch (itemName) {
         case RG_FAIRY_OCARINA:
             return CheckInventory(ITEM_OCARINA_FAIRY, false);
@@ -698,7 +696,8 @@ bool Logic::CanUse(RandomizerGet itemName) {
         case RG_PROGRESSIVE_BOMB_BAG:
         case RG_BOMB_BAG:
 #ifdef COMBO_BUILD
-            return HasItem(RG_BOMB_BAG_INF) || Get(LOGIC_RENEWABLE_BOMBS) || Get(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU) || Get(LOGIC_BUY_BOMB);
+            return HasItem(RG_BOMB_BAG_INF) || Get(LOGIC_RENEWABLE_BOMBS) || Get(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU) ||
+                   Get(LOGIC_BUY_BOMB);
 #else
             return true; // AmmoCanDrop || Get(LOGIC_BUY_BOMB)
 #endif
@@ -851,7 +850,8 @@ bool Logic::CanDoGlitch(GlitchType glitch) {
 // ammo capacity
 bool Logic::CanKillEnemy(RandomizerEnemy enemy, EnemyDistance distance, bool wallOrFloor, uint8_t quantity, bool timer,
                          bool inWater) {
-    if(!Souls::EnemySoul(this,enemy))return false;
+    if (!Souls::EnemySoul(this, enemy))
+        return false;
     bool killed = false;
     switch (enemy) {
         case RE_GERUDO_GUARD:
@@ -1377,12 +1377,14 @@ bool Logic::CanBreakMudWalls() {
 }
 
 bool Logic::CanGetDekuBabaSticks() {
-    if(Souls::Enabled() && !Souls::Has(this,Souls::OotSoul::ENEMY_DEKU_BABA))return false;
+    if (Souls::Enabled() && !Souls::Has(this, Souls::OotSoul::ENEMY_DEKU_BABA))
+        return false;
     return CanUseSword() || CanUse(RG_BOOMERANG);
 }
 
 bool Logic::CanGetDekuBabaNuts() {
-    if(Souls::Enabled() && !Souls::Has(this,Souls::OotSoul::ENEMY_DEKU_BABA))return false;
+    if (Souls::Enabled() && !Souls::Has(this, Souls::OotSoul::ENEMY_DEKU_BABA))
+        return false;
     return CanJumpslash() || CanUse(RG_FAIRY_SLINGSHOT) || CanUse(RG_FAIRY_BOW) || HasExplosives() ||
            CanUse(RG_DINS_FIRE);
 }
@@ -1516,8 +1518,7 @@ bool Logic::HasBottle() {
 
 bool Logic::CanUseSword() {
 #ifdef COMBO_BUILD
-    return CanUse(RG_KOKIRI_SWORD) || CanUse(RG_MASTER_SWORD) || CanUse(RG_BIGGORON_SWORD) ||
-           CanUse(RG_GIANTS_KNIFE);
+    return CanUse(RG_KOKIRI_SWORD) || CanUse(RG_MASTER_SWORD) || CanUse(RG_BIGGORON_SWORD) || CanUse(RG_GIANTS_KNIFE);
 #else
     return CanUse(RG_KOKIRI_SWORD) || CanUse(RG_MASTER_SWORD) || CanUse(RG_BIGGORON_SWORD);
 #endif
@@ -1610,8 +1611,7 @@ bool Logic::ShopItemNotForSale(RandomizerCheck loc) {
 bool Logic::BombchuRefill() {
     return Get(LOGIC_BUY_BOMBCHUS) || Get(LOGIC_COULD_PLAY_BOWLING) || Get(LOGIC_CARPET_MERCHANT) ||
 #ifdef COMBO_BUILD
-           (Get(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU) &&
-            ctx->GetOption(RSK_ENABLE_BOMBCHU_DROPS).Is(RO_AMMO_DROPS_ON)) ||
+           (Get(LOGIC_RENEWABLE_BOMBS_OR_BOMBCHU) && ctx->GetOption(RSK_ENABLE_BOMBCHU_DROPS).Is(RO_AMMO_DROPS_ON)) ||
            HasItem(RG_BOMBCHU_INF);
 #else
            (ctx->GetOption(RSK_ENABLE_BOMBCHU_DROPS).Is(RO_AMMO_DROPS_ON /*_PLUS_BOMBCHU*/));
@@ -1631,8 +1631,9 @@ bool Logic::BlueFire() {
     // Runtime hooks accept either the native seed option or the enhancement.
     // Generation uses only the native option synchronized from its logic rule.
     return CanUse(RG_BOTTLE_WITH_BLUE_FIRE) ||
-        ((ctx->GetOption(RSK_BLUE_FIRE_ARROWS).Get() ||
-          (CalculatingAvailableChecks && CVarGetInteger("gEnhancements.BlueFireArrows", 0))) && CanUse(RG_ICE_ARROWS));
+           ((ctx->GetOption(RSK_BLUE_FIRE_ARROWS).Get() ||
+             (CalculatingAvailableChecks && CVarGetInteger("gEnhancements.BlueFireArrows", 0))) &&
+            CanUse(RG_ICE_ARROWS));
 }
 
 bool Logic::CanBreakPots(EnemyDistance distance, bool wallOrFloor, bool inWater) {
@@ -1777,13 +1778,17 @@ uint8_t Logic::MedallionCount() {
 }
 
 uint8_t Logic::FireTimer() {
-    return (CanUse(RG_GORON_TUNIC) || HasSuperTunic()) ? 255 : (ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS)) ? (Hearts() * 8) : 0;
+    return (CanUse(RG_GORON_TUNIC) || HasSuperTunic())          ? 255
+           : (ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS)) ? (Hearts() * 8)
+                                                                : 0;
 }
 
 // Tunic is not required if you are using irons to do something that a simple gold scale dive could do, and you are not
 // in water temple. (celing swimming and long walks through water do not count)
 uint8_t Logic::WaterTimer() {
-    return (CanUse(RG_ZORA_TUNIC) || HasSuperTunic()) ? 255 : (ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS)) ? (Hearts() * 8) : 0;
+    return (CanUse(RG_ZORA_TUNIC) || HasSuperTunic())           ? 255
+           : (ctx->GetTrickOption(RT_FEWER_TUNIC_REQUIREMENTS)) ? (Hearts() * 8)
+                                                                : 0;
 }
 
 bool Logic::TakeDamage() {
@@ -1824,8 +1829,8 @@ bool Logic::CanGetNightTimeGS(RandomizerCheck check) {
         default:
             break;
     }
-    return ComboRando::CanCollectNightSkulltula(AtDay, AtNight, CanUse(RG_SUNS_SONG),
-        ctx->GetOption(RSK_SKULLS_SUNS_SONG).Is(RO_GENERIC_ON),
+    return ComboRando::CanCollectNightSkulltula(
+        AtDay, AtNight, CanUse(RG_SUNS_SONG), ctx->GetOption(RSK_SKULLS_SUNS_SONG).Is(RO_GENERIC_ON),
         GameplayRuleValue("gEnhancements.NightGSAlwaysSpawn") != 0, verifiedDayActor);
 #else
     return AtNight && (CanUse(RG_SUNS_SONG) || !ctx->GetOption(RSK_SKULLS_SUNS_SONG));
@@ -1851,7 +1856,8 @@ bool Logic::HasFireSourceWithTorch() {
 
 bool Logic::SunlightArrows() {
     return (ctx->GetOption(RSK_SUNLIGHT_ARROWS).Get() ||
-        (CalculatingAvailableChecks && CVarGetInteger("gEnhancements.SunlightArrows", 0))) && CanUse(RG_LIGHT_ARROWS);
+            (CalculatingAvailableChecks && CVarGetInteger("gEnhancements.SunlightArrows", 0))) &&
+           CanUse(RG_LIGHT_ARROWS);
 }
 
 bool Logic::CanStandingShield() {
@@ -2224,7 +2230,10 @@ std::set<RandomizerGet> StaticData::allowBottleMaskTrade = { RG_KEATON_MASK,
                                                              RG_BOTTLE_WITH_BIG_POE };
 
 void Logic::ApplyItemEffect(Item& item, bool state) {
-    if(Souls::GeneralIndex(item.GetRandomizerGet())>=0){Souls::LogicDelta(this,item.GetRandomizerGet(),state);return;}
+    if (Souls::GeneralIndex(item.GetRandomizerGet()) >= 0) {
+        Souls::LogicDelta(this, item.GetRandomizerGet(), state);
+        return;
+    }
     if (SilverRupees::IsItem(item.GetRandomizerGet())) {
         SilverRupees::LogicDelta(this, item.GetRandomizerGet(), state);
         return;

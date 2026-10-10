@@ -216,11 +216,11 @@ s32 AudioSeq_SeqChannelSetLayer(SequenceChannel* channel, s32 layerIdx) {
     layer->velocitySquare2 = 0.0f;
     layer->instOrWave = 0xFF;
 #ifdef COMBO_BUILD
-    layer->comboMmDialect=Combo_SOHIsMmAudioSequence(channel->seqPlayer);
-    layer->comboMmSurroundEffectIndex=0x80;
-    layer->comboMmTargetReverbVol=channel->reverb;
-    layer->comboMmFlags.asByte=0xFFFF;
-    layer->comboMmVibrato=(ComboMmVibratoParameters){0x800,0,0x800,0,0,0,0};
+    layer->comboMmDialect = Combo_SOHIsMmAudioSequence(channel->seqPlayer);
+    layer->comboMmSurroundEffectIndex = 0x80;
+    layer->comboMmTargetReverbVol = channel->reverb;
+    layer->comboMmFlags.asByte = 0xFFFF;
+    layer->comboMmVibrato = (ComboMmVibratoParameters){ 0x800, 0, 0x800, 0, 0, 0, 0 };
 #endif
     return 0;
 }
@@ -493,7 +493,8 @@ s32 AudioSeq_SeqLayerProcessScriptStep2(SequenceLayer* layer) {
         cmd = AudioSeq_ScriptReadU8(state);
 #ifdef COMBO_BUILD
         Combo_SOHTraceMmAudioLayer(layer, cmd, false);
-        if(Combo_SOHMmAudioLayerCommand(layer,cmd))continue;
+        if (Combo_SOHMmAudioLayerCommand(layer, cmd))
+            continue;
 #endif
         if (cmd < 0xC1) {
             return cmd;
@@ -1028,7 +1029,8 @@ void AudioSeq_SequenceChannelProcessScript(SequenceChannel* channel) {
         s32 pad2;
 
 #ifdef COMBO_BUILD
-        if (Combo_SOHMmAudioChannelCommand(channel, command)) continue;
+        if (Combo_SOHMmAudioChannelCommand(channel, command))
+            continue;
 #endif
         if (command >= 0xB0) {
             highBits = D_80130520[(s32)command - 0xB0];

@@ -247,7 +247,7 @@ void EnNwc_CheckFound(EnNwc* this, PlayState* play) {
 
 #ifdef COMBO_BUILD
         int required = CVarGetInteger("gEnhancements.DifficultyOptions.BremenChickCount",
-                                       CVarGetInteger("gEnhancements.Masks.BremenOneChick", 0) ? 1 : 10);
+                                      CVarGetInteger("gEnhancements.Masks.BremenOneChick", 0) ? 1 : 10);
         required = required < 1 ? 1 : required > 10 ? 10 : required;
         const int recruited = this->grog->actor.home.rot.z / 2;
         if (recruited >= required && recruited < 10) {

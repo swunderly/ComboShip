@@ -10,22 +10,27 @@ static bool MoonSoul(ActorId actor) {
     return !RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] || HaveEnemySoul(actor);
 }
 static bool CanPassMoonDinolfos() {
-    return MoonSoul(ACTOR_EN_DINOFOS) && ComboRando::MmMoonTrialRules::Dinolfos(
-        CAN_USE_SWORD, CAN_BE_GORON, CAN_BE_ZORA, (CAN_BE_DEKU && HAS_MAGIC), CAN_USE_BOW);
+    return MoonSoul(ACTOR_EN_DINOFOS) &&
+           ComboRando::MmMoonTrialRules::Dinolfos(CAN_USE_SWORD, CAN_BE_GORON, CAN_BE_ZORA, (CAN_BE_DEKU && HAS_MAGIC),
+                                                  CAN_USE_BOW);
 }
 static bool CanPassMoonGaro() {
-    return CanPassMoonDinolfos() && MoonSoul(ACTOR_EN_JSO2) && ComboRando::MmMoonTrialRules::Garo(
-        CAN_USE_SWORD, CAN_BE_GORON, (CAN_BE_DEKU && HAS_MAGIC), CAN_USE_BOW);
+    return CanPassMoonDinolfos() && MoonSoul(ACTOR_EN_JSO2) &&
+           ComboRando::MmMoonTrialRules::Garo(CAN_USE_SWORD, CAN_BE_GORON, (CAN_BE_DEKU && HAS_MAGIC), CAN_USE_BOW);
 }
 static bool CanPassMoonIronKnuckle() {
-    return CanPassMoonGaro() && MoonSoul(ACTOR_EN_IK) && ComboRando::MmMoonTrialRules::IronKnuckle(
-        CAN_USE_SWORD, CAN_BE_GORON, CAN_USE_BOMBS, CAN_USE_BOMBCHUS, HAS_ITEM(ITEM_MASK_BLAST), MoonMaskCount());
+    return CanPassMoonGaro() && MoonSoul(ACTOR_EN_IK) &&
+           ComboRando::MmMoonTrialRules::IronKnuckle(CAN_USE_SWORD, CAN_BE_GORON, CAN_USE_BOMBS, CAN_USE_BOMBCHUS,
+                                                     HAS_ITEM(ITEM_MASK_BLAST), MoonMaskCount());
 }
 #else
-static bool CanPassMoonGaro() { return true; }
-static bool CanPassMoonIronKnuckle() { return true; }
+static bool CanPassMoonGaro() {
+    return true;
+}
+static bool CanPassMoonIronKnuckle() {
+    return true;
+}
 #endif
-
 
 static bool CanReturnFromMoon() {
 #ifdef COMBO_BUILD

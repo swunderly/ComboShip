@@ -649,9 +649,9 @@ u8 gPlayerFormItemRestrictions[PLAYER_FORM_MAX][256] = {
         false, // ITEM_HEART_PIECE
         false, // ITEM_71
 #ifdef COMBO_BUILD
-        [ITEM_COMBO_FARORES_WIND]=true,
-        [ITEM_COMBO_DINS_FIRE]=true,
-        [ITEM_COMBO_NAYRUS_LOVE]=true,
+        [ITEM_COMBO_FARORES_WIND] = true,
+        [ITEM_COMBO_DINS_FIRE] = true,
+        [ITEM_COMBO_NAYRUS_LOVE] = true,
 #endif
     },
 };
@@ -2898,7 +2898,7 @@ void Interface_UpdateHudAlphas(PlayState* play, s16 dimmingAlpha) {
  * A continuation of the if-else chain from Interface_UpdateButtonsPart1
  * Also used directly when opening the pause menu i.e. skips part 1
  */
- #ifdef COMBO_BUILD
+#ifdef COMBO_BUILD
 extern int Combo_MM_AdultResourcesReady(void);
 #include "ComboAdultSwimmingRestrictionNative.h"
 #endif
@@ -3163,13 +3163,15 @@ static void Interface_UpdateButtonsPart2Native(PlayState* play) {
         }
 
         for (i = EQUIP_SLOT_C_LEFT; i <= EQUIP_SLOT_C_RIGHT; i++) {
-            if (GameInteractor_Should(VB_DISABLE_ITEM_UNDERWATER,
+            if (GameInteractor_Should(
+                    VB_DISABLE_ITEM_UNDERWATER,
 #ifdef COMBO_BUILD
-                                      Combo_MM_ShouldCheckItemUsabilityWhileSwimming(GET_PLAYER(play),GET_CUR_FORM_BTN_ITEM(i),Player_GetEnvironmentalHazard(play)),
+                    Combo_MM_ShouldCheckItemUsabilityWhileSwimming(GET_PLAYER(play), GET_CUR_FORM_BTN_ITEM(i),
+                                                                   Player_GetEnvironmentalHazard(play)),
 #else
-                                      GET_CUR_FORM_BTN_ITEM(i) != ITEM_MASK_ZORA,
+                    GET_CUR_FORM_BTN_ITEM(i) != ITEM_MASK_ZORA,
 #endif
-                                      (s32)GET_CUR_FORM_BTN_ITEM(i))) {
+                    (s32)GET_CUR_FORM_BTN_ITEM(i))) {
                 if (Player_GetEnvironmentalHazard(play) == PLAYER_ENV_HAZARD_UNDERWATER_FLOOR) {
                     if (!((GET_CUR_FORM_BTN_ITEM(i) >= ITEM_BOTTLE) &&
                           (GET_CUR_FORM_BTN_ITEM(i) <= ITEM_OBABA_DRINK))) {
@@ -3196,13 +3198,15 @@ static void Interface_UpdateButtonsPart2Native(PlayState* play) {
         }
         // #region 2S2H [Dpad]
         for (s16 j = EQUIP_SLOT_D_RIGHT; j <= EQUIP_SLOT_D_UP; j++) {
-            if (GameInteractor_Should(VB_DISABLE_ITEM_UNDERWATER,
+            if (GameInteractor_Should(
+                    VB_DISABLE_ITEM_UNDERWATER,
 #ifdef COMBO_BUILD
-                                      Combo_MM_ShouldCheckItemUsabilityWhileSwimming(GET_PLAYER(play),DPAD_GET_CUR_FORM_BTN_ITEM(j),Player_GetEnvironmentalHazard(play)),
+                    Combo_MM_ShouldCheckItemUsabilityWhileSwimming(GET_PLAYER(play), DPAD_GET_CUR_FORM_BTN_ITEM(j),
+                                                                   Player_GetEnvironmentalHazard(play)),
 #else
-                                      DPAD_GET_CUR_FORM_BTN_ITEM(j) != ITEM_MASK_ZORA,
+                    DPAD_GET_CUR_FORM_BTN_ITEM(j) != ITEM_MASK_ZORA,
 #endif
-                                      (s32)DPAD_GET_CUR_FORM_BTN_ITEM(j))) {
+                    (s32)DPAD_GET_CUR_FORM_BTN_ITEM(j))) {
                 if (Player_GetEnvironmentalHazard(play) == PLAYER_ENV_HAZARD_UNDERWATER_FLOOR) {
                     if (!((DPAD_GET_CUR_FORM_BTN_ITEM(j) >= ITEM_BOTTLE) &&
                           (DPAD_GET_CUR_FORM_BTN_ITEM(j) <= ITEM_OBABA_DRINK))) {
@@ -3685,10 +3689,13 @@ static void Interface_UpdateButtonsPart2Native(PlayState* play) {
 #ifdef COMBO_BUILD
 extern int Combo_MM_AdultResourcesReady(void);
 #include "ComboAdultHazardTimerNative.h"
-static u8 Combo_MM_AdultButtonRestrictionAlias(PlayState* play,u8 item){
-    if(item!=0xbc||!Combo_MM_AdultResourcesReady())return item;
-    s32 hazard=Player_GetEnvironmentalHazard(play);
-    return hazard>=PLAYER_ENV_HAZARD_UNDERWATER_FLOOR&&hazard<=PLAYER_ENV_HAZARD_UNDERWATER_FREE?ITEM_MASK_ZORA:ITEM_OCARINA_OF_TIME;
+static u8 Combo_MM_AdultButtonRestrictionAlias(PlayState* play, u8 item) {
+    if (item != 0xbc || !Combo_MM_AdultResourcesReady())
+        return item;
+    s32 hazard = Player_GetEnvironmentalHazard(play);
+    return hazard >= PLAYER_ENV_HAZARD_UNDERWATER_FLOOR && hazard <= PLAYER_ENV_HAZARD_UNDERWATER_FREE
+               ? ITEM_MASK_ZORA
+               : ITEM_OCARINA_OF_TIME;
 }
 #endif
 // Pinned MM interface wrapper: restriction checks see Fairy as Time, then restore identity.
@@ -3697,25 +3704,29 @@ void Interface_UpdateButtonsPart2(PlayState* play) {
     u8 savedDpad[4];
     for (int i = 0; i < 4; ++i) {
         savedDpad[i] = DPAD_GET_CUR_FORM_BTN_ITEM(i);
-        if (savedDpad[i] == ITEM_OCARINA_FAIRY) DPAD_GET_CUR_FORM_BTN_ITEM(i) = ITEM_OCARINA_OF_TIME;
+        if (savedDpad[i] == ITEM_OCARINA_FAIRY)
+            DPAD_GET_CUR_FORM_BTN_ITEM(i) = ITEM_OCARINA_OF_TIME;
 #ifdef COMBO_BUILD
-        else DPAD_GET_CUR_FORM_BTN_ITEM(i)=Combo_MM_AdultButtonRestrictionAlias(play,savedDpad[i]);
+        else
+            DPAD_GET_CUR_FORM_BTN_ITEM(i) = Combo_MM_AdultButtonRestrictionAlias(play, savedDpad[i]);
 #endif
     }
     for (int i = 0; i < 3; ++i) {
         u8* item = &gSaveContext.save.saveInfo.equips.buttonItems[0][i + 1];
         savedButtons[i] = *item;
-        if (*item == ITEM_OCARINA_FAIRY) *item = ITEM_OCARINA_OF_TIME;
+        if (*item == ITEM_OCARINA_FAIRY)
+            *item = ITEM_OCARINA_OF_TIME;
 #ifdef COMBO_BUILD
-        else *item=Combo_MM_AdultButtonRestrictionAlias(play,*item);
+        else
+            *item = Combo_MM_AdultButtonRestrictionAlias(play, *item);
 #endif
     }
     Interface_UpdateButtonsPart2Native(play);
-    for (int i = 0; i < 4; ++i) DPAD_GET_CUR_FORM_BTN_ITEM(i) = savedDpad[i];
+    for (int i = 0; i < 4; ++i)
+        DPAD_GET_CUR_FORM_BTN_ITEM(i) = savedDpad[i];
     for (int i = 0; i < 3; ++i)
         gSaveContext.save.saveInfo.equips.buttonItems[0][i + 1] = savedButtons[i];
 }
-
 
 void Interface_UpdateButtonsPart1(PlayState* play) {
     InterfaceContext* interfaceCtx = &play->interfaceCtx;
@@ -9981,11 +9992,11 @@ void Interface_Update(PlayState* play) {
     if (gSaveContext.timerStates[TIMER_ID_ENV_HAZARD] == TIMER_STATE_OFF) {
         if (
 #ifdef COMBO_BUILD
-            Combo_MM_ShouldStartHazardTimer(GET_PLAYER(play),sEnvHazard)
+            Combo_MM_ShouldStartHazardTimer(GET_PLAYER(play), sEnvHazard)
 #else
             (sEnvHazard == PLAYER_ENV_HAZARD_HOTROOM) || (sEnvHazard == PLAYER_ENV_HAZARD_UNDERWATER_FREE)
 #endif
-            ) {
+        ) {
             if (CUR_FORM != PLAYER_FORM_ZORA) {
                 if (play->gameOverCtx.state == GAMEOVER_INACTIVE) {
                     if ((gSaveContext.save.saveInfo.playerData.health >> 1) != 0) {

@@ -40,8 +40,8 @@ class ComboMenu final : public Ship::GuiWindow {
     // native controls remain editable through their existing callbacks.
     // Drawn in the active scope's content area, so the left navigation panel stays visible.
     void DrawSearchResults(const std::string& query);
-    void OpenSearchDestination(const std::string& scope, const std::string& page,
-                               const char* rule = nullptr, const char* trick = nullptr, int targetGame = -1);
+    void OpenSearchDestination(const std::string& scope, const std::string& page, const char* rule = nullptr,
+                               const char* trick = nullptr, int targetGame = -1);
     void DrawScopeHelp();
 
     char mSearchBuf[256] = { 0 }; // raw global-search input; normalized into mSearchQuery each frame
@@ -60,9 +60,8 @@ class ComboMenu final : public Ship::GuiWindow {
     std::map<std::string, std::string> mSectionSelection;
     int mPreferenceGame = 0; // 0 follows foreground; 1 OoT; 2 MM
     int mRandomizerGame = 0; // Seed configuration stays on the selected world, independent of gameplay.
-    int mPoolSection = 0;   // Shared Checks / Items selection.
-    int mHintSection = 0;   // Shared Hints / Traps selection.
-
+    int mPoolSection = 0;    // Shared Checks / Items selection.
+    int mHintSection = 0;    // Shared Hints / Traps selection.
 };
 
 } // namespace ComboRando

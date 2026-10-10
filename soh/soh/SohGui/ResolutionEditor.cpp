@@ -129,7 +129,8 @@ void ResolutionCustomWidget(WidgetInfo& info) {
         if ((aspectRatioX > 0.0f) && (aspectRatioY > 0.0f)) {
             // So basically we're "faking" this one by setting aspectRatioX instead.
             UIWidgets::PushStyleInput(THEME_COLOR);
-            if (ImGui::SliderInt("Horiz. Pixel Count", &horizontalPixelCount, 320, 7680, "%d px", ImGuiSliderFlags_NoInput)) {
+            if (ImGui::SliderInt("Horiz. Pixel Count", &horizontalPixelCount, 320, 7680, "%d px",
+                                 ImGuiSliderFlags_NoInput)) {
                 item_aspectRatio = default_aspectRatio;
                 if (horizontalPixelCount < SCREEN_WIDTH) {
                     horizontalPixelCount = SCREEN_WIDTH;

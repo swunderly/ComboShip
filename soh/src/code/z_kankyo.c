@@ -2530,7 +2530,8 @@ extern int Combo_OOTSongWarp(PlayState*, int);
 #endif
 void Environment_WarpSongLeave(PlayState* play) {
 #ifdef COMBO_BUILD
-    if (Combo_OOTSongWarp(play, play->msgCtx.lastPlayedSong)) return;
+    if (Combo_OOTSongWarp(play, play->msgCtx.lastPlayedSong))
+        return;
 #endif
     gWeatherMode = 0;
     gSaveContext.cutsceneIndex = 0;

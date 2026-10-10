@@ -8,32 +8,35 @@ namespace ComboRando {
 // seed remains immutable; malformed/missing entries cannot inherit another slot's abilities.
 inline bool IsGameplayRuleBlock(const nlohmann::json& block) {
     return block.is_object() && block.contains("version") && block["version"].is_number_integer() &&
-           (block["version"] == 1 || block["version"] == 2) && block.contains("values") &&
-           block["values"].is_object();
+           (block["version"] == 1 || block["version"] == 2) && block.contains("values") && block["values"].is_object();
 }
 inline bool HasSavedRuleValue(const nlohmann::json& block, const GameplayRule& rule) {
-    if (!IsGameplayRuleBlock(block)) return false;
+    if (!IsGameplayRuleBlock(block))
+        return false;
     const auto value = block["values"].find(rule.name);
-    return value != block["values"].end() && value->is_number_integer() &&
-           *value >= rule.minimum && *value <= rule.maximum;
+    return value != block["values"].end() && value->is_number_integer() && *value >= rule.minimum &&
+           *value <= rule.maximum;
 }
 inline nlohmann::json NormalizeGameplayRuleSnapshot(const nlohmann::json& input) {
     const auto block = UpgradeGameplayRules(input);
     auto result = CaptureGameplayRules([](const char*, int fallback) { return fallback; });
     result["ootTricks"] = "";
-    if (!IsGameplayRuleBlock(block)) return result;
+    if (!IsGameplayRuleBlock(block))
+        return result;
     for (const auto& rule : kGameplayRules) {
-        if (!HasSavedRuleValue(block, rule)) continue;
+        if (!HasSavedRuleValue(block, rule))
+            continue;
         const int runtime = block["values"][rule.name].get<int>();
         result["values"][rule.name] = runtime;
-        if (rule.runtimeOnly) continue; // preserve old quest counts without a generation assumption
+        if (rule.runtimeOnly)
+            continue; // preserve old quest counts without a generation assumption
         if (block["version"] == 1) {
-            if (!rule.trickGoverned) result["logicValues"][rule.name] = runtime;
-        }
-        else if (block.contains("logicValues") && block["logicValues"].is_object()) {
+            if (!rule.trickGoverned)
+                result["logicValues"][rule.name] = runtime;
+        } else if (block.contains("logicValues") && block["logicValues"].is_object()) {
             const auto logical = block["logicValues"].find(rule.name);
-            if (logical != block["logicValues"].end() && logical->is_number_integer() &&
-                *logical >= 0 && *logical <= rule.maximum)
+            if (logical != block["logicValues"].end() && logical->is_number_integer() && *logical >= 0 &&
+                *logical <= rule.maximum)
                 result["logicValues"][rule.name] = logical->get<int>();
         }
     }
@@ -44,7 +47,8 @@ inline nlohmann::json NormalizeGameplayRuleSnapshot(const nlohmann::json& input)
                 result["mmTricks"][trick.key] = value->get<int>();
         }
     }
-    if (block.contains("ootTricks") && block["ootTricks"].is_string()) result["ootTricks"] = block["ootTricks"];
+    if (block.contains("ootTricks") && block["ootTricks"].is_string())
+        result["ootTricks"] = block["ootTricks"];
     return result;
 }
 
@@ -54,10 +58,11 @@ inline nlohmann::json GameplayRulesForSeed(const nlohmann::json& seed) {
     auto rules = captured ? saved : CaptureGameplayRules([](const char*, int fallback) { return fallback; });
     if (!captured || rules["version"] == 1) {
         const auto map = SongTravelMap::parse(seed.value("songTravel", nlohmann::json()));
-        for (const auto& pair : {std::pair{"gCombo.Enhancements.ForeignSongs", map.foreignSongs},
-                                std::pair{"gCombo.Enhancements.SongTravel", map.enabled}}) {
+        for (const auto& pair : { std::pair{ "gCombo.Enhancements.ForeignSongs", map.foreignSongs },
+                                  std::pair{ "gCombo.Enhancements.SongTravel", map.enabled } }) {
             const auto& rule = *FindGameplayRule(pair.first);
-            if (!captured || !HasSavedRuleValue(saved, rule)) rules["values"][rule.name] = int(pair.second);
+            if (!captured || !HasSavedRuleValue(saved, rule))
+                rules["values"][rule.name] = int(pair.second);
         }
         if (rules["version"] == 2) {
             rules["logicValues"]["gCombo.Enhancements.ForeignSongs"] = int(map.logicForeignSongs);
@@ -66,26 +71,31 @@ inline nlohmann::json GameplayRulesForSeed(const nlohmann::json& seed) {
     }
     const auto oot = seed.value("oot", nlohmann::json::object());
     const auto settings = oot.value("settings", nlohmann::json::object());
-    for (const char* runtime : {"gEnhancements.BlueFireArrows", "gEnhancements.SunlightArrows"}) {
+    for (const char* runtime : { "gEnhancements.BlueFireArrows", "gEnhancements.SunlightArrows" }) {
         const auto& rule = *FindGameplayRule(runtime);
-        if (captured && HasSavedRuleValue(saved, rule)) continue;
+        if (captured && HasSavedRuleValue(saved, rule))
+            continue;
         const auto key = LogicRuleKey(runtime);
         const auto value = settings.find(key);
-        const int enabled = value != settings.end() &&
-            ((value->is_boolean() && value->get<bool>()) || (value->is_number_integer() && *value == 1));
+        const int enabled = value != settings.end() && ((value->is_boolean() && value->get<bool>()) ||
+                                                        (value->is_number_integer() && *value == 1));
         rules["values"][runtime] = enabled;
-        if (rules["version"] == 2) rules["logicValues"][runtime] = enabled;
+        if (rules["version"] == 2)
+            rules["logicValues"][runtime] = enabled;
     }
     if (!rules.contains("ootTricks") || !rules["ootTricks"].is_string()) {
         std::string csv;
         const auto names = oot.value("enabledTricks", nlohmann::json());
         if (names.is_array()) {
             for (const auto& name : names) {
-                if (!name.is_string()) continue;
-                if (!csv.empty()) csv += ",";
+                if (!name.is_string())
+                    continue;
+                if (!csv.empty())
+                    csv += ",";
                 csv += name.get<std::string>();
             }
-        } else if (settings.contains("gRandoSettings.EnabledTricks") && settings["gRandoSettings.EnabledTricks"].is_string())
+        } else if (settings.contains("gRandoSettings.EnabledTricks") &&
+                   settings["gRandoSettings.EnabledTricks"].is_string())
             csv = settings["gRandoSettings.EnabledTricks"].get<std::string>();
         rules["ootTricks"] = csv;
     }
@@ -94,15 +104,19 @@ inline nlohmann::json GameplayRulesForSeed(const nlohmann::json& seed) {
 
 inline nlohmann::json GameplayRulesForRun(const nlohmann::json& seed, const nlohmann::json& savedRun) {
     const auto original = GameplayRulesForSeed(seed);
-    if (!IsGameplayRuleBlock(savedRun)) return original;
+    if (!IsGameplayRuleBlock(savedRun))
+        return original;
     auto rules = NormalizeGameplayRuleSnapshot(savedRun);
     for (const auto& rule : kGameplayRules) {
-        if (HasSavedRuleValue(UpgradeGameplayRules(savedRun), rule)) continue;
+        if (HasSavedRuleValue(UpgradeGameplayRules(savedRun), rule))
+            continue;
         rules["values"][rule.name] = original["values"][rule.name];
         rules["logicValues"][rule.name] = original["logicValues"][rule.name];
     }
-    if (!savedRun.contains("mmTricks")) rules["mmTricks"] = original["mmTricks"];
-    if (!savedRun.contains("ootTricks") || !savedRun["ootTricks"].is_string()) rules["ootTricks"] = original["ootTricks"];
+    if (!savedRun.contains("mmTricks"))
+        rules["mmTricks"] = original["mmTricks"];
+    if (!savedRun.contains("ootTricks") || !savedRun["ootTricks"].is_string())
+        rules["ootTricks"] = original["ootTricks"];
     return rules;
 }
 } // namespace ComboRando

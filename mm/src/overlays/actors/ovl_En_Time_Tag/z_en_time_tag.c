@@ -301,11 +301,13 @@ void EnTimeTag_KickOut_Transition(EnTimeTag* this, PlayState* play) {
                 case ENTRANCE(GORMAN_TRACK, 0):
                 case ENTRANCE(GORMAN_TRACK, 1):
                 case ENTRANCE(GORMAN_TRACK, 2):
-                    ordinaryReturn = ENTRANCE(MILK_ROAD, 3); break;
+                    ordinaryReturn = ENTRANCE(MILK_ROAD, 3);
+                    break;
                 case ENTRANCE(GORMAN_TRACK, 3):
                 case ENTRANCE(GORMAN_TRACK, 4):
                 case ENTRANCE(GORMAN_TRACK, 5):
-                    ordinaryReturn = ENTRANCE(MILK_ROAD, 2); break;
+                    ordinaryReturn = ENTRANCE(MILK_ROAD, 2);
+                    break;
             }
             if (Combo_MMOrdinarySourceConfigured(ordinaryReturn))
                 play->nextEntrance = ordinaryReturn;

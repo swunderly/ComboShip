@@ -5,9 +5,9 @@
 #include <stdexcept>
 #include <nlohmann/json.hpp>
 namespace Rando::Souls {
-inline constexpr unsigned GeneralOotSoulCount=95;
-using GeneralOotSoulsOwnership=std::array<uint8_t,12>;
-inline constexpr std::array<OotSoul,GeneralOotSoulCount> generalOotSoulItems={
+inline constexpr unsigned GeneralOotSoulCount = 95;
+using GeneralOotSoulsOwnership = std::array<uint8_t, 12>;
+inline constexpr std::array<OotSoul, GeneralOotSoulCount> generalOotSoulItems = {
     OotSoul::ENEMY_POE,
     OotSoul::ENEMY_STALFOS,
     OotSoul::ENEMY_OCTOROK,
@@ -105,37 +105,51 @@ inline constexpr std::array<OotSoul,GeneralOotSoulCount> generalOotSoulItems={
     OotSoul::MISC_GS,
 };
 inline int GeneralOotSoulIndex(OotSoul soul) {
- for(unsigned i=0;i<GeneralOotSoulCount;++i)if(generalOotSoulItems[i]==soul)return i;
- return -1;
+    for (unsigned i = 0; i < GeneralOotSoulCount; ++i)
+        if (generalOotSoulItems[i] == soul)
+            return i;
+    return -1;
 }
-inline bool GeneralOotSoulOwned(const GeneralOotSoulsOwnership& owned,unsigned index) {
- return index<GeneralOotSoulCount && (owned[index>>3]&(1u<<(index&7)));
+inline bool GeneralOotSoulOwned(const GeneralOotSoulsOwnership& owned, unsigned index) {
+    return index < GeneralOotSoulCount && (owned[index >> 3] & (1u << (index & 7)));
 }
-inline bool ChangeGeneralOotSoul(GeneralOotSoulsOwnership& owned,unsigned index,bool grant) {
- if(index>=GeneralOotSoulCount)return false;
- if(grant)owned[index>>3]|=1u<<(index&7);else owned[index>>3]&=~(1u<<(index&7));
- return true;
+inline bool ChangeGeneralOotSoul(GeneralOotSoulsOwnership& owned, unsigned index, bool grant) {
+    if (index >= GeneralOotSoulCount)
+        return false;
+    if (grant)
+        owned[index >> 3] |= 1u << (index & 7);
+    else
+        owned[index >> 3] &= ~(1u << (index & 7));
+    return true;
 }
 inline GeneralOotSoulsOwnership RestoreGeneralOotSouls(const nlohmann::json& saved) {
- GeneralOotSoulsOwnership out{};
- if(!saved.contains("ootExpandedSoulsOwned"))return out;
- const auto& source=saved.at("ootExpandedSoulsOwned");
- if(!source.is_array() || source.size()!=out.size())throw std::runtime_error("Invalid OoT soul ownership length");
- for(unsigned i=0;i<out.size();++i){
-  if(!source[i].is_number_integer())throw std::runtime_error("Invalid OoT soul ownership type");
-  const int64_t value=source[i].get<int64_t>();
-  if(value<0 || value>(i==11?127:255))throw std::runtime_error("Invalid OoT soul ownership bits");
-  out[i]=static_cast<uint8_t>(value);
- }
- return out;
+    GeneralOotSoulsOwnership out{};
+    if (!saved.contains("ootExpandedSoulsOwned"))
+        return out;
+    const auto& source = saved.at("ootExpandedSoulsOwned");
+    if (!source.is_array() || source.size() != out.size())
+        throw std::runtime_error("Invalid OoT soul ownership length");
+    for (unsigned i = 0; i < out.size(); ++i) {
+        if (!source[i].is_number_integer())
+            throw std::runtime_error("Invalid OoT soul ownership type");
+        const int64_t value = source[i].get<int64_t>();
+        if (value < 0 || value > (i == 11 ? 127 : 255))
+            throw std::runtime_error("Invalid OoT soul ownership bits");
+        out[i] = static_cast<uint8_t>(value);
+    }
+    return out;
 }
-struct GeneralOotSoulOptions {bool enabled=false,enemy=false,npc=false,animal=false,misc=false;};
-inline bool GeneralOotSoulShuffled(const GeneralOotSoulOptions& options,unsigned index) {
- if(!options.enabled || index>=95)return false;
- return index<43?options.enemy:index<89?options.npc:index<93?options.animal:options.misc;
+struct GeneralOotSoulOptions {
+    bool enabled = false, enemy = false, npc = false, animal = false, misc = false;
+};
+inline bool GeneralOotSoulShuffled(const GeneralOotSoulOptions& options, unsigned index) {
+    if (!options.enabled || index >= 95)
+        return false;
+    return index < 43 ? options.enemy : index < 89 ? options.npc : index < 93 ? options.animal : options.misc;
 }
-inline bool HaveGeneralOotSoul(const GeneralOotSoulsOwnership& owned,const GeneralOotSoulOptions& options,OotSoul soul) {
- const int index=GeneralOotSoulIndex(soul);
- return index>=0 && (!GeneralOotSoulShuffled(options,index) || GeneralOotSoulOwned(owned,index));
+inline bool HaveGeneralOotSoul(const GeneralOotSoulsOwnership& owned, const GeneralOotSoulOptions& options,
+                               OotSoul soul) {
+    const int index = GeneralOotSoulIndex(soul);
+    return index >= 0 && (!GeneralOotSoulShuffled(options, index) || GeneralOotSoulOwned(owned, index));
 }
-}
+} // namespace Rando::Souls

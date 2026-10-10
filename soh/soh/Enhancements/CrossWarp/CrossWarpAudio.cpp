@@ -32,7 +32,7 @@ s16 AudioSeq_ScriptReadS16(SeqScriptState* state);
 namespace {
 constexpr const char* kPrefix = "@mm-audio:";
 constexpr const char* kSequences[] = { "audio/sequences/SongOfSoaring_55", "audio/sequences/Sequence_0",
-                                    "audio/sequences/SongOfSoaring(Ocarina)_47" };
+                                       "audio/sequences/SongOfSoaring(Ocarina)_47" };
 constexpr int kFonts[] = { 9, 1, 0 };
 std::shared_ptr<Ship::ResourceManager> sResources;
 std::array<SequenceData*, 3> sSequences{};
@@ -46,34 +46,42 @@ u16 sPreviousMain = NA_BGM_DISABLED, sPreviousSub = NA_BGM_DISABLED;
 std::array<std::array<std::atomic<u8>, 16>, 16> sSfxState{};
 std::array<bool, 0x100> sDialectSeen{};
 std::array<bool, 3> sSequenceExecuting{};
-std::atomic<u32> sDialectFailures{0};
+std::atomic<u32> sDialectFailures{ 0 };
 
 // SfxChannelState's native float bytes are little endian in the Android runtime.
 // Keep the same indexed state seen by A0..A3 and BE, with atomic graph/audio access.
 void StoreMmSfxFloat(size_t channel, size_t offset, float value) {
-    u32 bits; std::memcpy(&bits, &value, sizeof(bits));
-    for (size_t i=0;i<4;++i) sSfxState[channel][offset+i].store(static_cast<u8>(bits>>(i*8)));
+    u32 bits;
+    std::memcpy(&bits, &value, sizeof(bits));
+    for (size_t i = 0; i < 4; ++i)
+        sSfxState[channel][offset + i].store(static_cast<u8>(bits >> (i * 8)));
 }
 float LoadMmSfxFrequency(size_t channel) {
-    u32 bits=0;
-    for (size_t i=0;i<4;++i) bits|=static_cast<u32>(sSfxState[channel][4+i].load())<<(i*8);
-    float value;std::memcpy(&value,&bits,sizeof(value));return value;
+    u32 bits = 0;
+    for (size_t i = 0; i < 4; ++i)
+        bits |= static_cast<u32>(sSfxState[channel][4 + i].load()) << (i * 8);
+    float value;
+    std::memcpy(&value, &bits, sizeof(value));
+    return value;
 }
 void UseResidentSampleStorage(SoundFontSample* sample) {
     // MM's archive retains CART tags on some music samples. The resource
     // factory has already copied those bytes into owned host RAM: sending a
     // host pointer through OoT's N64 cartridge DMA cache corrupts its address.
-    if (sample) sample->medium = MEDIUM_RAM;
+    if (sample)
+        sample->medium = MEDIUM_RAM;
 }
 
 class ResidentMmSampleFactory final : public Ship::ResourceFactoryBinary {
   public:
     std::shared_ptr<Ship::IResource> ReadResource(std::shared_ptr<Ship::File> file,
-                                                std::shared_ptr<Ship::ResourceInitData> initData) override {
+                                                  std::shared_ptr<Ship::ResourceInitData> initData) override {
         auto resource = nativeFactory.ReadResource(file, initData);
-        if (resource) UseResidentSampleStorage(static_cast<SoundFontSample*>(resource->GetRawPointer()));
+        if (resource)
+            UseResidentSampleStorage(static_cast<SoundFontSample*>(resource->GetRawPointer()));
         return resource;
     }
+
   private:
     SOH::ResourceFactoryBinaryAudioSampleV2 nativeFactory;
 };
@@ -96,7 +104,7 @@ void StartForeignSequence(int player, int sequence, u8 nativeLabel) {
     gAudioContext.seqReplaced[player] = 1;
     Audio_StartSequence(player, nativeLabel, 0, 0);
 }
-}
+} // namespace
 
 extern "C" void Combo_SOHInitWarpAudio() {
     DropResources();
@@ -104,19 +112,25 @@ extern "C" void Combo_SOHInitWarpAudio() {
         std::string archive;
         for (const auto* name : { "mm.o2r", "mm.otr", "mm.zip" }) {
             auto path = Ship::Context::LocateFileAcrossAppDirs(name, "2ship");
-            if (std::filesystem::exists(path)) { archive = path; break; }
+            if (std::filesystem::exists(path)) {
+                archive = path;
+                break;
+            }
         }
-        if (archive.empty() || fontMapSize + 3 >= 0xFF || sequenceMapSize + 18 > 0xFFFF) return;
+        if (archive.empty() || fontMapSize + 3 >= 0xFF || sequenceMapSize + 18 > 0xFFFF)
+            return;
 
         auto rm = std::make_shared<Ship::ResourceManager>();
         rm->Init({ archive }, {}, 1);
         auto loader = rm->GetResourceLoader();
-        loader->RegisterResourceFactory(std::make_shared<ResidentMmSampleFactory>(),
-            RESOURCE_FORMAT_BINARY, "AudioSample", static_cast<uint32_t>(SOH::ResourceType::SOH_AudioSample), 2);
+        loader->RegisterResourceFactory(std::make_shared<ResidentMmSampleFactory>(), RESOURCE_FORMAT_BINARY,
+                                        "AudioSample", static_cast<uint32_t>(SOH::ResourceType::SOH_AudioSample), 2);
         loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryAudioSequenceV2>(),
-            RESOURCE_FORMAT_BINARY, "AudioSequence", static_cast<uint32_t>(SOH::ResourceType::SOH_AudioSequence), 2);
+                                        RESOURCE_FORMAT_BINARY, "AudioSequence",
+                                        static_cast<uint32_t>(SOH::ResourceType::SOH_AudioSequence), 2);
         loader->RegisterResourceFactory(std::make_shared<SOH::ResourceFactoryBinaryAudioSoundFontV2>(rm),
-            RESOURCE_FORMAT_BINARY, "AudioSoundFont", static_cast<uint32_t>(SOH::ResourceType::SOH_AudioSoundFont), 2);
+                                        RESOURCE_FORMAT_BINARY, "AudioSoundFont",
+                                        static_cast<uint32_t>(SOH::ResourceType::SOH_AudioSoundFont), 2);
 
         std::array<SoundFont*, 3> fonts{};
         std::array<SequenceData*, 3> sequences{};
@@ -124,16 +138,20 @@ extern "C" void Combo_SOHInitWarpAudio() {
         for (size_t i = 0; i < fonts.size(); ++i) {
             paths[i] = "audio/fonts/Soundfont_" + std::to_string(kFonts[i]);
             fonts[i] = static_cast<SoundFont*>(rm->GetResourceRawPointer(paths[i].c_str()));
-            if (!fonts[i] || fonts[i]->fntIndex != kFonts[i]) return;
+            if (!fonts[i] || fonts[i]->fntIndex != kFonts[i])
+                return;
         }
         for (size_t i = 0; i < sequences.size(); ++i) {
             sequences[i] = static_cast<SequenceData*>(rm->GetResourceRawPointer(kSequences[i]));
-            if (!sequences[i] || !sequences[i]->seqData || sequences[i]->numFonts < 0 || sequences[i]->numFonts > 16) return;
+            if (!sequences[i] || !sequences[i]->seqData || sequences[i]->numFonts < 0 || sequences[i]->numFonts > 16)
+                return;
             for (int j = 0; j < sequences[i]->numFonts; ++j) {
                 const int original = sequences[i]->fonts[j];
                 size_t match = 0;
-                while (match < fonts.size() && kFonts[match] != original) ++match;
-                if (match == fonts.size()) return;
+                while (match < fonts.size() && kFonts[match] != original)
+                    ++match;
+                if (match == fonts.size())
+                    return;
                 sequences[i]->fonts[j] = static_cast<u8>(fontMapSize + match);
             }
         }
@@ -147,11 +165,11 @@ extern "C" void Combo_SOHInitWarpAudio() {
             static_cast<char**>(std::calloc(nextSequenceSize + 15, sizeof(char*))), freeMemory);
         std::unique_ptr<char*, decltype(freeMemory)> newFonts(
             static_cast<char**>(std::calloc(nextFontSize, sizeof(char*))), freeMemory);
-        std::unique_ptr<u8, decltype(freeMemory)> sequenceStatus(
-            static_cast<u8*>(std::malloc(nextSequenceSize + 15)), freeMemory);
-        std::unique_ptr<u8, decltype(freeMemory)> fontStatus(
-            static_cast<u8*>(std::malloc(nextFontSize)), freeMemory);
-        if (!newSequences || !newFonts || !sequenceStatus || !fontStatus) throw std::bad_alloc();
+        std::unique_ptr<u8, decltype(freeMemory)> sequenceStatus(static_cast<u8*>(std::malloc(nextSequenceSize + 15)),
+                                                                 freeMemory);
+        std::unique_ptr<u8, decltype(freeMemory)> fontStatus(static_cast<u8*>(std::malloc(nextFontSize)), freeMemory);
+        if (!newSequences || !newFonts || !sequenceStatus || !fontStatus)
+            throw std::bad_alloc();
         std::memcpy(newSequences.get(), sequenceMap, (sequenceMapSize + 15) * sizeof(char*));
         std::memcpy(newFonts.get(), fontMap, fontMapSize * sizeof(char*));
         std::memset(sequenceStatus.get(), 5, nextSequenceSize + 15);
@@ -168,15 +186,25 @@ extern "C" void Combo_SOHInitWarpAudio() {
         }
         sSequenceBase = static_cast<int>(sequenceBase);
         sFontBase = static_cast<int>(fontMapSize);
-        std::free(sequenceMap); sequenceMap = newSequences.release(); sequenceMapSize = nextSequenceSize;
-        std::free(fontMap); fontMap = newFonts.release(); fontMapSize = nextFontSize;
-        std::free(gAudioContext.seqLoadStatus); gAudioContext.seqLoadStatus = sequenceStatus.release();
-        std::free(gAudioContext.fontLoadStatus); gAudioContext.fontLoadStatus = fontStatus.release();
-        sResources = rm; sSequences = sequences; sFonts = fonts;
-        for (size_t i=0;i<sSfxState.size();++i) {
-            auto& state=sSfxState[i];
-            for (auto& byte : state) byte.store(0);
-            StoreMmSfxFloat(i,0,1.0f);StoreMmSfxFloat(i,4,1.0f);
+        std::free(sequenceMap);
+        sequenceMap = newSequences.release();
+        sequenceMapSize = nextSequenceSize;
+        std::free(fontMap);
+        fontMap = newFonts.release();
+        fontMapSize = nextFontSize;
+        std::free(gAudioContext.seqLoadStatus);
+        gAudioContext.seqLoadStatus = sequenceStatus.release();
+        std::free(gAudioContext.fontLoadStatus);
+        gAudioContext.fontLoadStatus = fontStatus.release();
+        sResources = rm;
+        sSequences = sequences;
+        sFonts = fonts;
+        for (size_t i = 0; i < sSfxState.size(); ++i) {
+            auto& state = sSfxState[i];
+            for (auto& byte : state)
+                byte.store(0);
+            StoreMmSfxFloat(i, 0, 1.0f);
+            StoreMmSfxFloat(i, 4, 1.0f);
             state[9].store(0x40);
             state[11].store(0xFF);
             state[12].store(0xFF);
@@ -192,12 +220,14 @@ extern "C" void Combo_SOHInitWarpAudio() {
 }
 
 extern "C" void* Combo_SOHWarpAudioResource(const char* path) {
-    if (!path || std::strncmp(path, kPrefix, std::strlen(kPrefix)) || !sResources) return nullptr;
+    if (!path || std::strncmp(path, kPrefix, std::strlen(kPrefix)) || !sResources)
+        return nullptr;
     return sResources->GetResourceRawPointer(path + std::strlen(kPrefix));
 }
 
 extern "C" void* Combo_SOHWarpAudioCache(int table, int id) {
-    if (sSequenceBase < 0) return nullptr;
+    if (sSequenceBase < 0)
+        return nullptr;
     if (table == SEQUENCE_TABLE && id >= sSequenceBase && id < sSequenceBase + static_cast<int>(sSequences.size()))
         return sSequences[id - sSequenceBase]->seqData;
     if (table == FONT_TABLE && id >= sFontBase && id < sFontBase + 3)
@@ -206,7 +236,8 @@ extern "C" void* Combo_SOHWarpAudioCache(int table, int id) {
 }
 
 extern "C" void Combo_SOHSoaringAudioBegin() {
-    if (sSequenceBase < 0 || sPlaying) return;
+    if (sSequenceBase < 0 || sPlaying)
+        return;
     sPlaying = true;
     sPreviousAudioErrors = gAudioContext.audioErrorFlags;
     SPDLOG_INFO("[ComboShip] Native Soaring audio prior errors {:#x}", sPreviousAudioErrors);
@@ -222,13 +253,15 @@ extern "C" void Combo_SOHSoaringAudioBegin() {
 }
 
 extern "C" void Combo_SOHSoaringSound(int phase) {
-    if (!sPlaying || phase < 0 || phase > 3) return;
+    if (!sPlaying || phase < 0 || phase > 3)
+        return;
     // ovl_En_Test7's four native wing cues; retain the General SFX score rather
     // than replacing their layers, envelopes or timing with unrelated sounds.
     const u16 sfxId = 0x9BB + phase;
     const u32 channel = static_cast<u32>(phase % 3);
     const u32 target = (SEQ_PLAYER_BGM_SUB << 16) | (channel << 8);
-    StoreMmSfxFloat(channel,0,1.0f);StoreMmSfxFloat(channel,4,1.0f);
+    StoreMmSfxFloat(channel, 0, 1.0f);
+    StoreMmSfxFloat(channel, 4, 1.0f);
     sSfxState[channel][10].store(0);
     sSfxState[channel][9].store(0x40);
     Audio_QueueCmdF32(0x01000000 | target, 1.0f);
@@ -241,7 +274,8 @@ extern "C" void Combo_SOHSoaringSound(int phase) {
 }
 
 extern "C" void Combo_SOHSoaringFanfare() {
-    if (sSequenceBase < 0) return;
+    if (sSequenceBase < 0)
+        return;
     // Preserve the native fanfare player, BGM ducking and restoration queue.
     gAudioContext.seqToPlay[SEQ_PLAYER_FANFARE] = sSequenceBase + 2;
     gAudioContext.seqReplaced[SEQ_PLAYER_FANFARE] = 1;
@@ -253,22 +287,26 @@ extern "C" void Combo_SOHSoaringFanfare() {
 }
 
 extern "C" int Combo_SOHIsMmAudioSequence(void* rawPlayer) {
-    auto* player=static_cast<SequencePlayer*>(rawPlayer);if(!player)return 0;
-    for(const auto* sequence:sSequences)
-        if(sequence && reinterpret_cast<u8*>(sequence->seqData)==player->seqData)return 1;
+    auto* player = static_cast<SequencePlayer*>(rawPlayer);
+    if (!player)
+        return 0;
+    for (const auto* sequence : sSequences)
+        if (sequence && reinterpret_cast<u8*>(sequence->seqData) == player->seqData)
+            return 1;
     return 0;
 }
-extern "C" int Combo_SOHMmAudioLayerCommand(void* rawLayer,int command) {
-    auto* layer=static_cast<SequenceLayer*>(rawLayer);
-    if(!layer || !layer->comboMmDialect)return 0;
-    auto* state=&layer->scriptState;
-    if(command==0xF0) {
-        const u16 mask=AudioSeq_ScriptReadS16(state);
-        layer->comboMmFlags.asByte&=(mask^0xFFFF);
+extern "C" int Combo_SOHMmAudioLayerCommand(void* rawLayer, int command) {
+    auto* layer = static_cast<SequenceLayer*>(rawLayer);
+    if (!layer || !layer->comboMmDialect)
+        return 0;
+    auto* state = &layer->scriptState;
+    if (command == 0xF0) {
+        const u16 mask = AudioSeq_ScriptReadS16(state);
+        layer->comboMmFlags.asByte &= (mask ^ 0xFFFF);
         return 1;
     }
-    if(command==0xF1) {
-        layer->comboMmSurroundEffectIndex=AudioSeq_ScriptReadU8(state);
+    if (command == 0xF1) {
+        layer->comboMmSurroundEffectIndex = AudioSeq_ScriptReadU8(state);
         return 1;
     }
     return 0;
@@ -287,7 +325,8 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
             }
         }
     }
-    if (!foreign || !((command >= 0xA0 && command <= 0xA8) || command == 0xBD || command == 0xBE)) return 0;
+    if (!foreign || !((command >= 0xA0 && command <= 0xA8) || command == 0xBD || command == 0xBE))
+        return 0;
     if (!sDialectSeen[command]) {
         sDialectSeen[command] = true;
         SPDLOG_INFO("[ComboShip] MM audio dialect command {:#x}", command);
@@ -298,8 +337,10 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
     // two s16 arguments for random range (moved to A8 in MM).
     auto* state = &channel->scriptState;
     size_t channelIndex = 0;
-    while (channelIndex < 16 && channel->seqPlayer->channels[channelIndex] != channel) ++channelIndex;
-    if (channelIndex == 16) return 0;
+    while (channelIndex < 16 && channel->seqPlayer->channels[channelIndex] != channel)
+        ++channelIndex;
+    if (channelIndex == 16)
+        return 0;
     const bool sfx = sSequences[1] && channel->seqPlayer->seqData == reinterpret_cast<u8*>(sSequences[1]->seqData);
     switch (command) {
         case 0xA0:
@@ -308,8 +349,10 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
         case 0xA3: {
             const u16 index = (command == 0xA0 || command == 0xA2) ? AudioSeq_ScriptReadS16(state) : channel->unk_22;
             if (sfx && index < 16) {
-                if (command == 0xA0 || command == 0xA1) state->value = sSfxState[channelIndex][index].load();
-                else sSfxState[channelIndex][index].store(state->value);
+                if (command == 0xA0 || command == 0xA1)
+                    state->value = sSfxState[channelIndex][index].load();
+                else
+                    sSfxState[channelIndex][index].store(state->value);
             }
             break;
         }
@@ -333,7 +376,8 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
         case 0xA7: {
             const u8 flags = AudioSeq_ScriptReadU8(state);
             s32 value = (flags & 0x80) ? (state->value >> (flags & 0xF)) : (state->value << (flags & 0xF));
-            if (flags & 0x40) value = (value & static_cast<u8>(~0x80)) | (state->value & 0x80);
+            if (flags & 0x40)
+                value = (value & static_cast<u8>(~0x80)) | (state->value & 0x80);
             state->value = value;
             break;
         }
@@ -356,12 +400,12 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
             const u8 function = AudioSeq_ScriptReadU8(state);
             // MM registers AudioSfx_SetFreqAndStereoBits in slot zero.
             if (function == 0) {
-                const u8 selected=static_cast<u8>(state->value);
-                if (selected<sSfxState.size()) {
-                    channel->stereo.asByte=sSfxState[selected][10].load();
-                    channel->freqScale=LoadMmSfxFrequency(selected);
-                    channel->changes.s.freqScale=true;
-                    state->value=selected; // Native AudioSfx_SetFreqAndStereoBits returns its input.
+                const u8 selected = static_cast<u8>(state->value);
+                if (selected < sSfxState.size()) {
+                    channel->stereo.asByte = sSfxState[selected][10].load();
+                    channel->freqScale = LoadMmSfxFrequency(selected);
+                    channel->changes.s.freqScale = true;
+                    state->value = selected; // Native AudioSfx_SetFreqAndStereoBits returns its input.
                 }
             }
             break;
@@ -372,15 +416,18 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
 
 extern "C" void Combo_SOHTraceMmAudioLayer(void* rawLayer, int command, int missingDrum) {
     auto* layer = static_cast<SequenceLayer*>(rawLayer);
-    if (!layer || !layer->channel || !layer->channel->seqPlayer) return;
+    if (!layer || !layer->channel || !layer->channel->seqPlayer)
+        return;
     const auto* player = layer->channel->seqPlayer;
     for (const auto* sequence : sSequences) {
-        if (!sequence || reinterpret_cast<u8*>(sequence->seqData) != player->seqData) continue;
+        if (!sequence || reinterpret_cast<u8*>(sequence->seqData) != player->seqData)
+            continue;
         const auto offset = layer->scriptState.pc - player->seqData;
         if (missingDrum) {
-            SPDLOG_ERROR("[ComboShip] Native MM score missing drum {} font {} pc {} layer instrument {} channel instrument {} transpose {}/{}",
-                         command, layer->channel->fontId, offset, layer->instOrWave,
-                         layer->channel->instOrWave, layer->transposition, layer->channel->transposition);
+            SPDLOG_ERROR("[ComboShip] Native MM score missing drum {} font {} pc {} layer instrument {} channel "
+                         "instrument {} transpose {}/{}",
+                         command, layer->channel->fontId, offset, layer->instOrWave, layer->channel->instOrWave,
+                         layer->transposition, layer->channel->transposition);
         } else if ((command == 0xF0 || command == 0xF1) && !sDialectSeen[command]) {
             sDialectSeen[command] = true;
             SPDLOG_WARN("[ComboShip] Native MM layer dialect command {:#x} pc {}", command, offset);
@@ -390,15 +437,16 @@ extern "C" void Combo_SOHTraceMmAudioLayer(void* rawLayer, int command, int miss
 }
 
 extern "C" void Combo_SOHSoaringAudioEnd() {
-    if (!sPlaying) return;
+    if (!sPlaying)
+        return;
     sPlaying = false;
     SPDLOG_INFO("[ComboShip] Native Soaring audio end (audio errors {:#x}, dialect failures {:#x})",
                 gAudioContext.audioErrorFlags, sDialectFailures.load());
     Audio_SetGameVolume(SEQ_PLAYER_BGM_SUB, CVarGetInteger(CVAR_SETTING("Volume.SubMusic"), 100) / 100.0f);
-    for (const auto& entry : { std::pair{SEQ_PLAYER_BGM_MAIN, sPreviousMain},
-                               std::pair{SEQ_PLAYER_BGM_SUB, sPreviousSub} }) {
-        Audio_QueueSeqCmd((entry.second == NA_BGM_DISABLED ? 0x10000000 : 0) |
-                         (entry.first << 24) | (entry.second == NA_BGM_DISABLED ? 0 : entry.second));
+    for (const auto& entry :
+         { std::pair{ SEQ_PLAYER_BGM_MAIN, sPreviousMain }, std::pair{ SEQ_PLAYER_BGM_SUB, sPreviousSub } }) {
+        Audio_QueueSeqCmd((entry.second == NA_BGM_DISABLED ? 0x10000000 : 0) | (entry.first << 24) |
+                          (entry.second == NA_BGM_DISABLED ? 0 : entry.second));
     }
 }
 #endif

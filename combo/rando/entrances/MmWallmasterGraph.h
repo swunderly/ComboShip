@@ -13,10 +13,10 @@ inline std::optional<MmWallmasterAssumptions>& ActiveMmWallmasterAssumptions() {
     static thread_local std::optional<MmWallmasterAssumptions> state;
     return state;
 }
-inline MmWallmasterAssumptions BuildMmWallmasterAssumptions(const Overrides& overrides,
-                                                           const Pools& remaining) {
+inline MmWallmasterAssumptions BuildMmWallmasterAssumptions(const Overrides& overrides, const Pools& remaining) {
     Settings s;
-    s.games = Games::Mm; s.erWallmasters = Mode::OwnGame;
+    s.games = Games::Mm;
+    s.erWallmasters = Mode::OwnGame;
     MmWallmasterAssumptions result;
     result.enabled = true;
     for (size_t i = 0; i < kMmWallmasterSources.size(); ++i) {
@@ -25,11 +25,13 @@ inline MmWallmasterAssumptions BuildMmWallmasterAssumptions(const Overrides& ove
         const auto fixed = overrides.find(src);
         if (fixed != overrides.end()) {
             const auto* dst = Find(fixed->second);
-            if (!dst || !MmBaseDestination(*dst)) throw std::invalid_argument("Unsupported assumed MM Wallmaster destination");
+            if (!dst || !MmBaseDestination(*dst))
+                throw std::invalid_argument("Unsupported assumed MM Wallmaster destination");
             destinations.insert(static_cast<uint16_t>(dst->id));
         } else {
             for (const auto& pool : remaining) {
-                if (!pool.src.contains(src)) continue;
+                if (!pool.src.contains(src))
+                    continue;
                 if (pool.name != "WALLMASTERS" || !pool.alias || !pool.ownGame)
                     throw std::invalid_argument("Unsupported MM Wallmaster assumption pool");
                 for (const auto name : pool.dst) {
@@ -50,21 +52,26 @@ inline MmWallmasterAssumptions BuildMmWallmasterAssumptions(const Overrides& ove
 }
 class MmWallmasterAssumptionScope {
     std::optional<MmWallmasterAssumptions> previous;
-public:
+
+  public:
     explicit MmWallmasterAssumptionScope(MmWallmasterAssumptions candidate)
         : previous(std::move(ActiveMmWallmasterAssumptions())) {
         ActiveMmWallmasterAssumptions() = std::move(candidate);
     }
-    ~MmWallmasterAssumptionScope() { ActiveMmWallmasterAssumptions() = std::move(previous); }
+    ~MmWallmasterAssumptionScope() {
+        ActiveMmWallmasterAssumptions() = std::move(previous);
+    }
     MmWallmasterAssumptionScope(const MmWallmasterAssumptionScope&) = delete;
     MmWallmasterAssumptionScope& operator=(const MmWallmasterAssumptionScope&) = delete;
 };
 inline std::vector<uint16_t> MmWallmasterGraphDestinations(std::string_view source) {
     const auto i = std::find(kMmWallmasterSources.begin(), kMmWallmasterSources.end(), source);
-    if (i == kMmWallmasterSources.end()) return {};
+    if (i == kMmWallmasterSources.end())
+        return {};
     const auto& assumptions = ActiveMmWallmasterAssumptions();
-    if (assumptions && assumptions->enabled) return assumptions->routes[i - kMmWallmasterSources.begin()];
+    if (assumptions && assumptions->enabled)
+        return assumptions->routes[i - kMmWallmasterSources.begin()];
     const auto dst = ActiveMmWallmasters().destination(source);
-    return dst ? std::vector<uint16_t>{*dst} : std::vector<uint16_t>{};
+    return dst ? std::vector<uint16_t>{ *dst } : std::vector<uint16_t>{};
 }
 } // namespace ComboRando::Entrances

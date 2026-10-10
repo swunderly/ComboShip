@@ -25,7 +25,7 @@ SOFTWARE.
 #ifdef COMBO_BUILD
 #include "z_combo_magic_dark.h"
 #include "assets/objects/gameplay_keep/gameplay_keep.h"
-static const ALIGN_ASSET(2) char sComboDarkTexture[]="__OTR__@oot:overlays/ovl_Magic_Dark/sDiamondTex";
+static const ALIGN_ASSET(2) char sComboDarkTexture[] = "__OTR__@oot:overlays/ovl_Magic_Dark/sDiamondTex";
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
 
@@ -46,8 +46,8 @@ static Gfx sDiamondMaterialDL[22] = {
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_NONE),
     gsSPTexture(0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON),
-    gsDPLoadTextureBlock(gameplay_keep_Tex_028BB8, G_IM_FMT_I, G_IM_SIZ_8b, 32, 32, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR
-                         | G_TX_WRAP, 5, 5, G_TX_NOLOD, 1),
+    gsDPLoadTextureBlock(gameplay_keep_Tex_028BB8, G_IM_FMT_I, G_IM_SIZ_8b, 32, 32, 0, G_TX_NOMIRROR | G_TX_WRAP,
+                         G_TX_NOMIRROR | G_TX_WRAP, 5, 5, G_TX_NOLOD, 1),
     gsDPLoadMultiBlock(sComboDarkTexture, 0x0100, 1, G_IM_FMT_I, G_IM_SIZ_8b, 32, 64, 0, G_TX_NOMIRROR | G_TX_WRAP,
                        G_TX_MIRROR | G_TX_WRAP, 5, 6, 13, 13),
     gsDPSetCombineLERP(TEXEL1, PRIMITIVE, ENV_ALPHA, TEXEL0, TEXEL1, TEXEL0, ENVIRONMENT, TEXEL0, PRIMITIVE,
@@ -69,27 +69,28 @@ static Gfx sDiamondModelDL[8] = {
     gsSPEndDisplayList(),
 };
 
-static f32 ComboMagicDark_GetScale(Player* player)
-{
-    switch (player->transformation)
-    {
-    case PLAYER_FORM_FIERCE_DEITY:
-        return 0.8f;
-    case PLAYER_FORM_GORON:
-        return 0.6f;
-    case PLAYER_FORM_ZORA:
-        return 0.6f;
-    case PLAYER_FORM_DEKU:
-        return 0.4f;
-    case PLAYER_FORM_HUMAN:
-        return (Combo_MMSpellEffectiveHumanAge()==0) ? 0.6f : 0.4f;
+static f32 ComboMagicDark_GetScale(Player* player) {
+    switch (player->transformation) {
+        case PLAYER_FORM_FIERCE_DEITY:
+            return 0.8f;
+        case PLAYER_FORM_GORON:
+            return 0.6f;
+        case PLAYER_FORM_ZORA:
+            return 0.6f;
+        case PLAYER_FORM_DEKU:
+            return 0.4f;
+        case PLAYER_FORM_HUMAN:
+            return (Combo_MMSpellEffectiveHumanAge() == 0) ? 0.6f : 0.4f;
     }
     return 0.0f;
 }
 
 void ComboMagicDark_Init(Actor* thisx, PlayState* play) {
     ComboMagicDark* this = (ComboMagicDark*)thisx;
-    if (!Combo_MMSpellPrepareResources(1)) { Actor_Kill(thisx); return; }
+    if (!Combo_MMSpellPrepareResources(1)) {
+        Actor_Kill(thisx);
+        return;
+    }
     Player* player = GET_PLAYER(play);
 
     this->scale = ComboMagicDark_GetScale(player);
@@ -127,8 +128,10 @@ void ComboMagicDark_DiamondUpdate(Actor* thisx, PlayState* play) {
     /* See `ACTOROVL_ALLOC_ABSOLUTE` */
     /*! @bug This condition is too broad, the actor will also be killed by warp songs. But warp songs do not use an */
     /*! actor which uses `ACTOROVL_ALLOC_ABSOLUTE`. There is no reason to kill the actor in this case. */
-    /*! This happens with all magic effects actors, but is especially visible with Nayru's Love as it lasts longer than */
-    /*! other magic actors, and the Nayru's Love actor is supposed to be spawned back after ocarina effects actors are */
+    /*! This happens with all magic effects actors, but is especially visible with Nayru's Love as it lasts longer than
+     */
+    /*! other magic actors, and the Nayru's Love actor is supposed to be spawned back after ocarina effects actors are
+     */
     /*! done. But with warp songs, whether the player warps away or not, the actor won't be spawned back. */
     /* if ((msgMode == MSGMODE_OCARINA_CORRECT_PLAYBACK) || (msgMode == MSGMODE_SONG_PLAYED)) { */
     /*     Actor_Kill(thisx); */
@@ -254,7 +257,6 @@ void ComboMagicDark_DiamondDraw(Actor* thisx, PlayState* play) {
     u16 gameplayFrames = play->gameplayFrames;
 
     OPEN_DISPS(play->state.gfxCtx);
-    
 
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
 
@@ -265,19 +267,13 @@ void ComboMagicDark_DiamondDraw(Actor* thisx, PlayState* play) {
         this->actor.world.pos.x = player->bodyPartsPos[PLAYER_BODYPART_WAIST].x;
         this->actor.world.pos.z = player->bodyPartsPos[PLAYER_BODYPART_WAIST].z;
         f32 y;
-        if (player->transformation == PLAYER_FORM_GORON)
-        {
-            if (player->stateFlags3 & PLAYER_STATE3_1000)
-            {
+        if (player->transformation == PLAYER_FORM_GORON) {
+            if (player->stateFlags3 & PLAYER_STATE3_1000) {
                 y = player->actor.world.pos.y + Player_GetHeight(player) * 0.5f;
-            }
-            else
-            {
+            } else {
                 y = player->bodyPartsPos[PLAYER_BODYPART_WAIST].y + 10.0f; /* Goron's waist is really low */
             }
-        }
-        else
-        {
+        } else {
             y = player->bodyPartsPos[PLAYER_BODYPART_WAIST].y;
         }
         heightDiff = y - this->actor.world.pos.y;
@@ -289,8 +285,7 @@ void ComboMagicDark_DiamondDraw(Actor* thisx, PlayState* play) {
         Matrix_Translate(this->actor.world.pos.x, this->actor.world.pos.y, this->actor.world.pos.z, MTXMODE_NEW);
         Matrix_Scale(this->actor.scale.x, this->actor.scale.y, this->actor.scale.z, MTXMODE_APPLY);
         Matrix_RotateYF(BINANG_TO_RAD(this->actor.shape.rot.y), MTXMODE_APPLY);
-        gSPMatrix(POLY_XLU_DISP++, Matrix_Finalize(play->state.gfxCtx),
-                  G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_Finalize(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 170, 255, 255, (s32)(this->primAlpha * 0.6f) & 0xFF);
         gDPSetEnvColor(POLY_XLU_DISP++, 0, 100, 255, 128);
         gSPDisplayList(POLY_XLU_DISP++, sDiamondMaterialDL);
@@ -311,11 +306,14 @@ void ComboMagicDark_OrbDraw(Actor* thisx, PlayState* play) {
 
     if (this->timer < 32) {
         pos.x =
-            (player->bodyPartsPos[PLAYER_BODYPART_LEFT_HAND].x + player->bodyPartsPos[PLAYER_BODYPART_RIGHT_HAND].x) * 0.5f;
+            (player->bodyPartsPos[PLAYER_BODYPART_LEFT_HAND].x + player->bodyPartsPos[PLAYER_BODYPART_RIGHT_HAND].x) *
+            0.5f;
         pos.y =
-            (player->bodyPartsPos[PLAYER_BODYPART_LEFT_HAND].y + player->bodyPartsPos[PLAYER_BODYPART_RIGHT_HAND].y) * 0.5f;
+            (player->bodyPartsPos[PLAYER_BODYPART_LEFT_HAND].y + player->bodyPartsPos[PLAYER_BODYPART_RIGHT_HAND].y) *
+            0.5f;
         pos.z =
-            (player->bodyPartsPos[PLAYER_BODYPART_LEFT_HAND].z + player->bodyPartsPos[PLAYER_BODYPART_RIGHT_HAND].z) * 0.5f;
+            (player->bodyPartsPos[PLAYER_BODYPART_LEFT_HAND].z + player->bodyPartsPos[PLAYER_BODYPART_RIGHT_HAND].z) *
+            0.5f;
         if (this->timer > 20) {
             pos.y += (this->timer - 20) * 1.4f;
         }
@@ -341,14 +339,12 @@ void ComboMagicDark_OrbDraw(Actor* thisx, PlayState* play) {
     Matrix_Scale(this->actor.scale.x, this->actor.scale.y, this->actor.scale.z, MTXMODE_APPLY);
     Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
     Matrix_Push();
-    gSPMatrix(POLY_XLU_DISP++, Matrix_Finalize(play->state.gfxCtx),
-              G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_Finalize(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     Matrix_RotateZF(sp6C * (M_PI / 32), MTXMODE_APPLY);
     gSPDisplayList(POLY_XLU_DISP++, gEffFlash1DL);
     Matrix_Pop();
     Matrix_RotateZF(-sp6C * (M_PI / 32), MTXMODE_APPLY);
-    gSPMatrix(POLY_XLU_DISP++, Matrix_Finalize(play->state.gfxCtx),
-              G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_Finalize(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_XLU_DISP++, gEffFlash1DL);
 
     CLOSE_DISPS(play->state.gfxCtx);
@@ -365,7 +361,5 @@ ActorProfile Combo_Magic_Dark_Profile = {
     (ActorFunc)ComboMagicDark_OrbUpdate,
     (ActorFunc)ComboMagicDark_OrbDraw,
 };
-
-
 
 #endif

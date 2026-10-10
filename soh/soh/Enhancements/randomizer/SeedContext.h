@@ -40,9 +40,12 @@ class Context {
     static std::shared_ptr<Context> CreateInstance();
     static std::shared_ptr<Context> GetInstance();
 #ifdef COMBO_BUILD
-    int GetKokiriSeedRevision() const { return mKokiriSeedRevision; }
+    int GetKokiriSeedRevision() const {
+        return mKokiriSeedRevision;
+    }
     bool SetKokiriSeedRevision(int revision) {
-        if (revision != 0 && revision != 1) return false;
+        if (revision != 0 && revision != 1)
+            return false;
         mKokiriSeedRevision = revision;
         return true;
     }
@@ -56,7 +59,8 @@ class Context {
     }
 #ifdef COMBO_BUILD
     bool SetKokiriGrassCatalogRevision(int revision) {
-        if (revision != 0 && revision != 1) return false;
+        if (revision != 0 && revision != 1)
+            return false;
         mKokiriGrassCatalogRevision = revision;
         return true;
     }

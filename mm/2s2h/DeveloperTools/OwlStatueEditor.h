@@ -28,8 +28,7 @@ inline constexpr uint16_t SetActivated(uint16_t flags, unsigned owlId, bool acti
 }
 
 inline constexpr uint16_t SetAllActivated(uint16_t flags, bool activated) {
-    return activated ? static_cast<uint16_t>(flags | kStatueMask)
-                     : static_cast<uint16_t>(flags & ~kStatueMask);
+    return activated ? static_cast<uint16_t>(flags | kStatueMask) : static_cast<uint16_t>(flags & ~kStatueMask);
 }
 
 inline constexpr unsigned ActivatedCount(uint16_t flags) {

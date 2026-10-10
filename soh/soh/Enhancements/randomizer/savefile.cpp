@@ -441,9 +441,9 @@ extern "C" void Randomizer_RepairLegacyMaskInventory() {
         return;
     }
     for (RandomizerInf flag : { RAND_INF_CHILD_TRADES_HAS_MASK_KEATON, RAND_INF_CHILD_TRADES_HAS_MASK_SKULL,
-                               RAND_INF_CHILD_TRADES_HAS_MASK_SPOOKY, RAND_INF_CHILD_TRADES_HAS_MASK_BUNNY,
-                               RAND_INF_CHILD_TRADES_HAS_MASK_GORON, RAND_INF_CHILD_TRADES_HAS_MASK_ZORA,
-                               RAND_INF_CHILD_TRADES_HAS_MASK_GERUDO, RAND_INF_CHILD_TRADES_HAS_MASK_TRUTH }) {
+                                RAND_INF_CHILD_TRADES_HAS_MASK_SPOOKY, RAND_INF_CHILD_TRADES_HAS_MASK_BUNNY,
+                                RAND_INF_CHILD_TRADES_HAS_MASK_GORON, RAND_INF_CHILD_TRADES_HAS_MASK_ZORA,
+                                RAND_INF_CHILD_TRADES_HAS_MASK_GERUDO, RAND_INF_CHILD_TRADES_HAS_MASK_TRUTH }) {
         if (!Flags_GetRandomizerInf(flag)) {
             Flags_SetRandomizerInf(flag);
         }

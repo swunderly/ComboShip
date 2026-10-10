@@ -7,17 +7,17 @@
 using namespace Rando::Logic;
 #ifdef COMBO_BUILD
 // Pinned clock_town.yml169/478: Hover ownership is effective only with bootsHoverMm.
-#define CAN_REACH_SPI_ROOF_WITH_GEAR ComboRando::FaroreOracle::SpiRoof(CAN_BE_DEKU, false, MM_LOGIC_HAS_HOVER_BOOTS, RANDO_EVENTS[RE_SPI_ROOF_FARORE])
+#define CAN_REACH_SPI_ROOF_WITH_GEAR \
+    ComboRando::FaroreOracle::SpiRoof(CAN_BE_DEKU, false, MM_LOGIC_HAS_HOVER_BOOTS, RANDO_EVENTS[RE_SPI_ROOF_FARORE])
 #else
-#define CAN_REACH_SPI_ROOF_WITH_GEAR ComboRando::FaroreOracle::SpiRoof(CAN_BE_DEKU, false, false, RANDO_EVENTS[RE_SPI_ROOF_FARORE])
+#define CAN_REACH_SPI_ROOF_WITH_GEAR \
+    ComboRando::FaroreOracle::SpiRoof(CAN_BE_DEKU, false, false, RANDO_EVENTS[RE_SPI_ROOF_FARORE])
 #endif
-
 
 // Pinned moonCrash=cycle: supported glitchless seeds retain progress on crash.
 static bool GrandmaMoonCrashCycles() {
     return IS_RANDO && RANDO_SAVE_OPTIONS[RO_LOGIC] == RO_LOGIC_GLITCHLESS;
 }
-
 
 static bool ExpandedTradingPostOpen() {
     return Rando::ExpandedTradingPostRoute(

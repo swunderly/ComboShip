@@ -458,7 +458,8 @@ void FileChoose_DrawNameEntry(GameState* thisx) {
                                                    &gSfxDefaultReverb);
                             gSaveContext.fileNum = this->buttonIndex;
                             dayTime = ((void)0, gSaveContext.dayTime);
-                            if (!Sram_InitSave(this)) return;
+                            if (!Sram_InitSave(this))
+                                return;
                             gSaveContext.dayTime = dayTime;
                             this->prevConfigMode = CM_MAIN_MENU;
                             this->configMode = CM_NAME_ENTRY_TO_MAIN;

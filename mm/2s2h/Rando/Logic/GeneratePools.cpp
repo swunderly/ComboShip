@@ -232,13 +232,17 @@ void GeneratePools(RandoSaveInfo& saveInfo, std::vector<RandoCheckId>& checkPool
     itemPool.push_back(RI_SHIELD_HERO);
 
     // Pinned world/transform.ts adds exactly one Adult Mask; the native pool balancer handles junk.
-    if(saveInfo.randoSaveOptions[RO_MM_ADULT_MASK]==RO_GENERIC_YES) itemPool.push_back(RI_MASK_ADULT);
+    if (saveInfo.randoSaveOptions[RO_MM_ADULT_MASK] == RO_GENERIC_YES)
+        itemPool.push_back(RI_MASK_ADULT);
     // Pinned world/transform.ts independent MM equipment: exactly one each; shared replacement is separate.
-    if(saveInfo.randoSaveOptions[RO_MM_BOOTS_IRON]==RO_GENERIC_YES)itemPool.push_back(RI_BOOTS_IRON);
-    if(saveInfo.randoSaveOptions[RO_MM_BOOTS_HOVER]==RO_GENERIC_YES)itemPool.push_back(RI_BOOTS_HOVER);
-    if(saveInfo.randoSaveOptions[RO_MM_TUNIC_GORON]==RO_GENERIC_YES)itemPool.push_back(RI_TUNIC_GORON);
-    if(saveInfo.randoSaveOptions[RO_MM_TUNIC_ZORA]==RO_GENERIC_YES)itemPool.push_back(RI_TUNIC_ZORA);
-
+    if (saveInfo.randoSaveOptions[RO_MM_BOOTS_IRON] == RO_GENERIC_YES)
+        itemPool.push_back(RI_BOOTS_IRON);
+    if (saveInfo.randoSaveOptions[RO_MM_BOOTS_HOVER] == RO_GENERIC_YES)
+        itemPool.push_back(RI_BOOTS_HOVER);
+    if (saveInfo.randoSaveOptions[RO_MM_TUNIC_GORON] == RO_GENERIC_YES)
+        itemPool.push_back(RI_TUNIC_GORON);
+    if (saveInfo.randoSaveOptions[RO_MM_TUNIC_ZORA] == RO_GENERIC_YES)
+        itemPool.push_back(RI_TUNIC_ZORA);
 
     // Add other items that don't have a vanilla location like Sun's Song or Song of Double Time
 
@@ -260,7 +264,7 @@ void GeneratePools(RandoSaveInfo& saveInfo, std::vector<RandoCheckId>& checkPool
     }
 
     AddExpandedSoulPool(saveInfo.randoSaveOptions, itemPool);
-    AddMissingMmSoulPool(saveInfo.randoSaveOptions,itemPool);
+    AddMissingMmSoulPool(saveInfo.randoSaveOptions, itemPool);
 
     // Shuffle Time
     if (saveInfo.randoSaveOptions[RO_CLOCK_SHUFFLE] == RO_GENERIC_YES) {
@@ -364,11 +368,14 @@ void GeneratePools(RandoSaveInfo& saveInfo, std::vector<RandoCheckId>& checkPool
 
     ReplaceKeyRingPool(saveInfo.randoSaveOptions, startingItems, itemPool);
     Ocarinas::ReplaceNativePool(saveInfo.randoSaveOptions[RO_FAIRY_OCARINA_MM] != 0,
-                               saveInfo.randoSaveOptions[RO_SHARED_OCARINA] != 0, startingItems, itemPool);
+                                saveInfo.randoSaveOptions[RO_SHARED_OCARINA] != 0, startingItems, itemPool);
 
-    if (saveInfo.randoSaveOptions[RO_MM_SPELL_WIND]) itemPool.push_back(RI_FARORES_WIND);
-    if (saveInfo.randoSaveOptions[RO_MM_SPELL_FIRE]) itemPool.push_back(RI_DINS_FIRE);
-    if (saveInfo.randoSaveOptions[RO_MM_SPELL_LOVE]) itemPool.push_back(RI_NAYRUS_LOVE);
+    if (saveInfo.randoSaveOptions[RO_MM_SPELL_WIND])
+        itemPool.push_back(RI_FARORES_WIND);
+    if (saveInfo.randoSaveOptions[RO_MM_SPELL_FIRE])
+        itemPool.push_back(RI_DINS_FIRE);
+    if (saveInfo.randoSaveOptions[RO_MM_SPELL_LOVE])
+        itemPool.push_back(RI_NAYRUS_LOVE);
 
     // Remove starting items from the pool (but only one per entry in startingItems)
     for (RandoItemId startingItem : startingItems) {

@@ -233,7 +233,8 @@ static void Sram_StageOpenedSave(void) {
 
 #ifdef COMBO_BUILD
 int Sram_TryOpenSave(int fileNum, int initializeFullContext) {
-    if (!Save_TryLoadFile(fileNum, initializeFullContext)) return 0;
+    if (!Save_TryLoadFile(fileNum, initializeFullContext))
+        return 0;
     Sram_StageOpenedSave();
     return 1;
 }
@@ -250,7 +251,8 @@ void Sram_OpenSave(void) {
 int Sram_InitSave(FileChooseContext* fileChooseCtx) {
 #ifdef COMBO_BUILD
     extern int (*gComboProfilePrepareSave)(int);
-    if (gComboProfilePrepareSave && !gComboProfilePrepareSave(fileChooseCtx->buttonIndex)) return 0;
+    if (gComboProfilePrepareSave && !gComboProfilePrepareSave(fileChooseCtx->buttonIndex))
+        return 0;
 #endif
     u16 offset;
     u16 j;

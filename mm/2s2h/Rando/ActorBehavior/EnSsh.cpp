@@ -17,7 +17,7 @@ void ApplySwampSpiderHouseHint(u16* textId, bool* loadFromMessageTable) {
     CustomMessage::Replace(
         &entry.msg, "{{item}}",
         Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_SWAMP_SPIDER_HOUSE_MASK_OF_TRUTH].randoItemId, true,
-                                       RC_SWAMP_SPIDER_HOUSE_MASK_OF_TRUTH));
+                                               RC_SWAMP_SPIDER_HOUSE_MASK_OF_TRUTH));
 
     CustomMessage::LoadCustomMessageIntoFont(entry);
     *loadFromMessageTable = false;
@@ -28,9 +28,10 @@ void ApplyOceanSpiderHouseHint(u16* textId, bool* loadFromMessageTable) {
         .msg = "Huh? How'd I get up here... Why do I have %g{{item}}%w in my pocket...?\xE0",
     };
 
-    CustomMessage::Replace(&entry.msg, "{{item}}",
-                           Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_OCEAN_SPIDER_HOUSE_WALLET].randoItemId,
-                                                          true, RC_OCEAN_SPIDER_HOUSE_WALLET));
+    CustomMessage::Replace(
+        &entry.msg, "{{item}}",
+        Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_OCEAN_SPIDER_HOUSE_WALLET].randoItemId, true,
+                                               RC_OCEAN_SPIDER_HOUSE_WALLET));
 
     CustomMessage::LoadCustomMessageIntoFont(entry);
     *loadFromMessageTable = false;

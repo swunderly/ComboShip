@@ -11,8 +11,9 @@ void ComboTracker::SyncAppearance() {
         CVarSetInteger("gCombo.Tracker.IconSize", CVarGetInteger("gTrackers.ItemTracker.IconSize", kDefaultIconSize));
         Color_RGBA8 seed = CVarGetColor("gTrackers.ItemTracker.BgColor.Value", { 0, 0, 0, 0 });
         CVarSetFloat("gCombo.Tracker.Opacity", seed.a / 255.0f);
-        CVarSetInteger("gCombo.Tracker.WindowType",
-                       CVarGetInteger("gCombo.Tracker.WindowType", CVarGetInteger("gTrackers.ItemTracker.WindowType", 2)));
+        CVarSetInteger(
+            "gCombo.Tracker.WindowType",
+            CVarGetInteger("gCombo.Tracker.WindowType", CVarGetInteger("gTrackers.ItemTracker.WindowType", 2)));
         CVarSetInteger("gCombo.Tracker.Draggable",
                        CVarGetInteger("gTrackers.ItemTracker.Draggable", kDefaultDraggable));
     }
@@ -61,7 +62,8 @@ void ComboTracker::SyncAppearance() {
     }
     int onlyPaused = CVarGetInteger("gCombo.Tracker.OnlyPaused", kDefaultOnlyPaused) != 0 ? 1 : 0;
     CVarSetInteger("gTrackers.ItemTracker.ShowOnlyPaused", onlyPaused);
-    if (!CVarGetInteger("gCombo.Tracker.ControlsVersion",0)) CVarSetInteger("gSettings.ItemTracker.VisibilityMode", onlyPaused);
+    if (!CVarGetInteger("gCombo.Tracker.ControlsVersion", 0))
+        CVarSetInteger("gSettings.ItemTracker.VisibilityMode", onlyPaused);
 
     // Check Tracker window type (0 = floating overlay, 1 = window): OOT native; MM's tracker has
     // no native window-type CVar — its COMBO_BUILD seam reads the canonical CVar directly.

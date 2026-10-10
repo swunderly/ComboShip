@@ -225,9 +225,13 @@ RandoItemId Rando::CurrentTrapItem(RandoCheckId randoCheckId) {
 
 bool Rando::IsItemObtainable(RandoItemId randoItemId, RandoCheckId randoCheckId) {
     const int missingSoul = MissingMmSoulIndex(randoItemId);
-    if(missingSoul>=0) return (randoCheckId == RC_UNKNOWN || !RANDO_SAVE_CHECKS[randoCheckId].obtained) && !HaveMissingMmSoul(missingSoul);
+    if (missingSoul >= 0)
+        return (randoCheckId == RC_UNKNOWN || !RANDO_SAVE_CHECKS[randoCheckId].obtained) &&
+               !HaveMissingMmSoul(missingSoul);
     const int expandedSoul = ExpandedSoulIndex(randoItemId);
-    if (expandedSoul >= 0) return (randoCheckId == RC_UNKNOWN || !RANDO_SAVE_CHECKS[randoCheckId].obtained) && !HaveExpandedSoul(static_cast<ExpandedSoul>(expandedSoul));
+    if (expandedSoul >= 0)
+        return (randoCheckId == RC_UNKNOWN || !RANDO_SAVE_CHECKS[randoCheckId].obtained) &&
+               !HaveExpandedSoul(static_cast<ExpandedSoul>(expandedSoul));
     bool hasObtainedCheck = false;
     if (randoCheckId != RC_UNKNOWN) {
         hasObtainedCheck = RANDO_SAVE_CHECKS[randoCheckId].obtained;
@@ -239,23 +243,34 @@ bool Rando::IsItemObtainable(RandoItemId randoItemId, RandoCheckId randoCheckId)
     // existing obtainability rules below.
     if (hasObtainedCheck) {
         switch (randoItemId) {
-            case RI_SHIELD_HERO: case RI_MAGIC_BEAN:
-            case RI_BOTTLE_RED_POTION: case RI_BOTTLE_MILK:
-            case RI_BOTTLE_CHATEAU_ROMANI: case RI_BOTTLE_GOLD_DUST:
-            case RI_MOONS_TEAR: case RI_DEED_LAND: case RI_DEED_SWAMP:
-            case RI_DEED_MOUNTAIN: case RI_DEED_OCEAN: case RI_ROOM_KEY:
-            case RI_LETTER_TO_MAMA: case RI_LETTER_TO_KAFEI: case RI_PENDANT_OF_MEMORIES:
+            case RI_SHIELD_HERO:
+            case RI_MAGIC_BEAN:
+            case RI_BOTTLE_RED_POTION:
+            case RI_BOTTLE_MILK:
+            case RI_BOTTLE_CHATEAU_ROMANI:
+            case RI_BOTTLE_GOLD_DUST:
+            case RI_MOONS_TEAR:
+            case RI_DEED_LAND:
+            case RI_DEED_SWAMP:
+            case RI_DEED_MOUNTAIN:
+            case RI_DEED_OCEAN:
+            case RI_ROOM_KEY:
+            case RI_LETTER_TO_MAMA:
+            case RI_LETTER_TO_KAFEI:
+            case RI_PENDANT_OF_MEMORIES:
                 break;
             default:
                 if (Rando::StaticData::Items[randoItemId].randoItemType != RITYPE_JUNK ||
-                    randoItemId == RI_COMBO_FOREIGN) return false;
+                    randoItemId == RI_COMBO_FOREIGN)
+                    return false;
                 break;
         }
     }
 #endif
 
     if (const auto* ring = FindKeyRing(randoItemId)) {
-        return !hasObtainedCheck && gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys[ring->dungeon] < ring->maximum;
+        return !hasObtainedCheck &&
+               gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys[ring->dungeon] < ring->maximum;
     }
     u8 vanillaCantObtain = false;
     if (Rando::StaticData::Items[randoItemId].itemId != ITEM_NONE &&
@@ -736,9 +751,10 @@ bool Rando::IsItemObtainable(RandoItemId randoItemId, RandoCheckId randoCheckId)
 
 RandoItemId Rando::ConvertItem(RandoItemId randoItemId, RandoCheckId randoCheckId) {
     if (randoItemId == RI_PROGRESSIVE_OCARINA) {
-        if (randoCheckId != RC_UNKNOWN && RANDO_SAVE_CHECKS[randoCheckId].obtained) return RI_JUNK;
+        if (randoCheckId != RC_UNKNOWN && RANDO_SAVE_CHECKS[randoCheckId].obtained)
+            return RI_JUNK;
         const auto tier = Ocarinas::NextTier(gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits,
-                                            INV_CONTENT(ITEM_OCARINA_OF_TIME));
+                                             INV_CONTENT(ITEM_OCARINA_OF_TIME));
         return tier == 1 ? RI_OCARINA_FAIRY : tier == 2 ? RI_OCARINA : RI_JUNK;
     }
     if (IsItemObtainable(randoItemId, randoCheckId)) {

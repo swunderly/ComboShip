@@ -5,13 +5,13 @@
 #ifndef COMBO_PAUSE_STATE_DEFS_H
 #define COMBO_PAUSE_STATE_DEFS_H
 
-#define PAUSE_STATE_OWLWARP_0       0x101
-#define PAUSE_STATE_OWLWARP_1       0x102
-#define PAUSE_STATE_OWLWARP_2       0x103
-#define PAUSE_STATE_OWLWARP_3       0x104
-#define PAUSE_STATE_OWLWARP_SELECT  0x106
+#define PAUSE_STATE_OWLWARP_0 0x101
+#define PAUSE_STATE_OWLWARP_1 0x102
+#define PAUSE_STATE_OWLWARP_2 0x103
+#define PAUSE_STATE_OWLWARP_3 0x104
+#define PAUSE_STATE_OWLWARP_SELECT 0x106
 #define PAUSE_STATE_OWLWARP_CONFIRM 0x107
-#define PAUSE_STATE_OWLWARP_6       0x112
+#define PAUSE_STATE_OWLWARP_6 0x112
 
 #define PAUSE_ITEM_NONE 999
 
@@ -34,10 +34,9 @@
 #define WORLD_MAP_IMAGE_FRAG_NUM (((WORLD_MAP_IMAGE_HEIGHT - 1) / WORLD_MAP_IMAGE_FRAG_HEIGHT) + 1)
 #define WORLD_MAP_NUM_CLOUDS 15
 
-#define VTX_PAGE_MAP_WORLD_QUADS 36  /* VTX_PAGE_MAP_WORLD */
+#define VTX_PAGE_MAP_WORLD_QUADS 36 /* VTX_PAGE_MAP_WORLD */
 
 #endif
-
 
 #define PAUSE_WORLD_MAP 4
 #define VTX_PAGE_MAX 1
@@ -58,7 +57,7 @@ static float sMapVerticalOffset;
 static int sMapReply;
 static s16 sSavedUpdateRate;
 static u16 sSavedHud;
-static s16 R_PAUSE_OWLWARP_ALPHA=120;
+static s16 R_PAUSE_OWLWARP_ALPHA = 120;
 extern uint32_t SOH_ForeignSongChoices(void);
 extern void SOH_ForeignSongChoose(int);
 extern void Combo_SOHMapConfirm(int source);
@@ -219,19 +218,19 @@ static s16 gVtxPageMapWorldQuadsHeight[VTX_PAGE_MAP_WORLD_QUADS] = {
 };
 
 static s16* sVtxPageQuadsX[VTX_PAGE_MAX] = {
-    sVtxPageMapWorldQuadsX,   /* VTX_PAGE_MAP_WORLD */
+    sVtxPageMapWorldQuadsX, /* VTX_PAGE_MAP_WORLD */
 };
 
 static s16* sVtxPageQuadsWidth[VTX_PAGE_MAX] = {
-    gVtxPageMapWorldQuadsWidth,   /* VTX_PAGE_MAP_WORLD */
+    gVtxPageMapWorldQuadsWidth, /* VTX_PAGE_MAP_WORLD */
 };
 
 static s16* sVtxPageQuadsY[VTX_PAGE_MAX] = {
-    sVtxPageMapWorldQuadsY,   /* VTX_PAGE_MAP_WORLD */
+    sVtxPageMapWorldQuadsY, /* VTX_PAGE_MAP_WORLD */
 };
 
 static s16* sVtxPageQuadsHeight[VTX_PAGE_MAX] = {
-    gVtxPageMapWorldQuadsHeight,   /* VTX_PAGE_MAP_WORLD */
+    gVtxPageMapWorldQuadsHeight, /* VTX_PAGE_MAP_WORLD */
 };
 
 static const char* sCloudTextures[] = {
@@ -326,8 +325,6 @@ static void KaleidoScope_DrawWorldMap(PlayState* play) {
     PauseContext* pauseCtx = &play->pauseCtx;
 
     void* mapImage = Combo_SOHWarpResource(gWorldMapImageTex);
-    
-    
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -357,10 +354,10 @@ static void KaleidoScope_DrawWorldMap(PlayState* play) {
     /* Process the first 72 rows of pixels for gWorldMapImageTex, 9 rows at a time over 8 iterations */
     /* Loop over quadIndex of this loop (i), quadIndex of the entire texture (k), vtxIndex (j) */
     for (i = 0, k = 0, j = 0; i < 8; i++, k++, j += 4) {
-        gDPLoadTextureBlock(
-            POLY_OPA_DISP++, (u8*)mapImage + k * (WORLD_MAP_IMAGE_WIDTH * WORLD_MAP_IMAGE_FRAG_HEIGHT),
-            G_IM_FMT_CI, G_IM_SIZ_8b, WORLD_MAP_IMAGE_WIDTH, WORLD_MAP_IMAGE_FRAG_HEIGHT, 0,
-            G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
+        gDPLoadTextureBlock(POLY_OPA_DISP++, (u8*)mapImage + k * (WORLD_MAP_IMAGE_WIDTH * WORLD_MAP_IMAGE_FRAG_HEIGHT),
+                            G_IM_FMT_CI, G_IM_SIZ_8b, WORLD_MAP_IMAGE_WIDTH, WORLD_MAP_IMAGE_FRAG_HEIGHT, 0,
+                            G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD,
+                            G_TX_NOLOD);
 
         gSP1Quadrangle(POLY_OPA_DISP++, j, j + 2, j + 3, j + 1, 0);
     }
@@ -372,19 +369,19 @@ static void KaleidoScope_DrawWorldMap(PlayState* play) {
     /* Process the next 54 rows of pixels for gWorldMapImageTex, 9 rows at a time over 6 iterations */
     /* Loop over quadIndex of this loop (i), quadIndex of the entire texture (k), vtxIndex (j) */
     for (i = 0, j = 0; i < 6; i++, k++, j += 4) {
-        gDPLoadTextureBlock(
-            POLY_OPA_DISP++, (u8*)mapImage + k * (WORLD_MAP_IMAGE_WIDTH * WORLD_MAP_IMAGE_FRAG_HEIGHT),
-            G_IM_FMT_CI, G_IM_SIZ_8b, WORLD_MAP_IMAGE_WIDTH, WORLD_MAP_IMAGE_FRAG_HEIGHT, 0,
-            G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
+        gDPLoadTextureBlock(POLY_OPA_DISP++, (u8*)mapImage + k * (WORLD_MAP_IMAGE_WIDTH * WORLD_MAP_IMAGE_FRAG_HEIGHT),
+                            G_IM_FMT_CI, G_IM_SIZ_8b, WORLD_MAP_IMAGE_WIDTH, WORLD_MAP_IMAGE_FRAG_HEIGHT, 0,
+                            G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD,
+                            G_TX_NOLOD);
 
         gSP1Quadrangle(POLY_OPA_DISP++, j, j + 2, j + 3, j + 1, 0);
     }
 
     /* Process the last 2 rows of pixels for gWorldMapImageTex */
-    gDPLoadTextureBlock(
-        POLY_OPA_DISP++, (u8*)mapImage + k * (WORLD_MAP_IMAGE_WIDTH * WORLD_MAP_IMAGE_FRAG_HEIGHT),
-        G_IM_FMT_CI, G_IM_SIZ_8b, WORLD_MAP_IMAGE_WIDTH, WORLD_MAP_IMAGE_HEIGHT % WORLD_MAP_IMAGE_FRAG_HEIGHT, 0,
-        G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
+    gDPLoadTextureBlock(POLY_OPA_DISP++, (u8*)mapImage + k * (WORLD_MAP_IMAGE_WIDTH * WORLD_MAP_IMAGE_FRAG_HEIGHT),
+                        G_IM_FMT_CI, G_IM_SIZ_8b, WORLD_MAP_IMAGE_WIDTH,
+                        WORLD_MAP_IMAGE_HEIGHT % WORLD_MAP_IMAGE_FRAG_HEIGHT, 0, G_TX_NOMIRROR | G_TX_WRAP,
+                        G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
 
     gSP1Quadrangle(POLY_OPA_DISP++, j, j + 2, j + 3, j + 1, 0);
 
@@ -407,9 +404,10 @@ static void KaleidoScope_DrawWorldMap(PlayState* play) {
 
             gSPVertex(POLY_OPA_DISP++, &pauseCtx->mapPageVtx[(QUAD_MAP_PAGE_WORLD_CLOUDS_FIRST + n) * 4], 4, 0);
 
-            gDPLoadTextureBlock(POLY_OPA_DISP++, sCloudTextures[n], G_IM_FMT_IA, G_IM_SIZ_8b, gVtxPageMapWorldQuadsWidth[n], gVtxPageMapWorldQuadsHeight[n], 0,
-                                G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD,
-                                G_TX_NOLOD);
+            gDPLoadTextureBlock(POLY_OPA_DISP++, sCloudTextures[n], G_IM_FMT_IA, G_IM_SIZ_8b,
+                                gVtxPageMapWorldQuadsWidth[n], gVtxPageMapWorldQuadsHeight[n], 0,
+                                G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK,
+                                G_TX_NOLOD, G_TX_NOLOD);
 
             gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
         }
@@ -445,8 +443,7 @@ static void KaleidoScope_DrawWorldMap(PlayState* play) {
     CLOSE_DISPS(play->state.gfxCtx);
 }
 
-static void KaleidoScope_DrawOwlWarpInfoPanel(PlayState* play)
-{
+static void KaleidoScope_DrawOwlWarpInfoPanel(PlayState* play) {
     static s16 sPauseLRCursorColorTargets[][4] = {
         { 180, 210, 255, 220 },
         { 100, 100, 150, 220 },
@@ -468,14 +465,13 @@ static void KaleidoScope_DrawOwlWarpInfoPanel(PlayState* play)
 
     OPEN_DISPS(play->state.gfxCtx);
 
-    stepR =
-        ABS(sPauseLRCursorRed - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][0]) / sPauseLRCursorColorTimer;
-    stepG = ABS(sPauseLRCursorGreen - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][1]) /
-            sPauseLRCursorColorTimer;
-    stepB = ABS(sPauseLRCursorBlue - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][2]) /
-            sPauseLRCursorColorTimer;
-    stepA = ABS(sPauseLRCursorAlpha - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][3]) /
-            sPauseLRCursorColorTimer;
+    stepR = ABS(sPauseLRCursorRed - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][0]) / sPauseLRCursorColorTimer;
+    stepG =
+        ABS(sPauseLRCursorGreen - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][1]) / sPauseLRCursorColorTimer;
+    stepB =
+        ABS(sPauseLRCursorBlue - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][2]) / sPauseLRCursorColorTimer;
+    stepA =
+        ABS(sPauseLRCursorAlpha - sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][3]) / sPauseLRCursorColorTimer;
 
     if (sPauseLRCursorRed >= sPauseLRCursorColorTargets[sPauseLRCursorColorIndex][0]) {
         sPauseLRCursorRed -= stepR;
@@ -644,8 +640,9 @@ static void KaleidoScope_DrawOwlWarpInfoPanel(PlayState* play)
             gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 255, 255, 255, 255);
         }
 
-        gDPLoadTextureBlock_4b(POLY_OPA_DISP++, pauseCtx->nameSegment, G_IM_FMT_IA, 128, 16, 0, G_TX_NOMIRROR | G_TX_WRAP,
-                            G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
+        gDPLoadTextureBlock_4b(POLY_OPA_DISP++, pauseCtx->nameSegment, G_IM_FMT_IA, 128, 16, 0,
+                               G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK,
+                               G_TX_NOLOD, G_TX_NOLOD);
 
         gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
     }
@@ -662,16 +659,12 @@ static void KaleidoScope_DrawCursor(PlayState* play) {
     static s16 sCursorColorTimer = 10;
     static s16 sCursorColorTargetIndex = 0;
 
-
-    stepR =
-        ABS(sCursorPrimR - sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) /
-        sCursorColorTimer;
-    stepG =
-        ABS(sCursorPrimG - sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1]) /
-        sCursorColorTimer;
-    stepB =
-        ABS(sCursorPrimB - sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2]) /
-        sCursorColorTimer;
+    stepR = ABS(sCursorPrimR - sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) /
+            sCursorColorTimer;
+    stepG = ABS(sCursorPrimG - sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1]) /
+            sCursorColorTimer;
+    stepB = ABS(sCursorPrimB - sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2]) /
+            sCursorColorTimer;
 
     if (sCursorPrimR >= sCursorPrimColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) {
         sCursorPrimR -= stepR;
@@ -691,15 +684,12 @@ static void KaleidoScope_DrawCursor(PlayState* play) {
         sCursorPrimB += stepB;
     }
 
-    stepR =
-        ABS(sCursorEnvR - sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) /
-        sCursorColorTimer;
-    stepG =
-        ABS(sCursorEnvG - sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1]) /
-        sCursorColorTimer;
-    stepB =
-        ABS(sCursorEnvB - sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2]) /
-        sCursorColorTimer;
+    stepR = ABS(sCursorEnvR - sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) /
+            sCursorColorTimer;
+    stepG = ABS(sCursorEnvG - sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][1]) /
+            sCursorColorTimer;
+    stepB = ABS(sCursorEnvB - sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][2]) /
+            sCursorColorTimer;
 
     if (sCursorEnvR >= sCursorEnvColorTarget[pauseCtx->cursorColorSet + sCursorColorTargetIndex][0]) {
         sCursorEnvR -= stepR;
@@ -733,8 +723,7 @@ static void KaleidoScope_DrawCursor(PlayState* play) {
 
     OPEN_DISPS(play->state.gfxCtx);
 
-    if ((pauseCtx->unk_1E4 == PAUSE_MAIN_STATE_IDLE) ||
-        (pauseCtx->unk_1E4 == PAUSE_MAIN_STATE_IDLE_CURSOR_ON_SONG)) {
+    if ((pauseCtx->unk_1E4 == PAUSE_MAIN_STATE_IDLE) || (pauseCtx->unk_1E4 == PAUSE_MAIN_STATE_IDLE_CURSOR_ON_SONG)) {
         gDPPipeSync(POLY_OPA_DISP++);
         gDPSetCombineLERP(POLY_OPA_DISP++, PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0,
                           PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0);
@@ -764,8 +753,7 @@ static void KaleidoScope_DrawCursor(PlayState* play) {
     CLOSE_DISPS(play->state.gfxCtx);
 }
 
-static void KaleidoScope_UpdateCursorSize(PlayState* play)
-{
+static void KaleidoScope_UpdateCursorSize(PlayState* play) {
     PauseContext* pauseCtx = &play->pauseCtx;
 
     pauseCtx->cursorVtx[0].v.ob[0] = pauseCtx->cursorVtx[2].v.ob[0] = -8;
@@ -901,8 +889,7 @@ static s16 KaleidoScope_SetPageVertices(PlayState* play, Vtx* vtx, s16 vtxPage, 
     return k;
 }
 
-static void KaleidoScope_SetVertices(PlayState* play, GraphicsContext* gfxCtx)
-{
+static void KaleidoScope_SetVertices(PlayState* play, GraphicsContext* gfxCtx) {
     PauseContext* pauseCtx = &play->pauseCtx;
     s16 i;
     s16 j;
@@ -914,8 +901,8 @@ static void KaleidoScope_SetVertices(PlayState* play, GraphicsContext* gfxCtx)
         pauseCtx->offsetY = 80;
     }
 
-    pauseCtx->mapPageVtx = Graph_Alloc(
-        gfxCtx, ((PAGE_BG_QUADS + VTX_PAGE_MAP_WORLD_QUADS + WORLD_MAP_IMAGE_FRAG_NUM) * 4) * sizeof(Vtx));
+    pauseCtx->mapPageVtx =
+        Graph_Alloc(gfxCtx, ((PAGE_BG_QUADS + VTX_PAGE_MAP_WORLD_QUADS + WORLD_MAP_IMAGE_FRAG_NUM) * 4) * sizeof(Vtx));
     j = KaleidoScope_SetPageVertices(play, pauseCtx->mapPageVtx, VTX_PAGE_MAP_WORLD, VTX_PAGE_MAP_WORLD_QUADS);
 
     for (i = 0, vtx_y = 59; i < WORLD_MAP_IMAGE_FRAG_NUM; i++, j += 4, vtx_y -= WORLD_MAP_IMAGE_FRAG_HEIGHT) {
@@ -933,14 +920,13 @@ static void KaleidoScope_SetVertices(PlayState* play, GraphicsContext* gfxCtx)
         pauseCtx->mapPageVtx[j + 0].v.ob[2] = pauseCtx->mapPageVtx[j + 1].v.ob[2] =
             pauseCtx->mapPageVtx[j + 2].v.ob[2] = pauseCtx->mapPageVtx[j + 3].v.ob[2] = 0;
 
-        pauseCtx->mapPageVtx[j + 0].v.flag = pauseCtx->mapPageVtx[j + 1].v.flag =
-            pauseCtx->mapPageVtx[j + 2].v.flag = pauseCtx->mapPageVtx[j + 3].v.flag = 0;
+        pauseCtx->mapPageVtx[j + 0].v.flag = pauseCtx->mapPageVtx[j + 1].v.flag = pauseCtx->mapPageVtx[j + 2].v.flag =
+            pauseCtx->mapPageVtx[j + 3].v.flag = 0;
 
         pauseCtx->mapPageVtx[j + 0].v.tc[0] = pauseCtx->mapPageVtx[j + 0].v.tc[1] =
             pauseCtx->mapPageVtx[j + 1].v.tc[1] = pauseCtx->mapPageVtx[j + 2].v.tc[0] = 0;
 
-        pauseCtx->mapPageVtx[j + 1].v.tc[0] = pauseCtx->mapPageVtx[j + 3].v.tc[0] =
-            WORLD_MAP_IMAGE_WIDTH * (1 << 5);
+        pauseCtx->mapPageVtx[j + 1].v.tc[0] = pauseCtx->mapPageVtx[j + 3].v.tc[0] = WORLD_MAP_IMAGE_WIDTH * (1 << 5);
         pauseCtx->mapPageVtx[j + 2].v.tc[1] = pauseCtx->mapPageVtx[j + 3].v.tc[1] =
             WORLD_MAP_IMAGE_FRAG_HEIGHT * (1 << 5);
 
@@ -994,76 +980,105 @@ static void KaleidoScope_SetVertices(PlayState* play, GraphicsContext* gfxCtx)
     pauseCtx->infoPanelVtx = Graph_Alloc(gfxCtx, 28 * sizeof(Vtx));
 }
 
-
-static const char* sOwlNames[]={gMapPointGreatBayCoastENGTex,gMapPointZoraCapeENGTex,
-    gMapPointSnowheadENGTex,gMapPointMountainVillageENGTex,gMapPointClockTownENGTex,gMapPointMilkRoadENGTex,
-    gMapPointWoodfallENGTex,gMapPointSouthernSwampENGTex,gMapPointIkanaCanyonENGTex,gMapPointStoneTowerENGTex};
+static const char* sOwlNames[] = { gMapPointGreatBayCoastENGTex, gMapPointZoraCapeENGTex,
+                                   gMapPointSnowheadENGTex,      gMapPointMountainVillageENGTex,
+                                   gMapPointClockTownENGTex,     gMapPointMilkRoadENGTex,
+                                   gMapPointWoodfallENGTex,      gMapPointSouthernSwampENGTex,
+                                   gMapPointIkanaCanyonENGTex,   gMapPointStoneTowerENGTex };
 static void SetSelection(PlayState* play, int owl) {
-    PauseContext* pauseCtx=&play->pauseCtx;
-    pauseCtx->cursorPoint[PAUSE_WORLD_MAP]=owl;
-    pauseCtx->namedItem=owl; pauseCtx->nameDisplayTimer=0;
-    pauseCtx->nameSegment=(void*)sOwlNames[owl];
-    sCursorShrinkRate=4;
+    PauseContext* pauseCtx = &play->pauseCtx;
+    pauseCtx->cursorPoint[PAUSE_WORLD_MAP] = owl;
+    pauseCtx->namedItem = owl;
+    pauseCtx->nameDisplayTimer = 0;
+    pauseCtx->nameSegment = (void*)sOwlNames[owl];
+    sCursorShrinkRate = 4;
 }
-int Combo_SOHSoaringMapActive(void) { return sMapPlay!=NULL; }
+int Combo_SOHSoaringMapActive(void) {
+    return sMapPlay != NULL;
+}
 int Combo_SOHSoaringMapBegin(PlayState* play, uint32_t choices) {
-    if(sMapPlay || !(choices&0xffc0) || !Combo_SOHPrepareWarpAssets()) return 0;
+    if (sMapPlay || !(choices & 0xffc0) || !Combo_SOHPrepareWarpAssets())
+        return 0;
     // MM waits for Oceff_Wipe6 to finish before pausing the world. Otherwise
     // the actor stops updating and its last screen wipe stays behind the map.
-    for(Actor* actor=play->actorCtx.actorLists[ACTORCAT_ITEMACTION].head; actor; actor=actor->next) {
-        if(actor->id==ACTOR_COMBO_OWL_WARP && actor->params==0x100 && actor->update) return 1;
+    for (Actor* actor = play->actorCtx.actorLists[ACTORCAT_ITEMACTION].head; actor; actor = actor->next) {
+        if (actor->id == ACTOR_COMBO_OWL_WARP && actor->params == 0x100 && actor->update)
+            return 1;
     }
-    sSavedPause=play->pauseCtx; sMapPlay=play; sChoices=choices;
-    sSavedUpdateRate=R_UPDATE_RATE; R_UPDATE_RATE=2;
-    play->pauseCtx.state=PAUSE_STATE_OWLWARP_3;
-    play->pauseCtx.eye=(Vec3f){-64,0,0};
-    play->pauseCtx.alpha=0; play->pauseCtx.infoPanelOffsetY=-80;
-    play->pauseCtx.cursorSpecialPos=0; play->pauseCtx.unk_1E4=0;
-    play->pauseCtx.cursorColorSet=4; play->pauseCtx.nameColorSet=0;
-    for(int owl=0;owl<10;owl++) play->pauseCtx.worldMapPoints[owl]=(choices>>(owl+6))&1;
-    for(int owl=0;owl<10;owl++) if(choices&(1u<<(owl+6))) { SetSelection(play,owl); break; }
-    sStick=0; sRepeat=0; sMapPageRoll=320; sMapVerticalOffset=-6240;
-    sMapReply=-1; R_PAUSE_OWLWARP_ALPHA=0;
-    sSavedHud=gSaveContext.hudVisibilityMode;
+    sSavedPause = play->pauseCtx;
+    sMapPlay = play;
+    sChoices = choices;
+    sSavedUpdateRate = R_UPDATE_RATE;
+    R_UPDATE_RATE = 2;
+    play->pauseCtx.state = PAUSE_STATE_OWLWARP_3;
+    play->pauseCtx.eye = (Vec3f){ -64, 0, 0 };
+    play->pauseCtx.alpha = 0;
+    play->pauseCtx.infoPanelOffsetY = -80;
+    play->pauseCtx.cursorSpecialPos = 0;
+    play->pauseCtx.unk_1E4 = 0;
+    play->pauseCtx.cursorColorSet = 4;
+    play->pauseCtx.nameColorSet = 0;
+    for (int owl = 0; owl < 10; owl++)
+        play->pauseCtx.worldMapPoints[owl] = (choices >> (owl + 6)) & 1;
+    for (int owl = 0; owl < 10; owl++)
+        if (choices & (1u << (owl + 6))) {
+            SetSelection(play, owl);
+            break;
+        }
+    sStick = 0;
+    sRepeat = 0;
+    sMapPageRoll = 320;
+    sMapVerticalOffset = -6240;
+    sMapReply = -1;
+    R_PAUSE_OWLWARP_ALPHA = 0;
+    sSavedHud = gSaveContext.hudVisibilityMode;
     Message_CloseTextbox(play);
     Interface_SetDoAction(play, DO_ACTION_DECIDE);
     Interface_LoadActionLabelB(play, DO_ACTION_STOP);
     return 1;
 }
 void Combo_SOHSoaringMapClose(PlayState* play) {
-    if(sMapPlay!=play) return;
-    play->pauseCtx=sSavedPause; sMapPlay=NULL; R_UPDATE_RATE=sSavedUpdateRate;
+    if (sMapPlay != play)
+        return;
+    play->pauseCtx = sSavedPause;
+    sMapPlay = NULL;
+    R_UPDATE_RATE = sSavedUpdateRate;
     Interface_SetDoAction(play, DO_ACTION_NONE);
     Interface_ChangeHudVisibilityMode(sSavedHud);
 }
 void Combo_SOHSoaringMapFinish(PlayState* play, int reply) {
-    if(sMapPlay!=play || play->pauseCtx.state==PAUSE_STATE_OWLWARP_6) return;
-    sMapReply=reply; sMapVerticalOffset=-6240;
-    play->pauseCtx.state=PAUSE_STATE_OWLWARP_6;
+    if (sMapPlay != play || play->pauseCtx.state == PAUSE_STATE_OWLWARP_6)
+        return;
+    sMapReply = reply;
+    sMapVerticalOffset = -6240;
+    play->pauseCtx.state = PAUSE_STATE_OWLWARP_6;
     Message_CloseTextbox(play);
 }
 int Combo_SOHSoaringMapUpdate(PlayState* play) {
-    if(sMapPlay!=play) return 0;
-    if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_3 || play->pauseCtx.state==PAUSE_STATE_OWLWARP_6) {
+    if (sMapPlay != play)
+        return 0;
+    if (play->pauseCtx.state == PAUSE_STATE_OWLWARP_3 || play->pauseCtx.state == PAUSE_STATE_OWLWARP_6) {
         // Native MM page counters, once per 30 Hz pause tick.
         {
-            if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_3) {
-                sMapPageRoll-=40;
-                play->pauseCtx.alpha=MIN(play->pauseCtx.alpha+31,255);
-                play->pauseCtx.infoPanelOffsetY+=10;
-                R_PAUSE_OWLWARP_ALPHA=MIN(R_PAUSE_OWLWARP_ALPHA+20,120);
-                if(sMapPageRoll<=0) {
-                    sMapPageRoll=0; sMapVerticalOffset=0;
-                    play->pauseCtx.alpha=255; play->pauseCtx.infoPanelOffsetY=0;
-                    play->pauseCtx.state=PAUSE_STATE_OWLWARP_SELECT;
+            if (play->pauseCtx.state == PAUSE_STATE_OWLWARP_3) {
+                sMapPageRoll -= 40;
+                play->pauseCtx.alpha = MIN(play->pauseCtx.alpha + 31, 255);
+                play->pauseCtx.infoPanelOffsetY += 10;
+                R_PAUSE_OWLWARP_ALPHA = MIN(R_PAUSE_OWLWARP_ALPHA + 20, 120);
+                if (sMapPageRoll <= 0) {
+                    sMapPageRoll = 0;
+                    sMapVerticalOffset = 0;
+                    play->pauseCtx.alpha = 255;
+                    play->pauseCtx.infoPanelOffsetY = 0;
+                    play->pauseCtx.state = PAUSE_STATE_OWLWARP_SELECT;
                 }
             } else {
-                sMapPageRoll+=40;
-                play->pauseCtx.alpha=MAX(play->pauseCtx.alpha-63,0);
-                play->pauseCtx.infoPanelOffsetY-=10;
-                R_PAUSE_OWLWARP_ALPHA=MAX(R_PAUSE_OWLWARP_ALPHA-60,0);
-                if(sMapPageRoll>=160) {
-                    int reply=sMapReply;
+                sMapPageRoll += 40;
+                play->pauseCtx.alpha = MAX(play->pauseCtx.alpha - 63, 0);
+                play->pauseCtx.infoPanelOffsetY -= 10;
+                R_PAUSE_OWLWARP_ALPHA = MAX(R_PAUSE_OWLWARP_ALPHA - 60, 0);
+                if (sMapPageRoll >= 160) {
+                    int reply = sMapReply;
                     Combo_SOHSoaringMapClose(play);
                     SOH_ForeignSongChoose(reply);
                 }
@@ -1071,57 +1086,78 @@ int Combo_SOHSoaringMapUpdate(PlayState* play) {
         }
         return 1;
     }
-    if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_CONFIRM) { Message_Update(play); return 1; }
-    Input* input=&play->state.input[0];
-    if(input->press.button&(BTN_B|BTN_START)) { SOH_ForeignSongChoose(-1); return 1; }
-    if(input->press.button&BTN_A) {
-        input->press.button &= ~BTN_A;
-        Audio_PlaySoundGeneral(NA_SE_SY_DECIDE,&gSfxDefaultPos,4,&gSfxDefaultFreqAndVolScale,
-            &gSfxDefaultFreqAndVolScale,&gSfxDefaultReverb);
-        Combo_SOHMapConfirm(play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP]+6);
-        play->pauseCtx.state=PAUSE_STATE_OWLWARP_CONFIRM;
+    if (play->pauseCtx.state == PAUSE_STATE_OWLWARP_CONFIRM) {
+        Message_Update(play);
         return 1;
     }
-    int stick=input->cur.stick_x>30 ? 1 : input->cur.stick_x< -30 ? -1 : 0;
-    int direction=(input->press.button&BTN_DRIGHT) ? 1 : (input->press.button&BTN_DLEFT) ? -1 : 0;
-    if(stick) { if(stick!=sStick || --sRepeat<=0) {direction=stick; sRepeat=stick!=sStick ? 10 : 3;} }
-    sStick=stick;
-    if(direction) {
-        int current=play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP];
-        for(int step=1;step<=10;step++) {
-            int owl=(current+direction*step+10)%10;
-            if(sChoices&(1u<<(owl+6))) { SetSelection(play,owl); break; }
+    Input* input = &play->state.input[0];
+    if (input->press.button & (BTN_B | BTN_START)) {
+        SOH_ForeignSongChoose(-1);
+        return 1;
+    }
+    if (input->press.button & BTN_A) {
+        input->press.button &= ~BTN_A;
+        Audio_PlaySoundGeneral(NA_SE_SY_DECIDE, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
+                               &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
+        Combo_SOHMapConfirm(play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP] + 6);
+        play->pauseCtx.state = PAUSE_STATE_OWLWARP_CONFIRM;
+        return 1;
+    }
+    int stick = input->cur.stick_x > 30 ? 1 : input->cur.stick_x < -30 ? -1 : 0;
+    int direction = (input->press.button & BTN_DRIGHT) ? 1 : (input->press.button & BTN_DLEFT) ? -1 : 0;
+    if (stick) {
+        if (stick != sStick || --sRepeat <= 0) {
+            direction = stick;
+            sRepeat = stick != sStick ? 10 : 3;
         }
-        Audio_PlaySoundGeneral(NA_SE_SY_CURSOR,&gSfxDefaultPos,4,&gSfxDefaultFreqAndVolScale,
-            &gSfxDefaultFreqAndVolScale,&gSfxDefaultReverb);
+    }
+    sStick = stick;
+    if (direction) {
+        int current = play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP];
+        for (int step = 1; step <= 10; step++) {
+            int owl = (current + direction * step + 10) % 10;
+            if (sChoices & (1u << (owl + 6))) {
+                SetSelection(play, owl);
+                break;
+            }
+        }
+        Audio_PlaySoundGeneral(NA_SE_SY_CURSOR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
+                               &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
     }
     return 1;
 }
 int Combo_SOHSoaringMapDraw(PlayState* play) {
-    if(sMapPlay!=play) return 0;
+    if (sMapPlay != play)
+        return 0;
     OPEN_DISPS(play->state.gfxCtx);
     gSPComboRMPush(POLY_OPA_DISP++, "mm-warp");
-    KaleidoScope_SetView(&play->pauseCtx,-64,0,0);
-    KaleidoScope_SetVertices(play,play->state.gfxCtx);
+    KaleidoScope_SetView(&play->pauseCtx, -64, 0, 0);
+    KaleidoScope_SetVertices(play, play->state.gfxCtx);
     Gfx_SetupDL_42Opa(play->state.gfxCtx);
-    gDPSetCombineLERP(POLY_OPA_DISP++,TEXEL0,0,PRIMITIVE,0,TEXEL0,0,SHADE,0,TEXEL0,0,PRIMITIVE,0,TEXEL0,0,SHADE,0);
-    gDPSetPrimColor(POLY_OPA_DISP++,0,0,180,180,120,255);
-    Matrix_RotateY(-1.57f,MTXMODE_NEW);
-    Matrix_Translate(0,sMapVerticalOffset/100,-93,MTXMODE_APPLY);
-    Matrix_Scale(.78f,.78f,.78f,MTXMODE_APPLY);
-    Matrix_RotateX(-sMapPageRoll/100,MTXMODE_APPLY);
-    gSPMatrix(POLY_OPA_DISP++,MATRIX_NEWMTX(play->state.gfxCtx),G_MTX_NOPUSH|G_MTX_LOAD|G_MTX_MODELVIEW);
-    POLY_OPA_DISP=KaleidoScope_DrawPageSections(POLY_OPA_DISP,play->pauseCtx.mapPageVtx,sMapPageBgTextures);
-    Matrix_RotateY(-1.57f,MTXMODE_NEW);
-    Matrix_Translate(0,(play->pauseCtx.state==PAUSE_STATE_OWLWARP_3 ||
-        play->pauseCtx.state==PAUSE_STATE_OWLWARP_6) ? -80.9f : -.9f,-144,MTXMODE_APPLY);
-    Matrix_RotateX(-sMapPageRoll/100,MTXMODE_APPLY);
-    gSPMatrix(POLY_OPA_DISP++,MATRIX_NEWMTX(play->state.gfxCtx),G_MTX_NOPUSH|G_MTX_LOAD|G_MTX_MODELVIEW);
+    gDPSetCombineLERP(POLY_OPA_DISP++, TEXEL0, 0, PRIMITIVE, 0, TEXEL0, 0, SHADE, 0, TEXEL0, 0, PRIMITIVE, 0, TEXEL0, 0,
+                      SHADE, 0);
+    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 180, 180, 120, 255);
+    Matrix_RotateY(-1.57f, MTXMODE_NEW);
+    Matrix_Translate(0, sMapVerticalOffset / 100, -93, MTXMODE_APPLY);
+    Matrix_Scale(.78f, .78f, .78f, MTXMODE_APPLY);
+    Matrix_RotateX(-sMapPageRoll / 100, MTXMODE_APPLY);
+    gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    POLY_OPA_DISP = KaleidoScope_DrawPageSections(POLY_OPA_DISP, play->pauseCtx.mapPageVtx, sMapPageBgTextures);
+    Matrix_RotateY(-1.57f, MTXMODE_NEW);
+    Matrix_Translate(0,
+                     (play->pauseCtx.state == PAUSE_STATE_OWLWARP_3 || play->pauseCtx.state == PAUSE_STATE_OWLWARP_6)
+                         ? -80.9f
+                         : -.9f,
+                     -144, MTXMODE_APPLY);
+    Matrix_RotateX(-sMapPageRoll / 100, MTXMODE_APPLY);
+    gSPMatrix(POLY_OPA_DISP++, MATRIX_NEWMTX(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     KaleidoScope_DrawWorldMap(play);
     Gfx_SetupDL_42Opa(play->state.gfxCtx);
-    KaleidoScope_SetView(&play->pauseCtx,0,0,64);
-    KaleidoScope_DrawOwlWarpInfoPanel(play); KaleidoScope_UpdateCursorSize(play);
-    if(play->pauseCtx.state==PAUSE_STATE_OWLWARP_SELECT) KaleidoScope_DrawCursor(play);
+    KaleidoScope_SetView(&play->pauseCtx, 0, 0, 64);
+    KaleidoScope_DrawOwlWarpInfoPanel(play);
+    KaleidoScope_UpdateCursorSize(play);
+    if (play->pauseCtx.state == PAUSE_STATE_OWLWARP_SELECT)
+        KaleidoScope_DrawCursor(play);
     gSPComboRMPop(POLY_OPA_DISP++);
     CLOSE_DISPS(play->state.gfxCtx);
     return 1;

@@ -7,11 +7,13 @@ namespace Detail {
 // Search navigation carries a one-shot focus without changing any settings.
 class TrickCatalogueFocus {
   public:
-    void Set(const char* name) { pending = name ? name : ""; }
-    template <size_t N>
-    bool Apply(char (&query)[N], int& world, int& status, int& skill) {
+    void Set(const char* name) {
+        pending = name ? name : "";
+    }
+    template <size_t N> bool Apply(char (&query)[N], int& world, int& status, int& skill) {
         static_assert(N > 0);
-        if (pending.empty()) return false;
+        if (pending.empty())
+            return false;
         const auto length = std::min(pending.size(), N - 1);
         std::copy_n(pending.data(), length, query);
         query[length] = '\0';
@@ -19,10 +21,11 @@ class TrickCatalogueFocus {
         pending.clear();
         return true;
     }
+
   private:
     std::string pending;
 };
-}
+} // namespace Detail
 void FocusUnifiedTrick(const char* name);
 void DrawUnifiedTricks();
-}
+} // namespace ComboRando

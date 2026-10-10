@@ -18,306 +18,1167 @@
 #include <set>
 #include <vector>
 namespace ComboRando::ProfileUI {
-using Json=nlohmann::json;
+using Json = nlohmann::json;
 static ComboRandomizerProfileCallbacks callbacks{};
-static int selected=0,view=0; static bool active=false,dirty=false;
-static std::string error; static Json snapshot,document,catalog;
+static int selected = 0, view = 0;
+static bool active = false, dirty = false;
+static std::string error;
+static Json snapshot, document, catalog;
 // Inspection serializes the complete native catalog and both seed placement tables.
 // Keep it out of ordinary render frames; edits and generation still refresh the view.
-static bool refreshPending=true,snapshotValid=false;
-static int snapshotSlot=-1,snapshotView=-1,lastMenuFrame=-2;
-static double lastInspection=-1;
-static uint64_t snapshotRevision=0;
-static std::shared_ptr<ProfileOotPolicy::View> optionView;static std::set<std::string> mmBaseAvailable;
+static bool refreshPending = true, snapshotValid = false;
+static int snapshotSlot = -1, snapshotView = -1, lastMenuFrame = -2;
+static double lastInspection = -1;
+static uint64_t snapshotRevision = 0;
+static std::shared_ptr<ProfileOotPolicy::View> optionView;
+static std::set<std::string> mmBaseAvailable;
 static void RefreshOptionPolicy(bool apply);
-bool Ready(){return (callbacks.version==1||callbacks.version==2)&&callbacks.inspect&&callbacks.setDraft&&callbacks.copySaved&&callbacks.copyDraft&&callbacks.generate&&callbacks.cancel;}
-const Json& Catalogue(){return catalog;}
-int SelectedSlot(){return selected;} bool Active(){return active;} bool Editable(){return active&&document.is_object()&&view==0;}
-static bool Response(const char* raw){auto reply=Json::parse(raw?raw:"null");error=reply.value("error",std::string());return error.empty();}
-static Json* Field(const char* key,bool create){
- if(!document.is_object())return nullptr;
- for(const auto& rule:kGameplayRules){
-  if(LogicRuleKey(rule.name)==key){auto& values=document["gameplayRules"]["logicValues"];if(create&&!values.is_object())values=Json::object();return create||values.contains(rule.name)?&values[rule.name]:nullptr;}
-  if(!std::strcmp(key,rule.name)){auto& values=document["gameplayRules"]["values"];if(create&&!values.is_object())values=Json::object();return create||values.contains(key)?&values[key]:nullptr;}
- }
- const bool oot=std::strncmp(key,"gRandoSettings.",15)==0,mm=std::strncmp(key,"gRando.",7)==0||std::strncmp(key,"gCombo.Tricks.MM.",17)==0;
- auto& values=oot?document["oot"]["settings"]:mm?document["mm"]["settings"]:document["setupCVars"];
- if(create&&!values.is_object())values=Json::object();return create||values.contains(key)?&values[key]:nullptr;
+bool Ready() {
+    return (callbacks.version == 1 || callbacks.version == 2) && callbacks.inspect && callbacks.setDraft &&
+           callbacks.copySaved && callbacks.copyDraft && callbacks.generate && callbacks.cancel;
 }
-int ReadInteger(const char* key,int fallback){const auto* value=Field(key,false);return value&&value->is_number_integer()?value->get<int>():fallback;}
-static void RefreshPoolViews(){
- mmBaseAvailable.clear();const auto mm=catalog.value("mm",Json::object());const auto conditions=mm.value("checkRequirements",Json::object());const auto* exclusions=Field("gRando.ExcludedChecks",false);
- for(const auto& check:conditions.items()){const auto& row=check.value();if(row.contains("enabledKey")&&!ReadInteger(row["enabledKey"].get<std::string>().c_str(),0))continue;if(row.contains("countKey")&&ReadInteger(row["countKey"].get<std::string>().c_str(),30)<=0)continue;
-  if(ReadInteger("gRando.Options.RO_LOGIC",0)!=3&&row.value("junk",false)&&exclusions&&exclusions->is_array()&&std::find(exclusions->begin(),exclusions->end(),Json(check.key()))!=exclusions->end())continue;
-  mmBaseAvailable.insert(row.at("vanillaItem").get<std::string>());
- }
+const Json& Catalogue() {
+    return catalog;
 }
-void WriteInteger(const char* key,int value){if(Editable()){
- *Field(key,true)=value;dirty=true;
- if(!std::strcmp(key,"gRando.Options.RO_LOGIC")&&value==3)for(const auto& clear:catalog.at("mm").at("vanillaIncompatible"))*Field(clear.get<std::string>().c_str(),true)=0;
- if(!std::strcmp(key,"gRando.Options.RO_STRAY_FAIRIES_MAX")){const char* required="gRando.Options.RO_STRAY_FAIRIES_REQUIRED";if(ReadInteger(required,15)>value)*Field(required,true)=value;}
- if(ReadInteger("gRandoSettings.LogicRules",0)!=ProfileOotPolicy::RO_LOGIC_NO_LOGIC&&ReadInteger("gRandoSettings.ShopsanityCount",0)>7)*Field("gRandoSettings.ShopsanityCount",true)=7;
- RefreshOptionPolicy(true);RefreshPoolViews();
-}}
-static void RefreshOptionPolicy(bool apply){
- optionView=std::make_shared<ProfileOotPolicy::View>(catalog.at("oot"),ReadInteger);
- if(apply&&Editable())for(const auto& value:optionView->Adjustments())*Field(value.first.c_str(),true)=value.second;
+int SelectedSlot() {
+    return selected;
 }
-static std::string ReadString(const char* key){const auto* value=Field(key,false);return value&&value->is_string()?value->get<std::string>():"";}
-static void RefreshSnapshot(double now,uint64_t revision){
- refreshPending=false;snapshotValid=false;snapshotSlot=selected;snapshotView=view;lastInspection=now;
- auto next=Json::parse(callbacks.inspect(selected));
- if(next.contains("error"))throw std::runtime_error(next["error"].get<std::string>());
- snapshot=std::move(next);catalog=snapshot.at("catalog");
- document=snapshot.value(view==0?"draft":view==1?"savedSettings":"generatedSettings",Json());
- RefreshOptionPolicy(false);RefreshPoolViews();snapshotRevision=revision;snapshotValid=true;
+bool Active() {
+    return active;
 }
-void BeginFrame(){
- active=false;dirty=false;
- try{
-  if(!Ready())return;
-  const int frame=ImGui::GetFrameCount();const double now=ImGui::GetTime();
-  const bool versioned=callbacks.version>=2&&callbacks.revision;
-  const uint64_t revision=versioned?callbacks.revision():0;
-  const bool running=snapshot.is_object()&&snapshot.value("generation",Json::object()).value("running",false);
-  const bool refresh=refreshPending||!snapshotValid||(!versioned&&frame>lastMenuFrame+1)||
-      (versioned&&revision!=snapshotRevision)||selected!=snapshotSlot||view!=snapshotView||
-      (running&&now-lastInspection>=.25);
-  lastMenuFrame=frame;
-  if(refresh)RefreshSnapshot(now,revision);
-  active=snapshotValid;
- }catch(const std::exception& e){error=e.what();}
+bool Editable() {
+    return active && document.is_object() && view == 0;
 }
-void EndFrame(){if(dirty&&Editable()){refreshPending=true;try{Response(callbacks.setDraft(selected,document.dump().c_str()));}catch(const std::exception& e){error=e.what();}}active=false;}
-bool DrawUnavailableSettings(){
- if(active&&document.is_object())return false;
- if(!active){ImGui::TextWrapped("Settings are unavailable. Reopen the menu to try again.");return true;}
- ImGui::TextWrapped(view==1?"File %d has no saved seed settings.":view==2?"File %d has no generated seed settings.":"File %d has no next-seed settings.",selected+1);
- if(view!=0&&ImGui::Button("Configure next seed")){view=0;BeginFrame();}
- return true;
+static bool Response(const char* raw) {
+    auto reply = Json::parse(raw ? raw : "null");
+    error = reply.value("error", std::string());
+    return error.empty();
 }
-void DrawSelector(){
- static const char* files[]={"File 1","File 2","File 3"};
- ImGui::SetNextItemWidth(ImGui::GetFontSize()*5);if(ImGui::Combo("##Settings file",&selected,files,3))BeginFrame();
- MenuTooltip("Choose the file whose saved rules you inspect or whose next seed you configure. This does not change gameplay.");
- const char* modes[]={"Next seed","Saved seed","Generated seed"};
- const char* tips[]={"Editable settings for this file's next seed.","Read-only settings of the run saved in this file.","Read-only settings of the last seed generated for this file."};
- for(int i=0;i<3;++i){if(ImGui::GetItemRectMax().x+ImGui::CalcTextSize(modes[i]).x+44.f<ImGui::GetWindowPos().x+ImGui::GetContentRegionMax().x)ImGui::SameLine();if(ComboMenu_StyledHeaderEntry(modes[i],view==i)){view=i;BeginFrame();}MenuTooltip(tips[i]);}
- if(ImGui::GetItemRectMax().x+ImGui::CalcTextSize("Copy settings").x+44.f<ImGui::GetWindowPos().x+ImGui::GetContentRegionMax().x)ImGui::SameLine();
- ImGui::BeginDisabled(!active||view==2||!document.is_object());if(ImGui::Button("Copy settings"))ImGui::OpenPopup("Copy settings");ImGui::EndDisabled();
- MenuTooltip(view==2?"Select Next seed or Saved seed to copy settings.":"Copy these settings to a file's next-seed setup. This does not copy or replace saved progress.");
- if(ImGui::BeginPopup("Copy settings")){
-  for(int destination=0;destination<3;++destination){const std::string label="To File "+std::to_string(destination+1)+" next seed";
-   ImGui::BeginDisabled(view==2||document.is_null());if(ImGui::Selectable(label.c_str())){refreshPending=true;try{Response(view==0?callbacks.copyDraft(selected,destination):callbacks.copySaved(selected,destination));}catch(const std::exception& e){error=e.what();}}ImGui::EndDisabled();}
-  ImGui::EndPopup();
- }
- if(!error.empty())ImGui::TextWrapped("%s",error.c_str());
+static Json* Field(const char* key, bool create) {
+    if (!document.is_object())
+        return nullptr;
+    for (const auto& rule : kGameplayRules) {
+        if (LogicRuleKey(rule.name) == key) {
+            auto& values = document["gameplayRules"]["logicValues"];
+            if (create && !values.is_object())
+                values = Json::object();
+            return create || values.contains(rule.name) ? &values[rule.name] : nullptr;
+        }
+        if (!std::strcmp(key, rule.name)) {
+            auto& values = document["gameplayRules"]["values"];
+            if (create && !values.is_object())
+                values = Json::object();
+            return create || values.contains(key) ? &values[key] : nullptr;
+        }
+    }
+    const bool oot = std::strncmp(key, "gRandoSettings.", 15) == 0,
+               mm = std::strncmp(key, "gRando.", 7) == 0 || std::strncmp(key, "gCombo.Tricks.MM.", 17) == 0;
+    auto& values = oot ? document["oot"]["settings"] : mm ? document["mm"]["settings"] : document["setupCVars"];
+    if (create && !values.is_object())
+        values = Json::object();
+    return create || values.contains(key) ? &values[key] : nullptr;
 }
-static void Tooltip(const char* help){if(help&&help[0])MenuTooltip(help);}
-void DrawWidget(const CwWidget& w,const GameMenu& game){
- if(!active||!document.is_object()){ImGui::TextDisabled("No settings for this file and view.");return;}
- // A selection refreshes optionView; retain the current choices until this widget finishes drawing.
- const auto policyView=optionView;
- const auto* policy=policyView&&w.cvar?policyView->Find(w.cvar):nullptr;
- if(policy&&policy->hidden)return;
- (void)game;ImGui::PushID(w.index);const char* label=w.name?w.name:"";const char* key=w.cvar?w.cvar:"";const auto theme=ComboMenu_ThemeColor();
- std::string caption=label;
- if(const auto suffix=caption.find("##");suffix!=std::string::npos)caption.resize(suffix);
- ImGui::BeginDisabled(!Editable()||(policy&&policy->disabled));
- switch(w.kind){
- case CW_SEPARATOR:ImGui::Separator();break;
- case CW_SEPARATOR_TEXT:ImGui::SeparatorText(caption.c_str());break;
- case CW_TEXT:ImGui::TextWrapped("%s",caption.c_str());break;
- case CW_CHECKBOX:{bool value=ReadInteger(key,w.bDefault)!=0;ComboMenu_PushCheckbox(theme);if(ImGui::Checkbox(label,&value))WriteInteger(key,value);ComboMenu_PopCheckbox();break;}
- case CW_SLIDER_INT:{int value=ReadInteger(key,w.iDefault);ComboMenu_PushSlider(theme);ImGui::TextWrapped("%s",caption.c_str());ImGui::SetNextItemWidth(-FLT_MIN);if(ImGui::SliderInt("##Value",&value,w.iMin,policy?(!std::strcmp(key,"gRandoSettings.ShopsanityCount")&&ReadInteger("gRandoSettings.LogicRules",0)!=ProfileOotPolicy::RO_LOGIC_NO_LOGIC?std::min(7,int(policy->choices.size())-1):int(policy->choices.size())-1):w.iMax,policy&&!policy->choices.empty()?policy->choices[std::clamp(value,0,int(policy->choices.size())-1)].c_str():"%d",ImGuiSliderFlags_NoInput))WriteInteger(key,value);ComboMenu_PopSlider();break;}
- case CW_COMBOBOX:{int value=ReadInteger(key,w.iDefault);std::vector<CwChoice> choices;for(int i=0;policy&&i<int(policy->choices.size());++i)choices.push_back({policy->choices[i].c_str(),i});const CwChoice* list=policy?choices.data():w.choices;const int count=policy?int(choices.size()):w.choiceCount;const char* preview="Unknown saved value";for(int i=0;i<count;++i)if(list[i].value==value)preview=list[i].label;ImGui::TextWrapped("%s",caption.c_str());ComboMenu_PushCombobox(theme);ImGui::SetNextItemWidth(-FLT_MIN);if(ImGui::BeginCombo("##Choice",preview)){for(int i=0;i<count;++i)if(ImGui::Selectable(list[i].label,list[i].value==value))WriteInteger(key,list[i].value);ImGui::EndCombo();}ComboMenu_PopCombobox();break;}
- case CW_INPUT_TEXT:{std::string value=ReadString(key);if(ImGui::InputText(label,&value)&&Editable()){*Field(key,true)=value;dirty=true;}break;}
- case CW_CUSTOM:break;
- default:ImGui::TextDisabled("%s",caption.c_str());break;
- }
- ImGui::EndDisabled();Tooltip(policy&&policy->disabled?policy->disabledText.c_str():w.tooltip);
- if(view!=0&&!std::strcmp(key,"gRandoSettings.GanonTrial")){
-  const auto seed=snapshot.value(view==1?"savedSeed":"generatedSeed",Json());
-  if(seed.is_object()&&seed.contains("oot")&&seed["oot"].contains("resolvedSeedRules")){
-   const auto& trials=seed["oot"]["resolvedSeedRules"]["requiredTrials"];std::string text;for(const auto& id:trials){if(!text.empty())text+=", ";text+=catalog.at("oot").at("trialNames").value(std::to_string(id.get<int>()),std::string("Unknown trial"));}ImGui::TextWrapped("Required trials: %s",text.empty()?"None":text.c_str());
-  }
- }
- ImGui::PopID();
+int ReadInteger(const char* key, int fallback) {
+    const auto* value = Field(key, false);
+    return value && value->is_number_integer() ? value->get<int>() : fallback;
 }
-void DrawSidebar(const CwSidebar& side,const GameMenu& game,int world){
- const unsigned desired=std::min<unsigned>(2,side.columnCount?side.columnCount:1);const unsigned columns=ImGui::GetContentRegionAvail().x<ImGui::GetFontSize()*20*desired?1:desired;
- bool pouchesDrawn=false;
- const auto isPouch=[](const CwWidget& w){constexpr char prefix[]="gRandoSettings.SilverPouch";return w.cvar&&std::strncmp(w.cvar,prefix,sizeof(prefix)-1)==0;};
- auto draw=[&](const CwWidget& widget){
-  if(world==0&&isPouch(widget)){
-   if(pouchesDrawn)return;pouchesDrawn=true;
-   ImGui::BeginDisabled(!ReadInteger("gRandoSettings.SilverRupeeShuffle",0));
-   if(ImGui::CollapsingHeader("Silver rupee pouches"))for(int i=0;i<side.widgetCount;++i){const auto& pouch=side.widgets[i];if(isPouch(pouch))DrawWidget(pouch,game);}
-   ImGui::EndDisabled();return;
-  }
-  if(widget.kind==CW_CUSTOM)DrawCustom(widget.name,world);else DrawWidget(widget,game);
- };
- if(columns==1){for(int i=0;i<side.widgetCount;++i)draw(side.widgets[i]);return;}
- if(!ImGui::BeginTable("##NativeOptions",columns,ImGuiTableFlags_SizingStretchSame|ImGuiTableFlags_NoSavedSettings))return;
- ImGui::TableNextRow();for(unsigned column=0;column<columns;++column){ImGui::TableSetColumnIndex(column);ImGui::PushID(int(column));ImGui::BeginGroup();for(int i=0;i<side.widgetCount;++i)if(unsigned(std::clamp(side.widgets[i].column,0,int(columns)-1))==column)draw(side.widgets[i]);ImGui::EndGroup();ImGui::PopID();}ImGui::EndTable();
+static void RefreshPoolViews() {
+    mmBaseAvailable.clear();
+    const auto mm = catalog.value("mm", Json::object());
+    const auto conditions = mm.value("checkRequirements", Json::object());
+    const auto* exclusions = Field("gRando.ExcludedChecks", false);
+    for (const auto& check : conditions.items()) {
+        const auto& row = check.value();
+        if (row.contains("enabledKey") && !ReadInteger(row["enabledKey"].get<std::string>().c_str(), 0))
+            continue;
+        if (row.contains("countKey") && ReadInteger(row["countKey"].get<std::string>().c_str(), 30) <= 0)
+            continue;
+        if (ReadInteger("gRando.Options.RO_LOGIC", 0) != 3 && row.value("junk", false) && exclusions &&
+            exclusions->is_array() &&
+            std::find(exclusions->begin(), exclusions->end(), Json(check.key())) != exclusions->end())
+            continue;
+        mmBaseAvailable.insert(row.at("vanillaItem").get<std::string>());
+    }
 }
-static void CatalogRow(const Json& row){
- const auto key=row.at("key").get<std::string>(),label=row.at("label").get<std::string>(),kind=row.at("kind").get<std::string>();
- CwWidget widget{};widget.name=label.c_str();widget.cvar=key.c_str();widget.index=0;
- std::string help=row.value("tooltip",std::string());widget.tooltip=help.c_str();std::vector<CwChoice> choices;std::vector<std::string> labels;
- if(kind=="checkbox")widget.kind=CW_CHECKBOX;
- else if(kind=="slider"){widget.kind=CW_SLIDER_INT;widget.iMin=row.at("minimum");widget.iMax=row.at("maximum");if(row.contains("maximumKey"))widget.iMax=ReadInteger(row["maximumKey"].get<std::string>().c_str(),widget.iMax);}
- else{widget.kind=CW_COMBOBOX;for(const auto& c:row.at("choices"))labels.push_back(c.at("label"));int i=0;for(const auto& c:row.at("choices"))choices.push_back({labels[i++].c_str(),c.at("value")});widget.choices=choices.data();widget.choiceCount=int(choices.size());}
- bool visible=true,disabled=false;
- const auto get=[](const char* suffix,int fallback=0){const std::string key=std::string("gRando.Options.")+suffix;return ReadInteger(key.c_str(),fallback);};
- if(key=="gRando.Options.RO_SKULLTULA_TOKENS_REQUIRED"||key=="gRando.Options.RO_SKULLTULA_SHUFFLED")visible=get("RO_SHUFFLE_GOLD_SKULLTULAS")!=0;
- if(key=="gRando.Options.RO_CLOCK_SHUFFLE_PROGRESSIVE")visible=get("RO_CLOCK_SHUFFLE")!=0;
- if(key=="gRando.Options.RO_STRAY_FAIRIES_REQUIRED"||key=="gRando.Options.RO_STRAY_FAIRIES_MAX")visible=get("RO_PLACEMENT_STRAY_FAIRIES")!=2;
- if(key=="gRando.Options.RO_TRAP_AMOUNT")visible=get("RO_SHUFFLE_TRAPS")!=0;
- if(key=="gRando.Options.RO_SHUFFLE_SKELETON_KEY")disabled=get("RO_PLACEMENT_SMALL_KEYS")==2;
- if(get("RO_LOGIC")==3)for(const auto& value:catalog.at("mm").at("disabledInVanilla"))disabled|=value==key;
- if(!visible)return;
- ImGui::PushID(key.c_str());ImGui::BeginDisabled(disabled);DrawWidget(widget,ComboMenuModel::Get().Mm());ImGui::EndDisabled();ImGui::PopID();
+void WriteInteger(const char* key, int value) {
+    if (Editable()) {
+        *Field(key, true) = value;
+        dirty = true;
+        if (!std::strcmp(key, "gRando.Options.RO_LOGIC") && value == 3)
+            for (const auto& clear : catalog.at("mm").at("vanillaIncompatible"))
+                *Field(clear.get<std::string>().c_str(), true) = 0;
+        if (!std::strcmp(key, "gRando.Options.RO_STRAY_FAIRIES_MAX")) {
+            const char* required = "gRando.Options.RO_STRAY_FAIRIES_REQUIRED";
+            if (ReadInteger(required, 15) > value)
+                *Field(required, true) = value;
+        }
+        if (ReadInteger("gRandoSettings.LogicRules", 0) != ProfileOotPolicy::RO_LOGIC_NO_LOGIC &&
+            ReadInteger("gRandoSettings.ShopsanityCount", 0) > 7)
+            *Field("gRandoSettings.ShopsanityCount", true) = 7;
+        RefreshOptionPolicy(true);
+        RefreshPoolViews();
+    }
 }
-static void CheckList(int world){
- const char* game=world==0?"oot":"mm";const char* key=world==0?"gRandoSettings.ExcludedLocations":"gRando.ExcludedChecks";static ImGuiTextFilter query;static int group=0;query.Draw("Search checks");
- std::vector<std::string> selectedValues;if(world==0){std::istringstream text(ReadString(key));std::string item;while(std::getline(text,item,','))if(!item.empty())selectedValues.push_back(item);}else if(auto* value=Field(key,false);value&&value->is_array())selectedValues=value->get<std::vector<std::string>>();
- const auto& data=catalog.at(game);const Json groups=data.value("checkGroups",Json::array());
- if(world==1&&!groups.empty()){group=std::clamp(group,0,int(groups.size())-1);ImGui::SetNextItemWidth(-FLT_MIN);ComboMenu_PushCombobox(ComboMenu_ThemeColor());if(ImGui::BeginCombo("##CheckGroup",groups[group].at("label").get<std::string>().c_str())){for(int i=0;i<int(groups.size());++i){if(ImGui::Selectable(groups[i].at("label").get<std::string>().c_str(),group==i))group=i;Tooltip(groups[i].value("tooltip",std::string()).c_str());}ImGui::EndCombo();}ComboMenu_PopCombobox();}
- std::vector<Json> shown;for(const auto& row:data.at("checks")){
-  const std::string id=row.at("value"),label=row.at("label");if(!query.PassFilter(label.c_str()))continue;
-  if(world==1){const bool excluded=std::find(selectedValues.begin(),selectedValues.end(),id)!=selectedValues.end();const auto& requirements=data.at("checkRequirements");bool eligible=requirements.contains(id);
-   if(eligible){const auto& rule=requirements.at(id);if(rule.contains("enabledKey"))eligible=ReadInteger(rule["enabledKey"].get<std::string>().c_str(),0)!=0;if(rule.contains("countKey"))eligible&=ReadInteger(rule["countKey"].get<std::string>().c_str(),30)>0;}
-   if(!eligible&&!excluded)continue;
-   if(!groups.empty()&&!groups[group]["checks"].empty()&&std::find(groups[group]["checks"].begin(),groups[group]["checks"].end(),Json(id))==groups[group]["checks"].end())continue;
-  }shown.push_back(row);
- }
- bool changed=false;ImGui::BeginDisabled(!Editable());if(ImGui::Button("Exclude shown")){for(const auto& row:shown){const std::string id=row.at("value");if(std::find(selectedValues.begin(),selectedValues.end(),id)==selectedValues.end())selectedValues.push_back(id);}changed=true;}ImGui::SameLine();if(ImGui::Button("Include shown")){for(const auto& row:shown){const std::string id=row.at("value");selectedValues.erase(std::remove(selectedValues.begin(),selectedValues.end(),id),selectedValues.end());}changed=true;}
- ImGui::TextDisabled("%d checks shown",int(shown.size()));ImGui::BeginChild("##CheckRows",ImVec2(0,ImGui::GetFontSize()*20));ImGuiListClipper clipper;clipper.Begin(int(shown.size()));while(clipper.Step())for(int i=clipper.DisplayStart;i<clipper.DisplayEnd;++i){const auto& row=shown[i];const std::string label=row.at("label"),id=row.at("value");auto found=std::find(selectedValues.begin(),selectedValues.end(),id);bool checked=found!=selectedValues.end();ImGui::PushID(id.c_str());if(ImGui::Checkbox(label.c_str(),&checked)){if(checked)selectedValues.push_back(id);else selectedValues.erase(found);changed=true;}ImGui::PopID();}ImGui::EndChild();ImGui::EndDisabled();
- if(changed&&Editable()){if(world==0){std::string csv;for(const auto& v:selectedValues){if(!csv.empty())csv+=',';csv+=v;}*Field(key,true)=csv;}else *Field(key,true)=selectedValues;dirty=true;}
+static void RefreshOptionPolicy(bool apply) {
+    optionView = std::make_shared<ProfileOotPolicy::View>(catalog.at("oot"), ReadInteger);
+    if (apply && Editable())
+        for (const auto& value : optionView->Adjustments())
+            *Field(value.first.c_str(), true) = value.second;
 }
-static bool MmStartingAvailable(const Json& row){
- const std::string item=row.at("value");const auto* starting=Field("gRando.StartingItems",false);if(starting&&starting->is_array()&&std::find(starting->begin(),starting->end(),Json(item))!=starting->end())return true;
- if(row.value("excludeHunt",false)&&ReadInteger("gCombo.Rando.TriforceHunt",0))return false;
- if(row.contains("progressiveClock")&&row["progressiveClock"].get<bool>()!=(ReadInteger("gRando.Options.RO_CLOCK_SHUFFLE_PROGRESSIVE",0)!=0))return false;
- if(row.value("alwaysPool",false))return true;
- if(row.contains("poolKey"))return ReadInteger(row["poolKey"].get<std::string>().c_str(),0)!=0;
- return mmBaseAvailable.count(item)!=0;
+static std::string ReadString(const char* key) {
+    const auto* value = Field(key, false);
+    return value && value->is_string() ? value->get<std::string>() : "";
 }
-static void StartingIcons(int world){
- const auto& rows=catalog.at(world==0?"oot":"mm").at(world==0?"startingLayout":"startingItems");auto gui=std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
- for(const char* group:{"Equipment","Items","Masks","Songs","Clocks (MM)","Animal Souls","Misc. Souls","NPC Souls","Other"}){
-  std::vector<const Json*> groupRows;
-  for(const auto& row:rows){
-   if(row.value("category",std::string())!=group||(world==1&&!MmStartingAvailable(row)))continue;
-   if(row.contains("visibleKey")&&ReadInteger(row["visibleKey"].get<std::string>().c_str(),0)!=row["visibleValue"].get<int>())continue;
-   groupRows.push_back(&row);
-  }
-  if(groupRows.empty())continue;ImGui::SeparatorText(group);
-  const bool songGroup=std::strcmp(group,"Songs")==0;
-  if(songGroup)std::stable_sort(groupRows.begin(),groupRows.end(),[](const Json* a,const Json* b){return a->value("songSlot",100)<b->value("songSlot",100);});
-  const int columns=std::clamp(int(ImGui::GetContentRegionAvail().x/((songGroup?32:48)+ImGui::GetStyle().FramePadding.x*2+ImGui::GetStyle().ItemSpacing.x)),1,6);
-  if(!ImGui::BeginTable(group,columns,ImGuiTableFlags_SizingFixedFit|ImGuiTableFlags_NoSavedSettings))continue;
-  int songRow=-1;
-  for(const auto* entry:groupRows){const auto& row=*entry;
-   if(songGroup){
-    const int slot=row.value("songSlot",100),line=(slot/6)*((6+columns-1)/columns)+(slot%6)/columns;
-    if(line!=songRow){ImGui::TableNextRow();songRow=line;}
-    ImGui::TableSetColumnIndex((slot%6)%columns);
-   }else ImGui::TableNextColumn();
-   const std::string key=row.at(world==0?"key":"value");ImGui::PushID(key.c_str());int count=world==0?ReadInteger(key.c_str(),0):0;
-   const char* arrayKey="gRando.StartingItems";if(world==1){auto* values=Field(arrayKey,false);if(values&&values->is_array())for(const auto& v:*values)if(v==key)++count;}
-   auto setCount=[&](int value){if(!Editable())return;if(world==0)WriteInteger(key.c_str(),value);else{auto* values=Field(arrayKey,true);if(!values->is_array())*values=Json::array();auto next=Json::array();for(const auto& v:*values)if(v!=key)next.push_back(v);for(int i=0;i<value;++i)next.push_back(key);*values=next;dirty=true;}};
-   bool unavailable=false;
-   if(row.contains("disabledBy"))unavailable=ReadInteger(row["disabledBy"].get<std::string>().c_str(),0)!=0;
-   if(row.contains("requiresKey"))unavailable|=ReadInteger(row["requiresKey"].get<std::string>().c_str(),0)!=row["requiresValue"].get<int>();
-   if(row.contains("modeKey"))unavailable|=ReadInteger(row["modeKey"].get<std::string>().c_str(),0)==row["noneMode"].get<int>();
-   ImGui::BeginDisabled(unavailable);
-   if(world==0&&row.at("kind")=="StartingItemCount"){
-       const auto option=catalog.at("oot").at("options").at(key);const auto& choices=option.at("choices");const auto texture=row.at("tiers").at(0).at("texture").get<std::string>();
-       ImGui::Image(gui?gui->GetTextureByName(texture):nullptr,ImVec2(48,48));ImGui::TextWrapped("%s",row.at("label").get<std::string>().c_str());
-       int value=count;ImGui::BeginDisabled(!Editable());ComboMenu_PushSlider(ComboMenu_ThemeColor());const auto format=choices.at(std::clamp(value,0,int(choices.size())-1)).at("label").get<std::string>();if(ImGui::SliderInt("##Count",&value,0,int(choices.size())-1,format.c_str(),ImGuiSliderFlags_NoInput))setCount(value);ComboMenu_PopSlider();ImGui::EndDisabled();ImGui::EndDisabled();ImGui::PopID();continue;
-   }
-   const auto tiers=row.value("tiers",Json::array());if(tiers.empty()){const auto option=catalog.at("oot").at("options").at(key);Json plain={{"key",key},{"label",row.at("label")},{"kind","combo"},{"choices",option.at("choices")}};CatalogRow(plain);ImGui::EndDisabled();ImGui::PopID();continue;}
-   int maximum=world==0?int(tiers.size()):row.at("maximum").get<int>();if(world==1&&key=="RI_PROGRESSIVE_WALLET"&&ReadInteger("gRando.Options.RO_SHUFFLE_TYCOON_WALLET",0))maximum=3;
-   if(row.contains("modeKey")&&ReadInteger(row["modeKey"].get<std::string>().c_str(),0)==row["singleMode"].get<int>())maximum=1;
-   const bool song=row.value("song",false);const ImVec2 size(song?32.f:48.f,48.f);const auto& display=tiers.at(std::clamp(count-1,0,int(tiers.size())-1));const auto texture=display.at(count||!display.contains("faded")?"texture":"faded").get<std::string>();ImVec4 baseTint(1,1,1,1);if(row.contains("tint")){const auto& color=row["tint"];baseTint=ImVec4(color[0].get<float>(),color[1].get<float>(),color[2].get<float>(),color[3].get<float>());}ImVec4 tint=baseTint;if(row.contains("nightClock"))tint=row["nightClock"].get<bool>()?ImVec4(.3f,.5f,1,1):ImVec4(1,.85f,.3f,1);if(!count){tint.x*=.35f;tint.y*=.35f;tint.z*=.35f;}
-   ImGui::BeginDisabled(!Editable());ComboMenu_PushButton(ImVec4(.15f,.15f,.15f,1));if(texture.empty()?ImGui::Button(row.at("label").get<std::string>().c_str()):ImGui::ImageButton("##Item",gui?gui->GetTextureByName(texture):nullptr,size,ImVec2(0,0),ImVec2(1,1),ImVec4(0,0,0,0),tint)){if(maximum>1)ImGui::OpenPopup("##Tier");else setCount(count?0:1);}ComboMenu_PopButton();ImGui::EndDisabled();Tooltip(row.at("label").get<std::string>().c_str());
-   if(count&&maximum>1){const auto badge=std::to_string(count);ImGui::GetWindowDrawList()->AddText(ImGui::GetItemRectMax()-ImGui::CalcTextSize(badge.c_str())-ImVec2(3,2),IM_COL32_WHITE,badge.c_str());}
-   if(ImGui::BeginPopup("##Tier")){ImGui::BeginDisabled(!Editable());if(ImGui::Button("None")){setCount(0);ImGui::CloseCurrentPopup();}for(int tier=1;tier<=maximum;++tier){ImGui::SameLine();ImGui::PushID(tier);const auto& entry=tiers.at(std::min(tier-1,int(tiers.size())-1));const auto path=entry.at("texture").get<std::string>();if(path.empty()?ImGui::Button(entry.value("label",row.at("label").get<std::string>()).c_str()):ImGui::ImageButton("##Choice",gui?gui->GetTextureByName(path):nullptr,size,ImVec2(0,0),ImVec2(1,1),ImVec4(0,0,0,0),baseTint)){setCount(tier);ImGui::CloseCurrentPopup();}Tooltip(entry.value("label",row.at("label").get<std::string>()).c_str());ImGui::PopID();}ImGui::EndDisabled();ImGui::EndPopup();}
-   ImGui::EndDisabled();ImGui::PopID();
-  }ImGui::EndTable();
- }
+static void RefreshSnapshot(double now, uint64_t revision) {
+    refreshPending = false;
+    snapshotValid = false;
+    snapshotSlot = selected;
+    snapshotView = view;
+    lastInspection = now;
+    auto next = Json::parse(callbacks.inspect(selected));
+    if (next.contains("error"))
+        throw std::runtime_error(next["error"].get<std::string>());
+    snapshot = std::move(next);
+    catalog = snapshot.at("catalog");
+    document = snapshot.value(view == 0 ? "draft" : view == 1 ? "savedSettings" : "generatedSettings", Json());
+    RefreshOptionPolicy(false);
+    RefreshPoolViews();
+    snapshotRevision = revision;
+    snapshotValid = true;
 }
-static void SariaPriority(){
- if(!ReadInteger("gRando.Options.RO_SHUFFLE_SONG_SARIA",0))return;ImGui::SeparatorText("Saria's Song Priority Items");
- auto* field=Field("gRando.SariaPriorityItems",false);Json list=field&&field->is_array()?*field:Json::array();bool changed=false;const auto& choices=catalog.at("mm").at("sariaCandidates");auto gui=std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
- ImGui::BeginDisabled(!Editable());if(ImGui::Button("Reset to default")){list=catalog.at("mm").at("defaults").at("gRando.SariaPriorityItems");changed=true;}ImGui::TextDisabled("%d / 16 items",int(list.size()));
- if(ImGui::BeginTable("##SariaPriority",5,ImGuiTableFlags_SizingFixedFit|ImGuiTableFlags_NoSavedSettings)){
- for(int i=0;i<int(list.size());++i){ImGui::PushID(i);ImGui::TableNextRow();ImGui::TableNextColumn();auto found=std::find_if(choices.begin(),choices.end(),[&](const Json& row){return row["value"]==list[i];});const std::string label=found==choices.end()?list[i].get<std::string>():found->at("label").get<std::string>();if(found!=choices.end()&&!found->at("texture").get<std::string>().empty())ImGui::Image(gui?gui->GetTextureByName(found->at("texture").get<std::string>()):nullptr,ImVec2(24,24));ImGui::TableNextColumn();ImGui::TextWrapped("%s",label.c_str());ImGui::TableNextColumn();ImGui::BeginDisabled(i==0);if(ImGui::Button("Up")){std::swap(list[i],list[i-1]);changed=true;}ImGui::EndDisabled();ImGui::TableNextColumn();ImGui::BeginDisabled(i+1==int(list.size()));if(ImGui::Button("Down")){std::swap(list[i],list[i+1]);changed=true;}ImGui::EndDisabled();ImGui::TableNextColumn();if(ImGui::Button("Remove")){list.erase(list.begin()+i);changed=true;--i;}ImGui::PopID();}ImGui::EndTable();}
- ImGui::BeginDisabled(list.size()>=16);if(ImGui::BeginCombo("Add item","Choose an item")){for(const auto& row:choices){if(std::find(list.begin(),list.end(),row["value"])!=list.end()||!MmStartingAvailable(row))continue;if(ImGui::Selectable(row.at("label").get<std::string>().c_str())){list.push_back(row["value"]);changed=true;}}ImGui::EndCombo();}ImGui::EndDisabled();ImGui::EndDisabled();
- if(changed&&Editable()){*Field("gRando.SariaPriorityItems",true)=list;dirty=true;}
+void BeginFrame() {
+    active = false;
+    dirty = false;
+    try {
+        if (!Ready())
+            return;
+        const int frame = ImGui::GetFrameCount();
+        const double now = ImGui::GetTime();
+        const bool versioned = callbacks.version >= 2 && callbacks.revision;
+        const uint64_t revision = versioned ? callbacks.revision() : 0;
+        const bool running =
+            snapshot.is_object() && snapshot.value("generation", Json::object()).value("running", false);
+        const bool refresh = refreshPending || !snapshotValid || (!versioned && frame > lastMenuFrame + 1) ||
+                             (versioned && revision != snapshotRevision) || selected != snapshotSlot ||
+                             view != snapshotView || (running && now - lastInspection >= .25);
+        lastMenuFrame = frame;
+        if (refresh)
+            RefreshSnapshot(now, revision);
+        active = snapshotValid;
+    } catch (const std::exception& e) { error = e.what(); }
 }
-static void GlobalTrapPreferences(){
- if(view!=0||!active)return;ImGui::SeparatorText("Trap preferences (global)");MenuTooltip("These runtime preferences apply to every file and are not copied with seed settings.");bool changed=false;
- int behavior=CVarGetInteger("gRando.TrapItems",0);const char* choices[]={"Default (Dynamic)","Static"};ComboMenu_PushCombobox(ComboMenu_ThemeColor());if(ImGui::Combo("Trap Behavior",&behavior,choices,2)){CVarSetInteger("gRando.TrapItems",behavior);changed=true;}ComboMenu_PopCombobox();
- if(ImGui::BeginTable("##GlobalTrapEffects",2,ImGuiTableFlags_NoSavedSettings)){for(const auto& row:catalog.at("mm").at("globalTrapEffects")){ImGui::TableNextColumn();const auto key=row.at("key").get<std::string>();bool value=CVarGetInteger(key.c_str(),0)!=0;ImGui::PushID(key.c_str());ComboMenu_PushCheckbox(ComboMenu_ThemeColor());if(ImGui::Checkbox(row.at("label").get<std::string>().c_str(),&value)){CVarSetInteger(key.c_str(),value);changed=true;}ComboMenu_PopCheckbox();Tooltip(row.at("tooltip").get<std::string>().c_str());ImGui::PopID();}ImGui::EndTable();}
- if(changed)Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+void EndFrame() {
+    if (dirty && Editable()) {
+        refreshPending = true;
+        try {
+            Response(callbacks.setDraft(selected, document.dump().c_str()));
+        } catch (const std::exception& e) { error = e.what(); }
+    }
+    active = false;
 }
-void DrawCustom(const char* sidebar,int world){
- const std::string name=sidebar?sidebar:"";if(name=="Starting Items"){StartingIcons(world);}
- if(name=="Locations"||name=="Excluded Locations"||name=="Check Exclusions"){CheckList(world);return;}
- if(world==0)return;
- std::vector<std::string> cards;for(const auto& row:catalog.at("mm").at("layout"))if(row.at("page")==name){const std::string card=row.at("card");if(std::find(cards.begin(),cards.end(),card)==cards.end())cards.push_back(card);}
- const float minimum=name=="Logic/Conditions"?ImGui::GetFontSize()*28:std::max(400.f,ImGui::GetFontSize()*20);const int columns=ImGui::GetContentRegionAvail().x>=minimum*2?2:1;
- if(cards.empty()||!ImGui::BeginTable("##NativeMmCards",columns,ImGuiTableFlags_SizingStretchSame|ImGuiTableFlags_NoSavedSettings))return;
- for(const auto& card:cards){ImGui::TableNextColumn();ImGui::PushID(card.c_str());ImGui::BeginGroup();if(card=="checkPoolScenery"){ImGui::BeginDisabled(!Editable());for(int value=1;value>=0;--value){if(value==0)ImGui::SameLine();if(ImGui::Button(value?"All On":"All Off"))for(const auto& row:catalog.at("mm").at("layout"))if(row.at("card")==card)WriteInteger(row.at("key").get<std::string>().c_str(),value);}ImGui::EndDisabled();}bool headingDrawn=false;for(const auto& row:catalog.at("mm").at("layout")){if(row.at("page")!=name||row.at("card")!=card)continue;if(!headingDrawn){const auto heading=row.at("heading").get<std::string>();if(!heading.empty())ImGui::SeparatorText(heading.c_str());headingDrawn=true;}CatalogRow(row);}ImGui::EndGroup();ImGui::PopID();}ImGui::EndTable();if(name=="Item Pool")SariaPriority();if(name=="Traps")GlobalTrapPreferences();
+bool DrawUnavailableSettings() {
+    if (active && document.is_object())
+        return false;
+    if (!active) {
+        ImGui::TextWrapped("Settings are unavailable. Reopen the menu to try again.");
+        return true;
+    }
+    ImGui::TextWrapped(view == 1   ? "File %d has no saved seed settings."
+                       : view == 2 ? "File %d has no generated seed settings."
+                                   : "File %d has no next-seed settings.",
+                       selected + 1);
+    if (view != 0 && ImGui::Button("Configure next seed")) {
+        view = 0;
+        BeginFrame();
+    }
+    return true;
 }
-void DrawGeneration(){
- if(!active||document.is_null()){ImGui::TextUnformatted("No settings are available for this file.");return;}const auto generation=snapshot.value("generation",Json::object());const bool running=generation.value("running",false);std::string seed=document.value("seed",std::string());ImGui::BeginDisabled(!Editable()||running);if(ImGui::InputTextWithHint("Seed","(blank = random)",&seed)){document["seed"]=seed;dirty=true;}
- if(ImGui::Button("Generate combined seed")){refreshPending=true;try{bool committed=true;if(dirty){committed=Response(callbacks.setDraft(selected,document.dump().c_str()));if(committed)dirty=false;}if(committed)Response(callbacks.generate(selected,seed.c_str()));}catch(const std::exception& e){error=e.what();}}ImGui::EndDisabled();if(running){ImGui::Text("File %d: %s (%d / %d)",generation.value("file",selected)+1,generation.value("phase",std::string()).c_str(),generation.value("placed",0),generation.value("total",0));ImGui::BeginDisabled(!generation.value("canCancel",false));if(ImGui::Button("Cancel")){refreshPending=true;Response(callbacks.cancel());}ImGui::EndDisabled();}DrawAdvanced();
+void DrawSelector() {
+    static const char* files[] = { "File 1", "File 2", "File 3" };
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5);
+    if (ImGui::Combo("##Settings file", &selected, files, 3))
+        BeginFrame();
+    MenuTooltip("Choose the file whose saved rules you inspect or whose next seed you configure. This does not change "
+                "gameplay.");
+    const char* modes[] = { "Next seed", "Saved seed", "Generated seed" };
+    const char* tips[] = { "Editable settings for this file's next seed.",
+                           "Read-only settings of the run saved in this file.",
+                           "Read-only settings of the last seed generated for this file." };
+    for (int i = 0; i < 3; ++i) {
+        if (ImGui::GetItemRectMax().x + ImGui::CalcTextSize(modes[i]).x + 44.f <
+            ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x)
+            ImGui::SameLine();
+        if (ComboMenu_StyledHeaderEntry(modes[i], view == i)) {
+            view = i;
+            BeginFrame();
+        }
+        MenuTooltip(tips[i]);
+    }
+    if (ImGui::GetItemRectMax().x + ImGui::CalcTextSize("Copy settings").x + 44.f <
+        ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x)
+        ImGui::SameLine();
+    ImGui::BeginDisabled(!active || view == 2 || !document.is_object());
+    if (ImGui::Button("Copy settings"))
+        ImGui::OpenPopup("Copy settings");
+    ImGui::EndDisabled();
+    MenuTooltip(view == 2
+                    ? "Select Next seed or Saved seed to copy settings."
+                    : "Copy these settings to a file's next-seed setup. This does not copy or replace saved progress.");
+    if (ImGui::BeginPopup("Copy settings")) {
+        for (int destination = 0; destination < 3; ++destination) {
+            const std::string label = "To File " + std::to_string(destination + 1) + " next seed";
+            ImGui::BeginDisabled(view == 2 || document.is_null());
+            if (ImGui::Selectable(label.c_str())) {
+                refreshPending = true;
+                try {
+                    Response(view == 0 ? callbacks.copyDraft(selected, destination)
+                                       : callbacks.copySaved(selected, destination));
+                } catch (const std::exception& e) { error = e.what(); }
+            }
+            ImGui::EndDisabled();
+        }
+        ImGui::EndPopup();
+    }
+    if (!error.empty())
+        ImGui::TextWrapped("%s", error.c_str());
 }
-void DrawHome(){
- if(!active)return;const int columns=ImGui::GetContentRegionAvail().x>=ImGui::GetFontSize()*60?3:MenuColumns(20.f);if(!ImGui::BeginTable("##CommunityPresets",columns,ImGuiTableFlags_SizingStretchSame|ImGuiTableFlags_NoSavedSettings))return;
- for(const auto& preset:catalog.at("combo").at("presets")){ImGui::TableNextColumn();ImGui::PushID(preset.at("id").get<int>());ImGui::SeparatorText(preset.at("label").get<std::string>().c_str());ImGui::TextWrapped("%s",preset.at("summary").get<std::string>().c_str());ImGui::BeginDisabled(!Editable());if(ImGui::Button("Apply preset",ImVec2(-FLT_MIN,ImGui::GetFrameHeight()*1.25f))){
-  document["oot"]["settings"]=Json::object();
-  for(auto it=document["mm"]["settings"].begin();it!=document["mm"]["settings"].end();){if(it.key().rfind("gRando.Options.",0)==0||it.key().rfind("gCombo.Tricks.",0)==0)it=document["mm"]["settings"].erase(it);else ++it;}
-  document["oot"]["settings"]["gRandoSettings.EnabledTricks"]="";
-  for(const auto& rule:kGameplayRules)SetLogicRule(rule,0,WriteInteger);
-  for(const char* game:{"oot","mm"})for(const auto& value:catalog.at(game).at("defaults").items())document[game]["settings"][value.key()]=value.value();
-  for(const auto& write:preset.at("writes").items())WriteInteger(write.key().c_str(),write.value());document["mm"]["settings"]["gRando.StartingItems"]=catalog.at("mm").at("presetStartingItems").at(std::to_string(preset.at("id").get<int>()));
-  SetLogicRule(*FindGameplayRule("gCombo.Enhancements.ForeignSongs"),preset.at("id").get<int>()!=0,WriteInteger);
-  SynchronizeGenerationGuarantee(ReadInteger,WriteInteger);RefreshOptionPolicy(true);dirty=true;
- }ImGui::EndDisabled();Tooltip(preset.at("help").get<std::string>().c_str());ImGui::Spacing();ImGui::PopID();}ImGui::EndTable();
+static void Tooltip(const char* help) {
+    if (help && help[0])
+        MenuTooltip(help);
 }
-void DrawSavedPlacements(){
- const auto seed=snapshot.value(view==1?"savedSeed":"generatedSeed",Json());
- if(!seed.is_object()){ImGui::TextUnformatted("No seed placements are available for this file.");return;}
- for(const char* game:{"oot","mm"}){ImGui::SeparatorText(game[0]=='o'?"Ocarina of Time":"Majora's Mask");
-  if(!seed.contains(game)||!seed[game].contains("placements"))continue;
-  if(ImGui::BeginTable(game,2,ImGuiTableFlags_RowBg|ImGuiTableFlags_SizingStretchProp)){ImGui::TableSetupColumn("Check");ImGui::TableSetupColumn("Item");ImGui::TableHeadersRow();
-   for(const auto& row:seed[game]["placements"].items()){ImGui::TableNextRow();ImGui::TableNextColumn();ImGui::TextWrapped("%s",row.key().c_str());ImGui::TableNextColumn();const auto label=row.value().is_string()?row.value().get<std::string>():row.value().dump();ImGui::TextWrapped("%s",label.c_str());}ImGui::EndTable();}
- }
+void DrawWidget(const CwWidget& w, const GameMenu& game) {
+    if (!active || !document.is_object()) {
+        ImGui::TextDisabled("No settings for this file and view.");
+        return;
+    }
+    // A selection refreshes optionView; retain the current choices until this widget finishes drawing.
+    const auto policyView = optionView;
+    const auto* policy = policyView && w.cvar ? policyView->Find(w.cvar) : nullptr;
+    if (policy && policy->hidden)
+        return;
+    (void)game;
+    ImGui::PushID(w.index);
+    const char* label = w.name ? w.name : "";
+    const char* key = w.cvar ? w.cvar : "";
+    const auto theme = ComboMenu_ThemeColor();
+    std::string caption = label;
+    if (const auto suffix = caption.find("##"); suffix != std::string::npos)
+        caption.resize(suffix);
+    ImGui::BeginDisabled(!Editable() || (policy && policy->disabled));
+    switch (w.kind) {
+        case CW_SEPARATOR:
+            ImGui::Separator();
+            break;
+        case CW_SEPARATOR_TEXT:
+            ImGui::SeparatorText(caption.c_str());
+            break;
+        case CW_TEXT:
+            ImGui::TextWrapped("%s", caption.c_str());
+            break;
+        case CW_CHECKBOX: {
+            bool value = ReadInteger(key, w.bDefault) != 0;
+            ComboMenu_PushCheckbox(theme);
+            if (ImGui::Checkbox(label, &value))
+                WriteInteger(key, value);
+            ComboMenu_PopCheckbox();
+            break;
+        }
+        case CW_SLIDER_INT: {
+            int value = ReadInteger(key, w.iDefault);
+            ComboMenu_PushSlider(theme);
+            ImGui::TextWrapped("%s", caption.c_str());
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::SliderInt(
+                    "##Value", &value, w.iMin,
+                    policy ? (!std::strcmp(key, "gRandoSettings.ShopsanityCount") &&
+                                      ReadInteger("gRandoSettings.LogicRules", 0) != ProfileOotPolicy::RO_LOGIC_NO_LOGIC
+                                  ? std::min(7, int(policy->choices.size()) - 1)
+                                  : int(policy->choices.size()) - 1)
+                           : w.iMax,
+                    policy && !policy->choices.empty()
+                        ? policy->choices[std::clamp(value, 0, int(policy->choices.size()) - 1)].c_str()
+                        : "%d",
+                    ImGuiSliderFlags_NoInput))
+                WriteInteger(key, value);
+            ComboMenu_PopSlider();
+            break;
+        }
+        case CW_COMBOBOX: {
+            int value = ReadInteger(key, w.iDefault);
+            std::vector<CwChoice> choices;
+            for (int i = 0; policy && i < int(policy->choices.size()); ++i)
+                choices.push_back({ policy->choices[i].c_str(), i });
+            const CwChoice* list = policy ? choices.data() : w.choices;
+            const int count = policy ? int(choices.size()) : w.choiceCount;
+            const char* preview = "Unknown saved value";
+            for (int i = 0; i < count; ++i)
+                if (list[i].value == value)
+                    preview = list[i].label;
+            ImGui::TextWrapped("%s", caption.c_str());
+            ComboMenu_PushCombobox(theme);
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::BeginCombo("##Choice", preview)) {
+                for (int i = 0; i < count; ++i)
+                    if (ImGui::Selectable(list[i].label, list[i].value == value))
+                        WriteInteger(key, list[i].value);
+                ImGui::EndCombo();
+            }
+            ComboMenu_PopCombobox();
+            break;
+        }
+        case CW_INPUT_TEXT: {
+            std::string value = ReadString(key);
+            if (ImGui::InputText(label, &value) && Editable()) {
+                *Field(key, true) = value;
+                dirty = true;
+            }
+            break;
+        }
+        case CW_CUSTOM:
+            break;
+        default:
+            ImGui::TextDisabled("%s", caption.c_str());
+            break;
+    }
+    ImGui::EndDisabled();
+    Tooltip(policy && policy->disabled ? policy->disabledText.c_str() : w.tooltip);
+    if (view != 0 && !std::strcmp(key, "gRandoSettings.GanonTrial")) {
+        const auto seed = snapshot.value(view == 1 ? "savedSeed" : "generatedSeed", Json());
+        if (seed.is_object() && seed.contains("oot") && seed["oot"].contains("resolvedSeedRules")) {
+            const auto& trials = seed["oot"]["resolvedSeedRules"]["requiredTrials"];
+            std::string text;
+            for (const auto& id : trials) {
+                if (!text.empty())
+                    text += ", ";
+                text += catalog.at("oot")
+                            .at("trialNames")
+                            .value(std::to_string(id.get<int>()), std::string("Unknown trial"));
+            }
+            ImGui::TextWrapped("Required trials: %s", text.empty() ? "None" : text.c_str());
+        }
+    }
+    ImGui::PopID();
 }
-void DrawAdvanced(){if(ImGui::CollapsingHeader("Advanced seed inspection")){const auto raw=snapshot.value(view==1?"savedSeed":"generatedSeed",Json());ImGui::TextWrapped("%s",raw.dump(2).c_str());}}
-void DrawTricks(){static char query[160]={};static int world=0,state=0,skill=0;ImGui::InputTextWithHint("##TechniqueSearch","Search techniques",query,sizeof(query));const char* names[]={"Both games","Ocarina of Time","Majora's Mask"};for(int i=0;i<3;++i){if(i)ImGui::SameLine();if(ComboMenu_StyledHeaderEntry(names[i],world==i))world=i;}const char* modes[]={"All techniques","Enabled only","Disabled only"};ImGui::Combo("Show",&state,modes,3);const char* levels[]={"All difficulties","Novice","Intermediate","Advanced","Expert","Extreme","Experimental"};ImGui::Combo("Difficulty",&skill,levels,7);
- if(world!=2)for(const auto* rule:{FindGameplayRule("gEnhancements.RestoreShadowDoorUnload"),FindGameplayRule("gEnhancements.EarlyEyeballFrog")}){
-  const bool original=ReadInteger(LogicRuleKey(rule->name).c_str(),0)!=0;const auto row=std::strcmp(rule->name,"gEnhancements.RestoreShadowDoorUnload")==0?ComboTricks::RestoredShadowDoorInfo(rule->label,rule->help,original):ComboTricks::EarlyEyeballFrogInfo(rule->label,rule->help,original);
-  if(!ComboTricks::Matches(row,0,query,world,state,skill-1))continue;ImGui::PushID(rule->name);bool enabled=original;ImGui::BeginDisabled(!Editable());ComboMenu_PushCheckbox(ComboMenu_ThemeColor());if(ImGui::Checkbox(rule->label,&enabled))SetTrickGovernedRule(*rule,enabled,WriteInteger);ComboMenu_PopCheckbox();ImGui::EndDisabled();Tooltip(rule->help);ImGui::TextDisabled("%s · %s",row.area,row.tags);if(ImGui::TreeNode("Details")){ImGui::TextWrapped("%s",rule->help);ImGui::TreePop();}ImGui::Separator();ImGui::PopID();
- }
- for(int game=0;game<2;++game){if(world&&world!=game+1)continue;const char* key=game==0?"gRandoSettings.EnabledTricks":"";std::vector<std::string> csv;if(game==0){std::istringstream stream(ReadString(key));std::string tag;while(std::getline(stream,tag,','))if(!tag.empty())csv.push_back(tag);}for(const auto& row:catalog.at(game==0?"oot":"mm").at("tricks")){const std::string label=row.at("label"),id=row.at("value"),help=row.value("description",std::string());bool on=game==0?std::find(csv.begin(),csv.end(),id)!=csv.end():ReadInteger(id.c_str(),0)!=0;if((state==1&&!on)||(state==2&&on)||(skill&&row.value("difficulty",0)!=skill-1)||(query[0]&&(label+help+row.value("area",std::string())+row.value("tags",std::string())).find(query)==std::string::npos))continue;ImGui::PushID(id.c_str());ImGui::BeginDisabled(!Editable());ComboMenu_PushCheckbox(ComboMenu_ThemeColor());if(ImGui::Checkbox(label.c_str(),&on)){if(game==1)WriteInteger(id.c_str(),on);else{auto found=std::find(csv.begin(),csv.end(),id);if(on)csv.push_back(id);else if(found!=csv.end())csv.erase(found);std::string text;for(const auto& tag:csv){if(!text.empty())text+=',';text+=tag;}*Field(key,true)=text;dirty=true;}}ComboMenu_PopCheckbox();ImGui::EndDisabled();Tooltip(help.c_str());ImGui::TextDisabled("%s · %s · %s",game==0?"OoT":"MM",row.value("area",std::string("General")).c_str(),row.value("tags",std::string()).c_str());if(ImGui::TreeNode("Details")){ImGui::TextWrapped("%s",help.c_str());ImGui::TreePop();}ImGui::Separator();ImGui::PopID();}}
+void DrawSidebar(const CwSidebar& side, const GameMenu& game, int world) {
+    const unsigned desired = std::min<unsigned>(2, side.columnCount ? side.columnCount : 1);
+    const unsigned columns = ImGui::GetContentRegionAvail().x < ImGui::GetFontSize() * 20 * desired ? 1 : desired;
+    bool pouchesDrawn = false;
+    const auto isPouch = [](const CwWidget& w) {
+        constexpr char prefix[] = "gRandoSettings.SilverPouch";
+        return w.cvar && std::strncmp(w.cvar, prefix, sizeof(prefix) - 1) == 0;
+    };
+    auto draw = [&](const CwWidget& widget) {
+        if (world == 0 && isPouch(widget)) {
+            if (pouchesDrawn)
+                return;
+            pouchesDrawn = true;
+            ImGui::BeginDisabled(!ReadInteger("gRandoSettings.SilverRupeeShuffle", 0));
+            if (ImGui::CollapsingHeader("Silver rupee pouches"))
+                for (int i = 0; i < side.widgetCount; ++i) {
+                    const auto& pouch = side.widgets[i];
+                    if (isPouch(pouch))
+                        DrawWidget(pouch, game);
+                }
+            ImGui::EndDisabled();
+            return;
+        }
+        if (widget.kind == CW_CUSTOM)
+            DrawCustom(widget.name, world);
+        else
+            DrawWidget(widget, game);
+    };
+    if (columns == 1) {
+        for (int i = 0; i < side.widgetCount; ++i)
+            draw(side.widgets[i]);
+        return;
+    }
+    if (!ImGui::BeginTable("##NativeOptions", columns,
+                           ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+        return;
+    ImGui::TableNextRow();
+    for (unsigned column = 0; column < columns; ++column) {
+        ImGui::TableSetColumnIndex(column);
+        ImGui::PushID(int(column));
+        ImGui::BeginGroup();
+        for (int i = 0; i < side.widgetCount; ++i)
+            if (unsigned(std::clamp(side.widgets[i].column, 0, int(columns) - 1)) == column)
+                draw(side.widgets[i]);
+        ImGui::EndGroup();
+        ImGui::PopID();
+    }
+    ImGui::EndTable();
+}
+static void CatalogRow(const Json& row) {
+    const auto key = row.at("key").get<std::string>(), label = row.at("label").get<std::string>(),
+               kind = row.at("kind").get<std::string>();
+    CwWidget widget{};
+    widget.name = label.c_str();
+    widget.cvar = key.c_str();
+    widget.index = 0;
+    std::string help = row.value("tooltip", std::string());
+    widget.tooltip = help.c_str();
+    std::vector<CwChoice> choices;
+    std::vector<std::string> labels;
+    if (kind == "checkbox")
+        widget.kind = CW_CHECKBOX;
+    else if (kind == "slider") {
+        widget.kind = CW_SLIDER_INT;
+        widget.iMin = row.at("minimum");
+        widget.iMax = row.at("maximum");
+        if (row.contains("maximumKey"))
+            widget.iMax = ReadInteger(row["maximumKey"].get<std::string>().c_str(), widget.iMax);
+    } else {
+        widget.kind = CW_COMBOBOX;
+        for (const auto& c : row.at("choices"))
+            labels.push_back(c.at("label"));
+        int i = 0;
+        for (const auto& c : row.at("choices"))
+            choices.push_back({ labels[i++].c_str(), c.at("value") });
+        widget.choices = choices.data();
+        widget.choiceCount = int(choices.size());
+    }
+    bool visible = true, disabled = false;
+    const auto get = [](const char* suffix, int fallback = 0) {
+        const std::string key = std::string("gRando.Options.") + suffix;
+        return ReadInteger(key.c_str(), fallback);
+    };
+    if (key == "gRando.Options.RO_SKULLTULA_TOKENS_REQUIRED" || key == "gRando.Options.RO_SKULLTULA_SHUFFLED")
+        visible = get("RO_SHUFFLE_GOLD_SKULLTULAS") != 0;
+    if (key == "gRando.Options.RO_CLOCK_SHUFFLE_PROGRESSIVE")
+        visible = get("RO_CLOCK_SHUFFLE") != 0;
+    if (key == "gRando.Options.RO_STRAY_FAIRIES_REQUIRED" || key == "gRando.Options.RO_STRAY_FAIRIES_MAX")
+        visible = get("RO_PLACEMENT_STRAY_FAIRIES") != 2;
+    if (key == "gRando.Options.RO_TRAP_AMOUNT")
+        visible = get("RO_SHUFFLE_TRAPS") != 0;
+    if (key == "gRando.Options.RO_SHUFFLE_SKELETON_KEY")
+        disabled = get("RO_PLACEMENT_SMALL_KEYS") == 2;
+    if (get("RO_LOGIC") == 3)
+        for (const auto& value : catalog.at("mm").at("disabledInVanilla"))
+            disabled |= value == key;
+    if (!visible)
+        return;
+    ImGui::PushID(key.c_str());
+    ImGui::BeginDisabled(disabled);
+    DrawWidget(widget, ComboMenuModel::Get().Mm());
+    ImGui::EndDisabled();
+    ImGui::PopID();
+}
+static void CheckList(int world) {
+    const char* game = world == 0 ? "oot" : "mm";
+    const char* key = world == 0 ? "gRandoSettings.ExcludedLocations" : "gRando.ExcludedChecks";
+    static ImGuiTextFilter query;
+    static int group = 0;
+    query.Draw("Search checks");
+    std::vector<std::string> selectedValues;
+    if (world == 0) {
+        std::istringstream text(ReadString(key));
+        std::string item;
+        while (std::getline(text, item, ','))
+            if (!item.empty())
+                selectedValues.push_back(item);
+    } else if (auto* value = Field(key, false); value && value->is_array())
+        selectedValues = value->get<std::vector<std::string>>();
+    const auto& data = catalog.at(game);
+    const Json groups = data.value("checkGroups", Json::array());
+    if (world == 1 && !groups.empty()) {
+        group = std::clamp(group, 0, int(groups.size()) - 1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ComboMenu_PushCombobox(ComboMenu_ThemeColor());
+        if (ImGui::BeginCombo("##CheckGroup", groups[group].at("label").get<std::string>().c_str())) {
+            for (int i = 0; i < int(groups.size()); ++i) {
+                if (ImGui::Selectable(groups[i].at("label").get<std::string>().c_str(), group == i))
+                    group = i;
+                Tooltip(groups[i].value("tooltip", std::string()).c_str());
+            }
+            ImGui::EndCombo();
+        }
+        ComboMenu_PopCombobox();
+    }
+    std::vector<Json> shown;
+    for (const auto& row : data.at("checks")) {
+        const std::string id = row.at("value"), label = row.at("label");
+        if (!query.PassFilter(label.c_str()))
+            continue;
+        if (world == 1) {
+            const bool excluded = std::find(selectedValues.begin(), selectedValues.end(), id) != selectedValues.end();
+            const auto& requirements = data.at("checkRequirements");
+            bool eligible = requirements.contains(id);
+            if (eligible) {
+                const auto& rule = requirements.at(id);
+                if (rule.contains("enabledKey"))
+                    eligible = ReadInteger(rule["enabledKey"].get<std::string>().c_str(), 0) != 0;
+                if (rule.contains("countKey"))
+                    eligible &= ReadInteger(rule["countKey"].get<std::string>().c_str(), 30) > 0;
+            }
+            if (!eligible && !excluded)
+                continue;
+            if (!groups.empty() && !groups[group]["checks"].empty() &&
+                std::find(groups[group]["checks"].begin(), groups[group]["checks"].end(), Json(id)) ==
+                    groups[group]["checks"].end())
+                continue;
+        }
+        shown.push_back(row);
+    }
+    bool changed = false;
+    ImGui::BeginDisabled(!Editable());
+    if (ImGui::Button("Exclude shown")) {
+        for (const auto& row : shown) {
+            const std::string id = row.at("value");
+            if (std::find(selectedValues.begin(), selectedValues.end(), id) == selectedValues.end())
+                selectedValues.push_back(id);
+        }
+        changed = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Include shown")) {
+        for (const auto& row : shown) {
+            const std::string id = row.at("value");
+            selectedValues.erase(std::remove(selectedValues.begin(), selectedValues.end(), id), selectedValues.end());
+        }
+        changed = true;
+    }
+    ImGui::TextDisabled("%d checks shown", int(shown.size()));
+    ImGui::BeginChild("##CheckRows", ImVec2(0, ImGui::GetFontSize() * 20));
+    ImGuiListClipper clipper;
+    clipper.Begin(int(shown.size()));
+    while (clipper.Step())
+        for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
+            const auto& row = shown[i];
+            const std::string label = row.at("label"), id = row.at("value");
+            auto found = std::find(selectedValues.begin(), selectedValues.end(), id);
+            bool checked = found != selectedValues.end();
+            ImGui::PushID(id.c_str());
+            if (ImGui::Checkbox(label.c_str(), &checked)) {
+                if (checked)
+                    selectedValues.push_back(id);
+                else
+                    selectedValues.erase(found);
+                changed = true;
+            }
+            ImGui::PopID();
+        }
+    ImGui::EndChild();
+    ImGui::EndDisabled();
+    if (changed && Editable()) {
+        if (world == 0) {
+            std::string csv;
+            for (const auto& v : selectedValues) {
+                if (!csv.empty())
+                    csv += ',';
+                csv += v;
+            }
+            *Field(key, true) = csv;
+        } else
+            *Field(key, true) = selectedValues;
+        dirty = true;
+    }
+}
+static bool MmStartingAvailable(const Json& row) {
+    const std::string item = row.at("value");
+    const auto* starting = Field("gRando.StartingItems", false);
+    if (starting && starting->is_array() &&
+        std::find(starting->begin(), starting->end(), Json(item)) != starting->end())
+        return true;
+    if (row.value("excludeHunt", false) && ReadInteger("gCombo.Rando.TriforceHunt", 0))
+        return false;
+    if (row.contains("progressiveClock") &&
+        row["progressiveClock"].get<bool>() != (ReadInteger("gRando.Options.RO_CLOCK_SHUFFLE_PROGRESSIVE", 0) != 0))
+        return false;
+    if (row.value("alwaysPool", false))
+        return true;
+    if (row.contains("poolKey"))
+        return ReadInteger(row["poolKey"].get<std::string>().c_str(), 0) != 0;
+    return mmBaseAvailable.count(item) != 0;
+}
+static void StartingIcons(int world) {
+    const auto& rows = catalog.at(world == 0 ? "oot" : "mm").at(world == 0 ? "startingLayout" : "startingItems");
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    for (const char* group : { "Equipment", "Items", "Masks", "Songs", "Clocks (MM)", "Animal Souls", "Misc. Souls",
+                               "NPC Souls", "Other" }) {
+        std::vector<const Json*> groupRows;
+        for (const auto& row : rows) {
+            if (row.value("category", std::string()) != group || (world == 1 && !MmStartingAvailable(row)))
+                continue;
+            if (row.contains("visibleKey") &&
+                ReadInteger(row["visibleKey"].get<std::string>().c_str(), 0) != row["visibleValue"].get<int>())
+                continue;
+            groupRows.push_back(&row);
+        }
+        if (groupRows.empty())
+            continue;
+        ImGui::SeparatorText(group);
+        const bool songGroup = std::strcmp(group, "Songs") == 0;
+        if (songGroup)
+            std::stable_sort(groupRows.begin(), groupRows.end(), [](const Json* a, const Json* b) {
+                return a->value("songSlot", 100) < b->value("songSlot", 100);
+            });
+        const int columns = std::clamp(
+            int(ImGui::GetContentRegionAvail().x /
+                ((songGroup ? 32 : 48) + ImGui::GetStyle().FramePadding.x * 2 + ImGui::GetStyle().ItemSpacing.x)),
+            1, 6);
+        if (!ImGui::BeginTable(group, columns, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
+            continue;
+        int songRow = -1;
+        for (const auto* entry : groupRows) {
+            const auto& row = *entry;
+            if (songGroup) {
+                const int slot = row.value("songSlot", 100),
+                          line = (slot / 6) * ((6 + columns - 1) / columns) + (slot % 6) / columns;
+                if (line != songRow) {
+                    ImGui::TableNextRow();
+                    songRow = line;
+                }
+                ImGui::TableSetColumnIndex((slot % 6) % columns);
+            } else
+                ImGui::TableNextColumn();
+            const std::string key = row.at(world == 0 ? "key" : "value");
+            ImGui::PushID(key.c_str());
+            int count = world == 0 ? ReadInteger(key.c_str(), 0) : 0;
+            const char* arrayKey = "gRando.StartingItems";
+            if (world == 1) {
+                auto* values = Field(arrayKey, false);
+                if (values && values->is_array())
+                    for (const auto& v : *values)
+                        if (v == key)
+                            ++count;
+            }
+            auto setCount = [&](int value) {
+                if (!Editable())
+                    return;
+                if (world == 0)
+                    WriteInteger(key.c_str(), value);
+                else {
+                    auto* values = Field(arrayKey, true);
+                    if (!values->is_array())
+                        *values = Json::array();
+                    auto next = Json::array();
+                    for (const auto& v : *values)
+                        if (v != key)
+                            next.push_back(v);
+                    for (int i = 0; i < value; ++i)
+                        next.push_back(key);
+                    *values = next;
+                    dirty = true;
+                }
+            };
+            bool unavailable = false;
+            if (row.contains("disabledBy"))
+                unavailable = ReadInteger(row["disabledBy"].get<std::string>().c_str(), 0) != 0;
+            if (row.contains("requiresKey"))
+                unavailable |=
+                    ReadInteger(row["requiresKey"].get<std::string>().c_str(), 0) != row["requiresValue"].get<int>();
+            if (row.contains("modeKey"))
+                unavailable |= ReadInteger(row["modeKey"].get<std::string>().c_str(), 0) == row["noneMode"].get<int>();
+            ImGui::BeginDisabled(unavailable);
+            if (world == 0 && row.at("kind") == "StartingItemCount") {
+                const auto option = catalog.at("oot").at("options").at(key);
+                const auto& choices = option.at("choices");
+                const auto texture = row.at("tiers").at(0).at("texture").get<std::string>();
+                ImGui::Image(gui ? gui->GetTextureByName(texture) : nullptr, ImVec2(48, 48));
+                ImGui::TextWrapped("%s", row.at("label").get<std::string>().c_str());
+                int value = count;
+                ImGui::BeginDisabled(!Editable());
+                ComboMenu_PushSlider(ComboMenu_ThemeColor());
+                const auto format =
+                    choices.at(std::clamp(value, 0, int(choices.size()) - 1)).at("label").get<std::string>();
+                if (ImGui::SliderInt("##Count", &value, 0, int(choices.size()) - 1, format.c_str(),
+                                     ImGuiSliderFlags_NoInput))
+                    setCount(value);
+                ComboMenu_PopSlider();
+                ImGui::EndDisabled();
+                ImGui::EndDisabled();
+                ImGui::PopID();
+                continue;
+            }
+            const auto tiers = row.value("tiers", Json::array());
+            if (tiers.empty()) {
+                const auto option = catalog.at("oot").at("options").at(key);
+                Json plain = { { "key", key },
+                               { "label", row.at("label") },
+                               { "kind", "combo" },
+                               { "choices", option.at("choices") } };
+                CatalogRow(plain);
+                ImGui::EndDisabled();
+                ImGui::PopID();
+                continue;
+            }
+            int maximum = world == 0 ? int(tiers.size()) : row.at("maximum").get<int>();
+            if (world == 1 && key == "RI_PROGRESSIVE_WALLET" &&
+                ReadInteger("gRando.Options.RO_SHUFFLE_TYCOON_WALLET", 0))
+                maximum = 3;
+            if (row.contains("modeKey") &&
+                ReadInteger(row["modeKey"].get<std::string>().c_str(), 0) == row["singleMode"].get<int>())
+                maximum = 1;
+            const bool song = row.value("song", false);
+            const ImVec2 size(song ? 32.f : 48.f, 48.f);
+            const auto& display = tiers.at(std::clamp(count - 1, 0, int(tiers.size()) - 1));
+            const auto texture =
+                display.at(count || !display.contains("faded") ? "texture" : "faded").get<std::string>();
+            ImVec4 baseTint(1, 1, 1, 1);
+            if (row.contains("tint")) {
+                const auto& color = row["tint"];
+                baseTint =
+                    ImVec4(color[0].get<float>(), color[1].get<float>(), color[2].get<float>(), color[3].get<float>());
+            }
+            ImVec4 tint = baseTint;
+            if (row.contains("nightClock"))
+                tint = row["nightClock"].get<bool>() ? ImVec4(.3f, .5f, 1, 1) : ImVec4(1, .85f, .3f, 1);
+            if (!count) {
+                tint.x *= .35f;
+                tint.y *= .35f;
+                tint.z *= .35f;
+            }
+            ImGui::BeginDisabled(!Editable());
+            ComboMenu_PushButton(ImVec4(.15f, .15f, .15f, 1));
+            if (texture.empty() ? ImGui::Button(row.at("label").get<std::string>().c_str())
+                                : ImGui::ImageButton("##Item", gui ? gui->GetTextureByName(texture) : nullptr, size,
+                                                     ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
+                if (maximum > 1)
+                    ImGui::OpenPopup("##Tier");
+                else
+                    setCount(count ? 0 : 1);
+            }
+            ComboMenu_PopButton();
+            ImGui::EndDisabled();
+            Tooltip(row.at("label").get<std::string>().c_str());
+            if (count && maximum > 1) {
+                const auto badge = std::to_string(count);
+                ImGui::GetWindowDrawList()->AddText(ImGui::GetItemRectMax() - ImGui::CalcTextSize(badge.c_str()) -
+                                                        ImVec2(3, 2),
+                                                    IM_COL32_WHITE, badge.c_str());
+            }
+            if (ImGui::BeginPopup("##Tier")) {
+                ImGui::BeginDisabled(!Editable());
+                if (ImGui::Button("None")) {
+                    setCount(0);
+                    ImGui::CloseCurrentPopup();
+                }
+                for (int tier = 1; tier <= maximum; ++tier) {
+                    ImGui::SameLine();
+                    ImGui::PushID(tier);
+                    const auto& entry = tiers.at(std::min(tier - 1, int(tiers.size()) - 1));
+                    const auto path = entry.at("texture").get<std::string>();
+                    if (path.empty() ? ImGui::Button(entry.value("label", row.at("label").get<std::string>()).c_str())
+                                     : ImGui::ImageButton("##Choice", gui ? gui->GetTextureByName(path) : nullptr, size,
+                                                          ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), baseTint)) {
+                        setCount(tier);
+                        ImGui::CloseCurrentPopup();
+                    }
+                    Tooltip(entry.value("label", row.at("label").get<std::string>()).c_str());
+                    ImGui::PopID();
+                }
+                ImGui::EndDisabled();
+                ImGui::EndPopup();
+            }
+            ImGui::EndDisabled();
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+}
+static void SariaPriority() {
+    if (!ReadInteger("gRando.Options.RO_SHUFFLE_SONG_SARIA", 0))
+        return;
+    ImGui::SeparatorText("Saria's Song Priority Items");
+    auto* field = Field("gRando.SariaPriorityItems", false);
+    Json list = field && field->is_array() ? *field : Json::array();
+    bool changed = false;
+    const auto& choices = catalog.at("mm").at("sariaCandidates");
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    ImGui::BeginDisabled(!Editable());
+    if (ImGui::Button("Reset to default")) {
+        list = catalog.at("mm").at("defaults").at("gRando.SariaPriorityItems");
+        changed = true;
+    }
+    ImGui::TextDisabled("%d / 16 items", int(list.size()));
+    if (ImGui::BeginTable("##SariaPriority", 5, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings)) {
+        for (int i = 0; i < int(list.size()); ++i) {
+            ImGui::PushID(i);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            auto found =
+                std::find_if(choices.begin(), choices.end(), [&](const Json& row) { return row["value"] == list[i]; });
+            const std::string label =
+                found == choices.end() ? list[i].get<std::string>() : found->at("label").get<std::string>();
+            if (found != choices.end() && !found->at("texture").get<std::string>().empty())
+                ImGui::Image(gui ? gui->GetTextureByName(found->at("texture").get<std::string>()) : nullptr,
+                             ImVec2(24, 24));
+            ImGui::TableNextColumn();
+            ImGui::TextWrapped("%s", label.c_str());
+            ImGui::TableNextColumn();
+            ImGui::BeginDisabled(i == 0);
+            if (ImGui::Button("Up")) {
+                std::swap(list[i], list[i - 1]);
+                changed = true;
+            }
+            ImGui::EndDisabled();
+            ImGui::TableNextColumn();
+            ImGui::BeginDisabled(i + 1 == int(list.size()));
+            if (ImGui::Button("Down")) {
+                std::swap(list[i], list[i + 1]);
+                changed = true;
+            }
+            ImGui::EndDisabled();
+            ImGui::TableNextColumn();
+            if (ImGui::Button("Remove")) {
+                list.erase(list.begin() + i);
+                changed = true;
+                --i;
+            }
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+    ImGui::BeginDisabled(list.size() >= 16);
+    if (ImGui::BeginCombo("Add item", "Choose an item")) {
+        for (const auto& row : choices) {
+            if (std::find(list.begin(), list.end(), row["value"]) != list.end() || !MmStartingAvailable(row))
+                continue;
+            if (ImGui::Selectable(row.at("label").get<std::string>().c_str())) {
+                list.push_back(row["value"]);
+                changed = true;
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::EndDisabled();
+    ImGui::EndDisabled();
+    if (changed && Editable()) {
+        *Field("gRando.SariaPriorityItems", true) = list;
+        dirty = true;
+    }
+}
+static void GlobalTrapPreferences() {
+    if (view != 0 || !active)
+        return;
+    ImGui::SeparatorText("Trap preferences (global)");
+    MenuTooltip("These runtime preferences apply to every file and are not copied with seed settings.");
+    bool changed = false;
+    int behavior = CVarGetInteger("gRando.TrapItems", 0);
+    const char* choices[] = { "Default (Dynamic)", "Static" };
+    ComboMenu_PushCombobox(ComboMenu_ThemeColor());
+    if (ImGui::Combo("Trap Behavior", &behavior, choices, 2)) {
+        CVarSetInteger("gRando.TrapItems", behavior);
+        changed = true;
+    }
+    ComboMenu_PopCombobox();
+    if (ImGui::BeginTable("##GlobalTrapEffects", 2, ImGuiTableFlags_NoSavedSettings)) {
+        for (const auto& row : catalog.at("mm").at("globalTrapEffects")) {
+            ImGui::TableNextColumn();
+            const auto key = row.at("key").get<std::string>();
+            bool value = CVarGetInteger(key.c_str(), 0) != 0;
+            ImGui::PushID(key.c_str());
+            ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
+            if (ImGui::Checkbox(row.at("label").get<std::string>().c_str(), &value)) {
+                CVarSetInteger(key.c_str(), value);
+                changed = true;
+            }
+            ComboMenu_PopCheckbox();
+            Tooltip(row.at("tooltip").get<std::string>().c_str());
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+    if (changed)
+        Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+}
+void DrawCustom(const char* sidebar, int world) {
+    const std::string name = sidebar ? sidebar : "";
+    if (name == "Starting Items") {
+        StartingIcons(world);
+    }
+    if (name == "Locations" || name == "Excluded Locations" || name == "Check Exclusions") {
+        CheckList(world);
+        return;
+    }
+    if (world == 0)
+        return;
+    std::vector<std::string> cards;
+    for (const auto& row : catalog.at("mm").at("layout"))
+        if (row.at("page") == name) {
+            const std::string card = row.at("card");
+            if (std::find(cards.begin(), cards.end(), card) == cards.end())
+                cards.push_back(card);
+        }
+    const float minimum =
+        name == "Logic/Conditions" ? ImGui::GetFontSize() * 28 : std::max(400.f, ImGui::GetFontSize() * 20);
+    const int columns = ImGui::GetContentRegionAvail().x >= minimum * 2 ? 2 : 1;
+    if (cards.empty() || !ImGui::BeginTable("##NativeMmCards", columns,
+                                            ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+        return;
+    for (const auto& card : cards) {
+        ImGui::TableNextColumn();
+        ImGui::PushID(card.c_str());
+        ImGui::BeginGroup();
+        if (card == "checkPoolScenery") {
+            ImGui::BeginDisabled(!Editable());
+            for (int value = 1; value >= 0; --value) {
+                if (value == 0)
+                    ImGui::SameLine();
+                if (ImGui::Button(value ? "All On" : "All Off"))
+                    for (const auto& row : catalog.at("mm").at("layout"))
+                        if (row.at("card") == card)
+                            WriteInteger(row.at("key").get<std::string>().c_str(), value);
+            }
+            ImGui::EndDisabled();
+        }
+        bool headingDrawn = false;
+        for (const auto& row : catalog.at("mm").at("layout")) {
+            if (row.at("page") != name || row.at("card") != card)
+                continue;
+            if (!headingDrawn) {
+                const auto heading = row.at("heading").get<std::string>();
+                if (!heading.empty())
+                    ImGui::SeparatorText(heading.c_str());
+                headingDrawn = true;
+            }
+            CatalogRow(row);
+        }
+        ImGui::EndGroup();
+        ImGui::PopID();
+    }
+    ImGui::EndTable();
+    if (name == "Item Pool")
+        SariaPriority();
+    if (name == "Traps")
+        GlobalTrapPreferences();
+}
+void DrawGeneration() {
+    if (!active || document.is_null()) {
+        ImGui::TextUnformatted("No settings are available for this file.");
+        return;
+    }
+    const auto generation = snapshot.value("generation", Json::object());
+    const bool running = generation.value("running", false);
+    std::string seed = document.value("seed", std::string());
+    ImGui::BeginDisabled(!Editable() || running);
+    if (ImGui::InputTextWithHint("Seed", "(blank = random)", &seed)) {
+        document["seed"] = seed;
+        dirty = true;
+    }
+    if (ImGui::Button("Generate combined seed")) {
+        refreshPending = true;
+        try {
+            bool committed = true;
+            if (dirty) {
+                committed = Response(callbacks.setDraft(selected, document.dump().c_str()));
+                if (committed)
+                    dirty = false;
+            }
+            if (committed)
+                Response(callbacks.generate(selected, seed.c_str()));
+        } catch (const std::exception& e) { error = e.what(); }
+    }
+    ImGui::EndDisabled();
+    if (running) {
+        ImGui::Text("File %d: %s (%d / %d)", generation.value("file", selected) + 1,
+                    generation.value("phase", std::string()).c_str(), generation.value("placed", 0),
+                    generation.value("total", 0));
+        ImGui::BeginDisabled(!generation.value("canCancel", false));
+        if (ImGui::Button("Cancel")) {
+            refreshPending = true;
+            Response(callbacks.cancel());
+        }
+        ImGui::EndDisabled();
+    }
+    DrawAdvanced();
+}
+void DrawHome() {
+    if (!active)
+        return;
+    const int columns = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 60 ? 3 : MenuColumns(20.f);
+    if (!ImGui::BeginTable("##CommunityPresets", columns,
+                           ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+        return;
+    for (const auto& preset : catalog.at("combo").at("presets")) {
+        ImGui::TableNextColumn();
+        ImGui::PushID(preset.at("id").get<int>());
+        ImGui::SeparatorText(preset.at("label").get<std::string>().c_str());
+        ImGui::TextWrapped("%s", preset.at("summary").get<std::string>().c_str());
+        ImGui::BeginDisabled(!Editable());
+        if (ImGui::Button("Apply preset", ImVec2(-FLT_MIN, ImGui::GetFrameHeight() * 1.25f))) {
+            document["oot"]["settings"] = Json::object();
+            for (auto it = document["mm"]["settings"].begin(); it != document["mm"]["settings"].end();) {
+                if (it.key().rfind("gRando.Options.", 0) == 0 || it.key().rfind("gCombo.Tricks.", 0) == 0)
+                    it = document["mm"]["settings"].erase(it);
+                else
+                    ++it;
+            }
+            document["oot"]["settings"]["gRandoSettings.EnabledTricks"] = "";
+            for (const auto& rule : kGameplayRules)
+                SetLogicRule(rule, 0, WriteInteger);
+            for (const char* game : { "oot", "mm" })
+                for (const auto& value : catalog.at(game).at("defaults").items())
+                    document[game]["settings"][value.key()] = value.value();
+            for (const auto& write : preset.at("writes").items())
+                WriteInteger(write.key().c_str(), write.value());
+            document["mm"]["settings"]["gRando.StartingItems"] =
+                catalog.at("mm").at("presetStartingItems").at(std::to_string(preset.at("id").get<int>()));
+            SetLogicRule(*FindGameplayRule("gCombo.Enhancements.ForeignSongs"), preset.at("id").get<int>() != 0,
+                         WriteInteger);
+            SynchronizeGenerationGuarantee(ReadInteger, WriteInteger);
+            RefreshOptionPolicy(true);
+            dirty = true;
+        }
+        ImGui::EndDisabled();
+        Tooltip(preset.at("help").get<std::string>().c_str());
+        ImGui::Spacing();
+        ImGui::PopID();
+    }
+    ImGui::EndTable();
+}
+void DrawSavedPlacements() {
+    const auto seed = snapshot.value(view == 1 ? "savedSeed" : "generatedSeed", Json());
+    if (!seed.is_object()) {
+        ImGui::TextUnformatted("No seed placements are available for this file.");
+        return;
+    }
+    for (const char* game : { "oot", "mm" }) {
+        ImGui::SeparatorText(game[0] == 'o' ? "Ocarina of Time" : "Majora's Mask");
+        if (!seed.contains(game) || !seed[game].contains("placements"))
+            continue;
+        if (ImGui::BeginTable(game, 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+            ImGui::TableSetupColumn("Check");
+            ImGui::TableSetupColumn("Item");
+            ImGui::TableHeadersRow();
+            for (const auto& row : seed[game]["placements"].items()) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::TextWrapped("%s", row.key().c_str());
+                ImGui::TableNextColumn();
+                const auto label = row.value().is_string() ? row.value().get<std::string>() : row.value().dump();
+                ImGui::TextWrapped("%s", label.c_str());
+            }
+            ImGui::EndTable();
+        }
+    }
+}
+void DrawAdvanced() {
+    if (ImGui::CollapsingHeader("Advanced seed inspection")) {
+        const auto raw = snapshot.value(view == 1 ? "savedSeed" : "generatedSeed", Json());
+        ImGui::TextWrapped("%s", raw.dump(2).c_str());
+    }
+}
+void DrawTricks() {
+    static char query[160] = {};
+    static int world = 0, state = 0, skill = 0;
+    ImGui::InputTextWithHint("##TechniqueSearch", "Search techniques", query, sizeof(query));
+    const char* names[] = { "Both games", "Ocarina of Time", "Majora's Mask" };
+    for (int i = 0; i < 3; ++i) {
+        if (i)
+            ImGui::SameLine();
+        if (ComboMenu_StyledHeaderEntry(names[i], world == i))
+            world = i;
+    }
+    const char* modes[] = { "All techniques", "Enabled only", "Disabled only" };
+    ImGui::Combo("Show", &state, modes, 3);
+    const char* levels[] = { "All difficulties", "Novice",  "Intermediate", "Advanced",
+                             "Expert",           "Extreme", "Experimental" };
+    ImGui::Combo("Difficulty", &skill, levels, 7);
+    if (world != 2)
+        for (const auto* rule : { FindGameplayRule("gEnhancements.RestoreShadowDoorUnload"),
+                                  FindGameplayRule("gEnhancements.EarlyEyeballFrog") }) {
+            const bool original = ReadInteger(LogicRuleKey(rule->name).c_str(), 0) != 0;
+            const auto row = std::strcmp(rule->name, "gEnhancements.RestoreShadowDoorUnload") == 0
+                                 ? ComboTricks::RestoredShadowDoorInfo(rule->label, rule->help, original)
+                                 : ComboTricks::EarlyEyeballFrogInfo(rule->label, rule->help, original);
+            if (!ComboTricks::Matches(row, 0, query, world, state, skill - 1))
+                continue;
+            ImGui::PushID(rule->name);
+            bool enabled = original;
+            ImGui::BeginDisabled(!Editable());
+            ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
+            if (ImGui::Checkbox(rule->label, &enabled))
+                SetTrickGovernedRule(*rule, enabled, WriteInteger);
+            ComboMenu_PopCheckbox();
+            ImGui::EndDisabled();
+            Tooltip(rule->help);
+            ImGui::TextDisabled("%s · %s", row.area, row.tags);
+            if (ImGui::TreeNode("Details")) {
+                ImGui::TextWrapped("%s", rule->help);
+                ImGui::TreePop();
+            }
+            ImGui::Separator();
+            ImGui::PopID();
+        }
+    for (int game = 0; game < 2; ++game) {
+        if (world && world != game + 1)
+            continue;
+        const char* key = game == 0 ? "gRandoSettings.EnabledTricks" : "";
+        std::vector<std::string> csv;
+        if (game == 0) {
+            std::istringstream stream(ReadString(key));
+            std::string tag;
+            while (std::getline(stream, tag, ','))
+                if (!tag.empty())
+                    csv.push_back(tag);
+        }
+        for (const auto& row : catalog.at(game == 0 ? "oot" : "mm").at("tricks")) {
+            const std::string label = row.at("label"), id = row.at("value"),
+                              help = row.value("description", std::string());
+            bool on = game == 0 ? std::find(csv.begin(), csv.end(), id) != csv.end() : ReadInteger(id.c_str(), 0) != 0;
+            if ((state == 1 && !on) || (state == 2 && on) || (skill && row.value("difficulty", 0) != skill - 1) ||
+                (query[0] &&
+                 (label + help + row.value("area", std::string()) + row.value("tags", std::string())).find(query) ==
+                     std::string::npos))
+                continue;
+            ImGui::PushID(id.c_str());
+            ImGui::BeginDisabled(!Editable());
+            ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
+            if (ImGui::Checkbox(label.c_str(), &on)) {
+                if (game == 1)
+                    WriteInteger(id.c_str(), on);
+                else {
+                    auto found = std::find(csv.begin(), csv.end(), id);
+                    if (on)
+                        csv.push_back(id);
+                    else if (found != csv.end())
+                        csv.erase(found);
+                    std::string text;
+                    for (const auto& tag : csv) {
+                        if (!text.empty())
+                            text += ',';
+                        text += tag;
+                    }
+                    *Field(key, true) = text;
+                    dirty = true;
+                }
+            }
+            ComboMenu_PopCheckbox();
+            ImGui::EndDisabled();
+            Tooltip(help.c_str());
+            ImGui::TextDisabled("%s · %s · %s", game == 0 ? "OoT" : "MM",
+                                row.value("area", std::string("General")).c_str(),
+                                row.value("tags", std::string()).c_str());
+            if (ImGui::TreeNode("Details")) {
+                ImGui::TextWrapped("%s", help.c_str());
+                ImGui::TreePop();
+            }
+            ImGui::Separator();
+            ImGui::PopID();
+        }
+    }
 }
 } // namespace ComboRando::ProfileUI
-extern "C" COMBO_EXPORT void ComboUI_SetRandomizerProfileStore(const ComboRandomizerProfileCallbacks* source){
- using namespace ComboRando::ProfileUI;
- callbacks={};refreshPending=true;snapshotValid=false;
- if(!source||(source->version!=1&&source->version!=2))return;
- // Copy the version-1 prefix without reading beyond an older caller's struct.
- callbacks={source->version,source->inspect,source->setDraft,source->copySaved,source->generate,source->copyDraft,source->cancel,
-     source->version>=2?source->revision:nullptr};
- // Prime at runtime initialization, before gameplay/menu opening. This helper
- // uses no ImGui calls and never applies settings or writes a gameplay save.
- if(Ready()&&callbacks.version>=2&&callbacks.revision)try{RefreshSnapshot(0,callbacks.revision());}
- catch(const std::exception& e){error=e.what();}
+extern "C" COMBO_EXPORT void ComboUI_SetRandomizerProfileStore(const ComboRandomizerProfileCallbacks* source) {
+    using namespace ComboRando::ProfileUI;
+    callbacks = {};
+    refreshPending = true;
+    snapshotValid = false;
+    if (!source || (source->version != 1 && source->version != 2))
+        return;
+    // Copy the version-1 prefix without reading beyond an older caller's struct.
+    callbacks = { source->version,  source->inspect,
+                  source->setDraft, source->copySaved,
+                  source->generate, source->copyDraft,
+                  source->cancel,   source->version >= 2 ? source->revision : nullptr };
+    // Prime at runtime initialization, before gameplay/menu opening. This helper
+    // uses no ImGui calls and never applies settings or writes a gameplay save.
+    if (Ready() && callbacks.version >= 2 && callbacks.revision)
+        try {
+            RefreshSnapshot(0, callbacks.revision());
+        } catch (const std::exception& e) { error = e.what(); }
 }
-extern "C" COMBO_EXPORT int ComboUI_GetSelectedSettingsFile(){return ComboRando::ProfileUI::SelectedSlot();}
+extern "C" COMBO_EXPORT int ComboUI_GetSelectedSettingsFile() {
+    return ComboRando::ProfileUI::SelectedSlot();
+}

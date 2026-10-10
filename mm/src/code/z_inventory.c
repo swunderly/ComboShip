@@ -100,22 +100,25 @@ u32 gGsFlagsShift[] = {
 #ifdef COMBO_BUILD
 // Asset paths enter Fast::Interpreter::SegAddr; native paths reserve bit0
 // for segmented N64 addresses and require the same alignment as stock assets.
-static const ALIGN_ASSET(2) char sComboFairyOcarinaIcon[] = "__OTR__@oot:textures/icon_item_static/gItemIconOcarinaFairyTex";
-static const ALIGN_ASSET(2) char sComboFaroresWindIcon[] = "__OTR__@oot:textures/icon_item_static/gItemIconFaroresWindTex";
+static const ALIGN_ASSET(2) char sComboFairyOcarinaIcon[] =
+    "__OTR__@oot:textures/icon_item_static/gItemIconOcarinaFairyTex";
+static const ALIGN_ASSET(2) char sComboFaroresWindIcon[] =
+    "__OTR__@oot:textures/icon_item_static/gItemIconFaroresWindTex";
 static const ALIGN_ASSET(2) char sComboDinsFireIcon[] = "__OTR__@oot:textures/icon_item_static/gItemIconDinsFireTex";
-static const ALIGN_ASSET(2) char sComboNayrusLoveIcon[] = "__OTR__@oot:textures/icon_item_static/gItemIconNayrusLoveTex";
+static const ALIGN_ASSET(2) char sComboNayrusLoveIcon[] =
+    "__OTR__@oot:textures/icon_item_static/gItemIconNayrusLoveTex";
 #endif
 
 TexturePtr gItemIcons[256] = {
-    gItemIconOcarinaOfTimeTex,       // ITEM_OCARINA_OF_TIME
-    gItemIconBowTex,                 // ITEM_BOW
-    gItemIconFireArrowTex,           // ITEM_ARROW_FIRE
-    gItemIconIceArrowTex,            // ITEM_ARROW_ICE
-    gItemIconLightArrowTex,          // ITEM_ARROW_LIGHT
+    gItemIconOcarinaOfTimeTex, // ITEM_OCARINA_OF_TIME
+    gItemIconBowTex,           // ITEM_BOW
+    gItemIconFireArrowTex,     // ITEM_ARROW_FIRE
+    gItemIconIceArrowTex,      // ITEM_ARROW_ICE
+    gItemIconLightArrowTex,    // ITEM_ARROW_LIGHT
 #ifdef COMBO_BUILD
     sComboFairyOcarinaIcon, // original OOT owner
 #else
-    gItemIconFairyOcarinaTex,        // ITEM_OCARINA_FAIRY
+    gItemIconFairyOcarinaTex, // ITEM_OCARINA_FAIRY
 #endif
     gItemIconBombTex,                // ITEM_BOMB
     gItemIconBombchuTex,             // ITEM_BOMBCHU
@@ -243,26 +246,26 @@ TexturePtr gItemIcons[256] = {
     gOcarinaCRightTex,               // ITEM_INVALID_6
     gOcarinaATex,                    // ITEM_INVALID_7
 #ifdef COMBO_BUILD
-    [ITEM_COMBO_FARORES_WIND]=(TexturePtr)sComboFaroresWindIcon,
-    [ITEM_COMBO_DINS_FIRE]=(TexturePtr)sComboDinsFireIcon,
-    [ITEM_COMBO_NAYRUS_LOVE]=(TexturePtr)sComboNayrusLoveIcon,
+    [ITEM_COMBO_FARORES_WIND] = (TexturePtr)sComboFaroresWindIcon,
+    [ITEM_COMBO_DINS_FIRE] = (TexturePtr)sComboDinsFireIcon,
+    [ITEM_COMBO_NAYRUS_LOVE] = (TexturePtr)sComboNayrusLoveIcon,
 #endif
 };
 
 // Used to map item IDs to inventory slots
 u8 gItemSlots[256] = {
 #ifdef COMBO_BUILD
-    [ITEM_COMBO_FARORES_WIND]=SLOT_TRADE_KEY_MAMA,
-    [ITEM_COMBO_DINS_FIRE]=SLOT_TRADE_DEED,
-    [ITEM_COMBO_NAYRUS_LOVE]=SLOT_TRADE_COUPLE,
-    [0]=
+    [ITEM_COMBO_FARORES_WIND] = SLOT_TRADE_KEY_MAMA,
+    [ITEM_COMBO_DINS_FIRE] = SLOT_TRADE_DEED,
+    [ITEM_COMBO_NAYRUS_LOVE] = SLOT_TRADE_COUPLE,
+    [0] =
 #else
-    [0xAE]=SLOT_NONE,
-    [0xB8]=SLOT_NONE,
-    [0xB9]=SLOT_NONE,
-    [0]=
+    [0xAE] = SLOT_NONE,
+    [0xB8] = SLOT_NONE,
+    [0xB9] = SLOT_NONE,
+    [0] =
 #endif
-    SLOT_OCARINA,            // ITEM_OCARINA_OF_TIME
+        SLOT_OCARINA,        // ITEM_OCARINA_OF_TIME
     SLOT_BOW,                // ITEM_BOW
     SLOT_ARROW_FIRE,         // ITEM_ARROW_FIRE
     SLOT_ARROW_ICE,          // ITEM_ARROW_ICE
@@ -340,42 +343,182 @@ u8 gItemSlots[256] = {
     SLOT_BOW,                // ITEM_BOW_ICE
     SLOT_BOW,                // ITEM_BOW_LIGHT
     // Expanded custom IDs leave native non-inventory items unmapped. Zero is SLOT_OCARINA.
-    [0x4D]=SLOT_NONE, [0x4E]=SLOT_NONE, [0x4F]=SLOT_NONE, [0x50]=SLOT_NONE, [0x51]=SLOT_NONE,
-    [0x52]=SLOT_NONE, [0x53]=SLOT_NONE, [0x54]=SLOT_NONE, [0x55]=SLOT_NONE, [0x56]=SLOT_NONE,
-    [0x57]=SLOT_NONE, [0x58]=SLOT_NONE, [0x59]=SLOT_NONE, [0x5A]=SLOT_NONE, [0x5B]=SLOT_NONE,
-    [0x5C]=SLOT_NONE, [0x5D]=SLOT_NONE, [0x5E]=SLOT_NONE, [0x5F]=SLOT_NONE, [0x60]=SLOT_NONE,
-    [0x61]=SLOT_NONE, [0x62]=SLOT_NONE, [0x63]=SLOT_NONE, [0x64]=SLOT_NONE, [0x65]=SLOT_NONE,
-    [0x66]=SLOT_NONE, [0x67]=SLOT_NONE, [0x68]=SLOT_NONE, [0x69]=SLOT_NONE, [0x6A]=SLOT_NONE,
-    [0x6B]=SLOT_NONE, [0x6C]=SLOT_NONE, [0x6D]=SLOT_NONE, [0x6E]=SLOT_NONE, [0x6F]=SLOT_NONE,
-    [0x70]=SLOT_NONE, [0x71]=SLOT_NONE, [0x72]=SLOT_NONE, [0x73]=SLOT_NONE, [0x74]=SLOT_NONE,
-    [0x75]=SLOT_NONE, [0x76]=SLOT_NONE, [0x77]=SLOT_NONE, [0x78]=SLOT_NONE, [0x79]=SLOT_NONE,
-    [0x7A]=SLOT_NONE, [0x7B]=SLOT_NONE, [0x7C]=SLOT_NONE, [0x7D]=SLOT_NONE, [0x7E]=SLOT_NONE,
-    [0x7F]=SLOT_NONE, [0x80]=SLOT_NONE, [0x81]=SLOT_NONE, [0x82]=SLOT_NONE, [0x83]=SLOT_NONE,
-    [0x84]=SLOT_NONE, [0x85]=SLOT_NONE, [0x86]=SLOT_NONE, [0x87]=SLOT_NONE, [0x88]=SLOT_NONE,
-    [0x89]=SLOT_NONE, [0x8A]=SLOT_NONE, [0x8B]=SLOT_NONE, [0x8C]=SLOT_NONE, [0x8D]=SLOT_NONE,
-    [0x8E]=SLOT_NONE, [0x8F]=SLOT_NONE, [0x90]=SLOT_NONE, [0x91]=SLOT_NONE, [0x92]=SLOT_NONE,
-    [0x93]=SLOT_NONE, [0x94]=SLOT_NONE, [0x95]=SLOT_NONE, [0x96]=SLOT_NONE, [0x97]=SLOT_NONE,
-    [0x98]=SLOT_NONE, [0x99]=SLOT_NONE, [0x9A]=SLOT_NONE, [0x9B]=SLOT_NONE, [0x9C]=SLOT_NONE,
-    [0x9D]=SLOT_NONE, [0x9E]=SLOT_NONE, [0x9F]=SLOT_NONE, [0xA0]=SLOT_NONE, [0xA1]=SLOT_NONE,
-    [0xA2]=SLOT_NONE, [0xA3]=SLOT_NONE, [0xA4]=SLOT_NONE, [0xA5]=SLOT_NONE, [0xA6]=SLOT_NONE,
-    [0xA7]=SLOT_NONE, [0xA8]=SLOT_NONE, [0xA9]=SLOT_NONE, [0xAA]=SLOT_NONE, [0xAB]=SLOT_NONE,
-    [0xAC]=SLOT_NONE, [0xAD]=SLOT_NONE, [0xAF]=SLOT_NONE, [0xB0]=SLOT_NONE, [0xB1]=SLOT_NONE,
-    [0xB2]=SLOT_NONE, [0xB3]=SLOT_NONE, [0xB4]=SLOT_NONE, [0xB5]=SLOT_NONE, [0xB6]=SLOT_NONE,
-    [0xB7]=SLOT_NONE, [0xBA]=SLOT_NONE, [0xBB]=SLOT_NONE, [0xBC]=SLOT_NONE, [0xBD]=SLOT_NONE,
-    [0xBE]=SLOT_NONE, [0xBF]=SLOT_NONE, [0xC0]=SLOT_NONE, [0xC1]=SLOT_NONE, [0xC2]=SLOT_NONE,
-    [0xC3]=SLOT_NONE, [0xC4]=SLOT_NONE, [0xC5]=SLOT_NONE, [0xC6]=SLOT_NONE, [0xC7]=SLOT_NONE,
-    [0xC8]=SLOT_NONE, [0xC9]=SLOT_NONE, [0xCA]=SLOT_NONE, [0xCB]=SLOT_NONE, [0xCC]=SLOT_NONE,
-    [0xCD]=SLOT_NONE, [0xCE]=SLOT_NONE, [0xCF]=SLOT_NONE, [0xD0]=SLOT_NONE, [0xD1]=SLOT_NONE,
-    [0xD2]=SLOT_NONE, [0xD3]=SLOT_NONE, [0xD4]=SLOT_NONE, [0xD5]=SLOT_NONE, [0xD6]=SLOT_NONE,
-    [0xD7]=SLOT_NONE, [0xD8]=SLOT_NONE, [0xD9]=SLOT_NONE, [0xDA]=SLOT_NONE, [0xDB]=SLOT_NONE,
-    [0xDC]=SLOT_NONE, [0xDD]=SLOT_NONE, [0xDE]=SLOT_NONE, [0xDF]=SLOT_NONE, [0xE0]=SLOT_NONE,
-    [0xE1]=SLOT_NONE, [0xE2]=SLOT_NONE, [0xE3]=SLOT_NONE, [0xE4]=SLOT_NONE, [0xE5]=SLOT_NONE,
-    [0xE6]=SLOT_NONE, [0xE7]=SLOT_NONE, [0xE8]=SLOT_NONE, [0xE9]=SLOT_NONE, [0xEA]=SLOT_NONE,
-    [0xEB]=SLOT_NONE, [0xEC]=SLOT_NONE, [0xED]=SLOT_NONE, [0xEE]=SLOT_NONE, [0xEF]=SLOT_NONE,
-    [0xF0]=SLOT_NONE, [0xF1]=SLOT_NONE, [0xF2]=SLOT_NONE, [0xF3]=SLOT_NONE, [0xF4]=SLOT_NONE,
-    [0xF5]=SLOT_NONE, [0xF6]=SLOT_NONE, [0xF7]=SLOT_NONE, [0xF8]=SLOT_NONE, [0xF9]=SLOT_NONE,
-    [0xFA]=SLOT_NONE, [0xFB]=SLOT_NONE, [0xFC]=SLOT_NONE, [0xFD]=SLOT_NONE, [0xFE]=SLOT_NONE,
-    [0xFF]=SLOT_NONE,
+    [0x4D] = SLOT_NONE,
+    [0x4E] = SLOT_NONE,
+    [0x4F] = SLOT_NONE,
+    [0x50] = SLOT_NONE,
+    [0x51] = SLOT_NONE,
+    [0x52] = SLOT_NONE,
+    [0x53] = SLOT_NONE,
+    [0x54] = SLOT_NONE,
+    [0x55] = SLOT_NONE,
+    [0x56] = SLOT_NONE,
+    [0x57] = SLOT_NONE,
+    [0x58] = SLOT_NONE,
+    [0x59] = SLOT_NONE,
+    [0x5A] = SLOT_NONE,
+    [0x5B] = SLOT_NONE,
+    [0x5C] = SLOT_NONE,
+    [0x5D] = SLOT_NONE,
+    [0x5E] = SLOT_NONE,
+    [0x5F] = SLOT_NONE,
+    [0x60] = SLOT_NONE,
+    [0x61] = SLOT_NONE,
+    [0x62] = SLOT_NONE,
+    [0x63] = SLOT_NONE,
+    [0x64] = SLOT_NONE,
+    [0x65] = SLOT_NONE,
+    [0x66] = SLOT_NONE,
+    [0x67] = SLOT_NONE,
+    [0x68] = SLOT_NONE,
+    [0x69] = SLOT_NONE,
+    [0x6A] = SLOT_NONE,
+    [0x6B] = SLOT_NONE,
+    [0x6C] = SLOT_NONE,
+    [0x6D] = SLOT_NONE,
+    [0x6E] = SLOT_NONE,
+    [0x6F] = SLOT_NONE,
+    [0x70] = SLOT_NONE,
+    [0x71] = SLOT_NONE,
+    [0x72] = SLOT_NONE,
+    [0x73] = SLOT_NONE,
+    [0x74] = SLOT_NONE,
+    [0x75] = SLOT_NONE,
+    [0x76] = SLOT_NONE,
+    [0x77] = SLOT_NONE,
+    [0x78] = SLOT_NONE,
+    [0x79] = SLOT_NONE,
+    [0x7A] = SLOT_NONE,
+    [0x7B] = SLOT_NONE,
+    [0x7C] = SLOT_NONE,
+    [0x7D] = SLOT_NONE,
+    [0x7E] = SLOT_NONE,
+    [0x7F] = SLOT_NONE,
+    [0x80] = SLOT_NONE,
+    [0x81] = SLOT_NONE,
+    [0x82] = SLOT_NONE,
+    [0x83] = SLOT_NONE,
+    [0x84] = SLOT_NONE,
+    [0x85] = SLOT_NONE,
+    [0x86] = SLOT_NONE,
+    [0x87] = SLOT_NONE,
+    [0x88] = SLOT_NONE,
+    [0x89] = SLOT_NONE,
+    [0x8A] = SLOT_NONE,
+    [0x8B] = SLOT_NONE,
+    [0x8C] = SLOT_NONE,
+    [0x8D] = SLOT_NONE,
+    [0x8E] = SLOT_NONE,
+    [0x8F] = SLOT_NONE,
+    [0x90] = SLOT_NONE,
+    [0x91] = SLOT_NONE,
+    [0x92] = SLOT_NONE,
+    [0x93] = SLOT_NONE,
+    [0x94] = SLOT_NONE,
+    [0x95] = SLOT_NONE,
+    [0x96] = SLOT_NONE,
+    [0x97] = SLOT_NONE,
+    [0x98] = SLOT_NONE,
+    [0x99] = SLOT_NONE,
+    [0x9A] = SLOT_NONE,
+    [0x9B] = SLOT_NONE,
+    [0x9C] = SLOT_NONE,
+    [0x9D] = SLOT_NONE,
+    [0x9E] = SLOT_NONE,
+    [0x9F] = SLOT_NONE,
+    [0xA0] = SLOT_NONE,
+    [0xA1] = SLOT_NONE,
+    [0xA2] = SLOT_NONE,
+    [0xA3] = SLOT_NONE,
+    [0xA4] = SLOT_NONE,
+    [0xA5] = SLOT_NONE,
+    [0xA6] = SLOT_NONE,
+    [0xA7] = SLOT_NONE,
+    [0xA8] = SLOT_NONE,
+    [0xA9] = SLOT_NONE,
+    [0xAA] = SLOT_NONE,
+    [0xAB] = SLOT_NONE,
+    [0xAC] = SLOT_NONE,
+    [0xAD] = SLOT_NONE,
+    [0xAF] = SLOT_NONE,
+    [0xB0] = SLOT_NONE,
+    [0xB1] = SLOT_NONE,
+    [0xB2] = SLOT_NONE,
+    [0xB3] = SLOT_NONE,
+    [0xB4] = SLOT_NONE,
+    [0xB5] = SLOT_NONE,
+    [0xB6] = SLOT_NONE,
+    [0xB7] = SLOT_NONE,
+    [0xBA] = SLOT_NONE,
+    [0xBB] = SLOT_NONE,
+    [0xBC] = SLOT_NONE,
+    [0xBD] = SLOT_NONE,
+    [0xBE] = SLOT_NONE,
+    [0xBF] = SLOT_NONE,
+    [0xC0] = SLOT_NONE,
+    [0xC1] = SLOT_NONE,
+    [0xC2] = SLOT_NONE,
+    [0xC3] = SLOT_NONE,
+    [0xC4] = SLOT_NONE,
+    [0xC5] = SLOT_NONE,
+    [0xC6] = SLOT_NONE,
+    [0xC7] = SLOT_NONE,
+    [0xC8] = SLOT_NONE,
+    [0xC9] = SLOT_NONE,
+    [0xCA] = SLOT_NONE,
+    [0xCB] = SLOT_NONE,
+    [0xCC] = SLOT_NONE,
+    [0xCD] = SLOT_NONE,
+    [0xCE] = SLOT_NONE,
+    [0xCF] = SLOT_NONE,
+    [0xD0] = SLOT_NONE,
+    [0xD1] = SLOT_NONE,
+    [0xD2] = SLOT_NONE,
+    [0xD3] = SLOT_NONE,
+    [0xD4] = SLOT_NONE,
+    [0xD5] = SLOT_NONE,
+    [0xD6] = SLOT_NONE,
+    [0xD7] = SLOT_NONE,
+    [0xD8] = SLOT_NONE,
+    [0xD9] = SLOT_NONE,
+    [0xDA] = SLOT_NONE,
+    [0xDB] = SLOT_NONE,
+    [0xDC] = SLOT_NONE,
+    [0xDD] = SLOT_NONE,
+    [0xDE] = SLOT_NONE,
+    [0xDF] = SLOT_NONE,
+    [0xE0] = SLOT_NONE,
+    [0xE1] = SLOT_NONE,
+    [0xE2] = SLOT_NONE,
+    [0xE3] = SLOT_NONE,
+    [0xE4] = SLOT_NONE,
+    [0xE5] = SLOT_NONE,
+    [0xE6] = SLOT_NONE,
+    [0xE7] = SLOT_NONE,
+    [0xE8] = SLOT_NONE,
+    [0xE9] = SLOT_NONE,
+    [0xEA] = SLOT_NONE,
+    [0xEB] = SLOT_NONE,
+    [0xEC] = SLOT_NONE,
+    [0xED] = SLOT_NONE,
+    [0xEE] = SLOT_NONE,
+    [0xEF] = SLOT_NONE,
+    [0xF0] = SLOT_NONE,
+    [0xF1] = SLOT_NONE,
+    [0xF2] = SLOT_NONE,
+    [0xF3] = SLOT_NONE,
+    [0xF4] = SLOT_NONE,
+    [0xF5] = SLOT_NONE,
+    [0xF6] = SLOT_NONE,
+    [0xF7] = SLOT_NONE,
+    [0xF8] = SLOT_NONE,
+    [0xF9] = SLOT_NONE,
+    [0xFA] = SLOT_NONE,
+    [0xFB] = SLOT_NONE,
+    [0xFC] = SLOT_NONE,
+    [0xFD] = SLOT_NONE,
+    [0xFE] = SLOT_NONE,
+    [0xFF] = SLOT_NONE,
 };
 
 s16 gItemPrices[] = {

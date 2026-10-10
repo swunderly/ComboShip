@@ -715,7 +715,7 @@ void func_80BD9B4C(EnPamera* this, PlayState* play) {
 void func_80BD9C70(EnPamera* this, PlayState* play) {
     play->nextEntrance = ENTRANCE(IKANA_CANYON, 2);
 #ifdef COMBO_BUILD
-            play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
+    play->nextEntrance = Combo_MMOrdinaryExitOverride(play->nextEntrance);
 #endif
     play->transitionTrigger = TRANS_TRIGGER_START;
     play->transitionType = TRANS_TYPE_70;

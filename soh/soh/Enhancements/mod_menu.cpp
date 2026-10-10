@@ -204,7 +204,8 @@ bool IsValidExtension(std::string extension) {
 void UpdateModFiles(bool init = false, bool reset = false) {
 #ifdef __ANDROID__
     const char* skipMods = std::getenv("COMBOSHIP_SKIP_MODS");
-    if (skipMods && skipMods[0] == '1') return;
+    if (skipMods && skipMods[0] == '1')
+        return;
 #endif
     if (init || reset) {
         enabledModFiles.clear();

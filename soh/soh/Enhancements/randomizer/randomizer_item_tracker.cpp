@@ -753,7 +753,8 @@ ItemTrackerNumbers GetItemCurrentAndMax(ItemTrackerItem item) {
 #define IM_COL_LIGHT_YELLOW IM_COL32(255, 255, 130, 255)
 
 void DrawItemCount(ItemTrackerItem item, bool hideMax) {
-    if (Rando::Souls::GeneralIndex(static_cast<RandomizerGet>(item.id)) >= 0) return;
+    if (Rando::Souls::GeneralIndex(static_cast<RandomizerGet>(item.id)) >= 0)
+        return;
     if (!GameInteractor::IsSaveLoaded()) {
         return;
     }
@@ -977,7 +978,8 @@ bool HasBossSoul(RandomizerInf bossSoul) {
 void DrawItem(ItemTrackerItem item) {
 
     const int generalSoul = Rando::Souls::GeneralIndex(static_cast<RandomizerGet>(item.id));
-    uint32_t actualItemId = generalSoul >= 0 ? ITEM_SKULL_TOKEN : (GameInteractor::IsSaveLoaded() ? INV_CONTENT(item.id) : ITEM_NONE);
+    uint32_t actualItemId =
+        generalSoul >= 0 ? ITEM_SKULL_TOKEN : (GameInteractor::IsSaveLoaded() ? INV_CONTENT(item.id) : ITEM_NONE);
     float iconSize = static_cast<float>(CVarGetInteger(CVAR_TRACKER_ITEM("IconSize"), 36));
     bool hasItem = actualItemId != ITEM_NONE;
     std::string itemName = "";
@@ -1348,101 +1350,291 @@ void DrawItem(ItemTrackerItem item) {
     if (generalSoul >= 0) {
         hasItem = GameInteractor::IsSaveLoaded() && Rando::Souls::RuntimeOwned(static_cast<RandomizerGet>(item.id));
         switch (item.id) {
-            case RG_SOUL_ENEMY_POE: itemName = "Soul of Poes (OoT)"; break;
-            case RG_SOUL_ENEMY_STALFOS: itemName = "Soul of Stalfos (OoT)"; break;
-            case RG_SOUL_ENEMY_OCTOROK: itemName = "Soul of Octoroks (OoT)"; break;
-            case RG_SOUL_ENEMY_WALLMASTER: itemName = "Soul of Wallmasters (OoT)"; break;
-            case RG_SOUL_ENEMY_DODONGO: itemName = "Soul of Dodongos (OoT)"; break;
-            case RG_SOUL_ENEMY_KEESE: itemName = "Soul of Keese (OoT)"; break;
-            case RG_SOUL_ENEMY_TEKTITE: itemName = "Soul of Tektites (OoT)"; break;
-            case RG_SOUL_ENEMY_PEAHAT: itemName = "Soul of Peahats (OoT)"; break;
-            case RG_SOUL_ENEMY_LIZALFOS_DINOLFOS: itemName = "Soul of Lizalfos/Dinolfos (OoT)"; break;
-            case RG_SOUL_ENEMY_GOHMA_LARVA: itemName = "Soul of Gohma Larvae"; break;
-            case RG_SOUL_ENEMY_SHABOM: itemName = "Soul of Shaboms"; break;
-            case RG_SOUL_ENEMY_BABY_DODONGO: itemName = "Soul of Baby Dodongos"; break;
-            case RG_SOUL_ENEMY_DARK_LINK: itemName = "Soul of Dark Link"; break;
-            case RG_SOUL_ENEMY_BIRI_BARI: itemName = "Soul of Biris/Baris"; break;
-            case RG_SOUL_ENEMY_TAILPASARN: itemName = "Soul of Tailpasarans"; break;
-            case RG_SOUL_ENEMY_SKULLTULA: itemName = "Soul of Skulltulas (OoT)"; break;
-            case RG_SOUL_ENEMY_TORCH_SLUG: itemName = "Soul of Torch Slugs"; break;
-            case RG_SOUL_ENEMY_MOBLIN: itemName = "Soul of Moblins"; break;
-            case RG_SOUL_ENEMY_ARMOS: itemName = "Soul of Armos (OoT)"; break;
-            case RG_SOUL_ENEMY_DEKU_BABA: itemName = "Soul of Deku Babas (OoT)"; break;
-            case RG_SOUL_ENEMY_DEKU_SCRUB: itemName = "Soul of Deku Scrubs (OoT)"; break;
-            case RG_SOUL_ENEMY_BUBBLE: itemName = "Soul of Bubbles (OoT)"; break;
-            case RG_SOUL_ENEMY_BEAMOS: itemName = "Soul of Beamos (OoT)"; break;
-            case RG_SOUL_ENEMY_FLOORMASTER: itemName = "Soul of Floormasters (OoT)"; break;
-            case RG_SOUL_ENEMY_REDEAD_GIBDO: itemName = "Soul of ReDeads/Gibdos (OoT)"; break;
-            case RG_SOUL_ENEMY_SKULLWALLTULA: itemName = "Soul of Skullwalltulas (OoT)"; break;
-            case RG_SOUL_ENEMY_FLARE_DANCER: itemName = "Soul of Flare Dancers"; break;
-            case RG_SOUL_ENEMY_DEAD_HAND: itemName = "Soul of Dead Hands"; break;
-            case RG_SOUL_ENEMY_SHELL_BLADE: itemName = "Soul of Shell Blades (OoT)"; break;
-            case RG_SOUL_ENEMY_LIKE_LIKE: itemName = "Soul of Like Likes (OoT)"; break;
-            case RG_SOUL_ENEMY_SPIKE: itemName = "Soul of Spikes"; break;
-            case RG_SOUL_ENEMY_ANUBIS: itemName = "Soul of Anubis"; break;
-            case RG_SOUL_ENEMY_IRON_KNUCKLE: itemName = "Soul of Iron Knuckles (OoT)"; break;
-            case RG_SOUL_ENEMY_SKULL_KID: itemName = "Soul of Skull Kids (OoT)"; break;
-            case RG_SOUL_ENEMY_FLYING_POT: itemName = "Soul of Flying Pots (OoT)"; break;
-            case RG_SOUL_ENEMY_FREEZARD: itemName = "Soul of Freezards (OoT)"; break;
-            case RG_SOUL_ENEMY_STINGER: itemName = "Soul of Stingers"; break;
-            case RG_SOUL_ENEMY_WOLFOS: itemName = "Soul of Wolfos (OoT)"; break;
-            case RG_SOUL_ENEMY_GUAY: itemName = "Soul of Guays (OoT)"; break;
-            case RG_SOUL_ENEMY_PARASITE: itemName = "Soul of Jabu-Jabu's Parasites"; break;
-            case RG_SOUL_ENEMY_LEEVER: itemName = "Soul of Leevers (OoT)"; break;
-            case RG_SOUL_ENEMY_STALCHILD: itemName = "Soul of Stalchildren (OoT)"; break;
-            case RG_SOUL_ENEMY_THIEVES: itemName = "Soul of the Fighting Gerudos"; break;
-            case RG_SOUL_NPC_OLD_HAG: itemName = "Soul of the Old Hag (OoT)"; break;
-            case RG_SOUL_NPC_CARPET_MAN: itemName = "Soul of the Carpet Man (OoT)"; break;
-            case RG_SOUL_NPC_GROG: itemName = "Soul of the Punk Kid (OoT)"; break;
-            case RG_SOUL_NPC_GORMAN: itemName = "Soul of Ingo (OoT)"; break;
-            case RG_SOUL_NPC_SCIENTIST: itemName = "Soul of the Scientist (OoT)"; break;
-            case RG_SOUL_NPC_BEAN_SALESMAN: itemName = "Soul of the Bean Salesman (OoT)"; break;
-            case RG_SOUL_NPC_HONEY_DARLING: itemName = "Soul of Honey & Darling (OoT)"; break;
-            case RG_SOUL_NPC_CHEST_GAME_OWNER: itemName = "Soul of Chest Game Owner (OoT)"; break;
-            case RG_SOUL_NPC_COMPOSER_BROS: itemName = "Soul of Composer Bros. (OoT)"; break;
-            case RG_SOUL_NPC_SARIA: itemName = "Soul of Saria"; break;
-            case RG_SOUL_NPC_DARUNIA: itemName = "Soul of Darunia"; break;
-            case RG_SOUL_NPC_RUTO: itemName = "Soul of Ruto (OoT)"; break;
-            case RG_SOUL_NPC_KING_ZORA: itemName = "Soul of King Zora"; break;
-            case RG_SOUL_NPC_ANJU: itemName = "Soul of Cucco Lady (OoT)"; break;
-            case RG_SOUL_NPC_CARPENTERS: itemName = "Soul of Carpenters (OoT)"; break;
-            case RG_SOUL_NPC_GURU_GURU: itemName = "Soul of Guru-Guru (OoT)"; break;
-            case RG_SOUL_NPC_MIDO: itemName = "Soul of Mido"; break;
-            case RG_SOUL_NPC_KOKIRI: itemName = "Soul of Kokiri"; break;
-            case RG_SOUL_NPC_KOKIRI_SHOPKEEPER: itemName = "Soul of Kokiri Shopkeeper"; break;
-            case RG_SOUL_NPC_POTION_SHOPKEEPER: itemName = "Soul of Potion Shopkeeper"; break;
-            case RG_SOUL_NPC_BOMBCHU_SHOPKEEPER: itemName = "Soul of Bombchu Shopkeeper (OoT)"; break;
-            case RG_SOUL_NPC_BAZAAR_SHOPKEEPER: itemName = "Soul of Bazaar Shopkeeper (OoT)"; break;
-            case RG_SOUL_NPC_ZORA_SHOPKEEPER: itemName = "Soul of Zora Shopkeeper (OoT)"; break;
-            case RG_SOUL_NPC_GORON_SHOPKEEPER: itemName = "Soul of Goron Shopkeeper (OoT)"; break;
-            case RG_SOUL_NPC_HYLIAN_GUARD: itemName = "Soul of Hylian Guard"; break;
-            case RG_SOUL_NPC_ROOFTOP_MAN: itemName = "Soul of the Rooftop Man (OoT)"; break;
-            case RG_SOUL_NPC_CITIZEN: itemName = "Soul of the Citizens (OoT)"; break;
-            case RG_SOUL_NPC_DOG_LADY: itemName = "Soul of the Dog Lady (OoT)"; break;
-            case RG_SOUL_NPC_BANKER: itemName = "Soul of the Beggar (OoT)"; break;
-            case RG_SOUL_NPC_ASTRONOMER: itemName = "Soul of the Astronomer (OoT)"; break;
-            case RG_SOUL_NPC_MALON: itemName = "Soul of Malon (OoT)"; break;
-            case RG_SOUL_NPC_TALON: itemName = "Soul of Talon (OoT)"; break;
-            case RG_SOUL_NPC_FISHING_POND_OWNER: itemName = "Soul of Fishing Pond Owner (OoT)"; break;
-            case RG_SOUL_NPC_GORON: itemName = "Soul of Goron (OoT)"; break;
-            case RG_SOUL_NPC_GORON_CHILD: itemName = "Soul of Goron Child (OoT)"; break;
-            case RG_SOUL_NPC_BIGGORON: itemName = "Soul of Biggoron (OoT)"; break;
-            case RG_SOUL_NPC_MEDIGORON: itemName = "Soul of Medigoron (OoT)"; break;
-            case RG_SOUL_NPC_ZORA: itemName = "Soul of Zora (OoT)"; break;
-            case RG_SOUL_NPC_BOMBCHU_BOWLING_LADY: itemName = "Soul of Bombchu Bowling Lady (OoT)"; break;
-            case RG_SOUL_NPC_SHOOTING_GALLERY_OWNER: itemName = "Soul of Shooting Gallery Owner (OoT)"; break;
-            case RG_SOUL_NPC_DAMPE: itemName = "Soul of Dampe (OoT)"; break;
-            case RG_SOUL_NPC_BOMBERS: itemName = "Soul of Graveyard Kid (OoT)"; break;
-            case RG_SOUL_NPC_POE_COLLECTOR: itemName = "Soul of Poe Collector (OoT)"; break;
-            case RG_SOUL_NPC_SHEIK: itemName = "Soul of Sheik"; break;
-            case RG_SOUL_NPC_ZELDA: itemName = "Soul of Zelda"; break;
-            case RG_SOUL_NPC_THIEVES: itemName = "Soul of the Patrolling Gerudos"; break;
-            case RG_SOUL_ANIMAL_CUCCO: itemName = "Soul of Cuccos (OoT)"; break;
-            case RG_SOUL_ANIMAL_COW: itemName = "Soul of Cows (OoT)"; break;
-            case RG_SOUL_ANIMAL_DOG: itemName = "Soul of Dogs (OoT)"; break;
-            case RG_SOUL_ANIMAL_BUTTERFLY: itemName = "Soul of Butterflies (OoT)"; break;
-            case RG_SOUL_MISC_BUSINESS_SCRUB: itemName = "Soul of Business Scrubs (OoT)"; break;
-            case RG_SOUL_MISC_GS: itemName = "Soul of Gold Skulltulas (OoT)"; break;
+            case RG_SOUL_ENEMY_POE:
+                itemName = "Soul of Poes (OoT)";
+                break;
+            case RG_SOUL_ENEMY_STALFOS:
+                itemName = "Soul of Stalfos (OoT)";
+                break;
+            case RG_SOUL_ENEMY_OCTOROK:
+                itemName = "Soul of Octoroks (OoT)";
+                break;
+            case RG_SOUL_ENEMY_WALLMASTER:
+                itemName = "Soul of Wallmasters (OoT)";
+                break;
+            case RG_SOUL_ENEMY_DODONGO:
+                itemName = "Soul of Dodongos (OoT)";
+                break;
+            case RG_SOUL_ENEMY_KEESE:
+                itemName = "Soul of Keese (OoT)";
+                break;
+            case RG_SOUL_ENEMY_TEKTITE:
+                itemName = "Soul of Tektites (OoT)";
+                break;
+            case RG_SOUL_ENEMY_PEAHAT:
+                itemName = "Soul of Peahats (OoT)";
+                break;
+            case RG_SOUL_ENEMY_LIZALFOS_DINOLFOS:
+                itemName = "Soul of Lizalfos/Dinolfos (OoT)";
+                break;
+            case RG_SOUL_ENEMY_GOHMA_LARVA:
+                itemName = "Soul of Gohma Larvae";
+                break;
+            case RG_SOUL_ENEMY_SHABOM:
+                itemName = "Soul of Shaboms";
+                break;
+            case RG_SOUL_ENEMY_BABY_DODONGO:
+                itemName = "Soul of Baby Dodongos";
+                break;
+            case RG_SOUL_ENEMY_DARK_LINK:
+                itemName = "Soul of Dark Link";
+                break;
+            case RG_SOUL_ENEMY_BIRI_BARI:
+                itemName = "Soul of Biris/Baris";
+                break;
+            case RG_SOUL_ENEMY_TAILPASARN:
+                itemName = "Soul of Tailpasarans";
+                break;
+            case RG_SOUL_ENEMY_SKULLTULA:
+                itemName = "Soul of Skulltulas (OoT)";
+                break;
+            case RG_SOUL_ENEMY_TORCH_SLUG:
+                itemName = "Soul of Torch Slugs";
+                break;
+            case RG_SOUL_ENEMY_MOBLIN:
+                itemName = "Soul of Moblins";
+                break;
+            case RG_SOUL_ENEMY_ARMOS:
+                itemName = "Soul of Armos (OoT)";
+                break;
+            case RG_SOUL_ENEMY_DEKU_BABA:
+                itemName = "Soul of Deku Babas (OoT)";
+                break;
+            case RG_SOUL_ENEMY_DEKU_SCRUB:
+                itemName = "Soul of Deku Scrubs (OoT)";
+                break;
+            case RG_SOUL_ENEMY_BUBBLE:
+                itemName = "Soul of Bubbles (OoT)";
+                break;
+            case RG_SOUL_ENEMY_BEAMOS:
+                itemName = "Soul of Beamos (OoT)";
+                break;
+            case RG_SOUL_ENEMY_FLOORMASTER:
+                itemName = "Soul of Floormasters (OoT)";
+                break;
+            case RG_SOUL_ENEMY_REDEAD_GIBDO:
+                itemName = "Soul of ReDeads/Gibdos (OoT)";
+                break;
+            case RG_SOUL_ENEMY_SKULLWALLTULA:
+                itemName = "Soul of Skullwalltulas (OoT)";
+                break;
+            case RG_SOUL_ENEMY_FLARE_DANCER:
+                itemName = "Soul of Flare Dancers";
+                break;
+            case RG_SOUL_ENEMY_DEAD_HAND:
+                itemName = "Soul of Dead Hands";
+                break;
+            case RG_SOUL_ENEMY_SHELL_BLADE:
+                itemName = "Soul of Shell Blades (OoT)";
+                break;
+            case RG_SOUL_ENEMY_LIKE_LIKE:
+                itemName = "Soul of Like Likes (OoT)";
+                break;
+            case RG_SOUL_ENEMY_SPIKE:
+                itemName = "Soul of Spikes";
+                break;
+            case RG_SOUL_ENEMY_ANUBIS:
+                itemName = "Soul of Anubis";
+                break;
+            case RG_SOUL_ENEMY_IRON_KNUCKLE:
+                itemName = "Soul of Iron Knuckles (OoT)";
+                break;
+            case RG_SOUL_ENEMY_SKULL_KID:
+                itemName = "Soul of Skull Kids (OoT)";
+                break;
+            case RG_SOUL_ENEMY_FLYING_POT:
+                itemName = "Soul of Flying Pots (OoT)";
+                break;
+            case RG_SOUL_ENEMY_FREEZARD:
+                itemName = "Soul of Freezards (OoT)";
+                break;
+            case RG_SOUL_ENEMY_STINGER:
+                itemName = "Soul of Stingers";
+                break;
+            case RG_SOUL_ENEMY_WOLFOS:
+                itemName = "Soul of Wolfos (OoT)";
+                break;
+            case RG_SOUL_ENEMY_GUAY:
+                itemName = "Soul of Guays (OoT)";
+                break;
+            case RG_SOUL_ENEMY_PARASITE:
+                itemName = "Soul of Jabu-Jabu's Parasites";
+                break;
+            case RG_SOUL_ENEMY_LEEVER:
+                itemName = "Soul of Leevers (OoT)";
+                break;
+            case RG_SOUL_ENEMY_STALCHILD:
+                itemName = "Soul of Stalchildren (OoT)";
+                break;
+            case RG_SOUL_ENEMY_THIEVES:
+                itemName = "Soul of the Fighting Gerudos";
+                break;
+            case RG_SOUL_NPC_OLD_HAG:
+                itemName = "Soul of the Old Hag (OoT)";
+                break;
+            case RG_SOUL_NPC_CARPET_MAN:
+                itemName = "Soul of the Carpet Man (OoT)";
+                break;
+            case RG_SOUL_NPC_GROG:
+                itemName = "Soul of the Punk Kid (OoT)";
+                break;
+            case RG_SOUL_NPC_GORMAN:
+                itemName = "Soul of Ingo (OoT)";
+                break;
+            case RG_SOUL_NPC_SCIENTIST:
+                itemName = "Soul of the Scientist (OoT)";
+                break;
+            case RG_SOUL_NPC_BEAN_SALESMAN:
+                itemName = "Soul of the Bean Salesman (OoT)";
+                break;
+            case RG_SOUL_NPC_HONEY_DARLING:
+                itemName = "Soul of Honey & Darling (OoT)";
+                break;
+            case RG_SOUL_NPC_CHEST_GAME_OWNER:
+                itemName = "Soul of Chest Game Owner (OoT)";
+                break;
+            case RG_SOUL_NPC_COMPOSER_BROS:
+                itemName = "Soul of Composer Bros. (OoT)";
+                break;
+            case RG_SOUL_NPC_SARIA:
+                itemName = "Soul of Saria";
+                break;
+            case RG_SOUL_NPC_DARUNIA:
+                itemName = "Soul of Darunia";
+                break;
+            case RG_SOUL_NPC_RUTO:
+                itemName = "Soul of Ruto (OoT)";
+                break;
+            case RG_SOUL_NPC_KING_ZORA:
+                itemName = "Soul of King Zora";
+                break;
+            case RG_SOUL_NPC_ANJU:
+                itemName = "Soul of Cucco Lady (OoT)";
+                break;
+            case RG_SOUL_NPC_CARPENTERS:
+                itemName = "Soul of Carpenters (OoT)";
+                break;
+            case RG_SOUL_NPC_GURU_GURU:
+                itemName = "Soul of Guru-Guru (OoT)";
+                break;
+            case RG_SOUL_NPC_MIDO:
+                itemName = "Soul of Mido";
+                break;
+            case RG_SOUL_NPC_KOKIRI:
+                itemName = "Soul of Kokiri";
+                break;
+            case RG_SOUL_NPC_KOKIRI_SHOPKEEPER:
+                itemName = "Soul of Kokiri Shopkeeper";
+                break;
+            case RG_SOUL_NPC_POTION_SHOPKEEPER:
+                itemName = "Soul of Potion Shopkeeper";
+                break;
+            case RG_SOUL_NPC_BOMBCHU_SHOPKEEPER:
+                itemName = "Soul of Bombchu Shopkeeper (OoT)";
+                break;
+            case RG_SOUL_NPC_BAZAAR_SHOPKEEPER:
+                itemName = "Soul of Bazaar Shopkeeper (OoT)";
+                break;
+            case RG_SOUL_NPC_ZORA_SHOPKEEPER:
+                itemName = "Soul of Zora Shopkeeper (OoT)";
+                break;
+            case RG_SOUL_NPC_GORON_SHOPKEEPER:
+                itemName = "Soul of Goron Shopkeeper (OoT)";
+                break;
+            case RG_SOUL_NPC_HYLIAN_GUARD:
+                itemName = "Soul of Hylian Guard";
+                break;
+            case RG_SOUL_NPC_ROOFTOP_MAN:
+                itemName = "Soul of the Rooftop Man (OoT)";
+                break;
+            case RG_SOUL_NPC_CITIZEN:
+                itemName = "Soul of the Citizens (OoT)";
+                break;
+            case RG_SOUL_NPC_DOG_LADY:
+                itemName = "Soul of the Dog Lady (OoT)";
+                break;
+            case RG_SOUL_NPC_BANKER:
+                itemName = "Soul of the Beggar (OoT)";
+                break;
+            case RG_SOUL_NPC_ASTRONOMER:
+                itemName = "Soul of the Astronomer (OoT)";
+                break;
+            case RG_SOUL_NPC_MALON:
+                itemName = "Soul of Malon (OoT)";
+                break;
+            case RG_SOUL_NPC_TALON:
+                itemName = "Soul of Talon (OoT)";
+                break;
+            case RG_SOUL_NPC_FISHING_POND_OWNER:
+                itemName = "Soul of Fishing Pond Owner (OoT)";
+                break;
+            case RG_SOUL_NPC_GORON:
+                itemName = "Soul of Goron (OoT)";
+                break;
+            case RG_SOUL_NPC_GORON_CHILD:
+                itemName = "Soul of Goron Child (OoT)";
+                break;
+            case RG_SOUL_NPC_BIGGORON:
+                itemName = "Soul of Biggoron (OoT)";
+                break;
+            case RG_SOUL_NPC_MEDIGORON:
+                itemName = "Soul of Medigoron (OoT)";
+                break;
+            case RG_SOUL_NPC_ZORA:
+                itemName = "Soul of Zora (OoT)";
+                break;
+            case RG_SOUL_NPC_BOMBCHU_BOWLING_LADY:
+                itemName = "Soul of Bombchu Bowling Lady (OoT)";
+                break;
+            case RG_SOUL_NPC_SHOOTING_GALLERY_OWNER:
+                itemName = "Soul of Shooting Gallery Owner (OoT)";
+                break;
+            case RG_SOUL_NPC_DAMPE:
+                itemName = "Soul of Dampe (OoT)";
+                break;
+            case RG_SOUL_NPC_BOMBERS:
+                itemName = "Soul of Graveyard Kid (OoT)";
+                break;
+            case RG_SOUL_NPC_POE_COLLECTOR:
+                itemName = "Soul of Poe Collector (OoT)";
+                break;
+            case RG_SOUL_NPC_SHEIK:
+                itemName = "Soul of Sheik";
+                break;
+            case RG_SOUL_NPC_ZELDA:
+                itemName = "Soul of Zelda";
+                break;
+            case RG_SOUL_NPC_THIEVES:
+                itemName = "Soul of the Patrolling Gerudos";
+                break;
+            case RG_SOUL_ANIMAL_CUCCO:
+                itemName = "Soul of Cuccos (OoT)";
+                break;
+            case RG_SOUL_ANIMAL_COW:
+                itemName = "Soul of Cows (OoT)";
+                break;
+            case RG_SOUL_ANIMAL_DOG:
+                itemName = "Soul of Dogs (OoT)";
+                break;
+            case RG_SOUL_ANIMAL_BUTTERFLY:
+                itemName = "Soul of Butterflies (OoT)";
+                break;
+            case RG_SOUL_MISC_BUSINESS_SCRUB:
+                itemName = "Soul of Business Scrubs (OoT)";
+                break;
+            case RG_SOUL_MISC_GS:
+                itemName = "Soul of Gold Skulltulas (OoT)";
+                break;
         }
     }
 
@@ -2057,47 +2249,61 @@ void ItemTrackerLoadFile() {
 extern "C" COMBO_EXPORT void SOH_ComboItemTrackerDrawContents() {
     ComboMenuContext::UseSharedImGuiContext();
     Ship::ResourceManagerScope rmScope(Ship::CrossRMRegistry::Get("oot"));
-    if (presetLoaded) { shouldUpdateVectors = true; presetLoaded = false; }
+    if (presetLoaded) {
+        shouldUpdateVectors = true;
+        presetLoaded = false;
+    }
     UpdateVectors();
-    const float size = std::clamp(CVarGetInteger("gCombo.Tracker.IconSize",36),16,128);
-    const float pitch = size + std::clamp(CVarGetInteger("gCombo.Tracker.IconSpacing",12),0,50);
-    auto group = [&](const char* title,const char* cvar,const std::vector<ItemTrackerItem>& items) {
-        if (!CVarGetInteger(cvar,1) || items.empty()) return;
+    const float size = std::clamp(CVarGetInteger("gCombo.Tracker.IconSize", 36), 16, 128);
+    const float pitch = size + std::clamp(CVarGetInteger("gCombo.Tracker.IconSpacing", 12), 0, 50);
+    auto group = [&](const char* title, const char* cvar, const std::vector<ItemTrackerItem>& items) {
+        if (!CVarGetInteger(cvar, 1) || items.empty())
+            return;
         ImGui::Separator();
-        if (!ImGui::CollapsingHeader(title,ImGuiTreeNodeFlags_DefaultOpen)) return;
-        const int columns = std::clamp(static_cast<int>(ImGui::GetContentRegionAvail().x / pitch),1,6);
+        if (!ImGui::CollapsingHeader(title, ImGuiTreeNodeFlags_DefaultOpen))
+            return;
+        const int columns = std::clamp(static_cast<int>(ImGui::GetContentRegionAvail().x / pitch), 1, 6);
         ImGui::PushID(title);
-        if (ImGui::BeginTable("##icons",columns,ImGuiTableFlags_SizingFixedFit)) {
-            for (int c=0;c<columns;++c) ImGui::TableSetupColumn("",ImGuiTableColumnFlags_WidthFixed,pitch);
+        if (ImGui::BeginTable("##icons", columns, ImGuiTableFlags_SizingFixedFit)) {
+            for (int c = 0; c < columns; ++c)
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, pitch);
             for (const auto& item : items) {
                 ImGui::TableNextColumn();
                 const auto start = ImGui::GetCursorPos();
                 item.drawFunc(item);
                 // Count renderers reposition the cursor; keep grid rows at a stable pitch.
-                ImGui::SetCursorPos(start); ImGui::Dummy(ImVec2(size,pitch));
+                ImGui::SetCursorPos(start);
+                ImGui::Dummy(ImVec2(size, pitch));
             }
             ImGui::EndTable();
         }
         ImGui::PopID();
     };
-    group("Items","gCombo.Tracker.Inventory",inventoryItems);
-    group("Equipment","gCombo.Tracker.Equipment",equipmentItems);
-    group("Quest items","gCombo.Tracker.Quest",miscItems);
-    group("Dungeon rewards","gCombo.Tracker.Quest",dungeonRewards);
-    group("Songs","gCombo.Tracker.Songs",songItems);
-    group("Dungeon items","gCombo.Tracker.Dungeons",dungeonItems);
+    group("Items", "gCombo.Tracker.Inventory", inventoryItems);
+    group("Equipment", "gCombo.Tracker.Equipment", equipmentItems);
+    group("Quest items", "gCombo.Tracker.Quest", miscItems);
+    group("Dungeon rewards", "gCombo.Tracker.Quest", dungeonRewards);
+    group("Songs", "gCombo.Tracker.Songs", songItems);
+    group("Dungeon items", "gCombo.Tracker.Dungeons", dungeonItems);
     if (IS_RANDO) {
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.BeanSouls"),0)) group("Bean souls","gCombo.Tracker.Quest",beanSoulItems);
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.BossSouls"),0)) group("Boss souls","gCombo.Tracker.Quest",bossSoulItems);
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.JabberNuts"),0)) group("Jabbernuts","gCombo.Tracker.Quest",jabbernutItems);
+        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.BeanSouls"), 0))
+            group("Bean souls", "gCombo.Tracker.Quest", beanSoulItems);
+        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.BossSouls"), 0))
+            group("Boss souls", "gCombo.Tracker.Quest", bossSoulItems);
+        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.JabberNuts"), 0))
+            group("Jabbernuts", "gCombo.Tracker.Quest", jabbernutItems);
         if (Rando::Souls::Enabled()) {
-            if (Rando::Souls::FamilyVisible(0)) group("Enemy souls","gCombo.Tracker.Quest",expandedENEMYSouls);
-            if (Rando::Souls::FamilyVisible(1)) group("NPC souls","gCombo.Tracker.Quest",expandedNPCSouls);
-            if (Rando::Souls::FamilyVisible(2)) group("Animal souls","gCombo.Tracker.Quest",expandedANIMALSouls);
-            if (Rando::Souls::FamilyVisible(3)) group("Miscellaneous souls","gCombo.Tracker.Quest",expandedMISCSouls);
+            if (Rando::Souls::FamilyVisible(0))
+                group("Enemy souls", "gCombo.Tracker.Quest", expandedENEMYSouls);
+            if (Rando::Souls::FamilyVisible(1))
+                group("NPC souls", "gCombo.Tracker.Quest", expandedNPCSouls);
+            if (Rando::Souls::FamilyVisible(2))
+                group("Animal souls", "gCombo.Tracker.Quest", expandedANIMALSouls);
+            if (Rando::Souls::FamilyVisible(3))
+                group("Miscellaneous souls", "gCombo.Tracker.Quest", expandedMISCSouls);
         }
-        group("Ocarina buttons","gCombo.Tracker.Quest",ocarinaButtonItems);
-        group("Overworld keys","gCombo.Tracker.Dungeons",overworldKeyItems);
+        group("Ocarina buttons", "gCombo.Tracker.Quest", ocarinaButtonItems);
+        group("Overworld keys", "gCombo.Tracker.Dungeons", overworldKeyItems);
     }
 }
 #endif

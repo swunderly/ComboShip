@@ -776,15 +776,21 @@ void Play_UpdateTransition(PlayState* this) {
                         SET_NEXT_GAMESTATE(&this->state, TitleSetup_Init, sizeof(TitleSetupState));
 #endif
                     } else if (gSaveContext.gameMode != GAMEMODE_FILE_SELECT) {
-                        #ifdef COMBO_BUILD
-                        if(Combo_MMCompleteOrdinaryEntrance(this)<0) {
+#ifdef COMBO_BUILD
+                        if (Combo_MMCompleteOrdinaryEntrance(this) < 0) {
                             Play_ClearTransition(this);
-                            this->transitionTrigger=TRANS_TRIGGER_OFF;this->transitionMode=TRANS_MODE_OFF;
-                            this->envCtx.fillScreen=false;this->envCtx.screenFillColor[3]=0;
+                            this->transitionTrigger = TRANS_TRIGGER_OFF;
+                            this->transitionMode = TRANS_MODE_OFF;
+                            this->envCtx.fillScreen = false;
+                            this->envCtx.screenFillColor[3] = 0;
                             return;
                         }
-                        if(Combo_MMFinishEntranceDeparture(this)) {STOP_GAMESTATE(&this->state);this->state.init=NULL;return;}
-                        #endif
+                        if (Combo_MMFinishEntranceDeparture(this)) {
+                            STOP_GAMESTATE(&this->state);
+                            this->state.init = NULL;
+                            return;
+                        }
+#endif
                         STOP_GAMESTATE(&this->state);
                         SET_NEXT_GAMESTATE(&this->state, Play_Init, sizeof(PlayState));
                         gSaveContext.save.entrance = this->nextEntrance;
@@ -839,15 +845,21 @@ void Play_UpdateTransition(PlayState* this) {
             this->envCtx.screenFillColor[3] = (sTransitionFillTimer / 20.0f) * 255.0f;
 
             if (sTransitionFillTimer >= 20) {
-                #ifdef COMBO_BUILD
-                if(Combo_MMCompleteOrdinaryEntrance(this)<0) {
-                            Play_ClearTransition(this);
-                            this->transitionTrigger=TRANS_TRIGGER_OFF;this->transitionMode=TRANS_MODE_OFF;
-                            this->envCtx.fillScreen=false;this->envCtx.screenFillColor[3]=0;
-                            return;
-                        }
-                        if(Combo_MMFinishEntranceDeparture(this)) {STOP_GAMESTATE(&this->state);this->state.init=NULL;return;}
-                #endif
+#ifdef COMBO_BUILD
+                if (Combo_MMCompleteOrdinaryEntrance(this) < 0) {
+                    Play_ClearTransition(this);
+                    this->transitionTrigger = TRANS_TRIGGER_OFF;
+                    this->transitionMode = TRANS_MODE_OFF;
+                    this->envCtx.fillScreen = false;
+                    this->envCtx.screenFillColor[3] = 0;
+                    return;
+                }
+                if (Combo_MMFinishEntranceDeparture(this)) {
+                    STOP_GAMESTATE(&this->state);
+                    this->state.init = NULL;
+                    return;
+                }
+#endif
                 STOP_GAMESTATE(&this->state);
                 SET_NEXT_GAMESTATE(&this->state, Play_Init, sizeof(PlayState));
                 gSaveContext.save.entrance = this->nextEntrance;
@@ -890,15 +902,21 @@ void Play_UpdateTransition(PlayState* this) {
 
         case TRANS_MODE_INSTANT:
             if (this->transitionTrigger != TRANS_TRIGGER_END) {
-                #ifdef COMBO_BUILD
-                if(Combo_MMCompleteOrdinaryEntrance(this)<0) {
-                            Play_ClearTransition(this);
-                            this->transitionTrigger=TRANS_TRIGGER_OFF;this->transitionMode=TRANS_MODE_OFF;
-                            this->envCtx.fillScreen=false;this->envCtx.screenFillColor[3]=0;
-                            return;
-                        }
-                        if(Combo_MMFinishEntranceDeparture(this)) {STOP_GAMESTATE(&this->state);this->state.init=NULL;return;}
-                #endif
+#ifdef COMBO_BUILD
+                if (Combo_MMCompleteOrdinaryEntrance(this) < 0) {
+                    Play_ClearTransition(this);
+                    this->transitionTrigger = TRANS_TRIGGER_OFF;
+                    this->transitionMode = TRANS_MODE_OFF;
+                    this->envCtx.fillScreen = false;
+                    this->envCtx.screenFillColor[3] = 0;
+                    return;
+                }
+                if (Combo_MMFinishEntranceDeparture(this)) {
+                    STOP_GAMESTATE(&this->state);
+                    this->state.init = NULL;
+                    return;
+                }
+#endif
                 STOP_GAMESTATE(&this->state);
                 SET_NEXT_GAMESTATE(&this->state, Play_Init, sizeof(PlayState));
                 gSaveContext.save.entrance = this->nextEntrance;
@@ -941,15 +959,21 @@ void Play_UpdateTransition(PlayState* this) {
                 }
             } else {
                 if (this->envCtx.sandstormEnvA == 255) {
-                    #ifdef COMBO_BUILD
-                    if(Combo_MMCompleteOrdinaryEntrance(this)<0) {
-                            Play_ClearTransition(this);
-                            this->transitionTrigger=TRANS_TRIGGER_OFF;this->transitionMode=TRANS_MODE_OFF;
-                            this->envCtx.fillScreen=false;this->envCtx.screenFillColor[3]=0;
-                            return;
-                        }
-                        if(Combo_MMFinishEntranceDeparture(this)) {STOP_GAMESTATE(&this->state);this->state.init=NULL;return;}
-                    #endif
+#ifdef COMBO_BUILD
+                    if (Combo_MMCompleteOrdinaryEntrance(this) < 0) {
+                        Play_ClearTransition(this);
+                        this->transitionTrigger = TRANS_TRIGGER_OFF;
+                        this->transitionMode = TRANS_MODE_OFF;
+                        this->envCtx.fillScreen = false;
+                        this->envCtx.screenFillColor[3] = 0;
+                        return;
+                    }
+                    if (Combo_MMFinishEntranceDeparture(this)) {
+                        STOP_GAMESTATE(&this->state);
+                        this->state.init = NULL;
+                        return;
+                    }
+#endif
                     STOP_GAMESTATE(&this->state);
                     SET_NEXT_GAMESTATE(&this->state, Play_Init, sizeof(PlayState));
                     gSaveContext.save.entrance = this->nextEntrance;
@@ -1166,7 +1190,7 @@ void Play_UpdateMain(PlayState* this) {
 void Play_Update(PlayState* this) {
 #ifdef COMBO_BUILD
     // A cancelled source transition must not mark a later spell/void/load return.
-    if(this->transitionTrigger==TRANS_TRIGGER_OFF&&this->transitionMode==TRANS_MODE_OFF)
+    if (this->transitionTrigger == TRANS_TRIGGER_OFF && this->transitionMode == TRANS_MODE_OFF)
         Combo_MMClearOrdinaryTransitionMarker();
 #endif
     if (!sBombersNotebookOpen) {

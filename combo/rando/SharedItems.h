@@ -39,11 +39,14 @@ enum SharedFamily {
     SF_OCARINA_BUTTON_C_UP,
     SF_SONG_OF_TIME,
     SF_MIRROR_SHIELD,
-    SF_OCARINA, // append only; progressive family, excluded from singleton paths
+    SF_OCARINA,    // append only; progressive family, excluded from singleton paths
     SF_SPELL_WIND, // public with spellWindMm (0.3.9); Din's Fire/Nayru's Love remain private
     SF_SPELL_FIRE,
     SF_SPELL_LOVE,
-    SF_BOOTS_IRON, SF_BOOTS_HOVER, SF_TUNIC_GORON, SF_TUNIC_ZORA, // append private bits28..31
+    SF_BOOTS_IRON,
+    SF_BOOTS_HOVER,
+    SF_TUNIC_GORON,
+    SF_TUNIC_ZORA, // append private bits28..31
     SF_COUNT
 };
 
@@ -110,42 +113,70 @@ inline const SharedFamilyDef* SharedFamilyTable() {
           "One Mask of Truth counts for both games. Requires OOT Mask Quest = Shuffle.", "Mask of Truth",
           "Mask of Truth", 1, true, true, false },
         { SF_OCARINA_BUTTON_A, "ocarinaA", "gCombo.Rando.Shared.OcarinaA", "Shared Ocarina A Button",
-          "One A Button counts for both games. Requires Shuffle Ocarina Buttons in both games.", "Ocarina A Button", "A Button", 1, false, true, false, true },
+          "One A Button counts for both games. Requires Shuffle Ocarina Buttons in both games.", "Ocarina A Button",
+          "A Button", 1, false, true, false, true },
         { SF_OCARINA_BUTTON_C_DOWN, "ocarinaCDown", "gCombo.Rando.Shared.OcarinaCDown", "Shared Ocarina C Down Button",
-          "One C Down Button counts for both games. Requires Shuffle Ocarina Buttons in both games.", "Ocarina C Down Button", "C Down Button", 1, false, true, false, true },
-        { SF_OCARINA_BUTTON_C_RIGHT, "ocarinaCRight", "gCombo.Rando.Shared.OcarinaCRight", "Shared Ocarina C Right Button",
-          "One C Right Button counts for both games. Requires Shuffle Ocarina Buttons in both games.", "Ocarina C Right Button", "C Right Button", 1, false, true, false, true },
+          "One C Down Button counts for both games. Requires Shuffle Ocarina Buttons in both games.",
+          "Ocarina C Down Button", "C Down Button", 1, false, true, false, true },
+        { SF_OCARINA_BUTTON_C_RIGHT, "ocarinaCRight", "gCombo.Rando.Shared.OcarinaCRight",
+          "Shared Ocarina C Right Button",
+          "One C Right Button counts for both games. Requires Shuffle Ocarina Buttons in both games.",
+          "Ocarina C Right Button", "C Right Button", 1, false, true, false, true },
         { SF_OCARINA_BUTTON_C_LEFT, "ocarinaCLeft", "gCombo.Rando.Shared.OcarinaCLeft", "Shared Ocarina C Left Button",
-          "One C Left Button counts for both games. Requires Shuffle Ocarina Buttons in both games.", "Ocarina C Left Button", "C Left Button", 1, false, true, false, true },
+          "One C Left Button counts for both games. Requires Shuffle Ocarina Buttons in both games.",
+          "Ocarina C Left Button", "C Left Button", 1, false, true, false, true },
         { SF_OCARINA_BUTTON_C_UP, "ocarinaCUp", "gCombo.Rando.Shared.OcarinaCUp", "Shared Ocarina C Up Button",
-          "One C Up Button counts for both games. Requires Shuffle Ocarina Buttons in both games.", "Ocarina C Up Button", "C Up Button", 1, false, true, false, true },
+          "One C Up Button counts for both games. Requires Shuffle Ocarina Buttons in both games.",
+          "Ocarina C Up Button", "C Up Button", 1, false, true, false, true },
         { SF_SONG_OF_TIME, "songOfTime", "gCombo.Rando.Shared.SongOfTime", "Shared Song of Time",
-          "One Song of Time counts for both games, including starting songs.", "Song of Time", "Song of Time", 1, false, true, false },
+          "One Song of Time counts for both games, including starting songs.", "Song of Time", "Song of Time", 1, false,
+          true, false },
         { SF_MIRROR_SHIELD, "mirrorShield", "gCombo.Rando.Shared.MirrorShield", "Shared Mirror Shield",
-          "One Mirror Shield counts for both games. Shares the native nonprogressive shields.", "Mirror Shield", "Mirror Shield", 1, false, true, false },
+          "One Mirror Shield counts for both games. Shares the native nonprogressive shields.", "Mirror Shield",
+          "Mirror Shield", 1, false, true, false },
         { SF_OCARINA, "ocarina", "gCombo.Rando.Shared.Ocarina", "Shared Ocarina",
-          "Progressive Ocarina shared with pinned MM Fairy restrictions.", "Progressive Ocarina", "Progressive Ocarina", 2, false, true, false },
+          "Progressive Ocarina shared with pinned MM Fairy restrictions.", "Progressive Ocarina", "Progressive Ocarina",
+          2, false, true, false },
         { SF_SPELL_WIND, "spellWind", "gCombo.Rando.Shared.SpellWind", "Shared Farore's Wind",
-          "Combines Farore's Wind from OoT and MM into one item for both games",
-          "Farore's Wind", "Farore's Wind", 1, false, true, false, false, true },
-        { SF_SPELL_FIRE,"spellFire","gCombo.Rando.Shared.SpellFire","Shared Din's Fire",
-          "One Din's Fire counts for both games when the MM spell is enabled.","Din's Fire","Din's Fire",1,false,true,false,false,false },
-        { SF_SPELL_LOVE,"spellLove","gCombo.Rando.Shared.SpellLove","Shared Nayru's Love",
-          "One Nayru's Love counts for both games when the MM spell is enabled.","Nayru's Love","Nayru's Love",1,false,true,false,false,false },
-        { SF_BOOTS_IRON,"bootsIron","gCombo.Rando.Shared.bootsIron","Shared Iron Boots","One Iron Boots counts for both enabled engines.","Iron Boots","Iron Boots",1,false,true,false,false,false },
-        { SF_BOOTS_HOVER,"bootsHover","gCombo.Rando.Shared.bootsHover","Shared Hover Boots","One Hover Boots counts for both enabled engines.","Hover Boots","Hover Boots",1,false,true,false,false,false },
-        { SF_TUNIC_GORON,"tunicGoron","gCombo.Rando.Shared.tunicGoron","Shared Goron Tunic","One Goron Tunic counts for both enabled engines.","Goron Tunic","Goron Tunic",1,false,true,false,false,false },
-        { SF_TUNIC_ZORA,"tunicZora","gCombo.Rando.Shared.tunicZora","Shared Zora Tunic","One Zora Tunic counts for both enabled engines.","Zora Tunic","Zora Tunic",1,false,true,false,false,false },
+          "Combines Farore's Wind from OoT and MM into one item for both games", "Farore's Wind", "Farore's Wind", 1,
+          false, true, false, false, true },
+        { SF_SPELL_FIRE, "spellFire", "gCombo.Rando.Shared.SpellFire", "Shared Din's Fire",
+          "One Din's Fire counts for both games when the MM spell is enabled.", "Din's Fire", "Din's Fire", 1, false,
+          true, false, false, false },
+        { SF_SPELL_LOVE, "spellLove", "gCombo.Rando.Shared.SpellLove", "Shared Nayru's Love",
+          "One Nayru's Love counts for both games when the MM spell is enabled.", "Nayru's Love", "Nayru's Love", 1,
+          false, true, false, false, false },
+        { SF_BOOTS_IRON, "bootsIron", "gCombo.Rando.Shared.bootsIron", "Shared Iron Boots",
+          "One Iron Boots counts for both enabled engines.", "Iron Boots", "Iron Boots", 1, false, true, false, false,
+          false },
+        { SF_BOOTS_HOVER, "bootsHover", "gCombo.Rando.Shared.bootsHover", "Shared Hover Boots",
+          "One Hover Boots counts for both enabled engines.", "Hover Boots", "Hover Boots", 1, false, true, false,
+          false, false },
+        { SF_TUNIC_GORON, "tunicGoron", "gCombo.Rando.Shared.tunicGoron", "Shared Goron Tunic",
+          "One Goron Tunic counts for both enabled engines.", "Goron Tunic", "Goron Tunic", 1, false, true, false,
+          false, false },
+        { SF_TUNIC_ZORA, "tunicZora", "gCombo.Rando.Shared.tunicZora", "Shared Zora Tunic",
+          "One Zora Tunic counts for both enabled engines.", "Zora Tunic", "Zora Tunic", 1, false, true, false, false,
+          false },
     };
     return table;
 }
 
 // data.ts requires the matching MM extension before either new shared spell can be effective.
-inline bool SharedExtraSpellEnabled(int family,const nlohmann::json& mmDump) {
- const char* key=family==SF_SPELL_WIND?"RO_MM_SPELL_WIND":family==SF_SPELL_FIRE?"RO_MM_SPELL_FIRE":family==SF_SPELL_LOVE?"RO_MM_SPELL_LOVE":family==SF_BOOTS_IRON?"RO_MM_BOOTS_IRON":family==SF_BOOTS_HOVER?"RO_MM_BOOTS_HOVER":family==SF_TUNIC_GORON?"RO_MM_TUNIC_GORON":family==SF_TUNIC_ZORA?"RO_MM_TUNIC_ZORA":nullptr;
- if(!key)return true;
- const auto options=mmDump.value("options",nlohmann::json::object());const auto i=options.find(key);
- return i!=options.end()&&i->is_number_integer()&&*i==1;
+inline bool SharedExtraSpellEnabled(int family, const nlohmann::json& mmDump) {
+    const char* key = family == SF_SPELL_WIND    ? "RO_MM_SPELL_WIND"
+                      : family == SF_SPELL_FIRE  ? "RO_MM_SPELL_FIRE"
+                      : family == SF_SPELL_LOVE  ? "RO_MM_SPELL_LOVE"
+                      : family == SF_BOOTS_IRON  ? "RO_MM_BOOTS_IRON"
+                      : family == SF_BOOTS_HOVER ? "RO_MM_BOOTS_HOVER"
+                      : family == SF_TUNIC_GORON ? "RO_MM_TUNIC_GORON"
+                      : family == SF_TUNIC_ZORA  ? "RO_MM_TUNIC_ZORA"
+                                                 : nullptr;
+    if (!key)
+        return true;
+    const auto options = mmDump.value("options", nlohmann::json::object());
+    const auto i = options.find(key);
+    return i != options.end() && i->is_number_integer() && *i == 1;
 }
 inline const SharedFamilyDef& SharedFamilyByIndex(int i) {
     return SharedFamilyTable()[i];
@@ -154,19 +185,24 @@ inline const SharedFamilyDef& SharedFamilyByIndex(int i) {
 // New single-item families expose their native starting possessions in the dump.
 // Native oracles apply their own starting inventory; this also credits the opposite
 // world before its first query, including an MM starter while the portal is shut.
-inline std::pair<std::vector<std::string>, std::vector<std::string>> SharedStartingInventories(
-    uint32_t mask, const std::string& ootDump, const std::string& mmDump) {
+inline std::pair<std::vector<std::string>, std::vector<std::string>>
+SharedStartingInventories(uint32_t mask, const std::string& ootDump, const std::string& mmDump) {
     std::pair<std::vector<std::string>, std::vector<std::string>> result;
     const auto oot = nlohmann::json::parse(ootDump.empty() ? "{}" : ootDump);
     const auto mm = nlohmann::json::parse(mmDump.empty() ? "{}" : mmDump);
     const auto ootItems = oot.value("sharedStartingItems", std::vector<std::string>{});
     const auto mmItems = mm.value("sharedStartingItems", std::vector<std::string>{});
     for (int i = SF_OCARINA_BUTTON_A; i < SF_COUNT; ++i) {
-        if (i == SF_OCARINA) continue; // handled by tier-aware instrument adapter
-        if (!SharedExtraSpellEnabled(i,mm)) continue;
+        if (i == SF_OCARINA)
+            continue; // handled by tier-aware instrument adapter
+        if (!SharedExtraSpellEnabled(i, mm))
+            continue;
         const auto& def = SharedFamilyByIndex(i);
-        if (!(mask & (1u << i))) continue;
-        if (def.requiresButtons && (!oot.value("sharedButtonsEnabled", false) || !mm.value("sharedButtonsEnabled", false))) continue;
+        if (!(mask & (1u << i)))
+            continue;
+        if (def.requiresButtons &&
+            (!oot.value("sharedButtonsEnabled", false) || !mm.value("sharedButtonsEnabled", false)))
+            continue;
         if (std::find(ootItems.begin(), ootItems.end(), def.ootName) != ootItems.end() ||
             std::find(mmItems.begin(), mmItems.end(), def.mmName) != mmItems.end()) {
             result.first.push_back(def.ootName);
@@ -184,13 +220,17 @@ inline std::pair<std::vector<std::string>, std::vector<std::string>> SharedStart
 
 inline void MirrorSharedSingletons(uint32_t mask, std::vector<std::string>& oot, std::vector<std::string>& mm) {
     for (int i = SF_OCARINA_BUTTON_A; i < SF_COUNT; ++i) {
-        if (!(mask & (1u << i))) continue;
-        if (i == SF_OCARINA) continue; // handled by tier-aware instrument adapter
+        if (!(mask & (1u << i)))
+            continue;
+        if (i == SF_OCARINA)
+            continue; // handled by tier-aware instrument adapter
         const auto& def = SharedFamilyByIndex(i);
         const bool o = std::find(oot.begin(), oot.end(), def.ootName) != oot.end();
         const bool m = std::find(mm.begin(), mm.end(), def.mmName) != mm.end();
-        if (o && !m) mm.push_back(def.mmName);
-        if (m && !o) oot.push_back(def.ootName);
+        if (o && !m)
+            mm.push_back(def.mmName);
+        if (m && !o)
+            oot.push_back(def.ootName);
     }
 }
 
@@ -210,7 +250,7 @@ inline uint32_t SharedMaskFromKeys(const nlohmann::json& keys) {
 }
 
 inline uint32_t SharedMaskAll() {
-    return (SF_COUNT >= 32) ? 0xFFFFFFFFu : static_cast<uint32_t>((uint64_t{1} << SF_COUNT) - 1u);
+    return (SF_COUNT >= 32) ? 0xFFFFFFFFu : static_cast<uint32_t>((uint64_t{ 1 } << SF_COUNT) - 1u);
 }
 
 // Names to leave untagged by SuffixCrossGameItems: both games' pool name for every effective family.
@@ -223,7 +263,10 @@ inline std::set<std::string> SharedUntaggedNames(uint32_t mask) {
         if (SharedFamilyTable()[i].mmHasItem)
             out.insert(SharedFamilyTable()[i].mmName);
     }
-    if (mask & (1u << SF_OCARINA)) { out.insert("Fairy Ocarina"); out.insert("Ocarina of Time"); }
+    if (mask & (1u << SF_OCARINA)) {
+        out.insert("Fairy Ocarina");
+        out.insert("Ocarina of Time");
+    }
     return out;
 }
 

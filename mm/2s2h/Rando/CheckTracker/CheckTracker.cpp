@@ -16,11 +16,12 @@
 bool Combo_MmIsForeground(void); // defined in BenPort.cpp
 
 void Rando::CheckTracker::RecordSeenItem(RandoCheckId id, RandoItemId shownItem, uint8_t source) {
-    if (!Combo_MmIsForeground() || !gPlayState || !IS_RANDO || gSaveContext.fileNum > 2 ||
-        id <= RC_UNKNOWN || id >= RC_MAX || shownItem <= RI_UNKNOWN || shownItem >= RI_MAX ||
-        shownItem == RI_TRAP) return;
+    if (!Combo_MmIsForeground() || !gPlayState || !IS_RANDO || gSaveContext.fileNum > 2 || id <= RC_UNKNOWN ||
+        id >= RC_MAX || shownItem <= RI_UNKNOWN || shownItem >= RI_MAX || shownItem == RI_TRAP)
+        return;
     auto& check = RANDO_SAVE_CHECKS[id];
-    if (!check.shuffled || check.obtained) return;
+    if (!check.shuffled || check.obtained)
+        return;
     // Keep the displayed tier/disguise. Do not re-resolve it later against a different inventory.
     ComboRando::RecordTrackerItemKnowledge(check.knowledgeSource, check.seenItemId, source, shownItem);
 }
@@ -108,7 +109,8 @@ static bool sCheckTrackerBtnState = false;
 #define CVAR_VISIBILITY_MODE CVarGetInteger(CVAR_NAME_VISIBILITY_MODE, CHECK_TRACKER_VISIBILITY_MODE_ALWAYS)
 #define CVAR_VISIBILITY_BTN CVarGetInteger(CVAR_NAME_VISIBILITY_BTN, BTN_CUSTOM_MODIFIER1)
 #ifdef COMBO_BUILD
-#define CVAR_OUT_OF_LOGIC_MODE (CVarGetInteger("gCombo.CheckTracker.ShowLogic", 1) ? CHECK_MODE_COLORED : CHECK_MODE_NORMAL)
+#define CVAR_OUT_OF_LOGIC_MODE \
+    (CVarGetInteger("gCombo.CheckTracker.ShowLogic", 1) ? CHECK_MODE_COLORED : CHECK_MODE_NORMAL)
 #else
 #define CVAR_OUT_OF_LOGIC_MODE CVarGetInteger(CVAR_NAME_OUT_OF_LOGIC_MODE, CHECK_MODE_COLORED)
 #endif
@@ -361,7 +363,8 @@ comboPeekRefresh:;
             Rando::Logic::SetCurrentRegionTime(regionTimeStates, regionId);
 
             for (auto& event : randoRegion.events) {
-                if (!RANDO_EVENTS[event.first] && Rando::Logic::TimeLogic::EvaluateConditionTimes(event.second, Rando::Logic::gCurrentRegionTime)) {
+                if (!RANDO_EVENTS[event.first] &&
+                    Rando::Logic::TimeLogic::EvaluateConditionTimes(event.second, Rando::Logic::gCurrentRegionTime)) {
                     RANDO_EVENTS[event.first]++;
                     changed = true;
                 }
@@ -381,7 +384,9 @@ comboPeekRefresh:;
         for (auto& [randoCheckId, accessLogicFunc] : randoRegion.checks) {
             auto& randoStaticCheck = Rando::StaticData::Checks[randoCheckId];
             auto& randoSaveCheck = RANDO_SAVE_CHECKS[randoCheckId];
-            if (randoSaveCheck.shuffled && !randoSaveCheck.obtained && Rando::Logic::TimeLogic::EvaluateConditionTimes(accessLogicFunc.first, Rando::Logic::gCurrentRegionTime)) {
+            if (randoSaveCheck.shuffled && !randoSaveCheck.obtained &&
+                Rando::Logic::TimeLogic::EvaluateConditionTimes(accessLogicFunc.first,
+                                                                Rando::Logic::gCurrentRegionTime)) {
                 checksInLogic.insert({ randoCheckId, true });
             }
         }

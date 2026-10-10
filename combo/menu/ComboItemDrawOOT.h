@@ -95,31 +95,39 @@ static int32_t CwSimple(CwItemDrawInfo* out, const char* dl, bool xlu, float sca
 // model. Each branch is a 1:1 description of the func in soh/.../randomizer/draw.cpp. Returns 1 when
 // rg is handled; 0 means "fall through to the gid table".
 static int32_t OOT_FillSilverDrawInfo(RandomizerGet rg, CwItemDrawInfo* out) {
-    if(rg<RG_RUPEE_SILVER_BOTW || rg>RG_POUCH_SILVER_SPIRIT_SUN)return 0;
-        const bool pouch=rg>=RG_POUCH_SILVER_BOTW;
-        out->drawKind=CW_DRAW_KIND_COLOR_LAYERS;
-        out->xluStartIndex=pouch ? -1 : 1;
-        if(pouch) {
-            out->dlistCount=5;
-            out->dlists[0]=gGiWalletDL;
-            out->dlists[1]=gGiWalletRupeeOuterDL;
-            out->dlists[2]=gGiAdultWalletStringColorDL;
-            out->dlists[3]=gGiWalletStringDL;
-            out->dlists[4]=gGiWalletRupeeInnerDL;
-            CwLayerPrim(out,0,{50,50,50}); CwLayerEnv(out,0,{15,15,15});
-            CwLayerPrim(out,1,{255,255,255}); CwLayerEnv(out,1,{50,50,50});
-            CwLayerPrim(out,4,{255,255,255}); CwLayerEnv(out,4,{50,50,50});
-        } else {
-            out->dlistCount=2;
-            out->dlists[0]=gGiRupeeInnerDL;out->dlists[1]=gGiRupeeOuterDL;
-            for(int i=0;i<2;++i) {CwLayerPrim(out,i,{255,255,255});CwLayerEnv(out,i,{50,50,50});}
+    if (rg < RG_RUPEE_SILVER_BOTW || rg > RG_POUCH_SILVER_SPIRIT_SUN)
+        return 0;
+    const bool pouch = rg >= RG_POUCH_SILVER_BOTW;
+    out->drawKind = CW_DRAW_KIND_COLOR_LAYERS;
+    out->xluStartIndex = pouch ? -1 : 1;
+    if (pouch) {
+        out->dlistCount = 5;
+        out->dlists[0] = gGiWalletDL;
+        out->dlists[1] = gGiWalletRupeeOuterDL;
+        out->dlists[2] = gGiAdultWalletStringColorDL;
+        out->dlists[3] = gGiWalletStringDL;
+        out->dlists[4] = gGiWalletRupeeInnerDL;
+        CwLayerPrim(out, 0, { 50, 50, 50 });
+        CwLayerEnv(out, 0, { 15, 15, 15 });
+        CwLayerPrim(out, 1, { 255, 255, 255 });
+        CwLayerEnv(out, 1, { 50, 50, 50 });
+        CwLayerPrim(out, 4, { 255, 255, 255 });
+        CwLayerEnv(out, 4, { 50, 50, 50 });
+    } else {
+        out->dlistCount = 2;
+        out->dlists[0] = gGiRupeeInnerDL;
+        out->dlists[1] = gGiRupeeOuterDL;
+        for (int i = 0; i < 2; ++i) {
+            CwLayerPrim(out, i, { 255, 255, 255 });
+            CwLayerEnv(out, i, { 50, 50, 50 });
         }
-        return 1;
-    
+    }
+    return 1;
 }
 
 static int32_t OOT_DescribeCustomDraw(RandomizerGet rg, CwItemDrawInfo* out) {
-    if(OOT_FillSilverDrawInfo(rg,out))return 1;
+    if (OOT_FillSilverDrawInfo(rg, out))
+        return 1;
     // Boss souls: bespoke func the gid-keyed table can't express (vestigial skull-token gid).
     // Grayscale-colored flame dl0 + generic skull dl1 (Randomizer_DrawBossSoul).
     if (rg >= RG_GOHMA_SOUL && rg <= RG_GANON_SOUL) {

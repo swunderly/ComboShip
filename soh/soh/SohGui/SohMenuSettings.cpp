@@ -485,13 +485,12 @@ void SohMenu::AddMenuSettings() {
     path.sidebarName = "Camera";
     path.column = SECTION_COLUMN_1;
     AddSidebarEntry("Settings", path.sidebarName, 1);
-    AddWidget(path, "Camera controls", WIDGET_CUSTOM)
-        .RaceDisable(false)
-        .CustomFunction([](WidgetInfo&) {
-            auto gui = Ship::Context::GetRawInstance()->GetWindow()->GetGui();
-            auto editor = std::dynamic_pointer_cast<SohInputEditorWindow>(gui->GetGuiWindow("Configure Controller"));
-            if (editor) editor->DrawCameraControlPanel();
-        });
+    AddWidget(path, "Camera controls", WIDGET_CUSTOM).RaceDisable(false).CustomFunction([](WidgetInfo&) {
+        auto gui = Ship::Context::GetRawInstance()->GetWindow()->GetGui();
+        auto editor = std::dynamic_pointer_cast<SohInputEditorWindow>(gui->GetGuiWindow("Configure Controller"));
+        if (editor)
+            editor->DrawCameraControlPanel();
+    });
 #endif
 
     // Input Viewer

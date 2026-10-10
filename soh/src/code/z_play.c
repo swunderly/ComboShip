@@ -919,7 +919,11 @@ void Play_Update(PlayState* play) {
                             }
                         } else if (play->transitionTrigger != TRANS_TRIGGER_END) {
 #ifdef COMBO_BUILD
-                            if(Combo_OotFinishEntranceDeparture(play)) {play->state.running=false;play->state.init=NULL;return;}
+                            if (Combo_OotFinishEntranceDeparture(play)) {
+                                play->state.running = false;
+                                play->state.init = NULL;
+                                return;
+                            }
 #endif
                             play->state.running = false;
 
@@ -977,9 +981,13 @@ void Play_Update(PlayState* play) {
                     play->envCtx.screenFillColor[3] = (sTransitionFillTimer / 20.0f) * 255.0f;
 
                     if (sTransitionFillTimer >= 20) {
-                        #ifdef COMBO_BUILD
-                        if(Combo_OotFinishEntranceDeparture(play)) {play->state.running=false;play->state.init=NULL;return;}
-                        #endif
+#ifdef COMBO_BUILD
+                        if (Combo_OotFinishEntranceDeparture(play)) {
+                            play->state.running = false;
+                            play->state.init = NULL;
+                            return;
+                        }
+#endif
                         play->state.running = false;
                         SET_NEXT_GAMESTATE(&play->state, Play_Init, PlayState);
                         gSaveContext.entranceIndex = play->nextEntranceIndex;
@@ -1022,9 +1030,13 @@ void Play_Update(PlayState* play) {
 
                 case TRANS_MODE_INSTANT:
                     if (play->transitionTrigger != TRANS_TRIGGER_END) {
-                        #ifdef COMBO_BUILD
-                        if(Combo_OotFinishEntranceDeparture(play)) {play->state.running=false;play->state.init=NULL;return;}
-                        #endif
+#ifdef COMBO_BUILD
+                        if (Combo_OotFinishEntranceDeparture(play)) {
+                            play->state.running = false;
+                            play->state.init = NULL;
+                            return;
+                        }
+#endif
                         play->state.running = 0;
                         SET_NEXT_GAMESTATE(&play->state, Play_Init, PlayState);
                         gSaveContext.entranceIndex = play->nextEntranceIndex;
@@ -1073,9 +1085,13 @@ void Play_Update(PlayState* play) {
                         }
                     } else {
                         if (play->envCtx.sandstormEnvA == 255) {
-                            #ifdef COMBO_BUILD
-                            if(Combo_OotFinishEntranceDeparture(play)) {play->state.running=false;play->state.init=NULL;return;}
-                            #endif
+#ifdef COMBO_BUILD
+                            if (Combo_OotFinishEntranceDeparture(play)) {
+                                play->state.running = false;
+                                play->state.init = NULL;
+                                return;
+                            }
+#endif
                             play->state.running = false;
                             SET_NEXT_GAMESTATE(&play->state, Play_Init, PlayState);
                             gSaveContext.entranceIndex = play->nextEntranceIndex;
@@ -1394,13 +1410,13 @@ void Play_Draw(PlayState* play) {
     gSPSegment(OVERLAY_DISP++, 0x02, play->sceneSegment);
 
 #ifdef COMBO_BUILD
-    const int soaringCutscene=Combo_SOHSoaringCutsceneActive(play);
+    const int soaringCutscene = Combo_SOHSoaringCutsceneActive(play);
     if (soaringCutscene) {
         // MM clears to fog color and hides the room during its wing sequence.
-        Gfx_SetupFrame(gfxCtx,play->lightCtx.fogColor[0],play->lightCtx.fogColor[1],play->lightCtx.fogColor[2]);
+        Gfx_SetupFrame(gfxCtx, play->lightCtx.fogColor[0], play->lightCtx.fogColor[1], play->lightCtx.fogColor[2]);
     } else
 #endif
-    Gfx_SetupFrame(gfxCtx, 0, 0, 0);
+        Gfx_SetupFrame(gfxCtx, 0, 0, 0);
 
     if ((HREG(80) != 10) || (HREG(82) != 0)) {
         GameInteractor_ExecuteOnPlayDrawBegin();
@@ -1509,68 +1525,68 @@ void Play_Draw(PlayState* play) {
 #ifdef COMBO_BUILD
         if (!soaringCutscene) {
 #endif
-        if ((HREG(80) != 10) || (HREG(83) != 0)) {
-            if (play->skyboxId && (play->skyboxId != SKYBOX_UNSET_1D) && !play->envCtx.skyboxDisabled) {
-                if ((play->skyboxId == SKYBOX_NORMAL_SKY) || (play->skyboxId == SKYBOX_CUTSCENE_MAP)) {
-                    Environment_UpdateSkybox(play, play->skyboxId, &play->envCtx, &play->skyboxCtx);
-                    SkyboxDraw_Draw(&play->skyboxCtx, gfxCtx, play->skyboxId, play->envCtx.skyboxBlend,
-                                    play->view.eye.x, play->view.eye.y, play->view.eye.z);
-                } else if (play->skyboxCtx.unk_140 == 0) {
-                    SkyboxDraw_Draw(&play->skyboxCtx, gfxCtx, play->skyboxId, 0, play->view.eye.x, play->view.eye.y,
-                                    play->view.eye.z);
+            if ((HREG(80) != 10) || (HREG(83) != 0)) {
+                if (play->skyboxId && (play->skyboxId != SKYBOX_UNSET_1D) && !play->envCtx.skyboxDisabled) {
+                    if ((play->skyboxId == SKYBOX_NORMAL_SKY) || (play->skyboxId == SKYBOX_CUTSCENE_MAP)) {
+                        Environment_UpdateSkybox(play, play->skyboxId, &play->envCtx, &play->skyboxCtx);
+                        SkyboxDraw_Draw(&play->skyboxCtx, gfxCtx, play->skyboxId, play->envCtx.skyboxBlend,
+                                        play->view.eye.x, play->view.eye.y, play->view.eye.z);
+                    } else if (play->skyboxCtx.unk_140 == 0) {
+                        SkyboxDraw_Draw(&play->skyboxCtx, gfxCtx, play->skyboxId, 0, play->view.eye.x, play->view.eye.y,
+                                        play->view.eye.z);
+                    }
                 }
             }
-        }
 
-        if ((HREG(80) != 10) || (HREG(90) & 2)) {
-            if (!play->envCtx.sunMoonDisabled) {
-                Environment_DrawSunAndMoon(play);
-            }
-        }
-
-        if ((HREG(80) != 10) || (HREG(90) & 1)) {
-            Environment_DrawSkyboxFilters(play);
-        }
-
-        if ((HREG(80) != 10) || (HREG(90) & 4)) {
-            Environment_UpdateLightningStrike(play);
-            Environment_DrawLightning(play, 0);
-        }
-
-        if ((HREG(80) != 10) || (HREG(90) & 8)) {
-            sp228 = LightContext_NewLights(&play->lightCtx, gfxCtx);
-            Lights_BindAll(sp228, play->lightCtx.listHead, NULL);
-            Lights_Draw(sp228, gfxCtx);
-        }
-
-        if ((HREG(80) != 10) || (HREG(84) != 0)) {
-            if (VREG(94) == 0) {
-                s32 roomDrawFlags;
-
-                if (HREG(80) != 10) {
-                    roomDrawFlags = 3;
-                } else {
-                    roomDrawFlags = HREG(84);
+            if ((HREG(80) != 10) || (HREG(90) & 2)) {
+                if (!play->envCtx.sunMoonDisabled) {
+                    Environment_DrawSunAndMoon(play);
                 }
-                Scene_Draw(play);
-                Room_Draw(play, &play->roomCtx.curRoom, roomDrawFlags & 3);
-                Room_Draw(play, &play->roomCtx.prevRoom, roomDrawFlags & 3);
             }
-        }
 
-        if ((HREG(80) != 10) || (HREG(83) != 0)) {
-            if ((play->skyboxCtx.unk_140 != 0) && (GET_ACTIVE_CAM(play)->setting != CAM_SET_PREREND_FIXED)) {
-                Vec3f quakeOffset;
-
-                Camera_GetSkyboxOffset(&quakeOffset, GET_ACTIVE_CAM(play));
-                SkyboxDraw_Draw(&play->skyboxCtx, gfxCtx, play->skyboxId, 0, play->view.eye.x + quakeOffset.x,
-                                play->view.eye.y + quakeOffset.y, play->view.eye.z + quakeOffset.z);
+            if ((HREG(80) != 10) || (HREG(90) & 1)) {
+                Environment_DrawSkyboxFilters(play);
             }
-        }
 
-        if (play->envCtx.unk_EE[1] != 0) {
-            Environment_DrawRain(play, &play->view, gfxCtx);
-        }
+            if ((HREG(80) != 10) || (HREG(90) & 4)) {
+                Environment_UpdateLightningStrike(play);
+                Environment_DrawLightning(play, 0);
+            }
+
+            if ((HREG(80) != 10) || (HREG(90) & 8)) {
+                sp228 = LightContext_NewLights(&play->lightCtx, gfxCtx);
+                Lights_BindAll(sp228, play->lightCtx.listHead, NULL);
+                Lights_Draw(sp228, gfxCtx);
+            }
+
+            if ((HREG(80) != 10) || (HREG(84) != 0)) {
+                if (VREG(94) == 0) {
+                    s32 roomDrawFlags;
+
+                    if (HREG(80) != 10) {
+                        roomDrawFlags = 3;
+                    } else {
+                        roomDrawFlags = HREG(84);
+                    }
+                    Scene_Draw(play);
+                    Room_Draw(play, &play->roomCtx.curRoom, roomDrawFlags & 3);
+                    Room_Draw(play, &play->roomCtx.prevRoom, roomDrawFlags & 3);
+                }
+            }
+
+            if ((HREG(80) != 10) || (HREG(83) != 0)) {
+                if ((play->skyboxCtx.unk_140 != 0) && (GET_ACTIVE_CAM(play)->setting != CAM_SET_PREREND_FIXED)) {
+                    Vec3f quakeOffset;
+
+                    Camera_GetSkyboxOffset(&quakeOffset, GET_ACTIVE_CAM(play));
+                    SkyboxDraw_Draw(&play->skyboxCtx, gfxCtx, play->skyboxId, 0, play->view.eye.x + quakeOffset.x,
+                                    play->view.eye.y + quakeOffset.y, play->view.eye.z + quakeOffset.z);
+                }
+            }
+
+            if (play->envCtx.unk_EE[1] != 0) {
+                Environment_DrawRain(play, &play->view, gfxCtx);
+            }
 #ifdef COMBO_BUILD
         }
 #endif

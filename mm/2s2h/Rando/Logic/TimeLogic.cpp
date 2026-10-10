@@ -12,27 +12,35 @@ namespace TimeLogic {
 uint64_t EvaluateConditionTimes(const std::function<bool()>& condition, uint64_t timeSlices) {
     struct RestoreTime {
         uint64_t previous = gCurrentRegionTime;
-        ~RestoreTime() { gCurrentRegionTime = previous; }
+        ~RestoreTime() {
+            gCurrentRegionTime = previous;
+        }
     } restore;
     uint64_t allowed = 0;
 #ifdef COMBO_BUILD
-    bool anyDomain=false;
-    auto domain=ComboRando::Entrances::mmFlagSource;
+    bool anyDomain = false;
+    auto domain = ComboRando::Entrances::mmFlagSource;
 #endif
     for (int slice = 0; slice < TIME_SLICE_COUNT; ++slice) {
         const uint64_t bit = TIME_BIT_ONE << slice;
-        if (!(timeSlices & bit)) continue;
+        if (!(timeSlices & bit))
+            continue;
         gCurrentRegionTime = bit;
 #ifdef COMBO_BUILD
-        if(NativeMmErContextsEnabled()) {
-            const auto evaluated=ComboRando::Entrances::EvaluateMmFlags(condition);
-            if(evaluated.allowed){allowed|=bit;domain=anyDomain?ComboRando::Entrances::Merge(domain,evaluated.domain):evaluated.domain;anyDomain=true;}
+        if (NativeMmErContextsEnabled()) {
+            const auto evaluated = ComboRando::Entrances::EvaluateMmFlags(condition);
+            if (evaluated.allowed) {
+                allowed |= bit;
+                domain = anyDomain ? ComboRando::Entrances::Merge(domain, evaluated.domain) : evaluated.domain;
+                anyDomain = true;
+            }
         } else
 #endif
-        if (condition()) allowed |= bit;
+            if (condition())
+            allowed |= bit;
     }
 #ifdef COMBO_BUILD
-    ComboRando::Entrances::mmFlagResult=anyDomain?domain:ComboRando::Entrances::mmFlagSource;
+    ComboRando::Entrances::mmFlagResult = anyDomain ? domain : ComboRando::Entrances::mmFlagSource;
 #endif
     return allowed;
 }
@@ -54,10 +62,10 @@ uint64_t ExpandTimeForward(uint64_t timeSlices, const RandoRegion& region) {
             // check/exit predicates by the clocks owned. A missing clock is a
             // skipped interval, so its closed-door stay restriction cannot
             // prevent waiting into a later owned clock.
-            if (!(owned & bit)) continue;
+            if (!(owned & bit))
+                continue;
             const auto restriction = region.timeStayRestrictions.find(static_cast<TimeSlice>(slice));
-            if (restriction != region.timeStayRestrictions.end() &&
-                !EvaluateConditionTimes(restriction->second, bit)) {
+            if (restriction != region.timeStayRestrictions.end() && !EvaluateConditionTimes(restriction->second, bit)) {
                 canWait = false;
             } else {
                 expanded |= bit;

@@ -601,8 +601,8 @@ void DrawInventoryTab() {
                     "##inventorySlot",
                     std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
                         ->GetTextureByName(textureName),
-                    ImVec2(IMAGE_SIZE, IMAGE_SIZE), ImVec2(0, 0), ImVec2(1, 1),
-                    ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, hasItemIcon ? 1.0f : 0.4f));
+                    ImVec2(IMAGE_SIZE, IMAGE_SIZE), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0),
+                    ImVec4(1, 1, 1, hasItemIcon ? 1.0f : 0.4f));
                 if (ret) {
                     selectedIndex = index;
                     ImGui::OpenPopup(itemPopupPicker);

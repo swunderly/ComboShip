@@ -7,19 +7,18 @@ using namespace Rando::Logic;
 
 // OoTMM macros_mm.yml gorman_gates_moved ends at the 05:30 kickout.
 #ifdef COMBO_BUILD
-#define GORMAN_GATES_MOVED (RANDO_EVENTS[RE_COWS_FROM_ALIENS] && AFTER(TIME_NIGHT2_PM_06_00) && BEFORE(TIME_NIGHT2_AM_05_30))
+#define GORMAN_GATES_MOVED \
+    (RANDO_EVENTS[RE_COWS_FROM_ALIENS] && AFTER(TIME_NIGHT2_PM_06_00) && BEFORE(TIME_NIGHT2_AM_05_30))
 #else
 #define GORMAN_GATES_MOVED (RANDO_EVENTS[RE_COWS_FROM_ALIENS] && IS_NIGHT2())
 #endif
 
 // TODO: This is a temporary fix to ensure cows can only be accessed if they can reach the ranch
 // on day 1 or beat the aliens. This will not work for entrance rando when that comes.
-#define BREAK_BOULDER_BEFORE_OR_BEAT_ALIENS_DAY                                                          \
-    ((BETWEEN(TIME_DAY1_AM_06_00, TIME_NIGHT1_PM_06_00) && CAN_USE_POWDER_KEG) || \
-     RANDO_EVENTS[RE_COWS_FROM_ALIENS])
-#define BREAK_BOULDER_BEFORE_OR_BEAT_ALIENS_NIGHT                                                          \
-    ((BETWEEN(TIME_NIGHT1_PM_06_00, TIME_NIGHT1_AM_02_30) && CAN_USE_POWDER_KEG) || \
-     RANDO_EVENTS[RE_COWS_FROM_ALIENS])
+#define BREAK_BOULDER_BEFORE_OR_BEAT_ALIENS_DAY \
+    ((BETWEEN(TIME_DAY1_AM_06_00, TIME_NIGHT1_PM_06_00) && CAN_USE_POWDER_KEG) || RANDO_EVENTS[RE_COWS_FROM_ALIENS])
+#define BREAK_BOULDER_BEFORE_OR_BEAT_ALIENS_NIGHT \
+    ((BETWEEN(TIME_NIGHT1_PM_06_00, TIME_NIGHT1_AM_02_30) && CAN_USE_POWDER_KEG) || RANDO_EVENTS[RE_COWS_FROM_ALIENS])
 
 // clang-format off
 static RegisterShipInitFunc initFunc([]() {

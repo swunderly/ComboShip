@@ -12,7 +12,7 @@
 #include <libultraship/bridge/consolevariablebridge.h>
 
 #ifdef COMBO_BUILD
-void Combo_MM_AdultGearDrawExtraIcon(PlayState* play,int slot,const Vtx* source);
+void Combo_MM_AdultGearDrawExtraIcon(PlayState* play, int slot, const Vtx* source);
 #endif
 
 s16 sEquipState = EQUIP_STATE_MAGIC_ARROW_GROW_ORB;
@@ -258,7 +258,7 @@ static s16 sMagicArrowEffectsR[] = { 255, 100, 255 };
 static s16 sMagicArrowEffectsG[] = { 0, 100, 255 };
 static s16 sMagicArrowEffectsB[] = { 0, 255, 100 };
 
-extern int Combo_MM_AdultGearPauseTick(PlayState* play,int slot);
+extern int Combo_MM_AdultGearPauseTick(PlayState* play, int slot);
 
 void KaleidoScope_DrawItemSelect(PlayState* play) {
     PauseContext* pauseCtx = &play->pauseCtx;
@@ -353,7 +353,7 @@ void KaleidoScope_DrawItemSelect(PlayState* play) {
                 gSPGrayscale(POLY_OPA_DISP++, false);
             }
 #ifdef COMBO_BUILD
-            Combo_MM_AdultGearDrawExtraIcon(play,i,&pauseCtx->itemVtx[j]);
+            Combo_MM_AdultGearDrawExtraIcon(play, i, &pauseCtx->itemVtx[j]);
 #endif
             // #endregion
         }
@@ -639,7 +639,8 @@ void KaleidoScope_UpdateItemCursor(PlayState* play) {
                 Interface_SetHudVisibility(HUD_VISIBILITY_ALL);
             }
 
-            if(Combo_MM_AdultGearPauseTick(play,cursorSlot))cursorItem=gSaveContext.save.saveInfo.inventory.items[cursorSlot];
+            if (Combo_MM_AdultGearPauseTick(play, cursorSlot))
+                cursorItem = gSaveContext.save.saveInfo.inventory.items[cursorSlot];
             pauseCtx->cursorItem[PAUSE_ITEM] = cursorItem;
             pauseCtx->cursorSlot[PAUSE_ITEM] = cursorSlot;
             if (cursorItem != PAUSE_ITEM_NONE) {

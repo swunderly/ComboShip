@@ -26,7 +26,8 @@ RandomizerCheckArea Rando::Location::GetArea() const {
 RandomizerCheckType Rando::Location::GetRCType() const {
 #ifdef COMBO_BUILD
     const auto ctx = Context::GetInstance(); // Nullable before static-data/context creation; never creates a context.
-    if (ctx) return KokiriEffectiveType(rc, checkType, ctx->GetKokiriSeedRevision());
+    if (ctx)
+        return KokiriEffectiveType(rc, checkType, ctx->GetKokiriSeedRevision());
 #endif
     return checkType;
 }

@@ -14,23 +14,24 @@ extern void EnItem00_DrawRandomizedItem(EnItem00* enItem00, PlayState* play);
 static bool Item00FamilyEnabled(const Rando::Location* loc) {
     auto freestanding = RAND_GET_OPTION(RSK_SHUFFLE_FREESTANDING);
     const auto rc = loc->GetRandomizerCheck();
-    if (rc == RC_UNKNOWN_CHECK) return false;
+    if (rc == RC_UNKNOWN_CHECK)
+        return false;
 #ifdef COMBO_BUILD
     if (Rando::IsKokiriInvisibleRupee(rc))
         return Rando::KokiriItem00Enabled(rc, Rando::Context::GetInstance()->GetKokiriSeedRevision(),
-            freestanding.Get(), RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS).Get());
+                                          freestanding.Get(), RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS).Get());
 #endif
-    return freestanding &&
-        !(freestanding.Is(RO_SHUFFLE_FREESTANDING_OVERWORLD) && loc->IsDungeon()) &&
-        !(freestanding.Is(RO_SHUFFLE_FREESTANDING_DUNGEONS) && !loc->IsDungeon());
+    return freestanding && !(freestanding.Is(RO_SHUFFLE_FREESTANDING_OVERWORLD) && loc->IsDungeon()) &&
+           !(freestanding.Is(RO_SHUFFLE_FREESTANDING_DUNGEONS) && !loc->IsDungeon());
 }
 
 void RegisterShuffleFreestanding() {
     bool shouldRegister = IS_RANDO && RAND_GET_OPTION(RSK_SHUFFLE_FREESTANDING);
 #ifdef COMBO_BUILD
-    shouldRegister = shouldRegister || (IS_RANDO && Rando::Context::GetInstance()->GetKokiriSeedRevision() == 1 &&
-        (RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS).Is(RO_SHUFFLE_WONDER_ITEMS_OVERWORLD) ||
-         RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS).Is(RO_SHUFFLE_WONDER_ITEMS_ALL)));
+    shouldRegister =
+        shouldRegister || (IS_RANDO && Rando::Context::GetInstance()->GetKokiriSeedRevision() == 1 &&
+                           (RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS).Is(RO_SHUFFLE_WONDER_ITEMS_OVERWORLD) ||
+                            RAND_GET_OPTION(RSK_SHUFFLE_WONDER_ITEMS).Is(RO_SHUFFLE_WONDER_ITEMS_ALL)));
 #endif
 
     COND_VB_SHOULD(VB_ITEM00_DESPAWN, shouldRegister, {

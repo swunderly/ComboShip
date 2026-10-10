@@ -17,11 +17,11 @@ inline bool CanUsePowderKeg(bool ownsGoron, bool ownsKeg, bool ownsBlastMask, bo
 }
 // OoTMM's Moon Boss rules: a ranged first phase AND a repeatable finishing weapon.
 // Native Boss07 damage tables accept all three paths. Boss souls still gate the actor.
-inline bool CanDefeatMajora(bool soulEnabled, bool ownsSoul, bool ownsBow, bool ownsZora,
-                            bool ownsDeity, bool ownsMagic, bool ownsHumanSword, bool ownsFairySword) {
+inline bool CanDefeatMajora(bool soulEnabled, bool ownsSoul, bool ownsBow, bool ownsZora, bool ownsDeity,
+                            bool ownsMagic, bool ownsHumanSword, bool ownsFairySword) {
     const bool deityBeam = ownsDeity && ownsMagic;
     const bool phaseOne = ownsBow || ownsZora || deityBeam;
     const bool finish = ownsHumanSword || ownsFairySword || ownsZora || deityBeam;
     return (!soulEnabled || ownsSoul) && phaseOne && finish;
 }
-}
+} // namespace ComboRando

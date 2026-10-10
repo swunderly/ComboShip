@@ -1149,7 +1149,8 @@ extern "C" u16 Randomizer_Item_Give(PlayState* play, GetItemEntry giEntry) {
     }
 
     RandomizerGet item = (RandomizerGet)giEntry.getItemId;
-    if (Combo_OotSoulGive(play,item)) return Return_Item_Entry(giEntry,RG_NONE);
+    if (Combo_OotSoulGive(play, item))
+        return Return_Item_Entry(giEntry, RG_NONE);
     if (Combo_SilverGive(play, item)) {
         Randomizer_GameplayStats_SetTimestamp(item);
         return Return_Item_Entry(giEntry, RG_NONE);
@@ -1421,7 +1422,8 @@ extern "C" u16 Randomizer_Item_Give(PlayState* play, GetItemEntry giEntry) {
         case RG_TRIFORCE_WISDOM:
             gSaveContext.ship.quest.data.randomizer.namedTriforceMask |= 1u << (item - RG_TRIFORCE_POWER);
 #ifdef COMBO_BUILD
-            if (gComboTriforceProgress != NULL) gComboTriforceProgress(0, gSaveContext.fileNum);
+            if (gComboTriforceProgress != NULL)
+                gComboTriforceProgress(0, gSaveContext.fileNum);
 #endif
             break;
         case RG_TRIFORCE_PIECE:

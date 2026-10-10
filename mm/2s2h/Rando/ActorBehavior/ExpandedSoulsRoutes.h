@@ -20,4 +20,4 @@ inline bool ExpandedBoatAuthorization(bool savedKoume, bool swampPhoto) {
 inline bool ExpandedGoronFoodTorches(bool fireArrows, bool songAndSticks) {
     return fireArrows || (songAndSticks && HaveExpandedSoul(ExpandedSoul::NPC_GORON_CHILD));
 }
-}
+} // namespace Rando

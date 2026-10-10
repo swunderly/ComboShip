@@ -8,8 +8,8 @@
 #include "global.h"
 #include "CrossWarp.h"
 #include "CrossKeyframe.h"
-#define CB(x) ((x)*(x)*(x))
-#define DEG_TO_BINANG(d) ((s16)((d)*(0x10000/360.0f)))
+#define CB(x) ((x) * (x) * (x))
+#define DEG_TO_BINANG(d) ((s16)((d) * (0x10000 / 360.0f)))
 #include "soh/ResourceManagerHelpers.h"
 
 #define FMOD(x, mod) ((x) - ((s32)((x) * (1.0f / (mod))) * (f32)(mod)))
@@ -37,7 +37,7 @@ void CWFrameCtrl_Init(CWFrameControl* frameCtrl) {
  * @note Original name: cKF_FrameControl_setFrame
  */
 void CWFrameCtrl_SetProperties(CWFrameControl* frameCtrl, f32 startTime, f32 endTime, f32 frameCount, f32 t, f32 speed,
-                             s32 animMode) {
+                               s32 animMode) {
     frameCtrl->start = startTime;
     frameCtrl->end = (endTime < 1.0f) ? frameCount : endTime;
     frameCtrl->frameCount = frameCount;
@@ -174,8 +174,9 @@ void CWKeyframe_ResetFlex(CWKFSkelAnimeFlex* kfSkelAnime) {
  *
  * @note Original name unknown
  */
-void CWKeyframe_InitFlex(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton, CWKeyFrameAnimation* animation,
-                       Vec3s* jointTable, Vec3s* morphTable, KeyframeTransformCallback* transformCallbacks) {
+void CWKeyframe_InitFlex(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton,
+                         CWKeyFrameAnimation* animation, Vec3s* jointTable, Vec3s* morphTable,
+                         KeyframeTransformCallback* transformCallbacks) {
     if (ResourceMgr_OTRSigCheck(skeleton)) {
         skeleton = (CWKeyFrameSkeleton*)Combo_SOHWarpResource(skeleton);
     }
@@ -200,8 +201,9 @@ void CWKeyframe_InitFlex(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton*
 void CWKeyframe_DestroyFlex(CWKFSkelAnimeFlex* kfSkelAnime) {
 }
 
-void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton, CWKeyFrameAnimation* animation,
-                             f32 startTime, f32 endTime, f32 t, f32 speed, f32 morphFrames, s32 animMode);
+void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton,
+                               CWKeyFrameAnimation* animation, f32 startTime, f32 endTime, f32 t, f32 speed,
+                               f32 morphFrames, s32 animMode);
 
 /**
  * Immediately changes to an animation that plays once from start to end at the default speed.
@@ -212,8 +214,8 @@ void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSke
  */
 void CWKeyframe_FlexPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation) {
     CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f, 0.0f,
-                            KEYFRAME_ANIM_ONCE);
+                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f, 0.0f,
+                              KEYFRAME_ANIM_ONCE);
 }
 
 /**
@@ -226,8 +228,8 @@ void CWKeyframe_FlexPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation
  */
 void CWKeyframe_FlexPlayOnceSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed) {
     CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, speed, 0.0f,
-                            KEYFRAME_ANIM_ONCE);
+                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, speed, 0.0f,
+                              KEYFRAME_ANIM_ONCE);
 }
 
 /**
@@ -244,8 +246,8 @@ void CWKeyframe_FlexPlayOnceSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameA
  */
 void CWKeyframe_FlexMorphToPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames) {
     CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f,
-                            morphFrames, KEYFRAME_ANIM_ONCE);
+                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f,
+                              morphFrames, KEYFRAME_ANIM_ONCE);
 }
 
 /**
@@ -257,8 +259,8 @@ void CWKeyframe_FlexMorphToPlayOnce(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAn
  */
 void CWKeyframe_FlexPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation) {
     CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f, 0.0f,
-                            KEYFRAME_ANIM_LOOP);
+                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f, 0.0f,
+                              KEYFRAME_ANIM_LOOP);
 }
 
 /**
@@ -271,8 +273,8 @@ void CWKeyframe_FlexPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation
  */
 void CWKeyframe_FlexPlayLoopSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 speed) {
     CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, speed, 0.0f,
-                            KEYFRAME_ANIM_LOOP);
+                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, speed, 0.0f,
+                              KEYFRAME_ANIM_LOOP);
 }
 
 /**
@@ -289,8 +291,8 @@ void CWKeyframe_FlexPlayLoopSetSpeed(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameA
  */
 void CWKeyframe_FlexMorphToPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAnimation* animation, f32 morphFrames) {
     CWKeyframe_FlexChangeAnim(kfSkelAnime, kfSkelAnime->skeleton, animation, 1.0f,
-                            ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f,
-                            morphFrames, KEYFRAME_ANIM_LOOP);
+                              ((CWKeyFrameAnimation*)SEGMENTED_TO_VIRTUAL(animation))->frameCount, 1.0f, 1.0f,
+                              morphFrames, KEYFRAME_ANIM_LOOP);
 }
 
 /**
@@ -315,8 +317,9 @@ void CWKeyframe_FlexMorphToPlayLoop(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameAn
  *
  * @note Original name unknown
  */
-void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton, CWKeyFrameAnimation* animation,
-                             f32 startTime, f32 endTime, f32 t, f32 speed, f32 morphFrames, s32 animMode) {
+void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSkeleton* skeleton,
+                               CWKeyFrameAnimation* animation, f32 startTime, f32 endTime, f32 t, f32 speed,
+                               f32 morphFrames, s32 animMode) {
     if (ResourceMgr_OTRSigCheck(skeleton)) {
         skeleton = Combo_SOHWarpResource(skeleton);
     }
@@ -335,7 +338,7 @@ void CWKeyframe_FlexChangeAnim(CWKFSkelAnimeFlex* kfSkelAnime, CWKeyFrameFlexSke
     kfSkelAnime->animation = SEGMENTED_TO_VIRTUAL(animation);
 
     CWFrameCtrl_SetProperties(&kfSkelAnime->frameCtrl, startTime, endTime, kfSkelAnime->animation->frameCount, t, speed,
-                            animMode);
+                              animMode);
 }
 
 /**
@@ -407,8 +410,8 @@ s16 CWKeyframe_KeyCalc(s16 kfStart, s16 kfNum, KeyFrame* keyFrames, f32 t) {
             if (!IS_ZERO(delta)) {
                 // Between two keyframes, interpolate a value and round to nearest integer
                 return nearbyint(CWKeyframe_Interpolate((t - keyFramesOffset[kf1].frame) / delta, delta * (1.0f / 30),
-                                                      keyFramesOffset[kf1].value, keyFramesOffset[kf2].value,
-                                                      keyFramesOffset[kf1].velocity, keyFramesOffset[kf2].velocity));
+                                                        keyFramesOffset[kf1].value, keyFramesOffset[kf2].value,
+                                                        keyFramesOffset[kf1].velocity, keyFramesOffset[kf2].velocity));
             } else {
                 // Close enough to a keyframe, take the specified value with no interpolation
                 return keyFramesOffset[kf1].value;
@@ -640,8 +643,8 @@ s32 CWKeyframe_UpdateFlex(CWKFSkelAnimeFlex* kfSkelAnime) {
 }
 
 /**
- * Draws the limb specified by `limbIndex` of type `CWKeyFrameFlexLimb` belonging to a flex-type keyframe skeleton to the
- * display buffer specified by the limb's drawFlags.
+ * Draws the limb specified by `limbIndex` of type `CWKeyFrameFlexLimb` belonging to a flex-type keyframe skeleton to
+ * the display buffer specified by the limb's drawFlags.
  *
  * @param limbIndex Pointer to the index of the limb to draw
  * @param overrideKeyframeDraw Callback for before submitting the limb to be drawn. The matrix state will not include
@@ -654,8 +657,8 @@ s32 CWKeyframe_UpdateFlex(CWKFSkelAnimeFlex* kfSkelAnime) {
  * @note Original name unknown
  */
 void CWKeyframe_DrawFlexLimb(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, s32* limbIndex,
-                           CWOverrideKeyframeDrawScaled overrideKeyframeDraw, CWPostKeyframeDrawScaled postKeyframeDraw,
-                           void* arg, Mtx** mtxStack) {
+                             CWOverrideKeyframeDrawScaled overrideKeyframeDraw,
+                             CWPostKeyframeDrawScaled postKeyframeDraw, void* arg, Mtx** mtxStack) {
     CWKeyFrameFlexLimb* limb = SEGMENTED_TO_VIRTUAL(kfSkelAnime->skeleton->limbs);
     s32 i;
     Gfx* newDList;
@@ -754,8 +757,8 @@ void CWKeyframe_DrawFlexLimb(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, s3
  * @note Original name unknown
  */
 void CWKeyframe_DrawFlex(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, Mtx* mtxStack,
-                       CWOverrideKeyframeDrawScaled overrideKeyframeDraw, CWPostKeyframeDrawScaled postKeyframeDraw,
-                       void* arg) {
+                         CWOverrideKeyframeDrawScaled overrideKeyframeDraw, CWPostKeyframeDrawScaled postKeyframeDraw,
+                         void* arg) {
     s32 limbIndex;
 
     if (mtxStack == NULL) {

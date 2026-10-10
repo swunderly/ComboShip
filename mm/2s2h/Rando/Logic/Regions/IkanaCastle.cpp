@@ -4,7 +4,9 @@
 #include "2s2h/Rando/Logic/Logic.h"
 #ifdef COMBO_BUILD
 #include "rando/MmAdultWorldRoutes.h"
-#define IKANA_ADULT_GEAR_MODE (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
+#define IKANA_ADULT_GEAR_MODE                                                          \
+    (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || \
+     RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
 #endif
 
 using namespace Rando::Logic;

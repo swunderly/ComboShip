@@ -93,7 +93,8 @@ std::vector<u8> BuildAvailableItemsList(u8 slot) {
     switch (slot) {
         case SLOT_TRADE_DEED:
 #ifdef COMBO_BUILD
-            if(gSaveContext.save.shipSaveInfo.spellFireOwned)availableItems.push_back(ITEM_COMBO_DINS_FIRE);
+            if (gSaveContext.save.shipSaveInfo.spellFireOwned)
+                availableItems.push_back(ITEM_COMBO_DINS_FIRE);
 #endif
             if (Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)) {
                 availableItems.push_back(ITEM_MOONS_TEAR);
@@ -114,12 +115,14 @@ std::vector<u8> BuildAvailableItemsList(u8 slot) {
         case SLOT_TRADE_KEY_MAMA:
 #ifdef COMBO_BUILD
             // common/trade.c kMmTrade2 puts Farore before the native room key/letter.
-            if(gSaveContext.save.shipSaveInfo.faroresWind.owned)
+            if (gSaveContext.save.shipSaveInfo.faroresWind.owned)
                 availableItems.push_back(ITEM_COMBO_FARORES_WIND);
-            if(Combo_MM_AdultResourcesReady()) {
-                const auto bits=gSaveContext.save.shipSaveInfo.adultMm.gearTrade2Bits;
-                if(ComboAdultGearInventory::Has(bits,ITEM_COMBO_BOOTS_IRON))availableItems.push_back(ITEM_COMBO_BOOTS_IRON);
-                if(ComboAdultGearInventory::Has(bits,ITEM_COMBO_TUNIC_GORON))availableItems.push_back(ITEM_COMBO_TUNIC_GORON);
+            if (Combo_MM_AdultResourcesReady()) {
+                const auto bits = gSaveContext.save.shipSaveInfo.adultMm.gearTrade2Bits;
+                if (ComboAdultGearInventory::Has(bits, ITEM_COMBO_BOOTS_IRON))
+                    availableItems.push_back(ITEM_COMBO_BOOTS_IRON);
+                if (ComboAdultGearInventory::Has(bits, ITEM_COMBO_TUNIC_GORON))
+                    availableItems.push_back(ITEM_COMBO_TUNIC_GORON);
             }
 #endif
             if (Flags_GetRandoInf(RANDO_INF_OBTAINED_ROOM_KEY)) {
@@ -131,14 +134,19 @@ std::vector<u8> BuildAvailableItemsList(u8 slot) {
             break;
         case SLOT_TRADE_COUPLE:
 #ifdef COMBO_BUILD
-            if(gSaveContext.save.shipSaveInfo.spellLoveOwned)availableItems.push_back(ITEM_COMBO_NAYRUS_LOVE);
-            if(Combo_MM_AdultResourcesReady()) {
-                const auto bits=gSaveContext.save.shipSaveInfo.adultMm.gearTrade3Bits;
-                if(ComboAdultGearInventory::Has(bits,ITEM_COMBO_BOOTS_HOVER))availableItems.push_back(ITEM_COMBO_BOOTS_HOVER);
-                if(ComboAdultGearInventory::Has(bits,ITEM_COMBO_TUNIC_ZORA))availableItems.push_back(ITEM_COMBO_TUNIC_ZORA);
+            if (gSaveContext.save.shipSaveInfo.spellLoveOwned)
+                availableItems.push_back(ITEM_COMBO_NAYRUS_LOVE);
+            if (Combo_MM_AdultResourcesReady()) {
+                const auto bits = gSaveContext.save.shipSaveInfo.adultMm.gearTrade3Bits;
+                if (ComboAdultGearInventory::Has(bits, ITEM_COMBO_BOOTS_HOVER))
+                    availableItems.push_back(ITEM_COMBO_BOOTS_HOVER);
+                if (ComboAdultGearInventory::Has(bits, ITEM_COMBO_TUNIC_ZORA))
+                    availableItems.push_back(ITEM_COMBO_TUNIC_ZORA);
                 // Pinned kMmTrade3: letter precedes pendant. Preserve legacy native order while disabled.
-                if(Flags_GetRandoInf(RANDO_INF_OBTAINED_LETTER_TO_KAFEI))availableItems.push_back(ITEM_LETTER_TO_KAFEI);
-                if(Flags_GetRandoInf(RANDO_INF_OBTAINED_PENDANT_OF_MEMORIES))availableItems.push_back(ITEM_PENDANT_OF_MEMORIES);
+                if (Flags_GetRandoInf(RANDO_INF_OBTAINED_LETTER_TO_KAFEI))
+                    availableItems.push_back(ITEM_LETTER_TO_KAFEI);
+                if (Flags_GetRandoInf(RANDO_INF_OBTAINED_PENDANT_OF_MEMORIES))
+                    availableItems.push_back(ITEM_PENDANT_OF_MEMORIES);
                 break;
             }
 #endif

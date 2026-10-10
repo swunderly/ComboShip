@@ -93,25 +93,31 @@ void Setup_InitImpl(SetupState* this) {
         extern int MM_ConsumeFaroreArrival(void);
         extern int MM_ConsumeDungeonArrival(void);
         extern int MM_ConsumeEntranceArrival(void);
-        const int entranceArrival=MM_ConsumeEntranceArrival();
-        const int dungeonArrival=MM_ConsumeDungeonArrival();
-        const int faroreArrival=MM_ConsumeFaroreArrival();
+        const int entranceArrival = MM_ConsumeEntranceArrival();
+        const int dungeonArrival = MM_ConsumeDungeonArrival();
+        const int faroreArrival = MM_ConsumeFaroreArrival();
         extern int MM_ConsumeSongArrival(void);
-        const int songArrival=MM_ConsumeSongArrival();
-        if(entranceArrival>=0) {gSaveContext.save.isOwlSave=false;gSaveContext.save.entrance=entranceArrival;}
-        else if(dungeonArrival>=0) {gSaveContext.save.isOwlSave=false;gSaveContext.save.entrance=dungeonArrival;}
-        else if(faroreArrival>=0) {
-            gSaveContext.save.isOwlSave=false;
-            gSaveContext.save.entrance=faroreArrival;
-        } else if (songArrival>=0) {
+        const int songArrival = MM_ConsumeSongArrival();
+        if (entranceArrival >= 0) {
+            gSaveContext.save.isOwlSave = false;
+            gSaveContext.save.entrance = entranceArrival;
+        } else if (dungeonArrival >= 0) {
+            gSaveContext.save.isOwlSave = false;
+            gSaveContext.save.entrance = dungeonArrival;
+        } else if (faroreArrival >= 0) {
+            gSaveContext.save.isOwlSave = false;
+            gSaveContext.save.entrance = faroreArrival;
+        } else if (songArrival >= 0) {
             gSaveContext.save.isOwlSave = false;
             gSaveContext.save.playerForm = PLAYER_FORM_HUMAN;
             gSaveContext.save.equippedMask = PLAYER_MASK_NONE;
-            gSaveContext.save.entrance=songArrival;
-            if(songArrival==ENTRANCE(SOUTHERN_SWAMP_POISONED,10) && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE))
-                gSaveContext.save.entrance=ENTRANCE(SOUTHERN_SWAMP_CLEARED,10);
-            if(songArrival==ENTRANCE(MOUNTAIN_VILLAGE_WINTER,8) && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE))
-                gSaveContext.save.entrance=ENTRANCE(MOUNTAIN_VILLAGE_SPRING,8);
+            gSaveContext.save.entrance = songArrival;
+            if (songArrival == ENTRANCE(SOUTHERN_SWAMP_POISONED, 10) &&
+                CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE))
+                gSaveContext.save.entrance = ENTRANCE(SOUTHERN_SWAMP_CLEARED, 10);
+            if (songArrival == ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 8) &&
+                CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE))
+                gSaveContext.save.entrance = ENTRANCE(MOUNTAIN_VILLAGE_SPRING, 8);
         }
         gSaveContext.save.cutsceneIndex = 0;
         // Reset magicLevel like Sram_OpenSave does â€” re-arms the magic meter grow animation

@@ -14,8 +14,8 @@ struct VisibilityState {
     int context = -1;
     int mode = -1;
     uint32_t binding = 0;
-    bool Update(int newContext, int newMode, uint32_t mask, uint32_t buttons,
-                bool enabled, bool loaded, bool paused, bool menu, bool touch = false) {
+    bool Update(int newContext, int newMode, uint32_t mask, uint32_t buttons, bool enabled, bool loaded, bool paused,
+                bool menu, bool touch = false) {
         const bool held = mask != 0 && (buttons & mask) == mask;
         if (context != newContext || mode != newMode || binding != mask) {
             down = held;
@@ -23,36 +23,54 @@ struct VisibilityState {
             mode = newMode;
             binding = mask;
         }
-        if (enabled && loaded && !menu && newMode == Toggle && held && !down) open = !open;
-        if (enabled && loaded && !menu && newMode == OnScreen && touch) open = !open;
+        if (enabled && loaded && !menu && newMode == Toggle && held && !down)
+            open = !open;
+        if (enabled && loaded && !menu && newMode == OnScreen && touch)
+            open = !open;
         down = held;
-        if (!enabled || !loaded) return false;
-        if (newMode == Always) return true;
-        if (newMode == Paused) return paused;
-        if (newMode == Hold) return held && !menu;
+        if (!enabled || !loaded)
+            return false;
+        if (newMode == Always)
+            return true;
+        if (newMode == Paused)
+            return paused;
+        if (newMode == Hold)
+            return held && !menu;
         return open;
     }
 };
 
-inline bool IsCollected(uint32_t flags) { return (flags & COMBO_CHECK_COLLECTED) != 0; }
-inline bool IsSkipped(uint32_t flags) { return !IsCollected(flags) && (flags & COMBO_CHECK_SKIPPED) != 0; }
+inline bool IsCollected(uint32_t flags) {
+    return (flags & COMBO_CHECK_COLLECTED) != 0;
+}
+inline bool IsSkipped(uint32_t flags) {
+    return !IsCollected(flags) && (flags & COMBO_CHECK_SKIPPED) != 0;
+}
 inline bool OutOfLogic(uint32_t flags) {
     return !IsCollected(flags) && (flags & COMBO_CHECK_LOGIC_KNOWN) && !(flags & COMBO_CHECK_AVAILABLE);
 }
 inline bool PassesFilters(uint32_t flags, bool collected, bool skipped, bool onlyAvailable) {
-    if (flags & COMBO_CHECK_AREA_HIDDEN) return !onlyAvailable;
-    if (IsCollected(flags) && !collected) return false;
-    if (IsSkipped(flags) && !skipped) return false;
+    if (flags & COMBO_CHECK_AREA_HIDDEN)
+        return !onlyAvailable;
+    if (IsCollected(flags) && !collected)
+        return false;
+    if (IsSkipped(flags) && !skipped)
+        return false;
     return !onlyAvailable || !OutOfLogic(flags);
 }
 struct Totals {
     int total = 0, collected = 0, skipped = 0;
     bool hiddenArea = false;
     void Add(uint32_t flags) {
-        if (flags & COMBO_CHECK_AREA_HIDDEN) { hiddenArea = true; return; }
+        if (flags & COMBO_CHECK_AREA_HIDDEN) {
+            hiddenArea = true;
+            return;
+        }
         ++total;
-        if (IsCollected(flags)) ++collected;
-        else if (IsSkipped(flags)) ++skipped;
+        if (IsCollected(flags))
+            ++collected;
+        else if (IsSkipped(flags))
+            ++skipped;
     }
 };
 // A check may be reachable from several areas (for example MM's postboxes).
@@ -60,8 +78,12 @@ struct Totals {
 struct UniqueTotals : Totals {
     std::unordered_set<int32_t> ids;
     void Add(int32_t id, uint32_t flags) {
-        if (flags & COMBO_CHECK_AREA_HIDDEN) { hiddenArea = true; return; }
-        if (ids.insert(id).second) Totals::Add(flags);
+        if (flags & COMBO_CHECK_AREA_HIDDEN) {
+            hiddenArea = true;
+            return;
+        }
+        if (ids.insert(id).second)
+            Totals::Add(flags);
     }
 };
 } // namespace ComboChecks

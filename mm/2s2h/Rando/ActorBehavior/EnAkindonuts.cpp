@@ -12,27 +12,30 @@ void func_80BEF360(EnAkindonuts* enAkindonuts, PlayState* play);
 void func_80BEEFA8(EnAkindonuts* enAkindonuts, PlayState* play);
 }
 
-
 #ifdef COMBO_BUILD
 #include "RenewableStock.h"
 #include "ComboExport.h"
 #include "ComboRenewableStockABI.h"
 #include "Rando/MiscBehavior/MiscBehavior.h"
 #include "2s2h/CustomItem/CustomItem.h"
-namespace Rando { bool DrawComboForeignRenewable(const char*); bool CanDrawComboForeignRenewable(const char*); }
+namespace Rando {
+bool DrawComboForeignRenewable(const char*);
+bool CanDrawComboForeignRenewable(const char*);
+} // namespace Rando
 static FnScrubStockQuery sScrubOwnerQuery = nullptr;
 static FnScrubStockGrant sScrubOwnerGrant = nullptr;
 extern "C" COMBO_EXPORT void MM_SetScrubStockBridge(FnScrubStockQuery query, FnScrubStockGrant grant) {
-    sScrubOwnerQuery = query; sScrubOwnerGrant = grant;
+    sScrubOwnerQuery = query;
+    sScrubOwnerGrant = grant;
 }
 
-
-static const RandoCheckId kScrubChecks[] = {RC_SOUTHERN_SWAMP_SCRUB_BEANS, RC_GORON_VILLAGE_SCRUB_BOMB_BAG,
-    RC_ZORA_HALL_SCRUB_POTION_REFILL, RC_IKANA_CANYON_SCRUB_POTION_REFILL};
-static const RandoInf kScrubFlags[] = {RANDO_INF_PURCHASED_BEANS_FROM_SOUTHERN_SWAMP_SCRUB,
-    RANDO_INF_PURCHASED_BOMB_BAG_FROM_GORON_VILLAGE_SCRUB,
-    RANDO_INF_PURCHASED_POTION_FROM_ZORA_HALL_SCRUB, RANDO_INF_PURCHASED_POTION_FROM_IKANA_CANYON_SCRUB};
-static const int kScrubPrices[] = {10, 200, 40, 100};
+static const RandoCheckId kScrubChecks[] = { RC_SOUTHERN_SWAMP_SCRUB_BEANS, RC_GORON_VILLAGE_SCRUB_BOMB_BAG,
+                                             RC_ZORA_HALL_SCRUB_POTION_REFILL, RC_IKANA_CANYON_SCRUB_POTION_REFILL };
+static const RandoInf kScrubFlags[] = { RANDO_INF_PURCHASED_BEANS_FROM_SOUTHERN_SWAMP_SCRUB,
+                                        RANDO_INF_PURCHASED_BOMB_BAG_FROM_GORON_VILLAGE_SCRUB,
+                                        RANDO_INF_PURCHASED_POTION_FROM_ZORA_HALL_SCRUB,
+                                        RANDO_INF_PURCHASED_POTION_FROM_IKANA_CANYON_SCRUB };
+static const int kScrubPrices[] = { 10, 200, 40, 100 };
 
 // Pinned En_Akindonuts_ItemOverride gives the Goron vendor a recovery heart on every repeat.
 static RandoItemId ScrubStock(unsigned id) {
@@ -40,16 +43,22 @@ static RandoItemId ScrubStock(unsigned id) {
 }
 
 static bool ScrubForeignStock(unsigned id, ComboRenewableStock& stock) {
-    if (id == 1 || RANDO_SAVE_CHECKS[kScrubChecks[id]].randoItemId != RI_COMBO_FOREIGN ||
-        !sScrubOwnerQuery || !sScrubOwnerGrant || gSaveContext.fileNum > 2) return false;
+    if (id == 1 || RANDO_SAVE_CHECKS[kScrubChecks[id]].randoItemId != RI_COMBO_FOREIGN || !sScrubOwnerQuery ||
+        !sScrubOwnerGrant || gSaveContext.fileNum > 2)
+        return false;
     const auto* foreign = Rando::MiscBehavior::MM_LookupForeign(kScrubChecks[id]);
-    if (!foreign || foreign->itemGame != ComboRando::GAME_OOT || foreign->itemName.empty()) return false;
-    if (!sScrubOwnerQuery(gSaveContext.fileNum, foreign->itemName.c_str(), &stock)) return false;
-    if (stock.kind == 1) return true;
-    if (stock.kind != 2 || !stock.name[0] || !stock.drawName[0] || stock.nativeGi <= 0 || (stock.buyable != 0 && stock.buyable != 1) ||
-        (stock.fastBuy != 0 && stock.fastBuy != 1) ||
-        !std::memchr(stock.name, 0, sizeof(stock.name)) || !std::memchr(stock.drawName, 0, sizeof(stock.drawName))) return false;
-    if (!stock.fastBuy && !Rando::CanDrawComboForeignRenewable(stock.drawName)) stock.buyable = 0;
+    if (!foreign || foreign->itemGame != ComboRando::GAME_OOT || foreign->itemName.empty())
+        return false;
+    if (!sScrubOwnerQuery(gSaveContext.fileNum, foreign->itemName.c_str(), &stock))
+        return false;
+    if (stock.kind == 1)
+        return true;
+    if (stock.kind != 2 || !stock.name[0] || !stock.drawName[0] || stock.nativeGi <= 0 ||
+        (stock.buyable != 0 && stock.buyable != 1) || (stock.fastBuy != 0 && stock.fastBuy != 1) ||
+        !std::memchr(stock.name, 0, sizeof(stock.name)) || !std::memchr(stock.drawName, 0, sizeof(stock.drawName)))
+        return false;
+    if (!stock.fastBuy && !Rando::CanDrawComboForeignRenewable(stock.drawName))
+        stock.buyable = 0;
     return true;
 }
 
@@ -58,49 +67,74 @@ static bool ScrubForeignStock(unsigned id, ComboRenewableStock& stock) {
 static bool ScrubStockBuyable(RandoItemId item) {
     const auto& p = gSaveContext.save.saveInfo.playerData;
     switch (item) {
-        case RI_UNKNOWN: return false; // Foreign stock requires an owning-engine resolver.
-        case RI_RECOVERY_HEART: return p.health < p.healthCapacity;
-        case RI_MAGIC_JAR_SMALL: case RI_MAGIC_JAR_BIG:
+        case RI_UNKNOWN:
+            return false; // Foreign stock requires an owning-engine resolver.
+        case RI_RECOVERY_HEART:
+            return p.health < p.healthCapacity;
+        case RI_MAGIC_JAR_SMALL:
+        case RI_MAGIC_JAR_BIG:
             return p.isMagicAcquired && p.magic < (p.isDoubleMagicAcquired ? 0x60 : 0x30);
-        case RI_DEKU_STICK: return AMMO(ITEM_DEKU_STICK) < CUR_CAPACITY(UPG_DEKU_STICKS);
-        case RI_DEKU_NUT: case RI_DEKU_NUTS_5: case RI_DEKU_NUTS_10:
+        case RI_DEKU_STICK:
+            return AMMO(ITEM_DEKU_STICK) < CUR_CAPACITY(UPG_DEKU_STICKS);
+        case RI_DEKU_NUT:
+        case RI_DEKU_NUTS_5:
+        case RI_DEKU_NUTS_10:
             return AMMO(ITEM_DEKU_NUT) < CUR_CAPACITY(UPG_DEKU_NUTS);
-        case RI_BOMBS_5: case RI_BOMBS_10:
+        case RI_BOMBS_5:
+        case RI_BOMBS_10:
             return CUR_UPG_VALUE(UPG_BOMB_BAG) && AMMO(ITEM_BOMB) < CUR_CAPACITY(UPG_BOMB_BAG);
-        case RI_BOMBCHU: case RI_BOMBCHU_5: case RI_BOMBCHU_10:
+        case RI_BOMBCHU:
+        case RI_BOMBCHU_5:
+        case RI_BOMBCHU_10:
             // Native MM and the pinned default bombBag mode both clamp chus to the real Bomb Bag capacity.
             return INV_CONTENT(ITEM_BOMBCHU) == ITEM_BOMBCHU && AMMO(ITEM_BOMBCHU) < CUR_CAPACITY(UPG_BOMB_BAG);
-        case RI_ARROWS_10: case RI_ARROWS_30: case RI_ARROWS_50:
+        case RI_ARROWS_10:
+        case RI_ARROWS_30:
+        case RI_ARROWS_50:
             return CUR_UPG_VALUE(UPG_QUIVER) && AMMO(ITEM_BOW) < CUR_CAPACITY(UPG_QUIVER);
         case RI_MAGIC_BEAN:
             // Preserve the pinned inventory-slot comparison, not a new ammo-cap interpretation.
             return INV_CONTENT(ITEM_MAGIC_BEANS) == ITEM_MAGIC_BEANS && INV_CONTENT(ITEM_MAGIC_BEANS) < 20;
-        case RI_SHIELD_HERO: return GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) == EQUIP_VALUE_SHIELD_NONE;
-        case RI_RED_POTION_REFILL: case RI_GREEN_POTION_REFILL: case RI_BLUE_POTION_REFILL:
-        case RI_FAIRY_REFILL: case RI_MILK_REFILL: case RI_CHATEAU_ROMANI_REFILL:
+        case RI_SHIELD_HERO:
+            return GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) == EQUIP_VALUE_SHIELD_NONE;
+        case RI_RED_POTION_REFILL:
+        case RI_GREEN_POTION_REFILL:
+        case RI_BLUE_POTION_REFILL:
+        case RI_FAIRY_REFILL:
+        case RI_MILK_REFILL:
+        case RI_CHATEAU_ROMANI_REFILL:
             return Inventory_HasEmptyBottle();
-        default: return false;
+        default:
+            return false;
     }
 }
 
 // -1 delegates first purchases and unshuffled vendors to the original native actor.
 extern "C" int Combo_MM_ScrubRepeatPrecond(EnAkindonuts* actor) {
-    if (!IS_RANDO || !actor) return -1;
+    if (!IS_RANDO || !actor)
+        return -1;
     const unsigned id = ENAKINDONUTS_GET_3(&actor->actor);
-    if(id>=4)return -1;
+    if (id >= 4)
+        return -1;
     // A local renewable bean never creates its own inventory license, even
     // on the first randomized purchase or an unshuffled randomizer vendor.
-    if(RANDO_SAVE_CHECKS[kScrubChecks[id]].randoItemId==RI_MAGIC_BEAN&&INV_CONTENT(ITEM_MAGIC_BEANS)!=ITEM_MAGIC_BEANS)return 2;
-    if(!RANDO_SAVE_CHECKS[kScrubChecks[id]].shuffled||!Flags_GetRandoInf(kScrubFlags[id]))return -1;
+    if (RANDO_SAVE_CHECKS[kScrubChecks[id]].randoItemId == RI_MAGIC_BEAN &&
+        INV_CONTENT(ITEM_MAGIC_BEANS) != ITEM_MAGIC_BEANS)
+        return 2;
+    if (!RANDO_SAVE_CHECKS[kScrubChecks[id]].shuffled || !Flags_GetRandoInf(kScrubFlags[id]))
+        return -1;
     bool buyable = ScrubStockBuyable(ScrubStock(id));
     if (id != 1 && RANDO_SAVE_CHECKS[kScrubChecks[id]].randoItemId == RI_COMBO_FOREIGN) {
         ComboRenewableStock stock{};
-        buyable = ScrubForeignStock(id, stock) && (stock.kind == 1 ? ScrubStockBuyable(RI_RECOVERY_HEART) : stock.buyable);
+        buyable =
+            ScrubForeignStock(id, stock) && (stock.kind == 1 ? ScrubStockBuyable(RI_RECOVERY_HEART) : stock.buyable);
     }
-    if (!buyable) return 2;
-    if (gSaveContext.save.saveInfo.playerData.rupees < kScrubPrices[id]) return 1;
+    if (!buyable)
+        return 2;
+    if (gSaveContext.save.saveInfo.playerData.rupees < kScrubPrices[id])
+        return 1;
     actor->unk_364 = -kScrubPrices[id];
-    static const int nativeGi[] = {GI_MAGIC_BEANS, GI_BOMB_BAG_40, GI_POTION_GREEN, GI_POTION_BLUE};
+    static const int nativeGi[] = { GI_MAGIC_BEANS, GI_BOMB_BAG_40, GI_POTION_GREEN, GI_POTION_BLUE };
     actor->unk_366 = nativeGi[id];
     return 3;
 }
@@ -108,48 +142,72 @@ extern "C" int Combo_MM_ScrubRepeatPrecond(EnAkindonuts* actor) {
 
 #ifdef COMBO_BUILD
 struct ScrubPendingForeign {
-    EnAkindonuts* scrub=nullptr;int fileNum=-1;unsigned id=0;uint64_t generation=0;
-    ComboRenewableStock stock{};bool given=false;
+    EnAkindonuts* scrub = nullptr;
+    int fileNum = -1;
+    unsigned id = 0;
+    uint64_t generation = 0;
+    ComboRenewableStock stock{};
+    bool given = false;
 };
 static std::unordered_map<s16, ScrubPendingForeign> sScrubForeignPending;
-static s16 sScrubForeignTicket=0;
+static s16 sScrubForeignTicket = 0;
 static void ScrubGiveForeign(Actor* actor, PlayState* play) {
-    auto found=sScrubForeignPending.find(CUSTOM_ITEM_PARAM);
-    if(found==sScrubForeignPending.end()) return;
-    auto& pending=found->second;
-    if(pending.given) return;
-    const bool valid=pending.scrub && pending.fileNum==gSaveContext.fileNum &&
-        pending.generation==Rando::MiscBehavior::ComboRandoGen() &&
-        gSaveContext.save.saveInfo.playerData.rupees>=kScrubPrices[pending.id];
-    const bool granted=valid && sScrubOwnerGrant && sScrubOwnerGrant(pending.fileNum,pending.stock.nativeGi);
-    CustomMessage::Entry message{.textboxType=2,.icon=Rando::StaticData::GetIconForZMessage(RI_COMBO_FOREIGN),
-        .msg=granted ? "You got "+std::string(pending.stock.name)+"!" : "Oh, it seems I can't sell you that right now."};
-    if(CUSTOM_ITEM_FLAGS&CustomItem::GIVE_ITEM_CUTSCENE) CustomMessage::SetActiveCustomMessage(message.msg,message);
-    else CustomMessage::StartTextbox(message.msg+"\x1C\x02\x10",message);
-    pending.given=granted;
-    if(pending.scrub) {
-        if(granted) pending.scrub->actor.parent=&GET_PLAYER(play)->actor; // Native acknowledgement performs exactly one price debit.
-        else {pending.scrub->unk_32C &= ~0x40;pending.scrub->actionFunc=func_80BEEFA8;}
-        pending.scrub=nullptr;
+    auto found = sScrubForeignPending.find(CUSTOM_ITEM_PARAM);
+    if (found == sScrubForeignPending.end())
+        return;
+    auto& pending = found->second;
+    if (pending.given)
+        return;
+    const bool valid = pending.scrub && pending.fileNum == gSaveContext.fileNum &&
+                       pending.generation == Rando::MiscBehavior::ComboRandoGen() &&
+                       gSaveContext.save.saveInfo.playerData.rupees >= kScrubPrices[pending.id];
+    const bool granted = valid && sScrubOwnerGrant && sScrubOwnerGrant(pending.fileNum, pending.stock.nativeGi);
+    CustomMessage::Entry message{ .textboxType = 2,
+                                  .icon = Rando::StaticData::GetIconForZMessage(RI_COMBO_FOREIGN),
+                                  .msg = granted ? "You got " + std::string(pending.stock.name) + "!"
+                                                 : "Oh, it seems I can't sell you that right now." };
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE)
+        CustomMessage::SetActiveCustomMessage(message.msg, message);
+    else
+        CustomMessage::StartTextbox(message.msg + "\x1C\x02\x10", message);
+    pending.given = granted;
+    if (pending.scrub) {
+        if (granted)
+            pending.scrub->actor.parent =
+                &GET_PLAYER(play)->actor; // Native acknowledgement performs exactly one price debit.
+        else {
+            pending.scrub->unk_32C &= ~0x40;
+            pending.scrub->actionFunc = func_80BEEFA8;
+        }
+        pending.scrub = nullptr;
     }
 }
 static void ScrubDrawForeign(Actor* actor, PlayState* play) {
-    auto found=sScrubForeignPending.find(CUSTOM_ITEM_PARAM);
-    if(found==sScrubForeignPending.end()) return;
-    Matrix_Scale(30.0f,30.0f,30.0f,MTXMODE_APPLY);
+    auto found = sScrubForeignPending.find(CUSTOM_ITEM_PARAM);
+    if (found == sScrubForeignPending.end())
+        return;
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
     Rando::DrawComboForeignRenewable(found->second.stock.drawName);
 }
-static bool ScrubQueueForeign(EnAkindonuts* scrub,unsigned id,const ComboRenewableStock& stock) {
-    for(const auto& pending:sScrubForeignPending) if(pending.second.scrub==scrub) return true;
-    if(std::holds_alternative<GIEventNone>(GameInteractor::Instance->currentEvent) && GameInteractor::Instance->events.empty())
+static bool ScrubQueueForeign(EnAkindonuts* scrub, unsigned id, const ComboRenewableStock& stock) {
+    for (const auto& pending : sScrubForeignPending)
+        if (pending.second.scrub == scrub)
+            return true;
+    if (std::holds_alternative<GIEventNone>(GameInteractor::Instance->currentEvent) &&
+        GameInteractor::Instance->events.empty())
         sScrubForeignPending.clear();
-    if(sScrubForeignPending.size()>=128) return false;
-    sScrubForeignTicket=sScrubForeignTicket==32767?1:sScrubForeignTicket+1;
-    if(sScrubForeignPending.count(sScrubForeignTicket)) return false;
-    sScrubForeignPending.emplace(sScrubForeignTicket,ScrubPendingForeign{scrub,gSaveContext.fileNum,id,
-        Rando::MiscBehavior::ComboRandoGen(),stock,false});
-    GameInteractor::Instance->events.emplace_back(GIEventGiveItem{.showGetItemCutscene=!stock.fastBuy,
-        .param=sScrubForeignTicket,.giveItem=ScrubGiveForeign,.drawItem=ScrubDrawForeign});
+    if (sScrubForeignPending.size() >= 128)
+        return false;
+    sScrubForeignTicket = sScrubForeignTicket == 32767 ? 1 : sScrubForeignTicket + 1;
+    if (sScrubForeignPending.count(sScrubForeignTicket))
+        return false;
+    sScrubForeignPending.emplace(
+        sScrubForeignTicket,
+        ScrubPendingForeign{ scrub, gSaveContext.fileNum, id, Rando::MiscBehavior::ComboRandoGen(), stock, false });
+    GameInteractor::Instance->events.emplace_back(GIEventGiveItem{ .showGetItemCutscene = !stock.fastBuy,
+                                                                   .param = sScrubForeignTicket,
+                                                                   .giveItem = ScrubGiveForeign,
+                                                                   .drawItem = ScrubDrawForeign });
     return true;
 }
 #endif
@@ -169,25 +227,36 @@ void EnAkindonuts_ReplacePurchaseMessage(RandoCheckId randoCheckId, RandoInf ran
 
     RandoItemId offered = randoSaveCheck.randoItemId;
 #ifdef COMBO_BUILD
-    if (Flags_GetRandoInf(randoInf)) offered = randoCheckId == RC_GORON_VILLAGE_SCRUB_BOMB_BAG ? RI_RECOVERY_HEART : Rando::RenewableStockItem(offered);
+    if (Flags_GetRandoInf(randoInf))
+        offered =
+            randoCheckId == RC_GORON_VILLAGE_SCRUB_BOMB_BAG ? RI_RECOVERY_HEART : Rando::RenewableStockItem(offered);
 #endif
     std::string renewableName;
 #ifdef COMBO_BUILD
-    if(Flags_GetRandoInf(randoInf) && offered==RI_UNKNOWN) {
-        unsigned id=0;while(id<4 && kScrubChecks[id]!=randoCheckId) ++id;
+    if (Flags_GetRandoInf(randoInf) && offered == RI_UNKNOWN) {
+        unsigned id = 0;
+        while (id < 4 && kScrubChecks[id] != randoCheckId)
+            ++id;
         ComboRenewableStock stock{};
-        if(id<4 && ScrubForeignStock(id,stock)) {
-            if(stock.kind==1) offered=RI_RECOVERY_HEART;
-            else renewableName=stock.name;
+        if (id < 4 && ScrubForeignStock(id, stock)) {
+            if (stock.kind == 1)
+                offered = RI_RECOVERY_HEART;
+            else
+                renewableName = stock.name;
         }
     }
 #endif
     auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
-    entry.msg = offered == RI_UNKNOWN && renewableName.empty() ? "Oh, it seems I can't sell you that right now.\xE0" :
-        "I'll sell you %g{{item}}%w for %r{{rupees}} Rupees%w!\xE0";
+    entry.msg = offered == RI_UNKNOWN && renewableName.empty()
+                    ? "Oh, it seems I can't sell you that right now.\xE0"
+                    : "I'll sell you %g{{item}}%w for %r{{rupees}} Rupees%w!\xE0";
 
     CustomMessage::Replace(&entry.msg, "{{item}}",
-                           !renewableName.empty() ? renewableName : (offered == RI_UNKNOWN ? std::string("unavailable stock") : Rando::StaticData::GetRevealedItemName(offered, true, randoCheckId)));
+                           !renewableName.empty()
+                               ? renewableName
+                               : (offered == RI_UNKNOWN
+                                      ? std::string("unavailable stock")
+                                      : Rando::StaticData::GetRevealedItemName(offered, true, randoCheckId)));
     CustomMessage::Replace(&entry.msg, "{{rupees}}", std::to_string(cost));
 
     CustomMessage::LoadCustomMessageIntoFont(entry);
@@ -213,7 +282,10 @@ void EnAkindonuts_IsEligible(RandoCheckId randoCheckId, RandoInf randoInf, bool*
     auto& randoSaveCheck = RANDO_SAVE_CHECKS[randoCheckId];
 
 #ifdef COMBO_BUILD
-    if(randoSaveCheck.randoItemId==RI_MAGIC_BEAN&&INV_CONTENT(ITEM_MAGIC_BEANS)!=ITEM_MAGIC_BEANS){*should=false;return;}
+    if (randoSaveCheck.randoItemId == RI_MAGIC_BEAN && INV_CONTENT(ITEM_MAGIC_BEANS) != ITEM_MAGIC_BEANS) {
+        *should = false;
+        return;
+    }
 #endif
     if (!randoSaveCheck.shuffled || Flags_GetRandoInf(randoInf)) {
         return;
@@ -225,10 +297,12 @@ void EnAkindonuts_IsEligible(RandoCheckId randoCheckId, RandoInf randoInf, bool*
 void Rando::ActorBehavior::InitEnAkindonutsBehavior() {
 
 #ifdef COMBO_BUILD
-    COND_ID_HOOK(OnActorDestroy,ACTOR_EN_AKINDONUTS,IS_RANDO,[](Actor* actor) {
-        for(auto& pending:sScrubForeignPending) if(pending.second.scrub && &pending.second.scrub->actor==actor) pending.second.scrub=nullptr;
+    COND_ID_HOOK(OnActorDestroy, ACTOR_EN_AKINDONUTS, IS_RANDO, [](Actor* actor) {
+        for (auto& pending : sScrubForeignPending)
+            if (pending.second.scrub && &pending.second.scrub->actor == actor)
+                pending.second.scrub = nullptr;
     });
-    COND_HOOK(OnSceneInit,IS_RANDO,[](s16 sceneId,s8 spawnNum) {sScrubForeignPending.clear();});
+    COND_HOOK(OnSceneInit, IS_RANDO, [](s16 sceneId, s8 spawnNum) { sScrubForeignPending.clear(); });
     COND_VB_SHOULD(VB_GIVE_ITEM_FROM_OFFER, IS_RANDO, {
         GetItemId* item = va_arg(args, GetItemId*);
         Actor* actor = va_arg(args, Actor*);
@@ -237,21 +311,27 @@ void Rando::ActorBehavior::InitEnAkindonutsBehavior() {
             const unsigned id = ENAKINDONUTS_GET_3(actor);
             if (id < 4 && (scrub->unk_32C & 0x40) && RANDO_SAVE_CHECKS[kScrubChecks[id]].shuffled &&
                 Flags_GetRandoInf(kScrubFlags[id])) {
-                if(id!=1 && RANDO_SAVE_CHECKS[kScrubChecks[id]].randoItemId==RI_COMBO_FOREIGN) {
+                if (id != 1 && RANDO_SAVE_CHECKS[kScrubChecks[id]].randoItemId == RI_COMBO_FOREIGN) {
                     ComboRenewableStock foreign{};
-                    if(!ScrubForeignStock(id,foreign)) *should=false;
-                    else if(foreign.kind==1) {
-                        if(!ScrubStockBuyable(RI_RECOVERY_HEART)) *should=false;
-                        else *item=Rando::StaticData::Items[RI_RECOVERY_HEART].getItemId;
+                    if (!ScrubForeignStock(id, foreign))
+                        *should = false;
+                    else if (foreign.kind == 1) {
+                        if (!ScrubStockBuyable(RI_RECOVERY_HEART))
+                            *should = false;
+                        else
+                            *item = Rando::StaticData::Items[RI_RECOVERY_HEART].getItemId;
                     } else {
-                        *should=false;
-                        if(foreign.buyable) ScrubQueueForeign(scrub,id,foreign);
+                        *should = false;
+                        if (foreign.buyable)
+                            ScrubQueueForeign(scrub, id, foreign);
                     }
                     return;
                 }
                 const auto stock = ScrubStock(id);
-                if (!ScrubStockBuyable(stock)) *should = false;
-                else *item = Rando::StaticData::Items[stock].getItemId;
+                if (!ScrubStockBuyable(stock))
+                    *should = false;
+                else
+                    *item = Rando::StaticData::Items[stock].getItemId;
             }
         }
     });
@@ -317,7 +397,7 @@ void Rando::ActorBehavior::InitEnAkindonutsBehavior() {
         CustomMessage::Replace(
             &entry.msg, "{{item}}",
             Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_SOUTHERN_SWAMP_SCRUB_BEANS].randoItemId, true,
-                                           RC_SOUTHERN_SWAMP_SCRUB_BEANS));
+                                                   RC_SOUTHERN_SWAMP_SCRUB_BEANS));
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;
     });

@@ -25,7 +25,8 @@ ResourceFactoryBinaryAudioSoundFontV2::ReadResource(std::shared_ptr<Ship::File> 
     }
 
     auto resourceManager = mOwner.lock();
-    if (!resourceManager) resourceManager = COMBO_OWN_RM();
+    if (!resourceManager)
+        resourceManager = COMBO_OWN_RM();
     auto audioSoundFont = std::make_shared<AudioSoundFont>(initData);
     auto reader = std::get<std::shared_ptr<Ship::BinaryReader>>(file->Reader);
 

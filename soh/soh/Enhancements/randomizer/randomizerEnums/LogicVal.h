@@ -378,5 +378,3 @@ RANDO_ENUM_END(LogicVal)
 #undef RANDO_ENUM_END
 #undef RANDO_ENUM_END_CLEANUP
 #endif
-
-

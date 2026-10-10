@@ -3456,7 +3456,8 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                                 msgCtx->ocarinaStaff->state == OCARINA_SONG_SCARECROW_SPAWN) {
                                 AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
 #ifdef COMBO_BUILD
-                                if (Combo_SOHForeignSongPerformanceActive()) Combo_SOHForeignSongDiagnostic("failed-song");
+                                if (Combo_SOHForeignSongPerformanceActive())
+                                    Combo_SOHForeignSongDiagnostic("failed-song");
 #endif
                                 Audio_PlaySoundGeneral(NA_SE_SY_OCARINA_ERROR, &gSfxDefaultPos, 4,
                                                        &gSfxDefaultFreqAndVolScale, &gSfxDefaultFreqAndVolScale,
@@ -3478,7 +3479,8 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                             if (msgCtx->ocarinaStaff->state < OCARINA_SONG_SCARECROW_SPAWN) {
                                 AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
 #ifdef COMBO_BUILD
-                                if (Combo_SOHForeignSongPerformanceActive()) Combo_SOHForeignSongDiagnostic("failed-song");
+                                if (Combo_SOHForeignSongPerformanceActive())
+                                    Combo_SOHForeignSongDiagnostic("failed-song");
 #endif
                                 Audio_PlaySoundGeneral(NA_SE_SY_OCARINA_ERROR, &gSfxDefaultPos, 4,
                                                        &gSfxDefaultFreqAndVolScale, &gSfxDefaultFreqAndVolScale,
@@ -3516,7 +3518,8 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                     } else {
                         AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
 #ifdef COMBO_BUILD
-                        if (Combo_SOHForeignSongPerformanceActive()) Combo_SOHForeignSongDiagnostic("failed-song");
+                        if (Combo_SOHForeignSongPerformanceActive())
+                            Combo_SOHForeignSongDiagnostic("failed-song");
 #endif
                         Audio_PlaySoundGeneral(NA_SE_SY_OCARINA_ERROR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
                                                &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
@@ -3525,7 +3528,8 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                 } else if (msgCtx->ocarinaStaff->state == 0xFF) {
                     AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
 #ifdef COMBO_BUILD
-                    if (Combo_SOHForeignSongPerformanceActive()) Combo_SOHForeignSongDiagnostic("failed-song");
+                    if (Combo_SOHForeignSongPerformanceActive())
+                        Combo_SOHForeignSongDiagnostic("failed-song");
 #endif
                     Audio_PlaySoundGeneral(NA_SE_SY_OCARINA_ERROR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
                                            &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
@@ -3663,11 +3667,12 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                     msgCtx->ocarinaStaff->pos = sOcarinaButtonIndexBufPos = 0;
                     Message_ResetOcarinaNoteState();
 #ifdef COMBO_BUILD
-                    if (Combo_SOHForeignSongPerformanceActive()) Combo_SOHStartSoaringEffect(play);
+                    if (Combo_SOHForeignSongPerformanceActive())
+                        Combo_SOHStartSoaringEffect(play);
                     else
 #endif
-                    if (msgCtx->lastPlayedSong >= OCARINA_SONG_SARIAS &&
-                        msgCtx->lastPlayedSong < OCARINA_SONG_MEMORY_GAME) {
+                        if (msgCtx->lastPlayedSong >= OCARINA_SONG_SARIAS &&
+                            msgCtx->lastPlayedSong < OCARINA_SONG_MEMORY_GAME) {
                         Actor_Spawn(&play->actorCtx, play,
                                     sOcarinaEffectActorIds[msgCtx->lastPlayedSong - OCARINA_SONG_SARIAS],
                                     player->actor.world.pos.x, player->actor.world.pos.y, player->actor.world.pos.z, 0,
@@ -3677,10 +3682,10 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                 break;
             case MSGMODE_SETUP_DISPLAY_SONG_PLAYED:
 #ifdef COMBO_BUILD
-                if (Combo_SOHForeignSongPerformanceActive()) Combo_SOHForeignSongDiagnostic("performance-start");
+                if (Combo_SOHForeignSongPerformanceActive())
+                    Combo_SOHForeignSongDiagnostic("performance-start");
 #endif
-                if (
-                    CVarGetInteger(CVAR_ENHANCEMENT("FastOcarinaPlayback"), 0) == 0 ||
+                if (CVarGetInteger(CVAR_ENHANCEMENT("FastOcarinaPlayback"), 0) == 0 ||
                     play->msgCtx.lastPlayedSong == OCARINA_SONG_TIME ||
                     play->msgCtx.lastPlayedSong == OCARINA_SONG_STORMS ||
                     play->msgCtx.lastPlayedSong == OCARINA_SONG_SUNS) {
@@ -3701,7 +3706,7 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                     Combo_SOHSoaringFanfare();
                 } else
 #endif
-                if (msgCtx->lastPlayedSong != OCARINA_SONG_SCARECROW_SPAWN) {
+                    if (msgCtx->lastPlayedSong != OCARINA_SONG_SCARECROW_SPAWN) {
                     Audio_PlayFanfare(sOcarinaSongFanfares[msgCtx->lastPlayedSong]);
                     Audio_SetSfxBanksMute(0x20);
                 }
@@ -3749,12 +3754,11 @@ void Message_DrawMain(PlayState* play, Gfx** p) {
                     Combo_SOHForeignSongPlayedText();
                 } else
 #endif
-                Message_ContinueTextbox(play, msgCtx->lastPlayedSong + 0x893); // You played [song name]
+                    Message_ContinueTextbox(play, msgCtx->lastPlayedSong + 0x893); // You played [song name]
                 Message_Decode(play);
                 msgCtx->msgMode = MSGMODE_DISPLAY_SONG_PLAYED_TEXT;
 
-                if (
-                    CVarGetInteger(CVAR_ENHANCEMENT("FastOcarinaPlayback"), 0) == 0 ||
+                if (CVarGetInteger(CVAR_ENHANCEMENT("FastOcarinaPlayback"), 0) == 0 ||
                     play->msgCtx.lastPlayedSong == OCARINA_SONG_TIME ||
                     play->msgCtx.lastPlayedSong == OCARINA_SONG_STORMS ||
                     play->msgCtx.lastPlayedSong == OCARINA_SONG_SUNS) {

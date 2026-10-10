@@ -191,10 +191,9 @@ static std::shared_ptr<ComboMenu> sComboMenu;
 
 // OoT exports its restoration controls in the third Fixes column (index 2). Route that
 // group into the shared Restorations page while retaining every native widget.
-static MenuDestination FeatureMenuRoute(bool oot, const std::string& section,
-                                        const std::string& sidebar, int column) {
+static MenuDestination FeatureMenuRoute(bool oot, const std::string& section, const std::string& sidebar, int column) {
     if (oot && section == "Enhancements" && sidebar == "Fixes" && column == 2)
-        return {"gameplay", "Restorations"};
+        return { "gameplay", "Restorations" };
     return MenuRoute(oot, section, sidebar);
 }
 
@@ -205,33 +204,41 @@ static std::string NormalizeSearch(std::string s) {
 static const ImVec4 kBreadcrumbColor(0.6f, 0.6f, 0.6f, 1.0f); // muted gray for the result origin line
 
 void ComboMenu::Draw() {
-    if(auto ctx=Ship::Context::GetRawInstance();ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui())
+    if (auto ctx = Ship::Context::GetRawInstance(); ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui())
         ImGui::SetCurrentContext(ctx->GetWindow()->GetGui()->GetImGuiContext());
     DrawSongTravel();
     ResolveComboGenSyms();
-    const auto* generation=sGetProgress ? sGetProgress() : nullptr;
-    if(generation && generation->running && !ImGui::IsPopupOpen("Generating combined seed"))
+    const auto* generation = sGetProgress ? sGetProgress() : nullptr;
+    if (generation && generation->running && !ImGui::IsPopupOpen("Generating combined seed"))
         ImGui::OpenPopup("Generating combined seed");
-    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(),ImGuiCond_Always,ImVec2(.5f,.5f));
-    ImGui::SetNextWindowSize(ImVec2(std::min(540.0f,ImGui::GetMainViewport()->Size.x*.9f),0),ImGuiCond_Always);
-    if(ImGui::BeginPopupModal("Generating combined seed",nullptr,ImGuiWindowFlags_AlwaysAutoResize)) {
-        if(!generation || !generation->running) ImGui::CloseCurrentPopup();
+    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(.5f, .5f));
+    ImGui::SetNextWindowSize(ImVec2(std::min(540.0f, ImGui::GetMainViewport()->Size.x * .9f), 0), ImGuiCond_Always);
+    if (ImGui::BeginPopupModal("Generating combined seed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (!generation || !generation->running)
+            ImGui::CloseCurrentPopup();
         else {
-            const auto elapsed=generation->ElapsedSeconds();
-            ImGui::Text("Attempt %llu - %llu:%02llu",(unsigned long long)generation->attempt.load(),
-                (unsigned long long)(elapsed/60),(unsigned long long)(elapsed%60));
+            const auto elapsed = generation->ElapsedSeconds();
+            ImGui::Text("Attempt %llu - %llu:%02llu", (unsigned long long)generation->attempt.load(),
+                        (unsigned long long)(elapsed / 60), (unsigned long long)(elapsed % 60));
             ImGui::TextUnformatted(ComboGenProgress::PhaseLabel(generation->phase));
-            const int total=generation->total.load();
-            if(total>0) ImGui::ProgressBar(float(generation->placed.load())/total,ImVec2(-1,0));
+            const int total = generation->total.load();
+            if (total > 0)
+                ImGui::ProgressBar(float(generation->placed.load()) / total, ImVec2(-1, 0));
             ImGui::TextWrapped("Invalid layouts are retried automatically. Your existing saves keep their seeds.");
-            if(generation->CancelRequested()) ImGui::TextUnformatted("Cancelling after the current step...");
-            else if(!generation->CanCancel()) ImGui::TextUnformatted("Saving the completed seed...");
-            else if(generation->WarningDue(elapsed)) {
+            if (generation->CancelRequested())
+                ImGui::TextUnformatted("Cancelling after the current step...");
+            else if (!generation->CanCancel())
+                ImGui::TextUnformatted("Saving the completed seed...");
+            else if (generation->WarningDue(elapsed)) {
                 ImGui::Separator();
-                ImGui::TextWrapped("Your seed may be too difficult to generate. Try changing some settings and trying again.");
-                if(ImGui::Button("Keep trying",ImVec2(-1,0))) generation->KeepTrying(elapsed);
-                if(ImGui::Button("Stop and change settings",ImVec2(-1,0))) generation->RequestCancel();
-            } else if(ImGui::Button("Cancel generation",ImVec2(-1,0))) generation->RequestCancel();
+                ImGui::TextWrapped(
+                    "Your seed may be too difficult to generate. Try changing some settings and trying again.");
+                if (ImGui::Button("Keep trying", ImVec2(-1, 0)))
+                    generation->KeepTrying(elapsed);
+                if (ImGui::Button("Stop and change settings", ImVec2(-1, 0)))
+                    generation->RequestCancel();
+            } else if (ImGui::Button("Cancel generation", ImVec2(-1, 0)))
+                generation->RequestCancel();
         }
         ImGui::EndPopup();
     }
@@ -248,7 +255,9 @@ void ComboMenu::OpenAtRandomizer() {
     mScope = "randomizer";
     mHubActive = "randomizer/Generate";
     mSearchBuf[0] = 0;
-    mSearchQuery.clear(); mSearchReturn.Clear(); mRuleFocus.Clear();
+    mSearchQuery.clear();
+    mSearchReturn.Clear();
+    mRuleFocus.Clear();
     mResetContentScroll = true;
     Show();
 }
@@ -270,7 +279,8 @@ void ComboMenu::DrawElement() {
     ImGui::SetNextWindowSize(vp->WorkSize, ImGuiCond_Always);
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.035f, 0.045f, 0.08f, CVarGetFloat("gSettings.Menu.BackgroundOpacity", 0.94f)));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,
+                          ImVec4(0.035f, 0.045f, 0.08f, CVarGetFloat("gSettings.Menu.BackgroundOpacity", 0.94f)));
     bool open = ImGui::Begin("Combo Menu", nullptr, flags);
     ImGui::PopStyleColor();
     ImGui::PopStyleVar();
@@ -297,23 +307,30 @@ void ComboMenu::DrawElement() {
         const float returnW = ImGui::CalcTextSize("Return to game").x + 32.0f;
         ImGui::SameLine(std::max(ImGui::GetCursorPosX(), ImGui::GetContentRegionMax().x - returnW));
         ComboMenu_PushButton(ComboMenu_ThemeColor());
-        if (ImGui::Button("Return to game", ImVec2(returnW, 0))) Hide();
+        if (ImGui::Button("Return to game", ImVec2(returnW, 0)))
+            Hide();
         ComboMenu_PopButton();
         ProfileUI::BeginFrame();
         ProfileUI::DrawSelector();
         ImGui::Spacing();
-        struct Scope { const char* id; const char* label; };
-        static const Scope scopes[] = {
-            {"home", "Home"}, {"gameplay", "Enhancements"}, {"randomizer", "Randomizer"}, {"media", "Video & Audio"},
-            {"trackers", "Trackers"}, {"settings", "Settings"}, {"tools", "Tools"}
+        struct Scope {
+            const char* id;
+            const char* label;
         };
-        if (mScope.empty()) mScope = "home";
+        static const Scope scopes[] = {
+            { "home", "Home" },           { "gameplay", "Enhancements" }, { "randomizer", "Randomizer" },
+            { "media", "Video & Audio" }, { "trackers", "Trackers" },     { "settings", "Settings" },
+            { "tools", "Tools" }
+        };
+        if (mScope.empty())
+            mScope = "home";
         ImGui::PushID("ComboSections");
         bool first = true;
         for (const auto& scope : scopes) {
             const float need = ImGui::CalcTextSize(scope.label).x + 32.0f;
-            if (!first && ImGui::GetItemRectMax().x + need + 12.0f <
-                              ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x) ImGui::SameLine();
+            if (!first &&
+                ImGui::GetItemRectMax().x + need + 12.0f < ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x)
+                ImGui::SameLine();
             first = false;
             if (ComboMenu_StyledHeaderEntry(scope.label, mScope == scope.id)) {
                 mSectionSelection[mScope] = mHubActive;
@@ -325,30 +342,36 @@ void ComboMenu::DrawElement() {
         }
         if (FindMenuGuide(mScope)) {
             const float need = ImGui::CalcTextSize("Guide").x + 32.0f;
-            if (ImGui::GetItemRectMax().x + need + 12.0f <
-                ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x) ImGui::SameLine();
-            if (ImGui::Button("Guide")) mHelpRequested = true;
+            if (ImGui::GetItemRectMax().x + need + 12.0f < ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x)
+                ImGui::SameLine();
+            if (ImGui::Button("Guide"))
+                mHelpRequested = true;
         }
         ImGui::PopID();
         ImGui::Spacing();
         const float clearWidth = ImGui::CalcTextSize("Clear").x + ImGui::GetStyle().FramePadding.x * 2.0f;
         const bool hasSearch = mSearchBuf[0] != 0;
-        ImGui::SetNextItemWidth(hasSearch
-            ? std::max(1.0f, ImGui::GetContentRegionAvail().x - clearWidth - ImGui::GetStyle().ItemSpacing.x)
-            : -FLT_MIN);
+        ImGui::SetNextItemWidth(
+            hasSearch ? std::max(1.0f, ImGui::GetContentRegionAvail().x - clearWidth - ImGui::GetStyle().ItemSpacing.x)
+                      : -FLT_MIN);
         if (ImGui::InputTextWithHint("##ComboSearch", "Search all settings...", mSearchBuf, sizeof(mSearchBuf)))
             mSearchReturn.Clear();
         if (hasSearch) {
             ImGui::SameLine();
             if (ImGui::Button("Clear##ComboSearch")) {
-                mSearchBuf[0] = 0; mRuleFocus.Clear(); mSearchReturn.Clear();
+                mSearchBuf[0] = 0;
+                mRuleFocus.Clear();
+                mSearchReturn.Clear();
             }
         }
         if (!mSearchBuf[0] && mSearchReturn.HasResult()) {
             if (ImGui::Button("Back to search results", ImVec2(0, ImGui::GetFrameHeight() * 1.25f))) {
-                mScope = mSearchReturn.scope; mHubActive = mSearchReturn.hub;
+                mScope = mSearchReturn.scope;
+                mHubActive = mSearchReturn.hub;
                 std::snprintf(mSearchBuf, sizeof(mSearchBuf), "%s", mSearchReturn.query.c_str());
-                mSearchReturn.Clear(); mRuleFocus.Clear(); mResetContentScroll = true;
+                mSearchReturn.Clear();
+                mRuleFocus.Clear();
+                mResetContentScroll = true;
                 mLastNavSig = mScope + "|" + mHubActive;
             }
         }
@@ -360,7 +383,10 @@ void ComboMenu::DrawElement() {
         DrawScopeHelp();
         const std::string navSig = mScope + "|" + mHubActive;
         if (navSig != mLastNavSig) {
-            if (!mLastNavSig.empty()) { mSearchBuf[0] = 0; mSearchQuery.clear(); }
+            if (!mLastNavSig.empty()) {
+                mSearchBuf[0] = 0;
+                mSearchQuery.clear();
+            }
             mLastNavSig = navSig;
         }
         ImGui::EndChild();
@@ -369,18 +395,21 @@ void ComboMenu::DrawElement() {
     ImGui::End();
 }
 
-void ComboMenu::OpenSearchDestination(const std::string& scope, const std::string& page,
-                                     const char* rule, const char* trick, int targetGame) {
+void ComboMenu::OpenSearchDestination(const std::string& scope, const std::string& page, const char* rule,
+                                      const char* trick, int targetGame) {
     mSearchReturn.Capture(mSearchQuery, mScope, mHubActive);
     mSectionSelection[mScope] = mHubActive;
     mScope = scope;
     mHubActive = scope + "/" + page;
     mSectionSelection[mScope] = mHubActive;
     mRuleFocus.Set(rule);
-    if (trick) FocusUnifiedTrick(trick);
+    if (trick)
+        FocusUnifiedTrick(trick);
     if (targetGame >= 0 && targetGame <= 1) {
-        if (scope == "randomizer") mRandomizerGame = targetGame;
-        else mPreferenceGame = targetGame + 1;
+        if (scope == "randomizer")
+            mRandomizerGame = targetGame;
+        else
+            mPreferenceGame = targetGame + 1;
     }
     mSearchBuf[0] = 0;
     mSearchQuery.clear();
@@ -395,7 +424,8 @@ void ComboMenu::DrawScopeHelp() {
         mHelpRequested = false;
     }
     const auto* guide = FindMenuGuide(mGuideScope);
-    if (!guide) return;
+    if (!guide)
+        return;
     auto dismiss = [&]() {
         CVarSetInteger(guide->seenKey, 1);
         Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
@@ -405,20 +435,25 @@ void ComboMenu::DrawScopeHelp() {
     ImGui::SetNextWindowSize(ImVec2(width, 0), ImGuiCond_Appearing);
     if (ImGui::BeginPopupModal("Combo Ship guide", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("%s", guide->title);
-        ImGui::Separator(); ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
         // Keep both actions visible on a phone; longer copy scrolls separately.
-        const float copyHeight = std::max(ImGui::GetFontSize() * 3.0f,
-            std::min(ImGui::GetFontSize() * 7.0f,
-                     ImGui::GetMainViewport()->WorkSize.y * 0.85f - ImGui::GetFontSize() * 7.0f));
+        const float copyHeight =
+            std::max(ImGui::GetFontSize() * 3.0f,
+                     std::min(ImGui::GetFontSize() * 7.0f,
+                              ImGui::GetMainViewport()->WorkSize.y * 0.85f - ImGui::GetFontSize() * 7.0f));
         ImGui::BeginChild("##GuideCopy", ImVec2(0, copyHeight));
         ImGui::TextWrapped("%s", guide->introduction);
-        ImGui::Spacing(); ImGui::TextWrapped("%s", guide->behavior);
-        ImGui::Spacing(); ImGui::TextWrapped("%s", guide->runWarning);
+        ImGui::Spacing();
+        ImGui::TextWrapped("%s", guide->behavior);
+        ImGui::Spacing();
+        ImGui::TextWrapped("%s", guide->runWarning);
         ImGui::EndChild();
         ImGui::Spacing();
         const float height = ImGui::GetFrameHeight() * 1.25f;
         if (ImGui::Button("Got it", ImVec2(-FLT_MIN, height))) {
-            dismiss(); ImGui::CloseCurrentPopup();
+            dismiss();
+            ImGui::CloseCurrentPopup();
         }
         if (ImGui::Button("View travel settings", ImVec2(-FLT_MIN, height))) {
             dismiss();
@@ -427,7 +462,8 @@ void ComboMenu::DrawScopeHelp() {
         }
         ImGui::EndPopup();
     }
-    if (!open) dismiss();
+    if (!open)
+        dismiss();
 }
 
 // Canonical rules and techniques navigate to their owning editor. Native
@@ -435,10 +471,11 @@ void ComboMenu::DrawScopeHelp() {
 void ComboMenu::DrawSearchResults(const std::string& query) {
     auto& model = ComboMenuModel::Get();
     model.EnsureLoaded();
-    struct Source { const char* label; const GameMenu* game; };
-    const Source sources[] = {
-        { "Ocarina of Time", &model.Oot() }, { "Majora's Mask", &model.Mm() }
+    struct Source {
+        const char* label;
+        const GameMenu* game;
     };
+    const Source sources[] = { { "Ocarina of Time", &model.Oot() }, { "Majora's Mask", &model.Mm() } };
     struct Hit {
         MenuSearchKind kind;
         int rank;
@@ -450,124 +487,160 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
         int targetSubpage = -1;
     };
     std::vector<Hit> hits;
-    auto addLink = [&](MenuSearchKind kind, const char* name, const char* keywords,
-                       const char* scope, const char* page, const char* origin = "", int canonicalBonus = 0, int targetGame = -1,
-                       int targetSubpage = -1) {
+    auto addLink = [&](MenuSearchKind kind, const char* name, const char* keywords, const char* scope, const char* page,
+                       const char* origin = "", int canonicalBonus = 0, int targetGame = -1, int targetSubpage = -1) {
         int rank = MenuSearchRank(query, name, keywords, kind);
-        if (!rank) return;
+        if (!rank)
+            return;
         rank += canonicalBonus;
         if (kind == MenuSearchKind::Page) {
-            for (auto& hit : hits) if (hit.kind == kind && hit.scope == scope && hit.page == page) {
-                if (rank > hit.rank) {
-                    hit.rank = rank; hit.label = name; hit.origin = origin; hit.targetGame = targetGame;
+            for (auto& hit : hits)
+                if (hit.kind == kind && hit.scope == scope && hit.page == page) {
+                    if (rank > hit.rank) {
+                        hit.rank = rank;
+                        hit.label = name;
+                        hit.origin = origin;
+                        hit.targetGame = targetGame;
+                    }
+                    return; // one link per shared feature, even with several native aliases
                 }
-                return; // one link per shared feature, even with several native aliases
-            }
         }
-        hits.push_back({kind, rank, name ? name : "", scope, page, origin, nullptr, nullptr, nullptr, targetGame, targetSubpage});
+        hits.push_back({ kind, rank, name ? name : "", scope, page, origin, nullptr, nullptr, nullptr, targetGame,
+                         targetSubpage });
     };
     for (const auto& page : kSharedPages) {
         addLink(MenuSearchKind::Page, page.name, page.keywords, page.scope, page.name, page.scopeLabel, 40);
     }
     for (int i = 0; i < SF_COUNT; ++i) {
-        if (i == SF_OCARINA || !SharedFamilyByIndex(i).publicOption) continue; // private native features await runtime validation
+        if (i == SF_OCARINA || !SharedFamilyByIndex(i).publicOption)
+            continue; // private native features await runtime validation
         const auto& family = SharedFamilyByIndex(i);
-        addLink(MenuSearchKind::Setting, family.label, family.tooltip,
-                "randomizer", "Shared items", "Randomizer");
+        addLink(MenuSearchKind::Setting, family.label, family.tooltip, "randomizer", "Shared items", "Randomizer");
     }
-    addLink(MenuSearchKind::Setting, "Victory condition", "triforce quest hunt ganon majora goal required total pieces win victory", "randomizer", "Logic & access", "Randomizer");
-    addLink(MenuSearchKind::Setting, "Starting world", "starting game OoT MM random world", "randomizer", "Logic & access", "Randomizer");
+    addLink(MenuSearchKind::Setting, "Victory condition",
+            "triforce quest hunt ganon majora goal required total pieces win victory", "randomizer", "Logic & access",
+            "Randomizer");
+    addLink(MenuSearchKind::Setting, "Starting world", "starting game OoT MM random world", "randomizer",
+            "Logic & access", "Randomizer");
     addLink(MenuSearchKind::Setting, "Clocks as Items (MM)",
-            "clock shuffle time day night half days six cycle progressive ascending descending",
-            "randomizer", "Items & checks", "MM", 0, 1, 1);
+            "clock shuffle time day night half days six cycle progressive ascending descending", "randomizer",
+            "Items & checks", "MM", 0, 1, 1);
     addLink(MenuSearchKind::Setting, "Farore's Wind (MM)", "farore fw spell magic warp cross game items extension",
             "randomizer", "Items & checks", "MM", 0, 1, 1);
-    addLink(MenuSearchKind::Setting, "Cross-Games Farore's Wind", "farore fw spell warp travel between oot mm cross game world",
-            "randomizer", "Logic & access", "Randomizer");
-    addLink(MenuSearchKind::Setting, "Reachability", "guarantee beatable all checks reachable", "randomizer", "Logic & access", "Randomizer");
+    addLink(MenuSearchKind::Setting, "Cross-Games Farore's Wind",
+            "farore fw spell warp travel between oot mm cross game world", "randomizer", "Logic & access",
+            "Randomizer");
+    addLink(MenuSearchKind::Setting, "Reachability", "guarantee beatable all checks reachable", "randomizer",
+            "Logic & access", "Randomizer");
     for (const auto& rule : kGameplayRules) {
-        if (IsLegacyGameplayRule(rule.name)) continue;
-        const auto keywords = std::string(rule.help) + (rule.runtimeOnly ? " enhancement quality of life " : " randomizer logic ") + GameplayRuleSearchAliases(rule.name);
+        if (IsLegacyGameplayRule(rule.name))
+            continue;
+        const auto keywords = std::string(rule.help) +
+                              (rule.runtimeOnly ? " enhancement quality of life " : " randomizer logic ") +
+                              GameplayRuleSearchAliases(rule.name);
         const auto* label = GameplayRuleMenuLabel(rule.name, rule.label, !rule.runtimeOnly);
         const int rank = MenuSearchRank(query, label, keywords.c_str(), MenuSearchKind::Rule);
-        if (rank) hits.push_back({MenuSearchKind::Rule, rank, label, rule.runtimeOnly ? "gameplay" : "randomizer",
-            rule.trickGoverned ? "Tricks & glitches" : GameplayRulePage(rule.name, !rule.runtimeOnly), "", &rule});
+        if (rank)
+            hits.push_back({ MenuSearchKind::Rule, rank, label, rule.runtimeOnly ? "gameplay" : "randomizer",
+                             rule.trickGoverned ? "Tricks & glitches" : GameplayRulePage(rule.name, !rule.runtimeOnly),
+                             "", &rule });
     }
     for (const auto& trick : kMmTricks) {
-        if(!trick.publicOption)continue;
-        const auto keywords = std::string(trick.description) + " " + trick.area + " " + trick.tags + " technique trick MM Majora Mask";
+        if (!trick.publicOption)
+            continue;
+        const auto keywords =
+            std::string(trick.description) + " " + trick.area + " " + trick.tags + " technique trick MM Majora Mask";
         addLink(MenuSearchKind::Technique, trick.name, keywords.c_str(), "randomizer", "Tricks & glitches", "MM");
     }
-    if(ProfileUI::Ready())for(const auto& row:ProfileUI::Catalogue().at("oot").at("tricks")){
-        const auto name=row.at("label").get<std::string>();const auto keywords=row.at("description").get<std::string>()+" "+row.value("area",std::string())+" "+row.value("tags",std::string())+" technique trick OoT";
-        addLink(MenuSearchKind::Technique,name.c_str(),keywords.c_str(),"randomizer","Tricks & glitches","OoT");
-    }
+    if (ProfileUI::Ready())
+        for (const auto& row : ProfileUI::Catalogue().at("oot").at("tricks")) {
+            const auto name = row.at("label").get<std::string>();
+            const auto keywords = row.at("description").get<std::string>() + " " + row.value("area", std::string()) +
+                                  " " + row.value("tags", std::string()) + " technique trick OoT";
+            addLink(MenuSearchKind::Technique, name.c_str(), keywords.c_str(), "randomizer", "Tricks & glitches",
+                    "OoT");
+        }
     for (const auto& info : kRandomizerPages) {
         addLink(MenuSearchKind::Page, info.name, info.keywords, "randomizer", info.name, "Randomizer", 40);
     }
     std::unordered_set<std::string> seen;
     for (const auto& src : sources) {
-            const GameMenu& game = *src.game;
-            if (!game.loaded || !game.menu)
-                continue;
-            const CwMenu* m = game.menu;
-            for (int s = 0; s < m->sectionCount; ++s) {
-                const CwSection& sec = m->sections[s];
-                for (int sb = 0; sb < sec.sidebarCount; ++sb) {
-                    const CwSidebar& side = sec.sidebars[sb];
-                    const auto pageRoute = NativeSearchPageRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
-                                                               side.sidebarName ? side.sidebarName : "");
-                    if (!pageRoute.scope.empty()) {
-                        const bool oot = src.game == &model.Oot();
-                        const auto keywords = NativeSearchPageKeywords(sec.sectionLabel ? sec.sectionLabel : "",
-                            side.sidebarName ? side.sidebarName : "", pageRoute, oot);
-                        const auto label = NativeSearchPageLabel(oot, pageRoute, query);
-                        const int target = NativeSearchPageTarget(oot, pageRoute, query);
-                        const auto origin = std::string(MenuScopeLabel(pageRoute.scope)) +
-                            (target == 1 ? " / Majora's Mask" : target == 0 ? " / Ocarina of Time" : "");
-                        addLink(MenuSearchKind::Page, label.c_str(), keywords.c_str(),
-                            pageRoute.scope.c_str(), pageRoute.page.c_str(), origin.c_str(), 0, target);
+        const GameMenu& game = *src.game;
+        if (!game.loaded || !game.menu)
+            continue;
+        const CwMenu* m = game.menu;
+        for (int s = 0; s < m->sectionCount; ++s) {
+            const CwSection& sec = m->sections[s];
+            for (int sb = 0; sb < sec.sidebarCount; ++sb) {
+                const CwSidebar& side = sec.sidebars[sb];
+                const auto pageRoute =
+                    NativeSearchPageRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
+                                          side.sidebarName ? side.sidebarName : "");
+                if (!pageRoute.scope.empty()) {
+                    const bool oot = src.game == &model.Oot();
+                    const auto keywords =
+                        NativeSearchPageKeywords(sec.sectionLabel ? sec.sectionLabel : "",
+                                                 side.sidebarName ? side.sidebarName : "", pageRoute, oot);
+                    const auto label = NativeSearchPageLabel(oot, pageRoute, query);
+                    const int target = NativeSearchPageTarget(oot, pageRoute, query);
+                    const auto origin =
+                        std::string(MenuScopeLabel(pageRoute.scope)) + (target == 1   ? " / Majora's Mask"
+                                                                        : target == 0 ? " / Ocarina of Time"
+                                                                                      : "");
+                    addLink(MenuSearchKind::Page, label.c_str(), keywords.c_str(), pageRoute.scope.c_str(),
+                            pageRoute.page.c_str(), origin.c_str(), 0, target);
+                }
+                const auto sidebarRoute = MenuRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
+                                                    side.sidebarName ? side.sidebarName : "");
+                if (sidebarRoute.scope.empty())
+                    continue;
+                if (side.sidebarName && std::strcmp(side.sidebarName, "Check Tracker") == 0)
+                    continue;
+                std::string heading;
+                int column = -1;
+                for (int w = 0; w < side.widgetCount; ++w) {
+                    const CwWidget& wd = side.widgets[w];
+                    if (column != wd.column) {
+                        column = wd.column;
+                        heading.clear();
                     }
-                    const auto sidebarRoute = MenuRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
-                                                        side.sidebarName ? side.sidebarName : "");
-                    if (sidebarRoute.scope.empty()) continue;
-                    if (side.sidebarName && std::strcmp(side.sidebarName, "Check Tracker") == 0) continue;
-                    std::string heading;
-                    int column = -1;
-                    for (int w = 0; w < side.widgetCount; ++w) {
-                        const CwWidget& wd = side.widgets[w];
-                        if (column != wd.column) { column = wd.column; heading.clear(); }
-                        if (wd.kind == CW_SEPARATOR_TEXT) heading = wd.name ? wd.name : "";
-                        const auto route = MenuGroupRoute(src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
-                                                            side.sidebarName ? side.sidebarName : "", wd.column, heading, wd.cvar ? wd.cvar : "");
-                        if (route.scope.empty()) continue;
-                        if (wd.cvar && (std::strstr(wd.cvar, "CheckTracker") || IsRetiredNativeRuleControl(wd.cvar))) continue; // retired per-game controls
-                        const std::string name = wd.name ? wd.name : "";
-                        if (name == "Open App Files Folder" || name == "Cursor Always Visible" ||
-                            name == "Allow background inputs" || name == "Search In Sidebar" ||
-                            name == "Search Input Autofocus" || name == "Import Settings") continue;
-                        // Non-interactive / opted-out kinds never appear in search.
-                        if (wd.kind == CW_SEPARATOR || wd.kind == CW_SEPARATOR_TEXT || wd.kind == CW_TEXT ||
-                            wd.kind == CW_CUSTOM || wd.hideInSearch)
-                            continue;
-                        const auto keywords = std::string(wd.tooltip ? wd.tooltip : "") + " " + src.label +
-                            (src.game == &model.Oot() ? " OoT" : " MM");
-                        const int rank = MenuSearchRank(query, wd.name, keywords.c_str(), MenuSearchKind::Setting);
-                        if (!rank) continue;
-                        // Dedupe shared settings (same backing CVar) across both games. Widgets with no
-                        // CVar (buttons/window toggles) drive distinct callbacks, so scope their key per
-                        // game â€” otherwise two same-named buttons would collapse and one would vanish.
-                        std::string cvar = wd.cvar ? wd.cvar : "";
-                        std::string key = cvar.empty() ? (std::string(src.label) + "|" + (wd.name ? wd.name : ""))
-                                                       : NormalizeSearch(cvar);
-                        if (!seen.insert(NormalizeSearch(key)).second)
-                            continue; // a shared setting already shown from OOT
+                    if (wd.kind == CW_SEPARATOR_TEXT)
+                        heading = wd.name ? wd.name : "";
+                    const auto route = MenuGroupRoute(
+                        src.game == &model.Oot(), sec.sectionLabel ? sec.sectionLabel : "",
+                        side.sidebarName ? side.sidebarName : "", wd.column, heading, wd.cvar ? wd.cvar : "");
+                    if (route.scope.empty())
+                        continue;
+                    if (wd.cvar && (std::strstr(wd.cvar, "CheckTracker") || IsRetiredNativeRuleControl(wd.cvar)))
+                        continue; // retired per-game controls
+                    const std::string name = wd.name ? wd.name : "";
+                    if (name == "Open App Files Folder" || name == "Cursor Always Visible" ||
+                        name == "Allow background inputs" || name == "Search In Sidebar" ||
+                        name == "Search Input Autofocus" || name == "Import Settings")
+                        continue;
+                    // Non-interactive / opted-out kinds never appear in search.
+                    if (wd.kind == CW_SEPARATOR || wd.kind == CW_SEPARATOR_TEXT || wd.kind == CW_TEXT ||
+                        wd.kind == CW_CUSTOM || wd.hideInSearch)
+                        continue;
+                    const auto keywords = std::string(wd.tooltip ? wd.tooltip : "") + " " + src.label +
+                                          (src.game == &model.Oot() ? " OoT" : " MM");
+                    const int rank = MenuSearchRank(query, wd.name, keywords.c_str(), MenuSearchKind::Setting);
+                    if (!rank)
+                        continue;
+                    // Dedupe shared settings (same backing CVar) across both games. Widgets with no
+                    // CVar (buttons/window toggles) drive distinct callbacks, so scope their key per
+                    // game â€” otherwise two same-named buttons would collapse and one would vanish.
+                    std::string cvar = wd.cvar ? wd.cvar : "";
+                    std::string key = cvar.empty() ? (std::string(src.label) + "|" + (wd.name ? wd.name : ""))
+                                                   : NormalizeSearch(cvar);
+                    if (!seen.insert(NormalizeSearch(key)).second)
+                        continue; // a shared setting already shown from OOT
 
-                        hits.push_back({MenuSearchKind::Setting, rank, name, route.scope, route.page, src.label,
-                                       nullptr, &game, &wd});
-                    }
+                    hits.push_back({ MenuSearchKind::Setting, rank, name, route.scope, route.page, src.label, nullptr,
+                                     &game, &wd });
                 }
             }
+        }
     }
     if (hits.empty()) {
         ImGui::TextDisabled("No matching settings.");
@@ -575,25 +648,36 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
         return;
     }
     std::stable_sort(hits.begin(), hits.end(), [](const Hit& a, const Hit& b) {
-        if (a.rank != b.rank) return a.rank > b.rank;
+        if (a.rank != b.rank)
+            return a.rank > b.rank;
         const auto an = NormalizeMenuSearch(a.label), bn = NormalizeMenuSearch(b.label);
         return an != bn ? an < bn : a.origin < b.origin;
     });
-    struct Group { MenuSearchKind kind; const char* title; int best = 0; int count = 0; };
-    std::vector<Group> groups = {
-        {MenuSearchKind::Rule, "Gameplay rules"}, {MenuSearchKind::Setting, "Settings"},
-        {MenuSearchKind::Technique, "Tricks & glitches"}, {MenuSearchKind::Page, "Pages"}
+    struct Group {
+        MenuSearchKind kind;
+        const char* title;
+        int best = 0;
+        int count = 0;
     };
-    for (auto& group : groups) for (const auto& hit : hits) if (hit.kind == group.kind) {
-        group.best = std::max(group.best, hit.rank); ++group.count;
-    }
+    std::vector<Group> groups = { { MenuSearchKind::Rule, "Gameplay rules" },
+                                  { MenuSearchKind::Setting, "Settings" },
+                                  { MenuSearchKind::Technique, "Tricks & glitches" },
+                                  { MenuSearchKind::Page, "Pages" } };
+    for (auto& group : groups)
+        for (const auto& hit : hits)
+            if (hit.kind == group.kind) {
+                group.best = std::max(group.best, hit.rank);
+                ++group.count;
+            }
     std::stable_sort(groups.begin(), groups.end(), [](const Group& a, const Group& b) { return a.best > b.best; });
-    ImGui::TextWrapped("%d result%s for \"%s\"", static_cast<int>(hits.size()), hits.size() == 1 ? "" : "s", query.c_str());
+    ImGui::TextWrapped("%d result%s for \"%s\"", static_cast<int>(hits.size()), hits.size() == 1 ? "" : "s",
+                       query.c_str());
     const int cols = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 60.0f ? 2 : 1;
     const float buttonHeight = ImGui::GetFrameHeight() * 1.25f;
     const ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
     for (const auto& group : groups) {
-        if (!group.count) continue;
+        if (!group.count)
+            continue;
         ImGui::PushID(static_cast<int>(group.kind));
         ImGui::Spacing();
         ImGui::SeparatorText((std::string(group.title) + " (" + std::to_string(group.count) + ")").c_str());
@@ -601,74 +685,95 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
         if (ImGui::BeginTable("##RankedResults", group.kind == MenuSearchKind::Rule ? 1 : cols, flags)) {
             int id = 0;
             for (const auto& hit : hits) {
-                if (hit.kind != group.kind) continue;
+                if (hit.kind != group.kind)
+                    continue;
                 ImGui::TableNextColumn();
                 ImGui::PushID(id++);
                 if (hit.widget) {
                     ImGui::PushID(hit.origin.c_str());
-                    if(hit.scope=="randomizer")ProfileUI::DrawWidget(*hit.widget,*hit.game);
-                    else RenderWidget(*hit.widget, *hit.game, 90 / cols);
+                    if (hit.scope == "randomizer")
+                        ProfileUI::DrawWidget(*hit.widget, *hit.game);
+                    else
+                        RenderWidget(*hit.widget, *hit.game, 90 / cols);
                     ImGui::PopID();
-                } else ImGui::TextWrapped("%s", hit.label.c_str());
+                } else
+                    ImGui::TextWrapped("%s", hit.label.c_str());
                 ImGui::PushTextWrapPos(0.0f);
                 if (hit.rule) {
                     if (hit.rule->runtimeOnly) {
                         ImGui::TextColored(kBreadcrumbColor, "Enhancements / %s", hit.page.c_str());
                         if (ImGui::Button("Open Enhancements", ImVec2(0, buttonHeight))) {
                             OpenSearchDestination("gameplay", hit.page, hit.rule->name, nullptr,
-                                std::strstr(hit.rule->label, "(MM)") ? 1 : 0); navigate = true;
+                                                  std::strstr(hit.rule->label, "(MM)") ? 1 : 0);
+                            navigate = true;
                         }
                     } else if (hit.rule->trickGoverned) {
                         ImGui::TextColored(kBreadcrumbColor, "Randomizer / Tricks & glitches");
                         if (ImGui::Button("Open technique", ImVec2(-FLT_MIN, buttonHeight))) {
-                            OpenSearchDestination(hit.scope, hit.page, nullptr, hit.rule->label); navigate = true;
+                            OpenSearchDestination(hit.scope, hit.page, nullptr, hit.rule->label);
+                            navigate = true;
                         }
                     } else {
                         ImGui::TextColored(kBreadcrumbColor, "Randomizer / %s", hit.page.c_str());
                         const float pairWidth = ImGui::CalcTextSize("Open Randomizer").x +
-                            ImGui::CalcTextSize("Open Enhancements").x + ImGui::GetStyle().FramePadding.x * 4 +
-                            ImGui::GetStyle().ItemSpacing.x;
+                                                ImGui::CalcTextSize("Open Enhancements").x +
+                                                ImGui::GetStyle().FramePadding.x * 4 + ImGui::GetStyle().ItemSpacing.x;
                         const bool pairFits = ImGui::GetContentRegionAvail().x >= pairWidth;
                         if (ImGui::Button("Open Randomizer", ImVec2(0, buttonHeight))) {
-                            OpenSearchDestination("randomizer", GameplayRulePage(hit.rule->name, true), hit.rule->name, nullptr,
-                                IsSongTravelRule(hit.rule->name) ? -1 : std::strstr(hit.rule->label, "(MM)") ? 1 : 0); navigate = true;
+                            OpenSearchDestination("randomizer", GameplayRulePage(hit.rule->name, true), hit.rule->name,
+                                                  nullptr,
+                                                  IsSongTravelRule(hit.rule->name)       ? -1
+                                                  : std::strstr(hit.rule->label, "(MM)") ? 1
+                                                                                         : 0);
+                            navigate = true;
                         }
-                        if (pairFits) ImGui::SameLine();
+                        if (pairFits)
+                            ImGui::SameLine();
                         if (ImGui::Button("Open Enhancements", ImVec2(0, buttonHeight))) {
-                            OpenSearchDestination("gameplay", GameplayRulePage(hit.rule->name, false), hit.rule->name, nullptr,
-                                IsSongTravelRule(hit.rule->name) ? -1 : std::strstr(hit.rule->label, "(MM)") ? 1 : 0); navigate = true;
+                            OpenSearchDestination("gameplay", GameplayRulePage(hit.rule->name, false), hit.rule->name,
+                                                  nullptr,
+                                                  IsSongTravelRule(hit.rule->name)       ? -1
+                                                  : std::strstr(hit.rule->label, "(MM)") ? 1
+                                                                                         : 0);
+                            navigate = true;
                         }
                     }
                 } else {
                     ImGui::TextColored(kBreadcrumbColor, "%s / %s", hit.origin.c_str(), hit.page.c_str());
                     if (!hit.widget && ImGui::Button("Open", ImVec2(-FLT_MIN, buttonHeight))) {
-                        if (hit.targetSubpage >= 0) mPoolSection = hit.targetSubpage;
+                        if (hit.targetSubpage >= 0)
+                            mPoolSection = hit.targetSubpage;
                         OpenSearchDestination(hit.scope, hit.page, nullptr,
-                            hit.kind == MenuSearchKind::Technique ? hit.label.c_str() : nullptr, hit.targetGame);
+                                              hit.kind == MenuSearchKind::Technique ? hit.label.c_str() : nullptr,
+                                              hit.targetGame);
                         navigate = true;
                     }
                 }
                 ImGui::PopTextWrapPos();
-                ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
                 ImGui::PopID();
-                if (navigate) break;
+                if (navigate)
+                    break;
             }
             ImGui::EndTable();
         }
         ImGui::PopID();
-        if (navigate) return;
+        if (navigate)
+            return;
     }
 }
 
 // A feature page can draw one or both engine sources without duplicating navigation.
 namespace {
 
-
 void DrawTrackerSharedPanel() {
     ComboTrackerUI::DrawItemSettings();
     bool notes = ComboNotes::WindowShown();
     ComboRando::ComboMenu_PushCheckbox(ComboRando::ComboMenu_ThemeColor());
-    if (ImGui::Checkbox("Show Personal Notes window", &notes)) ComboNotes::SetWindowShown(notes);
+    if (ImGui::Checkbox("Show Personal Notes window", &notes))
+        ComboNotes::SetWindowShown(notes);
     ComboRando::ComboMenu_PopCheckbox();
 }
 
@@ -711,7 +816,8 @@ void DrawNetworkSharedPanel() {
 
     // --- Connection settings (disabled while enabled, like soh) ---
     ImGui::SeparatorText("Connection Settings");
-    MenuTooltip("Set a host, room and name, then Enable. Shared progress requires Combo Ship 0.1.15 or newer, the same seed and the same team for every player.");
+    MenuTooltip("Set a host, room and name, then Enable. Shared progress requires Combo Ship 0.1.15 or newer, the same "
+                "seed and the same team for every player.");
     ImGui::BeginDisabled(enabled);
 
     char host[256], name[128], roomId[128], teamId[128];
@@ -828,7 +934,8 @@ void DrawNetworkSharedPanel() {
                 sMmRequestResync();
         }
         ComboRando::ComboMenu_PopButton();
-        MenuTooltip("Pull the latest progress for both games if you are missing items or flags a teammate has collected.");
+        MenuTooltip(
+            "Pull the latest progress for both games if you are missing items or flags a teammate has collected.");
 
         bool showMinimap = CVarGetInteger(AnchorCVar::ShowOnMinimap, 1) != 0;
         ComboRando::ComboMenu_PushCheckbox(theme);
@@ -1134,7 +1241,8 @@ void DrawComboPlandoPanel() {
         ImGui::EndCombo();
     }
     ComboRando::ComboMenu_PopCombobox();
-    MenuTooltip("Load a generated spoiler from the Randomizer folder, edit rewards in either game, then Save. Use Save & Play at file select.");
+    MenuTooltip("Load a generated spoiler from the Randomizer folder, edit rewards in either game, then Save. Use Save "
+                "& Play at file select.");
     ImGui::SameLine();
     ComboRando::ComboMenu_PushButton(theme);
     if (ImGui::Button("Refresh"))
@@ -1240,20 +1348,23 @@ void DrawComboPlandoPanel() {
 
 namespace {
 const CwWidget* FindPreference(const GameMenu& game, const char* cvar) {
-    if (!game.loaded || !game.menu) return nullptr;
+    if (!game.loaded || !game.menu)
+        return nullptr;
     for (int s = 0; s < game.menu->sectionCount; ++s) {
         const auto& section = game.menu->sections[s];
         for (int b = 0; b < section.sidebarCount; ++b) {
             const auto& side = section.sidebars[b];
             for (int w = 0; w < side.widgetCount; ++w)
-                if (side.widgets[w].cvar && std::strcmp(side.widgets[w].cvar, cvar) == 0) return &side.widgets[w];
+                if (side.widgets[w].cvar && std::strcmp(side.widgets[w].cvar, cvar) == 0)
+                    return &side.widgets[w];
         }
     }
     return nullptr;
 }
 bool DrawRuleCheckbox(const char* label, bool* enabled) {
     const float need = ImGui::CalcTextSize(label).x + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x;
-    if (need <= ImGui::GetContentRegionAvail().x) return ImGui::Checkbox(label, enabled);
+    if (need <= ImGui::GetContentRegionAvail().x)
+        return ImGui::Checkbox(label, enabled);
     bool changed = ImGui::Checkbox("##RuleToggle", enabled);
     ImGui::SameLine();
     ImGui::TextWrapped("%s", label);
@@ -1263,7 +1374,8 @@ bool DrawRuleCheckbox(const char* label, bool* enabled) {
     // Native button behavior toggles on release and cancels a drag released
     // elsewhere. A disabled seed-generation control also blocks this target.
     if (ImGui::InvisibleButton("##RuleLabel", ImVec2(labelEnd.x - labelStart.x, labelEnd.y - labelStart.y))) {
-        *enabled = !*enabled; changed = true;
+        *enabled = !*enabled;
+        changed = true;
     }
     ImGui::SetCursorScreenPos(afterLabel);
     return changed;
@@ -1273,78 +1385,104 @@ void DrawGameplayRules(bool randomizer, const std::string& page, int world,
     auto& model = ComboMenuModel::Get();
     auto apply = [&](const char* name, int value) {
         const auto* rule = FindGameplayRule(name);
-        if(randomizer || (ProfileUI::Active() && rule && !rule->runtimeOnly)) { ProfileUI::WriteInteger(name,value); return; }
+        if (randomizer || (ProfileUI::Active() && rule && !rule->runtimeOnly)) {
+            ProfileUI::WriteInteger(name, value);
+            return;
+        }
         CVarSetInteger(name, value);
-        static auto write = (void(*)(const char*, int32_t))Combo_ResolveSym("soh", "SOH_WriteGameplayRule");
-        if (write) write(name, value);
+        static auto write = (void (*)(const char*, int32_t))Combo_ResolveSym("soh", "SOH_WriteGameplayRule");
+        if (write)
+            write(name, value);
         WarnAboutRuleChange(name);
-        if (model.Oot().applyCVarChange) model.Oot().applyCVarChange(name);
-        if (model.Mm().applyCVarChange) model.Mm().applyCVarChange(name);
+        if (model.Oot().applyCVarChange)
+            model.Oot().applyCVarChange(name);
+        if (model.Mm().applyCVarChange)
+            model.Mm().applyCVarChange(name);
     };
     auto read = [randomizer](const char* name, int fallback) {
         const auto* rule = FindGameplayRule(name);
         return randomizer || (ProfileUI::Active() && rule && !rule->runtimeOnly)
-            ? ProfileUI::ReadInteger(name,fallback) : CVarGetInteger(name,fallback);
+                   ? ProfileUI::ReadInteger(name, fallback)
+                   : CVarGetInteger(name, fallback);
     };
     std::vector<const GameplayRule*> rules;
     for (const auto& rule : kGameplayRules) {
-        if (rule.trickGoverned || (randomizer && rule.runtimeOnly) || IsLegacyGameplayRule(rule.name) || GameplayRulePage(rule.name, randomizer) != page) continue;
-        if (!IsSongTravelRule(rule.name) && (std::strstr(rule.label, "(MM)") != nullptr) != (world == 1)) continue;
+        if (rule.trickGoverned || (randomizer && rule.runtimeOnly) || IsLegacyGameplayRule(rule.name) ||
+            GameplayRulePage(rule.name, randomizer) != page)
+            continue;
+        if (!IsSongTravelRule(rule.name) && (std::strstr(rule.label, "(MM)") != nullptr) != (world == 1))
+            continue;
         rules.push_back(&rule);
     }
-    if (rules.empty()) return;
+    if (rules.empty())
+        return;
     const int columns = MenuColumns();
     if (!ImGui::BeginTable("##GameplayAbilities", columns,
-        ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) return;
+                           ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+        return;
     for (const auto* item : rules) {
         const auto& rule = *item;
         ImGui::TableNextColumn();
         ImGui::PushID(rule.name);
         ImGui::BeginGroup();
         const bool focused = focus && focus->Matches(rule.name);
-        if (focused) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(.65f, .8f, 1.0f, 1.0f));
+        if (focused)
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(.65f, .8f, 1.0f, 1.0f));
         std::string label = GameplayRuleMenuLabel(rule.name, rule.label, randomizer);
-        for (const auto* suffix : {" (OoT)", " (MM)"}) {
+        for (const auto* suffix : { " (OoT)", " (MM)" }) {
             const auto pos = label.find(suffix);
-            if (pos != std::string::npos) label.erase(pos);
+            if (pos != std::string::npos)
+                label.erase(pos);
         }
         int value = ReadGameplayRule(rule, randomizer, read);
         const int required = !randomizer && !rule.runtimeOnly ? ReadGameplayRule(rule, true, read) : 0;
-        if (required) value = required;
-        ImGui::BeginDisabled(required || (!randomizer && !rule.runtimeOnly && ProfileUI::Active() && !ProfileUI::Editable()));
+        if (required)
+            value = required;
+        ImGui::BeginDisabled(required ||
+                             (!randomizer && !rule.runtimeOnly && ProfileUI::Active() && !ProfileUI::Editable()));
         bool changed = false;
         if (rule.maximum == 1) {
             bool enabled = value != 0;
-            changed = DrawRuleCheckbox(label.c_str(), &enabled); value = enabled;
+            changed = DrawRuleCheckbox(label.c_str(), &enabled);
+            value = enabled;
         } else if (rule.minimum > 0) {
-            if (value < rule.minimum) value = rule.fallback;
+            if (value < rule.minimum)
+                value = rule.fallback;
             ImGui::TextWrapped("%s", label.c_str());
             ImGui::SetNextItemWidth(-FLT_MIN);
-            changed = ImGui::SliderInt("##RequiredCount", &value, rule.minimum, rule.maximum, "%d", ImGuiSliderFlags_NoInput);
+            changed =
+                ImGui::SliderInt("##RequiredCount", &value, rule.minimum, rule.maximum, "%d", ImGuiSliderFlags_NoInput);
         } else {
-            const char* gibdo[] = {"Vanilla", "MM3D", "No trade"};
-            const char* dog[] = {"Off", "With Mask of Truth", "Always"};
-            const char* sticks[] = {"Normal", "Unbreakable", "Always burning"};
-            const char* age[] = {"Off", "Ocarina of Time", "Ocarina of Time + Master Sword",
-                                 "Either ocarina", "Either ocarina + Master Sword"};
-            const char** modes = rule.maximum == 4 ? age : !std::strcmp(rule.name, "gCheats.DekuStick") ? sticks :
-                !std::strcmp(rule.name, "gEnhancements.DifficultyOptions.GibdoTradeSequence") ? gibdo : dog;
+            const char* gibdo[] = { "Vanilla", "MM3D", "No trade" };
+            const char* dog[] = { "Off", "With Mask of Truth", "Always" };
+            const char* sticks[] = { "Normal", "Unbreakable", "Always burning" };
+            const char* age[] = { "Off", "Ocarina of Time", "Ocarina of Time + Master Sword", "Either ocarina",
+                                  "Either ocarina + Master Sword" };
+            const char** modes = rule.maximum == 4                              ? age
+                                 : !std::strcmp(rule.name, "gCheats.DekuStick") ? sticks
+                                 : !std::strcmp(rule.name, "gEnhancements.DifficultyOptions.GibdoTradeSequence") ? gibdo
+                                                                                                                 : dog;
             ImGui::TextWrapped("%s", label.c_str());
             ImGui::SetNextItemWidth(-FLT_MIN);
             changed = ImGui::Combo("##Ability", &value, modes, rule.maximum + 1);
         }
-        if (focused) ImGui::PopStyleColor();
+        if (focused)
+            ImGui::PopStyleColor();
         ImGui::EndGroup();
         ImGui::EndDisabled();
-        if (focus && focus->ConsumeScrollFor(rule.name)) ImGui::SetScrollHereY(.15f);
+        if (focus && focus->ConsumeScrollFor(rule.name))
+            ImGui::SetScrollHereY(.15f);
         MenuTooltip(rule.help);
         if (changed) {
-            if (randomizer) SetLogicRule(rule, value, apply);
-            else SetEnhancementRule(rule, value, read, apply);
+            if (randomizer)
+                SetLogicRule(rule, value, apply);
+            else
+                SetEnhancementRule(rule, value, read, apply);
         }
-        if (changed&&!randomizer) {
-            static auto refresh = (void(*)())Combo_ResolveSym("soh", "SOH_RefreshComboRules");
-            if (refresh) refresh();
+        if (changed && !randomizer) {
+            static auto refresh = (void (*)())Combo_ResolveSym("soh", "SOH_RefreshComboRules");
+            if (refresh)
+                refresh();
             Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
         }
         ImGui::Spacing();
@@ -1355,31 +1493,41 @@ void DrawGameplayRules(bool randomizer, const std::string& page, int world,
 }
 
 void DrawPairedPreferences(const std::string& page) {
-    struct Pair { const char* label; const char* oot; const char* mm; const char* help; const char* page; };
+    struct Pair {
+        const char* label;
+        const char* oot;
+        const char* mm;
+        const char* help;
+        const char* page;
+    };
     static const Pair pairs[] = {
-        {"Equip items with the D-pad", "gEnhancements.DpadEquips", "gEnhancements.Dpad.DpadEquips",
-         "Assign items to the D-pad in the pause menu.", "Controls"},
-        {"Allow unequipping items", "gEnhancements.ItemUnequip", "gEnhancements.Equipment.ItemUnequip",
-         "Press an item's assigned button again in the pause menu to unequip it.", "Items & equipment"},
-        {"Quick magic-arrow equip", "gEnhancements.SkipArrowAnimation", "gEnhancements.Equipment.MagicArrowEquipSpeed",
-         "Skip the long animation when equipping magic arrows.", "Items & equipment"},
-        {"Cycle arrow types", "gEnhancements.BowArrowCycle", "gEnhancements.PlayerActions.ArrowCycle",
-         "Switch arrow types while aiming. Each game retains its native button behavior.", "Items & equipment"},
-        {"Autosave", "gEnhancements.Autosave", "gEnhancements.Saving.Autosave",
-         "OoT saves on its three-minute interval. MM uses its configured interval and persistent owl saves. Save manually before exiting.", "Saving"}
+        { "Equip items with the D-pad", "gEnhancements.DpadEquips", "gEnhancements.Dpad.DpadEquips",
+          "Assign items to the D-pad in the pause menu.", "Controls" },
+        { "Allow unequipping items", "gEnhancements.ItemUnequip", "gEnhancements.Equipment.ItemUnequip",
+          "Press an item's assigned button again in the pause menu to unequip it.", "Items & equipment" },
+        { "Quick magic-arrow equip", "gEnhancements.SkipArrowAnimation", "gEnhancements.Equipment.MagicArrowEquipSpeed",
+          "Skip the long animation when equipping magic arrows.", "Items & equipment" },
+        { "Cycle arrow types", "gEnhancements.BowArrowCycle", "gEnhancements.PlayerActions.ArrowCycle",
+          "Switch arrow types while aiming. Each game retains its native button behavior.", "Items & equipment" },
+        { "Autosave", "gEnhancements.Autosave", "gEnhancements.Saving.Autosave",
+          "OoT saves on its three-minute interval. MM uses its configured interval and persistent owl saves. Save "
+          "manually before exiting.",
+          "Saving" }
     };
     auto& model = ComboMenuModel::Get();
     for (const auto& pair : pairs) {
-        if (page != pair.page) continue;
-        const GameMenu* games[] = {&model.Oot(), &model.Mm()};
-        const CwWidget* widgets[] = {FindPreference(*games[0], pair.oot), FindPreference(*games[1], pair.mm)};
+        if (page != pair.page)
+            continue;
+        const GameMenu* games[] = { &model.Oot(), &model.Mm() };
+        const CwWidget* widgets[] = { FindPreference(*games[0], pair.oot), FindPreference(*games[1], pair.mm) };
         bool disabled = !widgets[0] || !widgets[1];
         bool values[2] = {};
         for (int i = 0; i < 2; ++i) {
-            if (!widgets[i]) continue;
+            if (!widgets[i])
+                continue;
             values[i] = CVarGetInteger(widgets[i]->cvar, widgets[i]->bDefault) != 0;
-            disabled |= widgets[i]->kind != CW_CHECKBOX ||
-                        (widgets[i]->hasPreFunc && games[i]->evalDisabled && games[i]->evalDisabled(widgets[i]->index, nullptr));
+            disabled |= widgets[i]->kind != CW_CHECKBOX || (widgets[i]->hasPreFunc && games[i]->evalDisabled &&
+                                                            games[i]->evalDisabled(widgets[i]->index, nullptr));
         }
         ImGui::Spacing();
         ImGui::BeginDisabled(disabled);
@@ -1388,8 +1536,10 @@ void DrawPairedPreferences(const std::string& page) {
         if (ImGui::Checkbox(pair.label, &enabled)) {
             for (int i = 0; i < 2; ++i) {
                 CVarSetInteger(widgets[i]->cvar, enabled ? 1 : 0);
-                if (widgets[i]->hasCallback && games[i]->invokeCallback) games[i]->invokeCallback(widgets[i]->index);
-                if (games[i]->applyCVarChange) games[i]->applyCVarChange(widgets[i]->cvar);
+                if (widgets[i]->hasCallback && games[i]->invokeCallback)
+                    games[i]->invokeCallback(widgets[i]->index);
+                if (games[i]->applyCVarChange)
+                    games[i]->applyCVarChange(widgets[i]->cvar);
             }
             AnchorSaveCVars();
         }
@@ -1400,17 +1550,18 @@ void DrawPairedPreferences(const std::string& page) {
 }
 void DrawCombinedGoals() {
     auto save = [] {};
-    const char* guarantees[] = {"All checks reachable", "Beatable seed"};
+    const char* guarantees[] = { "All checks reachable", "Beatable seed" };
     int guarantee = std::clamp(ProfileUI::ReadInteger(kCombinedGuarantee, 0), 0, 1);
     ImGui::SetNextItemWidth(-FLT_MIN);
     if (ImGui::Combo("##Reachability", &guarantee, guarantees, 2)) {
         ProfileUI::WriteInteger(kCombinedGuarantee, guarantee);
         SynchronizeGenerationGuarantee([](const char* k, int v) { return ProfileUI::ReadInteger(k, v); },
-                                      [](const char* k, int v) { ProfileUI::WriteInteger(k, v); });
+                                       [](const char* k, int v) { ProfileUI::WriteInteger(k, v); });
         save();
     }
-    MenuTooltip("All checks reachable includes every enabled, non-excluded check. Beatable seed requires the selected victory goal. No Logic disables these guarantees.");
-    const char* worlds[] = {"Start in Ocarina of Time", "Start in Majora's Mask", "Random starting world"};
+    MenuTooltip("All checks reachable includes every enabled, non-excluded check. Beatable seed requires the selected "
+                "victory goal. No Logic disables these guarantees.");
+    const char* worlds[] = { "Start in Ocarina of Time", "Start in Majora's Mask", "Random starting world" };
     int world = std::clamp(ProfileUI::ReadInteger("gCombo.Rando.StartingGame", 0), 0, 2);
     ImGui::SetNextItemWidth(-FLT_MIN);
     if (ImGui::Combo("##StartingWorld", &world, worlds, 3)) {
@@ -1419,28 +1570,43 @@ void DrawCombinedGoals() {
         save();
     }
     MenuTooltip("Choose the world where the new file starts. Both worlds remain part of the seed.");
-    const char* goals[] = {"Both final bosses", "Triforce Hunt", "Either final boss", "Ganon only", "Majora only", "Triforce Quest"};
-    int goal = std::clamp(ProfileUI::ReadInteger("gCombo.Rando.Goal", ProfileUI::ReadInteger("gCombo.Rando.TriforceHunt", 0) ? 1 : 0), 0, 5);
-    ImGui::TextUnformatted("Victory condition"); ImGui::SetNextItemWidth(-FLT_MIN);
+    const char* goals[] = { "Both final bosses", "Triforce Hunt", "Either final boss",
+                            "Ganon only",        "Majora only",   "Triforce Quest" };
+    int goal = std::clamp(
+        ProfileUI::ReadInteger("gCombo.Rando.Goal", ProfileUI::ReadInteger("gCombo.Rando.TriforceHunt", 0) ? 1 : 0), 0,
+        5);
+    ImGui::TextUnformatted("Victory condition");
+    ImGui::SetNextItemWidth(-FLT_MIN);
     if (ImGui::Combo("##VictoryCondition", &goal, goals, 6)) {
         ProfileUI::WriteInteger("gCombo.Rando.Goal", goal);
         ProfileUI::WriteInteger("gCombo.Rando.TriforceHunt", goal == 1);
         save();
     }
-    MenuTooltip("Choose the goal for new seeds. Triforce Quest requires Power, Courage and Wisdom, placed in later progression spheres in different regions.");
+    MenuTooltip("Choose the goal for new seeds. Triforce Quest requires Power, Courage and Wisdom, placed in later "
+                "progression spheres in different regions.");
     const bool hunt = goal == 1;
     if (hunt) {
-        int required = std::clamp(ProfileUI::ReadInteger("gCombo.Rando.TriforceRequired", 15), 1, kMaxComboTriforcePieces);
-        int total = std::clamp(ProfileUI::ReadInteger("gCombo.Rando.TriforceTotal", 15), required, kMaxComboTriforcePieces);
-        ImGui::TextUnformatted("Required pieces"); ImGui::SetNextItemWidth(-FLT_MIN);
-        if (ImGui::SliderInt("##RequiredPieces", &required, 1, kMaxComboTriforcePieces, "%d", ImGuiSliderFlags_NoInput)) {
+        int required =
+            std::clamp(ProfileUI::ReadInteger("gCombo.Rando.TriforceRequired", 15), 1, kMaxComboTriforcePieces);
+        int total =
+            std::clamp(ProfileUI::ReadInteger("gCombo.Rando.TriforceTotal", 15), required, kMaxComboTriforcePieces);
+        ImGui::TextUnformatted("Required pieces");
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if (ImGui::SliderInt("##RequiredPieces", &required, 1, kMaxComboTriforcePieces, "%d",
+                             ImGuiSliderFlags_NoInput)) {
             ProfileUI::WriteInteger("gCombo.Rando.TriforceRequired", required);
-            if (total < required) { total = required; ProfileUI::WriteInteger("gCombo.Rando.TriforceTotal", total); }
+            if (total < required) {
+                total = required;
+                ProfileUI::WriteInteger("gCombo.Rando.TriforceTotal", total);
+            }
             save();
         }
-        ImGui::TextUnformatted("Pieces in the pool"); ImGui::SetNextItemWidth(-FLT_MIN);
-        if (ImGui::SliderInt("##TotalPieces", &total, required, kMaxComboTriforcePieces, "%d", ImGuiSliderFlags_NoInput)) {
-            ProfileUI::WriteInteger("gCombo.Rando.TriforceTotal", total); save();
+        ImGui::TextUnformatted("Pieces in the pool");
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if (ImGui::SliderInt("##TotalPieces", &total, required, kMaxComboTriforcePieces, "%d",
+                             ImGuiSliderFlags_NoInput)) {
+            ProfileUI::WriteInteger("gCombo.Rando.TriforceTotal", total);
+            save();
         }
     }
     ImGui::SeparatorText("World access");
@@ -1454,21 +1620,26 @@ void DrawCombinedGoals() {
     }
     ImGui::EndDisabled();
     MenuTooltip(windMm ? "Controls whether you can use Farore's Wind to warp between OoT and MM."
-                       : "Controls whether you can use Farore's Wind to warp between OoT and MM.\n\nRequires Farore's Wind (MM) under Items & checks > Majora's Mask.");
+                       : "Controls whether you can use Farore's Wind to warp between OoT and MM.\n\nRequires Farore's "
+                         "Wind (MM) under Items & checks > Majora's Mask.");
 }
 void DrawSharedItems() {
     const int columns = MenuColumns();
     if (!ImGui::BeginTable("##SharedItems", columns,
-        ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) return;
+                           ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
+        return;
     for (int i = 0; i < SF_COUNT; ++i) {
         ImGui::TableNextColumn();
-        if (i == SF_OCARINA || !SharedFamilyByIndex(i).publicOption) continue; // private native features await runtime validation
+        if (i == SF_OCARINA || !SharedFamilyByIndex(i).publicOption)
+            continue; // private native features await runtime validation
         const auto& family = SharedFamilyByIndex(i);
         bool enabled = ProfileUI::ReadInteger(family.cvar, 0) != 0;
         ImGui::PushID(family.cvar);
-        const bool unavailable = (family.requiresButtons &&
-            (!ProfileUI::ReadInteger("gRandoSettings.ShuffleOcarinaButtons", 0) || !ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_OCARINA_BUTTONS", 0))) ||
-            (i == SF_SPELL_WIND && !ProfileUI::ReadInteger("gRando.Options.RO_MM_SPELL_WIND", 0)); // OoTMM: requires spellWindMm
+        const bool unavailable =
+            (family.requiresButtons && (!ProfileUI::ReadInteger("gRandoSettings.ShuffleOcarinaButtons", 0) ||
+                                        !ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_OCARINA_BUTTONS", 0))) ||
+            (i == SF_SPELL_WIND &&
+             !ProfileUI::ReadInteger("gRando.Options.RO_MM_SPELL_WIND", 0)); // OoTMM: requires spellWindMm
         ImGui::BeginDisabled(unavailable);
         if (DrawRuleCheckbox(family.label, &enabled)) {
             ProfileUI::WriteInteger(family.cvar, enabled);
@@ -1482,19 +1653,22 @@ void DrawSharedItems() {
 void DrawCosmeticSync() {
     bool linked = CVarGetInteger("gCombo.Rando.SyncCosmetics", 0) != 0;
     if (DrawRuleCheckbox("Match cosmetics between games", &linked)) {
-        CVarSetInteger("gCombo.Rando.SyncCosmetics", linked); AnchorSaveCVars();
+        CVarSetInteger("gCombo.Rando.SyncCosmetics", linked);
+        AnchorSaveCVars();
     }
-    MenuTooltip("Use matching randomized colors and trails in both games when generating a new seed. This changes appearance only.");
+    MenuTooltip("Use matching randomized colors and trails in both games when generating a new seed. This changes "
+                "appearance only.");
 }
 void DrawCommunityPresets() {
     static std::string applied;
     ResolveComboGenSyms();
-    static auto native = (void(*)(int))Combo_ResolveSym("2ship", "MM_ApplyComboCommunityPreset");
+    static auto native = (void (*)(int))Combo_ResolveSym("2ship", "MM_ApplyComboCommunityPreset");
     const bool ready = sIsOnFileSelect && sIsOnFileSelect() && sTrigger && native;
     const auto* progress = sGetProgress ? sGetProgress() : nullptr;
     const bool running = progress && progress->running.load();
     const int columns = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 60.0f ? 3 : MenuColumns(20.0f);
-    if (ImGui::BeginTable("##CommunityPresets", columns, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
+    if (ImGui::BeginTable("##CommunityPresets", columns,
+                          ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
         for (const auto& preset : kCommunityPresets) {
             ImGui::TableNextColumn();
             ImGui::PushID(static_cast<int>(preset.id));
@@ -1507,15 +1681,20 @@ void DrawCommunityPresets() {
                 CVarClearBlock("gRandoSettings");
                 CVarClearBlock("gRando.Options");
                 CVarClearBlock("gCombo.Tricks");
-                for (const auto& rule : kGameplayRules) SetLogicRule(rule, 0, [](const char* k, int v) { CVarSetInteger(k, v); });
-                for (const auto& option : CommunityPresetOptions(preset.id)) CVarSetInteger(option.key, option.value);
+                for (const auto& rule : kGameplayRules)
+                    SetLogicRule(rule, 0, [](const char* k, int v) { CVarSetInteger(k, v); });
+                for (const auto& option : CommunityPresetOptions(preset.id))
+                    CVarSetInteger(option.key, option.value);
                 const auto& songs = *FindGameplayRule("gCombo.Enhancements.ForeignSongs");
-                SetLogicRule(songs, preset.id != CommunityPreset::Default, [](const char* k, int v) { CVarSetInteger(k, v); });
+                SetLogicRule(songs, preset.id != CommunityPreset::Default,
+                             [](const char* k, int v) { CVarSetInteger(k, v); });
                 native(static_cast<int>(preset.id));
-                if (sRefreshStartingGameUI) sRefreshStartingGameUI();
+                if (sRefreshStartingGameUI)
+                    sRefreshStartingGameUI();
                 SynchronizeGenerationGuarantee([](const char* k, int v) { return CVarGetInteger(k, v); },
-                                              [](const char* k, int v) { CVarSetInteger(k, v); });
-                applied = preset.name; AnchorSaveCVars();
+                                               [](const char* k, int v) { CVarSetInteger(k, v); });
+                applied = preset.name;
+                AnchorSaveCVars();
             }
             ImGui::EndDisabled();
             MenuTooltip(preset.help);
@@ -1526,24 +1705,30 @@ void DrawCommunityPresets() {
     }
     ImGui::Spacing();
     ImGui::TextDisabled("Adapted from OoTMM community presets");
-    MenuTooltip("These are supported Combo Ship adaptations. Hover, focus or touch each Apply button for its details. Source: OoTMM/OoTMM packages/generator/lib/combo/presets.ts.");
-    if (!ready) ImGui::TextDisabled("Return to file select to configure a new seed.");
-    if (!applied.empty()) ImGui::Text("%s applied. Fine-tune under Randomizer, then Generate.", applied.c_str());
+    MenuTooltip("These are supported Combo Ship adaptations. Hover, focus or touch each Apply button for its details. "
+                "Source: OoTMM/OoTMM packages/generator/lib/combo/presets.ts.");
+    if (!ready)
+        ImGui::TextDisabled("Return to file select to configure a new seed.");
+    if (!applied.empty())
+        ImGui::Text("%s applied. Fine-tune under Randomizer, then Generate.", applied.c_str());
 }
 
 void DrawScreenAndHud() {
 #ifdef __ANDROID__
     int mode = CVarGetInteger("gCombo.Display.AutoFit", 1);
-    const char* modes[] = {"Manual (advanced graphics)", "Automatic - balanced", "Automatic - full width", "Original 4:3"};
+    const char* modes[] = { "Manual (advanced graphics)", "Automatic - balanced", "Automatic - full width",
+                            "Original 4:3" };
     ImGui::SetNextItemWidth(std::min(400.0f, ImGui::GetContentRegionAvail().x));
     if (ImGui::Combo("Screen fit", &mode, modes, IM_ARRAYSIZE(modes))) {
         CVarSetInteger("gCombo.Display.AutoFit", mode);
         Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
     }
-    MenuTooltip("Fit the complete original 4:3 view and HUD. Balanced limits extra side visibility to 16:9; Full width fills wider displays. Manual keeps your advanced graphics settings.");
+    MenuTooltip("Fit the complete original 4:3 view and HUD. Balanced limits extra side visibility to 16:9; Full width "
+                "fills wider displays. Manual keeps your advanced graphics settings.");
 #endif
     ImGui::SeparatorText("HUD layout");
-    MenuTooltip("Move and resize hearts, buttons, magic, rupees and other game information. To move touch controls, hold Menu and choose Move controls.");
+    MenuTooltip("Move and resize hearts, buttons, magic, rupees and other game information. To move touch controls, "
+                "hold Menu and choose Move controls.");
     static int game = ComboUI::GetForegroundGame();
     MenuWorldButtons(game);
     DrawHudLayout(game);
@@ -1557,20 +1742,29 @@ void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& pag
     int sourceColumn = -1;
     for (int i = 0; i < side.widgetCount; ++i) {
         const auto& widget = side.widgets[i];
-        if (sourceColumn != widget.column) { sourceColumn = widget.column; currentHeading.clear(); }
-        if (widget.kind == CW_SEPARATOR_TEXT) currentHeading = widget.name ? widget.name : "";
-        if (MenuGroupRoute(source.oot, source.section, side.sidebarName, sourceColumn, currentHeading, widget.cvar ? widget.cvar : "").page == page)
+        if (sourceColumn != widget.column) {
+            sourceColumn = widget.column;
+            currentHeading.clear();
+        }
+        if (widget.kind == CW_SEPARATOR_TEXT)
+            currentHeading = widget.name ? widget.name : "";
+        if (MenuGroupRoute(source.oot, source.section, side.sidebarName, sourceColumn, currentHeading,
+                           widget.cvar ? widget.cvar : "")
+                .page == page)
             grouped.push_back(widget);
     }
-    side.widgets = grouped.data(); side.widgetCount = (int)grouped.size();
+    side.widgets = grouped.data();
+    side.widgetCount = (int)grouped.size();
     std::vector<CwWidget> filtered;
     if (source.oot && side.sidebarName && std::strcmp(side.sidebarName, "Fixes") == 0 &&
         (page == "Fixes" || page == "Restorations")) {
         for (int i = 0; i < side.widgetCount; ++i) {
             const auto& w = side.widgets[i];
-            if (FeatureMenuRoute(true, "Enhancements", side.sidebarName, w.column).page != page) continue;
+            if (FeatureMenuRoute(true, "Enhancements", side.sidebarName, w.column).page != page)
+                continue;
             filtered.push_back(w); // preserve native index, CVar and callbacks
-            if (page == "Restorations") filtered.back().column = 0;
+            if (page == "Restorations")
+                filtered.back().column = 0;
         }
         side.widgets = filtered.data();
         side.widgetCount = (int)filtered.size();
@@ -1582,14 +1776,14 @@ void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& pag
             const auto& w = side.widgets[i];
             const std::string name = w.name ? w.name : "";
             const std::string cv = w.cvar ? w.cvar : "";
-            if (FindGameplayRule(w.cvar)) continue;
+            if (FindGameplayRule(w.cvar))
+                continue;
             if (w.column > 0 || name == "Open App Files Folder" || name == "Cursor Always Visible" ||
-                name == "Allow background inputs" || name == "Search In Sidebar" ||
-                name == "Search Input Autofocus" || name == "Import Settings" ||
-                name == "Menu Theme" || name == "Menu Controller Navigation" ||
-                name == "Menu Background Opacity" || name == "ImGui Menu Scaling" ||
-                name == "Menu Settings" || name == "General Settings" || name == "EXPERIMENTAL" ||
-                cv == "gSettings.Menu.SidebarSearch") continue;
+                name == "Allow background inputs" || name == "Search In Sidebar" || name == "Search Input Autofocus" ||
+                name == "Import Settings" || name == "Menu Theme" || name == "Menu Controller Navigation" ||
+                name == "Menu Background Opacity" || name == "ImGui Menu Scaling" || name == "Menu Settings" ||
+                name == "General Settings" || name == "EXPERIMENTAL" || cv == "gSettings.Menu.SidebarSearch")
+                continue;
             filtered.push_back(w);
         }
         side.widgets = filtered.data();
@@ -1602,37 +1796,55 @@ void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& pag
         int column = -1;
         for (int i = 0; i < side.widgetCount; ++i) {
             const auto& w = side.widgets[i];
-            if (column != w.column) { column = w.column; heading.clear(); }
-            if (w.kind == CW_SEPARATOR_TEXT) heading = w.name ? w.name : "";
-            if (RandomizerWidgetGroup(true, source.sidebar->sidebarName, w.column, heading, w.cvar ? w.cvar : "") != subpage) continue;
+            if (column != w.column) {
+                column = w.column;
+                heading.clear();
+            }
+            if (w.kind == CW_SEPARATOR_TEXT)
+                heading = w.name ? w.name : "";
+            if (RandomizerWidgetGroup(true, source.sidebar->sidebarName, w.column, heading, w.cvar ? w.cvar : "") !=
+                subpage)
+                continue;
             filtered.push_back(w);
         }
         side.widgets = filtered.data();
         side.widgetCount = (int)filtered.size();
         const bool pools = std::strcmp(source.sidebar->sidebarName, "Shuffles") == 0;
         side.columnCount = pools ? 2 : source.sidebar->columnCount;
-        if (pools) for (auto& widget : filtered) widget.column = widget.column % 2;
+        if (pools)
+            for (auto& widget : filtered)
+                widget.column = widget.column % 2;
     }
     if (source.oot && subpage == 0 && std::strcmp(source.sidebar->sidebarName, "Shuffles") == 0) {
-        constexpr const char* headings[] = {"World & NPCs", "Creatures & Collectibles", "Scenery Drops", "Shops & Merchants"};
+        constexpr const char* headings[] = { "World & NPCs", "Creatures & Collectibles", "Scenery Drops",
+                                             "Shops & Merchants" };
         std::vector<CwWidget> arranged;
         for (int group = 0; group < 4; ++group) {
-            CwWidget heading{}; heading.index = -1; heading.kind = CW_SEPARATOR_TEXT;
-            heading.name = headings[group]; heading.column = group == 1 || group == 2 ? 1 : 0;
+            CwWidget heading{};
+            heading.index = -1;
+            heading.kind = CW_SEPARATOR_TEXT;
+            heading.name = headings[group];
+            heading.column = group == 1 || group == 2 ? 1 : 0;
             arranged.push_back(heading);
             for (int i = 0; i < side.widgetCount; ++i) {
                 const auto& widget = side.widgets[i];
-                if (widget.kind == CW_SEPARATOR_TEXT || widget.kind == CW_SEPARATOR) continue;
-                if (OotLocationPoolGroup(widget.cvar ? widget.cvar : "", widget.column) != group) continue;
-                arranged.push_back(widget); arranged.back().column = heading.column;
+                if (widget.kind == CW_SEPARATOR_TEXT || widget.kind == CW_SEPARATOR)
+                    continue;
+                if (OotLocationPoolGroup(widget.cvar ? widget.cvar : "", widget.column) != group)
+                    continue;
+                arranged.push_back(widget);
+                arranged.back().column = heading.column;
             }
         }
-        filtered = std::move(arranged); side.widgets = filtered.data(); side.widgetCount = (int)filtered.size();
+        filtered = std::move(arranged);
+        side.widgets = filtered.data();
+        side.widgetCount = (int)filtered.size();
         side.columnCount = 2;
     }
     columns = std::max(columns, side.columnCount);
     for (int i = 0; i < side.widgetCount; ++i)
-        if (!IsRetiredNativeRuleControl(side.widgets[i].cvar)) output.push_back(side.widgets[i]);
+        if (!IsRetiredNativeRuleControl(side.widgets[i].cvar))
+            output.push_back(side.widgets[i]);
 }
 } // namespace
 
@@ -1642,31 +1854,44 @@ void ComboMenu::DrawSharedPanel() {
     model.EnsureLoaded();
     static MenuNavigationCache navigation;
     auto& entries = navigation.Get(mScope, model);
-    if (entries.empty()) { ImGui::TextUnformatted("Loading settings..."); return; }
-    auto active = std::find_if(entries.begin(), entries.end(), [&](const HubEntry& e) { return e.key() == mHubActive; });
-    if (active == entries.end()) { active = entries.begin(); mHubActive = active->key(); }
+    if (entries.empty()) {
+        ImGui::TextUnformatted("Loading settings...");
+        return;
+    }
+    auto active =
+        std::find_if(entries.begin(), entries.end(), [&](const HubEntry& e) { return e.key() == mHubActive; });
+    if (active == entries.end()) {
+        active = entries.begin();
+        mHubActive = active->key();
+    }
     if (mScope != "home") {
         float width = 0;
-        for (const auto& e : entries) width = std::max(width, ImGui::CalcTextSize(e.label.c_str()).x + ImGui::GetStyle().ScrollbarSize + 40.0f);
+        for (const auto& e : entries)
+            width = std::max(width, ImGui::CalcTextSize(e.label.c_str()).x + ImGui::GetStyle().ScrollbarSize + 40.0f);
         width = std::min(width, ImGui::GetContentRegionAvail().x * 0.32f);
         ImGui::BeginChild("##FeatureSidebar", ImVec2(width, 0));
         auto drawEntry = [&](auto it) {
             ImGui::PushID(it->key().c_str());
             if (ComboMenu_StyledSidebarEntry(it->label.c_str(), it == active, ImGui::GetContentRegionAvail().x)) {
-                active = it; mHubActive = it->key();
+                active = it;
+                mHubActive = it->key();
                 mRuleFocus.Clear();
                 mSearchReturn.Clear();
             }
             ImGui::PopID();
         };
         for (auto it = entries.begin(); it != entries.end(); ++it)
-            if (mScope != "tools" || !IsDeveloperToolPage(it->label)) drawEntry(it);
-        if (mScope == "tools" && std::any_of(entries.begin(), entries.end(), [](const HubEntry& e) { return IsDeveloperToolPage(e.label); })) {
+            if (mScope != "tools" || !IsDeveloperToolPage(it->label))
+                drawEntry(it);
+        if (mScope == "tools" && std::any_of(entries.begin(), entries.end(),
+                                             [](const HubEntry& e) { return IsDeveloperToolPage(e.label); })) {
             ImGui::Spacing();
-            if (IsDeveloperToolPage(active->label)) ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+            if (IsDeveloperToolPage(active->label))
+                ImGui::SetNextItemOpen(true, ImGuiCond_Always);
             if (ImGui::CollapsingHeader("Developer tools"))
                 for (auto it = entries.begin(); it != entries.end(); ++it)
-                    if (IsDeveloperToolPage(it->label)) drawEntry(it);
+                    if (IsDeveloperToolPage(it->label))
+                        drawEntry(it);
         }
         ImGui::EndChild();
         ImGui::SameLine();
@@ -1682,167 +1907,235 @@ void ComboMenu::DrawSharedPanel() {
     const auto* generation = sGetProgress ? sGetProgress() : nullptr;
     const bool generating = generation && generation->running.load();
     // Changing rules during the worker's reachability queries could create inconsistent seeds.
-    ImGui::BeginDisabled(generating&&mScope!="randomizer"&&active->kind!=HubEntry::COMBO_GEN);
+    ImGui::BeginDisabled(generating && mScope != "randomizer" && active->kind != HubEntry::COMBO_GEN);
     if (!mSearchQuery.empty()) {
         DrawSearchResults(mSearchQuery);
     } else if ((mScope == "randomizer" || mScope == "home") && ProfileUI::DrawUnavailableSettings()) {
         // Never present fallback defaults as a file's saved/generated settings.
     } else {
         ImGui::SeparatorText(active->kind == HubEntry::COMBO_HOME ? "Community presets" : active->label.c_str());
-        if (mScope == "randomizer") MenuTooltip(RandomizerPageHelp(active->label));
+        if (mScope == "randomizer")
+            MenuTooltip(RandomizerPageHelp(active->label));
         switch (active->kind) {
-        case HubEntry::COMBO_HOME: ProfileUI::DrawHome(); break;
-        case HubEntry::COMBO_SHARED_ITEMS: ImGui::BeginDisabled(!ProfileUI::Editable());DrawSharedItems();ImGui::EndDisabled();break;
-        case HubEntry::COMBO_INTERFACE: {
-            const auto& game = model.Oot();
-            if (game.loaded && game.menu) {
-                for (int s = 0; s < game.menu->sectionCount; ++s) {
-                    const auto& section = game.menu->sections[s];
-                    if (std::strcmp(section.sectionLabel, "Settings") != 0) continue;
-                    for (int b = 0; b < section.sidebarCount; ++b) {
-                        const auto& side = section.sidebars[b];
-                        if (std::strcmp(side.sidebarName, "General") != 0) continue;
-                        for (int w = 0; w < side.widgetCount; ++w) {
-                            const auto& widget = side.widgets[w];
-                            const std::string name = widget.name ? widget.name : "";
-                            if (name == "Menu Theme" || name == "Menu Controller Navigation" ||
-                                name == "Menu Background Opacity" || name == "ImGui Menu Scaling") RenderWidget(widget, game);
+            case HubEntry::COMBO_HOME:
+                ProfileUI::DrawHome();
+                break;
+            case HubEntry::COMBO_SHARED_ITEMS:
+                ImGui::BeginDisabled(!ProfileUI::Editable());
+                DrawSharedItems();
+                ImGui::EndDisabled();
+                break;
+            case HubEntry::COMBO_INTERFACE: {
+                const auto& game = model.Oot();
+                if (game.loaded && game.menu) {
+                    for (int s = 0; s < game.menu->sectionCount; ++s) {
+                        const auto& section = game.menu->sections[s];
+                        if (std::strcmp(section.sectionLabel, "Settings") != 0)
+                            continue;
+                        for (int b = 0; b < section.sidebarCount; ++b) {
+                            const auto& side = section.sidebars[b];
+                            if (std::strcmp(side.sidebarName, "General") != 0)
+                                continue;
+                            for (int w = 0; w < side.widgetCount; ++w) {
+                                const auto& widget = side.widgets[w];
+                                const std::string name = widget.name ? widget.name : "";
+                                if (name == "Menu Theme" || name == "Menu Controller Navigation" ||
+                                    name == "Menu Background Opacity" || name == "ImGui Menu Scaling")
+                                    RenderWidget(widget, game);
+                            }
                         }
                     }
                 }
-            }
-            break;
-        }
-        case HubEntry::COMBO_GEN: ProfileUI::DrawGeneration(); break;
-        case HubEntry::COMBO_PLANDO: if(ProfileUI::Editable())DrawComboPlandoPanel();else ProfileUI::DrawSavedPlacements(); break;
-        case HubEntry::COMBO_TRACKER: DrawTrackerSharedPanel(); break;
-        case HubEntry::COMBO_CHECK_TRACKER: DrawCheckTrackerSharedPanel(); break;
-        case HubEntry::COMBO_HINT_TRACKER: DrawHintTrackerSharedPanel(); break;
-        case HubEntry::COMBO_TIMERS: DrawTimersSharedPanel(); break;
-        case HubEntry::COMBO_NETWORK: DrawNetworkSharedPanel(); break;
-        case HubEntry::COMBO_ABOUT:
-#ifdef COMBO_ANDROID_APP_VERSION
-            ImGui::TextWrapped("Combo Ship for Android - %s", COMBO_ANDROID_APP_VERSION);
-#else
-            ImGui::TextUnformatted("Combo Ship for Android");
-#endif
-            ImGui::TextWrapped("A combined Ocarina of Time and Majora's Mask randomizer with shared menus, trackers and touch controls.");
-            ImGui::Spacing();
-            ImGui::SeparatorText("Built on community work");
-            ImGui::TextWrapped("ComboShip, Ship of Harkinian, 2 Ship 2 Harkinian, libultraship and their Android ports.");
-            ImGui::TextWrapped("Your ROMs, extracted game data and saves stay on your device.");
-            break;
-        case HubEntry::COMBO_SESSION:
-            ImGui::TextWrapped("Save in-game before restarting or exiting.");
-            if (ImGui::Button("Restart game")) ImGui::OpenPopup("Restart game?");
-            if (ImGui::Button("Exit Combo Ship")) ImGui::OpenPopup("Exit Combo Ship?");
-            for (int i = 0; i < 2; ++i) {
-                if (ImGui::BeginPopupModal(i == 0 ? "Restart game?" : "Exit Combo Ship?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-                    ImGui::TextUnformatted("Unsaved progress will be lost.");
-                    if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
-                    ImGui::SameLine();
-                    if (ImGui::Button(i == 0 ? "Restart" : "Exit")) {
-                        ImGui::CloseCurrentPopup();
-                        if (i == 1) Ship::Context::GetRawInstance()->GetWindow()->Close();
-                        else if (auto console = std::static_pointer_cast<Ship::ConsoleWindow>(
-                            Ship::Context::GetRawInstance()->GetWindow()->GetGui()->GetGuiWindow("Console"))) {
-                            console->Dispatch("reset"); Hide();
-                        }
-                    }
-                    ImGui::EndPopup();
-                }
-            }
-            break;
-        default: {
-            if (active->label == "Tricks & glitches") { ProfileUI::DrawTricks(); break; }
-            if (active->label == "Screen & HUD") {
-                DrawScreenAndHud();
-                if (ImGui::Button("Advanced graphics")) { mScope = "media"; mHubActive = "media/Graphics"; }
                 break;
             }
-            bool hasOot = false, hasMm = false;
-            for (const auto& source : active->sources) { hasOot |= source.oot; hasMm |= !source.oot; }
-            int selectedGame = ComboUI::GetForegroundGame();
-            const bool seedOptions = mScope == "randomizer";
-            auto choiceRow = [&](const char* id, const char* first, const char* second, int& choice) {
-                ImGui::PushID(id);
-                if (ComboMenu_StyledHeaderEntry(first, choice == 0)) choice = 0;
-                const float need = ImGui::CalcTextSize(second).x + 32.0f;
-                if (ImGui::GetItemRectMax().x + need + 12.0f < ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x)
-                    ImGui::SameLine();
-                if (ComboMenu_StyledHeaderEntry(second, choice == 1)) choice = 1;
-                ImGui::PopID();
-            };
-            if (seedOptions && active->label == "Logic & access") {
-                ImGui::BeginDisabled(!ProfileUI::Editable());
-                DrawCombinedGoals();
-                ImGui::EndDisabled();
-            }
-            if (hasOot && hasMm) {
-                if (seedOptions) {
-                    choiceRow("SeedWorld", "Ocarina of Time", "Majora's Mask", mRandomizerGame);
-                    selectedGame = mRandomizerGame;
-                } else {
-                    if (mPreferenceGame) selectedGame = mPreferenceGame - 1;
-                    MenuWorldButtons(selectedGame);
-                    mPreferenceGame = selectedGame + 1;
+            case HubEntry::COMBO_GEN:
+                ProfileUI::DrawGeneration();
+                break;
+            case HubEntry::COMBO_PLANDO:
+                if (ProfileUI::Editable())
+                    DrawComboPlandoPanel();
+                else
+                    ProfileUI::DrawSavedPlacements();
+                break;
+            case HubEntry::COMBO_TRACKER:
+                DrawTrackerSharedPanel();
+                break;
+            case HubEntry::COMBO_CHECK_TRACKER:
+                DrawCheckTrackerSharedPanel();
+                break;
+            case HubEntry::COMBO_HINT_TRACKER:
+                DrawHintTrackerSharedPanel();
+                break;
+            case HubEntry::COMBO_TIMERS:
+                DrawTimersSharedPanel();
+                break;
+            case HubEntry::COMBO_NETWORK:
+                DrawNetworkSharedPanel();
+                break;
+            case HubEntry::COMBO_ABOUT:
+#ifdef COMBO_ANDROID_APP_VERSION
+                ImGui::TextWrapped("Combo Ship for Android - %s", COMBO_ANDROID_APP_VERSION);
+#else
+                ImGui::TextUnformatted("Combo Ship for Android");
+#endif
+                ImGui::TextWrapped("A combined Ocarina of Time and Majora's Mask randomizer with shared menus, "
+                                   "trackers and touch controls.");
+                ImGui::Spacing();
+                ImGui::SeparatorText("Built on community work");
+                ImGui::TextWrapped(
+                    "ComboShip, Ship of Harkinian, 2 Ship 2 Harkinian, libultraship and their Android ports.");
+                ImGui::TextWrapped("Your ROMs, extracted game data and saves stay on your device.");
+                break;
+            case HubEntry::COMBO_SESSION:
+                ImGui::TextWrapped("Save in-game before restarting or exiting.");
+                if (ImGui::Button("Restart game"))
+                    ImGui::OpenPopup("Restart game?");
+                if (ImGui::Button("Exit Combo Ship"))
+                    ImGui::OpenPopup("Exit Combo Ship?");
+                for (int i = 0; i < 2; ++i) {
+                    if (ImGui::BeginPopupModal(i == 0 ? "Restart game?" : "Exit Combo Ship?", nullptr,
+                                               ImGuiWindowFlags_AlwaysAutoResize)) {
+                        ImGui::TextUnformatted("Unsaved progress will be lost.");
+                        if (ImGui::Button("Cancel"))
+                            ImGui::CloseCurrentPopup();
+                        ImGui::SameLine();
+                        if (ImGui::Button(i == 0 ? "Restart" : "Exit")) {
+                            ImGui::CloseCurrentPopup();
+                            if (i == 1)
+                                Ship::Context::GetRawInstance()->GetWindow()->Close();
+                            else if (auto console = std::static_pointer_cast<Ship::ConsoleWindow>(
+                                         Ship::Context::GetRawInstance()->GetWindow()->GetGui()->GetGuiWindow(
+                                             "Console"))) {
+                                console->Dispatch("reset");
+                                Hide();
+                            }
+                        }
+                        ImGui::EndPopup();
+                    }
                 }
-            } else if (active->label == "Warps & travel") {
-                selectedGame = -1;
-            } else if (active->label == "Gameplay rules" || active->label == "Difficulty" || active->label == "Logic & access") {
-                if (seedOptions) { MenuWorldButtons(mRandomizerGame); selectedGame = mRandomizerGame; }
-                else { if (mPreferenceGame) selectedGame = mPreferenceGame - 1;
-                    MenuWorldButtons(selectedGame); mPreferenceGame = selectedGame + 1; }
-            } else if (hasOot || hasMm) {
-                selectedGame = hasOot ? 0 : 1;
-            }
-            int subpage = -1;
-            if (active->label == "Items & checks") {
-                choiceRow("PoolSection", "Checks", "Items", mPoolSection);
-                subpage = mPoolSection;
-            } else if (active->label == "Hints & traps") {
-                choiceRow("HintSection", "Hints", "Traps", mHintSection);
-                subpage = mHintSection;
-            }
-            // Keep world/topic selectors visible while each independent body scrolls.
-            ImGui::PushID(selectedGame);
-            ImGui::PushID(subpage);
-            ImGui::BeginChild("##FeatureOptions", ImVec2(0, 0));
-            if (mResetOptionsScroll) { ImGui::SetScrollY(0.0f); mResetOptionsScroll = false; }
-            ImGui::BeginDisabled(seedOptions&&!ProfileUI::Editable());
-            DrawGameplayRules(seedOptions, active->label, selectedGame, &mRuleFocus);
-            ImGui::EndDisabled();
-            if(!seedOptions) DrawPairedPreferences(active->label);
-            if (mScope == "media" && active->label == "Appearance") DrawCosmeticSync();
-            const auto bodyKey = std::make_pair(selectedGame, subpage);
-            auto body = active->bodies.find(bodyKey);
-            if (body == active->bodies.end()) {
-                HubEntry::Body built;
+                break;
+            default: {
+                if (active->label == "Tricks & glitches") {
+                    ProfileUI::DrawTricks();
+                    break;
+                }
+                if (active->label == "Screen & HUD") {
+                    DrawScreenAndHud();
+                    if (ImGui::Button("Advanced graphics")) {
+                        mScope = "media";
+                        mHubActive = "media/Graphics";
+                    }
+                    break;
+                }
+                bool hasOot = false, hasMm = false;
                 for (const auto& source : active->sources) {
-                    if (source.oot != (selectedGame == 0)) continue;
-                    built.game = source.game;
-                    if (!source.oot && subpage >= 0 &&
-                        RandomizerWidgetGroup(false, source.sidebar->sidebarName, 0, "") != subpage) continue;
-                    AppendFeatureWidgets(source, active->label, subpage, built.widgets, built.columns);
+                    hasOot |= source.oot;
+                    hasMm |= !source.oot;
                 }
-                if (active->label == "Controls" || active->label == "Saving") {
-                    built.columns = 1;
-                    for (auto& widget : built.widgets) widget.column = 0;
-                    std::stable_partition(built.widgets.begin(), built.widgets.end(),
-                        [](const CwWidget& widget) { return widget.kind != CW_CUSTOM; });
+                int selectedGame = ComboUI::GetForegroundGame();
+                const bool seedOptions = mScope == "randomizer";
+                auto choiceRow = [&](const char* id, const char* first, const char* second, int& choice) {
+                    ImGui::PushID(id);
+                    if (ComboMenu_StyledHeaderEntry(first, choice == 0))
+                        choice = 0;
+                    const float need = ImGui::CalcTextSize(second).x + 32.0f;
+                    if (ImGui::GetItemRectMax().x + need + 12.0f <
+                        ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x)
+                        ImGui::SameLine();
+                    if (ComboMenu_StyledHeaderEntry(second, choice == 1))
+                        choice = 1;
+                    ImGui::PopID();
+                };
+                if (seedOptions && active->label == "Logic & access") {
+                    ImGui::BeginDisabled(!ProfileUI::Editable());
+                    DrawCombinedGoals();
+                    ImGui::EndDisabled();
                 }
-                body = active->bodies.emplace(bodyKey, std::move(built)).first;
+                if (hasOot && hasMm) {
+                    if (seedOptions) {
+                        choiceRow("SeedWorld", "Ocarina of Time", "Majora's Mask", mRandomizerGame);
+                        selectedGame = mRandomizerGame;
+                    } else {
+                        if (mPreferenceGame)
+                            selectedGame = mPreferenceGame - 1;
+                        MenuWorldButtons(selectedGame);
+                        mPreferenceGame = selectedGame + 1;
+                    }
+                } else if (active->label == "Warps & travel") {
+                    selectedGame = -1;
+                } else if (active->label == "Gameplay rules" || active->label == "Difficulty" ||
+                           active->label == "Logic & access") {
+                    if (seedOptions) {
+                        MenuWorldButtons(mRandomizerGame);
+                        selectedGame = mRandomizerGame;
+                    } else {
+                        if (mPreferenceGame)
+                            selectedGame = mPreferenceGame - 1;
+                        MenuWorldButtons(selectedGame);
+                        mPreferenceGame = selectedGame + 1;
+                    }
+                } else if (hasOot || hasMm) {
+                    selectedGame = hasOot ? 0 : 1;
+                }
+                int subpage = -1;
+                if (active->label == "Items & checks") {
+                    choiceRow("PoolSection", "Checks", "Items", mPoolSection);
+                    subpage = mPoolSection;
+                } else if (active->label == "Hints & traps") {
+                    choiceRow("HintSection", "Hints", "Traps", mHintSection);
+                    subpage = mHintSection;
+                }
+                // Keep world/topic selectors visible while each independent body scrolls.
+                ImGui::PushID(selectedGame);
+                ImGui::PushID(subpage);
+                ImGui::BeginChild("##FeatureOptions", ImVec2(0, 0));
+                if (mResetOptionsScroll) {
+                    ImGui::SetScrollY(0.0f);
+                    mResetOptionsScroll = false;
+                }
+                ImGui::BeginDisabled(seedOptions && !ProfileUI::Editable());
+                DrawGameplayRules(seedOptions, active->label, selectedGame, &mRuleFocus);
+                ImGui::EndDisabled();
+                if (!seedOptions)
+                    DrawPairedPreferences(active->label);
+                if (mScope == "media" && active->label == "Appearance")
+                    DrawCosmeticSync();
+                const auto bodyKey = std::make_pair(selectedGame, subpage);
+                auto body = active->bodies.find(bodyKey);
+                if (body == active->bodies.end()) {
+                    HubEntry::Body built;
+                    for (const auto& source : active->sources) {
+                        if (source.oot != (selectedGame == 0))
+                            continue;
+                        built.game = source.game;
+                        if (!source.oot && subpage >= 0 &&
+                            RandomizerWidgetGroup(false, source.sidebar->sidebarName, 0, "") != subpage)
+                            continue;
+                        AppendFeatureWidgets(source, active->label, subpage, built.widgets, built.columns);
+                    }
+                    if (active->label == "Controls" || active->label == "Saving") {
+                        built.columns = 1;
+                        for (auto& widget : built.widgets)
+                            widget.column = 0;
+                        std::stable_partition(built.widgets.begin(), built.widgets.end(),
+                                              [](const CwWidget& widget) { return widget.kind != CW_CUSTOM; });
+                    }
+                    body = active->bodies.emplace(bodyKey, std::move(built)).first;
+                }
+                auto& content = body->second;
+                if (content.game) {
+                    const CwSidebar feature = { active->label.c_str(), content.columns, content.widgets.data(),
+                                                (int)content.widgets.size() };
+                    if (seedOptions)
+                        ProfileUI::DrawSidebar(feature, *content.game, selectedGame);
+                    else
+                        RenderSidebarWidgets(feature, *content.game);
+                }
+                ImGui::EndChild();
+                ImGui::PopID();
+                ImGui::PopID();
+                break;
             }
-            auto& content = body->second;
-            if (content.game) {
-                const CwSidebar feature = {active->label.c_str(), content.columns, content.widgets.data(), (int)content.widgets.size()};
-                if(seedOptions)ProfileUI::DrawSidebar(feature,*content.game,selectedGame);
-                else RenderSidebarWidgets(feature, *content.game);
-            }
-            ImGui::EndChild();
-            ImGui::PopID(); ImGui::PopID();
-            break;
-        }
         }
     }
     ImGui::EndDisabled();
@@ -1861,7 +2154,8 @@ void ComboMenu::DrawComboPanel() {
     if (ImGui::InputTextWithHint("Seed", "(blank = random)", mSeedBuf, sizeof(mSeedBuf))) {
         CVarSetString("gGeneral.ComboSeed", mSeedBuf);
     }
-    MenuTooltip("Leave this blank for a new random seed. The same text and settings repeat a seed. Generate before starting a new randomizer file; existing saves keep their original seed.");
+    MenuTooltip("Leave this blank for a new random seed. The same text and settings repeat a seed. Generate before "
+                "starting a new randomizer file; existing saves keep their original seed.");
 
     const ComboRando::ComboGenProgress* p = sGetProgress ? sGetProgress() : nullptr;
     const bool running = p && p->running.load();
@@ -1920,20 +2214,21 @@ void ComboMenu::DrawComboPanel() {
                 ImGui::Text("OOT checks: %d", p->ootCheckCount.load());
                 ImGui::Text("MM checks: %d", p->mmCheckCount.load());
                 ImGui::Text("Cross-game placements: %d", p->foreignCount.load());
-            } else if(p->CancelRequested()) {
+            } else if (p->CancelRequested()) {
                 ImGui::TextUnformatted("Generation cancelled. Change settings or try again when ready.");
             } else {
-                ImGui::TextWrapped("Generation stopped: %s",p->error);
+                ImGui::TextWrapped("Generation stopped: %s", p->error);
             }
         }
     }
     ImGui::Spacing();
-    static const char* goalNames[] = {"Both final bosses", "Triforce Hunt", "Either final boss", "Ganon only", "Majora only", "Triforce Quest"};
-    static const char* worldNames[] = {"Ocarina of Time", "Majora's Mask", "Random"};
-    ImGui::TextWrapped("Starting world: %s. Goal: %s.",
-        worldNames[std::clamp(CVarGetInteger("gCombo.Rando.StartingGame", 0), 0, 2)],
-        goalNames[std::clamp(CVarGetInteger("gCombo.Rando.Goal", CVarGetInteger("gCombo.Rando.TriforceHunt", 0) ? 1 : 0), 0, 5)]);
-
+    static const char* goalNames[] = { "Both final bosses", "Triforce Hunt", "Either final boss",
+                                       "Ganon only",        "Majora only",   "Triforce Quest" };
+    static const char* worldNames[] = { "Ocarina of Time", "Majora's Mask", "Random" };
+    ImGui::TextWrapped(
+        "Starting world: %s. Goal: %s.", worldNames[std::clamp(CVarGetInteger("gCombo.Rando.StartingGame", 0), 0, 2)],
+        goalNames[std::clamp(
+            CVarGetInteger("gCombo.Rando.Goal", CVarGetInteger("gCombo.Rando.TriforceHunt", 0) ? 1 : 0), 0, 5)]);
 }
 
 } // namespace ComboRando

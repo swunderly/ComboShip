@@ -43,9 +43,9 @@ void Rando::ActorBehavior::InitEnGb2Behavior() {
             return;
         }
 
-        std::string checkItemName =
-            Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART].randoItemId,
-                                           true, RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART);
+        std::string checkItemName = Rando::StaticData::GetRevealedItemName(
+            RANDO_SAVE_CHECKS[RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART].randoItemId, true,
+            RC_IKANA_CANYON_GHOST_HUT_PIECE_OF_HEART);
 
         auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
         entry.msg = "If you are seeking the one who is\n";

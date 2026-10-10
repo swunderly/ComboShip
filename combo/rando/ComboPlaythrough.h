@@ -27,21 +27,26 @@ namespace ComboRando {
 // Shared Items mirror: pushes newly-owed mmOwned copies per ootOwned's count; `given` tracks what's
 // already pushed so repeat calls don't duplicate.
 inline void ApplySharedMirror(uint32_t sharedMask, std::vector<std::string>& ootOwned,
-                              std::vector<std::string>& mmOwned, size_t (&given)[SF_COUNT], bool fairyOcarinaMm = false) {
+                              std::vector<std::string>& mmOwned, size_t (&given)[SF_COUNT],
+                              bool fairyOcarinaMm = false) {
     if (sharedMask == 0)
         return;
     MirrorSharedSingletons(sharedMask, ootOwned, mmOwned);
-    if (sharedMask & (1u << SF_OCARINA)) MirrorSharedOcarina(ootOwned, mmOwned, fairyOcarinaMm);
+    if (sharedMask & (1u << SF_OCARINA))
+        MirrorSharedOcarina(ootOwned, mmOwned, fairyOcarinaMm);
     for (int i = 0; i < SF_COUNT; ++i) {
         if (!(sharedMask & (1u << i)))
             continue;
-        if (i == SF_OCARINA) continue;
+        if (i == SF_OCARINA)
+            continue;
         const auto& def = SharedFamilyByIndex(i);
         if (!def.mmHasItem)
             continue; // nothing to push; MM logic doesn't need it
         size_t k = static_cast<size_t>(std::count(ootOwned.begin(), ootOwned.end(), std::string(def.ootName)));
         size_t target = std::min<size_t>(k, static_cast<size_t>(def.mmTierCap));
-        for (size_t n = std::max(given[i], static_cast<size_t>(std::count(mmOwned.begin(), mmOwned.end(), std::string(def.mmName)))); n < target; ++n)
+        for (size_t n = std::max(
+                 given[i], static_cast<size_t>(std::count(mmOwned.begin(), mmOwned.end(), std::string(def.mmName))));
+             n < target; ++n)
             mmOwned.push_back(def.mmName);
         given[i] = target;
     }
@@ -155,9 +160,10 @@ inline std::unordered_set<std::string> QueryReachable(const OracleFns& o, const 
     return out;
 }
 
-inline std::unordered_set<std::string> QueryReachableWithMmStock(
-    const OracleFns& o, const std::vector<std::string>& owned, bool isMm,
-    const std::vector<CwPlacedItem>& placements, const std::unordered_set<size_t>& excluded = {}) {
+inline std::unordered_set<std::string> QueryReachableWithMmStock(const OracleFns& o,
+                                                                 const std::vector<std::string>& owned, bool isMm,
+                                                                 const std::vector<CwPlacedItem>& placements,
+                                                                 const std::unordered_set<size_t>& excluded = {}) {
     CheckGenerationCancellation();
     o.Reset();
     o.SetOwnedItems(nlohmann::json(owned).dump().c_str());
@@ -170,7 +176,8 @@ inline std::unordered_set<std::string> QueryReachableWithMmStock(
         }
     }
     std::unordered_set<std::string> out;
-    for (const auto& name : nlohmann::json::parse(o.GetReachableChecks())) out.insert(name.get<std::string>());
+    for (const auto& name : nlohmann::json::parse(o.GetReachableChecks()))
+        out.insert(name.get<std::string>());
     return out;
 }
 
@@ -279,20 +286,24 @@ struct PathTarget {
 // hinted only if a collected-inventory baseline actually reaches it.
 inline const std::vector<PathTarget>& HintPathTargets() {
     static const std::vector<PathTarget> targets = {
-        {GAME_OOT, "Queen Gohma", "Queen Gohma"}, {GAME_OOT, "King Dodongo", "King Dodongo"},
-        {GAME_OOT, "Barinade", "Barinade"}, {GAME_OOT, "Phantom Ganon", "Phantom Ganon"},
-        {GAME_OOT, "Volvagia", "Volvagia"}, {GAME_OOT, "Morpha", "Morpha"},
-        {GAME_OOT, "Twinrova", "Twinrova"}, {GAME_OOT, "Bongo Bongo", "Bongo Bongo"},
-        {GAME_OOT, "Ganon", "Ganon"},
-        {GAME_MM, "Woodfall Temple Boss Warp", "Odolwa"},
-        {GAME_MM, "Snowhead Temple Boss Warp", "Goht"},
-        {GAME_MM, "Great Bay Temple Boss Warp", "Gyorg"},
-        {GAME_MM, "Stone Tower Temple Inverted Boss Warp", "Twinmold"},
-        {GAME_MM, "Defeat Majora", "Majora"},
-        {GAME_OOT, "Ocarina of Time Item", "Zelda's escape"},
-        {GAME_OOT, kNamedTriforcePieces[0], "Triforce of Power", true},
-        {GAME_OOT, kNamedTriforcePieces[1], "Triforce of Courage", true},
-        {GAME_OOT, kNamedTriforcePieces[2], "Triforce of Wisdom", true},
+        { GAME_OOT, "Queen Gohma", "Queen Gohma" },
+        { GAME_OOT, "King Dodongo", "King Dodongo" },
+        { GAME_OOT, "Barinade", "Barinade" },
+        { GAME_OOT, "Phantom Ganon", "Phantom Ganon" },
+        { GAME_OOT, "Volvagia", "Volvagia" },
+        { GAME_OOT, "Morpha", "Morpha" },
+        { GAME_OOT, "Twinrova", "Twinrova" },
+        { GAME_OOT, "Bongo Bongo", "Bongo Bongo" },
+        { GAME_OOT, "Ganon", "Ganon" },
+        { GAME_MM, "Woodfall Temple Boss Warp", "Odolwa" },
+        { GAME_MM, "Snowhead Temple Boss Warp", "Goht" },
+        { GAME_MM, "Great Bay Temple Boss Warp", "Gyorg" },
+        { GAME_MM, "Stone Tower Temple Inverted Boss Warp", "Twinmold" },
+        { GAME_MM, "Defeat Majora", "Majora" },
+        { GAME_OOT, "Ocarina of Time Item", "Zelda's escape" },
+        { GAME_OOT, kNamedTriforcePieces[0], "Triforce of Power", true },
+        { GAME_OOT, kNamedTriforcePieces[1], "Triforce of Courage", true },
+        { GAME_OOT, kNamedTriforcePieces[2], "Triforce of Wisdom", true },
     };
     return targets;
 }
@@ -335,18 +346,23 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
 
     // Cache the complete two-world probe. Song access depends on BOTH inventories
     // and whether MM is already reachable; per-engine inventory caches lose those edges.
-    struct SongReachMemo { ReachSet oot, mm; bool mmOpen; };
+    struct SongReachMemo {
+        ReachSet oot, mm;
+        bool mmOpen;
+    };
     std::unordered_map<std::string, SongReachMemo> songMemo;
     std::unordered_set<size_t> stockSensitive;
-    const auto sourceMetadata = nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson)
-                                    .value("beanSources", nlohmann::json::object());
+    const auto sourceMetadata =
+        nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("beanSources", nlohmann::json::object());
     for (size_t i = 0; i < placements.size(); ++i) {
-        if (placements[i].checkGame != GAME_MM) continue;
+        if (placements[i].checkGame != GAME_MM)
+            continue;
         const auto source = sourceMetadata.find(placements[i].check);
         // Without metadata, keep the conservative cache separation. With a
         // native dump, only renewable stock can change the resource search;
         // excluding ordinary rewards is already reflected in owned inventory.
-        if (source == sourceMetadata.end() || source->value("renewable", false)) stockSensitive.insert(i);
+        if (source == sourceMetadata.end() || source->value("renewable", false))
+            stockSensitive.insert(i);
     }
 
     // Excludes a SET of placements from ever crediting their items, then sphere-collects everything
@@ -355,7 +371,9 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
     auto winsWithout = [&](const std::unordered_set<size_t>& excludeIdx, std::vector<char>* creditedOut,
                            uint64_t* pathsOut) {
         std::vector<size_t> excludedKey;
-        for (const auto index : excludeIdx) if (stockSensitive.count(index)) excludedKey.push_back(index);
+        for (const auto index : excludeIdx)
+            if (stockSensitive.count(index))
+                excludedKey.push_back(index);
         std::sort(excludedKey.begin(), excludedKey.end());
         auto queryWithStock = [&](const OracleFns& o, const std::vector<std::string>& owned) {
             return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements, excludeIdx);
@@ -366,37 +384,46 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
         ReachSet ootReach, mmReach;
         bool won = false;
         uint64_t paths = 0;
-        size_t sharedGiven[SF_COUNT] = {0};
+        size_t sharedGiven[SF_COUNT] = { 0 };
         // Latched: MM stays open once OOT can reach the Happy Mask Shop. Ungated (NO_LOGIC) = open,
         // and an MM start (#135) roots MM from the beginning.
         bool portalOpen = !portalGated || mmStart;
         for (;;) {
             CheckGenerationCancellation();
-            ApplySharedMirror(sharedMask, ootOwned, mmOwned, sharedGiven, nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
-            const std::string key=nlohmann::json::array({CanonicalOwnedKey(ootOwned),
-                CanonicalOwnedKey(mmOwned),portalOpen,excludedKey}).dump();
-            auto memo=songMemo.find(key);
-            if(memo==songMemo.end()) {
+            ApplySharedMirror(
+                sharedMask, ootOwned, mmOwned, sharedGiven,
+                nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+            const std::string key = nlohmann::json::array({ CanonicalOwnedKey(ootOwned), CanonicalOwnedKey(mmOwned),
+                                                            portalOpen, excludedKey })
+                                        .dump();
+            auto memo = songMemo.find(key);
+            if (memo == songMemo.end()) {
                 // Requiredness probes share prefixes, but unique counterfactual inventories
                 // must not retain full two-world reachability sets for every candidate.
                 // Eviction only repeats the identical oracle query; it changes no rule.
                 constexpr size_t kMaxSongReachMemoEntries = 128;
-                if (songMemo.size() >= kMaxSongReachMemoEntries) songMemo.clear();
-                auto worlds=QuerySongWorlds(ootOracle,mmOracle,ootOwned,mmOwned,portalOpen,queryWithStock);
-                SongReachMemo value{std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.first)),
-                    std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.second)),portalOpen};
-                memo=songMemo.emplace(key,std::move(value)).first;
+                if (songMemo.size() >= kMaxSongReachMemoEntries)
+                    songMemo.clear();
+                auto worlds = QuerySongWorlds(ootOracle, mmOracle, ootOwned, mmOwned, portalOpen, queryWithStock);
+                SongReachMemo value{ std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.first)),
+                                     std::make_shared<const std::unordered_set<std::string>>(std::move(worlds.second)),
+                                     portalOpen };
+                memo = songMemo.emplace(key, std::move(value)).first;
             }
-            ootReach=memo->second.oot; mmReach=memo->second.mm; portalOpen=memo->second.mmOpen;
+            ootReach = memo->second.oot;
+            mmReach = memo->second.mm;
+            portalOpen = memo->second.mmOpen;
             won |= goalReached(*ootReach, *mmReach, ootOwned, mmOwned);
             const auto& targets = HintPathTargets();
             for (size_t i = 0; i < targets.size(); ++i) {
                 const auto& reach = targets[i].game == GAME_OOT ? *ootReach : *mmReach;
-                const bool reached = targets[i].namedItem
-                    ? (std::find(ootOwned.begin(), ootOwned.end(), targets[i].check) != ootOwned.end() ||
-                       std::find(mmOwned.begin(), mmOwned.end(), targets[i].check) != mmOwned.end())
-                    : reach.count(targets[i].check) != 0;
-                if (reached) paths |= uint64_t{1} << i;
+                const bool reached =
+                    targets[i].namedItem
+                        ? (std::find(ootOwned.begin(), ootOwned.end(), targets[i].check) != ootOwned.end() ||
+                           std::find(mmOwned.begin(), mmOwned.end(), targets[i].check) != mmOwned.end())
+                        : reach.count(targets[i].check) != 0;
+                if (reached)
+                    paths |= uint64_t{ 1 } << i;
             }
             bool changed = false;
             for (size_t i = 0; i < placements.size(); ++i) {
@@ -417,7 +444,8 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
             won = goalReached(*ootReach, *mmReach, ootOwned, mmOwned);
         if (creditedOut)
             *creditedOut = std::move(credited);
-        if (pathsOut) *pathsOut = paths;
+        if (pathsOut)
+            *pathsOut = paths;
         return won;
     };
 
@@ -466,7 +494,8 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
         classified[i] = winsWithout({ i }, nullptr, &remainingPaths) ? 0 : 1;
         auto lostPaths = basePaths & ~remainingPaths;
         for (size_t t = 0; t < HintPathTargets().size(); ++t) {
-            if (!(lostPaths & (uint64_t{1} << t))) continue;
+            if (!(lostPaths & (uint64_t{ 1 } << t)))
+                continue;
             const std::string label = HintPathTargets()[t].label;
             const auto& p = placements[i];
             result.pathsByCheck[checkKey(p)].push_back(label);
@@ -474,7 +503,8 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
             auto area = areas.find(p.check);
             if (area != areas.end()) {
                 auto& labels = result.pathsByArea[(p.checkGame == GAME_OOT ? "oot:" : "mm:") + area->second];
-                if (std::find(labels.begin(), labels.end(), label) == labels.end()) labels.push_back(label);
+                if (std::find(labels.begin(), labels.end(), label) == labels.end())
+                    labels.push_back(label);
             }
         }
         if (progress)
@@ -563,13 +593,16 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
     bool portalOpen = !portalGated || mmStart;
     size_t sharedGiven[SF_COUNT] = { 0 };
     for (int sphere = 0; sphere < kMaxSpheres; ++sphere) {
-        ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven, nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
-        auto worlds=QuerySongWorlds(ootOracle,mmOracle,ownedOot,ownedMm,portalOpen,queryReachable);
-        auto& ootReach=worlds.first; auto& mmReach=worlds.second;
+        ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven,
+                          nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+        auto worlds = QuerySongWorlds(ootOracle, mmOracle, ownedOot, ownedMm, portalOpen, queryReachable);
+        auto& ootReach = worlds.first;
+        auto& mmReach = worlds.second;
         bool canGanon = ootReach.count(kOotGanon) > 0;
         bool canMajora = mmReach.count(kMmWin) > 0;
         if (CwGoalReached(goal, canGanon, canMajora, ownedOot, ownedMm)) {
-            if (beatableSphere < 0) beatableSphere = sphere;
+            if (beatableSphere < 0)
+                beatableSphere = sphere;
             // Continue collecting to a fixed point. Winning does not prove optional
             // checks accessible, and assuming all placed items would hide circular locks.
         }
@@ -584,7 +617,8 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
                 newly.push_back(p);
         }
         if (newly.empty()) {
-            log << "Sphere " << sphere << (beatableSphere < 0 ? ": (stuck before the goal)\n" : ": (collected fixed point after the goal)\n");
+            log << "Sphere " << sphere
+                << (beatableSphere < 0 ? ": (stuck before the goal)\n" : ": (collected fixed point after the goal)\n");
             break;
         }
         size_t newlyAdv = 0;
@@ -623,9 +657,11 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
 
     // Reachability after collecting only checks that actually opened from the empty start.
     // Never grant the contents of inaccessible checks to prove those same checks accessible.
-    ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven, nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
-    auto everWorlds=QuerySongWorlds(ootOracle,mmOracle,ownedOot,ownedMm,portalOpen,queryReachable);
-    auto& everReachOot=everWorlds.first; auto& everReachMm=everWorlds.second;
+    ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven,
+                      nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+    auto everWorlds = QuerySongWorlds(ootOracle, mmOracle, ownedOot, ownedMm, portalOpen, queryReachable);
+    auto& everReachOot = everWorlds.first;
+    auto& everReachMm = everWorlds.second;
     result.ganonReachable = everReachOot.count(kOotGanon) > 0;
     result.majoraReachable = everReachMm.count(kMmWin) > 0;
     if (goal.hunt) {
@@ -635,7 +671,6 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
                 ++result.piecesReachable;
             }
         }
-
     }
 
     if (mmRestore)
@@ -645,7 +680,8 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
         log << "\nBEATABLE at sphere " << beatableSphere << ": " << goal.required
             << " Triforce Pieces collected. Seed is completable.\n";
     } else if (beatableSphere >= 0) {
-        log << "\nBEATABLE at sphere " << beatableSphere << ": combined goal " << CwGoalName(goal) << " reached. Seed is completable.\n";
+        log << "\nBEATABLE at sphere " << beatableSphere << ": combined goal " << CwGoalName(goal)
+            << " reached. Seed is completable.\n";
     } else {
         log << "\nNOT proven beatable within " << kMaxSpheres << " spheres (see stuck note above).\n";
     }
@@ -687,7 +723,8 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
     std::cout << "[PLAYTHROUGH] seed '" << seedLabel << "' - " << (beatableSphere >= 0 ? "BEATABLE" : "NOT beatable")
               << (beatableSphere >= 0 ? (" at sphere " + std::to_string(beatableSphere)) : "") << "\n";
     std::cout << "[PLAYTHROUGH] collected " << collected.size() << " items across "
-              << (beatableSphere >= 0 ? beatableSphere : kMaxSpheres) << " spheres through the reachability fixed point\n";
+              << (beatableSphere >= 0 ? beatableSphere : kMaxSpheres)
+              << " spheres through the reachability fixed point\n";
 
     result.beatable = beatableSphere >= 0;
     result.beatableSphere = beatableSphere;

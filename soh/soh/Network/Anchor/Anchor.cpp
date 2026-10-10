@@ -369,9 +369,14 @@ void Anchor::RequestResyncDormantSafe() {
 
 void Anchor::SendSnapshotDormantSafe() {
     const bool previous = isDormantApply;
-    if (gPlayState == nullptr) isDormantApply = true;
-    try { SendPacket_UpdateTeamState(); }
-    catch (...) { isDormantApply = previous; throw; }
+    if (gPlayState == nullptr)
+        isDormantApply = true;
+    try {
+        SendPacket_UpdateTeamState();
+    } catch (...) {
+        isDormantApply = previous;
+        throw;
+    }
     isDormantApply = previous;
 }
 #endif

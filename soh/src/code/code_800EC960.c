@@ -12,13 +12,10 @@ extern int Combo_SOHForeignSongPerformanceActive(void);
 // Native MM Soaring melody; a dedicated table preserves OoT's warp songs.
 static OcarinaNote sComboSoaringNotes[20] = {
 
-        { OCARINA_PITCH_F4, 18, 84, 0, 0, 0 },
-        { OCARINA_PITCH_B4, 18, 80, 0, 0, 0 },
-        { OCARINA_PITCH_D5, 36, 94, 0, 0, 0 },
-        { OCARINA_PITCH_F4, 18, 73, 0, 0, 0 },
-        { OCARINA_PITCH_B4, 18, 76, 0, 0, 0 },
-        { OCARINA_PITCH_D5, 108, 96, 2, 0, 0 },
-        { OCARINA_PITCH_NONE, 0, 90, 0, 0, 0 },
+    { OCARINA_PITCH_F4, 18, 84, 0, 0, 0 },  { OCARINA_PITCH_B4, 18, 80, 0, 0, 0 },
+    { OCARINA_PITCH_D5, 36, 94, 0, 0, 0 },  { OCARINA_PITCH_F4, 18, 73, 0, 0, 0 },
+    { OCARINA_PITCH_B4, 18, 76, 0, 0, 0 },  { OCARINA_PITCH_D5, 108, 96, 2, 0, 0 },
+    { OCARINA_PITCH_NONE, 0, 90, 0, 0, 0 },
 };
 #endif
 
@@ -2121,9 +2118,8 @@ void AudioOcarina_PlaybackSong(void) {
             } else {
                 // The graph thread may miss several audio tasks. Excess elapsed ticks
                 // must not wrap the unsigned next-note timer into a multi-year wait.
-                sPlaybackNoteTimer = nextNoteTimerStep < sPlaybackNoteTimer
-                                         ? sPlaybackNoteTimer - nextNoteTimerStep
-                                         : 0;
+                sPlaybackNoteTimer =
+                    nextNoteTimerStep < sPlaybackNoteTimer ? sPlaybackNoteTimer - nextNoteTimerStep : 0;
             }
 
             // Update volume

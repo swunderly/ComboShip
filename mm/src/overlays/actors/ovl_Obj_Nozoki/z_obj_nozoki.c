@@ -439,7 +439,10 @@ void func_80BA3230(ObjNozoki* this, PlayState* play) {
 }
 
 #ifdef COMBO_BUILD
-static void ComboObjNozokiNoop(ObjNozoki* this, PlayState* play){(void)this;(void)play;}
+static void ComboObjNozokiNoop(ObjNozoki* this, PlayState* play) {
+    (void)this;
+    (void)play;
+}
 #endif
 void func_80BA3344(ObjNozoki* this, PlayState* play) {
     if ((play->curSpawn == 3) && !CHECK_WEEKEVENTREG(WEEKEVENTREG_64_40)) {

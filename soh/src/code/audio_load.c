@@ -856,7 +856,8 @@ void* AudioLoad_SearchCaches(s32 tableType, s32 id) {
     // Foreign scores/samples are owned by their private resource manager; they
     // already reside in RAM and must not exhaust the N64 permanent audio pool.
     ret = Combo_SOHWarpAudioCache(tableType, id);
-    if (ret != NULL) return ret;
+    if (ret != NULL)
+        return ret;
 #endif
 
     ret = AudioHeap_SearchPermanentCache(tableType, id);

@@ -4,7 +4,7 @@
 namespace ComboRando::Entrances {
 // Exact native source/arrival matches, including unsupported typed-context rows.
 // Keeping those areas visible makes the solver reject unsupported eligible records.
-inline constexpr std::array<std::string_view,187> kMmOrdinaryNativeAreas = {
+inline constexpr std::array<std::string_view, 187> kMmOrdinaryNativeAreas = {
     "MM Ancient Castle of Ikana",
     "MM Ancient Castle of Ikana Interior South",
     "MM Ancient Castle of Ikana Roof Interior",
@@ -193,5 +193,10 @@ inline constexpr std::array<std::string_view,187> kMmOrdinaryNativeAreas = {
     "MM Zora Hall Entrance",
     "MM Zora Shop",
 };
-inline bool MmOrdinaryNativeAreaExists(std::string_view area){for(auto value:kMmOrdinaryNativeAreas)if(value==area)return true;return false;}
+inline bool MmOrdinaryNativeAreaExists(std::string_view area) {
+    for (auto value : kMmOrdinaryNativeAreas)
+        if (value == area)
+            return true;
+    return false;
 }
+} // namespace ComboRando::Entrances

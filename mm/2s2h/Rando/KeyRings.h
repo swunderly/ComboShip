@@ -43,7 +43,9 @@ inline constexpr KeyRingDefinition keyRings[] = {
     { RI_STONE_TOWER_KEY_RING, RI_STONE_TOWER_SMALL_KEY, RO_KEY_RING_STONE_TOWER, 3, 4 },
 };
 inline const KeyRingDefinition* FindKeyRing(RandoItemId item) {
-    for (const auto& ring : keyRings) if (ring.ring == item) return &ring;
+    for (const auto& ring : keyRings)
+        if (ring.ring == item)
+            return &ring;
     return nullptr;
 }
 // Found keys represent lifetime collection, including keys already spent on doors.
@@ -79,10 +81,12 @@ inline void ReplaceKeyRingPool(const Options& options, const std::vector<RandoIt
                                std::vector<RandoItemId>& pool) {
     for (const auto& ring : keyRings) {
         const bool startsWithRing = std::find(starting.begin(), starting.end(), ring.ring) != starting.end();
-        if (!options[ring.option] && !startsWithRing) continue;
+        if (!options[ring.option] && !startsWithRing)
+            continue;
         const auto oldSize = pool.size();
         pool.erase(std::remove(pool.begin(), pool.end(), ring.key), pool.end());
-        if (!startsWithRing && pool.size() != oldSize) pool.push_back(ring.ring);
+        if (!startsWithRing && pool.size() != oldSize)
+            pool.push_back(ring.ring);
     }
 }
-}
+} // namespace Rando

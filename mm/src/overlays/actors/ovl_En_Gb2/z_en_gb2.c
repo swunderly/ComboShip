@@ -7,9 +7,9 @@
 #include "z_en_gb2.h"
 #ifdef COMBO_BUILD
 #include "rando/MmGhostHutRules.h"
-#define ENGB2_HAS_ENOUGH_HEALTH \
+#define ENGB2_HAS_ENOUGH_HEALTH                                            \
     ComboMmGhostHutHasHealth(gSaveContext.save.saveInfo.playerData.health, \
-                            gSaveContext.save.shipSaveInfo.saveType == SAVETYPE_RANDO)
+                             gSaveContext.save.shipSaveInfo.saveType == SAVETYPE_RANDO)
 #else
 #define ENGB2_HAS_ENOUGH_HEALTH (gSaveContext.save.saveInfo.playerData.health > 0x30)
 #endif

@@ -21,7 +21,7 @@ void MagicWind_FadeOut(MagicWind* this, PlayState* play);
 void MagicWind_WaitAtFullSize(MagicWind* this, PlayState* play);
 void MagicWind_Grow(MagicWind* this, PlayState* play);
 
-static const ALIGN_ASSET(2) char sComboWindTexture[]="__OTR__@oot:overlays/ovl_Magic_Wind/sTex";
+static const ALIGN_ASSET(2) char sComboWindTexture[] = "__OTR__@oot:overlays/ovl_Magic_Wind/sTex";
 static Vtx sCylinderVtx[36] = {
 #include "sCylinderVtx.vtx.inc"
 };
@@ -30,10 +30,10 @@ static Gfx sInnerCylinderDL[33] = {
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_NONE),
     gsSPTexture(0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON),
-    gsDPLoadTextureBlock((uintptr_t)sComboWindTexture, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP,
-                         6, 6, G_TX_NOLOD, G_TX_NOLOD),
-    gsDPLoadMultiBlock((uintptr_t)sComboWindTexture, 0x0100, 1, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR |
-                       G_TX_WRAP, 6, 6, 14, 14),
+    gsDPLoadTextureBlock((uintptr_t)sComboWindTexture, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0, G_TX_NOMIRROR | G_TX_WRAP,
+                         G_TX_NOMIRROR | G_TX_WRAP, 6, 6, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadMultiBlock((uintptr_t)sComboWindTexture, 0x0100, 1, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0,
+                       G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, 6, 6, 14, 14),
     gsDPSetCombineLERP(TEXEL1, PRIMITIVE, PRIM_LOD_FRAC, TEXEL0, TEXEL1, TEXEL0, PRIM_LOD_FRAC, TEXEL0, PRIMITIVE,
                        ENVIRONMENT, COMBINED, ENVIRONMENT, COMBINED, 0, SHADE, 0),
     gsDPSetRenderMode(G_RM_PASS, G_RM_AA_ZB_XLU_SURF2),
@@ -57,10 +57,10 @@ static Gfx sOuterCylinderDL[33] = {
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_NONE),
     gsSPTexture(0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON),
-    gsDPLoadTextureBlock((uintptr_t)sComboWindTexture, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP,
-                         6, 6, G_TX_NOLOD, G_TX_NOLOD),
-    gsDPLoadMultiBlock((uintptr_t)sComboWindTexture, 0x0100, 1, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR |
-                       G_TX_WRAP, 6, 6, 15, 15),
+    gsDPLoadTextureBlock((uintptr_t)sComboWindTexture, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0, G_TX_NOMIRROR | G_TX_WRAP,
+                         G_TX_NOMIRROR | G_TX_WRAP, 6, 6, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadMultiBlock((uintptr_t)sComboWindTexture, 0x0100, 1, G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0,
+                       G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, 6, 6, 15, 15),
     gsDPSetCombineLERP(TEXEL1, PRIMITIVE, PRIM_LOD_FRAC, TEXEL0, TEXEL1, TEXEL0, PRIM_LOD_FRAC, TEXEL0, PRIMITIVE,
                        ENVIRONMENT, COMBINED, ENVIRONMENT, COMBINED, 0, SHADE, 0),
     gsDPSetRenderMode(G_RM_PASS, G_RM_AA_ZB_XLU_SURF2),
@@ -81,17 +81,12 @@ static Gfx sOuterCylinderDL[33] = {
 };
 
 static u8 ovl_Magic_WindCurveAnime_Ref_001BD0[27] = {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
 static s16 ovl_Magic_WindCurveAnime_Copy_001BEC[25] = {
-      1024,   1024,   1024,      0,      0,      0,      0,      0,
-         0,    512,    512,      0,      0,      0,      0,      0,
-         0,    717,    717,      0,      0,      0,      0,      0,
-         0,
+    1024, 1024, 1024, 0, 0, 0, 0, 0, 0, 512, 512, 0, 0, 0, 0, 0, 0, 717, 717, 0, 0, 0, 0, 0, 0,
 };
 
 static CurveInterpKnot ovl_Magic_WindCurveAnime_CurveInterpKnot_001C20[4] = {
@@ -101,27 +96,15 @@ static CurveInterpKnot ovl_Magic_WindCurveAnime_CurveInterpKnot_001C20[4] = {
     { 0x0014, 0x003C, 0, 0, 1.000000f },
 };
 
-static CurveAnimationHeader sAnim = {
-    ovl_Magic_WindCurveAnime_Ref_001BD0,
-    ovl_Magic_WindCurveAnime_CurveInterpKnot_001C20,
-    ovl_Magic_WindCurveAnime_Copy_001BEC,
-    1, 60
-};
+static CurveAnimationHeader sAnim = { ovl_Magic_WindCurveAnime_Ref_001BD0,
+                                      ovl_Magic_WindCurveAnime_CurveInterpKnot_001C20,
+                                      ovl_Magic_WindCurveAnime_Copy_001BEC, 1, 60 };
 
-static SkelCurveLimb sRootLimb = {
-    0x01, LIMB_DONE,
-    { NULL, NULL }
-};
+static SkelCurveLimb sRootLimb = { 0x01, LIMB_DONE, { NULL, NULL } };
 
-static SkelCurveLimb sInnerCylinderLimb = {
-    LIMB_DONE, 0x02,
-    { NULL, sInnerCylinderDL }
-};
+static SkelCurveLimb sInnerCylinderLimb = { LIMB_DONE, 0x02, { NULL, sInnerCylinderDL } };
 
-static SkelCurveLimb sOuterCylinderLimb = {
-    LIMB_DONE, LIMB_DONE,
-    { NULL, sOuterCylinderDL }
-};
+static SkelCurveLimb sOuterCylinderLimb = { LIMB_DONE, LIMB_DONE, { NULL, sOuterCylinderDL } };
 
 static SkelCurveLimb* sSkelLimbs[3] = {
     &sRootLimb,
@@ -129,9 +112,7 @@ static SkelCurveLimb* sSkelLimbs[3] = {
     &sOuterCylinderLimb,
 };
 
-static CurveSkeletonHeader sSkel = {
-    sSkelLimbs, ARRAY_COUNT(sSkelLimbs)
-};
+static CurveSkeletonHeader sSkel = { sSkelLimbs, ARRAY_COUNT(sSkelLimbs) };
 
 static u8 sAlphaUpdVals[] = {
     0x00, 0x03, 0x04, 0x07, 0x09, 0x0A, 0x0D, 0x0F, 0x11, 0x12, 0x15, 0x16, 0x19, 0x1B, 0x1C, 0x1F, 0x21, 0x23,
@@ -146,7 +127,8 @@ void MagicWind_Init(Actor* thisx, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
     if (!Combo_MMFarorePrepareResources() || !SkelCurve_Init(play, &this->skelCurve, &sSkel, &sAnim)) {
-        Actor_Kill(thisx); return;
+        Actor_Kill(thisx);
+        return;
     }
     this->actor.room = -1;
     switch (this->actor.params) {
@@ -228,7 +210,8 @@ void MagicWind_Update(Actor* thisx, PlayState* play) {
     /* See `ACTOROVL_ALLOC_ABSOLUTE` */
     /*! @bug This condition is too broad, the actor will also be killed by warp songs. But warp songs do not use an */
     /*! actor which uses `ACTOROVL_ALLOC_ABSOLUTE`. There is no reason to kill the actor in this case. */
-    /* if ((play->msgCtx.msgMode == MSGMODE_OCARINA_CORRECT_PLAYBACK) || (play->msgCtx.msgMode == MSGMODE_SONG_PLAYED)) { */
+    /* if ((play->msgCtx.msgMode == MSGMODE_OCARINA_CORRECT_PLAYBACK) || (play->msgCtx.msgMode == MSGMODE_SONG_PLAYED))
+     * { */
     /*     Actor_Kill(thisx); */
     /*     return; */
     /* } */
@@ -236,8 +219,7 @@ void MagicWind_Update(Actor* thisx, PlayState* play) {
     this->actionFunc(this, play);
 }
 
-s32 MagicWind_OverrideLimbDraw(PlayState* play, SkelCurve* skelCurve, s32 limbIndex, Actor* thisx)
-{
+s32 MagicWind_OverrideLimbDraw(PlayState* play, SkelCurve* skelCurve, s32 limbIndex, Actor* thisx) {
     OPEN_DISPS(play->state.gfxCtx);
 
     if (limbIndex == 1) {
@@ -288,7 +270,5 @@ ActorProfile Combo_Magic_Wind_Profile = {
     (ActorFunc)MagicWind_Draw,
     NULL,
 };
-
-
 
 #endif

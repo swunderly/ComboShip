@@ -133,8 +133,9 @@ inline ComboForeignResolve ComboFillForeignDrawInfo(RandomizerCheck rc, int slot
         }
         // A MM-owned item may deliberately reuse OOT assets (Fairy Ocarina).
         // Preserve the recipe's explicit owner instead of creating @mm:@oot nesting.
-        info.dls[i] = ComboInternRoutedPath(p[sizeof(kOtrPrefix) - 1] == '@' ? std::string(p) :
-                                         std::string("__OTR__@mm:") + (p + sizeof(kOtrPrefix) - 1));
+        info.dls[i] = ComboInternRoutedPath(p[sizeof(kOtrPrefix) - 1] == '@'
+                                                ? std::string(p)
+                                                : std::string("__OTR__@mm:") + (p + sizeof(kOtrPrefix) - 1));
     }
     info.count = n;
     info.xluStart = raw.xluStartIndex;
