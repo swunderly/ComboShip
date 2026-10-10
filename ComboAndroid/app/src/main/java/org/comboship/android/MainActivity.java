@@ -367,7 +367,8 @@ public final class MainActivity extends Activity {
             .setMessage((existing?"This folder's saves will become the active copy. Other copies will be preserved.":
                 "Saves, settings, ROMs, and mods will be copied and verified. The current copy will be preserved.")+"\n\n"+destination)
             .setPositiveButton(existing?"Use existing":"Copy and switch",(d,w)->execute("Preparing data location…",()->{
-                StorageLocations.select(this,root!=null?root:StorageLocations.previous(this),destination,existing);
+                // Only a copy needs the old location, so a removed SD card cannot block switching to existing data.
+                StorageLocations.select(this,root!=null || existing?root:StorageLocations.previous(this),destination,existing);
                 root=DataFiles.root(this);storageAccessRequired=false;supportReady=false;
                 try(DataLock ignored=new DataLock(root)) {
                     DataFiles.installSupport(this,root);supportInstalled();

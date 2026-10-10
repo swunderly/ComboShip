@@ -96,7 +96,9 @@ public final class StorageLocations {
             try(DataLock ignored=new DataLock(target)){saveSelection(context,target);}
             return;
         }
-        if(source==null)throw new IOException("Reinsert the selected SD card to copy its data, or select a location that already contains Combo Ship data.");
+        // previous() throws for an unavailable saved location, so no source means nothing was ever set up.
+        if(source==null)throw new IOException("There is no Combo Ship data to copy yet. New installs start in Internal storage / ComboShip: "+
+            "allow file access to set it up, then other locations can be chosen here.");
         try(DataLock ignored=new DataLock(source)) {
             StorageCopy.prepare(source,target,staging->DataFiles.rebaseSettings(staging,source,target));
             mark(target);saveSelection(context,target);
