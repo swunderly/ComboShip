@@ -159,6 +159,49 @@ bool ResolveGrotto(CE::Key source, PlayState* play) {
     play->nextEntrance = entrance;
     return true;
 }
+bool MixedGrottoSource(uint32_t logicalId) {
+    for (const auto& row : CE::kMmGrottoGraphBindings)
+        if (row.logicalId == logicalId)
+            return true;
+    return false;
+}
+// Returns -1, with nothing written, when the destination cannot be entered.
+int ResolveMixed(uint32_t logicalId, int previousScene, PlayState* play) {
+    const auto destination = CE::ActiveMmMixed().destination(logicalId);
+    const int age = MM_GetEffectiveHumanAge(gSaveContext.fileNum);
+    if (age < 0 || !MM_CanEntranceArrival(gSaveContext.fileNum, destination, age, 0)) {
+        SPDLOG_ERROR("[ComboShip] Owning MM mixed arrival rejected source {:08x} destination {:08x}", logicalId,
+                     destination);
+        return -1;
+    }
+    try {
+        auto previous = previousScene == SCENE_00KEIKOKU  ? CE::MmPreviousScene::TerminaField
+                        : previousScene == SCENE_30GYOSON ? CE::MmPreviousScene::GreatBayCoast
+                                                          : CE::MmPreviousScene::Other;
+        const auto prepared = CE::PrepareNativeMmMixedArrival(
+            destination, gSaveContext.respawn, previous, gSaveContext.respawnFlag, gSaveContext.nextCutsceneIndex,
+            CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE),
+            CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE),
+            CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_GREAT_BAY_TEMPLE),
+            CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_STONE_TOWER_TEMPLE));
+        for (size_t i = 0; i < 4; ++i)
+            gSaveContext.respawn[i] = prepared.slots[i];
+        auto& ship = gSaveContext.save.shipSaveInfo;
+        ship.grottoPreviousScene = previousScene;
+        ship.grottoPreviousSceneValid = 1;
+        if (prepared.previous == CE::MmPreviousScene::TerminaField)
+            ship.grottoPreviousScene = SCENE_00KEIKOKU;
+        if (prepared.previous == CE::MmPreviousScene::GreatBayCoast)
+            ship.grottoPreviousScene = SCENE_30GYOSON;
+        gSaveContext.respawnFlag = prepared.flag;
+        gSaveContext.nextCutsceneIndex = prepared.cutscene;
+        play->nextEntrance = prepared.entrance;
+        return 1;
+    } catch (const std::exception& e) {
+        SPDLOG_ERROR("[ComboShip] MM mixed typed arrival rejected: {}", e.what());
+        return -1;
+    }
+}
 } // namespace
 extern "C" int Combo_MMGrottoEnter(PlayState* play) {
     if (!play || !IS_RANDO || (!CE::ActiveMmGrottos().active() && !CE::ActiveMmMixed().active()))
@@ -172,6 +215,10 @@ extern "C" int Combo_MMGrottoEnter(PlayState* play) {
     if (!source)
         return 0;
     if (CE::ActiveMmMixed().containsSource(source->id)) {
+        // A hole starts its fall transition frames later, after Play_Update has dropped any mark,
+        // so grotto sources resolve now, like ResolveGrotto.
+        if (MixedGrottoSource(source->id))
+            return ResolveMixed(source->id, play->sceneId, play) > 0;
         sMmMixedSource.mark(play, gSaveContext.fileNum, source->id, play->nextEntrance, play->sceneId);
         return 1;
     }
@@ -187,13 +234,9 @@ extern "C" int Combo_MMGrottoExit(PlayState* play) {
         return 0;
     const auto c = CE::ReadNativeMmGrotto(gSaveContext.respawn, GrottoPreviousScene(), gSaveContext.respawnFlag, false);
     const auto source = CE::LogicalMmGrottoExit(static_cast<uint8_t>(play->roomCtx.curRoom.num), c);
-    if (CE::ActiveMmMixed().containsSource(source.id)) {
-        // Keep the internal native exit sentinel: pinned completion resolves the full
-        // logical exit before override. Do not apply the unshuffled flag=4 fallback.
-        sMmMixedSource.mark(play, gSaveContext.fileNum, source.id, play->nextEntrance,
-                            gSaveContext.save.shipSaveInfo.grottoPreviousScene);
-        return 1;
-    }
+    // Resolve now: the 0xFFFF exit sentinel must never reach the transition setup.
+    if (CE::ActiveMmMixed().containsSource(source.id))
+        return ResolveMixed(source.id, gSaveContext.save.shipSaveInfo.grottoPreviousScene, play) > 0;
     return ResolveGrotto(source, play);
 }
 extern "C" int Combo_MMOrdinaryEntranceActive() {
@@ -225,40 +268,7 @@ extern "C" int Combo_MMCompleteOrdinaryEntrance(PlayState* play) {
         if (!source || play != gPlayState || !IS_RANDO || gSaveContext.gameMode != GAMEMODE_NORMAL ||
             !CE::ActiveMmMixed().containsSource(source->logicalId))
             return -1;
-        const auto destination = CE::ActiveMmMixed().destination(source->logicalId);
-        const int age = MM_GetEffectiveHumanAge(gSaveContext.fileNum);
-        if (age < 0 || !MM_CanEntranceArrival(gSaveContext.fileNum, destination, age, 0)) {
-            SPDLOG_ERROR("[ComboShip] Owning MM mixed arrival rejected source {:08x} destination {:08x}",
-                         source->logicalId, destination);
-            return -1;
-        }
-        try {
-            auto previous = source->previousScene == SCENE_00KEIKOKU  ? CE::MmPreviousScene::TerminaField
-                            : source->previousScene == SCENE_30GYOSON ? CE::MmPreviousScene::GreatBayCoast
-                                                                      : CE::MmPreviousScene::Other;
-            const auto prepared = CE::PrepareNativeMmMixedArrival(
-                destination, gSaveContext.respawn, previous, gSaveContext.respawnFlag, gSaveContext.nextCutsceneIndex,
-                CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE),
-                CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE),
-                CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_GREAT_BAY_TEMPLE),
-                CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_STONE_TOWER_TEMPLE));
-            for (size_t i = 0; i < 4; ++i)
-                gSaveContext.respawn[i] = prepared.slots[i];
-            auto& ship = gSaveContext.save.shipSaveInfo;
-            ship.grottoPreviousScene = source->previousScene;
-            ship.grottoPreviousSceneValid = 1;
-            if (prepared.previous == CE::MmPreviousScene::TerminaField)
-                ship.grottoPreviousScene = SCENE_00KEIKOKU;
-            if (prepared.previous == CE::MmPreviousScene::GreatBayCoast)
-                ship.grottoPreviousScene = SCENE_30GYOSON;
-            gSaveContext.respawnFlag = prepared.flag;
-            gSaveContext.nextCutsceneIndex = prepared.cutscene;
-            play->nextEntrance = prepared.entrance;
-            return 1;
-        } catch (const std::exception& e) {
-            SPDLOG_ERROR("[ComboShip] MM mixed typed arrival rejected: {}", e.what());
-            return -1;
-        }
+        return ResolveMixed(source->logicalId, source->previousScene, play);
     }
     const auto source = sMmMarkedSource.take(play, gSaveContext.fileNum, play->nextEntrance);
     if (!source || play != gPlayState || !IS_RANDO || gSaveContext.gameMode != GAMEMODE_NORMAL ||
