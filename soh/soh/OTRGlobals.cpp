@@ -3101,7 +3101,7 @@ static void UpdateNativeSongDialogue() {
         if (Combo_SOHSoaringMapActive() && sNativeSongOpen) {
             Message_CloseTextbox(gPlayState);
             sNativeSongOpen = false;
-            gPlayState->pauseCtx.state = 0x106; // native map selection
+            gPlayState->pauseCtx.state = PAUSE_STATE_OWLWARP_SELECT; // native map selection
             input.press.button &= ~BTN_B;
         } else
             sForeignSongReply = -1;
@@ -3131,7 +3131,7 @@ static void UpdateNativeSongDialogue() {
         else {
             Message_CloseTextbox(gPlayState);
             sNativeSongOpen = false;
-            gPlayState->pauseCtx.state = 0x106;
+            gPlayState->pauseCtx.state = PAUSE_STATE_OWLWARP_SELECT;
         }
     }
 }
