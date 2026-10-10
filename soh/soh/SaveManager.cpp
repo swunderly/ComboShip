@@ -1402,8 +1402,12 @@ void SaveManager::SaveSection(int fileNum, int sectionID, bool threaded) {
     memcpy(saveContext, &gSaveContext, sizeof(gSaveContext));
     std::string anchorJournal;
 #ifdef COMBO_BUILD
-    if (sectionID == SECTION_ID_BASE && gComboAnchorJournalProvider)
-        anchorJournal = gComboAnchorJournalProvider(fileNum);
+    if (gComboAnchorJournalProvider) {
+        // The provider also captures the launcher's game-thread gameplay-rule snapshot for this save.
+        std::string journal = gComboAnchorJournalProvider(fileNum);
+        if (sectionID == SECTION_ID_BASE)
+            anchorJournal = std::move(journal);
+    }
 #endif
     if (threaded) {
         smThreadPool->detach_task(
