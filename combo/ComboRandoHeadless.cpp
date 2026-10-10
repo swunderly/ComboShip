@@ -256,7 +256,10 @@ int main(int argc, char** argv) {
     auto SOH_ReadComboStartingGameCVar = Sym<int (*)(void)>(soh, "SOH_ReadComboStartingGameCVar");
     // Shared Items: also pushed before every dump (shapes OOT's wallet force + MM's trimmed pool).
     auto SOH_SetComboSharedItems = Sym<void (*)(uint32_t)>(soh, "SOH_SetComboSharedItems");
+    auto MM_SetComboSharedItems = Sym<void (*)(uint32_t)>(mm, "MM_SetComboSharedItems");
     auto SOH_ReadComboSharedCVars = Sym<uint32_t (*)(void)>(soh, "SOH_ReadComboSharedCVars");
+    // Ganon's trials resolved at generation (absent on spoilers made before they were recorded).
+    auto SOH_ApplyResolvedSeedRules = Sym<int (*)(const char*)>(soh, "SOH_ApplyProfileResolvedSeedRules");
 
     ComboRando::OracleFns oot{ Sym<FnOracleVoid>(soh, "Combo_SOH_Rando_Reset"),
                                Sym<FnOracleSetItems>(soh, "Combo_SOH_Rando_SetOwnedItems"),
@@ -366,6 +369,8 @@ int main(int argc, char** argv) {
             ComboRando::SharedMaskFromKeys(spoiler.value("sharedItems", nlohmann::json::array()));
 
         auto ootEntrances = spoiler.value("entrances", nlohmann::json::object()).value("oot", nlohmann::json::array());
+        const auto ootSeed = spoiler.value("oot", nlohmann::json::object());
+        const bool hasResolvedTrials = ootSeed.contains("resolvedSeedRules");
 
         // Prices are part of the seed: an unknown price can never be treated as buyable, so a spoiler
         // without them can't be validated honestly. Hard-fail rather than emit an optimistic verdict.
@@ -416,6 +421,10 @@ int main(int argc, char** argv) {
                 MM_SetComboGoalType(ComboRando::CwGoalType(goal), goal.required, ComboRando::CwMmPieces(goal.total));
             if (SOH_SetComboStartingGame)
                 SOH_SetComboStartingGame(mmStart ? 1 : 0);
+            if (SOH_SetComboSharedItems)
+                SOH_SetComboSharedItems(sharedMask);
+            if (MM_SetComboSharedItems)
+                MM_SetComboSharedItems(sharedMask);
             // A real in-game save's placement map lists only SHUFFLED checks; non-shuffled items the
             // oracle still gates on (OOT vanilla shop items, MM boss remains when not shuffled) live in
             // the dump's fixed[]. Merge them in so those gates (e.g. MM RemainsCount for the Moon) resolve.
@@ -434,6 +443,13 @@ int main(int argc, char** argv) {
             SOH_RestoreSettings(os.dump().c_str());
             applyPlaythroughRules(allTricks);
             SOH_PrepContext();
+            // The player's trials are the ones generation resolved, as the in-game reload applies them.
+            if (hasResolvedTrials && (!SOH_ApplyResolvedSeedRules ||
+                                      !SOH_ApplyResolvedSeedRules(ootSeed.at("resolvedSeedRules").dump().c_str()))) {
+                std::cerr << "[playthrough] could not apply the seed's resolved Ganon's trials — no verdict\n";
+                nativePreparationFailed = true;
+                return ComboRando::PlaythroughResult{};
+            }
             // The PrepContext above reset the OOT region graph to VANILLA wiring — not the graph the
             // seed was filled against. Install the seed's recorded entrance layout (empty array =
             // vanilla, still correct). Re-deriving via SOH_ShuffleEntrances is only a fallback for
@@ -551,6 +567,14 @@ int main(int argc, char** argv) {
             if (it.key().find("LogicRules") != std::string::npos && it.value().is_number() &&
                 it.value().get<int>() == 1)
                 ootNoLogic = true;
+
+        // Older spoilers did not record which trials generation picked. When only some (or a random
+        // number) are required, the replay re-derives them and may judge a different set.
+        const int trialMode = ootSettings.value("gRandoSettings.GanonTrial", 1);
+        const int trialCount = ootSettings.value("gRandoSettings.GanonTrialCount", 6);
+        if (!hasResolvedTrials && (trialMode == 2 || (trialMode == 1 && trialCount > 0 && trialCount < 6)))
+            std::cout << "[playthrough] note: this spoiler predates recorded Ganon's trials; the replay re-derives "
+                         "them, so the verdict is approximate\n";
 
         // Pass 1 — the seed's own settings + enabled tricks: "can this player beat it?"
         const auto trickCsv = originalRules["ootTricks"].get<std::string>();
@@ -787,9 +811,12 @@ int main(int argc, char** argv) {
             // Same reason (#135): an MM start forces OOT's age/forest/exclusions.
             if (SOH_SetComboStartingGame)
                 SOH_SetComboStartingGame(mmStart ? 1 : 0);
-            // Shared Items: shapes OOT's wallet-force before the dump (settings.cpp reads gComboSharedMask).
+            // Shared Items: shapes OOT's wallet-force (settings.cpp reads gComboSharedMask) and MM's shared
+            // ocarina/spell pool (GeneratePools reads gMMComboSharedMask) before the dumps, as RunComboFill.
             if (SOH_SetComboSharedItems)
                 SOH_SetComboSharedItems(sharedMask);
+            if (MM_SetComboSharedItems)
+                MM_SetComboSharedItems(sharedMask);
             ComboRando::SynchronizeGenerationGuarantee(
                 [&](const char* key, int fallback) { return readRule ? readRule(key, fallback) : fallback; },
                 [&](const char* key, int value) {
