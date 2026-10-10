@@ -3524,13 +3524,15 @@ static int Combo_OnReloadRequest(const char* path);
 // The profile apply is all-or-nothing: one setting this build does not know (an unknown check or item
 // name, an out-of-range option) rejects the whole set. Fall back to the lenient restore, which skips
 // only those entries, so the MM save never silently uses whatever gRando.* CVars happen to be live.
-static void ApplyMmRandoSettingsForSave(const std::string& settings) {
+// Returns true when the lenient restore ran: unlike the transient profile apply, it saves the config.
+static bool ApplyMmRandoSettingsForSave(const std::string& settings) {
     if (sProfiles && sProfileApplyMm && sProfileApplyMm(settings.c_str()))
-        return;
+        return false;
     if (sProfiles && sProfileApplyMm)
         std::cerr << "[ComboShip] MM settings rejected by the profile apply; restoring the known ones\n";
     if (MM_RestoreRandoSettings)
         MM_RestoreRandoSettings(settings.c_str());
+    return MM_RestoreRandoSettings != nullptr;
 }
 
 static void Combo_OnOOTSaveInit(int fileNum) {
@@ -3608,8 +3610,8 @@ static void Combo_OnOOTSaveInit(int fileNum) {
                 seed.value("mm", nlohmann::json::object()).value("prices", nlohmann::json::object()).dump().c_str());
         // A reloaded seed's MM settings only get written here (MM_InitRandoSaveFile is where MM reads
         // them) — never at reload time, so they can't leak into comboship.json before a slot is bound.
-        if (!g_PendingMMSettingsJson.empty())
-            ApplyMmRandoSettingsForSave(g_PendingMMSettingsJson);
+        const bool seedSettingsSaved =
+            !g_PendingMMSettingsJson.empty() && ApplyMmRandoSettingsForSave(g_PendingMMSettingsJson);
         g_MmSaveInMemorySlot = -1;
         const int mmInitResult = MM_InitRandoSaveFile(fileNum, mmPlacements.c_str(), playerName);
         if (mmInitResult == 0)
@@ -3628,8 +3630,14 @@ static void Combo_OnOOTSaveInit(int fileNum) {
         }
         // Silent auto-load: the save now has the seed's settings baked in — return the CVars to the
         // user's config. An explicit drop leaves the seed's settings as the new persisted baseline.
-        if (g_ComboReloadRestoreUserMM && !g_UserMMSettingsSnapshot.empty())
-            ApplyMmRandoSettingsForSave(g_UserMMSettingsSnapshot);
+        // If the seed's settings went through the lenient restore they are in the saved config now, so put
+        // the user's back the same way; the transient profile apply would leave the seed's on disk.
+        if (g_ComboReloadRestoreUserMM && !g_UserMMSettingsSnapshot.empty()) {
+            if (seedSettingsSaved)
+                MM_RestoreRandoSettings(g_UserMMSettingsSnapshot.c_str());
+            else
+                ApplyMmRandoSettingsForSave(g_UserMMSettingsSnapshot);
+        }
         g_PendingMMSettingsJson.clear();
         g_UserMMSettingsSnapshot.clear();
         g_ComboReloadRestoreUserMM = false;
