@@ -62,13 +62,9 @@ void AdultMask_DrawMaskInHand(PlayState* play, Player* player) { Combo_MM_DrawAd
 void AdultMask_DrawMaskOnFaceNativeLike(PlayState* play, Player* player) { Combo_MM_DrawAdultMask(play, player, 1); }
 void AdultMask_DrawTransformationMaskOnFace(PlayState* play, Player* player) { Combo_MM_DrawAdultMask(play, player, 2); }
 
-s32 AdultMask_IsActive(void) { return sAdultMaskCutsceneMode != ADULT_MASK_CS_NONE; }
 s32 AdultMask_IsPuttingOn(void) { return sAdultMaskCutsceneMode == ADULT_MASK_CS_PUT_ON; }
 s32 AdultMask_IsTakeOffTransform(void) { return sAdultMaskCutsceneMode == ADULT_MASK_CS_TAKE_OFF_TRANSFORM; }
 s32 AdultMask_IsTakeOffChild(void) { return sAdultMaskCutsceneMode == ADULT_MASK_CS_ENDING_ANIM; }
-s32 AdultMask_IsTakingOff(void) { return AdultMask_IsTakeOffTransform() || AdultMask_IsTakeOffChild(); }
-s32 AdultMask_IsCsItem(Player* player) { return player->itemAction == Combo_MM_AdultMaskAction(); }
-s32 AdultMask_ShouldDrawAdultModel(void) { return Combo_MM_IsAdult(); }
 s32 AdultMask_GetTimer(void) { return sAdultMaskTimer; }
 s32 AdultMask_ShouldDrawTransformFace(void) { return sAdultMaskDrawTransformFace; }
 
@@ -718,11 +714,6 @@ void AdultMask_StartCsItem(Player* player, PlayState* play)
     func_8083249C(player);
     player->stateFlags1 |= 0x30000000;
     player->stateFlags3 |= 0x80;
-}
-
-void AdultMask_AfterStart(Player* player)
-{
-    (void)player;
 }
 
 // Cross-engine pre-Player_Init table bridge; activation requires complete resources upstream.

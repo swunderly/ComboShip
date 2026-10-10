@@ -106,13 +106,6 @@ inline bool SwapHumanLoadout(Save& save, u8 age) {
     save.linkAge = age;
     return true;
 }
-inline bool CanUseAdultMask(Player* player, PlayState* play, bool reloadBusy) {
-    return !reloadBusy && player->transformation == PLAYER_FORM_HUMAN && player->actor.draw != nullptr &&
-           !Player_InCsMode(play) && !(player->stateFlags1 & 0x207c7080) && !(player->stateFlags3 & 0x1000);
-}
-inline float AdultHumanHeight(const Player& player) {
-    return 68.0f + ((player.stateFlags1 & PLAYER_STATE1_800000) ? 32.0f : 0.0f);
-}
 // Native Player_Init uses exact age properties; collision/culling rules stay in native code.
 
 } // namespace ComboAdultMM

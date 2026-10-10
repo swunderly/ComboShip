@@ -129,6 +129,3 @@ inline void UpdateAdultVoiceRouting(Player* player, bool adult) {
         memcpy(dst, src, 0x40);
 }
 } // namespace ComboAdultMM
-extern "C" SoundFont* Combo_MM_AdultHybridFont(void) {
-    return ComboAdultMM::BuildAdultHybridFont();
-}

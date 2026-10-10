@@ -3181,7 +3181,6 @@ s8 sItemItemActions[] = {
 int Combo_MM_AdultMaskAction(void);
 s32 AdultMask_TryUse(Player* player, PlayState* play, s32 itemAction);
 void AdultMask_StartCsItem(Player* player, PlayState* play);
-void AdultMask_AfterStart(Player* player);
 PlayerItemAction Player_ItemToItemAction(Player* this, ItemId item) {
 #ifdef COMBO_BUILD
     if (item == ITEM_COMBO_FARORES_WIND)
@@ -8121,7 +8120,6 @@ s32 Player_ActionHandler_13(Player* this, PlayState* play) {
                 // Pinned Player_StartCsItem custom Adult Mask branch precedes native masks.
                 if ((int)this->itemAction == Combo_MM_AdultMaskAction()) {
                     AdultMask_StartCsItem(this, play);
-                    AdultMask_AfterStart(this);
                     return true;
                 }
                 if ((this->itemAction >= PLAYER_IA_MASK_MIN) && (this->itemAction <= PLAYER_IA_MASK_MAX)) {
