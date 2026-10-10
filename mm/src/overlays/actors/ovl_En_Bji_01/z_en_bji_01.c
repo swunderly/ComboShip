@@ -346,11 +346,9 @@ void EnBji01_DialogueHandler(EnBji01* this, PlayState* play) {
 }
 
 void func_809CD634(EnBji01* this, PlayState* play) {
-    AudioSfx_MuteBanks((1 << BANK_PLAYER) | (1 << BANK_ITEM) | (1 << BANK_ENV) | (1 << BANK_ENEMY) |
-                       (1 << BANK_OCARINA) | (1 << BANK_VOICE));
-    SEQCMD_DISABLE_PLAY_SEQUENCES(true);
 #ifdef COMBO_BUILD
-    // Pinned EnBji01_TelescopeER is an ordinary entrance, not a respawn.
+    // Pinned EnBji01_TelescopeER is an ordinary entrance, not a respawn. It replaces the whole function, so the
+    // telescope-view audio mute below (undone only by EnBji01_Init at the observatory) is skipped too.
     if (Combo_MMOrdinarySourceConfigured(ENTRANCE(TERMINA_FIELD, 10))) {
         play->nextEntrance = Combo_MMOrdinaryExitOverride(ENTRANCE(TERMINA_FIELD, 10));
         play->transitionTrigger = TRANS_TRIGGER_START;
@@ -359,6 +357,9 @@ void func_809CD634(EnBji01* this, PlayState* play) {
         return;
     }
 #endif
+    AudioSfx_MuteBanks((1 << BANK_PLAYER) | (1 << BANK_ITEM) | (1 << BANK_ENV) | (1 << BANK_ENEMY) |
+                       (1 << BANK_OCARINA) | (1 << BANK_VOICE));
+    SEQCMD_DISABLE_PLAY_SEQUENCES(true);
     play->nextEntrance = ENTRANCE(TERMINA_FIELD, 10); /* Telescope entrance */
     gSaveContext.respawn[RESPAWN_MODE_DOWN].entrance = play->nextEntrance;
     func_80169EFC(play); /* Load new entrance? */
