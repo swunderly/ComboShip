@@ -360,9 +360,14 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_SNOWHEAD_TEMPLE_PILLARS_ROOM_LOWER, true),
         },
         .events = {
-            // OoTMM SNOWHEAD_RAISE_PILLAR. In this engine the usable
-            // short-range fire source is Fire Arrows; foreign Din is unsupported.
-            EVENT(RE_SNOWHEAD_RAISE_PILLAR, CAN_BE_GORON && CAN_USE_MAGIC_ARROW(FIRE)),
+            // OoTMM SNOWHEAD_RAISE_PILLAR (snowhead_temple.yml:128). The Hammer, the stick run
+            // and hookshot-anywhere are not supported here, so their branches are left out.
+            // Every entry into this room still needs Fire Arrows (OoTMM: can_use_fire_short_range),
+            // so the Din and Farore branches only take effect once those entries accept Din's Fire.
+            EVENT(RE_SNOWHEAD_RAISE_PILLAR, CAN_BE_GORON && (CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_DINS_FIRE) &&
+                (CAN_USE_MAGIC_ARROW(FIRE) || CAN_HOOK_SCARECROW ||
+                 (CAN_USE_EXPLOSIVE && HAS_ITEM(ITEM_HOOKSHOT) && KEY_COUNT(SNOWHEAD_TEMPLE) >= 3) ||
+                 (RANDO_EVENTS[RE_SHT_FARORE_MAP] && (CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS)))),
         },
     };
     Regions[RR_SNOWHEAD_TEMPLE_SNOW_ROOM] = RandoRegion{ .sceneId = SCENE_HAKUGIN,
