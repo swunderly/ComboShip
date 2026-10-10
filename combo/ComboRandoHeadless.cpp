@@ -547,17 +547,16 @@ int main(int argc, char** argv) {
             }
             return bad;
         };
-        // Names the blocking win side from full-inventory reachability, so "stuck" is exact.
-        auto blocked = [](const ComboRando::PlaythroughResult& r) -> const char* {
+        // Names the blocking win side from reachability at the collected fixed point, so "stuck" is exact.
+        // Only a stuck pass asks, and there the goal is not met with everything reached collected.
+        auto blocked = [&goal](const ComboRando::PlaythroughResult& r) -> const char* {
             if (r.hunt)
-                return r.piecesReachable >= r.piecesRequired
-                           ? "enough Triforce Pieces are placed but the forward walk dead-ends (item cycle)"
-                           : "not enough Triforce Pieces are reachable";
+                return "not enough Triforce Pieces are reachable";
+            if (ComboRando::CwGoalType(goal) == ComboRando::CwGoal::QUEST)
+                return "the named Triforce Pieces are not all reachable";
             return (!r.ganonReachable && !r.majoraReachable) ? "neither Ganon nor Majora is reachable"
                    : !r.ganonReachable                       ? "Ganon (OOT) is unreachable"
-                   : !r.majoraReachable
-                       ? "Majora (MM) is unreachable"
-                       : "both ends reachable with full inventory but the forward walk dead-ends (item cycle)";
+                                                             : "Majora (MM) is unreachable";
         };
 
         // No Logic seeds may be OOT-unbeatable by design; the verdict below tolerates that as long as
@@ -617,29 +616,14 @@ int main(int argc, char** argv) {
                       << r2.beatableSphere << "). With the seed's tricks, Pass 1 got stuck: " << blocked(r1) << ".\n";
             return 3;
         }
-        // No Logic: the forward-walk sphere ORDER is meaningless (in-game No Logic disables the very gates
-        // the walk enforces), so beatability is judged on FULL-inventory reachability. Both win conditions
-        // reachable with everything placed => genuinely beatable. Majora-only => tolerate OOT/Ganon (still a
-        // valid No-Logic seed, MM win chain intact; MM-advancement reachability is guaranteed by the fill,
-        // which retries on mmAdvUnreachable>0 — not gated on unreachableMm==0, ~1 MM junk check is always
+        // No Logic: RunPlaythrough walks to the collected fixed point, so with both bosses as the goal, Ganon
+        // and Majora both reachable there already passed as beatable above. Majora-only => tolerate OOT/Ganon
+        // (still a valid No-Logic seed, MM win chain intact; MM-advancement reachability is guaranteed by the
+        // fill, which retries on mmAdvUnreachable>0 — not gated on unreachableMm==0, ~1 MM junk check is always
         // under-modeled since the oracle evaluates MM with zeroed save options).
-        if (ootNoLogic && ComboRando::CwGoalType(goal) == ComboRando::CwGoal::BOTH && r2.ganonReachable &&
-            r2.majoraReachable) {
-            // Under a hunt both flags mirror the piece count, so name the pieces instead of the bosses.
-            if (r2.hunt) {
-                std::cout << "[playthrough] RESULT: PASS (No Logic) — beatable: " << r2.piecesReachable << "/"
-                          << r2.piecesRequired
-                          << " Triforce Pieces reachable with full inventory (forward-walk order N/A under No "
-                             "Logic).\n";
-            } else {
-                std::cout << "[playthrough] RESULT: PASS (No Logic) — beatable: Ganon AND Majora both reachable "
-                             "with full inventory (forward-walk order N/A under No Logic).\n";
-            }
-            return 0;
-        }
         if (ootNoLogic && ComboRando::CwGoalType(goal) == ComboRando::CwGoal::BOTH && r2.majoraReachable) {
             std::cout << "[playthrough] RESULT: PASS (No Logic) — Majora beatable (MM reachable); Ganon (OOT) "
-                         "unreachable even at full inventory, tolerated.\n";
+                         "unreachable even with all tricks, tolerated.\n";
             return 0;
         }
         std::cout << "[playthrough] RESULT: FAIL — not beatable even with all tricks; stuck: " << blocked(r2)
