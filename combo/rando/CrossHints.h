@@ -413,12 +413,9 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
         else if (!areaHasMajor.count(key)) // barren only if no WotH AND no major item (native parity)
             foolishAreas.push_back(key);
     }
-    for (auto& [area, labels] : hintablePaths) {
+    // Paths label required items only, so they never add a WotH area or change foolish eligibility.
+    for (auto& [area, labels] : hintablePaths)
         std::sort(labels.begin(), labels.end());
-        if (std::find(requiredAreas.begin(), requiredAreas.end(), area) == requiredAreas.end())
-            requiredAreas.push_back(area);
-        foolishAreas.erase(std::remove(foolishAreas.begin(), foolishAreas.end(), area), foolishAreas.end());
-    }
     // Stable order (unordered_map iteration feeds the RNG picks) — sort so determinism never
     // depends on the STL's bucket layout.
     std::sort(requiredAreas.begin(), requiredAreas.end());
@@ -736,8 +733,9 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
                     auto paths = hintablePaths.find(usedKey);
                     if (cat == "WotH" && paths != hintablePaths.end() && !paths->second.empty()) {
                         pathTarget = paths->second[rng.below(static_cast<uint32_t>(paths->second.size()))];
-                        msg = EnglishOnly("They say that " + areaText(usedKey).en + " is on the path to " + pathTarget +
-                                          ".");
+                        // OoTMM hint.c HINT_TYPE_PATH wording (English only there too).
+                        msg = EnglishOnly("They say that " + areaText(usedKey).en + " is on the " +
+                                          PathHintName(pathTarget) + ".");
                     }
                     usedAreaKeys.insert(usedKey);
                     placed = true;
@@ -847,7 +845,7 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
         const std::string target = labels[rng.below(static_cast<uint32_t>(labels.size()))];
         mmGossipPool.push_back(
             { { "weight", 3 },
-              { "text", "They say that " + areaText(area).en + " is on the path to " + target + "." },
+              { "text", "They say that " + areaText(area).en + " is on the " + PathHintName(target) + "." },
               { "pathTarget", target },
               { "pathArea", area } });
     }

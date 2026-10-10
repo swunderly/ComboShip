@@ -281,19 +281,29 @@ int main(){
         {"foreign",nlohmann::json::array({{{"checkGame","oot"},{"checkName","Oot optional"},
             {"itemGame","mm"},{"itemName","Gyorg route"},{"advancement",true}}})}};
     std::unordered_map<std::string,std::string> areas={{"Oot start","Forest"},{"Oot optional","Village"}};
+    // OoTMM gives a boss a path only when the goal fails without it, and only to required items.
+    // Gyorg is optional under these goals, so nothing is labelled and no area becomes WotH.
     auto paths=PareDownPlaythrough(pathSpoiler.dump(),oot,mm,nullptr,"","",areas,{},DefaultGanonMajoraGoal,false);
     assert(!paths.requiredByCheck.at("oot:Oot start") && !paths.requiredByCheck.at("oot:Oot optional"));
-    assert(paths.pathsByCheck.at("oot:Oot start")==std::vector<std::string>{"Gyorg"});
-    assert(paths.pathsByCheck.at("oot:Oot optional")==std::vector<std::string>{"Gyorg"});
-    assert(paths.pathsByArea.at("oot:Forest")==std::vector<std::string>{"Gyorg"});
+    assert(paths.pathsByCheck.empty() && paths.pathsByArea.empty());
     auto huntSpoiler=pathSpoiler;
     huntSpoiler["mm"]["Mm start"]=kMmTriforcePiece;
     auto huntPaths=PareDownPlaythrough(huntSpoiler.dump(),oot,mm,nullptr,"","",areas,{},MakeCombinedGoal(CwGoal{true,1}),false);
     assert(huntPaths.requiredByCheck.at("mm:Mm start"));
     assert(!huntPaths.requiredByCheck.at("oot:Oot start"));
-    assert(huntPaths.pathsByCheck.at("oot:Oot start")==std::vector<std::string>{"Gyorg"});
+    assert(huntPaths.pathsByCheck.empty());
     nlohmann::json hintDump={{"checks",nlohmann::json::array({{{"name","Oot start"},{"area","Forest"}},
         {{"name","Oot optional"},{"area","Village"}}})}};
+    for(const auto& hint:Generate(77,"{}",hintDump.dump(),"{}",nlohmann::json::array(),pathSpoiler.dump(),paths).at("mm").at("gossipPool"))
+        assert(!hint.contains("pathTarget"));
+    // When the goal needs Gyorg, the items on the way are required and on the Path to Gyorg.
+    auto needsGyorg=[](const auto&,const auto& mmReached,const auto&,const auto&){
+        return mmReached.count("Great Bay Temple Boss Warp")!=0 && mmReached.count("Defeat Majora")!=0;};
+    paths=PareDownPlaythrough(pathSpoiler.dump(),oot,mm,nullptr,"","",areas,{},needsGyorg,false);
+    assert(paths.requiredByCheck.at("oot:Oot start") && paths.requiredByCheck.at("oot:Oot optional"));
+    assert(paths.pathsByCheck.at("oot:Oot start")==std::vector<std::string>{"Gyorg"});
+    assert(paths.pathsByCheck.at("oot:Oot optional")==std::vector<std::string>{"Gyorg"});
+    assert(paths.pathsByArea.at("oot:Forest")==std::vector<std::string>{"Gyorg"});
     auto hints=Generate(77,"{}",hintDump.dump(),"{}",nlohmann::json::array(),pathSpoiler.dump(),paths);
     bool sawPath=false;
     for(const auto& hint:hints.at("mm").at("gossipPool")) {
@@ -301,10 +311,23 @@ int main(){
         sawPath=true;
         assert(hint.at("pathTarget")=="Gyorg");
         const std::string text=hint.at("text");
+        assert(text.find("is on the Path to Gyorg.")!=std::string::npos);
         assert(text.find("Gyorg route")==std::string::npos && text.find("Open optional")==std::string::npos);
     }
     assert(sawPath);
     assert(hints==Generate(77,"{}",hintDump.dump(),"{}",nlohmann::json::array(),pathSpoiler.dump(),paths));
+    // OoTMM path locks: Majora needs Gyorg's remains here, so an item on both paths is hinted for
+    // Gyorg alone, while the remains themselves are on the Path to Majora.
+    OracleFns remainsMm{resetMm,grantMm,+[]()->const char*{
+        static std::string buffer; nlohmann::json checks={"Mm start"};
+        if(has(1,"Gyorg route")) checks.push_back("Great Bay Temple Boss Warp");
+        if(has(1,"Remains")) checks.push_back("Defeat Majora");
+        buffer=checks.dump();return buffer.c_str();},place};
+    auto remainsSpoiler=pathSpoiler;
+    remainsSpoiler["mm"]["Great Bay Temple Boss Warp"]="Remains";
+    auto locked=PareDownPlaythrough(remainsSpoiler.dump(),oot,remainsMm,nullptr,"","",areas,{},DefaultGanonMajoraGoal,false);
+    assert(locked.pathsByCheck.at("oot:Oot start")==std::vector<std::string>{"Gyorg"});
+    assert(locked.pathsByCheck.at("mm:Great Bay Temple Boss Warp")==std::vector<std::string>{"Majora"});
     // An MM bean delivered by an OoT check is a one-time reward: OoT shop slots sell out and shuffled
     // cows give once, so only native MM stock renews. Licenses keep the donor table's answer.
     BeanSourceMap beanDump;

@@ -231,34 +231,43 @@ inline GoalPredicate MakeCombinedGoal(CwGoal goal) {
 struct PathTarget {
     GameId game;
     const char* check;
-    const char* label;
+    const char* label; // OoTMM boss.ts name; the hint tracker shows "Path to <label>"
+    const char* path;  // OoTMM hint.c path name, as the hint text says it
     bool namedItem = false;
 };
 
-// These markers are native defeat checks, not entering a boss room. A target is
-// hinted only if a collected-inventory baseline actually reaches it.
+// OoTMM analysis-path.ts boss, end-boss and triforce3 paths. These markers are native defeat checks,
+// not entering a boss room. A target is hinted only if a collected-inventory baseline actually
+// reaches it and the goal fails without it.
 inline const std::vector<PathTarget>& HintPathTargets() {
     static const std::vector<PathTarget> targets = {
-        { GAME_OOT, "Queen Gohma", "Queen Gohma" },
-        { GAME_OOT, "King Dodongo", "King Dodongo" },
-        { GAME_OOT, "Barinade", "Barinade" },
-        { GAME_OOT, "Phantom Ganon", "Phantom Ganon" },
-        { GAME_OOT, "Volvagia", "Volvagia" },
-        { GAME_OOT, "Morpha", "Morpha" },
-        { GAME_OOT, "Twinrova", "Twinrova" },
-        { GAME_OOT, "Bongo Bongo", "Bongo Bongo" },
-        { GAME_OOT, "Ganon", "Ganon" },
-        { GAME_MM, "Woodfall Temple Boss Warp", "Odolwa" },
-        { GAME_MM, "Snowhead Temple Boss Warp", "Goht" },
-        { GAME_MM, "Great Bay Temple Boss Warp", "Gyorg" },
-        { GAME_MM, "Stone Tower Temple Inverted Boss Warp", "Twinmold" },
-        { GAME_MM, "Defeat Majora", "Majora" },
-        { GAME_OOT, "Ocarina of Time Item", "Zelda's escape" },
-        { GAME_OOT, kNamedTriforcePieces[0], "Triforce of Power", true },
-        { GAME_OOT, kNamedTriforcePieces[1], "Triforce of Courage", true },
-        { GAME_OOT, kNamedTriforcePieces[2], "Triforce of Wisdom", true },
+        { GAME_OOT, "Queen Gohma", "Gohma", "Path to Gohma" },
+        { GAME_OOT, "King Dodongo", "King Dodongo", "Path to King Dodongo" },
+        { GAME_OOT, "Barinade", "Barinade", "Path to Barinade" },
+        { GAME_OOT, "Phantom Ganon", "Phantom Ganon", "Path to Phantom Ganon" },
+        { GAME_OOT, "Volvagia", "Volvagia", "Path to Volvagia" },
+        { GAME_OOT, "Morpha", "Morpha", "Path to Morpha" },
+        { GAME_OOT, "Twinrova", "Twinrova", "Path to Twinrova" },
+        { GAME_OOT, "Bongo Bongo", "Bongo Bongo", "Path to Bongo Bongo" },
+        { GAME_OOT, "Ganon", "Ganon", "Path to Ganon" },
+        { GAME_MM, "Woodfall Temple Boss Warp", "Odolwa", "Path to Odolwa" },
+        { GAME_MM, "Snowhead Temple Boss Warp", "Goht", "Path to Goht" },
+        { GAME_MM, "Great Bay Temple Boss Warp", "Gyorg", "Path to Gyorg" },
+        { GAME_MM, "Stone Tower Temple Inverted Boss Warp", "Twinmold", "Path to Twinmold" },
+        { GAME_MM, "Defeat Majora", "Majora", "Path to Majora" },
+        { GAME_OOT, kNamedTriforcePieces[0], "Triforce of Power", "Path of Power", true },
+        { GAME_OOT, kNamedTriforcePieces[1], "Triforce of Courage", "Path of Courage", true },
+        { GAME_OOT, kNamedTriforcePieces[2], "Triforce of Wisdom", "Path of Wisdom", true },
     };
     return targets;
+}
+
+// The hint text's name for a path label.
+inline std::string PathHintName(const std::string& label) {
+    for (const auto& target : HintPathTargets())
+        if (label == target.label)
+            return target.path;
+    return "Path to " + label;
 }
 
 struct RequirednessResult {
@@ -266,8 +275,8 @@ struct RequirednessResult {
     std::unordered_map<std::string, bool> requiredByCheck;
     // "oot:<area>"/"mm:<area>" -> true once ANY advancement item placed there is required.
     std::unordered_map<std::string, bool> areaHasRequired;
-    // An area/item may be required for an optional boss even if it is not required
-    // for the chosen victory condition (e.g. Triforce hunt). Labels contain no reward.
+    // Path labels: a required item whose removal also blocks a target the goal needs
+    // (OoTMM analysis-path.ts). Labels contain no reward.
     std::unordered_map<std::string, std::vector<std::string>> pathsByCheck;
     std::unordered_map<std::string, std::vector<std::string>> pathsByArea;
     int candidateCount = 0;
@@ -278,7 +287,8 @@ struct RequirednessResult {
 // Requiredness pare-down over the COMBINED world: for each placed advancement item, tentatively
 // remove it (check stays, item not credited) and re-run the sphere-collect from empty; still-reachable
 // goal => NOT required (foolish), else required (WotH). Tested individually (no monotonicity assumed),
-// restricted to actually collected checks. Boss/event paths are scored in the same replays.
+// restricted to actually collected checks. Boss paths are scored in the same replays, plus one
+// replay per reached target to learn whether the goal needs it.
 // mmRestore resets the MM oracle snapshot afterward.
 // ootCheckAreas/mmCheckAreas (checkName -> area) roll results up into per-area classification.
 // progress (optional) is write-only reporting for the UI; it never influences the result.
@@ -328,11 +338,13 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
     // The same MM search root the fill uses; kept apart from portalOpen, which each search overwrites.
     const bool mmRoot = !portalGated || mmStart;
 
+    const auto& targets = HintPathTargets();
+
     // Excludes a SET of placements from ever crediting their items, then sphere-collects everything
-    // else from empty until stable. Latch the first win but continue collecting to distinguish
-    // optional boss paths from items required for the seed's selected victory condition.
+    // else from empty until stable. Latch the first win but continue collecting to the fixed point,
+    // where pathsOut reads which targets were reached. forbidden: a defeat check never reached.
     auto winsWithout = [&](const std::unordered_set<size_t>& excludeIdx, std::vector<char>* creditedOut,
-                           uint64_t* pathsOut) {
+                           uint64_t* pathsOut, const PathTarget* forbidden = nullptr) {
         std::vector<size_t> excludedKey;
         for (const auto index : excludeIdx)
             if (stockSensitive.count(index))
@@ -375,8 +387,15 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
             ootReach = memo->second.oot;
             mmReach = memo->second.mm;
             portalOpen = memo->second.mmOpen;
+            if (forbidden) {
+                auto& reach = forbidden->game == GAME_OOT ? ootReach : mmReach;
+                if (reach->count(forbidden->check)) {
+                    auto without = std::make_shared<std::unordered_set<std::string>>(*reach);
+                    without->erase(forbidden->check);
+                    reach = std::move(without);
+                }
+            }
             won |= goalReached(*ootReach, *mmReach, ootOwned, mmOwned);
-            const auto& targets = HintPathTargets();
             for (size_t i = 0; i < targets.size(); ++i) {
                 const auto& reach = targets[i].game == GAME_OOT ? *ootReach : *mmReach;
                 const bool reached =
@@ -450,6 +469,32 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
         progress->placed.store(0);
     }
 
+    // OoTMM analysis-path.ts:172-236 builds a boss, end-boss or triforce3 path only when the goal
+    // fails without that target. OoTMM removes the boss event; the oracles cannot, so here the
+    // defeat check is never reached (or the piece's checks never credited) and only what it gives
+    // is lost. checkLocks/cleanPaths (259-351): a target whose removal also blocks another target
+    // locks it, and items on both paths keep only the locking one.
+    uint64_t goalPaths = 0;
+    std::vector<uint64_t> locks(targets.size(), 0);
+    if (baseWon) {
+        std::vector<uint64_t> reachedWithout(targets.size(), 0);
+        for (size_t t = 0; t < targets.size(); ++t) {
+            if (!(basePaths & (uint64_t{ 1 } << t)))
+                continue;
+            std::unordered_set<size_t> pieces;
+            if (targets[t].namedItem)
+                for (size_t i = 0; i < placements.size(); ++i)
+                    if (placements[i].item == targets[t].check)
+                        pieces.insert(i);
+            ++result.replayedCount;
+            if (!winsWithout(pieces, nullptr, &reachedWithout[t], targets[t].namedItem ? nullptr : &targets[t]))
+                goalPaths |= uint64_t{ 1 } << t;
+        }
+        for (size_t t = 0; t < targets.size(); ++t)
+            if (goalPaths & (uint64_t{ 1 } << t))
+                locks[t] = goalPaths & ~reachedWithout[t] & ~(uint64_t{ 1 } << t);
+    }
+
     // Per-item WotH (native IsBeatableWithout): blank exactly one candidate check and replay from
     // empty. Still wins -> not required; loses -> required. Definitionally correct, no monotonicity
     // assumption (unlike the old group-test binary split, which our cross-game oracle broke).
@@ -457,11 +502,17 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
         ++result.replayedCount;
         uint64_t remainingPaths = 0;
         classified[i] = winsWithout({ i }, nullptr, &remainingPaths) ? 0 : 1;
-        auto lostPaths = basePaths & ~remainingPaths;
-        for (size_t t = 0; t < HintPathTargets().size(); ++t) {
+        // Only required items get a path (analysis-path.ts:65 walks analysis.required).
+        uint64_t lostPaths = classified[i] == 1 ? basePaths & ~remainingPaths & goalPaths : 0;
+        uint64_t locked = 0;
+        for (size_t t = 0; t < targets.size(); ++t)
+            if (lostPaths & (uint64_t{ 1 } << t))
+                locked |= locks[t];
+        lostPaths &= ~locked;
+        for (size_t t = 0; t < targets.size(); ++t) {
             if (!(lostPaths & (uint64_t{ 1 } << t)))
                 continue;
-            const std::string label = HintPathTargets()[t].label;
+            const std::string label = targets[t].label;
             const auto& p = placements[i];
             result.pathsByCheck[checkKey(p)].push_back(label);
             const auto& areas = p.checkGame == GAME_OOT ? ootCheckAreas : mmCheckAreas;
