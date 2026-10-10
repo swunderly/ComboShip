@@ -161,6 +161,10 @@ int main() {
     assert(Runtime(game, frogs.name) == 3 && Logical(game, frogs.name) == 0);
     SetLogicRule(frogs, 0, write);
     assert(Runtime(game, frogs.name) == 5 && Logical(game, frogs.name) == 0);
+    // Clearing only the logic assumption leaves the player's own enhancement as it was.
+    SetLogicRule(frogs, 2, write);
+    ClearLogicRule(frogs, write);
+    assert(Runtime(game, frogs.name) == 2 && Logical(game, frogs.name) == 0);
 
     // Extra abilities are monotone; a shuffled destination map is not. A runtime-only choice
     // before generation must not make the engine warp somewhere different from its logic.

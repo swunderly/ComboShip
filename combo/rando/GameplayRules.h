@@ -187,6 +187,11 @@ template <class Write> void SetLogicRule(const GameplayRule& rule, int value, Wr
     write(LogicRuleKey(rule.name).c_str(), value);
     write(rule.name, value < rule.minimum ? rule.fallback : value);
 }
+// Clears only the logic assumption. The standalone enhancement keeps the player's value, so turning
+// a rule off in the Randomizer (or applying a preset) never switches off what the player turned on.
+template <class Write> void ClearLogicRule(const GameplayRule& rule, Write write) {
+    write(LogicRuleKey(rule.name).c_str(), 0);
+}
 template <class Read, class Write>
 void SetEnhancementRule(const GameplayRule& rule, int value, Read read, Write write) {
     value = std::clamp(value, rule.minimum, rule.maximum);
@@ -206,7 +211,7 @@ template <class Write> void SetTrickGovernedRule(const GameplayRule& rule, bool 
     if (enabled)
         SetLogicRule(rule, 1, write);
     else
-        write(LogicRuleKey(rule.name).c_str(), 0);
+        ClearLogicRule(rule, write);
 }
 
 template <class Read> nlohmann::json CaptureGameplayRules(Read read) {
