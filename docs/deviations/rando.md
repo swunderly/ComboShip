@@ -718,6 +718,20 @@ runtime lookups on either game's side, since only the combo layer sees both worl
   categories. Previously these were exported but never consumed, so native always-hints never landed
   on a gossip stone.
 
+**Hint paths vs OoTMM (2026-10-10):** the combo always builds boss paths (OoT bosses, MM boss warps)
+and end-boss paths (Ganon, Majora), as if OoTMM's `hintPathBoss` and `hintPathEndBoss` were on.
+OoTMM v32.3 defaults both off (`packages/core/src/settings/data.ts:187-200`); its Blitz presets turn
+them on (`packages/generator/lib/combo/presets.ts:9-11`). Until the Randomizer menu offers these
+options, every combo seed gets these paths. Triforce Quest piece paths (Path of Power/Courage/Wisdom)
+are always on in both (`packages/logic/src/analysis/analysis-path.ts:284-288`). Dungeon and event
+paths (`hintPathDungeons`, `hintPathEvents`, default off) are not built. As in OoTMM, a target gets a
+path only when the goal fails without it, and only required items are labelled (`PareDownPlaythrough`
+in `combo/rando/ComboPlaythrough.h`). Approximation: to test whether the goal needs a boss, OoTMM removes the boss event
+(`pathfindNoEvent`). The oracles cannot remove events, so `PareDownPlaythrough` removes only the defeat
+check from the reach set: the goal predicate and that check's reward are lost, but the oracle still
+applies the boss's own events internally. Checks gated by those events stay reachable, so the result
+can differ from OoTMM where the goal depends on them.
+
 **Known v1 limitations (documented, not bugs):** trial/gossip text for cross entries is English-only
 (no translation source); MM can't exclude an already-obtained OOT item from its own gossip pool
 (only its own-game repeat-hint pool is protected). ~~Ganondorf's combined-hint phrasing variant isn't
