@@ -28,6 +28,7 @@ extern size_t fontMapSize;
 u8 AudioSeq_ScriptReadU8(SeqScriptState* state);
 s16 AudioSeq_ScriptReadS16(SeqScriptState* state);
 bool AudioCollection_HasSequenceNum(uint16_t seqId);
+void OTRAudio_Exit(void);
 }
 
 namespace {
@@ -88,14 +89,22 @@ class ResidentMmSampleFactory final : public Ship::ResourceFactoryBinary {
 };
 
 void DropResources() {
+    sSequenceBase = sFontBase = -1;
     sSequences = {};
     sFonts = {};
     sResources.reset();
-    sSequenceBase = sFontBase = -1;
     sPlaying = false;
     sDialectSeen = {};
     sSequenceExecuting = {};
     sDialectFailures.store(0);
+}
+
+// Teardown listeners fire at shutdown, first from MM_Deinit, while OoT's audio
+// thread may still be mixing these MM scores and samples. Stop it before they
+// are released; OoT's own deinit then finds the thread already joined.
+void ReleaseResources() {
+    OTRAudio_Exit();
+    DropResources();
 }
 
 // Use the ordinary audio command queue: the audio thread alone changes the
@@ -220,7 +229,7 @@ extern "C" void Combo_SOHInitWarpAudio() {
             state[13].store(0xFF);
         }
         sSfxState[13][12].store(0); // Native SFX_CHANNEL_OCARINA default.
-        Ship::CrossRMRegistry::RegisterTeardownListener(DropResources);
+        Ship::CrossRMRegistry::RegisterTeardownListener(ReleaseResources);
         SPDLOG_INFO("[ComboShip] Native MM Soaring audio loaded (sequences {}, {}, {}; fonts {}, {}, {})",
                     sSequenceBase, sSequenceBase + 1, sSequenceBase + 2, sFontBase, sFontBase + 1, sFontBase + 2);
     } catch (const std::exception& error) {
