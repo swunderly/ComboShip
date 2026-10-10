@@ -1293,7 +1293,7 @@ void DrawItem(ItemTrackerItem item) {
         case RG_DAMPES_HUT_KEY:
             actualItemId = item.id;
             hasItem = Flags_GetRandomizerInf(RAND_INF_DAMPES_HUT_KEY_OBTAINED);
-            itemName = "DampÃ©'s Hut Key";
+            itemName = "Dampé's Hut Key";
             break;
         case RG_TALONS_HOUSE_KEY:
             actualItemId = item.id;
@@ -2346,7 +2346,7 @@ void ItemTrackerWindow::DrawElement() {
     bool isPaused = CVarGetInteger(CVAR_TRACKER_ITEM("ShowOnlyPaused"), 0) == 0 ||
                     gPlayState != nullptr && gPlayState->pauseCtx.state > 0;
 #ifdef COMBO_BUILD
-    // ComboShip: pause/button state is stale while dormant (tracker swapped in) â€” always show.
+    // ComboShip: pause/button state is stale while dormant (tracker swapped in) — always show.
     if (!Combo_OotIsForeground()) {
         isPaused = true;
         comboButtonsHeld = true;
@@ -2587,7 +2587,7 @@ void ItemTrackerSettingsWindow::DrawElement() {
                 shouldUpdateVectors = true;
             }
 #ifndef COMBO_BUILD
-            // ComboShip: derived from the shared "Only enable while paused" toggle â€” hide this editor.
+            // ComboShip: derived from the shared "Only enable while paused" toggle — hide this editor.
             if (CVarCheckbox("Only Enable While Paused", CVAR_TRACKER_ITEM("ShowOnlyPaused"),
                              CheckboxOptions().Color(THEME_COLOR))) {
                 shouldUpdateVectors = true;
@@ -2623,7 +2623,7 @@ void ItemTrackerSettingsWindow::DrawElement() {
         }
         ImGui::Separator();
 #ifndef COMBO_BUILD
-        // ComboShip: both are derived from the shared icon size/spacing sliders â€” hide these editors.
+        // ComboShip: both are derived from the shared icon size/spacing sliders — hide these editors.
         CVarSliderInt("Icon size : %dpx", CVAR_TRACKER_ITEM("IconSize"),
                       IntSliderOptions().Min(25).Max(128).DefaultValue(36).Color(THEME_COLOR));
         CVarSliderInt("Icon margins : %dpx", CVAR_TRACKER_ITEM("IconSpacing"),
