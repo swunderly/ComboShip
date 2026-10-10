@@ -535,11 +535,24 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
             "Randomizer");
     addLink(MenuSearchKind::Setting, "Starting world", "starting game OoT MM random world", "randomizer",
             "Logic & access", "Randomizer");
-    addLink(MenuSearchKind::Setting, "Clocks as Items (MM)",
-            "clock shuffle time day night half days six cycle progressive ascending descending", "randomizer",
-            "Items & checks", "MM", 0, 1, 1);
-    addLink(MenuSearchKind::Setting, "Farore's Wind (MM)", "farore fw spell magic warp cross game items extension",
-            "randomizer", "Items & checks", "MM", 0, 1, 1);
+    // MM randomizer pages are native custom widgets; index their catalog rows instead.
+    if (const auto* layout = CatalogueList("mm", "layout"))
+        for (const auto& row : *layout) {
+            if (!row.is_object())
+                continue;
+            const auto name = row.value("label", std::string()), page = row.value("page", std::string());
+            if (name.empty() || name.rfind("##", 0) == 0)
+                continue;
+            auto keywords = row.value("tooltip", std::string()) + " " + row.value("heading", std::string()) +
+                            " MM Majora Mask randomizer";
+            if (name == "Clocks as Items (MM)")
+                keywords += " clock shuffle time day night half days six cycle progressive ascending descending";
+            if (name == "Farore's Wind (MM)")
+                keywords += " farore fw spell magic warp cross game items extension";
+            addLink(MenuSearchKind::Setting, name.c_str(), keywords.c_str(), "randomizer",
+                    MenuRoute(false, "Rando", page).page.c_str(), "MM", 0, 1,
+                    RandomizerWidgetGroup(false, page, 0, ""));
+        }
     addLink(MenuSearchKind::Setting, "Cross-Games Farore's Wind",
             "farore fw spell warp travel between oot mm cross game world", "randomizer", "Logic & access",
             "Randomizer");
@@ -757,7 +770,7 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                     ImGui::TextColored(kBreadcrumbColor, "%s / %s", hit.origin.c_str(), hit.page.c_str());
                     if (!hit.widget && ImGui::Button("Open", ImVec2(-FLT_MIN, buttonHeight))) {
                         if (hit.targetSubpage >= 0)
-                            mPoolSection = hit.targetSubpage;
+                            (hit.page == "Hints & traps" ? mHintSection : mPoolSection) = hit.targetSubpage;
                         OpenSearchDestination(hit.scope, hit.page, nullptr,
                                               hit.kind == MenuSearchKind::Technique ? hit.label.c_str() : nullptr,
                                               hit.targetGame);
