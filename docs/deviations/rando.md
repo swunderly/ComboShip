@@ -318,7 +318,7 @@ because they are special*, and every one is progression:
   trims surplus `JUNK` most-duplicated-name-first (RNG-free, so the seeded stream can't shift), pads a
   deficit with cloned junk, hard-fails if `JUNK` runs out. Per-game rather than global on purpose: under
   global-only an OOT surplus and an MM deficit cancel and the defect stays invisible.
-- Phase B's stream is `fastFillItems` (it holds junk *and* relaxed OOT advancement; the old name
+- Phase B's stream is `fastFillItems` (it holds junk *and* relaxed advancement from either game; the old name
   `junkToPlace` asserted the discarded tail was junk while it discarded a boss key). A `stable_partition`
   puts advancement ahead of junk with a named `mustPlace` boundary, so the truncatable tail is junk by
   construction. This does not narrow No Logic's freedom: `allChecks` is the uniformly shuffled sequence,
@@ -893,8 +893,9 @@ touched, so native single-game SoH is unchanged.
 
 **Why:** The cross-fill ignored OOT's `RSK_LOGIC_RULES` and `RSK_ALL_LOCATIONS_REACHABLE` — it always
 ran an all-reachable assumed fill. Native OOT relaxes: No Logic fast-fills everything; ALR-off places
-with logic only until beatable. The combo fill now honors these **per-game**: OOT relaxes, MM always
-stays all-reachable (MM reachability must never degrade).
+with logic only until beatable. The combo fill now honors these: No Logic relaxes OOT only and keeps MM
+advancement reachable, while BEATABLE_ONLY relaxes advancement from either game (MM is no longer always
+all-reachable there).
 
 **`soh/soh/OTRGlobals.cpp` (`SOH_DumpRandoStaticData`):** the dump gains an `"accessibility"` block
 (`noLogic`, `allLocationsReachable`, `lockOverworldDoors`) read from the live
@@ -905,14 +906,17 @@ Context. Defaults (ALL_REACHABLE) if the prep throws.
 defaulted `OotAccess` param. Per mode:
 - **ALL_REACHABLE:** unchanged; `toPlace = advItems` unreordered so a fixed seed is bit-identical.
 - **NO_LOGIC:** assumed-fill only MM advancement; OOT advancement rides the junk fast-fill.
-- **BEATABLE_ONLY:** assumed-fill the full set, but a single dead-ended OOT item is stranded to the
-  junk fast-fill (MM dead-ends still retry the pass).
-Validation classifies unreachable advancement by **item-game**: MM unreachable is always fatal/retry;
-OOT unreachable is fatal only under ALL_REACHABLE, tolerated (logged) under relaxed modes. BEATABLE_ONLY
-additionally requires the win still holds (`reachableFixpoint` now also returns the final `ootOwned`).
+- **BEATABLE_ONLY:** assumed-fill the full set, but a single dead-ended advancement item from either
+  game is stranded to the junk fast-fill; ALL_REACHABLE, and NO_LOGIC's MM-only assumed fill, put it
+  back and retry.
+Validation (`CrossWorldRando.h`, `needRetry`): ALL_REACHABLE retries on any unreachable check or a
+failed combined goal; BEATABLE_ONLY retries only when the combined goal fails and tolerates unreachable
+advancement from either game; NO_LOGIC retries on unreachable MM advancement and tolerates OOT. The
+goal check reads the final owned sets (`reachableFixpoint` now also returns the final `ootOwned`).
 
 See "Gate MM on the OOT→MM portal region" below — the portal is no longer ungated, which is what makes
-the MM-always-all-reachable rule above sound.
+the MM reachability required above (every MM check under ALL_REACHABLE, the goal's MM side under
+BEATABLE_ONLY) sound.
 
 **`combo/rando/ComboPlaythrough.h`:** `MmOnlyMajoraGoal` — under NO_LOGIC the pare-down (WotH) gates
 requiredness on MM only, since OOT may be structurally unbeatable from empty. Wired at both
@@ -1026,7 +1030,8 @@ behind a different door.
 `CrossWorldCombinedFill` drops `portalCheckName` and reads the gate off the OOT oracle **immediately
 after** the OOT query in each fixpoint iteration, before any MM check is credited — that ordering is
 what makes it sound. Latched (monotone) for the rest of the fixpoint. Retry/validation conditions are
-unchanged: `mmAdvUnreachable > 0` is already fatal in every mode, so a closed portal fails the pass.
+unchanged: a closed portal leaves the MM checks unreachable, which fails the pass under ALL_REACHABLE,
+and under BEATABLE_ONLY when the combined goal needs MM.
 
 - **NO_LOGIC bypass:** the gate is skipped entirely (`portalGated == false`). An impossible seed is that
   mode's point.
