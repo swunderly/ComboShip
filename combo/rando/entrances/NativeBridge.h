@@ -152,7 +152,8 @@ struct AssumedWorld {
             return result;
         };
         bool mmOpen = mmStart;
-        const auto reached = QuerySongWorlds(oot, mm, ootItems, mmItems, mmOpen, query);
+        // An MM start roots MM from the start in the age-aware search too, as mmOpen does in the plain one.
+        const auto reached = QuerySongWorlds(oot, mm, ootItems, mmItems, mmOpen, query, mmStart);
         for (const auto& name : ootChecks)
             if (!reached.first.contains(name))
                 return false;
