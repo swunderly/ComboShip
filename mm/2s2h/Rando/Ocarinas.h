@@ -13,7 +13,8 @@ inline int NextTier(uint8_t saved, uint8_t item) {
 }
 inline void Grant(uint8_t& saved, uint8_t& item, int tier) {
     saved = EffectiveBits(saved, item) | (1u << (tier - 1));
-    item = tier >= 2 ? 0 : 5;
+    // The slot shows the best owned tier, so a later Fairy never replaces Time.
+    item = (saved & 2) ? 0 : 5;
 }
 // Pinned macros_mm.yml has_ocarina; all song macros use this instrument gate.
 inline bool CanPlay(bool shared, bool fairyEnabled, int tier) {
