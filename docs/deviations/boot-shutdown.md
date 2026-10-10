@@ -307,7 +307,7 @@ field alone — see the return-kind note below.
 
 **The intercept.** `Combo_OnOOTSaveLoad` already fires at the ideal moment: `FileChoose_LoadGame` runs
 `GameInteractor_ExecuteOnLoadGame` at its tail (`soh/src/overlays/gamestates/ovl_file_choose/z_file_choose.c`),
-i.e. after `Sram_OpenSave` rebuilt `gRandoContext` and after the launcher loaded the dormant MM save,
+i.e. after `Sram_TryOpenSave` rebuilt `gRandoContext` and after the launcher loaded the dormant MM save,
 but before OOT executes a single Play frame. `Combo_ResumeMMIfLastSavedThere` decides there, so no
 vendored file-select edit is needed. It is gated on `SOH_IsOnFileSelect()` because `OnLoadGame` also
 fires from `TitleSetup` on the MM→OOT return and from in-game reloads (`Warping`, `BetterSaveMenu`) —

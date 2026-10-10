@@ -649,7 +649,7 @@ back to OOT instead of restarting the MM cycle.
   trigger now requires `spawnNum == 1` (the South Clock Town door) so cycle resets (moon crash /
   Song of Time respawn at spawns 0/2/3/6 in `SCENE_INSIDETOWER`) stay in MM.
 - `soh/src/code/title_setup.c` — the combo-return jump fires `GameInteractor_ExecuteOnLoadGame`
-  after `Sram_OpenSave` like `FileChoose_LoadGame` does; `Save_LoadFile` recreates `gRandoContext`,
+  after `Sram_TryOpenSave` like `FileChoose_LoadGame` does; `Save_TryLoadFile` recreates `gRandoContext`,
   and without the hook the check tracker's region-table `ctx` dangled → UAF on the next recalc.
 
 ## Cross-game hints (closes GAP-2/GAP-3, 4 phases, 2026-07-14/15)

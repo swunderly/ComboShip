@@ -169,7 +169,8 @@ adds canonical `gCombo.Tracker.IconSpacing` (separately seeded) and flips Dragga
 - `mm/.../ItemTracker/ItemTracker.cpp` — cell padded around the icon by
   `gSettings.ItemTracker.IconSpacing` (bridge-mirrored) so both grids share icon+gap pitch;
   count text anchored to the icon rect. Vanilla path unchanged (pad 0 / `#else`).
-- `soh/soh/SaveManager.cpp` — `Save_LoadFile`: `ThreadPoolWait()` before recreating gRandoContext
+- `soh/soh/SaveManager.cpp` — `SaveManager::LoadFile`, reached through `Save_TryLoadFile` (combo builds
+  compile out `Save_LoadFile`): `ThreadPoolWait()` before recreating gRandoContext
   (reload paths reach here before OnExitGame's drain), and early-return keeping the current
   context when the container has no OOT block (previously reset-then-bail left it all-unchecked).
 - `soh/.../randomizer_check_tracker.cpp` — `CheckTrackerLoadGame` promotes a persisted status to
