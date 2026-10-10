@@ -3467,7 +3467,7 @@ typedef enum {
     RO_SHUFFLE_ANIMAL_SOULS,
     RO_SHUFFLE_MISC_SOULS,
     RO_MM_COMPLETE_SOULS, // Internal version switch; absent legacy saves/seeds stay zero.
-    RO_MM_SPELL_WIND,     // dormant until complete launcher/equip integration
+    RO_MM_SPELL_WIND,     // Farore's Wind (MM) item-pool toggle, exposed in the combo menus
     RO_CROSS_GAME_FARORE,
     RO_MM_CROSS_AGE,
     RO_SHARED_SPELL_WIND, // append-only private effective seed mask
