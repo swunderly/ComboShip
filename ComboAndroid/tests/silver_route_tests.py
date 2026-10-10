@@ -4,7 +4,8 @@ import argparse,json,re,subprocess
 import hostcxx
 p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--build-dir',type=Path,required=True);p.add_argument('--compiler',default=hostcxx.DEFAULT_COMPILER);p.add_argument('--json-include',type=Path,required=True);a=p.parse_args()
 r=a.source.resolve()/'soh/soh/Enhancements/randomizer';d=r/'silver_rupees';work=a.build_dir.resolve();work.mkdir(parents=True,exist_ok=True)
-up=json.loads((d/'upstream-access.json').read_text())['access'];receipt=json.loads((d/'native-route-map.json').read_text())['access'];inc=(d/'SilverRoutes.inc').read_text()
+fixtures=Path(__file__).resolve().parent/'fixtures'
+up=json.loads((fixtures/'silver-upstream-access.json').read_text())['access'];receipt=json.loads((fixtures/'silver-native-route-map.json').read_text())['access'];inc=(d/'SilverRoutes.inc').read_text()
 assert len(up)==len(receipt)==188
 assert len({x['check'] for x in up})==154 and len({x['region'] for x in up})==39
 for original,ported in zip(up,receipt):
