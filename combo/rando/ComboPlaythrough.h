@@ -352,8 +352,11 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
     };
     std::unordered_map<std::string, SongReachMemo> songMemo;
     std::unordered_set<size_t> stockSensitive;
-    const auto sourceMetadata =
-        nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("beanSources", nlohmann::json::object());
+    // The dumps are the same for every replay: parse them once, not once per replay sphere.
+    const auto mmDump = nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson);
+    const auto sourceMetadata = mmDump.value("beanSources", nlohmann::json::object());
+    const bool fairyOcarinaMm = mmDump.value("fairyOcarinaMm", false);
+    const auto sharedStarts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
     for (size_t i = 0; i < placements.size(); ++i) {
         if (placements[i].checkGame != GAME_MM)
             continue;
@@ -378,8 +381,7 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
         auto queryWithStock = [&](const OracleFns& o, const std::vector<std::string>& owned) {
             return QueryReachableWithMmStock(o, owned, &o == &mmOracle, placements, excludeIdx);
         };
-        const auto starts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
-        std::vector<std::string> ootOwned = starts.first, mmOwned = starts.second;
+        std::vector<std::string> ootOwned = sharedStarts.first, mmOwned = sharedStarts.second;
         std::vector<char> credited(placements.size(), 0);
         ReachSet ootReach, mmReach;
         bool won = false;
@@ -390,9 +392,7 @@ inline RequirednessResult PareDownPlaythrough(const std::string& spoilerJson, co
         bool portalOpen = !portalGated || mmStart;
         for (;;) {
             CheckGenerationCancellation();
-            ApplySharedMirror(
-                sharedMask, ootOwned, mmOwned, sharedGiven,
-                nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+            ApplySharedMirror(sharedMask, ootOwned, mmOwned, sharedGiven, fairyOcarinaMm);
             const std::string key = nlohmann::json::array({ CanonicalOwnedKey(ootOwned), CanonicalOwnedKey(mmOwned),
                                                             portalOpen, excludedKey })
                                         .dump();
@@ -577,6 +577,8 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
 
     const auto starts = SharedStartingInventories(sharedMask, sohDumpJson, mmDumpJson);
     std::vector<std::string> ownedOot = starts.first, ownedMm = starts.second;
+    const bool fairyOcarinaMm =
+        nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false);
     std::unordered_set<std::string> collected; // "<cg>:<cn>"
     std::ostringstream log;
     log << "Cross-world playthrough - seed '" << seedLabel << "'\n";
@@ -593,8 +595,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
     bool portalOpen = !portalGated || mmStart;
     size_t sharedGiven[SF_COUNT] = { 0 };
     for (int sphere = 0; sphere < kMaxSpheres; ++sphere) {
-        ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven,
-                          nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+        ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven, fairyOcarinaMm);
         auto worlds = QuerySongWorlds(ootOracle, mmOracle, ownedOot, ownedMm, portalOpen, queryReachable);
         auto& ootReach = worlds.first;
         auto& mmReach = worlds.second;
@@ -657,8 +658,7 @@ inline PlaythroughResult RunPlaythrough(const std::string& spoilerJson, const Or
 
     // Reachability after collecting only checks that actually opened from the empty start.
     // Never grant the contents of inaccessible checks to prove those same checks accessible.
-    ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven,
-                      nlohmann::json::parse(mmDumpJson.empty() ? "{}" : mmDumpJson).value("fairyOcarinaMm", false));
+    ApplySharedMirror(sharedMask, ownedOot, ownedMm, sharedGiven, fairyOcarinaMm);
     auto everWorlds = QuerySongWorlds(ootOracle, mmOracle, ownedOot, ownedMm, portalOpen, queryReachable);
     auto& everReachOot = everWorlds.first;
     auto& everReachMm = everWorlds.second;
