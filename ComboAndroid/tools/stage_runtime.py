@@ -49,16 +49,9 @@ def stage(upstream,native,sdl,ndk,app):
         exported[name]=sorted(set(exported.get(name,[])) | symbols)
     verify_runtime({p.name:p.read_bytes() for p in libs.glob('*.so')},exported)
     (assets/'native-exports.json').write_text(json.dumps(exported,indent=2)+'\n',encoding='utf-8')
-    pin='94eb185e4abcc2d568aa8241fa02c43cdd86c439'
-    patched=subprocess.check_output(['git','-C',str(upstream),'diff',pin,'--name-only'],text=True).splitlines()
-    patched+=subprocess.check_output(['git','-C',str(upstream),'ls-files','--others','--exclude-standard','--','combo','libultraship/include/ship/window/gui','mm/2s2h/DeveloperTools/OwlStatueEditor.h','soh/soh/Enhancements/Restorations/ShadowDoorUnload.h','soh/soh/Enhancements/randomizer/age_change_areas.h','soh/soh/Enhancements/CrossWarp','mm/src/overlays/actors/ovl_Combo_Song_Warp','mm/src/overlays/actors/ovl_Combo_Magic_Fire/z_combo_magic_fire.c','mm/src/overlays/actors/ovl_Combo_Magic_Fire/z_combo_magic_fire.h','mm/src/overlays/actors/ovl_Combo_Magic_Fire/sSphereVtx.vtx.inc','mm/src/overlays/actors/ovl_Combo_Magic_Dark/z_combo_magic_dark.c','mm/src/overlays/actors/ovl_Combo_Magic_Dark/z_combo_magic_dark.h','mm/src/overlays/actors/ovl_Combo_Magic_Dark/sDiamondVtx.vtx.inc','mm/2s2h/Rando/Spells.h','mm/2s2h/Rando/Spells.cpp','mm/src/overlays/actors/ovl_player_actor/ComboSpellPlayer.inc.h','combo/rando/SpellRules.h','mm/src/overlays/actors/ovl_Combo_Magic_Wind','mm/src/overlays/actors/ovl_player_actor/ComboFarorePlayer.inc.h','mm/src/code/ComboFarorePointer.c','mm/src/overlays/actors/ovl_En_Wallmas','mm/2s2h/Enhancements/Songs/CrossWarpAudio.cpp','mm/2s2h/Enhancements/Songs/CrossWarpAudio.h'],text=True).splitlines()
-    patched+=subprocess.check_output(['git','-C',str(upstream),'ls-files','--others','--exclude-standard','--','soh/soh/Enhancements/randomizer/silver_rupees','mm/2s2h/Rando','mm/2s2h/Enhancements'],text=True).splitlines()
-    patched+=subprocess.check_output(['git','-C',str(upstream),'ls-files','--others','--exclude-standard','--',
-        'soh/soh/Enhancements/randomizer/KokiriRupeePolicy.h',
-        'soh/soh/Enhancements/randomizer/KokiriGrassPolicy.h',
-        'soh/soh/ProfileOotStartingLayout.inc', 'mm/2s2h/ProfileMmLayout.inc'],text=True).splitlines()
-    provenance={'upstream':pin,'androidApi':28,'ndk':'28.2.13676358','abi':'arm64-v8a',
-        'deviceTested':False,'patchedFiles':{p:hashlib.sha256((upstream/p).read_bytes()).hexdigest() for p in patched}}
+    git=lambda *args:subprocess.check_output(['git','-C',str(upstream),*args],text=True).strip()
+    provenance={'source':git('rev-parse','HEAD'),'sourceModified':bool(git('status','--porcelain','--untracked-files=no')),
+        'androidApi':28,'ndk':'28.2.13676358','abi':'arm64-v8a','deviceTested':False}
     (assets/'build-info.json').write_text(json.dumps(provenance,indent=2)+'\n',encoding='utf-8')
     copy_tree(sdl/'android-project/app/src/main/java',java)
     patch_sdl(java)

@@ -1,11 +1,21 @@
 #!/usr/bin/env python3
 """Check APK architecture, native alignment, manifest hashes, and absence of game ROMs."""
-import argparse,json,zipfile,hashlib
+import argparse,json,zipfile,hashlib,struct
 from pathlib import Path
 from stage_runtime import REQUIRED,arm64
 from verify_native import verify_runtime
+def unreferenced_bytes(apk,z):
+    """Bytes between local entries that no central-directory entry points at (left by incremental packaging)."""
+    data=apk.read_bytes();end=0;gaps=0
+    for info in sorted(z.infolist(),key=lambda i:i.header_offset):
+        gaps+=max(0,info.header_offset-end)
+        name_length,extra_length=struct.unpack_from('<HH',data,info.header_offset+26)
+        end=info.header_offset+30+name_length+extra_length+info.compress_size+(16 if info.flag_bits&8 else 0)
+    return gaps
 def verify(apk):
     with zipfile.ZipFile(apk) as z:
+        stale=unreferenced_bytes(apk,z)
+        if stale>1024*1024:raise RuntimeError(f'{stale} bytes of unreferenced space in the APK; package from clean outputs')
         names=z.namelist()
         if len(names)!=len(set(names)):raise RuntimeError('Duplicate APK entries')
         libs={Path(name).name:name for name in names if name.startswith('lib/arm64-v8a/') and name.endswith('.so')}

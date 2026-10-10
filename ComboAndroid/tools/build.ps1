@@ -1,5 +1,4 @@
 param(
-    [Parameter(Mandatory=$true)][string]$Upstream,
     [Parameter(Mandatory=$true)][string]$Vcpkg,
     [Parameter(Mandatory=$true)][string]$Workspace,
     [Parameter(Mandatory=$true)][string]$AndroidSdk,
@@ -14,7 +13,7 @@ function Run([string]$Program,[string[]]$Arguments) {
 }
 function Full([string]$Path){return [IO.Path]::GetFullPath($Path).Replace('\','/')}
 $overlay=Full (Join-Path $PSScriptRoot '..')
-$source=Full $Upstream
+$source=Full (Join-Path $overlay '..')
 $dependencies=Full $Vcpkg
 $work=Full $Workspace
 $sdk=Full $AndroidSdk
@@ -41,7 +40,6 @@ $env:JAVA_TOOL_OPTIONS="$env:JAVA_TOOL_OPTIONS -Djdk.net.unixdomain.tmpdir=$sock
 
 Run "$dependencies/vcpkg.exe" @('install','--triplet','arm64-android','zlib','libpng','libogg','libvorbis','opus','opusfile')
 Run "$dependencies/vcpkg.exe" @('install','--triplet','x64-windows-static-md','zlib','bzip2','libzip','libpng','sdl2','sdl2-net','glew','glfw3','nlohmann-json','tinyxml2','spdlog','libogg','libvorbis','opus','opusfile')
-Run $python @('-X','utf8',"$overlay/tools/apply_port.py",$source)
 Run $cmake @('-S',$source,'-B',"$work/build-android",'-G','Ninja','-DCMAKE_BUILD_TYPE=RelWithDebInfo',
     "-DCMAKE_MAKE_PROGRAM=$ninja","-DCMAKE_TOOLCHAIN_FILE=$ndk/build/cmake/android.toolchain.cmake",'-DANDROID_ABI=arm64-v8a',
     '-DANDROID_PLATFORM=android-28','-DANDROID_STL=c++_shared',"-DCOMBO_VCPKG_PREFIX=$dependencies/installed/arm64-android",
@@ -53,6 +51,8 @@ Run $cmake @('-S',$source,'-B',"$work/build-assets",'-G','Ninja','-DCMAKE_BUILD_
 Run $cmake @('--build',"$work/build-assets",'--target','GenerateSohOtr','Generate2ShipOtr','--parallel',"$Jobs")
 Run $python @('-X','utf8',"$overlay/tools/stage_runtime.py",'--upstream',$source,'--native',"$work/build-android",
     '--sdl',"$work/build-android/_deps/sdl2-src",'--ndk',$ndk,'--app',"$overlay/app")
+# Package from clean outputs: incremental packaging leaves megabytes of dead space in the APK.
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "$overlay/app/build/outputs/apk","$overlay/app/build/intermediates/apk"
 Run "$overlay/gradlew.bat" @('-p',$overlay,':app:assembleDebug','--no-daemon')
 $apk="$overlay/app/build/outputs/apk/debug/app-debug.apk"
 Run $python @('-X','utf8',"$overlay/tools/verify_apk.py",$apk)
