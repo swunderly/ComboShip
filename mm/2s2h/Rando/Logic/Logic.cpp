@@ -268,10 +268,6 @@ bool NativeMmCanResetTimeDungeon() {
     // Do not assume upstream Farore, autoInvert, or Majora-in-logic options.
     return NativeMmCanResetTime();
 }
-bool NativeMmCanResetTimeOnMoon() {
-    // can_reset_time_on_moon excludes the moon-crash cycle branch.
-    return CAN_PLAY_SONG(TIME);
-}
 
 MmAccessScope::MmAccessScope()
     : previousIngress(mmAccessIngress), previousAccess(mmAccessEvent), previousChanged(mmAccessChanged) {

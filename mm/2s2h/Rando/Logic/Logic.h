@@ -48,7 +48,6 @@ extern "C" {
 #define COMBO_MM_TRICK(name) CVarGetInteger("gCombo.Tricks.MM." name, 0)
 #define CAN_RESET_TIME Rando::Logic::NativeMmCanResetTime()
 #define CAN_RESET_TIME_DUNGEON Rando::Logic::NativeMmCanResetTimeDungeon()
-#define CAN_RESET_TIME_ON_MOON Rando::Logic::NativeMmCanResetTimeOnMoon()
 #define CAN_ACTIVATE_OWL (CAN_USE_SWORD || CAN_USE_STICKS)
 #define CAN_FIGHT_WITH_STICKS (CAN_USE_STICKS && COMBO_MM_TRICK("DekuStickFighting"))
 #define CAN_NAVIGATE_HIDDEN \
@@ -83,7 +82,6 @@ extern "C" {
 #define COMBO_MM_TRICK(name) 0
 #define CAN_RESET_TIME true
 #define CAN_RESET_TIME_DUNGEON true
-#define CAN_RESET_TIME_ON_MOON true
 #define CAN_ACTIVATE_OWL CAN_USE_SWORD
 #define CAN_FIGHT_WITH_STICKS CAN_USE_STICKS
 #define CAN_NAVIGATE_HIDDEN (HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC)
@@ -264,7 +262,6 @@ inline int GameplayRuleValue(const char* runtime) {
 // Routed entrances record the original reachable edge BEFORE filtering its destination.
 bool NativeMmCanResetTime();
 bool NativeMmCanResetTimeDungeon();
-bool NativeMmCanResetTimeOnMoon();
 bool NativeMmIngressNeedsDungeonReset(s32 entrance);
 bool NativeMmIngressNeedsReset(s32 entrance);
 uint64_t FilterNativeMmIngressTimes(s32 entrance, uint64_t arrivalTimes);
@@ -403,7 +400,6 @@ bool HasUsableBottle();
 // Pinned macros_mm.yml70..75: MM equipment ownership is effective only with its option.
 #define MM_LOGIC_HAS_IRON_BOOTS (RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] && HAS_ITEM(ITEM_COMBO_BOOTS_IRON))
 #define MM_LOGIC_HAS_HOVER_BOOTS (RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] && HAS_ITEM(ITEM_COMBO_BOOTS_HOVER))
-#define MM_LOGIC_HAS_GORON_TUNIC_STRICT (RANDO_SAVE_OPTIONS[RO_MM_TUNIC_GORON] && HAS_ITEM(ITEM_COMBO_TUNIC_GORON))
 #define MM_LOGIC_HAS_ZORA_TUNIC_STRICT (RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA] && HAS_ITEM(ITEM_COMBO_TUNIC_ZORA))
 #define MM_LOGIC_UNDERWATER_WALKING_STRICT \
     (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT))
