@@ -121,10 +121,6 @@ inline std::vector<HubEntry> BuildFeatureNavigation(const std::string& scope, co
                     addSource(MenuGroupRoute(g == 0, section.sectionLabel, sidebar.sidebarName, column, heading,
                                              widget.cvar ? widget.cvar : ""));
                 }
-                const auto restoration = NavigationSourceRoute(g == 0, section.sectionLabel ? section.sectionLabel : "",
-                                                               sidebar.sidebarName ? sidebar.sidebarName : "", 2);
-                if (restoration.scope != dest.scope || restoration.page != dest.page)
-                    addSource(restoration);
             }
         }
     }

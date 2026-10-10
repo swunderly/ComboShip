@@ -179,14 +179,6 @@ namespace ComboRando {
 
 static std::shared_ptr<ComboMenu> sComboMenu;
 
-// OoT exports its restoration controls in the third Fixes column (index 2). Route that
-// group into the shared Restorations page while retaining every native widget.
-static MenuDestination FeatureMenuRoute(bool oot, const std::string& section, const std::string& sidebar, int column) {
-    if (oot && section == "Enhancements" && sidebar == "Fixes" && column == 2)
-        return { "gameplay", "Restorations" };
-    return MenuRoute(oot, section, sidebar);
-}
-
 // Search normalization shared by the query and every widget haystack: lowercase + strip spaces.
 static std::string NormalizeSearch(std::string s) {
     return NormalizeMenuSearch(std::move(s));
@@ -1695,18 +1687,13 @@ void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& pag
     side.widgets = grouped.data();
     side.widgetCount = (int)grouped.size();
     std::vector<CwWidget> filtered;
+    // OoT's restoration controls are the third Fixes column, which MenuGroupRoute sends to
+    // Restorations; lay them out as one column there.
     if (source.oot && side.sidebarName && std::strcmp(side.sidebarName, "Fixes") == 0 &&
         (page == "Fixes" || page == "Restorations")) {
-        for (int i = 0; i < side.widgetCount; ++i) {
-            const auto& w = side.widgets[i];
-            if (FeatureMenuRoute(true, "Enhancements", side.sidebarName, w.column).page != page)
-                continue;
-            filtered.push_back(w); // preserve native index, CVar and callbacks
-            if (page == "Restorations")
-                filtered.back().column = 0;
-        }
-        side.widgets = filtered.data();
-        side.widgetCount = (int)filtered.size();
+        if (page == "Restorations")
+            for (auto& w : grouped)
+                w.column = 0; // native index, CVar and callbacks are kept
         side.columnCount = page == "Restorations" ? 1 : 2;
     }
     if (page == "General") {
