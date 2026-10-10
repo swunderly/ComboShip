@@ -337,6 +337,24 @@ inline void OOT_DrawForeignRecoveryHeart(PlayState* play, const ComboForeignDraw
     OOT_RestoreForeignSegs(play, segs, 1);
 }
 
+// Din's Fire / Farore's Wind / Nayru's Love: XLU seg8 scroll, dl0,1,2 (GetItem_DrawMagicSpell).
+inline void OOT_DrawForeignMagicSpell(PlayState* play, const ComboForeignDrawInfo* info) {
+    OPEN_DISPS(play->state.gfxCtx);
+    Gfx_SetupDL_25Xlu(play->state.gfxCtx);
+    OOT_FOREIGN_PIN_XLU();
+    gSPSegment(POLY_XLU_DISP++, 0x08,
+               (uintptr_t)Gfx_TwoTexScrollEx(play->state.gfxCtx, G_TX_RENDERTILE, play->state.frames * 2,
+                                             -(int32_t)(play->state.frames * 6), 32, 32, 1, play->state.frames * 1,
+                                             -(int32_t)(play->state.frames * 2), 32, 32, 2, -6, 1, -2));
+    COMBO_FOREIGN_MTX(POLY_XLU_DISP++);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)info->dls[0]);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)info->dls[1]);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)info->dls[2]);
+    CLOSE_DISPS(play->state.gfxCtx);
+    int32_t segs[] = { 0x08 };
+    OOT_RestoreForeignSegs(play, segs, 1);
+}
+
 // Fish container: seg8 XLU scroll (GetItem_DrawFish).
 inline void OOT_DrawForeignFish(PlayState* play, const ComboForeignDrawInfo* info) {
     OPEN_DISPS(play->state.gfxCtx);
@@ -684,6 +702,9 @@ inline void OOT_DrawComboForeign(PlayState* play, GetItemEntry* getItemEntry) {
             break;
         case CW_DRAW_KIND_MM_FAIRY_BOTTLE:
             OOT_DrawForeignFairyBottle(play, info);
+            break;
+        case CW_DRAW_KIND_MAGIC_SPELL:
+            OOT_DrawForeignMagicSpell(play, info);
             break;
         case CW_DRAW_KIND_MM_SOUL_FLAME:
             OOT_DrawForeignSoulFlame(play, info);

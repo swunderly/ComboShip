@@ -996,6 +996,21 @@ static int32_t MM_FillItemDrawInfo(RandoItemId id, CwItemDrawInfo* out) {
         out->setupDlXlu = nullptr;
         return 1;
     }
+    if (id == RI_FARORES_WIND || id == RI_DINS_FIRE || id == RI_NAYRUS_LOVE) {
+        // OOT's own goddess model and GetItem_DrawMagicSpell recipe, as Rando::DrawItem uses in MM.
+        out->dlists[0] = "__OTR__@oot:objects/object_gi_goddess/gGiMagicSpellDiamondDL";
+        out->dlists[1] = id == RI_FARORES_WIND ? "__OTR__@oot:objects/object_gi_goddess/gGiFaroresWindColorDL"
+                         : id == RI_DINS_FIRE  ? "__OTR__@oot:objects/object_gi_goddess/gGiDinsFireColorDL"
+                                               : "__OTR__@oot:objects/object_gi_goddess/gGiNayrusLoveColorDL";
+        out->dlists[2] = "__OTR__@oot:objects/object_gi_goddess/gGiMagicSpellOrbDL";
+        out->dlistCount = 3;
+        out->xluStartIndex = 0;
+        out->scale = 1.0f;
+        out->drawKind = CW_DRAW_KIND_MAGIC_SPELL;
+        out->setupDlOpa = nullptr;
+        out->setupDlXlu = nullptr;
+        return 1;
+    }
     if (MM_FillSongDrawInfo(id, out)) {
         return 1; // songs: tinted note, no table row
     }
