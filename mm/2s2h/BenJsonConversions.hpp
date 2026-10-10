@@ -286,6 +286,8 @@ inline void to_json(json& j, const ShipSaveInfo& shipSaveInfo) {
         { "faroresWind", shipSaveInfo.faroresWind },
         { "spellFireOwned", shipSaveInfo.spellFireOwned },
         { "spellLoveOwned", shipSaveInfo.spellLoveOwned },
+        { "grottoPreviousSceneValid", shipSaveInfo.grottoPreviousSceneValid },
+        { "grottoPreviousScene", shipSaveInfo.grottoPreviousScene },
         { "commitHash", commitHash },
     };
 
@@ -308,6 +310,9 @@ inline void from_json(const json& j, ShipSaveInfo& shipSaveInfo) {
     shipSaveInfo.faroresWind = j.value("faroresWind", ComboFaroreSaveInfo{});
     shipSaveInfo.spellFireOwned = j.value("spellFireOwned", uint8_t(0));
     shipSaveInfo.spellLoveOwned = j.value("spellLoveOwned", uint8_t(0));
+    // Older saves lack the grotto context; anything but an explicit 1 loads as inactive.
+    shipSaveInfo.grottoPreviousSceneValid = j.value("grottoPreviousSceneValid", uint8_t(0)) == 1;
+    shipSaveInfo.grottoPreviousScene = j.value("grottoPreviousScene", uint16_t(0));
     j.at("commitHash").get_to(shipSaveInfo.commitHash);
 
     if (shipSaveInfo.saveType == SAVETYPE_RANDO) {
