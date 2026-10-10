@@ -4317,10 +4317,6 @@ int main(int argc, char** argv) {
     MM_TakeDungeonDeparture = (FaroreDeparture)GetSym(mmModule, "MM_TakeDungeonDeparture");
     SOH_SetDungeonArrival = (FaroreArrival)GetSym(sohModule, "SOH_SetDungeonArrival");
     MM_SetDungeonArrival = (FaroreArrival)GetSym(mmModule, "MM_SetDungeonArrival");
-    if (auto configure = (void (*)(int))GetSym(sohModule, "SOH_ConfigureSharedDungeonRules"))
-        configure(0);
-    if (auto configure = (void (*)(int))GetSym(mmModule, "MM_ConfigureSharedDungeonRules"))
-        configure(0);
     if (auto set =
             (void (*)(ComboReadSharedDungeon, ComboWriteSharedDungeon))GetSym(sohModule, "SOH_SetSharedDungeonBridge"))
         set(Combo_FaroreReadDungeon, Combo_FaroreWriteDungeon);

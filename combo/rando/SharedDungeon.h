@@ -10,11 +10,3 @@ typedef struct ComboSharedDungeon {
 } ComboSharedDungeon;
 typedef int (*ComboReadSharedDungeon)(int fileNum, ComboSharedDungeon*);
 typedef int (*ComboWriteSharedDungeon)(int fileNum, const ComboSharedDungeon*);
-#ifdef __cplusplus
-extern "C" {
-#endif
-void SOH_ConfigureSharedDungeonRules(int enabled);
-void MM_ConfigureSharedDungeonRules(int enabled);
-#ifdef __cplusplus
-}
-#endif
