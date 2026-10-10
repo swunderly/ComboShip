@@ -2,8 +2,9 @@
 #include "OotSouls.h"
 namespace Rando::Souls {
 // Source vanilla FOREST_POE_1..4 and MQ JOELLE/BETH/AMY_CLEAR all require the Poe soul.
-// Events that a setting also grants in RR_ROOT (Kakariko gate, Talon, Malon) check their NPC soul
+// Events that a setting also grants in RR_ROOT (Kakariko gate, Talon) check their NPC soul
 // at the in-world grant instead, so the setting grant stays unconditional as in pinned OoTMM.
+// Malon is not one of them: OoTMM's MALON event needs her soul however it is granted.
 inline bool EventPrerequisite(Logic* logic, LogicVal event) {
     if (!Enabled())
         return true;
@@ -34,6 +35,7 @@ inline bool EventPrerequisite(Logic* logic, LogicVal event) {
             return Has(logic, OotSoul::NPC_THIEVES);
         case LOGIC_SPIRIT_MQ_3SUNS_ENEMIES:
             return Has(logic, OotSoul::ENEMY_STALFOS) && Has(logic, OotSoul::ENEMY_WALLMASTER);
+        case LOGIC_MALON_RETURNED_FROM_CASTLE:
         case LOGIC_LINKS_COW:
             return Has(logic, OotSoul::NPC_MALON);
         case LOGIC_BIG_POE_KILL:

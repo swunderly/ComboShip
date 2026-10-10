@@ -28,9 +28,9 @@ void RegionTable_Init_CastleGrounds() {
 #ifdef COMBO_BUILD
         // OoTMM's MALON event requires meeting her at the castle. Collecting
         // her unrestricted reward sends her home even if the egg is shuffled.
-        EVENT_ACCESS(LOGIC_MALON_RETURNED_FROM_CASTLE, logic->IsChild && logic->HasItem(RG_SPEAK_HYLIAN) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::NPC_MALON))),
+        EVENT_ACCESS(LOGIC_MALON_RETURNED_FROM_CASTLE, logic->IsChild && logic->HasItem(RG_SPEAK_HYLIAN)),
 #else
-        EVENT_ACCESS(LOGIC_MALON_RETURNED_FROM_CASTLE, logic->Get(LOGIC_TALON_RETURNED_FROM_CASTLE) && logic->HasItem(RG_SPEAK_HYLIAN) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::NPC_MALON))),
+        EVENT_ACCESS(LOGIC_MALON_RETURNED_FROM_CASTLE, logic->Get(LOGIC_TALON_RETURNED_FROM_CASTLE) && logic->HasItem(RG_SPEAK_HYLIAN)),
 #endif
     }, {
         //Locations
