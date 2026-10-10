@@ -1,8 +1,8 @@
 #pragma once
 
-// Adapted from OoTMM oot/play/play.c and mm/play/play.c, MIT revision
+// Adapted from OoTMM oot/play/play.c, MIT revision
 // 41a2b7c0d7dbbb53fed928652f8271bc336c113f. See OoTMM-MIT-LICENSE.txt.
-// Isolated field-restoration adapters only. The engine bridge must perform its
+// Isolated field-restoration adapter only. The engine bridge must perform its
 // age change first, then supply that age's typed point and respawn backups.
 // Respawn arguments share one engine type: no cross-engine byte copying.
 namespace ComboFarore {
@@ -32,25 +32,6 @@ void RestoreNativeOotArrival(const Point& point, const Respawn& dungeonBackup, R
         top.pos.x = 0.0f;
         top.pos.y = 0.0f;
         top.pos.z = 0.0f;
-    }
-}
-
-template <class Respawn, class Flag, class SpawnMarker>
-void RestoreNativeMmArrival(const Respawn& point, const Respawn& topBackup, const Respawn& dungeonBackup,
-                            Respawn& human, Respawn& top, Respawn& dungeon, Flag& respawnFlag, SpawnMarker& isFwSpawn) {
-    if (!isFwSpawn)
-        return;
-    respawnFlag = 8;
-    top = topBackup;
-    dungeon = dungeonBackup;
-    // MM leaves isFwSpawn unchanged in this pinned branch.
-    if (point.data) {
-        human = point;
-    } else {
-        human.data = 0;
-        human.pos.x = 0.0f;
-        human.pos.y = 0.0f;
-        human.pos.z = 0.0f;
     }
 }
 } // namespace ComboFarore

@@ -9,12 +9,6 @@ namespace ComboRando {
 // OoTMM a284b8aa: settings erWarps, solver/entrances.ts poolWarps, both _system.yml.
 // Destination shuffle and shared cross-game song playback are independent seed options.
 inline constexpr int kSongDestinations = 16;
-inline constexpr const char* kSongNames[] = { "Minuet of Forest",  "Bolero of Fire",     "Serenade of Water",
-                                              "Requiem of Spirit", "Nocturne of Shadow", "Prelude of Light",
-                                              "Great Bay Coast",   "Zora Cape",          "Snowhead",
-                                              "Mountain Village",  "Clock Town",         "Milk Road",
-                                              "Woodfall",          "Southern Swamp",     "Ikana Canyon",
-                                              "Stone Tower" };
 struct SongTravelMap {
     bool enabled = false;
     bool foreignSongs = false;

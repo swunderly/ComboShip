@@ -13,9 +13,4 @@ inline bool IsTall(bool zoraMask, bool adult) {
 inline bool IsShort(bool dekuMask, bool child) {
     return dekuMask || child;
 }
-// Pinned pathfind.ts: a newly obtained mask re-explores MM regions at the other age
-// only in crossAge mode. Actual area cloning/frontier wiring remains engine-owned.
-inline bool CanChangeAtMmArea(bool crossAge, bool adultMaskOwned) {
-    return crossAge && adultMaskOwned;
-}
 } // namespace ComboRando::MmAgeLogic

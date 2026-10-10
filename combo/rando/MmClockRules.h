@@ -25,12 +25,6 @@ constexpr uint32_t MoonCrash(uint8_t mask) {
             end = i + 1;
     return FromHalfDay(end);
 }
-constexpr uint32_t NewCycle(uint8_t mask) {
-    for (int i = 0; i < 6; ++i)
-        if (mask & (1u << i))
-            return FromHalfDay(i);
-    return FromHalfDay(6);
-}
 constexpr bool IsMoonCrash(uint8_t mask, int day, uint16_t time) {
     const uint32_t linear = Linear(day, time);
     return linear >= MoonCrash(mask) && linear < 0x40000u;
