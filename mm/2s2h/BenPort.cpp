@@ -4060,8 +4060,9 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
     }
 
     nlohmann::json sharedStartingItems = nlohmann::json::array();
-    // These seven single-item families use explicit starting inventory. Computed
-    // clock/key starts are unrelated and must not consume the generator RNG here.
+    // Every explicitly configured starting item; the combo layer picks the shared
+    // single-item families from it. Computed clock/key starts are left out so
+    // they do not consume the generator RNG here.
     for (const auto item : startingItems)
         sharedStartingItems.push_back(Rando::StaticData::GetItemDisplayName(item));
     cached = nlohmann::json{
@@ -4667,9 +4668,6 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
     // The memset wiped check prices too; re-apply the rolled/spoiler set or every CAN_AFFORD gate
     // evaluates price==0 and shops/Tingle maps are free to the oracle.
     Combo_MM_ApplyCheckPrices();
-    // GeneratePools leaves these shelves at their vanilla items when shops are
-    // not shuffled. They still supply renewable ammo to the real game; clearing
-    // them here must not erase those sources from generation's search.
     // Restore shelf shuffle identity erased by the oracle save reset. Native
     // potion events must not mistake randomized stock for its vanilla refill.
     for (const auto& [id, check] : Rando::StaticData::Checks) {
@@ -4678,6 +4676,9 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
             RANDO_SAVE_CHECKS[id].shuffled = RANDO_SAVE_OPTIONS[RO_SHUFFLE_SHOPS] != RO_GENERIC_NO;
         }
     }
+    // GeneratePools leaves these shelves at their vanilla items when shops are
+    // not shuffled. They still supply renewable ammo to the real game; clearing
+    // them here must not erase those sources from generation's search.
     if (RANDO_SAVE_OPTIONS[RO_SHUFFLE_SHOPS] == RO_GENERIC_NO) {
         for (const auto& [id, check] : Rando::StaticData::Checks) {
             if (check.randoCheckType == RCTYPE_SHOP && id != RC_CURIOSITY_SHOP_SPECIAL_ITEM &&
