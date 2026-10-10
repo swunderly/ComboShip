@@ -25,12 +25,18 @@ public final class StorageCopy {
     static void prepare(File source,File target) throws IOException {
         prepare(source,target,staging->{});
     }
-    static void prepare(File source,File target,BeforePublish beforePublish) throws IOException {
+    static synchronized void prepare(File source,File target,BeforePublish beforePublish) throws IOException {
         Path from=source.getCanonicalFile().toPath(),to=target.getCanonicalFile().toPath();
         if(!Files.isDirectory(from) || to.startsWith(from) || from.startsWith(to))
             throw new IOException("Storage folders must be separate.");
         boolean emptyTarget=Files.exists(to,LinkOption.NOFOLLOW_LINKS);
         if(emptyTarget && !isEmptyDirectory(to))throw new IOException("The destination already contains data. No files were overwritten.");
+        // A copy killed mid-way never reaches the cleanup below. Copies run one at a time, so a staging
+        // folder left here is abandoned; it was never published, so removing it cannot lose data.
+        try(DirectoryStream<Path> abandoned=Files.newDirectoryStream(to.getParent(),".comboship-copy-*")) {
+            for(Path old:abandoned)if(Files.isDirectory(old,LinkOption.NOFOLLOW_LINKS))
+                try{removeTree(old);}catch(IOException ignored){} // Best effort; it must not block this copy.
+        }
         Path staging=Files.createTempDirectory(to.getParent(),".comboship-copy-");
         boolean committed=false;
         try {
@@ -54,15 +60,19 @@ public final class StorageCopy {
             Files.move(staging,to);
             committed=true;
         }finally {
-            if(!committed)Files.walkFileTree(staging,new SimpleFileVisitor<Path>() {
-                @Override public FileVisitResult visitFile(Path file,BasicFileAttributes attrs)throws IOException {
-                    Files.delete(file);return FileVisitResult.CONTINUE;
-                }
-                @Override public FileVisitResult postVisitDirectory(Path dir,IOException error)throws IOException {
-                    if(error!=null)throw error;Files.delete(dir);return FileVisitResult.CONTINUE;
-                }
-            });
+            if(!committed)removeTree(staging);
             if(!committed && emptyTarget && !Files.exists(to))Files.createDirectory(to);
         }
+    }
+    /** Deletes a staging tree; symbolic links inside it are removed, never followed. */
+    private static void removeTree(Path root)throws IOException {
+        Files.walkFileTree(root,new SimpleFileVisitor<Path>() {
+            @Override public FileVisitResult visitFile(Path file,BasicFileAttributes attrs)throws IOException {
+                Files.delete(file);return FileVisitResult.CONTINUE;
+            }
+            @Override public FileVisitResult postVisitDirectory(Path dir,IOException error)throws IOException {
+                if(error!=null)throw error;Files.delete(dir);return FileVisitResult.CONTINUE;
+            }
+        });
     }
 }
