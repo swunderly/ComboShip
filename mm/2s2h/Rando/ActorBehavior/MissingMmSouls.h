@@ -3,6 +3,9 @@
 #include <algorithm>
 #include "MissingMmSoulsState.h"
 namespace Rando {
+// Complete MM souls (Igos as a boss, Bio Baba, Floormaster, Flying Pot, Real Bombchu, Skullwalltula) is
+// unreleased: RO_MM_COMPLETE_SOULS has no CVar and stays off, so every path keyed on it is dormant and
+// seeds keep the legacy Igos enemy soul. Its item and option ids stay for save compatibility.
 inline constexpr RandoItemId missingMmSoulItems[] = { RI_SOUL_BOSS_IGOS,          RI_SOUL_ENEMY_BIO_BABA,
                                                       RI_SOUL_ENEMY_FLOORMASTER,  RI_SOUL_ENEMY_FLYING_POT,
                                                       RI_SOUL_ENEMY_REAL_BOMBCHU, RI_SOUL_ENEMY_SKULLWALLTULA };
@@ -49,7 +52,7 @@ template <class Options> inline bool MissingMmSoulShuffled(const Options& option
 template <class Options> inline void AddMissingMmSoulPool(const Options& options, std::vector<RandoItemId>& pool) {
     if (!options[RO_MM_COMPLETE_SOULS])
         return;
-    // Preserve the old item ID, but new seeds classify Igos in the boss family.
+    // With complete souls Igos moves to the boss family, so the legacy enemy soul leaves the pool.
     pool.erase(std::remove(pool.begin(), pool.end(), RI_SOUL_ENEMY_IGOS_DU_IKANA), pool.end());
     for (unsigned i = 0; i < 6; ++i)
         if (MissingMmSoulShuffled(options, i))
@@ -59,7 +62,7 @@ template <class Options>
 inline void AddUnshuffledMissingMmSouls(const Options& options, std::vector<RandoItemId>& starts) {
     if (!options[RO_MM_COMPLETE_SOULS])
         return;
-    // New seeds use the boss identity; legacy seeds retain their old starter unchanged.
+    // With complete souls the boss identity replaces the legacy Igos starter.
     starts.erase(std::remove(starts.begin(), starts.end(), RI_SOUL_ENEMY_IGOS_DU_IKANA), starts.end());
     for (unsigned i = 0; i < 6; ++i)
         if (!MissingMmSoulShuffled(options, i))
