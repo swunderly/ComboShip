@@ -1,4 +1,5 @@
-// Pinned OoTMM 41a2b7c0d7dbbb53fed928652f8271bc336c113f; source-coupled spells-shared/generate.py.
+// Maintained by hand from the combat macros in data/macros/macros_mm.yml of pinned OoTMM
+// 41a2b7c0d7dbbb53fed928652f8271bc336c113f.
 /*
 MIT License
 
