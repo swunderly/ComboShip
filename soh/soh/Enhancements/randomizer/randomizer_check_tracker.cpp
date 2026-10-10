@@ -63,11 +63,12 @@ using json = nlohmann::json;
 using namespace UIWidgets;
 
 namespace CheckTracker {
+// Defined and called in both builds, so its default argument cannot live in the COMBO block.
+static std::string ComboKnownReward(RandomizerCheck rc, bool explicitReveal = false);
 #ifdef COMBO_BUILD
 extern int sectionId;
 static std::array<ComboRando::TrackerKnowledge, RC_MAX> sItemKnowledge{};
 static std::mutex sItemKnowledgeMutex;
-static std::string ComboKnownReward(RandomizerCheck rc, bool explicitReveal = false);
 static ComboRando::TrackerKnowledge GetKnowledge(RandomizerCheck rc) {
     std::lock_guard<std::mutex> lock(sItemKnowledgeMutex);
     return rc > RC_UNKNOWN_CHECK && rc < RC_MAX ? sItemKnowledge[rc] : ComboRando::TrackerKnowledge{};
