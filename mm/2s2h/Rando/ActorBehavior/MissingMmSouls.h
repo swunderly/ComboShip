@@ -4,8 +4,9 @@
 #include "MissingMmSoulsState.h"
 namespace Rando {
 // Complete MM souls (Igos as a boss, Bio Baba, Floormaster, Flying Pot, Real Bombchu, Skullwalltula) is
-// unreleased: RO_MM_COMPLETE_SOULS has no CVar and stays off, so every path keyed on it is dormant and
-// seeds keep the legacy Igos enemy soul. Its item and option ids stay for save compatibility.
+// unreleased: RO_MM_COMPLETE_SOULS has no CVar, so new saves keep it off, every path keyed on it is dormant
+// for them and they keep the legacy Igos enemy soul. A save that already stored it on still runs these
+// paths. Its item and option ids stay for save compatibility.
 inline constexpr RandoItemId missingMmSoulItems[] = { RI_SOUL_BOSS_IGOS,          RI_SOUL_ENEMY_BIO_BABA,
                                                       RI_SOUL_ENEMY_FLOORMASTER,  RI_SOUL_ENEMY_FLYING_POT,
                                                       RI_SOUL_ENEMY_REAL_BOMBCHU, RI_SOUL_ENEMY_SKULLWALLTULA };
