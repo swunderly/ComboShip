@@ -796,7 +796,17 @@ static nlohmann::json SnapshotGameplayRules() {
     rules["ootTricks"] = sGetOotTricksCsv ? sGetOotTricksCsv() : "";
     return rules;
 }
+// The player's own rules this session, read from the live CVars at startup, before any slot restore or
+// profile draft rewrites them. A vanilla or pre-rules save adopts them in place of the fallbacks; the
+// limitation of reading them from the live CVars is noted at GameplayRulesForSeed.
+static nlohmann::json sRuleBaseline;
+static const nlohmann::json& RuleBaseline() {
+    if (sRuleBaseline.is_null())
+        sRuleBaseline = SnapshotGameplayRules();
+    return sRuleBaseline;
+}
 static void RestoreGameplayRules(const nlohmann::json& rules, int slot) {
+    RuleBaseline(); // before the first restore of the session writes anything
     ComboRando::ApplyGameplayRules(rules, [](const char* name, int value) {
         if (sWriteGameplayRule)
             sWriteGameplayRule(name, value);
@@ -843,7 +853,7 @@ static void RefreshGameplayRuntime() {
         CaptureSaveRules(sGameplayRulesSlot);
 }
 static nlohmann::json SeedGameplayRules(const nlohmann::json& seed) {
-    return ComboRando::GameplayRulesForSeed(seed);
+    return ComboRando::GameplayRulesForSeed(seed, RuleBaseline());
 }
 static nlohmann::json SongMapForGeneration(uint32_t seed) {
     auto read = [](const char* name) { return sReadGameplayRule ? sReadGameplayRule(name, 0) != 0 : false; };
@@ -3688,7 +3698,8 @@ static void Combo_OnOOTSaveLoad(int fileNum) {
         std::lock_guard<std::mutex> lk(g_containerMutex);
         auto& c = LoadOrCreateContainer(fileNum);
         const auto originalSeed = c["combo"].value("rando", nlohmann::json::object());
-        rules = ComboRando::GameplayRulesForRun(originalSeed, c["combo"].value("gameplayRules", nlohmann::json()));
+        rules = ComboRando::GameplayRulesForRun(originalSeed, c["combo"].value("gameplayRules", nlohmann::json()),
+                                                RuleBaseline());
         c["combo"]["gameplayRules"] = rules; // persisted migration, separate from immutable seed data
         if (SOH_SetMmVisited)
             SOH_SetMmVisited((c["combo"].value("visitedGames", 0) & 2) || c["combo"].value("lastGame", 0) == 1);
@@ -4675,6 +4686,8 @@ int main(int argc, char** argv) {
     // ComboShip: OOT owns the foreground at startup — hide MM's (now-registered) tracker windows so
     // only OOT's Check/Item trackers can show. See combo/gui/ComboTrackerVisibility.cpp.
     Combo_SetForegroundGame(ComboRando::GAME_OOT);
+
+    RuleBaseline(); // the player's own rules, before any slot or profile draft can rewrite them
 
     // --- 5. Register OOT callbacks ---
     sProfileDumpCombo = (FnDumpData)GetSym(sohModule, "SOH_DumpComboSetupCVars");
