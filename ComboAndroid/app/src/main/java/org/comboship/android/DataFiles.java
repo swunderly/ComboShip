@@ -64,6 +64,12 @@ public final class DataFiles {
             done=true;
         } finally {if(!done) Files.deleteIfExists(temporary);}
     }
+    /** SHA-256 of the bundled manifest, which lists every support file's own SHA-256. */
+    static String supportVersion(Context context) throws IOException {
+        try (InputStream in=context.getAssets().open("support-manifest.json")) {
+            return RomImporter.hex(MessageDigest.getInstance("SHA-256").digest(readLimited(in,4*1024*1024)));
+        } catch (NoSuchAlgorithmException impossible) {throw new IOException(impossible);}
+    }
     public static void installSupport(Context context, File root) throws IOException {
         try {
             byte[] manifest;

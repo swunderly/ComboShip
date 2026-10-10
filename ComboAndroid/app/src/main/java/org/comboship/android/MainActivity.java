@@ -62,11 +62,10 @@ public final class MainActivity extends Activity {
         execute("Preparing your ComboShip folder…",()->{
             root=StorageLocations.initialize(this);
             try(DataLock ignored=new DataLock(root)) {
-                supportReady=getPreferences(MODE_PRIVATE).getInt(supportKey(),-1)==BuildConfig.VERSION_CODE;
+                supportReady=DataFiles.supportVersion(this).equals(getPreferences(MODE_PRIVATE).getString(supportKey(),null));
                 if(!supportReady) {
                     DataFiles.installSupport(this,root);
-                    getPreferences(MODE_PRIVATE).edit().putInt(supportKey(),BuildConfig.VERSION_CODE).apply();
-                    supportReady=true;
+                    supportInstalled();
                 }
             }
         },"",true,()->{
@@ -90,7 +89,14 @@ public final class MainActivity extends Activity {
             android.Manifest.permission.WRITE_EXTERNAL_STORAGE},FILE_ACCESS);
     }
 
-    private String supportKey() {return "support-version:"+root.getAbsolutePath();}
+    private String supportKey() {return "support-manifest:"+root.getAbsolutePath();}
+    private void supportInstalled() throws IOException {
+        // Keyed on the bundled files, not versionCode: a same-version rebuild can change them. The old
+        // versionCode key is dropped so a downgraded APK also reinstalls its own files.
+        getPreferences(MODE_PRIVATE).edit().putString(supportKey(),DataFiles.supportVersion(this))
+            .remove("support-version:"+root.getAbsolutePath()).apply();
+        supportReady=true;
+    }
     private boolean startupFailed() {return new File(root,"last-startup-error.txt").isFile();}
     private void removeLegacyGameTasks() {
         // Before 0.1.4 the game had its own task affinity. Android retains its empty Recents card
@@ -318,8 +324,7 @@ public final class MainActivity extends Activity {
     }
     private void prepare() {
         execute("Getting things ready…",()->{
-            supportReady=false;DataFiles.installSupport(this,root);
-            getPreferences(MODE_PRIVATE).edit().putInt(supportKey(),BuildConfig.VERSION_CODE).apply();supportReady=true;
+            supportReady=false;DataFiles.installSupport(this,root);supportInstalled();
         },"",false,()->{if(!managing && hasRoms() && pendingDocument==null && !startupFailed())launch(false);});
     }
     private void pick(int request) {
@@ -365,8 +370,7 @@ public final class MainActivity extends Activity {
                 StorageLocations.select(this,root!=null?root:StorageLocations.previous(this),destination,existing);
                 root=DataFiles.root(this);storageAccessRequired=false;supportReady=false;
                 try(DataLock ignored=new DataLock(root)) {
-                    DataFiles.installSupport(this,root);
-                    getPreferences(MODE_PRIVATE).edit().putInt(supportKey(),BuildConfig.VERSION_CODE).apply();supportReady=true;
+                    DataFiles.installSupport(this,root);supportInstalled();
                 }
             },"Data location changed.",true,null,false))
             .setNegativeButton("Cancel",null).show();
