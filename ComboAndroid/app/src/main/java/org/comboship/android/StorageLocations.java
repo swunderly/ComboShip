@@ -10,7 +10,7 @@ import java.util.*;
 
 /** Visible shared storage by default; legacy app folders remain explicit recovery choices. */
 public final class StorageLocations {
-    private static final String PREFS="combo-storage", KEY="root", MARKER=".comboship-data-v1";
+    private static final String PREFS="combo-storage", KEY="root", MARKER=".comboship-data-v1", DELETING=".comboship-deleting";
     private static final String VISIBLE_DEFAULT="visible-default-v1";
     public static final class Location {
         public final String label;
@@ -86,6 +86,8 @@ public final class StorageLocations {
         return target;
     }
     public static boolean hasData(File target){return new File(target,MARKER).isFile();}
+    /** A copy whose deletion stopped part-way; Data location offers to finish it. */
+    public static boolean partlyDeleted(File target){return new File(target,DELETING).isFile();}
     public static void select(Context context,File source,File requested,boolean useExisting) throws IOException {
         File target=allowed(context,requested);requireAccess(context,target);
         if(source!=null && source.getCanonicalFile().equals(target)) {
@@ -108,13 +110,19 @@ public final class StorageLocations {
     /** Deletes a marked data folder that is not the active one, such as the copy a move leaves behind. */
     public static void removeCopy(Context context,File requested) throws IOException {
         File target=allowed(context,requested),active=current(context);requireAccess(context,target);
-        if(!hasData(target) || target.toPath().startsWith(active.toPath()) || active.toPath().startsWith(target.toPath()))
+        if(!(hasData(target) || partlyDeleted(target)) || target.toPath().startsWith(active.toPath()) || active.toPath().startsWith(target.toPath()))
             throw new IOException("Only a Combo Ship data folder that is not in use can be deleted.");
         // A running game holds this lock for its whole session; a leftover .running file is not a session.
         try(DataLock ignored=new DataLock(target)) {
-            // Unmark first, so a partly deleted folder can never be chosen as existing data.
-            Files.delete(new File(target,MARKER).toPath());
-            StorageCopy.removeTree(target.toPath());
+            // Swap the data marker for one that is deleted last, so a partly deleted folder can never be
+            // chosen as existing data but can still be deleted again.
+            File deleting=new File(target,DELETING);
+            if(!deleting.exists() && !deleting.createNewFile())throw new IOException("Cannot mark the old copy for deletion.");
+            Files.deleteIfExists(new File(target,MARKER).toPath());
+            try(DirectoryStream<Path> entries=Files.newDirectoryStream(target.toPath())) {
+                for(Path entry:entries)if(!entry.getFileName().toString().equals(DELETING))StorageCopy.removeTree(entry);
+            }
+            Files.delete(deleting.toPath());Files.delete(target.toPath());
         }
     }
     static long size(File folder) throws IOException {

@@ -365,6 +365,8 @@ public final class MainActivity extends Activity {
                 pendingStorage=destination;requestFileAccess();return;
             }
         }catch(IOException error){showError(error);return;}
+        // A copy whose deletion stopped part-way can only be deleted again.
+        if(root!=null && !destination.equals(root) && StorageLocations.partlyDeleted(destination)){removeCopy(destination);return;}
         boolean existing=StorageLocations.hasData(destination);
         AlertDialog.Builder dialog=new AlertDialog.Builder(this).setTitle(existing?"Use existing Combo Ship data?":"Copy data to this storage?")
             .setMessage((existing?"This folder's saves will become the active copy. Other copies will be preserved.":
