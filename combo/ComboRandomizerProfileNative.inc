@@ -210,29 +210,12 @@ static void ProfileCompleteGeneration() {
     sProfileAttempt.reset();
 }
 static nlohmann::json ProfileComboCatalog(){
-    auto options=nlohmann::json::object();
-    for(int i=0;i<ComboRando::SF_COUNT;++i){const auto& family=ComboRando::SharedFamilyByIndex(i);
-        if(family.publicOption)options[family.cvar]={{"label",family.label},{"minimum",0},{"maximum",1}};}
-    nlohmann::json goals=nlohmann::json::array();
-    for(int i=0;i<=ComboRando::CwGoal::QUEST;++i){ComboRando::CwGoal goal;goal.type=static_cast<ComboRando::CwGoal::Type>(i);
-        goals.push_back({{"value",i},{"label",ComboRando::CwGoalName(goal)}});}
-    options["gCombo.Rando.Goal"]={{"label","Victory condition"},{"choices",goals}};
-    options["gCombo.Rando.StartingGame"]={{"label","Starting world"},{"choices",nlohmann::json::array({
-        {{"value",0},{"label","Ocarina of Time"}},{{"value",1},{"label","Majora's Mask"}},{{"value",2},{"label","Random"}}})}};
-    for(const char* key:{"gCombo.Rando.TriforceRequired","gCombo.Rando.TriforceTotal"})
-        options[key]={{"label",std::string(key).find("Required")!=std::string::npos?"Required pieces":"Total pieces"},{"minimum",1},{"maximum",ComboRando::kMaxComboTriforcePieces}};
-    options[ComboRando::kCombinedGuarantee]={{"label","Reachability"},{"choices",nlohmann::json::array({
-        {{"value",0},{"label","Every check"}},{{"value",1},{"label","Beatable"}}})}};
-    for(const auto& rule:ComboRando::kGameplayRules)if(!rule.runtimeOnly&&!rule.trickGoverned)
-        options[rule.name]={{"label",rule.label},{"minimum",rule.minimum},{"maximum",rule.maximum}};
-    for(const auto& trick:ComboRando::kMmTricks)if(trick.publicOption)
-        options[trick.key]={{"label",trick.name},{"minimum",0},{"maximum",1}};
     auto presets=nlohmann::json::array();
     for(const auto& preset:ComboRando::kCommunityPresets){auto writes=nlohmann::json::object();
         for(const auto& option:ComboRando::CommunityPresetOptions(preset.id))writes[option.key]=option.value;
         presets.push_back({{"id",int(preset.id)},{"label",preset.name},{"summary",preset.summary},{"help",preset.help},{"writes",writes}});
     }
-    return {{"options",options},{"presets",presets}};
+    return {{"presets",presets}}; // The menu lays out its own combo options; only presets are read.
 }
 static int ProfilePrepareSave(int slot) {
     try {
