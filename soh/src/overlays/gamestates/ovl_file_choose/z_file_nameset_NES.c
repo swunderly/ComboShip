@@ -701,13 +701,17 @@ void FileChoose_DrawNameEntryNES(GameState* thisx) {
                             }
 
                             if (validName) {
+                                gSaveContext.fileNum = this->buttonIndex;
+                                dayTime = ((void)0, gSaveContext.dayTime);
+                                // ComboShip: no file is created while the slot's seed cannot be prepared (e.g. a
+                                // generation is running); stay on name entry and play the error sound.
+                                validName = Sram_InitSave(this);
+                            }
+
+                            if (validName) {
                                 Audio_PlaySoundGeneral(NA_SE_SY_FSEL_DECIDE_L, &gSfxDefaultPos, 4,
                                                        &gSfxDefaultFreqAndVolScale, &gSfxDefaultFreqAndVolScale,
                                                        &gSfxDefaultReverb);
-                                gSaveContext.fileNum = this->buttonIndex;
-                                dayTime = ((void)0, gSaveContext.dayTime);
-                                if (!Sram_InitSave(this))
-                                    return;
                                 gSaveContext.dayTime = dayTime;
                                 this->prevConfigMode = CM_MAIN_MENU;
                                 this->configMode = CM_NAME_ENTRY_TO_MAIN;
