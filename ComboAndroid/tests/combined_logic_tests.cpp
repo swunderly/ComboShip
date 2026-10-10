@@ -279,7 +279,7 @@ int main(){
     assert(paths.pathsByArea.at("oot:Forest")==std::vector<std::string>{"Gyorg"});
     auto huntSpoiler=pathSpoiler;
     huntSpoiler["mm"]["Mm start"]=kMmTriforcePiece;
-    auto huntPaths=PareDownPlaythrough(huntSpoiler.dump(),oot,mm,nullptr,"","",areas,{},MakeTriforceHuntGoal(1),false);
+    auto huntPaths=PareDownPlaythrough(huntSpoiler.dump(),oot,mm,nullptr,"","",areas,{},MakeCombinedGoal(CwGoal{true,1}),false);
     assert(huntPaths.requiredByCheck.at("mm:Mm start"));
     assert(!huntPaths.requiredByCheck.at("oot:Oot start"));
     assert(huntPaths.pathsByCheck.at("oot:Oot start")==std::vector<std::string>{"Gyorg"});

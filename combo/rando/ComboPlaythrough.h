@@ -145,21 +145,6 @@ inline std::vector<CwPlacedItem> ParseSpoilerPlacements(const std::string& spoil
     return placements;
 }
 
-inline std::unordered_set<std::string> QueryReachable(const OracleFns& o, const std::vector<std::string>& owned) {
-    CheckGenerationCancellation();
-    nlohmann::json arr = nlohmann::json::array();
-    for (auto& n : owned)
-        arr.push_back(n);
-    o.Reset();
-    o.SetOwnedItems(arr.dump().c_str());
-    std::unordered_set<std::string> out;
-    try {
-        for (auto& n : nlohmann::json::parse(o.GetReachableChecks()))
-            out.insert(n.get<std::string>());
-    } catch (...) {}
-    return out;
-}
-
 inline std::unordered_set<std::string> QueryReachableWithMmStock(const OracleFns& o,
                                                                  const std::vector<std::string>& owned, bool isMm,
                                                                  const std::vector<CwPlacedItem>& placements,
@@ -181,19 +166,7 @@ inline std::unordered_set<std::string> QueryReachableWithMmStock(const OracleFns
     return out;
 }
 
-// OOT->MM portal openness for the owned-set of the LAST QueryReachable on this oracle (see OracleFns).
-// No export (MM oracle, or an old soh.dll) => ungated, matching the pre-gate behavior.
-inline bool OraclePortalOpen(const OracleFns& o) {
-    return o.GetPortalOpen == nullptr || o.GetPortalOpen() != 0;
-}
-
 using ReachSet = std::shared_ptr<const std::unordered_set<std::string>>;
-
-// A memoized query result: the reachable set plus the portal bit that belonged to the same search.
-struct ReachResult {
-    ReachSet reach;
-    bool portalOpen = true;
-};
 
 // Memo key for an owned-item MULTISET: reachability depends on which items and HOW MANY (1 vs 2
 // Hookshots differ), not grant order. Sort only — dedupe would collapse progressive counts (stale hit).
@@ -205,21 +178,6 @@ inline std::string CanonicalOwnedKey(std::vector<std::string> owned) {
         key += '\x1f';
     }
     return key;
-}
-
-// Memoized QueryReachable keyed on CanonicalOwnedKey: the same owned-set prefixes recur across the
-// hundreds of counterfactual replays (each starts from empty), so caching collapses the repeats.
-inline ReachResult QueryReachableMemo(const OracleFns& o, const std::vector<std::string>& owned,
-                                      std::unordered_map<std::string, ReachResult>& memo) {
-    std::string key = CanonicalOwnedKey(owned);
-    auto it = memo.find(key);
-    if (it != memo.end())
-        return it->second;
-    // Cache the portal bit with the set: a memo hit runs no search, so reading it later would be stale.
-    ReachResult r{ std::make_shared<const std::unordered_set<std::string>>(QueryReachable(o, owned)), false };
-    r.portalOpen = OraclePortalOpen(o);
-    memo.emplace(std::move(key), r);
-    return r;
 }
 
 // Default win condition: RC_GANON reachable (OOT) AND actual Majora defeat reachable (MM).
@@ -249,8 +207,7 @@ inline bool MmOnlyMajoraGoal(const std::unordered_set<std::string>& /*ootReach*/
     return mmReach.count(kMmWin) > 0;
 }
 
-// Counts Triforce Pieces held across BOTH games (#136). Owned-based, not reachability-based, so the
-// pare-down counterfactuals (which blank one placement) actually change the answer.
+// Counts Triforce Pieces held across BOTH games (#136), for the playthrough log.
 inline int CountOwnedTriforcePieces(const std::vector<std::string>& ownedOot, const std::vector<std::string>& ownedMm) {
     int n = 0;
     for (const auto& i : ownedOot)
@@ -258,14 +215,6 @@ inline int CountOwnedTriforcePieces(const std::vector<std::string>& ownedOot, co
     for (const auto& i : ownedMm)
         n += (i == kMmTriforcePiece) ? 1 : 0;
     return n;
-}
-
-// Triforce Hunt goal: `required` pieces owned, from either game. Bosses are irrelevant under it.
-inline GoalPredicate MakeTriforceHuntGoal(int required) {
-    return [required](const std::unordered_set<std::string>&, const std::unordered_set<std::string>&,
-                      const std::vector<std::string>& ownedOot, const std::vector<std::string>& ownedMm) {
-        return CountOwnedTriforcePieces(ownedOot, ownedMm) >= required;
-    };
 }
 
 inline GoalPredicate MakeCombinedGoal(CwGoal goal) {
