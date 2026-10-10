@@ -262,8 +262,12 @@ int main(){
         assert(commands[4]==std::make_pair(0x06000004|target,nativeCues[phase]&255));
         assert(commands[5]==std::make_pair(0x06000005|target,((nativeCues[phase]&0x300)>>7)+((nativeCues[phase]&255)>>7)));
     }
-    commands.clear();Combo_SOHSoaringAudioEnd();Combo_SOHSoaringAudioEnd();
+    commands.clear();Combo_SOHSoaringAudioEnd(0);Combo_SOHSoaringAudioEnd(0);
     assert(commands.size()==2&&commands[0].first==66&&commands[1].first==0x13000000);
+    assert(volumes[3]>0.409f&&volumes[3]<0.411f);
+    // A departure stops both players: the destination starts its own music.
+    Combo_SOHSoaringAudioBegin();commands.clear();volumes[3]=0;Combo_SOHSoaringAudioEnd(1);
+    assert(commands.size()==2&&commands[0].first==0x10000000&&commands[1].first==0x13000000);
     assert(volumes[3]>0.409f&&volumes[3]<0.411f);
     char bytes[32]{};SequenceData data{bytes};sSequences[1]=&data;
     SequencePlayer player;SequenceChannel channel;channel.seqPlayer=&player;player.channels[2]=&channel;

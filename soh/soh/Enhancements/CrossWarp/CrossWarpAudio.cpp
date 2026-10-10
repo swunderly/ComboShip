@@ -454,17 +454,18 @@ extern "C" void Combo_SOHTraceMmAudioLayer(void* rawLayer, int command, int miss
     }
 }
 
-extern "C" void Combo_SOHSoaringAudioEnd() {
+extern "C" void Combo_SOHSoaringAudioEnd(int departed) {
     if (!sPlaying)
         return;
     sPlaying = false;
     SPDLOG_INFO("[ComboShip] Native Soaring audio end (audio errors {:#x}, dialect failures {:#x})",
                 gAudioContext.audioErrorFlags, sDialectFailures.load());
     Audio_SetGameVolume(SEQ_PLAYER_BGM_SUB, CVarGetInteger(CVAR_SETTING("Volume.SubMusic"), 100) / 100.0f);
+    // After a departure the next scene starts its own music, as with MM's warp.
     for (const auto& entry :
          { std::pair{ SEQ_PLAYER_BGM_MAIN, sPreviousMain }, std::pair{ SEQ_PLAYER_BGM_SUB, sPreviousSub } }) {
-        Audio_QueueSeqCmd((entry.second == NA_BGM_DISABLED ? 0x10000000 : 0) | (entry.first << 24) |
-                          (entry.second == NA_BGM_DISABLED ? 0 : entry.second));
+        const bool stop = departed || entry.second == NA_BGM_DISABLED;
+        Audio_QueueSeqCmd((stop ? 0x10000000 : 0) | (entry.first << 24) | (stop ? 0 : entry.second));
     }
 }
 #endif

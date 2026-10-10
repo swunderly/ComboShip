@@ -122,8 +122,24 @@ s32 CrossOwl_OverrideLimbDraw(PlayState* play, CWKFSkelAnimeFlex* kfSkelAnime, s
 void CrossOwl_Draw(Actor* thisx, PlayState* play);
 
 void CrossOwl_WarpCsWarp(CrossOwl* this, PlayState* play) {
-    Combo_SOHCompleteWarp(play, this->actor.params);
-    Actor_Kill(&this->actor);
+    Vec3f featherPos;
+
+    Math_Vec3f_Copy(&featherPos, &this->actor.world.pos);
+
+    if (Rand_ZeroOne() < 0.1f) {
+        CrossOwl_AddAndChooseFeather(this->feathers, &featherPos, true);
+    }
+
+    this->windCapsule.yaw -= 0x2EE0;
+
+    // MM keeps this actor, its feathers and capsule until the scene changes. Start
+    // the warp once and, as MM does, let the destination start its own music.
+    if (!this->departed) {
+        this->departed = true;
+        Combo_SOHCompleteWarp(play, this->actor.params);
+        gSaveContext.seqId = (u8)NA_BGM_DISABLED;
+        gSaveContext.natureAmbienceId = NATURE_ID_DISABLED;
+    }
 }
 int Combo_SOHSoaringCutsceneActive(PlayState* play) {
     // Native MM's soaringCsOrSoTCsPlaying covers departure ticks 0..99.
@@ -181,20 +197,22 @@ void CrossOwl_Init(Actor* thisx, PlayState* play) {
 void CrossOwl_Destroy(Actor* thisx, PlayState* play) {
     if (thisx->params == 0x100)
         return;
-    Combo_SOHSoaringAudioEnd();
     CrossOwl* this = (CrossOwl*)thisx;
-    Player* player = GET_PLAYER(play);
-    // Game handoff destroys the player category before item-action actors.
-    if (player) {
-        player->actor.draw = this->playerDrawFunc;
-        player->actor.scale.x = this->playerScaleX;
-        player->actor.scale.z = this->playerScaleZ;
-        player->stateFlags1 &= ~PLAYER_STATE1_IN_CUTSCENE;
-        Player_SetCsAction(play, &this->actor, 7);
+    Combo_SOHSoaringAudioEnd(this->departed);
+    if (!this->departed) {
+        Player* player = GET_PLAYER(play);
+        // Game handoff destroys the player category before item-action actors.
+        if (player) {
+            player->actor.draw = this->playerDrawFunc;
+            player->actor.scale.x = this->playerScaleX;
+            player->actor.scale.z = this->playerScaleZ;
+            player->stateFlags1 &= ~PLAYER_STATE1_IN_CUTSCENE;
+            Player_SetCsAction(play, &this->actor, 7);
+        }
+        Play_ClearCamera(play, this->subCamId);
+        Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_ACTIVE);
+        Interface_ChangeHudVisibilityMode(this->savedHud);
     }
-    Play_ClearCamera(play, this->subCamId);
-    Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_ACTIVE);
-    Interface_ChangeHudVisibilityMode(this->savedHud);
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
 }
 const ActorInit Combo_Owl_Warp_InitVars = {
@@ -826,8 +844,6 @@ void CrossOwl_Update(Actor* thisx, PlayState* play) {
     }
     // En_Test7 updates once per gameplay tick in MM and OoT alike.
     this->actionFunc(this, play);
-    if (thisx->update == NULL)
-        return;
     if (this->playerCamFunc)
         this->playerCamFunc(this, play);
     Camera* camera = Play_GetCamera(play, this->subCamId);

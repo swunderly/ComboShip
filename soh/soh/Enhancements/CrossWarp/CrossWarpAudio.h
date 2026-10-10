@@ -7,7 +7,7 @@ void* Combo_SOHWarpAudioResource(const char* path);
 void* Combo_SOHWarpAudioCache(int table, int id);
 void Combo_SOHSoaringAudioBegin(void);
 void Combo_SOHSoaringSound(int phase);
-void Combo_SOHSoaringAudioEnd(void);
+void Combo_SOHSoaringAudioEnd(int departed);
 void Combo_SOHSoaringFanfare(void);
 int Combo_SOHMmAudioChannelCommand(void* channel, int command);
 int Combo_SOHIsMmAudioSequence(void* player);
