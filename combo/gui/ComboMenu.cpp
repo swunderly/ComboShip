@@ -426,10 +426,6 @@ void ComboMenu::DrawScopeHelp() {
     const auto* guide = FindMenuGuide(mGuideScope);
     if (!guide)
         return;
-    auto dismiss = [&]() {
-        CVarSetInteger(guide->seenKey, 1);
-        Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
-    };
     bool open = true;
     const float width = std::min(ImGui::GetMainViewport()->WorkSize.x * 0.82f, ImGui::GetFontSize() * 37.0f);
     ImGui::SetNextWindowSize(ImVec2(width, 0), ImGuiCond_Appearing);
@@ -437,7 +433,7 @@ void ComboMenu::DrawScopeHelp() {
         ImGui::TextWrapped("%s", guide->title);
         ImGui::Separator();
         ImGui::Spacing();
-        // Keep both actions visible on a phone; longer copy scrolls separately.
+        // Keep the action visible on a phone; longer copy scrolls separately.
         const float copyHeight =
             std::max(ImGui::GetFontSize() * 3.0f,
                      std::min(ImGui::GetFontSize() * 7.0f,
@@ -451,19 +447,10 @@ void ComboMenu::DrawScopeHelp() {
         ImGui::EndChild();
         ImGui::Spacing();
         const float height = ImGui::GetFrameHeight() * 1.25f;
-        if (ImGui::Button("Got it", ImVec2(-FLT_MIN, height))) {
-            dismiss();
+        if (ImGui::Button("Got it", ImVec2(-FLT_MIN, height)))
             ImGui::CloseCurrentPopup();
-        }
-        if (ImGui::Button("View travel settings", ImVec2(-FLT_MIN, height))) {
-            dismiss();
-            OpenSearchDestination("randomizer", "Warps & travel");
-            ImGui::CloseCurrentPopup();
-        }
         ImGui::EndPopup();
     }
-    if (!open)
-        dismiss();
 }
 
 // The profile catalog stays null until a file inspection first succeeds, and

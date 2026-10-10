@@ -156,13 +156,9 @@ int main() {
     assert(history.scope == "settings" && history.HasResult());
     history.Clear(); assert(!history.HasResult() && history.scope.empty() && history.hub.empty());
 
-    // Each feature has its own persistent guide acknowledgement; unrelated
-    // tabs are not forced through either introduction.
-    std::set<std::string> seenKeys;
+    // Each feature has its own guide; unrelated tabs have none.
     for (const auto& guide : kMenuGuides) {
         assert(FindMenuGuide(guide.scope) == &guide);
-        assert(seenKeys.insert(guide.seenKey).second);
-        assert(std::string(guide.seenKey).find("gCombo.Menu.Help.") == 0);
         assert(*guide.introduction && *guide.behavior && *guide.runWarning);
     }
     for (const auto* scope : {"home", "settings", "trackers", "tools", ""}) assert(!FindMenuGuide(scope));

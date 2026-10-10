@@ -67,18 +67,16 @@ inline constexpr SharedPageInfo kSharedPages[] = {
 };
 struct MenuGuideInfo {
     const char* scope;
-    const char* seenKey;
     const char* title;
     const char* introduction;
     const char* behavior;
     const char* runWarning;
 };
 inline constexpr MenuGuideInfo kMenuGuides[] = {
-    { "randomizer", "gCombo.Menu.Help.RandomizerSeen", "Randomizer",
-      "These settings define the items and logic of your next seed.",
+    { "randomizer", "Randomizer", "These settings define the items and logic of your next seed.",
       "These rules also control the corresponding in-game abilities.", "Existing item placements stay unchanged." },
-    { "gameplay", "gCombo.Menu.Help.EnhancementsSeen", "Enhancements", "These settings change how you play.",
-      "Logic choices are under Randomizer.", "Your seed's item placements stay unchanged." }
+    { "gameplay", "Enhancements", "These settings change how you play.", "Logic choices are under Randomizer.",
+      "Your seed's item placements stay unchanged." }
 };
 inline const MenuGuideInfo* FindMenuGuide(const std::string& scope) {
     for (const auto& guide : kMenuGuides)
