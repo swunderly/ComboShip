@@ -14,6 +14,4 @@ typedef struct {
     int32_t enabled;
 } CwTrickInfo;
 
-typedef const CwTrickInfo* (*Fn_ComboTricks)(int32_t* count);
-typedef int32_t (*Fn_ComboSetTrick)(int32_t id, int32_t enabled);
 typedef void (*Fn_ComboApplyTricks)(void);
