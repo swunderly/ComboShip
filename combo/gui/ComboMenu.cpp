@@ -1657,9 +1657,9 @@ void DrawSharedItems() {
                            ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
         return;
     for (int i = 0; i < SF_COUNT; ++i) {
-        ImGui::TableNextColumn();
         if (i == SF_OCARINA || !SharedFamilyByIndex(i).publicOption)
             continue; // private native features await runtime validation
+        ImGui::TableNextColumn();
         const auto& family = SharedFamilyByIndex(i);
         bool enabled = ProfileUI::ReadInteger(family.cvar, 0) != 0;
         ImGui::PushID(family.cvar);
