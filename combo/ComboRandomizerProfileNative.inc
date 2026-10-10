@@ -127,7 +127,10 @@ static const char* ProfileSetDraft(int slot,const char* input){return ProfileRes
         bool changed=false;
         for(const auto& rule:ComboRando::kGameplayRules) {
             if(rule.runtimeOnly || rule.trickGoverned)continue;
-            const int required=logic.value(rule.name,0);
+            // The loaded seed's own logic keeps every ability it assumes at its value (e.g. its frog
+            // count); a draft for the next seed must never take one away from the run being played.
+            const int running=sGameplayRulesSlot==slot&&sReadGameplayRule?sReadGameplayRule(ComboRando::LogicRuleKey(rule.name).c_str(),0):0;
+            const int required=running>0 ? running : logic.value(rule.name,0);
             const int runtime=required>0 ? required : values.value(rule.name,rule.fallback);
             if(runtime==before.value(rule.name,rule.fallback) &&
                (!required || !sReadGameplayRule || sReadGameplayRule(rule.name,rule.fallback)==runtime))continue;

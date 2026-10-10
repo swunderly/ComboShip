@@ -75,6 +75,15 @@ int main(int argc,char** argv){
  assert(ballad.runtimeOnly);setup["gameplayRules"]["values"][ballad.name]=1;
  setup["gameplayRules"]["logicValues"][ballad.name]=1;
  assert(NormalizeGameplayRuleSnapshot(setup["gameplayRules"])["logicValues"][ballad.name]==0);
+ // A next-seed draft never takes away an ability the loaded run's own logic assumes.
+ const auto beforeRunLogic=setup;
+ const auto& frogs=*FindGameplayRule("gEnhancements.DifficultyOptions.FrogChoirCount");
+ runtime[LogicRuleKey(cross.name)]=1;runtime[LogicRuleKey(frogs.name)]=3;runtime[frogs.name]=3;
+ SetLogicRule(cross,0,put);SetLogicRule(frogs,5,put);commit(0);
+ assert(Read(cross.name,0)==1 && Read(frogs.name,0)==3);
+ runtime[cross.name]=0;commit(0);assert(Read(cross.name,0)==1); // repair toward the run's logic
+ runtime.erase(LogicRuleKey(cross.name));runtime.erase(LogicRuleKey(frogs.name));
+ setup=beforeRunLogic;commit(0);assert(Read(cross.name,0)==1 && Read(frogs.name,0)==5);
  auto saved=sProfiles->view().draft(0);setup["gameplayRules"]["values"][cross.name]="invalid";
  commit(0);assert(Read(cross.name,-1)==0); // invalid imports cannot enable arbitrary runtime rules
  setup=saved;commit(0);
