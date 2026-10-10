@@ -323,6 +323,19 @@ extern "C" int Combo_OotSoulPreSpawn(void* raw, int actor, unsigned params) {
             Combo_OotSoulResetRoom(play);
         soulRoomBlocked = true;
     }
+    // Pinned Actor_SpawnWrapper keeps a blocked boss's arena usable: Bongo Bongo's drum floor is
+    // otherwise only spawned by the boss itself, and Morpha's water is drained.
+    if (result <= 0) {
+        switch (actor) {
+            case ACTOR_BOSS_MO:
+                play->roomCtx.unk_74[0] = 0xFF;
+                play->colCtx.colHeader->waterBoxes[0].ySurface = -500;
+                break;
+            case ACTOR_BOSS_SST:
+                Actor_Spawn(&play->actorCtx, play, ACTOR_BG_SST_FLOOR, -50.0f, 0.0f, 0.0f, 0, 0, 0, 0);
+                break;
+        }
+    }
     return result;
 }
 extern "C" int Combo_OotSoulGive(void*, int item) {
