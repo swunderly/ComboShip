@@ -527,8 +527,8 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
 #ifdef COMBO_BUILD
     // The native age hook preserves position except at Castle Grounds (which relocates).
     // Audited ordinary interiors preserve their common collision and camera too.
-    // Bosses, grotto setups and unverified underwater positions
-    // positions remain absent; this does not imply unrestricted dungeon routing.
+    // Bosses, grotto setups and underwater positions remain absent;
+    // this does not imply unrestricted dungeon routing.
     const bool ageSafe = SongAgeChangeAreaAllowed(region->randomizerRegionKey);
     if (ageSafe) {
         const bool savedChild = logic->IsChild, savedAdult = logic->IsAdult;

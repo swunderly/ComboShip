@@ -6,7 +6,9 @@ namespace Rando {
 // OoTMM permits local age changes in ordinary dungeon areas. SwitchAge preserves
 // room/position here; age-specific movement, equipment and encounter requirements
 // remain on their edges/checks. Boss arenas have separate transitions and do not
-// inherit this permission. Enum ranges below are the contiguous dungeon groups.
+// inherit this permission. Enum ranges below are the contiguous dungeon groups;
+// the Ocarina cannot be played underwater, so underwater regions are excluded.
+// (RR_JABU_JABUS_BELLY_MQ_UNDERWATER_ALCOVE is a dry alcove despite its name.)
 inline constexpr bool SongAgeChangeAreaAllowed(RandomizerRegion region) {
     if ((region >= RR_DEKU_TREE_LOBBY && region <= RR_DEKU_TREE_MQ_OUTSIDE_BOSS_ROOM) ||
         (region >= RR_JABU_JABUS_BELLY_BEGINNING && region <= RR_JABU_JABUS_BELLY_MQ_NEAR_BOSS_ROOM) ||
@@ -14,7 +16,7 @@ inline constexpr bool SongAgeChangeAreaAllowed(RandomizerRegion region) {
         (region >= RR_SHADOW_TEMPLE_BEGINNING && region <= RR_SHADOW_TEMPLE_MQ_SPIKE_WALLS_ROOM) ||
         (region >= RR_BOTW_CORRIDOR && region <= RR_BOTW_MQ_B3_PLATFORM) ||
         (region >= RR_ICE_CAVERN_BEGINNING && region <= RR_ICE_CAVERN_MQ_ABOVE_BEGINNING &&
-         region != RR_ICE_CAVERN_MQ_STALFOS_ROOM_UNDERWATER)) {
+         region != RR_ICE_CAVERN_FINAL_ROOM_UNDERWATER && region != RR_ICE_CAVERN_MQ_STALFOS_ROOM_UNDERWATER)) {
         return true;
     }
     switch (region) {
