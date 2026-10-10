@@ -1,0 +1,100 @@
+--- a/combo/gui/ComboMenu.cpp
++++ b/combo/gui/ComboMenu.cpp
+@@ -480,6 +480,10 @@
+     addLink(MenuSearchKind::Setting, "Clocks as Items (MM)",
+             "clock shuffle time day night half days six cycle progressive ascending descending",
+             "randomizer", "Items & checks", "MM", 0, 1, 1);
++    addLink(MenuSearchKind::Setting, "Farore's Wind (MM)", "farore fw spell magic warp cross game items extension",
++            "randomizer", "Items & checks", "MM", 0, 1, 1);
++    addLink(MenuSearchKind::Setting, "Cross-Games Farore's Wind", "farore fw spell warp travel between oot mm cross game world",
++            "randomizer", "Logic & access", "Randomizer");
+     addLink(MenuSearchKind::Setting, "Reachability", "guarantee beatable all checks reachable", "randomizer", "Logic & access", "Randomizer");
+     for (const auto& rule : kGameplayRules) {
+         if (IsLegacyGameplayRule(rule.name)) continue;
+@@ -1440,6 +1444,17 @@
+         }
+     }
+     ImGui::SeparatorText("World access");
++    // OoTMM main.cross crossGameFw: available only with spellWindMm.
++    const bool windMm = ProfileUI::ReadInteger("gRando.Options.RO_MM_SPELL_WIND", 0) != 0;
++    bool crossFw = windMm && ProfileUI::ReadInteger("gRando.Options.RO_CROSS_GAME_FARORE", 0) != 0;
++    ImGui::BeginDisabled(!windMm);
++    if (DrawRuleCheckbox("Cross-Games Farore's Wind", &crossFw)) {
++        ProfileUI::WriteInteger("gRando.Options.RO_CROSS_GAME_FARORE", crossFw);
++        save();
++    }
++    ImGui::EndDisabled();
++    MenuTooltip(windMm ? "Controls whether you can use Farore's Wind to warp between OoT and MM."
++                       : "Controls whether you can use Farore's Wind to warp between OoT and MM.\n\nRequires Farore's Wind (MM) under Items & checks > Majora's Mask.");
+ }
+ void DrawSharedItems() {
+     const int columns = MenuColumns();
+@@ -1451,8 +1466,9 @@
+         const auto& family = SharedFamilyByIndex(i);
+         bool enabled = ProfileUI::ReadInteger(family.cvar, 0) != 0;
+         ImGui::PushID(family.cvar);
+-        const bool unavailable = family.requiresButtons &&
+-            (!ProfileUI::ReadInteger("gRandoSettings.ShuffleOcarinaButtons", 0) || !ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_OCARINA_BUTTONS", 0));
++        const bool unavailable = (family.requiresButtons &&
++            (!ProfileUI::ReadInteger("gRandoSettings.ShuffleOcarinaButtons", 0) || !ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_OCARINA_BUTTONS", 0))) ||
++            (i == SF_SPELL_WIND && !ProfileUI::ReadInteger("gRando.Options.RO_MM_SPELL_WIND", 0)); // OoTMM: requires spellWindMm
+         ImGui::BeginDisabled(unavailable);
+         if (DrawRuleCheckbox(family.label, &enabled)) {
+             ProfileUI::WriteInteger(family.cvar, enabled);
+--- a/combo/rando/SharedItems.h
++++ b/combo/rando/SharedItems.h
+@@ -40,7 +40,7 @@
+     SF_SONG_OF_TIME,
+     SF_MIRROR_SHIELD,
+     SF_OCARINA, // append only; progressive family, excluded from singleton paths
+-    SF_SPELL_WIND, // private until native runtime and route validation complete
++    SF_SPELL_WIND, // public with spellWindMm (0.3.9); Din's Fire/Nayru's Love remain private
+     SF_SPELL_FIRE,
+     SF_SPELL_LOVE,
+     SF_BOOTS_IRON, SF_BOOTS_HOVER, SF_TUNIC_GORON, SF_TUNIC_ZORA, // append private bits28..31
+@@ -126,8 +126,8 @@
+         { SF_OCARINA, "ocarina", "gCombo.Rando.Shared.Ocarina", "Shared Ocarina",
+           "Progressive Ocarina shared with pinned MM Fairy restrictions.", "Progressive Ocarina", "Progressive Ocarina", 2, false, true, false },
+         { SF_SPELL_WIND, "spellWind", "gCombo.Rando.Shared.SpellWind", "Shared Farore's Wind",
+-          "One Farore's Wind counts for both games when the MM spell is enabled.",
+-          "Farore's Wind", "Farore's Wind", 1, false, true, false, false, false },
++          "Combines Farore's Wind from OoT and MM into one item for both games",
++          "Farore's Wind", "Farore's Wind", 1, false, true, false, false, true },
+         { SF_SPELL_FIRE,"spellFire","gCombo.Rando.Shared.SpellFire","Shared Din's Fire",
+           "One Din's Fire counts for both games when the MM spell is enabled.","Din's Fire","Din's Fire",1,false,true,false,false,false },
+         { SF_SPELL_LOVE,"spellLove","gCombo.Rando.Shared.SpellLove","Shared Nayru's Love",
+@@ -142,7 +142,7 @@
+ 
+ // data.ts requires the matching MM extension before either new shared spell can be effective.
+ inline bool SharedExtraSpellEnabled(int family,const nlohmann::json& mmDump) {
+- const char* key=family==SF_SPELL_FIRE?"RO_MM_SPELL_FIRE":family==SF_SPELL_LOVE?"RO_MM_SPELL_LOVE":family==SF_BOOTS_IRON?"RO_MM_BOOTS_IRON":family==SF_BOOTS_HOVER?"RO_MM_BOOTS_HOVER":family==SF_TUNIC_GORON?"RO_MM_TUNIC_GORON":family==SF_TUNIC_ZORA?"RO_MM_TUNIC_ZORA":nullptr;
++ const char* key=family==SF_SPELL_WIND?"RO_MM_SPELL_WIND":family==SF_SPELL_FIRE?"RO_MM_SPELL_FIRE":family==SF_SPELL_LOVE?"RO_MM_SPELL_LOVE":family==SF_BOOTS_IRON?"RO_MM_BOOTS_IRON":family==SF_BOOTS_HOVER?"RO_MM_BOOTS_HOVER":family==SF_TUNIC_GORON?"RO_MM_TUNIC_GORON":family==SF_TUNIC_ZORA?"RO_MM_TUNIC_ZORA":nullptr;
+  if(!key)return true;
+  const auto options=mmDump.value("options",nlohmann::json::object());const auto i=options.find(key);
+  return i!=options.end()&&i->is_number_integer()&&*i==1;
+--- a/mm/2s2h/ProfileMmLayout.inc
++++ b/mm/2s2h/ProfileMmLayout.inc
+@@ -35,6 +35,7 @@
+ if constexpr(Rando::MiscSoulsIntegrationReady) data["layout"].push_back({{"page","Item Pool"},{"card","itemPoolSouls"},{"heading","Souls"},{"label","Misc. Souls"},{"kind","checkbox"},{"tooltip","Add Souls for MM Business Scrubs and Gold Skulltulas into the item pool. They won't spawn unless their Soul is obtained."},{"key",Rando::StaticData::Options.at(RO_SHUFFLE_MISC_SOULS).cvar}});
+ data["layout"].push_back({{"page","Item Pool"},{"card","itemPoolTime"},{"heading","Clocks (MM)"},{"label","Clocks as Items (MM)"},{"kind","checkbox"},{"tooltip","Breaks the 3-day cycle into 6 separate half-days (Day 1 Day/Night, Day 2 Day/Night, Day 3 Day/Night) that must be unlocked as items. Players can only access time periods they've obtained. Attempting to access unowned time redirects to the next owned half-day."},{"key",Rando::StaticData::Options.at(RO_CLOCK_SHUFFLE).cvar}});
+ data["layout"].push_back({{"page","Item Pool"},{"card","itemPoolTime"},{"heading","Clocks (MM)"},{"label","Clocks"},{"kind","combo"},{"tooltip","Separate: six independent clock items. Starts with a random clock unless one is selected.\n\nAscending: Day 1 starts unlocked; five progressive clocks unlock the remaining half-days.\n\nDescending: Night 3 starts unlocked; five progressive clocks unlock the remaining half-days in reverse order."},{"key",Rando::StaticData::Options.at(RO_CLOCK_SHUFFLE_PROGRESSIVE).cvar},{"choices",nlohmann::json::array({{{"value",RO_CLOCK_SHUFFLE_RANDOM},{"label","Separate"}},{{"value",RO_CLOCK_SHUFFLE_ASCENDING},{"label","Progressive: Ascending"}},{{"value",RO_CLOCK_SHUFFLE_DESCENDING},{"label","Progressive: Descending"}}})}});
++data["layout"].push_back({{"page","Item Pool"},{"card","itemPoolCrossGame"},{"heading","Cross-Game Items"},{"label","Farore's Wind (MM)"},{"kind","checkbox"},{"tooltip","Adds Farore's Wind in Majora's Mask."},{"key",Rando::StaticData::Options.at(RO_MM_SPELL_WIND).cvar}});
+ data["layout"].push_back({{"page","Dungeon Items"},{"card","itemPoolDungeonItems"},{"heading","Dungeon Items"},{"label","Small Keys"},{"kind","combo"},{"tooltip","Where each dungeon's small keys may be placed.\n\nAnywhere - Small keys can be found anywhere in the world.\n\nOwn Dungeon - Each dungeon's small keys are only found within that dungeon.\n\nStart With - You begin with every dungeon's small keys, and none are added to the item pool."},{"key",Rando::StaticData::Options.at(RO_PLACEMENT_SMALL_KEYS).cvar},{"choices",nlohmann::json::array({{{"value",RO_DUNGEON_ITEM_ANYWHERE},{"label","Anywhere"}},{{"value",RO_DUNGEON_ITEM_OWN_DUNGEON},{"label","Own Dungeon"}},{{"value",RO_DUNGEON_ITEM_START_WITH},{"label","Start With"}}})}});
+ data["layout"].push_back({{"page","Dungeon Items"},{"card","itemPoolDungeonItems"},{"heading","Dungeon Items"},{"label","Woodfall Key Ring"},{"kind","checkbox"},{"tooltip","Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate rings do not refill spent keys."},{"key",Rando::StaticData::Options.at(RO_KEY_RING_WOODFALL).cvar}});
+ data["layout"].push_back({{"page","Dungeon Items"},{"card","itemPoolDungeonItems"},{"heading","Dungeon Items"},{"label","Snowhead Key Ring"},{"kind","checkbox"},{"tooltip","Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate rings do not refill spent keys."},{"key",Rando::StaticData::Options.at(RO_KEY_RING_SNOWHEAD).cvar}});
+--- a/mm/2s2h/Rando/Menu.cpp
++++ b/mm/2s2h/Rando/Menu.cpp
+@@ -1085,6 +1085,13 @@
+ 
+         }
+         UIWidgets::EndCard();
++
++#ifdef COMBO_BUILD
++        UIWidgets::BeginCard("itemPoolCrossGame");
++        ImGui::SeparatorText("Cross-Game Items");
++        ItemPoolCheckbox("Farore's Wind (MM)", RO_MM_SPELL_WIND, "Adds Farore's Wind in Majora's Mask.", 1);
++        UIWidgets::EndCard();
++#endif
+ 
+ #ifndef COMBO_BUILD // ComboShip (#136): combo owns the hunt toggle plus the combined required/total counts.
+         UIWidgets::BeginCard("itemPoolGoals");

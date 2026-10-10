@@ -152,6 +152,7 @@ endif()
         component_patches.append('menu-reopen-cache.patch')
         component_patches.append('menu-polish-cache.patch')
         component_patches.append('mm-expanded-souls-public.patch')
+        component_patches.append('farore-wind-public.patch')
     for name in component_patches:
         patch=root/'ComboAndroid/patches'/name
         subprocess.run(['git','-C',str(root),'apply','--ignore-space-change','--check',str(patch)],check=True)
