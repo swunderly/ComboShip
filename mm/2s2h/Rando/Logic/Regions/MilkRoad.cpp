@@ -295,7 +295,7 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(DOGGY_RACETRACK, 0),              ENTRANCE(ROMANI_RANCH, 5), BETWEEN(TIME_DAY1_AM_06_00, TIME_NIGHT1_PM_08_00) || BETWEEN(TIME_DAY2_AM_06_00, TIME_NIGHT2_PM_08_00) || BETWEEN(TIME_DAY3_AM_06_00, TIME_NIGHT3_PM_08_00)),
         },
         .events = {
-            EVENT(RE_COWS_FROM_ALIENS, ComboRando::FaroreOracle::RanchAliens(Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MALON), AT(TIME_NIGHT1_AM_02_30), COMBO_MM_TRICK("RanchFarore"), CAN_USE_FARORE, CLOCK_NIGHT1(), CAN_USE_BOW, false, false)),
+            EVENT(RE_COWS_FROM_ALIENS, ComboRando::FaroreOracle::RanchAliens(Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MALON), AT(TIME_NIGHT1_AM_02_30), COMBO_MM_TRICK("RanchFarore"), CAN_USE_FARORE, CLOCK_NIGHT1(), CanKillEnemy(ACTOR_EN_INVADEPOH), false, false)),
         },
     };
 }, RANDO_LOGIC_INIT_PATHS);
