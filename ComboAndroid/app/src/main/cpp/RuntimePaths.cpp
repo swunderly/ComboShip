@@ -12,11 +12,6 @@ std::filesystem::path requireDirectory(const std::string& value) {
     if (!std::filesystem::is_directory(result)) throw std::invalid_argument("Application path is not a directory");
     return result;
 }
-std::string libraryPath(const std::string& nativeDirectory, const std::string& name) {
-    if (name != "libsoh.so" && name != "lib2ship.so" && name != "libcomboui.so" && name != "libultraship.so")
-        throw std::invalid_argument("Unexpected native module name: " + name);
-    return (requireDirectory(nativeDirectory) / name).string();
-}
 SessionLock::SessionLock(const std::filesystem::path& root) {
     const auto lockPath = root / ".runtime.lock";
     fd_ = ::open(lockPath.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOFOLLOW, 0600);

@@ -20,10 +20,7 @@ int main() {
     for(int i=0;i<10000;++i) { state = input.snapshot(); assert(state.axes[0] <= 1.f); }
     writer.join(); input.releaseAll(); assert(input.snapshot().buttons == 0);
     char root[] = "/tmp/comboship-native-XXXXXX"; assert(mkdtemp(root));
-    assert(libraryPath(root, "libsoh.so") == std::string(root) + "/libsoh.so");
-    bool rejected=false; try { libraryPath(root, "../libsoh.so"); } catch(...) { rejected=true; }
-    assert(rejected);
-    rejected=false; try { requireDirectory("relative"); } catch(...) { rejected=true; }
+    bool rejected=false; try { requireDirectory("relative"); } catch(...) { rejected=true; }
     assert(rejected);
     {
         SessionLock held(root);

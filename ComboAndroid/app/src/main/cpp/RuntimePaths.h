@@ -3,7 +3,6 @@
 #include <string>
 namespace comboandroid {
 std::filesystem::path requireDirectory(const std::string& value);
-std::string libraryPath(const std::string& nativeDirectory, const std::string& name);
 class SessionLock {
 public:
     explicit SessionLock(const std::filesystem::path& root);
