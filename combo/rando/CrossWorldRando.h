@@ -1500,8 +1500,12 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
             }
         }
 
-        // OoTMM solver/solve.ts at 41a2b7c0d7dbbb53fed928652f8271bc336c113f.
-        // Upstream MIT notice: TriforceQuest-LICENSE.txt.
+        // Triforce Quest pieces: the late-sphere median, depth weighting and one-piece-per-region rule
+        // of OoTMM solver/solve.ts placeNamedTriforceWorld at 41a2b7c0d7dbbb53fed928652f8271bc336c113f.
+        // Unlike OoTMM, which places the pieces on any reachable unfilled check right after the
+        // required fill, they are swapped in after the full fill, only onto checks holding discardable
+        // junk or another piece, with the median taken over those checks; and BEATABLE_ONLY does not
+        // add OoTMM's ganonMajora requirement. Upstream MIT notice: TriforceQuest-LICENSE.txt.
         if (CwGoalType(goal) == CwGoal::QUEST) {
             auto baseline = reachableFixpoint({}, {});
             std::vector<size_t> extras, candidates;
@@ -1531,7 +1535,6 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                         weighted.push_back(i);
             }
             cwShuffle(weighted, rng);
-            cwShuffle(extras, rng);
             std::vector<size_t> selected;
             while (selected.size() < 3 && !weighted.empty()) {
                 const auto pick = weighted.back();
