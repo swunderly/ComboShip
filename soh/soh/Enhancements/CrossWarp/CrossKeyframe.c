@@ -9,7 +9,8 @@
 #include "CrossWarp.h"
 #include "CrossKeyframe.h"
 #define CB(x) ((x) * (x) * (x))
-#define DEG_TO_BINANG(d) ((s16)((d) * (0x10000 / 360.0f)))
+// MM z64math.h DEG_TO_BINANG: truncate through s32, so angles past 180 degrees wrap.
+#define CW_DEG_TO_BINANG(degrees) ((s16)(s32)((degrees) * (0x8000 / 180.0f)))
 #include "soh/ResourceManagerHelpers.h"
 
 #define FMOD(x, mod) ((x) - ((s32)((x) * (1.0f / (mod))) * (f32)(mod)))
@@ -613,7 +614,7 @@ s32 CWKeyframe_UpdateFlex(CWKFSkelAnimeFlex* kfSkelAnime) {
 
                 if (i == 1) {
                     // For rotations, translate angle value from tenths of a degree to binang
-                    *outputValues = DEG_TO_BINANG(FMOD(*outputValues * 0.1f, 360));
+                    *outputValues = CW_DEG_TO_BINANG(FMOD(*outputValues * 0.1f, 360));
                 }
                 outputValues++;
             }
