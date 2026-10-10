@@ -492,7 +492,6 @@ s32 AudioSeq_SeqLayerProcessScriptStep2(SequenceLayer* layer) {
     for (;;) {
         cmd = AudioSeq_ScriptReadU8(state);
 #ifdef COMBO_BUILD
-        Combo_SOHTraceMmAudioLayer(layer, cmd, false);
         if (Combo_SOHMmAudioLayerCommand(layer, cmd))
             continue;
 #endif
@@ -680,9 +679,6 @@ s32 AudioSeq_SeqLayerProcessScriptStep4(SequenceLayer* layer, s32 cmd) {
             layer->semitone = semitone;
             drum = Audio_GetDrum(channel->fontId, semitone);
             if (drum == NULL) {
-#ifdef COMBO_BUILD
-                Combo_SOHTraceMmAudioLayer(layer, semitone, true);
-#endif
                 layer->stopSomething = true;
                 layer->delay2 = layer->delay;
                 return -1;

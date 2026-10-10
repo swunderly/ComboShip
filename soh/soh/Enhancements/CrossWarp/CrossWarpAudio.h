@@ -12,7 +12,6 @@ void Combo_SOHSoaringFanfare(void);
 int Combo_SOHMmAudioChannelCommand(void* channel, int command);
 int Combo_SOHIsMmAudioSequence(void* player);
 int Combo_SOHMmAudioLayerCommand(void* layer, int command);
-void Combo_SOHTraceMmAudioLayer(void* layer, int command, int missingDrum);
 #ifdef __cplusplus
 }
 #endif

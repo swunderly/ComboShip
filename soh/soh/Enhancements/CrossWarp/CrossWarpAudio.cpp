@@ -399,18 +399,6 @@ extern "C" int Combo_SOHMmAudioChannelCommand(void* rawChannel, int command) {
     return 1;
 }
 
-// Debug trace only. The native MM Soaring score requests a drum its font leaves
-// empty (MM reports the same audio error), so this is not logged as an error.
-extern "C" void Combo_SOHTraceMmAudioLayer(void* rawLayer, int command, int missingDrum) {
-    auto* layer = static_cast<SequenceLayer*>(rawLayer);
-    if (!missingDrum || !layer || !layer->channel || !Combo_SOHIsMmAudioSequence(layer->channel->seqPlayer))
-        return;
-    SPDLOG_DEBUG("[ComboShip] Native MM score missing drum {} font {} pc {} layer instrument {} channel instrument {} "
-                 "transpose {}/{}",
-                 command, layer->channel->fontId, layer->scriptState.pc - layer->channel->seqPlayer->seqData,
-                 layer->instOrWave, layer->channel->instOrWave, layer->transposition, layer->channel->transposition);
-}
-
 extern "C" void Combo_SOHSoaringAudioEnd(int departed) {
     if (!sPlaying)
         return;
