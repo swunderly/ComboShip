@@ -21,7 +21,7 @@ Planned order (each step ships when it is complete and tested):
 4. **Din's Fire and Nayru's Love in MM** (`spellFireMm`, `spellLoveMm`, shared variants), after re-auditing the MM logic branches they switch on.
 5. **Shared MM player groundwork** for adult Link and MM gear: one age check, one gear check, and saves that never refuse to load because of adult or gear state.
 6. **Iron Boots, Hover Boots, Goron and Zora Tunics in MM** (`bootsIronMm`, `bootsHoverMm`, `tunicGoronMm`, `tunicZoraMm`, shared variants).
-7. **Adult Link in MM** (OoTMM `crossAge`, "Cross-Games Age"). Needs an owner decision on OoTMM's adult-Link model files for MM (neither game has one natively).
+7. **Adult Link in MM** (OoTMM `crossAge`, "Cross-Games Age"). The model comes from OoT's own adult Link in the OoT data the app already extracts from the player's ROM; nothing is bundled in the APK or copied to the phone separately. Adult hands holding MM-only items combine OoT's adult hand with MM's own item model, the way MM builds its child versions.
 8. **Entrance randomization**: Wallmaster and one-way pools, then own-game pools for both games, MM extras, cross-game ("Full") pools, and boss entrances, following OoTMM's `er*` settings. Shipped in milestones.
 9. **Parity check** of the finished APK's logic against OoTMM, comparing like features only; mismatches that are bugs get fixed.
 
