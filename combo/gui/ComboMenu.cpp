@@ -1376,13 +1376,23 @@ bool DrawRuleCheckbox(const char* label, bool* enabled) {
     ImGui::SetCursorScreenPos(afterLabel);
     return changed;
 }
+// The file slot of the run the foreground game has loaded, or -1 on the title and file screens.
+int LoadedRunSlot() {
+    ComboCheckInfo info{ 0, -1, -1 };
+    if (const auto snapshot = ComboChecks::Snapshot(ComboUI::GetForegroundGame() == 1 ? 1 : 0))
+        snapshot(&info, nullptr, nullptr);
+    return info.loaded ? info.slot : -1;
+}
 void DrawGameplayRules(bool randomizer, const std::string& page, int world,
                        ComboRando::MenuRuleFocus* focus = nullptr) {
     auto& model = ComboMenuModel::Get();
-    // Randomizer edits the selected file's next seed. Enhancements change the running game: its
-    // live rules, which the save keeps per run, and its logic locks restored from the loaded seed.
+    // Randomizer edits the selected file's next seed. During a run, Enhancements change the running
+    // game: its live rules, which the save keeps per run, under the logic locks restored from its
+    // seed. With no run loaded, Enhancements configure the selected file's next seed instead.
+    const bool nextSeed = !randomizer && LoadedRunSlot() < 0 && ProfileUI::Active();
     auto apply = [&](const char* name, int value) {
-        if (randomizer) {
+        const auto* rule = FindGameplayRule(name);
+        if (randomizer || (nextSeed && rule && !rule->runtimeOnly)) {
             ProfileUI::WriteInteger(name, value);
             return;
         }
@@ -1396,8 +1406,10 @@ void DrawGameplayRules(bool randomizer, const std::string& page, int world,
         if (model.Mm().applyCVarChange)
             model.Mm().applyCVarChange(name);
     };
-    auto read = [randomizer](const char* name, int fallback) {
-        return randomizer ? ProfileUI::ReadInteger(name, fallback) : CVarGetInteger(name, fallback);
+    auto read = [randomizer, nextSeed](const char* name, int fallback) {
+        const auto* rule = FindGameplayRule(name);
+        return randomizer || (nextSeed && rule && !rule->runtimeOnly) ? ProfileUI::ReadInteger(name, fallback)
+                                                                      : CVarGetInteger(name, fallback);
     };
     std::vector<const GameplayRule*> rules;
     for (const auto& rule : kGameplayRules) {
@@ -1432,7 +1444,7 @@ void DrawGameplayRules(bool randomizer, const std::string& page, int world,
         const int required = !randomizer && !rule.runtimeOnly ? ReadGameplayRule(rule, true, read) : 0;
         if (required)
             value = required;
-        ImGui::BeginDisabled(required);
+        ImGui::BeginDisabled(required || (nextSeed && !rule.runtimeOnly && !ProfileUI::Editable()));
         bool changed = false;
         if (rule.maximum == 1) {
             bool enabled = value != 0;
