@@ -35,7 +35,6 @@ class ComboMenu final : public Ship::GuiWindow {
 
   private:
     void DrawSharedPanel();                  // hub for the Settings + Randomizer tabs (by mScope)
-    void DrawComboPanel();                   // cross-world Generate (seed + button + progress)
     // Global menu search: ranks canonical rules, techniques, widgets and pages;
     // native controls remain editable through their existing callbacks.
     // Drawn in the active scope's content area, so the left navigation panel stays visible.
@@ -53,7 +52,6 @@ class ComboMenu final : public Ship::GuiWindow {
     bool mHelpRequested = false;
     bool mResetContentScroll = false;
     bool mResetOptionsScroll = false;
-    char mSeedBuf[128] = { 0 };
     std::string mHubActive;        // active hub entry key ("group/label"); persists across frames
     std::string mScope;            // active top-level tab: feature scope
     std::string mLastNavSig;       // last frame's nav location; a change clears the search box

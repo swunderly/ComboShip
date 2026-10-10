@@ -7,7 +7,7 @@
 #include "ComboNavigation.h"
 #include "ComboMenuNavigation.h"
 #include "ComboMenuLayout.h"
-#include "rando/ComboPresets.h"
+#include "rando/SharedItems.h"
 #include "ComboWidgetRender.h"
 #include "ComboWidgetStyle.h"
 #include "ComboForeground.h" // dormant-game gate for inline tracker popout buttons
@@ -21,7 +21,6 @@
 #include "rando/GameplayRules.h"
 #include "rando/GenerationRules.h"
 #include "ComboRuleWarning.h"
-#include "ComboSongTravel.h"
 #include "ComboHudLayout.h"
 #include "ComboTricks.h"
 #include "menu/ComboTrickABI.h"
@@ -40,26 +39,17 @@
 #include "ComboResolve.h"
 
 namespace {
-// soh.dll exports: trigger combo generation (non-blocking; spawns the launcher worker), read the
-// shared progress, and gate generation to the file-select screen.
-typedef void (*FnTriggerGenerate)(void);
+// soh.dll exports: read the shared generation progress, and tell whether the file-select screen
+// (the only place the save state may be rewritten) is showing.
 typedef const ComboRando::ComboGenProgress* (*FnGetProgress)(void);
 typedef unsigned char (*FnIsOnFileSelect)(void);
-// (#135) re-applies the Starting Age / Mask Shop exclusion disables after the dropdown changes.
-typedef void (*FnRefreshStartingGameUI)(void);
-FnTriggerGenerate sTrigger = nullptr;
 FnGetProgress sGetProgress = nullptr;
 FnIsOnFileSelect sIsOnFileSelect = nullptr;
-FnRefreshStartingGameUI sRefreshStartingGameUI = nullptr;
 void ResolveComboGenSyms() {
-    if (!sTrigger)
-        sTrigger = (FnTriggerGenerate)Combo_ResolveSym("soh", "SOH_TriggerComboGenerate");
     if (!sGetProgress)
         sGetProgress = (FnGetProgress)Combo_ResolveSym("soh", "SOH_GetComboGenProgress");
     if (!sIsOnFileSelect)
         sIsOnFileSelect = (FnIsOnFileSelect)Combo_ResolveSym("soh", "SOH_CanGenerateComboSeed");
-    if (!sRefreshStartingGameUI)
-        sRefreshStartingGameUI = (FnRefreshStartingGameUI)Combo_ResolveSym("soh", "SOH_RefreshComboStartingGameUI");
 }
 
 // Bug 2: Anchor resync exports, one per game DLL — resolved the same way as the combo-gen syms
@@ -206,7 +196,6 @@ static const ImVec4 kBreadcrumbColor(0.6f, 0.6f, 0.6f, 1.0f); // muted gray for 
 void ComboMenu::Draw() {
     if (auto ctx = Ship::Context::GetRawInstance(); ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui())
         ImGui::SetCurrentContext(ctx->GetWindow()->GetGui()->GetImGuiContext());
-    DrawSongTravel();
     ResolveComboGenSyms();
     const auto* generation = sGetProgress ? sGetProgress() : nullptr;
     if (generation && generation->running && !ImGui::IsPopupOpen("Generating combined seed"))
@@ -1663,60 +1652,6 @@ void DrawCosmeticSync() {
     MenuTooltip("Use matching randomized colors and trails in both games when generating a new seed. This changes "
                 "appearance only.");
 }
-void DrawCommunityPresets() {
-    static std::string applied;
-    ResolveComboGenSyms();
-    static auto native = (void (*)(int))Combo_ResolveSym("2ship", "MM_ApplyComboCommunityPreset");
-    const bool ready = sIsOnFileSelect && sIsOnFileSelect() && sTrigger && native;
-    const auto* progress = sGetProgress ? sGetProgress() : nullptr;
-    const bool running = progress && progress->running.load();
-    const int columns = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 60.0f ? 3 : MenuColumns(20.0f);
-    if (ImGui::BeginTable("##CommunityPresets", columns,
-                          ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
-        for (const auto& preset : kCommunityPresets) {
-            ImGui::TableNextColumn();
-            ImGui::PushID(static_cast<int>(preset.id));
-            ImGui::SeparatorText(preset.name);
-            ImGui::TextWrapped("%s", preset.summary);
-            ImGui::BeginDisabled(!ready || running);
-            if (ImGui::Button("Apply preset", ImVec2(-FLT_MIN, ImGui::GetFrameHeight() * 1.25f))) {
-                // Presets configure a new seed only. Clearing these precise namespaces
-                // also prevents options from a previously chosen preset leaking into it.
-                CVarClearBlock("gRandoSettings");
-                CVarClearBlock("gRando.Options");
-                CVarClearBlock("gCombo.Tricks");
-                for (const auto& rule : kGameplayRules)
-                    SetLogicRule(rule, 0, [](const char* k, int v) { CVarSetInteger(k, v); });
-                for (const auto& option : CommunityPresetOptions(preset.id))
-                    CVarSetInteger(option.key, option.value);
-                const auto& songs = *FindGameplayRule("gCombo.Enhancements.ForeignSongs");
-                SetLogicRule(songs, preset.id != CommunityPreset::Default,
-                             [](const char* k, int v) { CVarSetInteger(k, v); });
-                native(static_cast<int>(preset.id));
-                if (sRefreshStartingGameUI)
-                    sRefreshStartingGameUI();
-                SynchronizeGenerationGuarantee([](const char* k, int v) { return CVarGetInteger(k, v); },
-                                               [](const char* k, int v) { CVarSetInteger(k, v); });
-                applied = preset.name;
-                AnchorSaveCVars();
-            }
-            ImGui::EndDisabled();
-            MenuTooltip(preset.help);
-            ImGui::Spacing();
-            ImGui::PopID();
-        }
-        ImGui::EndTable();
-    }
-    ImGui::Spacing();
-    ImGui::TextDisabled("Adapted from OoTMM community presets");
-    MenuTooltip("These are supported Combo Ship adaptations. Hover, focus or touch each Apply button for its details. "
-                "Source: OoTMM/OoTMM packages/generator/lib/combo/presets.ts.");
-    if (!ready)
-        ImGui::TextDisabled("Return to file select to configure a new seed.");
-    if (!applied.empty())
-        ImGui::Text("%s applied. Fine-tune under Randomizer, then Generate.", applied.c_str());
-}
-
 void DrawScreenAndHud() {
 #ifdef __ANDROID__
     int mode = CVarGetInteger("gCombo.Display.AutoFit", 1);
@@ -2147,93 +2082,6 @@ void ComboMenu::DrawSharedPanel() {
     ImGui::PopID();
 }
 
-void ComboMenu::DrawComboPanel() {
-    ResolveComboGenSyms();
-    // Seed field -> shared CVar the generator reads (same source the native file-select
-    // "Generate a new seed" option uses).
-    // Keep restored custom seeds visible too; a blank-looking field must never hide a fixed seed.
-    std::strncpy(mSeedBuf, CVarGetString("gGeneral.ComboSeed", ""), sizeof(mSeedBuf) - 1);
-    mSeedBuf[sizeof(mSeedBuf) - 1] = '\0';
-    ImGui::SetNextItemWidth(std::min(500.0f, ImGui::GetContentRegionAvail().x * 0.8f));
-    if (ImGui::InputTextWithHint("Seed", "(blank = random)", mSeedBuf, sizeof(mSeedBuf))) {
-        CVarSetString("gGeneral.ComboSeed", mSeedBuf);
-    }
-    MenuTooltip("Leave this blank for a new random seed. The same text and settings repeat a seed. Generate before "
-                "starting a new randomizer file; existing saves keep their original seed.");
-
-    const ComboRando::ComboGenProgress* p = sGetProgress ? sGetProgress() : nullptr;
-    const bool running = p && p->running.load();
-    // Generation may only run at the OOT file-select screen, so the worker can't race a live game
-    // tick (the prior off-thread crash class).
-    const bool onFileSelect = sIsOnFileSelect && sIsOnFileSelect();
-    const bool canGenerate = sTrigger && onFileSelect && !running;
-
-    if (!canGenerate)
-        ImGui::BeginDisabled();
-    ComboMenu_PushButton(ComboMenu_ThemeColor());
-    if (ImGui::Button("Generate combined seed", ImVec2(-FLT_MIN, 0))) {
-        CVarSetString("gGeneral.ComboSeed", mSeedBuf);
-        sTrigger(); // non-blocking: launcher spawns the worker; the main loop keeps running
-    }
-    ComboMenu_PopButton();
-    if (!canGenerate)
-        ImGui::EndDisabled();
-
-    if (!sTrigger) {
-        ImGui::TextUnformatted("Generate unavailable (soh.dll export not found).");
-    } else if (!onFileSelect && !running) {
-        ImGui::TextWrapped("Generate from the file list or an empty file's randomizer screen. "
-                           "Finish or cancel name entry first.");
-    }
-
-    // Live progress + result, polled from the launcher-owned progress each frame.
-    if (p) {
-        if (running) {
-            int placed = p->placed.load();
-            int total = p->total.load();
-            float frac = total > 0 ? (float)placed / (float)total : 0.0f;
-            ImGui::TextUnformatted(ComboGenProgress::PhaseLabel(p->phase.load()));
-            if (p->phase.load() == 3)
-                ImGui::TextWrapped("Items are placed. Building hints and preparing both games; please wait.");
-            else
-                ImGui::ProgressBar(frac, ImVec2(360.0f, 0.0f));
-            ImGui::Text("%d / %d", placed, total);
-        } else if (p->done.load()) {
-            if (p->success.load()) {
-                ImGui::TextUnformatted("Seed ready for OoT + MM. Start Randomizer on a new file.");
-                // Show the reproducible seed token (the input string, not the internal masterSeed
-                // hash). Paste it into the Seed field + same settings to reproduce — shareable
-                // without sharing a save file.
-                ImGui::Text("Seed: %s", p->seedStr);
-                ImGui::SameLine();
-                if (ImGui::SmallButton("Copy")) {
-                    ImGui::SetClipboardText(p->seedStr);
-                }
-                ImGui::SameLine();
-                if (ImGui::SmallButton("Reuse")) {
-                    std::strncpy(mSeedBuf, p->seedStr, sizeof(mSeedBuf) - 1);
-                    mSeedBuf[sizeof(mSeedBuf) - 1] = '\0';
-                    CVarSetString("gGeneral.ComboSeed", mSeedBuf);
-                }
-                ImGui::Text("OOT checks: %d", p->ootCheckCount.load());
-                ImGui::Text("MM checks: %d", p->mmCheckCount.load());
-                ImGui::Text("Cross-game placements: %d", p->foreignCount.load());
-            } else if (p->CancelRequested()) {
-                ImGui::TextUnformatted("Generation cancelled. Change settings or try again when ready.");
-            } else {
-                ImGui::TextWrapped("Generation stopped: %s", p->error);
-            }
-        }
-    }
-    ImGui::Spacing();
-    static const char* goalNames[] = { "Both final bosses", "Triforce Hunt", "Either final boss",
-                                       "Ganon only",        "Majora only",   "Triforce Quest" };
-    static const char* worldNames[] = { "Ocarina of Time", "Majora's Mask", "Random" };
-    ImGui::TextWrapped(
-        "Starting world: %s. Goal: %s.", worldNames[std::clamp(CVarGetInteger("gCombo.Rando.StartingGame", 0), 0, 2)],
-        goalNames[std::clamp(
-            CVarGetInteger("gCombo.Rando.Goal", CVarGetInteger("gCombo.Rando.TriforceHunt", 0) ? 1 : 0), 0, 5)]);
-}
 
 } // namespace ComboRando
 
