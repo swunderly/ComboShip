@@ -33,10 +33,11 @@ public final class StorageCopy {
         if(emptyTarget && !isEmptyDirectory(to))throw new IOException("The destination already contains data. No files were overwritten.");
         // A copy killed mid-way never reaches the cleanup below. Copies run one at a time, so a staging
         // folder left here is abandoned; it was never published, so removing it cannot lose data.
+        // Best effort throughout; it must not block this copy.
         try(DirectoryStream<Path> abandoned=Files.newDirectoryStream(to.getParent(),".comboship-copy-*")) {
             for(Path old:abandoned)if(Files.isDirectory(old,LinkOption.NOFOLLOW_LINKS))
-                try{removeTree(old);}catch(IOException ignored){} // Best effort; it must not block this copy.
-        }
+                try{removeTree(old);}catch(IOException ignored){}
+        }catch(IOException | DirectoryIteratorException ignored){}
         Path staging=Files.createTempDirectory(to.getParent(),".comboship-copy-");
         boolean committed=false;
         try {
