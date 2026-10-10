@@ -302,7 +302,7 @@ extern "C" int Combo_OotSoulPreSpawn(void* raw, int actor, unsigned params) {
     const auto owned = Rando::Souls::Read(&gSaveContext);
     const auto options = Rando::Souls::Options();
     const int aux = Rando::Souls::EvaluateOotAuxSoulPreSpawn(
-        actor, params, play->sceneNum,
+        actor,
         CHECK_QUEST_ITEM(QUEST_KOKIRI_EMERALD) && CHECK_QUEST_ITEM(QUEST_GORON_RUBY) &&
             CHECK_QUEST_ITEM(QUEST_ZORA_SAPPHIRE),
         [&](Rando::Souls::OotSoul soul) { return Rando::Souls::HaveGeneralOotSoul(owned, options, soul); });

@@ -399,12 +399,11 @@ inline int EvaluateOotSoulPreSpawn(int actorId, unsigned variable, int scene, bo
     }
 }
 // Soul-bearing branches from pinned canSpawnActor, independent of room-clear suppression.
-template <class Has>
-inline int EvaluateOotAuxSoulPreSpawn(int actor, unsigned params, int scene, bool allStones, Has has) {
+// Its Market Day crowd sound branch (ACTOR_EN_RIVER_SOUND, params 0xA) returns opt(Citizen soul),
+// i.e. -1 without the soul, which Actor_SpawnWrapper's !canSpawnActor() lets spawn, so it never blocks.
+template <class Has> inline int EvaluateOotAuxSoulPreSpawn(int actor, bool allStones, Has has) {
     if (actor == ACTOR_ITEM_OCARINA)
         return allStones && has(OotSoul::NPC_ZELDA) ? 1 : 0;
-    if (actor == ACTOR_EN_RIVER_SOUND && scene == SCENE_MARKET_DAY && (params & 0xFF) == 0xA)
-        return has(OotSoul::NPC_CITIZEN) ? 1 : -1;
     return 1;
 }
 
