@@ -50,6 +50,7 @@ extern "C" Gfx* Combo_MM_FairyOcarinaHand(PlayState* play, Gfx* nativeHand) {
         return nullptr;
     Gfx* d = list;
     gSPDisplayList(d++, nativeHand);
-    gSPBranchList(d++, (Gfx*)instrument);
+    // Routed path branch: the stripped copy's texture/vertex hashes must resolve in OoT's RM.
+    gDma1p(d++, G_DL_OTR_FILEPATH, instrument, 0, G_DL_NOPUSH);
     return list; // native hand + stripped instrument, same limb matrix, no fabricated transform
 }
