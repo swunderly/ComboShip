@@ -3958,8 +3958,11 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
     // OoTMM transform.ts counts consumables originally supplied by randomized
     // renewable locations; solve.ts protects those copies from junk filling.
     // Keep the native IDs here and export the resulting placement constraint.
+    // groups.ts CRITICAL_RENEWABLES also lists MM_MAGIC_BEAN, which is not junk there; bean renewal is
+    // handled by beanSources (license/renewable per check) and the Palace salesman event instead.
     auto criticalRenewable = [](RandoItemId id) {
-        return id == RI_BOMBCHU_10 || id == RI_RED_POTION_REFILL || id == RI_BLUE_POTION_REFILL || id == RI_MILK_REFILL;
+        return id == RI_SHIELD_HERO || id == RI_BOMBCHU_10 || id == RI_RED_POTION_REFILL ||
+               id == RI_BLUE_POTION_REFILL || id == RI_MILK_REFILL;
     };
     std::unordered_map<RandoItemId, size_t> renewableJunks;
     for (const auto id : checkPool) {
