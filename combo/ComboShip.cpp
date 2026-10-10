@@ -3004,6 +3004,9 @@ static void Combo_OnGenerateThreaded(const char* inputSeed) {
             ProfileBeginGeneration(slot, profileSeed.c_str());
             inputSeed = profileSeed.c_str();
         } catch (const std::exception& e) {
+            // A refused profile is a failed generation: drop any earlier success (e.g. a silent
+            // pending-seed reload) so the file select reports the failure, not a ready seed.
+            g_ComboProgress.Reset();
             g_ComboProgress.SetError(e.what());
             g_ComboProgress.done.store(true);
             return;
