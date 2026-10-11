@@ -3,10 +3,11 @@
 Checks the production sources for: the gear runtime switch (Combo_MM_GearActive) separate from Adult Link in MM, the
 load policy that never refuses a save for its adult or gear state, the readiness gate that greys the gear options out
 and leaves them out of new seeds where the gear cannot run, the menu, profile, Save Editor and tracker rows, the child
-boot textures (a subset of the names the readiness check validates), the Hover Boots lily pads and the Goron/Zora Tunic
-colour patch (on the combiners just before 2S2H's own tunic cosmetic patches). When the OoTMM v32.3 checkout is
-available (--reference, or references/ootmm-stable-32.3 beside the worktree), the copied boot table, child boot and
-hover-circle display lists, tunic palette, gear setting text and tunic combiner patches are checked against it.
+boot textures (a subset of the names the readiness check validates), the Hover Boots lily pads, the Iron Boots under
+Swim shuffle and the Goron/Zora Tunic colour patch (on the combiners just before 2S2H's own tunic cosmetic patches).
+When the OoTMM v32.3 checkout is available (--reference, or references/ootmm-stable-32.3 beside the worktree), the
+copied boot table, child boot and hover-circle display lists, tunic palette, gear setting text, tunic combiner patches
+and no-scale water check are checked against it.
 """
 from pathlib import Path
 import argparse
@@ -198,6 +199,15 @@ check({'gLinkAdultIronBootTex', 'gLinkAdultHoverBootsHeelTex', 'gLinkAdultHoverB
 lotus = squash(read('mm/src/overlays/actors/ovl_Bg_Lotus/z_bg_lotus.c'))
 check('if((gSaveContext.save.playerForm!=PLAYER_FORM_DEKU)&&(Combo_MM_GetCustomBoots(GET_PLAYER(play))!=COMBO_LOTUS_HOVER_BOOTS)){'
       in lotus and '#defineCOMBO_LOTUS_HOVER_BOOTS2' in lotus, 'lily pads sink under Hover Boots')
+# Swim shuffle: human Link in the MM Iron Boots sinks instead of being sent back (OoTMM common/bronze_scale.c:63-66),
+# which the logic's can_swim_or_sink (macros_mm.yml:84) relies on.
+swim = read('mm/2s2h/Rando/ActorBehavior/Player.cpp')
+swim = squash(swim[swim.index('void RespawnOnWaterTouch(Player* player)'):swim.index('void Rando::ActorBehavior::InitPlayerBehavior()')])
+sink = 'if(player->transformation==PLAYER_FORM_HUMAN&&player->currentBoots==PLAYER_BOOTS_GORON){return;}'
+check(sink in swim and swim.index(sink) < swim.index('if(player->stateFlags1&PLAYER_STATE1_8000000)'),
+      'the Swim shuffle sends human Link in the MM Iron Boots back from deep water')
+check('player->currentBoots=6;/*PLAYER_BOOTS_GORON*/' in squash(read('mm/src/code/ComboAdultBootsNative.h')),
+      'the MM Iron Boots no longer set currentBoots to PLAYER_BOOTS_GORON')
 use = squash(read('mm/src/overlays/actors/ovl_player_actor/ComboAdultGearUseNative.h'))
 check('if(player->heldItemAction!=player->itemAction||(player->stateFlags1&PLAYER_STATE1_400000))return1;' in use,
       'gear toggles outside OoTMM\'s Player_UseItem guard')
@@ -271,6 +281,9 @@ if reference is not None:
         ours = (root / 'mm/src/code' / vtx).read_text(encoding='utf-8')
         theirs = (reference / 'packages/generator/src/mm/actors' / vtx).read_text(encoding='utf-8')
         check(squash(ours) == squash(theirs), f'{vtx} differs from OoTMM')
+    scale_ref = squash((reference / 'packages/generator/src/common/bronze_scale.c').read_text(encoding='utf-8'))
+    check('#ifdefined(GAME_MM)if(this->currentBoots==6||this->currentBoots==3)return;#endif' in scale_ref,
+          'OoTMM bronze_scale.c no longer skips the MM Iron Boots')
     lotus_ref = (reference / 'packages/generator/src/mm/actors/Bg/Bg_Lotus.c').read_text(encoding='utf-8')
     check('GET_PLAYER_CUSTOM_BOOTS(player) != PLAYER_BOOTS_HOVER' in lotus_ref, 'OoTMM Bg_Lotus.c changed')
     player_s = (reference / 'packages/generator/src/mm/actors/Player.S').read_text(encoding='utf-8')

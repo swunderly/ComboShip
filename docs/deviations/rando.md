@@ -2118,6 +2118,9 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   env colour (`ComboGearTunicColorNative.h`), so the sword/shield lists stay untouched and, with the default tunic,
   2S2H's own cosmetic keeps working. The Goron/Zora colours follow OoT's tunic cosmetics, as in OoTMM
   (`cosmetics/index.ts:383-395`). Custom player models are not patched.
+- **Swim shuffle.** 2S2H's Swim shuffle stands in for OoTMM's MM scales (`can_swim`). As OoTMM's no-scale water check
+  skips the MM Iron Boots (`common/bronze_scale.c:63-66`), `RespawnOnWaterTouch` does not send back human Link wearing
+  them, which the logic's `can_swim_or_sink` (`macros_mm.yml:84`) relies on.
 - **Not copied:** the MM pause-menu item descriptions (2S2H rando suppresses the descriptions of all trade slots;
   owner decision), OoTMM's OoT file-select MM equipment icons, scales, and the tricks that need the Megaton Hammer or
   Strength 3 in MM (not authorized). The shared tunic text keeps OoTMM's "into two items" wording.

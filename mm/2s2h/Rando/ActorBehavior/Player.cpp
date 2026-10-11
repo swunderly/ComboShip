@@ -20,6 +20,15 @@ void RespawnOnWaterTouch(Player* player) {
         return;
     }
 
+#ifdef COMBO_BUILD
+    // ComboShip: human Link in the MM Iron Boots (currentBoots PLAYER_BOOTS_GORON) sinks instead of swimming, so he
+    // is not sent back, as in OoTMM's no-scale water check (common/bronze_scale.c:63-66) and its logic
+    // (macros_mm.yml:84 can_swim_or_sink = can_swim || has_iron_boots).
+    if (player->transformation == PLAYER_FORM_HUMAN && player->currentBoots == PLAYER_BOOTS_GORON) {
+        return;
+    }
+#endif
+
     if (player->stateFlags1 & PLAYER_STATE1_8000000) {
         // Mimic Deku Hop failure behavior
         Player_SetAction(gPlayState, player, Player_Action_1, 0);
