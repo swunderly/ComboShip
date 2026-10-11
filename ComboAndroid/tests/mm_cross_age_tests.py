@@ -135,6 +135,14 @@ check('if(sChecksInLogicStale&&gGameState!=NULL)lastFrame=gGameState->frames-20;
 check('sChecksInLogicStale=true;' in body(tracker, 'void Rando::CheckTracker::MarkChecksInLogicStale()'),
       'MarkChecksInLogicStale must set the stale mark')
 
+# ---- 5a-4: an existing seed's Cross-Games Age is authoritative; device readiness only gates new seeds.
+check('returnrules.crossAge&&ComboRando::ComboFaroreIntegrationReady;' in
+      body(combo, 'static bool EffectiveCrossAge(const ComboRando::FaroreRules& rules)'),
+      'EffectiveCrossAge must use the seed and the native integration only')
+check('MM_AdultRuntimeReady' not in combo + benport, 'MM_AdultRuntimeReady must not gate a seed\'s Cross-Games Age')
+check('if(id!=RO_MM_CROSS_AGE||!sMMSeedFaroreRulesBound)' in init,
+      'MM_InitRandoSaveFile must keep a bound seed\'s Cross-Games Age')
+
 if failures:
     print('\n'.join(failures))
     sys.exit(1)

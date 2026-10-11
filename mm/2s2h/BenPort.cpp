@@ -3086,10 +3086,12 @@ extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(int fileNum, const char* placem
             options[Rando::StaticData::Options[RO_CROSS_GAME_FARORE].name] = uint32_t(sMMSeedFaroreRules.crossGameFw);
             options[Rando::StaticData::Options[RO_MM_CROSS_AGE].name] = uint32_t(sMMSeedFaroreRules.crossAge);
         }
-        // After the seed override above, which can otherwise bring Cross Age or a spell back.
+        // After the seed override above, which can otherwise bring a dormant adult option or a spell back. A bound
+        // seed keeps its Cross-Games Age: it is the seed's logic, whatever this device can draw.
         if (!Combo_MM_AdultResourcesReady())
             for (const auto id : kComboHiddenAdultMmOptions)
-                options[Rando::StaticData::Options[id].name] = uint32_t(0);
+                if (id != RO_MM_CROSS_AGE || !sMMSeedFaroreRulesBound)
+                    options[Rando::StaticData::Options[id].name] = uint32_t(0);
         for (const auto& [id, spell] : kComboMmSpellOptions)
             if (!Combo_MMSpellOptionReady(spell))
                 options[Rando::StaticData::Options[id].name] = uint32_t(0);
@@ -6204,11 +6206,6 @@ extern "C" void Combo_MM_GearForHeadlessGeneration(void) {
 // Shared gear row out exactly where the MM row is (ComboMenu.cpp DrawSharedItems).
 extern "C" COMBO_EXPORT int MM_GearOptionsAllowed(int swimShuffled) {
     return Combo_MM_GearOptionsAllowed(swimShuffled);
-}
-// The combo layer ANDs a seed's faroreRules.crossAge with this before configuring either engine's Farore
-// runtime or preflighting an entrance, so they agree with the MM save and oracle (RO_MM_CROSS_AGE kept off).
-extern "C" COMBO_EXPORT int MM_AdultRuntimeReady(void) {
-    return Combo_MM_AdultResourcesReady();
 }
 // The one place a seed's age options set a save's age state: a new MM file (MM_InitRandoSaveFile) and the diagnostics
 // export. Eligibility is checked before any legacy normalization or loadout mutation.

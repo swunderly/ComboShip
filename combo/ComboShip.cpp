@@ -461,11 +461,11 @@ static FaroreDeparture SOH_TakeDungeonDeparture = nullptr, MM_TakeDungeonDepartu
 static FaroreArrival SOH_SetDungeonArrival = nullptr, MM_SetDungeonArrival = nullptr;
 static void (*SOH_ConfigureFaroreRules)(int, int) = nullptr;
 static void (*MM_ConfigureFaroreRules)(int, int, int) = nullptr;
-static int (*MM_AdultRuntimeReady)() = nullptr;
-// A seed's Cross Age needs MM's adult runtime. While it is unavailable the MM save, pool and oracle keep
-// RO_MM_CROSS_AGE off, so every consumer of the seed's crossAge uses this one effective value.
+// A seed's Cross-Games Age is part of its logic, and generation leaves it off where this device cannot run adult Link
+// in MM (BenPort.cpp Combo_MM_ClearUnavailableOptions). So an existing seed's value holds whatever the device can draw,
+// as in the MM save and oracle; both engines' Farore's Wind and entrance runtimes only need the native integration.
 static bool EffectiveCrossAge(const ComboRando::FaroreRules& rules) {
-    return rules.crossAge && MM_AdultRuntimeReady && MM_AdultRuntimeReady();
+    return rules.crossAge && ComboRando::ComboFaroreIntegrationReady;
 }
 static int (*MM_GearOptionsAllowed)(int) = nullptr;
 // A seed that adds MM boots or tunics needs MM's gear runtime. A new MM save drops gear this device cannot run
@@ -3914,7 +3914,7 @@ static int Combo_PreflightEntranceDeparture(int fileNum, int source, int destina
         (source == 1 && g_pendingOOTReturn))
         return 0;
     // The immutable saved seed owns cross-age policy; the caller cannot enable it
-    // through a current QoL CVar or a song destination. MM adult readiness can only turn it off.
+    // through a current QoL CVar or a song destination. Only a missing native integration turns it off.
     bool savedCrossAge = false;
     try {
         std::lock_guard<std::mutex> lock(g_containerMutex);
@@ -4411,7 +4411,6 @@ int main(int argc, char** argv) {
     MM_SetFaroreArrivalEntrance = (FaroreArrival)GetSym(mmModule, "MM_SetFaroreArrivalEntrance");
     SOH_ConfigureFaroreRules = (void (*)(int, int))GetSym(sohModule, "SOH_ConfigureFaroreRules");
     MM_ConfigureFaroreRules = (void (*)(int, int, int))GetSym(mmModule, "MM_ConfigureFaroreRules");
-    MM_AdultRuntimeReady = (int (*)())GetSym(mmModule, "MM_AdultRuntimeReady");
     MM_GearOptionsAllowed = (int (*)(int))GetSym(mmModule, "MM_GearOptionsAllowed");
     if (auto set = (void (*)(FaroreDestination, FaroreSync))GetSym(sohModule, "SOH_SetFaroreBridge"))
         set(Combo_FaroreMmDestination, Combo_FaroreSyncMm);
