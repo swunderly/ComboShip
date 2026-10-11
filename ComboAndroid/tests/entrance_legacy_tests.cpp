@@ -71,6 +71,7 @@ static void CheckDecoded(const Json& fixture) {
     mixed.install(e.at("mixed"));
     assert(ordinary.json() == e.at("ordinary") && grotto.json() == e.at("grotto") && mixed.json() == e.at("mixed"));
     assert(!ordinary.containsSource(0xc010u) && ordinary.destination(0xc010u) == 0xc010u);
+    assert(ordinary.destination(0xca00u) == 0x2800u && ordinary.destination(0xd460u) == 0xd240u);
     // Numeric expectations are frozen independently of today's registry lookups. In particular,
     // the incoming and outgoing full-width grotto IDs must not alias their truncated low words.
     assert(grotto.destination({ Game::Mm, 0x10000u }).id == 0x10001u);

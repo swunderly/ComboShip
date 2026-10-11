@@ -1,0 +1,7 @@
+# Generated OoTMM artifacts use canonical LF bytes on every checkout, including Windows.
+combo/rando/entrances/Registry.h text eol=lf
+combo/rando/entrances/GrottoMetadata.h text eol=lf
+combo/rando/entrances/LICENSE.OoTMM text eol=lf
+tools/ootmm/*-source.json text eol=lf
+combo/rando/entrances/OotmmSettingsData.inc text eol=lf
+ComboAndroid/tests/fixtures/ootmm-32.3-entrance-settings.json text eol=lf
