@@ -1,8 +1,8 @@
 # Device validation still required
 
-## Quick checks for Din's Fire (MM) and Nayru's Love (MM) (unreleased)
+## Quick checks for Din's Fire (MM) and Nayru's Love (MM) (0.4.1)
 
-Release gate: checks 2, 3, 4 and 7 must pass on a phone before a build offers these options. Their casting code has never been played.
+Checks 2, 3, 4 and 7 matter most: casting the MM spells had not been played before 0.4.1.
 
 1. Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items lists **Din's Fire (MM)**, **Farore's Wind (MM)** and **Nayru's Love (MM)** in that order, each with OoTMM's tooltip, and all three can be ticked (a greyed-out Din's Fire or Nayru's Love row means this device could not prepare the spell; report it). Under Randomizer > Shared items, **Shared Din's Fire** and **Shared Nayru's Love** are greyed out and unticked until their MM option is ticked. Search finds "Din's Fire (MM)".
 2. Generate a seed with both MM spells on and their shared options off, and start a new file. Find both spells in MM. Din's Fire should light a torch and melt ice or a large snowball; Nayru's Love should block damage and last through a scene change. Both use magic, and only human Link can cast them. Use the trade-slot cycling to switch between the Deed and Couple items and the spells.
@@ -12,7 +12,7 @@ Release gate: checks 2, 3, 4 and 7 must pass on a phone before a build offers th
 6. Add the **Trade Items** group to the item tracker: the spell rows show only on this seed and light up after pickup. In the default **Inventory** group, the Deed and Couple slots show the Din's Fire and Nayru's Love icons once you have only the spell there, not the Moon's Tear or a letter. A save from 0.4.0 or earlier loads with no spell rows and no new items.
 7. With the trick **Burn Igos' curtain with Din's Fire** on, stand at the top of the stairs next to Igos' throne and cast Din's Fire: the left curtain should burn.
 
-## Quick checks for OoT Enemy Souls (unreleased)
+## Quick checks for OoT Enemy Souls (0.4.0)
 
 1. Items & checks > OoT > Item pool shows **Enemy Souls (OoT)** with OoTMM's tooltip, and "Complete OoT Soul Compatibility" appears nowhere. Tick it, then turn on Enhancements > Enemy Randomizer: the option unticks and greys out with "Disabled because Enemy Randomizer is on." Turn Enemy Randomizer off again.
 2. Generate a seed with Enemy Souls (OoT) on and start a new file. Repeat once with a Plentiful item pool.

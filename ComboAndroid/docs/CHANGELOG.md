@@ -12,7 +12,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
-## Unreleased
+## 0.4.1 - 2026-10-11
 
 - **New options: Din's Fire (MM) and Nayru's Love (MM)**, under Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items, next to Farore's Wind (MM), with OoTMM v32.3's names and descriptions. Each adds the OoT spell to MM's item pool; it is cast from its trade slot like Farore's Wind. Both are off by default. If the app cannot prepare a spell on your device, its option is greyed out and new seeds leave the spell out, so no seed needs a spell you cannot cast.
   - **Shared Din's Fire** and **Shared Nayru's Love** (Randomizer > Shared items) make one spell count in both games. As in OoTMM, each stays greyed out and unticked until its MM option is on. Every shared item now shows OoTMM's description.
@@ -29,8 +29,9 @@ Install each update over the existing app, so your ROMs, saves and settings are 
   - The logic behind the hidden Cross-Games Age and MM boots and tunic options also follows v32.3 now; current seeds cannot turn those on.
 
 Tested:
-- 73 automated host tests pass (3 are skipped on Windows), run on these changes on top of 0.4.0. They check the MM spell settings, shared items, tricks and every spell logic site against OoTMM v32.3, including that Din's Fire counts nowhere OoTMM leaves it out. They compare, for every combination of items, what a Nayru's Love seed can reach in the swamp, Deku Palace and Woodfall against the previous logic, and check that Ikana Castle only gains OoTMM's Nayru's Love route. They also check the tracker icons and that the spell options are off wherever the device cannot cast them.
-- The MM spell changes have not been built into an APK, generated or played on the emulator, or tried on a phone yet. Their casting code has never been played; these options should not ship until the phone checks pass.
+- 74 automated host tests pass (2 are skipped on Windows). They check the MM spell settings, shared items, tricks and every spell logic site against OoTMM v32.3, including that Din's Fire counts nowhere OoTMM leaves it out. They compare, for every combination of items, what a Nayru's Love seed can reach in the swamp, Deku Palace and Woodfall against the previous logic, and check that Ikana Castle only gains OoTMM's Nayru's Love route. They also check the tracker icons and that the spell options are off wherever the device cannot cast them.
+- Seed generation on the emulator with this release's native build, one seed each, every one generated on the first try and passed its playthrough check: defaults (OoT start and MM start); both MM spells (OoT start); both MM spells shared (MM start); both MM spells with a Minimal pool; the Allsanity preset. The spoilers have exactly one Din's Fire (MM) and one Nayru's Love (MM), or one shared copy of each when shared.
+- Not tried on a phone: casting the MM spells has not been played yet.
 
 ## 0.4.0 - 2026-10-11
 
