@@ -2969,6 +2969,8 @@ extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongLogicSources() {
     return OotLiveSongSources(true);
 }
 // With the player's active song options, for MM's live tracker (trackers follow active enhancements).
+// Its reader is MM_LiveIncomingSongs (BenPort.cpp), which still uses SOH_GetLiveSongLogicSources until
+// it follows the active options too.
 extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongSources() {
     return OotLiveSongSources(false);
 }
