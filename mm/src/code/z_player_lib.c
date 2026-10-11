@@ -230,6 +230,15 @@ void func_801229FC(Player* player) {
         if (true) {
             // #endregion
             player->maskObjectLoadState = 0;
+#ifdef COMBO_BUILD
+            // OoTMM fits Keaton, Bunny and Scents to adult Link once the mask has loaded (Player_AfterMaskLoaded,
+            // generator/src/mm/actors/Player.S at 0x80122ab8).
+            if (player->actor.id == ACTOR_PLAYER) {
+                extern int Combo_MM_IsLinkAdult(void);
+                extern void Combo_MM_ApplyAdultMaskScale(s32 mask, s32 adult);
+                Combo_MM_ApplyAdultMaskScale(player->currentMask, Combo_MM_IsLinkAdult());
+            }
+#endif
 
             if (player->currentMask == PLAYER_MASK_GREAT_FAIRY) {
                 s32 i;

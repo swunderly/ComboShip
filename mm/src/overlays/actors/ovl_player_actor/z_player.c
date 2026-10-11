@@ -11473,6 +11473,7 @@ extern void Combo_MM_ApplyAdultGearInventoryResources(int enabled);
 extern void Combo_MM_ApplyAdultOverlayAge(int adult);
 extern s32 Combo_MM_ApplyAdultModelTables(s32 adult);
 extern void Combo_MM_ApplyAdultGameplayKeep(PlayState* play, int adult);
+extern void Combo_MM_ApplyAdultMaskScale(s32 mask, s32 adult);
 extern void Combo_MM_ApplyAdultMaskInventoryResources(int enabled);
 #endif
 
@@ -11569,6 +11570,7 @@ void Player_Init(Actor* thisx, PlayState* play) {
         int adult = Combo_MM_ApplyAdultModelTables(Combo_MM_IsLinkAdult());
         Combo_MM_ApplyAdultOverlayAge(adult);
         Combo_MM_ApplyAdultGameplayKeep(play, adult);
+        Combo_MM_ApplyAdultMaskScale(this->currentMask, adult);
         Combo_MM_ApplyAdultMaskInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled &&
                                                   Combo_MM_AdultResourcesReady());
         Combo_MM_ApplyAdultGearInventoryResources(Combo_MM_GearActive());

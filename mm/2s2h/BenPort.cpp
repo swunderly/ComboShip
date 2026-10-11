@@ -6054,6 +6054,7 @@ extern "C" void Combo_MM_AdultRestoreFaroreRespawn(void) {
 #endif
 
 #include "ComboAdultGameplayKeepResources.h"
+#include "ComboAdultMaskScale.h"
 
 // Farore's pinned mode selection uses CFG_MM_MASK_ADULT, independent of startingAgeMm.
 // Resource readiness controls transitions, never the saved age-mode policy.

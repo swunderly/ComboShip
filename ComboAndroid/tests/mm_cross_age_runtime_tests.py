@@ -355,6 +355,40 @@ if reference:
           'maskMatrixDL[0] = 0xe7000000;' in scene and 'maskMatrixDL[2] = 0xda380001;' in scene and
           'maskMatrixDL[4] = 0xdf000000;' in scene, 'OoTMM scene.c no longer patches the spin attack this way')
 
+# ---- Mask fit (plan F5b 5b-5): Keaton, Bunny and Scents call the scale list at OoTMM's commands, found by walking the
+# port's list (H6), checked against the command OoTMM replaces, and given back for child Link.
+mask_src = read('mm/2s2h/ComboAdultMaskScale.h')
+patches = [(m, l, int(c), w == 'true') for m, l, c, w in re.findall(
+    r'\{\s*PLAYER_MASK_(\w+),\s*"__OTR__objects/\w+/(\w+)",\s*(\d+),\s*(true|false),', mask_src)]
+check(patches == [('KEATON', 'object_mask_ki_tan_DL_0004A0', 1, True), ('BUNNY', 'object_mask_rabit_DL_000610', 2, True),
+                   ('BUNNY', 'object_mask_rabit_DL_000610', 46, False), ('BUNNY', 'object_mask_rabit_DL_000610', 52, True),
+                   ('BUNNY', 'object_mask_rabit_DL_000610', 80, False), ('BUNNY', 'object_mask_rabit_DL_000610', 86, True),
+                   ('SCENTS', 'object_mask_bu_san_DL_000710', 1, True)], f'mask patches: {patches}')
+slots_fn = body(mask_src, 'inline bool AdultMaskScaleSlots(')
+check('slots[i]=ComboAdultOotModel::N64CommandSlot(list.data(),list.size(),patch.command);' in slots_fn and
+      'constuint8_texpected=patch.withSync?G_RDPPIPESYNC:G_TEXTURE;' in slots_fn and
+      'resource->GetInitData()->IsCustom' in slots_fn, 'mask patch slots are not walked and checked')
+check('if(player->actor.id==ACTOR_PLAYER){externintCombo_MM_IsLinkAdult(void);externvoidCombo_MM_ApplyAdultMaskScale(s32mask,'
+      's32adult);Combo_MM_ApplyAdultMaskScale(player->currentMask,Combo_MM_IsLinkAdult());}' in
+      squash(lib[lib.index('void func_801229FC(Player* player)'):lib.index('void func_80122BA4(')]),
+      'the mask fit does not run when Player\'s mask has loaded')
+check('Combo_MM_ApplyAdultMaskScale(this->currentMask,adult);' in seam, 'Player_Init does not fit or restore the mask')
+if reference:
+    after = re.search(r'u8 Player_AfterMaskLoaded\(Player\* player\)\n\{(.*?)\n\}', (reference /
+                      'packages/generator/src/mm/actors/Player.c').read_text(encoding='utf-8'), re.S).group(1)
+    upstream = []
+    for case, block in re.findall(r'case MASK_(\w+):(.*?)break;', after, re.S):
+        writes = dict(re.findall(r'maskObjectSegment\[0x([0-9a-f]+)\] = 0x([0-9a-f]+);', block))
+        lists = {'KEATON': 'object_mask_ki_tan', 'BUNNY': 'object_mask_rabit', 'SCENTS': 'object_mask_bu_san'}
+        xml = read(f'mm/assets/xml/N64_US/objects/{lists[case]}.xml')
+        name, offset = re.search(r'<DList Name="(\w+)" Offset="0x([0-9A-Fa-f]+)"', xml).groups()
+        for word, value in sorted((int(w, 16), v) for w, v in writes.items()):
+            if value == 'de000000':
+                target = int(writes[format(word + 1, 'x')], 16)
+                check(target in (0x0405A2E0, 0x0405A2E8), f'{case} target {target:#x}')
+                upstream.append((case, name, (word - int(offset, 16) // 4) // 2, target == 0x0405A2E0))
+    check(upstream == patches, f'mask patches differ from OoTMM Player_AfterMaskLoaded: {upstream}')
+
 # The loader's lists, in slot order, and its composites (plan F5b 1.3).
 enum = re.search(r'typedef enum ComboAdultOotSlot \{(.*?)\} ComboAdultOotSlot;', slots_src, re.S).group(1)
 order = [e.split('=')[0].strip().replace('COMBO_ADULT_', '') for e in re.sub(r'//[^\n]*', '', enum).split(',')
