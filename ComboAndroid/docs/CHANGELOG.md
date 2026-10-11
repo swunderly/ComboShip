@@ -12,6 +12,13 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## 0.3.11 - 2026-10-11
+
+- Tingle's map menu now shows a bought slot as **SOLD OUT** (in red, no price) when its item cannot be given again, as OoTMM does. Refillable items stay for sale. Picking a sold-out slot plays Tingle's own reply.
+- Check tracker: entering an area later in the cycle no longer puts its earlier-time checks in logic. For example, walking into Romani Ranch on Day 3 (after the boulder is gone) no longer shows Epona's Song, the aliens or Cremia's escort as available; those still need the boulder broken on Day 1.
+
+Tested: automated host tests and APK checks; not tested on a phone.
+
 ## 0.3.10 - 2026-10-10
 
 A cleanup release: no new features. An independent review of all code the earlier AI agent wrote confirmed 200 problems; 187 are fixed here, 10 are deferred and 3 minor cleanups were skipped (list in [history/CODE-REVIEW-2026-10-10.md](history/CODE-REVIEW-2026-10-10.md)).
