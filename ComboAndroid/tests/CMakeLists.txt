@@ -60,6 +60,7 @@ endfunction()
 
 # Python harnesses (any host C++ compiler).
 combo_json_harness_test(oot_silver_native_routes_and_coverage silver_route_tests.py)
+combo_json_harness_test(oot_enemy_souls_policy_names_settings_and_receipt oot_enemy_soul_tests.py)
 combo_harness_test(cross_warp_native_presentation_and_skips song_presentation_tests.py)
 combo_harness_test(cross_warp_native_audio_and_dialect warp_audio_tests.py)
 combo_harness_test(oot_early_frog_native_predicate_and_reward early_frog_rules_tests.py)

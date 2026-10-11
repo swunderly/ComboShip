@@ -1,0 +1,1174 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "license": "MIT",
+  "sources": {
+    "data/defs/gi.yml": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/data/defs/gi.yml",
+      "sha256": "40dd7c9722a2b6123549e164066b59da8d04b27d028ba15b6eefca9a58a83943"
+    },
+    "packages/generator/lib/combo/names.ts": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/packages/generator/lib/combo/names.ts",
+      "sha256": "ef42e489ac9d483658f9badf2c8d288906ab3c1fba1277bf81eb737bc2020aa2"
+    },
+    "packages/generator/src/common/text/text.c": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/packages/generator/src/common/text/text.c",
+      "sha256": "3fb44a73bfd33b16b7a9c6cfa7185b6c8f0679f421a3de96b61b0ad582c7aab9"
+    },
+    "packages/core/src/settings/data.ts": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/packages/core/src/settings/data.ts",
+      "sha256": "8115778263641ee8a2e99be4850fb73665933b951dca582a113c0926cb2292d8"
+    },
+    "packages/generator/src/oot/actors.c": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/packages/generator/src/oot/actors.c",
+      "sha256": "878791bf73d263b7bde115242903b328df156bf594c54a816c92f7dbec69e08f"
+    }
+  },
+  "setting": {
+    "key": "soulsEnemyOot",
+    "name": "Enemy Souls (OoT)",
+    "category": "items.extensions",
+    "type": "boolean",
+    "description": "Add Souls for OoT enemies into the item pool. They won't spawn unless their Soul is obtained.",
+    "default": false
+  },
+  "souls": [
+    {
+      "soul": "ENEMY_STALFOS",
+      "giName": "Soul of Stalfos",
+      "name": "Soul of Stalfos (OoT)",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_OCTOROK",
+      "giName": "Soul of Octoroks",
+      "name": "Soul of Octoroks (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_WALLMASTER",
+      "giName": "Soul of Wallmasters",
+      "name": "Soul of Wallmasters (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_DODONGO",
+      "giName": "Soul of Dodongos",
+      "name": "Soul of Dodongos (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_KEESE",
+      "giName": "Soul of Keeses",
+      "name": "Soul of Keese (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_TEKTITE",
+      "giName": "Soul of Tektites",
+      "name": "Soul of Tektites (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_LEEVER",
+      "giName": "Soul of Leevers",
+      "name": "Soul of Leevers (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_PEAHAT",
+      "giName": "Soul of Peahats",
+      "name": "Soul of Peahats (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_LIZALFOS_DINOLFOS",
+      "giName": "Soul of Lizalfos/Dinolfos",
+      "name": "Soul of Lizalfos/Dinolfos (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_GOHMA_LARVA",
+      "giName": "Soul of Gohma Larvae",
+      "name": "Soul of Gohma Larvae",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_SHABOM",
+      "giName": "Soul of Shaboms",
+      "name": "Soul of Shaboms",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_BABY_DODONGO",
+      "giName": "Soul of Baby Dodongos",
+      "name": "Soul of Baby Dodongos",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_DARK_LINK",
+      "giName": "Soul of Dark Link",
+      "name": "Soul of Dark Link",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_BIRI_BARI",
+      "giName": "Soul of Biris/Baris",
+      "name": "Soul of Biris/Baris",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_TAILPASARN",
+      "giName": "Soul of Tailpasarans",
+      "name": "Soul of Tailpasarans",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_PARASITE",
+      "giName": "Soul of Jabu-Jabu's Parasites",
+      "name": "Soul of Jabu-Jabu's Parasites",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_SKULLTULA",
+      "giName": "Soul of Skulltulas",
+      "name": "Soul of Skulltulas (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_TORCH_SLUG",
+      "giName": "Soul of Torch Slugs",
+      "name": "Soul of Torch Slugs",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_MOBLIN",
+      "giName": "Soul of Moblins",
+      "name": "Soul of Moblins",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_ARMOS",
+      "giName": "Soul of Armos",
+      "name": "Soul of Armos (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_DEKU_BABA",
+      "giName": "Soul of Deku Babas",
+      "name": "Soul of Deku Babas (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_DEKU_SCRUB",
+      "giName": "Soul of Deku Scrubs",
+      "name": "Soul of Deku Scrubs (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_BUBBLE",
+      "giName": "Soul of Bubbles",
+      "name": "Soul of Bubbles (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_BEAMOS",
+      "giName": "Soul of Beamos",
+      "name": "Soul of Beamos (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_FLOORMASTER",
+      "giName": "Soul of Floormasters",
+      "name": "Soul of Floormasters (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_REDEAD_GIBDO",
+      "giName": "Soul of ReDeads/Gibdos",
+      "name": "Soul of ReDeads/Gibdos (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_SKULLWALLTULA",
+      "giName": "Soul of Skullwalltulas",
+      "name": "Soul of Skullwalltulas (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_FLARE_DANCER",
+      "giName": "Soul of Flare Dancers",
+      "name": "Soul of Flare Dancers",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_DEAD_HAND",
+      "giName": "Soul of Dead Hands",
+      "name": "Soul of Dead Hands",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_SHELL_BLADE",
+      "giName": "Soul of Shell Blades",
+      "name": "Soul of Shell Blades (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_LIKE_LIKE",
+      "giName": "Soul of Like-Likes",
+      "name": "Soul of Like Likes (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_SPIKE",
+      "giName": "Soul of Spikes",
+      "name": "Soul of Spikes",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_ANUBIS",
+      "giName": "Soul of Anubis",
+      "name": "Soul of Anubis",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_IRON_KNUCKLE",
+      "giName": "Soul of Iron Knuckles",
+      "name": "Soul of Iron Knuckles (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_SKULL_KID",
+      "giName": "Soul of Skull Kids",
+      "name": "Soul of Skull Kids (OoT)",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_FLYING_POT",
+      "giName": "Soul of Flying Pots",
+      "name": "Soul of Flying Pots (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_FREEZARD",
+      "giName": "Soul of Freezards",
+      "name": "Soul of Freezards (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_STINGER",
+      "giName": "Soul of Stingers",
+      "name": "Soul of Stingers",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_WOLFOS",
+      "giName": "Soul of Wolfos",
+      "name": "Soul of Wolfoses (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_STALCHILD",
+      "giName": "Soul of Stalchildren",
+      "name": "Soul of Stalchildren (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_GUAY",
+      "giName": "Soul of Guays",
+      "name": "Soul of Guays (OoT)",
+      "ambiguous": true
+    },
+    {
+      "soul": "ENEMY_THIEVES",
+      "giName": "Soul of the Fighting Gerudos",
+      "name": "Soul of the Fighting Gerudos",
+      "ambiguous": false
+    },
+    {
+      "soul": "ENEMY_POE",
+      "giName": "Soul of Poes",
+      "name": "Soul of Poes (OoT)",
+      "ambiguous": true
+    }
+  ],
+  "actors": [
+    {
+      "actors": [
+        "ACTOR_EN_DS"
+      ],
+      "soul": "NPC_OLD_HAG",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_JS"
+      ],
+      "soul": "NPC_CARPET_MAN",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_HS",
+        "ACTOR_EN_HS2"
+      ],
+      "soul": "NPC_GROG",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_IN"
+      ],
+      "soul": "NPC_GORMAN",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_MK"
+      ],
+      "soul": "NPC_SCIENTIST",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_MS"
+      ],
+      "soul": "NPC_BEAN_SALESMAN",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TG"
+      ],
+      "soul": "NPC_HONEY_DARLING",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TAKARA_MAN"
+      ],
+      "soul": "NPC_CHEST_GAME_OWNER",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_PO_SISTERS",
+        "ACTOR_EN_PO_FIELD"
+      ],
+      "soul": "ENEMY_POE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_DNS",
+        "ACTOR_EN_SHOPNUTS"
+      ],
+      "soul": "MISC_BUSINESS_SCRUB",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TEST"
+      ],
+      "soul": "ENEMY_STALFOS",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_BG_MORI_BIGST"
+      ],
+      "soul": "ENEMY_STALFOS",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_OKUTA",
+        "ACTOR_EN_BIGOKUTA"
+      ],
+      "soul": "ENEMY_OCTOROK",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_WALLMAS"
+      ],
+      "soul": "ENEMY_WALLMASTER",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_DODONGO"
+      ],
+      "soul": "ENEMY_DODONGO",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_FIREFLY"
+      ],
+      "soul": "ENEMY_KEESE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TITE"
+      ],
+      "soul": "ENEMY_TEKTITE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_PEEHAT"
+      ],
+      "soul": "ENEMY_PEAHAT",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_ZF"
+      ],
+      "soul": "ENEMY_LIZALFOS_DINOLFOS",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_BUBBLE"
+      ],
+      "soul": "ENEMY_SHABOM",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_DODOJR"
+      ],
+      "soul": "ENEMY_BABY_DODONGO",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TORCH2"
+      ],
+      "soul": "ENEMY_DARK_LINK",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_BILI",
+        "ACTOR_EN_VALI"
+      ],
+      "soul": "ENEMY_BIRI_BARI",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TP"
+      ],
+      "soul": "ENEMY_TAILPASARN",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_ST"
+      ],
+      "soul": "ENEMY_SKULLTULA",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_BW"
+      ],
+      "soul": "ENEMY_TORCH_SLUG",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_MB"
+      ],
+      "soul": "ENEMY_MOBLIN",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_DEKUBABA",
+        "ACTOR_EN_KAREBABA"
+      ],
+      "soul": "ENEMY_DEKU_BABA",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_DEKUNUTS",
+        "ACTOR_EN_HINTNUTS"
+      ],
+      "soul": "ENEMY_DEKU_SCRUB",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_BB"
+      ],
+      "soul": "ENEMY_BUBBLE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_VM"
+      ],
+      "soul": "ENEMY_BEAMOS",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_FLOORMAS"
+      ],
+      "soul": "ENEMY_FLOORMASTER",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_RD"
+      ],
+      "soul": "ENEMY_REDEAD_GIBDO",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_FD"
+      ],
+      "soul": "ENEMY_FLARE_DANCER",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_DH",
+        "ACTOR_EN_DHA"
+      ],
+      "soul": "ENEMY_DEAD_HAND",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_SB"
+      ],
+      "soul": "ENEMY_SHELL_BLADE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_RR"
+      ],
+      "soul": "ENEMY_LIKE_LIKE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_NY"
+      ],
+      "soul": "ENEMY_SPIKE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_ANUBICE_TAG",
+        "ACTOR_EN_ANUBICE"
+      ],
+      "soul": "ENEMY_ANUBIS",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_IK"
+      ],
+      "soul": "ENEMY_IRON_KNUCKLE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TUBO_TRAP"
+      ],
+      "soul": "ENEMY_FLYING_POT",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_FZ"
+      ],
+      "soul": "ENEMY_FREEZARD",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_WEIYER",
+        "ACTOR_EN_EIYER"
+      ],
+      "soul": "ENEMY_STINGER",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_WF"
+      ],
+      "soul": "ENEMY_WOLFOS",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_CROW"
+      ],
+      "soul": "ENEMY_GUAY",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_BOSS_GOMA"
+      ],
+      "soul": "BOSS_QUEEN_GOHMA",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_BOSS_DODONGO"
+      ],
+      "soul": "BOSS_KING_DODONGO",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_BOSS_VA"
+      ],
+      "soul": "BOSS_BARINADE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_BOSS_GANONDROF"
+      ],
+      "soul": "BOSS_PHANTOM_GANON",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_BOSS_FD"
+      ],
+      "soul": "BOSS_VOLVAGIA",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_BOSS_MO"
+      ],
+      "soul": "BOSS_MORPHA",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_BOSS_SST"
+      ],
+      "soul": "BOSS_BONGO_BONGO",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_BOSS_TW"
+      ],
+      "soul": "BOSS_TWINROVA",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_BA"
+      ],
+      "soul": "ENEMY_PARASITE",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_REEBA"
+      ],
+      "soul": "ENEMY_LEEVER",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_SKB"
+      ],
+      "soul": "ENEMY_STALCHILD",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_SA"
+      ],
+      "soul": "NPC_SARIA",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_DU"
+      ],
+      "soul": "NPC_DARUNIA",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_RU1"
+      ],
+      "soul": "NPC_RUTO",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_KZ"
+      ],
+      "soul": "NPC_KING_ZORA",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_NIW_LADY"
+      ],
+      "soul": "NPC_ANJU",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TORYO",
+        "ACTOR_EN_DAIKU",
+        "ACTOR_EN_DAIKU_KAKARIKO"
+      ],
+      "soul": "NPC_CARPENTERS",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_FU"
+      ],
+      "soul": "NPC_GURU_GURU",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_MD"
+      ],
+      "soul": "NPC_MIDO",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_KO"
+      ],
+      "soul": "NPC_KOKIRI",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_HEISHI2",
+        "ACTOR_EN_HEISHI3",
+        "ACTOR_EN_HEISHI4"
+      ],
+      "soul": "NPC_HYLIAN_GUARD",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_ANI"
+      ],
+      "soul": "NPC_ROOFTOP_MAN",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_MU",
+        "ACTOR_EN_NIW_GIRL",
+        "ACTOR_EN_MM",
+        "ACTOR_EN_MM2"
+      ],
+      "soul": "NPC_CITIZEN",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_MA1",
+        "ACTOR_EN_MA2",
+        "ACTOR_EN_MA3"
+      ],
+      "soul": "NPC_MALON",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TA"
+      ],
+      "soul": "NPC_TALON",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_FISHING"
+      ],
+      "soul": "NPC_FISHING_POND_OWNER",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_GO"
+      ],
+      "soul": "NPC_GORON",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_GM"
+      ],
+      "soul": "NPC_MEDIGORON",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_ZO",
+        "ACTOR_EN_DIVING_GAME"
+      ],
+      "soul": "NPC_ZORA",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_BOM_BOWL_MAN",
+        "ACTOR_BG_BOWL_WALL"
+      ],
+      "soul": "NPC_BOMBCHU_BOWLING_LADY",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_SYATEKI_MAN"
+      ],
+      "soul": "NPC_SHOOTING_GALLERY_OWNER",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_TK",
+        "ACTOR_EN_PO_RELAY"
+      ],
+      "soul": "NPC_DAMPE",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_CS"
+      ],
+      "soul": "NPC_BOMBERS",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_GB"
+      ],
+      "soul": "NPC_POE_COLLECTOR",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_XC"
+      ],
+      "soul": "NPC_SHEIK",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_ZL1",
+        "ACTOR_EN_ZL3",
+        "ACTOR_EN_ZL4"
+      ],
+      "soul": "NPC_ZELDA",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_GE1",
+        "ACTOR_EN_GE2"
+      ],
+      "soul": "NPC_THIEVES",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_GELDB"
+      ],
+      "soul": "ENEMY_THIEVES",
+      "class": "hard"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_NIW",
+        "ACTOR_EN_NWC"
+      ],
+      "soul": "ANIMAL_CUCCO",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_COW"
+      ],
+      "soul": "ANIMAL_COW",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_DOG"
+      ],
+      "soul": "ANIMAL_DOG",
+      "class": "opt"
+    },
+    {
+      "actors": [
+        "ACTOR_EN_BUTTE"
+      ],
+      "soul": "ANIMAL_BUTTERFLY",
+      "class": "opt"
+    }
+  ],
+  "variants": [
+    {
+      "actor": "ACTOR_EN_POH",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": "ENEMY_POE",
+      "class": "hard"
+    },
+    {
+      "actor": "ACTOR_EN_POH",
+      "variable": 2,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_COMPOSER_BROS",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_POH",
+      "variable": 3,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_COMPOSER_BROS",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_BG_BDAN_OBJECTS",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": "ENEMY_OCTOROK",
+      "class": "hard"
+    },
+    {
+      "actor": "ACTOR_BG_BDAN_OBJECTS",
+      "variable": 1,
+      "scene": null,
+      "adult": true,
+      "soul": null,
+      "class": "always"
+    },
+    {
+      "actor": "ACTOR_EN_GOMA",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": "ENEMY_GOHMA_LARVA",
+      "class": "hard"
+    },
+    {
+      "actor": "ACTOR_EN_GOMA",
+      "variable": 0,
+      "scene": "SCE_OOT_LAIR_GOHMA",
+      "adult": true,
+      "soul": null,
+      "class": "always"
+    },
+    {
+      "actor": "ACTOR_EN_AM",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": null,
+      "class": "always"
+    },
+    {
+      "actor": "ACTOR_EN_AM",
+      "variable": 1,
+      "scene": null,
+      "adult": true,
+      "soul": "ENEMY_ARMOS",
+      "class": "hard"
+    },
+    {
+      "actor": "ACTOR_EN_SW",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": "ENEMY_SKULLWALLTULA",
+      "class": "hard"
+    },
+    {
+      "actor": "ACTOR_EN_SW",
+      "variable": 8192,
+      "scene": null,
+      "adult": true,
+      "soul": "MISC_GS",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_SKJ",
+      "variable": 0,
+      "scene": null,
+      "adult": false,
+      "soul": null,
+      "class": "always"
+    },
+    {
+      "actor": "ACTOR_EN_SKJ",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": "ENEMY_SKULL_KID",
+      "class": "hard"
+    },
+    {
+      "actor": "ACTOR_EN_OSSAN",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_KOKIRI_SHOPKEEPER",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_OSSAN",
+      "variable": 1,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_POTION_SHOPKEEPER",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_OSSAN",
+      "variable": 2,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_BOMBCHU_SHOPKEEPER",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_OSSAN",
+      "variable": 3,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_POTION_SHOPKEEPER",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_OSSAN",
+      "variable": 4,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_BAZAAR_SHOPKEEPER",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_OSSAN",
+      "variable": 5,
+      "scene": null,
+      "adult": true,
+      "soul": null,
+      "class": "always"
+    },
+    {
+      "actor": "ACTOR_EN_OSSAN",
+      "variable": 7,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_ZORA_SHOPKEEPER",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_OSSAN",
+      "variable": 8,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_GORON_SHOPKEEPER",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_HY",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_DOG_LADY",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_HY",
+      "variable": 5,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_BANKER",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_HY",
+      "variable": 7,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_ASTRONOMER",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_HY",
+      "variable": 1,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_CITIZEN",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_BG_SPOT15_RRBOX",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": null,
+      "class": "always"
+    },
+    {
+      "actor": "ACTOR_BG_SPOT15_RRBOX",
+      "variable": 0,
+      "scene": "SCE_OOT_HYRULE_CASTLE",
+      "adult": true,
+      "soul": "NPC_TALON",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_GO2",
+      "variable": 1,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_GORON_CHILD",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_GO2",
+      "variable": 2,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_BIGGORON",
+      "class": "opt"
+    },
+    {
+      "actor": "ACTOR_EN_GO2",
+      "variable": 0,
+      "scene": null,
+      "adult": true,
+      "soul": "NPC_GORON",
+      "class": "opt"
+    }
+  ],
+  "credits": "canSpawnSoul returns 1 for every actor during the credits (g.isCredits)"
+}
