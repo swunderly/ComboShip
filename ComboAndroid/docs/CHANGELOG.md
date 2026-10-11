@@ -12,7 +12,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
-## Unreleased
+## 0.4.0 - 2026-10-11
 
 - **New option: Enemy Souls (OoT)**, under Items & checks > OoT > Item pool, copied from OoTMM v32.3 with its description. It adds a soul for each of the 43 kinds of OoT enemy to the item pool, and an enemy does not appear until you find its soul. A Plentiful item pool adds second copies of souls as far as there are free checks, the way SoH treats its other Plentiful extras (OoTMM always adds a second copy of each). It is off by default and not in any preset yet.
   - A room that is missing an enemy because of its soul stays barred, as in OoTMM. That includes Dark Link's room.
@@ -20,15 +20,22 @@ Install each update over the existing app, so your ROMs, saves and settings are 
   - Souls use OoTMM's names: the item text reads "the Soul of ...", hints name the soul instead of "No Hint", the tracker group is "OoT Enemy Souls", and a soul found in MM looks like OoTMM's white token with a red flame.
   - The option is unavailable (unticked and greyed out, and off in new seeds) while Enhancements > Enemy Randomizer is on. OoTMM has no enemy randomizer to copy. If you turn Enemy Randomizer on during a souls save, souls stop keeping enemies away and rooms clear normally; turn it off again to play with souls.
   - Two Keese in the Master Quest Spirit Temple's Torch Slug room never appear in the original game either (their room does not load them). As in OoTMM, they do not count, so that room clears without the Keese soul.
+- **Tracker fixes** from a dedicated review of both games' trackers:
+  - MM: New Wave Bossa Nova can show as available (the tracker counted the seven Zora eggs as one). Saria's Song hint uses the same search as the tracker, so it no longer names a check you can't reach at the current time.
+  - MM: a junk stand-in shown for a temporarily unobtainable item is no longer recorded as Seen. In co-op, a teammate's Seen now upgrades your Hinted record.
+  - Both games follow "Play warp songs across games" when it is on only as a gameplay option.
+  - Seed logic: an MM warp song that lands in OoT now counts only for the ages Link can actually be in MM.
+  - Combo gossip stones and always-hints that name an exact OoT check now mark it Hinted (newly generated seeds).
+  - With Shopsanity on, OoT refill stock is no longer listed in the check tracker, since it could never show Collected.
+  - The OoT item tracker shows shuffled abilities and the Fishing Pole, and hides Ocarina buttons and Overworld keys when the seed doesn't shuffle them.
 - **Removed**: the hidden "Complete OoT Soul Compatibility" switch is no longer a setting. NPC, animal and misc OoT souls stay hidden and off.
 - **Renamed**: "Soul of Wolfos (OoT)" is now "Soul of Wolfoses (OoT)" in spoilers and the tracker, as in OoTMM.
 - Existing saves play as before, with every OoT enemy present, even if their stored settings carry the old hidden soul switches. Seeds generated before this version also keep souls off when reloaded, whatever the new option says. The option has a new setting name, so an old value of the hidden switch in your settings or a profile does not turn it on.
 
 Tested:
-- 68 automated host tests pass (3 are skipped on Windows), including one that checks OoT enemy souls against OoTMM v32.3, broken actors, 0.3.10 saves and the Enemy Randomizer rules.
-- Seed generation on the emulator with this branch's native build, one seed per setup, each followed by a playthrough check: souls off; souls on; with Boss Souls; with a Plentiful pool; with a Minimal pool; with all 12 dungeons Master Quest; with Enemy Randomizer on; souls with Boss Souls, Bean Souls, silver rupees anywhere and a Plentiful pool; Master Quest with Boss Souls and a Minimal pool; and an MM start. Every seed generated on the first try and passed. With souls on, all 43 souls were placed across OoT and MM checks. A Plentiful pool added 25 second copies with default checks and 12 in the heaviest setup.
-- With Enemy Randomizer on, the seed recorded the option as off and held no souls; replaying it with Enemy Randomizer off still passed. A souls seed replayed with Enemy Randomizer on passed at the same sphere.
-- Not yet built into an APK, played on the emulator or tried on a phone.
+- 72 automated host tests pass (2 are skipped on Windows), including one that checks OoT enemy souls against OoTMM v32.3, broken actors, 0.3.10 saves and the Enemy Randomizer rules.
+- Seed generation on the emulator with this release's native build, one seed each, every one generated on the first try and passed its playthrough check: defaults (OoT start and MM start); the Allsanity preset; Enemy Souls; Enemy Souls with Boss Souls, all 12 dungeons Master Quest and a Plentiful pool; Enemy Souls with a Minimal pool; cross-game song travel from an MM start; silver rupees anywhere. The Master Quest seed checks logic only: there is no Master Quest game data on the test emulator.
+- Not tried on a phone: the room-clear behaviour, Dark Link's room and a soul found in MM still need a check in game.
 
 ## 0.3.11 - 2026-10-11
 
