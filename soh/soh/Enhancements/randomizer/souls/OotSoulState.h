@@ -78,9 +78,14 @@ inline constexpr bool DeriveGeneralOotSoulSwitch(bool enemy, bool npc, bool anim
     return (OotEnemySoulsPublic && enemy) || (OotNpcSoulsPublic && npc) || (OotAnimalSoulsPublic && animal) ||
            (OotMiscSoulsPublic && misc);
 }
-// The options a seed plays with. A save keeps its stored switch, so old saves behave as they did.
-inline constexpr GeneralOotSoulOptions PublishedGeneralOotSoulOptions(bool stored, bool enemy, bool npc, bool animal,
-                                                                      bool misc) {
+// The options a seed plays with. Before the families were published every soul read as off whatever the
+// seed stored, and a 0.3.10 seed can store 1 in these keys (Randomize All Settings, a profile or a snapshot
+// could set the hidden CVars) with no souls in its pool. Only a seed carrying RSK_OOT_SOULS_PUBLISHED,
+// which FinalizeSettings and ParseJson set and an older save loads as 0, reads its stored families.
+inline constexpr GeneralOotSoulOptions PublishedGeneralOotSoulOptions(bool published, bool stored, bool enemy, bool npc,
+                                                                      bool animal, bool misc) {
+    if (!published)
+        return {};
     return { stored && DeriveGeneralOotSoulSwitch(enemy, npc, animal, misc), OotEnemySoulsPublic && enemy,
              OotNpcSoulsPublic && npc, OotAnimalSoulsPublic && animal, OotMiscSoulsPublic && misc };
 }

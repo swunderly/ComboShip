@@ -2414,6 +2414,8 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
             sWriteGameplayRule("gRandoSettings.CompleteMaskQuest",
                                ComboRando::NormalizeOotMaskQuestForGeneration(
                                    sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
+        if (sReadGameplayRule && sWriteGameplayRule)
+            ComboRando::ApplyOotEnemySoulsAvailability(sReadGameplayRule, sWriteGameplayRule);
         sohDump = SOH_DumpRandoStaticData();
         std::cout << "[ComboShip] Preparing MM randomizer pool..." << std::endl;
         mmDump = MM_DumpRandoStaticData();
@@ -2918,6 +2920,8 @@ static int RunComboGenTest(int numSeeds, uint32_t seedBase) {
                 sWriteGameplayRule("gRandoSettings.CompleteMaskQuest",
                                    ComboRando::NormalizeOotMaskQuestForGeneration(
                                        sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
+            if (sReadGameplayRule && sWriteGameplayRule)
+                ComboRando::ApplyOotEnemySoulsAvailability(sReadGameplayRule, sWriteGameplayRule);
             std::string sohDump = SOH_DumpRandoStaticData();
             std::string mmDump = MM_DumpRandoStaticData();
             if (sohDump.empty() || mmDump.empty()) {
@@ -3034,6 +3038,8 @@ static void RunComboPlaythrough(const std::string& inputSeed) {
             sWriteGameplayRule("gRandoSettings.CompleteMaskQuest",
                                ComboRando::NormalizeOotMaskQuestForGeneration(
                                    sReadGameplayRule("gRandoSettings.CompleteMaskQuest", 2)));
+        if (sReadGameplayRule && sWriteGameplayRule)
+            ComboRando::ApplyOotEnemySoulsAvailability(sReadGameplayRule, sWriteGameplayRule);
         sohDump = SOH_DumpRandoStaticData();
         mmDump = MM_DumpRandoStaticData();
         if (sohDump.empty() || mmDump.empty()) {

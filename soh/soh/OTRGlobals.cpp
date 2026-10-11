@@ -4683,6 +4683,9 @@ extern "C" COMBO_EXPORT void SOH_RestoreRandoSettings(const char* json) {
         // with no exclusions applied) doesn't inherit this machine's local exclusions.
         CVarSetString(CVAR_RANDOMIZER_SETTING("ExcludedLocations"), "");
         CVarSetString(CVAR_RANDOMIZER_SETTING("EnabledTricks"), "");
+        // A snapshot from before Enemy Souls (OoT) has no souls in its placements, so this machine's own
+        // choice must not switch them on for it.
+        CVarSetInteger(CVAR_RANDOMIZER_SETTING("SoulsEnemyOot"), 0);
         for (auto it = j.begin(); it != j.end(); ++it) {
             if (it.value().is_string())
                 CVarSetString(it.key().c_str(), it.value().get<std::string>().c_str());

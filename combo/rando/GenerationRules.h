@@ -18,6 +18,15 @@ inline constexpr int NativeAllLocationsForGuarantee(int combinedGuarantee, int n
 template <class Read, class Write> void SynchronizeGenerationGuarantee(Read read, Write write) {
     write(kNativeAllLocations, NativeAllLocationsForGuarantee(read(kCombinedGuarantee, 0), read(kNativeLogicRule, 0)));
 }
+// Enemy Souls (OoT) is unavailable while SoH's Enemy Randomizer is on (docs/deviations/rando.md). Every
+// generation clears the option's CVar before the dumps, so the seed's settings snapshot holds the value the
+// seed was made with and a reload, which never reads the Enemy Randomizer, reproduces it on any machine.
+inline constexpr const char* kOotEnemySouls = "gRandoSettings.SoulsEnemyOot";
+inline constexpr const char* kOotEnemyRandomizer = "gEnhancements.RandomizedEnemies";
+template <class Read, class Write> void ApplyOotEnemySoulsAvailability(Read read, Write write) {
+    if (read(kOotEnemyRandomizer, 0))
+        write(kOotEnemySouls, 0);
+}
 inline bool IsRetiredNativeRuleControl(const char* key) {
     if (!key)
         return false;

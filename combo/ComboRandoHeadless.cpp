@@ -816,6 +816,8 @@ int main(int argc, char** argv) {
             if (readRule && writeRule)
                 writeRule("gRandoSettings.CompleteMaskQuest", ComboRando::NormalizeOotMaskQuestForGeneration(
                                                                   readRule("gRandoSettings.CompleteMaskQuest", 2)));
+            if (readRule && writeRule)
+                ComboRando::ApplyOotEnemySoulsAvailability(readRule, writeRule);
             sohDump = SOH_Dump();
             mmDump = MM_Dump();
             if (const auto failure = ComboRando::ParseNativePoolFailure(sohDump, mmDump)) {

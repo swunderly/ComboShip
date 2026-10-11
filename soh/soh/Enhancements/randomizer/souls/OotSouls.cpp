@@ -57,13 +57,13 @@ RandomizerHintTextKey HintKey(RandomizerGet item) {
 }
 // A settings profile, seed or CVar can carry a family that has no Randomizer menu entry yet, so
 // unpublished families read as off: a stale value can never stop NPCs and enemies from spawning or
-// add soul items to a seed.
+// add soul items to a seed. A seed from before publication reads every family as off.
 GeneralOotSoulOptions Options() {
     auto ctx = Context::GetInstance();
     return PublishedGeneralOotSoulOptions(
-        bool(ctx->GetOption(RSK_COMPLETE_OOT_SOULS).Get()), bool(ctx->GetOption(RSK_SHUFFLE_ENEMY_SOULS).Get()),
-        bool(ctx->GetOption(RSK_SHUFFLE_NPC_SOULS).Get()), bool(ctx->GetOption(RSK_SHUFFLE_ANIMAL_SOULS).Get()),
-        bool(ctx->GetOption(RSK_SHUFFLE_MISC_SOULS).Get()));
+        bool(ctx->GetOption(RSK_OOT_SOULS_PUBLISHED).Get()), bool(ctx->GetOption(RSK_COMPLETE_OOT_SOULS).Get()),
+        bool(ctx->GetOption(RSK_SHUFFLE_ENEMY_SOULS).Get()), bool(ctx->GetOption(RSK_SHUFFLE_NPC_SOULS).Get()),
+        bool(ctx->GetOption(RSK_SHUFFLE_ANIMAL_SOULS).Get()), bool(ctx->GetOption(RSK_SHUFFLE_MISC_SOULS).Get()));
 }
 bool Enabled() {
     return Options().enabled;

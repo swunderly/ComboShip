@@ -1117,15 +1117,21 @@ void Settings::CreateOptions() {
         }
     });
     OPT_BOOL(RSK_SHUFFLE_BEAN_SOULS, "Shuffle Bean Souls", CVAR_RANDOMIZER_SETTING("ShuffleBeanSouls"), mOptionDescriptions[RSK_SHUFFLE_BEAN_SOULS], IMFLAG_SEPARATOR_BOTTOM, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
-    // Not a user setting: OoTMM has no master soul switch. Derived from the published soul families in
-    // FinalizeSettings and ParseJson, like RSK_SHUFFLE_ENTRANCES; no CVar, and no name so the spoiler skips it.
+    // Not user settings: OoTMM has no master soul switch. Set in FinalizeSettings and ParseJson, like
+    // RSK_SHUFFLE_ENTRANCES; no CVar, and no name so the spoiler skips them. RSK_OOT_SOULS_PUBLISHED marks a seed
+    // made once the soul families were published; a save from before reads 0 and keeps every soul off.
     OPT_BOOL(RSK_COMPLETE_OOT_SOULS, "");
-    // OoTMM soulsEnemyOot (packages/core/src/settings/data.ts:2336-2343); the CVar keeps profiles and seeds working.
-    OPT_BOOL(RSK_SHUFFLE_ENEMY_SOULS, "Enemy Souls (OoT)", CVAR_RANDOMIZER_SETTING("ShuffleEnemySouls"), mOptionDescriptions[RSK_SHUFFLE_ENEMY_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
+    OPT_BOOL(RSK_OOT_SOULS_PUBLISHED, "");
+    // OoTMM soulsEnemyOot (packages/core/src/settings/data.ts:2336-2343). A fresh CVar: the old hidden
+    // ShuffleEnemySouls CVar could hold a stale 1 in configs, profiles and seed snapshots that never chose souls.
+    OPT_BOOL(RSK_SHUFFLE_ENEMY_SOULS, "Enemy Souls (OoT)", CVAR_RANDOMIZER_SETTING("SoulsEnemyOot"), mOptionDescriptions[RSK_SHUFFLE_ENEMY_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
     // SoH's Enemy Randomizer has no OoTMM counterpart: its replacement enemies would be kept away by souls
-    // that logic does not model. FinalizeSettings forces the souls off while it is on.
+    // that logic does not model. The option is cleared and greyed out while it is on, and generation clears
+    // it again before the settings snapshot (ComboRando::ApplyOotEnemySoulsAvailability), so a seed records
+    // the value it was made with and FinalizeSettings never reads this machine's Enemy Randomizer.
     OPT_CALLBACK(RSK_SHUFFLE_ENEMY_SOULS, {
         if (CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0)) {
+            CVarSetInteger(CVAR_RANDOMIZER_SETTING("SoulsEnemyOot"), RO_GENERIC_OFF);
             mOptions[RSK_SHUFFLE_ENEMY_SOULS].Disable("Disabled because Enemy Randomizer is on.");
         } else {
             mOptions[RSK_SHUFFLE_ENEMY_SOULS].Enable();
@@ -2786,8 +2792,9 @@ void Settings::UpdateAllOptions() {
 }
 
 // OoTMM v32.3 has one boolean per soul family and no master switch (data.ts:2336-2414). Force the
-// unpublished families off and derive the stored compatibility switch from the rest, for new seeds and
-// spoiler imports alike. Old saves keep the value they were generated with.
+// unpublished families off, derive the stored compatibility switch from the rest and mark the seed as made
+// after publication, for new seeds and spoiler imports alike. Old saves keep their stored values, which
+// Souls::Options() reads as all off because they lack the mark.
 template <class GetOption> static void FinalizeOotSoulSettings(GetOption option) {
     const std::pair<RandomizerSettingKey, bool> families[] = {
         { RSK_SHUFFLE_ENEMY_SOULS, Souls::OotEnemySoulsPublic },
@@ -2804,6 +2811,7 @@ template <class GetOption> static void FinalizeOotSoulSettings(GetOption option)
         .Set(Souls::DeriveGeneralOotSoulSwitch(
             option(RSK_SHUFFLE_ENEMY_SOULS).Get(), option(RSK_SHUFFLE_NPC_SOULS).Get(),
             option(RSK_SHUFFLE_ANIMAL_SOULS).Get(), option(RSK_SHUFFLE_MISC_SOULS).Get()));
+    option(RSK_OOT_SOULS_PUBLISHED).Set(RO_GENERIC_ON);
 }
 
 void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocations,
@@ -3298,10 +3306,8 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
         mOptions[RSK_LOACH_HINT].Set(RO_GENERIC_OFF);
     }
 
-    // Enemy Souls (OoT) is unavailable with SoH's Enemy Randomizer (see the option's callback).
-    if (CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0)) {
-        mOptions[RSK_SHUFFLE_ENEMY_SOULS].Set(RO_GENERIC_OFF);
-    }
+    // Enemy Souls (OoT) and SoH's Enemy Randomizer are kept apart on the settings side (see the option's
+    // callback), never here: a reloaded seed must keep the souls value it was generated with.
     FinalizeOotSoulSettings([this](RandomizerSettingKey key) -> OptionValue& { return mOptions[key]; });
 }
 
