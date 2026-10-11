@@ -22089,5 +22089,6 @@ s32 func_8085B930(PlayState* play, PlayerAnimationHeader* talkAnim, AnimationMod
 #include "ComboSpellPlayer.inc.h"
 
 #ifdef COMBO_BUILD
+#include "ComboAdultAgeNative.h"
 #include "ComboAdultMaskNative.h"
 #endif

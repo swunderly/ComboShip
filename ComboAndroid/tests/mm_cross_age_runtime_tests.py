@@ -4,6 +4,9 @@ H1: every human slot of MM's player tables (z_player_lib.c: the display-list gro
 string, the human skeleton and the eye and mouth rows) is classified exactly once: taken by the adult model as plan
 F5b 1.3 maps it, or kept as MM's own. Every OoT name the loader asks for is in all twelve retail object_link_boy.xml
 files (identical), and every MM name in MM's N64_US XMLs.
+H4: adult Link's human age properties match OoTMM v32.3's sPlayerAgePropertiesAdult field by field (with
+gPlayerAnim_pz_climb_endAR for OoTMM's 0x04008360), and the door animations its player patch sets.
+Also: the draw glue, the readiness gate and release switch, and the resource rules of plan F5b 1.8.
 """
 from pathlib import Path
 import argparse
@@ -185,6 +188,95 @@ check('constLodLimb*' in oot_load and 'sAdultShadowLimbs.data()' in oot_load, 't
 check(body(loader, 'inline void DropAdultOotModel()').index('Combo_MM_RestoreChildModelTables();') <
       body(loader, 'inline void DropAdultOotModel()').index('sAdultOotPins.clear();'),
       'teardown drops resources before restoring the child tables')
+
+# ---- H4: adult Link's human age properties are OoTMM v32.3's sPlayerAgePropertiesAdult field by field
+# (generator/src/mm/actors.c:971-1031), and the door animations its Actor_PatchPlayerFormProperties sets (:1033-1058).
+# OoTMM's values, in field order; animations as MM US gameplay_keep offsets. 0x8360 is not an animation there: the plan
+# substitutes gPlayerAnim_pz_climb_endAR (0xE360), the animation OoTMM's own comment names.
+OOTMM_ADULT = [56.0, 90.0, 1.0, 111.0, 70.0, 79.4, 59.0, 41.0, 19.0, 36.0, 50.0, 56.0, 68.0, 70.0, 18.0, 23.0, 70.0,
+               9, 0x123F, 0x167,
+               8, 0x1256, 0x17C, 9, 0x17EA, 0x167, 8, 0x1256, 0x17C, 9, 0x17EA, 0x167,
+               9, 0x17EA, 0x167, 9, 0x1E0D, 0x17C, 9, 0x17EA, 0x167, 9, 0x1E0D, 0x17C,
+               8, 0x1256, 0x17C, 9, 0x17EA, 0x167, -0x638, 0x1256, 0x17C, -0x637, 0x17EA, 0x167,
+               0, 0x80, 22.0, 36.0,
+               0xE300, 0xD548, 0xD660, 0xE378, 0xE380, 0xE388, 0xE390, 0xDAB0, 0xDAB8, 0xDA90, 0xDA98, 0xE358, 0x8360,
+               0xE370, 0xE368]
+OOTMM_DOORS = (0xE3C8, 0xE3D0)
+
+
+def number(token):
+    token = token.strip().rstrip('f')
+    sign = -1 if token.startswith('-') else 1
+    token = token.lstrip('-')
+    return sign * (int(token, 16) if token.lower().startswith('0x') else (float(token) if '.' in token else int(token)))
+
+
+def find_reference():
+    for parent in [root, *root.parents]:
+        candidate = parent / 'references/ootmm-stable-32.3'
+        if (candidate / 'packages/generator/src/mm/actors.c').is_file():
+            return candidate
+    return None
+
+
+reference = find_reference()
+if reference:
+    actors = (reference / 'packages/generator/src/mm/actors.c').read_text(encoding='utf-8')
+    block = re.search(r'static PlayerAgeProperties sPlayerAgePropertiesAdult = \{(.*?)\n\};', actors, re.S).group(1)
+    block = re.sub(r'/\*.*?\*/', '', block)
+    block = re.sub(r'\(PlayerAnimationHeader \*\)0x0400', '0x', block)
+    upstream = [number(t) for t in re.findall(r'-?0x[0-9a-fA-F]+|-?\d+\.\d+f|-?\d+', block)]
+    check(upstream == OOTMM_ADULT, 'the test\'s OoTMM values differ from the reference actors.c')
+    doors = re.findall(r'playerAnimationHeaders\[0x(3[6-9ab]|4[2-7])\] = 0x0400([0-9a-f]+);', actors)
+    check(sorted({(int(i, 16) // 6, int(v, 16)) for i, v in doors}) == [(9, OOTMM_DOORS[0]), (11, OOTMM_DOORS[1])] and
+          len(doors) == 12, 'door animation patches differ from the reference actors.c')
+    print(f'OoTMM reference checked: {reference}')
+
+fields = []
+for kind, name, count in re.findall(r'/\* 0x\w+ \*/ (f32|Vec3s|u16|PlayerAnimationHeader\*) (\w+)(?:\[(\d)\])?;',
+                                    re.search(r'typedef struct PlayerAgeProperties \{(.*?)\} PlayerAgeProperties;',
+                                              read('mm/include/z64player.h'), re.S).group(1)):
+    fields.append((kind, name, int(count or 1)))
+keep_xml = read('mm/assets/xml/N64_US/objects/gameplay_keep.xml')
+anim_offset = {n: int(o, 16) for n, o in re.findall(r'<PlayerAnimation Name="(\w+)" Offset="0x([0-9A-Fa-f]+)"', keep_xml)}
+props_src = read('mm/2s2h/ComboAdultMM.h')
+props = body(props_src, 'inline PlayerAgeProperties BuildAdultProperties()')
+arrays = {n: [number(t) for t in re.findall(r'-?0x[0-9A-Fa-f]+|-?\d+', v)]
+          for n, v in re.findall(r'constVec3s(\w)\[4\]=\{(.*?)\};', props)}
+loop = dict(re.findall(r'p\.(unk_\w+)\[i\]=(\w)\[i\];', props))
+production = []
+for kind, name, count in fields:
+    if kind == 'f32' or kind == 'u16':
+        m = re.search(r'p\.' + name + r'=([^;]+);', props)
+        production.append(number(m.group(1)) if m else None)
+    elif kind == 'Vec3s' and count == 1:
+        m = re.search(r'p\.' + name + r'=\{([^}]*)\};', props)
+        production += [number(t) for t in m.group(1).split(',')] if m else [None] * 3
+    elif kind == 'Vec3s':
+        production += arrays.get(loop.get(name), [None] * 12)
+    else:
+        for i in range(count):
+            m = re.search(r'ADULT_ANIM\(' + re.escape(name + (f'[{i}]' if count > 1 else '')) + r',(\w+)\);', props)
+            production.append(anim_offset.get(m.group(1)) if m else None)
+expected = list(OOTMM_ADULT)
+expected[expected.index(0x8360)] = anim_offset['gPlayerAnim_pz_climb_endAR']
+check(len(production) == len(expected) and production == expected,
+      'adult age properties differ from OoTMM v32.3: ' +
+      str([(i, production[i] if i < len(production) else None, e) for i, e in enumerate(expected)
+           if i >= len(production) or production[i] != e]))
+check(anim_offset['gPlayerAnim_pz_climb_endAR'] == 0xE360 and 0x8360 not in anim_offset.values(),
+      'pz_climb_endAR substitution no longer needed or wrong')
+age_native = squash(read('mm/src/overlays/actors/ovl_player_actor/ComboAdultAgeNative.h'))
+check('D_8085BE84[PLAYER_ANIMGROUP_doorA][i]=(PlayerAnimationHeader*)&gPlayerAnim_pz_doorA_open;' in age_native and
+      'D_8085BE84[PLAYER_ANIMGROUP_doorB][i]=(PlayerAnimationHeader*)&gPlayerAnim_pz_doorB_open;' in age_native and
+      (anim_offset['gPlayerAnim_pz_doorA_open'], anim_offset['gPlayerAnim_pz_doorB_open']) == OOTMM_DOORS,
+      'adult door animations are not OoTMM\'s')
+check(re.search(r'PLAYER_ANIMGROUP_doorA, // OPEN_DOOR_LEFT_HUMAN', read('mm/include/z64player.h')) and
+      re.search(r'/\*  9 \*/ PLAYER_ANIMGROUP_doorA,', read('mm/include/z64player.h')) and
+      re.search(r'/\* 11 \*/ PLAYER_ANIMGROUP_doorB,', read('mm/include/z64player.h')),
+      'anim groups doorA/doorB are not OoTMM\'s 0x36/0x42 (groups 9 and 11 of 6 types)')
+check('AdultMask' not in read('mm/src/overlays/actors/ovl_player_actor/ComboAdultAgeNative.h'),
+      'adult age still depends on the Adult Mask')
 
 # The loader's lists, in slot order, and its composites (plan F5b 1.3).
 enum = re.search(r'typedef enum ComboAdultOotSlot \{(.*?)\} ComboAdultOotSlot;', slots_src, re.S).group(1)

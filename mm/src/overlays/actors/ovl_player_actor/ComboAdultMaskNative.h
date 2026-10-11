@@ -6,23 +6,6 @@
 #include "2s2h_assets.h"
 int Combo_MM_AdultMaskAction(void) { return 0x5b; } // Exact 41a2b7c0 PLAYER_CUSTOM_IA_MASK_ADULT.
 #define ADULT_MASK_SKIP_BUTTONS (BTN_A | BTN_B | BTN_CUP | BTN_CLEFT | BTN_CDOWN | BTN_CRIGHT)
-static PlayerAgeProperties sAdultMaskChildProperties;
-static PlayerAnimationHeader* sAdultMaskChildDoorA[PLAYER_ANIMTYPE_MAX];
-static PlayerAnimationHeader* sAdultMaskChildDoorB[PLAYER_ANIMTYPE_MAX];
-static int sAdultMaskOverlayDefaultsValid;
-static void AdultMask_ApplyNativeOverlayAge(int adult) {
-    PlayerAnimationHeader** table=(PlayerAnimationHeader**)D_8085BE84;
-    if(!sAdultMaskOverlayDefaultsValid) {
-        sAdultMaskChildProperties=sPlayerAgeProperties[PLAYER_FORM_HUMAN];
-        memcpy(sAdultMaskChildDoorA,table+0x36,sizeof(sAdultMaskChildDoorA));
-        memcpy(sAdultMaskChildDoorB,table+0x42,sizeof(sAdultMaskChildDoorB));
-        sAdultMaskOverlayDefaultsValid=1;
-    }
-    if(adult){Combo_MM_CopyAdultProperties(&sPlayerAgeProperties[PLAYER_FORM_HUMAN]);
-        for(int i=0;i<PLAYER_ANIMTYPE_MAX;++i){table[0x36+i]=(PlayerAnimationHeader*)&gPlayerAnim_pz_doorA_open;table[0x42+i]=(PlayerAnimationHeader*)&gPlayerAnim_pz_doorB_open;}
-    }else{sPlayerAgeProperties[PLAYER_FORM_HUMAN]=sAdultMaskChildProperties;
-        memcpy(table+0x36,sAdultMaskChildDoorA,sizeof(sAdultMaskChildDoorA));memcpy(table+0x42,sAdultMaskChildDoorB,sizeof(sAdultMaskChildDoorB));}
-}
 void AdultMask_Action(Player* player, PlayState* play);
 
 typedef enum {
@@ -353,7 +336,7 @@ static void AdultMask_CommitAgeApplyTablesAndReloadPlayer(Player* player, PlaySt
     else
         EponaAge_ClearReload();
     Combo_MM_ApplyAdultModelTables(sAdultMaskTargetAdult);
-    AdultMask_ApplyNativeOverlayAge(sAdultMaskTargetAdult);
+    Combo_MM_ApplyAdultOverlayAge(sAdultMaskTargetAdult);
     if (sAdultMaskCutsceneMode != ADULT_MASK_CS_NONE)
         AdultMask_EndCutsceneCamera(player);
     AdultMask_ClearHeldMaskAndUnlock(player);
@@ -717,8 +700,6 @@ void AdultMask_StartCsItem(Player* player, PlayState* play)
     player->stateFlags3 |= 0x80;
 }
 
-// Cross-engine pre-Player_Init table bridge; activation requires complete resources upstream.
-void Combo_MM_ApplyAdultOverlayAge(int adult){AdultMask_ApplyNativeOverlayAge(adult);}
 
 extern Gfx* Combo_MM_GetAdultMaskBinding(int index);
 // Exact 41a2b7c0 hand/face transforms, using decoded native MM display lists and owners.
