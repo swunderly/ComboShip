@@ -20,7 +20,9 @@ void Rando::CheckTracker::RecordSeenItem(RandoCheckId id, RandoItemId shownItem,
         id >= RC_MAX || shownItem <= RI_UNKNOWN || shownItem >= RI_MAX || shownItem == RI_TRAP)
         return;
     auto& check = RANDO_SAVE_CHECKS[id];
-    if (!check.shuffled || check.obtained)
+    // RI_JUNK for a non-junk placement is ConvertItem's stand-in for an item the player cannot get yet; like
+    // OoT's stand-in it reveals nothing, so it must not replace what the player already knows.
+    if (!check.shuffled || check.obtained || (shownItem == RI_JUNK && check.randoItemId != RI_JUNK))
         return;
     // Keep the displayed tier/disguise. Do not re-resolve it later against a different inventory.
     ComboRando::RecordTrackerItemKnowledge(check.knowledgeSource, check.seenItemId, source, shownItem);
@@ -32,7 +34,8 @@ bool Rando::CheckTracker::NeedsSighting(RandoCheckId id, RandoItemId shownItem) 
         id >= RC_MAX || shownItem <= RI_UNKNOWN || shownItem >= RI_MAX || shownItem == RI_TRAP)
         return false;
     const auto& check = RANDO_SAVE_CHECKS[id];
-    return check.shuffled && !check.obtained && !(check.knowledgeSource == 1 && check.seenItemId == shownItem);
+    return check.shuffled && !check.obtained && !(shownItem == RI_JUNK && check.randoItemId != RI_JUNK) &&
+           !(check.knowledgeSource == 1 && check.seenItemId == shownItem);
 }
 #endif
 

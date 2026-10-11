@@ -108,11 +108,23 @@ int main() {
     RecordSeenItem(RC_CLOCK_TOWN_NORTH_TREE_PIECE_OF_HEART, RI_HOOKSHOT, 2);
     assert(observed.knowledgeSource == 2); // explicit hint is known, not visually seen
     assert(json(observed).get<RandoSaveCheck>().knowledgeSource == 2);
+    // RI_JUNK is ConvertItem's stand-in for an item not obtainable yet: it reveals nothing about the Hookshot.
+    RecordSeenItem(RC_CLOCK_TOWN_NORTH_TREE_PIECE_OF_HEART, RI_JUNK);
+    assert(observed.seenItemId == RI_HOOKSHOT && observed.knowledgeSource == 2);
     RecordSeenItem(RC_CLOCK_TOWN_NORTH_TREE_PIECE_OF_HEART, RI_HOOKSHOT);
     assert(observed.seenItemId == RI_HOOKSHOT && !observed.obtained && !observed.eligible);
     assert(observed.knowledgeSource == 1); // actually viewing it upgrades the source
     RecordSeenItem(RC_CLOCK_TOWN_NORTH_TREE_PIECE_OF_HEART, RI_HOOKSHOT, 2);
     assert(observed.knowledgeSource == 1); // a later hint does not downgrade a sighting
+    RecordSeenItem(RC_CLOCK_TOWN_NORTH_TREE_PIECE_OF_HEART, RI_JUNK);
+    RecordSeenItem(RC_CLOCK_TOWN_NORTH_TREE_PIECE_OF_HEART, RI_JUNK, 2);
+    assert(observed.seenItemId == RI_HOOKSHOT && observed.knowledgeSource == 1);
+    auto& junk = RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_SOUTH_PLATFORM_PIECE_OF_HEART];
+    junk = old.get<RandoSaveCheck>();
+    junk.randoItemId = RI_JUNK;
+    RecordSeenItem(RC_CLOCK_TOWN_SOUTH_PLATFORM_PIECE_OF_HEART, RI_JUNK, 2);
+    assert(junk.seenItemId == RI_JUNK && junk.knowledgeSource == 2); // a real junk placement is still recorded
+    junk = {};
     observed.obtained = true;
     RecordSeenItem(RC_CLOCK_TOWN_NORTH_TREE_PIECE_OF_HEART, RI_RUPEE_GREEN);
     assert(observed.seenItemId == RI_HOOKSHOT); // renewable refill does not replace observed reward
