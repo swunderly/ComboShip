@@ -1,4 +1,5 @@
 #include "Logic.h"
+#include <algorithm>
 #include <spdlog/spdlog.h>
 
 extern "C" {
@@ -91,6 +92,29 @@ uint64_t ExpandTimeForward(uint64_t timeSlices, const RandoRegion& region) {
 }
 
 // Owned time calculation - aggregates all owned half-day time slices
+// Minutes after Day 1 06:00 at which each TimeSlice begins, in enum order.
+static constexpr uint16_t kSliceStartMinutes[TIME_SLICE_COUNT] = {
+    0,    60,   120,  240,  465,  540,  600,              // Day 1
+    720,  840,  900,  960,  1020, 1080, 1230, 1320, 1380, // Night 1
+    1440, 1500, 1560, 1680, 1770, 1920, 2040,             // Day 2
+    2160, 2280, 2340, 2400, 2460, 2520, 2760, 2820, 2850, // Night 2
+    2880, 2940, 3000, 3120, 3210, 3300,                   // Day 3
+    3600, 3720, 3780, 3840, 3900, 3960, 4200, 4260,       // Night 3
+};
+static_assert(kSliceStartMinutes[TIME_NIGHT3_AM_05_00] == 4260, "one start time per TimeSlice");
+
+uint64_t CurrentTimeSlice() {
+    // MM's day counter advances at dawn, so after-midnight night times still belong to that day.
+    const int day = std::clamp<int>(gSaveContext.save.day, 1, 3);
+    const int clockMinutes = gSaveContext.save.time * (24 * 60) / 0x10000;
+    const int now = (day - 1) * 24 * 60 + (clockMinutes - 6 * 60 + 24 * 60) % (24 * 60);
+    int current = 0;
+    for (int slice = 0; slice < TIME_SLICE_COUNT; ++slice)
+        if (kSliceStartMinutes[slice] <= now)
+            current = slice;
+    return TIME_BIT_ONE << current;
+}
+
 uint64_t GetOwnedTimeSlices() {
     if (!RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) {
         return TIME_ALL_SLICES;

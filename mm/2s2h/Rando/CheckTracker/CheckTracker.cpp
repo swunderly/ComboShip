@@ -349,6 +349,15 @@ comboPeekRefresh:;
     // Initialize time states using shared function
     std::unordered_map<RandoRegionId, Rando::Logic::RegionTimeState> regionTimeStates =
         Rando::Logic::InitializeRegionTimeStates(RR_MAX);
+#ifdef COMBO_BUILD
+    // Standing somewhere now proves access only from the current time on. Without this the
+    // current region took every owned slice, so entering Romani Ranch on Day 3 (boulder gone)
+    // put its Day 1 / Night 1 checks in logic. Earlier times still come from the cycle start.
+    if (const RandoRegionId here = Rando::Logic::GetRegionIdFromEntrance(gSaveContext.save.entrance); here != RR_MAX)
+        regionTimeStates[here] = { .timeSlices = Rando::Logic::TimeLogic::CurrentTimeSlice() &
+                                                 Rando::Logic::TimeLogic::GetOwnedTimeSlices(),
+                                   .canStayOverTime = Rando::Logic::Regions[here].canStayOverTime };
+#endif
 
     // Iteratively explore until no new regions/events discovered
     bool changed = true;

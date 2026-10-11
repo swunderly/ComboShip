@@ -363,6 +363,10 @@ uint64_t ExpandTimeForward(uint64_t timeSlices, const RandoRegion& region);
 // Owned time calculation - aggregates all owned half-day time slices
 uint64_t GetOwnedTimeSlices();
 
+// The bit of the slice holding the current in-game time. Where the player stands is known
+// reachable from then on (ExpandTimeForward applies the region's stay limits), not earlier.
+uint64_t CurrentTimeSlice();
+
 // Validation helper for clock ownership during logic generation
 void ValidateRegionTimeOwnership(RandoRegionId regionId, RandoCheckId checkId, uint64_t regionTime,
                                  const char* context);
