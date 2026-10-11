@@ -38,8 +38,9 @@
 #include "ComboMenuSharedContext.h"        // ComboShip: per-DLL ImGui context helper (combo-owned)
 #include <ship/resource/CrossRMRegistry.h> // ComboShip: dormant-draw resource lookups need OOT's RM
 #include <ship/resource/ResourceManagerScope.h>
-bool Combo_OotIsForeground(void);           // defined in OTRGlobals.cpp
-extern "C" int gComboTrackerPeekSaveLoaded; // defined in GameInteractor.cpp
+bool Combo_OotIsForeground(void);                             // defined in OTRGlobals.cpp
+RandomizerCheck OOT_ComboHintedCheck(RandomizerHint hintKey); // defined in OTRGlobals.cpp
+extern "C" int gComboTrackerPeekSaveLoaded;                   // defined in GameInteractor.cpp
 #endif
 
 extern "C" {
@@ -690,6 +691,22 @@ static bool HintNamesItemUniquely(RandomizerGet rg) {
     return keyUses[Rando::StaticData::RetrieveItem(rg).GetHintKey()] == 1;
 }
 
+#ifdef COMBO_BUILD
+// A combo location sentence names an OoT item by its native hint text and an MM item by its own
+// shown name, the same text the tracker records. It names an OoT ice trap as "an Ice Trap", though,
+// not as the disguise the tracker would record, so that one marks nothing.
+static bool ComboHintNamesItemUniquely(RandomizerCheck rc) {
+    const RandomizerGet placed = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->GetPlacedRandomizerGet();
+    if (placed == RG_ICE_TRAP) {
+        return false;
+    }
+    if (placed == RG_COMBO_FOREIGN) {
+        return OOT_LookupForeignByCheck(rc) != nullptr;
+    }
+    return HintNamesItemUniquely(placed);
+}
+#endif
+
 // Only HINT_TYPE_ITEM hints name a check's item outright; other types stay
 // ambiguous. Marks Seen, not Identified, since hints never state a price.
 static bool ApplyItemHintToChecks(RandomizerHint hintKey) {
@@ -705,13 +722,28 @@ static bool ApplyItemHintToChecks(RandomizerHint hintKey) {
 
     // The hint-revealed hook can fire for hints the seed has disabled.
     auto hint = OTRGlobals::Instance->gRandoContext->GetHint(hintKey);
-    if (!hint->IsEnabled() || hint->GetHintType() != HINT_TYPE_ITEM) {
+    if (!hint->IsEnabled()) {
         return false;
     }
+#ifdef COMBO_BUILD
+    // Combo seeds write their stone hints as pre-rendered messages. A sentence that names the item at
+    // one exact OoT check carries that check beside its text (CrossHints.h "hintedCheck").
+    const bool comboMessage = hint->GetHintType() == HINT_TYPE_MESSAGE;
+    if (!comboMessage && hint->GetHintType() != HINT_TYPE_ITEM) {
+        return false;
+    }
+    const std::vector<RandomizerCheck> hintedLocations =
+        comboMessage ? std::vector<RandomizerCheck>{ OOT_ComboHintedCheck(hintKey) } : hint->GetHintedLocations();
+#else
+    if (hint->GetHintType() != HINT_TYPE_ITEM) {
+        return false;
+    }
+    const std::vector<RandomizerCheck> hintedLocations = hint->GetHintedLocations();
+#endif
 
     // Loop over hinted locations, apply the ones which are unambiguous
     bool changed = false;
-    for (RandomizerCheck rc : hint->GetHintedLocations()) {
+    for (RandomizerCheck rc : hintedLocations) {
         if (rc == RC_UNKNOWN_CHECK) {
             continue;
         }
@@ -722,7 +754,13 @@ static bool ApplyItemHintToChecks(RandomizerHint hintKey) {
         if (named == RG_ICE_TRAP && overrides.contains(rc)) {
             named = overrides[rc].LooksLike();
         }
-        if (!HintNamesItemUniquely(named)) {
+        bool unique = HintNamesItemUniquely(named);
+#ifdef COMBO_BUILD
+        if (comboMessage) {
+            unique = ComboHintNamesItemUniquely(rc);
+        }
+#endif
+        if (!unique) {
             // The hint could mean several items, no spoilers!
             continue;
         }

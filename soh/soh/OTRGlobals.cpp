@@ -5510,15 +5510,19 @@ static bool sComboHintsPresent = false;
 // ComboShip (#164): RandomizerHint -> the combo checkName it was applied from, so a reveal can be
 // reported to the combo Hint Tracker (whose read state is keyed by combo key, not by RandomizerHint).
 static std::unordered_map<int, std::string> sComboHintKeys;
+// RandomizerHint -> the exact OoT check its sentence names (CrossHints.h "hintedCheck"), built with
+// sComboHintKeys; the check tracker marks that check Hinted on reveal.
+static std::unordered_map<int, RandomizerCheck> sComboHintChecks;
 static uint64_t sComboHintKeysGen = (uint64_t)-1; // OOT_ForeignMapGen() the map was built for
 
 // ComboShip: one resolution walk over a combo hints payload, shared by apply and by the lazy map
 // replay. `isTaken` reports an already-claimed hint slot; `emit` receives each resolution in claiming
-// order. Both callers MUST walk this identically or the sentinel -> stone mapping drifts.
-static void
-Combo_WalkComboHints(const nlohmann::json& hints, const std::function<bool(RandomizerHint)>& isTaken,
-                     const std::function<void(RandomizerHint, const std::string&, std::vector<CustomMessage>&)>& emit,
-                     int& applied, int& skipped) {
+// order (hintedCheck is RC_UNKNOWN_CHECK unless the entry names one). Both callers MUST walk this
+// identically or the sentinel -> stone mapping drifts.
+static void Combo_WalkComboHints(
+    const nlohmann::json& hints, const std::function<bool(RandomizerHint)>& isTaken,
+    const std::function<void(RandomizerHint, const std::string&, RandomizerCheck, std::vector<CustomMessage>&)>& emit,
+    int& applied, int& skipped) {
     const std::vector<RandomizerCheck> stones = Rando::StaticData::GetGossipStoneLocations();
     for (auto& entry : hints.value("oot", nlohmann::json::array())) {
         std::string checkName = entry.value("checkName", "");
@@ -5591,7 +5595,9 @@ Combo_WalkComboHints(const nlohmann::json& hints, const std::function<bool(Rando
             ++skipped;
             continue;
         }
-        emit(rh, checkName, messages);
+        auto hintedIt = Rando::StaticData::locationNameToEnum.find(entry.value("hintedCheck", ""));
+        emit(rh, checkName,
+             hintedIt != Rando::StaticData::locationNameToEnum.end() ? hintedIt->second : RC_UNKNOWN_CHECK, messages);
         ++applied;
     }
 }
@@ -5608,14 +5614,19 @@ static void Combo_EnsureHintKeyMap() {
         return;
     }
     std::unordered_map<int, std::string> built;
+    std::unordered_map<int, RandomizerCheck> builtChecks;
     try {
         nlohmann::json hints =
             nlohmann::json::parse(ComboRando::g_comboForeignJson).value("hints", nlohmann::json::object());
         int applied = 0, skipped = 0;
         Combo_WalkComboHints(
             hints, [&](RandomizerHint rh) { return built.count(rh) != 0; },
-            [&](RandomizerHint rh, const std::string& key, std::vector<CustomMessage>&) { built[rh] = key; }, applied,
-            skipped);
+            [&](RandomizerHint rh, const std::string& key, RandomizerCheck hinted, std::vector<CustomMessage>&) {
+                built[rh] = key;
+                if (hinted != RC_UNKNOWN_CHECK)
+                    builtChecks[rh] = hinted;
+            },
+            applied, skipped);
     } catch (const std::exception& e) {
         SPDLOG_ERROR("[ComboShip] Combo_EnsureHintKeyMap: exception: {} (will retry next reveal)", e.what());
         return;
@@ -5624,7 +5635,16 @@ static void Combo_EnsureHintKeyMap() {
         return;
     }
     sComboHintKeys = std::move(built);
+    sComboHintChecks = std::move(builtChecks);
     sComboHintKeysGen = gen;
+}
+
+// The exact OoT check a revealed combo hint names, or RC_UNKNOWN_CHECK (area/path/junk hints, and
+// seeds generated before CrossHints.h recorded it). Read by the check tracker's hint reveal.
+RandomizerCheck OOT_ComboHintedCheck(RandomizerHint hintKey) {
+    Combo_EnsureHintKeyMap();
+    auto it = sComboHintChecks.find(hintKey);
+    return it == sComboHintChecks.end() ? RC_UNKNOWN_CHECK : it->second;
 }
 
 // ComboShip (#164): OnRandoHintRevealed subscriber (registered from SOH_LoadComboRando). The hook can
@@ -5678,15 +5698,20 @@ extern "C" COMBO_EXPORT void SOH_ApplyComboHints(const char* json) {
         nlohmann::json hints = nlohmann::json::parse(json);
         int applied = 0, skipped = 0;
         std::unordered_map<int, std::string> built;
+        std::unordered_map<int, RandomizerCheck> builtChecks;
         Combo_WalkComboHints(
             hints, [&](RandomizerHint rh) { return ctx->GetHint(rh)->IsEnabled(); },
-            [&](RandomizerHint rh, const std::string& checkName, std::vector<CustomMessage>& messages) {
+            [&](RandomizerHint rh, const std::string& checkName, RandomizerCheck hinted,
+                std::vector<CustomMessage>& messages) {
                 ctx->AddHint(rh, Rando::Hint(rh, messages));
                 built[rh] = checkName;
+                if (hinted != RC_UNKNOWN_CHECK)
+                    builtChecks[rh] = hinted;
             },
             applied, skipped);
         // Committed only past the walk — a throw leaves the previous gen stamped so the lazy replay retries.
         sComboHintKeys = std::move(built);
+        sComboHintChecks = std::move(builtChecks);
         sComboHintKeysGen = OOT_ForeignMapGen();
 
         // Native fills whatever combo didn't pre-populate (altar/Biggoron/mask-shop/skulltula-count/

@@ -294,7 +294,9 @@ int main(){
     assert(huntPaths.pathsByCheck.empty());
     nlohmann::json hintDump={{"checks",nlohmann::json::array({{{"name","Oot start"},{"area","Forest"}},
         {{"name","Oot optional"},{"area","Village"}}})}};
-    for(const auto& hint:Generate(77,"{}",hintDump.dump(),"{}",nlohmann::json::array(),pathSpoiler.dump(),paths).at("mm").at("gossipPool"))
+    // Keep the generated json alive: a range-for over .at() of a temporary dangles.
+    const auto optionalHints=Generate(77,"{}",hintDump.dump(),"{}",nlohmann::json::array(),pathSpoiler.dump(),paths);
+    for(const auto& hint:optionalHints.at("mm").at("gossipPool"))
         assert(!hint.contains("pathTarget"));
     // When the goal needs Gyorg, the items on the way are required and on the Path to Gyorg.
     auto needsGyorg=[](const auto&,const auto& mmReached,const auto&,const auto&){
@@ -316,6 +318,34 @@ int main(){
     }
     assert(sawPath);
     assert(hints==Generate(77,"{}",hintDump.dump(),"{}",nlohmann::json::array(),pathSpoiler.dump(),paths));
+    // An always hint and an OoT location hint carry the exact check they name, so the check tracker
+    // can mark it Hinted; area, path and MM-check hints name no OoT check.
+    nlohmann::json stoneDump={{"options",{{"gossipStoneHints",1},{"hintDistribution",1}}},
+        {"stones",{"Stone 1","Stone 2","Stone 3","Stone 4","Stone 5","Stone 6"}},
+        {"alwaysHintChecks",{"Oot optional"}},
+        {"checks",nlohmann::json::array({
+            {{"name","Oot start"},{"area","Forest"},{"overworld",true},{"locationHint",{{"clear",{{"en","Start has [[1]]."}}}}}},
+            {{"name","Oot optional"},{"area","Village"},{"locationHint",{{"clear",{{"en","Optional has [[1]]."}}}}}}})}};
+    bool sawLocation=false;
+    for(uint32_t seed=1;seed<64;++seed) {
+        int always=0;
+        const auto stoneHints=Generate(seed,"{}",stoneDump.dump(),"{}",nlohmann::json::array(),pathSpoiler.dump(),paths);
+        for(const auto& hint:stoneHints.at("oot")) {
+            const std::string type=hint.at("type");
+            if(type=="always") {
+                ++always;
+                assert(hint.at("hintedCheck")=="Oot optional");
+            } else if(type=="Overworld" && hint.contains("hintedCheck")) {
+                sawLocation=true;
+                assert(hint.at("hintedCheck")=="Oot start");
+                assert(hint.at("messages").at(0).at("en").get<std::string>().rfind("Start has ",0)==0);
+            } else {
+                assert(!hint.contains("hintedCheck"));
+            }
+        }
+        assert(always==1);
+    }
+    assert(sawLocation);
     // OoTMM path locks: Majora needs Gyorg's remains here, so an item on both paths is hinted for
     // Gyorg alone, while the remains themselves are on the Path to Majora.
     OracleFns remainsMm{resetMm,grantMm,+[]()->const char*{

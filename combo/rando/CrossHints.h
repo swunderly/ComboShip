@@ -679,9 +679,12 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
                 ReplacePlaceholder(msg, 1, PickTemplate(itemHint, hintClarity, rng, MaskOrNull(itemMask)));
                 uint8_t copies = std::min<uint8_t>(preset.alwaysCopies, static_cast<uint8_t>(totalStones));
                 for (uint8_t copy = 0; copy < copies; ++copy) {
+                    // hintedCheck: the exact OoT check this sentence names, so the check tracker can
+                    // mark it Hinted as native SoH does for its own item hints.
                     ootHints.push_back(
                         { { "checkName", "__ALWAYS__" + checkName + std::to_string(copy) },
                           { "type", "always" },
+                          { "hintedCheck", checkName },
                           { "messages", { { { "en", msg.en }, { "de", msg.de }, { "fr", msg.fr } } } } });
                     ++producedHints;
                 }
@@ -719,6 +722,7 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
             bool placed = false;
             std::string usedKey;
             std::string pathTarget;
+            std::string hintedCheck; // an OoT location hint's exact check (see the always-hint block)
 
             if (cat == "WotH" || cat == "Foolish") {
                 auto& pool = (cat == "WotH") ? requiredAreas : foolishAreas;
@@ -765,6 +769,7 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
                         msg = PickTemplate(cand.locationHint, hintClarity, rng);
                         ReplacePlaceholder(
                             msg, 1, PickTemplate(cand.itemHint, hintClarity, rng, MaskOrNull(cand.itemHintMask)));
+                        hintedCheck = cand.checkName;
                     } else {
                         // MM checks have no authored location sentence — compose item + region.
                         msg = PickTemplate(tmpl("RHT_CAN_BE_FOUND_AT"), hintClarity, rng);
@@ -807,6 +812,8 @@ inline nlohmann::json Generate(uint32_t masterSeed, const std::string& sohDumpJs
                 ootHints.back()["pathTarget"] = pathTarget;
                 ootHints.back()["pathArea"] = usedKey;
             }
+            if (!hintedCheck.empty())
+                ootHints.back()["hintedCheck"] = hintedCheck;
             ++producedHints;
             --totalStones;
         }
