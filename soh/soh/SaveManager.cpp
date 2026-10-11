@@ -3,6 +3,7 @@
 #ifdef COMBO_BUILD
 #include "ComboExport.h"
 #include "rando/KokiriSeedRevision.h"
+#include "rando/ComboSeedFormat.h"
 #endif
 #include "OTRGlobals.h"
 #include "Enhancements/game-interactor/GameInteractor.h"
@@ -1468,6 +1469,14 @@ bool SaveManager::LoadFile(int fileNum, bool initializeFullContext) {
             input >> parsedSave;
         }
         input.close();
+        // Compatibility rejection must not enter the corruption handler or bind this slot.
+        try {
+            ComboRando::CheckComboSeedPreflight(parsedSave);
+        } catch (const ComboRando::UnsupportedComboSeedFormat& error) {
+            SPDLOG_ERROR("Seed format rejected slot {}: {}", fileNum, error.what());
+            SohGui::RegisterPopup("Unsupported seed format", error.what());
+            return false;
+        }
         // This catches only an invalid named revision in otherwise parsed JSON.
         // Syntax/structural errors retain the native corruption handler below.
         try {

@@ -1,6 +1,7 @@
 // Shared launcher/headless adapter for the bounded native MM Wallmaster profile.
 #pragma once
 #include "Format.h"
+#include "rando/ComboSeedFormat.h"
 #include "rando/entrances/MmGrottoLayout.h"
 #include "rando/entrances/MmOrdinaryLayout.h"
 #include "rando/entrances/MmMixedLayout.h"
@@ -14,6 +15,7 @@ struct NativeFns {
     const char* (*dumpSeed)() = nullptr;
 };
 inline void ApplyNativeSeed(const NativeFns& native, const nlohmann::json& seed) {
+    RequireSupportedSeedCapabilities(seed);
     ValidateMmMixedSeed(seed);
     DecodeMmWallmasterSeed(seed); // reject unsupported data even with an older MM module
     if (seed.contains("ordinaryEntranceExpansion")) {

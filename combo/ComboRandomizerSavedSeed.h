@@ -17,6 +17,7 @@ inline Json SeedFromContainer(const Json& container) {
     auto seed = combo["rando"];
     if (seed.is_string())
         seed = Json::parse(seed.get<std::string>());
+    RequireSupportedSeedCapabilities(seed);
     if (!SeedDocument(seed))
         throw std::invalid_argument("Saved randomizer seed is malformed");
     return seed;

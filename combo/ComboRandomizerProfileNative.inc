@@ -9,13 +9,20 @@ static nlohmann::json ProfileNativeSnapshot() {
     if(SOH_ReadComboGoalTypeCVars)goal.type=static_cast<ComboRando::CwGoal::Type>(SOH_ReadComboGoalTypeCVars(&required,&total));
     goal.hunt=goal.type==ComboRando::CwGoal::HUNT;goal.required=required;goal.total=total;
     const int world=SOH_ReadComboStartingGameCVar?SOH_ReadComboStartingGameCVar():0;
-    return {{"fileType","ComboShipRandomizer"},{"version",1},{"seed",sProfileLegacySeed?sProfileLegacySeed():""},
-        {"oot",{{"settings",read(SOH_DumpRandoSettings)}}},
-        {"mm",{{"settings",read(MM_DumpRandoSettings)}}},
-        {"setupCVars",read(sProfileDumpCombo)}, {"gameplayRules",SnapshotGameplayRules()},
-        {"songTravel",sSongTravel.json()},{"goal",ComboRando::CwGoalJson(goal)},
-        {"startingGame",world==2?"Random":world==1?"MM":"OOT"},
-        {"sharedItems",ComboRando::SharedKeysFromMask(SOH_ReadComboSharedCVars?SOH_ReadComboSharedCVars():0)}};
+    return { { "fileType", ComboRando::kComboSeedFileType },
+             { "version", 1 },
+             { "seed", sProfileLegacySeed ? sProfileLegacySeed() : "" },
+             { "oot", { { "settings", read(SOH_DumpRandoSettings) } } },
+             { "mm", { { "settings", read(MM_DumpRandoSettings) } } },
+             { "setupCVars", read(sProfileDumpCombo) },
+             { "gameplayRules", SnapshotGameplayRules() },
+             { "songTravel", sSongTravel.json() },
+             { "goal", ComboRando::CwGoalJson(goal) },
+             { "startingGame", world == 2   ? "Random"
+                               : world == 1 ? "MM"
+                                            : "OOT" },
+             { "sharedItems",
+               ComboRando::SharedKeysFromMask(SOH_ReadComboSharedCVars ? SOH_ReadComboSharedCVars() : 0) } };
 }
 static nlohmann::json ProfileEditableSetup(nlohmann::json setup){
     if(!setup.contains("setupCVars")){

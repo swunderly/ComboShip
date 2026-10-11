@@ -40,6 +40,7 @@
 
 #include "rando/CrossWorldRando.h"
 #include "rando/ComboPlaythrough.h"
+#include "rando/ComboSeedFormat.h"
 #include "rando/GameplayRules.h"
 #include "rando/GenerationRules.h"
 #include "rando/KokiriSeedRevision.h"
@@ -324,6 +325,7 @@ int main(int argc, char** argv) {
         nlohmann::json spoiler;
         try {
             spoiler = nlohmann::json::parse(ReadFile(playthroughFile));
+            ComboRando::RequireSupportedSeedDocument(spoiler);
         } catch (const std::exception& e) {
             std::cerr << "[playthrough] could not read/parse '" << playthroughFile << "': " << e.what() << "\n";
             return 2;
@@ -649,6 +651,8 @@ int main(int argc, char** argv) {
         }
         try {
             auto sj = nlohmann::json::parse(ReadFile(settingsFile));
+            // Standalone per-game settings remain valid; unsupported combo capabilities do not.
+            ComboRando::RequireSupportedSeedCapabilities(sj);
             const auto& oot = sj.contains("oot") ? sj["oot"] : sj;
             const auto& mm = sj.contains("mm") ? sj["mm"] : sj;
             // Exact settings reproduction retains the original family (absence = legacy).
@@ -971,7 +975,6 @@ int main(int argc, char** argv) {
                         return nlohmann::json::parse(dump).value("iceTrapModels", nlohmann::json::array());
                     };
                     nlohmann::json consolidated;
-                    consolidated["fileType"] = "ComboShipRandomizer";
                     consolidated["seed"] = seed;
                     consolidated["masterSeed"] = masterSeed;
                     consolidated["gameplayRules"] = ComboRando::CaptureGameplayRules(
@@ -1045,6 +1048,7 @@ int main(int argc, char** argv) {
                     std::error_code ec;
                     std::filesystem::create_directories("saves/combo", ec);
                     std::ofstream f("saves/combo/comborando.spoiler.json", std::ios::trunc);
+                    ComboRando::StampComboSeedFormat(consolidated);
                     f << consolidated.dump(2);
                     std::cout << "[comborando]   consolidated spoiler -> saves/combo/comborando.spoiler.json\n";
                 } catch (const std::exception& e) {

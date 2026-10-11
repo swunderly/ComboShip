@@ -26,6 +26,7 @@
 #include "dungeon.h"
 #ifdef COMBO_BUILD
 #include "hook_handlers.h" // ComboShip: OOT_DeliverForeign for RG_COMBO_FOREIGN grant divert
+#include "rando/ComboSeedFormat.h"
 extern "C" void (*gComboTriforceProgress)(int game, int fileNum);
 #endif
 
@@ -67,7 +68,7 @@ bool Rando_HandleSpoilerDrop(char* filePath) {
 #ifdef COMBO_BUILD
         // ComboShip: a dropped consolidated combo spoiler — route it to the combo reload path (see
         // FileChoose_UpdateRandomizer) rather than SoH's ParseSpoiler. Only flag it here.
-        if (json.value("fileType", std::string()) == "ComboShipRandomizer") {
+        if (ComboRando::IsComboSeedDocument(json) || json.contains("entranceLayout")) {
             CVarSetString(CVAR_GENERAL("ComboDroppedFile"), filePath);
             return true;
         }

@@ -1,6 +1,7 @@
 #pragma once
 #include <nlohmann/json.hpp>
 #include "rando/KokiriSeedRevision.h"
+#include "rando/ComboSeedFormat.h"
 #include <array>
 #include <cstdint>
 #include <stdexcept>
@@ -19,6 +20,7 @@ inline void RequireSlot(int slot) {
 inline Json SettingsDocument(const Json& seed) {
     if (!seed.is_object())
         throw std::invalid_argument("Randomizer settings document must be an object");
+    RequireSupportedSeedCapabilities(seed);
     Json result = seed;
     for (const char* key :
          { "masterSeed", "displaySeed", "file_hash", "foreign", "playthrough", "hints", "comboProfile" })
@@ -44,7 +46,7 @@ inline Json SettingsDocument(const Json& seed) {
     return result;
 }
 inline bool SeedDocument(const Json& value) {
-    return value.is_object() && value.value("fileType", std::string()) == "ComboShipRandomizer";
+    return IsComboSeedDocument(value);
 }
 inline void MergeSettings(Json& destination, const Json& source) {
     for (const auto& field : source.items()) {
@@ -131,6 +133,7 @@ class Store {
                 SettingsDocument(file["generatedInput"]);
             if (!file["generated"].is_null() && !SeedDocument(file["generated"]))
                 throw std::invalid_argument("Malformed generated seed snapshot");
+            RequireSupportedSeedCapabilities(file["generated"]);
             if (!file["lastAttempt"].is_null() && !file["lastAttempt"].is_object())
                 throw std::invalid_argument("Malformed generation status");
         }
@@ -195,6 +198,8 @@ class Store {
             throw std::invalid_argument("Generation transaction does not match settings file");
         if (success && !SeedDocument(seed))
             throw std::invalid_argument("Generation did not produce a complete seed document");
+        if (success)
+            RequireSupportedSeedCapabilities(seed);
         auto copy = document;
         auto& file = copy["files"][running->slot];
         if (success) {

@@ -14,6 +14,7 @@
 #include "ComboRandomizerSavedSeed.h"
 #include "menu/ComboRandomizerProfileABI.h"
 #include "rando/ComboPresets.h"
+#include "rando/ComboSeedFormat.h"
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -749,6 +750,14 @@ static const char* Combo_ReadGameSave(int game, int fileNum) {
                             ? cached->second
                             : ComboRando::Profiles::ReadSavedContainerFile(ComboContainerPath(fileNum));
             ComboRando::Profiles::ValidateSavedCatalogs(inspected);
+        } catch (const ComboRando::UnsupportedComboSeedFormat& error) {
+            // Transient page only: native preflight rejects before binding or migrating this slot.
+            auto page = inspected.value("oot", nlohmann::json::object());
+            if (!page.is_object())
+                page = nlohmann::json::object();
+            page[ComboRando::kComboSeedPreflightError] = error.what();
+            buf = page.dump();
+            return buf.c_str();
         } catch (const ComboRando::UnsupportedKokiriSeedRevision& error) {
             // Return a transient native-page copy. SOH raises the typed error
             // locally before any save/context binding; no DLL exception crosses
@@ -2748,7 +2757,6 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                                          ComboRando::SharedUntaggedNames(effectiveSharedMask));
 
         nlohmann::json consolidated;
-        consolidated["fileType"] = "ComboShipRandomizer";
         consolidated["version"] = 1;
         consolidated["gameplayRules"] = SnapshotGameplayRules();
         consolidated["faroreRules"] = ComboRando::FaroreRulesFromMmDump(nlohmann::json::parse(mmDump)).json();
@@ -2829,6 +2837,7 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                                              { "file", sProfileAttempt->slot },
                                              { "revision", sProfileAttempt->revision },
                                              { "settings", sProfileAttempt->setup } };
+        ComboRando::StampComboSeedFormat(consolidated);
         g_ConsolidatedJson = consolidated.dump(2);
 
         // This seed's own spoiler, so earlier seeds survive instead of being overwritten. The CVar that
@@ -3257,10 +3266,7 @@ static bool TryLoadComboSeedFile(const std::filesystem::path& p, nlohmann::json&
     try {
         nlohmann::json j;
         in >> j;
-        if (j.value("fileType", std::string()) != "ComboShipRandomizer") {
-            std::cerr << "[ComboShip] reload: " << p.string() << " is not a ComboShip seed file\n";
-            return false;
-        }
+        ComboRando::RequireSupportedSeedDocument(j);
         ComboRando::Entrances::ValidateMmMixedSeed(j);
         if (j.contains("ordinaryEntranceExpansion")) {
             ComboRando::Entrances::MmOrdinaryLayout proof;
@@ -3348,6 +3354,7 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
     try {
         if (profileSeed) {
             j = *profileSeed;
+            ComboRando::RequireSupportedSeedDocument(j);
         } else if (!isSilentAutoLoad) {
             // An explicit drop never falls back to another seed: a failed drop is a real error.
             auto dropped = ResolveComboSeedPath(path);

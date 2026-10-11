@@ -8,6 +8,7 @@
 #include "ComboMenuNavigation.h"
 #include "ComboMenuLayout.h"
 #include "rando/SharedItems.h"
+#include "rando/ComboSeedFormat.h"
 #include "ComboWidgetRender.h"
 #include "ComboWidgetStyle.h"
 #include "ComboForeground.h" // dormant-game gate for inline tracker popout buttons
@@ -1114,8 +1115,10 @@ void PlandoLoad() {
         sPlando.statusError = true;
         return;
     }
-    if (j.value("fileType", std::string()) != "ComboShipRandomizer") {
-        sPlando.status = "Not a ComboShip seed (regenerate with this build).";
+    try {
+        ComboRando::RequireSupportedSeedDocument(j);
+    } catch (const std::exception& error) {
+        sPlando.status = error.what();
         sPlando.statusError = true;
         return;
     }
