@@ -4,6 +4,7 @@
 
 #include <spdlog/spdlog.h>
 #include "rando/ComboAnchorToast.h" // shared cross-game resync-toast debounce
+#include "rando/TrackerKnowledge.h" // shared Seen/Hinted precedence for the team knowledge merge
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/NameTag/NameTag.h"
 #include "2s2h/Rando/Rando.h" // Rando::GiveItem / ConvertItem / CurrentJunkItem / RANDO_SAVE_CHECKS / IS_RANDO
@@ -888,13 +889,19 @@ void MMAnchor::HandlePacket_UpdateTeamState(nlohmann::json& payload) {
 
     Save loadedData = payload["state"].get<Save>();
 
-    // A stale or older client must not erase a reward this player already saw. Keep our last
-    // observed tier/disguise; otherwise accept the teammate's explicitly revealed knowledge.
+    // A stale or older client must not erase a reward this player already saw. Keep our record unless the
+    // teammate's ranks higher by the shared precedence (Seen over Hinted over legacy Known); an equal rank
+    // keeps ours, so our observed tier/disguise stays and two hints never swap back and forth.
     for (int i = 0; i < RC_MAX; ++i) {
-        if (RANDO_SAVE_CHECKS[i].seenItemId != RI_UNKNOWN) {
-            loadedData.shipSaveInfo.rando.randoSaveChecks[i].seenItemId = RANDO_SAVE_CHECKS[i].seenItemId;
-            loadedData.shipSaveInfo.rando.randoSaveChecks[i].knowledgeSource = RANDO_SAVE_CHECKS[i].knowledgeSource;
-        }
+        auto& merged = loadedData.shipSaveInfo.rando.randoSaveChecks[i];
+        uint8_t source = RANDO_SAVE_CHECKS[i].knowledgeSource;
+        RandoItemId item = RANDO_SAVE_CHECKS[i].seenItemId;
+        if (item == RI_UNKNOWN)
+            continue;
+        if (merged.knowledgeSource != source)
+            ComboRando::RecordTrackerItemKnowledge(source, item, merged.knowledgeSource, merged.seenItemId);
+        merged.seenItemId = item;
+        merged.knowledgeSource = source;
     }
 
     // Permanent equipment must not disappear when an older peer answers resync.

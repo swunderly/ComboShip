@@ -147,6 +147,26 @@ int main() {
     assert(RANDO_SAVE_CHECKS[unseen].seenItemId == RI_MASK_BUNNY);
     assert(RANDO_SAVE_CHECKS[unseen].knowledgeSource == 2);
     assert(RANDO_SAVE_CHECKS[RC_CLOCK_TOWN_NORTH_TREE_PIECE_OF_HEART].seenItemId == RI_HOOKSHOT);
+    // The teammate's record wins only when it ranks higher: Seen over Hinted over legacy Known.
+    const auto merge = [&](uint8_t localSource, RandoItemId localItem, uint8_t remoteSource, RandoItemId remoteItem) {
+        auto& row = RANDO_SAVE_CHECKS[unseen];
+        row.knowledgeSource = remoteSource;
+        row.seenItemId = remoteItem;
+        json teammate = PackKnowledge();
+        row.knowledgeSource = localSource;
+        row.seenItemId = localItem;
+        ApplyKnowledge(teammate);
+        return std::make_pair(int(RANDO_SAVE_CHECKS[unseen].knowledgeSource), RANDO_SAVE_CHECKS[unseen].seenItemId);
+    };
+    assert(merge(2, RI_BOW, 1, RI_HOOKSHOT) == std::make_pair(1, RI_HOOKSHOT)); // Seen upgrades Hinted
+    assert(merge(0, RI_BOW, 1, RI_HOOKSHOT) == std::make_pair(1, RI_HOOKSHOT)); // and legacy Known
+    assert(merge(0, RI_BOW, 2, RI_HOOKSHOT) == std::make_pair(2, RI_HOOKSHOT)); // Hinted upgrades legacy Known
+    assert(merge(1, RI_BOW, 1, RI_HOOKSHOT) == std::make_pair(1, RI_BOW)); // our own tier/disguise stays
+    assert(merge(1, RI_BOW, 2, RI_HOOKSHOT) == std::make_pair(1, RI_BOW));
+    assert(merge(2, RI_BOW, 2, RI_HOOKSHOT) == std::make_pair(2, RI_BOW)); // two hints never swap back and forth
+    assert(merge(2, RI_BOW, 0, RI_HOOKSHOT) == std::make_pair(2, RI_BOW));
+    assert(merge(0, RI_UNKNOWN, 0, RI_HOOKSHOT) == std::make_pair(0, RI_HOOKSHOT)); // an empty row takes anything
+    assert(merge(1, RI_BOW, 0, RI_UNKNOWN) == std::make_pair(1, RI_BOW));
     std::cout << "MM knowledge: legacy saves, persistence, stable disguises, skip independence and invalid IDs passed\n";
     std::cout << "MM observation guards and old/new multiplayer knowledge merges passed\n";
 }
