@@ -297,6 +297,34 @@ int main(int argc, char** argv) {
         gear.get_to(*gearOnly);
         assert(ComboAdultMM::ConfigureSeedAge(*gearOnly, 1, false, false) && !gearOnly->shipSaveInfo.adultMm.enabled);
     }
+    // Cross-Games Age (F5b 5a-2): the seed only stores an age. A new file starts child with its gear and buttons
+    // untouched (no 41a2b7c0 loadout swap); a crossAge save with the model missing loads as it is; the saved adult
+    // state survives a round trip.
+    auto crossSeed = gear;
+    crossSeed["shipSaveInfo"]["rando"]["randoSaveOptions"][RO_MM_CROSS_AGE] = 1;
+    crossSeed["linkAge"] = 0; // native MM's raw child age
+    VerifySave(crossSeed);
+    VerifyLoadPolicy(crossSeed, true);
+    {
+        auto created = std::make_unique<Save>();
+        crossSeed.get_to(*created);
+        const json before = *created;
+        assert(ComboAdultMM::ConfigureSeedAge(*created, 1, false, true));
+        const auto& state = created->shipSaveInfo.adultMm;
+        assert(state.enabled && !state.maskEnabled && !state.initialized && created->linkAge == 1);
+        json expected = before;
+        expected["linkAge"] = 1;
+        expected["shipSaveInfo"]["adultMm"]["enabled"] = 1;
+        assert(json(*created) == expected); // boots, tunic, gear bits, buttons and loadouts untouched
+        created->linkAge = 0;                // OoT's adult age, copied in at an MM entry
+        assert(ComboAdultMM::ConfigureSeedAge(*created, 1, false, true) && created->linkAge == 0); // bound once
+        const json adult = *created;
+        auto reread = std::make_unique<Save>();
+        adult.get_to(*reread);
+        assert(ComboAdultMM::IsAdult(*reread) && json(*reread) == adult);
+        ComboAdultMM::PrepareLoadedSave(*reread, false);
+        assert(json(*reread) == adult);
+    }
     for (const char* field : {"boots", "tunic", "gearTrade2Bits"}) { // malformed gear bytes are still a parse error
         auto broken = gear;
         broken["shipSaveInfo"]["adultMm"][field] = 7;

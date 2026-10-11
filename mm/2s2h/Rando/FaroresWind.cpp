@@ -346,7 +346,7 @@ extern "C" COMBO_EXPORT int MM_ConsumeFaroreArrival() {
     }
     const int entrance = sArrivalEntrance;
     if (sCrossAge) {
-        // Adult callback is registered only by a complete, resource-ready native implementation.
+        // Cross-Games Age: the arrival takes the departing OoT age (BenPort.cpp MM_ApplyFaroreTransitionAge).
         if (!CanAge(sArrivalAge) ||
             (sApplyAge ? !sApplyAge(gSaveContext.fileNum, sArrivalAge) : NativeAge() != sArrivalAge)) {
             sArrivalFile = sArrivalAge = sArrivalEntrance = sSpawnAge = -1;

@@ -4405,7 +4405,7 @@ int main(int argc, char** argv) {
         set(Combo_FaroreSyncOot);
     if (auto set =
             (void (*)(int (*)(int), int (*)(int, int), int (*)(int, int)))GetSym(mmModule, "MM_SetFaroreAgeBridge")) {
-        // Each native export preflights exact model, property, equipment and voice eligibility.
+        // The saved MM age and its setter; drawing adult Link is the MM runtime's own check (Combo_MM_IsLinkAdult).
         set((int (*)(int))GetSym(mmModule, "MM_GetEffectiveHumanAge"),
             (int (*)(int, int))GetSym(mmModule, "MM_CanFaroreTransitionAge"),
             (int (*)(int, int))GetSym(mmModule, "MM_ApplyFaroreTransitionAge"));
