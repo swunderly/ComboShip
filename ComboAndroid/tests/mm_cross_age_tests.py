@@ -99,6 +99,10 @@ for name in ('MM_GetEffectiveHumanAge(int fileNum)', 'MM_CanFaroreTransitionAge(
     for banned in ('ResourcesReady', 'BuildAdultHybridSequence', 'SwapHumanLoadout', 'ApplyAdultModelTables',
                    'ApplyAdultOverlayAge'):
         check(banned not in fn, f'{name.split("(")[0]} must not use {banned}')
+save_h = squash(read('mm/include/z64save.h'))
+check('#ifdefCOMBO_BUILD#defineLINK_IS_CHILD(gSaveContext.save.linkAge==1&&!gSaveContext.save.shipSaveInfo.adultMm.enabled)'
+      '#defineLINK_IS_ADULT(gSaveContext.save.linkAge==0||gSaveContext.save.shipSaveInfo.adultMm.enabled)' in save_h,
+      'z64save.h: MM\'s native age remnants must keep reading "always adult" when linkAge holds Cross-Games Age')
 check('if(save.shipSaveInfo.adultMm.enabled)save.linkAge=(u8)age;return1;' in
       body(benport, 'extern "C" COMBO_EXPORT int MM_ApplyFaroreTransitionAge(int fileNum, int age)'),
       'MM_ApplyFaroreTransitionAge must set the saved age only')
