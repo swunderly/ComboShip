@@ -120,6 +120,19 @@ for weapon, length in (('KOKIRI', '4000.0f'), ('RAZOR', '4000.0f'), ('GILDED', '
 check('D_801C0D94' not in tables_src and 'gPlayerSheath' not in tables_src and 'gPlayerShields' not in tables_src,
       'a slot plan F5b keeps as MM\'s own is changed')
 
+# Draw glue (plan F5b 5b-3): OoT's adult lists take the tunic colour from env, the Kokiri green unless a gear tunic
+# is worn; a face row that Play As Kafei rewrote while adult is captured again, and only the adult texture is given back.
+draw = squash(lib[lib.index('void Player_DrawImpl('):lib.index('Vec3f D_801C08C0')])
+check('if(playerForm==PLAYER_FORM_HUMAN&&(Combo_MM_GearActive()||Combo_MM_IsLinkAdult())){constColor_RGB8*color='
+      'Combo_MM_GetSavedTunicColor(Combo_MM_GearActive()?gSaveContext.save.shipSaveInfo.adultMm.tunic:0);' in draw,
+      'adult Link env colour is not the Kokiri green without a worn gear tunic')
+check(draw.index('gDPSetEnvColor(POLY_OPA_DISP++') < draw.index('SkelAnime_DrawFlexLod('), 'env colour after the skeleton')
+check('if(*Combo_MM_HumanFaceRow(i)!=Combo_MM_CrossAgeFaceTexture(i)){sComboChildFace[i]=*Combo_MM_HumanFaceRow(i);'
+      in apply and 'if(*Combo_MM_HumanFaceRow(i)==Combo_MM_CrossAgeFaceTexture(i)){*Combo_MM_HumanFaceRow(i)='
+      'sComboChildFace[i];' in squash(tables_src), 'face rows are not captured and given back around Play As Kafei')
+check(sum(1 for line in read('mm/2s2h/Enhancements/GfxPatcher/PlayerCustomFlipbooks.cpp').splitlines()
+          if 'PLAYER_FORM_HUMAN' in line) == 0, 'custom flipbooks now write the human face rows')
+
 # The loader's lists, in slot order, and its composites (plan F5b 1.3).
 enum = re.search(r'typedef enum ComboAdultOotSlot \{(.*?)\} ComboAdultOotSlot;', slots_src, re.S).group(1)
 order = [e.split('=')[0].strip().replace('COMBO_ADULT_', '') for e in re.sub(r'//[^\n]*', '', enum).split(',')

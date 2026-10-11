@@ -2162,9 +2162,11 @@ void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dL
     }
     sPlayerLod = lod;
 #ifdef COMBO_BUILD
-    // The tunic env colour serves OoT's adult model (Adult Link in MM) and the gear tunics.
+    // The tunic env colour serves OoT's adult model (Adult Link in MM) and the gear tunics. OoT's adult lists take
+    // the tunic colour from env; without a worn gear tunic it is the Kokiri green, OoTMM's MM default (Player.c:1244).
     if (playerForm == PLAYER_FORM_HUMAN && (Combo_MM_GearActive() || Combo_MM_IsLinkAdult())) {
-        const Color_RGB8* color = Combo_MM_GetSavedTunicColor(gSaveContext.save.shipSaveInfo.adultMm.tunic);
+        const Color_RGB8* color =
+            Combo_MM_GetSavedTunicColor(Combo_MM_GearActive() ? gSaveContext.save.shipSaveInfo.adultMm.tunic : 0);
         gDPSetEnvColor(POLY_OPA_DISP++, color->r, color->g, color->b, 255);
     }
     if (playerForm == PLAYER_FORM_HUMAN && actor->id == ACTOR_PLAYER) {
