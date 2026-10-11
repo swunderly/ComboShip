@@ -3774,8 +3774,10 @@ static void Combo_OnOOTSaveLoad(int fileNum) {
             std::cerr << "[ComboShip] Invalid slot seed: " << error.what() << "\n";
             return;
         }
-        if (!InstallEntranceSeed(seedForEntrances))
-            return;
+        // A rejected legacy layout is logged and cleared by InstallEntranceSeed. Keep binding
+        // the existing slot so its items, hints, song travel and dormant MM save cannot remain
+        // borrowed from the previously selected file. Do not rewrite the saved seed envelope.
+        InstallEntranceSeed(seedForEntrances);
         InstallSongTravel(rando.empty() ? nlohmann::json() : seedForEntrances.value("songTravel", nlohmann::json()));
         RefreshGameplayRuntime();
         if (!rando.empty()) {
