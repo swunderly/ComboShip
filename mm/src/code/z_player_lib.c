@@ -2097,6 +2097,7 @@ extern int Combo_MM_GearActive(void);
 extern s32 Combo_MM_GetCustomBoots(Player* player);
 #include "ComboChildBootDrawNative.h"
 #include "ComboHoverCircleDrawNative.h"
+#include "ComboGearTunicColorNative.h"
 extern int Combo_MM_ChildBootResourcesReady(void);
 extern const char* Combo_MM_GetAdultBootDrawPath(int index);
 extern int Combo_MM_AdultResourcesReady(void);
@@ -2165,6 +2166,9 @@ void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dL
     if (playerForm == PLAYER_FORM_HUMAN && (Combo_MM_GearActive() || Combo_MM_IsLinkAdult())) {
         const Color_RGB8* color = Combo_MM_GetSavedTunicColor(gSaveContext.save.shipSaveInfo.adultMm.tunic);
         gDPSetEnvColor(POLY_OPA_DISP++, color->r, color->g, color->b, 255);
+    }
+    if (playerForm == PLAYER_FORM_HUMAN && actor->id == ACTOR_PLAYER) {
+        Combo_MM_SyncGearTunicColor(Combo_MM_GearActive() ? gSaveContext.save.shipSaveInfo.adultMm.tunic : 0);
     }
 #endif
     SkelAnime_DrawFlexLod(play, skeleton, jointTable, dListCount, overrideLimbDraw, postLimbDraw, actor, lod);
