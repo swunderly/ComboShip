@@ -343,19 +343,29 @@ void LoadAvailableWindows() {
     });
 
     // Ordered by the inventory slot each one shares, so the rows line up with the three trade slots
-    // the Inventory group shows.
+    // the Inventory group shows. The MM spells lead their slots, in OoTMM's trade order
+    // (generator/src/common/trade.c kMmTrade1..3); they only show on seeds that add them.
     itemTrackerGroupsAvailable.push_back(TrackerGroup{
         .name = "Trade Items",
         .columns = 5,
         .scale = 1.0f,
         .items = {
+#ifdef COMBO_BUILD
+            { TRACKER_ITEM_RANDO, RI_DINS_FIRE },
+#endif
             { TRACKER_ITEM_RANDO, RI_MOONS_TEAR },
             { TRACKER_ITEM_RANDO, RI_DEED_LAND },
             { TRACKER_ITEM_RANDO, RI_DEED_SWAMP },
             { TRACKER_ITEM_RANDO, RI_DEED_MOUNTAIN },
             { TRACKER_ITEM_RANDO, RI_DEED_OCEAN },
+#ifdef COMBO_BUILD
+            { TRACKER_ITEM_RANDO, RI_FARORES_WIND },
+#endif
             { TRACKER_ITEM_RANDO, RI_ROOM_KEY },
             { TRACKER_ITEM_RANDO, RI_LETTER_TO_MAMA },
+#ifdef COMBO_BUILD
+            { TRACKER_ITEM_RANDO, RI_NAYRUS_LOVE },
+#endif
             { TRACKER_ITEM_RANDO, RI_LETTER_TO_KAFEI },
             { TRACKER_ITEM_RANDO, RI_PENDANT_OF_MEMORIES },
         },

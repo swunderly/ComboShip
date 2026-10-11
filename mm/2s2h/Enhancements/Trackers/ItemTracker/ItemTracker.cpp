@@ -71,9 +71,36 @@ static bool IsTradeItemObtained(RandoItemId randoItemId) {
             return Flags_GetRandoInf(RANDO_INF_OBTAINED_LETTER_TO_KAFEI);
         case RI_PENDANT_OF_MEMORIES:
             return Flags_GetRandoInf(RANDO_INF_OBTAINED_PENDANT_OF_MEMORIES);
+#ifdef COMBO_BUILD
+        // The spells keep their own ownership, which survives Song of Time like the trade flags above.
+        case RI_DINS_FIRE:
+            return gSaveContext.save.shipSaveInfo.spellFireOwned != 0;
+        case RI_FARORES_WIND:
+            return gSaveContext.save.shipSaveInfo.faroresWind.owned != 0;
+        case RI_NAYRUS_LOVE:
+            return gSaveContext.save.shipSaveInfo.spellLoveOwned != 0;
+#endif
         default:
             return false;
     }
+}
+
+// Rows that do not apply to the loaded save. The MM spells only exist on seeds that add them, so other seeds
+// keep their tracker unchanged.
+static bool IsTrackerItemHidden(TrackerItemType itemType, u32 itemId) {
+    if (itemType != TRACKER_ITEM_RANDO)
+        return false;
+    if (itemId == RI_SOUL_ENEMY_IGOS_DU_IKANA)
+        return IS_RANDO && RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS];
+#ifdef COMBO_BUILD
+    if (itemId == RI_DINS_FIRE)
+        return !IS_RANDO || !RANDO_SAVE_OPTIONS[RO_MM_SPELL_FIRE];
+    if (itemId == RI_FARORES_WIND)
+        return !IS_RANDO || !RANDO_SAVE_OPTIONS[RO_MM_SPELL_WIND];
+    if (itemId == RI_NAYRUS_LOVE)
+        return !IS_RANDO || !RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE];
+#endif
+    return false;
 }
 
 TrackerImageObject GetImageObject(TrackerItemType itemType, u32 itemId) {
@@ -142,7 +169,13 @@ TrackerImageObject GetImageObject(TrackerItemType itemType, u32 itemId) {
                 case RI_ROOM_KEY:
                 case RI_LETTER_TO_MAMA:
                 case RI_LETTER_TO_KAFEI:
-                case RI_PENDANT_OF_MEMORIES: {
+                case RI_PENDANT_OF_MEMORIES:
+#ifdef COMBO_BUILD
+                case RI_DINS_FIRE:
+                case RI_FARORES_WIND:
+                case RI_NAYRUS_LOVE:
+#endif
+                {
                     itemObtained = IsTradeItemObtained(randoItemId);
                 } break;
                 default: {
@@ -521,8 +554,7 @@ void DrawItemTrackerGroup(TrackerGroup& trackerGroup) {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
         for (auto& [itemType, itemId] : trackerGroup.items) {
-            if (itemType == TRACKER_ITEM_RANDO && itemId == RI_SOUL_ENEMY_IGOS_DU_IKANA && IS_RANDO &&
-                RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS])
+            if (IsTrackerItemHidden(itemType, itemId))
                 continue;
             ImGui::TableNextColumn();
             DrawItemTrackerSlot(itemType, itemId, scale, false);
@@ -565,8 +597,7 @@ extern "C" COMBO_EXPORT void MM_ComboItemTrackerDrawContents() {
             for (int c = 0; c < columns; ++c)
                 ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, pitch);
             for (const auto& [itemType, itemId] : source.items) {
-                if (itemType == TRACKER_ITEM_RANDO && itemId == RI_SOUL_ENEMY_IGOS_DU_IKANA && IS_RANDO &&
-                    RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS])
+                if (IsTrackerItemHidden(itemType, itemId))
                     continue;
                 ImGui::TableNextColumn();
                 const auto start = ImGui::GetCursorPos();
