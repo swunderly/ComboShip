@@ -134,9 +134,9 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_GORON_VILLAGE] = RandoRegion{ .sceneId = SCENE_11GORONNOSATO,
         .checks = {
             CHECK(RC_GORON_VILLAGE_PIECE_OF_HEART, Flags_GetRandoInf(RANDO_INF_OBTAINED_DEED_SWAMP) && CAN_BE_DEKU),
-            CHECK(RC_GORON_VILLAGE_LARGE_CRATE, CAN_USE_MAGIC_ARROW(FIRE) || NativeMmNorthSpring()),
+            CHECK(RC_GORON_VILLAGE_LARGE_CRATE, CAN_USE_FIRE_SHORT_RANGE || NativeMmNorthSpring()), // goron_village.yml:23
             // FIXME: Update logic for Entrance Rando to account for being able to access the Racetrack Boulder
-            CHECK(RC_GORON_VILLAGE_MEDIGORON, (CAN_USE_MAGIC_ARROW(FIRE) || NativeMmNorthSpring()) && CAN_BE_GORON && (RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] != RO_GENERIC_YES || RANDO_EVENTS[RE_EXPANDED_TRIAL_BOULDER])),
+            CHECK(RC_GORON_VILLAGE_MEDIGORON, (CAN_USE_FIRE_SHORT_RANGE || NativeMmNorthSpring()) && CAN_BE_GORON && (RANDO_SAVE_OPTIONS[RO_SHUFFLE_NPC_SOULS] != RO_GENERIC_YES || RANDO_EVENTS[RE_EXPANDED_TRIAL_BOULDER])),
             CHECK(RC_GORON_VILLAGE_SCRUB_BOMB_BAG, (GET_CUR_UPG_VALUE(UPG_WALLET) >= 1) && CAN_BE_GORON),
             CHECK(RC_GORON_VILLAGE_SCRUB_DEED, Flags_GetRandoInf(RANDO_INF_OBTAINED_DEED_SWAMP) && CAN_BE_DEKU),
             CHECK(RC_GORON_VILLAGE_LARGE_SNOWBALL_01, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CanKillEnemy(ACTOR_OBJ_SNOWBALL))),
@@ -163,8 +163,8 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ENEMY_DROP_TEKTITE, CanKillEnemy(ACTOR_EN_TITE)),
         },
         .events = {
-            EVENT(RE_EXPANDED_POWDER_KEG_TRIAL, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MEDIGORON) && (NativeMmNorthSpring() || CAN_USE_MAGIC_ARROW(FIRE)) && CAN_BE_GORON),
-            EVENT(RE_EXPANDED_BUY_KEG, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MEDIGORON) && (NativeMmNorthSpring() || CAN_USE_MAGIC_ARROW(FIRE)) && RANDO_EVENTS[RE_EXPANDED_TRIAL_BOULDER] && HAS_ITEM(ITEM_POWDER_KEG) && CAN_PAY(100)),
+            EVENT(RE_EXPANDED_POWDER_KEG_TRIAL, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MEDIGORON) && (NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE) && CAN_BE_GORON), // goron_village.yml:9
+            EVENT(RE_EXPANDED_BUY_KEG, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MEDIGORON) && (NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE) && RANDO_EVENTS[RE_EXPANDED_TRIAL_BOULDER] && HAS_ITEM(ITEM_POWDER_KEG) && CAN_PAY(100)),
         },
         .exits = { //     TO                                         FROM
             // During First Day a NPC Goron can open the door to the the Shrine
@@ -399,7 +399,7 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_PATH_TO_GORON_VILLAGE] = RandoRegion{ .sceneId = SCENE_17SETUGEN,
         .checks = {
             // TODO : Add Spring only checks.
-            CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_MAGIC_ARROW(FIRE) || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE)))),
+            CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_FIRE_SHORT_RANGE || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE)))), // twin_island.yml:19
             CHECK(RC_TWIN_ISLANDS_TINGLE_MAP_01,          CAN_USE_PROJECTILE && CAN_AFFORD(RC_TWIN_ISLANDS_TINGLE_MAP_01)),
             CHECK(RC_TWIN_ISLANDS_TINGLE_MAP_02,          CAN_USE_PROJECTILE && CAN_AFFORD(RC_TWIN_ISLANDS_TINGLE_MAP_02)),
             CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_01, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
@@ -451,7 +451,7 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ENEMY_DROP_SNAPPER, CanKillEnemy(ACTOR_OBJ_SNOWBALL) && CanKillEnemy(ACTOR_EN_KAME)),
         },
         .exits = { //     TO                                     FROM
-            EXIT(ENTRANCE(GROTTOS, 5),                  ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_MAGIC_ARROW(FIRE) || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH)),
+            EXIT(ENTRANCE(GROTTOS, 5),                  ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH)), // twin_island.yml:14
             // TODO: This can be reached in entrance rando if coming from Goron Racetrack
             EXIT(ENTRANCE(GROTTOS, 24),                 ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), CAN_USE_EXPLOSIVE && (CAN_BE_GORON || CAN_HOOK_SCARECROW)),
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 2),  ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), true),
@@ -484,7 +484,7 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(TERMINA_FIELD, 3),                ENTRANCE(PATH_TO_MOUNTAIN_VILLAGE, 0), true),
         },
         .connections = {
-            CONNECTION(RR_PATH_TO_MOUNTAIN_VILLAGE_UPPER, CAN_BE_GORON || CAN_USE_EXPLOSIVE || CAN_USE_MAGIC_ARROW(FIRE)),
+            CONNECTION(RR_PATH_TO_MOUNTAIN_VILLAGE_UPPER, CAN_BE_GORON || CAN_USE_EXPLOSIVE || CAN_USE_FIRE_SHORT_RANGE), // path_to_mountain_village.yml:11
         },
     };
     Regions[RR_PATH_TO_MOUNTAIN_VILLAGE_UPPER] = RandoRegion{ .name = "Upper", .sceneId = SCENE_13HUBUKINOMITI,
@@ -507,7 +507,7 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 6),      ENTRANCE(PATH_TO_MOUNTAIN_VILLAGE, 1), true),
         },
         .connections = {
-            CONNECTION(RR_PATH_TO_MOUNTAIN_VILLAGE_LOWER, CAN_BE_GORON || CAN_USE_EXPLOSIVE || CAN_USE_MAGIC_ARROW(FIRE)),
+            CONNECTION(RR_PATH_TO_MOUNTAIN_VILLAGE_LOWER, CAN_BE_GORON || CAN_USE_EXPLOSIVE || CAN_USE_FIRE_SHORT_RANGE),
         },
     };
     Regions[RR_PATH_TO_SNOWHEAD_GROTTO] = RandoRegion{ .name = "Path To Snowhead Grotto", .sceneId = SCENE_KAKUSIANA,

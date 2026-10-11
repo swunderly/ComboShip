@@ -42,7 +42,8 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_OCEAN_SPIDER_HOUSE_ENTRANCE_LOWER, HAS_ITEM(ITEM_HOOKSHOT)),
-            CONNECTION(RR_OCEAN_SPIDER_HOUSE_LIBRARY_ROOM, CAN_LIGHT_TORCH_NEAR_ANOTHER),
+            // ocean_spider_house.yml:39-45: every Library location needs has_arrows || has_sticks; Din's Fire does not count.
+            CONNECTION(RR_OCEAN_SPIDER_HOUSE_LIBRARY_ROOM, CAN_USE_BOW || CAN_USE_STICKS),
             CONNECTION(RR_OCEAN_SPIDER_HOUSE_MEETING_ROOM, true),
             CONNECTION(RR_OCEAN_SPIDER_HOUSE_STORAGE_ROOM, CAN_LIGHT_TORCH_NEAR_ANOTHER)
         }
@@ -116,7 +117,7 @@ static RegisterShipInitFunc initFunc([]() {
 #else
             CHECK(RC_OCEAN_SKULLTULA_STORAGE_ROOM_BEHIND_CRATE, CanKillEnemy(ACTOR_EN_SW,1) && (HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)),
 #endif
-            CHECK(RC_OCEAN_SKULLTULA_STORAGE_ROOM_CEILING_WEB, CanKillEnemy(ACTOR_EN_SW,1) && (CAN_USE_MAGIC_ARROW(FIRE) && (HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA))),
+            CHECK(RC_OCEAN_SKULLTULA_STORAGE_ROOM_CEILING_WEB, CanKillEnemy(ACTOR_EN_SW,1) && (CAN_USE_FIRE_SHORT_RANGE && (HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA))), // ocean_spider_house.yml:54
             #ifdef COMBO_BUILD
             CHECK(RC_OCEAN_SKULLTULA_STORAGE_ROOM_CRATE, COMBO_WORLD36_ENABLED ? (COMBO_WORLD36_FIRE_STICKS && (CanKillEnemy(ACTOR_EN_SW,1))) : (CanKillEnemy(ACTOR_EN_SW,1))),
 #else

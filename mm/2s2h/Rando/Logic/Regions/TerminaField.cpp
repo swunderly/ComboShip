@@ -34,7 +34,7 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(PATH_TO_MOUNTAIN_VILLAGE, 0),     ENTRANCE(TERMINA_FIELD, 3), true),
         },
         .connections = {
-            CONNECTION(RR_TERMINA_FIELD, CAN_USE_BOW),
+            CONNECTION(RR_TERMINA_FIELD, CAN_USE_BOW || CAN_USE_DINS_FIRE), // termina_field.yml:651
         },
     };
     Regions[RR_TERMINA_FIELD_BIO_BABA_GROTTO] = RandoRegion{ .name = "Termina Field Bio Baba", .sceneId = SCENE_KAKUSIANA,
@@ -594,7 +594,7 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(NORTH_CLOCK_TOWN, 0),             ENTRANCE(TERMINA_FIELD, 8), true),
         },
         .connections = {
-            CONNECTION(RR_TERMINA_FIELD_BEFORE_PATH_TO_MOUNTAIN_VILLAGE, CAN_USE_BOW),
+            CONNECTION(RR_TERMINA_FIELD_BEFORE_PATH_TO_MOUNTAIN_VILLAGE, CAN_USE_BOW || CAN_USE_DINS_FIRE), // termina_field.yml:35
             CONNECTION(RR_TERMINA_FIELD_BEFORE_GREAT_BAY_COAST, CAN_PLAY_SONG(EPONA)),
             CONNECTION(RR_ASTRAL_OBSERVATORY_OUTSIDE, CAN_BE_DEKU),
         },
