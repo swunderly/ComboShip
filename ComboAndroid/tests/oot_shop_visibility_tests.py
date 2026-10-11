@@ -41,7 +41,7 @@ slots = re.findall(r'locationTable\[(RC_\w+)\]\s*=\s*Location::Base\([^\n]*?RCTY
                    (base/'location_list.cpp').read_text(encoding='utf-8'))
 assert len(slots) == 64 and len(set(slots)) == 64, slots
 
-symbols = sorted(set(re.findall(r'\b(?:RC_|RCQUEST_|RCTYPE_|RCAREA_|RSK_|RO_|SCENE_|RR_|RG_)[A-Z0-9_]+',
+symbols = sorted(set(re.findall(r'\b(?:RC_|RCQUEST_|RCTYPE_|RCAREA_|RSK_|RO_|SCENE_|RR_|RG_|ITEMTYPE_)[A-Z0-9_]+',
                                  shuffled + visible + pool + oracle + load_shop + ' '.join(slots) + ' RO_GENERIC_ON')))
 flags = sorted(set(re.findall(r'\b(?:show[A-Z0-9]\w*|alwaysShowGS|hideShopUnshuffledChecks|fortressNormal|fortressFast)\b',
                              shuffled + visible)))
@@ -86,7 +86,9 @@ struct Option {
  bool Is(int n)const{return value==n;} bool IsNot(int n)const{return value!=n;}
  explicit operator bool()const{return value!=0;}
 };
-struct ItemLocation {bool excluded=false;bool IsExcluded()const{return excluded;}};
+struct Item {int type=0;int GetItemType()const{return type;}};
+struct ItemLocation {bool excluded=false;Item placed;bool IsExcluded()const{return excluded;}
+ const Item& GetPlacedItem()const{return placed;}};
 struct Dungeon {std::vector<int> locations;bool IsMQ()const{return false;}};
 struct Dungeons {
  Dungeon dungeon;
@@ -156,12 +158,14 @@ void Run() {
   for(size_t i=0;i<shopChecks.size();++i) {
    // Native stock has real EnGirlA IDs; unique rewards have SI_RANDOMIZED_ITEM (50).
    mockRandomizer.identities[int(i)]={int(i%8)<oneTimeCount?50:int(i%8)};
+   ctx->items[shopChecks[i]].placed.type=int(i%8)<oneTimeCount?0:ITEMTYPE_SHOP;
   }
   for(bool hideNativeStock:{false,true}) {
    hideShopUnshuffledChecks=hideNativeStock;
    unsigned shown=0;
    for(int rc:shopChecks) shown+=IsVisibleInCheckTracker(rc);
-   Require(shown==(oneTimeCount<0?0u:64u),"tracker omitted shuffled refill stock");
+   // Refill stock is bought through the vanilla shop path, which never collects a check.
+   Require(shown==(oneTimeCount<0?0u:8u*oneTimeCount),"tracker listed refill stock or omitted a reward");
   }
   auto result=nlohmann::json::parse(Combo_SOH_Rando_GetReachableChecks());
   (void)result;
@@ -178,7 +182,7 @@ void Run() {
  ctx->inactive.clear();auto& loc=*Rando::StaticData::GetLocation(rc);loc.type=RCTYPE_POT;
  showOverworldPots=showDungeonPots=false;Require(!IsVisibleInCheckTracker(rc),"unshuffled pot became visible");
  showOverworldPots=true;Require(IsVisibleInCheckTracker(rc),"shuffled pot became hidden");
- std::cout<<"PASS: 64 shop slots, off/refill-only/two/eight rewards, generation pool and oracle candidates, exclusions/catalog and conditional pot filters\n";
+ std::cout<<"PASS: 64 shop slots, off/refill-only/two/eight rewards, rewards-only tracker rows, generation pool and oracle candidates, exclusions/catalog and conditional pot filters\n";
 }
 int main(){try{Run();}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}}
 '''

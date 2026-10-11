@@ -1471,17 +1471,5 @@ void EnGirlA_Draw(Actor* thisx, PlayState* play) {
         return;
     }
 
-#ifdef COMBO_BUILD
-    if (IS_RANDO && this->randoSlotIndex != 0 && this->actor.params != SI_SOLD_OUT) {
-        ShopItemIdentity identity = Randomizer_IdentifyShopItem(play->sceneNum, this->randoSlotIndex);
-        GetItemEntry shown = Randomizer_GetItemFromKnownCheckWithoutObtainabilityCheck(
-            identity.identity.randomizerCheck, identity.ogItemId);
-        // Observe only the model this ordinary shop actor actually draws.
-        if (shown.gid == this->giDrawId) {
-            shown.comboForeignCheck = identity.identity.randomizerCheck;
-            Combo_OOTRecordObservedItem(&this->actor, &shown);
-        }
-    }
-#endif
     GetItem_Draw(play, this->giDrawId);
 }

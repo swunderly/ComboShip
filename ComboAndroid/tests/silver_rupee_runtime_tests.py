@@ -44,7 +44,7 @@ for token in re.findall(r'\b(?:RG_|RC_|RAND_INF_|RSK_)[A-Z0-9_]+',data):
  if token not in symbols:symbols.append(token)
 code+='enum {'+','.join(f'{name}={20000+i}' for i,name in enumerate(symbols))+'};\n'
 extra=[]
-for token in re.findall(r'\b(?:RC_|RCTYPE_|RCAREA_|RSK_|RO_)[A-Z0-9_]+',shuffled+visible+' RCTYPE_STANDARD'):
+for token in re.findall(r'\b(?:RC_|RCTYPE_|RCAREA_|RSK_|RO_|ITEMTYPE_)[A-Z0-9_]+',shuffled+visible+' RCTYPE_STANDARD'):
  if token not in symbols and token!='RSK_SHUFFLE_SILVER_RUPEES' and token not in extra:extra.append(token)
 code+='enum {'+','.join(f'{name}={40000+i}' for i,name in enumerate(extra))+'};\n'
 flags=sorted(set(re.findall(r'\b(?:show[A-Z0-9]\w*|alwaysShowGS|hideShopUnshuffledChecks|fortressNormal|fortressFast)\b',shuffled+visible)))
@@ -74,7 +74,8 @@ struct Location {int quest=RCQUEST_VANILLA,scene=0,area=0,type=RCTYPE_STANDARD;
  int GetRCType()const{return type;}int GetActorParams()const{return 0;}
  bool IsVanillaCompletion()const{return false;}bool IsDungeon()const{return true;}};
 namespace StaticData {std::map<int,Location> locations;Location* GetLocation(int rc){return &locations.at(rc);}}
-struct ItemLocation {bool excluded=false;bool IsExcluded()const{return excluded;}};
+struct Item {int GetItemType()const{return 0;}};
+struct ItemLocation {bool excluded=false;Item placed;bool IsExcluded()const{return excluded;}const Item& GetPlacedItem()const{return placed;}};
 struct Fishsanity {bool GetFishLocationIncluded(Location*)const{return true;}};
 struct Context {std::map<int,Option> options;Dungeons dungeons;std::vector<int> allLocations;
  Dungeons* mDungeons=&dungeons;std::map<int,ItemLocation> itemLocations;Fishsanity fish;

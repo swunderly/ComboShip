@@ -158,22 +158,11 @@ void RecordHintedItem(RandomizerCheck rc) {
 static bool ObserveKnownCheck(RandomizerCheck rc, const GetItemEntry& shown) {
     if (rc <= RC_UNKNOWN_CHECK || rc >= RC_MAX)
         return false;
-    const auto* location = Rando::StaticData::GetLocation(rc);
-    if (!IsCheckShuffled(rc) && location->GetRCType() != RCTYPE_SHOP)
+    if (!IsCheckShuffled(rc))
         return false;
     auto* item = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
     if (item->HasObtained())
         return false;
-    // Shop refills use ordinary GetItem_Draw rather than the randomized draw.
-    // Preserve the shop quantity (30 arrows, for example) instead of naming a
-    // refill with the same model but a different quantity from the item table.
-    if (location->GetRCType() == RCTYPE_SHOP && item->GetPlacedItem().GetItemType() == ITEMTYPE_SHOP) {
-        const auto entry = item->GetPlacedItem().GetGIEntry();
-        return entry && entry->gid == shown.gid && entry->drawModIndex == shown.drawModIndex &&
-               entry->drawItemId == shown.drawItemId &&
-               StoreKnowledge(rc, 1, item->GetPlacedRandomizerGet(),
-                              item->GetPlacedItem().GetName().GetForLanguage(gSaveContext.language));
-    }
     if (item->GetPlacedRandomizerGet() == RG_COMBO_FOREIGN) {
         const auto* foreign = OOT_LookupForeign(gSaveContext.fileNum, Rando::StaticData::GetLocation(rc)->GetName());
         return foreign && StoreKnowledge(rc, 1, RG_COMBO_FOREIGN,
@@ -2075,8 +2064,10 @@ bool IsCheckShuffled(RandomizerCheck rc) {
 #ifdef COMBO_BUILD
                 // Shopsanity shuffles every shelf slot: some receive one-time
                 // rewards, while the rest receive the native minimum stock of
-                // renewable goods. Both participate in generation and logic.
-                showShops) &&
+                // renewable goods. That stock is bought through the vanilla shop
+                // path, which never collects a check, so only rewards are listed.
+                (showShops && OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->GetPlacedItem().GetItemType() !=
+                                  ITEMTYPE_SHOP)) &&
 #else
                 (showShops &&
                  OTRGlobals::Instance->gRandomizer->IdentifyShopItem(loc->GetScene(), loc->GetActorParams() + 1)
