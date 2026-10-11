@@ -29,6 +29,7 @@ sys.path.insert(0, str(source/'tools/ootmm'))
 import export_registry as registry
 import export_grotto_context as context
 import export_oot_wallmaster_sources as wallmasters
+import export_mm_wallmaster_spawn as mm_spawn
 
 original, records = registry.read_registry(reference)
 manifest = json.loads((source/'tools/ootmm/registry-source.json').read_text(encoding='utf-8'))
@@ -40,9 +41,11 @@ assert json.loads(registry.json_bytes(context.parse_context(runtime, records))) 
 wallmaster_blob = registry.verified_blob(reference, wallmasters.SOURCE)
 wallmaster_expected = json.loads((source/wallmasters.OUTPUT).read_text(encoding='utf-8'))
 assert wallmasters.parse_source(wallmaster_blob, records) == wallmaster_expected
+assert mm_spawn.parse_source(registry.verified_blob(reference, mm_spawn.SOURCE)) == json.loads(
+    (source/mm_spawn.OUTPUT).read_text(encoding='utf-8'))
 outputs = ['combo/rando/entrances/Registry.h', 'combo/rando/entrances/GrottoMetadata.h',
            'combo/rando/entrances/LICENSE.OoTMM', 'tools/ootmm/registry-source.json',
-           'tools/ootmm/grotto-context-source.json', wallmasters.OUTPUT,
+           'tools/ootmm/grotto-context-source.json', wallmasters.OUTPUT, mm_spawn.OUTPUT,
            'ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json']
 attributes = subprocess.check_output(['git', '-C', str(source), '-c', 'core.autocrlf=true',
                                      'check-attr', 'eol', '--', *outputs], text=True, timeout=30)
@@ -59,7 +62,8 @@ with tempfile.TemporaryDirectory(prefix='entrance-export-', dir=work) as scratch
     for script, target in [('export_registry.py', 'combo/rando/entrances/Registry.h'),
                            ('export_grotto_context.py', 'combo/rando/entrances/GrottoMetadata.h'),
                            ('export_solver_contract.py', 'ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json'),
-                           ('export_oot_wallmaster_sources.py', wallmasters.OUTPUT)]:
+                           ('export_oot_wallmaster_sources.py', wallmasters.OUTPUT),
+                           ('export_mm_wallmaster_spawn.py', mm_spawn.OUTPUT)]:
         result = run(script, source, check=True)
         assert result.returncode == 0, result.stdout + result.stderr
         result = run(script, scratch)

@@ -288,6 +288,9 @@ extern "C" int Combo_MMCompleteOrdinaryEntrance(PlayState* play) {
     play->nextEntrance = static_cast<uint16_t>(native);
     return 1;
 }
+extern "C" COMBO_EXPORT int Combo_MMWallmasterErActive(void) {
+    return IS_RANDO && CE::ActiveMmWallmasters().active();
+}
 extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
     if (!play || !actor || !IS_RANDO || !CE::ActiveMmWallmasters().active())
         return 0;

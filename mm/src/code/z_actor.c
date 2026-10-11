@@ -3749,6 +3749,9 @@ extern void MM_MissingSoulRoomReset(PlayState* play);
 extern void MM_MissingSoulRoomBlock(PlayState* play);
 extern s32 MM_MissingSoulRoomCanClear(PlayState* play, s32 room);
 extern s32 MM_ExpandedSoulPreSpawn(PlayState* play, s16 actorId, s32* params);
+#ifdef COMBO_BUILD
+extern int Combo_MMWallmasterErActive(void);
+#endif
 
 Actor* Actor_SpawnAsChildAndCutscene(ActorContext* actorCtx, PlayState* play, s16 index, f32 x, f32 y, f32 z, s16 rotX,
                                      s16 rotY, s16 rotZ, s32 params, u32 csId, u32 halfDaysBits, Actor* parent) {
@@ -3777,7 +3780,13 @@ Actor* Actor_SpawnAsChildAndCutscene(ActorContext* actorCtx, PlayState* play, s1
     objectSlot = Object_GetSlot(&play->objectCtx, profile->objectId);
     if ((objectSlot <= OBJECT_SLOT_NONE) ||
         ((profile->type == ACTORCAT_ENEMY) && Flags_GetClear(play, play->roomCtx.curRoom.num) &&
-         (profile->id != ACTOR_BOSS_05))) {
+         (profile->id != ACTOR_BOSS_05)
+#ifdef COMBO_BUILD
+         // OoTMM v32.3 actors.c preserves ER Wallmasters after a room is cleared.
+         // Use the requested actor ID, after the existing soul and object gates.
+         && !(index == ACTOR_EN_WALLMAS && Combo_MMWallmasterErActive())
+#endif
+             )) {
         Actor_FreeOverlay(&gActorOverlayTable[index]);
         return NULL;
     }

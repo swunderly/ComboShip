@@ -17,6 +17,7 @@ python tools/ootmm/export_entrance_settings.py --reference /path/to/ootmm-stable
 python tools/ootmm/export_solver_contract.py --reference /path/to/ootmm-stable-32.3
 python tools/ootmm/export_solver_contract.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_oot_wallmaster_sources.py --reference /path/to/ootmm-stable-32.3 --check
+python tools/ootmm/export_mm_wallmaster_spawn.py --reference /path/to/ootmm-stable-32.3 --check
 ```
 
 `--output-root` defaults to this repository and can point at a scratch directory.
@@ -95,3 +96,12 @@ existing respawn unless a validated route exists. The 23 incoming OoT logic edge
 support must still be completed before enabling OoT Wallmaster shuffling. In
 particular, Forest MQ hallway keys and Ganon Spirit's capture-specific conditions
 cannot be inferred from similarly named native regions.
+
+The MM Wallmaster spawn exporter preserves the pinned `mm/actors.c` clear-flag hook
+and its soul-gated caller in `mm-wallmaster-spawn-source.json`. The native spawn
+exception applies only to the requested Wallmaster actor while a validated private
+MM Wallmaster layout is active in a randomizer game. Its full-function host test
+compiles both combo and standalone paths, compares 288 cases per path with the
+upstream hook, and retains soul, object-slot, boss, allocation and initialization
+guards. This repairs the existing four-source private profile; it adds no pool,
+setting, layout format or public entrance capability.

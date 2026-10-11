@@ -1,0 +1,7 @@
+{
+  "revision": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "source": "packages/generator/src/mm/actors.c",
+  "sourceSha256": "b8fda906faa69bc19c9e1d50cc45a3e36ad9573ca029241e2d3a105362f3d7b0",
+  "roomClearFunction": "static int GetRoomClearFlagForActor(PlayState *play, int flag)\n{\n    int res;\n\n    res = Flags_GetClear(play, flag);\n    if (Config_Flag(CFG_ER_WALLMASTERS) && sActorIdToSpawn == ACTOR_EN_WALLMAS)\n        res = 0;\n    return res;\n}",
+  "spawnWrapperFunction": "Actor *Actor_SpawnAsChildAndCutsceneWrapper(ActorContext *actorCtx, PlayState *play, short actorId, float x, float y, float z, s16 rx, s16 ry, s16 rz, u16 variable, int ex1, int ex2, int ex3)\n{\n    int ret;\n\n    if (!canSpawnActor(play, actorId, variable))\n        return NULL;\n\n    /* Patch for gorman on donkeys */\n    if (actorId == ACTOR_EN_HORSE && ((variable & 0x1fff) == 0x13 || (variable & 0x1fff) == 0x14) && !comboHasSoulMm(GI_MM_SOUL_NPC_GORMAN))\n        variable = (variable & 0xe000);\n\n    ret = canSpawnSoul(play, actorId, variable);\n    if (ret <= 0)\n    {\n        if (ret == 0)\n            g.roomEnemyLackSoul = 1;\n        return NULL;\n    }\n    sActorIdToSpawn = actorId;\n    return _Actor_SpawnAsChildAndCutscene(actorCtx, play, actorId, x, y, z, rx, ry, rz, variable, ex1, ex2, ex3);\n}"
+}
