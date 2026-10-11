@@ -224,8 +224,8 @@ check('returnkCrossAgeRuntimeComplete;' in body(benport, 'static int Combo_MM_Cr
 check(squash(benport).count('kCrossAgeRuntimeComplete=') == 1, 'Cross-Games Age must have one release switch')
 ready = body(benport, 'extern "C" int Combo_MM_CrossAgeReady(void)')
 check(ready.startswith('extern"C"intCombo_MM_CrossAgeReady(void){returnCombo_MM_CrossAgeRuntimeEnabled()&&') and
-      'Combo_MM_CrossAgeModelReady()' in ready,
-      'Combo_MM_CrossAgeReady must need the release switch and the OoT adult model')
+      'Combo_MM_CrossAgeModelReady()' in ready and 'Combo_MM_AdultEponaResourcesReady()' in ready,
+      'Combo_MM_CrossAgeReady must need the release switch, the OoT adult model and the OoT Epona')
 for banned in ('CrossRMRegistry', 'ResourceManager', 'gPlayState', 'AdultResourcesReady'):
     check(banned not in ready, f'Combo_MM_CrossAgeReady must not use {banned}')
 check('returnCombo_MM_CrossAgeRuntimeEnabled()&&(sCrossAgeHeadlessGeneration||Combo_MM_CrossAgeReady());' in

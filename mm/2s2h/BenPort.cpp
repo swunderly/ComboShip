@@ -6132,9 +6132,9 @@ extern "C" int Combo_MM_AdultResourcesReady(void) {
            Combo_MM_HoverCircleResourcesReady() && Combo_MM_AdultGearIconsReady() && Combo_MM_AdultGearGiReady() &&
            ComboAdultMM::BuildAdultHybridSequence();
 }
-// Cross-Games Age (OoTMM crossAge, data.ts:1504-1511) draws adult Link in MM with OoT's own adult model from the OoT
-// archive (plan F5b 5b-1) and needs none of the Adult Mask, hybrid voice or importer resources above. Release switch,
-// set in its own commit: turn it off again if the on-phone adult checks fail.
+// Cross-Games Age (OoTMM crossAge, data.ts:1504-1511) draws adult Link in MM with OoT's own adult model and Epona from
+// the OoT archive (plan F5b 5b-1, 5b-7) and needs none of the Adult Mask, hybrid voice or importer resources above.
+// Release switch, set in its own commit: turn it off again if the on-phone adult checks fail.
 static constexpr bool kCrossAgeRuntimeComplete = false;
 static int Combo_MM_CrossAgeRuntimeEnabled(void) {
 #ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
@@ -6144,11 +6144,12 @@ static int Combo_MM_CrossAgeRuntimeEnabled(void) {
     return kCrossAgeRuntimeComplete;
 #endif
 }
-// This device can run Cross-Games Age: the runtime is released and OoT's adult model is in OoT's archive. It needs
-// nothing from MM's manager, so the menu can ask before MM has booted. New seeds leave the option off where it is
-// false; a save with it on still loads, and Link is drawn as child.
+// This device can run Cross-Games Age: the runtime is released, and OoT's adult model and OoT's Epona, which adult
+// Link rides as in OoTMM (actors.c:901-955, decision D4), are in OoT's archive. It needs nothing from MM's manager, so
+// the menu can ask before MM has booted. New seeds leave the option off where it is false; a save with it on still
+// loads, and Link is drawn as child.
 extern "C" int Combo_MM_CrossAgeReady(void) {
-    return Combo_MM_CrossAgeRuntimeEnabled() && Combo_MM_CrossAgeModelReady();
+    return Combo_MM_CrossAgeRuntimeEnabled() && Combo_MM_CrossAgeModelReady() && Combo_MM_AdultEponaResourcesReady();
 }
 // Human Link is adult as in OoTMM (comboIsLinkAdult, common/util.c:74-81): a Cross-Games Age seed with adult Link's
 // age saved, on a device that can draw him. Every adult runtime branch asks this.

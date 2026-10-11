@@ -143,9 +143,6 @@ extern "C" void Combo_MMFaroreGrantItem() {
     if (slot == ITEM_NONE)
         slot = ITEM_COMBO_FARORES_WIND;
 }
-extern "C" int Combo_MMFaroreEffectiveHumanAge() {
-    return NativeAge();
-}
 extern "C" int Combo_MMFaroreBridgeReady() {
     return sOotAge && sOotDestination && sSyncOot && sNativeAge && sNativeAgeMode && sCanAge && sApplyAge &&
            sNativeDepartureCommit && sReadDungeon && sWriteDungeon;

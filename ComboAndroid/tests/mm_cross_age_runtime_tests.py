@@ -159,7 +159,8 @@ check('#ifdefCOMBO_ADULT_MM_RUNTIME_DIAGNOSTICS' in body(benport, 'static int Co
       'diagnostics switch')
 check(body(benport, 'extern "C" int Combo_MM_CrossAgeReady(void)') ==
       squash('extern "C" int Combo_MM_CrossAgeReady(void) { return Combo_MM_CrossAgeRuntimeEnabled() && '
-             'Combo_MM_CrossAgeModelReady(); }'), 'Combo_MM_CrossAgeReady')
+             'Combo_MM_CrossAgeModelReady() && Combo_MM_AdultEponaResourcesReady(); }'),
+      "Combo_MM_CrossAgeReady is not the release switch, OoT's adult model and OoT's Epona (decision D4)")
 check('Combo_MM_CrossAgeReady()' in body(benport, 'extern "C" int Combo_MM_CrossAgeOptionReady(void)') and
       'returnCombo_MM_CrossAgeOptionReady();' in body(benport, 'extern "C" COMBO_EXPORT int MM_CrossAgeOptionReady(void)'),
       'the menu export MM_CrossAgeOptionReady does not follow Combo_MM_CrossAgeReady')
