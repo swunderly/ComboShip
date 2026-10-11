@@ -32,10 +32,15 @@ Install each update over the existing app, so your ROMs, saves and settings are 
   - The item tracker's Trade Items group shows the boots and tunics on seeds that add them.
 - An MM save is no longer refused at load because of its Adult Link or boots-and-tunics data. Anything the app cannot run on your device is simply left off.
 - **Shared Din's Fire** and **Shared Nayru's Love** now also stay greyed out and unticked while their MM spell option is greyed out on your device, instead of looking available while new seeds ignored them.
+- Fixed crashes while drawing MM boots and tunics during item pickups, and while drawing the native Fairy Ocarina.
+- Profile editing now greys out the four MM gear options while Swim is shuffled, matching the main menu. Your saved gear preferences return when Swim shuffle is turned off.
+- An unsupported old experimental entrance layout no longer prevents the rest of an existing save from loading. Seeds that require a future entrance format are rejected before changing the loaded save.
 
 Tested:
-- 75 automated host tests pass (3 are skipped on Windows). They check the four options, their shared items and the new tricks against OoTMM v32.3, every changed logic line against OoTMM's, that MM logic is unchanged with the boots and tunics off, that the options are off wherever the device cannot run them, that a save keeps its seed's choice, and that saves from earlier versions load. The boots and tunics have not been built into an APK, generated or played on the emulator, or tried on a phone yet.
-- With Cross-Games Age added, 82 automated host tests pass (3 are skipped on Windows). The new ones check its menu row, text and readiness, every OoTMM v32.3 MM age line, the age copied in on each MM entry, OoTMM's adult values for Link, the parts of OoT's adult Link and Epona that are used, all 53 of OoTMM's adult Epona changes, and that saves from earlier versions and Cross-Games Age saves load. Two of them also read the OoT and MM data extracted from the developer's own ROMs. Cross-Games Age has not been built into an APK, run on the emulator, or tried on a phone yet.
+- The integrated candidate passes 87 automated host tests, with zero failures and two platform-dependent skips. They cover gear and age logic, source assets, saved-rule compatibility, profile controls, the command-line generator, and save-format preflight. The two archive checks read the developer's own extracted game data.
+- Gear-only 0.4.2 and Adult Link 0.4.3 candidates pass the Android build, lint, APK and signing checks. These remain local candidates.
+- On the Android emulator, all four gear pickups and the Fairy Ocarina render without crashing. Pause icons, trade-slot cycling, all four equip/unequip actions, and a normal Mask Shop portal round trip work. The two other save slots stayed byte-for-byte unchanged.
+- Still awaiting runtime checks: gear effects in water, heat and sustained hovering; transformations; Adult Link's entry routes, item animations, Epona, age round trips and save/resume. No physical-phone test or complete seed playthrough has been done for these candidates.
 
 ## 0.4.1 - 2026-10-11
 
