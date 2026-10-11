@@ -243,6 +243,31 @@ init = body(benport, 'extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(')
 check('if((id!=RO_MM_CROSS_AGE||!sMMSeedFaroreRulesBound)&&!Combo_MM_HiddenAdultOptionReady(id))' in init,
       'a new file must keep a bound seed\'s Cross-Games Age and gate only unbound options')
 
+# ---- 5b-10 (menu half): the World access row with OoTMM's text, greyed out and unticked where the option cannot run,
+# a search link, a CVar for the option, and no preset or standalone rule (critique X9, lead decision D7).
+CROSS_AGE_NAME = 'Cross-Games Age'
+CROSS_AGE_TEXT = 'When you enter MM as Adult Link, you will be Adult Link in MM.'
+menu = read('combo/gui/ComboMenu.cpp')
+goals = body(menu, 'void DrawCombinedGoals()')
+row = goals.find('DrawRuleCheckbox("' + squash(CROSS_AGE_NAME) + '",&crossAge)')
+check(0 < goals.find(squash('DrawRuleCheckbox("Cross-Games Farore\'s Wind", &crossFw)')) < row,
+      'the Cross-Games Age row must follow Cross-Games Farore\'s Wind in World access')
+for term in ('Combo_ResolveSym("2ship","MM_CrossAgeOptionReady")', 'constboolageReady=crossAgeReady&&crossAgeReady();',
+             'boolcrossAge=ageReady&&ProfileUI::ReadInteger("gRando.Options.RO_MM_CROSS_AGE",0)!=0;',
+             'ImGui::BeginDisabled(!ageReady);',
+             'ProfileUI::WriteInteger("gRando.Options.RO_MM_CROSS_AGE",crossAge);',
+             'MenuTooltip(ageReady?"' + squash(CROSS_AGE_TEXT) + '":"' + squash(CROSS_AGE_TEXT)):
+    check(term in goals, f'the Cross-Games Age row lacks {term}')
+links = squash(body(menu, 'void ComboMenu::DrawSearchResults(const std::string& query)'))
+m = re.search(r'addLink\(MenuSearchKind::Setting,"' + squash(CROSS_AGE_NAME) + r'","([^"]*)","randomizer","Logic&access",'
+              r'"Randomizer"\);', links)
+check(m is not None, 'no search link to Cross-Games Age')
+check('RO(RO_MM_CROSS_AGE,RO_GENERIC_NO)' in squash(read('mm/2s2h/Rando/StaticData/Options.cpp')),
+      'RO_MM_CROSS_AGE must have its CVar (gRando.Options.RO_MM_CROSS_AGE) for the menu row')
+check('RO_MM_CROSS_AGE' not in read('combo/rando/ComboPresets.h'), 'Cross-Games Age must not be in a preset')
+check('CrossGamesAge' not in read('combo/rando/GameplayRules.h') + menu,
+      'Cross-Games Age must not have a standalone enhancement')
+
 # ---- 5a-8: every v32.3 MM age line (data/world/mm, plus macros_mm.yml:260) and the fork statements that carry it.
 fixture = json.loads((Path(__file__).resolve().parent / 'fixtures/ootmm-32.3-mm-age-lines.json')
                      .read_text(encoding='utf-8'))
@@ -320,6 +345,11 @@ if reference is not None:
         rel, line = row['ootmm'].rsplit(':', 1)
         check(row['expr'] in (reference / rel).read_text(encoding='utf-8').splitlines()[int(line) - 1],
               f'{row["ootmm"]} does not read {row["expr"][:80]}')
+    data_ts = (reference / 'packages/core/src/settings/data.ts').read_text(encoding='utf-8')
+    setting = data_ts[data_ts.index("  key: 'crossAge',"):]
+    setting = setting[:setting.index('}')]
+    check(f"name: '{CROSS_AGE_NAME}'," in setting and f"description: '{CROSS_AGE_TEXT}'," in setting and
+          "default: false," in setting, 'the Cross-Games Age row text differs from OoTMM data.ts')
     print(f'OoTMM reference checked: {reference}')
 else:
     print('OoTMM reference not found; checked the production sources against the fixture only')
