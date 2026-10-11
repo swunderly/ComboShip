@@ -44,8 +44,8 @@ code = r'''
 #include <unordered_map>
 #include <utility>
 #include <vector>
-enum RandoCheckId { RC_UNKNOWN, RC_RANCH_EPONAS_SONG, RC_RANCH_BARN, RC_MAX };
-enum RandoRegionId { RR_FIELD, RR_RANCH, RR_MAX };
+enum RandoCheckId { RC_UNKNOWN, RC_RANCH_EPONAS_SONG, RC_RANCH_BARN, RC_BOSSA_NOVA, RC_MAX };
+enum RandoRegionId { RR_FIELD, RR_RANCH, RR_FORTRESS, RR_PINNACLE, RR_MAX };
 enum RandoEvent { RE_ACCESS_ZORA_EGG, RE_MAX };
 enum RandoItemId { RI_UNKNOWN, RI_BOW, RI_RUPEE_GREEN };
 enum RandoItemType { RITYPE_JUNK, RITYPE_MAJOR, RITYPE_MASK };
@@ -159,7 +159,26 @@ int main() {
     assert(Hint(RR_RANCH, DAY1) == RC_RANCH_EPONAS_SONG);
     RANDO_SAVE_CHECKS[RC_RANCH_EPONAS_SONG].obtained = true;
     assert(!InLogic(RR_RANCH, DAY1, RC_RANCH_EPONAS_SONG) && Hint(RR_RANCH, DAY1) == RC_UNKNOWN);
-    std::puts("MM live search: current-time seed, per-region times and Saria's Song hint passed");
+
+    // RE_ACCESS_ZORA_EGG counts one EVENT entry per egg: four in Pirates' Fortress, three at Pinnacle Rock.
+    static bool lastEgg = true;
+    exits[RR_FIELD].push_back({ RR_FORTRESS, OWNED });
+    exits[RR_FIELD].push_back({ RR_PINNACLE, OWNED });
+    for (int egg = 0; egg < 4; ++egg)
+        Rando::Logic::Regions[RR_FORTRESS].events.push_back({ RE_ACCESS_ZORA_EGG, [] { return true; } });
+    for (int egg = 0; egg < 3; ++egg)
+        Rando::Logic::Regions[RR_PINNACLE].events.push_back(
+            { RE_ACCESS_ZORA_EGG, [egg] { return egg < 2 || lastEgg; } });
+    Rando::Logic::Regions[RR_FIELD].checks[RC_BOSSA_NOVA] = { [] { return RANDO_EVENTS[RE_ACCESS_ZORA_EGG] >= 7; },
+                                                              "" };
+    RANDO_SAVE_CHECKS[RC_BOSSA_NOVA] = { RI_RUPEE_GREEN, true, false };
+    for (int refresh = 0; refresh < 2; ++refresh) {
+        assert(InLogic(RR_FIELD, DAY1, RC_BOSSA_NOVA));
+        assert(RANDO_EVENTS[RE_ACCESS_ZORA_EGG] == 7); // recounted each search, never accumulated
+    }
+    lastEgg = false;
+    assert(!InLogic(RR_FIELD, DAY1, RC_BOSSA_NOVA) && RANDO_EVENTS[RE_ACCESS_ZORA_EGG] == 6);
+    std::puts("MM live search: current-time seed, per-region times, Saria's Song hint and Zora egg count passed");
 }
 '''
 a.build_dir.mkdir(parents=True, exist_ok=True)

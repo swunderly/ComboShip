@@ -364,7 +364,9 @@ void Rando::CheckTracker::ComputeChecksInLogic(std::unordered_map<RandoCheckId, 
                                    .canStayOverTime = Rando::Logic::Regions[here].canStayOverTime };
 #endif
 
-    // Iteratively explore until no new regions/events discovered
+    // Iteratively explore until no new regions/events discovered. Count each EVENT entry once, as generation
+    // does: RE_ACCESS_ZORA_EGG is a counter with one entry per egg (New Wave Bossa Nova needs all of them).
+    std::set<std::pair<RandoEvent, std::function<bool()>>*> eventsInLogic;
     bool changed = true;
     while (changed) {
         changed = false;
@@ -386,9 +388,10 @@ void Rando::CheckTracker::ComputeChecksInLogic(std::unordered_map<RandoCheckId, 
             Rando::Logic::SetCurrentRegionTime(regionTimeStates, regionId);
 
             for (auto& event : randoRegion.events) {
-                if (!RANDO_EVENTS[event.first] &&
+                if (!eventsInLogic.contains(&event) &&
                     Rando::Logic::TimeLogic::EvaluateConditionTimes(event.second, Rando::Logic::gCurrentRegionTime)) {
                     RANDO_EVENTS[event.first]++;
+                    eventsInLogic.insert(&event);
                     changed = true;
                 }
             }
