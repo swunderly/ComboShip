@@ -25,7 +25,7 @@ location=(root/'soh/soh/Enhancements/randomizer/location_access.cpp').read_text(
 mm=(root/'mm/2s2h/Rando/Logic/Logic.h').read_text()
 scope=mm[mm.index('inline thread_local bool evaluatingLiveTracker'):mm.index('\n#endif',mm.index('inline thread_local bool evaluatingLiveTracker'))]
 refresh=(root/'mm/2s2h/Rando/CheckTracker/CheckTracker.cpp').read_text()
-refresh=function(refresh,'void RefreshChecksInLogic(')
+refresh=function(refresh,'void Rando::CheckTracker::ComputeChecksInLogic(')
 assert 'LiveTrackerRuleScope ruleScope;' in refresh
 assert refresh.index('LiveTrackerRuleScope ruleScope;') < refresh.index('while (changed)')
 assert refresh.index('LiveTrackerRuleScope ruleScope;') < refresh.index('for (RandoRegionId regionId : reachableRegions)')

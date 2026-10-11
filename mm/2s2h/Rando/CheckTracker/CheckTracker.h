@@ -3,6 +3,7 @@
 
 #include "Rando/Rando.h"
 #include <ship/window/gui/GuiWindow.h>
+#include <unordered_map>
 
 namespace Rando {
 
@@ -10,6 +11,8 @@ namespace CheckTracker {
 
 void Init();
 void OnFileLoad();
+// The unobtained shuffled checks in logic from the save's current place and time, as the tracker shows them.
+void ComputeChecksInLogic(std::unordered_map<RandoCheckId, bool>& inLogic);
 #ifdef COMBO_BUILD
 // Only call for a model or an unambiguous item name actually revealed by the game.
 void RecordSeenItem(RandoCheckId check, RandoItemId shownItem, uint8_t source = 1);

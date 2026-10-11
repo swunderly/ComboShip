@@ -2,7 +2,7 @@
 #include "MiscBehavior.h"
 #include "2s2h/ShipUtils.h"
 #include <algorithm>
-#include <set>
+#include "2s2h/Rando/CheckTracker/CheckTracker.h"
 #include "2s2h/Rando/Logic/Logic.h"
 #include "2s2h/SaveManager/SaveManager.h"
 #include <libultraship/libultraship.h>
@@ -146,37 +146,24 @@ std::vector<RandoItemId> Rando::GetSariaPriorityItemCandidates() {
 static int playedSariasSongState = 0;
 
 RandoCheckId GetProgressiveCheckInLogic() {
-#ifdef COMBO_BUILD
-    Rando::Logic::MmAccessScope access;
-#endif
     std::vector<RandoItemId> priorityItems = Rando::GetSariaPriorityItemsFromSave(gSaveContext.save.shipSaveInfo.rando);
 
-    std::unordered_map<RandoRegionId, Rando::Logic::RegionTimeState> regionTimeStates =
-        Rando::Logic::InitializeRegionTimeStates(RR_MAX);
-    std::set<RandoRegionId> reachableRegions = {};
-    // Get connected entrances from starting & warp points
-    Rando::Logic::FindReachableRegions(RR_MAX, reachableRegions, regionTimeStates);
-    // Get connected regions from current entrance (TODO: Make this optional)
-    Rando::Logic::FindReachableRegions(Rando::Logic::GetRegionIdFromEntrance(gSaveContext.save.entrance),
-                                       reachableRegions, regionTimeStates);
+    // The tracker's live search: the current region only from the current time on, each check at its region's
+    // reachable times, events recomputed. A check reachable only earlier in the cycle must not spend the hint.
+    std::unordered_map<RandoCheckId, bool> checksInLogic;
+    Rando::CheckTracker::ComputeChecksInLogic(checksInLogic);
 
     std::unordered_map<RandoItemId, RandoCheckId> priorityItemChecks = {};
     std::vector<RandoCheckId> otherChecks = {};
 
-    for (RandoRegionId regionId : reachableRegions) {
-        auto& randoRegion = Rando::Logic::Regions[regionId];
-        for (auto& [randoCheckId, accessLogicFunc] : randoRegion.checks) {
-            if (accessLogicFunc.first() && RANDO_SAVE_CHECKS[randoCheckId].shuffled &&
-                !RANDO_SAVE_CHECKS[randoCheckId].obtained) {
-                RandoItemId itemId = Rando::ConvertItem(RANDO_SAVE_CHECKS[randoCheckId].randoItemId, randoCheckId);
-                auto type = Rando::StaticData::Items[itemId].randoItemType;
+    for (auto& [randoCheckId, _] : checksInLogic) {
+        RandoItemId itemId = Rando::ConvertItem(RANDO_SAVE_CHECKS[randoCheckId].randoItemId, randoCheckId);
+        auto type = Rando::StaticData::Items[itemId].randoItemType;
 
-                if (std::find(priorityItems.begin(), priorityItems.end(), itemId) != priorityItems.end()) {
-                    priorityItemChecks.try_emplace(itemId, randoCheckId);
-                } else if (type == RITYPE_MAJOR || type == RITYPE_MASK) {
-                    otherChecks.push_back(randoCheckId);
-                }
-            }
+        if (std::find(priorityItems.begin(), priorityItems.end(), itemId) != priorityItems.end()) {
+            priorityItemChecks.try_emplace(itemId, randoCheckId);
+        } else if (type == RITYPE_MAJOR || type == RITYPE_MASK) {
+            otherChecks.push_back(randoCheckId);
         }
     }
 

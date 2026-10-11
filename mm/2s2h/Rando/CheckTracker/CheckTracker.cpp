@@ -330,12 +330,17 @@ void RefreshChecksInLogic() {
 #ifdef COMBO_BUILD
 comboPeekRefresh:;
 #endif
+    Rando::CheckTracker::ComputeChecksInLogic(checksInLogic);
+}
+
+// No throttle and no display mode: Saria's Song hint needs a fresh answer whatever the tracker shows.
+void Rando::CheckTracker::ComputeChecksInLogic(std::unordered_map<RandoCheckId, bool>& inLogic) {
 #ifdef COMBO_BUILD
     Rando::Logic::LiveTrackerRuleScope ruleScope;
     ComboRando::MmResourceScope resources;
     Rando::Logic::MmAccessScope access;
 #endif
-    checksInLogic.clear();
+    inLogic.clear();
 
     // Clear all events so they're re-evaluated fresh each refresh
     for (int i = 0; i < RE_MAX; i++) {
@@ -400,12 +405,11 @@ comboPeekRefresh:;
         Rando::Logic::SetCurrentRegionTime(regionTimeStates, regionId);
 
         for (auto& [randoCheckId, accessLogicFunc] : randoRegion.checks) {
-            auto& randoStaticCheck = Rando::StaticData::Checks[randoCheckId];
             auto& randoSaveCheck = RANDO_SAVE_CHECKS[randoCheckId];
             if (randoSaveCheck.shuffled && !randoSaveCheck.obtained &&
                 Rando::Logic::TimeLogic::EvaluateConditionTimes(accessLogicFunc.first,
                                                                 Rando::Logic::gCurrentRegionTime)) {
-                checksInLogic.insert({ randoCheckId, true });
+                inLogic.insert({ randoCheckId, true });
             }
         }
     }
