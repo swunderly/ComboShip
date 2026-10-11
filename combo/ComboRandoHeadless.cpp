@@ -1,3 +1,5 @@
+// This console executable owns main; transitive SDL headers must not rename it.
+#define SDL_MAIN_HANDLED
 #include "rando/OotMaskQuest.h"
 // combo/ComboRandoHeadless.cpp
 // ComboShip: standalone HEADLESS cross-world seed generator/validator. Loads soh.dll + 2ship.dll and

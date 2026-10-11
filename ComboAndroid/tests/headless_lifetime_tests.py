@@ -14,6 +14,7 @@ source = args.source.resolve()
 work = args.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
 text = (source/'combo/ComboRandoHeadless.cpp').read_text(encoding='utf-8')
+assert '#define SDL_MAIN_HANDLED' in text.split('#include', 1)[0]
 lifetime = text.split('struct HeadlessContextLifetime {', 1)[1].split('\n};', 1)[0]
 lifetime = 'struct HeadlessContextLifetime {' + lifetime + '\n};\n'
 entry = text[text.index('int main(int argc, char** argv) {'):]
