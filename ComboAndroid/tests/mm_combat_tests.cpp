@@ -161,6 +161,23 @@ int main(int argc,char** argv) {
   ++compared;
   if(ComboRando::can_kill_wolfos(c)!=q.at("combat").at("can_kill_wolfos").get<bool>()) {++failures;std::cerr<<q.at("id")<<" can_kill_wolfos\n";}
  }
- std::cout<<"Compared "<<compared<<" imported predicates; differences "<<failures<<std::endl;
+ // Din's Fire (MM) and trick MM_IGOS_DINS, which the 111 fixture cases leave off: every combination
+ // against macros_mm.yml:401 can_kill_igos = has_mirror_shield && (can_use_fire_arrows ||
+ // (trick(MM_IGOS_DINS) && can_use_din)) && (can_fight || can_use_deku_bubble || can_use_slingshot), with
+ // can_fight = has_weapon || has_mask_zora || has_mask_goron (:212) and no MM slingshot.
+ int igosCases=0;
+ for(int bits=0;bits<(1<<9);++bits) {
+  auto on=[&](int i){return ((bits>>i)&1)!=0;};
+  ComboRando::MmCombatCapabilities igos{};
+  igos.mirrorShield=on(0);igos.fireArrows=on(1);igos.din=on(2);igos.igosDins=on(3);igos.sword=on(4);igos.zora=on(5);igos.goron=on(6);igos.deku=on(7);igos.magic=on(8);
+  const bool expected=igos.mirrorShield&&(igos.fireArrows||(igos.igosDins&&igos.din))&&((igos.sword||igos.zora||igos.goron)||(igos.deku&&igos.magic));
+  ++igosCases;
+  if(ComboRando::can_kill_igos(igos)!=expected){++failures;std::cerr<<"igos case "<<bits<<"\n";}
+ }
+ // Din's Fire alone never burns the curtain without the trick.
+ {ComboRando::MmCombatCapabilities din{};din.mirrorShield=din.din=din.sword=true;
+  if(ComboRando::can_kill_igos(din)){++failures;std::cerr<<"igos without trick\n";}
+  din.igosDins=true;if(!ComboRando::can_kill_igos(din)){++failures;std::cerr<<"igos with trick\n";}}
+ std::cout<<"Compared "<<compared<<" imported predicates and "<<igosCases<<" Igos Din's Fire cases; differences "<<failures<<std::endl;
  return failures!=0;
 }

@@ -1,5 +1,5 @@
-// Maintained by hand from the combat macros in data/macros/macros_mm.yml of pinned OoTMM
-// 41a2b7c0d7dbbb53fed928652f8271bc336c113f.
+// Maintained by hand from the combat macros in data/macros/macros_mm.yml of OoTMM v32.3
+// 413573d22d1d53e8a81931a70927f625b73488b9 (the combat macros are unchanged from 41a2b7c0).
 /*
 MIT License
 
@@ -30,7 +30,8 @@ struct MmCombatCapabilities {
     bool sword, deku, goron, zora, deity, giant, magic, arrows, hookshot;
     bool explosives, nuts, stickFighting, fireArrows, iceArrows, lightArrows;
     bool mirrorShield, swim, day, twinmoldBow, twinmoldFireIce;
-    bool din = false; // appended; legacy host fixtures retain false
+    bool din = false;      // appended; legacy host fixtures retain false
+    bool igosDins = false; // appended: trick(MM_IGOS_DINS)
 };
 inline bool can_fight_pirates(const MmCombatCapabilities& c) {
     return true && ((c.sword || c.zora || c.goron) || c.arrows || c.stickFighting);
@@ -119,7 +120,7 @@ inline bool can_kill_gyorg(const MmCombatCapabilities& c) {
            ((c.magic && ((c.zora && (c.arrows || false)) || c.deity)) || (false && false && c.hookshot && false));
 }
 inline bool can_kill_igos(const MmCombatCapabilities& c) {
-    return true && c.mirrorShield && (c.fireArrows || (false && c.din)) &&
+    return true && c.mirrorShield && (c.fireArrows || (c.igosDins && c.din)) &&
            ((c.sword || c.zora || c.goron) || (c.deku && c.magic) || false);
 }
 inline bool can_kill_keese_close(const MmCombatCapabilities& c) {

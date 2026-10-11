@@ -1061,7 +1061,8 @@ inline bool CanKillEnemy(ActorId EnemyId, unsigned actorParams = 0) {
                                                    IS_DAY(),
                                                    COMBO_MM_TRICK("TwinmoldBow") != 0,
                                                    COMBO_MM_TRICK("TwinmoldFireIce") != 0,
-                                                   CAN_USE_DINS_FIRE };
+                                                   CAN_USE_DINS_FIRE,
+                                                   COMBO_MM_TRICK("IgosDins") != 0 };
     // Expressions are imported from OoTMM. Keep actor-specific soul gates here.
     switch (EnemyId) {
         case ACTOR_BOSS_01:
