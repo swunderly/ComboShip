@@ -1,4 +1,5 @@
 #pragma once
+#include "rando/entrances/LegacyEnvelope.h"
 #include "NativeBridge.h"
 #include "MmOrdinaryGraph.h"
 #include "MmOrdinaryAreas.h"
@@ -6,8 +7,8 @@ namespace ComboRando::Entrances {
 inline nlohmann::json EncodeMmOrdinaryExtension(const Overrides& overrides) {
     nlohmann::json value = { { "schemaVersion", 1 },
                              { "profile", "mm-ordinary-coupled-v1" },
-                             { "upstreamCommit", kUpstreamCommit },
-                             { "registrySha256", kRegistrySourceSha256 },
+                             { "upstreamCommit", kLegacyUpstreamCommit },
+                             { "registrySha256", kLegacyRegistrySourceSha256 },
                              { "overrides", nlohmann::json::array() } };
     for (const auto& [src, dst] : overrides) {
         if (IsMmGrottoClockTowerReservation(src, dst))

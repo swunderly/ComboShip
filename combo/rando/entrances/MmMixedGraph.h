@@ -1,4 +1,5 @@
 #pragma once
+#include "rando/entrances/LegacyEnvelope.h"
 #include "rando/entrances/MmMixedLayout.h"
 #include "rando/entrances/MmGrottoGraph.h"
 namespace ComboRando::Entrances {
@@ -75,8 +76,8 @@ inline nlohmann::json EncodeMmMixedAssumptions(const Overrides& rows, const Pool
     BuildMmMixedAssumptions(rows, pools, settings);
     nlohmann::json value = { { "schemaVersion", 1 },
                              { "profile", "mm-mixed-coupled-assumptions-v1" },
-                             { "upstreamCommit", kUpstreamCommit },
-                             { "registrySha256", kRegistrySourceSha256 },
+                             { "upstreamCommit", kLegacyUpstreamCommit },
+                             { "registrySha256", kLegacyRegistrySourceSha256 },
                              { "noPolarity", settings.erNoPolarity },
                              { "selfLoops", settings.erSelfLoops },
                              { "overworld", Active(settings.erOverworld) },
@@ -95,9 +96,9 @@ inline nlohmann::json EncodeMmMixedAssumptions(const Overrides& rows, const Pool
 inline MmMixedAssumptions DecodeMmMixedAssumptions(const nlohmann::json& value) {
     if (!value.is_object() || value.value("schemaVersion", 0) != 1 ||
         value.value("profile", std::string()) != "mm-mixed-coupled-assumptions-v1" ||
-        value.value("upstreamCommit", std::string()) != kUpstreamCommit ||
-        value.value("registrySha256", std::string()) != kRegistrySourceSha256 || !value.at("noPolarity").is_boolean() ||
-        !value.at("selfLoops").is_boolean())
+        value.value("upstreamCommit", std::string()) != kLegacyUpstreamCommit ||
+        value.value("registrySha256", std::string()) != kLegacyRegistrySourceSha256 ||
+        !value.at("noPolarity").is_boolean() || !value.at("selfLoops").is_boolean())
         throw std::invalid_argument("Invalid MM mixed assumptions");
     Settings settings;
     settings.games = Games::Mm;

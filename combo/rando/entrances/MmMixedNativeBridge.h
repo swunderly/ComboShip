@@ -1,4 +1,5 @@
 #pragma once
+#include "rando/entrances/LegacyEnvelope.h"
 #include "rando/entrances/NativeBridge.h"
 #include "rando/entrances/MmMixedGraph.h"
 #include "rando/entrances/MmOrdinaryAreas.h"
@@ -54,8 +55,8 @@ inline void ValidateMmMixedGenerationCoverage(const Settings& settings) {
 inline nlohmann::json EncodeMmMixedExtension(const Overrides& rows, const Settings& settings) {
     nlohmann::json value = { { "schemaVersion", 1 },
                              { "profile", "mm-mixed-coupled-v1" },
-                             { "upstreamCommit", kUpstreamCommit },
-                             { "registrySha256", kRegistrySourceSha256 },
+                             { "upstreamCommit", kLegacyUpstreamCommit },
+                             { "registrySha256", kLegacyRegistrySourceSha256 },
                              { "noPolarity", settings.erNoPolarity },
                              { "selfLoops", settings.erSelfLoops },
                              { "overworld", Active(settings.erOverworld) },

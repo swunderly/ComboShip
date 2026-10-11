@@ -1,5 +1,6 @@
 // Coupled same-MM ordinary + full-US grotto identities. MIT; see LICENSE.OoTMM.
 #pragma once
+#include "rando/entrances/LegacyEnvelope.h"
 #include "rando/entrances/MmOrdinaryLayout.h"
 #include "rando/entrances/MmGrottoLayout.h"
 #include "rando/entrances/Shuffle.h"
@@ -42,8 +43,8 @@ class MmMixedLayout {
         MmMixedLayout next;
         if (!value.is_object() || value.value("schemaVersion", 0) != 1 ||
             value.value("profile", std::string()) != "mm-mixed-coupled-v1" ||
-            value.value("upstreamCommit", std::string()) != kUpstreamCommit ||
-            value.value("registrySha256", std::string()) != kRegistrySourceSha256 ||
+            value.value("upstreamCommit", std::string()) != kLegacyUpstreamCommit ||
+            value.value("registrySha256", std::string()) != kLegacyRegistrySourceSha256 ||
             !value.at("noPolarity").is_boolean() || !value.at("selfLoops").is_boolean() ||
             !value.at("overworld").is_boolean() || !value.at("overrides").is_array())
             throw std::invalid_argument("Invalid coupled MM mixed envelope");

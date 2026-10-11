@@ -1,0 +1,10 @@
+entrances-legacy-v1.json was captured by entrance_legacy_tests.cpp against unmodified
+production headers at b74917af, before the v32.3 registry repin. It freezes the four
+shipped MM-only profile encodings, oracle assumption encodings, and semantic fields
+of every registry record used by their native adapters. Its old CRLF-derived source
+hash is an existing saved-file contract, not a digest to refresh from upstream.
+
+The test decodes these old envelopes with current production loaders and asserts
+full 32-bit grotto routing, cross-category mixed routing, native Clock Tower behavior,
+unchanged saved JSON, and transactional rejection. The fixture is intentionally not
+an output of tools/ootmm exporters. Do not regenerate it when updating the registry.

@@ -1,5 +1,6 @@
 // Full source-qualified MM grotto graph and pinned assumption arcs.
 #pragma once
+#include "rando/entrances/LegacyEnvelope.h"
 #include "rando/entrances/MmGrottoLayout.h"
 #include "rando/entrances/Shuffle.h"
 namespace ComboRando::Entrances {
@@ -71,8 +72,8 @@ inline nlohmann::json EncodeMmGrottoAssumptions(const Overrides& rows, const Poo
     BuildMmGrottoAssumptions(rows, pools, settings);
     nlohmann::json value = { { "schemaVersion", 1 },
                              { "profile", "mm-grotto-coupled-assumptions-v1" },
-                             { "upstreamCommit", kUpstreamCommit },
-                             { "registrySha256", kRegistrySourceSha256 },
+                             { "upstreamCommit", kLegacyUpstreamCommit },
+                             { "registrySha256", kLegacyRegistrySourceSha256 },
                              { "noPolarity", settings.erNoPolarity },
                              { "selfLoops", settings.erSelfLoops },
                              { "overrides", nlohmann::json::object() },
@@ -90,10 +91,10 @@ inline nlohmann::json EncodeMmGrottoAssumptions(const Overrides& rows, const Poo
 inline MmGrottoAssumptions DecodeMmGrottoAssumptions(const nlohmann::json& value) {
     if (!value.is_object() || value.value("schemaVersion", 0) != 1 ||
         value.value("profile", std::string()) != "mm-grotto-coupled-assumptions-v1" ||
-        value.value("upstreamCommit", std::string()) != kUpstreamCommit ||
-        value.value("registrySha256", std::string()) != kRegistrySourceSha256 || !value.at("noPolarity").is_boolean() ||
-        !value.at("selfLoops").is_boolean() || !value.at("overrides").is_object() ||
-        !value.at("remainingPools").is_array())
+        value.value("upstreamCommit", std::string()) != kLegacyUpstreamCommit ||
+        value.value("registrySha256", std::string()) != kLegacyRegistrySourceSha256 ||
+        !value.at("noPolarity").is_boolean() || !value.at("selfLoops").is_boolean() ||
+        !value.at("overrides").is_object() || !value.at("remainingPools").is_array())
         throw std::invalid_argument("Invalid MM grotto assumptions");
     Settings settings;
     settings.games = Games::Mm;

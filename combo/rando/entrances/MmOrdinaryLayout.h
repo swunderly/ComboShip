@@ -1,4 +1,5 @@
 #pragma once
+#include "rando/entrances/LegacyEnvelope.h"
 #include "MmOrdinaryBindings.h"
 #include "rando/entrances/Context.h"
 #include "rando/entrances/Shuffle.h"
@@ -51,9 +52,9 @@ class MmOrdinaryLayout {
         MmOrdinaryLayout next;
         if (!value.is_object() || value.value("schemaVersion", 0) != 1 ||
             value.value("profile", std::string()) != "mm-ordinary-coupled-v1" ||
-            value.value("upstreamCommit", std::string()) != kUpstreamCommit ||
-            value.value("registrySha256", std::string()) != kRegistrySourceSha256 || !value.contains("overrides") ||
-            !value["overrides"].is_array())
+            value.value("upstreamCommit", std::string()) != kLegacyUpstreamCommit ||
+            value.value("registrySha256", std::string()) != kLegacyRegistrySourceSha256 ||
+            !value.contains("overrides") || !value["overrides"].is_array())
             throw std::invalid_argument("Unsupported MM ordinary entrance envelope");
         std::map<std::string, std::string> named;
         for (const auto& row : value["overrides"]) {

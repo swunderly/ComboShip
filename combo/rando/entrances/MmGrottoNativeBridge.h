@@ -1,5 +1,6 @@
 // Real full-pool MM generation. Public capability stays gated pending runtime proof.
 #pragma once
+#include "rando/entrances/LegacyEnvelope.h"
 #include "rando/entrances/NativeBridge.h"
 #include "rando/entrances/MmGrottoGraph.h"
 #include "rando/entrances/MmOrdinaryAreas.h"
@@ -7,8 +8,8 @@ namespace ComboRando::Entrances {
 inline nlohmann::json EncodeMmGrottoExtension(const Overrides& rows, bool noPolarity = false) {
     nlohmann::json value = { { "schemaVersion", 1 },
                              { "profile", "mm-grotto-coupled-v1" },
-                             { "upstreamCommit", kUpstreamCommit },
-                             { "registrySha256", kRegistrySourceSha256 },
+                             { "upstreamCommit", kLegacyUpstreamCommit },
+                             { "registrySha256", kLegacyRegistrySourceSha256 },
                              { "noPolarity", noPolarity },
                              { "overrides", nlohmann::json::array() } };
     for (const auto& [src, dst] : rows) {

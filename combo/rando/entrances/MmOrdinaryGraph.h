@@ -1,4 +1,5 @@
 #pragma once
+#include "rando/entrances/LegacyEnvelope.h"
 #include "MmOrdinaryLayout.h"
 #include "rando/entrances/Shuffle.h"
 #include <set>
@@ -83,8 +84,8 @@ inline nlohmann::json EncodeMmOrdinaryAssumptions(const Overrides& overrides, co
     BuildMmOrdinaryAssumptions(overrides, pools, settings);
     nlohmann::json value = { { "schemaVersion", 1 },
                              { "profile", "mm-ordinary-coupled-assumptions-v1" },
-                             { "upstreamCommit", kUpstreamCommit },
-                             { "registrySha256", kRegistrySourceSha256 },
+                             { "upstreamCommit", kLegacyUpstreamCommit },
+                             { "registrySha256", kLegacyRegistrySourceSha256 },
                              { "noPolarity", settings.erNoPolarity },
                              { "selfLoops", settings.erSelfLoops },
                              { "overrides", nlohmann::json::object() },
@@ -102,9 +103,9 @@ inline nlohmann::json EncodeMmOrdinaryAssumptions(const Overrides& overrides, co
 inline MmOrdinaryAssumptions DecodeMmOrdinaryAssumptions(const nlohmann::json& value) {
     if (!value.is_object() || value.value("schemaVersion", 0) != 1 ||
         value.value("profile", std::string()) != "mm-ordinary-coupled-assumptions-v1" ||
-        value.value("upstreamCommit", std::string()) != kUpstreamCommit ||
-        value.value("registrySha256", std::string()) != kRegistrySourceSha256 || !value.at("noPolarity").is_boolean() ||
-        !value.at("selfLoops").is_boolean())
+        value.value("upstreamCommit", std::string()) != kLegacyUpstreamCommit ||
+        value.value("registrySha256", std::string()) != kLegacyRegistrySourceSha256 ||
+        !value.at("noPolarity").is_boolean() || !value.at("selfLoops").is_boolean())
         throw std::invalid_argument("Invalid ordinary MM assumptions");
     Settings settings;
     settings.games = Games::Mm;

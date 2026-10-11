@@ -1,5 +1,6 @@
 // Optional seed extension. Missing field always uses legacy/default entrance behavior.
 #pragma once
+#include "rando/entrances/LegacyEnvelope.h"
 #include "MmWallmasterGraph.h"
 #include <nlohmann/json.hpp>
 
@@ -25,15 +26,15 @@ inline uint32_t ReadLogicalId(const nlohmann::json& object, const char* field) {
 inline void CheckEnvelope(const nlohmann::json& value) {
     if (!value.is_object() || !value.at("schemaVersion").is_number_integer() || value.at("schemaVersion") != 1 ||
         value.at("profile").get<std::string>() != kMmWallmasterProfile ||
-        value.at("upstreamCommit").get<std::string>() != kUpstreamCommit ||
-        value.at("registrySourceSha256").get<std::string>() != kRegistrySourceSha256)
+        value.at("upstreamCommit").get<std::string>() != kLegacyUpstreamCommit ||
+        value.at("registrySourceSha256").get<std::string>() != kLegacyRegistrySourceSha256)
         throw std::invalid_argument("Unsupported entrance expansion envelope");
 }
 inline nlohmann::json Envelope() {
     return { { "schemaVersion", 1 },
              { "profile", kMmWallmasterProfile },
-             { "upstreamCommit", kUpstreamCommit },
-             { "registrySourceSha256", kRegistrySourceSha256 } };
+             { "upstreamCommit", kLegacyUpstreamCommit },
+             { "registrySourceSha256", kLegacyRegistrySourceSha256 } };
 }
 inline std::optional<std::vector<SavedOverride>> DecodeMmWallmasterSeed(const nlohmann::json& seed) {
     if (!seed.is_object())
