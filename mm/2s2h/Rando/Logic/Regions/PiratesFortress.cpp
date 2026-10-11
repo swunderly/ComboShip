@@ -455,8 +455,9 @@ static RegisterShipInitFunc initFunc([]() {
     entry.canStayOverTime = cage.canStayOverTime;
     entry.checks.insert(cage.checks.extract(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_01));
     entry.exits.insert(cage.exits.extract(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2)));
-    entry.exits.at(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2)).condition = [] { return CAN_RESET_TIME && CAN_BE_ZORA; };
-    entry.exits.at(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2)).conditionString = "can_reset_time && has_mask_zora";
+    // pirate_fortress.yml:33 Sewers -> Sewers Entrance "true", then :121 -> Pirate Fortress Entrance "can_reset_time".
+    entry.exits.at(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2)).condition = [] { return CAN_RESET_TIME; };
+    entry.exits.at(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2)).conditionString = "can_reset_time";
     entry.connections[RR_PIRATES_FORTRESS_SEWERS_PREGATE] = {
         [] { return CAN_RESET_TIME && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM); }, "can_reset_time && has_mask_zora && can_swim"};
     cage.connections[RR_PIRATES_FORTRESS_SEWERS_ENTRY] = {[] { return CAN_BE_ZORA; }, "has_mask_zora"};
