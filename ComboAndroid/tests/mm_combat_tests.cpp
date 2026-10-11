@@ -178,6 +178,29 @@ int main(int argc,char** argv) {
  {ComboRando::MmCombatCapabilities din{};din.mirrorShield=din.din=din.sword=true;
   if(ComboRando::can_kill_igos(din)){++failures;std::cerr<<"igos without trick\n";}
   din.igosDins=true;if(!ComboRando::can_kill_igos(din)){++failures;std::cerr<<"igos with trick\n";}}
- std::cout<<"Compared "<<compared<<" imported predicates and "<<igosCases<<" Igos Din's Fire cases; differences "<<failures<<std::endl;
+ // MM Iron Boots, Zora Tunic and trick MM_GYORG_IRONS, which the 111 fixture cases leave off (so those cases are the
+ // seeds without the gear options): every combination against macros_mm.yml:399 can_kill_gyorg = has_magic &&
+ // ((has_mask_zora && (has_arrows || can_use_slingshot)) || has(MASK_FIERCE_DEITY)) || (has_iron_boots &&
+ // has_tunic_zora_strict && can_hookshot_short && trick(MM_GYORG_IRONS)), :351 can_kill_shell_blades_underwater and
+ // :364 can_kill_skullfish = has_mask_zora || (has_iron_boots && can_hookshot), with no MM slingshot.
+ int gearCases=0;
+ for(int bits=0;bits<(1<<8);++bits) {
+  auto on=[&](int i){return ((bits>>i)&1)!=0;};
+  ComboRando::MmCombatCapabilities g{};
+  g.magic=on(0);g.zora=on(1);g.arrows=on(2);g.deity=on(3);g.ironBoots=on(4);g.zoraTunicStrict=on(5);g.hookshot=on(6);g.gyorgIrons=on(7);
+  const bool gyorg=(g.magic&&((g.zora&&g.arrows)||g.deity))||(g.ironBoots&&g.zoraTunicStrict&&g.hookshot&&g.gyorgIrons);
+  const bool underwater=g.zora||(g.ironBoots&&g.hookshot);
+  ++gearCases;
+  if(ComboRando::can_kill_gyorg(g)!=gyorg){++failures;std::cerr<<"gyorg case "<<bits<<"\n";}
+  if(ComboRando::can_kill_shell_blades_underwater(g)!=underwater){++failures;std::cerr<<"shell blades case "<<bits<<"\n";}
+  if(ComboRando::can_kill_skullfish(g)!=underwater){++failures;std::cerr<<"skullfish case "<<bits<<"\n";}
+ }
+ // Without the gear fields the three predicates are the ones every seed used before.
+ {ComboRando::MmCombatCapabilities none{};none.hookshot=none.gyorgIrons=true;
+  if(ComboRando::can_kill_gyorg(none)||ComboRando::can_kill_shell_blades_underwater(none)||ComboRando::can_kill_skullfish(none)){++failures;std::cerr<<"gear terms without gear\n";}
+  none.ironBoots=true;if(ComboRando::can_kill_gyorg(none)){++failures;std::cerr<<"gyorg without the strict Zora Tunic\n";}
+  none.zoraTunicStrict=true;if(!ComboRando::can_kill_gyorg(none)){++failures;std::cerr<<"gyorg with Iron Boots\n";}
+  none.gyorgIrons=false;if(ComboRando::can_kill_gyorg(none)){++failures;std::cerr<<"gyorg without trick\n";}}
+ std::cout<<"Compared "<<compared<<" imported predicates, "<<igosCases<<" Igos Din's Fire cases and "<<gearCases<<" MM gear cases; differences "<<failures<<std::endl;
  return failures!=0;
 }

@@ -410,7 +410,16 @@ bool HasUsableBottle();
 // Pinned macros_mm.yml70..75: MM equipment ownership is effective only with its option.
 #define MM_LOGIC_HAS_IRON_BOOTS (RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] && HAS_ITEM(ITEM_COMBO_BOOTS_IRON))
 #define MM_LOGIC_HAS_HOVER_BOOTS (RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] && HAS_ITEM(ITEM_COMBO_BOOTS_HOVER))
+#define MM_LOGIC_HAS_GORON_TUNIC_STRICT (RANDO_SAVE_OPTIONS[RO_MM_TUNIC_GORON] && HAS_ITEM(ITEM_COMBO_TUNIC_GORON))
 #define MM_LOGIC_HAS_ZORA_TUNIC_STRICT (RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA] && HAS_ITEM(ITEM_COMBO_TUNIC_ZORA))
+// macros_mm.yml:76-77: trick(MM_TUNICS) ("Fewer Tunic Requirements (MM)") stands in for either tunic.
+#define MM_LOGIC_HAS_GORON_TUNIC (MM_LOGIC_HAS_GORON_TUNIC_STRICT || COMBO_MM_TRICK("Tunics"))
+#define MM_LOGIC_HAS_ZORA_TUNIC (MM_LOGIC_HAS_ZORA_TUNIC_STRICT || COMBO_MM_TRICK("Tunics"))
+// macros_mm.yml:84 can_swim_or_sink = can_swim || has_iron_boots. The port has no MM scales, so can_swim is the
+// native Swim ability, as on the water edges that use this macro.
+#define MM_LOGIC_CAN_SWIM_OR_SINK (CAN_USE_ABILITY(SWIM) || MM_LOGIC_HAS_IRON_BOOTS)
+// macros_mm.yml:258-259 underwater_walking and underwater_walking_strict.
+#define MM_LOGIC_UNDERWATER_WALKING (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_ZORA_TUNIC && MM_LOGIC_HAS_IRON_BOOTS))
 #define MM_LOGIC_UNDERWATER_WALKING_STRICT \
     (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT))
 
@@ -1062,7 +1071,10 @@ inline bool CanKillEnemy(ActorId EnemyId, unsigned actorParams = 0) {
                                                    COMBO_MM_TRICK("TwinmoldBow") != 0,
                                                    COMBO_MM_TRICK("TwinmoldFireIce") != 0,
                                                    CAN_USE_DINS_FIRE,
-                                                   COMBO_MM_TRICK("IgosDins") != 0 };
+                                                   COMBO_MM_TRICK("IgosDins") != 0,
+                                                   MM_LOGIC_HAS_IRON_BOOTS,
+                                                   MM_LOGIC_HAS_ZORA_TUNIC_STRICT,
+                                                   COMBO_MM_TRICK("GyorgIrons") != 0 };
     // Expressions are imported from OoTMM. Keep actor-specific soul gates here.
     switch (EnemyId) {
         case ACTOR_BOSS_01:
@@ -1159,6 +1171,15 @@ inline bool CanKillEnemy(ActorId EnemyId, unsigned actorParams = 0) {
             return ComboRando::can_kill_leevers(combat);
         case ACTOR_EN_SB:
             return ComboRando::can_kill_shell_blades_underwater(combat);
+        case ACTOR_EN_PR2: {
+            // can_kill_skullfish (macros_mm.yml:364) adds its Iron Boots route to the native rule below, which keeps
+            // its magic and Swim requirements for the Zora route.
+            auto ironBoots = combat;
+            ironBoots.zora = false;
+            if (ComboRando::can_kill_skullfish(ironBoots))
+                return true;
+            break;
+        }
         case ACTOR_BOSS_05:
             return ComboRando::can_kill_bio_babas(combat);
         case ACTOR_EN_DRAGON:

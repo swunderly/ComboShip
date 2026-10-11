@@ -32,6 +32,10 @@ struct MmCombatCapabilities {
     bool mirrorShield, swim, day, twinmoldBow, twinmoldFireIce;
     bool din = false;      // appended; legacy host fixtures retain false
     bool igosDins = false; // appended: trick(MM_IGOS_DINS)
+    // Appended for MM Iron Boots and Zora Tunic (macros_mm.yml:70, 75, 399); false with their options off.
+    bool ironBoots = false;       // has_iron_boots
+    bool zoraTunicStrict = false; // has_tunic_zora_strict
+    bool gyorgIrons = false;      // trick(MM_GYORG_IRONS)
 };
 inline bool can_fight_pirates(const MmCombatCapabilities& c) {
     return true && ((c.sword || c.zora || c.goron) || c.arrows || c.stickFighting);
@@ -116,8 +120,8 @@ inline bool can_kill_guays(const MmCombatCapabilities& c) {
                     false || c.din || c.explosives || c.stickFighting);
 }
 inline bool can_kill_gyorg(const MmCombatCapabilities& c) {
-    return true &&
-           ((c.magic && ((c.zora && (c.arrows || false)) || c.deity)) || (false && false && c.hookshot && false));
+    return true && ((c.magic && ((c.zora && (c.arrows || false)) || c.deity)) ||
+                    (c.ironBoots && c.zoraTunicStrict && c.hookshot && c.gyorgIrons));
 }
 inline bool can_kill_igos(const MmCombatCapabilities& c) {
     return true && c.mirrorShield && (c.fireArrows || (c.igosDins && c.din)) &&
@@ -157,7 +161,10 @@ inline bool can_kill_scrubs_anywhere(const MmCombatCapabilities& c) {
                     (c.deku && c.magic) || false || c.nuts || c.stickFighting);
 }
 inline bool can_kill_shell_blades_underwater(const MmCombatCapabilities& c) {
-    return true && (c.zora || (false && c.hookshot));
+    return true && (c.zora || (c.ironBoots && c.hookshot));
+}
+inline bool can_kill_skullfish(const MmCombatCapabilities& c) {
+    return true && (c.zora || (c.ironBoots && c.hookshot));
 }
 inline bool can_kill_skulltulas(const MmCombatCapabilities& c) {
     return true && ((c.sword || c.zora || c.goron) || c.arrows || c.hookshot || c.din || c.explosives ||
