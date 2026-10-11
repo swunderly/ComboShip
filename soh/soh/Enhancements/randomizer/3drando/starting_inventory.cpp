@@ -1,4 +1,3 @@
-#include "../souls/OotSouls.h"
 #include "starting_inventory.hpp"
 #ifdef COMBO_BUILD
 #include "rando/OotMaskQuest.h"
@@ -21,7 +20,6 @@ static void AddItemToInventory(RandomizerGet item, size_t count = 1) {
 void GenerateStartingInventory() {
     auto ctx = Rando::Context::GetInstance();
     StartingInventory.clear();
-    Rando::Souls::AddUnshuffledStarts(StartingInventory);
 
 #ifdef COMBO_BUILD
     // Match Completed starts and the compatibility repair for old Vanilla seeds.

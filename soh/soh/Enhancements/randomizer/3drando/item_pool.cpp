@@ -783,7 +783,11 @@ void GenerateItemPool() {
                                      ctx->GetOption(RSK_SHUFFLE_FREESTANDING).Is(RO_SHUFFLE_FREESTANDING_ALL);
     PlaceItemsForType(RCTYPE_FREESTANDING, overworldFreeStandingActive, dungeonFreeStandingActive);
     Rando::SilverRupees::AddPool(itemPool);
-    Rando::Souls::AddPool(itemPool);
+    // One of each shuffled soul, plus OoTMM's extra copy in plentiful (packages/logic/src/world/transform.ts:
+    // 1655-1665, 583-667). Souls have no ice trap names, so they never disguise one.
+    for (const RandomizerGet soul : Rando::Souls::ShuffledItems()) {
+        AddItemToPool(soul, 2, 1, 1, 1, false);
+    }
 
     // Dungeon pools
     if (ctx->GetDungeon(Rando::DEKU_TREE)->IsMQ()) {

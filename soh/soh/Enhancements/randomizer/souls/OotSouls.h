@@ -8,7 +8,8 @@ class Logic;
 }
 namespace Rando::Souls {
 void RegisterItems(std::array<Item, RG_MAX>& items);
-void AddPool(std::vector<RandomizerGet>& pool);
+// The soul items of the shuffled families, one each, in save-bit order.
+std::vector<RandomizerGet> ShuffledItems();
 int GeneralIndex(RandomizerGet item);
 bool Has(Logic* logic, OotSoul soul);
 bool HasItem(Logic* logic, RandomizerGet item);
@@ -19,7 +20,6 @@ bool Enabled();
 bool FamilyShuffled(OotSoulFamily family);
 bool RuntimeOwned(RandomizerGet item);
 bool TcgSoulAccess(Logic* logic);
-void AddUnshuffledStarts(std::vector<RandomizerGet>& starts);
 void InitStartingOwnership();
 } // namespace Rando::Souls
 extern "C" {

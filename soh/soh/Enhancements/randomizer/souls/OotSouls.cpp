@@ -204,14 +204,6 @@ bool EnemySoul(Logic* logic, RandomizerEnemy enemy) {
             return true;
     }
 }
-void AddUnshuffledStarts(std::vector<RandomizerGet>& starts) {
-    const auto options = Options();
-    if (!options.enabled)
-        return;
-    for (const auto& row : generalSouls)
-        if (!GeneralOotSoulShuffled(options, row.index))
-            starts.push_back(row.item);
-}
 void InitStartingOwnership() {
     const auto options = Options();
     if (!options.enabled)
@@ -222,11 +214,13 @@ void InitStartingOwnership() {
             ChangeGeneralOotSoul(owned, row.index, true);
     Write(&gSaveContext, owned);
 }
-void AddPool(std::vector<RandomizerGet>& pool) {
+std::vector<RandomizerGet> ShuffledItems() {
     const auto options = Options();
+    std::vector<RandomizerGet> items;
     for (const auto& row : generalSouls)
         if (GeneralOotSoulShuffled(options, row.index))
-            pool.push_back(row.item);
+            items.push_back(row.item);
+    return items;
 }
 } // namespace Rando::Souls
 // Pinned CustomGS: native token geometry, gray/white skull and family-colored flame.
