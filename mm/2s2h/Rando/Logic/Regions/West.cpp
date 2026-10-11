@@ -33,8 +33,8 @@ static bool CanLearnNewWaveBossaNova() {
 #define COMBO_WORLD54_ENABLED (COMBO_WORLD37_ENABLED || RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE])
 #define COMBO_WORLD54_SELECT(legacy, pinned) (COMBO_WORLD54_ENABLED ? (pinned) : (legacy))
 // zora_cape.yml:11/:141: (can_swim && (underwater_walking || can_use_nayru || trick)) || (ice && chateau).
-#define COMBO_WORLD54_PENINSULA                                                                \
-    ((CAN_USE_ABILITY(SWIM) && (MM_LOGIC_UNDERWATER_WALKING_STRICT || CAN_USE_NAYRUS_LOVE)) || \
+#define COMBO_WORLD54_PENINSULA                                                         \
+    ((CAN_USE_ABILITY(SWIM) && (MM_LOGIC_UNDERWATER_WALKING || CAN_USE_NAYRUS_LOVE)) || \
      (CAN_USE_MAGIC_ARROW(ICE) && CAN_SUPPLY_CHATEAU))
 #else
 #define COMBO_WORLD37_SELECT(legacy, pinned) (legacy)
@@ -182,14 +182,22 @@ static RegisterShipInitFunc initFunc([]() {
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(TERMINA_FIELD, 2),                ENTRANCE(GREAT_BAY_COAST, 0), true),
             EXIT(ENTRANCE(ZORA_CAPE, 0),                    ENTRANCE(GREAT_BAY_COAST, 1), true),
+#ifdef COMBO_BUILD
+            EXIT(ENTRANCE(PINNACLE_ROCK, 0),                ENTRANCE(GREAT_BAY_COAST, 3), MM_LOGIC_CAN_SWIM_OR_SINK), // great_bay_coast.yml:5
+#else
             EXIT(ENTRANCE(PINNACLE_ROCK, 0),                ENTRANCE(GREAT_BAY_COAST, 3), CAN_USE_ABILITY(SWIM)),
+#endif
             EXIT(ENTRANCE(FISHERMANS_HUT, 0),               ENTRANCE(GREAT_BAY_COAST, 4), true),
-            EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0),    ENTRANCE(GREAT_BAY_COAST, 5), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_RESET_TIME_DUNGEON && MM_LOGIC_UNDERWATER_WALKING_STRICT && CAN_USE_ABILITY(SWIM))),
+            EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0),    ENTRANCE(GREAT_BAY_COAST, 5), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_RESET_TIME_DUNGEON && MM_LOGIC_UNDERWATER_WALKING && CAN_USE_ABILITY(SWIM))),
             EXIT(ENTRANCE(OCEANSIDE_SPIDER_HOUSE, 0),       ENTRANCE(GREAT_BAY_COAST, 8), true),
             EXIT(ENTRANCE(GROTTOS, 26),                     ENTRANCE(GREAT_BAY_COAST, 0), true),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_GREAT_BAY_COAST_CLIFFSIDE, MM_LOGIC_CAN_SWIM_OR_SINK), // great_bay_coast.yml:5
+#else
             CONNECTION(RR_GREAT_BAY_COAST_CLIFFSIDE, CAN_USE_ABILITY(SWIM)),
+#endif
             CONNECTION(RR_GREAT_BAY_COAST_MARINE_LAB_EXTERIOR, CAN_USE_ABILITY(SWIM)),
             CONNECTION(RR_GREAT_BAY_COAST_PIRATE_LEDGE, CAN_USE_ABILITY(SWIM)),
         },
@@ -210,7 +218,11 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(MARINE_RESEARCH_LAB, 0),          ENTRANCE(GREAT_BAY_COAST, 7), true),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE || MM_LOGIC_HAS_IRON_BOOTS), // great_bay_coast.yml:119
+#else
             CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE),
+#endif
         },
         .events = {
             EVENT(RE_ACCESS_PICTOGRAPH_TINGLE, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_TINGLE) && (HAS_ITEM(ITEM_PICTOGRAPH_BOX))),
@@ -243,7 +255,11 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(GROTTOS, 27),                     ENTRANCE(GREAT_BAY_COAST, 0), HAS_ITEM(ITEM_HOOKSHOT)),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE || MM_LOGIC_HAS_IRON_BOOTS), // great_bay_coast.yml:48
+#else
             CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE),
+#endif
             CONNECTION(RR_GREAT_BAY_COAST_MINIGAME_PLATFORMS, NativeMmOceanCleared() && (HAS_ITEM(ITEM_HOOKSHOT))),
         },
     };
@@ -380,7 +396,11 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(FAIRY_FOUNTAIN, 3),               ENTRANCE(ZORA_CAPE, 5), CAN_USE_EXPLOSIVE),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_ZORA_CAPE, MM_LOGIC_CAN_SWIM_OR_SINK), // zora_cape.yml:94
+#else
             CONNECTION(RR_ZORA_CAPE, CAN_USE_ABILITY(SWIM)),
+#endif
         }
     };
     Regions[RR_ZORA_CAPE] = RandoRegion{ .sceneId = SCENE_31MISAKI,
@@ -388,12 +408,12 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ZORA_CAPE_LEDGE_CHEST_01,             HAS_ITEM(ITEM_HOOKSHOT)),
             CHECK(RC_ZORA_CAPE_LEDGE_CHEST_02,             HAS_ITEM(ITEM_HOOKSHOT)),
 #ifdef COMBO_BUILD
-            CHECK(RC_ZORA_CAPE_UNDERWATER_CHEST, COMBO_WORLD37_ENABLED ? (MM_LOGIC_UNDERWATER_WALKING_STRICT) : (          CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),
+            CHECK(RC_ZORA_CAPE_UNDERWATER_CHEST, COMBO_WORLD37_ENABLED ? (MM_LOGIC_UNDERWATER_WALKING) : (          CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),
 #else
             CHECK(RC_ZORA_CAPE_UNDERWATER_CHEST,           CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
 #endif
 #ifdef COMBO_BUILD
-            CHECK(RC_ZORA_CAPE_WATERFALL_PIECE_OF_HEART, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT && (CAN_USE_BOW || HAS_ITEM(ITEM_MASK_BLAST)))) : (  CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),
+            CHECK(RC_ZORA_CAPE_WATERFALL_PIECE_OF_HEART, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC && (CAN_USE_BOW || HAS_ITEM(ITEM_MASK_BLAST)))) : (  CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),
 #else
             CHECK(RC_ZORA_CAPE_WATERFALL_PIECE_OF_HEART,   CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
 #endif
@@ -422,7 +442,7 @@ static RegisterShipInitFunc initFunc([]() {
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(GREAT_BAY_COAST, 1),              ENTRANCE(ZORA_CAPE, 0), true),
             EXIT(ENTRANCE(GROTTOS, 28),                     ENTRANCE(ZORA_CAPE, 0), CAN_USE_EXPLOSIVE || CAN_BE_GORON),
-            EXIT(ENTRANCE(ZORA_HALL, 0),                    ENTRANCE(ZORA_CAPE, 1), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            EXIT(ENTRANCE(ZORA_HALL, 0),                    ENTRANCE(ZORA_CAPE, 1), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING)),
             EXIT(ENTRANCE(WATERFALL_RAPIDS, 0),             ENTRANCE(ZORA_CAPE, 4), HAS_ITEM(ITEM_HOOKSHOT)),
         },
         .connections = {
@@ -491,7 +511,7 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ZORA_HALL_SCENE_LIGHTS, CAN_USE_MAGIC_ARROW(FIRE) || (COMBO_MM_TRICK("StageLightsDin") && CAN_USE_BOW && CAN_USE_DINS_FIRE && HAS_ITEM(ITEM_HOOKSHOT))),
         },
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(ZORA_CAPE, 1),                    ENTRANCE(ZORA_HALL, 0), COMBO_WORLD37_SELECT(true, MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            EXIT(ENTRANCE(ZORA_CAPE, 1),                    ENTRANCE(ZORA_HALL, 0), COMBO_WORLD37_SELECT(true, MM_LOGIC_UNDERWATER_WALKING)),
             EXIT(ENTRANCE(ZORA_CAPE, 2),                    ENTRANCE(ZORA_HALL, 1), true), // Back entrance beside the owl           
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 5),              ENTRANCE(ZORA_HALL, 2), true), // To Shop
 #ifdef COMBO_BUILD

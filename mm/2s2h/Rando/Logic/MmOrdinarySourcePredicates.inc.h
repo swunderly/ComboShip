@@ -11,8 +11,10 @@ inline std::function<bool()> MmOrdinarySourcePredicate(RandoRegionId region, s32
         return [] { return HAS_ITEM(ITEM_HOOKSHOT); };
     if (region == RR_IKANA_CASTLE_MAIN_ROOM && exit == 13344)
         return [] { return true; };
-    if (region == RR_PIRATES_FORTRESS_MOAT_LOWER && exit == 26704)
-        return [] { return CAN_BE_ZORA && CAN_USE_ABILITY(SWIM); };
+    if (region == RR_PIRATES_FORTRESS_MOAT_LOWER && exit == 26704) // pirate_fortress.yml:4
+        return [] {
+            return (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC);
+        };
     if (region == RR_SNOWHEAD_TEMPLE_ENTRANCE_BEFORE_BLOCK && exit == 45584)
         return [] { return true; };
     if (region == RR_OCEAN_SPIDER_HOUSE_ENTRANCE_UPPER && exit == 26752)
