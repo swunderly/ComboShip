@@ -465,7 +465,7 @@ void RegionTable_Init_SpiritTemple() {
     areaTable[RR_SPIRIT_TEMPLE_BIG_WALL_BASE] = Region("Spirit Temple Big Wall Base", SCENE_SPIRIT_TEMPLE, {}, {}, {
         //Exits
         ENTRANCE(RR_SPIRIT_TEMPLE_BEAMOS_PITS,    true),
-        ENTRANCE(RR_SPIRIT_TEMPLE_BIG_WALL_UPPER, (Souls::Enabled() || ctx->GetTrickOption(RT_SPIRIT_WALL) || (logic->CanAvoidEnemy(RE_BEAMOS, true, 2) && logic->CanPassEnemy(RE_WALLTULA, ED_BOOMERANG))) &&
+        ENTRANCE(RR_SPIRIT_TEMPLE_BIG_WALL_UPPER, (Souls::FamilyShuffled(Souls::OotSoulFamily::Enemy) || ctx->GetTrickOption(RT_SPIRIT_WALL) || (logic->CanAvoidEnemy(RE_BEAMOS, true, 2) && logic->CanPassEnemy(RE_WALLTULA, ED_BOOMERANG))) &&
                                                   (logic->HasItem(RG_CLIMB) || logic->CanUse(RG_LONGSHOT))),
     });
 

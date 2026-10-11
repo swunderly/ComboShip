@@ -251,7 +251,8 @@ void RegionTable_Init_ShadowTemple() {
 
     areaTable[RR_SHADOW_TEMPLE_WIND_TUNNEL_HINT_ROOM] = Region("Shadow Temple Wind Tunnel Hint Room", SCENE_SHADOW_TEMPLE, {}, {
         //Locations
-        LOCATION(RC_SHADOW_TEMPLE_WIND_HINT_CHEST,     (Souls::Enabled() || logic->CanKillEnemy(RE_REDEAD)) && logic->HasItem(RG_OPEN_CHEST)),
+        // With enemy souls shuffled this follows OoTMM shadow_temple.yml:120 ("Shadow Temple Wind Room Hint": "true").
+        LOCATION(RC_SHADOW_TEMPLE_WIND_HINT_CHEST,     (Souls::FamilyShuffled(Souls::OotSoulFamily::Enemy) || logic->CanKillEnemy(RE_REDEAD)) && logic->HasItem(RG_OPEN_CHEST)),
         LOCATION(RC_SHADOW_TEMPLE_WIND_HINT_SUN_FAIRY, logic->CanUse(RG_SUNS_SONG)),
     }, {
         //Exits
