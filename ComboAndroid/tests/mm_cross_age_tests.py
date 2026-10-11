@@ -151,7 +151,7 @@ check('returnrules.crossAge&&ComboRando::ComboFaroreIntegrationReady;' in
       body(combo, 'static bool EffectiveCrossAge(const ComboRando::FaroreRules& rules)'),
       'EffectiveCrossAge must use the seed and the native integration only')
 check('MM_AdultRuntimeReady' not in combo + benport, 'MM_AdultRuntimeReady must not gate a seed\'s Cross-Games Age')
-check('if(id!=RO_MM_CROSS_AGE||!sMMSeedFaroreRulesBound)' in init,
+check('(id!=RO_MM_CROSS_AGE||!sMMSeedFaroreRulesBound)' in init,
       'MM_InitRandoSaveFile must keep a bound seed\'s Cross-Games Age')
 
 # ---- 5a-5: the generation oracle explores each MM entry age (pathfind.ts:263-267, 342-346) for the seed's option alone,
@@ -208,6 +208,40 @@ check(0 < entry.find('if(MM_LOGIC_STONE_TOWER_PINNED&&entrance==ENTRANCE(STONE_T
       < entry.find('staticstd::map<s32,RandoRegionId>entranceToRegionId;') and
       'randoRegionId==RR_MM_STONE_TOWER_FRONT_OF_TEMPLE)continue;' in entry,
       'GetRegionIdFromEntrance must pick the Stone Tower temple arrival per call and keep it out of its cache')
+
+# ---- 5b-9 (seed half): readiness. The release switch and OoT's adult model (looked up at run time, absent = not ready,
+# no MM resource manager needed) decide whether a new seed may turn Cross-Games Age on; every place options are
+# gathered uses that, except a bound seed's own value; the headless generator follows the release switch alone.
+benport = read('mm/2s2h/BenPort.cpp')
+check('staticconstexprboolkCrossAgeRuntimeComplete=' in squash(benport), 'no kCrossAgeRuntimeComplete release switch')
+check('returnkCrossAgeRuntimeComplete;' in body(benport, 'static int Combo_MM_CrossAgeIntegrationEnabled(void)'),
+      'the Cross-Games Age runtime does not follow its release switch')
+ready = body(benport, 'extern "C" int Combo_MM_CrossAgeReady(void)')
+check(ready.startswith('extern"C"intCombo_MM_CrossAgeReady(void){if(!Combo_MM_CrossAgeIntegrationEnabled())return0;') and
+      'Combo_ResolveSym("2ship","Combo_MM_CrossAgeModelReady")' in ready and
+      ready.endswith('returnmodelReady&&modelReady();}'),
+      'Combo_MM_CrossAgeReady must need the release switch and the model loader, a missing loader reading as not ready')
+for banned in ('CrossRMRegistry', 'ResourceManager', 'gPlayState', 'AdultResourcesReady'):
+    check(banned not in ready, f'Combo_MM_CrossAgeReady must not use {banned}')
+check('returnCombo_MM_CrossAgeIntegrationEnabled()&&(sCrossAgeHeadlessGeneration||Combo_MM_CrossAgeReady());' in
+      body(benport, 'extern "C" int Combo_MM_CrossAgeOptionReady(void)'), 'Combo_MM_CrossAgeOptionReady differs')
+check('returnCombo_MM_CrossAgeOptionReady();' in body(benport, 'extern "C" COMBO_EXPORT int MM_CrossAgeOptionReady(void)'),
+      'MM_CrossAgeOptionReady must export the option readiness')
+check('Combo_MM_CrossAgeForHeadlessGeneration();' in body(benport, 'extern "C" COMBO_EXPORT void MM_InitRandoHeadless(void)'),
+      'the headless generator must follow the Cross-Games Age release switch alone')
+check('returnid==RO_MM_CROSS_AGE?Combo_MM_CrossAgeOptionReady()!=0:Combo_MM_AdultResourcesReady()!=0;' in
+      body(benport, 'static bool Combo_MM_HiddenAdultOptionReady(RandoOptionId id)'),
+      'Cross-Games Age must have its own readiness, apart from the dormant Adult Mask')
+flat = squash(benport)
+check(flat.count('Combo_MM_HiddenAdultOptionReady(id)') == 5 and
+      'if(!Combo_MM_AdultResourcesReady())for(constautoid:kComboHiddenAdultMmOptions)' not in flat,
+      'every place adult options are gathered must use their own readiness')
+check('for(constautoid:kComboHiddenAdultMmOptions)if(!Combo_MM_HiddenAdultOptionReady(id))options[id]=0;' in
+      body(benport, 'extern "C" void Combo_MM_ClearUnavailableOptions(u32* options)'),
+      'new seeds must leave Cross-Games Age off where it cannot run')
+init = body(benport, 'extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(')
+check('if((id!=RO_MM_CROSS_AGE||!sMMSeedFaroreRulesBound)&&!Combo_MM_HiddenAdultOptionReady(id))' in init,
+      'a new file must keep a bound seed\'s Cross-Games Age and gate only unbound options')
 
 # ---- 5a-8: every v32.3 MM age line (data/world/mm, plus macros_mm.yml:260) and the fork statements that carry it.
 fixture = json.loads((Path(__file__).resolve().parent / 'fixtures/ootmm-32.3-mm-age-lines.json')

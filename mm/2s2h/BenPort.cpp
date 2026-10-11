@@ -2843,6 +2843,9 @@ extern "C" COMBO_EXPORT void MM_BootForCombo(void) {
 extern "C" int Combo_MM_GearOptionReady(void);
 extern "C" int Combo_MM_GearOptionsAllowed(int swimShuffled);
 extern "C" void Combo_MM_GearForHeadlessGeneration(void);
+// Whether a seed may turn Cross-Games Age on (BenPort.cpp, beside Combo_MM_IsLinkAdult).
+extern "C" int Combo_MM_CrossAgeOptionReady(void);
+extern "C" void Combo_MM_CrossAgeForHeadlessGeneration(void);
 #endif
 // ComboShip: headless rando-only MM init — builds ONLY the rando region graph via the "RANDO_LOGIC"
 // ShipInit path (no window/RM/audio/GUI), unlike MM_BootForCombo's full boot. StaticData maps are
@@ -2858,6 +2861,7 @@ extern "C" COMBO_EXPORT void MM_InitRandoHeadless(void) {
 #ifdef COMBO_BUILD
     Combo_MMSpellsForHeadlessGeneration(); // only the headless generator calls this function
     Combo_MM_GearForHeadlessGeneration();
+    Combo_MM_CrossAgeForHeadlessGeneration();
 #endif
 }
 
@@ -2952,15 +2956,21 @@ extern "C" int gMMComboGoalHunt;
 extern "C" int gMMComboGoalRequired;
 extern "C" int gMMComboGoalPieces;
 
-// The adult options have no menu, but profile or seed JSON and raw CVars can still set them. Keep them at
-// their defaults (0) wherever options are gathered while the adult runtime is unavailable, so the pool, the
-// oracle and the new save agree.
+// The adult options. Cross-Games Age has a menu row only where this device can run adult Link in MM; the 41a2b7c0
+// Adult Mask and MM starting age have none. Profile or seed JSON and raw CVars can still set any of them, so each keeps
+// its default (0) wherever options are gathered while it is unavailable, and the pool, the oracle and the new save
+// agree.
 extern "C" int Combo_MM_AdultResourcesReady(void);
 extern "C" int Combo_MM_AdultConfigureBoundSeed(int fileNum);
 static constexpr RandoOptionId kComboHiddenAdultMmOptions[] = { RO_MM_ADULT_MASK, RO_MM_STARTING_AGE, RO_MM_CROSS_AGE };
 static bool Combo_MM_IsHiddenAdultOption(RandoOptionId id) {
     return std::find(std::begin(kComboHiddenAdultMmOptions), std::end(kComboHiddenAdultMmOptions), id) !=
            std::end(kComboHiddenAdultMmOptions);
+}
+// Whether a new seed may turn this adult option on here: Cross-Games Age where its runtime can run, the dormant Adult
+// Mask and MM starting age only with the whole (unfinished) 41a2b7c0 adult runtime.
+static bool Combo_MM_HiddenAdultOptionReady(RandoOptionId id) {
+    return id == RO_MM_CROSS_AGE ? Combo_MM_CrossAgeOptionReady() != 0 : Combo_MM_AdultResourcesReady() != 0;
 }
 // Din's Fire and Nayru's Love (MM), numbered as in Spells.cpp. A device that cannot cast one keeps its option at 0
 // wherever options are gathered, so no seed made there needs it (Combo_MMSpellOptionReady).
@@ -2972,8 +2982,8 @@ static constexpr std::pair<RandoOptionId, int> kComboMmSpellOptions[] = { { RO_M
 static constexpr RandoOptionId kComboMmGearOptions[] = { RO_MM_BOOTS_IRON, RO_MM_BOOTS_HOVER, RO_MM_TUNIC_GORON,
                                                          RO_MM_TUNIC_ZORA };
 extern "C" void Combo_MM_ClearUnavailableOptions(u32* options) {
-    if (!Combo_MM_AdultResourcesReady())
-        for (const auto id : kComboHiddenAdultMmOptions)
+    for (const auto id : kComboHiddenAdultMmOptions)
+        if (!Combo_MM_HiddenAdultOptionReady(id))
             options[id] = 0;
     for (const auto& [id, spell] : kComboMmSpellOptions)
         if (!Combo_MMSpellOptionReady(spell))
@@ -3088,10 +3098,9 @@ extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(int fileNum, const char* placem
         }
         // After the seed override above, which can otherwise bring a dormant adult option or a spell back. A bound
         // seed keeps its Cross-Games Age: it is the seed's logic, whatever this device can draw.
-        if (!Combo_MM_AdultResourcesReady())
-            for (const auto id : kComboHiddenAdultMmOptions)
-                if (id != RO_MM_CROSS_AGE || !sMMSeedFaroreRulesBound)
-                    options[Rando::StaticData::Options[id].name] = uint32_t(0);
+        for (const auto id : kComboHiddenAdultMmOptions)
+            if ((id != RO_MM_CROSS_AGE || !sMMSeedFaroreRulesBound) && !Combo_MM_HiddenAdultOptionReady(id))
+                options[Rando::StaticData::Options[id].name] = uint32_t(0);
         for (const auto& [id, spell] : kComboMmSpellOptions)
             if (!Combo_MMSpellOptionReady(spell))
                 options[Rando::StaticData::Options[id].name] = uint32_t(0);
@@ -3386,8 +3395,8 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings(void) {
     }
     // The snapshot travels with seeds; keep it matching their pools (kComboHiddenAdultMmOptions,
     // kComboMmSpellOptions, kComboMmGearOptions).
-    if (!Combo_MM_AdultResourcesReady())
-        for (const auto id : kComboHiddenAdultMmOptions)
+    for (const auto id : kComboHiddenAdultMmOptions)
+        if (!Combo_MM_HiddenAdultOptionReady(id))
             j[Rando::StaticData::Options[id].cvar] = 0;
     for (const auto& [id, spell] : kComboMmSpellOptions)
         if (!Combo_MMSpellOptionReady(spell))
@@ -3646,7 +3655,7 @@ static int MM_ApplyProfileRandoSettingsImpl(const char* raw, bool apply) {
             if (!value.is_number_integer() || value.get<int64_t>() < 0 ||
                 value.get<uint64_t>() > (id == RO_CLOCK_TERMINAL_TIME ? uint64_t(INT32_MAX) : uint64_t(UINT8_MAX)))
                 return 0;
-            const bool hidden = Combo_MM_IsHiddenAdultOption(id) && !Combo_MM_AdultResourcesReady();
+            const bool hidden = Combo_MM_IsHiddenAdultOption(id) && !Combo_MM_HiddenAdultOptionReady(id);
             settings[option.cvar] = hidden ? nlohmann::json(option.defaultValue) : value;
         }
         for (const auto& trick : ComboRando::kMmTricks) {
@@ -3755,8 +3764,8 @@ extern "C" COMBO_EXPORT void MM_RestoreRandoSettings(const char* json) {
             else
                 CVarSetInteger(it.key().c_str(), it.value().get<int>());
         }
-        if (!Combo_MM_AdultResourcesReady())
-            for (const auto id : kComboHiddenAdultMmOptions)
+        for (const auto id : kComboHiddenAdultMmOptions)
+            if (!Combo_MM_HiddenAdultOptionReady(id))
                 CVarClear(Rando::StaticData::Options[id].cvar);
     } catch (...) {}
 }
@@ -6125,6 +6134,41 @@ extern "C" int Combo_MM_AdultResourcesReady(void) {
 // Human Link is adult only while the whole Adult Link in MM runtime is integrated and ready.
 extern "C" int Combo_MM_IsLinkAdult(void) {
     return Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady();
+}
+// Cross-Games Age (OoTMM crossAge, data.ts:1504-1511) draws adult Link in MM with OoT's own adult model from the OoT
+// archive (plan F5b 5b-1). Release switch, set in its own commit: turn it off again if the on-phone adult checks fail.
+static constexpr bool kCrossAgeRuntimeComplete = false;
+static int Combo_MM_CrossAgeIntegrationEnabled(void) {
+#ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
+    // The private diagnostic build validates it with the same default-off switch as the adult runtime.
+    return kCrossAgeRuntimeComplete || CVarGetInteger("gCombo.Debug.AdultMmRuntimeValidation", 0);
+#else
+    return kCrossAgeRuntimeComplete;
+#endif
+}
+// Whether this device can draw adult Link in MM: the released runtime and OoT's adult model prepared for MM. The model
+// loader (extern "C" COMBO_EXPORT int Combo_MM_CrossAgeModelReady(void), F5b 5b-1) is looked up at run time, and a
+// build without it is not ready. Nothing here needs MM's resource manager, so the menu can ask before MM has booted.
+extern "C" int Combo_MM_CrossAgeReady(void) {
+    if (!Combo_MM_CrossAgeIntegrationEnabled())
+        return 0;
+    static const auto modelReady =
+        reinterpret_cast<int (*)(void)>(Combo_ResolveSym("2ship", "Combo_MM_CrossAgeModelReady"));
+    return modelReady && modelReady();
+}
+// A new seed turns Cross-Games Age on only where it can run (Combo_MM_ClearUnavailableOptions); a seed that has it
+// keeps it (its logic), and on a device without the model Link is drawn as child. The headless generator has no game
+// runtime and follows the release switch alone, as for the gear.
+static bool sCrossAgeHeadlessGeneration = false;
+extern "C" int Combo_MM_CrossAgeOptionReady(void) {
+    return Combo_MM_CrossAgeIntegrationEnabled() && (sCrossAgeHeadlessGeneration || Combo_MM_CrossAgeReady());
+}
+extern "C" void Combo_MM_CrossAgeForHeadlessGeneration(void) {
+    sCrossAgeHeadlessGeneration = true;
+}
+// The menu greys the Cross-Games Age row out and unticks it where this is 0 (ComboMenu.cpp, World access).
+extern "C" COMBO_EXPORT int MM_CrossAgeOptionReady(void) {
+    return Combo_MM_CrossAgeOptionReady();
 }
 // MM boots and tunics are separate from Adult Link in MM, as in OoTMM, where child Link wears them (Player.c:616-687,
 // 1171-1207). Release switch, set in its own commit: turn it off again if the on-phone gear checks fail.
