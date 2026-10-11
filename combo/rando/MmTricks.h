@@ -78,10 +78,12 @@ inline constexpr MmTrickDefinition kMmTricks[] = {
       "Using Fire and Ice Arrows on the water stream above the ladder or an OoT Spell while on the spinning platform, "
       "it is possible to sink down during the cutscene, then swim into one of the tunnels.",
       "Great Bay Temple", "Farore, movement", 2, 1u << 2, false },
-    { 15, "gCombo.Tricks.MM.LullabySkipIrons", "Snowhead blizzard with Iron Boots",
-      "The pinned Iron Boots blizzard bypass still requires magic and Goron Mask ownership. Hidden until actual native "
-      "gear gameplay is validated.",
-      "Snowhead", "Iron Boots, movement", 2, 1u << 2, false },
+    // OoTMM tricks.ts:679-682 MM_LULLABY_SKIP_IRONS (snowhead.yml:7-8). The key is unchanged, so stored seeds and
+    // profiles keep their value.
+    { 15, "gCombo.Tricks.MM.LullabySkipIrons", "Skip playing Goron Lullaby by using Iron Boots",
+      "By combining Iron Boots to not be blown away by the wind and Goron to roll up the slope, Goron Lullaby can be "
+      "skipped.",
+      "Snowhead", "Iron Boots, movement", 2, 1u << 2 },
     { 16, "gCombo.Tricks.MM.ZoraHallScrubNoDeku", "Zora Hall Scrub heart without Deku",
       "Pinned Goron or tall-form jump reaches the heart without Deku. Hidden until actual Adult gameplay is validated.",
       "Zora Hall", "Movement, masks", 2, 1u << 2, false },
@@ -94,6 +96,67 @@ inline constexpr MmTrickDefinition kMmTricks[] = {
       "The item can be obtained without Fire Arrows by first reaching either torch with the hookshot, using Din's "
       "Fire, then shooting an arrow to the other torch.",
       "Zora Hall", "Din's Fire, bow, hookshot", 2, 1u << 2 },
+    // OoTMM tricks.ts:372-375 MM_TUNICS (macros_mm.yml:76-77 has_tunic_goron, has_tunic_zora).
+    { 19, "gCombo.Tricks.MM.Tunics", "Fewer Tunic Requirements (MM)",
+      "Most things that would normally require Zora Tunic no longer will. Pirate Fortress Sewers and Pinnacle Rock "
+      "will still require it.",
+      "Overworld and dungeons", "Zora Tunic, Iron Boots", 2, 1u << 2 },
+    // OoTMM tricks.ts:709-712 MM_GYORG_IRONS (macros_mm.yml:399 can_kill_gyorg).
+    { 20, "gCombo.Tricks.MM.GyorgIrons", "Fight Gyorg as Human using Iron Boots and Hookshot",
+      "Gyorg can be damaged with Hookshot. Turning this trick on will enable the fight in logic with Iron Boots and "
+      "Hookshot.",
+      "Great Bay Temple", "Combat, Iron Boots, hookshot", 2, 1u << 2 },
+    // OoTMM tricks.ts:659-662 MM_WF_SHRINE_HOVERS (woodfall.yml:42).
+    { 21, "gCombo.Tricks.MM.WfShrineHovers", "Woodfall Owl Chest with Hover Boots and Jump Slash",
+      "The chest can be reached with a tight jump slash at the end of the hover duration.", "Woodfall",
+      "Hover Boots, jump slash", 2, 1u << 2 },
+    // OoTMM tricks.ts:664-667 MM_WFT_LOBBY_HOVERS (woodfall_temple.yml:16).
+    { 22, "gCombo.Tricks.MM.WftLobbyHovers", "Woodfall Temple Lobby with Damage Boost and Hover Boots",
+      "The lobby can be traversed by damaging yourself with bombs at certain points. Very difficult.",
+      "Woodfall Temple", "Hover Boots, damage boost", 2, 1u << 2 },
+    // OoTMM tricks.ts:674-677 MM_SOARING_HOVERS (southern_swamp.yml:300).
+    { 23, "gCombo.Tricks.MM.SoaringHovers",
+      "Jump Slash or Damage Boost to the Soaring Tablet with Hover Boots and Bunny Hood",
+      "Using Bunny Hood for extra speed, Hover Boots can be used to reach the Soaring Tablet with a tight jump slash "
+      "or a damage boost with explosives.",
+      "Southern Swamp", "Hover Boots, Bunny Hood", 2, 1u << 2 },
+    // OoTMM tricks.ts:684-687 MM_PATH_SNOWHEAD_HOVERS (path_to_snowhead.yml:7, :28).
+    { 24, "gCombo.Tricks.MM.PathSnowheadHovers", "Cross Path to Snowhead using Hover Boots",
+      "Hover Boots can be used to slide off the slopes on the side and get across the gaps.", "Path to Snowhead",
+      "Hover Boots, movement", 2, 1u << 2 },
+    // OoTMM tricks.ts:689-692 MM_GBT_WATERWHEEL_HOVERS (great_bay_temple.yml:37).
+    { 25, "gCombo.Tricks.MM.GbtWaterwheelHovers", "Cross GBT Waterwheel Room using Hover Boots",
+      "Similar to using Goron, Hover Boots can be used to get on the water wheel and then reach the central room.",
+      "Great Bay Temple", "Hover Boots, movement", 2, 1u << 2 },
+    // OoTMM tricks.ts:694-697 MM_GBT_CENTER_POT_IRONS (great_bay_temple.yml:62).
+    { 26, "gCombo.Tricks.MM.GbtCenterPotIrons", "Great Bay Temple Center Underwater Pot using only Iron Boots",
+      "The pot can be broken by rolling into it, allowing you to collect the Stray Fairy.", "Great Bay Temple",
+      "Iron Boots, Zora Tunic", 2, 1u << 2 },
+    // OoTMM tricks.ts:699-702 MM_GBT_RED1_HOVERS (great_bay_temple.yml:135).
+    { 27, "gCombo.Tricks.MM.GbtRed1Hovers",
+      "Reach the First Red Turnkey in GBT using Hover Boots, Bunny Hood, and a Jump Slash",
+      "The red turnkey in front of Wart can be reached with a precise jump slash after the hover duration, using "
+      "Bunny Hood for extra speed.",
+      "Great Bay Temple", "Hover Boots, Bunny Hood, jump slash", 2, 1u << 2 },
+    // OoTMM tricks.ts:704-707 MM_GBT_GREEN2_UPPER_HOVERS (great_bay_temple.yml:252).
+    { 28, "gCombo.Tricks.MM.GbtGreen2UpperHovers", "Reach the Upper Chest in GBT's Second Green Room using Hover Boots",
+      "The upper chest in the green water wheel room can be reached by using Hover Boots to move between the wheel's "
+      "blades.",
+      "Great Bay Temple", "Hover Boots, movement", 2, 1u << 2 },
+    // OoTMM tricks.ts:714-717 MM_STT_LAVA_BLOCK_HOVERS (stone_tower_temple.yml:65).
+    { 29, "gCombo.Tricks.MM.SttLavaBlockHovers", "Stone Tower Temple Map Chest using Hover Boots",
+      "After using the Hookshot to reach the chest on the high platform in the lava room, one can then use the Hover "
+      "Boots to land on top of the sun block.",
+      "Stone Tower Temple", "Hover Boots, hookshot", 2, 1u << 2 },
+    // OoTMM tricks.ts:719-722 MM_ISTT_ENTRY_HOVER (stone_tower_temple_inverted.yml:16).
+    { 30, "gCombo.Tricks.MM.IsttEntryHover", "Inverted Stone Tower Temple Death Armos using Hover Boots and Bunny Hood",
+      "The Death Armos switch can be reached by using the Hover Boots and then sidehopping onto the platform, with "
+      "Bunny Hood for extra speed.",
+      "Stone Tower Temple", "Hover Boots, Bunny Hood", 2, 1u << 2 },
+    // OoTMM tricks.ts:583-586 MM_ST_UPDRAFTS (stone_tower_temple.yml:176-187, stone_tower_temple_inverted.yml:33).
+    { 31, "gCombo.Tricks.MM.StUpdrafts", "Stone Tower Updrafts without Deku Mask",
+      "This room can be traversed using Recoil Flips or Goron Mask instead of Deku Mask.", "Stone Tower Temple",
+      "Movement, updrafts", 2, 1u << 2 },
 };
 inline const MmTrickDefinition* FindMmTrick(int32_t id) {
     for (const auto& trick : kMmTricks)

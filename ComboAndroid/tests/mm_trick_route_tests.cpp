@@ -75,7 +75,7 @@ static void Enable(int id, bool enabled) {
 int main() {
     using namespace ComboRando;
     // Preserve the exact legacy prefix; only the reviewed appendages may follow.
-    assert(std::size(kMmTricks) == 19);
+    assert(std::size(kMmTricks) == 32);
     const char* legacyKeys[] = {"Lensless", "DarmaniWall", "PinnacleNoSeahorse", "PostOfficeTiming", "OceansideCode", "ClockTownLowerJump", "DoggyFenceJump", "PalaceBeanSkip", "IkanaIceSkip", "StoneTowerOneMask", "DekuStickFighting", "TwinmoldBow", "TwinmoldFireIce", "RanchFarore", "GbtCentralGeyser"};
     const char* legacyNames[] = {"Fewer Lens Requirements", "Climb to Darmani without the Lens", "Pinnacle Rock without the Seahorse", "Post Office timing without Bunny Hood", "Guess Oceanside Spider House code", "South Clock Town lower chest with a precise jump", "Doggy Racetrack chest with a fence jump", "Skip planting beans in Deku Palace", "Climb Ikana Canyon without Ice Arrows", "Climb Stone Tower with one transformation mask", "Fight enemies with Deku Sticks", "Defeat Twinmold with the Bow", "Defeat Twinmold with Fire and Ice Arrows", "Ranch events with Farore's Wind", "GBT Central Room without Zora using Fire & Ice Arrows or an OoT Magic Spell"};
     for (int id=0;id<15;++id) {
@@ -83,10 +83,41 @@ int main() {
         assert(row && std::string(row->key)==std::string("gCombo.Tricks.MM.")+legacyKeys[id]);
         assert(std::string(row->name)==legacyNames[id] && row->publicOption==(id<13));
     }
+    // LullabySkipIrons keeps its stored key (id 15) under OoTMM's name; only ZoraHallScrubNoDeku stays hidden.
     const char* appendedKeys[] = {"gCombo.Tricks.MM.LullabySkipIrons", "gCombo.Tricks.MM.ZoraHallScrubNoDeku",
-                                  "gCombo.Tricks.MM.IgosDins", "gCombo.Tricks.MM.StageLightsDin"};
+                                  "gCombo.Tricks.MM.IgosDins", "gCombo.Tricks.MM.StageLightsDin",
+                                  "gCombo.Tricks.MM.Tunics", "gCombo.Tricks.MM.GyorgIrons",
+                                  "gCombo.Tricks.MM.WfShrineHovers", "gCombo.Tricks.MM.WftLobbyHovers",
+                                  "gCombo.Tricks.MM.SoaringHovers", "gCombo.Tricks.MM.PathSnowheadHovers",
+                                  "gCombo.Tricks.MM.GbtWaterwheelHovers", "gCombo.Tricks.MM.GbtCenterPotIrons",
+                                  "gCombo.Tricks.MM.GbtRed1Hovers", "gCombo.Tricks.MM.GbtGreen2UpperHovers",
+                                  "gCombo.Tricks.MM.SttLavaBlockHovers", "gCombo.Tricks.MM.IsttEntryHover",
+                                  "gCombo.Tricks.MM.StUpdrafts"};
+    static_assert(std::size(appendedKeys) == std::size(kMmTricks) - 15);
     for (int id=15;id<int(std::size(kMmTricks));++id) {
-        assert(FindMmTrick(id)->publicOption==(id>=17) && std::string(FindMmTrick(id)->key)==appendedKeys[id-15]);
+        assert(FindMmTrick(id)->publicOption==(id!=16) && std::string(FindMmTrick(id)->key)==appendedKeys[id-15]);
+    }
+    // OoTMM tricks.ts names and tooltips, verbatim: MM_LULLABY_SKIP_IRONS (679-682) and the gear tricks of plan F2
+    // B7 (372-375, 709-712, 659-722, 583-586) in kMmTricks order.
+    const char* gearTricks[][2] = {
+        {"Skip playing Goron Lullaby by using Iron Boots", "By combining Iron Boots to not be blown away by the wind and Goron to roll up the slope, Goron Lullaby can be skipped."},
+        {"Fewer Tunic Requirements (MM)", "Most things that would normally require Zora Tunic no longer will. Pirate Fortress Sewers and Pinnacle Rock will still require it."},
+        {"Fight Gyorg as Human using Iron Boots and Hookshot", "Gyorg can be damaged with Hookshot. Turning this trick on will enable the fight in logic with Iron Boots and Hookshot."},
+        {"Woodfall Owl Chest with Hover Boots and Jump Slash", "The chest can be reached with a tight jump slash at the end of the hover duration."},
+        {"Woodfall Temple Lobby with Damage Boost and Hover Boots", "The lobby can be traversed by damaging yourself with bombs at certain points. Very difficult."},
+        {"Jump Slash or Damage Boost to the Soaring Tablet with Hover Boots and Bunny Hood", "Using Bunny Hood for extra speed, Hover Boots can be used to reach the Soaring Tablet with a tight jump slash or a damage boost with explosives."},
+        {"Cross Path to Snowhead using Hover Boots", "Hover Boots can be used to slide off the slopes on the side and get across the gaps."},
+        {"Cross GBT Waterwheel Room using Hover Boots", "Similar to using Goron, Hover Boots can be used to get on the water wheel and then reach the central room."},
+        {"Great Bay Temple Center Underwater Pot using only Iron Boots", "The pot can be broken by rolling into it, allowing you to collect the Stray Fairy."},
+        {"Reach the First Red Turnkey in GBT using Hover Boots, Bunny Hood, and a Jump Slash", "The red turnkey in front of Wart can be reached with a precise jump slash after the hover duration, using Bunny Hood for extra speed."},
+        {"Reach the Upper Chest in GBT's Second Green Room using Hover Boots", "The upper chest in the green water wheel room can be reached by using Hover Boots to move between the wheel's blades."},
+        {"Stone Tower Temple Map Chest using Hover Boots", "After using the Hookshot to reach the chest on the high platform in the lava room, one can then use the Hover Boots to land on top of the sun block."},
+        {"Inverted Stone Tower Temple Death Armos using Hover Boots and Bunny Hood", "The Death Armos switch can be reached by using the Hover Boots and then sidehopping onto the platform, with Bunny Hood for extra speed."},
+        {"Stone Tower Updrafts without Deku Mask", "This room can be traversed using Recoil Flips or Goron Mask instead of Deku Mask."},
+    };
+    for (int i = 0; i < int(std::size(gearTricks)); ++i) {
+        const auto* row = FindMmTrick(i == 0 ? 15 : 18 + i);
+        assert(row && std::string(row->name) == gearTricks[i][0] && std::string(row->description) == gearTricks[i][1]);
     }
     // OoTMM tricks.ts:598-601, 644-647 and 740-743, verbatim.
     assert(std::string(FindMmTrick(14)->description)=="Using Fire and Ice Arrows on the water stream above the ladder or an OoT Spell while on the spinning platform, it is possible to sink down during the cutscene, then swim into one of the tunnels.");
@@ -215,6 +246,22 @@ int main() {
     ApplyGameplayRules(GameplayRulesForRun(oldSeed, nlohmann::json()), write);
     for (int id = 2; id < int(std::size(kMmTricks)); ++id) assert(CVarGetInteger(FindMmTrick(id)->key, 9) == 0);
     assert(CVarGetInteger(kMmTricks[0].key, 0) == 1 && CVarGetInteger(kMmTricks[1].key, 0) == 1);
+    // A seed or profile saved before the gear tricks existed (ids 0-18 only) reads every appended trick as 0, even
+    // over enabled CVars, and LullabySkipIrons, public now, takes the value stored under its unchanged key.
+    {
+        auto preGear = rules;
+        for (int id = 19; id < int(std::size(kMmTricks)); ++id) preGear["mmTricks"].erase(FindMmTrick(id)->key);
+        assert(preGear["mmTricks"].size() == 19 && preGear["mmTricks"].contains("gCombo.Tricks.MM.LullabySkipIrons"));
+        for (const auto& row : kMmTricks) cvars[row.key] = 1;
+        preGear["mmTricks"]["gCombo.Tricks.MM.LullabySkipIrons"] = 1;
+        ApplyGameplayRules(GameplayRulesForRun(nlohmann::json{{"gameplayRules", preGear}}, nlohmann::json()), write);
+        for (int id = 19; id < int(std::size(kMmTricks)); ++id) assert(CVarGetInteger(FindMmTrick(id)->key, 9) == 0);
+        assert(CVarGetInteger("gCombo.Tricks.MM.LullabySkipIrons", 9) == 1);
+        assert(CVarGetInteger("gCombo.Tricks.MM.ZoraHallScrubNoDeku", 9) == 0);
+        preGear["mmTricks"]["gCombo.Tricks.MM.LullabySkipIrons"] = 0;
+        ApplyGameplayRules(preGear, write);
+        assert(CVarGetInteger("gCombo.Tricks.MM.LullabySkipIrons", 9) == 0);
+    }
     for (int id = 2; id < int(std::size(kMmTricks)); ++id) {
         auto corrupt = rules;
         corrupt["mmTricks"][FindMmTrick(id)->key] = "1";
@@ -235,6 +282,6 @@ int main() {
     assert(!IsHiddenMmTrick("gUnrelated.Cheat"));
     // MM logic's trick macro passes a literal key, so the check must not cost a scan per oracle query.
     static_assert(IsHiddenMmTrick("gCombo.Tricks.MM.ZoraHallScrubNoDeku") &&
-                  !IsHiddenMmTrick("gCombo.Tricks.MM.Lensless"));
+                  !IsHiddenMmTrick("gCombo.Tricks.MM.Lensless") && !IsHiddenMmTrick("gCombo.Tricks.MM.LullabySkipIrons"));
     std::cout << "PASS: " << cases << " production MM trick macro cases, region bindings, neighboring gates, stable IDs and immutable seed/run snapshots\n";
 }
