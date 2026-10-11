@@ -151,9 +151,16 @@ void BuildSkulltulaPeopleMessage(uint16_t* textId, bool* loadFromMessageTable) {
                                       "Yeaaarrgh! Je suis maudit!^Détruit encore %y[[d]] Araignées de la Malédiction%w "
                                       "et j'aurai quelque chose à te donner! [[color]]([[1]])%w");
     msg.InsertNumber(count);
-    msg.Replace("[[color]]", item.GetColor());
+    std::string color = item.GetColor();
     CustomMessage hintName = item.GetHint().GetHintMessage();
 #ifdef COMBO_BUILD
+    // ComboShip: an ice trap is hinted under its disguise, as Hint::GetItemHintText does, so the
+    // text matches the trick name the tracker records for this reward.
+    if (RAND_GET_ITEM_LOC(rc)->GetPlacedRandomizerGet() == RG_ICE_TRAP) {
+        auto& trick = OTRGlobals::Instance->gRandoContext->overrides[rc];
+        color = Rando::StaticData::RetrieveItem(trick.LooksLike()).GetColor();
+        hintName = CustomMessage({ trick.GetTrickArticle() + trick.GetTrickName() });
+    }
     // ComboShip: this reward was cross-placed into MM; show the real item instead of the sentinel's.
     if (RAND_GET_ITEM_LOC(rc)->GetPlacedRandomizerGet() == RG_COMBO_FOREIGN) {
         const ComboRando::ForeignItem* fi =
@@ -166,6 +173,7 @@ void BuildSkulltulaPeopleMessage(uint16_t* textId, bool* loadFromMessageTable) {
         }
     }
 #endif
+    msg.Replace("[[color]]", color);
     msg.InsertNames({ hintName });
     msg.AutoFormat();
     msg.LoadIntoFont();
@@ -183,9 +191,16 @@ void Build100SkullsHintMessage(uint16_t* textId, bool* loadFromMessageTable) {
                                       "et j'aurai quelque chose à te donner! [[color]]([[1]])%w");
     Rando::Item& item =
         Rando::StaticData::RetrieveItem(RAND_GET_ITEM_LOC(RC_KAK_100_GOLD_SKULLTULA_REWARD)->GetPlacedRandomizerGet());
-    msg.Replace("[[color]]", item.GetColor());
+    std::string color = item.GetColor();
     CustomMessage hintName = item.GetHint().GetHintMessage();
 #ifdef COMBO_BUILD
+    // ComboShip: an ice trap is hinted under its disguise, as Hint::GetItemHintText does, so the
+    // text matches the trick name the tracker records for this reward.
+    if (RAND_GET_ITEM_LOC(RC_KAK_100_GOLD_SKULLTULA_REWARD)->GetPlacedRandomizerGet() == RG_ICE_TRAP) {
+        auto& trick = OTRGlobals::Instance->gRandoContext->overrides[RC_KAK_100_GOLD_SKULLTULA_REWARD];
+        color = Rando::StaticData::RetrieveItem(trick.LooksLike()).GetColor();
+        hintName = CustomMessage({ trick.GetTrickArticle() + trick.GetTrickName() });
+    }
     // ComboShip: this reward was cross-placed into MM; show the real item instead of the sentinel's.
     if (RAND_GET_ITEM_LOC(RC_KAK_100_GOLD_SKULLTULA_REWARD)->GetPlacedRandomizerGet() == RG_COMBO_FOREIGN) {
         const ComboRando::ForeignItem* fi = OOT_LookupForeign(
@@ -198,6 +213,7 @@ void Build100SkullsHintMessage(uint16_t* textId, bool* loadFromMessageTable) {
         }
     }
 #endif
+    msg.Replace("[[color]]", color);
     msg.InsertNames({ hintName });
     msg.AutoFormat();
     msg.LoadIntoFont();
