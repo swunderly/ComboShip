@@ -482,7 +482,8 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_ZORA_HALL] = RandoRegion{ .sceneId = SCENE_33ZORACITY,
         .checks = {
-            CHECK(RC_ZORA_HALL_SCENE_LIGHTS, CAN_USE_MAGIC_ARROW(FIRE)),
+            // OoTMM zora_hall.yml:19: can_use_fire_arrows || (trick(MM_STAGE_LIGHTS_DIN) && has_arrows && can_use_din && can_hookshot)
+            CHECK(RC_ZORA_HALL_SCENE_LIGHTS, CAN_USE_MAGIC_ARROW(FIRE) || (COMBO_MM_TRICK("StageLightsDin") && CAN_USE_BOW && CAN_USE_DINS_FIRE && HAS_ITEM(ITEM_HOOKSHOT))),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(ZORA_CAPE, 1),                    ENTRANCE(ZORA_HALL, 0), COMBO_WORLD54_SELECT(true, MM_LOGIC_UNDERWATER_WALKING_STRICT)),

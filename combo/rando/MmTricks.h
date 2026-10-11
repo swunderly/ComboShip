@@ -72,9 +72,11 @@ inline constexpr MmTrickDefinition kMmTricks[] = {
       "Return to a recorded ranch point across the cycle; the requested half-day clock, Romani's soul and the event's "
       "equipment remain required.",
       "Romani Ranch", "Farore, clocks", 2, 1u << 2, false },
-    { 14, "gCombo.Tricks.MM.GbtCentralGeyser", "Great Bay central geyser",
-      "Reach central-room pipes with the pinned spell or magic-arrow geyser technique. The water wheel and swimming "
-      "requirements remain specific to the destination.",
+    // OoTMM tricks.ts:598-601 MM_GBT_CENTRAL_GEYSER.
+    { 14, "gCombo.Tricks.MM.GbtCentralGeyser",
+      "GBT Central Room without Zora using Fire & Ice Arrows or an OoT Magic Spell",
+      "Using Fire and Ice Arrows on the water stream above the ladder or an OoT Spell while on the spinning platform, "
+      "it is possible to sink down during the cutscene, then swim into one of the tunnels.",
       "Great Bay Temple", "Farore, movement", 2, 1u << 2, false },
     { 15, "gCombo.Tricks.MM.LullabySkipIrons", "Snowhead blizzard with Iron Boots",
       "The pinned Iron Boots blizzard bypass still requires magic and Goron Mask ownership. Hidden until actual native "
@@ -83,6 +85,15 @@ inline constexpr MmTrickDefinition kMmTricks[] = {
     { 16, "gCombo.Tricks.MM.ZoraHallScrubNoDeku", "Zora Hall Scrub heart without Deku",
       "Pinned Goron or tall-form jump reaches the heart without Deku. Hidden until actual Adult gameplay is validated.",
       "Zora Hall", "Movement, masks", 2, 1u << 2, false },
+    // OoTMM tricks.ts:644-647 MM_IGOS_DINS (macros_mm.yml:401 can_kill_igos).
+    { 17, "gCombo.Tricks.MM.IgosDins", "Burn Igos' curtain with Din's Fire",
+      "Igos' left curtain can be burned by standing at the top of the stairs next to his throne.",
+      "Ancient Castle of Ikana", "Combat, Din's Fire", 2, 1u << 2 },
+    // OoTMM tricks.ts:740-743 MM_STAGE_LIGHTS_DIN (zora_hall.yml:19).
+    { 18, "gCombo.Tricks.MM.StageLightsDin", "Light the Zora Hall Stage Lights using Din's Fire, Bow, and Hookshot",
+      "The item can be obtained without Fire Arrows by first reaching either torch with the hookshot, using Din's "
+      "Fire, then shooting an arrow to the other torch.",
+      "Zora Hall", "Din's Fire, bow, hookshot", 2, 1u << 2 },
 };
 inline const MmTrickDefinition* FindMmTrick(int32_t id) {
     for (const auto& trick : kMmTricks)

@@ -74,19 +74,26 @@ static void Enable(int id, bool enabled) {
 
 int main() {
     using namespace ComboRando;
-    // Preserve the exact legacy prefix; only the reviewed hidden appendages may follow.
-    assert(std::size(kMmTricks) >= 16 && std::size(kMmTricks) <= 17);
+    // Preserve the exact legacy prefix; only the reviewed appendages may follow.
+    assert(std::size(kMmTricks) == 19);
     const char* legacyKeys[] = {"Lensless", "DarmaniWall", "PinnacleNoSeahorse", "PostOfficeTiming", "OceansideCode", "ClockTownLowerJump", "DoggyFenceJump", "PalaceBeanSkip", "IkanaIceSkip", "StoneTowerOneMask", "DekuStickFighting", "TwinmoldBow", "TwinmoldFireIce", "RanchFarore", "GbtCentralGeyser"};
-    const char* legacyNames[] = {"Fewer Lens Requirements", "Climb to Darmani without the Lens", "Pinnacle Rock without the Seahorse", "Post Office timing without Bunny Hood", "Guess Oceanside Spider House code", "South Clock Town lower chest with a precise jump", "Doggy Racetrack chest with a fence jump", "Skip planting beans in Deku Palace", "Climb Ikana Canyon without Ice Arrows", "Climb Stone Tower with one transformation mask", "Fight enemies with Deku Sticks", "Defeat Twinmold with the Bow", "Defeat Twinmold with Fire and Ice Arrows", "Ranch events with Farore's Wind", "Great Bay central geyser"};
+    const char* legacyNames[] = {"Fewer Lens Requirements", "Climb to Darmani without the Lens", "Pinnacle Rock without the Seahorse", "Post Office timing without Bunny Hood", "Guess Oceanside Spider House code", "South Clock Town lower chest with a precise jump", "Doggy Racetrack chest with a fence jump", "Skip planting beans in Deku Palace", "Climb Ikana Canyon without Ice Arrows", "Climb Stone Tower with one transformation mask", "Fight enemies with Deku Sticks", "Defeat Twinmold with the Bow", "Defeat Twinmold with Fire and Ice Arrows", "Ranch events with Farore's Wind", "GBT Central Room without Zora using Fire & Ice Arrows or an OoT Magic Spell"};
     for (int id=0;id<15;++id) {
         const auto* row=FindMmTrick(id);
         assert(row && std::string(row->key)==std::string("gCombo.Tricks.MM.")+legacyKeys[id]);
         assert(std::string(row->name)==legacyNames[id] && row->publicOption==(id<13));
     }
-    const char* appendedKeys[] = {"gCombo.Tricks.MM.LullabySkipIrons", "gCombo.Tricks.MM.ZoraHallScrubNoDeku"};
+    const char* appendedKeys[] = {"gCombo.Tricks.MM.LullabySkipIrons", "gCombo.Tricks.MM.ZoraHallScrubNoDeku",
+                                  "gCombo.Tricks.MM.IgosDins", "gCombo.Tricks.MM.StageLightsDin"};
     for (int id=15;id<int(std::size(kMmTricks));++id) {
-        assert(!FindMmTrick(id)->publicOption && std::string(FindMmTrick(id)->key)==appendedKeys[id-15]);
+        assert(FindMmTrick(id)->publicOption==(id>=17) && std::string(FindMmTrick(id)->key)==appendedKeys[id-15]);
     }
+    // OoTMM tricks.ts:598-601, 644-647 and 740-743, verbatim.
+    assert(std::string(FindMmTrick(14)->description)=="Using Fire and Ice Arrows on the water stream above the ladder or an OoT Spell while on the spinning platform, it is possible to sink down during the cutscene, then swim into one of the tunnels.");
+    assert(std::string(FindMmTrick(17)->name)=="Burn Igos' curtain with Din's Fire");
+    assert(std::string(FindMmTrick(17)->description)=="Igos' left curtain can be burned by standing at the top of the stairs next to his throne.");
+    assert(std::string(FindMmTrick(18)->name)=="Light the Zora Hall Stage Lights using Din's Fire, Bow, and Hookshot");
+    assert(std::string(FindMmTrick(18)->description)=="The item can be obtained without Fire Arrows by first reaching either torch with the hookshot, using Din's Fire, then shooting an arrow to the other torch.");
     assert(std::string(kMmTricks[0].key) == "gCombo.Tricks.MM.Lensless");
     assert(std::string(kMmTricks[1].key) == "gCombo.Tricks.MM.DarmaniWall");
     std::set<std::string> keys;
@@ -164,6 +171,7 @@ int main() {
         "CHECK(RC_CLOCK_TOWN_SOUTH_CHEST_UPPER, ((CAN_BE_DEKU && Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)) || HAS_ITEM(ITEM_HOOKSHOT)) && FINAL_DAY())");
     Has(Region(central, "RR_POST_OFFICE"), "CHECK(RC_CLOCK_TOWN_WEST_POSTMAN_MINIGAME, CAN_WIN_POST_OFFICE)");
     Has(Region(west, "RR_PINNACLE_ROCK_ENTRANCE"), "CONNECTION(RR_PINNACLE_ROCK_INNER, CAN_CROSS_PINNACLE_ROCK)");
+    Has(Region(west, "RR_ZORA_HALL"), "CHECK(RC_ZORA_HALL_SCENE_LIGHTS, CAN_USE_MAGIC_ARROW(FIRE) || (COMBO_MM_TRICK(\"StageLightsDin\") && CAN_USE_BOW && CAN_USE_DINS_FIRE && HAS_ITEM(ITEM_HOOKSHOT)))");
     Has(west, "EVENT(RE_ACCESS_SEAHORSE, RANDO_EVENTS[RE_ACCESS_PIRATE_PICTURE] && HAS_ITEM(ITEM_PICTOGRAPH_BOX) && HAS_BOTTLE)");
     Has(Region(west, "RR_PINNACLE_ROCK_INNER"), "CanKillEnemy(ACTOR_EN_DRAGON) && RANDO_EVENTS[RE_ACCESS_SEAHORSE]");
     Has(spiders, "CHECK(RC_OCEAN_SPIDER_HOUSE_CHEST_PIECE_OF_HEART, CAN_OPEN_OCEANSIDE_CODE_CHEST)");
