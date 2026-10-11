@@ -509,7 +509,8 @@ static RegisterShipInitFunc initFunc([]() {
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(GROTTOS, 21),                     ENTRANCE(SOUTHERN_SWAMP_POISONED, 3), CAN_BE_DEKU || CAN_BE_ZORA || (NativeMmSwampCleared() && CAN_TRAVERSE_WAIST_DEEP_WATER)),
             EXIT(ENTRANCE(DEKU_PALACE, 0),                  ENTRANCE(SOUTHERN_SWAMP_POISONED, 3), true),
-            EXIT(ENTRANCE(SWAMP_SPIDER_HOUSE, 0),           ENTRANCE(SOUTHERN_SWAMP_POISONED, 8), CAN_LIGHT_TORCH_NEAR_ANOTHER && (CAN_BE_DEKU || CAN_BE_ZORA || (NativeMmSwampCleared() && CAN_USE_ABILITY(SWIM)))),
+            // southern_swamp.yml:178: has_sticks || has_arrows; Din's Fire does not count.
+            EXIT(ENTRANCE(SWAMP_SPIDER_HOUSE, 0),           ENTRANCE(SOUTHERN_SWAMP_POISONED, 8), (CAN_USE_STICKS || CAN_USE_BOW) && (CAN_BE_DEKU || CAN_BE_ZORA || (NativeMmSwampCleared() && CAN_USE_ABILITY(SWIM)))),
         },
         .connections = {
             CONNECTION(RR_SOUTHERN_SWAMP_NORTH, CanGetPastBigOcto()),

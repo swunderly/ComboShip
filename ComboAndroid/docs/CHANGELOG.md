@@ -21,7 +21,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
   - New tricks with OoTMM's names, off by default: "Burn Igos' curtain with Din's Fire" and "Light the Zora Hall Stage Lights using Din's Fire, Bow, and Hookshot".
   - The item tracker's Trade Items group shows the MM spells, on seeds that add them.
 - **MM logic follows OoTMM v32.3 in more places**, whatever the options:
-  - The Oceanside Spider House library needs arrows or Deku Sticks, so plain arrows now count.
+  - The Oceanside Spider House library, the Swamp Spider House entrance and the door from the Woodfall Temple dark room to the maze need arrows or Deku Sticks, so plain arrows now count. Din's Fire does not count there, as in OoTMM.
   - The Snowhead Temple Pillars Room chest needs you to defeat its Freezard (and its soul, with enemy souls on); the pots there are free.
   - Fire Arrows also reach the Woodfall Temple main room's upper ledge from below, and open the Snowhead Temple icicle room chest.
   - Once Snowhead is cleared, its blizzard no longer blocks the way to the temple.

@@ -90,7 +90,8 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_WOODFALL_TEMPLE_MAIN_ROOM_UPPER, CAN_BE_DEKU && CAN_LIGHT_TORCH_NEAR_ANOTHER),
-            CONNECTION(RR_WOODFALL_TEMPLE_MAZE_ROOM, CAN_LIGHT_TORCH_NEAR_ANOTHER),
+            // woodfall_temple.yml:169: has_sticks || has_arrows; Din's Fire does not count.
+            CONNECTION(RR_WOODFALL_TEMPLE_MAZE_ROOM, CAN_USE_STICKS || CAN_USE_BOW),
         },
     };
     Regions[RR_WOODFALL_TEMPLE_DEKU_PRINCESS_ROOM] = RandoRegion{ .name = "Deku Princess Room", .sceneId = SCENE_MITURIN,

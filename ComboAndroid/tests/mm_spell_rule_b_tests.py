@@ -468,7 +468,6 @@ EXPECTED_SWAMP = {
     'ENTRANCE(DEKU_PALACE, 0)': 'southern_swamp.yml:232: the boat ride needs is_swamp_poisoned',
     'ENTRANCE(DEKU_PALACE, 5)': 'southern_swamp.yml:298: Canopy Back -> Canopy Front needs short_hook_anywhere; the treetop '
                                 'is still reached from the palace itself',
-    'ENTRANCE(SWAMP_SPIDER_HOUSE, 0)': 'southern_swamp.yml:178: has_sticks || has_arrows (Din\'s Fire does not count)',
     'RC_SOUTHERN_SWAMP_FREESTANDING_RUPEE_01': 'southern_swamp.yml:113: is_swamp_poisoned',
     'RC_SOUTHERN_SWAMP_FREESTANDING_RUPEE_02': 'southern_swamp.yml:114: is_swamp_poisoned',
     # can_swim is the Swim ability or the Zora Mask; without Swim (swim shuffle) the native graph let Goron wade.

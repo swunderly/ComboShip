@@ -2,10 +2,12 @@
 
 The fixture fixtures/ootmm-32.3-mm-spells.json holds OoTMM v32.3's names and descriptions for the MM spell
 settings, the cross-game shared items and the spell tricks, plus the receipt of every MM logic site that copies an
-OoTMM Din's Fire / Nayru's Love term (fork region and expression -> OoTMM file:line). This checks the production
-menus, profile layout, shared-item table, trick table, tracker and region files against it. When the OoTMM v32.3
-checkout is available (--reference, or references/ootmm-stable-32.3 beside the worktree), the fixture itself is
-checked against data.ts, tricks.ts and the cited yml lines.
+OoTMM Din's Fire / Nayru's Love term (fork region and expression -> OoTMM file:line) and of the sites where OoTMM's
+expression has no Din's Fire although the native one had short-range fire ('dinNotCounted'). This checks the
+production menus, profile layout, shared-item table, trick table, tracker and region files against it, and fails
+on any logic line that counts Din's Fire without being a receipt site. When the OoTMM v32.3 checkout is available
+(--reference, or references/ootmm-stable-32.3 beside the worktree), the fixture itself is checked against data.ts,
+tricks.ts, the cited yml lines and the macros that count Din's Fire.
 """
 from pathlib import Path
 import argparse
@@ -106,14 +108,70 @@ check(not fire_refs, f'Din switches {fire_refs}')
 
 # ---- Receipt: every mapped site carries its OoTMM term.
 sources = {}
+
+
+def site_file(name):
+    """A receipt file: a bare name is a region file, anything else is relative to the worktree."""
+    return regions_dir / name if '/' not in name else root / name
+
+
+def source_of(name):
+    return sources.setdefault(name, site_file(name).read_text(encoding='utf-8'))
+
+
 for entry in fixture['macros']:
     text = squash(read(entry['file']))
     check(squash(entry['text']) in text, f'{entry["file"]} lacks {entry["text"]}')
-for group in ('din', 'nayru'):
+for group in ('din', 'nayru', 'dinNotCounted'):
     for entry in fixture[group]:
-        source = sources.setdefault(entry['file'], (regions_dir / entry['file']).read_text(encoding='utf-8'))
-        check(squash(entry['text']) in squash(region(source, entry['region'])),
+        check(squash(entry['text']) in squash(region(source_of(entry['file']), entry['region'])),
               f'{entry["file"]} {entry["region"] or "(file)"} lacks {entry["text"]}')
+
+# ---- Din's Fire only where OoTMM has it. The fork's short-range fire macros count Din's Fire, including the native
+# torch macro (CAN_LIGHT_TORCH_NEAR_ANOTHER, OoTMM has_fire_sticks). Every logic line that uses one must be a receipt
+# site whose OoTMM expression counts Din's Fire, and the sites where OoTMM's expression has no Din's Fire (the
+# 'dinNotCounted' entries) must use none of them. CAN_USE_GBT_GEYSER (all three spells, hidden trick) is covered by
+# its notApplicable entry.
+DIN_TOKENS = {'CAN_USE_DINS_FIRE', 'CAN_USE_FIRE_SHORT_RANGE', 'CAN_LIGHT_TORCH_NEAR_ANOTHER'}
+logic_dir = root / 'mm/2s2h/Rando/Logic'
+inventory_files = sorted(regions_dir.glob('*.cpp')) + sorted(logic_dir.glob('Mm*.inc.h'))
+changed = True
+while changed:  # local macros built on them, e.g. SpiderHouses.cpp COMBO_WORLD36_FIRE_STICKS
+    changed = False
+    for path in inventory_files:
+        for m in re.finditer(r'#define\s+(\w+)((?:[^\n]*\\\n)*[^\n]*)', path.read_text(encoding='utf-8')):
+            if m.group(1) not in DIN_TOKENS and set(re.findall(r'\w+', m.group(2))) & DIN_TOKENS:
+                DIN_TOKENS.add(m.group(1))
+                changed = True
+
+
+def statement(text, at):
+    """The call that starts at text[at] (squashed), up to its matching parenthesis."""
+    depth, i = 0, text.index('(', at)
+    while True:
+        depth += (text[i] == '(') - (text[i] == ')')
+        i += 1
+        if depth == 0:
+            return text[at:i]
+
+
+for entry in fixture['dinNotCounted']:
+    body = squash(region(source_of(entry['file']), entry['region']))
+    at = body.find(squash(entry['text']))
+    if at >= 0:
+        used = set(re.findall(r'\w+', statement(body, at))) & DIN_TOKENS
+        check(not used, f'{entry["file"]} {entry["region"] or "(file)"} counts Din\'s Fire ({sorted(used)}) where '
+                        f'{entry["ootmm"]} does not')
+for path in inventory_files:
+    name = path.name if path.parent == regions_dir else path.relative_to(root).as_posix()
+    entries = [squash(e['text']) for g in ('din', 'nayru') for e in fixture[g] if e['file'] == name]
+    for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+        if line.lstrip().startswith('#define') or not set(re.findall(r'\w+', line.split('//')[0])) & DIN_TOKENS:
+            continue
+        s = squash(line.split('//')[0])
+        tail = s.rstrip(');,')  # a line can close a statement that starts above it
+        check(any(e in s or tail in e for e in entries),
+              f'{name}:{number} counts Din\'s Fire but is not a receipt site: {line.strip()[:120]}')
 
 # ---- Item tracker: the spells lead their trade slots (OoTMM trade.c kMmTrade1..3) and hide on other seeds.
 settings = squash(read('mm/2s2h/Enhancements/Trackers/ItemTracker/ItemTrackerSettings.cpp'))
@@ -153,10 +211,33 @@ if reference is not None:
         name = re.search(r'name: ("|\')(.*?)\1,', block).group(2)
         tip = re.search(r'tooltip: ("|\')(.*?)\1,', block).group(2)
         check((name, tip) == (t['name'], t['tooltip']), f'fixture {t["key"]} differs from tricks.ts')
-    for entry in fixture['macros'] + fixture['din'] + fixture['nayru']:
+    for entry in fixture['macros'] + fixture['din'] + fixture['nayru'] + fixture['dinNotCounted']:
         rel, line = entry['ootmm'].rsplit(':', 1)
         lines = (reference / rel).read_text(encoding='utf-8').splitlines()
         check(entry['expects'] in lines[int(line) - 1], f'{entry["ootmm"]} does not contain {entry["expects"]!r}')
+    # OoTMM macros that count Din's Fire (can_use_din and everything built on it, e.g. has_fire_sticks).
+    macros = {}
+    for rel in ('data/macros/macros_common.yml', 'data/macros/macros_mm.yml'):
+        for m in re.finditer(r'^"(\w+)(?:\([^)]*\))?":\s*"(.*)"', (reference / rel).read_text(encoding='utf-8'), re.M):
+            macros[m.group(1)] = set(re.findall(r'\b[a-z_][a-z0-9_]*\b', m.group(2)))
+    din_terms = {'can_use_din', 'can_use_din_raw'}
+    changed = True
+    while changed:
+        changed = False
+        for name, uses in macros.items():
+            if name not in din_terms and uses & din_terms:
+                din_terms.add(name)
+                changed = True
+
+    def terms(expression):
+        return set(re.findall(r'\b[a-z_][a-z0-9_]*\b', expression))
+
+    for entry in fixture['din']:
+        check(terms(entry['expects']) & din_terms, f'{entry["ootmm"]}: {entry["expects"]!r} does not count Din\'s Fire')
+    for entry in fixture['dinNotCounted']:
+        rel, line = entry['ootmm'].rsplit(':', 1)
+        expression = (reference / rel).read_text(encoding='utf-8').splitlines()[int(line) - 1].split(':', 1)[1]
+        check(not terms(expression) & din_terms, f'{entry["ootmm"]} counts Din\'s Fire after all')
     print(f'OoTMM reference checked: {reference}')
 else:
     print('OoTMM reference not found; checked the production sources against the fixture only')
@@ -165,5 +246,6 @@ if failures:
     print('\n'.join(failures))
     sys.exit(1)
 print(f'MM spell extensions: {len(fixture["settings"])} settings, {len(fixture["shared"])} shared items, '
-      f'{len(fixture["tricks"])} tricks, {len(fixture["din"]) + len(fixture["nayru"]) + len(fixture["macros"])} logic sites '
+      f'{len(fixture["tricks"])} tricks, {len(fixture["din"]) + len(fixture["nayru"]) + len(fixture["macros"])} logic sites, '
+      f'{len(fixture["dinNotCounted"])} sites without Din\'s Fire '
       f'and {len(fixture["notApplicable"])} documented N/A entries match OoTMM v32.3')
