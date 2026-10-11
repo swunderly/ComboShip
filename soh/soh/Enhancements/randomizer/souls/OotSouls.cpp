@@ -292,6 +292,11 @@ extern "C" void Combo_OotSoulResetRoom(void* raw) {
 extern "C" int Combo_OotSoulCanClear(void* raw, int room) {
     return !(soulRoomBlocked && soulPlay == raw && soulRoom == room);
 }
+// OoTMM's En_Blkobj hook makes Actor_Find report Dark Link present while his soul is missing.
+extern "C" int Combo_OotDarkLinkSoulMissing(void) {
+    return IS_RANDO && !Rando::Souls::HaveGeneralOotSoul(Rando::Souls::Read(&gSaveContext), Rando::Souls::Options(),
+                                                         Rando::Souls::OotSoul::ENEMY_DARK_LINK);
+}
 extern "C" int Combo_OotSoulPreSpawn(void* raw, int actor, unsigned params) {
     if (!IS_RANDO || !Rando::Souls::Options().enabled)
         return 1;

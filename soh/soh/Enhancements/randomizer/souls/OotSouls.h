@@ -28,6 +28,7 @@ int Combo_OotSoulGive(void* play, int item);
 int Combo_OotSoulPreSpawn(void* play, int actor, unsigned params);
 void Combo_OotSoulResetRoom(void* play);
 int Combo_OotSoulCanClear(void* play, int room);
+int Combo_OotDarkLinkSoulMissing(void);
 #ifdef __cplusplus
 }
 #endif

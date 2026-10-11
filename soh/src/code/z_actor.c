@@ -763,10 +763,7 @@ s32 Flags_GetClear(PlayState* play, s32 flag) {
 /**
  * Sets current scene clear flag.
  */
-extern int Combo_OotSoulCanClear(void*, int);
 void Flags_SetClear(PlayState* play, s32 flag) {
-    if (!Combo_OotSoulCanClear(play, flag))
-        return;
     u8 previouslyOff = !Flags_GetClear(play, flag);
     play->actorCtx.flags.clear |= (1 << flag);
     if (previouslyOff) {
@@ -3288,6 +3285,7 @@ void Actor_AddToCategory(ActorContext* actorCtx, Actor* actorToAdd, u8 actorCate
  * Removes a given actor instance from its actor list.
  * Also sets the temp clear flag of the current room if the actor removed was the last enemy loaded.
  */
+extern int Combo_OotSoulCanClear(void*, int);
 Actor* Actor_RemoveFromCategory(PlayState* play, ActorContext* actorCtx, Actor* actorToRemove) {
     Actor* newHead;
 
@@ -3309,8 +3307,9 @@ Actor* Actor_RemoveFromCategory(PlayState* play, ActorContext* actorCtx, Actor* 
     actorToRemove->next = NULL;
     actorToRemove->prev = NULL;
 
+    // A room that kept an enemy away for its missing soul never clears (OoTMM SetRoomClearHook).
     if ((actorToRemove->room == play->roomCtx.curRoom.num) && (actorToRemove->category == ACTORCAT_ENEMY) &&
-        (actorCtx->actorLists[ACTORCAT_ENEMY].length == 0)) {
+        (actorCtx->actorLists[ACTORCAT_ENEMY].length == 0) && Combo_OotSoulCanClear(play, play->roomCtx.curRoom.num)) {
         Flags_SetTempClear(play, play->roomCtx.curRoom.num);
     }
 

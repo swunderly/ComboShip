@@ -97,6 +97,7 @@ void EnBlkobj_SpawnDarkLink(EnBlkobj* this, PlayState* play) {
     }
 }
 
+extern int Combo_OotDarkLinkSoulMissing(void);
 void EnBlkobj_DarkLinkFight(EnBlkobj* this, PlayState* play) {
     s32 alphaMod;
 
@@ -104,12 +105,14 @@ void EnBlkobj_DarkLinkFight(EnBlkobj* this, PlayState* play) {
         // Dark Link room completed.
         // Check for if Dark Link is defeated in authentic gameplay.
         // Check for if all enemies are defeated with enemy randomizer or crowd control on.
-        uint8_t roomCleared = (!CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0) &&
-                               !(CVarGetInteger(CVAR_REMOTE_CROWD_CONTROL("Enabled"), 0)) &&
-                               Actor_Find(&play->actorCtx, ACTOR_EN_TORCH2, ACTORCAT_BOSS) == NULL) ||
-                              ((CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0) ||
-                                (CVarGetInteger(CVAR_REMOTE_CROWD_CONTROL("Enabled"), 0))) &&
-                               Flags_GetTempClear(play, this->dyna.actor.room));
+        // Without his shuffled soul Dark Link never spawns, and the room never clears (OoTMM En_Blkobj.c).
+        uint8_t roomCleared =
+            (!CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0) &&
+             !(CVarGetInteger(CVAR_REMOTE_CROWD_CONTROL("Enabled"), 0)) &&
+             Actor_Find(&play->actorCtx, ACTOR_EN_TORCH2, ACTORCAT_BOSS) == NULL && !Combo_OotDarkLinkSoulMissing()) ||
+            ((CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0) ||
+              (CVarGetInteger(CVAR_REMOTE_CROWD_CONTROL("Enabled"), 0))) &&
+             Flags_GetTempClear(play, this->dyna.actor.room));
         if (roomCleared) {
             Flags_SetClear(play, this->dyna.actor.room);
             this->timer++;
