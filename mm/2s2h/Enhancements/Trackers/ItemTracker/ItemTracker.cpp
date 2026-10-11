@@ -30,6 +30,10 @@ extern "C" {
 #include "overlays/actors/ovl_En_Si/z_en_si.h"
 }
 
+#ifdef COMBO_BUILD
+#include "2s2h/ComboAdultGearInventory.h" // MM gear ownership bits
+#endif
+
 #include <fast/Fast3dGui.h>
 
 namespace BenGui {
@@ -79,6 +83,15 @@ static bool IsTradeItemObtained(RandoItemId randoItemId) {
             return gSaveContext.save.shipSaveInfo.faroresWind.owned != 0;
         case RI_NAYRUS_LOVE:
             return gSaveContext.save.shipSaveInfo.spellLoveOwned != 0;
+        // The gear ownership bits survive Song of Time too; HAS_ITEM reads the same bits (Logic.h).
+        case RI_BOOTS_IRON:
+        case RI_TUNIC_GORON:
+            return ComboAdultGearInventory::Has(gSaveContext.save.shipSaveInfo.adultMm.gearTrade2Bits,
+                                                Rando::StaticData::Items[randoItemId].itemId);
+        case RI_BOOTS_HOVER:
+        case RI_TUNIC_ZORA:
+            return ComboAdultGearInventory::Has(gSaveContext.save.shipSaveInfo.adultMm.gearTrade3Bits,
+                                                Rando::StaticData::Items[randoItemId].itemId);
 #endif
         default:
             return false;
@@ -99,6 +112,14 @@ static bool IsTrackerItemHidden(TrackerItemType itemType, u32 itemId) {
         return !IS_RANDO || !RANDO_SAVE_OPTIONS[RO_MM_SPELL_WIND];
     if (itemId == RI_NAYRUS_LOVE)
         return !IS_RANDO || !RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE];
+    if (itemId == RI_BOOTS_IRON)
+        return !IS_RANDO || !RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON];
+    if (itemId == RI_BOOTS_HOVER)
+        return !IS_RANDO || !RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER];
+    if (itemId == RI_TUNIC_GORON)
+        return !IS_RANDO || !RANDO_SAVE_OPTIONS[RO_MM_TUNIC_GORON];
+    if (itemId == RI_TUNIC_ZORA)
+        return !IS_RANDO || !RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA];
 #endif
     return false;
 }
@@ -174,6 +195,10 @@ TrackerImageObject GetImageObject(TrackerItemType itemType, u32 itemId) {
                 case RI_DINS_FIRE:
                 case RI_FARORES_WIND:
                 case RI_NAYRUS_LOVE:
+                case RI_BOOTS_IRON:
+                case RI_BOOTS_HOVER:
+                case RI_TUNIC_GORON:
+                case RI_TUNIC_ZORA:
 #endif
                 {
                     itemObtained = IsTradeItemObtained(randoItemId);
@@ -203,10 +228,12 @@ TrackerImageObject GetImageObject(TrackerItemType itemType, u32 itemId) {
             itemObtained = gSaveContext.save.saveInfo.inventory.items[itemId] != ITEM_NONE;
             auto vanillaItemId = isSaveLoaded ? gSaveContext.save.saveInfo.inventory.items[itemId] : ITEM_NONE;
 #ifdef COMBO_BUILD
-            // The MM spells sit in the trade slots (Spells.cpp, FaroresWind.cpp) and have their own gItemIcons
-            // entries (z_inventory.c), so the slot shows the spell rather than the slot's first trade item.
+            // The MM spells and gear sit in the trade slots (Spells.cpp, FaroresWind.cpp, ComboAdultGearInventory.h)
+            // and have their own gItemIcons entries (z_inventory.c), so the slot shows the item rather than the slot's
+            // first trade item.
             const bool spellIcon = vanillaItemId == ITEM_COMBO_FARORES_WIND || vanillaItemId == ITEM_COMBO_DINS_FIRE ||
-                                   vanillaItemId == ITEM_COMBO_NAYRUS_LOVE;
+                                   vanillaItemId == ITEM_COMBO_NAYRUS_LOVE ||
+                                   (vanillaItemId >= ITEM_COMBO_BOOTS_IRON && vanillaItemId <= ITEM_COMBO_TUNIC_ZORA);
 #else
             const bool spellIcon = false;
 #endif

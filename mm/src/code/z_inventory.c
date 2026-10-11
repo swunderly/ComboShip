@@ -107,6 +107,13 @@ static const ALIGN_ASSET(2) char sComboFaroresWindIcon[] =
 static const ALIGN_ASSET(2) char sComboDinsFireIcon[] = "__OTR__@oot:textures/icon_item_static/gItemIconDinsFireTex";
 static const ALIGN_ASSET(2) char sComboNayrusLoveIcon[] =
     "__OTR__@oot:textures/icon_item_static/gItemIconNayrusLoveTex";
+// The MM gear keeps OoT's own icons (OoTMM z_parameter.c:5-63); gear tables swap the same paths in while it runs.
+static const ALIGN_ASSET(2) char sComboBootsIronIcon[] = "__OTR__@oot:textures/icon_item_static/gItemIconBootsIronTex";
+static const ALIGN_ASSET(2) char sComboBootsHoverIcon[] =
+    "__OTR__@oot:textures/icon_item_static/gItemIconBootsHoverTex";
+static const ALIGN_ASSET(2) char sComboTunicGoronIcon[] =
+    "__OTR__@oot:textures/icon_item_static/gItemIconTunicGoronTex";
+static const ALIGN_ASSET(2) char sComboTunicZoraIcon[] = "__OTR__@oot:textures/icon_item_static/gItemIconTunicZoraTex";
 #endif
 
 TexturePtr gItemIcons[256] = {
@@ -249,6 +256,10 @@ TexturePtr gItemIcons[256] = {
     [ITEM_COMBO_FARORES_WIND] = (TexturePtr)sComboFaroresWindIcon,
     [ITEM_COMBO_DINS_FIRE] = (TexturePtr)sComboDinsFireIcon,
     [ITEM_COMBO_NAYRUS_LOVE] = (TexturePtr)sComboNayrusLoveIcon,
+    [ITEM_COMBO_BOOTS_IRON] = (TexturePtr)sComboBootsIronIcon,
+    [ITEM_COMBO_BOOTS_HOVER] = (TexturePtr)sComboBootsHoverIcon,
+    [ITEM_COMBO_TUNIC_GORON] = (TexturePtr)sComboTunicGoronIcon,
+    [ITEM_COMBO_TUNIC_ZORA] = (TexturePtr)sComboTunicZoraIcon,
 #endif
 };
 
