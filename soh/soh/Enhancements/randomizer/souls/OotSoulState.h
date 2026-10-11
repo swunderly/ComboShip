@@ -61,6 +61,22 @@ inline GeneralOotSoulsOwnership RestoreGeneralOotSouls(const nlohmann::json& sav
 struct GeneralOotSoulOptions {
     bool enabled = false, enemy = false, npc = false, animal = false, misc = false;
 };
+// OoTMM v32.3 has one boolean per soul family and no master switch (packages/core/src/settings/
+// data.ts:2336-2414). A family is offered only once its gates and runtime are finished, as MM's
+// ExpandedSoulsReadiness.h does; an unpublished family stays off whatever a profile, CVar or seed says.
+inline constexpr bool OotEnemySoulsPublic = false, OotNpcSoulsPublic = false, OotAnimalSoulsPublic = false,
+                      OotMiscSoulsPublic = false;
+// The stored RSK_COMPLETE_OOT_SOULS of a new seed: on when any published family is on.
+inline constexpr bool DeriveGeneralOotSoulSwitch(bool enemy, bool npc, bool animal, bool misc) {
+    return (OotEnemySoulsPublic && enemy) || (OotNpcSoulsPublic && npc) || (OotAnimalSoulsPublic && animal) ||
+           (OotMiscSoulsPublic && misc);
+}
+// The options a seed plays with. A save keeps its stored switch, so old saves behave as they did.
+inline constexpr GeneralOotSoulOptions PublishedGeneralOotSoulOptions(bool stored, bool enemy, bool npc, bool animal,
+                                                                      bool misc) {
+    return { stored && DeriveGeneralOotSoulSwitch(enemy, npc, animal, misc), OotEnemySoulsPublic && enemy,
+             OotNpcSoulsPublic && npc, OotAnimalSoulsPublic && animal, OotMiscSoulsPublic && misc };
+}
 inline bool GeneralOotSoulShuffled(const GeneralOotSoulOptions& options, unsigned index) {
     if (!options.enabled || index >= GeneralOotSoulCount)
         return false;

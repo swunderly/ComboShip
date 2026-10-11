@@ -3,6 +3,7 @@
 #include "dungeon.h"
 #include "soh/Enhancements/randomizer/randomizerTypes.h"
 #include "soh/Enhancements/randomizer/rng.h"
+#include "soh/Enhancements/randomizer/souls/OotSoulState.h"
 #include "soh/OTRGlobals.h"
 
 #include <spdlog/spdlog.h>
@@ -1115,7 +1116,9 @@ void Settings::CreateOptions() {
         }
     });
     OPT_BOOL(RSK_SHUFFLE_BEAN_SOULS, "Shuffle Bean Souls", CVAR_RANDOMIZER_SETTING("ShuffleBeanSouls"), mOptionDescriptions[RSK_SHUFFLE_BEAN_SOULS], IMFLAG_SEPARATOR_BOTTOM, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
-    OPT_BOOL(RSK_COMPLETE_OOT_SOULS, "Complete OoT Soul Compatibility", CVAR_RANDOMIZER_SETTING("CompleteOotSouls"), mOptionDescriptions[RSK_COMPLETE_OOT_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
+    // Not a user setting: OoTMM has no master soul switch. Derived from the published soul families in
+    // FinalizeSettings and ParseJson, like RSK_SHUFFLE_ENTRANCES; no CVar, and no name so the spoiler skips it.
+    OPT_BOOL(RSK_COMPLETE_OOT_SOULS, "");
     OPT_BOOL(RSK_SHUFFLE_ENEMY_SOULS, "Shuffle Enemy Souls", CVAR_RANDOMIZER_SETTING("ShuffleEnemySouls"), mOptionDescriptions[RSK_SHUFFLE_ENEMY_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
     OPT_BOOL(RSK_SHUFFLE_NPC_SOULS, "Shuffle NPC Souls", CVAR_RANDOMIZER_SETTING("ShuffleNpcSouls"), mOptionDescriptions[RSK_SHUFFLE_NPC_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
     OPT_BOOL(RSK_SHUFFLE_ANIMAL_SOULS, "Shuffle Animal Souls", CVAR_RANDOMIZER_SETTING("ShuffleAnimalSouls"), mOptionDescriptions[RSK_SHUFFLE_ANIMAL_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
@@ -2777,6 +2780,27 @@ void Settings::UpdateAllOptions() {
     }
 }
 
+// OoTMM v32.3 has one boolean per soul family and no master switch (data.ts:2336-2414). Force the
+// unpublished families off and derive the stored compatibility switch from the rest, for new seeds and
+// spoiler imports alike. Old saves keep the value they were generated with.
+template <class GetOption> static void FinalizeOotSoulSettings(GetOption option) {
+    const std::pair<RandomizerSettingKey, bool> families[] = {
+        { RSK_SHUFFLE_ENEMY_SOULS, Souls::OotEnemySoulsPublic },
+        { RSK_SHUFFLE_NPC_SOULS, Souls::OotNpcSoulsPublic },
+        { RSK_SHUFFLE_ANIMAL_SOULS, Souls::OotAnimalSoulsPublic },
+        { RSK_SHUFFLE_MISC_SOULS, Souls::OotMiscSoulsPublic },
+    };
+    for (const auto& [key, published] : families) {
+        if (!published) {
+            option(key).Set(RO_GENERIC_OFF);
+        }
+    }
+    option(RSK_COMPLETE_OOT_SOULS)
+        .Set(Souls::DeriveGeneralOotSoulSwitch(
+            option(RSK_SHUFFLE_ENEMY_SOULS).Get(), option(RSK_SHUFFLE_NPC_SOULS).Get(),
+            option(RSK_SHUFFLE_ANIMAL_SOULS).Get(), option(RSK_SHUFFLE_MISC_SOULS).Get()));
+}
+
 void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocations,
                                const std::set<RandomizerTrick>& enabledTricks) {
 #ifdef COMBO_BUILD
@@ -3268,6 +3292,8 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
     if (mOptions[RSK_FISHSANITY].IsNot(RO_FISHSANITY_HYRULE_LOACH)) {
         mOptions[RSK_LOACH_HINT].Set(RO_GENERIC_OFF);
     }
+
+    FinalizeOotSoulSettings([this](RandomizerSettingKey key) -> OptionValue& { return mOptions[key]; });
 }
 
 void Settings::ParseJson(const nlohmann::json& spoilerFileJson) {
@@ -3282,6 +3308,7 @@ void Settings::ParseJson(const nlohmann::json& spoilerFileJson) {
             mContext->GetOption(index).Set(mOptions[index].GetValueFromText(it.value()));
         }
     }
+    FinalizeOotSoulSettings([this](RandomizerSettingKey key) -> OptionValue& { return mContext->GetOption(key); });
 
     nlohmann::json jsonExcludedLocations = spoilerFileJson.value("excludedLocations", nlohmann::json());
     const auto ctx = Context::GetInstance();
