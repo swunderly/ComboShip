@@ -1714,7 +1714,7 @@
       "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_1 in RR_SPIRIT_TEMPLE_MQ_TURNTABLE, location_access/dungeons/spirit_temple.cpp:659 (room-27 pots; vanilla contents heart, heart, seeds, rupee match OoTMM's heart, heart, seeds, flexible)",
       "nativeRequirement": "CanUse(RG_BOOMERANG) || CanKillEnemy(RE_STALFOS); no CheckPrerequisite case. TURNTABLE is entered from GIBDO_POTS via LOGIC_SPIRIT_MQ_GIBDOS_CLEARED (ReDead soul, :649) or from ANUBIS_BRIDGE_GRAVE with true (:692, reached from ANUBIS_BRIDGE_CHEST by hookshot/hover boots :706). So boomerang needs no Stalfos soul and the Anubis-bridge route needs no ReDead soul",
       "auditStatus": "native_weaker",
-      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped (no combo counterpart, off by default).",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped: with it off (OoTMM's default; the combo has no such setting) the room's two Keese are broken actors that never spawn, and Actor_Spawn skips the soul hook for a room-list actor whose object is not loaded, as OoTMM deletes them (src/oot/mq.c kMqBrokenActors).",
       "evidence": [
         {
           "file": "souls/OotSoulChecks.h",
@@ -1733,7 +1733,7 @@
       "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_2 in RR_SPIRIT_TEMPLE_MQ_TURNTABLE, location_access/dungeons/spirit_temple.cpp:660 (room-27 pots; vanilla contents heart, heart, seeds, rupee match OoTMM's heart, heart, seeds, flexible)",
       "nativeRequirement": "CanUse(RG_BOOMERANG) || CanKillEnemy(RE_STALFOS); no CheckPrerequisite case. TURNTABLE is entered from GIBDO_POTS via LOGIC_SPIRIT_MQ_GIBDOS_CLEARED (ReDead soul, :649) or from ANUBIS_BRIDGE_GRAVE with true (:692, reached from ANUBIS_BRIDGE_CHEST by hookshot/hover boots :706). So boomerang needs no Stalfos soul and the Anubis-bridge route needs no ReDead soul",
       "auditStatus": "native_weaker",
-      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped (no combo counterpart, off by default).",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped: with it off (OoTMM's default; the combo has no such setting) the room's two Keese are broken actors that never spawn, and Actor_Spawn skips the soul hook for a room-list actor whose object is not loaded, as OoTMM deletes them (src/oot/mq.c kMqBrokenActors).",
       "evidence": [
         {
           "file": "souls/OotSoulChecks.h",
@@ -1752,7 +1752,7 @@
       "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_3 in RR_SPIRIT_TEMPLE_MQ_TURNTABLE, location_access/dungeons/spirit_temple.cpp:661 (room-27 pots; vanilla contents heart, heart, seeds, rupee match OoTMM's heart, heart, seeds, flexible)",
       "nativeRequirement": "CanUse(RG_BOOMERANG) || CanKillEnemy(RE_STALFOS); no CheckPrerequisite case. TURNTABLE is entered from GIBDO_POTS via LOGIC_SPIRIT_MQ_GIBDOS_CLEARED (ReDead soul, :649) or from ANUBIS_BRIDGE_GRAVE with true (:692, reached from ANUBIS_BRIDGE_CHEST by hookshot/hover boots :706). So boomerang needs no Stalfos soul and the Anubis-bridge route needs no ReDead soul",
       "auditStatus": "native_weaker",
-      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped (no combo counterpart, off by default).",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped: with it off (OoTMM's default; the combo has no such setting) the room's two Keese are broken actors that never spawn, and Actor_Spawn skips the soul hook for a room-list actor whose object is not loaded, as OoTMM deletes them (src/oot/mq.c kMqBrokenActors).",
       "evidence": [
         {
           "file": "souls/OotSoulChecks.h",
@@ -1771,7 +1771,7 @@
       "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_4 in RR_SPIRIT_TEMPLE_MQ_TURNTABLE, location_access/dungeons/spirit_temple.cpp:662 (room-27 pots; vanilla contents heart, heart, seeds, rupee match OoTMM's heart, heart, seeds, flexible)",
       "nativeRequirement": "CanUse(RG_BOOMERANG) || CanKillEnemy(RE_STALFOS); no CheckPrerequisite case. TURNTABLE is entered from GIBDO_POTS via LOGIC_SPIRIT_MQ_GIBDOS_CLEARED (ReDead soul, :649) or from ANUBIS_BRIDGE_GRAVE with true (:692, reached from ANUBIS_BRIDGE_CHEST by hookshot/hover boots :706). So boomerang needs no Stalfos soul and the Anubis-bridge route needs no ReDead soul",
       "auditStatus": "native_weaker",
-      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped (no combo counterpart, off by default).",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped: with it off (OoTMM's default; the combo has no such setting) the room's two Keese are broken actors that never spawn, and Actor_Spawn skips the soul hook for a room-list actor whose object is not loaded, as OoTMM deletes them (src/oot/mq.c kMqBrokenActors).",
       "evidence": [
         {
           "file": "souls/OotSoulChecks.h",

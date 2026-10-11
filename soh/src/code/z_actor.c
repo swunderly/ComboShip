@@ -3348,11 +3348,17 @@ Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 pos
     s32 objBankIndex;
     u32 temp;
 
-    if (Combo_OotSoulPreSpawn(play, actorId, (u16)params) <= 0)
-        return NULL;
     ActorDBEntry* dbEntry = ActorDB_Retrieve(actorId);
 
     assert(dbEntry->valid);
+
+    // OoT's broken actors are room-list entries whose object their room never loads, so the object check
+    // below always refuses them (e.g. the two Keese in MQ Spirit Temple's Torch Slug room). OoTMM deletes them
+    // from the room lists before its soul hook runs (src/oot/mq.c kMqBrokenActors, src/oot/patches/
+    // broken_actors.S), so their missing soul must never keep the room shut.
+    if (!(gMapLoading && Object_GetIndex(&gPlayState->objectCtx, dbEntry->objectId) < 0) &&
+        Combo_OotSoulPreSpawn(play, actorId, (u16)params) <= 0)
+        return NULL;
 
     if (HREG(20) != 0) {
         // "Actor class addition [%d:%s]"
