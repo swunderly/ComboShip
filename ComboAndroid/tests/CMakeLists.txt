@@ -79,6 +79,12 @@ combo_python_test(mm_cross_age_runtime_slots_names_and_ootmm_parity mm_cross_age
 # Local only: reads the oot.o2r and mm.o2r extracted from the user's ROMs, and reports SKIPPED without them.
 combo_harness_test(mm_cross_age_user_archives_and_spin_vertices mm_cross_age_archive_tests.py)
 set_tests_properties(mm_cross_age_user_archives_and_spin_vertices PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+combo_python_test(mm_adult_epona_ootmm_patch_pairs_mapped mm_adult_epona_tests.py)
+# Local only: checks OoT's object_horse in the user's extracted OoT archive (COMBO_OOT_ARCHIVE, or an oot.o2r under a
+# local-roms folder beside the checkout) and is reported as skipped where there is none.
+set(COMBO_OOT_ARCHIVE "" CACHE FILEPATH "Extracted OoT archive (oot.o2r) for the local-only archive checks")
+combo_python_test(mm_adult_epona_oot_archive mm_adult_epona_archive_tests.py "--archive=${COMBO_OOT_ARCHIVE}")
+set_tests_properties(mm_adult_epona_oot_archive PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 combo_harness_test(mm_key_ring_native_runtime_oracle_and_placement mm_key_ring_native_tests.py)
 combo_harness_test(mm_native_resource_propagation mm_resource_tests.py)
 combo_harness_test(mm_native_schedule_propagation mm_schedule_tests.py)
