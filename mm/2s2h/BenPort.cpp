@@ -5453,6 +5453,11 @@ static void ProcessForeignSongReply() {
 }
 
 extern "C" uint32_t MM_LiveIncomingSongs() {
+    if (Rando::Logic::evaluatingLiveTracker) {
+        // The tracker shows what the active options allow now, including gameplay-only cross-game songs.
+        auto fn = (uint32_t (*)())Combo_ResolveSym("soh", "SOH_GetLiveSongSources");
+        return ComboRando::ActiveSongTravel().resolve((fn ? fn() : 0) | MM_GetLiveSongSources()) & 0xffc0;
+    }
     auto fn = (uint32_t(*)())Combo_ResolveSym("soh", "SOH_GetLiveSongLogicSources");
     return ComboRando::ActiveSongTravel().resolveLogic((fn ? fn() : 0) | MM_GetLiveSongLogicSources()) & 0xffc0;
 }

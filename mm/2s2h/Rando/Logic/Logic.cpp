@@ -551,8 +551,11 @@ void FindReachableRegions(RandoRegionId currentRegion, std::set<RandoRegionId>& 
     // reachable logical slice. Never read the player's current day/time.
     if (currentRegion == RR_MAX)
         RecordMmAccess(currentTime);
-    if (currentRegion == RR_MAX &&
-        (ComboRando::ActiveSongTravel().logicEnabled || ComboRando::ActiveSongTravel().logicForeignSongs)) {
+    // The live tracker follows the active cross-game song options, as OoT's does; other searches use the seed's.
+    const bool liveSongTravel = !ComboRando::MmSongOracle() && evaluatingLiveTracker &&
+                                (ComboRando::ActiveSongTravel().enabled || ComboRando::ActiveSongTravel().foreignSongs);
+    if (currentRegion == RR_MAX && (ComboRando::ActiveSongTravel().logicEnabled ||
+                                    ComboRando::ActiveSongTravel().logicForeignSongs || liveSongTravel)) {
         const auto& ageArrivals = ComboRando::MmSongAgeArrivals();
         const uint32_t arrivals =
             ComboRando::MmSongOracle()
