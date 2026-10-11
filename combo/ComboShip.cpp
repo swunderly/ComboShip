@@ -468,6 +468,9 @@ static bool EffectiveCrossAge(const ComboRando::FaroreRules& rules) {
     return rules.crossAge && ComboRando::ComboFaroreIntegrationReady;
 }
 static int (*MM_GearOptionsAllowed)(int) = nullptr;
+// Whether a new seed may turn Cross-Games Age on (BenPort.cpp Combo_MM_CrossAgeOptionReady). Its first answer loads
+// OoT's adult Link and Epona inside a scope on OoT's resource manager, which is for the main thread only.
+static int (*MM_CrossAgeOptionReady)() = nullptr;
 // A seed that adds MM boots or tunics needs MM's gear runtime. A new MM save drops gear this device cannot run
 // (BenPort.cpp MM_InitRandoSaveFile) while the seed's placement may need it, so such a seed is not loaded and no file
 // is made from it. Loading an existing save is never refused; its gear just stays off.
@@ -3136,6 +3139,10 @@ static void Combo_OnGenerateThreaded(const char* inputSeed) {
     g_ComboProgress.done.store(false);
     g_ComboProgress.running.store(true);
     std::string seed(inputSeed ? inputSeed : "");
+    // The worker reads Cross-Games Age readiness wherever MM gathers options. Asking here first makes its one-time load
+    // of OoT's adult Link and Epona happen on the main thread, so the worker only reads the remembered answer.
+    if (MM_CrossAgeOptionReady)
+        MM_CrossAgeOptionReady();
     // RunComboFill clears g_GenerateBusy when it finishes; the finalize gate then blocks re-trigger
     // until the main-thread apply runs. Call RunComboFill directly (busy is already held).
     g_GenerateThread = std::thread([seed]() { RunComboFill(seed, &g_ComboProgress, true); });
@@ -4412,6 +4419,7 @@ int main(int argc, char** argv) {
     SOH_ConfigureFaroreRules = (void (*)(int, int))GetSym(sohModule, "SOH_ConfigureFaroreRules");
     MM_ConfigureFaroreRules = (void (*)(int, int, int))GetSym(mmModule, "MM_ConfigureFaroreRules");
     MM_GearOptionsAllowed = (int (*)(int))GetSym(mmModule, "MM_GearOptionsAllowed");
+    MM_CrossAgeOptionReady = (int (*)())GetSym(mmModule, "MM_CrossAgeOptionReady");
     if (auto set = (void (*)(FaroreDestination, FaroreSync))GetSym(sohModule, "SOH_SetFaroreBridge"))
         set(Combo_FaroreMmDestination, Combo_FaroreSyncMm);
     if (auto set = (void (*)(int (*)(int), FaroreDestination))GetSym(mmModule, "MM_SetFaroreBridge"))

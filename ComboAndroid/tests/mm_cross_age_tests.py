@@ -234,6 +234,12 @@ check('returnCombo_MM_CrossAgeOptionReady();' in body(benport, 'extern "C" COMBO
       'MM_CrossAgeOptionReady must export the option readiness')
 check('Combo_MM_CrossAgeForHeadlessGeneration();' in body(benport, 'extern "C" COMBO_EXPORT void MM_InitRandoHeadless(void)'),
       'the headless generator must follow the Cross-Games Age release switch alone')
+# The readiness loads OoT's adult Link and Epona in a scope on OoT's manager on its first call (plan F5b 1.8): the UI
+# generation asks once on the main thread before its worker gathers options.
+threaded = body(combo, 'static void Combo_OnGenerateThreaded(const char* inputSeed)')
+check('MM_CrossAgeOptionReady=(int(*)())GetSym(mmModule,"MM_CrossAgeOptionReady");' in squash(combo) and
+      0 < threaded.find('if(MM_CrossAgeOptionReady)MM_CrossAgeOptionReady();') < threaded.find('std::thread('),
+      'generation must ask Cross-Games Age readiness on the main thread before starting its worker')
 check('returnid==RO_MM_CROSS_AGE?Combo_MM_CrossAgeOptionReady()!=0:Combo_MM_AdultResourcesReady()!=0;' in
       body(benport, 'static bool Combo_MM_HiddenAdultOptionReady(RandoOptionId id)'),
       'Cross-Games Age must have its own readiness, apart from the dormant Adult Mask')
