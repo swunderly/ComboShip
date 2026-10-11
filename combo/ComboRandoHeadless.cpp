@@ -37,6 +37,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include "ship/Context.h"
 
 #include "rando/CrossWorldRando.h"
 #include "rando/ComboPlaythrough.h"
@@ -57,6 +58,14 @@
 #include "rando/CrossHints.h"
 
 namespace {
+
+// The logging registry is initialized after Context's static owner. Destroy the
+// headless context while that registry is still alive, on every normal/error return.
+struct HeadlessContextLifetime {
+    ~HeadlessContextLifetime() {
+        Ship::Context::DestroyInstance();
+    }
+};
 
 typedef void (*FnVoidV)(void);
 typedef const char* (*FnDump)(void);
@@ -149,7 +158,7 @@ std::string SeedLabel(const nlohmann::json& spoiler) {
 
 } // namespace
 
-int main(int argc, char** argv) {
+int RunHeadless(int argc, char** argv) {
     std::string seed = "1";
     int count = 1;
     std::string playthroughFile;
@@ -1138,4 +1147,16 @@ int main(int argc, char** argv) {
     std::cout << "[comborando] RESULT: " << (failures ? "FAIL" : "PASS") << " — " << (count - failures) << "/" << count
               << " completable, " << ms << " ms\n";
     return failures == 0 ? 0 : 1;
+}
+
+int main(int argc, char** argv) {
+    const HeadlessContextLifetime contextLifetime{};
+    try {
+        return RunHeadless(argc, argv);
+    } catch (const std::exception& error) {
+        std::cerr << "[comborando] setup or validation error: " << error.what() << "\n";
+    } catch (...) {
+        std::cerr << "[comborando] unknown setup or validation error\n";
+    }
+    return 2;
 }
