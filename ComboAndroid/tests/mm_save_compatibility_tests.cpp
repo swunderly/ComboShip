@@ -4,6 +4,11 @@
 #include <iostream>
 #include <memory>
 #include "BenJsonConversions.hpp"
+extern "C" {
+#include "z64player.h"
+}
+#include "ComboAdultSettings.h"
+#include "rando/GearRules.h"
 
 static void VerifyRando(const json& before, const RandoSaveInfo& loaded) {
     json after = loaded;
@@ -48,6 +53,55 @@ static void VerifySave(const json& before) {
     }
     VerifyRando(before["shipSaveInfo"]["rando"], loaded->shipSaveInfo.rando);
     auto reread=std::make_unique<Save>();after.get_to(*reread);assert(json(*reread)==after);
+}
+
+// The load policy (critique X3, lead decision 2): a save never fails to load for its adult or gear state. The adult
+// runtime binds the seed age only when it is ready; gear never touches the adult state.
+static void VerifyLoadPolicy(const json& page, bool expectGear) {
+    for (bool adultReady : {false, true}) {
+        auto save = std::make_unique<Save>();
+        page.get_to(*save);
+        const json before = *save;
+        ComboAdultMM::PrepareLoadedSave(*save, adultReady);
+        assert(ComboAdultMM::SaveHasGear(*save) == expectGear);
+        const auto& options = save->shipSaveInfo.rando.randoSaveOptions;
+        const bool adultSeed = options[RO_MM_ADULT_MASK] || options[RO_MM_CROSS_AGE] || options[RO_MM_STARTING_AGE];
+        if (!adultReady || !adultSeed || before["shipSaveInfo"]["adultMm"]["enabled"] == 1)
+            assert(json(*save) == before); // loads as it is: child Link, gear only while its runtime is active
+        else
+            assert(save->shipSaveInfo.adultMm.enabled == 1);
+    }
+}
+
+static void VerifyGearRules() {
+    using ComboRando::GearRules;
+    GearRules rules;
+    rules.bootsIronMm = rules.tunicZoraMm = true;
+    assert(ComboRando::ReadGearRules(nullptr, rules) && !rules.bootsIronMm && !rules.bootsHoverMm &&
+           !rules.tunicGoronMm && !rules.tunicZoraMm); // old seeds without gearRules: all off
+    for (int mask = 0; mask < 16; ++mask) {
+        const GearRules written{ (mask & 1) != 0, (mask & 2) != 0, (mask & 4) != 0, (mask & 8) != 0 };
+        GearRules read;
+        assert(ComboRando::ReadGearRules(json::parse(written.json().dump()), read));
+        assert(read.bootsIronMm == written.bootsIronMm && read.bootsHoverMm == written.bootsHoverMm &&
+               read.tunicGoronMm == written.tunicGoronMm && read.tunicZoraMm == written.tunicZoraMm);
+        const json dump = { { "options",
+                              { { "RO_MM_BOOTS_IRON", int(written.bootsIronMm) },
+                                { "RO_MM_BOOTS_HOVER", int(written.bootsHoverMm) },
+                                { "RO_MM_TUNIC_GORON", int(written.tunicGoronMm) },
+                                { "RO_MM_TUNIC_ZORA", int(written.tunicZoraMm) } } } };
+        assert(ComboRando::GearRulesFromMmDump(dump).json() == written.json());
+    }
+    assert(ComboRando::GearRulesFromMmDump(json::object()).json() == GearRules{}.json());
+    const json bad[] = { json{ { "version", 2 } }, json{ { "version", 1 }, { "bootsIronMm", true } },
+                         json{ { "version", 1 }, { "bootsIronMm", 2 }, { "bootsHoverMm", 0 }, { "tunicGoronMm", 0 },
+                               { "tunicZoraMm", 0 } },
+                         json::array() };
+    for (const auto& j : bad) {
+        GearRules read;
+        read.tunicGoronMm = true;
+        assert(!ComboRando::ReadGearRules(j, read) && !read.tunicGoronMm);
+    }
 }
 
 int main(int argc, char** argv) {
@@ -192,6 +246,67 @@ int main(int argc, char** argv) {
     catch (const std::exception&) { rejected = true; }
     assert(rejected);
 
+    // Adult and gear state (lead decision 2): every one of these loads, and appended gear/spell bytes read as 0.
+    static_assert(RO_MM_BOOTS_IRON == 87 && RO_MM_TUNIC_ZORA == 90 && RO_MAX == 91, "Review the gear option ids");
+    auto release039 = modern["save"]; // 0.3.9 saves carry all RO_MAX options
+    for (auto id : {RO_MM_ADULT_MASK, RO_MM_STARTING_AGE, RO_MM_CROSS_AGE, RO_MM_BOOTS_IRON, RO_MM_BOOTS_HOVER,
+                    RO_MM_TUNIC_GORON, RO_MM_TUNIC_ZORA})
+        release039["shipSaveInfo"]["rando"]["randoSaveOptions"][id] = 0;
+    VerifySave(release039);
+    VerifyLoadPolicy(release039, false);
+    VerifyLoadPolicy(save85, false);
+    auto noAdult = release039;
+    noAdult["shipSaveInfo"].erase("adultMm");
+    noAdult["shipSaveInfo"].erase("spellFireOwned");
+    noAdult["shipSaveInfo"].erase("spellLoveOwned");
+    {
+        auto loaded = std::make_unique<Save>();
+        noAdult.get_to(*loaded);
+        const auto& state = loaded->shipSaveInfo.adultMm;
+        assert(!state.enabled && !state.boots && !state.tunic && !state.gearTrade2Bits && !state.gearTrade3Bits);
+        assert(!loaded->shipSaveInfo.spellFireOwned && !loaded->shipSaveInfo.spellLoveOwned);
+    }
+    VerifyLoadPolicy(noAdult, false);
+    // Gear options on while the gear or adult runtime is missing: loads, adult state untouched (the gear runtime stays
+    // inactive until Combo_MM_GearActive, checked in mm_gear_runtime_tests.py).
+    auto gear = release039;
+    for (auto id : {RO_MM_BOOTS_IRON, RO_MM_BOOTS_HOVER, RO_MM_TUNIC_GORON, RO_MM_TUNIC_ZORA})
+        gear["shipSaveInfo"]["rando"]["randoSaveOptions"][id] = 1;
+    gear["shipSaveInfo"]["adultMm"]["gearTrade2Bits"] = 6;
+    gear["shipSaveInfo"]["adultMm"]["boots"] = 2;
+    gear["shipSaveInfo"]["adultMm"]["tunic"] = 3;
+    VerifySave(gear);
+    VerifyLoadPolicy(gear, true);
+    // A private diagnostics save whose gear turned the adult state on (0.3.9 ConfigureSeedAge) still loads unchanged.
+    auto diagnostic = gear;
+    diagnostic["shipSaveInfo"]["adultMm"]["enabled"] = 1;
+    diagnostic["shipSaveInfo"]["adultMm"]["initialized"] = 1;
+    diagnostic["linkAge"] = 1;
+    VerifyLoadPolicy(diagnostic, true);
+    // Adult options with the adult runtime unavailable (always, while it is unfinished): loads as child.
+    auto adultSeed = release039;
+    adultSeed["shipSaveInfo"]["rando"]["randoSaveOptions"][RO_MM_STARTING_AGE] = 1;
+    adultSeed["shipSaveInfo"]["rando"]["randoSaveOptions"][RO_MM_BOOTS_IRON] = 1;
+    VerifyLoadPolicy(adultSeed, true);
+    {
+        auto loaded = std::make_unique<Save>();
+        adultSeed.get_to(*loaded);
+        ComboAdultMM::PrepareLoadedSave(*loaded, true);
+        assert(loaded->shipSaveInfo.adultMm.enabled && loaded->linkAge == 0); // a ready adult runtime binds the age
+        auto gearOnly = std::make_unique<Save>();
+        gear.get_to(*gearOnly);
+        assert(ComboAdultMM::ConfigureSeedAge(*gearOnly, 1, false, false) && !gearOnly->shipSaveInfo.adultMm.enabled);
+    }
+    for (const char* field : {"boots", "tunic", "gearTrade2Bits"}) { // malformed gear bytes are still a parse error
+        auto broken = gear;
+        broken["shipSaveInfo"]["adultMm"][field] = 7;
+        bool rejected = false;
+        try { auto target = std::make_unique<Save>(); broken.get_to(*target); }
+        catch (const std::exception&) { rejected = true; }
+        assert(rejected);
+    }
+    VerifyGearRules();
+
     if (argc == 2) {
         // Optional private historical container, never bundled with the tests.
         std::ifstream stream(argv[1]); assert(stream);
@@ -199,5 +314,5 @@ int main(int argc, char** argv) {
         for (const auto* page : {"newCycleSave", "owlSave"})
             if (container["mm"].contains(page)) VerifySave(container["mm"][page]["save"]);
     }
-    std::cout << "MM legacy/current save reads preserve inventory, songs, owls, checks and settings; malformed saves rejected\n";
+    std::cout << "MM legacy/current save reads preserve inventory, songs, owls, checks and settings; adult and gear state never refuse a load; gearRules round-trip; malformed saves rejected\n";
 }

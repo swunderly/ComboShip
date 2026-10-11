@@ -67,7 +67,7 @@ inventory=(s/'mm/src/code/z_inventory.c').read_text()
 # only the initializer would either fail to compile or miss its alignment ABI.
 aligned_assets=dict(re.findall(r'(static const ALIGN_ASSET\(2\) char (sCombo\w+Icon)\[\]\s*=\s*"[^"\n]+";)',inventory))
 aligned_names=set(aligned_assets.values())
-assert len(aligned_names)==4
+assert len(aligned_names)==8 # Fairy Ocarina, the three MM spells and the four MM gear icons
 code+='#include "'+(s/'mm/include/align_asset_macro.h').as_posix()+'"\n'
 code+='\n'.join(aligned_assets)+'\n'
 icons=re.search(r'TexturePtr gItemIcons\[256\] = \{([\s\S]*?)\n\};',inventory).group(1)
@@ -77,6 +77,7 @@ icons=icons.replace('#ifdef COMBO_BUILD','').replace('#endif','')
 icons=re.sub(r'//[^\n]*','',icons)
 item_header=(s/'mm/include/z64item.h').read_text()
 custom_ids={name:int(value,16) for name,value in re.findall(r'(ITEM_COMBO_\w+)\s*=\s*(0x[0-9A-Fa-f]+)',item_header)}
+custom_ids.update({name:int(value,16) for value,name in re.findall(r'/\*\s*(0x[0-9A-Fa-f]+)\s*\*/\s*(ITEM_COMBO_\w+)',item_header)})
 assignments=[];index=0
 for entry in icons.split(','):
     entry=entry.strip()
