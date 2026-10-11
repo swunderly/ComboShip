@@ -1075,7 +1075,7 @@ void RandomizerOnDialogMessageHandler() {
                     reveal = RC_KAK_30_GOLD_SKULLTULA_REWARD;
                 } else if (actor->params == 4 && ctx->GetOption(RSK_KAK_40_SKULLS_HINT)) {
                     reveal = RC_KAK_40_GOLD_SKULLTULA_REWARD;
-                } else if (ctx->GetOption(RSK_KAK_50_SKULLS_HINT)) {
+                } else if (actor->params == 5 && ctx->GetOption(RSK_KAK_50_SKULLS_HINT)) {
                     reveal = RC_KAK_50_GOLD_SKULLTULA_REWARD;
                 }
                 break;
