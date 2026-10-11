@@ -151,8 +151,9 @@ def body(source, signature):
             return squash(source[at:i])
 
 
-check('staticconstexprboolkCrossAgeRuntimeComplete=false;' in squash(benport),
-      'the Cross-Games Age runtime switch is not off (the merge step turns it on in its own commit)')
+# The release switch is set in its own commit, which can be reverted alone; these checks hold either way.
+check(re.search(r'staticconstexprboolkCrossAgeRuntimeComplete=(true|false);', squash(benport)) is not None,
+      'the Cross-Games Age runtime has no release switch')
 check('#ifdefCOMBO_ADULT_MM_RUNTIME_DIAGNOSTICS' in body(benport, 'static int Combo_MM_CrossAgeRuntimeEnabled(void)') and
       'returnkCrossAgeRuntimeComplete||CVarGetInteger("gCombo.Debug.CrossAgeRuntimeValidation",0);#else'
       'returnkCrossAgeRuntimeComplete;#endif' in body(benport, 'static int Combo_MM_CrossAgeRuntimeEnabled(void)'),
