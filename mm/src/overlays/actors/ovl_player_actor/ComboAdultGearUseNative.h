@@ -13,6 +13,9 @@ static int Combo_MM_AdultTryUseGear(PlayState* play, Player* player, ItemId item
     }
     // No partial action path can bypass the gear runtime gate.
     if(!Combo_MM_GearActive())return 1;
+    // OoTMM v32.3 calls Player_CustomUseItem inside Player_UseItem's guard (Player.S:353-380): only between item
+    // actions and with the shield down. Swimming does not block it (Player_ShouldCheckItemUsabilityWhileSwimming).
+    if(player->heldItemAction!=player->itemAction||(player->stateFlags1&PLAYER_STATE1_400000))return 1;
     if(player->transformation!=PLAYER_FORM_HUMAN)return 1;
     if(boots) {
         if(gSaveContext.save.shipSaveInfo.adultMm.boots==boots)boots=0;

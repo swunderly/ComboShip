@@ -65,7 +65,7 @@ static void Combo_MM_DrawHoverCircle(PlayState* play,Player* player){
             MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++,play->state.gfxCtx);
             gSPSegment(POLY_XLU_DISP++, 0x09,
                        Gfx_TwoTexScroll(play->state.gfxCtx, G_TX_RENDERTILE, 0, 0, 16, 32, 1, 0,
-                                        (play->state.frames * -15) % 128, 16, 32));
+                                        (play->gameplayFrames * -15) % 128, 16, 32));
             gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 255, 255, 255, sHoverBootCircleAlpha);
             gDPSetEnvColor(POLY_XLU_DISP++, 120, 90, 30, 128);
             gSPDisplayList(POLY_XLU_DISP++, gComboHoverBootsCircleDL);
