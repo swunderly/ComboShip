@@ -313,7 +313,6 @@ namespace Rando::Logic {
 // share its interface instead of inferring clock/song rules in this adapter.
 bool NativeMmCanResetTime();
 uint64_t FilterNativeMmIngressTimes(s32 entrance, uint64_t arrivalTimes);
-bool RecordMmAccess(uint64_t times);
 
 bool ExploreMmWallmasterEntrances(RandoRegionId region, uint64_t sourceTimes, std::set<RandoRegionId>& reachable,
                                   std::unordered_map<RandoRegionId, RegionTimeState>& times) {
@@ -328,14 +327,13 @@ bool ExploreMmWallmasterEntrances(RandoRegionId region, uint64_t sourceTimes, st
     const auto capturedTimes =
         TimeLogic::EvaluateConditionTimes([] { return HaveEnemySoul(ACTOR_EN_WALLMAS); }, sourceTimes);
     const auto capturedFlags = CE::mmFlagResult;
-    bool accessChanged = false;
     for (const auto destination : destinations) {
         const auto* record = CE::Find(CE::Game::Mm, destination);
         if (!record)
             continue;
         uint64_t arrivalTimes = capturedTimes;
         if (!record->noSongOfTime) {
-            accessChanged |= RecordMmAccess(arrivalTimes);
+            // OoTMM v32.3 placeSingleExpr only ANDs can_reset_time; arrival does not grant ACCESS.
             arrivalTimes = TimeLogic::EvaluateConditionTimes([] { return NativeMmCanResetTime(); }, arrivalTimes);
         }
         // Native arrival IDs merge OoTMM's dungeon wrapper with interior regions.
@@ -356,7 +354,7 @@ bool ExploreMmWallmasterEntrances(RandoRegionId region, uint64_t sourceTimes, st
         times[target] = MergeTimeStates(times[target], incoming);
         FindReachableRegions(target, reachable, times);
     }
-    return accessChanged;
+    return false; // Traversal above updates regions; this adapter no longer creates an ACCESS event.
 }
 } // namespace Rando::Logic
 #endif

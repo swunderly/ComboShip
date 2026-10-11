@@ -189,7 +189,6 @@ inline Descriptions MakePools(const Settings& s) {
         if (s.erSpawns == Spawns::Child || s.erSpawns == Spawns::Both)
             src.insert(Type::SpawnChild);
         dst.erase(Type::Boss);
-        dst.erase(Type::IndoorsTelescope);
         // Upstream also adds type 'spawn', absent from this pinned registry.
         dst.insert(Type::Indoors);
         dst.insert(Type::OneWaySong);
@@ -202,7 +201,6 @@ inline Descriptions MakePools(const Settings& s) {
     extended.insert(Type::DungeonSh);
     if (Active(s.erWallmasters)) {
         auto dst = extended;
-        dst.erase(Type::IndoorsTelescope);
         if (Active(s.erBoss))
             dst.insert(Type::Boss);
         p.push_back({ "WALLMASTERS", { Type::Wallmaster }, std::move(dst), s.erWallmasters == Mode::OwnGame, true });
@@ -241,7 +239,6 @@ inline Polarity EntrancePolarity(const Record& e, const Settings& s) {
         case Type::IndoorsPf:
         case Type::IndoorsExtra:
         case Type::IndoorsSpecial:
-        case Type::IndoorsTelescope:
         case Type::Grotto:
         case Type::Grave:
             return Polarity::In;
@@ -278,11 +275,18 @@ struct Bindings {
     std::function<bool(const Record&)> sourceSupported, destinationSupported;
     // Each candidate includes default/plando/prior overrides AND remaining pools.
     // Build a temporary graph, preserve source predicates, OR duplicate edges,
-    // add MM ACCESS/can_reset_time for destinations without no-sot, and assume
+    // AND can_reset_time for MM destinations without no-sot, and assume
     // remaining candidates with the upstream cardinality optimization.
     std::function<bool(const Overrides&, const Pools&)> validateAssumed;
+    // Pinned validateAgeTemple: on the SAME changed world/remaining pools, enable only
+    // the opposite-age OoT spawn and recursively reach Temple of Time with STARTING
+    // items, never the all-items inventory used by validateAssumed. A native OoTMM
+    // graph adapter must supply this before enabling OoT/Both pools; none exists yet.
+    std::function<bool(const Overrides&, const Pools&)> validateAgeTemple;
+    // Supplied from the existing combined accessibility choice, not a new setting.
+    bool logicEnabled = true;
     // Re-run all-item pathfinding and the existing native fill/solver contract.
-    // This must certify every original check and both-game completion.
+    // This must apply the selected goal/accessibility policy and commit the native layout.
     std::function<bool(const Overrides&)> validateComplete;
     std::function<size_t(size_t)> chooseIndex;
 };
@@ -400,8 +404,12 @@ class Shuffler {
             }
             auto completeOverrides = fixed;
             completeOverrides.insert(nextOverrides.begin(), nextOverrides.end());
-            if (!bindings.validateAssumed(completeOverrides, nextPools))
-                continue;
+            if (bindings.logicEnabled) {
+                if (!bindings.validateAssumed(completeOverrides, nextPools))
+                    continue;
+                if (settings.games != Games::Mm && !bindings.validateAgeTemple(completeOverrides, nextPools))
+                    continue;
+            }
             if (nextPool.src.empty()) {
                 if (!nextPool.dst.empty() && !pool.alias)
                     throw ShuffleError("Unbalanced pool: " + pool.name);
@@ -421,8 +429,10 @@ class Shuffler {
         // Disabled path does not validate bindings, consume RNG, or create layout.
         if (!anyActive)
             return;
-        if (!bindings.areaExists || !bindings.validateAssumed || !bindings.validateComplete)
+        if (!bindings.areaExists || !bindings.validateComplete || (bindings.logicEnabled && !bindings.validateAssumed))
             throw std::invalid_argument("Entrance graph validation bindings are required");
+        if (bindings.logicEnabled && settings.games != Games::Mm && !bindings.validateAgeTemple)
+            throw std::invalid_argument("OoT entrance validation requires the starting-item opposite-age Temple probe");
         for (const auto& e : kRegistry) {
             if ((settings.games == Games::Oot && e.game != Game::Oot) ||
                 (settings.games == Games::Mm && e.game != Game::Mm))

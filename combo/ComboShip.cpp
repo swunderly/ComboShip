@@ -2513,19 +2513,20 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         mmOracle.SetExternalBeanRenewal = MM_SetOracleExternalBeanRenewal;
         AttachAdultAgeOracle(ootOracle, mmOracle);
 
+        ComboRando::OotAccess ootAccess = CombinedAccessForGeneration(sohDump);
         entranceExpansion = ComboRando::Entrances::GenerateNativeMmWallmasters(
             nativeMmWallmasters, masterSeed, sEntranceNative, sohDump, mmDump, forcedOot, ootOracle, mmOracle, mmStart,
-            goal);
+            goal, ootAccess);
 
         if (nativeMmMixed) {
             mixedEntranceExpansion = ComboRando::Entrances::GenerateNativeMmMixed(
                 ComboRando::Entrances::MmMixedGenerationSettings(ordinarySettings, nativeMmGrottos), masterSeed,
-                sEntranceNative, sohDump, mmDump, forcedOot, ootOracle, mmOracle, mmStart, goal);
+                sEntranceNative, sohDump, mmDump, forcedOot, ootOracle, mmOracle, mmStart, goal, ootAccess);
             ComboRando::Entrances::ApplyNativeMmMixed(sEntranceNative, mixedEntranceExpansion);
         } else {
-            ordinaryEntranceExpansion =
-                ComboRando::Entrances::GenerateNativeMmOrdinary(ordinarySettings, masterSeed, sEntranceNative, sohDump,
-                                                                mmDump, forcedOot, ootOracle, mmOracle, mmStart, goal);
+            ordinaryEntranceExpansion = ComboRando::Entrances::GenerateNativeMmOrdinary(
+                ordinarySettings, masterSeed, sEntranceNative, sohDump, mmDump, forcedOot, ootOracle, mmOracle, mmStart,
+                goal, ootAccess);
             if (!ordinaryEntranceExpansion.is_null())
                 ComboRando::Entrances::ApplyNativeMmOrdinary(sEntranceNative, ordinaryEntranceExpansion);
 
@@ -2535,13 +2536,11 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                 settings.erGrottos = ComboRando::Entrances::Mode::OwnGame;
                 grottoEntranceExpansion = ComboRando::Entrances::GenerateNativeMmGrottos(
                     settings, masterSeed, sEntranceNative, sohDump, mmDump, forcedOot, ootOracle, mmOracle, mmStart,
-                    goal);
+                    goal, ootAccess);
                 ComboRando::Entrances::ApplyNativeMmGrottos(sEntranceNative, grottoEntranceExpansion);
             }
         }
-        // ComboShip: honor OOT's logic/ALR settings per-game (MM stays all-reachable). The fill gates MM
-        // on the portal region via ootOracle.GetPortalOpen; NO_LOGIC bypasses it.
-        ComboRando::OotAccess ootAccess = CombinedAccessForGeneration(sohDump);
+        // The same combined accessibility policy governs entrance candidates and final item placement.
         auto result = ComboRando::CrossWorldCombinedFill(
             sohDump, mmDump, masterSeed, ootOracle, mmOracle, progress, forcedOot, ootAccess, goal,
             mmStart ? ComboRando::GAME_MM : ComboRando::GAME_OOT, sharedMask);

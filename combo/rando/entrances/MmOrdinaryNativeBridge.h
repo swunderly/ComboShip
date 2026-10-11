@@ -73,7 +73,7 @@ inline void ValidateMmOrdinaryGenerationCoverage(const Settings& settings) {
 inline nlohmann::json GenerateNativeMmOrdinary(Settings settings, uint32_t seed, const NativeFns& native,
                                                const std::string& ootDump, const std::string& mmDump,
                                                const std::string& forcedOot, const OracleFns& oot, const OracleFns& mm,
-                                               bool mmStart, CwGoal goal) {
+                                               bool mmStart, CwGoal goal, OotAccess access = OotAccess::ALL_REACHABLE) {
     if (MakePools(settings).empty())
         return nlohmann::json();
     if (settings.games != Games::Mm || settings.erDecoupled || settings.erBoss != Mode::None ||
@@ -85,6 +85,7 @@ inline nlohmann::json GenerateNativeMmOrdinary(Settings settings, uint32_t seed,
     AssumedWorld world(ootDump, mmDump, forcedOot);
     CwRng rng(CwHashName("entrances:mm-ordinary-coupled-v1:" + std::to_string(seed)));
     Bindings bindings;
+    bindings.logicEnabled = access != OotAccess::NO_LOGIC;
     bindings.areaExists = MmOrdinaryNativeAreaExists;
     bindings.sourceSupported = [](const Record& record) { return MmOrdinaryBound(record.name); };
     bindings.destinationSupported = bindings.sourceSupported;
@@ -96,11 +97,11 @@ inline nlohmann::json GenerateNativeMmOrdinary(Settings settings, uint32_t seed,
         const auto graph = BuildMmOrdinaryAssumptions(rows, pools, settings);
         MmOrdinaryAssumptionScope scope(native, rows, pools, settings);
         // Pinned OOT SPAWN is unconditional; ASSUMED permits entry without the real portal.
-        return world.validate(oot, mm, mmStart || !graph.syntheticDestinations.empty(), goal);
+        return world.validate(oot, mm, mmStart || !graph.syntheticDestinations.empty(), goal, access);
     };
     bindings.validateComplete = [&](const Overrides& rows) {
         ApplyNativeMmOrdinary(native, EncodeMmOrdinaryExtension(rows));
-        return world.validate(oot, mm, mmStart, goal);
+        return world.validate(oot, mm, mmStart, goal, access);
     };
     auto rows = Shuffler(settings, std::move(bindings)).run();
     return EncodeMmOrdinaryExtension(rows);

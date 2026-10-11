@@ -717,7 +717,7 @@ void FindReachableRegions(RandoRegionId currentRegion, std::set<RandoRegionId>& 
                     if (!record)
                         throw std::runtime_error("Unregistered shuffled MM arrival");
                     if (!record->noSongOfTime) {
-                        RecordMmAccess(arrivalTimes);
+                        // OoTMM v32.3 placeSingleExpr only ANDs can_reset_time; arrival does not grant ACCESS.
                         arrivalTimes =
                             TimeLogic::EvaluateConditionTimes([] { return NativeMmCanResetTime(); }, arrivalTimes);
                     }

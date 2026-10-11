@@ -103,12 +103,13 @@ class MmMixedAssumptionScope {
 inline nlohmann::json GenerateNativeMmMixed(Settings settings, uint32_t seed, const NativeFns& native,
                                             const std::string& ootDump, const std::string& mmDump,
                                             const std::string& forcedOot, const OracleFns& oot, const OracleFns& mm,
-                                            bool mmStart, CwGoal goal) {
+                                            bool mmStart, CwGoal goal, OotAccess access = OotAccess::ALL_REACHABLE) {
     ValidateMmMixedGenerationCoverage(settings);
     NativeScope restore(native);
     AssumedWorld world(ootDump, mmDump, forcedOot);
     CwRng rng(CwHashName("entrances:mm-mixed-coupled-v1:" + std::to_string(seed)));
     Bindings bindings;
+    bindings.logicEnabled = access != OotAccess::NO_LOGIC;
     bindings.areaExists = MmMixedAreaExists;
     bindings.sourceSupported = [](const Record& r) { return MmMixedBound(&r); };
     bindings.destinationSupported = bindings.sourceSupported;
@@ -119,11 +120,11 @@ inline nlohmann::json GenerateNativeMmMixed(Settings settings, uint32_t seed, co
     bindings.validateAssumed = [&](const Overrides& rows, const Pools& pools) {
         const auto graph = BuildMmMixedAssumptions(rows, pools, settings);
         MmMixedAssumptionScope scope(native, rows, pools, settings);
-        return world.validate(oot, mm, mmStart || !graph.syntheticDestinations.empty(), goal);
+        return world.validate(oot, mm, mmStart || !graph.syntheticDestinations.empty(), goal, access);
     };
     bindings.validateComplete = [&](const Overrides& rows) {
         ApplyNativeMmMixed(native, EncodeMmMixedExtension(rows, settings));
-        return world.validate(oot, mm, mmStart, goal);
+        return world.validate(oot, mm, mmStart, goal, access);
     };
     const auto rows = Shuffler(settings, std::move(bindings)).run();
     return EncodeMmMixedExtension(rows, settings);

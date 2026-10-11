@@ -14,6 +14,8 @@ python tools/ootmm/export_grotto_context.py --reference /path/to/ootmm-stable-32
 python tools/ootmm/export_registry.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_grotto_context.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_entrance_settings.py --reference /path/to/ootmm-stable-32.3 --check
+python tools/ootmm/export_solver_contract.py --reference /path/to/ootmm-stable-32.3
+python tools/ootmm/export_solver_contract.py --reference /path/to/ootmm-stable-32.3 --check
 ```
 
 `--output-root` defaults to this repository and can point at a scratch directory.
@@ -66,3 +68,12 @@ preparation for later menu/profile/headless integration, not a new public menu.
 choices and stable enum values with the fixture and evaluates 1,288 normalization
 cases against the original reference conditions. It also verifies that correcting
 the shared default booleans preserves the private v1 helper's existing pools.
+The solver exporter records the pinned polarity sets, spawn/Wallmaster destination
+type changes, retry bounds, and opposite-age Temple starting-item requirement in
+`ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json`. The executable host
+fixture checks joint pool selection, the 10-backtrack/1000-attempt bounds, selected
+accessibility, and MM arrival/reset behavior against that contract. The OoT Temple
+case tests the required callback boundary with a small graph; a native OoT graph
+adapter remains unavailable. OoT/Both shuffles with active logic therefore reject
+a missing Temple callback before sampling. This foundation does not complete M0
+or enable public entrance controls or a new playable entrance format.

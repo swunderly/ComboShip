@@ -2205,3 +2205,29 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   lines and the US stub at `deku_palace.yml:26`, Zora Cape Rock Island 1-5 (the fork has no rock checks), and two
   lines behind tricks the fork does not have (`great_bay_temple.yml:106`, `southern_swamp.yml:171`). The Deku Palace
   `is_child` rupees map to RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18 as a group.
+
+## Entrance solver foundation: pinned OoTMM v32.3 (2026-10-11)
+
+The private MM entrance adapters now use the existing combined accessibility choice:
+all-locations validates every location plus the goal, beatable validates the goal,
+and no-logic skips reachability probes. No new setting or public entrance control is
+enabled. `Shuffle.h` retains joint pool sampling and the existing 10-backtrack and
+1000-attempt bounds. Telescope destinations and polarity follow the exact pinned
+`packages/logic/src/solver/entrances.ts` contract; see `tools/ootmm/README.md`.
+
+Preserve these guarded native MM changes across upstream merges:
+
+- `mm/2s2h/Rando/Logic/Logic.cpp`: shuffled ordinary/mixed/grotto arrivals retain
+  the source predicate and AND `can_reset_time` for destinations without `no-sot`.
+  An arrival does not itself grant `MM ACCESS`. The existing GLOBAL-to-ACCESS event
+  path remains the only producer, matching the pinned world logic.
+- `mm/2s2h/Rando/Logic/ComboEntrancesMM.cpp`: Wallmaster arrivals apply the same
+  reset predicate without granting ACCESS on arrival. Existing time and ingress
+  filters remain in place.
+
+OoT/Both shuffles with active logic require a separate opposite-age Temple probe
+using only starting inventory on the changed world; a missing binding fails before
+RNG sampling. The native OoT graph binding is not implemented. Host tests verify
+this boundary with a fixture graph, not real OoT reachability. M0's native OoT
+validation gate remains incomplete, and no unified runtime entrance layout is
+enabled by this foundation.

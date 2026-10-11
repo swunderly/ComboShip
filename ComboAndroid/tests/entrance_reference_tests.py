@@ -38,7 +38,8 @@ expected = json.loads((source/'tools/ootmm/grotto-context-source.json').read_tex
 assert json.loads(registry.json_bytes(context.parse_context(runtime, records))) == expected
 outputs = ['combo/rando/entrances/Registry.h', 'combo/rando/entrances/GrottoMetadata.h',
            'combo/rando/entrances/LICENSE.OoTMM', 'tools/ootmm/registry-source.json',
-           'tools/ootmm/grotto-context-source.json']
+           'tools/ootmm/grotto-context-source.json',
+           'ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json']
 attributes = subprocess.check_output(['git', '-C', str(source), '-c', 'core.autocrlf=true',
                                      'check-attr', 'eol', '--', *outputs], text=True, timeout=30)
 assert len(attributes.splitlines()) == len(outputs)
@@ -52,7 +53,8 @@ def run(script, output, check=False, ref=reference):
 with tempfile.TemporaryDirectory(prefix='entrance-export-', dir=work) as scratch:
     scratch = Path(scratch)
     for script, target in [('export_registry.py', 'combo/rando/entrances/Registry.h'),
-                           ('export_grotto_context.py', 'combo/rando/entrances/GrottoMetadata.h')]:
+                           ('export_grotto_context.py', 'combo/rando/entrances/GrottoMetadata.h'),
+                           ('export_solver_contract.py', 'ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json')]:
         result = run(script, source, check=True)
         assert result.returncode == 0, result.stdout + result.stderr
         result = run(script, scratch)

@@ -134,7 +134,10 @@ struct AssumedWorld {
             }
         }
     }
-    bool validate(const OracleFns& oot, const OracleFns& mm, bool mmStart, const CwGoal& goal) const {
+    bool validate(const OracleFns& oot, const OracleFns& mm, bool mmStart, const CwGoal& goal,
+                  OotAccess access = OotAccess::ALL_REACHABLE) const {
+        if (access == OotAccess::NO_LOGIC)
+            return true;
         if (!oot.Reset || !oot.SetOwnedItems || !oot.GetReachableChecks || !oot.GetPortalOpen || !mm.Reset ||
             !mm.SetOwnedItems || !mm.GetReachableChecks)
             throw std::runtime_error("Entrance validation requires both native reachability oracles");
@@ -156,12 +159,14 @@ struct AssumedWorld {
         bool mmOpen = mmStart;
         // An MM start roots MM from the start in the age-aware search too, as mmOpen does in the plain one.
         const auto reached = QuerySongWorlds(oot, mm, ootItems, mmItems, mmOpen, query, mmStart);
-        for (const auto& name : ootChecks)
-            if (!reached.first.contains(name))
-                return false;
-        for (const auto& name : mmChecks)
-            if (!reached.second.contains(name))
-                return false;
+        if (access == OotAccess::ALL_REACHABLE) {
+            for (const auto& name : ootChecks)
+                if (!reached.first.contains(name))
+                    return false;
+            for (const auto& name : mmChecks)
+                if (!reached.second.contains(name))
+                    return false;
+        }
         return CwGoalReached(goal, reached.first.contains("Ganon"), reached.second.contains("Defeat Majora"), ootItems,
                              mmItems);
     }
@@ -171,7 +176,8 @@ struct AssumedWorld {
 inline nlohmann::json GenerateNativeMmWallmasters(bool enabled, uint32_t seed, const NativeFns& native,
                                                   const std::string& ootDump, const std::string& mmDump,
                                                   const std::string& forcedOot, const OracleFns& oot,
-                                                  const OracleFns& mm, bool mmStart, CwGoal goal) {
+                                                  const OracleFns& mm, bool mmStart, CwGoal goal,
+                                                  OotAccess access = OotAccess::ALL_REACHABLE) {
     ApplyNativeSeed(native, nlohmann::json::object());
     if (!enabled)
         return nlohmann::json(); // no pool construction or new RNG on legacy seeds
@@ -183,6 +189,7 @@ inline nlohmann::json GenerateNativeMmWallmasters(bool enabled, uint32_t seed, c
     settings.erWallmasters = Mode::OwnGame;
     CwRng rng(CwHashName("entrances:mm-wallmasters-own-game-v1:" + std::to_string(seed)));
     Bindings bindings;
+    bindings.logicEnabled = access != OotAccess::NO_LOGIC;
     bindings.areaExists = [](std::string_view area) {
         for (const auto& record : kRegistry)
             if ((Contains(kMmWallmasterSources, record.name) || MmBaseDestination(record, true)) &&
@@ -198,11 +205,11 @@ inline nlohmann::json GenerateNativeMmWallmasters(bool enabled, uint32_t seed, c
     };
     bindings.validateAssumed = [&](const Overrides& rows, const Pools& pools) {
         AssumptionScope scope(native, rows, pools);
-        return world.validate(oot, mm, mmStart, goal);
+        return world.validate(oot, mm, mmStart, goal, access);
     };
     bindings.validateComplete = [&](const Overrides& rows) {
         ApplyNativeSeed(native, { { "entranceExpansion", EncodeMmWallmasterExtension(MmWallmasterRows(rows)) } });
-        return world.validate(oot, mm, mmStart, goal);
+        return world.validate(oot, mm, mmStart, goal, access);
     };
     const auto rows = Shuffler(settings, std::move(bindings)).run();
     return EncodeMmWallmasterExtension(MmWallmasterRows(rows));

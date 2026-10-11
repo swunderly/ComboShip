@@ -61,7 +61,7 @@ class MmGrottoAssumptionScope {
 inline nlohmann::json GenerateNativeMmGrottos(Settings settings, uint32_t seed, const NativeFns& native,
                                               const std::string& ootDump, const std::string& mmDump,
                                               const std::string& forcedOot, const OracleFns& oot, const OracleFns& mm,
-                                              bool mmStart, CwGoal goal) {
+                                              bool mmStart, CwGoal goal, OotAccess access = OotAccess::ALL_REACHABLE) {
     if (settings.erGrottos == Mode::None)
         return nlohmann::json();
     if (settings.games != Games::Mm || settings.erGrottos != Mode::OwnGame || settings.erDecoupled ||
@@ -74,6 +74,7 @@ inline nlohmann::json GenerateNativeMmGrottos(Settings settings, uint32_t seed, 
     AssumedWorld world(ootDump, mmDump, forcedOot);
     CwRng rng(CwHashName("entrances:mm-grotto-coupled-v1:" + std::to_string(seed)));
     Bindings bindings;
+    bindings.logicEnabled = access != OotAccess::NO_LOGIC;
     bindings.areaExists = [](std::string_view area) {
         return MmOrdinaryNativeAreaExists(area) || MmGrottoNativeAreaExists(area);
     };
@@ -85,14 +86,14 @@ inline nlohmann::json GenerateNativeMmGrottos(Settings settings, uint32_t seed, 
     };
     bindings.validateAssumed = [&](const Overrides& rows, const Pools& pools) {
         MmGrottoAssumptionScope scope(native, rows, pools, settings);
-        return world.validate(oot, mm, mmStart, goal);
+        return world.validate(oot, mm, mmStart, goal, access);
     };
     bindings.validateComplete = [&](const Overrides& rows) {
         const auto extension = EncodeMmGrottoExtension(rows, settings.erNoPolarity);
         if (extension.at("overrides").size() != kMmGrottoGraphBindings.size())
             throw std::runtime_error("Incomplete default-US MM grotto pool");
         ApplyNativeMmGrottos(native, extension);
-        return world.validate(oot, mm, mmStart, goal);
+        return world.validate(oot, mm, mmStart, goal, access);
     };
     const auto rows = Shuffler(settings, std::move(bindings)).run();
     return EncodeMmGrottoExtension(rows, settings.erNoPolarity);

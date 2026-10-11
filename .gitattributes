@@ -5,3 +5,4 @@ combo/rando/entrances/LICENSE.OoTMM text eol=lf
 tools/ootmm/*-source.json text eol=lf
 combo/rando/entrances/OotmmSettingsData.inc text eol=lf
 ComboAndroid/tests/fixtures/ootmm-32.3-entrance-settings.json text eol=lf
+ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json text eol=lf

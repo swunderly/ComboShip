@@ -1,0 +1,72 @@
+{
+  "commit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "path": "packages/logic/src/solver/entrances.ts",
+  "sha256": "fa3bd74313c06f50082d097a66539ced5c1d78709fd548a63d2ef40297b45f0b",
+  "polarity": {
+    "IN": [
+      "boss",
+      "dungeon",
+      "dungeon-minor",
+      "dungeon-ganon",
+      "dungeon-ganon-tower",
+      "dungeon-sh",
+      "dungeon-pf",
+      "dungeon-btw",
+      "dungeon-acoi",
+      "dungeon-ss",
+      "dungeon-ctr",
+      "wallmaster",
+      "region",
+      "region-extra",
+      "region-shortcut",
+      "indoors",
+      "indoors-pf",
+      "indoors-extra",
+      "indoors-special",
+      "grotto",
+      "grave"
+    ],
+    "OUT": [
+      "dungeon-exit",
+      "indoors-exit",
+      "region-exit",
+      "grotto-exit",
+      "grave-exit"
+    ],
+    "ANY_OVERWORLD": [
+      "region",
+      "region-extra",
+      "region-shortcut",
+      "region-exit"
+    ]
+  },
+  "pools": {
+    "poolSpawns": {
+      "add": [
+        "spawn",
+        "indoors",
+        "one-way-song",
+        "region"
+      ],
+      "delete": [
+        "boss"
+      ]
+    },
+    "poolWallmasters": {
+      "add": [
+        "dungeon",
+        "dungeon-minor",
+        "dungeon-sh",
+        "boss"
+      ],
+      "delete": []
+    }
+  },
+  "backtracks": 10,
+  "attempts": 1000,
+  "ageTemple": {
+    "target": "OOT Temple of Time",
+    "inventory": "startingItems",
+    "oppositeSpawnOnly": true
+  }
+}

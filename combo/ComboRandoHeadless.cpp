@@ -922,7 +922,8 @@ int main(int argc, char** argv) {
                                                                      : ComboRando::OotAccess::ALL_REACHABLE;
             try {
                 entranceExpansion = ComboRando::Entrances::GenerateNativeMmWallmasters(
-                    nativeMmWallmasters, masterSeed, entranceNative, sohDump, mmDump, forced, oot, mmO, mmStart, goal);
+                    nativeMmWallmasters, masterSeed, entranceNative, sohDump, mmDump, forced, oot, mmO, mmStart, goal,
+                    ootAccess);
             } catch (const std::exception& error) {
                 std::cerr << "[comborando] MM Wallmaster generation: " << error.what() << "\n";
                 return 2;
@@ -937,7 +938,7 @@ int main(int argc, char** argv) {
                                     nativeMmOrdinaryIndoors, nativeMmOrdinaryTelescopes, nativeMmOrdinaryOverworld,
                                     nativeMmOrdinaryDungeons),
                                 nativeMmGrottos),
-                            masterSeed, entranceNative, sohDump, mmDump, forced, oot, mmO, mmStart, goal);
+                            masterSeed, entranceNative, sohDump, mmDump, forced, oot, mmO, mmStart, goal, ootAccess);
                     ComboRando::Entrances::ApplyNativeMmMixed(entranceNative, mixedEntranceExpansion);
                 } catch (const std::exception& error) {
                     std::cerr << "[comborando] MM mixed generation: " << error.what() << "\n";
@@ -952,7 +953,8 @@ int main(int argc, char** argv) {
                             nativeMmOrdinaryIndoors, nativeMmOrdinaryTelescopes, nativeMmOrdinaryOverworld,
                             nativeMmOrdinaryDungeons);
                         ordinaryEntranceExpansion = ComboRando::Entrances::GenerateNativeMmOrdinary(
-                            settings, masterSeed, entranceNative, sohDump, mmDump, forced, oot, mmO, mmStart, goal);
+                            settings, masterSeed, entranceNative, sohDump, mmDump, forced, oot, mmO, mmStart, goal,
+                            ootAccess);
                     }
                     if (!ordinaryEntranceExpansion.is_null())
                         ComboRando::Entrances::ApplyNativeMmOrdinary(entranceNative, ordinaryEntranceExpansion);
@@ -967,7 +969,8 @@ int main(int argc, char** argv) {
                         settings.games = ComboRando::Entrances::Games::Mm;
                         settings.erGrottos = ComboRando::Entrances::Mode::OwnGame;
                         grottoEntranceExpansion = ComboRando::Entrances::GenerateNativeMmGrottos(
-                            settings, masterSeed, entranceNative, sohDump, mmDump, forced, oot, mmO, mmStart, goal);
+                            settings, masterSeed, entranceNative, sohDump, mmDump, forced, oot, mmO, mmStart, goal,
+                            ootAccess);
                     }
                     if (!grottoEntranceExpansion.is_null())
                         ComboRando::Entrances::ApplyNativeMmGrottos(entranceNative, grottoEntranceExpansion);
