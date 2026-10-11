@@ -76,6 +76,7 @@ class View {
         return uint8_t(total - total / 2);
     }
 #define CVAR_RANDOMIZER_SETTING(s) "gRandoSettings." s
+#define CVAR_ENHANCEMENT(s) "gEnhancements." s
     void HandleShopsanityPriceUI() {
         bool isTycoon = CVarGetInteger(CVAR_RANDOMIZER_SETTING("IncludeTycoonWallet"), RO_GENERIC_OFF);
         mOptions[RSK_SHOPSANITY].RemoveFlag(IMFLAG_SEPARATOR_BOTTOM);
@@ -977,6 +978,13 @@ class View {
             mOptions[RSK_KAK_100_SKULLS_HINT].Disable("There is no point to hinting 100 skulls if it is not shuffled.");
         }
     }
+    void Callback_RSK_SHUFFLE_ENEMY_SOULS() {
+        if (CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0)) {
+            mOptions[RSK_SHUFFLE_ENEMY_SOULS].Disable("Disabled because Enemy Randomizer is on.");
+        } else {
+            mOptions[RSK_SHUFFLE_ENEMY_SOULS].Enable();
+        }
+    }
     void Callback_RSK_SHUFFLE_DEKU_STICK_BAG() {
         if (CVarGetInteger(CVAR_RANDOMIZER_SETTING("ShuffleDekuStickBag"), 0)) {
             mOptions[RSK_STARTING_STICKS].Disable("Disabled because Shuffle Deku Stick Bag is on.");
@@ -1315,6 +1323,7 @@ class View {
         callbacks[RSK_MERCHANT_PRICES] = [this] { Callback_RSK_MERCHANT_PRICES(); };
         callbacks[RSK_SHUFFLE_ADULT_TRADE] = [this] { Callback_RSK_SHUFFLE_ADULT_TRADE(); };
         callbacks[RSK_SHUFFLE_100_GS_REWARD] = [this] { Callback_RSK_SHUFFLE_100_GS_REWARD(); };
+        callbacks[RSK_SHUFFLE_ENEMY_SOULS] = [this] { Callback_RSK_SHUFFLE_ENEMY_SOULS(); };
         callbacks[RSK_SHUFFLE_DEKU_STICK_BAG] = [this] { Callback_RSK_SHUFFLE_DEKU_STICK_BAG(); };
         callbacks[RSK_SHUFFLE_DEKU_NUT_BAG] = [this] { Callback_RSK_SHUFFLE_DEKU_NUT_BAG(); };
         callbacks[RSK_FISHSANITY] = [this] { Callback_RSK_FISHSANITY(); };

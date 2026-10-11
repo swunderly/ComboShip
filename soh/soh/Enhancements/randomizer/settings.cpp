@@ -5,6 +5,7 @@
 #include "soh/Enhancements/randomizer/rng.h"
 #include "soh/Enhancements/randomizer/souls/OotSoulState.h"
 #include "soh/OTRGlobals.h"
+#include "soh/ShipInit.hpp"
 
 #include <spdlog/spdlog.h>
 #include <libultraship/bridge/consolevariablebridge.h>
@@ -1120,6 +1121,15 @@ void Settings::CreateOptions() {
     // FinalizeSettings and ParseJson, like RSK_SHUFFLE_ENTRANCES; no CVar, and no name so the spoiler skips it.
     OPT_BOOL(RSK_COMPLETE_OOT_SOULS, "");
     OPT_BOOL(RSK_SHUFFLE_ENEMY_SOULS, "Shuffle Enemy Souls", CVAR_RANDOMIZER_SETTING("ShuffleEnemySouls"), mOptionDescriptions[RSK_SHUFFLE_ENEMY_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
+    // SoH's Enemy Randomizer has no OoTMM counterpart: its replacement enemies would be kept away by souls
+    // that logic does not model. FinalizeSettings forces the souls off while it is on.
+    OPT_CALLBACK(RSK_SHUFFLE_ENEMY_SOULS, {
+        if (CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0)) {
+            mOptions[RSK_SHUFFLE_ENEMY_SOULS].Disable("Disabled because Enemy Randomizer is on.");
+        } else {
+            mOptions[RSK_SHUFFLE_ENEMY_SOULS].Enable();
+        }
+    });
     OPT_BOOL(RSK_SHUFFLE_NPC_SOULS, "Shuffle NPC Souls", CVAR_RANDOMIZER_SETTING("ShuffleNpcSouls"), mOptionDescriptions[RSK_SHUFFLE_NPC_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
     OPT_BOOL(RSK_SHUFFLE_ANIMAL_SOULS, "Shuffle Animal Souls", CVAR_RANDOMIZER_SETTING("ShuffleAnimalSouls"), mOptionDescriptions[RSK_SHUFFLE_ANIMAL_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
     OPT_BOOL(RSK_SHUFFLE_MISC_SOULS, "Shuffle Misc Souls", CVAR_RANDOMIZER_SETTING("ShuffleMiscSouls"), mOptionDescriptions[RSK_SHUFFLE_MISC_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
@@ -3293,8 +3303,17 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
         mOptions[RSK_LOACH_HINT].Set(RO_GENERIC_OFF);
     }
 
+    // Enemy Souls (OoT) is unavailable with SoH's Enemy Randomizer (see the option's callback).
+    if (CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0)) {
+        mOptions[RSK_SHUFFLE_ENEMY_SOULS].Set(RO_GENERIC_OFF);
+    }
     FinalizeOotSoulSettings([this](RandomizerSettingKey key) -> OptionValue& { return mOptions[key]; });
 }
+
+// The Enemy Randomizer lives in another menu, so re-run the souls option's callback when it changes.
+static RegisterShipInitFunc
+    sEnemySoulsAvailability([] { Settings::GetInstance()->GetOption(RSK_SHUFFLE_ENEMY_SOULS).RunCallback(); },
+                            { CVAR_ENHANCEMENT("RandomizedEnemies") });
 
 void Settings::ParseJson(const nlohmann::json& spoilerFileJson) {
     mContext->SetSeedString(spoilerFileJson.at("seed").get<std::string>());
