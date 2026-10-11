@@ -2840,6 +2840,7 @@ extern "C" COMBO_EXPORT void MM_BootForCombo(void) {
 #ifdef COMBO_BUILD
 // Whether a seed may add the MM gear (BenPort.cpp, beside Combo_MM_GearActive).
 extern "C" int Combo_MM_GearOptionReady(void);
+extern "C" int Combo_MM_GearOptionsAllowed(int swimShuffled);
 extern "C" void Combo_MM_GearForHeadlessGeneration(void);
 #endif
 // ComboShip: headless rando-only MM init — builds ONLY the rando region graph via the "RANDO_LOGIC"
@@ -2964,7 +2965,8 @@ static bool Combo_MM_IsHiddenAdultOption(RandoOptionId id) {
 static constexpr std::pair<RandoOptionId, int> kComboMmSpellOptions[] = { { RO_MM_SPELL_LOVE, 1 },
                                                                           { RO_MM_SPELL_FIRE, 2 } };
 // Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM). A device whose gear runtime is not released or cannot
-// prepare the gear resources keeps these at 0 wherever options are gathered (Combo_MM_GearOptionReady).
+// prepare the gear resources, or a seed with Swim shuffled, keeps these at 0 wherever options are gathered
+// (Combo_MM_GearOptionsAllowed).
 static constexpr RandoOptionId kComboMmGearOptions[] = { RO_MM_BOOTS_IRON, RO_MM_BOOTS_HOVER, RO_MM_TUNIC_GORON,
                                                          RO_MM_TUNIC_ZORA };
 extern "C" void Combo_MM_ClearUnavailableOptions(u32* options) {
@@ -2974,7 +2976,7 @@ extern "C" void Combo_MM_ClearUnavailableOptions(u32* options) {
     for (const auto& [id, spell] : kComboMmSpellOptions)
         if (!Combo_MMSpellOptionReady(spell))
             options[id] = 0;
-    if (!Combo_MM_GearOptionReady())
+    if (!Combo_MM_GearOptionsAllowed(options[RO_SHUFFLE_SWIM] == RO_GENERIC_YES))
         for (const auto id : kComboMmGearOptions)
             options[id] = 0;
 }
@@ -3384,7 +3386,8 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings(void) {
     for (const auto& [id, spell] : kComboMmSpellOptions)
         if (!Combo_MMSpellOptionReady(spell))
             j[Rando::StaticData::Options[id].cvar] = 0;
-    if (!Combo_MM_GearOptionReady())
+    const auto& swim = Rando::StaticData::Options[RO_SHUFFLE_SWIM];
+    if (!Combo_MM_GearOptionsAllowed(CVarGetInteger(swim.cvar, swim.defaultValue) == RO_GENERIC_YES))
         for (const auto id : kComboMmGearOptions)
             j[Rando::StaticData::Options[id].cvar] = 0;
     // Excluded checks are a JSON-array config block of RC_ names (upstream #1817) outside the options
@@ -6162,6 +6165,13 @@ extern "C" int Combo_MM_GearActive(void) {
 static bool sMmGearHeadlessGeneration = false;
 extern "C" int Combo_MM_GearOptionReady(void) {
     return sMmGearHeadlessGeneration || (Combo_MM_GearIntegrationEnabled() && Combo_MM_GearResourcesReady());
+}
+// Any gear option switches on the pinned OoTMM graphs, which read can_swim as true and count the Zora Mask as swimming
+// (macros_mm.yml:83, :258) because OoTMM's no-scale water check spares every non-human form (bronze_scale.c:53-66).
+// 2S2H's Swim shuffle sends back every form that swims without Swim, Zora included (RespawnOnWaterTouch), so a seed
+// with Swim shuffled leaves the gear out until those graphs know the Swim ability.
+extern "C" int Combo_MM_GearOptionsAllowed(int swimShuffled) {
+    return Combo_MM_GearOptionReady() && !swimShuffled;
 }
 // The headless generator has no game runtime; it generates as a device that can use the gear.
 extern "C" void Combo_MM_GearForHeadlessGeneration(void) {

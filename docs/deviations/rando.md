@@ -2120,7 +2120,12 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   (`cosmetics/index.ts:383-395`). Custom player models are not patched.
 - **Swim shuffle.** 2S2H's Swim shuffle stands in for OoTMM's MM scales (`can_swim`). As OoTMM's no-scale water check
   skips the MM Iron Boots (`common/bronze_scale.c:63-66`), `RespawnOnWaterTouch` does not send back human Link wearing
-  them, which the logic's `can_swim_or_sink` (`macros_mm.yml:84`) relies on.
+  them, which the logic's `can_swim_or_sink` (`macros_mm.yml:84`) relies on. OoTMM's check also spares every
+  non-human form (`:53-66`), so its `can_swim` counts the Zora Mask (`macros_mm.yml:83`, `underwater_walking` `:258`),
+  and the pinned graphs any gear option switches on read `can_swim` as true; 2S2H sends back a Zora without Swim too.
+  Until those graphs know the Swim ability, a seed with Swim shuffled leaves the gear out: the four rows are greyed
+  out and unticked while Swim is ticked, and option gathering keeps them at 0 (`Combo_MM_GearOptionsAllowed`).
+  `mm_gear_swim_shuffle_tests.py` checks that every native Swim requirement holds for such a seed.
 - **Not copied:** the MM pause-menu item descriptions (2S2H rando suppresses the descriptions of all trade slots;
   owner decision), OoTMM's OoT file-select MM equipment icons, scales, and the tricks that need the Megaton Hammer or
   Strength 3 in MM (not authorized). The shared tunic text keeps OoTMM's "into two items" wording.

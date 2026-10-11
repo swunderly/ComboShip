@@ -113,11 +113,18 @@ check(hidden is not None and not any(o in hidden.group(1) for o in GEAR), 'gear 
 check('returnsMmGearHeadlessGeneration||(Combo_MM_GearIntegrationEnabled()&&Combo_MM_GearResourcesReady());'
       in body(benport, 'extern "C" int Combo_MM_GearOptionReady(void)'), 'Combo_MM_GearOptionReady')
 zero = 'if(!Combo_MM_GearOptionReady())for(constautoid:kComboMmGearOptions)'
-check(zero + 'options[id]=0;' in body(benport, 'extern "C" void Combo_MM_ClearUnavailableOptions('), 'generation keeps unready gear')
+# Option gathering also leaves the gear out of Swim-shuffled seeds (mm_gear_swim_shuffle_tests.py); a new MM save keeps
+# its seed's gear wherever the device can run it.
+allowed = 'if(!Combo_MM_GearOptionsAllowed('
+check(allowed + 'options[RO_SHUFFLE_SWIM]==RO_GENERIC_YES))for(constautoid:kComboMmGearOptions)options[id]=0;'
+      in body(benport, 'extern "C" void Combo_MM_ClearUnavailableOptions('), 'generation keeps unready gear')
 check(zero + 'options[Rando::StaticData::Options[id].name]=uint32_t(0);'
       in body(benport, 'extern "C" COMBO_EXPORT int MM_InitRandoSaveFile('), 'a new MM save keeps unready gear')
-check(zero + 'j[Rando::StaticData::Options[id].cvar]=0;' in body(benport, 'extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings('),
+check(allowed + 'CVarGetInteger(swim.cvar,swim.defaultValue)==RO_GENERIC_YES))for(constautoid:kComboMmGearOptions)'
+      'j[Rando::StaticData::Options[id].cvar]=0;' in body(benport, 'extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings('),
       'the settings snapshot keeps unready gear')
+check('returnCombo_MM_GearOptionReady()&&!swimShuffled;' in body(benport, 'extern "C" int Combo_MM_GearOptionsAllowed('),
+      'Combo_MM_GearOptionsAllowed does not include the readiness gate')
 check('Combo_MM_GearForHeadlessGeneration();' in body(benport, 'extern "C" COMBO_EXPORT void MM_InitRandoHeadless('),
       'the headless generator cannot add the gear')
 init = body(benport, 'extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(')
@@ -151,7 +158,8 @@ for key, ro, name, desc in SETTINGS:
           f'ProfileMmLayout.inc lacks the {name} row')
     check(f'RO({ro}, RO_GENERIC_NO)' in options, f'{ro} is not released with a CVar')
 check(-1 not in positions and positions == sorted(positions), 'gear rows are not after Nayru\'s Love in OoTMM order')
-check('if(Combo_MM_GearOptionReady()){ItemPoolCheckbox(label,optionId,tooltip,1);return;}'
+check('if(Combo_MM_GearOptionsAllowed(CVarGetInteger(swim.cvar,swim.defaultValue)==RO_GENERIC_YES)){'
+      'ItemPoolCheckbox(label,optionId,tooltip,1);return;}'
       in body(menu, 'static void GearPoolCheckbox('), 'the gear rows are not greyed out where the gear cannot run')
 shared = read('combo/rando/SharedItems.h')
 for key, family, name, desc in SHARED:

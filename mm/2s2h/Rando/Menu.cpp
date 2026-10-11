@@ -328,6 +328,7 @@ static uint32_t checkPoolGeneration = 0;
 extern "C" void Combo_MM_ClearUnavailableOptions(u32* options);
 extern "C" int Combo_MMSpellOptionReady(int spell);
 extern "C" int Combo_MM_GearOptionReady(void);
+extern "C" int Combo_MM_GearOptionsAllowed(int swimShuffled);
 #endif
 void RefreshMetrics() {
     setOfItemsInPool.clear();
@@ -975,20 +976,26 @@ static void SpellPoolCheckbox(const char* label, RandoOptionId optionId, int spe
                                             .disabledTooltip = "Disabled because this device could not prepare the "
                                                                "spell. New seeds leave it out." } }));
 }
-// The MM boots and tunics need their native runtime (BenPort.cpp Combo_MM_GearActive). Where it is not released or
-// cannot prepare the gear resources, the row shows unticked and greyed out without overwriting the stored preference,
-// and new seeds leave the item out.
+// The MM boots and tunics need their native runtime (BenPort.cpp Combo_MM_GearActive), and their logic does not yet
+// know Swim shuffle (Combo_MM_GearOptionsAllowed). Where the runtime is not released or cannot prepare the gear
+// resources, or while Swim is shuffled, the row shows unticked and greyed out without overwriting the stored
+// preference, and new seeds leave the item out.
 static void GearPoolCheckbox(const char* label, RandoOptionId optionId, const char* tooltip) {
-    if (Combo_MM_GearOptionReady()) {
+    const auto& swim = Rando::StaticData::Options[RO_SHUFFLE_SWIM];
+    if (Combo_MM_GearOptionsAllowed(CVarGetInteger(swim.cvar, swim.defaultValue) == RO_GENERIC_YES)) {
         ItemPoolCheckbox(label, optionId, tooltip, 1);
         return;
     }
     bool off = false;
-    UIWidgets::Checkbox(label, &off,
-                        CheckboxOptions({ { .tooltip = tooltip,
-                                            .disabled = true,
-                                            .disabledTooltip = "Disabled because this device cannot run the MM boots "
-                                                               "and tunics yet. New seeds leave them out." } }));
+    UIWidgets::Checkbox(
+        label, &off,
+        CheckboxOptions({ { .tooltip = tooltip,
+                            .disabled = true,
+                            .disabledTooltip = Combo_MM_GearOptionReady()
+                                                   ? "Disabled while Swim is shuffled. New seeds leave the MM boots "
+                                                     "and tunics out."
+                                                   : "Disabled because this device cannot run the MM boots and tunics "
+                                                     "yet. New seeds leave them out." } }));
 }
 #endif
 
