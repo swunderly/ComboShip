@@ -82,6 +82,7 @@ CrowdControl* CrowdControl::Instance;
 #include "2s2h/Rando/FaroresWind.h"
 #include "2s2h/Rando/Spells.h"
 #include "rando/SpellRules.h"
+#include "rando/GearRules.h"
 #include "2s2h/Rando/MiscBehavior/MiscBehavior.h" // ComboShip: MM_LoadComboRando cache invalidation + ComboRando types
 #endif
 
@@ -2971,6 +2972,7 @@ extern "C" void Combo_MM_ClearUnavailableOptions(u32* options) {
 // Combo master seed for MM's RNG, mirroring OOT's SOH_SetComboRandoSeed so confined placement
 // (PreplaceConfinedItems, via Ship_Random) is reproducible per seed.
 static ComboRando::SpellRules sMMSeedSpellRules;
+static ComboRando::GearRules sMMSeedGearRules;
 static ComboRando::FaroreRules sMMSeedFaroreRules;
 static bool sMMSeedFaroreRulesBound = false;
 static uint64_t sMMComboRandoSeed = 0;
@@ -3063,6 +3065,10 @@ extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(int fileNum, const char* placem
             options[Rando::StaticData::Options[RO_MM_SPELL_WIND].name] = uint32_t(sMMSeedFaroreRules.spellWindMm);
             options[Rando::StaticData::Options[RO_MM_SPELL_FIRE].name] = uint32_t(sMMSeedSpellRules.spellFireMm);
             options[Rando::StaticData::Options[RO_MM_SPELL_LOVE].name] = uint32_t(sMMSeedSpellRules.spellLoveMm);
+            options[Rando::StaticData::Options[RO_MM_BOOTS_IRON].name] = uint32_t(sMMSeedGearRules.bootsIronMm);
+            options[Rando::StaticData::Options[RO_MM_BOOTS_HOVER].name] = uint32_t(sMMSeedGearRules.bootsHoverMm);
+            options[Rando::StaticData::Options[RO_MM_TUNIC_GORON].name] = uint32_t(sMMSeedGearRules.tunicGoronMm);
+            options[Rando::StaticData::Options[RO_MM_TUNIC_ZORA].name] = uint32_t(sMMSeedGearRules.tunicZoraMm);
             options[Rando::StaticData::Options[RO_CROSS_GAME_FARORE].name] = uint32_t(sMMSeedFaroreRules.crossGameFw);
             options[Rando::StaticData::Options[RO_MM_CROSS_AGE].name] = uint32_t(sMMSeedFaroreRules.crossAge);
         }
@@ -3211,12 +3217,14 @@ extern "C" COMBO_EXPORT void MM_SetComboSaveIO(ComboRando::FnComboReadSave r, Co
 // save-load; store the blob and invalidate MM's lookup caches so they rebuild from it. Idempotent.
 extern "C" COMBO_EXPORT void MM_LoadComboRando(const char* json) {
     sMMSeedSpellRules = {};
+    sMMSeedGearRules = {};
     sMMSeedFaroreRules = {};
     sMMSeedFaroreRulesBound = true;
     try {
         const auto seed = nlohmann::json::parse(json ? json : "{}");
         ComboRando::ReadFaroreRules(seed.value("faroreRules", nlohmann::json()), sMMSeedFaroreRules);
         ComboRando::ReadSpellRules(seed.value("spellRules", nlohmann::json()), sMMSeedSpellRules);
+        ComboRando::ReadGearRules(seed.value("gearRules", nlohmann::json()), sMMSeedGearRules);
     } catch (...) {}
     ComboRando::Combo_SetForeignJson(json);
     Rando::MiscBehavior::InvalidateComboForeignCache();

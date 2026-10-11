@@ -441,6 +441,7 @@ static int (*SOH_TakeSongDeparture)() = nullptr, (*MM_TakeSongDeparture)() = nul
 #include "rando/SharedDungeonJson.h"
 #include "rando/FaroreRules.h"
 #include "rando/SpellRules.h"
+#include "rando/GearRules.h"
 #include "rando/CrossArrival.h"
 #include "rando/CrossEntrance.h"
 using EntranceArrival = int (*)(int, uint32_t, int, int);
@@ -2739,6 +2740,7 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         consolidated["gameplayRules"] = SnapshotGameplayRules();
         consolidated["faroreRules"] = ComboRando::FaroreRulesFromMmDump(nlohmann::json::parse(mmDump)).json();
         consolidated["spellRules"] = ComboRando::SpellRulesFromMmDump(nlohmann::json::parse(mmDump)).json();
+        consolidated["gearRules"] = ComboRando::GearRulesFromMmDump(nlohmann::json::parse(mmDump)).json();
         consolidated["accessibility"] = {
             { "version", 1 },
             { "mode", CombinedAccessForGeneration(sohDump) == ComboRando::OotAccess::NO_LOGIC        ? "noLogic"
