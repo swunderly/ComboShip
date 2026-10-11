@@ -215,4 +215,9 @@ inline void EnsureMmSwampContexts() {
     frog.first = [originalFrog] { return !TypedMmSwampActive() && originalFrog(); };
     Regions.at(RR_MM_SWAMP_NEAR_FROG)
         .checks.insert(CHECK(RC_SOUTHERN_SWAMP_FROG, TypedMmSwampActive() && HAS_ITEM(ITEM_MASK_DON_GERO)));
+    // The native Octorok drop has no OoTMM location; keep it reachable from the water the Octoroks swim in, with
+    // its native condition, now that the flower platforms are the dry Swamp Rupee Flowers region.
+    Regions.at(RR_MM_SWAMP_WATER_FROG)
+        .checks.insert(CHECK(RC_ENEMY_DROP_OCTOROK, TypedMmSwampActive() && CanKillEnemy(ACTOR_EN_OKUTA) &&
+                                                        (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA || CAN_BE_GORON)));
 }
