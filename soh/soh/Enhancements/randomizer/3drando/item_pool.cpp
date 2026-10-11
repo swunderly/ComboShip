@@ -10,6 +10,8 @@
 #include "soh/Enhancements/randomizer/Traps.h"
 #include "soh/Enhancements/randomizer/randomizerTypes.h"
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 #include <spdlog/spdlog.h>
 
 std::vector<RandomizerGet> itemPool = {};
@@ -968,6 +970,12 @@ void GenerateItemPool() {
     std::erase(plentifulPool, RG_NONE);
 
     size_t locCount = ctx->CountEmptyLocations(false);
+    // Release builds compile the assert out, and `locCount - itemPool.size()` below would then wrap. Enemy
+    // Souls (OoT) adds up to 86 items, so refuse an overfull pool with a message the combo reports instead.
+    if (itemPool.size() > locCount) {
+        throw std::runtime_error("OoT item pool holds " + std::to_string(itemPool.size()) + " items for " +
+                                 std::to_string(locCount) + " checks; shuffle more checks or fewer items");
+    }
     assert(itemPool.size() <= locCount);
     int iceTrapstoAdd = 0;
     if (itemPool.size() + plentifulPool.size() < locCount) {
