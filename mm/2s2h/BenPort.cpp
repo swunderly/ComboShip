@@ -6179,7 +6179,8 @@ extern "C" void Combo_MM_GearForHeadlessGeneration(void) {
     sMmGearHeadlessGeneration = true;
 }
 // The combo layer asks before it loads a seed that adds the gear, or makes a file from one (ComboShip.cpp
-// SeedNeedsUnavailableMmGear): a new MM save drops gear this device cannot run (MM_InitRandoSaveFile).
+// SeedNeedsUnavailableMmGear): a new MM save drops gear this device cannot run (MM_InitRandoSaveFile). Its menu greys a
+// Shared gear row out exactly where the MM row is (ComboMenu.cpp DrawSharedItems).
 extern "C" COMBO_EXPORT int MM_GearOptionsAllowed(int swimShuffled) {
     return Combo_MM_GearOptionsAllowed(swimShuffled);
 }

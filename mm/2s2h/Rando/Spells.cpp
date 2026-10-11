@@ -148,6 +148,10 @@ extern "C" int Combo_MMSpellOptionReady(int spell) {
 extern "C" void Combo_MMSpellsForHeadlessGeneration() {
     sHeadlessGeneration = true;
 }
+// The combo menu greys a Shared spell row out exactly where the MM row is (ComboMenu.cpp DrawSharedItems).
+extern "C" COMBO_EXPORT int MM_SpellOptionReady(int spell) {
+    return Combo_MMSpellOptionReady(spell);
+}
 extern "C" const char* Combo_MMSpellItemName(int item) {
     const int spell = item == ITEM_COMBO_NAYRUS_LOVE ? 1 : item == ITEM_COMBO_DINS_FIRE ? 2 : 0;
     if (!spell || !Combo_MMSpellPrepareResources(spell))

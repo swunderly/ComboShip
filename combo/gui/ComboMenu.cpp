@@ -1634,6 +1634,30 @@ void DrawCombinedGoals() {
                        : "Controls whether you can use Farore's Wind to warp between OoT and MM.\n\nRequires Farore's "
                          "Wind (MM) under Items & checks > Majora's Mask.");
 }
+// Whether MM offers the family's MM option: its MM row is greyed out and unticked where the device cannot run the item,
+// and for the boots and tunics while Swim is shuffled, RO_SHUFFLE_SWIM = RO_GENERIC_YES (1) (2S2H Rando/Menu.cpp
+// SpellPoolCheckbox, GearPoolCheckbox).
+bool SharedMmExtensionOffered(int family) {
+    static int (*spellReady)(int) = nullptr;
+    static int (*gearAllowed)(int) = nullptr;
+    if (!spellReady)
+        spellReady = (int (*)(int))Combo_ResolveSym("2ship", "MM_SpellOptionReady");
+    if (!gearAllowed)
+        gearAllowed = (int (*)(int))Combo_ResolveSym("2ship", "MM_GearOptionsAllowed");
+    switch (family) {
+        case SF_SPELL_FIRE:
+            return spellReady && spellReady(2);
+        case SF_SPELL_LOVE:
+            return spellReady && spellReady(1);
+        case SF_BOOTS_IRON:
+        case SF_BOOTS_HOVER:
+        case SF_TUNIC_GORON:
+        case SF_TUNIC_ZORA:
+            return gearAllowed && gearAllowed(ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_SWIM", 0) == 1);
+        default:
+            return true;
+    }
+}
 void DrawSharedItems() {
     const int columns = MenuColumns();
     if (!ImGui::BeginTable("##SharedItems", columns,
@@ -1647,10 +1671,13 @@ void DrawSharedItems() {
         bool enabled = ProfileUI::ReadInteger(family.cvar, 0) != 0;
         ImGui::PushID(family.cvar);
         // OoTMM data.ts:3000-3054 cond `hasOoTMM && <x>Mm`: without its MM option the shared item is off
-        // (util.ts:80-93 resets it). Show it unchecked but keep the stored preference; generation ignores it.
+        // (util.ts:80-93 resets it). Show it unchecked but keep the stored preference; generation ignores it. An MM
+        // option MM does not offer here counts as off, as generation gathers it (BenPort.cpp
+        // Combo_MM_ClearUnavailableOptions).
         const char* extension = SharedFamilyMmExtension(i);
         const bool extensionOff =
-            extension && !ProfileUI::ReadInteger((std::string("gRando.Options.") + extension).c_str(), 0);
+            extension && (!ProfileUI::ReadInteger((std::string("gRando.Options.") + extension).c_str(), 0) ||
+                          !SharedMmExtensionOffered(i));
         if (extensionOff)
             enabled = false;
         const bool unavailable =

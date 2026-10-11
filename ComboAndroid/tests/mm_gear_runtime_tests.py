@@ -194,6 +194,24 @@ for key, family, name, desc in SHARED:
 check('if(i==SF_OCARINA||!SharedFamilyByIndex(i).publicOption)' in squash(read('combo/gui/ComboMenu.cpp'))
       and 'constchar*extension=SharedFamilyMmExtension(i);' in squash(read('combo/gui/ComboMenu.cpp')),
       'the Shared items page no longer greys a family out without its MM option')
+# A Shared row is greyed out and unticked exactly where its MM row is: MM option off, or not offered by MM (the gear
+# where the device cannot run it or while Swim is shuffled, a spell where the device cannot cast it).
+combo_menu = read('combo/gui/ComboMenu.cpp')
+check('constboolextensionOff=extension&&(!ProfileUI::ReadInteger((std::string("gRando.Options.")+extension).c_str(),0)'
+      '||!SharedMmExtensionOffered(i));' in body(combo_menu, 'void DrawSharedItems()'),
+      'a Shared row stays tickable where MM greys its MM row out')
+offered = body(combo_menu, 'bool SharedMmExtensionOffered(int family)')
+check('caseSF_BOOTS_IRON:caseSF_BOOTS_HOVER:caseSF_TUNIC_GORON:caseSF_TUNIC_ZORA:returngearAllowed&&gearAllowed('
+      'ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_SWIM",0)==1);' in offered
+      and 'Combo_ResolveSym("2ship","MM_GearOptionsAllowed")' in offered,
+      'the Shared gear rows do not follow the MM gear rows')
+spell_numbers = dict(re.findall(r'\{\s*(RO_MM_SPELL_\w+),\s*(\d)\s*\}', benport))
+check(f'caseSF_SPELL_FIRE:returnspellReady&&spellReady({spell_numbers.get("RO_MM_SPELL_FIRE")});' in offered
+      and f'caseSF_SPELL_LOVE:returnspellReady&&spellReady({spell_numbers.get("RO_MM_SPELL_LOVE")});' in offered
+      and 'Combo_ResolveSym("2ship","MM_SpellOptionReady")' in offered,
+      'the Shared spell rows do not follow the MM spell rows')
+check('returnCombo_MMSpellOptionReady(spell);' in body(read('mm/2s2h/Rando/Spells.cpp'),
+      'extern "C" COMBO_EXPORT int MM_SpellOptionReady(int spell)'), 'MM_SpellOptionReady export')
 editor = squash(read('mm/2s2h/DeveloperTools/SaveEditor.cpp'))
 for item, family in (('BOOTS_IRON', 'BOOTS_IRON'), ('BOOTS_HOVER', 'BOOTS_HOVER'), ('TUNIC_GORON', 'TUNIC_GORON'),
                      ('TUNIC_ZORA', 'TUNIC_ZORA')):
