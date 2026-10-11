@@ -6125,11 +6125,11 @@ extern "C" int Combo_MM_AdultResourcesReady(void) {
         return 0;
 #endif
     }
-    return Combo_MM_AdultModelResourcesReady() && Combo_MM_AdultMaskResourcesReady() &&
-           Combo_MM_AdultMaskIconsReady() && Combo_MM_AdultGameplayKeepResourcesReady() &&
-           Combo_MM_AdultEponaResourcesReady() && Combo_MM_AdultBootDrawResourcesReady() &&
-           Combo_MM_ChildBootResourcesReady() && Combo_MM_HoverCircleResourcesReady() &&
-           Combo_MM_AdultGearIconsReady() && Combo_MM_AdultGearGiReady() && ComboAdultMM::BuildAdultHybridSequence();
+    return Combo_MM_CrossAgeModelReady() && Combo_MM_AdultMaskResourcesReady() && Combo_MM_AdultMaskIconsReady() &&
+           Combo_MM_AdultGameplayKeepResourcesReady() && Combo_MM_AdultEponaResourcesReady() &&
+           Combo_MM_AdultBootDrawResourcesReady() && Combo_MM_ChildBootResourcesReady() &&
+           Combo_MM_HoverCircleResourcesReady() && Combo_MM_AdultGearIconsReady() && Combo_MM_AdultGearGiReady() &&
+           ComboAdultMM::BuildAdultHybridSequence();
 }
 // Human Link is adult only while the whole Adult Link in MM runtime is integrated and ready.
 extern "C" int Combo_MM_IsLinkAdult(void) {
