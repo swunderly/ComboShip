@@ -190,7 +190,8 @@ inline auto QuerySongWorlds(const OracleFns& oot, const OracleFns& mm, const std
     const bool ootAges = oot.GetPortalAges && oot.GetSongSourcesForAge && oot.SetSongAgeArrivals && oot.GetStartAges;
     std::array<uint32_t, 2> ootAgeArrivals{};
     uint8_t mmEntryAges = ootAges && mmRootAtStart ? static_cast<uint8_t>(oot.GetStartAges() & 3) : uint8_t(0);
-    for (int pass = 0; pass < 18; pass++) {
+    // Every pass but the last adds a state bit: 6 + 10 arrivals, 2 x 6 per-age arrivals, 2 entry ages.
+    for (int pass = 0; pass < 31; pass++) {
         if (ootAges)
             oot.SetSongAgeArrivals(ootAgeArrivals[0], ootAgeArrivals[1]);
         else if (oot.SetSongArrivals)
