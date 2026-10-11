@@ -40,7 +40,7 @@ enum SharedFamily {
     SF_SONG_OF_TIME,
     SF_MIRROR_SHIELD,
     SF_OCARINA,    // append only; progressive family, excluded from singleton paths
-    SF_SPELL_WIND, // public with spellWindMm (0.3.9); Din's Fire/Nayru's Love remain private
+    SF_SPELL_WIND, // the spells are public with their MM settings; the gear families stay private
     SF_SPELL_FIRE,
     SF_SPELL_LOVE,
     SF_BOOTS_IRON,
@@ -141,37 +141,74 @@ inline const SharedFamilyDef* SharedFamilyTable() {
           "Combines Farore's Wind from OoT and MM into one item for both games", "Farore's Wind", "Farore's Wind", 1,
           false, true, false, false, true },
         { SF_SPELL_FIRE, "spellFire", "gCombo.Rando.Shared.SpellFire", "Shared Din's Fire",
-          "One Din's Fire counts for both games when the MM spell is enabled.", "Din's Fire", "Din's Fire", 1, false,
-          true, false, false, false },
+          "Combines Din's Fire from OoT and MM into one item for both games", "Din's Fire", "Din's Fire", 1, false,
+          true, false, false, true },
         { SF_SPELL_LOVE, "spellLove", "gCombo.Rando.Shared.SpellLove", "Shared Nayru's Love",
-          "One Nayru's Love counts for both games when the MM spell is enabled.", "Nayru's Love", "Nayru's Love", 1,
-          false, true, false, false, false },
+          "Combines Nayru's Love from OoT and MM into one item for both games", "Nayru's Love", "Nayru's Love", 1,
+          false, true, false, false, true },
         { SF_BOOTS_IRON, "bootsIron", "gCombo.Rando.Shared.bootsIron", "Shared Iron Boots",
-          "One Iron Boots counts for both enabled engines.", "Iron Boots", "Iron Boots", 1, false, true, false, false,
-          false },
+          "Combines the Iron Boots from OoT and MM into one item for both games", "Iron Boots", "Iron Boots", 1, false,
+          true, false, false, false },
         { SF_BOOTS_HOVER, "bootsHover", "gCombo.Rando.Shared.bootsHover", "Shared Hover Boots",
-          "One Hover Boots counts for both enabled engines.", "Hover Boots", "Hover Boots", 1, false, true, false,
-          false, false },
+          "Combines the Hover Boots from OoT and MM into one item for both games", "Hover Boots", "Hover Boots", 1,
+          false, true, false, false, false },
         { SF_TUNIC_GORON, "tunicGoron", "gCombo.Rando.Shared.tunicGoron", "Shared Goron Tunic",
-          "One Goron Tunic counts for both enabled engines.", "Goron Tunic", "Goron Tunic", 1, false, true, false,
-          false, false },
+          "Combines the Goron Tunics from OoT and MM into two items for both games", "Goron Tunic", "Goron Tunic", 1,
+          false, true, false, false, false },
         { SF_TUNIC_ZORA, "tunicZora", "gCombo.Rando.Shared.tunicZora", "Shared Zora Tunic",
-          "One Zora Tunic counts for both enabled engines.", "Zora Tunic", "Zora Tunic", 1, false, true, false, false,
-          false },
+          "Combines the Zora Tunics from OoT and MM into two items for both games", "Zora Tunic", "Zora Tunic", 1,
+          false, true, false, false, false },
     };
     return table;
 }
 
-// data.ts requires the matching MM extension before either new shared spell can be effective.
+// OoTMM data.ts:3000-3054: each cross-game shared item has cond `hasOoTMM && <x>Mm`. The MM option that a
+// family needs (its RO name), or nullptr when the family needs none.
+inline const char* SharedFamilyMmExtension(int family) {
+    switch (family) {
+        case SF_SPELL_WIND:
+            return "RO_MM_SPELL_WIND";
+        case SF_SPELL_FIRE:
+            return "RO_MM_SPELL_FIRE";
+        case SF_SPELL_LOVE:
+            return "RO_MM_SPELL_LOVE";
+        case SF_BOOTS_IRON:
+            return "RO_MM_BOOTS_IRON";
+        case SF_BOOTS_HOVER:
+            return "RO_MM_BOOTS_HOVER";
+        case SF_TUNIC_GORON:
+            return "RO_MM_TUNIC_GORON";
+        case SF_TUNIC_ZORA:
+            return "RO_MM_TUNIC_ZORA";
+        default:
+            return nullptr;
+    }
+}
+// OoTMM's name of that MM setting (data.ts:2000-2054), or nullptr.
+inline const char* SharedFamilyMmExtensionLabel(int family) {
+    switch (family) {
+        case SF_SPELL_WIND:
+            return "Farore's Wind (MM)";
+        case SF_SPELL_FIRE:
+            return "Din's Fire (MM)";
+        case SF_SPELL_LOVE:
+            return "Nayru's Love (MM)";
+        case SF_BOOTS_IRON:
+            return "Iron Boots (MM)";
+        case SF_BOOTS_HOVER:
+            return "Hover Boots (MM)";
+        case SF_TUNIC_GORON:
+            return "Goron Tunic (MM)";
+        case SF_TUNIC_ZORA:
+            return "Zora Tunic (MM)";
+        default:
+            return nullptr;
+    }
+}
+
+// A shared family is effective only when its MM extension is on in the MM dump (util.ts:80-93 resets it).
 inline bool SharedExtraSpellEnabled(int family, const nlohmann::json& mmDump) {
-    const char* key = family == SF_SPELL_WIND    ? "RO_MM_SPELL_WIND"
-                      : family == SF_SPELL_FIRE  ? "RO_MM_SPELL_FIRE"
-                      : family == SF_SPELL_LOVE  ? "RO_MM_SPELL_LOVE"
-                      : family == SF_BOOTS_IRON  ? "RO_MM_BOOTS_IRON"
-                      : family == SF_BOOTS_HOVER ? "RO_MM_BOOTS_HOVER"
-                      : family == SF_TUNIC_GORON ? "RO_MM_TUNIC_GORON"
-                      : family == SF_TUNIC_ZORA  ? "RO_MM_TUNIC_ZORA"
-                                                 : nullptr;
+    const char* key = SharedFamilyMmExtension(family);
     if (!key)
         return true;
     const auto options = mmDump.value("options", nlohmann::json::object());
