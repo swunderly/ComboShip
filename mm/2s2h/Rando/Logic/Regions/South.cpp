@@ -523,7 +523,11 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_SOUTHERN_SWAMP_SOUTH_UPPER] = RandoRegion{ .name = "Upper South Section", .sceneId = SCENE_20SICHITAI,
         .checks = {
+#ifdef COMBO_BUILD
+            CHECK(RC_SOUTHERN_SWAMP_SONG_OF_SOARING, CAN_BE_DEKU || (MM_LOGIC_HAS_HOVER_BOOTS && HAS_ITEM(ITEM_MASK_BUNNY) && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || CAN_USE_EXPLOSIVE) && COMBO_MM_TRICK("SoaringHovers"))), // southern_swamp.yml:300
+#else
             CHECK(RC_SOUTHERN_SWAMP_SONG_OF_SOARING, CAN_BE_DEKU),
+#endif
             CHECK(RC_ENEMY_DROP_DRAGONFLY, CanKillEnemy(ACTOR_EN_GRASSHOPPER)),
         },
         .exits = { //     TO                                         FROM
@@ -615,7 +619,11 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_WOODFALL_OWL_STATUE_PLATFORM] = RandoRegion{ .name = "Owl Statue Platform", .sceneId = SCENE_21MITURINMAE,
         .checks = {
             CHECK(RC_WOODFALL_OWL_STATUE, CAN_ACTIVATE_OWL),
+#ifdef COMBO_BUILD
+            CHECK(RC_WOODFALL_NEAR_OWL_CHEST, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT) || (MM_LOGIC_HAS_HOVER_BOOTS && HAS_ITEM(ITEM_MASK_BUNNY) && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY)) && COMBO_MM_TRICK("WfShrineHovers"))), // woodfall.yml:42
+#else
             CHECK(RC_WOODFALL_NEAR_OWL_CHEST, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT)),
+#endif
             CHECK(RC_WOODFALL_POT_01, true),
             CHECK(RC_WOODFALL_POT_02, true),
             CHECK(RC_WOODFALL_POT_03, true),

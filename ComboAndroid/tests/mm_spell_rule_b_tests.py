@@ -62,7 +62,7 @@ def split_top(text):
 
 
 # ---------------------------------------------------------------- C++ boolean expressions -> Python
-TOKEN = re.compile(r'\s*(&&|\|\||==|!=|>=|<=|::|[!?:(),\[\]<>]|[A-Za-z_]\w*|\d+)')
+TOKEN = re.compile(r'\s*(&&|\|\||==|!=|>=|<=|::|[!?:(),\[\]<>]|[A-Za-z_]\w*|\d+|"[^"]*")')  # "..." in trick keys
 
 
 def tokenize(text):
