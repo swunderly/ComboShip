@@ -18,6 +18,22 @@ std::map<int16_t, std::vector<RandoCheckId>> tingleMap = {
     { SCENE_IKANA, { RC_IKANA_CANYON_TINGLE_MAP_01, RC_IKANA_CANYON_TINGLE_MAP_02 } }
 };
 
+// A bought slot whose item cannot be given again reads "SOLD OUT" in red without a price, as in OoTMM
+// (En_Bal.c EnBal_OverrideTextMapName: the bought flag persists across cycles and only renewables stay for sale).
+static bool IsTingleSlotSoldOut(RandoCheckId randoCheckId) {
+    return RANDO_SAVE_CHECKS[randoCheckId].obtained &&
+           !Rando::IsItemObtainable(RANDO_SAVE_CHECKS[randoCheckId].randoItemId, randoCheckId);
+}
+
+static std::string TingleSlotText(RandoCheckId randoCheckId) {
+    if (IsTingleSlotSoldOut(randoCheckId))
+        return "\x01SOLD OUT";
+    return "\x02" +
+           Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[randoCheckId].randoItemId, false, randoCheckId,
+                                                  true) +
+           "\x01 " + std::to_string(RANDO_SAVE_CHECKS[randoCheckId].price) + " Rupees";
+}
+
 void OnOpenShopText(u16* textId, bool* loadFromMessageTable) {
     RandoCheckId randoCheckId1 = tingleMap[gPlayState->sceneId][0];
     RandoCheckId randoCheckId2 = tingleMap[gPlayState->sceneId][1];
@@ -25,26 +41,11 @@ void OnOpenShopText(u16* textId, bool* loadFromMessageTable) {
     auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
     entry.autoFormat = false;
 
-    entry.msg = "\x02\xC3{item1}\x01 {price1} Rupees\x11"
-                "\x02{item2}\x01 {price2} Rupees\x11"
-                "\x02No thanks";
-
-    CustomMessage::Replace(&entry.msg, "{item1}",
-                           Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[randoCheckId1].randoItemId, false,
-                                                                  randoCheckId1, true));
-    CustomMessage::Replace(&entry.msg, "{item2}",
-                           Rando::StaticData::GetRevealedItemName(RANDO_SAVE_CHECKS[randoCheckId2].randoItemId, false,
-                                                                  randoCheckId2, true));
-    CustomMessage::Replace(&entry.msg, "{price1}", std::to_string(RANDO_SAVE_CHECKS[randoCheckId1].price));
-    CustomMessage::Replace(&entry.msg, "{price2}", std::to_string(RANDO_SAVE_CHECKS[randoCheckId2].price));
+    // Same layout as before: the three-choice code follows the first line's color code.
+    std::string first = TingleSlotText(randoCheckId1);
+    first.insert(1, "\xC3");
+    entry.msg = first + "\x11" + TingleSlotText(randoCheckId2) + "\x11" + "\x02No thanks";
     CustomMessage::EnsureMessageEnd(&entry.msg);
-    CustomMessage::LoadCustomMessageIntoFont(entry);
-    *loadFromMessageTable = false;
-};
-
-void OnOpenCantGetText(u16* textId, bool* loadFromMessageTable) {
-    auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
-    entry.msg = "I'm sorry, but it seems I cannot sell this to you now.";
     CustomMessage::LoadCustomMessageIntoFont(entry);
     *loadFromMessageTable = false;
 };
@@ -89,7 +90,7 @@ void Rando::ActorBehavior::InitEnBalBehavior() {
     COND_ID_HOOK(OnOpenText, 0x1D14, shouldRegister, OnOpenShopText);
     COND_ID_HOOK(OnOpenText, 0x1D15, shouldRegister, OnOpenShopText);
     COND_ID_HOOK(OnOpenText, 0x1D16, shouldRegister, OnOpenShopText);
-    COND_ID_HOOK(OnOpenText, 0x1D09, shouldRegister, OnOpenCantGetText);
+    // Picking a slot that cannot be bought keeps Tingle's native reply (0x1D09), as OoTMM does.
 
     COND_VB_SHOULD(VB_HAVE_MAGIC_FOR_TINGLE, shouldRegister, { *should = true; });
 }
