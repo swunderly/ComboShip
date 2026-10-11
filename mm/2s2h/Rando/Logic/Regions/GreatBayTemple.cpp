@@ -24,7 +24,7 @@ using namespace Rando::Logic;
 static RegisterShipInitFunc initFunc([]() {
     Regions[RR_GREAT_BAY_TEMPLE_BABA_CHEST_ROOM] = RandoRegion{ .sceneId = SCENE_SEA,
         .checks = {
-            CHECK(RC_GREAT_BAY_TEMPLE_BABA_CHEST, Rando::MissingSoulBabaChest(RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS],CAN_BE_ZORA || CAN_USE_PROJECTILE || HAS_ITEM(ITEM_HOOKSHOT),Rando::HaveMissingMmSoul(1),CAN_BE_ZORA,CAN_USE_BOW,HAS_ITEM(ITEM_MASK_BLAST),HAS_ITEM(ITEM_HOOKSHOT))),
+            CHECK(RC_GREAT_BAY_TEMPLE_BABA_CHEST, Rando::MissingSoulBabaChest(RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS],CAN_BE_ZORA || CAN_USE_PROJECTILE || HAS_ITEM(ITEM_HOOKSHOT),Rando::HaveMissingMmSoul(1),CAN_BE_ZORA,CAN_USE_BOW,HAS_ITEM(ITEM_MASK_BLAST),false)), // great_bay_temple.yml:96: Blast Mask needs short_hook_anywhere, which is not ported
             CHECK(RC_ENEMY_DROP_BIO_DEKU_BABA, CanKillEnemy(ACTOR_BOSS_05)),
         },
         .connections = {
@@ -155,6 +155,9 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ENEMY_DROP_DEXIHAND,                          CanKillEnemy(ACTOR_EN_WDHAND)),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM,                      COMBO_WORLD48_ENABLED), // great_bay_temple.yml:104
+#endif
             CONNECTION(RR_GREAT_BAY_TEMPLE_BABA_CHEST_ROOM,                   true),
             //CONNECTION(RR_GREAT_BAY_TEMPLE_COMPASS_ROOM_WITH_BOSS_KEY_CHEST,  CAN_BE_ZORA && CAN_USE_MAGIC_ARROW(ICE)), // Implement as trick later.
             CONNECTION(RR_GREAT_BAY_TEMPLE_GEKKO,                             CAN_USE_MAGIC_ARROW(ICE) && CAN_USE_MAGIC_ARROW(FIRE)),
@@ -291,7 +294,7 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_GREAT_BAY_TEMPLE_BABA_CHEST_ROOM, COMBO_WORLD48_SELECT(CAN_BE_ZORA, HAS_ITEM(ITEM_MASK_ZORA) || (HAS_ITEM(ITEM_MASK_BLAST) && COMBO_WORLD48_UW))),
-            CONNECTION(RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM,            CAN_BE_ZORA && COMBO_WORLD48_WHEEL),
+            CONNECTION(RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM,            COMBO_WORLD48_SELECT(CAN_BE_ZORA && GBT_CAN_REVERSE_WATER_FLOW, false)), // great_bay_temple.yml:70-74 has no such exit
             CONNECTION(RR_GREAT_BAY_TEMPLE_RED_PIPE_SWITCH_ROOM,    CAN_USE_MAGIC_ARROW(ICE)),
         },
     };
