@@ -673,6 +673,10 @@ int main(int argc, char** argv) {
     // ---- Generate + validate mode. ----
     int kokiriRevision = ComboRando::kKokiriModernRevision;
     int grassRevision = ComboRando::kKokiriGrassModernRevision;
+    nlohmann::json savedGoal;
+    int savedStartingGame = -1;
+    bool hasSavedSharedItems = false;
+    uint32_t savedSharedMask = 0;
     // Restore a reported seed's settings so generation matches it; otherwise live CVar defaults apply.
     if (!settingsFile.empty()) {
         if (!SOH_RestoreSettings || !MM_RestoreSettings) {
@@ -685,6 +689,29 @@ int main(int argc, char** argv) {
             ComboRando::RequireSupportedSeedCapabilities(sj);
             const auto& oot = sj.contains("oot") ? sj["oot"] : sj;
             const auto& mm = sj.contains("mm") ? sj["mm"] : sj;
+            // Combined metadata is outside the native per-game settings snapshots.
+            if (sj.contains("goal")) {
+                const auto& saved = sj.at("goal");
+                for (const char* key : { "requiredPieces", "totalPieces" })
+                    if (saved.contains(key) && !saved.at(key).is_number_integer())
+                        throw std::runtime_error("Saved goal piece counts must be integers");
+                const auto parsed = ComboRando::CwGoalFromJson(saved);
+                if ((parsed.hunt && (parsed.required < 1 || parsed.required > ComboRando::kMaxComboTriforcePieces)) ||
+                    parsed.total < -1 || parsed.total > ComboRando::kMaxComboTriforcePieces ||
+                    (parsed.total >= 0 && parsed.total < parsed.required))
+                    throw std::runtime_error("Saved goal piece counts are out of range");
+                savedGoal = ComboRando::CwGoalJson(parsed);
+            }
+            if (sj.contains("startingGame")) {
+                const auto game = sj.at("startingGame").get<std::string>();
+                if (game != "OOT" && game != "MM")
+                    throw std::runtime_error("Saved startingGame must be OOT or MM");
+                savedStartingGame = game == "MM" ? 1 : 0;
+            }
+            if (sj.contains("sharedItems")) {
+                savedSharedMask = ComboRando::SharedMaskFromKeys(sj.at("sharedItems"));
+                hasSavedSharedItems = true;
+            }
             // Exact settings reproduction retains the original family (absence = legacy).
             const auto catalog = ComboRando::ReadKokiriCatalogRevisions(oot);
             kokiriRevision = catalog.invisibleRupees;
@@ -730,15 +757,11 @@ int main(int argc, char** argv) {
         std::cerr << "[comborando] " << error.what() << "\n";
         return 2;
     }
-    // #136: goal resolution. --triforce-required wins; otherwise fall back to the menu CVars so a
-    // headless seed reproduces the in-game one.
+    // #136: goal resolution. Explicit flags win, then saved combined metadata, then menu CVars.
     ComboRando::CwGoal goal;
-    if (triforceRequiredArg >= 0) {
-        goal.hunt = triforceRequiredArg > 0;
-        goal.required = std::min(triforceRequiredArg, ComboRando::kMaxComboTriforcePieces);
-        // --triforce-total wins; else default the pool to exactly what the goal needs.
-        goal.total = std::max(triforceTotalArg, goal.required);
-    } else if (SOH_ReadComboGoalCVars) {
+    if (!savedGoal.is_null()) {
+        goal = ComboRando::CwGoalFromJson(savedGoal);
+    } else if (triforceRequiredArg < 0 && SOH_ReadComboGoalCVars) {
         int required = 0, total = -1;
         goal.hunt = SOH_ReadComboGoalCVars(&required, &total) != 0;
         goal.type = SOH_ReadComboGoalTypeCVars
@@ -746,8 +769,19 @@ int main(int argc, char** argv) {
                         : (goal.hunt ? ComboRando::CwGoal::HUNT : ComboRando::CwGoal::BOTH);
         goal.hunt = goal.type == ComboRando::CwGoal::HUNT;
         goal.required = goal.hunt ? required : 0;
-        goal.total = triforceTotalArg > 0 ? std::max(triforceTotalArg, goal.required) : total;
+        goal.total = total;
     }
+    if (triforceRequiredArg >= 0) {
+        goal.hunt = triforceRequiredArg > 0;
+        goal.type = goal.hunt ? ComboRando::CwGoal::HUNT : ComboRando::CwGoal::BOTH;
+        goal.required = std::min(triforceRequiredArg, ComboRando::kMaxComboTriforcePieces);
+        // Keep a saved pool total when changing only the required count. Without a snapshot,
+        // retain the historical CLI default of exactly the required number of pieces.
+        if (savedGoal.is_null())
+            goal.total = goal.required;
+    }
+    if (triforceTotalArg >= 0)
+        goal.total = std::max(triforceTotalArg, goal.required);
     if (!goalArg.empty()) {
         try {
             auto override = ComboRando::CwGoalFromJson(
@@ -764,13 +798,16 @@ int main(int argc, char** argv) {
     }
     // Same cap the DLLs apply per game, so the recorded totalPieces can't disagree with the pools.
     goal.total = std::clamp(goal.total, goal.required, ComboRando::kMaxComboTriforcePieces);
-    // #135: same fallback order — the flag wins, else the menu CVar.
+    // #135: a seed records its resolved starting game, not the menu's Random preference.
     const int startCfg = startingGameArg >= 0            ? startingGameArg
+                         : savedStartingGame >= 0        ? savedStartingGame
                          : SOH_ReadComboStartingGameCVar ? SOH_ReadComboStartingGameCVar()
                                                          : 0;
-    // Shared Items: --shared-items wins ("all"/"none"/comma-separated keys); else the menu CVars.
+    // Shared Items: --shared-items wins ("all"/"none"/comma-separated keys), then saved keys, then CVars.
     uint32_t sharedMask = 0;
-    if (sharedItemsArg == "all") {
+    if (sharedItemsArg.empty() && hasSavedSharedItems) {
+        sharedMask = savedSharedMask;
+    } else if (sharedItemsArg == "all") {
         sharedMask = ComboRando::SharedMaskAll();
     } else if (sharedItemsArg == "none" || sharedItemsArg.empty()) {
         sharedMask = (sharedItemsArg.empty() && SOH_ReadComboSharedCVars) ? SOH_ReadComboSharedCVars() : 0;
