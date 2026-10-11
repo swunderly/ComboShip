@@ -329,6 +329,32 @@ for signature in ('s32 Player_OverrideLimbDrawGameplayDefault(', 'void Player_Dr
     check('Combo_MM_IsAdult()' not in body(source, signature) and
           'Combo_MM_AdultResourcesReady()' not in body(source, signature), f'{signature} still uses the old adult gate')
 
+# ---- Spin attack (plan F5b 5b-6, lead decision D3): MM's own spin vertices scaled at run time by OoTMM's factors, and
+# the spin-charge list's first N64 command (after the port's two-slot marker, not slot 0) calls the 1.25 scale list.
+keep = read('mm/2s2h/ComboAdultGameplayKeepResources.h')
+model = read('mm/2s2h/ComboAdultOotModel.h')
+check('constexprfloatkSpinScale[5]={1.5f,1.5f,1.3f,1.3f,1.05f};' in squash(model) and
+      'constexprfloatkMaskScale=1.25f;' in squash(model), 'spin and mask scales are not OoTMM\'s')
+check(re.findall(r'gameplay_keepVtx_(\w+)"', keep) == ['025510', '0256B0', '025A90', '025C30', '026810'] and
+      'kSpinVertexCounts[5]={26,26,26,26,14};' in squash(keep), 'spin vertex arrays')
+load_keep = body(keep, 'inline bool LoadAdultKeep()')
+check('constlongslot=ComboAdultOotModel::N64CommandSlot(charging->Instructions.data(),charging->Instructions.size(),0);'
+      in load_keep and '(charging->Instructions[slot].words.w0>>24)!=G_RDPPIPESYNC' in load_keep,
+      'the spin-charge patch does not walk past the marker to the pipe sync')
+check('Instructions[0]' not in keep and 'sSpinChargingDL->Instructions[sSpinChargingSlot]=call;' in squash(keep),
+      'the spin-charge patch overwrites the marker')
+check('coord=ComboAdultOotModel::ScaleSpinCoord(coord,ComboAdultOotModel::kSpinScale[i]);' in load_keep and
+      'combo_adult' not in keep, 'spin vertices are not derived from MM\'s own')
+check('gsDPPipeSync(),gsSPMatrix(&sAdultMaskScaleMtx,G_MTX_NOPUSH|G_MTX_MUL|G_MTX_MODELVIEW),gsSPEndDisplayList()' in
+      squash(keep) and 'SkinMatrix_SetScale(&scale,ComboAdultOotModel::kMaskScale,ComboAdultOotModel::kMaskScale,'
+      'ComboAdultOotModel::kMaskScale);' in squash(keep), 'the mask scale list is not [sync, 1.25 scale, end]')
+if reference:
+    scene = (reference / 'packages/generator/src/mm/scene.c').read_text(encoding='utf-8')
+    check(all(f'gameplayKeep + 0x{o}' in scene for o in ('25510', '25A90', '26810', '5A2A0')) and
+          'spinAttackChargingDL1[0] = 0xde000000;' in scene and 'spinAttackChargingDL1[1] = 0x0405a2e0;' in scene and
+          'maskMatrixDL[0] = 0xe7000000;' in scene and 'maskMatrixDL[2] = 0xda380001;' in scene and
+          'maskMatrixDL[4] = 0xdf000000;' in scene, 'OoTMM scene.c no longer patches the spin attack this way')
+
 # The loader's lists, in slot order, and its composites (plan F5b 1.3).
 enum = re.search(r'typedef enum ComboAdultOotSlot \{(.*?)\} ComboAdultOotSlot;', slots_src, re.S).group(1)
 order = [e.split('=')[0].strip().replace('COMBO_ADULT_', '') for e in re.sub(r'//[^\n]*', '', enum).split(',')
