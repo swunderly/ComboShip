@@ -94,7 +94,17 @@ int main() {
         assert(std::string(gear.key)==privateGearKeys[i]);
         assert(std::string(gear.ootName)==privateGearNames[i] && std::string(gear.mmName)==privateGearNames[i]);
     }
-    assert(SharedFamilyByIndex(SF_SPELL_WIND).publicOption); // public since 0.3.9 (Farore's Wind settings)
+    // The three spells are public with their MM settings (Farore's Wind since 0.3.9); the gear stays private.
+    const char* spellNames[]={"Shared Farore's Wind","Shared Din's Fire","Shared Nayru's Love"};
+    const char* spellTooltips[]={"Combines Farore's Wind from OoT and MM into one item for both games",
+        "Combines Din's Fire from OoT and MM into one item for both games",
+        "Combines Nayru's Love from OoT and MM into one item for both games"};
+    for (int i=0;i<3;++i) {
+        const auto& spell=SharedFamilyByIndex(SF_SPELL_WIND+i);
+        assert(spell.publicOption && std::string(spell.label)==spellNames[i] && std::string(spell.tooltip)==spellTooltips[i]);
+    }
+    assert(std::string(SharedFamilyByIndex(SF_SPELL_FIRE).cvar)=="gCombo.Rando.Shared.SpellFire");
+    assert(std::string(SharedFamilyByIndex(SF_SPELL_LOVE).cvar)=="gCombo.Rando.Shared.SpellLove");
     std::set<std::string> presetNames;
     for (const auto& preset:kCommunityPresets) {
         assert(presetNames.insert(preset.name).second);

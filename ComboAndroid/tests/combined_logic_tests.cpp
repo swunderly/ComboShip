@@ -63,6 +63,14 @@ int main(){
     static_assert(SF_MASK_OF_TRUTH==16 && SF_OCARINA_BUTTON_A==17 && SF_MIRROR_SHIELD==23 && SF_OCARINA==24 && SF_SPELL_WIND==25 && SF_SPELL_LOVE==27);
     static_assert(SF_BOOTS_IRON==28 && SF_BOOTS_HOVER==29 && SF_TUNIC_GORON==30 && SF_TUNIC_ZORA==31 && SF_COUNT==32);
     assert(SharedMaskFromKeys(nlohmann::json::array({"bows","maskOfTruth"}))==((1u<<0)|(1u<<16)));
+    // One table names the MM option every cross-game shared family needs, with OoTMM's setting name.
+    const char* extensions[]={"RO_MM_SPELL_WIND","RO_MM_SPELL_FIRE","RO_MM_SPELL_LOVE","RO_MM_BOOTS_IRON","RO_MM_BOOTS_HOVER","RO_MM_TUNIC_GORON","RO_MM_TUNIC_ZORA"};
+    const char* labels[]={"Farore's Wind (MM)","Din's Fire (MM)","Nayru's Love (MM)","Iron Boots (MM)","Hover Boots (MM)","Goron Tunic (MM)","Zora Tunic (MM)"};
+    for(int family=0;family<SF_COUNT;++family) {
+        if(family<SF_SPELL_WIND) { assert(!SharedFamilyMmExtension(family) && !SharedFamilyMmExtensionLabel(family)); continue; }
+        assert(std::string(SharedFamilyMmExtension(family))==extensions[family-SF_SPELL_WIND]);
+        assert(std::string(SharedFamilyMmExtensionLabel(family))==labels[family-SF_SPELL_WIND]);
+    }
     for(int family=SF_OCARINA_BUTTON_A;family<SF_COUNT;++family) {
         if (family == SF_OCARINA) continue; // progressive tiers use their source-backed contracts
         const auto& def=SharedFamilyByIndex(family);
@@ -73,14 +81,8 @@ int main(){
         assert(o.size()==1 && m.size()==1); // singleton mirroring cannot invent a second pickup
         const auto ootStart=nlohmann::json{{"sharedStartingItems",{def.ootName}},{"sharedButtonsEnabled",true}};
         auto mmStart=nlohmann::json{{"sharedStartingItems",{def.mmName}},{"sharedButtonsEnabled",true}};
-        // Since 0.3.9 Shared Farore's Wind is public and, as in OoTMM, needs spellWindMm.
-        const char* extension = family == SF_SPELL_WIND ? "RO_MM_SPELL_WIND" :
-            family == SF_SPELL_FIRE ? "RO_MM_SPELL_FIRE" :
-            family == SF_SPELL_LOVE ? "RO_MM_SPELL_LOVE" :
-            family == SF_BOOTS_IRON ? "RO_MM_BOOTS_IRON" :
-            family == SF_BOOTS_HOVER ? "RO_MM_BOOTS_HOVER" :
-            family == SF_TUNIC_GORON ? "RO_MM_TUNIC_GORON" :
-            family == SF_TUNIC_ZORA ? "RO_MM_TUNIC_ZORA" : nullptr;
+        // As in OoTMM (data.ts:3000-3054), each cross-game shared item needs its MM extension.
+        const char* extension = SharedFamilyMmExtension(family);
         if (extension) {
             // Extra equipment cannot become a shared starter without its MM
             // extension. A disabled extension must remain rejected as well.
@@ -140,14 +142,8 @@ int main(){
         if (family == SF_OCARINA) continue; // tiered instruments have separate native pool tests
         const auto& def=SharedFamilyByIndex(family);
         auto o=confinedStartingOot, m=startingMm;
-        // Since 0.3.9 Shared Farore's Wind is public and, as in OoTMM, needs spellWindMm.
-        const char* extension = family == SF_SPELL_WIND ? "RO_MM_SPELL_WIND" :
-            family == SF_SPELL_FIRE ? "RO_MM_SPELL_FIRE" :
-            family == SF_SPELL_LOVE ? "RO_MM_SPELL_LOVE" :
-            family == SF_BOOTS_IRON ? "RO_MM_BOOTS_IRON" :
-            family == SF_BOOTS_HOVER ? "RO_MM_BOOTS_HOVER" :
-            family == SF_TUNIC_GORON ? "RO_MM_TUNIC_GORON" :
-            family == SF_TUNIC_ZORA ? "RO_MM_TUNIC_ZORA" : nullptr;
+        // As in OoTMM (data.ts:3000-3054), each cross-game shared item needs its MM extension.
+        const char* extension = SharedFamilyMmExtension(family);
         o["sharedButtonsEnabled"]=m["sharedButtonsEnabled"]=true;
         o["fixed"][0]["item"]=def.ootName;
         m["checks"]=nlohmann::json::array();
