@@ -1,0 +1,1518 @@
+{
+ "about": "OoTMM v32.3 (413573d) MM age lines (is_adult/is_child/is_tall/is_short in data/world/mm, plus macros_mm.yml:260 cross_poison_swamp) and the fork statements that carry them (plan F5b 5a-8). Statuses: covered = the fork already evaluates the line as v32.3 for both ages (a pinned branch switched on by Cross-Games Age, or the age term adds nothing given the port); needs_change = this branch added the age term (Rule A: false without Cross-Games Age); na_no_graph = no fork statement can carry it. OoTMM rule text is MIT-licensed (OoTMM LICENSE).",
+ "switches": [
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "name": "MM_LOGIC_SOUTH_PINNED"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "name": "MM_LOGIC_STONE_TOWER_PINNED"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "name": "COMBO_WORLD48_ENABLED"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "name": "COMBO_WORLD40_ENABLED"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "name": "COMBO_WORLD42_ENABLED"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp",
+   "name": "COMBO_WORLD36_ENABLED"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "name": "COMBO_WORLD37_ENABLED"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/IkanaCastle.cpp",
+   "name": "IKANA_ADULT_GEAR_MODE"
+  }
+ ],
+ "helpers": {
+  "MmSwampSwimOrTallOrGoron": "MM_LOGIC_IS_TALL",
+  "MmSwampCrossPoison": "MM_LOGIC_IS_TALL",
+  "TypedMmSwampActive": "MM_LOGIC_SOUTH_PINNED"
+ },
+ "rows": [
+  {
+   "ootmm": "data/world/mm/dungeons/ancient_castle_of_ikana.yml:27",
+   "where": "Ancient Castle of Ikana Interior North exits Ancient Castle of Ikana Interior North 2",
+   "expr": "has(MASK_DEKU) || short_hook_anywhere || (can_use_nayru && is_tall)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/IkanaCastle.cpp",
+     "region": "RR_IKANA_CASTLE_CEILING_ROOM",
+     "text": "CONNECTION(RR_IKANA_CASTLE_SKULLTULA_ROOM, IKANA_ADULT_GEAR_MODE ? ComboRando::MmAdultWorldRoutes::IkanaNorthEntry(HAS_ITEM(ITEM_MASK_DEKU), false, CAN_USE_NAYRUS_LOVE, MM_LOGIC_IS_TALL) : (CAN_BE_DEKU || (CAN_USE_NAYRUS_LOVE && MM_LOGIC_IS_TALL)))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Interior North -> Interior North 2 is the Ceiling Room -> Skulltula Room edge; both branches carry is_tall (IKANA_ADULT_GEAR_MODE includes RO_MM_CROSS_AGE)."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:106",
+   "where": "Great Bay Temple Compass Room exits Great Bay Temple After Boss Key",
+   "expr": "(can_use_ice_arrows && trick(MM_GBT_FIRELESS) && is_tall) || short_hook_anywhere",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "Compass Room -> After Boss Key needs trick(MM_GBT_FIRELESS) or short_hook_anywhere; the port offers neither (no fork trick, hookshotAnywhereMm not ported), so v32.3 itself is false here at any age and the fork has no edge (GreatBayTemple.cpp keeps it commented out)."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:268",
+   "where": "Great Bay Temple Green Pipe 3 exits Great Bay Temple Map Room",
+   "expr": "(can_use_fire_arrows && can_use_ice_arrows) || (trick(MM_GBT_FIRELESS) && has(MASK_DEKU) && (has_mask_zora || (is_adult && (has_weapon || has_sticks)))) || short_hook_anywhere || has_hover_boots",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+     "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_3",
+     "text": "CONNECTION(RR_GREAT_BAY_TEMPLE_MAP_ROOM, COMBO_WORLD48_SELECT(CAN_USE_MAGIC_ARROW(FIRE), (CAN_USE_MAGIC_ARROW(FIRE) && CAN_USE_MAGIC_ARROW(ICE)) || MM_LOGIC_HAS_HOVER_BOOTS))",
+     "token": null
+    }
+   ],
+   "note": "The age term sits only inside the trick(MM_GBT_FIRELESS) disjunct, which the port does not offer (false); the pinned branch equals the rest of the line (short_hook_anywhere false)."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:271",
+   "where": "Great Bay Temple Green Pipe 3 events GB_PIPE_GREEN2",
+   "expr": "(can_use_fire_arrows && can_use_ice_arrows) || (trick(MM_GBT_FIRELESS) && has(MASK_DEKU) && (has_mask_zora || (is_adult && (has_weapon || has_sticks)))) || short_hook_anywhere || has_hover_boots",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+     "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_3",
+     "text": "EVENT(RE_GREAT_BAY_GREEN_SWITCH_2, COMBO_WORLD48_SELECT(CAN_USE_MAGIC_ARROW(FIRE), (CAN_USE_MAGIC_ARROW(FIRE) && CAN_USE_MAGIC_ARROW(ICE)) || MM_LOGIC_HAS_HOVER_BOOTS))",
+     "token": null
+    }
+   ],
+   "note": "GB_PIPE_GREEN2: as :268, the age term is only inside the unported trick(MM_GBT_FIRELESS) disjunct."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:273",
+   "where": "Great Bay Temple Green Pipe 3 locations Great Bay Temple Green Pipe 3 Chest",
+   "expr": "(can_use_fire_arrows && can_use_ice_arrows && is_tall) || (trick(MM_GBT_FIRELESS) && has(MASK_DEKU) && (has_mask_zora || (is_adult && (has_weapon || has_sticks)))) || short_hook_anywhere || has_hover_boots",
+   "terms": [
+    "is_adult",
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+     "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_3",
+     "text": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_3_CHEST,          COMBO_WORLD48_SELECT(CAN_USE_MAGIC_ARROW(FIRE), (CAN_USE_MAGIC_ARROW(FIRE) && CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL) || MM_LOGIC_HAS_HOVER_BOOTS))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD48 branch (includes RO_MM_CROSS_AGE); MM_GBT_FIRELESS and short_hook_anywhere are false in the port."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:275",
+   "where": "Great Bay Temple Green Pipe 3 locations Great Bay Temple Pot Green Pipe 3 Upper 1",
+   "expr": "(can_use_fire_arrows && can_use_ice_arrows && is_tall) || (trick(MM_GBT_FIRELESS) && has(MASK_DEKU) && (has_mask_zora || (is_adult && (has_weapon || has_sticks)))) || short_hook_anywhere || has_hover_boots",
+   "terms": [
+    "is_adult",
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+     "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_3",
+     "text": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_3_UPPER_POT_01,   COMBO_WORLD48_SELECT(CAN_USE_MAGIC_ARROW(FIRE), (CAN_USE_MAGIC_ARROW(FIRE) && CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL) || MM_LOGIC_HAS_HOVER_BOOTS))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD48 branch."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:276",
+   "where": "Great Bay Temple Green Pipe 3 locations Great Bay Temple Pot Green Pipe 3 Upper 2",
+   "expr": "(can_use_fire_arrows && can_use_ice_arrows && is_tall) || (trick(MM_GBT_FIRELESS) && has(MASK_DEKU) && (has_mask_zora || (is_adult && (has_weapon || has_sticks)))) || short_hook_anywhere || has_hover_boots",
+   "terms": [
+    "is_adult",
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+     "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_3",
+     "text": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_3_UPPER_POT_02,   COMBO_WORLD48_SELECT(CAN_USE_MAGIC_ARROW(FIRE), (CAN_USE_MAGIC_ARROW(FIRE) && CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL) || MM_LOGIC_HAS_HOVER_BOOTS))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD48 branch."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/ocean_spider_house.yml:55",
+   "where": "Ocean Spider House Back locations Ocean Skulltula Storage Room Behind Crate",
+   "expr": "gs && has_fire_sticks && is_short && (can_hookshot_short || has_boomerang || has_mask_zora || (has_mask_goron && (has_arrows || can_use_deku_bubble || has_explosives || trick_keg_explosives)))",
+   "terms": [
+    "is_short"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp",
+     "region": "RR_OCEAN_SPIDER_HOUSE_STORAGE_ROOM",
+     "text": "CHECK(RC_OCEAN_SKULLTULA_STORAGE_ROOM_BEHIND_CRATE, COMBO_WORLD36_ENABLED ? (CanKillEnemy(ACTOR_EN_SW,1) && COMBO_WORLD36_FIRE_STICKS && MM_LOGIC_IS_SHORT",
+     "token": "MM_LOGIC_IS_SHORT"
+    }
+   ],
+   "note": "Both branches carry is_short (COMBO_WORLD36 includes RO_MM_CROSS_AGE)."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/ocean_spider_house.yml:65",
+   "where": "Ocean Spider House Back locations Ocean Spider House Pot Storage 2",
+   "expr": "has_fire_sticks && is_short",
+   "terms": [
+    "is_short"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp",
+     "region": "RR_OCEAN_SPIDER_HOUSE_STORAGE_ROOM",
+     "text": "CHECK(RC_OCEAN_SPIDER_HOUSE_STORAGE_POT_02, COMBO_WORLD36_ENABLED ? (COMBO_WORLD36_FIRE_STICKS && MM_LOGIC_IS_SHORT) : ((true) && MM_LOGIC_IS_SHORT))",
+     "token": "MM_LOGIC_IS_SHORT"
+    }
+   ],
+   "note": "Both branches carry is_short."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/ocean_spider_house.yml:66",
+   "where": "Ocean Spider House Back locations Ocean Spider House Pot Storage 3",
+   "expr": "has_fire_sticks && is_short",
+   "terms": [
+    "is_short"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SpiderHouses.cpp",
+     "region": "RR_OCEAN_SPIDER_HOUSE_STORAGE_ROOM",
+     "text": "CHECK(RC_OCEAN_SPIDER_HOUSE_STORAGE_POT_03, COMBO_WORLD36_ENABLED ? (COMBO_WORLD36_FIRE_STICKS && MM_LOGIC_IS_SHORT) : ((true) && MM_LOGIC_IS_SHORT))",
+     "token": "MM_LOGIC_IS_SHORT"
+    }
+   ],
+   "note": "Both branches carry is_short."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:179",
+   "where": "Snowhead Temple Block Room exits Snowhead Temple Block Room Upper",
+   "expr": "can_hookshot_short || (event(SNOWHEAD_PUSH_BLOCK) && is_tall)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+     "region": "RR_SNOWHEAD_TEMPLE_BLOCK_ROOM",
+     "text": "CONNECTION(RR_SNOWHEAD_TEMPLE_BLOCK_ROOM_UPPER, COMBO_WORLD40_SELECT(HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA, HAS_ITEM(ITEM_HOOKSHOT) || (RANDO_EVENTS[RE_MM_SNOWHEAD_PUSH_BLOCK] && MM_LOGIC_IS_TALL)))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD40 branch (includes RO_MM_CROSS_AGE)."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:209",
+   "where": "Snowhead Temple Compass Room locations Snowhead Temple SF Compass Room Crate",
+   "expr": "(((can_use_fire_short_range || trick_sht_hot_water) || can_hookshot_short || is_tall) && (has_explosives || has_mask_goron || can_hammer || has_hover_boots)) || (has(MASK_GREAT_FAIRY) && (has_bombs || has_bombchu || trick_keg_explosives)) || can_goron_bomb_jump",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+     "region": "RR_SNOWHEAD_TEMPLE_COMPASS_ROOM",
+     "text": "(((CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_DINS_FIRE || HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_IS_TALL) && (CAN_USE_EXPLOSIVE || HAS_ITEM(ITEM_MASK_GORON) || MM_LOGIC_HAS_HOVER_BOOTS))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD40 branch of RC_SNOWHEAD_TEMPLE_SF_COMPASS_ROOM_CRATE."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:224",
+   "where": "Snowhead Temple Icicles locations Snowhead Temple Icicle Room",
+   "expr": "((has_arrows || is_tall || can_use_lens) && (can_break_boulders || can_use_fire_short_range)) || (can_hookshot_short && (has_explosives || trick_keg_explosives || can_use_fire_short_range))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "needs_change",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+     "region": "RR_SNOWHEAD_TEMPLE_ICICLE_ROOM",
+     "text": "CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_CHEST, ((CAN_USE_EXPLOSIVE && HAS_ITEM(ITEM_HOOKSHOT)) || CAN_BE_GORON || (CAN_USE_FIRE_SHORT_RANGE && (CAN_USE_BOW || MM_LOGIC_IS_TALL || CAN_NAVIGATE_HIDDEN || HAS_ITEM(ITEM_HOOKSHOT))) || (MM_LOGIC_IS_ADULT && CAN_USE_EXPLOSIVE)))",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "Legacy-only check (no pinned branch). v32.3 gives is_tall && (can_break_boulders || can_use_fire_short_range); the fork already had is_tall with fire and the Goron Mask alone, so only the adult half with explosives was missing. The Zora Mask with explosives (is_tall's other half) stays out: adding it would change seeds without Cross-Games Age.",
+   "edit": "Rule A: added || (MM_LOGIC_IS_ADULT && CAN_USE_EXPLOSIVE), false without Cross-Games Age.",
+   "before": "CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_CHEST, ((CAN_USE_EXPLOSIVE && HAS_ITEM(ITEM_HOOKSHOT)) || CAN_BE_GORON || (CAN_USE_FIRE_SHORT_RANGE && (CAN_USE_BOW || MM_LOGIC_IS_TALL || CAN_NAVIGATE_HIDDEN || HAS_ITEM(ITEM_HOOKSHOT))))),"
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:228",
+   "where": "Snowhead Temple Icicles locations Snowhead Temple Big Snowball Icicle Room",
+   "expr": "((has_arrows || is_tall || can_use_lens || short_hook_anywhere) && (has_mask_goron || can_hammer)) || has_explosives || trick_keg_explosives || can_use_fire_short_range",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+     "region": "RR_SNOWHEAD_TEMPLE_ICICLE_ROOM",
+     "text": "CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_LARGE_SNOWBALL_01, CanKillEnemy(ACTOR_OBJ_SNOWBALL))",
+     "token": null
+    },
+    {
+     "file": "mm/2s2h/Rando/Logic/Logic.h",
+     "region": "",
+     "text": "case ACTOR_OBJ_SNOWBALL: // Large Snowball: OoTMM macros_mm.yml:183 can_break_snowballs\n            return (CAN_USE_EXPLOSIVE || CAN_BE_GORON || CAN_USE_FIRE_SHORT_RANGE);",
+     "token": null
+    }
+   ],
+   "note": "The age term is is_tall && (has_mask_goron || can_hammer); the fork's snowball rule (can_break_snowballs) already accepts the Goron Mask alone, so it adds nothing."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:229",
+   "where": "Snowhead Temple Icicles locations Snowhead Temple Small Snowball Icicles Room 1",
+   "expr": "is_tall || has_arrows || short_hook_anywhere",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+     "region": "RR_SNOWHEAD_TEMPLE_ICICLE_ROOM",
+     "text": "CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_SMALL_SNOWBALL_01, true)",
+     "token": null
+    }
+   ],
+   "note": "The fork's small snowballs are true at any age (more permissive than v32.3, pre-existing), so is_tall can add nothing. Small Snowball Icicles Room 1-3 map to RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_SMALL_SNOWBALL_01..05 together."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:230",
+   "where": "Snowhead Temple Icicles locations Snowhead Temple Small Snowball Icicles Room 2",
+   "expr": "is_tall || has_arrows || short_hook_anywhere",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+     "region": "RR_SNOWHEAD_TEMPLE_ICICLE_ROOM",
+     "text": "CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_SMALL_SNOWBALL_02, true)",
+     "token": null
+    }
+   ],
+   "note": "As :229."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:231",
+   "where": "Snowhead Temple Icicles locations Snowhead Temple Small Snowball Icicles Room 3",
+   "expr": "is_tall || has_arrows || short_hook_anywhere",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+     "region": "RR_SNOWHEAD_TEMPLE_ICICLE_ROOM",
+     "text": "CHECK(RC_SNOWHEAD_TEMPLE_ICICLE_ROOM_SMALL_SNOWBALL_03, true)",
+     "token": null
+    }
+   ],
+   "note": "As :229."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:239",
+   "where": "Snowhead Temple Dual Switches Locked exits Snowhead Temple Dual Switches Unlocked",
+   "expr": "has_mask_goron || can_hammer || is_tall || short_hook_anywhere || can_hookshot || has_hover_boots || can_use_fire_short_range || trick_sht_hot_water_er",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "needs_change",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+     "region": "RR_SNOWHEAD_TEMPLE_DUAL_SWITCHES_ROOM",
+     "text": "CONNECTION(RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR, CAN_BE_GORON || CAN_USE_FIRE_SHORT_RANGE || MM_LOGIC_HAS_HOVER_BOOTS || MM_LOGIC_IS_ADULT)",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "RR_SNOWHEAD_TEMPLE_DUAL_SWITCHES_ROOM merges Dual Switches Locked and Unlocked; its exit to the second floor (Unlocked -> Center Level 2 Dual is true, :250) carries Locked -> Unlocked. Legacy-only edge (the F3 gear audit added only the Hover Boots term). is_tall's Zora half and can_hookshot remain non-age gaps of the legacy edge.",
+   "edit": "Rule A: added || MM_LOGIC_IS_ADULT to the COMBO_BUILD branch, false without Cross-Games Age.",
+   "before": "CONNECTION(RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR, CAN_BE_GORON || CAN_USE_FIRE_SHORT_RANGE || MM_LOGIC_HAS_HOVER_BOOTS), // yml:239"
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:320",
+   "where": "Snowhead Temple Center Level 3 Iced exits Snowhead Temple Center Level 2 Dual",
+   "expr": "has_weapon || is_tall || has_mask_goron || has_hover_boots",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+     "region": "RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR",
+     "text": "CONNECTION(RR_SNOWHEAD_TEMPLE_DUAL_SWITCHES_ROOM, (CAN_BE_GORON || CAN_USE_FIRE_SHORT_RANGE))",
+     "token": null
+    }
+   ],
+   "note": "Center Level 3 Iced -> Center Level 2 Dual (weapon || tall || goron || hover) is folded into the second floor -> dual switches edge, which needs only the Goron Mask or short-range fire for the climb (:276) and treats this step as free, so the age term adds nothing."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:101",
+   "where": "Woodfall Temple Water Room Lower Ledge exits Woodfall Temple Water Room Map Ledge",
+   "expr": "has(MASK_DEKU) || can_hookshot || can_use_ice_arrows || event(WOODFALL_TEMPLE_MAIN_FLOWER) || has_bombs || short_hook_anywhere || (has_hover_boots && (has_arrows || can_hookshot_short)) || (has_mask_goron && (has_hover_boots || can_hookshot_short)) || (enter_woodfall_temple_water && can_enter_water && is_child && (can_hookshot_short || (has_arrows && (has_weapon || has_mask_zora || has_mask_goron || has_sticks))))",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_WOODFALL_TEMPLE_WATER_ROOM",
+     "text": "CONNECTION(RR_WOODFALL_TEMPLE_MAP_ROOM, CAN_BE_DEKU || (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_GORON))))",
+     "token": null
+    }
+   ],
+   "note": "is_child only restricts the child water route (enter_woodfall_temple_water && can_enter_water ...), which the fork does not have for any age (the map ledge needs Deku or Hover Boots), so the fork is never more permissive for adult Link here."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:113",
+   "where": "Woodfall Temple Water Room Map Ledge exits Woodfall Temple Water Room Lower Ledge",
+   "expr": "has(MASK_DEKU) || short_hook_anywhere || can_use_ice_arrows || event(WOODFALL_TEMPLE_MAIN_FLOWER) || has_bombs || has_hover_boots || (can_use_nayru && can_swim) || (has_arrows && (has_mask_goron || (enter_woodfall_temple_water && can_enter_water && is_child)))",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_WOODFALL_TEMPLE_MAP_ROOM",
+     "text": "CONNECTION(RR_WOODFALL_TEMPLE_WATER_ROOM, true)",
+     "token": null
+    }
+   ],
+   "note": "Map Ledge -> Lower Ledge: the fork's Map Room -> Water Room edge is true for every age (pre-existing); the map room is reached only from the water room, so the is_child restriction would remove nothing reachable."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:284",
+   "where": "Woodfall Temple Pre-Boss Main Ledge exits Woodfall Temple Pre-Boss Rupee Platform",
+   "expr": "has(MASK_DEKU) || has_mask_zora || can_goron_bomb_jump || short_hook_anywhere || ((has_hover_boots || can_swim || can_use_ice_arrows) && (can_hookshot || is_adult))",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_WOODFALL_TEMPLE_PRE_BOSS_ROOM",
+     "text": "CONNECTION(RR_COMBO_WF_PRE_BOSS_RUPEES, COMBO_WORLD42_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || HAS_ITEM(ITEM_MASK_ZORA) || HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_IS_ADULT))",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD42 graph (includes RO_MM_CROSS_AGE); can_swim is true without scalesMm, can_goron_bomb_jump and short_hook_anywhere are false in the port."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:310",
+   "where": "Woodfall Temple Pre-Boss Far Ledge locations Woodfall Temple SF Pre-Boss Bottom Right",
+   "expr": "short_hook_anywhere || has(MASK_DEKU) || (can_use_ice_arrows && is_tall) || (has(MASK_GREAT_FAIRY) && (has_arrows || can_hookshot))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_COMBO_WF_PRE_BOSS_FAR",
+     "text": "CHECK(RC_WOODFALL_TEMPLE_SF_PRE_BOSS_BOTTOM_RIGHT, COMBO_WORLD42_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || (CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL)",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned RR_COMBO_WF_PRE_BOSS_FAR."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:312",
+   "where": "Woodfall Temple Pre-Boss Far Ledge locations Woodfall Temple SF Pre-Boss Top Right",
+   "expr": "short_hook_anywhere || has(MASK_DEKU) || (can_use_ice_arrows && is_tall) || (has(MASK_GREAT_FAIRY) && has_arrows)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_COMBO_WF_PRE_BOSS_FAR",
+     "text": "CHECK(RC_WOODFALL_TEMPLE_SF_PRE_BOSS_TOP_RIGHT, COMBO_WORLD42_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || (CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL)",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned RR_COMBO_WF_PRE_BOSS_FAR."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:314",
+   "where": "Woodfall Temple Pre-Boss Far Ledge locations Woodfall Temple Grass Pre-Boss 1",
+   "expr": "short_hook_anywhere || has(MASK_DEKU) || (can_use_ice_arrows && is_tall)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_COMBO_WF_PRE_BOSS_FAR",
+     "text": "CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_GRASS_01, COMBO_WORLD42_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || (CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL)))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned RR_COMBO_WF_PRE_BOSS_FAR."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:315",
+   "where": "Woodfall Temple Pre-Boss Far Ledge locations Woodfall Temple Grass Pre-Boss 2",
+   "expr": "short_hook_anywhere || has(MASK_DEKU) || (can_use_ice_arrows && is_tall)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_COMBO_WF_PRE_BOSS_FAR",
+     "text": "CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_GRASS_02, COMBO_WORLD42_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || (CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL)))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned RR_COMBO_WF_PRE_BOSS_FAR."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:316",
+   "where": "Woodfall Temple Pre-Boss Far Ledge locations Woodfall Temple Grass Pre-Boss 3",
+   "expr": "short_hook_anywhere || has(MASK_DEKU) || (can_use_ice_arrows && is_tall)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_COMBO_WF_PRE_BOSS_FAR",
+     "text": "CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_GRASS_03, COMBO_WORLD42_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || (CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL)))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned RR_COMBO_WF_PRE_BOSS_FAR."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:317",
+   "where": "Woodfall Temple Pre-Boss Far Ledge locations Woodfall Temple Grass Pre-Boss 4",
+   "expr": "short_hook_anywhere || has(MASK_DEKU) || (can_use_ice_arrows && is_tall)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_COMBO_WF_PRE_BOSS_FAR",
+     "text": "CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_GRASS_04, COMBO_WORLD42_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || (CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL)))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned RR_COMBO_WF_PRE_BOSS_FAR."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:318",
+   "where": "Woodfall Temple Pre-Boss Far Ledge locations Woodfall Temple Grass Pre-Boss 5",
+   "expr": "short_hook_anywhere || has(MASK_DEKU) || (can_use_ice_arrows && is_tall)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_COMBO_WF_PRE_BOSS_FAR",
+     "text": "CHECK(RC_WOODFALL_TEMPLE_PRE_BOSS_GRASS_05, COMBO_WORLD42_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || (CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL)))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned RR_COMBO_WF_PRE_BOSS_FAR."
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:323",
+   "where": "Woodfall Temple Pre-Boss Rupee Platform exits Woodfall Temple Pre-Boss Main Ledge",
+   "expr": "short_hook_anywhere || has(MASK_DEKU) || (can_use_ice_arrows && is_tall)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+     "region": "RR_COMBO_WF_PRE_BOSS_RUPEES",
+     "text": "CONNECTION(RR_WOODFALL_TEMPLE_PRE_BOSS_ROOM, COMBO_WORLD42_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || (CAN_USE_MAGIC_ARROW(ICE) && MM_LOGIC_IS_TALL)))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned RR_COMBO_WF_PRE_BOSS_RUPEES."
+  },
+  {
+   "ootmm": "data/world/mm/jp/deku_palace_jp.yml:39",
+   "where": "Deku Palace Near JP Grotto Line Start exits Deku Palace Main",
+   "expr": "is_child",
+   "terms": [
+    "is_child"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "JP layout only; the fork accepts US ROMs only (us/deku_palace_us.yml keeps these regions as stubs)."
+  },
+  {
+   "ootmm": "data/world/mm/jp/deku_palace_jp.yml:90",
+   "where": "Deku Palace Corner Ledge Middle exits Deku Palace Corner Ledge Top",
+   "expr": "can_hookshot_short || is_tall",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "JP layout only (US ROMs only)."
+  },
+  {
+   "ootmm": "data/world/mm/jp/deku_palace_jp.yml:99",
+   "where": "Deku Palace Corner Ledge Bottom exits Deku Palace Corner Ledge Middle",
+   "expr": "can_hookshot_short || is_tall",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "JP layout only (US ROMs only)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/clock_town.yml:49",
+   "where": "Clock Town South locations Clock Town South Chest Lower",
+   "expr": "can_hookshot || (is_adult && can_hookshot_short) || short_hook_anywhere || (has(MASK_DEKU) && event(CLOCK_TOWN_SCRUB)) || trick(MM_SCT_NOTHING) || can_goron_bomb_jump",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Logic.h",
+     "region": "",
+     "text": "ComboRando::MmTrickRoutes::ClockTownLowerChest(CAN_BE_DEKU, Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR), HAS_ITEM(ITEM_HOOKSHOT), COMBO_MM_TRICK(\"ClockTownLowerJump\") != 0)",
+     "token": null
+    }
+   ],
+   "note": "The age term is (is_adult && can_hookshot_short); the port has no Short Hookshot (no shortHookshotMm), so can_hookshot_short == can_hookshot (macros_mm.yml:217-219) and the fork statement already accepts the Hookshot at any age. (MmTrickRoutes::ClockTownLowerChest accepts the Hookshot alone.)"
+  },
+  {
+   "ootmm": "data/world/mm/overworld/clock_town.yml:563",
+   "where": "Astral Observatory Passage locations Astral Observatory Passage Chest",
+   "expr": "(has_explosives || trick_keg_explosives) && (can_swim || is_tall)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "needs_change",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/Central.cpp",
+     "region": "RR_ASTRAL_OBSERVATORY_PASSAGE",
+     "text": "CHECK(RC_ASTRAL_OBSERVATORY_PASSAGE_CHEST, CAN_USE_EXPLOSIVE && (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA || MM_LOGIC_IS_ADULT))",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "Legacy-only check. can_swim (the Swim ability or the Zora Mask) was already there; is_tall's adult half was missing.",
+   "edit": "Rule A: added || MM_LOGIC_IS_ADULT under #ifdef COMBO_BUILD (native statement kept in #else), false without Cross-Games Age.",
+   "before": "CHECK(RC_ASTRAL_OBSERVATORY_PASSAGE_CHEST, CAN_USE_EXPLOSIVE && (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA)),"
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:7",
+   "where": "Deku Palace Front exits Near Deku Shrine",
+   "expr": "(is_swamp_cleared && can_swim) || (can_use_nayru && (has_mask_zora || (is_adult && (has_arrows || can_hookshot_short || can_use_din)))) || (has_hover_boots && (has_arrows || can_hookshot_short || can_use_din))",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_OUTSIDE",
+     "text": "(CAN_USE_NAYRUS_LOVE && (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_IS_ADULT && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_DINS_FIRE))))",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD45 branch of the Deku Shrine exit (Near Deku Shrine is folded into it)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:26",
+   "where": "Deku Palace Main exits Deku Palace Near JP Grotto Line Start",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "Deku Palace Main -> Near JP Grotto Line Start: on US ROMs that region is an empty stub (us/deku_palace_us.yml), so the fork has nothing to gate."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:29",
+   "where": "Deku Palace Main exits Deku Palace Near US Beans Grotto",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "EXIT(ENTRANCE(GROTTOS, 12), ENTRANCE(DEKU_PALACE, 9), MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS)",
+     "token": "MM_LOGIC_IS_CHILD"
+    },
+    {
+     "file": "mm/2s2h/Rando/Logic/MmRawGrottoContexts.inc.h",
+     "region": "",
+     "text": "CONNECTION(RR_MM_GROTTO_BEANS_BANK, TypedMmGrottoSourceActive(0x14c0u) && (MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Near US Beans Grotto: the grotto exit, and its bank under grotto entrance shuffle."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:32",
+   "where": "Deku Palace Main locations Deku Palace HP",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_PIECE_OF_HEART, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS)",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Deku Palace HP."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:40",
+   "where": "Deku Palace Main locations Deku Palace Rupee Right 08",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_FREESTANDING_RUPEE_09, COMBO_WORLD45_SELECT(CAN_BE_DEKU, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Rupee Right 08-13 and Left Far 1-3 are the nine Deku Palace Main rupees whose pinned rule carries is_child (RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18; 96dbcfec did not record the one-to-one pairing, so they are listed in order)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:41",
+   "where": "Deku Palace Main locations Deku Palace Rupee Right 09",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_FREESTANDING_RUPEE_10, COMBO_WORLD45_SELECT(CAN_BE_DEKU, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Rupee Right 08-13 and Left Far 1-3 are the nine Deku Palace Main rupees whose pinned rule carries is_child (RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18; 96dbcfec did not record the one-to-one pairing, so they are listed in order)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:42",
+   "where": "Deku Palace Main locations Deku Palace Rupee Right 10",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_FREESTANDING_RUPEE_11, COMBO_WORLD45_SELECT(CAN_BE_DEKU, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Rupee Right 08-13 and Left Far 1-3 are the nine Deku Palace Main rupees whose pinned rule carries is_child (RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18; 96dbcfec did not record the one-to-one pairing, so they are listed in order)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:43",
+   "where": "Deku Palace Main locations Deku Palace Rupee Right 11",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_FREESTANDING_RUPEE_13, COMBO_WORLD45_SELECT(CAN_BE_DEKU, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Rupee Right 08-13 and Left Far 1-3 are the nine Deku Palace Main rupees whose pinned rule carries is_child (RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18; 96dbcfec did not record the one-to-one pairing, so they are listed in order)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:44",
+   "where": "Deku Palace Main locations Deku Palace Rupee Right 12",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_FREESTANDING_RUPEE_14, COMBO_WORLD45_SELECT(CAN_BE_DEKU, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Rupee Right 08-13 and Left Far 1-3 are the nine Deku Palace Main rupees whose pinned rule carries is_child (RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18; 96dbcfec did not record the one-to-one pairing, so they are listed in order)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:45",
+   "where": "Deku Palace Main locations Deku Palace Rupee Right 13",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_FREESTANDING_RUPEE_15, COMBO_WORLD45_SELECT(CAN_BE_DEKU, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Rupee Right 08-13 and Left Far 1-3 are the nine Deku Palace Main rupees whose pinned rule carries is_child (RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18; 96dbcfec did not record the one-to-one pairing, so they are listed in order)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:52",
+   "where": "Deku Palace Main locations Deku Palace Rupee Left Far 1",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_FREESTANDING_RUPEE_16, COMBO_WORLD45_SELECT(CAN_BE_DEKU, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Rupee Right 08-13 and Left Far 1-3 are the nine Deku Palace Main rupees whose pinned rule carries is_child (RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18; 96dbcfec did not record the one-to-one pairing, so they are listed in order)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:53",
+   "where": "Deku Palace Main locations Deku Palace Rupee Left Far 2",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_FREESTANDING_RUPEE_17, COMBO_WORLD45_SELECT(CAN_BE_DEKU, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Rupee Right 08-13 and Left Far 1-3 are the nine Deku Palace Main rupees whose pinned rule carries is_child (RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18; 96dbcfec did not record the one-to-one pairing, so they are listed in order)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/deku_palace.yml:54",
+   "where": "Deku Palace Main locations Deku Palace Rupee Left Far 3",
+   "expr": "is_child || has(MASK_DEKU) || trick(MM_PALACE_BEAN_SKIP)",
+   "terms": [
+    "is_child"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_DEKU_PALACE_INSIDE_LOWER",
+     "text": "CHECK(RC_DEKU_PALACE_FREESTANDING_RUPEE_18, COMBO_WORLD45_SELECT(CAN_BE_DEKU, MM_LOGIC_IS_CHILD || HAS_ITEM(ITEM_MASK_DEKU) || CAN_SKIP_PALACE_BEANS))",
+     "token": "MM_LOGIC_IS_CHILD"
+    }
+   ],
+   "note": "Rupee Right 08-13 and Left Far 1-3 are the nine Deku Palace Main rupees whose pinned rule carries is_child (RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18; 96dbcfec did not record the one-to-one pairing, so they are listed in order)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/road_to_ikana.yml:53",
+   "where": "Road to Ikana Center exits Road to Ikana Top",
+   "expr": "(soul_poe_collector && (has(MASK_GARO) || has(MASK_GIBDO) || (has_mask_spooky && is_night)) && (can_hookshot || (can_hookshot_short && (trick(MM_HARD_HOOKSHOT) || is_adult)))) || short_hook_anywhere",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/East.cpp",
+     "region": "RR_ROAD_TO_IKANA_BELOW_LEDGE",
+     "text": "CONNECTION(RR_ROAD_TO_IKANA_ABOVE_LEDGE, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_POE_COLLECTOR) && HAS_ITEM(ITEM_HOOKSHOT) && (HAS_ITEM(ITEM_MASK_GARO) || HAS_ITEM(ITEM_MASK_GIBDO)))",
+     "token": null
+    }
+   ],
+   "note": "The age term is (can_hookshot_short && (trick(MM_HARD_HOOKSHOT) || is_adult)); the port has no Short Hookshot (no shortHookshotMm), so can_hookshot_short == can_hookshot (macros_mm.yml:217-219) and the fork statement already accepts the Hookshot at any age."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/romani_ranch.yml:146",
+   "where": "Romani Ranch locations Doggy Racetrack Chest",
+   "expr": "can_use_beans || is_tall || can_hookshot_short || trick(MM_DOG_RACE_CHEST_NOTHING)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/MilkRoad.cpp",
+     "region": "RR_DOGGY_RACETRACK",
+     "text": "CHECK(RC_DOGGY_RACETRACK_CHEST, RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] ? (HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_DAY2_RAIN_BEAN || MM_LOGIC_IS_TALL || COMBO_MM_TRICK(\"DoggyFenceJump\"))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Its own Cross-Games Age branch."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:8",
+   "where": "Swamp Front exits Swamp Water Near Tourist",
+   "expr": "can_swim_or_sink || is_tall || has_mask_goron",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_SOUTHERN_SWAMP_NORTH, RR_MM_SWAMP_WATER_TOURIST, [] { return MmSwampSwimOrTallOrGoron(); });",
+     "token": "MmSwampSwimOrTallOrGoron"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:54",
+   "where": "Swamp Water Near Witch exits Swamp Near Potion Shop",
+   "expr": "can_swim_or_sink || is_tall || has_mask_goron",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_WATER_WITCH, RR_SOUTHERN_SWAMP_NEAR_WOODS, [] { return MmSwampSwimOrTallOrGoron(); });",
+     "token": "MmSwampSwimOrTallOrGoron"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:56",
+   "where": "Swamp Water Near Witch exits Swamp Water Near Frog",
+   "expr": "can_swim_or_sink || is_tall || has_mask_goron",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_WATER_WITCH, RR_MM_SWAMP_WATER_FROG, [] { return MmSwampSwimOrTallOrGoron(); });",
+     "token": "MmSwampSwimOrTallOrGoron"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:58",
+   "where": "Swamp Water Near Witch events SOUTHERN_SWAMP_HIVE",
+   "expr": "has_mask_zora || (is_adult && (can_hookshot_short || has_arrows || (has_bombchu && trick(MM_HIVE_BOMBCHU))))",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "Regions.at(RR_MM_SWAMP_WATER_WITCH).events.push_back(EVENT(RE_MM_SWAMP_HIVE, TypedMmSwampActive() && (CAN_BE_ZORA || (MM_LOGIC_IS_ADULT && (HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_BOW)))));",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run. trick(MM_HIVE_BOMBCHU) is not in the port."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:60",
+   "where": "Swamp Water Near Witch locations Southern Swamp Hive",
+   "expr": "is_swamp_poisoned && event(SOUTHERN_SWAMP_HIVE) && (can_swim_or_sink || is_tall || has_mask_goron)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "Regions.at(RR_MM_SWAMP_WATER_WITCH).checks.insert(CHECK(RC_SOUTHERN_SWAMP_POISON_BEEHIVE, TypedMmSwampActive() && NativeMmSwampPoisoned() && RANDO_EVENTS[RE_MM_SWAMP_HIVE] && MmSwampSwimOrTallOrGoron()));",
+     "token": "MmSwampSwimOrTallOrGoron"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:65",
+   "where": "Swamp Water Near Frog exits Swamp Near Frog",
+   "expr": "can_swim || is_tall",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_WATER_FROG, RR_MM_SWAMP_NEAR_FROG, [] { return MmSwampCanSwim() || MM_LOGIC_IS_TALL; });",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:66",
+   "where": "Swamp Water Near Frog exits Swamp Rupee Flowers",
+   "expr": "is_tall",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_WATER_FROG, RR_SOUTHERN_SWAMP_NEAR_FLOWERS, [] { return MM_LOGIC_IS_TALL; });",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:67",
+   "where": "Swamp Water Near Frog exits Swamp Water Near Witch",
+   "expr": "can_swim_or_sink || is_tall || has_mask_goron",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_WATER_FROG, RR_MM_SWAMP_WATER_WITCH, [] { return MmSwampSwimOrTallOrGoron(); });",
+     "token": "MmSwampSwimOrTallOrGoron"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:73",
+   "where": "Swamp Water Near Deku Palace events SWAMP_OCTO_LEFT",
+   "expr": "is_swamp_poisoned && (has_mask_zora || (is_adult && (can_use_nayru || can_use_din)))",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "Regions.at(RR_MM_SWAMP_WATER_PALACE).events.push_back(EVENT(RE_MM_SWAMP_OCTO_LEFT, TypedMmSwampActive() && NativeMmSwampPoisoned() && (CAN_BE_ZORA || (MM_LOGIC_IS_ADULT && (CAN_USE_NAYRUS_LOVE || CAN_USE_DINS_FIRE)))));",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:77",
+   "where": "Swamp Water Near Deku Palace exits Swamp Back",
+   "expr": "is_tall || (can_swim && can_use_nayru) || (has_mask_goron && has(MASK_DEKU)) || (is_swamp_cleared && (can_swim_or_sink || has_mask_goron))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_WATER_PALACE, RR_SOUTHERN_SWAMP_SOUTH, [] { return MM_LOGIC_IS_TALL || (MmSwampCanSwim() && CAN_USE_NAYRUS_LOVE) || (CAN_BE_GORON && CAN_BE_DEKU) || (NativeMmSwampCleared() && (MmSwampCanSwim() || MM_LOGIC_HAS_IRON_BOOTS || CAN_BE_GORON)); });",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:84",
+   "where": "Swamp Water Near Spider House exits Near Swamp Spider House",
+   "expr": "is_tall || (can_swim && (is_swamp_cleared || can_use_nayru)) || (has_mask_goron && has(MASK_DEKU))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_WATER_SPIDER, RR_MM_SWAMP_NEAR_SPIDER, [] { return MM_LOGIC_IS_TALL || (MmSwampCanSwim() && (NativeMmSwampCleared() || CAN_USE_NAYRUS_LOVE)) || (CAN_BE_GORON && CAN_BE_DEKU); });",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:85",
+   "where": "Swamp Water Near Spider House exits Near Swamp Grotto",
+   "expr": "is_tall || (has_mask_goron && has(MASK_DEKU)) || (is_swamp_cleared && (can_swim || has_mask_goron || has_iron_boots))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_WATER_SPIDER, RR_MM_GROTTO_SWAMP_LEDGE, [] { return MM_LOGIC_IS_TALL || (CAN_BE_GORON && CAN_BE_DEKU) || (NativeMmSwampCleared() && (MmSwampCanSwim() || CAN_BE_GORON || MM_LOGIC_HAS_IRON_BOOTS)); });",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:87",
+   "where": "Swamp Water Near Spider House events SWAMP_OCTO_RIGHT",
+   "expr": "is_swamp_poisoned && (has_mask_zora || (is_adult && (can_use_nayru || can_use_din)))",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "Regions.at(RR_MM_SWAMP_WATER_SPIDER).events.push_back(EVENT(RE_MM_SWAMP_OCTO_RIGHT, TypedMmSwampActive() && NativeMmSwampPoisoned() && (CAN_BE_ZORA || (MM_LOGIC_IS_ADULT && (CAN_USE_NAYRUS_LOVE || CAN_USE_DINS_FIRE)))));",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:94",
+   "where": "Swamp Near Frog exits Swamp Water Near Frog",
+   "expr": "can_swim_or_sink || is_tall || has_mask_goron",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_NEAR_FROG, RR_MM_SWAMP_WATER_FROG, [] { return MmSwampSwimOrTallOrGoron(); });",
+     "token": "MmSwampSwimOrTallOrGoron"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:109",
+   "where": "Swamp Rupee Flowers exits Swamp Water Near Frog",
+   "expr": "can_swim_or_sink || is_tall || has_mask_goron",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_SOUTHERN_SWAMP_NEAR_FLOWERS, RR_MM_SWAMP_WATER_FROG, [] { return MmSwampSwimOrTallOrGoron(); });",
+     "token": "MmSwampSwimOrTallOrGoron"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:122",
+   "where": "Swamp Near Potion Shop exits Swamp Water Near Witch",
+   "expr": "can_swim_or_sink || is_tall || has_mask_goron",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_SOUTHERN_SWAMP_NEAR_WOODS, RR_MM_SWAMP_WATER_WITCH, [] { return MmSwampSwimOrTallOrGoron(); });",
+     "token": "MmSwampSwimOrTallOrGoron"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:168",
+   "where": "Swamp Back exits Swamp Canopy Back",
+   "expr": "(is_swamp_cleared && (can_swim_or_sink || is_tall || has_hover_boots || has_mask_goron || has(MASK_DEKU))) || short_hook_anywhere",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_SOUTHERN_SWAMP_SOUTH, RR_SOUTHERN_SWAMP_SOUTH_UPPER, [] { return NativeMmSwampCleared() && (MmSwampSwimOrTallOrGoron() || MM_LOGIC_HAS_HOVER_BOOTS || CAN_BE_DEKU); });",
+     "token": "MmSwampSwimOrTallOrGoron"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run. short_hook_anywhere is not ported."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:171",
+   "where": "Swamp Back locations Southern Swamp Song of Soaring",
+   "expr": "is_swamp_poisoned && is_tall && has_explosives && trick(MM_SOARING_ZORA)",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "Swamp Back -> Southern Swamp Song of Soaring needs trick(MM_SOARING_ZORA), which the port does not offer, so v32.3 itself is false here at any age (the owl statue keeps its own routes, South.cpp RR_SOUTHERN_SWAMP_SOUTH_UPPER)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:284",
+   "where": "Swamp Canopy Front exits Swamp Water Near Deku Palace",
+   "expr": "is_swamp_cleared || is_tall || has_iron_boots || can_use_nayru",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_MM_SWAMP_CANOPY_FRONT, RR_MM_SWAMP_WATER_PALACE, [] { return NativeMmSwampCleared() || MM_LOGIC_IS_TALL || MM_LOGIC_HAS_IRON_BOOTS || CAN_USE_NAYRUS_LOVE; });",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:296",
+   "where": "Swamp Canopy Back exits Swamp Water Near Spider House",
+   "expr": "is_tall || has_iron_boots || is_swamp_cleared || can_use_nayru",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "edge(RR_SOUTHERN_SWAMP_SOUTH_UPPER, RR_MM_SWAMP_WATER_SPIDER, [] { return MM_LOGIC_IS_TALL || MM_LOGIC_HAS_IRON_BOOTS || NativeMmSwampCleared() || CAN_USE_NAYRUS_LOVE; });",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/stone_tower.yml:32",
+   "where": "Stone Tower Front of Temple exits Stone Tower Lower Scarecrow Ledge",
+   "expr": "has_mask_goron || is_tall || scarecrow_hookshot || hookshot_anywhere || has_hover_boots || (short_hook_anywhere && trick(MM_OOB_MOVEMENT))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/East.cpp",
+     "region": "RR_MM_STONE_TOWER_FRONT_OF_TEMPLE",
+     "text": "CONNECTION(RR_STONE_TOWER_MIDDLE, MM_LOGIC_STONE_TOWER_PINNED && (HAS_ITEM(ITEM_MASK_GORON) || MM_LOGIC_IS_TALL || CAN_HOOK_SCARECROW || MM_LOGIC_HAS_HOVER_BOOTS))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned Stone Tower graph (MM_LOGIC_STONE_TOWER_PINNED includes RO_MM_CROSS_AGE), chosen per seed (95b31f88). hookshot_anywhere and short_hook_anywhere are not ported."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/woodfall.yml:14",
+   "where": "Woodfall locations Woodfall HP Chest",
+   "expr": "(has(MASK_DEKU) && (soul_deku_scrub || is_swamp_cleared)) || can_hookshot || (is_adult && can_hookshot_short && (is_swamp_cleared || can_use_nayru))",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_WOODFALL",
+     "text": "CHECK(RC_WOODFALL_PIECE_OF_HEART_CHEST, COMBO_WORLD45_ENABLED ? ComboRando::MmAdultWorldRoutes::WoodfallHeart(HAS_ITEM(ITEM_MASK_DEKU), (!(RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] || RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) || HaveEnemySoul(ACTOR_EN_DEKUNUTS)), NativeMmSwampCleared(), HAS_ITEM(ITEM_HOOKSHOT), MM_LOGIC_IS_ADULT, HAS_ITEM(ITEM_HOOKSHOT), CAN_USE_NAYRUS_LOVE)",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD45 branch (MmAdultWorldRoutes::WoodfallHeart)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/woodfall.yml:15",
+   "where": "Woodfall locations Woodfall Near Owl Chest",
+   "expr": "(has(MASK_DEKU) && (soul_deku_scrub || is_swamp_cleared)) || (is_swamp_cleared && can_hookshot) || (is_adult && can_hookshot_short && (is_swamp_cleared || can_use_nayru)) || hookshot_anywhere",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_WOODFALL",
+     "text": "(MM_LOGIC_IS_ADULT && HAS_ITEM(ITEM_HOOKSHOT) && (NativeMmSwampCleared() || CAN_USE_NAYRUS_LOVE)))), // woodfall.yml:15",
+     "token": "MM_LOGIC_IS_ADULT"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD45 Woodfall Near Owl Chest from Woodfall."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/woodfall.yml:52",
+   "where": "Woodfall Near Fairy Fountain locations Woodfall Near Owl Chest",
+   "expr": "can_hookshot || (is_adult && can_hookshot_short && (is_swamp_cleared || can_use_nayru))",
+   "terms": [
+    "is_adult"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+     "region": "RR_WOODFALL",
+     "text": "CHECK(RC_WOODFALL_NEAR_OWL_CHEST, COMBO_WORLD45_ENABLED && ((HAS_ITEM(ITEM_MASK_DEKU)",
+     "token": null
+    }
+   ],
+   "note": "Woodfall Near Fairy Fountain is part of RR_WOODFALL in the fork, whose Near Owl Chest rule is the :15 one. The age term is (is_adult && can_hookshot_short); the port has no Short Hookshot (no shortHookshotMm), so can_hookshot_short == can_hookshot (macros_mm.yml:217-219) and the fork statement already accepts the Hookshot at any age."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:15",
+   "where": "Zora Cape exits Great Bay Near Fairy Fountain",
+   "expr": "(can_hookshot && (has_explosives || trick_keg_explosives || short_hook_anywhere)) || (can_use_ice_arrows && (is_tall || can_hookshot_short))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+     "region": "RR_ZORA_CAPE",
+     "text": "CONNECTION(RR_ZORA_CAPE_OUTSIDE_FAIRY_FOUNTAIN, COMBO_WORLD37_ENABLED ? ((HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_EXPLOSIVE) || (CAN_USE_MAGIC_ARROW(ICE) && (MM_LOGIC_IS_TALL || HAS_ITEM(ITEM_HOOKSHOT))))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Pinned COMBO_WORLD37 branch (includes RO_MM_CROSS_AGE)."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:33",
+   "where": "Zora Cape locations Zora Cape Rock Island 1",
+   "expr": "can_hookshot || (can_use_ice_arrows && (is_tall || can_hookshot_short))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "Zora Cape Rock Island: a rock-shuffle location (OoTMM pool type \"rock\"); the fork has no rock checks."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:34",
+   "where": "Zora Cape locations Zora Cape Rock Island 2",
+   "expr": "can_hookshot || (can_use_ice_arrows && (is_tall || can_hookshot_short))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "Zora Cape Rock Island: a rock-shuffle location (OoTMM pool type \"rock\"); the fork has no rock checks."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:35",
+   "where": "Zora Cape locations Zora Cape Rock Island 3",
+   "expr": "can_hookshot || (can_use_ice_arrows && (is_tall || can_hookshot_short))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "Zora Cape Rock Island: a rock-shuffle location (OoTMM pool type \"rock\"); the fork has no rock checks."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:36",
+   "where": "Zora Cape locations Zora Cape Rock Island 4",
+   "expr": "can_hookshot || (can_use_ice_arrows && (is_tall || can_hookshot_short))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "Zora Cape Rock Island: a rock-shuffle location (OoTMM pool type \"rock\"); the fork has no rock checks."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:37",
+   "where": "Zora Cape locations Zora Cape Rock Island 5",
+   "expr": "can_hookshot || (can_use_ice_arrows && (is_tall || can_hookshot_short))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "na_no_graph",
+   "sites": [],
+   "note": "Zora Cape Rock Island: a rock-shuffle location (OoTMM pool type \"rock\"); the fork has no rock checks."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:40",
+   "where": "Zora Cape locations Zora Cape Palm Tree Island Near Fountain",
+   "expr": "can_hookshot || (can_use_ice_arrows && (is_tall || can_hookshot_short))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+     "region": "RR_ZORA_CAPE",
+     "text": "CHECK(RC_ZORA_CAPE_TREE_03, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_HOOKSHOT) || (CAN_USE_MAGIC_ARROW(ICE) && (MM_LOGIC_IS_TALL || HAS_ITEM(ITEM_HOOKSHOT))))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "The three island palm trees are the fork's Zora Cape trees 03-05 (the two beach trees, 01-02, are true as in v32.3); pinned COMBO_WORLD37 branch."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:41",
+   "where": "Zora Cape locations Zora Cape Palm Tree Island Near Beach",
+   "expr": "can_hookshot || (can_use_ice_arrows && (is_tall || can_hookshot_short))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+     "region": "RR_ZORA_CAPE",
+     "text": "CHECK(RC_ZORA_CAPE_TREE_04, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_HOOKSHOT) || (CAN_USE_MAGIC_ARROW(ICE) && (MM_LOGIC_IS_TALL || HAS_ITEM(ITEM_HOOKSHOT))))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "The three island palm trees are the fork's Zora Cape trees 03-05 (the two beach trees, 01-02, are true as in v32.3); pinned COMBO_WORLD37 branch."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:42",
+   "where": "Zora Cape locations Zora Cape Palm Tree Island Center",
+   "expr": "can_hookshot || (can_use_ice_arrows && (is_tall || can_hookshot_short))",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+     "region": "RR_ZORA_CAPE",
+     "text": "CHECK(RC_ZORA_CAPE_TREE_05, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_HOOKSHOT) || (CAN_USE_MAGIC_ARROW(ICE) && (MM_LOGIC_IS_TALL || HAS_ITEM(ITEM_HOOKSHOT))))",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "The three island palm trees are the fork's Zora Cape trees 03-05 (the two beach trees, 01-02, are true as in v32.3); pinned COMBO_WORLD37 branch."
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_hall.yml:57",
+   "where": "Lulu's Room locations Zora Hall Scrub HP",
+   "expr": "(trick(MM_ZORA_HALL_SCRUB_HP_NO_DEKU) && (has_mask_goron || is_tall)) || (has_mask_goron && has(MASK_DEKU) && has(DEED_MOUNTAIN)) || has_boomerang || short_hook_anywhere",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+     "region": "RR_ZORA_HALL_LULUS_ROOM",
+     "text": "ComboRando::MmAdultWorldRoutes::ZoraHallScrubHeart(COMBO_MM_TRICK(\"ZoraHallScrubNoDeku\"), HAS_ITEM(ITEM_MASK_GORON), MM_LOGIC_IS_TALL, HAS_ITEM(ITEM_MASK_DEKU), Flags_GetRandoInf(RANDO_INF_OBTAINED_DEED_MOUNTAIN), false, false)",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "Its own Cross-Games Age branch (MmAdultWorldRoutes::ZoraHallScrubHeart)."
+  },
+  {
+   "ootmm": "data/macros/macros_mm.yml:260",
+   "where": "macro cross_poison_swamp",
+   "expr": "is_tall || has_mask_goron || (can_swim && (is_swamp_cleared || can_use_nayru)) || has_iron_boots",
+   "terms": [
+    "is_tall"
+   ],
+   "status": "covered",
+   "sites": [
+    {
+     "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+     "region": "",
+     "text": "inline bool MmSwampCrossPoison() { return MM_LOGIC_IS_TALL || CAN_BE_GORON || (MmSwampCanSwim() && (NativeMmSwampCleared() || CAN_USE_NAYRUS_LOVE)) || MM_LOGIC_HAS_IRON_BOOTS; }",
+     "token": "MM_LOGIC_IS_TALL"
+    }
+   ],
+   "note": "MmSwampContexts.inc.h holds the exact v32.3 swamp regions; they run whenever TypedMmSwampActive(), which includes MM_LOGIC_SOUTH_PINNED and so Cross-Games Age (96dbcfec, critique X5), and the legacy South.cpp edges among the five native swamp regions are disabled while they run."
+  }
+ ]
+}

@@ -361,6 +361,13 @@ def main():
     # ---- Receipt: every row's statements carry its gear term; an added term keeps the native statement in #else.
     logic_h = read('mm/2s2h/Rando/Logic/Logic.h')
     gear_macros = defines(logic_h, lambda name: name.startswith('MM_LOGIC_'))
+    # The age macros as MmAgeLogic computes them (combined_logic_tests.cpp), with the Cross-Games Age option as an
+    # unknown that compare() can pin.
+    for name, expansion in (('MM_LOGIC_IS_ADULT', '(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] && MM_LOGIC_AGE_IS_ADULT)'),
+                            ('MM_LOGIC_IS_CHILD', '(!RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || !MM_LOGIC_AGE_IS_ADULT)'),
+                            ('MM_LOGIC_IS_TALL', '(HAS_ITEM(ITEM_MASK_ZORA) || MM_LOGIC_IS_ADULT)'),
+                            ('MM_LOGIC_IS_SHORT', '(HAS_ITEM(ITEM_MASK_DEKU) || MM_LOGIC_IS_CHILD)')):
+        gear_macros[name] = (None, tokenize(expansion))
     files = {}
 
     def file_macros(name, before):
@@ -413,10 +420,13 @@ def main():
             continue
         before = (condition(s['before']) if s['before'] else [], file_macros(s['file'], True))
         after = (condition(s['after']), file_macros(s['file'], False))
-        diff = compare(before, after, 600, rng, GEAR_OPTIONS, fixture['newTricks'], hidden)
+        # A statement that later gained a Cross-Games Age term (mm_cross_age_tests.py checks that term on its own) is
+        # compared with that option off as well.
+        off = GEAR_OPTIONS + (('RO_MM_CROSS_AGE',) if s.get('crossAge') else ())
+        diff = compare(before, after, 600, rng, off, fixture['newTricks'], hidden)
         check(diff is None, f'{s["id"]}: differs with the gear options and new tricks off')
         # The gear-only tricks (all but the non-gear ones) change nothing while the gear options are off.
-        diff = compare(before, after, 600, rng, GEAR_OPTIONS, fixture['nonGearTricks'], hidden)
+        diff = compare(before, after, 600, rng, off, fixture['nonGearTricks'], hidden)
         check(diff is None, f'{s["id"]}: a gear trick changes it with the gear options off')
         compared += 1
     # ... and with the gear on each row's statements do change.

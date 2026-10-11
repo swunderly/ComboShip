@@ -1,12 +1,23 @@
 """Cross-Games Age (OoTMM v32.3 crossAge, plan F5b 5a and the seed and menu half of 5b-9/5b-10): logic and age state.
 
 Checks the production sources for: the MM logic age (Logic.h MM_LOGIC_AGE) and the v32.3 age macros
-(macros_mm.yml:59-62).
+(macros_mm.yml:59-62); the age state (one ConfigureSeedAge contract, no load or age step needing the adult model);
+OoT's age copied in at every MM entry in the critique X12 order; the check tracker refresh; the seed's value being
+authoritative; the per-age generation oracle; the Stone Tower graph chosen per seed; and the receipt of every v32.3 MM
+age line (fixtures/ootmm-32.3-mm-age-lines.json): each row's fork statements carry the age term in their region, every
+edited statement evaluates exactly as before with Cross-Games Age off and differently with it on, and, when the OoTMM
+checkout is available (--reference, or references/ootmm-stable-32.3 beside the worktree), the rows are exactly the
+v32.3 lines.
 """
 from pathlib import Path
 import argparse
+import json
+import random
 import re
 import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import mm_gear_logic_tests as cexpr  # noqa: E402 (its C expression reader and evaluator)
 
 p = argparse.ArgumentParser()
 p.add_argument('--source', type=Path, required=True)
@@ -198,7 +209,89 @@ check(0 < entry.find('if(MM_LOGIC_STONE_TOWER_PINNED&&entrance==ENTRANCE(STONE_T
       'randoRegionId==RR_MM_STONE_TOWER_FRONT_OF_TEMPLE)continue;' in entry,
       'GetRegionIdFromEntrance must pick the Stone Tower temple arrival per call and keep it out of its cache')
 
+# ---- 5a-8: every v32.3 MM age line (data/world/mm, plus macros_mm.yml:260) and the fork statements that carry it.
+fixture = json.loads((Path(__file__).resolve().parent / 'fixtures/ootmm-32.3-mm-age-lines.json')
+                     .read_text(encoding='utf-8'))
+rows = fixture['rows']
+statuses = {}
+for row in rows:
+    statuses[row['status']] = statuses.get(row['status'], 0) + 1
+check(len(rows) == 85 and set(statuses) <= {'covered', 'needs_change', 'na_no_graph'},
+      f'the receipt must list the 84 world lines and the macro line ({len(rows)} rows, {statuses})')
+for switch in fixture['switches']:
+    m = re.search(r'#define' + switch['name'] + r'([^#]*)', squash(read(switch['file'])))
+    check(m and 'RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]' in m.group(1),
+          f'{switch["file"]}: {switch["name"]} must switch on with Cross-Games Age')
+sources = {}
+for row in rows:
+    check(bool(row['sites']) == (row['status'] != 'na_no_graph'), f'{row["ootmm"]}: status and sites disagree')
+    for site in row['sites']:
+        if site['file'] not in sources:
+            sources[site['file']] = read(site['file'])
+        text = squash(cexpr.region(sources[site['file']], site['region']))
+        statement = squash(site['text'])
+        check(statement in text, f'{row["ootmm"]}: {site["file"]} {site["region"] or ""} lacks {site["text"][:90]}')
+        token = site['token']
+        if token in fixture['helpers']:
+            helper = body(sources[site['file']], 'inline bool ' + token + '()')
+            check(token + '()' in statement and fixture['helpers'][token] in helper,
+                  f'{row["ootmm"]}: {token} must carry {fixture["helpers"][token]}')
+        elif token:
+            check(re.search(re.escape(token) + r'(?!\w)', statement) is not None, f'{row["ootmm"]}: no {token}')
+for helper, needed in fixture['helpers'].items():
+    check(needed in body(read('mm/2s2h/Rando/Logic/MmSwampContexts.inc.h'), 'inline bool ' + helper + '()'),
+          f'MmSwampContexts.inc.h: {helper} must use {needed}')
+# Each edit is additive: with Cross-Games Age off the statement evaluates exactly as before; with it on it changes.
+# The age macros are written out as MmAgeLogic computes them (checked above and in combined_logic_tests.cpp), with the
+# seed option as an unknown the evaluator can pin to 0.
+macros = cexpr.defines(read('mm/2s2h/Rando/Logic/Logic.h'), lambda name: name.startswith('MM_LOGIC_'))
+for name, expansion in (('MM_LOGIC_IS_ADULT', '(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] && MM_LOGIC_AGE_IS_ADULT)'),
+                        ('MM_LOGIC_IS_CHILD', '(!RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || !MM_LOGIC_AGE_IS_ADULT)'),
+                        ('MM_LOGIC_IS_TALL', '(HAS_ITEM(ITEM_MASK_ZORA) || MM_LOGIC_IS_ADULT)'),
+                        ('MM_LOGIC_IS_SHORT', '(HAS_ITEM(ITEM_MASK_DEKU) || MM_LOGIC_IS_CHILD)')):
+    macros[name] = (None, cexpr.tokenize(expansion))
+rng = random.Random(20261011)
+edited = 0
+for row in rows:
+    if row['status'] != 'needs_change':
+        continue
+    site = row['sites'][0]
+    known = dict(macros, **cexpr.defines(sources[site['file']]))
+    before, after = (cexpr.condition(row['before']), known), (cexpr.condition(site['text']), known)
+    check(cexpr.compare(before, after, 800, rng, ('RO_MM_CROSS_AGE',), (), (set(), set())) is None,
+          f'{row["ootmm"]}: the edit changes the rule without Cross-Games Age')
+    check(cexpr.compare(before, after, 3000, rng, (), (), (set(), set())) is not None,
+          f'{row["ootmm"]}: the edit changes nothing with Cross-Games Age on')
+    check(squash(row['before']) not in squash(cexpr.region(sources[site['file']], site['region'])) or
+          '#else' in squash(cexpr.region(sources[site['file']], site['region'])),
+          f'{row["ootmm"]}: the old statement is still active')
+    edited += 1
+# Against OoTMM v32.3 itself: the rows are exactly its age lines, with their text.
+reference = a.reference
+if reference is None:
+    for candidate in (root.parent.parent / 'references/ootmm-stable-32.3', root.parent / 'references/ootmm-stable-32.3'):
+        if (candidate / 'data/macros/macros_mm.yml').exists():
+            reference = candidate
+            break
+if reference is not None:
+    found = set()
+    for f in sorted((reference / 'data/world/mm').rglob('*.yml')):
+        for i, line in enumerate(f.read_text(encoding='utf-8').splitlines(), 1):
+            if re.search(r'\b(is_adult|is_child|is_tall|is_short)\b', line):
+                found.add(f'data/world/mm/{f.relative_to(reference / "data/world/mm").as_posix()}:{i}')
+    found.add('data/macros/macros_mm.yml:260')
+    check(found == {row['ootmm'] for row in rows}, 'the receipt rows differ from the OoTMM v32.3 age lines: ' +
+          str(sorted(found ^ {row['ootmm'] for row in rows})))
+    for row in rows:
+        rel, line = row['ootmm'].rsplit(':', 1)
+        check(row['expr'] in (reference / rel).read_text(encoding='utf-8').splitlines()[int(line) - 1],
+              f'{row["ootmm"]} does not read {row["expr"][:80]}')
+    print(f'OoTMM reference checked: {reference}')
+else:
+    print('OoTMM reference not found; checked the production sources against the fixture only')
+
 if failures:
     print('\n'.join(failures))
     sys.exit(1)
-print('Cross-Games Age: logic age and age macros match OoTMM v32.3')
+print(f'Cross-Games Age: age macros, age state, entry sync, oracle and Stone Tower match OoTMM v32.3; {len(rows)} age '
+      f'lines ({statuses}), {edited} edits unchanged with the option off')
