@@ -1740,7 +1740,8 @@ which retries until `2ship.dll` is loaded.
   mismatches (OOT rolls the primaries only; MM's secondaries keep their independent roll). The spin
   attack pairs are unaffected: OOT derives its advanced Primaries from the non-advanced Secondary roll.
 - Link's tunic is mapped Kokiri → all four MM forms on purpose. OOT's Goron/Zora tunic rolls are
-  equipment colors with no MM equivalent and are intentionally not mirrored.
+  equipment colors and are not mirrored; the MM Goron/Zora Tunic gear reads them directly instead (see "MM boots
+  and tunics" below).
 - `ctx->SetSeed` means OOT saves created from this version on persist a real `finalSeed`, while saves
   made before it carry 0. Per project policy save compatibility across versions is not required, so
   `COMBO_RELEASE_VERSION` is unchanged; the practical effect is that a pre-existing save and a new one
@@ -2093,3 +2094,30 @@ same way as the Shared Items reader: resolve by `isMagicAcquired`/`isDoubleMagic
 - **Unpublished families.** NPC, animal and misc OoT souls are forced off (`OotSoulState.h` readiness
   constants). "Complete OoT Soul Compatibility" (`RSK_COMPLETE_OOT_SOULS`) is no longer a setting; it is
   derived from the published families at generation and on spoiler import.
+
+## MM boots and tunics (OoTMM `bootsIronMm`, `bootsHoverMm`, `tunicGoronMm`, `tunicZoraMm`) (2026-10-11)
+
+Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared variants copy OoTMM v32.3 (settings
+`packages/core/src/settings/data.ts:2024-2054, 3024-3054`, runtime `packages/generator/src/mm/actors/Player.c`,
+`actors/Bg/Bg_Lotus.c`). Runtime, save and menu notes (the logic is documented with the logic receipt):
+
+- **Separate from Adult Link in MM.** As in OoTMM, child Link wears the gear. `Combo_MM_GearActive()` (BenPort.cpp)
+  gates every gear hook: a rando save whose seed adds gear, the `kMmGearIntegrationComplete` release switch and the
+  native OoT resources the gear draws with. `Combo_MM_IsLinkAdult()` is the adult test; the boot registers and the
+  tunic env colour serve both (`GearActive() || IsLinkAdult()`). Gear never turns the adult state on.
+- **Loads never refuse** a save for its adult or gear state (`ComboAdultMM::PrepareLoadedSave`): a feature that is
+  not active draws Link as child without gear. Malformed adult/gear bytes still fail the JSON read.
+- **Readiness gate.** Where the gear runtime is not released or cannot prepare its resources, the four Cross-Game
+  Items rows show unticked and greyed out (the stored preference is kept), the Save Editor does not offer the gear,
+  and every place that gathers options zeroes them (`kComboMmGearOptions`), as for the MM spells. The headless
+  generator generates as a ready device would. Each seed binds its four options (`gearRules`, like `spellRules`).
+- **Tunic colour.** MM's human display lists colour the tunic with PRIM (30,105,27), which 2S2H's Link tunic
+  cosmetic replaces. OoTMM instead patches the 11 tunic combiners to use ENV (`actors/Player.S:891-945`), sets the
+  env colour before the skeleton and patches the sword/shield lists that set ENV themselves (`:948-1215`). The port
+  patches the same 11 combiners only while a Goron or Zora Tunic is worn, to a call that sets OoTMM's combiner and the
+  env colour (`ComboGearTunicColorNative.h`), so the sword/shield lists stay untouched and, with the default tunic,
+  2S2H's own cosmetic keeps working. The Goron/Zora colours follow OoT's tunic cosmetics, as in OoTMM
+  (`cosmetics/index.ts:383-395`). Custom player models are not patched.
+- **Not copied:** the MM pause-menu item descriptions (2S2H rando suppresses the descriptions of all trade slots;
+  owner decision), OoTMM's OoT file-select MM equipment icons, scales, and the tricks that need the Megaton Hammer or
+  Strength 3 in MM (not authorized). The shared tunic text keeps OoTMM's "into two items" wording.
