@@ -35,12 +35,20 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 - Fixed crashes while drawing MM boots and tunics during item pickups, and while drawing the native Fairy Ocarina.
 - Profile editing now greys out the four MM gear options while Swim is shuffled, matching the main menu. Your saved gear preferences return when Swim shuffle is turned off.
 - An unsupported old experimental entrance layout no longer prevents the rest of an existing save from loading. Seeds that require a future entrance format are rejected before changing the loaded save.
+- Fixed developer-console commands targeting the wrong game after switching between OoT and MM, including an MM entrance-command crash.
+- Fixed the command-line generator crashing after successful completion, and corrected memory cleanup during repeated seed-generation searches.
 
 Tested:
-- The integrated candidate passes 87 automated host tests, with zero failures and two platform-dependent skips. They cover gear and age logic, source assets, saved-rule compatibility, profile controls, the command-line generator, and save-format preflight. The two archive checks read the developer's own extracted game data.
+- The integrated candidate passes 97 automated host tests, with zero failures and two platform-dependent skips. They cover gear and age logic, source assets, saved-rule compatibility, profile controls, console dispatch, the command-line generator, entrance foundations and save-format preflight. The two archive checks read the developer's own extracted game data.
 - Gear-only 0.4.2 and Adult Link 0.4.3 candidates pass the Android build, lint, APK and signing checks. These remain local candidates.
 - On the Android emulator, all four gear pickups and the Fairy Ocarina render without crashing. Pause icons, trade-slot cycling, all four equip/unequip actions, and a normal Mask Shop portal round trip work. The two other save slots stayed byte-for-byte unchanged.
-- Still awaiting runtime checks: gear effects in water, heat and sustained hovering; transformations; Adult Link's entry routes, item animations, Epona, age round trips and save/resume. No physical-phone test or complete seed playthrough has been done for these candidates.
+- A fresh Cross-Games Age seed generated in the app with every check reachable. Adult Link rendered in MM after a Mask Shop handoff, and Deku, Goron and Zora transformations returned to the adult human model. The test used the developer console to reach the boarded-up adult Mask Shop; natural walking access is not claimed.
+- The repaired Android command-line generator completes a fresh Cross-Games Age/MM-gear seed and replays all six age/gear/starting-world cases with clean process exits. The regenerated seed matches its original byte for byte. These command-line checks disable optional hint pruning and do not certify full hints.
+- Four existing private MM entrance profiles (Wallmasters, interiors, grottos and mixed interiors/grottos) pass native generation and replay with every check reachable and clean process exits. Their old saved format is preserved. This does not test entrance transport in gameplay or enable new public entrance settings.
+- Installing the final candidate over the existing app reloads the adult MM save and preserves its inventory. The exact MM console entrance command that previously crashed now succeeds.
+- An adult MM → OoT → MM round trip preserves age and inventory, using the developer console to reach the native portals. The two protected save slots remain byte-for-byte unchanged after all final checks.
+- Adult Link mounts and dismounts the native Epona fixture, aims the bow and hookshot in first person, and fires an arrow. Epona travel distance and jumping remain unverified. The Fairy Ocarina enters its play state without crashing, but the adult hand/instrument alignment needs correction or further diagnosis before a visual pass.
+- Still awaiting runtime checks: gear effects in water, heat and sustained hovering; gear clearing on transformation; Adult Link's other entry routes, full item animations, Epona travel/jumping and child/adult age reversal. No physical-phone test or complete seed playthrough has been done for these candidates.
 
 ## 0.4.1 - 2026-10-11
 
