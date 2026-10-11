@@ -143,6 +143,22 @@ check('MM_AdultRuntimeReady' not in combo + benport, 'MM_AdultRuntimeReady must 
 check('if(id!=RO_MM_CROSS_AGE||!sMMSeedFaroreRulesBound)' in init,
       'MM_InitRandoSaveFile must keep a bound seed\'s Cross-Games Age')
 
+# ---- 5a-5: the generation oracle explores each MM entry age (pathfind.ts:263-267, 342-346) for the seed's option alone,
+# MM open at the start is entered as child, and the 41a2b7c0 Adult Mask frontier clone is gone.
+check('returngSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE]!=0;' in
+      body(benport, 'extern "C" COMBO_EXPORT bool MM_UseCrossAgeOracle(void)'),
+      'MM_UseCrossAgeOracle must read the seed option only')
+check('return2;' in body(benport, 'extern "C" COMBO_EXPORT uint8_t MM_GetOracleDefaultEntryAges(void)'),
+      'MM_GetOracleDefaultEntryAges must be child')
+reset = body(benport, 'extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void)')
+check('gSaveContext.save.linkAge=1;' in reset and
+      'gSaveContext.save.shipSaveInfo.adultMm.enabled=gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE]!=0;'
+      in reset, 'the oracle snapshot must start child with the age state enabled exactly for Cross-Games Age')
+reach = body(benport, 'extern "C" COMBO_EXPORT const char* Combo_MM_Rando_GetReachableChecks(void)')
+check('clone' not in reach and 'maskOwnedBits' not in reach and 'MergeTimeStates' not in reach,
+      'the oracle must not clone frontiers between ages')
+check('gSaveContext.save.linkAge=age;' in reach, 'the oracle must explore each entry age with its own linkAge')
+
 if failures:
     print('\n'.join(failures))
     sys.exit(1)

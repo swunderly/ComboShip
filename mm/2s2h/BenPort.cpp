@@ -4680,12 +4680,13 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
 
     // Headless logic age has no model dependency. Full SaveContext snapshot/restore
     // above owns this state; the native runtime remains separately capability-gated.
-    gSaveContext.save.linkAge = gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_STARTING_AGE] ? 0 : 1;
+    // Link starts child; Combo_MM_Rando_GetReachableChecks explores each MM entry age with Cross-Games Age
+    // (OoTMM pathfind.ts:263-267), so the age state is enabled exactly for it (Logic.h MM_LOGIC_AGE).
+    gSaveContext.save.linkAge = 1;
     gSaveContext.save.shipSaveInfo.adultMm.maskEnabled =
         gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_ADULT_MASK] != 0;
     gSaveContext.save.shipSaveInfo.adultMm.enabled =
-        gSaveContext.save.shipSaveInfo.adultMm.maskEnabled ||
-        gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE] != 0 || gSaveContext.save.linkAge == 0;
+        gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE] != 0;
 
     // ComboShip: grant the seed's STARTING ITEMS into the oracle inventory. These aren't in the
     // shuffled pool (so SetOwnedItems never grants them), but logic depends on them: the default kit
@@ -5565,12 +5566,10 @@ extern "C" COMBO_EXPORT const char* Combo_MM_Rando_GetReachableChecks(void) {
         }
     } restoreAge{ gSaveContext.save.linkAge };
     const bool cross = gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE] != 0;
-    const bool clone = cross && (gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits & 2);
+    // Each age MM is entered at explores on its own: v32.3 MM areas never change age (builder.ts:319).
     uint8_t ages = (cross && sAdultOracleEntryAges)
                        ? sAdultOracleEntryAges
                        : (gSaveContext.save.linkAge <= 1 ? uint8_t(1u << gSaveContext.save.linkAge) : uint8_t(0));
-    if (clone && ages)
-        ages = 3;
     sAdultOracleReachedAges = ages;
     using Times = decltype(Rando::Logic::InitializeRegionTimeStates(RR_MAX));
     struct Frontier {
@@ -5611,29 +5610,6 @@ extern "C" COMBO_EXPORT const char* Combo_MM_Rando_GetReachableChecks(void) {
                     }
             }
         }
-        // Pinned Adult Mask clones reached areas and their time state, not merely checks.
-        if (clone)
-            for (auto& [age, dst] : frontiers) {
-                const auto& src = frontiers.at(1 - age);
-                for (auto region : src.reachable) {
-                    changed |= dst.reachable.insert(region).second;
-                    auto it = src.times.find(region);
-                    if (it == src.times.end())
-                        continue;
-                    auto existing = dst.times.find(region);
-                    if (existing == dst.times.end()) {
-                        dst.times.emplace(region, it->second);
-                        changed = true;
-                    } else {
-                        auto merged = Rando::Logic::MergeTimeStates(existing->second, it->second);
-                        if (merged.timeSlices != existing->second.timeSlices ||
-                            merged.canStayOverTime != existing->second.canStayOverTime) {
-                            existing->second = merged;
-                            changed = true;
-                        }
-                    }
-                }
-            }
     }
     std::set<std::string> accessible;
     for (auto& [age, frontier] : frontiers) {
@@ -6266,10 +6242,14 @@ extern "C" COMBO_EXPORT uint32_t MM_GetOracleSongSourcesForAge(int age) {
 extern "C" COMBO_EXPORT void MM_SetOracleSongAgeArrivals(uint32_t adult, uint32_t child) {
     ComboRando::MmSongAgeArrivals() = { true, { adult & 0xffc0, child & 0xffc0 } };
 }
+// MM open at the start is entered as child: v32.3 has no MM starting age, and an MM start forces OoT child
+// (settings.cpp, gComboStartingGameMM).
 extern "C" COMBO_EXPORT uint8_t MM_GetOracleDefaultEntryAges(void) {
-    return gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_STARTING_AGE] ? 1 : 2;
+    return 2;
 }
+// The seed's Cross-Games Age alone picks the per-age search (OoTMM pathfind.ts:263-267, 342-346), whatever this device
+// can draw.
 extern "C" COMBO_EXPORT bool MM_UseCrossAgeOracle(void) {
-    return gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE] && Combo_MM_AdultResourcesReady();
+    return gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE] != 0;
 }
 #endif
