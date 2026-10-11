@@ -2892,6 +2892,7 @@ extern "C" COMBO_EXPORT void SOH_SetSongTravel(const char* json) {
         ComboRando::ActiveSongTravel() = ComboRando::SongTravelMap::parse(nlohmann::json::parse(json));
     } catch (...) { ComboRando::ActiveSongTravel() = {}; }
     ComboRando::OotSongArrivals() = 0;
+    ComboRando::OotSongAgeArrivals() = {};
 }
 extern "C" COMBO_EXPORT void SOH_SetSongArrivals(uint32_t mask) {
     ComboRando::OotSongArrivals() = mask & 63;
@@ -2952,7 +2953,7 @@ extern "C" COMBO_EXPORT uint32_t SOH_GetSongSources() {
     return mask | OotSoaringSources(OTRGlobals::Instance->gRandoContext->GetLogic().get(),
                                     ComboRando::OotForeignKnowledge(), RegionTable(RR_ROOT)->Child(), true);
 }
-static uint32_t OotLiveSongSources() {
+static uint32_t OotLiveSongSources(bool logical) {
     if (!IS_RANDO || gSaveContext.fileNum >= 3 ||
         (INV_CONTENT(ITEM_OCARINA_FAIRY) != ITEM_OCARINA_FAIRY && INV_CONTENT(ITEM_OCARINA_FAIRY) != ITEM_OCARINA_TIME))
         return 0;
@@ -2962,10 +2963,14 @@ static uint32_t OotLiveSongSources() {
     for (int i = 0; i < 6; i++)
         if (live->CanUse(kWarpSongs[i]))
             mask |= 1u << i;
-    return mask | OotLiveSoaringSources(true);
+    return mask | OotLiveSoaringSources(logical);
 }
 extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongLogicSources() {
-    return OotLiveSongSources();
+    return OotLiveSongSources(true);
+}
+// With the player's active song options, for MM's live tracker (trackers follow active enhancements).
+extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongSources() {
+    return OotLiveSongSources(false);
 }
 extern "C" COMBO_EXPORT int SOH_SongLogicDestination(int source) {
     const auto& map = ComboRando::ActiveSongTravel();
@@ -3135,14 +3140,41 @@ static void ProcessForeignSongReply() {
     }
 }
 
-extern "C" uint32_t SOH_LiveIncomingSongs() {
-    auto fn = (uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetLiveSongLogicSources");
-    if (!fn)
-        return 0;
+bool Combo_OotIsForeground(void);
+// The live tracker's song arrivals at the OoT root, per age. Like the other tracker rules they follow
+// the player's active song options (resolve, runtime sources); seed searches keep the seed's rules.
+// MM keeps OoT's age, so MM's songs land only with the ages that can be in MM (SongTravel.h).
+ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges() {
+    ComboRando::SongAgeArrivals arrivals{ true, {} };
+    auto mmSources = (uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetLiveSongSources");
+    auto mmKnowledge = (uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetLiveSongKnowledge");
+    if (!IS_RANDO || !mmSources || !mmKnowledge)
+        return arrivals;
+    const auto& travel = ComboRando::ActiveSongTravel();
+    auto live = LiveSongLogic();
+    auto* root = RegionTable(RR_ROOT);
     auto* portal = RegionTable(RR_MARKET_MASK_SHOP);
-    const bool mmAccessible = sMmVisitedForSongs || portal->Child() || portal->Adult() ||
-                              (ComboRando::ActiveSongTravel().resolveLogic(SOH_GetSongSources()) & 0xffc0);
-    return ComboRando::ActiveSongTravel().resolveLogic((mmAccessible ? fn() : 0) | OotLiveSoaringSources(true)) & 63;
+    uint8_t mmAges = (portal->Adult() ? 1 : 0) | (portal->Child() ? 2 : 0);
+    // While MM is in the foreground, Link is there with the dormant OoT save's age.
+    if (sMmVisitedForSongs && !Combo_OotIsForeground())
+        mmAges |= LINK_IS_CHILD ? 2 : 1;
+    // OoT's own warp songs reach OoT through their native exits; only their MM landings matter here.
+    std::array<uint32_t, 2> soaring{}, departures{};
+    for (int age = 0; age < 2; ++age) {
+        if (!(age == 0 ? root->Adult() : root->Child()))
+            continue;
+        uint32_t warps = 0;
+        for (int i = 0; i < 6; ++i) {
+            auto* warp = RegionTable(ComboRando::kOotSongSources[i]);
+            if (age == 0 ? warp->Adult() : warp->Child())
+                warps |= 1u << i;
+        }
+        soaring[age] = travel.resolve(OotSoaringSources(live.get(), mmKnowledge(), age == 1));
+        departures[age] = soaring[age] | travel.resolve(warps);
+    }
+    arrivals.masks = ComboRando::OotArrivalsByAge(soaring, travel.resolve(mmSources()),
+                                                  ComboRando::MmEntryOotAges(mmAges, departures));
+    return arrivals;
 }
 extern "C" void Combo_SOHCompleteWarp(PlayState* play, int destination) {
     if (destination < 0 || destination >= 16)
@@ -6481,6 +6513,10 @@ bool SoH_HandleConfigDrop(char* filePath) {
 extern "C" COMBO_EXPORT uint8_t SOH_GetOraclePortalAges(void) {
     auto* portal = RegionTable(RR_MARKET_MASK_SHOP);
     return (portal->Adult() ? 1 : 0) | (portal->Child() ? 2 : 0);
+}
+// The seed's OoT starting age, same bits: Link's OoT age in MM when the seed starts in MM.
+extern "C" COMBO_EXPORT uint8_t SOH_GetOracleStartAges(void) {
+    return OTRGlobals::Instance->gRandoContext->GetOption(RSK_SELECTED_STARTING_AGE).Is(RO_AGE_ADULT) ? 1 : 2;
 }
 extern "C" COMBO_EXPORT uint32_t SOH_GetOracleSongSourcesForAge(int age) {
     if (age < 0 || age > 1)

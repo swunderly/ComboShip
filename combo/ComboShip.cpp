@@ -425,6 +425,7 @@ static void AttachAdultAgeOracle(ComboRando::OracleFns& oot, ComboRando::OracleF
     oot.GetPortalAges = sAdultOotAgeOracle.GetPortalAges;
     oot.GetSongSourcesForAge = sAdultOotAgeOracle.GetSongSourcesForAge;
     oot.SetSongAgeArrivals = sAdultOotAgeOracle.SetSongAgeArrivals;
+    oot.GetStartAges = sAdultOotAgeOracle.GetStartAges;
     mm.SetEntryAges = sAdultMmAgeOracle.SetEntryAges;
     mm.GetDefaultEntryAges = sAdultMmAgeOracle.GetDefaultEntryAges;
     mm.GetSongSourcesForAge = sAdultMmAgeOracle.GetSongSourcesForAge;
@@ -4325,6 +4326,7 @@ int main(int argc, char** argv) {
     sAdultOotAgeOracle.GetSongSourcesForAge = (uint32_t(*)(int))GetSym(sohModule, "SOH_GetOracleSongSourcesForAge");
     sAdultOotAgeOracle.SetSongAgeArrivals =
         (void (*)(uint32_t, uint32_t))GetSym(sohModule, "SOH_SetOracleSongAgeArrivals");
+    sAdultOotAgeOracle.GetStartAges = (uint8_t(*)())GetSym(sohModule, "SOH_GetOracleStartAges");
     sAdultMmAgeOracle.SetEntryAges = (void (*)(uint8_t))GetSym(mmModule, "MM_SetOracleEntryAges");
     sAdultMmAgeOracle.GetDefaultEntryAges = (uint8_t(*)())GetSym(mmModule, "MM_GetOracleDefaultEntryAges");
     sAdultMmAgeOracle.GetSongSourcesForAge = (uint32_t(*)(int))GetSym(mmModule, "MM_GetOracleSongSourcesForAge");

@@ -6,7 +6,7 @@
 #include "rando/AgeTravel.h"
 #include "rando/SongTravelOOT.h"
 #include "../age_change_areas.h"
-extern "C" uint32_t SOH_LiveIncomingSongs();
+ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges(); // OTRGlobals.cpp
 #endif
 
 #include "../dungeon.h"
@@ -570,16 +570,17 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
     }
 
 #ifdef COMBO_BUILD
-    if (region->randomizerRegionKey == RR_ROOT &&
-        (ComboRando::ActiveSongTravel().logicEnabled || ComboRando::ActiveSongTravel().logicForeignSongs)) {
-        const auto& ageArrivals = ComboRando::OotSongAgeArrivals();
-        const bool ageAware = ComboRando::OotSongOracle() && ageArrivals.active;
-        // Live arrivals read the loaded saves, so only the tracker may use them. Entrance validation,
-        // beatable and playthrough searches must depend on the seed alone.
+    // Live arrivals read the loaded saves and the player's active song options, so only the tracker
+    // may use them. Entrance validation, beatable and playthrough searches must depend on the seed alone.
+    const auto& songTravel = ComboRando::ActiveSongTravel();
+    const bool liveSongs = !ComboRando::OotSongOracle() && logic->CalculatingAvailableChecks;
+    if (region->randomizerRegionKey == RR_ROOT && (songTravel.logicEnabled || songTravel.logicForeignSongs ||
+                                                   (liveSongs && (songTravel.enabled || songTravel.foreignSongs)))) {
+        const ComboRando::SongAgeArrivals ageArrivals =
+            liveSongs ? SOH_LiveIncomingSongAges() : ComboRando::OotSongAgeArrivals();
+        const bool ageAware = (liveSongs || ComboRando::OotSongOracle()) && ageArrivals.active;
         const uint32_t incoming = ageAware ? (ageArrivals.masks[0] | ageArrivals.masks[1])
-                                           : (ComboRando::OotSongOracle()
-                                                  ? ComboRando::OotSongArrivals()
-                                                  : (logic->CalculatingAvailableChecks ? SOH_LiveIncomingSongs() : 0u));
+                                           : (ComboRando::OotSongOracle() ? ComboRando::OotSongArrivals() : 0u);
         for (int i = 0; i < 6; i++)
             if (incoming & (1u << i)) {
                 auto* target = RegionTable(ComboRando::kOotSongRegions[i]);

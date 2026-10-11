@@ -114,13 +114,48 @@ int main() {
     assert(!reached.first.count("Spirit child checks")); // no learned Requiem, no warp
     open=false;reached=QuerySongWorlds(oot,mm,{"Requiem"},{"Ocarina"},open,foreignQuery);
     assert(!reached.first.count("Spirit child checks")); // MM itself must be accessible
-    // The runtime convenience remains usable while generation/tracker cannot require it.
+    // The runtime convenience remains usable while generation cannot require it (the live tracker
+    // follows the active option instead; see OTRGlobals SOH_LiveIncomingSongAges).
     map.logicForeignSongs=false;
     assert(ForeignWarpSources(map.foreignSongs,1u<<3,true,31)==(1u<<3));
     open=true;reached=QuerySongWorlds(oot,mm,{"Requiem"},{"Ocarina"},open,foreignQuery);
     assert(!reached.first.count("Spirit child checks"));
     auto saved=map.json(); assert(SongTravelMap::parse(saved).json()==saved);
     map.logicForeignSongs=true;
+
+    // Without Cross Age MM keeps OoT's age: MM's Requiem lands at the Colossus only with the OoT ages
+    // that can be in MM (child Mask Shop portal, an OoT route to MM, or the starting age for an MM start).
+    static uint8_t portalAges=0,startAges=2;static uint32_t ageArrivals[2],ageSources[2];
+    OracleFns ageOot=oot;
+    ageOot.GetPortalOpen=+[]()->uint8_t{return portalAges!=0;};
+    ageOot.GetPortalAges=+[]()->uint8_t{return portalAges;};
+    ageOot.GetStartAges=+[]()->uint8_t{return startAges;};
+    ageOot.GetSongSourcesForAge=+[](int age){return ageSources[age];};
+    ageOot.SetSongAgeArrivals=+[](uint32_t adult,uint32_t child){ageArrivals[0]=adult;ageArrivals[1]=child;};
+    bool adultSoaring=false;
+    auto ageQuery=[&](const OracleFns& o,const std::vector<std::string>& items){
+        std::unordered_set<std::string> result;
+        if(&o==&ageOot) {
+            ageSources[0]=adultSoaring ? 1u<<10 : 0;ageSources[1]=0;sources[0]=ageSources[0];
+            if(ageArrivals[1]&(1u<<3)) result.insert("Spirit child checks");
+            if(ageArrivals[0]&(1u<<3)) result.insert("Colossus GS Tree");
+        } else sources[1]=ForeignWarpSources(map.logicForeignSongs,foreign[1],
+                                             std::find(items.begin(),items.end(),"Ocarina")!=items.end(),31);
+        return result;
+    };
+    portalAges=2;open=false;reached=QuerySongWorlds(ageOot,mm,{"Requiem"},{"Ocarina"},open,ageQuery);
+    assert(open && reached.first.count("Spirit child checks") && !reached.first.count("Colossus GS Tree"));
+    adultSoaring=true;open=false;reached=QuerySongWorlds(ageOot,mm,{"Requiem"},{"Ocarina"},open,ageQuery);
+    assert(reached.first.count("Spirit child checks") && reached.first.count("Colossus GS Tree"));
+    adultSoaring=false;portalAges=0;open=false;reached=QuerySongWorlds(ageOot,mm,{"Requiem"},{"Ocarina"},open,ageQuery);
+    assert(!open && reached.first.empty());
+    for(uint8_t start:{uint8_t(1),uint8_t(2)}) {
+        startAges=start;open=true;reached=QuerySongWorlds(ageOot,mm,{"Requiem"},{"Ocarina"},open,ageQuery,true);
+        assert((reached.first.count("Spirit child checks")!=0)==(start==2));
+        assert((reached.first.count("Colossus GS Tree")!=0)==(start==1));
+    }
+    assert(OotArrivalsByAge({1u<<2,0},1u<<3,2)==(std::array<uint32_t,2>{1u<<2,1u<<3}));
+    assert(MmEntryOotAges(0,{1u<<10,1u<<2})==1 && MmEntryOotAges(2,{0,0})==2);
     // Destination mappings stay immutable when their runtime/logic shuffle flags differ.
     auto mixed=SongTravelMap::generate(99,true,true);
     mixed.logicEnabled=false;

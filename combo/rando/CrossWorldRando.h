@@ -23,6 +23,7 @@
 #include "gui/ComboGenProgress.h"
 #include "CrossForeign.h" // for ComboRando::GameId
 #include "SharedItems.h"
+#include "SongTravel.h" // MmEntryOotAges/OotArrivalsByAge
 
 namespace ComboRando {
 
@@ -83,6 +84,8 @@ struct OracleFns {
     void (*SetSongAgeArrivals)(uint32_t, uint32_t) = nullptr;
     bool (*UseCrossAgeOracle)() = nullptr;
     int (*SetExternalBeanRenewal)(uint8_t) = nullptr;
+    // OOT only: the save's starting age (adult bit0, child bit1), Link's age in MM when MM is open at start.
+    uint8_t (*GetStartAges)() = nullptr;
 };
 
 // Pinned exits preserve age; no all-age destination union is permitted.
@@ -168,12 +171,11 @@ inline auto QuerySongWorlds(const OracleFns& oot, const OracleFns& mm, const std
         mm.GetSongSourcesForAge && oot.SetSongAgeArrivals && mm.SetSongAgeArrivals && oot.SongDestination &&
         mm.SongDestination)
         return QueryAgeSongWorlds(oot, mm, ootOwned, mmOwned, mmOpen, query, mmRootAtStart);
-    auto destinations = [](const OracleFns& oracle) {
+    auto destinations = [](const OracleFns& oracle, uint32_t from) {
         uint32_t mask = 0;
-        if (oracle.GetSongSources && oracle.SongDestination) {
-            uint32_t sources = oracle.GetSongSources();
+        if (oracle.SongDestination) {
             for (int i = 0; i < 16; i++)
-                if (sources & (1u << i)) {
+                if (from & (1u << i)) {
                     int d = oracle.SongDestination(i);
                     if (d >= 0 && d < 16)
                         mask |= 1u << d;
@@ -181,24 +183,44 @@ inline auto QuerySongWorlds(const OracleFns& oot, const OracleFns& mm, const std
         }
         return mask;
     };
+    auto allDestinations = [&](const OracleFns& oracle) {
+        return oracle.GetSongSources ? destinations(oracle, oracle.GetSongSources()) : 0u;
+    };
+    // MM keeps OoT's age, so MM's OoT landings carry only the OoT ages that can be in MM (SongTravel.h).
+    const bool ootAges = oot.GetPortalAges && oot.GetSongSourcesForAge && oot.SetSongAgeArrivals && oot.GetStartAges;
+    std::array<uint32_t, 2> ootAgeArrivals{};
+    uint8_t mmEntryAges = ootAges && mmRootAtStart ? static_cast<uint8_t>(oot.GetStartAges() & 3) : uint8_t(0);
     for (int pass = 0; pass < 18; pass++) {
-        if (oot.SetSongArrivals)
+        if (ootAges)
+            oot.SetSongAgeArrivals(ootAgeArrivals[0], ootAgeArrivals[1]);
+        else if (oot.SetSongArrivals)
             oot.SetSongArrivals(ootArrivals);
         result.first = query(oot, ootOwned);
         mmOpen = mmOpen || !oot.GetPortalOpen || oot.GetPortalOpen() != 0;
-        const uint32_t fromOot = destinations(oot);
+        const uint32_t fromOot = allDestinations(oot);
+        std::array<uint32_t, 2> fromOotAge{};
+        uint8_t entryAges = mmEntryAges;
+        if (ootAges) {
+            fromOotAge = { destinations(oot, oot.GetSongSourcesForAge(0)),
+                           destinations(oot, oot.GetSongSourcesForAge(1)) };
+            entryAges = MmEntryOotAges(static_cast<uint8_t>(entryAges | oot.GetPortalAges()), fromOotAge);
+        }
         const uint32_t newMm = mmArrivals | (fromOot & 0xffc0);
         mmOpen = mmOpen || newMm != 0;
         if (mm.SetSongArrivals)
             mm.SetSongArrivals(newMm);
         result.second = mmOpen ? query(mm, mmOwned) : Checks{};
-        const uint32_t fromMm = mmOpen ? destinations(mm) : 0;
+        const uint32_t fromMm = mmOpen ? allDestinations(mm) : 0;
         const uint32_t newOot = ootArrivals | ((fromOot | fromMm) & 63);
         const uint32_t allMm = newMm | (fromMm & 0xffc0);
-        if (newOot == ootArrivals && allMm == mmArrivals)
+        std::array<uint32_t, 2> newOotAge = OotArrivalsByAge(fromOotAge, fromMm, entryAges);
+        newOotAge = { newOotAge[0] | ootAgeArrivals[0], newOotAge[1] | ootAgeArrivals[1] };
+        if (newOot == ootArrivals && allMm == mmArrivals && newOotAge == ootAgeArrivals && entryAges == mmEntryAges)
             return result;
         ootArrivals = newOot;
         mmArrivals = allMm;
+        ootAgeArrivals = newOotAge;
+        mmEntryAges = entryAges;
     }
     throw std::runtime_error("Song-route search failed to converge");
 }

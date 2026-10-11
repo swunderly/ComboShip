@@ -138,5 +138,18 @@ inline SongAgeArrivals& MmSongAgeArrivals() {
     static SongAgeArrivals value;
     return value;
 }
+// Without Cross Age, MM keeps OoT's age: a song played in MM lands in OoT with the age Link had when
+// he left OoT (FIXES-0.1.19). Masks are per age (adult 0, child 1) and hold resolved destinations;
+// `baseAges` (bit per age) are the ages already able to be in MM, such as the Mask Shop portal's.
+inline uint8_t MmEntryOotAges(uint8_t baseAges, const std::array<uint32_t, 2>& ootDestinations) {
+    return (baseAges & 3) | ((ootDestinations[0] & 0xffc0) ? 1 : 0) | ((ootDestinations[1] & 0xffc0) ? 2 : 0);
+}
+inline std::array<uint32_t, 2> OotArrivalsByAge(const std::array<uint32_t, 2>& ootDestinations, uint32_t mmDestinations,
+                                                uint8_t mmEntryAges) {
+    std::array<uint32_t, 2> arrivals{};
+    for (int age = 0; age < 2; ++age)
+        arrivals[age] = (ootDestinations[age] | ((mmEntryAges & (1u << age)) ? mmDestinations : 0)) & 63;
+    return arrivals;
+}
 
 } // namespace ComboRando
