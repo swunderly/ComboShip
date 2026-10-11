@@ -2286,11 +2286,34 @@ extern "C" COMBO_EXPORT void SOH_ComboItemTrackerDrawContents() {
     group("Songs", "gCombo.Tracker.Songs", songItems);
     group("Dungeon items", "gCombo.Tracker.Dungeons", dungeonItems);
     if (IS_RANDO) {
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.BeanSouls"), 0))
+        // Native SoH draws these only on its hidden main window or behind its own DisplayType
+        // settings; show each one the loaded seed shuffles, as the pause menu (kaleido.cpp) does.
+        static std::vector<ItemTrackerItem> abilityItems, soulItems;
+        const std::pair<RandomizerSettingKey, const std::vector<ItemTrackerItem>*> abilities[] = {
+            { RSK_ROCS_FEATHER, &rocsFeather },
+            { RSK_SHUFFLE_SWIM, &swimItems },
+            { RSK_SHUFFLE_GRAB, &grabItems },
+            { RSK_SHUFFLE_CLIMB, &climbItems },
+            { RSK_SHUFFLE_CRAWL, &crawlItems },
+            { RSK_SHUFFLE_OPEN_CHEST, &openChestItems },
+            { RSK_SHUFFLE_FISHING_POLE, &fishingPoleItems },
+        };
+        abilityItems.clear();
+        for (const auto& [option, items] : abilities) {
+            if (RAND_GET_OPTION(option))
+                abilityItems.insert(abilityItems.end(), items->begin(), items->end());
+        }
+        group("Abilities", "gCombo.Tracker.Quest", abilityItems);
+        if (RAND_GET_OPTION(RSK_SHUFFLE_BEAN_SOULS))
             group("Bean souls", "gCombo.Tracker.Quest", beanSoulItems);
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.BossSouls"), 0))
-            group("Boss souls", "gCombo.Tracker.Quest", bossSoulItems);
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.JabberNuts"), 0))
+        // bossSoulItems ends with Ganon's Soul, which has its own setting.
+        soulItems.clear();
+        if (RAND_GET_OPTION(RSK_SHUFFLE_BOSS_SOULS).IsNot(RO_BOSS_SOULS_OFF))
+            soulItems.assign(bossSoulItems.begin(), bossSoulItems.end() - 1);
+        if (RAND_GET_OPTION(RSK_GANONS_SOUL).IsNot(RO_GANONS_SOUL_STARTWITH))
+            soulItems.push_back(bossSoulItems.back());
+        group("Boss souls", "gCombo.Tracker.Quest", soulItems);
+        if (RAND_GET_OPTION(RSK_SHUFFLE_SPEAK))
             group("Jabbernuts", "gCombo.Tracker.Quest", jabbernutItems);
         if (Rando::Souls::Enabled()) {
             if (Rando::Souls::FamilyVisible(0))
@@ -2302,8 +2325,10 @@ extern "C" COMBO_EXPORT void SOH_ComboItemTrackerDrawContents() {
             if (Rando::Souls::FamilyVisible(3))
                 group("Miscellaneous souls", "gCombo.Tracker.Quest", expandedMISCSouls);
         }
-        group("Ocarina buttons", "gCombo.Tracker.Quest", ocarinaButtonItems);
-        group("Overworld keys", "gCombo.Tracker.Dungeons", overworldKeyItems);
+        if (RAND_GET_OPTION(RSK_SHUFFLE_OCARINA_BUTTONS))
+            group("Ocarina buttons", "gCombo.Tracker.Quest", ocarinaButtonItems);
+        if (RAND_GET_OPTION(RSK_LOCK_OVERWORLD_DOORS))
+            group("Overworld keys", "gCombo.Tracker.Dungeons", overworldKeyItems);
     }
 }
 #endif
