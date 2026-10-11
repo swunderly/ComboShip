@@ -2052,11 +2052,30 @@ same way as the Shared Items reader: resolve by `isMagicAcquired`/`isDoubleMagic
 `packages/generator/src/oot/actors.c:19-364`). Where the port differs from OoTMM:
 
 - **SoH Enemy Randomizer.** OoTMM has none. Its replacement enemies would be gated by souls logic does not
-  model, so the souls option is greyed out while it is on (SoH's option-disable, re-run by a ShipInit hook on
-  `gEnhancements.RandomizedEnemies`) and `FinalizeSettings` forces it off. Spoiler imports keep the seed's own
-  value. Turning the Enemy Randomizer on in the middle of a souls seed is not handled. The profile editor's
+  model, so the souls option is cleared and greyed out while it is on (SoH's option callback, re-run by a ShipInit
+  hook on `gEnhancements.RandomizedEnemies`), and every generation clears it again before the dumps
+  (`ComboRando::ApplyOotEnemySoulsAvailability`, beside the Mask Quest normalization). `FinalizeSettings` never
+  reads the Enemy Randomizer: the seed's settings snapshot records the souls value it was generated with, and a
+  reload on any machine reproduces it. At runtime, while the Enemy Randomizer is on (turned on in the middle of a
+  souls save, or a souls seed loaded on a device that has it on), the soul gate is suspended: no enemy is kept
+  away, no room is kept shut and Dark Link's room clears (`OotSoulsSuspended`, `OotSouls.cpp`). Logic still asks
+  for the souls, so it only asks for more than the game needs and the save cannot softlock. The profile editor's
   copy of the callback reads the profile, where the enhancement is absent, so it shows the option enabled;
-  generation still forces it off.
+  generation still clears it.
+- **Broken actors.** OoT has room-list actors whose object their room never loads, so they never spawn (OoTMM's
+  `restoreBrokenActors` lists them; e.g. the two Keese in MQ Spirit Temple's Torch Slug room, room 1). With that
+  setting off, which is OoTMM's default and the combo's only mode, OoTMM deletes them from the room lists before
+  its soul hook sees them (`src/oot/mq.c` `kMqBrokenActors`, `src/oot/patches/broken_actors.S`). SoH keeps them
+  and calls the soul hook before the object check, so `Actor_Spawn` skips the hook for an actor-list spawn whose
+  object is not loaded (`gMapLoading`). Such an actor cannot spawn either way, so its missing soul never keeps the
+  room shut, and logic copies OoTMM's restoreBrokenActors-off rules (no Keese soul for that room).
+- **Old saves and seeds.** 0.3.10 read every OoT soul family as off, yet a 0.3.10 save can store 1 in
+  `RSK_COMPLETE_OOT_SOULS` and `RSK_SHUFFLE_ENEMY_SOULS` (Randomize All Settings, a profile or a seed snapshot
+  could set the hidden CVars), with no souls in its pool. `RSK_OOT_SOULS_PUBLISHED`, appended before `RSK_MAX`,
+  is set on every seed finalized from now on; a save without it loads 0 and reads every family as off. The option
+  uses a fresh CVar, `gRandoSettings.SoulsEnemyOot`, so a stale `ShuffleEnemySouls` in a config, profile or
+  snapshot is ignored, and `SOH_RestoreRandoSettings` clears it before applying a snapshot, so an older seed that
+  lacks the key never picks up this machine's choice.
 - **Logic receipt.** `soh/soh/Enhancements/randomizer/souls/upstream-enemy-gates.json` lists every OoTMM OoT
   world line that gates on an enemy soul; `native-enemy-gate-map.json` maps each to its native gate. Four native
   rules stay stricter than OoTMM because they are SoH's own logic (Link's porch climb, the Kokiri Forest nut
@@ -2064,8 +2083,12 @@ same way as the Shared Items reader: resolve by `isMagicAcquired`/`isDoubleMagic
   inheriting the soul through CanKillEnemy. Both can only fail generation. The 23 OoT Wallmaster edges wait for
   OoT Wallmaster entrance shuffle.
 - **Bosses** stay with SoH's boss-soul hook (`hook_handlers.cpp`); the enemy souls never block a boss.
+- **Plentiful copies.** OoTMM always adds a second copy of each soul in a Plentiful pool (`transform.ts`
+  `plentifulPool`). Souls go through SoH's `AddItemToPool`, whose Plentiful extras are added only as far as there
+  are empty OoT checks, sampled at random otherwise; with default checks a Plentiful seed got 25 of the 43 second
+  copies. Copying OoTMM exactly would mean forcing the extras past that limit for souls alone.
 - **Not copied:** OoTMM's in-game "OoT Enemy Souls" list screen, its CSMC soul textures, the
-  `restoreBrokenActors` Keese terms, and Shared Enemy Souls. Ownership shows in the tracker group "OoT Enemy
+  `restoreBrokenActors` setting and its Keese terms, and Shared Enemy Souls. Ownership shows in the tracker group "OoT Enemy
   Souls". OoTMM's names are English only, so English fills every language slot.
 - **Unpublished families.** NPC, animal and misc OoT souls are forced off (`OotSoulState.h` readiness
   constants). "Complete OoT Soul Compatibility" (`RSK_COMPLETE_OOT_SOULS`) is no longer a setting; it is
