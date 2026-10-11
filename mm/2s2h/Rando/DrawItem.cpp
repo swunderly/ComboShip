@@ -432,6 +432,9 @@ static const ALIGN_ASSET(2) char sComboSpellOrbDL[] = "__OTR__@oot:objects/objec
 static const ALIGN_ASSET(2) char sComboNayrusLoveColorDL[] =
     "__OTR__@oot:objects/object_gi_goddess/gGiNayrusLoveColorDL";
 static const ALIGN_ASSET(2) char sComboDinsFireColorDL[] = "__OTR__@oot:objects/object_gi_goddess/gGiDinsFireColorDL";
+static const ALIGN_ASSET(2) char sComboFairyOcarinaDL[] = "__OTR__@oot:objects/object_gi_ocarina_0/gGiOcarinaFairyDL";
+static const ALIGN_ASSET(2) char sComboFairyOcarinaHolesDL[] =
+    "__OTR__@oot:objects/object_gi_ocarina_0/gGiOcarinaFairyHolesDL";
 // Native Fairy pickup/world rendering copies OOT's exact OPA0/XLU1 recipe.
 extern "C" int Combo_MM_AdultMaskResourcesReady(void);
 extern "C" Gfx* Combo_MM_GetAdultMaskBinding(int index);
@@ -509,10 +512,10 @@ static void DrawFairyOcarinaItem() {
     OPEN_DISPS(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, gPlayState->state.gfxCtx);
-    gSPDisplayList(POLY_OPA_DISP++, (Gfx*)"__OTR__@oot:objects/object_gi_ocarina_0/gGiOcarinaFairyDL");
+    gSPDisplayList(POLY_OPA_DISP++, (Gfx*)sComboFairyOcarinaDL);
     Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
     MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, gPlayState->state.gfxCtx);
-    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)"__OTR__@oot:objects/object_gi_ocarina_0/gGiOcarinaFairyHolesDL");
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)sComboFairyOcarinaHolesDL);
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 }
 #endif

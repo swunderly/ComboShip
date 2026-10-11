@@ -48,10 +48,10 @@ code+=function(native,'const NativeItem* FindItem(')
 code+='namespace Rando::SilverRupees { using ::FindItem; }\n'
 code+=r"""
 struct PlayState {struct {int gfxCtx=0;}state;};struct GetItemEntry {int drawItemId;};using Gfx=char;
-std::vector<std::string> drawn;int prim[3],env[3];
+std::vector<std::string> drawn;std::vector<const Gfx*> nativePaths;int prim[3],env[3];
 struct Layer {std::string dl;int p[3],e[3];};std::vector<Layer> layers;
 void color(int* target,int r,int g,int b){target[0]=r;target[1]=g;target[2]=b;}
-void draw(const Gfx* dl){Layer v;v.dl=dl;std::memcpy(v.p,prim,sizeof prim);std::memcpy(v.e,env,sizeof env);layers.push_back(v);}
+void draw(const Gfx* dl){nativePaths.push_back(dl);Layer v;v.dl=dl;std::memcpy(v.p,prim,sizeof prim);std::memcpy(v.e,env,sizeof env);layers.push_back(v);}
 #define OPEN_DISPS(x) {
 #define CLOSE_DISPS(x) }
 #define Gfx_SetupDL_25Opa(x)
@@ -94,6 +94,30 @@ code+='void CheckNativeAssetAlignment(){'+''.join('static_assert(__alignof('+nam
 code+='#include "'+(s/'combo/rando/AdultGearDrawRecipe.h').as_posix()+'"\n'
 signature_source=re.sub(r'//[^\n]*', '', (s/'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8'))
 code+=function(signature_source, 'extern "C" int ResourceMgr_OTRSigCheck(')
+# Native Fairy Ocarina submits its paths directly; unlike the foreign consumer,
+# no std::string copy rescues an odd-address pooled literal before the GBI bridge.
+native_mm_draw=(s/'mm/2s2h/Rando/DrawItem.cpp').read_text(encoding='utf-8')
+fairy_assets=re.findall(r'static const ALIGN_ASSET\(2\) char sComboFairyOcarina\w*\[\]\s*=\s*"[^"\n]+";',native_mm_draw)
+code+='\n'.join(fairy_assets)+'\n'
+code+='#define Gfx_SetupDL25_Opa(...)\n#define Gfx_SetupDL25_Xlu(...)\n#define MATRIX_FINALIZE_AND_LOAD(...)\n'
+code+=function(native_mm_draw, 'static void DrawFairyOcarinaItem()')
+code+=r'''
+void CheckFairyOcarinaAssetAlignment() {
+    static_assert(__alignof(sComboFairyOcarinaDL) >= 2);
+    static_assert(__alignof(sComboFairyOcarinaHolesDL) >= 2);
+    nativePaths.clear();
+    DrawFairyOcarinaItem();
+    assert(nativePaths.size() == 2);
+    assert(std::strcmp(nativePaths[0], "__OTR__@oot:objects/object_gi_ocarina_0/gGiOcarinaFairyDL") == 0);
+    assert(std::strcmp(nativePaths[1], "__OTR__@oot:objects/object_gi_ocarina_0/gGiOcarinaFairyHolesDL") == 0);
+    for (const auto* path : nativePaths) {
+        if (!ResourceMgr_OTRSigCheck(const_cast<char*>(path))) {
+            std::fprintf(stderr, "Rejected Fairy Ocarina resource at %p: %s\n", (const void*)path, path);
+            assert(false && "Native Fairy Ocarina paths must pass the production OTR signature guard");
+        }
+    }
+}
+'''
 code+=r'''
 void CheckGearAssetAlignment() {
     const int counts[] = {2, 1, 4, 4}, xlu[] = {1, -1, -1, -1};
@@ -127,6 +151,7 @@ code+=r"""
 int main(){
     CheckNativeAssetAlignment();
     CheckGearAssetAlignment();
+    CheckFairyOcarinaAssetAlignment();
     size_t populated=0;for(auto icon:gItemIcons)if(icon)++populated;
     assert(populated>100&&populated<gItemIcons.size());
     LoadGuiTextures();assert(registeredIcons.size()==populated+4);
