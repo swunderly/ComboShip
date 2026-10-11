@@ -1,0 +1,163 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "source": "packages/generator/src/oot/actors/En/En_Wallmas.c",
+  "sourceSha256": "2d9e7729ea8fc152c3932d368cd1dea9911d103bf71eec35499028448186824d",
+  "functionSource": "static int EnWallmas_GetDestEr(Actor* this, PlayState* play)\n{\n    u8 room;\n\n    room = this->room;\n\n    switch (play->sceneId)\n    {\n    case SCE_OOT_TEMPLE_FOREST:\n        return room == 0x14 ? ENTR_OOT_WALLMASTER_FOREST_CORRIDOR_EAST : ENTR_OOT_WALLMASTER_FOREST_CORRIDOR_WEST;\n    case SCE_OOT_TEMPLE_SHADOW:\n        return ENTR_OOT_WALLMASTER_SHADOW;\n    case SCE_OOT_TEMPLE_SPIRIT:\n        switch (room)\n        {\n        case 0x02: return ENTR_OOT_WALLMASTER_SPIRIT_CHILD_RUPEES;\n        case 0x05: return ENTR_OOT_WALLMASTER_SPIRIT_STATUE;\n        case 0x08: return ENTR_OOT_WALLMASTER_SPIRIT_CHILD_SUN;\n        case 0x0f: return ENTR_OOT_WALLMASTER_SPIRIT_ADULT_CLIMB;\n        default: UNREACHABLE();\n        }\n    case SCE_OOT_BOTTOM_OF_THE_WELL:\n        switch (room)\n        {\n        case 0x00: return ENTR_OOT_WALLMASTER_BOTW_MAIN;\n        case 0x01: return ENTR_OOT_WALLMASTER_BOTW_BASEMENT;\n        case 0x03: return ENTR_OOT_WALLMASTER_BOTW_PIT;\n        default: UNREACHABLE();\n        }\n    case SCE_OOT_GERUDO_TRAINING_GROUND:\n        return ENTR_OOT_WALLMASTER_GTG;\n    case SCE_OOT_INSIDE_GANON_CASTLE:\n        switch (room)\n        {\n        case 0x0a: return ENTR_OOT_WALLMASTER_GANON_LIGHT;\n        default: return ENTR_OOT_WALLMASTER_GANON_SPIRIT;\n        }\n    default:\n        UNREACHABLE();\n    }\n}",
+  "rules": [
+    {
+      "scene": "SCE_OOT_TEMPLE_FOREST",
+      "context": "ForestTemple",
+      "rooms": {
+        "20": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST"
+      },
+      "default": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST"
+    },
+    {
+      "scene": "SCE_OOT_TEMPLE_SHADOW",
+      "context": "ShadowTemple",
+      "rooms": {},
+      "default": "OOT_WALLMASTER_SHADOW"
+    },
+    {
+      "scene": "SCE_OOT_TEMPLE_SPIRIT",
+      "context": "SpiritTemple",
+      "rooms": {
+        "2": "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+        "5": "OOT_WALLMASTER_SPIRIT_STATUE",
+        "8": "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+        "15": "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB"
+      },
+      "default": null
+    },
+    {
+      "scene": "SCE_OOT_BOTTOM_OF_THE_WELL",
+      "context": "BottomOfTheWell",
+      "rooms": {
+        "0": "OOT_WALLMASTER_BOTW_MAIN",
+        "1": "OOT_WALLMASTER_BOTW_BASEMENT",
+        "3": "OOT_WALLMASTER_BOTW_PIT"
+      },
+      "default": null
+    },
+    {
+      "scene": "SCE_OOT_GERUDO_TRAINING_GROUND",
+      "context": "GerudoTrainingGround",
+      "rooms": {},
+      "default": "OOT_WALLMASTER_GTG"
+    },
+    {
+      "scene": "SCE_OOT_INSIDE_GANON_CASTLE",
+      "context": "InsideGanonsCastle",
+      "rooms": {
+        "10": "OOT_WALLMASTER_GANON_LIGHT"
+      },
+      "default": "OOT_WALLMASTER_GANON_SPIRIT"
+    }
+  ],
+  "sources": [
+    {
+      "name": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "game": "oot",
+      "id": 3856,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "game": "oot",
+      "id": 3857,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_SHADOW",
+      "game": "oot",
+      "id": 3858,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+      "game": "oot",
+      "id": 3859,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+      "game": "oot",
+      "id": 3860,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+      "game": "oot",
+      "id": 3861,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_SPIRIT_STATUE",
+      "game": "oot",
+      "id": 3862,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_BOTW_MAIN",
+      "game": "oot",
+      "id": 3863,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_BOTW_BASEMENT",
+      "game": "oot",
+      "id": 3864,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_BOTW_PIT",
+      "game": "oot",
+      "id": 3865,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_GTG",
+      "game": "oot",
+      "id": 3866,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_GANON_SPIRIT",
+      "game": "oot",
+      "id": 3867,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    },
+    {
+      "name": "OOT_WALLMASTER_GANON_LIGHT",
+      "game": "oot",
+      "id": 3868,
+      "type": "wallmaster",
+      "reverse": null,
+      "to": "OOT VOID"
+    }
+  ]
+}

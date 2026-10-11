@@ -28,6 +28,7 @@ if reference is None:
 sys.path.insert(0, str(source/'tools/ootmm'))
 import export_registry as registry
 import export_grotto_context as context
+import export_oot_wallmaster_sources as wallmasters
 
 original, records = registry.read_registry(reference)
 manifest = json.loads((source/'tools/ootmm/registry-source.json').read_text(encoding='utf-8'))
@@ -36,9 +37,12 @@ assert records == manifest['entrances']
 runtime = registry.verified_blob(reference, context.RUNTIME_SOURCE)
 expected = json.loads((source/'tools/ootmm/grotto-context-source.json').read_text(encoding='utf-8'))
 assert json.loads(registry.json_bytes(context.parse_context(runtime, records))) == expected
+wallmaster_blob = registry.verified_blob(reference, wallmasters.SOURCE)
+wallmaster_expected = json.loads((source/wallmasters.OUTPUT).read_text(encoding='utf-8'))
+assert wallmasters.parse_source(wallmaster_blob, records) == wallmaster_expected
 outputs = ['combo/rando/entrances/Registry.h', 'combo/rando/entrances/GrottoMetadata.h',
            'combo/rando/entrances/LICENSE.OoTMM', 'tools/ootmm/registry-source.json',
-           'tools/ootmm/grotto-context-source.json',
+           'tools/ootmm/grotto-context-source.json', wallmasters.OUTPUT,
            'ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json']
 attributes = subprocess.check_output(['git', '-C', str(source), '-c', 'core.autocrlf=true',
                                      'check-attr', 'eol', '--', *outputs], text=True, timeout=30)
@@ -54,7 +58,8 @@ with tempfile.TemporaryDirectory(prefix='entrance-export-', dir=work) as scratch
     scratch = Path(scratch)
     for script, target in [('export_registry.py', 'combo/rando/entrances/Registry.h'),
                            ('export_grotto_context.py', 'combo/rando/entrances/GrottoMetadata.h'),
-                           ('export_solver_contract.py', 'ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json')]:
+                           ('export_solver_contract.py', 'ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json'),
+                           ('export_oot_wallmaster_sources.py', wallmasters.OUTPUT)]:
         result = run(script, source, check=True)
         assert result.returncode == 0, result.stdout + result.stderr
         result = run(script, scratch)
