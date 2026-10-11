@@ -27,11 +27,17 @@ static bool CanLearnNewWaveBossaNova() {
 }
 
 #ifdef COMBO_BUILD
+// Only the Zora Cape peninsula pair has a Nayru's Love term in OoTMM v32.3 (zora_cape.yml:11, :141), so only
+// it switches on that option; the other pinned West rows switch on the gear and age options alone.
+#define COMBO_WORLD37_SELECT(legacy, pinned) (COMBO_WORLD37_ENABLED ? (pinned) : (legacy))
 #define COMBO_WORLD54_ENABLED (COMBO_WORLD37_ENABLED || RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE])
 #define COMBO_WORLD54_SELECT(legacy, pinned) (COMBO_WORLD54_ENABLED ? (pinned) : (legacy))
-#define COMBO_WORLD54_PENINSULA \
-    (MM_LOGIC_UNDERWATER_WALKING_STRICT || CAN_USE_NAYRUS_LOVE || (CAN_USE_MAGIC_ARROW(ICE) && CAN_SUPPLY_CHATEAU))
+// zora_cape.yml:11/:141: (can_swim && (underwater_walking || can_use_nayru || trick)) || (ice && chateau).
+#define COMBO_WORLD54_PENINSULA                                                                \
+    ((CAN_USE_ABILITY(SWIM) && (MM_LOGIC_UNDERWATER_WALKING_STRICT || CAN_USE_NAYRUS_LOVE)) || \
+     (CAN_USE_MAGIC_ARROW(ICE) && CAN_SUPPLY_CHATEAU))
 #else
+#define COMBO_WORLD37_SELECT(legacy, pinned) (legacy)
 #define COMBO_WORLD54_SELECT(legacy, pinned) (legacy)
 #endif
 
@@ -178,7 +184,7 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(ZORA_CAPE, 0),                    ENTRANCE(GREAT_BAY_COAST, 1), true),
             EXIT(ENTRANCE(PINNACLE_ROCK, 0),                ENTRANCE(GREAT_BAY_COAST, 3), CAN_USE_ABILITY(SWIM)),
             EXIT(ENTRANCE(FISHERMANS_HUT, 0),               ENTRANCE(GREAT_BAY_COAST, 4), true),
-            EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0),    ENTRANCE(GREAT_BAY_COAST, 5), COMBO_WORLD54_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_RESET_TIME_DUNGEON && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0),    ENTRANCE(GREAT_BAY_COAST, 5), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_RESET_TIME_DUNGEON && MM_LOGIC_UNDERWATER_WALKING_STRICT && CAN_USE_ABILITY(SWIM))),
             EXIT(ENTRANCE(OCEANSIDE_SPIDER_HOUSE, 0),       ENTRANCE(GREAT_BAY_COAST, 8), true),
             EXIT(ENTRANCE(GROTTOS, 26),                     ENTRANCE(GREAT_BAY_COAST, 0), true),
         },
@@ -416,7 +422,7 @@ static RegisterShipInitFunc initFunc([]() {
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(GREAT_BAY_COAST, 1),              ENTRANCE(ZORA_CAPE, 0), true),
             EXIT(ENTRANCE(GROTTOS, 28),                     ENTRANCE(ZORA_CAPE, 0), CAN_USE_EXPLOSIVE || CAN_BE_GORON),
-            EXIT(ENTRANCE(ZORA_HALL, 0),                    ENTRANCE(ZORA_CAPE, 1), COMBO_WORLD54_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            EXIT(ENTRANCE(ZORA_HALL, 0),                    ENTRANCE(ZORA_CAPE, 1), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),
             EXIT(ENTRANCE(WATERFALL_RAPIDS, 0),             ENTRANCE(ZORA_CAPE, 4), HAS_ITEM(ITEM_HOOKSHOT)),
         },
         .connections = {
@@ -485,26 +491,26 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ZORA_HALL_SCENE_LIGHTS, CAN_USE_MAGIC_ARROW(FIRE) || (COMBO_MM_TRICK("StageLightsDin") && CAN_USE_BOW && CAN_USE_DINS_FIRE && HAS_ITEM(ITEM_HOOKSHOT))),
         },
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(ZORA_CAPE, 1),                    ENTRANCE(ZORA_HALL, 0), COMBO_WORLD54_SELECT(true, MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            EXIT(ENTRANCE(ZORA_CAPE, 1),                    ENTRANCE(ZORA_HALL, 0), COMBO_WORLD37_SELECT(true, MM_LOGIC_UNDERWATER_WALKING_STRICT)),
             EXIT(ENTRANCE(ZORA_CAPE, 2),                    ENTRANCE(ZORA_HALL, 1), true), // Back entrance beside the owl           
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 5),              ENTRANCE(ZORA_HALL, 2), true), // To Shop
 #ifdef COMBO_BUILD
-            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 2),              ENTRANCE(ZORA_HALL, 3), ((RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Lulu's Room
+            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 2),              ENTRANCE(ZORA_HALL, 3), (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), NativeMmOceanCleared(), false, false) : CAN_BE_ZORA)), // To Lulu's Room
 #else
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 2),              ENTRANCE(ZORA_HALL, 3), CAN_BE_ZORA), // To Lulu's Room
 #endif
 #ifdef COMBO_BUILD
-            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 3),              ENTRANCE(ZORA_HALL, 4), ((RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Evan's Room
+            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 3),              ENTRANCE(ZORA_HALL, 4), (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), NativeMmOceanCleared(), false, false) : CAN_BE_ZORA)), // To Evan's Room
 #else
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 3),              ENTRANCE(ZORA_HALL, 4), CAN_BE_ZORA), // To Evan's Room
 #endif
 #ifdef COMBO_BUILD
-            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 1),              ENTRANCE(ZORA_HALL, 5), ((RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Japas's Room
+            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 1),              ENTRANCE(ZORA_HALL, 5), (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), NativeMmOceanCleared(), false, false) : CAN_BE_ZORA)), // To Japas's Room
 #else
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 1),              ENTRANCE(ZORA_HALL, 5), CAN_BE_ZORA), // To Japas's Room
 #endif
 #ifdef COMBO_BUILD
-            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 0),              ENTRANCE(ZORA_HALL, 6), ((RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Mikaus's Room
+            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 0),              ENTRANCE(ZORA_HALL, 6), (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), NativeMmOceanCleared(), false, false) : CAN_BE_ZORA)), // To Mikaus's Room
 #else
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 0),              ENTRANCE(ZORA_HALL, 6), CAN_BE_ZORA), // To Mikaus's Room
 #endif
