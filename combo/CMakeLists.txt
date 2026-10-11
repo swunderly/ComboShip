@@ -163,8 +163,9 @@ if(ANDROID)
     target_link_options(comborando PRIVATE "-Wl,-rpath,$ORIGIN")
     # SOH is loaded later and needs SDL_net. RUNPATH is not inherited by its dependencies;
     # retain this direct shared dependency even though headless never calls its network API.
+    # Restore the caller's link state so later transitive dependencies remain retained.
     if(TARGET SDL2_net::SDL2_net)
-        target_link_libraries(comborando PRIVATE "-Wl,--no-as-needed" SDL2_net::SDL2_net "-Wl,--as-needed")
+        target_link_libraries(comborando PRIVATE "-Wl,--push-state,--no-as-needed" SDL2_net::SDL2_net "-Wl,--pop-state")
     endif()
 endif()
 add_dependencies(comborando soh 2ship)
