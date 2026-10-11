@@ -4,7 +4,11 @@
 #include "2s2h/Rando/Logic/Logic.h"
 #ifdef COMBO_BUILD
 #include "rando/MmAdultWorldRoutes.h"
-#define IKANA_ADULT_GEAR_MODE (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
+// Pinned ancient_castle_of_ikana.yml graph (unchanged in v32.3), whose only Nayru's Love term is Interior North ->
+// Interior North 2 (:27).
+#define IKANA_ADULT_GEAR_MODE                                                        \
+    (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || \
+     RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE])
 #endif
 
 using namespace Rando::Logic;

@@ -410,7 +410,7 @@ static RegisterShipInitFunc initFunc([]() {
             EVENT(RE_ACCESS_SPRING_WATER, true),
             // Finite owned beans are not a refill source. The Palace salesman
             // supplies RE_ACCESS_BEANS_REFILL through its actual NPC event.
-            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC))),
+            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC) || CAN_USE_NAYRUS_LOVE || CAN_USE_DINS_FIRE)), // southern_swamp.yml:23, :98, :111 kill_big_octo_close (macros_mm.yml:143)
             EVENT(RE_ACCESS_PICTOGRAPH_SWAMP_GENERIC, HAS_ITEM(ITEM_PICTOGRAPH_BOX)),
         },
         .oneWayEntrances = {
@@ -433,7 +433,7 @@ static RegisterShipInitFunc initFunc([]() {
             // Any form but Deku can bottle water here. Human can do it from a lilypad before it sinks.
             // If human is ever shuffled, revisit this.
             EVENT(RE_ACCESS_SPRING_WATER, true),
-            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC))),
+            EVENT(RE_SOUTHERN_SWAMP_KILL_OCTOROK, (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_DEITY_OUTSIDE_BOSS && HAS_MAGIC) || CAN_USE_NAYRUS_LOVE || CAN_USE_DINS_FIRE)), // southern_swamp.yml:23, :98, :111 kill_big_octo_close (macros_mm.yml:143)
             EVENT(RE_ACCESS_PICTOGRAPH_SWAMP_GENERIC, HAS_ITEM(ITEM_PICTOGRAPH_BOX)),
         },
     };
