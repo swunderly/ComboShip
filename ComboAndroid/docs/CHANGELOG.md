@@ -29,7 +29,8 @@ Install each update over the existing app, so your ROMs, saves and settings are 
   - The logic behind the hidden Cross-Games Age and MM boots and tunic options also follows v32.3 now; current seeds cannot turn those on.
 
 Tested:
-- 73 automated host tests pass (3 are skipped on Windows). They check the MM spell settings, shared items, tricks and every spell logic site against OoTMM v32.3, and compare, for every combination of items, what a Nayru's Love seed can reach in the swamp, Deku Palace, Woodfall and Ikana Castle against the previous logic. The MM spell changes have not been built into an APK, generated or played on the emulator, or tried on a phone yet.
+- 73 automated host tests pass (3 are skipped on Windows), run on these changes on top of 0.4.0. They check the MM spell settings, shared items, tricks and every spell logic site against OoTMM v32.3, including that Din's Fire counts nowhere OoTMM leaves it out. They compare, for every combination of items, what a Nayru's Love seed can reach in the swamp, Deku Palace and Woodfall against the previous logic, and check that Ikana Castle only gains OoTMM's Nayru's Love route. They also check the tracker icons and that the spell options are off wherever the device cannot cast them.
+- The MM spell changes have not been built into an APK, generated or played on the emulator, or tried on a phone yet. Their casting code has never been played; these options should not ship until the phone checks pass.
 
 ## 0.4.0 - 2026-10-11
 
