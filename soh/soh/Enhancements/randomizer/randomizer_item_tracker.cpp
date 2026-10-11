@@ -2316,13 +2316,13 @@ extern "C" COMBO_EXPORT void SOH_ComboItemTrackerDrawContents() {
         if (RAND_GET_OPTION(RSK_SHUFFLE_SPEAK))
             group("Jabbernuts", "gCombo.Tracker.Quest", jabbernutItems);
         if (Rando::Souls::Enabled()) {
-            if (Rando::Souls::FamilyVisible(0))
+            if (Rando::Souls::FamilyShuffled(Rando::Souls::OotSoulFamily::Enemy))
                 group("Enemy souls", "gCombo.Tracker.Quest", expandedENEMYSouls);
-            if (Rando::Souls::FamilyVisible(1))
+            if (Rando::Souls::FamilyShuffled(Rando::Souls::OotSoulFamily::Npc))
                 group("NPC souls", "gCombo.Tracker.Quest", expandedNPCSouls);
-            if (Rando::Souls::FamilyVisible(2))
+            if (Rando::Souls::FamilyShuffled(Rando::Souls::OotSoulFamily::Animal))
                 group("Animal souls", "gCombo.Tracker.Quest", expandedANIMALSouls);
-            if (Rando::Souls::FamilyVisible(3))
+            if (Rando::Souls::FamilyShuffled(Rando::Souls::OotSoulFamily::Misc))
                 group("Miscellaneous souls", "gCombo.Tracker.Quest", expandedMISCSouls);
         }
         if (RAND_GET_OPTION(RSK_SHUFFLE_OCARINA_BUTTONS))

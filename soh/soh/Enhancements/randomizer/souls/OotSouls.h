@@ -15,7 +15,8 @@ bool HasItem(Logic* logic, RandomizerGet item);
 void LogicDelta(Logic* logic, RandomizerGet item, bool add);
 bool EnemySoul(Logic* logic, RandomizerEnemy enemy);
 bool Enabled();
-bool FamilyVisible(unsigned family);
+// True when the seed shuffles this family's souls, so a missing soul keeps its actors away.
+bool FamilyShuffled(OotSoulFamily family);
 bool RuntimeOwned(RandomizerGet item);
 bool TcgSoulAccess(Logic* logic);
 void AddUnshuffledStarts(std::vector<RandomizerGet>& starts);

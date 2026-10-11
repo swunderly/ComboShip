@@ -13,7 +13,8 @@ inline constexpr std::array<OotSoul, GeneralOotSoulCount> generalOotSoulItems = 
 #include "OotSoulData.inc"
 #undef OOT_SOUL_ITEM
 };
-// Families are contiguous in index order: enemies and bosses, NPCs, animals, misc.
+// Families are contiguous in index order: enemies, NPCs, animals, misc.
+enum class OotSoulFamily : unsigned { Enemy, Npc, Animal, Misc };
 inline constexpr unsigned GeneralOotSoulFamily(unsigned index) {
     return index < 43 ? 0 : index < 89 ? 1 : index < 93 ? 2 : 3;
 }
@@ -22,11 +23,17 @@ static_assert(generalOotSoulItems[42] == OotSoul::ENEMY_THIEVES && generalOotSou
               generalOotSoulItems[92] == OotSoul::ANIMAL_BUTTERFLY &&
               generalOotSoulItems[93] == OotSoul::MISC_BUSINESS_SCRUB &&
               generalOotSoulItems[GeneralOotSoulCount - 1] == OotSoul::MISC_GS);
-inline int GeneralOotSoulIndex(OotSoul soul) {
+// Logic asks for souls constantly, so look the save bit up instead of scanning the table.
+inline constexpr std::array<int, size_t(OotSoul::COUNT)> generalOotSoulIndexOf = [] {
+    std::array<int, size_t(OotSoul::COUNT)> table{};
+    for (auto& index : table)
+        index = -1;
     for (unsigned i = 0; i < GeneralOotSoulCount; ++i)
-        if (generalOotSoulItems[i] == soul)
-            return i;
-    return -1;
+        table[size_t(generalOotSoulItems[i])] = int(i);
+    return table;
+}();
+inline int GeneralOotSoulIndex(OotSoul soul) {
+    return size_t(soul) < generalOotSoulIndexOf.size() ? generalOotSoulIndexOf[size_t(soul)] : -1;
 }
 inline bool GeneralOotSoulOwned(const GeneralOotSoulsOwnership& owned, unsigned index) {
     return index < GeneralOotSoulCount && (owned[index >> 3] & (1u << (index & 7)));
@@ -77,11 +84,24 @@ inline constexpr GeneralOotSoulOptions PublishedGeneralOotSoulOptions(bool store
     return { stored && DeriveGeneralOotSoulSwitch(enemy, npc, animal, misc), OotEnemySoulsPublic && enemy,
              OotNpcSoulsPublic && npc, OotAnimalSoulsPublic && animal, OotMiscSoulsPublic && misc };
 }
-inline bool GeneralOotSoulShuffled(const GeneralOotSoulOptions& options, unsigned index) {
-    if (!options.enabled || index >= GeneralOotSoulCount)
+inline bool GeneralOotSoulFamilyShuffled(const GeneralOotSoulOptions& options, OotSoulFamily family) {
+    if (!options.enabled)
         return false;
-    const unsigned family = GeneralOotSoulFamily(index);
-    return family == 0 ? options.enemy : family == 1 ? options.npc : family == 2 ? options.animal : options.misc;
+    switch (family) {
+        case OotSoulFamily::Enemy:
+            return options.enemy;
+        case OotSoulFamily::Npc:
+            return options.npc;
+        case OotSoulFamily::Animal:
+            return options.animal;
+        case OotSoulFamily::Misc:
+            return options.misc;
+    }
+    return false;
+}
+inline bool GeneralOotSoulShuffled(const GeneralOotSoulOptions& options, unsigned index) {
+    return index < GeneralOotSoulCount &&
+           GeneralOotSoulFamilyShuffled(options, OotSoulFamily(GeneralOotSoulFamily(index)));
 }
 inline bool HaveGeneralOotSoul(const GeneralOotSoulsOwnership& owned, const GeneralOotSoulOptions& options,
                                OotSoul soul) {

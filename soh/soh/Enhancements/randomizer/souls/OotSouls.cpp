@@ -1,4 +1,4 @@
-// OoTMM 41a2b7c0d7dbbb53fed928652f8271bc336c113f actor/soul policy, MIT.
+// OoTMM v32.3 (413573d) actor/soul policy, MIT.
 #include "OotSouls.h"
 #include "global.h"
 #include "soh/Enhancements/randomizer/logic.h"
@@ -18,20 +18,21 @@ struct NativeSoul {
     OotSoul soul;
     const char* label;
 };
-const NativeSoul generalSouls[] = {
+constexpr NativeSoul generalSouls[] = {
 #define OOT_SOUL_ITEM(item, index, soul, label) { item, index, soul, label },
 #include "OotSoulData.inc"
 #undef OOT_SOUL_ITEM
 };
-// HasItem asks for every item, so skip the scan outside the contiguous soul block.
-static_assert(RG_SOUL_MISC_GS - RG_SOUL_ENEMY_POE + 1 == std::size(generalSouls));
+// HasItem asks for every item, so the soul block must be contiguous and in save-bit order.
+constexpr bool SoulRowsFollowItemOrder() {
+    for (unsigned i = 0; i < std::size(generalSouls); ++i)
+        if (generalSouls[i].item != RG_SOUL_ENEMY_POE + i || generalSouls[i].index != i)
+            return false;
+    return RG_SOUL_MISC_GS - RG_SOUL_ENEMY_POE + 1 == std::size(generalSouls);
+}
+static_assert(SoulRowsFollowItemOrder());
 int GeneralIndex(RandomizerGet item) {
-    if (item < RG_SOUL_ENEMY_POE || item > RG_SOUL_MISC_GS)
-        return -1;
-    for (const auto& row : generalSouls)
-        if (row.item == item)
-            return row.index;
-    return -1;
+    return item >= RG_SOUL_ENEMY_POE && item <= RG_SOUL_MISC_GS ? item - RG_SOUL_ENEMY_POE : -1;
 }
 // A settings profile, seed or CVar can carry a family that has no Randomizer menu entry yet, so
 // unpublished families read as off: a stale value can never stop NPCs and enemies from spawning or
@@ -82,13 +83,8 @@ bool Has(Logic* logic, OotSoul soul) {
         return logic->HasItem(boss);
     return HaveGeneralOotSoul(Read(logic->GetSaveContext()), Options(), soul);
 }
-bool FamilyVisible(unsigned family) {
-    const auto o = Options();
-    return o.enabled && (family == 0   ? o.enemy
-                         : family == 1 ? o.npc
-                         : family == 2 ? o.animal
-                         : family == 3 ? o.misc
-                                       : false);
+bool FamilyShuffled(OotSoulFamily family) {
+    return GeneralOotSoulFamilyShuffled(Options(), family);
 }
 bool TcgSoulAccess(Logic* logic) {
     return !Enabled() || Rando::Context::GetInstance()->GetOption(RSK_SHUFFLE_CHEST_MINIGAME).Get() != 0 ||
@@ -303,40 +299,28 @@ extern "C" int Combo_OotSoulPreSpawn(void* raw, int actor, unsigned params) {
     // Runtime ownership uses the real save, independent of generator's logic save.
     const auto owned = Rando::Souls::Read(&gSaveContext);
     const auto options = Rando::Souls::Options();
-    const int aux = Rando::Souls::EvaluateOotAuxSoulPreSpawn(
-        actor,
-        CHECK_QUEST_ITEM(QUEST_KOKIRI_EMERALD) && CHECK_QUEST_ITEM(QUEST_GORON_RUBY) &&
-            CHECK_QUEST_ITEM(QUEST_ZORA_SAPPHIRE),
-        [&](Rando::Souls::OotSoul soul) { return Rando::Souls::HaveGeneralOotSoul(owned, options, soul); });
-    if (aux <= 0)
-        return -1; // pinned early auxiliary rejection never marks an enemy room deficient
+    // The auxiliary branch only tests NPC souls (Zelda's, for the Ocarina of Time), so it can block
+    // nothing unless NPC souls are shuffled.
+    if (options.npc) {
+        const int aux = Rando::Souls::EvaluateOotAuxSoulPreSpawn(
+            actor,
+            CHECK_QUEST_ITEM(QUEST_KOKIRI_EMERALD) && CHECK_QUEST_ITEM(QUEST_GORON_RUBY) &&
+                CHECK_QUEST_ITEM(QUEST_ZORA_SAPPHIRE),
+            [&](Rando::Souls::OotSoul soul) { return Rando::Souls::HaveGeneralOotSoul(owned, options, soul); });
+        if (aux <= 0)
+            return -1; // pinned early auxiliary rejection never marks an enemy room deficient
+    }
+    // Bosses stay with SoH's own boss-soul hook (hook_handlers.cpp), so these families never change
+    // how a boss spawns.
     int result = Rando::Souls::EvaluateOotSoulPreSpawn(
         actor, params, play->sceneNum, gSaveContext.linkAge == 0, gSaveContext.gameMode == GAMEMODE_END_CREDITS,
         [&](Rando::Souls::OotSoul soul) {
-            auto boss = Rando::Souls::BossItem(soul);
-            if (boss != RG_NONE)
-                return !Rando::Context::GetInstance()->GetOption(RSK_SHUFFLE_BOSS_SOULS).Get() ||
-                       Flags_GetRandomizerInf(
-                           static_cast<RandomizerInf>(Rando::StaticData::RandoGetToRandInf.at(boss)));
-            return Rando::Souls::HaveGeneralOotSoul(owned, options, soul);
+            return Rando::Souls::BossItem(soul) != RG_NONE || Rando::Souls::HaveGeneralOotSoul(owned, options, soul);
         });
     if (result == 0) {
         if (soulPlay != play || soulRoom != play->roomCtx.curRoom.num)
             Combo_OotSoulResetRoom(play);
         soulRoomBlocked = true;
-    }
-    // Pinned Actor_SpawnWrapper keeps a blocked boss's arena usable: Bongo Bongo's drum floor is
-    // otherwise only spawned by the boss itself, and Morpha's water is drained.
-    if (result <= 0) {
-        switch (actor) {
-            case ACTOR_BOSS_MO:
-                play->roomCtx.unk_74[0] = 0xFF;
-                play->colCtx.colHeader->waterBoxes[0].ySurface = -500;
-                break;
-            case ACTOR_BOSS_SST:
-                Actor_Spawn(&play->actorCtx, play, ACTOR_BG_SST_FLOOR, -50.0f, 0.0f, 0.0f, 0, 0, 0, 0);
-                break;
-        }
     }
     return result;
 }

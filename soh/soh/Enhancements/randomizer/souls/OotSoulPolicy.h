@@ -1,4 +1,4 @@
-// Adapted exactly from OoTMM 41a2b7c0d7dbbb53fed928652f8271bc336c113f oot/actors.c; MIT.
+// Adapted exactly from OoTMM v32.3 (413573d) packages/generator/src/oot/actors.c:19-364; MIT.
 #pragma once
 #include "z64actor_enum.h"
 #ifdef OOT_SOUL_POLICY_HOST_ENUMS
