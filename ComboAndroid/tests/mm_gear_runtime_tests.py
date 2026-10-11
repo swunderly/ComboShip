@@ -110,8 +110,27 @@ check(squash('static constexpr RandoOptionId kComboMmGearOptions[] = { RO_MM_BOO
              'RO_MM_TUNIC_GORON, RO_MM_TUNIC_ZORA };') in squash(benport), 'kComboMmGearOptions')
 hidden = re.search(r'kComboHiddenAdultMmOptions\[\]\s*=\s*\{([^}]*)\}', benport)
 check(hidden is not None and not any(o in hidden.group(1) for o in GEAR), 'gear is still hidden with the adult options')
-check('returnsMmGearHeadlessGeneration||(Combo_MM_GearIntegrationEnabled()&&Combo_MM_GearResourcesReady());'
+# The headless generator follows the release switch too, so reverting the switch commit stops gear seeds everywhere.
+check('returnCombo_MM_GearIntegrationEnabled()&&(sMmGearHeadlessGeneration||Combo_MM_GearResourcesReady());'
       in body(benport, 'extern "C" int Combo_MM_GearOptionReady(void)'), 'Combo_MM_GearOptionReady')
+# A seed that adds gear this device cannot run is not loaded and no file is made from it (the new MM save would drop
+# the gear its placement may need); loading an existing save is never refused.
+check('returnCombo_MM_GearOptionsAllowed(swimShuffled);'
+      in body(benport, 'extern "C" COMBO_EXPORT int MM_GearOptionsAllowed(int swimShuffled)'), 'MM_GearOptionsAllowed export')
+combo = read('combo/ComboShip.cpp')
+check('MM_GearOptionsAllowed=(int(*)(int))GetSym(mmModule,"MM_GearOptionsAllowed");' in squash(combo),
+      'the combo layer does not bind MM_GearOptionsAllowed')
+needs = body(combo, 'static bool SeedNeedsUnavailableMmGear(const nlohmann::json& seed)')
+check('ComboRando::ReadGearRules(seed.value("gearRules",nlohmann::json()),gear);' in needs
+      and '!(MM_GearOptionsAllowed&&MM_GearOptionsAllowed(0))' in needs, 'SeedNeedsUnavailableMmGear')
+reload = body(combo, 'static int Combo_OnReloadRequestImpl(')
+check('if(SeedNeedsUnavailableMmGear(j)){' in reload
+      and reload.index('if(SeedNeedsUnavailableMmGear(j)){') < reload.index('RestoreGameplayRules('),
+      'a seed with gear this device cannot run is loaded')
+create = body(combo, 'static void Combo_OnOOTSaveInit(int fileNum)')
+check('if(!seed.is_null()&&SeedNeedsUnavailableMmGear(seed)){' in create
+      and create.index('SeedNeedsUnavailableMmGear(seed)') < create.index('MM_InitRandoSaveFile('),
+      'a file is made from a seed with gear this device cannot run')
 zero = 'if(!Combo_MM_GearOptionReady())for(constautoid:kComboMmGearOptions)'
 # Option gathering also leaves the gear out of Swim-shuffled seeds (mm_gear_swim_shuffle_tests.py); a new MM save keeps
 # its seed's gear wherever the device can run it.

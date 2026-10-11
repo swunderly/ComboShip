@@ -15,7 +15,7 @@ Release gate: checks 2 to 7 must pass on a phone before a release ships with the
 9. On a seed without the gear: lily pads sink as before, Link's tunic and sword and shield colours are unchanged, and the MM tunic colour setting still works. A seed with your usual settings generates, and existing seeds and saves load.
 10. Optional: with "Stone Tower Updrafts without Deku Mask" on and no gear, the seed may expect the Inverted Stone Tower Temple east middle chest and the two updraft bridge pots without the Deku Mask.
 
-If the release-switch commit is reverted: the four MM rows are greyed out with the "cannot run" tooltip, and generated seeds contain no MM boots or tunics.
+If the release-switch commit is reverted: the four MM rows are greyed out with the "cannot run" tooltip, and generated seeds contain no MM boots or tunics. Dropping a seed that adds them (made by a build with the switch on) plays the error sound and does not load it.
 
 ## Quick checks for Din's Fire (MM) and Nayru's Love (MM) (0.4.1)
 

@@ -2110,7 +2110,10 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
 - **Readiness gate.** Where the gear runtime is not released or cannot prepare its resources, the four Cross-Game
   Items rows show unticked and greyed out (the stored preference is kept), the Save Editor does not offer the gear,
   and every place that gathers options zeroes them (`kComboMmGearOptions`), as for the MM spells. The headless
-  generator generates as a ready device would. Each seed binds its four options (`gearRules`, like `spellRules`).
+  generator generates as a ready device would, but only while the release switch is on. Each seed binds its four
+  options (`gearRules`, like `spellRules`). A new MM save drops gear the device cannot run, so a seed whose
+  `gearRules` add gear is not loaded on such a device (a dropped file plays the error sound) and no file is made from
+  it (`SeedNeedsUnavailableMmGear`); that is file creation, so the load policy above is unaffected.
 - **Tunic colour.** MM's human display lists colour the tunic with PRIM (30,105,27), which 2S2H's Link tunic
   cosmetic replaces. OoTMM instead patches the 11 tunic combiners to use ENV (`actors/Player.S:891-945`), sets the
   env colour before the skeleton and patches the sword/shield lists that set ENV themselves (`:948-1215`). The port

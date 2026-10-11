@@ -467,6 +467,16 @@ static int (*MM_AdultRuntimeReady)() = nullptr;
 static bool EffectiveCrossAge(const ComboRando::FaroreRules& rules) {
     return rules.crossAge && MM_AdultRuntimeReady && MM_AdultRuntimeReady();
 }
+static int (*MM_GearOptionsAllowed)(int) = nullptr;
+// A seed that adds MM boots or tunics needs MM's gear runtime. A new MM save drops gear this device cannot run
+// (BenPort.cpp MM_InitRandoSaveFile) while the seed's placement may need it, so such a seed is not loaded and no file
+// is made from it. Loading an existing save is never refused; its gear just stays off.
+static bool SeedNeedsUnavailableMmGear(const nlohmann::json& seed) {
+    ComboRando::GearRules gear;
+    ComboRando::ReadGearRules(seed.value("gearRules", nlohmann::json()), gear);
+    return (gear.bootsIronMm || gear.bootsHoverMm || gear.tunicGoronMm || gear.tunicZoraMm) &&
+           !(MM_GearOptionsAllowed && MM_GearOptionsAllowed(0));
+}
 static void (*SOH_SetSongArrival)(int) = nullptr, (*MM_SetSongArrival)(int) = nullptr;
 static int (*MM_SetNativeSpellIntegrationReady)(int, void (*)()) = nullptr;
 static void InvalidateNativeSpellIntegration() {
@@ -3372,6 +3382,10 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
         return 0;
     }
     try {
+        if (SeedNeedsUnavailableMmGear(j)) {
+            std::cerr << "[ComboShip] reload: the seed adds MM boots or tunics, which this device cannot run\n";
+            return 0;
+        }
         const auto catalog = ComboRando::ReadKokiriCatalogRevisions(j.value("oot", nlohmann::json::object()));
         ComboRando::KokiriSeedRevisionScope kokiriRevision(SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision,
                                                            catalog.invisibleRupees);
@@ -3606,6 +3620,11 @@ static void Combo_OnOOTSaveInit(int fileNum) {
         try {
             seed = nlohmann::json::parse(g_ConsolidatedJson);
         } catch (...) {}
+        if (!seed.is_null() && SeedNeedsUnavailableMmGear(seed)) {
+            std::cerr << "[ComboShip] Save creation rejected: the seed adds MM boots or tunics this device cannot "
+                         "run\n";
+            return;
+        }
         if (seed.is_null() || !InstallEntranceSeed(seed)) {
             std::cerr << "[ComboShip] Save creation rejected unsupported MM entrance layout\n";
             return;
@@ -4377,6 +4396,7 @@ int main(int argc, char** argv) {
     SOH_ConfigureFaroreRules = (void (*)(int, int))GetSym(sohModule, "SOH_ConfigureFaroreRules");
     MM_ConfigureFaroreRules = (void (*)(int, int, int))GetSym(mmModule, "MM_ConfigureFaroreRules");
     MM_AdultRuntimeReady = (int (*)())GetSym(mmModule, "MM_AdultRuntimeReady");
+    MM_GearOptionsAllowed = (int (*)(int))GetSym(mmModule, "MM_GearOptionsAllowed");
     if (auto set = (void (*)(FaroreDestination, FaroreSync))GetSym(sohModule, "SOH_SetFaroreBridge"))
         set(Combo_FaroreMmDestination, Combo_FaroreSyncMm);
     if (auto set = (void (*)(int (*)(int), FaroreDestination))GetSym(mmModule, "MM_SetFaroreBridge"))

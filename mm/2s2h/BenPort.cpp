@@ -6161,10 +6161,11 @@ extern "C" int Combo_MM_GearActive(void) {
     return Combo_MM_GearResourcesReady();
 }
 // A seed must not need gear this device cannot use: without the released runtime and its resources the menu greys
-// the gear options out and options are gathered with them off (kComboMmGearOptions), as for the MM spells.
+// the gear options out and options are gathered with them off (kComboMmGearOptions), as for the MM spells. The
+// headless generator follows the release switch too, so turning it off stops gear seeds everywhere.
 static bool sMmGearHeadlessGeneration = false;
 extern "C" int Combo_MM_GearOptionReady(void) {
-    return sMmGearHeadlessGeneration || (Combo_MM_GearIntegrationEnabled() && Combo_MM_GearResourcesReady());
+    return Combo_MM_GearIntegrationEnabled() && (sMmGearHeadlessGeneration || Combo_MM_GearResourcesReady());
 }
 // Any gear option switches on the pinned OoTMM graphs, which read can_swim as true and count the Zora Mask as swimming
 // (macros_mm.yml:83, :258) because OoTMM's no-scale water check spares every non-human form (bronze_scale.c:53-66).
@@ -6173,9 +6174,14 @@ extern "C" int Combo_MM_GearOptionReady(void) {
 extern "C" int Combo_MM_GearOptionsAllowed(int swimShuffled) {
     return Combo_MM_GearOptionReady() && !swimShuffled;
 }
-// The headless generator has no game runtime; it generates as a device that can use the gear.
+// The headless generator has no game runtime; it generates as a device that can use the released gear.
 extern "C" void Combo_MM_GearForHeadlessGeneration(void) {
     sMmGearHeadlessGeneration = true;
+}
+// The combo layer asks before it loads a seed that adds the gear, or makes a file from one (ComboShip.cpp
+// SeedNeedsUnavailableMmGear): a new MM save drops gear this device cannot run (MM_InitRandoSaveFile).
+extern "C" COMBO_EXPORT int MM_GearOptionsAllowed(int swimShuffled) {
+    return Combo_MM_GearOptionsAllowed(swimShuffled);
 }
 // The combo layer ANDs a seed's faroreRules.crossAge with this before configuring either engine's Farore
 // runtime or preflighting an entrance, so they agree with the MM save and oracle (RO_MM_CROSS_AGE kept off).
