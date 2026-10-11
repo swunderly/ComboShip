@@ -133,6 +133,59 @@ check('if(*Combo_MM_HumanFaceRow(i)!=Combo_MM_CrossAgeFaceTexture(i)){sComboChil
 check(sum(1 for line in read('mm/2s2h/Enhancements/GfxPatcher/PlayerCustomFlipbooks.cpp').splitlines()
           if 'PLAYER_FORM_HUMAN' in line) == 0, 'custom flipbooks now write the human face rows')
 
+# ---- Readiness and the release switch (plan F5b 5b-8, 5b-9 runtime half, 5b-11).
+benport = read('mm/2s2h/BenPort.cpp')
+
+
+def body(source, signature):
+    """Text of the definition that starts at signature, up to its matching brace (whitespace removed)."""
+    m = re.search(re.escape(signature) + r'[^;{]*\{', source)
+    at, depth, i = m.start(), 0, m.end() - 1
+    while True:
+        depth += (source[i] == '{') - (source[i] == '}')
+        i += 1
+        if depth == 0:
+            return squash(source[at:i])
+
+
+check('staticconstexprboolkCrossAgeRuntimeComplete=false;' in squash(benport),
+      'the Cross-Games Age runtime switch is not off (the merge step turns it on in its own commit)')
+check('#ifdefCOMBO_ADULT_MM_RUNTIME_DIAGNOSTICS' in body(benport, 'static int Combo_MM_CrossAgeRuntimeEnabled(void)') and
+      'returnkCrossAgeRuntimeComplete||CVarGetInteger("gCombo.Debug.CrossAgeRuntimeValidation",0);#else'
+      'returnkCrossAgeRuntimeComplete;#endif' in body(benport, 'static int Combo_MM_CrossAgeRuntimeEnabled(void)'),
+      'diagnostics switch')
+check(body(benport, 'extern "C" int Combo_MM_CrossAgeReady(void)') ==
+      squash('extern "C" int Combo_MM_CrossAgeReady(void) { return Combo_MM_CrossAgeRuntimeEnabled() && '
+             'Combo_MM_CrossAgeModelReady(); }'), 'Combo_MM_CrossAgeReady')
+check('Combo_MM_CrossAgeReady()' in body(benport, 'extern "C" int Combo_MM_CrossAgeOptionReady(void)') and
+      'returnCombo_MM_CrossAgeOptionReady();' in body(benport, 'extern "C" COMBO_EXPORT int MM_CrossAgeOptionReady(void)'),
+      'the menu export MM_CrossAgeOptionReady does not follow Combo_MM_CrossAgeReady')
+check('MM_AdultRuntimeReady' not in benport and 'COMBO_EXPORT int MM_CrossAgeReady(' not in benport,
+      'Cross-Games Age has one readiness export (MM_CrossAgeOptionReady)')
+linkadult = body(benport, 'extern "C" int Combo_MM_IsLinkAdult(void)')
+check('ComboAdultMM::IsCrossAgeAdult(gSaveContext.save)' in linkadult and 'returnCombo_MM_CrossAgeReady();' in linkadult
+      and 'AdultResourcesReady' not in linkadult, 'Combo_MM_IsLinkAdult is not seed crossAge && adult && ready')
+check(body(read('mm/2s2h/ComboAdultMM.h'), 'inline bool IsCrossAgeAdult(const Save& save)') ==
+      squash('inline bool IsCrossAgeAdult(const Save& save) { return '
+             'save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE] && IsAdult(save); }'), 'IsCrossAgeAdult')
+# The readiness answers before MM has booted: OoT's side needs nothing from MM's manager.
+check('Get("mm")' not in body(loader, 'inline bool LoadAdultOotModel()') and
+      body(loader, 'extern "C" int Combo_MM_CrossAgeModelReady(void)') ==
+      squash('extern "C" int Combo_MM_CrossAgeModelReady(void) { return ComboAdultMM::LoadAdultOotModel() && '
+             '!ComboAdultMM::AdultMmFailed(); }'), 'the model readiness depends on MM\'s manager')
+# Resource safety (plan F5b 1.8): the OoT skeleton loads only inside a scope that makes OoT's manager active, types are
+# compared by tag, and OoT's cached limbs are only read.
+oot_load = body(loader, 'inline bool LoadAdultOotModel()')
+check('{Ship::ResourceManagerScopescope(oot);skeleton=oot->LoadResourceProcess(kAdultSkeleton);}' in oot_load,
+      'the OoT skeleton is loaded outside a scope on OoT\'s manager')
+loader_code = re.sub(r'//.*', '', loader)
+check(loader_code.count('LoadResourceProcess(kAdultSkeleton)') == 1 and 'dynamic_cast' not in loader_code and
+      'dynamic_pointer_cast' not in loader_code, 'the loader loads the skeleton twice or casts across modules')
+check('constLodLimb*' in oot_load and 'sAdultShadowLimbs.data()' in oot_load, 'the shadow skeleton is not MM\'s own')
+check(body(loader, 'inline void DropAdultOotModel()').index('Combo_MM_RestoreChildModelTables();') <
+      body(loader, 'inline void DropAdultOotModel()').index('sAdultOotPins.clear();'),
+      'teardown drops resources before restoring the child tables')
+
 # The loader's lists, in slot order, and its composites (plan F5b 1.3).
 enum = re.search(r'typedef enum ComboAdultOotSlot \{(.*?)\} ComboAdultOotSlot;', slots_src, re.S).group(1)
 order = [e.split('=')[0].strip().replace('COMBO_ADULT_', '') for e in re.sub(r'//[^\n]*', '', enum).split(',')

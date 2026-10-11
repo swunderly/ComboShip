@@ -214,21 +214,21 @@ check(0 < entry.find('if(MM_LOGIC_STONE_TOWER_PINNED&&entrance==ENTRANCE(STONE_T
       'randoRegionId==RR_MM_STONE_TOWER_FRONT_OF_TEMPLE)continue;' in entry,
       'GetRegionIdFromEntrance must pick the Stone Tower temple arrival per call and keep it out of its cache')
 
-# ---- 5b-9 (seed half): readiness. The release switch and OoT's adult model (looked up at run time, absent = not ready,
-# no MM resource manager needed) decide whether a new seed may turn Cross-Games Age on; every place options are
-# gathered uses that, except a bound seed's own value; the headless generator follows the release switch alone.
+# ---- 5b-9 (seed half): readiness. The release switch and OoT's adult model (no MM resource manager needed) decide
+# whether a new seed may turn Cross-Games Age on; every place options are gathered uses that, except a bound seed's own
+# value; the headless generator follows the release switch alone.
 benport = read('mm/2s2h/BenPort.cpp')
 check('staticconstexprboolkCrossAgeRuntimeComplete=' in squash(benport), 'no kCrossAgeRuntimeComplete release switch')
-check('returnkCrossAgeRuntimeComplete;' in body(benport, 'static int Combo_MM_CrossAgeIntegrationEnabled(void)'),
+check('returnkCrossAgeRuntimeComplete;' in body(benport, 'static int Combo_MM_CrossAgeRuntimeEnabled(void)'),
       'the Cross-Games Age runtime does not follow its release switch')
+check(squash(benport).count('kCrossAgeRuntimeComplete=') == 1, 'Cross-Games Age must have one release switch')
 ready = body(benport, 'extern "C" int Combo_MM_CrossAgeReady(void)')
-check(ready.startswith('extern"C"intCombo_MM_CrossAgeReady(void){if(!Combo_MM_CrossAgeIntegrationEnabled())return0;') and
-      'Combo_ResolveSym("2ship","Combo_MM_CrossAgeModelReady")' in ready and
-      ready.endswith('returnmodelReady&&modelReady();}'),
-      'Combo_MM_CrossAgeReady must need the release switch and the model loader, a missing loader reading as not ready')
+check(ready.startswith('extern"C"intCombo_MM_CrossAgeReady(void){returnCombo_MM_CrossAgeRuntimeEnabled()&&') and
+      'Combo_MM_CrossAgeModelReady()' in ready,
+      'Combo_MM_CrossAgeReady must need the release switch and the OoT adult model')
 for banned in ('CrossRMRegistry', 'ResourceManager', 'gPlayState', 'AdultResourcesReady'):
     check(banned not in ready, f'Combo_MM_CrossAgeReady must not use {banned}')
-check('returnCombo_MM_CrossAgeIntegrationEnabled()&&(sCrossAgeHeadlessGeneration||Combo_MM_CrossAgeReady());' in
+check('returnCombo_MM_CrossAgeRuntimeEnabled()&&(sCrossAgeHeadlessGeneration||Combo_MM_CrossAgeReady());' in
       body(benport, 'extern "C" int Combo_MM_CrossAgeOptionReady(void)'), 'Combo_MM_CrossAgeOptionReady differs')
 check('returnCombo_MM_CrossAgeOptionReady();' in body(benport, 'extern "C" COMBO_EXPORT int MM_CrossAgeOptionReady(void)'),
       'MM_CrossAgeOptionReady must export the option readiness')

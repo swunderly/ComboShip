@@ -6131,37 +6131,37 @@ extern "C" int Combo_MM_AdultResourcesReady(void) {
            Combo_MM_HoverCircleResourcesReady() && Combo_MM_AdultGearIconsReady() && Combo_MM_AdultGearGiReady() &&
            ComboAdultMM::BuildAdultHybridSequence();
 }
-// Human Link is adult only while the whole Adult Link in MM runtime is integrated and ready.
-extern "C" int Combo_MM_IsLinkAdult(void) {
-    return Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady();
-}
 // Cross-Games Age (OoTMM crossAge, data.ts:1504-1511) draws adult Link in MM with OoT's own adult model from the OoT
-// archive (plan F5b 5b-1). Release switch, set in its own commit: turn it off again if the on-phone adult checks fail.
+// archive (plan F5b 5b-1) and needs none of the Adult Mask, hybrid voice or importer resources above. Release switch,
+// set in its own commit: turn it off again if the on-phone adult checks fail.
 static constexpr bool kCrossAgeRuntimeComplete = false;
-static int Combo_MM_CrossAgeIntegrationEnabled(void) {
+static int Combo_MM_CrossAgeRuntimeEnabled(void) {
 #ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
-    // The private diagnostic build validates it with the same default-off switch as the adult runtime.
-    return kCrossAgeRuntimeComplete || CVarGetInteger("gCombo.Debug.AdultMmRuntimeValidation", 0);
+    // Emulator runs of a diagnostics build switch it on with a default-off debug CVar (plan F5b 5b-8).
+    return kCrossAgeRuntimeComplete || CVarGetInteger("gCombo.Debug.CrossAgeRuntimeValidation", 0);
 #else
     return kCrossAgeRuntimeComplete;
 #endif
 }
-// Whether this device can draw adult Link in MM: the released runtime and OoT's adult model prepared for MM. The model
-// loader (extern "C" COMBO_EXPORT int Combo_MM_CrossAgeModelReady(void), F5b 5b-1) is looked up at run time, and a
-// build without it is not ready. Nothing here needs MM's resource manager, so the menu can ask before MM has booted.
+// This device can run Cross-Games Age: the runtime is released and OoT's adult model is in OoT's archive. It needs
+// nothing from MM's manager, so the menu can ask before MM has booted. New seeds leave the option off where it is
+// false; a save with it on still loads, and Link is drawn as child.
 extern "C" int Combo_MM_CrossAgeReady(void) {
-    if (!Combo_MM_CrossAgeIntegrationEnabled())
+    return Combo_MM_CrossAgeRuntimeEnabled() && Combo_MM_CrossAgeModelReady();
+}
+// Human Link is adult as in OoTMM (comboIsLinkAdult, common/util.c:74-81): a Cross-Games Age seed with adult Link's
+// age saved, on a device that can draw him. Every adult runtime branch asks this.
+extern "C" int Combo_MM_IsLinkAdult(void) {
+    if (gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2 || !ComboAdultMM::IsCrossAgeAdult(gSaveContext.save))
         return 0;
-    static const auto modelReady =
-        reinterpret_cast<int (*)(void)>(Combo_ResolveSym("2ship", "Combo_MM_CrossAgeModelReady"));
-    return modelReady && modelReady();
+    return Combo_MM_CrossAgeReady();
 }
 // A new seed turns Cross-Games Age on only where it can run (Combo_MM_ClearUnavailableOptions); a seed that has it
 // keeps it (its logic), and on a device without the model Link is drawn as child. The headless generator has no game
 // runtime and follows the release switch alone, as for the gear.
 static bool sCrossAgeHeadlessGeneration = false;
 extern "C" int Combo_MM_CrossAgeOptionReady(void) {
-    return Combo_MM_CrossAgeIntegrationEnabled() && (sCrossAgeHeadlessGeneration || Combo_MM_CrossAgeReady());
+    return Combo_MM_CrossAgeRuntimeEnabled() && (sCrossAgeHeadlessGeneration || Combo_MM_CrossAgeReady());
 }
 extern "C" void Combo_MM_CrossAgeForHeadlessGeneration(void) {
     sCrossAgeHeadlessGeneration = true;

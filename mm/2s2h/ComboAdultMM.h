@@ -59,6 +59,11 @@ inline PlayerAgeProperties BuildAdultProperties() {
 inline bool IsAdult(const Save& save) {
     return save.shipSaveInfo.adultMm.enabled && save.linkAge == 0;
 }
+// Adult in MM as OoTMM's comboIsLinkAdult (common/util.c:74-81): Cross-Games Age on in the seed and adult Link's age
+// saved. adultMm.enabled keeps legacy saves child, which store linkAge 0 for child.
+inline bool IsCrossAgeAdult(const Save& save) {
+    return save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE] && IsAdult(save);
+}
 inline void InitializeLoadouts(ComboAdultMmSave& state) {
     state.initialized = 1;
     for (auto& x : state.loadouts) {
