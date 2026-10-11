@@ -575,6 +575,8 @@ bool HasUsableBottle();
     ComboRando::FaroreOracle::CanUse(                                                              \
         RANDO_SAVE_OPTIONS[RO_MM_SPELL_WIND], HAS_MAGIC, RANDO_SAVE_OPTIONS[RO_SHARED_SPELL_WIND], \
         gSaveContext.save.shipSaveInfo.faroresWind.owned, gSaveContext.save.shipSaveInfo.faroresWind.owned)
+// OoTMM macros_mm.yml:182 can_use_fire_short_range = can_use_fire_arrows || can_use_din.
+#define CAN_USE_FIRE_SHORT_RANGE (CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_DINS_FIRE)
 // Shared and local Wind pickups converge into the same native owned byte through GiveItem.
 #define CAN_USE_GBT_GEYSER                                                                             \
     ComboRando::FaroreOracle::GbtGeyser(COMBO_MM_TRICK("GbtCentralGeyser"), CAN_USE_MAGIC_ARROW(FIRE), \
@@ -585,6 +587,7 @@ bool HasUsableBottle();
      (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) || \
       (CAN_PLAY_SONG(SOARING) && CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE)) || CAN_USE_FARORE))
 #else
+#define CAN_USE_FIRE_SHORT_RANGE CAN_USE_MAGIC_ARROW(FIRE)
 #define CAN_BRING_HOT_WATER_NORTH CAN_ACCESS(HOT_SPRING_WATER)
 #endif
 #define CAN_GROW_BEAN_PLANT      \
@@ -1230,8 +1233,8 @@ inline bool CanKillEnemy(ActorId EnemyId, unsigned actorParams = 0) {
         case ACTOR_EN_DEKUBABA: // Neck bending Deku Baba
             return (CAN_USE_SWORD || CAN_BE_DEKU || CAN_BE_GORON || CAN_BE_ZORA || CAN_USE_BOW || CAN_USE_EXPLOSIVE ||
                     CAN_USE_STICKS);
-        case ACTOR_OBJ_SNOWBALL: // Large Snowball
-            return (CAN_USE_EXPLOSIVE || CAN_BE_GORON || CAN_USE_MAGIC_ARROW(FIRE));
+        case ACTOR_OBJ_SNOWBALL: // Large Snowball: OoTMM macros_mm.yml:183 can_break_snowballs
+            return (CAN_USE_EXPLOSIVE || CAN_BE_GORON || CAN_USE_FIRE_SHORT_RANGE);
         case ACTOR_EN_AM: // Armos
             return (CAN_USE_SWORD || CAN_BE_GORON || CAN_BE_ZORA || CAN_BE_DEKU || CAN_USE_EXPLOSIVE);
         case ACTOR_EN_VM: // Beamos
