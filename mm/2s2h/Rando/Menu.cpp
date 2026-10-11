@@ -1102,7 +1102,9 @@ static void DrawItemPoolTab(int section = 0) {
 #ifdef COMBO_BUILD
         UIWidgets::BeginCard("itemPoolCrossGame");
         ImGui::SeparatorText("Cross-Game Items");
+        ItemPoolCheckbox("Din's Fire (MM)", RO_MM_SPELL_FIRE, "Adds Din's Fire in Majora's Mask.", 1);
         ItemPoolCheckbox("Farore's Wind (MM)", RO_MM_SPELL_WIND, "Adds Farore's Wind in Majora's Mask.", 1);
+        ItemPoolCheckbox("Nayru's Love (MM)", RO_MM_SPELL_LOVE, "Adds Nayru's Love in Majora's Mask.", 1);
         UIWidgets::EndCard();
 #endif
 
