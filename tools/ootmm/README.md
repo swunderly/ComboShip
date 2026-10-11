@@ -13,6 +13,7 @@ python tools/ootmm/export_registry.py --reference /path/to/ootmm-stable-32.3
 python tools/ootmm/export_grotto_context.py --reference /path/to/ootmm-stable-32.3
 python tools/ootmm/export_registry.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_grotto_context.py --reference /path/to/ootmm-stable-32.3 --check
+python tools/ootmm/export_entrance_settings.py --reference /path/to/ootmm-stable-32.3 --check
 ```
 
 `--output-root` defaults to this repository and can point at a scratch directory.
@@ -51,3 +52,17 @@ export reproducibility with wrong-pin and stale-output rejection. The reference
 test uses `COMBO_OOTMM_REFERENCE` or discovers `references/ootmm-stable-32.3` in an
 ancestor directory. It reports an explicit skip when that optional checkout is
 absent; compiled metadata and legacy-route checks still run.
+
+The independent settings exporter reads the same pinned revision's
+`packages/core/src/settings/data.ts`. It writes `OotmmSettingsData.inc` and the
+`ootmm-32.3-entrance-settings.json` host fixture; omit `--check` to regenerate them.
+Its optional destination flag is `--root`. The fixture retains all 44 reference
+rows, while the hidden C++ catalog contains the 40 in-scope settings. Warp songs,
+soaring spots and altered Lost Woods exits stay deferred. Every capability bit
+is off, so the guarded reader cannot enable an unfinished pool. This model is
+preparation for later menu/profile/headless integration, not a new public menu.
+
+`entrance_hidden_settings_reference_parity` compares compiled names, descriptions,
+choices and stable enum values with the fixture and evaluates 1,288 normalization
+cases against the original reference conditions. It also verifies that correcting
+the shared default booleans preserves the private v1 helper's existing pools.
