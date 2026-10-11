@@ -12,6 +12,24 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## Unreleased
+
+- **New options: Din's Fire (MM) and Nayru's Love (MM)**, under Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items, next to Farore's Wind (MM), with OoTMM v32.3's names and descriptions. Each adds the OoT spell to MM's item pool; it is cast from its trade slot like Farore's Wind. Both are off by default.
+  - **Shared Din's Fire** and **Shared Nayru's Love** (Randomizer > Shared items) make one spell count in both games. As in OoTMM, each stays greyed out and unticked until its MM option is on. Every shared item now shows OoTMM's description.
+  - MM logic counts the spells where OoTMM does. Din's Fire works as short-range fire (Snowhead Temple, the Goron Village keg trial and crate, Ikana Castle, the Beneath the Well Mirror Shield, the Termina Field icicles and more), breaks large snowballs and can defeat the swamp's Big Octo. Nayru's Love lets you cross the poisoned swamp water with Swim, and opens OoTMM's routes to the Deku Shrine, Deku Palace, Woodfall and in Ikana Castle.
+  - With Nayru's Love (MM) on, a seed uses OoTMM's own layout for Deku Palace, the Southern Swamp, Woodfall and Ikana Castle, so a few other requirements there follow OoTMM too. For example, Ikana Castle's second-room pots need the Deku Mask, and a few swamp spots no longer accept wading as Goron (when Swim is shuffled and not found) or as Fierce Deity (with its logic rule on).
+  - New tricks with OoTMM's names, off by default: "Burn Igos' curtain with Din's Fire" and "Light the Zora Hall Stage Lights using Din's Fire, Bow, and Hookshot".
+  - The item tracker's Trade Items group shows the MM spells, on seeds that add them.
+- **MM logic follows OoTMM v32.3 in more places**, whatever the options:
+  - The Oceanside Spider House library needs arrows or Deku Sticks, so plain arrows now count.
+  - The Snowhead Temple Pillars Room chest needs you to defeat its Freezard (and its soul, with enemy souls on); the pots there are free.
+  - Fire Arrows also reach the Woodfall Temple main room's upper ledge from below, and open the Snowhead Temple icicle room chest.
+  - Once Snowhead is cleared, its blizzard no longer blocks the way to the temple.
+  - The logic behind the hidden Cross-Games Age and MM boots and tunic options also follows v32.3 now; current seeds cannot turn those on.
+
+Tested:
+- 73 automated host tests pass (3 are skipped on Windows). They check the MM spell settings, shared items, tricks and every spell logic site against OoTMM v32.3, and compare, for every combination of items, what a Nayru's Love seed can reach in the swamp, Deku Palace, Woodfall and Ikana Castle against the previous logic. The MM spell changes have not been built into an APK, generated or played on the emulator, or tried on a phone yet.
+
 ## 0.4.0 - 2026-10-11
 
 - **New option: Enemy Souls (OoT)**, under Items & checks > OoT > Item pool, copied from OoTMM v32.3 with its description. It adds a soul for each of the 43 kinds of OoT enemy to the item pool, and an enemy does not appear until you find its soul. A Plentiful item pool adds second copies of souls as far as there are free checks, the way SoH treats its other Plentiful extras (OoTMM always adds a second copy of each). It is off by default and not in any preset yet.

@@ -1,5 +1,15 @@
 # Device validation still required
 
+## Quick checks for Din's Fire (MM) and Nayru's Love (MM) (unreleased)
+
+1. Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items lists **Din's Fire (MM)**, **Farore's Wind (MM)** and **Nayru's Love (MM)** in that order, each with OoTMM's tooltip. Under Randomizer > Shared items, **Shared Din's Fire** and **Shared Nayru's Love** are greyed out and unticked until their MM option is ticked. Search finds "Din's Fire (MM)".
+2. Generate a seed with both MM spells on and their shared options off, and start a new file. Find both spells in MM. Din's Fire should light a torch and melt ice or a large snowball; Nayru's Love should block damage and last through a scene change. Both use magic, and only human Link can cast them. Use the trade-slot cycling to switch between the Deed and Couple items and the spells.
+3. In the Southern Swamp with Swim, cast Nayru's Love and swim through the poisoned water: you should take no damage while it lasts.
+4. With **Shared Din's Fire** on: pick up Din's Fire in OoT, then go to MM: MM's Deed slot holds it. Repeat once starting with the MM copy.
+5. An MM spell placed in an OoT chest shows the spinning OoT spell model, not a blue rupee.
+6. Add the **Trade Items** group to the item tracker: the spell rows show only on this seed and light up after pickup. A save from 0.3.11 or earlier loads with no spell rows and no new items.
+7. With the trick **Burn Igos' curtain with Din's Fire** on, stand at the top of the stairs next to Igos' throne and cast Din's Fire: the left curtain should burn.
+
 ## Quick checks for OoT Enemy Souls (unreleased)
 
 1. Items & checks > OoT > Item pool shows **Enemy Souls (OoT)** with OoTMM's tooltip, and "Complete OoT Soul Compatibility" appears nowhere. Tick it, then turn on Enhancements > Enemy Randomizer: the option unticks and greys out with "Disabled because Enemy Randomizer is on." Turn Enemy Randomizer off again.
