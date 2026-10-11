@@ -1,7 +1,7 @@
 #pragma once
 // Pinned Player.c custom boot table and runtime register application.
 enum{COMBO_CUSTOM_BOOTS_IRON=1,COMBO_CUSTOM_BOOTS_HOVER=2};
-int Combo_MM_IsAdult(void);int Combo_MM_AdultResourcesReady(void);
+int Combo_MM_IsLinkAdult(void);int Combo_MM_GearActive(void);
 static s16 sComboAdultBootData[7][18] = {
     /* Child Link - Iron Boots */
     { 200, 1000, 300, 700, 550, 270, 1000, 0, 120, 800, 300, -160, 600, 590, 750, 125, 200, 130 },
@@ -28,17 +28,20 @@ static s16 sComboAdultBootData[7][18] = {
 void Combo_MM_AdultCheckBoots(PlayState* play)
 {
     Player* player = GET_PLAYER(play);
-    if(!gSaveContext.save.shipSaveInfo.adultMm.enabled||!Combo_MM_AdultResourcesReady()||player->actor.id!=ACTOR_PLAYER)return;
+    // Custom boots are gear; the adult row without boots belongs to Adult Link in MM.
+    const s32 gear = Combo_MM_GearActive();
+    if((!gear&&!Combo_MM_IsLinkAdult())||player->actor.id!=ACTOR_PLAYER)return;
     if(gSaveContext.save.shipSaveInfo.adultMm.boots>2)return;
     if (player->transformation == PLAYER_FORM_HUMAN)
     {
-        s32 isAdult = Combo_MM_IsAdult();
+        s32 isAdult = Combo_MM_IsLinkAdult();
+        const s32 boots = gear ? gSaveContext.save.shipSaveInfo.adultMm.boots : 0;
         player->actor.flags &= ~ACTOR_FLAG_CAN_PRESS_HEAVY_SWITCHES;
         player->actor.flags |= ACTOR_FLAG_CAN_PRESS_SWITCHES;
 
-        if (gSaveContext.save.shipSaveInfo.adultMm.boots > 0 || isAdult)
+        if (boots > 0 || isAdult)
         {
-            s32 currentBoots = gSaveContext.save.shipSaveInfo.adultMm.boots;
+            s32 currentBoots = boots;
             s16* bootRegs;
 
             REG(27) = 2000;

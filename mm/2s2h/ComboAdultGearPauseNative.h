@@ -35,8 +35,7 @@ inline u8 GearPauseNextItem(int slot) {
 } // namespace ComboAdultMM
 
 extern "C" int Combo_MM_AdultGearPauseTick(PlayState* play, int slot) {
-    if (!play || gSaveContext.fileNum > 2 || !gSaveContext.save.shipSaveInfo.adultMm.enabled ||
-        !Combo_MM_AdultResourcesReady())
+    if (!play || gSaveContext.fileNum > 2 || !Combo_MM_GearActive())
         return 0;
     if (slot != SLOT_TRADE_KEY_MAMA && slot != SLOT_TRADE_COUPLE)
         return 0;

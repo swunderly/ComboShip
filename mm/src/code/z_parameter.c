@@ -2899,7 +2899,7 @@ void Interface_UpdateHudAlphas(PlayState* play, s16 dimmingAlpha) {
  * Also used directly when opening the pause menu i.e. skips part 1
  */
 #ifdef COMBO_BUILD
-extern int Combo_MM_AdultResourcesReady(void);
+extern int Combo_MM_GearActive(void);
 #include "ComboAdultSwimmingRestrictionNative.h"
 #endif
 static void Interface_UpdateButtonsPart2Native(PlayState* play) {
@@ -3688,6 +3688,7 @@ static void Interface_UpdateButtonsPart2Native(PlayState* play) {
 
 #ifdef COMBO_BUILD
 extern int Combo_MM_AdultResourcesReady(void);
+extern int Combo_MM_GearActive(void);
 #include "ComboAdultHazardTimerNative.h"
 static u8 Combo_MM_AdultButtonRestrictionAlias(PlayState* play, u8 item) {
     if (item != 0xbc || !Combo_MM_AdultResourcesReady())

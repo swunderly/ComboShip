@@ -34,7 +34,7 @@ static Vec3s sHoverBootsRot={0,0,0};
 static s32 sHoverBootCircleAlpha=255;
 extern int Combo_MM_HoverCircleResourcesReady(void);
 static void Combo_MM_DrawHoverCircle(PlayState* play,Player* player){
- if(!Combo_MM_AdultResourcesReady()||!Combo_MM_HoverCircleResourcesReady())return;
+ if(!Combo_MM_GearActive()||!Combo_MM_HoverCircleResourcesReady())return;
  OPEN_DISPS(play->state.gfxCtx);
     if (Combo_MM_GetCustomBoots(player) == 2 && !(player->actor.bgCheckFlags & BGCHECKFLAG_GROUND)
         && !(player->stateFlags1 & (1 << 23)) && player->unk_734[0] != 0)

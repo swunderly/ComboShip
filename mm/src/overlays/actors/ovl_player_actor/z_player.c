@@ -1807,12 +1807,12 @@ void Player_AnimSfx_PlayFloor(Player* this, u16 sfxId) {
 
 #ifdef COMBO_BUILD
 int Combo_MM_AdultResourcesReady(void);
+int Combo_MM_GearActive(void);
 #endif
 #ifdef COMBO_BUILD
 #define COMBO_HOVER_TIMER(p) ((p)->unk_734[0])
 s32 Combo_MM_GetCustomBoots(Player* player) {
-    if (!gSaveContext.save.shipSaveInfo.adultMm.enabled || !Combo_MM_AdultResourcesReady() ||
-        player->actor.id != ACTOR_PLAYER || player->transformation != PLAYER_FORM_HUMAN)
+    if (!Combo_MM_GearActive() || player->actor.id != ACTOR_PLAYER || player->transformation != PLAYER_FORM_HUMAN)
         return -1;
     return player->currentBoots == 6 ? 1 : player->currentBoots == 0 ? 2 : -1;
 }
@@ -1832,8 +1832,7 @@ static s32 Combo_MM_IsBeingPushed(Player* player, PlayState* play) {
 }
 static s32 Combo_MM_IsGoronOrGoronTunic(Player* player) {
     return player->transformation == PLAYER_FORM_GORON ||
-           (gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady() &&
-            gSaveContext.save.shipSaveInfo.adultMm.tunic == 2);
+           (Combo_MM_GearActive() && gSaveContext.save.shipSaveInfo.adultMm.tunic == 2);
 }
 static s32 Combo_MM_ShouldTakeFloorDamage(Player* player, s32 wall, s32 floorType, s32 floorDamage) {
     if (floorDamage || wall || player->actor.depthInWater > 0.0f) {
@@ -6417,8 +6416,7 @@ s32 func_80834600(Player* this, PlayState* play) {
             func_80834534(play, this);
         } else {
 #ifdef COMBO_BUILD
-            if (gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady() &&
-                !Combo_MM_ShouldTakeFloorDamage(this, var_a1, sp58, isSurfaceWallDamage))
+            if (Combo_MM_GearActive() && !Combo_MM_ShouldTakeFloorDamage(this, var_a1, sp58, isSurfaceWallDamage))
                 goto label;
 #endif
             this->actor.colChkInfo.damage = 4;
@@ -11573,8 +11571,7 @@ void Player_Init(Actor* thisx, PlayState* play) {
         Combo_MM_ApplyAdultGameplayKeep(play, adult);
         Combo_MM_ApplyAdultMaskInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled &&
                                                   Combo_MM_AdultResourcesReady());
-        Combo_MM_ApplyAdultGearInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled &&
-                                                  Combo_MM_AdultResourcesReady());
+        Combo_MM_ApplyAdultGearInventoryResources(Combo_MM_GearActive());
     }
 #endif
     this->ageProperties = &sPlayerAgeProperties[this->transformation];
@@ -12104,7 +12101,7 @@ s32 Combo_MM_UpdateHoverBoots(Player* this) {
 
 s32 func_808430E0(Player* this) {
 #ifdef COMBO_BUILD
-    if (gSaveContext.save.shipSaveInfo.adultMm.enabled && Combo_MM_AdultResourcesReady())
+    if (Combo_MM_GearActive())
         return Combo_MM_UpdateHoverBoots(this);
 #endif
     return Combo_MM_NativeFloorUpdate(this);

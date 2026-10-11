@@ -11,8 +11,8 @@ static int Combo_MM_AdultTryUseGear(PlayState* play, Player* player, ItemId item
     case ITEM_COMBO_TUNIC_ZORA: tunic=3; break;
     default: return 0;
     }
-    // No partial action path can bypass the complete Adult capability gate.
-    if(!gSaveContext.save.shipSaveInfo.adultMm.enabled||!Combo_MM_AdultResourcesReady())return 1;
+    // No partial action path can bypass the gear runtime gate.
+    if(!Combo_MM_GearActive())return 1;
     if(player->transformation!=PLAYER_FORM_HUMAN)return 1;
     if(boots) {
         if(gSaveContext.save.shipSaveInfo.adultMm.boots==boots)boots=0;

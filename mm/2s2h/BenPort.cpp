@@ -6052,6 +6052,7 @@ extern "C" COMBO_EXPORT int MM_GrantFierceDeityAdultVariant(int fileNum, int var
 
 #include "ComboAdultMaskPauseNative.h"
 
+extern "C" int Combo_MM_GearActive(void);
 #include "ComboAdultBootDrawResources.h"
 #include "ComboHoverCircleResources.h"
 #include "ComboAdultGearInventory.h"
@@ -6095,6 +6096,43 @@ extern "C" int Combo_MM_AdultResourcesReady(void) {
            Combo_MM_ChildBootResourcesReady() && Combo_MM_HoverCircleResourcesReady() &&
            Combo_MM_AdultGearIconsReady() && Combo_MM_AdultGearGiReady() && ComboAdultMM::BuildAdultHybridSequence();
 }
+// Human Link is adult only while the whole Adult Link in MM runtime is integrated and ready.
+extern "C" int Combo_MM_IsLinkAdult(void) {
+    return Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady();
+}
+// MM boots and tunics are separate from Adult Link in MM, as in OoTMM, where child Link wears them (Player.c:616-687,
+// 1171-1207). Release switch: on only after the on-phone gear checks pass.
+static constexpr bool kMmGearIntegrationComplete = false;
+static int Combo_MM_GearIntegrationEnabled(void) {
+#ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
+    // The private diagnostic build validates the gear with the same default-off switch as the adult runtime.
+    return kMmGearIntegrationComplete || CVarGetInteger("gCombo.Debug.AdultMmRuntimeValidation", 0);
+#else
+    return kMmGearIntegrationComplete;
+#endif
+}
+// The native OoT resources the gear draws with: child boots, the hover circle, the trade-slot icons and the GI models,
+// plus OoT's adult boots while Link is adult. A resource missing from an OoT archive stays missing, so a failed check
+// is not repeated for the same archive.
+extern "C" int Combo_MM_GearResourcesReady(void) {
+    static std::weak_ptr<Ship::ResourceManager> failed;
+    const auto oot = Ship::CrossRMRegistry::Get("oot");
+    if (!oot || failed.lock() == oot)
+        return 0;
+    if (!Combo_MM_ChildBootResourcesReady() || !Combo_MM_HoverCircleResourcesReady() ||
+        !Combo_MM_AdultGearIconsReady() || !Combo_MM_AdultGearGiReady()) {
+        failed = oot;
+        return 0;
+    }
+    return !Combo_MM_IsLinkAdult() || Combo_MM_AdultBootDrawResourcesReady();
+}
+// Gear runs for a save whose seed adds it, on a device whose gear runtime is released and prepared.
+extern "C" int Combo_MM_GearActive(void) {
+    if (gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2 || !Combo_MM_GearIntegrationEnabled() ||
+        !ComboAdultMM::SaveHasGear(gSaveContext.save))
+        return 0;
+    return Combo_MM_GearResourcesReady();
+}
 // The combo layer ANDs a seed's faroreRules.crossAge with this before configuring either engine's Farore
 // runtime or preflighting an entrance, so they agree with the MM save and oracle (RO_MM_CROSS_AGE kept off).
 extern "C" COMBO_EXPORT int MM_AdultRuntimeReady(void) {
@@ -6109,11 +6147,10 @@ extern "C" int Combo_MM_AdultConfigureBoundSeed(int fileNum) {
     const int age = options[RO_MM_STARTING_AGE] ? 0 : 1;
     const bool mask = options[RO_MM_ADULT_MASK] != 0;
     const bool cross = options[RO_MM_CROSS_AGE] != 0;
-    const bool gear = options[RO_MM_BOOTS_IRON] || options[RO_MM_BOOTS_HOVER] || options[RO_MM_TUNIC_GORON] ||
-                      options[RO_MM_TUNIC_ZORA];
-    if ((mask || cross || gear || age == 0 || save.shipSaveInfo.adultMm.enabled) && !Combo_MM_AdultResourcesReady())
+    // The gear never needs the adult state (Combo_MM_GearActive).
+    if ((mask || cross || age == 0 || save.shipSaveInfo.adultMm.enabled) && !Combo_MM_AdultResourcesReady())
         return 0;
-    return ComboAdultMM::ConfigureSeedAge(save, age, mask, cross, gear);
+    return ComboAdultMM::ConfigureSeedAge(save, age, mask, cross);
 }
 #ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
 // No options/grants are injected: root must supply an explicitly private bound seed fixture.
@@ -6129,35 +6166,13 @@ extern "C" COMBO_EXPORT int MM_DebugAdultResourcesReady(void) {
 #endif
 
 #ifdef COMBO_BUILD
-extern "C" int Combo_MM_AdultValidateLoadedSave(const Save* save) {
-    if (!save)
-        return 0;
-    const auto& state = save->shipSaveInfo.adultMm;
-    if (!state.enabled)
-        return 1;
-    return save->linkAge <= 1 && state.boots <= 2 && (state.tunic == 0 || state.tunic == 2 || state.tunic == 3) &&
-           state.maskEnabled <= 1 && state.maskOwnedBits <= 3 &&
-           !((state.gearTrade2Bits | state.gearTrade3Bits) & ~6u) && Combo_MM_AdultResourcesReady();
-}
-#endif
-
-#ifdef COMBO_BUILD
-// Called with the parsed local page, before assigning live SaveContext.
+// Called with the parsed local page, before assigning live SaveContext. Never refuses a save for its adult or gear
+// state (ComboAdultMM::PrepareLoadedSave); the JSON reader already rejects malformed adult/gear bytes.
 extern "C" int Combo_MM_AdultPrepareLoadedSave(Save* save) {
     if (!save)
         return 0;
-    const auto& options = save->shipSaveInfo.rando.randoSaveOptions;
-    const bool mask = options[RO_MM_ADULT_MASK] != 0, cross = options[RO_MM_CROSS_AGE] != 0;
-    const bool gear = options[RO_MM_BOOTS_IRON] || options[RO_MM_BOOTS_HOVER] || options[RO_MM_TUNIC_GORON] ||
-                      options[RO_MM_TUNIC_ZORA];
-    const int age = options[RO_MM_STARTING_AGE] ? 0 : 1;
-    if (!save->shipSaveInfo.adultMm.enabled && (mask || cross || gear || age == 0)) {
-        if (!Combo_MM_AdultResourcesReady())
-            return 0;
-        if (!ComboAdultMM::ConfigureSeedAge(*save, age, mask, cross, gear))
-            return 0;
-    }
-    return Combo_MM_AdultValidateLoadedSave(save);
+    ComboAdultMM::PrepareLoadedSave(*save, Combo_MM_AdultResourcesReady() != 0);
+    return 1;
 }
 #endif
 

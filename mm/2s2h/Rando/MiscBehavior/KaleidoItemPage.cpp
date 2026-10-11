@@ -1,6 +1,6 @@
 #include "MiscBehavior.h"
 #include "2s2h/ComboAdultGearInventory.h"
-extern "C" int Combo_MM_AdultResourcesReady(void);
+extern "C" int Combo_MM_GearActive(void);
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 #include "2s2h/ShipUtils.h"
 
@@ -117,7 +117,7 @@ std::vector<u8> BuildAvailableItemsList(u8 slot) {
             // common/trade.c kMmTrade2 puts Farore before the native room key/letter.
             if (gSaveContext.save.shipSaveInfo.faroresWind.owned)
                 availableItems.push_back(ITEM_COMBO_FARORES_WIND);
-            if (Combo_MM_AdultResourcesReady()) {
+            if (Combo_MM_GearActive()) {
                 const auto bits = gSaveContext.save.shipSaveInfo.adultMm.gearTrade2Bits;
                 if (ComboAdultGearInventory::Has(bits, ITEM_COMBO_BOOTS_IRON))
                     availableItems.push_back(ITEM_COMBO_BOOTS_IRON);
@@ -136,7 +136,7 @@ std::vector<u8> BuildAvailableItemsList(u8 slot) {
 #ifdef COMBO_BUILD
             if (gSaveContext.save.shipSaveInfo.spellLoveOwned)
                 availableItems.push_back(ITEM_COMBO_NAYRUS_LOVE);
-            if (Combo_MM_AdultResourcesReady()) {
+            if (Combo_MM_GearActive()) {
                 const auto bits = gSaveContext.save.shipSaveInfo.adultMm.gearTrade3Bits;
                 if (ComboAdultGearInventory::Has(bits, ITEM_COMBO_BOOTS_HOVER))
                     availableItems.push_back(ITEM_COMBO_BOOTS_HOVER);

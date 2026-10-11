@@ -2092,6 +2092,8 @@ PlayerFaceIndices sPlayerFaces[PLAYER_FACE_MAX] = {
 #ifdef COMBO_BUILD
 #include "ComboAdultTunicColorsNative.h"
 extern int Combo_MM_IsAdult(void);
+extern int Combo_MM_IsLinkAdult(void);
+extern int Combo_MM_GearActive(void);
 extern s32 Combo_MM_GetCustomBoots(Player* player);
 #include "ComboChildBootDrawNative.h"
 #include "ComboHoverCircleDrawNative.h"
@@ -2159,22 +2161,22 @@ void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dL
     }
     sPlayerLod = lod;
 #ifdef COMBO_BUILD
-    if (playerForm == PLAYER_FORM_HUMAN && gSaveContext.save.shipSaveInfo.adultMm.enabled &&
-        Combo_MM_AdultResourcesReady()) {
+    // The tunic env colour serves OoT's adult model (Adult Link in MM) and the gear tunics.
+    if (playerForm == PLAYER_FORM_HUMAN && (Combo_MM_GearActive() || Combo_MM_IsLinkAdult())) {
         const Color_RGB8* color = Combo_MM_GetSavedTunicColor(gSaveContext.save.shipSaveInfo.adultMm.tunic);
         gDPSetEnvColor(POLY_OPA_DISP++, color->r, color->g, color->b, 255);
     }
 #endif
     SkelAnime_DrawFlexLod(play, skeleton, jointTable, dListCount, overrideLimbDraw, postLimbDraw, actor, lod);
 #ifdef COMBO_BUILD
-    if (playerForm == PLAYER_FORM_HUMAN && Combo_MM_AdultResourcesReady() &&
+    if (playerForm == PLAYER_FORM_HUMAN && Combo_MM_GearActive() &&
         overrideLimbDraw != Player_OverrideLimbDrawGameplayFirstPerson &&
         gSaveContext.gameMode != GAMEMODE_END_CREDITS) {
         const s32 boots = Combo_MM_GetCustomBoots((Player*)actor);
         if (boots == 1 || boots == 2) {
             const s32 index = (boots - 1) * 2;
             const char *left = Combo_MM_GetAdultBootDrawPath(index), *right = Combo_MM_GetAdultBootDrawPath(index + 1);
-            if (Combo_MM_IsAdult()) {
+            if (Combo_MM_IsLinkAdult()) {
                 if (left && right) {
                     gSPDisplayList(POLY_OPA_DISP++, left);
                     gSPDisplayList(POLY_OPA_DISP++, right);
