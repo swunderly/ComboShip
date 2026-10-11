@@ -519,6 +519,10 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                 keywords += " clock shuffle time day night half days six cycle progressive ascending descending";
             if (name == "Farore's Wind (MM)")
                 keywords += " farore fw spell magic warp cross game items extension";
+            if (name == "Din's Fire (MM)")
+                keywords += " din dins spell magic fire cross game items extension";
+            if (name == "Nayru's Love (MM)")
+                keywords += " nayru nayrus spell magic barrier cross game items extension";
             addLink(MenuSearchKind::Setting, name.c_str(), keywords.c_str(), "randomizer",
                     MenuRoute(false, "Rando", page).page.c_str(), "MM", 0, 1,
                     RandomizerWidgetGroup(false, page, 0, ""));
@@ -1639,11 +1643,17 @@ void DrawSharedItems() {
         const auto& family = SharedFamilyByIndex(i);
         bool enabled = ProfileUI::ReadInteger(family.cvar, 0) != 0;
         ImGui::PushID(family.cvar);
+        // OoTMM data.ts:3000-3054 cond `hasOoTMM && <x>Mm`: without its MM option the shared item is off
+        // (util.ts:80-93 resets it). Show it unchecked but keep the stored preference; generation ignores it.
+        const char* extension = SharedFamilyMmExtension(i);
+        const bool extensionOff =
+            extension && !ProfileUI::ReadInteger((std::string("gRando.Options.") + extension).c_str(), 0);
+        if (extensionOff)
+            enabled = false;
         const bool unavailable =
             (family.requiresButtons && (!ProfileUI::ReadInteger("gRandoSettings.ShuffleOcarinaButtons", 0) ||
                                         !ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_OCARINA_BUTTONS", 0))) ||
-            (i == SF_SPELL_WIND &&
-             !ProfileUI::ReadInteger("gRando.Options.RO_MM_SPELL_WIND", 0)); // OoTMM: requires spellWindMm
+            extensionOff;
         ImGui::BeginDisabled(unavailable);
         if (DrawRuleCheckbox(family.label, &enabled)) {
             ProfileUI::WriteInteger(family.cvar, enabled);
