@@ -327,6 +327,7 @@ static uint32_t checkPoolGeneration = 0;
 #ifdef COMBO_BUILD
 extern "C" void Combo_MM_ClearUnavailableOptions(u32* options);
 extern "C" int Combo_MMSpellOptionReady(int spell);
+extern "C" int Combo_MM_GearOptionReady(void);
 #endif
 void RefreshMetrics() {
     setOfItemsInPool.clear();
@@ -974,6 +975,21 @@ static void SpellPoolCheckbox(const char* label, RandoOptionId optionId, int spe
                                             .disabledTooltip = "Disabled because this device could not prepare the "
                                                                "spell. New seeds leave it out." } }));
 }
+// The MM boots and tunics need their native runtime (BenPort.cpp Combo_MM_GearActive). Where it is not released or
+// cannot prepare the gear resources, the row shows unticked and greyed out without overwriting the stored preference,
+// and new seeds leave the item out.
+static void GearPoolCheckbox(const char* label, RandoOptionId optionId, const char* tooltip) {
+    if (Combo_MM_GearOptionReady()) {
+        ItemPoolCheckbox(label, optionId, tooltip, 1);
+        return;
+    }
+    bool off = false;
+    UIWidgets::Checkbox(label, &off,
+                        CheckboxOptions({ { .tooltip = tooltip,
+                                            .disabled = true,
+                                            .disabledTooltip = "Disabled because this device cannot run the MM boots "
+                                                               "and tunics yet. New seeds leave them out." } }));
+}
 #endif
 
 static void DrawItemPoolTab(int section = 0) {
@@ -1123,6 +1139,10 @@ static void DrawItemPoolTab(int section = 0) {
         SpellPoolCheckbox("Din's Fire (MM)", RO_MM_SPELL_FIRE, 2, "Adds Din's Fire in Majora's Mask.");
         ItemPoolCheckbox("Farore's Wind (MM)", RO_MM_SPELL_WIND, "Adds Farore's Wind in Majora's Mask.", 1);
         SpellPoolCheckbox("Nayru's Love (MM)", RO_MM_SPELL_LOVE, 1, "Adds Nayru's Love in Majora's Mask.");
+        GearPoolCheckbox("Iron Boots (MM)", RO_MM_BOOTS_IRON, "Adds Iron Boots in Majora's Mask.");
+        GearPoolCheckbox("Hover Boots (MM)", RO_MM_BOOTS_HOVER, "Adds Hover Boots in Majora's Mask.");
+        GearPoolCheckbox("Goron Tunic (MM)", RO_MM_TUNIC_GORON, "Adds the Goron Tunic in Majora's Mask.");
+        GearPoolCheckbox("Zora Tunic (MM)", RO_MM_TUNIC_ZORA, "Adds the Zora Tunic in Majora's Mask.");
         UIWidgets::EndCard();
 #endif
 

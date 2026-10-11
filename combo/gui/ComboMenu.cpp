@@ -523,6 +523,9 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                 keywords += " din dins spell magic fire cross game items extension";
             if (name == "Nayru's Love (MM)")
                 keywords += " nayru nayrus spell magic barrier cross game items extension";
+            if (name == "Iron Boots (MM)" || name == "Hover Boots (MM)" || name == "Goron Tunic (MM)" ||
+                name == "Zora Tunic (MM)")
+                keywords += " boots tunic gear equipment cross game items extension";
             addLink(MenuSearchKind::Setting, name.c_str(), keywords.c_str(), "randomizer",
                     MenuRoute(false, "Rando", page).page.c_str(), "MM", 0, 1,
                     RandomizerWidgetGroup(false, page, 0, ""));

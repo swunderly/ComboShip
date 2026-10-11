@@ -86,15 +86,34 @@ int main() {
     assert(OotLocationPoolGroup("gRandoSettings.ShopsanityCount",1)==3);
     assert(SF_OCARINA == 24 && SF_SPELL_WIND == 25 && SF_SPELL_FIRE == 26 && SF_SPELL_LOVE == 27);
     assert(SF_BOOTS_IRON == 28 && SF_BOOTS_HOVER == 29 && SF_TUNIC_GORON == 30 && SF_TUNIC_ZORA == 31 && SF_COUNT == 32);
-    const char* privateGearKeys[] = {"bootsIron", "bootsHover", "tunicGoron", "tunicZora"};
-    const char* privateGearNames[] = {"Iron Boots", "Hover Boots", "Goron Tunic", "Zora Tunic"};
+    // The MM gear is public with OoTMM's shared settings (data.ts:3024-3054), keeping the stored lowercase CVar keys.
+    // Each shared item stays off unless its MM option is on: the menu greys it out (ComboMenu.cpp DrawSharedItems) and
+    // generation ignores it (SharedExtraSpellEnabled), as OoTMM's cond `hasOoTMM && <x>Mm` resets it (util.ts:80-93).
+    const char* gearKeys[] = {"bootsIron", "bootsHover", "tunicGoron", "tunicZora"};
+    const char* gearNames[] = {"Iron Boots", "Hover Boots", "Goron Tunic", "Zora Tunic"};
+    const char* gearLabels[] = {"Shared Iron Boots", "Shared Hover Boots", "Shared Goron Tunic", "Shared Zora Tunic"};
+    const char* gearTooltips[] = {"Combines the Iron Boots from OoT and MM into one item for both games",
+        "Combines the Hover Boots from OoT and MM into one item for both games",
+        "Combines the Goron Tunics from OoT and MM into two items for both games",
+        "Combines the Zora Tunics from OoT and MM into two items for both games"};
+    const char* gearOptions[] = {"RO_MM_BOOTS_IRON", "RO_MM_BOOTS_HOVER", "RO_MM_TUNIC_GORON", "RO_MM_TUNIC_ZORA"};
+    const char* gearSettings[] = {"Iron Boots (MM)", "Hover Boots (MM)", "Goron Tunic (MM)", "Zora Tunic (MM)"};
     for (int i=0;i<4;++i) {
         const auto& gear=SharedFamilyByIndex(SF_BOOTS_IRON+i);
-        assert(!gear.publicOption);
-        assert(std::string(gear.key)==privateGearKeys[i]);
-        assert(std::string(gear.ootName)==privateGearNames[i] && std::string(gear.mmName)==privateGearNames[i]);
+        assert(gear.publicOption);
+        assert(std::string(gear.key)==gearKeys[i]);
+        assert(std::string(gear.cvar)==std::string("gCombo.Rando.Shared.")+gearKeys[i]);
+        assert(std::string(gear.ootName)==gearNames[i] && std::string(gear.mmName)==gearNames[i]);
+        assert(std::string(gear.label)==gearLabels[i] && std::string(gear.tooltip)==gearTooltips[i]);
+        assert(std::string(SharedFamilyMmExtension(SF_BOOTS_IRON+i))==gearOptions[i]);
+        assert(std::string(SharedFamilyMmExtensionLabel(SF_BOOTS_IRON+i))==gearSettings[i]);
+        for (int on : {0, 1}) {
+            const nlohmann::json dump={{"options",{{gearOptions[i],on}}}};
+            assert(SharedExtraSpellEnabled(SF_BOOTS_IRON+i,dump)==(on==1));
+        }
+        assert(!SharedExtraSpellEnabled(SF_BOOTS_IRON+i,nlohmann::json::object()));
     }
-    // The three spells are public with their MM settings (Farore's Wind since 0.3.9); the gear stays private.
+    // The three spells are public with their MM settings (Farore's Wind since 0.3.9), like the gear.
     const char* spellNames[]={"Shared Farore's Wind","Shared Din's Fire","Shared Nayru's Love"};
     const char* spellTooltips[]={"Combines Farore's Wind from OoT and MM into one item for both games",
         "Combines Din's Fire from OoT and MM into one item for both games",

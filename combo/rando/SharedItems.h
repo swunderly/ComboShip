@@ -40,13 +40,13 @@ enum SharedFamily {
     SF_SONG_OF_TIME,
     SF_MIRROR_SHIELD,
     SF_OCARINA,    // append only; progressive family, excluded from singleton paths
-    SF_SPELL_WIND, // the spells are public with their MM settings; the gear families stay private
+    SF_SPELL_WIND, // the spells and the gear are public with their MM settings
     SF_SPELL_FIRE,
     SF_SPELL_LOVE,
     SF_BOOTS_IRON,
     SF_BOOTS_HOVER,
     SF_TUNIC_GORON,
-    SF_TUNIC_ZORA, // append private bits28..31
+    SF_TUNIC_ZORA, // appended bits28..31
     SF_COUNT
 };
 
@@ -148,16 +148,16 @@ inline const SharedFamilyDef* SharedFamilyTable() {
           false, true, false, false, true },
         { SF_BOOTS_IRON, "bootsIron", "gCombo.Rando.Shared.bootsIron", "Shared Iron Boots",
           "Combines the Iron Boots from OoT and MM into one item for both games", "Iron Boots", "Iron Boots", 1, false,
-          true, false, false, false },
+          true, false, false, true },
         { SF_BOOTS_HOVER, "bootsHover", "gCombo.Rando.Shared.bootsHover", "Shared Hover Boots",
           "Combines the Hover Boots from OoT and MM into one item for both games", "Hover Boots", "Hover Boots", 1,
-          false, true, false, false, false },
+          false, true, false, false, true },
         { SF_TUNIC_GORON, "tunicGoron", "gCombo.Rando.Shared.tunicGoron", "Shared Goron Tunic",
           "Combines the Goron Tunics from OoT and MM into two items for both games", "Goron Tunic", "Goron Tunic", 1,
-          false, true, false, false, false },
+          false, true, false, false, true },
         { SF_TUNIC_ZORA, "tunicZora", "gCombo.Rando.Shared.tunicZora", "Shared Zora Tunic",
           "Combines the Zora Tunics from OoT and MM into two items for both games", "Zora Tunic", "Zora Tunic", 1,
-          false, true, false, false, false },
+          false, true, false, false, true },
     };
     return table;
 }

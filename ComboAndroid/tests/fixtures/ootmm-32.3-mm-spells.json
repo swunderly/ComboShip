@@ -10,10 +10,10 @@
     {"key": "sharedSpellFire", "family": "spellFire", "public": true, "name": "Shared Din's Fire", "description": "Combines Din's Fire from OoT and MM into one item for both games"},
     {"key": "sharedSpellWind", "family": "spellWind", "public": true, "name": "Shared Farore's Wind", "description": "Combines Farore's Wind from OoT and MM into one item for both games"},
     {"key": "sharedSpellLove", "family": "spellLove", "public": true, "name": "Shared Nayru's Love", "description": "Combines Nayru's Love from OoT and MM into one item for both games"},
-    {"key": "sharedBootsIron", "family": "bootsIron", "public": false, "name": "Shared Iron Boots", "description": "Combines the Iron Boots from OoT and MM into one item for both games"},
-    {"key": "sharedBootsHover", "family": "bootsHover", "public": false, "name": "Shared Hover Boots", "description": "Combines the Hover Boots from OoT and MM into one item for both games"},
-    {"key": "sharedTunicGoron", "family": "tunicGoron", "public": false, "name": "Shared Goron Tunic", "description": "Combines the Goron Tunics from OoT and MM into two items for both games"},
-    {"key": "sharedTunicZora", "family": "tunicZora", "public": false, "name": "Shared Zora Tunic", "description": "Combines the Zora Tunics from OoT and MM into two items for both games"}
+    {"key": "sharedBootsIron", "family": "bootsIron", "public": true, "name": "Shared Iron Boots", "description": "Combines the Iron Boots from OoT and MM into one item for both games"},
+    {"key": "sharedBootsHover", "family": "bootsHover", "public": true, "name": "Shared Hover Boots", "description": "Combines the Hover Boots from OoT and MM into one item for both games"},
+    {"key": "sharedTunicGoron", "family": "tunicGoron", "public": true, "name": "Shared Goron Tunic", "description": "Combines the Goron Tunics from OoT and MM into two items for both games"},
+    {"key": "sharedTunicZora", "family": "tunicZora", "public": true, "name": "Shared Zora Tunic", "description": "Combines the Zora Tunics from OoT and MM into two items for both games"}
   ],
   "tricks": [
     {"key": "MM_GBT_CENTRAL_GEYSER", "fork": "gCombo.Tricks.MM.GbtCentralGeyser", "public": false, "name": "GBT Central Room without Zora using Fire & Ice Arrows or an OoT Magic Spell", "tooltip": "Using Fire and Ice Arrows on the water stream above the ladder or an OoT Spell while on the spinning platform, it is possible to sink down during the cutscene, then swim into one of the tunnels."},

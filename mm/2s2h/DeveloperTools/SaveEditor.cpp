@@ -17,6 +17,8 @@
 #include "rando/SharedItems.h"  // same public readiness as the shared menu
 // ComboShip (issue #3): immediate cross-game delivery seam (defined in BenPort.cpp).
 extern "C" void (*gMMComboCrossDeliver)(int targetGame, const char* itemName, const char* srcCheckName);
+// The MM gear runtime is released and prepared on this device (BenPort.cpp).
+extern "C" int Combo_MM_GearOptionReady(void);
 #endif
 
 #include "interface/icon_item_dungeon_static/icon_item_dungeon_static.h"
@@ -101,17 +103,26 @@ std::vector<ItemId> safeItemsForInventorySlot[SLOT_MASK_FIERCE_DEITY + 1] = {};
 
 using namespace UIWidgets;
 
-// Public availability is independent of startup resource readiness and saved RO flags.
-// These families stay unavailable until actual native gameplay is validated.
+// Public availability is independent of startup resource readiness and saved RO flags, except for the MM gear,
+// which is offered only where its runtime is released and prepared (Combo_MM_GearOptionReady).
+// The Adult Mask stays unavailable until actual native gameplay is validated.
 static bool IsInventoryItemPubliclyAvailable(ItemId item) {
 #ifdef COMBO_BUILD
     switch (item) {
         case (ItemId)0xbc: // Adult Mask is private until full gameplay validation.
-        case ITEM_COMBO_BOOTS_IRON:
-        case ITEM_COMBO_BOOTS_HOVER:
-        case ITEM_COMBO_TUNIC_GORON:
-        case ITEM_COMBO_TUNIC_ZORA:
             return false;
+        case ITEM_COMBO_BOOTS_IRON:
+            return ComboRando::SharedFamilyByIndex(ComboRando::SF_BOOTS_IRON).publicOption &&
+                   Combo_MM_GearOptionReady();
+        case ITEM_COMBO_BOOTS_HOVER:
+            return ComboRando::SharedFamilyByIndex(ComboRando::SF_BOOTS_HOVER).publicOption &&
+                   Combo_MM_GearOptionReady();
+        case ITEM_COMBO_TUNIC_GORON:
+            return ComboRando::SharedFamilyByIndex(ComboRando::SF_TUNIC_GORON).publicOption &&
+                   Combo_MM_GearOptionReady();
+        case ITEM_COMBO_TUNIC_ZORA:
+            return ComboRando::SharedFamilyByIndex(ComboRando::SF_TUNIC_ZORA).publicOption &&
+                   Combo_MM_GearOptionReady();
         case ITEM_COMBO_FARORES_WIND:
             return ComboRando::SharedFamilyByIndex(ComboRando::SF_SPELL_WIND).publicOption;
         case ITEM_COMBO_DINS_FIRE:
@@ -129,11 +140,15 @@ static bool IsRandomizerItemGivePubliclyAvailable(RandoItemId item) {
 #ifdef COMBO_BUILD
     switch (item) {
         case RI_MASK_ADULT:
-        case RI_BOOTS_IRON:
-        case RI_BOOTS_HOVER:
-        case RI_TUNIC_GORON:
-        case RI_TUNIC_ZORA:
             return false;
+        case RI_BOOTS_IRON:
+            return IsInventoryItemPubliclyAvailable(ITEM_COMBO_BOOTS_IRON);
+        case RI_BOOTS_HOVER:
+            return IsInventoryItemPubliclyAvailable(ITEM_COMBO_BOOTS_HOVER);
+        case RI_TUNIC_GORON:
+            return IsInventoryItemPubliclyAvailable(ITEM_COMBO_TUNIC_GORON);
+        case RI_TUNIC_ZORA:
+            return IsInventoryItemPubliclyAvailable(ITEM_COMBO_TUNIC_ZORA);
         case RI_FARORES_WIND:
             return IsInventoryItemPubliclyAvailable(ITEM_COMBO_FARORES_WIND);
         case RI_DINS_FIRE:

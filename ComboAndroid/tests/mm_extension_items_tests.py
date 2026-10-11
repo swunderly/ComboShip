@@ -65,7 +65,7 @@ for s in fixture['settings']:
     check(f'RO({s["ro"]}, RO_GENERIC_NO)' in options, f'{s["ro"]} is not released with a CVar')
 check(positions == sorted(positions), 'Cross-Game Items rows are not in OoTMM order (data.ts:2000-2022)')
 
-# ---- Shared items: OoTMM names/descriptions, public spells, private gear.
+# ---- Shared items: OoTMM names/descriptions, public spells and gear.
 shared = read('combo/rando/SharedItems.h')
 for s in fixture['shared']:
     m = re.search(r'\{\s*SF_\w+,\s*"' + s['family'] + r'",\s*"[^"]*",\s*"([^"]*)",\s*((?:"[^"]*"\s*)+),([^}]*)\}', shared)

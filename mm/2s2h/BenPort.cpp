@@ -2837,6 +2837,11 @@ extern "C" COMBO_EXPORT void MM_BootForCombo(void) {
     SaveManager_MarkNoSaveLoaded();
 }
 
+#ifdef COMBO_BUILD
+// Whether a seed may add the MM gear (BenPort.cpp, beside Combo_MM_GearActive).
+extern "C" int Combo_MM_GearOptionReady(void);
+extern "C" void Combo_MM_GearForHeadlessGeneration(void);
+#endif
 // ComboShip: headless rando-only MM init — builds ONLY the rando region graph via the "RANDO_LOGIC"
 // ShipInit path (no window/RM/audio/GUI), unlike MM_BootForCombo's full boot. StaticData maps are
 // populated at DLL load; CVars come from the shared libultraship Context that SOH_InitRandoHeadless
@@ -2850,6 +2855,7 @@ extern "C" COMBO_EXPORT void MM_InitRandoHeadless(void) {
     Rando::StaticData::PopulateCheckNames();
 #ifdef COMBO_BUILD
     Combo_MMSpellsForHeadlessGeneration(); // only the headless generator calls this function
+    Combo_MM_GearForHeadlessGeneration();
 #endif
 }
 
@@ -2944,14 +2950,11 @@ extern "C" int gMMComboGoalHunt;
 extern "C" int gMMComboGoalRequired;
 extern "C" int gMMComboGoalPieces;
 
-// The adult/gear options have no menu, but profile or seed JSON and raw CVars can still set them, and
-// SaveManager refuses every save that carries them while the adult runtime is unavailable. Keep them at
-// their defaults (0) wherever options are gathered, so the pool, the oracle and the new save agree.
+// The adult options have no menu, but profile or seed JSON and raw CVars can still set them. Keep them at
+// their defaults (0) wherever options are gathered while the adult runtime is unavailable, so the pool, the
+// oracle and the new save agree.
 extern "C" int Combo_MM_AdultResourcesReady(void);
-static constexpr RandoOptionId kComboHiddenAdultMmOptions[] = {
-    RO_MM_ADULT_MASK,  RO_MM_STARTING_AGE, RO_MM_CROSS_AGE,  RO_MM_BOOTS_IRON,
-    RO_MM_BOOTS_HOVER, RO_MM_TUNIC_GORON,  RO_MM_TUNIC_ZORA,
-};
+static constexpr RandoOptionId kComboHiddenAdultMmOptions[] = { RO_MM_ADULT_MASK, RO_MM_STARTING_AGE, RO_MM_CROSS_AGE };
 static bool Combo_MM_IsHiddenAdultOption(RandoOptionId id) {
     return std::find(std::begin(kComboHiddenAdultMmOptions), std::end(kComboHiddenAdultMmOptions), id) !=
            std::end(kComboHiddenAdultMmOptions);
@@ -2960,12 +2963,19 @@ static bool Combo_MM_IsHiddenAdultOption(RandoOptionId id) {
 // wherever options are gathered, so no seed made there needs it (Combo_MMSpellOptionReady).
 static constexpr std::pair<RandoOptionId, int> kComboMmSpellOptions[] = { { RO_MM_SPELL_LOVE, 1 },
                                                                           { RO_MM_SPELL_FIRE, 2 } };
+// Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM). A device whose gear runtime is not released or cannot
+// prepare the gear resources keeps these at 0 wherever options are gathered (Combo_MM_GearOptionReady).
+static constexpr RandoOptionId kComboMmGearOptions[] = { RO_MM_BOOTS_IRON, RO_MM_BOOTS_HOVER, RO_MM_TUNIC_GORON,
+                                                         RO_MM_TUNIC_ZORA };
 extern "C" void Combo_MM_ClearUnavailableOptions(u32* options) {
     if (!Combo_MM_AdultResourcesReady())
         for (const auto id : kComboHiddenAdultMmOptions)
             options[id] = 0;
     for (const auto& [id, spell] : kComboMmSpellOptions)
         if (!Combo_MMSpellOptionReady(spell))
+            options[id] = 0;
+    if (!Combo_MM_GearOptionReady())
+        for (const auto id : kComboMmGearOptions)
             options[id] = 0;
 }
 
@@ -3078,6 +3088,9 @@ extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(int fileNum, const char* placem
                 options[Rando::StaticData::Options[id].name] = uint32_t(0);
         for (const auto& [id, spell] : kComboMmSpellOptions)
             if (!Combo_MMSpellOptionReady(spell))
+                options[Rando::StaticData::Options[id].name] = uint32_t(0);
+        if (!Combo_MM_GearOptionReady())
+            for (const auto id : kComboMmGearOptions)
                 options[Rando::StaticData::Options[id].name] = uint32_t(0);
         spoiler["options"] = options;
         spoiler["startingItems"] = nlohmann::json::array();
@@ -3364,12 +3377,15 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings(void) {
             j[opt.cvar] = (int)CVarGetInteger(opt.cvar, opt.defaultValue);
     }
     // The snapshot travels with seeds; keep it matching their pools (kComboHiddenAdultMmOptions,
-    // kComboMmSpellOptions).
+    // kComboMmSpellOptions, kComboMmGearOptions).
     if (!Combo_MM_AdultResourcesReady())
         for (const auto id : kComboHiddenAdultMmOptions)
             j[Rando::StaticData::Options[id].cvar] = 0;
     for (const auto& [id, spell] : kComboMmSpellOptions)
         if (!Combo_MMSpellOptionReady(spell))
+            j[Rando::StaticData::Options[id].cvar] = 0;
+    if (!Combo_MM_GearOptionReady())
+        for (const auto id : kComboMmGearOptions)
             j[Rando::StaticData::Options[id].cvar] = 0;
     // Excluded checks are a JSON-array config block of RC_ names (upstream #1817) outside the options
     // walk; GeneratePools reads them, so a replayed spoiler must carry them or local exclusions leak
@@ -6140,6 +6156,16 @@ extern "C" int Combo_MM_GearActive(void) {
         !ComboAdultMM::SaveHasGear(gSaveContext.save))
         return 0;
     return Combo_MM_GearResourcesReady();
+}
+// A seed must not need gear this device cannot use: without the released runtime and its resources the menu greys
+// the gear options out and options are gathered with them off (kComboMmGearOptions), as for the MM spells.
+static bool sMmGearHeadlessGeneration = false;
+extern "C" int Combo_MM_GearOptionReady(void) {
+    return sMmGearHeadlessGeneration || (Combo_MM_GearIntegrationEnabled() && Combo_MM_GearResourcesReady());
+}
+// The headless generator has no game runtime; it generates as a device that can use the gear.
+extern "C" void Combo_MM_GearForHeadlessGeneration(void) {
+    sMmGearHeadlessGeneration = true;
 }
 // The combo layer ANDs a seed's faroreRules.crossAge with this before configuring either engine's Farore
 // runtime or preflighting an entrance, so they agree with the MM save and oracle (RO_MM_CROSS_AGE kept off).
