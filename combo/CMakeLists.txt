@@ -161,6 +161,11 @@ target_link_libraries(comborando PRIVATE libultraship nlohmann_json::nlohmann_js
 if(ANDROID)
     # Standalone adb-shell tool: resolve bundled shared libraries beside the executable.
     target_link_options(comborando PRIVATE "-Wl,-rpath,$ORIGIN")
+    # SOH is loaded later and needs SDL_net. RUNPATH is not inherited by its dependencies;
+    # retain this direct shared dependency even though headless never calls its network API.
+    if(TARGET SDL2_net::SDL2_net)
+        target_link_libraries(comborando PRIVATE "-Wl,--no-as-needed" SDL2_net::SDL2_net "-Wl,--as-needed")
+    endif()
 endif()
 add_dependencies(comborando soh 2ship)
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
