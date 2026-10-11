@@ -597,8 +597,10 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
 #ifdef COMBO_BUILD
+            // snowhead.yml:7-8: (blizzard_stopped || ...) && has_mask_goron; blizzard_stopped includes is_spring
+            // (macros_mm.yml:244).
             CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE,
-                (CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) && CAN_BE_GORON) ||
+                ((CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) || NativeMmNorthSpring()) && CAN_BE_GORON) ||
                 (MM_LOGIC_HAS_IRON_BOOTS && HAS_MAGIC && HAS_ITEM(ITEM_MASK_GORON) &&
                  COMBO_MM_TRICK("LullabySkipIrons"))),
 #else
@@ -633,7 +635,8 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
 #ifdef COMBO_BUILD
-            CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) || MM_LOGIC_HAS_IRON_BOOTS),
+            // snowhead.yml:21,23,32-33: blizzard_stopped (with is_spring, macros_mm.yml:244) || has_iron_boots.
+            CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) || NativeMmNorthSpring() || MM_LOGIC_HAS_IRON_BOOTS),
 #else
             CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE)),
 #endif
@@ -646,7 +649,8 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
 #ifdef COMBO_BUILD
-            CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) || MM_LOGIC_HAS_IRON_BOOTS),
+            // snowhead.yml:21,23,32-33: blizzard_stopped (with is_spring, macros_mm.yml:244) || has_iron_boots.
+            CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE) || NativeMmNorthSpring() || MM_LOGIC_HAS_IRON_BOOTS),
 #else
             CONNECTION(RR_SNOWHEAD_NEAR_TEMPLE, CanAccessDungeon(DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE)),
 #endif
