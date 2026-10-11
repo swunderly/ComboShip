@@ -401,6 +401,12 @@ bool HasUsableBottle();
 #define MM_LOGIC_IS_SHORT ComboRando::MmAgeLogic::IsShort(HAS_ITEM(ITEM_MASK_DEKU), MM_LOGIC_IS_CHILD)
 // Pinned stone_tower.yml graph (East.cpp), which splits the temple front from the Soaring top.
 #define MM_LOGIC_STONE_TOWER_PINNED (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
+// Pinned OoTMM v32.3 Deku Palace, Southern Swamp and Woodfall graph (South.cpp and MmSwampContexts.inc.h): on
+// whenever a setting is on whose terms only that graph can express (is_adult/is_tall and hover and iron boots,
+// e.g. deku_palace.yml:7-9, woodfall.yml:11-52, macros_mm.yml:260 cross_poison_swamp).
+#define MM_LOGIC_SOUTH_PINNED                                                        \
+    (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || \
+     RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON])
 // Pinned macros_mm.yml70..75: MM equipment ownership is effective only with its option.
 #define MM_LOGIC_HAS_IRON_BOOTS (RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] && HAS_ITEM(ITEM_COMBO_BOOTS_IRON))
 #define MM_LOGIC_HAS_HOVER_BOOTS (RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] && HAS_ITEM(ITEM_COMBO_BOOTS_HOVER))

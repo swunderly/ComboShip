@@ -28,6 +28,7 @@ std::map<RandoRegionId, RandoRegion> Regions = {};
 uint64_t gCurrentRegionTime = 0;
 #ifdef COMBO_BUILD
 inline bool TypedMmGrottoSourceActive(uint32_t id);
+inline bool TypedMmSwampActive();
 bool NativeMmErContextsEnabled() {
     return ComboRando::Entrances::ActiveMmMixed().active() ||
            ComboRando::Entrances::ActiveMmMixedAssumptions().has_value() ||
@@ -373,7 +374,7 @@ RandoRegionId GetRegionIdFromEntrance(s32 entrance) {
         return RR_MM_TWIN_NEAR_RACE;
     // Graph-only context nodes must not overwrite the immutable vanilla cache.
     // Ordinary saved arrivals have the same exact outside area as the pin.
-    if (TypedMmGrottoSourceActive(65540u)) {
+    if (TypedMmSwampActive()) {
         if (entrance == ENTRANCE(SOUTHERN_SWAMP_POISONED, 8))
             return RR_MM_SWAMP_NEAR_SPIDER;
         if (entrance == ENTRANCE(SOUTHERN_SWAMP_POISONED, 4))
