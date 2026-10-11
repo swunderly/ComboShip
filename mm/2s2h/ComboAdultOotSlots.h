@@ -1,0 +1,47 @@
+#pragma once
+// What Adult Link in MM draws in MM's human slots (plan F5b 1.3; OoTMM v32.3 play/play.c:620-724 rebinds the same
+// slots). Shared by the loader (2s2h/ComboAdultModelResources.h) and the tables
+// (src/code/ComboAdultModelTablesNative.h). The first group is OoT's own adult display lists; the second calls an OoT
+// adult hand and then MM's own item.
+typedef enum ComboAdultOotSlot {
+    COMBO_ADULT_WAIST_NEAR,
+    COMBO_ADULT_WAIST_FAR,
+    COMBO_ADULT_LEFT_HAND_OPEN_NEAR,
+    COMBO_ADULT_LEFT_HAND_OPEN_FAR,
+    COMBO_ADULT_LEFT_HAND_CLOSED_NEAR,
+    COMBO_ADULT_LEFT_HAND_CLOSED_FAR,
+    COMBO_ADULT_RIGHT_HAND_OPEN_NEAR,
+    COMBO_ADULT_RIGHT_HAND_OPEN_FAR,
+    COMBO_ADULT_RIGHT_HAND_CLOSED_NEAR,
+    COMBO_ADULT_RIGHT_HAND_CLOSED_FAR,
+    COMBO_ADULT_RIGHT_HAND_INSTRUMENT_NEAR,
+    COMBO_ADULT_RIGHT_HAND_INSTRUMENT_FAR,
+    COMBO_ADULT_LEFT_HAND_BOTTLE,
+    COMBO_ADULT_RIGHT_SHOULDER_NEAR,
+    COMBO_ADULT_BODY_MAX,
+    COMBO_ADULT_KOKIRI_SWORD_NEAR = COMBO_ADULT_BODY_MAX,
+    COMBO_ADULT_KOKIRI_SWORD_FAR,
+    COMBO_ADULT_RAZOR_SWORD_NEAR,
+    COMBO_ADULT_RAZOR_SWORD_FAR,
+    COMBO_ADULT_GILDED_SWORD_NEAR,
+    COMBO_ADULT_GILDED_SWORD_FAR,
+    COMBO_ADULT_GREAT_FAIRYS_SWORD_NEAR,
+    COMBO_ADULT_GREAT_FAIRYS_SWORD_FAR,
+    COMBO_ADULT_HEROS_SHIELD_NEAR,
+    COMBO_ADULT_HEROS_SHIELD_FAR,
+    COMBO_ADULT_MIRROR_SHIELD_NEAR,
+    COMBO_ADULT_MIRROR_SHIELD_FAR,
+    COMBO_ADULT_BOW_NEAR,
+    COMBO_ADULT_BOW_FAR,
+    COMBO_ADULT_HOOKSHOT_NEAR,
+    COMBO_ADULT_HOOKSHOT_FAR,
+    COMBO_ADULT_FIRST_PERSON_BOW,
+    COMBO_ADULT_FIRST_PERSON_HOOKSHOT,
+    COMBO_ADULT_SLOT_MAX,
+    // Nothing is drawn, as OoTMM binds an empty list there (the first-person left forearm).
+    COMBO_ADULT_SLOT_EMPTY = 0xFF
+} ComboAdultOotSlot;
+
+// OoT's eight adult eye textures, then its four mouth textures, index for index with MM's human rows.
+#define COMBO_ADULT_EYE_TEXTURES 8
+#define COMBO_ADULT_MOUTH_TEXTURES 4
