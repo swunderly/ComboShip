@@ -9,6 +9,7 @@
 #include <fast/resource/type/DisplayList.h>
 #include <ship/Context.h>
 #include <ship/resource/ResourceManager.h>
+#include <libultraship/bridge/consolevariablebridge.h>
 #include "soh/frame_interpolation.h"
 #include "soh/Enhancements/custom-message/CustomMessageTypes.h"
 #include <algorithm>
@@ -303,6 +304,12 @@ void RegisterItems(std::array<Item, RG_MAX>& items) {
 static const void* soulPlay = nullptr;
 static int soulRoom = -1;
 static bool soulRoomBlocked = false;
+// SoH's Enemy Randomizer swaps enemies for identities logic never modelled (EnemyRandomizer.cpp), and OoTMM
+// has no counterpart. While it is on, a soul never keeps an enemy away, a room shut or Dark Link's room
+// open, so logic only asks for more than the game and a souls save cannot softlock (docs/deviations/rando.md).
+static bool OotSoulsSuspended() {
+    return CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0) != 0;
+}
 extern "C" void Combo_OotSoulResetRoom(void* raw) {
     auto play = static_cast<PlayState*>(raw);
     soulPlay = play;
@@ -310,15 +317,16 @@ extern "C" void Combo_OotSoulResetRoom(void* raw) {
     soulRoomBlocked = false;
 }
 extern "C" int Combo_OotSoulCanClear(void* raw, int room) {
-    return !(soulRoomBlocked && soulPlay == raw && soulRoom == room);
+    return OotSoulsSuspended() || !(soulRoomBlocked && soulPlay == raw && soulRoom == room);
 }
 // OoTMM's En_Blkobj hook makes Actor_Find report Dark Link present while his soul is missing.
 extern "C" int Combo_OotDarkLinkSoulMissing(void) {
-    return IS_RANDO && !Rando::Souls::HaveGeneralOotSoul(Rando::Souls::Read(&gSaveContext), Rando::Souls::Options(),
-                                                         Rando::Souls::OotSoul::ENEMY_DARK_LINK);
+    return IS_RANDO && !OotSoulsSuspended() &&
+           !Rando::Souls::HaveGeneralOotSoul(Rando::Souls::Read(&gSaveContext), Rando::Souls::Options(),
+                                             Rando::Souls::OotSoul::ENEMY_DARK_LINK);
 }
 extern "C" int Combo_OotSoulPreSpawn(void* raw, int actor, unsigned params) {
-    if (!IS_RANDO || !Rando::Souls::Options().enabled)
+    if (!IS_RANDO || OotSoulsSuspended() || !Rando::Souls::Options().enabled)
         return 1;
     auto play = static_cast<PlayState*>(raw);
     // Runtime ownership uses the real save, independent of generator's logic save.
