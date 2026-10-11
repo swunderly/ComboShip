@@ -325,7 +325,8 @@ static std::set<RandoItemId> setOfItemsInPool;
 static std::set<RandoCheckId> setOfChecksInPool;
 static uint32_t checkPoolGeneration = 0;
 #ifdef COMBO_BUILD
-extern "C" void Combo_MM_ClearHiddenAdultOptions(u32* options);
+extern "C" void Combo_MM_ClearUnavailableOptions(u32* options);
+extern "C" int Combo_MMSpellOptionReady(int spell);
 #endif
 void RefreshMetrics() {
     setOfItemsInPool.clear();
@@ -342,8 +343,8 @@ void RefreshMetrics() {
     auto startingItems = Rando::GetStartingItemsFromConfig();
     Rando::SetStartingItemsInSave(randoSaveInfo, startingItems);
 #ifdef COMBO_BUILD
-    // Same hidden adult/gear defaults as generation (BenPort.cpp), so the counts match the seed.
-    Combo_MM_ClearHiddenAdultOptions(randoSaveInfo.randoSaveOptions);
+    // Same hidden adult/gear and unready spell defaults as generation (BenPort.cpp), so the counts match the seed.
+    Combo_MM_ClearUnavailableOptions(randoSaveInfo.randoSaveOptions);
 #endif
 
     Rando::Logic::GeneratePools(randoSaveInfo, checkPool, itemPool);
@@ -958,6 +959,23 @@ static bool ItemPoolCheckbox(const char* label, RandoOptionId optionId, const ch
     return changed;
 }
 
+#ifdef COMBO_BUILD
+// Din's Fire and Nayru's Love (MM) need their native runtime (Spells.cpp). Where it is not ready, the row shows
+// unticked and greyed out without overwriting the stored preference, and new seeds leave the spell out.
+static void SpellPoolCheckbox(const char* label, RandoOptionId optionId, int spell, const char* tooltip) {
+    if (Combo_MMSpellOptionReady(spell)) {
+        ItemPoolCheckbox(label, optionId, tooltip, 1);
+        return;
+    }
+    bool off = false;
+    UIWidgets::Checkbox(label, &off,
+                        CheckboxOptions({ { .tooltip = tooltip,
+                                            .disabled = true,
+                                            .disabledTooltip = "Disabled because this device could not prepare the "
+                                                               "spell. New seeds leave it out." } }));
+}
+#endif
+
 static void DrawItemPoolTab(int section = 0) {
     DrawSeedHealthStrip();
 
@@ -1102,9 +1120,9 @@ static void DrawItemPoolTab(int section = 0) {
 #ifdef COMBO_BUILD
         UIWidgets::BeginCard("itemPoolCrossGame");
         ImGui::SeparatorText("Cross-Game Items");
-        ItemPoolCheckbox("Din's Fire (MM)", RO_MM_SPELL_FIRE, "Adds Din's Fire in Majora's Mask.", 1);
+        SpellPoolCheckbox("Din's Fire (MM)", RO_MM_SPELL_FIRE, 2, "Adds Din's Fire in Majora's Mask.");
         ItemPoolCheckbox("Farore's Wind (MM)", RO_MM_SPELL_WIND, "Adds Farore's Wind in Majora's Mask.", 1);
-        ItemPoolCheckbox("Nayru's Love (MM)", RO_MM_SPELL_LOVE, "Adds Nayru's Love in Majora's Mask.", 1);
+        SpellPoolCheckbox("Nayru's Love (MM)", RO_MM_SPELL_LOVE, 1, "Adds Nayru's Love in Majora's Mask.");
         UIWidgets::EndCard();
 #endif
 

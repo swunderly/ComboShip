@@ -54,7 +54,10 @@ layout = read('mm/2s2h/ProfileMmLayout.inc')
 options = read('mm/2s2h/Rando/StaticData/Options.cpp')
 positions = []
 for s in fixture['settings']:
-    row = f'ItemPoolCheckbox("{s["name"]}", {s["ro"]}, "{s["description"]}", 1);'
+    # Din's Fire and Nayru's Love go through SpellPoolCheckbox, which greys them out where they cannot be cast.
+    spell = {'RO_MM_SPELL_LOVE': 1, 'RO_MM_SPELL_FIRE': 2}.get(s['ro'])
+    row = (f'SpellPoolCheckbox("{s["name"]}", {s["ro"]}, {spell}, "{s["description"]}");' if spell else
+           f'ItemPoolCheckbox("{s["name"]}", {s["ro"]}, "{s["description"]}", 1);')
     check(row in menu, f'Menu.cpp lacks {row}')
     positions.append(menu.find(row))
     check(f'{{"label","{s["name"]}"}},{{"kind","checkbox"}},{{"tooltip","{s["description"]}"}},{{"key",Rando::StaticData::Options.at({s["ro"]}).cvar}}' in layout,
@@ -223,6 +226,48 @@ if spell_expr and fallback:
     for name, expected in (('ITEM_NONE', True), ('ITEM_RECOVERY_HEART', True), ('ITEM_MOONS_TEAR', False)):
         check(falls_back(item_ids[name]) == expected, f'Inventory tracker fallback changed for {name}')
 check('for (const TexturePtr entry : gItemIcons)' in read('mm/2s2h/ShipUtils.cpp'), 'gItemIcons textures are not loaded')
+
+# ---- Runtime readiness: a device that cannot cast Din's Fire or Nayru's Love never generates a seed that needs it.
+# The cast checks the integration (Combo_MMSpellEnabled) and the spell's own resources (Combo_MMSpellUseItem,
+# ComboMagic*_Init); the seed options follow the same readiness, kept per spell when the integration comes up.
+
+
+def body(source, signature):
+    """Text of the function or initializer that starts at signature, up to its matching brace."""
+    at = source.index(signature)
+    depth, i = 0, source.index('{', at)
+    while True:
+        depth += (source[i] == '{') - (source[i] == '}')
+        i += 1
+        if depth == 0:
+            return squash(source[at:i])
+
+
+spells_cpp = read('mm/2s2h/Rando/Spells.cpp')
+benport = read('mm/2s2h/BenPort.cpp')
+ready = body(spells_cpp, 'extern "C" COMBO_EXPORT int MM_SetNativeSpellIntegrationReady(')
+check('constintmask=MM_PrepareNativeSpellsForCombo();if(mask&1){ComboRando::ComboFaroreIntegrationReady=true;sReadySpells=mask&6;}' in ready,
+      'MM_SetNativeSpellIntegrationReady does not keep the Love/Fire readiness bits')
+check('sReadySpells=0;' in body(spells_cpp, 'void DropSpellResources()'), 'resource teardown keeps the spells ready')
+check('returnComboRando::ComboFaroreIntegrationReady&&(sReadySpells&(spell==1?2:4))?1:0;'
+      in body(spells_cpp, 'extern "C" int Combo_MMSpellOptionReady('), 'Combo_MMSpellOptionReady does not need both')
+check('{RO_MM_SPELL_LOVE,1},{RO_MM_SPELL_FIRE,2}' in squash(benport), 'kComboMmSpellOptions does not number the spells as Spells.cpp')
+zero_options = 'for(constauto&[id,spell]:kComboMmSpellOptions)if(!Combo_MMSpellOptionReady(spell))'
+check(zero_options + 'options[id]=0;' in body(benport, 'extern "C" void Combo_MM_ClearUnavailableOptions('),
+      'generation keeps a spell the device cannot cast')
+check(zero_options + 'options[Rando::StaticData::Options[id].name]=uint32_t(0);'
+      in body(benport, 'extern "C" COMBO_EXPORT int MM_InitRandoSaveFile('), 'a new MM save keeps an unready spell')
+check(zero_options + 'j[Rando::StaticData::Options[id].cvar]=0;'
+      in body(benport, 'extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings('), 'the settings snapshot keeps an unready spell')
+check('Combo_MM_ClearUnavailableOptions(saveInfo.randoSaveOptions);' in body(benport, 'extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData('),
+      'the generation dump does not drop unready spells')
+check('Combo_MM_ClearHiddenAdultOptions' not in benport + menu, 'an options path still clears only the adult options')
+check('Combo_MMSpellsForHeadlessGeneration();' in body(benport, 'extern "C" COMBO_EXPORT void MM_InitRandoHeadless('),
+      'the headless generator cannot add the spells')
+check(squash('SpellPoolCheckbox("Din\'s Fire (MM)", RO_MM_SPELL_FIRE, 2,') in squash(menu)
+      and squash('SpellPoolCheckbox("Nayru\'s Love (MM)", RO_MM_SPELL_LOVE, 1,') in squash(menu),
+      'the Cross-Game Items rows do not grey out unready spells')
+check('Combo_MM_ClearUnavailableOptions(randoSaveInfo.randoSaveOptions);' in squash(menu), 'pool counts keep unready spells')
 
 # ---- The fixture against OoTMM v32.3 itself.
 reference = a.reference

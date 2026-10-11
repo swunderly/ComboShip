@@ -20,6 +20,9 @@ std::array<std::shared_ptr<Ship::ResourceManager>, 2> sOotResources, sMmResource
 std::array<std::array<std::shared_ptr<Ship::IResource>, 12>, 2> sOwners, sFrameOwners;
 std::array<bool, 2> sOotAlt{}, sMmAlt{};
 void (*sInvalidateIntegration)() = nullptr;
+// MM_PrepareNativeSpellsForCombo bits 1 (Love) and 2 (Fire) as found when the integration came up.
+int sReadySpells = 0;
+bool sHeadlessGeneration = false;
 constexpr const char* sPaths[2][12] = {
     { "overlays/ovl_Magic_Dark/sDiamondTex", "objects/gameplay_keep/gPlayerAnim_link_magic_tame",
       "objects/gameplay_keep/gPlayerAnim_link_magic_honoo1", "objects/gameplay_keep/gPlayerAnim_link_magic_honoo2",
@@ -36,6 +39,7 @@ constexpr const char* sPaths[2][12] = {
 };
 void DropSpellResources() {
     ComboRando::ComboFaroreIntegrationReady = false;
+    sReadySpells = 0;
     sOwners = {};
     sFrameOwners = {};
     sOotResources = {};
@@ -116,13 +120,33 @@ extern "C" COMBO_EXPORT int MM_PrepareNativeSpellsForCombo() {
     return mask;
 }
 // Process startup/teardown only. Save rules and actual ownership remain independent.
-// Readiness needs only Farore's Wind; Love and Fire check their own resources wherever they are used.
+// Readiness needs only Farore's Wind; Love and Fire check their own resources wherever they are used, and the
+// result for each is kept so their seed options are offered only where they can be cast.
 extern "C" COMBO_EXPORT int MM_SetNativeSpellIntegrationReady(int enable, void (*invalidate)()) {
     ComboRando::ComboFaroreIntegrationReady = false;
+    sReadySpells = 0;
     sInvalidateIntegration = enable ? invalidate : nullptr;
-    if (enable && Combo_MMFaroreBridgeReady() && (MM_PrepareNativeSpellsForCombo() & 1))
-        ComboRando::ComboFaroreIntegrationReady = true;
+    if (enable && Combo_MMFaroreBridgeReady()) {
+        const int mask = MM_PrepareNativeSpellsForCombo();
+        if (mask & 1) {
+            ComboRando::ComboFaroreIntegrationReady = true;
+            sReadySpells = mask & 6;
+        }
+    }
     return ComboRando::ComboFaroreIntegrationReady ? 1 : 0;
+}
+// A seed must not need a spell this device cannot cast: casting needs the integration (Combo_MMSpellEnabled) and
+// the spell's own resources (Combo_MMSpellUseItem, ComboMagic*_Init). Without them the menu greys the option out
+// and options are gathered with it off (BenPort.cpp kComboMmSpellOptions), as for the hidden adult options.
+extern "C" int Combo_MMSpellOptionReady(int spell) {
+    if (spell != 1 && spell != 2)
+        return 0;
+    if (sHeadlessGeneration)
+        return 1;
+    return ComboRando::ComboFaroreIntegrationReady && (sReadySpells & (spell == 1 ? 2 : 4)) ? 1 : 0;
+}
+extern "C" void Combo_MMSpellsForHeadlessGeneration() {
+    sHeadlessGeneration = true;
 }
 extern "C" const char* Combo_MMSpellItemName(int item) {
     const int spell = item == ITEM_COMBO_NAYRUS_LOVE ? 1 : item == ITEM_COMBO_DINS_FIRE ? 2 : 0;

@@ -2847,6 +2847,9 @@ extern "C" COMBO_EXPORT void MM_InitRandoHeadless(void) {
     inited = true;
     ShipInit::Init("RANDO_LOGIC"); // OwnRMScope("mm") no-ops headlessly (no "mm" RM registered)
     Rando::StaticData::PopulateCheckNames();
+#ifdef COMBO_BUILD
+    Combo_MMSpellsForHeadlessGeneration(); // only the headless generator calls this function
+#endif
 }
 
 #ifdef COMBO_BUILD
@@ -2952,11 +2955,17 @@ static bool Combo_MM_IsHiddenAdultOption(RandoOptionId id) {
     return std::find(std::begin(kComboHiddenAdultMmOptions), std::end(kComboHiddenAdultMmOptions), id) !=
            std::end(kComboHiddenAdultMmOptions);
 }
-extern "C" void Combo_MM_ClearHiddenAdultOptions(u32* options) {
-    if (Combo_MM_AdultResourcesReady())
-        return;
-    for (const auto id : kComboHiddenAdultMmOptions)
-        options[id] = 0;
+// Din's Fire and Nayru's Love (MM), numbered as in Spells.cpp. A device that cannot cast one keeps its option at 0
+// wherever options are gathered, so no seed made there needs it (Combo_MMSpellOptionReady).
+static constexpr std::pair<RandoOptionId, int> kComboMmSpellOptions[] = { { RO_MM_SPELL_LOVE, 1 },
+                                                                          { RO_MM_SPELL_FIRE, 2 } };
+extern "C" void Combo_MM_ClearUnavailableOptions(u32* options) {
+    if (!Combo_MM_AdultResourcesReady())
+        for (const auto id : kComboHiddenAdultMmOptions)
+            options[id] = 0;
+    for (const auto& [id, spell] : kComboMmSpellOptions)
+        if (!Combo_MMSpellOptionReady(spell))
+            options[id] = 0;
 }
 
 // Combo master seed for MM's RNG, mirroring OOT's SOH_SetComboRandoSeed so confined placement
@@ -3057,9 +3066,12 @@ extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(int fileNum, const char* placem
             options[Rando::StaticData::Options[RO_CROSS_GAME_FARORE].name] = uint32_t(sMMSeedFaroreRules.crossGameFw);
             options[Rando::StaticData::Options[RO_MM_CROSS_AGE].name] = uint32_t(sMMSeedFaroreRules.crossAge);
         }
-        // After the seed override above, which can otherwise bring Cross Age back.
+        // After the seed override above, which can otherwise bring Cross Age or a spell back.
         if (!Combo_MM_AdultResourcesReady())
             for (const auto id : kComboHiddenAdultMmOptions)
+                options[Rando::StaticData::Options[id].name] = uint32_t(0);
+        for (const auto& [id, spell] : kComboMmSpellOptions)
+            if (!Combo_MMSpellOptionReady(spell))
                 options[Rando::StaticData::Options[id].name] = uint32_t(0);
         spoiler["options"] = options;
         spoiler["startingItems"] = nlohmann::json::array();
@@ -3343,9 +3355,13 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings(void) {
         if (opt.cvar && opt.cvar[0])
             j[opt.cvar] = (int)CVarGetInteger(opt.cvar, opt.defaultValue);
     }
-    // The snapshot travels with seeds; keep it matching their pools (kComboHiddenAdultMmOptions).
+    // The snapshot travels with seeds; keep it matching their pools (kComboHiddenAdultMmOptions,
+    // kComboMmSpellOptions).
     if (!Combo_MM_AdultResourcesReady())
         for (const auto id : kComboHiddenAdultMmOptions)
+            j[Rando::StaticData::Options[id].cvar] = 0;
+    for (const auto& [id, spell] : kComboMmSpellOptions)
+        if (!Combo_MMSpellOptionReady(spell))
             j[Rando::StaticData::Options[id].cvar] = 0;
     // Excluded checks are a JSON-array config block of RC_ names (upstream #1817) outside the options
     // walk; GeneratePools reads them, so a replayed spoiler must carry them or local exclusions leak
@@ -3782,7 +3798,7 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoStaticData(void) {
     saveInfo.randoSaveOptions[RO_SHARED_SPELL_WIND] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_WIND)) != 0;
     saveInfo.randoSaveOptions[RO_SHARED_SPELL_FIRE] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_FIRE)) != 0;
     saveInfo.randoSaveOptions[RO_SHARED_SPELL_LOVE] = (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_LOVE)) != 0;
-    Combo_MM_ClearHiddenAdultOptions(saveInfo.randoSaveOptions);
+    Combo_MM_ClearUnavailableOptions(saveInfo.randoSaveOptions);
     Rando::Logic::GeneratePools(saveInfo, checkPool, itemPool);
 
     // Capture only randomized purchase prices. Upstream also rolls unused prices
@@ -4615,7 +4631,7 @@ extern "C" COMBO_EXPORT void Combo_MM_Rando_Reset(void) {
         (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_FIRE)) != 0;
     gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHARED_SPELL_LOVE] =
         (gMMComboSharedMask & (1u << ComboRando::SF_SPELL_LOVE)) != 0;
-    Combo_MM_ClearHiddenAdultOptions(gSaveContext.save.shipSaveInfo.rando.randoSaveOptions);
+    Combo_MM_ClearUnavailableOptions(gSaveContext.save.shipSaveInfo.rando.randoSaveOptions);
     // ComboShip (#136): combo owns the goal, so the hidden CVars above must not decide it here either.
     gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_SHUFFLE_TRIFORCE_PIECES] =
         gMMComboGoalHunt ? RO_GENERIC_YES : RO_GENERIC_NO;
