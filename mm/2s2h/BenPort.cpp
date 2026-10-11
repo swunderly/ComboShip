@@ -6135,7 +6135,7 @@ extern "C" int Combo_MM_AdultResourcesReady(void) {
 // Cross-Games Age (OoTMM crossAge, data.ts:1504-1511) draws adult Link in MM with OoT's own adult model and Epona from
 // the OoT archive (plan F5b 5b-1, 5b-7) and needs none of the Adult Mask, hybrid voice or importer resources above.
 // Release switch, set in its own commit: turn it off again if the on-phone adult checks fail.
-static constexpr bool kCrossAgeRuntimeComplete = false;
+static constexpr bool kCrossAgeRuntimeComplete = true;
 static int Combo_MM_CrossAgeRuntimeEnabled(void) {
 #ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
     // Emulator runs of a diagnostics build switch it on with a default-off debug CVar (plan F5b 5b-8).
