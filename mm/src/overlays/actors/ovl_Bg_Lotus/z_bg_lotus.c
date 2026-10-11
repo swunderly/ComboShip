@@ -12,6 +12,12 @@ void func_80AD68DC(BgLotus* this, PlayState* play);
 void func_80AD6A88(BgLotus* this, PlayState* play);
 void func_80AD6B68(BgLotus* this, PlayState* play);
 
+#ifdef COMBO_BUILD
+// Player.c custom boots: 1 Iron, 2 Hover (z_player.c Combo_MM_GetCustomBoots, -1 without gear).
+#define COMBO_LOTUS_HOVER_BOOTS 2
+s32 Combo_MM_GetCustomBoots(Player* player);
+#endif
+
 ActorProfile Bg_Lotus_Profile = {
     /**/ ACTOR_BG_LOTUS,
     /**/ ACTORCAT_BG,
@@ -83,7 +89,13 @@ void func_80AD68DC(BgLotus* this, PlayState* play) {
                 EffectSsGRipple_Spawn(play, &this->dyna.actor.world.pos, 0x3E8, 0x578, 8);
                 this->unk166 = 40;
             }
+#ifdef COMBO_BUILD
+            // OoTMM v32.3 BgLotus_ShouldSink (Bg_Lotus.c:4-8): Hover Boots keep the lily pad afloat.
+            if ((gSaveContext.save.playerForm != PLAYER_FORM_DEKU) &&
+                (Combo_MM_GetCustomBoots(GET_PLAYER(play)) != COMBO_LOTUS_HOVER_BOOTS)) {
+#else
             if (gSaveContext.save.playerForm != PLAYER_FORM_DEKU) {
+#endif
                 this->unk166 = 40;
                 this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
                 this->actionFunc = func_80AD6A88;
