@@ -693,15 +693,25 @@ static bool HintNamesItemUniquely(RandomizerGet rg) {
 
 #ifdef COMBO_BUILD
 // A combo location sentence names an OoT item by its native hint text and an MM item by its own
-// shown name, the same text the tracker records. It names an OoT ice trap as "an Ice Trap", though,
-// not as the disguise the tracker would record, so that one marks nothing.
+// untagged name, which the tracker records with its "(MM)" tag. An MM item named like an OoT item
+// marks nothing, or the tag would tell which game's item the text meant. The sentence names an OoT
+// ice trap as "an Ice Trap", not as the disguise the tracker would record, so that one marks nothing.
 static bool ComboHintNamesItemUniquely(RandomizerCheck rc) {
     const RandomizerGet placed = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->GetPlacedRandomizerGet();
     if (placed == RG_ICE_TRAP) {
         return false;
     }
     if (placed == RG_COMBO_FOREIGN) {
-        return OOT_LookupForeignByCheck(rc) != nullptr;
+        static const auto ootNames = [] {
+            std::set<std::string> names;
+            for (const auto& item : Rando::StaticData::GetItemTable()) {
+                names.insert(item.GetName().GetEnglish());
+            }
+            return names;
+        }();
+        const ComboRando::ForeignItem* fi = OOT_LookupForeignByCheck(rc);
+        return fi != nullptr && (fi->shared || !ootNames.contains(ComboRando::StripGameSuffix(
+                                                   fi->HasDisguise() ? fi->fakeDisplayName : fi->displayName)));
     }
     return HintNamesItemUniquely(placed);
 }
