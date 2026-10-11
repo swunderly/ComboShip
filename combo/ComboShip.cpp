@@ -2888,6 +2888,7 @@ static int RunComboGenTest(int numSeeds, uint32_t seedBase) {
                                        MM_GetSongKnowledge,
                                        MM_SetForeignSongKnowledge };
     mmOracle.SetExternalBeanRenewal = MM_SetOracleExternalBeanRenewal;
+    AttachAdultAgeOracle(ootOracle, mmOracle);
 
     std::cout << "[GENTEST] running " << numSeeds << " cross-world generations (seedBase=" << seedBase
               << ") — asserting every advancement item is reachable from an empty start in both games\n";
@@ -3008,6 +3009,7 @@ static void RunComboPlaythrough(const std::string& inputSeed) {
                                        MM_GetSongKnowledge,
                                        MM_SetForeignSongKnowledge };
     mmOracle.SetExternalBeanRenewal = MM_SetOracleExternalBeanRenewal;
+    AttachAdultAgeOracle(ootOracle, mmOracle);
     std::string seedStr = inputSeed.empty() ? "1" : inputSeed;
     const uint32_t baseSeed = ComboHash(seedStr.c_str());
     std::string sohDump, mmDump;

@@ -282,6 +282,12 @@ int main(int argc, char** argv) {
                                Sym<uint32_t (*)()>(mm, "MM_GetSongKnowledge"),
                                Sym<void (*)(uint32_t)>(mm, "MM_SetForeignSongKnowledge") };
     mmO.SetExternalBeanRenewal = Sym<int (*)(uint8_t)>(mm, "MM_SetOracleExternalBeanRenewal");
+    // The app's OoT age oracle (ComboShip.cpp AttachAdultAgeOracle), so song landings in OoT carry the
+    // same ages as in the app's generation.
+    oot.GetPortalAges = Sym<uint8_t (*)()>(soh, "SOH_GetOraclePortalAges");
+    oot.GetSongSourcesForAge = Sym<uint32_t (*)(int)>(soh, "SOH_GetOracleSongSourcesForAge");
+    oot.SetSongAgeArrivals = Sym<void (*)(uint32_t, uint32_t)>(soh, "SOH_SetOracleSongAgeArrivals");
+    oot.GetStartAges = Sym<uint8_t (*)()>(soh, "SOH_GetOracleStartAges");
 
     if (!SOH_InitRandoHeadless || !MM_InitRandoHeadless || !SOH_Dump || !MM_Dump || !oot.Reset || !oot.SetOwnedItems ||
         !oot.GetReachableChecks || !oot.PlaceItem || !oot.GetPortalOpen || !mmO.Reset || !mmO.SetOwnedItems ||
