@@ -78,6 +78,12 @@ for rel, count in gear_sites.items():
     text = read(rel)
     check(text.count('Combo_MM_GearActive()') >= count, f'{rel}: gear gate is not Combo_MM_GearActive()')
     check('adultMm.enabled' not in text and 'Combo_MM_AdultResourcesReady()' not in text, f'{rel} still reads the adult state')
+# One trade-slot cycle in a rando save: 2S2H's (KaleidoItemPage.cpp, which offers the gear and the MM spells), not
+# OoTMM's L/C-up cycle and extra icon on top of it.
+for rel, signature in (('mm/2s2h/ComboAdultGearPauseNative.h', 'extern "C" int Combo_MM_AdultGearPauseTick('),
+                       ('mm/2s2h/ComboAdultGearExtraIconNative.h', 'extern "C" void Combo_MM_AdultGearDrawExtraIcon(')):
+    check('gSaveContext.fileNum>2||IS_RANDO||!Combo_MM_GearActive())' in body(read(rel), signature),
+          f'{rel}: OoTMM\'s trade-slot cycle runs beside 2S2H\'s in a rando save')
 player = read('mm/src/overlays/actors/ovl_player_actor/z_player.c')
 for signature in ('s32 Combo_MM_GetCustomBoots(Player* player)', 'static s32 Combo_MM_IsGoronOrGoronTunic(Player* player)',
                   's32 func_808430E0(Player* this)'):

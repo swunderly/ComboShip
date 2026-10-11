@@ -1,7 +1,8 @@
 #pragma once
 // Exact pinned GetVtxBuffer/DrawIcon alternate trade-slot geometry, native owning icon paths.
 extern "C" void Combo_MM_AdultGearDrawExtraIcon(PlayState* play, int slot, const Vtx* source) {
-    if (!play || !source || gSaveContext.fileNum > 2 || !Combo_MM_GearActive())
+    // A rando save shows 2S2H's own cycle icons instead (Combo_MM_AdultGearPauseTick).
+    if (!play || !source || gSaveContext.fileNum > 2 || IS_RANDO || !Combo_MM_GearActive())
         return;
     if (slot != SLOT_TRADE_KEY_MAMA && slot != SLOT_TRADE_COUPLE)
         return;

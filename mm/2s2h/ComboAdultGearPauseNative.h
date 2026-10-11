@@ -35,7 +35,9 @@ inline u8 GearPauseNextItem(int slot) {
 } // namespace ComboAdultMM
 
 extern "C" int Combo_MM_AdultGearPauseTick(PlayState* play, int slot) {
-    if (!play || gSaveContext.fileNum > 2 || !Combo_MM_GearActive())
+    // A rando save cycles the trade slots with 2S2H's own cycle (Rando/MiscBehavior/KaleidoItemPage.cpp), which also
+    // offers the gear and the MM spells; OoTMM's L/C-up cycle would be a second one on the same slot.
+    if (!play || gSaveContext.fileNum > 2 || IS_RANDO || !Combo_MM_GearActive())
         return 0;
     if (slot != SLOT_TRADE_KEY_MAMA && slot != SLOT_TRADE_COUPLE)
         return 0;

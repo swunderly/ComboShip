@@ -2129,6 +2129,12 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   Until those graphs know the Swim ability, a seed with Swim shuffled leaves the gear out: the four rows are greyed
   out and unticked while Swim is ticked, and option gathering keeps them at 0 (`Combo_MM_GearOptionsAllowed`).
   `mm_gear_swim_shuffle_tests.py` checks that every native Swim requirement holds for such a seed.
+- **Trade-slot cycle.** OoTMM changes a shared trade slot with L or C-up, turns the cursor blue and draws the next
+  item in the slot's corner (`mm/ovl_patch/kaleido_scope.c:85-148, 657-711`). A rando save already has 2S2H's own
+  trade-slot cycle (`Rando/MiscBehavior/KaleidoItemPage.cpp`: A, then left/right), which offers the gear beside
+  Farore's Wind, Nayru's Love and the native trade items, as for the MM spells. So the port's copy of OoTMM's cycle
+  (`Combo_MM_AdultGearPauseTick`, `Combo_MM_AdultGearDrawExtraIcon`) stays off in rando saves, and each slot has one
+  cycle.
 - **Not copied:** the MM pause-menu item descriptions (2S2H rando suppresses the descriptions of all trade slots;
   owner decision), OoTMM's OoT file-select MM equipment icons, scales, and the tricks that need the Megaton Hammer or
   Strength 3 in MM (not authorized). The shared tunic text keeps OoTMM's "into two items" wording.
