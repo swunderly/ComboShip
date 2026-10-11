@@ -223,7 +223,8 @@ void RegionTable_Init_DekuTree() {
     areaTable[RR_DEKU_TREE_MQ_1F] = Region("Deku Tree MQ 1F", SCENE_DEKU_TREE, {
         //Events
         EVENT_ACCESS(LOGIC_STICK_ACCESS, logic->CanKillEnemy(RE_WITHERED_DEKU_BABA)),
-        EVENT_ACCESS(LOGIC_NUT_ACCESS,   logic->HasFireSource()),
+        //Nuts from burning the withered Deku Babas need their soul (OoTMM deku_tree_mq.yml:16 can_kill_baba_nuts)
+        EVENT_ACCESS(LOGIC_NUT_ACCESS,   logic->HasFireSource() && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_DEKU_BABA))),
     }, {
         //Locations
         LOCATION(RC_DEKU_TREE_MQ_LOBBY_HEART,   logic->CanUse(RG_BOOMERANG)),
@@ -292,7 +293,7 @@ void RegionTable_Init_DekuTree() {
         LOCATION(RC_DEKU_TREE_MQ_SLINGSHOT_ROOM_CRATE_2,    logic->CanBreakCrates()),
     }, {
         //Exits
-        ENTRANCE(RR_DEKU_TREE_MQ_3F, logic->CanKillEnemy(RE_DEKU_BABA)),
+        ENTRANCE(RR_DEKU_TREE_MQ_3F, logic->CanKillEnemy(RE_DEKU_BABA) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_GOHMA_LARVA))),
     });
 
     areaTable[RR_DEKU_TREE_MQ_EYE_TARGET_ROOM] = Region("Deku Tree MQ Eye Target Room", SCENE_DEKU_TREE, {}, {
@@ -399,7 +400,8 @@ void RegionTable_Init_DekuTree() {
     areaTable[RR_DEKU_TREE_MQ_BASEMENT_WATER_ROOM_BACK] = Region("Deku Tree MQ Basement Water Room Back", SCENE_DEKU_TREE, {
         //Events
         EVENT_ACCESS(LOGIC_STICK_ACCESS, logic->CanKillEnemy(RE_WITHERED_DEKU_BABA)),
-        EVENT_ACCESS(LOGIC_NUT_ACCESS,   logic->HasFireSource()),
+        //Nuts from withered Deku Babas that cannot spawn without their soul (OoTMM has no nut event here)
+        EVENT_ACCESS(LOGIC_NUT_ACCESS,   logic->HasFireSource() && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_DEKU_BABA))),
     }, {
         //Locations
         //it blocks the chest while stunned unless you stun it from afar while it's slightly off the ground
@@ -489,7 +491,7 @@ void RegionTable_Init_DekuTree() {
     }, {
         //Exits
         ENTRANCE(RR_DEKU_TREE_MQ_BASEMENT_LEDGE, logic->HasItem(RG_CLIMB) && (logic->HasItem(RG_BRONZE_SCALE) || logic->CanUse(RG_HOOKSHOT))),
-        ENTRANCE(RR_DEKU_TREE_BOSS_ENTRYWAY,     AnyAgeTime([]{return logic->CanReflectNuts();})),
+        ENTRANCE(RR_DEKU_TREE_BOSS_ENTRYWAY,     AnyAgeTime([]{return logic->CanReflectNuts() && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_DEKU_SCRUB));})),
     });
 
 #pragma endregion

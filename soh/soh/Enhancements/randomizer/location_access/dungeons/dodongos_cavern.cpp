@@ -71,7 +71,8 @@ void RegionTable_Init_DodongosCavern() {
         //Exits
         ENTRANCE(RR_DODONGOS_CAVERN_LOBBY,               true),
         //Shield seems to be in logic to drop a pot on their head as they hit you to blow up the wall
-        ENTRANCE(RR_DODONGOS_CAVERN_SE_ROOM,             AnyAgeTime([]{return logic->CanBreakMudWalls() || logic->CanAttack() || (logic->TakeDamage() && logic->CanShield() && logic->HasItem(RG_POWER_BRACELET));})),
+        //Without explosives a Baby Dodongo blows up the wall, so those routes need its soul (OoTMM dodongo_cavern.yml:26)
+        ENTRANCE(RR_DODONGOS_CAVERN_SE_ROOM,             AnyAgeTime([]{return logic->CanBreakMudWalls() || ((logic->CanAttack() || (logic->TakeDamage() && logic->CanShield() && logic->HasItem(RG_POWER_BRACELET))) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_BABY_DODONGO)));})),
         ENTRANCE(RR_DODONGOS_CAVERN_NEAR_LOWER_LIZALFOS, logic->HasItem(RG_POWER_BRACELET)),
     });
 
@@ -157,7 +158,7 @@ void RegionTable_Init_DodongosCavern() {
         LOCATION(RC_DODONGOS_CAVERN_COMPASS_CHEST, logic->CanOpenLargeChest()),
     }, {
         //Exits
-        ENTRANCE(RR_DODONGOS_CAVERN_STAIRS_LOWER, logic->CanUse(RG_MASTER_SWORD) || logic->CanUse(RG_BIGGORON_SWORD) || logic->CanUse(RG_MEGATON_HAMMER) || logic->HasExplosives() || logic->HasItem(RG_GORONS_BRACELET)),
+        ENTRANCE(RR_DODONGOS_CAVERN_STAIRS_LOWER, (logic->CanUse(RG_MASTER_SWORD) || logic->CanUse(RG_BIGGORON_SWORD) || logic->CanUse(RG_MEGATON_HAMMER) || logic->HasExplosives() || logic->HasItem(RG_GORONS_BRACELET)) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_ARMOS))),
     });
 
     areaTable[RR_DODONGOS_CAVERN_ARMOS_ROOM] = Region("Dodongos Cavern Armos Room", SCENE_DODONGOS_CAVERN, {}, {}, {
@@ -415,7 +416,7 @@ void RegionTable_Init_DodongosCavern() {
     }, {
         //Exits
         ENTRANCE(RR_DODONGOS_CAVERN_MQ_STAIRS_PAST_BIG_SKULLTULAS, true),
-        ENTRANCE(RR_DODONGOS_CAVERN_MQ_TORCH_PUZZLE_LOWER,         AnyAgeTime([]{return logic->CanKillEnemy(RE_DODONGO) || logic->HasItem(RG_GORONS_BRACELET);})),
+        ENTRANCE(RR_DODONGOS_CAVERN_MQ_TORCH_PUZZLE_LOWER,         AnyAgeTime([]{return logic->CanKillEnemy(RE_DODONGO) || logic->HasItem(RG_GORONS_BRACELET);}) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_DODONGO))),
     });
 
     areaTable[RR_DODONGOS_CAVERN_MQ_ENTRANCE_SIDE_BRIDGE] = Region("Dodongos Cavern MQ Entrance Side Bridge", SCENE_DODONGOS_CAVERN, {
@@ -475,7 +476,7 @@ void RegionTable_Init_DodongosCavern() {
         LOCATION(RC_DODONGOS_CAVERN_MQ_LARVAE_ROOM_CRATE_6, logic->CanBreakCrates()),
     }, {
         //Exits
-        ENTRANCE(RR_DODONGOS_CAVERN_MQ_TORCH_PUZZLE_LOWER, true), //implied logic->CanKillEnemy(RE_GOHMA_LARVA) based on entry reqs with a trick to kill with nuts
+        ENTRANCE(RR_DODONGOS_CAVERN_MQ_TORCH_PUZZLE_LOWER, (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_GOHMA_LARVA))), //implied logic->CanKillEnemy(RE_GOHMA_LARVA) based on entry reqs with a trick to kill with nuts
     });
 
     areaTable[RR_DODONGOS_CAVERN_MQ_UPPER_LIZALFOS] = Region("Dodongos Cavern MQ Before Upper Lizalfos", SCENE_DODONGOS_CAVERN, {}, {

@@ -3085,11 +3085,11 @@ bool Logic::MQSpirit4KeyColossus() {
     // We only need 4 keys and the ability to reach both hands for adult to logically be able to drop down onto Desert
     // Colossus This is because there are only 3 keys that can be wasted without opening up either this lock to East
     // hand, or the West Hand lock through Sun Block Room and both directions allow you to drop onto colossus
-    // logic->CanKillEnemy(RE_FLOORMASTER) is implied
+    // logic->CanKillEnemy(RE_FLOORMASTER) is implied, but its soul is not (OoTMM spirit_temple_mq.yml:119)
     return CanAvoidEnemy(RE_BEAMOS, true, 4) && CanUse(RG_SONG_OF_TIME) && CanJumpslash() &&
            (HasItem(RG_POWER_BRACELET) || SunlightArrows()) &&
            (ctx->GetTrickOption(RT_LENS_SPIRIT_MQ) || CanUse(RG_LENS_OF_TRUTH)) && CanKillEnemy(RE_IRON_KNUCKLE) &&
-           CanUse(RG_HOOKSHOT);
+           CanUse(RG_HOOKSHOT) && (!Souls::Enabled() || Souls::Has(this, Souls::OotSoul::ENEMY_FLOORMASTER));
 }
 
 bool Logic::MQSpirit4KeyWestHand() {

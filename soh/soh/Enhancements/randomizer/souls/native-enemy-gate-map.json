@@ -1,0 +1,2314 @@
+{
+  "revision": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "nativeBase": "soh/soh/Enhancements/randomizer/",
+  "description": "Native counterpart of every upstream-enemy-gates.json row. status: match (same soul set), native_stricter (SoH needs a soul OoTMM does not; safe, can only fail generation), no_native_location, not_enemy_soul. auditStatus keeps the step-4 audit result for rows changed or reviewed in F1, and evidence names the statement the host test checks. Line numbers in native and nativeRequirement refer to android-source 72934704, before F1.",
+  "gates": [
+    {
+      "ootmm": "data/world/oot/boss/barinade.yml:6",
+      "status": "not_enemy_soul",
+      "native": "location_access/dungeons/jabujabus_belly.cpp:620 LOGIC_JABU_JABUS_BELLY_CLEAR: CanKillEnemy(RE_<boss>) checks the SoH boss soul HasItem(RG_*_SOUL); EnemySoul has no boss case and OotSoulEvents.h has no case for this event, so no enemy soul on either side",
+      "nativeRequirement": "no enemy soul"
+    },
+    {
+      "ootmm": "data/world/oot/boss/bongo_bongo.yml:6",
+      "status": "not_enemy_soul",
+      "native": "location_access/dungeons/shadow_temple.cpp:807 LOGIC_SHADOW_TEMPLE_CLEAR: CanKillEnemy(RE_<boss>) checks the SoH boss soul HasItem(RG_*_SOUL); EnemySoul has no boss case and OotSoulEvents.h has no case for this event, so no enemy soul on either side",
+      "nativeRequirement": "no enemy soul"
+    },
+    {
+      "ootmm": "data/world/oot/boss/gohma.yml:6",
+      "status": "not_enemy_soul",
+      "native": "location_access/dungeons/deku_tree.cpp:511 LOGIC_DEKU_TREE_CLEAR: CanKillEnemy(RE_<boss>) checks the SoH boss soul HasItem(RG_*_SOUL); EnemySoul has no boss case and OotSoulEvents.h has no case for this event, so no enemy soul on either side",
+      "nativeRequirement": "no enemy soul"
+    },
+    {
+      "ootmm": "data/world/oot/boss/king_dodongo.yml:6",
+      "status": "not_enemy_soul",
+      "native": "location_access/dungeons/dodongos_cavern.cpp:682-686 LOGIC_DODONGOS_CAVERN_CLEAR: CanKillEnemy(RE_<boss>) checks the SoH boss soul HasItem(RG_*_SOUL); EnemySoul has no boss case and OotSoulEvents.h has no case for this event, so no enemy soul on either side",
+      "nativeRequirement": "no enemy soul"
+    },
+    {
+      "ootmm": "data/world/oot/boss/morpha.yml:6",
+      "status": "not_enemy_soul",
+      "native": "location_access/dungeons/water_temple.cpp:1454 LOGIC_WATER_TEMPLE_CLEAR: CanKillEnemy(RE_<boss>) checks the SoH boss soul HasItem(RG_*_SOUL); EnemySoul has no boss case and OotSoulEvents.h has no case for this event, so no enemy soul on either side",
+      "nativeRequirement": "no enemy soul"
+    },
+    {
+      "ootmm": "data/world/oot/boss/phantom_ganon.yml:6",
+      "status": "not_enemy_soul",
+      "native": "location_access/dungeons/forest_temple.cpp:849 LOGIC_FOREST_TEMPLE_CLEAR: CanKillEnemy(RE_<boss>) checks the SoH boss soul HasItem(RG_*_SOUL); EnemySoul has no boss case and OotSoulEvents.h has no case for this event, so no enemy soul on either side",
+      "nativeRequirement": "no enemy soul"
+    },
+    {
+      "ootmm": "data/world/oot/boss/twinrova.yml:6",
+      "status": "match",
+      "native": "LOGIC_SPIRIT_TEMPLE_CLEAR, location_access/dungeons/spirit_temple.cpp:1194 (RR_SPIRIT_TEMPLE_BOSS_ROOM); EVENT_ACCESS -> EventPrerequisite OotSoulEvents.h:16-17 Has(ENEMY_IRON_KNUCKLE); boss part = CanKillEnemy(RE_TWINROVA) HasItem(RG_TWINROVA_SOUL), logic.cpp:1137-1139 (SoH boss soul); event gates RC_SPIRIT_TEMPLE_TWINROVA_HEART and RC_TWINROVA (:1197-1198) and the Colossus exit (:1202)",
+      "nativeRequirement": "{ENEMY_IRON_KNUCKLE} (+ SoH RG_TWINROVA_SOUL)"
+    },
+    {
+      "ootmm": "data/world/oot/boss/volvagia.yml:6",
+      "status": "not_enemy_soul",
+      "native": "location_access/dungeons/fire_temple.cpp:1111 LOGIC_FIRE_TEMPLE_CLEAR: CanKillEnemy(RE_<boss>) checks the SoH boss soul HasItem(RG_*_SOUL); EnemySoul has no boss case and OotSoulEvents.h has no case for this event, so no enemy soul on either side",
+      "nativeRequirement": "no enemy soul"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/*.yml: 46 uses of gs / collect_gs_on_walls (bottom_of_the_well:43-45; deku_tree:20,53,54,69; dodongo_cavern:29,42,99,100,192; fire_temple:36,58,74,101,102; forest_temple:9,34,64,111,209,227; ice_cavern:28,55,96; jabu_jabu:83,84,103,131; shadow_temple:66,82,106,145,159; spirit_temple:50,74,102,117,142,172; water_temple:72,125,139,171,195)",
+      "status": "not_enemy_soul",
+      "native": "RE_GOLD_SKULLTULA -> Has(MISC_GS) (OotSouls.cpp:119-120) and souls/OotSoulChecks.h MISC_GS cases (misc soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/*.yml: 9 uses of business_scrub (dodongo_cavern:18,76,134,135; ganon_castle:27-30; jabu_jabu:15)",
+      "status": "not_enemy_soul",
+      "native": "souls/OotSoulChecks.h MISC_BUSINESS_SCRUB cases (misc soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:23",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_BOTW_MAIN is registry data only (combo/rando/entrances/Registry.h:491); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:41",
+      "status": "match",
+      "native": "RC_BOTTOM_OF_THE_WELL_LENS_OF_TRUTH_CHEST, location_access/dungeons/bottom_of_the_well.cpp:182 + souls/OotSoulChecks.h:24-25",
+      "nativeRequirement": "CanKillEnemy(RE_DEAD_HAND) -> ENEMY_DEAD_HAND (OotSouls.cpp:141-142); CheckPrerequisite Has(ENEMY_DEAD_HAND)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:70",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:71",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:72",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/deku_tree.yml:11",
+      "status": "match",
+      "native": "RR_DEKU_TREE_2F_MIDDLE_ROOM -> RR_DEKU_TREE_SLINGSHOT_ROOM, location_access/dungeons/deku_tree.cpp:67",
+      "nativeRequirement": "(CanReflectNuts || hammer) && (!Souls::Enabled() || Souls::Has(ENEMY_DEKU_SCRUB))"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/deku_tree.yml:14",
+      "status": "match",
+      "native": "LOGIC_STICK_ACCESS in RR_DEKU_TREE_LOBBY, location_access/dungeons/deku_tree.cpp:21",
+      "nativeRequirement": "CanGetDekuBabaSticks(): returns false when Souls::Enabled() && !Has(ENEMY_DEKU_BABA) (logic.cpp:1388-1391)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/deku_tree.yml:15",
+      "status": "match",
+      "native": "LOGIC_NUT_ACCESS in RR_DEKU_TREE_LOBBY, location_access/dungeons/deku_tree.cpp:22",
+      "nativeRequirement": "CanGetDekuBabaNuts(): false when Souls::Enabled() && !Has(ENEMY_DEKU_BABA) (logic.cpp:1394-1398)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/deku_tree.yml:88",
+      "status": "match",
+      "native": "RR_DEKU_TREE_OUTSIDE_BOSS_ROOM -> RR_DEKU_TREE_BOSS_ENTRYWAY, location_access/dungeons/deku_tree.cpp:216",
+      "nativeRequirement": "CanReflectNuts && (!Souls::Enabled() || Souls::Has(ENEMY_DEKU_SCRUB))"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:26",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_SE_CORRIDOR -> RR_DODONGOS_CAVERN_SE_ROOM, location_access/dungeons/dodongos_cavern.cpp:74",
+      "nativeRequirement": "CanBreakMudWalls() || CanAttack() || (TakeDamage() && CanShield() && HasItem(RG_POWER_BRACELET)); no soul on the baby-dodongo alternatives",
+      "auditStatus": "native_missing",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The attack and shield/pot alternatives rely on a Baby Dodongo blowing the wall; CanBreakMudWalls stays soul-free like OoTMM's explosive, hammer, blue fire and Blast Mask alternatives.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/dodongos_cavern.cpp",
+          "region": "RR_DODONGOS_CAVERN_SE_CORRIDOR",
+          "statement": "ENTRANCE(RR_DODONGOS_CAVERN_SE_ROOM,",
+          "souls": [
+            "ENEMY_BABY_DODONGO"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:49",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_LOWER_LIZALFOS -> RR_DODONGOS_CAVERN_NEAR_LOWER_LIZALFOS, location_access/dungeons/dodongos_cavern.cpp:104 via LOGIC_DC_KILLED_LOWER_LIZALFOS (:94)",
+      "nativeRequirement": "CanKillEnemy(RE_LIZALFOS) -> ENEMY_LIZALFOS_DINOLFOS (OotSouls.cpp:125-126)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:50",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_LOWER_LIZALFOS -> RR_DODONGOS_CAVERN_DODONGO_ROOM, location_access/dungeons/dodongos_cavern.cpp:105 via LOGIC_DC_KILLED_LOWER_LIZALFOS (:94)",
+      "nativeRequirement": "CanKillEnemy(RE_LIZALFOS) -> ENEMY_LIZALFOS_DINOLFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:110",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_COMPASS_ROOM -> RR_DODONGOS_CAVERN_STAIRS_LOWER, location_access/dungeons/dodongos_cavern.cpp:160",
+      "nativeRequirement": "MASTER_SWORD || BIGGORON_SWORD || MEGATON_HAMMER || HasExplosives || GORONS_BRACELET; no soul",
+      "auditStatus": "native_missing",
+      "note": "Fixed in F1: the native gate now requires the same soul set. ",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/dodongos_cavern.cpp",
+          "region": "RR_DODONGOS_CAVERN_COMPASS_ROOM",
+          "statement": "ENTRANCE(RR_DODONGOS_CAVERN_STAIRS_LOWER,",
+          "souls": [
+            "ENEMY_ARMOS"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:140",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_UPPER_LIZALFOS -> RR_DODONGOS_CAVERN_FIRST_SLINGSHOT_ROOM, location_access/dungeons/dodongos_cavern.cpp:217",
+      "nativeRequirement": "CanKillEnemy(RE_LIZALFOS) -> ENEMY_LIZALFOS_DINOLFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:141",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_UPPER_LIZALFOS -> RR_DODONGOS_CAVERN_SECOND_SLINGSHOT_ROOM, location_access/dungeons/dodongos_cavern.cpp:218",
+      "nativeRequirement": "CanKillEnemy(RE_LIZALFOS) -> ENEMY_LIZALFOS_DINOLFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:28",
+      "status": "match",
+      "native": "RR_FIRE_TEMPLE_LOOP_HEXAGON_ROOM -> RR_FIRE_TEMPLE_LOOP_5_TILE_ROOM, location_access/dungeons/fire_temple.cpp:57",
+      "nativeRequirement": "CanKillEnemy(RE_TORCH_SLUG) && CanKillEnemy(RE_FIRE_KEESE) -> ENEMY_TORCH_SLUG + ENEMY_KEESE (OotSouls.cpp:131-132,169-170)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:41",
+      "status": "match",
+      "native": "RR_FIRE_TEMPLE_LOOP_FLARE_DANCER -> RR_FIRE_TEMPLE_LOOP_5_TILE_ROOM, location_access/dungeons/fire_temple.cpp:74",
+      "nativeRequirement": "CanKillEnemy(RE_FLARE_DANCER) -> ENEMY_FLARE_DANCER"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:42",
+      "status": "match",
+      "native": "RR_FIRE_TEMPLE_LOOP_FLARE_DANCER -> RR_FIRE_TEMPLE_LOOP_CAGE_SWITCH, location_access/dungeons/fire_temple.cpp:75",
+      "nativeRequirement": "CanKillEnemy(RE_FLARE_DANCER) -> ENEMY_FLARE_DANCER"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:44",
+      "status": "match",
+      "native": "RC_FIRE_TEMPLE_FLARE_DANCER_CHEST, location_access/dungeons/fire_temple.cpp:71 + souls/OotSoulChecks.h:60-61",
+      "nativeRequirement": "CanKillEnemy(RE_FLARE_DANCER) + CheckPrerequisite Has(ENEMY_FLARE_DANCER)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:119",
+      "status": "match",
+      "native": "RR_FIRE_TEMPLE_3F_FLARE_DANCER -> RR_FIRE_TEMPLE_ABOVE_3F_FLARE_DANCER, location_access/dungeons/fire_temple.cpp:384 (and -> FIRE_MAZE_PAST_WALL :383)",
+      "nativeRequirement": "CanKillEnemy(RE_FLARE_DANCER) -> ENEMY_FLARE_DANCER"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:32",
+      "status": "match",
+      "native": "LOGIC_FOREST_MEG in RR_FOREST_TEMPLE_LOBBY, location_access/dungeons/forest_temple.cpp:47 + souls/OotSoulEvents.h:18-22",
+      "nativeRequirement": "CanKillEnemy(RE_MEG) -> ENEMY_POE (OotSouls.cpp:161-162); EventPrerequisite Has(ENEMY_POE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:45",
+      "status": "match",
+      "native": "RC_FOREST_TEMPLE_FIRST_STALFOS_CHEST, location_access/dungeons/forest_temple.cpp:81 via LOGIC_FOREST_CLEAR_BETWEEN_JOELLE_AND_BETH (:78) + souls/OotSoulChecks.h:74-75",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> ENEMY_STALFOS; CheckPrerequisite Has(ENEMY_STALFOS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:61",
+      "status": "match",
+      "native": "LOGIC_STICK_ACCESS in RR_FOREST_TEMPLE_NW_COURTYARD_LOWER/UPPER, location_access/dungeons/forest_temple.cpp:91,118",
+      "nativeRequirement": "CanGetDekuBabaSticks() (logic.cpp:1388-1391)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:62",
+      "status": "match",
+      "native": "LOGIC_NUT_ACCESS in RR_FOREST_TEMPLE_NW_COURTYARD_LOWER/UPPER, location_access/dungeons/forest_temple.cpp:92,119",
+      "nativeRequirement": "CanGetDekuBabaNuts() (logic.cpp:1394-1398)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:82",
+      "status": "match",
+      "native": "RC_FOREST_TEMPLE_FLOORMASTER_CHEST, location_access/dungeons/forest_temple.cpp:230 + souls/OotSoulChecks.h:78-79",
+      "nativeRequirement": "CanDamage() + CheckPrerequisite Has(ENEMY_FLOORMASTER)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:87",
+      "status": "match",
+      "native": "RR_FOREST_TEMPLE_MAP_ROOM -> RR_FOREST_TEMPLE_NW_COURTYARD_UPPER_ALCOVE, location_access/dungeons/forest_temple.cpp:197",
+      "nativeRequirement": "CanKillEnemy(RE_BLUE_BUBBLE) -> ENEMY_BUBBLE (OotSouls.cpp:137-138)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:88",
+      "status": "match",
+      "native": "RR_FOREST_TEMPLE_MAP_ROOM -> RR_FOREST_TEMPLE_NE_COURTYARD_UPPER, location_access/dungeons/forest_temple.cpp:198",
+      "nativeRequirement": "CanKillEnemy(RE_BLUE_BUBBLE) -> ENEMY_BUBBLE"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:90",
+      "status": "match",
+      "native": "RC_FOREST_TEMPLE_MAP_CHEST, location_access/dungeons/forest_temple.cpp:194 + souls/OotSoulChecks.h:80-81",
+      "nativeRequirement": "CanKillEnemy(RE_BLUE_BUBBLE) + CheckPrerequisite Has(ENEMY_BUBBLE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:107",
+      "status": "match",
+      "native": "LOGIC_STICK_ACCESS in RR_FOREST_TEMPLE_NE_COURTYARD_LOWER/UPPER, location_access/dungeons/forest_temple.cpp:135,151",
+      "nativeRequirement": "CanGetDekuBabaSticks()"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:108",
+      "status": "match",
+      "native": "LOGIC_NUT_ACCESS in RR_FOREST_TEMPLE_NE_COURTYARD_LOWER/UPPER, location_access/dungeons/forest_temple.cpp:136,152",
+      "nativeRequirement": "CanGetDekuBabaNuts()"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:138",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_FOREST_CORRIDOR_WEST is registry data only (combo/rando/entrances/Registry.h:477); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:144",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_FOREST_CORRIDOR_WEST is registry data only (combo/rando/entrances/Registry.h:477); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:145",
+      "status": "match",
+      "native": "RR_FOREST_TEMPLE_BELOW_BOSS_KEY_CHEST -> RR_FOREST_TEMPLE_NW_COURTYARD_UPPER, location_access/dungeons/forest_temple.cpp:225",
+      "nativeRequirement": "CanKillEnemy(RE_BLUE_BUBBLE) -> ENEMY_BUBBLE"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:154",
+      "status": "match",
+      "native": "LOGIC_FOREST_JOELLE, location_access/dungeons/forest_temple.cpp:308 + souls/OotSoulEvents.h:18 (RC_FOREST_TEMPLE_RED_POE_CHEST also souls/OotSoulChecks.h:84-85)",
+      "nativeRequirement": "EventPrerequisite Has(ENEMY_POE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:161",
+      "status": "match",
+      "native": "RR_FOREST_TEMPLE_UPPER_STALFOS -> RR_FOREST_TEMPLE_BLUE_POE_ROOM, location_access/dungeons/forest_temple.cpp:332",
+      "nativeRequirement": "LOGIC_FOREST_CLEAR_BETWEEN_JOELLE_AND_BETH (:321) && CanKillEnemy(RE_STALFOS) -> ENEMY_STALFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:163",
+      "status": "match",
+      "native": "RC_FOREST_TEMPLE_BOW_CHEST, location_access/dungeons/forest_temple.cpp:324 + souls/OotSoulChecks.h:86-87",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) + CheckPrerequisite Has(ENEMY_STALFOS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:174",
+      "status": "match",
+      "native": "LOGIC_FOREST_BETH, location_access/dungeons/forest_temple.cpp:337 + souls/OotSoulEvents.h:19 (RC_FOREST_TEMPLE_BLUE_POE_CHEST also souls/OotSoulChecks.h:88-89)",
+      "nativeRequirement": "EventPrerequisite Has(ENEMY_POE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:184",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_FOREST_CORRIDOR_EAST is registry data only (combo/rando/entrances/Registry.h:479); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:198",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_FOREST_CORRIDOR_EAST is registry data only (combo/rando/entrances/Registry.h:479); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:216",
+      "status": "match",
+      "native": "LOGIC_FOREST_AMY, location_access/dungeons/forest_temple.cpp:383 + souls/OotSoulEvents.h:20",
+      "nativeRequirement": "EventPrerequisite Has(ENEMY_POE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:51",
+      "status": "match",
+      "native": "RC_GANONS_CASTLE_LIGHT_TRIAL_INVISIBLE_ENEMIES_CHEST, location_access/dungeons/ganons_castle.cpp:363 + souls/OotSoulChecks.h:100-101",
+      "nativeRequirement": "CanKillEnemy(RE_BIG_SKULLTULA) && CanKillEnemy(RE_KEESE) + CheckPrerequisite Has(KEESE) && Has(SKULLTULA)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:69",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_GANON_LIGHT is registry data only (combo/rando/entrances/Registry.h:501); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:81",
+      "status": "match",
+      "native": "RC_GANONS_CASTLE_FOREST_TRIAL_CHEST, location_access/dungeons/ganons_castle.cpp:77 + souls/OotSoulChecks.h:102-103",
+      "nativeRequirement": "CanKillEnemy(RE_WOLFOS) + CheckPrerequisite Has(ENEMY_WOLFOS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:127",
+      "status": "match",
+      "native": "RR_GANONS_CASTLE_WATER_TRIAL_BLUE_FIRE_ROOM -> RR_GANONS_CASTLE_WATER_TRIAL_BLOCK_ROOM, location_access/dungeons/ganons_castle.cpp:200",
+      "nativeRequirement": "BlueFire() && (!Souls::Enabled() || Souls::Has(ENEMY_FREEZARD))"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:177",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_GANON_SPIRIT is registry data only (combo/rando/entrances/Registry.h:499); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:194",
+      "status": "match",
+      "native": "Shadow trial route RR_GANONS_CASTLE_SHADOW_TRIAL_START -> POTS_PLATFORM (location_access/dungeons/ganons_castle.cpp:250) / -> CHEST_PLATFORM (:252) -> SHADOW_TRIAL_END (:278) -> FINAL_ROOM (:298)",
+      "nativeRequirement": "START->POTS_PLATFORM: CanUse(FIRE_ARROWS) || CanUse(LONGSHOT); START->CHEST_PLATFORM: DINS_FIRE && LONGSHOT; no Like-Like soul, so the trial end and its final-room pots are reachable by longshot without the soul",
+      "auditStatus": "native_missing",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Both exits off the start platform carry the Like-Like soul on their longshot branch; the fire-arrow branch stays soul-free.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/ganons_castle.cpp",
+          "region": "RR_GANONS_CASTLE_SHADOW_TRIAL_START",
+          "statement": "ENTRANCE(RR_GANONS_CASTLE_SHADOW_TRIAL_POTS_PLATFORM,",
+          "souls": [
+            "ENEMY_LIKE_LIKE"
+          ],
+          "contains": []
+        },
+        {
+          "file": "location_access/dungeons/ganons_castle.cpp",
+          "region": "RR_GANONS_CASTLE_SHADOW_TRIAL_START",
+          "statement": "ENTRANCE(RR_GANONS_CASTLE_SHADOW_TRIAL_CHEST_PLATFORM,",
+          "souls": [
+            "ENEMY_LIKE_LIKE"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:197",
+      "status": "match",
+      "native": "RC_GANONS_CASTLE_SHADOW_TRIAL_GOLDEN_GAUNTLETS_CHEST, location_access/dungeons/ganons_castle.cpp:270 + souls/OotSoulChecks.h:918-921",
+      "nativeRequirement": "CheckPrerequisite ShadowTrialSoulAlternative(longshot, Has(ENEMY_LIKE_LIKE), fireArrows, hovers, dins) = ((longshot && LL) || FA) && (hovers || FA || dins) (souls/OotSoulRouteLogic.h:4-7)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:198",
+      "status": "match",
+      "native": "RC_GANONS_CASTLE_SHADOW_TRIAL_POT_1, location_access/dungeons/ganons_castle.cpp:257 + souls/OotSoulChecks.h:922-925",
+      "nativeRequirement": "CheckPrerequisite ShadowTrialSoulAlternative(longshot, Has(ENEMY_LIKE_LIKE), fireArrows, hovers, dins) = ((longshot && LL) || FA) && (hovers || FA || dins) (souls/OotSoulRouteLogic.h:4-7)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:199",
+      "status": "match",
+      "native": "RC_GANONS_CASTLE_SHADOW_TRIAL_POT_2, location_access/dungeons/ganons_castle.cpp:258 + souls/OotSoulChecks.h:926-929",
+      "nativeRequirement": "CheckPrerequisite ShadowTrialSoulAlternative(longshot, Has(ENEMY_LIKE_LIKE), fireArrows, hovers, dins) = ((longshot && LL) || FA) && (hovers || FA || dins) (souls/OotSoulRouteLogic.h:4-7)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:200",
+      "status": "match",
+      "native": "RC_GANONS_CASTLE_SHADOW_TRIAL_HEART_1, location_access/dungeons/ganons_castle.cpp:271 + souls/OotSoulChecks.h:930-933",
+      "nativeRequirement": "CheckPrerequisite ShadowTrialSoulAlternative(longshot, Has(ENEMY_LIKE_LIKE), fireArrows, hovers, dins) = ((longshot && LL) || FA) && (hovers || FA || dins) (souls/OotSoulRouteLogic.h:4-7)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:201",
+      "status": "match",
+      "native": "RC_GANONS_CASTLE_SHADOW_TRIAL_HEART_2, location_access/dungeons/ganons_castle.cpp:272,291 + souls/OotSoulChecks.h:934-937",
+      "nativeRequirement": "CheckPrerequisite ShadowTrialSoulAlternative(longshot, Has(ENEMY_LIKE_LIKE), fireArrows, hovers, dins) = ((longshot && LL) || FA) && (hovers || FA || dins) (souls/OotSoulRouteLogic.h:4-7)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:202",
+      "status": "match",
+      "native": "RC_GANONS_CASTLE_SHADOW_TRIAL_HEART_3, location_access/dungeons/ganons_castle.cpp:273,292 + souls/OotSoulChecks.h:938-941",
+      "nativeRequirement": "CheckPrerequisite ShadowTrialSoulAlternative(longshot, Has(ENEMY_LIKE_LIKE), fireArrows, hovers, dins) = ((longshot && LL) || FA) && (hovers || FA || dins) (souls/OotSoulRouteLogic.h:4-7)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_tower.yml:19",
+      "status": "match",
+      "native": "RR_GANONS_TOWER_FLOOR_1 -> STAIRS_1/STAIRS_2, location_access/dungeons/ganons_castle.cpp:814-815",
+      "nativeRequirement": "CanKillEnemy(RE_DINOLFOS) -> ENEMY_LIZALFOS_DINOLFOS (OotSouls.cpp:167-168)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_tower.yml:33",
+      "status": "match",
+      "native": "RR_GANONS_TOWER_FLOOR_2 -> STAIRS_2/STAIRS_3 location_access/dungeons/ganons_castle.cpp:829-830; RC_GANONS_TOWER_BOSS_KEY_CHEST :826 + souls/OotSoulChecks.h:104-105",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> ENEMY_STALFOS; CheckPrerequisite Has(ENEMY_STALFOS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_tower.yml:49",
+      "status": "match",
+      "native": "RR_GANONS_TOWER_FLOOR_3 -> STAIRS_3/STAIRS_4, location_access/dungeons/ganons_castle.cpp:841-842",
+      "nativeRequirement": "CanKillEnemy(RE_IRON_KNUCKLE) -> ENEMY_IRON_KNUCKLE"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_tower.yml:95",
+      "status": "not_enemy_soul",
+      "native": "RE_GANON -> Has(NPC_ZELDA), souls/OotSouls.cpp:181-182 (NPC soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:11",
+      "status": "match",
+      "native": "LOGIC_TH_COULD_FREE_1_TORCH_CARPENTER, location_access/overworld/thieves_hideout.cpp:11",
+      "nativeRequirement": "CanKillEnemy(RE_GERUDO_WARRIOR) -> ENEMY_THIEVES (OotSouls.cpp:185-186) && Has(NPC_CARPENTERS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:13",
+      "status": "match",
+      "native": "RC_TH_1_TORCH_CARPENTER (flag 0x0C = OoTMM Jail 1), location_access/overworld/thieves_hideout.cpp:15 + souls/OotSoulChecks.h:15-16",
+      "nativeRequirement": "CanKillEnemy(RE_GERUDO_WARRIOR) + CheckPrerequisite Has(NPC_CARPENTERS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:37",
+      "status": "match",
+      "native": "LOGIC_TH_COULD_FREE_SLOPE_CARPENTER, location_access/overworld/thieves_hideout.cpp:73",
+      "nativeRequirement": "CanKillEnemy(RE_GERUDO_WARRIOR) && Has(NPC_CARPENTERS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:39",
+      "status": "match",
+      "native": "RC_TH_STEEP_SLOPE_CARPENTER (flag 0x0F = OoTMM Jail 2), location_access/overworld/thieves_hideout.cpp:77 + souls/OotSoulChecks.h:21-22",
+      "nativeRequirement": "CanKillEnemy(RE_GERUDO_WARRIOR) + CheckPrerequisite Has(NPC_CARPENTERS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:75",
+      "status": "match",
+      "native": "LOGIC_TH_COULD_FREE_DOUBLE_CELL_CARPENTER, location_access/overworld/thieves_hideout.cpp:31",
+      "nativeRequirement": "CanKillEnemy(RE_GERUDO_WARRIOR) && Has(NPC_CARPENTERS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:77",
+      "status": "match",
+      "native": "RC_TH_DOUBLE_CELL_CARPENTER (flag 0x0E = OoTMM Jail 4), location_access/overworld/thieves_hideout.cpp:35 + souls/OotSoulChecks.h:17-18",
+      "nativeRequirement": "CanKillEnemy(RE_GERUDO_WARRIOR) + CheckPrerequisite Has(NPC_CARPENTERS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:139",
+      "status": "match",
+      "native": "LOGIC_TH_COULD_FREE_DEAD_END_CARPENTER, location_access/overworld/thieves_hideout.cpp:57",
+      "nativeRequirement": "CanKillEnemy(RE_GERUDO_WARRIOR) && Has(NPC_CARPENTERS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:141",
+      "status": "match",
+      "native": "RC_TH_DEAD_END_CARPENTER (flag 0x0A = OoTMM Jail 3), location_access/overworld/thieves_hideout.cpp:61 + souls/OotSoulChecks.h:19-20",
+      "nativeRequirement": "CanKillEnemy(RE_GERUDO_WARRIOR) + CheckPrerequisite Has(NPC_CARPENTERS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:5",
+      "status": "match",
+      "native": "RR_GERUDO_TRAINING_GROUND_SAND_ROOM -> RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM, location_access/dungeons/gerudo_training_ground.cpp:39",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> ENEMY_STALFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:6",
+      "status": "match",
+      "native": "RR_GERUDO_TRAINING_GROUND_DINALFOS -> RR_GERUDO_TRAINING_GROUND_LAVA_ROOM, location_access/dungeons/gerudo_training_ground.cpp:184 (and RC_GERUDO_TRAINING_GROUND_BEAMOS_CHEST :177)",
+      "nativeRequirement": "CanKillEnemy(RE_BEAMOS) && CanKillEnemy(RE_DINOLFOS) -> ENEMY_BEAMOS + ENEMY_LIZALFOS_DINOLFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:11",
+      "status": "match",
+      "native": "RC_GERUDO_TRAINING_GROUND_STALFOS_CHEST, location_access/dungeons/gerudo_training_ground.cpp:35 + souls/OotSoulChecks.h:106-107",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) + CheckPrerequisite Has(ENEMY_STALFOS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:27",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_GTG is registry data only (combo/rando/entrances/Registry.h:497); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:48",
+      "status": "match",
+      "native": "RC_GERUDO_TRAINING_GROUND_BEFORE_HEAVY_BLOCK_CHEST (flag 0x11), location_access/dungeons/gerudo_training_ground.cpp:77 + souls/OotSoulChecks.h:108-109",
+      "nativeRequirement": "CanKillEnemy(RE_WOLFOS) + CheckPrerequisite Has(ENEMY_WOLFOS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:55",
+      "status": "match",
+      "native": "RC_GERUDO_TRAINING_GROUND_HEAVY_BLOCK_SECOND_CHEST (flag 0x0E), location_access/dungeons/gerudo_training_ground.cpp:103 + souls/OotSoulChecks.h:110-111",
+      "nativeRequirement": "CanKillEnemy(RE_LIKE_LIKE) + CheckPrerequisite Has(ENEMY_LIKE_LIKE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:56",
+      "status": "match",
+      "native": "RC_GERUDO_TRAINING_GROUND_HEAVY_BLOCK_FIRST_CHEST (flag 0x0F), location_access/dungeons/gerudo_training_ground.cpp:102 + souls/OotSoulChecks.h:112-113",
+      "nativeRequirement": "CanKillEnemy(RE_LIKE_LIKE) + CheckPrerequisite Has(ENEMY_LIKE_LIKE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:120",
+      "status": "match",
+      "native": "RR_GERUDO_TRAINING_GROUND_HAMMER_ROOM -> RR_GERUDO_TRAINING_GROUND_LAVA_ROOM_UPPER_LEDGE, location_access/dungeons/gerudo_training_ground.cpp:148",
+      "nativeRequirement": "true (no soul, no kill)",
+      "auditStatus": "native_missing",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's weapon requirement is item logic outside this audit.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/gerudo_training_ground.cpp",
+          "region": "RR_GERUDO_TRAINING_GROUND_HAMMER_ROOM",
+          "statement": "ENTRANCE(RR_GERUDO_TRAINING_GROUND_LAVA_ROOM_UPPER_LEDGE,",
+          "souls": [
+            "ENEMY_TORCH_SLUG",
+            "ENEMY_KEESE"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:124",
+      "status": "match",
+      "native": "RC_GERUDO_TRAINING_GROUND_HAMMER_ROOM_CLEAR_CHEST (flag 0x12), location_access/dungeons/gerudo_training_ground.cpp:142 + souls/OotSoulChecks.h:114-115",
+      "nativeRequirement": "CanAttack() + CheckPrerequisite Has(KEESE) && Has(TORCH_SLUG)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:125",
+      "status": "match",
+      "native": "RR_GERUDO_TRAINING_GROUND_HAMMER_ROOM -> RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_CENTER (RC_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_CENTER), silver_rupees/SilverRoutes.inc:198",
+      "nativeRequirement": "Souls::Has(ENEMY_KEESE) && Souls::Has(ENEMY_TORCH_SLUG) && weapon && hookshot (Lava-room route :189 is soul-free like OoTMM Lava region)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:126",
+      "status": "match",
+      "native": "RR_GERUDO_TRAINING_GROUND_HAMMER_ROOM -> RR_SR_GERUDO_TRAINING_GROUNDS_SILVER_RUPEE_LAVA_BACK_RIGHT, silver_rupees/SilverRoutes.inc:199",
+      "nativeRequirement": "Souls::Has(ENEMY_KEESE) && Souls::Has(ENEMY_TORCH_SLUG) && weapon && hookshot"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:6",
+      "status": "match",
+      "native": "RR_ICE_CAVERN_BEGINNING -> RR_ICE_CAVERN_HUB, location_access/dungeons/ice_cavern.cpp:39",
+      "nativeRequirement": "CanKillEnemy(RE_FREEZARD) -> ENEMY_FREEZARD"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:39",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:117",
+      "status": "match",
+      "native": "RR_ICE_CAVERN_FINAL_ROOM -> RR_ICE_CAVERN_BEFORE_FINAL_ROOM, location_access/dungeons/ice_cavern.cpp:210",
+      "nativeRequirement": "CanKillEnemy(RE_WOLFOS) -> ENEMY_WOLFOS (OotSouls.cpp:155-156)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:119",
+      "status": "match",
+      "native": "RC_ICE_CAVERN_IRON_BOOTS_CHEST, location_access/dungeons/ice_cavern.cpp:206 + souls/OotSoulChecks.h:122-123",
+      "nativeRequirement": "CanKillEnemy(RE_WOLFOS) + CheckPrerequisite Has(ENEMY_WOLFOS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:120",
+      "status": "match",
+      "native": "RC_SHEIK_IN_ICE_CAVERN, location_access/dungeons/ice_cavern.cpp:207 + souls/OotSoulChecks.h:956-957",
+      "nativeRequirement": "CanKillEnemy(RE_WOLFOS) -> ENEMY_WOLFOS; CheckPrerequisite Has(NPC_SHEIK)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:121",
+      "status": "match",
+      "native": "RC_ICE_CAVERN_NEAR_END_POT_1 in RR_ICE_CAVERN_BEFORE_FINAL_ROOM, location_access/dungeons/ice_cavern.cpp:193; from FINAL_ROOM only via :210",
+      "nativeRequirement": "From the end room: CanKillEnemy(RE_WOLFOS) then CanBreakPots && BlueFire; from the block room: silver gate + BlueFire, no soul"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:122",
+      "status": "match",
+      "native": "RC_ICE_CAVERN_NEAR_END_POT_2 in RR_ICE_CAVERN_BEFORE_FINAL_ROOM, location_access/dungeons/ice_cavern.cpp:194; from FINAL_ROOM only via :210",
+      "nativeRequirement": "From the end room: CanKillEnemy(RE_WOLFOS) then CanBreakPots && BlueFire"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:34",
+      "status": "not_enemy_soul",
+      "native": "LOGIC_JABU_RUTO_IN_1F, location_access/dungeons/jabujabus_belly.cpp:80 (NPC soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:44",
+      "status": "match",
+      "native": "RC_JABU_JABUS_BELLY_BOOMERANG_CHEST, location_access/dungeons/jabujabus_belly.cpp:194 + souls/OotSoulChecks.h:126-127",
+      "nativeRequirement": "(LOGIC_JABU_RUTO_IN_1F || CanKillEnemy(RE_STINGER)) + CheckPrerequisite Has(ENEMY_STINGER) && Has(NPC_RUTO)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:48",
+      "status": "match",
+      "native": "LOGIC_JABU_WEST_TENTACLE, location_access/dungeons/jabujabus_belly.cpp:135 + souls/OotSoulEvents.h:23-26 (map chest :138 + souls/OotSoulChecks.h:128-129)",
+      "nativeRequirement": "CanKillEnemy(RE_TENTACLE) -> ENEMY_PARASITE (OotSouls.cpp:199-200); EventPrerequisite Has(ENEMY_PARASITE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:58",
+      "status": "match",
+      "native": "RR_JABU_JABUS_BELLY_FORK_NORTH_WEST -> RR_JABU_JABUS_BELLY_TO_FORK_NORTH_WEST, location_access/dungeons/jabujabus_belly.cpp:157",
+      "nativeRequirement": "CanKillEnemy(RE_SHABOM) -> ENEMY_SHABOM"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:60",
+      "status": "match",
+      "native": "RC_JABU_JABUS_BELLY_COMPASS_CHEST, location_access/dungeons/jabujabus_belly.cpp:154 + souls/OotSoulChecks.h:130-131",
+      "nativeRequirement": "CanKillEnemy(RE_SHABOM) + CheckPrerequisite Has(ENEMY_SHABOM)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:65",
+      "status": "match",
+      "native": "LOGIC_JABU_EAST_TENTACLE, location_access/dungeons/jabujabus_belly.cpp:185 + souls/OotSoulEvents.h:25",
+      "nativeRequirement": "CanKillEnemy(RE_TENTACLE) + EventPrerequisite Has(ENEMY_PARASITE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:72",
+      "status": "match",
+      "native": "LOGIC_JABU_NORTH_TENTACLE, location_access/dungeons/jabujabus_belly.cpp:169 + souls/OotSoulEvents.h:24",
+      "nativeRequirement": "CanKillEnemy(RE_TENTACLE) + EventPrerequisite Has(ENEMY_PARASITE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:74",
+      "status": "match",
+      "native": "RR_JABU_JABUS_BELLY_FORK_NORTH -> RR_JABU_JABUS_BELLY_TO_FORK_NORTH, location_access/dungeons/jabujabus_belly.cpp:173",
+      "nativeRequirement": "LOGIC_JABU_NORTH_TENTACLE && (!Souls::Enabled() || Souls::Has(ENEMY_BIRI_BARI))"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:117",
+      "status": "match",
+      "native": "RR_JABU_JABUS_BELLY_BIGOCTO_LEDGE -> RR_JABU_JABUS_BELLY_BIGOCTO location_access/dungeons/jabujabus_belly.cpp:208; BIGOCTO exits :213-214",
+      "nativeRequirement": "LOGIC_JABU_RUTO_IN_1F && CanKillEnemy(RE_BIG_OCTO) -> ENEMY_OCTOROK && NPC_RUTO (OotSouls.cpp:183-184)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:21",
+      "status": "match",
+      "native": "RC_SHADOW_TEMPLE_MAP_CHEST, location_access/dungeons/shadow_temple.cpp:72 + souls/OotSoulChecks.h:140-141",
+      "nativeRequirement": "CanKillEnemy(RE_REDEAD) && CanKillEnemy(RE_KEESE) + CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:22",
+      "status": "match",
+      "native": "RC_SHADOW_TEMPLE_HOVER_BOOTS_CHEST, location_access/dungeons/shadow_temple.cpp:82 + souls/OotSoulChecks.h:142-143",
+      "nativeRequirement": "CanKillEnemy(RE_DEAD_HAND) + CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:31",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:39",
+      "status": "match",
+      "native": "RC_SHADOW_TEMPLE_COMPASS_CHEST, location_access/dungeons/shadow_temple.cpp:101 + souls/OotSoulChecks.h:144-145",
+      "nativeRequirement": "CanKillEnemy(RE_GIBDO) -> ENEMY_REDEAD_GIBDO + CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:58",
+      "status": "match",
+      "native": "no event; the three gated checks RC_SHADOW_TEMPLE_INVISIBLE_BLADES_VISIBLE_CHEST/INVISIBLE_CHEST/GS_LIKE_LIKE_ROOM, location_access/dungeons/shadow_temple.cpp:188,189,192-197 + souls/OotSoulChecks.h:146-152",
+      "nativeRequirement": "CanKillEnemy(RE_LIKE_LIKE) && CanKillEnemy(RE_KEESE) + CheckPrerequisite Has(KEESE) && Has(LIKE_LIKE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:62",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_SHADOW is registry data only (combo/rando/entrances/Registry.h:481); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:92",
+      "status": "match",
+      "native": "RR_SHADOW_TEMPLE_INVISIBLE_SPIKES -> RR_SHADOW_TEMPLE_INVISIBLE_SPIKES_PLATFORM, location_access/dungeons/shadow_temple.cpp:215-216",
+      "nativeRequirement": "CanUse(CanKillEnemy(RE_REDEAD) ? HOOKSHOT : LONGSHOT): hookshot only with the ReDead/Gibdo soul, longshot without"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:100",
+      "status": "match",
+      "native": "RC_SHADOW_TEMPLE_INVISIBLE_SPIKES_CHEST, location_access/dungeons/shadow_temple.cpp:210 + souls/OotSoulChecks.h:155-156",
+      "nativeRequirement": "CanKillEnemy(RE_REDEAD) + CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:126",
+      "status": "match",
+      "native": "RR_SHADOW_TEMPLE_ROOM_TO_BOAT -> RR_SHADOW_TEMPLE_WIND_TUNNEL_ALCOVE, location_access/dungeons/shadow_temple.cpp:269",
+      "nativeRequirement": "CanKillEnemy(RE_GIBDO) -> ENEMY_REDEAD_GIBDO"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:128",
+      "status": "match",
+      "native": "RC_SHADOW_TEMPLE_AFTER_WIND_ENEMY_CHEST, location_access/dungeons/shadow_temple.cpp:263 + souls/OotSoulChecks.h:159-160",
+      "nativeRequirement": "CanKillEnemy(RE_GIBDO) + CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:132",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:133",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:158",
+      "status": "match",
+      "native": "RC_SHADOW_TEMPLE_INVISIBLE_FLOORMASTER_CHEST, location_access/dungeons/shadow_temple.cpp:359 + souls/OotSoulChecks.h:163-164",
+      "nativeRequirement": "CanKillEnemy(RE_FLOORMASTER) + CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:15",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:16",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:32",
+      "status": "match",
+      "native": "RR_SPIRIT_TEMPLE_CHILD_SIDE_HUB -> RR_SPIRIT_TEMPLE_SWITCH_BRIDGE_SOUTH, location_access/dungeons/spirit_temple.cpp:47",
+      "nativeRequirement": "CanKillEnemy(RE_ARMOS) -> ENEMY_ARMOS && (!Souls::Enabled() || Has(ENEMY_KEESE))"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:33",
+      "status": "match",
+      "native": "RR_SPIRIT_TEMPLE_CHILD_SIDE_HUB -> RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_SOUTH, location_access/dungeons/spirit_temple.cpp:48",
+      "nativeRequirement": "CanKillEnemy(RE_ARMOS) && Has(ENEMY_KEESE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:57",
+      "status": "match",
+      "native": "RR_SPIRIT_TEMPLE_1F_ANUBIS -> RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_NORTH, location_access/dungeons/spirit_temple.cpp:83 (switch-bridge side enters 1F_ANUBIS freely, :71)",
+      "nativeRequirement": "(CanHitSwitch || POWER_BRACELET || CanKillEnemy(RE_ANUBIS)) && (!Souls::Enabled() || Has(ENEMY_ANUBIS))"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:60",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:61",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:70",
+      "status": "match",
+      "native": "RR_SPIRIT_TEMPLE_1F_ANUBIS -> RR_SPIRIT_TEMPLE_SWITCH_BRIDGE_NORTH, location_access/dungeons/spirit_temple.cpp:82 (rupee-bridge side enters 1F_ANUBIS freely, :98)",
+      "nativeRequirement": "(CanHitSwitch || POWER_BRACELET || CanKillEnemy(RE_ANUBIS)) && Has(ENEMY_ANUBIS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:71",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_SPIRIT_CHILD_RUPEES is registry data only (combo/rando/entrances/Registry.h:483); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:109",
+      "status": "match",
+      "native": "RR_SPIRIT_TEMPLE_CHILD_THRONE -> RR_SPIRIT_TEMPLE_RIGHT_HAND_EXIT, location_access/dungeons/spirit_temple.cpp:334",
+      "nativeRequirement": "CanKillEnemy(RE_IRON_KNUCKLE) -> ENEMY_IRON_KNUCKLE"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:154",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_SPIRIT_ADULT_CLIMB is registry data only (combo/rando/entrances/Registry.h:485); the combo builds only the MM Wallmaster pool (NativeBridge.h:181-191)",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:160",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:161",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:173",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_SILVER_GAUNTLETS_CHEST in RR_SPIRIT_TEMPLE_OUTER_RIGHT_HAND, location_access/dungeons/spirit_temple.cpp:348; adult route BEAMOS_PITS->4_ARMOS :411, CHEST_STAIRS->ADULT_THRONE :440, ADULT_THRONE->LEFT_HAND_EXIT :446, OUTER_LEFT_HAND->OUTER_RIGHT_HAND :461",
+      "nativeRequirement": "CanKillEnemy(RE_BEAMOS)+Has(ANUBIS), Has(ARMOS), CanKillEnemy(RE_IRON_KNUCKLE), longshot. Elegy alternative absent: the combo has no OoT Elegy of Emptiness item (OoTMM elegyOot, data.ts:2184, has no native counterpart), so ARMOS-or-Elegy reduces to ARMOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:180",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:181",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:197",
+      "status": "match",
+      "native": "RR_SPIRIT_TEMPLE_BEAMOS_PITS -> RR_SPIRIT_TEMPLE_4_ARMOS, location_access/dungeons/spirit_temple.cpp:411",
+      "nativeRequirement": "CanKillEnemy(RE_BEAMOS) -> ENEMY_BEAMOS && (!Souls::Enabled() || Has(ENEMY_ANUBIS))"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:199",
+      "status": "match",
+      "native": "RR_SPIRIT_TEMPLE_BEAMOS_PITS -> RR_SPIRIT_TEMPLE_POT_STAIRS location_access/dungeons/spirit_temple.cpp:410, then POT_STAIRS -> STATUE_ROOM_ADULT :404 (keys 4)",
+      "nativeRequirement": "CanKillEnemy(RE_BEAMOS) && Has(ENEMY_ANUBIS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:201",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_BEAMOS_HALL_POT_1 (OoTMM pot 0x1005, the only pot in room 16) in RR_SPIRIT_TEMPLE_POT_STAIRS, location_access/dungeons/spirit_temple.cpp:402",
+      "nativeRequirement": "CanBreakPots() only; POT_STAIRS is entered from STATUE_ROOM_ADULT with SmallKeys(4) and no soul (location_access/dungeons/spirit_temple.cpp:362); no CheckPrerequisite case. The other route, from BEAMOS_PITS (:410), already needs both souls",
+      "auditStatus": "native_weaker",
+      "note": "No change: the audit row is wrong. OoTMM also lists \"Spirit Temple Pot Adult Upper\" under \"Spirit Temple Statue Adult\" with small_keys_spirit(4) and no soul (spirit_temple.yml:192), and a location is reachable through any region that lists it. Native POT_STAIRS is entered from STATUE_ROOM_ADULT with SmallKeys(4), which matches that soul-free route; adding Beamos and Anubis souls would add a requirement OoTMM lacks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:207",
+      "status": "match",
+      "native": "RR_SPIRIT_TEMPLE_CHEST_STAIRS -> RR_SPIRIT_TEMPLE_ADULT_THRONE location_access/dungeons/spirit_temple.cpp:440, ADULT_THRONE -> LEFT_HAND_EXIT :446",
+      "nativeRequirement": "(!Souls::Enabled() || Has(ENEMY_ARMOS)) then CanKillEnemy(RE_IRON_KNUCKLE); no OoT Elegy exists natively"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:210",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_HALLWAY_RIGHT_INVISIBLE_CHEST (flag 0x14), location_access/dungeons/spirit_temple.cpp:436 + souls/OotSoulChecks.h:964-966",
+      "nativeRequirement": "CheckPrerequisite Has(ENEMY_ARMOS); no OoT Elegy exists natively"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:211",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_HALLWAY_LEFT_INVISIBLE_CHEST (flag 0x15), location_access/dungeons/spirit_temple.cpp:435 + souls/OotSoulChecks.h:964-966",
+      "nativeRequirement": "CheckPrerequisite Has(ENEMY_ARMOS); no OoT Elegy exists natively"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:217",
+      "status": "match",
+      "native": "RR_SPIRIT_TEMPLE_LEFT_HAND_EXIT -> ADULT_THRONE (location_access/dungeons/spirit_temple.cpp:451, true) then ADULT_THRONE -> CHEST_STAIRS :445",
+      "nativeRequirement": "CanKillEnemy(RE_IRON_KNUCKLE) -> ENEMY_IRON_KNUCKLE"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:231",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:232",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:233",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:234",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:235",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:236",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/treasure_chest_game.yml:5,12,20,28,36,44",
+      "status": "not_enemy_soul",
+      "native": "TcgSoulAccess, souls/OotSouls.cpp:95-98 (NPC soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/treasure_chest_game.yml:7",
+      "status": "not_enemy_soul",
+      "native": "TcgSoulAccess, souls/OotSouls.cpp:95-98 via souls/OotSoulChecks.h:967-978 (NPC soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:52",
+      "status": "match",
+      "native": "RC_WATER_TEMPLE_MAP_CHEST, location_access/dungeons/water_temple.cpp:175 + souls/OotSoulChecks.h:177-178",
+      "nativeRequirement": "CanKillEnemy(RE_SPIKE) + CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:57",
+      "status": "match",
+      "native": "RC_WATER_TEMPLE_TORCHES_CHEST (flag 0x01), location_access/dungeons/water_temple.cpp:191 + souls/OotSoulChecks.h:179-180",
+      "nativeRequirement": "CanKillEnemy(RE_SHELL_BLADE) or CanOpenUnderwaterChest, and always CheckPrerequisite Has(ENEMY_SHELL_BLADE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:77",
+      "status": "match",
+      "native": "RC_WATER_TEMPLE_CENTRAL_PILLAR_CHEST (flag 0x06), location_access/dungeons/water_temple.cpp:421 + souls/OotSoulChecks.h:183-184",
+      "nativeRequirement": "hookshot && scale + CheckPrerequisite Has(SHELL_BLADE) && Has(SPIKE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:152",
+      "status": "match",
+      "native": "RR_WATER_TEMPLE_DARK_LINK_ROOM -> RR_WATER_TEMPLE_SOT_PIT_ROOM, location_access/dungeons/water_temple.cpp:562",
+      "nativeRequirement": "CanKillEnemy(RE_DARK_LINK) -> ENEMY_DARK_LINK"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:153",
+      "status": "match",
+      "native": "RR_WATER_TEMPLE_DARK_LINK_ROOM -> RR_WATER_TEMPLE_LIKE_LIKE_SPIKES, location_access/dungeons/water_temple.cpp:561",
+      "nativeRequirement": "CanKillEnemy(RE_DARK_LINK) -> ENEMY_DARK_LINK"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/*.yml: 10 uses of business_scrub (deku_tree_mq:322; dodongo_cavern_mq:29,30,86,232; ganon_castle_mq:32-36)",
+      "status": "not_enemy_soul",
+      "native": "souls/OotSoulChecks.h MISC_BUSINESS_SCRUB cases (misc soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/*.yml: 47 uses of gs (bottom_of_the_well_mq:95,105,134; deku_tree_mq:32,107,275,306; dodongo_cavern_mq:75,149,192,251,284,333; fire_temple_mq:177,327,420,429,522; forest_temple_mq:46,119,233,279,324,337; ice_cavern_mq:93,112,122; jabu_jabu_mq:120,134,274,287,297,308; shadow_temple_mq:252,336,355,411,425,509; spirit_temple_mq:122,138,139; water_temple_mq:191,253,342,433,485)",
+      "status": "not_enemy_soul",
+      "native": "RE_GOLD_SKULLTULA -> Has(MISC_GS) (souls/OotSouls.cpp:119-120) and souls/OotSoulChecks.h MISC_GS cases (misc soul, not audited; the two spirit GS rows that also need the Iron Knuckle soul are listed separately)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_BOTW_MAIN is registry data only (combo/rando/entrances/Registry.h:491); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_BOTW_BASEMENT is registry data only (combo/rando/entrances/Registry.h:493); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:147",
+      "status": "match",
+      "native": "RR_BOTW_MQ_DEAD_HAND_ROOM -> RR_BOTW_MQ_NEAR_BOSS_UPPER, location_access/dungeons/bottom_of_the_well.cpp:455",
+      "nativeRequirement": "CanKillEnemy(RE_DEAD_HAND) -> ENEMY_DEAD_HAND (souls/OotSouls.cpp:141-142)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:149",
+      "status": "match",
+      "native": "RC_BOTTOM_OF_THE_WELL_MQ_COMPASS_CHEST (chest flag 0x02 in both), location_access/dungeons/bottom_of_the_well.cpp:447 + souls/OotSoulChecks.h:199-200",
+      "nativeRequirement": "CanKillEnemy(RE_DEAD_HAND) -> ENEMY_DEAD_HAND; CheckPrerequisite Has(ENEMY_DEAD_HAND)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_BOTW_PIT is registry data only (combo/rando/entrances/Registry.h:495); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:15",
+      "status": "match",
+      "native": "LOGIC_STICK_ACCESS in RR_DEKU_TREE_MQ_1F, location_access/dungeons/deku_tree.cpp:225",
+      "nativeRequirement": "CanKillEnemy(RE_WITHERED_DEKU_BABA) -> ENEMY_DEKU_BABA (souls/OotSouls.cpp:145-146)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:16",
+      "status": "match",
+      "native": "LOGIC_NUT_ACCESS in RR_DEKU_TREE_MQ_1F, location_access/dungeons/deku_tree.cpp:226",
+      "nativeRequirement": "HasFireSource() (nuts from burning the lobby's withered Deku Babas); no soul",
+      "auditStatus": "native_missing",
+      "note": "Fixed in F1: the native gate now requires the same soul set. ",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/deku_tree.cpp",
+          "region": "RR_DEKU_TREE_MQ_1F",
+          "statement": "EVENT_ACCESS(LOGIC_NUT_ACCESS,",
+          "souls": [
+            "ENEMY_DEKU_BABA"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:137",
+      "status": "match",
+      "native": "chest: RC_DEKU_TREE_MQ_SLINGSHOT_CHEST (flag 0x06 in both), location_access/dungeons/deku_tree.cpp:284 + souls/OotSoulChecks.h:205-206; exit: RR_DEKU_TREE_MQ_SLINGSHOT_ROOM -> RR_DEKU_TREE_MQ_3F, location_access/dungeons/deku_tree.cpp:295",
+      "nativeRequirement": "chest: CanKillEnemy(RE_DEKU_BABA) + CheckPrerequisite Has(DEKU_BABA) && Has(GOHMA_LARVA) (matches); exit: CanKillEnemy(RE_DEKU_BABA) only -> Deku Baba soul, no Gohma Larva soul",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The exit already needed the Deku Baba soul through CanKillEnemy; it now also needs the Gohma Larva soul.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/deku_tree.cpp",
+          "region": "RR_DEKU_TREE_MQ_SLINGSHOT_ROOM",
+          "statement": "ENTRANCE(RR_DEKU_TREE_MQ_3F,",
+          "souls": [
+            "ENEMY_GOHMA_LARVA"
+          ],
+          "contains": [
+            "CanKillEnemy(RE_DEKU_BABA)"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:185",
+      "status": "match",
+      "native": "LOGIC_DEKU_TREE_MQ_CLEARED_SE_ROOM, location_access/dungeons/deku_tree.cpp:370 + souls/OotSoulEvents.h:30-31; gates RR_DEKU_TREE_MQ_BASEMENT_SOUTHEAST_ROOM -> RR_DEKU_TREE_MQ_BASEMENT, location_access/dungeons/deku_tree.cpp:380",
+      "nativeRequirement": "CanKillEnemy(RE_MAD_SCRUB) -> ENEMY_DEKU_SCRUB; EventPrerequisite Has(DEKU_SCRUB) && Has(GOHMA_LARVA). Note: native also requires this event on the stick-torch route RR_DEKU_TREE_MQ_BASEMENT -> BASEMENT_WATER_ROOM_FRONT (deku_tree.cpp:363), which OoTMM does not soul-gate (DEKU_MQ_WATER_PATH_TORCH1 = has_fire || can_use_sticks, deku_tree_mq.yml:157); native-stricter there, no change proposed"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:247",
+      "status": "match",
+      "native": "RR_DEKU_TREE_MQ_BASEMENT_SOUTHWEST_ROOM -> BASEMENT_GRAVE_ROOM / BASEMENT_WATER_ROOM_BACK, location_access/dungeons/deku_tree.cpp:422-423",
+      "nativeRequirement": "CanKillEnemy(RE_MAD_SCRUB) -> DEKU_SCRUB, CanKillEnemy(RE_KEESE) -> KEESE, explicit Souls::Has(GOHMA_LARVA)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:271",
+      "status": "match",
+      "native": "LOGIC_STICK_ACCESS in RR_DEKU_TREE_MQ_BASEMENT_GRAVE_ROOM, location_access/dungeons/deku_tree.cpp:428",
+      "nativeRequirement": "CanGetDekuBabaSticks() -> Souls::Has(ENEMY_DEKU_BABA) (logic.cpp:1388-1392)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:272",
+      "status": "match",
+      "native": "LOGIC_NUT_ACCESS in RR_DEKU_TREE_MQ_BASEMENT_GRAVE_ROOM, location_access/dungeons/deku_tree.cpp:429",
+      "nativeRequirement": "CanGetDekuBabaNuts() -> Souls::Has(ENEMY_DEKU_BABA) (logic.cpp:1394-1398)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:344",
+      "status": "match",
+      "native": "RR_DEKU_TREE_MQ_OUTSIDE_BOSS_ROOM -> RR_DEKU_TREE_BOSS_ENTRYWAY, location_access/dungeons/deku_tree.cpp:492",
+      "nativeRequirement": "AnyAgeTime(CanReflectNuts()); no soul (the vanilla twin at deku_tree.cpp:216 already carries ENEMY_DEKU_SCRUB)",
+      "auditStatus": "native_missing",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Same form as the vanilla boss door.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/deku_tree.cpp",
+          "region": "RR_DEKU_TREE_MQ_OUTSIDE_BOSS_ROOM",
+          "statement": "ENTRANCE(RR_DEKU_TREE_BOSS_ENTRYWAY,",
+          "souls": [
+            "ENEMY_DEKU_SCRUB"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:58",
+      "status": "match",
+      "native": "LOGIC_STICK_ACCESS in RR_DODONGOS_CAVERN_MQ_STAIRS_PAST_MUD_WALL, location_access/dungeons/dodongos_cavern.cpp:374",
+      "nativeRequirement": "CanGetDekuBabaSticks() -> Souls::Has(ENEMY_DEKU_BABA) (logic.cpp:1388-1392)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:98",
+      "status": "match",
+      "native": "chest: RC_DODONGOS_CAVERN_MQ_COMPASS_CHEST (flag 0x05 in both), location_access/dungeons/dodongos_cavern.cpp:410 + souls/OotSoulChecks.h:221-222; exit: RR_DODONGOS_CAVERN_MQ_DODONGO_ROOM -> RR_DODONGOS_CAVERN_MQ_TORCH_PUZZLE_LOWER (the room's way out toward the entrance-side bridge), location_access/dungeons/dodongos_cavern.cpp:418",
+      "nativeRequirement": "chest: CheckPrerequisite Has(ENEMY_DODONGO) (matches); exit: CanKillEnemy(RE_DODONGO) || HasItem(RG_GORONS_BRACELET) -> the bomb-flower branch carries no Dodongo soul",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The Goron's Bracelet branch now needs the Dodongo soul too.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/dodongos_cavern.cpp",
+          "region": "RR_DODONGOS_CAVERN_MQ_DODONGO_ROOM",
+          "statement": "ENTRANCE(RR_DODONGOS_CAVERN_MQ_TORCH_PUZZLE_LOWER,",
+          "souls": [
+            "ENEMY_DODONGO"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:146",
+      "status": "match",
+      "native": "chest: RC_DODONGOS_CAVERN_MQ_LARVAE_ROOM_CHEST (flag 0x02 in both), location_access/dungeons/dodongos_cavern.cpp:468 + souls/OotSoulChecks.h:223-224; exit: RR_DODONGOS_CAVERN_MQ_LARVAE_ROOM -> RR_DODONGOS_CAVERN_MQ_TORCH_PUZZLE_LOWER, location_access/dungeons/dodongos_cavern.cpp:478",
+      "nativeRequirement": "chest: CheckPrerequisite Has(ENEMY_GOHMA_LARVA) (matches); exit: true (no soul)",
+      "auditStatus": "native_missing",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's can_damage is item logic outside this audit.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/dodongos_cavern.cpp",
+          "region": "RR_DODONGOS_CAVERN_MQ_LARVAE_ROOM",
+          "statement": "ENTRANCE(RR_DODONGOS_CAVERN_MQ_TORCH_PUZZLE_LOWER,",
+          "souls": [
+            "ENEMY_GOHMA_LARVA"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:189",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_MQ_UPPER_LIZALFOS -> BIG_BLOCK_ROOM / TWO_FIRES_ROOM, location_access/dungeons/dodongos_cavern.cpp:504-505",
+      "nativeRequirement": "CanKillEnemy(RE_LIZALFOS) -> ENEMY_LIZALFOS_DINOLFOS (souls/OotSouls.cpp:125-126)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:190",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_MQ_LOWER_LIZALFOS -> LOWER_RIGHT_SIDE / POES_ROOM, location_access/dungeons/dodongos_cavern.cpp:567-568",
+      "nativeRequirement": "CanKillEnemy(RE_LIZALFOS) on every native lower-room exit (native has no cross-room alternative)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:247",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_MQ_LOWER_LIZALFOS -> LOWER_RIGHT_SIDE / POES_ROOM, location_access/dungeons/dodongos_cavern.cpp:567-568",
+      "nativeRequirement": "CanKillEnemy(RE_LIZALFOS) -> ENEMY_LIZALFOS_DINOLFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:248",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_MQ_UPPER_LIZALFOS -> BIG_BLOCK_ROOM / TWO_FIRES_ROOM, location_access/dungeons/dodongos_cavern.cpp:504-505",
+      "nativeRequirement": "CanKillEnemy(RE_LIZALFOS) on every native upper-room exit"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:282",
+      "status": "match",
+      "native": "RR_DODONGOS_CAVERN_MQ_MAD_SCRUB_ROOM -> RR_DODONGOS_CAVERN_MQ_POES_ROOM, location_access/dungeons/dodongos_cavern.cpp:600",
+      "nativeRequirement": "CanKillEnemy(RE_FIRE_KEESE) -> ENEMY_KEESE (OotSouls.cpp:131-132) && CanKillEnemy(RE_MAD_SCRUB) -> ENEMY_DEKU_SCRUB (OotSouls.cpp:135-136)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:31",
+      "status": "match",
+      "native": "chest: RC_FIRE_TEMPLE_MQ_MAP_ROOM_SIDE_CHEST (flag 0x02 in both), location_access/dungeons/fire_temple.cpp:476 + souls/OotSoulChecks.h:235-236; exit: RR_FIRE_TEMPLE_MQ_LOOP_CAGE_FOYER_SIDE -> RR_FIRE_TEMPLE_MQ_FOYER_LOWER, location_access/dungeons/fire_temple.cpp:479",
+      "nativeRequirement": "CanKillEnemy(RE_LIKE_LIKE) -> ENEMY_LIKE_LIKE on both; chest also CheckPrerequisite Has(ENEMY_LIKE_LIKE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:92",
+      "status": "match",
+      "native": "RR_FIRE_TEMPLE_MQ_LOOP_HEXAGON_ROOM -> RR_FIRE_TEMPLE_MQ_LOOP_5_TILE_ROOM, location_access/dungeons/fire_temple.cpp:489",
+      "nativeRequirement": "AnyAgeTime(CanKillEnemy(RE_STALFOS, ED_CLOSE, true, 2)) -> Stalfos soul only; no Keese soul",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. ",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/fire_temple.cpp",
+          "region": "RR_FIRE_TEMPLE_MQ_LOOP_HEXAGON_ROOM",
+          "statement": "ENTRANCE(RR_FIRE_TEMPLE_MQ_LOOP_5_TILE_ROOM,",
+          "souls": [
+            "ENEMY_KEESE"
+          ],
+          "contains": [
+            "CanKillEnemy(RE_STALFOS"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:102",
+      "status": "match",
+      "native": "RR_FIRE_TEMPLE_MQ_LOOP_5_TILE_ROOM -> RR_FIRE_TEMPLE_MQ_LOOP_FLARE_DANCER, location_access/dungeons/fire_temple.cpp:509",
+      "nativeRequirement": "CanKillEnemy(RE_IRON_KNUCKLE) -> ENEMY_IRON_KNUCKLE (OotSouls.cpp:151-152)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:120",
+      "status": "match",
+      "native": "chest: RC_FIRE_TEMPLE_MQ_MEGATON_HAMMER_CHEST (flag 0x00 in both), location_access/dungeons/fire_temple.cpp:514 + souls/OotSoulChecks.h:237-238; exit: RR_FIRE_TEMPLE_MQ_LOOP_FLARE_DANCER -> RR_FIRE_TEMPLE_MQ_LOOP_CAGE_SWITCH, location_access/dungeons/fire_temple.cpp:518",
+      "nativeRequirement": "CanKillEnemy(RE_FLARE_DANCER) -> ENEMY_FLARE_DANCER (OotSouls.cpp:153-154) on both; chest also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:466",
+      "status": "match",
+      "native": "key: RC_FIRE_TEMPLE_MQ_FREESTANDING_KEY, location_access/dungeons/fire_temple.cpp:1020 + souls/OotSoulChecks.h:247-248; exits: RR_FIRE_TEMPLE_MQ_3F_FLARE_DANCER -> FIRE_MAZE_PAST_WALL / ABOVE_3F_FLARE_DANCER, location_access/dungeons/fire_temple.cpp:1023-1024",
+      "nativeRequirement": "CanKillEnemy(RE_FLARE_DANCER) -> ENEMY_FLARE_DANCER on all three; key also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:87",
+      "status": "match",
+      "native": "LOGIC_FOREST_CLEAR_BETWEEN_JOELLE_AND_BETH, location_access/dungeons/forest_temple.cpp:479; chest RC_FOREST_TEMPLE_MQ_WOLFOS_CHEST (flag 0x00 in both), location_access/dungeons/forest_temple.cpp:482 + souls/OotSoulChecks.h:253-254; exit RR_FOREST_TEMPLE_MQ_WOLFOS_ROOM -> RR_FOREST_TEMPLE_MQ_NORTH_HALLWAY, location_access/dungeons/forest_temple.cpp:487",
+      "nativeRequirement": "event: CanKillEnemy(RE_WOLFOS) -> ENEMY_WOLFOS (OotSouls.cpp:155-156); chest also CheckPrerequisite Has(ENEMY_WOLFOS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:103",
+      "status": "match",
+      "native": "RR_FOREST_TEMPLE_MQ_RED_DOORMAT_HALLWAY -> LOBBY / BLOCK_PUZZLE_FLOOR, location_access/dungeons/forest_temple.cpp:492-493",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> ENEMY_STALFOS (OotSouls.cpp:149-150)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:178",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_FOREST_CORRIDOR_WEST is registry data only (combo/rando/entrances/Registry.h:477); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:188",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_FOREST_CORRIDOR_WEST is registry data only (combo/rando/entrances/Registry.h:477); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:192",
+      "status": "match",
+      "native": "RR_FOREST_TEMPLE_MQ_FLOORMASTER_ROOM -> RR_FOREST_TEMPLE_MQ_NW_COURTYARD_LEDGE, location_access/dungeons/forest_temple.cpp:578",
+      "nativeRequirement": "CanKillEnemy(RE_FLOORMASTER) -> ENEMY_FLOORMASTER (OotSouls.cpp:157-158)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:221",
+      "status": "match",
+      "native": "chest RC_FOREST_TEMPLE_MQ_REDEAD_CHEST (flag 0x02 in both), location_access/dungeons/forest_temple.cpp:606 + souls/OotSoulChecks.h:257-258; exit RR_FOREST_TEMPLE_MQ_REDEAD_ROOM -> NW_COURTYARD_LEDGE, location_access/dungeons/forest_temple.cpp:609",
+      "nativeRequirement": "CanKillEnemy(RE_REDEAD) -> ENEMY_REDEAD_GIBDO (OotSouls.cpp:159-160) on both; chest also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:309",
+      "status": "match",
+      "native": "LOGIC_STICK_ACCESS in RR_FOREST_TEMPLE_MQ_NE_COURTYARD, location_access/dungeons/forest_temple.cpp:662",
+      "nativeRequirement": "CanGetDekuBabaSticks() (logic.cpp:1388-1392) -> Souls::Has(ENEMY_DEKU_BABA); the hill/island (RR_FOREST_TEMPLE_MQ_NE_COURTYARD_ISLAND) has no event of its own but exits freely to NE_COURTYARD (forest_temple.cpp:713)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:310",
+      "status": "match",
+      "native": "LOGIC_NUT_ACCESS in RR_FOREST_TEMPLE_MQ_NE_COURTYARD, location_access/dungeons/forest_temple.cpp:663",
+      "nativeRequirement": "CanGetDekuBabaNuts() (logic.cpp:1394-1398) -> Souls::Has(ENEMY_DEKU_BABA); the hill/island (RR_FOREST_TEMPLE_MQ_NE_COURTYARD_ISLAND) has no event of its own but exits freely to NE_COURTYARD (forest_temple.cpp:713)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:339",
+      "status": "match",
+      "native": "LOGIC_STICK_ACCESS in RR_FOREST_TEMPLE_MQ_NE_COURTYARD, location_access/dungeons/forest_temple.cpp:662",
+      "nativeRequirement": "CanGetDekuBabaSticks() (logic.cpp:1388-1392) -> Souls::Has(ENEMY_DEKU_BABA)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:340",
+      "status": "match",
+      "native": "LOGIC_NUT_ACCESS in RR_FOREST_TEMPLE_MQ_NE_COURTYARD, location_access/dungeons/forest_temple.cpp:663",
+      "nativeRequirement": "CanGetDekuBabaNuts() (logic.cpp:1394-1398) -> Souls::Has(ENEMY_DEKU_BABA)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:357",
+      "status": "match",
+      "native": "LOGIC_FOREST_JOELLE, location_access/dungeons/forest_temple.cpp:724 + souls/OotSoulEvents.h:18-22; chest RC_FOREST_TEMPLE_MQ_MAP_CHEST (flag 0x0D in both), location_access/dungeons/forest_temple.cpp:727 + souls/OotSoulChecks.h:265-266",
+      "nativeRequirement": "EventPrerequisite Has(ENEMY_POE); chest CheckPrerequisite Has(ENEMY_POE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:371",
+      "status": "match",
+      "native": "RR_FOREST_TEMPLE_MQ_3_STALFOS_ROOM: chest RC_FOREST_TEMPLE_MQ_BOW_CHEST (flag 0x0C in both), location_access/dungeons/forest_temple.cpp:740 + souls/OotSoulChecks.h:267-268; exits -> JOELLE_ROOM / BETH_ROOM, location_access/dungeons/forest_temple.cpp:747-748",
+      "nativeRequirement": "Get(LOGIC_FOREST_CLEAR_BETWEEN_JOELLE_AND_BETH) [Wolfos] && CanKillEnemy(RE_STALFOS) [Stalfos]; chest CheckPrerequisite Has(STALFOS) && Has(WOLFOS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:372",
+      "status": "match",
+      "native": "LOGIC_FOREST_CLEAR_BETWEEN_JOELLE_AND_BETH in RR_FOREST_TEMPLE_MQ_3_STALFOS_ROOM, location_access/dungeons/forest_temple.cpp:737",
+      "nativeRequirement": "CanKillEnemy(RE_WOLFOS) -> ENEMY_WOLFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:385",
+      "status": "match",
+      "native": "LOGIC_FOREST_BETH, location_access/dungeons/forest_temple.cpp:753 + souls/OotSoulEvents.h:18-22; chest RC_FOREST_TEMPLE_MQ_COMPASS_CHEST (flag 0x0F in both), location_access/dungeons/forest_temple.cpp:756 + souls/OotSoulChecks.h:269-270",
+      "nativeRequirement": "EventPrerequisite Has(ENEMY_POE); chest CheckPrerequisite Has(ENEMY_POE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:393",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_FOREST_CORRIDOR_EAST is registry data only (combo/rando/entrances/Registry.h:479); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:401",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_FOREST_CORRIDOR_EAST is registry data only (combo/rando/entrances/Registry.h:479); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:435",
+      "status": "match",
+      "native": "LOGIC_FOREST_AMY, location_access/dungeons/forest_temple.cpp:792 + souls/OotSoulEvents.h:18-22; gates RR_FOREST_TEMPLE_MQ_AMY_ROOM -> RR_FOREST_TEMPLE_MQ_BLUE_DOORMAT_HALLWAY, location_access/dungeons/forest_temple.cpp:799 (and LOGIC_FOREST_MEG, forest_temple.cpp:449)",
+      "nativeRequirement": "EventPrerequisite Has(ENEMY_POE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:7",
+      "status": "match",
+      "native": "RR_GANONS_CASTLE_MQ_LOBBY -> RR_GANONS_CASTLE_MQ_MAIN, location_access/dungeons/ganons_castle.cpp:408",
+      "nativeRequirement": "CanKillEnemy(RE_IRON_KNUCKLE) -> IRON_KNUCKLE, CanKillEnemy(RE_ARMOS) -> ARMOS, explicit Souls::Has(ENEMY_BUBBLE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:52",
+      "status": "match",
+      "native": "RR_GANONS_CASTLE_MQ_LIGHT_TRIAL_DINOLFOS_ROOM -> RR_GANONS_CASTLE_MQ_LIGHT_TRIAL_TRIFORCE_ROOM, location_access/dungeons/ganons_castle.cpp:746",
+      "nativeRequirement": "CanKillEnemy(RE_DINOLFOS) -> LIZALFOS_DINOLFOS (OotSouls.cpp:167-168) && CanKillEnemy(RE_TORCH_SLUG) -> TORCH_SLUG (OotSouls.cpp:169-170)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:93",
+      "status": "match",
+      "native": "RR_GANONS_CASTLE_MQ_FOREST_TRIAL_STALFOS_ROOM -> RR_GANONS_CASTLE_MQ_FOREST_TRIAL_BEAMOS_ROOM, location_access/dungeons/ganons_castle.cpp:463",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> ENEMY_STALFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:255",
+      "status": "match",
+      "native": "RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_CHAIRS_ROOM -> RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_BEFORE_SWITCH, location_access/dungeons/ganons_castle.cpp:703",
+      "nativeRequirement": "AnyAgeTime((CanHitEyeTargets() || trick RT_VISIBLE_COLLISION) && CanUse(MEGATON_HAMMER)); no soul on either branch",
+      "auditStatus": "native_missing",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The Iron Knuckle soul is on the eye-target branch (OoTMM's bow/slingshot branch); the RT_VISIBLE_COLLISION trick branch stays soul-free like OoTMM's OOT_HAMMER_WALLS trick branch.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/ganons_castle.cpp",
+          "region": "RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_CHAIRS_ROOM",
+          "statement": "ENTRANCE(RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_BEFORE_SWITCH,",
+          "souls": [
+            "ENEMY_IRON_KNUCKLE"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:272",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_GANON_SPIRIT is registry data only (combo/rando/entrances/Registry.h:499); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:111",
+      "status": "match",
+      "native": "chest RC_GERUDO_TRAINING_GROUND_MQ_DINOLFOS_CHEST (flag 0x01 in both), location_access/dungeons/gerudo_training_ground.cpp:446-449 (COMBO_BUILD) + souls/OotSoulChecks.h:281-283; exit RR_GERUDO_TRAINING_GROUND_MQ_DINOLFOS_ROOM -> TORCH_SIDE_PLATFORMS, location_access/dungeons/gerudo_training_ground.cpp:458-461 (COMBO_BUILD)",
+      "nativeRequirement": "CanKillEnemy(RE_DINOLFOS) && CanKillEnemy(RE_ARMOS) && CanKillEnemy(RE_DODONGO) on both; chest also CheckPrerequisite all three"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:210",
+      "status": "match",
+      "native": "chest RC_GERUDO_TRAINING_GROUND_MQ_FIRST_IRON_KNUCKLE_CHEST (flag 0x00 in both), location_access/dungeons/gerudo_training_ground.cpp:242 + souls/OotSoulChecks.h:284-285; exit RR_GERUDO_TRAINING_GROUND_MQ_SAND_ROOM -> BOULDER_ROOM, location_access/dungeons/gerudo_training_ground.cpp:246",
+      "nativeRequirement": "CanKillEnemy(RE_IRON_KNUCKLE) -> IRON_KNUCKLE on both; chest also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_GTG is registry data only (combo/rando/entrances/Registry.h:497); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:245",
+      "status": "match",
+      "native": "chest RC_GERUDO_TRAINING_GROUND_MQ_BEFORE_HEAVY_BLOCK_CHEST (flag 0x11 in both), location_access/dungeons/gerudo_training_ground.cpp:278 + souls/OotSoulChecks.h:286-287; exits gated by LOGIC_GTG_UNLOCKED_DOOR_BEHIND_HEAVY_BLOCK (location_access/dungeons/gerudo_training_ground.cpp:273): BEHIND_BLOCK -> ROOM_BEHIND_BLOCK (:288) and STALFOS_ROOM_ALCOVE -> STATUE_ROOM_LEDGE (:310)",
+      "nativeRequirement": "chest: CanKillEnemy(RE_STALFOS) + CheckPrerequisite Has(SKULLTULA) && Has(STALFOS) (matches); door event: CanKillEnemy(RE_STALFOS) only -> no Skulltula soul on the two exits",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. On the MQ event itself, not in EventPrerequisite, because vanilla GTG grants the same event freely.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/gerudo_training_ground.cpp",
+          "region": "RR_GERUDO_TRAINING_GROUND_MQ_STALFOS_ROOM",
+          "statement": "EVENT_ACCESS(LOGIC_GTG_UNLOCKED_DOOR_BEHIND_HEAVY_BLOCK,",
+          "souls": [
+            "ENEMY_SKULLTULA"
+          ],
+          "contains": [
+            "CanKillEnemy(RE_STALFOS"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:261",
+      "status": "match",
+      "native": "RC_GERUDO_TRAINING_GROUND_MQ_HEAVY_BLOCK_CHEST (flag 0x02 in both), location_access/dungeons/gerudo_training_ground.cpp:295-297 (COMBO_BUILD) + souls/OotSoulChecks.h:288-289",
+      "nativeRequirement": "CanKillEnemy(RE_FREEZARD) && CanKillEnemy(RE_SPIKE); CheckPrerequisite Has(FREEZARD) && Has(SPIKE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:318",
+      "status": "match",
+      "native": "chest RC_GERUDO_TRAINING_GROUND_MQ_SECOND_IRON_KNUCKLE_CHEST (flag 0x12 in both), location_access/dungeons/gerudo_training_ground.cpp:344 + souls/OotSoulChecks.h:290-291; exits RR_GERUDO_TRAINING_GROUND_MQ_TORCH_SLUG_ROOM -> STATUE_ROOM / SWITCH_LEDGE, location_access/dungeons/gerudo_training_ground.cpp:348-349",
+      "nativeRequirement": "CanKillEnemy(RE_IRON_KNUCKLE) && explicit Souls::Has(ENEMY_TORCH_SLUG) on the exits; chest CheckPrerequisite Has(IRON_KNUCKLE) && Has(TORCH_SLUG)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ice_cavern_mq.yml:44",
+      "status": "match",
+      "native": "RR_ICE_CAVERN_MQ_HUB -> RR_ICE_CAVERN_MQ_MAP_ROOM, location_access/dungeons/ice_cavern.cpp:273",
+      "nativeRequirement": "CanKillEnemy(RE_WHITE_WOLFOS) -> WOLFOS (OotSouls.cpp:177-178) && CanKillEnemy(RE_FREEZARD) -> FREEZARD (OotSouls.cpp:171-172)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ice_cavern_mq.yml:139",
+      "status": "match",
+      "native": "chest RC_ICE_CAVERN_MQ_IRON_BOOTS_CHEST (flag 0x02 in both), location_access/dungeons/ice_cavern.cpp:357 + souls/OotSoulChecks.h:298-299; exits RR_ICE_CAVERN_MQ_STALFOS_ROOM -> WEST_CORRIDOR / STALFOS_ROOM_UNDERWATER, location_access/dungeons/ice_cavern.cpp:361-362",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> STALFOS on all; chest also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ice_cavern_mq.yml:142",
+      "status": "match",
+      "native": "RC_SHEIK_IN_ICE_CAVERN (MQ entry), location_access/dungeons/ice_cavern.cpp:358 + souls/OotSoulChecks.h:956-957",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> STALFOS; CheckPrerequisite Has(NPC_SHEIK)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:8",
+      "status": "not_enemy_soul",
+      "native": "RR_JABU_JABUS_BELLY_MQ_BEGINNING -> RR_JABU_JABUS_BELLY_MQ_LIFT_ROOM, location_access/dungeons/jabujabus_belly.cpp:281 (animal soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:11,16,17,181",
+      "status": "not_enemy_soul",
+      "native": "souls/OotSoulChecks.h:958-961 ANIMAL_COW cases; RC_JABU_JABUS_BELLY_MQ_COW souls/OotSoulChecks.h:305-306 (animal soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:102",
+      "status": "not_enemy_soul",
+      "native": "RR_JABU_JABUS_BELLY_MQ_HOLES_BASEMENT -> RR_JABU_JABUS_BELLY_MQ_WATER_SWITCH_ROOM, location_access/dungeons/jabujabus_belly.cpp:368 (NPC soul, not audited)",
+      "nativeRequirement": "n/a"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:117",
+      "status": "match",
+      "native": "LOGIC_JABU_MQ_WATER_SWITCH_LIFT_ACCESS, location_access/dungeons/jabujabus_belly.cpp:376-378 (COMBO_BUILD) + souls/OotSoulEvents.h:27-29, gating LIFT_ROOM -> WATER_SWITCH_ROOM_PAST_GEYSER (:302), PAST_GEYSER -> WATER_SWITCH_ROOM (:405) and RC_JABU_JABUS_BELLY_MQ_BOOMERANG_CHEST (flag 0x06 in both, :386-388 + souls/OotSoulChecks.h:300-302); but RR_JABU_JABUS_BELLY_MQ_WATER_SWITCH_ROOM -> WATER_SWITCH_ROOM_PAST_GEYSER, location_access/dungeons/jabujabus_belly.cpp:399",
+      "nativeRequirement": "event, both event-gated exits and the chest carry all three souls (match); the reverse crossing WATER_SWITCH_ROOM -> PAST_GEYSER (then PAST_GEYSER -> LIFT_ROOM true, :406) is AnyAgeTime(CanKillEnemy(RE_LIZALFOS)) -> Lizalfos soul only",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The reverse crossing past the geyser now needs the Like-Like and Stinger souls besides the Lizalfos soul from CanKillEnemy.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/jabujabus_belly.cpp",
+          "region": "RR_JABU_JABUS_BELLY_MQ_WATER_SWITCH_ROOM",
+          "statement": "ENTRANCE(RR_JABU_JABUS_BELLY_MQ_WATER_SWITCH_ROOM_PAST_GEYSER,",
+          "souls": [
+            "ENEMY_LIKE_LIKE",
+            "ENEMY_STINGER"
+          ],
+          "contains": [
+            "CanKillEnemy(RE_LIZALFOS)"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:128",
+      "status": "match",
+      "native": "LOGIC_JABU_MQ_WATER_SWITCH_LIFT_ACCESS, location_access/dungeons/jabujabus_belly.cpp:376-378 + souls/OotSoulEvents.h:27-29 (native WATER_SWITCH_ROOM covers both OoTMM sides)",
+      "nativeRequirement": "event carries all three souls; the one weaker native exit is reported on the line-117 row"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:162",
+      "status": "match",
+      "native": "RR_JABU_JABUS_BELLY_MQ_BIGOCTO -> RR_JABU_JABUS_BELLY_MQ_ABOVE_BIGOCTO, location_access/dungeons/jabujabus_belly.cpp:532",
+      "nativeRequirement": "CanKillEnemy(RE_BIG_OCTO) -> Has(ENEMY_OCTOROK) && Has(NPC_RUTO) (souls/OotSouls.cpp:183-184). (Native also gates the return BIGOCTO -> TO_BIGOCTO, :531, with the octo kill; OoTMM's return exit is free: native-stricter, no change proposed)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:226",
+      "status": "match",
+      "native": "LOGIC_JABU_NORTH_TENTACLE, location_access/dungeons/jabujabus_belly.cpp:464 + souls/OotSoulEvents.h:23-26, gating TO_NEAR_BOSS_ROOM -> NEAR_BOSS_ROOM (:581) and HOLES_BASEMENT -> INVISIBLE_KEESE_ROOM (:369)",
+      "nativeRequirement": "EventPrerequisite Has(ENEMY_PARASITE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:233",
+      "status": "match",
+      "native": "chest RC_JABU_JABUS_BELLY_MQ_FALLING_LIKE_LIKE_ROOM_CHEST (flag 0x09 in both), location_access/dungeons/jabujabus_belly.cpp:473 + souls/OotSoulChecks.h:307-308; exit RR_JABU_JABUS_BELLY_MQ_FORK_NORTH_EAST -> FORKED_CORRIDOR, location_access/dungeons/jabujabus_belly.cpp:490; web route FORKED_CORRIDOR -> FORK_EAST, location_access/dungeons/jabujabus_belly.cpp:421",
+      "nativeRequirement": "chest: CheckPrerequisite Has(ENEMY_LIKE_LIKE) (matches); exit: true (no soul); web route: (CanUse(SLINGSHOT) && CanUse(STICKS)) || HasFireSource() -> no Like-Like soul on the sticks branch",
+      "auditStatus": "native_missing",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The falling Like-Like room exit and the sticks branch of the web route both need the Like-Like soul; the fire branch stays soul-free.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/jabujabus_belly.cpp",
+          "region": "RR_JABU_JABUS_BELLY_MQ_FORK_NORTH_EAST",
+          "statement": "ENTRANCE(RR_JABU_JABUS_BELLY_MQ_FORKED_CORRIDOR,",
+          "souls": [
+            "ENEMY_LIKE_LIKE"
+          ],
+          "contains": []
+        },
+        {
+          "file": "location_access/dungeons/jabujabus_belly.cpp",
+          "region": "RR_JABU_JABUS_BELLY_MQ_FORKED_CORRIDOR",
+          "statement": "ENTRANCE(RR_JABU_JABUS_BELLY_MQ_FORK_EAST,",
+          "souls": [
+            "ENEMY_LIKE_LIKE"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:260",
+      "status": "match",
+      "native": "LOGIC_JABU_EAST_TENTACLE, location_access/dungeons/jabujabus_belly.cpp:495 + souls/OotSoulEvents.h:23-26, gating TO_FORK_WEST -> FORK_WEST (:428) and TO_FORK_NORTH_WEST -> FORK_NORTH_WEST (:443)",
+      "nativeRequirement": "CanKillEnemy(RE_TENTACLE) -> ENEMY_PARASITE (OotSouls.cpp:199-200) + EventPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:267",
+      "status": "match",
+      "native": "LOGIC_JABU_WEST_TENTACLE, location_access/dungeons/jabujabus_belly.cpp:433 + souls/OotSoulEvents.h:23-26, gating HOLES_BASEMENT -> TO_BIGOCTO (:367); return TO_BIGOCTO -> HOLES_BASEMENT (:524) is event || TakeDamage()",
+      "nativeRequirement": "CanKillEnemy(RE_TENTACLE) + EventPrerequisite Has(ENEMY_PARASITE). The return's TakeDamage branch is only reachable after the soul-gated forward exit (TO_BIGOCTO has no other way in), so the soul set is the same"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:284",
+      "status": "match",
+      "native": "native has no GS-side region; RC_JABU_JABUS_BELLY_MQ_GS_INVISIBLE_ENEMIES_ROOM, location_access/dungeons/jabujabus_belly.cpp:503-515 + souls/OotSoulChecks.h:311-312",
+      "nativeRequirement": "platform branch: CanKillEnemy(RE_STINGER) && CanKillEnemy(RE_KEESE) (or the lens-trick hookshot+irons Keese alternative) -> Stinger + Keese souls; hover-boots and fire-arrow+longshot branches soul-free, as OoTMM's hover and entrance-side GS alternatives"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:294",
+      "status": "match",
+      "native": "location_access/dungeons/jabujabus_belly.cpp:510-513 (same platform branch as line-284 row)",
+      "nativeRequirement": "CanKillEnemy(RE_STINGER) && CanKillEnemy(RE_KEESE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:53",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP (Flying Pot) has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:54",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP (Flying Pot) has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:67",
+      "status": "match",
+      "native": "chest RC_SHADOW_TEMPLE_MQ_COMPASS_CHEST (flag 0x01 in both), location_access/dungeons/shadow_temple.cpp:456 + souls/OotSoulChecks.h:315-316; exit WHISPERING_WALLS_SIDE_ROOM -> WHISPERING_WALLS_SIDE, location_access/dungeons/shadow_temple.cpp:461",
+      "nativeRequirement": "CanKillEnemy(RE_REDEAD) -> REDEAD_GIBDO on both; chest also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:81",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP (Flying Pot) has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:82",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP (Flying Pot) has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:95",
+      "status": "match",
+      "native": "chest RC_SHADOW_TEMPLE_MQ_HOVER_BOOTS_CHEST (flag 0x07 in both), location_access/dungeons/shadow_temple.cpp:466 + souls/OotSoulChecks.h:317-318; exit WHISPERING_WALLS_DEAD_HAND -> WHISPERING_WALLS_END, location_access/dungeons/shadow_temple.cpp:469",
+      "nativeRequirement": "CanKillEnemy(RE_DEAD_HAND) -> DEAD_HAND on both; chest also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:130",
+      "status": "match",
+      "native": "chest RC_SHADOW_TEMPLE_MQ_EARLY_GIBDOS_CHEST (flag 0x03 in both), location_access/dungeons/shadow_temple.cpp:486 + souls/OotSoulChecks.h:319-320; exit B2_GIBDO_ROOM -> FIRST_BEAMOS, location_access/dungeons/shadow_temple.cpp:489",
+      "nativeRequirement": "CanKillEnemy(RE_GIBDO) -> REDEAD_GIBDO (OotSouls.cpp:187-188) on both; chest also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:146",
+      "status": "match",
+      "native": "RR_SHADOW_TEMPLE_MQ_B2_SPINNING_BLADE_ROOM -> RR_SHADOW_TEMPLE_MQ_FIRST_BEAMOS, location_access/dungeons/shadow_temple.cpp:504",
+      "nativeRequirement": "CanKillEnemy(RE_BIG_SKULLTULA) -> ENEMY_SKULLTULA (OotSouls.cpp:121-122)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:273",
+      "status": "match",
+      "native": "chest RC_SHADOW_TEMPLE_MQ_INVISIBLE_SPIKES_CHEST (flag 0x09 in both), location_access/dungeons/shadow_temple.cpp:621 + souls/OotSoulChecks.h:323-324; platform exit location_access/dungeons/shadow_temple.cpp:627 uses the same CanKillEnemy(RE_REDEAD) alternative",
+      "nativeRequirement": "CanKillEnemy(RE_REDEAD) -> REDEAD_GIBDO; chest also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:293",
+      "status": "match",
+      "native": "chest RC_SHADOW_TEMPLE_MQ_STALFOS_ROOM_CHEST (flag 0x10 in both), location_access/dungeons/shadow_temple.cpp:639 + souls/OotSoulChecks.h:325-326; exit STALFOS_ROOM -> FLOOR_SPIKES_ROOM, location_access/dungeons/shadow_temple.cpp:642",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> STALFOS on both; chest also CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:333",
+      "status": "match",
+      "native": "RC_SHADOW_TEMPLE_MQ_WIND_HINT_CHEST (flag 0x15 in both), location_access/dungeons/shadow_temple.cpp:660 + souls/OotSoulChecks.h:327-328",
+      "nativeRequirement": "CanPassEnemy(RE_REDEAD) (no soul by itself) + CheckPrerequisite Has(ENEMY_REDEAD_GIBDO)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:351",
+      "status": "match",
+      "native": "RC_SHADOW_TEMPLE_MQ_AFTER_WIND_ENEMY_CHEST (flag 0x08 in both), location_access/dungeons/shadow_temple.cpp:678 + souls/OotSoulChecks.h:331-332",
+      "nativeRequirement": "CanKillEnemy(RE_GIBDO) + CheckPrerequisite Has(ENEMY_REDEAD_GIBDO)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:358",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP (Flying Pot) has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:359",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP (Flying Pot) has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:466",
+      "status": "match",
+      "native": "RC_SHADOW_TEMPLE_MQ_BOMB_FLOWER_CHEST (flag 0x0D in both), location_access/dungeons/shadow_temple.cpp:768 + souls/OotSoulChecks.h:337-338",
+      "nativeRequirement": "CanKillEnemy(RE_DEAD_HAND) + CheckPrerequisite Has(ENEMY_DEAD_HAND)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:20",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_SILVER_GAUNTLETS_CHEST in RR_SPIRIT_TEMPLE_MQ_OUTER_RIGHT_HAND, location_access/dungeons/spirit_temple.cpp:874; every way into that region needs the Iron Knuckle: CHILD_THRONE -> RIGHT_HAND_EXIT (:860), STATUE_ROOM_ADULT 4-key exit (:909, MQSpirit4KeyWestHand -> CanKillEnemy(RE_IRON_KNUCKLE), logic.cpp:3091), OUTER_LEFT_HAND longshot (:1065, after ADULT_THRONE -> LEFT_HAND_EXIT :1052)",
+      "nativeRequirement": "CanKillEnemy(RE_IRON_KNUCKLE) -> IRON_KNUCKLE on every route"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:54",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_MAP_CHEST (flag 0x00 in both) in ANUBIS_BRIDGE_CHEST, location_access/dungeons/spirit_temple.cpp:702 + souls/OotSoulChecks.h:962-963; region entered from CHILD_SIDE_HUB via :621",
+      "nativeRequirement": "CanKillEnemy(RE_TORCH_SLUG) on the hub exit + CheckPrerequisite Has(ENEMY_TORCH_SLUG)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:55",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_MAP_ROOM_ENEMY_CHEST (flag 0x08 in both), location_access/dungeons/spirit_temple.cpp:682-686 (COMBO_BUILD) + souls/OotSoulChecks.h:341-344",
+      "nativeRequirement": "CanKillEnemy REDEAD/STALFOS/TORCH_SLUG + LOGIC_SPIRIT_MQ_MAP_ROOM_ENEMIES (Anubis + Keese); CheckPrerequisite all five"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:58",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_GIBDO_POT_1 in GIBDO_POTS, location_access/dungeons/spirit_temple.cpp:644 (room-2 pots, matching vanilla contents heart / second pot)",
+      "nativeRequirement": "every route in leaves CHILD_SIDE_HUB through CanKillEnemy(RE_TORCH_SLUG) (spirit_temple.cpp:620 to GIBDO_GRAVES, :621 to ANUBIS_BRIDGE_CHEST)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:59",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_GIBDO_POT_2 in GIBDO_POTS, location_access/dungeons/spirit_temple.cpp:645 (room-2 pots, matching vanilla contents heart / second pot)",
+      "nativeRequirement": "every route in leaves CHILD_SIDE_HUB through CanKillEnemy(RE_TORCH_SLUG) (spirit_temple.cpp:620 to GIBDO_GRAVES, :621 to ANUBIS_BRIDGE_CHEST)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:60",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_1 in RR_SPIRIT_TEMPLE_MQ_TURNTABLE, location_access/dungeons/spirit_temple.cpp:659 (room-27 pots; vanilla contents heart, heart, seeds, rupee match OoTMM's heart, heart, seeds, flexible)",
+      "nativeRequirement": "CanUse(RG_BOOMERANG) || CanKillEnemy(RE_STALFOS); no CheckPrerequisite case. TURNTABLE is entered from GIBDO_POTS via LOGIC_SPIRIT_MQ_GIBDOS_CLEARED (ReDead soul, :649) or from ANUBIS_BRIDGE_GRAVE with true (:692, reached from ANUBIS_BRIDGE_CHEST by hookshot/hover boots :706). So boomerang needs no Stalfos soul and the Anubis-bridge route needs no ReDead soul",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped (no combo counterpart, off by default).",
+      "evidence": [
+        {
+          "file": "souls/OotSoulChecks.h",
+          "case": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_1",
+          "souls": [
+            "ENEMY_TORCH_SLUG",
+            "ENEMY_REDEAD_GIBDO",
+            "ENEMY_STALFOS"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:61",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_2 in RR_SPIRIT_TEMPLE_MQ_TURNTABLE, location_access/dungeons/spirit_temple.cpp:660 (room-27 pots; vanilla contents heart, heart, seeds, rupee match OoTMM's heart, heart, seeds, flexible)",
+      "nativeRequirement": "CanUse(RG_BOOMERANG) || CanKillEnemy(RE_STALFOS); no CheckPrerequisite case. TURNTABLE is entered from GIBDO_POTS via LOGIC_SPIRIT_MQ_GIBDOS_CLEARED (ReDead soul, :649) or from ANUBIS_BRIDGE_GRAVE with true (:692, reached from ANUBIS_BRIDGE_CHEST by hookshot/hover boots :706). So boomerang needs no Stalfos soul and the Anubis-bridge route needs no ReDead soul",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped (no combo counterpart, off by default).",
+      "evidence": [
+        {
+          "file": "souls/OotSoulChecks.h",
+          "case": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_2",
+          "souls": [
+            "ENEMY_TORCH_SLUG",
+            "ENEMY_REDEAD_GIBDO",
+            "ENEMY_STALFOS"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:62",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_3 in RR_SPIRIT_TEMPLE_MQ_TURNTABLE, location_access/dungeons/spirit_temple.cpp:661 (room-27 pots; vanilla contents heart, heart, seeds, rupee match OoTMM's heart, heart, seeds, flexible)",
+      "nativeRequirement": "CanUse(RG_BOOMERANG) || CanKillEnemy(RE_STALFOS); no CheckPrerequisite case. TURNTABLE is entered from GIBDO_POTS via LOGIC_SPIRIT_MQ_GIBDOS_CLEARED (ReDead soul, :649) or from ANUBIS_BRIDGE_GRAVE with true (:692, reached from ANUBIS_BRIDGE_CHEST by hookshot/hover boots :706). So boomerang needs no Stalfos soul and the Anubis-bridge route needs no ReDead soul",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped (no combo counterpart, off by default).",
+      "evidence": [
+        {
+          "file": "souls/OotSoulChecks.h",
+          "case": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_3",
+          "souls": [
+            "ENEMY_TORCH_SLUG",
+            "ENEMY_REDEAD_GIBDO",
+            "ENEMY_STALFOS"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:63",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_4 in RR_SPIRIT_TEMPLE_MQ_TURNTABLE, location_access/dungeons/spirit_temple.cpp:662 (room-27 pots; vanilla contents heart, heart, seeds, rupee match OoTMM's heart, heart, seeds, flexible)",
+      "nativeRequirement": "CanUse(RG_BOOMERANG) || CanKillEnemy(RE_STALFOS); no CheckPrerequisite case. TURNTABLE is entered from GIBDO_POTS via LOGIC_SPIRIT_MQ_GIBDOS_CLEARED (ReDead soul, :649) or from ANUBIS_BRIDGE_GRAVE with true (:692, reached from ANUBIS_BRIDGE_CHEST by hookshot/hover boots :706). So boomerang needs no Stalfos soul and the Anubis-bridge route needs no ReDead soul",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Soul part only; OoTMM's restoreBrokenActors Keese term is dropped (no combo counterpart, off by default).",
+      "evidence": [
+        {
+          "file": "souls/OotSoulChecks.h",
+          "case": "RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_4",
+          "souls": [
+            "ENEMY_TORCH_SLUG",
+            "ENEMY_REDEAD_GIBDO",
+            "ENEMY_STALFOS"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:69",
+      "status": "match",
+      "native": "room-2 boulders RC_SPIRIT_TEMPLE_MQ_GIBDO_BOULDER_HIGH / _LOW (GIBDO_GRAVES), location_access/dungeons/spirit_temple.cpp:632-633",
+      "nativeRequirement": "every route in leaves CHILD_SIDE_HUB through CanKillEnemy(RE_TORCH_SLUG) (spirit_temple.cpp:620-621)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:70",
+      "status": "match",
+      "native": "room-2 boulders RC_SPIRIT_TEMPLE_MQ_GIBDO_BOULDER_HIGH / _LOW (GIBDO_GRAVES), location_access/dungeons/spirit_temple.cpp:632-633",
+      "nativeRequirement": "every route in leaves CHILD_SIDE_HUB through CanKillEnemy(RE_TORCH_SLUG) (spirit_temple.cpp:620-621)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:71",
+      "status": "match",
+      "native": "room-2 boulders RC_SPIRIT_TEMPLE_MQ_GIBDO_BOULDER (GIBDO_POTS), location_access/dungeons/spirit_temple.cpp:646",
+      "nativeRequirement": "every route in leaves CHILD_SIDE_HUB through CanKillEnemy(RE_TORCH_SLUG) (spirit_temple.cpp:620-621)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:81",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_CHILD_CLIMB_NORTH_CHEST (flag 0x06 in both), location_access/dungeons/spirit_temple.cpp:737 + souls/OotSoulChecks.h:345-347",
+      "nativeRequirement": "CanKillEnemy(RE_BEAMOS) + CheckPrerequisite Has(BABY_DODONGO) && Has(BEAMOS) && Has(LIKE_LIKE)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_SPIRIT_STATUE is registry data only (combo/rando/entrances/Registry.h:489); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_SPIRIT_ADULT_CLIMB is registry data only (combo/rando/entrances/Registry.h:485); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:92",
+      "status": "match",
+      "native": "LOGIC_SPIRIT_MQ_3SUNS_ENEMIES, location_access/dungeons/spirit_temple.cpp:940 + souls/OotSoulEvents.h:36-37, gating 3_SUNS_ROOM_2F -> 3_SUNS_ROOM_1F (:944) and back (:950)",
+      "nativeRequirement": "EventPrerequisite Has(ENEMY_STALFOS) && Has(ENEMY_WALLMASTER). (Native also has a soul-free FOYER -> BEHIND_GEYSER route behind trick RT_HOVER_BOOST_SIMPLE, spirit_temple.cpp:595; OoTMM has no such route. Trick-only, not a soul gate)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:105",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP (Flying Pot) has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:106",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP (Flying Pot) has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:107",
+      "status": "no_native_location",
+      "native": "none: native pot checks cover only ACTOR_OBJ_TSUBO (ShufflePots.cpp:118,133); EN_TUBO_TRAP (Flying Pot) has no check",
+      "nativeRequirement": "n/a",
+      "note": "Flying Pot: SoH has no EN_TUBO_TRAP checks."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118",
+      "status": "no_native_location",
+      "native": "none: OOT_WALLMASTER_SPIRIT_CHILD_SUN is registry data only (combo/rando/entrances/Registry.h:487); the combo builds only the MM Wallmaster pool (combo/rando/entrances/NativeBridge.h:181-191); SoH logic has no OoT Wallmaster-grab exit",
+      "nativeRequirement": "n/a",
+      "pending": "OoT Wallmaster entrance shuffle: no native edge until it exists; that edge must require Souls::Has(ENEMY_WALLMASTER)."
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:119",
+      "status": "match",
+      "native": "adult 4-key quantum branch: RR_SPIRIT_TEMPLE_MQ_STATUE_ROOM_ADULT -> DESERT_COLOSSUS / OUTER_RIGHT_HAND, location_access/dungeons/spirit_temple.cpp:908-909, via Logic::MQSpirit4KeyColossus / MQSpirit4KeyWestHand (logic.cpp:3083-3100); 7-key branch: CHILD_THRONE -> RIGHT_HAND_EXIT, location_access/dungeons/spirit_temple.cpp:860",
+      "nativeRequirement": "IK branch matches (CanKillEnemy(RE_IRON_KNUCKLE)). MQSpirit4KeyColossus requires CanKillEnemy(RE_IRON_KNUCKLE) but its own comment says 'CanKillEnemy(RE_FLOORMASTER) is implied' (logic.cpp:3088): no Floormaster soul. (Separately, native lets any age open SKULLTULA_STAIRS -> CHILD_THRONE with 4 keys, spirit_temple.cpp:854, where OoTMM needs 7 keys; that is key logic, not a soul gate)",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. Logic::MQSpirit4KeyColossus (also used by MQSpirit4KeyWestHand) needs the Floormaster soul; CouldMQSpirit4KeyWestHand stays unchanged because OoTMM's child 4-key path needs only the Iron Knuckle soul.",
+      "evidence": [
+        {
+          "file": "logic.cpp",
+          "function": "bool Logic::MQSpirit4KeyColossus()",
+          "souls": [
+            "ENEMY_FLOORMASTER"
+          ],
+          "contains": [
+            "CanKillEnemy(RE_IRON_KNUCKLE)"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:136",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_LEEVER_ROOM_CHEST (flag 0x04 in both), location_access/dungeons/spirit_temple.cpp:973 + souls/OotSoulChecks.h:350-351",
+      "nativeRequirement": "CanKillEnemy(RE_PURPLE_LEEVER) -> LEEVER (OotSouls.cpp:197-198) + CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:153",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_BEAMOS_ROOM_CHEST (flag 0x19 in both), location_access/dungeons/spirit_temple.cpp:1021 + souls/OotSoulChecks.h:356-357",
+      "nativeRequirement": "CanKillEnemy(RE_BEAMOS) -> BEAMOS (OotSouls.cpp:193-194) + CheckPrerequisite"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:159",
+      "status": "match",
+      "native": "FLOORMASTER_STAIRS -> ADULT_THRONE, location_access/dungeons/spirit_temple.cpp:1046, then ADULT_THRONE -> LEFT_HAND_EXIT, :1052 -> OUTER_LEFT_HAND",
+      "nativeRequirement": "CanKillEnemy(RE_FLOORMASTER) -> FLOORMASTER and CanKillEnemy(RE_IRON_KNUCKLE) -> IRON_KNUCKLE in series"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:164",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MIRROR_SHIELD_CHEST in OUTER_LEFT_HAND, location_access/dungeons/spirit_temple.cpp:1062 (only entered through :1046 and :1052)",
+      "nativeRequirement": "Floormaster + Iron Knuckle souls on the only route"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:195",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_GS_NINE_THRONES_ROOM_WEST, location_access/dungeons/spirit_temple.cpp:1113 + souls/OotSoulChecks.h:358-359",
+      "nativeRequirement": "CheckPrerequisite Has(ENEMY_IRON_KNUCKLE) && Has(MISC_GS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:196",
+      "status": "match",
+      "native": "RC_SPIRIT_TEMPLE_MQ_GS_NINE_THRONES_ROOM_NORTH, location_access/dungeons/spirit_temple.cpp:1114 + souls/OotSoulChecks.h:360-361",
+      "nativeRequirement": "CheckPrerequisite Has(ENEMY_IRON_KNUCKLE) && Has(MISC_GS)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:73",
+      "status": "match",
+      "native": "LOGIC_WATER_MQ_SIDE_TOWER_TARGETS, location_access/dungeons/water_temple.cpp:844; chest RC_WATER_TEMPLE_MQ_COMPASS_CHEST (flag 0x01 in both), :847 + souls/OotSoulChecks.h:362-363; side-tower climb SIDE_TOWER_1F -> SIDE_TOWER_2F low-water branch, :807-808",
+      "nativeRequirement": "CanKillEnemy(RE_LIZALFOS) && CanKillEnemy(RE_SPIKE) (OotSouls.cpp:125-126, 175-176); chest also CheckPrerequisite both"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:99",
+      "status": "match",
+      "native": "RR_WATER_TEMPLE_MQ_3_STALFOS_ROOM -> RR_WATER_TEMPLE_MQ_LOW_EMBLEM, location_access/dungeons/water_temple.cpp:839",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> STALFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:150",
+      "status": "match",
+      "native": "LOGIC_WATER_MQ_STALFOS_PIT, location_access/dungeons/water_temple.cpp:1092, gating every native way up: STALFOS_PIT (:1087), STALFOS_PIT_LOWER (:1097), STALFOS_PIT_POTS (:1115) -> STALFOS_PIT_UPPER",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> STALFOS"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:153",
+      "status": "match",
+      "native": "RC_WATER_TEMPLE_MQ_STALFOS_PIT_MIDDLE_POT (nuts in both) in RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS, location_access/dungeons/water_temple.cpp:1107-1110; entry STALFOS_PIT_LOWER -> STALFOS_PIT_POTS, location_access/dungeons/water_temple.cpp:1096",
+      "nativeRequirement": "STALFOS_PIT_LOWER -> POTS: (IsAdult && CanUse(HOOKSHOT)) || (hookshot && ... && (hover || LOGIC_WATER_MQ_STALFOS_PIT)); the first branch (adult + hookshot) carries no Stalfos soul. Other entries (STALFOS_PIT :1086, STALFOS_PIT_UPPER :1128) need the event or hover boots",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The adult hookshot branch into the ledge needs the Stalfos soul; the Hover Boots branch stays soul-free.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/water_temple.cpp",
+          "region": "RR_WATER_TEMPLE_MQ_STALFOS_PIT_LOWER",
+          "statement": "ENTRANCE(RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS,",
+          "souls": [
+            "ENEMY_STALFOS"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:154",
+      "status": "match",
+      "native": "RC_WATER_TEMPLE_MQ_STALFOS_PIT_SOUTH_POT in RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS, location_access/dungeons/water_temple.cpp:1107-1110; entry STALFOS_PIT_LOWER -> STALFOS_PIT_POTS, location_access/dungeons/water_temple.cpp:1096",
+      "nativeRequirement": "STALFOS_PIT_LOWER -> POTS: (IsAdult && CanUse(HOOKSHOT)) || (hookshot && ... && (hover || LOGIC_WATER_MQ_STALFOS_PIT)); the first branch (adult + hookshot) carries no Stalfos soul. Other entries (STALFOS_PIT :1086, STALFOS_PIT_UPPER :1128) need the event or hover boots",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The adult hookshot branch into the ledge needs the Stalfos soul; the Hover Boots branch stays soul-free.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/water_temple.cpp",
+          "region": "RR_WATER_TEMPLE_MQ_STALFOS_PIT_LOWER",
+          "statement": "ENTRANCE(RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS,",
+          "souls": [
+            "ENEMY_STALFOS"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:155",
+      "status": "match",
+      "native": "RC_WATER_TEMPLE_MQ_STALFOS_PIT_NORTH_POT in RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS, location_access/dungeons/water_temple.cpp:1107-1110; entry STALFOS_PIT_LOWER -> STALFOS_PIT_POTS, location_access/dungeons/water_temple.cpp:1096",
+      "nativeRequirement": "STALFOS_PIT_LOWER -> POTS: (IsAdult && CanUse(HOOKSHOT)) || (hookshot && ... && (hover || LOGIC_WATER_MQ_STALFOS_PIT)); the first branch (adult + hookshot) carries no Stalfos soul. Other entries (STALFOS_PIT :1086, STALFOS_PIT_UPPER :1128) need the event or hover boots",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The adult hookshot branch into the ledge needs the Stalfos soul; the Hover Boots branch stays soul-free.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/water_temple.cpp",
+          "region": "RR_WATER_TEMPLE_MQ_STALFOS_PIT_LOWER",
+          "statement": "ENTRANCE(RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS,",
+          "souls": [
+            "ENEMY_STALFOS"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:156",
+      "status": "match",
+      "native": "RC_WATER_TEMPLE_MQ_DARK_LINK_PILAR_SUN_FAIRY in RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS, location_access/dungeons/water_temple.cpp:1107-1110; entry STALFOS_PIT_LOWER -> STALFOS_PIT_POTS, location_access/dungeons/water_temple.cpp:1096",
+      "nativeRequirement": "STALFOS_PIT_LOWER -> POTS: (IsAdult && CanUse(HOOKSHOT)) || (hookshot && ... && (hover || LOGIC_WATER_MQ_STALFOS_PIT)); the first branch (adult + hookshot) carries no Stalfos soul. Other entries (STALFOS_PIT :1086, STALFOS_PIT_UPPER :1128) need the event or hover boots",
+      "auditStatus": "native_weaker",
+      "note": "Fixed in F1: the native gate now requires the same soul set. The adult hookshot branch into the ledge needs the Stalfos soul; the Hover Boots branch stays soul-free.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/water_temple.cpp",
+          "region": "RR_WATER_TEMPLE_MQ_STALFOS_PIT_LOWER",
+          "statement": "ENTRANCE(RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS,",
+          "souls": [
+            "ENEMY_STALFOS"
+          ],
+          "contains": []
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:161",
+      "status": "match",
+      "native": "STALFOS_PIT_UPPER -> STALFOS_PIT_LOWER / STALFOS_PIT_POTS, location_access/dungeons/water_temple.cpp:1127-1128 (true)",
+      "nativeRequirement": "true, but STALFOS_PIT_UPPER is only reachable through LOGIC_WATER_MQ_STALFOS_PIT (:1087/1097/1115) or from DARK_LINK_ROOM (:1129), whose only other entry is GATED_PIT (:1148), itself only entered from DARK_LINK_ROOM (:1135). The Stalfos soul is already required to stand there"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:172",
+      "status": "match",
+      "native": "RR_WATER_TEMPLE_MQ_DARK_LINK_ROOM -> RR_WATER_TEMPLE_MQ_STALFOS_PIT_UPPER, location_access/dungeons/water_temple.cpp:1134",
+      "nativeRequirement": "CanKillEnemy(RE_DARK_LINK) -> DARK_LINK (OotSouls.cpp:189-190)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:173",
+      "status": "match",
+      "native": "RR_WATER_TEMPLE_MQ_DARK_LINK_ROOM -> RR_WATER_TEMPLE_MQ_GATED_PIT, location_access/dungeons/water_temple.cpp:1135",
+      "nativeRequirement": "CanKillEnemy(RE_DARK_LINK) -> DARK_LINK"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:325",
+      "status": "match",
+      "native": "RR_WATER_TEMPLE_MQ_DODONGO_ROOM -> RR_WATER_TEMPLE_MQ_3_JETS_ROOM_NO_SWITCH_SIDE, location_access/dungeons/water_temple.cpp:1425",
+      "nativeRequirement": "CanKillEnemy(RE_DODONGO, ...) -> DODONGO (OotSouls.cpp:123-124)"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:326",
+      "status": "match",
+      "native": "RR_WATER_TEMPLE_MQ_DODONGO_ROOM -> RR_WATER_TEMPLE_MQ_CRATE_VORTEX_CAGE, location_access/dungeons/water_temple.cpp:1426",
+      "nativeRequirement": "CanKillEnemy(RE_DODONGO, ...) -> DODONGO"
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:357",
+      "status": "match",
+      "native": "RR_WATER_TEMPLE_MQ_FREESTANDING_ROOM -> RR_WATER_TEMPLE_MQ_BEHIND_CANAL, location_access/dungeons/water_temple.cpp:1387",
+      "nativeRequirement": "CanKillEnemy(RE_STALFOS) -> STALFOS"
+    },
+    {
+      "ootmm": "data/world/oot/overworld/*.yml (10 lines)",
+      "status": "not_enemy_soul",
+      "native": "n/a (animal soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/*.yml (27 lines)",
+      "status": "not_enemy_soul",
+      "native": "n/a (misc soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/*.yml (57 lines)",
+      "status": "not_enemy_soul",
+      "native": "n/a (misc soul; native RE_GOLD_SKULLTULA -> MISC_GS, OotSouls.cpp:119-120)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/*.yml (58 lines)",
+      "status": "not_enemy_soul",
+      "native": "n/a (animal soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/death_mountain_crater.yml:103",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/death_mountain_trail.yml:77-79",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/desert_colossus.yml:74",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/gerudo_fortress.yml:11,15,17-18,123,126",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/gerudo_valley.yml:6,19-20,24,27,61",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/goron_city.yml:16-17,27,33-35,125,136-143",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/graveyard.yml:23,24,101,109,111-112,122-126,132-141",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/graveyard.yml:69",
+      "status": "match",
+      "native": "RC_SONG_FROM_ROYAL_FAMILYS_TOMB, location_access/overworld/graveyard.cpp:88 (RR_GRAVEYARD_COMPOSERS_GRAVE); LOCATION wrapper -> CheckPrerequisite souls/OotSoulChecks.h:486-487 Has(ENEMY_KEESE)",
+      "nativeRequirement": "{ENEMY_KEESE}"
+    },
+    {
+      "ootmm": "data/world/oot/overworld/haunted_wasteland.yml:17",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/hyrule_field.yml:25",
+      "status": "match",
+      "native": "LOGIC_BIG_POE_KILL, location_access/overworld/hyrule_field.cpp:10 (RR_HYRULE_FIELD); EVENT_ACCESS wrapper -> EventPrerequisite souls/OotSoulEvents.h:41-42 Has(ENEMY_POE)",
+      "nativeRequirement": "{ENEMY_POE}"
+    },
+    {
+      "ootmm": "data/world/oot/overworld/hyrule_field.yml:33-35",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/hyrule_ganon_castle.yml:9,12,13,85",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kakariko.yml:4,19,21,30-35,134-141,150-157,178-179,186,215,229,280",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kakariko.yml:251",
+      "status": "match",
+      "native": "RC_KAK_REDEAD_GROTTO_CHEST, location_access/overworld/kakariko.cpp:276 (RR_KAK_REDEAD_GROTTO): CanKillEnemy(RE_REDEAD,...) -> logic.cpp:862 EnemySoul -> souls/OotSouls.cpp:159-160 ENEMY_REDEAD_GIBDO; plus CheckPrerequisite OotSoulChecks.h:624-625 Has(ENEMY_REDEAD_GIBDO)",
+      "nativeRequirement": "{ENEMY_REDEAD_GIBDO}"
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:17",
+      "status": "native_stricter",
+      "native": "location_access/overworld/kokiri_forest.cpp:112-113 (RR_KOKIRI_FOREST->RR_KF_LINKS_PORCH): HasItem(RG_CLIMB) || HoverBoots || ((IsChild || CanKillEnemy(RE_DEKU_BABA) || FOREST_TEMPLE_CLEAR) && CanClimbLadder()). Only when Climb is shuffled and missing (RT_HOOKSHOT_LADDERS path) does an adult need ENEMY_DEKU_BABA (OotSouls.cpp:143-144)",
+      "nativeRequirement": "adult without Climb: ENEMY_DEKU_BABA",
+      "auditStatus": "native_stricter",
+      "note": "Kept: the exact OoTMM copy would also delete SoH's own Climb-shuffle rule. Stricter but safe: it can only fail generation."
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:26",
+      "status": "match",
+      "native": "location_access/overworld/kokiri_forest.cpp:119: adult CanPassEnemy(RE_BIG_SKULLTULA) would inherit ENEMY_SKULLTULA (logic.cpp:1225-1227, 1261-1264; OotSouls.cpp:121-122), but the disjunct `Souls::Enabled() && (IsAdult || (IsChild && KokiriSword && DekuShield))` makes it soul-free whenever souls are on (bare Enabled(); F1 step 3 rekeys it)",
+      "nativeRequirement": "none when souls are on"
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:35,166",
+      "status": "not_enemy_soul",
+      "native": "n/a (NPC soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:162",
+      "status": "match",
+      "native": "location_access/overworld/kokiri_forest.cpp:193 (RR_KF_OUTSIDE_DEKU_TREE->RR_KOKIRI_FOREST): (IsAdult && (CanPassEnemy(RE_BIG_SKULLTULA) || DEKU_TREE_CLEAR)) || forest open || SHOWED_MIDO. It has no Souls::Enabled() bypass, so without the Skulltula soul an adult needs Nuts, Boomerang or RT_BIG_SKULLTULA_PAUSE_LIFT (logic.cpp:1261-1264)",
+      "nativeRequirement": "adult: ENEMY_SKULLTULA (or Nuts / Boomerang / trick)",
+      "auditStatus": "native_stricter",
+      "note": "Fixed in F1: the reverse Deku Tree exit now has the same can_bypass_mido souls bypass as the forward exit, keyed to the enemy family (adult) and NPC family (child). This removes a soul dependency and adds none.",
+      "evidence": [
+        {
+          "file": "location_access/overworld/kokiri_forest.cpp",
+          "region": "RR_KF_OUTSIDE_DEKU_TREE",
+          "statement": "ENTRANCE(RR_KOKIRI_FOREST,",
+          "souls": [],
+          "contains": [
+            "Souls::FamilyShuffled(Souls::OotSoulFamily::Enemy) && logic->IsAdult",
+            "Souls::FamilyShuffled(Souls::OotSoulFamily::Npc) && logic->IsChild"
+          ]
+        }
+      ]
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:164-166",
+      "status": "native_stricter",
+      "native": "LOGIC_NUT_ACCESS, location_access/overworld/kokiri_forest.cpp:179 = CanGetDekuBabaNuts(), logic.cpp:1394-1399 (ENEMY_DEKU_BABA)",
+      "nativeRequirement": "{ENEMY_DEKU_BABA} on a SoH-only event",
+      "auditStatus": "native_stricter",
+      "note": "Kept: OoTMM has no nut source here, and deleting only the soul check would count nuts from Deku Babas that cannot spawn."
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:165",
+      "status": "match",
+      "native": "LOGIC_STICK_ACCESS, location_access/overworld/kokiri_forest.cpp:178 (RR_KF_OUTSIDE_DEKU_TREE) = CanGetDekuBabaSticks(), logic.cpp:1388-1392: Souls::Enabled() && !Has(ENEMY_DEKU_BABA) -> false",
+      "nativeRequirement": "{ENEMY_DEKU_BABA}"
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:176",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/lake_hylia.yml:28",
+      "status": "native_stricter",
+      "native": "RC_LH_FREESTANDING_POH, location_access/overworld/lake_hylia.cpp:18: ... && CanAvoidEnemy(RE_GUAY, false) -> CanKillEnemy (OotSouls.cpp:133-134 ENEMY_GUAY) or Nuts / Skull Mask (logic.cpp:1329-1330); no CheckPrerequisite case",
+      "nativeRequirement": "ENEMY_GUAY or Nuts or Skull Mask",
+      "auditStatus": "native_stricter",
+      "note": "Kept: F1 deliberately keeps CanAvoidEnemy soul inheritance (Guay, or Nuts / Skull Mask). Stricter but safe."
+    },
+    {
+      "ootmm": "data/world/oot/overworld/lake_hylia.yml:132-133,145-179",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/lon_lon_ranch.yml:14,64-65",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/lost_woods.yml:55,56,137",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/market.yml:33,75,95,115,229,247,264",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/market.yml:200",
+      "status": "match",
+      "native": "RC_MARKET_10_BIG_POES, location_access/overworld/market.cpp:68: Get(LOGIC_BIG_POE_KILL) [ENEMY_POE via OotSoulEvents.h:41-42] || BigPoes>=count [RG_BOTTLE_WITH_BIG_POE count, logic.cpp:2505-2506, no soul]; CheckPrerequisite OotSoulChecks.h:846-847 Has(NPC_POE_COLLECTOR)",
+      "nativeRequirement": "{ENEMY_POE} on the event alternative only; NPC_POE_COLLECTOR"
+    },
+    {
+      "ootmm": "data/world/oot/overworld/sacred_forest_meadow.yml:6",
+      "status": "match",
+      "native": "ENTRANCE RR_SFM_ENTRYWAY->RR_SACRED_FOREST_MEADOW, location_access/overworld/sacred_forest_meadow.cpp:17 = IsAdult || Get(LOGIC_OPEN_SFM_GATE); LOGIC_OPEN_SFM_GATE :10 = IsChild && CanKillEnemy(RE_WOLFOS) -> OotSouls.cpp:155-156 ENEMY_WOLFOS",
+      "nativeRequirement": "child {ENEMY_WOLFOS}; adult none"
+    },
+    {
+      "ootmm": "data/world/oot/overworld/sacred_forest_meadow.yml:20",
+      "status": "match",
+      "native": "RC_SFM_WOLFOS_GROTTO_CHEST, location_access/overworld/sacred_forest_meadow.cpp:90 (RR_SFM_WOLFOS_GROTTO): CanKillEnemy(RE_WOLFOS,...) -> OotSouls.cpp:155-156 ENEMY_WOLFOS; plus CheckPrerequisite OotSoulChecks.h:852-853 Has(ENEMY_WOLFOS)",
+      "nativeRequirement": "{ENEMY_WOLFOS}"
+    },
+    {
+      "ootmm": "data/world/oot/overworld/sacred_forest_meadow.yml:26",
+      "status": "native_stricter",
+      "native": "ENTRANCE RR_SACRED_FOREST_MEADOW->RR_SFM_ENTRYWAY, location_access/overworld/sacred_forest_meadow.cpp:58 = IsAdult || Get(LOGIC_OPEN_SFM_GATE) (:10, ENEMY_WOLFOS)",
+      "nativeRequirement": "child {ENEMY_WOLFOS}",
+      "auditStatus": "native_stricter",
+      "note": "Kept: the child Wolfos gate is SoH's own rule (it applies with souls off too), so removing it is a SoH-logic change for the owner. Stricter but safe."
+    },
+    {
+      "ootmm": "data/world/oot/overworld/sacred_forest_meadow.yml:31,32",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/temple_of_time.yml:13,14",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/zora_domain.yml:18-25,71-78",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    },
+    {
+      "ootmm": "data/world/oot/overworld/zora_river.yml:43-45,57,58-59,70",
+      "status": "not_enemy_soul",
+      "native": "n/a (not an enemy soul)",
+      "nativeRequirement": ""
+    }
+  ],
+  "nativeOnly": [
+    {
+      "native": "location_access/dungeons/deku_tree.cpp RR_DEKU_TREE_MQ_BASEMENT_WATER_ROOM_BACK LOGIC_NUT_ACCESS",
+      "status": "match",
+      "note": "Fixed in F1: a SoH-only nut event from burning withered Deku Babas (OoTMM has no nut event in that room) now needs the Deku Baba soul, like its MQ lobby twin, so logic never counts nuts from Deku Babas that cannot spawn.",
+      "evidence": [
+        {
+          "file": "location_access/dungeons/deku_tree.cpp",
+          "region": "RR_DEKU_TREE_MQ_BASEMENT_WATER_ROOM_BACK",
+          "statement": "EVENT_ACCESS(LOGIC_NUT_ACCESS,",
+          "souls": [
+            "ENEMY_DEKU_BABA"
+          ],
+          "contains": []
+        }
+      ]
+    }
+  ]
+}

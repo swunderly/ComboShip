@@ -486,7 +486,7 @@ void RegionTable_Init_FireTemple() {
     }, {
         //Exits
         ENTRANCE(RR_FIRE_TEMPLE_MQ_FOYER_LOWER,      true),
-        ENTRANCE(RR_FIRE_TEMPLE_MQ_LOOP_5_TILE_ROOM, AnyAgeTime([]{return logic->CanKillEnemy(RE_STALFOS, ED_CLOSE, true, 2);})),
+        ENTRANCE(RR_FIRE_TEMPLE_MQ_LOOP_5_TILE_ROOM, AnyAgeTime([]{return logic->CanKillEnemy(RE_STALFOS, ED_CLOSE, true, 2);}) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_KEESE))),
     });
 
     areaTable[RR_FIRE_TEMPLE_MQ_LOOP_5_TILE_ROOM] = Region("Fire Temple MQ Loop 5 Tile Room", SCENE_FIRE_TEMPLE, {

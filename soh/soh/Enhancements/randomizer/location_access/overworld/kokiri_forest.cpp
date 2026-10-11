@@ -116,9 +116,9 @@ void RegionTable_Init_KokiriForest() {
         ENTRANCE(RR_KF_HOUSE_OF_TWINS,     true),
         ENTRANCE(RR_KF_KNOW_IT_ALL_HOUSE,  true),
         ENTRANCE(RR_KF_KOKIRI_SHOP,        true),
-        // With souls shuffled, OoTMM's can_bypass_mido (macros_oot.yml:244) applies; it has no soul term. The adult
-        // half stands in for CanPassEnemy(RE_BIG_SKULLTULA), which fails without the enemy soul although the Skulltula
-        // is then absent; the child half stands in for showing Mido, who is absent without his NPC soul.
+        //With souls shuffled, OoTMM's can_bypass_mido (macros_oot.yml:244) applies; it has no soul term. The adult
+        //half stands in for CanPassEnemy(RE_BIG_SKULLTULA), which fails without the enemy soul although the Skulltula
+        //is then absent; the child half stands in for showing Mido, who is absent without his NPC soul.
         ENTRANCE(RR_KF_OUTSIDE_DEKU_TREE,  (logic->IsAdult && (logic->CanPassEnemy(RE_BIG_SKULLTULA) || logic->Get(LOGIC_FOREST_TEMPLE_CLEAR))) || logic->Get(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD) || (Souls::FamilyShuffled(Souls::OotSoulFamily::Enemy) && logic->IsAdult) || (Souls::FamilyShuffled(Souls::OotSoulFamily::Npc) && logic->IsChild && logic->CanUse(RG_KOKIRI_SWORD) && logic->CanUse(RG_DEKU_SHIELD))),
         ENTRANCE(RR_KF_OUTSIDE_LOST_WOODS, logic->HasItem(RG_CLIMB) || logic->CanUse(RG_HOOKSHOT) || (logic->IsAdult && (CanPlantBean(RR_KOKIRI_FOREST, RG_KOKIRI_FOREST_BEAN_SOUL) || ctx->GetTrickOption(RT_UNINTUITIVE_JUMPS)))),
         ENTRANCE(RR_KF_RUPEE_ALCOVE,       logic->IsAdult && CanPlantBean(RR_KOKIRI_FOREST, RG_KOKIRI_FOREST_BEAN_SOUL)),
@@ -193,7 +193,8 @@ void RegionTable_Init_KokiriForest() {
     }, {
         //Exits
         ENTRANCE(RR_DEKU_TREE_ENTRYWAY, logic->IsChild || (ctx->GetOption(RSK_SHUFFLE_DUNGEON_ENTRANCES).IsNot(RO_DUNGEON_ENTRANCE_SHUFFLE_OFF) && (ctx->GetOption(RSK_FOREST).Is(RO_CLOSED_FOREST_OFF) || logic->Get(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD)))),
-        ENTRANCE(RR_KOKIRI_FOREST,      (logic->IsAdult && (logic->CanPassEnemy(RE_BIG_SKULLTULA) || logic->Get(LOGIC_DEKU_TREE_CLEAR))) || ctx->GetOption(RSK_FOREST).Is(RO_CLOSED_FOREST_OFF) || logic->Get(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD)),
+        //OoTMM kokiri_forest.yml:162 uses can_bypass_mido both ways; see RR_KOKIRI_FOREST -> RR_KF_OUTSIDE_DEKU_TREE.
+        ENTRANCE(RR_KOKIRI_FOREST,      (logic->IsAdult && (logic->CanPassEnemy(RE_BIG_SKULLTULA) || logic->Get(LOGIC_DEKU_TREE_CLEAR))) || ctx->GetOption(RSK_FOREST).Is(RO_CLOSED_FOREST_OFF) || logic->Get(LOGIC_SHOWED_MIDO_SWORD_AND_SHIELD) || (Souls::FamilyShuffled(Souls::OotSoulFamily::Enemy) && logic->IsAdult) || (Souls::FamilyShuffled(Souls::OotSoulFamily::Npc) && logic->IsChild && logic->CanUse(RG_KOKIRI_SWORD) && logic->CanUse(RG_DEKU_SHIELD))),
     });
 
     areaTable[RR_KF_LINKS_PORCH] = Region("KF Link's Porch", SCENE_KOKIRI_FOREST, {}, {}, {

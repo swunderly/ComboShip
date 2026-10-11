@@ -396,7 +396,8 @@ void RegionTable_Init_JabuJabusBelly() {
     }, {
         //Exits
         //without swim, jump from rang chest to the other side
-        ENTRANCE(RR_JABU_JABUS_BELLY_MQ_WATER_SWITCH_ROOM_PAST_GEYSER, AnyAgeTime([]{return logic->CanKillEnemy(RE_LIZALFOS);})),
+        //The spouts stop once the room's Lizalfos, Like-Like and Stinger are gone (OoTMM jabu_jabu_mq.yml:117)
+        ENTRANCE(RR_JABU_JABUS_BELLY_MQ_WATER_SWITCH_ROOM_PAST_GEYSER, AnyAgeTime([]{return logic->CanKillEnemy(RE_LIZALFOS);}) && (!Souls::Enabled() || (Souls::Has(logic.get(),Souls::OotSoul::ENEMY_LIKE_LIKE) && Souls::Has(logic.get(),Souls::OotSoul::ENEMY_STINGER)))),
         ENTRANCE(RR_JABU_JABUS_BELLY_MQ_HOLES_ROOM,                    (logic->IsAdult || logic->HasItem(RG_BRONZE_SCALE)) && AnyAgeTime([]{return logic->CanKillEnemy(RE_LIZALFOS);})),
     });
 
@@ -418,7 +419,8 @@ void RegionTable_Init_JabuJabusBelly() {
         ENTRANCE(RR_JABU_JABUS_BELLY_MQ_TO_FORK_NORTH_WEST, true),
         ENTRANCE(RR_JABU_JABUS_BELLY_MQ_TO_FORK_NORTH,      logic->BlastOrSmash() && logic->HasItem(RG_POWER_BRACELET)),
         ENTRANCE(RR_JABU_JABUS_BELLY_MQ_FORK_NORTH_EAST,    true),
-        ENTRANCE(RR_JABU_JABUS_BELLY_MQ_FORK_EAST,          AnyAgeTime([]{return logic->CanUse(RG_FAIRY_SLINGSHOT) && logic->CanUse(RG_STICKS);}) || AnyAgeTime([]{return logic->HasFireSource();})),
+        //The sticks are lit in the Like-Like room, which opens once cleared (OoTMM jabu_jabu_mq.yml:207)
+        ENTRANCE(RR_JABU_JABUS_BELLY_MQ_FORK_EAST,          AnyAgeTime([]{return logic->CanUse(RG_FAIRY_SLINGSHOT) && logic->CanUse(RG_STICKS) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_LIKE_LIKE));}) || AnyAgeTime([]{return logic->HasFireSource();})),
     });
 
     // this handles spawning in tentacle
@@ -487,7 +489,7 @@ void RegionTable_Init_JabuJabusBelly() {
         LOCATION(RC_JABU_JABUS_BELLY_MQ_WONDER_FALLING_LIKE_LIKES_EXPLOSION_3, logic->HasExplosives()),
     }, {
         //Exits
-        ENTRANCE(RR_JABU_JABUS_BELLY_MQ_FORKED_CORRIDOR, true),
+        ENTRANCE(RR_JABU_JABUS_BELLY_MQ_FORKED_CORRIDOR, (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_LIKE_LIKE))),
     });
 
     areaTable[RR_JABU_JABUS_BELLY_MQ_FORK_EAST] = Region("Jabu Jabus Belly MQ Fork East", SCENE_JABU_JABU, {

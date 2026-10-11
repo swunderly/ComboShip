@@ -1093,7 +1093,8 @@ void RegionTable_Init_WaterTemple() {
     }, {}, {
         //Exits
         ENTRANCE(RR_WATER_TEMPLE_MQ_STALFOS_PIT,       logic->CanUse(RG_HOOKSHOT) && (logic->IsAdult || (logic->CanUse(RG_IRON_BOOTS) && logic->WaterTimer() >= 8))),
-        ENTRANCE(RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS,  (logic->IsAdult && logic->CanUse(RG_HOOKSHOT)) || (logic->CanUse(RG_HOOKSHOT) && (logic->IsAdult || logic->CanUse(RG_IRON_BOOTS) && logic->WaterTimer() >= 8) && (logic->CanUse(RG_HOVER_BOOTS) || logic->Get(LOGIC_WATER_MQ_STALFOS_PIT)))),
+        //OoTMM water_temple_mq.yml:153-156 needs the Stalfos soul unless Hover Boots are used
+        ENTRANCE(RR_WATER_TEMPLE_MQ_STALFOS_PIT_POTS,  (logic->IsAdult && logic->CanUse(RG_HOOKSHOT) && (!Souls::Enabled() || Souls::Has(logic.get(),Souls::OotSoul::ENEMY_STALFOS))) || (logic->CanUse(RG_HOOKSHOT) && (logic->IsAdult || logic->CanUse(RG_IRON_BOOTS) && logic->WaterTimer() >= 8) && (logic->CanUse(RG_HOVER_BOOTS) || logic->Get(LOGIC_WATER_MQ_STALFOS_PIT)))),
         ENTRANCE(RR_WATER_TEMPLE_MQ_STALFOS_PIT_UPPER, logic->Get(LOGIC_WATER_MQ_STALFOS_PIT) && (logic->IsAdult || logic->CanUse(RG_IRON_BOOTS) && logic->WaterTimer() >= 8) && logic->CanUse(RG_HOOKSHOT)),
     });
 

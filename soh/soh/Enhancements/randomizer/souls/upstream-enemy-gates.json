@@ -1,0 +1,2457 @@
+{
+  "revision": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "license": "MIT",
+  "description": "Every OoTMM v32.3 OoT world line that gates on an enemy soul. \"direct\" rows match the scan below; the others are indirect uses (through events or has_big_poe), soul-free OoTMM rules that SoH gates on an enemy, and NPC, animal and misc soul uses recorded during the audit.",
+  "scan": "data/world/oot/**/*.yml, comment lines skipped, text before \" #\": soul_enemy(SOUL_ENEMY_*), the per-enemy shared_soul_enemy macros of data/macros/macros_common.yml, can_kill_baba_*, can_rescue_carpenter, can_kill_twinrova",
+  "enemyMacros": [
+    "soul_octorok",
+    "soul_wallmaster",
+    "soul_dodongo",
+    "soul_keese",
+    "soul_tektite",
+    "soul_peahat",
+    "soul_lizalfos_dinolfos",
+    "soul_skulltula",
+    "soul_armos",
+    "soul_deku_baba",
+    "soul_deku_scrub",
+    "soul_bubble",
+    "soul_beamos",
+    "soul_redead_gibdo",
+    "soul_skullwalltula",
+    "soul_shell_blade",
+    "soul_like_like",
+    "soul_iron_knuckle",
+    "soul_freezard",
+    "soul_wolfos",
+    "soul_guay",
+    "soul_flying_pot",
+    "soul_floormaster",
+    "soul_leever",
+    "soul_stalchild",
+    "soul_thief_fighter",
+    "soul_poe"
+  ],
+  "sources": {
+    "data/world/oot/boss/barinade.yml": {
+      "sha256": "115c0f17d43894c3444bd78c1dd087abf3ebb76304825987cbae8a9c908acae0",
+      "directLines": 0
+    },
+    "data/world/oot/boss/bongo_bongo.yml": {
+      "sha256": "dbbb145de1e2546b53c82e17b78cdb73594905e49354b9b7ea7fc59571009366",
+      "directLines": 0
+    },
+    "data/world/oot/boss/gohma.yml": {
+      "sha256": "f3051bd973a71ba9f16492073f9096abb1188b564a0e5e4a6f46de3b45833aed",
+      "directLines": 0
+    },
+    "data/world/oot/boss/king_dodongo.yml": {
+      "sha256": "c37333c7fa37fe65443449be1c94387dd826cbb40e6d2f87a08bfe7c67d30002",
+      "directLines": 0
+    },
+    "data/world/oot/boss/morpha.yml": {
+      "sha256": "f1655b6dd21f1f0353dd2945b6fffa0dc059567564cee363a6bbdbb85ff7d088",
+      "directLines": 0
+    },
+    "data/world/oot/boss/phantom_ganon.yml": {
+      "sha256": "3c76914484d85ad0b4dded3d17e8664caa2e900b861fb3a1f018b13a8a899ac0",
+      "directLines": 0
+    },
+    "data/world/oot/boss/twinrova.yml": {
+      "sha256": "d23d443abe36b1b3afbb526f15d850baa56d29d8ceaa130b9a4cad6734245c53",
+      "directLines": 1
+    },
+    "data/world/oot/boss/volvagia.yml": {
+      "sha256": "7109dbaa5682812a08ac845ce88960f2aa3714a2d9313819c1ffa66a16fbeb25",
+      "directLines": 0
+    },
+    "data/world/oot/dungeons/bottom_of_the_well.yml": {
+      "sha256": "0dd2899cfc35667749b593dcabcdf5e8af3a7a50abee0d5692f97ccc5f603cbd",
+      "directLines": 5
+    },
+    "data/world/oot/dungeons/deku_tree.yml": {
+      "sha256": "836334683a98a7925571e0e6004050211aaf108c18c975746ae4b6254a784aae",
+      "directLines": 4
+    },
+    "data/world/oot/dungeons/dodongo_cavern.yml": {
+      "sha256": "6edc0d3f47b22e2d35e42d8e40a0c788384ec8dc2874e3019d1a0d3d14c241d1",
+      "directLines": 6
+    },
+    "data/world/oot/dungeons/fire_temple.yml": {
+      "sha256": "d045b6839077e7306ba8c8292b71db16b2da497927c79125f8973da7128af074",
+      "directLines": 5
+    },
+    "data/world/oot/dungeons/forest_temple.yml": {
+      "sha256": "dc4c1d61446b6b75a9773fffb0108d1f786aaa09a190278b6bfc95e817b868ee",
+      "directLines": 20
+    },
+    "data/world/oot/dungeons/ganon_castle.yml": {
+      "sha256": "1b11ac9548f8416229fb2a6e27443b52b86b1d5346364a109cfcb1e1753eea6b",
+      "directLines": 12
+    },
+    "data/world/oot/dungeons/ganon_tower.yml": {
+      "sha256": "c3c519fa86ce92a70d074bcf8065c30a0066ed490d1e8bc5c449491c915d4920",
+      "directLines": 3
+    },
+    "data/world/oot/dungeons/gerudo_fortress.yml": {
+      "sha256": "3e62019bbf532878d3e561a1e446bd366db026d9eb4005562897fe5c17bdc11c",
+      "directLines": 8
+    },
+    "data/world/oot/dungeons/gerudo_training_grounds.yml": {
+      "sha256": "922bd83a1f01fb7e8187ced3844d363855e3b61658c51110f1c64abfc17096cc",
+      "directLines": 11
+    },
+    "data/world/oot/dungeons/ice_cavern.yml": {
+      "sha256": "3b79274aec6d86544b226ea6a78edfff3a571eae875b49a716a3269259b150de",
+      "directLines": 7
+    },
+    "data/world/oot/dungeons/jabu_jabu.yml": {
+      "sha256": "211c16d733aeeefa4186a7fd1dd4b6fa1f4e5b2f25260bb5c2b2430256212bf5",
+      "directLines": 8
+    },
+    "data/world/oot/dungeons/shadow_temple.yml": {
+      "sha256": "6a29954dfc19832acfbcb6310739ad93733fe2dd272754311a9b90260ed91a6d",
+      "directLines": 13
+    },
+    "data/world/oot/dungeons/spirit_temple.yml": {
+      "sha256": "119feb8946201e9136004289dd1b85dcd1010459dd2fb5ef4fd2d76642a32d5a",
+      "directLines": 29
+    },
+    "data/world/oot/dungeons/treasure_chest_game.yml": {
+      "sha256": "d8655d9a6292b80c6ba8541eadfdb3d06d980c49cad50a83d69d03a3b2908926",
+      "directLines": 0
+    },
+    "data/world/oot/dungeons/water_temple.yml": {
+      "sha256": "1da9034b307e26c81f5e6273e4cb712e90aedbd92e2a7263b7b05736355d8a91",
+      "directLines": 5
+    },
+    "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml": {
+      "sha256": "101fccb56719b56e3a3749d3a7931e93cc5cbe3c3cb815d611e78ec68832d56e",
+      "directLines": 5
+    },
+    "data/world/oot/dungeons_mq/deku_tree_mq.yml": {
+      "sha256": "356ae4981fbc651f47fb826a988c598c70fe4902ff91d78021d47cc4c4cab0a6",
+      "directLines": 8
+    },
+    "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml": {
+      "sha256": "6cf57848a23f4b4867880e71c1993f5b1239b866b2a67609f6ba48d84fc99c8f",
+      "directLines": 8
+    },
+    "data/world/oot/dungeons_mq/fire_temple_mq.yml": {
+      "sha256": "f0a394c146b580d6fdbd432cd016bfc9495d98a3a463e7cbd41600cc7f5d12ee",
+      "directLines": 5
+    },
+    "data/world/oot/dungeons_mq/forest_temple_mq.yml": {
+      "sha256": "edf17df8b682c7f216e4c84f63f17f52b54ca067e9c83a8ba2811f4bd14f8a43",
+      "directLines": 17
+    },
+    "data/world/oot/dungeons_mq/ganon_castle_mq.yml": {
+      "sha256": "cf168c77387e28a839dc9843173ce0d5453c720bc1ac78c17ac8abdc81ffe26d",
+      "directLines": 5
+    },
+    "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml": {
+      "sha256": "f83a81990223768cd03f16b90fa4adf7235081d1a32d9343a21df068795bdc63",
+      "directLines": 6
+    },
+    "data/world/oot/dungeons_mq/ice_cavern_mq.yml": {
+      "sha256": "004ab902ec646204b140e26a06488147f9470ada7e6f84b4aca665b7a214d560",
+      "directLines": 2
+    },
+    "data/world/oot/dungeons_mq/jabu_jabu_mq.yml": {
+      "sha256": "dadf927d7bf8ca8c586393d21bd06b7e5e4978eb341cf9788c8772ea59a8fd09",
+      "directLines": 9
+    },
+    "data/world/oot/dungeons_mq/shadow_temple_mq.yml": {
+      "sha256": "7553edee6ae1bbb000a76d92598be5820161f9eb430c933ae430aab4e7f62302",
+      "directLines": 15
+    },
+    "data/world/oot/dungeons_mq/spirit_temple_mq.yml": {
+      "sha256": "a36df246011123e59e13d91abdf2a090f5bc23cb16cff565ca5281c6b5970d77",
+      "directLines": 27
+    },
+    "data/world/oot/dungeons_mq/water_temple_mq.yml": {
+      "sha256": "30ff95fbbc38385201c723202c6cea65d3742497650d7a5a0466f70faf139323",
+      "directLines": 13
+    },
+    "data/world/oot/overworld/death_mountain_crater.yml": {
+      "sha256": "0947ebe04840de0b9437ce2005fe7506de6094869350ae7ed92fcdd1d5cdb686",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/death_mountain_trail.yml": {
+      "sha256": "4f24c8bb0c0d8a0f62bf711fa0c5b2c3b952eae3e7656f38a60d53b3a4b9e1ed",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/desert_colossus.yml": {
+      "sha256": "4ed035bf547b372289c0ce7ed359cb52360b8619985956bcf812bca7f0514eeb",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/gerudo_fortress.yml": {
+      "sha256": "b65a5479bba649b00c859904e5786a45334cb2cd2c27864d74c1650f782f6db5",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/gerudo_valley.yml": {
+      "sha256": "2965aabaead14b3419699842e190a98ef6b6d5f5ed34dc8364e9d47d7161ad1f",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/goron_city.yml": {
+      "sha256": "8dd97fbe9424d80906d5d775c024adc6ef10badb5e9b94fb9929f7983bcd1202",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/graveyard.yml": {
+      "sha256": "e5d87632bd26595abc51d0da7d7dbf7830a3dbd3b6f58663bd891a125fbc430e",
+      "directLines": 1
+    },
+    "data/world/oot/overworld/haunted_wasteland.yml": {
+      "sha256": "8c84cdab0651a491cbbab3a9a791ce7ee827206c9615531a4077368a158d06b5",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/hyrule_field.yml": {
+      "sha256": "71c36417fef59dac46d652664d712f93c469cdad823e298058ed051f4dbac9c8",
+      "directLines": 1
+    },
+    "data/world/oot/overworld/hyrule_ganon_castle.yml": {
+      "sha256": "747e8d560c6858bab186634b46c973ef85b8a9cb9d8dd1480fecc1830fde0bb5",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/kakariko.yml": {
+      "sha256": "a5ceeeb1dfb596da3d86e3033409a54d6f12dcec89e547ae2be6bcfc61ef231a",
+      "directLines": 1
+    },
+    "data/world/oot/overworld/kokiri_forest.yml": {
+      "sha256": "1741a77b33866d3708bf6d2eb88544f0258fadf1f19d84e19bfa4dcba4fa4752",
+      "directLines": 1
+    },
+    "data/world/oot/overworld/lake_hylia.yml": {
+      "sha256": "a93efa695e4065e98ef174a32ee1daa06dac917ed1a9e31bf69a1bc0fa0283ed",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/lon_lon_ranch.yml": {
+      "sha256": "9212cba7a8bafdbecabf7abfda8664ae499faeaaccc189f64e324dabe333e4d4",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/lost_woods.yml": {
+      "sha256": "4ff2e82c77c295b19e68f445385756b861ade777b2acda9adb91a23bb319d6bd",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/market.yml": {
+      "sha256": "12c1157f90d2b9d5f04d4e985fd8512d2085ec6a2c87cf2013c24a5ae5f76d3e",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/sacred_forest_meadow.yml": {
+      "sha256": "0f39f81c0d87bb2dd2c11fcce529a702d1179213dc094436b08bbccd217bb69e",
+      "directLines": 2
+    },
+    "data/world/oot/overworld/temple_of_time.yml": {
+      "sha256": "4253eac0eaa5412bbf26f187647cbded6da01f89288a6c7d2f009db11a43be86",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/zora_domain.yml": {
+      "sha256": "12c0500229cb8f667f0521f3bed572dc4debce26654db3c0a4f0e15e1a8be79b",
+      "directLines": 0
+    },
+    "data/world/oot/overworld/zora_river.yml": {
+      "sha256": "74e0a0b5f4a41c7d10ba29faaa62a8946bc6b8231a74483135da9945cc20f6ed",
+      "directLines": 0
+    }
+  },
+  "gates": [
+    {
+      "ootmm": "data/world/oot/boss/barinade.yml:6",
+      "region": "Jabu-Jabu Boss",
+      "target": "event BOSS_BARINADE",
+      "souls": "SOUL_BOSS_BARINADE only (boss soul)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/boss/bongo_bongo.yml:6",
+      "region": "Shadow Temple Boss",
+      "target": "event BOSS_BONGO_BONGO",
+      "souls": "SOUL_BOSS_BONGO_BONGO only (boss soul)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/boss/gohma.yml:6",
+      "region": "Deku Tree Boss",
+      "target": "event BOSS_GOHMA",
+      "souls": "SOUL_BOSS_QUEEN_GOHMA only (boss soul)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/boss/king_dodongo.yml:6",
+      "region": "Dodongo Cavern Boss",
+      "target": "event BOSS_KING_DODONGO",
+      "souls": "SOUL_BOSS_KING_DODONGO only (boss soul)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/boss/morpha.yml:6",
+      "region": "Water Temple Boss",
+      "target": "event BOSS_MORPHA",
+      "souls": "SOUL_BOSS_MORPHA only (boss soul)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/boss/phantom_ganon.yml:6",
+      "region": "Forest Temple Boss",
+      "target": "event BOSS_PHANTOM_GANON",
+      "souls": "SOUL_BOSS_PHANTOM_GANON only (boss soul)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/boss/twinrova.yml:6",
+      "region": "Spirit Temple Boss",
+      "target": "event BOSS_TWINROVA (gates exit to Spirit Temple After Boss: Spirit Temple Boss HC + Spirit Temple Boss medallion, twinrova.yml:8,15-16)",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE (can_kill_twinrova, macros_oot.yml:384 -> soul_iron_knuckle) + SOUL_BOSS_TWINROVA (boss soul, not enemy)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/boss/volvagia.yml:6",
+      "region": "Fire Temple Boss",
+      "target": "event BOSS_VOLVAGIA",
+      "souls": "SOUL_BOSS_VOLVAGIA only (boss soul)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/*.yml: 46 uses of gs / collect_gs_on_walls (bottom_of_the_well:43-45; deku_tree:20,53,54,69; dodongo_cavern:29,42,99,100,192; fire_temple:36,58,74,101,102; forest_temple:9,34,64,111,209,227; ice_cavern:28,55,96; jabu_jabu:83,84,103,131; shadow_temple:66,82,106,145,159; spirit_temple:50,74,102,117,142,172; water_temple:72,125,139,171,195)",
+      "region": "various",
+      "target": "Gold Skulltula token locations",
+      "souls": "SOUL_MISC_GS (gs -> soul_gs, macros_oot.yml:210)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/*.yml: 9 uses of business_scrub (dodongo_cavern:18,76,134,135; ganon_castle:27-30; jabu_jabu:15)",
+      "region": "various",
+      "target": "Business Scrub locations",
+      "souls": "SOUL_MISC_BUSINESS_SCRUB (business_scrub, macros_oot.yml:256)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:23",
+      "region": "Bottom of the Well Main",
+      "target": "exit \"Bottom of the Well Wallmaster Main\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:41",
+      "region": "Bottom of the Well Main",
+      "target": "location \"Bottom of the Well Lens\"",
+      "souls": "SOUL_ENEMY_DEAD_HAND",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:70",
+      "region": "Bottom of the Well Main",
+      "target": "location \"Bottom of the Well Flying Pot 1\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:71",
+      "region": "Bottom of the Well Main",
+      "target": "location \"Bottom of the Well Flying Pot 2\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/bottom_of_the_well.yml:72",
+      "region": "Bottom of the Well Main",
+      "target": "location \"Bottom of the Well Flying Pot 3\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/deku_tree.yml:11",
+      "region": "Deku Tree Lobby",
+      "target": "exit \"Deku Tree Slingshot Room\"",
+      "souls": "SOUL_ENEMY_DEKU_SCRUB (soul_deku_scrub, macros_common.yml:80)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/deku_tree.yml:14",
+      "region": "Deku Tree Lobby",
+      "target": "event \"STICKS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA (can_kill_baba_sticks, macros_oot.yml:224 -> soul_deku_baba)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/deku_tree.yml:15",
+      "region": "Deku Tree Lobby",
+      "target": "event \"NUTS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA (can_kill_baba_nuts, macros_oot.yml:225 -> soul_deku_baba)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/deku_tree.yml:88",
+      "region": "Deku Tree Before Boss",
+      "target": "exit \"Deku Tree Boss\"",
+      "souls": "SOUL_ENEMY_DEKU_SCRUB",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:26",
+      "region": "Dodongo Cavern Right Corridor",
+      "target": "exit \"Dodongo Cavern Side Room\"",
+      "souls": "SOUL_ENEMY_BABY_DODONGO on the (can_use_sword || can_use_sticks) alternative only; the explosives/hammer, blue-fire-arrow and blast-mask alternatives need no soul",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:49",
+      "region": "Dodongo Cavern Miniboss 1",
+      "target": "exit \"Dodongo Cavern Right Corridor\"",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS (soul_lizalfos_dinolfos, macros_common.yml:76)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:50",
+      "region": "Dodongo Cavern Miniboss 1",
+      "target": "exit \"Dodongo Cavern Green Room\"",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:110",
+      "region": "Dodongo Cavern Compass Room",
+      "target": "exit \"Dodongo Cavern Stairs\"",
+      "souls": "SOUL_ENEMY_ARMOS (soul_armos, macros_common.yml:78)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:140",
+      "region": "Dodongo Cavern Miniboss 2",
+      "target": "exit \"Dodongo Cavern Bomb Bag Room 1\"",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/dodongo_cavern.yml:141",
+      "region": "Dodongo Cavern Miniboss 2",
+      "target": "exit \"Dodongo Cavern Bomb Bag Room 2\"",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:28",
+      "region": "Fire Temple Boss Key Loop Start",
+      "target": "exit \"Fire Temple Boss Key Loop Floor Tiles\"",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_TORCH_SLUG",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:41",
+      "region": "Fire Temple Boss Key Loop Flare Dancer",
+      "target": "exit \"Fire Temple Boss Key Loop Floor Tiles\"",
+      "souls": "SOUL_ENEMY_FLARE_DANCER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:42",
+      "region": "Fire Temple Boss Key Loop Flare Dancer",
+      "target": "exit \"Fire Temple Boss Key Loop End\"",
+      "souls": "SOUL_ENEMY_FLARE_DANCER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:44",
+      "region": "Fire Temple Boss Key Loop Flare Dancer",
+      "target": "location \"Fire Temple Boss Key Side Chest\"",
+      "souls": "SOUL_ENEMY_FLARE_DANCER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/fire_temple.yml:119",
+      "region": "Fire Temple Before Miniboss",
+      "target": "exit \"Fire Temple After Miniboss\"",
+      "souls": "SOUL_ENEMY_FLARE_DANCER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:32",
+      "region": "Forest Temple Main",
+      "target": "event \"FOREST_POE_4\"",
+      "souls": "SOUL_ENEMY_POE (soul_poe, macros_common.yml:96)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:45",
+      "region": "Forest Temple Mini-Boss",
+      "target": "location \"Forest Temple Mini-Boss Key\"",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:61",
+      "region": "Forest Temple Garden West",
+      "target": "event \"STICKS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:62",
+      "region": "Forest Temple Garden West",
+      "target": "event \"NUTS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:82",
+      "region": "Forest Temple Floormaster",
+      "target": "location \"Forest Temple Floormaster\"",
+      "souls": "SOUL_ENEMY_FLOORMASTER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:87",
+      "region": "Forest Temple Map Room",
+      "target": "exit \"Forest Temple Garden West\"",
+      "souls": "SOUL_ENEMY_BUBBLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:88",
+      "region": "Forest Temple Map Room",
+      "target": "exit \"Forest Temple Garden East Ledge\"",
+      "souls": "SOUL_ENEMY_BUBBLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:90",
+      "region": "Forest Temple Map Room",
+      "target": "location \"Forest Temple Map\"",
+      "souls": "SOUL_ENEMY_BUBBLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:107",
+      "region": "Forest Temple Garden East",
+      "target": "event \"STICKS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:108",
+      "region": "Forest Temple Garden East",
+      "target": "event \"NUTS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:138",
+      "region": "Forest Temple Twisted 1 Normal",
+      "target": "exit \"Forest Temple Wallmaster West\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:144",
+      "region": "Forest Temple Twisted 1 Alt",
+      "target": "exit \"Forest Temple Wallmaster West\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:145",
+      "region": "Forest Temple Twisted 1 Alt",
+      "target": "exit \"Forest Temple Garden West Ledge\"",
+      "souls": "SOUL_ENEMY_BUBBLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:154",
+      "region": "Forest Temple Poe 1",
+      "target": "event \"FOREST_POE_1\"",
+      "souls": "SOUL_ENEMY_POE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:161",
+      "region": "Forest Temple Mini-Boss 2",
+      "target": "exit \"Forest Temple Poe 2\"",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:163",
+      "region": "Forest Temple Mini-Boss 2",
+      "target": "location \"Forest Temple Bow\"",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:174",
+      "region": "Forest Temple Poe 2",
+      "target": "event \"FOREST_POE_2\"",
+      "souls": "SOUL_ENEMY_POE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:184",
+      "region": "Forest Temple Twisted 2 Normal",
+      "target": "exit \"Forest Temple Wallmaster East\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:198",
+      "region": "Forest Temple Twisted 2 Alt",
+      "target": "exit \"Forest Temple Wallmaster East\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/forest_temple.yml:216",
+      "region": "Forest Temple Poe 3",
+      "target": "event \"FOREST_POE_3\"",
+      "souls": "SOUL_ENEMY_POE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:51",
+      "region": "Ganon Castle Light",
+      "target": "location \"Ganon Castle Light Chest Center\"",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_SKULLTULA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:69",
+      "region": "Ganon Castle Light End",
+      "target": "exit \"Ganon Castle Light Wallmaster\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:81",
+      "region": "Ganon Castle Forest",
+      "target": "location \"Ganon Castle Forest Chest\"",
+      "souls": "SOUL_ENEMY_WOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:127",
+      "region": "Ganon Castle Water",
+      "target": "exit \"Ganon Castle Water 2\"",
+      "souls": "SOUL_ENEMY_FREEZARD",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:177",
+      "region": "Ganon Castle Spirit 2",
+      "target": "exit \"Ganon Castle Spirit Wallmaster\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:194",
+      "region": "Ganon Castle Shadow",
+      "target": "exit \"Ganon Castle Shadow End\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE on the can_longshot alternative: everything past the start platform needs ((can_longshot && soul_like_like) || has_fire_arrows)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:197",
+      "region": "Ganon Castle Shadow",
+      "target": "location \"Ganon Castle Shadow Chest 2\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE on the can_longshot alternative ((can_longshot && soul_like_like) || has_fire_arrows) && (hover || fire)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:198",
+      "region": "Ganon Castle Shadow",
+      "target": "location \"Ganon Castle Pot Shadow 1\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE on the can_longshot alternative ((can_longshot && soul_like_like) || has_fire_arrows) && (hover || fire)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:199",
+      "region": "Ganon Castle Shadow",
+      "target": "location \"Ganon Castle Pot Shadow 2\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE on the can_longshot alternative ((can_longshot && soul_like_like) || has_fire_arrows) && (hover || fire)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:200",
+      "region": "Ganon Castle Shadow",
+      "target": "location \"Ganon Castle Heart Shadow 1\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE on the can_longshot alternative ((can_longshot && soul_like_like) || has_fire_arrows) && (hover || fire)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:201",
+      "region": "Ganon Castle Shadow",
+      "target": "location \"Ganon Castle Heart Shadow 2\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE on the can_longshot alternative ((can_longshot && soul_like_like) || has_fire_arrows) && (hover || fire)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_castle.yml:202",
+      "region": "Ganon Castle Shadow",
+      "target": "location \"Ganon Castle Heart Shadow 3\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE on the can_longshot alternative ((can_longshot && soul_like_like) || has_fire_arrows) && (hover || fire)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_tower.yml:19",
+      "region": "Ganon Castle Tower Dinolfos Room",
+      "target": "event \"GANON_TOWER_LIZALFOS_CLEAR\"",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_tower.yml:33",
+      "region": "Ganon Castle Tower Stalfos Room",
+      "target": "event \"GANON_TOWER_STALFOS_CLEAR\"",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_tower.yml:49",
+      "region": "Ganon Castle Tower Iron Knuckle Room",
+      "target": "event \"GANON_TOWER_IRON_KNUCKLE_CLEAR\"",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ganon_tower.yml:95",
+      "region": "Ganon Castle Tower Boss",
+      "target": "event \"GANON\"",
+      "souls": "SOUL_NPC_ZELDA (soul_npc)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:11",
+      "region": "Gerudo Fortress Carpenter 1 Left",
+      "target": "event \"CARPENTER_1\"",
+      "souls": "SOUL_ENEMY_THIEVES (+ NPC soul SOUL_NPC_CARPENTERS) via can_rescue_carpenter, macros_oot.yml:227",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:13",
+      "region": "Gerudo Fortress Carpenter 1 Left",
+      "target": "location \"Gerudo Fortress Jail 1\"",
+      "souls": "SOUL_ENEMY_THIEVES (+ NPC soul SOUL_NPC_CARPENTERS)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:37",
+      "region": "Gerudo Fortress Carpenter 2 Bottom",
+      "target": "event \"CARPENTER_2\"",
+      "souls": "SOUL_ENEMY_THIEVES (+ NPC soul SOUL_NPC_CARPENTERS) via can_rescue_carpenter, macros_oot.yml:227",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:39",
+      "region": "Gerudo Fortress Carpenter 2 Bottom",
+      "target": "location \"Gerudo Fortress Jail 2\"",
+      "souls": "SOUL_ENEMY_THIEVES (+ NPC soul SOUL_NPC_CARPENTERS)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:75",
+      "region": "Gerudo Fortress Carpenter 4 Top",
+      "target": "event \"CARPENTER_4\"",
+      "souls": "SOUL_ENEMY_THIEVES (+ NPC soul SOUL_NPC_CARPENTERS) via can_rescue_carpenter, macros_oot.yml:227",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:77",
+      "region": "Gerudo Fortress Carpenter 4 Top",
+      "target": "location \"Gerudo Fortress Jail 4\"",
+      "souls": "SOUL_ENEMY_THIEVES (+ NPC soul SOUL_NPC_CARPENTERS)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:139",
+      "region": "Gerudo Fortress Carpenter 3",
+      "target": "event \"CARPENTER_3\"",
+      "souls": "SOUL_ENEMY_THIEVES (+ NPC soul SOUL_NPC_CARPENTERS) via can_rescue_carpenter, macros_oot.yml:227",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_fortress.yml:141",
+      "region": "Gerudo Fortress Carpenter 3",
+      "target": "location \"Gerudo Fortress Jail 3\"",
+      "souls": "SOUL_ENEMY_THIEVES (+ NPC soul SOUL_NPC_CARPENTERS)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:5",
+      "region": "Gerudo Training Grounds",
+      "target": "exit \"Gerudo Training Grounds Slopes\"",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:6",
+      "region": "Gerudo Training Grounds",
+      "target": "exit \"Gerudo Training Grounds Right Side\"",
+      "souls": "SOUL_ENEMY_BEAMOS + SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:11",
+      "region": "Gerudo Training Grounds",
+      "target": "location \"Gerudo Training Grounds Stalfos\"",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:27",
+      "region": "Gerudo Training Grounds Slopes",
+      "target": "exit \"Gerudo Training Grounds Wallmaster\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:48",
+      "region": "Gerudo Training Grounds Left Side",
+      "target": "location \"Gerudo Training Grounds Near Block\"",
+      "souls": "SOUL_ENEMY_WOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:55",
+      "region": "Gerudo Training Grounds After Block",
+      "target": "location \"Gerudo Training Grounds Behind Block Enemy Back\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:56",
+      "region": "Gerudo Training Grounds After Block",
+      "target": "location \"Gerudo Training Grounds Behind Block Enemy Front\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:120",
+      "region": "Gerudo Training Grounds Hammer",
+      "target": "exit \"Gerudo Training Grounds Lava\"",
+      "souls": "SOUL_ENEMY_TORCH_SLUG + SOUL_ENEMY_KEESE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:124",
+      "region": "Gerudo Training Grounds Hammer",
+      "target": "location \"Gerudo Training Grounds Hammer Room\"",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_TORCH_SLUG",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:125",
+      "region": "Gerudo Training Grounds Hammer",
+      "target": "location \"Gerudo Training Grounds SR Lava Back Center\"",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_TORCH_SLUG",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/gerudo_training_grounds.yml:126",
+      "region": "Gerudo Training Grounds Hammer",
+      "target": "location \"Gerudo Training Grounds SR Lava Back Right\"",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_TORCH_SLUG",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:6",
+      "region": "Ice Cavern",
+      "target": "exit \"Ice Cavern Scythe\"",
+      "souls": "SOUL_ENEMY_FREEZARD",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:39",
+      "region": "Ice Cavern Scythe",
+      "target": "location \"Ice Cavern Flying Pot Scythe Room\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:117",
+      "region": "Ice Cavern End",
+      "target": "exit \"Ice Cavern Block Room\"",
+      "souls": "SOUL_ENEMY_WOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:119",
+      "region": "Ice Cavern End",
+      "target": "location \"Ice Cavern Iron Boots\"",
+      "souls": "SOUL_ENEMY_WOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:120",
+      "region": "Ice Cavern End",
+      "target": "location \"Ice Cavern Sheik Song\"",
+      "souls": "SOUL_ENEMY_WOLFOS (+ NPC soul SOUL_NPC_SHEIK)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:121",
+      "region": "Ice Cavern End",
+      "target": "location \"Ice Cavern Pot Red Ice 1\"",
+      "souls": "SOUL_ENEMY_WOLFOS on the End-room route (Block Room route via silver_rupees_ic_block needs no soul)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/ice_cavern.yml:122",
+      "region": "Ice Cavern End",
+      "target": "location \"Ice Cavern Pot Red Ice 2\"",
+      "souls": "SOUL_ENEMY_WOLFOS on the End-room route (Block Room route needs no soul)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:34",
+      "region": "Jabu-Jabu Parasite Fork",
+      "target": "exit \"Jabu-Jabu Map Room\"",
+      "souls": "SOUL_NPC_RUTO (soul_ruto) || can_play_emptiness",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:44",
+      "region": "Jabu-Jabu Boomerang Room",
+      "target": "location \"Jabu-Jabu Boomerang Chest\"",
+      "souls": "SOUL_ENEMY_STINGER (+ NPC soul SOUL_NPC_RUTO)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:48",
+      "region": "Jabu-Jabu Map Room",
+      "target": "event \"RED_PARASITE\"",
+      "souls": "SOUL_ENEMY_PARASITE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:58",
+      "region": "Jabu-Jabu Compass Room",
+      "target": "exit \"Jabu-Jabu Parasite Fork\"",
+      "souls": "SOUL_ENEMY_SHABOM",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:60",
+      "region": "Jabu-Jabu Compass Room",
+      "target": "location \"Jabu-Jabu Compass Chest\"",
+      "souls": "SOUL_ENEMY_SHABOM",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:65",
+      "region": "Jabu-Jabu Blue Parasite",
+      "target": "event \"BLUE_PARASITE\"",
+      "souls": "SOUL_ENEMY_PARASITE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:72",
+      "region": "Jabu-Jabu Green Parasite",
+      "target": "event \"GREEN_PARASITE\"",
+      "souls": "SOUL_ENEMY_PARASITE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:74",
+      "region": "Jabu-Jabu Green Parasite",
+      "target": "exit \"Jabu-Jabu Parasite Fork\"",
+      "souls": "SOUL_ENEMY_BIRI_BARI",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/jabu_jabu.yml:117",
+      "region": "Jabu-Jabu Big Octo",
+      "target": "event \"BIG_OCTO\"",
+      "souls": "SOUL_ENEMY_OCTOROK (+ NPC soul SOUL_NPC_RUTO)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:21",
+      "region": "Shadow Temple Pit",
+      "target": "location \"Shadow Temple Map\"",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO + SOUL_ENEMY_KEESE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:22",
+      "region": "Shadow Temple Pit",
+      "target": "location \"Shadow Temple Hover Boots\"",
+      "souls": "SOUL_ENEMY_DEAD_HAND",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:31",
+      "region": "Shadow Temple Pit",
+      "target": "location \"Shadow Temple Flying Pot Early Maze\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:39",
+      "region": "Shadow Temple Main",
+      "target": "location \"Shadow Temple Compass\"",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:58",
+      "region": "Shadow Temple Open",
+      "target": "event \"SHADOW_INVISIBLE_SCYTHE_GATE\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE + SOUL_ENEMY_KEESE (event gating Spinning Blades Visible/Invisible and GS Invisible Scythe)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:62",
+      "region": "Shadow Temple Open",
+      "target": "exit \"Shadow Temple Wallmaster\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:92",
+      "region": "Shadow Temple Invisible Spikes",
+      "target": "exit \"Shadow Temple Wind Front\"",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO on the adult can_hookshot alternative (can_longshot alternative needs none)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:100",
+      "region": "Shadow Temple Invisible Spikes",
+      "target": "location \"Shadow Temple Invisible Spike Room\"",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:126",
+      "region": "Shadow Temple Wind Gibdo",
+      "target": "exit \"Shadow Temple Wind Back\"",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:128",
+      "region": "Shadow Temple Wind Gibdo",
+      "target": "location \"Shadow Temple After Wind\"",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:132",
+      "region": "Shadow Temple Wind Gibdo",
+      "target": "location \"Shadow Temple Flying Pot After Wind 1\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:133",
+      "region": "Shadow Temple Wind Gibdo",
+      "target": "location \"Shadow Temple Flying Pot After Wind 2\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/shadow_temple.yml:158",
+      "region": "Shadow Temple After Boat",
+      "target": "location \"Shadow Temple Invisible Floormaster\"",
+      "souls": "SOUL_ENEMY_FLOORMASTER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:15",
+      "region": "Spirit Temple",
+      "target": "location \"Spirit Temple Flying Pot Lobby 1\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:16",
+      "region": "Spirit Temple",
+      "target": "location \"Spirit Temple Flying Pot Lobby 2\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:32",
+      "region": "Spirit Temple Child Entrance",
+      "target": "exit \"Spirit Temple Child Left\"",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_ARMOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:33",
+      "region": "Spirit Temple Child Entrance",
+      "target": "exit \"Spirit Temple Child Right\"",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_ARMOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:57",
+      "region": "Spirit Temple Child Back Left",
+      "target": "exit \"Spirit Temple Child Back Right\"",
+      "souls": "SOUL_ENEMY_ANUBIS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:60",
+      "region": "Spirit Temple Child Back Left",
+      "target": "location \"Spirit Temple Flying Pot Child After Bridge 1\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:61",
+      "region": "Spirit Temple Child Back Left",
+      "target": "location \"Spirit Temple Flying Pot Child After Bridge 2\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:70",
+      "region": "Spirit Temple Child Back Right",
+      "target": "exit \"Spirit Temple Child Back Left\"",
+      "souls": "SOUL_ENEMY_ANUBIS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:71",
+      "region": "Spirit Temple Child Back Right",
+      "target": "exit \"Spirit Temple Wallmaster Child Rupees\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:109",
+      "region": "Spirit Temple Child Upper",
+      "target": "exit \"Spirit Temple Child Hand\"",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:154",
+      "region": "Spirit Temple Adult Climb",
+      "target": "exit \"Spirit Temple Wallmaster Adult Climb\"",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:160",
+      "region": "Spirit Temple Adult Climb",
+      "target": "location \"Spirit Temple Flying Pot Adult Climb 1\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:161",
+      "region": "Spirit Temple Adult Climb",
+      "target": "location \"Spirit Temple Flying Pot Adult Climb 2\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:173",
+      "region": "Spirit Temple Statue",
+      "target": "location \"Spirit Temple Silver Gauntlets\"",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE + SOUL_ENEMY_ANUBIS + SOUL_ENEMY_BEAMOS + (SOUL_ENEMY_ARMOS or can_play_emptiness) on the statue (adult-side longshot) route; the Child Hand route needs Iron Knuckle via :109",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:180",
+      "region": "Spirit Temple Statue",
+      "target": "location \"Spirit Temple Flying Pot Statue Room 1\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:181",
+      "region": "Spirit Temple Statue",
+      "target": "location \"Spirit Temple Flying Pot Statue Room 2\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:197",
+      "region": "Spirit Temple Adult Upper",
+      "target": "exit \"Spirit Temple Adult Upper 2\"",
+      "souls": "SOUL_ENEMY_BEAMOS + SOUL_ENEMY_ANUBIS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:199",
+      "region": "Spirit Temple Adult Upper",
+      "target": "exit \"Spirit Temple Statue Adult\"",
+      "souls": "SOUL_ENEMY_BEAMOS + SOUL_ENEMY_ANUBIS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:201",
+      "region": "Spirit Temple Adult Upper",
+      "target": "location \"Spirit Temple Pot Adult Upper\"",
+      "souls": "SOUL_ENEMY_BEAMOS + SOUL_ENEMY_ANUBIS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:207",
+      "region": "Spirit Temple Adult Upper 2",
+      "target": "exit \"Spirit Temple Adult Hand\"",
+      "souls": "(SOUL_ENEMY_ARMOS or can_play_emptiness) + SOUL_ENEMY_IRON_KNUCKLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:210",
+      "region": "Spirit Temple Adult Upper 2",
+      "target": "location \"Spirit Temple Adult Invisible 1\"",
+      "souls": "SOUL_ENEMY_ARMOS or can_play_emptiness",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:211",
+      "region": "Spirit Temple Adult Upper 2",
+      "target": "location \"Spirit Temple Adult Invisible 2\"",
+      "souls": "SOUL_ENEMY_ARMOS or can_play_emptiness",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:217",
+      "region": "Spirit Temple Adult Hand",
+      "target": "exit \"Spirit Temple Adult Upper 2\"",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:231",
+      "region": "Spirit Temple Adult Climb 2",
+      "target": "location \"Spirit Temple Flying Pot Topmost 1\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:232",
+      "region": "Spirit Temple Adult Climb 2",
+      "target": "location \"Spirit Temple Flying Pot Topmost 2\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:233",
+      "region": "Spirit Temple Adult Climb 2",
+      "target": "location \"Spirit Temple Flying Pot Topmost 3\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:234",
+      "region": "Spirit Temple Adult Climb 2",
+      "target": "location \"Spirit Temple Flying Pot Topmost 4\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:235",
+      "region": "Spirit Temple Adult Climb 2",
+      "target": "location \"Spirit Temple Flying Pot Topmost 5\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/spirit_temple.yml:236",
+      "region": "Spirit Temple Adult Climb 2",
+      "target": "location \"Spirit Temple Flying Pot Topmost 6\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/treasure_chest_game.yml:5,12,20,28,36,44",
+      "region": "Treasure Chest Game rooms",
+      "target": "exits via small_keys_tcg(n) (macros_oot.yml:277)",
+      "souls": "SOUL_NPC_CHEST_GAME_OWNER when smallKeyShuffleChestGame is vanilla",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/treasure_chest_game.yml:7",
+      "region": "Treasure Chest Game",
+      "target": "location \"Treasure Chest Game Buy Key\"",
+      "souls": "SOUL_NPC_CHEST_GAME_OWNER (soul_chest_game_owner)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:52",
+      "region": "Water Temple Map Room",
+      "target": "location \"Water Temple Map\"",
+      "souls": "SOUL_ENEMY_SPIKE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:57",
+      "region": "Water Temple Shell Room",
+      "target": "location \"Water Temple Shell Chest\"",
+      "souls": "SOUL_ENEMY_SHELL_BLADE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:77",
+      "region": "Water Temple Under Center",
+      "target": "location \"Water Temple Under Center\"",
+      "souls": "SOUL_ENEMY_SPIKE + SOUL_ENEMY_SHELL_BLADE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:152",
+      "region": "Water Temple Dark Link",
+      "target": "exit \"Water Temple Longshot Room\"",
+      "souls": "SOUL_ENEMY_DARK_LINK",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons/water_temple.yml:153",
+      "region": "Water Temple Dark Link",
+      "target": "exit \"Water Temple Before Dark Link\"",
+      "souls": "SOUL_ENEMY_DARK_LINK",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/*.yml: 10 uses of business_scrub (deku_tree_mq:322; dodongo_cavern_mq:29,30,86,232; ganon_castle_mq:32-36)",
+      "region": "various",
+      "target": "Business Scrub locations",
+      "souls": "SOUL_MISC_BUSINESS_SCRUB (business_scrub, macros_oot.yml:256)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/*.yml: 47 uses of gs (bottom_of_the_well_mq:95,105,134; deku_tree_mq:32,107,275,306; dodongo_cavern_mq:75,149,192,251,284,333; fire_temple_mq:177,327,420,429,522; forest_temple_mq:46,119,233,279,324,337; ice_cavern_mq:93,112,122; jabu_jabu_mq:120,134,274,287,297,308; shadow_temple_mq:252,336,355,411,425,509; spirit_temple_mq:122,138,139; water_temple_mq:191,253,342,433,485)",
+      "region": "various",
+      "target": "Gold Skulltula token locations",
+      "souls": "SOUL_MISC_GS (gs -> soul_gs, macros_oot.yml:210)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71",
+      "region": "Bottom of the Well Main Room Center",
+      "target": "exit \"Bottom of the Well Wallmaster Main\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91",
+      "region": "Bottom of the Well Basement",
+      "target": "exit \"Bottom of the Well Wallmaster Basement\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:147",
+      "region": "Bottom of the Well Dead Hand Room",
+      "target": "exit \"Bottom of the Well Before Dead Hand\"",
+      "souls": "SOUL_ENEMY_DEAD_HAND",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:149",
+      "region": "Bottom of the Well Dead Hand Room",
+      "target": "location \"MQ Bottom of the Well Compass Chest\"",
+      "souls": "SOUL_ENEMY_DEAD_HAND",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167",
+      "region": "Bottom of the Well Pit Before Cage",
+      "target": "exit \"Bottom of the Well Wallmaster Pit\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:15",
+      "region": "MQ Deku Tree Lobby",
+      "target": "event \"STICKS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA (can_kill_baba_sticks, macros_oot.yml:224 -> soul_deku_baba)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:16",
+      "region": "MQ Deku Tree Lobby",
+      "target": "event \"NUTS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA (can_kill_baba_nuts, macros_oot.yml:225 -> soul_deku_baba)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:137",
+      "region": "MQ Deku Tree MQ Slingshot Room",
+      "target": "event \"DEKU_MQ_SLINGSHOT_ENEMIES\" -> location \"MQ Deku Tree Slingshot Chest\" (140) and exit \"MQ Deku Tree Slingshot Room Exit Door\" -> \"MQ Deku Tree Slingshot Room Entry Door\" (129)",
+      "souls": "SOUL_ENEMY_DEKU_BABA + SOUL_ENEMY_GOHMA_LARVA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:185",
+      "region": "MQ Deku Tree Room Before Water Room",
+      "target": "event \"DEKU_MQ_ROOM_BEFORE_WATER_CLEAR\" -> exit \"MQ Deku Tree Room Before Water Room Door to Basement\" -> \"Entry Door\" (175)",
+      "souls": "SOUL_ENEMY_DEKU_SCRUB + SOUL_ENEMY_GOHMA_LARVA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:247",
+      "region": "MQ Deku Tree Room After Water Room",
+      "target": "event \"DEKU_MQ_ROOM_AFTER_WATER_CLEAR\" -> exits to the Water Room door (238) and to the Gravestone Room door (256)",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_DEKU_SCRUB + SOUL_ENEMY_GOHMA_LARVA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:271",
+      "region": "MQ Deku Tree MQ Grave Room",
+      "target": "event \"STICKS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA (can_kill_baba_sticks)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:272",
+      "region": "MQ Deku Tree MQ Grave Room",
+      "target": "event \"NUTS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA (can_kill_baba_nuts)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/deku_tree_mq.yml:344",
+      "region": "Deku Tree Before Boss",
+      "target": "event \"DEKU_TREE_MQ_PRE_BOSS_SCRUB_PUZZLE\" -> exit \"Deku Tree Boss\" (342)",
+      "souls": "SOUL_ENEMY_DEKU_SCRUB (soul_deku_scrub, macros_common.yml:80)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:58",
+      "region": "Dodongo Cavern Staircase Room Lower",
+      "target": "event \"STICKS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:98",
+      "region": "Dodongo Cavern Room After Upper Staircase",
+      "target": "event \"DC_MQ_DEFEAT_DONDONGOS_AFTER_STAIRCASE\" -> location \"MQ Dodongo Cavern Compass Chest\" (100) and exit \"Dodongo Cavern Main Room Upper Entrance Side\" (96)",
+      "souls": "SOUL_ENEMY_DODONGO (soul_dodongo)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:146",
+      "region": "Dodongo Cavern MQ Larvae Room",
+      "target": "event \"MQ_DC_CLEAR_LARVAE_ROOM\" -> location \"MQ Dodongo Cavern Larvae Room Chest\" (148) and exit \"Dodongo Cavern Vanilla Bomb Bag Room Lower\" (144)",
+      "souls": "SOUL_ENEMY_GOHMA_LARVA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:189",
+      "region": "Dodongo Cavern Upper Lizalfos",
+      "target": "event \"MQ_DC_UPPER_LIZALFOS_CLEAR_FROM_UPPER\" -> exits to Room Before / Room After Upper Lizalfos (185-186)",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:190",
+      "region": "Dodongo Cavern Upper Lizalfos",
+      "target": "event \"MQ_DC_LOWER_LIZALFOS_CLEAR_FROM_UPPER\" (time_travel_at_will cross-room clear) -> lower-room exits (243-244)",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:247",
+      "region": "Dodongo Cavern Lower Lizalfos",
+      "target": "event \"MQ_DC_LOWER_LIZALFOS_CLEAR_FROM_LOWER\" -> exits to Corridor Before Lower Lizalfos / Poe Room (243-244)",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:248",
+      "region": "Dodongo Cavern Lower Lizalfos",
+      "target": "event \"MQ_DC_UPPER_LIZALFOS_CLEAR_FROM_LOWER\" (climb/longshot_anywhere cross-room clear) -> upper-room exits (185-186)",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml:282",
+      "region": "Dodongo Cavern MQ Poe Room Side Room",
+      "target": "exit \"Dodongo Cavern Poe Room\"",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_DEKU_SCRUB",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:31",
+      "region": "Fire Temple Hammer Loop Goron Cell Like Like Side",
+      "target": "event \"FIRE_MQ_1ST_GORON_LIKELIKE\" -> exit \"Fire Temple Lower Lobby\" (28) and location \"MQ Fire Temple Early Lower Left Chest\" (33)",
+      "souls": "SOUL_ENEMY_LIKE_LIKE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:92",
+      "region": "Fire Temple Hammer Loop Enemies Room",
+      "target": "event \"FIRE_MQ_HAMMER_LOOP_FIRST_CLEAR\" -> exit \"Fire Temple Hammer Loop Iron Knuckle Room\" (90)",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:102",
+      "region": "Fire Temple Hammer Loop Iron Knuckle Room",
+      "target": "event \"FIRE_MQ_HAMMER_LOOP_KNUCKLE_CLEAR\" -> exit \"Fire Temple Hammer Loop Flare Dancer Room\" (100)",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:120",
+      "region": "Fire Temple Hammer Loop Flare Dancer Room",
+      "target": "event \"FIRE_MQ_HAMMER_LOOP_FLARE_DANCER_CLEAR\" -> exit \"Fire Temple Hammer Loop Goron Cell Map Chest Side\" (118) and location \"MQ Fire Temple Hammer Chest\" (122)",
+      "souls": "SOUL_ENEMY_FLARE_DANCER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/fire_temple_mq.yml:466",
+      "region": "Fire Temple Flare Dancer Room After Fire Walls",
+      "target": "event \"FIRE_MQ_FLARE_DANCER_AFTER_FIRE_WALLS\" -> exits to Fire Walls Room Area After Large Fire Wall (463) and Tower After Flare Dancer First Room (464) and location \"MQ Fire Temple Flare Dancer Key\" (468)",
+      "souls": "SOUL_ENEMY_FLARE_DANCER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:87",
+      "region": "Forest Temple Lower Section Of Stalfos Battle Room",
+      "target": "event \"FOREST_MQ_UNDER_STALFOS_BATTLE_WOLFOS_CLEAR\" -> exit \"Forest Temple Hallway Before Lower Section Of Stalfos Battle Room\" (85) and location \"MQ Forest Temple Wolfos Chest\" (89)",
+      "souls": "SOUL_ENEMY_WOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:103",
+      "region": "Forest Temple Hallway Before Climbing Block Puzzle Room",
+      "target": "event \"FOREST_MQ_HALLWAY_BEFORE_CLIMBING_BLOCKS_STALFOS_CLEAR\" -> exits to Main Lobby (100) and Climbing Block Puzzle Room Ground Floor (101)",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:178",
+      "region": "Forest Temple Western Twisting Hallway Block Push Side",
+      "target": "exit \"Forest Temple Wallmaster West\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:188",
+      "region": "Forest Temple Floormaster Battle Room Below Hallway",
+      "target": "exit \"Forest Temple Wallmaster West\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster), with hookshot_anywhere && climb_anywhere",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:192",
+      "region": "Forest Temple Floormaster Battle Room Below Hallway",
+      "target": "event \"FOREST_MQ_FLOORMASTER_BATTLE_BELOW_HALLWAY_CLEAR\" -> exit \"Forest Temple West Garden Upper Ledge Hallway\" (187)",
+      "souls": "SOUL_ENEMY_FLOORMASTER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:221",
+      "region": "Forest Temple West Garden Redead Battle Room",
+      "target": "event \"FOREST_MQ_WEST_GARDEN_REDEAD_BATTLE_CLEAR\" -> exit \"Forest Temple West Garden Upper Ledge Hallway\" (219) and location \"MQ Forest Temple ReDead Chest\" (223)",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:309",
+      "region": "Forest Temple East Garden Hill With Chest",
+      "target": "event \"STICKS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:310",
+      "region": "Forest Temple East Garden Hill With Chest",
+      "target": "event \"NUTS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:339",
+      "region": "Forest Temple East Garden Ground Area",
+      "target": "event \"STICKS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:340",
+      "region": "Forest Temple East Garden Ground Area",
+      "target": "event \"NUTS\"",
+      "souls": "SOUL_ENEMY_DEKU_BABA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:357",
+      "region": "Forest Temple Red Poe Paintings Room",
+      "target": "event \"FOREST_MQ_JOELLE_CLEAR\" -> location \"MQ Forest Temple Map Chest\" (355) and FOREST_MQ_MEG_CLEAR (59)",
+      "souls": "SOUL_ENEMY_POE (soul_poe)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:371",
+      "region": "Forest Temple Upper Section Of Stalfos Battle Room",
+      "target": "event \"FOREST_MQ_BOW_ROOM_STALFOS_BATTLE_CLEAR\" -> exits to Red Poe Paintings Room (362) and Blue Poe Paintings Room (363) and location \"MQ Forest Temple Bow Chest\" (365)",
+      "souls": "SOUL_ENEMY_STALFOS + SOUL_ENEMY_WOLFOS (via event(FOREST_MQ_UNDER_STALFOS_BATTLE_WOLFOS_CLEAR))",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:372",
+      "region": "Forest Temple Upper Section Of Stalfos Battle Room",
+      "target": "event \"FOREST_MQ_UNDER_STALFOS_BATTLE_WOLFOS_CLEAR\" (from above) -> feeds FOREST_MQ_BOW_ROOM_STALFOS_BATTLE_CLEAR and the lower-room gates",
+      "souls": "SOUL_ENEMY_WOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:385",
+      "region": "Forest Temple Blue Poe Paintings Room",
+      "target": "event \"FOREST_MQ_BETH_CLEAR\" -> location \"MQ Forest Temple Compass Chest\" (380) and FOREST_MQ_MEG_CLEAR (59)",
+      "souls": "SOUL_ENEMY_POE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:393",
+      "region": "Forest Temple Eastern Twisting Hallway Blue Poe Side",
+      "target": "exit \"Forest Temple Wallmaster East\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:401",
+      "region": "Forest Temple Eastern Twisting Hallway Red Pool Side",
+      "target": "exit \"Forest Temple Wallmaster East\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/forest_temple_mq.yml:435",
+      "region": "Forest Temple Green Poe Painting Room",
+      "target": "event \"FOREST_MQ_AMY_CLEAR\" -> exit \"Forest Temple Hallway Between Green Poe Room And Lobby\" (430) and FOREST_MQ_MEG_CLEAR (59)",
+      "souls": "SOUL_ENEMY_POE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:7",
+      "region": "Ganon Castle",
+      "target": "event \"MQ_GANON_OPEN_MAIN\" -> exit \"Ganon Castle Main Room\" (5)",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE + SOUL_ENEMY_ARMOS + SOUL_ENEMY_BUBBLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:52",
+      "region": "Ganon Castle Light Trial Entrance",
+      "target": "event \"GANON_MQ_LIGHT_ENEMIES\" -> exit \"Ganon Castle Light Trial Lullaby Hallway\" (50)",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS + SOUL_ENEMY_TORCH_SLUG",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:93",
+      "region": "Ganon Castle Forest Trial Entrance",
+      "target": "event \"GANON_MQ_FOREST_ENEMIES\" -> exit \"Ganon Castle Forest Trial Wind Room Starting Side\" (91)",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:255",
+      "region": "Ganon Castle Spirit Trial Entrance",
+      "target": "event \"GANON_MQ_SPIRIT_HAMMER_SWITCH\" -> exit \"Ganon Castle Spirit Trial Sun Room Entrance Side\" (253)",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE on the (bow || slingshot) && hammer branch; the hammer && trick(OOT_HAMMER_WALLS) branch is soul-free",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:272",
+      "region": "Ganon Castle Spirit Trial Sun Room Sun Side",
+      "target": "exit \"Ganon Castle Spirit Wallmaster\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster) && event(GANON_MQ_SPIRIT_ENDING_SUNS)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:111",
+      "region": "Gerudo Training Grounds Right Path First Room",
+      "target": "event \"GTG_MQ_RIGHT_FIRST_CLEAR\" -> exit \"Gerudo Training Grounds Lava Room Near Beginning\" (109) and location \"MQ Gerudo Training Grounds Right Side Dinolfos Chest\" (113)",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS + SOUL_ENEMY_ARMOS + SOUL_ENEMY_DODONGO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:210",
+      "region": "Gerudo Training Grounds Left Path First Room",
+      "target": "event \"GTG_IRON_KNUCKLE\" -> exit \"Gerudo Training Grounds Slopes\" (213) and location \"MQ Gerudo Training Grounds Left Side Iron Knuckle Chest\" (215)",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220",
+      "region": "Gerudo Training Grounds Slopes",
+      "target": "exit \"Gerudo Training Grounds Wallmaster\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:245",
+      "region": "Gerudo Training Grounds Stalfos Room",
+      "target": "event \"GTG_MQ_STALFOS_CLEAR\" -> location \"MQ Gerudo Training Grounds Stalfos Room Chest\" (248), exit \"Stalfos Room After Silver Block\" -> \"Stalfos Room Side Room\" (254), exit \"Stalfos Room Ledge After Red Ice\" -> \"Spinning Statue Room Upper\" (275)",
+      "souls": "SOUL_ENEMY_STALFOS + SOUL_ENEMY_SKULLTULA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:261",
+      "region": "Gerudo Training Grounds Stalfos Room Side Room",
+      "target": "event \"GTG_MQ_STALFOS_SIDE_CLEAR\" -> location \"MQ Gerudo Training Grounds Silver Block Room Chest\" (263)",
+      "souls": "SOUL_ENEMY_SPIKE + SOUL_ENEMY_FREEZARD",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:318",
+      "region": "Gerudo Training Grounds Room After Spinning Statue",
+      "target": "event \"GTG_MQ_KNUCKLE_AND_SLUGS_CLEAR\" -> exits to Spinning Statue Room Lower (315) and Lava Room Deep Side Ledge (316) and location \"MQ Gerudo Training Grounds Torch Slug Room Clear Chest\" (321)",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE + SOUL_ENEMY_TORCH_SLUG",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ice_cavern_mq.yml:44",
+      "region": "Ice Cavern Main Room",
+      "target": "event \"ICE_MQ_MAIN_ENEMIES_CLEAR\" -> exit \"Ice Cavern Map Room\" (40)",
+      "souls": "SOUL_ENEMY_WOLFOS + SOUL_ENEMY_FREEZARD",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ice_cavern_mq.yml:139",
+      "region": "Ice Cavern Serenade Room",
+      "target": "event \"ICE_MQ_FINAL_ROOM_CLEAR\" -> exits to Past Red Ice Before Shiek (136) and Inside Pit of Water (137) and location \"MQ Ice Cavern Iron Boots\" (141)",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/ice_cavern_mq.yml:142",
+      "region": "Ice Cavern Serenade Room",
+      "target": "location \"MQ Ice Cavern Sheik Song\"",
+      "souls": "SOUL_ENEMY_STALFOS (via event(ICE_MQ_FINAL_ROOM_CLEAR)) + SOUL_NPC_SHEIK (NPC, not audited)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:8",
+      "region": "Jabu-Jabu",
+      "target": "event \"JABU_MQ_START\" -> exit \"Jabu-Jabu Main Elevator Room Upper\" (6)",
+      "souls": "SOUL_ANIMAL_COW (soul_cow) || trick(OOT_MQ_JABU_WITHOUT_COW_SOUL)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:11,16,17,181",
+      "region": "Jabu-Jabu / Jabu-Jabu Room After Above Big Octo",
+      "target": "locations \"MQ Jabu-Jabu Entry Chest\", \"Wonder Item Entrance Left Cow\", \"Wonder Item Entrance Right Cow\", \"MQ Jabu-Jabu Cow\" (cow macro, macros_common.yml:149)",
+      "souls": "SOUL_ANIMAL_COW (soul_cow)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:102",
+      "region": "Jabu-Jabu Ruto Section Bottom Floor",
+      "target": "exit \"Jabu Jabu Basement Loop to Main Elevator East Side\"",
+      "souls": "SOUL_NPC_RUTO (soul_ruto) || can_play_emptiness",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:117",
+      "region": "Jabu Jabu Basement Loop to Main Elevator West Side",
+      "target": "event \"JABU_MQ_WATER_SPOUTS\" -> exits \"Main Elevator Room Lower\" <-> \"Basement Loop West Side\" (39, 114) and location \"MQ Jabu-Jabu Boomerang Chest\" (119, 135)",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS + SOUL_ENEMY_LIKE_LIKE + SOUL_ENEMY_STINGER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:128",
+      "region": "Jabu Jabu Basement Loop to Main Elevator East Side",
+      "target": "event \"JABU_MQ_WATER_SPOUTS\" (east-side copy of line 117) -> same targets",
+      "souls": "SOUL_ENEMY_LIZALFOS_DINOLFOS + SOUL_ENEMY_LIKE_LIKE + SOUL_ENEMY_STINGER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:162",
+      "region": "Jabu-Jabu Big Octo Room",
+      "target": "event \"JABU_BIG_OCTO\" -> exit \"Jabu-Jabu Above Big Octo Fight\" (160)",
+      "souls": "SOUL_ENEMY_OCTOROK + SOUL_NPC_RUTO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:226",
+      "region": "Jabu-Jabu Back Forked Paths Center Room",
+      "target": "event \"JABU_TENTACLE_RED\" -> exits \"Ledge Before Pre-Boss\" -> \"Pre-Boss Room\" (69) and \"Ruto Section Bottom Floor\" -> \"Basement Side Room Entrance Side\" (101)",
+      "souls": "SOUL_ENEMY_PARASITE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:233",
+      "region": "Jabu-Jabu Back Forked Paths Right 1",
+      "target": "event \"JABU_MQ_LIKE_LIKE_ROOM_CLEAR\" -> exit \"Jabu-Jabu Back Forked Paths\" (231), location \"MQ Jabu-Jabu Back Chest\" (235), and the sticks branch of JABU_MQ_BACK_FIRE_WEB (207) that opens \"After Right 2 Web\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:260",
+      "region": "Jabu-Jabu Back Forked Paths Right 2",
+      "target": "event \"JABU_TENTACLE_BLUE\" -> exits \"Back Forked Paths\" -> \"Left 1\" / \"Left 2\" (200-201)",
+      "souls": "SOUL_ENEMY_PARASITE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:267",
+      "region": "Jabu-Jabu Back Forked Paths Left 1",
+      "target": "event \"JABU_TENTACLE_GREEN\" -> exits \"Basement Ledge Before Big Octo\" <-> \"After Green Tentacle\" (141, 153)",
+      "souls": "SOUL_ENEMY_PARASITE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:284",
+      "region": "Jabu-Jabu Basement Side Room Entrance Side",
+      "target": "event \"JABU_MQ_BASEMENT_SIDE_PLATFORM\" -> exit to \"Basement Side Room GS Side\" (282, alternatives hover boots / climb_anywhere) and the climb_anywhere return (281)",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_STINGER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/jabu_jabu_mq.yml:294",
+      "region": "Jabu-Jabu Basement Side Room GS Side",
+      "target": "event \"JABU_MQ_BASEMENT_SIDE_PLATFORM\" (GS-side copy of line 284)",
+      "souls": "SOUL_ENEMY_KEESE + SOUL_ENEMY_STINGER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:53",
+      "region": "Shadow Temple Textured Maze First Half",
+      "target": "location \"MQ Shadow Temple Flying Pot Entrance Maze 1\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:54",
+      "region": "Shadow Temple Textured Maze First Half",
+      "target": "location \"MQ Shadow Temple Flying Pot Entrance Maze 2\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:67",
+      "region": "Shadow Temple Textured Maze First Half Side Room",
+      "target": "event \"SHADOW_MQ_TEXTURED_MAZE_SIDE_ROOM_CLEAR\" -> exit to Lens Alcove (65) and location \"MQ Shadow Temple Compass Chest\" (69)",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:81",
+      "region": "Shadow Temple Textured Maze Second Half",
+      "target": "location \"MQ Shadow Temple Flying Pot Entrance Maze 3\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:82",
+      "region": "Shadow Temple Textured Maze Second Half",
+      "target": "location \"MQ Shadow Temple Flying Pot Entrance Maze 4\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:95",
+      "region": "Shadow Temple Dead Hand Room",
+      "target": "event \"SHADOW_MQ_TEXTURED_MAZE_DEAD_HAND_ROOM_CLEAR\" -> exit to Lens Alcove (93) and location \"MQ Shadow Temple Hover Boots Chest\" (97)",
+      "souls": "SOUL_ENEMY_DEAD_HAND",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:130",
+      "region": "Shadow Temple First Beamos Fork Gibdo Room",
+      "target": "event \"SHADOW_MQ_FIRST_BEAMOS_FORK_GIBDOS_CLEAR\" -> exit to Lens Alcove (128) and location \"MQ Shadow Temple First Gibdos Chest\" (132)",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:146",
+      "region": "Shadow Temple Scythe Room",
+      "target": "event \"SHADOW_MQ_SCYTHE_ROOM_SKULTULLAS_CLEAR\" -> exit to \"First Beamos Fork Room Lens Alcove to Scythe and Shortcut Room\" (143)",
+      "souls": "SOUL_ENEMY_SKULLTULA",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:273",
+      "region": "Shadow Temple Invisible Spike Floors Room",
+      "target": "event \"SHADOW_MQ_INVISIBLE_SPIKE_FLOORS_REDEADS_CLEAR\" -> location \"MQ Shadow Temple Invisible Spike Floor Chest\" (276); also an alternative to the ice-platform event for the upper-ledge exit (270) and SR Spikes Ceiling (280)",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:293",
+      "region": "Shadow Temple Dual Staircase Stalfos Room",
+      "target": "event \"SHADOW_MQ_DUAL_STAIRCASE_STALFOS_CLEAR\" -> exit \"Shadow Temple Invisible Spike Floors Room\" (291) and location \"MQ Shadow Temple Stalfos Room Chest\" (295)",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:333",
+      "region": "Shadow Temple Wind Tunnel Hint Room",
+      "target": "event \"SHADOW_MQ_WIND_TUNNEL_HINT_ROOM_REDEADS_CLEAR\" -> location \"MQ Shadow Temple Wind Hint Chest\" (335)",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:351",
+      "region": "Shadow Temple After Wind Tunnel Gibdos Room",
+      "target": "event \"SHADOW_MQ_AFTER_WIND_TUNNEL_GIBDOS_CLEAR\" -> location \"MQ Shadow Temple After Wind Gibdos Chest\" (353)",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:358",
+      "region": "Shadow Temple After Wind Tunnel Gibdos Room",
+      "target": "location \"MQ Shadow Temple Flying Pot Room Before Boat 1\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:359",
+      "region": "Shadow Temple After Wind Tunnel Gibdos Room",
+      "target": "location \"MQ Shadow Temple Flying Pot Room Before Boat 2\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/shadow_temple_mq.yml:466",
+      "region": "Shadow Temple Invisible Wall Maze Dead Hand Bomb Flower Room",
+      "target": "event \"SHADOW_MQ_INVISIBLE_WALL_MAZE_DEAD_HAND_CLEAR\" -> location \"MQ Shadow Temple Hidden Dead Hand Chest\" (468)",
+      "souls": "SOUL_ENEMY_DEAD_HAND",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:20",
+      "region": "Spirit Temple",
+      "target": "location \"Spirit Temple Silver Gauntlets\" (age-indeterminate child 4-key path)",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:54",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Map Chest\"",
+      "souls": "SOUL_ENEMY_TORCH_SLUG (+ SOUL_ENEMY_KEESE only when restoreBrokenActors is on; that setting is off by default and has no native counterpart)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:55",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Map Room Back Chest\"",
+      "souls": "SOUL_ENEMY_TORCH_SLUG + SOUL_ENEMY_REDEAD_GIBDO + SOUL_ENEMY_STALFOS + SOUL_ENEMY_KEESE + SOUL_ENEMY_ANUBIS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:58",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Pot Child Boulders 1\" (pot 0x020c, room 2)",
+      "souls": "SOUL_ENEMY_TORCH_SLUG (+ Keese only with restoreBrokenActors)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:59",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Pot Child Boulders 2\" (pot 0x020d, room 2)",
+      "souls": "SOUL_ENEMY_TORCH_SLUG (+ Keese only with restoreBrokenActors)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:60",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Pot Child Back 1\" (pot 0x1b09, room 27)",
+      "souls": "SOUL_ENEMY_TORCH_SLUG + SOUL_ENEMY_REDEAD_GIBDO + SOUL_ENEMY_STALFOS (+ Keese only with restoreBrokenActors)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:61",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Pot Child Back 2\" (pot 0x1b0a, room 27)",
+      "souls": "SOUL_ENEMY_TORCH_SLUG + SOUL_ENEMY_REDEAD_GIBDO + SOUL_ENEMY_STALFOS (+ Keese only with restoreBrokenActors)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:62",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Pot Child Back 3\" (pot 0x1b0b, room 27)",
+      "souls": "SOUL_ENEMY_TORCH_SLUG + SOUL_ENEMY_REDEAD_GIBDO + SOUL_ENEMY_STALFOS (+ Keese only with restoreBrokenActors)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:63",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Pot Child Back 4\" (pot 0x1b0c, room 27)",
+      "souls": "SOUL_ENEMY_TORCH_SLUG + SOUL_ENEMY_REDEAD_GIBDO + SOUL_ENEMY_STALFOS (+ Keese only with restoreBrokenActors)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:69",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Boulder Child Bridge Ground\" (boulder, room 2)",
+      "souls": "SOUL_ENEMY_TORCH_SLUG (+ Keese only with restoreBrokenActors)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:70",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Boulder Child Bridge Wall Left\" (boulder, room 2)",
+      "souls": "SOUL_ENEMY_TORCH_SLUG (+ Keese only with restoreBrokenActors)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:71",
+      "region": "Spirit Temple Child Side",
+      "target": "location \"MQ Spirit Temple Boulder Child Bridge Wall Front\" (boulder, room 2)",
+      "souls": "SOUL_ENEMY_TORCH_SLUG (+ Keese only with restoreBrokenActors)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:81",
+      "region": "Spirit Temple Child Upper",
+      "target": "location \"MQ Spirit Temple Child Upper Ground Chest\"",
+      "souls": "SOUL_ENEMY_LIKE_LIKE + SOUL_ENEMY_BEAMOS + SOUL_ENEMY_BABY_DODONGO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88",
+      "region": "Spirit Temple Statue",
+      "target": "exit \"Spirit Temple Wallmaster Statue\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89",
+      "region": "Spirit Temple Statue",
+      "target": "exit \"Spirit Temple Wallmaster Adult Climb\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster) && has_fire_arrows && can_reflect_light",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:92",
+      "region": "Spirit Temple Statue",
+      "target": "exit \"Spirit Temple Adult Lower\"",
+      "souls": "SOUL_ENEMY_STALFOS + SOUL_ENEMY_WALLMASTER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:105",
+      "region": "Spirit Temple Statue",
+      "target": "location \"MQ Spirit Temple Flying Pot Statue Room Lower\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:106",
+      "region": "Spirit Temple Statue",
+      "target": "location \"MQ Spirit Temple Flying Pot Statue Room Stairs\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot, macros_common.yml:91)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:107",
+      "region": "Spirit Temple Statue",
+      "target": "location \"MQ Spirit Temple Flying Pot Statue Room Upper\"",
+      "souls": "SOUL_ENEMY_FLYING_POT (soul_flying_pot) && (can_play_time || has_hover_boots)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118",
+      "region": "Spirit Temple Sun Block Room",
+      "target": "exit \"Spirit Temple Wallmaster Child Sun\" (BUFFER_DELAYED region whose only exit is VOID)",
+      "souls": "SOUL_ENEMY_WALLMASTER (soul_wallmaster, macros_common.yml:71)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:119",
+      "region": "Spirit Temple Sun Block Room",
+      "target": "exit \"Spirit Temple Child Hand\" (Silver Gauntlets, then Desert Colossus)",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE always; + SOUL_ENEMY_FLOORMASTER on the adult 4-key quantum branch (is_adult && small_keys_spirit(4) && has_lens && SoT)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:136",
+      "region": "Spirit Temple Adult Lower",
+      "target": "location \"MQ Spirit Temple Purple Leever Chest\"",
+      "souls": "SOUL_ENEMY_LEEVER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:153",
+      "region": "Spirit Temple Adult Upper",
+      "target": "location \"MQ Spirit Temple Beamos Room Chest\"",
+      "souls": "SOUL_ENEMY_BEAMOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:159",
+      "region": "Spirit Temple Adult Upper 2",
+      "target": "exit \"Spirit Temple Adult Hand\"",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE + SOUL_ENEMY_FLOORMASTER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:164",
+      "region": "Spirit Temple Adult Upper 2",
+      "target": "location \"Spirit Temple Mirror Shield\"",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE + SOUL_ENEMY_FLOORMASTER",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:195",
+      "region": "Spirit Temple Top Floor",
+      "target": "location \"MQ Spirit Temple GS Top Floor Left Wall\"",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE + SOUL_MISC_GS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:196",
+      "region": "Spirit Temple Top Floor",
+      "target": "location \"MQ Spirit Temple GS Top Floor Back Wall\"",
+      "souls": "SOUL_ENEMY_IRON_KNUCKLE + SOUL_MISC_GS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:73",
+      "region": "Water Temple Compass Room",
+      "target": "event \"RUTO_COLUMN_HOOKSHOTS\" -> location \"MQ Water Temple Compass Chest\" (75) and the low-water hookshot branch of \"Ruto Column Bottom\" -> \"Ruto Column Middle\" (61)",
+      "souls": "SOUL_ENEMY_SPIKE + SOUL_ENEMY_LIZALFOS_DINOLFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:99",
+      "region": "Water Temple Map Chest Room",
+      "target": "exit \"Water Temple Ruto Column Top\"",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:150",
+      "region": "Water Temple Room Before Dark Link Lower",
+      "target": "exit \"Water Temple Room Before Dark Link Upper\"",
+      "souls": "SOUL_ENEMY_STALFOS (on the is_adult && has_weapon && can_hookshot branch; other branches are hookshot_anywhere/climb_anywhere)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:153",
+      "region": "Water Temple Room Before Dark Link Lower",
+      "target": "location \"MQ Water Temple Pot Before Dark Link Ledge 1\"",
+      "souls": "SOUL_ENEMY_STALFOS on the (has_weapon && can_hookshot) branch; has_hover_boots (and hookshot/climb_anywhere) branches soul-free",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:154",
+      "region": "Water Temple Room Before Dark Link Lower",
+      "target": "location \"MQ Water Temple Pot Before Dark Link Ledge 2\"",
+      "souls": "SOUL_ENEMY_STALFOS on the (has_weapon && can_hookshot) branch; has_hover_boots (and hookshot/climb_anywhere) branches soul-free",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:155",
+      "region": "Water Temple Room Before Dark Link Lower",
+      "target": "location \"MQ Water Temple Pot Before Dark Link Ledge 3\"",
+      "souls": "SOUL_ENEMY_STALFOS on the (has_weapon && can_hookshot) branch; has_hover_boots (and hookshot/climb_anywhere) branches soul-free",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:156",
+      "region": "Water Temple Room Before Dark Link Lower",
+      "target": "location \"MQ Water Temple Big Fairy Before Dark Link Ledge\"",
+      "souls": "SOUL_ENEMY_STALFOS on the (has_weapon && can_hookshot) branch; has_hover_boots (and hookshot/climb_anywhere) branches soul-free ; plus can_play_sun",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:161",
+      "region": "Water Temple Room Before Dark Link Upper",
+      "target": "exit \"Water Temple Room Before Dark Link Lower\"",
+      "souls": "SOUL_ENEMY_STALFOS on the (has_weapon && can_hookshot) branch; has_hover_boots / anywhere branches soul-free",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:172",
+      "region": "Water Temple Dark Link",
+      "target": "exit \"Water Temple Room Before Dark Link Upper\"",
+      "souls": "SOUL_ENEMY_DARK_LINK",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:173",
+      "region": "Water Temple Dark Link",
+      "target": "exit \"Water Temple After Dark Link\"",
+      "souls": "SOUL_ENEMY_DARK_LINK",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:325",
+      "region": "Water Temple Side Loop Dodongo Room",
+      "target": "exit \"Water Temple Side Loop Room After Locked Door Target Side\"",
+      "souls": "SOUL_ENEMY_DODONGO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:326",
+      "region": "Water Temple Side Loop Dodongo Room",
+      "target": "exit \"Water Temple Side Loop Gate Room Past Gate\"",
+      "souls": "SOUL_ENEMY_DODONGO",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/dungeons_mq/water_temple_mq.yml:357",
+      "region": "Water Temple Side Loop Stalfos Room",
+      "target": "exit \"Water Temple Side Loop Scarecrow Alcove Underwater Path\"",
+      "souls": "SOUL_ENEMY_STALFOS",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/overworld/*.yml (10 lines)",
+      "region": "",
+      "target": "every cow via cow (macros_common.yml:149)",
+      "souls": "SOUL_ANIMAL_COW",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/*.yml (27 lines)",
+      "region": "",
+      "target": "every business scrub via business_scrub(id) (macros_oot.yml:256)",
+      "souls": "SOUL_MISC_BUSINESS_SCRUB",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/*.yml (57 lines)",
+      "region": "",
+      "target": "every GS location via gs / gs_soil / gs_night / collect_gs_on_walls (macros_oot.yml:210-212,231)",
+      "souls": "SOUL_MISC_GS",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/*.yml (58 lines)",
+      "region": "",
+      "target": "every butterfly fairy via butterfly (macros_common.yml:148)",
+      "souls": "SOUL_ANIMAL_BUTTERFLY",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/death_mountain_crater.yml:103",
+      "region": "",
+      "target": "Death Mountain Crater Sheik Song",
+      "souls": "SOUL_NPC_SHEIK",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/death_mountain_trail.yml:77-79",
+      "region": "",
+      "target": "Biggoron trades (Prescription, Claim Check, Biggoron Sword)",
+      "souls": "SOUL_NPC_BIGGORON",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/desert_colossus.yml:74",
+      "region": "",
+      "target": "Desert Colossus Song Spirit",
+      "souls": "SOUL_NPC_SHEIK",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/gerudo_fortress.yml:11,15,17-18,123,126",
+      "region": "",
+      "target": "GTG entrance, OPEN_FORTRESS_GATE x2, Archery Rewards 1-2, Fortress Near Wasteland exit",
+      "souls": "SOUL_NPC_THIEVES (soul_thief_guard is the NPC soul, not soul_thief_fighter / SOUL_ENEMY_THIEVES); native also uses NPC_THIEVES (gerudo_fortress.cpp:196,257)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/gerudo_valley.yml:6,19-20,24,27,61",
+      "region": "",
+      "target": "Cucco routes, HPs, crate ledge, wonder item; Broken Goron Sword",
+      "souls": "SOUL_ANIMAL_CUCCO, SOUL_NPC_CARPENTERS",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/goron_city.yml:16-17,27,33-35,125,136-143",
+      "region": "",
+      "target": "Darunia Chamber and Goron Shop exits, BUY_KEG, Tunic, Bomb Bag, Giant Knife, Darunia, Goron Shop Items 1-8",
+      "souls": "SOUL_NPC_GORON_CHILD, SOUL_NPC_MEDIGORON, SOUL_NPC_GORON, SOUL_NPC_DARUNIA, SOUL_NPC_GORON_SHOPKEEPER",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/graveyard.yml:23,24,101,109,111-112,122-126,132-141",
+      "region": "",
+      "target": "Dampe game, tomb race rewards, rupees and wonder items, Windmill exit, WINDMILL_TOP, Spooky Mask sale",
+      "souls": "SOUL_NPC_DAMPE, SOUL_NPC_BOMBERS",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/graveyard.yml:69",
+      "region": "Graveyard Royal Tomb",
+      "target": "location Graveyard Royal Tomb Song (Sun's Song; pool_oot.csv TOMB_ROYAL/ROYAL_TOMB_SONG)",
+      "souls": "SOUL_ENEMY_KEESE (soul_keese, macros_common.yml:73)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/overworld/haunted_wasteland.yml:17",
+      "region": "",
+      "target": "Haunted Wasteland Carpet Merchant",
+      "souls": "SOUL_NPC_CARPET_MAN",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/hyrule_field.yml:25",
+      "region": "Hyrule Field",
+      "target": "event BIG_POE",
+      "souls": "SOUL_ENEMY_POE (soul_poe, macros_common.yml:96)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/overworld/hyrule_field.yml:33-35",
+      "region": "",
+      "target": "Ocarina of Time, Song of Time, Sell Bunny Mask",
+      "souls": "SOUL_NPC_ZELDA, SOUL_NPC_CITIZEN",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/hyrule_ganon_castle.yml:9,12,13,85",
+      "region": "",
+      "target": "Hyrule Castle Courtyard exit, MALON, TALON_CHILD, MEET_ZELDA",
+      "souls": "SOUL_NPC_TALON, SOUL_NPC_MALON, SOUL_NPC_ZELDA",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kakariko.yml:4,19,21,30-35,134-141,150-157,178-179,186,215,229,280",
+      "region": "",
+      "target": "Kakariko gate, cucco routes, Anju, Shadow song, Man on Roof x2, Keaton sale, Bazaar and Potion shops, Granny, Shooting Gallery, Windmill Storms, TALON_AWAKE",
+      "souls": "SOUL_NPC_HYLIAN_GUARD, SOUL_ANIMAL_CUCCO, SOUL_NPC_ANJU, SOUL_NPC_SHEIK, SOUL_NPC_ROOFTOP_MAN, SOUL_NPC_BAZAAR_SHOPKEEPER, SOUL_NPC_POTION_SHOPKEEPER, SOUL_NPC_OLD_HAG, SOUL_NPC_SHOOTING_GALLERY_OWNER, SOUL_NPC_GURU_GURU, SOUL_NPC_TALON",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kakariko.yml:251",
+      "region": "ReDead Grotto",
+      "target": "location Kakariko Grotto Front (ReDead grotto chest; pool_oot.csv GROTTOS 0x0a)",
+      "souls": "SOUL_ENEMY_REDEAD_GIBDO (soul_redead_gibdo, macros_common.yml:83)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:17",
+      "region": "Kokiri Forest",
+      "target": "exit Kokiri Forest -> Link's House",
+      "souls": "none (\"true\")",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:26",
+      "region": "Kokiri Forest",
+      "target": "exit Kokiri Forest -> Kokiri Forest Near Deku Tree",
+      "souls": "none (can_bypass_mido, macros_oot.yml:244: no enemy soul and no Mido soul)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:35,166",
+      "region": "Kokiri Forest / Kokiri Forest Near Deku Tree",
+      "target": "event MIDO_MOVED via can_move_mido (macros_oot.yml:243)",
+      "souls": "SOUL_NPC_MIDO",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:162",
+      "region": "Kokiri Forest Near Deku Tree",
+      "target": "exit Kokiri Forest Near Deku Tree -> Kokiri Forest",
+      "souls": "none (can_bypass_mido)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:164-166",
+      "region": "Kokiri Forest Near Deku Tree",
+      "target": "events of the region (OoTMM has STICKS and MIDO_MOVED only; no NUTS event)",
+      "souls": "none (OoTMM has no nut source here)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:165",
+      "region": "Kokiri Forest Near Deku Tree",
+      "target": "event STICKS",
+      "souls": "SOUL_ENEMY_DEKU_BABA (soul_deku_baba, macros_common.yml:79)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/overworld/kokiri_forest.yml:176",
+      "region": "",
+      "target": "Kokiri Shop Items exit",
+      "souls": "SOUL_NPC_KOKIRI_SHOPKEEPER",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/lake_hylia.yml:28",
+      "region": "Lake Hylia",
+      "target": "location Lake Hylia HP (pool_oot.csv LAKE_HYLIA 0x1e)",
+      "souls": "none",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/lake_hylia.yml:132-133,145-179",
+      "region": "",
+      "target": "Laboratory Dive and Eye Drops, Fishing Pond (35 checks)",
+      "souls": "SOUL_NPC_SCIENTIST, SOUL_NPC_FISHING_POND_OWNER",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/lon_lon_ranch.yml:14,64-65",
+      "region": "",
+      "target": "MALON_COW, Talon Bottle and Buy Milk",
+      "souls": "SOUL_NPC_MALON, SOUL_NPC_TALON, SOUL_ANIMAL_CUCCO",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/lost_woods.yml:55,56,137",
+      "region": "",
+      "target": "Odd Mushroom, Poacher's Saw, Gift from Saria",
+      "souls": "SOUL_NPC_GROG, SOUL_NPC_KOKIRI, SOUL_NPC_SARIA",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/market.yml:33,75,95,115,229,247,264",
+      "region": "",
+      "target": "RICHARD, Bazaar, Potion and Bombchu shops, Dog Lady HP, Bombchu Bowling, Shooting Gallery Child (line 200 has its own row)",
+      "souls": "SOUL_ANIMAL_DOG, SOUL_NPC_BAZAAR_SHOPKEEPER, SOUL_NPC_POTION_SHOPKEEPER, SOUL_NPC_BOMBCHU_SHOPKEEPER, SOUL_NPC_DOG_LADY, SOUL_NPC_BOMBCHU_BOWLING_LADY, SOUL_NPC_SHOOTING_GALLERY_OWNER",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/market.yml:200",
+      "region": "Market Pot House Adult",
+      "target": "location Market Pot House Big Poes (indirect: has_big_poe, macros_common.yml:176, includes event BIG_POE)",
+      "souls": "SOUL_ENEMY_POE on the event(BIG_POE) alternative only (bottled Big Poe and MM shared-bottle alternatives need no soul) + SOUL_NPC_POE_COLLECTOR (NPC, not enemy)",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/sacred_forest_meadow.yml:6",
+      "region": "Sacred Meadow Entryway",
+      "target": "exit Sacred Meadow Entryway -> Sacred Meadow",
+      "souls": "child: SOUL_ENEMY_WOLFOS (soul_wolfos, macros_common.yml:89); adult / climb_anywhere / hookshot_anywhere: none",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/overworld/sacred_forest_meadow.yml:20",
+      "region": "Wolfos Grotto",
+      "target": "location Sacred Meadow Grotto (Wolfos grotto chest; pool_oot.csv GROTTOS 0x11)",
+      "souls": "SOUL_ENEMY_WOLFOS (soul_wolfos)",
+      "direct": true
+    },
+    {
+      "ootmm": "data/world/oot/overworld/sacred_forest_meadow.yml:26",
+      "region": "Sacred Meadow",
+      "target": "exit Sacred Meadow -> Sacred Meadow Entryway",
+      "souls": "none (\"true\")",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/sacred_forest_meadow.yml:31,32",
+      "region": "",
+      "target": "Saria's Song, Sacred Meadow Sheik Song",
+      "souls": "SOUL_NPC_SARIA, SOUL_NPC_SHEIK",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/temple_of_time.yml:13,14",
+      "region": "",
+      "target": "Temple of Time Sheik Song, Light Arrows",
+      "souls": "SOUL_NPC_SHEIK, SOUL_NPC_ZELDA",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/zora_domain.yml:18-25,71-78",
+      "region": "",
+      "target": "Diving Game (6), Zora Tunic, Eyeball Frog, Zora Shop Items 1-8",
+      "souls": "SOUL_NPC_ZORA, SOUL_NPC_KING_ZORA, SOUL_NPC_ZORA_SHOPKEEPER",
+      "direct": false
+    },
+    {
+      "ootmm": "data/world/oot/overworld/zora_river.yml:43-45,57,58-59,70",
+      "region": "",
+      "target": "Cucco routes, HPs, grass, Bean Seller",
+      "souls": "SOUL_ANIMAL_CUCCO, SOUL_NPC_BEAN_SALESMAN",
+      "direct": false
+    }
+  ]
+}

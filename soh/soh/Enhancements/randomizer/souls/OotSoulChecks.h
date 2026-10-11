@@ -961,6 +961,12 @@ inline bool CheckPrerequisite(Logic* logic, RandomizerCheck check) {
             return Has(logic, OotSoul::ANIMAL_COW);
         case RC_SPIRIT_TEMPLE_MQ_MAP_CHEST:
             return Has(logic, OotSoul::ENEMY_TORCH_SLUG);
+        case RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_1:
+        case RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_2:
+        case RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_3:
+        case RC_SPIRIT_TEMPLE_MQ_CHILD_STALFOS_POT_4:
+            return Has(logic, OotSoul::ENEMY_TORCH_SLUG) && Has(logic, OotSoul::ENEMY_REDEAD_GIBDO) &&
+                   Has(logic, OotSoul::ENEMY_STALFOS);
         case RC_SPIRIT_TEMPLE_HALLWAY_RIGHT_INVISIBLE_CHEST:
         case RC_SPIRIT_TEMPLE_HALLWAY_LEFT_INVISIBLE_CHEST:
             return Has(logic, OotSoul::ENEMY_ARMOS);
