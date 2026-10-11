@@ -14,18 +14,21 @@ parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
 args.build_dir.mkdir(parents=True, exist_ok=True)
 source = args.profile_source or args.source / 'combo/gui/ComboRandomizerProfiles.cpp'
-prefix = source.read_text(encoding='utf-8').split('void DrawSidebar(', 1)[0]
+text = source.read_text(encoding='utf-8')
+prefix = text.split('void DrawSidebar(', 1)[0]
+catalog_row = 'static void CatalogRow(' + text.split('static void CatalogRow(', 1)[1].split('static void CheckList(', 1)[0]
 # The widget prefix does not use the runtime/texture APIs, so it needs no game libraries.
 for include in ['#include <libultraship/libultraship.h>\n', '#include <fast/Fast3dGui.h>\n']:
     assert include in prefix
     prefix = prefix.replace(include, '')
-(args.build_dir / 'profile_widget.inc').write_text(prefix + '\n}\n', encoding='utf-8')
+(args.build_dir / 'profile_widget.inc').write_text(prefix + catalog_row + '\n}\n', encoding='utf-8')
 harness = r'''
 #include <imgui_internal.h>
 #include <cassert>
 #include <iostream>
 #include "profile_widget.inc"
 namespace ComboRando {
+ComboMenuModel& ComboMenuModel::Get(){static ComboMenuModel model;return model;}
 ImVec4 ComboMenu_ThemeColor(){return ImVec4(0,0,1,1);}
 void ComboMenu_PushCheckbox(const ImVec4&){} void ComboMenu_PopCheckbox(){}
 void ComboMenu_PushCombobox(const ImVec4&){} void ComboMenu_PopCombobox(){}
@@ -105,6 +108,45 @@ int main(){
  assert(ReadInteger("gEnhancements.OpenAllHours",0)==1&&document["gameplayRules"]["version"]==2);
  document.erase("songTravel");
  std::cout << "Read a rule block next to a malformed song travel map\n";
+ // The profile catalog is the active MM item-pool UI. Gear must reflect the same Swim
+ // restriction as the native menu without erasing the preference or changing old seed views.
+ const char* swim="gRando.Options.RO_SHUFFLE_SWIM";
+ ImVec2 checkboxPosition;io.ConfigInputTrickleEventQueue=false;
+ auto catalogFrame=[&](const Json& row,int mouseAction,bool disabled,bool checked){
+  if(mouseAction){io.AddMousePosEvent(checkboxPosition.x,checkboxPosition.y);io.AddMouseButtonEvent(0,mouseAction==1);}
+  ImGui::NewFrame();ImGui::SetNextWindowPos(ImVec2(0,0));ImGui::SetNextWindowSize(ImVec2(640,480));
+  ImGui::Begin("Profile catalog");auto& context=*ImGui::GetCurrentContext();
+  ImGui::LogToBuffer();CatalogRow(row);
+  checkboxPosition=context.LastItemData.Rect.GetCenter();
+  assert(context.LastItemData.ID!=0);
+  assert(bool(context.LastItemData.ItemFlags&ImGuiItemFlags_Disabled)==disabled);
+  const std::string rendered=context.LogBuffer.c_str();
+  if(rendered.find(checked?"[x]":"[ ]")==std::string::npos)
+   std::cerr << "Unexpected checkbox render: " << row.at("key") << ", mouseAction=" << mouseAction
+             << ", view=" << view << ", checked=" << checked << ": " << rendered << '\n';
+  assert(rendered.find(checked?"[x]":"[ ]")!=std::string::npos);
+  ImGui::LogFinish();ImGui::End();ImGui::Render();
+ };
+ for(const char* gear : {"RO_MM_BOOTS_IRON","RO_MM_BOOTS_HOVER","RO_MM_TUNIC_GORON","RO_MM_TUNIC_ZORA"}){
+  const std::string gearKey=std::string("gRando.Options.")+gear;
+  const Json row={{"key",gearKey},{"label",gear},{"kind","checkbox"},{"tooltip","MM gear"}};
+  view=0;WriteInteger(gearKey.c_str(),1);WriteInteger(swim,1);dirty=false;
+  catalogFrame(row,0,true,false);catalogFrame(row,1,true,false);catalogFrame(row,2,true,false);
+  assert(ReadInteger(gearKey.c_str(),-1)==1&&!dirty);
+  WriteInteger(swim,0);dirty=false;
+  catalogFrame(row,0,false,true);catalogFrame(row,1,false,true);catalogFrame(row,2,false,false);
+  assert(ReadInteger(gearKey.c_str(),-1)==0&&dirty);
+  WriteInteger(gearKey.c_str(),1);WriteInteger(swim,1);dirty=false;
+  for(int seedView : {1,2}){
+   view=seedView;catalogFrame(row,0,true,true);catalogFrame(row,1,true,true);catalogFrame(row,2,true,true);
+   assert(ReadInteger(gearKey.c_str(),-1)==1&&!dirty);
+  }
+ }
+ view=0;const char* love="gRando.Options.RO_MM_SPELL_LOVE";WriteInteger(love,1);dirty=false;
+ const Json loveRow={{"key",love},{"label","Nayru's Love"},{"kind","checkbox"}};
+ catalogFrame(loveRow,0,false,true);catalogFrame(loveRow,1,false,true);catalogFrame(loveRow,2,false,false);
+ assert(ReadInteger(love,-1)==0&&dirty);
+ std::cout << "Swim disables all four MM gear rows, preserves preferences and saved/generated views, and spares spells\n";
  ImGui::DestroyContext();std::cout << "PASS: production dropdown selection/refresh remains valid\n";
 }
 '''
