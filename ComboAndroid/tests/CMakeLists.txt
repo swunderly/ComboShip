@@ -520,6 +520,8 @@ else()
     combo_skipped_test(mm_entrance_layouts_clock_tower_and_wallmasters "${COMBO_NEEDS_JSON}")
 endif()
 
+combo_json_harness_test(entrance_hidden_settings_reference_parity entrance_settings_tests.py)
+
 # Every test gets a timeout, so a hang fails instead of blocking the run.
 set(COMBO_TEST_TIMEOUT 300 CACHE STRING "Default per-test timeout in seconds")
 get_property(combo_all_tests DIRECTORY PROPERTY TESTS)

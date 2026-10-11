@@ -1,0 +1,674 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "source": "packages/core/src/settings/data.ts",
+  "sourceSha256": "123a63834897d3f64e22e2bbb9cfec04bbdd8f6ab13255d4300ad8bad6deeb8f",
+  "settings": [
+    {
+      "key": "erSelfLoops",
+      "name": "Allow Self-Loops",
+      "type": "boolean",
+      "description": "Allow entrances to loop back to the same map. Might make the topology of the world very confusing.",
+      "default": false,
+      "condition": "",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erNoPolarity",
+      "name": "No Entrance Polarity",
+      "type": "boolean",
+      "description": "Some entrances have a polarity, for example dungeon entrances and exits.<br>Normally, they're shuffled respecting that polarity, so a dungeon entrance will always lead to the inside of a dungeon, never to a dungeon exit. This option disables that.",
+      "default": false,
+      "condition": "",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erDecoupled",
+      "name": "Decoupled Entrances",
+      "type": "boolean",
+      "description": "Makes the entrances decoupled from the exits.<br>This means that entering and exiting an area does not lead you back to where you came from, but to a different location instead.",
+      "default": false,
+      "condition": "",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erBoss",
+      "name": "Boss Entrance Shuffle",
+      "type": "enum",
+      "description": "Shuffle bosses either within their own game or across both",
+      "default": "none",
+      "condition": "",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erDungeons",
+      "name": "Dungeon Entrance Shuffle",
+      "type": "enum",
+      "description": "Shuffle dungeons either within their own game or across both",
+      "default": "none",
+      "condition": "",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erMajorDungeons",
+      "name": "Shuffle Major Dungeons with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, the boss-containing dungeons and uninverted Stone Tower Temple will be shuffled among dungeons.",
+      "default": false,
+      "condition": "(x: any) => x.erDungeons !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erMinorDungeons",
+      "name": "Shuffle OoT Minor Dungeons with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, Bottom of the Well, Ice Cavern and Gerudo Training Grounds will be shuffled among dungeons.",
+      "default": false,
+      "condition": "(x: any) => hasOoT(x) && x.erDungeons !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erGanonCastle",
+      "name": "Shuffle Ganon's Castle with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, Ganon's Castle will be shuffled among dungeons.",
+      "default": false,
+      "condition": "(x: any) => hasOoT(x) && x.erDungeons !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erGanonTower",
+      "name": "Shuffle Ganon's Tower with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, Ganon's Tower will be shuffled among dungeons.",
+      "default": false,
+      "condition": "(x: any) => hasOoT(x) && x.erDungeons !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erMoon",
+      "name": "Shuffle Clock Tower Roof with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, Clock Tower Roof will be shuffled among dungeons.<br>When paired with another dungeon shuffle, saving is enabled on the Clock Tower Roof, allowing you to leave by warping back to spawn.",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && x.erDungeons !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erSpiderHouses",
+      "name": "Shuffle Spider Houses with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, the Swamp and Ocean Spider Houses will be shuffled among dungeons.",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && x.erDungeons !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erPirateFortress",
+      "name": "Shuffle Pirates' Fortress with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, the main Pirates' Fortress entrance will be shuffled among dungeons.<br>This setting is disabled if the other entrances are shuffled among the overworld.",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && x.erDungeons !== 'none' && ((x.erPiratesWorld && x.erOverworld === 'none') || !x.erPiratesWorld)",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erBeneathWell",
+      "name": "Shuffle Beneath The Well with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, the entrance in Ikana Canyon and the exit in Ikana Castle Exterior will be shuffled among dungeons.",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && x.erDungeons !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erIkanaCastle",
+      "name": "Shuffle Ikana Castle's Interior with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, the main entrance leading into Ikana Castle's Interior will be shuffled among dungeons.",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && x.erDungeons !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erSecretShrine",
+      "name": "Shuffle Secret Shrine with Dungeons",
+      "type": "boolean",
+      "description": "If turned on, Secret Shrine will be shuffled among dungeons.",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && x.erDungeons !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erGrottos",
+      "name": "Grotto Shuffle",
+      "type": "enum",
+      "description": "Shuffle grottos and graves either within their own game or across both",
+      "default": "none",
+      "condition": "",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erIndoors",
+      "name": "Interiors Shuffle",
+      "type": "enum",
+      "description": "Shuffle interiors either within their own game or across both",
+      "default": "none",
+      "condition": "",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erIndoorsMajor",
+      "name": "Shuffle Most Interiors",
+      "type": "boolean",
+      "description": "Shuffle most interiors with each other.",
+      "default": false,
+      "condition": "(x: any) => x.erIndoors !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erIndoorsExtra",
+      "name": "Shuffle Extra Interiors",
+      "type": "boolean",
+      "description": "Shuffle additional, more complex interiors. These include:<br>- OoT: Link's House, Temple of Time, Windmill, Kak Potion Shop<br>- MM: Stock Pot Inn, Astral Observatory/Bombers' Hideout, Swamp Tourist Hut, Ikana Spring Cave, Music Box House<br>- Pirate's Fortress Sewers Exit if Shuffle Pirate Fortress Entrances is enabled",
+      "default": false,
+      "condition": "(x: any) => x.erIndoors !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erIndoorsTelescopes",
+      "name": "Shuffle Telescopes",
+      "type": "boolean",
+      "description": "Shuffle Telescopes (Astral Observatory, Kafei Hideout, Pirate Fortress Sewers) among the interiors.",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && (x.erIndoors !== 'none')",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erIndoorsGameLinks",
+      "name": "Shuffle Mask Shop/Clock Tower Entrances",
+      "type": "boolean",
+      "description": "Shuffle the Mask Shop & Clock Tower entrances among the other indoors.",
+      "default": false,
+      "condition": "(x: any) => hasOoTMM(x) && (x.erIndoors === 'full' && (!x.erMixedIndoors || x.erMixed === 'full'))",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erRegions",
+      "name": "Major Regions Shuffle",
+      "type": "enum",
+      "description": "Shuffle major regions either within their own game or across both. These include:<br>- Every entrance to Hyrule Field except Market<br>- The entrance to Gerudo Fortress from Gerudo Valley<br>- The entrance to Death Mountain from Kakariko<br>- The entrances to the four main regions in MM<br>- The entrance to Romani Ranch",
+      "default": "none",
+      "condition": "(x: any) => x.erOverworld === 'none'",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erRegionsExtra",
+      "name": "Shuffle Market Entrance",
+      "type": "boolean",
+      "description": "Shuffle the entrance from Hyrule Field to Market among the regions.",
+      "default": false,
+      "condition": "(x: any) => hasOoT(x) && x.erRegions !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erRegionsShortcuts",
+      "name": "Shuffle Regional Shortcuts",
+      "type": "boolean",
+      "description": "Shuffles the various shortcuts between regions. These include:<br>- Lost Woods/Goron City<br>- Lost Woods/Zora's River<br>- Zora's Domain/Lake Hylia",
+      "default": false,
+      "condition": "(x: any) => hasOoT(x) && x.erRegions !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erOverworld",
+      "name": "Overworld Shuffle",
+      "type": "enum",
+      "description": "Shuffle every overworld entrance either within their own game or across both",
+      "default": "none",
+      "condition": "(x: any) => x.erRegions === 'none'",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erPiratesWorld",
+      "name": "Shuffle Pirates' Fortress Entrances",
+      "type": "boolean",
+      "description": "Shuffle some entrances within Pirates' Fortress, including the main entrance if Overworld ER is enabled.<br>Shuffle the Sewers exit door if Extra Interiors are enabled.",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && (x.erOverworld !== 'none' || x.erIndoorsExtra)",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erMixed",
+      "name": "Mixed Pools",
+      "type": "enum",
+      "description": "Allow shuffling multiple pools together.",
+      "default": "none",
+      "condition": "",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erMixedDungeons",
+      "name": "Mixed Pools - Dungeons",
+      "type": "boolean",
+      "description": "If turned on, dungeons will be shuffled with other mixed pools.",
+      "default": false,
+      "condition": "(x: any) => x.erMixed !== 'none' && x.erMixed === x.erDungeons",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erMixedGrottos",
+      "name": "Mixed Pools - Grottos",
+      "type": "boolean",
+      "description": "If turned on, grottos will be shuffled with other mixed pools.",
+      "default": false,
+      "condition": "(x: any) => x.erMixed !== 'none' && x.erMixed === x.erGrottos",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erMixedIndoors",
+      "name": "Mixed Pools - Interiors",
+      "type": "boolean",
+      "description": "If turned on, interiors will be shuffled with other mixed pools.",
+      "default": false,
+      "condition": "(x: any) => x.erMixed !== 'none' && x.erMixed === x.erIndoors",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erMixedRegions",
+      "name": "Mixed Pools - Regions",
+      "type": "boolean",
+      "description": "If turned on, regions will be shuffled with other mixed pools.",
+      "default": false,
+      "condition": "(x: any) => x.erMixed !== 'none' && x.erMixed === x.erRegions",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erMixedOverworld",
+      "name": "Mixed Pools - Overworld",
+      "type": "boolean",
+      "description": "If turned on, overworld entrances will be shuffled with other mixed pools.",
+      "default": false,
+      "condition": "(x: any) => x.erMixed !== 'none' && x.erMixed === x.erOverworld",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erSpawns",
+      "name": "Spawn Shuffle",
+      "type": "enum",
+      "description": "Shuffle the starting positions of the player in OoT.",
+      "default": "none",
+      "condition": "hasOoT",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "child",
+          "name": "Child Only",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "adult",
+          "name": "Adult Only",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "both",
+          "name": "Both",
+          "description": "",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erWallmasters",
+      "name": "Wallmaster Shuffle",
+      "type": "enum",
+      "description": "Enables the ability for Wallmasters to take you to random locations within their own game or across both games, based on other entrance settings",
+      "default": "none",
+      "condition": "",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "",
+          "condition": ""
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erWarps",
+      "name": "Warp Songs and Soaring Spots Shuffle",
+      "type": "enum",
+      "description": "Allows separate shuffling of the warp songs and soaring spots. This setting is disabled if both are selected in \"One-Ways Shuffle\".",
+      "default": "none",
+      "condition": "(s: any) => !s.erOneWaysSongs || !s.erOneWaysStatues",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "Warp songs and soaring spots are not shuffled.",
+          "condition": ""
+        },
+        {
+          "value": "ootOnly",
+          "name": "OoT Only",
+          "description": "Shuffles only OoT's warp songs among each other.",
+          "condition": "hasOoT"
+        },
+        {
+          "value": "mmOnly",
+          "name": "MM Only",
+          "description": "Shuffles only MM's soaring spots among each other.",
+          "condition": "hasMM"
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "Shuffles both warp songs and soaring spots within their own game.",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "Shuffles both warp songs and soaring spots together.",
+          "condition": ""
+        }
+      ],
+      "inScope": false
+    },
+    {
+      "key": "erOneWays",
+      "name": "One-Ways Shuffle",
+      "type": "enum",
+      "description": "Enables the option of shuffling various one-way entrances.",
+      "default": "none",
+      "condition": "",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "One-way entrances are not shuffled.",
+          "condition": ""
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "One-way entrances are only shuffled among their own game.",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "One-way entrances can be shuffled among both games.",
+          "condition": ""
+        }
+      ],
+      "inScope": true
+    },
+    {
+      "key": "erOneWaysMajor",
+      "name": "Shuffle Standard One-Ways",
+      "type": "boolean",
+      "description": "Shuffles the Gerudo Valley to Lake Hylia and Ikana Canyon to Southern Swamp entrances.",
+      "default": false,
+      "condition": "(x: any) => x.erOneWays !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erOneWaysIkana",
+      "name": "Shuffle Ikana Castle One-Ways",
+      "type": "boolean",
+      "description": "Shuffles the one-way entrances in Ikana Castle among the others. This is the keg-blocked entrance and the block moved by the switch.",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && x.erOneWays !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erOneWaysSongs",
+      "name": "Shuffle Warp Songs with One-Ways",
+      "type": "boolean",
+      "description": "Shuffles the warp songs from OoT among one-way entrances. This setting is disabled if the warp songs are shuffled with \"Warp Songs and Soaring Spots Shuffle\".",
+      "default": false,
+      "condition": "(x: any) => hasOoT(x) && x.erOneWays !== 'none' && x.erWarps !== 'ootOnly' && x.erWarps !== 'full' && x.erWarps !== 'ownGame'",
+      "values": [],
+      "inScope": false
+    },
+    {
+      "key": "erOneWaysStatues",
+      "name": "Shuffle Soaring Spots with One-Ways",
+      "type": "boolean",
+      "description": "Shuffles the soaring spots from MM among one-way entrances. This setting is disabled if the soaring spots are shuffled with \"Warp Songs and Soaring Spots Shuffle\".",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && x.erOneWays !== 'none' && x.erWarps !== 'mmOnly' && x.erWarps !== 'full' && x.erWarps !== 'ownGame'",
+      "values": [],
+      "inScope": false
+    },
+    {
+      "key": "erOneWaysOwls",
+      "name": "Shuffle Child Owl Flights",
+      "type": "boolean",
+      "description": "Shuffle the two owl flights among one-way entrances.",
+      "default": false,
+      "condition": "(x: any) => hasOoT(x) && x.erOneWays !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erOneWaysWoods",
+      "name": "Shuffle Altered Lost Woods Exits",
+      "type": "boolean",
+      "description": "Shuffle the Lost Woods exits added by the \"Alter Lost Woods Exits\" setting among one-way entrances. ",
+      "default": false,
+      "condition": "(x: any) => hasOoT(x) && x.erOneWays !== 'none' && x.alterLostWoodsExits",
+      "values": [],
+      "inScope": false
+    },
+    {
+      "key": "erOneWaysWaterVoids",
+      "name": "Shuffle the Water Void Points in MM",
+      "type": "boolean",
+      "description": "Shuffle the Water Void points among one-way entrances. These can be found at:<br>- Zora Cape<br>- Great Bay Coast, south of the Pinnacle Rock entrance<br>- Great Bay Coast, north of the Pinnacle Rock entrance<br>- Pinnacle Rock",
+      "default": false,
+      "condition": "(x: any) => hasMM(x) && x.erOneWays !== 'none'",
+      "values": [],
+      "inScope": true
+    },
+    {
+      "key": "erOneWaysAnywhere",
+      "name": "Allow One-Ways to take you elsewhere than other one-ways",
+      "type": "boolean",
+      "description": "Makes it so one-ways can take you to any place also shuffled.<br>This also affects warp songs and soaring spots if they are included in one-ways.",
+      "default": false,
+      "condition": "(x: any) => x.erOneWays !== 'none'",
+      "values": [],
+      "inScope": true
+    }
+  ]
+}

@@ -6,6 +6,10 @@ namespace ComboRando::Entrances {
 inline Settings MmOrdinaryGenerationSettings(bool indoors, bool telescopes, bool overworld, bool dungeons) {
     Settings settings;
     settings.games = Games::Mm;
+    // Preserve the original private v1 generator's pools after the shared model
+    // adopts OoTMM v32.3's false defaults. New unified settings use their own values.
+    settings.erMajorDungeons = true;
+    settings.erIndoorsMajor = true;
     if (indoors || telescopes)
         settings.erIndoors = Mode::OwnGame;
     settings.erIndoorsTelescopes = telescopes;

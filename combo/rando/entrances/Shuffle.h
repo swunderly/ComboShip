@@ -12,10 +12,10 @@
 #include <vector>
 
 namespace ComboRando::Entrances {
-enum class Mode : uint8_t { None, OwnGame, Full };
+enum class Mode : uint8_t { None = 0, OwnGame = 1, Full = 2 };
 enum class Games : uint8_t { Both, Oot, Mm };
 enum class Warps : uint8_t { None, OotOnly, MmOnly, OwnGame, Full };
-enum class Spawns : uint8_t { None, Adult, Child, Both };
+enum class Spawns : uint8_t { None = 0, Child = 1, Adult = 2, Both = 3 };
 enum class Polarity : uint8_t { In, Out, Any };
 
 // New native profile: all entrance extensions are off until the seed enables them.
@@ -27,12 +27,12 @@ struct Settings {
     Mode erMixed = Mode::None, erOneWays = Mode::None, erWallmasters = Mode::None;
     Warps erWarps = Warps::None;
     Spawns erSpawns = Spawns::None;
-    bool erMajorDungeons = true, erMinorDungeons = false;
+    bool erMajorDungeons = false, erMinorDungeons = false;
     bool erGanonCastle = false, erGanonTower = false, erSpiderHouses = false;
     bool erPirateFortress = false, erBeneathWell = false, erIkanaCastle = false;
     bool erSecretShrine = false, erMoon = false;
     bool erRegionsExtra = false, erRegionsShortcuts = false, erPiratesWorld = false;
-    bool erIndoorsMajor = true, erIndoorsExtra = false, erIndoorsTelescopes = false;
+    bool erIndoorsMajor = false, erIndoorsExtra = false, erIndoorsTelescopes = false;
     bool erIndoorsGameLinks = false;
     bool erMixedDungeons = false, erMixedGrottos = false, erMixedRegions = false;
     bool erMixedOverworld = false, erMixedIndoors = false;
