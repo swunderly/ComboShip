@@ -40,7 +40,11 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_ASTRAL_OBSERVATORY_PASSAGE] = RandoRegion{ .name = "Passage", .sceneId = SCENE_TENMON_DAI,
         .checks = {
+#ifdef COMBO_BUILD
+            CHECK(RC_ASTRAL_OBSERVATORY_PASSAGE_CHEST, CAN_USE_EXPLOSIVE && (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA || MM_LOGIC_IS_ADULT)), // clock_town.yml:563
+#else
             CHECK(RC_ASTRAL_OBSERVATORY_PASSAGE_CHEST, CAN_USE_EXPLOSIVE && (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA)),
+#endif
             CHECK(RC_ASTRAL_OBSERVATORY_PASSAGE_POT_01, true),
             CHECK(RC_ASTRAL_OBSERVATORY_PASSAGE_POT_02, true),
             CHECK(RC_ASTRAL_OBSERVATORY_PASSAGE_POT_03, true),

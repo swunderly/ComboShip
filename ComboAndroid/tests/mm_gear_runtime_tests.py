@@ -58,7 +58,8 @@ for term in ('Combo_MM_GearIntegrationEnabled()', 'ComboAdultMM::SaveHasGear(gSa
     check(term in active, f'Combo_MM_GearActive lacks {term}')
 check('kMmGearIntegrationComplete' in body(benport, 'static int Combo_MM_GearIntegrationEnabled(void)'),
       'the gear runtime does not follow its release switch')
-check('returnCombo_MM_IsAdult()&&Combo_MM_AdultResourcesReady();' in body(benport, 'extern "C" int Combo_MM_IsLinkAdult(void)'),
+check('returnCombo_MM_CrossAgeReady();' in body(benport, 'extern "C" int Combo_MM_IsLinkAdult(void)') and
+      'ComboAdultMM::IsCrossAgeAdult(gSaveContext.save)' in body(benport, 'extern "C" int Combo_MM_IsLinkAdult(void)'),
       'Combo_MM_IsLinkAdult is not the adult runtime test')
 settings = read('mm/2s2h/ComboAdultSettings.h')
 check(all(o in body(settings, 'inline bool SaveHasGear(') for o in GEAR), 'SaveHasGear does not read the four gear options')

@@ -4474,7 +4474,17 @@ void Audio_PlaySfx_GiantsMaskUnused(Vec3f* pos, u16 sfxId) {
     AudioSfx_PlaySfx(sfxId | 0xE0, pos, 4, &sGiantsMaskFreq, &gSfxDefaultFreqAndVolScale, &sGiantsMaskReverbAdd);
 }
 
+#ifdef COMBO_BUILD
+extern int Combo_MM_IsLinkAdult(void);
+#endif
 void Audio_PlaySfx_GiantsMask(Vec3f* pos, u16 sfxId) {
+#ifdef COMBO_BUILD
+    // OoTMM plays adult Link's Giant's Mask voice from MM's voice bank 0, as his own voice (actors/Player.c:2088-2097).
+    if (Combo_MM_IsLinkAdult()) {
+        AudioSfx_PlaySfx(sfxId & 0x681F, pos, 4, &sGiantsMaskFreq, &gSfxDefaultFreqAndVolScale, &sGiantsMaskReverbAdd);
+        return;
+    }
+#endif
     AudioSfx_PlaySfx((sfxId & 0x681F) + 0x20, pos, 4, &sGiantsMaskFreq, &gSfxDefaultFreqAndVolScale,
                      &sGiantsMaskReverbAdd);
 }

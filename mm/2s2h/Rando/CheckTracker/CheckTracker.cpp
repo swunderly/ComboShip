@@ -307,6 +307,12 @@ bool CheckTrackerIsFiltered(RandoCheckId randoCheckId) {
 
 std::unordered_map<RandoCheckId, bool> checksInLogic;
 static u32 lastFrame = 0;
+#ifdef COMBO_BUILD
+static bool sChecksInLogicStale = false;
+void Rando::CheckTracker::MarkChecksInLogicStale() {
+    sChecksInLogicStale = true;
+}
+#endif
 
 void RefreshChecksInLogic() {
 #ifdef COMBO_BUILD
@@ -324,6 +330,8 @@ void RefreshChecksInLogic() {
         sLastPeekFrame = frame;
         goto comboPeekRefresh;
     }
+    if (sChecksInLogicStale && gGameState != NULL)
+        lastFrame = gGameState->frames - 20; // past the interval: refresh on this draw
 #endif
     if (gGameState == NULL || gGameState->frames - lastFrame < 20 || CVAR_OUT_OF_LOGIC_MODE == CHECK_MODE_NORMAL) {
         return;
@@ -332,6 +340,7 @@ void RefreshChecksInLogic() {
     lastFrame = gGameState->frames;
 #ifdef COMBO_BUILD
 comboPeekRefresh:;
+    sChecksInLogicStale = false;
 #endif
     Rando::CheckTracker::ComputeChecksInLogic(checksInLogic);
 }

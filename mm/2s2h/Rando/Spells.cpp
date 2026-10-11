@@ -10,7 +10,6 @@
 #include "NativeSpellResources.h"
 #include <array>
 #include <memory>
-extern "C" int Combo_MMFaroreEffectiveHumanAge(void);
 namespace {
 static const ALIGN_ASSET(2) char sComboLoveItemName[] =
     "__OTR__@oot:textures/item_name_static/gNayrusLoveItemNameENGTex";
@@ -50,9 +49,6 @@ void DropSpellResources() {
         invalidate();
 }
 } // namespace
-extern "C" int Combo_MMSpellEffectiveHumanAge() {
-    return Combo_MMFaroreEffectiveHumanAge();
-}
 extern "C" int Combo_MMSpellEnabled(int spell) {
     if (!ComboRando::ComboFaroreIntegrationReady)
         return 0;

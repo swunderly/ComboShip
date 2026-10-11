@@ -163,7 +163,7 @@ void Combo_MMSpellCasting(Player* this, PlayState* play)
             else if (this->av2.actionVar2 == 1)
             {
                 s8 spellSfxIndex = this->av1.actionVar1;
-                if (spellSfxIndex == 2 && (Combo_MMSpellEffectiveHumanAge()==0))
+                if (spellSfxIndex == 2 && Combo_MM_IsLinkAdult())
                 {
                     spellSfxIndex = 3;
                 }

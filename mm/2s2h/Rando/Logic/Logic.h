@@ -393,10 +393,11 @@ bool HasUsableBottle();
                                                           INV_CONTENT(ITEM_MASK_FIERCE_DEITY))                  \
                 : (INV_CONTENT(item) == item)))
 #ifdef COMBO_BUILD
-#define MM_LOGIC_IS_CHILD \
-    ComboRando::MmAgeLogic::IsChild(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, gSaveContext.save.linkAge)
-#define MM_LOGIC_IS_ADULT \
-    ComboRando::MmAgeLogic::IsAdult(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, gSaveContext.save.linkAge)
+// The age the macros_mm.yml:59-62 age terms read. Native MM stores linkAge 0 for its child Link, so a save's linkAge
+// is an age only while its adult state is enabled (ComboAdultMM::IsAdult); every other save is child.
+#define MM_LOGIC_AGE (gSaveContext.save.shipSaveInfo.adultMm.enabled ? gSaveContext.save.linkAge : 1)
+#define MM_LOGIC_IS_CHILD ComboRando::MmAgeLogic::IsChild(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, MM_LOGIC_AGE)
+#define MM_LOGIC_IS_ADULT ComboRando::MmAgeLogic::IsAdult(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, MM_LOGIC_AGE)
 #define MM_LOGIC_IS_TALL ComboRando::MmAgeLogic::IsTall(HAS_ITEM(ITEM_MASK_ZORA), MM_LOGIC_IS_ADULT)
 #define MM_LOGIC_IS_SHORT ComboRando::MmAgeLogic::IsShort(HAS_ITEM(ITEM_MASK_DEKU), MM_LOGIC_IS_CHILD)
 // Pinned stone_tower.yml graph (East.cpp), which splits the temple front from the Soaring top.

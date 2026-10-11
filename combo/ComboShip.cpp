@@ -461,13 +461,16 @@ static FaroreDeparture SOH_TakeDungeonDeparture = nullptr, MM_TakeDungeonDepartu
 static FaroreArrival SOH_SetDungeonArrival = nullptr, MM_SetDungeonArrival = nullptr;
 static void (*SOH_ConfigureFaroreRules)(int, int) = nullptr;
 static void (*MM_ConfigureFaroreRules)(int, int, int) = nullptr;
-static int (*MM_AdultRuntimeReady)() = nullptr;
-// A seed's Cross Age needs MM's adult runtime. While it is unavailable the MM save, pool and oracle keep
-// RO_MM_CROSS_AGE off, so every consumer of the seed's crossAge uses this one effective value.
+// A seed's Cross-Games Age is part of its logic, and generation leaves it off where this device cannot run adult Link
+// in MM (BenPort.cpp Combo_MM_ClearUnavailableOptions). So an existing seed's value holds whatever the device can draw,
+// as in the MM save and oracle; both engines' Farore's Wind and entrance runtimes only need the native integration.
 static bool EffectiveCrossAge(const ComboRando::FaroreRules& rules) {
-    return rules.crossAge && MM_AdultRuntimeReady && MM_AdultRuntimeReady();
+    return rules.crossAge && ComboRando::ComboFaroreIntegrationReady;
 }
 static int (*MM_GearOptionsAllowed)(int) = nullptr;
+// Whether a new seed may turn Cross-Games Age on (BenPort.cpp Combo_MM_CrossAgeOptionReady). Its first answer loads
+// OoT's adult Link and Epona inside a scope on OoT's resource manager, which is for the main thread only.
+static int (*MM_CrossAgeOptionReady)() = nullptr;
 // A seed that adds MM boots or tunics needs MM's gear runtime. A new MM save drops gear this device cannot run
 // (BenPort.cpp MM_InitRandoSaveFile) while the seed's placement may need it, so such a seed is not loaded and no file
 // is made from it. Loading an existing save is never refused; its gear just stays off.
@@ -3136,6 +3139,10 @@ static void Combo_OnGenerateThreaded(const char* inputSeed) {
     g_ComboProgress.done.store(false);
     g_ComboProgress.running.store(true);
     std::string seed(inputSeed ? inputSeed : "");
+    // The worker reads Cross-Games Age readiness wherever MM gathers options. Asking here first makes its one-time load
+    // of OoT's adult Link and Epona happen on the main thread, so the worker only reads the remembered answer.
+    if (MM_CrossAgeOptionReady)
+        MM_CrossAgeOptionReady();
     // RunComboFill clears g_GenerateBusy when it finishes; the finalize gate then blocks re-trigger
     // until the main-thread apply runs. Call RunComboFill directly (busy is already held).
     g_GenerateThread = std::thread([seed]() { RunComboFill(seed, &g_ComboProgress, true); });
@@ -3853,6 +3860,22 @@ static int Combo_FaroreOotAge(int fileNum) {
         return -1;
     return SOH_GetFaroreAge ? SOH_GetFaroreAge(fileNum) : -1;
 }
+// Cross-Games Age (BenPort.cpp Combo_MM_SyncCrossAgeOnEntry): the slot's OoT age, live while OoT has the slot loaded,
+// else the age saved on its OoT page (SaveManager.cpp SaveBase "linkAge"); -1 when neither is known.
+static int Combo_CrossAgeOotAge(int fileNum) {
+    if (!ComboIsValidSlot(fileNum))
+        return -1;
+    const int live = SOH_GetFaroreAge ? SOH_GetFaroreAge(fileNum) : -1;
+    if (live == 0 || live == 1)
+        return live;
+    try {
+        const char* page = Combo_ReadGameSave(ComboRando::GAME_OOT, fileNum);
+        if (!page || !*page)
+            return -1;
+        const auto age = nlohmann::json::parse(page).at("sections").at("base").at("data").at("linkAge");
+        return age.is_number_integer() && (age == 0 || age == 1) ? age.get<int>() : -1;
+    } catch (...) { return -1; }
+}
 static bool BindDormantMmFarore(int fileNum) {
     if (!FaroreSlot(fileNum))
         return false;
@@ -3898,7 +3921,7 @@ static int Combo_PreflightEntranceDeparture(int fileNum, int source, int destina
         (source == 1 && g_pendingOOTReturn))
         return 0;
     // The immutable saved seed owns cross-age policy; the caller cannot enable it
-    // through a current QoL CVar or a song destination. MM adult readiness can only turn it off.
+    // through a current QoL CVar or a song destination. Only a missing native integration turns it off.
     bool savedCrossAge = false;
     try {
         std::lock_guard<std::mutex> lock(g_containerMutex);
@@ -4395,17 +4418,19 @@ int main(int argc, char** argv) {
     MM_SetFaroreArrivalEntrance = (FaroreArrival)GetSym(mmModule, "MM_SetFaroreArrivalEntrance");
     SOH_ConfigureFaroreRules = (void (*)(int, int))GetSym(sohModule, "SOH_ConfigureFaroreRules");
     MM_ConfigureFaroreRules = (void (*)(int, int, int))GetSym(mmModule, "MM_ConfigureFaroreRules");
-    MM_AdultRuntimeReady = (int (*)())GetSym(mmModule, "MM_AdultRuntimeReady");
     MM_GearOptionsAllowed = (int (*)(int))GetSym(mmModule, "MM_GearOptionsAllowed");
+    MM_CrossAgeOptionReady = (int (*)())GetSym(mmModule, "MM_CrossAgeOptionReady");
     if (auto set = (void (*)(FaroreDestination, FaroreSync))GetSym(sohModule, "SOH_SetFaroreBridge"))
         set(Combo_FaroreMmDestination, Combo_FaroreSyncMm);
     if (auto set = (void (*)(int (*)(int), FaroreDestination))GetSym(mmModule, "MM_SetFaroreBridge"))
         set(Combo_FaroreOotAge, Combo_FaroreOotDestination);
+    if (auto set = (void (*)(int (*)(int)))GetSym(mmModule, "MM_SetCrossAgeOotAgeBridge"))
+        set(Combo_CrossAgeOotAge);
     if (auto set = (void (*)(FaroreSync))GetSym(mmModule, "MM_SetFaroreSyncOot"))
         set(Combo_FaroreSyncOot);
     if (auto set =
             (void (*)(int (*)(int), int (*)(int, int), int (*)(int, int)))GetSym(mmModule, "MM_SetFaroreAgeBridge")) {
-        // Each native export preflights exact model, property, equipment and voice eligibility.
+        // The saved MM age and its setter; drawing adult Link is the MM runtime's own check (Combo_MM_IsLinkAdult).
         set((int (*)(int))GetSym(mmModule, "MM_GetEffectiveHumanAge"),
             (int (*)(int, int))GetSym(mmModule, "MM_CanFaroreTransitionAge"),
             (int (*)(int, int))GetSym(mmModule, "MM_ApplyFaroreTransitionAge"));

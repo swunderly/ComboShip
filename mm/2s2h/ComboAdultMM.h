@@ -1,7 +1,8 @@
 #pragma once
 #include "objects/gameplay_keep/gameplay_keep.h"
-// Exact pinned custom/index.ts gameplay dimensions and MM animation bindings.
-// This module does not enable Adult MM: transformation/model resources must be integrated first.
+// Adult Link's human age properties in MM, OoTMM v32.3 sPlayerAgePropertiesAdult field by field
+// (generator/src/mm/actors.c:971-1031). OoTMM's unk_CC[1] address 0x04008360 is not an animation in MM's US
+// gameplay_keep; it is gPlayerAnim_pz_climb_endAR, the animation its own comment names (0xE360).
 namespace ComboAdultMM {
 inline PlayerAgeProperties BuildAdultProperties() {
     PlayerAgeProperties p{};
@@ -15,12 +16,12 @@ inline PlayerAgeProperties BuildAdultProperties() {
     p.unk_1C = 41.0f;
     p.unk_20 = 19.0f;
     p.unk_24 = 36.0f;
-    p.unk_28 = 44.8f;
+    p.unk_28 = 50.0f;
     p.unk_2C = 56.0f;
     p.unk_30 = 68.0f;
     p.unk_34 = 70.0f;
     p.wallCheckRadius = 18.0f;
-    p.unk_3C = 15.0f;
+    p.unk_3C = 23.0f;
     p.unk_40 = 70.0f;
     p.unk_44 = { 9, 0x123F, 0x0167 };
     const Vec3s a[4] = { { 8, 0x1256, 0x017C }, { 9, 0x17EA, 0x0167 }, { 8, 0x1256, 0x017C }, { 9, 0x17EA, 0x0167 } };
@@ -33,31 +34,37 @@ inline PlayerAgeProperties BuildAdultProperties() {
         p.unk_62[i] = b[i];
         p.unk_7A[i] = c[i];
     }
-    p.voiceSfxIdOffset = 0x20;
+    // MM's own voice bank 0, the Fierce Deity's adult voice; no OoT sound.
+    p.voiceSfxIdOffset = 0;
     p.surfaceSfxIdOffset = 0x80;
     p.unk_98 = 22.0f;
     p.unk_9C = 36.0f;
 #define ADULT_ANIM(field, name) p.field = (PlayerAnimationHeader*)&name
-    ADULT_ANIM(openChestAnim, gPlayerAnim_link_demo_Tbox_open);
+    ADULT_ANIM(openChestAnim, gPlayerAnim_pz_Tbox_open);
     ADULT_ANIM(timeTravelStartAnim, gPlayerAnim_link_demo_back_to_past);
     ADULT_ANIM(timeTravelEndAnim, gPlayerAnim_link_demo_return_to_past);
-    ADULT_ANIM(unk_AC, gPlayerAnim_link_normal_climb_startA);
-    ADULT_ANIM(unk_B0, gPlayerAnim_link_normal_climb_startB);
-    ADULT_ANIM(unk_B4[0], gPlayerAnim_link_normal_climb_upL);
-    ADULT_ANIM(unk_B4[1], gPlayerAnim_link_normal_climb_upR);
+    ADULT_ANIM(unk_AC, gPlayerAnim_pz_climb_startA);
+    ADULT_ANIM(unk_B0, gPlayerAnim_pz_climb_startB);
+    ADULT_ANIM(unk_B4[0], gPlayerAnim_pz_climb_upL);
+    ADULT_ANIM(unk_B4[1], gPlayerAnim_pz_climb_upR);
     ADULT_ANIM(unk_B4[2], gPlayerAnim_link_normal_Fclimb_upL);
     ADULT_ANIM(unk_B4[3], gPlayerAnim_link_normal_Fclimb_upR);
     ADULT_ANIM(unk_C4[0], gPlayerAnim_link_normal_Fclimb_sideL);
     ADULT_ANIM(unk_C4[1], gPlayerAnim_link_normal_Fclimb_sideR);
-    ADULT_ANIM(unk_CC[0], gPlayerAnim_link_normal_climb_endAL);
-    ADULT_ANIM(unk_CC[1], gPlayerAnim_link_normal_climb_endAR);
-    ADULT_ANIM(unk_D4[0], gPlayerAnim_link_normal_climb_endBR);
-    ADULT_ANIM(unk_D4[1], gPlayerAnim_link_normal_climb_endBL);
+    ADULT_ANIM(unk_CC[0], gPlayerAnim_pz_climb_endAL);
+    ADULT_ANIM(unk_CC[1], gPlayerAnim_pz_climb_endAR);
+    ADULT_ANIM(unk_D4[0], gPlayerAnim_pz_climb_endBR);
+    ADULT_ANIM(unk_D4[1], gPlayerAnim_pz_climb_endBL);
 #undef ADULT_ANIM
     return p;
 }
 inline bool IsAdult(const Save& save) {
     return save.shipSaveInfo.adultMm.enabled && save.linkAge == 0;
+}
+// Adult in MM as OoTMM's comboIsLinkAdult (common/util.c:74-81): Cross-Games Age on in the seed and adult Link's age
+// saved. adultMm.enabled keeps legacy saves child, which store linkAge 0 for child.
+inline bool IsCrossAgeAdult(const Save& save) {
+    return save.shipSaveInfo.rando.randoSaveOptions[RO_MM_CROSS_AGE] && IsAdult(save);
 }
 inline void InitializeLoadouts(ComboAdultMmSave& state) {
     state.initialized = 1;

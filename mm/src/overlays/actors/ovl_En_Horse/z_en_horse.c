@@ -154,12 +154,17 @@ static f32 sPlaybackSpeeds[ENHORSE_ANIM_MAX] = {
 };
 
 #ifdef COMBO_BUILD
-extern int Combo_MM_IsAdult(void);
-extern int Combo_MM_AdultResourcesReady(void);
+extern int Combo_MM_IsLinkAdult(void);
 extern int Combo_MM_AdultEponaResourcesReady(void);
 extern void* Combo_MM_GetAdultEponaBinding(int index);
 void Combo_MM_ApplyEponaVariantTables(int adult);
 int Combo_MM_IsAdultEponaVariantApplied(void);
+// Adult Link's Epona plays OoT's animations in the cutscene cues too: OoTMM's 38 lui/addiu patches (actors.c:902-939),
+// one numbered reference each (ComboAdultEponaTablesNative.h).
+void* Combo_MM_EponaCsAnimation(s32 reference, const void* childAnimation);
+#define ENHORSE_CS_ANIM(reference, childAnimation) Combo_MM_EponaCsAnimation(reference, childAnimation)
+#else
+#define ENHORSE_CS_ANIM(reference, childAnimation) (childAnimation)
 #endif
 static TexturePtr D_80889204[] = { gEponaEyeOpenTex, gEponaEyeHalfTex, gEponaEyeClosedTex };
 
@@ -731,7 +736,7 @@ void EnHorse_Init(Actor* thisx, PlayState* play2) {
     Skin* skin = &this->skin;
 
 #ifdef COMBO_BUILD
-    Combo_MM_ApplyEponaVariantTables(Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady());
+    Combo_MM_ApplyEponaVariantTables(Combo_MM_IsLinkAdult());
 #endif
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
@@ -3175,8 +3180,9 @@ void func_80883CB0(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
 void func_80883D64(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
     func_80883B70(this, cue);
     this->cueId = 2;
-    Animation_Change(&this->skin.skelAnime, &object_horse_link_child_Anim_00A8DC, 0.0f, 0.0f,
-                     Animation_GetLastFrame(&object_horse_link_child_Anim_00A8DC), ANIMMODE_ONCE, 0.0f);
+    Animation_Change(&this->skin.skelAnime, ENHORSE_CS_ANIM(1, &object_horse_link_child_Anim_00A8DC), 0.0f, 0.0f,
+                     Animation_GetLastFrame(ENHORSE_CS_ANIM(0, &object_horse_link_child_Anim_00A8DC)), ANIMMODE_ONCE,
+                     0.0f);
 }
 
 void func_80883DE0(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
@@ -3186,27 +3192,31 @@ void func_80883DE0(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
 void func_80883E10(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
     func_80883B70(this, cue);
     this->cueId = 3;
-    Animation_Change(&this->skin.skelAnime, &object_horse_link_child_Anim_00A8DC, 1.0f, 0.0f,
-                     Animation_GetLastFrame(&object_horse_link_child_Anim_00A8DC), ANIMMODE_ONCE, -3.0f);
+    Animation_Change(&this->skin.skelAnime, ENHORSE_CS_ANIM(3, &object_horse_link_child_Anim_00A8DC), 1.0f, 0.0f,
+                     Animation_GetLastFrame(ENHORSE_CS_ANIM(2, &object_horse_link_child_Anim_00A8DC)), ANIMMODE_ONCE,
+                     -3.0f);
     Audio_PlaySfx_AtPos(&this->unk_218, NA_SE_EV_KID_HORSE_NEIGH);
 }
 
 void func_80883EA0(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
     if (SkelAnime_Update(&this->skin.skelAnime)) {
-        Animation_Change(&this->skin.skelAnime, &object_horse_link_child_Anim_00B3E0, 1.0f, 11.0f,
-                         Animation_GetLastFrame(&object_horse_link_child_Anim_00B3E0), ANIMMODE_ONCE, 0.0f);
+        Animation_Change(&this->skin.skelAnime, ENHORSE_CS_ANIM(5, &object_horse_link_child_Anim_00B3E0), 1.0f, 11.0f,
+                         Animation_GetLastFrame(ENHORSE_CS_ANIM(4, &object_horse_link_child_Anim_00B3E0)),
+                         ANIMMODE_ONCE, 0.0f);
     }
 }
 
 void func_80883F18(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
     func_80883B70(this, cue);
     this->cueId = 4;
-    Animation_Change(&this->skin.skelAnime, &object_horse_link_child_Anim_00AD08, 1.0f, 0.0f,
-                     Animation_GetLastFrame(&object_horse_link_child_Anim_00AD08), ANIMMODE_ONCE, -3.0f);
+    Animation_Change(&this->skin.skelAnime, ENHORSE_CS_ANIM(7, &object_horse_link_child_Anim_00AD08), 1.0f, 0.0f,
+                     Animation_GetLastFrame(ENHORSE_CS_ANIM(6, &object_horse_link_child_Anim_00AD08)), ANIMMODE_ONCE,
+                     -3.0f);
 }
 
 void func_80883F98(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
-    if (Animation_OnFrame(&this->skin.skelAnime, Animation_GetLastFrame(&object_horse_link_child_Anim_00AD08) - 1.0f)) {
+    if (Animation_OnFrame(&this->skin.skelAnime,
+                          Animation_GetLastFrame(ENHORSE_CS_ANIM(8, &object_horse_link_child_Anim_00AD08)) - 1.0f)) {
         Audio_PlaySfx_AtPos(&this->actor.projectedPos, NA_SE_EV_KID_HORSE_LAND2);
     }
     SkelAnime_Update(&this->skin.skelAnime);
@@ -3251,8 +3261,9 @@ void func_80884314(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
     ActorShape_Init(&this->actor.shape, 0.0f, NULL, 20.0f);
     func_80883B70(this, cue);
     this->cueId = 7;
-    Animation_Change(&this->skin.skelAnime, &object_horse_link_child_Anim_00D178, 1.0f, 0.0f,
-                     Animation_GetLastFrame(&object_horse_link_child_Anim_00D178), ANIMMODE_ONCE, 0.0f);
+    Animation_Change(&this->skin.skelAnime, ENHORSE_CS_ANIM(10, &object_horse_link_child_Anim_00D178), 1.0f, 0.0f,
+                     Animation_GetLastFrame(ENHORSE_CS_ANIM(9, &object_horse_link_child_Anim_00D178)), ANIMMODE_ONCE,
+                     0.0f);
     Audio_PlaySfx_AtPos(&this->unk_218, NA_SE_EV_KID_HORSE_NEIGH);
 }
 
@@ -3270,16 +3281,18 @@ void func_80884444(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
     ActorShape_Init(&this->actor.shape, 0.0f, NULL, 20.0f);
     func_80883B70(this, cue);
     this->cutsceneAction = 8;
-    Animation_Change(&this->skin.skelAnime, &object_horse_link_child_Anim_00D4E8, 1.0f, 0.0f,
-                     Animation_GetLastFrame(&object_horse_link_child_Anim_00D4E8), ANIMMODE_ONCE, 0.0f);
+    Animation_Change(&this->skin.skelAnime, ENHORSE_CS_ANIM(12, &object_horse_link_child_Anim_00D4E8), 1.0f, 0.0f,
+                     Animation_GetLastFrame(ENHORSE_CS_ANIM(11, &object_horse_link_child_Anim_00D4E8)), ANIMMODE_ONCE,
+                     0.0f);
     func_8087C1C0(this);
 }
 
 void func_808844E0(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
     Cutscene_ActorTranslateAndYaw(&this->actor, play, this->cueChannel);
     if (SkelAnime_Update(&this->skin.skelAnime)) {
-        Animation_Change(&this->skin.skelAnime, &object_horse_link_child_Anim_00D4E8, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&object_horse_link_child_Anim_00D4E8), ANIMMODE_ONCE, 0.0f);
+        Animation_Change(&this->skin.skelAnime, ENHORSE_CS_ANIM(14, &object_horse_link_child_Anim_00D4E8), 1.0f, 0.0f,
+                         Animation_GetLastFrame(ENHORSE_CS_ANIM(13, &object_horse_link_child_Anim_00D4E8)),
+                         ANIMMODE_ONCE, 0.0f);
         func_8087C1C0(this);
     }
 }
@@ -3288,16 +3301,18 @@ void func_80884564(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
     ActorShape_Init(&this->actor.shape, 0.0f, NULL, 20.0f);
     func_80883B70(this, cue);
     this->cutsceneAction = 8;
-    Animation_Change(&this->skin.skelAnime, &object_horse_link_child_Anim_00BDE0, 1.0f, 0.0f,
-                     Animation_GetLastFrame(&object_horse_link_child_Anim_00BDE0), ANIMMODE_ONCE, -3.0f);
+    Animation_Change(&this->skin.skelAnime, ENHORSE_CS_ANIM(16, &object_horse_link_child_Anim_00BDE0), 1.0f, 0.0f,
+                     Animation_GetLastFrame(ENHORSE_CS_ANIM(15, &object_horse_link_child_Anim_00BDE0)), ANIMMODE_ONCE,
+                     -3.0f);
     func_8087C1C0(this);
 }
 
 void func_80884604(EnHorse* this, PlayState* play, CsCmdActorCue* cue) {
     Cutscene_ActorTranslateAndYaw(&this->actor, play, this->cueChannel);
     if (SkelAnime_Update(&this->skin.skelAnime)) {
-        Animation_Change(&this->skin.skelAnime, &object_horse_link_child_Anim_00BDE0, 1.0f, 0.0f,
-                         Animation_GetLastFrame(&object_horse_link_child_Anim_00BDE0), ANIMMODE_ONCE, 0.0f);
+        Animation_Change(&this->skin.skelAnime, ENHORSE_CS_ANIM(18, &object_horse_link_child_Anim_00BDE0), 1.0f, 0.0f,
+                         Animation_GetLastFrame(ENHORSE_CS_ANIM(17, &object_horse_link_child_Anim_00BDE0)),
+                         ANIMMODE_ONCE, 0.0f);
     }
 
     if (((s32)this->curFrame % 11) == 0) {

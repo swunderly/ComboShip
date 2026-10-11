@@ -914,7 +914,13 @@ void func_80B94E34(EnZog* this, PlayState* play) {
     }
 
     if (ABS_ALT(this->actor.yawTowardsPlayer - this->actor.world.rot.y) > 0x5000) {
+#ifdef COMBO_BUILD
+        // OoTMM lets adult Link grab Mikau from higher up (generator/src/mm/actors/En/En_Zog.c:85-93).
+        extern int Combo_MM_IsLinkAdult(void);
+        Actor_OfferGetItem(&this->actor, play, GI_NONE, 60.0f, Combo_MM_IsLinkAdult() ? 96.0f : 40.0f);
+#else
         Actor_OfferGetItem(&this->actor, play, GI_NONE, 60.0f, 40.0f);
+#endif
     }
 
     if (this->unk_324 > 0) {

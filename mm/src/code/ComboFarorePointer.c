@@ -2,7 +2,7 @@
 #ifdef COMBO_BUILD
 #include "global.h"
 #include "2s2h/Rando/FaroresWind.h"
-extern int Combo_MMFaroreEffectiveHumanAge(void);
+extern int Combo_MM_IsLinkAdult(void);
 #include "assets/objects/gameplay_keep/gameplay_keep.h"
 static LightInfo D_8015BC00;
 static LightNode* D_8015BC10;
@@ -46,7 +46,7 @@ void Combo_MMFaroreDrawPointer(PlayState* play) {
     params = gSaveContext.respawn[RESPAWN_MODE_HUMAN].data;
 
     if (params && gSaveContext.respawn[RESPAWN_MODE_HUMAN].entrance != COMBO_FARORE_CROSS_ENTRANCE) {
-        f32 yOffset = (Combo_MMFaroreEffectiveHumanAge() == 0) ? 80.0f : 60.0f;
+        f32 yOffset = Combo_MM_IsLinkAdult() ? 80.0f : 60.0f;
         f32 ratio = 1.0f;
         s32 alpha = 255;
         s32 temp = params - 40;

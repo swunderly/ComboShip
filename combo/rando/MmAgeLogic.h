@@ -14,4 +14,13 @@ inline bool IsTall(bool zoraMask, bool adult) {
 inline bool IsShort(bool dekuMask, bool child) {
     return dekuMask || child;
 }
+// Link's MM age at an MM entry (util.c:74-81; MM never changes it, builder.ts:319): with Cross-Games Age active, OoT's
+// age, or the stored age when OoT's is unknown; child otherwise.
+inline int EntryAge(bool active, int ootAge, int storedAge) {
+    if (!active)
+        return 1;
+    if (ootAge == 0 || ootAge == 1)
+        return ootAge;
+    return storedAge == 0 ? 0 : 1;
+}
 } // namespace ComboRando::MmAgeLogic

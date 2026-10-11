@@ -533,6 +533,9 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
     addLink(MenuSearchKind::Setting, "Cross-Games Farore's Wind",
             "farore fw spell warp travel between oot mm cross game world", "randomizer", "Logic & access",
             "Randomizer");
+    addLink(MenuSearchKind::Setting, "Cross-Games Age",
+            "adult link age enter mm as adult majora mask between oot mm cross game world", "randomizer",
+            "Logic & access", "Randomizer");
     addLink(MenuSearchKind::Setting, "Reachability", "guarantee beatable all checks reachable", "randomizer",
             "Logic & access", "Randomizer");
     for (const auto& rule : kGameplayRules) {
@@ -1633,6 +1636,22 @@ void DrawCombinedGoals() {
     MenuTooltip(windMm ? "Controls whether you can use Farore's Wind to warp between OoT and MM."
                        : "Controls whether you can use Farore's Wind to warp between OoT and MM.\n\nRequires Farore's "
                          "Wind (MM) under Items & checks > Majora's Mask.");
+    // OoTMM main.cross crossAge (data.ts:1504-1511). Where this device cannot run adult Link in MM the row is greyed
+    // out and unticked without overwriting the stored preference, and new seeds leave it off (BenPort.cpp
+    // Combo_MM_ClearUnavailableOptions). It is in no preset and has no standalone rule (critique X9).
+    static int (*crossAgeReady)() = nullptr;
+    if (!crossAgeReady)
+        crossAgeReady = (int (*)())Combo_ResolveSym("2ship", "MM_CrossAgeOptionReady");
+    const bool ageReady = crossAgeReady && crossAgeReady();
+    bool crossAge = ageReady && ProfileUI::ReadInteger("gRando.Options.RO_MM_CROSS_AGE", 0) != 0;
+    ImGui::BeginDisabled(!ageReady);
+    if (DrawRuleCheckbox("Cross-Games Age", &crossAge)) {
+        ProfileUI::WriteInteger("gRando.Options.RO_MM_CROSS_AGE", crossAge);
+    }
+    ImGui::EndDisabled();
+    MenuTooltip(ageReady ? "When you enter MM as Adult Link, you will be Adult Link in MM."
+                         : "When you enter MM as Adult Link, you will be Adult Link in MM.\n\nDisabled because this "
+                           "device cannot run Adult Link in MM yet. New seeds leave it off.");
 }
 // Whether MM offers the family's MM option: its MM row is greyed out and unticked where the device cannot run the item,
 // and for the boots and tunics while Swim is shuffled, RO_SHUFFLE_SWIM = RO_GENERIC_YES (1) (2S2H Rando/Menu.cpp

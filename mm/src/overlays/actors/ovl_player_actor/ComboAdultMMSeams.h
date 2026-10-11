@@ -13,7 +13,7 @@ void Combo_MM_CopyAdultProperties(PlayerAgeProperties* out);
 void Combo_MM_DrawAdultMask(PlayState* play,Player* player,int mode);
 PlayerAnimationHeader* Combo_MM_AdultMaskOffAnimation(void);
 void Combo_MM_ApplyAdultGameplayKeep(PlayState* play,int adult);
-void Combo_MM_ApplyAdultModelTables(int adult);
+s32 Combo_MM_ApplyAdultModelTables(s32 adult);
 void Combo_MM_AdultCheckBoots(PlayState* play);
 void EponaAge_ClearReload(void);
 void EponaAge_Request(PlayState* play,int adult);

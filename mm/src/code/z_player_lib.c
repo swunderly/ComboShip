@@ -230,6 +230,15 @@ void func_801229FC(Player* player) {
         if (true) {
             // #endregion
             player->maskObjectLoadState = 0;
+#ifdef COMBO_BUILD
+            // OoTMM fits Keaton, Bunny and Scents to adult Link once the mask has loaded (Player_AfterMaskLoaded,
+            // generator/src/mm/actors/Player.S at 0x80122ab8).
+            if (player->actor.id == ACTOR_PLAYER) {
+                extern int Combo_MM_IsLinkAdult(void);
+                extern void Combo_MM_ApplyAdultMaskScale(s32 mask, s32 adult);
+                Combo_MM_ApplyAdultMaskScale(player->currentMask, Combo_MM_IsLinkAdult());
+            }
+#endif
 
             if (player->currentMask == PLAYER_MASK_GREAT_FAIRY) {
                 s32 i;
@@ -2162,9 +2171,11 @@ void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dL
     }
     sPlayerLod = lod;
 #ifdef COMBO_BUILD
-    // The tunic env colour serves OoT's adult model (Adult Link in MM) and the gear tunics.
+    // The tunic env colour serves OoT's adult model (Adult Link in MM) and the gear tunics. OoT's adult lists take
+    // the tunic colour from env; without a worn gear tunic it is the Kokiri green, OoTMM's MM default (Player.c:1244).
     if (playerForm == PLAYER_FORM_HUMAN && (Combo_MM_GearActive() || Combo_MM_IsLinkAdult())) {
-        const Color_RGB8* color = Combo_MM_GetSavedTunicColor(gSaveContext.save.shipSaveInfo.adultMm.tunic);
+        const Color_RGB8* color =
+            Combo_MM_GetSavedTunicColor(Combo_MM_GearActive() ? gSaveContext.save.shipSaveInfo.adultMm.tunic : 0);
         gDPSetEnvColor(POLY_OPA_DISP++, color->r, color->g, color->b, 255);
     }
     if (playerForm == PLAYER_FORM_HUMAN && actor->id == ACTOR_PLAYER) {
@@ -2823,6 +2834,13 @@ s32 Player_OverrideLimbDrawGameplayDefault(PlayState* play, s32 limbIndex, Gfx**
         }
     }
 
+#ifdef COMBO_BUILD
+    // OoTMM's Player_OverrideLimbDrawGameplayDefault_Custom (generator/src/mm/actors/Player.c:2137-2150) raises adult
+    // Link's root during the Bremen march or cutscene action 108, after the native default override.
+    if (limbIndex == PLAYER_LIMB_ROOT && (player->stateFlags3 & PLAYER_STATE3_20000000) && Combo_MM_IsLinkAdult()) {
+        pos->y += 1280.0f;
+    }
+#endif
     return false;
 }
 
@@ -2849,14 +2867,6 @@ s32 Player_OverrideLimbDrawGameplayFirstPerson(PlayState* play, s32 limbIndex, G
             *dList = NULL;
         }
     }
-
-#ifdef COMBO_BUILD
-    // Pinned Player_OverrideLimbDrawGameplayDefault_Custom runs after the native override.
-    if (limbIndex == PLAYER_LIMB_ROOT && (player->stateFlags3 & PLAYER_STATE3_20000000) && Combo_MM_IsAdult() &&
-        Combo_MM_AdultResourcesReady()) {
-        pos->y += 1280.0f;
-    }
-#endif
     return false;
 }
 
@@ -3925,7 +3935,11 @@ static void Combo_Player_PostLimbDrawGameplayNative(PlayState* play, s32 limbInd
                     Vec3f* var_a0 = &D_801C0D60;
 
                     if (player->transformation == PLAYER_FORM_HUMAN) {
-                        var_a0 = &D_801C0D6C;
+#ifdef COMBO_BUILD
+                        // OoTMM holds adult Link's arrow at the other forms' point (Player.S:865-876).
+                        if (!Combo_MM_IsLinkAdult())
+#endif
+                            var_a0 = &D_801C0D6C;
                     }
 
                     Matrix_MultVec3f(var_a0, &heldActor->world.pos);

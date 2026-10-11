@@ -69,6 +69,8 @@ static Gfx sDiamondModelDL[8] = {
     gsSPEndDisplayList(),
 };
 
+extern int Combo_MM_IsLinkAdult(void);
+
 static f32 ComboMagicDark_GetScale(Player* player) {
     switch (player->transformation) {
         case PLAYER_FORM_FIERCE_DEITY:
@@ -80,7 +82,7 @@ static f32 ComboMagicDark_GetScale(Player* player) {
         case PLAYER_FORM_DEKU:
             return 0.4f;
         case PLAYER_FORM_HUMAN:
-            return (Combo_MMSpellEffectiveHumanAge() == 0) ? 0.6f : 0.4f;
+            return Combo_MM_IsLinkAdult() ? 0.6f : 0.4f;
     }
     return 0.0f;
 }

@@ -2148,3 +2148,60 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
 - **Not copied:** the MM pause-menu item descriptions (2S2H rando suppresses the descriptions of all trade slots;
   owner decision), OoTMM's OoT file-select MM equipment icons, scales, and the tricks that need the Megaton Hammer or
   Strength 3 in MM (not authorized). The shared tunic text keeps OoTMM's "into two items" wording.
+
+## Cross-Games Age: Adult Link in MM (OoTMM `crossAge`) (2026-10-11)
+
+"Cross-Games Age" copies OoTMM v32.3 (setting `packages/core/src/settings/data.ts:1504-1511`, logic
+`data/macros/macros_mm.yml:59-62` and the `is_adult`/`is_child` lines of `data/world/mm`, runtime
+`packages/generator/src/mm/actors.c:901-1031`, `src/mm/actors/Player.c`, `src/common/util.c:74-81`). Feature plan
+`tooling/claude-cleanup/feature-plans/F5b-oot-model.md`. Where the port differs from OoTMM:
+
+- **OoT's own model, not OoTMM's.** Owner ruling: adult Link is OoT's `objects/object_link_boy/gLinkAdultSkel` and
+  Epona OoT's `objects/object_horse/gEponaSkel`, both from the OoT archive the app already extracts; OoTMM's
+  `mm_adult_link.zobj` is not used and nothing is imported or copied to the phone. MM draws them through MM-owned
+  shadow skeletons whose limbs route their display lists to OoT (`"__OTR__@oot:"`); OoT's cached resources are only
+  read (`ComboAdultModelResources.h`, `ComboAdultEponaResources.h`). Skeletons load only inside
+  `Ship::ResourceManagerScope(oot)`, resource types are compared by `GetInitData()->Type`, and teardown puts MM's child
+  tables back before releasing anything. OoTMM's `mm_adult_epona.zobj` is OoT's `object_horse` byte for byte, so
+  Epona matches OoTMM; its 53 patch pairs are typed changes in En_Horse (`fixtures/ootmm-32.3-mm-adult-epona.json`).
+  The order of the two cutscene animation references inside each En_Horse cue function is inferred from OoTMM's
+  patch spacing, not disassembled; it only matters for cue 2, which holds rearing frame 0 either way.
+- **Items in adult hands.** OoTMM's model carries adult-size MM swords, shields, bow and hookshot. The port puts MM's
+  own child-size items in OoT's adult hands (lead decision D1, OoTMM's own technique on its OoT side), built at
+  runtime as [OoT hand, MM item] lists (near hand for the near LOD, far hand for the far one). MM's bow string and
+  hookshot chain stay (D2). Sheaths, shields on the back and sheathed swords stay MM's child ones. The first-person
+  left forearm draws nothing, as in OoTMM; MM never draws a first-person right forearm, so a gap between shoulder and
+  hand is possible when aiming (D8, open).
+- **Face and tunic.** Eyes and mouths are OoT's adult textures, index for index with MM's rows (OoTMM's model has its
+  own). The tunic is OoTMM's Kokiri green (30,105,27) unless a Goron or Zora Tunic (MM) is worn; 2S2H's tunic cosmetic
+  does not reach OoT's model.
+- **Animations and values.** Age properties are OoTMM's field by field, except one: OoTMM's `0x04008360` is not an
+  animation in MM US gameplay_keep, so `gPlayerAnim_pz_climb_endAR` (the animation OoTMM's comment names) is used.
+  Voice: OoTMM's adult `voiceSfxIdOffset` 0 is MM's own adult voice bank (the Fierce Deity's), and the Giant's Mask
+  voice drops 0x20 as in OoTMM; both are native MM sounds. The dormant OoT hybrid voice stays off. The Giant's Mask
+  voice change sits inside `Audio_PlaySfx_GiantsMask`. The Ice Arrow platform's adult heights (0.20, 0.13 on melting)
+  apply to adult Link only, so child is unchanged (OoTMM writes 0.13 for child too).
+- **Masks and spin attack.** Keaton, Bunny and Scents get OoTMM's 1.25 scale through a command walker that skips the
+  port's two-slot marker and 128-bit commands; it is applied at the end of Player's mask load and at Player_Init,
+  because the port keeps mask lists cached. The adult spin attack scales MM's own gameplay_keep vertices by OoTMM's
+  factors at runtime (D3); 344 of 354 coordinates equal OoTMM's files and 10 differ by 1.
+- **Age state.** OoTMM reads OoT's age on every MM use (`comboIsLinkAdult`). The port copies OoT's age into MM's
+  saved age at each MM entry (`Combo_MM_SyncCrossAgeOnEntry`, title_setup.c, after the arrival is resolved and
+  before the save-load hooks), taken from the live OoT save, or from the slot's OoT page when OoT has not loaded it.
+  A new file starts as child. While the adult state is enabled, MM's native `LINK_IS_CHILD`/`LINK_IS_ADULT` remnants
+  keep MM's "always adult" reading (`z64save.h`), since OoTMM never changes MM's own age. While OoT is the active
+  game, MM's tracker peek uses the age of the last MM entry.
+- **Device readiness.** OoTMM has no device check. Where the runtime is not released (`kCrossAgeRuntimeComplete`,
+  BenPort.cpp) or OoT's adult model or Epona cannot be prepared, the menu row is greyed out and unticked (its tooltip
+  adds "Disabled because this device cannot run Adult Link in MM yet. New seeds leave it off." after OoTMM's text,
+  D6) and every place options are gathered leaves the option off, except a bound seed's own value. A seed's value is
+  its logic whatever the device: a Cross-Games Age save on a device that cannot draw adult Link loads, follows the
+  seed's logic and draws Link as child. The headless generator follows the release switch. A diagnostics build can
+  turn the runtime on with `gCombo.Debug.CrossAgeRuntimeValidation`.
+- **Menu.** The row follows Cross-Games Farore's Wind (OoTMM's `data.ts` lists `crossAge` first). It is in no
+  preset and has no standalone enhancement (critique X9, D7).
+- **Logic receipt.** `ComboAndroid/tests/fixtures/ootmm-32.3-mm-age-lines.json` maps all 85 v32.3 MM age lines (84
+  world lines and `cross_poison_swamp`, `macros_mm.yml:260`). 11 have no fork statement: three JP-only Deku Palace
+  lines and the US stub at `deku_palace.yml:26`, Zora Cape Rock Island 1-5 (the fork has no rock checks), and two
+  lines behind tricks the fork does not have (`great_bay_temple.yml:106`, `southern_swamp.yml:171`). The Deku Palace
+  `is_child` rupees map to RC_DEKU_PALACE_FREESTANDING_RUPEE_09-11 and 13-18 as a group.

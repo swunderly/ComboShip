@@ -14,6 +14,12 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ## Unreleased
 
+- **New option: Cross-Games Age**, under Randomizer > Logic & access > World access, after Cross-Games Farore's Wind, with OoTMM v32.3's name and description: "When you enter MM as Adult Link, you will be Adult Link in MM." It is off by default, in no preset, and only affects newly generated seeds. It has not been played on a phone yet.
+  - Adult Link in MM is OoT's own adult Link, read from the OoT game data the app already extracted from your ROM. Nothing extra is installed or copied to the phone. He rides OoT's own adult Epona.
+  - He holds MM's own swords, shields, bow and hookshot in his hands. As in OoTMM, he gets adult height, sword reach, climbing, door and chest animations, a larger spin attack, and Keaton, Bunny and Scents masks sized to fit.
+  - Link has the age he left OoT with each time he enters MM, whether by Soaring, the Mask Shop, Farore's Wind or loading a save. A new file starts as child, and the item tracker updates as soon as his age changes.
+  - MM logic counts adult Link where OoTMM does, including a few spots in the Astral Observatory and Snowhead Temple. Seeds without the option are unchanged.
+  - If the app cannot prepare OoT's adult Link or Epona on your device, the option is greyed out and unticked, and new seeds leave it off. A save made with it still loads; Link is then drawn as child.
 - **New options: Iron Boots (MM), Hover Boots (MM), Goron Tunic (MM) and Zora Tunic (MM)**, under Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items, after Nayru's Love (MM), with OoTMM v32.3's names and descriptions. Each adds that OoT item to MM's item pool, and child Link wears it, as in OoTMM. All four are off by default and only affect newly generated seeds. If the app cannot prepare them on your device, the options are greyed out and new seeds leave them out. They are also greyed out while Swim is shuffled, because their OoTMM logic does not yet know about the Swim item. A seed made elsewhere that adds them is not loaded on a device that cannot run them, so no file loses items its seed relies on. They have not been played on a phone yet.
   - Choose them in the pause menu's trade item slots the same way as Farore's Wind and Nayru's Love: the Iron Boots and Goron Tunic share Farore's Wind's slot, the Hover Boots and Zora Tunic share Nayru's Love's.
   - Put one on or take it off from a C button in human form. Transforming with a mask takes the boots and tunic off.
@@ -29,6 +35,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 Tested:
 - 75 automated host tests pass (3 are skipped on Windows). They check the four options, their shared items and the new tricks against OoTMM v32.3, every changed logic line against OoTMM's, that MM logic is unchanged with the boots and tunics off, that the options are off wherever the device cannot run them, that a save keeps its seed's choice, and that saves from earlier versions load. The boots and tunics have not been built into an APK, generated or played on the emulator, or tried on a phone yet.
+- With Cross-Games Age added, 82 automated host tests pass (3 are skipped on Windows). The new ones check its menu row, text and readiness, every OoTMM v32.3 MM age line, the age copied in on each MM entry, OoTMM's adult values for Link, the parts of OoT's adult Link and Epona that are used, all 53 of OoTMM's adult Epona changes, and that saves from earlier versions and Cross-Games Age saves load. Two of them also read the OoT and MM data extracted from the developer's own ROMs. Cross-Games Age has not been built into an APK, run on the emulator, or tried on a phone yet.
 
 ## 0.4.1 - 2026-10-11
 

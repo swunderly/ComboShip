@@ -601,8 +601,15 @@ typedef enum {
 
 // linkAge still exists in MM, but is always set to 0 (always adult)
 // There are remnants of these macros from OOT, but they are essentially useless
+#ifdef COMBO_BUILD
+// ComboShip: Cross-Games Age keeps OoT's age in linkAge while the appended adult state is enabled (1 child, 0 adult).
+// OoTMM leaves MM's own age alone (util.c:74-81), so these native remnants keep MM's "always adult" reading.
+#define LINK_IS_CHILD (gSaveContext.save.linkAge == 1 && !gSaveContext.save.shipSaveInfo.adultMm.enabled)
+#define LINK_IS_ADULT (gSaveContext.save.linkAge == 0 || gSaveContext.save.shipSaveInfo.adultMm.enabled)
+#else
 #define LINK_IS_CHILD (gSaveContext.save.linkAge == 1)
 #define LINK_IS_ADULT (gSaveContext.save.linkAge == 0)
+#endif
 
 #define YEARS_CHILD 5
 #define YEARS_ADULT 17

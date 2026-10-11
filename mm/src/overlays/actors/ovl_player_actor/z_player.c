@@ -7854,7 +7854,7 @@ void func_8083827C(Player* this, PlayState* play) {
 }
 
 #ifdef COMBO_BUILD
-extern int Combo_MM_IsAdult(void);
+extern int Combo_MM_IsLinkAdult(void);
 #endif
 s32 func_8083868C(PlayState* play, Player* this) {
     s32 camMode;
@@ -7867,7 +7867,7 @@ s32 func_8083868C(PlayState* play, Player* this) {
                 // Pinned Player_GetItemCamMode: swimming Hookshot or Adult human uses Bow mode.
                 camMode =
                     ((this->heldItemAction == PLAYER_IA_HOOKSHOT && (this->stateFlags1 & PLAYER_STATE1_8000000)) ||
-                     (Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady()))
+                     Combo_MM_IsLinkAdult())
                         ? CAM_MODE_BOWARROW
                         : CAM_MODE_SLINGSHOT;
 #else
@@ -11467,12 +11467,13 @@ Color_RGBA8 D_8085D338 = { 0, 0, 15, 100 };
 Color_RGBA8 D_8085D33C = { 0, 0, 0, 150 };
 
 #ifdef COMBO_BUILD
-extern int Combo_MM_IsAdult(void);
+extern int Combo_MM_IsLinkAdult(void);
 extern int Combo_MM_AdultResourcesReady(void);
 extern void Combo_MM_ApplyAdultGearInventoryResources(int enabled);
 extern void Combo_MM_ApplyAdultOverlayAge(int adult);
-extern void Combo_MM_ApplyAdultModelTables(int adult);
+extern s32 Combo_MM_ApplyAdultModelTables(s32 adult);
 extern void Combo_MM_ApplyAdultGameplayKeep(PlayState* play, int adult);
+extern void Combo_MM_ApplyAdultMaskScale(s32 mask, s32 adult);
 extern void Combo_MM_ApplyAdultMaskInventoryResources(int enabled);
 #endif
 
@@ -11565,10 +11566,11 @@ void Player_Init(Actor* thisx, PlayState* play) {
     // Commit exact human model/property resources before native equipment and skeleton init.
     // Other forms retain their original tables; legacy saves remain native child MM.
     {
-        int adult = Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady();
+        // The tables report whether the adult model could be drawn; without it Link stays child throughout.
+        int adult = Combo_MM_ApplyAdultModelTables(Combo_MM_IsLinkAdult());
         Combo_MM_ApplyAdultOverlayAge(adult);
-        Combo_MM_ApplyAdultModelTables(adult);
         Combo_MM_ApplyAdultGameplayKeep(play, adult);
+        Combo_MM_ApplyAdultMaskScale(this->currentMask, adult);
         Combo_MM_ApplyAdultMaskInventoryResources(gSaveContext.save.shipSaveInfo.adultMm.enabled &&
                                                   Combo_MM_AdultResourcesReady());
         Combo_MM_ApplyAdultGearInventoryResources(Combo_MM_GearActive());
@@ -22089,5 +22091,6 @@ s32 func_8085B930(PlayState* play, PlayerAnimationHeader* talkAnim, AnimationMod
 #include "ComboSpellPlayer.inc.h"
 
 #ifdef COMBO_BUILD
+#include "ComboAdultAgeNative.h"
 #include "ComboAdultMaskNative.h"
 #endif

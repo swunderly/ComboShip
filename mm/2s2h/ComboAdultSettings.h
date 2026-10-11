@@ -1,8 +1,9 @@
 #pragma once
 #include "ComboAdultMM.h"
-// Save-only seed bootstrap. Runtime caller must preflight full resources before calling.
-// OoTMM development commit 41a2b7c0 (not in v32.3): startingAgeMm is independent of adultMaskMm;
-// raw ages 0 adult/1 child.
+// Save-only seed bootstrap; raw ages 0 adult/1 child. OoTMM v32.3 Cross-Games Age (crossAge) only stores an age: Link
+// is child until an MM entry copies OoT's age in (util.c:74-81), and MM never changes it or swaps loadouts
+// (builder.ts:319). The Adult Mask and MM starting age of OoTMM development commit 41a2b7c0 (not in v32.3) also swap
+// loadouts, so their runtime caller must preflight full resources before calling.
 namespace ComboAdultMM {
 inline bool ConfigureSeedAge(Save& save, int startingAge, bool maskEnabled, bool crossAge) {
     if (startingAge < 0 || startingAge > 1)
@@ -23,6 +24,8 @@ inline bool ConfigureSeedAge(Save& save, int startingAge, bool maskEnabled, bool
     save.linkAge = 1;
     state.enabled = 1;
     state.maskEnabled = maskEnabled;
+    if (!maskEnabled && startingAge == 1)
+        return true; // Cross-Games Age alone: child, loadouts untouched
     state.boots = state.tunic = state.customMask = 0;
     InitializeLoadouts(state);
     return SwapHumanLoadout(save, (u8)startingAge);
