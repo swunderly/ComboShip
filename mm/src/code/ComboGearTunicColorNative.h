@@ -37,8 +37,15 @@ static Color_RGB8 Combo_MM_GetGearTunicColor(s32 tunic) {
     return base;
 }
 
-// tunic: the worn gear tunic (2 Goron, 3 Zora) or 0. Patches only authentic combiners: custom models and alt assets
-// keep their own colours.
+// The command at a combiner site, or NULL for a custom or shorter list (custom models keep their own colours).
+static const Gfx* Combo_MM_GearTunicSite(s32 i) {
+    if (ResourceGetIsCustomByName(sComboGearTunicDLs[i]) ||
+        ResourceGetSizeByName(sComboGearTunicDLs[i]) <= sComboGearTunicIndices[i] * sizeof(Gfx))
+        return NULL;
+    return &ResourceMgr_LoadGfxByName(sComboGearTunicDLs[i])[sComboGearTunicIndices[i]];
+}
+
+// tunic: the worn gear tunic (2 Goron, 3 Zora) or 0. Patches only authentic combiners.
 static void Combo_MM_SyncGearTunicColor(s32 tunic) {
     const Gfx call = gsSPDisplayList(sComboGearTunicDL);
     const s32 want = tunic == 2 || tunic == 3;
@@ -48,9 +55,8 @@ static void Combo_MM_SyncGearTunicColor(s32 tunic) {
         sComboGearTunicDL[1] = env;
         // A resource reload or a cosmetic reset drops the patch; check one site each frame.
         if (sComboGearTunicPatched) {
-            const Gfx* dl = ResourceMgr_LoadGfxByName(sComboGearTunicDLs[0]);
-            if (dl[sComboGearTunicIndices[0]].words.w0 != call.words.w0 ||
-                dl[sComboGearTunicIndices[0]].words.w1 != call.words.w1)
+            const Gfx* cmd = Combo_MM_GearTunicSite(0);
+            if (cmd == NULL || cmd->words.w0 != call.words.w0 || cmd->words.w1 != call.words.w1)
                 sComboGearTunicPatched = 0;
         }
     }
@@ -61,10 +67,9 @@ static void Combo_MM_SyncGearTunicColor(s32 tunic) {
             ResourceMgr_UnpatchGfxByName(sComboGearTunicDLs[i], sComboGearTunicPatches[i]);
             continue;
         }
-        const Gfx* dl = ResourceMgr_LoadGfxByName(sComboGearTunicDLs[i]);
-        const Gfx* cmd = &dl[sComboGearTunicIndices[i]];
-        if (((u32)cmd->words.w0 == 0xFC11FE04 && (u32)cmd->words.w1 == 0xFFFFF3F8) ||
-            (cmd->words.w0 == call.words.w0 && cmd->words.w1 == call.words.w1))
+        const Gfx* cmd = Combo_MM_GearTunicSite(i);
+        if (cmd != NULL && (((u32)cmd->words.w0 == 0xFC11FE04 && (u32)cmd->words.w1 == 0xFFFFF3F8) ||
+                            (cmd->words.w0 == call.words.w0 && cmd->words.w1 == call.words.w1)))
             ResourceMgr_PatchGfxByName(sComboGearTunicDLs[i], sComboGearTunicPatches[i], sComboGearTunicIndices[i],
                                        call);
     }
