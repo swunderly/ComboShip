@@ -1,0 +1,4416 @@
+{
+ "commit": "413573d22d1d53e8a81931a70927f625b73488b9",
+ "base": "84a778f9",
+ "note": "Receipt of plan F2 B6/B7 (fix/F3-mm-gear-logic): OoTMM v32.3 MM lines with a gear term and the fork statements that carry it. before = the statement at the base commit, after = the COMBO_BUILD statement now; changedDefines holds the base bodies of the file macros that changed.",
+ "newTricks": [
+  "Tunics",
+  "GyorgIrons",
+  "WfShrineHovers",
+  "WftLobbyHovers",
+  "SoaringHovers",
+  "PathSnowheadHovers",
+  "GbtWaterwheelHovers",
+  "GbtCenterPotIrons",
+  "GbtRed1Hovers",
+  "GbtGreen2UpperHovers",
+  "SttLavaBlockHovers",
+  "IsttEntryHover",
+  "StUpdrafts"
+ ],
+ "nonGearTricks": [
+  "StUpdrafts"
+ ],
+ "hiddenBefore": [
+  "LullabySkipIrons",
+  "ZoraHallScrubNoDeku",
+  "RanchFarore",
+  "GbtCentralGeyser"
+ ],
+ "hiddenAfter": [
+  "ZoraHallScrubNoDeku",
+  "RanchFarore",
+  "GbtCentralGeyser"
+ ],
+ "changedDefines": {
+  "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp": {
+   "COMBO_WORLD48_UW": "MM_LOGIC_UNDERWATER_WALKING_STRICT"
+  },
+  "mm/2s2h/Rando/Logic/Regions/West.cpp": {
+   "COMBO_WORLD54_PENINSULA": "((CAN_USE_ABILITY(SWIM) && (MM_LOGIC_UNDERWATER_WALKING_STRICT || CAN_USE_NAYRUS_LOVE)) || (CAN_USE_MAGIC_ARROW(ICE) && CAN_SUPPLY_CHATEAU))"
+  }
+ },
+ "tricks": [
+  {
+   "key": "MM_LULLABY_SKIP_IRONS",
+   "fork": "gCombo.Tricks.MM.LullabySkipIrons",
+   "id": 15,
+   "name": "Skip playing Goron Lullaby by using Iron Boots",
+   "tooltip": "By combining Iron Boots to not be blown away by the wind and Goron to roll up the slope, Goron Lullaby can be skipped."
+  },
+  {
+   "key": "MM_TUNICS",
+   "fork": "gCombo.Tricks.MM.Tunics",
+   "id": 19,
+   "name": "Fewer Tunic Requirements (MM)",
+   "tooltip": "Most things that would normally require Zora Tunic no longer will. Pirate Fortress Sewers and Pinnacle Rock will still require it."
+  },
+  {
+   "key": "MM_GYORG_IRONS",
+   "fork": "gCombo.Tricks.MM.GyorgIrons",
+   "id": 20,
+   "name": "Fight Gyorg as Human using Iron Boots and Hookshot",
+   "tooltip": "Gyorg can be damaged with Hookshot. Turning this trick on will enable the fight in logic with Iron Boots and Hookshot."
+  },
+  {
+   "key": "MM_WF_SHRINE_HOVERS",
+   "fork": "gCombo.Tricks.MM.WfShrineHovers",
+   "id": 21,
+   "name": "Woodfall Owl Chest with Hover Boots and Jump Slash",
+   "tooltip": "The chest can be reached with a tight jump slash at the end of the hover duration."
+  },
+  {
+   "key": "MM_WFT_LOBBY_HOVERS",
+   "fork": "gCombo.Tricks.MM.WftLobbyHovers",
+   "id": 22,
+   "name": "Woodfall Temple Lobby with Damage Boost and Hover Boots",
+   "tooltip": "The lobby can be traversed by damaging yourself with bombs at certain points. Very difficult."
+  },
+  {
+   "key": "MM_SOARING_HOVERS",
+   "fork": "gCombo.Tricks.MM.SoaringHovers",
+   "id": 23,
+   "name": "Jump Slash or Damage Boost to the Soaring Tablet with Hover Boots and Bunny Hood",
+   "tooltip": "Using Bunny Hood for extra speed, Hover Boots can be used to reach the Soaring Tablet with a tight jump slash or a damage boost with explosives."
+  },
+  {
+   "key": "MM_PATH_SNOWHEAD_HOVERS",
+   "fork": "gCombo.Tricks.MM.PathSnowheadHovers",
+   "id": 24,
+   "name": "Cross Path to Snowhead using Hover Boots",
+   "tooltip": "Hover Boots can be used to slide off the slopes on the side and get across the gaps."
+  },
+  {
+   "key": "MM_GBT_WATERWHEEL_HOVERS",
+   "fork": "gCombo.Tricks.MM.GbtWaterwheelHovers",
+   "id": 25,
+   "name": "Cross GBT Waterwheel Room using Hover Boots",
+   "tooltip": "Similar to using Goron, Hover Boots can be used to get on the water wheel and then reach the central room."
+  },
+  {
+   "key": "MM_GBT_CENTER_POT_IRONS",
+   "fork": "gCombo.Tricks.MM.GbtCenterPotIrons",
+   "id": 26,
+   "name": "Great Bay Temple Center Underwater Pot using only Iron Boots",
+   "tooltip": "The pot can be broken by rolling into it, allowing you to collect the Stray Fairy."
+  },
+  {
+   "key": "MM_GBT_RED1_HOVERS",
+   "fork": "gCombo.Tricks.MM.GbtRed1Hovers",
+   "id": 27,
+   "name": "Reach the First Red Turnkey in GBT using Hover Boots, Bunny Hood, and a Jump Slash",
+   "tooltip": "The red turnkey in front of Wart can be reached with a precise jump slash after the hover duration, using Bunny Hood for extra speed."
+  },
+  {
+   "key": "MM_GBT_GREEN2_UPPER_HOVERS",
+   "fork": "gCombo.Tricks.MM.GbtGreen2UpperHovers",
+   "id": 28,
+   "name": "Reach the Upper Chest in GBT's Second Green Room using Hover Boots",
+   "tooltip": "The upper chest in the green water wheel room can be reached by using Hover Boots to move between the wheel's blades."
+  },
+  {
+   "key": "MM_STT_LAVA_BLOCK_HOVERS",
+   "fork": "gCombo.Tricks.MM.SttLavaBlockHovers",
+   "id": 29,
+   "name": "Stone Tower Temple Map Chest using Hover Boots",
+   "tooltip": "After using the Hookshot to reach the chest on the high platform in the lava room, one can then use the Hover Boots to land on top of the sun block."
+  },
+  {
+   "key": "MM_ISTT_ENTRY_HOVER",
+   "fork": "gCombo.Tricks.MM.IsttEntryHover",
+   "id": 30,
+   "name": "Inverted Stone Tower Temple Death Armos using Hover Boots and Bunny Hood",
+   "tooltip": "The Death Armos switch can be reached by using the Hover Boots and then sidehopping onto the platform, with Bunny Hood for extra speed."
+  },
+  {
+   "key": "MM_ST_UPDRAFTS",
+   "fork": "gCombo.Tricks.MM.StUpdrafts",
+   "id": 31,
+   "name": "Stone Tower Updrafts without Deku Mask",
+   "tooltip": "This room can be traversed using Recoil Flips or Goron Mask instead of Deku Mask."
+  }
+ ],
+ "macros": [
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "ootmm": "data/macros/macros_mm.yml:74",
+   "expects": [
+    "setting(tunicGoronMm) && has_tunic_goron_raw"
+   ],
+   "text": "#define MM_LOGIC_HAS_GORON_TUNIC_STRICT (RANDO_SAVE_OPTIONS[RO_MM_TUNIC_GORON] && HAS_ITEM(ITEM_COMBO_TUNIC_GORON))"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "ootmm": "data/macros/macros_mm.yml:75",
+   "expects": [
+    "setting(tunicZoraMm) && has_tunic_zora_raw"
+   ],
+   "text": "#define MM_LOGIC_HAS_ZORA_TUNIC_STRICT (RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA] && HAS_ITEM(ITEM_COMBO_TUNIC_ZORA))"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "ootmm": "data/macros/macros_mm.yml:76",
+   "expects": [
+    "has_tunic_goron_strict || trick(MM_TUNICS)"
+   ],
+   "text": "#define MM_LOGIC_HAS_GORON_TUNIC (MM_LOGIC_HAS_GORON_TUNIC_STRICT || COMBO_MM_TRICK(\"Tunics\"))"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "ootmm": "data/macros/macros_mm.yml:77",
+   "expects": [
+    "has_tunic_zora_strict || trick(MM_TUNICS)"
+   ],
+   "text": "#define MM_LOGIC_HAS_ZORA_TUNIC (MM_LOGIC_HAS_ZORA_TUNIC_STRICT || COMBO_MM_TRICK(\"Tunics\"))"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "ootmm": "data/macros/macros_mm.yml:84",
+   "expects": [
+    "can_swim || has_iron_boots"
+   ],
+   "text": "#define MM_LOGIC_CAN_SWIM_OR_SINK (CAN_USE_ABILITY(SWIM) || MM_LOGIC_HAS_IRON_BOOTS)"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "ootmm": "data/macros/macros_mm.yml:258",
+   "expects": [
+    "has_mask_zora || (has_tunic_zora && has_iron_boots)"
+   ],
+   "text": "#define MM_LOGIC_UNDERWATER_WALKING (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_ZORA_TUNIC && MM_LOGIC_HAS_IRON_BOOTS))"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "ootmm": "data/macros/macros_mm.yml:259",
+   "expects": [
+    "has_mask_zora || (has_tunic_zora_strict && has_iron_boots)"
+   ],
+   "text": "#define MM_LOGIC_UNDERWATER_WALKING_STRICT (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT))"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/MmSwampContexts.inc.h",
+   "ootmm": "data/macros/macros_mm.yml:260",
+   "expects": [
+    "is_tall || has_mask_goron || (can_swim && (is_swamp_cleared || can_use_nayru)) || has_iron_boots"
+   ],
+   "text": "return MM_LOGIC_IS_TALL || CAN_BE_GORON || (MmSwampCanSwim() && (NativeMmSwampCleared() || CAN_USE_NAYRUS_LOVE)) || MM_LOGIC_HAS_IRON_BOOTS;"
+  },
+  {
+   "file": "combo/rando/MmCombatRules.h",
+   "ootmm": "data/macros/macros_mm.yml:399",
+   "expects": [
+    "(has_iron_boots && has_tunic_zora_strict && can_hookshot_short && trick(MM_GYORG_IRONS))"
+   ],
+   "text": "((c.magic && ((c.zora && (c.arrows || false)) || c.deity)) || (c.ironBoots && c.zoraTunicStrict && c.hookshot && c.gyorgIrons));"
+  },
+  {
+   "file": "combo/rando/MmCombatRules.h",
+   "ootmm": "data/macros/macros_mm.yml:351",
+   "expects": [
+    "(has_mask_zora || (has_iron_boots && can_hookshot_short))"
+   ],
+   "text": "inline bool can_kill_shell_blades_underwater(const MmCombatCapabilities& c) { return true && (c.zora || (c.ironBoots && c.hookshot)); }"
+  },
+  {
+   "file": "combo/rando/MmCombatRules.h",
+   "ootmm": "data/macros/macros_mm.yml:364",
+   "expects": [
+    "(has_mask_zora || (has_iron_boots && can_hookshot))"
+   ],
+   "text": "inline bool can_kill_skullfish(const MmCombatCapabilities& c) { return true && (c.zora || (c.ironBoots && c.hookshot)); }"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "ootmm": "data/macros/macros_mm.yml:364",
+   "expects": [
+    "can_kill_skullfish"
+   ],
+   "text": "case ACTOR_EN_PR2: { auto ironBoots = combat; ironBoots.zora = false; if (ComboRando::can_kill_skullfish(ironBoots)) return true; break; }"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "ootmm": "data/macros/macros_mm.yml:399",
+   "expects": [
+    "trick(MM_GYORG_IRONS)"
+   ],
+   "text": "COMBO_MM_TRICK(\"IgosDins\") != 0, MM_LOGIC_HAS_IRON_BOOTS, MM_LOGIC_HAS_ZORA_TUNIC_STRICT, COMBO_MM_TRICK(\"GyorgIrons\") != 0 };"
+  }
+ ],
+ "sites": [
+  {
+   "file": "mm/2s2h/Rando/Logic/MmOrdinarySourcePredicates.inc.h",
+   "line": 15,
+   "region": "",
+   "kind": "expr",
+   "before": "CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)",
+   "after": "(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC)",
+   "id": "MmOrdinarySourcePredicates:15"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/Central.cpp",
+   "line": 170,
+   "region": "RR_CLOCK_TOWN_LAUNDRY",
+   "kind": "ifdef",
+   "before": "CHECK(RC_CLOCK_TOWN_LAUNDRY_FREESTANDING_RUPEE_01,  (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA) && IS_NIGHT2()),",
+   "after": "CHECK(RC_CLOCK_TOWN_LAUNDRY_FREESTANDING_RUPEE_01,  (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA || MM_LOGIC_HAS_IRON_BOOTS) && IS_NIGHT2()), // clock_town.yml:232",
+   "id": "Central:170"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/Central.cpp",
+   "line": 171,
+   "region": "RR_CLOCK_TOWN_LAUNDRY",
+   "kind": "ifdef",
+   "before": "CHECK(RC_CLOCK_TOWN_LAUNDRY_FREESTANDING_RUPEE_02,  (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA) && IS_NIGHT2()),",
+   "after": "CHECK(RC_CLOCK_TOWN_LAUNDRY_FREESTANDING_RUPEE_02,  (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA || MM_LOGIC_HAS_IRON_BOOTS) && IS_NIGHT2()), // clock_town.yml:233",
+   "id": "Central:171"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/Central.cpp",
+   "line": 172,
+   "region": "RR_CLOCK_TOWN_LAUNDRY",
+   "kind": "ifdef",
+   "before": "CHECK(RC_CLOCK_TOWN_LAUNDRY_FREESTANDING_RUPEE_03,  (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA) && IS_NIGHT2()),",
+   "after": "CHECK(RC_CLOCK_TOWN_LAUNDRY_FREESTANDING_RUPEE_03,  (CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA || MM_LOGIC_HAS_IRON_BOOTS) && IS_NIGHT2()), // clock_town.yml:234",
+   "id": "Central:172"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/Central.cpp",
+   "line": 197,
+   "region": "RR_CLOCK_TOWN_NORTH",
+   "kind": "ifdef",
+   "before": "CHECK(RC_CLOCK_TOWN_NORTH_TINGLE_MAP_01, CAN_USE_PROJECTILE && CAN_AFFORD(RC_CLOCK_TOWN_NORTH_TINGLE_MAP_01) && IS_DAY()),",
+   "after": "CHECK(RC_CLOCK_TOWN_NORTH_TINGLE_MAP_01, (CAN_USE_PROJECTILE || (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY)))) && CAN_AFFORD(RC_CLOCK_TOWN_NORTH_TINGLE_MAP_01) && IS_DAY()), // clock_town.yml:94",
+   "id": "Central:197"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/Central.cpp",
+   "line": 198,
+   "region": "RR_CLOCK_TOWN_NORTH",
+   "kind": "ifdef",
+   "before": "CHECK(RC_CLOCK_TOWN_NORTH_TINGLE_MAP_02, CAN_USE_PROJECTILE && CAN_AFFORD(RC_CLOCK_TOWN_NORTH_TINGLE_MAP_02) && IS_DAY()),",
+   "after": "CHECK(RC_CLOCK_TOWN_NORTH_TINGLE_MAP_02, (CAN_USE_PROJECTILE || (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY)))) && CAN_AFFORD(RC_CLOCK_TOWN_NORTH_TINGLE_MAP_02) && IS_DAY()), // clock_town.yml:94",
+   "id": "Central:198"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/East.cpp",
+   "line": 469,
+   "region": "RR_SECRET_SHRINE",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SECRET_SHRINE_POT_04, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA),",
+   "after": "CHECK(RC_SECRET_SHRINE_POT_04, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA || (MM_LOGIC_HAS_IRON_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT)))), // secret_shrine.yml:65",
+   "id": "East:469"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/East.cpp",
+   "line": 470,
+   "region": "RR_SECRET_SHRINE",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SECRET_SHRINE_POT_05, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA),",
+   "after": "CHECK(RC_SECRET_SHRINE_POT_05, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA || (MM_LOGIC_HAS_IRON_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT)))), // secret_shrine.yml:66",
+   "id": "East:470"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/East.cpp",
+   "line": 471,
+   "region": "RR_SECRET_SHRINE",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SECRET_SHRINE_POT_06, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA),",
+   "after": "CHECK(RC_SECRET_SHRINE_POT_06, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA || (MM_LOGIC_HAS_IRON_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT)))), // secret_shrine.yml:67",
+   "id": "East:471"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/East.cpp",
+   "line": 472,
+   "region": "RR_SECRET_SHRINE",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SECRET_SHRINE_POT_07, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA),",
+   "after": "CHECK(RC_SECRET_SHRINE_POT_07, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA || (MM_LOGIC_HAS_IRON_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT)))), // secret_shrine.yml:68",
+   "id": "East:472"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/East.cpp",
+   "line": 473,
+   "region": "RR_SECRET_SHRINE",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SECRET_SHRINE_POT_08, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA),",
+   "after": "CHECK(RC_SECRET_SHRINE_POT_08, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA || (MM_LOGIC_HAS_IRON_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT)))), // secret_shrine.yml:69",
+   "id": "East:473"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/East.cpp",
+   "line": 474,
+   "region": "RR_SECRET_SHRINE",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SECRET_SHRINE_POT_09, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA),",
+   "after": "CHECK(RC_SECRET_SHRINE_POT_09, (CAN_USE_PROJECTILE && CAN_USE_ABILITY(SWIM)) || CAN_BE_ZORA || (MM_LOGIC_HAS_IRON_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT)))), // secret_shrine.yml:70",
+   "id": "East:474"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 13,
+   "region": "",
+   "kind": "define",
+   "before": "#define COMBO_WORLD48_UW MM_LOGIC_UNDERWATER_WALKING_STRICT",
+   "after": "#define COMBO_WORLD48_UW MM_LOGIC_UNDERWATER_WALKING",
+   "id": "GreatBayTemple:13"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 106,
+   "region": "RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_SF_CENTRAL_ROOM_UNDERWATER_POT,   COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || (HAS_ITEM(ITEM_MASK_GREAT_FAIRY) && (CAN_USE_BOW || (COMBO_WORLD48_UW && HAS_ITEM(ITEM_MASK_BLAST)))))),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_SF_CENTRAL_ROOM_UNDERWATER_POT,   COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || (HAS_ITEM(ITEM_MASK_GREAT_FAIRY) && (CAN_USE_BOW || (MM_LOGIC_UNDERWATER_WALKING_STRICT && HAS_ITEM(ITEM_MASK_BLAST)))) || (MM_LOGIC_UNDERWATER_WALKING_STRICT && (HAS_ITEM(ITEM_MASK_BLAST) || CAN_USE_BOW) && COMBO_MM_TRICK(\"GbtCenterPotIrons\")))), // great_bay_temple.yml:62",
+   "id": "GreatBayTemple:106"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 238,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_2",
+   "kind": "sub",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_UPPER_CHEST, COMBO_WORLD48_SELECT((HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_MAGIC_ARROW(ICE)), HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_MAGIC_ARROW(ICE))),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_UPPER_CHEST, COMBO_WORLD48_SELECT((HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_MAGIC_ARROW(ICE)), (HAS_ITEM(ITEM_HOOKSHOT) && CAN_USE_MAGIC_ARROW(ICE)) || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"GbtGreen2UpperHovers\")))), // great_bay_temple.yml:252",
+   "id": "GreatBayTemple:238"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 335,
+   "region": "RR_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM,    CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),",
+   "after": "CONNECTION(RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM,    (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC)), // great_bay_temple.yml:131",
+   "id": "GreatBayTemple:335"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 339,
+   "region": "RR_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART",
+   "kind": "ifdef",
+   "before": "EVENT(RE_GREAT_BAY_RED_SWITCH_1, CAN_USE_MAGIC_ARROW(ICE) && Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_ENEMY_OCTOROKS)),",
+   "after": "EVENT(RE_GREAT_BAY_RED_SWITCH_1, (CAN_USE_MAGIC_ARROW(ICE) && Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_ENEMY_OCTOROKS)) || (MM_LOGIC_HAS_HOVER_BOOTS && HAS_ITEM(ITEM_MASK_BUNNY) && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY)) && COMBO_MM_TRICK(\"GbtRed1Hovers\"))), // great_bay_temple.yml:135",
+   "id": "GreatBayTemple:339"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 391,
+   "region": "RR_GREAT_BAY_TEMPLE_WATER_WHEEL_ROOM",
+   "kind": "sub",
+   "before": "CONNECTION(RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CONNECTION(RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"GbtWaterwheelHovers\")))), // great_bay_temple.yml:37",
+   "id": "GreatBayTemple:391"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/Moon.cpp",
+   "line": 122,
+   "region": "RR_MOON_ZORA_TRIAL",
+   "kind": "ifdef",
+   "before": "CHECK(RC_MOON_TRIAL_ZORA_PIECE_OF_HEART, CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),",
+   "after": "CHECK(RC_MOON_TRIAL_ZORA_PIECE_OF_HEART, (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_ZORA_TUNIC && MM_LOGIC_HAS_IRON_BOOTS)), // moon.yml:119",
+   "id": "Moon:122"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/Moon.cpp",
+   "line": 133,
+   "region": "RR_MOON",
+   "kind": "ifdef",
+   "before": "CHECK(RC_MOON_FIERCE_DEITY_MASK, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MOON_CHILDREN) && CanReturnFromMoon() && MoonMaskCount() >= 20 && CAN_BE_DEKU && CAN_GORON_SPIKE_ROLL && CAN_BE_ZORA && HAS_ITEM(ITEM_HOOKSHOT) && CanPassMoonIronKnuckle() && CAN_USE_BOMBCHUS && CAN_USE_BOW && CAN_USE_MAGIC_ARROW(FIRE)),",
+   "after": "CHECK(RC_MOON_FIERCE_DEITY_MASK, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MOON_CHILDREN) && CanReturnFromMoon() && MoonMaskCount() >= 20 && CAN_BE_DEKU && CAN_GORON_SPIKE_ROLL && (CAN_BE_ZORA || (MM_LOGIC_HAS_ZORA_TUNIC && MM_LOGIC_HAS_IRON_BOOTS)) && HAS_ITEM(ITEM_HOOKSHOT) && CanPassMoonIronKnuckle() && CAN_USE_BOMBCHUS && CAN_USE_BOW && CAN_USE_MAGIC_ARROW(FIRE)),",
+   "id": "Moon:133"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 405,
+   "region": "RR_PATH_TO_GORON_VILLAGE",
+   "kind": "sub",
+   "before": "CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_01, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_01, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "North:405"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 406,
+   "region": "RR_PATH_TO_GORON_VILLAGE",
+   "kind": "sub",
+   "before": "CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_02, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_02, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "North:406"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 407,
+   "region": "RR_PATH_TO_GORON_VILLAGE",
+   "kind": "sub",
+   "before": "CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_01, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_01, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "North:407"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 408,
+   "region": "RR_PATH_TO_GORON_VILLAGE",
+   "kind": "sub",
+   "before": "CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_02, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_02, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "North:408"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 409,
+   "region": "RR_PATH_TO_GORON_VILLAGE",
+   "kind": "sub",
+   "before": "CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_03, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_03, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "North:409"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 410,
+   "region": "RR_PATH_TO_GORON_VILLAGE",
+   "kind": "sub",
+   "before": "CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_04, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_04, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "North:410"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 545,
+   "region": "RR_PATH_TO_SNOWHEAD_LOWER",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL),",
+   "after": "CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"PathSnowheadHovers\"))), // path_to_snowhead.yml:7",
+   "id": "North:545"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 556,
+   "region": "RR_PATH_TO_SNOWHEAD_MIDDLE",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_PATH_TO_SNOWHEAD_LOWER, CAN_GORON_SPIKE_ROLL),",
+   "after": "CONNECTION(RR_PATH_TO_SNOWHEAD_LOWER, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"PathSnowheadHovers\"))), // path_to_snowhead.yml:28",
+   "id": "North:556"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 557,
+   "region": "RR_PATH_TO_SNOWHEAD_MIDDLE",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_PATH_TO_SNOWHEAD_UPPER, CAN_GORON_SPIKE_ROLL),",
+   "after": "CONNECTION(RR_PATH_TO_SNOWHEAD_UPPER, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"PathSnowheadHovers\"))), // path_to_snowhead.yml:7",
+   "id": "North:557"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/North.cpp",
+   "line": 576,
+   "region": "RR_PATH_TO_SNOWHEAD_UPPER",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL),",
+   "after": "CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"PathSnowheadHovers\"))), // path_to_snowhead.yml:28",
+   "id": "North:576"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 62,
+   "region": "RR_PIRATES_FORTRESS_CAPTAIN_ROOM",
+   "kind": "ifdef",
+   "before": "EVENT(RE_ACCESS_ZORA_EGG, HAS_ITEM(ITEM_HOOKSHOT) && HAS_BOTTLE && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),",
+   "after": "EVENT(RE_ACCESS_ZORA_EGG, HAS_ITEM(ITEM_HOOKSHOT) && HAS_BOTTLE && ((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC && RANDO_EVENTS[RE_PIRATE_FORTRESS_BEEHIVE_HIT]))), // pirate_fortress.yml:175",
+   "id": "PiratesFortress:62"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 81,
+   "region": "RR_PIRATES_FORTRESS_INSIDE_CHEST_EGG_ROOM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_PIRATE_FORTRESS_INTERIOR_AQUARIUM_CHEST, HAS_ITEM(ITEM_HOOKSHOT) && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),",
+   "after": "CHECK(RC_PIRATE_FORTRESS_INTERIOR_AQUARIUM_CHEST, HAS_ITEM(ITEM_HOOKSHOT) && ((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC))), // pirate_fortress.yml:254",
+   "id": "PiratesFortress:81"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 94,
+   "region": "RR_PIRATES_FORTRESS_INSIDE_CHEST_EGG_ROOM",
+   "kind": "ifdef",
+   "before": "EVENT(RE_ACCESS_ZORA_EGG, HAS_ITEM(ITEM_HOOKSHOT) && HAS_BOTTLE && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),",
+   "after": "EVENT(RE_ACCESS_ZORA_EGG, HAS_ITEM(ITEM_HOOKSHOT) && HAS_BOTTLE && ((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC))), // pirate_fortress.yml:251",
+   "id": "PiratesFortress:94"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 172,
+   "region": "RR_PIRATES_FORTRESS_LEFT_CLAM_EGG_ROOM",
+   "kind": "ifdef",
+   "before": "EVENT(RE_ACCESS_ZORA_EGG, HAS_ITEM(ITEM_HOOKSHOT) && HAS_BOTTLE && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),",
+   "after": "EVENT(RE_ACCESS_ZORA_EGG, HAS_ITEM(ITEM_HOOKSHOT) && HAS_BOTTLE && ((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC))), // pirate_fortress.yml:290",
+   "id": "PiratesFortress:172"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 198,
+   "region": "RR_PIRATES_FORTRESS_MOAT_LOWER",
+   "kind": "sub",
+   "before": "CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_01, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_01, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "PiratesFortress:198"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 199,
+   "region": "RR_PIRATES_FORTRESS_MOAT_LOWER",
+   "kind": "sub",
+   "before": "CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_02, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_02, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "PiratesFortress:199"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 200,
+   "region": "RR_PIRATES_FORTRESS_MOAT_LOWER",
+   "kind": "sub",
+   "before": "CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_03, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_PIRATE_FORTRESS_ENTRANCE_CHEST_03, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "PiratesFortress:200"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 203,
+   "region": "RR_PIRATES_FORTRESS_MOAT_LOWER",
+   "kind": "ifdef",
+   "before": "EXIT(ENTRANCE(GREAT_BAY_COAST, 5),              ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0), CAN_RESET_TIME && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),",
+   "after": "EXIT(ENTRANCE(GREAT_BAY_COAST, 5),              ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0), CAN_RESET_TIME && ((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC))), // pirate_fortress.yml:4, great_bay_coast.yml:156",
+   "id": "PiratesFortress:203"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 204,
+   "region": "RR_PIRATES_FORTRESS_MOAT_LOWER",
+   "kind": "sub",
+   "before": "EXIT(ENTRANCE(PIRATES_FORTRESS_INTERIOR, 9),    ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2), COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && CAN_BE_GORON, MM_LOGIC_UNDERWATER_WALKING_STRICT && HAS_ITEM(ITEM_MASK_GORON))),",
+   "after": "EXIT(ENTRANCE(PIRATES_FORTRESS_INTERIOR, 9),    ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 2), COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && CAN_BE_GORON, MM_LOGIC_UNDERWATER_WALKING && HAS_ITEM(ITEM_MASK_GORON))),",
+   "id": "PiratesFortress:204"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 362,
+   "region": "RR_PIRATES_FORTRESS_RIGHT_CLAM_EGG_ROOM",
+   "kind": "ifdef",
+   "before": "EVENT(RE_ACCESS_ZORA_EGG, HAS_ITEM(ITEM_HOOKSHOT) && HAS_BOTTLE && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),",
+   "after": "EVENT(RE_ACCESS_ZORA_EGG, HAS_ITEM(ITEM_HOOKSHOT) && HAS_BOTTLE && ((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC))), // pirate_fortress.yml:217",
+   "id": "PiratesFortress:362"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 380,
+   "region": "RR_PIRATES_FORTRESS_SEWERS_PREGATE",
+   "kind": "sub",
+   "before": "CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_02, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_02, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "PiratesFortress:380"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp",
+   "line": 381,
+   "region": "RR_PIRATES_FORTRESS_SEWERS_PREGATE",
+   "kind": "sub",
+   "before": "CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_03, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_03, COMBO_WORLD52_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "PiratesFortress:381"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 74,
+   "region": "RR_SNOWHEAD_TEMPLE_BRIDGE_ROOM_AFTER",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SNOWHEAD_TEMPLE_BRIDGE_ROOM_CHEST, (CAN_BE_ZORA || CAN_USE_FIRE_SHORT_RANGE || HAS_ITEM(ITEM_HOOKSHOT))), // yml:51, :70",
+   "after": "CHECK(RC_SNOWHEAD_TEMPLE_BRIDGE_ROOM_CHEST, (CAN_BE_ZORA || CAN_USE_FIRE_SHORT_RANGE || HAS_ITEM(ITEM_HOOKSHOT)) || (MM_LOGIC_HAS_HOVER_BOOTS && CanKillEnemy(ACTOR_EN_FZ))), // yml:51, :70",
+   "id": "SnowheadTemple:74"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 170,
+   "region": "RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_POT_01, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT)),",
+   "after": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_POT_01, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS), // snowhead_temple.yml:262, :275",
+   "id": "SnowheadTemple:170"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 171,
+   "region": "RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_POT_02, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT)),",
+   "after": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_POT_02, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS), // snowhead_temple.yml:262, :275",
+   "id": "SnowheadTemple:171"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 175,
+   "region": "RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_SMALL_SNOWBALL_04, CAN_GORON_SPIKE_ROLL),",
+   "after": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_SMALL_SNOWBALL_04, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && CAN_USE_FIRE_SHORT_RANGE)), // snowhead_temple.yml:322",
+   "id": "SnowheadTemple:175"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 176,
+   "region": "RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_SMALL_SNOWBALL_05, CAN_GORON_SPIKE_ROLL),",
+   "after": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_SMALL_SNOWBALL_05, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && CAN_USE_FIRE_SHORT_RANGE)), // snowhead_temple.yml:322",
+   "id": "SnowheadTemple:176"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 177,
+   "region": "RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_SMALL_SNOWBALL_06, CAN_GORON_SPIKE_ROLL),",
+   "after": "CHECK(RC_SNOWHEAD_TEMPLE_CENTRAL_ROOM_LEVEL_2_SMALL_SNOWBALL_06, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && CAN_USE_FIRE_SHORT_RANGE)), // snowhead_temple.yml:322",
+   "id": "SnowheadTemple:177"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 183,
+   "region": "RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_SNOWHEAD_TEMPLE_LOWER_WIZZROBE_ROOM, CAN_GORON_SPIKE_ROLL),",
+   "after": "CONNECTION(RR_SNOWHEAD_TEMPLE_LOWER_WIZZROBE_ROOM, CAN_GORON_SPIKE_ROLL || MM_LOGIC_HAS_HOVER_BOOTS), // snowhead_temple.yml:96, :274",
+   "id": "SnowheadTemple:183"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 185,
+   "region": "RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_SNOWHEAD_TEMPLE_MAP_ROOM_UPPER, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT)),",
+   "after": "CONNECTION(RR_SNOWHEAD_TEMPLE_MAP_ROOM_UPPER, CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS), // snowhead_temple.yml:262, :275",
+   "id": "SnowheadTemple:185"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 205,
+   "region": "RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_THIRD_FLOOR",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_SNOWHEAD_TEMPLE_SNOW_ROOM, (CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT)) && KEY_COUNT(SNOWHEAD_TEMPLE) >= 3),",
+   "after": "CONNECTION(RR_SNOWHEAD_TEMPLE_SNOW_ROOM, (CAN_BE_GORON || HAS_ITEM(ITEM_HOOKSHOT) || MM_LOGIC_HAS_HOVER_BOOTS) && KEY_COUNT(SNOWHEAD_TEMPLE) >= 3), // snowhead_temple.yml:322",
+   "id": "SnowheadTemple:205"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp",
+   "line": 248,
+   "region": "RR_SNOWHEAD_TEMPLE_DUAL_SWITCHES_ROOM",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR, CAN_BE_GORON || CAN_USE_FIRE_SHORT_RANGE), // yml:239",
+   "after": "CONNECTION(RR_SNOWHEAD_TEMPLE_CENTRAL_ROOM_SECOND_FLOOR, CAN_BE_GORON || CAN_USE_FIRE_SHORT_RANGE || MM_LOGIC_HAS_HOVER_BOOTS), // yml:239",
+   "id": "SnowheadTemple:248"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+   "line": 526,
+   "region": "RR_SOUTHERN_SWAMP_SOUTH_UPPER",
+   "kind": "ifdef",
+   "before": "CHECK(RC_SOUTHERN_SWAMP_SONG_OF_SOARING, CAN_BE_DEKU),",
+   "after": "CHECK(RC_SOUTHERN_SWAMP_SONG_OF_SOARING, CAN_BE_DEKU || (MM_LOGIC_HAS_HOVER_BOOTS && HAS_ITEM(ITEM_MASK_BUNNY) && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || CAN_USE_EXPLOSIVE) && COMBO_MM_TRICK(\"SoaringHovers\"))), // southern_swamp.yml:300",
+   "id": "South:526"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/South.cpp",
+   "line": 618,
+   "region": "RR_WOODFALL_OWL_STATUE_PLATFORM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_WOODFALL_NEAR_OWL_CHEST, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT)),",
+   "after": "CHECK(RC_WOODFALL_NEAR_OWL_CHEST, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT) || (MM_LOGIC_HAS_HOVER_BOOTS && HAS_ITEM(ITEM_MASK_BUNNY) && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY)) && COMBO_MM_TRICK(\"WfShrineHovers\"))), // woodfall.yml:42",
+   "id": "South:618"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 40,
+   "region": "RR_COMBO_ST_CENTER_EAST",
+   "kind": "sub",
+   "before": "CONNECTION(RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM, COMBO_WORLD36_ENABLED && MM_LOGIC_UNDERWATER_WALKING_STRICT),",
+   "after": "CONNECTION(RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM, COMBO_WORLD36_ENABLED && MM_LOGIC_UNDERWATER_WALKING), // stone_tower_temple.yml:102",
+   "id": "StoneTowerTemple:40"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 110,
+   "region": "RR_STONE_TOWER_TEMPLE_ARMOS_ROOM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_UNDER_WEST_GARDEN_LAVA_CHEST, ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT)) && CanKillEnemy(ACTOR_EN_AM)),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_UNDER_WEST_GARDEN_LAVA_CHEST, (((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT)) && CanKillEnemy(ACTOR_EN_AM)) || ((HAS_ITEM(ITEM_HOOKSHOT) && MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"SttLavaBlockHovers\") && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || HAS_ITEM(ITEM_MASK_BUNNY))) && CanKillEnemy(ACTOR_EN_AM))), // stone_tower_temple.yml:65",
+   "id": "StoneTowerTemple:110"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 115,
+   "region": "RR_STONE_TOWER_TEMPLE_ARMOS_ROOM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_MAP_CHEST, ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_MAP_CHEST, ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT)) || (HAS_ITEM(ITEM_HOOKSHOT) && MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"SttLavaBlockHovers\") && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || HAS_ITEM(ITEM_MASK_BUNNY)))), // stone_tower_temple.yml:65",
+   "id": "StoneTowerTemple:115"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 116,
+   "region": "RR_STONE_TOWER_TEMPLE_ARMOS_ROOM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_LAVA_ROOM_AFTER_BLOCK_POT_01, CAN_BE_GORON && ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_LAVA_ROOM_AFTER_BLOCK_POT_01, (CAN_BE_GORON && ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT))) || (HAS_ITEM(ITEM_HOOKSHOT) && MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"SttLavaBlockHovers\") && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || HAS_ITEM(ITEM_MASK_BUNNY)))), // stone_tower_temple.yml:65",
+   "id": "StoneTowerTemple:116"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 117,
+   "region": "RR_STONE_TOWER_TEMPLE_ARMOS_ROOM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_LAVA_ROOM_AFTER_BLOCK_POT_02, CAN_BE_GORON && ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_LAVA_ROOM_AFTER_BLOCK_POT_02, (CAN_BE_GORON && ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT))) || (HAS_ITEM(ITEM_HOOKSHOT) && MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"SttLavaBlockHovers\") && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || HAS_ITEM(ITEM_MASK_BUNNY)))), // stone_tower_temple.yml:65",
+   "id": "StoneTowerTemple:117"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 118,
+   "region": "RR_STONE_TOWER_TEMPLE_ARMOS_ROOM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_LAVA_ROOM_AFTER_BLOCK_POT_03, CAN_BE_GORON && ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_LAVA_ROOM_AFTER_BLOCK_POT_03, (CAN_BE_GORON && ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT))) || (HAS_ITEM(ITEM_HOOKSHOT) && MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"SttLavaBlockHovers\") && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || HAS_ITEM(ITEM_MASK_BUNNY)))), // stone_tower_temple.yml:65",
+   "id": "StoneTowerTemple:118"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 119,
+   "region": "RR_STONE_TOWER_TEMPLE_ARMOS_ROOM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_LAVA_ROOM_AFTER_BLOCK_POT_04, CAN_BE_GORON && ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_LAVA_ROOM_AFTER_BLOCK_POT_04, (CAN_BE_GORON && ((CAN_USE_EXPLOSIVE && (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) >= EQUIP_VALUE_SHIELD_MIRROR)) || CAN_USE_MAGIC_ARROW(LIGHT))) || (HAS_ITEM(ITEM_HOOKSHOT) && MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK(\"SttLavaBlockHovers\") && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY) || HAS_ITEM(ITEM_MASK_BUNNY)))), // stone_tower_temple.yml:65",
+   "id": "StoneTowerTemple:119"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 199,
+   "region": "RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM_UNDERWATER",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_LOWER_POT_01, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING_STRICT : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_LOWER_POT_01, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "id": "StoneTowerTemple:199"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 204,
+   "region": "RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM_UNDERWATER",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_LOWER_POT_02, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING_STRICT : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_LOWER_POT_02, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "id": "StoneTowerTemple:204"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 209,
+   "region": "RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM_UNDERWATER",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_LOWER_POT_03, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING_STRICT : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_LOWER_POT_03, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "id": "StoneTowerTemple:209"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 214,
+   "region": "RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM_UNDERWATER",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_UPPER_POT_01, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING_STRICT : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_UPPER_POT_01, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "id": "StoneTowerTemple:214"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 219,
+   "region": "RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM_UNDERWATER",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_UPPER_POT_02, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING_STRICT : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_ROOM_UNDERWATER_UPPER_POT_02, (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "id": "StoneTowerTemple:219"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 224,
+   "region": "RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM_UNDERWATER",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_SUN_SWITCH_CHEST, RANDO_EVENTS[RE_STONE_TOWER_TEMPLE_DEEP_POOL_SUN_SWITCH] && (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING_STRICT : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WATER_SUN_SWITCH_CHEST, RANDO_EVENTS[RE_STONE_TOWER_TEMPLE_DEEP_POOL_SUN_SWITCH] && (COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING : (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)))),",
+   "id": "StoneTowerTemple:224"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 232,
+   "region": "RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM_UNDERWATER",
+   "kind": "sub",
+   "before": "CONNECTION(RR_COMBO_ST_CENTER_WATER, COMBO_WORLD36_ENABLED && MM_LOGIC_UNDERWATER_WALKING_STRICT),",
+   "after": "CONNECTION(RR_COMBO_ST_CENTER_WATER, COMBO_WORLD36_ENABLED && MM_LOGIC_UNDERWATER_WALKING), // stone_tower_temple.yml:146",
+   "id": "StoneTowerTemple:232"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 245,
+   "region": "RR_STONE_TOWER_TEMPLE_DEEP_POOL_ROOM_UNDERWATER",
+   "kind": "sub",
+   "before": "EVENT(RE_STONE_TOWER_WATER_CHEST_SWITCH, COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING_STRICT : CAN_BE_ZORA),",
+   "after": "EVENT(RE_STONE_TOWER_WATER_CHEST_SWITCH, COMBO_WORLD36_ENABLED ? MM_LOGIC_UNDERWATER_WALKING : CAN_BE_ZORA), // stone_tower_temple.yml:148",
+   "id": "StoneTowerTemple:245"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 269,
+   "region": "RR_STONE_TOWER_TEMPLE_LAVA_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_LEDGE_CHEST, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_LEDGE_CHEST, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU) || (COMBO_MM_TRICK(\"StUpdrafts\") && MM_LOGIC_HAS_HOVER_BOOTS && MM_LOGIC_HAS_IRON_BOOTS))), // stone_tower_temple.yml:176",
+   "id": "StoneTowerTemple:269"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 271,
+   "region": "RR_STONE_TOWER_TEMPLE_LAVA_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_01, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_01, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU) || (COMBO_MM_TRICK(\"StUpdrafts\") && MM_LOGIC_HAS_HOVER_BOOTS && MM_LOGIC_HAS_IRON_BOOTS))), // stone_tower_temple.yml:182",
+   "id": "StoneTowerTemple:271"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 272,
+   "region": "RR_STONE_TOWER_TEMPLE_LAVA_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_02, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_02, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU) || (COMBO_MM_TRICK(\"StUpdrafts\") && MM_LOGIC_HAS_HOVER_BOOTS && MM_LOGIC_HAS_IRON_BOOTS))), // stone_tower_temple.yml:183",
+   "id": "StoneTowerTemple:272"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 273,
+   "region": "RR_STONE_TOWER_TEMPLE_LAVA_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_03, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_03, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU) || (COMBO_MM_TRICK(\"StUpdrafts\") && MM_LOGIC_HAS_HOVER_BOOTS && MM_LOGIC_HAS_IRON_BOOTS))), // stone_tower_temple.yml:184",
+   "id": "StoneTowerTemple:273"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 274,
+   "region": "RR_STONE_TOWER_TEMPLE_LAVA_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_04, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_04, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU) || (COMBO_MM_TRICK(\"StUpdrafts\") && MM_LOGIC_HAS_HOVER_BOOTS && MM_LOGIC_HAS_IRON_BOOTS))), // stone_tower_temple.yml:185",
+   "id": "StoneTowerTemple:274"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 275,
+   "region": "RR_STONE_TOWER_TEMPLE_LAVA_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_05, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_05, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU) || (COMBO_MM_TRICK(\"StUpdrafts\") && MM_LOGIC_HAS_HOVER_BOOTS && MM_LOGIC_HAS_IRON_BOOTS))), // stone_tower_temple.yml:186",
+   "id": "StoneTowerTemple:275"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 276,
+   "region": "RR_STONE_TOWER_TEMPLE_LAVA_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_06, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU))),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_WIND_ROOM_FREESTANDING_RUPEE_06, COMBO_WORLD49_SELECT(CAN_BE_DEKU, HAS_ITEM(ITEM_MASK_DEKU) || (COMBO_MM_TRICK(\"StUpdrafts\") && MM_LOGIC_HAS_HOVER_BOOTS && MM_LOGIC_HAS_IRON_BOOTS))), // stone_tower_temple.yml:187",
+   "id": "StoneTowerTemple:276"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 358,
+   "region": "RR_STONE_TOWER_TEMPLE_INVERTED_ENTRANCE",
+   "kind": "insert",
+   "before": null,
+   "after": "CONNECTION(RR_STONE_TOWER_TEMPLE_INVERTED_SIDE_OF_ENTRANCE, COMBO_MM_TRICK(\"IsttEntryHover\") && MM_LOGIC_HAS_HOVER_BOOTS && HAS_ITEM(ITEM_MASK_BUNNY)), // stone_tower_temple_inverted.yml:16",
+   "id": "StoneTowerTemple:358"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 365,
+   "region": "RR_STONE_TOWER_TEMPLE_INVERTED_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_INVERTED_EAST_MIDDLE_CHEST, CAN_BE_DEKU),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_INVERTED_EAST_MIDDLE_CHEST, CAN_BE_DEKU || COMBO_MM_TRICK(\"StUpdrafts\")), // stone_tower_temple_inverted.yml:33",
+   "id": "StoneTowerTemple:365"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 367,
+   "region": "RR_STONE_TOWER_TEMPLE_INVERTED_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_INVERTED_UPDRAFTS_BRIDGE_POT_01, CAN_BE_DEKU),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_INVERTED_UPDRAFTS_BRIDGE_POT_01, CAN_BE_DEKU || COMBO_MM_TRICK(\"StUpdrafts\")), // stone_tower_temple_inverted.yml:33",
+   "id": "StoneTowerTemple:367"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 368,
+   "region": "RR_STONE_TOWER_TEMPLE_INVERTED_WIND_ROOM",
+   "kind": "sub",
+   "before": "CHECK(RC_STONE_TOWER_TEMPLE_INVERTED_UPDRAFTS_BRIDGE_POT_02, CAN_BE_DEKU),",
+   "after": "CHECK(RC_STONE_TOWER_TEMPLE_INVERTED_UPDRAFTS_BRIDGE_POT_02, CAN_BE_DEKU || COMBO_MM_TRICK(\"StUpdrafts\")), // stone_tower_temple_inverted.yml:33",
+   "id": "StoneTowerTemple:368"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp",
+   "line": 385,
+   "region": "RR_STONE_TOWER_TEMPLE_INVERTED_WIND_ROOM",
+   "kind": "sub",
+   "before": "CONNECTION(RR_STONE_TOWER_TEMPLE_INVERTED_PATH_TO_GOMESS, COMBO_WORLD36_ENABLED && HAS_ITEM(ITEM_MASK_DEKU) && MM_LOGIC_HAS_HOVER_BOOTS),",
+   "after": "CONNECTION(RR_STONE_TOWER_TEMPLE_INVERTED_PATH_TO_GOMESS, COMBO_WORLD36_ENABLED && (HAS_ITEM(ITEM_MASK_DEKU) || COMBO_MM_TRICK(\"StUpdrafts\")) && MM_LOGIC_HAS_HOVER_BOOTS),",
+   "id": "StoneTowerTemple:385"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp",
+   "line": 42,
+   "region": "RR_TERMINA_FIELD_BIO_BABA_GROTTO",
+   "kind": "sub",
+   "before": "CHECK(RC_TERMINA_FIELD_BIO_BABA_GROTTO, COMBO_WORLD51_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_UNDERWATER_WALKING_STRICT && (COMBO_WORLD51_RANGE || (CAN_USE_BOMBS && COMBO_WORLD51_BABA_SOUL))))),",
+   "after": "CHECK(RC_TERMINA_FIELD_BIO_BABA_GROTTO, COMBO_WORLD51_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_UNDERWATER_WALKING && (COMBO_WORLD51_RANGE || (CAN_USE_BOMBS && COMBO_WORLD51_BABA_SOUL))))),",
+   "id": "TerminaField:42"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp",
+   "line": 45,
+   "region": "RR_TERMINA_FIELD_BIO_BABA_GROTTO",
+   "kind": "sub",
+   "before": "CHECK(RC_TERMINA_FIELD_BIO_BABA_GROTTO_BEEHIVE_01, COMBO_WORLD51_SELECT(CAN_USE_PROJECTILE && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || ((COMBO_WORLD51_RANGE || (CAN_USE_BOMBS && COMBO_WORLD51_BABA_SOUL)) && MM_LOGIC_UNDERWATER_WALKING_STRICT))),",
+   "after": "CHECK(RC_TERMINA_FIELD_BIO_BABA_GROTTO_BEEHIVE_01, COMBO_WORLD51_SELECT(CAN_USE_PROJECTILE && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || ((COMBO_WORLD51_RANGE || (CAN_USE_BOMBS && COMBO_WORLD51_BABA_SOUL)) && MM_LOGIC_UNDERWATER_WALKING))),",
+   "id": "TerminaField:45"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp",
+   "line": 46,
+   "region": "RR_TERMINA_FIELD_BIO_BABA_GROTTO",
+   "kind": "sub",
+   "before": "CHECK(RC_TERMINA_FIELD_BIO_BABA_GROTTO_BEEHIVE_02, COMBO_WORLD51_SELECT(CAN_USE_PROJECTILE && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || ((COMBO_WORLD51_RANGE || (CAN_USE_BOMBS && COMBO_WORLD51_BABA_SOUL)) && MM_LOGIC_UNDERWATER_WALKING_STRICT))),",
+   "after": "CHECK(RC_TERMINA_FIELD_BIO_BABA_GROTTO_BEEHIVE_02, COMBO_WORLD51_SELECT(CAN_USE_PROJECTILE && CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || ((COMBO_WORLD51_RANGE || (CAN_USE_BOMBS && COMBO_WORLD51_BABA_SOUL)) && MM_LOGIC_UNDERWATER_WALKING))),",
+   "id": "TerminaField:46"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp",
+   "line": 286,
+   "region": "RR_TERMINA_FIELD",
+   "kind": "sub",
+   "before": "CHECK(RC_TERMINA_FIELD_WATER_CHEST, COMBO_WORLD51_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "CHECK(RC_TERMINA_FIELD_WATER_CHEST, COMBO_WORLD51_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "TerminaField:286"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 37,
+   "region": "",
+   "kind": "define",
+   "before": "((CAN_USE_ABILITY(SWIM) && (MM_LOGIC_UNDERWATER_WALKING_STRICT || CAN_USE_NAYRUS_LOVE)) || \\",
+   "after": "((CAN_USE_ABILITY(SWIM) && (MM_LOGIC_UNDERWATER_WALKING || CAN_USE_NAYRUS_LOVE)) || \\",
+   "id": "West:37"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 185,
+   "region": "RR_GREAT_BAY_COAST",
+   "kind": "ifdef",
+   "before": "EXIT(ENTRANCE(PINNACLE_ROCK, 0),                ENTRANCE(GREAT_BAY_COAST, 3), CAN_USE_ABILITY(SWIM)),",
+   "after": "EXIT(ENTRANCE(PINNACLE_ROCK, 0),                ENTRANCE(GREAT_BAY_COAST, 3), MM_LOGIC_CAN_SWIM_OR_SINK), // great_bay_coast.yml:5",
+   "id": "West:185"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 187,
+   "region": "RR_GREAT_BAY_COAST",
+   "kind": "sub",
+   "before": "EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0),    ENTRANCE(GREAT_BAY_COAST, 5), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_RESET_TIME_DUNGEON && MM_LOGIC_UNDERWATER_WALKING_STRICT && CAN_USE_ABILITY(SWIM))),",
+   "after": "EXIT(ENTRANCE(PIRATES_FORTRESS_EXTERIOR, 0),    ENTRANCE(GREAT_BAY_COAST, 5), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_RESET_TIME_DUNGEON && MM_LOGIC_UNDERWATER_WALKING && CAN_USE_ABILITY(SWIM))),",
+   "id": "West:187"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 192,
+   "region": "RR_GREAT_BAY_COAST",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_GREAT_BAY_COAST_CLIFFSIDE, CAN_USE_ABILITY(SWIM)),",
+   "after": "CONNECTION(RR_GREAT_BAY_COAST_CLIFFSIDE, MM_LOGIC_CAN_SWIM_OR_SINK), // great_bay_coast.yml:5",
+   "id": "West:192"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 213,
+   "region": "RR_GREAT_BAY_COAST_MARINE_LAB_EXTERIOR",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE),",
+   "after": "CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE || MM_LOGIC_HAS_IRON_BOOTS), // great_bay_coast.yml:119",
+   "id": "West:213"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 246,
+   "region": "RR_GREAT_BAY_COAST_CLIFFSIDE",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE),",
+   "after": "CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE || MM_LOGIC_HAS_IRON_BOOTS), // great_bay_coast.yml:48",
+   "id": "West:246"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 383,
+   "region": "RR_ZORA_CAPE_OUTSIDE_FAIRY_FOUNTAIN",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_ZORA_CAPE, CAN_USE_ABILITY(SWIM)),",
+   "after": "CONNECTION(RR_ZORA_CAPE, MM_LOGIC_CAN_SWIM_OR_SINK), // zora_cape.yml:94",
+   "id": "West:383"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 391,
+   "region": "RR_ZORA_CAPE",
+   "kind": "sub",
+   "before": "CHECK(RC_ZORA_CAPE_UNDERWATER_CHEST, COMBO_WORLD37_ENABLED ? (MM_LOGIC_UNDERWATER_WALKING_STRICT) : (          CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),",
+   "after": "CHECK(RC_ZORA_CAPE_UNDERWATER_CHEST, COMBO_WORLD37_ENABLED ? (MM_LOGIC_UNDERWATER_WALKING) : (          CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),",
+   "id": "West:391"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 396,
+   "region": "RR_ZORA_CAPE",
+   "kind": "sub",
+   "before": "CHECK(RC_ZORA_CAPE_WATERFALL_PIECE_OF_HEART, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT && (CAN_USE_BOW || HAS_ITEM(ITEM_MASK_BLAST)))) : (  CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),",
+   "after": "CHECK(RC_ZORA_CAPE_WATERFALL_PIECE_OF_HEART, COMBO_WORLD37_ENABLED ? (HAS_ITEM(ITEM_MASK_ZORA) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC && (CAN_USE_BOW || HAS_ITEM(ITEM_MASK_BLAST)))) : (  CAN_BE_ZORA && CAN_USE_ABILITY(SWIM))),",
+   "id": "West:396"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 425,
+   "region": "RR_ZORA_CAPE",
+   "kind": "sub",
+   "before": "EXIT(ENTRANCE(ZORA_HALL, 0),                    ENTRANCE(ZORA_CAPE, 1), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "EXIT(ENTRANCE(ZORA_HALL, 0),                    ENTRANCE(ZORA_CAPE, 1), COMBO_WORLD37_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "West:425"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 494,
+   "region": "RR_ZORA_HALL",
+   "kind": "sub",
+   "before": "EXIT(ENTRANCE(ZORA_CAPE, 1),                    ENTRANCE(ZORA_HALL, 0), COMBO_WORLD37_SELECT(true, MM_LOGIC_UNDERWATER_WALKING_STRICT)),",
+   "after": "EXIT(ENTRANCE(ZORA_CAPE, 1),                    ENTRANCE(ZORA_HALL, 0), COMBO_WORLD37_SELECT(true, MM_LOGIC_UNDERWATER_WALKING)),",
+   "id": "West:494"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 113,
+   "region": "RR_WOODFALL_TEMPLE_ENTRANCE",
+   "kind": "ifdef",
+   "before": "CHECK(RC_WOODFALL_TEMPLE_ENTRANCE_GRASS_04, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT)),",
+   "after": "CHECK(RC_WOODFALL_TEMPLE_ENTRANCE_GRASS_04, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT) || (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY)) && CAN_USE_EXPLOSIVE && HAS_ITEM(ITEM_MASK_BUNNY) && (CAN_USE_BOW || HAS_ITEM(ITEM_MASK_STONE)) && COMBO_MM_TRICK(\"WftLobbyHovers\"))), // woodfall_temple.yml:16",
+   "id": "WoodfallTemple:113"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 114,
+   "region": "RR_WOODFALL_TEMPLE_ENTRANCE",
+   "kind": "ifdef",
+   "before": "CHECK(RC_WOODFALL_TEMPLE_ENTRANCE_GRASS_05, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT)),",
+   "after": "CHECK(RC_WOODFALL_TEMPLE_ENTRANCE_GRASS_05, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT) || (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY)) && CAN_USE_EXPLOSIVE && HAS_ITEM(ITEM_MASK_BUNNY) && (CAN_USE_BOW || HAS_ITEM(ITEM_MASK_STONE)) && COMBO_MM_TRICK(\"WftLobbyHovers\"))), // woodfall_temple.yml:16",
+   "id": "WoodfallTemple:114"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 126,
+   "region": "RR_WOODFALL_TEMPLE_ENTRANCE",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_WOODFALL_TEMPLE_MAIN_ROOM, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT)),",
+   "after": "CONNECTION(RR_WOODFALL_TEMPLE_MAIN_ROOM, CAN_BE_DEKU || HAS_ITEM(ITEM_HOOKSHOT) || (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_HUMAN_SWORD || HAS_ITEM(ITEM_SWORD_GREAT_FAIRY)) && CAN_USE_EXPLOSIVE && HAS_ITEM(ITEM_MASK_BUNNY) && (CAN_USE_BOW || HAS_ITEM(ITEM_MASK_STONE)) && COMBO_MM_TRICK(\"WftLobbyHovers\"))), // woodfall_temple.yml:16",
+   "id": "WoodfallTemple:126"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 146,
+   "region": "RR_WOODFALL_TEMPLE_MAIN_ROOM_UPPER",
+   "kind": "ifdef",
+   "before": "CHECK(RC_WOODFALL_TEMPLE_CENTER_CHEST, CAN_BE_DEKU),",
+   "after": "CHECK(RC_WOODFALL_TEMPLE_CENTER_CHEST, CAN_BE_DEKU || MM_LOGIC_HAS_HOVER_BOOTS), // woodfall_temple.yml:213",
+   "id": "WoodfallTemple:146"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 287,
+   "region": "RR_WOODFALL_TEMPLE_WATER_ROOM_UPPER",
+   "kind": "insert",
+   "before": null,
+   "after": "CHECK(RC_WOODFALL_TEMPLE_WATER_ROOM_GRASS_01, MM_LOGIC_HAS_HOVER_BOOTS), // woodfall_temple.yml:224, :120",
+   "id": "WoodfallTemple:287"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 287,
+   "region": "RR_WOODFALL_TEMPLE_WATER_ROOM_UPPER",
+   "kind": "insert",
+   "before": null,
+   "after": "CHECK(RC_WOODFALL_TEMPLE_WATER_ROOM_GRASS_02, MM_LOGIC_HAS_HOVER_BOOTS), // woodfall_temple.yml:224, :121",
+   "id": "WoodfallTemple:287+1"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 287,
+   "region": "RR_WOODFALL_TEMPLE_WATER_ROOM_UPPER",
+   "kind": "insert",
+   "before": null,
+   "after": "CHECK(RC_WOODFALL_TEMPLE_WATER_CHEST, MM_LOGIC_HAS_HOVER_BOOTS), // woodfall_temple.yml:229",
+   "id": "WoodfallTemple:287+2"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 293,
+   "region": "RR_WOODFALL_TEMPLE_WATER_ROOM_UPPER",
+   "kind": "insert",
+   "before": null,
+   "after": "CONNECTION(RR_WOODFALL_TEMPLE_MAP_ROOM, MM_LOGIC_HAS_HOVER_BOOTS), // woodfall_temple.yml:224, :112",
+   "id": "WoodfallTemple:293"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 298,
+   "region": "RR_WOODFALL_TEMPLE_WATER_ROOM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_WOODFALL_TEMPLE_WATER_ROOM_GRASS_01, CAN_BE_DEKU),",
+   "after": "CHECK(RC_WOODFALL_TEMPLE_WATER_ROOM_GRASS_01, CAN_BE_DEKU || (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_GORON)))), // woodfall_temple.yml:101",
+   "id": "WoodfallTemple:298"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 299,
+   "region": "RR_WOODFALL_TEMPLE_WATER_ROOM",
+   "kind": "ifdef",
+   "before": "CHECK(RC_WOODFALL_TEMPLE_WATER_ROOM_GRASS_02, CAN_BE_DEKU),",
+   "after": "CHECK(RC_WOODFALL_TEMPLE_WATER_ROOM_GRASS_02, CAN_BE_DEKU || (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_GORON)))), // woodfall_temple.yml:101",
+   "id": "WoodfallTemple:299"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 310,
+   "region": "RR_WOODFALL_TEMPLE_WATER_ROOM",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_WOODFALL_TEMPLE_MAP_ROOM, CAN_BE_DEKU),",
+   "after": "CONNECTION(RR_WOODFALL_TEMPLE_MAP_ROOM, CAN_BE_DEKU || (MM_LOGIC_HAS_HOVER_BOOTS && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_GORON)))), // woodfall_temple.yml:101",
+   "id": "WoodfallTemple:310"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp",
+   "line": 311,
+   "region": "RR_WOODFALL_TEMPLE_WATER_ROOM",
+   "kind": "ifdef",
+   "before": "CONNECTION(RR_WOODFALL_TEMPLE_WATER_ROOM_UPPER, CAN_USE_BOW && CAN_BE_DEKU),",
+   "after": "CONNECTION(RR_WOODFALL_TEMPLE_WATER_ROOM_UPPER, (CAN_USE_BOW && CAN_BE_DEKU) || (CAN_USE_BOW && MM_LOGIC_HAS_HOVER_BOOTS)), // woodfall_temple.yml:102, :114",
+   "id": "WoodfallTemple:311"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 381,
+   "region": "RR_GREAT_BAY_TEMPLE_WATER_WHEEL_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_SF_WATER_WHEEL_PLATFORM,           COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (CAN_USE_BOW && HAS_ITEM(ITEM_MASK_GREAT_FAIRY)), COMBO_WORLD48_UW || (HAS_ITEM(ITEM_MASK_GREAT_FAIRY) && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT))))),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_SF_WATER_WHEEL_PLATFORM,           COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (CAN_USE_BOW && HAS_ITEM(ITEM_MASK_GREAT_FAIRY)), COMBO_WORLD48_UW || (HAS_ITEM(ITEM_MASK_GREAT_FAIRY) && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT))))),",
+   "id": "GreatBayTemple:381"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 115,
+   "region": "RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM",
+   "kind": "define-use",
+   "before": "CONNECTION(RR_GREAT_BAY_TEMPLE_MAP_ROOM,                COMBO_WORLD48_SELECT(ComboRando::FaroreOracle::GbtMapUnderwater(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_USE_ABILITY(SWIM), false, CAN_USE_GBT_GEYSER), ComboRando::FaroreOracle::GbtMapUnderwater(COMBO_WORLD48_UW, true, false, CAN_USE_GBT_GEYSER))),",
+   "after": "CONNECTION(RR_GREAT_BAY_TEMPLE_MAP_ROOM,                COMBO_WORLD48_SELECT(ComboRando::FaroreOracle::GbtMapUnderwater(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_USE_ABILITY(SWIM), false, CAN_USE_GBT_GEYSER), ComboRando::FaroreOracle::GbtMapUnderwater(COMBO_WORLD48_UW, true, false, CAN_USE_GBT_GEYSER))),",
+   "id": "GreatBayTemple:115"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 117,
+   "region": "RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM",
+   "kind": "define-use",
+   "before": "CONNECTION(RR_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART,    COMBO_WORLD48_SELECT(ComboRando::FaroreOracle::GbtRedPipe(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_USE_GBT_GEYSER), ComboRando::FaroreOracle::GbtRedPipe(COMBO_WORLD48_UW, CAN_USE_GBT_GEYSER))),",
+   "after": "CONNECTION(RR_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART,    COMBO_WORLD48_SELECT(ComboRando::FaroreOracle::GbtRedPipe(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_USE_GBT_GEYSER), ComboRando::FaroreOracle::GbtRedPipe(COMBO_WORLD48_UW, CAN_USE_GBT_GEYSER))),",
+   "id": "GreatBayTemple:117"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 110,
+   "region": "RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM",
+   "kind": "define-use",
+   "before": "CONNECTION(RR_GREAT_BAY_TEMPLE_COMPASS_ROOM, COMBO_WORLD48_ENABLED && ComboRando::FaroreOracle::GbtCompass(COMBO_WORLD48_UW, false, CAN_USE_GBT_GEYSER, COMBO_WORLD48_WHEEL)),",
+   "after": "CONNECTION(RR_GREAT_BAY_TEMPLE_COMPASS_ROOM, COMBO_WORLD48_ENABLED && ComboRando::FaroreOracle::GbtCompass(COMBO_WORLD48_UW, false, CAN_USE_GBT_GEYSER, COMBO_WORLD48_WHEEL)),",
+   "id": "GreatBayTemple:110"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 116,
+   "region": "RR_GREAT_BAY_TEMPLE_CENTRAL_ROOM",
+   "kind": "define-use",
+   "before": "CONNECTION(RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM,           COMBO_WORLD48_SELECT(ComboRando::FaroreOracle::GbtPreBoss(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_USE_GBT_GEYSER, COMBO_WORLD48_WHEEL), ComboRando::FaroreOracle::GbtPreBoss(COMBO_WORLD48_UW, CAN_USE_GBT_GEYSER, COMBO_WORLD48_WHEEL))),",
+   "after": "CONNECTION(RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM,           COMBO_WORLD48_SELECT(ComboRando::FaroreOracle::GbtPreBoss(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), CAN_USE_GBT_GEYSER, COMBO_WORLD48_WHEEL), ComboRando::FaroreOracle::GbtPreBoss(COMBO_WORLD48_UW, CAN_USE_GBT_GEYSER, COMBO_WORLD48_WHEEL))),",
+   "id": "GreatBayTemple:116"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 296,
+   "region": "RR_GREAT_BAY_TEMPLE_MAP_ROOM",
+   "kind": "define-use",
+   "before": "CONNECTION(RR_GREAT_BAY_TEMPLE_BABA_CHEST_ROOM, COMBO_WORLD48_SELECT(CAN_BE_ZORA, HAS_ITEM(ITEM_MASK_ZORA) || (HAS_ITEM(ITEM_MASK_BLAST) && COMBO_WORLD48_UW))),",
+   "after": "CONNECTION(RR_GREAT_BAY_TEMPLE_BABA_CHEST_ROOM, COMBO_WORLD48_SELECT(CAN_BE_ZORA, HAS_ITEM(ITEM_MASK_ZORA) || (HAS_ITEM(ITEM_MASK_BLAST) && COMBO_WORLD48_UW))),",
+   "id": "GreatBayTemple:296"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 284,
+   "region": "RR_GREAT_BAY_TEMPLE_MAP_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_01,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_01,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:284"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 285,
+   "region": "RR_GREAT_BAY_TEMPLE_MAP_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_02,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_02,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:285"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 286,
+   "region": "RR_GREAT_BAY_TEMPLE_MAP_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_03,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_03,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:286"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 287,
+   "region": "RR_GREAT_BAY_TEMPLE_MAP_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_04,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_04,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:287"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 288,
+   "region": "RR_GREAT_BAY_TEMPLE_MAP_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_05,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_05,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:288"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 289,
+   "region": "RR_GREAT_BAY_TEMPLE_MAP_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_06,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_06,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:289"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 290,
+   "region": "RR_GREAT_BAY_TEMPLE_MAP_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_07,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_07,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:290"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 291,
+   "region": "RR_GREAT_BAY_TEMPLE_MAP_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_08,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_MAP_ROOM_WATER_POT_08,    COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:291"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 146,
+   "region": "RR_GREAT_BAY_TEMPLE_COMPASS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_UNDERWATER,     COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_UNDERWATER,     COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:146"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 133,
+   "region": "RR_GREAT_BAY_TEMPLE_COMPASS_ROOM_TUNNEL",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_SF_COMPASS_ROOM_TUNNEL_POT,                COMBO_WORLD48_SELECT(CAN_BE_ZORA || (CAN_USE_PROJECTILE && HAS_ITEM(ITEM_MASK_GREAT_FAIRY)), HAS_ITEM(ITEM_MASK_ZORA) || ((HAS_ITEM(ITEM_MASK_GREAT_FAIRY) || COMBO_WORLD48_UW || (!(RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] || RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) || HaveEnemySoul(ACTOR_EN_WDHAND))) && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_ZORA) || (HAS_ITEM(ITEM_MASK_DEKU) && HAS_MAGIC) || CAN_USE_BOMBCHUS)) || (COMBO_WORLD48_UW && HAS_ITEM(ITEM_MASK_BLAST)))),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_SF_COMPASS_ROOM_TUNNEL_POT,                COMBO_WORLD48_SELECT(CAN_BE_ZORA || (CAN_USE_PROJECTILE && HAS_ITEM(ITEM_MASK_GREAT_FAIRY)), HAS_ITEM(ITEM_MASK_ZORA) || ((HAS_ITEM(ITEM_MASK_GREAT_FAIRY) || COMBO_WORLD48_UW || (!(RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] || RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS]) || HaveEnemySoul(ACTOR_EN_WDHAND))) && (CAN_USE_BOW || HAS_ITEM(ITEM_HOOKSHOT) || HAS_ITEM(ITEM_MASK_ZORA) || (HAS_ITEM(ITEM_MASK_DEKU) && HAS_MAGIC) || CAN_USE_BOMBCHUS)) || (COMBO_WORLD48_UW && HAS_ITEM(ITEM_MASK_BLAST)))),",
+   "id": "GreatBayTemple:133"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 151,
+   "region": "RR_GREAT_BAY_TEMPLE_COMPASS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_WATER_POT_01,   COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_WATER_POT_01,   COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:151"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 152,
+   "region": "RR_GREAT_BAY_TEMPLE_COMPASS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_WATER_POT_02,   COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_WATER_POT_02,   COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:152"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 153,
+   "region": "RR_GREAT_BAY_TEMPLE_COMPASS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_WATER_POT_03,   COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_WATER_POT_03,   COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:153"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 134,
+   "region": "RR_GREAT_BAY_TEMPLE_COMPASS_ROOM_TUNNEL",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_TUNNEL_FREESTANDING_RUPEE_01, COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_TUNNEL_FREESTANDING_RUPEE_01, COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:134"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 135,
+   "region": "RR_GREAT_BAY_TEMPLE_COMPASS_ROOM_TUNNEL",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_TUNNEL_FREESTANDING_RUPEE_02, COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_COMPASS_ROOM_TUNNEL_FREESTANDING_RUPEE_02, COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:135"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 326,
+   "region": "RR_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART_POT_01, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART_POT_01, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:326"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 327,
+   "region": "RR_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART_POT_02, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART_POT_02, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:327"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 328,
+   "region": "RR_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART_POT_03, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART_POT_03, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:328"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 329,
+   "region": "RR_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART_POT_04, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_RED_PIPE_BEFORE_WART_POT_04, COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:329"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 214,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_1",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_1_POT_01,                COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_1_POT_01,                COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:214"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 215,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_1",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_1_POT_02,                COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_1_POT_02,                COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:215"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 216,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_1",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_1_POT_03,                COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_1_POT_03,                COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:216"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 217,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_1",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_1_POT_04,                COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_1_POT_04,                COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:217"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 239,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_2",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_01,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_01,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:239"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 240,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_2",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_02,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_02,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:240"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 241,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_2",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_03,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_03,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:241"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 242,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_2",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_04,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_04,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:242"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 243,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_2",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_05,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_05,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:243"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 244,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_2",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_06,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_06,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:244"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 245,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_2",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_07,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_07,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:245"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 246,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_2",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_08,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_GREEN_PIPE_2_POT_08,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:246"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 260,
+   "region": "RR_GREAT_BAY_TEMPLE_GREEN_PIPE_3",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_SF_GREEN_PIPE_3_BARREL,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW || (HAS_ITEM(ITEM_MASK_GREAT_FAIRY) && CAN_USE_BOMBCHUS))),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_SF_GREEN_PIPE_3_BARREL,      COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), COMBO_WORLD48_UW || (HAS_ITEM(ITEM_MASK_GREAT_FAIRY) && CAN_USE_BOMBCHUS))),",
+   "id": "GreatBayTemple:260"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 312,
+   "region": "RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_SF_PRE_BOSS_UNDERWATER,  COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || (CAN_USE_MAGIC_ARROW(ICE) && (HAS_ITEM(ITEM_MASK_GREAT_FAIRY) || COMBO_WORLD48_UW)) || (COMBO_WORLD48_UW && HAS_ITEM(ITEM_HOOKSHOT)))),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_SF_PRE_BOSS_UNDERWATER,  COMBO_WORLD48_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM), HAS_ITEM(ITEM_MASK_ZORA) || (CAN_USE_MAGIC_ARROW(ICE) && (HAS_ITEM(ITEM_MASK_GREAT_FAIRY) || COMBO_WORLD48_UW)) || (COMBO_WORLD48_UW && HAS_ITEM(ITEM_HOOKSHOT)))),",
+   "id": "GreatBayTemple:312"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 303,
+   "region": "RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_01,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_01,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:303"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 304,
+   "region": "RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_02,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_02,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:304"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 305,
+   "region": "RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_03,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_03,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:305"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 306,
+   "region": "RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_04,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_04,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:306"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 307,
+   "region": "RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_05,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_05,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:307"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 308,
+   "region": "RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_06,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_06,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:308"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 309,
+   "region": "RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_07,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_07,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:309"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 310,
+   "region": "RR_GREAT_BAY_TEMPLE_PRE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_08,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_PRE_BOSS_POT_08,         COMBO_WORLD48_SELECT(CAN_BE_ZORA, COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:310"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Logic.h",
+   "line": 0,
+   "region": "",
+   "kind": "text",
+   "before": null,
+   "after": "COMBO_MM_TRICK(\"IgosDins\") != 0, MM_LOGIC_HAS_IRON_BOOTS, MM_LOGIC_HAS_ZORA_TUNIC_STRICT, COMBO_MM_TRICK(\"GyorgIrons\") != 0 };",
+   "id": "Logic:0"
+  },
+  {
+   "file": "combo/rando/MmCombatRules.h",
+   "line": 0,
+   "region": "",
+   "kind": "text",
+   "before": null,
+   "after": "(c.ironBoots && c.zoraTunicStrict && c.hookshot && c.gyorgIrons)",
+   "id": "MmCombatRules:0"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 66,
+   "region": "RR_GREAT_BAY_TEMPLE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_BOSS_UNDERWATER_POT_01, COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_BOSS_UNDERWATER_POT_01, COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:66"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 72,
+   "region": "RR_GREAT_BAY_TEMPLE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_BOSS_UNDERWATER_POT_02, COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_BOSS_UNDERWATER_POT_02, COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:72"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 78,
+   "region": "RR_GREAT_BAY_TEMPLE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_BOSS_UNDERWATER_POT_03, COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_BOSS_UNDERWATER_POT_03, COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:78"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp",
+   "line": 84,
+   "region": "RR_GREAT_BAY_TEMPLE_BOSS_ROOM",
+   "kind": "define-use",
+   "before": "CHECK(RC_GREAT_BAY_TEMPLE_BOSS_UNDERWATER_POT_04, COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT), COMBO_WORLD48_UW)),",
+   "after": "CHECK(RC_GREAT_BAY_TEMPLE_BOSS_UNDERWATER_POT_04, COMBO_WORLD48_SELECT((CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_IRON_BOOTS && MM_LOGIC_HAS_ZORA_TUNIC_STRICT), COMBO_WORLD48_UW)),",
+   "id": "GreatBayTemple:84"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 429,
+   "region": "RR_ZORA_CAPE",
+   "kind": "define-use",
+   "before": "CONNECTION(RR_ZORA_CAPE_BEFORE_GREAT_BAY_TEMPLE, COMBO_WORLD54_SELECT(CAN_BE_ZORA, COMBO_WORLD54_PENINSULA)),",
+   "after": "CONNECTION(RR_ZORA_CAPE_BEFORE_GREAT_BAY_TEMPLE, COMBO_WORLD54_SELECT(CAN_BE_ZORA, COMBO_WORLD54_PENINSULA)),",
+   "id": "West:429"
+  },
+  {
+   "file": "mm/2s2h/Rando/Logic/Regions/West.cpp",
+   "line": 345,
+   "region": "RR_ZORA_CAPE_BEFORE_GREAT_BAY_TEMPLE",
+   "kind": "define-use",
+   "before": "CONNECTION(RR_ZORA_CAPE, COMBO_WORLD54_SELECT(CAN_BE_ZORA, COMBO_WORLD54_PENINSULA)),",
+   "after": "CONNECTION(RR_ZORA_CAPE, COMBO_WORLD54_SELECT(CAN_BE_ZORA, COMBO_WORLD54_PENINSULA)),",
+   "id": "West:345"
+  }
+ ],
+ "rows": [
+  {
+   "ootmm": "data/world/mm/overworld/great_bay_coast.yml:5",
+   "expr": "Great Bay Coast -> Great Bay Coast Water: can_swim_or_sink",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:185 (EXIT PINNACLE_ROCK 0 from GBC 3), mm/2s2h/Rando/Logic/Regions/West.cpp:192 (CONNECTION RR_GREAT_BAY_COAST_CLIFFSIDE); also inside mm/2s2h/Rando/Logic/Regions/West.cpp:187",
+   "sites": [
+    "West:185",
+    "West:192"
+   ],
+   "terms": [
+    "MM_LOGIC_CAN_SWIM_OR_SINK"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/great_bay_coast.yml:48",
+   "expr": "Great Bay Coast Cliffs -> Great Bay Coast Water: can_swim_or_sink",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:246 (RR_GREAT_BAY_COAST_CLIFFSIDE -> CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE))",
+   "sites": [
+    "West:246"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/great_bay_coast.yml:72",
+   "expr": "Great Bay Coast Water -> Great Bay Coast Fortress: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:187 (EXIT PIRATES_FORTRESS_EXTERIOR 0 from GBC 5, COMBO_WORLD37_SELECT)",
+   "sites": [
+    "West:187"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/great_bay_coast.yml:119",
+   "expr": "Great Bay Coast Platform -> Great Bay Coast Water: can_swim_or_sink",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:213 (RR_GREAT_BAY_COAST_MARINE_LAB_EXTERIOR -> CONNECTION(RR_GREAT_BAY_COAST, CAN_CROSS_OPEN_WATER_SURFACE))",
+   "sites": [
+    "West:213"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/great_bay_coast.yml:156",
+   "expr": "Great Bay Coast Fortress -> Great Bay Coast Water: underwater_walking",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:203 (RR_PIRATES_FORTRESS_MOAT_LOWER EXIT GBC 5) + mm/2s2h/Rando/Logic/MmOrdinarySourcePredicates.inc.h:14-15",
+   "sites": [
+    "MmOrdinarySourcePredicates:15",
+    "PiratesFortress:203"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:4",
+   "expr": "Pirate Fortress -> Great Bay Coast Fortress: can_reset_time && (underwater_walking || can_dive_small)",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:203",
+   "sites": [
+    "PiratesFortress:203"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:4#source",
+   "expr": "Pirate Fortress -> Great Bay Coast Fortress (ER source predicate for exit 0x6850 = 26704)",
+   "kind": "context_inc",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/MmOrdinarySourcePredicates.inc.h:14-15",
+   "sites": [
+    "MmOrdinarySourcePredicates:15"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:12",
+   "expr": "Pirate Fortress Entrance -> Pirate Fortress Sewers: underwater_walking && (has_mask_goron || can_hammer)",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:204 (EXIT PIRATES_FORTRESS_INTERIOR 9, COMBO_WORLD52_SELECT)",
+   "sites": [
+    "PiratesFortress:204"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:18",
+   "expr": "Pirate Fortress Entrance Chest 1: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:198 (RC_PIRATE_FORTRESS_ENTRANCE_CHEST_01, COMBO_WORLD52_SELECT)",
+   "sites": [
+    "PiratesFortress:198"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:19",
+   "expr": "Pirate Fortress Entrance Chest 2: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:199 (RC_PIRATE_FORTRESS_ENTRANCE_CHEST_02, COMBO_WORLD52_SELECT)",
+   "sites": [
+    "PiratesFortress:199"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:20",
+   "expr": "Pirate Fortress Entrance Chest 3: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:200 (RC_PIRATE_FORTRESS_ENTRANCE_CHEST_03, COMBO_WORLD52_SELECT)",
+   "sites": [
+    "PiratesFortress:200"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:48",
+   "expr": "Pirate Fortress Sewers Chest 2: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:380 (RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_02 in RR_PIRATES_FORTRESS_SEWERS_PREGATE, COMBO_WORLD52_SELECT)",
+   "sites": [
+    "PiratesFortress:380"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:49",
+   "expr": "Pirate Fortress Sewers Chest 3: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:381 (RC_PIRATE_FORTRESS_INTERIOR_SEWERS_CHEST_03 in RR_PIRATES_FORTRESS_SEWERS_PREGATE, COMBO_WORLD52_SELECT)",
+   "sites": [
+    "PiratesFortress:381"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:175",
+   "expr": "ZORA_EGGS_HOOKSHOT_ROOM: can_hookshot_short && underwater_walking && event(FORTRESS_BEEHIVE)",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:62 (RR_PIRATES_FORTRESS_CAPTAIN_ROOM = 'Hookshot Room Lower', EVENT RE_ACCESS_ZORA_EGG)",
+   "sites": [
+    "PiratesFortress:62"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:217",
+   "expr": "ZORA_EGGS_BARREL_MAZE: can_hookshot_short && underwater_walking",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:362 (RR_PIRATES_FORTRESS_RIGHT_CLAM_EGG_ROOM = 'Barrel Maze Aquarium', EVENT RE_ACCESS_ZORA_EGG)",
+   "sites": [
+    "PiratesFortress:362"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:251",
+   "expr": "ZORA_EGGS_LONE_GUARD: can_hookshot_short && underwater_walking",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:94 (RR_PIRATES_FORTRESS_INSIDE_CHEST_EGG_ROOM = 'Lone Guard Aquarium', EVENT RE_ACCESS_ZORA_EGG)",
+   "sites": [
+    "PiratesFortress:94"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:290",
+   "expr": "ZORA_EGGS_TREASURE_ROOM: can_hookshot_short && underwater_walking",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:172 (RR_PIRATES_FORTRESS_LEFT_CLAM_EGG_ROOM = 'Treasure Room Aquarium', EVENT RE_ACCESS_ZORA_EGG)",
+   "sites": [
+    "PiratesFortress:172"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/pirate_fortress.yml:254",
+   "expr": "Pirate Fortress Interior Aquarium: underwater_walking && can_hookshot_short",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/PiratesFortress.cpp:81 (RC_PIRATE_FORTRESS_INTERIOR_AQUARIUM_CHEST in RR_PIRATES_FORTRESS_INSIDE_CHEST_EGG_ROOM)",
+   "sites": [
+    "PiratesFortress:81"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/clock_town.yml:94",
+   "expr": "Clock Town North -> Tingle Town: soul_npc(SOUL_NPC_TINGLE) && is_day && (has_weapon_range || (has_weapon && (trick(MM_NCT_TINGLE) || has_hover_boots)))",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/Central.cpp:197-198 (RC_CLOCK_TOWN_NORTH_TINGLE_MAP_01/02 in RR_CLOCK_TOWN_NORTH)",
+   "sites": [
+    "Central:197",
+    "Central:198"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/clock_town.yml:232",
+   "expr": "Clock Town Laundry Pool Rupee 1: is_night2 && can_swim_or_sink",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/Central.cpp:170 (RC_CLOCK_TOWN_LAUNDRY_FREESTANDING_RUPEE_01)",
+   "sites": [
+    "Central:170"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/clock_town.yml:233",
+   "expr": "Clock Town Laundry Pool Rupee 2: is_night2 && can_swim_or_sink",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/Central.cpp:171 (RC_CLOCK_TOWN_LAUNDRY_FREESTANDING_RUPEE_02)",
+   "sites": [
+    "Central:171"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/clock_town.yml:234",
+   "expr": "Clock Town Laundry Pool Rupee 3: is_night2 && can_swim_or_sink",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/Central.cpp:172 (RC_CLOCK_TOWN_LAUNDRY_FREESTANDING_RUPEE_03)",
+   "sites": [
+    "Central:172"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/termina_field.yml:53",
+   "expr": "Termina Field Water Chest: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp:286 (RC_TERMINA_FIELD_WATER_CHEST, COMBO_WORLD51_SELECT)",
+   "sites": [
+    "TerminaField:286"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/termina_field.yml:400",
+   "expr": "Termina Field Bio Baba Grotto: has_mask_zora || has_boomerang || ((underwater_walking || can_dive_big || (trick(MM_BIO_BABA_LUCK) && soul)) && (has_weapon_range || (has_bombs && soul) || (has_bombchu && trick(MM_BIO_BABA_CHU))))",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp:42 (RC_TERMINA_FIELD_BIO_BABA_GROTTO, COMBO_WORLD51_SELECT)",
+   "sites": [
+    "TerminaField:42"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/termina_field.yml:404",
+   "expr": "Termina Field Bio Baba Grotto Hive Middle: has_mask_zora || ((break_hive || (has_bombs && soul) || (has_bombchu && trick(MM_BIO_BABA_CHU))) && (underwater_walking || can_dive_big || hookshot_anywhere || (short_hook_anywhere && soul)))",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp:45 (RC_TERMINA_FIELD_BIO_BABA_GROTTO_BEEHIVE_01, COMBO_WORLD51_SELECT)",
+   "sites": [
+    "TerminaField:45"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/termina_field.yml:405",
+   "expr": "Termina Field Bio Baba Grotto Hive Left: has_mask_zora || ((break_hive || (has_bombs && soul) || (has_bombchu && trick(MM_BIO_BABA_CHU))) && (underwater_walking || can_dive_big || short_hook_anywhere))",
+   "kind": "pinned_branch",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp:46 (RC_TERMINA_FIELD_BIO_BABA_GROTTO_BEEHIVE_02, COMBO_WORLD51_SELECT)",
+   "sites": [
+    "TerminaField:46"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/path_to_snowhead.yml:7",
+   "expr": "Path to Snowhead Front -> Middle: goron_fast_roll || hookshot_anywhere || (has_hover_boots && trick(MM_PATH_SNOWHEAD_HOVERS))",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/North.cpp:545 (RR_PATH_TO_SNOWHEAD_LOWER -> MIDDLE) and mm/2s2h/Rando/Logic/Regions/North.cpp:557 (MIDDLE -> UPPER)",
+   "sites": [
+    "North:545",
+    "North:557"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"PathSnowheadHovers\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_PATH_SNOWHEAD_HOVERS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/path_to_snowhead.yml:28",
+   "expr": "Path to Snowhead Back -> Middle: goron_fast_roll || hookshot_anywhere || (has_hover_boots && trick(MM_PATH_SNOWHEAD_HOVERS))",
+   "kind": "legacy_only",
+   "audit": "audit-coast-north.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/North.cpp:576 (RR_PATH_TO_SNOWHEAD_UPPER -> MIDDLE) and mm/2s2h/Rando/Logic/Regions/North.cpp:556 (MIDDLE -> LOWER)",
+   "sites": [
+    "North:556",
+    "North:576"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"PathSnowheadHovers\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_PATH_SNOWHEAD_HOVERS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:37",
+   "expr": "Great Bay Temple Central Room: underwater_walking || (has_mask_goron && trick(MM_GBT_WATERWHEEL_GORON)) || short_hook_anywhere || (has_hover_boots && trick(MM_GBT_WATERWHEEL_HOVERS))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:391",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:391"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"GbtWaterwheelHovers\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS",
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_GBT_WATERWHEEL_HOVERS)",
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:40",
+   "expr": "Great Bay Temple SF Water Wheel Platform: can_dive_small || underwater_walking || (has(MASK_GREAT_FAIRY) && (has_arrows || can_hookshot)) || (short_hook_anywhere && trick(MM_GBT_FAIRY2_HOOK) && can_swim)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:381",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:381"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:52",
+   "expr": "Great Bay Temple Map Room: underwater_walking || hookshot_anywhere || (trick(MM_GBT_CENTRAL_GEYSER) && ((can_use_fire_arrows && can_use_ice_arrows) || can_use_din || can_use_farore || can_use_nayru))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:115",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:115"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:53",
+   "expr": "Great Bay Temple Red Pipe 1: underwater_walking || (trick(MM_GBT_CENTRAL_GEYSER) && ((can_use_fire_arrows && can_use_ice_arrows) || can_use_din || can_use_farore || can_use_nayru))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:117",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:117"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:55",
+   "expr": "Great Bay Temple Compass Room: (underwater_walking || hookshot_anywhere || (trick(MM_GBT_CENTRAL_GEYSER) && ((can_use_fire_arrows && can_use_ice_arrows) || can_use_din || can_use_farore || can_use_nayru))) && event(GB_WATER_WHEEL)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:110",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:110"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:56",
+   "expr": "Great Bay Temple Pre-Boss: (underwater_walking || (trick(MM_GBT_CENTRAL_GEYSER) && ((can_use_fire_arrows && can_use_ice_arrows) || can_use_din || can_use_farore || can_use_nayru))) && event(GB_WATER_WHEEL)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:116",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:116"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:62",
+   "expr": "Great Bay Temple SF Central Room Underwater Pot: has_mask_zora || (has(MASK_GREAT_FAIRY) && (has_arrows || (underwater_walking_strict && has_mask_blast))) || (underwater_walking_strict && (has_mask_blast || has_arrows) && trick(MM_GBT_CENTER_POT_IRONS))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:106",
+   "sites": [
+    "GreatBayTemple:106"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"GbtCenterPotIrons\")"
+   ],
+   "expects": [
+    "trick(MM_GBT_CENTER_POT_IRONS)",
+    "underwater_walking_strict"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:71",
+   "expr": "Great Bay Temple Baba Room: has_mask_zora || (((has_bombchu && trick(MM_GBT_BABA_ENTRY_BOMBCHU)) || has_mask_blast || has_boomerang) && (short_hook_anywhere || underwater_walking || (can_dive_big && has_tunic_zora))) || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:296",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:296"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "has_tunic_zora",
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:81",
+   "expr": "Great Bay Temple Pot Map Room Water 1: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:284",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:284"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:82",
+   "expr": "Great Bay Temple Pot Map Room Water 2: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:285",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:285"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:83",
+   "expr": "Great Bay Temple Pot Map Room Water 3: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:286",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:286"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:84",
+   "expr": "Great Bay Temple Pot Map Room Water 4: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:287",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:287"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:85",
+   "expr": "Great Bay Temple Pot Map Room Water 5: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:288",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:288"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:86",
+   "expr": "Great Bay Temple Pot Map Room Water 6: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:289",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:289"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:87",
+   "expr": "Great Bay Temple Pot Map Room Water 7: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:290",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:290"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:88",
+   "expr": "Great Bay Temple Pot Map Room Water 8: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:291",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:291"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:111",
+   "expr": "Great Bay Temple Compass Room Underwater: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:146",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:146"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:112",
+   "expr": "Great Bay Temple SF Compass Room Pot: has_mask_zora || short_hook_anywhere || ((has(MASK_GREAT_FAIRY) || underwater_walking || soul_enemy(SOUL_ENEMY_DEXIHAND)) && (has_weapon_range || has_bombchu)) || (underwater_walking && has_mask_blast)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:133",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:133"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:117",
+   "expr": "Great Bay Temple Pot Compass Room Water 1: underwater_walking || short_hook_anywhere || (can_dive_small && (has_weapon_range || has_bombchu))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:151",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:151"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:118",
+   "expr": "Great Bay Temple Pot Compass Room Water 2: underwater_walking || short_hook_anywhere || (can_dive_small && (has_weapon_range || has_bombchu))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:152",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:152"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:119",
+   "expr": "Great Bay Temple Pot Compass Room Water 3: underwater_walking || short_hook_anywhere || (can_dive_small && (has_weapon_range || has_bombchu))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:153",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:153"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:120",
+   "expr": "Great Bay Temple Rupee Compass Room 1: underwater_walking || short_hook_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:134",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:134"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:121",
+   "expr": "Great Bay Temple Rupee Compass Room 2: underwater_walking || short_hook_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:135",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:135"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:131",
+   "expr": "Great Bay Temple Central Room: underwater_walking || hookshot_anywhere",
+   "kind": "legacy_only",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:335",
+   "sites": [
+    "GreatBayTemple:335"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:135",
+   "expr": "GB_PIPE_RED: (soul_octorok && can_use_ice_arrows) || short_hook_anywhere || (has_hover_boots && has_mask_bunny && has_weapon && trick(MM_GBT_RED1_HOVERS))",
+   "kind": "legacy_only",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:339",
+   "sites": [
+    "GreatBayTemple:339"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"GbtRed1Hovers\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_GBT_RED1_HOVERS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:137",
+   "expr": "Great Bay Temple Pot Red Pipe Before Wart 1: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:326",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:326"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:138",
+   "expr": "Great Bay Temple Pot Red Pipe Before Wart 2: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:327",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:327"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:139",
+   "expr": "Great Bay Temple Pot Red Pipe Before Wart 3: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:328",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:328"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:140",
+   "expr": "Great Bay Temple Pot Red Pipe Before Wart 4: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:329",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:329"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:235",
+   "expr": "Great Bay Temple Pot Green Pipe 1 1: underwater_walking || (can_use_ice_arrows && hookshot_anywhere)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:214",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:214"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:236",
+   "expr": "Great Bay Temple Pot Green Pipe 1 2: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:215",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:215"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:237",
+   "expr": "Great Bay Temple Pot Green Pipe 1 3: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:216",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:216"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:238",
+   "expr": "Great Bay Temple Pot Green Pipe 1 4: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:217",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:217"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:252",
+   "expr": "Great Bay Temple Green Pipe 2 Upper Chest: (can_hookshot && can_use_ice_arrows) || short_hook_anywhere || (has_hover_boots && trick(MM_GBT_GREEN2_UPPER_HOVERS))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:238",
+   "sites": [
+    "GreatBayTemple:238"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"GbtGreen2UpperHovers\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_GBT_GREEN2_UPPER_HOVERS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:253",
+   "expr": "Great Bay Temple Pot Green Pipe 2 1: (can_dive_small && (has_arrows || has_bombchu || can_hookshot)) || underwater_walking || hookshot_anywhere || (can_use_ice_arrows && short_hook_anywhere)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:239",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:239"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:254",
+   "expr": "Great Bay Temple Pot Green Pipe 2 2: (can_dive_small && (has_arrows || has_bombchu || can_hookshot)) || underwater_walking || hookshot_anywhere || (can_use_ice_arrows && short_hook_anywhere)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:240",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:240"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:255",
+   "expr": "Great Bay Temple Pot Green Pipe 2 3: (can_dive_small && (has_arrows || has_bombchu || can_hookshot)) || underwater_walking || hookshot_anywhere || (can_use_ice_arrows && short_hook_anywhere)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:241",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:241"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:256",
+   "expr": "Great Bay Temple Pot Green Pipe 2 4: (can_dive_small && (has_arrows || has_bombchu || can_hookshot)) || underwater_walking || hookshot_anywhere || (can_use_ice_arrows && short_hook_anywhere)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:242",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:242"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:257",
+   "expr": "Great Bay Temple Pot Green Pipe 2 5: (can_dive_small && (has_arrows || has_bombchu || can_hookshot)) || underwater_walking || hookshot_anywhere || (can_use_ice_arrows && short_hook_anywhere)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:243",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:243"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:258",
+   "expr": "Great Bay Temple Pot Green Pipe 2 6: (can_dive_small && (has_arrows || has_bombchu || can_hookshot)) || underwater_walking || hookshot_anywhere || (can_use_ice_arrows && short_hook_anywhere)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:244",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:244"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:259",
+   "expr": "Great Bay Temple Pot Green Pipe 2 7: (can_dive_small && (has_arrows || has_bombchu)) || underwater_walking || (can_use_ice_arrows && short_hook_anywhere)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:245",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:245"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:260",
+   "expr": "Great Bay Temple Pot Green Pipe 2 8: (can_dive_small && (has_arrows || has_bombchu)) || underwater_walking || (can_use_ice_arrows && short_hook_anywhere)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:246",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:246"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:274",
+   "expr": "Great Bay Temple SF Green Pipe 3 Barrel: underwater_walking || ((has_bombchu || has_mask_blast) && (short_hook_anywhere || can_dive_small)) || (has(MASK_GREAT_FAIRY) && has_bombchu)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:260",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:260"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:293",
+   "expr": "Great Bay Temple SF Pre-Boss Underwater: has_mask_zora || (can_use_ice_arrows && (has(MASK_GREAT_FAIRY) || short_hook_anywhere || underwater_walking)) || (underwater_walking && can_hookshot_short)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:312",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:312"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:294",
+   "expr": "Great Bay Temple Pot Pre-Boss 1: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:303",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:303"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:295",
+   "expr": "Great Bay Temple Pot Pre-Boss 2: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:304",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:304"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:296",
+   "expr": "Great Bay Temple Pot Pre-Boss 3: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:305",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:305"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:297",
+   "expr": "Great Bay Temple Pot Pre-Boss 4: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:306",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:306"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:298",
+   "expr": "Great Bay Temple Pot Pre-Boss 5: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:307",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:307"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:299",
+   "expr": "Great Bay Temple Pot Pre-Boss 6: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:308",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:308"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:300",
+   "expr": "Great Bay Temple Pot Pre-Boss 7: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:309",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:309"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/great_bay_temple.yml:301",
+   "expr": "Great Bay Temple Pot Pre-Boss 8: underwater_walking || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:310",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:310"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/boss/gyorg.yml:6",
+   "expr": "BOSS_GYORG: can_kill_gyorg",
+   "kind": "macro",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:95",
+   "sites": [
+    "Logic:0",
+    "MmCombatRules:0"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"GyorgIrons\")",
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_kill_gyorg"
+   ],
+   "combat": true
+  },
+  {
+   "ootmm": "data/world/mm/boss/gyorg.yml:15",
+   "expr": "Great Bay Temple Boss Pot Underwater 1: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:66-67",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:66"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/boss/gyorg.yml:16",
+   "expr": "Great Bay Temple Boss Pot Underwater 2: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:72-73",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:72"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/boss/gyorg.yml:17",
+   "expr": "Great Bay Temple Boss Pot Underwater 3: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:78-79",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:78"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/boss/gyorg.yml:18",
+   "expr": "Great Bay Temple Boss Pot Underwater 4: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:84-85",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:84"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/boss/gyorg.yml:28",
+   "expr": "Great Bay Temple Boss Pot Underwater 1: underwater_walking || (has_mask_blast && can_dive_big && trick(MM_GYORG_POTS_DIVE))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:66-67",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:66"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/boss/gyorg.yml:29",
+   "expr": "Great Bay Temple Boss Pot Underwater 2: underwater_walking || (has_mask_blast && can_dive_big && trick(MM_GYORG_POTS_DIVE))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:72-73",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:72"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/boss/gyorg.yml:30",
+   "expr": "Great Bay Temple Boss Pot Underwater 3: underwater_walking || (has_mask_blast && can_dive_big && trick(MM_GYORG_POTS_DIVE))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:78-79",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:78"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/boss/gyorg.yml:31",
+   "expr": "Great Bay Temple Boss Pot Underwater 4: underwater_walking || (has_mask_blast && can_dive_big && trick(MM_GYORG_POTS_DIVE))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/GreatBayTemple.cpp:84-85",
+   "sites": [
+    "GreatBayTemple:13",
+    "GreatBayTemple:84"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD48_UW"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:11",
+   "expr": "Zora Cape Peninsula: (can_swim && (underwater_walking || can_use_nayru || trick(MM_ZORA_HALL_HUMAN))) || (can_use_ice_arrows && has_chateau)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:429",
+   "sites": [
+    "West:37",
+    "West:429"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD54_PENINSULA"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:13",
+   "expr": "Zora Cape Near Hall: underwater_walking || (can_dive_small && trick(MM_ZORA_HALL_HUMAN))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:425",
+   "sites": [
+    "West:425"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:19",
+   "expr": "Zora Cape Underwater Chest: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:391",
+   "sites": [
+    "West:391"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:20",
+   "expr": "Zora Cape Waterfall HP: has_mask_zora || (has_iron_boots && has_tunic_zora && (has_arrows || can_use_slingshot || (has_bombchu && trick(MM_CAPE_LIKE_LIKE_BOMBCHU)) || has_mask_blast))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:396",
+   "sites": [
+    "West:396"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "has_iron_boots",
+    "has_tunic_zora"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:94",
+   "expr": "Zora Cape: (has_explosives || trick_keg_explosives || !setting(erIndoorsMajor)) && (can_swim_or_sink || can_use_ice_arrows)",
+   "kind": "legacy_only",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:383",
+   "sites": [
+    "West:383"
+   ],
+   "terms": [
+    "MM_LOGIC_CAN_SWIM_OR_SINK"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:131",
+   "expr": "Zora Hall Entrance: underwater_walking || can_dive_small",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:425",
+   "sites": [
+    "West:425"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:134",
+   "expr": "Zora Cape: underwater_walking || (can_dive_small && trick(MM_ZORA_HALL_HUMAN))",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:494",
+   "sites": [
+    "West:494"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_cape.yml:141",
+   "expr": "Zora Cape: (can_swim && (underwater_walking || can_use_nayru || trick(MM_ZORA_HALL_HUMAN))) || (can_use_ice_arrows && has_chateau)",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:345",
+   "sites": [
+    "West:37",
+    "West:345"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ],
+   "defines": [
+    "COMBO_WORLD54_PENINSULA"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/zora_hall.yml:4",
+   "expr": "Zora Cape Near Hall: underwater_walking || can_dive_small",
+   "kind": "pinned_branch",
+   "audit": "audit-greatbay.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/West.cpp:494",
+   "sites": [
+    "West:494"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:65",
+   "expr": "\"Stone Tower Temple Under West Garden\" -> \"Under West Garden After Block\": ... || (can_hookshot && has_hover_boots && trick(MM_STT_LAVA_BLOCK_HOVERS) && (has_weapon || has_mask_bunny))",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:110,115-119",
+   "sites": [
+    "StoneTowerTemple:110",
+    "StoneTowerTemple:115",
+    "StoneTowerTemple:116",
+    "StoneTowerTemple:117",
+    "StoneTowerTemple:118",
+    "StoneTowerTemple:119"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"SttLavaBlockHovers\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_STT_LAVA_BLOCK_HOVERS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:102",
+   "expr": "\"Stone Tower Temple Center East\" -> \"East\": underwater_walking || short_hook_anywhere || can_dive_small",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:40",
+   "sites": [
+    "StoneTowerTemple:40"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:146",
+   "expr": "\"Stone Tower Temple East Water\" -> \"Center Water\": has_mask_zora || can_dive_small || (has_tunic_zora && has_iron_boots)",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:232",
+   "sites": [
+    "StoneTowerTemple:232"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "has_iron_boots",
+    "has_tunic_zora"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:148",
+   "expr": "East Water event STONE_TOWER_WATER_CHEST_SWITCH: underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:245",
+   "sites": [
+    "StoneTowerTemple:245"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:150",
+   "expr": "\"Stone Tower Temple Water Sun Switch Chest\": underwater_walking && event(STONE_TOWER_WATER_CHEST_SUN)",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:224",
+   "sites": [
+    "StoneTowerTemple:224"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:151",
+   "expr": "\"Stone Tower Temple Pot Water Room Underwater Lower 1\" (East Water): underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:204",
+   "sites": [
+    "StoneTowerTemple:204"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:152",
+   "expr": "\"Stone Tower Temple Pot Water Room Underwater Lower 2\" (East Water): underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:209",
+   "sites": [
+    "StoneTowerTemple:209"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:153",
+   "expr": "\"Stone Tower Temple Pot Water Room Underwater Lower 3\" (East Water): underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:199",
+   "sites": [
+    "StoneTowerTemple:199"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:154",
+   "expr": "\"Stone Tower Temple Pot Water Room Underwater Upper 1\" (East Water): underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:214",
+   "sites": [
+    "StoneTowerTemple:214"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:155",
+   "expr": "\"Stone Tower Temple Pot Water Room Underwater Upper 2\" (East Water): underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:219",
+   "sites": [
+    "StoneTowerTemple:219"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:176",
+   "expr": "\"Stone Tower Temple Wind Room Ledge Chest\": has(MASK_DEKU) || (trick(MM_ST_UPDRAFTS) && (short_hook_anywhere || (has_hover_boots && has_iron_boots))) || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:269",
+   "sites": [
+    "StoneTowerTemple:269"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"StUpdrafts\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS",
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "has_iron_boots",
+    "trick(MM_ST_UPDRAFTS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:182",
+   "expr": "\"Stone Tower Temple Rupee Wind Room 1\": has(MASK_DEKU) || (trick(MM_ST_UPDRAFTS) && (short_hook_anywhere || (has_hover_boots && has_iron_boots))) || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:271",
+   "sites": [
+    "StoneTowerTemple:271"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"StUpdrafts\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS",
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "has_iron_boots",
+    "trick(MM_ST_UPDRAFTS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:183",
+   "expr": "\"Stone Tower Temple Rupee Wind Room 2\": has(MASK_DEKU) || (trick(MM_ST_UPDRAFTS) && (short_hook_anywhere || (has_hover_boots && has_iron_boots))) || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:272",
+   "sites": [
+    "StoneTowerTemple:272"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"StUpdrafts\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS",
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "has_iron_boots",
+    "trick(MM_ST_UPDRAFTS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:184",
+   "expr": "\"Stone Tower Temple Rupee Wind Room 3\": has(MASK_DEKU) || (trick(MM_ST_UPDRAFTS) && (short_hook_anywhere || (has_hover_boots && has_iron_boots))) || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:273",
+   "sites": [
+    "StoneTowerTemple:273"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"StUpdrafts\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS",
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "has_iron_boots",
+    "trick(MM_ST_UPDRAFTS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:185",
+   "expr": "\"Stone Tower Temple Rupee Wind Room 4\": has(MASK_DEKU) || (trick(MM_ST_UPDRAFTS) && (short_hook_anywhere || (has_hover_boots && has_iron_boots))) || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:274",
+   "sites": [
+    "StoneTowerTemple:274"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"StUpdrafts\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS",
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "has_iron_boots",
+    "trick(MM_ST_UPDRAFTS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:186",
+   "expr": "\"Stone Tower Temple Rupee Wind Room 5\": has(MASK_DEKU) || (trick(MM_ST_UPDRAFTS) && (short_hook_anywhere || (has_hover_boots && has_iron_boots))) || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:275",
+   "sites": [
+    "StoneTowerTemple:275"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"StUpdrafts\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS",
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "has_iron_boots",
+    "trick(MM_ST_UPDRAFTS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple.yml:187",
+   "expr": "\"Stone Tower Temple Rupee Wind Room 6\": has(MASK_DEKU) || (trick(MM_ST_UPDRAFTS) && (short_hook_anywhere || (has_hover_boots && has_iron_boots))) || hookshot_anywhere",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:276",
+   "sites": [
+    "StoneTowerTemple:276"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"StUpdrafts\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS",
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "has_iron_boots",
+    "trick(MM_ST_UPDRAFTS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple_inverted.yml:16",
+   "expr": "\"Stone Tower Temple Inverted Entrance\" -> \"Inverted Entrance Ledge\": (trick(MM_ISTT_ENTRY_JUMP) && (has_bombs || trick_keg_explosives)) || short_hook_anywhere || (trick(MM_ISTT_ENTRY_HOVER) && has_hover_boots && has_mask_bunny)",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:357-360",
+   "sites": [
+    "StoneTowerTemple:358"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"IsttEntryHover\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_ISTT_ENTRY_HOVER)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/stone_tower_temple_inverted.yml:33",
+   "expr": "\"Stone Tower Temple Inverted East\" -> \"Inverted East Bridge\": has(MASK_DEKU) || trick(MM_ST_UPDRAFTS) || short_hook_anywhere",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/StoneTowerTemple.cpp:365,367-368,385",
+   "sites": [
+    "StoneTowerTemple:365",
+    "StoneTowerTemple:367",
+    "StoneTowerTemple:368",
+    "StoneTowerTemple:385"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"StUpdrafts\")"
+   ],
+   "expects": [
+    "trick(MM_ST_UPDRAFTS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:51",
+   "expr": "\"Snowhead Temple Bridge Room\" (in Bridge Front): soul_freezard && (can_hookshot_short || (has_hover_boots && can_kill_freezard_short_range))",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp:74",
+   "sites": [
+    "SnowheadTemple:74"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:70",
+   "expr": "\"Snowhead Temple Bridge Room\" (in Bridge Back): soul_freezard && (can_use_fire_short_range || (has_hover_boots && can_kill_freezard_short_range))",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp:74",
+   "sites": [
+    "SnowheadTemple:74"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:96",
+   "expr": "\"Snowhead Temple Map Room Upper\" -> \"Fire Arrow\": goron_fast_roll || (can_use_lens && scarecrow_hookshot && has(MASK_DEKU)) || short_hook_anywhere || has_hover_boots",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp:183",
+   "sites": [
+    "SnowheadTemple:183"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:239",
+   "expr": "\"Snowhead Temple Dual Switches Locked\" -> \"Unlocked\": has_mask_goron || can_hammer || is_tall || short_hook_anywhere || can_hookshot || has_hover_boots || can_use_fire_short_range || trick_sht_hot_water_er",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp:248",
+   "sites": [
+    "SnowheadTemple:248"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:262",
+   "expr": "\"Snowhead Temple Center Level 2 Dual\" -> \"Map Room Upper\": can_hookshot || short_hook_anywhere || has_hover_boots",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp:185,170-171",
+   "sites": [
+    "SnowheadTemple:170",
+    "SnowheadTemple:171",
+    "SnowheadTemple:185"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:274",
+   "expr": "\"Snowhead Temple Center Level 2 Iced\" -> \"Fire Arrow\": (can_use_lens && scarecrow_hookshot && has(MASK_DEKU)) || short_hook_anywhere || has_hover_boots",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp:183",
+   "sites": [
+    "SnowheadTemple:183"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:275",
+   "expr": "\"Snowhead Temple Center Level 2 Iced\" -> \"Map Room Upper\": has_mask_goron || short_hook_anywhere || has_hover_boots || can_hookshot",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp:185,170-171",
+   "sites": [
+    "SnowheadTemple:170",
+    "SnowheadTemple:171",
+    "SnowheadTemple:185"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/snowhead_temple.yml:322",
+   "expr": "\"Snowhead Temple Center Level 3 Iced\" -> \"Center Level 3 Snow\": has_mask_goron || can_hookshot || short_hook_anywhere || has_hover_boots",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/SnowheadTemple.cpp:205",
+   "sites": [
+    "SnowheadTemple:175",
+    "SnowheadTemple:176",
+    "SnowheadTemple:177",
+    "SnowheadTemple:205"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/moon.yml:117",
+   "expr": "Moon Trial Zora event MOON_TRIAL_ZORA: underwater_walking || can_dive_small",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/Moon.cpp:133-135",
+   "sites": [
+    "Moon:133"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/moon.yml:119",
+   "expr": "\"Moon Trial Zora HP\": underwater_walking || can_dive_small",
+   "kind": "legacy_only",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/Moon.cpp:122",
+   "sites": [
+    "Moon:122"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS",
+    "MM_LOGIC_HAS_ZORA_TUNIC"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/twin_island.yml:17",
+   "expr": "\"Twin Islands Underwater Chest 1\": is_spring && underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/North.cpp:405",
+   "sites": [
+    "North:405"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/twin_island.yml:18",
+   "expr": "\"Twin Islands Underwater Chest 2\": is_spring && underwater_walking",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/North.cpp:406",
+   "sites": [
+    "North:406"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/twin_island.yml:32",
+   "expr": "\"Twin Islands Rupee 1\": is_spring && (underwater_walking || can_dive_small)",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/North.cpp:407",
+   "sites": [
+    "North:407"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/twin_island.yml:33",
+   "expr": "\"Twin Islands Rupee 2\": is_spring && (underwater_walking || can_dive_small)",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/North.cpp:408",
+   "sites": [
+    "North:408"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/twin_island.yml:34",
+   "expr": "\"Twin Islands Rupee 3\": is_spring && (underwater_walking || can_dive_small)",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/North.cpp:409",
+   "sites": [
+    "North:409"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/twin_island.yml:35",
+   "expr": "\"Twin Islands Rupee 4\": is_spring && (underwater_walking || can_dive_small)",
+   "kind": "pinned_branch",
+   "audit": "audit-snow-ikana.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/North.cpp:410",
+   "sites": [
+    "North:410"
+   ],
+   "terms": [
+    "MM_LOGIC_UNDERWATER_WALKING"
+   ],
+   "expects": [
+    "underwater_walking"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/southern_swamp.yml:300",
+   "expr": "Southern Swamp Song of Soaring (Swamp Canopy Back): has(MASK_DEKU) || short_hook_anywhere || (has_hover_boots && has_mask_bunny && (has_weapon || has_explosives) && trick(MM_SOARING_HOVERS)) || (has_mask_zora && has_explosives && trick(MM_SOARING_ZORA))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/South.cpp:526",
+   "sites": [
+    "South:526"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"SoaringHovers\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_SOARING_HOVERS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:16",
+   "expr": "Woodfall Temple Entrance Front -> Entrance Back: has(MASK_DEKU) || can_hookshot_short || (has_hover_boots && has_weapon && has_explosives && has_mask_bunny && (has_arrows || has_mask_stone) && trick(MM_WFT_LOBBY_HOVERS))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp:126",
+   "sites": [
+    "WoodfallTemple:113",
+    "WoodfallTemple:114",
+    "WoodfallTemple:126"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"WftLobbyHovers\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_WFT_LOBBY_HOVERS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:101",
+   "expr": "Water Room Lower Ledge -> Water Room Map Ledge: has(MASK_DEKU) || ... || (has_hover_boots && (has_arrows || can_hookshot_short)) || (has_mask_goron && (has_hover_boots || can_hookshot_short)) || ...",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp:310",
+   "sites": [
+    "WoodfallTemple:298",
+    "WoodfallTemple:299",
+    "WoodfallTemple:310"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:102",
+   "expr": "Water Room Lower Ledge -> Water Room Upper Ledge: (has_arrows && (has(MASK_DEKU) || has_hover_boots)) || short_hook_anywhere",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp:311",
+   "sites": [
+    "WoodfallTemple:311"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:114",
+   "expr": "Water Room Map Ledge -> Water Room Upper Ledge: (has_arrows && (has(MASK_DEKU) || has_hover_boots)) || short_hook_anywhere",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp:311",
+   "sites": [
+    "WoodfallTemple:311"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:213",
+   "expr": "Main Upper Ledge event WOODFALL_TEMPLE_MAIN_CHEST: has(MASK_DEKU) || short_hook_anywhere || has_hover_boots (-> :61 Center Chest = event(WOODFALL_TEMPLE_MAIN_CHEST))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp:146",
+   "sites": [
+    "WoodfallTemple:146"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:224",
+   "expr": "Water Room Upper Ledge -> Water Room Map Ledge: has_bombs || has_mask_goron || has_hover_boots || can_use_ice_arrows || can_hookshot_short",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp:282-295",
+   "sites": [
+    "WoodfallTemple:287",
+    "WoodfallTemple:287+1",
+    "WoodfallTemple:293"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/woodfall_temple.yml:229",
+   "expr": "Woodfall Temple Water Chest (Upper Ledge): has(MASK_DEKU) || has_hover_boots || can_hookshot || (can_hookshot_short && (...)) || can_use_ice_arrows",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/WoodfallTemple.cpp:282-288",
+   "sites": [
+    "WoodfallTemple:287+2"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/overworld/woodfall.yml:42",
+   "expr": "Woodfall Near Owl Chest (Woodfall Shrine): short_hook_anywhere || (has_hover_boots && has_mask_bunny && has_weapon && trick(MM_WF_SHRINE_HOVERS))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/South.cpp:618",
+   "sites": [
+    "South:618"
+   ],
+   "terms": [
+    "COMBO_MM_TRICK(\"WfShrineHovers\")",
+    "MM_LOGIC_HAS_HOVER_BOOTS"
+   ],
+   "expects": [
+    "has_hover_boots",
+    "trick(MM_WF_SHRINE_HOVERS)"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/secret_shrine.yml:65",
+   "expr": "Secret Shrine Pot Underwater 1: has_mask_zora || has_boomerang || (can_swim_or_sink && (has_arrows || can_hookshot_short || can_use_slingshot))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/East.cpp:469",
+   "sites": [
+    "East:469"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/secret_shrine.yml:66",
+   "expr": "Secret Shrine Pot Underwater 2: has_mask_zora || has_boomerang || (can_swim_or_sink && (has_arrows || can_hookshot_short || can_use_slingshot))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/East.cpp:470",
+   "sites": [
+    "East:470"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/secret_shrine.yml:67",
+   "expr": "Secret Shrine Pot Underwater 3: has_mask_zora || has_boomerang || (can_swim_or_sink && (has_arrows || can_hookshot_short || can_use_slingshot))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/East.cpp:471",
+   "sites": [
+    "East:471"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/secret_shrine.yml:68",
+   "expr": "Secret Shrine Pot Underwater 4: has_mask_zora || has_boomerang || (can_swim_or_sink && (has_arrows || can_hookshot_short || can_use_slingshot))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/East.cpp:472",
+   "sites": [
+    "East:472"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/secret_shrine.yml:69",
+   "expr": "Secret Shrine Pot Underwater 5: has_mask_zora || has_boomerang || (can_swim_or_sink && (has_arrows || can_hookshot_short || can_use_slingshot))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/East.cpp:473",
+   "sites": [
+    "East:473"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  },
+  {
+   "ootmm": "data/world/mm/dungeons/secret_shrine.yml:70",
+   "expr": "Secret Shrine Pot Underwater 6: has_mask_zora || has_boomerang || (can_swim_or_sink && (has_arrows || can_hookshot_short || can_use_slingshot))",
+   "kind": "legacy_only",
+   "audit": "audit-south.json",
+   "fork": "mm/2s2h/Rando/Logic/Regions/East.cpp:474",
+   "sites": [
+    "East:474"
+   ],
+   "terms": [
+    "MM_LOGIC_HAS_IRON_BOOTS"
+   ],
+   "expects": [
+    "can_swim_or_sink"
+   ]
+  }
+ ]
+}
