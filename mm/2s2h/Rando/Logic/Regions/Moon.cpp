@@ -119,7 +119,11 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_MOON_ZORA_TRIAL] = RandoRegion{ .sceneId = SCENE_LAST_ZORA,
         .checks = {
+#ifdef COMBO_BUILD
+            CHECK(RC_MOON_TRIAL_ZORA_PIECE_OF_HEART, (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)) || (MM_LOGIC_HAS_ZORA_TUNIC && MM_LOGIC_HAS_IRON_BOOTS)), // moon.yml:119
+#else
             CHECK(RC_MOON_TRIAL_ZORA_PIECE_OF_HEART, CAN_BE_ZORA && CAN_USE_ABILITY(SWIM)),
+#endif
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(THE_MOON, 0),                     ENTRANCE(MOON_ZORA_TRIAL, 0), true),
@@ -130,9 +134,15 @@ static RegisterShipInitFunc initFunc([]() {
         .checks = {
             // With 20 regular masks each pinned trial entrance is available (1/2/3/4).
             // Compose MOON_TRIAL_* completion events from their exact supported routes.
+#ifdef COMBO_BUILD
+            CHECK(RC_MOON_FIERCE_DEITY_MASK, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MOON_CHILDREN) &&
+                CanReturnFromMoon() && MoonMaskCount() >= 20 && CAN_BE_DEKU && CAN_GORON_SPIKE_ROLL &&
+                (CAN_BE_ZORA || (MM_LOGIC_HAS_ZORA_TUNIC && MM_LOGIC_HAS_IRON_BOOTS)) && HAS_ITEM(ITEM_HOOKSHOT) && CanPassMoonIronKnuckle() && CAN_USE_BOMBCHUS && CAN_USE_BOW && CAN_USE_MAGIC_ARROW(FIRE)),
+#else
             CHECK(RC_MOON_FIERCE_DEITY_MASK, Rando::HaveExpandedSoul(Rando::ExpandedSoul::NPC_MOON_CHILDREN) &&
                 CanReturnFromMoon() && MoonMaskCount() >= 20 && CAN_BE_DEKU && CAN_GORON_SPIKE_ROLL &&
                 CAN_BE_ZORA && HAS_ITEM(ITEM_HOOKSHOT) && CanPassMoonIronKnuckle() && CAN_USE_BOMBCHUS && CAN_USE_BOW && CAN_USE_MAGIC_ARROW(FIRE)),
+#endif
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(MOON_DEKU_TRIAL, 0),              ENTRANCE(THE_MOON, 0), 
