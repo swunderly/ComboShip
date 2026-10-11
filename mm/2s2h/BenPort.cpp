@@ -6032,10 +6032,12 @@ extern "C" int Combo_MM_SyncCrossAgeOnEntry(void) {
     // A save without the adult state keeps native MM's raw age, and the dormant Adult Mask keeps its own.
     if (file < 0 || file > 2 || (!active && (!state.enabled || state.maskEnabled)))
         return 0;
+    // The stored age as logic reads it: native MM's raw linkAge is not an age until the state is enabled.
     const int before = MM_GetEffectiveHumanAge(file);
     const int ootAge = active && sCrossAgeOotAge ? sCrossAgeOotAge(file) : -1;
     state.enabled = 1;
-    MM_ApplyFaroreTransitionAge(file, ComboRando::MmAgeLogic::EntryAge(active, ootAge, save.linkAge));
+    save.linkAge = before == 0 ? 0 : 1;
+    MM_ApplyFaroreTransitionAge(file, ComboRando::MmAgeLogic::EntryAge(active, ootAge, before));
     if (MM_GetEffectiveHumanAge(file) == before)
         return 0;
     Rando::CheckTracker::MarkChecksInLogicStale(); // the age macros read it (Logic.h MM_LOGIC_AGE)

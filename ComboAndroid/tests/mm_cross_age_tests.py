@@ -119,7 +119,8 @@ sync_fn = body(benport, 'extern "C" int Combo_MM_SyncCrossAgeOnEntry(void)')
 for term in ('constboolactive=IS_RANDO&&RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE];',
              'if(file<0||file>2||(!active&&(!state.enabled||state.maskEnabled)))return0;',
              'constintootAge=active&&sCrossAgeOotAge?sCrossAgeOotAge(file):-1;', 'state.enabled=1;',
-             'MM_ApplyFaroreTransitionAge(file,ComboRando::MmAgeLogic::EntryAge(active,ootAge,save.linkAge));'):
+             'constintbefore=MM_GetEffectiveHumanAge(file);', 'save.linkAge=before==0?0:1;',
+             'MM_ApplyFaroreTransitionAge(file,ComboRando::MmAgeLogic::EntryAge(active,ootAge,before));'):
     check(term in sync_fn, f'Combo_MM_SyncCrossAgeOnEntry lacks {term}')
 check('if(!active)return1;if(ootAge==0||ootAge==1)returnootAge;returnstoredAge==0?0:1;' in
       body(read('combo/rando/MmAgeLogic.h'), 'inline int EntryAge('), 'MmAgeLogic::EntryAge differs')
