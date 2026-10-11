@@ -6128,8 +6128,8 @@ extern "C" int Combo_MM_IsLinkAdult(void) {
     return Combo_MM_IsAdult() && Combo_MM_AdultResourcesReady();
 }
 // MM boots and tunics are separate from Adult Link in MM, as in OoTMM, where child Link wears them (Player.c:616-687,
-// 1171-1207). Release switch: on only after the on-phone gear checks pass.
-static constexpr bool kMmGearIntegrationComplete = false;
+// 1171-1207). Release switch, set in its own commit: turn it off again if the on-phone gear checks fail.
+static constexpr bool kMmGearIntegrationComplete = true;
 static int Combo_MM_GearIntegrationEnabled(void) {
 #ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
     // The private diagnostic build validates the gear with the same default-off switch as the adult runtime.
