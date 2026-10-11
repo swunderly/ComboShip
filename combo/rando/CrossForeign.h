@@ -23,6 +23,8 @@
 #include <filesystem>
 #include <fstream>
 #include <cstdint>
+#include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <iterator>
 #include <nlohmann/json.hpp>
@@ -124,11 +126,13 @@ inline void Combo_SetForeignJson(const char* json) {
 }
 
 // Drop a trailing " (OOT)"/" (MM)" tag so re-tagging an already-tagged name (plandomizer round-trip)
-// can't double it.
+// can't double it. Case-insensitive: OoTMM's own names (e.g. OoT soul nouns) end in " (OoT)".
 inline std::string StripGameSuffix(std::string s) {
     for (const char* suf : { " (OOT)", " (MM)" }) {
         const size_t n = std::strlen(suf);
-        if (s.size() > n && s.compare(s.size() - n, n, suf) == 0) {
+        if (s.size() > n && std::equal(s.end() - n, s.end(), suf, [](char a, char b) {
+                return std::toupper(static_cast<unsigned char>(a)) == b;
+            })) {
             s.resize(s.size() - n);
             break;
         }
