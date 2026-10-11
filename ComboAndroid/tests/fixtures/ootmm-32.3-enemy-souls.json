@@ -21,6 +21,18 @@
     "packages/generator/src/oot/actors.c": {
       "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/packages/generator/src/oot/actors.c",
       "sha256": "878791bf73d263b7bde115242903b328df156bf594c54a816c92f7dbec69e08f"
+    },
+    "packages/generator/src/oot/mq.c": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/packages/generator/src/oot/mq.c",
+      "sha256": "86789c1280f6d23373c328460aeb6ffac8053a639a78ad7957fe2cb84bd97efa"
+    },
+    "packages/generator/include/combo/dungeon.h": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/packages/generator/include/combo/dungeon.h",
+      "sha256": "7eab6abebdcda9b61fdff742dbc4db1f5e4925ee287089ca44f11911b66ec584"
+    },
+    "packages/generator/data/static/mq_rooms.bin": {
+      "url": "https://github.com/OoTMM/OoTMM/blob/413573d22d1d53e8a81931a70927f625b73488b9/packages/generator/data/static/mq_rooms.bin",
+      "sha256": "3b3e1f836124f756560382e7ae033bfb7bd84570b2b1c5ea228655728cb6f636"
     }
   },
   "setting": {
@@ -1170,5 +1182,135 @@
       "class": "opt"
     }
   ],
-  "credits": "canSpawnSoul returns 1 for every actor during the credits (g.isCredits)"
+  "credits": "canSpawnSoul returns 1 for every actor during the credits (g.isCredits)",
+  "mqBrokenActors": {
+    "note": "OoTMM kMqBrokenActors (src/oot/mq.c:70-77), deleted from the MQ room lists while restoreBrokenActors is off (mq.c:398-410), decoded from data/static/mq_rooms.bin with SoH's actor and object tables",
+    "entries": [
+      {
+        "mqDungeon": "MQ_DODONGOS_CAVERN",
+        "scene": "SCENE_DODONGOS_CAVERN",
+        "room": 9,
+        "actorIndex": 0,
+        "actor": "ACTOR_EN_KUSA",
+        "params": 65281,
+        "roomObjects": [
+          "OBJECT_DDAN_OBJECTS",
+          "OBJECT_BWALL",
+          "OBJECT_BOMBF",
+          "OBJECT_BOX",
+          "OBJECT_AM",
+          "OBJECT_SHOPNUTS",
+          "OBJECT_D_ELEVATOR",
+          "OBJECT_BOMBIWA",
+          "OBJECT_ST",
+          "OBJECT_GS",
+          "OBJECT_SYOKUDAI",
+          "OBJECT_YDAN_OBJECTS",
+          "OBJECT_DODOJR",
+          "OBJECT_FIREFLY",
+          "OBJECT_KIBAKO2"
+        ]
+      },
+      {
+        "mqDungeon": "MQ_DODONGOS_CAVERN",
+        "scene": "SCENE_DODONGOS_CAVERN",
+        "room": 10,
+        "actorIndex": 6,
+        "actor": "ACTOR_EN_KUSA",
+        "params": 65281,
+        "roomObjects": [
+          "OBJECT_DDAN_OBJECTS",
+          "OBJECT_BWALL",
+          "OBJECT_BOMBF",
+          "OBJECT_BOX",
+          "OBJECT_AM",
+          "OBJECT_SHOPNUTS",
+          "OBJECT_D_ELEVATOR",
+          "OBJECT_BOMBIWA",
+          "OBJECT_ST",
+          "OBJECT_GS",
+          "OBJECT_SYOKUDAI",
+          "OBJECT_YDAN_OBJECTS",
+          "OBJECT_DODOJR",
+          "OBJECT_FIREFLY",
+          "OBJECT_KIBAKO2"
+        ]
+      },
+      {
+        "mqDungeon": "MQ_JABU_JABU",
+        "scene": "SCENE_JABU_JABU",
+        "room": 7,
+        "actorIndex": 1,
+        "actor": "ACTOR_EN_RU1",
+        "params": 518,
+        "roomObjects": [
+          "OBJECT_BDAN_OBJECTS",
+          "OBJECT_TP",
+          "OBJECT_BXA",
+          "OBJECT_BUBBLE",
+          "OBJECT_VALI",
+          "OBJECT_YDAN_OBJECTS",
+          "OBJECT_KUSA",
+          "OBJECT_BOMBIWA",
+          "OBJECT_ZF"
+        ]
+      },
+      {
+        "mqDungeon": "MQ_TEMPLE_SPIRIT",
+        "scene": "SCENE_SPIRIT_TEMPLE",
+        "room": 1,
+        "actorIndex": 2,
+        "actor": "ACTOR_EN_FIREFLY",
+        "params": 0,
+        "roomObjects": [
+          "OBJECT_JYA_OBJ",
+          "OBJECT_JYA_DOOR",
+          "OBJECT_BOMBIWA",
+          "OBJECT_BOX",
+          "OBJECT_SIOFUKI",
+          "OBJECT_MAMENOKI",
+          "OBJECT_D_HSBLOCK",
+          "OBJECT_BW",
+          "OBJECT_NB",
+          "OBJECT_GI_HEART"
+        ]
+      },
+      {
+        "mqDungeon": "MQ_TEMPLE_SPIRIT",
+        "scene": "SCENE_SPIRIT_TEMPLE",
+        "room": 1,
+        "actorIndex": 3,
+        "actor": "ACTOR_EN_FIREFLY",
+        "params": 0,
+        "roomObjects": [
+          "OBJECT_JYA_OBJ",
+          "OBJECT_JYA_DOOR",
+          "OBJECT_BOMBIWA",
+          "OBJECT_BOX",
+          "OBJECT_SIOFUKI",
+          "OBJECT_MAMENOKI",
+          "OBJECT_D_HSBLOCK",
+          "OBJECT_BW",
+          "OBJECT_NB",
+          "OBJECT_GI_HEART"
+        ]
+      },
+      {
+        "mqDungeon": "MQ_TEMPLE_SPIRIT",
+        "scene": "SCENE_SPIRIT_TEMPLE",
+        "room": 23,
+        "actorIndex": 0,
+        "actor": "ACTOR_EN_SW",
+        "params": 0,
+        "roomObjects": [
+          "OBJECT_JYA_OBJ",
+          "OBJECT_JYA_DOOR",
+          "OBJECT_GI_HEART",
+          "OBJECT_SYOKUDAI",
+          "OBJECT_FIREFLY",
+          "OBJECT_BW"
+        ]
+      }
+    ]
+  }
 }
