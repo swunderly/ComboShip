@@ -1,5 +1,14 @@
 # Device validation still required
 
+## Quick checks for 0.3.10
+
+1. Install over 0.3.9 without uninstalling. The first launch may take a few extra seconds while support files refresh. Load an existing save in each game; it should load as before.
+2. At the file select, move to File 2 and choose Generate. Start Randomizer on File 2 should become available, and File 1's pending seed should be unchanged.
+3. Randomizer menu: set OoT Mask Quest to Shuffle, close and reopen the menu; it should still say Shuffle. Drag a slider; the game should not stutter.
+4. In a seed with silver rupees shuffled, collect one silver rupee check: you should get one item, not two. A silver rupee floating in the air should be collectable.
+5. Rotate the phone (or fold/unfold) during play: the game should keep running.
+6. Hold the app icon and choose App options while a game is running: it should warn before closing.
+
 The development APK has passed local ROM extraction, combined seed generation, gameplay, normal portals in both directions, one OoT-to-MM item delivery, and MM pause-save/cold-reload checks in an Android 15 emulator. These are targeted integration checks, not a full playthrough. See [VALIDATION.md](docs/history/VALIDATION.md) for exact scope and evidence. Repeat the checks below on a physical device; audio, hardware controllers, SD storage, mods, cycle resets and complete QoL parity still need coverage.
 
 Record phone/tablet model, Android version, GPU, controller, app version and APK checksum. Use a separate test save and export a backup before updating builds.

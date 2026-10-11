@@ -12,6 +12,56 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## 0.3.10 - 2026-10-10
+
+A cleanup release: no new features. An independent review of all code the earlier AI agent wrote confirmed 200 problems; 187 are fixed here, 10 are deferred and 3 minor cleanups were skipped (list in [history/CODE-REVIEW-2026-10-10.md](history/CODE-REVIEW-2026-10-10.md)).
+
+- **Crashes fixed**:
+  - entering the Moon with NPC souls shuffled and the Moon Children soul missing;
+  - showing Farore's Wind to an MM character;
+  - the Save Editor's inventory tab;
+  - the settings search when the randomizer catalog had not loaded;
+  - a possible crash after cross-game Soaring;
+  - seed generation was reading freed memory on every seed.
+- **Save safety**:
+  - A new save no longer inherits silver rupees, named Triforce pieces or souls from the file loaded before it.
+  - Multiplayer (Anchor) resyncs no longer wipe received silver rupees, OoT soul ownership or MM Farore's Wind and spell data.
+  - A crash at startup no longer turns into an endless relaunch loop.
+- **Silver rupees**:
+  - Each silver rupee check now gives its item once instead of twice.
+  - Silver rupees in midair or on fences can be collected.
+  - Gossip stones no longer say "No Hint" for them.
+- **Randomizer menu**:
+  - The OoT Mask Quest dropdown now saves the value you pick.
+  - Generate and seed import at the file select now apply to the file you are on, not always File 1.
+  - Editing the next seed's settings no longer changes the rules of the run you are playing.
+  - Apply preset and turning a logic rule off leave your own enhancements alone.
+  - Clock Shuffle now checks and greys out Better Song of Double Time.
+  - Search covers MM randomizer options.
+  - Sliders no longer stutter.
+- **Logic now matches OoTMM in more places**:
+  - Path hints only name bosses the goal needs.
+  - MM beans from OoT shops, cows and scrubs are not treated as renewable.
+  - Shuffle Grab/Climb requirements are restored.
+  - Ranch alien defense, Tingle's maps and the Romani Ranch cows need their souls when those souls are shuffled.
+  - Foreign warp songs work with the MM Fairy Ocarina.
+  - Getting the Fairy Ocarina no longer replaces the Ocarina of Time.
+- **Unfinished, hidden options** (MM entrance shuffle, adult Link and gear in MM, MM Din's Fire and Nayru's Love, hidden MM tricks) can no longer be switched on through profile or seed files.
+- **Cross-game travel**: an MM Farore's Wind placed in OoT shows the spell's orb instead of a blue rupee. Link, the camera and the HUD no longer reappear during an OoT-bound owl departure.
+- **Android**:
+  - The game survives screen and window changes.
+  - The App options shortcut warns before closing a running game.
+  - Storage location choices and leftover copies work as described.
+  - Touch size and opacity cycles return to the defaults.
+  - N64 Mode works with automatic screen fit.
+- **First launch after updating** takes a few seconds longer while the app refreshes its support files. Saves are not touched.
+
+Tested:
+- 68 automated host tests pass and the APK checks pass.
+- Seed generation on the emulator: see the release report.
+- Not tested on a phone.
+- Still open, needs the owner's decision: a save made before per-save rules existed (0.1.18) still falls back to default enhancement values on load.
+
 ## 0.3.9 - 2026-10-09
 
 - Adds OoTMM's three Farore's Wind settings, all off by default: **Farore's Wind (MM)**, **Shared Farore's Wind** and **Cross-Games Farore's Wind**.
