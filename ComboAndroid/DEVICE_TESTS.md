@@ -1,5 +1,18 @@
 # Device validation still required
 
+## Quick checks for OoT Enemy Souls (unreleased)
+
+1. Items & checks > OoT > Item pool shows **Enemy Souls (OoT)** with OoTMM's tooltip, and "Complete OoT Soul Compatibility" appears nowhere. Turn on Enhancements > Enemy Randomizer: the option greys out with "Disabled because Enemy Randomizer is on." Turn Enemy Randomizer off again.
+2. Generate a seed with Enemy Souls (OoT) on and start a new file. Repeat once with a Plentiful item pool.
+3. Without the Lizalfos soul, the Lizalfos room in Dodongo's Cavern should be empty and its doors should stay barred. Once you have the soul, re-enter: they appear and the room clears normally.
+4. In a room with two kinds of enemy where you own only one soul, defeat the ones that appear: the door should stay barred.
+5. Without Dark Link's soul, his room in the Water Temple should never clear.
+6. In the Forest Temple room where Stalfos drop from the ceiling, with the Stalfos soul the room should play as normal.
+7. Pick up a soul: it shows a white skull with a red flame and "You found the Soul of ...!". The **OoT Enemy Souls** tracker group marks it, and a hint that names a soul shows its name, not "No Hint".
+8. An OoT soul found at an MM check should look like the same white and red token. After collecting it, back in OoT, its enemy appears.
+9. Save, quit and reload: owned souls stay owned. A save from 0.3.10 loads with every enemy present.
+10. With Boss Souls also on, bosses behave exactly as with Boss Souls alone.
+
 ## Quick checks for 0.3.10
 
 1. Install over 0.3.9 without uninstalling. The first launch may take a few extra seconds while support files refresh. Load an existing save in each game; it should load as before.

@@ -2045,3 +2045,28 @@ progressive resolver, which switches on `logic->GetSaveContext()->magicLevel` â€
 generation). A second cross-granted magic upgrade re-resolved to single magic and was lost. Fixed the
 same way as the Shared Items reader: resolve by `isMagicAcquired`/`isDoubleMagicAcquired` to a concrete
 `RG_MAGIC_SINGLE`/`RG_MAGIC_DOUBLE` before the generic `itemNameToEnum` lookup.
+
+## OoT Enemy Souls (OoTMM `soulsEnemyOot`) (2026-10-10)
+
+"Enemy Souls (OoT)" copies OoTMM v32.3 (setting `packages/core/src/settings/data.ts:2336-2343`, policy
+`packages/generator/src/oot/actors.c:19-364`). Where the port differs from OoTMM:
+
+- **SoH Enemy Randomizer.** OoTMM has none. Its replacement enemies would be gated by souls logic does not
+  model, so the souls option is greyed out while it is on (SoH's option-disable, re-run by a ShipInit hook on
+  `gEnhancements.RandomizedEnemies`) and `FinalizeSettings` forces it off. Spoiler imports keep the seed's own
+  value. Turning the Enemy Randomizer on in the middle of a souls seed is not handled. The profile editor's
+  copy of the callback reads the profile, where the enhancement is absent, so it shows the option enabled;
+  generation still forces it off.
+- **Logic receipt.** `soh/soh/Enhancements/randomizer/souls/upstream-enemy-gates.json` lists every OoTMM OoT
+  world line that gates on an enemy soul; `native-enemy-gate-map.json` maps each to its native gate. Four native
+  rules stay stricter than OoTMM because they are SoH's own logic (Link's porch climb, the Kokiri Forest nut
+  event, the Lake Hylia Guay, the Sacred Meadow Wolfos gate), and SoH's CanPassEnemy/CanAvoidEnemy keep
+  inheriting the soul through CanKillEnemy. Both can only fail generation. The 23 OoT Wallmaster edges wait for
+  OoT Wallmaster entrance shuffle.
+- **Bosses** stay with SoH's boss-soul hook (`hook_handlers.cpp`); the enemy souls never block a boss.
+- **Not copied:** OoTMM's in-game "OoT Enemy Souls" list screen, its CSMC soul textures, the
+  `restoreBrokenActors` Keese terms, and Shared Enemy Souls. Ownership shows in the tracker group "OoT Enemy
+  Souls". OoTMM's names are English only, so English fills every language slot.
+- **Unpublished families.** NPC, animal and misc OoT souls are forced off (`OotSoulState.h` readiness
+  constants). "Complete OoT Soul Compatibility" (`RSK_COMPLETE_OOT_SOULS`) is no longer a setting; it is
+  derived from the published families at generation and on spoiler import.

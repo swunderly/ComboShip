@@ -12,6 +12,21 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## Unreleased
+
+- **New option: Enemy Souls (OoT)**, under Items & checks > OoT > Item pool, copied from OoTMM v32.3 with its description. It adds a soul for each of the 43 kinds of OoT enemy to the item pool, and an enemy does not appear until you find its soul. A Plentiful item pool adds a second copy of each soul. It is off by default and not in any preset yet.
+  - A room that is missing an enemy because of its soul stays barred, as in OoTMM. That includes Dark Link's room.
+  - Logic now asks for the same enemy souls as OoTMM in parts of Dodongo's Cavern, Ganon's Castle, Gerudo Training Ground and the Master Quest dungeons. This only matters with the option on.
+  - Souls use OoTMM's names: the item text reads "the Soul of ...", hints name the soul instead of "No Hint", the tracker group is "OoT Enemy Souls", and a soul found in MM looks like OoTMM's white token with a red flame.
+  - The option is unavailable (greyed out, and off in new seeds) while Enhancements > Enemy Randomizer is on. OoTMM has no enemy randomizer to copy.
+- **Removed**: the hidden "Complete OoT Soul Compatibility" switch is no longer a setting. NPC, animal and misc OoT souls stay hidden and off.
+- **Renamed**: "Soul of Wolfos (OoT)" is now "Soul of Wolfoses (OoT)" in spoilers and the tracker, as in OoTMM.
+- Existing saves and seeds behave as before.
+
+Tested:
+- 68 automated host tests pass, including a new one that checks OoT enemy souls against OoTMM v32.3.
+- Not yet built into an APK, run on the emulator or tried on a phone, and no seed has been generated with the option on.
+
 ## 0.3.11 - 2026-10-11
 
 - Tingle's map menu now shows a bought slot as **SOLD OUT** (in red, no price) when its item cannot be given again, as OoTMM does. Refillable items stay for sale. Picking a sold-out slot plays Tingle's own reply.
