@@ -2129,15 +2129,16 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   Until those graphs know the Swim ability, a seed with Swim shuffled leaves the gear out: the four rows are greyed
   out and unticked while Swim is ticked, and option gathering keeps them at 0 (`Combo_MM_GearOptionsAllowed`).
   `mm_gear_swim_shuffle_tests.py` checks that every native Swim requirement holds for such a seed.
-- **Child boot geometry (needs the owner's sign-off).** OoT has no child Iron or Hover Boots. OoTMM draws them on MM's
+- **Child boot geometry.** OoT has no child Iron or Hover Boots. OoTMM draws them on MM's
   child Link with its own copy of OoT's adult boot meshes (`mm/actors/Player.c:873-1060`, `sIronBootsVtx.vtx.inc`,
   `sHoverBootsVtx.vtx.inc`), and the port includes those two files (`mm/src/code/ComboChildBootDrawNative.h`); only
   the textures come from the OoT archive. Checked against an extracted OoT archive, every vertex keeps the order,
   texture coordinates and normals of OoT's `object_link_boyVtx_017448` and `_0176F8` (Iron Boots, 87 vertices) and
   `_0179B8` and `_017E88` (Hover Boots, 154), but its position is OoTMM's refit to the child foot, so the shape is
   OoTMM-authored. It is the only OoTMM-authored geometry the gear draws: the hover circle's 13 vertices equal OoT's
-  own `gameplay_keepVtx_038200`. The native-assets rule allows it only with the owner's sign-off; until that is
-  recorded here, a release keeps the release-switch commit (`kMmGearIntegrationComplete`) reverted.
+  own `gameplay_keepVtx_038200`. It ships as OoTMM draws it, because no native child boot model exists and any other
+  shape would be invented; the release notes tell the owner. If the owner prefers, the alternative is OoT's own adult
+  boot display lists drawn on the child foot with a scale and offset that would have to be chosen.
 - **Trade-slot cycle.** OoTMM changes a shared trade slot with L or C-up, turns the cursor blue and draws the next
   item in the slot's corner (`mm/ovl_patch/kaleido_scope.c:85-148, 657-711`). A rando save already has 2S2H's own
   trade-slot cycle (`Rando/MiscBehavior/KaleidoItemPage.cpp`: A, then left/right), which offers the gear beside
