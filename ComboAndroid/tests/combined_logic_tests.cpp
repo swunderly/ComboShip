@@ -3,6 +3,7 @@
 #include "rando/AgeTravel.h"
 #include "rando/MmTricks.h"
 #include "rando/CrossHints.h"
+#include "rando/MmAgeLogic.h"
 #include <cassert>
 #include <iostream>
 using namespace ComboRando;
@@ -390,5 +391,12 @@ int main(){
     assert(ExpandSongAgeAccess(a,false,true) && a.childDay && !a.childNight);
     assert(!ExpandSongAgeAccess(a,false,true));
     AgeTimeAccess b{false,true,false,false};assert(ExpandSongAgeAccess(b,true,false) && b.adultNight && !b.adultDay);
+    // OoTMM macros_mm.yml:59-62: without Cross-Games Age MM Link is always child; with it, the explored age decides.
+    // Logic.h MM_LOGIC_AGE hands these the save's linkAge only while its adult state is enabled, else 1 (child).
+    for(int cross=0;cross<2;++cross) for(int age=0;age<2;++age) for(int zora=0;zora<2;++zora) for(int deku=0;deku<2;++deku){
+        const bool child=MmAgeLogic::IsChild(cross,age), adult=MmAgeLogic::IsAdult(cross,age);
+        assert(child==(!cross || age==1) && adult==(cross && age==0) && child!=adult);
+        assert(MmAgeLogic::IsTall(zora,adult)==(zora || adult) && MmAgeLogic::IsShort(deku,child)==(deku || child));
+    }
     std::cout<<"Combined reachability, collected fixed point, native ability and age-time checks passed\n";
 }
