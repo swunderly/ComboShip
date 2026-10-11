@@ -12,6 +12,22 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## Unreleased
+
+- **New options: Iron Boots (MM), Hover Boots (MM), Goron Tunic (MM) and Zora Tunic (MM)**, under Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items, after Nayru's Love (MM), with OoTMM v32.3's names and descriptions. Each adds that OoT item to MM's item pool, and child Link wears it, as in OoTMM. All four are off by default and only affect newly generated seeds. If the app cannot prepare them on your device, the options are greyed out and new seeds leave them out. They have not been played on a phone yet.
+  - Put one on or take it off from a C button in human form. Transforming with a mask takes the boots and tunic off.
+  - Iron Boots make Link heavy: he sinks in water (also before he can swim, with Swim shuffled), is not pushed by wind and can press heavy switches. With the Zora Tunic as well, he can walk on the bottom without drowning. Hover Boots let Link hover for a moment past a ledge and keep lily pads from sinking. The Goron Tunic delays damage from hot floors.
+  - Wearing the Goron or Zora Tunic recolours Link's tunic, using your OoT Goron and Zora tunic colour settings. Your MM tunic colour setting still applies when neither is worn.
+  - **Shared Iron Boots**, **Shared Hover Boots**, **Shared Goron Tunic** and **Shared Zora Tunic** (Randomizer > Shared items) make one copy count in both games. As in OoTMM, each stays greyed out and unticked until its MM option is on.
+  - MM logic counts the boots and tunics where OoTMM does, for example in Great Bay Temple, Pirates' Fortress, Zora Cape, Stone Tower and Woodfall Temple. Seeds without them are unchanged.
+  - New tricks with OoTMM's names, off by default, in Randomizer > Tricks & glitches: "Fewer Tunic Requirements (MM)", "Fight Gyorg as Human using Iron Boots and Hookshot", "Great Bay Temple Center Underwater Pot using only Iron Boots", "Stone Tower Updrafts without Deku Mask", and Hover Boots tricks for Woodfall, Woodfall Temple, the Soaring tablet, the Path to Snowhead, Great Bay Temple and Stone Tower Temple. "Stone Tower Updrafts without Deku Mask" also works on seeds without the boots.
+  - The Snowhead Iron Boots trick now appears in the Tricks list under OoTMM's name, "Skip playing Goron Lullaby by using Iron Boots". A value you saved for it is kept.
+  - The item tracker's Trade Items group shows the boots and tunics on seeds that add them.
+- An MM save is no longer refused at load because of its Adult Link or boots-and-tunics data. Anything the app cannot run on your device is simply left off.
+
+Tested:
+- 75 automated host tests pass (3 are skipped on Windows). They check the four options, their shared items and the new tricks against OoTMM v32.3, every changed logic line against OoTMM's, that MM logic is unchanged with the boots and tunics off, that the options are off wherever the device cannot run them, that a save keeps its seed's choice, and that saves from earlier versions load. The boots and tunics have not been built into an APK, generated or played on the emulator, or tried on a phone yet.
+
 ## 0.4.1 - 2026-10-11
 
 - **New options: Din's Fire (MM) and Nayru's Love (MM)**, under Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items, next to Farore's Wind (MM), with OoTMM v32.3's names and descriptions. Each adds the OoT spell to MM's item pool; it is cast from its trade slot like Farore's Wind. Both are off by default. If the app cannot prepare a spell on your device, its option is greyed out and new seeds leave the spell out, so no seed needs a spell you cannot cast.

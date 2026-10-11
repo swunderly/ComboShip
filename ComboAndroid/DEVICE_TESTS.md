@@ -1,5 +1,22 @@
 # Device validation still required
 
+## Quick checks for Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) (unreleased)
+
+Release gate: checks 2 to 7 must pass on a phone before a release ships with these options switched on; otherwise revert the release-switch commit (`kMmGearIntegrationComplete`). The gear runtime has never been played.
+
+1. Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items lists **Iron Boots (MM)**, **Hover Boots (MM)**, **Goron Tunic (MM)** and **Zora Tunic (MM)** after Nayru's Love (MM), each with OoTMM's tooltip, and all four can be ticked (a greyed-out row saying the device cannot run the MM boots and tunics yet means it could not prepare them; report it). Under Randomizer > Shared items, the four Shared rows are greyed out and unticked until their MM option is ticked. Randomizer > Tricks & glitches lists "Skip playing Goron Lullaby by using Iron Boots", "Fewer Tunic Requirements (MM)", "Stone Tower Updrafts without Deku Mask" and the other new boots tricks with OoTMM's tooltips, and search finds them.
+2. Generate a seed with Iron Boots (MM) and Zora Tunic (MM) on and shared off, and start a new file. Find both in MM. As human Link, put the Iron Boots on from a C button: Link clanks, sinks in Zora Cape water, is not pushed by the Snowhead blizzard and presses a heavy floor switch. Press the button again: they come off.
+3. Same seed: wear the Zora Tunic with the Iron Boots and walk on the bottom of Zora Cape or Great Bay water for well over a minute. There is no drowning timer, Link's tunic turns blue, and a bottle or the Hookshot works from a C button on the bottom. If Swim is shuffled and not yet found, wading into deep water with the Iron Boots on should let Link sink and walk, not send him back to the shore.
+4. Generate a seed with Hover Boots (MM) on. Run off a ledge: a glowing circle shows and Link hovers for a moment. Stand on a Southern Swamp lily pad as human Link: it does not sink with the boots on, and does without them. The floor feels slippery.
+5. Generate a seed with Goron Tunic (MM) on: wearing it turns Link's tunic red, or the OoT Goron Tunic colour if one is set in Cosmetics. Take it off: the MM tunic colour comes back, including a custom MM tunic colour.
+6. Wearing boots and a tunic, put on the Deku, Goron or Zora Mask and change back to human: the boots and tunic are off. Pressing the gear button mid sword swing or while shielding does nothing.
+7. With **Shared Iron Boots** on: get the Iron Boots in OoT, go through a portal to MM, and check MM's Iron Boots are owned. Repeat once starting with the MM copy.
+8. Add the **Trade Items** group to the item tracker: the gear rows show only on gear seeds and light up after pickup. A save made before this version loads with no new rows and its Link colours unchanged.
+9. On a seed without the gear: lily pads sink as before, Link's tunic and sword and shield colours are unchanged, and the MM tunic colour setting still works. A seed with your usual settings generates, and existing seeds and saves load.
+10. Optional: with "Stone Tower Updrafts without Deku Mask" on and no gear, the seed may expect the Inverted Stone Tower Temple east middle chest and the two updraft bridge pots without the Deku Mask.
+
+If the release-switch commit is reverted: the four MM rows are greyed out with the "cannot run" tooltip, and generated seeds contain no MM boots or tunics.
+
 ## Quick checks for Din's Fire (MM) and Nayru's Love (MM) (0.4.1)
 
 Checks 2, 3, 4 and 7 matter most: casting the MM spells had not been played before 0.4.1.
