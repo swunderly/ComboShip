@@ -37,6 +37,11 @@
 #include "objects/object_gi_bomb_2/object_gi_bomb_2.h"       // gGiBombchuDL
 #include "objects/object_mamenoki/object_mamenoki.h"         // gMagicBeanSeedlingDL
 #include "objects/object_toki_objects/object_toki_objects.h" // Master Sword model
+#include "objects/object_gi_sutaru/object_gi_sutaru.h"       // Gold Skulltula token (OoT soul model)
+#include "soh/Enhancements/randomizer/souls/OotSoulToken.h"
+#include <fast/resource/type/DisplayList.h>
+#include <ship/resource/CrossRMRegistry.h>
+#include <ship/resource/ResourceManager.h>
 // Boss-soul skeletons/animations/textures for the animated cross-game class (issue #86).
 #include "objects/object_goma/object_goma.h"
 #include "objects/object_kingdodongo/object_kingdodongo.h"
@@ -125,9 +130,74 @@ static int32_t OOT_FillSilverDrawInfo(RandomizerGet rg, CwItemDrawInfo* out) {
     return 1;
 }
 
+// OoT souls drawn in MM: the native token's display lists set their own colours, so MM gets copies with
+// only those commands removed, cached in OOT's resource manager. The exact reverse of MM_ColorlessKeyPath
+// (combo/menu/ComboItemDrawMM.h). False if OOT's resources are down or the lists are not the expected shape.
+static std::shared_ptr<Ship::IResource> sOOTSoulTokenSources[2];
+static std::weak_ptr<Ship::ResourceManager> sOOTSoulTokenOwner;
+static bool sOOTSoulTokenListener;
+static void OOT_DropSoulTokenSources() {
+    for (auto& source : sOOTSoulTokenSources)
+        source.reset();
+    sOOTSoulTokenOwner.reset();
+}
+static const char* const kOOTSoulTokenPaths[2] = { "__OTR__combo/runtime/oot_soul_token_skull",
+                                                   "__OTR__combo/runtime/oot_soul_token_flame" };
+static bool OOT_ColorlessSoulToken() {
+    auto rm = Ship::CrossRMRegistry::GetOrActive("oot");
+    if (!rm)
+        return false;
+    if (sOOTSoulTokenOwner.lock() == rm)
+        return true;
+    const char* lists[2] = { gGiSkulltulaTokenDL, gGiSkulltulaTokenFlameDL };
+    const size_t commands[2][2] = { { Rando::Souls::TokenSkullPrimCmd, Rando::Souls::TokenSkullEnvCmd },
+                                    { Rando::Souls::TokenFlamePrimCmd, Rando::Souls::TokenFlameEnvCmd } };
+    std::shared_ptr<Fast::DisplayList> sources[2], copies[2];
+    for (int i = 0; i < 2; ++i) {
+        sources[i] = std::dynamic_pointer_cast<Fast::DisplayList>(rm->LoadResource(lists[i] + 7));
+        if (!sources[i])
+            return false;
+        copies[i] = std::make_shared<Fast::DisplayList>(sources[i]->GetInitData());
+        copies[i]->UCode = sources[i]->UCode;
+        const Gfx noOp = gsDPNoOp();
+        if (!Rando::Souls::ColorlessTokenCopy(sources[i]->Instructions, commands[i][0], commands[i][1], G_SETPRIMCOLOR,
+                                              G_SETENVCOLOR, noOp, copies[i]->Instructions))
+            return false;
+    }
+    for (int i = 0; i < 2; ++i) {
+        rm->CacheExternalResource(kOOTSoulTokenPaths[i] + 7, copies[i]);
+        sOOTSoulTokenSources[i] = sources[i];
+    }
+    sOOTSoulTokenOwner = rm;
+    if (!sOOTSoulTokenListener) {
+        Ship::CrossRMRegistry::RegisterTeardownListener(OOT_DropSoulTokenSources);
+        sOOTSoulTokenListener = true;
+    }
+    return true;
+}
+
 static int32_t OOT_DescribeCustomDraw(RandomizerGet rg, CwItemDrawInfo* out) {
     if (OOT_FillSilverDrawInfo(rg, out))
         return 1;
+    // General OoT souls: OoTMM's recoloured native token (src/common/drawgi.c:759-830), as DrawGeneralOotSoul
+    // draws it in OOT. The skull-token handler sets each layer's colours before its colourless list. If the
+    // lists are not the expected shape this falls through to the gid table's plain token.
+    if (const int soul = Rando::Souls::GeneralIndex(rg); soul >= 0 && OOT_ColorlessSoulToken()) {
+        const auto& flame = Rando::Souls::TokenFlameColors[Rando::Souls::GeneralOotSoulFamily(soul)];
+        out->drawKind = CW_DRAW_KIND_SKULL_TOKEN;
+        out->dlistCount = 2;
+        out->xluStartIndex = 1;
+        out->dlists[0] = kOOTSoulTokenPaths[0];
+        out->dlists[1] = kOOTSoulTokenPaths[1];
+        CwLayerPrim(
+            out, 0,
+            { Rando::Souls::TokenSkullPrim[0], Rando::Souls::TokenSkullPrim[1], Rando::Souls::TokenSkullPrim[2] });
+        CwLayerEnv(out, 0,
+                   { Rando::Souls::TokenSkullEnv[0], Rando::Souls::TokenSkullEnv[1], Rando::Souls::TokenSkullEnv[2] });
+        CwLayerPrim(out, 1, { flame[0], flame[1], flame[2] });
+        CwLayerEnv(out, 1, { flame[0], flame[1], flame[2] });
+        return 1;
+    }
     // Boss souls: bespoke func the gid-keyed table can't express (vestigial skull-token gid).
     // Grayscale-colored flame dl0 + generic skull dl1 (Randomizer_DrawBossSoul).
     if (rg >= RG_GOHMA_SOUL && rg <= RG_GANON_SOUL) {

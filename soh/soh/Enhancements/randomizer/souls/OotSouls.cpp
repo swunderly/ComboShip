@@ -1,5 +1,6 @@
 // OoTMM v32.3 (413573d) actor/soul policy, MIT.
 #include "OotSouls.h"
+#include "OotSoulToken.h"
 #include "global.h"
 #include "soh/Enhancements/randomizer/logic.h"
 #include "soh/Enhancements/randomizer/SeedContext.h"
@@ -256,7 +257,7 @@ static Gfx* SoulTokenList(PlayState* play, const char* path, size_t prim, size_t
         return nullptr;
     auto copy = static_cast<Gfx*>(Graph_Alloc(play->state.gfxCtx, resource->Instructions.size() * sizeof(Gfx)));
     std::copy(resource->Instructions.begin(), resource->Instructions.end(), copy);
-    gDPSetPrimColor(&copy[prim], 0, 0x80, r, g, b, 255);
+    gDPSetPrimColor(&copy[prim], 0, Rando::Souls::TokenPrimLodFrac, r, g, b, 255);
     gDPSetEnvColor(&copy[env], er, eg, eb, 255);
     return copy;
 }
@@ -264,11 +265,13 @@ static void DrawGeneralOotSoul(PlayState* play, GetItemEntry* item) {
     int index = Rando::Souls::GeneralIndex(static_cast<RandomizerGet>(item->getItemId));
     if (index < 0)
         return;
-    const unsigned colors[4][3] = { { 255, 0, 0 }, { 0, 255, 0 }, { 34, 34, 255 }, { 136, 136, 136 } };
-    unsigned family = Rando::Souls::GeneralOotSoulFamily(index);
-    const auto& c = colors[family];
-    auto skull = SoulTokenList(play, gGiSkulltulaTokenDL, 5, 6, 255, 255, 255, 170, 170, 170);
-    auto flame = SoulTokenList(play, gGiSkulltulaTokenFlameDL, 32, 33, c[0], c[1], c[2], c[0], c[1], c[2]);
+    using namespace Rando::Souls;
+    const auto& c = TokenFlameColors[GeneralOotSoulFamily(index)];
+    auto skull =
+        SoulTokenList(play, gGiSkulltulaTokenDL, TokenSkullPrimCmd, TokenSkullEnvCmd, TokenSkullPrim[0],
+                      TokenSkullPrim[1], TokenSkullPrim[2], TokenSkullEnv[0], TokenSkullEnv[1], TokenSkullEnv[2]);
+    auto flame = SoulTokenList(play, gGiSkulltulaTokenFlameDL, TokenFlamePrimCmd, TokenFlameEnvCmd, c[0], c[1], c[2],
+                               c[0], c[1], c[2]);
     if (!skull || !flame)
         return;
     OPEN_DISPS(play->state.gfxCtx);

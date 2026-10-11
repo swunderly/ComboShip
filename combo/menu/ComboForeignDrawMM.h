@@ -601,13 +601,24 @@ inline void MM_DrawForeignScale(const ComboForeignDrawInfoOOT* info) {
 }
 
 // Skulltula Token: body OPA dl0 + XLU seg8 flame dl1 (GetItem_DrawSkullToken, full flame).
+// An OoT soul sends colourless copies of the token lists plus layer colours (OoTMM's recoloured token,
+// prim LOD fraction 0x80); a vanilla token sends no layer colours and draws as before.
 inline void MM_DrawForeignSkullToken(const ComboForeignDrawInfoOOT* info) {
     PlayState* play = gPlayState;
     GraphicsContext* gfxCtx = play->state.gfxCtx;
+    auto layerColors = [info](Gfx*& disp, int32_t layer) {
+        if (info->layerEnvMask & (1 << layer))
+            gDPSetEnvColor(disp++, info->layerEnvColor[layer][0], info->layerEnvColor[layer][1],
+                           info->layerEnvColor[layer][2], info->layerEnvColor[layer][3]);
+        if (info->layerPrimMask & (1 << layer))
+            gDPSetPrimColor(disp++, 0, 0x80, info->layerPrimColor[layer][0], info->layerPrimColor[layer][1],
+                            info->layerPrimColor[layer][2], info->layerPrimColor[layer][3]);
+    };
     OPEN_DISPS(gfxCtx);
     Gfx_SetupDL25_Opa(gfxCtx);
     MM_FOREIGN_PIN_OPA();
     MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, gfxCtx);
+    layerColors(POLY_OPA_DISP, 0);
     gSPDisplayList(POLY_OPA_DISP++, (Gfx*)info->dls[0]);
     Gfx_SetupDL25_Xlu(gfxCtx);
     MM_FOREIGN_PIN_XLU();
@@ -616,6 +627,7 @@ inline void MM_DrawForeignSkullToken(const ComboForeignDrawInfoOOT* info) {
                                              32, 32, 1, play->state.frames * 0, play->state.frames * 0, 32, 64, 0, -5,
                                              0, 0));
     MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, gfxCtx);
+    layerColors(POLY_XLU_DISP, 1);
     gSPDisplayList(POLY_XLU_DISP++, (Gfx*)info->dls[1]);
     CLOSE_DISPS(gfxCtx);
     int32_t segs[] = { 0x08 };

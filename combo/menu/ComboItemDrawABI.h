@@ -120,7 +120,8 @@ typedef struct {
     int32_t stateDependent;
 
     /* ComboShip: CW_DRAW_KIND_COLOR_LAYERS payload — the per-DL prim/env colors the rando key/map/
-     * compass/jabber-nut funcs set before each display list. Bit i of each mask = dlists[i] sets it. */
+     * compass/jabber-nut funcs set before each display list. Bit i of each mask = dlists[i] sets it.
+     * CW_DRAW_KIND_SKULL_TOKEN reads it too (OOT soul tokens, prim LOD fraction 0x80); masks 0 = vanilla. */
     uint8_t layerPrimColor[CW_DRAW_MAX_DLISTS][4];
     uint8_t layerEnvColor[CW_DRAW_MAX_DLISTS][4];
     int32_t layerPrimMask;
