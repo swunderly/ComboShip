@@ -88,6 +88,30 @@ for entry in icons.split(','):
     assignments.append(f'v[{index}]={value};');index+=1
 code+='using TexturePtr=const char*;auto gItemIcons=[](){std::array<TexturePtr,256> v{};'+''.join(assignments)+'return v;}();\n'
 code+='void CheckNativeAssetAlignment(){'+''.join('static_assert(__alignof('+name+')>=2);assert((reinterpret_cast<uintptr_t>('+name+')&1)==0);' for name in sorted(aligned_names))+'}\n'
+# Gear paths go directly to Fast3D in both games. Exercise the real signature
+# guard against the real recipe storage: a correct string at an odd address is
+# treated as a segmented pointer and crashes when the item is drawn on Android.
+code+='#include "'+(s/'combo/rando/AdultGearDrawRecipe.h').as_posix()+'"\n'
+signature_source=re.sub(r'//[^\n]*', '', (s/'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8'))
+code+=function(signature_source, 'extern "C" int ResourceMgr_OTRSigCheck(')
+code+=r'''
+void CheckGearAssetAlignment() {
+    const int counts[] = {2, 1, 4, 4}, xlu[] = {1, -1, -1, -1};
+    assert(!ComboRando::AdultGearRecipe(-1) && !ComboRando::AdultGearRecipe(4));
+    for (int kind = 0; kind < 4; ++kind) {
+        const auto* recipe = ComboRando::AdultGearRecipe(kind);
+        assert(recipe && recipe->count == counts[kind] && recipe->xlu == xlu[kind]);
+        for (int i = 0; i < recipe->count; ++i) {
+            const char* path = recipe->paths[i];
+            assert(path && std::strncmp(path, "__OTR__@oot:objects/", 19) == 0);
+            if (!ResourceMgr_OTRSigCheck(const_cast<char*>(path))) {
+                std::fprintf(stderr, "Rejected gear resource at %p: %s\n", (const void*)path, path);
+                assert(false && "Gear display-list paths must pass the production OTR signature guard");
+            }
+        }
+    }
+}
+'''
 code+=r"""
 TexturePtr gQuestIcons[]={"quest"},gBombersNotebookPhotos[]={"photo"};
 const char* miscellaneousTextures[]={"misc"};const char* digitList[]={"digit"};
@@ -102,6 +126,7 @@ code+=function((s/'mm/2s2h/ShipUtils.cpp').read_text(),'void LoadGuiTextures()')
 code+=r"""
 int main(){
     CheckNativeAssetAlignment();
+    CheckGearAssetAlignment();
     size_t populated=0;for(auto icon:gItemIcons)if(icon)++populated;
     assert(populated>100&&populated<gItemIcons.size());
     LoadGuiTextures();assert(registeredIcons.size()==populated+4);
