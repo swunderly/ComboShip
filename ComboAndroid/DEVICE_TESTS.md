@@ -1,5 +1,23 @@
 # Device validation still required
 
+## Quick checks for Cross-Games Age (unreleased)
+
+Checks 4 to 10 matter most: adult Link in MM had never been played before this build. He holds MM's own child-size swords, shields, bow and hookshot, as decided; say if they look wrong in his hands. Note the frame rate as adult Link and while riding Epona.
+
+1. Install over the current build without uninstalling. Load an existing save in OoT and in MM: MM Link is child and nothing has changed. The MM check tracker shows the same checks as before, and a collected rupee or heart rises to the same height as before.
+2. Randomizer > Logic & access > World access: **Cross-Games Age** is directly below Cross-Games Farore's Wind, with the tooltip "When you enter MM as Adult Link, you will be Adult Link in MM.", and it can be ticked. If it is greyed out with "Disabled because this device cannot run Adult Link in MM yet", the app could not prepare OoT's adult Link or Epona; report it. Searching "Cross-Games Age" or "adult age" finds it. The Allsanity preset leaves it unticked.
+3. Generate a seed with Cross-Games Age off and start it: the spoiler shows Cross-Games Age off, and both games play as before.
+4. Tick Cross-Games Age, generate a seed and start a new file. Enter MM while child in OoT: Link is child. Become adult in OoT, then enter MM by Soaring: Link is adult, with OoT's adult body and face, and the MM check tracker updates right away. Owl-save as adult and resume: still adult. Return to OoT, become child, and enter MM through the Mask Shop: Link is child again, and nothing looks scaled.
+5. As adult Link in MM: walk, roll, climb a ladder and a ledge, open a door from each side and a chest, and march with the Bremen Mask. Swing each MM sword you have (Kokiri, Razor, Gilded, Great Fairy's Sword), and hold the Hero's and Mirror Shield. Play the Ocarina of Time, hold a bottle and a Deku Stick.
+6. Aim the bow and the hookshot in first person: the hand and the item are visible. Say whether part of the arm between shoulder and hand is missing.
+7. Wear the Bunny Hood, Keaton Mask and Mask of Scents as adult Link: they sit on his larger head. Other masks look as usual. Transform with the Deku, Goron and Zora Masks and back to human.
+8. Charge and release a spin attack: the charge ring and the spin trail are adult-sized. Watch Link blink and look left and right: his eyes move the right way.
+9. As adult Link, play Epona's Song in Termina Field: Epona looks like OoT's adult Epona, blinks, walks, gallops and jumps a fence, and Link sits on the saddle. Then go to OoT and ride Epona there: she looks and moves as usual. On a child save, MM's Epona looks as before.
+10. Go between OoT and MM a few times as adult and as child: Link's age always follows OoT, and nothing looks out of place.
+11. Optional, with the item tracker's logic view: as adult in MM, the Astral Observatory passage chest (with explosives), the Snowhead Temple icicle room chest (with explosives) and the way on from Snowhead Temple's dual switches room count as reachable.
+
+If the release-switch commit is reverted: the row is greyed out with the "cannot run" tooltip, new seeds leave Cross-Games Age off, and a save made with it still loads with Link drawn as child.
+
 ## Quick checks for Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) (unreleased)
 
 Checks 2 to 8 matter most: the boots and tunics had never been played before this build. The child boots use OoTMM's boot shape with OoT's textures (docs/deviations/rando.md, "Child boot geometry"); if they look wrong on Link's feet, say so.
