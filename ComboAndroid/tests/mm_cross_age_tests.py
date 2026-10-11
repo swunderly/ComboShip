@@ -159,6 +159,45 @@ check('clone' not in reach and 'maskOwnedBits' not in reach and 'MergeTimeStates
       'the oracle must not clone frontiers between ages')
 check('gSaveContext.save.linkAge=age;' in reach, 'the oracle must explore each entry age with its own linkAge')
 
+
+def enclosing_call(text, at):
+    """Name of the innermost call whose parentheses contain text[at]."""
+    depth = 0
+    for j in range(at - 1, -1, -1):
+        if text[j] == ')':
+            depth += 1
+        elif text[j] == '(':
+            if depth == 0:
+                return re.search(r'(\w*)$', text[:j]).group(1)
+            depth -= 1
+    return ''
+
+
+# ---- 5a-6: the Stone Tower graph (stone_tower.yml:32) is picked per seed. A seed bound after ShipInit::Init (or
+# "RANDO_LOGIC") gets the right graph because every pinned choice is made when its edge is evaluated: the switch reads
+# only the bound seed's options, appears only inside CHECK/CONNECTION/EXIT conditions (each a lambda), the front of the
+# temple region is always built, and the temple arrival picks its region on each call, before the entrance cache.
+check('#defineMM_LOGIC_STONE_TOWER_PINNED(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]||RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])' in
+      logic_h, 'MM_LOGIC_STONE_TOWER_PINNED must read the bound seed options only')
+# Comments and preprocessor lines (the #define of the switch, #ifdef COMBO_BUILD) removed, layout kept.
+east = '\n'.join(line for line in re.sub(r'//[^\n]*', '', read('mm/2s2h/Rando/Logic/Regions/East.cpp')).splitlines()
+                 if not line.lstrip().startswith('#'))
+uses = [m.start() for m in re.finditer(r'MM_LOGIC_STONE_TOWER_PINNED|COMBO_STONE_TOWER_SELECT', east)]
+check(len(uses) > 30, f'only {len(uses)} Stone Tower pinned uses found')
+for at in uses:
+    caller = enclosing_call(east, at)
+    check(caller in ('CHECK', 'CONNECTION', 'EXIT', 'COMBO_STONE_TOWER_SELECT'),
+          f'East.cpp: a Stone Tower graph choice is made outside an edge condition ({caller}: {east[at - 60:at + 40]!r})')
+front = east.find('Regions[RR_MM_STONE_TOWER_FRONT_OF_TEMPLE] = RandoRegion{')
+check(front > 0 and enclosing_call(east, front) == 'initFunc' and
+      not re.search(r'\b(if|else)\b|\?', east[max(east.rfind(';', 0, front), east.rfind('}', 0, front)) + 1:front]),
+      'East.cpp: the Stone Tower front of temple region must be built unconditionally at init')
+entry = body(read('mm/2s2h/Rando/Logic/Logic.cpp'), 'RandoRegionId GetRegionIdFromEntrance(s32 entrance)')
+check(0 < entry.find('if(MM_LOGIC_STONE_TOWER_PINNED&&entrance==ENTRANCE(STONE_TOWER,2))returnRR_MM_STONE_TOWER_FRONT_OF_TEMPLE;')
+      < entry.find('staticstd::map<s32,RandoRegionId>entranceToRegionId;') and
+      'randoRegionId==RR_MM_STONE_TOWER_FRONT_OF_TEMPLE)continue;' in entry,
+      'GetRegionIdFromEntrance must pick the Stone Tower temple arrival per call and keep it out of its cache')
+
 if failures:
     print('\n'.join(failures))
     sys.exit(1)
