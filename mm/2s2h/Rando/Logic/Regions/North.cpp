@@ -402,12 +402,12 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_FIRE_SHORT_RANGE || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE)))), // twin_island.yml:19
             CHECK(RC_TWIN_ISLANDS_TINGLE_MAP_01,          CAN_USE_PROJECTILE && CAN_AFFORD(RC_TWIN_ISLANDS_TINGLE_MAP_01)),
             CHECK(RC_TWIN_ISLANDS_TINGLE_MAP_02,          CAN_USE_PROJECTILE && CAN_AFFORD(RC_TWIN_ISLANDS_TINGLE_MAP_02)),
-            CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_01, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
-            CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_02, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
-            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_01, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
-            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_02, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
-            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_03, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
-            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_04, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING_STRICT)),
+            CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_01, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),
+            CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_02, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),
+            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_01, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),
+            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_02, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),
+            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_03, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),
+            CHECK(RC_TWIN_ISLANDS_FREESTANDING_RUPEE_04, COMBO_WORLD53_SELECT(CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring(), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),
             CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_01, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
             CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_02, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
             CHECK(RC_TWIN_ISLANDS_SPRING_GRASS_03, (!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (NativeMmNorthSpring())),
@@ -542,7 +542,11 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 4),      ENTRANCE(PATH_TO_SNOWHEAD, 0), true),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK("PathSnowheadHovers"))), // path_to_snowhead.yml:7
+#else
             CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL),
+#endif
         },
     };
     Regions[RR_PATH_TO_SNOWHEAD_MIDDLE] = RandoRegion{ .sceneId = SCENE_14YUKIDAMANOMITI,
@@ -553,8 +557,13 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ENEMY_DROP_KEESE, CanKillEnemy(ACTOR_EN_FIREFLY)),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_PATH_TO_SNOWHEAD_LOWER, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK("PathSnowheadHovers"))), // path_to_snowhead.yml:28
+            CONNECTION(RR_PATH_TO_SNOWHEAD_UPPER, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK("PathSnowheadHovers"))), // path_to_snowhead.yml:7
+#else
             CONNECTION(RR_PATH_TO_SNOWHEAD_LOWER, CAN_GORON_SPIKE_ROLL),
             CONNECTION(RR_PATH_TO_SNOWHEAD_UPPER, CAN_GORON_SPIKE_ROLL),
+#endif
         },
     };
     Regions[RR_PATH_TO_SNOWHEAD_UPPER] = RandoRegion{ .sceneId = SCENE_14YUKIDAMANOMITI,
@@ -573,7 +582,11 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(GROTTOS, 25),                     ENTRANCE(PATH_TO_SNOWHEAD, 1), CAN_USE_EXPLOSIVE),
         },
         .connections = {
+#ifdef COMBO_BUILD
+            CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL || (MM_LOGIC_HAS_HOVER_BOOTS && COMBO_MM_TRICK("PathSnowheadHovers"))), // path_to_snowhead.yml:28
+#else
             CONNECTION(RR_PATH_TO_SNOWHEAD_MIDDLE, CAN_GORON_SPIKE_ROLL),
+#endif
         },
     };
     Regions[RR_SNOWHEAD_GREAT_FAIRY_FOUNTAIN] = RandoRegion{ .sceneId = SCENE_YOUSEI_IZUMI,
