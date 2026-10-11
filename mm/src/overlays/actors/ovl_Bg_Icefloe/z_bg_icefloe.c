@@ -6,6 +6,9 @@
 
 #include "z_bg_icefloe.h"
 #include "objects/object_icefloe/object_icefloe.h"
+#ifdef COMBO_BUILD
+extern int Combo_MM_IsLinkAdult(void);
+#endif
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
 
@@ -126,6 +129,13 @@ void func_80AC4C34(BgIcefloe* this, PlayState* play) {
                                 &this->dyna.actor.home.pos.y, &waterBox)) {
         func_80AC4CF0(this);
     } else {
+#ifdef COMBO_BUILD
+        // OoTMM raises the floating platform for adult Link
+        // (generator/src/common/ovl/actors/Bg_Icefloe/Bg_Icefloe.c:132) and lowers it back as it melts (:140).
+        if (Combo_MM_IsLinkAdult()) {
+            this->dyna.actor.scale.y = 0.20f;
+        }
+#endif
         this->dyna.actor.world.pos.y =
             (Math_SinF(this->timer * (M_PIf / 30.0f)) * 3.0f) + (this->dyna.actor.home.pos.y + 10.0f);
     }
@@ -133,6 +143,11 @@ void func_80AC4C34(BgIcefloe* this, PlayState* play) {
 
 void func_80AC4CF0(BgIcefloe* this) {
     this->timer = 50;
+#ifdef COMBO_BUILD
+    if (Combo_MM_IsLinkAdult()) {
+        this->dyna.actor.scale.y = 0.13f;
+    }
+#endif
     Actor_PlaySfx(&this->dyna.actor, NA_SE_EV_ICE_MELT_LEVEL);
     this->actionFunc = func_80AC4D2C;
 }

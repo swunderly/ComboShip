@@ -2825,6 +2825,13 @@ s32 Player_OverrideLimbDrawGameplayDefault(PlayState* play, s32 limbIndex, Gfx**
         }
     }
 
+#ifdef COMBO_BUILD
+    // OoTMM's Player_OverrideLimbDrawGameplayDefault_Custom (generator/src/mm/actors/Player.c:2137-2150) raises adult
+    // Link's root during the Bremen march or cutscene action 108, after the native default override.
+    if (limbIndex == PLAYER_LIMB_ROOT && (player->stateFlags3 & PLAYER_STATE3_20000000) && Combo_MM_IsLinkAdult()) {
+        pos->y += 1280.0f;
+    }
+#endif
     return false;
 }
 
@@ -2851,14 +2858,6 @@ s32 Player_OverrideLimbDrawGameplayFirstPerson(PlayState* play, s32 limbIndex, G
             *dList = NULL;
         }
     }
-
-#ifdef COMBO_BUILD
-    // Pinned Player_OverrideLimbDrawGameplayDefault_Custom runs after the native override.
-    if (limbIndex == PLAYER_LIMB_ROOT && (player->stateFlags3 & PLAYER_STATE3_20000000) && Combo_MM_IsAdult() &&
-        Combo_MM_AdultResourcesReady()) {
-        pos->y += 1280.0f;
-    }
-#endif
     return false;
 }
 
@@ -3927,7 +3926,11 @@ static void Combo_Player_PostLimbDrawGameplayNative(PlayState* play, s32 limbInd
                     Vec3f* var_a0 = &D_801C0D60;
 
                     if (player->transformation == PLAYER_FORM_HUMAN) {
-                        var_a0 = &D_801C0D6C;
+#ifdef COMBO_BUILD
+                        // OoTMM holds adult Link's arrow at the other forms' point (Player.S:865-876).
+                        if (!Combo_MM_IsLinkAdult())
+#endif
+                            var_a0 = &D_801C0D6C;
                     }
 
                     Matrix_MultVec3f(var_a0, &heldActor->world.pos);

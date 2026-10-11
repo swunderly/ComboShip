@@ -278,6 +278,57 @@ check(re.search(r'PLAYER_ANIMGROUP_doorA, // OPEN_DOOR_LEFT_HUMAN', read('mm/inc
 check('AdultMask' not in read('mm/src/overlays/actors/ovl_player_actor/ComboAdultAgeNative.h'),
       'adult age still depends on the Adult Mask')
 
+# ---- OoTMM v32.3's adult runtime branches (plan F5 steps 6 and 8 as F5b amends them), all on Combo_MM_IsLinkAdult.
+player = read('mm/src/overlays/actors/ovl_player_actor/z_player.c')
+seam = squash(player[player.index('// Commit exact human model/property resources'):])
+check(seam.startswith(squash('''// Commit exact human model/property resources before native equipment and skeleton init.
+    // Other forms retain their original tables; legacy saves remain native child MM.
+    {
+        // The tables report whether the adult model could be drawn; without it Link stays child throughout.
+        int adult = Combo_MM_ApplyAdultModelTables(Combo_MM_IsLinkAdult());
+        Combo_MM_ApplyAdultOverlayAge(adult);
+        Combo_MM_ApplyAdultGameplayKeep(play, adult);''')), 'Player_Init does not apply the adult runtime from the tables')
+check('((this->heldItemAction==PLAYER_IA_HOOKSHOT&&(this->stateFlags1&PLAYER_STATE1_8000000))||Combo_MM_IsLinkAdult())'
+      '?CAM_MODE_BOWARROW' in body(player, 's32 func_8083868C(PlayState* play, Player* this)'),
+      'item camera (Player.c:2034-2051)')
+check('if(Combo_MM_IsLinkAdult())returnextraHeight+68.0f;' in body(read('mm/src/code/z_actor.c'),
+                                                                     'f32 Player_GetHeight(Player* player)'),
+      'adult Link is not the Zora\'s height (play.c:721-722)')
+check('if(player->transformation==PLAYER_FORM_HUMAN){#ifdefCOMBO_BUILD//OoTMMholdsadultLink\'sarrowattheotherforms\''
+      'point(Player.S:865-876).if(!Combo_MM_IsLinkAdult())#endifvar_a0=&D_801C0D6C;}' in squash(lib),
+      'arrow position (Player.S:865-876)')
+bremen = 'if(limbIndex==PLAYER_LIMB_ROOT&&(player->stateFlags3&PLAYER_STATE3_20000000)&&Combo_MM_IsLinkAdult()){pos->y+=1280.0f;}'
+check(bremen in body(lib, 's32 Player_OverrideLimbDrawGameplayDefault(') and
+      '1280' not in body(lib, 's32 Player_OverrideLimbDrawGameplayFirstPerson('), 'Bremen march raise (Player.c:2135-2150)')
+check('f32yOffset=Combo_MM_IsLinkAdult()?80.0f:60.0f;' in squash(read('mm/src/code/ComboFarorePointer.c')),
+      'Farore\'s Wind pointer height (actors.c:693)')
+check('casePLAYER_FORM_HUMAN:returnCombo_MM_IsLinkAdult()?0.6f:0.4f;' in
+      squash(read('mm/src/overlays/actors/ovl_Combo_Magic_Dark/z_combo_magic_dark.c')),
+      'Nayru\'s Love size (Custom_Magic_Dark.c:63-64)')
+check('if(spellSfxIndex==2&&Combo_MM_IsLinkAdult()){spellSfxIndex=3;}' in
+      squash(read('mm/src/overlays/actors/ovl_player_actor/ComboSpellPlayer.inc.h')), 'spell sound (Player.c:431-435)')
+giant = body(read('mm/src/audio/code_8019AF00.c'), 'void Audio_PlaySfx_GiantsMask(Vec3f* pos, u16 sfxId)')
+check('if(Combo_MM_IsLinkAdult()){AudioSfx_PlaySfx(sfxId&0x681F,pos,4,' in giant and
+      'AudioSfx_PlaySfx((sfxId&0x681F)+0x20,pos,4,' in giant, 'Giant\'s Mask voice (Player.c:2088-2097)')
+check('Actor_OfferGetItem(&this->actor,play,GI_NONE,60.0f,Combo_MM_IsLinkAdult()?96.0f:40.0f);' in
+      squash(read('mm/src/overlays/actors/ovl_En_Zog/z_en_zog.c')), 'Mikau grab range (En_Zog.c:85-93)')
+icefloe = squash(read('mm/src/overlays/actors/ovl_Bg_Icefloe/z_bg_icefloe.c'))
+check('if(Combo_MM_IsLinkAdult()){this->dyna.actor.scale.y=0.20f;}' in icefloe and
+      'if(Combo_MM_IsLinkAdult()){this->dyna.actor.scale.y=0.13f;}' in icefloe, 'ice platform (Bg_Icefloe.c:132, 140)')
+check('IsLinkAdult' not in read('mm/src/overlays/actors/ovl_Arms_Hook/z_arms_hook.c'),
+      'the hookshot chain is no longer MM\'s own (lead decision D2)')
+# No adult runtime branch of Cross-Games Age still asks the Adult Mask aggregate.
+for rel in ('mm/src/code/z_actor.c', 'mm/src/code/ComboFarorePointer.c', 'mm/src/audio/code_8019AF00.c',
+            'mm/src/overlays/actors/ovl_Combo_Magic_Dark/z_combo_magic_dark.c',
+            'mm/src/overlays/actors/ovl_player_actor/ComboSpellPlayer.inc.h', 'mm/src/code/ComboAdultModelTablesNative.h'):
+    text = read(rel)
+    check('Combo_MM_AdultResourcesReady()' not in text and 'Combo_MM_IsAdult()' not in text and
+          'EffectiveHumanAge' not in text, f'{rel} still uses the old adult gate')
+for signature in ('s32 Player_OverrideLimbDrawGameplayDefault(', 'void Player_DrawImpl(', 's32 func_8083868C('):
+    source = lib if 'func_8083868C' not in signature else player
+    check('Combo_MM_IsAdult()' not in body(source, signature) and
+          'Combo_MM_AdultResourcesReady()' not in body(source, signature), f'{signature} still uses the old adult gate')
+
 # The loader's lists, in slot order, and its composites (plan F5b 1.3).
 enum = re.search(r'typedef enum ComboAdultOotSlot \{(.*?)\} ComboAdultOotSlot;', slots_src, re.S).group(1)
 order = [e.split('=')[0].strip().replace('COMBO_ADULT_', '') for e in re.sub(r'//[^\n]*', '', enum).split(',')

@@ -1503,8 +1503,7 @@ void Actor_SetControlStickData(PlayState* play, Input* input, f32 controlStickMa
 }
 
 #ifdef COMBO_BUILD
-extern int Combo_MM_IsAdult(void);
-extern int Combo_MM_AdultResourcesReady(void);
+extern int Combo_MM_IsLinkAdult(void);
 #endif
 f32 Player_GetHeight(Player* player) {
     f32 extraHeight;
@@ -1531,7 +1530,8 @@ f32 Player_GetHeight(Player* player) {
 
         case PLAYER_FORM_HUMAN:
 #ifdef COMBO_BUILD
-            if (Combo_MM_AdultResourcesReady() && Combo_MM_IsAdult())
+            // OoTMM gives adult Link the Zora's height (play/play.c:721-722).
+            if (Combo_MM_IsLinkAdult())
                 return extraHeight + 68.0f;
 #endif
             return extraHeight + 44.0f;
