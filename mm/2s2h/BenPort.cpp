@@ -6030,6 +6030,28 @@ extern "C" COMBO_EXPORT int MM_ApplyFaroreTransitionAge(int fileNum, int age) {
         save.linkAge = (u8)age;
     return 1;
 }
+// Cross-Games Age: the combo layer's OoT age for a slot (the live OoT save's, else the one on the slot's OoT page).
+static int (*sCrossAgeOotAge)(int) = nullptr;
+extern "C" COMBO_EXPORT void MM_SetCrossAgeOotAgeBridge(int (*ootAge)(int)) {
+    sCrossAgeOotAge = ootAge;
+}
+// Copies OoT's age into MM at every MM entry (OoTMM comboIsLinkAdult, util.c:74-81). title_setup.c runs it after the
+// arrival is resolved and before the save-load hooks; Farore's Wind and shuffled-entrance arrivals set the departing
+// OoT age through the same setter first. Returns 1 when it changed Link's age.
+extern "C" int Combo_MM_SyncCrossAgeOnEntry(void) {
+    auto& save = gSaveContext.save;
+    auto& state = save.shipSaveInfo.adultMm;
+    const int file = gSaveContext.fileNum;
+    const bool active = IS_RANDO && RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE];
+    // A save without the adult state keeps native MM's raw age, and the dormant Adult Mask keeps its own.
+    if (file < 0 || file > 2 || (!active && (!state.enabled || state.maskEnabled)))
+        return 0;
+    const int before = MM_GetEffectiveHumanAge(file);
+    const int ootAge = active && sCrossAgeOotAge ? sCrossAgeOotAge(file) : -1;
+    state.enabled = 1;
+    MM_ApplyFaroreTransitionAge(file, ComboRando::MmAgeLogic::EntryAge(active, ootAge, save.linkAge));
+    return MM_GetEffectiveHumanAge(file) != before;
+}
 #endif
 
 #ifdef COMBO_BUILD

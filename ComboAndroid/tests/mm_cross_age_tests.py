@@ -92,6 +92,37 @@ check('if(save.shipSaveInfo.adultMm.enabled)save.linkAge=(u8)age;return1;' in
       body(benport, 'extern "C" COMBO_EXPORT int MM_ApplyFaroreTransitionAge(int fileNum, int age)'),
       'MM_ApplyFaroreTransitionAge must set the saved age only')
 
+# ---- 5a-3: OoT's age reaches MM at every entry, in the critique X12 order: arrival resolution, age sync, (Plan 4's
+# initial-entrance record), save-load hooks. Farore's Wind and shuffled-entrance arrivals use the same setter.
+setup = squash(read('mm/src/code/title_setup.c'))
+arrival = setup.find('constintsongArrival=MM_ConsumeSongArrival();')
+sync = setup.find('Combo_MM_SyncCrossAgeOnEntry();')
+check(0 < arrival < setup.find('gSaveContext.save.entrance=songArrival;') < sync <
+      setup.find('GameInteractor_ExecuteOnSaveLoad(gSaveContext.fileNum);'),
+      'title_setup.c: the age sync must follow the arrival and precede the save-load hooks')
+sync_fn = body(benport, 'extern "C" int Combo_MM_SyncCrossAgeOnEntry(void)')
+for term in ('constboolactive=IS_RANDO&&RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE];',
+             'if(file<0||file>2||(!active&&(!state.enabled||state.maskEnabled)))return0;',
+             'constintootAge=active&&sCrossAgeOotAge?sCrossAgeOotAge(file):-1;', 'state.enabled=1;',
+             'MM_ApplyFaroreTransitionAge(file,ComboRando::MmAgeLogic::EntryAge(active,ootAge,save.linkAge));'):
+    check(term in sync_fn, f'Combo_MM_SyncCrossAgeOnEntry lacks {term}')
+check('if(!active)return1;if(ootAge==0||ootAge==1)returnootAge;returnstoredAge==0?0:1;' in
+      body(read('combo/rando/MmAgeLogic.h'), 'inline int EntryAge('), 'MmAgeLogic::EntryAge differs')
+check('if(arrival->crossAge&&!MM_ApplyFaroreTransitionAge(arrival->file,arrival->age))return-1;' in
+      squash(read('mm/2s2h/Rando/CrossEntrance.inc.h')), 'shuffled-entrance arrivals must use the age setter')
+farore = squash(read('mm/2s2h/Rando/FaroresWind.cpp'))
+check('(sApplyAge?!sApplyAge(gSaveContext.fileNum,sArrivalAge)' in farore, 'Farore arrivals must use the age setter')
+combo = read('combo/ComboShip.cpp')
+oot_age = body(combo, 'static int Combo_CrossAgeOotAge(int fileNum)')
+check('constintlive=SOH_GetFaroreAge?SOH_GetFaroreAge(fileNum):-1;' in oot_age and
+      'Combo_ReadGameSave(ComboRando::GAME_OOT,fileNum);' in oot_age and
+      '.at("sections").at("base").at("data").at("linkAge")' in oot_age,
+      'Combo_CrossAgeOotAge must read the live OoT age, else the OoT page linkAge')
+check('SaveManager::Instance->SaveData("linkAge",saveContext->linkAge);' in
+      body(read('soh/soh/SaveManager.cpp'), 'void SaveManager::SaveBase('), 'OoT no longer saves linkAge in "base"')
+check('GetSym(mmModule,"MM_SetCrossAgeOotAgeBridge"))set(Combo_CrossAgeOotAge);' in squash(combo),
+      'ComboShip.cpp does not bind the Cross-Games Age OoT age bridge')
+
 if failures:
     print('\n'.join(failures))
     sys.exit(1)

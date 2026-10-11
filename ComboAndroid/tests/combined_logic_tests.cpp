@@ -398,5 +398,11 @@ int main(){
         assert(child==(!cross || age==1) && adult==(cross && age==0) && child!=adult);
         assert(MmAgeLogic::IsTall(zora,adult)==(zora || adult) && MmAgeLogic::IsShort(deku,child)==(deku || child));
     }
+    // The MM age at an MM entry (util.c:74-81): OoT's age while Cross-Games Age is active, else the stored age when
+    // OoT's is unknown (-1), and always child without it.
+    for(int stored=0;stored<3;++stored) for(int oot=-1;oot<3;++oot){
+        assert(MmAgeLogic::EntryAge(false,oot,stored)==1);
+        assert(MmAgeLogic::EntryAge(true,oot,stored)==(oot==0 || oot==1 ? oot : stored==0 ? 0 : 1));
+    }
     std::cout<<"Combined reachability, collected fixed point, native ability and age-time checks passed\n";
 }

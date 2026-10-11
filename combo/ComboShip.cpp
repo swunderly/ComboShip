@@ -3853,6 +3853,22 @@ static int Combo_FaroreOotAge(int fileNum) {
         return -1;
     return SOH_GetFaroreAge ? SOH_GetFaroreAge(fileNum) : -1;
 }
+// Cross-Games Age (BenPort.cpp Combo_MM_SyncCrossAgeOnEntry): the slot's OoT age, live while OoT has the slot loaded,
+// else the age saved on its OoT page (SaveManager.cpp SaveBase "linkAge"); -1 when neither is known.
+static int Combo_CrossAgeOotAge(int fileNum) {
+    if (!ComboIsValidSlot(fileNum))
+        return -1;
+    const int live = SOH_GetFaroreAge ? SOH_GetFaroreAge(fileNum) : -1;
+    if (live == 0 || live == 1)
+        return live;
+    try {
+        const char* page = Combo_ReadGameSave(ComboRando::GAME_OOT, fileNum);
+        if (!page || !*page)
+            return -1;
+        const auto age = nlohmann::json::parse(page).at("sections").at("base").at("data").at("linkAge");
+        return age.is_number_integer() && (age == 0 || age == 1) ? age.get<int>() : -1;
+    } catch (...) { return -1; }
+}
 static bool BindDormantMmFarore(int fileNum) {
     if (!FaroreSlot(fileNum))
         return false;
@@ -4401,6 +4417,8 @@ int main(int argc, char** argv) {
         set(Combo_FaroreMmDestination, Combo_FaroreSyncMm);
     if (auto set = (void (*)(int (*)(int), FaroreDestination))GetSym(mmModule, "MM_SetFaroreBridge"))
         set(Combo_FaroreOotAge, Combo_FaroreOotDestination);
+    if (auto set = (void (*)(int (*)(int)))GetSym(mmModule, "MM_SetCrossAgeOotAgeBridge"))
+        set(Combo_CrossAgeOotAge);
     if (auto set = (void (*)(FaroreSync))GetSym(mmModule, "MM_SetFaroreSyncOot"))
         set(Combo_FaroreSyncOot);
     if (auto set =

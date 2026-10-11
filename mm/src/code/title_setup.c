@@ -121,6 +121,10 @@ void Setup_InitImpl(SetupState* this) {
                 CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE))
                 gSaveContext.save.entrance = ENTRANCE(MOUNTAIN_VILLAGE_SPRING, 8);
         }
+        // Cross-Games Age: Link takes OoT's age on every entry. Order (critique X12): the arrival above, this age sync,
+        // the entrance randomizer's initial-entrance record (plan F4) when it lands, then the save-load hooks below.
+        extern int Combo_MM_SyncCrossAgeOnEntry(void);
+        Combo_MM_SyncCrossAgeOnEntry();
         gSaveContext.save.cutsceneIndex = 0;
         // Reset magicLevel like Sram_OpenSave does — re-arms the magic meter grow animation
         // (Interface_Update only steps magicCapacity when magicLevel == 0).
