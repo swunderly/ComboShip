@@ -879,5 +879,8 @@ void Settings::CreateOptionDescriptions() {
     mOptionDescriptions[RSK_SHUFFLE_BOSS_SOULS] =
         "Shuffles 8 boss souls (one for each blue warp dungeon). A boss will not appear until you collect its "
         "respective soul.";
+    // OoTMM soulsEnemyOot, verbatim (packages/core/src/settings/data.ts:2340).
+    mOptionDescriptions[RSK_SHUFFLE_ENEMY_SOULS] =
+        "Add Souls for OoT enemies into the item pool. They won't spawn unless their Soul is obtained.";
 }
 } // namespace Rando

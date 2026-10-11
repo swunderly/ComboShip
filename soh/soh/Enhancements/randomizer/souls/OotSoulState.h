@@ -71,7 +71,7 @@ struct GeneralOotSoulOptions {
 // OoTMM v32.3 has one boolean per soul family and no master switch (packages/core/src/settings/
 // data.ts:2336-2414). A family is offered only once its gates and runtime are finished, as MM's
 // ExpandedSoulsReadiness.h does; an unpublished family stays off whatever a profile, CVar or seed says.
-inline constexpr bool OotEnemySoulsPublic = false, OotNpcSoulsPublic = false, OotAnimalSoulsPublic = false,
+inline constexpr bool OotEnemySoulsPublic = true, OotNpcSoulsPublic = false, OotAnimalSoulsPublic = false,
                       OotMiscSoulsPublic = false;
 // The stored RSK_COMPLETE_OOT_SOULS of a new seed: on when any published family is on.
 inline constexpr bool DeriveGeneralOotSoulSwitch(bool enemy, bool npc, bool animal, bool misc) {

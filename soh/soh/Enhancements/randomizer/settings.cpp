@@ -1120,7 +1120,8 @@ void Settings::CreateOptions() {
     // Not a user setting: OoTMM has no master soul switch. Derived from the published soul families in
     // FinalizeSettings and ParseJson, like RSK_SHUFFLE_ENTRANCES; no CVar, and no name so the spoiler skips it.
     OPT_BOOL(RSK_COMPLETE_OOT_SOULS, "");
-    OPT_BOOL(RSK_SHUFFLE_ENEMY_SOULS, "Shuffle Enemy Souls", CVAR_RANDOMIZER_SETTING("ShuffleEnemySouls"), mOptionDescriptions[RSK_SHUFFLE_ENEMY_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
+    // OoTMM soulsEnemyOot (packages/core/src/settings/data.ts:2336-2343); the CVar keeps profiles and seeds working.
+    OPT_BOOL(RSK_SHUFFLE_ENEMY_SOULS, "Enemy Souls (OoT)", CVAR_RANDOMIZER_SETTING("ShuffleEnemySouls"), mOptionDescriptions[RSK_SHUFFLE_ENEMY_SOULS], IMFLAG_NONE, WIDGET_CVAR_CHECKBOX, RO_GENERIC_OFF);
     // SoH's Enemy Randomizer has no OoTMM counterpart: its replacement enemies would be kept away by souls
     // that logic does not model. FinalizeSettings forces the souls off while it is on.
     OPT_CALLBACK(RSK_SHUFFLE_ENEMY_SOULS, {
@@ -2243,28 +2244,21 @@ void Settings::CreateOptions() {
                               WidgetContainerType::SECTION);
     mOptionGroups[RSG_MENU_COLUMN_SHOP_SHUFFLES] =
         OptionGroup::SubGroup("", { &mOptionGroups[RSG_MENU_SECTION_SHOP_SHUFFLES] }, WidgetContainerType::COLUMN);
-    mOptionGroups[RSG_MENU_SECTION_ADDITIONAL_ITEMS] = OptionGroup::SubGroup("Additional Items",
-                                                                             {
-                                                                                 &mOptions[RSK_SHUFFLE_CHILD_WALLET],
-                                                                                 &mOptions[RSK_INCLUDE_TYCOON_WALLET],
-                                                                                 &mOptions[RSK_SHUFFLE_FISHING_POLE],
-                                                                                 &mOptions[RSK_SHUFFLE_DEKU_STICK_BAG],
-                                                                                 &mOptions[RSK_SHUFFLE_DEKU_NUT_BAG],
-                                                                                 &mOptions[RSK_SHUFFLE_OCARINA_BUTTONS],
-                                                                                 &mOptions[RSK_SHUFFLE_SWIM],
-                                                                                 &mOptions[RSK_SHUFFLE_GRAB],
-                                                                                 &mOptions[RSK_SHUFFLE_CLIMB],
-                                                                                 &mOptions[RSK_SHUFFLE_CRAWL],
-                                                                                 &mOptions[RSK_SHUFFLE_SPEAK],
-                                                                                 &mOptions[RSK_SHUFFLE_OPEN_CHEST],
-                                                                                 &mOptions[RSK_SHUFFLE_BEAN_SOULS],
-                                                                                 &mOptions[RSK_ROCS_FEATHER],
-                                                                                 &mOptions[RSK_BOMBCHU_BAG],
-                                                                                 &mOptions[RSK_ENABLE_BOMBCHU_DROPS],
-                                                                                 &mOptions[RSK_INFINITE_UPGRADES],
-                                                                                 &mOptions[RSK_SKELETON_KEY],
-                                                                             },
-                                                                             WidgetContainerType::SECTION);
+    mOptionGroups[RSG_MENU_SECTION_ADDITIONAL_ITEMS] =
+        OptionGroup::SubGroup("Additional Items",
+                              {
+                                  &mOptions[RSK_SHUFFLE_CHILD_WALLET], &mOptions[RSK_INCLUDE_TYCOON_WALLET],
+                                  &mOptions[RSK_SHUFFLE_FISHING_POLE], &mOptions[RSK_SHUFFLE_DEKU_STICK_BAG],
+                                  &mOptions[RSK_SHUFFLE_DEKU_NUT_BAG], &mOptions[RSK_SHUFFLE_OCARINA_BUTTONS],
+                                  &mOptions[RSK_SHUFFLE_SWIM],         &mOptions[RSK_SHUFFLE_GRAB],
+                                  &mOptions[RSK_SHUFFLE_CLIMB],        &mOptions[RSK_SHUFFLE_CRAWL],
+                                  &mOptions[RSK_SHUFFLE_SPEAK],        &mOptions[RSK_SHUFFLE_OPEN_CHEST],
+                                  &mOptions[RSK_SHUFFLE_ENEMY_SOULS],  &mOptions[RSK_SHUFFLE_BEAN_SOULS],
+                                  &mOptions[RSK_ROCS_FEATHER],         &mOptions[RSK_BOMBCHU_BAG],
+                                  &mOptions[RSK_ENABLE_BOMBCHU_DROPS], &mOptions[RSK_INFINITE_UPGRADES],
+                                  &mOptions[RSK_SKELETON_KEY],
+                              },
+                              WidgetContainerType::SECTION);
     mOptionGroups[RSG_MENU_COLUMN_ADDITIONAL_ITEMS] =
         OptionGroup::SubGroup("", { &mOptionGroups[RSG_MENU_SECTION_ADDITIONAL_ITEMS] }, WidgetContainerType::COLUMN);
     mOptionGroups[RSG_MENU_SIDEBAR_SHUFFLES] =
@@ -2455,6 +2449,7 @@ void Settings::CreateOptions() {
                                             &mOptions[RSK_SHUFFLE_BEAN_SOULS],
                                             &mOptions[RSK_ROCS_FEATHER],
                                             &mOptions[RSK_SHUFFLE_BOSS_SOULS],
+                                            &mOptions[RSK_SHUFFLE_ENEMY_SOULS],
                                             &mOptions[RSK_SHUFFLE_DEKU_STICK_BAG],
                                             &mOptions[RSK_SHUFFLE_DEKU_NUT_BAG],
                                             &mOptions[RSK_SHUFFLE_FREESTANDING],
