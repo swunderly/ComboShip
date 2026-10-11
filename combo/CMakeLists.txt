@@ -158,6 +158,10 @@ add_dependencies(ComboShip
 add_executable(comborando EXCLUDE_FROM_ALL ComboRandoHeadless.cpp)
 target_include_directories(comborando PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(comborando PRIVATE libultraship nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
+if(ANDROID)
+    # Standalone adb-shell tool: resolve bundled shared libraries beside the executable.
+    target_link_options(comborando PRIVATE "-Wl,-rpath,$ORIGIN")
+endif()
 add_dependencies(comborando soh 2ship)
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set_target_properties(comborando PROPERTIES
