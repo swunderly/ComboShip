@@ -18,6 +18,9 @@ void ComputeChecksInLogic(std::unordered_map<RandoCheckId, bool>& inLogic);
 void RecordSeenItem(RandoCheckId check, RandoItemId shownItem, uint8_t source = 1);
 // Whether RecordSeenItem(check, shownItem) would change anything; lets draw code skip its visibility test.
 bool NeedsSighting(RandoCheckId check, RandoItemId shownItem);
+// Recompute the checks in logic on the next tracker draw, without waiting for the refresh interval: something the
+// logic reads changed outside a check (BenPort.cpp Combo_MM_SyncCrossAgeOnEntry changes Link's age).
+void MarkChecksInLogicStale();
 #endif
 
 class CheckTrackerWindow : public Ship::GuiWindow {

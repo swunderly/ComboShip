@@ -95,6 +95,7 @@ CrowdControl* CrowdControl::Instance;
 #include "2s2h/Rando/Rando.h"
 #include "2s2h/Rando/Spoiler/Spoiler.h"
 #include "2s2h/Rando/Logic/Logic.h"
+#include "2s2h/Rando/CheckTracker/CheckTracker.h"
 #include "2s2h/Rando/MiscBehavior/ClockShuffle.h"
 #include "2s2h/SaveManager/SaveManager.h"
 #include "2s2h/CustomMessage/CustomMessage.h"
@@ -6050,7 +6051,10 @@ extern "C" int Combo_MM_SyncCrossAgeOnEntry(void) {
     const int ootAge = active && sCrossAgeOotAge ? sCrossAgeOotAge(file) : -1;
     state.enabled = 1;
     MM_ApplyFaroreTransitionAge(file, ComboRando::MmAgeLogic::EntryAge(active, ootAge, save.linkAge));
-    return MM_GetEffectiveHumanAge(file) != before;
+    if (MM_GetEffectiveHumanAge(file) == before)
+        return 0;
+    Rando::CheckTracker::MarkChecksInLogicStale(); // the age macros read it (Logic.h MM_LOGIC_AGE)
+    return 1;
 }
 #endif
 

@@ -123,6 +123,18 @@ check('SaveManager::Instance->SaveData("linkAge",saveContext->linkAge);' in
 check('GetSym(mmModule,"MM_SetCrossAgeOotAgeBridge"))set(Combo_CrossAgeOotAge);' in squash(combo),
       'ComboShip.cpp does not bind the Cross-Games Age OoT age bridge')
 
+# ---- 5a-7: the check tracker recomputes as soon as the entry sync changes the age its macros read.
+check('if(MM_GetEffectiveHumanAge(file)==before)return0;Rando::CheckTracker::MarkChecksInLogicStale();return1;' in
+      sync_fn, 'an age change must mark the check tracker stale')
+tracker = read('mm/2s2h/Rando/CheckTracker/CheckTracker.cpp')
+refresh = body(tracker, 'void RefreshChecksInLogic()')
+check('if(sChecksInLogicStale&&gGameState!=NULL)lastFrame=gGameState->frames-20;' in refresh and
+      refresh.find('lastFrame=gGameState->frames-20;') < refresh.find('gGameState->frames-lastFrame<20') <
+      refresh.find('sChecksInLogicStale=false;') < refresh.find('ComputeChecksInLogic(checksInLogic);'),
+      'RefreshChecksInLogic must skip its interval for a stale tracker and clear the mark when it refreshes')
+check('sChecksInLogicStale=true;' in body(tracker, 'void Rando::CheckTracker::MarkChecksInLogicStale()'),
+      'MarkChecksInLogicStale must set the stale mark')
+
 if failures:
     print('\n'.join(failures))
     sys.exit(1)
