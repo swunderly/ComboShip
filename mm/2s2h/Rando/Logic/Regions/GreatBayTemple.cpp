@@ -6,9 +6,8 @@
 
 using namespace Rando::Logic;
 #ifdef COMBO_BUILD
-#define COMBO_WORLD48_ENABLED                                                          \
-    (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || \
-     RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] ||    \
+#define COMBO_WORLD48_ENABLED                                                       \
+    (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] || \
      RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA])
 #define COMBO_WORLD48_SELECT(legacy, pinned) (COMBO_WORLD48_ENABLED ? (pinned) : (legacy))
 #define COMBO_WORLD48_UW MM_LOGIC_UNDERWATER_WALKING_STRICT

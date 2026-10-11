@@ -11,9 +11,8 @@
 
 using namespace Rando::Logic;
 #ifdef COMBO_BUILD
-#define COMBO_WORLD37_ENABLED                                                          \
-    (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || \
-     RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] ||    \
+#define COMBO_WORLD37_ENABLED                                                       \
+    (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] || \
      RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA])
 #endif
 
@@ -446,7 +445,7 @@ static RegisterShipInitFunc initFunc([]() {
         .checks = {
             CHECK(RC_ZORA_HALL_SCRUB_DEED,           Flags_GetRandoInf(RANDO_INF_OBTAINED_DEED_MOUNTAIN) && CAN_BE_GORON),
 #ifdef COMBO_BUILD
-            CHECK(RC_ZORA_HALL_SCRUB_PIECE_OF_HEART, (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE])
+            CHECK(RC_ZORA_HALL_SCRUB_PIECE_OF_HEART, (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE])
                 ? ComboRando::MmAdultWorldRoutes::ZoraHallScrubHeart(COMBO_MM_TRICK("ZoraHallScrubNoDeku"),
                     HAS_ITEM(ITEM_MASK_GORON), MM_LOGIC_IS_TALL, HAS_ITEM(ITEM_MASK_DEKU),
                     Flags_GetRandoInf(RANDO_INF_OBTAINED_DEED_MOUNTAIN), false, false)
@@ -490,22 +489,22 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(ZORA_CAPE, 2),                    ENTRANCE(ZORA_HALL, 1), true), // Back entrance beside the owl           
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 5),              ENTRANCE(ZORA_HALL, 2), true), // To Shop
 #ifdef COMBO_BUILD
-            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 2),              ENTRANCE(ZORA_HALL, 3), ((RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Lulu's Room
+            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 2),              ENTRANCE(ZORA_HALL, 3), ((RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Lulu's Room
 #else
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 2),              ENTRANCE(ZORA_HALL, 3), CAN_BE_ZORA), // To Lulu's Room
 #endif
 #ifdef COMBO_BUILD
-            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 3),              ENTRANCE(ZORA_HALL, 4), ((RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Evan's Room
+            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 3),              ENTRANCE(ZORA_HALL, 4), ((RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Evan's Room
 #else
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 3),              ENTRANCE(ZORA_HALL, 4), CAN_BE_ZORA), // To Evan's Room
 #endif
 #ifdef COMBO_BUILD
-            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 1),              ENTRANCE(ZORA_HALL, 5), ((RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Japas's Room
+            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 1),              ENTRANCE(ZORA_HALL, 5), ((RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Japas's Room
 #else
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 1),              ENTRANCE(ZORA_HALL, 5), CAN_BE_ZORA), // To Japas's Room
 #endif
 #ifdef COMBO_BUILD
-            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 0),              ENTRANCE(ZORA_HALL, 6), ((RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Mikaus's Room
+            EXIT(ENTRANCE(ZORA_HALL_ROOMS, 0),              ENTRANCE(ZORA_HALL, 6), ((RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? ComboRando::MmAdultWorldRoutes::ZoraHallDoor(HAS_ITEM(ITEM_MASK_ZORA), RANDO_EVENTS[RE_CLEARED_GREAT_BAY_TEMPLE], false, false) : CAN_BE_ZORA)), // To Mikaus's Room
 #else
             EXIT(ENTRANCE(ZORA_HALL_ROOMS, 0),              ENTRANCE(ZORA_HALL, 6), CAN_BE_ZORA), // To Mikaus's Room
 #endif

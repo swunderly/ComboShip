@@ -23,9 +23,8 @@ static bool BlacksmithCanThaw() {
 }
 
 #ifdef COMBO_BUILD
-#define COMBO_WORLD53_ENABLED                                                          \
-    (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || \
-     RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] ||    \
+#define COMBO_WORLD53_ENABLED                                                       \
+    (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_IRON] || \
      RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || RANDO_SAVE_OPTIONS[RO_MM_TUNIC_ZORA])
 #define COMBO_WORLD53_SELECT(legacy, pinned) (COMBO_WORLD53_ENABLED ? (pinned) : (legacy))
 #else
@@ -275,8 +274,7 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_MOUNTAIN_VILLAGE_OWL_STATUE,                   CAN_ACTIVATE_OWL),
 #ifdef COMBO_BUILD
             CHECK(RC_MOUNTAIN_VILLAGE_WATERFALL_CHEST,
-                (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] ||
-                 RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
+                (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
                     ? ComboRando::MmAdultWorldRoutes::MountainVillageWaterfall(
                         NativeMmNorthSpring(), CAN_NAVIGATE_HIDDEN,
                         true, // Pinned can_enter_water: scalesMm/bronzeScale are absent here.

@@ -50,7 +50,7 @@ static RegisterShipInitFunc initFunc([]() {
             // Zora's ordinary climb remains available; the optional human fence jump needs no item.
             // Pinned romani_ranch.yml Doggy Racetrack Chest: is_tall includes adult.
 #ifdef COMBO_BUILD
-            CHECK(RC_DOGGY_RACETRACK_CHEST, (RANDO_SAVE_OPTIONS[RO_MM_ADULT_MASK] || RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] || RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE]) ? (HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_DAY2_RAIN_BEAN || MM_LOGIC_IS_TALL || COMBO_MM_TRICK("DoggyFenceJump")) : (CAN_REACH_DOGGY_CHEST || MM_LOGIC_IS_ADULT)),
+            CHECK(RC_DOGGY_RACETRACK_CHEST, RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] ? (HAS_ITEM(ITEM_HOOKSHOT) || CAN_USE_DAY2_RAIN_BEAN || MM_LOGIC_IS_TALL || COMBO_MM_TRICK("DoggyFenceJump")) : (CAN_REACH_DOGGY_CHEST || MM_LOGIC_IS_ADULT)),
 #else
             CHECK(RC_DOGGY_RACETRACK_CHEST, CAN_REACH_DOGGY_CHEST),
 #endif
