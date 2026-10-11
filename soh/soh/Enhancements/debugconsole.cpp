@@ -37,7 +37,21 @@ extern PlayState* gPlayState;
 extern "C" void (*gComboCrossDeliver)(int targetGame, const char* itemName, const char* srcCheckName);
 #endif
 
+#ifdef COMBO_BUILD
+#include "ComboConsoleCommands.h"
+#include "ComboExport.h"
+static ComboConsole::Commands sComboConsoleCommands;
+extern "C" COMBO_EXPORT const Ship::CommandEntry* SOH_GetConsoleCommandForCombo(const char* name) {
+    return ComboConsole::Find(sComboConsoleCommands, name);
+}
+static void RegisterComboCommand(const std::string& name, Ship::CommandEntry entry) {
+    ComboConsole::Register(sComboConsoleCommands, Ship::Context::GetRawInstance()->GetConsole(), name,
+                           std::move(entry));
+}
+#define CMD_REGISTER RegisterComboCommand
+#else
 #define CMD_REGISTER Ship::Context::GetRawInstance()->GetConsole()->AddCommand
+#endif
 // TODO: Commands should be using the output passed in.
 #define ERROR_MESSAGE                                                                    \
     std::reinterpret_pointer_cast<Ship::ConsoleWindow>(                                  \
@@ -417,6 +431,10 @@ static bool GiveItemHandler(std::shared_ptr<Ship::Console> Console, const std::v
 
 static bool EntranceHandler(std::shared_ptr<Ship::Console> Console, const std::vector<std::string>& args,
                             std::string* output) {
+    if (gPlayState == nullptr) {
+        ERROR_MESSAGE("gPlayState == nullptr");
+        return 1;
+    }
     if (args.size() < 2) {
         ERROR_MESSAGE("[SOH] Unexpected arguments passed");
         return 1;

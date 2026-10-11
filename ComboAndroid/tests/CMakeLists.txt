@@ -125,6 +125,12 @@ combo_json_harness_test(menu_navigation_cache_and_profile_empty_states menu_poli
 combo_json_harness_test(profile_menu_reopen_cache_and_revisions menu_reopen_cache_tests.py)
 combo_json_harness_test(profile_menu_frame_refresh profile_menu_refresh_tests.py)
 get_filename_component(COMBO_PROFILE_TEST_IMGUI "${COMBO_JSON_INCLUDE_DIR}/../../imgui-src" ABSOLUTE)
+if(EXISTS "${COMBO_PROFILE_TEST_IMGUI}/imgui.h")
+    combo_harness_test(combo_console_foreground_dispatch_and_native_entrance combo_console_dispatch_tests.py
+        --imgui-include "${COMBO_PROFILE_TEST_IMGUI}")
+else()
+    combo_skipped_test(combo_console_foreground_dispatch_and_native_entrance "needs Dear ImGui headers")
+endif()
 if(COMBO_JSON_INCLUDE_DIR AND EXISTS "${COMBO_PROFILE_TEST_IMGUI}/imgui.cpp")
     combo_json_harness_test(profile_menu_dropdown_refresh_memory_safety profile_menu_dropdown_tests.py
         --imgui "${COMBO_PROFILE_TEST_IMGUI}")
