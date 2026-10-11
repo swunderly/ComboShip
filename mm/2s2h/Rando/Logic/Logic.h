@@ -393,14 +393,10 @@ bool HasUsableBottle();
                                                           INV_CONTENT(ITEM_MASK_FIERCE_DEITY))                  \
                 : (INV_CONTENT(item) == item)))
 #ifdef COMBO_BUILD
-#define MM_HAS_ADULT_MASK ((gSaveContext.save.shipSaveInfo.adultMm.maskOwnedBits & 2) != 0)
-#define MM_LOGIC_STARTING_AGE (RANDO_SAVE_OPTIONS[RO_MM_STARTING_AGE] ? 0 : 1)
-#define MM_LOGIC_IS_CHILD                                                                                \
-    ComboRando::MmAgeLogic::IsChild(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, gSaveContext.save.linkAge, \
-                                    MM_LOGIC_STARTING_AGE, MM_HAS_ADULT_MASK)
-#define MM_LOGIC_IS_ADULT                                                                                \
-    ComboRando::MmAgeLogic::IsAdult(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, gSaveContext.save.linkAge, \
-                                    MM_LOGIC_STARTING_AGE, MM_HAS_ADULT_MASK)
+#define MM_LOGIC_IS_CHILD \
+    ComboRando::MmAgeLogic::IsChild(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, gSaveContext.save.linkAge)
+#define MM_LOGIC_IS_ADULT \
+    ComboRando::MmAgeLogic::IsAdult(RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] != 0, gSaveContext.save.linkAge)
 #define MM_LOGIC_IS_TALL ComboRando::MmAgeLogic::IsTall(HAS_ITEM(ITEM_MASK_ZORA), MM_LOGIC_IS_ADULT)
 #define MM_LOGIC_IS_SHORT ComboRando::MmAgeLogic::IsShort(HAS_ITEM(ITEM_MASK_DEKU), MM_LOGIC_IS_CHILD)
 // Pinned stone_tower.yml graph (East.cpp), which splits the temple front from the Soaring top.
