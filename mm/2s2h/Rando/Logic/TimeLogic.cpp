@@ -1,5 +1,4 @@
 #include "Logic.h"
-#include <algorithm>
 #include <spdlog/spdlog.h>
 
 extern "C" {
@@ -105,8 +104,16 @@ static_assert(kSliceStartMinutes[TIME_NIGHT3_AM_05_00] == 4260, "one start time 
 
 uint64_t CurrentTimeSlice() {
     // MM's day counter advances at dawn, so after-midnight night times still belong to that day.
-    const int day = std::clamp<int>(gSaveContext.save.day, 1, 3);
+    int day = gSaveContext.save.day;
     const int clockMinutes = gSaveContext.save.time * (24 * 60) / 0x10000;
+    // A dawn still waiting for its DayTelop (the fade-out, the Scarecrow's dance) has not counted its day yet.
+    if (CHECK_EVENTINF(EVENTINF_TRIGGER_DAYTELOP) && clockMinutes >= 6 * 60 && clockMinutes < 18 * 60)
+        day++;
+    // Day 0 is before the cycle (Song of Time); day 4 is after it (moon crash).
+    if (day < 1)
+        return TIME_BIT_ONE << TIME_DAY1_AM_06_00;
+    if (day > 3)
+        return TIME_BIT_ONE << TIME_NIGHT3_AM_05_00;
     const int now = (day - 1) * 24 * 60 + (clockMinutes - 6 * 60 + 24 * 60) % (24 * 60);
     int current = 0;
     for (int slice = 0; slice < TIME_SLICE_COUNT; ++slice)

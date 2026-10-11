@@ -11,6 +11,9 @@ a = p.parse_args()
 logic = (a.source/'mm/2s2h/Rando/Logic/Logic.h').read_text(encoding='utf-8')
 enum = re.search(r'enum TimeSlice \{.*?\};', logic, re.S)
 assert enum, 'TimeSlice enum missing'
+save = (a.source/'mm/include/z64save.h').read_text(encoding='utf-8')
+eventInf = ''.join(re.search(pattern, save).group() + '\n' for pattern in
+                   (r'#define EVENTINF_TRIGGER_DAYTELOP .*', r'#define CHECK_EVENTINF\(flag\) .*'))
 timeLogic = (a.source/'mm/2s2h/Rando/Logic/TimeLogic.cpp').read_text(encoding='utf-8')
 table = re.search(r'static constexpr uint16_t kSliceStartMinutes\[TIME_SLICE_COUNT\] = \{.*?\};', timeLogic, re.S)
 function = re.search(r'uint64_t CurrentTimeSlice\(\) \{.*?\n\}', timeLogic, re.S)
@@ -24,13 +27,15 @@ code = r'''
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
-struct { struct { int day; uint16_t time; } save; } gSaveContext;
-''' + enum.group() + r'''
+struct { struct { int day; uint16_t time; } save; uint8_t eventInf[8]; } gSaveContext;
+''' + eventInf + enum.group() + r'''
 constexpr int TIME_SLICE_COUNT = TIME_NIGHT3_AM_05_00 + 1;
 constexpr uint64_t TIME_BIT_ONE = 1ULL;
 ''' + table.group() + '\n' + function.group() + r'''
-static int SliceAt(int day, int hour, int minute) {
+static int SliceAt(int day, int hour, int minute, bool dayTelopPending = false) {
     gSaveContext.save.day = day;
+    gSaveContext.eventInf[EVENTINF_TRIGGER_DAYTELOP >> 4] = dayTelopPending ? 1 << (EVENTINF_TRIGGER_DAYTELOP & 0xF) : 0;
+    assert(!CHECK_EVENTINF(EVENTINF_TRIGGER_DAYTELOP) == !dayTelopPending);
     gSaveContext.save.time = uint16_t(((hour * 60 + minute) * 0x10000 + 24 * 60 - 1) / (24 * 60));
     const uint64_t bit = CurrentTimeSlice();
     assert(bit && (bit & (bit - 1)) == 0);
@@ -56,9 +61,17 @@ int main() {
     assert(SliceAt(3, 9, 0) == TIME_DAY3_AM_08_00);
     assert(SliceAt(3, 13, 0) == TIME_DAY3_PM_01_00);
     assert(SliceAt(3, 5, 59) == TIME_NIGHT3_AM_05_00);
-    // Out-of-range day counters (title screen, Moon) clamp into the cycle.
+    // Dawn reached but its DayTelop still pending (fade-out, Scarecrow's dance): the day has not counted yet.
+    assert(SliceAt(1, 6, 0, true) == TIME_DAY2_AM_06_00);
+    assert(SliceAt(2, 6, 0, true) == TIME_DAY3_AM_06_00);
+    // A pending DayTelop into the night (Song of Double Time) does not shift the day.
+    assert(SliceAt(1, 18, 0, true) == TIME_NIGHT1_PM_06_00);
+    assert(SliceAt(1, 5, 59, true) == TIME_NIGHT1_AM_05_00);
+    // Day 0 is before the cycle (Song of Time sets 05:59); day 4 is after the moon crash.
     assert(SliceAt(0, 6, 0) == TIME_DAY1_AM_06_00);
-    assert(SliceAt(4, 6, 0) == TIME_DAY3_AM_06_00);
+    assert(SliceAt(0, 5, 59) == TIME_DAY1_AM_06_00);
+    assert(SliceAt(4, 6, 10) == TIME_NIGHT3_AM_05_00);
+    assert(SliceAt(3, 6, 0, true) == TIME_NIGHT3_AM_05_00);
     std::puts("MM current time slice: clock mapping and live seeding passed");
 }
 '''
