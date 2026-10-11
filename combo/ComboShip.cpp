@@ -797,8 +797,9 @@ static nlohmann::json SnapshotGameplayRules() {
     return rules;
 }
 // The player's own rules this session, read from the live CVars at startup, before any slot restore or
-// profile draft rewrites them. A vanilla or pre-rules save adopts them in place of the fallbacks; the
-// limitation of reading them from the live CVars is noted at GameplayRulesForSeed.
+// profile draft rewrites them. A vanilla or pre-rules save adopts them in place of the fallbacks (a seed
+// only their enhancement values); the limitation of reading them from the live CVars is noted at
+// GameplayRulesForSeed.
 static nlohmann::json sRuleBaseline;
 static const nlohmann::json& RuleBaseline() {
     if (sRuleBaseline.is_null())

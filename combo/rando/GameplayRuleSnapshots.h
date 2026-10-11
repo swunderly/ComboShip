@@ -56,7 +56,8 @@ inline nlohmann::json NormalizeGameplayRuleSnapshot(const nlohmann::json& input)
 // baseline (optional): the player's own settings, captured before any slot restored its rules this
 // session. A vanilla file, or a save from before rules were stored with the seed, adopts it once in
 // place of the fallbacks, so loading it does not switch the player's enhancements back to their
-// defaults. What the seed itself records (song map, arrow settings, trick list) still wins.
+// defaults. A seed adopts only the enhancement values: its logic assumptions and tricks come from what
+// the seed records (song map, arrow settings, trick list) and are otherwise off, as without a baseline.
 // Limitation: a baseline read from the live CVars at startup is what comboship.json holds, and menus
 // that save every CVar also store the rules a slot restored in an earlier session, so it can be that
 // slot's rules rather than the player's own. A baseline only the Enhancements menu writes avoids this.
@@ -67,11 +68,9 @@ inline nlohmann::json GameplayRulesForSeed(const nlohmann::json& seed,
     const bool adopt = !captured && IsGameplayRuleBlock(baseline);
     if (adopt && seed.empty())
         return NormalizeGameplayRuleSnapshot(baseline); // nothing else to take rules from
-    auto rules = captured ? saved
-                 : adopt  ? UpgradeGameplayRules(baseline)
-                          : CaptureGameplayRules([](const char*, int fallback) { return fallback; });
+    auto rules = captured ? saved : CaptureGameplayRules([](const char*, int fallback) { return fallback; });
     if (adopt)
-        rules.erase("ootTricks"); // the seed's own trick list, below
+        rules["values"] = UpgradeGameplayRules(baseline)["values"];
     if (!captured || rules["version"] == 1) {
         const auto map = SongTravelMap::parse(seed.value("songTravel", nlohmann::json()));
         for (const auto& pair : { std::pair{ "gCombo.Enhancements.ForeignSongs", map.foreignSongs },
