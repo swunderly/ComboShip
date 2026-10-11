@@ -4,6 +4,11 @@
 inline bool TypedMmSwampActive() {
     return TypedMmGrottoSourceActive(65540u) || MM_LOGIC_SOUTH_PINNED;
 }
+// macros_mm.yml:83 can_swim = can_enter_water || has_mask_zora: the Swim ability (the port has no MM scales) or the
+// Zora Mask. As in OoTMM, neither this nor is_tall counts Goron or Fierce Deity, so this graph has no Goron wading
+// where OoTMM lacks it (that matters only with Swim shuffled and not found) and ignores the native logic rule
+// "Fierce Deity's Mask anywhere". OoTMM gives Fierce Deity Anywhere "No logical applications" (data.ts:1601); its
+// is_tall carries the note "#add Fierce Deity" (macros_mm.yml:61), which v32.3 does not act on.
 inline bool MmSwampCanSwim() {
     return CAN_USE_ABILITY(SWIM) || CAN_BE_ZORA;
 }

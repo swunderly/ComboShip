@@ -112,9 +112,10 @@
     {"file": "South.cpp", "region": "RR_WOODFALL", "text": "(MM_LOGIC_IS_ADULT && HAS_ITEM(ITEM_HOOKSHOT) && (NativeMmSwampCleared() || CAN_USE_NAYRUS_LOVE))", "ootmm": "data/world/mm/overworld/woodfall.yml:15", "expects": "(is_adult && can_hookshot_short && (is_swamp_cleared || can_use_nayru))"},
     {"file": "South.cpp", "region": "RR_WOODFALL_OWL_STATUE_PLATFORM", "text": "|| NativeMmSwampCleared() || CAN_USE_NAYRUS_LOVE))", "ootmm": "data/world/mm/overworld/woodfall.yml:35", "expects": "is_swamp_cleared || hookshot_anywhere || can_use_nayru"},
     {"file": "IkanaCastle.cpp", "region": "RR_IKANA_CASTLE_CEILING_ROOM", "text": "ComboRando::MmAdultWorldRoutes::IkanaNorthEntry(HAS_ITEM(ITEM_MASK_DEKU), false, CAN_USE_NAYRUS_LOVE, MM_LOGIC_IS_TALL)", "ootmm": "data/world/mm/dungeons/ancient_castle_of_ikana.yml:27", "expects": "(can_use_nayru && is_tall)"},
+    {"file": "IkanaCastle.cpp", "region": "RR_IKANA_CASTLE_CEILING_ROOM", "text": ": (CAN_BE_DEKU || (CAN_USE_NAYRUS_LOVE && MM_LOGIC_IS_TALL)))", "ootmm": "data/world/mm/dungeons/ancient_castle_of_ikana.yml:27", "expects": "(can_use_nayru && is_tall)"},
     {"file": "West.cpp", "region": "", "text": "((CAN_USE_ABILITY(SWIM) && (MM_LOGIC_UNDERWATER_WALKING_STRICT || CAN_USE_NAYRUS_LOVE)) ||", "ootmm": "data/world/mm/overworld/zora_cape.yml:11", "expects": "(can_swim && (underwater_walking || can_use_nayru || trick(MM_ZORA_HALL_HUMAN)))"}
   ],
-  "nayruSwitches": ["MM_LOGIC_SOUTH_PINNED", "IKANA_ADULT_GEAR_MODE", "COMBO_WORLD54_ENABLED"],
+  "nayruSwitches": ["MM_LOGIC_SOUTH_PINNED", "COMBO_WORLD54_ENABLED"],
   "notApplicable": [
     {"ootmm": "data/macros/macros_mm.yml:180 break_icicle", "reason": "The fork has no icicle checks (great_bay_temple.yml, moon.yml and snowhead_temple.yml icicles)."},
     {"ootmm": "data/world/mm/overworld/mountain_village.yml:117", "reason": "The final-day Goron Elder shares the single Lullaby Intro check at twin_island.yml:19."},

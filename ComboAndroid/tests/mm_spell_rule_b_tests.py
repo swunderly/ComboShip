@@ -1,17 +1,20 @@
 """Item-level strictness of switching a Nayru's Love (MM) seed onto the pinned OoTMM v32.3 graphs (plan F2 rule B).
 
 A seed with Nayru's Love (MM) and no MM age or gear option uses the pinned South graph (Deku Palace, Southern
-Swamp, Woodfall) and the pinned Ancient Castle of Ikana graph instead of the native 2S2H ones. A check-level
-"superset with all items" comparison cannot see what that costs a player with fewer items (critique, plan 2 item
-5). This test reads the production sources and compares, for every combination of the relevant items:
+Swamp, Woodfall) instead of the native 2S2H one. A check-level "superset with all items" comparison cannot see
+what that costs a player with fewer items (critique, plan 2 item 5). This test reads the production sources and
+compares, for every combination of the relevant items:
 
-1. each switched expression (COMBO_WORLD45_SELECT in South.cpp, the Woodfall rows, IKANA_ADULT_GEAR_MODE in
-   IkanaCastle.cpp): where the pinned expression is false although the native one is true;
+1. each switched expression (COMBO_WORLD45_SELECT in South.cpp, the Woodfall rows): where the pinned expression is
+   false although the native one is true;
 2. the whole Southern Swamp: reachability of every swamp check, event and exit in the native regions versus the
    pinned swamp regions of MmSwampContexts.inc.h.
 
 Every place where the pinned graph needs more than the native one must be listed below with the OoTMM v32.3 line
 that requires it; anything else fails. MM age and gear options stay off (child Link, no boots or tunics).
+
+Ancient Castle of Ikana uses rule A instead: Nayru's Love keeps its native graph, and the test checks that the
+native edge gains exactly OoTMM's one Nayru's Love route.
 """
 from pathlib import Path
 import argparse
@@ -287,17 +290,28 @@ for m in re.finditer(r'(CHECK|CONNECTION|EXIT)\((\w+(?:\(\w+, \d+\))?),\s*(?:ENT
     pairs.append(('South', m.group(2), rest[cut + 1:].strip(), rest[:cut].strip()))
 m = re.search(r'CHECK\(RC_WOODFALL_NEAR_OWL_CHEST, COMBO_WORLD45_ENABLED && (.*)\), // woodfall.yml:15', south)
 pairs.append(('South', 'RC_WOODFALL_NEAR_OWL_CHEST (in RR_WOODFALL)', 'false', m.group(1)))
-for m in re.finditer(r'(CHECK|CONNECTION)\((\w+), IKANA_ADULT_GEAR_MODE \? ', ikana):
-    rest = ikana[m.end():ikana.index('\n', m.end())]
-    rest = rest[:rest.rindex(')')]
-    depth, cut = 0, None
-    for i, ch in enumerate(rest):
-        depth += (ch == '(') - (ch == ')')
-        if ch == ':' and depth == 0 and rest[i - 1] == ' ':
-            cut = i
-            break
-    region = ikana[:m.start()].rsplit('Regions[', 1)[1].split(']', 1)[0]
-    pairs.append(('Ikana', f'{m.group(2)} from {region}', rest[cut + 1:].strip(), rest[:cut].strip()))
+# Ancient Castle of Ikana uses rule A: Nayru's Love keeps the native graph, whose Ceiling Room -> Skulltula Room edge
+# takes OoTMM's only Nayru's Love term (ancient_castle_of_ikana.yml:27, Interior North -> Interior North 2) and
+# otherwise stays the native CAN_BE_DEKU.
+if 'RO_MM_SPELL_LOVE' in re.search(r'#define IKANA_ADULT_GEAR_MODE((?:[^\n]*\\\n)*[^\n]*)', ikana).group(1):
+    failures.append('Nayru\'s Love switches Ikana Castle onto the pinned graph')
+m = re.search(r'CONNECTION\(RR_IKANA_CASTLE_SKULLTULA_ROOM, IKANA_ADULT_GEAR_MODE \? ',
+              ikana[ikana.index('Regions[RR_IKANA_CASTLE_CEILING_ROOM]'):])
+rest = ikana[ikana.index('Regions[RR_IKANA_CASTLE_CEILING_ROOM]') + m.end():]
+rest = rest[:rest.index('\n')]
+rest = rest[:rest.rindex(')')]
+depth, cut = 0, None
+for i, ch in enumerate(rest):
+    depth += (ch == '(') - (ch == ')')
+    if ch == ':' and depth == 0 and rest[i - 1] == ' ':
+        cut = i
+        break
+ikana_native = compile_expr(rest[cut + 1:].strip())
+for deku, nayru, zora in itertools.product((False, True), repeat=3):
+    s = {'deku': deku, 'nayru': nayru, 'zora': zora}
+    if ikana_native(s, {}, False) != (deku or (nayru and zora)):
+        failures.append(f'native Ikana Ceiling Room -> Skulltula Room is not CAN_BE_DEKU plus OoTMM\'s Nayru\'s Love '
+                        f'route (ancient_castle_of_ikana.yml:27) with {sorted(k for k, v in s.items() if v)}')
 
 # Every pinned expression that needs more than its native counterpart for some items, with OoTMM's reason.
 # can_swim is the Swim ability or the Zora Mask (no scales); the native graph also lets Goron wade there.
@@ -308,10 +322,6 @@ EXPECTED_STRICTER = {
     'RC_DEKU_PALACE_POT_01': 'deku_palace.yml Upper pots need has(MASK_DEKU); their native region needs it too',
     'RC_DEKU_PALACE_POT_02': 'deku_palace.yml Upper pots need has(MASK_DEKU); their native region needs it too',
     'RR_WOODFALL': 'woodfall.yml:35 Woodfall Shrine -> Woodfall: has(MASK_DEKU) && soul_deku_scrub',
-    'RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_01': 'ancient_castle_of_ikana.yml:42: Deku Mask or hover boots, not the Bow',
-    'RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_02': 'ancient_castle_of_ikana.yml:43',
-    'RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_03': 'ancient_castle_of_ikana.yml:44',
-    'RC_ANCIENT_CASTLE_OF_IKANA_LEFT_SECOND_ROOM_POT_04': 'ancient_castle_of_ikana.yml:45',
 }
 stricter, looser = {}, {}
 for area, owner, legacy, pinned in pairs:
@@ -475,7 +485,8 @@ EXPECTED_SWAMP = {
     'RC_SOUTHERN_SWAMP_POISON_BEEHIVE': 'southern_swamp.yml:58, :99: breaking the hive needs the Zora Mask or Swamp Near Frog',
 }
 # The native rule that lets Fierce Deity wade (logic rule "Fierce Deity's Mask anywhere") has no v32.3 swamp
-# counterpart: OoTMM's Fierce Deity Anywhere in MM has "No logical applications" (data.ts:1597-1601).
+# counterpart: OoTMM's Fierce Deity Anywhere in MM has "No logical applications" (data.ts:1597-1601), and its is_tall
+# only notes "#add Fierce Deity" (macros_mm.yml:61). These locations are reported, not failed.
 tightened, widened, deity_only = {}, {}, set()
 cases = 0
 for values in itertools.product((False, True), repeat=len(SWAMP_VARS)):

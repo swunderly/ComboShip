@@ -4,11 +4,10 @@
 #include "2s2h/Rando/Logic/Logic.h"
 #ifdef COMBO_BUILD
 #include "rando/MmAdultWorldRoutes.h"
-// Pinned ancient_castle_of_ikana.yml graph (unchanged in v32.3), whose only Nayru's Love term is Interior North ->
-// Interior North 2 (:27).
-#define IKANA_ADULT_GEAR_MODE                                                        \
-    (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER] || \
-     RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE])
+// Pinned ancient_castle_of_ikana.yml graph (unchanged in v32.3). Nayru's Love does not switch to it: its only Nayru's
+// Love term, Interior North -> Interior North 2 (:27), is the native Ceiling Room -> Skulltula Room edge, which takes
+// the term directly (plan rule A), so the rest of the castle keeps the logic of seeds without the spell.
+#define IKANA_ADULT_GEAR_MODE (RANDO_SAVE_OPTIONS[RO_MM_CROSS_AGE] || RANDO_SAVE_OPTIONS[RO_MM_BOOTS_HOVER])
 #endif
 
 using namespace Rando::Logic;
@@ -46,7 +45,7 @@ static RegisterShipInitFunc initFunc([]() {
         .connections = {
             CONNECTION(RR_IKANA_CASTLE_MAIN_ROOM, true),
             #ifdef COMBO_BUILD
-            CONNECTION(RR_IKANA_CASTLE_SKULLTULA_ROOM, IKANA_ADULT_GEAR_MODE ? ComboRando::MmAdultWorldRoutes::IkanaNorthEntry(HAS_ITEM(ITEM_MASK_DEKU), false, CAN_USE_NAYRUS_LOVE, MM_LOGIC_IS_TALL) : CAN_BE_DEKU),
+            CONNECTION(RR_IKANA_CASTLE_SKULLTULA_ROOM, IKANA_ADULT_GEAR_MODE ? ComboRando::MmAdultWorldRoutes::IkanaNorthEntry(HAS_ITEM(ITEM_MASK_DEKU), false, CAN_USE_NAYRUS_LOVE, MM_LOGIC_IS_TALL) : (CAN_BE_DEKU || (CAN_USE_NAYRUS_LOVE && MM_LOGIC_IS_TALL))), // :27
 #else
             CONNECTION(RR_IKANA_CASTLE_SKULLTULA_ROOM, CAN_BE_DEKU),
 #endif
