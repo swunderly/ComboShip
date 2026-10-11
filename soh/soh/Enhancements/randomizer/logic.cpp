@@ -2850,7 +2850,7 @@ void Logic::InitSaveContext() {
 
 void Logic::NewSaveContext() {
     if (mSaveContext != nullptr && mSaveContext != &gSaveContext) {
-        free(mSaveContext);
+        delete mSaveContext;
     }
     mSaveContext = new SaveContext();
     InitSaveContext();
