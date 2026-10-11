@@ -49,6 +49,9 @@
 #include "rando/entrances/MmMixedNativeBridge.h"
 #include "rando/entrances/MmGrottoNativeBridge.h"
 #include "rando/GameplayRuleSnapshots.h"
+#include "rando/FaroreRules.h"
+#include "rando/SpellRules.h"
+#include "rando/GearRules.h"
 #include "rando/SongTravel.h"
 #include "rando/CrossForeign.h" // BuildForeignArray (foreign enrichment parity with RunComboFill)
 #include "rando/CrossHints.h"
@@ -80,6 +83,29 @@ bool ResolveStartingGameMM(int cfg, uint32_t masterSeed) {
     if (cfg == 2)
         return (ComboHash("startingGame:" + std::to_string(masterSeed)) & 1u) != 0;
     return cfg == 1;
+}
+
+// Runtime MM_InitRandoSaveFile installs these immutable envelopes after native settings.
+// Match that order in replay, including all-off defaults for historical missing envelopes.
+nlohmann::json MmSettingsForPlaythrough(const nlohmann::json& spoiler) {
+    ComboRando::FaroreRules farore;
+    ComboRando::SpellRules spell;
+    ComboRando::GearRules gear;
+    if (!ComboRando::ReadFaroreRules(spoiler.value("faroreRules", nlohmann::json()), farore) ||
+        !ComboRando::ReadSpellRules(spoiler.value("spellRules", nlohmann::json()), spell) ||
+        !ComboRando::ReadGearRules(spoiler.value("gearRules", nlohmann::json()), gear))
+        throw std::runtime_error("Invalid immutable MM feature rules");
+    auto settings = spoiler.value("mm", nlohmann::json::object()).value("settings", nlohmann::json::object());
+    settings["gRando.Options.RO_MM_SPELL_WIND"] = int(farore.spellWindMm);
+    settings["gRando.Options.RO_CROSS_GAME_FARORE"] = int(farore.crossGameFw);
+    settings["gRando.Options.RO_MM_CROSS_AGE"] = int(farore.crossAge);
+    settings["gRando.Options.RO_MM_SPELL_FIRE"] = int(spell.spellFireMm);
+    settings["gRando.Options.RO_MM_SPELL_LOVE"] = int(spell.spellLoveMm);
+    settings["gRando.Options.RO_MM_BOOTS_IRON"] = int(gear.bootsIronMm);
+    settings["gRando.Options.RO_MM_BOOTS_HOVER"] = int(gear.bootsHoverMm);
+    settings["gRando.Options.RO_MM_TUNIC_GORON"] = int(gear.tunicGoronMm);
+    settings["gRando.Options.RO_MM_TUNIC_ZORA"] = int(gear.tunicZoraMm);
+    return settings;
 }
 
 // Same module-loading seam as ComboShip.cpp's LoadDll/GetSym (see there for the RTLD notes).
@@ -283,12 +309,16 @@ int main(int argc, char** argv) {
                                Sym<uint32_t (*)()>(mm, "MM_GetSongKnowledge"),
                                Sym<void (*)(uint32_t)>(mm, "MM_SetForeignSongKnowledge") };
     mmO.SetExternalBeanRenewal = Sym<int (*)(uint8_t)>(mm, "MM_SetOracleExternalBeanRenewal");
-    // The app's OoT age oracle (ComboShip.cpp AttachAdultAgeOracle), so song landings in OoT carry the
-    // same ages as in the app's generation.
+    // Match the app's AttachAdultAgeOracle for both generation and saved-seed playthroughs.
     oot.GetPortalAges = Sym<uint8_t (*)()>(soh, "SOH_GetOraclePortalAges");
     oot.GetSongSourcesForAge = Sym<uint32_t (*)(int)>(soh, "SOH_GetOracleSongSourcesForAge");
     oot.SetSongAgeArrivals = Sym<void (*)(uint32_t, uint32_t)>(soh, "SOH_SetOracleSongAgeArrivals");
     oot.GetStartAges = Sym<uint8_t (*)()>(soh, "SOH_GetOracleStartAges");
+    mmO.SetEntryAges = Sym<void (*)(uint8_t)>(mm, "MM_SetOracleEntryAges");
+    mmO.GetDefaultEntryAges = Sym<uint8_t (*)()>(mm, "MM_GetOracleDefaultEntryAges");
+    mmO.GetSongSourcesForAge = Sym<uint32_t (*)(int)>(mm, "MM_GetOracleSongSourcesForAge");
+    mmO.SetSongAgeArrivals = Sym<void (*)(uint32_t, uint32_t)>(mm, "MM_SetOracleSongAgeArrivals");
+    mmO.UseCrossAgeOracle = Sym<bool (*)()>(mm, "MM_UseCrossAgeOracle");
 
     if (!SOH_InitRandoHeadless || !MM_InitRandoHeadless || !SOH_Dump || !MM_Dump || !oot.Reset || !oot.SetOwnedItems ||
         !oot.GetReachableChecks || !oot.PlaceItem || !oot.GetPortalOpen || !mmO.Reset || !mmO.SetOwnedItems ||
@@ -322,10 +352,11 @@ int main(int argc, char** argv) {
             std::cerr << "[playthrough] settings-restore exports unavailable — rebuild soh.dll / 2ship.dll\n";
             return 2;
         }
-        nlohmann::json spoiler;
+        nlohmann::json spoiler, mmSettings;
         try {
             spoiler = nlohmann::json::parse(ReadFile(playthroughFile));
             ComboRando::RequireSupportedSeedDocument(spoiler);
+            mmSettings = MmSettingsForPlaythrough(spoiler);
         } catch (const std::exception& e) {
             std::cerr << "[playthrough] could not read/parse '" << playthroughFile << "': " << e.what() << "\n";
             return 2;
@@ -346,7 +377,6 @@ int main(int argc, char** argv) {
         }
         const auto originalRules = ComboRando::GameplayRulesForSeed(spoiler);
         auto ootSettings = spoiler.value("oot", nlohmann::json::object()).value("settings", nlohmann::json::object());
-        auto mmSettings = spoiler.value("mm", nlohmann::json::object()).value("settings", nlohmann::json::object());
         // Flat placement map that RunPlaythrough consumes.
         nlohmann::json flat;
         flat["oot"] = spoiler.value("oot", nlohmann::json::object()).value("placements", nlohmann::json::object());
@@ -982,6 +1012,10 @@ int main(int argc, char** argv) {
                     auto getCsv = Sym<FnDump>(soh, "SOH_GetComboTricksCsv");
                     consolidated["gameplayRules"]["ootTricks"] = getCsv ? getCsv() : "";
                     consolidated["songTravel"] = generatedSongs.json();
+                    consolidated["faroreRules"] =
+                        ComboRando::FaroreRulesFromMmDump(nlohmann::json::parse(mmDump)).json();
+                    consolidated["spellRules"] = ComboRando::SpellRulesFromMmDump(nlohmann::json::parse(mmDump)).json();
+                    consolidated["gearRules"] = ComboRando::GearRulesFromMmDump(nlohmann::json::parse(mmDump)).json();
                     if (!entranceExpansion.is_null())
                         consolidated["entranceExpansion"] = entranceExpansion;
                     if (!ordinaryEntranceExpansion.is_null())
