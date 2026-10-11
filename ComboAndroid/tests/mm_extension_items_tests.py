@@ -181,9 +181,48 @@ trade = settings[settings.index('.name="TradeItems"'):]
 trade = trade[:trade.index('});')]
 check([trade.find('{TRACKER_ITEM_RANDO,' + x + '}') for x in order] == sorted(trade.find('{TRACKER_ITEM_RANDO,' + x + '}') for x in order)
       and all(trade.find('{TRACKER_ITEM_RANDO,' + x + '}') >= 0 for x in order), 'Trade Items order')
-tracker = squash(read('mm/2s2h/Enhancements/Trackers/ItemTracker/ItemTracker.cpp'))
+tracker_source = read('mm/2s2h/Enhancements/Trackers/ItemTracker/ItemTracker.cpp')
+tracker = squash(tracker_source)
 for item, ro in (('RI_DINS_FIRE', 'RO_MM_SPELL_FIRE'), ('RI_FARORES_WIND', 'RO_MM_SPELL_WIND'), ('RI_NAYRUS_LOVE', 'RO_MM_SPELL_LOVE')):
     check(f'if(itemId=={item})return!IS_RANDO||!RANDO_SAVE_OPTIONS[{ro}];' in tracker, f'{item} tracker row is not hidden without {ro}')
+
+# ---- Item tracker, default Inventory group (TRACKER_ITEM_SLOT): a slot holding a spell shows the spell's own icon.
+# Spells.cpp / FaroresWind.cpp put the spells into empty trade slots, and their ids lie above ITEM_RECOVERY_HEART, where
+# the slot otherwise falls back to the slot's first safe item (a lit Moon's Tear for Din's Fire). Evaluate the
+# production fallback condition for each item id.
+item_h = read('mm/include/z64item.h')
+item_ids, value = {}, -1
+for line in item_h[item_h.index('typedef enum ItemId {'):item_h.index('} ItemId;')].splitlines()[1:]:
+    m = re.match(r'\s*(?:/\*\s*(0x[0-9A-Fa-f]+)\s*\*/\s*)?(ITEM_\w+)(?:\s*=\s*(\w+))?', line)
+    if not m:
+        continue
+    explicit = m.group(3)
+    value = (int(explicit, 0) if explicit[0].isdigit() else item_ids[explicit]) if explicit else value + 1
+    item_ids[m.group(2)] = value
+slot_case = tracker_source[tracker_source.index('case TRACKER_ITEM_SLOT: {'):]
+slot_case = slot_case[:slot_case.index('} break;')]
+combo_branch = slot_case[slot_case.index('#ifdef COMBO_BUILD'):slot_case.index('#else')]
+spell_expr = re.search(r'const bool (\w+) =(.*?);', combo_branch, re.S)
+fallback = re.search(r'if \((.*)\) \{\s*const auto& safe = safeItemsForInventorySlot', slot_case)
+check(spell_expr is not None and fallback is not None, 'Inventory tracker slot fallback not found')
+if spell_expr and fallback:
+    def c_to_py(expression):
+        expression = expression.replace('||', ' or ').replace('&&', ' and ')
+        return '(' + re.sub(r'!(?!=)', ' not ', expression) + ')'
+
+    def falls_back(item):
+        names = dict(item_ids, vanillaItemId=item)
+        names[spell_expr.group(1)] = eval(c_to_py(spell_expr.group(2)), {}, names)
+        return eval(c_to_py(fallback.group(1)), {}, names)
+
+    for name in ('ITEM_COMBO_DINS_FIRE', 'ITEM_COMBO_NAYRUS_LOVE', 'ITEM_COMBO_FARORES_WIND'):
+        check(item_ids[name] >= item_ids['ITEM_RECOVERY_HEART'] and not falls_back(item_ids[name]),
+              f'the Inventory tracker draws another item for {name}')
+        check(re.search(r'\[' + name + r'\]\s*=\s*\(TexturePtr\)\w+', read('mm/src/code/z_inventory.c')) is not None,
+              f'{name} has no gItemIcons entry')
+    for name, expected in (('ITEM_NONE', True), ('ITEM_RECOVERY_HEART', True), ('ITEM_MOONS_TEAR', False)):
+        check(falls_back(item_ids[name]) == expected, f'Inventory tracker fallback changed for {name}')
+check('for (const TexturePtr entry : gItemIcons)' in read('mm/2s2h/ShipUtils.cpp'), 'gItemIcons textures are not loaded')
 
 # ---- The fixture against OoTMM v32.3 itself.
 reference = a.reference

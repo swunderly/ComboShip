@@ -202,7 +202,15 @@ TrackerImageObject GetImageObject(TrackerItemType itemType, u32 itemId) {
         case TRACKER_ITEM_SLOT: {
             itemObtained = gSaveContext.save.saveInfo.inventory.items[itemId] != ITEM_NONE;
             auto vanillaItemId = isSaveLoaded ? gSaveContext.save.saveInfo.inventory.items[itemId] : ITEM_NONE;
-            if (vanillaItemId == ITEM_NONE || vanillaItemId >= ITEM_RECOVERY_HEART) {
+#ifdef COMBO_BUILD
+            // The MM spells sit in the trade slots (Spells.cpp, FaroresWind.cpp) and have their own gItemIcons
+            // entries (z_inventory.c), so the slot shows the spell rather than the slot's first trade item.
+            const bool spellIcon = vanillaItemId == ITEM_COMBO_FARORES_WIND || vanillaItemId == ITEM_COMBO_DINS_FIRE ||
+                                   vanillaItemId == ITEM_COMBO_NAYRUS_LOVE;
+#else
+            const bool spellIcon = false;
+#endif
+            if (vanillaItemId == ITEM_NONE || (vanillaItemId >= ITEM_RECOVERY_HEART && !spellIcon)) {
                 const auto& safe = safeItemsForInventorySlot[itemId];
                 vanillaItemId = safe.empty() ? ITEM_NONE : safe[0];
             }

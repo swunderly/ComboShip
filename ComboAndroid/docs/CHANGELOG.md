@@ -20,7 +20,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
   - With Nayru's Love (MM) on, a seed uses OoTMM's own layout for Deku Palace, the Southern Swamp and Woodfall, so a few other requirements there follow OoTMM too: some swamp spots (the Deku Shrine, the Deku Palace bean route, the frog and the beehive among them) no longer accept wading as Goron when Swim is shuffled and not found, or as Fierce Deity with its logic rule on. OoTMM counts neither there.
   - Ikana Castle keeps its usual logic with Nayru's Love on and only gains OoTMM's Nayru's Love route.
   - New tricks with OoTMM's names, off by default: "Burn Igos' curtain with Din's Fire" and "Light the Zora Hall Stage Lights using Din's Fire, Bow, and Hookshot".
-  - The item tracker's Trade Items group shows the MM spells, on seeds that add them.
+  - The item tracker's Trade Items group shows the MM spells, on seeds that add them. Its default Inventory group now shows a spell's own icon when the spell sits in a trade slot; until now Farore's Wind (MM) showed there as a lit Room Key.
 - **MM logic follows OoTMM v32.3 in more places**, whatever the options:
   - The Oceanside Spider House library, the Swamp Spider House entrance and the door from the Woodfall Temple dark room to the maze need arrows or Deku Sticks, so plain arrows now count. Din's Fire does not count there, as in OoTMM.
   - The Snowhead Temple Pillars Room chest needs you to defeat its Freezard (and its soul, with enemy souls on); the pots there are free.
