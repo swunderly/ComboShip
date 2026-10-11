@@ -9,7 +9,7 @@ inline constexpr unsigned GeneralOotSoulCount = 95;
 using GeneralOotSoulsOwnership = std::array<uint8_t, 12>;
 // Save bit order, taken from the item table so the two cannot drift apart.
 inline constexpr std::array<OotSoul, GeneralOotSoulCount> generalOotSoulItems = {
-#define OOT_SOUL_ITEM(item, index, soul, label) soul,
+#define OOT_SOUL_ITEM(item, index, soul, label, inGame) soul,
 #include "OotSoulData.inc"
 #undef OOT_SOUL_ITEM
 };

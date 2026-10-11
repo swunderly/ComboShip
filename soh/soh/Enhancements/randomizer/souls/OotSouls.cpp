@@ -12,14 +12,18 @@
 #include "soh/Enhancements/custom-message/CustomMessageTypes.h"
 #include <algorithm>
 namespace Rando::Souls {
+// label: OoTMM's spoiler and hint name (packages/generator/lib/combo/names.ts:425-476, 883-886).
+// inGame: OoTMM's get-item noun (data/defs/gi.yml:244-286) with the " (OoT)" that src/common/text/text.c:
+// 442-494 adds to an ambiguous soul; the combo always plays both games and has no shared enemy souls.
 struct NativeSoul {
     RandomizerGet item;
     unsigned index;
     OotSoul soul;
     const char* label;
+    const char* inGame;
 };
 constexpr NativeSoul generalSouls[] = {
-#define OOT_SOUL_ITEM(item, index, soul, label) { item, index, soul, label },
+#define OOT_SOUL_ITEM(item, index, soul, label, inGame) { item, index, soul, label, inGame },
 #include "OotSoulData.inc"
 #undef OOT_SOUL_ITEM
 };
@@ -33,6 +37,22 @@ constexpr bool SoulRowsFollowItemOrder() {
 static_assert(SoulRowsFollowItemOrder());
 int GeneralIndex(RandomizerGet item) {
     return item >= RG_SOUL_ENEMY_POE && item <= RG_SOUL_MISC_GS ? item - RG_SOUL_ENEMY_POE : -1;
+}
+// The enemy souls' hint keys are appended in the same order.
+static_assert(RHT_SOUL_ENEMY_THIEVES - RHT_SOUL_ENEMY_POE == RG_SOUL_ENEMY_THIEVES - RG_SOUL_ENEMY_POE &&
+              RHT_SOUL_ENEMY_THIEVES + 1 == RHT_MAX && RG_SOUL_ENEMY_THIEVES - RG_SOUL_ENEMY_POE == 42);
+const char* Label(RandomizerGet item) {
+    const int i = GeneralIndex(item);
+    return i >= 0 ? generalSouls[i].label : nullptr;
+}
+const char* InGameName(RandomizerGet item) {
+    const int i = GeneralIndex(item);
+    return i >= 0 ? generalSouls[i].inGame : nullptr;
+}
+RandomizerHintTextKey HintKey(RandomizerGet item) {
+    return item >= RG_SOUL_ENEMY_POE && item <= RG_SOUL_ENEMY_THIEVES
+               ? static_cast<RandomizerHintTextKey>(RHT_SOUL_ENEMY_POE + (item - RG_SOUL_ENEMY_POE))
+               : RHT_NONE;
 }
 // A settings profile, seed or CVar can carry a family that has no Randomizer menu entry yet, so
 // unpublished families read as off: a stale value can never stop NPCs and enemies from spawning or
@@ -267,9 +287,12 @@ static void DrawGeneralOotSoul(PlayState* play, GetItemEntry* item) {
 namespace Rando::Souls {
 void RegisterItems(std::array<Item, RG_MAX>& items) {
     for (const auto& row : generalSouls) {
-        items[row.item] = Item(row.item, Text{ row.label, row.label, row.label }, ITEMTYPE_ITEM, row.item, true,
-                               LOGIC_NONE, RHT_NONE, row.item, OBJECT_GI_SUTARU, GID_SKULL_TOKEN,
-                               TEXT_RANDOMIZER_CUSTOM_ITEM, 0x80, CHEST_ANIM_LONG, ITEM_CATEGORY_MAJOR, MOD_RANDOMIZER);
+        // Enemy souls read "the <C1>Soul of ..." in OoTMM's item text; the other families keep their old text.
+        const bool enemy = HintKey(row.item) != RHT_NONE;
+        items[row.item] =
+            Item(row.item, Text{ row.label, row.label, row.label }, ITEMTYPE_ITEM, row.item, true, LOGIC_NONE,
+                 HintKey(row.item), row.item, OBJECT_GI_SUTARU, GID_SKULL_TOKEN, TEXT_RANDOMIZER_CUSTOM_ITEM, 0x80,
+                 CHEST_ANIM_LONG, ITEM_CATEGORY_MAJOR, MOD_RANDOMIZER, enemy ? Text{ "the ", "the ", "the " } : Text{});
         items[row.item].SetCustomDrawFunc(DrawGeneralOotSoul);
     }
 }

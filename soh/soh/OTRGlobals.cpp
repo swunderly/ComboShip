@@ -75,6 +75,7 @@
 #include "z64.h"
 #include "macros.h"
 #include "Enhancements/randomizer/silver_rupees/SilverRupees.h"
+#include "Enhancements/randomizer/souls/OotSouls.h"
 #include <ship/window/gui/Fonts.h>
 #include <ship/window/FileDropMgr.h>
 #include <ship/window/gui/resource/Font.h>
@@ -5137,8 +5138,10 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
         // ComboShip: "trap" lets the cross-world layer disguise a foreign trap in the other game.
         // ComboShip: "trickNames" are OOT's curated fake names, so a foreign trap disguised as this
         // item can lie with a real near-miss name instead of a letter-doubled one.
+        // An OoT soul shows OoTMM's in-game noun in the other game, like its own get-item text.
+        const char* soulName = Rando::Souls::InGameName(static_cast<RandomizerGet>(rg));
         items.push_back({ { "name", name },
-                          { "displayName", name },
+                          { "displayName", soulName ? std::string(soulName) : name },
                           { "advancement", comboIsAdv(static_cast<RandomizerGet>(rg)) },
                           { "trap", rg == RG_ICE_TRAP },
                           { "trickNames", Rando::Traps::GetTrickNamesEnglish(static_cast<uint16_t>(rg)) } });

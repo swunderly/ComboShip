@@ -11,6 +11,12 @@ void RegisterItems(std::array<Item, RG_MAX>& items);
 // The soul items of the shuffled families, one each, in save-bit order.
 std::vector<RandomizerGet> ShuffledItems();
 int GeneralIndex(RandomizerGet item);
+// Spoiler, tracker and hint name (OoTMM names.ts), or nullptr when item is not a general OoT soul.
+const char* Label(RandomizerGet item);
+// OoTMM's in-game noun for get-item text and the other game's display name, or nullptr.
+const char* InGameName(RandomizerGet item);
+// RHT_SOUL_ENEMY_* for an enemy soul, else RHT_NONE.
+RandomizerHintTextKey HintKey(RandomizerGet item);
 bool Has(Logic* logic, OotSoul soul);
 bool HasItem(Logic* logic, RandomizerGet item);
 void LogicDelta(Logic* logic, RandomizerGet item, bool add);

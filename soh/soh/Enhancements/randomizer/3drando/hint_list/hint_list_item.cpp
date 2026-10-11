@@ -1,6 +1,7 @@
 #include "../../static_data.h"
 #include "../hints.hpp"
 #include "../../../custom-message/CustomMessageManager.h"
+#include "../../souls/OotSouls.h"
 
 namespace Rando {
 
@@ -2163,6 +2164,12 @@ void StaticData::HintTable_Init_Item() {
 
      hintTextTable[RHT_MYSTERIOUS_ITEM_CAPITAL] = HintText(CustomMessage("Mysterious Item", /*german*/"Mysteriöser Gegenstand", /*french*/"Objet Mystérieux"));
                                                   // /*spanish*/Algo Misterioso
+
+    // OoT enemy souls: "the" plus OoTMM's in-game noun (data/defs/gi.yml:244-286). OoTMM has them in English only.
+    for (int rg = RG_SOUL_ENEMY_POE; rg <= RG_SOUL_ENEMY_THIEVES; ++rg) {
+        const std::string name = std::string("the ") + Souls::InGameName(static_cast<RandomizerGet>(rg));
+        hintTextTable[Souls::HintKey(static_cast<RandomizerGet>(rg))] = HintText(CustomMessage(name, name, name));
+    }
 
     // clang-format on
 }

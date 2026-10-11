@@ -17,6 +17,7 @@
 #include "rando/CrossForeign.h"
 #include "soh/Enhancements/randomizer/hook_handlers.h"
 #include "soh/Enhancements/randomizer/draw.h"
+#include "soh/Enhancements/randomizer/souls/OotSouls.h"
 extern "C" int gComboGoalRequired;
 extern "C" int (*gComboOtherTriforceCount)(void);
 #endif
@@ -177,6 +178,10 @@ void BuildCustomItemMessage(Player* player, CustomMessage& msg) {
                                    TEXTBOX_TYPE_BLUE)
                    : CustomMessage("Open Small Chests", "Kleine Truhen öffnen", "Ouvrir les petits coffres",
                                    TEXTBOX_TYPE_BLUE);
+    }
+    // OoT souls use OoTMM's in-game noun, not the spoiler name.
+    if (const char* soul = Rando::Souls::InGameName(static_cast<RandomizerGet>(rgid))) {
+        name = CustomMessage(Text{ soul, soul, soul }, TEXTBOX_TYPE_BLUE);
     }
     CustomMessage article = CustomMessage(
         Rando::StaticData::RetrieveItem(static_cast<RandomizerGet>(rgid)).GetArticle(), TEXTBOX_TYPE_BLUE);
