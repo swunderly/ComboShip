@@ -1,16 +1,18 @@
-"""MM boots and tunics under 2S2H's Swim shuffle: a Swim-shuffled seed never needs the gear's pinned graphs.
+"""MM boots and tunics and Cross-Games Age under 2S2H's Swim shuffle: a Swim-shuffled seed never needs the pinned graphs.
 
-Any MM gear option switches on pinned OoTMM v32.3 graphs (COMBO_WORLDxx_ENABLED, MM_LOGIC_*_PINNED) that read
-can_swim as true and count the Zora Mask as swimming (macros_mm.yml:83, :258), while 2S2H's Swim shuffle sends back
-every form that swims without Swim, Zora included (Rando/ActorBehavior/Player.cpp RespawnOnWaterTouch). So every
-place that gathers options for a seed keeps the gear options at 0 while Swim is shuffled (Combo_MM_GearOptionsAllowed).
+Any MM gear option, and Cross-Games Age, switches on pinned OoTMM v32.3 graphs (COMBO_WORLDxx_ENABLED,
+MM_LOGIC_*_PINNED) that read can_swim as true and count the Zora Mask as swimming (macros_mm.yml:83, :258), while
+2S2H's Swim shuffle sends back every form that swims without Swim, Zora included (Rando/ActorBehavior/Player.cpp
+RespawnOnWaterTouch). So every place that gathers options for a seed keeps the gear options and Cross-Games Age at 0
+while Swim is shuffled (Combo_MM_GearOptionsAllowed, Combo_MM_CrossAgeOptionsAllowed).
 This checks:
-  - the gate in the option gathering, the settings snapshot and the menu, and that Cross-Games Age stays off;
+  - the gates in the option gathering, the settings snapshot and the menus, and that the dormant Adult Mask and MM
+    starting age stay off;
   - with the options a Swim-shuffled seed can have (gear and age off, Nayru's Love either way), every pinned enable is
     off except the Nayru's Love graphs 0.4.1 already shipped;
   - every CHECK/CONNECTION/EVENT/EXIT of every MM region file that needs Swim in the native graph still needs it (or
     the Iron Boots) with those options, and no connection opens a pinned-only region;
-  - the check has teeth: with the gate bypassed, it finds the Zora-without-Swim statements the review named.
+  - the check has teeth: with either gate bypassed, it finds the Zora-without-Swim statements the review named.
 Statements are evaluated with the symbolic evaluator of mm_gear_logic_tests.py.
 """
 from pathlib import Path
@@ -83,12 +85,39 @@ check('constauto&swim=Rando::StaticData::Options[RO_SHUFFLE_SWIM];if(Combo_MM_Ge
       'swim.cvar,swim.defaultValue)==RO_GENERIC_YES)){ItemPoolCheckbox(label,optionId,tooltip,1);return;}'
       in body(menu, 'static void GearPoolCheckbox('), 'the gear rows are not greyed out while Swim is shuffled')
 check('Combo_MM_ClearUnavailableOptions(randoSaveInfo.randoSaveOptions);' in menu, 'the pool counts keep unready gear')
-# Cross-Games Age turns the same pinned graphs on; it is gathered as 0 while the adult runtime is unfinished.
+# Cross-Games Age (released, kCrossAgeRuntimeComplete) turns the same pinned graphs on, so it has the same Swim gate.
+check(body(benport, 'extern "C" int Combo_MM_CrossAgeOptionsAllowed(int swimShuffled)')
+      == T.squash('extern "C" int Combo_MM_CrossAgeOptionsAllowed(int swimShuffled) '
+                  '{ return Combo_MM_CrossAgeOptionReady() && !swimShuffled; }'),
+      'Combo_MM_CrossAgeOptionsAllowed does not leave Cross-Games Age off while Swim is shuffled')
+check('if(!Combo_MM_CrossAgeOptionsAllowed(options[RO_SHUFFLE_SWIM]==RO_GENERIC_YES))options[RO_MM_CROSS_AGE]=0;'
+      in body(benport, 'extern "C" void Combo_MM_ClearUnavailableOptions('),
+      'generation, the oracle and the pool keep Cross-Games Age with Swim shuffled')
+check('if(!Combo_MM_CrossAgeOptionsAllowed(CVarGetInteger(swim.cvar,swim.defaultValue)==RO_GENERIC_YES))'
+      'j[Rando::StaticData::Options[RO_MM_CROSS_AGE].cvar]=0;'
+      in body(benport, 'extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings('),
+      'the settings snapshot keeps Cross-Games Age with Swim shuffled')
+check('returnCombo_MM_CrossAgeOptionsAllowed(swimShuffled);'
+      in body(benport, 'extern "C" COMBO_EXPORT int MM_CrossAgeOptionsAllowed(int swimShuffled)'),
+      'the menu export MM_CrossAgeOptionsAllowed does not follow Combo_MM_CrossAgeOptionsAllowed')
+# A bound seed keeps its own Cross-Games Age when its file is made: the gate is for new seeds only.
+init = body(benport, 'extern "C" COMBO_EXPORT int MM_InitRandoSaveFile(')
+check('CrossAgeOptionsAllowed' not in init and 'options[Rando::StaticData::Options[RO_MM_CROSS_AGE].name]='
+      'uint32_t(sMMSeedFaroreRules.crossAge);' in init, 'a bound seed must keep its own Cross-Games Age')
+# The World access row (the only Cross-Games Age row) greys out and unticks while the draft has Swim shuffled; a seed's
+# own settings show as saved.
+goals = body(read('combo/gui/ComboMenu.cpp'), 'void DrawCombinedGoals()')
+for term in ('crossAgeAllowed=(int(*)(int))Combo_ResolveSym("2ship","MM_CrossAgeOptionsAllowed");',
+             'constboolswimShuffled=ProfileUI::Editable()&&ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_SWIM",0)'
+             '==1;', 'constboolageAllowed=crossAgeAllowed&&crossAgeAllowed(swimShuffled);',
+             'boolcrossAge=ageAllowed&&', 'ImGui::BeginDisabled(!ageAllowed);', 'DisabledwhileSwimis'):
+    check(term in goals, f'the Cross-Games Age row is not greyed out while Swim is shuffled: no {term}')
+# The dormant Adult Mask and MM starting age are gathered as 0 while the whole adult runtime is unfinished.
 hidden = re.search(r'kComboHiddenAdultMmOptions\[\]\s*=\s*\{([^}]*)\}', benport)
 check(hidden is not None and all(o in hidden.group(1) for o in AGE), 'the age options are not gathered as 0')
 check('staticconstexprboolkAdultMmGameplayIntegrationComplete=false;' in T.squash(benport),
-      'Adult Link in MM is integrated: Cross-Games Age now switches the pinned graphs on under Swim shuffle too, '
-      'so gate it like the gear (Combo_MM_GearOptionsAllowed) before shipping it')
+      'the Adult Mask runtime is integrated: if the Adult Mask or MM starting age can switch the pinned graphs on, '
+      'gate them on Swim shuffle like Cross-Games Age (Combo_MM_CrossAgeOptionsAllowed) before shipping them')
 
 # ---- The graphs a Swim-shuffled seed can use.
 logic = read('mm/2s2h/Rando/Logic/Logic.h')
@@ -126,7 +155,8 @@ def ever(tree, rng, fixed, swim, trials):
 
 NATIVE = {o: 0 for o in GEAR + AGE + (LOVE,)}
 SWIM_SHUFFLED = dict(NATIVE, **{LOVE: None})  # what Combo_MM_ClearUnavailableOptions leaves a Swim-shuffled seed
-BYPASSED = dict(SWIM_SHUFFLED, **{o: None for o in GEAR})  # the same seed if the gate were missing
+BYPASSED = dict(SWIM_SHUFFLED, **{o: None for o in GEAR})  # the same seed if the gear gate were missing
+BYPASSED_AGE = dict(SWIM_SHUFFLED, **{'RO_MM_CROSS_AGE': None})  # the same seed if the Cross-Games Age gate were missing
 rng = random.Random(20261011)
 
 enables = {}
@@ -186,7 +216,7 @@ def statements(text):
     return out
 
 
-compared, gated, bypassed, pinned_regions = 0, 0, set(), 0
+compared, gated, bypassed, bypassed_age, pinned_regions = 0, 0, set(), set(), 0
 for name, text, macros in files:
     for region, kind, lead, cond in statements(text):
         tree = T.Parser(T.expand(cond, macros)).parse()
@@ -203,15 +233,20 @@ for name, text, macros in files:
         check(not ever(tree, rng, SWIM_SHUFFLED, 0, 600), f'{label} is in logic without Swim for a Swim-shuffled seed')
         if ever(tree, rng, BYPASSED, 0, 600):
             bypassed.add(lead.split(' ')[0] if kind == 'CHECK' else f'{kind}({lead})')
+        if ever(tree, rng, BYPASSED_AGE, 0, 600):
+            bypassed_age.add(lead.split(' ')[0] if kind == 'CHECK' else f'{kind}({lead})')
 
 check(compared > 3000 and gated > 100, f'only {compared} statements, {gated} of them water-gated')
 check(pinned_regions >= 8, f'only {pinned_regions} connections into pinned-only regions')
 named = {'RC_TWIN_ISLANDS_UNDERWATER_CHEST_01', 'RC_TERMINA_FIELD_WATER_CHEST', 'RC_ZORA_CAPE_UNDERWATER_CHEST',
          'RC_PIRATE_FORTRESS_ENTRANCE_CHEST_01', 'EXIT(ENTRANCE(ZORA_HALL,0) ENTRANCE(ZORA_CAPE,1))'}
 check(named <= bypassed, f'the check would not see the review\'s cases with the gate bypassed: {sorted(named - bypassed)}')
+check(named <= bypassed_age, 'the check would not see the review\'s cases with the Cross-Games Age gate bypassed: '
+      f'{sorted(named - bypassed_age)}')
 
 if failures:
     print('\n'.join(failures))
     sys.exit(1)
-print(f'MM gear under Swim shuffle: {compared} statements, {gated} need Swim natively and still do for a Swim-shuffled '
-      f'seed; {len(bypassed)} would not without the gate; {len(enables)} pinned enables checked')
+print(f'MM gear and Cross-Games Age under Swim shuffle: {compared} statements, {gated} need Swim natively and still do '
+      f'for a Swim-shuffled seed; {len(bypassed)} would not without the gear gate, {len(bypassed_age)} without the '
+      f'Cross-Games Age gate; {len(enables)} pinned enables checked')

@@ -264,10 +264,10 @@ row = goals.find('DrawRuleCheckbox("' + squash(CROSS_AGE_NAME) + '",&crossAge)')
 check(0 < goals.find(squash('DrawRuleCheckbox("Cross-Games Farore\'s Wind", &crossFw)')) < row,
       'the Cross-Games Age row must follow Cross-Games Farore\'s Wind in World access')
 for term in ('Combo_ResolveSym("2ship","MM_CrossAgeOptionReady")', 'constboolageReady=crossAgeReady&&crossAgeReady();',
-             'boolcrossAge=ageReady&&ProfileUI::ReadInteger("gRando.Options.RO_MM_CROSS_AGE",0)!=0;',
-             'ImGui::BeginDisabled(!ageReady);',
+             'boolcrossAge=ageAllowed&&ProfileUI::ReadInteger("gRando.Options.RO_MM_CROSS_AGE",0)!=0;',
+             'ImGui::BeginDisabled(!ageAllowed);',
              'ProfileUI::WriteInteger("gRando.Options.RO_MM_CROSS_AGE",crossAge);',
-             'MenuTooltip(ageReady?"' + squash(CROSS_AGE_TEXT) + '":"' + squash(CROSS_AGE_TEXT)):
+             'MenuTooltip(ageAllowed?"' + squash(CROSS_AGE_TEXT) + '":ageReady?"' + squash(CROSS_AGE_TEXT)):
     check(term in goals, f'the Cross-Games Age row lacks {term}')
 links = squash(body(menu, 'void ComboMenu::DrawSearchResults(const std::string& query)'))
 m = re.search(r'addLink\(MenuSearchKind::Setting,"' + squash(CROSS_AGE_NAME) + r'","([^"]*)","randomizer","Logic&access",'

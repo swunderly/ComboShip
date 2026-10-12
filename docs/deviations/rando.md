@@ -2198,6 +2198,12 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   its logic whatever the device: a Cross-Games Age save on a device that cannot draw adult Link loads, follows the
   seed's logic and draws Link as child. The headless generator follows the release switch. A diagnostics build can
   turn the runtime on with `gCombo.Debug.CrossAgeRuntimeValidation`.
+- **Swim shuffle.** Cross-Games Age switches on the same pinned graphs as the MM gear (`COMBO_WORLDxx_ENABLED`,
+  `MM_LOGIC_*_PINNED`), which read `can_swim` as true and count the Zora Mask as swimming (see "Swim shuffle" under
+  the MM boots and tunics). Until those graphs know the Swim ability, a new seed with Swim shuffled leaves it off: the
+  row is greyed out and unticked while the draft has Swim ticked (its tooltip adds "Disabled while Swim is shuffled.
+  New seeds leave it off."), and every place options are gathered keeps it at 0
+  (`Combo_MM_CrossAgeOptionsAllowed`), except a bound seed's own value. `mm_gear_swim_shuffle_tests.py` checks it.
 - **Menu.** The row follows Cross-Games Farore's Wind (OoTMM's `data.ts` lists `crossAge` first). It is in no
   preset and has no standalone enhancement (critique X9, D7).
 - **Logic receipt.** `ComboAndroid/tests/fixtures/ootmm-32.3-mm-age-lines.json` maps all 85 v32.3 MM age lines (84

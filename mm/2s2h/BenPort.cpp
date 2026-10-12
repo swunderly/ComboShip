@@ -2845,6 +2845,7 @@ extern "C" int Combo_MM_GearOptionsAllowed(int swimShuffled);
 extern "C" void Combo_MM_GearForHeadlessGeneration(void);
 // Whether a seed may turn Cross-Games Age on (BenPort.cpp, beside Combo_MM_IsLinkAdult).
 extern "C" int Combo_MM_CrossAgeOptionReady(void);
+extern "C" int Combo_MM_CrossAgeOptionsAllowed(int swimShuffled);
 extern "C" void Combo_MM_CrossAgeForHeadlessGeneration(void);
 #endif
 // ComboShip: headless rando-only MM init — builds ONLY the rando region graph via the "RANDO_LOGIC"
@@ -2985,6 +2986,9 @@ extern "C" void Combo_MM_ClearUnavailableOptions(u32* options) {
     for (const auto id : kComboHiddenAdultMmOptions)
         if (!Combo_MM_HiddenAdultOptionReady(id))
             options[id] = 0;
+    // Cross-Games Age switches on the gear's pinned graphs too (Combo_MM_CrossAgeOptionsAllowed).
+    if (!Combo_MM_CrossAgeOptionsAllowed(options[RO_SHUFFLE_SWIM] == RO_GENERIC_YES))
+        options[RO_MM_CROSS_AGE] = 0;
     for (const auto& [id, spell] : kComboMmSpellOptions)
         if (!Combo_MMSpellOptionReady(spell))
             options[id] = 0;
@@ -3400,6 +3404,8 @@ extern "C" COMBO_EXPORT const char* MM_DumpRandoSettings(void) {
         if (!Combo_MMSpellOptionReady(spell))
             j[Rando::StaticData::Options[id].cvar] = 0;
     const auto& swim = Rando::StaticData::Options[RO_SHUFFLE_SWIM];
+    if (!Combo_MM_CrossAgeOptionsAllowed(CVarGetInteger(swim.cvar, swim.defaultValue) == RO_GENERIC_YES))
+        j[Rando::StaticData::Options[RO_MM_CROSS_AGE].cvar] = 0;
     if (!Combo_MM_GearOptionsAllowed(CVarGetInteger(swim.cvar, swim.defaultValue) == RO_GENERIC_YES))
         for (const auto id : kComboMmGearOptions)
             j[Rando::StaticData::Options[id].cvar] = 0;
@@ -6168,9 +6174,20 @@ extern "C" int Combo_MM_CrossAgeOptionReady(void) {
 extern "C" void Combo_MM_CrossAgeForHeadlessGeneration(void) {
     sCrossAgeHeadlessGeneration = true;
 }
-// The menu greys the Cross-Games Age row out and unticks it where this is 0 (ComboMenu.cpp, World access).
+// Cross-Games Age switches on the same pinned OoTMM graphs as the MM gear (COMBO_WORLDxx_ENABLED, MM_LOGIC_*_PINNED),
+// which read can_swim as true and count the Zora Mask as swimming, while 2S2H's Swim shuffle sends back a Zora without
+// Swim. So a seed with Swim shuffled leaves it off, as it leaves the gear out (Combo_MM_GearOptionsAllowed); a bound
+// seed keeps its own value (MM_InitRandoSaveFile).
+extern "C" int Combo_MM_CrossAgeOptionsAllowed(int swimShuffled) {
+    return Combo_MM_CrossAgeOptionReady() && !swimShuffled;
+}
+// The menu greys the Cross-Games Age row out and unticks it where these are 0 (ComboMenu.cpp, World access), and its
+// tooltip gives the reason.
 extern "C" COMBO_EXPORT int MM_CrossAgeOptionReady(void) {
     return Combo_MM_CrossAgeOptionReady();
+}
+extern "C" COMBO_EXPORT int MM_CrossAgeOptionsAllowed(int swimShuffled) {
+    return Combo_MM_CrossAgeOptionsAllowed(swimShuffled);
 }
 // MM boots and tunics are separate from Adult Link in MM, as in OoTMM, where child Link wears them (Player.c:616-687,
 // 1171-1207). Release switch, set in its own commit: turn it off again if the on-phone gear checks fail.
