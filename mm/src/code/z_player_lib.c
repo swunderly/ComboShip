@@ -2814,7 +2814,9 @@ s32 Player_OverrideLimbDrawGameplayDefault(PlayState* play, s32 limbIndex, Gfx**
 #ifdef COMBO_BUILD
                 // Pinned Player_CustomHandEq: human native open hand + stripped Fairy instrument. Adult Link may keep
                 // the native instrument hand instead, OoT's gLinkAdultRightHandHoldingOotNear/FarDL, as OoT draws for
-                // adult Link with either ocarina (soh z_player_lib.c:346-351). Off until the owner rules (BenPort.cpp).
+                // adult Link with either ocarina (soh z_player_lib.c:346-351); that option (B1) stays off, for A/B
+                // runs. The owner chose B3 (2026-10-12): the composite moves the item for adult Link
+                // (ComboFairyOcarinaHand.h, release switch kAdultFairyFittedPlacement in BenPort.cpp).
                 extern int Combo_MM_AdultFairyNativeHand(void);
                 if (player->transformation == PLAYER_FORM_HUMAN &&
                     player->rightHandType == PLAYER_MODELTYPE_RH_INSTRUMENT &&

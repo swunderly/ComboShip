@@ -1137,6 +1137,8 @@ bool VerifyArchiveVersion(ArchiveVersion version) {
 extern "C" int Combo_MM_IsLinkAdult(void);
 extern "C" int Combo_MM_AdultOcarinaFdCamera(void);
 extern "C" int Combo_MM_AdultFairyNativeHand(void);
+extern "C" int Combo_MM_AdultFairyFittedPlacement(void);
+extern "C" int Combo_MM_FairyPlacementState(void);
 // Adult ocarina probe (tooling/claude-cleanup/t6/decision.md, G0), behind the default-off
 // gCombo.Debug.AdultOcarinaProbe: the camera and pose that decide where Link's hands appear on screen, for the first 40
 // frames of each ocarina session. Eye and at are also given in Link's frame (side, up, forward from his position,
@@ -1163,13 +1165,16 @@ static void Combo_LogAdultOcarinaFrame(Player* player, Camera* camera) {
     const KeepOn4ReadOnlyData& keep4 = camera->paramData.keep4.roData;
     const bool item1 = camera->setting == CAM_SET_ITEM1;
     // The right-hand list z_player_lib.c picks: the Fairy composite, unless adult Link keeps OoT's native hand (the
-    // composite itself falls back to the native list if OoT's Fairy item cannot load).
+    // composite itself falls back to the native list if OoT's Fairy item cannot load). With the fitted placement (B3)
+    // the composite moves the item, unless the fit failed ("fairyCompositeNoFit"; it is tried at the first draw).
     const bool fairyGate = player->transformation == PLAYER_FORM_HUMAN &&
                            player->rightHandType == PLAYER_MODELTYPE_RH_INSTRUMENT &&
                            INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_FAIRY;
-    const char* rightHand = !fairyGate                        ? "native"
-                            : Combo_MM_AdultFairyNativeHand() ? "adultNativeHand"
-                                                              : "fairyComposite";
+    const char* rightHand = !fairyGate                              ? "native"
+                            : Combo_MM_AdultFairyNativeHand()       ? "adultNativeHand"
+                            : !Combo_MM_AdultFairyFittedPlacement() ? "fairyComposite"
+                            : Combo_MM_FairyPlacementState() < 0    ? "fairyCompositeNoFit"
+                                                                    : "fittedFairy";
     // Player's animations are resource paths, as BEN_ANIM_EQUAL compares them.
     const char* animation = static_cast<const char*>(player->skelAnime.animation);
     SPDLOG_INFO("[ComboShip AdultOcarina] frame={} setting={:#x} mode={} camId={} eye={}/{}/{} at={}/{}/{} fov={} "
@@ -6230,13 +6235,15 @@ extern "C" int Combo_MM_IsLinkAdult(void) {
 }
 // Adult Link playing the ocarina in MM: MM's own ocarina animations (the same data OoT plays for adult Link) drive
 // OoT's adult skeleton. Seen from MM's ocarina camera his hands cover his eyes (likely; the diagnostics probe checks
-// it), and the child Fairy instrument sits under his chin. Two adult-only fixes use native data. Both depart from
+// it), and the child Fairy instrument sits under his chin. The adult-only fixes use native data. They depart from
 // OoTMM, which keeps MM's NORMAL ITEM1 camera and draws the child Fairy item on the adult open hand (OoTMM v32.3
-// src/mm/actors/Player.c:1536-1539), so each has its own release switch and stays off until the owner rules
-// (tooling/claude-cleanup/t6/decision.md, options A1 and B1). Child Link and the other forms never take them.
-// Release switches, each set in its own commit.
+// src/mm/actors/Player.c:1536-1539), so each has its own release switch (tooling/claude-cleanup/t6/decision.md). The
+// owner ruled on 2026-10-12: camera A1 and Fairy item B3; B1 stays off, for A/B runs only. Child Link and the other
+// forms never take them. Release switches, each set in its own commit.
 static constexpr bool kAdultOcarinaFdCamera = false;
 static constexpr bool kAdultFairyNativeHand = false;
+static constexpr bool kAdultFairyFittedPlacement = false;
+static_assert(!(kAdultFairyNativeHand && kAdultFairyFittedPlacement), "B1 and B3 are alternatives for the Fairy hand");
 // A1, Camera_KeepOn4: adult Link playing takes ITEM1's Fierce Deity row (CAM_MODE_JUMP, D_801B5410). It is MM data,
 // but vanilla MM never uses it for the Fierce Deity playing: he may not use the Ocarina of Time (z_parameter.c:69,
 // gPlayerFormItemRestrictions), so the row runs for him only through this fork's Fairy Ocarina id. Adult Link does not
@@ -6260,6 +6267,21 @@ extern "C" int Combo_MM_AdultFairyNativeHand(void) {
     return (kAdultFairyNativeHand || CVarGetInteger("gCombo.Debug.AdultFairyNativeHand", 0)) && Combo_MM_IsLinkAdult();
 #else
     return kAdultFairyNativeHand && Combo_MM_IsLinkAdult();
+#endif
+}
+// B3, the Fairy Ocarina hand (owner ruling 2026-10-12): adult Link keeps OoTMM's composite, the child Fairy item on the
+// adult open hand, with the item moved as OoT moves the Ocarina of Time from the child's right hand
+// (gLinkChildRightHandAndOotNearDL) to the adult's (gLinkAdultRightHandHoldingOotNearDL): a rigid transform fitted at
+// run time from those lists (ComboFairyOcarinaFit.h, ComboFairyOcarinaHand.h). Where it cannot be fitted, the composite
+// is drawn as before. If B1 is also switched on in a diagnostics build, B1 wins (the Fairy hand gate skips the
+// composite).
+extern "C" int Combo_MM_AdultFairyFittedPlacement(void) {
+#ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
+    // Emulator A/B runs of a diagnostics build switch it on with a default-off debug CVar.
+    return (kAdultFairyFittedPlacement || CVarGetInteger("gCombo.Debug.AdultFairyFittedPlacement", 0)) &&
+           Combo_MM_IsLinkAdult();
+#else
+    return kAdultFairyFittedPlacement && Combo_MM_IsLinkAdult();
 #endif
 }
 // A new seed turns Cross-Games Age on only where it can run (Combo_MM_ClearUnavailableOptions); a seed that has it

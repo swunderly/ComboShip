@@ -1,17 +1,21 @@
-"""Adult Link playing the ocarina in MM (Cross-Games Age): the two adult-only fixes and their release switches.
+"""Adult Link playing the ocarina in MM (Cross-Games Age): the adult-only fixes and their release switches.
 
-Decision: tooling/claude-cleanup/t6/decision.md. A1 films adult human Link playing with ITEM1's Fierce Deity row
-(Camera_KeepOn4, CAM_MODE_JUMP = D_801B5410: MM data, which vanilla MM never uses for the Fierce Deity playing); B1
-keeps OoT's native adult instrument hand instead of the child Fairy item. Both are off until the owner rules; a
-diagnostics build can turn each on with a default-off debug CVar.
+Decision: tooling/claude-cleanup/t6/decision.md, owner ruling 2026-10-12. A1 films adult human Link playing with
+ITEM1's Fierce Deity row (Camera_KeepOn4, CAM_MODE_JUMP = D_801B5410: MM data, which vanilla MM never uses for the
+Fierce Deity playing); B3 moves the child Fairy item on the adult open hand by the placement fitted from OoT's own
+hands (ComboFairyOcarinaFit.h); B1, kept for A/B runs, keeps OoT's native adult instrument hand instead. Each has a
+release switch, and a diagnostics build can turn each on with a default-off debug CVar.
 
-Compiles the production helpers (BenPort.cpp), the form switch of Camera_KeepOn4 (z_camera.c) and the Fairy hand gate
-(z_player_lib.c) with stand-in engine types, for a release and a diagnostics build, each with the switches as committed
-and flipped on, and checks every input: only adult human Link (Combo_MM_IsLinkAdult) playing in CAM_SET_ITEM1 ever takes
-the Fierce Deity row or the native hand; child Link, old saves (Combo_MM_IsLinkAdult is 0) and the other forms keep
-MM's own choice, and a release build ignores the CVars. Also checks that the camera row is MM's unchanged native data
-and that the probe stays in diagnostics builds. The archive side (OoT's gLinkAdultSkel equals MM's
-gLinkFierceDeitySkel; OoT's gLinkAdultRightHandHoldingOotNear/FarDL exist) is mm_cross_age_archive_tests.py (H8).
+Compiles the production helpers (BenPort.cpp), the form switch of Camera_KeepOn4 (z_camera.c), the Fairy hand gate
+(z_player_lib.c) and the Fairy composite (ComboFairyOcarinaHand.h) with stand-in engine types, for a release and a
+diagnostics build, each with the switches as committed and flipped on (A1 with B1, A1 with B3), and checks every input:
+only adult human Link (Combo_MM_IsLinkAdult) playing in CAM_SET_ITEM1 ever takes the Fierce Deity row, the native hand
+or the fitted item; child Link, old saves (Combo_MM_IsLinkAdult is 0) and the other forms keep MM's own choice, and a
+release build ignores the CVars. The fitted composite pushes the fit onto the hand limb's matrix around the item only
+and pops it before the hand, and falls back to today's composite when there is no fit. Also checks that the camera row
+is MM's unchanged native data and that the probe stays in diagnostics builds. The archive side (OoT's gLinkAdultSkel
+equals MM's gLinkFierceDeitySkel; OoT's gLinkAdultRightHandHoldingOotNear/FarDL exist) is mm_cross_age_archive_tests.py
+(H8); the fit itself is mm_adult_fairy_fit_tests.py and, on the user's archives, mm_adult_fairy_fit_archive_tests.py.
 """
 from pathlib import Path
 import argparse
@@ -60,17 +64,20 @@ benport = read('mm/2s2h/BenPort.cpp')
 camera = read('mm/src/code/z_camera.c')
 camera_data = read('mm/src/code/z_camera_data.inc')
 lib = read('mm/src/code/z_player_lib.c')
+fairy_hand = read('combo/menu/ComboFairyOcarinaHand.h')
 
 # ---- The production text under test.
 switches = {}
-for name in ('kAdultOcarinaFdCamera', 'kAdultFairyNativeHand'):
+for name in ('kAdultOcarinaFdCamera', 'kAdultFairyNativeHand', 'kAdultFairyFittedPlacement'):
     m = re.search(r'static constexpr bool ' + name + r' = (true|false);', benport)
     check(m is not None, f'{name}: no release switch')
     switches[name] = m.group(1) if m else 'false'
 helpers_at = benport.index('static constexpr bool kAdultOcarinaFdCamera')
-hand_at = benport.index('extern "C" int Combo_MM_AdultFairyNativeHand(void) {')
-helpers = benport[helpers_at:hand_at + len(block(benport, hand_at))]
-check(helpers.count('extern "C" int ') == 2, 'the two helpers are not side by side')
+fitted_at = benport.index('extern "C" int Combo_MM_AdultFairyFittedPlacement(void) {')
+helpers = benport[helpers_at:fitted_at + len(block(benport, fitted_at))]
+check(helpers.count('extern "C" int ') == 3, 'the three helpers are not side by side')
+check('static_assert(!(kAdultFairyNativeHand && kAdultFairyFittedPlacement)' in helpers,
+      'nothing stops B1 and B3 from being released together')
 
 keepon4_at = camera.index('s32 Camera_KeepOn4(Camera* camera) {')
 switch_at = hostcxx.find(camera, 'switch (((Player*)camera->focalActor)->transformation) {', keepon4_at)
@@ -84,6 +91,11 @@ check(gate is not None, 'the Fairy hand gate in Player_OverrideLimbDrawGameplayD
 gate = gate.group(1) if gate else 'false'
 check(lib.count('Combo_MM_AdultFairyNativeHand()') == 1 and 'Combo_MM_AdultFairyNativeHand()' in gate,
       'the native adult hand is asked anywhere but the Fairy hand gate')
+composite_at = fairy_hand.index('extern "C" Gfx* Combo_MM_FairyOcarinaHand(PlayState* play, Gfx* nativeHand) {')
+composite = block(fairy_hand, composite_at)
+check(fairy_hand.count('Combo_MM_AdultFairyFittedPlacement()') == 1 and 'Combo_MM_AdultFairyFittedPlacement()' in composite
+      and 'Combo_MM_AdultFairyFittedPlacement' not in lib,
+      'the fitted placement is asked anywhere but the Fairy composite')
 
 # ---- Source checks.
 # A1 takes MM's own row: ITEM1's JUMP entry is D_801B5410, the Fierce Deity's mode in Camera_KeepOn4, unchanged.
@@ -124,6 +136,8 @@ HARNESS = r'''
 #define COMBO_BUILD 1
 #include <cassert>
 #include <cstdio>
+#include <algorithm>
+#include <iterator>
 #include <map>
 #include <string>
 typedef short s16;
@@ -134,6 +148,28 @@ enum { PLAYER_MODELTYPE_RH_OPEN = 10, PLAYER_MODELTYPE_RH_INSTRUMENT = 13 };
 enum { ITEM_OCARINA_OF_TIME = 0, ITEM_OCARINA_FAIRY = 5 };
 struct Player { int transformation; int rightHandType; };
 struct Camera { void* focalActor; s16 setting; };
+// The Fairy composite's engine: each display-list macro records one command; the instrument path and the fitted matrix
+// are switched on and off by the test.
+struct Mtx { int unused; };
+struct Gfx { char op; const void* arg; int flags; };
+struct GraphicsContext {};
+struct PlayState { struct { GraphicsContext* gfxCtx; } state; };
+enum { G_MTX_NOPUSH = 0, G_MTX_PUSH = 1, G_MTX_MUL = 0, G_MTX_LOAD = 2, G_MTX_MODELVIEW = 0, G_MTX_PROJECTION = 4 };
+enum { G_DL_OTR_FILEPATH = 0x27, G_DL_PUSH = 0 };
+static Gfx sPool[8];
+static size_t sAllocated = 0;
+#define GRAPH_ALLOC(ctx, size) (sAllocated = (size) / sizeof(Gfx), (void*)sPool)
+#define gSPMatrix(pkt, m, f) (*(pkt) = Gfx{ 'M', (m), (f) })
+#define gDma1p(pkt, c, s, l, p) (*(pkt) = Gfx{ 'I', (s), (c) })
+#define gSPPopMatrix(pkt, n) (*(pkt) = Gfx{ 'P', nullptr, (n) })
+#define gSPDisplayList(pkt, dl) (*(pkt) = Gfx{ 'H', (dl), 0 })
+#define gSPEndDisplayList(pkt) (*(pkt) = Gfx{ 'E', nullptr, 0 })
+static const char kInstrument[] = "__OTR__@oot:combo/runtime/fairy_ocarina_instrument";
+static bool sPathReady = true, sFitReady = true;
+static int sPlacementAsked = 0;
+static Mtx sPlacement;
+static const char* Combo_FairyInstrumentPath() { return sPathReady ? kInstrument : nullptr; }
+static Mtx* Combo_FairyInstrumentPlacement() { ++sPlacementAsked; return sFitReady ? &sPlacement : nullptr; }
 static std::map<std::string, int> cvars;
 static std::map<std::string, int> asked;
 static int linkAdult = 0, ocarinaSlot = ITEM_OCARINA_OF_TIME;
@@ -157,6 +193,31 @@ static bool FairyComposite(Player* player) {
     return @GATE@;
 }
 
+@COMPOSITE@
+
+// What the composite draws: "" (nothing, the gate's native list stays), "HIE" (today: hand, item) or "MIPHE" (B3: the
+// fit pushed, the item, popped, then the hand).
+static std::string Drawn(Gfx* nativeHand) {
+    PlayState play = {};
+    std::fill(std::begin(sPool), std::end(sPool), Gfx{ 0, nullptr, 0 });
+    Gfx* list = Combo_MM_FairyOcarinaHand(&play, nativeHand);
+    if (!list)
+        return "";
+    std::string ops;
+    for (size_t i = 0; i < sAllocated; ++i) {
+        ops += list[i].op;
+        if (list[i].op == 'M')
+            assert(list[i].arg == &sPlacement && list[i].flags == (G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW));
+        if (list[i].op == 'P')
+            assert(list[i].flags == G_MTX_MODELVIEW);
+        if (list[i].op == 'I')
+            assert(list[i].arg == kInstrument && list[i].flags == G_DL_OTR_FILEPATH);
+        if (list[i].op == 'H')
+            assert(list[i].arg == nativeHand);
+    }
+    return ops;
+}
+
 static s16 MmMode(int form) {
     return form == PLAYER_FORM_DEKU ? CAM_MODE_DEKUSHOOT : form == PLAYER_FORM_GORON ? CAM_MODE_GORONDASH
          : form == PLAYER_FORM_ZORA ? CAM_MODE_DEKUFLY : form == PLAYER_FORM_FIERCE_DEITY ? CAM_MODE_JUMP
@@ -164,27 +225,33 @@ static s16 MmMode(int form) {
 }
 
 int main() {
-    const bool diag = @DIAG@, fdSwitch = @FD_SWITCH@, handSwitch = @HAND_SWITCH@;
+    const bool diag = @DIAG@, fdSwitch = @FD_SWITCH@, handSwitch = @HAND_SWITCH@, fittedSwitch = @FITTED_SWITCH@;
     const int forms[] = { PLAYER_FORM_FIERCE_DEITY, PLAYER_FORM_GORON, PLAYER_FORM_ZORA, PLAYER_FORM_DEKU,
                           PLAYER_FORM_HUMAN };
     const s16 settings[] = { CAM_SET_NORMAL0, CAM_SET_ITEM0, CAM_SET_ITEM1, CAM_SET_ITEM2, CAM_SET_ITEM3 };
-    int fdTaken = 0, handTaken = 0;
+    int fdTaken = 0, handTaken = 0, fittedTaken = 0;
+    Gfx hand = { 'h', nullptr, 0 };
     for (int form : forms)
         for (s16 setting : settings)
-            for (int bits = 0; bits < 32; ++bits) {
+            for (int bits = 0; bits < 256; ++bits) {
                 linkAdult = bits & 1;
-                const int fdCvar = (bits >> 1) & 1, handCvar = (bits >> 2) & 1;
+                const int fdCvar = (bits >> 1) & 1, handCvar = (bits >> 2) & 1, fittedCvar = (bits >> 5) & 1;
                 const int rightHand = (bits & 8) ? PLAYER_MODELTYPE_RH_INSTRUMENT : PLAYER_MODELTYPE_RH_OPEN;
                 ocarinaSlot = (bits & 16) ? ITEM_OCARINA_FAIRY : ITEM_OCARINA_OF_TIME;
+                sPathReady = !(bits & 64);
+                sFitReady = !(bits & 128);
                 cvars = { { "gCombo.Debug.AdultOcarinaFdCamera", fdCvar },
-                          { "gCombo.Debug.AdultFairyNativeHand", handCvar } };
+                          { "gCombo.Debug.AdultFairyNativeHand", handCvar },
+                          { "gCombo.Debug.AdultFairyFittedPlacement", fittedCvar } };
                 Player player = { form, rightHand };
                 Camera camera = { &player, setting };
 
                 const bool fdOn = (fdSwitch || (diag && fdCvar)) && linkAdult;
                 const bool handOn = (handSwitch || (diag && handCvar)) && linkAdult;
+                const bool fittedOn = (fittedSwitch || (diag && fittedCvar)) && linkAdult;
                 assert(Combo_MM_AdultOcarinaFdCamera() == (fdOn ? 1 : 0));
                 assert(Combo_MM_AdultFairyNativeHand() == (handOn ? 1 : 0));
+                assert(Combo_MM_AdultFairyFittedPlacement() == (fittedOn ? 1 : 0));
 
                 // A1: only adult human Link playing (ITEM1) takes the Fierce Deity row; everyone else keeps MM's.
                 const bool fd = form == PLAYER_FORM_HUMAN && setting == CAM_SET_ITEM1 && fdOn;
@@ -198,19 +265,32 @@ int main() {
                 assert(FairyComposite(&player) == (mmComposite && !handOn));
                 handTaken += mmComposite && handOn;
 
+                // B3: the composite moves the item only for adult Link with the switch on and a fit; without a fit it
+                // is today's composite. The fit is not even looked up for anyone else.
+                sPlacementAsked = 0;
+                const std::string drawn = FairyComposite(&player) ? Drawn(&hand) : "";
+                const bool fitted = FairyComposite(&player) && fittedOn && sPathReady && sFitReady;
+                assert(drawn == (!FairyComposite(&player) || !sPathReady ? "" : fitted ? "MIPHE" : "HIE"));
+                assert(sPlacementAsked == (FairyComposite(&player) && fittedOn && sPathReady ? 1 : 0));
+                fittedTaken += fitted;
+
                 // Child Link and saves without Cross-Games Age (Combo_MM_IsLinkAdult 0) never change.
                 if (!linkAdult) {
                     assert(PickMode(&camera) == MmMode(form));
                     assert(FairyComposite(&player) == mmComposite);
+                    assert(drawn == (mmComposite && sPathReady ? "HIE" : ""));
                 }
             }
     // A release build never reads the debug CVars.
     assert(diag || (asked.count("gCombo.Debug.AdultOcarinaFdCamera") == 0 &&
-                    asked.count("gCombo.Debug.AdultFairyNativeHand") == 0));
-    assert((fdTaken > 0) == (fdSwitch || diag) && (handTaken > 0) == (handSwitch || diag));
-    std::printf("PASS %s build, camera switch %s, hand switch %s: Fierce Deity row in %d cases, native hand in %d, "
-                "all adult human\n", diag ? "diagnostics" : "release", fdSwitch ? "on" : "off",
-                handSwitch ? "on" : "off", fdTaken, handTaken);
+                    asked.count("gCombo.Debug.AdultFairyNativeHand") == 0 &&
+                    asked.count("gCombo.Debug.AdultFairyFittedPlacement") == 0));
+    assert((fdTaken > 0) == (fdSwitch || diag) && (handTaken > 0) == (handSwitch || diag) &&
+           (fittedTaken > 0) == ((fittedSwitch || diag) && !handSwitch)); // B1 switched on wins over B3
+    std::printf("PASS %s build, camera switch %s, native hand switch %s, fitted item switch %s: Fierce Deity row in %d "
+                "cases, native hand in %d, fitted item in %d, all adult human\n", diag ? "diagnostics" : "release",
+                fdSwitch ? "on" : "off", handSwitch ? "on" : "off", fittedSwitch ? "on" : "off", fdTaken, handTaken,
+                fittedTaken);
 }
 '''
 
@@ -218,15 +298,21 @@ if failures:
     print('\n'.join('FAIL: ' + f for f in failures))
     sys.exit(1)
 
-committed = (switches['kAdultOcarinaFdCamera'], switches['kAdultFairyNativeHand'])
-print(f'Release switches as committed: camera {committed[0]}, hand {committed[1]}', flush=True)
+committed = (switches['kAdultOcarinaFdCamera'], switches['kAdultFairyNativeHand'],
+             switches['kAdultFairyFittedPlacement'])
+print(f'Release switches as committed: camera {committed[0]}, native hand {committed[1]}, fitted item {committed[2]}',
+      flush=True)
 for diag in (False, True):
-    for label, (fd, hand) in (('committed', committed), ('flipped', ('true', 'true'))):
+    # B1 and B3 are alternatives (a static_assert keeps them from being switched on together).
+    for label, (fd, hand, fitted) in (('committed', committed), ('flipped_b1', ('true', 'true', 'false')),
+                                      ('flipped_b3', ('true', 'false', 'true'))):
         text = re.sub(r'(static constexpr bool kAdultOcarinaFdCamera = )(true|false);', r'\g<1>' + fd + ';', helpers)
         text = re.sub(r'(static constexpr bool kAdultFairyNativeHand = )(true|false);', r'\g<1>' + hand + ';', text)
+        text = re.sub(r'(static constexpr bool kAdultFairyFittedPlacement = )(true|false);', r'\g<1>' + fitted + ';',
+                      text)
         code = (HARNESS.replace('@DIAG@', 'true' if diag else 'false').replace('@FD_SWITCH@', fd)
-                .replace('@HAND_SWITCH@', hand).replace('@FORM_SWITCH@', form_switch).replace('@GATE@', gate)
-                .replace('@HELPERS@', text))
+                .replace('@HAND_SWITCH@', hand).replace('@FITTED_SWITCH@', fitted).replace('@FORM_SWITCH@', form_switch)
+                .replace('@GATE@', gate).replace('@COMPOSITE@', composite).replace('@HELPERS@', text))
         name = f'adult_ocarina_{"diagnostics" if diag else "release"}_{label}'
         source = work / f'{name}.cpp'
         source.write_text(code, encoding='utf-8')

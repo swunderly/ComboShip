@@ -1,17 +1,33 @@
 #pragma once
 #include "ComboFairyOcarinaGeometry.h"
+#include "ComboFairyOcarinaFit.h"
+#include "2s2h/resource/type/2shResourceType.h"
 #include <fast/resource/type/DisplayList.h>
+#include <fast/resource/ResourceType.h>
 #include <fast/lus_gbi.h>
 #include <ship/resource/CrossRMRegistry.h>
 #include <ship/resource/ResourceManager.h>
+#include <ship/resource/archive/ArchiveManager.h>
+#include <ship/utils/StrHash64.h>
 static std::shared_ptr<Ship::IResource> sFairyInstrumentSource;
 static std::shared_ptr<Fast::DisplayList> sFairyInstrumentCopy;
 static std::weak_ptr<Ship::ResourceManager> sFairyInstrumentOwner;
 static bool sFairyInstrumentListener;
+// B3: the fitted placement for the current OoT manager, or the manager it could not be fitted for (once each).
+static Mtx sFairyPlacementMtx;
+static std::weak_ptr<Ship::ResourceManager> sFairyPlacementOwner, sFairyPlacementFailed;
 static void Combo_DropFairyInstrument() {
     sFairyInstrumentCopy.reset();
     sFairyInstrumentSource.reset();
     sFairyInstrumentOwner.reset();
+    sFairyPlacementOwner.reset();
+    sFairyPlacementFailed.reset();
+}
+static void Combo_ListenFairyInstrumentTeardown() {
+    if (!sFairyInstrumentListener) {
+        Ship::CrossRMRegistry::RegisterTeardownListener(Combo_DropFairyInstrument);
+        sFairyInstrumentListener = true;
+    }
 }
 static const char* Combo_FairyInstrumentPath() {
     auto rm = Ship::CrossRMRegistry::Get("oot");
@@ -31,24 +47,117 @@ static const char* Combo_FairyInstrumentPath() {
         sFairyInstrumentSource = source;
         sFairyInstrumentCopy = copy;
         sFairyInstrumentOwner = rm;
-        if (!sFairyInstrumentListener) {
-            Ship::CrossRMRegistry::RegisterTeardownListener(Combo_DropFairyInstrument);
-            sFairyInstrumentListener = true;
-        }
+        Combo_ListenFairyInstrumentTeardown();
     }
     // Runtime resources have no archive backing. Reinsert after cache eviction, retaining
     // source-owned pointer payloads until registry teardown drops both references.
     rm->CacheExternalResource("combo/runtime/fairy_ocarina_instrument", sFairyInstrumentCopy);
     return "__OTR__@oot:combo/runtime/fairy_ocarina_instrument";
 }
+static_assert(ComboFairyOcarinaFit::kOpTri1 == G_TRI1 && ComboFairyOcarinaFit::kOpTri2 == G_TRI2 &&
+                  ComboFairyOcarinaFit::kOpQuad == G_QUAD &&
+                  ComboFairyOcarinaFit::kOpSetTImgHash == G_SETTIMG_OTR_HASH &&
+                  ComboFairyOcarinaFit::kOpVtxHash == G_VTX_OTR_HASH && ComboFairyOcarinaFit::kOpMarker == G_MARKER &&
+                  ComboFairyOcarinaFit::kOpTexture == G_TEXTURE &&
+                  ComboFairyOcarinaFit::kOpGeometryMode == G_GEOMETRYMODE && ComboFairyOcarinaFit::kOpDl == G_DL &&
+                  ComboFairyOcarinaFit::kOpEndDl == G_ENDDL &&
+                  ComboFairyOcarinaFit::kVertexBytes == sizeof(Fast::F3DVtx),
+              "libultraship opcodes and vertex size");
+// OoT's lists the fit reads (ComboFairyOcarinaFit::FitFairyPlacement), and the Ocarina of Time texture that marks the
+// instrument in OoT's child and adult hands.
+static const char* const kFairyPlacementLists[4] = {
+    "objects/object_link_child/gLinkChildRightHandAndOotNearDL",
+    "objects/object_link_child/gLinkChildRightHandHoldingFairyOcarinaNearDL",
+    "objects/object_link_boy/gLinkAdultRightHandHoldingOotNearDL",
+    "objects/object_link_boy/gLinkAdultRightHandNearDL",
+};
+static const char kFairyPlacementInstrumentTexture[] = "objects/gameplay_keep/gOcarinaofTimeDesignTex";
+// The vertex loads of one of OoT's lists with their positions. Display lists and vertex arrays load nothing nested. A
+// custom (mod) list or array keeps its own geometry and is not fitted.
+static bool Combo_FairyPlacementLoads(Ship::ResourceManager& rm, const char* name,
+                                      std::vector<ComboFairyOcarinaFit::VertexLoad>& loads) {
+    auto list = rm.LoadResourceProcess(name);
+    if (!list || !list->GetInitData() || list->GetInitData()->IsCustom ||
+        list->GetInitData()->Type != static_cast<uint32_t>(Fast::ResourceType::DisplayList))
+        return false;
+    const auto& commands = std::static_pointer_cast<Fast::DisplayList>(list)->Instructions;
+    if (!ComboFairyOcarinaFit::ListVertexLoads(commands.data(), commands.size(), loads))
+        return false;
+    for (auto& load : loads) {
+        const std::string* path = rm.GetArchiveManager()->HashToString(load.array);
+        auto array = path ? rm.LoadResourceProcess(*path) : nullptr;
+        if (!array || !array->GetInitData() || array->GetInitData()->IsCustom ||
+            array->GetInitData()->Type != static_cast<uint32_t>(SOH::ResourceType::SOH_Array) ||
+            !ComboFairyOcarinaFit::ReadPoints(static_cast<const uint8_t*>(array->GetRawPointer()),
+                                              array->GetPointerSize(), load))
+            return false;
+    }
+    return true;
+}
+// B3: the matrix that moves the Fairy item from the child's hand frame to adult Link's, fitted once per OoT manager
+// from OoT's own data, or null when it cannot be fitted (the reason is logged once).
+static Mtx* Combo_FairyInstrumentPlacement() {
+    auto rm = Ship::CrossRMRegistry::Get("oot");
+    if (!rm || sFairyPlacementFailed.lock() == rm)
+        return nullptr;
+    if (sFairyPlacementOwner.lock() == rm)
+        return &sFairyPlacementMtx;
+    Combo_ListenFairyInstrumentTeardown();
+    std::array<std::vector<ComboFairyOcarinaFit::VertexLoad>, 4> lists;
+    for (size_t i = 0; i < lists.size(); ++i)
+        if (!Combo_FairyPlacementLoads(*rm, kFairyPlacementLists[i], lists[i])) {
+            SPDLOG_WARN("[ComboShip AdultFairy] {} cannot be read; adult Link keeps the unmoved Fairy item",
+                        kFairyPlacementLists[i]);
+            sFairyPlacementFailed = rm;
+            return nullptr;
+        }
+    ComboFairyOcarinaFit::RigidFit fit;
+    const auto result = ComboFairyOcarinaFit::FitFairyPlacement(lists[0], lists[1], lists[2], lists[3],
+                                                                CRC64(kFairyPlacementInstrumentTexture), fit);
+    if (result != ComboFairyOcarinaFit::FitResult::Fitted) {
+        SPDLOG_WARN("[ComboShip AdultFairy] no fit ({}; residual max {}); adult Link keeps the unmoved Fairy item",
+                    ComboFairyOcarinaFit::FitResultName(result), fit.max);
+        sFairyPlacementFailed = rm;
+        return nullptr;
+    }
+    // Built here, not through SkinMatrix_MtxFToMtx: the matrix is constant, so it is not recorded for interpolation.
+    float mf[4][4];
+    ComboFairyOcarinaFit::PlacementMatrix(fit, mf);
+    guMtxF2L(mf, &sFairyPlacementMtx);
+    SPDLOG_INFO(
+        "[ComboShip AdultFairy] fitted: rotation {:.2f} deg, translation {:.1f}/{:.1f}/{:.1f}, residual rms {:.2f} "
+        "max {:.2f} (limit {:.2f})",
+        ComboFairyOcarinaFit::RotationDegrees(fit), fit.translation[0], fit.translation[1], fit.translation[2], fit.rms,
+        fit.max, ComboFairyOcarinaFit::RoundingBound());
+    sFairyPlacementOwner = rm;
+    return &sFairyPlacementMtx;
+}
+// 1 when the placement is fitted for the current OoT manager, -1 when it cannot be, 0 before it is tried (the probe).
+extern "C" int Combo_MM_FairyPlacementState(void) {
+    auto rm = Ship::CrossRMRegistry::Get("oot");
+    return !rm ? 0 : sFairyPlacementOwner.lock() == rm ? 1 : sFairyPlacementFailed.lock() == rm ? -1 : 0;
+}
+extern "C" int Combo_MM_AdultFairyFittedPlacement(void);
 extern "C" Gfx* Combo_MM_FairyOcarinaHand(PlayState* play, Gfx* nativeHand) {
     const char* instrument = Combo_FairyInstrumentPath();
     if (!instrument)
         return nullptr;
-    Gfx* list = (Gfx*)GRAPH_ALLOC(play->state.gfxCtx, sizeof(Gfx) * 3);
+    // B3, adult Link only (BenPort.cpp): the item moved by OoT's own placement; without a fit, the composite as before.
+    Mtx* placement = Combo_MM_AdultFairyFittedPlacement() ? Combo_FairyInstrumentPlacement() : nullptr;
+    Gfx* list = (Gfx*)GRAPH_ALLOC(play->state.gfxCtx, sizeof(Gfx) * (placement ? 5 : 3));
     if (!list)
         return nullptr;
     Gfx* d = list;
+    if (placement) {
+        // Item first, as in OoT's own child list, under the hand limb's matrix times the fit. The pop restores the limb
+        // matrix before the hand, on every path: a route that fails to resolve skips only the item.
+        gSPMatrix(d++, placement, G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+        gDma1p(d++, G_DL_OTR_FILEPATH, instrument, 0, G_DL_PUSH);
+        gSPPopMatrix(d++, G_MTX_MODELVIEW);
+        gSPDisplayList(d++, nativeHand);
+        gSPEndDisplayList(d++);
+        return list; // fitted item + native hand, the matrix pushed and popped inside the limb
+    }
     gSPDisplayList(d++, nativeHand);
     // Routed path call: the stripped copy's texture/vertex hashes must resolve in OoT's RM. A route
     // that fails to resolve is skipped, so the list still ends here instead of past its allocation.
