@@ -562,11 +562,50 @@ void Foreign() {
     std::cout << "PASS: MM items at OoT checks are Seen only once their real model was drawn, by its shown tier\n";
 }
 
+void RepeatsAndResets() {
+    const auto cow = RC_HF_GS_COW_GROTTO, chest = RC_MARKET_TREASURE_CHEST_GAME_KEY_1;
+    ResetWorld();
+    ctx.GetItemLocation(cow)->placed = RG_PIECE_OF_HEART;
+    occluders = { { { 0, 0, 40 }, 3, &web } };
+    Draw(cow);
+    Seen(cow, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    const int rays = raycasts;
+    for (int frame = 0; frame < 5; ++frame)
+        Draw(cow);
+    assert(raycasts == rays && saves == 1); // already recorded: no collision work and no save
+    // The treasure chest game resets its rows on entry but keeps what the player learned. A key seen
+    // again through the Lens of Truth marks the row again, even though the record did not change.
+    ctx.GetItemLocation(chest)->placed = RG_PIECE_OF_HEART;
+    Draw(chest);
+    Seen(chest, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    ctx.GetItemLocation(chest)->status = RCSHOW_UNCHECKED;
+    occluders = { { { 0, 0, 40 }, BGCHECK_SCENE, nullptr } };
+    Draw(chest);
+    assert(ctx.GetItemLocation(chest)->GetCheckStatus() == RCSHOW_UNCHECKED); // not while hidden
+    occluders.clear();
+    Draw(chest);
+    Seen(chest, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    assert(saves == 3);
+    // A stand-in seen after the reset re-marks the row with the real item it saw earlier.
+    ctx.GetItemLocation(chest)->status = RCSHOW_UNCHECKED;
+    obtainability.value[RG_PIECE_OF_HEART] = CANT_OBTAIN_MISC;
+    Draw(chest);
+    Seen(chest, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    // Collected checks are never recorded again.
+    ctx.GetItemLocation(cow)->obtained = true;
+    ctx.GetItemLocation(cow)->status = RCSHOW_COLLECTED;
+    const int before = raycasts;
+    Draw(cow);
+    assert(raycasts == before && ctx.GetItemLocation(cow)->GetCheckStatus() == RCSHOW_COLLECTED);
+    std::cout << "PASS: recorded sightings skip the collision test; a reset row is re-marked when seen again\n";
+}
+
 int main() {
     StandIns();
     Hidden();
     SeeThrough();
     Foreign();
+    RepeatsAndResets();
 }
 '''
 code = prelude + final_entry + '\n} // namespace Rando\nnamespace CheckTracker {\n' + block + '\n} // namespace CheckTracker\n' + tests

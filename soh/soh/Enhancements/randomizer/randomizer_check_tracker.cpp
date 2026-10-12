@@ -160,11 +160,15 @@ static bool StoreKnowledge(RandomizerCheck rc, uint8_t source, RandomizerGet ite
     if (location->HasObtained())
         return false;
     std::lock_guard<std::mutex> lock(sItemKnowledgeMutex);
-    if (!ComboRando::RecordTrackerKnowledge(sItemKnowledge[rc], source, item, std::move(name)))
-        return false;
-    if (location->GetCheckStatus() == RCSHOW_UNCHECKED)
+    auto& knowledge = sItemKnowledge[rc];
+    bool changed = ComboRando::RecordTrackerKnowledge(knowledge, source, item, std::move(name));
+    // A status reset (the treasure chest game on entry, a co-op status update) can leave the record
+    // behind an Unchecked row. Seeing or being told of the item again marks the row again.
+    if (!knowledge.displayName.empty() && location->GetCheckStatus() == RCSHOW_UNCHECKED) {
         location->SetCheckStatus(RCSHOW_SEEN_OR_HINTED);
-    return true;
+        changed = true;
+    }
+    return changed;
 }
 
 void RecordHintedItem(RandomizerCheck rc) {
@@ -218,6 +222,13 @@ static Sighting SightingFor(RandomizerCheck rc, const GetItemEntry& shown) {
              Rando::StaticData::RetrieveItem(named).GetName().GetForLanguage(gSaveContext.language) };
 }
 
+// The model is drawn every frame: skip the collision test once this sighting changes nothing.
+static bool SightingIsNew(RandomizerCheck rc, const Sighting& sighting) {
+    auto knowledge = GetKnowledge(rc);
+    return ComboRando::RecordTrackerKnowledge(knowledge, sighting.source, sighting.item, sighting.name) ||
+           OTRGlobals::Instance->gRandoContext->GetItemLocation(rc)->GetCheckStatus() == RCSHOW_UNCHECKED;
+}
+
 static void StoreSighting(RandomizerCheck rc, Sighting sighting) {
     if (StoreKnowledge(rc, sighting.source, sighting.item, std::move(sighting.name)))
         SaveManager::Instance->SaveSection(gSaveContext.fileNum, sectionId, true);
@@ -234,7 +245,7 @@ void RecordObservedItem(Actor* actor, const GetItemEntry& shown) {
         return;
     RandomizerCheck rc = static_cast<RandomizerCheck>(shown.comboForeignCheck);
     Sighting sighting = SightingFor(rc, shown);
-    if (sighting.source == 0)
+    if (sighting.source == 0 || !SightingIsNew(rc, sighting))
         return;
     const MtxF* model = Matrix_GetCurrent();
     Vec3f origin{}, pos;
