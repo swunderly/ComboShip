@@ -436,6 +436,11 @@ void Hidden() {
         Unseen(tektite);
         assert(raycasts == 0); // invisible cases need no collision work
     }
+    // A cutscene fade can leave the fill switched on at alpha 0, which draws nothing: the model is Seen.
+    prepare();
+    play.envCtx.fillScreen = 1;
+    Draw(tektite);
+    Seen(tektite, ComboRando::kTrackerSourceStandIn, RG_BLUE_RUPEE, "Blue Rupee");
     // In view but behind a wall or a closed door: never Seen.
     prepare();
     occluders = { { { 0, 0, 50 }, BGCHECK_SCENE, nullptr } };
@@ -451,7 +456,7 @@ void Hidden() {
     Actor stock{ ACTOR_EN_GIRLA };
     Draw(tektite, &stock);
     Seen(tektite, ComboRando::kTrackerSourceStandIn, RG_BLUE_RUPEE, "Blue Rupee");
-    std::cout << "PASS: off-screen, covered, unrevealed and occluded models stay unseen\n";
+    std::cout << "PASS: off-screen, covered, unrevealed and occluded models stay unseen; a faded-out fill hides nothing\n";
 }
 
 void SeeThrough() {

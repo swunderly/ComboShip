@@ -81,6 +81,12 @@ int main() {
     assert(!visible(0,0,0,0));
     assert(!visible(0,0,0,1,1,0)); // unrevealed zero-scale model
     assert(!visible(0,0,0,1,1,1,true)); // transition/fade/pause covers picture
+    assert(!TrackerViewCovered(false, false, 0, false));
+    assert(TrackerViewCovered(true, false, 0, false)); // scene transition
+    assert(TrackerViewCovered(false, false, 0, true)); // pause screen
+    assert(TrackerViewCovered(false, true, 255, false) && TrackerViewCovered(false, true, 1, false)); // any drawn fill
+    assert(!TrackerViewCovered(false, true, 0, false)); // fill left on after a cutscene faded it out
+    assert(!TrackerViewCovered(false, false, 255, false)); // a stale colour with the fill off
     assert(visible(1.5f,0,0,1,2)); // genuinely visible widescreen side
     assert(!visible(.8f,0,0,1,.5f)); // cropped narrow viewport
     assert(!visible(std::numeric_limits<float>::quiet_NaN(),0,0,1));

@@ -675,9 +675,9 @@ static bool IsCheckModelVisible(Actor* actor) {
     const float scaleY2 = model->xy * model->xy + model->yy * model->yy + model->zy * model->zy;
     const float scaleZ2 = model->xz * model->xz + model->yz * model->yz + model->zz * model->zz;
     // The camera can sweep past a reward while a scene fade or pause overlay hides the view.
-    const bool covered = gPlayState->transitionMode != TRANS_MODE_OFF ||
-                         gPlayState->transitionTrigger != TRANS_TRIGGER_OFF || gPlayState->envCtx.fillScreen ||
-                         gPlayState->pauseCtx.state != 0;
+    const bool covered = ComboRando::TrackerViewCovered(
+        gPlayState->transitionMode != TRANS_MODE_OFF || gPlayState->transitionTrigger != TRANS_TRIGGER_OFF,
+        gPlayState->envCtx.fillScreen, gPlayState->envCtx.screenFillColor[3], gPlayState->pauseCtx.state != 0);
     // Same frustum test as OoT's tracker, with Fast3D's horizontal aspect correction (narrow phone viewports).
     if (!ComboRando::TrackerItemInView(projected.x, projected.y, projected.z, w, OTRGetAspectRatio() / (4.0f / 3.0f),
                                        scaleX2, scaleY2, scaleZ2, covered))

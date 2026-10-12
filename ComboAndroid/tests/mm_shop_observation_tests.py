@@ -59,7 +59,7 @@ struct CollisionPoly {};
 struct Actor { int id=0; struct { struct { int x=0,y=0,z=0; } rot; } home; };
 struct PlayState {
  int transitionMode=0,transitionTrigger=0;
- struct { bool fillScreen=false; } envCtx;
+ struct { bool fillScreen=false; unsigned char screenFillColor[4]{}; } envCtx;
  struct { int state=0; } pauseCtx;
  MtxF viewProjectionMtxF;
  struct { Vec3f eye; } view;
@@ -130,8 +130,10 @@ void Run() {
  Require(!IsCheckModelVisible(&other),"ordinary occluded rewards must remain unseen");
  projection.x=2;
  Require(!IsCheckModelVisible(&shelf),"off-screen stock must remain unseen");
- projection={};playState.envCtx.fillScreen=true;
+ projection={};playState.envCtx.fillScreen=true;playState.envCtx.screenFillColor[3]=255;
  Require(!IsCheckModelVisible(&shelf),"fade-covered stock must remain unseen");
+ playState.envCtx.screenFillColor[3]=0;
+ Require(IsCheckModelVisible(&shelf),"a fill left on at alpha 0 after a cutscene fade hid nothing");
  playState.envCtx.fillScreen=false;playState.pauseCtx.state=1;
  Require(!IsCheckModelVisible(&shelf),"pause-covered stock must remain unseen");
  playState.pauseCtx.state=0;modelMatrix.xx=0;

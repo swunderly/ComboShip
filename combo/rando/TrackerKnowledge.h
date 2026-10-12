@@ -61,6 +61,12 @@ inline bool RecordTrackerKnowledge(TrackerKnowledge& previous, uint8_t source, i
     return true;
 }
 
+// A scene transition, the pause screen or a drawn screen fill hides the picture. A cutscene fade can
+// leave the fill switched on after it faded to alpha 0, and Environment_FillScreen draws nothing then.
+inline bool TrackerViewCovered(bool transitionActive, bool fillScreen, uint8_t fillAlpha, bool paused) {
+    return transitionActive || (fillScreen && fillAlpha != 0) || paused;
+}
+
 // A submitted draw is insufficient: generous actor culling boxes extend off
 // screen. Test the rendered model origin against the actual camera frustum.
 inline bool TrackerItemInView(float x, float y, float z, float w, float horizontalScale, float scaleX2, float scaleY2,

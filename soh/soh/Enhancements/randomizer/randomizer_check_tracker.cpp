@@ -113,9 +113,9 @@ static bool ModelVisible(Vec3f pos, float scaleX2, float scaleY2, float scaleZ2,
     Vec3f projected;
     float w;
     SkinMatrix_Vec3fMtxFMultXYZW(&gPlayState->viewProjectionMtxF, &pos, &projected, &w);
-    const bool covered = gPlayState->transitionMode != TRANS_MODE_OFF ||
-                         gPlayState->transitionTrigger != TRANS_TRIGGER_OFF || gPlayState->envCtx.fillScreen ||
-                         gPlayState->pauseCtx.state != 0;
+    const bool covered = ComboRando::TrackerViewCovered(
+        gPlayState->transitionMode != TRANS_MODE_OFF || gPlayState->transitionTrigger != TRANS_TRIGGER_OFF,
+        gPlayState->envCtx.fillScreen, gPlayState->envCtx.screenFillColor[3], gPlayState->pauseCtx.state != 0);
     if (!ComboRando::TrackerItemInView(projected.x, projected.y, projected.z, w, OTRGetAspectRatio() / (4.0f / 3.0f),
                                        scaleX2, scaleY2, scaleZ2, covered))
         return false;

@@ -30,7 +30,7 @@ struct Actor { int id = 0; Vec3f worldPos = {900, 900, 900}; } testActor;
 struct CollisionContext {};
 struct CollisionPoly {};
 constexpr int TRANS_MODE_OFF=0, TRANS_TRIGGER_OFF=0, ACTOR_EN_GIRLA=42;
-struct PlayState { int transitionMode=0, transitionTrigger=0; struct { bool fillScreen=false; } envCtx; struct { int state=0; } pauseCtx; MtxF viewProjectionMtxF; struct { Vec3f eye; } view; CollisionContext colCtx; } play;
+struct PlayState { int transitionMode=0, transitionTrigger=0; struct { bool fillScreen=false; unsigned char screenFillColor[4]{}; } envCtx; struct { int state=0; } pauseCtx; MtxF viewProjectionMtxF; struct { Vec3f eye; } view; CollisionContext colCtx; } play;
 PlayState* gPlayState = &play;
 using RandoCheckId = int;
 using RandoItemId = int;
@@ -78,8 +78,15 @@ int main() {
     assert(!IsCheckModelVisible(&testActor));
     play.transitionMode = 0; play.transitionTrigger = -20;
     assert(!IsCheckModelVisible(&testActor));
-    play.transitionTrigger = 0; play.envCtx.fillScreen = true;
+    play.transitionTrigger = 0; play.envCtx.fillScreen = true; play.envCtx.screenFillColor[3] = 255;
     assert(!IsCheckModelVisible(&testActor));
+    play.envCtx.screenFillColor[3] = 1; // any drawn fill still covers the picture
+    assert(!IsCheckModelVisible(&testActor));
+    before = raycasts;
+    play.envCtx.screenFillColor[3] = 0; // a cutscene fade left the fill on after fading out: nothing drawn
+    assert(IsCheckModelVisible(&testActor));
+    assert(raycasts == before + 1);
+    before = raycasts;
     play.envCtx.fillScreen = false; play.pauseCtx.state = 1;
     assert(!IsCheckModelVisible(&testActor));
     play.pauseCtx.state = 0;
