@@ -2186,8 +2186,10 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   voice change sits inside `Audio_PlaySfx_GiantsMask`. The Ice Arrow platform's adult heights (0.20, 0.13 on melting)
   apply to adult Link only, so child is unchanged (OoTMM writes 0.13 for child too).
 - **Masks and spin attack.** Keaton, Bunny and Scents get OoTMM's 1.25 scale through a command walker that skips the
-  port's two-slot marker and 128-bit commands; it is applied at the end of Player's mask load and at Player_Init,
-  because the port keeps mask lists cached. The adult spin attack scales MM's own gameplay_keep vertices by OoTMM's
+  port's two-slot marker and 128-bit commands. OoTMM writes the calls into Link's own copy of the mask object; the
+  port keeps mask lists cached and shared, so at the end of Player's mask load and at Player_Init it builds Player its
+  own copy of the list with the calls written in (`Combo_MM_AdultMaskDL`), which only Player draws. MM's cached lists
+  are never changed, so an NPC's mask, such as Kafei's Keaton Mask, keeps its size, as in OoTMM. The adult spin attack scales MM's own gameplay_keep vertices by OoTMM's
   factors at runtime (D3); 344 of 354 coordinates equal OoTMM's files and 10 differ by 1.
 - **Age state.** OoTMM reads OoT's age on every MM use (`comboIsLinkAdult`). The port copies OoT's age into MM's
   saved age at each MM entry (`Combo_MM_SyncCrossAgeOnEntry`, title_setup.c, after the arrival is resolved and

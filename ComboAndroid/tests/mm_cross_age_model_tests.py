@@ -5,6 +5,7 @@ H2 the shadow skeleton builder routes both LOD lists of every limb to OoT, keeps
    joints and tree, never writes the source, and rejects broken trees;
 H3 the composite builder emits only [routed OoT hand, routed MM item..., end];
 H6 the walker that finds an N64 command in an extracted list skips the port's marker and counts two-slot commands once.
+The mask fit copies a mask list for Link with the scale calls written in and leaves the shared list unchanged.
 """
 from pathlib import Path
 import argparse
@@ -154,6 +155,30 @@ static void Walker() {
     std::puts("H6 walker: marker skipped, two-slot commands counted once");
 }
 
+static void FittedMask() {
+    // Link's own copy of a mask list gets the calls at the walked slots; the shared list Kafei draws is untouched.
+    const std::vector<Gfx> shared = { G(kOpMarker), G(0, 1), G(kOpPipeSync), G(kOpTexture), G(kOpDlHash), G(0, 2),
+                                      G(kOpPipeSync), G(kOpEndDl) };
+    const std::vector<Gfx> before = shared;
+    const long slots[] = { N64CommandSlot(shared.data(), shared.size(), 0),
+                           N64CommandSlot(shared.data(), shared.size(), 3) };
+    assert(slots[0] == 2 && slots[1] == 6);
+    const Gfx calls[] = { G(0xDE, 0x100), G(0xDE, 0x108) };
+    const std::vector<Gfx> fitted = FittedMaskList(shared.data(), shared.size(), slots, calls, 2);
+    assert(fitted.size() == shared.size());
+    for (size_t i = 0; i < shared.size(); ++i) {
+        assert(shared[i].words.w0 == before[i].words.w0 && shared[i].words.w1 == before[i].words.w1);
+        const Gfx& want = i == 2 ? calls[0] : i == 6 ? calls[1] : shared[i];
+        assert(fitted[i].words.w0 == want.words.w0 && fitted[i].words.w1 == want.words.w1);
+    }
+    assert(fitted.data() != shared.data());
+    const long outside[] = { 2, 8 };
+    assert(FittedMaskList(shared.data(), shared.size(), outside, calls, 2).empty());
+    const long missing[] = { -1 };
+    assert(FittedMaskList(shared.data(), shared.size(), missing, calls, 1).empty());
+    std::puts("Mask fit: Link's own copy carries the calls, the shared list (Kafei's Keaton Mask) is unchanged");
+}
+
 static void Routes() {
     std::string out;
     assert(RoutePath("__OTR__objects/object_link_boy/gLinkAdultSkel", "oot", out) &&
@@ -168,6 +193,7 @@ int main() {
     ShadowSkeleton();
     Composite();
     Walker();
+    FittedMask();
     std::puts("PASS");
 }
 '''

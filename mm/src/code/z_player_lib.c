@@ -2112,6 +2112,8 @@ extern const char* Combo_MM_GetAdultBootDrawPath(int index);
 extern int Combo_MM_AdultResourcesReady(void);
 // Adult Link's tunic env colour while his skeleton draws, else NULL (Player_OverrideLimbDrawGameplayCommon).
 static const Color_RGB8* sComboAdultTunicEnv = NULL;
+// Player's own copy of a Keaton, Bunny or Scents list fitted to adult Link, or NULL (2s2h/ComboAdultMaskScale.h).
+extern Gfx* Combo_MM_AdultMaskDL(s32 mask);
 #endif
 void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dListCount, s32 lod,
                      PlayerTransformation playerForm, s32 boots, s32 face, OverrideLimbDrawFlex overrideLimbDraw,
@@ -3842,7 +3844,17 @@ s32 func_80128640(PlayState* play, Player* player, Gfx* dlist) {
 
             MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
 
+#ifdef COMBO_BUILD
+            // Adult Link draws his own copy of the mask, fitted to his head; Kafei shares this draw (z_en_test3.c).
+            Gfx* fitted = (player->actor.id == ACTOR_PLAYER) ? Combo_MM_AdultMaskDL(mask) : NULL;
+            if (fitted != NULL) {
+                gSPDisplayList(POLY_OPA_DISP++, fitted);
+            } else {
+                gSPDisplayList(POLY_OPA_DISP++, D_801C0B20[mask - 1]);
+            }
+#else
             gSPDisplayList(POLY_OPA_DISP++, D_801C0B20[mask - 1]);
+#endif
 
             Matrix_Pop();
 
@@ -4201,7 +4213,17 @@ static void Combo_Player_PostLimbDrawGameplayNative(PlayState* play, s32 limbInd
                     }
                 }
 
+#ifdef COMBO_BUILD
+                // Adult Link draws his own copy of the mask, fitted to his head (func_80128640).
+                Gfx* fitted = (player->actor.id == ACTOR_PLAYER) ? Combo_MM_AdultMaskDL(maskMinusOne + 1) : NULL;
+                if (fitted != NULL) {
+                    gSPDisplayList(POLY_OPA_DISP++, fitted);
+                } else {
+                    gSPDisplayList(POLY_OPA_DISP++, D_801C0B20[maskMinusOne]);
+                }
+#else
                 gSPDisplayList(POLY_OPA_DISP++, D_801C0B20[maskMinusOne]);
+#endif
 
                 CLOSE_DISPS(play->state.gfxCtx);
             }

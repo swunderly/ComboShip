@@ -216,7 +216,7 @@ check(horse[0] == 0 and horse[1] == 3 and horse[2] == 47, f'gEponaSkel is not No
 
 # Production walker on the user's lists: the mask patch commands and the spin-charge pipe sync.
 walks = [('objects/gameplay_keep/gSpinAttackChargingDL', 0, 0xE7)]
-for mask, name, command, sync in re.findall(r'\{\s*PLAYER_MASK_(\w+),\s*"__OTR__(objects/\w+/\w+)",\s*(\d+),\s*(true|false),',
+for mask, name, command, sync in re.findall(r'\{\s*PLAYER_MASK_(\w+),\s*"__OTR__(objects/\w+/\w+)",\s*(\d+),\s*(true|false)\s*\}',
                                             mask_src):
     walks.append((name, int(command), 0xE7 if sync == 'true' else 0xD7))
 check(len(walks) == 8, 'mask patches')

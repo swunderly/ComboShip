@@ -161,4 +161,19 @@ constexpr float kSpinScale[5] = { 1.5f, 1.5f, 1.3f, 1.3f, 1.05f };
 // OoTMM's mm_adult_link_mask_mtx.bin is a uniform 1.25 scale (scene.c:68-78; actors/Player.c:2099-2135).
 constexpr float kMaskScale = 1.25f;
 
+// Link's own copy of a mask list with OoTMM's scale calls written in: `calls[i]` at slot `slots[i]`. OoTMM writes them
+// into Link's own copy of the mask object (Player_AfterMaskLoaded, player->maskObjectSegment), so an actor drawing the
+// same mask from its own copy, such as Kafei with his Keaton Mask, keeps its size; the source list is never written.
+// Empty when a slot is outside the list.
+template <typename Gfx>
+std::vector<Gfx> FittedMaskList(const Gfx* list, size_t size, const long* slots, const Gfx* calls, size_t count) {
+    std::vector<Gfx> copy(list, list + size);
+    for (size_t i = 0; i < count; ++i) {
+        if (slots[i] < 0 || size_t(slots[i]) >= size)
+            return {};
+        copy[size_t(slots[i])] = calls[i];
+    }
+    return copy;
+}
+
 } // namespace ComboAdultOotModel

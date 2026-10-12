@@ -371,7 +371,7 @@ if reference:
 # port's list (H6), checked against the command OoTMM replaces, and given back for child Link.
 mask_src = read('mm/2s2h/ComboAdultMaskScale.h')
 patches = [(m, l, int(c), w == 'true') for m, l, c, w in re.findall(
-    r'\{\s*PLAYER_MASK_(\w+),\s*"__OTR__objects/\w+/(\w+)",\s*(\d+),\s*(true|false),', mask_src)]
+    r'\{\s*PLAYER_MASK_(\w+),\s*"__OTR__objects/\w+/(\w+)",\s*(\d+),\s*(true|false)\s*\}', mask_src)]
 check(patches == [('KEATON', 'object_mask_ki_tan_DL_0004A0', 1, True), ('BUNNY', 'object_mask_rabit_DL_000610', 2, True),
                    ('BUNNY', 'object_mask_rabit_DL_000610', 46, False), ('BUNNY', 'object_mask_rabit_DL_000610', 52, True),
                    ('BUNNY', 'object_mask_rabit_DL_000610', 80, False), ('BUNNY', 'object_mask_rabit_DL_000610', 86, True),
@@ -385,6 +385,28 @@ check('if(player->actor.id==ACTOR_PLAYER){externintCombo_MM_IsLinkAdult(void);ex
       squash(lib[lib.index('void func_801229FC(Player* player)'):lib.index('void func_80122BA4(')]),
       'the mask fit does not run when Player\'s mask has loaded')
 check('Combo_MM_ApplyAdultMaskScale(this->currentMask,adult);' in seam, 'Player_Init does not fit or restore the mask')
+# OoTMM writes the calls into Link's own copy of the mask object, so Kafei's Keaton Mask (EnTest3, which draws MM's
+# shared list from its own buffer) keeps its size: Player draws a fitted copy and the cached lists are never written.
+check('PatchGfxByName' not in mask_src and 'ResourceManagerScope' not in mask_src,
+      'the mask fit edits MM\'s shared mask lists, which Kafei also draws')
+apply_fit = body(mask_src, 'extern "C" void Combo_MM_ApplyAdultMaskScale(s32 mask, s32 adult)')
+check('sAdultMaskFit=adult!=0;' in apply_fit and
+      'fitted=ComboAdultOotModel::FittedMaskList(list->Instructions.data(),list->Instructions.size(),at.data(),'
+      'calls.data(),at.size());' in apply_fit and 'sAdultMaskCopies[copy]=std::move(fitted);' in apply_fit,
+      'the mask fit does not build Player\'s own copy')
+check('returnsAdultMaskFit&&copy>=0&&!sAdultMaskCopies[copy].empty()?sAdultMaskCopies[copy].data():nullptr;' in
+      body(mask_src, 'extern "C" Gfx* Combo_MM_AdultMaskDL(s32 mask)'), 'Combo_MM_AdultMaskDL is not the fitted copy')
+held = squash(lib[lib.index('s32 func_80128640('):lib.index('} else if (player->itemAction == PLAYER_IA_DEKU_STICK)')])
+worn = squash(lib[lib.index('} else if (limbIndex == PLAYER_LIMB_HEAD) {', lib.index('void Combo_Player_PostLimbDraw')):])
+check('Gfx*fitted=(player->actor.id==ACTOR_PLAYER)?Combo_MM_AdultMaskDL(mask):NULL;if(fitted!=NULL){gSPDisplayList('
+      'POLY_OPA_DISP++,fitted);}else{gSPDisplayList(POLY_OPA_DISP++,D_801C0B20[mask-1]);}' in held,
+      'the mask in Link\'s hand is not his own fitted copy, or Kafei (who shares func_80128640) draws it')
+check('Gfx*fitted=(player->actor.id==ACTOR_PLAYER)?Combo_MM_AdultMaskDL(maskMinusOne+1):NULL;if(fitted!=NULL){'
+      'gSPDisplayList(POLY_OPA_DISP++,fitted);}else{gSPDisplayList(POLY_OPA_DISP++,D_801C0B20[maskMinusOne]);}' in worn,
+      'the mask on Link\'s head is not his own fitted copy')
+kafei = read('mm/src/overlays/actors/ovl_En_Test3/z_en_test3.c')
+check('Combo_MM_AdultMaskDL' not in kafei and 'gSPDisplayList(POLY_OPA_DISP++,object_mask_ki_tan_DL_0004A0);' in
+      squash(kafei), 'Kafei no longer draws MM\'s own Keaton Mask list')
 if reference:
     after = re.search(r'u8 Player_AfterMaskLoaded\(Player\* player\)\n\{(.*?)\n\}', (reference /
                       'packages/generator/src/mm/actors/Player.c').read_text(encoding='utf-8'), re.S).group(1)
