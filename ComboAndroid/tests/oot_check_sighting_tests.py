@@ -6,6 +6,7 @@ for the camera projection, the collision line test and the seed; this is not a G
 """
 import argparse
 from pathlib import Path
+import re
 import subprocess
 import hostcxx
 
@@ -39,6 +40,13 @@ start = tracker.index('extern int sectionId;')
 block = tracker[start:tracker.rindex('#endif', start, tracker.index('static WidgetInfo backgroundColorWidget;'))]
 start, end = body(tracker, 'static std::string ComboKnownReward(RandomizerCheck rc, bool explicitReveal) {')
 known_reward = tracker[start:end]
+# The fixture's IsCheckShuffled keeps the real one's treasure chest game exclusion, for the rows
+# location_list.cpp gives that type. The game resets those rows on entry, but the tracker never shows them.
+start, end = body(tracker, 'bool IsCheckShuffled(')
+assert '(loc->GetRCType() != RCTYPE_CHEST_GAME)' in tracker[start:end]
+chest_game = re.findall(r'locationTable\[(RC_\w+)\]\s*=\s*Location::\w+\(\1,\s*RCQUEST_\w+,\s*RCTYPE_CHEST_GAME,',
+                        (randomizer/'location_list.cpp').read_text(encoding='utf-8'))
+assert len(chest_game) == 10, chest_game
 
 prelude = r'''
 #define COMBO_BUILD 1
@@ -240,9 +248,14 @@ const Item& RetrieveItem(RandomizerGet rg) {
 }
 std::map<RandomizerCheck, Location> locations;
 Location* GetLocation(RandomizerCheck rc) {
+    static const RandomizerCheck chestGame[] = { @CHEST_GAME@ };
     auto& loc = locations[rc];
     loc.rc = rc;
-    if (loc.name.empty()) loc.name = "Check " + std::to_string(int(rc));
+    if (loc.name.empty()) {
+        loc.name = "Check " + std::to_string(int(rc));
+        if (std::find(std::begin(chestGame), std::end(chestGame), rc) != std::end(chestGame))
+            loc.type = RCTYPE_CHEST_GAME;
+    }
     return &loc;
 }
 } // namespace StaticData
@@ -306,7 +319,9 @@ const char* foreignLiveName = nullptr;
 extern "C" const char* Randomizer_ComboForeignLiveName(int32_t) { return foreignLiveName; }
 namespace CheckTracker {
 std::map<RandomizerCheck, bool> unshuffled;
-bool IsCheckShuffled(RandomizerCheck rc) { return !unshuffled[rc]; }
+bool IsCheckShuffled(RandomizerCheck rc) {
+    return !unshuffled[rc] && Rando::StaticData::GetLocation(rc)->GetRCType() != RCTYPE_CHEST_GAME;
+}
 bool IsVisibleInCheckTracker(RandomizerCheck) { return true; }
 bool IsMysteryShopItem(RandomizerCheck) { return false; }
 static std::string ComboKnownReward(RandomizerCheck rc, bool explicitReveal = false);
@@ -590,7 +605,8 @@ void Foreign() {
 }
 
 void RepeatsAndResets() {
-    const auto cow = RC_HF_GS_COW_GROTTO, chest = RC_MARKET_TREASURE_CHEST_GAME_KEY_1;
+    const auto cow = RC_HF_GS_COW_GROTTO, tektite = RC_HF_TEKTITE_GROTTO_FREESTANDING_POH,
+               key = RC_MARKET_TREASURE_CHEST_GAME_KEY_1;
     ResetWorld();
     ctx.GetItemLocation(cow)->placed = RG_PIECE_OF_HEART;
     occluders = { { { 0, 0, 40 }, 3, &web } };
@@ -600,31 +616,42 @@ void RepeatsAndResets() {
     for (int frame = 0; frame < 5; ++frame)
         Draw(cow);
     assert(raycasts == rays && saves == 1); // already recorded: no collision work and no save
-    // The treasure chest game resets its rows on entry but keeps what the player learned. A key seen
-    // again through the Lens of Truth marks the row again, even though the record did not change.
-    ctx.GetItemLocation(chest)->placed = RG_PIECE_OF_HEART;
-    Draw(chest);
-    Seen(chest, 1, RG_PIECE_OF_HEART, "Piece of Heart");
-    ctx.GetItemLocation(chest)->status = RCSHOW_UNCHECKED;
-    occluders = { { { 0, 0, 40 }, BGCHECK_SCENE, nullptr } };
-    Draw(chest);
-    assert(ctx.GetItemLocation(chest)->GetCheckStatus() == RCSHOW_UNCHECKED); // not while hidden
+    // In co-op, a teammate who has not seen this item skips or unskips its check and sends
+    // SET_CHECK_STATUS with Unchecked; HandlePacket_SetCheckStatus applies it and the record stays.
+    // Seeing the item again marks the row again, even though the record does not change.
     occluders.clear();
-    Draw(chest);
-    Seen(chest, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    ctx.GetItemLocation(tektite)->placed = RG_PIECE_OF_HEART;
+    Draw(tektite);
+    Seen(tektite, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    ctx.GetItemLocation(tektite)->SetCheckStatus(RCSHOW_UNCHECKED);
+    occluders = { { { 0, 0, 40 }, BGCHECK_SCENE, nullptr } };
+    Draw(tektite);
+    assert(ctx.GetItemLocation(tektite)->GetCheckStatus() == RCSHOW_UNCHECKED); // not while hidden
+    occluders.clear();
+    Draw(tektite);
+    Seen(tektite, 1, RG_PIECE_OF_HEART, "Piece of Heart");
     assert(saves == 3);
     // A stand-in seen after the reset re-marks the row with the real item it saw earlier.
-    ctx.GetItemLocation(chest)->status = RCSHOW_UNCHECKED;
+    ctx.GetItemLocation(tektite)->SetCheckStatus(RCSHOW_UNCHECKED);
     obtainability.value[RG_PIECE_OF_HEART] = CANT_OBTAIN_MISC;
-    Draw(chest);
-    Seen(chest, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    Draw(tektite);
+    Seen(tektite, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    obtainability.value.clear();
+    // The treasure chest game resets its own rows on every entry, but IsCheckShuffled leaves that
+    // type out of the tracker: those rows are never recorded, so no collision work is spent on them.
+    ctx.GetItemLocation(key)->placed = RG_PIECE_OF_HEART;
+    const int keyRays = raycasts;
+    Draw(key);
+    Unseen(key);
+    assert(raycasts == keyRays);
     // Collected checks are never recorded again.
     ctx.GetItemLocation(cow)->obtained = true;
     ctx.GetItemLocation(cow)->status = RCSHOW_COLLECTED;
     const int before = raycasts;
     Draw(cow);
     assert(raycasts == before && ctx.GetItemLocation(cow)->GetCheckStatus() == RCSHOW_COLLECTED);
-    std::cout << "PASS: recorded sightings skip the collision test; a reset row is re-marked when seen again\n";
+    std::cout << "PASS: recorded sightings skip the collision test; a co-op reset row is re-marked when seen "
+                 "again; chest game rows are never recorded\n";
 }
 
 void Hints() {
@@ -660,7 +687,8 @@ int main() {
     RepeatsAndResets();
 }
 '''
-code = (prelude + final_entry + '\n} // namespace Rando\nnamespace CheckTracker {\n' + block + known_reward +
+code = (prelude.replace('@CHEST_GAME@', ', '.join(chest_game)) + final_entry +
+        '\n} // namespace Rando\nnamespace CheckTracker {\n' + block + known_reward +
         '\n} // namespace CheckTracker\n' + tests)
 cpp = out/'oot_check_sighting.cpp'
 cpp.write_text(code, encoding='utf-8')

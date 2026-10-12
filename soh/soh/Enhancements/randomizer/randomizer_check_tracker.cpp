@@ -162,8 +162,8 @@ static bool StoreKnowledge(RandomizerCheck rc, uint8_t source, RandomizerGet ite
     std::lock_guard<std::mutex> lock(sItemKnowledgeMutex);
     auto& knowledge = sItemKnowledge[rc];
     bool changed = ComboRando::RecordTrackerKnowledge(knowledge, source, item, std::move(name));
-    // A status reset (the treasure chest game on entry, a co-op status update) can leave the record
-    // behind an Unchecked row. Seeing or being told of the item again marks the row again.
+    // A co-op SET_CHECK_STATUS packet can set the row back to Unchecked (a teammate who has not seen
+    // the item skips or unskips it) and leave the record behind. Seeing the item again marks it again.
     if (!knowledge.displayName.empty() && location->GetCheckStatus() == RCSHOW_UNCHECKED) {
         location->SetCheckStatus(RCSHOW_SEEN_OR_HINTED);
         changed = true;
