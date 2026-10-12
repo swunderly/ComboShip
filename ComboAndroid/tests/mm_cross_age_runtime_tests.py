@@ -114,6 +114,13 @@ check(set(recipes) | KEPT | SPECIAL == human_slots,
       f'not MM slots: {sorted((set(recipes) | KEPT | SPECIAL) - human_slots)}')
 apply = squash(tables_src[tables_src.index('s32 Combo_MM_ApplyAdultModelTables(s32 adult) {'):])
 check('gPlayerSkeletons[PLAYER_FORM_HUMAN]=skeleton;' in apply, 'the human skeleton is not taken')
+# The shadow skeleton is not a resource path, so SkelAnime_InitPlayer registers nothing for it: it must drop the entry
+# an earlier form left for the same SkelAnime, or an Alternate Assets toggle puts that skeleton on adult Link.
+init_player = re.sub(r'//[^\n]*', '', read('mm/src/code/z_skelanime.c'))
+init_player = squash(init_player[init_player.index('void SkelAnime_InitPlayer('):])
+check('if(ResourceMgr_OTRSigCheck(skeletonHeaderSeg)!=0)skeletonHeaderSeg=ResourceMgr_LoadSkeletonByName('
+      'skeletonHeaderSeg,skelAnime);#ifdefCOMBO_BUILDelseResourceMgr_UnregisterSkeleton(skelAnime);#endif'
+      in init_player, 'a Player SkelAnime initialised with the adult shadow skeleton keeps a stale SkeletonPatcher entry')
 check('&sPlayerEyesTextures[PLAYER_FORM_HUMAN][index]' in squash(tables_src) and
       '&sPlayerMouthTextures[PLAYER_FORM_HUMAN][index-COMBO_ADULT_EYE_TEXTURES]' in squash(tables_src),
       'the face rows are not the human rows')

@@ -1292,6 +1292,13 @@ void SkelAnime_InitPlayer(PlayState* play, SkelAnime* skelAnime, FlexSkeletonHea
 
     if (ResourceMgr_OTRSigCheck(skeletonHeaderSeg) != 0)
         skeletonHeaderSeg = ResourceMgr_LoadSkeletonByName(skeletonHeaderSeg, skelAnime);
+#ifdef COMBO_BUILD
+    // Adult Link's MM-owned shadow skeleton is not a resource path, so nothing registers it. Player re-inits the same
+    // SkelAnime for every form, so drop the previous form's entry, or an Alternate Assets toggle
+    // (SkeletonPatcher::UpdateSkeletons) would put that skeleton back on adult Link.
+    else
+        ResourceMgr_UnregisterSkeleton(skelAnime);
+#endif
 
     skeletonHeader = Lib_SegmentedToVirtual(skeletonHeaderSeg);
     headerJointCount = skeletonHeader->sh.limbCount;
