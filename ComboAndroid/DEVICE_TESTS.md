@@ -16,7 +16,7 @@ Checks 4 to 10 matter most: adult Link in MM had never been played before this b
 10. Go between OoT and MM a few times as adult and as child: Link's age always follows OoT, and nothing looks out of place.
 11. Optional, with the item tracker's logic view: as adult in MM, the Astral Observatory passage chest (with explosives), the Snowhead Temple icicle room chest (with explosives) and the way on from Snowhead Temple's dual switches room count as reachable.
 
-If the release-switch commit is reverted: the row is greyed out with the "cannot run" tooltip, new seeds leave Cross-Games Age off, and a save made with it still loads with Link drawn as child.
+If the release-switch commit is reverted: the row is greyed out with the "cannot run" tooltip and new seeds leave Cross-Games Age off, because such a seed's logic expects adult Link. A save made with it still loads, but Link plays as child in MM while its logic still expects adult Link, so some adult-only checks may be out of reach.
 
 ## Quick checks for Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) (unreleased)
 

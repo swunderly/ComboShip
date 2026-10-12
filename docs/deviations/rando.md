@@ -2206,9 +2206,12 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   BenPort.cpp) or OoT's adult model or Epona cannot be prepared, the menu row is greyed out and unticked (its tooltip
   adds "Disabled because this device cannot run Adult Link in MM yet. New seeds leave it off." after OoTMM's text,
   D6) and every place options are gathered leaves the option off, except a bound seed's own value. A seed's value is
-  its logic whatever the device: a Cross-Games Age save on a device that cannot draw adult Link loads, follows the
-  seed's logic and draws Link as child. The headless generator follows the release switch. A diagnostics build can
-  turn the runtime on with `gCombo.Debug.CrossAgeRuntimeValidation`.
+  its logic whatever the device: a Cross-Games Age save on a device that cannot draw adult Link loads and follows the
+  seed's logic, which still expects adult Link in MM, while Link plays as child in every respect (`Combo_MM_IsLinkAdult`
+  is 0), so adult-only checks the logic and the tracker count may be out of reach. Such seeds and saves are not refused
+  (unlike gear seeds, `SeedNeedsUnavailableMmGear`), so new seeds leave the option off on such a device. The headless
+  generator follows the release switch. A diagnostics build can turn the runtime on with
+  `gCombo.Debug.CrossAgeRuntimeValidation`.
 - **Swim shuffle.** Cross-Games Age switches on the same pinned graphs as the MM gear (`COMBO_WORLDxx_ENABLED`,
   `MM_LOGIC_*_PINNED`), which read `can_swim` as true and count the Zora Mask as swimming (see "Swim shuffle" under
   the MM boots and tunics). Until those graphs know the Swim ability, a new seed with Swim shuffled leaves it off: the
