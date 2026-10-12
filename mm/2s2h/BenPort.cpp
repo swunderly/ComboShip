@@ -6242,7 +6242,7 @@ extern "C" int Combo_MM_IsLinkAdult(void) {
 // forms never take them. Release switches, each set in its own commit.
 static constexpr bool kAdultOcarinaFdCamera = false;
 static constexpr bool kAdultFairyNativeHand = false;
-static constexpr bool kAdultFairyFittedPlacement = false;
+static constexpr bool kAdultFairyFittedPlacement = true;
 static_assert(!(kAdultFairyNativeHand && kAdultFairyFittedPlacement), "B1 and B3 are alternatives for the Fairy hand");
 // A1, Camera_KeepOn4: adult Link playing takes ITEM1's Fierce Deity row (CAM_MODE_JUMP, D_801B5410). It is MM data,
 // but vanilla MM never uses it for the Fierce Deity playing: he may not use the Ocarina of Time (z_parameter.c:69,
