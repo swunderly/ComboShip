@@ -2110,6 +2110,8 @@ extern s32 Combo_MM_GetCustomBoots(Player* player);
 extern int Combo_MM_ChildBootResourcesReady(void);
 extern const char* Combo_MM_GetAdultBootDrawPath(int index);
 extern int Combo_MM_AdultResourcesReady(void);
+// Adult Link's tunic env colour while his skeleton draws, else NULL (Player_OverrideLimbDrawGameplayCommon).
+static const Color_RGB8* sComboAdultTunicEnv = NULL;
 #endif
 void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dListCount, s32 lod,
                      PlayerTransformation playerForm, s32 boots, s32 face, OverrideLimbDrawFlex overrideLimbDraw,
@@ -2173,10 +2175,17 @@ void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dL
 #ifdef COMBO_BUILD
     // The tunic env colour serves OoT's adult model (Adult Link in MM) and the gear tunics. OoT's adult lists take
     // the tunic colour from env; without a worn gear tunic it is the Kokiri green, OoTMM's MM default (Player.c:1244).
+    sComboAdultTunicEnv = NULL;
     if (playerForm == PLAYER_FORM_HUMAN && (Combo_MM_GearActive() || Combo_MM_IsLinkAdult())) {
         const Color_RGB8* color =
             Combo_MM_GetSavedTunicColor(Combo_MM_GearActive() ? gSaveContext.save.shipSaveInfo.adultMm.tunic : 0);
         gDPSetEnvColor(POLY_OPA_DISP++, color->r, color->g, color->b, 255);
+        // MM's Razor, Gilded and Great Fairy's Sword and Mirror Shield lists set env and leave it, and they draw in
+        // the hands, on the sheath and on the back before OoT's right shoulder and torso. OoTMM removes those env
+        // writes (actors/Player.S:948-1215); here each adult limb sets the tunic colour again first.
+        if (Combo_MM_IsLinkAdult()) {
+            sComboAdultTunicEnv = color;
+        }
     }
     if (playerForm == PLAYER_FORM_HUMAN && actor->id == ACTOR_PLAYER) {
         Combo_MM_SyncGearTunicColor(Combo_MM_GearActive() ? gSaveContext.save.shipSaveInfo.adultMm.tunic : 0);
@@ -2184,6 +2193,7 @@ void Player_DrawImpl(PlayState* play, void** skeleton, Vec3s* jointTable, s32 dL
 #endif
     SkelAnime_DrawFlexLod(play, skeleton, jointTable, dListCount, overrideLimbDraw, postLimbDraw, actor, lod);
 #ifdef COMBO_BUILD
+    sComboAdultTunicEnv = NULL;
     if (playerForm == PLAYER_FORM_HUMAN && Combo_MM_GearActive() &&
         overrideLimbDraw != Player_OverrideLimbDrawGameplayFirstPerson &&
         gSaveContext.gameMode != GAMEMODE_END_CREDITS) {
@@ -2528,6 +2538,14 @@ s32 Player_OverrideLimbDrawGameplayCommon(PlayState* play, s32 limbIndex, Gfx** 
     s32 pad;
     Player* player = (Player*)thisx;
 
+#ifdef COMBO_BUILD
+    // OoT's adult limb lists take the tunic colour from env and never set it (Player_DrawImpl).
+    if (sComboAdultTunicEnv != NULL) {
+        OPEN_DISPS(play->state.gfxCtx);
+        gDPSetEnvColor(POLY_OPA_DISP++, sComboAdultTunicEnv->r, sComboAdultTunicEnv->g, sComboAdultTunicEnv->b, 255);
+        CLOSE_DISPS(play->state.gfxCtx);
+    }
+#endif
     if (limbIndex == PLAYER_LIMB_ROOT) {
         sPlayerLeftHandType = player->leftHandType;
         sPlayerRightHandType = player->rightHandType;

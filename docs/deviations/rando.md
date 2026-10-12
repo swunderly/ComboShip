@@ -2174,7 +2174,11 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   hand is possible when aiming (D8, open).
 - **Face and tunic.** Eyes and mouths are OoT's adult textures, index for index with MM's rows (OoTMM's model has its
   own). The tunic is OoTMM's Kokiri green (30,105,27) unless a Goron or Zora Tunic (MM) is worn; 2S2H's tunic cosmetic
-  does not reach OoT's model.
+  does not reach OoT's model. OoT's adult lists take the tunic colour from env and never set it, while MM's Razor,
+  Gilded and Great Fairy's Sword and Mirror Shield lists set env and leave it. OoTMM removes those env writes
+  (`actors/Player.S:948-1215`), which also changes how those items are shaded; the port instead sets the tunic colour
+  again before each adult limb (`Player_OverrideLimbDrawGameplayCommon`), so the tunic keeps its colour with every MM
+  item and the items keep MM's own shading.
 - **Animations and values.** Age properties are OoTMM's field by field, except one: OoTMM's `0x04008360` is not an
   animation in MM US gameplay_keep, so `gPlayerAnim_pz_climb_endAR` (the animation OoTMM's comment names) is used.
   Voice: OoTMM's adult `voiceSfxIdOffset` 0 is MM's own adult voice bank (the Fierce Deity's), and the Giant's Mask

@@ -130,6 +130,16 @@ check('if(playerForm==PLAYER_FORM_HUMAN&&(Combo_MM_GearActive()||Combo_MM_IsLink
       'Combo_MM_GetSavedTunicColor(Combo_MM_GearActive()?gSaveContext.save.shipSaveInfo.adultMm.tunic:0);' in draw,
       'adult Link env colour is not the Kokiri green without a worn gear tunic')
 check(draw.index('gDPSetEnvColor(POLY_OPA_DISP++') < draw.index('SkelAnime_DrawFlexLod('), 'env colour after the skeleton')
+# MM's Razor, Gilded and Great Fairy's Sword and Mirror Shield lists set env and leave it, before OoT's right shoulder
+# and torso draw; every adult limb sets the tunic colour again (OoTMM removes those env writes, Player.S:948-1215).
+check(draw.index('sComboAdultTunicEnv=NULL;') < draw.index('if(Combo_MM_IsLinkAdult()){sComboAdultTunicEnv=color;}')
+      < draw.index('SkelAnime_DrawFlexLod(') < draw.index('sComboAdultTunicEnv=NULL;', draw.index('SkelAnime_DrawFlexLod(')),
+      'adult Link\'s tunic env colour is not kept for his limbs during his skeleton draw only')
+common = squash(lib[lib.index('s32 Player_OverrideLimbDrawGameplayCommon('):lib.index('if (limbIndex == PLAYER_LIMB_ROOT)',
+                                                                                lib.index('s32 Player_OverrideLimbDrawGameplayCommon('))])
+check('if(sComboAdultTunicEnv!=NULL){OPEN_DISPS(play->state.gfxCtx);gDPSetEnvColor(POLY_OPA_DISP++,'
+      'sComboAdultTunicEnv->r,sComboAdultTunicEnv->g,sComboAdultTunicEnv->b,255);' in common,
+      'an MM sword or shield drawn before an adult limb can recolour the tunic')
 check('if(*Combo_MM_HumanFaceRow(i)!=Combo_MM_CrossAgeFaceTexture(i)){sComboChildFace[i]=*Combo_MM_HumanFaceRow(i);'
       in apply and 'if(*Combo_MM_HumanFaceRow(i)==Combo_MM_CrossAgeFaceTexture(i)){*Combo_MM_HumanFaceRow(i)='
       'sComboChildFace[i];' in squash(tables_src), 'face rows are not captured and given back around Play As Kafei')
