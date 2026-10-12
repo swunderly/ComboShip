@@ -1,0 +1,85 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "registrySha256": "b95aee4e8dfb5b9015aca60ad98f11aeb12e86fec42528e9dddd4043119f709d",
+  "purpose": "Reviewed native edge bindings for the generation-only opposite-age Temple probe, tranche 1. Each row names the one native Ship exit that carries the pinned OoTMM entrance; export_oot_bindings.py re-verifies every claim below against the sources and fails on drift.",
+  "rows": [
+    {
+      "name": "OOT_LAKE_HYLIA_FROM_VALLEY",
+      "role": "candidate",
+      "parent": "RR_GV_LOWER_STREAM",
+      "target": "RR_LAKE_HYLIA",
+      "nativeEntrance": "ENTR_LAKE_HYLIA_RIVER_EXIT",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/overworld/gerudo_valley.cpp", "line": 72, "text": "// scale/boots logic is outside lower stream, as lower stream combines access to lake hylia for entrance randomizer's sake"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/overworld/gerudo_valley.cpp", "line": 73, "text": "areaTable[RR_GV_LOWER_STREAM] = Region(\"GV Lower Stream\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/overworld/gerudo_valley.cpp", "line": 75, "text": "ENTRANCE(RR_LAKE_HYLIA, true),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 541, "text": "{ { EntranceType::Overworld, RR_GV_LOWER_STREAM, RR_LAKE_HYLIA, ENTR_LAKE_HYLIA_RIVER_EXIT },"}
+      ],
+      "note": "Pinned 'OOT Gerudo Valley Falls' -> 'OOT Lake Hylia' is \"true\" (data/world/oot/overworld/gerudo_valley.yml:118). Ship's shuffled river exit is the unconditional GV Lower Stream -> Lake Hylia edge; the scale/boots requirement sits on the edges into GV Lower Stream, so deleting this exit removes exactly the falls route."
+    },
+    {
+      "name": "OOT_FIELD_OWL",
+      "role": "candidate",
+      "parent": "RR_LH_OWL_FLIGHT",
+      "target": "RR_HYRULE_FIELD",
+      "nativeEntrance": "ENTR_HYRULE_FIELD_OWL_DROP",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/overworld/lake_hylia.cpp", "line": 91, "text": "ENTRANCE(RR_LH_OWL_FLIGHT, logic->IsChild &&"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/overworld/lake_hylia.cpp", "line": 133, "text": "areaTable[RR_LH_OWL_FLIGHT] = Region(\"LH Owl Flight\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/overworld/lake_hylia.cpp", "line": 135, "text": "ENTRANCE(RR_HYRULE_FIELD, true, false),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 544, "text": "{ { EntranceType::OwlDrop, RR_LH_OWL_FLIGHT, RR_HYRULE_FIELD, ENTR_HYRULE_FIELD_OWL_DROP },"}
+      ],
+      "note": "Pinned 'OOT Lake Hylia' -> 'OOT Hyrule Field Drawbridge' is \"is_child\" (lake_hylia.yml:7). Ship splits the owl into Lake Hylia -> LH Owl Flight (child plus a known language, lake_hylia.cpp:91) and the shuffled flight -> Hyrule Field drop; binding the drop keeps the source condition on the flight edge. Ship has one Hyrule Field region for the drawbridge area."
+    },
+    {
+      "name": "OOT_VILLAGE_OWL",
+      "role": "candidate",
+      "parent": "RR_DMT_OWL_FLIGHT",
+      "target": "RR_KAK_IMPAS_ROOFTOP",
+      "nativeEntrance": "ENTR_KAKARIKO_VILLAGE_OWL_DROP",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/overworld/death_mountain_trail.cpp", "line": 117, "text": "ENTRANCE(RR_DMT_OWL_FLIGHT, logic->IsChild &&"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/overworld/death_mountain_trail.cpp", "line": 121, "text": "areaTable[RR_DMT_OWL_FLIGHT] = Region(\"DMT Owl Flight\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/overworld/death_mountain_trail.cpp", "line": 123, "text": "ENTRANCE(RR_KAK_IMPAS_ROOFTOP, true, false),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 546, "text": "{ { EntranceType::OwlDrop, RR_DMT_OWL_FLIGHT, RR_KAK_IMPAS_ROOFTOP, ENTR_KAKARIKO_VILLAGE_OWL_DROP },"}
+      ],
+      "note": "Pinned 'OOT Death Mountain Summit' -> 'OOT Kakariko Rooftop' is \"is_child\" (death_mountain_trail.yml:72). Same owl split as the field owl: the condition stays on summit -> DMT Owl Flight and the bound edge is the flight -> Impa's rooftop drop."
+    },
+    {
+      "name": "OOT_SPAWN_CHILD",
+      "role": "rootPolicy",
+      "parent": "RR_CHILD_SPAWN",
+      "target": "RR_KF_LINKS_HOUSE",
+      "nativeEntrance": "ENTR_LINKS_HOUSE_CHILD_SPAWN",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 45, "text": "ENTRANCE(RR_CHILD_SPAWN, logic->IsChild),"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 55, "text": "areaTable[RR_CHILD_SPAWN] = Region(\"Child Spawn\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 57, "text": "ENTRANCE(RR_KF_LINKS_HOUSE, true),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 549, "text": "{ { EntranceType::Spawn, RR_CHILD_SPAWN, RR_KF_LINKS_HOUSE, ENTR_LINKS_HOUSE_CHILD_SPAWN },"}
+      ],
+      "note": "Root policy only, never a candidate edge in tranche 1. The probe's synthesized root edge RR_ROOT -> RR_CHILD_SPAWN uses the Root Exits condition logic->IsChild, which equals the pinned exprAge(AGE_CHILD) of validateAgeTemple (solver/entrances.ts:270-278); 'OOT SPAWN CHILD' -> \"OOT Link's House\" is \"true\" (_system.yml:15)."
+    },
+    {
+      "name": "OOT_SPAWN_ADULT",
+      "role": "rootPolicy",
+      "parent": "RR_ADULT_SPAWN",
+      "target": "RR_TEMPLE_OF_TIME",
+      "nativeEntrance": "ENTR_HYRULE_FIELD_10",
+      "indexRule": "shipwright-repurposed",
+      "alias": "0x5f4",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 46, "text": "ENTRANCE(RR_ADULT_SPAWN, logic->IsAdult),"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 60, "text": "areaTable[RR_ADULT_SPAWN] = Region(\"Adult Spawn\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 62, "text": "ENTRANCE(RR_TEMPLE_OF_TIME, true),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 551, "text": "{ { EntranceType::Spawn, RR_ADULT_SPAWN, RR_TEMPLE_OF_TIME, ENTR_HYRULE_FIELD_10 },"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 552, "text": "NO_RETURN_ENTRANCE }, // 0x282 is an unused entrance index repurposed to differentiate between"},
+        {"file": "combo/rando/entrances/OotNativeArrival.h", "line": 67, "text": "case 0xf20:"}
+      ],
+      "note": "Root policy only. OoTMM's 0xf20 is a logical id that loads as 0x5f4 (OotNativeArrival.h playAdjustEntrance alias); Ship repurposes 0x282 for the same adult spawn so it differs from Prelude. The synthesized root edge RR_ROOT -> RR_ADULT_SPAWN uses logic->IsAdult, the pinned exprAge(AGE_ADULT); 'OOT SPAWN ADULT' -> 'OOT Temple of Time' is \"true\" (_system.yml:21)."
+    }
+  ]
+}

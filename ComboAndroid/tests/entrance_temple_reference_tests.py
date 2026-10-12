@@ -10,6 +10,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
@@ -172,4 +173,37 @@ assert rows['OOT_TEMPLE_OF_TIME']['type'] == 'indoors-extra'
 assert {rows[n]['type'] for n in ('OOT_LAKE_HYLIA_FROM_VALLEY', 'OOT_FIELD_OWL', 'OOT_VILLAGE_OWL')} == {
     'one-way', 'one-way-owl'}
 assert rows['OOT_SHOP_MASKS']['from'] == 'OOT Market' and rows['OOT_SHOP_MASKS']['to'] == 'OOT Market Mask Shop'
-print('Pinned opposite-age Temple lemmas L1-L4 verified at', registry.PIN)
+
+# The tranche-1 native bindings are reproducible from the audit, read-only under --check, and bound to
+# this exact pin (tools/ootmm/export_oot_bindings.py).
+outputs = ['soh/soh/Enhancements/randomizer/combo_oot_edge_bindings.inc',
+           'combo/rando/entrances/OotEdgeBindingNames.h', 'tools/ootmm/oot-edge-audit.json']
+attributes = subprocess.check_output(['git', '-C', str(source), '-c', 'core.autocrlf=true', 'check-attr', 'eol',
+                                      '--', *outputs], text=True, timeout=30)
+assert all(line.endswith(': eol: lf') for line in attributes.splitlines()) and len(attributes.splitlines()) == 3
+
+
+def export(output, check=False, ref=reference):
+    command = [sys.executable, str(source/'tools/ootmm/export_oot_bindings.py'), '--reference', str(ref),
+               '--output-root', str(output)] + (['--check'] if check else [])
+    return subprocess.run(command, capture_output=True, text=True, timeout=60)
+
+
+work = args.build_dir.resolve()
+work.mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(prefix='oot-bindings-', dir=work) as scratch:
+    scratch = Path(scratch)
+    result = export(source, check=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    result = export(scratch)
+    assert result.returncode == 0, result.stdout + result.stderr
+    for target in outputs[:2]:
+        assert (scratch/target).read_bytes() == (source/target).read_bytes(), target
+        damaged = (scratch/target).read_bytes() + b'// deliberate stale output\n'
+        (scratch/target).write_bytes(damaged)
+        assert export(scratch, check=True).returncode != 0
+        assert (scratch/target).read_bytes() == damaged
+        (scratch/target).write_bytes((source/target).read_bytes())
+    rejected = export(scratch, ref=source)
+    assert rejected.returncode != 0 and 'Expected exact OoTMM v32.3 revision' in rejected.stderr
+print('Pinned opposite-age Temple lemmas L1-L4 and tranche-1 bindings verified at', registry.PIN)

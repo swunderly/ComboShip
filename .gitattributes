@@ -6,3 +6,6 @@ tools/ootmm/*-source.json text eol=lf
 combo/rando/entrances/OotmmSettingsData.inc text eol=lf
 ComboAndroid/tests/fixtures/ootmm-32.3-entrance-settings.json text eol=lf
 ComboAndroid/tests/fixtures/ootmm-32.3-solver-contract.json text eol=lf
+tools/ootmm/oot-edge-audit.json text eol=lf
+combo/rando/entrances/OotEdgeBindingNames.h text eol=lf
+soh/soh/Enhancements/randomizer/combo_oot_edge_bindings.inc text eol=lf

@@ -18,6 +18,7 @@ python tools/ootmm/export_solver_contract.py --reference /path/to/ootmm-stable-3
 python tools/ootmm/export_solver_contract.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_oot_wallmaster_sources.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_mm_wallmaster_spawn.py --reference /path/to/ootmm-stable-32.3 --check
+python tools/ootmm/export_oot_bindings.py --reference /path/to/ootmm-stable-32.3 --check
 ```
 
 `--output-root` defaults to this repository and can point at a scratch directory.
@@ -105,3 +106,13 @@ compiles both combo and standalone paths, compares 288 cases per path with the
 upstream hook, and retains soul, object-slot, boss, allocation and initialization
 guards. This repairs the existing four-source private profile; it adds no pool,
 setting, layout format or public entrance capability.
+
+The OoT edge-binding exporter turns the reviewed `oot-edge-audit.json` into
+`combo_oot_edge_bindings.inc` (native) and `OotEdgeBindingNames.h` (names only) for
+the generation-only opposite-age Temple probe. Tranche 1 binds the three OoT one-way
+rows (`OOT_LAKE_HYLIA_FROM_VALLEY`, `OOT_FIELD_OWL`, `OOT_VILLAGE_OWL`) as candidate
+edges and the two spawn rows for the probe's root policy only. For every row it
+re-checks the registry type, one native exit from the parent to the target, the
+Ship `entranceShuffleTable` row and entrance index (or the audited adult-spawn
+alias), the absent reverse, and each file:line of evidence. The probe is not wired
+into generation and no entrance capability is enabled.
