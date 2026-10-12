@@ -50,6 +50,7 @@
 #include "soh/Enhancements/randomizer/settings.h"
 #include "soh/Enhancements/randomizer/logic.h"
 #include "soh/Enhancements/randomizer/Traps.h" // ComboShip: Rando::Traps::CanBeTrapModel for disguise curation
+#include "soh/Enhancements/randomizer/TempleProbe.h"
 #include "soh/Enhancements/randomizer/3drando/fill.hpp"
 #include "soh/Enhancements/randomizer/3drando/shops.hpp"
 #include "soh/Enhancements/randomizer/rng.h"
@@ -6258,6 +6259,13 @@ static void EnsureOracleInit() {
     GenerateStartingInventory();
     sOracleInitialized = true;
 }
+
+#ifdef COMBO_BUILD
+// The Temple probe's prepared-context check (TempleProbe.cpp); the probe never runs EnsureOracleInit.
+bool OotOracleInitialized() {
+    return sOracleInitialized;
+}
+#endif
 
 extern "C" COMBO_EXPORT void Combo_SOH_Rando_Reset(void) {
     auto ctx = OTRGlobals::Instance->gRandoContext;

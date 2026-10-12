@@ -50,6 +50,7 @@ allowed = {
     'location_access.cpp': 2,  # ::logic = ctx->GetLogic() in RegionTable_Init; ActiveLogic's fallback
     'entrance.cpp': 1, 'item_list.cpp': 1, 'randomizer_check_tracker.cpp': 1, 'savefile.cpp': 1,
     'SeedContext.cpp': 2, 'SeedContext.h': 1, '3drando/playthrough.cpp': 1, '3drando/hints.cpp': 3,
+    'TempleProbe.cpp': 3,  # the probe's preconditions compare ::logic with the Context's Logic
 }
 found = {}
 for path in sorted(randomizer.rglob('*')):
