@@ -76,4 +76,17 @@ inline bool TrackerItemInView(float x, float y, float z, float w, float horizont
            scaleY2 >= 0.000001f && scaleZ2 >= 0.000001f && z >= -w && z <= w && std::fabs(x) <= w * horizontalScale &&
            std::fabs(y) <= w;
 }
+
+// OoT's Actor_DrawLensOverlay stretches the Lens of Truth mask (gLensOfTruthMaskTex, 64x64 mirrored to
+// 128x128) over the 320x240 frame, centred, at 576/1024 texels per pixel across and 597/1024 down. The
+// mask is fully clear within 52.4 texels of its centre; 51 leaves a texel for filtering. x, y and w are
+// clip coordinates, in which the 4:3 frame spans -w..w on both axes.
+inline bool TrackerInsideLensCircle(float x, float y, float w) {
+    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(w) || w <= 0)
+        return false;
+    constexpr float kClearTexels = 51.0f;
+    const float s = x / w * 160.0f * (576.0f / 1024.0f) / kClearTexels;
+    const float t = y / w * 120.0f * (597.0f / 1024.0f) / kClearTexels;
+    return s * s + t * t <= 1.0f;
+}
 } // namespace ComboRando

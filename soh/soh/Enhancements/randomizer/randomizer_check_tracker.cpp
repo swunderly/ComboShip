@@ -87,10 +87,19 @@ static bool SeeThroughOccluder(const Actor* actor) {
     return actor != nullptr && (actor->id == ACTOR_BG_YDAN_SP || actor->id == ACTOR_BG_BOM_GUARD);
 }
 
+// With the Lens of Truth on, in a room whose lens mode is not LENS_MODE_HIDE_ACTORS, Actor_DrawAll leaves
+// lens-reactive actors to Actor_DrawLensActors, which draws them only outside the lens circle. The
+// treasure chest game's closed chests are such actors: a reward previewed in one, inside the circle,
+// is seen through it.
+static bool LensErased(const Actor* actor, bool insideLens) {
+    return insideLens && (actor->flags & ACTOR_FLAG_REACT_TO_LENS) && gPlayState->actorCtx.lensActive &&
+           gPlayState->roomCtx.curRoom.lensMode != LENS_MODE_HIDE_ACTORS;
+}
+
 // BgCheck_AnyLineTest2 (every collision category: both flag masks 0 = COLPOLY_IGNORE_NONE, both faces,
-// moving collision), continued past each see-through actor it meets. A flat web is crossed once, so
-// each pass excludes only the actor just passed.
-static bool LineOfSight(Vec3f from, Vec3f to) {
+// moving collision), continued past each see-through or lens-erased actor it meets. A flat web is
+// crossed once, so each pass excludes only the actor just passed.
+static bool LineOfSight(Vec3f from, Vec3f to, bool insideLens) {
     Actor* passed = nullptr;
     for (int pass = 0; pass < 8; pass++) {
         Vec3f hit;
@@ -100,7 +109,7 @@ static bool LineOfSight(Vec3f from, Vec3f to) {
                                    BgCheck_GetBccFlags(true, true, true, false, true)))
             return true;
         DynaPolyActor* owner = bgId != BGCHECK_SCENE ? DynaPoly_GetActor(&gPlayState->colCtx, bgId) : nullptr;
-        if (owner == nullptr || !SeeThroughOccluder(&owner->actor))
+        if (owner == nullptr || !(SeeThroughOccluder(&owner->actor) || LensErased(&owner->actor, insideLens)))
             return false;
         from = hit;
         passed = &owner->actor;
@@ -124,7 +133,7 @@ static bool ModelVisible(Vec3f pos, float scaleX2, float scaleY2, float scaleZ2,
     // displayed models. It blocks a collision ray, but not the camera picture.
     if (shopPreview)
         return true;
-    return LineOfSight(gPlayState->view.eye, pos);
+    return LineOfSight(gPlayState->view.eye, pos, ComboRando::TrackerInsideLensCircle(projected.x, projected.y, w));
 }
 
 static bool KnowledgeEnabled() {

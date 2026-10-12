@@ -9,6 +9,7 @@ Use a randomizer save with Gold Skulltula tokens shuffled. A check you skipped s
 3. Save, reload and open the tracker: both rows are still Seen. Collect one: its row turns Collected.
 4. A check whose item is hidden, such as a closed chest or an item behind a wall, stays unmarked until you can see the item.
 5. Optional: Bombchu Bowling prizes on the counter, shuffled fairies, the Ocarina of Time in the castle moat and fishsanity fish turn Seen once on screen. An MM item at an OoT check shows its MM name.
+6. Optional: in the Treasure Chest Game's last room, turn on the Lens of Truth with the closed prize chest in the middle of the lens circle: "Treasure Chest Game Reward" turns Seen. With the Lens off, or with the chest at the edge of the screen outside the circle, it stays unmarked.
 
 ## Quick checks for Cross-Games Age (unreleased)
 

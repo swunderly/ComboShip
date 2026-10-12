@@ -92,5 +92,14 @@ int main() {
     assert(!visible(std::numeric_limits<float>::quiet_NaN(),0,0,1));
     assert(!visible(0,0,0,std::numeric_limits<float>::infinity()));
     assert(!visible(0,0,0,1,0));
-    std::cout << "PASS: tracker observations, hint precedence, exact tiers/disguises, reset and camera visibility\n";
+    // The Lens of Truth mask's clear area, in 4:3 clip coordinates: 0.567 across, 0.729 down.
+    assert(TrackerInsideLensCircle(0,0,1));
+    assert(TrackerInsideLensCircle(.56f,0,1) && TrackerInsideLensCircle(-.56f,0,1) && !TrackerInsideLensCircle(.58f,0,1));
+    assert(TrackerInsideLensCircle(0,-.72f,1) && !TrackerInsideLensCircle(0,-.74f,1));
+    assert(TrackerInsideLensCircle(.40f,.51f,1) && !TrackerInsideLensCircle(.41f,.53f,1));
+    assert(TrackerInsideLensCircle(5.6f,0,10) && !TrackerInsideLensCircle(5.8f,0,10));
+    assert(!TrackerInsideLensCircle(0,0,0) && !TrackerInsideLensCircle(0,0,-1)); // behind the camera
+    assert(!TrackerInsideLensCircle(std::numeric_limits<float>::quiet_NaN(),0,1));
+    assert(!TrackerInsideLensCircle(0,0,std::numeric_limits<float>::infinity()));
+    std::cout << "PASS: tracker observations, hint precedence, exact tiers/disguises, reset, camera and lens visibility\n";
 }

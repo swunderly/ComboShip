@@ -18,9 +18,10 @@ Install each update over the existing app, so your ROMs, saves and settings are 
   - When you cannot get a check's item yet (for example equipment you already own), the game shows a Blue Rupee in its place. Looking at it now marks the check "Seen: Blue Rupee". Seeing the real item later, or a hint, replaces that. This is the most likely reason the underwater item in Hyrule Field's Tektite grotto never became Seen.
   - Items and Gold Skulltula tokens seen through a spider web, such as in Hyrule Field's cow grotto, and the Bombchu Bowling prizes behind the counter now become Seen.
   - Shuffled fairies, fishsanity fish in Zora's Domain and grottos, and the Ocarina of Time in the castle moat now become Seen.
+  - The Treasure Chest Game's prize, which the Lens of Truth shows inside its closed chest, now becomes Seen while it is inside the lens circle.
   - An MM item at an OoT check is marked Seen only once its MM model is actually shown, under the name of the version shown.
   - In both games, after some cutscenes nothing could become Seen until you left the area. That is fixed.
-  - Items behind walls, floors or doors, in unopened chests or off screen still never become Seen.
+  - Items behind walls, floors or doors, in unopened chests (apart from that Lens of Truth view) or off screen still never become Seen.
 - **New option: Cross-Games Age**, under Randomizer > Logic & access > World access, after Cross-Games Farore's Wind, with OoTMM v32.3's name and description: "When you enter MM as Adult Link, you will be Adult Link in MM." It is off by default, in no preset, and only affects newly generated seeds. It has not been played on a phone yet.
   - Adult Link in MM is OoT's own adult Link, read from the OoT game data the app already extracted from your ROM. Nothing extra is installed or copied to the phone. He rides OoT's own adult Epona.
   - He holds MM's own swords, shields, bow and hookshot in his hands. As in OoTMM, he gets adult height, sword reach, climbing, door and chest animations, a larger spin attack, and Keaton, Bunny and Scents masks sized to fit.

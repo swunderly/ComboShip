@@ -69,7 +69,9 @@ using GetItemID = int;
 constexpr int GI_NONE = 0, GI_RUPEE_BLUE = 0x4C, GI_SHIELD_DEKU = 0x29, GI_HEART_PIECE = 0x7A;
 constexpr int GID_RUPEE_BLUE = 0x6E, GID_SHIELD_DEKU = 0x1F, GID_HEART_PIECE = 0x13, GID_RUPEE_GOLD = 0x71;
 constexpr int ACTOR_EN_ITEM00 = 0x15, ACTOR_EN_SI = 0xF1, ACTOR_EN_GIRLA = 0x10A, ACTOR_BG_YDAN_SP = 0x0F,
-              ACTOR_BG_BOM_GUARD = 0x1A5, ACTOR_BG_SOLID = 0x99;
+              ACTOR_BG_BOM_GUARD = 0x1A5, ACTOR_BG_SOLID = 0x99, ACTOR_EN_BOX = 0x0A;
+constexpr u32 ACTOR_FLAG_REACT_TO_LENS = 1 << 7;
+constexpr uint8_t LENS_MODE_HIDE_ACTORS = 0, LENS_MODE_SHOW_ACTORS = 1;
 constexpr int TRANS_MODE_OFF = 0, TRANS_TRIGGER_OFF = 0, BGCHECK_SCENE = 50;
 using CustomDrawFunc = void (*)(void*, void*);
 struct GetItemEntry {
@@ -92,7 +94,7 @@ GetItemEntry Entry(int modIndex, int getItemId, int gid) {
 // ---- Engine fixtures: camera, model matrix and collision ----
 struct Vec3f { float x = 0, y = 0, z = 0; };
 struct MtxF { float xx = 1, yx = 0, zx = 0, xy = 0, yy = 1, zy = 0, xz = 0, yz = 0, zz = 1; } testModel;
-struct Actor { s16 id = ACTOR_EN_ITEM00; };
+struct Actor { s16 id = ACTOR_EN_ITEM00; u32 flags = 0; };
 struct DynaPolyActor { Actor actor; };
 struct CollisionPoly {};
 struct CollisionContext {} ;
@@ -103,6 +105,8 @@ struct PlayState {
     MtxF viewProjectionMtxF;
     struct { Vec3f eye{ 0, 0, 0 }; } view;
     CollisionContext colCtx;
+    struct { uint8_t lensActive = 0; } actorCtx;
+    struct { struct { uint8_t lensMode = LENS_MODE_HIDE_ACTORS; } curRoom; } roomCtx;
 } play;
 PlayState* gPlayState = &play;
 Vec3f drawnOrigin{ 0, 0, 100 }, clip{ 0, 0, 50 };
@@ -124,7 +128,8 @@ void SkinMatrix_Vec3fMtxFMultXYZW(MtxF* mtx, Vec3f* pos, Vec3f* projected, float
 struct Occluder { Vec3f at; s32 bgId; DynaPolyActor* owner; };
 std::vector<Occluder> occluders;
 DynaPolyActor web{ { ACTOR_BG_YDAN_SP } }, web2{ { ACTOR_BG_YDAN_SP } }, guard{ { ACTOR_BG_BOM_GUARD } },
-    door{ { ACTOR_BG_SOLID } }, shelf{ { ACTOR_EN_GIRLA } };
+    door{ { ACTOR_BG_SOLID } }, shelf{ { ACTOR_EN_GIRLA } }, lensChest{ { ACTOR_EN_BOX, ACTOR_FLAG_REACT_TO_LENS } },
+    chest{ { ACTOR_EN_BOX } };
 int raycasts = 0;
 static float Along(const Vec3f& from, const Vec3f& to, const Vec3f& at) {
     const Vec3f d{ to.x - from.x, to.y - from.y, to.z - from.z };
@@ -654,6 +659,66 @@ void RepeatsAndResets() {
                  "again; chest game rows are never recorded\n";
 }
 
+void LensOfTruth() {
+    const auto reward = RC_MARKET_TREASURE_CHEST_GAME_REWARD;
+    // The Treasure Chest Game's last room previews its reward inside the closed chest, which reacts to
+    // the lens. The shop's rooms are lens mode 1: such actors show normally and the lens erases them.
+    auto prepare = [&](bool lens, std::vector<Occluder> blockers) {
+        ResetWorld();
+        ctx.GetItemLocation(reward)->placed = RG_PIECE_OF_HEART;
+        play.roomCtx.curRoom.lensMode = LENS_MODE_SHOW_ACTORS;
+        play.actorCtx.lensActive = lens;
+        occluders = std::move(blockers);
+    };
+    const std::vector<Occluder> closed = { { { 0, 0, 60 }, 3, &lensChest } };
+    // Inside the lens circle the chest is not drawn: the reward is Seen.
+    prepare(true, closed);
+    Draw(reward);
+    Seen(reward, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    assert(raycasts == 2); // the line continues once, past the chest
+    // Up to the edge of the mask's clear area (clip w is 100, the 4:3 frame spans -100..100).
+    for (const Vec3f& at : { Vec3f{ 56, 0, 50 }, Vec3f{ -56, 0, 50 }, Vec3f{ 0, 72, 50 }, Vec3f{ 0, -72, 50 },
+                             Vec3f{ 40, 51, 50 } }) {
+        prepare(true, closed);
+        clip = at;
+        Draw(reward);
+        Seen(reward, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    }
+    // Outside it the chest is drawn over the reward, although the reward is on screen.
+    for (const Vec3f& at : { Vec3f{ 58, 0, 50 }, Vec3f{ -58, 0, 50 }, Vec3f{ 0, 74, 50 }, Vec3f{ 0, -74, 50 },
+                             Vec3f{ 41, 53, 50 }, Vec3f{ 95, 95, 50 } }) {
+        prepare(true, closed);
+        clip = at;
+        Draw(reward);
+        Unseen(reward);
+    }
+    // Lens off, a room whose lens actors only the lens shows, or a chest that does not react to it.
+    prepare(false, closed);
+    Draw(reward);
+    Unseen(reward);
+    prepare(true, closed);
+    play.roomCtx.curRoom.lensMode = LENS_MODE_HIDE_ACTORS;
+    Draw(reward);
+    Unseen(reward);
+    prepare(true, { { { 0, 0, 60 }, 3, &chest } });
+    Draw(reward);
+    Unseen(reward);
+    // The lens erases only lens actors: a wall or door in front of the chest, or behind it, still hides it.
+    for (const auto& blockers : std::vector<std::vector<Occluder>>{
+             { { { 0, 0, 30 }, BGCHECK_SCENE, nullptr }, { { 0, 0, 60 }, 3, &lensChest } },
+             { { { 0, 0, 30 }, 4, &door }, { { 0, 0, 60 }, 3, &lensChest } },
+             { { { 0, 0, 60 }, 3, &lensChest }, { { 0, 0, 80 }, BGCHECK_SCENE, nullptr } },
+         }) {
+        prepare(true, blockers);
+        Draw(reward);
+        Unseen(reward);
+    }
+    prepare(true, { { { 0, 0, 30 }, 4, &web }, { { 0, 0, 60 }, 3, &lensChest } });
+    Draw(reward);
+    Seen(reward, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    std::cout << "PASS: the Lens of Truth shows the chest game reward inside the lens circle only\n";
+}
+
 void Hints() {
     const auto ocarina = RC_HF_OCARINA_OF_TIME_ITEM;
     // Sheik's hint about the Ocarina of Time item, after its stand-in was seen in the moat.
@@ -685,6 +750,7 @@ int main() {
     SeeThrough();
     Foreign();
     RepeatsAndResets();
+    LensOfTruth();
 }
 '''
 code = (prelude.replace('@CHEST_GAME@', ', '.join(chest_game)) + final_entry +
