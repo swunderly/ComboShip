@@ -1,5 +1,15 @@
 # Device validation still required
 
+## Quick checks for OoT tracker sightings (unreleased)
+
+Use a randomizer save with Gold Skulltula tokens shuffled. A check you skipped shows as Skipped even after you see its item: unskip it first in the tracker's details popup.
+
+1. In Hyrule Field's Tektite grotto, stand at the pool edge where the item at the bottom is hidden under the ledge: "Tektite Grotto Freestanding PoH" is not Seen yet. Dive until the item is on screen: the row turns Seen. If it reads "Seen: Blue Rupee", the real item is one you cannot get yet.
+2. In Hyrule Field's cow grotto, defeat the Gold Skulltula and look at its token through the web without burning it: "GS Cow Grotto" turns Seen.
+3. Save, reload and open the tracker: both rows are still Seen. Collect one: its row turns Collected.
+4. A check whose item is hidden, such as a closed chest or an item behind a wall, stays unmarked until you can see the item.
+5. Optional: Bombchu Bowling prizes on the counter, shuffled fairies, the Ocarina of Time in the castle moat and fishsanity fish turn Seen once on screen. An MM item at an OoT check shows its MM name.
+
 ## Quick checks for Cross-Games Age (unreleased)
 
 Checks 4 to 10 matter most: adult Link in MM had never been played before this build. He holds MM's own child-size swords, shields, bow and hookshot, as decided; say if they look wrong in his hands. Note the frame rate as adult Link and while riding Epona.

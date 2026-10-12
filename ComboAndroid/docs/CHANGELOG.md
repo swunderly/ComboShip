@@ -14,6 +14,13 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ## Unreleased
 
+- **OoT check tracker: more items you can see are now marked Seen.**
+  - When you cannot get a check's item yet (for example equipment you already own), the game shows a Blue Rupee in its place. Looking at it now marks the check "Seen: Blue Rupee". Seeing the real item later, or a hint, replaces that. This is the most likely reason the underwater item in Hyrule Field's Tektite grotto never became Seen.
+  - Items and Gold Skulltula tokens seen through a spider web, such as in Hyrule Field's cow grotto, and the Bombchu Bowling prizes behind the counter now become Seen.
+  - Shuffled fairies, fishsanity fish in Zora's Domain and grottos, and the Ocarina of Time in the castle moat now become Seen.
+  - An MM item at an OoT check is marked Seen only once its MM model is actually shown, under the name of the version shown.
+  - In both games, after some cutscenes nothing could become Seen until you left the area. That is fixed.
+  - Items behind walls, floors or doors, in unopened chests or off screen still never become Seen.
 - **New option: Cross-Games Age**, under Randomizer > Logic & access > World access, after Cross-Games Farore's Wind, with OoTMM v32.3's name and description: "When you enter MM as Adult Link, you will be Adult Link in MM." It is off by default, in no preset, and only affects newly generated seeds. It has not been played on a phone yet.
   - Adult Link in MM is OoT's own adult Link, read from the OoT game data the app already extracted from your ROM. Nothing extra is installed or copied to the phone. He rides OoT's own adult Epona.
   - He holds MM's own swords, shields, bow and hookshot in his hands. As in OoTMM, he gets adult height, sword reach, climbing, door and chest animations, a larger spin attack, and Keaton, Bunny and Scents masks sized to fit.
@@ -40,6 +47,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 - Fixed the command-line generator crashing after successful completion, and corrected memory cleanup during repeated seed-generation searches.
 
 Tested:
+- The OoT check tracker changes pass new automated host tests that run the game's own sighting code with camera and collision stand-ins, plus a check that every OoT item model reports its sighting. They have not been tried on the emulator or a phone yet.
 - The integrated candidate passes 97 automated host tests, with zero failures and two platform-dependent skips. They cover gear and age logic, source assets, saved-rule compatibility, profile controls, console dispatch, the command-line generator, entrance foundations and save-format preflight. The two archive checks read the developer's own extracted game data.
 - Gear-only 0.4.2 and Adult Link 0.4.3 candidates pass the Android build, lint, APK and signing checks. These remain local candidates.
 - On the Android emulator, all four gear pickups and the Fairy Ocarina render without crashing. Pause icons, trade-slot cycling, all four equip/unequip actions, and a normal Mask Shop portal round trip work. The two other save slots stayed byte-for-byte unchanged.
