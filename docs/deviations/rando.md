@@ -2119,8 +2119,9 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   env colour before the skeleton and patches the sword/shield lists that set ENV themselves (`:948-1215`). The port
   patches the same 11 combiners only while a Goron or Zora Tunic is worn, to a call that sets OoTMM's combiner and the
   env colour (`ComboGearTunicColorNative.h`), so the sword/shield lists stay untouched and, with the default tunic,
-  2S2H's own cosmetic keeps working. The Goron/Zora colours follow OoT's tunic cosmetics, as in OoTMM
-  (`cosmetics/index.ts:383-395`). Custom player models are not patched.
+  2S2H's own cosmetic keeps working. On child Link the Goron/Zora colours follow OoT's tunic cosmetics, as in OoTMM
+  (`cosmetics/index.ts:383-395`); adult Link (Cross-Games Age) uses the fixed palette, see "Face and tunic" there.
+  Custom player models are not patched.
 - **Swim shuffle.** 2S2H's Swim shuffle stands in for OoTMM's MM scales (`can_swim`). As OoTMM's no-scale water check
   skips the MM Iron Boots (`common/bronze_scale.c:63-66`), `RespawnOnWaterTouch` does not send back human Link wearing
   them, which the logic's `can_swim_or_sink` (`macros_mm.yml:84`) relies on. OoTMM's check also spares every
@@ -2173,9 +2174,12 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   left forearm draws nothing, as in OoTMM; MM never draws a first-person right forearm, so a gap between shoulder and
   hand is possible when aiming (D8, open).
 - **Face and tunic.** Eyes and mouths are OoT's adult textures, index for index with MM's rows (OoTMM's model has its
-  own). The tunic is OoTMM's Kokiri green (30,105,27) unless a Goron or Zora Tunic (MM) is worn; 2S2H's tunic cosmetic
-  does not reach OoT's model. OoT's adult lists take the tunic colour from env and never set it, while MM's Razor,
-  Gilded and Great Fairy's Sword and Mirror Shield lists set env and leave it. OoTMM removes those env writes
+  own). The tunic env colour is OoTMM's default palette (`mm/actors/Player.c:1244-1249`, `Combo_MM_GetSavedTunicColor`):
+  Kokiri green (30,105,27), or Goron red (100,20,0) or Zora blue (0,60,100) while that Tunic (MM) is worn. OoTMM patches
+  that palette from the cosmetics (`cosmetics/index.ts:383-395`), so its adult tunic follows the OoT Goron/Zora and MM
+  tunic colour settings; the port's does not yet, as neither 2S2H's tunic cosmetic nor OoT's Goron/Zora tunic cosmetics
+  reach OoT's adult model. OoT's adult lists take the tunic colour from env and never set it, while MM's Razor, Gilded
+  and Great Fairy's Sword and Mirror Shield lists set env and leave it. OoTMM removes those env writes
   (`actors/Player.S:948-1215`), which also changes how those items are shaded; the port instead sets the tunic colour
   again before each adult limb (`Player_OverrideLimbDrawGameplayCommon`), so the tunic keeps its colour with every MM
   item and the items keep MM's own shading.
@@ -2186,11 +2190,12 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   voice change sits inside `Audio_PlaySfx_GiantsMask`. The Ice Arrow platform's adult heights (0.20, 0.13 on melting)
   apply to adult Link only, so child is unchanged (OoTMM writes 0.13 for child too).
 - **Masks and spin attack.** Keaton, Bunny and Scents get OoTMM's 1.25 scale through a command walker that skips the
-  port's two-slot marker and 128-bit commands. OoTMM writes the calls into Link's own copy of the mask object; the
-  port keeps mask lists cached and shared, so at the end of Player's mask load and at Player_Init it builds Player its
-  own copy of the list with the calls written in (`Combo_MM_AdultMaskDL`), which only Player draws. MM's cached lists
-  are never changed, so an NPC's mask, such as Kafei's Keaton Mask, keeps its size, as in OoTMM. The adult spin attack scales MM's own gameplay_keep vertices by OoTMM's
-  factors at runtime (D3); 344 of 354 coordinates equal OoTMM's files and 10 differ by 1.
+  port's two-slot marker and 128-bit commands. OoTMM writes the calls into Link's own copy of the mask object; the port
+  keeps mask lists cached and shared, so at the end of Player's mask load and at Player_Init it builds Player its own
+  copy of the list with the calls written in (`Combo_MM_AdultMaskDL`), which only Player draws. MM's cached lists are
+  never changed, so an NPC's mask, such as Kafei's Keaton Mask, keeps its size, as in OoTMM. The adult spin attack
+  scales MM's own gameplay_keep vertices by OoTMM's factors at runtime (D3); 344 of 354 coordinates equal OoTMM's files
+  and 10 differ by 1.
 - **Age state.** OoTMM reads OoT's age on every MM use (`comboIsLinkAdult`). The port copies OoT's age into MM's
   saved age at each MM entry (`Combo_MM_SyncCrossAgeOnEntry`, title_setup.c, after the arrival is resolved and
   before the save-load hooks), taken from the live OoT save, or from the slot's OoT page when OoT has not loaded it.
