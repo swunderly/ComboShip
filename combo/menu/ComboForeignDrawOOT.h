@@ -6,9 +6,10 @@
  * MM's ResourceManager (CrossRMRegistry + scoped routing — see libultraship interpreter.cpp).
  *
  * All foreign checks share one sentinel entry, so the check identity rides in the entry itself:
- * Context::GetFinalGIEntry stamps comboForeignCheck (ItemTableTypes.h) into every entry it returns,
- * which covers every draw path that knows its check (shop shelves, freestanding, chests, queued
- * get-item, ...). Entries built without a check carry RC_UNKNOWN_CHECK and degrade to the sentinel.
+ * Context::GetFinalGIEntry stamps comboForeignCheck (ItemTableTypes.h) into every placed entry it
+ * returns, including its Blue Rupee stand-in, which covers every draw path that knows its check (shop
+ * shelves, freestanding, chests, queued get-item, ...). Unshuffled vanilla entries and entries built
+ * without a check carry RC_UNKNOWN_CHECK and degrade to the sentinel.
  *
  * TU-GLUE HEADER (menu-extraction pattern): include ONCE from
  * soh/soh/Enhancements/randomizer/draw.cpp, inside its #ifdef COMBO_BUILD, AFTER the engine headers

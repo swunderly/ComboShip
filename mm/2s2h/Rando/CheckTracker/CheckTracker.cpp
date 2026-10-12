@@ -20,8 +20,9 @@ void Rando::CheckTracker::RecordSeenItem(RandoCheckId id, RandoItemId shownItem,
         id >= RC_MAX || shownItem <= RI_UNKNOWN || shownItem >= RI_MAX || shownItem == RI_TRAP)
         return;
     auto& check = RANDO_SAVE_CHECKS[id];
-    // RI_JUNK for a non-junk placement is ConvertItem's stand-in for an item the player cannot get yet; like
-    // OoT's stand-in it reveals nothing, so it must not replace what the player already knows.
+    // RI_JUNK for a non-junk placement is ConvertItem's stand-in for an item the player cannot get yet; it
+    // reveals nothing, so it must not replace what the player already knows. Unlike OoT's single Blue Rupee
+    // stand-in (kept as a low-priority stand-in sighting) it rotates through junk models, so it is not recorded.
     if (!check.shuffled || check.obtained || (shownItem == RI_JUNK && check.randoItemId != RI_JUNK))
         return;
     // Keep the displayed tier/disguise. Do not re-resolve it later against a different inventory.

@@ -170,8 +170,12 @@ static bool ObserveKnownCheck(RandomizerCheck rc, const GetItemEntry& shown) {
                                          foreign->HasDisguise() ? foreign->fakeDisplayName : foreign->displayName);
     }
     RandomizerGet named = ShownNativeItem(shown);
+    // GetFinalGIEntry draws a plain Blue Rupee while the placed item cannot be obtained. Record what
+    // is on screen as a stand-in, which never replaces a sighting or a hint of the real item.
+    const bool standIn = shown.modIndex == MOD_NONE && shown.getItemId == GI_RUPEE_BLUE &&
+                         item->GetPlacedRandomizerGet() != RG_BLUE_RUPEE;
     return named != RG_NONE &&
-           StoreKnowledge(rc, 1, named,
+           StoreKnowledge(rc, standIn ? ComboRando::kTrackerSourceStandIn : 1, named,
                           Rando::StaticData::RetrieveItem(named).GetName().GetForLanguage(gSaveContext.language));
 }
 
@@ -1332,8 +1336,8 @@ void LoadFile() {
             SaveManager::Instance->LoadData("knowledgeSource", knowledge.source, (uint8_t)0);
             SaveManager::Instance->LoadData("knownItem", knowledge.item, (int32_t)0);
             SaveManager::Instance->LoadData("knownItemName", knowledge.displayName, std::string{});
-            if (knowledge.source >= 1 && knowledge.source <= 2 && knowledge.item > RG_NONE && knowledge.item < RG_MAX &&
-                !knowledge.displayName.empty() && knowledge.displayName.size() <= 512) {
+            if (ComboRando::TrackerKnowledgeSourceValid(knowledge.source) && knowledge.item > RG_NONE &&
+                knowledge.item < RG_MAX && !knowledge.displayName.empty() && knowledge.displayName.size() <= 512) {
                 std::lock_guard<std::mutex> lock(sItemKnowledgeMutex);
                 sItemKnowledge[rc] = std::move(knowledge);
             }

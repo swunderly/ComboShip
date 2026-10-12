@@ -26,12 +26,35 @@ int main() {
     assert(RecordTrackerKnowledge(knowledge, 1, 13, "Kokiri Sword"));
     assert(!RecordTrackerKnowledge(knowledge, 2, 99, "Ice Trap"));
     assert(knowledge.displayName == "Kokiri Sword");
+    // OoT's stand-in: the Blue Rupee drawn while the placed item cannot be obtained yet.
+    // It marks the check Seen with what was on screen, and is the lowest-ranked record.
+    TrackerKnowledge standIn;
+    assert(RecordTrackerKnowledge(standIn, kTrackerSourceStandIn, 5, "Blue Rupee"));
+    assert(standIn.source == kTrackerSourceStandIn && standIn.item == 5 && standIn.displayName == "Blue Rupee");
+    assert(TrackerKnowledgeSeen(standIn.source) && TrackerKnowledgeSourceValid(standIn.source));
+    assert(!RecordTrackerKnowledge(standIn, kTrackerSourceStandIn, 5, "Blue Rupee")); // nothing new to save
+    assert(!RecordTrackerKnowledge(standIn, kTrackerSourceStandIn, 0, "Blue Rupee"));
+    assert(!RecordTrackerKnowledge(standIn, kTrackerSourceStandIn, 5, ""));
+    assert(RecordTrackerKnowledge(standIn, 2, 10, "Progressive Hookshot")); // a hint names the real item
+    assert(!RecordTrackerKnowledge(standIn, kTrackerSourceStandIn, 5, "Blue Rupee"));
+    assert(standIn.source == 2 && standIn.displayName == "Progressive Hookshot");
+    assert(RecordTrackerKnowledge(standIn, 1, 11, "Hookshot"));
+    assert(!RecordTrackerKnowledge(standIn, kTrackerSourceStandIn, 5, "Blue Rupee")); // nor a real sighting
+    assert(standIn.source == 1 && standIn.item == 11 && standIn.displayName == "Hookshot");
+    standIn = {};
+    assert(RecordTrackerKnowledge(standIn, kTrackerSourceStandIn, 5, "Blue Rupee"));
+    assert(RecordTrackerKnowledge(standIn, 1, 11, "Hookshot")); // once obtainable, the real model replaces it
+    assert(standIn.source == 1 && standIn.item == 11);
+    for (const uint8_t source : { uint8_t(0), uint8_t(4), uint8_t(255) })
+        assert(!TrackerKnowledgeSourceValid(source) && !TrackerKnowledgeSeen(source));
+    assert(TrackerKnowledgeSourceValid(1) && TrackerKnowledgeSourceValid(2));
+    assert(TrackerKnowledgeSeen(1) && !TrackerKnowledgeSeen(2)); // a hint is not a sighting
     // The production MM save-field helper must preserve the displayed tier
     // and disguised trap model even when a later hint resolves differently.
     uint8_t mmSource = 0;
     int32_t mmItem = 0;
     assert(!RecordTrackerItemKnowledge(mmSource, mmItem, 0, 10));
-    assert(!RecordTrackerItemKnowledge(mmSource, mmItem, 3, 10));
+    assert(!RecordTrackerItemKnowledge(mmSource, mmItem, kTrackerSourceStandIn, 10)); // MM never stores a stand-in
     assert(!RecordTrackerItemKnowledge(mmSource, mmItem, 255, 10));
     assert(!RecordTrackerItemKnowledge(mmSource, mmItem, 1, 0));
     assert(RecordTrackerItemKnowledge(mmSource, mmItem, 2, 10));

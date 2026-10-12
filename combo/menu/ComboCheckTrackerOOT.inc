@@ -84,7 +84,7 @@ extern "C" COMBO_EXPORT void SOH_ComboCheckSnapshot(ComboCheckInfo* info, ComboC
                 const auto knowledge = GetKnowledge(rc);
                 // Legacy price/seen flags do not prove that a reward was learned.
                 if (!knowledge.displayName.empty()) {
-                    if (knowledge.source == 1) flags |= COMBO_CHECK_SEEN;
+                    if (ComboRando::TrackerKnowledgeSeen(knowledge.source)) flags |= COMBO_CHECK_SEEN;
                     else if (knowledge.source == 2) flags |= COMBO_CHECK_HINTED;
                 }
             }

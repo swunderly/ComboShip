@@ -7,8 +7,11 @@
 namespace ComboRando {
 // 0 is deliberately unknown: old saves merged physical previews and hints.
 // Those records must never be retroactively advertised as a physical sighting.
+// 3 is OoT's stand-in: the check holds an item the player cannot obtain yet, so the game
+// draws (and would give) a Blue Rupee instead. Only OoT records it; MM's save never holds 3.
+constexpr uint8_t kTrackerSourceStandIn = 3;
 struct TrackerKnowledge {
-    uint8_t source = 0; // 1 = rendered observation, 2 = explicit item hint
+    uint8_t source = 0; // 1 = rendered observation, 2 = explicit item hint, 3 = rendered stand-in
     int32_t item = 0;
     std::string displayName;
 };
@@ -17,6 +20,16 @@ inline bool TrackerKnowledgeSourceCanReplace(uint8_t previousSource, uint8_t sou
     // A hint may describe a progressive family or the hidden trap placement.
     // It must not downgrade an actual observed model to a hint or change its tier.
     return (source == 1 || source == 2) && !(source == 2 && previousSource == 1);
+}
+
+// A saved OoT record is kept only with one of these sources.
+inline bool TrackerKnowledgeSourceValid(uint8_t source) {
+    return source >= 1 && source <= kTrackerSourceStandIn;
+}
+
+// The player looked at a model on screen: the placed item itself or its stand-in.
+inline bool TrackerKnowledgeSeen(uint8_t source) {
+    return source == 1 || source == kTrackerSourceStandIn;
 }
 
 // MM stores the enum item and provenance as fields in its save record. This
@@ -33,7 +46,12 @@ inline bool RecordTrackerItemKnowledge(uint8_t& previousSource, ItemId& previous
 }
 
 inline bool RecordTrackerKnowledge(TrackerKnowledge& previous, uint8_t source, int32_t item, std::string displayName) {
-    if (!TrackerKnowledgeSourceCanReplace(previous.source, source) || item <= 0 || displayName.empty())
+    // A stand-in says nothing about the placed item. It only fills an empty record; any
+    // later sighting of the real model or hint replaces it, and it never replaces either.
+    const bool allowed = source == kTrackerSourceStandIn
+                             ? previous.source == 0 || previous.source == kTrackerSourceStandIn
+                             : TrackerKnowledgeSourceCanReplace(previous.source, source);
+    if (!allowed || item <= 0 || displayName.empty())
         return false;
     // Hints describe the seed item, sometimes only its progressive family.
     // Never replace the exact tier/disguise the player has already looked at.

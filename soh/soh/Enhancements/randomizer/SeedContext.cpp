@@ -428,7 +428,14 @@ GetItemEntry Context::GetFinalGIEntry(const RandomizerCheck rc, const bool check
     }
     if (checkObtainability && OTRGlobals::Instance->gRandomizer->GetItemObtainabilityFromRandomizerGet(
                                   itemLoc->GetPlacedRandomizerGet()) != CAN_OBTAIN) {
+#ifdef COMBO_BUILD
+        // ComboShip: the stand-in keeps its check too, so the tracker can mark the drawn Blue Rupee Seen.
+        GetItemEntry standIn = ItemTableManager::Instance->RetrieveItemEntry(MOD_NONE, GI_RUPEE_BLUE);
+        standIn.comboForeignCheck = rc;
+        return standIn;
+#else
         return ItemTableManager::Instance->RetrieveItemEntry(MOD_NONE, GI_RUPEE_BLUE);
+#endif
     }
     GetItemEntry giEntry = itemLoc->GetPlacedItem().GetGIEntry_Copy();
     if (overrides.contains(rc)) {

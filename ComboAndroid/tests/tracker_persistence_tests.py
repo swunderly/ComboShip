@@ -120,6 +120,8 @@ int main() {
     const auto skulltula=RC_FOREST_TEMPLE_GS_LEVEL_ISLAND_COURTYARD;
     const auto freestanding=RC_LLR_FREESTANDING_POH;
     const auto foreign=RC_KAK_WINDMILL_FREESTANDING_POH;
+    const auto standIn=RC_HF_TEKTITE_GROTTO_FREESTANDING_POH;
+    const auto badSource=RC_HF_GS_COW_GROTTO;
     const auto collected=RC_KF_KOKIRI_SWORD_CHEST;
     const auto skipped=RC_KF_STORMS_GROTTO_CHEST;
     InitTrackerData(false);
@@ -129,10 +131,12 @@ int main() {
     sItemKnowledge[skulltula]={1,RG_PIECE_OF_HEART,"Piece of Heart"};
     sItemKnowledge[freestanding]={1,RG_HOOKSHOT,"Hookshot"};
     sItemKnowledge[foreign]={1,RG_COMBO_FOREIGN,"Bunny Hood (MM)"};
+    sItemKnowledge[standIn]={ComboRando::kTrackerSourceStandIn,RG_BLUE_RUPEE,"Blue Rupee"};
+    sItemKnowledge[badSource]={4,RG_PIECE_OF_HEART,"Piece of Heart"}; // no such source: dropped on load
     globals.gRandoContext->items[shop].status=RCSHOW_IDENTIFIED;
     globals.gRandoContext->items[hint].status=RCSHOW_SEEN_OR_HINTED;
     globals.gRandoContext->items[trap].status=RCSHOW_SEEN_OR_HINTED;
-    for(auto rc:{skulltula,freestanding,foreign})
+    for(auto rc:{skulltula,freestanding,foreign,standIn,badSource})
         globals.gRandoContext->items[rc].status=RCSHOW_SEEN_OR_HINTED;
     globals.gRandoContext->items[collected].status=RCSHOW_COLLECTED;
     globals.gRandoContext->items[skipped].skipped=true;
@@ -142,7 +146,7 @@ int main() {
     assert(globals.gRandoContext->items[collected].status==RCSHOW_COLLECTED);
     const auto full=Save(true);
     assert(Row(full,collected).at("status")==RCSHOW_SAVED);
-    assert(full.at("checkStatus").size()==8); // Unseen checks stay absent.
+    assert(full.at("checkStatus").size()==10); // Unseen checks stay absent.
     for(bool fullSave:{false,true}) {
         // TitleSetup and Return-to-Spawn both load, then fire exit/load hooks.
         Load(full);
@@ -152,7 +156,7 @@ int main() {
         assert(Row(after,shop)==Row(full,shop));
         assert(Row(after,hint)==Row(full,hint));
         assert(Row(after,trap)==Row(full,trap));
-        for(auto rc:{skulltula,freestanding,foreign}) assert(Row(after,rc)==Row(full,rc));
+        for(auto rc:{skulltula,freestanding,foreign,standIn}) assert(Row(after,rc)==Row(full,rc));
         assert(Row(after,collected)==Row(full,collected));
         assert(Row(after,skipped)==Row(full,skipped));
         // Cold start after the post-return save preserves names/provenance.
@@ -163,6 +167,11 @@ int main() {
         assert(GetKnowledge(skulltula).source==1 && GetKnowledge(skulltula).displayName=="Piece of Heart");
         assert(GetKnowledge(freestanding).source==1 && GetKnowledge(freestanding).displayName=="Hookshot");
         assert(GetKnowledge(foreign).source==1 && GetKnowledge(foreign).displayName=="Bunny Hood (MM)");
+        // A stand-in sighting stays Seen across reloads, still ranked below any later sighting or hint.
+        assert(GetKnowledge(standIn).source==ComboRando::kTrackerSourceStandIn);
+        assert(GetKnowledge(standIn).item==RG_BLUE_RUPEE && GetKnowledge(standIn).displayName=="Blue Rupee");
+        assert(globals.gRandoContext->items[standIn].status==RCSHOW_SEEN_OR_HINTED);
+        assert(GetKnowledge(badSource).source==0 && GetKnowledge(badSource).displayName.empty());
     }
     // Loading another profile/seed clears all knowledge, even a legacy record.
     nlohmann::json legacy={{"areasSpoiled",0},{"checkStatus",nlohmann::json::array({
@@ -170,11 +179,11 @@ int main() {
     Load(legacy);
     assert(GetKnowledge(shop).source==0 && GetKnowledge(shop).displayName.empty());
     assert(GetKnowledge(hint).source==0 && GetKnowledge(trap).source==0);
-    for(auto rc:{skulltula,freestanding,foreign}) assert(GetKnowledge(rc).source==0);
+    for(auto rc:{skulltula,freestanding,foreign,standIn}) assert(GetKnowledge(rc).source==0);
     assert(Row(Save(true),shop).at("knownItemName")=="");
     InitTrackerData(false); // New-file path also clears previous knowledge.
     assert(GetKnowledge(shop).source==0);
-    std::cout<<"PASS: native tracker JSON, full/partial saves, load-exit-save, cold reload, shops, Skulltulas, freestanding/foreign items, hints, trap disguises, unseen checks, collection and profile isolation\n";
+    std::cout<<"PASS: native tracker JSON, full/partial saves, load-exit-save, cold reload, shops, Skulltulas, freestanding/foreign items, stand-ins, hints, trap disguises, unseen checks, collection and profile isolation\n";
 }
 '''
 code = prelude + '\n'

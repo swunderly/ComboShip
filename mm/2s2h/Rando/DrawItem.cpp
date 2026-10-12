@@ -770,7 +770,7 @@ void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* 
         case RI_JUNK:
 #ifdef COMBO_BUILD
             // For a non-junk placement this is ConvertItem's stand-in for an item the player cannot get yet.
-            // Like OoT's stand-in it is drawn without its check, so the rotating junk is never recorded as seen.
+            // It is drawn without its check, so the rotating junk is never recorded as seen.
             if (RANDO_SAVE_CHECKS[randoCheckId].randoItemId != RI_JUNK) {
                 Rando::DrawItem(Rando::CurrentJunkItem(randoCheckId), RC_UNKNOWN, actor);
                 break;
