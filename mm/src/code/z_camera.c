@@ -4575,9 +4575,10 @@ s32 Camera_KeepOn4(Camera* camera) {
             default:
                 camMode = CAM_MODE_NORMAL;
 #ifdef COMBO_BUILD
-                // Adult human Link (Cross-Games Age) plays the ocarina on OoT's gLinkAdultSkel, which is
-                // gLinkFierceDeitySkel joint for joint, with the same animations: he takes MM's own Fierce Deity ITEM1
-                // row (CAM_MODE_JUMP, D_801B5410). Off until the owner rules (BenPort.cpp).
+                // Option A1 for adult human Link (Cross-Games Age) playing the ocarina: ITEM1's Fierce Deity row
+                // (CAM_MODE_JUMP, D_801B5410). Vanilla MM never uses it for the Fierce Deity playing, and the height
+                // scaling below gives adult Link (H = 68) a level shot at eye height from 40 degrees off the front,
+                // not the Fierce Deity's view. Off until the owner rules (BenPort.cpp).
                 if ((camera->setting == CAM_SET_ITEM1) && Combo_MM_AdultOcarinaFdCamera()) {
                     camMode = CAM_MODE_JUMP;
                 }

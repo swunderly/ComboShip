@@ -1,8 +1,9 @@
 """Adult Link playing the ocarina in MM (Cross-Games Age): the two adult-only fixes and their release switches.
 
-Decision: tooling/claude-cleanup/t6/decision.md. A1 films adult human Link playing with MM's own Fierce Deity ITEM1
-row (Camera_KeepOn4, CAM_MODE_JUMP = D_801B5410); B1 keeps OoT's native adult instrument hand instead of the child
-Fairy item. Both are off until the owner rules; a diagnostics build can turn each on with a default-off debug CVar.
+Decision: tooling/claude-cleanup/t6/decision.md. A1 films adult human Link playing with ITEM1's Fierce Deity row
+(Camera_KeepOn4, CAM_MODE_JUMP = D_801B5410: MM data, which vanilla MM never uses for the Fierce Deity playing); B1
+keeps OoT's native adult instrument hand instead of the child Fairy item. Both are off until the owner rules; a
+diagnostics build can turn each on with a default-off debug CVar.
 
 Compiles the production helpers (BenPort.cpp), the form switch of Camera_KeepOn4 (z_camera.c) and the Fairy hand gate
 (z_player_lib.c) with stand-in engine types, for a release and a diagnostics build, each with the switches as committed

@@ -2225,12 +2225,15 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   hands cover his eyes (likely, not yet captured at runtime), and the Fairy Ocarina, drawn as OoTMM draws it (OoT's
   child Fairy item on the adult open hand, `mm/actors/Player.c:1536-1539`), sits under his chin. OoTMM keeps both. Two
   adult-only fixes that use only native data are in the code behind release switches, both off, so release builds
-  behave as OoTMM: `Camera_KeepOn4` giving adult human Link MM's own Fierce Deity ITEM1 row (`CAM_MODE_JUMP`,
-  `D_801B5410`; `gLinkFierceDeitySkel` is `gLinkAdultSkel`), and the Fairy hand gate keeping OoT's
-  `gLinkAdultRightHandHoldingOotNear/FarDL`, as OoT draws for adult Link with either ocarina (soh
-  `z_player_lib.c:346-351`) (`kAdultOcarinaFdCamera`, `kAdultFairyNativeHand`, BenPort.cpp). A diagnostics build can
-  turn each on with `gCombo.Debug.AdultOcarinaFdCamera` / `gCombo.Debug.AdultFairyNativeHand` for an A/B, and logs
-  the camera and pose of each ocarina session behind `gCombo.Debug.AdultOcarinaProbe`
+  behave as OoTMM: `Camera_KeepOn4` giving adult human Link ITEM1's Fierce Deity row (`CAM_MODE_JUMP`, `D_801B5410`),
+  and the Fairy hand gate keeping OoT's `gLinkAdultRightHandHoldingOotNear/FarDL`, as OoT draws for adult Link with
+  either ocarina (soh `z_player_lib.c:346-351`) (`kAdultOcarinaFdCamera`, `kAdultFairyNativeHand`, BenPort.cpp). The
+  camera row is MM data that vanilla MM never uses for the Fierce Deity playing (he may not use the Ocarina of Time,
+  `z_parameter.c:69`). `Camera_KeepOn4` scales it by Link's height, so at adult height (68) it films a level shot at
+  eye height from 40 degrees off the front, not the Fierce Deity's view and a view no game shows. OoT's own ocarina
+  camera for this pose (owner option A2) is not built: it needs OoT's interface flags mapped to MM's. A diagnostics
+  build can turn each switch on with `gCombo.Debug.AdultOcarinaFdCamera` / `gCombo.Debug.AdultFairyNativeHand` for an
+  A/B, and logs the camera and pose of each ocarina session behind `gCombo.Debug.AdultOcarinaProbe`
   (`tooling/claude-cleanup/t6/decision.md`). `mm_adult_ocarina_tests.py` checks that only adult human Link can take
   them.
 - **Logic receipt.** `ComboAndroid/tests/fixtures/ootmm-32.3-mm-age-lines.json` maps all 85 v32.3 MM age lines (84

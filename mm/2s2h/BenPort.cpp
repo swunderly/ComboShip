@@ -6237,8 +6237,12 @@ extern "C" int Combo_MM_IsLinkAdult(void) {
 // Release switches, each set in its own commit.
 static constexpr bool kAdultOcarinaFdCamera = false;
 static constexpr bool kAdultFairyNativeHand = false;
-// A1, Camera_KeepOn4: MM's own Fierce Deity ITEM1 row (CAM_MODE_JUMP, D_801B5410) films adult Link playing. MM uses it
-// for the Fierce Deity, whose skeleton is OoT's gLinkAdultSkel joint for joint, playing these same animations.
+// A1, Camera_KeepOn4: adult Link playing takes ITEM1's Fierce Deity row (CAM_MODE_JUMP, D_801B5410). It is MM data,
+// but vanilla MM never uses it for the Fierce Deity playing: he may not use the Ocarina of Time (z_parameter.c:69,
+// gPlayerFormItemRestrictions), so the row runs for him only through this fork's Fairy Ocarina id. Adult Link does not
+// get the Fierce Deity's view either: KeepOn4 scales the row by Link's height (0.5 H + 34), so at H = 68 it films a
+// level shot at eye height from 40 degrees off the front, a view no game shows (t6/kinematics.md section 7, row 8).
+// OoT's own ocarina camera for this pose is option A2 (decision.md), which is not built.
 extern "C" int Combo_MM_AdultOcarinaFdCamera(void) {
 #ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
     // Emulator A/B runs of a diagnostics build switch it on with a default-off debug CVar.
