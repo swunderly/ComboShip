@@ -2435,7 +2435,10 @@ static std::string ComboKnownReward(RandomizerCheck rc, bool explicitReveal) {
 #ifdef COMBO_BUILD
     const bool mystery = CVarGetInteger(CVAR_RANDOMIZER_ENHANCEMENT("MysteriousShuffle"), 0);
     const auto knowledge = GetKnowledge(rc);
-    if ((status == RCSHOW_SEEN_OR_HINTED || status == RCSHOW_IDENTIFIED) && !knowledge.displayName.empty()) {
+    // A hint names the placed item, never the stand-in Blue Rupee that was seen in its place.
+    const bool hintAfterStandIn = explicitReveal && knowledge.source == ComboRando::kTrackerSourceStandIn;
+    if ((status == RCSHOW_SEEN_OR_HINTED || status == RCSHOW_IDENTIFIED) && !knowledge.displayName.empty() &&
+        !hintAfterStandIn) {
         txt = knowledge.displayName;
         if (itemLoc->CanBePurchased() && status == RCSHOW_IDENTIFIED)
             txt = fmt::format("{} - {}", txt, itemLoc->GetPrice());

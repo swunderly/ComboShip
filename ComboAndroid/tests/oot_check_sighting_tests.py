@@ -34,11 +34,11 @@ seed = (randomizer/'SeedContext.cpp').read_text(encoding='utf-8')
 start, end = body(seed, 'GetItemEntry Context::GetFinalGIEntry(')
 final_entry = seed[start:end]
 tracker = (randomizer/'randomizer_check_tracker.cpp').read_text(encoding='utf-8')
-# The whole COMBO_BUILD sighting block, minus the hint entry point (it formats shop prices).
+# The whole COMBO_BUILD sighting and hint block, and the reward text it names hints with.
 start = tracker.index('extern int sectionId;')
 block = tracker[start:tracker.rindex('#endif', start, tracker.index('static WidgetInfo backgroundColorWidget;'))]
-hint_start, hint_end = body(block, 'void RecordHintedItem(')
-block = block[:hint_start] + block[hint_end:]
+start, end = body(tracker, 'static std::string ComboKnownReward(RandomizerCheck rc, bool explicitReveal) {')
+known_reward = tracker[start:end]
 
 prelude = r'''
 #define COMBO_BUILD 1
@@ -185,7 +185,21 @@ struct SaveManager {
     }
 } saveManager;
 SaveManager* SaveManager::Instance = &saveManager;
-struct Text { std::string english; std::string GetForLanguage(int) const { return english; } };
+struct Text {
+    std::string english, french;
+    std::string GetForLanguage(int) const { return english; }
+};
+constexpr int LANGUAGE_ENG = 0, LANGUAGE_GER = 1, LANGUAGE_FRA = 2, LANGUAGE_JPN = 3;
+bool IsHeartPiece(GetItemID id) { return id == GI_HEART_PIECE; }
+namespace fmt { // the "{} - {}" price formats the hint path uses
+inline std::string Piece(const std::string& s) { return s; }
+inline std::string Piece(int n) { return std::to_string(n); }
+template <typename... Args> std::string format(const char* pattern, const Args&... args) {
+    std::string out = pattern;
+    ((out.replace(out.find("{}"), 2, Piece(args))), ...);
+    return out;
+}
+} // namespace fmt
 struct ItemObtainabilityTable { std::map<RandomizerGet, ItemObtainability> value; } obtainability;
 namespace Rando {
 struct Item {
@@ -199,14 +213,16 @@ struct Item {
     }
     GetItemEntry GetGIEntry_Copy() const { return entry; }
     int GetItemID() const { return entry.getItemId; }
-    Text GetName() const { return { name }; }
+    Text GetName() const { return { name, name }; }
 };
 struct Location {
     RandomizerCheck rc;
     std::string name;
     RandomizerGet vanilla;
+    RandomizerCheckType type = RCTYPE_STANDARD;
     const std::string& GetName() const { return name; }
     RandomizerGet GetVanillaItem() const { return vanilla; }
+    RandomizerCheckType GetRCType() const { return type; }
 };
 namespace StaticData {
 std::vector<Item> items = {
@@ -237,10 +253,17 @@ struct ItemLocation {
     RandomizerGet GetPlacedRandomizerGet() const { return placed; }
     const Item& GetPlacedItem() const { return StaticData::RetrieveItem(placed); }
     bool HasObtained() const { return obtained; }
+    bool GetIsSkipped() const { return false; }
+    bool CanBePurchased() const { return false; }
+    int GetPrice() const { return 0; }
     RandomizerCheckStatus GetCheckStatus() const { return status; }
     void SetCheckStatus(RandomizerCheckStatus value) { status = value; }
 };
-struct Override { RandomizerGet looksLike; RandomizerGet LooksLike() const { return looksLike; } };
+struct Override {
+    RandomizerGet looksLike;
+    RandomizerGet LooksLike() const { return looksLike; }
+    Text GetTrickName() const { return { "Fake " + StaticData::RetrieveItem(looksLike).name }; }
+};
 struct Context {
     std::map<RandomizerCheck, ItemLocation> locations;
     std::map<RandomizerCheck, Override> overrides;
@@ -264,6 +287,7 @@ struct Randomizer {
         auto it = obtainability.value.find(rg);
         return it == obtainability.value.end() ? CAN_OBTAIN : it->second;
     }
+    int GetRandoSettingValue(RandomizerSettingKey) { return 1; } // merchant and scrub text hints on
 } randomizer;
 struct OTRGlobals {
     static OTRGlobals* Instance;
@@ -283,6 +307,9 @@ extern "C" const char* Randomizer_ComboForeignLiveName(int32_t) { return foreign
 namespace CheckTracker {
 std::map<RandomizerCheck, bool> unshuffled;
 bool IsCheckShuffled(RandomizerCheck rc) { return !unshuffled[rc]; }
+bool IsVisibleInCheckTracker(RandomizerCheck) { return true; }
+bool IsMysteryShopItem(RandomizerCheck) { return false; }
+static std::string ComboKnownReward(RandomizerCheck rc, bool explicitReveal = false);
 } // namespace CheckTracker
 namespace Rando {
 '''
@@ -600,7 +627,32 @@ void RepeatsAndResets() {
     std::cout << "PASS: recorded sightings skip the collision test; a reset row is re-marked when seen again\n";
 }
 
+void Hints() {
+    const auto ocarina = RC_HF_OCARINA_OF_TIME_ITEM;
+    // Sheik's hint about the Ocarina of Time item, after its stand-in was seen in the moat.
+    ResetWorld();
+    ctx.GetItemLocation(ocarina)->placed = RG_DEKU_SHIELD;
+    obtainability.value[RG_DEKU_SHIELD] = CANT_OBTAIN_ALREADY_HAVE;
+    Draw(ocarina);
+    Seen(ocarina, ComboRando::kTrackerSourceStandIn, RG_BLUE_RUPEE, "Blue Rupee");
+    RecordHintedItem(ocarina);
+    const auto hinted = GetKnowledge(ocarina);
+    assert(hinted.source == 2 && hinted.item == RG_DEKU_SHIELD && hinted.displayName == "Deku Shield");
+    assert(saves == 2);
+    Draw(ocarina); // the stand-in never replaces the hint
+    assert(GetKnowledge(ocarina).source == 2 && saves == 2);
+    // A hint never replaces what the player actually saw.
+    ResetWorld();
+    ctx.GetItemLocation(ocarina)->placed = RG_DEKU_SHIELD;
+    Draw(ocarina);
+    Seen(ocarina, 1, RG_DEKU_SHIELD, "Deku Shield");
+    RecordHintedItem(ocarina);
+    Seen(ocarina, 1, RG_DEKU_SHIELD, "Deku Shield");
+    std::cout << "PASS: a hint after a stand-in sighting names the placed item, not the Blue Rupee" << '\n';
+}
+
 int main() {
+    Hints();
     StandIns();
     Hidden();
     SeeThrough();
@@ -608,7 +660,8 @@ int main() {
     RepeatsAndResets();
 }
 '''
-code = prelude + final_entry + '\n} // namespace Rando\nnamespace CheckTracker {\n' + block + '\n} // namespace CheckTracker\n' + tests
+code = (prelude + final_entry + '\n} // namespace Rando\nnamespace CheckTracker {\n' + block + known_reward +
+        '\n} // namespace CheckTracker\n' + tests)
 cpp = out/'oot_check_sighting.cpp'
 cpp.write_text(code, encoding='utf-8')
 exe = hostcxx.build(a.compiler, cpp, includes=[source/'soh', source/'combo', a.json_include],
