@@ -179,7 +179,7 @@ void OppositeAgeContract() {
         b.validateAgeTemple = [&](const Overrides& rows, const Pools& pools) {
             ++ageCalls;
             assert(rows.contains("OOT_SPAWN_ADULT") && !pools.empty());
-            // Fixture graph: only the opposite spawn is rooted; reaching ToT requires a starting key.
+            // Stand-in probe: both roots seeded, only the opposite spawn exit open; ToT needs a starting key.
             const int rootedAge = startingAdult ? 0 : 1;
             const std::set<int> reachedAges = startingItems.contains("Door Key") ? std::set<int>{rootedAge} : std::set<int>{};
             return reachedAges.contains(rootedAge);

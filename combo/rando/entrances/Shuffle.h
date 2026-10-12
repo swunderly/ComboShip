@@ -273,15 +273,15 @@ inline bool Assignable(const Record& src, const Record& dst, bool ownGame, const
 struct Bindings {
     std::function<bool(std::string_view)> areaExists;
     std::function<bool(const Record&)> sourceSupported, destinationSupported;
-    // Each candidate includes default/plando/prior overrides AND remaining pools.
+    // Each candidate includes the default and prior overrides AND remaining pools.
     // Build a temporary graph, preserve source predicates, OR duplicate edges,
     // AND can_reset_time for MM destinations without no-sot, and assume
     // remaining candidates with the upstream cardinality optimization.
     std::function<bool(const Overrides&, const Pools&)> validateAssumed;
-    // Pinned validateAgeTemple: on the SAME changed world/remaining pools, enable only
-    // the opposite-age OoT spawn and recursively reach Temple of Time with STARTING
-    // items, never the all-items inventory used by validateAssumed. A native OoTMM
-    // graph adapter must supply this before enabling OoT/Both pools; none exists yet.
+    // Pinned validateAgeTemple (entrances.ts:265-286): on the SAME changed world/remaining pools,
+    // ASSUMED and SPAWN events kept, explore OOT SPAWN at both ages with STARTING items (never the
+    // all items of validateAssumed); the starting age's spawn exit is false and the other a bare age
+    // check. True when that age reaches Temple of Time. No production adapter is assigned yet.
     std::function<bool(const Overrides&, const Pools&)> validateAgeTemple;
     // Supplied from the existing combined accessibility choice, not a new setting.
     bool logicEnabled = true;
