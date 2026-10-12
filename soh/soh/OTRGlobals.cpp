@@ -6522,6 +6522,13 @@ extern "C" COMBO_EXPORT uint8_t SOH_GetOraclePortalAges(void) {
     auto* portal = RegionTable(RR_MARKET_MASK_SHOP);
     return (portal->Adult() ? 1 : 0) | (portal->Child() ? 2 : 0);
 }
+// Diagnostic only, same bits: Temple of Time's age states from the last completed native search. That
+// search roots the starting age and allows time travel, so this is not the pinned opposite-age Temple
+// check (TempleProbe.cpp); it runs no search, validates no entrances, and nothing in combo reads it.
+extern "C" COMBO_EXPORT uint8_t SOH_GetOracleTempleAges(void) {
+    auto* temple = RegionTable(RR_TEMPLE_OF_TIME);
+    return (temple->Adult() ? 1 : 0) | (temple->Child() ? 2 : 0);
+}
 // The seed's OoT starting age, same bits: Link's OoT age in MM when the seed starts in MM.
 extern "C" COMBO_EXPORT uint8_t SOH_GetOracleStartAges(void) {
     return OTRGlobals::Instance->gRandoContext->GetOption(RSK_SELECTED_STARTING_AGE).Is(RO_AGE_ADULT) ? 1 : 2;
