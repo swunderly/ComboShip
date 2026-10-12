@@ -51,6 +51,7 @@ extern PlayState* gPlayState;
 #ifdef COMBO_BUILD
 float OTRGetAspectRatio(void);
 MtxF* Matrix_GetCurrent(void);
+u32 BgCheck_GetBccFlags(s32 chkWall, s32 chkFloor, s32 chkCeil, s32 chkOneFace, s32 chkDyna); // z_bgcheck.c
 #endif
 }
 extern "C" GetItemEntry ItemTable_RetrieveEntry(s16 modIndex, s16 getItemID);
@@ -79,6 +80,33 @@ static void ResetKnowledge() {
     sItemKnowledge = {};
 }
 
+// Translucent spider webs and the Bombchu Bowling Alley's invisible counter guard have collision,
+// but the camera sees what is behind them. Every other wall, floor, door or object blocks the view.
+static bool SeeThroughOccluder(const Actor* actor) {
+    return actor != nullptr && (actor->id == ACTOR_BG_YDAN_SP || actor->id == ACTOR_BG_BOM_GUARD);
+}
+
+// BgCheck_AnyLineTest2 (every collision category: both flag masks 0 = COLPOLY_IGNORE_NONE, both faces,
+// moving collision), continued past each see-through actor it meets. A flat web is crossed once, so
+// each pass excludes only the actor just passed.
+static bool LineOfSight(Vec3f from, Vec3f to) {
+    Actor* passed = nullptr;
+    for (int pass = 0; pass < 8; pass++) {
+        Vec3f hit;
+        CollisionPoly* poly = nullptr;
+        s32 bgId = BGCHECK_SCENE;
+        if (!BgCheck_CheckLineImpl(&gPlayState->colCtx, 0, 0, &from, &to, &hit, &poly, &bgId, passed, 1.0f,
+                                   BgCheck_GetBccFlags(true, true, true, false, true)))
+            return true;
+        DynaPolyActor* owner = bgId != BGCHECK_SCENE ? DynaPoly_GetActor(&gPlayState->colCtx, bgId) : nullptr;
+        if (owner == nullptr || !SeeThroughOccluder(&owner->actor))
+            return false;
+        from = hit;
+        passed = &owner->actor;
+    }
+    return false;
+}
+
 // A draw call alone does not prove a reward can be seen. Use the transformed
 // model origin and reject off-screen, hidden, paused and occluded previews.
 static bool ModelVisible(Vec3f pos, float scaleX2, float scaleY2, float scaleZ2, bool shopPreview) {
@@ -95,9 +123,7 @@ static bool ModelVisible(Vec3f pos, float scaleX2, float scaleY2, float scaleZ2,
     // displayed models. It blocks a collision ray, but not the camera picture.
     if (shopPreview)
         return true;
-    Vec3f eye = gPlayState->view.eye, hit;
-    CollisionPoly* poly = nullptr;
-    return !BgCheck_AnyLineTest2(&gPlayState->colCtx, &eye, &pos, &hit, &poly, true, true, true, false);
+    return LineOfSight(gPlayState->view.eye, pos);
 }
 
 static bool KnowledgeEnabled() {

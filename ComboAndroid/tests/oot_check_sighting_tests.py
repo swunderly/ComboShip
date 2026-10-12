@@ -130,8 +130,9 @@ static bool LineFixture(Vec3f* from, Vec3f* to, Vec3f* hit, CollisionPoly** poly
     float best = 2;
     for (const auto& o : occluders) {
         const float t = Along(*from, *to, o.at);
-        // A start point lying on a polygon's plane does not cross it again (z_bgcheck.c LineVsPoly).
-        if (t <= 0.0001f || t >= 1 || (skip && o.owner && skip == &o.owner->actor) || t >= best)
+        // A start point on a polygon's plane can still count as crossing it after float rounding
+        // (z_bgcheck.c LineVsPoly), so a continued line must exclude the actor it just passed.
+        if (t < -0.0001f || t >= 1 || (skip && o.owner && skip == &o.owner->actor) || t >= best)
             continue;
         best = t;
         nearest = &o;
@@ -453,9 +454,47 @@ void Hidden() {
     std::cout << "PASS: off-screen, covered, unrevealed and occluded models stay unseen\n";
 }
 
+void SeeThrough() {
+    const auto cow = RC_HF_GS_COW_GROTTO, bowling = RC_MARKET_BOMBCHU_BOWLING_FIRST_PRIZE;
+    auto prepare = [&](RandomizerCheck rc, std::vector<Occluder> blockers) {
+        ResetWorld();
+        ctx.GetItemLocation(rc)->placed = RG_PIECE_OF_HEART;
+        occluders = std::move(blockers);
+    };
+    // Screenshot 2: the token is seen through the cow grotto's unburned web.
+    prepare(cow, { { { 0, 0, 40 }, 3, &web } });
+    Draw(cow);
+    Seen(cow, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    assert(raycasts == 2); // the line continues once, past the web
+    prepare(cow, { { { 0, 0, 30 }, 3, &web }, { { 0, 0, 60 }, 4, &web2 } });
+    Draw(cow);
+    Seen(cow, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    // A web never reveals what a wall, floor or closed door behind or in front of it hides.
+    for (const auto& blockers : std::vector<std::vector<Occluder>>{
+             { { { 0, 0, 30 }, 3, &web }, { { 0, 0, 60 }, BGCHECK_SCENE, nullptr } },
+             { { { 0, 0, 30 }, BGCHECK_SCENE, nullptr }, { { 0, 0, 60 }, 3, &web } },
+             { { { 0, 0, 30 }, 3, &web }, { { 0, 0, 60 }, 4, &door } },
+             { { { 0, 0, 20 }, 3, &web }, { { 0, 0, 40 }, 4, &web2 }, { { 0, 0, 80 }, 5, &door } },
+         }) {
+        prepare(cow, blockers);
+        Draw(cow);
+        Unseen(cow);
+    }
+    // Bombchu Bowling prizes on the counter stand behind the alley's invisible guard wall.
+    prepare(bowling, { { { 0, 0, 45 }, 6, &guard } });
+    Draw(bowling);
+    Seen(bowling, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    // ... but the counter's own geometry still hides a prize from a low camera.
+    prepare(bowling, { { { 0, 0, 45 }, 6, &guard }, { { 0, 0, 80 }, BGCHECK_SCENE, nullptr } });
+    Draw(bowling);
+    Unseen(bowling);
+    std::cout << "PASS: webs and the bowling guard do not hide rewards; walls, floors and doors behind them do\n";
+}
+
 int main() {
     StandIns();
     Hidden();
+    SeeThrough();
 }
 '''
 code = prelude + final_entry + '\n} // namespace Rando\nnamespace CheckTracker {\n' + block + '\n} // namespace CheckTracker\n' + tests
