@@ -6240,7 +6240,7 @@ extern "C" int Combo_MM_IsLinkAdult(void) {
 // src/mm/actors/Player.c:1536-1539), so each has its own release switch (tooling/claude-cleanup/t6/decision.md). The
 // owner ruled on 2026-10-12: camera A1 and Fairy item B3; B1 stays off, for A/B runs only. Child Link and the other
 // forms never take them. Release switches, each set in its own commit.
-static constexpr bool kAdultOcarinaFdCamera = false;
+static constexpr bool kAdultOcarinaFdCamera = true;
 static constexpr bool kAdultFairyNativeHand = false;
 static constexpr bool kAdultFairyFittedPlacement = true;
 static_assert(!(kAdultFairyNativeHand && kAdultFairyFittedPlacement), "B1 and B3 are alternatives for the Fairy hand");

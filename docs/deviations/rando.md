@@ -2232,7 +2232,7 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
     height (68) it films a level shot at eye height from 40 degrees off the front: not the Fierce Deity's view, and a
     view no game shows. OoT's own ocarina camera for this pose (option A2) is not built: it needs OoT's interface
     flags mapped to MM's.
-    Switch off.
+    Switch on (owner-approved 2026-10-12), pending the owner's confirmation from emulator before/after shots.
   - **Fairy Ocarina (B3, `kAdultFairyFittedPlacement`).** The composite keeps OoTMM's binding (the child Fairy item
     on the adult open hand) and moves the item as OoT moves the Ocarina of Time from the child's right hand
     (`gLinkChildRightHandAndOotNearDL`) to the adult's (`gLinkAdultRightHandHoldingOotNearDL`), each in its hand's
