@@ -9,6 +9,9 @@
 #include "soh/Enhancements/randomizer/randomizer.h"
 #include "soh/Enhancements/randomizer/randomizerTypes.h"
 #include "soh/Enhancements/randomizer/RCToRandInf.h"
+#ifdef COMBO_BUILD
+#include "randomizer_check_tracker.h"
+#endif
 
 extern "C" {
 #include "src/overlays/actors/ovl_Fishing/z_fishing.h"
@@ -540,6 +543,9 @@ void Fishsanity_DrawEnFish(struct Actor* actor, struct PlayState* play) {
     func_8002EBCC(actor, play, 0);
     func_8002ED80(actor, play, 0);
     EnItem00_CustomItemsParticles(actor, play, randoItem);
+#ifdef COMBO_BUILD
+    CheckTracker::RecordObservedItem(actor, randoItem);
+#endif
     GetItemEntry_Draw(play, randoItem);
 
     Matrix_Pop();

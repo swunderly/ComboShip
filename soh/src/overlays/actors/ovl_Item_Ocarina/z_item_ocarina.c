@@ -9,6 +9,10 @@
 #include "soh/OTRGlobals.h"
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 
+#ifdef COMBO_BUILD
+extern void Combo_OOTRecordObservedItem(Actor* actor, const GetItemEntry* shown);
+#endif
+
 #define FLAGS ACTOR_FLAG_UPDATE_CULLING_DISABLED
 
 void ItemOcarina_Init(Actor* thisx, PlayState* play);
@@ -214,6 +218,9 @@ void ItemOcarina_Draw(Actor* thisx, PlayState* play) {
                                         ? GetItemMystery()
                                         : Randomizer_GetItemFromKnownCheck(RC_HF_OCARINA_OF_TIME_ITEM, GI_OCARINA_OOT);
         EnItem00_CustomItemsParticles(&this->actor, play, randoGetItem);
+#ifdef COMBO_BUILD
+        Combo_OOTRecordObservedItem(&this->actor, &randoGetItem);
+#endif
         GetItemEntry_Draw(play, randoGetItem);
         return;
     }

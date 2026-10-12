@@ -5,6 +5,9 @@
 #include "soh/Enhancements/item-tables/ItemTableTypes.h"
 #include "soh/ObjectExtension/ObjectExtension.h"
 #include "soh/Enhancements/randomizer/randomizer.h"
+#ifdef COMBO_BUILD
+#include "randomizer_check_tracker.h"
+#endif
 
 extern "C" {
 #include "src/overlays/actors/ovl_En_Elf/z_en_elf.h"
@@ -32,6 +35,9 @@ void ShuffleFairies_DrawRandomizedItem(EnElf* enElf, PlayState* play) {
     func_8002EBCC(&enElf->actor, play, 0);
     func_8002ED80(&enElf->actor, play, 0);
     EnItem00_CustomItemsParticles(&enElf->actor, play, randoGetItem);
+#ifdef COMBO_BUILD
+    CheckTracker::RecordObservedItem(&enElf->actor, randoGetItem);
+#endif
     GetItemEntry_Draw(play, randoGetItem);
     Matrix_Pop();
 }
