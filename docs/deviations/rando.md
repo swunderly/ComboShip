@@ -2220,6 +2220,19 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   (`Combo_MM_CrossAgeOptionsAllowed`), except a bound seed's own value. `mm_gear_swim_shuffle_tests.py` checks it.
 - **Menu.** The row follows Cross-Games Farore's Wind (OoTMM's `data.ts` lists `crossAge` first). It is in no
   preset and has no standalone enhancement (critique X9, D7).
+- **Ocarina (owner ruling pending).** MM's human ocarina animations are the data OoT plays for adult Link, so adult
+  Link plays in OoT's own adult pose. Seen from MM's ocarina camera (`CAM_SET_ITEM1`, human row `D_801B53EC`) his
+  hands cover his eyes (likely, not yet captured at runtime), and the Fairy Ocarina, drawn as OoTMM draws it (OoT's
+  child Fairy item on the adult open hand, `mm/actors/Player.c:1536-1539`), sits under his chin. OoTMM keeps both. Two
+  adult-only fixes that use only native data are in the code behind release switches, both off, so release builds
+  behave as OoTMM: `Camera_KeepOn4` giving adult human Link MM's own Fierce Deity ITEM1 row (`CAM_MODE_JUMP`,
+  `D_801B5410`; `gLinkFierceDeitySkel` is `gLinkAdultSkel`), and the Fairy hand gate keeping OoT's
+  `gLinkAdultRightHandHoldingOotNear/FarDL`, as OoT draws for adult Link with either ocarina (soh
+  `z_player_lib.c:346-351`) (`kAdultOcarinaFdCamera`, `kAdultFairyNativeHand`, BenPort.cpp). A diagnostics build can
+  turn each on with `gCombo.Debug.AdultOcarinaFdCamera` / `gCombo.Debug.AdultFairyNativeHand` for an A/B, and logs
+  the camera and pose of each ocarina session behind `gCombo.Debug.AdultOcarinaProbe`
+  (`tooling/claude-cleanup/t6/decision.md`). `mm_adult_ocarina_tests.py` checks that only adult human Link can take
+  them.
 - **Logic receipt.** `ComboAndroid/tests/fixtures/ootmm-32.3-mm-age-lines.json` maps all 85 v32.3 MM age lines (84
   world lines and `cross_poison_swamp`, `macros_mm.yml:260`). 11 have no fork statement: three JP-only Deku Palace
   lines and the US stub at `deku_palace.yml:26`, Zora Cape Rock Island 1-5 (the fork has no rock checks), and two

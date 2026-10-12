@@ -4504,6 +4504,10 @@ s32 Camera_KeepOn3(Camera* camera) {
     return 1;
 }
 
+#ifdef COMBO_BUILD
+extern int Combo_MM_AdultOcarinaFdCamera(void);
+#endif
+
 /**
  * Used for settings where camera turns around and faces player
  * eg. all item-based settings, elegy shell cutscene, death cutscene, ...
@@ -4570,6 +4574,14 @@ s32 Camera_KeepOn4(Camera* camera) {
 
             default:
                 camMode = CAM_MODE_NORMAL;
+#ifdef COMBO_BUILD
+                // Adult human Link (Cross-Games Age) plays the ocarina on OoT's gLinkAdultSkel, which is
+                // gLinkFierceDeitySkel joint for joint, with the same animations: he takes MM's own Fierce Deity ITEM1
+                // row (CAM_MODE_JUMP, D_801B5410). Off until the owner rules (BenPort.cpp).
+                if ((camera->setting == CAM_SET_ITEM1) && Combo_MM_AdultOcarinaFdCamera()) {
+                    camMode = CAM_MODE_JUMP;
+                }
+#endif
                 break;
         }
 

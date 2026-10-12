@@ -81,6 +81,7 @@ combo_python_test(mm_gear_left_out_of_swim_shuffled_seeds mm_gear_swim_shuffle_t
 combo_python_test(mm_cross_age_logic_state_receipt_and_menu mm_cross_age_tests.py)
 combo_harness_test(mm_cross_age_oot_model_shadow_composites_and_walker mm_cross_age_model_tests.py)
 combo_python_test(mm_cross_age_runtime_slots_names_and_ootmm_parity mm_cross_age_runtime_tests.py)
+combo_harness_test(mm_adult_ocarina_camera_and_fairy_hand_switches mm_adult_ocarina_tests.py)
 # Local only: reads the oot.o2r and mm.o2r extracted from the user's ROMs, and reports SKIPPED without them.
 combo_harness_test(mm_cross_age_user_archives_and_spin_vertices mm_cross_age_archive_tests.py)
 set_tests_properties(mm_cross_age_user_archives_and_spin_vertices PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")

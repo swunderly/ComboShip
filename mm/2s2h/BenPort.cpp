@@ -1133,6 +1133,63 @@ bool VerifyArchiveVersion(ArchiveVersion version) {
     return version.major != INT16_MAX && version.major != gBuildVersionMajor;
 }
 
+#if defined(COMBO_BUILD) && defined(COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS)
+extern "C" int Combo_MM_IsLinkAdult(void);
+extern "C" int Combo_MM_AdultOcarinaFdCamera(void);
+extern "C" int Combo_MM_AdultFairyNativeHand(void);
+// Adult ocarina probe (tooling/claude-cleanup/t6/decision.md, G0), behind the default-off
+// gCombo.Debug.AdultOcarinaProbe: the camera and pose that decide where Link's hands appear on screen, for the first 40
+// frames of each ocarina session. Eye and at are also given in Link's frame (side, up, forward from his position,
+// facing +forward).
+static void Combo_LogAdultOcarinaFrame(Player* player, Camera* camera) {
+    static bool sPlaying = false;
+    static unsigned sFrame = 0;
+    if (!(player->stateFlags2 & PLAYER_STATE2_USING_OCARINA)) {
+        sPlaying = false;
+        return;
+    }
+    if (!sPlaying) {
+        sPlaying = true;
+        sFrame = 0;
+    }
+    if (sFrame >= 40)
+        return;
+    const f32 sinY = Math_SinS(player->actor.shape.rot.y), cosY = Math_CosS(player->actor.shape.rot.y);
+    const Vec3f eye = { camera->eye.x - player->actor.world.pos.x, camera->eye.y - player->actor.world.pos.y,
+                        camera->eye.z - player->actor.world.pos.z };
+    const Vec3f at = { camera->at.x - player->actor.world.pos.x, camera->at.y - player->actor.world.pos.y,
+                       camera->at.z - player->actor.world.pos.z };
+    // KeepOn4's row as loaded: ITEM1 NORMAL (D_801B53EC) has pitch target -12, ITEM1 JUMP (D_801B5410) +20.
+    const KeepOn4ReadOnlyData& keep4 = camera->paramData.keep4.roData;
+    const bool item1 = camera->setting == CAM_SET_ITEM1;
+    // The right-hand list z_player_lib.c picks: the Fairy composite, unless adult Link keeps OoT's native hand (the
+    // composite itself falls back to the native list if OoT's Fairy item cannot load).
+    const bool fairyGate = player->transformation == PLAYER_FORM_HUMAN &&
+                           player->rightHandType == PLAYER_MODELTYPE_RH_INSTRUMENT &&
+                           INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_FAIRY;
+    const char* rightHand = !fairyGate                        ? "native"
+                            : Combo_MM_AdultFairyNativeHand() ? "adultNativeHand"
+                                                              : "fairyComposite";
+    // Player's animations are resource paths, as BEN_ANIM_EQUAL compares them.
+    const char* animation = static_cast<const char*>(player->skelAnime.animation);
+    SPDLOG_INFO("[ComboShip AdultOcarina] frame={} setting={:#x} mode={} camId={} eye={}/{}/{} at={}/{}/{} fov={} "
+                "dist={} eyeLocal={}/{}/{} atLocal={}/{}/{} keep4={} keep4YOffset={} keep4Dist={} keep4Pitch={} "
+                "keep4Fov={} fdCamera={} pos={}/{}/{} yaw={} height={} headLimbRot={}/{}/{} upperLimbRot={}/{}/{} "
+                "anim={} animFrame={} rightHandType={} ocarina={} form={} adult={} rightHand={}",
+                sFrame, int(camera->setting), int(camera->mode), int(camera->camId), camera->eye.x, camera->eye.y,
+                camera->eye.z, camera->at.x, camera->at.y, camera->at.z, camera->fov, camera->dist,
+                eye.x * cosY - eye.z * sinY, eye.y, eye.x * sinY + eye.z * cosY, at.x * cosY - at.z * sinY, at.y,
+                at.x * sinY + at.z * cosY, int(item1), item1 ? keep4.unk_00 : 0.0f, item1 ? keep4.unk_04 : 0.0f,
+                item1 ? keep4.unk_08 : 0.0f, item1 ? keep4.unk_18 : 0.0f, Combo_MM_AdultOcarinaFdCamera(),
+                player->actor.world.pos.x, player->actor.world.pos.y, player->actor.world.pos.z,
+                int(player->actor.shape.rot.y), Player_GetHeight(player), player->headLimbRot.x, player->headLimbRot.y,
+                player->headLimbRot.z, player->upperLimbRot.x, player->upperLimbRot.y, player->upperLimbRot.z,
+                animation != nullptr ? animation : "(none)", player->skelAnime.curFrame, int(player->rightHandType),
+                int(INV_CONTENT(ITEM_OCARINA_OF_TIME)), int(player->transformation), Combo_MM_IsLinkAdult(), rightHand);
+    sFrame++;
+}
+#endif
+
 extern "C" void InitOTR(int argc, char* argv[]) {
     OTRGlobals::Instance = new OTRGlobals();
     OTRGlobals::Instance->RunExtract(argc, argv);
@@ -1217,14 +1274,19 @@ extern "C" void InitOTR(int argc, char* argv[]) {
 #if defined(COMBO_BUILD) && defined(COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS)
     GameInteractor::Instance->RegisterGameHookForID<GameInteractor::OnActorUpdate>(ACTOR_PLAYER, [](Actor* actor) {
         static unsigned snapshotFrames = 0;
-        if (!CVarGetInteger("gCombo.Debug.AdultMmRuntimeValidation", 0) || !gPlayState || gSaveContext.fileNum > 2 ||
-            !actor)
+        // The ocarina probe has its own switch: AdultMmRuntimeValidation also opens the dormant Adult Mask readiness on
+        // every Player_Update (Combo_MM_AdultUpdateVoiceRouting), which the ocarina measurement must not change.
+        const bool validation = CVarGetInteger("gCombo.Debug.AdultMmRuntimeValidation", 0);
+        const bool ocarinaProbe = CVarGetInteger("gCombo.Debug.AdultOcarinaProbe", 0);
+        if ((!validation && !ocarinaProbe) || !gPlayState || gSaveContext.fileNum > 2 || !actor)
             return;
         Player* player = reinterpret_cast<Player*>(actor);
         Camera* camera = GET_ACTIVE_CAM(gPlayState);
         if (!camera || !player->ageProperties || !player->skelAnime.jointTable)
             return;
-        if (snapshotFrames++ >= 5 && snapshotFrames % 300 != 0)
+        if (ocarinaProbe)
+            Combo_LogAdultOcarinaFrame(player, camera);
+        if (!validation || (snapshotFrames++ >= 5 && snapshotFrames % 300 != 0))
             return;
         const Vec3s root = player->skelAnime.jointTable[0], head = player->skelAnime.jointTable[PLAYER_LIMB_HEAD];
         SPDLOG_INFO("[ComboShip AdultReadonly] form={} scale={}/{}/{} height={} propertyHeight={} effectiveAge={} "
@@ -6165,6 +6227,36 @@ extern "C" int Combo_MM_IsLinkAdult(void) {
     if (gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2 || !ComboAdultMM::IsCrossAgeAdult(gSaveContext.save))
         return 0;
     return Combo_MM_CrossAgeReady();
+}
+// Adult Link playing the ocarina in MM: MM's own ocarina animations (the same data OoT plays for adult Link) drive
+// OoT's adult skeleton. Seen from MM's ocarina camera his hands cover his eyes (likely; the diagnostics probe checks
+// it), and the child Fairy instrument sits under his chin. Two adult-only fixes use native data. Both depart from
+// OoTMM, which keeps MM's NORMAL ITEM1 camera and draws the child Fairy item on the adult open hand (OoTMM v32.3
+// src/mm/actors/Player.c:1536-1539), so each has its own release switch and stays off until the owner rules
+// (tooling/claude-cleanup/t6/decision.md, options A1 and B1). Child Link and the other forms never take them.
+// Release switches, each set in its own commit.
+static constexpr bool kAdultOcarinaFdCamera = false;
+static constexpr bool kAdultFairyNativeHand = false;
+// A1, Camera_KeepOn4: MM's own Fierce Deity ITEM1 row (CAM_MODE_JUMP, D_801B5410) films adult Link playing. MM uses it
+// for the Fierce Deity, whose skeleton is OoT's gLinkAdultSkel joint for joint, playing these same animations.
+extern "C" int Combo_MM_AdultOcarinaFdCamera(void) {
+#ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
+    // Emulator A/B runs of a diagnostics build switch it on with a default-off debug CVar.
+    return (kAdultOcarinaFdCamera || CVarGetInteger("gCombo.Debug.AdultOcarinaFdCamera", 0)) && Combo_MM_IsLinkAdult();
+#else
+    return kAdultOcarinaFdCamera && Combo_MM_IsLinkAdult();
+#endif
+}
+// B1, the Fairy Ocarina hand: adult Link keeps the native instrument hand, OoT's
+// gLinkAdultRightHandHoldingOotNear/FarDL, which is what OoT draws for adult Link with either ocarina (soh
+// z_player_lib.c:346-351), instead of the child Fairy item on the open hand.
+extern "C" int Combo_MM_AdultFairyNativeHand(void) {
+#ifdef COMBO_ADULT_MM_RUNTIME_DIAGNOSTICS
+    // Emulator A/B runs of a diagnostics build switch it on with a default-off debug CVar.
+    return (kAdultFairyNativeHand || CVarGetInteger("gCombo.Debug.AdultFairyNativeHand", 0)) && Combo_MM_IsLinkAdult();
+#else
+    return kAdultFairyNativeHand && Combo_MM_IsLinkAdult();
+#endif
 }
 // A new seed turns Cross-Games Age on only where it can run (Combo_MM_ClearUnavailableOptions); a seed that has it
 // keeps it (its logic), and on a device without the model Link is drawn as child. The headless generator has no game
