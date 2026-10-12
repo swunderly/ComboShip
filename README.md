@@ -31,7 +31,7 @@ The app is not on Google Play. You install the APK yourself. It does not check f
 
 You can check a ROM at [ship.equipment](https://ship.equipment/) (OoT) and [2ship.equipment](https://2ship.equipment/) (MM).
 
-Game controllers are supported, but none has been tested on a real device yet. The app does not require a touchscreen, but playing without one has not been tested either.
+Touch controls and game controllers both work. The owner plays on a phone with both.
 
 ## Install and first run
 
@@ -67,7 +67,7 @@ Game controllers are supported, but none has been tested on a real device yet. T
 - **One native app.** Both game engines and the combined randomizer are built for ARM64 and packed into one APK. It is not two separate apps and not an emulator.
 - **Everything on the device.** ROM import, game data extraction and seed generation all run on the phone.
 - **Touch controls.** A multi-touch gamepad with invisible floating sticks, visible fixed sticks, or a visible floating left stick. It has C buttons, D-pad, L, Z, R and Start, with Nintendo, Xbox or GameCube face-button layouts. Buttons can be moved, and their size and opacity can be changed. Layouts are saved per screen shape.
-- **Controllers.** Supported through SDL, but not yet tested on a device. The default mapping is L/L1 → L, ZL/L2 → Z and ZR/R2 → R. Remap in **Settings → Controls**. Hide the touch buttons with **Hold Menu → Hide touch controls**.
+- **Controllers.** Supported through SDL, and used on the owner's phone alongside touch. The default mapping is L/L1 → L, ZL/L2 → Z and ZR/R2 → R. Remap in **Settings → Controls**. Hide the touch buttons with **Hold Menu → Hide touch controls**.
 - **Phone-sized menus.** Tabs for Home, Enhancements, Randomizer, Video & Audio, Trackers, Settings and Tools. Adjustable menu size, tap for descriptions, multi-word search, sliders for most number settings, and a movable Menu button.
 - **Your files, visible.** Saves, seeds, backups and mods live in `Internal storage/ComboShip`. You can move them to private storage or an SD card. Data is copied and checked before a move, and the old copy is kept.
 - **Recovery tools.** Play without mods, startup and crash logs, and a backup ZIP of saves, settings and logs. Restoring a backup is manual.
@@ -113,11 +113,11 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 These are early builds. Expect bugs, and keep backups of your saves.
 
 - Most testing is automated tests plus an Android 15 emulator. The emulator runs the ARM64 code through translation with a software GPU, usually with audio off.
-- Some builds are also checked on the owner's own phone. Only a few fixes have been confirmed on a phone so far.
+- The owner plays the releases on a phone, with touch controls and a game controller. Only a few specific fixes have been confirmed on a phone so far.
 - No build has had a complete seed playthrough.
 - For 0.4.1: 74 automated tests, run on the developer's Windows PC, pass. 2 tests that cannot run on Windows were skipped. Six seeds were generated on the emulator. Each passed the generator's automatic playthrough check, which confirms in logic that the seed can be finished. Nobody played them through.
 - 0.4.1 was not tested on a phone before release, and nobody has cast the new MM spells in play yet, on a phone or the emulator.
-- Not yet checked on a real device: audio delay and quality, hardware controllers and keyboards, SD card storage, mods, MM three-day cycle resets, multiplayer over the Internet, and tablets.
+- Not yet checked on a real device: audio delay and quality, keyboards, SD card storage, mods, MM three-day cycle resets, multiplayer over the Internet, and tablets.
 - The SoH and 2Ship enhancements carried over from upstream are not all tested on Android.
 - Only OoT USA 1.0 and MM USA 1.0 ROMs have been used in testing. Master Quest has only been checked as seed data, never in play.
 - This port was written largely by AI coding agents, with code reviews between releases (for example, a full review before 0.3.10 found and fixed 187 problems).
