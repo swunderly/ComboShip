@@ -1367,6 +1367,30 @@ int LoadedRunSlot() {
     return info.loaded ? info.slot : game ? ComboTracker::OotActiveSlot() : -1;
 }
 
+// The MM spells where the device cannot cast them, and the MM boots and tunics where it cannot run them or while Swim
+// is shuffled (RO_SHUFFLE_SWIM = RO_GENERIC_YES, 1), with 2S2H's own disabled tooltips.
+const char* MmPoolOptionUnavailable(const char* option, bool swimShuffled) {
+    static int (*spellReady)(int) = nullptr;
+    static int (*gearAllowed)(int) = nullptr;
+    if (!spellReady)
+        spellReady = (int (*)(int))Combo_ResolveSym("2ship", "MM_SpellOptionReady");
+    if (!gearAllowed)
+        gearAllowed = (int (*)(int))Combo_ResolveSym("2ship", "MM_GearOptionsAllowed");
+    const std::string name = option ? option : "";
+    if (name == "RO_MM_SPELL_FIRE" || name == "RO_MM_SPELL_LOVE") // Spells.cpp: 2 Din's Fire, 1 Nayru's Love
+        return spellReady && spellReady(name == "RO_MM_SPELL_FIRE" ? 2 : 1)
+                   ? nullptr
+                   : "Disabled because this device could not prepare the spell. New seeds leave it out.";
+    if (name != "RO_MM_BOOTS_IRON" && name != "RO_MM_BOOTS_HOVER" && name != "RO_MM_TUNIC_GORON" &&
+        name != "RO_MM_TUNIC_ZORA")
+        return nullptr;
+    if (gearAllowed && gearAllowed(swimShuffled))
+        return nullptr;
+    return gearAllowed && gearAllowed(0)
+               ? "Disabled while Swim is shuffled. New seeds leave the MM boots and tunics out."
+               : "Disabled because this device cannot run the MM boots and tunics yet. New seeds leave them out.";
+}
+
 namespace {
 const CwWidget* FindPreference(const GameMenu& game, const char* cvar) {
     if (!game.loaded || !game.menu)
@@ -1666,28 +1690,11 @@ void DrawCombinedGoals() {
                              "device cannot run Adult Link in MM yet. New seeds leave it off.");
 }
 // Whether MM offers the family's MM option: its MM row is greyed out and unticked where the device cannot run the item,
-// and for the boots and tunics while Swim is shuffled, RO_SHUFFLE_SWIM = RO_GENERIC_YES (1) (2S2H Rando/Menu.cpp
-// SpellPoolCheckbox, GearPoolCheckbox).
+// and for the boots and tunics while Swim is shuffled (MmPoolOptionUnavailable).
 bool SharedMmExtensionOffered(int family) {
-    static int (*spellReady)(int) = nullptr;
-    static int (*gearAllowed)(int) = nullptr;
-    if (!spellReady)
-        spellReady = (int (*)(int))Combo_ResolveSym("2ship", "MM_SpellOptionReady");
-    if (!gearAllowed)
-        gearAllowed = (int (*)(int))Combo_ResolveSym("2ship", "MM_GearOptionsAllowed");
-    switch (family) {
-        case SF_SPELL_FIRE:
-            return spellReady && spellReady(2);
-        case SF_SPELL_LOVE:
-            return spellReady && spellReady(1);
-        case SF_BOOTS_IRON:
-        case SF_BOOTS_HOVER:
-        case SF_TUNIC_GORON:
-        case SF_TUNIC_ZORA:
-            return gearAllowed && gearAllowed(ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_SWIM", 0) == 1);
-        default:
-            return true;
-    }
+    const char* option = SharedFamilyMmExtension(family);
+    return !option ||
+           !MmPoolOptionUnavailable(option, ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_SWIM", 0) == 1);
 }
 void DrawSharedItems() {
     const int columns = MenuColumns();

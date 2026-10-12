@@ -227,16 +227,24 @@ combo_menu = read('combo/gui/ComboMenu.cpp')
 check('constboolextensionOff=extension&&(!ProfileUI::ReadInteger((std::string("gRando.Options.")+extension).c_str(),0)'
       '||!SharedMmExtensionOffered(i));' in body(combo_menu, 'void DrawSharedItems()'),
       'a Shared row stays tickable where MM greys its MM row out')
-offered = body(combo_menu, 'bool SharedMmExtensionOffered(int family)')
-check('caseSF_BOOTS_IRON:caseSF_BOOTS_HOVER:caseSF_TUNIC_GORON:caseSF_TUNIC_ZORA:returngearAllowed&&gearAllowed('
-      'ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_SWIM",0)==1);' in offered
-      and 'Combo_ResolveSym("2ship","MM_GearOptionsAllowed")' in offered,
-      'the Shared gear rows do not follow the MM gear rows')
+check('constchar*option=SharedFamilyMmExtension(family);return!option||!MmPoolOptionUnavailable(option,'
+      'ProfileUI::ReadInteger("gRando.Options.RO_SHUFFLE_SWIM",0)==1);'
+      in body(combo_menu, 'bool SharedMmExtensionOffered(int family)'),
+      'the Shared rows do not follow the MM rows (MmPoolOptionUnavailable)')
+# One answer for every app row of an MM spell or gear option (profile CatalogRow, Shared items), as 2S2H's own rows
+# decide: the spells by device readiness, the gear by device readiness and Swim shuffle.
+unavailable = body(combo_menu, 'const char* MmPoolOptionUnavailable(const char* option, bool swimShuffled)')
 spell_numbers = dict(re.findall(r'\{\s*(RO_MM_SPELL_\w+),\s*(\d)\s*\}', benport))
-check(f'caseSF_SPELL_FIRE:returnspellReady&&spellReady({spell_numbers.get("RO_MM_SPELL_FIRE")});' in offered
-      and f'caseSF_SPELL_LOVE:returnspellReady&&spellReady({spell_numbers.get("RO_MM_SPELL_LOVE")});' in offered
-      and 'Combo_ResolveSym("2ship","MM_SpellOptionReady")' in offered,
-      'the Shared spell rows do not follow the MM spell rows')
+check('Combo_ResolveSym("2ship","MM_SpellOptionReady")' in unavailable and
+      f'spellReady(name=="RO_MM_SPELL_FIRE"?{spell_numbers.get("RO_MM_SPELL_FIRE")}:'
+      f'{spell_numbers.get("RO_MM_SPELL_LOVE")})' in unavailable, 'the MM spell rows do not follow device readiness')
+check('Combo_ResolveSym("2ship","MM_GearOptionsAllowed")' in unavailable and
+      'if(gearAllowed&&gearAllowed(swimShuffled))returnnullptr;' in unavailable and
+      all(f'name!="{o}"' in unavailable for o in GEAR), 'the MM gear rows do not follow Combo_MM_GearOptionsAllowed')
+catalog_row = body(read('combo/gui/ComboRandomizerProfiles.cpp'), 'static void CatalogRow(const Json& row)')
+check('MmPoolOptionUnavailable(key.c_str()+kOptionPrefix.size(),get("RO_SHUFFLE_SWIM")==1)' in catalog_row and
+      'ImGui::BeginDisabled(disabled||unavailable);' in catalog_row,
+      'the profile item-pool rows do not grey out where MM does not offer the option')
 check('returnCombo_MMSpellOptionReady(spell);' in body(read('mm/2s2h/Rando/Spells.cpp'),
       'extern "C" COMBO_EXPORT int MM_SpellOptionReady(int spell)'), 'MM_SpellOptionReady export')
 editor = squash(read('mm/2s2h/DeveloperTools/SaveEditor.cpp'))

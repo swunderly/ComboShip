@@ -33,6 +33,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
   - The item tracker's Trade Items group shows the boots and tunics on seeds that add them.
 - An MM save is no longer refused at load because of its Adult Link or boots-and-tunics data. Anything the app cannot run on your device is simply left off.
 - **Shared Din's Fire** and **Shared Nayru's Love** now also stay greyed out and unticked while their MM spell option is greyed out on your device, instead of looking available while new seeds ignored them.
+- Randomizer > Items & checks > Majora's Mask now greys out **Din's Fire (MM)** and **Nayru's Love (MM)** where your device cannot cast them, as 0.4.1's notes described. Before, they could be ticked there while new seeds left them out. Your saved choice is kept.
 - Fixed crashes while drawing MM boots and tunics during item pickups, and while drawing the native Fairy Ocarina.
 - Profile editing now greys out the four MM gear options while Swim is shuffled, matching the main menu. Your saved gear preferences return when Swim shuffle is turned off.
 - An unsupported old experimental entrance layout no longer prevents the rest of an existing save from loading. Seeds that require a future entrance format are rejected before changing the loaded save.

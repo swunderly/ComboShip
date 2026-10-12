@@ -489,25 +489,27 @@ static void CatalogRow(const Json& row) {
         visible = get("RO_SHUFFLE_TRAPS") != 0;
     if (key == "gRando.Options.RO_SHUFFLE_SKELETON_KEY")
         disabled = get("RO_PLACEMENT_SMALL_KEYS") == 2;
-    // Match the native GearPoolCheckbox: Swim-shuffled seeds leave these out. Keep the
-    // draft preference so disabling Swim restores it, and display old seed snapshots as saved.
-    const bool unavailableGear =
-        Editable() && get("RO_SHUFFLE_SWIM") == 1 &&
-        (key == "gRando.Options.RO_MM_BOOTS_IRON" || key == "gRando.Options.RO_MM_BOOTS_HOVER" ||
-         key == "gRando.Options.RO_MM_TUNIC_GORON" || key == "gRando.Options.RO_MM_TUNIC_ZORA");
+    // Match the native SpellPoolCheckbox and GearPoolCheckbox: where this device cannot run an MM spell or the MM boots
+    // and tunics, or while Swim is shuffled for the boots and tunics, new seeds leave it out. Keep the draft
+    // preference so it returns once the row is offered again, and display old seed snapshots as saved.
+    static const std::string kOptionPrefix = "gRando.Options.";
+    const char* unavailable =
+        Editable() && key.rfind(kOptionPrefix, 0) == 0
+            ? MmPoolOptionUnavailable(key.c_str() + kOptionPrefix.size(), get("RO_SHUFFLE_SWIM") == 1)
+            : nullptr;
     if (get("RO_LOGIC") == 3)
         for (const auto& value : catalog.at("mm").at("disabledInVanilla"))
             disabled |= value == key;
     if (!visible)
         return;
     ImGui::PushID(key.c_str());
-    ImGui::BeginDisabled(disabled || unavailableGear);
-    if (unavailableGear) {
+    ImGui::BeginDisabled(disabled || unavailable);
+    if (unavailable) {
         bool off = false;
         ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
         ImGui::Checkbox(label.c_str(), &off);
         ComboMenu_PopCheckbox();
-        Tooltip("Disabled while Swim is shuffled. New seeds leave the MM boots and tunics out.");
+        Tooltip(unavailable);
     } else {
         DrawWidget(widget, ComboMenuModel::Get().Mm());
     }

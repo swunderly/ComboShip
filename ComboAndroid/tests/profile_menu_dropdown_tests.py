@@ -22,12 +22,33 @@ for include in ['#include <libultraship/libultraship.h>\n', '#include <fast/Fast
     assert include in prefix
     prefix = prefix.replace(include, '')
 (args.build_dir / 'profile_widget.inc').write_text(prefix + catalog_row + '\n}\n', encoding='utf-8')
+# The rows MM does not offer here come from ComboMenu.cpp, which resolves MM's readiness exports at run time.
+menu_text = (args.source / 'combo/gui/ComboMenu.cpp').read_text(encoding='utf-8')
+start = menu_text.index('const char* MmPoolOptionUnavailable(const char* option, bool swimShuffled) {')
+depth, end = 0, menu_text.index('{', start)
+while True:
+    depth += (menu_text[end] == '{') - (menu_text[end] == '}')
+    end += 1
+    if depth == 0:
+        break
+unavailable_fn = menu_text[start:end]
 harness = r'''
 #include <imgui_internal.h>
 #include <cassert>
+#include <cstring>
 #include <iostream>
 #include "profile_widget.inc"
+bool gearReady=true,spellReady[3]={true,true,true};
+extern "C" int FakeSpellOptionReady(int spell){return spell>=1&&spell<=2&&spellReady[spell];}
+extern "C" int FakeGearOptionsAllowed(int swimShuffled){return gearReady&&!swimShuffled;}
 namespace ComboRando {
+void* Combo_ResolveSym(const char* module,const char* name){
+ assert(!std::strcmp(module,"2ship"));
+ if(!std::strcmp(name,"MM_SpellOptionReady"))return reinterpret_cast<void*>(FakeSpellOptionReady);
+ if(!std::strcmp(name,"MM_GearOptionsAllowed"))return reinterpret_cast<void*>(FakeGearOptionsAllowed);
+ assert(false);return nullptr;
+}
+''' + unavailable_fn + r'''
 ComboMenuModel& ComboMenuModel::Get(){static ComboMenuModel model;return model;}
 ImVec4 ComboMenu_ThemeColor(){return ImVec4(0,0,1,1);}
 void ComboMenu_PushCheckbox(const ImVec4&){} void ComboMenu_PopCheckbox(){}
@@ -141,12 +162,46 @@ int main(){
    view=seedView;catalogFrame(row,0,true,true);catalogFrame(row,1,true,true);catalogFrame(row,2,true,true);
    assert(ReadInteger(gearKey.c_str(),-1)==1&&!dirty);
   }
+  // A device that cannot run the gear greys the rows out with Swim off too, as the native GearPoolCheckbox does.
+  gearReady=false;view=0;WriteInteger(swim,0);dirty=false;
+  catalogFrame(row,0,true,false);catalogFrame(row,1,true,false);catalogFrame(row,2,true,false);
+  assert(ReadInteger(gearKey.c_str(),-1)==1&&!dirty);
+  for(int seedView : {1,2}){
+   view=seedView;catalogFrame(row,0,true,true);
+  }
+  view=0;
+  assert(!std::strcmp(MmPoolOptionUnavailable(gear,false),
+                      "Disabled because this device cannot run the MM boots and tunics yet. New seeds leave them out."));
+  gearReady=true;
+  assert(!std::strcmp(MmPoolOptionUnavailable(gear,true),
+                      "Disabled while Swim is shuffled. New seeds leave the MM boots and tunics out."));
+  assert(MmPoolOptionUnavailable(gear,false)==nullptr);
  }
- view=0;const char* love="gRando.Options.RO_MM_SPELL_LOVE";WriteInteger(love,1);dirty=false;
- const Json loveRow={{"key",love},{"label","Nayru's Love"},{"kind","checkbox"}};
- catalogFrame(loveRow,0,false,true);catalogFrame(loveRow,1,false,true);catalogFrame(loveRow,2,false,false);
- assert(ReadInteger(love,-1)==0&&dirty);
- std::cout << "Swim disables all four MM gear rows, preserves preferences and saved/generated views, and spares spells\n";
+ std::cout << "Swim and device readiness disable all four MM gear rows, preserving preferences and saved/generated views\n";
+ // The MM spells follow device readiness only (the native SpellPoolCheckbox); Farore's Wind (MM) is always offered.
+ view=0;WriteInteger(swim,1);
+ for(int spell : {1,2}){
+  const char* option=spell==1?"RO_MM_SPELL_LOVE":"RO_MM_SPELL_FIRE";
+  const std::string spellKey=std::string("gRando.Options.")+option;
+  const Json spellRow={{"key",spellKey},{"label",option},{"kind","checkbox"}};
+  WriteInteger(spellKey.c_str(),1);dirty=false;
+  catalogFrame(spellRow,0,false,true);catalogFrame(spellRow,1,false,true);catalogFrame(spellRow,2,false,false);
+  assert(ReadInteger(spellKey.c_str(),-1)==0&&dirty);
+  WriteInteger(spellKey.c_str(),1);spellReady[spell]=false;dirty=false;
+  catalogFrame(spellRow,0,true,false);catalogFrame(spellRow,1,true,false);catalogFrame(spellRow,2,true,false);
+  assert(ReadInteger(spellKey.c_str(),-1)==1&&!dirty);
+  assert(!std::strcmp(MmPoolOptionUnavailable(option,false),
+                      "Disabled because this device could not prepare the spell. New seeds leave it out."));
+  view=1;catalogFrame(spellRow,0,true,true);view=0;
+  spellReady[spell]=true;
+ }
+ spellReady[1]=spellReady[2]=false;gearReady=false;
+ const char* wind="gRando.Options.RO_MM_SPELL_WIND";WriteInteger(wind,1);dirty=false;
+ const Json windRow={{"key",wind},{"label","Farore's Wind"},{"kind","checkbox"}};
+ catalogFrame(windRow,0,false,true);catalogFrame(windRow,1,false,true);catalogFrame(windRow,2,false,false);
+ assert(ReadInteger(wind,-1)==0&&dirty);
+ spellReady[1]=spellReady[2]=true;gearReady=true;
+ std::cout << "Device readiness disables the Din's Fire and Nayru's Love (MM) rows and spares Farore's Wind (MM)\n";
  ImGui::DestroyContext();std::cout << "PASS: production dropdown selection/refresh remains valid\n";
 }
 '''
