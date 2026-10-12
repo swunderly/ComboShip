@@ -1172,8 +1172,10 @@ extern "C" void InitOTR(int argc, char* argv[]) {
         sComboReturnPending = false;
         sComboResetReturnPending = false;
         sComboOwlSaveQuitPending = false;
-        // An owl save quit lands on OOT's title, like Ctrl+R, rather than resuming OOT gameplay.
-        if (isOwlSaveQuit) {
+        // A reset (Ctrl+R, Restart game, the console's "reset") and an owl save quit land on OOT's title rather than
+        // resuming OOT gameplay. Console commands follow the foreground game (ComboConsoleCommands.h), so a reset
+        // from MM runs MM's own handler, which only requests this return; OOT's Combo_HandleReset no longer sees it.
+        if (isReset || isOwlSaveQuit) {
             static void (*sFn)(void) = nullptr;
             static bool sTried = false;
             if (!sTried) {
