@@ -496,10 +496,77 @@ void SeeThrough() {
     std::cout << "PASS: webs and the bowling guard do not hide rewards; walls, floors and doors behind them do\n";
 }
 
+void Foreign() {
+    const auto windmill = RC_KAK_WINDMILL_FREESTANDING_POH, other = RC_HF_TEKTITE_GROTTO_FREESTANDING_POH;
+    auto prepare = [&] {
+        ResetWorld();
+        ctx.GetItemLocation(windmill)->placed = RG_COMBO_FOREIGN;
+        auto& item = foreignMap[Rando::StaticData::GetLocation(windmill)->GetName()];
+        item = {};
+        item.itemGame = ComboRando::GAME_MM;
+        item.itemName = "Progressive Sword";
+        item.displayName = "Progressive Sword (MM)";
+        return &item;
+    };
+    // The MM model drew: the sighting names the tier that model shows.
+    prepare();
+    foreignLiveName = "Razor Sword";
+    const GetItemEntry sentinel = ctx.GetFinalGIEntry(windmill, true);
+    assert(sentinel.getItemId == RG_COMBO_FOREIGN && sentinel.comboForeignCheck == windmill);
+    RecordObservedItem(&item00, sentinel);
+    Unseen(windmill); // nothing is stored before the model is drawn
+    RecordForeignDraw(windmill, true);
+    Seen(windmill, 1, RG_COMBO_FOREIGN, "Razor Sword (MM)");
+    assert(saves == 1);
+    RecordForeignDraw(windmill, true);
+    assert(saves == 1); // one sighting per sampled draw
+    // Without a resolved tier the spoiler's name is used.
+    prepare();
+    Draw(windmill);
+    RecordForeignDraw(windmill, true);
+    Seen(windmill, 1, RG_COMBO_FOREIGN, "Progressive Sword (MM)");
+    // A disguised MM trap is recorded as its disguise.
+    prepare()->fakeItemName = "Hookshot";
+    foreignMap.begin()->second.fakeDisplayName = "Hookshot (MM)";
+    Draw(windmill);
+    RecordForeignDraw(windmill, true);
+    Seen(windmill, 1, RG_COMBO_FOREIGN, "Hookshot (MM)");
+    // The MM model failed and the sentinel Blue Rupee was drawn: nothing about the MM item is revealed.
+    prepare();
+    Draw(windmill);
+    RecordForeignDraw(windmill, false);
+    Unseen(windmill);
+    // A draw result never applies to a different check or to a sighting another draw replaced.
+    prepare();
+    ctx.GetItemLocation(other)->placed = RG_PIECE_OF_HEART;
+    Draw(windmill);
+    RecordForeignDraw(other, true);
+    RecordForeignDraw(windmill, true);
+    Unseen(windmill);
+    Draw(windmill);
+    Draw(other);
+    RecordForeignDraw(windmill, true);
+    Unseen(windmill);
+    Seen(other, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    // Hidden or unknown foreign checks stay unseen even when the model draws.
+    prepare();
+    occluders = { { { 0, 0, 50 }, BGCHECK_SCENE, nullptr } };
+    Draw(windmill);
+    RecordForeignDraw(windmill, true);
+    Unseen(windmill);
+    prepare();
+    foreignMap.clear();
+    Draw(windmill);
+    RecordForeignDraw(windmill, true);
+    Unseen(windmill);
+    std::cout << "PASS: MM items at OoT checks are Seen only once their real model was drawn, by its shown tier\n";
+}
+
 int main() {
     StandIns();
     Hidden();
     SeeThrough();
+    Foreign();
 }
 '''
 code = prelude + final_entry + '\n} // namespace Rando\nnamespace CheckTracker {\n' + block + '\n} // namespace CheckTracker\n' + tests

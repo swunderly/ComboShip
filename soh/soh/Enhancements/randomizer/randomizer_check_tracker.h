@@ -69,6 +69,8 @@ void LoadFromPreset(const nlohmann::json& info);
 #ifdef COMBO_BUILD
 // Called at the actual randomized-model draw and explicit item-hint reveal.
 void RecordObservedItem(Actor* actor, const GetItemEntry& shownItem);
+// Called after a foreign (MM) model draw; drawn is false when it fell back to the sentinel Blue Rupee.
+void RecordForeignDraw(RandomizerCheck rc, bool drawn);
 void RecordHintedItem(RandomizerCheck rc);
 #endif
 } // namespace CheckTracker

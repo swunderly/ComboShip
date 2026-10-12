@@ -33,6 +33,7 @@
 #include "z64item.h"
 
 #ifdef COMBO_BUILD
+#include "draw.h" // Randomizer_ComboForeignLiveName
 #include "rando/TrackerKnowledge.h"
 #include "overlays/actors/ovl_En_Ossan/z_en_ossan.h"
 #include "ComboMenuSharedContext.h"        // ComboShip: per-DLL ImGui context helper (combo-owned)
@@ -182,35 +183,59 @@ void RecordHintedItem(RandomizerCheck rc) {
         SaveManager::Instance->SaveSection(gSaveContext.fileNum, sectionId, true);
 }
 
-static bool ObserveKnownCheck(RandomizerCheck rc, const GetItemEntry& shown) {
+// What the model drawn for a check shows the player. source 0: nothing to record.
+struct Sighting {
+    uint8_t source = 0;
+    RandomizerGet item = RG_NONE;
+    std::string name;
+};
+
+static Sighting SightingFor(RandomizerCheck rc, const GetItemEntry& shown) {
     if (rc <= RC_UNKNOWN_CHECK || rc >= RC_MAX)
-        return false;
+        return {}; // no arbitrary actor-to-reward guessing
     if (!IsCheckShuffled(rc))
-        return false;
+        return {};
     auto* item = OTRGlobals::Instance->gRandoContext->GetItemLocation(rc);
     if (item->HasObtained())
-        return false;
+        return {};
     if (item->GetPlacedRandomizerGet() == RG_COMBO_FOREIGN) {
         const auto* foreign = OOT_LookupForeign(gSaveContext.fileNum, Rando::StaticData::GetLocation(rc)->GetName());
-        return foreign && StoreKnowledge(rc, 1, RG_COMBO_FOREIGN,
-                                         foreign->HasDisguise() ? foreign->fakeDisplayName : foreign->displayName);
+        if (foreign == nullptr)
+            return {};
+        // A disguised trap shows its disguise; any other MM item the tier its model is drawn as.
+        return { 1, RG_COMBO_FOREIGN,
+                 foreign->HasDisguise() ? foreign->fakeDisplayName
+                                        : ComboRando::ShownForeignName(*foreign, Randomizer_ComboForeignLiveName(rc)) };
     }
     RandomizerGet named = ShownNativeItem(shown);
+    if (named == RG_NONE)
+        return {};
     // GetFinalGIEntry draws a plain Blue Rupee while the placed item cannot be obtained. Record what
     // is on screen as a stand-in, which never replaces a sighting or a hint of the real item.
     const bool standIn = shown.modIndex == MOD_NONE && shown.getItemId == GI_RUPEE_BLUE &&
                          item->GetPlacedRandomizerGet() != RG_BLUE_RUPEE;
-    return named != RG_NONE &&
-           StoreKnowledge(rc, standIn ? ComboRando::kTrackerSourceStandIn : 1, named,
-                          Rando::StaticData::RetrieveItem(named).GetName().GetForLanguage(gSaveContext.language));
+    return { standIn ? ComboRando::kTrackerSourceStandIn : uint8_t(1), named,
+             Rando::StaticData::RetrieveItem(named).GetName().GetForLanguage(gSaveContext.language) };
 }
 
+static void StoreSighting(RandomizerCheck rc, Sighting sighting) {
+    if (StoreKnowledge(rc, sighting.source, sighting.item, std::move(sighting.name)))
+        SaveManager::Instance->SaveSection(gSaveContext.fileNum, sectionId, true);
+}
+
+// A foreign (MM) model is drawn right after RecordObservedItem and can still fall back to the
+// sentinel Blue Rupee, which must not reveal the MM item. Its sighting waits for RecordForeignDraw.
+static RandomizerCheck sForeignCheck = RC_UNKNOWN_CHECK;
+static Sighting sForeignSighting;
+
 void RecordObservedItem(Actor* actor, const GetItemEntry& shown) {
+    sForeignCheck = RC_UNKNOWN_CHECK;
     if (!actor || !KnowledgeEnabled() || CVarGetInteger(CVAR_RANDOMIZER_ENHANCEMENT("MysteriousShuffle"), 0))
         return;
     RandomizerCheck rc = static_cast<RandomizerCheck>(shown.comboForeignCheck);
-    if (rc <= RC_UNKNOWN_CHECK || rc >= RC_MAX)
-        return; // no arbitrary actor-to-reward guessing
+    Sighting sighting = SightingFor(rc, shown);
+    if (sighting.source == 0)
+        return;
     const MtxF* model = Matrix_GetCurrent();
     Vec3f origin{}, pos;
     Matrix_MultVec3f(&origin, &pos);
@@ -219,8 +244,19 @@ void RecordObservedItem(Actor* actor, const GetItemEntry& shown) {
                       model->xz * model->xz + model->yz * model->yz + model->zz * model->zz,
                       actor->id == ACTOR_EN_GIRLA))
         return;
-    if (ObserveKnownCheck(rc, shown))
-        SaveManager::Instance->SaveSection(gSaveContext.fileNum, sectionId, true);
+    if (sighting.item == RG_COMBO_FOREIGN) {
+        sForeignCheck = rc;
+        sForeignSighting = std::move(sighting);
+        return;
+    }
+    StoreSighting(rc, std::move(sighting));
+}
+
+void RecordForeignDraw(RandomizerCheck rc, bool drawn) {
+    const bool pending = rc > RC_UNKNOWN_CHECK && rc == sForeignCheck;
+    sForeignCheck = RC_UNKNOWN_CHECK;
+    if (pending && drawn)
+        StoreSighting(rc, std::move(sForeignSighting));
 }
 
 #endif

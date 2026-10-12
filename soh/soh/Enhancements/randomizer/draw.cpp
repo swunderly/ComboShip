@@ -39,6 +39,7 @@ extern SaveContext gSaveContext;
 // ComboShip: combo-owned animated cross-game item rendering (MM stray fairies). TU-glue: needs the
 // engine headers above (z64.h/macros.h/functions.h) already in scope.
 #include "ComboForeignAnim.h"
+#include "randomizer_check_tracker.h"
 #endif
 
 const char* SmallBodyCvarValue[10] = {
@@ -517,7 +518,9 @@ extern "C" void Randomizer_DrawRocsFeather(PlayState* play, GetItemEntry* getIte
 #include "ComboForeignDrawOOT.h"
 
 extern "C" void Randomizer_DrawComboForeign(PlayState* play, GetItemEntry* getItemEntry) {
-    OOT_DrawComboForeign(play, getItemEntry);
+    const bool drawn = OOT_DrawComboForeign(play, getItemEntry);
+    // A tracker sighting sampled just before this draw counts only when the real MM model was drawn.
+    CheckTracker::RecordForeignDraw(static_cast<RandomizerCheck>(getItemEntry->comboForeignCheck), drawn);
 }
 
 extern "C" void Randomizer_LatchComboForeign(int32_t rc) {

@@ -659,8 +659,9 @@ inline void OOT_DrawForeignSimple(PlayState* play, const ComboForeignDrawInfo* i
 
 // Draw a foreign (MM-bound) item's real MM model at the current model matrix. Any resolution
 // failure falls back to the sentinel (the RG_COMBO_FOREIGN entry's blue rupee), so we never draw
-// blank. Mirror of MM_DrawComboForeign (combo/menu/ComboForeignDrawMM.h).
-inline void OOT_DrawComboForeign(PlayState* play, GetItemEntry* getItemEntry) {
+// blank. Returns true when the real MM model was drawn, false for the sentinel. Mirror of
+// MM_DrawComboForeign (combo/menu/ComboForeignDrawMM.h).
+inline bool OOT_DrawComboForeign(PlayState* play, GetItemEntry* getItemEntry) {
     RandomizerCheck rc = (RandomizerCheck)getItemEntry->comboForeignCheck;
     if (rc == RC_UNKNOWN_CHECK) {
         // Defensive: entries not built via GetFinalGIEntry carry no check; the queued get-item
@@ -671,15 +672,16 @@ inline void OOT_DrawComboForeign(PlayState* play, GetItemEntry* getItemEntry) {
     const ComboForeignDrawInfo* info = (rc != RC_UNKNOWN_CHECK) ? ComboResolveForeignDrawInfo(rc) : nullptr;
     if (info == nullptr) {
         GetItem_Draw(play, getItemEntry->gid);
-        return;
+        return false;
     }
 
     // ComboShip: animated class — combo-owned skeletal draw (any failure -> sentinel, never blank).
     if (info->animOk) {
         if (!ComboForeignAnim_Draw(&info->anim, "mm", play)) {
             GetItem_Draw(play, getItemEntry->gid);
+            return false;
         }
-        return;
+        return true;
     }
 
     switch (info->drawKind) {
@@ -718,6 +720,7 @@ inline void OOT_DrawComboForeign(PlayState* play, GetItemEntry* getItemEntry) {
             OOT_DrawForeignSimple(play, info);
             break;
     }
+    return true;
 }
 
 #undef COMBO_FOREIGN_MTX

@@ -3,7 +3,9 @@
 Scans the OoT sources for GetItemEntry_Draw calls (the shared reward-model draw). Each one must be
 preceded, in the same function and under COMBO_BUILD, by CheckTracker::RecordObservedItem or
 Combo_OOTRecordObservedItem with the same entry, so the check can become Seen. Recording comes
-before the draw because the visibility test reads the model matrix the draw then changes.
+before the draw because the visibility test reads the model matrix the draw then changes. An MM
+item's sighting is kept only when the foreign draw reports that its real model, not the sentinel
+Blue Rupee, was drawn.
 """
 import argparse
 from pathlib import Path
@@ -64,6 +66,22 @@ for rel, count in expected.items():
     found = sum(host.startswith(rel + ':') for host in hosts)
     if found != count:
         failures.append(f'{rel}: expected {count} recorded reward draws, found {found}')
+
+# An MM item's sighting is stored only after its real model drew: every sentinel fallback in the
+# foreign draw reports false, and the draw hook hands that result to the tracker.
+foreign = (source/'combo/menu/ComboForeignDrawOOT.h').read_text(encoding='utf-8')
+body = foreign[foreign.index('inline bool OOT_DrawComboForeign('):]
+body = body[:body.index('\n}\n')]
+fallbacks = [body[m.end():body.index(';', m.end())].strip()
+             for m in re.finditer(r'GetItem_Draw\(play, getItemEntry->gid\);', body)]
+if len(fallbacks) != 2 or any(after != 'return false' for after in fallbacks):
+    failures.append('OOT_DrawComboForeign: a sentinel fallback does not return false')
+hook = (source/'soh/soh/Enhancements/randomizer/draw.cpp').read_text(encoding='utf-8')
+hook = hook[hook.index('extern "C" void Randomizer_DrawComboForeign('):]
+hook = hook[:hook.index('\n}\n')]
+if not re.search(r'const bool (\w+) = OOT_DrawComboForeign\(play, getItemEntry\);.*'
+                 r'CheckTracker::RecordForeignDraw\([^;]*comboForeignCheck[^;]*,\s*\1\);', hook, re.S):
+    failures.append('Randomizer_DrawComboForeign: the foreign draw result does not reach the tracker')
 if failures:
     print('\n'.join(failures))
     sys.exit(1)
