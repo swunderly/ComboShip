@@ -4,10 +4,11 @@ Checks the production sources for: the gear runtime switch (Combo_MM_GearActive)
 load policy that never refuses a save for its adult or gear state, the readiness gate that greys the gear options out
 and leaves them out of new seeds where the gear cannot run, the menu, profile, Save Editor and tracker rows, the child
 boot textures (a subset of the names the readiness check validates), the Hover Boots lily pads, the Iron Boots under
-Swim shuffle and the Goron/Zora Tunic colour patch (on the combiners just before 2S2H's own tunic cosmetic patches).
+Swim shuffle, the underwater get-item check and the Goron/Zora Tunic colour patch (on the combiners just before
+2S2H's own tunic cosmetic patches).
 When the OoTMM v32.3 checkout is available (--reference, or references/ootmm-stable-32.3 beside the worktree), the
-copied boot table, child boot and hover-circle display lists, tunic palette, gear setting text, tunic combiner patches
-and no-scale water check are checked against it.
+copied boot table, child boot and hover-circle display lists, tunic palette, gear setting text, tunic combiner patches,
+no-scale water check and underwater get-item patch (Player.S 0x8083D2FC) are checked against it.
 """
 from pathlib import Path
 import argparse
@@ -91,6 +92,31 @@ for signature in ('s32 Combo_MM_GetCustomBoots(Player* player)', 'static s32 Com
     fn = body(player, signature)
     check('Combo_MM_GearActive()' in fn and 'adultMm.enabled' not in fn, f'{signature} is not gated on the gear runtime')
 check('Combo_MM_GearActive()&&!Combo_MM_ShouldTakeFloorDamage(' in squash(player), 'Goron Tunic floor damage gate')
+# Underwater get-items (OoTMM Player.S 0x8083D2FC): the MM Iron Boots (currentBoots 6) take the get-item cutscene too.
+handler = re.sub(r'//[^\n]*', '', player[player.index('s32 Player_ActionHandler_2('):])
+handler = handler[:handler.index('func_8083D168(play, this, giEntry);')]
+underwater = re.search(r'if \(!\(this->stateFlags2 & PLAYER_STATE2_400\) \|\|\s*#ifdef COMBO_BUILD\s*\(([^\n]*)\)\s*#else\s*'
+                       r'\(([^\n]*)\)\s*#endif\s*\) \{\s*Player_StopCutscene\(this\);', handler)
+check(underwater is not None and underwater.group(2) == 'this->currentBoots == PLAYER_BOOTS_ZORA_UNDERWATER',
+      'the underwater get-item check is not the native one with a COMBO_BUILD branch')
+boot_enum = read('mm/include/z64player.h')
+boot_enum = boot_enum[boot_enum.index('typedef enum PlayerBoots {'):boot_enum.index('} PlayerBoots;')]
+boot_values = {name: int(value) for value, name in re.findall(r'/\* (\d+) \*/ (PLAYER_BOOTS_\w+)', boot_enum)}
+
+
+def underwater_setup(expression, boots):
+    """Whether Player_ActionHandler_2 sets up the get-item cutscene with STATE2_400 set and these boots."""
+    expression = expression.replace('this->currentBoots', str(boots))
+    for name, value in boot_values.items():
+        expression = re.sub(r'\b' + name + r'\b', str(value), expression)
+    check(re.fullmatch(r'[\d\s<>=!]+', expression) is not None, f'unexpected underwater check: {expression}')
+    return bool(eval(expression)) if re.fullmatch(r'[\d\s<>=!]+', expression) else None
+
+
+iron = 6  # ComboAdultBootsNative.h: player->currentBoots = 6 (PLAYER_BOOTS_GORON), checked below
+if underwater:
+    check(underwater_setup(underwater.group(1), iron) and not underwater_setup(underwater.group(2), iron),
+          'MM Iron Boots underwater still skip the get-item cutscene')
 check('Combo_MM_ApplyAdultGearInventoryResources(Combo_MM_GearActive());' in squash(player), 'gear item tables gate')
 boots = read('mm/src/code/ComboAdultBootsNative.h')
 check('if((!gear&&!Combo_MM_IsLinkAdult())||' in squash(boots) and 'isAdult=Combo_MM_IsLinkAdult();' in squash(boots),
@@ -341,6 +367,20 @@ if reference is not None:
     player_s = (reference / 'packages/generator/src/mm/actors/Player.S').read_text(encoding='utf-8')
     env = re.findall(r'PATCH_VROM (0x[0-9A-F]+)\s*\.int 0xFC12FE04\s*\.int 0xFFFFFDFE', player_s)
     check(len(env) == 11, f'OoTMM patches {len(env)} tunic combiners, not 11')
+    # Player.S 0x8083D2FC turns "currentBoots == 5" (addiu at, 5; bnel t5, at skips the cutscene setup) into
+    # "currentBoots >= 5" (slti at, t5, 5; bnezl at skips it); the port's branches must agree for every boot value.
+    patched = re.search(r'PATCH_START 0x8083D2FC\s*slti\s+at, t5, (0x[0-9A-Fa-f]+)\s*bnezl\s+at, \.\+0x60\s*PATCH_END',
+                        player_s)
+    replaced = re.search(r'Replaces:\s*ADDIU\s+AT, R0, (0x[0-9A-Fa-f]+)\s*BNEL\s+T5, AT, \.\+0x60\s*\*/\s*'
+                         r'PATCH_START 0x8083D2FC', player_s)
+    check(patched is not None and replaced is not None,
+          'OoTMM Player.S no longer patches the underwater get-item check at 0x8083D2FC')
+    if patched and replaced and underwater:
+        for value in range(boot_values['PLAYER_BOOTS_MAX']):
+            check(underwater_setup(underwater.group(1), value) == (value >= int(patched.group(1), 16)),
+                  f'boots {value}: the underwater get-item check differs from OoTMM 0x8083D2FC')
+            check(underwater_setup(underwater.group(2), value) == (value == int(replaced.group(1), 16)),
+                  f'boots {value}: the native underwater get-item check is not MM\'s')
     data = (reference / 'packages/core/src/settings/data.ts').read_text(encoding='utf-8')
 
     def setting(key):

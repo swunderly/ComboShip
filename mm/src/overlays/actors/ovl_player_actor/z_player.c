@@ -9795,7 +9795,15 @@ s32 Player_ActionHandler_2(Player* this, PlayState* play) {
                         func_80838830(this, giEntry->objectId);
 
                         if (!(this->stateFlags2 & PLAYER_STATE2_400) ||
-                            (this->currentBoots == PLAYER_BOOTS_ZORA_UNDERWATER)) {
+#ifdef COMBO_BUILD
+                            // OoTMM v32.3 Player.S 0x8083D2FC ("pick up heart pieces underwater"): the MM Iron Boots
+                            // (currentBoots 6) also take the get-item cutscene underwater, instead of leaving Link
+                            // in his ground action with the get-item flags set.
+                            (this->currentBoots >= PLAYER_BOOTS_ZORA_UNDERWATER)
+#else
+                            (this->currentBoots == PLAYER_BOOTS_ZORA_UNDERWATER)
+#endif
+                        ) {
                             Player_StopCutscene(this);
                             Player_SetupWaitForPutAwayWithCs(play, this, func_80837C78,
                                                              play->playerCsIds[PLAYER_CS_ID_ITEM_GET]);
