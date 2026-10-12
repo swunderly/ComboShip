@@ -188,4 +188,10 @@ class Logic {
     std::shared_ptr<Context> ctx;
     bool inLogic[LOGIC_MAX];
 }; // class Logic
+
+// The Logic that bean predicates and item effects read and write. Outside a Temple probe query it is
+// the Context's Logic, exactly as before; TempleProbe.cpp sets ProbeLogicActive() for one query while
+// ::logic points at the probe's private Logic (generation only).
+std::shared_ptr<Logic> ActiveLogic();
+bool& ProbeLogicActive();
 } // namespace Rando

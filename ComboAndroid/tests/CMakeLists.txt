@@ -114,6 +114,7 @@ set_tests_properties(entrance_pinned_reference_and_exporters PROPERTIES SKIP_REG
 combo_python_test(entrance_temple_pinned_lemmas entrance_temple_reference_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_temple_reference")
 set_tests_properties(entrance_temple_pinned_lemmas PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+combo_harness_test(oot_temple_probe_active_logic_scope temple_active_logic_tests.py)
 combo_json_harness_test(oot_song_age_native_area_propagation song_age_area_tests.py)
 combo_json_harness_test(oot_tracker_transition_reachability_refresh tracker_transition_tests.py)
 combo_json_harness_test(oot_tracker_knowledge_save_lifecycle tracker_persistence_tests.py)

@@ -47,8 +47,7 @@ Item::Item(const RandomizerGet randomizerGet_, Text name_, const ItemType type_,
 }
 
 void Item::ApplyEffect() const {
-    auto ctx = Rando::Context::GetInstance();
-    auto logic = ctx->GetLogic();
+    auto logic = ActiveLogic();
     if (!logic->CalculatingAvailableChecks) {
         logic->ApplyItemEffect(StaticData::RetrieveItem(randomizerGet), true);
     }
@@ -56,8 +55,7 @@ void Item::ApplyEffect() const {
 }
 
 void Item::UndoEffect() const {
-    auto ctx = Rando::Context::GetInstance();
-    auto logic = ctx->GetLogic();
+    auto logic = ActiveLogic();
     if (!logic->CalculatingAvailableChecks) {
         logic->ApplyItemEffect(StaticData::RetrieveItem(randomizerGet), false);
     }
@@ -115,7 +113,7 @@ std::shared_ptr<GetItemEntry> Item::GetGIEntry() const { // NOLINT(*-no-recursio
         return giEntry;
     }
     std::shared_ptr<Rando::Context> ctx = Rando::Context::GetInstance();
-    auto logic = ctx->GetLogic();
+    auto logic = ActiveLogic();
     RandomizerGet actual = RG_NONE;
     const bool tycoonWallet = OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_INCLUDE_TYCOON_WALLET);
     const u8 infiniteUpgrades = OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_INFINITE_UPGRADES);

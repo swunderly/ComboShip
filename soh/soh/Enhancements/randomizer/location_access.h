@@ -283,6 +283,8 @@ extern void DumpWorldGraph(std::string str);
 } // namespace Regions
 
 void RegionTable_Init();
+// Counts RegionTable_Init calls: Region and Entrance pointers from an older epoch are stale.
+uint32_t RegionTable_Epoch();
 Region* RegionTable(const RandomizerRegion regionKey);
 std::vector<Rando::Entrance*> GetShuffleableEntrances(Rando::EntranceType type, bool onlyPrimary = true);
 Rando::Entrance* GetEntrance(RandomizerRegion source, RandomizerRegion destination);

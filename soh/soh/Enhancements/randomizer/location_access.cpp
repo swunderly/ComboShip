@@ -517,7 +517,7 @@ Rando::Entrance* Region::GetExit(RandomizerRegion exitToReturn) {
 
 bool Region::CanPlantBeanCheck(RandomizerGet bean) const {
     auto ctx = Rando::Context::GetInstance();
-    auto logic = ctx->GetLogic();
+    auto logic = Rando::ActiveLogic();
     return logic->HasItem(bean) && logic->GetAmmo(ITEM_BEAN) > 0 &&
            (ctx->GetOption(RSK_SKIP_PLANTING_BEANS) || BothAgesCheck());
 }
@@ -894,7 +894,7 @@ bool AnyAgeTime(ConditionFn condition) {
 }
 
 bool BeanPlanted(const RandomizerGet bean) {
-    auto logic = Rando::Context::GetInstance()->GetLogic();
+    auto logic = Rando::ActiveLogic();
     // flag irrelevant if plant won't spawn
     if (!logic->HasItem(bean)) {
         return false;
@@ -985,9 +985,28 @@ bool AdultCanAccess(const RandomizerRegion region) {
 
 Rando::Context* ctx;
 std::shared_ptr<Rando::Logic> logic;
+static uint32_t sRegionTableEpoch = 0;
+
+bool& Rando::ProbeLogicActive() {
+    static bool active = false;
+    return active;
+}
+
+std::shared_ptr<Rando::Logic> Rando::ActiveLogic() {
+    if (ProbeLogicActive()) {
+        assert(::logic != nullptr);
+        return ::logic;
+    }
+    return Context::GetInstance()->GetLogic();
+}
+
+uint32_t RegionTable_Epoch() {
+    return sRegionTableEpoch;
+}
 
 void RegionTable_Init() {
     using namespace Rando;
+    ++sRegionTableEpoch;
     ctx = Context::GetInstance().get();
     logic = ctx->GetLogic(); // RANDOTODO do not hardcode, instead allow accepting a Logic class somehow
     grottoEvents = {
