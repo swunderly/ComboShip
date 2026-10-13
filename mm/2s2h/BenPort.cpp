@@ -3699,18 +3699,27 @@ extern "C" COMBO_EXPORT const char* MM_DumpProfileCatalog(void) {
             row["excludeHunt"] = true;
         data["startingItems"].push_back(std::move(row));
     }
+    // ComboPresets.h: OoTMM's Default and Allsanity start with nothing (startingItems {}, util.ts:21); the Ocarina and
+    // Song of Time are Clock Tower Roof checks and the sword a pool item. Beginner starts with two swords, the shield
+    // (sharedShields), the Ocarina, Soaring and the Song of Time it places on the initial Song of Healing
+    // (presets.ts:1023-1032,1059). A file without its own list keeps 2Ship's start.
+    const std::vector<RandoItemId> base = { RI_PROGRESSIVE_SWORD, RI_SHIELD_HERO, RI_OCARINA, RI_SONG_TIME };
+    auto itemNames = [](const std::vector<RandoItemId>& items) {
+        auto names = nlohmann::json::array();
+        for (auto id : items)
+            names.push_back(MM_ProfileCatalogText(Rando::StaticData::Items.at(id).spoilerName));
+        return names;
+    };
     for (int preset = 0; preset < 3; ++preset) {
-        std::vector<RandoItemId> starting = { RI_PROGRESSIVE_SWORD, RI_SHIELD_HERO, RI_OCARINA, RI_SONG_TIME };
+        std::vector<RandoItemId> starting;
         if (preset == 1) {
+            starting = base;
             starting.push_back(RI_PROGRESSIVE_SWORD);
             starting.push_back(RI_SONG_SOARING);
         }
-        auto names = nlohmann::json::array();
-        for (auto id : starting)
-            names.push_back(MM_ProfileCatalogText(Rando::StaticData::Items.at(id).spoilerName));
-        data["presetStartingItems"][std::to_string(preset)] = std::move(names);
+        data["presetStartingItems"][std::to_string(preset)] = itemNames(starting);
     }
-    data["defaults"]["gRando.StartingItems"] = data["presetStartingItems"]["0"];
+    data["defaults"]["gRando.StartingItems"] = itemNames(base);
     MM_AppendProfileMenuMetadata(data);
     result = data.dump();
     return result.c_str();
