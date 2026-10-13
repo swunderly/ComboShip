@@ -405,7 +405,8 @@ void DrawInfoTab() {
     }
     Kit::EndCard();
 
-    // Everything else, nothing removed: counters, engine state, the Biggoron's Sword quest, minigame records.
+    // Everything else, nothing removed: counters, engine state, minigame records. The Biggoron's Sword quest is
+    // on Equipment and the Triforce pieces on Quest Status.
     Kit::BeginCard("advancedCard");
     if (ImGui::CollapsingHeader("Advanced")) {
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
@@ -417,19 +418,6 @@ void DrawInfoTab() {
         PushStyleInput(THEME_COLOR);
         ComboTouch::Count("Deaths", &gSaveContext.deaths, 0, 65535);
         Tooltip("Total number of deaths");
-        PopStyleInput();
-
-        Checkbox("Has BGS", (bool*)&gSaveContext.bgsFlag,
-                 checkboxOptionsBase.Tooltip("Is Biggoron sword unlocked? Replaces Giant's knife"));
-
-        PushStyleInput(THEME_COLOR);
-        ComboTouch::Count("Sword Health", &gSaveContext.swordHealth, 0, 255);
-        Tooltip("Giant's knife health. Default is 8. Must be >0 for Biggoron sword to work");
-        PopStyleInput();
-
-        PushStyleInput(THEME_COLOR);
-        ComboTouch::Count("Bgs Day Count", &gSaveContext.bgsDayCount, 0, 1000);
-        Tooltip("Total number of days elapsed since receiving claim check from Biggoron");
         PopStyleInput();
 
         PushStyleInput(THEME_COLOR);
@@ -474,14 +462,6 @@ void DrawInfoTab() {
 
         Combobox("Z Target Mode", &gSaveContext.zTargetSetting, zTargetMap,
                  comboboxOptionsBase.Tooltip("Z-Targeting behavior"));
-
-        if (IS_RANDO && (OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_TRIFORCE_HUNT_PIECES_TOTAL) > 0)) {
-            PushStyleInput(THEME_COLOR);
-            ComboTouch::Count("Triforce Pieces", &gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected, 0,
-                              255);
-            Tooltip("Currently obtained Triforce Pieces. For Triforce Hunt.");
-            PopStyleInput();
-        }
 
         static std::array<const char*, 7> minigameHS = { "Horseback Archery", "Big Poe Points",
                                                          "Fishing",           "Malon's Obstacle Course",
@@ -2264,6 +2244,26 @@ void DrawUpgrade(const std::string& categoryName, int32_t categoryId, const std:
 }
 
 // Draws a combo that lets you choose and upgrade value from a popup grid of icons
+#ifdef COMBO_BUILD
+// ComboShip: an upgrade as MM's Equipment tab draws one: its icon with its name under it, a picker of every level
+// with item names.
+void DrawUpgradeIcon(const std::string& categoryName, int32_t categoryId, const std::vector<uint8_t>& items) {
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    std::vector<ComboSaveEditorKit::Level> levels;
+    std::vector<std::string> names;
+    for (uint8_t item : items) {
+        names.push_back(item == ITEM_NONE ? "None" : SohUtils::GetItemName(item));
+    }
+    for (size_t i = 0; i < items.size(); i++) {
+        levels.push_back({ items[i] == ITEM_NONE ? ComboSaveEditorKit::kNoTexture : gui->GetTextureByName(itemMapping[items[i]].name),
+                           names[i].c_str() });
+    }
+    const int picked = ComboSaveEditorKit::LevelPicker(categoryName.c_str(), CUR_UPG_VALUE(categoryId), levels);
+    if (picked >= 0) {
+        Inventory_ChangeUpgrade(categoryId, static_cast<s16>(picked));
+    }
+}
+#else
 void DrawUpgradeIcon(const std::string& categoryName, int32_t categoryId, const std::vector<uint8_t>& items) {
     static const char* upgradePopupPicker = "upgradePopupPicker";
 
@@ -2316,9 +2316,17 @@ void DrawUpgradeIcon(const std::string& categoryName, int32_t categoryId, const 
     }
     ImGui::PopID();
 }
+#endif
 
 #ifdef COMBO_BUILD
+// ComboShip: the Equipment tab, mirrored by MM's: the sword, shield, tunic and boots toggles (OoT owns each one), the
+// upgrade pickers, the capacities, and the Biggoron's Sword quest moved here from General. The wallet is on General.
 void DrawEquipmentTab() {
+    namespace Kit = ComboSaveEditorKit;
+    const ImVec4 theme = ColorValues.at(THEME_COLOR);
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+
+    ImGui::SeparatorText("Swords, shields, tunics and boots");
     const std::vector<uint8_t> equipmentValues = {
         ITEM_SWORD_KOKIRI, ITEM_SWORD_MASTER,  ITEM_SWORD_BGS,     ITEM_SWORD_BROKEN,
         ITEM_SHIELD_DEKU,  ITEM_SHIELD_HYLIAN, ITEM_SHIELD_MIRROR, ITEM_NONE,
@@ -2338,73 +2346,31 @@ void DrawEquipmentTab() {
         uint32_t bitMask = 1 << i;
         bool hasEquip = (bitMask & gSaveContext.inventory.equipment) != 0;
         const ItemMapEntry& entry = itemMapping[equipmentValues[i]];
-        PushStyleButton(Colors::DarkGray);
-        auto ret = ImGui::ImageButton(
-            entry.name.c_str(),
-            std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
-                ->GetTextureByName(hasEquip ? entry.name : entry.nameFaded),
-            ImVec2(IMAGE_SIZE, IMAGE_SIZE), ImVec2(0, 0), ImVec2(1, 1));
-        if (ret) {
+        if (Kit::IconButton(entry.name.c_str(), gui->GetTextureByName(entry.name), hasEquip)) {
             if (hasEquip) {
                 gSaveContext.inventory.equipment &= ~bitMask;
             } else {
                 gSaveContext.inventory.equipment |= bitMask;
             }
         }
-        PopStyleButton();
-        Tooltip(SohUtils::GetItemName(entry.id).c_str());
+        const std::string tooltip = SohUtils::GetItemName(entry.id) + "\n" + Kit::TapHint(Kit::Tap::Toggle);
+        UIWidgets::Tooltip(tooltip.c_str());
         ImGui::PopID();
     }
 
-    const std::vector<uint8_t> bulletBagValues = {
-        ITEM_NONE,
-        ITEM_BULLET_BAG_30,
-        ITEM_BULLET_BAG_40,
-        ITEM_BULLET_BAG_50,
-    };
-    DrawUpgradeIcon("Bullet Bag", UPG_BULLET_BAG, bulletBagValues);
-
+    ImGui::SeparatorText("Upgrades");
+    DrawUpgradeIcon("Bullet Bag", UPG_BULLET_BAG,
+                    { ITEM_NONE, ITEM_BULLET_BAG_30, ITEM_BULLET_BAG_40, ITEM_BULLET_BAG_50 });
     ImGui::SameLine();
-
-    const std::vector<uint8_t> quiverValues = {
-        ITEM_NONE,
-        ITEM_QUIVER_30,
-        ITEM_QUIVER_40,
-        ITEM_QUIVER_50,
-    };
-    DrawUpgradeIcon("Quiver", UPG_QUIVER, quiverValues);
-
+    DrawUpgradeIcon("Quiver", UPG_QUIVER, { ITEM_NONE, ITEM_QUIVER_30, ITEM_QUIVER_40, ITEM_QUIVER_50 });
     ImGui::SameLine();
-
-    const std::vector<uint8_t> bombBagValues = {
-        ITEM_NONE,
-        ITEM_BOMB_BAG_20,
-        ITEM_BOMB_BAG_30,
-        ITEM_BOMB_BAG_40,
-    };
-    DrawUpgradeIcon("Bomb Bag", UPG_BOMB_BAG, bombBagValues);
-
+    DrawUpgradeIcon("Bomb Bag", UPG_BOMB_BAG, { ITEM_NONE, ITEM_BOMB_BAG_20, ITEM_BOMB_BAG_30, ITEM_BOMB_BAG_40 });
     ImGui::SameLine();
-
-    const std::vector<uint8_t> scaleValues = {
-        ITEM_NONE,
-        ITEM_SCALE_SILVER,
-        ITEM_SCALE_GOLDEN,
-    };
-    DrawUpgradeIcon("Scale", UPG_SCALE, scaleValues);
-
+    DrawUpgradeIcon("Scale", UPG_SCALE, { ITEM_NONE, ITEM_SCALE_SILVER, ITEM_SCALE_GOLDEN });
     ImGui::SameLine();
+    DrawUpgradeIcon("Strength", UPG_STRENGTH, { ITEM_NONE, ITEM_BRACELET, ITEM_GAUNTLETS_SILVER, ITEM_GAUNTLETS_GOLD });
 
-    const std::vector<uint8_t> strengthValues = {
-        ITEM_NONE,
-        ITEM_BRACELET,
-        ITEM_GAUNTLETS_SILVER,
-        ITEM_GAUNTLETS_GOLD,
-    };
-    DrawUpgradeIcon("Strength", UPG_STRENGTH, strengthValues);
-
-    // ComboShip: the wallet is on General > Rupees, next to the rupee count, as in MM.
-
+    ImGui::SeparatorText("Capacities");
     const std::vector<std::string> stickNames = {
         "None",
         "10",
@@ -2453,6 +2419,14 @@ void DrawEquipmentTab() {
         ImGui::PopID();
         UIWidgets::Tooltip("Bombchu Bag Capacity");
     }
+
+    ImGui::SeparatorText("Biggoron's Sword");
+    Checkbox("Has Biggoron's Sword", (bool*)&gSaveContext.bgsFlag,
+             checkboxOptionsBase.Tooltip("Is Biggoron sword unlocked? Replaces Giant's knife"));
+    Kit::ResourceBar("##swordHealth", &gSaveContext.swordHealth, 0, 255, "Sword health: %d", theme);
+    Kit::Tooltip("Giant's knife health. Default is 8. Must be >0 for Biggoron sword to work");
+    Kit::ResourceBar("##bgsDayCount", &gSaveContext.bgsDayCount, 0, 1000, "Days since Claim Check: %d", theme);
+    Kit::Tooltip("Total number of days elapsed since receiving claim check from Biggoron");
 }
 #else
 void DrawEquipmentTab() {
@@ -2608,6 +2582,23 @@ void DrawEquipmentTab() {
 #endif
 
 // Draws a toggleable icon for a quest item that is faded when disabled
+#ifdef COMBO_BUILD
+// ComboShip: MM's icon style, faded when not owned.
+void DrawQuestItemButton(uint32_t item) {
+    const QuestMapEntry& entry = questMapping[item];
+    uint32_t bitMask = 1 << entry.id;
+    bool hasQuestItem = (bitMask & gSaveContext.inventory.questItems) != 0;
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    if (ComboSaveEditorKit::IconButton(entry.name.c_str(), gui->GetTextureByName(entry.name), hasQuestItem)) {
+        if (hasQuestItem) {
+            gSaveContext.inventory.questItems &= ~bitMask;
+        } else {
+            gSaveContext.inventory.questItems |= bitMask;
+        }
+    }
+    Tooltip(SohUtils::GetQuestItemName(entry.id).c_str());
+}
+#else
 void DrawQuestItemButton(uint32_t item) {
     const QuestMapEntry& entry = questMapping[item];
     uint32_t bitMask = 1 << entry.id;
@@ -2628,8 +2619,26 @@ void DrawQuestItemButton(uint32_t item) {
     PopStyleButton();
     Tooltip(SohUtils::GetQuestItemName(entry.id).c_str());
 }
+#endif
 
 // Draws a toggleable icon for a dungeon item that is faded when disabled
+#ifdef COMBO_BUILD
+// ComboShip: MM's icon style, faded when not owned.
+void DrawDungeonItemButton(uint32_t item, uint32_t scene) {
+    const ItemMapEntry& entry = itemMapping[item];
+    uint32_t bitMask = 1 << (entry.id - ITEM_KEY_BOSS); // Bitset starts at ITEM_KEY_BOSS == 0. the rest are sequential
+    bool hasItem = (bitMask & gSaveContext.inventory.dungeonItems[scene]) != 0;
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    if (ComboSaveEditorKit::IconButton(entry.name.c_str(), gui->GetTextureByName(entry.name), hasItem)) {
+        if (hasItem) {
+            gSaveContext.inventory.dungeonItems[scene] &= ~bitMask;
+        } else {
+            gSaveContext.inventory.dungeonItems[scene] |= bitMask;
+        }
+    }
+    Tooltip(SohUtils::GetItemName(entry.id).c_str());
+}
+#else
 void DrawDungeonItemButton(uint32_t item, uint32_t scene) {
     const ItemMapEntry& entry = itemMapping[item];
     uint32_t bitMask = 1 << (entry.id - ITEM_KEY_BOSS); // Bitset starts at ITEM_KEY_BOSS == 0. the rest are sequential
@@ -2650,17 +2659,23 @@ void DrawDungeonItemButton(uint32_t item, uint32_t scene) {
     PopStyleButton();
     Tooltip(SohUtils::GetItemName(entry.id).c_str());
 }
+#endif
 
 #ifdef COMBO_BUILD
+// ComboShip: Quest Status with MM's headings in the same order: Boss rewards, Songs, Quest items, Gold Skulltula tokens
+// and Heart pieces as bars, then OoT's Triforce pieces. The dungeon items have their own tab.
 void DrawQuestStatusTab() {
+    namespace Kit = ComboSaveEditorKit;
+    const ImVec4 theme = ColorValues.at(THEME_COLOR);
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
 
+    ImGui::SeparatorText("Boss rewards");
     for (int32_t i = QUEST_MEDALLION_FOREST; i < QUEST_MEDALLION_LIGHT + 1; i++) {
         if (i != QUEST_MEDALLION_FOREST) {
             ImGui::SameLine();
         }
         DrawQuestItemButton(i);
     }
-
     for (int32_t i = QUEST_KOKIRI_EMERALD; i < QUEST_ZORA_SAPPHIRE + 1; i++) {
         if (i != QUEST_KOKIRI_EMERALD) {
             ImGui::SameLine();
@@ -2668,70 +2683,57 @@ void DrawQuestStatusTab() {
         DrawQuestItemButton(i);
     }
 
-    // Put Stone of Agony and Gerudo Card on the same line with a little space between them
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(IMAGE_SIZE, IMAGE_SIZE) + ImGui::GetStyle().FramePadding * 2);
-
-    ImGui::SameLine();
-    DrawQuestItemButton(QUEST_STONE_OF_AGONY);
-
-    ImGui::SameLine();
-    DrawQuestItemButton(QUEST_GERUDO_CARD);
+    ImGui::SeparatorText("Songs");
     for (const auto& [quest, entry] : songMapping) {
         if ((entry.id != QUEST_SONG_MINUET) && (entry.id != QUEST_SONG_LULLABY)) {
             ImGui::SameLine();
         }
-
         uint32_t bitMask = 1 << entry.id;
         bool hasQuestItem = (bitMask & gSaveContext.inventory.questItems) != 0;
-        PushStyleButton(Colors::DarkGray);
-        auto ret = ImGui::ImageButton(
-            entry.name.c_str(),
-            std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
-                ->GetTextureByName(hasQuestItem ? entry.name : entry.nameFaded),
-            ImVec2(ComboSaveEditorKit::kSongIconWidth, IMAGE_SIZE), ImVec2(0, 0), ImVec2(1, 1));
-        if (ret) {
+        if (Kit::IconButton(entry.name.c_str(), gui->GetTextureByName(entry.name), hasQuestItem,
+                            ImVec2(Kit::kSongIconWidth, Kit::kIconSize))) {
             if (hasQuestItem) {
                 gSaveContext.inventory.questItems &= ~bitMask;
             } else {
                 gSaveContext.inventory.questItems |= bitMask;
             }
         }
-        PopStyleButton();
         Tooltip(SohUtils::GetQuestItemName(entry.id).c_str());
     }
 
-    PushStyleInput(THEME_COLOR);
-    int tokens = gSaveContext.inventory.gsTokens;
-    if (ImGui::SliderInt("Gold Skulltula tokens", &tokens, 0, 100, "%d", ImGuiSliderFlags_NoInput))
-        gSaveContext.inventory.gsTokens = static_cast<int16_t>(tokens);
-    PopStyleInput();
-    InsertHelpHoverText("Number of gold skulltula tokens acquired");
+    ImGui::SeparatorText("Quest items");
+    DrawQuestItemButton(QUEST_STONE_OF_AGONY);
+    ImGui::SameLine();
+    DrawQuestItemButton(QUEST_GERUDO_CARD);
 
+    ImGui::SeparatorText("Gold Skulltula tokens");
+    Kit::ResourceBar("##gsTokens", &gSaveContext.inventory.gsTokens, 0, 100, "Tokens: %d", theme);
+    Kit::Tooltip("Number of gold skulltula tokens acquired");
     uint32_t bitMask = 1 << QUEST_SKULL_TOKEN;
     bool gsUnlocked = (bitMask & gSaveContext.inventory.questItems) != 0;
-    if (Checkbox("GS unlocked", &gsUnlocked, CheckboxOptions().Color(THEME_COLOR))) {
+    if (Checkbox("Show token count", &gsUnlocked, CheckboxOptions().Color(THEME_COLOR))) {
         if (gsUnlocked) {
             gSaveContext.inventory.questItems |= bitMask;
         } else {
             gSaveContext.inventory.questItems &= ~bitMask;
         }
     }
-    InsertHelpHoverText("If unlocked, enables showing the gold skulltula count in the quest status menu");
+    Kit::Tooltip("Shows the gold skulltula count in the pause menu's Quest Status");
 
+    ImGui::SeparatorText("Heart pieces");
     int32_t pohCount = (gSaveContext.inventory.questItems & 0xF0000000) >> 28;
-    PushStyleCombobox(THEME_COLOR);
-    if (ImGui::BeginCombo("PoH count", std::to_string(pohCount).c_str())) {
-        for (int32_t i = 0; i < 4; i++) {
-            if (ImGui::Selectable(std::to_string(i).c_str(), pohCount == i)) {
-                gSaveContext.inventory.questItems &= ~0xF0000000;
-                gSaveContext.inventory.questItems |= (i << 28);
-            }
-        }
-        ImGui::EndCombo();
+    if (Kit::ResourceBar("##heartPieces", &pohCount, 0, 3, "Heart pieces: %d", Kit::kHeartPieces)) {
+        gSaveContext.inventory.questItems &= ~0xF0000000;
+        gSaveContext.inventory.questItems |= (pohCount << 28);
     }
-    InsertHelpHoverText("The number of pieces of heart acquired towards the next heart container");
-    PopStyleCombobox();
+    Kit::Tooltip("The number of pieces of heart acquired towards the next heart container");
+
+    if (IS_RANDO && (OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_TRIFORCE_HUNT_PIECES_TOTAL) > 0)) {
+        ImGui::SeparatorText("Triforce pieces");
+        Kit::ResourceBar("##triforcePieces", &gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected, 0, 255,
+                         "Triforce pieces: %d", theme);
+        Kit::Tooltip("Currently obtained Triforce Pieces. For Triforce Hunt.");
+    }
 }
 #else
 void DrawQuestStatusTab() {
@@ -2872,61 +2874,39 @@ void DrawQuestStatusTab() {
 #endif
 
 #ifdef COMBO_BUILD
-// ComboShip: the dungeon items, which upstream draws at the end of Quest Status, in their own tab as in MM.
+// ComboShip: the dungeon items as MM draws them, one bordered row per dungeon instead of one dungeon at a time from a
+// list: Map, Compass and Boss key, the small key icon (faded at no keys) and the small key count. Dungeons 0x00-0x0D
+// and the Treasure Box Shop's keys; the boss rooms and collapse scenes hold no items of their own.
 void DrawDungeonItemsTab() {
-    DrawGroupWithBorder(
-        [&]() {
-            ImGui::Text("Dungeon Items");
-
-            static int32_t dungeonItemsScene = SCENE_DEKU_TREE;
-            static int32_t lastDungeonScene = -1;
-            if (gPlayState != nullptr) {
-                int32_t sceneNum = gPlayState->sceneNum;
-                if (sceneNum >= SCENE_DEKU_TREE && sceneNum <= SCENE_JABU_JABU_BOSS && lastDungeonScene != sceneNum) {
-                    dungeonItemsScene = sceneNum;
-                    lastDungeonScene = sceneNum;
-                }
-            }
-
-            PushStyleCombobox(THEME_COLOR);
-            if (ImGui::BeginCombo("##DungeonSelect", SohUtils::GetSceneName(dungeonItemsScene).c_str())) {
-                for (int32_t dungeonIndex = SCENE_DEKU_TREE; dungeonIndex < SCENE_JABU_JABU_BOSS + 1; dungeonIndex++) {
-                    if (ImGui::Selectable(SohUtils::GetSceneName(dungeonIndex).c_str(),
-                                          dungeonIndex == dungeonItemsScene)) {
-                        dungeonItemsScene = dungeonIndex;
-                    }
-                }
-
-                ImGui::EndCombo();
-            }
-            PopStyleCombobox();
-
-            DrawDungeonItemButton(ITEM_KEY_BOSS, dungeonItemsScene);
-            ImGui::SameLine();
-            DrawDungeonItemButton(ITEM_COMPASS, dungeonItemsScene);
-            ImGui::SameLine();
-            DrawDungeonItemButton(ITEM_DUNGEON_MAP, dungeonItemsScene);
-
-            if (dungeonItemsScene != SCENE_JABU_JABU_BOSS) {
-                float lineHeight = ImGui::GetTextLineHeightWithSpacing();
-                ImGui::Image(
-                    std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
-                        ->GetTextureByName(itemMapping[ITEM_KEY_SMALL].name),
-                    ImVec2(lineHeight, lineHeight));
-                ImGui::SameLine();
-                PushStyleInput(THEME_COLOR);
-                if (ComboTouch::Count("##Keys", gSaveContext.inventory.dungeonKeys + dungeonItemsScene, -1, 20)) {
-                    gSaveContext.ship.stats.dungeonKeys[dungeonItemsScene] =
-                        gSaveContext.inventory.dungeonKeys[dungeonItemsScene];
-                };
-                PopStyleInput();
-            } else {
-                // dungeonItems is size 20 but dungeonKeys is size 19, so there are no keys for the last scene
-                // (Barinade's Lair)
-                ImGui::Text("Barinade's Lair does not have small keys");
-            }
-        },
-        "Dungeon Items");
+    namespace Kit = ComboSaveEditorKit;
+    const ImVec4 theme = ColorValues.at(THEME_COLOR);
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    static const int32_t scenes[] = {
+        SCENE_DEKU_TREE,          SCENE_DODONGOS_CAVERN,      SCENE_JABU_JABU,         SCENE_FOREST_TEMPLE,
+        SCENE_FIRE_TEMPLE,        SCENE_WATER_TEMPLE,         SCENE_SPIRIT_TEMPLE,     SCENE_SHADOW_TEMPLE,
+        SCENE_BOTTOM_OF_THE_WELL, SCENE_ICE_CAVERN,           SCENE_GANONS_TOWER,      SCENE_GERUDO_TRAINING_GROUND,
+        SCENE_THIEVES_HIDEOUT,    SCENE_INSIDE_GANONS_CASTLE, SCENE_TREASURE_BOX_SHOP,
+    };
+    Kit::BeginCardLayout(2, Kit::kGridWidth * 4);
+    for (int32_t scene : scenes) {
+        ImGui::PushID(scene);
+        Kit::BeginCard("dungeon");
+        ImGui::Text("%s", SohUtils::GetSceneName(scene).c_str());
+        DrawDungeonItemButton(ITEM_DUNGEON_MAP, scene);
+        ImGui::SameLine();
+        DrawDungeonItemButton(ITEM_COMPASS, scene);
+        ImGui::SameLine();
+        DrawDungeonItemButton(ITEM_KEY_BOSS, scene);
+        ImGui::SameLine();
+        Kit::Icon(gui->GetTextureByName(itemMapping[ITEM_KEY_SMALL].name),
+                  gSaveContext.inventory.dungeonKeys[scene] > 0);
+        if (Kit::ResourceBar("##keys", gSaveContext.inventory.dungeonKeys + scene, -1, 20, "Small keys: %d", theme)) {
+            gSaveContext.ship.stats.dungeonKeys[scene] = gSaveContext.inventory.dungeonKeys[scene];
+        }
+        Kit::EndCard();
+        ImGui::PopID();
+    }
+    Kit::EndCardLayout();
 }
 #endif
 

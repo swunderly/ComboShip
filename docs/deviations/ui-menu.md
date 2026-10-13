@@ -483,6 +483,16 @@ take upstream changes into the `#else` branch and port them to the combo branch 
   picking the item does, plus capacity level 1 and full ammo when the item has no capacity yet; off does what None
   does); Ocarina, Hookshot, bottles and trade slots keep the picker, which now shows item names under the icons.
   The grid uses MM's geometry, and each ammo count sits under its icon instead of in a separate Ammo row.
+- Equipment (`DrawEquipmentTab`, `DrawUpgradeIcon`): headings Swords, shields, tunics and boots / Upgrades /
+  Capacities / Biggoron's Sword. The upgrade icons use the kit's `LevelPicker` (name under the icon, item names in
+  the picker); the Biggoron's Sword card ("Has Biggoron's Sword", "Sword health", "Days since Claim Check") moves
+  here from General.
+- Quest Status (`DrawQuestStatusTab`, `DrawQuestItemButton`): MM's headings in MM's order (Boss rewards, Songs,
+  Quest items, Gold Skulltula tokens, Heart pieces), then Triforce pieces (moved from General). Tokens are a theme
+  bar with "Show token count" (was "GS unlocked"); heart pieces a Red bar (was the "PoH count" dropdown).
+- Dungeon Items (`DrawDungeonItemsTab`, `DrawDungeonItemButton`): one card per dungeon instead of one dungeon at a
+  time from a dropdown: Map, Compass, Boss key, the small key icon (faded at no keys) and an inline small key bar.
+  Scenes 0x00-0x0D and the Treasure Box Shop (0x10); the boss rooms and collapse scenes hold no items of their own.
 
 **MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp`:** rewritten functions are guarded the same way as OoT's
 (`#ifdef COMBO_BUILD <combo body> #else <upstream body> #endif`); one-line wording changes are inline guards.
