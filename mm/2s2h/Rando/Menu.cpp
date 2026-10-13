@@ -1780,7 +1780,63 @@ void Rando::RegisterMenu() {
     mBenMenu->AddMenuEntry("Rando", "gSettings.Menu.RandoSidebarSection");
     mBenMenu->AddSidebarEntry("Rando", "General", 1);
     WidgetPath path = { "Rando", "General", SECTION_COLUMN_1 };
+#ifdef COMBO_BUILD
+    // ComboShip: the live options (not tied to the seed) as ordinary widgets, so the combined menu files
+    // them with the matching OoT options and search finds them. The custom General tab is not drawn: combo
+    // drives seed generation, and its pool-balance strip reads global settings, not the file's next seed.
+    mBenMenu->AddWidget(path, "Containers match contents", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.CSMC")
+        .Options(CheckboxOptions().Tooltip("This will make the contents of a container match the container itself. "
+                                           "Eg chests, pots, crates, grass, etc."));
+    mBenMenu->AddWidget(path, "Junk items", WIDGET_CVAR_COMBOBOX)
+        .CVar("gRando.JunkItems")
+        .Options(ComboboxOptions()
+                     .ComboMap(&junkItemsOptions)
+                     .Tooltip("Note: For both Options, junk items will be randomly rolled from a pool of obtainable "
+                              "items.\n\nDefault (Cycle): Junk items will cycle every few seconds, allowing you to "
+                              "choose which item "
+                              "to pick up\n\nStatic: Junk items will be static, only changing when obtainability "
+                              "status changes."));
+    mBenMenu->AddWidget(path, "Trap appearance", WIDGET_CVAR_COMBOBOX)
+        .CVar("gRando.TrapItems")
+        .Options(ComboboxOptions()
+                     .ComboMap(&trapItemsOptions)
+                     .Tooltip("Default (Dynamic): Trap items will change dynamically as you progress, ensuring they "
+                              "are an item you "
+                              "have not obtained yet for maximum trickery.\n\nStatic: Trap items will be static, "
+                              "according to the "
+                              "randomizer seed.\n\nNot tied to the seed - can be changed at any time."));
+    // The effects a randomizer trap can have (Traps tab "Trap Types"); each still picks one at pickup.
+    mBenMenu->AddWidget(path, "Freeze traps", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.Traps.Freeze")
+        .Options(CheckboxOptions().Tooltip("Freezes Link in place."));
+    mBenMenu->AddWidget(path, "Blast traps", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.Traps.Blast")
+        .Options(CheckboxOptions().Tooltip("Link explodes with Powder Keg force."));
+    mBenMenu->AddWidget(path, "Shock traps", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.Traps.Shock")
+        .Options(CheckboxOptions().Tooltip("Shocks Link for a few seconds."));
+    mBenMenu->AddWidget(path, "Jinx traps", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.Traps.Jinx")
+        .Options(CheckboxOptions().Tooltip("Afflicts Link with Jinx."));
+    mBenMenu->AddWidget(path, "Wallet traps", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.Traps.Wallet")
+        .Options(CheckboxOptions().Tooltip("Links rupees scatter around him."));
+    mBenMenu->AddWidget(path, "Like Like traps", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.Traps.Enemy")
+        .Options(CheckboxOptions().Tooltip("Spawns a Like Like on top of Link."));
+    mBenMenu->AddWidget(path, "Time traps", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.Traps.Time")
+        .Options(CheckboxOptions().Tooltip("Advances Time 90 Minutes (Game Time)."));
+    mBenMenu->AddWidget(path, "Fire traps", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.Traps.Fire")
+        .Options(CheckboxOptions().Tooltip("Deals Fire to Link."));
+    mBenMenu->AddWidget(path, "Knockback traps", WIDGET_CVAR_CHECKBOX)
+        .CVar("gRando.Traps.Knockback")
+        .Options(CheckboxOptions().Tooltip("Knocks Link back."));
+#else
     mBenMenu->AddWidget(path, "General", WIDGET_CUSTOM).CustomFunction([](WidgetInfo& info) { DrawGeneralTab(); });
+#endif
     mBenMenu->AddSidebarEntry("Rando", "Logic/Conditions", 1);
     path.sidebarName = "Logic/Conditions";
     mBenMenu->AddWidget(path, "Logic/Conditions", WIDGET_CUSTOM).CustomFunction([](WidgetInfo& info) {

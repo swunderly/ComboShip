@@ -161,7 +161,7 @@ const std::vector<const char*> kOotMenuFiles = {
 const std::vector<const char*> kMmMenuFiles = { "mm/2s2h/BenGui/BenMenu.cpp", "mm/2s2h/BenGui/ResolutionEditor.cpp",
                                                 "mm/2s2h/Rando/Menu.cpp" };
 bool IsCVarKey(const char* key) {
-    for (const char* kind : { "widget:", "heading:", "sidebar:", "rule:", "pair:" })
+    for (const char* kind : { "widget:", "heading:", "sidebar:", "rule:", "pair:", "note:" })
         if (!std::strncmp(key, kind, std::strlen(kind)))
             return false;
     return true;

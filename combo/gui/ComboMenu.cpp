@@ -1631,7 +1631,7 @@ void DrawPairedPreferences(const std::string& scope, const std::string& page) {
 
 // Rule and pair rows inside their catalogue heading are pseudo-widgets: CW_CUSTOM rows whose index
 // is -1000 - rule or -2000 - pair, with the rule's (or this world's) CVar so anchors find them.
-constexpr int32_t kRuleRowBase = -1000, kPairRowBase = -2000;
+constexpr int32_t kRuleRowBase = -1000, kPairRowBase = -2000, kNoteRow = -3000;
 ComboRando::MenuRuleFocus* sRuleRowFocus = nullptr; // the menu's search focus while a page draws
 
 bool MakePseudoRow(const char* cvar, bool oot, const std::string& scope, const std::string& page, CwWidget& row,
@@ -1670,13 +1670,13 @@ bool MakePseudoRow(const char* cvar, bool oot, const std::string& scope, const s
 } // namespace
 
 bool DrawMenuPseudoRow(const CwWidget& widget, bool randomizer) {
-    if (widget.index <= kPairRowBase) {
+    if (widget.index <= kPairRowBase && widget.index > kPairRowBase - 1000) {
         const int pair = kPairRowBase - widget.index;
         if (pair < int(sizeof(kPairedPreferences) / sizeof(*kPairedPreferences)))
             DrawPairedPreferenceRow(kPairedPreferences[pair]);
         return true;
     }
-    if (widget.index <= kRuleRowBase) {
+    if (widget.index <= kRuleRowBase && widget.index > kRuleRowBase - 1000) {
         const int rule = kRuleRowBase - widget.index;
         if (rule < int(sizeof(kGameplayRules) / sizeof(*kGameplayRules))) {
             ImGui::BeginDisabled(randomizer && !ProfileUI::Editable());
@@ -2435,6 +2435,16 @@ void ComboMenu::DrawSharedPanel() {
                         AppendFeatureWidgets(source, mScope, active->label, subpage, built.widgets, built.columns,
                                              &origins);
                     }
+                    if (layout && selectedGame == 0 && mScope == "settings" && active->label == MenuPage::Controls) {
+                        CwWidget note{};
+                        note.index = kNoteRow;
+                        note.kind = CW_TEXT;
+                        note.name = "Ocarina of Time: in Controller mapping > Ocarina Controls below.";
+                        built.widgets.push_back(note);
+                        origins[note.index] = {
+                            Detail::FindMenuPlacementKey(true, "note:Settings/Controls/Ocarina input"), nullptr
+                        };
+                    }
                     if (layout && selectedGame >= 0) {
                         AppendPseudoRows(selectedGame == 0, mScope, active->label, built.widgets, origins);
                         if (!built.game && !built.widgets.empty())
@@ -2451,6 +2461,41 @@ void ComboMenu::DrawSharedPanel() {
                         ProfileUI::DrawSidebar(feature, *content.game, selectedGame);
                     else
                         RenderSidebarWidgets(feature, *content.game);
+                }
+                if (layout && !seedOptions && selectedGame == 1 && mScope == "settings" &&
+                    active->label == MenuPage::Controls) {
+                    const auto mappingKey = std::make_pair(0, -2);
+                    auto mapping = active->bodies.find(mappingKey);
+                    if (mapping == active->bodies.end()) {
+                        HubEntry::Body built;
+                        RowOrigins origins;
+                        for (const auto& source : active->sources)
+                            if (source.oot) {
+                                built.game = source.game;
+                                AppendFeatureWidgets(source, mScope, active->label, -1, built.widgets, built.columns,
+                                                     &origins);
+                            }
+                        built.columns = ArrangeByPlacement(*layout, built.widgets, origins, built.columns);
+                        // Keep the Controller mapping heading and its rows.
+                        const auto first =
+                            std::find_if(built.widgets.begin(), built.widgets.end(), [](const CwWidget& w) {
+                                return w.index == -1 && w.kind == CW_SEPARATOR_TEXT && w.name &&
+                                       !std::strcmp(w.name, "Controller mapping");
+                            });
+                        const auto last = std::find_if(
+                            first == built.widgets.end() ? first : first + 1, built.widgets.end(),
+                            [](const CwWidget& w) { return w.index == -1 && w.kind == CW_SEPARATOR_TEXT; });
+                        built.widgets = std::vector<CwWidget>(first, last);
+                        for (auto& widget : built.widgets)
+                            widget.column = 0;
+                        built.columns = 1;
+                        mapping = active->bodies.emplace(mappingKey, std::move(built)).first;
+                    }
+                    if (mapping->second.game && !mapping->second.widgets.empty()) {
+                        const CwSidebar shared = { active->label.c_str(), 1, mapping->second.widgets.data(),
+                                                   (int)mapping->second.widgets.size() };
+                        RenderSidebarWidgets(shared, *mapping->second.game);
+                    }
                 }
                 ImGui::EndChild();
                 ImGui::PopID();

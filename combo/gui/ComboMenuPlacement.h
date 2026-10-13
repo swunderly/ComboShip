@@ -13,6 +13,7 @@
 //   "sidebar:<section>/<sidebar>"         the rows of that native sidebar that have no row of their own
 //   "rule:<CVar>"                         a combo-drawn gameplay rule (combo/rando/GameplayRules.h)
 //   "pair:<label>"                        a combo-drawn checkbox that sets one CVar in each game
+//   "note:<section>/<page>/<heading>"     a combo-drawn line of text
 // rank orders rows inside a heading; cross-game equivalents share a rank so both views line up.
 // after keeps a row directly under that CVar, which hides or disables it.
 #pragma once
@@ -309,6 +310,16 @@ inline constexpr MenuPlacement kMenuPlacements[] = {
     { kMenuOot, "gEnhancements.ExtraTraps.Ammo", "gameplay", "Extra modes", "Traps", 1110, "gEnhancements.ExtraTraps.Enabled", nullptr, 0 },
     { kMenuOot, "gEnhancements.ExtraTraps.Kill", "gameplay", "Extra modes", "Traps", 1120, "gEnhancements.ExtraTraps.Enabled", nullptr, 0 },
     { kMenuOot, "gEnhancements.ExtraTraps.Teleport", "gameplay", "Extra modes", "Traps", 1130, "gEnhancements.ExtraTraps.Enabled", nullptr, 0 },
+    // MM's randomizer trap effects: live preferences, not seed settings (Rando > General under COMBO_BUILD).
+    { kMenuMm, "gRando.Traps.Freeze", "gameplay", "Extra modes", "Traps", 2000, nullptr, "trap_effects", 0 },
+    { kMenuMm, "gRando.Traps.Blast", "gameplay", "Extra modes", "Traps", 2010, nullptr, "trap_effects", 0 },
+    { kMenuMm, "gRando.Traps.Shock", "gameplay", "Extra modes", "Traps", 2020, nullptr, "trap_effects", 0 },
+    { kMenuMm, "gRando.Traps.Jinx", "gameplay", "Extra modes", "Traps", 2030, nullptr, "trap_effects", 0 },
+    { kMenuMm, "gRando.Traps.Wallet", "gameplay", "Extra modes", "Traps", 2040, nullptr, "trap_effects", 0 },
+    { kMenuMm, "gRando.Traps.Enemy", "gameplay", "Extra modes", "Traps", 2050, nullptr, "trap_effects", 0 },
+    { kMenuMm, "gRando.Traps.Time", "gameplay", "Extra modes", "Traps", 2060, nullptr, "trap_effects", 0 },
+    { kMenuMm, "gRando.Traps.Fire", "gameplay", "Extra modes", "Traps", 2070, nullptr, "trap_effects", 0 },
+    { kMenuMm, "gRando.Traps.Knockback", "gameplay", "Extra modes", "Traps", 2080, nullptr, "trap_effects", 0 },
     { kMenuMm, "gModes.MirroredWorld.Mode", "gameplay", "Extra modes", "World", 10, nullptr, "mirrored_world", 1 },
     { kMenuMm, "gModes.MirroredWorld.StoneTowerTempleFix", "gameplay", "Extra modes", "World", 10, nullptr, "mirrored_world", 1 },
     { kMenuOot, "gEnhancements.MirroredWorldMode", "gameplay", "Extra modes", "World", 10, nullptr, "mirrored_world", 1 },
@@ -461,6 +472,10 @@ inline constexpr MenuPlacement kMenuPlacements[] = {
     { kMenuOot, "gRandoEnhancements.CustomKeyModels", "gameplay", "Randomizer extras", "Item appearance", 20, nullptr, "rando_extras", 0 },
     { kMenuOot, "gRandoEnhancements.ColoredMapsAndCompasses", "gameplay", "Randomizer extras", "Item appearance", 20, nullptr, "rando_extras", 0 },
     { kMenuOot, "gRandoEnhancements.MysteriousShuffle", "gameplay", "Randomizer extras", "Item appearance", 20, nullptr, "rando_extras", 0 },
+    // MM's live randomizer options, next to OoT's container rows (Rando > General under COMBO_BUILD).
+    { kMenuMm, "gRando.CSMC", "gameplay", "Randomizer extras", "Item appearance", 10, nullptr, "csmc", 1 },
+    { kMenuMm, "gRando.JunkItems", "gameplay", "Randomizer extras", "Item appearance", 20, nullptr, "rando_extras", 0 },
+    { kMenuMm, "gRando.TrapItems", "gameplay", "Randomizer extras", "Item appearance", 30, nullptr, nullptr, 0 },
     { kMenuOot, "gRandoEnhancements.GenericJabberNutModel", "gameplay", "Randomizer extras", "Item appearance", 1020, nullptr, nullptr, 0 },
     { kMenuOot, "gRandoEnhancements.SimplerBossSoulModels", "gameplay", "Randomizer extras", "Item appearance", 1030, nullptr, nullptr, 0 },
     { kMenuMm, "gEnhancements.Restorations.PowerCrouchStab", "gameplay", "Restorations", "Glitches", 10, nullptr, "crouch_stab", 0 },
@@ -747,6 +762,12 @@ inline constexpr MenuPlacement kMenuPlacements[] = {
     { kMenuBoth, "gSettings.ResetBtn", "settings", "General", "Shortcuts", 10, nullptr, "reset_button", 1 },
     { kMenuOot, "sidebar:Settings/Controls", "settings", "Controls", "Controller mapping", 1000, nullptr, nullptr, 0 },
     { kMenuOot, "sidebar:Settings/Audio", "media", "Audio", "Volume", 1000, nullptr, nullptr, 0 },
+    // OoT's D-pad and right-stick ocarina toggles are inside its controller editor (Controller mapping).
+    { kMenuOot, "note:Settings/Controls/Ocarina input", "settings", "Controls", "Ocarina input", 10, nullptr, nullptr, 0 },
+    // MM's ambience volume has no OoT twin; the rest of MM's audio sidebar is driven by OoT's volumes.
+    { kMenuMm, "gSettings.Audio.AmbienceVolume", "media", "Audio", "Ambience", 1000, nullptr, nullptr, 0 },
+    // MM's camera fixes join the other camera fixes; its native heading has no other rows.
+    { kMenuMm, "heading:Enhancements/Camera/Fixes", "gameplay", "Fixes", "Camera", 1000, nullptr, nullptr, 0 },
     // The retired HUD & overlays page: MM notifications join OoT's page, MM's HUD editor folds into Screen & HUD.
     { kMenuMm, "heading:Settings/Overlay/Notifications", "settings", "Notifications", nullptr, 1000, nullptr, nullptr, 0 },
     { kMenuMm, "gWindows.HudEditor", "media", "Screen & HUD", "Advanced HUD editor (MM)", 1000, nullptr, nullptr, 0 },

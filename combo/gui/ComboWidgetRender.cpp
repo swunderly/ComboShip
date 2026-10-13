@@ -303,7 +303,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
             ImGui::SeparatorText(w.name ? w.name : "");
             break;
         case CW_TEXT:
-            ImGui::TextUnformatted(w.name ? w.name : "");
+            ImGui::TextWrapped("%s", w.name ? w.name : "");
             break;
         case CW_CHECKBOX: {
             bool v = CVarGetInteger(w.cvar, w.bDefault) != 0;

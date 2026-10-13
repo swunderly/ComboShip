@@ -1383,7 +1383,12 @@ void SohInputEditorWindow::DrawCameraControlPanel() {
     SohGui::mSohMenu->MenuDrawItem(mouseDisableThirdPerson, static_cast<uint32_t>(ImGui::GetContentRegionAvail().x),
                                    THEME_COLOR);
 
+#ifdef COMBO_BUILD
+    // ComboShip: the headings MM's camera rows sit under on Video & Audio > Camera.
+    Ship::GuiWindow::BeginGroupPanel("First person & aiming", ImGui::GetContentRegionAvail());
+#else
     Ship::GuiWindow::BeginGroupPanel("Aiming/First-Person Camera", ImGui::GetContentRegionAvail());
+#endif
     CVarCheckbox("Right Stick Aiming", CVAR_SETTING("Controls.RightStickAim"),
                  CheckboxOptions()
                      .Color(THEME_COLOR)
@@ -1447,7 +1452,11 @@ void SohInputEditorWindow::DrawCameraControlPanel() {
 
     cursor = ImGui::GetCursorPos();
     ImGui::SetCursorPos(ImVec2(cursor.x + 5, cursor.y + 5));
+#ifdef COMBO_BUILD
+    Ship::GuiWindow::BeginGroupPanel("Third-person camera", ImGui::GetContentRegionAvail());
+#else
     Ship::GuiWindow::BeginGroupPanel("Third-Person Camera", ImGui::GetContentRegionAvail());
+#endif
 
     SohGui::mSohMenu->MenuDrawItem(freeLook, static_cast<uint32_t>(ImGui::GetContentRegionAvail().x), THEME_COLOR);
     CVarCheckbox("Invert Camera X Axis", CVAR_SETTING("FreeLook.InvertXAxis"),
