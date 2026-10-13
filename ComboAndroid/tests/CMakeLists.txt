@@ -129,6 +129,9 @@ set_tests_properties(entrance_pinned_reference_and_exporters PROPERTIES SKIP_REG
 combo_python_test(entrance_temple_pinned_lemmas entrance_temple_reference_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_temple_reference")
 set_tests_properties(entrance_temple_pinned_lemmas PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+combo_python_test(entrance_m1_pinned_contract_fixture entrance_m1_contract_tests.py
+    --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_m1_contract")
+set_tests_properties(entrance_m1_pinned_contract_fixture PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 combo_harness_test(oot_temple_probe_active_logic_scope temple_active_logic_tests.py)
 # ABI-only evidence (non-engine): bit order and target of the read-only diagnostic.
 combo_harness_test(oot_temple_ages_getter_abi_only oot_temple_ages_getter_tests.py)
@@ -624,11 +627,23 @@ if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
         target_compile_options(temple_capability_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     endif()
     add_test(NAME entrance_temple_capability_gate_before_rng COMMAND temple_capability_tests)
+    add_executable(entrance_m1_pool_parity_tests entrance_m1_pool_parity_tests.cpp)
+    target_compile_features(entrance_m1_pool_parity_tests PRIVATE cxx_std_20)
+    target_include_directories(entrance_m1_pool_parity_tests PRIVATE "${COMBO_SOURCE_DIR}" "${COMBO_JSON_INCLUDE_DIR}")
+    target_compile_definitions(entrance_m1_pool_parity_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+    if(MSVC)
+        target_compile_options(entrance_m1_pool_parity_tests PRIVATE /W4 /WX /UNDEBUG /bigobj)
+    else()
+        target_compile_options(entrance_m1_pool_parity_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    endif()
+    add_test(NAME entrance_m1_shuffle_pools_match_pinned_contract COMMAND entrance_m1_pool_parity_tests
+        "${COMBO_REPO_DIR}/tools/ootmm/m1-contract.json")
 else()
     combo_skipped_test(mm_entrance_layouts_clock_tower_and_wallmasters "${COMBO_NEEDS_JSON}")
     combo_skipped_test(mm_entrance_legacy_envelopes_and_routes "${COMBO_NEEDS_JSON}")
     combo_skipped_test(entrance_temple_candidate_matches_pinned_changed_world "${COMBO_NEEDS_JSON}")
     combo_skipped_test(entrance_temple_capability_gate_before_rng "${COMBO_NEEDS_JSON}")
+    combo_skipped_test(entrance_m1_shuffle_pools_match_pinned_contract "${COMBO_NEEDS_JSON}")
 endif()
 
 combo_json_harness_test(entrance_hidden_settings_reference_parity entrance_settings_tests.py)
