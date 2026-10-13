@@ -229,6 +229,48 @@ std::map<uint8_t, const char*> filenameLanguageMapNTSCOnly = {
 };
 
 #ifdef COMBO_BUILD
+// ComboShip: the Player Name text field. A character of the name as text, in the file's font: PAL's codes, or the
+// NTSC Japanese table, whose letters follow the kana.
+static std::string PlayerNameChar(uint8_t code, bool pal) {
+    return pal ? std::string(1, z2ASCII(code)) : decodeNTSCPlayerNameChar(code);
+}
+// The code of one typed character in the file's font; a character the font lacks becomes a space.
+static uint8_t PlayerNameCode(const std::string& typed, bool pal) {
+    if (pal)
+        return typed.size() == 1 ? ASCII2z(typed[0]) : ASCII2z(' ');
+    for (int code = 0; code < 256 && !typed.empty() && typed != "?"; code++)
+        if (decodeNTSCPlayerNameChar(code) == typed)
+            return uint8_t(code);
+    return 223; // NTSC space
+}
+// The next UTF-8 character of text ("" at its end); a kana takes three bytes.
+static std::string NextPlayerNameChar(const char*& text) {
+    const unsigned char lead = *text;
+    const size_t length = lead < 0x80 ? 1 : lead >= 0xF0 ? 4 : lead >= 0xE0 ? 3 : lead >= 0xC0 ? 2 : 1;
+    const std::string typed(text, strnlen(text, length));
+    text += typed.size();
+    return typed;
+}
+// Writes the field's text into the eight name codes. A character still shown where it was keeps its code, so one the
+// field cannot show survives an edit elsewhere in the name.
+static void ApplyPlayerNameText(const char* text, bool pal) {
+    for (int i = 0; i < 8; i++) {
+        const std::string typed = NextPlayerNameChar(text);
+        if (typed != PlayerNameChar(gSaveContext.playerName[i], pal))
+            gSaveContext.playerName[i] = PlayerNameCode(typed, pal);
+    }
+}
+// Eight characters at most, however many bytes they take.
+static int KeepEightPlayerNameChars(ImGuiInputTextCallbackData* data) {
+    const char* end = data->Buf;
+    for (int i = 0; i < 8 && *end; i++)
+        NextPlayerNameChar(end);
+    const int kept = int(end - data->Buf);
+    if (kept < data->BufTextLen)
+        data->DeleteChars(kept, data->BufTextLen - kept);
+    return 0;
+}
+
 // ComboShip: the General tab, laid out as the MM Save Editor's: Player, Health, Magic, Rupees and Time cards with the
 // same coloured bars and Max/Reset buttons, then everything else under a collapsed Advanced card. Max and Reset do
 // what MM's do for the same resource, with OoT's new-file values.
@@ -246,44 +288,34 @@ void DrawInfoTab() {
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Debug File");
     }
     ImGui::Text("Player Name");
-    if (gSaveContext.ship.filenameLanguage == NAME_LANGUAGE_PAL) {
-        // A text field, as in MM.
-        static char nameBuffer[9];
-        for (int i = 0; i < 8; i++) {
-            nameBuffer[i] = z2ASCII(gSaveContext.playerName[i]);
-        }
-        nameBuffer[8] = '\0';
-        PushStyleInput(THEME_COLOR);
-        if (ImGui::InputText("##playerName", nameBuffer, sizeof(nameBuffer), ImGuiInputTextFlags_AutoSelectAll)) {
-            bool ended = false;
-            for (int i = 0; i < 8; i++) {
-                ended = ended || nameBuffer[i] == '\0';
-                gSaveContext.playerName[i] = ASCII2z(ended ? ' ' : nameBuffer[i]);
-            }
-        }
-        PopStyleInput();
-    } else {
-        // NTSC names hold Japanese characters a keyboard cannot type: keep the character codes.
+    {
+        // A text field, as in MM, in the file's font codes (NTSC files too). An NTSC name may hold kana, which take the
+        // Japanese font.
+        const bool pal = gSaveContext.ship.filenameLanguage == NAME_LANGUAGE_PAL;
+        static char nameBuffer[8 * 4 + 1];
         std::string name;
         for (int i = 0; i < 8; i++) {
-            name += decodeNTSCPlayerNameChar(gSaveContext.playerName[i]);
+            name += PlayerNameChar(gSaveContext.playerName[i], pal);
         }
-        ImGui::PushFont(OTRGlobals::Instance->fontJapanese);
-        ImGui::Text("%s", name.c_str());
-        ImGui::PopFont();
-        ImU16 one = 1;
-        ImGui::PushItemWidth(ImGui::GetFontSize() * 6);
-        std::string nameID;
-        for (int i = 0; i < 8; i++) {
-            nameID = z2ASCII(i);
-            if (i % 4 != 0) {
-                ImGui::SameLine();
-            }
-            PushStyleInput(THEME_COLOR);
-            ImGui::InputScalar(nameID.c_str(), ImGuiDataType_U8, &gSaveContext.playerName[i], &one, NULL);
-            PopStyleInput();
+        snprintf(nameBuffer, sizeof(nameBuffer), "%s", name.c_str());
+        ImFont* kana = OTRGlobals::Instance->fontJapanese;
+        const bool japanese =
+            !pal && kana &&
+            (gSaveContext.ship.filenameLanguage == NAME_LANGUAGE_NTSC_JPN ||
+             std::any_of(name.begin(), name.end(), [](char c) { return static_cast<unsigned char>(c) >= 0x80; }));
+        if (japanese) {
+            ImGui::PushFont(kana);
         }
-        ImGui::PopItemWidth();
+        PushStyleInput(THEME_COLOR);
+        if (ImGui::InputText("##playerName", nameBuffer, sizeof(nameBuffer),
+                             ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CallbackEdit,
+                             KeepEightPlayerNameChars)) {
+            ApplyPlayerNameText(nameBuffer, pal);
+        }
+        PopStyleInput();
+        if (japanese) {
+            ImGui::PopFont();
+        }
     }
     // Filename encoding
     const bool hasPAL = (sGerMessageEntryTablePtr != nullptr) && (sFraMessageEntryTablePtr != nullptr);
