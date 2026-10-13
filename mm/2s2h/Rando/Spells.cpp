@@ -55,10 +55,11 @@ extern "C" int Combo_MMSpellEnabled(int spell) {
     const auto& state = gSaveContext.save.shipSaveInfo;
     if (gSaveContext.fileNum < 0 || gSaveContext.fileNum > 2 || state.saveType != SAVETYPE_RANDO)
         return 0;
+    // Pinned Player_CustomUseItem casts the spell on the button; the owned flags only feed the trade cycle and logic.
     if (spell == 1)
-        return state.rando.randoSaveOptions[RO_MM_SPELL_LOVE] && state.spellLoveOwned;
+        return state.rando.randoSaveOptions[RO_MM_SPELL_LOVE];
     if (spell == 2)
-        return state.rando.randoSaveOptions[RO_MM_SPELL_FIRE] && state.spellFireOwned;
+        return state.rando.randoSaveOptions[RO_MM_SPELL_FIRE];
     return 0;
 }
 extern "C" void Combo_MMSpellGrantItem(int spell) {

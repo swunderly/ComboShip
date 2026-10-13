@@ -2901,6 +2901,9 @@ void Interface_UpdateHudAlphas(PlayState* play, s16 dimmingAlpha) {
 #ifdef COMBO_BUILD
 extern int Combo_MM_GearActive(void);
 #include "ComboAdultSwimmingRestrictionNative.h"
+// Pinned Interface_GetItemRestriction: Farore's Wind is greyed out wherever Song of Soaring is.
+#define COMBO_MM_FARORE_RESTRICTED(play, item) \
+    ((item) == ITEM_COMBO_FARORES_WIND && (play)->interfaceCtx.restrictions.songOfSoaring != 0)
 #endif
 static void Interface_UpdateButtonsPart2Native(PlayState* play) {
     MessageContext* msgCtx = &play->msgCtx;
@@ -3385,7 +3388,13 @@ static void Interface_UpdateButtonsPart2Native(PlayState* play) {
                 //! the status of empty C-buttons - for most forms, the C-buttons are enabled when empty, however for
                 //! Deku Link only, empty C-buttons are disabled.
                 ItemId itemId = GET_CUR_FORM_BTN_ITEM(i);
-                if (GameInteractor_Should(VB_ITEM_BE_RESTRICTED, !gPlayerFormItemRestrictions[GET_PLAYER_FORM][itemId],
+                if (GameInteractor_Should(VB_ITEM_BE_RESTRICTED,
+#ifdef COMBO_BUILD
+                                          !gPlayerFormItemRestrictions[GET_PLAYER_FORM][itemId] ||
+                                              COMBO_MM_FARORE_RESTRICTED(play, itemId),
+#else
+                                          !gPlayerFormItemRestrictions[GET_PLAYER_FORM][itemId],
+#endif
                                           &itemId)) {
                     // Item not usable in current playerForm
                     if (gSaveContext.buttonStatus[i] != BTN_DISABLED) {
@@ -3532,7 +3541,13 @@ static void Interface_UpdateButtonsPart2Native(PlayState* play) {
             for (s16 j = EQUIP_SLOT_D_RIGHT; j <= EQUIP_SLOT_D_UP; j++) {
                 // Individual D button
                 ItemId itemId = DPAD_GET_CUR_FORM_BTN_ITEM(j);
-                if (GameInteractor_Should(VB_ITEM_BE_RESTRICTED, !gPlayerFormItemRestrictions[GET_PLAYER_FORM][itemId],
+                if (GameInteractor_Should(VB_ITEM_BE_RESTRICTED,
+#ifdef COMBO_BUILD
+                                          !gPlayerFormItemRestrictions[GET_PLAYER_FORM][itemId] ||
+                                              COMBO_MM_FARORE_RESTRICTED(play, itemId),
+#else
+                                          !gPlayerFormItemRestrictions[GET_PLAYER_FORM][itemId],
+#endif
                                           &itemId)) {
                     // Item not usable in current playerForm
                     if (gSaveContext.shipSaveContext.dpad.status[j] != BTN_DISABLED) {

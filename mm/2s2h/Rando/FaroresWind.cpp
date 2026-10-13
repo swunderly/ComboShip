@@ -148,8 +148,9 @@ extern "C" int Combo_MMFaroreBridgeReady() {
            sNativeDepartureCommit && sReadDungeon && sWriteDungeon;
 }
 extern "C" int Combo_MMFaroreEnabled() {
+    // Pinned Player_CustomUseItem casts the spell on the button; State().owned only feeds the trade cycle and logic.
     return ComboRando::ComboFaroreIntegrationReady && gSaveContext.fileNum >= 0 && gSaveContext.fileNum <= 2 &&
-           gSaveContext.save.shipSaveInfo.saveType == SAVETYPE_RANDO && sEnabled && State().owned;
+           gSaveContext.save.shipSaveInfo.saveType == SAVETYPE_RANDO && sEnabled;
 }
 extern "C" int Combo_MMFaroreAge() {
     // comboMmFwAge: cross-age, cross-game, adult-mask, then OoT age.
