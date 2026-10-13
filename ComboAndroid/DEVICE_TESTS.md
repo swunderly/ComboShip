@@ -6,17 +6,22 @@ Checks 2 to 5 are the examples Sam reported; they matter most. For each page, lo
 
 1. Install over the current build without uninstalling. Your settings, enhancement presets and each file's randomizer settings show the same values as before.
 2. Tools opens on the Save Editor. In OoT and in MM the tabs are General, Inventory, Equipment, Quest Status, Dungeon Items, Flags and Player, in that order; MM then adds Randomizer and Reg Editor. OoT's General looks like MM's: a dark red health bar, a green magic bar and green rupee and wallet bars with Max and Reset buttons, and the file number reads "File N" and cannot be changed.
-3. Save Editor > Inventory in OoT: tap Boomerang and it turns on and off with no list; tap Hookshot and a list offers None, Hookshot and Longshot with names. In MM: tap the Bow and it turns on and off; tap a bottle and a list opens.
-4. Enhancements > Time savers in both views: the headings are Cutscenes, Text & dialogue, Speed-ups and Quests & errands, and Climb speed is under Speed-ups in both (it reads +N in OoT and Nx in MM). Open two or three other Enhancements pages: both views show the same headings in the same order.
+3. Save Editor > Inventory in OoT: tap Boomerang and it turns on and off with no list; tap Hookshot and a list offers None, Hookshot and Longshot with names. In MM: tap the Bow and it turns on and off; tap a bottle and a list opens in which every entry has a name (Empty Bottle, Red Potion ... Fish, Bug, Blue Fire, Poe, Big Poe, Spring Water, Zora Egg, Sea Horse, Chateau Romani, Hyrule Loach), with no "Unknown" and no Obaba's Drink. Pick Fish: the slot holds a fish and its tooltip reads Fish.
+4. Enhancements > Time savers in both views: the headings are Cutscenes, Text & dialogue, Speed-ups and Quests & errands, each shown once. In the OoT view, All and None are the last rows under Cutscenes (All ticks the cutscene skips, None clears them), with no second Cutscenes heading. Climb speed is under Speed-ups in both (it reads +N in OoT and Nx in MM). Open two or three other Enhancements pages: both views show the same headings in the same order.
 5. Change a slider on an Enhancements or Settings page and on a Randomizer page in each view (for example Climb speed, Big Poes required for reward in the OoT view of Randomizer > Gameplay rules, and Trap Count in the MM view of Randomizer > Hints & traps > Traps): the name is above it, the value and unit are inside the bar, - and + step it, and a Default button appears. Change a checkbox too, restart the app, and both changes are kept. Tracker, timer, HUD position and advanced resolution sliders keep their compact style. In the MM view of Video & Audio > Visual enhancements > Motion blur, with the mode on Dynamic, On/Off turns motion blur on and off and Strength changes it.
 6. Randomizer > Hints & traps > Traps in the MM view shows only Traps and Trap Count, then a line pointing to the trap settings. Enhancements > Extra modes > Traps (MM view) has the nine trap effects, and Enhancements > Randomizer extras has Trap appearance, Junk items and Containers match contents.
 7. Randomizer > Gameplay rules in the OoT view: the headings are Abilities, Time of day, Quest requirements, Minigames and Seed settings (no logic effect). The last heading shows once, with Swordless Epona Items; Skip Child Stealth appears there only on a file that has it on. The rules still tick and grey out as before. Under Quest requirements both views read Skip Scarecrow's Song, as Enhancements > Time savers > Quests & errands does. Randomizer > Items & checks > Items: Souls reads Boss Souls and Enemy Souls in both views.
 8. Randomizer > Logic & access: Goal, Logic and Starting world are at the top, then Cross-Games Farore's Wind and Cross-Games Age. In the OoT view Starting Age is first under Area access. On the page list, Dungeons comes right after Items & checks.
-9. Back: open a dropdown and press Back (the dropdown closes). Search for something and press Back (the search clears). Search again, open a result, then press Back (the results come back), Back (the search clears) and Back (the menu closes).
-10. Search "climb" and "trap": each setting result reads like "Enhancements / Time savers / Speed-ups - OoT", and Open page goes to that page in the right world. Search "personal notes": it finds the Item Tracker page.
+9. Back: open a dropdown and press Back (the dropdown closes). Search for something and press Back (the search clears). Search again, close the keyboard with Back, tap Open page on a result, then press Back once (the results come back), Back (the search clears) and Back (the menu closes). Type in the search field, close the keyboard with Back, then press Back once: the search clears. While the keyboard is open, Back only closes the keyboard.
+10. Search "climb" and "trap": each setting result reads like "Enhancements / Time savers / Speed-ups - OoT", and Open page goes to that page in the right world. Search "personal notes": it finds the Item Tracker page. In the "trap" results every card shows a setting name and a control: OoT's Freeze, Burn, Shock and other trap rows are greyed out while Enhancements > Extra modes > Additional Traps is off and can be changed when it is on, and the MM Traps card has its checkbox and Trap Count its slider (greyed out while Traps is off). A change made in the results shows on the setting's page.
 11. Home > Apply preset and Tools > Session > Restart game ask first, with Cancel first. Settings > Interface > Menu size resizes the menu at once and is kept after a restart.
-12. On a Fold, the inner display shows two columns split at the same heading in both views; the outer display shows one column.
+12. On a Fold, the inner display shows two columns split at the same heading in both views; the outer display shows one column. Randomizer > Items & checks, both views: under Checks, the right column starts at Scenery drops (with All On/Off), then Shops & merchants; under Items, it starts at Souls (then Clocks and Cross-game items in MM). Logic & access, Dungeons and Hints & traps split as before.
 13. Enhancements > Difficulty > Minigames in the OoT view: each Customize Behavior and Instant Win row starts with its minigame's name, and the Lost Woods ocarina game rows sit together. Video & Audio > Audio in the MM view shows the volume sliders above Ambience.
+14. Randomizer > Starting inventory > Other in the OoT view: Link's Pocket and Link's Pocket Reward Type are full-width lists with readable labels. Gold Skulltula Tokens and Starting Hearts are full-width slider rows like MM's Starting Hearts (name above, value in the bar, - and +, and a Default button after a change). Changes are kept after reopening the menu.
+15. On a file whose randomizer settings were made by 0.4.1 or earlier, Randomizer > Items & checks > Items in the OoT view: Mask Quest reads Shuffle in Next seed, not "Unknown saved value", and Completed in the Saved and Generated seed views of a generated file. Picking Completed and then Shuffle saves normally. Generating without touching the row gives Shuffle, as before.
+16. Save Editor > General in OoT: Player Name is a text field showing the file's name, also on a file made with a US ROM. Rename it (for example to Zelda), save and check the name on File Select. A character the font lacks, such as "!", becomes a space. Use only a disposable file.
+17. Home > choose a file > Default > Apply preset > confirm, then Randomizer > Generate: the seed generates, with no "Invalid native settings profile" or "Generation failed". Repeat with Beginner and Allsanity. On a file whose randomizer settings were made by an older build, the shown values are unchanged and Generate still works.
+18. Randomizer counts follow the file's own settings: set Goal to Triforce Hunt with 30 pieces and the Rainbow Bridge to Triforce Pieces; the bridge count goes up to 15. Set it to 12 and generate: it succeeds. Set Key rings to Count with Gerudo Fortress keys Any Dungeon and Fortress carpenters Normal: the count goes up to 9; set 9, then set the Fortress keys to Vanilla: the count reads 8, and Generate succeeds.
 
 ## Quick checks for OoT tracker sightings (unreleased)
 
@@ -28,6 +33,8 @@ Use a randomizer save with Gold Skulltula tokens shuffled. A check you skipped s
 4. A check whose item is hidden, such as a closed chest or an item behind a wall, stays unmarked until you can see the item.
 5. Optional: Bombchu Bowling prizes on the counter, shuffled fairies, the Ocarina of Time in the castle moat and fishsanity fish turn Seen once on screen. An MM item at an OoT check shows its MM name.
 6. Optional: in the Treasure Chest Game's last room, turn on the Lens of Truth with the closed prize chest in the middle of the lens circle: "Treasure Chest Game Reward" turns Seen. With the Lens off, or with the chest at the edge of the screen outside the circle, it stays unmarked.
+7. In Impa's House in Kakariko, look from the front room at the Piece of Heart behind the cow-pen bars, or stand in the pen (back entrance): "Impas House Freestanding PoH" turns Seen.
+8. An item behind a solid wall or a closed door still stays unmarked, and a token behind a web (check 2) still turns Seen. Optional: an item seen across Kakariko's wooden fences or Lake Hylia's bridge rails turns Seen.
 
 ## Quick checks for Cross-Games Age (unreleased)
 
@@ -66,9 +73,11 @@ Checks 2 to 8 matter most: the boots and tunics had never been played before thi
 
 If the release-switch commit is reverted: the four MM rows are greyed out with the "cannot run" tooltip, the four Shared rows are greyed out and unticked even where an MM option was ticked before, and generated seeds contain no MM boots or tunics. Dropping a seed that adds them (made by a build with the switch on) plays the error sound and does not load it.
 
-## Quick check for Restart game from MM
+## Quick checks for Restart game (unreleased)
 
 1. While playing in MM, open Tools > Session > Restart game and confirm: the game returns to OoT's title screen, as in 0.4.1, not straight into OoT gameplay on the save.
+2. Turn Autosave on in both games. In MM, change something visible (for example rupees with the Save Editor), then Restart game: the OoT title shows, and reloading the file does not show the change. Repeat from OoT: Restart game does not save OoT either.
+3. With Autosave still on, go OoT → MM → OoT through a portal: the hand-off still saves.
 
 ## Quick checks for casting the MM spells (unreleased)
 
@@ -78,9 +87,16 @@ On 0.4.1, Din's Fire, Nayru's Love and Farore's Wind (MM) given with the Save Ed
 2. In Termina Field, cast each spell from a C button: Din's Fire, Nayru's Love, and Farore's Wind twice (the first cast sets a warp point, the second opens Return / Dispel / Exit). Repeat inside Woodfall Temple. None plays the "can't use" sound while the magic meter is full.
 3. On a new file, get each spell from its check, or with Save Editor > Randomizer > Give randomizer item > Give Din's Fire, Give Nayru's Love and Give Farore's Wind. Cast each one as in check 2.
 4. On the Clock Tower rooftop or in the Astral Observatory, where Song of Soaring cannot be played, Farore's Wind's C button is greyed out. It lights up again once you leave.
-5. A 0.4.1 save whose spells came from Give All now casts them, with nothing else changed.
+5. A 0.4.1 save whose spells came from Give All now casts them, with nothing else changed. On such a save, give the Iron Boots with Save Editor > Majora's Mask > Randomizer > Give randomizer item, then pause on the Farore's Wind slot: A reads Decide and switches to the Iron Boots. A slot with two or more owned items besides its spell still opens the list.
 6. Save Editor > Inventory > Reset. The trade and ocarina slots are empty, and pressing A on them in the pause menu brings nothing back. Link takes off any MM boots or tunic he was wearing.
 7. If a spell still plays the "can't use" sound, report two things: whether Din's Fire (MM) and Nayru's Love (MM) are greyed out under Randomizer > Items & checks > Majora's Mask > Items > Cross-game items, and whether the item tracker's Trade Items group shows the spell rows on that save.
+8. On a seed without Farore's Wind (MM), Save Editor > Majora's Mask > Randomizer > Give randomizer item > Farore's Wind gives junk, like Din's Fire and Nayru's Love on seeds without theirs. On a seed with Farore's Wind (MM) it gives the real spell, which casts.
+
+## Quick checks for the MM pause menu (unreleased)
+
+1. In MM gameplay, pause and press B: the "Would you like to save?" page's title strip is blank, with no Japanese "セーブ", and looks like MM's own game-over save page.
+2. Save Editor > Majora's Mask > Quest Status: give Sun's Song and Saria's Song, with Oath to Order and Song of Storms not learned. On the pause menu's Quest Status page, column 5: the upper song reads "Sun's Song" and the lower "Saria's Song" in English, the cursor turns blue, and the song's notes play back on the staff.
+3. Give Oath to Order and Song of Storms as well: column 5 names those two. Pressing right moves to Saria's or Sun's Song with its English name; right again goes on to the Quiver or the sword, and left comes back.
 
 ## Quick checks for Din's Fire (MM) and Nayru's Love (MM) (0.4.1)
 
