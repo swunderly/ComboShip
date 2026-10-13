@@ -4578,8 +4578,8 @@ s32 Camera_KeepOn4(Camera* camera) {
                 // Option A1 for adult human Link (Cross-Games Age) playing the ocarina: ITEM1's Fierce Deity row
                 // (CAM_MODE_JUMP, D_801B5410). Vanilla MM never uses it for the Fierce Deity playing, and the height
                 // scaling below gives adult Link (H = 68) a level shot at eye height from 40 degrees off the front,
-                // not the Fierce Deity's view. Owner-approved 2026-10-12; release switch kAdultOcarinaFdCamera
-                // (BenPort.cpp).
+                // not the Fierce Deity's view. Release switch kAdultOcarinaFdCamera (BenPort.cpp), off since the
+                // owner's revised ruling (2026-10-12).
                 if ((camera->setting == CAM_SET_ITEM1) && Combo_MM_AdultOcarinaFdCamera()) {
                     camMode = CAM_MODE_JUMP;
                 }

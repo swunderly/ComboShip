@@ -6263,9 +6263,10 @@ extern "C" int Combo_MM_IsLinkAdult(void) {
 // OoTMM, which keeps MM's NORMAL ITEM1 camera and draws the child Fairy item on the adult open hand (OoTMM v32.3
 // src/mm/actors/Player.c:1536-1539), so each has its own release switch (tooling/claude-cleanup/t6/decision.md). The
 // owner ruled on 2026-10-12: camera A1 and Fairy item B3; B1 stays off, for A/B runs only. His revised ruling the same
-// day asks for OoT's own adult hand holding the Ocarina of Time, coloured like the Fairy Ocarina (t10). Child Link and
-// the other forms never take them. Release switches, each set in its own commit.
-static constexpr bool kAdultOcarinaFdCamera = true;
+// day keeps MM's own ocarina camera (A1 off) and asks for OoT's own adult hand holding the Ocarina of Time, coloured
+// like the Fairy Ocarina (t10). Child Link and the other forms never take them. Release switches, each set in its own
+// commit.
+static constexpr bool kAdultOcarinaFdCamera = false;
 static constexpr bool kAdultFairyNativeHand = false;
 static constexpr bool kAdultFairyFittedPlacement = true;
 static constexpr bool kAdultFairyRecolouredOot = false;

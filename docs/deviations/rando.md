@@ -2220,19 +2220,21 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   (`Combo_MM_CrossAgeOptionsAllowed`), except a bound seed's own value. `mm_gear_swim_shuffle_tests.py` checks it.
 - **Menu.** The row follows Cross-Games Farore's Wind (OoTMM's `data.ts` lists `crossAge` first). It is in no
   preset and has no standalone enhancement (critique X9, D7).
-- **Ocarina (owner ruling 2026-10-12).** MM's human ocarina animations are the data OoT plays for adult Link, so
-  adult Link plays in OoT's own adult pose. Seen from MM's ocarina camera (`CAM_SET_ITEM1`, human row `D_801B53EC`)
-  his hands cover his eyes (likely, not yet captured at runtime), and the Fairy Ocarina, drawn as OoTMM draws it
-  (OoT's child Fairy item on the adult open hand, `mm/actors/Player.c:1536-1539`), sits under his chin. OoTMM keeps
-  both. The owner approved two adult-only fixes that use only native data; both depart from OoTMM, and each has its
-  own release switch in BenPort.cpp. Child Link, the other forms, Kafei and the OoT side never take them.
+- **Ocarina (owner ruling 2026-10-12, revised the same day).** MM's human ocarina animations are the data OoT plays for
+  adult Link, so adult Link plays in OoT's own adult pose. Seen from MM's ocarina camera (`CAM_SET_ITEM1`, human row
+  `D_801B53EC`) his hands cover his eyes (likely, not yet captured at runtime), and the Fairy Ocarina, drawn as OoTMM
+  draws it (OoT's child Fairy item on the adult open hand, `mm/actors/Player.c:1536-1539`), sits under his chin. OoTMM
+  keeps both. The owner first approved two adult-only fixes that use only native data, A1 and B3. After seeing A1's side
+  view he revised the ruling: MM's own camera stays, and the Fairy Ocarina is drawn as OoT's adult hand holding the
+  Ocarina of Time, coloured like the Fairy Ocarina. Each fix departs from OoTMM and has its own release switch in
+  BenPort.cpp. Child Link, the other forms, Kafei and the OoT side never take them.
   - **Camera (A1, `kAdultOcarinaFdCamera`).** `Camera_KeepOn4` gives adult human Link ITEM1's Fierce Deity row
     (`CAM_MODE_JUMP`, `D_801B5410`). The row is MM data that vanilla MM never uses for the Fierce Deity playing (he
     may not use the Ocarina of Time, `z_parameter.c:69`). `Camera_KeepOn4` scales it by Link's height, so at adult
     height (68) it films a level shot at eye height from 40 degrees off the front: not the Fierce Deity's view, and a
     view no game shows. OoT's own ocarina camera for this pose (option A2) is not built: it needs OoT's interface
     flags mapped to MM's.
-    Switch on (owner-approved 2026-10-12), pending the owner's confirmation from emulator before/after shots.
+    Switch off since the revised ruling: adult Link is filmed by MM's own ocarina camera, as in OoTMM.
   - **Fairy Ocarina (B3, `kAdultFairyFittedPlacement`).** The composite keeps OoTMM's binding (the child Fairy item
     on the adult open hand) and moves the item as OoT moves the Ocarina of Time from the child's right hand
     (`gLinkChildRightHandAndOotNearDL`) to the adult's (`gLinkAdultRightHandHoldingOotNearDL`), each in its hand's
