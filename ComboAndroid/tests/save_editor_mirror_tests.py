@@ -103,7 +103,8 @@ tab_names = dict(re.findall(r'inline constexpr const char\* (kTab\w+) = "([^"]*)
 def tabs(text):
     element = function(text, 'void SaveEditorWindow::DrawElement() {')
     found = []
-    for token in re.findall(r'BeginTabItem\((?:"([^"]*)"|ComboSaveEditorKit::(kTab\w+))', element):
+    # BeginTabItem("Name"), BeginTabItem(kTabName) or a { kTabName, DrawFunction } table row, in source order.
+    for token in re.findall(r'(?:BeginTabItem\(|\{ )(?:"([^"]*)"|(?:ComboSaveEditorKit::)?(kTab\w+))', element):
         found.append(token[0] or tab_names.get(token[1], token[1]))
     return found
 

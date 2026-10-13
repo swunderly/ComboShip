@@ -1,5 +1,8 @@
 #include "debugSaveEditor.h"
 #include "gui/ComboTouchSlider.h"
+#ifdef COMBO_BUILD
+#include "gui/ComboSaveEditorKit.h"
+#endif
 #include "soh/Enhancements/randomizer/randomizerTypes.h"
 #include "soh/Enhancements/randomizer/randomizer.h"
 #include "soh/util.h"
@@ -61,7 +64,12 @@ extern "C" u8 gAreaGsFlags[];
 
 extern "C" u8 gAmmoItems[];
 
+#ifdef COMBO_BUILD
+// ComboShip: the MM Save Editor's sizes (ComboSaveEditorKit), 120 px touch targets on phones.
+#define IMAGE_SIZE ComboSaveEditorKit::kIconSize
+#else
 #define IMAGE_SIZE 48.0f
+#endif
 
 using namespace UIWidgets;
 
@@ -1499,6 +1507,9 @@ void DrawFlagsTab() {
             ImGui::Spacing();
 
             if (!flagFilter.IsActive()) {
+                // ComboShip: the editor uses the menu font; these hex grids keep the monospace font their column
+                // headers are aligned for.
+                ImGui::PushFont(OTRGlobals::Instance->fontMonoLarger);
                 for (size_t j = 0; j < flagTable.size + 1; j++) {
                     DrawGroupWithBorder(
                         [&]() {
@@ -1534,6 +1545,7 @@ void DrawFlagsTab() {
                         },
                         flagTable.name);
                 }
+                ImGui::PopFont();
             } else {
                 DrawFlagTableSearchResults(flagTable, flagFilter);
             }
@@ -2467,7 +2479,7 @@ void DrawQuestStatusTab() {
             entry.name.c_str(),
             std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
                 ->GetTextureByName(hasQuestItem ? entry.name : entry.nameFaded),
-            ImVec2(32.0f, 48.0f), ImVec2(0, 0), ImVec2(1, 1));
+            ImVec2(ComboSaveEditorKit::kSongIconWidth, IMAGE_SIZE), ImVec2(0, 0), ImVec2(1, 1));
         if (ret) {
             if (hasQuestItem) {
                 gSaveContext.inventory.questItems &= ~bitMask;
@@ -3030,59 +3042,40 @@ void ResetBaseOptions() {
 
 #ifdef COMBO_BUILD
 void SaveEditorWindow::DrawElement() {
+    // ComboShip: no editable tabs on the title and file screens, the same one line as MM.
+    if (gSaveContext.gameMode == GAMEMODE_TITLE_SCREEN || gSaveContext.gameMode == GAMEMODE_FILE_SELECT) {
+        ImGui::TextWrapped("%s", ComboSaveEditorKit::kNoOotFile);
+        return;
+    }
     PushStyleTabs(THEME_COLOR);
-    ImGui::PushFont(OTRGlobals::Instance->fontMonoLarger);
     ImGui::BeginDisabled(CVarGetInteger(CVAR_SETTING("DisableChanges"), 0));
 
-    // ComboShip: the same tabs, in the same order, as the MM Save Editor.
+    // ComboShip: the same tabs, in the same order and in the same bordered panel, as the MM Save Editor; the menu
+    // font instead of the monospace one.
     if (ImGui::BeginTabBar("SaveContextTabBar", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton)) {
-        ResetBaseOptions();
-        if (ImGui::BeginTabItem("General")) {
-            DrawInfoTab();
-            ImGui::EndTabItem();
+        using namespace ComboSaveEditorKit;
+        const std::pair<const char*, void (*)()> tabs[] = {
+            { kTabGeneral, DrawInfoTab },
+            { kTabInventory, DrawInventoryTab },
+            { kTabEquipment, DrawEquipmentTab },
+            { kTabQuestStatus, DrawQuestStatusTab },
+            { kTabDungeonItems, DrawDungeonItemsTab },
+            { kTabFlags, DrawFlagsTab },
+            { kTabPlayer, DrawPlayerTab },
+        };
+        for (const auto& [name, draw] : tabs) {
+            ResetBaseOptions();
+            if (ImGui::BeginTabItem(name)) {
+                BeginPanel(name);
+                draw();
+                EndPanel();
+                ImGui::EndTabItem();
+            }
         }
-
-        ResetBaseOptions();
-        if (ImGui::BeginTabItem("Inventory")) {
-            DrawInventoryTab();
-            ImGui::EndTabItem();
-        }
-
-        ResetBaseOptions();
-        if (ImGui::BeginTabItem("Equipment")) {
-            DrawEquipmentTab();
-            ImGui::EndTabItem();
-        }
-
-        ResetBaseOptions();
-        if (ImGui::BeginTabItem("Quest Status")) {
-            DrawQuestStatusTab();
-            ImGui::EndTabItem();
-        }
-
-        ResetBaseOptions();
-        if (ImGui::BeginTabItem("Dungeon Items")) {
-            DrawDungeonItemsTab();
-            ImGui::EndTabItem();
-        }
-
-        ResetBaseOptions();
-        if (ImGui::BeginTabItem("Flags")) {
-            DrawFlagsTab();
-            ImGui::EndTabItem();
-        }
-
-        ResetBaseOptions();
-        if (ImGui::BeginTabItem("Player")) {
-            DrawPlayerTab();
-            ImGui::EndTabItem();
-        }
-
         ImGui::EndTabBar();
     }
 
     ImGui::EndDisabled();
-    ImGui::PopFont();
     PopStyleTabs();
 }
 #else

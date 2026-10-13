@@ -467,6 +467,10 @@ take upstream changes into the `#else` branch and port them to the combo branch 
 - `DrawInfoTab`: the File Number combobox is a read-only "File N". Editing it sent the next save to another slot,
   which could overwrite another file or split a file's OoT half from its MM half.
 - Typos: "visted" (`DrawFlagsTab`), "Capapcity" (`DrawEquipmentTab`), "aquired" (`DrawQuestStatusTab`).
+- Frame (`DrawElement`, `IMAGE_SIZE`): icons use the kit's sizes (120 px on Android, songs two-thirds as wide); the
+  menu font replaces `fontMonoLarger`, which stays only around the hex flag grids in `DrawFlagsTab` (their column
+  headers are aligned for it); every tab draws in MM's bordered panel; the title and file screens show
+  "Load an Ocarina of Time file to edit it." instead of editable tabs.
 
 **MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp`:** rewritten functions are guarded the same way as OoT's
 (`#ifdef COMBO_BUILD <combo body> #else <upstream body> #endif`); one-line wording changes are inline guards.
