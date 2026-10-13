@@ -28,6 +28,9 @@ inline constexpr RandomizerPageHeadings kRandomizerPageHeadings[] = {
       { "Dungeon rewards", "Maps & compasses", "Small keys", "Key rings", "Boss keys", "Stray fairies",
         "Master Quest" } },
     { "Warps & travel", { "Destination shuffles (OoT)" } },
+    { "Hints & traps", { "Hints", "Static hints", "Traps" } },
+    // Item icons first; their last group, Other, holds the rest of the page.
+    { "Starting inventory", {} },
 };
 inline const RandomizerPageHeadings* FindRandomizerPageHeadings(const std::string& page) {
     for (const auto& entry : kRandomizerPageHeadings)
@@ -87,6 +90,14 @@ inline const char* OotRandomizerHeading(const std::string& page, const std::stri
     }
     if (page == "Warps & travel")
         return option == "ShuffleWarpSongs" || option == "ShuffleOwlDrops" ? "Destination shuffles (OoT)" : nullptr;
+    if (page == "Hints & traps") {
+        for (const auto& [native, heading] :
+             { std::pair{ "Hints", "Hints" }, std::pair{ "Static Hints", "Static hints" },
+               std::pair{ "Traps", "Traps" } })
+            if (nativeHeading == native)
+                return heading;
+        return nullptr;
+    }
     return nullptr;
 }
 // Regroups an OoT Randomizer body under its page's headings: custom panels first, then rows without a heading, then

@@ -279,17 +279,24 @@ static void Tooltip(const char* help) {
     if (help && help[0])
         MenuTooltip(help);
 }
-// Display text the profile pages add to a native option without renaming it: settings.cpp and the MM catalog keep
-// their names for saved settings, presets and search.
+// Display text the profile pages give a native OoT option without renaming it: settings.cpp keeps its names for saved
+// settings, presets and search, where they stay aliases. Labels follow OoTMM v32.3
+// (packages/core/src/settings/data.ts).
 struct OptionDisplay {
     const char* key;
-    const char* note; // appended to the tooltip
-    bool visibleNote; // also shown under the row
+    const char* label; // nullptr keeps the native label
+    const char* note;  // appended to the tooltip
+    bool visibleNote;  // also shown under the row
 };
 static constexpr OptionDisplay kOptionDisplay[] = {
-    { "gRandoSettings.SwordlessEponaItems", "No logic effect. Fixed when the seed is made.", false },
-    { "gRandoSettings.SkipChildStealth",
+    { "gRandoSettings.SwordlessEponaItems", nullptr, "No logic effect. Fixed when the seed is made.", false },
+    { "gRandoSettings.SkipChildStealth", nullptr,
       "No logic effect. Use Enhancements > Time savers > Quests & errands > Skip Child Stealth instead.", true },
+    { "gRandoSettings.ShuffleWarpSongs", nullptr,
+      "Ocarina of Time destinations only. Warp Songs and Soaring Spots Shuffle above mixes both games.", false },
+    { "gRandoSettings.ShuffleOwlDrops", nullptr,
+      "Ocarina of Time destinations only. Warp Songs and Soaring Spots Shuffle above mixes both games.", false },
+    { "gRandoSettings.FullWallets", "Fill Wallets", nullptr, false },
 };
 static const OptionDisplay* FindOptionDisplay(const char* key) {
     for (const auto& row : kOptionDisplay)
@@ -315,8 +322,9 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
         return;
     (void)game;
     ImGui::PushID(w.index);
-    const char* label = w.name ? w.name : "";
     const char* key = w.cvar ? w.cvar : "";
+    const auto* display = FindOptionDisplay(key);
+    const char* label = display && display->label ? display->label : w.name ? w.name : "";
     const auto theme = ComboMenu_ThemeColor();
     std::string caption = label;
     if (const auto suffix = caption.find("##"); suffix != std::string::npos)
@@ -398,16 +406,15 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
             break;
     }
     ImGui::EndDisabled();
-    const auto* display = FindOptionDisplay(key);
     if (policy && policy->disabled)
         Tooltip(policy->disabledText.c_str());
-    else if (display) {
+    else if (display && display->note) {
         const std::string help =
             w.tooltip && w.tooltip[0] ? std::string(w.tooltip) + "\n\n" + display->note : std::string(display->note);
         Tooltip(help.c_str());
     } else
         Tooltip(w.tooltip);
-    if (display && display->visibleNote) {
+    if (display && display->note && display->visibleNote) {
         ImGui::PushTextWrapPos(0.0f);
         ImGui::TextDisabled("%s", display->note);
         ImGui::PopTextWrapPos();
@@ -428,6 +435,32 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
         }
     }
     ImGui::PopID();
+}
+// All On / All Off under OoT's Scenery drops heading, as MM's card has: every shown, enabled row goes to its widest
+// (last) or first choice.
+static void SceneryButtons(const CwWidget* rows, int count) {
+    ImGui::BeginDisabled(!Editable());
+    for (int on = 1; on >= 0; --on) {
+        if (on == 0)
+            ImGui::SameLine();
+        if (!ImGui::Button(on ? "All On" : "All Off"))
+            continue;
+        for (int i = 0; i < count; ++i) {
+            const auto& row = rows[i];
+            if (!row.cvar || !row.cvar[0])
+                continue;
+            int value = on;
+            if (const auto* policy = optionView ? optionView->Find(row.cvar) : nullptr) {
+                if (policy->hidden || policy->disabled)
+                    continue;
+                if (!policy->choiceValues.empty())
+                    value = on ? policy->choiceValues.back() : policy->choiceValues.front();
+            } else if (row.kind == CW_COMBOBOX && row.choiceCount > 0)
+                value = row.choices[on ? row.choiceCount - 1 : 0].value;
+            WriteInteger(row.cvar, value); // refreshes optionView: no policy is kept across it
+        }
+    }
+    ImGui::EndDisabled();
 }
 void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
     // OoT's rows take the page's fixed headings (ComboRandomizerLayout.h); MM's catalog cards already carry them.
@@ -471,7 +504,8 @@ void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
             DrawWidget(widget, game);
         }
     };
-    auto draw = [&](const CwWidget& widget) {
+    auto draw = [&](int index) {
+        const auto& widget = side.widgets[index];
         if (widget.index <= -1000 && DrawMenuPseudoRow(widget, true))
             return; // a gameplay rule row inside its heading
         if (seedOnly(widget))
@@ -494,10 +528,17 @@ void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
             DrawCustom(widget.name, world);
         else
             DrawWidget(widget, game);
+        if (world == 0 && widget.kind == CW_SEPARATOR_TEXT && widget.name &&
+            !std::strcmp(widget.name, "Scenery drops")) {
+            int count = 0;
+            while (index + 1 + count < side.widgetCount && side.widgets[index + 1 + count].kind != CW_SEPARATOR_TEXT)
+                ++count;
+            SceneryButtons(side.widgets + index + 1, count);
+        }
     };
     if (columns == 1) {
         for (int i = 0; i < side.widgetCount; ++i)
-            draw(side.widgets[i]);
+            draw(i);
         drawSeedOnly();
         return;
     }
@@ -511,7 +552,7 @@ void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
         ImGui::BeginGroup();
         for (int i = 0; i < side.widgetCount; ++i)
             if (unsigned(std::clamp(side.widgets[i].column, 0, int(columns) - 1)) == column)
-                draw(side.widgets[i]);
+                draw(i);
         ImGui::EndGroup();
         ImGui::PopID();
     }
@@ -594,6 +635,9 @@ static void CheckList(int world) {
     const char* key = world == 0 ? "gRandoSettings.ExcludedLocations" : "gRando.ExcludedChecks";
     static ImGuiTextFilter query;
     static int group = 0;
+    // MM's list shows only checks its pool can hold; SoH does not export that per check, so OoT lists them all.
+    if (world == 0)
+        ImGui::TextWrapped("Lists every Ocarina of Time check, including ones these settings leave out of the pool.");
     query.Draw("Search checks");
     std::vector<std::string> selectedValues;
     if (world == 0) {
@@ -716,7 +760,9 @@ static bool MmStartingAvailable(const Json& row) {
         return ReadInteger(row["poolKey"].get<std::string>().c_str(), 0) != 0;
     return mmBaseAvailable.count(item) != 0;
 }
-static void StartingIcons(int world) {
+// Returns the last group heading drawn, so the page's other rows can continue under it.
+static std::string StartingIcons(int world) {
+    std::string last;
     const auto& rows = catalog.at(world == 0 ? "oot" : "mm").at(world == 0 ? "startingLayout" : "startingItems");
     auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
     for (const char* group : { "Equipment", "Items", "Masks", "Songs", "Clocks (MM)", "Animal Souls", "Misc. Souls",
@@ -733,6 +779,7 @@ static void StartingIcons(int world) {
         if (groupRows.empty())
             continue;
         ImGui::SeparatorText(group);
+        last = group;
         const bool songGroup = std::strcmp(group, "Songs") == 0;
         if (songGroup)
             std::stable_sort(groupRows.begin(), groupRows.end(), [](const Json* a, const Json* b) {
@@ -901,6 +948,7 @@ static void StartingIcons(int world) {
         }
         ImGui::EndTable();
     }
+    return last;
 }
 static void SariaPriority() {
     if (!ReadInteger("gRando.Options.RO_SHUFFLE_SONG_SARIA", 0))
@@ -976,9 +1024,9 @@ static void SariaPriority() {
 }
 void DrawCustom(const char* sidebar, int world) {
     const std::string name = sidebar ? sidebar : "";
-    if (name == "Starting Items") {
-        StartingIcons(world);
-    }
+    std::string iconHeading;
+    if (name == "Starting Items")
+        iconHeading = StartingIcons(world);
     if (name == "Locations" || name == "Excluded Locations" || name == "Check Exclusions") {
         CheckList(world);
         return;
@@ -994,7 +1042,8 @@ void DrawCustom(const char* sidebar, int world) {
         }
     const float minimum =
         name == "Logic/Conditions" ? ImGui::GetFontSize() * 28 : std::max(400.f, ImGui::GetFontSize() * 20);
-    const int columns = ImGui::GetContentRegionAvail().x >= minimum * 2 ? 2 : 1;
+    // A page with one card uses the whole width.
+    const int columns = ImGui::GetContentRegionAvail().x >= minimum * 2 && cards.size() > 1 ? 2 : 1;
     if (cards.empty() || !ImGui::BeginTable("##NativeMmCards", columns,
                                             ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
         return;
@@ -1002,27 +1051,31 @@ void DrawCustom(const char* sidebar, int world) {
         ImGui::TableNextColumn();
         ImGui::PushID(card.c_str());
         ImGui::BeginGroup();
-        if (card == "checkPoolScenery") {
-            ImGui::BeginDisabled(!Editable());
-            for (int value = 1; value >= 0; --value) {
-                if (value == 0)
-                    ImGui::SameLine();
-                if (ImGui::Button(value ? "All On" : "All Off"))
-                    for (const auto& row : catalog.at("mm").at("layout"))
-                        if (row.at("card") == card)
-                            WriteInteger(row.at("key").get<std::string>().c_str(), value);
-            }
-            ImGui::EndDisabled();
-        }
-        bool headingDrawn = false;
+        // A card can hold several headings; rows after the item icons continue under the icons' last group.
+        std::string lastHeading = iconHeading;
+        iconHeading.clear();
+        bool sceneryButtons = card == "checkPoolScenery";
         for (const auto& row : catalog.at("mm").at("layout")) {
             if (row.at("page") != name || row.at("card") != card)
                 continue;
-            if (!headingDrawn) {
-                const auto heading = row.at("heading").get<std::string>();
+            const auto heading = row.at("heading").get<std::string>();
+            if (heading != lastHeading) {
                 if (!heading.empty())
                     ImGui::SeparatorText(heading.c_str());
-                headingDrawn = true;
+                lastHeading = heading;
+            }
+            if (sceneryButtons) {
+                sceneryButtons = false;
+                ImGui::BeginDisabled(!Editable());
+                for (int value = 1; value >= 0; --value) {
+                    if (value == 0)
+                        ImGui::SameLine();
+                    if (ImGui::Button(value ? "All On" : "All Off"))
+                        for (const auto& scenery : catalog.at("mm").at("layout"))
+                            if (scenery.at("card") == card)
+                                WriteInteger(scenery.at("key").get<std::string>().c_str(), value);
+                }
+                ImGui::EndDisabled();
             }
             CatalogRow(row);
         }

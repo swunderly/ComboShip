@@ -48,6 +48,7 @@ std::vector<std::string> drawn;bool pouchDisabled=false;
 void BeginFrame(){++refreshes;document=Json::object();}
 int ReadInteger(const char* key,int fallback){return std::string(key)=="gRandoSettings.SilverRupeeShuffle"?silver:fallback;}
 void DrawCustom(const char*,int){}
+void SceneryButtons(const CwWidget*,int){}
 void DrawWidget(const CwWidget& widget,const GameMenu&){drawn.emplace_back(widget.cvar?widget.cvar:"");if(drawn.back().find("SilverPouch")!=std::string::npos)pouchDisabled=ImGui::disabled;}
 '''
 code += function('bool Editable()') + function('bool DrawUnavailableSettings()') + function('void DrawSidebar(') + '}\n'

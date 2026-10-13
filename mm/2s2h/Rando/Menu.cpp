@@ -655,6 +655,8 @@ static void DrawLogicConditionsTab() {
                                  .minColumnWidth = ImGui::GetFontSize() * 28.0f,
                                  .childFlags = ImGuiChildFlags_AutoResizeY });
     UIWidgets::BeginCard("randoLogicColumn1");
+    // ComboShip: the same headings as OoT's Logic & access page (mirrors ProfileMmLayout.inc).
+    ImGui::SeparatorText("Logic");
     if (UIWidgets::CVarCombobox("Logic", Rando::StaticData::Options[RO_LOGIC].cvar, &logicOptions)) {
         ClearIncompatibleSetting();
     }
@@ -669,6 +671,7 @@ static void DrawLogicConditionsTab() {
         "the Moon.\n\n"
         "Vanilla - The items are not shuffled.\n"
         "Not compatible with settings that add items to the pool, like Boss Souls or Plentiful Items.");
+    ImGui::SeparatorText("Area access");
     UIWidgets::CVarCombobox("Dungeon Access", Rando::StaticData::Options[RO_ACCESS_DUNGEONS].cvar,
                             &accessDungeonOptions);
     UIWidgets::Tooltip("Dungeon access requirements:\n\n"
@@ -680,7 +683,7 @@ static void DrawLogicConditionsTab() {
     UIWidgets::CVarCombobox("Trials Access", Rando::StaticData::Options[RO_ACCESS_TRIALS].cvar, &accessTrialsOptions);
     UIWidgets::EndCard();
     UIWidgets::BeginCard("randoLogicColumn2");
-
+    ImGui::SeparatorText("Final boss access");
     UIWidgets::CVarSliderInt("Majora Access Remains Required",
                              Rando::StaticData::Options[RO_ACCESS_MAJORA_REMAINS_COUNT].cvar,
                              IntSliderOptions().Min(0).Max(4).DefaultValue(0));
@@ -747,7 +750,7 @@ static void DrawCheckPoolTab() {
     UIWidgets::EndCard();
 
     UIWidgets::BeginCard("checkPoolCreatures");
-    ImGui::SeparatorText("Creatures & Collectibles");
+    ImGui::SeparatorText("Creatures & collectibles");
     CheckPoolCheckbox("Enemy Drops", RO_SHUFFLE_ENEMY_DROPS, RCTYPE_ENEMY_DROP,
                       "The first drop from each non-boss enemy is a check.");
     CheckPoolCheckbox("Frogs", RO_SHUFFLE_FROGS, RCTYPE_FROG,
@@ -784,7 +787,7 @@ static void DrawCheckPoolTab() {
     UIWidgets::EndCard();
 
     UIWidgets::BeginCard("checkPoolScenery");
-    ImGui::SeparatorText("Scenery Drops");
+    ImGui::SeparatorText("Scenery drops");
     UIWidgets::Tooltip(
         "These groups add many scenery checks, making room for a larger item pool or an allsanity seed.");
     if (Button("All On", ButtonOptions({ { .tooltip = "Enable every scenery drop group" } })
@@ -806,7 +809,7 @@ static void DrawCheckPoolTab() {
 
     // ComboShip: shop-type checks share one card, as OoT's Shops & Merchants (mirrors ProfileMmLayout.inc).
     UIWidgets::BeginCard("checkPoolShops");
-    ImGui::SeparatorText("Shops & Merchants");
+    ImGui::SeparatorText("Shops & merchants");
     CheckPoolCheckbox("Shops", RO_SHUFFLE_SHOPS, RCTYPE_SHOP,
                       "Items sold in shops are checks, with randomized prices.\n\nThe Curiosity Shop special item "
                       "and the Bomb Shop's bomb bags are always shuffled, even with this off.");
@@ -1013,8 +1016,17 @@ static void DrawItemPoolTab(int section = 0) {
     UIWidgets::BeginCardLayout(PoolCardLayout());
 
     if (section == 0 || section == 1) {
+        // ComboShip: the pool size first, as OoT's Item Pool (mirrors ProfileMmLayout.inc).
+        UIWidgets::BeginCard("itemPoolModifiers");
+        ImGui::SeparatorText("Item pool");
+        ItemPoolCheckbox("Plentiful Items", RO_PLENTIFUL_ITEMS,
+                         "Major items, masks, and keys will have an extra copy added to the item pool. \n"
+                         "Lesser items, stray fairies, and skulltula tokens will have a chance for an "
+                         "extra copy to be added to the item pool.");
+        UIWidgets::EndCard();
+
         UIWidgets::BeginCard("itemPoolAbilities");
-        ImGui::SeparatorText("Abilities & Upgrades");
+        ImGui::SeparatorText("Abilities & upgrades");
         ItemPoolCheckbox("Swim", RO_SHUFFLE_SWIM,
                          "Shuffles the ability to Swim, entering the Swim state or submerging\n"
                          "into deep water will respawn Link.",
@@ -1051,7 +1063,7 @@ static void DrawItemPoolTab(int section = 0) {
         UIWidgets::EndCard();
 
         UIWidgets::BeginCard("itemPoolSongs");
-        ImGui::SeparatorText("Extra Songs");
+        ImGui::SeparatorText("Extra songs");
         ItemPoolCheckbox("Sun's Song", RO_SHUFFLE_SONG_SUN,
                          "Adds the Sun's Song to the item pool. Playing it sets the time of day to 06:00 or 18:00, "
                          "whichever comes first.",
@@ -1145,7 +1157,7 @@ static void DrawItemPoolTab(int section = 0) {
 
 #ifdef COMBO_BUILD
         UIWidgets::BeginCard("itemPoolCrossGame");
-        ImGui::SeparatorText("Cross-Game Items");
+        ImGui::SeparatorText("Cross-game items");
         SpellPoolCheckbox("Din's Fire (MM)", RO_MM_SPELL_FIRE, 2, "Adds Din's Fire in Majora's Mask.");
         ItemPoolCheckbox("Farore's Wind (MM)", RO_MM_SPELL_WIND, "Adds Farore's Wind in Majora's Mask.", 1);
         SpellPoolCheckbox("Nayru's Love (MM)", RO_MM_SPELL_LOVE, 1, "Adds Nayru's Love in Majora's Mask.");
@@ -1189,19 +1201,23 @@ static void DrawItemPoolTab(int section = 0) {
     }
     if (section == 0 || section == 2) {
         UIWidgets::BeginCard("itemPoolDungeonItems");
-        ImGui::SeparatorText("Dungeon Items");
-        // ComboShip: dungeon rewards and maps sit with the other dungeon items, as OoT's (mirrors ProfileMmLayout.inc).
+        // ComboShip: dungeon rewards and maps sit with the other dungeon items under OoT's headings (mirrors
+        // ProfileMmLayout.inc).
+        ImGui::SeparatorText("Dungeon rewards");
         CheckPoolCheckbox("Boss Remains", RO_SHUFFLE_BOSS_REMAINS, RCTYPE_REMAINS,
                           "Defeating each temple boss rewards a shuffled item instead of that boss's remains.");
+        ImGui::SeparatorText("Maps & compasses");
         CVarCheckbox("Maps and Compasses", Rando::StaticData::Options[RO_STARTING_MAPS_AND_COMPASSES].cvar,
                      CheckboxOptions().Tooltip("Start with dungeon maps and compasses."));
+        ImGui::SeparatorText("Small keys");
         UIWidgets::CVarCombobox(
-            "Small Keys", Rando::StaticData::Options[RO_PLACEMENT_SMALL_KEYS].cvar, &dungeonItemPlacementOptions,
+            "Small Key Shuffle", Rando::StaticData::Options[RO_PLACEMENT_SMALL_KEYS].cvar, &dungeonItemPlacementOptions,
             UIWidgets::ComboboxOptions().Tooltip(
                 "Where each dungeon's small keys may be placed.\n\n"
                 "Anywhere - Small keys can be found anywhere in the world.\n\n"
                 "Own Dungeon - Each dungeon's small keys are only found within that dungeon.\n\n"
                 "Start With - You begin with every dungeon's small keys, and none are added to the item pool."));
+        ImGui::SeparatorText("Key rings");
         ItemPoolCheckbox("Woodfall Key Ring", RO_KEY_RING_WOODFALL,
                          "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate "
                          "rings do not refill spent keys.");
@@ -1214,13 +1230,18 @@ static void DrawItemPoolTab(int section = 0) {
         ItemPoolCheckbox("Stone Tower Key Ring", RO_KEY_RING_STONE_TOWER,
                          "Replaces this dungeon's small keys with one ring granting all remaining keys. Duplicate "
                          "rings do not refill spent keys.");
+        UIWidgets::EndCard();
+
+        UIWidgets::BeginCard("itemPoolDungeonBossKeys");
+        ImGui::SeparatorText("Boss keys");
         UIWidgets::CVarCombobox(
-            "Boss Keys", Rando::StaticData::Options[RO_PLACEMENT_BOSS_KEYS].cvar, &dungeonItemPlacementOptions,
+            "Boss Key Shuffle", Rando::StaticData::Options[RO_PLACEMENT_BOSS_KEYS].cvar, &dungeonItemPlacementOptions,
             UIWidgets::ComboboxOptions().Tooltip(
                 "Where each dungeon's boss key may be placed.\n\n"
                 "Anywhere - Boss keys can be found anywhere in the world.\n\n"
                 "Own Dungeon - Each dungeon's boss key is only found within that dungeon.\n\n"
                 "Start With - You begin with every dungeon's boss key, and none are added to the item pool."));
+        ImGui::SeparatorText("Stray fairies");
         UIWidgets::CVarCombobox(
             "Stray Fairies", Rando::StaticData::Options[RO_PLACEMENT_STRAY_FAIRIES].cvar, &dungeonItemPlacementOptions,
             UIWidgets::ComboboxOptions().Tooltip(
@@ -1251,15 +1272,6 @@ static void DrawItemPoolTab(int section = 0) {
                 ClampRequiredToMax(RO_STRAY_FAIRIES_REQUIRED, RO_STRAY_FAIRIES_MAX, STRAY_FAIRY_SCATTERED_TOTAL);
             }
         }
-        UIWidgets::EndCard();
-    }
-    if (section == 0 || section == 1) {
-        UIWidgets::BeginCard("itemPoolModifiers");
-        ImGui::SeparatorText("Pool Modifiers");
-        ItemPoolCheckbox("Plentiful Items", RO_PLENTIFUL_ITEMS,
-                         "Major items, masks, and keys will have an extra copy added to the item pool. \n"
-                         "Lesser items, stray fairies, and skulltula tokens will have a chance for an "
-                         "extra copy to be added to the item pool.");
         UIWidgets::EndCard();
     }
     if (section == 0 || section == 3) {
@@ -1490,10 +1502,6 @@ static void DrawStartingItemsTab() {
         grid("Animal Souls", animals);
         grid("Misc. Souls", miscSouls);
     }
-    CVarCheckbox("Wallet Full", Rando::StaticData::Options[RO_STARTING_RUPEES].cvar,
-                 CheckboxOptions().Tooltip("Start with a full wallet."));
-    CVarCheckbox("Consumables Full", Rando::StaticData::Options[RO_STARTING_CONSUMABLES].cvar,
-                 CheckboxOptions().Tooltip("Start with full Deku Sticks and Deku Nuts."));
     CVarSliderInt("Starting Hearts", Rando::StaticData::Options[RO_STARTING_HEALTH].cvar,
                   IntSliderOptions()
                       .Min(1)
@@ -1502,6 +1510,11 @@ static void DrawStartingItemsTab() {
                       .Format("%d")
                       .LabelPosition(LabelPosition::Near)
                       .Color(Colors(CVarGetInteger("gSettings.Menu.Theme", LightBlue))));
+    // ComboShip: OoT's order and OoTMM's Fill Wallets name (mirrors ProfileMmLayout.inc).
+    CVarCheckbox("Fill Wallets", Rando::StaticData::Options[RO_STARTING_RUPEES].cvar,
+                 CheckboxOptions().Tooltip("Start with a full wallet."));
+    CVarCheckbox("Consumables Full", Rando::StaticData::Options[RO_STARTING_CONSUMABLES].cvar,
+                 CheckboxOptions().Tooltip("Start with full Deku Sticks and Deku Nuts."));
 }
 
 static void BulkExcludeChecks(const std::vector<RandoCheckId>& checks) {
@@ -1705,12 +1718,8 @@ static void DrawCheckExclusionsTab() {
 static void DrawHintsTab() {
     f32 halfHeight = ImGui::GetContentRegionAvail().y / 2 - (ImGui::GetStyle().ItemSpacing.y * 2);
     ImGui::BeginChild("randoHintsColumn1", ImVec2(0, 0));
-    CVarCheckbox(
-        "Spider House", Rando::StaticData::Options[RO_HINTS_SPIDER_HOUSES].cvar,
-        CheckboxOptions(
-            { { .tooltip =
-                    "Swamp Spider House: Hinted at his normal location within the Swamp Spider House\n\nOcean Spider "
-                    "House: Hinted in South Clock Town day 1, by the main standing on the scaffolding." } }));
+    // ComboShip: OoT's Hints / Static hints split and "X Hint" names (mirrors ProfileMmLayout.inc).
+    ImGui::SeparatorText("Hints");
     CVarCheckbox(
         "Gossip Stone Static Hint", Rando::StaticData::Options[RO_HINTS_GOSSIP_STONES].cvar,
         CheckboxOptions(
@@ -1746,19 +1755,26 @@ static void DrawHintsTab() {
                       "  Skulltula / Stray Fairy     3\n"
                       "  Health / Junk               2"));
     CVarCheckbox(
-        "Gossip Stone Purchaseable", Rando::StaticData::Options[RO_HINTS_PURCHASEABLE].cvar,
+        "Gossip Stone Purchasable", Rando::StaticData::Options[RO_HINTS_PURCHASEABLE].cvar,
         CheckboxOptions({ { .tooltip = "Gossip stones will offer a hint for a scaling rupee cost. This cost ranges "
                                        "from 10-250 rupees depending on how many checks are remaining in your seed. "
                                        "The hint will guaranteed be a check you have not obtained yet." } }));
+    ImGui::SeparatorText("Static hints");
     CVarCheckbox(
-        "Boss Remains", Rando::StaticData::Options[RO_HINTS_BOSS_REMAINS].cvar,
+        "Spider House Hints", Rando::StaticData::Options[RO_HINTS_SPIDER_HOUSES].cvar,
+        CheckboxOptions(
+            { { .tooltip =
+                    "Swamp Spider House: Hinted at his normal location within the Swamp Spider House\n\nOcean Spider "
+                    "House: Hinted in South Clock Town day 1, by the main standing on the scaffolding." } }));
+    CVarCheckbox(
+        "Boss Remains Hint", Rando::StaticData::Options[RO_HINTS_BOSS_REMAINS].cvar,
         CheckboxOptions(
             { { .tooltip =
                     "Lists the location of the Boss remains on the guard recruitment posters around Clock Town" } }));
-    CVarCheckbox("Oath to Order", Rando::StaticData::Options[RO_HINTS_OATH_TO_ORDER].cvar,
+    CVarCheckbox("Oath to Order Hint", Rando::StaticData::Options[RO_HINTS_OATH_TO_ORDER].cvar,
                  CheckboxOptions({ { .tooltip = "Once you have the Moon Access Requirements, talking to Skull Kid on "
                                                 "the Clock Tower Rooftop will hint the location of Oath to Order" } }));
-    CVarCheckbox("Transformation Masks", Rando::StaticData::Options[RO_HINTS_TRANSFORMATIONS].cvar,
+    CVarCheckbox("Transformation Masks Hint", Rando::StaticData::Options[RO_HINTS_TRANSFORMATIONS].cvar,
                  CheckboxOptions({ { .tooltip = "Checking the sign near the Business Scrub in South Clock Town "
                                                 "will reveal the location of Transformation Masks.\n"
                                                 "Note: This excludes Fierce Deity." } }));
@@ -1769,14 +1785,14 @@ static void DrawHintsTab() {
                                                "4th Item\n- Lottery\n- Great Fairy Fountains\n- Mountain Smithy" } })
             .DefaultValue(true));
     CVarCheckbox(
-        "Song of Soaring", Rando::StaticData::Options[RO_HINTS_SONG_OF_SOARING].cvar,
+        "Song of Soaring Hint", Rando::StaticData::Options[RO_HINTS_SONG_OF_SOARING].cvar,
         CheckboxOptions({ { .tooltip = "Hints the location of the Song of Soaring at it's vanilla location" } }));
     CVarCheckbox(
-        "Hookshot Location", Rando::StaticData::Options[RO_HINTS_HOOKSHOT].cvar,
+        "Hookshot Hint", Rando::StaticData::Options[RO_HINTS_HOOKSHOT].cvar,
         CheckboxOptions(
             { { .tooltip =
                     "The Zora in Great Bay Coast, near Pirates Fortress, will hint the location of the Hookshot." } }));
-    CVarCheckbox("Bank Reward", Rando::StaticData::Options[RO_HINTS_BANK_SIGN].cvar,
+    CVarCheckbox("Bank Reward Hint", Rando::StaticData::Options[RO_HINTS_BANK_SIGN].cvar,
                  CheckboxOptions({ { .tooltip = "The sign next to the Bank in West Clock Town will describe a "
                                                 "promotion for the Piece of Heart Check." } }));
     ImGui::EndChild();

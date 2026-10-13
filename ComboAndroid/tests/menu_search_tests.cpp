@@ -126,7 +126,9 @@ int main() {
     for (const auto& rule : kGameplayRules) ordinary += !rule.trickGoverned && !IsLegacyGameplayRule(rule.name);
     assert(grouped.size() == ordinary);
     assert(std::string(GameplayRuleMenuLabel(destinations->name, destinations->label, true)) ==
-           "Shuffle song warp destinations");
+           "Warp Songs and Soaring Spots Shuffle");
+    for (const auto* query : {"shuffle song warp destinations", "soaring spots"})
+        assert(RuleRank(query, *destinations) > 0); // the earlier label and OoTMM's name both find it
     assert(!IsSongTravelRule(nullptr) && !IsSongTravelRule("gCheats.Unrelated"));
     assert(std::string(GameplayRuleSearchAliases(nullptr)).empty());
 

@@ -323,21 +323,22 @@ struct RandomizerPageInfo {
 };
 inline constexpr RandomizerPageInfo kRandomizerPages[] = {
     { "Generate", "Create a seed using your chosen settings.", "seed generate creation progress retry cancel" },
-    { "Logic & access", "Choose the goal, reachability and world access rules.",
-      "goal Triforce hunt starting world reachability guarantee access bosses" },
+    { "Logic & access", "Choose the goal, logic and world access rules.",
+      "goal Triforce hunt starting world starting age reachability logic guarantee access bosses final boss" },
     { "Items & checks", "Choose randomized locations and extra items.",
-      "check pool item pool shuffles shops merchants scenery drops abilities upgrades souls songs plentiful" },
+      "check pool item pool shuffles shops merchants scenery drops abilities upgrades souls boss souls songs "
+      "plentiful" },
+    { "Dungeons", "Choose dungeon item placement and dungeon rules.",
+      "small keys boss keys key rings keyrings maps compass fairies master quest dungeon rewards boss remains" },
     { "Shared items", "One item can count for both games.",
       "shared items bows bombs magic arrows wallets hookshot masks songs" },
     { "Starting inventory", "Choose your starting items and resources.",
       "starting items equipment hearts consumables" },
     { "Warps & travel", "Choose cross-game song travel and shuffled destinations.",
-      "warp crossgame cross game songs transport transportation adult child Soaring owl Requiem" },
+      "warp crossgame cross game songs transport transportation adult child Soaring owl Requiem owl drops" },
     { "Gameplay rules", "Choose abilities and quest requirements the seed logic can require.",
       "fierce deity time travel age blue fire sunlight tunics water hopping rolling required count frogs eggs Gibdo "
       "dog race" },
-    { "Dungeons", "Choose dungeon item placement and dungeon rules.",
-      "small keys boss keys keyrings maps compass fairies master quest" },
     { "Hints & traps", "Choose hints and disguised traps.", "gossip stone hints ice traps junk" },
     { "Excluded checks", "Choose checks that should not hold progression.",
       "locations check exclusions excluded checks" },
@@ -405,16 +406,18 @@ inline int RandomizerWidgetGroup(bool oot, const std::string& sidebar, int colum
         return 1;
     return -1;
 }
-// Keep native widget callbacks while regrouping the OoT location pool like MM's cards.
+// Keep native widget callbacks while regrouping the OoT location pool like MM's cards: 0 World & NPCs, 1 Creatures &
+// collectibles (freestanding and wonder items, as MM), 2 Scenery drops (beehives, as MM), 3 Shops & merchants.
 inline int OotLocationPoolGroup(const std::string& key, int originalColumn) {
     if (originalColumn == 1)
         return 3; // shops, prices and merchants belong together
-    for (const char* part : { "ShuffleFreestanding", "ShuffleWonderItems", "ShufflePots", "ShuffleGrass",
-                              "ShuffleCrates", "ShuffleBoulders", "ShuffleRocks", "ShuffleTrees", "ShuffleBushes",
-                              "ShuffleIcicles", "ShuffleRedIce", "ShuffleSigns" })
+    for (const char* part :
+         { "ShufflePots", "ShuffleGrass", "ShuffleCrates", "ShuffleBoulders", "ShuffleRocks", "ShuffleTrees",
+           "ShuffleBushes", "ShuffleIcicles", "ShuffleRedIce", "ShuffleSigns", "ShuffleBeehives" })
         if (key.find(part) != std::string::npos)
             return 2;
-    for (const char* part : { "ShuffleTokens", "Fishsanity", "ShuffleBeehives", "Fairies" })
+    for (const char* part :
+         { "ShuffleTokens", "Fishsanity", "ShuffleFreestanding", "ShuffleWonderItems", "Fairies", "FairySpots" })
         if (key.find(part) != std::string::npos)
             return 1;
     return 0;

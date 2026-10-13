@@ -80,7 +80,7 @@ Touch controls and game controllers both work. The owner plays on a phone with b
 Upstream ComboShip already shuffles items across both games. It has cross-game hints, a starting-world choice, a combined Triforce Hunt, 17 shared items and Anchor multiplayer. All of that is kept. This fork adds many OoTMM settings on top. Newer ones use OoTMM v32.3's names and descriptions; some older ones still use the fork's own wording. The few additions that are this fork's own, not OoTMM's, are marked.
 
 - **Presets.** Default, Beginner and Allsanity on the Home tab. They adapt OoTMM's presets to the options this app supports and are not identical.
-- **Victory conditions.** Both final bosses, Either final boss, Ganon only, Majora only, Triforce Hunt, and Triforce Quest (separate Power, Courage and Wisdom pieces).
+- **Goal.** Ganon & Majora, Any Final Boss, Ganon, Majora, Triforce Hunt, and Triforce Quest (separate Power, Courage and Wisdom pieces).
 - **Shared items.** 27 instead of 17. Added: the five Ocarina buttons, Song of Time, Mirror Shield, Farore's Wind, Din's Fire and Nayru's Love.
 - **OoT spells in MM.** Farore's Wind (MM), Din's Fire (MM) and Nayru's Love (MM), each with a shared version. Cross-Games Farore's Wind lets you warp between the games.
 - **Souls.** Enemy Souls (OoT), covering 43 kinds of OoT enemy. NPC Souls, Animal Souls and Misc. Souls for MM. These add to the Boss Souls and MM enemy souls that SoH and 2Ship already have.
@@ -89,7 +89,7 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 - **Cross-game songs (this fork's own option).** With **Play warp songs across games**, OoT warp songs work in MM and Song of Soaring works in OoT with MM's owl statues. Each uses its own game's animation and sound. There are options for Soaring at any age and for mixing OoT warp pads and MM owls as shuffled destinations. (Upstream added its own, separate version of this on October 11, 2026. That version is not in this build.)
 - **Path hints.** OoTMM-style path hints for bosses and the final goal, plus Path of Power, Courage and Wisdom for Triforce Quest.
 - **Tricks and rules.** One searchable Tricks & glitches list, including 15 MM tricks based on OoTMM's. The newest use OoTMM's exact names; older ones keep the fork's own wording. A Gameplay rules page (this fork's own) links enhancements to logic, such as Song of Time age change and Fierce Deity Anywhere. Turning a rule on in Randomizer also turns on the matching enhancement.
-- **Logic.** OoT and MM logic follow OoTMM v32.3 in many places. Examples: MM combat requirements, renewable ammo, money and magic, MM time of day, and one-time MM rewards that stay collected across a three-day reset. A seed can guarantee **All checks reachable** or just a **Beatable seed**. This is not full OoTMM parity. A dated comparison (October 4, 2026) of 402 OoTMM settings records where it differed then.
+- **Logic.** OoT and MM logic follow OoTMM v32.3 in many places. Examples: MM combat requirements, renewable ammo, money and magic, MM time of day, and one-time MM rewards that stay collected across a three-day reset. A seed can guarantee **All Locations** or just **Beatable Only**. This is not full OoTMM parity. A dated comparison (October 4, 2026) of 402 OoTMM settings records where it differed then.
 
 ### Trackers and multiplayer (this fork's own changes)
 

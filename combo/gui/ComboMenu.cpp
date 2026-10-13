@@ -505,9 +505,11 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
         const auto& family = SharedFamilyByIndex(i);
         addLink(MenuSearchKind::Setting, family.label, family.tooltip, "randomizer", "Shared items", "Randomizer");
     }
-    addLink(MenuSearchKind::Setting, "Victory condition",
-            "triforce quest hunt ganon majora goal required total pieces win victory", "randomizer", "Logic & access",
-            "Randomizer");
+    // OoTMM names; the earlier labels stay aliases.
+    addLink(MenuSearchKind::Setting, "Goal",
+            "victory condition triforce quest hunt ganon majora both final bosses either any final boss required total "
+            "pieces triforce goal triforce pieces win",
+            "randomizer", "Logic & access", "Randomizer");
     addLink(MenuSearchKind::Setting, "Starting world", "starting game OoT MM random world", "randomizer",
             "Logic & access", "Randomizer");
     // MM randomizer pages are native custom widgets; index their catalog rows instead.
@@ -518,8 +520,8 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
             const auto name = row.value("label", std::string()), page = row.value("page", std::string());
             if (name.empty() || name.rfind("##", 0) == 0)
                 continue;
-            auto keywords = row.value("tooltip", std::string()) + " " + row.value("heading", std::string()) +
-                            " MM Majora Mask randomizer";
+            auto keywords = row.value("tooltip", std::string()) + " " + row.value("heading", std::string()) + " " +
+                            row.value("aliases", std::string()) + " MM Majora Mask randomizer";
             if (name == "Clocks as Items (MM)")
                 keywords += " clock shuffle time day night half days six cycle progressive ascending descending";
             if (name == "Farore's Wind (MM)")
@@ -541,7 +543,8 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
     addLink(MenuSearchKind::Setting, "Cross-Games Age",
             "adult link age enter mm as adult majora mask between oot mm cross game world", "randomizer",
             "Logic & access", "Randomizer");
-    addLink(MenuSearchKind::Setting, "Reachability", "guarantee beatable all checks reachable", "randomizer",
+    addLink(MenuSearchKind::Setting, "Logic",
+            "reachability guarantee all locations beatable only all checks reachable beatable seed", "randomizer",
             "Logic & access", "Randomizer");
     for (const auto& rule : kGameplayRules) {
         if (IsLegacyGameplayRule(rule.name))
@@ -1700,43 +1703,35 @@ bool DrawMenuPseudoRow(const CwWidget& widget, bool randomizer) {
 
 namespace {
 void DrawCombinedGoals() {
-    const char* guarantees[] = { "All checks reachable", "Beatable seed" };
-    int guarantee = std::clamp(ProfileUI::ReadInteger(kCombinedGuarantee, 0), 0, 1);
-    ImGui::SetNextItemWidth(-FLT_MIN);
-    if (ImGui::Combo("##Reachability", &guarantee, guarantees, 2)) {
-        ProfileUI::WriteInteger(kCombinedGuarantee, guarantee);
-        SynchronizeGenerationGuarantee([](const char* k, int v) { return ProfileUI::ReadInteger(k, v); },
-                                       [](const char* k, int v) { ProfileUI::WriteInteger(k, v); });
-    }
-    MenuTooltip("All checks reachable includes every enabled, non-excluded check. Beatable seed requires the selected "
-                "victory goal. No Logic disables these guarantees.");
-    const char* worlds[] = { "Start in Ocarina of Time", "Start in Majora's Mask", "Random starting world" };
-    int world = std::clamp(ProfileUI::ReadInteger("gCombo.Rando.StartingGame", 0), 0, 2);
-    ImGui::SetNextItemWidth(-FLT_MIN);
-    if (ImGui::Combo("##StartingWorld", &world, worlds, 3)) {
-        ProfileUI::WriteInteger("gCombo.Rando.StartingGame", world);
-    }
-    MenuTooltip("Choose the world where the new file starts. Both worlds remain part of the seed.");
-    const char* goals[] = { "Both final bosses", "Triforce Hunt", "Either final boss",
-                            "Ganon only",        "Majora only",   "Triforce Quest" };
-    int goal = std::clamp(
+    // One block drives both worlds, under OoTMM v32.3's names (data.ts goal, triforceGoal, triforcePieces, logic).
+    // Stored values and keys are unchanged; the old names stay search aliases (DrawSearchResults).
+    const auto theme = ComboMenu_ThemeColor();
+    ImGui::SeparatorText("Goal & logic");
+    // OoTMM's order; each entry keeps the value it was stored with.
+    const char* goals[] = { "Ganon & Majora", "Any Final Boss", "Ganon", "Majora", "Triforce Hunt", "Triforce Quest" };
+    const int goalValues[] = { 0, 2, 3, 4, 1, 5 };
+    const int goal = std::clamp(
         ProfileUI::ReadInteger("gCombo.Rando.Goal", ProfileUI::ReadInteger("gCombo.Rando.TriforceHunt", 0) ? 1 : 0), 0,
         5);
-    ImGui::TextUnformatted("Victory condition");
+    int goalChoice = int(std::find(std::begin(goalValues), std::end(goalValues), goal) - std::begin(goalValues));
+    ImGui::TextUnformatted("Goal");
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if (ImGui::Combo("##VictoryCondition", &goal, goals, 6)) {
-        ProfileUI::WriteInteger("gCombo.Rando.Goal", goal);
-        ProfileUI::WriteInteger("gCombo.Rando.TriforceHunt", goal == 1);
+    ComboMenu_PushCombobox(theme);
+    if (ImGui::Combo("##Goal", &goalChoice, goals, 6)) {
+        ProfileUI::WriteInteger("gCombo.Rando.Goal", goalValues[goalChoice]);
+        ProfileUI::WriteInteger("gCombo.Rando.TriforceHunt", goalValues[goalChoice] == 1);
     }
-    MenuTooltip("Choose the goal for new seeds. Triforce Quest requires Power, Courage and Wisdom, placed in later "
+    ComboMenu_PopCombobox();
+    MenuTooltip("The objective of the seed. Triforce Quest requires Power, Courage and Wisdom, placed in later "
                 "progression spheres in different regions.");
-    const bool hunt = goal == 1;
+    const bool hunt = goalValues[goalChoice] == 1;
     if (hunt) {
         int required =
             std::clamp(ProfileUI::ReadInteger("gCombo.Rando.TriforceRequired", 15), 1, kMaxComboTriforcePieces);
         int total =
             std::clamp(ProfileUI::ReadInteger("gCombo.Rando.TriforceTotal", 15), required, kMaxComboTriforcePieces);
-        ImGui::TextUnformatted("Required pieces");
+        ComboMenu_PushSlider(theme);
+        ImGui::TextUnformatted("Triforce Goal");
         ImGui::SetNextItemWidth(-FLT_MIN);
         if (ImGui::SliderInt("##RequiredPieces", &required, 1, kMaxComboTriforcePieces, "%d",
                              ImGuiSliderFlags_NoInput)) {
@@ -1746,14 +1741,40 @@ void DrawCombinedGoals() {
                 ProfileUI::WriteInteger("gCombo.Rando.TriforceTotal", total);
             }
         }
-        ImGui::TextUnformatted("Pieces in the pool");
+        MenuTooltip("The amount of Triforce Pieces that are required to win.");
+        ImGui::TextUnformatted("Triforce Pieces");
         ImGui::SetNextItemWidth(-FLT_MIN);
         if (ImGui::SliderInt("##TotalPieces", &total, required, kMaxComboTriforcePieces, "%d",
                              ImGuiSliderFlags_NoInput)) {
             ProfileUI::WriteInteger("gCombo.Rando.TriforceTotal", total);
         }
+        MenuTooltip("The total amount of Triforce Pieces in the item pool.");
+        ComboMenu_PopSlider();
     }
-    ImGui::SeparatorText("World access");
+    const char* guarantees[] = { "All Locations", "Beatable Only" };
+    int guarantee = std::clamp(ProfileUI::ReadInteger(kCombinedGuarantee, 0), 0, 1);
+    ImGui::TextUnformatted("Logic");
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ComboMenu_PushCombobox(theme);
+    if (ImGui::Combo("##Reachability", &guarantee, guarantees, 2)) {
+        ProfileUI::WriteInteger(kCombinedGuarantee, guarantee);
+        SynchronizeGenerationGuarantee([](const char* k, int v) { return ProfileUI::ReadInteger(k, v); },
+                                       [](const char* k, int v) { ProfileUI::WriteInteger(k, v); });
+    }
+    ComboMenu_PopCombobox();
+    MenuTooltip("All Locations: every enabled, non-excluded check can be reached. Beatable Only: the goal can be "
+                "reached; some checks may not be. Each world's own No Logic turns these guarantees off.");
+    const char* worlds[] = { "Start in Ocarina of Time", "Start in Majora's Mask", "Random starting world" };
+    int world = std::clamp(ProfileUI::ReadInteger("gCombo.Rando.StartingGame", 0), 0, 2);
+    ImGui::TextUnformatted("Starting world");
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ComboMenu_PushCombobox(theme);
+    if (ImGui::Combo("##StartingWorld", &world, worlds, 3)) {
+        ProfileUI::WriteInteger("gCombo.Rando.StartingGame", world);
+    }
+    ComboMenu_PopCombobox();
+    MenuTooltip("Choose the world where the new file starts. Both worlds remain part of the seed.");
+    ComboMenu_PushCheckbox(theme);
     // OoTMM main.cross crossGameFw: available only with spellWindMm.
     const bool windMm = ProfileUI::ReadInteger("gRando.Options.RO_MM_SPELL_WIND", 0) != 0;
     bool crossFw = windMm && ProfileUI::ReadInteger("gRando.Options.RO_CROSS_GAME_FARORE", 0) != 0;
@@ -1764,7 +1785,7 @@ void DrawCombinedGoals() {
     ImGui::EndDisabled();
     MenuTooltip(windMm ? "Controls whether you can use Farore's Wind to warp between OoT and MM."
                        : "Controls whether you can use Farore's Wind to warp between OoT and MM.\n\nRequires Farore's "
-                         "Wind (MM) under Items & checks > Majora's Mask.");
+                         "Wind (MM) under Items & checks > Items > Cross-game items (Majora's Mask).");
     // OoTMM main.cross crossAge (data.ts:1504-1511). Where this device cannot run adult Link in MM, or while the draft
     // has Swim shuffled (it switches on the MM gear's pinned graphs, BenPort.cpp Combo_MM_CrossAgeOptionsAllowed), the
     // row is greyed out and unticked without overwriting the stored preference, and new seeds leave it off (BenPort.cpp
@@ -1785,6 +1806,7 @@ void DrawCombinedGoals() {
         ProfileUI::WriteInteger("gRando.Options.RO_MM_CROSS_AGE", crossAge);
     }
     ImGui::EndDisabled();
+    ComboMenu_PopCheckbox();
     MenuTooltip(ageAllowed ? "When you enter MM as Adult Link, you will be Adult Link in MM."
                 : ageReady ? "When you enter MM as Adult Link, you will be Adult Link in MM.\n\nDisabled while Swim is "
                              "shuffled. New seeds leave it off."
@@ -1803,6 +1825,7 @@ void DrawSharedItems() {
     if (!ImGui::BeginTable("##SharedItems", columns,
                            ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
         return;
+    ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
     for (int i = 0; i < SF_COUNT; ++i) {
         if (i == SF_OCARINA || !SharedFamilyByIndex(i).publicOption)
             continue; // private native features await runtime validation
@@ -1832,6 +1855,7 @@ void DrawSharedItems() {
         MenuTooltip(family.tooltip);
         ImGui::PopID();
     }
+    ComboMenu_PopCheckbox();
     ImGui::EndTable();
 }
 void DrawCosmeticSync() {

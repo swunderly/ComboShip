@@ -119,7 +119,9 @@ inline bool IsSongTravelRule(const char* name) {
     return false;
 }
 inline const char* GameplayRuleMenuLabel(const char* name, const char* label, bool randomizer) {
-    return randomizer && name && !std::strcmp(name, kSongTravelRuleKeys[1]) ? "Shuffle song warp destinations" : label;
+    // OoTMM v32.3 names the seed option "Warp Songs and Soaring Spots Shuffle" (data.ts erWarps).
+    return randomizer && name && !std::strcmp(name, kSongTravelRuleKeys[1]) ? "Warp Songs and Soaring Spots Shuffle"
+                                                                            : label;
 }
 inline const char* GameplayRuleSearchAliases(const char* name) {
     if (!name)
@@ -130,7 +132,7 @@ inline const char* GameplayRuleSearchAliases(const char* name) {
                "Soaring owl";
     if (!std::strcmp(name, kSongTravelRuleKeys[1]))
         return "warp destination shuffle shuffled mixed song travel transport transportation saved map cross game "
-               "travel";
+               "travel shuffle song warp destinations soaring spots";
     return "";
 }
 

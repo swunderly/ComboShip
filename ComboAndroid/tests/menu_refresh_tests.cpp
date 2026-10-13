@@ -100,7 +100,12 @@ int main() {
     assert(OotLocationPoolGroup("gRandoSettings.ShuffleSongs",0)==0);
     assert(OotLocationPoolGroup("gRandoSettings.FishsanityPondCount",0)==1);
     assert(OotLocationPoolGroup("gRandoSettings.ShuffleButterflyFairies",0)==1);
-    assert(OotLocationPoolGroup("gRandoSettings.ShuffleFreestanding",0)==2);
+    // Same check types under the same headings in both worlds (MM ProfileMmLayout.inc cards).
+    assert(OotLocationPoolGroup("gRandoSettings.ShuffleFreestanding",0)==1);
+    assert(OotLocationPoolGroup("gRandoSettings.ShuffleWonderItems",0)==1);
+    assert(OotLocationPoolGroup("gRandoSettings.ShuffleFairySpots",0)==1);
+    assert(OotLocationPoolGroup("gRandoSettings.ShuffleBeehives",0)==2);
+    assert(OotLocationPoolGroup("gRandoSettings.ShufflePots",0)==2);
     assert(OotLocationPoolGroup("gRandoSettings.ShopsanityCount",1)==3);
     assert(SF_OCARINA == 24 && SF_SPELL_WIND == 25 && SF_SPELL_FIRE == 26 && SF_SPELL_LOVE == 27);
     assert(SF_BOOTS_IRON == 28 && SF_BOOTS_HOVER == 29 && SF_TUNIC_GORON == 30 && SF_TUNIC_ZORA == 31 && SF_COUNT == 32);
