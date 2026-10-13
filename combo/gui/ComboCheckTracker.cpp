@@ -420,7 +420,7 @@ void DrawUnifiedCheckTrackerSettings() {
     const ImVec4 theme = ComboMenu_ThemeColor();
     ComboTrackerUI::DrawEnabled(ComboTrackerUI::Check);
     ImGui::Spacing();
-    if (ImGui::BeginTable("##shared-check-settings", 2,
+    if (ImGui::BeginTable("##shared-check-settings", MenuColumns(),
                           ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
         ImGui::TableNextColumn();
         ComboTrackerUI::DrawOpenControls(ComboTrackerUI::Check);

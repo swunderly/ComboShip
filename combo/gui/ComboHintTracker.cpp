@@ -502,7 +502,8 @@ void RegisterHintTrackerWindow() {
 void DrawHintTrackerSharedPanel() {
     using namespace ComboTrackerUI;
     DrawEnabled(Hint);
-    if (ImGui::BeginTable("##hint-settings", 2, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
+    if (ImGui::BeginTable("##hint-settings", MenuColumns(),
+                          ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
         ImGui::TableNextColumn();
         DrawOpenControls(Hint);
         ImGui::TableNextColumn();

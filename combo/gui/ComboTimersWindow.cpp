@@ -357,22 +357,19 @@ void DrawTimersSharedPanel() {
     bool changed = false;
 
     const ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
-    if (ImGui::BeginTable("##combotimerscols", 2, tableFlags)) {
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
+    // Two columns where they fit; one on a phone.
+    if (ImGui::BeginTable("##combotimerscols", MenuColumns(), tableFlags)) {
+        ImGui::TableNextColumn();
 
-        const bool shown = CVarGetInteger(kCvarEnabled, 0) != 0;
-        std::string txt = std::string(shown ? ICON_FA_WINDOW_CLOSE : ICON_FA_EXTERNAL_LINK_SQUARE) + " Toggle Timers";
-        ComboMenu_PushButton(theme);
-        if (ImGui::Button(txt.c_str())) {
-            ComboTracker::SetTracker({ kCvarEnabled, kWindowName }, !shown);
+        ComboMenu_PushCheckbox(theme);
+        bool shown = CVarGetInteger(kCvarEnabled, 0) != 0;
+        if (ImGui::Checkbox("Show timers", &shown)) {
+            ComboTracker::SetTracker({ kCvarEnabled, kWindowName }, shown);
             changed = true;
         }
-        ComboMenu_PopButton();
         MenuTooltip("One overlay for both games. Play time is each game's own saved time, added up.");
 
         ImGui::SeparatorText("Rows");
-        ComboMenu_PushCheckbox(theme);
         bool total = CVarGetInteger(kCvarTotal, 1) != 0;
         if (ImGui::Checkbox("Total play time", &total)) {
             CVarSetInteger(kCvarTotal, total ? 1 : 0);
@@ -403,11 +400,11 @@ void DrawTimersSharedPanel() {
         ComboMenu_PopCheckbox();
         MenuTooltip("OoT-only rows are hidden while Majora's Mask is the active game.");
 
-        ImGui::TableSetColumnIndex(1);
+        ImGui::TableNextColumn();
         ImGui::SeparatorText("Appearance");
         float scale = CVarGetFloat(kCvarScale, 1.0f);
         ComboMenu_PushSlider(theme);
-        if (ImGui::SliderFloat("Scale", &scale, 1.0f, 5.0f, "%.1fx", ImGuiSliderFlags_NoInput)) {
+        if (ImGui::SliderFloat("Text size", &scale, 1.0f, 5.0f, "%.1fx", ImGuiSliderFlags_NoInput)) {
             CVarSetFloat(kCvarScale, std::clamp(scale, 1.0f, 5.0f));
             changed = true;
         }

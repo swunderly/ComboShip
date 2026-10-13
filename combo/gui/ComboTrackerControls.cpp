@@ -345,7 +345,9 @@ void RegisterItemWindow() {
 }
 void DrawItemSettings() {
     DrawEnabled(Item);
-    if (ImGui::BeginTable("##item-settings", 2, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
+    // Two columns where they fit; one on a phone.
+    if (ImGui::BeginTable("##item-settings", ComboRando::MenuColumns(),
+                          ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
         ImGui::TableNextColumn();
         DrawOpenControls(Item);
         ImGui::TableNextColumn();

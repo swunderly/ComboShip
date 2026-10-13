@@ -864,6 +864,7 @@ namespace {
 
 void DrawTrackerSharedPanel() {
     ComboTrackerUI::DrawItemSettings();
+    ImGui::SeparatorText("Personal notes");
     bool notes = ComboNotes::WindowShown();
     ComboRando::ComboMenu_PushCheckbox(ComboRando::ComboMenu_ThemeColor());
     if (ImGui::Checkbox("Show Personal Notes window", &notes))
@@ -900,13 +901,12 @@ void DrawNetworkSharedPanel() {
     bool enabled = (state & 1) != 0;
     bool connected = (state & 2) != 0;
 
-    // Widgets in the first cell of a 2-col stretch table, so they're half-width like the other panels.
+    // Connection in the first cell and room admin in the second: side by side where they fit, stacked on a phone.
     const ImGuiTableFlags anchorTableFlags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
-    if (!ImGui::BeginTable("##anchorcols", 2, anchorTableFlags)) {
+    if (!ImGui::BeginTable("##anchorcols", MenuColumns(), anchorTableFlags)) {
         return;
     }
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
+    ImGui::TableNextColumn();
 
     // --- Connection settings (disabled while enabled, like soh) ---
     ImGui::SeparatorText("Connection Settings");
@@ -1065,8 +1065,8 @@ void DrawNetworkSharedPanel() {
         MenuTooltip("Shows every teammate's game and area, with same-game teleport.");
     }
 
-    // --- Room settings (owner-only, non-global) — second column ---
-    ImGui::TableSetColumnIndex(1);
+    // --- Room settings (owner-only, non-global) — second cell ---
+    ImGui::TableNextColumn();
     // ownerInfo bit0=isOwner, bit1=isGlobalRoom; 0 unless connected. Mirrors soh's AnchorAdminMenu gate.
     int ownerInfo = sSohAnchorGetOwnerInfo ? sSohAnchorGetOwnerInfo() : 0;
     bool isOwner = (ownerInfo & 1) != 0;
