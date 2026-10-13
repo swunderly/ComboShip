@@ -2,6 +2,7 @@
 // combo/gui/ComboMenuPlacement.h, the rows a feature shares land together in both world views, and no CVar a menu
 // offered before the T8 audit lost its widget. The menus are read from the games' own registration sources, the same
 // COMBO_BUILD branches the Android build compiles.
+#include "ComboMenuLabels.h"
 #include "ComboNavigation.h"
 #include <cassert>
 #include <cstring>
@@ -339,6 +340,31 @@ int main() {
                                MenuPage::GameplayStats };
     for (int i = 0; i < int(sizeof(trackers) / sizeof(*trackers)); ++i)
         assert(MenuPageOrder("trackers", trackers[i]) == i);
+
+    // Every relabelled row is a widget of that game's menu (or a combo rule row), and a renamed feature
+    // keeps one label in both games.
+    std::map<std::string, std::string> labelOf;
+    for (const auto& row : kMenuLabels)
+        for (bool oot : { true, false }) {
+            if (!(row.games & (oot ? kMenuOot : kMenuMm)))
+                continue;
+            const bool rule = Detail::FindMenuPlacementKey(oot, std::string("rule:") + row.cvar) != nullptr;
+            if (!rule && !(oot ? ootWidgets : mmWidgets).count(row.cvar))
+                std::cerr << "Label for a CVar no " << (oot ? "OoT" : "MM") << " menu widget has: " << row.cvar << '\n';
+            assert(rule || (oot ? ootWidgets : mmWidgets).count(row.cvar));
+            assert(FindMenuLabel(oot, row.cvar) == &row); // one row per game and CVar
+        }
+    const char* climbLabels[] = { "gEnhancements.ClimbSpeed", "gEnhancements.Player.ClimbSpeed" };
+    assert(MenuRowLabel(true, climbLabels[0], "Vine/Ladder Climb Speed +%d") == "Climb speed");
+    assert(MenuRowLabel(false, climbLabels[1], "Climb speed") == "Climb speed");
+    assert(std::string(FindMenuLabel(true, climbLabels[0])->format) == "+%d");
+    assert(std::string(FindMenuLabel(false, climbLabels[1])->format) == "%dx");
+    assert(MenuRowLabel(true, "gEnhancements.CrawlSpeed", "Crawl Speed %dx") == "Crawl Speed");
+    assert(MenuRowLabel(false, "gCheats.SpeedModifier.Value", "Multiplier:") == "Multiplier");
+    assert(MenuRowKeywords(true, climbLabels[0], "Vine/Ladder Climb Speed +%d").find("Vine/Ladder") !=
+           std::string::npos);
+    assert(MenuRowTooltip(false, "gEnhancements.Minigames.CuccoShackCuccoCount", "Count").find("lower number wins") !=
+           std::string::npos);
 
     // No setting lost its home: every widget CVar the menus registered before the audit is still a widget of the same
     // game's menu.

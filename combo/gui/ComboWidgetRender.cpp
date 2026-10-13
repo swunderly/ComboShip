@@ -19,6 +19,7 @@
 #include "ComboAudioBridge.h"      // Shared-tab audio -> MM mirror
 #include "ComboResolutionEditor.h" // combo-owned Advanced Resolution editor (intercepts broken widgets)
 #include "ComboMenuLayout.h"
+#include "ComboMenuLabels.h"
 #include "ComboResolve.h"
 #include "rando/GenerationRules.h"
 
@@ -289,7 +290,9 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
 
     // 2) render by kind. `changed` => the backing CVar (or button) changed this frame.
     bool changed = false;
-    const char* label = (w.name && w.name[0]) ? w.name : "###unnamed";
+    const bool oot = game.menu == ComboMenuModel::Get().Oot().menu;
+    const auto* relabel = FindMenuLabel(oot, w.cvar);
+    const char* label = relabel && relabel->label ? relabel->label : (w.name && w.name[0]) ? w.name : "###unnamed";
 
     // Menu theme accent color (read each frame; clamped). Used to theme each widget kind to
     // match the OOT-rendered Shared tab. See ComboWidgetStyle.{h,cpp}.
@@ -356,7 +359,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
         }
         case CW_COMBOBOX: {
             ImGui::BeginGroup();
-            std::string displayLabel = label;
+            std::string displayLabel = MenuRowLabel(oot, w.cvar, w.name);
             if (const auto suffix = displayLabel.find("##"); suffix != std::string::npos)
                 displayLabel.resize(suffix);
             ImGui::TextWrapped("%s", displayLabel.c_str());
@@ -494,7 +497,9 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
             if (w.cvar && w.cvar[0]) {
                 const bool open = CVarGetInteger(w.cvar, 0) != 0;
                 std::string txt = std::string(open ? ICON_FA_WINDOW_CLOSE : ICON_FA_EXTERNAL_LINK_SQUARE) + " " +
-                                  ((w.name && w.name[0]) ? w.name : "");
+                                  ((relabel && relabel->label) ? relabel->label
+                                   : (w.name && w.name[0])     ? w.name
+                                                               : "");
                 ComboMenu_PushButton(themeColor);
                 if (ImGui::Button(txt.c_str())) {
                     std::shared_ptr<Ship::GuiWindow> win;
@@ -534,7 +539,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
     }
 
     // 3) tooltip on hover (applies to the widget item just drawn).
-    MenuTooltip(disabled && reason && *reason ? reason : w.tooltip);
+    MenuTooltip(disabled && reason && *reason ? reason : MenuRowTooltip(oot, w.cvar, w.tooltip).c_str());
 
     // 4) post-change callback, routed by index into the owning game.
     if (changed && w.hasCallback && game.invokeCallback) {

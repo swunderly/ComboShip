@@ -1370,6 +1370,12 @@ void SohInputEditorWindow::DrawOcarinaControlPanel() {
     }
 }
 
+#ifdef COMBO_BUILD
+// ComboShip: the words MM's camera rows use on Video & Audio > Camera, so both games read alike.
+#define COMBO_CAMERA_LABEL(combo, native) combo
+#else
+#define COMBO_CAMERA_LABEL(combo, native) native
+#endif
 void SohInputEditorWindow::DrawCameraControlPanel() {
     ImVec2 cursor = ImGui::GetCursorPos();
     ImGui::SetCursorPos(ImVec2(cursor.x + 5, cursor.y + 5));
@@ -1393,16 +1399,19 @@ void SohInputEditorWindow::DrawCameraControlPanel() {
                  CheckboxOptions()
                      .Color(THEME_COLOR)
                      .Tooltip("Allows for aiming with the right stick in:\n-First-Person/C-Up view\n-Weapon Aiming"));
-    CVarCheckbox("Allow moving while in first-person mode", CVAR_SETTING("MoveInFirstPerson"),
+    CVarCheckbox(COMBO_CAMERA_LABEL("Move while aiming", "Allow moving while in first-person mode"),
+                 CVAR_SETTING("MoveInFirstPerson"),
                  CheckboxOptions({ { .disabled = !CVarGetInteger(CVAR_SETTING("Controls.RightStickAim"), 0),
                                      .disabledTooltip = "Forced off because Right Stick Aiming is disabled." } })
                      .Color(THEME_COLOR)
                      .Tooltip("Changes the left stick to move the player while in first-person mode"));
-    CVarCheckbox("Invert Aiming X Axis", CVAR_SETTING("Controls.InvertAimingXAxis"),
+    CVarCheckbox(COMBO_CAMERA_LABEL("Invert X axis", "Invert Aiming X Axis"),
+                 CVAR_SETTING("Controls.InvertAimingXAxis"),
                  CheckboxOptions()
                      .Color(THEME_COLOR)
                      .Tooltip("Inverts the Camera X Axis in:\n-First-Person/C-Up view\n-Weapon Aiming"));
-    CVarCheckbox("Invert Aiming Y Axis", CVAR_SETTING("Controls.InvertAimingYAxis"),
+    CVarCheckbox(COMBO_CAMERA_LABEL("Invert Y axis", "Invert Aiming Y Axis"),
+                 CVAR_SETTING("Controls.InvertAimingYAxis"),
                  CheckboxOptions()
                      .Color(THEME_COLOR)
                      .DefaultValue(true)
@@ -1464,7 +1473,9 @@ void SohInputEditorWindow::DrawCameraControlPanel() {
     CVarCheckbox(
         "Invert Camera Y Axis", CVAR_SETTING("FreeLook.InvertYAxis"),
         CheckboxOptions().Color(THEME_COLOR).DefaultValue(true).Tooltip("Inverts the Camera Y Axis in:\n-Free look"));
-    CVarSliderFloat("Third-Person Horizontal Sensitivity: %.0f %%", CVAR_SETTING("FreeLook.CameraSensitivity.X"),
+    CVarSliderFloat(COMBO_CAMERA_LABEL("Third-person horizontal sensitivity: %.0f %%",
+                                       "Third-Person Horizontal Sensitivity: %.0f %%"),
+                    CVAR_SETTING("FreeLook.CameraSensitivity.X"),
                     FloatSliderOptions()
                         .Color(THEME_COLOR)
                         .IsPercentage()
@@ -1472,14 +1483,16 @@ void SohInputEditorWindow::DrawCameraControlPanel() {
                         .Max(5.0f)
                         .DefaultValue(1.0f)
                         .ShowButtons(true));
-    CVarSliderFloat("Third-Person Vertical Sensitivity: %.0f %%", CVAR_SETTING("FreeLook.CameraSensitivity.Y"),
-                    FloatSliderOptions()
-                        .Color(THEME_COLOR)
-                        .IsPercentage()
-                        .Min(0.01f)
-                        .Max(5.0f)
-                        .DefaultValue(1.0f)
-                        .ShowButtons(true));
+    CVarSliderFloat(
+        COMBO_CAMERA_LABEL("Third-person vertical sensitivity: %.0f %%", "Third-Person Vertical Sensitivity: %.0f %%"),
+        CVAR_SETTING("FreeLook.CameraSensitivity.Y"),
+        FloatSliderOptions()
+            .Color(THEME_COLOR)
+            .IsPercentage()
+            .Min(0.01f)
+            .Max(5.0f)
+            .DefaultValue(1.0f)
+            .ShowButtons(true));
     CVarCheckbox("Follow Default Camera Distance", CVAR_SETTING("FreeLook.UseGameDistance"),
                  CheckboxOptions()
                      .Color(THEME_COLOR)

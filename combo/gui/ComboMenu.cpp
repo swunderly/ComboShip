@@ -7,6 +7,7 @@
 #include "ComboNavigation.h"
 #include "ComboMenuNavigation.h"
 #include "ComboMenuLayout.h"
+#include "ComboMenuLabels.h"
 #include "rando/SharedItems.h"
 #include "rando/ComboSeedFormat.h"
 #include "ComboWidgetRender.h"
@@ -471,6 +472,7 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
         const CwWidget* widget = nullptr;
         int targetGame = -1;
         int targetSubpage = -1;
+        std::string heading; // the heading a setting or rule sits under on its page
     };
     std::vector<Hit> hits;
     auto addLink = [&](MenuSearchKind kind, const char* name, const char* keywords, const char* scope, const char* page,
@@ -552,7 +554,8 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
         if (rank)
             hits.push_back({ MenuSearchKind::Rule, rank, label, rule.runtimeOnly ? "gameplay" : "randomizer",
                              rule.trickGoverned ? "Tricks & glitches" : GameplayRulePage(rule.name, !rule.runtimeOnly),
-                             "", &rule });
+                             "", &rule, nullptr, nullptr, -1, -1,
+                             rule.trickGoverned ? "" : GameplayRuleHeading(rule.name, !rule.runtimeOnly) });
     }
     for (const auto& trick : kMmTricks) {
         if (!trick.publicOption)
@@ -633,9 +636,11 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                     if (wd.kind == CW_SEPARATOR || wd.kind == CW_SEPARATOR_TEXT || wd.kind == CW_TEXT ||
                         wd.kind == CW_CUSTOM || wd.hideInSearch)
                         continue;
+                    const bool oot = src.game == &model.Oot();
+                    const auto label = MenuRowLabel(oot, wd.cvar, wd.name);
                     const auto keywords = std::string(wd.tooltip ? wd.tooltip : "") + " " + src.label +
-                                          (src.game == &model.Oot() ? " OoT" : " MM");
-                    const int rank = MenuSearchRank(query, wd.name, keywords.c_str(), MenuSearchKind::Setting);
+                                          (oot ? " OoT " : " MM ") + MenuRowKeywords(oot, wd.cvar, wd.name);
+                    const int rank = MenuSearchRank(query, label.c_str(), keywords.c_str(), MenuSearchKind::Setting);
                     if (!rank)
                         continue;
                     // Dedupe shared settings (same backing CVar) across both games. Widgets with no
@@ -647,8 +652,12 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                     if (!seen.insert(NormalizeSearch(key)).second)
                         continue; // a shared setting already shown from OOT
 
-                    hits.push_back({ MenuSearchKind::Setting, rank, name, route.scope, route.page, src.label, nullptr,
-                                     &game, &wd });
+                    const auto* placement =
+                        FindMenuPlacement(oot, sec.sectionLabel ? sec.sectionLabel : "",
+                                          side.sidebarName ? side.sidebarName : "", heading, cvar, name);
+                    hits.push_back({ MenuSearchKind::Setting, rank, label, route.scope, route.page, src.label, nullptr,
+                                     &game, &wd, oot ? 0 : 1, -1,
+                                     placement && placement->heading ? placement->heading : heading });
                 }
             }
         }
@@ -712,7 +721,8 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                 ImGui::PushTextWrapPos(0.0f);
                 if (hit.rule) {
                     if (hit.rule->runtimeOnly) {
-                        ImGui::TextColored(kBreadcrumbColor, "Enhancements / %s", hit.page.c_str());
+                        ImGui::TextColored(kBreadcrumbColor, "Enhancements / %s / %s", hit.page.c_str(),
+                                           hit.heading.c_str());
                         if (ImGui::Button("Open Enhancements", ImVec2(0, buttonHeight))) {
                             OpenSearchDestination("gameplay", hit.page, hit.rule->name, nullptr,
                                                   std::strstr(hit.rule->label, "(MM)") ? 1 : 0);
@@ -725,7 +735,8 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                             navigate = true;
                         }
                     } else {
-                        ImGui::TextColored(kBreadcrumbColor, "Randomizer / %s", hit.page.c_str());
+                        ImGui::TextColored(kBreadcrumbColor, "Randomizer / %s / %s", hit.page.c_str(),
+                                           hit.heading.c_str());
                         const float pairWidth = ImGui::CalcTextSize("Open Randomizer").x +
                                                 ImGui::CalcTextSize("Open Enhancements").x +
                                                 ImGui::GetStyle().FramePadding.x * 4 + ImGui::GetStyle().ItemSpacing.x;
@@ -749,9 +760,13 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                             navigate = true;
                         }
                     }
+                } else if (hit.widget) {
+                    ImGui::TextColored(kBreadcrumbColor, "%s / %s%s%s - %s", MenuScopeLabel(hit.scope),
+                                       hit.page.c_str(), hit.heading.empty() ? "" : " / ", hit.heading.c_str(),
+                                       hit.targetGame == 1 ? "MM" : "OoT");
                 } else {
                     ImGui::TextColored(kBreadcrumbColor, "%s / %s", hit.origin.c_str(), hit.page.c_str());
-                    if (!hit.widget && ImGui::Button("Open", ImVec2(-FLT_MIN, buttonHeight))) {
+                    if (ImGui::Button("Open", ImVec2(-FLT_MIN, buttonHeight))) {
                         if (hit.targetSubpage >= 0)
                             (hit.page == "Hints & traps" ? mHintSection : mPoolSection) = hit.targetSubpage;
                         OpenSearchDestination(hit.scope, hit.page, nullptr,
@@ -1513,7 +1528,7 @@ void DrawGameplayRuleRow(const GameplayRule& rule, bool randomizer, ComboRando::
     if (focus && focus->ConsumeScrollFor(rule.name))
         ImGui::SetScrollHereY(.15f);
     // The in-game half says where its logic half is.
-    std::string help = rule.help;
+    std::string help = MenuRowTooltip(std::strstr(rule.label, "(MM)") == nullptr, rule.name, rule.help);
     if (!randomizer && !rule.runtimeOnly)
         help += IsSongTravelRule(rule.name) ? "\n\nLogic: Randomizer > Warps & travel."
                                             : "\n\nLogic: Randomizer > Gameplay rules.";
