@@ -98,6 +98,9 @@ struct Actor { s16 id = ACTOR_EN_ITEM00; u32 flags = 0; };
 struct DynaPolyActor { Actor actor; };
 struct CollisionPoly {};
 struct CollisionContext {} ;
+// A room's shape: type 1 is drawn from a pre-rendered picture (z_room.c).
+struct PolygonBase { uint8_t type = 0; };
+struct MeshHeader { PolygonBase base; } meshes[2] = { { { 0 } }, { { 1 } } };
 struct PlayState {
     int transitionMode = TRANS_MODE_OFF, transitionTrigger = TRANS_TRIGGER_OFF;
     struct { uint8_t fillScreen = 0; uint8_t screenFillColor[4] = { 0, 0, 0, 0 }; } envCtx;
@@ -106,7 +109,7 @@ struct PlayState {
     struct { Vec3f eye{ 0, 0, 0 }; } view;
     CollisionContext colCtx;
     struct { uint8_t lensActive = 0; } actorCtx;
-    struct { struct { uint8_t lensMode = LENS_MODE_HIDE_ACTORS; } curRoom; } roomCtx;
+    struct { struct { uint8_t lensMode = LENS_MODE_HIDE_ACTORS; MeshHeader* meshHeader = nullptr; } curRoom; } roomCtx;
 } play;
 PlayState* gPlayState = &play;
 Vec3f drawnOrigin{ 0, 0, 100 }, clip{ 0, 0, 50 };
@@ -124,8 +127,10 @@ void SkinMatrix_Vec3fMtxFMultXYZW(MtxF* mtx, Vec3f* pos, Vec3f* projected, float
     *w = clipW;
 }
 // Collision between the camera and the model: a flat polygon crossing the line at `at`,
-// owned by the scene (bgId BGCHECK_SCENE) or by a moving actor (its bgId).
-struct Occluder { Vec3f at; s32 bgId; DynaPolyActor* owner; };
+// owned by the scene (bgId BGCHECK_SCENE) or by a moving actor (its bgId), with its exclusion flags
+// (flags_vIA >> 13: 1 camera, 2 entities, 4 projectiles pass through it).
+struct Occluder { Vec3f at; s32 bgId; DynaPolyActor* owner; u16 flags = 0; };
+constexpr u16 kIgnoreCamera = 1, kIgnoreProjectiles = 4;
 std::vector<Occluder> occluders;
 DynaPolyActor web{ { ACTOR_BG_YDAN_SP } }, web2{ { ACTOR_BG_YDAN_SP } }, guard{ { ACTOR_BG_BOM_GUARD } },
     door{ { ACTOR_BG_SOLID } }, shelf{ { ACTOR_EN_GIRLA } }, lensChest{ { ACTOR_EN_BOX, ACTOR_FLAG_REACT_TO_LENS } },
@@ -136,7 +141,8 @@ static float Along(const Vec3f& from, const Vec3f& to, const Vec3f& at) {
     const float len2 = d.x * d.x + d.y * d.y + d.z * d.z;
     return len2 == 0 ? -1 : ((at.x - from.x) * d.x + (at.y - from.y) * d.y + (at.z - from.z) * d.z) / len2;
 }
-static bool LineFixture(Vec3f* from, Vec3f* to, Vec3f* hit, CollisionPoly** poly, s32* bgId, Actor* skip) {
+static bool LineFixture(Vec3f* from, Vec3f* to, Vec3f* hit, CollisionPoly** poly, s32* bgId, Actor* skip,
+                        u16 xpFlags = 0, bool dynaOnly = false) {
     ++raycasts;
     static CollisionPoly hitPoly;
     const Occluder* nearest = nullptr;
@@ -145,7 +151,8 @@ static bool LineFixture(Vec3f* from, Vec3f* to, Vec3f* hit, CollisionPoly** poly
         const float t = Along(*from, *to, o.at);
         // A start point on a polygon's plane can still count as crossing it after float rounding
         // (z_bgcheck.c LineVsPoly), so a continued line must exclude the actor it just passed.
-        if (t < -0.0001f || t >= 1 || (skip && o.owner && skip == &o.owner->actor) || t >= best)
+        if (t < -0.0001f || t >= 1 || (skip && o.owner && skip == &o.owner->actor) || t >= best ||
+            (o.flags & xpFlags) || (dynaOnly && o.bgId == BGCHECK_SCENE))
             continue;
         best = t;
         nearest = &o;
@@ -167,9 +174,21 @@ u32 BgCheck_GetBccFlags(s32 walls, s32 floors, s32 ceilings, s32 oneFace, s32 dy
 }
 s32 BgCheck_CheckLineImpl(CollisionContext* ctx, u16 xpFlags1, u16 xpFlags2, Vec3f* from, Vec3f* to, Vec3f* hit,
                           CollisionPoly** poly, s32* bgId, Actor* skip, f32 chkDist, u32 bccFlags) {
-    // Every collision category, both faces, moving collision included: as BgCheck_AnyLineTest2.
-    assert(ctx == &play.colCtx && xpFlags1 == 0 && xpFlags2 == 0 && chkDist == 1.0f && bccFlags == kAllBcc);
-    return LineFixture(from, to, hit, poly, bgId, skip);
+    // Every collision category, both faces, moving collision included, polygons projectiles pass through left out:
+    // as BgCheck_ProjectileLineTest.
+    assert(ctx == &play.colCtx && xpFlags1 == kIgnoreProjectiles && xpFlags2 == 0 && chkDist == 1.0f &&
+           bccFlags == kAllBcc);
+    assert(!play.roomCtx.curRoom.meshHeader || play.roomCtx.curRoom.meshHeader->base.type != 1);
+    return LineFixture(from, to, hit, poly, bgId, skip, xpFlags1);
+}
+s32 BgCheck_CheckLineAgainstDyna(CollisionContext* ctx, u16 xpFlags, Vec3f* from, Vec3f* to, Vec3f* hit,
+                                 CollisionPoly** poly, f32* distSq, s32* bgId, Actor* skip, f32 chkDist,
+                                 s32 bccFlags) {
+    // Moving collision only: the caller has set *hit, *bgId and the distance before the first actor.
+    assert(ctx == &play.colCtx && xpFlags == kIgnoreProjectiles && *distSq == 1.0e38f && chkDist == 1.0f &&
+           bccFlags == s32(kAllBcc) && hit->x == to->x && hit->y == to->y && hit->z == to->z);
+    assert(play.roomCtx.curRoom.meshHeader && play.roomCtx.curRoom.meshHeader->base.type == 1);
+    return LineFixture(from, to, hit, poly, bgId, skip, xpFlags, true);
 }
 DynaPolyActor* DynaPoly_GetActor(CollisionContext* ctx, s32 bgId) {
     assert(ctx == &play.colCtx);
@@ -532,15 +551,66 @@ void SeeThrough() {
         Draw(cow);
         Unseen(cow);
     }
-    // Bombchu Bowling prizes on the counter stand behind the alley's invisible guard wall.
-    prepare(bowling, { { { 0, 0, 45 }, 6, &guard } });
+    // Bombchu Bowling prizes on the counter stand behind the alley's invisible guard wall, whose collision
+    // (gBowlingDefaultCol) lets projectiles through.
+    prepare(bowling, { { { 0, 0, 45 }, 6, &guard, kIgnoreProjectiles } });
     Draw(bowling);
     Seen(bowling, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    assert(raycasts == 1); // left out of the line, not crossed
     // ... but the counter's own geometry still hides a prize from a low camera.
-    prepare(bowling, { { { 0, 0, 45 }, 6, &guard }, { { 0, 0, 80 }, BGCHECK_SCENE, nullptr } });
+    prepare(bowling, { { { 0, 0, 45 }, 6, &guard, kIgnoreProjectiles }, { { 0, 0, 80 }, BGCHECK_SCENE, nullptr } });
     Draw(bowling);
     Unseen(bowling);
     std::cout << "PASS: webs and the bowling guard do not hide rewards; walls, floors and doors behind them do\n";
+}
+
+void Fences() {
+    const auto impa = RC_KAK_IMPAS_HOUSE_FREESTANDING_POH;
+    auto prepare = [&](std::vector<Occluder> blockers, uint8_t roomShape = 0) {
+        ResetWorld();
+        ctx.GetItemLocation(impa)->placed = RG_PIECE_OF_HEART;
+        play.roomCtx.curRoom.meshHeader = &meshes[roomShape];
+        occluders = std::move(blockers);
+    };
+    // Scene or actor polygons that projectiles pass through (fences, railings, grates, invisible walls), next to
+    // a web: none hides the item.
+    prepare({ { { 0, 0, 30 }, BGCHECK_SCENE, nullptr, kIgnoreProjectiles },
+              { { 0, 0, 50 }, 3, &door, u16(kIgnoreProjectiles | kIgnoreCamera) },
+              { { 0, 0, 70 }, 4, &web } });
+    Draw(impa);
+    Seen(impa, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    // A wall or door behind or in front of a fence still hides the item, and camera-only flags (chests, crates,
+    // pillars carry them) see nothing through.
+    for (const auto& blockers : std::vector<std::vector<Occluder>>{
+             { { { 0, 0, 30 }, BGCHECK_SCENE, nullptr, kIgnoreProjectiles }, { { 0, 0, 60 }, BGCHECK_SCENE, nullptr } },
+             { { { 0, 0, 30 }, 3, &door }, { { 0, 0, 60 }, BGCHECK_SCENE, nullptr, kIgnoreProjectiles } },
+             { { { 0, 0, 50 }, BGCHECK_SCENE, nullptr, kIgnoreCamera } },
+             { { { 0, 0, 50 }, 3, &chest, kIgnoreCamera } },
+         }) {
+        prepare(blockers);
+        Draw(impa);
+        Unseen(impa);
+    }
+    // Impa's House is a pre-rendered room: its cow pen bars are scene collision with no flags, but the walls on
+    // screen are a picture drawn behind every actor. Only moving collision hides an item there.
+    prepare({ { { 0, 0, 50 }, BGCHECK_SCENE, nullptr } }, 1);
+    Draw(impa);
+    Seen(impa, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    prepare({ { { 0, 0, 30 }, BGCHECK_SCENE, nullptr },
+              { { 0, 0, 50 }, 3, &web },
+              { { 0, 0, 70 }, BGCHECK_SCENE, nullptr } },
+            1);
+    Draw(impa);
+    Seen(impa, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    prepare({ { { 0, 0, 30 }, BGCHECK_SCENE, nullptr }, { { 0, 0, 60 }, 3, &door } }, 1);
+    Draw(impa);
+    Unseen(impa);
+    // The same scene polygon in a 3D room hides it.
+    prepare({ { { 0, 0, 50 }, BGCHECK_SCENE, nullptr } }, 0);
+    Draw(impa);
+    Unseen(impa);
+    std::cout << "PASS: fences, grates and invisible walls projectiles pass do not hide rewards; walls, doors and "
+                 "camera-only polygons do; a pre-rendered room's picture hides nothing\n";
 }
 
 void Foreign() {
@@ -748,6 +818,7 @@ int main() {
     StandIns();
     Hidden();
     SeeThrough();
+    Fences();
     Foreign();
     RepeatsAndResets();
     LensOfTruth();

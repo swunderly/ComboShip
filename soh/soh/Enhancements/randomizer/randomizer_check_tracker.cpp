@@ -81,10 +81,10 @@ static void ResetKnowledge() {
     sItemKnowledge = {};
 }
 
-// Translucent spider webs and the Bombchu Bowling Alley's invisible counter guard have collision,
-// but the camera sees what is behind them. Every other wall, floor, door or object blocks the view.
+// Translucent spider webs have collision, but the camera sees what is behind them. Floor webs are not flagged
+// for projectiles (wall webs and the Bombchu Bowling Alley's invisible counter guard are, see LineOfSight).
 static bool SeeThroughOccluder(const Actor* actor) {
-    return actor != nullptr && (actor->id == ACTOR_BG_YDAN_SP || actor->id == ACTOR_BG_BOM_GUARD);
+    return actor != nullptr && actor->id == ACTOR_BG_YDAN_SP;
 }
 
 // With the Lens of Truth on, in a room whose lens mode is not LENS_MODE_HIDE_ACTORS, Actor_DrawAll leaves
@@ -96,17 +96,28 @@ static bool LensErased(const Actor* actor, bool insideLens) {
            gPlayState->roomCtx.curRoom.lensMode != LENS_MODE_HIDE_ACTORS;
 }
 
-// BgCheck_AnyLineTest2 (every collision category: both flag masks 0 = COLPOLY_IGNORE_NONE, both faces,
-// moving collision), continued past each see-through or lens-erased actor it meets. A flat web is
-// crossed once, so each pass excludes only the actor just passed.
+// The line an arrow flies (BgCheck_ProjectileLineTest: every collision category, both faces, moving
+// collision), continued past each see-through or lens-erased actor it meets. A flat web is crossed once,
+// so each pass excludes only the actor just passed. Polygons flagged for projectiles to pass through
+// (fences, railings, grates, invisible walls) do not block it, as Z-targeting sees past them
+// (Attention_FindActorInCategory); camera-only flags do not count, chests and pillars carry them too.
+// In a pre-rendered room (mesh type 1) Room_DrawBackground2D paints the walls behind every actor
+// without a depth test, so the static scene hides nothing there and only moving collision is tested.
 static bool LineOfSight(Vec3f from, Vec3f to, bool insideLens) {
+    constexpr u16 kIgnoreProjectiles = 1 << 2; // COLPOLY_IGNORE_PROJECTILES (z_bgcheck.c)
+    const MeshHeader* mesh = gPlayState->roomCtx.curRoom.meshHeader;
+    const bool pictureRoom = mesh != nullptr && mesh->base.type == 1;
+    const u32 bccFlags = BgCheck_GetBccFlags(true, true, true, false, true);
     Actor* passed = nullptr;
     for (int pass = 0; pass < 8; pass++) {
-        Vec3f hit;
+        Vec3f hit = to;
         CollisionPoly* poly = nullptr;
         s32 bgId = BGCHECK_SCENE;
-        if (!BgCheck_CheckLineImpl(&gPlayState->colCtx, 0, 0, &from, &to, &hit, &poly, &bgId, passed, 1.0f,
-                                   BgCheck_GetBccFlags(true, true, true, false, true)))
+        f32 distSq = 1.0e38f;
+        if (!(pictureRoom ? BgCheck_CheckLineAgainstDyna(&gPlayState->colCtx, kIgnoreProjectiles, &from, &to, &hit,
+                                                         &poly, &distSq, &bgId, passed, 1.0f, bccFlags)
+                          : BgCheck_CheckLineImpl(&gPlayState->colCtx, kIgnoreProjectiles, 0, &from, &to, &hit, &poly,
+                                                  &bgId, passed, 1.0f, bccFlags)))
             return true;
         DynaPolyActor* owner = bgId != BGCHECK_SCENE ? DynaPoly_GetActor(&gPlayState->colCtx, bgId) : nullptr;
         if (owner == nullptr || !(SeeThroughOccluder(&owner->actor) || LensErased(&owner->actor, insideLens)))
