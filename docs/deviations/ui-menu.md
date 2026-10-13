@@ -486,3 +486,9 @@ take upstream changes into the `#else` branch and port them to the combo branch 
   "Epona's Song" (`SongInfo`).
 - Frame: the `INV_GRID_*` sizes come from the kit (the same values as before), the Randomizer and Reg Editor tabs
   draw in the same bordered panel as the others, and the no-file line reads "Load a Majora's Mask file to edit it."
+- `DrawGeneralTab`: cards in OoT's order (Player, Health, Magic, Rupees, Time) drawn with the kit's bars and
+  buttons; Reset buttons are Red (were Gray); the neutral time, day and speed bars, time buttons, player-name field
+  and checkboxes take the menu theme colour (were LightBlue and Gray); "Max hearts" and the magic level names are
+  in sentence case (`MAGIC_LEVEL_NAMES`); the time bar reads as a clock without the raw hex. The owl statues editor,
+  which opened at the top, and the temple progress move into a collapsed "Progress (temples, owl statues)" card at
+  the end; the owl statues search still opens this tab. `DrawOwlStatuesEditor` checkboxes take the theme colour.

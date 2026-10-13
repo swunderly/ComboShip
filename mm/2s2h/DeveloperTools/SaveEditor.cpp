@@ -106,7 +106,11 @@ constexpr int8_t S8_ZERO = 0;
 constexpr u8 U8_ZERO = 0;
 constexpr u8 REG_PAGES_MAX = REG_PAGES;
 constexpr u8 REG_GROUPS_MAX = REG_GROUPS - 1;
+#ifdef COMBO_BUILD
+const char* MAGIC_LEVEL_NAMES[3] = { "No magic", "Single magic", "Double magic" };
+#else
 const char* MAGIC_LEVEL_NAMES[3] = { "No Magic", "Single Magic", "Double Magic" };
+#endif
 constexpr int8_t MAGIC_LEVEL_MAX = 2;
 const char* WALLET_LEVEL_NAMES[4] = { "Child Wallet", "Adult Wallet", "Giant Wallet", "Tycoon Wallet" };
 constexpr u8 WALLET_LEVEL_MAX = 2;
@@ -550,7 +554,12 @@ static void DrawOwlStatuesEditor() {
         for (const auto& statue : statues) {
             ImGui::TableNextColumn();
             bool activated = MmOwlEditor::IsActivated(flags, statue.id);
-            if (UIWidgets::Checkbox(statue.name, &activated, { .color = UIWidgets::Colors::Gray })) {
+#ifdef COMBO_BUILD
+            const auto colour = UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5));
+#else
+            const auto colour = UIWidgets::Colors::Gray;
+#endif
+            if (UIWidgets::Checkbox(statue.name, &activated, { .color = colour })) {
                 flags = MmOwlEditor::SetActivated(flags, statue.id, activated);
             }
         }
@@ -563,21 +572,21 @@ static void DrawOwlStatuesEditor() {
 }
 
 #ifdef COMBO_BUILD
+// ComboShip: the General tab, mirrored by OoT's: Player, Health, Magic, Rupees and Time cards with the shared coloured
+// bars and Max/Reset buttons (Reset is Red), then a collapsed Progress card with the temples and the owl statues, which
+// used to open at the top. Neutral bars, buttons and checkboxes take the menu theme colour.
 void DrawGeneralTab() {
+    namespace Kit = ComboSaveEditorKit;
+    const UIWidgets::Colors theme = UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5));
+    const ImVec4 themeColour = UIWidgets::ColorValues.at(theme);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
     ImGui::BeginChild("generalTab", ImVec2(0, 0), true);
+    Kit::BeginCardLayout();
 
-    if (ImGui::CollapsingHeader("Owl Statues / Warp Destinations", ImGuiTreeNodeFlags_DefaultOpen)) {
-        DrawOwlStatuesEditor();
-    }
-    ImGui::Spacing();
-    UIWidgets::BeginCardLayout({ .columnsPerRow = 2, .minColumnWidth = 420.0f });
-
-    // Card 1: Player Identity
-    UIWidgets::BeginCard("identityCard");
+    Kit::BeginCard("identityCard");
     ImGui::Text("Player Name");
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, UIWidgets::ColorValues.at(UIWidgets::Colors::Gray));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, themeColour);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 8.0f));
     static char playerNameBuf[9];
@@ -592,141 +601,20 @@ void DrawGeneralTab() {
                 gSaveContext.save.saveInfo.bomberCode[3], gSaveContext.save.saveInfo.bomberCode[4]);
 
     ImGui::Spacing();
-    UIWidgets::Checkbox("Has Tatl", (bool*)&gSaveContext.save.hasTatl, { .color = UIWidgets::Colors::Gray });
-    UIWidgets::Checkbox("Is Owl Save", (bool*)&gSaveContext.save.isOwlSave, { .color = UIWidgets::Colors::Gray });
-    UIWidgets::Checkbox("Finished Intro Sequence", (bool*)&gSaveContext.save.isFirstCycle,
-                        { .color = UIWidgets::Colors::Gray });
-    UIWidgets::EndCard();
+    UIWidgets::Checkbox("Has Tatl", (bool*)&gSaveContext.save.hasTatl, { .color = theme });
+    UIWidgets::Checkbox("Is Owl Save", (bool*)&gSaveContext.save.isOwlSave, { .color = theme });
+    UIWidgets::Checkbox("Finished Intro Sequence", (bool*)&gSaveContext.save.isFirstCycle, { .color = theme });
+    Kit::EndCard();
 
-    // Card 2: Time & Day
-    UIWidgets::BeginCard("timeCard");
-    ImGui::Text("Time of Day");
-    UIWidgets::PushStyleSlider();
-    static u16 minTime = 0;
-    static u16 maxTime = 0xFFFF;
-    // Get current time and format as digital string
-    u16 curMinutes = (s32)TIME_TO_MINUTES_F(CURRENT_TIME) % 60;
-    u16 curHours = (s32)TIME_TO_MINUTES_F(CURRENT_TIME) / 60;
-    std::string minutes = (curMinutes < 10 ? "0" : "") + std::to_string(curMinutes);
-    std::string hours = "";
-    std::string ampm = "";
-    // Handle 24 or 12 hour time
-    if (CVarGetInteger("gEnhancements.Graphics.24HoursClock", 0)) {
-        if (curHours < 10) {
-            hours += "0";
-        }
-    } else {
-        ampm = curHours >= 12 ? " pm" : " am";
-        curHours = curHours % 12 ? curHours % 12 : 12;
-    }
-    hours += std::to_string(curHours);
-    std::string timeString = hours + ":" + minutes + ampm + " (0x%x)";
-
-    u16 gameTime = CURRENT_TIME;
-    if (ImGui::SliderScalar("##timeInput", ImGuiDataType_U16, &gameTime, &minTime, &maxTime, timeString.c_str(),
-                            ImGuiSliderFlags_NoInput)) {
-        UpdateGameTime(gameTime);
-    }
-    UIWidgets::PopStyleSlider();
-
-    ImGui::Spacing();
-    static const std::array<std::pair<int8_t, const char*>, 4> timeSkipAmounts = {
-        { { -60, "-1hr" }, { -15, "-15m" }, { 15, "+15m" }, { 60, "+1hr" } }
-    };
-    float availWidth = ImGui::GetContentRegionAvail().x;
-    float spacing = ImGui::GetStyle().ItemSpacing.x;
-    float buttonWidth = (availWidth - (3 * spacing)) / 4;
-    for (size_t i = 0; i < timeSkipAmounts.size(); i++) {
-        const auto& skip = timeSkipAmounts.at(i);
-        if (UIWidgets::Button(skip.second, { .size = ImVec2(buttonWidth, 0), .color = UIWidgets::Colors::LightBlue })) {
-            UpdateGameTime(CURRENT_TIME + CLOCK_TIME(0, skip.first));
-        }
-        if (i < timeSkipAmounts.size() - 1) {
-            ImGui::SameLine();
-        }
-    }
-
-    UIWidgets::PushStyleSlider();
-    static s32 minDay = 0;
-    static s32 maxDay = 4;
-    if (ImGui::SliderScalar("##dayInput", ImGuiDataType_S32, &gSaveContext.save.day, &minDay, &maxDay, "Day: %d",
-                            ImGuiSliderFlags_NoInput)) {
-        gSaveContext.save.eventDayCount = CURRENT_DAY;
-
-        if (gPlayState != nullptr) {
-            Interface_NewDay(gPlayState, CURRENT_DAY);
-            // Inverting setup actors forces half-day actors to kill/respawn for new day
-            gPlayState->numSetupActors = -gPlayState->numSetupActors;
-            // Load environment values for new day
-            Environment_NewDay(&gPlayState->envCtx);
-            // Clear weather from day 2
-            gWeatherMode = WEATHER_MODE_CLEAR;
-            gPlayState->envCtx.lightningState = LIGHTNING_OFF;
-        }
-    }
-
-    // Time speed slider
-    // Values are added to R_TIME_SPEED which is generally 3 in normal play state
-    static s32 minSpeed = -3; // Time frozen
-    static s32 maxSpeed = 7;
-    std::string extraText = "";
-    if (gSaveContext.save.timeSpeedOffset == 0) {
-        extraText = " (default)";
-    } else if (gSaveContext.save.timeSpeedOffset == -2) {
-        extraText = " (inverted)";
-    }
-    std::string timeSpeedString = "Time Speed: " + std::to_string(gSaveContext.save.timeSpeedOffset + 3) + extraText;
-    ImGui::SliderScalar("##timeSpeedInput", ImGuiDataType_S32, &gSaveContext.save.timeSpeedOffset, &minSpeed, &maxSpeed,
-                        timeSpeedString.c_str(), ImGuiSliderFlags_NoInput);
-    UIWidgets::PopStyleSlider();
-    UIWidgets::EndCard();
-
-    // Card 3: Currency
-    UIWidgets::BeginCard("currencyCard");
-    u8 walletLevelMax = (IS_RANDO && RANDO_SAVE_OPTIONS[RO_SHUFFLE_TYCOON_WALLET] == RO_GENERIC_YES)
-                            ? WALLET_LEVEL_MAX + 1
-                            : WALLET_LEVEL_MAX;
-    if (UIWidgets::Button("Max Rupees", { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Green })) {
-        Inventory_ChangeUpgrade(UPG_WALLET, walletLevelMax);
-        gSaveContext.save.saveInfo.playerData.rupees = CUR_CAPACITY(UPG_WALLET);
-    }
-    ImGui::SameLine();
-    if (UIWidgets::Button("Reset##resetRupeesButton",
-                          { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Gray })) {
-        gSaveContext.save.saveInfo.playerData.rupees = 0;
-        Inventory_ChangeUpgrade(UPG_WALLET, 0);
-    }
-    UIWidgets::PushStyleSlider(UIWidgets::Colors::Green);
-    u8 currentWalletLevel = CUR_UPG_VALUE(UPG_WALLET);
-    if (ImGui::SliderScalar("##walletLevelSlider", ImGuiDataType_U8, &currentWalletLevel, &U8_ZERO, &walletLevelMax,
-                            WALLET_LEVEL_NAMES[currentWalletLevel], ImGuiSliderFlags_NoInput)) {
-        Inventory_ChangeUpgrade(UPG_WALLET, currentWalletLevel);
-        gSaveContext.save.saveInfo.playerData.rupees =
-            MIN(gSaveContext.save.saveInfo.playerData.rupees, CUR_CAPACITY(UPG_WALLET));
-    }
-    s16 walletCapacity = CUR_CAPACITY(UPG_WALLET);
-    ImGui::SliderScalar("##rupeesSlider", ImGuiDataType_S16, &gSaveContext.save.saveInfo.playerData.rupees, &S16_ZERO,
-                        &walletCapacity, "Rupees: %d", ImGuiSliderFlags_NoInput);
-
-    int bankedRupees = HS_GET_BANK_RUPEES();
-    if (ImGui::SliderInt("##setBank", &bankedRupees, 0, 5000, "Banked Rupees: %d", ImGuiSliderFlags_NoInput)) {
-        HS_SET_BANK_RUPEES(bankedRupees);
-    }
-    UIWidgets::Tooltip("To receive the rewards, set the bank to 199, 999, or 4,999 then deposit a single rupee");
-    UIWidgets::PopStyleSlider();
-    UIWidgets::EndCard();
-
-    // Card 4: Health
-    UIWidgets::BeginCard("healthCard");
-    if (UIWidgets::Button("Max Health", { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Red })) {
+    Kit::BeginCard("healthCard");
+    if (Kit::Button("Max Health", Kit::kHealthMax)) {
         gSaveContext.save.saveInfo.playerData.doubleDefense = 1;
         gSaveContext.save.saveInfo.inventory.defenseHearts = 20;
         gSaveContext.save.saveInfo.playerData.healthCapacity = gSaveContext.save.saveInfo.playerData.health = 20 * 16;
         gSaveContext.save.saveInfo.inventory.questItems &= ~0xF0000000;
     }
     ImGui::SameLine();
-    if (UIWidgets::Button("Reset##resetHealthButton",
-                          { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Gray })) {
+    if (Kit::Button("Reset##resetHealthButton", Kit::kReset)) {
         gSaveContext.save.saveInfo.playerData.doubleDefense = 0;
         gSaveContext.save.saveInfo.inventory.defenseHearts = 0;
         gSaveContext.save.saveInfo.playerData.healthCapacity = gSaveContext.save.saveInfo.playerData.health = 3 * 16;
@@ -741,22 +629,19 @@ void DrawGeneralTab() {
             gSaveContext.save.saveInfo.inventory.defenseHearts = 0;
         }
     }
-    UIWidgets::PushStyleSlider(UIWidgets::Colors::DarkRed);
     int16_t heartCount = (int16_t)gSaveContext.save.saveInfo.playerData.healthCapacity / 16;
-    if (ImGui::SliderScalar("##heartCountSlider", ImGuiDataType_U16, &heartCount, &HEART_COUNT_MIN, &HEART_COUNT_MAX,
-                            "Max Hearts: %d", ImGuiSliderFlags_NoInput)) {
+    if (Kit::ResourceBar("##heartCountSlider", &heartCount, HEART_COUNT_MIN, HEART_COUNT_MAX, "Max hearts: %d",
+                         Kit::kHealth)) {
         gSaveContext.save.saveInfo.playerData.healthCapacity = heartCount * 16;
         gSaveContext.save.saveInfo.playerData.health =
             MIN(gSaveContext.save.saveInfo.playerData.health, gSaveContext.save.saveInfo.playerData.healthCapacity);
     }
-    ImGui::SliderScalar("##healthSlider", ImGuiDataType_S16, &gSaveContext.save.saveInfo.playerData.health, &S16_ZERO,
-                        &gSaveContext.save.saveInfo.playerData.healthCapacity, "Health: %d", ImGuiSliderFlags_NoInput);
-    UIWidgets::PopStyleSlider();
-    UIWidgets::EndCard();
+    Kit::ResourceBar("##healthSlider", &gSaveContext.save.saveInfo.playerData.health, 0,
+                     gSaveContext.save.saveInfo.playerData.healthCapacity, "Health: %d", Kit::kHealth);
+    Kit::EndCard();
 
-    // Card 5: Magic
-    UIWidgets::BeginCard("magicCard");
-    if (UIWidgets::Button("Max Magic", { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::DarkGreen })) {
+    Kit::BeginCard("magicCard");
+    if (Kit::Button("Max Magic", Kit::kMagic)) {
         gSaveContext.magicCapacity = gSaveContext.save.saveInfo.playerData.magic = MAGIC_DOUBLE_METER;
         gSaveContext.save.saveInfo.playerData.magicLevel = 2;
         gSaveContext.save.saveInfo.playerData.isMagicAcquired = true;
@@ -764,8 +649,7 @@ void DrawGeneralTab() {
         BUTTON_ITEM_EQUIP(PLAYER_FORM_DEKU, EQUIP_SLOT_B) = ITEM_DEKU_NUT;
     }
     ImGui::SameLine();
-    if (UIWidgets::Button("Reset##resetMagicButton",
-                          { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Gray })) {
+    if (Kit::Button("Reset##resetMagicButton", Kit::kReset)) {
         gSaveContext.magicCapacity = gSaveContext.save.saveInfo.playerData.magic = 0;
         gSaveContext.save.saveInfo.playerData.magicLevel = 0;
         gSaveContext.save.saveInfo.playerData.isMagicAcquired = false;
@@ -788,11 +672,9 @@ void DrawGeneralTab() {
             CLEAR_WEEKEVENTREG(WEEKEVENTREG_DRANK_CHATEAU_ROMANI);
         }
     }
-    UIWidgets::PushStyleSlider(UIWidgets::Colors::DarkGreen);
-    if (ImGui::SliderScalar("##magicLevelSlider", ImGuiDataType_S8, &gSaveContext.save.saveInfo.playerData.magicLevel,
-                            &S8_ZERO, &MAGIC_LEVEL_MAX,
-                            MAGIC_LEVEL_NAMES[gSaveContext.save.saveInfo.playerData.magicLevel],
-                            ImGuiSliderFlags_NoInput)) {
+    const int magicLevel = CLAMP(gSaveContext.save.saveInfo.playerData.magicLevel, 0, MAGIC_LEVEL_MAX);
+    if (Kit::ResourceBar("##magicLevelSlider", &gSaveContext.save.saveInfo.playerData.magicLevel, 0, MAGIC_LEVEL_MAX,
+                         Kit::kMagicLevelNames[magicLevel], Kit::kMagic)) {
         gSaveContext.magicCapacity = gSaveContext.save.saveInfo.playerData.magicLevel * MAGIC_NORMAL_METER;
         gSaveContext.save.saveInfo.playerData.magic =
             MIN(gSaveContext.save.saveInfo.playerData.magic, gSaveContext.magicCapacity);
@@ -813,17 +695,99 @@ void DrawGeneralTab() {
                 break;
         }
     }
-    ImGui::SliderScalar("##magicSlider", ImGuiDataType_S8, &gSaveContext.save.saveInfo.playerData.magic, &S8_ZERO,
-                        &gSaveContext.magicCapacity, "Magic: %d", ImGuiSliderFlags_NoInput);
-    UIWidgets::PopStyleSlider();
-    UIWidgets::EndCard();
+    Kit::ResourceBar("##magicSlider", &gSaveContext.save.saveInfo.playerData.magic, 0, gSaveContext.magicCapacity,
+                     "Magic: %d", Kit::kMagic);
+    Kit::EndCard();
 
-    // Card 6: Temple Progress
-    UIWidgets::BeginCard("progressCard");
-    DrawTempleClears();
-    UIWidgets::EndCard();
+    Kit::BeginCard("currencyCard");
+    u8 walletLevelMax = (IS_RANDO && RANDO_SAVE_OPTIONS[RO_SHUFFLE_TYCOON_WALLET] == RO_GENERIC_YES)
+                            ? WALLET_LEVEL_MAX + 1
+                            : WALLET_LEVEL_MAX;
+    if (Kit::Button("Max Rupees", Kit::kRupees)) {
+        Inventory_ChangeUpgrade(UPG_WALLET, walletLevelMax);
+        gSaveContext.save.saveInfo.playerData.rupees = CUR_CAPACITY(UPG_WALLET);
+    }
+    ImGui::SameLine();
+    if (Kit::Button("Reset##resetRupeesButton", Kit::kReset)) {
+        gSaveContext.save.saveInfo.playerData.rupees = 0;
+        Inventory_ChangeUpgrade(UPG_WALLET, 0);
+    }
+    u8 currentWalletLevel = CUR_UPG_VALUE(UPG_WALLET);
+    if (Kit::ResourceBar("##walletLevelSlider", &currentWalletLevel, 0, walletLevelMax,
+                         currentWalletLevel < 4 ? WALLET_LEVEL_NAMES[currentWalletLevel] : "Glitched", Kit::kRupees)) {
+        Inventory_ChangeUpgrade(UPG_WALLET, currentWalletLevel);
+        gSaveContext.save.saveInfo.playerData.rupees =
+            MIN(gSaveContext.save.saveInfo.playerData.rupees, CUR_CAPACITY(UPG_WALLET));
+    }
+    Kit::ResourceBar("##rupeesSlider", &gSaveContext.save.saveInfo.playerData.rupees, 0, CUR_CAPACITY(UPG_WALLET),
+                     "Rupees: %d", Kit::kRupees);
+    int bankedRupees = HS_GET_BANK_RUPEES();
+    if (Kit::ResourceBar("##setBank", &bankedRupees, 0, 5000, "Banked Rupees: %d", Kit::kRupees)) {
+        HS_SET_BANK_RUPEES(bankedRupees);
+    }
+    UIWidgets::Tooltip("To receive the rewards, set the bank to 199, 999, or 4,999 then deposit a single rupee");
+    Kit::EndCard();
 
-    UIWidgets::EndCardLayout();
+    Kit::BeginCard("timeCard");
+    ImGui::Text("Time of Day");
+    u16 gameTime = CURRENT_TIME;
+    if (Kit::ResourceBar("##timeInput", &gameTime, 0, 0xFFFF,
+                         Kit::ClockText(CURRENT_TIME, CVarGetInteger("gEnhancements.Graphics.24HoursClock", 0)).c_str(),
+                         themeColour)) {
+        UpdateGameTime(gameTime);
+    }
+    static const std::array<std::pair<int8_t, const char*>, 4> timeSkipAmounts = {
+        { { -60, "-1hr" }, { -15, "-15m" }, { 15, "+15m" }, { 60, "+1hr" } }
+    };
+    float availWidth = ImGui::GetContentRegionAvail().x;
+    float spacing = ImGui::GetStyle().ItemSpacing.x;
+    float buttonWidth = (availWidth - (3 * spacing)) / 4;
+    for (size_t i = 0; i < timeSkipAmounts.size(); i++) {
+        const auto& skip = timeSkipAmounts.at(i);
+        if (Kit::Button(skip.second, themeColour, ImVec2(buttonWidth, 0))) {
+            UpdateGameTime(CURRENT_TIME + CLOCK_TIME(0, skip.first));
+        }
+        if (i < timeSkipAmounts.size() - 1) {
+            ImGui::SameLine();
+        }
+    }
+    if (Kit::ResourceBar("##dayInput", &gSaveContext.save.day, 0, 4, "Day: %d", themeColour)) {
+        gSaveContext.save.eventDayCount = CURRENT_DAY;
+
+        if (gPlayState != nullptr) {
+            Interface_NewDay(gPlayState, CURRENT_DAY);
+            // Inverting setup actors forces half-day actors to kill/respawn for new day
+            gPlayState->numSetupActors = -gPlayState->numSetupActors;
+            // Load environment values for new day
+            Environment_NewDay(&gPlayState->envCtx);
+            // Clear weather from day 2
+            gWeatherMode = WEATHER_MODE_CLEAR;
+            gPlayState->envCtx.lightningState = LIGHTNING_OFF;
+        }
+    }
+    // Values are added to R_TIME_SPEED which is generally 3 in normal play state; -3 freezes time.
+    std::string extraText = "";
+    if (gSaveContext.save.timeSpeedOffset == 0) {
+        extraText = " (default)";
+    } else if (gSaveContext.save.timeSpeedOffset == -2) {
+        extraText = " (inverted)";
+    }
+    std::string timeSpeedString = "Time Speed: " + std::to_string(gSaveContext.save.timeSpeedOffset + 3) + extraText;
+    Kit::ResourceBar("##timeSpeedInput", &gSaveContext.save.timeSpeedOffset, -3, 7, timeSpeedString.c_str(),
+                     themeColour);
+    Kit::EndCard();
+
+    // Collapsed, as OoT's Advanced card. The owl statues search lands on this tab.
+    Kit::BeginCard("progressCard");
+    if (ImGui::CollapsingHeader("Progress (temples, owl statues)")) {
+        ImGui::SeparatorText("Temples");
+        DrawTempleClears();
+        ImGui::SeparatorText("Owl statues");
+        DrawOwlStatuesEditor();
+    }
+    Kit::EndCard();
+
+    Kit::EndCardLayout();
 
     ImGui::EndChild();
     ImGui::PopStyleVar(2);
