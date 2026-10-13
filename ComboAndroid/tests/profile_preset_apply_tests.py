@@ -106,8 +106,9 @@ int main() {
             Require(!deferPoolViews && dirty, "a preset left its refresh deferred or its draft unsaved");
             for (const auto& write : preset.at("writes").items())
                 Require(ReadInteger(write.key().c_str(), -1) == write.value().get<int>(), "a preset value was not written");
-            Require(ReadInteger("gCombo.Rando.Goal", -1) == 0 && ReadInteger("gCombo.Rando.TriforceRequired", -1) == 15 &&
-                        ReadInteger("gCombo.Rando.TriforceTotal", -1) == 15,
+            // OoTMM's default goal and Triforce counts (data.ts:91-110).
+            Require(ReadInteger("gCombo.Rando.Goal", -1) == 0 && ReadInteger("gCombo.Rando.TriforceRequired", -1) == 20 &&
+                        ReadInteger("gCombo.Rando.TriforceTotal", -1) == 30,
                     "a preset kept the file's Triforce Hunt");
             for (const auto& rule : kGameplayRules) {
                 const int value = preset.at("rules").value(rule.name, 0);

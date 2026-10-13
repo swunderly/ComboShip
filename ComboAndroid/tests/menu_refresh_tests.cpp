@@ -157,11 +157,13 @@ int main() {
             assert(value.key && *value.key && value.value>=0);
             write(value.key,value.value);
         }
-        assert(read(kNativeLogicRule,-1)==0 && read(kCombinedGuarantee,-1)==0);
+        // Glitchless; only Allsanity's OoTMM logic is beatable-only (presets.ts:430).
+        assert(read(kNativeLogicRule,-1)==0 && read(kCombinedGuarantee,-1)==(preset.id==CommunityPreset::Allsanity));
         assert(read("gCombo.Rando.Goal",-1)==0 && read("gCombo.Rando.TriforceHunt",-1)==0); // OoTMM: Ganon & Majora
         for (int i=0;i<SF_COUNT;++i) {
             if (i == SF_OCARINA || !SharedFamilyByIndex(i).publicOption) { assert(!cv.count(SharedFamilyByIndex(i).cvar)); continue; }
-            assert(read(SharedFamilyByIndex(i).cvar,-1)==(preset.id!=CommunityPreset::Default));
+            const bool shared=preset.id==CommunityPreset::Allsanity || (preset.id==CommunityPreset::Beginner && BeginnerSharesFamily(i));
+            assert(read(SharedFamilyByIndex(i).cvar,-1)==(shared?1:0));
         }
         assert(!cv.count("gCombo.Rando.SyncCosmetics")); // visual preferences are preserved
         assert(!cv.count("gSettings.Volume.Master"));
