@@ -450,3 +450,20 @@ soh, 2ship and comboui must ship together.
 
 MM's In-Game Timer needs no row: its menu entries are already `#ifndef COMBO_BUILD` and its window is
 forced off at `ComboUI_Register` (see "Combo-owned overlay timers").
+
+## Save Editors as mirrors (T8, 2026-10-12)
+
+**Why:** Sam: the OoT and MM Save Editors work and look differently for the same thing (OoT "Info" vs MM
+"General", coloured bars only in MM, OoT opening a picker for a slot that holds one item). Both now show the same
+tabs in the same order (General, Inventory, Equipment, Quest Status, Dungeon Items, Flags, Player; MM then
+Randomizer and Reg Editor), the same cards, colours and wording, and one tap rule. No CVar, save field or window key
+changed; the editors' own switches are static bools.
+
+**OoT, `soh/soh/Enhancements/debugger/debugSaveEditor.cpp` (function-level guards):** every changed function is
+`#ifdef COMBO_BUILD <combo body> #else <upstream body> #endif`, so the upstream body stays byte-intact for merges;
+take upstream changes into the `#else` branch and port them to the combo branch by hand.
+- `DrawElement`: tabs renamed and reordered ("Info" is "General"; Flags moves from third to sixth); new
+  `DrawDungeonItemsTab` (combo-only) holds the dungeon block upstream draws at the end of `DrawQuestStatusTab`.
+- `DrawInfoTab`: the File Number combobox is a read-only "File N". Editing it sent the next save to another slot,
+  which could overwrite another file or split a file's OoT half from its MM half.
+- Typos: "visted" (`DrawFlagsTab`), "Capapcity" (`DrawEquipmentTab`), "aquired" (`DrawQuestStatusTab`).
