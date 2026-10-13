@@ -10,6 +10,23 @@
 
 s32 KaleidoScope_UpdateQuestStatusPoint(PauseContext* pauseCtx, s16 point);
 
+#ifdef COMBO_BUILD
+// Saria's Song and Sun's Song are drawn in Oath to Order's and Song of Storms' place (sQuestVtxRectLeft/Top), and no
+// vanilla cursor link leads to them. A place is its MM song, or its OoT song when only that one is learned, as the
+// Lullaby's place is the Lullaby Intro until the Lullaby is learned. With both learned, the OoT song is one step right
+// of the MM song (sCursorPointLinks).
+static s16 KaleidoScope_ComboQuestSongPlace(s16 point) {
+    if (((point == QUEST_SONG_SARIA) || (point == QUEST_SONG_SUN)) && !CHECK_QUEST_ITEM(point)) {
+        return point - 1;
+    }
+    if (((point == QUEST_SONG_OATH) || (point == QUEST_SONG_STORMS)) && !CHECK_QUEST_ITEM(point) &&
+        CHECK_QUEST_ITEM(point + 1)) {
+        return point + 1;
+    }
+    return point;
+}
+#endif
+
 s16 sQuestRemainsColorTimerInit[] = { 120, 60, 2, 80 };
 s16 sQuestHpColorTimerInits[] = { 20, 4, 20, 10 };
 s16 sQuestSongPlayedOcarinaButtonsNum = 0;
@@ -606,6 +623,16 @@ void KaleidoScope_UpdateQuestCursor(PlayState* play) {
     u16 cursor;
     u16 cursorItem;
 
+#ifdef COMBO_BUILD
+    // With both songs of Oath to Order's or Song of Storms' place learned, the OoT song is one step right of the MM
+    // song (KaleidoScope_ComboQuestSongPlace). Both leave the place up, down and right as the MM song does.
+    sCursorPointLinks[QUEST_SONG_OATH].right = QUEST_SONG_SARIA;
+    sCursorPointLinks[QUEST_SONG_SARIA].up = QUEST_SONG_STORMS;
+    sCursorPointLinks[QUEST_SONG_SARIA].right = QUEST_QUIVER;
+    sCursorPointLinks[QUEST_SONG_STORMS].right = QUEST_SONG_SUN;
+    sCursorPointLinks[QUEST_SONG_SUN].down = QUEST_SONG_OATH;
+#endif
+
     pauseCtx->nameColorSet = PAUSE_NAME_COLOR_SET_WHITE;
     pauseCtx->cursorColorSet = PAUSE_CURSOR_COLOR_SET_WHITE;
 
@@ -690,6 +717,10 @@ void KaleidoScope_UpdateQuestCursor(PlayState* play) {
                     nextCursorPoint = sCursorPointLinks[nextCursorPoint].up;
                 }
             }
+
+#ifdef COMBO_BUILD
+            pauseCtx->cursorPoint[PAUSE_QUEST] = KaleidoScope_ComboQuestSongPlace(pauseCtx->cursorPoint[PAUSE_QUEST]);
+#endif
 
             // if the cursor point changed
             if (oldCursorPoint != pauseCtx->cursorPoint[PAUSE_QUEST]) {
@@ -982,6 +1013,13 @@ void KaleidoScope_UpdateQuestCursor(PlayState* play) {
 }
 
 s32 KaleidoScope_UpdateQuestStatusPoint(PauseContext* pauseCtx, s16 point) {
+#ifdef COMBO_BUILD
+    // Pass over an unlearned OoT song, and over a place's unlearned MM song on the way out of that place.
+    if ((((point == QUEST_SONG_SARIA) || (point == QUEST_SONG_SUN)) && !CHECK_QUEST_ITEM(point)) ||
+        (KaleidoScope_ComboQuestSongPlace(point) == pauseCtx->cursorPoint[PAUSE_QUEST])) {
+        return false;
+    }
+#endif
     pauseCtx->cursorPoint[PAUSE_QUEST] = point;
 
     return true;
