@@ -2390,7 +2390,8 @@ void ComboMenu::DrawSharedPanel() {
                         mPreferenceGame = selectedGame + 1;
                     }
                 } else if (active->label == MenuPage::WarpsTravel) {
-                    selectedGame = -1;
+                    // Song travel drives both games; OoT's own destination shuffles follow it on the Randomizer tab.
+                    selectedGame = hasOot ? 0 : hasMm ? 1 : -1;
                 } else if (active->label == "Gameplay rules" || active->label == MenuPage::Difficulty ||
                            active->label == "Logic & access") {
                     if (seedOptions) {

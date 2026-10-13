@@ -203,13 +203,19 @@ inline MenuDestination MenuGroupRoute(bool oot, const std::string& section, cons
         if (key == "gRandoSettings.CompleteMaskQuest" || key == "gRandoSettings.ItemPool" ||
             heading == "Item Pool Settings")
             return { "randomizer", "Items & checks" };
-        if (key == "gRandoSettings.StartingAge" || key == "gRandoSettings.FullWallets")
+        if (key == "gRandoSettings.FullWallets")
             return { "randomizer", "Starting inventory" };
+        // OoTMM keeps one warp-song and soaring-spot destination shuffle; OoT's own two sit beside the combined one.
+        if (key == "gRandoSettings.ShuffleWarpSongs" || key == "gRandoSettings.ShuffleOwlDrops")
+            return { "randomizer", "Warps & travel" };
         for (const char* rule : { "BigPoeTargetCount", "SlingBowBeehives", "SwordlessEponaItems", "SkipChildStealth",
                                   "EarlyGrannysShop", "SkipPlantingBeans", "SkipEponaRace", "SkipScarecrowsSong" })
             if (key == std::string("gRandoSettings.") + rule)
                 return { "randomizer", "Gameplay rules" };
     }
+    // Boss souls sit with the other souls, as OoTMM keeps them and as MM shows them.
+    if (oot && section == "Randomizer" && page == "Dungeons" && key == "gRandoSettings.ShuffleBossSouls")
+        return { "randomizer", "Items & checks" };
     if (section == "Enhancements" && (page == "Quality of Life" || page == "Gameplay")) {
         if (heading == "Saving")
             return { "gameplay", MenuPage::Saving };
@@ -383,6 +389,8 @@ inline int RandomizerWidgetGroup(bool oot, const std::string& sidebar, int colum
         (key == "gRandoSettings.CompleteMaskQuest" || key == "gRandoSettings.ItemPool" ||
          heading == "Item Pool Settings"))
         return 1;
+    if (oot && sidebar == "Dungeons" && key == "gRandoSettings.ShuffleBossSouls")
+        return 1;
     if (oot && sidebar == "Shuffles")
         return column < 2 ? 0 : 1;
     if (!oot && sidebar == "Check Pool")
@@ -410,5 +418,15 @@ inline int OotLocationPoolGroup(const std::string& key, int originalColumn) {
         if (key.find(part) != std::string::npos)
             return 1;
     return 0;
+}
+// OoT's item pool under MM's Items headings: 0 Item pool (pool size first, as MM), 1 Abilities & upgrades, 2 Souls.
+inline int OotItemPoolGroup(const std::string& key) {
+    if (key == "gRandoSettings.ItemPool" || key == "gRandoSettings.CompleteMaskQuest")
+        return 0;
+    for (const char* soul :
+         { "gRandoSettings.SoulsEnemyOot", "gRandoSettings.ShuffleBeanSouls", "gRandoSettings.ShuffleBossSouls" })
+        if (key == soul)
+            return 2;
+    return 1;
 }
 } // namespace ComboRando

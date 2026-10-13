@@ -1,8 +1,12 @@
 #include "ComboNavigation.h"
+#include "ComboRandomizerLayout.h"
 #include "ComboTricks.h"
 #include "../rando/MmTricks.h"
 #include <cassert>
+#include <cstring>
 #include <iostream>
+#include <string>
+#include <vector>
 
 using ComboRando::MenuRoute;
 int main() {
@@ -138,8 +142,80 @@ int main() {
         assert(MenuGroupRoute(true, "Randomizer", "Logic/Access", 0, "Logic", key).page == "Items & checks");
         assert(RandomizerWidgetGroup(true, "Logic/Access", 0, "Logic", key) == 1);
     }
-    for (const char* key : {"gRandoSettings.StartingAge", "gRandoSettings.FullWallets"})
-        assert(MenuGroupRoute(true, "Randomizer", "Logic/Access", 0, "Logic", key).page == "Starting inventory");
+    assert(MenuGroupRoute(true, "Randomizer", "Logic/Access", 0, "Logic", "gRandoSettings.FullWallets").page ==
+           "Starting inventory");
+    // Starting Age sits with Starting world, which greys it out; OoT's own destination shuffles sit with song travel.
+    assert(MenuGroupRoute(true, "Randomizer", "Logic/Access", 0, "Logic", "gRandoSettings.StartingAge").page ==
+           "Logic & access");
+    for (const char* key : {"gRandoSettings.ShuffleWarpSongs", "gRandoSettings.ShuffleOwlDrops"})
+        assert(MenuGroupRoute(true, "Randomizer", "Logic/Access", 2, "Entrances", key).page == "Warps & travel");
+    assert(MenuGroupRoute(true, "Randomizer", "Logic/Access", 2, "Entrances",
+                          "gRandoSettings.ShuffleDungeonsEntrances").page == "Logic & access");
+    // Boss Souls joins the other souls on Items & checks > Items; the rest of Dungeons stays.
+    assert(MenuGroupRoute(true, "Randomizer", "Dungeons", 0, "Dungeon Items", "gRandoSettings.ShuffleBossSouls").page ==
+           "Items & checks");
+    assert(RandomizerWidgetGroup(true, "Dungeons", 0, "Dungeon Items", "gRandoSettings.ShuffleBossSouls") == 1);
+    assert(MenuGroupRoute(true, "Randomizer", "Dungeons", 0, "Dungeon Items", "gRandoSettings.Keysanity").page ==
+           "Dungeons");
+    {
+        // OoT rows take the page's fixed headings at draw time; native separators are replaced, keys and indices stay.
+        auto row = [](CwKind kind, const char* name, const char* cvar, int column) {
+            CwWidget w{};
+            w.kind = kind; w.name = name; w.cvar = cvar; w.column = column; w.index = column * 100 + int(std::strlen(name));
+            return w;
+        };
+        auto names = [](const std::vector<CwWidget>& rows) {
+            std::vector<std::string> out;
+            for (const auto& w : rows) out.push_back(w.name);
+            return out;
+        };
+        using List = std::vector<std::string>;
+        const CwWidget logic[] = {
+            row(CW_SEPARATOR_TEXT, "Logic", "", 0), row(CW_COMBOBOX, "Logic", "gRandoSettings.LogicRules", 0),
+            row(CW_COMBOBOX, "Starting Age", "gRandoSettings.StartingAge", 0),
+            row(CW_SEPARATOR_TEXT, "Win Condition", "", 0), row(CW_COMBOBOX, "Ganon's Boss Key", "gRandoSettings.ShuffleGanonBossKey", 0),
+            row(CW_SEPARATOR_TEXT, "Area Access", "", 1), row(CW_COMBOBOX, "Forest", "gRandoSettings.ClosedForest", 1),
+            row(CW_SEPARATOR_TEXT, "Entrances", "", 2), row(CW_CHECKBOX, "Dungeon Entrances", "gRandoSettings.ShuffleDungeonsEntrances", 2),
+        };
+        const auto arranged = ComboRando::ArrangeOotRandomizerPage("Logic & access", logic, 9);
+        assert((names(arranged) == List{"Logic", "Logic", "Area access", "Starting Age", "Forest", "Final boss access",
+                                        "Ganon's Boss Key", "Entrances", "Dungeon Entrances"}));
+        assert(arranged[0].index == -1 && arranged[0].kind == CW_SEPARATOR_TEXT && arranged[3].index == logic[2].index);
+        for (int i = 0; i < int(arranged.size()); ++i) assert(arranged[i].column == (i >= 5)); // balanced wide columns
+        const CwWidget items[] = {
+            row(CW_SEPARATOR_TEXT, "Item Pool Settings", "", 0), row(CW_COMBOBOX, "Item Pool", "gRandoSettings.ItemPool", 0),
+            row(CW_SEPARATOR_TEXT, "Additional Items", "", 0), row(CW_CHECKBOX, "Enemy Souls (OoT)", "gRandoSettings.SoulsEnemyOot", 0),
+            row(CW_CHECKBOX, "Shuffle Swim", "gRandoSettings.ShuffleSwim", 0),
+            row(CW_COMBOBOX, "Shuffle Boss Souls", "gRandoSettings.ShuffleBossSouls", 0),
+        };
+        assert((names(ComboRando::ArrangeOotRandomizerPage("Items & checks", items, 6)) ==
+                List{"Item pool", "Item Pool", "Abilities & upgrades", "Shuffle Swim", "Souls", "Enemy Souls (OoT)",
+                     "Shuffle Boss Souls"}));
+        const CwWidget dungeons[] = {
+            row(CW_SEPARATOR_TEXT, "Dungeon Items", "", 0), row(CW_COMBOBOX, "Maps/Compasses", "gRandoSettings.StartingMapsCompasses", 0),
+            row(CW_COMBOBOX, "Small Key Shuffle", "gRandoSettings.Keysanity", 0),
+            row(CW_COMBOBOX, "Boss Key Shuffle", "gRandoSettings.BossKeysanity", 0),
+            row(CW_COMBOBOX, "Shuffle Dungeon Rewards", "gRandoSettings.ShuffleDungeonReward", 0),
+            row(CW_SEPARATOR_TEXT, "Keyrings", "", 1), row(CW_COMBOBOX, "Key Rings", "gRandoSettings.ShuffleKeyRings", 1),
+            row(CW_SEPARATOR_TEXT, "Master Quest", "", 2), row(CW_COMBOBOX, "Master Quest Dungeons", "gRandoSettings.MQDungeons", 2),
+        };
+        assert((names(ComboRando::ArrangeOotRandomizerPage("Dungeons", dungeons, 9)) ==
+                List{"Dungeon rewards", "Shuffle Dungeon Rewards", "Maps & compasses", "Maps/Compasses", "Small keys",
+                     "Small Key Shuffle", "Key rings", "Key Rings", "Boss keys", "Boss Key Shuffle", "Master Quest",
+                     "Master Quest Dungeons"}));
+        const CwWidget warps[] = { row(CW_CHECKBOX, "Warp Songs", "gRandoSettings.ShuffleWarpSongs", 2) };
+        const auto travel = ComboRando::ArrangeOotRandomizerPage("Warps & travel", warps, 1);
+        assert(travel.size() == 2 && std::string(travel[0].name) == "Destination shuffles (OoT)" && travel[1].column == 0);
+        // A page without a heading list keeps its rows, order and columns.
+        const auto same = ComboRando::ArrangeOotRandomizerPage("Gameplay rules", logic, 9);
+        assert(same.size() == 9 && same[4].column == 0 && same[5].column == 1 && same[0].kind == CW_SEPARATOR_TEXT);
+        for (const auto& page : ComboRando::kRandomizerPageHeadings)
+            assert(ComboRando::RandomizerPageOrder(page.page) < 100);
+    }
+    using ComboRando::OotItemPoolGroup;
+    assert(OotItemPoolGroup("gRandoSettings.ItemPool") == 0 && OotItemPoolGroup("gRandoSettings.CompleteMaskQuest") == 0);
+    assert(OotItemPoolGroup("gRandoSettings.ShuffleBossSouls") == 2 && OotItemPoolGroup("gRandoSettings.SoulsEnemyOot") == 2);
+    assert(OotItemPoolGroup("gRandoSettings.ShuffleSwim") == 1 && OotItemPoolGroup("gRandoSettings.SkeletonKey") == 1);
     for (const char* key : {"gRandoSettings.BigPoeTargetCount", "gRandoSettings.SlingBowBeehives",
                            "gRandoSettings.SkipChildStealth", "gRandoSettings.EarlyGrannysShop",
                            "gRandoSettings.SkipPlantingBeans", "gRandoSettings.SkipEponaRace",

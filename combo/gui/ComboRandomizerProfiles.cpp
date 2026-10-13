@@ -5,6 +5,7 @@
 #include "ComboExport.h"
 #include "ComboWidgetStyle.h"
 #include "ComboMenuLayout.h"
+#include "ComboRandomizerLayout.h"
 #include "ComboTricks.h"
 #include "ComboTricksModel.h"
 #include "ComboRuleWarning.h"
@@ -428,8 +429,17 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
     }
     ImGui::PopID();
 }
-void DrawSidebar(const CwSidebar& side, const GameMenu& game, int world) {
-    const unsigned desired = std::min<unsigned>(2, side.columnCount ? side.columnCount : 1);
+void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
+    // OoT's rows take the page's fixed headings (ComboRandomizerLayout.h); MM's catalog cards already carry them.
+    const auto rows = world == 0 && page.sidebarName
+                          ? ArrangeOotRandomizerPage(page.sidebarName, page.widgets, page.widgetCount)
+                          : std::vector<CwWidget>(page.widgets, page.widgets + std::max(page.widgetCount, 0));
+    const CwSidebar side{ page.sidebarName, page.columnCount, rows.data(), int(rows.size()) };
+    // A body routed out of a wider sidebar may use one column only; then wide screens draw one column too.
+    const bool oneColumn = std::all_of(rows.begin(), rows.end(), [&](const CwWidget& w) {
+        return std::min(w.column, 1) == std::min(rows.front().column, 1);
+    });
+    const unsigned desired = oneColumn ? 1 : std::min<unsigned>(2, side.columnCount ? side.columnCount : 1);
     const unsigned columns = ImGui::GetContentRegionAvail().x < ImGui::GetFontSize() * 20 * desired ? 1 : desired;
     bool pouchesDrawn = false;
     const auto isPouch = [](const CwWidget& w) {

@@ -24,6 +24,7 @@ def function(signature):
 
 code = r'''
 #include "gui/ComboMenuNavigation.h"
+#include "gui/ComboRandomizerLayout.h"
 #include <nlohmann/json.hpp>
 #include <cassert>
 #include <cstring>

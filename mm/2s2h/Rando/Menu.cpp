@@ -743,8 +743,6 @@ static void DrawCheckPoolTab() {
                      .DefaultValue(true));
     CheckPoolCheckbox("Owl Statues", RO_SHUFFLE_OWL_STATUES, RCTYPE_OWL,
                       "Activating an owl statue is a check. Song of Soaring destinations are unaffected.");
-    CheckPoolCheckbox("Boss Remains", RO_SHUFFLE_BOSS_REMAINS, RCTYPE_REMAINS,
-                      "Defeating each temple boss rewards a shuffled item instead of that boss's remains.");
     CheckPoolCheckbox("Cows", RO_SHUFFLE_COWS, RCTYPE_COW, "Playing Epona's Song to a cow is a check.");
     UIWidgets::EndCard();
 
@@ -1192,6 +1190,11 @@ static void DrawItemPoolTab(int section = 0) {
     if (section == 0 || section == 2) {
         UIWidgets::BeginCard("itemPoolDungeonItems");
         ImGui::SeparatorText("Dungeon Items");
+        // ComboShip: dungeon rewards and maps sit with the other dungeon items, as OoT's (mirrors ProfileMmLayout.inc).
+        CheckPoolCheckbox("Boss Remains", RO_SHUFFLE_BOSS_REMAINS, RCTYPE_REMAINS,
+                          "Defeating each temple boss rewards a shuffled item instead of that boss's remains.");
+        CVarCheckbox("Maps and Compasses", Rando::StaticData::Options[RO_STARTING_MAPS_AND_COMPASSES].cvar,
+                     CheckboxOptions().Tooltip("Start with dungeon maps and compasses."));
         UIWidgets::CVarCombobox(
             "Small Keys", Rando::StaticData::Options[RO_PLACEMENT_SMALL_KEYS].cvar, &dungeonItemPlacementOptions,
             UIWidgets::ComboboxOptions().Tooltip(
@@ -1491,8 +1494,6 @@ static void DrawStartingItemsTab() {
                  CheckboxOptions().Tooltip("Start with a full wallet."));
     CVarCheckbox("Consumables Full", Rando::StaticData::Options[RO_STARTING_CONSUMABLES].cvar,
                  CheckboxOptions().Tooltip("Start with full Deku Sticks and Deku Nuts."));
-    CVarCheckbox("Maps and Compasses", Rando::StaticData::Options[RO_STARTING_MAPS_AND_COMPASSES].cvar,
-                 CheckboxOptions().Tooltip("Start with dungeon maps and compasses."));
     CVarSliderInt("Starting Hearts", Rando::StaticData::Options[RO_STARTING_HEALTH].cvar,
                   IntSliderOptions()
                       .Min(1)
