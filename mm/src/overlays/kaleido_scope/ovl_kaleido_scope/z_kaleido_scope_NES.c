@@ -682,12 +682,14 @@ s16 sCursorEnvColorTarget[][3] = {
 
 #ifdef COMBO_BUILD
 // MM's English release has no "SAVE" title section: its language textures (icon_item_jpn_static) title only the
-// Select Item, Map, Quest Status and Masks pages, and gPauseSave10JPNTex is the Japanese title. Use the blank title
-// section of the game over page, which asks the same "Would you like to save?" (sGameOverTexs).
+// Select Item, Map, Quest Status and Masks pages, and gPauseSave10JPNTex is the Japanese title. Use OoT's English
+// title section of the same page (same IA8 80x32 section in every OoT ROM), so the save prompt reads as OoT's does.
+static const ALIGN_ASSET(2) char sComboPauseSave10ENGTex[] =
+    "__OTR__@oot:textures/icon_item_nes_static/gPauseSave10ENGTex";
 static TexturePtr sSaveTexs[] = {
-    gPauseSave00Tex,     gPauseSave01Tex, gPauseSave02Tex, gPauseSave03Tex, gPauseSave04Tex,
-    gPauseGameOver10Tex, gPauseSave11Tex, gPauseSave12Tex, gPauseSave13Tex, gPauseSave14Tex,
-    gPauseSave20Tex,     gPauseSave21Tex, gPauseSave22Tex, gPauseSave23Tex, gPauseSave24Tex,
+    gPauseSave00Tex,         gPauseSave01Tex, gPauseSave02Tex, gPauseSave03Tex, gPauseSave04Tex,
+    sComboPauseSave10ENGTex, gPauseSave11Tex, gPauseSave12Tex, gPauseSave13Tex, gPauseSave14Tex,
+    gPauseSave20Tex,         gPauseSave21Tex, gPauseSave22Tex, gPauseSave23Tex, gPauseSave24Tex,
 };
 #else
 static TexturePtr sSaveTexs[] = {
