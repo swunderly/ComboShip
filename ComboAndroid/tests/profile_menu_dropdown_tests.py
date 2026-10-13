@@ -205,6 +205,39 @@ int main(){
  assert(ReadInteger(wind,-1)==0&&dirty);
  spellReady[1]=spellReady[2]=true;gearReady=true;
  std::cout << "Device readiness disables the Din's Fire and Nayru's Love (MM) rows and spares Farore's Wind (MM)\n";
+ // Search results: an MM option draws its catalog row, and a row its page hides (Trap Count while Traps is off) still
+ // names and shows its control, greyed out.
+ const char* trapCount="gRando.Options.RO_TRAP_AMOUNT";
+ catalog["mm"]["layout"]=Json::array({Json{{"page","Traps"},{"card","itemPoolTraps"},{"heading","Traps"},
+  {"label","Trap Count"},{"kind","slider"},{"tooltip",""},{"key",trapCount},{"minimum",0},{"maximum",50}}});
+ auto searchFrame=[&](const std::function<void()>& draw,const char* name,int expectDisabled){
+  ImGui::NewFrame();ImGui::SetNextWindowPos(ImVec2(0,0));ImGui::SetNextWindowSize(ImVec2(640,480));
+  ImGui::Begin("Search results");auto& context=*ImGui::GetCurrentContext();
+  ImGui::LogToBuffer();context.LastItemData.ItemFlags=0;draw();
+  const std::string rendered=context.LogBuffer.c_str();
+  if(expectDisabled<0)assert(rendered.find(name)==std::string::npos);
+  else{
+   assert(rendered.find(name)!=std::string::npos);
+   assert(bool(context.LastItemData.ItemFlags&ImGuiItemFlags_Disabled)==bool(expectDisabled));
+  }
+  ImGui::LogFinish();ImGui::End();ImGui::Render();
+ };
+ view=0;WriteInteger("gRando.Options.RO_SHUFFLE_TRAPS",0);
+ searchFrame([&]{CatalogRow(catalog["mm"]["layout"][0]);},"Trap Count",-1); // the page hides it
+ searchFrame([&]{assert(DrawCatalogSetting(trapCount));},"Trap Count",1);
+ WriteInteger("gRando.Options.RO_SHUFFLE_TRAPS",1);
+ searchFrame([&]{assert(DrawCatalogSetting(trapCount));},"Trap Count",0);
+ assert(!DrawCatalogSetting("gRando.Options.RO_NOT_A_ROW"));
+ // An OoT option these settings hide shows greyed out in a search result, and not at all on its page.
+ const char* hiddenKey="gRandoSettings.SearchHiddenTest";
+ catalog["oot"]["options"][hiddenKey]={{"id",100000},{"defaultHidden",true},
+  {"choices",Json::array({Json{{"label","Off"}},Json{{"label","On"}}})}};
+ RefreshOptionPolicy(true);assert(optionView->Find(hiddenKey)->hidden);
+ CwWidget hiddenRow{};hiddenRow.kind=CW_COMBOBOX;hiddenRow.name="Hidden Option";hiddenRow.cvar=hiddenKey;hiddenRow.index=7;
+ searchFrame([&]{DrawWidget(hiddenRow,game);},"Hidden Option",-1);
+ searchFrame([&]{DrawWidget(hiddenRow,game,true);},"Hidden Option",1);
+ catalog["oot"]["options"].erase(hiddenKey);RefreshOptionPolicy(true);
+ std::cout << "Search results name and show every Randomizer option, greying out the ones their page hides\n";
  ImGui::DestroyContext();std::cout << "PASS: production dropdown selection/refresh remains valid\n";
 }
 '''
@@ -218,3 +251,15 @@ exe = hostcxx.build(args.compiler, args.build_dir / 'profile_widget.cpp', warnin
                     msvc=['/Zc:preprocessor', '/utf-8', '/Zi', '/fsanitize=address'], gnu=['-g', '-fsanitize=address'],
                     link=['/INCREMENTAL:NO'] if hostcxx.msvc_style(args.compiler) else [])
 subprocess.run([str(exe)], cwd=args.build_dir, check=True, timeout=hostcxx.RUN_TIMEOUT)
+# Search result cards draw these rows: every setting shows its control (hidden ones greyed out), including the MM
+# Randomizer options, which come from the catalog rather than a native widget.
+results = menu_text[menu_text.index('void ComboMenu::DrawSearchResults('):]
+results = results[:results.index('\n}\n')]
+assert hostcxx.contains(results, 'ProfileUI::DrawWidget(*hit.widget, *hit.game, true)'), 'hidden OoT options drop out'
+assert hostcxx.contains(results, 'RenderWidget(*hit.widget, *hit.game, 90 / cols, true)'), 'hidden native rows drop out'
+assert hostcxx.contains(results, 'hits.back().catalogKey = row.value("key", std::string())'), 'MM options lost their key'
+assert hostcxx.contains(results, 'ProfileUI::DrawCatalogSetting(hit.catalogKey.c_str())'), 'MM options show no control'
+render = (args.source / 'combo/gui/ComboWidgetRender.cpp').read_text(encoding='utf-8')
+assert hostcxx.contains(render, 'if (state == 2 && !showHidden)') and \
+    hostcxx.contains(render, 'game.drawWidget && GameDrawsWidget(w) && state != 2'), \
+    'a hidden native row must take the greyed raw path when shown'

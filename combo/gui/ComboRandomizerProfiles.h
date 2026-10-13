@@ -21,7 +21,11 @@ bool DrawUnavailableSettings();
 int ReadInteger(const char*, int);
 void WriteInteger(const char*, int);
 void DrawSidebar(const CwSidebar&, const GameMenu&, int);
-void DrawWidget(const CwWidget&, const GameMenu&);
+// showHidden draws a row these settings hide greyed out instead of not at all (a search result still shows it).
+void DrawWidget(const CwWidget&, const GameMenu&, bool showHidden = false);
+// The MM catalog row of one option as its page draws it, for a search result; a row the page hides shows greyed out.
+// Returns false when no row has the key.
+bool DrawCatalogSetting(const char* key);
 void DrawCustom(const char*, int);
 void DrawGeneration();
 void DrawHome();

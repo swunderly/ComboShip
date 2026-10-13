@@ -17,8 +17,9 @@ struct GameMenu; // from ComboMenuModel.h
 
 // Render one widget. CVar/declarative kinds are delegated to the owning game's real UIWidgets when
 // its DrawWidget export is present (else drawn here with comboui's raw ImGui). widthBudget is the
-// WrappedText char budget for labels (typically 90/columns).
-void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget = 90);
+// WrappedText char budget for labels (typically 90/columns). showHidden draws a widget its menu hides
+// greyed out instead of not at all (a search result still names and shows its setting).
+void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget = 90, bool showHidden = false);
 
 // Draw a combo-owned row placed among native rows: a gameplay rule (index <= -1000) or a checkbox that
 // sets both games (index <= -2000). Returns false for any other widget. Defined in ComboMenu.cpp.

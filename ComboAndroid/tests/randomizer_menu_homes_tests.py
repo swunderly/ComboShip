@@ -110,7 +110,7 @@ check('"Seed settings (no logic effect)"' not in sidebar, 'DrawSidebar draws a s
 
 # ---- One row style: Randomizer rows of both worlds (MM's through CatalogRow) and the goal counts use the slider and
 # checkbox rows of the other tabs and the gameplay rule rows.
-widget = body(profiles, 'void DrawWidget(const CwWidget& w, const GameMenu& game)')
+widget = body(profiles, 'void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden)')
 check('ComboMenu_SliderRowInt(' in widget and 'ImGui::SliderInt(' not in widget,
       'Randomizer sliders do not use the one slider row')
 check('ComboMenu_CheckboxRow(' in widget and 'ImGui::Checkbox(' not in widget,

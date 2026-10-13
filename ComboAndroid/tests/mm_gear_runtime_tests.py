@@ -241,9 +241,9 @@ check('Combo_ResolveSym("2ship","MM_SpellOptionReady")' in unavailable and
 check('Combo_ResolveSym("2ship","MM_GearOptionsAllowed")' in unavailable and
       'if(gearAllowed&&gearAllowed(swimShuffled))returnnullptr;' in unavailable and
       all(f'name!="{o}"' in unavailable for o in GEAR), 'the MM gear rows do not follow Combo_MM_GearOptionsAllowed')
-catalog_row = body(read('combo/gui/ComboRandomizerProfiles.cpp'), 'static void CatalogRow(const Json& row)')
+catalog_row = body(read('combo/gui/ComboRandomizerProfiles.cpp'), 'static void CatalogRow(const Json& row')
 check('MmPoolOptionUnavailable(key.c_str()+kOptionPrefix.size(),get("RO_SHUFFLE_SWIM")==1)' in catalog_row and
-      'ImGui::BeginDisabled(disabled||unavailable);' in catalog_row,
+      'ImGui::BeginDisabled(disabled||unavailable||!visible);' in catalog_row,
       'the profile item-pool rows do not grey out where MM does not offer the option')
 check('returnCombo_MMSpellOptionReady(spell);' in body(read('mm/2s2h/Rando/Spells.cpp'),
       'extern "C" COMBO_EXPORT int MM_SpellOptionReady(int spell)'), 'MM_SpellOptionReady export')

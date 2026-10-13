@@ -516,6 +516,7 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
         int targetGame = -1;
         int targetSubpage = -1;
         std::string heading; // the heading a setting or rule sits under: <Tab> / <Page> / <Heading> - OoT|MM
+        std::string catalogKey; // an MM Randomizer option drawn from its catalog row (ProfileUI::DrawCatalogSetting)
     };
     std::vector<Hit> hits;
     auto addLink = [&](MenuSearchKind kind, const char* name, const char* keywords, const char* scope, const char* page,
@@ -577,9 +578,12 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
             if (name == "Iron Boots (MM)" || name == "Hover Boots (MM)" || name == "Goron Tunic (MM)" ||
                 name == "Zora Tunic (MM)")
                 keywords += " boots tunic gear equipment cross game items extension";
+            const size_t before = hits.size();
             addLink(MenuSearchKind::Setting, name.c_str(), keywords.c_str(), "randomizer",
                     MenuRoute(false, "Rando", page).page.c_str(), "MM", 0, 1, RandomizerWidgetGroup(false, page, 0, ""),
                     row.value("heading", std::string()).c_str());
+            if (hits.size() > before)
+                hits.back().catalogKey = row.value("key", std::string());
         }
     addLink(MenuSearchKind::Setting, "Cross-Games Farore's Wind",
             "farore fw spell warp travel between oot mm cross game world", "randomizer", "Logic & access",
@@ -796,14 +800,15 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                     continue;
                 ImGui::TableNextColumn();
                 ImGui::PushID(id++);
+                // Every setting shows its control, one its page hides greyed out, so a result always names it.
                 if (hit.widget) {
                     ImGui::PushID(hit.origin.c_str());
                     if (hit.scope == "randomizer")
-                        ProfileUI::DrawWidget(*hit.widget, *hit.game);
+                        ProfileUI::DrawWidget(*hit.widget, *hit.game, true);
                     else
-                        RenderWidget(*hit.widget, *hit.game, 90 / cols);
+                        RenderWidget(*hit.widget, *hit.game, 90 / cols, true);
                     ImGui::PopID();
-                } else
+                } else if (hit.catalogKey.empty() || !ProfileUI::DrawCatalogSetting(hit.catalogKey.c_str()))
                     ImGui::TextWrapped("%s", hit.label.c_str());
                 ImGui::PushTextWrapPos(0.0f);
                 if (hit.rule) {

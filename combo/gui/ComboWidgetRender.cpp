@@ -269,7 +269,7 @@ static void RefreshSharedReticlePeer(const CwWidget& w, const GameMenu& game) {
         oot.applyCVarChange(w.cvar);
 }
 
-void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
+void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget, bool showHidden) {
     // A gameplay rule or both-games checkbox placed inside its heading.
     if (w.index <= -1000 && DrawMenuPseudoRow(w, false))
         return;
@@ -282,7 +282,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
     // once per frame: 2 = hidden by the owning menu, 1 = disabled with `reason`.
     const char* reason = "";
     const int state = w.hasPreFunc && game.evalDisabled ? game.evalDisabled(w.index, &reason) : 0;
-    if (state == 2) {
+    if (state == 2 && !showHidden) {
         ImGui::PopID();
         return;
     } // hidden by the owning menu
@@ -299,7 +299,8 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
     // The game applies the change (its own callback + ShipInit) internally, so we must NOT re-invoke
     // those here — only the cross-game audio mirror stays comboui's concern. Falls through to the
     // raw path below when the export is absent (older DLL).
-    if (w.index >= 0 && game.drawWidget && GameDrawsWidget(w)) {
+    // The game's own draw would hide a hidden widget again, so a shown hidden one takes the raw path, greyed out.
+    if (w.index >= 0 && game.drawWidget && GameDrawsWidget(w) && state != 2) {
         // Enforce the widget's preFunc disable at the comboui level (wrap in BeginDisabled) — same as
         // the raw path below. The game's MenuDrawItem also applies it internally, but wrapping here is
         // what reliably makes a preFunc-gated control non-interactive (e.g. "Cull Glitch Useful

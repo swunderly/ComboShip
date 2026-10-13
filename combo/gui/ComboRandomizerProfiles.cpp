@@ -359,7 +359,7 @@ static const Json& InspectedSeed() {
     const auto seed = snapshot.find(view == 1 ? "savedSeed" : "generatedSeed");
     return seed != snapshot.end() ? *seed : none;
 }
-void DrawWidget(const CwWidget& w, const GameMenu& game) {
+void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden) {
     if (!active || !document.is_object()) {
         ImGui::TextDisabled("No settings for this file and view.");
         return;
@@ -367,7 +367,7 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
     // A selection refreshes optionView; retain the current choices until this widget finishes drawing.
     const auto policyView = optionView;
     const auto* policy = policyView && w.cvar ? policyView->Find(w.cvar) : nullptr;
-    if (policy && policy->hidden)
+    if (policy && policy->hidden && !showHidden)
         return;
     (void)game;
     ImGui::PushID(w.index);
@@ -378,7 +378,7 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
     std::string caption = label;
     if (const auto suffix = caption.find("##"); suffix != std::string::npos)
         caption.resize(suffix);
-    ImGui::BeginDisabled(!Editable() || (policy && policy->disabled));
+    ImGui::BeginDisabled(!Editable() || (policy && (policy->disabled || policy->hidden)));
     switch (w.kind) {
         case CW_SEPARATOR:
             ImGui::Separator();
@@ -582,7 +582,7 @@ void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
     }
     ImGui::EndTable();
 }
-static void CatalogRow(const Json& row) {
+static void CatalogRow(const Json& row, bool showHidden = false) {
     const auto key = row.at("key").get<std::string>(), label = row.at("label").get<std::string>(),
                kind = row.at("kind").get<std::string>();
     CwWidget widget{};
@@ -641,10 +641,10 @@ static void CatalogRow(const Json& row) {
     if (get("RO_LOGIC") == 3)
         for (const auto& value : catalog.at("mm").at("disabledInVanilla"))
             disabled |= value == key;
-    if (!visible)
+    if (!visible && !showHidden)
         return;
     ImGui::PushID(key.c_str());
-    ImGui::BeginDisabled(disabled || unavailable);
+    ImGui::BeginDisabled(disabled || unavailable || !visible);
     if (unavailable) {
         bool off = false;
         ComboMenu_CheckboxRow(label.c_str(), &off);
@@ -654,6 +654,17 @@ static void CatalogRow(const Json& row) {
     }
     ImGui::EndDisabled();
     ImGui::PopID();
+}
+bool DrawCatalogSetting(const char* key) {
+    const auto mm = catalog.is_object() ? catalog.find("mm") : catalog.end();
+    if (!key || mm == catalog.end() || !mm->is_object() || !mm->contains("layout"))
+        return false;
+    for (const auto& row : mm->at("layout"))
+        if (row.value("key", std::string()) == key) {
+            CatalogRow(row, true);
+            return true;
+        }
+    return false;
 }
 static void CheckList(int world) {
     const char* game = world == 0 ? "oot" : "mm";
