@@ -5,7 +5,7 @@ local-roms/test-output/**/ folder holding oot.o2r beside the checkout); reports 
 read, never copied: the lists go to this test's build directory.
 
 Runs combo/menu/ComboFairyOcarinaRecolour.h on OoT's gLinkAdultRightHandHoldingOotNear/FarDL as
-ComboFairyOcarinaHand.h does on the device, once as extracted and once with the addresses libultraship writes into the
+ComboFairyOcarinaRecolourHands.h does on the device in both games, once as extracted and once with the addresses libultraship writes into the
 first slots after a draw, and checks that exactly one slot changes: the hash of gOcarinaofTimeDesignTex becomes that
 of gLinkChildFairyOcarinaTex; and that its device check (SameLoad) passes against OoT's child hand holding the Fairy
 Ocarina (gLinkChildRightHandHoldingFairyOcarinaNear/FarDL), as extracted and after a draw. Then checks the facts the
@@ -109,7 +109,7 @@ def commands(name):
     return out
 
 
-hand_src = (root / 'combo/menu/ComboFairyOcarinaHand.h').read_text(encoding='utf-8')
+hand_src = (root / 'combo/menu/ComboFairyOcarinaRecolourHands.h').read_text(encoding='utf-8')
 ADULT, CHILD = 'objects/object_link_boy/', 'objects/object_link_child/'
 LISTS = {
     'near': (ADULT + 'gLinkAdultRightHandHoldingOotNearDL', CHILD + 'gLinkChildRightHandHoldingFairyOcarinaNearDL'),

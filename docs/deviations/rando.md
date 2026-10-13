@@ -2227,7 +2227,8 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
   keeps both. The owner first approved two adult-only fixes that use only native data, A1 and B3. After seeing A1's side
   view he revised the ruling: MM's own camera stays, and the Fairy Ocarina is drawn as OoT's adult hand holding the
   Ocarina of Time, coloured like the Fairy Ocarina. Each fix departs from OoTMM and has its own release switch in
-  BenPort.cpp. Child Link, the other forms, Kafei and the OoT side never take them.
+  BenPort.cpp. Child Link, the other forms and Kafei never take them; on the OoT side adult Link takes only the
+  recoloured Fairy Ocarina, with its own switch (below).
   - **Camera (A1, `kAdultOcarinaFdCamera`).** `Camera_KeepOn4` gives adult human Link ITEM1's Fierce Deity row
     (`CAM_MODE_JUMP`, `D_801B5410`). The row is MM data that vanilla MM never uses for the Fierce Deity playing (he
     may not use the Ocarina of Time, `z_parameter.c:69`). `Camera_KeepOn4` scales it by Link's height, so at adult
@@ -2256,14 +2257,32 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
     combiner, render mode and prim colour, and both textures are RGBA16 32x16, so only that texture's path hash changes
     (`combo/menu/ComboFairyOcarinaRecolour.h`, `tooling/claude-cleanup/t10`). The instrument keeps the Ocarina of
     Time's shape and takes the Fairy Ocarina's colour, painted holes and streak. The copies are built once per OoT
-    resource manager and dropped at teardown. OoT's own lists are never changed, so the OoT side and the Ocarina of
-    Time in MM keep OoT's blue. Each copy must load and tile the Fairy Ocarina's texture with the commands OoT's child
-    hand loads it with (checked against `gLinkChildRightHandHoldingFairyOcarinaNear/FarDL` when the copies are built),
-    so a texture pack's replacement of either texture (Alternate Assets or a mod) is drawn as OoT's child hand draws
-    it: the renderer sizes the replacement from its own metadata. Where the copies cannot be built (a custom adult
+    resource manager (`combo/menu/ComboFairyOcarinaRecolourHands.h`, shared with the OoT side below) and dropped at
+    teardown. OoT's own lists are never changed, so the Ocarina of Time keeps OoT's blue in both games. Each copy must
+    load and tile the Fairy Ocarina's texture with the commands OoT's child hand loads it with (checked against
+    `gLinkChildRightHandHoldingFairyOcarinaNear/FarDL` when the copies are built), so a texture pack's replacement of
+    either texture (Alternate Assets or a mod) is drawn as OoT's child hand draws it: the renderer sizes the
+    replacement from its own metadata. Where the copies cannot be built (a custom adult
     list, a missing Fairy Ocarina texture or child list, a list without exactly one instrument texture, or a different
     load), the composite is drawn as before. This departs from OoTMM. Switch on (owner's revised ruling 2026-10-12).
     Not yet checked on the emulator or a phone.
+  - **The same Fairy Ocarina in OoT (`kAdultFairyRecolouredOot` in soh `OTRGlobals.cpp`; owner ruling 2026-10-12: OoT
+    and MM must look the same).** OoT draws adult Link holding the blue Ocarina of Time with either ocarina (the adult
+    entries of `sPlayerRightHandOcarinaDLs` are `gLinkAdultRightHandHoldingOotNear/FarDL`, `z_player_lib.c`), and
+    OoTMM's OoT side keeps that. Adult Link holding the Fairy Ocarina in OoT now draws the same recoloured copy as in
+    MM, built by the same code (`ComboFairyOcarinaRecolourHands.h`) from OoT's own resource manager, once per manager,
+    and dropped at teardown; each game keeps its own copies. The hook (`Combo_OotFairyOcarinaHand`) runs in the right
+    hand limb of `Player_OverrideLimbDrawGameplayDefault`, after OoT loads its list, for those adult entries only, so
+    it follows OoT's own choice of ocarina: an ocarina on a C button gives that item's action (`sItemActions`), and
+    cutscene and forced ocarina actions, such as learning a song, take the ocarina in the ocarina slot
+    (`func_8084B498`), which holds the Fairy Ocarina until the Ocarina of Time replaces it, the randomizer's
+    progressive ocarina included. Child Link, adult Link with the Ocarina of Time, the pause screen and other actors
+    draw as before, and a mod's custom equipment hand (`customequipment.cpp`, which runs after the hook) still
+    replaces it. The copy replaces only the very list it was made from: where OoT serves another list for that hand
+    (a texture pack's, through Alternate Assets) or the copies cannot be built (as in MM), OoT's own blue hand is
+    drawn. Nothing is saved, so saves are unaffected. This departs from OoT and OoTMM. Switch off; it is turned on in
+    its own commit. `oot_adult_fairy_recolour_tests.py` checks the whole selection, from the ocarina to the list
+    drawn, and the fallbacks.
   - B1 (`kAdultFairyNativeHand`: OoT's `gLinkAdultRightHandHoldingOotNear/FarDL`, as OoT draws for adult Link with
     either ocarina, soh `z_player_lib.c:346-351`) stays off. B1, B3 and the recoloured hand are alternatives, and a
     static_assert keeps any two of them from being released together.

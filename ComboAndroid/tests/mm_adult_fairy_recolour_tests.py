@@ -7,9 +7,10 @@ Synthetic lists and textures only (no ROM-derived data). Checks:
   after its end or ends inside a 128-bit command. The commands it treats as 128-bit are the ones libultraship's
   DisplayListFactory.cpp expands, with gbi.h's opcodes. Two lists load a texture alike only with the same
   G_SETTIMG_OTR_HASH first word and the same 64-bit commands through G_SETTILESIZE, whatever image address a draw left.
-- the runtime in combo/menu/ComboFairyOcarinaHand.h (Combo_FairyRecolouredHandPath and its state), with stand-in
-  engine types: the copies are built once per OoT resource manager from OoT's adult lists, cached under the routed
-  paths' names (reinserted on every call), drawn through even (2-byte aligned) routed paths, and dropped at teardown;
+- the runtime in combo/menu/ComboFairyOcarinaHand.h (Combo_FairyRecolouredHandPath and its state) with the builder it
+  shares with OoT (combo/menu/ComboFairyOcarinaRecolourHands.h), with stand-in engine types: the copies are built once
+  per OoT resource manager from OoT's adult lists, cached under the routed paths' names (reinserted on every call),
+  drawn through even (2-byte aligned) routed paths, and dropped at teardown;
   OoT's cached lists are never changed. They are built whatever texture OoT serves (a texture pack's HD replacement of
   either texture, at any scale, or a missing Ocarina of Time texture), since each copy loads the Fairy Ocarina's
   texture with the commands OoT's child hand loads it with. A custom, dirty, missing or mistyped adult list, an adult
@@ -259,9 +260,13 @@ hand = (root / 'combo/menu/ComboFairyOcarinaHand.h').read_text(encoding='utf-8')
 statics_at = hand.index('static std::shared_ptr<Ship::IResource> sFairyInstrumentSource;')
 listen_at = hand.index('static void Combo_ListenFairyInstrumentTeardown() {')
 statics = hand[statics_at:listen_at + len(block(hand, listen_at))]
-texture_line = re.search(r'static const char kFairyPlacementInstrumentTexture\[\] = "[^"]*";', hand)
-check(texture_line is not None, 'the Ocarina of Time texture name is not in ComboFairyOcarinaHand.h')
-recolour_at = hand.index('static const char* const kFairyRecolouredLists[2] = {')
+# The builder both games share (ComboFairyOcarinaRecolourHands.h), from its names through its build function.
+shared = (root / 'combo/menu/ComboFairyOcarinaRecolourHands.h').read_text(encoding='utf-8')
+names_at = shared.index('static const char* const kFairyRecolouredLists[2] = {')
+build_at = shared.index('static const char* Combo_BuildFairyRecolouredHands(')
+builder = shared[names_at:build_at + len(block(shared, build_at))]
+check('#include "ComboFairyOcarinaRecolourHands.h"' in hand, 'ComboFairyOcarinaHand.h does not use the shared builder')
+recolour_at = hand.index('alignas(2) static const char kFairyRecolouredNear[] = ')
 state_at = hand.index('extern "C" int Combo_MM_FairyRecolourState(void) {')
 recolour = hand[recolour_at:state_at + len(block(hand, state_at))]
 check(len(re.findall(r'alignas\(2\) static const char kFairyRecoloured\w+\[\] = "__OTR__@oot:', recolour)) == 2,
@@ -349,7 +354,7 @@ static int sWarnings = 0;
 #define SPDLOG_WARN(...) (++sWarnings)
 
 @STATICS@
-@TEXTURE@
+@BUILDER@
 @RECOLOUR@
 
 static uint8_t sImage[1024];
@@ -598,7 +603,7 @@ if failures:
     sys.exit(1)
 for name, code in (('fairy_recolour_pure', PURE),
                    ('fairy_recolour_runtime', RUNTIME.replace('@STATICS@', statics)
-                    .replace('@TEXTURE@', texture_line.group(0)).replace('@RECOLOUR@', recolour))):
+                    .replace('@BUILDER@', builder).replace('@RECOLOUR@', recolour))):
     source = work / f'{name}.cpp'
     source.write_text(code, encoding='utf-8')
     exe = hostcxx.build(a.compiler, source, std='c++17', includes=[root / 'combo/menu'], warnings=name.endswith('pure'),

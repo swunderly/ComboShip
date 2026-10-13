@@ -1405,6 +1405,15 @@ s32 Player_OverrideLimbDrawGameplayDefault(PlayState* play, s32 limbIndex, Gfx**
             }
 
             *dList = ResourceMgr_LoadGfxByName(dLists[sDListsLodOffset]);
+#ifdef COMBO_BUILD
+            // Adult Link holding the Fairy Ocarina (the adult entries of sPlayerRightHandOcarinaDLs: his hand holding
+            // the Ocarina of Time) may draw that hand coloured like the Fairy Ocarina, as in MM, or else OoT's own
+            // list: see Combo_OotFairyOcarinaHand and its release switch in OTRGlobals.cpp.
+            if (dLists == &sPlayerRightHandOcarinaDLs[0]) {
+                extern Gfx* Combo_OotFairyOcarinaHand(Gfx*, s32);
+                *dList = Combo_OotFairyOcarinaHand(*dList, sDListsLodOffset / 2);
+            }
+#endif
         } else if (limbIndex == PLAYER_LIMB_SHEATH) {
             Gfx** dLists = this->sheathDLists;
 

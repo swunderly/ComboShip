@@ -6563,3 +6563,53 @@ extern "C" COMBO_EXPORT void SOH_SetOracleSongAgeArrivals(uint32_t adult, uint32
     ComboRando::OotSongAgeArrivals() = { true, { adult & 63, child & 63 } };
 }
 #endif
+
+#ifdef COMBO_BUILD
+#include "ComboFairyOcarinaRecolourHands.h"
+// Adult Link holding the Fairy Ocarina (owner ruling 2026-10-12: OoT and MM look the same). OoT draws its adult hand
+// holding the Ocarina of Time for either ocarina (z_player_lib.c, sPlayerRightHandOcarinaDLs). With this switch the
+// hand holding the Fairy Ocarina is drawn from a private copy coloured like the Fairy Ocarina, the one MM draws for
+// adult Link (kAdultFairyRecolouredOot, BenPort.cpp), built from OoT's own manager with the same checks
+// (ComboFairyOcarinaRecolourHands.h). Child Link, the Ocarina of Time and every other list are unchanged. Where the
+// copies cannot be built, or OoT serves another list for that hand (a texture pack's), OoT's own list is drawn, blue as
+// before. Release switch, set in its own commit.
+static constexpr bool kAdultFairyRecolouredOot = false;
+// The copies (near, far) for the current OoT manager with the OoT lists they copy, or the manager they could not be
+// built for (once each).
+static std::array<std::shared_ptr<Fast::DisplayList>, 2> sFairyRecolouredSources, sFairyRecolouredCopies;
+static std::weak_ptr<Ship::ResourceManager> sFairyRecolouredOwner, sFairyRecolouredFailed;
+static bool sFairyRecolouredListener;
+static void Combo_OotDropFairyRecolouredHands() {
+    sFairyRecolouredCopies = {};
+    sFairyRecolouredSources = {};
+    sFairyRecolouredOwner.reset();
+    sFairyRecolouredFailed.reset();
+}
+// The list adult Link's right hand holding the Fairy Ocarina draws at `lod` (0 near, 1 far), where OoT draws
+// `nativeHand` (z_player_lib.c, Player_OverrideLimbDrawGameplayDefault).
+extern "C" Gfx* Combo_OotFairyOcarinaHand(Gfx* nativeHand, s32 lod) {
+    if (!kAdultFairyRecolouredOot || !nativeHand || lod < 0 || lod > 1)
+        return nativeHand;
+    auto rm = Ship::CrossRMRegistry::Get("oot");
+    if (!rm || sFairyRecolouredFailed.lock() == rm)
+        return nativeHand;
+    if (sFairyRecolouredOwner.lock() != rm) {
+        if (!sFairyRecolouredListener) {
+            Ship::CrossRMRegistry::RegisterTeardownListener(Combo_OotDropFairyRecolouredHands);
+            sFairyRecolouredListener = true;
+        }
+        if (const char* reason =
+                Combo_BuildFairyRecolouredHands(*rm, sFairyRecolouredSources, sFairyRecolouredCopies)) {
+            SPDLOG_WARN("[ComboShip AdultFairy] no recoloured hand in OoT ({}); adult Link keeps OoT's own hand",
+                        reason);
+            sFairyRecolouredFailed = rm;
+            return nativeHand;
+        }
+        sFairyRecolouredOwner = rm;
+    }
+    // Only in place of the very list the copy was made from: another list OoT serves for this hand is drawn as served.
+    return nativeHand == sFairyRecolouredSources[lod]->Instructions.data()
+               ? sFairyRecolouredCopies[lod]->Instructions.data()
+               : nativeHand;
+}
+#endif
