@@ -191,7 +191,14 @@ public final class TouchOverlayInstrumentation extends Instrumentation {
         Point row=p(1,W*.7f,H*.2f);
         check(!event(MotionEvent.ACTION_DOWN,0,row) && neutral(),"Tracker rows bypass invisible stick zones");
         Point a=p(2,W*.94f,H*.81f);
-        check(!event(MotionEvent.ACTION_DOWN,0,a) && neutral(),"Tracker content takes priority over covered game buttons");
+        check(event(MotionEvent.ACTION_DOWN,0,a) && (pad.buttons&1)!=0,"Buttons over the tracker keep working");
+        event(MotionEvent.ACTION_UP,0,a);
+        check(neutral(),"Releasing a button over the tracker releases it");
+        int[] covered=pixels();
+        check((covered[(int)(H*.81f)*W+(int)(W*.94f)]>>>24)!=0,"Buttons over the tracker are still drawn");
+        Point cLeft=p(4,W*.835f,H*.39f);
+        check(event(MotionEvent.ACTION_DOWN,0,cLeft) && pad.rx<-.99f,"C buttons over the tracker can assign items");
+        event(MotionEvent.ACTION_UP,0,cLeft);
         Point menu=p(2,W*.5f,H*.1f);int taps=menuTaps;
         event(MotionEvent.ACTION_DOWN,0,menu);event(MotionEvent.ACTION_UP,0,menu);
         check(menuTaps==taps+1 && neutral(),"Menu remains usable even over the tracker");
@@ -201,7 +208,9 @@ public final class TouchOverlayInstrumentation extends Instrumentation {
         check(pad.lx>.9f,"Uncovered stick still sends movement");
         event(MotionEvent.ACTION_UP,0,left);
         view.setStickMode(TouchOverlay.STICKS_FIXED);
-        check(!event(MotionEvent.ACTION_DOWN,0,a),"Fixed controls also yield covered buttons to tracker");
+        check(event(MotionEvent.ACTION_DOWN,0,a) && (pad.buttons&1)!=0,"Fixed controls also keep buttons over the tracker");
+        event(MotionEvent.ACTION_UP,0,a);
+        check(!event(MotionEvent.ACTION_DOWN,0,row) && neutral(),"Fixed controls leave the rest of the tracker to it");
         view.editLayout();
         check(event(MotionEvent.ACTION_DOWN,0,a) && neutral(),"Layout editor can still move buttons over tracker");
         event(MotionEvent.ACTION_UP,0,a);

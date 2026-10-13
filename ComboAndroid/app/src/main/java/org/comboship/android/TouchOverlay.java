@@ -94,8 +94,8 @@ public final class TouchOverlay extends View {
     @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){super.onSizeChanged(w,h,oldw,oldh);build();}
     @Override protected void onDraw(Canvas canvas){
         super.onDraw(canvas);
+        // Drawn controls stay on top of an open tracker, as they do over every other window on the game.
         for(Control c:controls){
-            if(!editing && !isUtility(c) && output.capturesTouch(c.x,c.y))continue;
             if(c.id==MENU && menuHidden && !editing)continue;
             if(!editing && c.id!=MENU && (suppressed || (!showPad && !isUtility(c))))continue;
             if(isStick(c) && stickMode==STICKS_INVISIBLE && !editing)continue;
@@ -118,9 +118,10 @@ public final class TouchOverlay extends View {
             canvas.drawText("Drag any button, including Done. Tap Done to save.",getWidth()*.5f,getHeight()*.22f,paint);}
     }
     private Control hit(float x,float y){
+        // A tracker under the finger takes only the invisible stick areas: every drawn button keeps working over it
+        // (C buttons assign items on the pause screen); elsewhere the tracker gets the touch.
         boolean tracker=!editing && output.capturesTouch(x/getWidth(),y/getHeight());
         for(int i=controls.size()-1;i>=0;i--){Control c=controls.get(i);
-            if(tracker && !isUtility(c))continue;
             if(c.id==MENU && menuHidden && !editing)continue;
             if(!editing && c.id!=MENU && (suppressed || (!showPad && !isUtility(c))))continue;
             if(isStick(c) && stickMode==STICKS_INVISIBLE && !editing)continue;
