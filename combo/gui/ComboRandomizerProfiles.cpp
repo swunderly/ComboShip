@@ -518,36 +518,17 @@ void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
         constexpr char prefix[] = "gRandoSettings.SilverPouch";
         return w.cvar && std::strncmp(w.cvar, prefix, sizeof(prefix) - 1) == 0;
     };
-    // Seed options no logic reads follow the page's rows under their own heading. Skip Child Stealth has a live twin
-    // in Enhancements, so its seed row shows only while the viewed settings have it on: decided here, because routing
-    // never depends on values.
-    const auto seedOnly = [](const CwWidget& w) {
-        return w.cvar && (!std::strcmp(w.cvar, "gRandoSettings.SwordlessEponaItems") ||
-                          !std::strcmp(w.cvar, "gRandoSettings.SkipChildStealth"));
-    };
-    const auto drawSeedOnly = [&]() {
-        bool headed = false;
-        for (int i = 0; i < side.widgetCount; ++i) {
-            const auto& widget = side.widgets[i];
-            if (!seedOnly(widget) ||
-                (!std::strcmp(widget.cvar, "gRandoSettings.SkipChildStealth") && !ReadInteger(widget.cvar, 0)))
-                continue;
-            if (!headed) {
-                CwWidget heading{};
-                heading.index = -1;
-                heading.kind = CW_SEPARATOR_TEXT;
-                heading.name = "Seed settings (no logic effect)";
-                DrawWidget(heading, game);
-                headed = true;
-            }
-            DrawWidget(widget, game);
-        }
+    // Seed options no logic reads sit under the seed-settings heading of Gameplay rules (ComboMenuPlacement.h).
+    // Skip Child Stealth has a live twin in Enhancements, so its seed row shows only while the viewed settings have it
+    // on: decided here, because routing never depends on values.
+    const auto hiddenSeedRow = [](const CwWidget& w) {
+        return w.cvar && !std::strcmp(w.cvar, "gRandoSettings.SkipChildStealth") && !ReadInteger(w.cvar, 0);
     };
     auto draw = [&](int index) {
         const auto& widget = side.widgets[index];
         if (widget.index <= -1000 && DrawMenuPseudoRow(widget, true))
             return; // a gameplay rule row inside its heading
-        if (seedOnly(widget))
+        if (hiddenSeedRow(widget))
             return;
         if (world == 0 && isPouch(widget)) {
             if (pouchesDrawn)
@@ -578,7 +559,6 @@ void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
     if (columns == 1) {
         for (int i = 0; i < side.widgetCount; ++i)
             draw(i);
-        drawSeedOnly();
         return;
     }
     if (!ImGui::BeginTable("##NativeOptions", columns,
@@ -596,7 +576,6 @@ void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
         ImGui::PopID();
     }
     ImGui::EndTable();
-    drawSeedOnly();
 }
 static void CatalogRow(const Json& row) {
     const auto key = row.at("key").get<std::string>(), label = row.at("label").get<std::string>(),

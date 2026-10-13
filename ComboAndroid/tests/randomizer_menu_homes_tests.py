@@ -99,9 +99,14 @@ check('No logic effect. Fixed when the seed is made.' in by_option['RO_PURCHASE_
       'Repeatable Rupee Purchases lost its marker')
 check(by_option['RO_PURCHASE_INFINITE_RUPEES']['heading'] == 'Shops & merchants',
       'Repeatable Rupee Purchases is not with the shops')
+placement = read('combo/gui/ComboMenuPlacement.h')
+for cvar in ('gRandoSettings.SwordlessEponaItems', 'gRandoSettings.SkipChildStealth'):
+    check(f'"{cvar}", "randomizer", "Gameplay rules", "Seed settings (no logic effect)"' in placement,
+          f'{cvar} left the Gameplay rules heading "Seed settings (no logic effect)"')
 sidebar = body(profiles, 'void DrawSidebar(')
-check('"Seed settings (no logic effect)"' in sidebar and 'gRandoSettings.SkipChildStealth' in sidebar,
-      'DrawSidebar no longer decides the seed-only rows at draw time')
+check('gRandoSettings.SkipChildStealth' in sidebar and 'ReadInteger' in sidebar,
+      'DrawSidebar no longer hides Skip Child Stealth while it is off')
+check('"Seed settings (no logic effect)"' not in sidebar, 'DrawSidebar draws a second seed-settings heading')
 
 # ---- Combined goal controls still write their keys.
 goals = body(menu, 'void DrawCombinedGoals()')
