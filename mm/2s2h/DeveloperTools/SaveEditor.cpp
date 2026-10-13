@@ -1,6 +1,9 @@
 #include "SaveEditor.h"
 #include "OwlStatueEditor.h"
 #include "gui/ComboTouchSlider.h"
+#ifdef COMBO_BUILD
+#include "gui/ComboSaveEditorKit.h"
+#endif
 #include <fast/Fast3dGui.h>
 #include "2s2h/BenGui/UIWidgets.hpp"
 #include "2s2h/GameInteractor/GameInteractor.h"
@@ -63,7 +66,18 @@ void EnTest4_GetBellTimeAndShrinkScreenBeforeDay3(EnTest4* thisx, PlayState* pla
 }
 
 bool safeMode = true;
-#if defined(__ANDROID__)
+#ifdef COMBO_BUILD
+// ComboShip: the sizes both Save Editors share (ComboSaveEditorKit): these values on Android, the desktop ones below
+// elsewhere.
+constexpr float INV_GRID_WIDTH = ComboSaveEditorKit::kGridWidth;
+constexpr float INV_GRID_HEIGHT = ComboSaveEditorKit::kGridHeight;
+constexpr float INV_GRID_ICON_SIZE = ComboSaveEditorKit::kIconSize;
+constexpr float INV_GRID_PADDING = ComboSaveEditorKit::kGridPadding;
+constexpr float INV_GRID_TOP_MARGIN = ComboSaveEditorKit::kGridTopMargin;
+constexpr float INV_GRID_AMMO_WIDTH = ComboSaveEditorKit::kAmmoWidth;
+constexpr float INV_GRID_AMMO_PADDING = ComboSaveEditorKit::kAmmoPadding;
+constexpr int INV_PICKER_COLUMNS = ComboSaveEditorKit::kPickerColumns;
+#elif defined(__ANDROID__)
 // Large touch targets for the Save Editor on phones/tablets.
 // Row height deliberately reserves space BELOW an ammo-bearing icon so the
 // numeric input can never overlap the icon in the following row.
@@ -3038,7 +3052,7 @@ void DrawRandoTab() {
 #ifdef COMBO_BUILD
 void SaveEditorWindow::DrawElement() {
     if (gSaveContext.fileNum >= 3 || !IS_RANDO) {
-        ImGui::TextWrapped("MM save is not loaded. Reload your profile before editing.");
+        ImGui::TextWrapped("%s", ComboSaveEditorKit::kNoMmFile);
         return;
     }
     UIWidgets::PushStyleTabs(UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5)));
@@ -3077,13 +3091,17 @@ void SaveEditorWindow::DrawElement() {
 
         if (IS_RANDO) {
             if (ImGui::BeginTabItem("Randomizer")) {
+                ComboSaveEditorKit::BeginPanel("randoTab");
                 DrawRandoTab();
+                ComboSaveEditorKit::EndPanel();
                 ImGui::EndTabItem();
             }
         }
 
         if (ImGui::BeginTabItem("Reg Editor")) {
+            ComboSaveEditorKit::BeginPanel("regTab");
             DrawRegEditorTab();
+            ComboSaveEditorKit::EndPanel();
             ImGui::EndTabItem();
         }
 

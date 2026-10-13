@@ -477,3 +477,5 @@ take upstream changes into the `#else` branch and port them to the combo branch 
 - `DrawElement`: "Items & Masks" is "Inventory", "Rando" is "Randomizer", and the developer Reg Editor moves last.
 - Wording: "DD" is "Double Defense", "Bombers Code" is "Bombers' Code" (`DrawGeneralTab`), "Eponas Song" is
   "Epona's Song" (`SongInfo`).
+- Frame: the `INV_GRID_*` sizes come from the kit (the same values as before), the Randomizer and Reg Editor tabs
+  draw in the same bordered panel as the others, and the no-file line reads "Load a Majora's Mask file to edit it."
