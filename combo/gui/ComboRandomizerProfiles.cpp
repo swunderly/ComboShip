@@ -13,6 +13,7 @@
 #include "rando/GameplayRules.h"
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/GenerationRules.h"
+#include "rando/OotMaskQuest.h"
 #include <libultraship/libultraship.h>
 #include <fast/Fast3dGui.h>
 #include <imgui.h>
@@ -414,6 +415,9 @@ void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden) {
         }
         case CW_COMBOBOX: {
             int value = ReadInteger(key, w.iDefault);
+            // Mask Quest's Vanilla, still stored by older files, has no choice: show the mode it plays as.
+            if (!std::strcmp(key, "gRandoSettings.CompleteMaskQuest"))
+                value = OotMaskQuestShownMode(value, view == 0);
             std::vector<CwChoice> choices;
             for (int i = 0; policy && i < int(policy->choices.size()); ++i)
                 choices.push_back({ policy->choices[i].c_str(), policy->choiceValues[i] });

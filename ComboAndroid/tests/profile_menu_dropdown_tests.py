@@ -115,6 +115,22 @@ int main(){
   assert(ReadInteger(mask,-1)==stored);
   std::cout << "Selected Mask Quest value " << stored << "\n";
  }
+ // Older files store Vanilla (0), which has no choice: the next seed shows Shuffle (what generation makes of it), a
+ // seed made with it shows Completed (it starts with the masks), and the stored value is kept.
+ for(int seedView : {0,1,2}){
+  document["oot"]["settings"][mask]=0;view=seedView;dirty=false;
+  ImGui::NewFrame();ImGui::SetNextWindowPos(ImVec2(0,0));ImGui::SetNextWindowSize(ImVec2(640,480));
+  ImGui::Begin("Profile menu");ImGui::LogToBuffer();DrawWidget(widget,game);
+  const std::string rendered=ImGui::GetCurrentContext()->LogBuffer.c_str();
+  ImGui::LogFinish();ImGui::End();ImGui::Render();
+  assert(rendered.find("Unknown saved value")==std::string::npos);
+  assert(rendered.find(seedView==0?"Shuffle":"Completed")!=std::string::npos);
+  assert(ReadInteger(mask,-1)==0&&!dirty);
+ }
+ view=0;
+ static_assert(OotMaskQuestShownMode(0,true)==2&&OotMaskQuestShownMode(0,false)==1);
+ static_assert(OotMaskQuestShownMode(1,true)==1&&OotMaskQuestShownMode(2,false)==2);
+ std::cout << "Mask Quest's stored Vanilla reads as the mode it plays as and stays stored\n";
  // Settings of a pre-0.3.9 seed have no rule block: edits must produce a block the readers accept,
  // keep values already written into a partial block, and mirror the native OoT logic option.
  const char* bfa="gRandoSettings.BlueFireArrows";

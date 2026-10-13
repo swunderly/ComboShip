@@ -14,4 +14,10 @@ constexpr bool OotMaskQuestHasStartingMasks(int mode) {
     return mode == 0 || mode == 1;
 }
 
+// The mode the Randomizer menu shows for a stored one; the stored value is kept. Vanilla is no longer offered: the
+// next seed generates it as Shuffle, and a seed already made with it starts with the masks, as Completed does.
+constexpr int OotMaskQuestShownMode(int mode, bool nextSeed) {
+    return mode != 0 ? mode : nextSeed ? NormalizeOotMaskQuestForGeneration(mode) : 1;
+}
+
 } // namespace ComboRando
