@@ -183,11 +183,24 @@ static bool DelegatesToGame(CwKind k) {
     }
 }
 
-// CVar widgets that only work drawn by their own game. Empty until a phone check shows one: add the CVar
-// with the reason.
+// A checkbox or slider without a CVar edits a variable only its game can reach through a value pointer
+// (MM's motion blur On/Off and dynamic Strength, both games' Frame Advance), so only the game can draw it.
+static bool HoldsValuePointer(const CwWidget& w) {
+    return (w.kind == CW_CHECKBOX || w.kind == CW_SLIDER_INT || w.kind == CW_SLIDER_FLOAT) && (!w.cvar || !*w.cvar);
+}
+
+// Value-pointer controls, and CVar widgets that only work drawn by their own game. The CVar list is empty
+// until a phone check shows one: add the CVar with the reason.
 static bool DrawnByGame(const CwWidget& w) {
     static const std::unordered_set<std::string> cvars = {};
-    return w.cvar && cvars.count(w.cvar) != 0;
+    return HoldsValuePointer(w) || (w.cvar && cvars.count(w.cvar) != 0);
+}
+
+// Whether the owning game's draw export draws this widget; comboui draws the rest. A combobox with choices
+// and a CVar stays here: it is a shared choice list.
+static bool GameDrawsWidget(const CwWidget& w) {
+    const bool sharedCombo = w.kind == CW_COMBOBOX && w.cvar && *w.cvar && w.choiceCount > 0;
+    return (DelegatesToGame(w.kind) || DrawnByGame(w)) && !sharedCombo;
 }
 
 // A slider's value readout: the label table's (the stored value as is), else the game's own format
@@ -286,8 +299,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
     // The game applies the change (its own callback + ShipInit) internally, so we must NOT re-invoke
     // those here — only the cross-game audio mirror stays comboui's concern. Falls through to the
     // raw path below when the export is absent (older DLL).
-    const bool sharedCombo = w.kind == CW_COMBOBOX && w.cvar && *w.cvar && w.choiceCount > 0;
-    if (w.index >= 0 && game.drawWidget && (DelegatesToGame(w.kind) || DrawnByGame(w)) && !sharedCombo) {
+    if (w.index >= 0 && game.drawWidget && GameDrawsWidget(w)) {
         // Enforce the widget's preFunc disable at the comboui level (wrap in BeginDisabled) — same as
         // the raw path below. The game's MenuDrawItem also applies it internally, but wrapping here is
         // what reliably makes a preFunc-gated control non-interactive (e.g. "Cull Glitch Useful
@@ -312,6 +324,12 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
         const bool nativeReticleTooltip = w.kind == CW_CHECKBOX && IsMmSharedReticle(w, game);
         if (!nativeReticleTooltip && (ImGui::IsItemFocused() || ImGui::IsItemActive()))
             MenuTooltip(w.tooltip);
+        ImGui::PopID();
+        return;
+    }
+    // A value-pointer control without the game's draw export: show its name, never touch a CVar named "".
+    if (HoldsValuePointer(w)) {
+        ImGui::TextDisabled("%s", MenuRowLabel(false, nullptr, w.name).c_str());
         ImGui::PopID();
         return;
     }

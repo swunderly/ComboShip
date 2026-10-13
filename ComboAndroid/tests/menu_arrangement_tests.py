@@ -45,6 +45,14 @@ production += block('bool IsStaleIntroText(') + block('uint32_t ArrangeByPlaceme
 # The slider readout of the one widget style (ComboWidgetRender.cpp).
 production += block('struct SliderReadout {', render) + block('static bool ReadoutFits(', render)
 production += block('static SliderReadout ReadoutOf(', render)
+# Which widgets the owning game draws (ComboWidgetRender.cpp).
+production += block('static bool DelegatesToGame(', render) + block('static bool HoldsValuePointer(', render)
+production += block('static bool DrawnByGame(', render) + block('static bool GameDrawsWidget(', render)
+# A value-pointer control never reaches the CVar switch of RenderWidget.
+render_widget = block('void RenderWidget(', render)
+assert 'game.drawWidget && GameDrawsWidget(w)' in render_widget, 'RenderWidget no longer asks GameDrawsWidget'
+guard = render_widget.find('if (HoldsValuePointer(w))')
+assert 0 <= guard < render_widget.find('switch (w.kind)'), 'a value-pointer control can reach the CVar path'
 
 code = r'''
 #include "ComboMenuABI.h"
@@ -60,6 +68,7 @@ code = r'''
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 namespace ComboRando {
 ''' + production + r'''
@@ -247,6 +256,23 @@ int main() {
     assert(same(readout(true, "Strength", "", nullptr, false, false), "%d", false));
     assert(same(readout(true, "Scale", "", "%f", false, true), "%.2f", false));
     assert(same(readout(true, "Odd: %d", "", "%f", false, true), "%.2f", false)); // an int token on a float bar
+    // A checkbox or slider without a CVar (a value pointer: MM motion blur, Frame Advance) is drawn by its game,
+    // never through a CVar named ""; CVar checkboxes and sliders take the one combo style.
+    for (CwKind kind : { CW_CHECKBOX, CW_SLIDER_INT, CW_SLIDER_FLOAT }) {
+        CwWidget w{};
+        w.kind = kind;
+        w.name = "On/Off";
+        for (const char* cvar : { "", static_cast<const char*>(nullptr) }) {
+            w.cvar = cvar;
+            assert(HoldsValuePointer(w) && GameDrawsWidget(w));
+        }
+        w.cvar = "gEnhancements.ClimbSpeed";
+        assert(!HoldsValuePointer(w) && !GameDrawsWidget(w));
+    }
+    CwWidget choice{};
+    choice.kind = CW_COMBOBOX;
+    choice.cvar = "";
+    assert(GameDrawsWidget(choice) && !HoldsValuePointer(choice));
 
     // A page without fixed headings keeps native order and drops only a heading repeating its title.
     MenuPageLayout notifications = *FindMenuPage("settings", MenuPage::Notifications);
