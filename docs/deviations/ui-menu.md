@@ -561,3 +561,34 @@ Save Editor page itself. Window keys and window CVars are unchanged.
   "Time items" and "Give randomizer item") move here from Inventory; the check-and-reward table, which shows where
   every item is, sits under a collapsed "Check list (shows item locations)"; "Cross-send debug item to OOT" shows only
   with MM's developer options on (`gDeveloperTools.DebugEnabledMM`, BenMenu.cpp's `COMBO_MM_DEBUG_MODE_NAME`).
+
+## Randomizer tab and menu navigation audit (T8, 2026-10-13)
+
+**Why:** Sam's 2026-10-12 menu audit (`tooling/claude-cleanup/t8/menu-spec.md`, sections 5, 7 and 8.3). The
+Randomizer tab holds only options generation reads or freezes into the seed, every Randomizer page shows one
+heading list in both worlds, and Back steps back one level at a time. No CVar, option name, choice text, rule
+name or logic key changed; saved settings, profiles and presets load as before.
+
+**Combo-owned:** `combo/gui/ComboRandomizerLayout.h` (each Randomizer page's fixed headings; OoT rows are
+regrouped under them at draw time in `ProfileUI::DrawSidebar`), `combo/gui/ComboShortcutPicker.h` (one
+button-shortcut picker), `MenuConfirm` in `combo/gui/ComboMenuLayout.h` (one confirm dialog), the CVar-keyed
+display table in `combo/gui/ComboRandomizerProfiles.cpp` (OoT labels change there, never in `settings.cpp`).
+
+**Vendored:**
+- `mm/2s2h/ProfileMmLayout.inc` and `mm/2s2h/Rando/Menu.cpp` — the MM catalog rows and their native mirror move
+  between cards and take the shared headings: Boss Remains and Maps and Compasses to Dungeon Items, Shops /
+  Tingle Maps / Repeatable Rupee Purchases to a Shops & merchants card, Plentiful Items first under Item pool,
+  Hints split into Hints and Static hints, OoTMM's "<Thing> Shuffle" labels. A renamed catalog row keeps its old
+  label in a new `aliases` field, which search reads. `page` stays a native sidebar name (DrawCustom draws by
+  it) and `key` never changes. `MM_AppendProfileMenuMetadata` no longer emits `globalTrapEffects` (nothing reads
+  it since the trap preferences left the Randomizer tab). When regenerating the layout from Menu.cpp, keep the
+  headings, cards and `aliases`.
+- `soh/soh/Enhancements/randomizer/settings.cpp` — the combo-added Enemy Souls (OoT) callback's disabled reason
+  names "Enhancements > Extra modes"; `combo/gui/ProfileOotOptionPolicy.h` keeps the same body (parity test).
+- `soh/soh/SohGui/SohMenuSettings.cpp` ("Toggle Fullscreen") and `mm/2s2h/BenGui/BenMenu.cpp` ("Alt Assets Tab
+  hotkey") — not registered on `COMBO_BUILD && __ANDROID__`.
+- `soh/soh/SohGui/SohMenuDevTools.cpp`, `mm/2s2h/BenGui/BenMenu.cpp` (`ComboInlineWindow`) — "Available while
+  playing Ocarina of Time." / "...Majora's Mask."
+- `libultraship` — `Mobile::RequestBack`/`ConsumeBackRequest` and `Gui::SetMenuBackHandler`: Android Back and
+  Escape ask the menu to step back (top popup, search text, search results) before toggling it.
+  `GameActivity.java` sends Back through `nativeBack`; the gamepad Select button still toggles the menu.
