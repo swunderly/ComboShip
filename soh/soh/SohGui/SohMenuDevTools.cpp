@@ -207,7 +207,12 @@ void SohMenu::AddMenuDevTools() {
         .CVar(CVAR_WINDOW("SaveEditor"))
         .WindowName("Save Editor")
         .HideInSearch(true)
+#ifdef COMBO_BUILD
+        // ComboShip: the same tooltip as MM's pop-out button; search finds the Save Editor page itself.
+        .Options(WindowButtonOptions().Tooltip("Opens the Save Editor in its own window."));
+#else
         .Options(WindowButtonOptions().Tooltip("Enables the separate Save Editor Window."));
+#endif
 #ifdef COMBO_BUILD
     AddWidget(path, "Save Editor Inline", WIDGET_CUSTOM).CustomFunction([](WidgetInfo&) {
         ComboInlineWindow("Save Editor", /*requiresForeground=*/false);

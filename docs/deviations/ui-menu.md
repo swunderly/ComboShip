@@ -502,6 +502,10 @@ take upstream changes into the `#else` branch and port them to the combo branch 
   rest in MM's names, Age, Equipped gear, Button items with MM's Clear all, Player state with the editable state
   flags under "Edit state flags"); "Available while playing." with no game running.
 
+**Pop-out buttons (`soh/soh/SohGui/SohMenuDevTools.cpp`, `mm/2s2h/BenGui/BenMenu.cpp`, `COMBO_BUILD`):** both read
+"Opens the Save Editor in its own window." and both are hidden from search (OoT's already was); search finds the
+Save Editor page itself. Window keys and window CVars are unchanged.
+
 **MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp`:** rewritten functions are guarded the same way as OoT's
 (`#ifdef COMBO_BUILD <combo body> #else <upstream body> #endif`); one-line wording changes are inline guards.
 - `DrawElement`: "Items & Masks" is "Inventory", "Rando" is "Randomizer", and the developer Reg Editor moves last.
