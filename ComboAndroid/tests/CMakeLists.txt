@@ -88,6 +88,10 @@ combo_harness_test(mm_adult_fairy_fit_walker_hands_and_rigid_fit mm_adult_fairy_
 # Local only: runs the fit on the oot.o2r and mm.o2r extracted from the user's ROMs, and reports SKIPPED without them.
 combo_harness_test(mm_adult_fairy_fit_user_archives mm_adult_fairy_fit_archive_tests.py)
 set_tests_properties(mm_adult_fairy_fit_user_archives PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+combo_harness_test(mm_adult_fairy_recolour_swap_and_runtime mm_adult_fairy_recolour_tests.py)
+# Local only: runs the texture swap on the oot.o2r extracted from the user's ROM, and reports SKIPPED without it.
+combo_harness_test(mm_adult_fairy_recolour_user_archive mm_adult_fairy_recolour_archive_tests.py)
+set_tests_properties(mm_adult_fairy_recolour_user_archive PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 # Local only: reads the oot.o2r and mm.o2r extracted from the user's ROMs, and reports SKIPPED without them.
 combo_harness_test(mm_cross_age_user_archives_and_spin_vertices mm_cross_age_archive_tests.py)
 set_tests_properties(mm_cross_age_user_archives_and_spin_vertices PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")

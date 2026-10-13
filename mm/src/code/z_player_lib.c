@@ -2815,14 +2815,16 @@ s32 Player_OverrideLimbDrawGameplayDefault(PlayState* play, s32 limbIndex, Gfx**
                 // Pinned Player_CustomHandEq: human native open hand + stripped Fairy instrument. Adult Link may keep
                 // the native instrument hand instead, OoT's gLinkAdultRightHandHoldingOotNear/FarDL, as OoT draws for
                 // adult Link with either ocarina (soh z_player_lib.c:346-351); that option (B1) stays off, for A/B
-                // runs. The owner chose B3 (2026-10-12): the composite moves the item for adult Link
-                // (ComboFairyOcarinaHand.h, release switch kAdultFairyFittedPlacement in BenPort.cpp).
+                // runs. For adult Link the composite may instead draw that hand with the instrument coloured like the
+                // Fairy Ocarina, or move the item (B3): see ComboFairyOcarinaHand.h and the release switches in
+                // BenPort.cpp.
                 extern int Combo_MM_AdultFairyNativeHand(void);
                 if (player->transformation == PLAYER_FORM_HUMAN &&
                     player->rightHandType == PLAYER_MODELTYPE_RH_INSTRUMENT &&
                     INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_FAIRY && !Combo_MM_AdultFairyNativeHand()) {
-                    extern Gfx* Combo_MM_FairyOcarinaHand(PlayState*, Gfx*);
-                    Gfx* fairyHand = Combo_MM_FairyOcarinaHand(play, gPlayerRightHandOpenDLs[D_801F59E0 + sPlayerLod]);
+                    extern Gfx* Combo_MM_FairyOcarinaHand(PlayState*, Gfx*, s32);
+                    Gfx* fairyHand =
+                        Combo_MM_FairyOcarinaHand(play, gPlayerRightHandOpenDLs[D_801F59E0 + sPlayerLod], sPlayerLod);
                     if (fairyHand != NULL)
                         *dList = fairyHand;
                 }

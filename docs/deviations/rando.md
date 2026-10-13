@@ -2245,14 +2245,29 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
     most 1.03, and the item's nearest point moves from 0.61 to 0.29 face units from the mouth (OoT's own adult Ocarina
     of Time: 0.13; `mm_adult_fairy_fit_archive_tests.py`, t6 kinematics.md).
     Switch on (owner-approved 2026-10-12). Not yet checked on the emulator or a phone.
+  - **Fairy Ocarina, recoloured (`kAdultFairyRecolouredOot`, owner's revised ruling 2026-10-12).** Adult Link holding
+    the Fairy Ocarina is drawn with OoT's own adult hand holding the Ocarina of Time
+    (`gLinkAdultRightHandHoldingOotNear/FarDL`, as OoT draws for adult Link with either ocarina, soh
+    `z_player_lib.c:346-351`), from a private copy of each list in which the Ocarina of Time's texture
+    (`gameplay_keep/gOcarinaofTimeDesignTex`) is replaced by the one OoT's child hand uses for the Fairy Ocarina
+    (`object_link_child/gLinkChildFairyOcarinaTex`). OoT draws the two instruments with the same texture load, tiles,
+    combiner, render mode and prim colour, and both textures are RGBA16 32x16, so only that texture's path hash changes
+    (`combo/menu/ComboFairyOcarinaRecolour.h`, `tooling/claude-cleanup/t10`). The instrument keeps the Ocarina of
+    Time's shape and takes the Fairy Ocarina's colour, painted holes and streak. The copies are built once per OoT
+    resource manager and dropped at teardown. OoT's own lists are never changed, so the OoT side and the Ocarina of
+    Time in MM keep OoT's blue. Where the copies cannot be built (a custom list, a missing or differently laid-out
+    texture, or a list without exactly one Ocarina of Time texture), the composite is drawn as before. This departs
+    from OoTMM. Switch off.
   - B1 (`kAdultFairyNativeHand`: OoT's `gLinkAdultRightHandHoldingOotNear/FarDL`, as OoT draws for adult Link with
-    either ocarina, soh `z_player_lib.c:346-351`) stays off. It is the A/B alternative to B3, and a static_assert keeps
-    the two from being released together.
+    either ocarina, soh `z_player_lib.c:346-351`) stays off. B1, B3 and the recoloured hand are alternatives, and a
+    static_assert keeps any two of them from being released together.
   - A diagnostics build can turn each switch on for an A/B with `gCombo.Debug.AdultOcarinaFdCamera`,
-    `gCombo.Debug.AdultFairyFittedPlacement` and `gCombo.Debug.AdultFairyNativeHand` (B1 wins over B3), and logs the
-    camera and pose of each ocarina session behind `gCombo.Debug.AdultOcarinaProbe`
-    (`tooling/claude-cleanup/t6/decision.md`). `mm_adult_ocarina_tests.py` checks that only adult human Link can take
-    them, and `mm_adult_fairy_fit_tests.py` checks the fit.
+    `gCombo.Debug.AdultFairyFittedPlacement`, `gCombo.Debug.AdultFairyRecolouredOot` and
+    `gCombo.Debug.AdultFairyNativeHand` (B1 wins over B3, and both win over the recoloured hand), and logs the camera
+    and pose of each ocarina session behind `gCombo.Debug.AdultOcarinaProbe` (`tooling/claude-cleanup/t6/decision.md`).
+    `mm_adult_ocarina_tests.py` checks that only adult human Link can take them, `mm_adult_fairy_fit_tests.py` checks
+    the fit, and `mm_adult_fairy_recolour_tests.py` and the local-only `mm_adult_fairy_recolour_archive_tests.py` check
+    the texture swap.
 - **Logic receipt.** `ComboAndroid/tests/fixtures/ootmm-32.3-mm-age-lines.json` maps all 85 v32.3 MM age lines (84
   world lines and `cross_poison_swamp`, `macros_mm.yml:260`). 11 have no fork statement: three JP-only Deku Palace
   lines and the US stub at `deku_palace.yml:26`, Zora Cape Rock Island 1-5 (the fork has no rock checks), and two

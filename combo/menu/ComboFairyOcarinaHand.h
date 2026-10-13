@@ -1,8 +1,10 @@
 #pragma once
 #include "ComboFairyOcarinaGeometry.h"
 #include "ComboFairyOcarinaFit.h"
+#include "ComboFairyOcarinaRecolour.h"
 #include "2s2h/resource/type/2shResourceType.h"
 #include <fast/resource/type/DisplayList.h>
+#include <fast/resource/type/Texture.h>
 #include <fast/resource/ResourceType.h>
 #include <fast/lus_gbi.h>
 #include <ship/resource/CrossRMRegistry.h>
@@ -16,12 +18,20 @@ static bool sFairyInstrumentListener;
 // B3: the fitted placement for the current OoT manager, or the manager it could not be fitted for (once each).
 static Mtx sFairyPlacementMtx;
 static std::weak_ptr<Ship::ResourceManager> sFairyPlacementOwner, sFairyPlacementFailed;
+// The recoloured hands (near, far) for the current OoT manager with the OoT lists they copy, or the manager they could
+// not be built for (once each).
+static std::array<std::shared_ptr<Fast::DisplayList>, 2> sFairyRecolouredSources, sFairyRecolouredCopies;
+static std::weak_ptr<Ship::ResourceManager> sFairyRecolouredOwner, sFairyRecolouredFailed;
 static void Combo_DropFairyInstrument() {
     sFairyInstrumentCopy.reset();
     sFairyInstrumentSource.reset();
     sFairyInstrumentOwner.reset();
     sFairyPlacementOwner.reset();
     sFairyPlacementFailed.reset();
+    sFairyRecolouredCopies = {};
+    sFairyRecolouredSources = {};
+    sFairyRecolouredOwner.reset();
+    sFairyRecolouredFailed.reset();
 }
 static void Combo_ListenFairyInstrumentTeardown() {
     if (!sFairyInstrumentListener) {
@@ -137,13 +147,102 @@ extern "C" int Combo_MM_FairyPlacementState(void) {
     auto rm = Ship::CrossRMRegistry::Get("oot");
     return !rm ? 0 : sFairyPlacementOwner.lock() == rm ? 1 : sFairyPlacementFailed.lock() == rm ? -1 : 0;
 }
+static_assert(ComboFairyOcarinaRecolour::kOpSetTImgHash == G_SETTIMG_OTR_HASH &&
+                  ComboFairyOcarinaRecolour::kOpDlHash == G_DL_OTR_HASH &&
+                  ComboFairyOcarinaRecolour::kOpVtxHash == G_VTX_OTR_HASH &&
+                  ComboFairyOcarinaRecolour::kOpMarker == G_MARKER &&
+                  ComboFairyOcarinaRecolour::kOpBranchZHash == G_BRANCH_Z_OTR &&
+                  ComboFairyOcarinaRecolour::kOpMtxHash == G_MTX_OTR &&
+                  ComboFairyOcarinaRecolour::kOpMoveMemHash == G_MOVEMEM_OTR &&
+                  ComboFairyOcarinaRecolour::kOpEndDl == G_ENDDL,
+              "libultraship opcodes");
+// The recoloured hands: OoT's adult hands holding the Ocarina of Time, near and far, and the texture that colours the
+// Fairy Ocarina in OoT's child hand (ComboFairyOcarinaRecolour.h). Each copy is cached in OoT's manager under its
+// routed path's name; paths in display lists must be even (ResourceMgr_OTRSigCheck).
+static const char* const kFairyRecolouredLists[2] = {
+    "objects/object_link_boy/gLinkAdultRightHandHoldingOotNearDL",
+    "objects/object_link_boy/gLinkAdultRightHandHoldingOotFarDL",
+};
+static const char kFairyRecolouredTexture[] = "objects/object_link_child/gLinkChildFairyOcarinaTex";
+alignas(2) static const char kFairyRecolouredNear[] = "__OTR__@oot:combo/runtime/adult_fairy_ocarina_hand_near";
+alignas(2) static const char kFairyRecolouredFar[] = "__OTR__@oot:combo/runtime/adult_fairy_ocarina_hand_far";
+static const char* const kFairyRecolouredPaths[2] = { kFairyRecolouredNear, kFairyRecolouredFar };
+static constexpr size_t kFairyRecolouredRoute = sizeof("__OTR__@oot:") - 1;
+// A texture from OoT's manager (a texture pack's replacement included), with its image, as the interpreter draws it.
+static std::shared_ptr<Fast::Texture> Combo_FairyRecolourTexture(Ship::ResourceManager& rm, const char* name) {
+    auto texture = rm.LoadResourceProcess(name);
+    if (!texture || !texture->GetInitData() || texture->IsDirty() ||
+        texture->GetInitData()->Type != static_cast<uint32_t>(Fast::ResourceType::Texture))
+        return nullptr;
+    auto typed = std::static_pointer_cast<Fast::Texture>(texture);
+    return typed->ImageData ? typed : nullptr;
+}
+// Builds both copies from OoT's manager, or says why not. Display lists and textures load nothing nested, so no
+// manager scope is needed. A custom (mod) list is not copied, as for the fit. Nothing cached is changed.
+static const char* Combo_BuildFairyRecolouredHands(Ship::ResourceManager& rm) {
+    auto design = Combo_FairyRecolourTexture(rm, kFairyPlacementInstrumentTexture);
+    auto fairy = Combo_FairyRecolourTexture(rm, kFairyRecolouredTexture);
+    if (!design || !fairy || !ComboFairyOcarinaRecolour::SameLayout(*design, *fairy))
+        return "the Fairy Ocarina texture cannot be read or is not laid out like the Ocarina of Time's";
+    std::array<std::shared_ptr<Fast::DisplayList>, 2> sources, copies;
+    for (size_t lod = 0; lod < sources.size(); ++lod) {
+        auto list = rm.LoadResourceProcess(kFairyRecolouredLists[lod]);
+        if (!list || !list->GetInitData() || list->GetInitData()->IsCustom || list->IsDirty() ||
+            list->GetInitData()->Type != static_cast<uint32_t>(Fast::ResourceType::DisplayList))
+            return "OoT's adult hand holding the Ocarina of Time cannot be read";
+        sources[lod] = std::static_pointer_cast<Fast::DisplayList>(list);
+        copies[lod] = std::make_shared<Fast::DisplayList>(sources[lod]->GetInitData());
+        copies[lod]->UCode = sources[lod]->UCode;
+        if (!ComboFairyOcarinaRecolour::SwapTexture(sources[lod]->Instructions, copies[lod]->Instructions,
+                                                    CRC64(kFairyPlacementInstrumentTexture),
+                                                    CRC64(kFairyRecolouredTexture)))
+            return "OoT's adult hand does not set the Ocarina of Time texture exactly once";
+    }
+    sFairyRecolouredSources = sources;
+    sFairyRecolouredCopies = copies;
+    return nullptr;
+}
+// The recoloured hand for `lod` (0 near, 1 far), routed to OoT, built once per OoT manager, or null when it cannot be
+// built (the reason is logged once).
+static const char* Combo_FairyRecolouredHandPath(s32 lod) {
+    auto rm = Ship::CrossRMRegistry::Get("oot");
+    if (!rm || lod < 0 || lod > 1 || sFairyRecolouredFailed.lock() == rm)
+        return nullptr;
+    if (sFairyRecolouredOwner.lock() != rm) {
+        Combo_ListenFairyInstrumentTeardown();
+        if (const char* reason = Combo_BuildFairyRecolouredHands(*rm)) {
+            SPDLOG_WARN("[ComboShip AdultFairy] no recoloured hand ({}); adult Link keeps the Fairy item composite",
+                        reason);
+            sFairyRecolouredFailed = rm;
+            return nullptr;
+        }
+        sFairyRecolouredOwner = rm;
+    }
+    // Runtime resources have no archive backing: reinsert after cache eviction, as for the instrument.
+    rm->CacheExternalResource(kFairyRecolouredPaths[lod] + kFairyRecolouredRoute, sFairyRecolouredCopies[lod]);
+    return kFairyRecolouredPaths[lod];
+}
+// 1 when the recoloured hands are built for the current OoT manager, -1 when they cannot be, 0 before they are tried.
+extern "C" int Combo_MM_FairyRecolourState(void) {
+    auto rm = Ship::CrossRMRegistry::Get("oot");
+    return !rm ? 0 : sFairyRecolouredOwner.lock() == rm ? 1 : sFairyRecolouredFailed.lock() == rm ? -1 : 0;
+}
 extern "C" int Combo_MM_AdultFairyFittedPlacement(void);
-extern "C" Gfx* Combo_MM_FairyOcarinaHand(PlayState* play, Gfx* nativeHand) {
+extern "C" int Combo_MM_AdultFairyRecolouredOot(void);
+extern "C" Gfx* Combo_MM_FairyOcarinaHand(PlayState* play, Gfx* nativeHand, s32 lod) {
+    // Adult Link only (BenPort.cpp). B3, if switched on, wins over the recoloured hand.
+    const bool fitted = Combo_MM_AdultFairyFittedPlacement();
+    if (!fitted && Combo_MM_AdultFairyRecolouredOot()) {
+        // OoT's own adult hand holding the Ocarina of Time, coloured like the Fairy Ocarina, drawn as the limb's list
+        // as the native hand would be; where it cannot be built, the composite below.
+        if (const char* recoloured = Combo_FairyRecolouredHandPath(lod))
+            return (Gfx*)recoloured;
+    }
     const char* instrument = Combo_FairyInstrumentPath();
     if (!instrument)
         return nullptr;
-    // B3, adult Link only (BenPort.cpp): the item moved by OoT's own placement; without a fit, the composite as before.
-    Mtx* placement = Combo_MM_AdultFairyFittedPlacement() ? Combo_FairyInstrumentPlacement() : nullptr;
+    // B3: the item moved by OoT's own placement; without a fit, the composite as before.
+    Mtx* placement = fitted ? Combo_FairyInstrumentPlacement() : nullptr;
     Gfx* list = (Gfx*)GRAPH_ALLOC(play->state.gfxCtx, sizeof(Gfx) * (placement ? 5 : 3));
     if (!list)
         return nullptr;
