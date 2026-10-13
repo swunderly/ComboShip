@@ -25,7 +25,8 @@
  *       static size_t CountChoices(const Widget&);                    // Pass-1 reserve count;
  *       static void EmitChoices(const Widget&, std::vector<CwChoice>&); // MUST emit exactly
  *                                                                     // CountChoices() entries
- *       static void FillOptions(const Widget&, CwWidget&);            // defaults/ranges/useAlpha;
+ *       static void FillOptions(const Widget&, CwWidget&);            // defaults/ranges/useAlpha,
+ *                                                                     // slider format/isPercentage;
  *                                                                     // cw.kind is already set
  *   };
  */
@@ -205,6 +206,8 @@ inline const CwMenu* Build(State<typename TPolicy::Widget>& st, const std::vecto
                     TPolicy::EmitChoices(w, st.choices);
                     size_t choiceCnt = st.choices.size() - choiceStart;
                     TPolicy::FillOptions(w, cw);
+                    // Own the readout: an options struct may point it at storage that does not outlive the walk.
+                    cw.format = cw.format ? ownStr(cw.format) : nullptr;
 
                     cw.choices = nullptr; // wired after st.choices is fully populated
                     cw.choiceCount = (int32_t)choiceCnt;
@@ -255,7 +258,7 @@ inline const CwMenu* Build(State<typename TPolicy::Widget>& st, const std::vecto
         st.sections.push_back(sec);
     }
 
-    st.menu.version = 2; // v2: CwWidget.column added for faithful multi-column layout
+    st.menu.version = COMBO_MENU_ABI_VERSION; // v2: CwWidget.column; v3: CwWidget.format, isPercentage
     st.menu.sectionCount = (int32_t)st.sections.size();
     st.menu.sections = st.sections.empty() ? nullptr : st.sections.data();
 

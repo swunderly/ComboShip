@@ -45,4 +45,15 @@ void ComboMenu_PopInput();
 bool ComboMenu_StyledHeaderEntry(const char* label, bool selected);
 bool ComboMenu_StyledSidebarEntry(const char* label, bool selected, float width);
 
+// One menu row style for both games' settings. A slider row: the label above, then "-" [a full-width
+// bar showing the value and its unit] "+", and a Default button while the value differs from its
+// default. No keyboard entry: the bar drags and the buttons step. percentage shows the value times
+// 100. Each returns true when the value changed.
+bool ComboMenu_SliderRowInt(const char* label, int* value, int min, int max, int step, int defaultValue,
+                            const char* format);
+bool ComboMenu_SliderRowFloat(const char* label, float* value, float min, float max, float step, float defaultValue,
+                              const char* format, bool percentage);
+// A themed checkbox whose long label wraps on a phone; tapping the label toggles it too.
+bool ComboMenu_CheckboxRow(const char* label, bool* value);
+
 } // namespace ComboRando

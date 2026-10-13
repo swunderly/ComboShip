@@ -1,6 +1,9 @@
 // combo/gui/ComboMenuModel.cpp
 #include "ComboMenuModel.h"
 #include "ComboResolve.h"
+#include <set>
+#include <spdlog/spdlog.h>
+#include <string>
 
 namespace ComboRando {
 
@@ -24,6 +27,14 @@ void ComboMenuModel::LoadGame(GameMenu& g, const char* moduleName, const char* e
     // ExportMenu may build the menu lazily (MM does so on ActivateMenu), so it can return
     // null until the game has eager-booted. Re-call it each retry until it yields a menu.
     g.menu = exportFn ? exportFn() : nullptr;
+    // The three libraries ship together; a menu from an older game library lacks the slider readouts.
+    if (g.menu && g.menu->version < COMBO_MENU_ABI_VERSION) {
+        static std::set<std::string> refused; // retried every frame: say it once
+        if (refused.insert(moduleName).second)
+            SPDLOG_ERROR("[ComboShip] {} menu ABI {} is older than {}; its menu is not shown", moduleName,
+                         g.menu->version, COMBO_MENU_ABI_VERSION);
+        g.menu = nullptr;
+    }
 
     g.loaded =
         (g.menu != nullptr && g.invokeCallback != nullptr && g.evalDisabled != nullptr && g.drawCustom != nullptr);

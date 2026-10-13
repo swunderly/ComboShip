@@ -18,9 +18,10 @@ a = p.parse_args()
 source, out = a.source.resolve(), a.build_dir.resolve()
 out.mkdir(parents=True, exist_ok=True)
 text = (source / 'combo/gui/ComboMenu.cpp').read_text(encoding='utf-8')
+render = (source / 'combo/gui/ComboWidgetRender.cpp').read_text(encoding='utf-8')
 
 
-def block(signature):
+def block(signature, text=text):
     start = hostcxx.find(text, signature)
     end = text.index('{', start) + 1
     depth = 1
@@ -41,9 +42,13 @@ production = block('struct RowOrigin {') + line('using RowOrigins')
 production += block('struct PairedPreference {') + block('constexpr PairedPreference kPairedPreferences[]')
 production += line('constexpr int32_t kRuleRowBase') + block('bool MakePseudoRow(') + block('void AppendPseudoRows(')
 production += block('bool IsStaleIntroText(') + block('uint32_t ArrangeByPlacement(')
+# The slider readout of the one widget style (ComboWidgetRender.cpp).
+production += block('struct SliderReadout {', render) + block('static bool ReadoutFits(', render)
+production += block('static SliderReadout ReadoutOf(', render)
 
 code = r'''
 #include "ComboMenuABI.h"
+#include "ComboMenuLabels.h"
 #include "ComboNavigation.h"
 #include "rando/GameplayRules.h"
 #include <algorithm>
@@ -214,6 +219,35 @@ int main() {
     assert(ootRules.headingOf.at("gRandoSettings.SwordlessEponaItems") == "Seed settings (no logic effect)");
     assert(mmRules.headingOf.at("gEnhancements.Minigames.AlwaysWinDoggyRace") == "Minigames");
     assert(!mmRules.headingOf.count("gEnhancements.DifficultyOptions.BremenChickCount"));
+    // Slider readouts: the label table's unit shows the stored value; the game's own format keeps its
+    // percentage; a printf token in the native name splits off the label.
+    auto readout = [](bool oot, const char* name, const char* cvar, const char* format, bool percentage, bool isFloat) {
+        CwWidget w{};
+        w.name = name;
+        w.cvar = cvar;
+        w.format = format;
+        w.isPercentage = percentage;
+        return ReadoutOf(w, FindMenuLabel(oot, cvar), isFloat);
+    };
+    auto same = [](const SliderReadout& r, const char* format, bool percentage) {
+        return r.format == format && r.percentage == percentage;
+    };
+    assert(same(readout(true, "Vine/Ladder Climb Speed +%d", "gEnhancements.ClimbSpeed", "+%d", false, false), "+%d", false));
+    assert(same(readout(false, "Climb speed", "gEnhancements.Player.ClimbSpeed", "%d", false, false), "%dx", false));
+    assert(MenuRowLabel(true, "gEnhancements.ClimbSpeed", "Vine/Ladder Climb Speed +%d") ==
+           MenuRowLabel(false, "gEnhancements.Player.ClimbSpeed", "Climb speed"));
+    assert(same(readout(true, "Crawl Speed %dx", "gEnhancements.CrawlSpeed", "%dx", false, false), "%dx", false));
+    assert(same(readout(false, "Master Volume: %.0f%%", "gSettings.Audio.MasterVolume", "%.0f%%", true, true), "%.0f%%", true));
+    assert(same(readout(false, "Internal Resolution: %.0f%%", "gSettings.InternalResolution", "", true, true), "%.0f%%", true));
+    assert(same(readout(true, "Multiplier:", "gCheats.SpeedModifier.Value", "%.0f%%", true, true), "%.2fx", false));
+    assert(same(readout(false, "Multiplier:", "gCheats.SpeedModifier.Value", "%.1fx", false, true), "%.2fx", false));
+    assert(same(readout(true, "Ingame Text Spacing: %d", "gEnhancements.TextSpacing", "%d", false, false), "%d", false));
+    assert(same(readout(true, "Duration (seconds):", "gSettings.Notifications.Duration", "%.1f", false, true),
+                "%.1f seconds", false));
+    assert(same(readout(true, "Strength", "", nullptr, false, false), "%d", false));
+    assert(same(readout(true, "Scale", "", "%f", false, true), "%.2f", false));
+    assert(same(readout(true, "Odd: %d", "", "%f", false, true), "%.2f", false)); // an int token on a float bar
+
     // A page without fixed headings keeps native order and drops only a heading repeating its title.
     MenuPageLayout notifications = *FindMenuPage("settings", MenuPage::Notifications);
     std::vector<CwWidget> rows(3);

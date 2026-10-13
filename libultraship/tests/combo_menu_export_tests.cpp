@@ -10,7 +10,7 @@
 // and of WidgetInfo (name/cVar/windowName/callback/preFunc/sameLine/hideInSearch).
 namespace {
 
-enum MockType { MT_CHECKBOX, MT_COMBOBOX, MT_CUSTOM };
+enum MockType { MT_CHECKBOX, MT_COMBOBOX, MT_CUSTOM, MT_SLIDER_FLOAT };
 
 struct MockWidget {
     MockType type = MT_CHECKBOX;
@@ -23,6 +23,8 @@ struct MockWidget {
     bool hideInSearch = false;
     std::vector<std::pair<int32_t, const char*>> comboChoices;
     std::string tooltip;
+    std::string format; // slider readout; empty = none
+    bool isPercentage = false;
 };
 
 struct MockSidebar {
@@ -45,6 +47,8 @@ struct MockPolicy {
                 return CW_COMBOBOX;
             case MT_CUSTOM:
                 return CW_CUSTOM;
+            case MT_SLIDER_FLOAT:
+                return CW_SLIDER_FLOAT;
             default:
                 return CW_CHECKBOX;
         }
@@ -72,6 +76,10 @@ struct MockPolicy {
     static void FillOptions(const Widget& w, CwWidget& cw) {
         if (cw.kind == CW_COMBOBOX) {
             cw.iDefault = 7; // sentinel: proves FillOptions ran for comboboxes
+        }
+        if (cw.kind == CW_SLIDER_FLOAT) {
+            cw.format = w.format.c_str(); // the serializer copies it into owned storage
+            cw.isPercentage = w.isPercentage ? 1 : 0;
         }
     }
 };
@@ -141,7 +149,8 @@ TEST(ComboMenuExport, FlattensInDeterministicOrderWithStableIndices) {
     Fixture f;
     const CwMenu* menu = f.Build();
     ASSERT_NE(menu, nullptr);
-    EXPECT_EQ(menu->version, 1);
+    EXPECT_EQ(menu->version, COMBO_MENU_ABI_VERSION);
+    EXPECT_EQ(COMBO_MENU_ABI_VERSION, 3);
     ASSERT_EQ(menu->sectionCount, 2);
     ASSERT_EQ(f.state.widgets.size(), 5u);
     ASSERT_EQ(f.state.flat.size(), 5u);
@@ -233,6 +242,24 @@ TEST(ComboMenuExport, EmptyMenuOrderFallsBackToSortedKeys) {
     // std::map keys sorted: "Rando" < "Settings".
     EXPECT_STREQ(menu->sections[0].sectionLabel, "Rando");
     EXPECT_STREQ(menu->sections[1].sectionLabel, "Settings");
+}
+
+TEST(ComboMenuExport, SliderReadoutIsExportedAndOwned) {
+    Fixture f;
+    MockWidget slider = MakeWidget(MT_SLIDER_FLOAT, "F");
+    slider.cVar = "gF";
+    slider.format = "%.1fx";
+    slider.isPercentage = true;
+    f.menuEntries["Rando"].sidebars["Seed"].columnWidgets[0].push_back(slider);
+    f.Build();
+    const CwWidget& exported = f.state.widgets.back();
+    ASSERT_EQ(exported.kind, CW_SLIDER_FLOAT);
+    ASSERT_NE(exported.format, nullptr);
+    EXPECT_STREQ(exported.format, "%.1fx");
+    EXPECT_NE(exported.format, f.menuEntries["Rando"].sidebars["Seed"].columnWidgets[0].back().format.c_str());
+    EXPECT_EQ(exported.isPercentage, 1);
+    EXPECT_EQ(f.state.widgets[0].format, nullptr); // a checkbox has no readout
+    EXPECT_EQ(f.state.widgets[0].isPercentage, 0);
 }
 
 TEST(ComboMenuExport, ChoicesStorageIsExactFitSoWiredPointersStayStable) {

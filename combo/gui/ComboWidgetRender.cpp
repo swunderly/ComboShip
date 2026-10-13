@@ -28,6 +28,7 @@
 #include <imgui.h>
 #include <cstring>
 #include <string>
+#include <unordered_set>
 
 namespace ComboRando {
 
@@ -161,15 +162,13 @@ void RenderAudioBackend(const CwWidget& w, const ImVec4& themeColor) {
 }
 } // namespace
 
-// Widget kinds whose draw we delegate to the OWNING GAME's real UIWidgets (label-above, +/- steppers,
-// themed separators, tooltips) so the menu matches upstream exactly and auto-inherits its changes.
-// Buttons / window-buttons / backend selectors / custom stay comboui-owned: they either look correct
-// already or can touch live subsystems that aren't safe to drive while the game is backgrounded.
+// Widget kinds whose draw we delegate to the OWNING GAME's real UIWidgets (themed separators, text and
+// comboboxes without choices). Checkboxes and sliders are drawn here in one style for both games (menu
+// ABI v3 exports their readout); buttons / window-buttons / backend selectors / custom stay
+// comboui-owned: they either look correct already or can touch live subsystems that aren't safe to
+// drive while the game is backgrounded.
 static bool DelegatesToGame(CwKind k) {
     switch (k) {
-        case CW_CHECKBOX:
-        case CW_SLIDER_INT:
-        case CW_SLIDER_FLOAT:
         case CW_COMBOBOX:
         // Button combinations use comboui's shared named-button control below.
         // CW_INPUT_TEXT (OOT) and CW_COLOR (MM) are intentionally NOT delegated: the respective
@@ -181,6 +180,46 @@ static bool DelegatesToGame(CwKind k) {
         default:
             return false;
     }
+}
+
+// CVar widgets that only work drawn by their own game. Empty until a phone check shows one: add the CVar
+// with the reason.
+static bool DrawnByGame(const CwWidget& w) {
+    static const std::unordered_set<std::string> cvars = {};
+    return w.cvar && cvars.count(w.cvar) != 0;
+}
+
+// A slider's value readout: the label table's (the stored value as is), else the game's own format
+// (times 100 for a percentage), else a printf token in the native name, else a plain number.
+struct SliderReadout {
+    std::string format;
+    bool percentage;
+};
+static bool ReadoutFits(const std::string& format, bool isFloat) {
+    for (size_t at = format.find('%'); at != std::string::npos; at = format.find('%', at + 2)) {
+        if (at + 1 < format.size() && format[at + 1] == '%')
+            continue;
+        const auto conversion = format.find_first_of("diufFeEgG", at + 1);
+        if (conversion == std::string::npos)
+            return false;
+        return std::strchr(isFloat ? "fFeEgG" : "diu", format[conversion]) != nullptr;
+    }
+    return false;
+}
+static SliderReadout ReadoutOf(const CwWidget& w, const MenuLabel* relabel, bool isFloat) {
+    if (relabel && relabel->format)
+        return { relabel->format, false };
+    const std::string exported = w.format ? w.format : "";
+    if (exported != "%d" && exported != "%f" && ReadoutFits(exported, isFloat))
+        return { exported, w.isPercentage != 0 };
+    if (const char* token = w.name ? std::strchr(w.name, '%') : nullptr) {
+        std::string format = (token > w.name && token[-1] == '+') ? std::string("+") + token : token;
+        if (ReadoutFits(format, isFloat))
+            return { format, w.isPercentage != 0 };
+    }
+    if (w.isPercentage)
+        return { "%.0f%%", true };
+    return { isFloat ? "%.2f" : "%d", false };
 }
 
 static void ApplyTrickGovernedRuntimeChange(const char* cvar) {
@@ -247,7 +286,7 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
     // those here — only the cross-game audio mirror stays comboui's concern. Falls through to the
     // raw path below when the export is absent (older DLL).
     const bool sharedCombo = w.kind == CW_COMBOBOX && w.cvar && *w.cvar && w.choiceCount > 0;
-    if (w.index >= 0 && game.drawWidget && DelegatesToGame(w.kind) && !sharedCombo) {
+    if (w.index >= 0 && game.drawWidget && (DelegatesToGame(w.kind) || DrawnByGame(w)) && !sharedCombo) {
         // Enforce the widget's preFunc disable at the comboui level (wrap in BeginDisabled) — same as
         // the raw path below. The game's MenuDrawItem also applies it internally, but wrapping here is
         // what reliably makes a preFunc-gated control non-interactive (e.g. "Cull Glitch Useful
@@ -310,51 +349,32 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
             break;
         case CW_CHECKBOX: {
             bool v = CVarGetInteger(w.cvar, w.bDefault) != 0;
-            ComboMenu_PushCheckbox(themeColor);
-            if (ImGui::Checkbox(label, &v)) {
+            if (ComboMenu_CheckboxRow(MenuRowLabel(oot, w.cvar, w.name).c_str(), &v)) {
                 CVarSetInteger(w.cvar, v ? 1 : 0);
                 changed = true;
             }
-            ComboMenu_PopCheckbox();
             break;
         }
         case CW_SLIDER_INT: {
+            // The label above and the value with its unit inside the bar (the native name may hold a
+            // printf readout, "Crawl Speed %dx": it is split into the two).
             int v = CVarGetInteger(w.cvar, w.iDefault);
-            ComboMenu_PushSlider(themeColor);
-            // Some sliders embed a printf format in the NAME (e.g. "Master Volume: %d %%"), meant
-            // to be the value overlay. Pass it as ImGui's format with a hidden label so the value
-            // renders on the slider (full width) instead of a literal "%d" label overflowing. Match
-            // an actual integer specifier (not just any '%') so a literal-percent label isn't fed to
-            // vsnprintf as a bogus format.
-            if (w.name && (std::strstr(w.name, "%d") || std::strstr(w.name, "%i"))) {
-                ImGui::SetNextItemWidth(-FLT_MIN);
-                if (ImGui::SliderInt("##v", &v, w.iMin, w.iMax, w.name, ImGuiSliderFlags_NoInput)) {
-                    CVarSetInteger(w.cvar, v);
-                    changed = true;
-                }
-            } else if (ImGui::SliderInt(label, &v, w.iMin, w.iMax, "%d", ImGuiSliderFlags_NoInput)) {
+            const auto readout = ReadoutOf(w, relabel, false);
+            if (ComboMenu_SliderRowInt(MenuRowLabel(oot, w.cvar, w.name).c_str(), &v, w.iMin, w.iMax, w.iStep,
+                                       w.iDefault, readout.format.c_str())) {
                 CVarSetInteger(w.cvar, v);
                 changed = true;
             }
-            ComboMenu_PopSlider();
             break;
         }
         case CW_SLIDER_FLOAT: {
             float v = CVarGetFloat(w.cvar, w.fDefault);
-            ComboMenu_PushSlider(themeColor);
-            // As CW_SLIDER_INT: a float specifier in the name is the value overlay format.
-            if (w.name && (std::strstr(w.name, "%f") || std::strstr(w.name, "%.") || std::strstr(w.name, "%g") ||
-                           std::strstr(w.name, "%e"))) {
-                ImGui::SetNextItemWidth(-FLT_MIN);
-                if (ImGui::SliderFloat("##v", &v, w.fMin, w.fMax, w.name, ImGuiSliderFlags_NoInput)) {
-                    CVarSetFloat(w.cvar, v);
-                    changed = true;
-                }
-            } else if (ImGui::SliderFloat(label, &v, w.fMin, w.fMax, "%.3f", ImGuiSliderFlags_NoInput)) {
+            const auto readout = ReadoutOf(w, relabel, true);
+            if (ComboMenu_SliderRowFloat(MenuRowLabel(oot, w.cvar, w.name).c_str(), &v, w.fMin, w.fMax, w.fStep,
+                                         w.fDefault, readout.format.c_str(), readout.percentage)) {
                 CVarSetFloat(w.cvar, v);
                 changed = true;
             }
-            ComboMenu_PopSlider();
             break;
         }
         case CW_COMBOBOX: {
@@ -563,6 +583,9 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
         ApplyTrickGovernedRuntimeChange(w.cvar);
         ComboAudio::MirrorIfVolumeCVar(w.cvar);
         WarnAboutRuleChange(w.cvar);
+        // The games' own widgets save on change; a row drawn here must too, or it reverts on restart.
+        if (auto ctx = Ship::Context::GetRawInstance(); ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui())
+            ctx->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
     }
 
     if (disabled) {

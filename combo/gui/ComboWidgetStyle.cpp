@@ -10,6 +10,8 @@
 #include <libultraship/libultraship.h> // CVarGetInteger
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
+#include <algorithm>
+#include <cmath>
 
 namespace ComboRando {
 
@@ -169,6 +171,98 @@ bool ComboMenu_StyledHeaderEntry(const char* label, bool selected) {
 
 bool ComboMenu_StyledSidebarEntry(const char* label, bool selected, float width) {
     return StyledNavButton(label, selected, ImVec2(width, 0.0f), ImVec2(10.0f, 6.0f));
+}
+
+// "-" [bar] "+" and, while changed, Default: the shared frame of both slider rows. drawBar draws the
+// bar at the next item width and returns true when it moved.
+template <class T, class DrawBar>
+static bool SliderRow(const char* label, T* value, T min, T max, T step, T defaultValue, bool changedFromDefault,
+                      DrawBar drawBar) {
+    const ImVec4 theme = ComboMenu_ThemeColor();
+    ImGui::PushID(label);
+    ImGui::BeginGroup();
+    if (label && *label)
+        ImGui::TextWrapped("%s", label);
+    const float button = ImGui::GetFontSize() * 2.0f; // a thumb-sized step button
+    const float spacing = ImGui::GetStyle().ItemSpacing.x;
+    const float reset = changedFromDefault ? ImGui::CalcTextSize("Default").x + 20.0f + spacing : 0.0f;
+    bool changed = false;
+    ComboMenu_PushButton(theme);
+    if (ImGui::Button("-", ImVec2(button, 0.0f))) {
+        *value = std::max(min, *value - step);
+        changed = true;
+    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(std::max(1.0f, ImGui::GetContentRegionAvail().x - button - spacing - reset));
+    ComboMenu_PushSlider(theme);
+    changed |= drawBar();
+    ComboMenu_PopSlider();
+    ImGui::SameLine();
+    if (ImGui::Button("+", ImVec2(button, 0.0f))) {
+        *value = std::min(max, *value + step);
+        changed = true;
+    }
+    if (changedFromDefault) {
+        ImGui::SameLine();
+        if (ImGui::Button("Default")) {
+            *value = defaultValue;
+            changed = true;
+        }
+    }
+    ComboMenu_PopButton();
+    ImGui::EndGroup();
+    ImGui::PopID();
+    return changed;
+}
+
+bool ComboMenu_SliderRowInt(const char* label, int* value, int min, int max, int step, int defaultValue,
+                            const char* format) {
+    return SliderRow(label, value, min, max, std::max(1, step), defaultValue, *value != defaultValue, [&] {
+        return ImGui::SliderInt("##Value", value, min, max, format,
+                                ImGuiSliderFlags_NoInput | ImGuiSliderFlags_AlwaysClamp);
+    });
+}
+
+bool ComboMenu_SliderRowFloat(const char* label, float* value, float min, float max, float step, float defaultValue,
+                              const char* format, bool percentage) {
+    if (step <= 0.0f)
+        step = (max - min) / 100.0f;
+    const float scale = percentage ? 100.0f : 1.0f;
+    const bool changedFromDefault = std::fabs(*value - defaultValue) > step * 0.5f;
+    return SliderRow(label, value, min, max, step, defaultValue, changedFromDefault, [&] {
+        float shown = *value * scale;
+        if (!ImGui::SliderFloat("##Value", &shown, min * scale, max * scale, format,
+                                ImGuiSliderFlags_NoInput | ImGuiSliderFlags_AlwaysClamp))
+            return false;
+        *value = shown / scale;
+        return true;
+    });
+}
+
+bool ComboMenu_CheckboxRow(const char* label, bool* value) {
+    ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
+    bool changed = false;
+    const float need = ImGui::CalcTextSize(label).x + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x;
+    if (need <= ImGui::GetContentRegionAvail().x) {
+        changed = ImGui::Checkbox(label, value);
+    } else {
+        // Too wide for one line: the box, then the label wrapped beside it, which also toggles.
+        ImGui::PushID(label);
+        changed = ImGui::Checkbox("##Toggle", value);
+        ImGui::SameLine();
+        ImGui::TextWrapped("%s", label);
+        const ImVec2 labelStart = ImGui::GetItemRectMin(), labelEnd = ImGui::GetItemRectMax();
+        const ImVec2 afterLabel = ImGui::GetCursorScreenPos();
+        ImGui::SetCursorScreenPos(labelStart);
+        if (ImGui::InvisibleButton("##Label", ImVec2(labelEnd.x - labelStart.x, labelEnd.y - labelStart.y))) {
+            *value = !*value;
+            changed = true;
+        }
+        ImGui::SetCursorScreenPos(afterLabel);
+        ImGui::PopID();
+    }
+    ComboMenu_PopCheckbox();
+    return changed;
 }
 
 } // namespace ComboRando

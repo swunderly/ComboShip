@@ -60,6 +60,9 @@ typedef struct {
     int32_t sameLine;
     int32_t hideInSearch;
     int32_t column; /* 0-based column index within the sidebar (for faithful multi-column layout) */
+    /* v3: sliders' value readout, so comboui can draw them in one style and keep each game's units */
+    const char* format;   /* slider printf format ("%d", "+%d", "%.1fx", "%.0f%%"), or NULL */
+    int32_t isPercentage; /* CW_SLIDER_FLOAT: the readout shows the value times 100 */
 } CwWidget;
 
 typedef struct {
@@ -75,6 +78,9 @@ typedef struct {
     const CwSidebar* sidebars;
     int32_t sidebarCount;
 } CwSection;
+
+/* comboui reads CwWidget.format, so it refuses an older game menu. */
+#define COMBO_MENU_ABI_VERSION 3
 
 typedef struct {
     int32_t version; /* ABI version; bump on layout change */

@@ -2609,6 +2609,7 @@ struct BenExportPolicy {
                         cw.iMax = o->max;
                         cw.iStep = o->step;
                         cw.iDefault = o->defaultValue;
+                        cw.format = o->format;
                     }
                     break;
                 }
@@ -2618,6 +2619,8 @@ struct BenExportPolicy {
                         cw.fMax = o->max;
                         cw.fStep = o->step;
                         cw.fDefault = o->defaultValue;
+                        cw.format = o->format;
+                        cw.isPercentage = o->isPercentage ? 1 : 0;
                     }
                     break;
                 }

@@ -1499,12 +1499,7 @@ void DrawGameplayRuleRow(const GameplayRule& rule, bool randomizer, ComboRando::
     } else if (rule.minimum > 0) {
         if (value < rule.minimum)
             value = rule.fallback;
-        ImGui::TextWrapped("%s", label.c_str());
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        ComboMenu_PushSlider(theme);
-        changed =
-            ImGui::SliderInt("##RequiredCount", &value, rule.minimum, rule.maximum, "%d", ImGuiSliderFlags_NoInput);
-        ComboMenu_PopSlider();
+        changed = ComboMenu_SliderRowInt(label.c_str(), &value, rule.minimum, rule.maximum, 1, rule.fallback, "%d");
     } else {
         const char* gibdo[] = { "Vanilla", "MM3D", "No trade" };
         const char* dog[] = { "Off", "With Mask of Truth", "Always" };
