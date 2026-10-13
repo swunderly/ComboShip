@@ -24,10 +24,14 @@ public final class TouchOverlayInstrumentation extends Instrumentation {
     private long downTime;
 
     private static final class Pad implements TouchOverlay.PadOutput {
-        int buttons,releases;float lx,ly,rx,ry;boolean tracker;
+        int buttons,releases,tracker;float lx,ly,rx,ry;boolean popup;
         final int[] toggles=new int[3];
         public void toggleTracker(int kind){toggles[kind]++;}
-        public boolean capturesTouch(float x,float y){return tracker && x>=.45f && x<=.98f && y>=.05f && y<=.90f;}
+        public int trackerTouch(float x,float y){
+            // A details popup over C-left, inside the tracker window.
+            if(tracker!=TouchOverlay.TOUCH_GAME && popup && x>=.78f && x<=.90f && y>=.30f && y<=.50f)return TouchOverlay.TOUCH_TRACKER;
+            return x>=.45f && x<=.98f && y>=.05f && y<=.90f?tracker:TouchOverlay.TOUCH_GAME;
+        }
         public void update(int buttons,float lx,float ly,float rx,float ry,float lt,float rt){
             this.buttons=buttons;this.lx=lx;this.ly=ly;this.rx=rx;this.ry=ry;
         }
@@ -187,18 +191,12 @@ public final class TouchOverlayInstrumentation extends Instrumentation {
     }
 
     private void testTrackerTouches(){
-        create();pad.tracker=true;
+        create();pad.tracker=TouchOverlay.TOUCH_TRACKER;
         Point row=p(1,W*.7f,H*.2f);
         check(!event(MotionEvent.ACTION_DOWN,0,row) && neutral(),"Tracker rows bypass invisible stick zones");
         Point a=p(2,W*.94f,H*.81f);
-        check(event(MotionEvent.ACTION_DOWN,0,a) && (pad.buttons&1)!=0,"Buttons over the tracker keep working");
-        event(MotionEvent.ACTION_UP,0,a);
-        check(neutral(),"Releasing a button over the tracker releases it");
-        int[] covered=pixels();
-        check((covered[(int)(H*.81f)*W+(int)(W*.94f)]>>>24)!=0,"Buttons over the tracker are still drawn");
-        Point cLeft=p(4,W*.835f,H*.39f);
-        check(event(MotionEvent.ACTION_DOWN,0,cLeft) && pad.rx<-.99f,"C buttons over the tracker can assign items");
-        event(MotionEvent.ACTION_UP,0,cLeft);
+        check(!event(MotionEvent.ACTION_DOWN,0,a) && neutral(),"During play tracker content takes priority over covered game buttons");
+        check((pixels()[(int)(H*.81f)*W+(int)(W*.94f)]>>>24)==0,"During play buttons under the tracker are not drawn");
         Point menu=p(2,W*.5f,H*.1f);int taps=menuTaps;
         event(MotionEvent.ACTION_DOWN,0,menu);event(MotionEvent.ACTION_UP,0,menu);
         check(menuTaps==taps+1 && neutral(),"Menu remains usable even over the tracker");
@@ -207,21 +205,40 @@ public final class TouchOverlayInstrumentation extends Instrumentation {
         event(MotionEvent.ACTION_MOVE,0,p(3,W*.3f,H*.12f));
         check(pad.lx>.9f,"Uncovered stick still sends movement");
         event(MotionEvent.ACTION_UP,0,left);
-        view.setStickMode(TouchOverlay.STICKS_FIXED);
-        check(event(MotionEvent.ACTION_DOWN,0,a) && (pad.buttons&1)!=0,"Fixed controls also keep buttons over the tracker");
+        // The pause screen: drawn buttons keep their touches over the tracker window, so C buttons can assign items.
+        pad.tracker=TouchOverlay.TOUCH_TRACKER_UNDER_BUTTONS;
+        check(!event(MotionEvent.ACTION_DOWN,0,row) && neutral(),"Paused tracker rows still bypass invisible stick zones");
+        check(event(MotionEvent.ACTION_DOWN,0,a) && (pad.buttons&1)!=0,"Paused buttons over the tracker keep working");
         event(MotionEvent.ACTION_UP,0,a);
+        check(neutral(),"Releasing a button over the tracker releases it");
+        check((pixels()[(int)(H*.81f)*W+(int)(W*.94f)]>>>24)!=0,"Paused buttons over the tracker are drawn");
+        Point cLeft=p(4,W*.835f,H*.39f);
+        check(event(MotionEvent.ACTION_DOWN,0,cLeft) && pad.rx<-.99f,"C buttons over the paused tracker can assign items");
+        event(MotionEvent.ACTION_UP,0,cLeft);
+        pad.popup=true;
+        check(!event(MotionEvent.ACTION_DOWN,0,cLeft) && neutral(),"A tracker popup takes priority over a covered C button");
+        check((pixels()[(int)(H*.39f)*W+(int)(W*.835f)]>>>24)==0,"Buttons under a tracker popup are not drawn");
+        check(event(MotionEvent.ACTION_DOWN,0,a) && (pad.buttons&1)!=0,"Buttons beside the popup keep working");
+        event(MotionEvent.ACTION_UP,0,a);pad.popup=false;
+        view.setStickMode(TouchOverlay.STICKS_FIXED);
+        check(event(MotionEvent.ACTION_DOWN,0,a) && (pad.buttons&1)!=0,"Fixed controls also keep buttons over the paused tracker");
+        event(MotionEvent.ACTION_UP,0,a);
+        Point camera=p(5,W*.64f,H*.77f);
+        check(!event(MotionEvent.ACTION_DOWN,0,camera) && neutral(),"A drawn camera stick leaves the tracker to scroll");
         check(!event(MotionEvent.ACTION_DOWN,0,row) && neutral(),"Fixed controls leave the rest of the tracker to it");
+        pad.tracker=TouchOverlay.TOUCH_TRACKER;
+        check(!event(MotionEvent.ACTION_DOWN,0,a),"Fixed controls also yield covered buttons to tracker during play");
         view.editLayout();
         check(event(MotionEvent.ACTION_DOWN,0,a) && neutral(),"Layout editor can still move buttons over tracker");
         event(MotionEvent.ACTION_UP,0,a);
-        view.release();create();pad.tracker=false;
+        view.release();create();pad.tracker=TouchOverlay.TOUCH_GAME;
         event(MotionEvent.ACTION_DOWN,0,a);
         check((pad.buttons&1)!=0,"Closing tracker restores normal button hit testing");
         event(MotionEvent.ACTION_UP,0,a);prefs.edit().clear().commit();
     }
 
     private void testTrackerButtons(){
-        prefs.edit().clear().commit();create();view.setTrackerButtons(7);pad.tracker=true;
+        prefs.edit().clear().commit();create();view.setTrackerButtons(7);pad.tracker=TouchOverlay.TOUCH_TRACKER;
         Point ct=p(1,W*.37f,H*.1f),it=p(2,W*.63f,H*.1f),ht=p(3,W*.76f,H*.1f);
         Point[] points={ct,it,ht};
         for(int kind=0;kind<3;kind++){
@@ -258,7 +275,7 @@ public final class TouchOverlayInstrumentation extends Instrumentation {
         check(pad.toggles[0]==before+1 && neutral(),"Removing CT while pressed cancels it");
         view.setTrackerButtons(7);view.resetLayout();
         check(zero(view.getTrackerButtonScale(0)-1f) && !prefs.contains("wide.0.214.x"),"Reset restores tracker size and position");
-        view.release();pad.tracker=false;prefs.edit().clear().commit();
+        view.release();pad.tracker=TouchOverlay.TOUCH_GAME;prefs.edit().clear().commit();
     }
 
     private void testMenuMovement(){

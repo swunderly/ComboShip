@@ -65,13 +65,14 @@ extern "C" JNIEXPORT jboolean JNICALL Java_org_comboship_android_GameActivity_na
 extern "C" JNIEXPORT jboolean JNICALL Java_org_comboship_android_GameActivity_nativeMenuOpen(JNIEnv*, jclass) {
     return gameplayActive.load() && Ship::Mobile::IsMenuVisible();
 }
-extern "C" JNIEXPORT jboolean JNICALL Java_org_comboship_android_GameActivity_nativeTrackerHitTest(JNIEnv*, jclass, jfloat x, jfloat y) {
-    if (!gameplayActive.load() || Ship::Mobile::IsMenuVisible()) return false;
+// TouchOverlay.TOUCH_GAME, TOUCH_TRACKER or TOUCH_TRACKER_UNDER_BUTTONS (ComboChecks::TrackerTouch).
+extern "C" JNIEXPORT jint JNICALL Java_org_comboship_android_GameActivity_nativeTrackerHitTest(JNIEnv*, jclass, jfloat x, jfloat y) {
+    if (!gameplayActive.load() || Ship::Mobile::IsMenuVisible()) return 0;
     using HitTest = int (*)(float, float);
     // Only Android's UI thread resolves this. Retry while comboui is still loading.
     static HitTest hitTest = nullptr;
     if (!hitTest) hitTest = reinterpret_cast<HitTest>(dlsym(RTLD_DEFAULT, "ComboUI_TrackerHitTest"));
-    return hitTest && hitTest(x, y);
+    return hitTest ? hitTest(x, y) : 0;
 }
 extern "C" JNIEXPORT jint JNICALL Java_org_comboship_android_GameActivity_nativeTrackerButtons(JNIEnv*, jclass) {
     if (!gameplayActive.load()) return 0;

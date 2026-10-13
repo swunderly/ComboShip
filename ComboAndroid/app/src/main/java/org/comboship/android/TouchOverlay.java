@@ -7,11 +7,14 @@ import java.util.*;
 /** Multi-pointer N64 controls; unclaimed touches continue to SDL's surface/ImGui. */
 public final class TouchOverlay extends View {
     static final int STICKS_INVISIBLE=0, STICKS_FIXED=1, STICKS_FLOATING_LEFT=2;
+    /** What a touch lands on (ComboChecks::TrackerTouch): the game; a tracker or its popup; or a tracker window on the
+     *  pause screen, which leaves the drawn buttons their touches. */
+    static final int TOUCH_GAME=0, TOUCH_TRACKER=1, TOUCH_TRACKER_UNDER_BUTTONS=2;
     private static final int LEFT=200, RIGHT=201, MENU=202, Z=203, R=204, CU=210, CD=211, CL=212, CR=213, CT=214, IT=215, HT=216;
     interface PadOutput {
         void update(int buttons,float lx,float ly,float rx,float ry,float lt,float rt);
         void release();
-        default boolean capturesTouch(float x,float y){return false;}
+        default int trackerTouch(float x,float y){return TOUCH_GAME;}
         default void toggleTracker(int kind){}
     }
     private static final class Control {
@@ -40,7 +43,7 @@ public final class TouchOverlay extends View {
                 GameActivity.nativePad(buttons,lx,ly,rx,ry,lt,rt);
             }
             public void release(){GameActivity.nativeRelease();}
-            public boolean capturesTouch(float x,float y){return GameActivity.nativeTrackerHitTest(x,y);}
+            public int trackerTouch(float x,float y){return GameActivity.nativeTrackerHitTest(x,y);}
             public void toggleTracker(int kind){GameActivity.nativeToggleTracker(kind);}
         });
     }
@@ -94,8 +97,8 @@ public final class TouchOverlay extends View {
     @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){super.onSizeChanged(w,h,oldw,oldh);build();}
     @Override protected void onDraw(Canvas canvas){
         super.onDraw(canvas);
-        // Drawn controls stay on top of an open tracker, as they do over every other window on the game.
         for(Control c:controls){
+            if(!editing && !isUtility(c) && yields(c,output.trackerTouch(c.x,c.y)))continue;
             if(c.id==MENU && menuHidden && !editing)continue;
             if(!editing && c.id!=MENU && (suppressed || (!showPad && !isUtility(c))))continue;
             if(isStick(c) && stickMode==STICKS_INVISIBLE && !editing)continue;
@@ -118,10 +121,9 @@ public final class TouchOverlay extends View {
             canvas.drawText("Drag any button, including Done. Tap Done to save.",getWidth()*.5f,getHeight()*.22f,paint);}
     }
     private Control hit(float x,float y){
-        // A tracker under the finger takes only the invisible stick areas: every drawn button keeps working over it
-        // (C buttons assign items on the pause screen); elsewhere the tracker gets the touch.
-        boolean tracker=!editing && output.capturesTouch(x/getWidth(),y/getHeight());
+        int tracker=editing?TOUCH_GAME:output.trackerTouch(x/getWidth(),y/getHeight());
         for(int i=controls.size()-1;i>=0;i--){Control c=controls.get(i);
+            if(yields(c,tracker))continue;
             if(c.id==MENU && menuHidden && !editing)continue;
             if(!editing && c.id!=MENU && (suppressed || (!showPad && !isUtility(c))))continue;
             if(isStick(c) && stickMode==STICKS_INVISIBLE && !editing)continue;
@@ -130,7 +132,7 @@ public final class TouchOverlay extends View {
         }
         // Buttons above get first claim. Otherwise a finger owns its starting side until lift,
         // even if it crosses the middle or a second finger lands on the same side.
-        if(showPad && !suppressed && !editing && !tracker){
+        if(showPad && !suppressed && !editing && tracker==TOUCH_GAME){
             int id=-1;
             if(stickMode==STICKS_INVISIBLE)id=x<getWidth()*.5f?LEFT:RIGHT;
             else if(stickMode==STICKS_FLOATING_LEFT && x<getWidth()*.43f && y>getHeight()*.35f)id=LEFT;
@@ -139,6 +141,12 @@ public final class TouchOverlay extends View {
         return null;
     }
     private static boolean isUtility(Control c){return c.id==MENU || (c.id>=CT && c.id<=HT);}
+    // Menu and CT/IT/HT always keep their touches. A tracker's popup, or its window during play, takes the touch from
+    // the other controls, which are not drawn there. On the pause screen its window leaves the drawn buttons theirs
+    // (C buttons assign items) but not the sticks, so the tracker can still be scrolled there.
+    private static boolean yields(Control c,int tracker){
+        return !isUtility(c) && (tracker==TOUCH_TRACKER || (tracker==TOUCH_TRACKER_UNDER_BUTTONS && isStick(c)));
+    }
     private static boolean isStick(Control c){return c.id==LEFT || c.id==RIGHT;}
     private boolean isFloating(Control c){return isStick(c) &&
             (stickMode==STICKS_INVISIBLE || (stickMode==STICKS_FLOATING_LEFT && c.id==LEFT));}

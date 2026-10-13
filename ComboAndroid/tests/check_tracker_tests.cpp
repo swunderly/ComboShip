@@ -76,5 +76,27 @@ int main() {
     assert(PassesFilters(COMBO_CHECK_LOGIC_KNOWN | COMBO_CHECK_AVAILABLE, false, false, true));
     assert(PassesFilters(COMBO_CHECK_COLLECTED | COMBO_CHECK_LOGIC_KNOWN, true, true, true));
     assert(!PassesFilters(COMBO_CHECK_AREA_HIDDEN, true, true, true));
-    std::cout << "PASS: shared tracker toggle, hold, pause, transitions, filters and totals\n";
+
+    // Touches over the trackers: a side panel on the right half, the Check details popup against its right edge.
+    float boxes[3][5][4]{};
+    const auto place = [](float* b, float x0, float y0, float x1, float y1) {
+        b[0] = x0;
+        b[1] = y0;
+        b[2] = x1;
+        b[3] = y1;
+    };
+    assert(TrackerTouchAt(boxes, true, .8f, .4f) == TouchGame); // no tracker open
+    place(boxes[0][0], .5f, 0, 1, 1);
+    assert(TrackerTouchAt(boxes, false, .835f, .39f) == TouchTracker); // during play the tracker takes it (0.1.11)
+    assert(TrackerTouchAt(boxes, true, .835f, .39f) == TouchTrackerUnderButtons); // pause screen: C buttons win
+    assert(TrackerTouchAt(boxes, true, .2f, .39f) == TouchGame);                  // beside the panel
+    place(boxes[0][1], .7f, .3f, 1, .5f);
+    assert(TrackerTouchAt(boxes, true, .835f, .39f) == TouchTracker);            // a popup always keeps its touches
+    assert(TrackerTouchAt(boxes, true, .78f, .81f) == TouchTrackerUnderButtons); // the window outside it does not
+    boxes[0][1][2] = boxes[0][1][0];                                             // an empty popup box claims nothing
+    assert(TrackerTouchAt(boxes, true, .835f, .39f) == TouchTrackerUnderButtons);
+    place(boxes[2][2], .1f, .1f, .9f, .9f);
+    assert(TrackerTouchAt(boxes, true, .835f, .39f) == TouchTracker); // another tracker's popup over this window
+    assert(TrackerTouchAt(boxes, false, .2f, .39f) == TouchTracker);  // and over the game
+    std::cout << "PASS: shared tracker toggle, hold, pause, transitions, filters, totals and touches\n";
 }

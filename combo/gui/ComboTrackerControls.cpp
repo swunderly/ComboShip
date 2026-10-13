@@ -28,6 +28,8 @@ bool focus[Count]{}, open[Count]{};
 int styles[Count] = { -1, -1, -1 };
 ImGuiID dock = 0;
 std::atomic<unsigned> pending{ 0 }, touchButtons{ 0 };
+// Whether the foreground game showed its pause screen last frame, for the touch overlay's hit test.
+std::atomic<bool> pauseScreen{ false };
 std::mutex boundsMutex;
 float bounds[Count][5][4]{};
 std::string Key(Kind k, const char* suffix) {
@@ -176,9 +178,10 @@ bool Visible(Kind kind) {
     else
         touchButtons.fetch_and(~bit);
     const bool was = states[kind].open;
+    const bool paused = ComboTracker::ForegroundPaused(game);
+    pauseScreen.store(paused);
     const bool shown = states[kind].Update(info.loaded ? game * 4 + info.slot : -1, mode, Int(kind, "Shortcut", 0x20),
-                                           pads ? pads[0].button : 0, enabled, info.loaded,
-                                           ComboTracker::ForegroundPaused(game), menu, touch);
+                                           pads ? pads[0].button : 0, enabled, info.loaded, paused, menu, touch);
     if (!was && states[kind].open && shown)
         focus[kind] = true;
     if (!shown)
@@ -392,11 +395,9 @@ extern "C" COMBO_EXPORT void ComboUI_ToggleTracker(int kind) {
     if (kind >= 0 && kind < ComboTrackerUI::Count)
         ComboTrackerUI::pending.fetch_or(1u << kind);
 }
+// A ComboChecks::TrackerTouch: 0 the game's, 1 a tracker's, 2 a tracker window's on the pause screen, which leaves
+// drawn touch buttons their touches.
 extern "C" COMBO_EXPORT int ComboUI_TrackerHitTest(float x, float y) {
     std::lock_guard<std::mutex> lock(ComboTrackerUI::boundsMutex);
-    for (const auto& boxes : ComboTrackerUI::bounds)
-        for (const auto& b : boxes)
-            if (b[2] > b[0] && b[3] > b[1] && x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3])
-                return 1;
-    return 0;
+    return ComboChecks::TrackerTouchAt(ComboTrackerUI::bounds, ComboTrackerUI::pauseScreen.load(), x, y);
 }

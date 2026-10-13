@@ -16,7 +16,7 @@ public final class GameActivity extends SDLActivity {
     public static native void nativeQuit();
     public static native boolean nativeControlsSuppressed();
     public static native boolean nativeMenuOpen();
-    public static native boolean nativeTrackerHitTest(float x,float y);
+    public static native int nativeTrackerHitTest(float x,float y);
     public static native int nativeTrackerButtons();
     public static native void nativeToggleTracker(int kind);
     public static native void nativeMenuScale(float scale);

@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <unordered_set>
 #include "../menu/ComboCheckTrackerABI.h"
@@ -39,6 +40,26 @@ struct VisibilityState {
         return open;
     }
 };
+
+// What a touch at (x, y), in screen fractions, lands on. Each tracker publishes box 0 for its window and boxes 1-4
+// for its open popups (unused boxes are empty). A popup always takes the touch, and so does a window during play, as
+// since 0.1.11. On the pause screen a window leaves the drawn touch buttons their touches, so the C buttons can
+// assign items; the touch overlay still keeps its sticks off the tracker.
+enum TrackerTouch { TouchGame, TouchTracker, TouchTrackerUnderButtons };
+template <std::size_t Trackers>
+inline int TrackerTouchAt(const float (&boxes)[Trackers][5][4], bool paused, float x, float y) {
+    const auto inside = [x, y](const float* b) {
+        return b[2] > b[0] && b[3] > b[1] && x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3];
+    };
+    for (const auto& tracker : boxes)
+        for (int i = 1; i < 5; ++i)
+            if (inside(tracker[i]))
+                return TouchTracker;
+    for (const auto& tracker : boxes)
+        if (inside(tracker[0]))
+            return paused ? TouchTrackerUnderButtons : TouchTracker;
+    return TouchGame;
+}
 
 inline bool IsCollected(uint32_t flags) {
     return (flags & COMBO_CHECK_COLLECTED) != 0;
