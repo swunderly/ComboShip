@@ -108,6 +108,18 @@ check('gRandoSettings.SkipChildStealth' in sidebar and 'ReadInteger' in sidebar,
       'DrawSidebar no longer hides Skip Child Stealth while it is off')
 check('"Seed settings (no logic effect)"' not in sidebar, 'DrawSidebar draws a second seed-settings heading')
 
+# ---- One row style: Randomizer rows of both worlds (MM's through CatalogRow) and the goal counts use the slider and
+# checkbox rows of the other tabs and the gameplay rule rows.
+widget = body(profiles, 'void DrawWidget(const CwWidget& w, const GameMenu& game)')
+check('ComboMenu_SliderRowInt(' in widget and 'ImGui::SliderInt(' not in widget,
+      'Randomizer sliders do not use the one slider row')
+check('ComboMenu_CheckboxRow(' in widget and 'ImGui::Checkbox(' not in widget,
+      'Randomizer checkboxes do not use the one checkbox row')
+check('ImGui::Checkbox(' not in body(profiles, 'static void CatalogRow('), 'an MM Randomizer checkbox has another style')
+check('"defaults"' in body(profiles, 'static void CatalogRow('), 'MM Randomizer sliders have no Default to return to')
+check('{ "gRandoSettings.BigPoeTargetCount", "Big Poes required for reward"' in profiles,
+      'Big Poe count does not read "<thing> required for <reward>" like the MM count rules')
+
 # ---- Combined goal controls still write their keys.
 goals = body(menu, 'void DrawCombinedGoals()')
 for key in fixture['combinedGoalKeys']:
@@ -115,6 +127,7 @@ for key in fixture['combinedGoalKeys']:
 for name in ('"Goal"', '"Triforce Goal"', '"Triforce Pieces"', '"Logic"', '"Starting world"', '"Ganon & Majora"',
              '"Any Final Boss"', '"All Locations"', '"Beatable Only"'):
     check(name in goals, f'DrawCombinedGoals lacks the OoTMM name {name}')
+check('ImGui::SliderInt(' not in goals, 'the Triforce counts do not use the one slider row')
 for alias in ('victory condition', 'reachability'):
     check(alias in body(menu, 'void ComboMenu::DrawSearchResults(const std::string& query)'),
           f'search lost the old name {alias!r}')

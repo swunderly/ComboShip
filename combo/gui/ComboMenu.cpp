@@ -1804,11 +1804,8 @@ void DrawCombinedGoals() {
             std::clamp(ProfileUI::ReadInteger("gCombo.Rando.TriforceRequired", 15), 1, kMaxComboTriforcePieces);
         int total =
             std::clamp(ProfileUI::ReadInteger("gCombo.Rando.TriforceTotal", 15), required, kMaxComboTriforcePieces);
-        ComboMenu_PushSlider(theme);
-        ImGui::TextUnformatted("Triforce Goal");
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        if (ImGui::SliderInt("##RequiredPieces", &required, 1, kMaxComboTriforcePieces, "%d",
-                             ImGuiSliderFlags_NoInput)) {
+        // The one slider row; Default returns to the 15 pieces a new file starts with.
+        if (ComboMenu_SliderRowInt("Triforce Goal", &required, 1, kMaxComboTriforcePieces, 1, 15, "%d")) {
             ProfileUI::WriteInteger("gCombo.Rando.TriforceRequired", required);
             if (total < required) {
                 total = required;
@@ -1816,14 +1813,11 @@ void DrawCombinedGoals() {
             }
         }
         MenuTooltip("The amount of Triforce Pieces that are required to win.");
-        ImGui::TextUnformatted("Triforce Pieces");
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        if (ImGui::SliderInt("##TotalPieces", &total, required, kMaxComboTriforcePieces, "%d",
-                             ImGuiSliderFlags_NoInput)) {
+        if (ComboMenu_SliderRowInt("Triforce Pieces", &total, required, kMaxComboTriforcePieces, 1,
+                                   std::max(required, 15), "%d")) {
             ProfileUI::WriteInteger("gCombo.Rando.TriforceTotal", total);
         }
         MenuTooltip("The total amount of Triforce Pieces in the item pool.");
-        ComboMenu_PopSlider();
     }
     const char* guarantees[] = { "All Locations", "Beatable Only" };
     int guarantee = std::clamp(ProfileUI::ReadInteger(kCombinedGuarantee, 0), 0, 1);

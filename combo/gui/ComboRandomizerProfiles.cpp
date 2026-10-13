@@ -307,6 +307,8 @@ static constexpr OptionDisplay kOptionDisplay[] = {
     { "gRandoSettings.ShuffleOwlDrops", nullptr,
       "Ocarina of Time destinations only. Warp Songs and Soaring Spots Shuffle above mixes both games.", false },
     { "gRandoSettings.FullWallets", "Fill Wallets", nullptr, false },
+    // Gameplay rules count rows read "<thing> required for <reward>", as MM's frog and Zora egg rules.
+    { "gRandoSettings.BigPoeTargetCount", "Big Poes required for reward", nullptr, false },
     { "gRandoSettings.ShuffleSongs", "Song Shuffle", nullptr, false },
     { "gRandoSettings.ShuffleTokens", "Gold Skulltula Tokens Shuffle", nullptr, false },
     { "gRandoSettings.ShuffleCows", "Cow Shuffle", nullptr, false },
@@ -380,31 +382,26 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
             ImGui::TextWrapped("%s", caption.c_str());
             break;
         case CW_CHECKBOX: {
+            // The row style of the other tabs and the gameplay rule rows: a long label wraps beside the box.
             bool value = ReadInteger(key, w.bDefault) != 0;
-            ComboMenu_PushCheckbox(theme);
-            if (ImGui::Checkbox(label, &value))
+            if (ComboMenu_CheckboxRow(caption.c_str(), &value))
                 WriteInteger(key, value);
-            ComboMenu_PopCheckbox();
             break;
         }
         case CW_SLIDER_INT: {
+            // The one slider row: the label above, the choice's words in the bar, - and +, and Default.
             int value = ReadInteger(key, w.iDefault);
-            ComboMenu_PushSlider(theme);
-            ImGui::TextWrapped("%s", caption.c_str());
-            ImGui::SetNextItemWidth(-FLT_MIN);
-            if (ImGui::SliderInt(
-                    "##Value", &value, w.iMin,
-                    policy ? (!std::strcmp(key, "gRandoSettings.ShopsanityCount") &&
-                                      ReadInteger("gRandoSettings.LogicRules", 0) != ProfileOotPolicy::RO_LOGIC_NO_LOGIC
-                                  ? std::min(7, int(policy->choices.size()) - 1)
-                                  : int(policy->choices.size()) - 1)
-                           : w.iMax,
-                    policy && !policy->choices.empty()
-                        ? policy->choices[std::clamp(value, 0, int(policy->choices.size()) - 1)].c_str()
-                        : "%d",
-                    ImGuiSliderFlags_NoInput))
+            const int maximum =
+                policy ? (!std::strcmp(key, "gRandoSettings.ShopsanityCount") &&
+                                  ReadInteger("gRandoSettings.LogicRules", 0) != ProfileOotPolicy::RO_LOGIC_NO_LOGIC
+                              ? std::min(7, int(policy->choices.size()) - 1)
+                              : int(policy->choices.size()) - 1)
+                       : w.iMax;
+            const char* format = policy && !policy->choices.empty()
+                                     ? policy->choices[std::clamp(value, 0, int(policy->choices.size()) - 1)].c_str()
+                                     : "%d";
+            if (ComboMenu_SliderRowInt(caption.c_str(), &value, w.iMin, maximum, w.iStep, w.iDefault, format))
                 WriteInteger(key, value);
-            ComboMenu_PopSlider();
             break;
         }
         case CW_COMBOBOX: {
@@ -596,6 +593,10 @@ static void CatalogRow(const Json& row) {
         widget.iMax = row.at("maximum");
         if (row.contains("maximumKey"))
             widget.iMax = ReadInteger(row["maximumKey"].get<std::string>().c_str(), widget.iMax);
+        // The slider row's Default button returns to MM's own default for the option.
+        const auto& mm = catalog.at("mm");
+        const int fallback = mm.contains("defaults") ? mm.at("defaults").value(key, widget.iMin) : widget.iMin;
+        widget.iDefault = std::max(widget.iMin, std::min(widget.iMax, fallback));
     } else {
         widget.kind = CW_COMBOBOX;
         for (const auto& c : row.at("choices"))
@@ -638,9 +639,7 @@ static void CatalogRow(const Json& row) {
     ImGui::BeginDisabled(disabled || unavailable);
     if (unavailable) {
         bool off = false;
-        ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
-        ImGui::Checkbox(label.c_str(), &off);
-        ComboMenu_PopCheckbox();
+        ComboMenu_CheckboxRow(label.c_str(), &off);
         Tooltip(unavailable);
     } else {
         DrawWidget(widget, ComboMenuModel::Get().Mm());

@@ -56,6 +56,9 @@ void ComboMenu_PushCombobox(const ImVec4&){} void ComboMenu_PopCombobox(){}
 void ComboMenu_PushSlider(const ImVec4&){} void ComboMenu_PopSlider(){}
 void ComboMenu_PushButton(const ImVec4&){} void ComboMenu_PopButton(){}
 bool ComboMenu_StyledHeaderEntry(const char* label,bool){return ImGui::Button(label);}
+bool ComboMenu_CheckboxRow(const char* label,bool* value){return ImGui::Checkbox(label,value);}
+bool ComboMenu_SliderRowInt(const char* label,int* value,int min,int max,int,int,const char* format){
+ return ImGui::SliderInt(label,value,min,max,format);}
 int LoadedRunSlot(){return -1;}
 }
 int main(){
