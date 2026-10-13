@@ -29,13 +29,15 @@ struct PresetOption {
     int value;
 };
 // Corresponding enums/values are validated against each native menu by the preset regression.
+// The three OoTMM presets keep its default goal, Ganon & Majora (Goal 0): the profile derives TriforceHunt from Goal.
 inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) {
     std::vector<PresetOption> options = {
-        { "gRandoSettings.LogicRules", 0 },      { "gCombo.Rando.Reachability", 0 },
-        { "gCombo.Rando.StartingGame", 0 },      { "gCombo.Rando.TriforceHunt", 0 },
-        { "gCombo.Rando.TriforceRequired", 15 }, { "gCombo.Rando.TriforceTotal", 15 },
-        { "gRando.Options.RO_LOGIC", 0 },        { "gRandoSettings.GossipStoneHints", 1 },
-        { "gRandoSettings.HintClarity", 2 },     { "gRandoSettings.HintDistribution", 1 },
+        { "gRandoSettings.LogicRules", 0 },       { "gCombo.Rando.Reachability", 0 },
+        { "gCombo.Rando.StartingGame", 0 },       { "gCombo.Rando.Goal", 0 },
+        { "gCombo.Rando.TriforceHunt", 0 },       { "gCombo.Rando.TriforceRequired", 15 },
+        { "gCombo.Rando.TriforceTotal", 15 },     { "gRando.Options.RO_LOGIC", 0 },
+        { "gRandoSettings.GossipStoneHints", 1 }, { "gRandoSettings.HintClarity", 2 },
+        { "gRandoSettings.HintDistribution", 1 },
     };
     const bool shared = preset != CommunityPreset::Default;
     for (int i = 0; i < SF_COUNT; ++i)

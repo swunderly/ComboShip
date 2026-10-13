@@ -151,12 +151,14 @@ int main() {
     for (const auto& preset:kCommunityPresets) {
         assert(presetNames.insert(preset.name).second);
         cv.clear();
+        // A file whose goal was a Triforce Hunt: the profile derives TriforceHunt from Goal, so the preset sets Goal.
+        write("gCombo.Rando.Goal",1); write("gCombo.Rando.TriforceHunt",1);
         for (const auto& value:CommunityPresetOptions(preset.id)) {
             assert(value.key && *value.key && value.value>=0);
             write(value.key,value.value);
         }
         assert(read(kNativeLogicRule,-1)==0 && read(kCombinedGuarantee,-1)==0);
-        assert(read("gCombo.Rando.TriforceHunt",-1)==0);
+        assert(read("gCombo.Rando.Goal",-1)==0 && read("gCombo.Rando.TriforceHunt",-1)==0); // OoTMM: Ganon & Majora
         for (int i=0;i<SF_COUNT;++i) {
             if (i == SF_OCARINA || !SharedFamilyByIndex(i).publicOption) { assert(!cv.count(SharedFamilyByIndex(i).cvar)); continue; }
             assert(read(SharedFamilyByIndex(i).cvar,-1)==(preset.id!=CommunityPreset::Default));
