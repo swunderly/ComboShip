@@ -471,6 +471,13 @@ take upstream changes into the `#else` branch and port them to the combo branch 
   menu font replaces `fontMonoLarger`, which stays only around the hex flag grids in `DrawFlagsTab` (their column
   headers are aligned for it); every tab draws in MM's bordered panel; the title and file screens show
   "Load an Ocarina of Time file to edit it." instead of editable tabs.
+- `DrawInfoTab` (the General tab): MM's cards in MM's order. Player (read-only "File N"; a text field for PAL names
+  through the combo-only `ASCII2z`, the inverse of `z2ASCII`; NTSC names keep their code boxes; name language),
+  Health (Max Health, Reset, Double Defense, DarkRed "Max hearts" and "Health" bars), Magic (Max Magic, Reset,
+  DarkGreen level and "Magic" bars instead of the Magic Level dropdown), Rupees (Max Rupees, Reset, the Green wallet
+  bar moved here from `DrawEquipmentTab`, "Rupees" bar), Time (a clock-text bar instead of 0-65535, Dawn, Noon,
+  Sunset, Midnight), then a collapsed Advanced card with everything else. Max and Reset do what MM's do for the
+  same resource, with OoT's new-file values (3 hearts).
 
 **MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp`:** rewritten functions are guarded the same way as OoT's
 (`#ifdef COMBO_BUILD <combo body> #else <upstream body> #endif`); one-line wording changes are inline guards.

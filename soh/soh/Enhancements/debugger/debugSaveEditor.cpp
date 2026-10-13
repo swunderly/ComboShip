@@ -119,6 +119,24 @@ char z2ASCII(int code) {
     return char(ret);
 }
 
+#ifdef COMBO_BUILD
+static uint8_t ASCII2z(char c) {
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if (c >= 'A' && c <= 'Z') {
+        return c - 'A' + 10;
+    }
+    if (c >= 'a' && c <= 'z') {
+        return c - 'a' + 36;
+    }
+    if (c == '-' || c == '.') {
+        return c + 0x12;
+    }
+    return 62;
+}
+#endif
+
 std::string decodeNTSCPlayerNameChar(int code) {
     const std::string charmap[] = {
         "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",  // 10
@@ -211,60 +229,62 @@ std::map<uint8_t, const char*> filenameLanguageMapNTSCOnly = {
 };
 
 #ifdef COMBO_BUILD
+// ComboShip: the General tab, laid out as the MM Save Editor's: Player, Health, Magic, Rupees and Time cards with the
+// same coloured bars and Max/Reset buttons, then everything else under a collapsed Advanced card. Max and Reset do
+// what MM's do for the same resource, with OoT's new-file values.
 void DrawInfoTab() {
-    if (gSaveContext.gameMode == GAMEMODE_TITLE_SCREEN) {
-        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Title Screen");
-    } else if (gSaveContext.gameMode == GAMEMODE_FILE_SELECT) {
-        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "File Select");
-    } else if (gPlayState == nullptr) {
-        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Game Inactive");
-    } else if (gSaveContext.fileNum >= 0 && gSaveContext.fileNum <= 2) {
-        // ComboShip: read-only. Editing it sent the next save to another slot, which could overwrite another file or
-        // split this file's OoT half from its MM half.
+    namespace Kit = ComboSaveEditorKit;
+    const ImVec4 theme = ColorValues.at(THEME_COLOR);
+    Kit::BeginCardLayout();
+
+    Kit::BeginCard("playerCard");
+    if (gSaveContext.fileNum >= 0 && gSaveContext.fileNum <= 2) {
+        // Read-only: editing it sent the next save to another slot, which could overwrite another file or split this
+        // file's OoT half from its MM half.
         ImGui::Text("File %d", gSaveContext.fileNum + 1);
     } else {
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Debug File");
     }
-
-    // TODO Needs a better method for name changing but for now this will work.
-    std::string name;
-    ImU16 one = 1;
-
+    ImGui::Text("Player Name");
     if (gSaveContext.ship.filenameLanguage == NAME_LANGUAGE_PAL) {
+        // A text field, as in MM.
+        static char nameBuffer[9];
         for (int i = 0; i < 8; i++) {
-            char letter = z2ASCII(gSaveContext.playerName[i]);
-            name += letter;
+            nameBuffer[i] = z2ASCII(gSaveContext.playerName[i]);
         }
-        name += '\0';
+        nameBuffer[8] = '\0';
+        PushStyleInput(THEME_COLOR);
+        if (ImGui::InputText("##playerName", nameBuffer, sizeof(nameBuffer), ImGuiInputTextFlags_AutoSelectAll)) {
+            bool ended = false;
+            for (int i = 0; i < 8; i++) {
+                ended = ended || nameBuffer[i] == '\0';
+                gSaveContext.playerName[i] = ASCII2z(ended ? ' ' : nameBuffer[i]);
+            }
+        }
+        PopStyleInput();
     } else {
+        // NTSC names hold Japanese characters a keyboard cannot type: keep the character codes.
+        std::string name;
         for (int i = 0; i < 8; i++) {
             name += decodeNTSCPlayerNameChar(gSaveContext.playerName[i]);
         }
-        name += '\0';
-    }
-
-    ImGui::PushItemWidth(ImGui::GetFontSize() * 6);
-
-    if (gSaveContext.ship.filenameLanguage == NAME_LANGUAGE_PAL) {
-        ImGui::Text("Name: %s", name.c_str());
-    } else {
         ImGui::PushFont(OTRGlobals::Instance->fontJapanese);
-        ImGui::Text("Name: %s", name.c_str());
+        ImGui::Text("%s", name.c_str());
         ImGui::PopFont();
-    }
-
-    Tooltip("Player Name");
-    std::string nameID;
-    for (int i = 0; i < 8; i++) {
-        nameID = z2ASCII(i);
-        if (i % 4 != 0) {
-            ImGui::SameLine();
+        ImU16 one = 1;
+        ImGui::PushItemWidth(ImGui::GetFontSize() * 6);
+        std::string nameID;
+        for (int i = 0; i < 8; i++) {
+            nameID = z2ASCII(i);
+            if (i % 4 != 0) {
+                ImGui::SameLine();
+            }
+            PushStyleInput(THEME_COLOR);
+            ImGui::InputScalar(nameID.c_str(), ImGuiDataType_U8, &gSaveContext.playerName[i], &one, NULL);
+            PopStyleInput();
         }
-        PushStyleInput(THEME_COLOR);
-        ImGui::InputScalar(nameID.c_str(), ImGuiDataType_U8, &gSaveContext.playerName[i], &one, NULL);
-        PopStyleInput();
+        ImGui::PopItemWidth();
     }
-
     // Filename encoding
     const bool hasPAL = (sGerMessageEntryTablePtr != nullptr) && (sFraMessageEntryTablePtr != nullptr);
     const bool hasNTSC = (sJpnMessageEntryTablePtr != nullptr);
@@ -283,34 +303,58 @@ void DrawInfoTab() {
                  comboboxOptionsBase.Tooltip("Encoding used for Player Name"));
         ImGui::EndDisabled();
     }
+    Kit::EndCard();
 
-    // Edit whole hearts with a positive lower bound; touch users never need a numeric keyboard.
-    int healthIntermediary = gSaveContext.healthCapacity / 16;
-    PushStyleInput(THEME_COLOR);
-    if (ImGui::SliderInt("Max Health", &healthIntermediary, 1, 20, "%d hearts", ImGuiSliderFlags_NoInput))
-        gSaveContext.healthCapacity = static_cast<int16_t>(healthIntermediary * 16);
-    PopStyleInput();
-    Tooltip("Maximum health in whole hearts");
-    if (gSaveContext.health > gSaveContext.healthCapacity) {
-        gSaveContext.health = gSaveContext.healthCapacity; // Clamp health to new max
+    Kit::BeginCard("healthCard");
+    if (Kit::Button("Max Health", Kit::kHealthMax)) {
+        gSaveContext.isDoubleDefenseAcquired = 1;
+        gSaveContext.inventory.defenseHearts = 20;
+        gSaveContext.healthCapacity = gSaveContext.health = 20 * 16;
+        gSaveContext.inventory.questItems &= ~0xF0000000;
     }
-    int32_t health = (int32_t)gSaveContext.health;
-    if (SliderInt("Health", &health,
-                  intSliderOptionsBase.Tooltip("Current health. 16 units per full heart")
-                      .Min(0)
-                      .Max(gSaveContext.healthCapacity))) {
-        gSaveContext.health = (int16_t)health;
+    ImGui::SameLine();
+    if (Kit::Button("Reset##health", Kit::kReset)) {
+        gSaveContext.isDoubleDefenseAcquired = 0;
+        gSaveContext.inventory.defenseHearts = 0;
+        gSaveContext.healthCapacity = gSaveContext.health = 3 * 16;
+        gSaveContext.inventory.questItems &= ~0xF0000000;
     }
-
+    ImGui::SameLine();
     bool isDoubleDefenseAcquired = gSaveContext.isDoubleDefenseAcquired != 0;
     if (Checkbox("Double Defense", &isDoubleDefenseAcquired,
-                 checkboxOptionsBase.Tooltip("Is double defense unlocked?"))) {
+                 CheckboxOptions().Color(Colors::Red).Tooltip("Is double defense unlocked?"))) {
         gSaveContext.isDoubleDefenseAcquired = isDoubleDefenseAcquired;
         gSaveContext.inventory.defenseHearts =
             gSaveContext.isDoubleDefenseAcquired ? 20 : 0; // Set to get the border drawn in the UI
     }
-    if (Combobox("Magic Level", &gSaveContext.magicLevel, magicLevelMap,
-                 comboboxOptionsBase.Tooltip("Current magic level"))) {
+    int16_t hearts = gSaveContext.healthCapacity / 16;
+    if (Kit::ResourceBar("##maxHearts", &hearts, 1, 20, "Max hearts: %d", Kit::kHealth)) {
+        gSaveContext.healthCapacity = static_cast<int16_t>(hearts * 16);
+    }
+    if (gSaveContext.health > gSaveContext.healthCapacity) {
+        gSaveContext.health = gSaveContext.healthCapacity; // Clamp health to new max
+    }
+    Kit::ResourceBar("##health", &gSaveContext.health, 0, gSaveContext.healthCapacity, "Health: %d", Kit::kHealth);
+    Kit::Tooltip("16 units per heart");
+    Kit::EndCard();
+
+    Kit::BeginCard("magicCard");
+    if (Kit::Button("Max Magic", Kit::kMagic)) {
+        gSaveContext.magicLevel = MAGIC_LEVEL_DOUBLE;
+        gSaveContext.isMagicAcquired = true;
+        gSaveContext.isDoubleMagicAcquired = true;
+        gSaveContext.magic = MAGIC_LEVEL_DOUBLE * 0x30;
+    }
+    ImGui::SameLine();
+    if (Kit::Button("Reset##magic", Kit::kReset)) {
+        gSaveContext.magicLevel = MAGIC_LEVEL_NONE;
+        gSaveContext.isMagicAcquired = false;
+        gSaveContext.isDoubleMagicAcquired = false;
+        gSaveContext.magic = 0;
+    }
+    const int magicLevel = std::clamp<int>(gSaveContext.magicLevel, MAGIC_LEVEL_NONE, MAGIC_LEVEL_DOUBLE);
+    if (Kit::ResourceBar("##magicLevel", &gSaveContext.magicLevel, MAGIC_LEVEL_NONE, MAGIC_LEVEL_DOUBLE,
+                         Kit::kMagicLevelNames[magicLevel], Kit::kMagic)) {
         gSaveContext.isMagicAcquired = gSaveContext.magicLevel > 0;
         gSaveContext.isDoubleMagicAcquired = gSaveContext.magicLevel == 2;
     }
@@ -318,213 +362,229 @@ void DrawInfoTab() {
     if (gSaveContext.magic > gSaveContext.magicCapacity) {
         gSaveContext.magic = static_cast<s8>(gSaveContext.magicCapacity); // Clamp magic to new max
     }
+    Kit::ResourceBar("##magic", &gSaveContext.magic, 0, gSaveContext.magicCapacity, "Magic: %d", Kit::kMagic);
+    Kit::Tooltip("48 units per magic level");
+    Kit::EndCard();
 
-    int32_t magic = (int32_t)gSaveContext.magic;
-    if (SliderInt("Magic", &magic,
-                  intSliderOptionsBase.Min(0)
-                      .Max(gSaveContext.magicCapacity)
-                      .Tooltip("Current magic. 48 units per magic level"))) {
-        gSaveContext.magic = (int8_t)magic;
-    }
-
-    PushStyleInput(THEME_COLOR);
-    int rupees = gSaveContext.rupees;
-    if (ImGui::SliderInt("Rupees", &rupees, 0, CUR_CAPACITY(UPG_WALLET), "%d", ImGuiSliderFlags_NoInput))
-        gSaveContext.rupees = static_cast<int16_t>(rupees);
-    Tooltip("Current rupees");
-    PopStyleInput();
-
-    int32_t dayTime = gSaveContext.dayTime;
-    if (SliderInt("Time", &dayTime, intSliderOptionsBase.Min(0).Max(0xFFFF).Tooltip("Time of day")))
-        gSaveContext.dayTime = static_cast<uint16_t>(dayTime);
-    if (Button("Dawn", buttonOptionsBase)) {
-        gSaveContext.dayTime = 0x4000;
+    Kit::BeginCard("rupeeCard");
+    // Tycoon's Wallet only when the seed has it.
+    const int walletMax =
+        IS_RANDO && OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_INCLUDE_TYCOON_WALLET) ? 3 : 2;
+    if (Kit::Button("Max Rupees", Kit::kRupees)) {
+        Inventory_ChangeUpgrade(UPG_WALLET, walletMax);
+        gSaveContext.rupees = CUR_CAPACITY(UPG_WALLET);
     }
     ImGui::SameLine();
-    if (Button("Noon", buttonOptionsBase)) {
-        gSaveContext.dayTime = 0x8000;
+    if (Kit::Button("Reset##rupees", Kit::kReset)) {
+        gSaveContext.rupees = 0;
+        Inventory_ChangeUpgrade(UPG_WALLET, 0);
     }
-    ImGui::SameLine();
-    if (Button("Sunset", buttonOptionsBase)) {
-        gSaveContext.dayTime = 0xC001;
+    int wallet = CUR_UPG_VALUE(UPG_WALLET);
+    if (Kit::ResourceBar("##wallet", &wallet, 0, walletMax, wallet < 4 ? Kit::kWalletNames[wallet] : "Glitched",
+                         Kit::kRupees)) {
+        Inventory_ChangeUpgrade(UPG_WALLET, wallet);
+        gSaveContext.rupees = std::min<int16_t>(gSaveContext.rupees, CUR_CAPACITY(UPG_WALLET));
     }
-    ImGui::SameLine();
-    if (Button("Midnight", buttonOptionsBase)) {
-        gSaveContext.dayTime = 0;
+    Kit::ResourceBar("##rupees", &gSaveContext.rupees, 0, CUR_CAPACITY(UPG_WALLET), "Rupees: %d", Kit::kRupees);
+    Kit::EndCard();
+
+    Kit::BeginCard("timeCard");
+    ImGui::Text("Time of Day");
+    Kit::ResourceBar("##time", &gSaveContext.dayTime, 0, 0xFFFF, Kit::ClockText(gSaveContext.dayTime).c_str(), theme);
+    const std::pair<const char*, uint16_t> times[] = {
+        { "Dawn", 0x4000 }, { "Noon", 0x8000 }, { "Sunset", 0xC001 }, { "Midnight", 0 }
+    };
+    const float timeButtonWidth = (ImGui::GetContentRegionAvail().x - 3 * ImGui::GetStyle().ItemSpacing.x) / 4;
+    for (size_t i = 0; i < 4; i++) {
+        if (i != 0) {
+            ImGui::SameLine();
+        }
+        if (Kit::Button(times[i].first, theme, ImVec2(timeButtonWidth, 0))) {
+            gSaveContext.dayTime = times[i].second;
+        }
     }
+    Kit::EndCard();
 
-    PushStyleInput(THEME_COLOR);
-    ComboTouch::Count("Total Days", &gSaveContext.totalDays, 0, 1000);
-    Tooltip("Total number of days elapsed since the start of the game");
-    PopStyleInput();
-
-    PushStyleInput(THEME_COLOR);
-    ComboTouch::Count("Deaths", &gSaveContext.deaths, 0, 65535);
-    Tooltip("Total number of deaths");
-    PopStyleInput();
-
-    Checkbox("Has BGS", (bool*)&gSaveContext.bgsFlag,
-             checkboxOptionsBase.Tooltip("Is Biggoron sword unlocked? Replaces Giant's knife"));
-
-    PushStyleInput(THEME_COLOR);
-    ComboTouch::Count("Sword Health", &gSaveContext.swordHealth, 0, 255);
-    Tooltip("Giant's knife health. Default is 8. Must be >0 for Biggoron sword to work");
-    PopStyleInput();
-
-    PushStyleInput(THEME_COLOR);
-    ComboTouch::Count("Bgs Day Count", &gSaveContext.bgsDayCount, 0, 1000);
-    Tooltip("Total number of days elapsed since receiving claim check from Biggoron");
-    PopStyleInput();
-
-    PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Entrance Index", ImGuiDataType_S32, &gSaveContext.entranceIndex);
-    Tooltip("From which entrance did Link arrive?");
-    PopStyleInput();
-
-    PushStyleInput(THEME_COLOR);
-    ImGui::InputScalar("Cutscene Index", ImGuiDataType_S32, &gSaveContext.cutsceneIndex);
-    Tooltip("Which cutscene is this?");
-    PopStyleInput();
-
-    PushStyleInput(THEME_COLOR);
-    ComboTouch::Count("Navi Timer", &gSaveContext.naviTimer, 0, 3000);
-    Tooltip("Navi wants to talk at 600 units, decides not to at 3000.");
-    PopStyleInput();
-
-    PushStyleInput(THEME_COLOR);
-    ComboTouch::Count("Timer State", &gSaveContext.timerState, 0, 16);
-    Tooltip("Heat timer, race timer, etc. Has white font");
-    PopStyleInput();
-
-    PushStyleInput(THEME_COLOR);
-    ComboTouch::Count("Timer Seconds", &gSaveContext.timerSeconds, 0, 32767);
-    Tooltip("Time, in seconds");
-    PopStyleInput();
-
-    PushStyleInput(THEME_COLOR);
-    ComboTouch::Count("Sub-Timer State", &gSaveContext.subTimerState, 0, 16);
-    Tooltip("Trade timer, Ganon collapse timer, etc. Has yellow font");
-    PopStyleInput();
-
-    PushStyleInput(THEME_COLOR);
-    ComboTouch::Count("Sub-Timer Seconds", &gSaveContext.subTimerSeconds, 0, 32767);
-    Tooltip("Time, in seconds");
-    PopStyleInput();
-
-    Combobox("Audio", &gSaveContext.audioSetting, audioMap, comboboxOptionsBase.Tooltip("Sound setting"));
-
-    Checkbox("64 DD file?", (bool*)&gSaveContext.n64ddFlag,
-             checkboxOptionsBase.Tooltip("WARNING! If you save, your file may be locked! Use caution!"));
-
-    Combobox("Z Target Mode", &gSaveContext.zTargetSetting, zTargetMap,
-             comboboxOptionsBase.Tooltip("Z-Targeting behavior"));
-
-    if (IS_RANDO && (OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_TRIFORCE_HUNT_PIECES_TOTAL) > 0)) {
+    // Everything else, nothing removed: counters, engine state, the Biggoron's Sword quest, minigame records.
+    Kit::BeginCard("advancedCard");
+    if (ImGui::CollapsingHeader("Advanced")) {
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         PushStyleInput(THEME_COLOR);
-        ComboTouch::Count("Triforce Pieces", &gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected, 0, 255);
-        Tooltip("Currently obtained Triforce Pieces. For Triforce Hunt.");
+        ComboTouch::Count("Total Days", &gSaveContext.totalDays, 0, 1000);
+        Tooltip("Total number of days elapsed since the start of the game");
         PopStyleInput();
-    }
 
-    ImGui::PushItemWidth(ImGui::GetFontSize() * 10);
-    static std::array<const char*, 7> minigameHS = { "Horseback Archery", "Big Poe Points",
-                                                     "Fishing",           "Malon's Obstacle Course",
-                                                     "Running Man Race",  "?",
-                                                     "Dampe's Race" };
+        PushStyleInput(THEME_COLOR);
+        ComboTouch::Count("Deaths", &gSaveContext.deaths, 0, 65535);
+        Tooltip("Total number of deaths");
+        PopStyleInput();
 
-    if (ImGui::TreeNode("Minigames")) {
-        for (int i = 0; i < 7; i++) {
-            if (i == 2 && ImGui::TreeNode("Fishing")) { // fishing has a few more flags to it
-                u8 fishSize = gSaveContext.highScores[i] & 0x7F;
-                PushStyleInput(THEME_COLOR);
-                if (ComboTouch::Count("Child Size Record", &fishSize, 0, 127)) {
-                    gSaveContext.highScores[i] &= ~0x7F;
-                    gSaveContext.highScores[i] |= fishSize & 0x7F;
-                }
-                char fishMsg[64];
-                std::snprintf(fishMsg, 64, "Weight: %2.0f lbs", ((SQ(fishSize) * .0036) + .5));
-                Tooltip(fishMsg);
-                PopStyleInput();
-                bool FishBool = gSaveContext.highScores[i] & 0x80;
-                if (Checkbox("Cheated as Child", &FishBool,
-                             checkboxOptionsBase.Tooltip("Used the Sinking lure to catch it."))) {
-                    gSaveContext.highScores[i] &= ~0x80;
-                    gSaveContext.highScores[i] |= (0x80 * FishBool);
-                }
-                fishSize = (gSaveContext.highScores[i] & 0x7F000000) >> 0x18;
-                PushStyleInput(THEME_COLOR);
-                if (ComboTouch::Count("Adult Size Record", &fishSize, 0, 127)) {
-                    gSaveContext.highScores[i] &= ~0x7F000000;
-                    gSaveContext.highScores[i] |= (fishSize & 0x7F) << 0x18;
-                }
-                std::snprintf(fishMsg, 64, "Weight: %2.0f lbs", ((SQ(fishSize) * .0036) + .5));
-                Tooltip(fishMsg);
-                PopStyleInput();
-                FishBool = gSaveContext.highScores[i] & 0x80000000;
-                if (Checkbox("Cheated as Adult", &FishBool,
-                             checkboxOptionsBase.Tooltip("Used the Sinking lure to catch it."))) {
-                    gSaveContext.highScores[i] &= ~0x80000000;
-                    gSaveContext.highScores[i] |= (0x80000000 * FishBool);
-                }
-                FishBool = gSaveContext.highScores[i] & 0x100;
-                if (Checkbox("Played as Child", &FishBool,
-                             checkboxOptionsBase.Tooltip("Played at least one game as a child"))) {
-                    gSaveContext.highScores[i] &= ~0x100;
-                    gSaveContext.highScores[i] |= (0x100 * FishBool);
-                }
-                FishBool = gSaveContext.highScores[i] & 0x200;
-                if (Checkbox("Played as Adult", &FishBool,
-                             checkboxOptionsBase.Tooltip("Played at least one game as an adult"))) {
-                    gSaveContext.highScores[i] &= ~0x200;
-                    gSaveContext.highScores[i] |= (0x200 * FishBool);
-                }
-                FishBool = gSaveContext.highScores[i] & 0x400;
-                if (Checkbox(
-                        "Got Prize as Child", &FishBool,
-                        checkboxOptionsBase.Tooltip(
-                            "Got the prize item (Heart Piece, unless rando.)\nunlocks Sinking Lure for Child Link."))) {
-                    gSaveContext.highScores[i] &= ~0x400;
-                    gSaveContext.highScores[i] |= (0x400 * FishBool);
-                }
-                FishBool = gSaveContext.highScores[i] & 0x800;
-                if (Checkbox("Got Prize as Adult", &FishBool,
-                             checkboxOptionsBase.Tooltip("Got the prize item (Golden Scale, unless rando.)\nUnlocks "
-                                                         "Sinking Lure for Adult Link."))) {
-                    gSaveContext.highScores[i] &= ~0x800;
-                    gSaveContext.highScores[i] |= (0x800 * FishBool);
-                }
-                FishBool = gSaveContext.highScores[i] & 0x1000;
-                if (Checkbox("Stole Owner's Hat", &FishBool,
-                             checkboxOptionsBase.Tooltip("The owner's now visibly bald when Adult Link."))) {
-                    gSaveContext.highScores[i] &= ~0x1000;
-                    gSaveContext.highScores[i] |= (0x1000 * FishBool);
-                }
-                fishSize = (gSaveContext.highScores[i] & 0xFF0000) >> 16;
-                PushStyleInput(THEME_COLOR);
-                if (ComboTouch::Count("Times Played", &fishSize, 0, 255)) {
-                    gSaveContext.highScores[i] &= ~0xFF0000;
-                    gSaveContext.highScores[i] |= (fishSize) << 16;
-                }
-                Tooltip("Determines weather and school size during dawn/dusk.");
-                PopStyleInput();
+        Checkbox("Has BGS", (bool*)&gSaveContext.bgsFlag,
+                 checkboxOptionsBase.Tooltip("Is Biggoron sword unlocked? Replaces Giant's knife"));
 
-                ImGui::TreePop();
-                continue;
-            }
+        PushStyleInput(THEME_COLOR);
+        ComboTouch::Count("Sword Health", &gSaveContext.swordHealth, 0, 255);
+        Tooltip("Giant's knife health. Default is 8. Must be >0 for Biggoron sword to work");
+        PopStyleInput();
 
-            if (i == 5 || i == 2) { // HS_UNK_05 is unused
-                continue;
-            }
-            std::string minigameLbl = minigameHS[i];
+        PushStyleInput(THEME_COLOR);
+        ComboTouch::Count("Bgs Day Count", &gSaveContext.bgsDayCount, 0, 1000);
+        Tooltip("Total number of days elapsed since receiving claim check from Biggoron");
+        PopStyleInput();
+
+        PushStyleInput(THEME_COLOR);
+        ImGui::InputScalar("Entrance Index", ImGuiDataType_S32, &gSaveContext.entranceIndex);
+        Tooltip("From which entrance did Link arrive?");
+        PopStyleInput();
+
+        PushStyleInput(THEME_COLOR);
+        ImGui::InputScalar("Cutscene Index", ImGuiDataType_S32, &gSaveContext.cutsceneIndex);
+        Tooltip("Which cutscene is this?");
+        PopStyleInput();
+
+        PushStyleInput(THEME_COLOR);
+        ComboTouch::Count("Navi Timer", &gSaveContext.naviTimer, 0, 3000);
+        Tooltip("Navi wants to talk at 600 units, decides not to at 3000.");
+        PopStyleInput();
+
+        PushStyleInput(THEME_COLOR);
+        ComboTouch::Count("Timer State", &gSaveContext.timerState, 0, 16);
+        Tooltip("Heat timer, race timer, etc. Has white font");
+        PopStyleInput();
+
+        PushStyleInput(THEME_COLOR);
+        ComboTouch::Count("Timer Seconds", &gSaveContext.timerSeconds, 0, 32767);
+        Tooltip("Time, in seconds");
+        PopStyleInput();
+
+        PushStyleInput(THEME_COLOR);
+        ComboTouch::Count("Sub-Timer State", &gSaveContext.subTimerState, 0, 16);
+        Tooltip("Trade timer, Ganon collapse timer, etc. Has yellow font");
+        PopStyleInput();
+
+        PushStyleInput(THEME_COLOR);
+        ComboTouch::Count("Sub-Timer Seconds", &gSaveContext.subTimerSeconds, 0, 32767);
+        Tooltip("Time, in seconds");
+        PopStyleInput();
+
+        Combobox("Audio", &gSaveContext.audioSetting, audioMap, comboboxOptionsBase.Tooltip("Sound setting"));
+
+        Checkbox("64 DD file?", (bool*)&gSaveContext.n64ddFlag,
+                 checkboxOptionsBase.Tooltip("WARNING! If you save, your file may be locked! Use caution!"));
+
+        Combobox("Z Target Mode", &gSaveContext.zTargetSetting, zTargetMap,
+                 comboboxOptionsBase.Tooltip("Z-Targeting behavior"));
+
+        if (IS_RANDO && (OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_TRIFORCE_HUNT_PIECES_TOTAL) > 0)) {
             PushStyleInput(THEME_COLOR);
-            ComboTouch::Count(minigameLbl.c_str(), &gSaveContext.highScores[i], 0, i == 1 ? 1000 : 99999);
+            ComboTouch::Count("Triforce Pieces", &gSaveContext.ship.quest.data.randomizer.triforcePiecesCollected, 0,
+                              255);
+            Tooltip("Currently obtained Triforce Pieces. For Triforce Hunt.");
             PopStyleInput();
         }
 
-        ImGui::TreePop();
-    }
+        static std::array<const char*, 7> minigameHS = { "Horseback Archery", "Big Poe Points",
+                                                         "Fishing",           "Malon's Obstacle Course",
+                                                         "Running Man Race",  "?",
+                                                         "Dampe's Race" };
 
-    ImGui::PopItemWidth();
+        if (ImGui::TreeNode("Minigames")) {
+            for (int i = 0; i < 7; i++) {
+                if (i == 2 && ImGui::TreeNode("Fishing")) { // fishing has a few more flags to it
+                    u8 fishSize = gSaveContext.highScores[i] & 0x7F;
+                    PushStyleInput(THEME_COLOR);
+                    if (ComboTouch::Count("Child Size Record", &fishSize, 0, 127)) {
+                        gSaveContext.highScores[i] &= ~0x7F;
+                        gSaveContext.highScores[i] |= fishSize & 0x7F;
+                    }
+                    char fishMsg[64];
+                    std::snprintf(fishMsg, 64, "Weight: %2.0f lbs", ((SQ(fishSize) * .0036) + .5));
+                    Tooltip(fishMsg);
+                    PopStyleInput();
+                    bool FishBool = gSaveContext.highScores[i] & 0x80;
+                    if (Checkbox("Cheated as Child", &FishBool,
+                                 checkboxOptionsBase.Tooltip("Used the Sinking lure to catch it."))) {
+                        gSaveContext.highScores[i] &= ~0x80;
+                        gSaveContext.highScores[i] |= (0x80 * FishBool);
+                    }
+                    fishSize = (gSaveContext.highScores[i] & 0x7F000000) >> 0x18;
+                    PushStyleInput(THEME_COLOR);
+                    if (ComboTouch::Count("Adult Size Record", &fishSize, 0, 127)) {
+                        gSaveContext.highScores[i] &= ~0x7F000000;
+                        gSaveContext.highScores[i] |= (fishSize & 0x7F) << 0x18;
+                    }
+                    std::snprintf(fishMsg, 64, "Weight: %2.0f lbs", ((SQ(fishSize) * .0036) + .5));
+                    Tooltip(fishMsg);
+                    PopStyleInput();
+                    FishBool = gSaveContext.highScores[i] & 0x80000000;
+                    if (Checkbox("Cheated as Adult", &FishBool,
+                                 checkboxOptionsBase.Tooltip("Used the Sinking lure to catch it."))) {
+                        gSaveContext.highScores[i] &= ~0x80000000;
+                        gSaveContext.highScores[i] |= (0x80000000 * FishBool);
+                    }
+                    FishBool = gSaveContext.highScores[i] & 0x100;
+                    if (Checkbox("Played as Child", &FishBool,
+                                 checkboxOptionsBase.Tooltip("Played at least one game as a child"))) {
+                        gSaveContext.highScores[i] &= ~0x100;
+                        gSaveContext.highScores[i] |= (0x100 * FishBool);
+                    }
+                    FishBool = gSaveContext.highScores[i] & 0x200;
+                    if (Checkbox("Played as Adult", &FishBool,
+                                 checkboxOptionsBase.Tooltip("Played at least one game as an adult"))) {
+                        gSaveContext.highScores[i] &= ~0x200;
+                        gSaveContext.highScores[i] |= (0x200 * FishBool);
+                    }
+                    FishBool = gSaveContext.highScores[i] & 0x400;
+                    if (Checkbox("Got Prize as Child", &FishBool,
+                                 checkboxOptionsBase.Tooltip("Got the prize item (Heart Piece, unless rando.)\nunlocks "
+                                                             "Sinking Lure for Child Link."))) {
+                        gSaveContext.highScores[i] &= ~0x400;
+                        gSaveContext.highScores[i] |= (0x400 * FishBool);
+                    }
+                    FishBool = gSaveContext.highScores[i] & 0x800;
+                    if (Checkbox(
+                            "Got Prize as Adult", &FishBool,
+                            checkboxOptionsBase.Tooltip("Got the prize item (Golden Scale, unless rando.)\nUnlocks "
+                                                        "Sinking Lure for Adult Link."))) {
+                        gSaveContext.highScores[i] &= ~0x800;
+                        gSaveContext.highScores[i] |= (0x800 * FishBool);
+                    }
+                    FishBool = gSaveContext.highScores[i] & 0x1000;
+                    if (Checkbox("Stole Owner's Hat", &FishBool,
+                                 checkboxOptionsBase.Tooltip("The owner's now visibly bald when Adult Link."))) {
+                        gSaveContext.highScores[i] &= ~0x1000;
+                        gSaveContext.highScores[i] |= (0x1000 * FishBool);
+                    }
+                    fishSize = (gSaveContext.highScores[i] & 0xFF0000) >> 16;
+                    PushStyleInput(THEME_COLOR);
+                    if (ComboTouch::Count("Times Played", &fishSize, 0, 255)) {
+                        gSaveContext.highScores[i] &= ~0xFF0000;
+                        gSaveContext.highScores[i] |= (fishSize) << 16;
+                    }
+                    Tooltip("Determines weather and school size during dawn/dusk.");
+                    PopStyleInput();
+
+                    ImGui::TreePop();
+                    continue;
+                }
+
+                if (i == 5 || i == 2) { // HS_UNK_05 is unused
+                    continue;
+                }
+                std::string minigameLbl = minigameHS[i];
+                PushStyleInput(THEME_COLOR);
+                ComboTouch::Count(minigameLbl.c_str(), &gSaveContext.highScores[i], 0, i == 1 ? 1000 : 99999);
+                PopStyleInput();
+            }
+
+            ImGui::TreePop();
+        }
+
+        ImGui::PopItemWidth();
+    }
+    Kit::EndCard();
+
+    Kit::EndCardLayout();
 }
 #else
 void DrawInfoTab() {
@@ -2179,21 +2239,7 @@ void DrawEquipmentTab() {
     };
     DrawUpgradeIcon("Strength", UPG_STRENGTH, strengthValues);
 
-    // There is no icon for child wallet, so default to a text list
-    // this was const, but I needed to append to it depending in rando settings.
-    std::vector<std::string> walletNamesImpl = {
-        "Child (99)",
-        "Adult (200)",
-        "Giant (500)",
-    };
-    // only display Tycoon wallet if you're in a save file that would allow it.
-    if (IS_RANDO && OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_INCLUDE_TYCOON_WALLET)) {
-        const std::string walletName = "Tycoon (999)";
-        walletNamesImpl.push_back(walletName);
-    }
-    // copy it to const value for display in ImGui.
-    const std::vector<std::string> walletNames = walletNamesImpl;
-    DrawUpgrade("Wallet", UPG_WALLET, walletNames);
+    // ComboShip: the wallet is on General > Rupees, next to the rupee count, as in MM.
 
     const std::vector<std::string> stickNames = {
         "None",
