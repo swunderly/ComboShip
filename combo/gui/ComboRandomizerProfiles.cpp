@@ -38,6 +38,7 @@ static double lastInspection = -1;
 static uint64_t snapshotRevision = 0, snapshotSerial = 0; // serial: changes with every inspection
 static std::shared_ptr<ProfileOotPolicy::View> optionView;
 static std::set<std::string> mmBaseAvailable;
+static bool deferPoolViews = false; // ApplyCommunityPreset refreshes the MM pool view once, after all its writes
 static void RefreshOptionPolicy(bool apply);
 bool Ready() {
     return (callbacks.version == 1 || callbacks.version == 2) && callbacks.inspect && callbacks.setDraft &&
@@ -134,7 +135,8 @@ void WriteInteger(const char* key, int value) {
             ReadInteger("gRandoSettings.ShopsanityCount", 0) > 7)
             *Field("gRandoSettings.ShopsanityCount", true) = 7;
         RefreshOptionPolicy(true);
-        RefreshPoolViews();
+        if (!deferPoolViews)
+            RefreshPoolViews();
     }
 }
 static void RefreshOptionPolicy(bool apply) {
@@ -1194,6 +1196,36 @@ void DrawGeneration() {
     }
     DrawAdvanced();
 }
+// Each write refreshes the MM pool view, a walk over every MM check: the hundred-odd writes of a preset froze the menu
+// for seconds on the confirming frame, which kept showing the pressed button, so the view is refreshed once at the end.
+static void ApplyCommunityPreset(const Json& preset) {
+    deferPoolViews = true;
+    document["oot"]["settings"] = Json::object();
+    for (auto it = document["mm"]["settings"].begin(); it != document["mm"]["settings"].end();) {
+        if (it.key().rfind("gRando.Options.", 0) == 0 || it.key().rfind("gCombo.Tricks.", 0) == 0)
+            it = document["mm"]["settings"].erase(it);
+        else
+            ++it;
+    }
+    document["oot"]["settings"]["gRandoSettings.EnabledTricks"] = "";
+    // Presets only drop logic assumptions; the player's own enhancements stay as they are.
+    for (const auto& rule : kGameplayRules)
+        ClearLogicRule(rule, WriteInteger);
+    for (const char* game : { "oot", "mm" })
+        for (const auto& value : catalog.at(game).at("defaults").items())
+            document[game]["settings"][value.key()] = value.value();
+    for (const auto& write : preset.at("writes").items())
+        WriteInteger(write.key().c_str(), write.value());
+    document["mm"]["settings"]["gRando.StartingItems"] =
+        catalog.at("mm").at("presetStartingItems").at(std::to_string(preset.at("id").get<int>()));
+    if (preset.at("id").get<int>() != 0) // the loop above cleared it otherwise
+        SetLogicRule(*FindGameplayRule("gCombo.Enhancements.ForeignSongs"), 1, WriteInteger);
+    SynchronizeGenerationGuarantee(ReadInteger, WriteInteger);
+    deferPoolViews = false;
+    RefreshOptionPolicy(true);
+    RefreshPoolViews();
+    dirty = true;
+}
 void DrawHome() {
     if (!active)
         return;
@@ -1214,31 +1246,8 @@ void DrawHome() {
         const std::string presetText = "File " + std::to_string(selected + 1) + "'s next-seed settings become " +
                                        preset.at("label").get<std::string>() +
                                        ". Your enhancements and saved progress stay.";
-        if (MenuConfirm("Apply preset?", presetText.c_str(), "Apply preset") && Editable()) {
-            document["oot"]["settings"] = Json::object();
-            for (auto it = document["mm"]["settings"].begin(); it != document["mm"]["settings"].end();) {
-                if (it.key().rfind("gRando.Options.", 0) == 0 || it.key().rfind("gCombo.Tricks.", 0) == 0)
-                    it = document["mm"]["settings"].erase(it);
-                else
-                    ++it;
-            }
-            document["oot"]["settings"]["gRandoSettings.EnabledTricks"] = "";
-            // Presets only drop logic assumptions; the player's own enhancements stay as they are.
-            for (const auto& rule : kGameplayRules)
-                ClearLogicRule(rule, WriteInteger);
-            for (const char* game : { "oot", "mm" })
-                for (const auto& value : catalog.at(game).at("defaults").items())
-                    document[game]["settings"][value.key()] = value.value();
-            for (const auto& write : preset.at("writes").items())
-                WriteInteger(write.key().c_str(), write.value());
-            document["mm"]["settings"]["gRando.StartingItems"] =
-                catalog.at("mm").at("presetStartingItems").at(std::to_string(preset.at("id").get<int>()));
-            if (preset.at("id").get<int>() != 0) // the loop above cleared it otherwise
-                SetLogicRule(*FindGameplayRule("gCombo.Enhancements.ForeignSongs"), 1, WriteInteger);
-            SynchronizeGenerationGuarantee(ReadInteger, WriteInteger);
-            RefreshOptionPolicy(true);
-            dirty = true;
-        }
+        if (MenuConfirm("Apply preset?", presetText.c_str(), "Apply preset") && Editable())
+            ApplyCommunityPreset(preset);
         ImGui::Spacing();
         ImGui::PopID();
     }
