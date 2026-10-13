@@ -278,6 +278,24 @@ static void Tooltip(const char* help) {
     if (help && help[0])
         MenuTooltip(help);
 }
+// Display text the profile pages add to a native option without renaming it: settings.cpp and the MM catalog keep
+// their names for saved settings, presets and search.
+struct OptionDisplay {
+    const char* key;
+    const char* note; // appended to the tooltip
+    bool visibleNote; // also shown under the row
+};
+static constexpr OptionDisplay kOptionDisplay[] = {
+    { "gRandoSettings.SwordlessEponaItems", "No logic effect. Fixed when the seed is made.", false },
+    { "gRandoSettings.SkipChildStealth",
+      "No logic effect. Use Enhancements > Time savers > Quests & errands > Skip Child Stealth instead.", true },
+};
+static const OptionDisplay* FindOptionDisplay(const char* key) {
+    for (const auto& row : kOptionDisplay)
+        if (key && !std::strcmp(key, row.key))
+            return &row;
+    return nullptr;
+}
 // Borrow the inspected seed: a copy would duplicate both placement tables every frame.
 static const Json& InspectedSeed() {
     static const Json none;
@@ -379,7 +397,20 @@ void DrawWidget(const CwWidget& w, const GameMenu& game) {
             break;
     }
     ImGui::EndDisabled();
-    Tooltip(policy && policy->disabled ? policy->disabledText.c_str() : w.tooltip);
+    const auto* display = FindOptionDisplay(key);
+    if (policy && policy->disabled)
+        Tooltip(policy->disabledText.c_str());
+    else if (display) {
+        const std::string help =
+            w.tooltip && w.tooltip[0] ? std::string(w.tooltip) + "\n\n" + display->note : std::string(display->note);
+        Tooltip(help.c_str());
+    } else
+        Tooltip(w.tooltip);
+    if (display && display->visibleNote) {
+        ImGui::PushTextWrapPos(0.0f);
+        ImGui::TextDisabled("%s", display->note);
+        ImGui::PopTextWrapPos();
+    }
     if (view != 0 && !std::strcmp(key, "gRandoSettings.GanonTrial")) {
         const auto& seed = InspectedSeed();
         if (seed.is_object() && seed.contains("oot") && seed["oot"].contains("resolvedSeedRules")) {
@@ -405,9 +436,36 @@ void DrawSidebar(const CwSidebar& side, const GameMenu& game, int world) {
         constexpr char prefix[] = "gRandoSettings.SilverPouch";
         return w.cvar && std::strncmp(w.cvar, prefix, sizeof(prefix) - 1) == 0;
     };
+    // Seed options no logic reads follow the page's rows under their own heading. Skip Child Stealth has a live twin
+    // in Enhancements, so its seed row shows only while the viewed settings have it on: decided here, because routing
+    // never depends on values.
+    const auto seedOnly = [](const CwWidget& w) {
+        return w.cvar && (!std::strcmp(w.cvar, "gRandoSettings.SwordlessEponaItems") ||
+                          !std::strcmp(w.cvar, "gRandoSettings.SkipChildStealth"));
+    };
+    const auto drawSeedOnly = [&]() {
+        bool headed = false;
+        for (int i = 0; i < side.widgetCount; ++i) {
+            const auto& widget = side.widgets[i];
+            if (!seedOnly(widget) ||
+                (!std::strcmp(widget.cvar, "gRandoSettings.SkipChildStealth") && !ReadInteger(widget.cvar, 0)))
+                continue;
+            if (!headed) {
+                CwWidget heading{};
+                heading.index = -1;
+                heading.kind = CW_SEPARATOR_TEXT;
+                heading.name = "Seed settings (no logic effect)";
+                DrawWidget(heading, game);
+                headed = true;
+            }
+            DrawWidget(widget, game);
+        }
+    };
     auto draw = [&](const CwWidget& widget) {
         if (widget.index <= -1000 && DrawMenuPseudoRow(widget, true))
             return; // a gameplay rule row inside its heading
+        if (seedOnly(widget))
+            return;
         if (world == 0 && isPouch(widget)) {
             if (pouchesDrawn)
                 return;
@@ -430,6 +488,7 @@ void DrawSidebar(const CwSidebar& side, const GameMenu& game, int world) {
     if (columns == 1) {
         for (int i = 0; i < side.widgetCount; ++i)
             draw(side.widgets[i]);
+        drawSeedOnly();
         return;
     }
     if (!ImGui::BeginTable("##NativeOptions", columns,
@@ -447,6 +506,7 @@ void DrawSidebar(const CwSidebar& side, const GameMenu& game, int world) {
         ImGui::PopID();
     }
     ImGui::EndTable();
+    drawSeedOnly();
 }
 static void CatalogRow(const Json& row) {
     const auto key = row.at("key").get<std::string>(), label = row.at("label").get<std::string>(),

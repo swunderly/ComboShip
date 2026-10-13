@@ -743,11 +743,6 @@ static void DrawCheckPoolTab() {
                      .DefaultValue(true));
     CheckPoolCheckbox("Owl Statues", RO_SHUFFLE_OWL_STATUES, RCTYPE_OWL,
                       "Activating an owl statue is a check. Song of Soaring destinations are unaffected.");
-    CheckPoolCheckbox("Shops", RO_SHUFFLE_SHOPS, RCTYPE_SHOP,
-                      "Items sold in shops are checks, with randomized prices.\n\nThe Curiosity Shop special item "
-                      "and the Bomb Shop's bomb bags are always shuffled, even with this off.");
-    CheckPoolCheckbox("Tingle Maps", RO_SHUFFLE_TINGLE_SHOPS, RCTYPE_TINGLE_SHOP,
-                      "Maps sold by Tingle are checks, with randomized prices.");
     CheckPoolCheckbox("Boss Remains", RO_SHUFFLE_BOSS_REMAINS, RCTYPE_REMAINS,
                       "Defeating each temple boss rewards a shuffled item instead of that boss's remains.");
     CheckPoolCheckbox("Cows", RO_SHUFFLE_COWS, RCTYPE_COW, "Playing Epona's Song to a cow is a check.");
@@ -809,6 +804,21 @@ static void DrawCheckPoolTab() {
         CheckPoolCheckbox(sceneryDropGroup.label, sceneryDropGroup.optionId, sceneryDropGroup.checkType,
                           sceneryDropGroup.tooltip);
     }
+    UIWidgets::EndCard();
+
+    // ComboShip: shop-type checks share one card, as OoT's Shops & Merchants (mirrors ProfileMmLayout.inc).
+    UIWidgets::BeginCard("checkPoolShops");
+    ImGui::SeparatorText("Shops & Merchants");
+    CheckPoolCheckbox("Shops", RO_SHUFFLE_SHOPS, RCTYPE_SHOP,
+                      "Items sold in shops are checks, with randomized prices.\n\nThe Curiosity Shop special item "
+                      "and the Bomb Shop's bomb bags are always shuffled, even with this off.");
+    CheckPoolCheckbox("Tingle Maps", RO_SHUFFLE_TINGLE_SHOPS, RCTYPE_TINGLE_SHOP,
+                      "Maps sold by Tingle are checks, with randomized prices.");
+    CVarCheckbox("Repeatable Rupee Purchases", Rando::StaticData::Options[RO_PURCHASE_INFINITE_RUPEES].cvar,
+                 CheckboxOptions({ { .tooltip = "Shops can end up selling rupees as their randomized stock (e.g. a "
+                                                "Silver Rupee for 1 rupee). When enabled, those rupees can be "
+                                                "purchased any number of times per cycle; otherwise only once per "
+                                                "cycle.\n\nNo logic effect. Fixed when the seed is made." } }));
     UIWidgets::EndCard();
 
     UIWidgets::EndCardLayout();
@@ -1029,11 +1039,6 @@ static void DrawItemPoolTab(int section = 0) {
                          "Adds the Tycoon's Wallet (5,000 rupees) to the item pool\n"
                          "as a third progressive wallet upgrade.",
                          1);
-        CVarCheckbox("Repeatable Rupee Purchases", Rando::StaticData::Options[RO_PURCHASE_INFINITE_RUPEES].cvar,
-                     CheckboxOptions({ { .tooltip = "Shops can end up selling rupees as their randomized stock (e.g. a "
-                                                    "Silver Rupee for 1 rupee). When enabled, those rupees can be "
-                                                    "purchased any number of times per cycle; otherwise only once "
-                                                    "per cycle." } }));
         ImGui::PushStyleColor(ImGuiCol_Text, DIM_TEXT_COLOR);
         ImGui::SeparatorText("Coming Soon");
         ImGui::PopStyleColor();
