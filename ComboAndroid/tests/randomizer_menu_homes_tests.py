@@ -94,6 +94,10 @@ custom = body(read('combo/gui/ComboRandomizerProfiles.cpp'), 'void DrawCustom(')
 check('RandomizerHeadingColumn(*layout, heading.c_str())' in custom, "MM cards do not take their headings' column")
 check('RandomizerHeadingColumn(*layout, layout->headings[row.group])' in body(headings_h, 'ArrangeOotRandomizerPage('),
       "OoT rows do not take their headings' column")
+# ---- One width rule: OoT's rows and MM's cards switch to two columns at the same width.
+sidebar = body(read('combo/gui/ComboRandomizerProfiles.cpp'), 'void DrawSidebar(')
+check('RandomizerColumnCount(' in sidebar and 'GetFontSize() * 20' not in sidebar, 'OoT rows use their own column width')
+check('RandomizerColumnCount(page,' in custom and 'GetFontSize() * 28' not in custom, 'MM cards use their own column width')
 navigation = read('combo/gui/ComboNavigation.h')
 order = re.findall(r'\{ "([^"]+)", "', body(navigation, 'inline constexpr RandomizerPageInfo kRandomizerPages[]'))
 check(order.index('Dungeons') == order.index('Items & checks') + 1, 'Dungeons does not follow Items & checks')

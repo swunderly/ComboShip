@@ -56,6 +56,15 @@ inline int RandomizerHeadingColumn(const RandomizerPageHeadings& page, const cha
             return 1;
     return 0;
 }
+// The narrowest wide-screen column of a Randomizer page, in both worlds. Logic & access holds the widest rows.
+inline float RandomizerColumnMinimum(const std::string& page, float fontSize) {
+    return page == "Logic & access" ? fontSize * 28 : std::max(400.f, fontSize * 20);
+}
+// The column count of a Randomizer page: two where the page splits and both columns fit, else one. OoT's rows and
+// MM's cards both use it, so the two worlds switch to two columns at the same width.
+inline int RandomizerColumnCount(const std::string& page, float fontSize, float width, bool split) {
+    return split && width >= 2 * RandomizerColumnMinimum(page, fontSize) ? 2 : 1;
+}
 // The OoT row's heading on a Randomizer page, from its key or its native heading; nullptr keeps it above the headings.
 inline const char* OotRandomizerHeading(const std::string& page, const std::string& key,
                                         const std::string& nativeHeading) {

@@ -235,6 +235,15 @@ int main() {
         assert(same.size() == 9 && same[4].column == 0 && same[5].column == 1 && same[0].kind == CW_SEPARATOR_TEXT);
         for (const auto& page : ComboRando::kRandomizerPageHeadings)
             assert(ComboRando::RandomizerPageOrder(page.page) < 100);
+        // Both worlds switch to two columns at one width per page (OoT's DrawSidebar and MM's DrawCustom share it).
+        using ComboRando::RandomizerColumnCount;
+        assert(RandomizerColumnCount("Logic & access", 32, 1500, true) == 1); // 40F <= W < 56F: one column in both
+        assert(RandomizerColumnCount("Logic & access", 32, 1792, true) == 2);
+        assert(RandomizerColumnCount("Items & checks", 16, 700, true) == 1); // F < 20: both need 800 px
+        assert(RandomizerColumnCount("Items & checks", 16, 800, true) == 2);
+        assert(RandomizerColumnCount("Dungeons", 32, 1280, true) == 2);
+        assert(RandomizerColumnCount("Dungeons", 32, 1279, true) == 1);
+        assert(RandomizerColumnCount("Hints & traps", 32, 4000, false) == 1); // a page in one column stays in one
     }
     using ComboRando::OotItemPoolGroup;
     assert(OotItemPoolGroup("gRandoSettings.ItemPool") == 0 && OotItemPoolGroup("gRandoSettings.CompleteMaskQuest") == 0);

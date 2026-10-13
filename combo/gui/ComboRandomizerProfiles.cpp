@@ -521,7 +521,8 @@ void DrawSidebar(const CwSidebar& page, const GameMenu& game, int world) {
         return std::min(w.column, 1) == std::min(rows.front().column, 1);
     });
     const unsigned desired = oneColumn ? 1 : std::min<unsigned>(2, side.columnCount ? side.columnCount : 1);
-    const unsigned columns = ImGui::GetContentRegionAvail().x < ImGui::GetFontSize() * 20 * desired ? 1 : desired;
+    const unsigned columns = RandomizerColumnCount(side.sidebarName ? side.sidebarName : "", ImGui::GetFontSize(),
+                                                   ImGui::GetContentRegionAvail().x, desired > 1);
     bool pouchesDrawn = false;
     const auto isPouch = [](const CwWidget& w) {
         constexpr char prefix[] = "gRandoSettings.SilverPouch";
@@ -1084,7 +1085,8 @@ void DrawCustom(const char* sidebar, int world) {
     if (world == 0)
         return;
     // Each card sits in the column of its first heading on the page (ComboRandomizerLayout.h), as OoT's rows do.
-    const auto* layout = FindRandomizerPageHeadings(MenuRoute(false, "Rando", name).page);
+    const std::string page = MenuRoute(false, "Rando", name).page;
+    const auto* layout = FindRandomizerPageHeadings(page);
     std::vector<std::string> cards;
     std::vector<int> cardColumns;
     for (const auto& row : catalog.at("mm").at("layout"))
@@ -1096,12 +1098,10 @@ void DrawCustom(const char* sidebar, int world) {
                 cardColumns.push_back(layout ? RandomizerHeadingColumn(*layout, heading.c_str()) : 0);
             }
         }
-    const float minimum =
-        name == "Logic/Conditions" ? ImGui::GetFontSize() * 28 : std::max(400.f, ImGui::GetFontSize() * 20);
-    // A page whose cards all sit in one column uses the whole width.
+    // A page whose cards all sit in one column uses the whole width; OoT's rows split at the same width.
     const auto second = std::count(cardColumns.begin(), cardColumns.end(), 1);
-    const int columns =
-        ImGui::GetContentRegionAvail().x >= minimum * 2 && second > 0 && second < std::ptrdiff_t(cards.size()) ? 2 : 1;
+    const int columns = RandomizerColumnCount(page, ImGui::GetFontSize(), ImGui::GetContentRegionAvail().x,
+                                              second > 0 && second < std::ptrdiff_t(cards.size()));
     if (cards.empty() || !ImGui::BeginTable("##NativeMmCards", columns,
                                             ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
         return;
