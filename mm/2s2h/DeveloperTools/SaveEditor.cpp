@@ -1156,9 +1156,7 @@ static const std::pair<ItemId, RandoInf> kSlotTradeItems[] = {
 // Records the ownership a real pickup records (Rando::GiveItem) for an item put in its own slot. A rando save keeps
 // what a shared trade slot holds outside the slot, and the 2S2H pause cycle offers only that, so this lets one slot
 // hold both title deeds. Returns whether the save can own the item: only rando saves have the MM spells and gear, and
-// only when the seed has the item's option. Rando::IsItemObtainable checks that option for Din's Fire, Nayru's Love
-// and the gear. It has no case for Farore's Wind, which casts only in a seed with Farore's Wind (MM)
-// (Combo_MMFaroreEnabled), so that option is checked here.
+// only when the seed has the item's option, which Rando::IsItemObtainable checks for the three spells and the gear.
 static bool GrantSlotItemOwnership(ItemId item) {
     for (const auto& [tradeItem, flag] : kSlotTradeItems) {
         if (item == tradeItem) {
@@ -1179,8 +1177,7 @@ static bool GrantSlotItemOwnership(ItemId item) {
         if (item != comboItem) {
             continue;
         }
-        if (!IS_RANDO || !Rando::IsItemObtainable(randoItem) ||
-            (item == ITEM_COMBO_FARORES_WIND && !RANDO_SAVE_OPTIONS[RO_MM_SPELL_WIND])) {
+        if (!IS_RANDO || !Rando::IsItemObtainable(randoItem)) {
             return false;
         }
         if (item == ITEM_COMBO_FARORES_WIND) {

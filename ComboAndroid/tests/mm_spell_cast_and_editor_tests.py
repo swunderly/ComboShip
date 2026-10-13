@@ -11,8 +11,8 @@ Builds one program from the production functions and runs it:
    restricted (OoTMM z_parameter.c Interface_GetItemRestriction), on the C buttons and on the D-pad. Termina Field
    and Woodfall Temple are not such scenes.
 3. Save Editor. For every trade-slot item and both seed-option states, the slot picker and Give All record the same
-   ownership as the real pickup (Rando::GiveItem's cases after Rando::IsItemObtainable), except that Farore's Wind,
-   which IsItemObtainable does not gate, is owned only in a seed with Farore's Wind (MM), the only seed that casts it.
+   ownership as the real pickup (Rando::GiveItem's cases after Rando::IsItemObtainable, which gates each MM spell and
+   gear piece on its seed option: on another seed Farore's Wind, like Din's Fire and Nayru's Love, is junk).
    The picker and the one-item toggle both add through AddSlotItem, which with "Restrict to valid items" on refuses an
    item the save cannot own; the toggle gives the Bow and bombs capacity level 1 and leaves it when removing them.
    After Give All the 2S2H pause cycle (KaleidoItemPage.cpp BuildAvailableItemsList) offers every trade item the seed
@@ -94,7 +94,8 @@ for ri in TRADE_RIS:
         pickup_cases.append(m.group())
 obtainable = re.search(r'case RI_DINS_FIRE:.*?RO_MM_TUNIC_ZORA\] == RO_GENERIC_YES;',
                        function(convert, 'bool Rando::IsItemObtainable('), re.S)
-check(obtainable is not None, 'IsItemObtainable no longer gates the MM spells and gear on their options')
+check(obtainable is not None and 'case RI_FARORES_WIND:' in obtainable.group(),
+      'IsItemObtainable no longer gates the three MM spells and the gear on their options')
 item_of = {}
 for ri in TRADE_RIS:
     m = re.search(r'RI\(' + ri + r',\s*"[^"]*",\s*"(?:[^"\\]|\\.)*",\s*\w+,\s*(\w+),', static_items)
@@ -479,23 +480,6 @@ int main() {
     // 3a. Each trade-slot item: the editor records what the real pickup records, with the seed option off and on.
     for (bool options : { false, true }) {
         for (const auto& [item, randoItem] : trade) {
-            if (item == ITEM_COMBO_FARORES_WIND && !options) {
-                // Not cast in this seed (Combo_MMFaroreEnabled), so the editor does not own it. With "Restrict to
-                // valid items" on the picker refuses it, as Give All leaves it out; with it off the picker only sets
-                // the slot.
-                Fresh(true, options);
-                assert(!GrantSlotItemOwnership(item));
-                assert(NoOwnership());
-                selectedInventorySlot = SLOT_TRADE_KEY_MAMA;
-                Pick(item);
-                assert(gSaveContext.save.saveInfo.inventory.items[SLOT_TRADE_KEY_MAMA] == ITEM_NONE && NoOwnership());
-                safeMode = false;
-                Pick(item);
-                safeMode = true;
-                assert(gSaveContext.save.saveInfo.inventory.items[SLOT_TRADE_KEY_MAMA] == item && NoOwnership());
-                assert(BuildAvailableItemsList(SLOT_TRADE_KEY_MAMA) == List({ item })); // nothing to switch to
-                continue;
-            }
             Fresh(true, options);
             RealPickup(randoItem);
             const Ownership real = Snapshot();
@@ -523,6 +507,13 @@ int main() {
             GrantSlotItemOwnership(item);
             assert(NoOwnership());
         }
+    }
+    // The MM spells only exist on seeds with their option. On another seed each one given (a placement, or Save
+    // Editor > Randomizer > Give randomizer item) is junk: Farore's Wind as Din's Fire and Nayru's Love.
+    for (bool options : { false, true }) {
+        Fresh(true, options);
+        for (RandoItemId spell : { RI_FARORES_WIND, RI_DINS_FIRE, RI_NAYRUS_LOVE })
+            assert(Rando::IsItemObtainable(spell) == options);
     }
     // A pick into another slot (Restrict to valid items off) records nothing.
     Fresh(true, true);

@@ -737,6 +737,8 @@ bool Rando::IsItemObtainable(RandoItemId randoItemId, RandoCheckId randoCheckId)
         // save has it off (e.g. from a shared profile or seed) becomes junk, as the complete-souls items do.
         case RI_DINS_FIRE:
             return RANDO_SAVE_OPTIONS[RO_MM_SPELL_FIRE];
+        case RI_FARORES_WIND:
+            return RANDO_SAVE_OPTIONS[RO_MM_SPELL_WIND];
         case RI_NAYRUS_LOVE:
             return RANDO_SAVE_OPTIONS[RO_MM_SPELL_LOVE];
         case RI_MASK_ADULT:
