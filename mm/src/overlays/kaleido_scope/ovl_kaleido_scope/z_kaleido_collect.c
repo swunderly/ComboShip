@@ -625,12 +625,15 @@ void KaleidoScope_UpdateQuestCursor(PlayState* play) {
 
 #ifdef COMBO_BUILD
     // With both songs of Oath to Order's or Song of Storms' place learned, the OoT song is one step right of the MM
-    // song (KaleidoScope_ComboQuestSongPlace). Both leave the place up, down and right as the MM song does.
+    // song (KaleidoScope_ComboQuestSongPlace). Both leave the place up, down and right as the MM song does, and Left
+    // from the quiver and the sword comes back to the OoT song first, as the vanilla links mirror each other.
     sCursorPointLinks[QUEST_SONG_OATH].right = QUEST_SONG_SARIA;
     sCursorPointLinks[QUEST_SONG_SARIA].up = QUEST_SONG_STORMS;
     sCursorPointLinks[QUEST_SONG_SARIA].right = QUEST_QUIVER;
     sCursorPointLinks[QUEST_SONG_STORMS].right = QUEST_SONG_SUN;
     sCursorPointLinks[QUEST_SONG_SUN].down = QUEST_SONG_OATH;
+    sCursorPointLinks[QUEST_QUIVER].left = QUEST_SONG_SARIA;
+    sCursorPointLinks[QUEST_SWORD].left = QUEST_SONG_SUN;
 #endif
 
     pauseCtx->nameColorSet = PAUSE_NAME_COLOR_SET_WHITE;

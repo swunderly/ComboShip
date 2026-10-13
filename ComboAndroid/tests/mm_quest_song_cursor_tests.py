@@ -4,7 +4,8 @@ MM draws Saria's Song and Sun's Song in Oath to Order's and Song of Storms' plac
 vanilla cursor link leads to them: with either OoT song learned the cursor rests on the unlearned MM song under its
 note and the name bar stays blank. This builds the quest cursor's links, its movement and its cursor item code from
 z_kaleido_collect.c (COMBO_BUILD) on host stubs and walks the page: a place is its MM song, or its OoT song when only
-that one is learned; with both learned the OoT song is one step right of the MM song; every other move is vanilla.
+that one is learned; with both learned the OoT song is one step right of the MM song, and Left from the quiver and the
+sword comes back to it first (the vanilla links mirror each other); every other move is vanilla.
 The item each point names is the one Kaleido_LoadItemNameStatic names in English (mm_pause_item_name_tests.py).
 """
 from pathlib import Path
@@ -151,6 +152,7 @@ int main() {
     Move(QUEST_SONG_STORMS, 0, D, QUEST_SONG_OATH, none);
     Move(QUEST_SONG_STORMS, 0, U, QUEST_HEART_PIECE, none);
     Move(QUEST_SONG_SOARING, R, 0, QUEST_SONG_STORMS, none);
+    Move(QUEST_SWORD, L, 0, QUEST_SONG_STORMS, none);
     // The OoT songs' own points fall back to their place's MM song.
     Move(QUEST_SONG_SARIA, 0, 0, QUEST_SONG_OATH, none);
     Move(QUEST_SONG_SUN, 0, 0, QUEST_SONG_STORMS, none);
@@ -161,6 +163,8 @@ int main() {
     Move(QUEST_SONG_OATH, R, 0, QUEST_QUIVER, none);
     Move(QUEST_SONG_STORMS, R, 0, QUEST_SWORD, none);
     Move(QUEST_SONG_SOARING, R, 0, QUEST_SONG_STORMS, ITEM_SONG_STORMS);
+    Move(QUEST_QUIVER, L, 0, QUEST_SONG_OATH, ITEM_SONG_OATH);
+    Move(QUEST_SWORD, L, 0, QUEST_SONG_STORMS, ITEM_SONG_STORMS);
 
     // Both songs of each place: the MM song first, the OoT song one step right, both reachable and named.
     questItems = Bit(QUEST_SONG_OATH) | Bit(QUEST_SONG_SARIA) | Bit(QUEST_SONG_STORMS) | Bit(QUEST_SONG_SUN);
@@ -172,6 +176,17 @@ int main() {
     Move(QUEST_SONG_STORMS, R, 0, QUEST_SONG_SUN, ITEM_SONG_SUN);
     Move(QUEST_SONG_SUN, R, 0, QUEST_SWORD, none);
     Move(QUEST_SONG_SUN, L, 0, QUEST_SONG_STORMS, ITEM_SONG_STORMS);
+    // Left from the next column comes back the way Right left: the OoT song, then the MM song (the emulator's
+    // recheck: Left from the quiver went straight to Oath to Order).
+    Move(QUEST_QUIVER, L, 0, QUEST_SONG_SARIA, ITEM_SONG_SARIA);
+    Move(QUEST_SWORD, L, 0, QUEST_SONG_SUN, ITEM_SONG_SUN);
+    const int places[] = { QUEST_SONG_OATH, QUEST_SONG_SARIA, QUEST_SONG_STORMS, QUEST_SONG_SUN };
+    for (int from : places) {
+        gPause.cursorPoint[PAUSE_QUEST] = s16(from);
+        Step(R, 0);
+        Step(L, 0);
+        assert(gPause.cursorPoint[PAUSE_QUEST] == from); // Right then Left returns where it started
+    }
     Move(QUEST_SONG_SARIA, 0, U, QUEST_SONG_STORMS, ITEM_SONG_STORMS);
     Move(QUEST_SONG_SUN, 0, D, QUEST_SONG_OATH, ITEM_SONG_OATH);
     Move(QUEST_SONG_SARIA, 0, 0, QUEST_SONG_SARIA, ITEM_SONG_SARIA);
