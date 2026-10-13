@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -277,6 +278,33 @@ inline bool PickerEntry(int index, const char* id, ImTextureID texture, const ch
 // No texture: PickerEntry and LevelPicker draw an empty button. ImTextureID is a macro for void* in the game builds,
 // so a constant one is written "ImTextureID const" (a const pointer), never "const ImTextureID" (a pointer to const).
 inline ImTextureID const kNoTexture = (ImTextureID)0;
+
+// A dropdown with a search box at the top of its list, for long lists such as scenes (MM's ComboboxWithSearch).
+// Returns whether the value changed.
+inline bool SearchableCombo(const char* id, int* value, int count, const std::function<std::string(int)>& name) {
+    bool changed = false;
+    if (ImGui::BeginCombo(id, name(*value).c_str())) {
+        static ImGuiTextFilter filter;
+        if (ImGui::IsWindowAppearing()) {
+            filter.Clear();
+        }
+        filter.Draw("##search", -FLT_MIN);
+        for (int i = 0; i < count; i++) {
+            const std::string text = name(i);
+            if (!filter.PassFilter(text.c_str())) {
+                continue;
+            }
+            ImGui::PushID(i);
+            if (ImGui::Selectable(text.c_str(), i == *value)) {
+                *value = i;
+                changed = true;
+            }
+            ImGui::PopID();
+        }
+        ImGui::EndCombo();
+    }
+    return changed;
+}
 
 // An icon that only shows state (a dungeon's small keys or stray fairies), faded when there are none.
 inline void Icon(ImTextureID texture, bool owned, const ImVec2& size = ImVec2(kIconSize, kIconSize)) {
