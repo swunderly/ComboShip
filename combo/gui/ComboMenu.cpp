@@ -40,6 +40,7 @@
 #include <cstdio>
 #include <functional>
 #include <unordered_map>
+#include <cmath>
 #include <unordered_set>
 #include "ComboResolve.h"
 
@@ -267,7 +268,7 @@ void ComboMenu::DrawElement() {
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg,
-                          ImVec4(0.035f, 0.045f, 0.08f, CVarGetFloat("gSettings.Menu.BackgroundOpacity", 0.94f)));
+                          ImVec4(0.035f, 0.045f, 0.08f, CVarGetFloat("gSettings.Menu.BackgroundOpacity", 0.85f)));
     bool open = ImGui::Begin("Combo Menu", nullptr, flags);
     ImGui::PopStyleColor();
     ImGui::PopStyleVar();
@@ -1862,6 +1863,28 @@ void DrawSharedItems() {
     ComboMenu_PopCheckbox();
     ImGui::EndTable();
 }
+#ifdef __ANDROID__
+// Android sizes the menu from gSettings.Menu.AndroidScale every frame (Mobile::ApplyMenuScale), so the desktop ImGui
+// scale does nothing there. Offer the touch dialog's sizes (GameActivity.java menuSize) instead.
+void DrawAndroidMenuSize() {
+    static constexpr float scales[] = { 1.f, 1.25f, 1.45f, 1.75f, 2.f, 2.5f, 3.f };
+    const char* labels[] = { "100%", "125%", "145% (default)", "175%", "200%", "250%", "300%" };
+    const float current = CVarGetFloat("gSettings.Menu.AndroidScale", 1.45f);
+    int choice = 0;
+    for (int i = 1; i < IM_ARRAYSIZE(scales); ++i)
+        if (std::fabs(scales[i] - current) < std::fabs(scales[choice] - current))
+            choice = i;
+    ImGui::TextUnformatted("Menu size");
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ComboMenu_PushCombobox(ComboMenu_ThemeColor());
+    if (ImGui::Combo("##MenuSize", &choice, labels, IM_ARRAYSIZE(labels))) {
+        CVarSetFloat("gSettings.Menu.AndroidScale", scales[choice]);
+        Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+    }
+    ComboMenu_PopCombobox();
+    MenuTooltip("Size of the menu text and controls. The touch controls' Menu size option sets the same value.");
+}
+#endif
 void DrawCosmeticSync() {
     bool linked = CVarGetInteger("gCombo.Rando.SyncCosmetics", 0) != 0;
     if (DrawRuleCheckbox("Match cosmetics between games", &linked)) {
@@ -2269,9 +2292,16 @@ void ComboMenu::DrawSharedPanel() {
                             for (int w = 0; w < side.widgetCount; ++w) {
                                 const auto& widget = side.widgets[w];
                                 const std::string name = widget.name ? widget.name : "";
-                                if (name == "Menu Theme" || name == "Menu Controller Navigation" ||
-                                    name == "Menu Background Opacity" || name == "ImGui Menu Scaling")
-                                    RenderWidget(widget, game);
+                                if (name != "Menu Theme" && name != "Menu Controller Navigation" &&
+                                    name != "Menu Background Opacity" && name != "ImGui Menu Scaling")
+                                    continue;
+#ifdef __ANDROID__
+                                if (name == "ImGui Menu Scaling") {
+                                    DrawAndroidMenuSize();
+                                    continue;
+                                }
+#endif
+                                RenderWidget(widget, game);
                             }
                         }
                     }
