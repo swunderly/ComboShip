@@ -1,5 +1,22 @@
 # Device validation still required
 
+## Quick checks for the menus (unreleased)
+
+Checks 2 to 5 are the examples Sam reported; they matter most. For each page, look at the OoT view, then tap the MM world button and compare.
+
+1. Install over the current build without uninstalling. Your settings, enhancement presets and each file's randomizer settings show the same values as before.
+2. Tools opens on the Save Editor. In OoT and in MM the tabs are General, Inventory, Equipment, Quest Status, Dungeon Items, Flags and Player, in that order; MM then adds Randomizer and Reg Editor. OoT's General looks like MM's: a dark red health bar, a green magic bar and green rupee and wallet bars with Max and Reset buttons, and the file number reads "File N" and cannot be changed.
+3. Save Editor > Inventory in OoT: tap Boomerang and it turns on and off with no list; tap Hookshot and a list offers None, Hookshot and Longshot with names. In MM: tap the Bow and it turns on and off; tap a bottle and a list opens.
+4. Enhancements > Time savers in both views: the headings are Cutscenes, Text & dialogue, Speed-ups and Quests & errands, and Climb speed is under Speed-ups in both (it reads +N in OoT and Nx in MM). Open two or three other Enhancements pages: both views show the same headings in the same order.
+5. Change a slider: the name is above it, the value and unit are inside the bar, - and + step it, and a Default button appears. Change a checkbox too, restart the app, and both changes are kept.
+6. Randomizer > Hints & traps > Traps in the MM view shows only Traps and Trap Count, then a line pointing to the trap settings. Enhancements > Extra modes > Traps (MM view) has the nine trap effects, and Enhancements > Randomizer extras has Trap appearance, Junk items and Containers match contents.
+7. Randomizer > Gameplay rules in the OoT view: the headings are Abilities, Time of day, Quest requirements, Minigames and Seed settings (no logic effect). The last heading shows once, with Swordless Epona Items; Skip Child Stealth appears there only on a file that has it on. The rules still tick and grey out as before.
+8. Randomizer > Logic & access: Goal, Logic and Starting world are at the top, then Cross-Games Farore's Wind and Cross-Games Age. In the OoT view Starting Age is first under Area access. On the page list, Dungeons comes right after Items & checks.
+9. Back: open a dropdown and press Back (the dropdown closes). Search for something and press Back (the search clears). Search again, open a result, then press Back (the results come back), Back (the search clears) and Back (the menu closes).
+10. Search "climb" and "trap": each setting result reads like "Enhancements / Time savers / Speed-ups - OoT", and Open page goes to that page in the right world. Search "personal notes": it finds the Item Tracker page.
+11. Home > Apply preset and Tools > Session > Restart game ask first, with Cancel first. Settings > Interface > Menu size resizes the menu at once and is kept after a restart.
+12. On a Fold, the inner display shows two columns split at the same heading in both views; the outer display shows one column.
+
 ## Quick checks for OoT tracker sightings (unreleased)
 
 Use a randomizer save with Gold Skulltula tokens shuffled. A check you skipped shows as Skipped even after you see its item: unskip it first in the tracker's details popup.
