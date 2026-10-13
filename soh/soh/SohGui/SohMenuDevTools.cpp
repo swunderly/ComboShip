@@ -25,7 +25,7 @@ using namespace UIWidgets;
 // opened while MM is foreground.
 static void ComboInlineWindow(const char* windowName, bool requiresForeground) {
     if (requiresForeground && !Combo_OotIsForeground()) {
-        ImGui::TextDisabled("Available while Ship of Harkinian is running.");
+        ImGui::TextDisabled("Available while playing Ocarina of Time.");
         return;
     }
     auto ctx = Ship::Context::GetRawInstance();

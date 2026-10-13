@@ -50,7 +50,7 @@ bool Combo_MmIsForeground(void); // defined in BenPort.cpp
 // they do not read MM's dormant/swapped play state when MM's tab is opened while OOT is foreground.
 static void ComboInlineWindow(const char* windowName, bool requiresForeground) {
     if (requiresForeground && !Combo_MmIsForeground()) {
-        ImGui::TextDisabled("Available while 2 Ship 2 Harkinian is running.");
+        ImGui::TextDisabled("Available while playing Majora's Mask.");
         return;
     }
     auto ctx = Ship::Context::GetRawInstance();
