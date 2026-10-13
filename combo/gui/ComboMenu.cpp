@@ -685,13 +685,12 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                     if (name == "ImGui Menu Scaling")
                         continue; // Settings > Interface > Menu size replaces it on Android
 #endif
-                    // A Randomizer row the profile page shows under OoTMM's name ranks by it; the native name
-                    // stays a keyword.
+                    // A row ranks by the label its page shows (OoTMM's name on the Randomizer tab, the shared
+                    // label elsewhere); MenuRowKeywords keeps the native name a keyword.
                     const char* shown = route.scope == "randomizer" ? ProfileUI::OptionDisplayLabel(wd.cvar) : nullptr;
                     const auto label = shown ? std::string(shown) : MenuRowLabel(oot, wd.cvar, wd.name);
                     const auto keywords = std::string(wd.tooltip ? wd.tooltip : "") + " " + src.label +
-                                          (oot ? " OoT " : " MM ") + MenuRowKeywords(oot, wd.cvar, wd.name) + " " +
-                                          (shown ? name : "");
+                                          (oot ? " OoT " : " MM ") + MenuRowKeywords(oot, wd.cvar, wd.name);
                     const int rank = MenuSearchRank(query, label.c_str(), keywords.c_str(), MenuSearchKind::Setting);
                     if (!rank)
                         continue;
@@ -716,9 +715,9 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                                          ? RandomizerWidgetGroup(oot, side.sidebarName ? side.sidebarName : "",
                                                                  wd.column, heading, cvar)
                                          : -1,
-                                     fixed                                  ? fixed
+                                     fixed                             ? fixed
                                      : placement && placement->heading ? placement->heading
-                                                                            : heading });
+                                                                       : heading });
                 }
             }
         }
