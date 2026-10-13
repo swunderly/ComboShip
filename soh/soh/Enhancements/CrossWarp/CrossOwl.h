@@ -69,7 +69,8 @@ typedef struct CrossOwl {
     s16 savedHud;
     u8 blurReady;
     u8 blurCopied;
-    u8 departed; // The warp has started; the scene change now owns Link, the camera, HUD and music.
+    u8 departed;         // The warp has started; the scene change now owns Link, the camera, HUD and music.
+    u8 sceneCamRestored; // A pre-rendered room's own camera shows the scene again from the white flash on.
     u32 blurWidth;
     u32 blurHeight;
 } CrossOwl; // size = 0x1E9C

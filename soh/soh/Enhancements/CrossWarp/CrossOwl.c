@@ -141,10 +141,11 @@ void CrossOwl_WarpCsWarp(CrossOwl* this, PlayState* play) {
     }
 }
 int Combo_SOHSoaringCutsceneActive(PlayState* play) {
-    // Native MM's soaringCsOrSoTCsPlaying covers departure ticks 0..99.
+    // Native MM's soaringCsOrSoTCsPlaying covers departure ticks 0..99 and is cleared by the tick-100 update, with
+    // the white flash. This is read while drawing, after that update has advanced the timer to 101.
     for (Actor* actor = play->actorCtx.actorLists[ACTORCAT_ITEMACTION].head; actor; actor = actor->next) {
         if (actor->id == ACTOR_COMBO_OWL_WARP && actor->params != 0x100 && actor->update &&
-            ((CrossOwl*)actor)->timer < 100)
+            ((CrossOwl*)actor)->timer <= 100)
             return 1;
     }
     return 0;
@@ -718,6 +719,14 @@ void CrossOwl_WarpCsPart5(CrossOwl* this, PlayState* play) {
         play->envCtx.screenFillColor[2] = 255;
         play->envCtx.screenFillColor[3] = 255;
 
+        // MM shows the scene again from here. A pre-rendered OoT room draws its background only for the scene's own
+        // fixed camera (z_room.c) and otherwise just its flat-coloured depth mesh, so hand the view back to that
+        // camera under the white frame. The sub-camera stays allocated until the scene changes.
+        if (play->roomCtx.curRoom.meshHeader != NULL && play->roomCtx.curRoom.meshHeader->base.type == 1) {
+            Play_ChangeCameraStatus(play, this->subCamId, CAM_STAT_WAIT);
+            Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_ACTIVE);
+            this->sceneCamRestored = true;
+        }
         this->flags &= ~OWL_WARP_FLAGS_DRAW_LENS_FLARE;
         CrossOwl_SetupAction(this, CrossOwl_WarpCsPart6);
     }
@@ -842,10 +851,12 @@ void CrossOwl_Update(Actor* thisx, PlayState* play) {
     this->actionFunc(this, play);
     if (this->playerCamFunc)
         this->playerCamFunc(this, play);
-    Camera* camera = Play_GetCamera(play, this->subCamId);
-    Play_CameraSetAtEye(play, this->subCamId, &camera->at, &camera->eye);
-    Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_WAIT);
-    Play_ChangeCameraStatus(play, this->subCamId, CAM_STAT_ACTIVE);
+    if (!this->sceneCamRestored) {
+        Camera* camera = Play_GetCamera(play, this->subCamId);
+        Play_CameraSetAtEye(play, this->subCamId, &camera->at, &camera->eye);
+        Play_ChangeCameraStatus(play, CAM_ID_MAIN, CAM_STAT_WAIT);
+        Play_ChangeCameraStatus(play, this->subCamId, CAM_STAT_ACTIVE);
+    }
     this->timer++;
     CrossOwl_UpdateFeathers(play, this->feathers, this, (this->flags & OWL_WARP_FLAGS_8) != 0,
                             (this->flags & OWL_WARP_FLAGS_10) != 0);
