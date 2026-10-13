@@ -5972,7 +5972,12 @@ extern "C" void Combo_MM_LoadFairyOcarinaPauseText(PlayState* play) {
 // which every supported OoT ROM has. nullptr keeps MM's native name. Display only; the inventory keeps MM's ids.
 extern "C" const char* Combo_MM_OotItemName(int item) {
     alignas(2) static const char fairyOcarina[] = "__OTR__@oot:textures/item_name_static/gFairyOcarinaItemNameENGTex";
-    const char* path = item == ITEM_OCARINA_FAIRY ? fairyOcarina : nullptr;
+    alignas(2) static const char sariasSong[] = "__OTR__@oot:textures/item_name_static/gSariasSongItemNameENGTex";
+    alignas(2) static const char sunsSong[] = "__OTR__@oot:textures/item_name_static/gSunsSongItemNameENGTex";
+    const char* path = item == ITEM_OCARINA_FAIRY ? fairyOcarina
+                       : item == ITEM_SONG_SARIA  ? sariasSong
+                       : item == ITEM_SONG_SUN    ? sunsSong
+                                                  : nullptr;
     auto oot = path ? Ship::CrossRMRegistry::Get("oot") : nullptr;
     if (!oot)
         return nullptr;

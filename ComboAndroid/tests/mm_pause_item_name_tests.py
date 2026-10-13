@@ -1,4 +1,4 @@
-"""MM pause name bar: every OoT item MM can hold is named in English.
+"""MM pause name bar: every OoT item or song MM can hold is named in English.
 
 Kaleido_LoadItemNameStatic and the combo name sources it calls are extracted verbatim from production and run on
 host stubs for the cross-game resource registry, for every item id. Every OoT name they return must be an English
@@ -145,11 +145,16 @@ int main() {
         const char* name = Name(id);
         std::printf("%02X %s\n", id, name ? name : "(null)");
     }
-    // OoT's English Fairy Ocarina name cannot load: MM's own name stays, never nothing or an invented one.
-    Ship::sOot->files.clear();
-    assert(!std::strcmp(Name(ITEM_OCARINA_FAIRY), "gItemNameFairyOcarinaJPNTex"));
-    Ship::sOot.reset();
-    assert(!std::strcmp(Name(ITEM_OCARINA_FAIRY), "gItemNameFairyOcarinaJPNTex"));
+    // OoT's English names cannot load: MM's own entries stay, never nothing or an invented name.
+    for (int missingRegistry = 0; missingRegistry < 2; ++missingRegistry) {
+        if (missingRegistry)
+            Ship::sOot.reset();
+        else
+            Ship::sOot->files.clear();
+        assert(!std::strcmp(Name(ITEM_OCARINA_FAIRY), "gItemNameFairyOcarinaJPNTex"));
+        assert(!std::strcmp(Name(ITEM_SONG_SARIA), "gItemNameNocturneOfShadowJPNTex"));
+        assert(!std::strcmp(Name(ITEM_SONG_SUN), "gItemNameSunsSongJPNTex"));
+    }
     return 0;
 }
 '''
@@ -179,7 +184,9 @@ for item, name in sorted(names.items()):
 # Every OoT item the combo puts in MM's inventory is named in English.
 cross_game = ['ITEM_OCARINA_FAIRY', 'ITEM_COMBO_FARORES_WIND', 'ITEM_COMBO_NAYRUS_LOVE', 'ITEM_COMBO_DINS_FIRE',
               'ITEM_COMBO_BOOTS_IRON', 'ITEM_COMBO_BOOTS_HOVER', 'ITEM_COMBO_TUNIC_GORON', 'ITEM_COMBO_TUNIC_ZORA']
-for item in cross_game:
+# OoT songs 2Ship's randomizer can put on MM's Quest page (Saria's Song, Sun's Song shuffles).
+oot_songs = ['ITEM_SONG_SARIA', 'ITEM_SONG_SUN']
+for item in cross_game + oot_songs:
     if not names[items[item]].startswith(OOT_PREFIX):
         failures.append(f'{item}: named {names[items[item]]}, not by OoT\'s English name')
 # Adult Link's mask (0xBC) uses the combo's own name texture.
@@ -189,8 +196,8 @@ if names[0xBC] != '__OTR__textures/combo_adult_mask_names/gComboAdultMaskNameTex
 # MM's own leftover entries: no MM item, quest slot or combo item is named by them.
 leftovers = {'ITEM_SLINGSHOT', 'ITEM_LONGSHOT', 'ITEM_HYLIAN_LOACH', 'ITEM_OBABA_DRINK', 'ITEM_TINGLE_MAP',
              'ITEM_BOW_FIRE', 'ITEM_BOW_ICE', 'ITEM_BOW_LIGHT', 'ITEM_SWORD_DEITY', 'ITEM_WALLET_DEFAULT',
-             'ITEM_WALLET_ADULT', 'ITEM_WALLET_GIANT', 'ITEM_FISHING_ROD', 'ITEM_SONG_SARIA', 'ITEM_SONG_SUN',
-             'ITEM_SKULL_TOKEN', 'ITEM_HEART_PIECE', 'ITEM_71', 'ITEM_72'}
+             'ITEM_WALLET_ADULT', 'ITEM_WALLET_GIANT', 'ITEM_FISHING_ROD', 'ITEM_SKULL_TOKEN', 'ITEM_HEART_PIECE',
+             'ITEM_71', 'ITEM_72'}
 japanese = {item for item, name in names.items() if 'JPN' in name}
 expected = {items[name] for name in leftovers}
 if japanese != expected:
@@ -207,5 +214,5 @@ if len(re.findall(r'Kaleido_LoadItemNameStatic\(&pauseCtx->nameSegment,', nes)) 
 
 if failures:
     raise SystemExit('\n'.join(failures))
-print(f'MM pause names: {len(names)} item ids, {len(cross_game) + 1} cross-game items in English, '
-      f'{len(japanese)} MM leftovers, checked against {len(versions)} OoT ROM versions.')
+print(f'MM pause names: {len(names)} item ids, {len(cross_game) + 1} cross-game items and {len(oot_songs)} OoT songs '
+      f'in English, {len(japanese)} MM leftovers, checked against {len(versions)} OoT ROM versions.')

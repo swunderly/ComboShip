@@ -316,8 +316,9 @@ void Kaleido_LoadItemNameStatic(void** segment, u32 texIndex) {
         *segment = (void*)Combo_MMSpellItemName(texIndex);
         return;
     }
-    // MM's only name for OoT's Fairy Ocarina is Japanese. Show OoT's own English name when it loads.
-    if (texIndex == ITEM_OCARINA_FAIRY) {
+    // MM's only names for OoT's Fairy Ocarina and Sun's Song are Japanese, and Saria's Song has none (its entry is
+    // Nocturne of Shadow's). Show OoT's own English names when they load.
+    if (texIndex == ITEM_OCARINA_FAIRY || texIndex == ITEM_SONG_SARIA || texIndex == ITEM_SONG_SUN) {
         const char* ootName = Combo_MM_OotItemName(texIndex);
         if (ootName != NULL) {
             *segment = (void*)ootName;
