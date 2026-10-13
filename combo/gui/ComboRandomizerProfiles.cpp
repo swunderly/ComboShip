@@ -281,7 +281,7 @@ static void Tooltip(const char* help) {
 }
 // Display text the profile pages give a native OoT option without renaming it: settings.cpp keeps its names for saved
 // settings, presets and search, where they stay aliases. Labels follow OoTMM v32.3
-// (packages/core/src/settings/data.ts).
+// (packages/core/src/settings/data.ts), whose "(OoT)" suffix is dropped inside a world view.
 struct OptionDisplay {
     const char* key;
     const char* label; // nullptr keeps the native label
@@ -297,12 +297,41 @@ static constexpr OptionDisplay kOptionDisplay[] = {
     { "gRandoSettings.ShuffleOwlDrops", nullptr,
       "Ocarina of Time destinations only. Warp Songs and Soaring Spots Shuffle above mixes both games.", false },
     { "gRandoSettings.FullWallets", "Fill Wallets", nullptr, false },
+    { "gRandoSettings.ShuffleSongs", "Song Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleTokens", "Gold Skulltula Tokens Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleCows", "Cow Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleScrubs", "Scrub Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleMerchants", "Merchants Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleWonderItems", "Wonder Items Shuffle", nullptr, false },
+    { "gRandoSettings.ShufflePots", "Pots Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleCrates", "Crates Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleBeehives", "Hives Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleGrass", "Grass Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleRocks", "Rock Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleTrees", "Tree Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleBushes", "Bush Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleBoulders", "Boulder Drops Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleIcicles", "Icicles Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleRedIce", "Red Ice Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleFountainFairies", "Fairy Fountain Fairy Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleFairySpots", "Fairy Spot Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleFrogSongRupees", "Frogs Rupees Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleOcarinas", "Ocarina Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleMasterSword", "Master Sword Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleGerudoToken", "Gerudo Card Shuffle", nullptr, false },
+    { "gRandoSettings.Shuffle100GSReward", "Skulltula Final Reward Shuffle", nullptr, false },
+    { "gRandoSettings.ShuffleDungeonReward", "Dungeon Reward Shuffle", nullptr, false },
+    { "gRandoSettings.StartingMapsCompasses", "Map / Compass Shuffle", nullptr, false },
 };
 static const OptionDisplay* FindOptionDisplay(const char* key) {
     for (const auto& row : kOptionDisplay)
         if (key && !std::strcmp(key, row.key))
             return &row;
     return nullptr;
+}
+const char* OptionDisplayLabel(const char* key) {
+    const auto* display = FindOptionDisplay(key);
+    return display && display->label ? display->label : nullptr;
 }
 // Borrow the inspected seed: a copy would duplicate both placement tables every frame.
 static const Json& InspectedSeed() {

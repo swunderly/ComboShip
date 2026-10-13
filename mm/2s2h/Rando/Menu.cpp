@@ -707,14 +707,14 @@ struct SceneryDropGroup {
 };
 
 static const SceneryDropGroup SCENERY_DROP_GROUPS[] = {
-    { "Pot Drops", RO_SHUFFLE_POT_DROPS, RCTYPE_POT, "Breaking each pot is a check." },
-    { "Crate Drops", RO_SHUFFLE_CRATE_DROPS, RCTYPE_CRATE, "Breaking each crate is a check." },
-    { "Barrel Drops", RO_SHUFFLE_BARREL_DROPS, RCTYPE_BARREL, "Breaking each barrel is a check." },
-    { "Snowball Drops", RO_SHUFFLE_SNOWBALL_DROPS, RCTYPE_SNOWBALL, "Breaking each large snowball is a check." },
-    { "Grass Drops", RO_SHUFFLE_GRASS_DROPS, RCTYPE_GRASS, "Cutting each clump of grass is a check." },
-    { "Tree Drops", RO_SHUFFLE_TREE_DROPS, RCTYPE_TREE,
+    { "Pots Shuffle", RO_SHUFFLE_POT_DROPS, RCTYPE_POT, "Breaking each pot is a check." },
+    { "Crates Shuffle", RO_SHUFFLE_CRATE_DROPS, RCTYPE_CRATE, "Breaking each crate is a check." },
+    { "Barrels Shuffle", RO_SHUFFLE_BARREL_DROPS, RCTYPE_BARREL, "Breaking each barrel is a check." },
+    { "Snowball Shuffle", RO_SHUFFLE_SNOWBALL_DROPS, RCTYPE_SNOWBALL, "Breaking each large snowball is a check." },
+    { "Grass Shuffle", RO_SHUFFLE_GRASS_DROPS, RCTYPE_GRASS, "Cutting each clump of grass is a check." },
+    { "Tree Shuffle", RO_SHUFFLE_TREE_DROPS, RCTYPE_TREE,
       "Bonking into each tree that shakes is a check. Trees that don't shake have no drops." },
-    { "Beehive Drops", RO_SHUFFLE_HIVE_DROPS, RCTYPE_BEEHIVE, "Knocking down each beehive is a check." },
+    { "Hives Shuffle", RO_SHUFFLE_HIVE_DROPS, RCTYPE_BEEHIVE, "Knocking down each beehive is a check." },
 };
 
 static void SetSceneryDropOptions(int32_t value) {
@@ -744,9 +744,9 @@ static void DrawCheckPoolTab() {
                                      .disabledTooltip = "Songs are currently always shuffled. The option to "
                                                         "disable this is coming soon." } })
                      .DefaultValue(true));
-    CheckPoolCheckbox("Owl Statues", RO_SHUFFLE_OWL_STATUES, RCTYPE_OWL,
+    CheckPoolCheckbox("Owl Statue Shuffle", RO_SHUFFLE_OWL_STATUES, RCTYPE_OWL,
                       "Activating an owl statue is a check. Song of Soaring destinations are unaffected.");
-    CheckPoolCheckbox("Cows", RO_SHUFFLE_COWS, RCTYPE_COW, "Playing Epona's Song to a cow is a check.");
+    CheckPoolCheckbox("Cow Shuffle", RO_SHUFFLE_COWS, RCTYPE_COW, "Playing Epona's Song to a cow is a check.");
     UIWidgets::EndCard();
 
     UIWidgets::BeginCard("checkPoolCreatures");
@@ -755,15 +755,15 @@ static void DrawCheckPoolTab() {
                       "The first drop from each non-boss enemy is a check.");
     CheckPoolCheckbox("Frogs", RO_SHUFFLE_FROGS, RCTYPE_FROG,
                       "Talking to each of the four scattered choir frogs while wearing Don Gero's Mask is a check.");
-    CheckPoolCheckbox("Butterflies", RO_SHUFFLE_BUTTERFLIES, RCTYPE_BUTTERFLY,
+    CheckPoolCheckbox("Butterflies Shuffle", RO_SHUFFLE_BUTTERFLIES, RCTYPE_BUTTERFLY,
                       "Butterfly swarms in the overworld are checks.");
     CheckPoolCheckbox("Freestanding Items", RO_SHUFFLE_FREESTANDING_ITEMS, RCTYPE_FREESTANDING,
                       "Items sitting out in the world (hearts, rupees, arrows, etc.) are checks.");
-    CheckPoolCheckbox("Wonder Items", RO_SHUFFLE_WONDER_ITEMS, RCTYPE_WONDER_ITEM,
+    CheckPoolCheckbox("Wonder Items Shuffle", RO_SHUFFLE_WONDER_ITEMS, RCTYPE_WONDER_ITEM,
                       "Invisible touch/shoot triggers scattered around the world are checks.");
     int32_t skulltulasShuffled =
         CVarGetInteger(Rando::StaticData::Options[RO_SKULLTULA_SHUFFLED].cvar, SPIDER_HOUSE_TOKENS_REQUIRED);
-    CheckPoolCheckbox("Gold Skulltulas", RO_SHUFFLE_GOLD_SKULLTULAS, RCTYPE_SKULL_TOKEN,
+    CheckPoolCheckbox("House Skulltula Tokens Shuffle", RO_SHUFFLE_GOLD_SKULLTULAS, RCTYPE_SKULL_TOKEN,
                       "Gold Skulltulas in the two Spider Houses are checks.", skulltulasShuffled * 2);
     if (CVarGetInteger(Rando::StaticData::Options[RO_SHUFFLE_GOLD_SKULLTULAS].cvar, RO_GENERIC_OFF)) {
         CVarSliderInt("Required Gold Skulltula Tokens", Rando::StaticData::Options[RO_SKULLTULA_TOKENS_REQUIRED].cvar,
@@ -810,10 +810,10 @@ static void DrawCheckPoolTab() {
     // ComboShip: shop-type checks share one card, as OoT's Shops & Merchants (mirrors ProfileMmLayout.inc).
     UIWidgets::BeginCard("checkPoolShops");
     ImGui::SeparatorText("Shops & merchants");
-    CheckPoolCheckbox("Shops", RO_SHUFFLE_SHOPS, RCTYPE_SHOP,
+    CheckPoolCheckbox("Shop Shuffle", RO_SHUFFLE_SHOPS, RCTYPE_SHOP,
                       "Items sold in shops are checks, with randomized prices.\n\nThe Curiosity Shop special item "
                       "and the Bomb Shop's bomb bags are always shuffled, even with this off.");
-    CheckPoolCheckbox("Tingle Maps", RO_SHUFFLE_TINGLE_SHOPS, RCTYPE_TINGLE_SHOP,
+    CheckPoolCheckbox("Tingle Maps Shuffle", RO_SHUFFLE_TINGLE_SHOPS, RCTYPE_TINGLE_SHOP,
                       "Maps sold by Tingle are checks, with randomized prices.");
     CVarCheckbox("Repeatable Rupee Purchases", Rando::StaticData::Options[RO_PURCHASE_INFINITE_RUPEES].cvar,
                  CheckboxOptions({ { .tooltip = "Shops can end up selling rupees as their randomized stock (e.g. a "
@@ -1204,7 +1204,7 @@ static void DrawItemPoolTab(int section = 0) {
         // ComboShip: dungeon rewards and maps sit with the other dungeon items under OoT's headings (mirrors
         // ProfileMmLayout.inc).
         ImGui::SeparatorText("Dungeon rewards");
-        CheckPoolCheckbox("Boss Remains", RO_SHUFFLE_BOSS_REMAINS, RCTYPE_REMAINS,
+        CheckPoolCheckbox("Dungeon Reward Shuffle", RO_SHUFFLE_BOSS_REMAINS, RCTYPE_REMAINS,
                           "Defeating each temple boss rewards a shuffled item instead of that boss's remains.");
         ImGui::SeparatorText("Maps & compasses");
         CVarCheckbox("Maps and Compasses", Rando::StaticData::Options[RO_STARTING_MAPS_AND_COMPASSES].cvar,

@@ -640,9 +640,13 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                         wd.kind == CW_CUSTOM || wd.hideInSearch)
                         continue;
                     const bool oot = src.game == &model.Oot();
-                    const auto label = MenuRowLabel(oot, wd.cvar, wd.name);
+                    // A Randomizer row the profile page shows under OoTMM's name ranks by it; the native name
+                    // stays a keyword.
+                    const char* shown = route.scope == "randomizer" ? ProfileUI::OptionDisplayLabel(wd.cvar) : nullptr;
+                    const auto label = shown ? std::string(shown) : MenuRowLabel(oot, wd.cvar, wd.name);
                     const auto keywords = std::string(wd.tooltip ? wd.tooltip : "") + " " + src.label +
-                                          (oot ? " OoT " : " MM ") + MenuRowKeywords(oot, wd.cvar, wd.name);
+                                          (oot ? " OoT " : " MM ") + MenuRowKeywords(oot, wd.cvar, wd.name) + " " +
+                                          (shown ? name : "");
                     const int rank = MenuSearchRank(query, label.c_str(), keywords.c_str(), MenuSearchKind::Setting);
                     if (!rank)
                         continue;
