@@ -1355,212 +1355,96 @@ static void DrawFlagTableSearchResults(const FlagTable& flagTable, ImGuiTextFilt
 }
 
 #ifdef COMBO_BUILD
+// ComboShip: the Flags tab with MM's layout: one table at a time from a "Flag type" list with plain names, each group
+// with Set all (theme) and Clear all (Red), a searchable scene list and a search box on every flag table. The player
+// state flags are on the Player tab. "Keep GS Count Updated" recounts only when a Gold Skulltula flag changes, so it no
+// longer overwrites the Quest Status token count every frame.
 void DrawFlagsTab() {
-    if (ImGui::TreeNode("Player State")) {
-        if (gPlayState != nullptr) {
-            Player* player = GET_PLAYER(gPlayState);
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("stateFlags1");
-                    DrawFlagArray32("stateFlags1", player->stateFlags1, THEME_COLOR);
-                },
-                "stateFlags1");
-
-            ImGui::SameLine();
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("stateFlags2");
-                    DrawFlagArray32("stateFlags2", player->stateFlags2, THEME_COLOR);
-                },
-                "stateFlags2");
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("stateFlags3");
-                    DrawFlagArray8("stateFlags3", player->stateFlags3, THEME_COLOR);
-                },
-                "stateFlags3");
-
-            ImGui::SameLine();
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("unk_6AE_rotFlags");
-                    DrawFlagArray16("unk_6AE_rotFlags", player->unk_6AE_rotFlags, THEME_COLOR);
-                },
-                "unk_6AE_rotFlags");
+    namespace Kit = ComboSaveEditorKit;
+    const ImVec4 theme = ColorValues.at(THEME_COLOR);
+    static const std::map<FlagTableType, const char*> tableNames = {
+        { EVENT_CHECK_INF, "Event flags" }, { ITEM_GET_INF, "Item flags" },         { INF_TABLE, "Info flags" },
+        { EVENT_INF, "Temporary events" },  { RANDOMIZER_INF, "Randomizer flags" },
+    };
+    std::vector<const char*> types = { "Current scene", "Saved scene", "Gold Skulltulas" };
+    std::vector<size_t> tables;
+    for (size_t i = 0; i < flagTables.size(); i++) {
+        if (flagTables[i].flagTableType == RANDOMIZER_INF && !IS_RANDO && !IS_BOSS_RUSH) {
+            continue;
         }
-        ImGui::TreePop();
+        types.push_back(tableNames.at(flagTables[i].flagTableType));
+        tables.push_back(i);
     }
-    if (ImGui::TreeNode("Current Scene")) {
-        if (gPlayState != nullptr) {
-            ActorContext* act = &gPlayState->actorCtx;
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("Switch");
-                    InsertHelpHoverText("Permanently-saved switch flags");
-                    if (Button("Set All##Switch", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.swch = UINT32_MAX;
-                    }
-                    ImGui::SameLine();
-                    if (Button("Clear All##Switch", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.swch = 0;
-                    }
-                    DrawFlagArray32("Switch", act->flags.swch, THEME_COLOR);
-                },
-                "Switch");
+    static int32_t flagType = 0;
+    flagType = std::clamp<int32_t>(flagType, 0, static_cast<int32_t>(types.size()) - 1);
+    Combobox("Flag type", &flagType, types, comboboxOptionsBase.Tooltip(""));
 
-            ImGui::SameLine();
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("Temp Switch");
-                    InsertHelpHoverText("Temporary switch flags. Unset on scene transitions");
-                    if (Button("Set All##Temp Switch", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.tempSwch = UINT32_MAX;
-                    }
-                    ImGui::SameLine();
-                    if (Button("Clear All##Temp Switch", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.tempSwch = 0;
-                    }
-                    DrawFlagArray32("Temp Switch", act->flags.tempSwch, THEME_COLOR);
-                },
-                "Temp Switch");
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("Clear");
-                    InsertHelpHoverText("Permanently-saved room-clear flags");
-                    if (Button("Set All##Clear", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.clear = UINT32_MAX;
-                    }
-                    ImGui::SameLine();
-                    if (Button("Clear All##Clear", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.clear = 0;
-                    }
-                    DrawFlagArray32("Clear", act->flags.clear, THEME_COLOR);
-                },
-                "Clear");
-
-            ImGui::SameLine();
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("Temp Clear");
-                    InsertHelpHoverText("Temporary room-clear flags. Unset on scene transitions");
-                    if (Button("Set All##Temp Clear", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.tempClear = UINT32_MAX;
-                    }
-                    ImGui::SameLine();
-                    if (Button("Clear All##Temp Clear", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.tempClear = 0;
-                    }
-                    DrawFlagArray32("Temp Clear", act->flags.tempClear, THEME_COLOR);
-                },
-                "Temp Clear");
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("Collect");
-                    InsertHelpHoverText("Permanently-saved collect flags");
-                    if (Button("Set All##Collect", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.collect = UINT32_MAX;
-                    }
-                    ImGui::SameLine();
-                    if (Button("Clear All##Collect", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.collect = 0;
-                    }
-                    DrawFlagArray32("Collect", act->flags.collect, THEME_COLOR);
-                },
-                "Collect");
-
-            ImGui::SameLine();
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("Temp Collect");
-                    InsertHelpHoverText("Temporary collect flags. Unset on scene transitions");
-                    if (Button("Set All##Temp Collect", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.tempCollect = UINT32_MAX;
-                    }
-                    ImGui::SameLine();
-                    if (Button("Clear All##Temp Collect", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.tempCollect = 0;
-                    }
-                    DrawFlagArray32("Temp Collect", act->flags.tempCollect, THEME_COLOR);
-                },
-                "Temp Collect");
-
-            DrawGroupWithBorder(
-                [&]() {
-                    ImGui::Text("Chest");
-                    InsertHelpHoverText("Permanently-saved chest flags");
-                    if (Button("Set All##Chest", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.chest = UINT32_MAX;
-                    }
-                    ImGui::SameLine();
-                    if (Button("Clear All##Chest", buttonOptionsBase.Tooltip(""))) {
-                        act->flags.chest = 0;
-                    }
-                    DrawFlagArray32("Chest", act->flags.chest, THEME_COLOR);
-                },
-                "Chest");
-
-            ImGui::SameLine();
-
-            ImGui::BeginGroup();
-
-            if (Button("Reload Flags", buttonOptionsBase.Tooltip(
-                                           "Load flags from saved scene flags. Normally happens on scene load"))) {
-                act->flags.swch = gSaveContext.sceneFlags[gPlayState->sceneNum].swch;
-                act->flags.clear = gSaveContext.sceneFlags[gPlayState->sceneNum].clear;
-                act->flags.collect = gSaveContext.sceneFlags[gPlayState->sceneNum].collect;
-                act->flags.chest = gSaveContext.sceneFlags[gPlayState->sceneNum].chest;
-            }
-
-            if (Button("Save Flags",
-                       buttonOptionsBase.Tooltip("Save current scene flags. Normally happens on scene exit"))) {
-                gSaveContext.sceneFlags[gPlayState->sceneNum].swch = act->flags.swch;
-                gSaveContext.sceneFlags[gPlayState->sceneNum].clear = act->flags.clear;
-                gSaveContext.sceneFlags[gPlayState->sceneNum].collect = act->flags.collect;
-                gSaveContext.sceneFlags[gPlayState->sceneNum].chest = act->flags.chest;
-            }
-
-            if (Button("Clear Flags",
-                       buttonOptionsBase.Tooltip("Clear current scene flags. Reload scene to see changes"))) {
-                act->flags.swch = 0;
-                act->flags.clear = 0;
-                act->flags.collect = 0;
-                act->flags.chest = 0;
-            }
-
-            ImGui::EndGroup();
-        } else {
-            ImGui::Text("Current game state does not have an active scene");
+    // One group of 32 flags: its name, Set all and Clear all, then the flags.
+    auto group = [&](const char* name, const char* help, uint32_t& flags) {
+        Kit::BeginCard(name);
+        ImGui::Text("%s", name);
+        InsertHelpHoverText(help);
+        ImGui::SameLine();
+        if (Kit::Button((std::string("Set all##") + name).c_str(), theme)) {
+            flags = UINT32_MAX;
         }
+        ImGui::SameLine();
+        if (Kit::Button((std::string("Clear all##") + name).c_str(), Kit::kReset)) {
+            flags = 0;
+        }
+        DrawFlagArray32(name, flags, THEME_COLOR);
+        Kit::EndCard();
+    };
 
-        ImGui::TreePop();
-    }
+    if (flagType == 0) {
+        if (gPlayState == nullptr) {
+            ImGui::TextWrapped("%s", Kit::kNeedsPlay);
+            return;
+        }
+        ActorContext* act = &gPlayState->actorCtx;
+        Kit::BeginCardLayout(2, 360.0f);
+        group("Switch", "Permanently-saved switch flags", act->flags.swch);
+        group("Temporary switch", "Temporary switch flags. Unset on scene transitions", act->flags.tempSwch);
+        group("Room clear", "Permanently-saved room-clear flags", act->flags.clear);
+        group("Temporary room clear", "Temporary room-clear flags. Unset on scene transitions", act->flags.tempClear);
+        group("Collectible", "Permanently-saved collect flags", act->flags.collect);
+        group("Temporary collectible", "Temporary collect flags. Unset on scene transitions", act->flags.tempCollect);
+        group("Chest", "Permanently-saved chest flags", act->flags.chest);
+        Kit::EndCardLayout();
 
-    if (ImGui::TreeNode("Saved Scene Flags")) {
-        static uint32_t selectedSceneFlagMap = 0;
+        if (Button("Reload Flags",
+                   buttonOptionsBase.Tooltip("Load flags from saved scene flags. Normally happens on scene load"))) {
+            act->flags.swch = gSaveContext.sceneFlags[gPlayState->sceneNum].swch;
+            act->flags.clear = gSaveContext.sceneFlags[gPlayState->sceneNum].clear;
+            act->flags.collect = gSaveContext.sceneFlags[gPlayState->sceneNum].collect;
+            act->flags.chest = gSaveContext.sceneFlags[gPlayState->sceneNum].chest;
+        }
+        ImGui::SameLine();
+        if (Button("Save Flags",
+                   buttonOptionsBase.Tooltip("Save current scene flags. Normally happens on scene exit"))) {
+            gSaveContext.sceneFlags[gPlayState->sceneNum].swch = act->flags.swch;
+            gSaveContext.sceneFlags[gPlayState->sceneNum].clear = act->flags.clear;
+            gSaveContext.sceneFlags[gPlayState->sceneNum].collect = act->flags.collect;
+            gSaveContext.sceneFlags[gPlayState->sceneNum].chest = act->flags.chest;
+        }
+        ImGui::SameLine();
+        if (Button("Clear Flags",
+                   buttonOptionsBase.Tooltip("Clear current scene flags. Reload scene to see changes"))) {
+            act->flags.swch = 0;
+            act->flags.clear = 0;
+            act->flags.collect = 0;
+            act->flags.chest = 0;
+        }
+    } else if (flagType == 1) {
+        static int32_t selectedSceneFlagMap = 0;
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Map");
+        ImGui::Text("Scene");
         ImGui::SameLine();
         PushStyleCombobox(THEME_COLOR);
-        if (ImGui::BeginCombo("##Map", SohUtils::GetSceneName(selectedSceneFlagMap).c_str())) {
-            for (int32_t sceneIndex = 0; sceneIndex < SCENE_ID_MAX; sceneIndex++) {
-                if (ImGui::Selectable(SohUtils::GetSceneName(sceneIndex).c_str())) {
-                    selectedSceneFlagMap = sceneIndex;
-                }
-            }
-
-            ImGui::EndCombo();
-        }
+        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16);
+        Kit::SearchableCombo("##Map", &selectedSceneFlagMap, SCENE_ID_MAX,
+                             [](int scene) { return SohUtils::GetSceneName(scene); });
         PopStyleCombobox();
-
         // Don't show current scene button if there is no current scene
         if (gPlayState != nullptr) {
             ImGui::SameLine();
@@ -1568,224 +1452,143 @@ void DrawFlagsTab() {
                 selectedSceneFlagMap = gPlayState->sceneNum;
             }
         }
-
-        DrawGroupWithBorder(
-            [&]() {
-                ImGui::Text("Switch");
-                InsertHelpHoverText("Switch flags");
-                DrawFlagArray32("Switch", gSaveContext.sceneFlags[selectedSceneFlagMap].swch, THEME_COLOR);
-            },
-            "Saved Switch");
-
-        ImGui::SameLine();
-
-        DrawGroupWithBorder(
-            [&]() {
-                ImGui::Text("Clear");
-                InsertHelpHoverText("Room-clear flags");
-                DrawFlagArray32("Clear", gSaveContext.sceneFlags[selectedSceneFlagMap].clear, THEME_COLOR);
-            },
-            "Saved Clear");
-
-        DrawGroupWithBorder(
-            [&]() {
-                ImGui::Text("Collect");
-                InsertHelpHoverText("Collect flags");
-                DrawFlagArray32("Collect", gSaveContext.sceneFlags[selectedSceneFlagMap].collect, THEME_COLOR);
-            },
-            "Saved Collect");
-
-        ImGui::SameLine();
-
-        DrawGroupWithBorder(
-            [&]() {
-                ImGui::Text("Chest");
-                InsertHelpHoverText("Chest flags");
-                DrawFlagArray32("Chest", gSaveContext.sceneFlags[selectedSceneFlagMap].chest, THEME_COLOR);
-            },
-            "Saved Chest");
-
-        DrawGroupWithBorder(
-            [&]() {
-                ImGui::Text("Rooms");
-                InsertHelpHoverText("Flags for visited rooms");
-                DrawFlagArray32("Rooms", gSaveContext.sceneFlags[selectedSceneFlagMap].rooms, THEME_COLOR);
-            },
-            "Saved Rooms");
-
-        ImGui::SameLine();
-
-        DrawGroupWithBorder(
-            [&]() {
-                ImGui::Text("Floors");
-                InsertHelpHoverText("Flags for visited floors");
-                DrawFlagArray32("Floors", gSaveContext.sceneFlags[selectedSceneFlagMap].floors, THEME_COLOR);
-            },
-            "Saved Floors");
-
-        ImGui::TreePop();
-    }
-
-    DrawGroupWithBorder(
-        [&]() {
-            PushStyleCombobox(THEME_COLOR);
-            static size_t selectedGsMap = 0;
-            ImGui::Text("Gold Skulltulas");
-            if (ImGui::BeginCombo("##GSMap", gsMapping[selectedGsMap])) {
-                for (size_t index = 0; index < gsMapping.size(); index++) {
-                    if (ImGui::Selectable(gsMapping[index])) {
-                        selectedGsMap = index;
-                    }
-                }
-
-                ImGui::EndCombo();
-            }
-            PopStyleCombobox();
-
-            // TODO We should write out descriptions for each one... ugh
-            ImGui::AlignTextToFramePadding();
-            ImGui::Text("Flags");
-            uint32_t currentFlags = GET_GS_FLAGS(selectedGsMap);
-            uint32_t allFlags = gAreaGsFlags[selectedGsMap];
-            uint32_t setMask = 1;
-            // Iterate over bitfield and create a checkbox for each skulltula
-            while (allFlags != 0) {
-                bool isThisSet = (currentFlags & 0x1) == 0x1;
-
-                ImGui::SameLine();
-                ImGui::PushID(allFlags);
-                PushStyleCheckbox(THEME_COLOR);
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 3.0f));
-                if (ImGui::Checkbox("##gs", &isThisSet)) {
-                    if (isThisSet) {
-                        SET_GS_FLAGS(selectedGsMap, setMask);
-                    } else {
-                        // Have to do this roundabout method as the macro does not support clearing flags
-                        uint32_t currentFlagsBase = GET_GS_FLAGS(selectedGsMap);
-                        gSaveContext.gsFlags[selectedGsMap >> 2] &= ~gGsFlagsMasks[selectedGsMap & 3];
-                        SET_GS_FLAGS(selectedGsMap, currentFlagsBase & ~setMask);
-                    }
-                }
-                ImGui::PopStyleVar();
-                PopStyleCheckbox();
-
-                ImGui::PopID();
-
-                allFlags >>= 1;
-                currentFlags >>= 1;
-                setMask <<= 1;
-            }
-
-            // If playing a Randomizer Save with Shuffle Skull Tokens on anything other than "Off" we don't want to keep
-            // GS Token Count updated, since Gold Skulltulas killed will not correlate to GS Tokens Collected.
-            if (!(IS_RANDO &&
-                  OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_SHUFFLE_TOKENS) != RO_TOKENSANITY_OFF)) {
-                static bool keepGsCountUpdated = true;
-                Checkbox("Keep GS Count Updated", &keepGsCountUpdated,
-                         checkboxOptionsBase.Tooltip(
-                             "Automatically adjust the number of gold skulltula tokens acquired based on set flags."));
-                int32_t gsCount = 0;
-                if (keepGsCountUpdated) {
-                    for (int32_t gsFlagIndex = 0; gsFlagIndex < 6; gsFlagIndex++) {
-                        gsCount += std::popcount(static_cast<uint32_t>(gSaveContext.gsFlags[gsFlagIndex]));
-                    }
-                    gSaveContext.inventory.gsTokens = gsCount;
+        auto& sceneFlags = gSaveContext.sceneFlags[selectedSceneFlagMap];
+        Kit::BeginCardLayout(2, 360.0f);
+        group("Switch", "Switch flags", sceneFlags.swch);
+        group("Room clear", "Room-clear flags", sceneFlags.clear);
+        group("Collectible", "Collect flags", sceneFlags.collect);
+        group("Chest", "Chest flags", sceneFlags.chest);
+        group("Rooms visited", "Flags for visited rooms", sceneFlags.rooms);
+        group("Floors visited", "Flags for visited floors", sceneFlags.floors);
+        Kit::EndCardLayout();
+    } else if (flagType == 2) {
+        PushStyleCombobox(THEME_COLOR);
+        static size_t selectedGsMap = 0;
+        if (ImGui::BeginCombo("##GSMap", gsMapping[selectedGsMap])) {
+            for (size_t index = 0; index < gsMapping.size(); index++) {
+                if (ImGui::Selectable(gsMapping[index])) {
+                    selectedGsMap = index;
                 }
             }
-        },
-        "Gold Skulltulas");
-
-    for (size_t i = 0; i < flagTables.size(); i++) {
-        const FlagTable& flagTable = flagTables[i];
-        if (flagTable.flagTableType == RANDOMIZER_INF && !IS_RANDO && !IS_BOSS_RUSH) {
-            continue;
+            ImGui::EndCombo();
         }
+        PopStyleCombobox();
 
-        if (ImGui::TreeNode(flagTable.name)) {
-            ImGui::PushID(flagTable.name);
-            ImGuiTextFilter& flagFilter = flagTableFilters[flagTable.name];
-            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16);
-            PushStyleInput(THEME_COLOR);
-            flagFilter.Draw();
-            PopStyleInput();
-            ImGui::Spacing();
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Flags");
+        uint32_t currentFlags = GET_GS_FLAGS(selectedGsMap);
+        uint32_t allFlags = gAreaGsFlags[selectedGsMap];
+        uint32_t setMask = 1;
+        bool changed = false;
+        // Iterate over bitfield and create a checkbox for each skulltula
+        while (allFlags != 0) {
+            bool isThisSet = (currentFlags & 0x1) == 0x1;
 
-            if (!flagFilter.IsActive()) {
-                // ComboShip: the editor uses the menu font; these hex grids keep the monospace font their column
-                // headers are aligned for.
-                ImGui::PushFont(OTRGlobals::Instance->fontMonoLarger);
-                for (size_t j = 0; j < flagTable.size + 1; j++) {
-                    DrawGroupWithBorder(
-                        [&]() {
-                            if (j == 0) {
-                                for (int k = 0xF; k >= 0; k--) {
-                                    ImGui::SameLine(static_cast<f32>(37.5 + ((0xF - k) * 33.8)));
-                                    ImGui::Text("%X", k);
-                                }
-                            }
-
-                            ImGui::Text("%s", fmt::format("{:<2X}", j).c_str());
-
-                            switch (flagTable.flagTableType) {
-                                case EVENT_CHECK_INF:
-                                    DrawFlagTableArray16(flagTable, static_cast<uint16_t>(j),
-                                                         gSaveContext.eventChkInf[j]);
-                                    break;
-                                case ITEM_GET_INF:
-                                    DrawFlagTableArray16(flagTable, static_cast<uint16_t>(j),
-                                                         gSaveContext.itemGetInf[j]);
-                                    break;
-                                case INF_TABLE:
-                                    DrawFlagTableArray16(flagTable, static_cast<uint16_t>(j), gSaveContext.infTable[j]);
-                                    break;
-                                case EVENT_INF:
-                                    DrawFlagTableArray16(flagTable, static_cast<uint16_t>(j), gSaveContext.eventInf[j]);
-                                    break;
-                                case RANDOMIZER_INF:
-                                    DrawFlagTableArray16(flagTable, static_cast<uint16_t>(j),
-                                                         gSaveContext.ship.randomizerInf[j]);
-                                    break;
-                            }
-                        },
-                        flagTable.name);
-                }
-                ImGui::PopFont();
-            } else {
-                DrawFlagTableSearchResults(flagTable, flagFilter);
-            }
-
-            // make some buttons to help with fishsanity debugging
-            uint8_t fsMode = OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_FISHSANITY);
-            if (flagTable.flagTableType == RANDOMIZER_INF && fsMode != RO_FISHSANITY_OFF &&
-                fsMode != RO_FISHSANITY_OVERWORLD) {
-                if (ImGui::Button("Catch All (Child)")) {
-                    for (int k = RAND_INF_CHILD_FISH_1; k <= RAND_INF_CHILD_LOACH_2; k++) {
-                        Flags_SetRandomizerInf((RandomizerInf)k);
-                    }
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Uncatch All (Child)")) {
-                    for (int k = RAND_INF_CHILD_FISH_1; k <= RAND_INF_CHILD_LOACH_2; k++) {
-                        Flags_UnsetRandomizerInf((RandomizerInf)k);
-                    }
-                }
-
-                if (ImGui::Button("Catch All (Adult)")) {
-                    for (int k = RAND_INF_ADULT_FISH_1; k <= RAND_INF_ADULT_LOACH; k++) {
-                        Flags_SetRandomizerInf((RandomizerInf)k);
-                    }
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Uncatch All (Adult)")) {
-                    for (int k = RAND_INF_ADULT_FISH_1; k <= RAND_INF_ADULT_LOACH; k++) {
-                        Flags_UnsetRandomizerInf((RandomizerInf)k);
-                    }
+            ImGui::SameLine();
+            ImGui::PushID(allFlags);
+            PushStyleCheckbox(THEME_COLOR);
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 3.0f));
+            if (ImGui::Checkbox("##gs", &isThisSet)) {
+                changed = true;
+                if (isThisSet) {
+                    SET_GS_FLAGS(selectedGsMap, setMask);
+                } else {
+                    // Have to do this roundabout method as the macro does not support clearing flags
+                    uint32_t currentFlagsBase = GET_GS_FLAGS(selectedGsMap);
+                    gSaveContext.gsFlags[selectedGsMap >> 2] &= ~gGsFlagsMasks[selectedGsMap & 3];
+                    SET_GS_FLAGS(selectedGsMap, currentFlagsBase & ~setMask);
                 }
             }
+            ImGui::PopStyleVar();
+            PopStyleCheckbox();
 
             ImGui::PopID();
-            ImGui::TreePop();
+
+            allFlags >>= 1;
+            currentFlags >>= 1;
+            setMask <<= 1;
         }
+
+        // If playing a Randomizer Save with Shuffle Skull Tokens on anything other than "Off" we don't want to keep
+        // GS Token Count updated, since Gold Skulltulas killed will not correlate to GS Tokens Collected.
+        if (!(IS_RANDO &&
+              OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_SHUFFLE_TOKENS) != RO_TOKENSANITY_OFF)) {
+            static bool keepGsCountUpdated = true;
+            Checkbox("Keep GS Count Updated", &keepGsCountUpdated,
+                     checkboxOptionsBase.Tooltip(
+                         "Adjust the number of gold skulltula tokens acquired when a flag here is changed."));
+            if (keepGsCountUpdated && changed) {
+                int32_t gsCount = 0;
+                for (int32_t gsFlagIndex = 0; gsFlagIndex < 6; gsFlagIndex++) {
+                    gsCount += std::popcount(static_cast<uint32_t>(gSaveContext.gsFlags[gsFlagIndex]));
+                }
+                gSaveContext.inventory.gsTokens = gsCount;
+            }
+        }
+    } else {
+        const FlagTable& flagTable = flagTables[tables[flagType - 3]];
+        ImGui::PushID(flagTable.name);
+        ImGuiTextFilter& flagFilter = flagTableFilters[flagTable.name];
+        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16);
+        PushStyleInput(THEME_COLOR);
+        flagFilter.Draw("Search");
+        PopStyleInput();
+        ImGui::Spacing();
+
+        if (!flagFilter.IsActive()) {
+            // The editor uses the menu font; these hex grids keep the monospace font their column headers are
+            // aligned for.
+            ImGui::PushFont(OTRGlobals::Instance->fontMonoLarger);
+            for (size_t j = 0; j < flagTable.size + 1; j++) {
+                DrawGroupWithBorder(
+                    [&]() {
+                        if (j == 0) {
+                            for (int k = 0xF; k >= 0; k--) {
+                                ImGui::SameLine(static_cast<f32>(37.5 + ((0xF - k) * 33.8)));
+                                ImGui::Text("%X", k);
+                            }
+                        }
+
+                        ImGui::Text("%s", fmt::format("{:<2X}", j).c_str());
+                        DrawFlagTableArray16(flagTable, static_cast<uint16_t>(j), GetFlagTableEntry(flagTable, j));
+                    },
+                    flagTable.name);
+            }
+            ImGui::PopFont();
+        } else {
+            DrawFlagTableSearchResults(flagTable, flagFilter);
+        }
+
+        // make some buttons to help with fishsanity debugging
+        uint8_t fsMode = OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_FISHSANITY);
+        if (flagTable.flagTableType == RANDOMIZER_INF && fsMode != RO_FISHSANITY_OFF &&
+            fsMode != RO_FISHSANITY_OVERWORLD) {
+            if (ImGui::Button("Catch All (Child)")) {
+                for (int k = RAND_INF_CHILD_FISH_1; k <= RAND_INF_CHILD_LOACH_2; k++) {
+                    Flags_SetRandomizerInf((RandomizerInf)k);
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Uncatch All (Child)")) {
+                for (int k = RAND_INF_CHILD_FISH_1; k <= RAND_INF_CHILD_LOACH_2; k++) {
+                    Flags_UnsetRandomizerInf((RandomizerInf)k);
+                }
+            }
+
+            if (ImGui::Button("Catch All (Adult)")) {
+                for (int k = RAND_INF_ADULT_FISH_1; k <= RAND_INF_ADULT_LOACH; k++) {
+                    Flags_SetRandomizerInf((RandomizerInf)k);
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Uncatch All (Adult)")) {
+                for (int k = RAND_INF_ADULT_FISH_1; k <= RAND_INF_ADULT_LOACH; k++) {
+                    Flags_UnsetRandomizerInf((RandomizerInf)k);
+                }
+            }
+        }
+
+        ImGui::PopID();
     }
 }
 #else
@@ -2910,6 +2713,297 @@ void DrawDungeonItemsTab() {
 }
 #endif
 
+#ifdef COMBO_BUILD
+// ComboShip: the Player tab with MM's cards and labels: Position & rotation, Speed, Age, Equipped gear, Button items
+// (with MM's Clear all) and Player state, which also holds the editable state flags that were on Flags.
+void DrawPlayerTab() {
+    namespace Kit = ComboSaveEditorKit;
+    if (gPlayState == nullptr) {
+        ImGui::TextWrapped("%s", Kit::kNeedsPlay);
+        return;
+    }
+    Player* player = GET_PLAYER(gPlayState);
+    const char* curSword;
+    const char* curShield;
+    const char* curTunic;
+    const char* curBoots;
+
+    switch (player->currentSwordItemId) {
+        case ITEM_SWORD_KOKIRI:
+            curSword = "Kokiri Sword";
+            break;
+        case ITEM_SWORD_MASTER:
+            curSword = "Master Sword";
+            break;
+        case ITEM_SWORD_BGS:
+            curSword = "Biggoron's Sword";
+            break;
+        case ITEM_FISHING_POLE:
+            curSword = "Fishing Pole";
+            break;
+        case ITEM_NONE:
+            curSword = "None";
+            break;
+        default:
+            curSword = "None";
+            break;
+    }
+
+    switch (player->currentShield) {
+        case PLAYER_SHIELD_NONE:
+            curShield = "None";
+            break;
+        case PLAYER_SHIELD_DEKU:
+            curShield = "Deku Shield";
+            break;
+        case PLAYER_SHIELD_HYLIAN:
+            curShield = "Hylian Shield";
+            break;
+        case PLAYER_SHIELD_MIRROR:
+            curShield = "Mirror Shield";
+            break;
+        default:
+            break;
+    }
+
+    switch (player->currentTunic) {
+        case PLAYER_TUNIC_KOKIRI:
+            curTunic = "Kokiri Tunic";
+            break;
+        case PLAYER_TUNIC_GORON:
+            curTunic = "Goron Tunic";
+            break;
+        case PLAYER_TUNIC_ZORA:
+            curTunic = "Zora Tunic";
+            break;
+        default:
+            break;
+    }
+
+    switch (player->currentBoots) {
+        case PLAYER_BOOTS_KOKIRI:
+            curBoots = "Kokiri Boots";
+            break;
+        case PLAYER_BOOTS_IRON:
+            curBoots = "Iron Boots";
+            break;
+        case PLAYER_BOOTS_HOVER:
+            curBoots = "Hover Boots";
+            break;
+        default:
+            break;
+    }
+
+    Kit::BeginCardLayout();
+
+    Kit::BeginCard("positionCard");
+    ImGui::Text("Position & rotation");
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+    PushStyleInput(THEME_COLOR);
+    ImGui::InputScalar("X##Pos", ImGuiDataType_Float, &player->actor.world.pos.x);
+    ImGui::InputScalar("Y##Pos", ImGuiDataType_Float, &player->actor.world.pos.y);
+    ImGui::InputScalar("Z##Pos", ImGuiDataType_Float, &player->actor.world.pos.z);
+    ComboTouch::Count("X rotation", &player->actor.world.rot.x, -32768, 32767);
+    ComboTouch::Count("Y rotation", &player->actor.world.rot.y, -32768, 32767);
+    ComboTouch::Count("Z rotation", &player->actor.world.rot.z, -32768, 32767);
+    InsertHelpHoverText("For Link's rotation in relation to the world");
+    ComboTouch::Count("Model X rotation", &player->actor.shape.rot.x, -32768, 32767);
+    ComboTouch::Count("Model Y rotation", &player->actor.shape.rot.y, -32768, 32767);
+    ComboTouch::Count("Model Z rotation", &player->actor.shape.rot.z, -32768, 32767);
+    InsertHelpHoverText("For Link's actual model");
+    PopStyleInput();
+    ImGui::PopItemWidth();
+    Kit::EndCard();
+
+    Kit::BeginCard("speedCard");
+    ImGui::Text("Speed");
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+    PushStyleInput(THEME_COLOR);
+    ImGui::InputScalar("XZ speed", ImGuiDataType_Float, &player->linearVelocity);
+    InsertHelpHoverText("Link's speed along the XZ plane");
+    ImGui::InputScalar("Y velocity", ImGuiDataType_Float, &player->actor.velocity.y);
+    InsertHelpHoverText("Link's speed along the Y plane. Caps at -20");
+    ImGui::InputScalar("Ledge height", ImGuiDataType_Float, &player->yDistToLedge);
+    InsertHelpHoverText("Height used to determine whether Link can climb or grab a ledge at the top");
+    ComboTouch::Count("Invincibility timer", &player->invincibilityTimer, -128, 127);
+    InsertHelpHoverText("Can't take damage while this is nonzero");
+    ImGui::InputScalar("Gravity", ImGuiDataType_Float, &player->actor.gravity);
+    InsertHelpHoverText("Rate at which Link falls. Default -4.0f");
+    PopStyleInput();
+    ImGui::PopItemWidth();
+    Kit::EndCard();
+
+    Kit::BeginCard("ageCard");
+    ImGui::Text("Age");
+    PushStyleCombobox(THEME_COLOR);
+    if (ImGui::BeginCombo("Link Age on Load", gPlayState->linkAgeOnLoad == 0 ? "Adult" : "Child")) {
+        if (ImGui::Selectable("Adult")) {
+            gPlayState->linkAgeOnLoad = 0;
+        }
+        if (ImGui::Selectable("Child")) {
+            gPlayState->linkAgeOnLoad = 1;
+        }
+        ImGui::EndCombo();
+    }
+    InsertHelpHoverText("This will change Link's age when you load a map");
+    PopStyleCombobox();
+    Kit::EndCard();
+
+    Kit::BeginCard("gearCard");
+    ImGui::Text("Equipped gear");
+    PushStyleCombobox(THEME_COLOR);
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+    if (ImGui::BeginCombo("Sword", curSword)) {
+        if (ImGui::Selectable("None")) {
+            player->currentSwordItemId = static_cast<s8>(ITEM_NONE);
+            gSaveContext.equips.buttonItems[0] = static_cast<u8>(ITEM_NONE);
+            Inventory_ChangeEquipment(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_NONE);
+        }
+        if (ImGui::Selectable("Kokiri Sword")) {
+            player->currentSwordItemId = static_cast<s8>(ITEM_SWORD_KOKIRI);
+            gSaveContext.equips.buttonItems[0] = static_cast<u8>(ITEM_SWORD_KOKIRI);
+            Inventory_ChangeEquipment(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_KOKIRI);
+        }
+        if (ImGui::Selectable("Master Sword")) {
+            player->currentSwordItemId = static_cast<s8>(ITEM_SWORD_MASTER);
+            gSaveContext.equips.buttonItems[0] = static_cast<u8>(ITEM_SWORD_MASTER);
+            Inventory_ChangeEquipment(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_MASTER);
+        }
+        if (ImGui::Selectable("Biggoron's Sword")) {
+            if (gSaveContext.bgsFlag) {
+                if (gSaveContext.swordHealth < 8) {
+                    gSaveContext.swordHealth = 8;
+                }
+                player->currentSwordItemId = static_cast<s8>(ITEM_SWORD_BGS);
+                gSaveContext.equips.buttonItems[0] = static_cast<u8>(ITEM_SWORD_BGS);
+            } else {
+                if (gSaveContext.swordHealth < 8) {
+                    gSaveContext.swordHealth = 8;
+                }
+                player->currentSwordItemId = static_cast<s8>(ITEM_SWORD_BGS);
+                gSaveContext.equips.buttonItems[0] = static_cast<u8>(ITEM_SWORD_KNIFE);
+            }
+
+            Inventory_ChangeEquipment(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_BIGGORON);
+        }
+        if (ImGui::Selectable("Fishing Pole")) {
+            player->currentSwordItemId = static_cast<s8>(ITEM_FISHING_POLE);
+            gSaveContext.equips.buttonItems[0] = static_cast<u8>(ITEM_FISHING_POLE);
+            Inventory_ChangeEquipment(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_MASTER);
+        }
+        ImGui::EndCombo();
+    }
+    if (ImGui::BeginCombo("Shield", curShield)) {
+        if (ImGui::Selectable("None")) {
+            player->currentShield = PLAYER_SHIELD_NONE;
+            Inventory_ChangeEquipment(EQUIP_TYPE_SHIELD, EQUIP_VALUE_SHIELD_NONE);
+        }
+        if (ImGui::Selectable("Deku Shield")) {
+            player->currentShield = PLAYER_SHIELD_DEKU;
+            Inventory_ChangeEquipment(EQUIP_TYPE_SHIELD, EQUIP_VALUE_SHIELD_DEKU);
+        }
+        if (ImGui::Selectable("Hylian Shield")) {
+            player->currentShield = PLAYER_SHIELD_HYLIAN;
+            Inventory_ChangeEquipment(EQUIP_TYPE_SHIELD, EQUIP_VALUE_SHIELD_HYLIAN);
+        }
+        if (ImGui::Selectable("Mirror Shield")) {
+            player->currentShield = PLAYER_SHIELD_MIRROR;
+            Inventory_ChangeEquipment(EQUIP_TYPE_SHIELD, EQUIP_VALUE_SHIELD_MIRROR);
+        }
+        ImGui::EndCombo();
+    }
+
+    if (ImGui::BeginCombo("Tunic", curTunic)) {
+        if (ImGui::Selectable("Kokiri Tunic")) {
+            player->currentTunic = PLAYER_TUNIC_KOKIRI;
+            Inventory_ChangeEquipment(EQUIP_TYPE_TUNIC, EQUIP_VALUE_TUNIC_KOKIRI);
+        }
+        if (ImGui::Selectable("Goron Tunic")) {
+            player->currentTunic = PLAYER_TUNIC_GORON;
+            Inventory_ChangeEquipment(EQUIP_TYPE_TUNIC, EQUIP_VALUE_TUNIC_GORON);
+        }
+        if (ImGui::Selectable("Zora Tunic")) {
+            player->currentTunic = PLAYER_TUNIC_ZORA;
+            Inventory_ChangeEquipment(EQUIP_TYPE_TUNIC, EQUIP_VALUE_TUNIC_ZORA);
+        }
+        ImGui::EndCombo();
+    }
+
+    if (ImGui::BeginCombo("Boots", curBoots)) {
+        if (ImGui::Selectable("Kokiri Boots")) {
+            player->currentBoots = PLAYER_BOOTS_KOKIRI;
+            Inventory_ChangeEquipment(EQUIP_TYPE_BOOTS, EQUIP_VALUE_BOOTS_KOKIRI);
+        }
+        if (ImGui::Selectable("Iron Boots")) {
+            player->currentBoots = PLAYER_BOOTS_IRON;
+            Inventory_ChangeEquipment(EQUIP_TYPE_BOOTS, EQUIP_VALUE_BOOTS_IRON);
+        }
+        if (ImGui::Selectable("Hover Boots")) {
+            player->currentBoots = PLAYER_BOOTS_HOVER;
+            Inventory_ChangeEquipment(EQUIP_TYPE_BOOTS, EQUIP_VALUE_BOOTS_HOVER);
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::PopItemWidth();
+    PopStyleCombobox();
+    Kit::EndCard();
+
+    Kit::BeginCard("buttonsCard");
+    ImGui::Text("Button items");
+    ImGui::PushItemWidth(ImGui::GetFontSize() * 6);
+    PushStyleInput(THEME_COLOR);
+    ImU16 one = 1;
+    ImGui::InputScalar("B", ImGuiDataType_U8, &gSaveContext.equips.buttonItems[0], &one, NULL);
+    ImGui::InputScalar("C-Left", ImGuiDataType_U8, &gSaveContext.equips.buttonItems[1], &one, NULL);
+    ImGui::InputScalar("C-Down", ImGuiDataType_U8, &gSaveContext.equips.buttonItems[2], &one, NULL);
+    ImGui::InputScalar("C-Right", ImGuiDataType_U8, &gSaveContext.equips.buttonItems[3], &one, NULL);
+    if (CVarGetInteger(CVAR_ENHANCEMENT("DpadEquips"), 0)) {
+        ImGui::InputScalar("D-pad Up", ImGuiDataType_U8, &gSaveContext.equips.buttonItems[4], &one, NULL);
+        ImGui::InputScalar("D-pad Down", ImGuiDataType_U8, &gSaveContext.equips.buttonItems[5], &one, NULL);
+        ImGui::InputScalar("D-pad Left", ImGuiDataType_U8, &gSaveContext.equips.buttonItems[6], &one, NULL);
+        ImGui::InputScalar("D-pad Right", ImGuiDataType_U8, &gSaveContext.equips.buttonItems[7], &one, NULL);
+    }
+    PopStyleInput();
+    ImGui::PopItemWidth();
+    // As MM's Clear All: every C and D-pad button empties; B keeps the sword.
+    if (Kit::Button("Clear all##buttons", Kit::kReset)) {
+        for (size_t i = 1; i < ARRAY_COUNT(gSaveContext.equips.buttonItems); i++) {
+            gSaveContext.equips.buttonItems[i] = ITEM_NONE;
+        }
+        for (size_t i = 0; i < ARRAY_COUNT(gSaveContext.equips.cButtonSlots); i++) {
+            gSaveContext.equips.cButtonSlots[i] = SLOT_NONE;
+        }
+    }
+    Kit::EndCard();
+
+    Kit::BeginCard("stateCard");
+    ImGui::Text("Player state");
+    uint32_t flags[3] = { player->stateFlags1, player->stateFlags2, player->stateFlags3 };
+    std::vector<std::vector<std::string>> flag_strs = { state1, state2, state3 };
+    for (int j = 0; j <= 2; j++) {
+        for (int i = 0; i <= 31; i++) {
+            if (((flags[j] >> i) & 1) != 0) {
+                ImGui::Text("%s", flag_strs[j][i].c_str());
+            }
+        }
+    }
+    ImGui::Text("Sword state: %d", player->meleeWeaponState);
+    if (ImGui::TreeNode("Edit state flags")) {
+        ImGui::Text("stateFlags1");
+        DrawFlagArray32("stateFlags1", player->stateFlags1, THEME_COLOR);
+        ImGui::Text("stateFlags2");
+        DrawFlagArray32("stateFlags2", player->stateFlags2, THEME_COLOR);
+        ImGui::Text("stateFlags3");
+        DrawFlagArray8("stateFlags3", player->stateFlags3, THEME_COLOR);
+        ImGui::Text("unk_6AE_rotFlags");
+        DrawFlagArray16("unk_6AE_rotFlags", player->unk_6AE_rotFlags, THEME_COLOR);
+        ImGui::TreePop();
+    }
+    Kit::EndCard();
+
+    Kit::EndCardLayout();
+}
+#else
 void DrawPlayerTab() {
     if (gPlayState != nullptr) {
         Player* player = GET_PLAYER(gPlayState);
@@ -3219,6 +3313,7 @@ void DrawPlayerTab() {
         ImGui::Text("Global Context needed for player info!");
     }
 }
+#endif
 
 void ResetBaseOptions() {
     intSliderOptionsBase.Color(THEME_COLOR).Size({ 320.0f, 0.0f }).Tooltip("");

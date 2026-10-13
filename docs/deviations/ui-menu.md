@@ -493,6 +493,14 @@ take upstream changes into the `#else` branch and port them to the combo branch 
 - Dungeon Items (`DrawDungeonItemsTab`, `DrawDungeonItemButton`): one card per dungeon instead of one dungeon at a
   time from a dropdown: Map, Compass, Boss key, the small key icon (faded at no keys) and an inline small key bar.
   Scenes 0x00-0x0D and the Treasure Box Shop (0x10); the boss rooms and collapse scenes hold no items of their own.
+- Flags (`DrawFlagsTab`): one "Flag type" list with plain names (Current scene, Saved scene, Gold Skulltulas, Event
+  flags, Item flags, Info flags, Temporary events, Randomizer flags) instead of stacked tree nodes; groups with plain
+  names and Set all (theme) / Clear all (Red); a searchable scene list (kit `SearchableCombo`); every flag table keeps
+  its search box. The player state flags move to Player. "Keep GS Count Updated" recounts only when a Gold
+  Skulltula flag changes; it used to overwrite the Quest Status token count every frame.
+- Player (`DrawPlayerTab`): MM's cards and labels (Position & rotation, Speed with "XZ speed", "Ledge height" and the
+  rest in MM's names, Age, Equipped gear, Button items with MM's Clear all, Player state with the editable state
+  flags under "Edit state flags"); "Available while playing." with no game running.
 
 **MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp`:** rewritten functions are guarded the same way as OoT's
 (`#ifdef COMBO_BUILD <combo body> #else <upstream body> #endif`); one-line wording changes are inline guards.
