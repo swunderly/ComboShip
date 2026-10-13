@@ -478,6 +478,11 @@ take upstream changes into the `#else` branch and port them to the combo branch 
   bar moved here from `DrawEquipmentTab`, "Rupees" bar), Time (a clock-text bar instead of 0-65535, Dawn, Noon,
   Sunset, Midnight), then a collapsed Advanced card with everything else. Max and Reset do what MM's do for the
   same resource, with OoT's new-file values (3 hearts).
+- `DrawInventoryTab` (Sam's example 1): with "Restrict to valid items" on, a slot whose
+  `GetLegalInventorySlotItems` list has one item toggles it on a tap (combo-only `ToggleInventorySlot`: on does what
+  picking the item does, plus capacity level 1 and full ammo when the item has no capacity yet; off does what None
+  does); Ocarina, Hookshot, bottles and trade slots keep the picker, which now shows item names under the icons.
+  The grid uses MM's geometry, and each ammo count sits under its icon instead of in a separate Ammo row.
 
 **MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp`:** rewritten functions are guarded the same way as OoT's
 (`#ifdef COMBO_BUILD <combo body> #else <upstream body> #endif`); one-line wording changes are inline guards.

@@ -9,6 +9,10 @@ draw their combo branches with combo/gui/ComboSaveEditorKit.h. This reads the ed
 2. Tabs: both editors draw General, Inventory, Equipment, Quest Status, Dungeon Items, Flags, Player in that order;
    MM then adds Randomizer and, last, Reg Editor. OoT's file number is not editable.
 3. Every CVar the editors read before T8, and the two window CVars, is still read or still has its widget.
+4. OoT's tap rule (Sam's example 1), run on the production GetLegalInventorySlotItems, ToggleInventorySlot, item
+   table and item slots: with "Restrict to valid items" on, Boomerang and the other one-item slots toggle while
+   Hookshot, Ocarina, bottles and trade slots open the picker. On does what picking the item does (set it, refresh
+   the C/D-pad buttons) plus capacity level 1 and full ammo when there is no capacity yet; off does what None does.
 """
 from pathlib import Path
 import argparse
@@ -128,14 +132,129 @@ check(hostcxx.contains(read('mm/2s2h/BenGui/BenMenu.cpp'),
                        'AddWidget(path, "Popout Save Editor", WIDGET_WINDOW_BUTTON).CVar("gWindows.SaveEditor")'),
       'the MM pop-out button lost gWindows.SaveEditor')
 
-# ---- 1b. The tap rule and the clock text, built and run.
+# ---- 4. OoT tap rule: production pieces.
+inventory = function(oot, 'void DrawInventoryTab() {')
+check(hostcxx.contains(inventory, 'const Kit::Tap tap = Kit::ToggleOrPick(restrictToValid, legalItems.size());') and
+      hostcxx.contains(inventory, 'if (tap == Kit::Tap::Toggle) { ToggleInventorySlot(index, legalItems.front().id, '
+                                  'syncButtons); } else { selectedIndex = index; ImGui::OpenPopup(itemPopupPicker); }'),
+      'the OoT inventory tap does not follow the tap rule')
+check(hostcxx.contains(inventory, 'gSaveContext.inventory.items[selectedIndex] = slotEntry.id; if (syncButtons) { '
+                                  'SyncButtonItemsForSlot(selectedIndex); }'),
+      'the OoT picker no longer sets the item and refreshes the buttons')
+check('ImGui::Text("Ammo")' not in inventory and 'Kit::AmmoCount(' in inventory,
+      'OoT ammo counts are not under their icons')
+z_inventory = read('soh/src/code/z_inventory.c')
+item_slots = re.search(r'u8 gItemSlots\[\] = \{(.*?)\};', z_inventory, re.S).group(1)
+capacities = re.search(r'u16 gUpgradeCapacities\[\]\[4\] = \{(.*?)\};', z_inventory, re.S).group(1)
+mapping = read('soh/soh/SohGui/ImGuiUtils.cpp')
+mapping = mapping[mapping.index('std::map<uint32_t, ItemMapEntry> itemMapping = {'):]
+mapping = mapping[:mapping.index('};') + 2]
+oot_harness = r'''
+typedef unsigned char u8;
+typedef signed char s8;
+typedef short s16;
+typedef unsigned short u16;
+#include "z64item.h"
+struct ItemMapEntry {
+    uint32_t id;
+    std::string name, nameFaded, texturePath;
+};
+#define ITEM_MAP_ENTRY(id) { id, { id, #id, #id "_Faded", "" } }
+''' + mapping + r'''
+u8 gItemSlots[] = {''' + item_slots + r'''};
+u16 gUpgradeCapacities[][4] = {''' + capacities + r'''};
+struct {
+    struct {
+        u8 items[24];
+        s8 ammo[16];
+    } inventory;
+} gSaveContext;
+int gUpgrades[8];
+#define CUR_UPG_VALUE(upg) gUpgrades[upg]
+#define CUR_CAPACITY(upg) gUpgradeCapacities[upg][CUR_UPG_VALUE(upg)]
+#define AMMO(item) gSaveContext.inventory.ammo[gItemSlots[item]]
+void Inventory_ChangeUpgrade(int upgrade, int value) { gUpgrades[upgrade] = value; }
+std::vector<int> gSynced;
+static void SyncButtonItemsForSlot(uint8_t slot) { gSynced.push_back(slot); }
+''' + function(oot_raw, 'static std::vector<ItemMapEntry> GetLegalInventorySlotItems(InventorySlot slot)') + '\n' + \
+    function(oot, 'static int AmmoUpgradeForItem(uint8_t item)') + '\n' + \
+    function(oot, 'static void ToggleInventorySlot(InventorySlot slot, uint8_t item, bool syncButtons)') + '\n'
+
+# ---- 1b and 4. The tap rule and the clock text, built and run.
 code = r'''
+#include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
+#include <map>
 #include <string>
+#include <tuple>
+#include <vector>
 #include "gui/ComboSaveEditorKit.h"
+''' + oot_harness + r'''
 using namespace ComboSaveEditorKit;
+void Fresh() {
+    gSaveContext = {};
+    std::fill(std::begin(gSaveContext.inventory.items), std::end(gSaveContext.inventory.items), (u8)ITEM_NONE);
+    std::fill(std::begin(gUpgrades), std::end(gUpgrades), 0);
+    gSynced.clear();
+}
+bool NoUpgrades() {
+    return std::all_of(std::begin(gUpgrades), std::end(gUpgrades), [](int v) { return v == 0; });
+}
+void OotTapRule() {
+    const std::vector<int> toggles = { SLOT_STICK,      SLOT_NUT,          SLOT_BOMB,      SLOT_BOW,
+                                       SLOT_ARROW_FIRE, SLOT_DINS_FIRE,    SLOT_SLINGSHOT, SLOT_BOMBCHU,
+                                       SLOT_ARROW_ICE,  SLOT_FARORES_WIND, SLOT_BOOMERANG, SLOT_LENS,
+                                       SLOT_BEAN,       SLOT_HAMMER,       SLOT_ARROW_LIGHT, SLOT_NAYRUS_LOVE };
+    for (int slot = 0; slot < 24; slot++) {
+        const auto legal = GetLegalInventorySlotItems((InventorySlot)slot);
+        const bool toggle = ToggleOrPick(true, legal.size()) == Tap::Toggle;
+        assert(toggle == (std::find(toggles.begin(), toggles.end(), slot) != toggles.end()));
+        assert(ToggleOrPick(false, legal.size()) == Tap::Pick);
+        if (toggle)
+            assert(gItemSlots[legal.front().id] == slot);
+    }
+    // Sam's examples: Boomerang just toggles, Hookshot asks Hookshot or Longshot.
+    const auto boomerang = GetLegalInventorySlotItems(SLOT_BOOMERANG);
+    assert(boomerang.size() == 1 && boomerang.front().id == ITEM_BOOMERANG);
+    const auto hookshot = GetLegalInventorySlotItems(SLOT_HOOKSHOT);
+    assert(hookshot.size() == 2 && hookshot[0].id == ITEM_HOOKSHOT && hookshot[1].id == ITEM_LONGSHOT);
+    assert(GetLegalInventorySlotItems(SLOT_OCARINA).size() == 2 && GetLegalInventorySlotItems(SLOT_BOTTLE_4).size() > 1);
+
+    // On does what picking the item does (set it, refresh the buttons), off what None does.
+    Fresh();
+    ToggleInventorySlot(SLOT_BOOMERANG, ITEM_BOOMERANG, true);
+    assert(gSaveContext.inventory.items[SLOT_BOOMERANG] == ITEM_BOOMERANG && gSynced == std::vector<int>{ SLOT_BOOMERANG });
+    assert(NoUpgrades());
+    ToggleInventorySlot(SLOT_BOOMERANG, ITEM_BOOMERANG, true);
+    assert(gSaveContext.inventory.items[SLOT_BOOMERANG] == ITEM_NONE && gSynced.size() == 2);
+    ToggleInventorySlot(SLOT_BOOMERANG, ITEM_BOOMERANG, false); // buttons left alone when sync is off
+    assert(gSaveContext.inventory.items[SLOT_BOOMERANG] == ITEM_BOOMERANG && gSynced.size() == 2);
+    // An ammo item without capacity gets level 1 and full ammo; removing it keeps the capacity.
+    for (auto [slot, item, upgrade, full] : { std::tuple{ SLOT_BOW, ITEM_BOW, UPG_QUIVER, 30 },
+                                             std::tuple{ SLOT_BOMB, ITEM_BOMB, UPG_BOMB_BAG, 20 },
+                                             std::tuple{ SLOT_STICK, ITEM_STICK, UPG_STICKS, 10 },
+                                             std::tuple{ SLOT_NUT, ITEM_NUT, UPG_NUTS, 20 },
+                                             std::tuple{ SLOT_SLINGSHOT, ITEM_SLINGSHOT, UPG_BULLET_BAG, 30 } }) {
+        Fresh();
+        ToggleInventorySlot((InventorySlot)slot, item, true);
+        assert(gSaveContext.inventory.items[slot] == item && gUpgrades[upgrade] == 1 &&
+               gSaveContext.inventory.ammo[slot] == full);
+        ToggleInventorySlot((InventorySlot)slot, item, true);
+        assert(gSaveContext.inventory.items[slot] == ITEM_NONE && gUpgrades[upgrade] == 1);
+        // With a capacity already, only the item changes.
+        gUpgrades[upgrade] = 2;
+        gSaveContext.inventory.ammo[slot] = 5;
+        ToggleInventorySlot((InventorySlot)slot, item, true);
+        assert(gUpgrades[upgrade] == 2 && gSaveContext.inventory.ammo[slot] == 5);
+    }
+    Fresh(); // Bombchus have no capacity upgrade: their ammo is left to the count under the icon.
+    ToggleInventorySlot(SLOT_BOMBCHU, ITEM_BOMBCHU, true);
+    assert(gSaveContext.inventory.ammo[SLOT_BOMBCHU] == 0 && NoUpgrades());
+}
 int main() {
+    OotTapRule();
     static_assert(ToggleOrPick(true, 1) == Tap::Toggle);
     for (size_t candidates : { 0, 2, 3, 13 })
         assert(ToggleOrPick(true, candidates) == Tap::Pick);
@@ -168,6 +287,7 @@ if failures:
 a.build_dir.mkdir(parents=True, exist_ok=True)
 source = a.build_dir / 'save_editor_mirror.cpp'
 source.write_text(code, encoding='utf-8')
-binary = hostcxx.build(a.compiler, source, includes=[root / 'combo', a.imgui_include], warnings=False)
+binary = hostcxx.build(a.compiler, source, includes=[root / 'combo', root / 'soh/include', a.imgui_include],
+                        warnings=False)
 subprocess.run([str(binary)], check=True, timeout=hostcxx.RUN_TIMEOUT)
-print('Save Editor tabs, kit and CVars: OK')
+print('Save Editor tabs, kit, CVars and OoT tap rule: OK')

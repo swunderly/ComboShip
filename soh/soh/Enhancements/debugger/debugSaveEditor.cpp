@@ -935,6 +935,169 @@ static std::vector<ItemMapEntry> GetLegalInventorySlotItems(InventorySlot slot) 
     return items;
 }
 
+#ifdef COMBO_BUILD
+// ComboShip: the capacity upgrade an ammo item needs before it holds anything.
+static int AmmoUpgradeForItem(uint8_t item) {
+    switch (item) {
+        case ITEM_STICK:
+            return UPG_STICKS;
+        case ITEM_NUT:
+            return UPG_NUTS;
+        case ITEM_BOMB:
+            return UPG_BOMB_BAG;
+        case ITEM_BOW:
+            return UPG_QUIVER;
+        case ITEM_SLINGSHOT:
+            return UPG_BULLET_BAG;
+        default:
+            return -1;
+    }
+}
+
+// ComboShip: the tap rule's toggle, for a slot that can hold only one item. On does exactly what picking that item
+// does, plus capacity level 1 and full ammo when the item has no capacity yet (as MM's first tap does); off does
+// exactly what picking None does.
+static void ToggleInventorySlot(InventorySlot slot, uint8_t item, bool syncButtons) {
+    if (gSaveContext.inventory.items[slot] == ITEM_NONE) {
+        gSaveContext.inventory.items[slot] = item;
+        const int upgrade = AmmoUpgradeForItem(item);
+        if (upgrade >= 0 && CUR_UPG_VALUE(upgrade) == 0) {
+            Inventory_ChangeUpgrade(upgrade, 1);
+            AMMO(item) = CUR_CAPACITY(upgrade);
+        }
+    } else {
+        gSaveContext.inventory.items[slot] = ITEM_NONE;
+    }
+    if (syncButtons) {
+        SyncButtonItemsForSlot(slot);
+    }
+}
+#endif
+
+#ifdef COMBO_BUILD
+// ComboShip: the Inventory tab as MM's. The switches sit on top; a slot that can hold one item toggles it, a slot that
+// can hold several (Ocarina, Hookshot, bottles, trade items) opens a picker with None first and item names; each ammo
+// count sits under its icon instead of in a separate Ammo row.
+void DrawInventoryTab() {
+    namespace Kit = ComboSaveEditorKit;
+    static bool restrictToValid = true;
+    static bool syncButtons = true;
+
+    Checkbox(Kit::kRestrictLabel, &restrictToValid, checkboxOptionsBase.Tooltip(Kit::kRestrictTooltip));
+    ImGui::SameLine();
+    Checkbox("Keep C/D-pad buttons in sync", &syncButtons,
+             checkboxOptionsBase.Tooltip("Refresh a C or D-pad button when its inventory slot is edited. Disable to "
+                                         "leave a slot and its button out of sync (e.g. to set up RBA)."));
+    ImGui::TextWrapped("%s", Kit::kInventoryHelp);
+
+    const ImVec4 theme = ColorValues.at(THEME_COLOR);
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    static InventorySlot selectedIndex = SLOT_NONE;
+    static const char* itemPopupPicker = "itemPopupPicker";
+    ImGui::BeginChild("itemsBox", Kit::GridBoxSize(), ImGuiChildFlags_Borders);
+    ImGui::Text("Items");
+    static_assert(5 + 3 * 6 < sizeof(gSaveContext.inventory.items) / sizeof(gSaveContext.inventory.items[0]));
+    for (int i = 0; i < 24; i++) {
+        const InventorySlot index = static_cast<InventorySlot>(i);
+        ImGui::PushID(index);
+
+        ItemID item = (ItemID)gSaveContext.inventory.items[index];
+        const auto legalItems = GetLegalInventorySlotItems(index);
+        std::string textureName;
+        std::string itemName;
+        bool hasItemIcon = false;
+        if (item == ITEM_ROCS_FEATHER) {
+            textureName = "ROCS_FEATHER";
+            itemName = "Roc's Feather";
+            hasItemIcon = true;
+        } else if (const auto mappedItem = itemMapping.find(item);
+                   item != ITEM_NONE && mappedItem != itemMapping.end()) {
+            textureName = mappedItem->second.name;
+            itemName = SohUtils::GetItemName(item);
+            hasItemIcon = true;
+        } else if (!legalItems.empty()) {
+            textureName = legalItems.front().name;
+            itemName = SohUtils::GetItemName(legalItems.front().id);
+        }
+        const Kit::Tap tap = Kit::ToggleOrPick(restrictToValid, legalItems.size());
+
+        // The ammo count under its icon; with the restriction off every ammo slot shows one.
+        if (item != ITEM_NONE && i < 16 && (!restrictToValid || gAmmoItems[i] != ITEM_NONE)) {
+            ImGui::SetCursorPos(Kit::GridAmmo(i));
+            Kit::AmmoCount("##ammoInput", &gSaveContext.inventory.ammo[i], theme);
+        }
+
+        ImGui::SetCursorPos(Kit::GridCell(i));
+        bool pressed;
+        if (!textureName.empty()) {
+            pressed = Kit::IconButton("##inventorySlot", gui->GetTextureByName(textureName), hasItemIcon);
+            std::string tooltip = itemName + (hasItemIcon ? " (owned)" : " (not owned)");
+            if (!hasItemIcon && item != ITEM_NONE) {
+                tooltip = "Unsupported saved item " + std::to_string(static_cast<int>(item));
+            }
+            tooltip += std::string("\n") + Kit::TapHint(tap);
+            UIWidgets::Tooltip(tooltip.c_str());
+        } else {
+            pressed = Kit::EmptyIconButton("##itemNone");
+        }
+        if (pressed) {
+            if (tap == Kit::Tap::Toggle) {
+                ToggleInventorySlot(index, legalItems.front().id, syncButtons);
+            } else {
+                selectedIndex = index;
+                ImGui::OpenPopup(itemPopupPicker);
+            }
+        }
+
+        if (ImGui::BeginPopup(itemPopupPicker)) {
+            if (Kit::PickerEntry(0, "##itemNonePicker", 0, "None")) {
+                if (selectedIndex != SLOT_NONE) {
+                    gSaveContext.inventory.items[selectedIndex] = ITEM_NONE;
+                    if (syncButtons) {
+                        SyncButtonItemsForSlot(selectedIndex);
+                    }
+                }
+                ImGui::CloseCurrentPopup();
+            }
+
+            std::vector<ItemMapEntry> possibleItems;
+            if (restrictToValid) {
+                possibleItems = GetLegalInventorySlotItems(selectedIndex);
+            } else {
+                for (const auto& entry : itemMapping) {
+                    possibleItems.push_back(entry.second);
+                }
+            }
+            for (size_t pickerIndex = 0; pickerIndex < possibleItems.size(); pickerIndex++) {
+                const ItemMapEntry& slotEntry = possibleItems[pickerIndex];
+                if (Kit::PickerEntry(static_cast<int>(pickerIndex) + 1, slotEntry.name.c_str(),
+                                     gui->GetTextureByName(slotEntry.name),
+                                     SohUtils::GetItemName(slotEntry.id).c_str())) {
+                    gSaveContext.inventory.items[selectedIndex] = slotEntry.id;
+                    if (syncButtons) {
+                        SyncButtonItemsForSlot(selectedIndex);
+                    }
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::PopID();
+    }
+    ImGui::EndChild();
+
+    // Trade quest flags are only used when shuffling the trade sequence, so
+    // don't show this if it isn't needed.
+    if (IS_RANDO && OTRGlobals::Instance->gRandomizer->GetRandoSettingValue(RSK_SHUFFLE_ADULT_TRADE) &&
+        ImGui::TreeNode("Adult trade quest items")) {
+        for (int i = ITEM_POCKET_EGG; i <= ITEM_CLAIM_CHECK; i++) {
+            DrawBGSItemFlag(i);
+        }
+        ImGui::TreePop();
+    }
+}
+#else
 void DrawInventoryTab() {
     static bool restrictToValid = true;
 
@@ -1101,6 +1264,7 @@ void DrawInventoryTab() {
         ImGui::TreePop();
     }
 }
+#endif
 
 // Draw a flag bitfield as a grid of checkboxes
 void DrawFlagTableArray16(const FlagTable& flagTable, uint16_t row, uint16_t& flags) {
