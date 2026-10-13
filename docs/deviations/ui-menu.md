@@ -467,3 +467,9 @@ take upstream changes into the `#else` branch and port them to the combo branch 
 - `DrawInfoTab`: the File Number combobox is a read-only "File N". Editing it sent the next save to another slot,
   which could overwrite another file or split a file's OoT half from its MM half.
 - Typos: "visted" (`DrawFlagsTab`), "Capapcity" (`DrawEquipmentTab`), "aquired" (`DrawQuestStatusTab`).
+
+**MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp`:** rewritten functions are guarded the same way as OoT's
+(`#ifdef COMBO_BUILD <combo body> #else <upstream body> #endif`); one-line wording changes are inline guards.
+- `DrawElement`: "Items & Masks" is "Inventory", "Rando" is "Randomizer", and the developer Reg Editor moves last.
+- Wording: "DD" is "Double Defense", "Bombers Code" is "Bombers' Code" (`DrawGeneralTab`), "Eponas Song" is
+  "Epona's Song" (`SongInfo`).
