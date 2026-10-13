@@ -3,6 +3,8 @@ import org.libsdl.app.SDLActivity;
 import android.app.AlertDialog;
 import android.os.*;
 import android.view.*;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import java.io.File;
 /** A dedicated process gives the combined native runtime a clean lifetime on every relaunch. */
 public final class GameActivity extends SDLActivity {
@@ -136,13 +138,13 @@ public final class GameActivity extends SDLActivity {
     // Back steps back inside the open menu (popup, search) before it closes it; it opens the menu while playing.
     @Override public void onBackPressed(){if(librariesReady)nativeBack();else super.onBackPressed();}
     // Whether the on-screen keyboard is showing. When the keyboard closes itself on Back, SDL is not told and its
-    // flag stays set until SDL next sees a key, so the window's own IME visibility decides where it can.
+    // flag stays set until SDL next sees a key, so the window's own IME visibility decides. Below API 30 AndroidX
+    // reads it from the window's visible insets, and SDL's flag must agree there.
     private boolean screenKeyboardShown(){
-        if(Build.VERSION.SDK_INT>=30){
-            WindowInsets insets=getWindow().getDecorView().getRootWindowInsets();
-            if(insets!=null)return insets.isVisible(WindowInsets.Type.ime());
-        }
-        return SDLActivity.isScreenKeyboardShown();
+        WindowInsetsCompat insets=ViewCompat.getRootWindowInsets(getWindow().getDecorView());
+        if(insets==null)return SDLActivity.isScreenKeyboardShown();
+        boolean ime=insets.isVisible(WindowInsetsCompat.Type.ime());
+        return Build.VERSION.SDK_INT>=30 ? ime : ime && SDLActivity.isScreenKeyboardShown();
     }
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         // SDL's surface consumes keyboard Back before Activity.onBackPressed.

@@ -4,8 +4,8 @@ Compiles ComboMenu.cpp's production HandleBack, ClearSearch and ReturnToSearchRe
 - after "Open page" on a search result, one Back returns to the results;
 - Back clears a search whose text field is still being edited after its keyboard closed (the field would otherwise
   write its text back on the next frame).
-GameActivity must route Back by the window's own keyboard visibility: SDL's flag stays set after the keyboard closes
-itself on Back, which sent the next Back to SDL as an unused key press.
+GameActivity must route Back by the window's own keyboard visibility on every API level from minSdk 28: SDL's flag
+stays set after the keyboard closes itself on Back, which sent the next Back to SDL as an unused key press.
 """
 import argparse
 import re
@@ -143,6 +143,10 @@ dispatch = block('@Override public boolean dispatchKeyEvent(KeyEvent event)', ac
 assert re.search(r'KEYCODE_BACK\s*&&\s*!screenKeyboardShown\(\)', dispatch), 'Back is not routed by the shown keyboard'
 assert 'SDLActivity.isScreenKeyboardShown()' not in dispatch, "Back is routed by SDL's keyboard flag"
 shown = block('private boolean screenKeyboardShown()', activity)
-assert shown.index('WindowInsets.Type.ime()') < shown.index('SDLActivity.isScreenKeyboardShown()'), \
-    "the window's keyboard visibility must decide before SDL's flag"
+assert 'ViewCompat.getRootWindowInsets(' in shown and 'WindowInsetsCompat.Type.ime()' in shown, \
+    "the window's keyboard visibility must decide on every API level, not only from API 30"
+# minSdk is 28: below API 30 SDL's flag may only confirm the window's answer; alone it decides only without insets.
+assert re.search(r'if\(insets==null\)return SDLActivity\.isScreenKeyboardShown\(\);', shown) and \
+    re.search(r'ime\s*&&\s*SDLActivity\.isScreenKeyboardShown\(\)', shown) and \
+    shown.count('SDLActivity.isScreenKeyboardShown()') == 2, "SDL's stale flag still decides Back below API 30"
 print('PASS: Back takes one press per menu step')
