@@ -2112,7 +2112,8 @@ void DrawUpgradeIcon(const std::string& categoryName, int32_t categoryId, const 
         names.push_back(item == ITEM_NONE ? "None" : SohUtils::GetItemName(item));
     }
     for (size_t i = 0; i < items.size(); i++) {
-        levels.push_back({ items[i] == ITEM_NONE ? ComboSaveEditorKit::kNoTexture : gui->GetTextureByName(itemMapping[items[i]].name),
+        levels.push_back({ items[i] == ITEM_NONE ? ComboSaveEditorKit::kNoTexture
+                                                 : gui->GetTextureByName(itemMapping[items[i]].name),
                            names[i].c_str() });
     }
     const int picked = ComboSaveEditorKit::LevelPicker(categoryName.c_str(), CUR_UPG_VALUE(categoryId), levels);

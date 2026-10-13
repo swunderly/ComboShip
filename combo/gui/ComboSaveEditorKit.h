@@ -338,8 +338,7 @@ inline int LevelPicker(const char* label, int level, const std::vector<Level>& l
     if (ImGui::BeginPopup("levelPicker")) {
         for (size_t i = 0; i < levels.size(); i++) {
             ImGui::PushID(static_cast<int>(i));
-            if (PickerEntry(static_cast<int>(i), "##choice", i == 0 ? kNoTexture : levels[i].texture,
-                            levels[i].name)) {
+            if (PickerEntry(static_cast<int>(i), "##choice", i == 0 ? kNoTexture : levels[i].texture, levels[i].name)) {
                 picked = static_cast<int>(i);
                 ImGui::CloseCurrentPopup();
             }
