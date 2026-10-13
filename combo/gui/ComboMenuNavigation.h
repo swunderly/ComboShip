@@ -58,26 +58,26 @@ inline std::vector<HubEntry> BuildFeatureNavigation(const std::string& scope, co
         entry.kind = kind;
         entries.push_back(std::move(entry));
     };
-    add("home", "Presets", HubEntry::COMBO_HOME);
+    add("home", MenuPage::CommunityPresets, HubEntry::COMBO_HOME);
     add("randomizer", "Shared items", HubEntry::COMBO_SHARED_ITEMS);
     add("randomizer", "Warps & travel", HubEntry::ENGINE);
-    add("gameplay", "Warps & travel", HubEntry::ENGINE);
+    add("gameplay", MenuPage::WarpsTravel, HubEntry::ENGINE);
     add("randomizer", "Logic & access", HubEntry::ENGINE);
-    add("gameplay", "Difficulty", HubEntry::ENGINE);
-    add("gameplay", "Saving", HubEntry::ENGINE);
-    add("gameplay", "Items & equipment", HubEntry::ENGINE);
-    add("gameplay", "Time savers", HubEntry::ENGINE);
+    add("gameplay", MenuPage::Difficulty, HubEntry::ENGINE);
+    add("gameplay", MenuPage::Saving, HubEntry::ENGINE);
+    add("gameplay", MenuPage::ItemsEquipment, HubEntry::ENGINE);
+    add("gameplay", MenuPage::TimeSavers, HubEntry::ENGINE);
     add("randomizer", "Generate", HubEntry::COMBO_GEN);
     add("randomizer", "Gameplay rules", HubEntry::ENGINE);
     add("randomizer", "Plandomizer", HubEntry::COMBO_PLANDO);
-    add("trackers", "Check Tracker", HubEntry::COMBO_CHECK_TRACKER);
-    add("trackers", "Item Tracker", HubEntry::COMBO_TRACKER);
-    add("trackers", "Hint Tracker", HubEntry::COMBO_HINT_TRACKER);
-    add("trackers", "Timers", HubEntry::COMBO_TIMERS);
-    add("settings", "Interface", HubEntry::COMBO_INTERFACE);
-    add("media", "Screen & HUD", HubEntry::ENGINE);
-    add("tools", "Session", HubEntry::COMBO_SESSION);
-    add("tools", "Multiplayer", HubEntry::COMBO_NETWORK);
+    add("trackers", MenuPage::CheckTracker, HubEntry::COMBO_CHECK_TRACKER);
+    add("trackers", MenuPage::ItemTracker, HubEntry::COMBO_TRACKER);
+    add("trackers", MenuPage::HintTracker, HubEntry::COMBO_HINT_TRACKER);
+    add("trackers", MenuPage::Timers, HubEntry::COMBO_TIMERS);
+    add("settings", MenuPage::Interface, HubEntry::COMBO_INTERFACE);
+    add("media", MenuPage::ScreenHud, HubEntry::ENGINE);
+    add("tools", MenuPage::Session, HubEntry::COMBO_SESSION);
+    add("tools", MenuPage::Multiplayer, HubEntry::COMBO_NETWORK);
     const GameMenu* games[] = { &model.Oot(), &model.Mm() };
     for (int g = 0; g < 2; ++g) {
         const auto& game = *games[g];
@@ -107,7 +107,10 @@ inline std::vector<HubEntry> BuildFeatureNavigation(const std::string& scope, co
                         }))
                         it->sources.push_back({ &game, &sidebar, g == 0, section.sectionLabel });
                 };
-                addSource(dest);
+                // A sidebar's own destination names a page only when it has no rows to route; otherwise
+                // the page list follows its rows, so a sidebar whose rows all moved leaves no empty page.
+                if (sidebar.widgetCount == 0)
+                    addSource(dest);
                 std::string heading;
                 int column = -1;
                 for (int w = 0; w < sidebar.widgetCount; ++w) {
@@ -129,8 +132,8 @@ inline std::vector<HubEntry> BuildFeatureNavigation(const std::string& scope, co
             return RandomizerPageOrder(a.label) < RandomizerPageOrder(b.label);
         });
     }
-    add("settings", "About Combo Ship", HubEntry::COMBO_ABOUT);
-    if (scope == "gameplay" || scope == "media" || scope == "settings" || scope == "tools")
+    add("settings", MenuPage::About, HubEntry::COMBO_ABOUT);
+    if (scope == "gameplay" || scope == "media" || scope == "settings" || scope == "tools" || scope == "trackers")
         std::stable_sort(entries.begin(), entries.end(), [&](const HubEntry& a, const HubEntry& b) {
             return MenuPageOrder(scope, a.label) < MenuPageOrder(scope, b.label);
         });

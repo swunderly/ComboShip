@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include "ComboMenuPlacement.h"
 #include "ComboMenuSearch.h"
 
 // Feature destinations, independent of engine ordering. Unknown pages stay reachable in Tools.
@@ -28,41 +29,43 @@ struct SharedPageInfo {
     const char* keywords;
 };
 inline constexpr SharedPageInfo kSharedPages[] = {
-    { "media", "Video & Audio", "Screen & HUD",
+    { "media", "Video & Audio", MenuPage::ScreenHud,
       "screen fit automatic fitter screen size aspect ratio widescreen borders safe insets HUD layout HUD editor edit "
       "HUD HUD placement hearts magic rupees minimap position guide reset" },
-    { "media", "Video & Audio", "Camera",
+    { "media", "Video & Audio", MenuPage::Camera,
       "camera aiming first person third person free look freelook gyro sensitivity invert distance" },
-    { "settings", "Settings", "Interface", "menu scale menu size text size theme background opacity navigation" },
-    { "home", "Home", "Presets", "community OoTMM beginner default allsanity presets" },
+    { "settings", "Settings", MenuPage::Interface,
+      "menu scale menu size text size theme background opacity navigation" },
+    { "home", "Home", MenuPage::CommunityPresets, "presets community OoTMM beginner default allsanity" },
     { "randomizer", "Randomizer", "Shared items",
       "shared bows bomb bags magic wallet hookshot arrows masks songs shared items pool" },
     { "randomizer", "Randomizer", "Warps & travel",
       "warp cross game songs Requiem Soaring adult child destination shuffle" },
-    { "gameplay", "Enhancements", "Warps & travel",
+    { "gameplay", "Enhancements", MenuPage::WarpsTravel,
       "cross game songs warp Soaring adult child travel quality of life" },
     { "randomizer", "Randomizer", "Gameplay rules", "required counts frogs eggs dog race Gibdo trades" },
-    { "gameplay", "Enhancements", "Difficulty", "minigame targets required counts chicks Bremen" },
-    { "gameplay", "Enhancements", "Items & equipment",
+    { "gameplay", "Enhancements", MenuPage::Difficulty, "minigame targets required counts chicks Bremen" },
+    { "gameplay", "Enhancements", MenuPage::ItemsEquipment,
       "enhancement only quality of life unequip magic arrow equip arrow cycle masks" },
-    { "gameplay", "Enhancements", "Time savers", "song playback animations cutscene skip speed-ups" },
-    { "gameplay", "Enhancements", "Saving", "autosave automatic saves saving interval" },
-    { "settings", "Settings", "Controls",
+    { "gameplay", "Enhancements", MenuPage::TimeSavers,
+      "song playback animations cutscene skip speed-ups climb climbing ladder vine push pull block" },
+    { "gameplay", "Enhancements", MenuPage::Saving, "autosave automatic saves saving interval" },
+    { "settings", "Settings", MenuPage::Controls,
       "D-pad dpad equips controller mapping input buttons invisible floating sticks touch layout menu position" },
-    { "gameplay", "Enhancements", "Restorations",
+    { "gameplay", "Enhancements", MenuPage::Restorations,
       "restoration restored behavior Shadow Door Unload stair shortcut Early Eyeball Frog trade sequence shield delay "
       "gameplay only" },
-    { "trackers", "Trackers", "Check Tracker",
+    { "trackers", "Trackers", MenuPage::CheckTracker,
       "check tracker on-screen CT touch visibility shortcut button toggle hold collected skipped search current area "
       "logic appearance text size background side panel dock divider" },
-    { "trackers", "Trackers", "Item Tracker",
+    { "trackers", "Trackers", MenuPage::ItemTracker,
       "item tracker equipment inventory icons icon size icon spacing layout visibility while paused button toggle hold "
       "shortcut modifier IT on-screen touch side panel" },
-    { "trackers", "Trackers", "Hint Tracker",
+    { "trackers", "Trackers", MenuPage::HintTracker,
       "hint tracker hinted seen known path boss event notes visibility while paused button toggle hold shortcut "
       "modifier HT on-screen touch side panel" },
-    { "trackers", "Trackers", "Timers", "game timer combined timer play time clock splits" },
-    { "tools", "Tools", "Multiplayer",
+    { "trackers", "Trackers", MenuPage::Timers, "game timer combined timer play time clock splits" },
+    { "tools", "Tools", MenuPage::Multiplayer,
       "multiplayer co-op shared progress Anchor network host server room team port reconnect" },
 };
 struct MenuGuideInfo {
@@ -95,7 +98,7 @@ inline MenuDestination MenuRoute(bool oot, const std::string& section, const std
         if (page.find("Tracker") != std::string::npos)
             return { "trackers", page };
         if (page == "General")
-            return { "gameplay", "Randomizer extras" };
+            return { "gameplay", MenuPage::RandomizerExtras };
         if (page == "Locations" || page == "Check Exclusions")
             return { "randomizer", "Excluded checks" };
         if (page == "Logic/Access" || page == "Logic/Conditions")
@@ -114,15 +117,15 @@ inline MenuDestination MenuRoute(bool oot, const std::string& section, const std
     }
     if (section == "Settings") {
         if (page == "Camera")
-            return { "media", "Camera" };
+            return { "media", MenuPage::Camera };
         if (page == "General")
-            return { "settings", "General" };
+            return { "settings", MenuPage::General };
         if (page == "Presets")
-            return { "tools", "Saved presets" };
+            return { "tools", MenuPage::EnhancementPresets };
         if (page == "Mod Menu")
-            return { "tools", "Mods" };
+            return { "tools", MenuPage::Mods };
         if (page == "Overlay")
-            return { "media", "HUD & overlays" };
+            return { "media", MenuPage::HudOverlays };
         // The shared audio bridge and controller backend already drive both engines.
         if (!oot && (page == "Audio" || page == "Graphics" || page == "Controls" || page == "Input Viewer"))
             return {};
@@ -134,32 +137,32 @@ inline MenuDestination MenuRoute(bool oot, const std::string& section, const std
         if (page == "Timers")
             return {}; // Replaced by the combined timer.
         if (page == "Quality of Life" || page == "Gameplay")
-            return { "gameplay", "Quality of life" };
+            return { "gameplay", MenuPage::QualityOfLife };
         if (page == "Skips & Speed-ups" || page == "Time Savers")
-            return { "gameplay", "Time savers" };
+            return { "gameplay", MenuPage::TimeSavers };
         if (page == "Items" || page == "Items/Songs")
-            return { "gameplay", "Items & equipment" };
+            return { "gameplay", MenuPage::ItemsEquipment };
         if (page == "Difficulty" || page == "Difficulty Options" || (oot && page == "Minigames"))
-            return { "gameplay", "Difficulty" };
+            return { "gameplay", MenuPage::Difficulty };
         if (page == "Camera")
-            return { "media", "Camera" };
+            return { "media", MenuPage::Camera };
         if (page == "Cosmetics Editor" || page == "Cosmetic Editor")
-            return { "media", "Appearance" };
+            return { "media", MenuPage::Appearance };
         if (page == "HUD Editor")
-            return { "media", "HUD & overlays" };
+            return { "media", MenuPage::HudOverlays };
         if (page == "Graphics")
-            return { "media", "Visual enhancements" };
+            return { "media", MenuPage::VisualEnhancements };
         if (page == "Audio Editor")
-            return { "media", "Music & sounds" };
+            return { "media", MenuPage::MusicSounds };
         if (page == "Gameplay Stats" || page == "Time Splits")
             return { "trackers", page };
         return { "gameplay", page };
     }
     if (section == "Dev Tools") {
         if (page == "General")
-            return { "tools", "Developer options" };
+            return { "tools", MenuPage::DeveloperOptions };
         if (page == "DList Viewer" || page == "DL Viewer")
-            return { "tools", "Display lists" };
+            return { "tools", MenuPage::DisplayLists };
         return { "tools", page };
     }
     return { "tools", section + " / " + page };
@@ -182,6 +185,12 @@ inline const char* MenuScopeLabel(const std::string& scope) {
 inline MenuDestination MenuGroupRoute(bool oot, const std::string& section, const std::string& page, int column,
                                       const std::string& heading, const std::string& key = {}) {
     auto route = MenuRoute(oot, section, page);
+    // The placement catalogue decides first. Its Randomizer rows only order the seed pages; the
+    // clauses below still route those, and every row the catalogue does not hold.
+    if (page != "Search" && section != "Network")
+        if (const auto* placement = FindMenuPlacement(oot, section, page, heading, key);
+            placement && std::strcmp(placement->scope, "randomizer") != 0)
+            return { placement->scope, placement->page };
     if (oot && section == "Randomizer" && page == "Logic/Access") {
         if (key == "gRandoSettings.CompleteMaskQuest" || key == "gRandoSettings.ItemPool" ||
             heading == "Item Pool Settings")
@@ -195,53 +204,58 @@ inline MenuDestination MenuGroupRoute(bool oot, const std::string& section, cons
     }
     if (section == "Enhancements" && (page == "Quality of Life" || page == "Gameplay")) {
         if (heading == "Saving")
-            return { "gameplay", "Saving" };
+            return { "gameplay", MenuPage::Saving };
         if (heading == "Controls")
-            return { "settings", "Controls" };
+            return { "settings", MenuPage::Controls };
     }
     if (oot && section == "Enhancements" && page == "Fixes" && column == 2)
-        return { "gameplay", "Restorations" };
+        return { "gameplay", MenuPage::Restorations };
     return route;
 }
 inline int MenuPageOrder(const std::string& scope, const std::string& page) {
-    const char* gameplay[] = { "Items & equipment", "Warps & travel", "Time savers", "Saving",
-                               "Quality of life",   "Minigames",      "Difficulty",  "Fixes",
-                               "Restorations",      "Extra Modes",    "Cheats",      "Randomizer extras" };
-    const char* media[] = { "Screen & HUD", "Camera",         "Graphics", "Visual enhancements",
-                            "Appearance",   "HUD & overlays", "Audio",    "Music & sounds" };
-    const char* settings[] = {
-        "General", "Controls", "Input Viewer", "Interface", "Notifications", "About Combo Ship"
-    };
-    const char* tools[] = { "Session",       "Save Editor",       "Mods",         "Saved presets",
-                            "Multiplayer",   "Developer options", "Stats",        "Console",
-                            "Hook Debugger", "Collision Viewer",  "Actor Viewer", "Display lists",
-                            "Value Viewer",  "Message Viewer",    "Gfx Debugger", "Event Log" };
-    const char* const* pages = scope == "gameplay" ? gameplay
-                               : scope == "media"  ? media
-                               : scope == "tools"  ? tools
-                                                   : settings;
-    const int count = scope == "gameplay" ? int(sizeof(gameplay) / sizeof(*gameplay))
-                      : scope == "media"  ? int(sizeof(media) / sizeof(*media))
-                      : scope == "tools"  ? int(sizeof(tools) / sizeof(*tools))
-                                          : int(sizeof(settings) / sizeof(*settings));
+    using namespace MenuPage;
+    const char* gameplay[] = { ItemsEquipment, WarpsTravel,  TimeSavers, Saving, QualityOfLife,   Difficulty,
+                               Fixes,          Restorations, ExtraModes, Cheats, RandomizerExtras };
+    const char* media[] = { ScreenHud, Camera, Graphics, VisualEnhancements, Appearance, Audio, MusicSounds };
+    const char* settings[] = { General, Controls, InputViewer, Interface, Notifications, About };
+    const char* trackers[] = { CheckTracker, ItemTracker, HintTracker,  EntranceTracker,
+                               Timers,       TimeSplits,  GameplayStats };
+    const char* tools[] = { SaveEditor,    EnhancementPresets, Mods,
+                            Multiplayer,   DeveloperOptions,   Stats,
+                            Console,       HookDebugger,       CollisionViewer,
+                            ActorViewer,   DisplayLists,       ValueViewer,
+                            MessageViewer, GfxDebugger,        EventLog,
+                            Session };
+    const char* const* pages = scope == "gameplay"   ? gameplay
+                               : scope == "media"    ? media
+                               : scope == "tools"    ? tools
+                               : scope == "trackers" ? trackers
+                                                     : settings;
+    const int count = scope == "gameplay"   ? int(sizeof(gameplay) / sizeof(*gameplay))
+                      : scope == "media"    ? int(sizeof(media) / sizeof(*media))
+                      : scope == "tools"    ? int(sizeof(tools) / sizeof(*tools))
+                      : scope == "trackers" ? int(sizeof(trackers) / sizeof(*trackers))
+                                            : int(sizeof(settings) / sizeof(*settings));
     for (int i = 0; i < count; ++i)
         if (page == pages[i])
             return i;
     return 100;
 }
 inline bool IsDeveloperToolPage(const std::string& page) {
-    for (const char* name :
-         { "Developer options", "Stats", "Console", "Hook Debugger", "Collision Viewer", "Actor Viewer",
-           "Display lists", "Value Viewer", "Message Viewer", "Gfx Debugger", "Event Log" })
+    using namespace MenuPage;
+    for (const char* name : { DeveloperOptions, Stats, Console, HookDebugger, CollisionViewer, ActorViewer,
+                              DisplayLists, ValueViewer, MessageViewer, GfxDebugger, EventLog })
         if (page == name)
             return true;
     return false;
 }
 inline MenuDestination NativeSearchPageRoute(bool oot, const std::string& section, const std::string& page) {
-    // Discovery of HUD editing goes to the common editor. The old advanced
-    // engine pages remain reachable in the feature navigation.
-    if ((section == "Enhancements" && page == "HUD Editor") || (section == "Settings" && page == "Overlay"))
-        return { "media", "Screen & HUD" };
+    // Discovery of HUD editing goes to the common editor, where MM's own editor is a folded block.
+    // MM's overlay sidebar holds only its notification settings, which share OoT's page.
+    if (section == "Enhancements" && page == "HUD Editor")
+        return { "media", MenuPage::ScreenHud };
+    if (section == "Settings" && page == "Overlay")
+        return { "settings", MenuPage::Notifications };
     return MenuRoute(oot, section, page);
 }
 inline std::string NativeSearchPageKeywords(const std::string& section, const std::string& sidebar,
@@ -249,14 +263,16 @@ inline std::string NativeSearchPageKeywords(const std::string& section, const st
     auto keywords = section + " " + sidebar + " " + MenuScopeLabel(destination.scope) + " " + destination.page;
     // Topic aliases describe this page, not every widget elsewhere in the game.
     if (destination.scope == "settings" || destination.scope == "media") {
-        if (destination.page == "Audio")
+        if (destination.page == MenuPage::Audio)
             keywords += " sound music volume speakers both games OoT MM";
-        else if (destination.page == "Graphics")
+        else if (destination.page == MenuPage::Graphics)
             keywords += " display renderer performance frame FPS resolution both games OoT MM";
-        else if (destination.page == "Controls")
+        else if (destination.page == MenuPage::Controls)
             keywords += " controller input mapping gamepad button bind keyboard both games OoT MM";
     }
-    if (destination.scope == "tools" && destination.page == "Save Editor") {
+    if (destination.scope == "tools" && destination.page == MenuPage::EnhancementPresets)
+        keywords += " saved presets"; // the page's old name
+    if (destination.scope == "tools" && destination.page == MenuPage::SaveEditor) {
         keywords += " save inventory equipment resources cheats";
         keywords +=
             oot ? " OoT Ocarina Time"
@@ -265,7 +281,7 @@ inline std::string NativeSearchPageKeywords(const std::string& section, const st
     return keywords;
 }
 inline bool IsOwlEditorSearch(bool oot, const MenuDestination& destination, const std::string& query) {
-    if (oot || destination.scope != "tools" || destination.page != "Save Editor")
+    if (oot || destination.scope != "tools" || destination.page != MenuPage::SaveEditor)
         return false;
     for (const auto& word : MenuSearchWords(query))
         if (word == "owl" || word == "statue")
@@ -278,7 +294,7 @@ inline std::string NativeSearchPageLabel(bool oot, const MenuDestination& destin
 inline int NativeSearchPageTarget(bool oot, const MenuDestination& destination, const std::string& query) {
     if (IsOwlEditorSearch(oot, destination, query))
         return 1;
-    if (destination.scope != "tools" || destination.page != "Save Editor")
+    if (destination.scope != "tools" || destination.page != MenuPage::SaveEditor)
         return -1;
     for (const auto& word : MenuSearchWords(query))
         if ((oot && (word == "oot" || word == "ocarina")) || (!oot && (word == "mm" || word == "majora")))
@@ -316,18 +332,18 @@ inline constexpr RandomizerPageInfo kRandomizerPages[] = {
 };
 inline const char* GameplayRulePage(const char* name, bool randomizer) {
     if (IsSongTravelRule(name))
-        return "Warps & travel";
+        return MenuPage::WarpsTravel; // the same page name on both tabs
     if (randomizer)
         return "Gameplay rules";
     const std::string key = name ? name : "";
     if (key.find("DifficultyOptions") != std::string::npos || key.find("ZoraEggCount") != std::string::npos ||
         key.find("AlwaysWinDoggyRace") != std::string::npos)
-        return "Difficulty";
+        return MenuPage::Difficulty;
     if (key.find("TimeTravel") != std::string::npos || key.find("OpenAllHours") != std::string::npos ||
         key.find("DayGravePull") != std::string::npos || key.find("NightGSAlwaysSpawn") != std::string::npos ||
         key.find("SkipBalladOfWindfish") != std::string::npos || key.find("SkipScarecrowSong") != std::string::npos)
-        return "Time savers";
-    return "Items & equipment";
+        return MenuPage::TimeSavers;
+    return MenuPage::ItemsEquipment;
 }
 inline int RandomizerPageOrder(const std::string& page) {
     for (int i = 0; i < int(sizeof(kRandomizerPages) / sizeof(kRandomizerPages[0])); ++i)

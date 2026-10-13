@@ -1551,17 +1551,17 @@ void DrawPairedPreferences(const std::string& page) {
     };
     static const Pair pairs[] = {
         { "Equip items with the D-pad", "gEnhancements.DpadEquips", "gEnhancements.Dpad.DpadEquips",
-          "Assign items to the D-pad in the pause menu.", "Controls" },
+          "Assign items to the D-pad in the pause menu.", MenuPage::Controls },
         { "Allow unequipping items", "gEnhancements.ItemUnequip", "gEnhancements.Equipment.ItemUnequip",
-          "Press an item's assigned button again in the pause menu to unequip it.", "Items & equipment" },
+          "Press an item's assigned button again in the pause menu to unequip it.", MenuPage::ItemsEquipment },
         { "Quick magic-arrow equip", "gEnhancements.SkipArrowAnimation", "gEnhancements.Equipment.MagicArrowEquipSpeed",
-          "Skip the long animation when equipping magic arrows.", "Items & equipment" },
+          "Skip the long animation when equipping magic arrows.", MenuPage::ItemsEquipment },
         { "Cycle arrow types", "gEnhancements.BowArrowCycle", "gEnhancements.PlayerActions.ArrowCycle",
-          "Switch arrow types while aiming. Each game retains its native button behavior.", "Items & equipment" },
+          "Switch arrow types while aiming. Each game retains its native button behavior.", MenuPage::ItemsEquipment },
         { "Autosave", "gEnhancements.Autosave", "gEnhancements.Saving.Autosave",
           "OoT saves on its three-minute interval. MM uses its configured interval and persistent owl saves. Save "
           "manually before exiting.",
-          "Saving" }
+          MenuPage::Saving }
     };
     auto& model = ComboMenuModel::Get();
     for (const auto& pair : pairs) {
@@ -1741,8 +1741,10 @@ void DrawCosmeticSync() {
     MenuTooltip("Use matching randomized colors and trails in both games when generating a new seed. This changes "
                 "appearance only.");
 }
-void DrawScreenAndHud() {
+// One HUD layout for both games; MM's own HUD editor stays reachable as a folded block in its view.
+void DrawScreenAndHud(int& game, const HubEntry::Body* advanced) {
 #ifdef __ANDROID__
+    ImGui::SeparatorText("Screen fit");
     int mode = CVarGetInteger("gCombo.Display.AutoFit", 1);
     const char* modes[] = { "Manual (advanced graphics)", "Automatic - balanced", "Automatic - full width",
                             "Original 4:3" };
@@ -1757,13 +1759,20 @@ void DrawScreenAndHud() {
     ImGui::SeparatorText("HUD layout");
     MenuTooltip("Move and resize hearts, buttons, magic, rupees and other game information. To move touch controls, "
                 "hold Menu and choose Move controls.");
-    static int game = ComboUI::GetForegroundGame();
     MenuWorldButtons(game);
     DrawHudLayout(game);
+    if (game == 1 && advanced && advanced->game && !advanced->widgets.empty()) {
+        ImGui::Spacing();
+        if (ImGui::CollapsingHeader("Advanced HUD editor (MM)")) {
+            const CwSidebar side = { MenuPage::ScreenHud, advanced->columns, advanced->widgets.data(),
+                                     (int)advanced->widgets.size() };
+            RenderSidebarWidgets(side, *advanced->game);
+        }
+    }
 }
 
-void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& page, int subpage,
-                          std::vector<CwWidget>& output, uint32_t& columns) {
+void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& scope, const std::string& page,
+                          int subpage, std::vector<CwWidget>& output, uint32_t& columns) {
     CwSidebar side = *source.sidebar;
     std::vector<CwWidget> grouped;
     std::string currentHeading;
@@ -1776,9 +1785,9 @@ void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& pag
         }
         if (widget.kind == CW_SEPARATOR_TEXT)
             currentHeading = widget.name ? widget.name : "";
-        if (MenuGroupRoute(source.oot, source.section, side.sidebarName, sourceColumn, currentHeading,
-                           widget.cvar ? widget.cvar : "")
-                .page == page)
+        const auto route = MenuGroupRoute(source.oot, source.section, side.sidebarName, sourceColumn, currentHeading,
+                                          widget.cvar ? widget.cvar : "");
+        if (route.scope == scope && route.page == page)
             grouped.push_back(widget);
     }
     side.widgets = grouped.data();
@@ -1787,13 +1796,14 @@ void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& pag
     // OoT's restoration controls are the third Fixes column, which MenuGroupRoute sends to
     // Restorations; lay them out as one column there.
     if (source.oot && side.sidebarName && std::strcmp(side.sidebarName, "Fixes") == 0 &&
-        (page == "Fixes" || page == "Restorations")) {
-        if (page == "Restorations")
+        (page == MenuPage::Fixes || page == MenuPage::Restorations)) {
+        if (page == MenuPage::Restorations)
             for (auto& w : grouped)
                 w.column = 0; // native index, CVar and callbacks are kept
-        side.columnCount = page == "Restorations" ? 1 : 2;
+        side.columnCount = page == MenuPage::Restorations ? 1 : 2;
     }
-    if (page == "General") {
+    if (page == MenuPage::General && !std::strcmp(source.section, "Settings") &&
+        !std::strcmp(source.sidebar->sidebarName, "General")) {
         // Drop desktop-only actions, obsolete native-menu preferences and engine About columns.
         for (int i = 0; i < side.widgetCount; ++i) {
             const auto& w = side.widgets[i];
@@ -1936,7 +1946,7 @@ void ComboMenu::DrawSharedPanel() {
     } else if ((mScope == "randomizer" || mScope == "home") && ProfileUI::DrawUnavailableSettings()) {
         // Never present fallback defaults as a file's saved/generated settings.
     } else {
-        ImGui::SeparatorText(active->kind == HubEntry::COMBO_HOME ? "Community presets" : active->label.c_str());
+        ImGui::SeparatorText(active->label.c_str());
         if (mScope == "randomizer")
             MenuTooltip(RandomizerPageHelp(active->label));
         switch (active->kind) {
@@ -2042,11 +2052,23 @@ void ComboMenu::DrawSharedPanel() {
                     ProfileUI::DrawTricks();
                     break;
                 }
-                if (active->label == "Screen & HUD") {
-                    DrawScreenAndHud();
+                if (active->label == MenuPage::ScreenHud) {
+                    const auto key = std::make_pair(1, -1);
+                    if (!active->bodies.count(key)) {
+                        HubEntry::Body built;
+                        for (const auto& source : active->sources)
+                            if (!source.oot) {
+                                built.game = source.game;
+                                AppendFeatureWidgets(source, mScope, active->label, -1, built.widgets, built.columns);
+                            }
+                        active->bodies.emplace(key, std::move(built));
+                    }
+                    int game = mPreferenceGame ? mPreferenceGame - 1 : ComboUI::GetForegroundGame();
+                    DrawScreenAndHud(game, &active->bodies.at(key));
+                    mPreferenceGame = game + 1;
                     if (ImGui::Button("Advanced graphics")) {
                         mScope = "media";
-                        mHubActive = "media/Graphics";
+                        mHubActive = std::string("media/") + MenuPage::Graphics;
                     }
                     break;
                 }
@@ -2084,9 +2106,9 @@ void ComboMenu::DrawSharedPanel() {
                         MenuWorldButtons(selectedGame);
                         mPreferenceGame = selectedGame + 1;
                     }
-                } else if (active->label == "Warps & travel") {
+                } else if (active->label == MenuPage::WarpsTravel) {
                     selectedGame = -1;
-                } else if (active->label == "Gameplay rules" || active->label == "Difficulty" ||
+                } else if (active->label == "Gameplay rules" || active->label == MenuPage::Difficulty ||
                            active->label == "Logic & access") {
                     if (seedOptions) {
                         MenuWorldButtons(mRandomizerGame);
@@ -2121,7 +2143,7 @@ void ComboMenu::DrawSharedPanel() {
                 ImGui::EndDisabled();
                 if (!seedOptions)
                     DrawPairedPreferences(active->label);
-                if (mScope == "media" && active->label == "Appearance")
+                if (mScope == "media" && active->label == MenuPage::Appearance)
                     DrawCosmeticSync();
                 const auto bodyKey = std::make_pair(selectedGame, subpage);
                 auto body = active->bodies.find(bodyKey);
@@ -2134,9 +2156,9 @@ void ComboMenu::DrawSharedPanel() {
                         if (!source.oot && subpage >= 0 &&
                             RandomizerWidgetGroup(false, source.sidebar->sidebarName, 0, "") != subpage)
                             continue;
-                        AppendFeatureWidgets(source, active->label, subpage, built.widgets, built.columns);
+                        AppendFeatureWidgets(source, mScope, active->label, subpage, built.widgets, built.columns);
                     }
-                    if (active->label == "Controls" || active->label == "Saving") {
+                    if (active->label == MenuPage::Controls || active->label == MenuPage::Saving) {
                         built.columns = 1;
                         for (auto& widget : built.widgets)
                             widget.column = 0;
