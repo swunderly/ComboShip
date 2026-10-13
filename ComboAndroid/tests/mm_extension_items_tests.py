@@ -208,6 +208,17 @@ check(':trade?"gCombo.Tracker.Trade"' in draw and 'CVarGetInteger(key,trade?trad
       and 'groups.insert(quest==groups.end()?quest:quest+1,&*trade);' in draw
       and draw.index('if(!ComboTrackerLayoutHasTrade())') < draw.index('groups.insert('),
       'the combo tracker does not add the Trade Items group after Quest')
+# A layout that already has the group (CVars.ItemTrackerLayout in comboship.json) keeps it at its own place, with the
+# toggle ticked on every seed, and the combo tracker only reads that layout: toggling never saves or changes it.
+combo_block = tracker_source[tracker_source.index('extern std::vector<TrackerGroup> itemTrackerGroupsAvailable;'):]
+combo_block = combo_block[:combo_block.index('#endif')]
+check(default.index('if (ComboTrackerLayoutHasTrade())') < default.index('if (!IS_RANDO)'),
+      'a layout with Trade Items does not keep the Trade items toggle on for every seed')
+check('std::vector<const TrackerGroup*> groups;' in combo_block and 'SaveItemTrackerLayout' not in combo_block
+      and 'GetConfig' not in combo_block and 'CVarSet' not in combo_block
+      and not re.search(r'itemTrackerGroups(Available)?\s*(\[|=[^=]|\.\s*(push_back|emplace|insert|erase|clear|swap))',
+                        combo_block),
+      'the combo item tracker changes the saved tracker layout')
 
 # ---- Item tracker, default Inventory group (TRACKER_ITEM_SLOT): a slot holding a spell shows the spell's own icon.
 # Spells.cpp / FaroresWind.cpp put the spells into empty trade slots, and their ids lie above ITEM_RECOVERY_HEART, where
