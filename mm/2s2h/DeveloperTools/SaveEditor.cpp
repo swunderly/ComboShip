@@ -47,6 +47,7 @@ extern "C" {
 extern PlayState* gPlayState;
 extern SaveContext gSaveContext;
 extern s16 D_801CFF94[250];
+extern MessageTableEntry* sMessageTableNES;
 void Interface_LoadItemIconImpl(PlayState* play, u8 btn);
 void Interface_NewDay(PlayState* play, s32 day);
 extern RegEditor* gRegEditor;
@@ -223,7 +224,8 @@ void initSafeItemsForInventorySlot() {
         }
         switch (slot) {
             case SLOT_BOTTLE_1:
-                if (i != ITEM_LONGSHOT) { // No longshot in bottles
+                // No longshot in bottles. ComboShip: nor Obaba's Drink, a leftover MM names only in Japanese.
+                if (i != ITEM_LONGSHOT && i != ITEM_OBABA_DRINK) {
                     safeItemsForInventorySlot[SLOT_BOTTLE_1].push_back(static_cast<ItemId>(i));
                     safeItemsForInventorySlot[SLOT_BOTTLE_2].push_back(static_cast<ItemId>(i));
                     safeItemsForInventorySlot[SLOT_BOTTLE_3].push_back(static_cast<ItemId>(i));
@@ -1323,15 +1325,46 @@ static void ResetSlotItems() {
     Inventory_ChangeUpgrade(UPG_QUIVER, 0);
 }
 
-// ComboShip: an item's name for the picker, from the randomizer's item table.
+// ComboShip: MM's own English name for a bottle's contents, as OoT's editor shows OoT's: the first line of the item's
+// pause description (message 0x1700 + item). Blue Fire has no description; MM's English pause name graphic
+// (gItemNameBlueFireENGTex) reads "Blue Fire". MM names the Hylian Loach only in Japanese (gItemNameHylianLoachJPNTex,
+// "Hyrule loach"); OoT's English text names that fish "Hyrule Loach". "" when MM's text is not loaded.
+static std::string NativeBottleName(ItemId item) {
+    if (item == ITEM_BLUE_FIRE)
+        return "Blue Fire";
+    if (item == ITEM_HYLIAN_LOACH)
+        return "Hyrule Loach";
+    for (const MessageTableEntry* entry = sMessageTableNES; entry && entry->textId != 0xFFFF; ++entry) {
+        if (entry->textId != 0x1700 + item)
+            continue;
+        std::string name;
+        for (u32 i = MESSAGE_HEADER_SIZE; i < entry->msgSize; ++i) {
+            const u8 c = entry->segment[i];
+            if (c >= 0x20 && c != 0xBF)
+                name += char(c);
+            else if (!name.empty() || c > 0x08) // a leading colour code, then the name up to its line break
+                break;
+        }
+        return name;
+    }
+    return "";
+}
+
+// ComboShip: an item's name for the picker, from the randomizer's item table; a bottle's contents take MM's own name.
 static const char* SlotItemName(ItemId item) {
-    static std::unordered_map<int, const char*> names;
+    static std::unordered_map<int, std::string> names;
     auto it = names.find(item);
     if (it == names.end()) {
-        const auto found = Rando::StaticData::Items.find(Rando::StaticData::GetItemIdFromVanillaItemId(item));
-        it = names.emplace(item, found != Rando::StaticData::Items.end() ? found->second.name : "").first;
+        std::string name = gItemSlots[item] == SLOT_BOTTLE_1 ? NativeBottleName(item) : "";
+        if (name.empty() && gItemSlots[item] == SLOT_BOTTLE_1 && !sMessageTableNES)
+            return "";
+        if (name.empty()) {
+            const auto found = Rando::StaticData::Items.find(Rando::StaticData::GetItemIdFromVanillaItemId(item));
+            name = found != Rando::StaticData::Items.end() ? found->second.name : "";
+        }
+        it = names.emplace(item, std::move(name)).first;
     }
-    return it->second;
+    return it->second.c_str();
 }
 
 // ComboShip: the randomizer's time-item and give-item controls, which upstream draws beside the inventory grid.
