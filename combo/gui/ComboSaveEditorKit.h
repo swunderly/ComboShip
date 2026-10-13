@@ -274,4 +274,53 @@ inline bool PickerEntry(int index, const char* id, ImTextureID texture, const ch
     return pressed;
 }
 
+// No texture: PickerEntry and LevelPicker draw an empty button. ImTextureID is a macro for void* in the game builds,
+// so a constant one is written "ImTextureID const" (a const pointer), never "const ImTextureID" (a pointer to const).
+inline ImTextureID const kNoTexture = (ImTextureID)0;
+
+// An icon that only shows state (a dungeon's small keys or stray fairies), faded when there are none.
+inline void Icon(ImTextureID texture, bool owned, const ImVec2& size = ImVec2(kIconSize, kIconSize)) {
+    ImGui::ImageWithBg(texture, size, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.0f),
+                       ImVec4(1.0f, 1.0f, 1.0f, owned ? 1.0f : 0.4f));
+}
+
+// Something with several levels (an upgrade, MM's sword or shield): the current level's icon with `label` under it,
+// faded at level 0, and a tap opens a picker of every level with its name. levels[0] is None (no texture). Returns
+// the level picked this frame, or -1.
+struct Level {
+    ImTextureID texture;
+    const char* name;
+};
+inline int LevelPicker(const char* label, int level, const std::vector<Level>& levels) {
+    ImGui::PushID(label);
+    const bool owned = level > 0 && level < static_cast<int>(levels.size());
+    ImTextureID const shown = owned ? levels[level].texture : levels.size() > 1 ? levels[1].texture : kNoTexture;
+    ImGui::BeginGroup();
+    const bool pressed = shown ? IconButton("##level", shown, owned) : EmptyIconButton("##level");
+    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + kIconSize);
+    ImGui::TextWrapped("%s", label);
+    ImGui::PopTextWrapPos();
+    ImGui::EndGroup();
+    const std::string tooltip = std::string(owned ? levels[level].name : "None") + "\n" + TapHint(Tap::Pick);
+    Tooltip(tooltip.c_str());
+    if (pressed) {
+        ImGui::OpenPopup("levelPicker");
+    }
+    int picked = -1;
+    if (ImGui::BeginPopup("levelPicker")) {
+        for (size_t i = 0; i < levels.size(); i++) {
+            ImGui::PushID(static_cast<int>(i));
+            if (PickerEntry(static_cast<int>(i), "##choice", i == 0 ? kNoTexture : levels[i].texture,
+                            levels[i].name)) {
+                picked = static_cast<int>(i);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::PopID();
+    return picked;
+}
+
 } // namespace ComboSaveEditorKit
