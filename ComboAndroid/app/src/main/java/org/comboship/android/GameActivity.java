@@ -135,11 +135,20 @@ public final class GameActivity extends SDLActivity {
     }
     // Back steps back inside the open menu (popup, search) before it closes it; it opens the menu while playing.
     @Override public void onBackPressed(){if(librariesReady)nativeBack();else super.onBackPressed();}
+    // Whether the on-screen keyboard is showing. When the keyboard closes itself on Back, SDL is not told and its
+    // flag stays set until SDL next sees a key, so the window's own IME visibility decides where it can.
+    private boolean screenKeyboardShown(){
+        if(Build.VERSION.SDK_INT>=30){
+            WindowInsets insets=getWindow().getDecorView().getRootWindowInsets();
+            if(insets!=null)return insets.isVisible(WindowInsets.Type.ime());
+        }
+        return SDLActivity.isScreenKeyboardShown();
+    }
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         // SDL's surface consumes keyboard Back before Activity.onBackPressed.
         // Let an open IME handle Back first; otherwise Back steps back in the menu, and Select toggles it.
         boolean select=event.getKeyCode()==KeyEvent.KEYCODE_BUTTON_SELECT;
-        boolean back=event.getKeyCode()==KeyEvent.KEYCODE_BACK && !SDLActivity.isScreenKeyboardShown();
+        boolean back=event.getKeyCode()==KeyEvent.KEYCODE_BACK && !screenKeyboardShown();
         if(librariesReady && (select || back)){
             if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0){if(back)nativeBack();else nativeMenu();}
             return true;

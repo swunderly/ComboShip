@@ -50,6 +50,7 @@ class ComboMenu final : public Ship::GuiWindow {
     void ReturnToSearchResults();
 
     char mSearchBuf[256] = { 0 }; // raw global-search input; normalized into mSearchQuery each frame
+    ImGuiID mSearchField = 0;     // the search box's ImGui id, so Back can end its edit
     std::string mSearchQuery;     // raw multi-word query this frame ("" = not searching)
     MenuRuleFocus mRuleFocus;
     MenuSearchReturn mSearchReturn;

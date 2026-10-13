@@ -348,6 +348,7 @@ void ComboMenu::DrawElement() {
                       : -FLT_MIN);
         if (ImGui::InputTextWithHint("##ComboSearch", "Search all settings...", mSearchBuf, sizeof(mSearchBuf)))
             mSearchReturn.Clear();
+        mSearchField = ImGui::GetItemID();
         if (hasSearch) {
             ImGui::SameLine();
             if (ImGui::Button("Clear##ComboSearch")) {
@@ -404,6 +405,13 @@ bool ComboMenu::HandleBack() {
     if (const int popups = ImGui::GetCurrentContext()->OpenPopupStack.Size; popups > 0) {
         ImGui::ClosePopupToLevel(popups - 1, true);
         return true;
+    }
+    // Back ends a text edit whose keyboard already closed. The search field drops its text first: ImGui writes an
+    // edited field's text back into its buffer when the edit ends, which would undo clearing the search.
+    if (auto* edit = ImGui::GetInputTextState(ImGui::GetActiveID())) {
+        if (edit->ID == mSearchField)
+            edit->ClearText();
+        ImGui::ClearActiveID();
     }
     if (mSearchBuf[0]) {
         ClearSearch();
