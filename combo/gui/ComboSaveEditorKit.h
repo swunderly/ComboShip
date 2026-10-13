@@ -225,5 +225,53 @@ inline bool IconButton(const char* id, ImTextureID texture, bool owned,
     ImGui::PopStyleColor(3);
     return pressed;
 }
+// The same button for an empty slot or the picker's None.
+inline bool EmptyIconButton(const char* id, const ImVec2& size = ImVec2(kIconSize, kIconSize)) {
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 1.0f, 1.0f, 0.2f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 1.0f, 1.0f, 0.1f));
+    const bool pressed = ImGui::Button(id, size);
+    ImGui::PopStyleColor(3);
+    return pressed;
+}
+
+// Item grids: six icons a row, each cell tall enough for its ammo count under the icon (MM's Items and Masks boxes).
+inline ImVec2 GridBoxSize(int rows = 4) {
+    return ImVec2(kGridWidth * 6 + kGridPadding * 2, kGridHeight * rows + kGridPadding * 2 + kGridTopMargin);
+}
+inline ImVec2 GridCell(int index) {
+    return ImVec2((index % 6) * kGridWidth + kGridPadding, (index / 6) * kGridHeight + kGridTopMargin + kGridPadding);
+}
+inline ImVec2 GridAmmo(int index) {
+    const ImVec2 cell = GridCell(index);
+    return ImVec2(cell.x + (kIconSize - kAmmoWidth) * 0.5f, cell.y + kIconSize + 6.0f);
+}
+// An ammo count under its icon, 0 to 99, no keyboard entry.
+template <typename T> inline bool AmmoCount(const char* id, T* value, const ImVec4& colour) {
+    ImGui::PushItemWidth(kAmmoWidth);
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, colour);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(kAmmoPadding, kAmmoPadding));
+    const bool changed = ComboTouch::Count(id, value, 0, kAmmoMax);
+    ImGui::PopStyleVar(2);
+    ImGui::PopStyleColor();
+    ImGui::PopItemWidth();
+    return changed;
+}
+
+// One picker entry, in rows of kPickerColumns with None first (index 0): the icon with its name under it, since a
+// touch screen shows no hover tooltips. A null texture draws an empty button (None).
+inline bool PickerEntry(int index, const char* id, ImTextureID texture, const char* name) {
+    if (index % kPickerColumns != 0) {
+        ImGui::SameLine();
+    }
+    ImGui::BeginGroup();
+    const bool pressed = texture ? IconButton(id, texture, true) : EmptyIconButton(id);
+    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + kIconSize);
+    ImGui::TextWrapped("%s", name);
+    ImGui::PopTextWrapPos();
+    ImGui::EndGroup();
+    return pressed;
+}
 
 } // namespace ComboSaveEditorKit
