@@ -153,32 +153,23 @@ int main() {
     assert(MenuRoute(true, "Randomizer", "Entrance Tracker").scope == "trackers");
     assert(MenuRoute(false, "Settings", "Overlay").scope == "media");
     assert(MenuRoute(true, "Settings", "Presets").page == MenuRoute(false, "Settings", "Presets").page);
-    // Renamed pages keep their old names as search words; MM's overlay sidebar
-    // now only holds notifications.
-    assert(MenuRoute(false, "Settings", "Presets").page ==
-           ComboRando::MenuPage::EnhancementPresets);
-    const auto presets =
-        ComboRando::NativeSearchPageRoute(false, "Settings", "Presets");
+    // Renamed pages keep their old names as search words; MM's overlay sidebar now only holds notifications.
+    assert(MenuRoute(false, "Settings", "Presets").page == ComboRando::MenuPage::EnhancementPresets);
+    const auto presets = ComboRando::NativeSearchPageRoute(false, "Settings", "Presets");
     assert(MenuSearchMatches("saved presets", presets.page.c_str(),
-                             ComboRando::NativeSearchPageKeywords(
-                                 "Settings", "Presets", presets, false)
-                                 .c_str()));
-    for (const auto &page : ComboRando::kSharedPages)
-      if (std::string(page.scope) == "home")
-        assert(std::string(page.name) == "Community presets" &&
-               MenuSearchMatches("presets", page.name, page.keywords));
-    const auto overlay =
-        ComboRando::NativeSearchPageRoute(false, "Settings", "Overlay");
+                             ComboRando::NativeSearchPageKeywords("Settings", "Presets", presets, false).c_str()));
+    for (const auto& page : ComboRando::kSharedPages)
+        if (std::string(page.scope) == "home")
+            assert(std::string(page.name) == "Community presets" &&
+                   MenuSearchMatches("presets", page.name, page.keywords));
+    const auto overlay = ComboRando::NativeSearchPageRoute(false, "Settings", "Overlay");
     assert(overlay.scope == "settings" && overlay.page == "Notifications");
-    // The Notifications rows of MM's overlay sidebar join OoT's Notifications
-    // page.
-    assert(ComboRando::MenuGroupRoute(false, "Settings", "Overlay", 0,
-                                      "Notifications",
-                                      "gNotifications.Position")
-               .page == "Notifications");
-    assert(ComboRando::MenuGroupRoute(false, "Enhancements", "HUD Editor", 0,
-                                      "", "gWindows.HudEditor")
-               .page == "Screen & HUD");
+    // The Notifications rows of MM's overlay sidebar join OoT's Notifications page.
+    assert(
+        ComboRando::MenuGroupRoute(false, "Settings", "Overlay", 0, "Notifications", "gNotifications.Position").page ==
+        "Notifications");
+    assert(ComboRando::MenuGroupRoute(false, "Enhancements", "HUD Editor", 0, "", "gWindows.HudEditor").page ==
+           "Screen & HUD");
     for (const auto* shared : {"Audio", "Graphics", "Controls", "Input Viewer"}) {
         assert(MenuRoute(true, "Settings", shared).scope == (std::string(shared) == "Audio" || std::string(shared) == "Graphics" ? "media" : "settings"));
         assert(MenuRoute(false, "Settings", shared).scope.empty());
