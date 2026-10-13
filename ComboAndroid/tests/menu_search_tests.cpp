@@ -64,6 +64,10 @@ int main() {
                    (std::strcmp(page.name, target) == 0));
         assert(MenuSearchRank(query, "Show collected items", "It changes the selected item", MenuSearchKind::Setting) == 0);
     }
+    // The Personal notes heading is on Item Tracker; no other shared page claims the words.
+    for (const auto& page : kSharedPages)
+        assert((MenuSearchRank("personal notes", page.name, page.keywords, MenuSearchKind::Page) > 0) ==
+               (std::strcmp(page.name, "Item Tracker") == 0));
 
     // Native feature names are indexed as direct shared page links, including
     // custom editors which cannot safely render as ordinary search widgets.
