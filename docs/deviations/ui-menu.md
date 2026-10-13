@@ -497,3 +497,15 @@ take upstream changes into the `#else` branch and port them to the combo branch 
   in sentence case (`MAGIC_LEVEL_NAMES`); the time bar reads as a clock without the raw hex. The owl statues editor,
   which opened at the top, and the temple progress move into a collapsed "Progress (temples, owl statues)" card at
   the end; the owl statues search still opens this tab. `DrawOwlStatuesEditor` checkboxes take the theme colour.
+- Inventory (`DrawItemsAndMasksTab`, `DrawSlot`, `DrawAmmoInput`): one tap rule with OoT. Bow, Bombs and Bombchus
+  stop cycling the quiver and bomb bag sizes and become plain toggles like every other one-item slot
+  (`ToggleSlotItem`: capacity level 1 and full ammo when there is none; removing leaves the capacity). The toggle and
+  the picker both add through `AddSlotItem`, which records T7's ownership (`GrantSlotItemOwnership`) for an item put
+  in its own slot; upstream's first tap skipped it. With "Restrict to valid items" (was "Safe Mode", the same
+  `safeMode` bool) on, `AddSlotItem` refuses an item the save cannot own, as Give all already leaves it out; with it
+  off the picker sets the slot as before. Give all and Reset (`GiveAllSlotItems`/`ResetSlotItems`, bodies unchanged
+  from T7) and the restriction move from the side panel into a top row; the picker shows item names
+  (`SlotItemName`, from the randomizer item table). The time-item and give-item controls (`DrawRandoItemGives`) sit
+  under the grids for now.
+- Quest Status (`DrawSong`): Goron Lullaby opens a picker (None, Goron Lullaby Intro, Goron Lullaby) instead of
+  cycling through them.

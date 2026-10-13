@@ -1064,6 +1064,16 @@ template <typename C, typename T> bool contains(C&& c, T e) {
     return std::find(std::begin(c), std::end(c), e) != std::end(c);
 };
 
+#ifdef COMBO_BUILD
+void DrawAmmoInput(InventorySlot slot) {
+    // ComboShip: the shared ammo count under its icon, in the menu theme colour.
+    ItemId currentItemId = static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]);
+    ImGui::SetCursorPos(ComboSaveEditorKit::GridAmmo(slot % 24));
+    ComboSaveEditorKit::AmmoCount(
+        "##ammoInput", &AMMO(currentItemId),
+        UIWidgets::ColorValues.at(UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5))));
+}
+#else
 void DrawAmmoInput(InventorySlot slot) {
     int x = slot % 6;
     int y = ((int)floor(slot / 6) % 4);
@@ -1085,6 +1095,7 @@ void DrawAmmoInput(InventorySlot slot) {
     ImGui::PopStyleColor(1);
     ImGui::PopItemWidth();
 }
+#endif
 
 void DrawEquipItemMenu(InventorySlot slot) {
     ItemId currentItemId = static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]);
@@ -1245,6 +1256,232 @@ static void ClearSlotItemOwnership() {
 #endif
 }
 
+#ifdef COMBO_BUILD
+// ComboShip: every way the editor adds one item to a slot (the toggle and the picker) goes through here, so each
+// records what a real pickup records: GrantSlotItemOwnership for an item put in its own slot. With "Restrict to valid
+// items" on, an item the save cannot own (an MM spell or gear piece the seed does not have) is refused, as Give all
+// already leaves it out. Returns whether the slot changed.
+static bool AddSlotItem(InventorySlot slot, ItemId item) {
+    const u8 previous = gSaveContext.save.saveInfo.inventory.items[slot];
+    gSaveContext.save.saveInfo.inventory.items[slot] = item;
+    if (gItemSlots[item] == slot && !GrantSlotItemOwnership(item) && safeMode) {
+        gSaveContext.save.saveInfo.inventory.items[slot] = previous;
+        return false;
+    }
+    return true;
+}
+
+// ComboShip: the tap rule's toggle, for a slot that can hold one item. On adds it through AddSlotItem, and the Bow,
+// Bombs and Bombchus also get capacity level 1 and full ammo when they have no capacity yet. Off removes it as the
+// picker's None does, leaving the quiver and the bomb bag (they are on the Equipment tab).
+static void ToggleSlotItem(InventorySlot slot) {
+    const ItemId current = static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]);
+    if (current != ITEM_NONE) {
+        Inventory_DeleteItem(current, slot);
+        return;
+    }
+    const ItemId item = safeItemsForInventorySlot[slot][0];
+    if (!AddSlotItem(slot, item)) {
+        return;
+    }
+    const s16 upgrade = item == ITEM_BOW ? UPG_QUIVER : (item == ITEM_BOMB || item == ITEM_BOMBCHU) ? UPG_BOMB_BAG : -1;
+    if (upgrade >= 0 && CUR_UPG_VALUE(upgrade) == 0) {
+        Inventory_ChangeUpgrade(upgrade, 1);
+        AMMO(item) = CUR_CAPACITY(upgrade);
+    }
+}
+
+// ComboShip: the Inventory tab's Give all and Reset, the same as the buttons upstream draws beside the grid.
+static void GiveAllSlotItems() {
+    for (int32_t i = 0; i <= SLOT_MASK_FIERCE_DEITY; i++) {
+        if (i >= SLOT_BOTTLE_1 && i <= SLOT_BOTTLE_6) {
+            gSaveContext.save.saveInfo.inventory.items[i] = ITEM_BOTTLE;
+        } else {
+            gSaveContext.save.saveInfo.inventory.items[i] = GiveAllSlotItem(static_cast<InventorySlot>(i));
+        }
+    }
+    // The grid lists no gear: gItemSlots maps it to the trade slots only in Player_Init. Grant it as pickups do.
+    for (ItemId gear :
+         { ITEM_COMBO_BOOTS_IRON, ITEM_COMBO_BOOTS_HOVER, ITEM_COMBO_TUNIC_GORON, ITEM_COMBO_TUNIC_ZORA }) {
+        GrantSlotItemOwnership(gear);
+    }
+    Inventory_ChangeUpgrade(UPG_BOMB_BAG, 3);
+    Inventory_ChangeUpgrade(UPG_QUIVER, 3);
+    AMMO(ITEM_BOW) = CUR_CAPACITY(UPG_QUIVER);
+    AMMO(ITEM_BOMB) = AMMO(ITEM_BOMBCHU) = CUR_CAPACITY(UPG_BOMB_BAG);
+    AMMO(ITEM_DEKU_STICK) = CUR_CAPACITY(UPG_DEKU_STICKS);
+    AMMO(ITEM_DEKU_NUT) = CUR_CAPACITY(UPG_DEKU_NUTS);
+    AMMO(ITEM_MAGIC_BEANS) = 20;
+    AMMO(ITEM_POWDER_KEG) = 1;
+}
+
+static void ResetSlotItems() {
+    for (int32_t i = 0; i <= SLOT_MASK_FIERCE_DEITY; i++) {
+        Inventory_DeleteItem(gSaveContext.save.saveInfo.inventory.items[i], i);
+    }
+    ClearSlotItemOwnership();
+    AMMO(ITEM_BOW) = AMMO(ITEM_BOMB) = AMMO(ITEM_BOMBCHU) = AMMO(ITEM_DEKU_STICK) = AMMO(ITEM_DEKU_NUT) =
+        AMMO(ITEM_MAGIC_BEANS) = AMMO(ITEM_POWDER_KEG) = 0;
+    Inventory_ChangeUpgrade(UPG_BOMB_BAG, 0);
+    Inventory_ChangeUpgrade(UPG_QUIVER, 0);
+}
+
+// ComboShip: an item's name for the picker, from the randomizer's item table.
+static const char* SlotItemName(ItemId item) {
+    static std::unordered_map<int, const char*> names;
+    auto it = names.find(item);
+    if (it == names.end()) {
+        const auto found = Rando::StaticData::Items.find(Rando::StaticData::GetItemIdFromVanillaItemId(item));
+        it = names.emplace(item, found != Rando::StaticData::Items.end() ? found->second.name : "").first;
+    }
+    return it->second;
+}
+
+// ComboShip: the randomizer's time-item and give-item controls, which upstream draws beside the inventory grid.
+static void DrawRandoItemGives() {
+    if (RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) {
+        // Time Items Management Section
+        ImGui::SeparatorText("Time Items");
+
+        // Individual time items in 3x2 grid with static positioning
+        RandoItemId clockItems[] = { RI_TIME_DAY_1,   RI_TIME_DAY_2,   RI_TIME_DAY_3,
+                                     RI_TIME_NIGHT_1, RI_TIME_NIGHT_2, RI_TIME_NIGHT_3 };
+
+        const char* clockNames[] = { "Day 1", "Day 2", "Day 3", "Night 1", "Night 2", "Night 3" };
+
+        // Use table for static positioning - 3 columns, 2 rows
+        if (ImGui::BeginTable("ClockItemsTable", 3, ImGuiTableFlags_None)) {
+            ImGui::TableSetupColumn("Day 1", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Day 2", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Day 3", ImGuiTableColumnFlags_WidthStretch);
+
+            // First row - Day items
+            ImGui::TableNextRow();
+            for (int i = 0; i < 3; i++) {
+                ImGui::TableNextColumn();
+                RandoItemId clockItem = clockItems[i];
+                int halfIndex = Rando::ClockItems::GetHalfDayIndexFromClockItem(clockItem);
+                bool isOwned = Flags_GetRandoInf(static_cast<RandoInf>(RANDO_INF_OBTAINED_CLOCK_DAY_1 + halfIndex));
+
+                std::string buttonText =
+                    isOwned ? ("Remove " + std::string(clockNames[i])) : ("No Item##" + std::to_string(i));
+                std::string tooltipText = "";
+                if (!isOwned) {
+                    tooltipText = "You don't own " + std::string(clockNames[i]);
+                }
+                UIWidgets::ButtonOptions buttonOpts;
+                buttonOpts.disabled = !isOwned;
+                buttonOpts.disabledTooltip = !isOwned ? tooltipText.c_str() : "";
+                if (UIWidgets::Button(buttonText.c_str(), buttonOpts)) {
+                    Rando::RemoveItem(clockItem);
+                }
+            }
+
+            // Second row - Night items
+            ImGui::TableNextRow();
+            for (int i = 3; i < 6; i++) {
+                ImGui::TableNextColumn();
+                RandoItemId clockItem = clockItems[i];
+                int halfIndex = Rando::ClockItems::GetHalfDayIndexFromClockItem(clockItem);
+                bool isOwned = Flags_GetRandoInf(static_cast<RandoInf>(RANDO_INF_OBTAINED_CLOCK_DAY_1 + halfIndex));
+
+                std::string buttonText =
+                    isOwned ? ("Remove " + std::string(clockNames[i])) : ("No Item##" + std::to_string(i));
+                std::string tooltipText = "";
+                if (!isOwned) {
+                    tooltipText = "You don't own " + std::string(clockNames[i]);
+                }
+                UIWidgets::ButtonOptions buttonOpts;
+                buttonOpts.disabled = !isOwned;
+                buttonOpts.disabledTooltip = !isOwned ? tooltipText.c_str() : "";
+                if (UIWidgets::Button(buttonText.c_str(), buttonOpts)) {
+                    Rando::RemoveItem(clockItem);
+                }
+            }
+
+            ImGui::EndTable();
+        }
+    }
+
+    // Queue Randomizer Item Gives section
+    ImGui::Spacing();
+    ImGui::SeparatorText("Queue Randomizer Item Gives");
+
+    static ImGuiTextFilter riFilter;
+    UIWidgets::PushStyleCombobox();
+    riFilter.Draw("##filter", ImGui::GetContentRegionAvail().x);
+    UIWidgets::PopStyleCombobox();
+    if (!riFilter.IsActive()) {
+        ImGui::SameLine(18.0f);
+        ImGui::Text("Search");
+    }
+    std::string riFilterString(riFilter.InputBuf);
+
+    for (auto& [randoItemId, randoStaticItem] : Rando::StaticData::Items) {
+        if (!IsRandomizerItemGivePubliclyAvailable(randoItemId) &&
+            !IsNativeAdultDiagnosticQueueAvailable(randoItemId)) {
+            continue;
+        }
+        if (!riFilter.PassFilter(randoStaticItem.name)) {
+            continue;
+        }
+        if (randoItemId == RI_TRIFORCE_PIECE_PREVIOUS) {
+            continue;
+        }
+
+        std::string buttonLabel = "Give ";
+        buttonLabel += randoStaticItem.name;
+        if (UIWidgets::Button(buttonLabel.c_str())) {
+            GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
+                .showGetItemCutscene = Rando::StaticData::ShouldShowGetItemCutscene(Rando::ConvertItem(randoItemId)),
+                .param = (int16_t)randoItemId,
+                .giveItem =
+                    [](Actor* actor, PlayState* play) {
+                        RandoItemId randoItemId = Rando::ConvertItem((RandoItemId)CUSTOM_ITEM_PARAM);
+                        std::string prefix = "You found";
+                        std::string message = Rando::StaticData::GetItemName(randoItemId);
+
+                        CustomMessage::Entry entry = {
+                            .textboxType = 2,
+                            .icon = Rando::StaticData::GetIconForZMessage(randoItemId),
+                            .msg = prefix + " " + message + "!",
+                        };
+
+                        if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+                            CustomMessage::SetActiveCustomMessage(entry.msg, entry);
+                        } else if (Rando::StaticData::ShouldShowGetItemCutscene(
+                                       Rando::ConvertItem((RandoItemId)CUSTOM_ITEM_PARAM))) {
+                            CustomMessage::StartTextbox(entry.msg + "\x1C\x02\x10", entry);
+                        } else {
+                            Notification::Emit({
+                                .itemIcon = Rando::StaticData::GetIconTexturePath(randoItemId),
+                                .message = prefix,
+                                .suffix = message,
+                            });
+                        }
+                        Rando::GiveItem(randoItemId);
+                        CUSTOM_ITEM_PARAM = randoItemId;
+                    },
+                .drawItem =
+                    [](Actor* actor, PlayState* play) {
+                        RandoItemId randoItemId;
+
+                        // If the item has been given, the CUSTOM_ITEM_PARAM is set to the RI, prior to that it's
+                        // the RC
+                        if (CUSTOM_ITEM_FLAGS & CustomItem::CALLED_ACTION) {
+                            randoItemId = (RandoItemId)CUSTOM_ITEM_PARAM;
+                        } else {
+                            randoItemId = Rando::ConvertItem((RandoItemId)CUSTOM_ITEM_PARAM);
+                        }
+
+                        Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+                        Rando::DrawItem(randoItemId, RC_UNKNOWN, actor);
+                    } });
+        }
+    }
+}
+#endif
+
 void NextItemInSlot(InventorySlot slot) {
     ItemId currentItemId = static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]);
     size_t currentItemIndex =
@@ -1290,6 +1527,89 @@ void NextItemInSlot(InventorySlot slot) {
     }
 }
 
+#ifdef COMBO_BUILD
+// ComboShip: one inventory slot, by the tap rule both editors share: a slot that can hold one item toggles it, a slot
+// that can hold several opens a picker with None first and item names. Both add through AddSlotItem.
+void DrawSlot(InventorySlot slot) {
+    namespace Kit = ComboSaveEditorKit;
+    if (!IsInventoryItemPubliclyAvailable(static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]))) {
+        return;
+    }
+    ItemId currentItemId = static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]);
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    const Kit::Tap tap = Kit::ToggleOrPick(safeMode, safeItemsForInventorySlot[slot].size());
+
+    ImGui::PushID(slot);
+
+    if (currentItemId != ITEM_NONE &&
+        currentItemId <= ITEM_BOW_LIGHT &&            // gItemSlots only has entries till 77 (ITEM_BOW_LIGHT)
+        gItemSlots[currentItemId] <= SLOT_BOTTLE_6 && // There is only ammo data for the first page
+        ((safeMode && gAmmoItems[gItemSlots[currentItemId]] != ITEM_NONE) || !safeMode)) {
+        DrawAmmoInput(slot);
+    }
+
+    ImGui::SetCursorPos(Kit::GridCell(slot % 24));
+
+    // isEquipped border
+    if (GET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_C_LEFT) == slot || GET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_C_DOWN) == slot ||
+        GET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_C_RIGHT) == slot ||
+        (CVarGetInteger("gEnhancements.Dpad.DpadEquips", 0) &&
+         (DPAD_GET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_D_RIGHT) == slot ||
+          DPAD_GET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_D_LEFT) == slot ||
+          DPAD_GET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_D_DOWN) == slot ||
+          DPAD_GET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_D_UP) == slot))) {
+        ImGui::PushStyleColor(ImGuiCol_Border, UIWidgets::ColorValues.at(UIWidgets::Colors::White));
+    } else {
+        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
+    }
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
+    const ItemId shownItemId = currentItemId != ITEM_NONE ? currentItemId : safeItemsForInventorySlot[slot][0];
+    bool buttonPressed = Kit::IconButton("##inventorySlot", gui->GetTextureByName((const char*)gItemIcons[shownItemId]),
+                                         currentItemId != ITEM_NONE);
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    const std::string tooltip = std::string(SlotItemName(shownItemId)) + "\n" + Kit::TapHint(tap);
+    Kit::Tooltip(tooltip.c_str());
+    if (buttonPressed) {
+        if (tap == Kit::Tap::Toggle) {
+            ToggleSlotItem(slot);
+        } else {
+            selectedInventorySlot = slot;
+            ImGui::OpenPopup("InventorySlotPopup");
+        }
+    }
+
+    if (ImGui::BeginPopup("InventorySlotPopup")) {
+        if (Kit::PickerEntry(0, "##invNonePicker", 0, "None")) {
+            Inventory_DeleteItem(gSaveContext.save.saveInfo.inventory.items[selectedInventorySlot],
+                                 selectedInventorySlot);
+            ImGui::CloseCurrentPopup();
+        }
+        size_t availableItems = safeMode ? safeItemsForInventorySlot[selectedInventorySlot].size() : ITEM_FISHING_ROD;
+        int entry = 1;
+        for (int32_t pickerIndex = 0; pickerIndex < availableItems; pickerIndex++) {
+            ItemId id = safeMode ? safeItemsForInventorySlot[selectedInventorySlot][pickerIndex]
+                                 : static_cast<ItemId>(pickerIndex);
+            if (!IsInventoryItemPubliclyAvailable(id)) {
+                continue;
+            }
+            if (Kit::PickerEntry(entry++, (const char*)gItemIcons[id],
+                                 gui->GetTextureByName((const char*)gItemIcons[id]), SlotItemName(id))) {
+                AddSlotItem(selectedInventorySlot, id);
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::EndPopup();
+    }
+
+    ImGui::PopID();
+
+    if (currentItemId != ITEM_NONE && ImGui::BeginPopupContextItem()) {
+        DrawEquipItemMenu(slot);
+        ImGui::EndPopup();
+    }
+}
+#else
 void DrawSlot(InventorySlot slot) {
     if (!IsInventoryItemPubliclyAvailable(static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]))) {
         return;
@@ -1403,7 +1723,50 @@ void DrawSlot(InventorySlot slot) {
         ImGui::EndPopup();
     }
 }
+#endif
 
+#ifdef COMBO_BUILD
+// ComboShip: the Inventory tab, mirrored by OoT's: Give all, Reset and Restrict to valid items (was "Safe Mode") on top
+// instead of in a side panel under the grid, the shared help line, then the Items and Masks grids.
+void DrawItemsAndMasksTab() {
+    namespace Kit = ComboSaveEditorKit;
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+    ImGui::BeginChild("itemsTab", ImVec2(0, 0), true);
+    if (Kit::Button("Give all##items", Kit::kGiveAll)) {
+        GiveAllSlotItems();
+    }
+    ImGui::SameLine();
+    if (Kit::Button("Reset##items", Kit::kReset)) {
+        ResetSlotItems();
+    }
+    ImGui::SameLine();
+    UIWidgets::Checkbox(Kit::kRestrictLabel, &safeMode,
+                        { .color = UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5)) });
+    Kit::Tooltip(Kit::kRestrictTooltip);
+    ImGui::TextWrapped("%s", Kit::kInventoryHelp);
+
+    ImGui::BeginChild("itemsBox", Kit::GridBoxSize(), ImGuiChildFlags_Borders);
+    ImGui::Text("Items");
+    for (uint32_t i = SLOT_OCARINA; i <= SLOT_BOTTLE_6; i++) {
+        DrawSlot(static_cast<InventorySlot>(i));
+    }
+    ImGui::EndChild();
+    ImGui::BeginChild("masksBox", Kit::GridBoxSize(), ImGuiChildFlags_Borders);
+    ImGui::Text("Masks");
+    for (uint32_t i = SLOT_MASK_POSTMAN; i <= SLOT_MASK_FIERCE_DEITY; i++) {
+        DrawSlot(static_cast<InventorySlot>(i));
+    }
+    ImGui::EndChild();
+
+    if (gSaveContext.save.shipSaveInfo.saveType == SAVETYPE_RANDO) {
+        DrawRandoItemGives();
+    }
+
+    ImGui::EndChild();
+    ImGui::PopStyleVar(2);
+}
+#else
 void DrawItemsAndMasksTab() {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
@@ -1633,6 +1996,7 @@ void DrawItemsAndMasksTab() {
     ImGui::EndChild();
     ImGui::PopStyleVar(2);
 }
+#endif
 
 void SongInfo(int32_t itemID) {
     switch (itemID) {
@@ -1779,6 +2143,52 @@ void DrawQuestSlot(QuestItem slot) {
     ImGui::PopID();
 }
 
+#ifdef COMBO_BUILD
+// ComboShip: Goron Lullaby can be its intro or the whole song, so a tap opens a picker (None, Goron Lullaby Intro,
+// Goron Lullaby) instead of cycling through them; every other song toggles.
+ImVec2 DrawSong(QuestItem slot) {
+    namespace Kit = ComboSaveEditorKit;
+    SongInfo(slot);
+    ImTextureID texture =
+        std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui())
+            ->GetTextureByName((const char*)gItemIcons[questToItemMap[(QuestItem)slot]]);
+    const bool pressed =
+        ImGui::ImageButton(std::to_string(slot).c_str(), texture, ImVec2(Kit::kSongIconWidth, Kit::kIconSize),
+                           ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), colorTint);
+    ImVec2 itemSize = ImGui::GetItemRectSize();
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::Text("%s", songTooltip);
+        ImGui::EndTooltip();
+    }
+    if (pressed) {
+        if (slot == QUEST_SONG_LULLABY) {
+            ImGui::OpenPopup("lullabyPicker");
+        } else {
+            NextQuestInSlot(slot);
+        }
+    }
+    if (slot == QUEST_SONG_LULLABY && ImGui::BeginPopup("lullabyPicker")) {
+        if (Kit::PickerEntry(0, "##lullabyNone", 0, "None")) {
+            REMOVE_QUEST_ITEM(QUEST_SONG_LULLABY);
+            REMOVE_QUEST_ITEM(QUEST_SONG_LULLABY_INTRO);
+            ImGui::CloseCurrentPopup();
+        }
+        if (Kit::PickerEntry(1, "##lullabyIntro", texture, "Goron Lullaby Intro")) {
+            REMOVE_QUEST_ITEM(QUEST_SONG_LULLABY);
+            SET_QUEST_ITEM(QUEST_SONG_LULLABY_INTRO);
+            ImGui::CloseCurrentPopup();
+        }
+        if (Kit::PickerEntry(2, "##lullabyFull", texture, "Goron Lullaby")) {
+            SET_QUEST_ITEM(QUEST_SONG_LULLABY_INTRO);
+            SET_QUEST_ITEM(QUEST_SONG_LULLABY);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    return itemSize;
+}
+#else
 ImVec2 DrawSong(QuestItem slot) {
     SongInfo(slot);
     if (ImGui::ImageButton(
@@ -1797,6 +2207,7 @@ ImVec2 DrawSong(QuestItem slot) {
     }
     return itemSize;
 }
+#endif
 
 void DrawQuestStatusTab() {
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));

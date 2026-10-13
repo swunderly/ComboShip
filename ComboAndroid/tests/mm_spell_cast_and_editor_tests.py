@@ -13,6 +13,8 @@ Builds one program from the production functions and runs it:
 3. Save Editor. For every trade-slot item and both seed-option states, the slot picker and Give All record the same
    ownership as the real pickup (Rando::GiveItem's cases after Rando::IsItemObtainable), except that Farore's Wind,
    which IsItemObtainable does not gate, is owned only in a seed with Farore's Wind (MM), the only seed that casts it.
+   The picker and the one-item toggle both add through AddSlotItem, which with "Restrict to valid items" on refuses an
+   item the save cannot own; the toggle gives the Bow and bombs capacity level 1 and leaves it when removing them.
    After Give All the 2S2H pause cycle (KaleidoItemPage.cpp BuildAvailableItemsList) offers every trade item the seed
    has, so both title deeds, the spells and the gear, and the ocarina slot shows the Ocarina of Time. Reset then
    clears that ownership, so the cycle offers nothing in the emptied slots, and takes the boots and tunic off Link. A
@@ -114,13 +116,21 @@ for element in (e.strip() for e in slots.split(',')):
                      f'gItemSlots[at++] = {element};')
 
 # ---- Save Editor pieces.
-picker = re.search(r'if \(buttonPressed\) \{\s*(gSaveContext\.save\.saveInfo\.inventory\.items\[selectedInventorySlot\] = id;'
-                   r'.*?)ImGui::CloseCurrentPopup\(\);', editor, re.S)
-check(picker is not None and 'GrantSlotItemOwnership(id);' in picker.group(1), 'the slot picker records no ownership')
-give_all = function(editor, 'if (UIWidgets::Button("Give All##items"))')
+# The combo build's slot (T8): the picker and the toggle add through AddSlotItem; Give all and Reset are functions.
+slot_code = function(editor, '// ComboShip: one inventory slot, by the tap rule both editors share')
+check(hostcxx.contains(slot_code, 'if (tap == Kit::Tap::Toggle) { ToggleSlotItem(slot); }') and
+      re.search(r'Kit::PickerEntry\(entry\+\+,[^;]*\)\)\s*\{\s*AddSlotItem\(selectedInventorySlot, id\);', slot_code),
+      'the combo slot does not add through AddSlotItem')
+add_slot = function(editor, 'static bool AddSlotItem(InventorySlot slot, ItemId item)')
+check('GrantSlotItemOwnership(item)' in add_slot, 'AddSlotItem records no ownership')
+toggle_slot = function(editor, 'static void ToggleSlotItem(InventorySlot slot)')
+check('AddSlotItem(slot, item)' in toggle_slot, 'the toggle does not add through AddSlotItem')
+items_tab = function(editor, '// ComboShip: the Inventory tab, mirrored by OoT')
+check('GiveAllSlotItems();' in items_tab and 'ResetSlotItems();' in items_tab, 'the combo Inventory tab lost Give all/Reset')
+give_all = function(editor, 'static void GiveAllSlotItems()')
 give_all = give_all[give_all.index('{'):]
 check('GiveAllSlotItem(static_cast<InventorySlot>(i))' in give_all, 'Give All does not use GiveAllSlotItem')
-reset = function(editor, 'if (UIWidgets::Button("Reset##items"))')
+reset = function(editor, 'static void ResetSlotItems()')
 reset = reset[reset.index('{'):]
 check('ClearSlotItemOwnership();' in reset, 'Reset does not clear the ownership Give All records')
 trade_table = re.search(r'static const std::pair<ItemId, RandoInf> kSlotTradeItems\[\] = \{.*?\};', editor, re.S)
@@ -312,11 +322,15 @@ void Inventory_DeleteItem(int, int slot) { gSaveContext.save.saveInfo.inventory.
     function(editor, 'static void ClearSlotItemOwnership()') + '\n' + \
     function(kaleido, 'std::vector<u8> BuildAvailableItemsList(u8 slot)') + r'''
 u8 gAmmo[256];
+int gUpgrades[8];
 #define AMMO(item) gAmmo[item]
 #define CUR_CAPACITY(upgrade) 1
-void Inventory_ChangeUpgrade(int, int) {}
+#define CUR_UPG_VALUE(upgrade) gUpgrades[upgrade]
+void Inventory_ChangeUpgrade(int upgrade, int value) { gUpgrades[upgrade] = value; }
+bool safeMode = true; // "Restrict to valid items"
+''' + add_slot + '\n' + toggle_slot + r'''
 void Pick(ItemId id) {
-''' + picker.group(1) + r'''
+    AddSlotItem(selectedInventorySlot, id);
 }
 void GiveAll() ''' + give_all + r'''
 void Reset() ''' + reset + r'''
@@ -342,6 +356,8 @@ bool NoOwnership() {
 }
 void Fresh(bool rando, bool options) {
     gSaveContext = {};
+    std::fill(std::begin(gUpgrades), std::end(gUpgrades), 0);
+    std::fill(std::begin(gAmmo), std::end(gAmmo), u8(0));
     std::fill(std::begin(gRandoInf), std::end(gRandoInf), false);
     gSaveContext.save.shipSaveInfo.saveType = rando ? SAVETYPE_RANDO : SAVETYPE_VANILLA;
     std::fill(std::begin(gSaveContext.save.saveInfo.inventory.items), std::end(gSaveContext.save.saveInfo.inventory.items),
@@ -463,13 +479,18 @@ int main() {
     for (bool options : { false, true }) {
         for (const auto& [item, randoItem] : trade) {
             if (item == ITEM_COMBO_FARORES_WIND && !options) {
-                // Not cast in this seed (Combo_MMFaroreEnabled), so the editor does not own it; the picker only sets
+                // Not cast in this seed (Combo_MMFaroreEnabled), so the editor does not own it. With "Restrict to
+                // valid items" on the picker refuses it, as Give All leaves it out; with it off the picker only sets
                 // the slot.
                 Fresh(true, options);
                 assert(!GrantSlotItemOwnership(item));
                 assert(NoOwnership());
                 selectedInventorySlot = SLOT_TRADE_KEY_MAMA;
                 Pick(item);
+                assert(gSaveContext.save.saveInfo.inventory.items[SLOT_TRADE_KEY_MAMA] == ITEM_NONE && NoOwnership());
+                safeMode = false;
+                Pick(item);
+                safeMode = true;
                 assert(gSaveContext.save.saveInfo.inventory.items[SLOT_TRADE_KEY_MAMA] == item && NoOwnership());
                 assert(BuildAvailableItemsList(SLOT_TRADE_KEY_MAMA).empty());
                 continue;
@@ -486,19 +507,55 @@ int main() {
                 Fresh(true, options);
                 selectedInventorySlot = static_cast<InventorySlot>(gItemSlots[item]);
                 Pick(item);
-                assert(gSaveContext.save.saveInfo.inventory.items[gItemSlots[item]] == item);
+                // Restrict to valid items (on) refuses an item the save cannot own; off, the picker only sets the slot.
+                assert(gSaveContext.save.saveInfo.inventory.items[gItemSlots[item]] == (owned ? item : ITEM_NONE));
                 assert(Snapshot() == real);
+                if (!owned) {
+                    safeMode = false;
+                    Pick(item);
+                    safeMode = true;
+                    assert(gSaveContext.save.saveInfo.inventory.items[gItemSlots[item]] == item);
+                    assert(Snapshot() == real);
+                }
             }
             Fresh(false, options); // a non-rando save gets no rando ownership
             GrantSlotItemOwnership(item);
             assert(NoOwnership());
         }
     }
-    // A pick into another slot (Safe Mode off) records nothing.
+    // A pick into another slot (Restrict to valid items off) records nothing.
     Fresh(true, true);
     selectedInventorySlot = SLOT_BOTTLE_1;
+    safeMode = false;
     Pick(ITEM_DEED_LAND);
-    assert(NoOwnership());
+    safeMode = true;
+    assert(gSaveContext.save.saveInfo.inventory.items[SLOT_BOTTLE_1] == ITEM_DEED_LAND && NoOwnership());
+
+    // 3a'. The one-item toggle (T8): every slot that holds one valid item toggles it through AddSlotItem. The Bow and
+    // bombs get capacity level 1 when they have none; removing them keeps it.
+    for (int slot = SLOT_OCARINA; slot <= SLOT_MASK_FIERCE_DEITY; slot++) {
+        if (safeItemsForInventorySlot[slot].size() != 1)
+            continue;
+        Fresh(true, true);
+        const InventorySlot s = static_cast<InventorySlot>(slot);
+        ToggleSlotItem(s);
+        assert(gSaveContext.save.saveInfo.inventory.items[slot] == safeItemsForInventorySlot[slot][0] && NoOwnership());
+        ToggleSlotItem(s);
+        assert(gSaveContext.save.saveInfo.inventory.items[slot] == ITEM_NONE);
+    }
+    assert(safeItemsForInventorySlot[SLOT_BOW].size() == 1 && safeItemsForInventorySlot[SLOT_BOMB].size() == 1 &&
+           safeItemsForInventorySlot[SLOT_BOMBCHU].size() == 1);
+    Fresh(true, true);
+    ToggleSlotItem(SLOT_BOW);
+    assert(gUpgrades[UPG_QUIVER] == 1 && gAmmo[ITEM_BOW] == 1);
+    ToggleSlotItem(SLOT_BOW);
+    assert(gSaveContext.save.saveInfo.inventory.items[SLOT_BOW] == ITEM_NONE && gUpgrades[UPG_QUIVER] == 1);
+    ToggleSlotItem(SLOT_BOMB);
+    assert(gUpgrades[UPG_BOMB_BAG] == 1 && gAmmo[ITEM_BOMB] == 1);
+    gUpgrades[UPG_BOMB_BAG] = 3;
+    ToggleSlotItem(SLOT_BOMBCHU); // a bomb bag already: only the item changes
+    assert(gSaveContext.save.saveInfo.inventory.items[SLOT_BOMBCHU] == ITEM_BOMBCHU && gUpgrades[UPG_BOMB_BAG] == 3 &&
+           gAmmo[ITEM_BOMBCHU] == 0);
 
     // 3b. Both title deeds through the picker: the slot shows the last one, the pause cycle offers both.
     Fresh(true, true);
