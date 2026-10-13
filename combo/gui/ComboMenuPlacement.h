@@ -857,9 +857,9 @@ inline const MenuPlacement* FindRulePlacement(const char* rule, bool oot, bool r
                 : nullptr;
 }
 
-// The row that places one native widget: its CVar (exact, then prefix), else its name when it has
-// no CVar, then its native heading, then its native sidebar. nullptr: not placed, so MenuRoute's
-// sidebar destination and the native heading stand.
+// The row that places one native widget: its CVar (exact, then prefix), else its name (without an
+// ImGui id suffix: "All##Skips" is "All") when it has no CVar, then its native heading, then its
+// native sidebar. nullptr: not placed, so MenuRoute's sidebar destination and the native heading stand.
 inline const MenuPlacement* FindMenuPlacement(bool oot, const std::string& section, const std::string& sidebar,
                                               const std::string& heading, const std::string& key,
                                               const std::string& name = {}) {
@@ -872,7 +872,8 @@ inline const MenuPlacement* FindMenuPlacement(bool oot, const std::string& secti
                 return row;
         }
     } else if (!name.empty()) {
-        if (const auto* row = Detail::FindMenuPlacementKey(oot, "widget:" + section + "/" + sidebar + "/" + name))
+        const std::string shown = name.substr(0, name.find("##"));
+        if (const auto* row = Detail::FindMenuPlacementKey(oot, "widget:" + section + "/" + sidebar + "/" + shown))
             return row;
     }
     if (!heading.empty())

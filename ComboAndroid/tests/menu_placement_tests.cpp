@@ -318,6 +318,13 @@ int main() {
     // destination.
     assert(!std::strcmp(FindMenuPlacement(true, "Enhancements", "Skips & Speed-ups", "Cutscenes", "", "All")->heading,
                         "Cutscenes"));
+    // A native name with an ImGui id suffix finds its row: OoT's Cutscenes All/None buttons stay under the page's
+    // Cutscenes heading instead of a second Cutscenes heading after the fixed ones.
+    for (const char* name : { "All##Skips", "None##Skips" }) {
+        assert(ootMenus.find(std::string("AddWidget(path, \"") + name + '"') != std::string::npos);
+        const auto* row = FindMenuPlacement(true, "Enhancements", "Skips & Speed-ups", "Cutscenes", "", name);
+        assert(row && !std::strcmp(row->page, MenuPage::TimeSavers) && !std::strcmp(row->heading, "Cutscenes"));
+    }
     assert(!std::strcmp(
         FindMenuPlacement(true, "Enhancements", "Extra Modes", "Trap Options", "", "Tier 2 Traps:")->heading, "Traps"));
     assert(!std::strcmp(FindMenuPlacement(true, "Enhancements", "Extra Modes", "", "", "Unknown text")->page,
