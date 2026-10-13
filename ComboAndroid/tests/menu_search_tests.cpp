@@ -1,3 +1,4 @@
+#include "gui/ComboMenuLabels.h"
 #include "gui/ComboNavigation.h"
 #include "rando/GameplayRules.h"
 #include <cassert>
@@ -155,6 +156,31 @@ int main() {
     history.Capture("--", "randomizer", "randomizer/Gameplay rules");
     assert(history.scope == "settings" && history.HasResult());
     history.Clear(); assert(!history.HasResult() && history.scope.empty() && history.hub.empty());
+
+    // A setting is found by the label its page shows, and still by its old native name. Both games'
+    // climb speed rows answer "climb speed" equally, and each lands on Time savers > Speed-ups.
+    auto settingRank = [](const char* query, bool oot, const char* cvar, const char* name) {
+        const auto label = MenuRowLabel(oot, cvar, name);
+        const auto keywords = MenuRowKeywords(oot, cvar, name);
+        return MenuSearchRank(query, label.c_str(), keywords.c_str(), MenuSearchKind::Setting);
+    };
+    const int ootClimb = settingRank("climb speed", true, "gEnhancements.ClimbSpeed", "Vine/Ladder Climb Speed +%d");
+    const int mmClimb = settingRank("climb speed", false, "gEnhancements.Player.ClimbSpeed", "Climb speed");
+    assert(ootClimb > 0 && ootClimb == mmClimb);
+    assert(settingRank("vine ladder", true, "gEnhancements.ClimbSpeed", "Vine/Ladder Climb Speed +%d") > 0);
+    assert(settingRank("trap behavior", false, "gRando.TrapItems", "Trap appearance") > 0);
+    assert(settingRank("screen flash", true, "gSettings.A11yNoScreenFlashForFinishingBlow",
+                       "Disable Screen Flash for Finishing Blow") ==
+           settingRank("screen flash", false, "gEnhancements.A11y.NoScreenFlashForEnemyKill",
+                       "Disable Screen Flash for Enemy Kills"));
+    for (bool oot : { true, false }) {
+        const auto* row =
+            FindMenuPlacement(oot, "", "", "", oot ? "gEnhancements.ClimbSpeed" : "gEnhancements.Player.ClimbSpeed");
+        assert(row && std::string(row->page) == "Time savers" && std::string(row->heading) == "Speed-ups");
+    }
+    // A rule result names the heading of the half it opens.
+    assert(std::string(GameplayRuleHeading("gEnhancements.OpenAllHours", false)) == "Time of day & cycle");
+    assert(std::string(GameplayRuleHeading("gEnhancements.OpenAllHours", true)) == "Time of day");
 
     // Each feature has its own guide; unrelated tabs have none.
     for (const auto& guide : kMenuGuides) {
