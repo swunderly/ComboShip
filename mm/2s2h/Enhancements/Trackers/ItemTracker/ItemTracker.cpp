@@ -604,24 +604,62 @@ void DrawItemTrackerGroup(TrackerGroup& trackerGroup) {
 }
 
 #ifdef COMBO_BUILD
+extern std::vector<TrackerGroup> itemTrackerGroupsAvailable; // ItemTrackerSettings.cpp
+
+static bool ComboTrackerLayoutHasTrade() {
+    return std::any_of(itemTrackerGroups.begin(), itemTrackerGroups.end(),
+                       [](const TrackerGroup& group) { return group.name == "Trade Items"; });
+}
+
+// 2S2H's Trade Items group is not one of its default groups, so the combo tracker's Trade toggle adds it after Quest.
+// Unset, the toggle is on when the layout already has the group, and on seeds with the MM spells, boots or tunics,
+// whose only rows are there (OoT shows its own in the default Items and Equipment groups).
+extern "C" COMBO_EXPORT int MM_ComboTrackerTradeDefault() {
+    if (ComboTrackerLayoutHasTrade())
+        return 1;
+    if (!IS_RANDO)
+        return 0;
+    for (const auto option : { RO_MM_SPELL_FIRE, RO_MM_SPELL_WIND, RO_MM_SPELL_LOVE, RO_MM_BOOTS_IRON,
+                               RO_MM_BOOTS_HOVER, RO_MM_TUNIC_GORON, RO_MM_TUNIC_ZORA })
+        if (RANDO_SAVE_OPTIONS[option])
+            return 1;
+    return 0;
+}
+
 extern "C" COMBO_EXPORT void MM_ComboItemTrackerDrawContents() {
     ComboMenuContext::UseSharedImGuiContext();
     Ship::ResourceManagerScope rmScope(Ship::CrossRMRegistry::Get("mm"));
     const float size = std::clamp(CVarGetInteger("gCombo.Tracker.IconSize", 36), 16, 128);
     const float pitch = size + std::clamp(CVarGetInteger("gCombo.Tracker.IconSpacing", 12), 0, 50);
-    for (const auto& source : itemTrackerGroups) {
+    std::vector<const TrackerGroup*> groups;
+    for (const auto& source : itemTrackerGroups)
+        groups.push_back(&source);
+    if (!ComboTrackerLayoutHasTrade()) {
+        const auto trade = std::find_if(itemTrackerGroupsAvailable.begin(), itemTrackerGroupsAvailable.end(),
+                                        [](const TrackerGroup& group) { return group.name == "Trade Items"; });
+        const auto quest = std::find_if(groups.begin(), groups.end(),
+                                        [](const TrackerGroup* group) { return group->name == "Quest"; });
+        if (trade != itemTrackerGroupsAvailable.end())
+            groups.insert(quest == groups.end() ? quest : quest + 1, &*trade);
+    }
+    const int tradeDefault = MM_ComboTrackerTradeDefault();
+    for (const auto* group : groups) {
+        const auto& source = *group;
         if (source.items.empty())
             continue;
+        const bool trade = source.name == "Trade Items";
         const char* key = source.name == "Inventory" ? "gCombo.Tracker.Inventory"
                           : source.name == "Masks"   ? "gCombo.Tracker.Equipment"
                           : source.name == "Songs"   ? "gCombo.Tracker.Songs"
                           : source.name == "Dungeon" ? "gCombo.Tracker.Dungeons"
+                          : trade                    ? "gCombo.Tracker.Trade"
                                                      : "gCombo.Tracker.Quest";
-        if (!CVarGetInteger(key, 1))
+        if (!CVarGetInteger(key, trade ? tradeDefault : 1))
             continue;
         const char* title = source.name == "Inventory" ? "Items"
                             : source.name == "Quest"   ? "Quest items"
                             : source.name == "Dungeon" ? "Dungeon items"
+                            : trade                    ? "Trade items"
                                                        : source.name.c_str();
         ImGui::Separator();
         if (!ImGui::CollapsingHeader(title, ImGuiTreeNodeFlags_DefaultOpen))

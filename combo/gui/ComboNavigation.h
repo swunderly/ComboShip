@@ -67,8 +67,8 @@ inline constexpr SharedPageInfo kSharedPages[] = {
       "check tracker on-screen CT touch visibility shortcut button toggle hold collected skipped search current area "
       "logic appearance text size background side panel dock divider" },
     { "trackers", "Trackers", MenuPage::ItemTracker,
-      "item tracker equipment inventory icons icon size icon spacing layout visibility while paused button toggle hold "
-      "shortcut modifier IT on-screen touch side panel personal notes" },
+      "item tracker equipment inventory icons icon size icon spacing layout groups trade items visibility while paused "
+      "button toggle hold shortcut modifier IT on-screen touch side panel personal notes" },
     { "trackers", "Trackers", MenuPage::HintTracker,
       "hint tracker hinted seen known path boss event notes visibility while paused button toggle hold shortcut "
       "modifier HT on-screen touch side panel" },

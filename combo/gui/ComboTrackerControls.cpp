@@ -371,6 +371,13 @@ void DrawItemSettings() {
         Checkbox("Equipment and masks", "gCombo.Tracker.Equipment", 1);
         Checkbox("Songs", "gCombo.Tracker.Songs", 1);
         Checkbox("Quest items", "gCombo.Tracker.Quest", 1);
+        // MM's own: unset, it is on for seeds with the MM spells, boots or tunics (MM_ComboTrackerTradeDefault).
+        static int (*tradeDefault)() = nullptr;
+        if (!tradeDefault)
+            tradeDefault = reinterpret_cast<int (*)()>(Combo_ResolveSym("2ship", "MM_ComboTrackerTradeDefault"));
+        Checkbox("Trade items (MM)", "gCombo.Tracker.Trade", tradeDefault ? tradeDefault() : 0);
+        ComboRando::MenuTooltip("Majora's Mask's trade items, including the MM spells, boots and tunics on seeds that "
+                                "add them. Shown by default on those seeds.");
         Checkbox("Dungeon items", "gCombo.Tracker.Dungeons", 1);
         Checkbox("Show combined Triforce count", "gCombo.Rando.TriforceCounter", 1);
         ComboRando::ComboMenu_PopCheckbox();

@@ -189,6 +189,26 @@ tracker = squash(tracker_source)
 for item, ro in (('RI_DINS_FIRE', 'RO_MM_SPELL_FIRE'), ('RI_FARORES_WIND', 'RO_MM_SPELL_WIND'), ('RI_NAYRUS_LOVE', 'RO_MM_SPELL_LOVE')):
     check(f'if(itemId=={item})return!IS_RANDO||!RANDO_SAVE_OPTIONS[{ro}];' in tracker, f'{item} tracker row is not hidden without {ro}')
 
+# ---- The combo tracker shows that group from its own toggle (Trackers > Item Tracker > Groups), after Quest, since
+# 2S2H's default groups leave it out. Unset, the toggle is on where its hidden rows show: on seeds with any of the MM
+# spells, boots or tunics (OoT tracks its own in its default Items and Equipment groups), or a layout that has it.
+controls = squash(read('combo/gui/ComboTrackerControls.cpp'))
+check('Combo_ResolveSym("2ship","MM_ComboTrackerTradeDefault")' in controls
+      and 'Checkbox("Tradeitems(MM)","gCombo.Tracker.Trade",tradeDefault?tradeDefault():0);' in controls,
+      'the item tracker has no Trade items (MM) group toggle')
+check(controls.index('"gCombo.Tracker.Quest"') < controls.index('"gCombo.Tracker.Trade"') < controls.index('"gCombo.Tracker.Dungeons"'),
+      'the Trade items toggle is not listed where the group is drawn')
+default = tracker_source[tracker_source.index('int MM_ComboTrackerTradeDefault() {'):]
+default = default[:default.index('\n}\n')]
+hidden = set(re.findall(r'return !IS_RANDO \|\| !RANDO_SAVE_OPTIONS\[(RO_\w+)\];', tracker_source))
+check(len(hidden) == 7 and set(re.findall(r'RO_MM_\w+', default)) == hidden and 'ComboTrackerLayoutHasTrade()' in default,
+      'the Trade group default does not follow the rows it hides')
+draw = squash(tracker_source[tracker_source.index('void MM_ComboItemTrackerDrawContents() {'):])
+check(':trade?"gCombo.Tracker.Trade"' in draw and 'CVarGetInteger(key,trade?tradeDefault:1)' in draw
+      and 'groups.insert(quest==groups.end()?quest:quest+1,&*trade);' in draw
+      and draw.index('if(!ComboTrackerLayoutHasTrade())') < draw.index('groups.insert('),
+      'the combo tracker does not add the Trade Items group after Quest')
+
 # ---- Item tracker, default Inventory group (TRACKER_ITEM_SLOT): a slot holding a spell shows the spell's own icon.
 # Spells.cpp / FaroresWind.cpp put the spells into empty trade slots, and their ids lie above ITEM_RECOVERY_HEART, where
 # the slot otherwise falls back to the slot's first safe item (a lit Moon's Tear for Din's Fire). Evaluate the

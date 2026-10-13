@@ -68,6 +68,10 @@ int main() {
     for (const auto& page : kSharedPages)
         assert((MenuSearchRank("personal notes", page.name, page.keywords, MenuSearchKind::Page) > 0) ==
                (std::strcmp(page.name, "Item Tracker") == 0));
+    // So is the Trade items (MM) group toggle.
+    for (const auto& page : kSharedPages)
+        if (!std::strcmp(page.name, "Item Tracker"))
+            assert(MenuSearchRank("trade items", page.name, page.keywords, MenuSearchKind::Page) > 0);
 
     // Native feature names are indexed as direct shared page links, including
     // custom editors which cannot safely render as ordinary search widgets.
