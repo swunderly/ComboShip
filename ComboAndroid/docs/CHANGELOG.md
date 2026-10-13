@@ -14,6 +14,9 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ## Unreleased
 
+- **MM spells: Din's Fire, Nayru's Love and Farore's Wind (MM) now cast whenever they are on a C button, as in OoTMM.** In 0.4.1, a spell given with the Save Editor's Give All or item picker played the "can't use" sound, because only picking a spell up marked it as yours. Saves from 0.4.1 need no changes.
+  - As in OoTMM, Farore's Wind's button is greyed out where Song of Soaring cannot be played, such as the Clock Tower rooftop and the Moon, instead of playing that sound. It works in Termina Field and in dungeons.
+  - Save Editor, randomizer saves: Give All and the item picker now record items the way finding them does. A shared trade slot keeps everything you give it, and A in the pause menu switches between them, so you can hold both the Land and the Ocean Title Deed. Give All adds the MM spells, boots and tunics your seed includes, and puts the Ocarina of Time, not the Fairy Ocarina, in the ocarina slot. In other saves Give All no longer puts the randomizer-only MM spells in the trade slots.
 - **OoT check tracker: more items you can see are now marked Seen.**
   - When you cannot get a check's item yet (for example equipment you already own), the game shows a Blue Rupee in its place. Looking at it now marks the check "Seen: Blue Rupee". Seeing the real item later, or a hint, replaces that. This is the most likely reason the underwater item in Hyrule Field's Tektite grotto never became Seen.
   - Items and Gold Skulltula tokens seen through a spider web, such as in Hyrule Field's cow grotto, and the Bombchu Bowling prizes behind the counter now become Seen.
@@ -50,6 +53,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 - Fixed the command-line generator crashing after successful completion, and corrected memory cleanup during repeated seed-generation searches.
 
 Tested:
+- The MM spell casting and Save Editor changes pass a new automated host test that runs the game's own cast checks, Save Editor, item pickup and pause-menu code. They have not been tried on the emulator or a phone yet.
 - The OoT check tracker changes pass new automated host tests that run the game's own sighting code with camera and collision stand-ins, plus a check that every OoT item model reports its sighting. They have not been tried on the emulator or a phone yet.
 - The integrated candidate passes 97 automated host tests, with zero failures and two platform-dependent skips. They cover gear and age logic, source assets, saved-rule compatibility, profile controls, console dispatch, the command-line generator, entrance foundations and save-format preflight. The two archive checks read the developer's own extracted game data.
 - Gear-only 0.4.2 and Adult Link 0.4.3 candidates pass the Android build, lint, APK and signing checks. These remain local candidates.

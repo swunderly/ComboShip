@@ -10,6 +10,7 @@
 #include "2s2h/CustomItem/CustomItem.h"
 #include "2s2h/BenGui/Notification.h"
 #include "2s2h/Rando/Spoiler/Spoiler.h"
+#include "2s2h/Rando/Ocarinas.h"
 #include "2s2h/ShipUtils.h"
 #ifdef COMBO_BUILD
 #include <spdlog/spdlog.h>
@@ -19,6 +20,10 @@
 extern "C" void (*gMMComboCrossDeliver)(int targetGame, const char* itemName, const char* srcCheckName);
 // The MM gear runtime is released and prepared on this device (BenPort.cpp).
 extern "C" int Combo_MM_GearOptionReady(void);
+// The ownership grants of a real pickup (Rando::GiveItem): Rando/Spells.cpp, Rando/FaroresWind.cpp, BenPort.cpp.
+extern "C" void Combo_MMSpellGrantItem(int spell);
+extern "C" void Combo_MMFaroreGrantItem(void);
+extern "C" int MM_GrantAdultGearItem(int fileNum, int item);
 #endif
 
 #include "interface/icon_item_dungeon_static/icon_item_dungeon_static.h"
@@ -878,6 +883,79 @@ void DrawEquipItemMenu(InventorySlot slot) {
     }
 }
 
+// Records the ownership a real pickup records (Rando::GiveItem) for an item put in its own slot. A rando save keeps
+// what a shared trade slot holds outside the slot, and the 2S2H pause cycle offers only that, so this lets one slot
+// hold both title deeds. Returns whether the save can own the item: only rando saves have the MM spells and gear, and
+// a seed without a spell's or gear piece's option turns it into junk (Rando::IsItemObtainable).
+static bool GrantSlotItemOwnership(ItemId item) {
+    static const std::pair<ItemId, RandoInf> kTradeItems[] = {
+        { ITEM_MOONS_TEAR, RANDO_INF_OBTAINED_MOONS_TEAR },
+        { ITEM_DEED_LAND, RANDO_INF_OBTAINED_DEED_LAND },
+        { ITEM_DEED_SWAMP, RANDO_INF_OBTAINED_DEED_SWAMP },
+        { ITEM_DEED_MOUNTAIN, RANDO_INF_OBTAINED_DEED_MOUNTAIN },
+        { ITEM_DEED_OCEAN, RANDO_INF_OBTAINED_DEED_OCEAN },
+        { ITEM_ROOM_KEY, RANDO_INF_OBTAINED_ROOM_KEY },
+        { ITEM_LETTER_MAMA, RANDO_INF_OBTAINED_LETTER_TO_MAMA },
+        { ITEM_LETTER_TO_KAFEI, RANDO_INF_OBTAINED_LETTER_TO_KAFEI },
+        { ITEM_PENDANT_OF_MEMORIES, RANDO_INF_OBTAINED_PENDANT_OF_MEMORIES },
+    };
+    for (const auto& [tradeItem, flag] : kTradeItems) {
+        if (item == tradeItem) {
+            if (IS_RANDO) {
+                Flags_SetRandoInf(flag);
+            }
+            return true;
+        }
+    }
+#ifdef COMBO_BUILD
+    static const std::pair<ItemId, RandoItemId> kComboItems[] = {
+        { ITEM_COMBO_FARORES_WIND, RI_FARORES_WIND }, { ITEM_COMBO_NAYRUS_LOVE, RI_NAYRUS_LOVE },
+        { ITEM_COMBO_DINS_FIRE, RI_DINS_FIRE },       { ITEM_COMBO_BOOTS_IRON, RI_BOOTS_IRON },
+        { ITEM_COMBO_BOOTS_HOVER, RI_BOOTS_HOVER },   { ITEM_COMBO_TUNIC_GORON, RI_TUNIC_GORON },
+        { ITEM_COMBO_TUNIC_ZORA, RI_TUNIC_ZORA },
+    };
+    for (const auto& [comboItem, randoItem] : kComboItems) {
+        if (item != comboItem) {
+            continue;
+        }
+        if (!IS_RANDO || !Rando::IsItemObtainable(randoItem)) {
+            return false;
+        }
+        if (item == ITEM_COMBO_FARORES_WIND) {
+            Combo_MMFaroreGrantItem();
+        } else if (item == ITEM_COMBO_NAYRUS_LOVE || item == ITEM_COMBO_DINS_FIRE) {
+            Combo_MMSpellGrantItem(item == ITEM_COMBO_NAYRUS_LOVE ? 1 : 2);
+        } else {
+            MM_GrantAdultGearItem(gSaveContext.fileNum, item);
+        }
+        return true;
+    }
+#endif
+    return true;
+}
+
+// Give All: every item of the slot, recorded as real pickups record them, showing the last one the save can own.
+static ItemId GiveAllSlotItem(InventorySlot slot) {
+    if (slot == SLOT_OCARINA) {
+        // Pickups of both instruments leave the Ocarina of Time in the slot (Rando::Ocarinas::Grant).
+        u8 ownedBits = gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits;
+        u8 shown = ITEM_NONE;
+        Rando::Ocarinas::Grant(ownedBits, shown, 1);
+        Rando::Ocarinas::Grant(ownedBits, shown, 2);
+        if (IS_RANDO) {
+            gSaveContext.save.shipSaveInfo.rando.ocarinaOwnedBits = ownedBits;
+        }
+        return static_cast<ItemId>(shown);
+    }
+    ItemId shown = safeItemsForInventorySlot[slot].back();
+    for (ItemId item : safeItemsForInventorySlot[slot]) {
+        if (GrantSlotItemOwnership(item)) {
+            shown = item;
+        }
+    }
+    return shown;
+}
+
 void NextItemInSlot(InventorySlot slot) {
     ItemId currentItemId = static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]);
     size_t currentItemIndex =
@@ -1017,6 +1095,9 @@ void DrawSlot(InventorySlot slot) {
             ImGui::PopStyleVar();
             if (buttonPressed) {
                 gSaveContext.save.saveInfo.inventory.items[selectedInventorySlot] = id;
+                if (gItemSlots[id] == selectedInventorySlot) {
+                    GrantSlotItemOwnership(id);
+                }
                 ImGui::CloseCurrentPopup();
             }
             // TODO: Add names for items
@@ -1081,9 +1162,16 @@ void DrawItemsAndMasksTab() {
             if (i >= SLOT_BOTTLE_1 && i <= SLOT_BOTTLE_6) {
                 gSaveContext.save.saveInfo.inventory.items[i] = ITEM_BOTTLE;
             } else {
-                gSaveContext.save.saveInfo.inventory.items[i] = safeItemsForInventorySlot[i].back();
+                gSaveContext.save.saveInfo.inventory.items[i] = GiveAllSlotItem(static_cast<InventorySlot>(i));
             }
         }
+#ifdef COMBO_BUILD
+        // The grid lists no gear: gItemSlots maps it to the trade slots only in Player_Init. Grant it as pickups do.
+        for (ItemId gear :
+             { ITEM_COMBO_BOOTS_IRON, ITEM_COMBO_BOOTS_HOVER, ITEM_COMBO_TUNIC_GORON, ITEM_COMBO_TUNIC_ZORA }) {
+            GrantSlotItemOwnership(gear);
+        }
+#endif
         Inventory_ChangeUpgrade(UPG_BOMB_BAG, 3);
         Inventory_ChangeUpgrade(UPG_QUIVER, 3);
         AMMO(ITEM_BOW) = CUR_CAPACITY(UPG_QUIVER);

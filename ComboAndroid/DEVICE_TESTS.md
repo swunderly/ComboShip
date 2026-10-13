@@ -52,6 +52,17 @@ If the release-switch commit is reverted: the four MM rows are greyed out with t
 
 1. While playing in MM, open Tools > Session > Restart game and confirm: the game returns to OoT's title screen, as in 0.4.1, not straight into OoT gameplay on the save.
 
+## Quick checks for casting the MM spells (unreleased)
+
+On 0.4.1, Din's Fire, Nayru's Love and Farore's Wind (MM) given with the Save Editor's Give All played the "can't use" sound everywhere. Use a randomizer seed with all three MM spell options on, and human Link.
+
+1. Save Editor > Items & Masks > Give All, and Save Editor > General > Max Magic. In the pause menu the three trade slots show Din's Fire, Farore's Wind and Nayru's Love, and the ocarina slot shows the Ocarina of Time. Press A on each trade slot: it offers every trade item, including both the Land and Ocean Title Deeds, and the MM boots and tunics on a seed that adds them.
+2. In Termina Field, cast each spell from a C button: Din's Fire, Nayru's Love, and Farore's Wind twice (the first cast sets a warp point, the second opens Return / Dispel / Exit). Repeat inside Woodfall Temple. None plays the "can't use" sound while the magic meter is full.
+3. On a new file, get each spell from its check, or with Save Editor > Items & Masks > Queue Randomizer Item Gives > Give Din's Fire, Give Nayru's Love and Give Farore's Wind. Cast each one as in check 2.
+4. On the Clock Tower rooftop or in the Astral Observatory, where Song of Soaring cannot be played, Farore's Wind's C button is greyed out. It lights up again once you leave.
+5. A 0.4.1 save whose spells came from Give All now casts them, with nothing else changed.
+6. If a spell still plays the "can't use" sound, report two things: whether Din's Fire (MM) and Nayru's Love (MM) are greyed out under Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items, and whether the item tracker's Trade Items group shows the spell rows on that save.
+
 ## Quick checks for Din's Fire (MM) and Nayru's Love (MM) (0.4.1)
 
 Checks 2, 3, 4 and 7 matter most: casting the MM spells had not been played before 0.4.1.
