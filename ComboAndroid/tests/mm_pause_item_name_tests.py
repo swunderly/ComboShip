@@ -4,7 +4,8 @@ Kaleido_LoadItemNameStatic and the combo name sources it calls are extracted ver
 host stubs for the cross-game resource registry, for every item id. Every OoT name they return must be an English
 item_name_static texture that every supported OoT ROM provides (soh/assets/xml/*), aligned for the interpreter's
 path check. A name that OoT cannot provide falls back to MM's own, never to nothing. The only Japanese names left
-are MM's own leftover entries.
+are MM's own leftover entries. The save prompt page's title section is not the Japanese one either: MM's English
+release has none for it, so the combo build uses the game over page's blank section, which every MM ROM has.
 """
 from pathlib import Path
 import argparse
@@ -208,6 +209,25 @@ if japanese != expected:
 if not (hostcxx.contains(native, 'if (name.starts_with("textures/item_name_static/"))') and
         hostcxx.contains(native, 'return Texture(r, Fast::TextureType::GrayscaleAlpha4bpp, 128, 16, 1024);')):
     failures.append('NativeSpellResources.h no longer checks item_name_static textures as IA4 128x16')
+# The save prompt page (sSaveTexs, its COMBO_BUILD table first) titles itself like the game over page, whose prompt
+# asks the same question: no Japanese section, and every section one that every supported MM ROM extracts.
+save_tables = re.findall(r'static TexturePtr sSaveTexs\[\] = \{([^}]*)\};', nes)
+game_over = re.search(r'static TexturePtr sGameOverTexs\[\] = \{([^}]*)\};', nes)
+combo_save = re.search(r'#ifdef COMBO_BUILD\s*(?://[^\n]*\n\s*)*static TexturePtr sSaveTexs\[\]', nes)
+if len(save_tables) != 2 or not game_over or not combo_save:
+    failures.append('z_kaleido_scope_NES.c: expected a COMBO_BUILD sSaveTexs, the native one and sGameOverTexs')
+else:
+    combo_tiles = re.findall(r'\w+', save_tables[0])
+    mm_static = None
+    for path in sorted((source/'mm/assets/xml').glob('*/archives/icon_item_static.xml')):
+        tiles = {t.get('Name') for t in ElementTree.parse(path).iter('Texture')}
+        mm_static = tiles if mm_static is None else mm_static & tiles
+    if len(combo_tiles) != 15 or combo_tiles != re.findall(r'\w+', game_over.group(1)):
+        failures.append(f'save prompt page sections {combo_tiles} differ from the game over page')
+    if any('JPN' in tile or tile not in (mm_static or set()) for tile in combo_tiles):
+        failures.append(f'save prompt page sections {combo_tiles}: Japanese or not in every MM ROM')
+    if 'gPauseSave10JPNTex' not in save_tables[1]:
+        failures.append('the native sSaveTexs no longer names gPauseSave10JPNTex: recheck the combo table')
 # Both name panels (items and owl warp) name the cursor item through this function.
 if len(re.findall(r'Kaleido_LoadItemNameStatic\(&pauseCtx->nameSegment,', nes)) != 2:
     failures.append('z_kaleido_scope_NES.c: expected the two name panels to call Kaleido_LoadItemNameStatic')
