@@ -170,7 +170,7 @@ uint8_t Option::GetValueFromText(const std::string text) {
 Option::Option(size_t key_, std::string name_, std::vector<std::string> options_, OptionCategory category_,
                std::string cvarName_, std::string description_, WidgetType widgetType_, uint8_t defaultOption_,
                bool defaultHidden_, WidgetFunc callback_, int imFlags_)
-    : key(key_), name(std::move(name_)), options(std::move(options_)), category(category_),
+    : key(key_), name(std::move(name_)), options(std::move(options_)), declaredOptions(options), category(category_),
       cvarName(std::move(cvarName_)), description(std::move(description_)), widgetType(widgetType_),
       defaultOption(defaultOption_), defaultHidden(defaultHidden_), callback(callback_), imFlags(imFlags_) {
     contextSelection = defaultOption;

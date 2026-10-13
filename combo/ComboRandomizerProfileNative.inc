@@ -53,8 +53,16 @@ static nlohmann::json ProfileEditableSetup(nlohmann::json setup){
     setup["gameplayRules"]=ComboRando::ProfileGameplayRules(setup);
     return setup;
 }
+// A draft as it is shown, validated and generated: ProfileEditableSetup, then the OoT option policy the menu runs
+// after every edit, on the draft's own settings. A preset's source defaults, an imported seed's or an older draft's
+// counts are kept within the range the draft's other settings give them; generation reads the CVars unchecked.
+static nlohmann::json ProfileDraftSetup(const nlohmann::json& requested){
+    auto setup=ProfileEditableSetup(requested);
+    if(sProfileCatalog.contains("oot"))ComboRando::ProfileOotPolicy::ApplyToSetup(sProfileCatalog["oot"],setup);
+    return setup;
+}
 static void ProfileValidateNative(const nlohmann::json& requested) {
-    const auto setup=ProfileEditableSetup(requested);
+    const auto setup=ProfileDraftSetup(requested);
     if(!sProfileValidateOot||!sProfileValidateMm||
        !sProfileValidateOot(setup.at("oot").at("settings").dump().c_str())||
        !sProfileValidateMm(setup.at("mm").at("settings").dump().c_str()))
@@ -62,7 +70,7 @@ static void ProfileValidateNative(const nlohmann::json& requested) {
 }
 static void ProfileApplyNative(const nlohmann::json& requested) {
     ProfileValidateNative(requested);
-    const auto setup=ProfileEditableSetup(requested);
+    const auto setup=ProfileDraftSetup(requested);
     // ProfileEditableSetup derives setupCVars for legacy seeds from their own goal/start/shared choices.
     const auto& combo=setup.at("setupCVars");
     if(!sProfileApplyCombo(combo.dump().c_str()))throw std::invalid_argument("Invalid shared settings profile");
@@ -101,7 +109,7 @@ static uint64_t ProfileRevision() {
 static const char* ProfileInspect(int slot) {return ProfileResponse([&] {
     if(!sProfiles)throw std::runtime_error("Settings profiles unavailable");
     auto value=sProfiles->view().inspect(slot,Combo_ReadSavedSeedReadonly(slot));value["catalog"]=sProfileCatalog;
-    value["draft"]=ProfileEditableSetup(value["draft"]);
+    value["draft"]=ProfileDraftSetup(value["draft"]);
     for(const char* key:{"savedSettings","generatedSettings"})if(value.contains(key)&&value[key].is_object())value[key]=ProfileEditableSetup(value[key]);
     value["nativeSavedRules"]=Combo_ReadNativeSeedRulesReadonly(slot);
     value["generation"]={{"running",g_ComboProgress.running.load()},{"phase",ComboRando::ComboGenProgress::PhaseLabel(g_ComboProgress.phase.load())},

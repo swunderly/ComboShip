@@ -4552,11 +4552,14 @@ extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void) {
         if (key.empty())
             continue;
         data["defaults"][key] = int(option.GetMenuOptionDefault());
+        // The declared choices, not what the callbacks left of them for the live CVars: the profile policy
+        // (ProfileOotOptionPolicy.h) narrows them for each profile's own settings, as a fresh Settings would.
+        const auto& declared = option.GetDeclaredOptions();
         nlohmann::json choices = nlohmann::json::array();
-        for (size_t i = 0; i < option.GetOptionCount(); ++i) {
+        for (size_t i = 0; i < declared.size(); ++i) {
             if (option.GetKey() == RSK_MASK_QUEST && i == RO_MASK_QUEST_VANILLA)
                 continue;
-            choices.push_back({ { "value", i }, { "label", option.GetOptionText(i) } });
+            choices.push_back({ { "value", i }, { "label", declared[i] } });
         }
         data["options"][key] = { { "label", option.GetName() },
                                  { "id", int(option.GetKey()) },
@@ -4628,6 +4631,10 @@ extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void) {
 
 // Profile generation uses a validated transient setup, never the saved-file
 // renderer. Missing legacy options use source defaults, not another file's CVars.
+// A value must be one of the option's declared choices. Which of them the profile's
+// other settings allow is not read from this Settings, whose lists the callbacks
+// narrowed for the live CVars: the launcher runs the profile policy on the profile's
+// own settings before it validates or applies one (ProfileDraftSetup).
 static int SOH_ApplyProfileRandoSettingsImpl(const char* raw, bool apply) {
     try {
         const auto input = nlohmann::json::parse(raw ? raw : "null");
@@ -4640,7 +4647,7 @@ static int SOH_ApplyProfileRandoSettingsImpl(const char* raw, bool apply) {
                 continue;
             const auto value = input.value(key, nlohmann::json(int(option.GetMenuOptionDefault())));
             if (!value.is_number_integer() || value.get<int64_t>() < 0 ||
-                value.get<uint64_t>() >= option.GetOptionCount())
+                value.get<uint64_t>() >= option.GetDeclaredOptions().size())
                 return 0;
             settings[key] = value;
         }

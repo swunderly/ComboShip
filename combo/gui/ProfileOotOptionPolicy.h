@@ -1354,4 +1354,18 @@ class View {
         return effective;
     }
 };
+// A profile setup (oot.settings beside setupCVars) as the menu leaves a draft after an edit (ComboRandomizerProfiles.cpp
+// RefreshOptionPolicy): the callbacks run on the setup's own settings, never on the live CVars, so each count is within
+// the range its other settings give it, as native ChangeOptions would clamp it.
+inline void ApplyToSetup(const nlohmann::json& catalog, nlohmann::json& setup) {
+    auto& settings = setup["oot"]["settings"];
+    const auto combo = setup.value("setupCVars", nlohmann::json::object());
+    const View view(catalog, [&](const char* key, int fallback) {
+        const auto& fields = std::string(key).rfind("gRandoSettings.", 0) == 0 ? settings : combo;
+        const auto found = fields.find(key);
+        return found != fields.end() && found->is_number_integer() ? found->get<int>() : fallback;
+    });
+    for (const auto& value : view.Adjustments())
+        settings[value.first] = value.second;
+}
 } // namespace ComboRando::ProfileOotPolicy

@@ -200,6 +200,7 @@ struct ProfileOption {
     const std::string& GetCVarName() const {return key;}
     int GetMenuOptionDefault() const {return defaultValue;}
     uint64_t GetOptionCount() const {return static_cast<uint64_t>(count);}
+    std::vector<std::string> GetDeclaredOptions() const {return std::vector<std::string>(static_cast<size_t>(count));}
 };
 struct Settings {
     std::vector<ProfileOption> options={{"gRandoSettings.CompleteMaskQuest",3,COMBO_MENU_DEFAULT},

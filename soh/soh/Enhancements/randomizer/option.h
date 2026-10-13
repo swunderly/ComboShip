@@ -260,6 +260,10 @@ class Option {
     bool IsDefaultHidden() const {
         return defaultHidden;
     }
+    // ComboShip: the choices this Option was constructed with, before any callback narrows them for the live CVars.
+    const std::vector<std::string>& GetDeclaredOptions() const {
+        return declaredOptions;
+    }
     /**
      * @brief Replaces the `options` vector for this Option with a new one.
      * If the new vector is smaller than the old one and the current selected
@@ -313,6 +317,7 @@ class Option {
     void PopulateTextToNum();
     std::string name;
     std::vector<std::string> options;
+    std::vector<std::string> declaredOptions;
     uint8_t contextSelection = 0;
     bool hidden = false;
     OptionCategory category = OptionCategory::Setting;

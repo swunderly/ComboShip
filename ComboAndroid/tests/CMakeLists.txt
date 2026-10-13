@@ -150,6 +150,7 @@ combo_json_harness_test(menu_navigation_cache_and_profile_empty_states menu_poli
 combo_json_harness_test(menu_pages_same_headings_in_both_worlds menu_arrangement_tests.py)
 combo_json_harness_test(profile_menu_reopen_cache_and_revisions menu_reopen_cache_tests.py)
 combo_json_harness_test(profile_menu_frame_refresh profile_menu_refresh_tests.py)
+combo_json_harness_test(profile_dependent_ranges_follow_own_settings profile_dependent_range_tests.py)
 get_filename_component(COMBO_PROFILE_TEST_IMGUI "${COMBO_JSON_INCLUDE_DIR}/../../imgui-src" ABSOLUTE)
 if(EXISTS "${COMBO_PROFILE_TEST_IMGUI}/imgui.h")
     combo_harness_test(combo_console_foreground_dispatch_and_native_entrance combo_console_dispatch_tests.py

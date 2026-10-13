@@ -54,6 +54,7 @@
 #include "rando/entrances/MmOrdinaryGenerationSettings.h"
 #include "rando/entrances/MmMixedNativeBridge.h"
 #include "gui/ComboGenProgress.h"
+#include "gui/ProfileOotOptionPolicy.h"
 #include "ComboExtract.h"
 #include "ComboSettingsImport.h"
 #include "network/ComboAnchorProtocol.h"
