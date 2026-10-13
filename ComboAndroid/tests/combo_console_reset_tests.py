@@ -6,6 +6,10 @@ OoT's boot-to-title flag, no longer sees it. This builds both games' reset handl
 in SOH_ResumeGame, and MM's return hook (BenPort.cpp OnGameStateMainStart) from production text and checks every
 return kind: a reset and an owl save quit resume OoT on its title (gComboReturnFileNum -1), a portal return resumes
 the slot, a reset in OoT runs OoT's own reset, and the 0.4.1 registration order still lands on the title.
+
+Restart game says "Unsaved progress will be lost": a reset saves neither game, even with autosave on. MM's return
+hook saves only a portal return, and OoT's reset skips the soft-reset autosave (Autosave.cpp, built from production
+text too) that its other exits keep.
 """
 from pathlib import Path
 import argparse
@@ -57,6 +61,11 @@ benport = (source/'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8')
 hook = hostcxx.find(benport, 'GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameStateMainStart>([]() {')
 main_start = block(benport, benport.index('[]()', hook))
 assert 'gComboReturnCallback(' in main_start and 'SOH_SetComboBootToTitle' in main_start
+autosave = (source/'soh/soh/Enhancements/QoL/Autosave.cpp').read_text(encoding='utf-8')
+assert hostcxx.contains(autosave, 'COND_HOOK(GameInteractor::OnExitGame, CVAR_AUTOSAVE_VALUE, [](int32_t fileNum) { '
+                                  'Autosave_SoftResetSave(); });')
+discard = re.search(r'bool gComboResetDiscardsProgress = false;', autosave)
+assert discard, 'Autosave.cpp no longer defines the reset flag'
 
 cpp = work/'combo_console_reset.cpp'
 cpp.write_text(r'''
@@ -129,10 +138,19 @@ struct GameState { bool running = true; const char* next = nullptr; };
 GameState* gGameState = nullptr;
 struct SaveContext { int fileNum = 0; } gSaveContext;
 s32 gComboReturnFileNum = -1;
+// OoT's autosave hook on OnExitGame (Autosave.cpp), registered while autosave is on.
+int autosave = 0, saves = 0;
+static bool Autosave_CanSave() { return true; }
+static void Autosave_PerformSave() { ++saves; }
+''' + discard.group(0) + '\n' + function(autosave, 'static void Autosave_SoftResetSave()') + r'''
 struct GameInteractor {
     struct OnExitGame {};
     int exits = 0;
-    template <typename Hook, typename... Args> void ExecuteHooks(Args...) { ++exits; }
+    template <typename Hook, typename... Args> void ExecuteHooks(Args...) {
+        ++exits;
+        if (autosave)
+            Autosave_SoftResetSave();
+    }
     static GameInteractor* Instance;
 };
 GameInteractor interactor;
@@ -196,15 +214,15 @@ int main() {
                               {Mm::ResetHandler, "MM", {}}, ResolveForTest); };
         if (mmFirst) { addMm(); addOot(); } else { addOot(); addMm(); }
         for (int autosave : {0, 1}) {
-            MmPort::autosave = autosave;
+            MmPort::autosave = Oot::autosave = autosave;
             // Restart game, Ctrl+R and the console with MM in the foreground: MM's own handler runs, OoT's game
-            // state is untouched, MM saves only with autosave, and OoT resumes on its title.
+            // state is untouched, neither game saves, even with autosave on, and OoT resumes on its title.
             foreground = 1;
             oot = {};
-            MmPort::saves = MmPort::cancels = 0;
+            MmPort::saves = MmPort::cancels = Oot::saves = 0;
             assert(Run(console) == 0 && oot.next == nullptr && oot.running);
             assert(ReturnToOot(window) == -1 && lastKind == 1);
-            assert(MmPort::saves == autosave && MmPort::cancels == 1);
+            assert(MmPort::saves == 0 && MmPort::cancels == 1 && Oot::saves == 0);
             // A portal return still resumes the slot: the title boot comes from the reset alone.
             MmPort::saves = 0;
             MmPort::sComboReturnPending = true;
@@ -213,10 +231,15 @@ int main() {
             MmPort::saves = 0;
             MmPort::Combo_RequestOwlSaveQuit();
             assert(ReturnToOot(window) == -1 && lastKind == 2 && MmPort::saves == 0);
-            // A reset with OoT in the foreground is OoT's own reset; MM is not asked to return.
+            // A reset with OoT in the foreground is OoT's own reset; MM is not asked to return. It skips the
+            // soft-reset autosave, which OoT's other exits (a game over quit, the pause menu's quit) keep.
             foreground = 0;
+            Oot::interactor.exits = 0;
             assert(Run(console) == 0 && !std::strcmp(oot.next, "TitleSetup_Init") && !oot.running);
             assert(ReturnToOot(window) == -2);
+            assert(Oot::interactor.exits == 1 && Oot::saves == 0 && !Oot::gComboResetDiscardsProgress);
+            Oot::GameInteractor::Instance->ExecuteHooks<Oot::GameInteractor::OnExitGame>(2);
+            assert(Oot::saves == autosave);
         }
     }
     // 0.4.1 kept the first registration, OoT's: its Combo_HandleReset path must still land on the title.
@@ -228,7 +251,8 @@ int main() {
     assert(Run(legacy) == 0 && oot.next == nullptr);
     assert(ReturnToOot(window) == -1 && lastKind == 1);
     assert(errors == 0);
-    std::puts("Console reset from MM (both boot orders, autosave on and off) resumes OoT on its title; portal return, "
+    std::puts("Console reset from MM (both boot orders, autosave on and off) resumes OoT on its title and saves neither "
+              "game; portal return, "
               "owl save quit, OoT's own reset and the 0.4.1 order behave as before");
 }
 ''', encoding='utf-8')

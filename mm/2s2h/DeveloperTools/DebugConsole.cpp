@@ -142,7 +142,7 @@ static bool ResetHandler(std::shared_ptr<Ship::Console> Console, std::vector<std
 
 #ifdef COMBO_BUILD
     // ComboShip: MM's boot path wipes the save (Sram_InitNewSave) and combo can't enter its file select.
-    // Reuse the Ctrl+R return instead — same semantics, and it persists only when autosave is on.
+    // Reuse the Ctrl+R return instead — same semantics, and it never persists MM.
     MM_RequestComboReturn();
 #else
     STOP_GAMESTATE(gGameState);

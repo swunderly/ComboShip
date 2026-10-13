@@ -68,7 +68,19 @@ static void Autosave_IntervalSave() {
     }
 }
 
+#ifdef COMBO_BUILD
+// Combo Ship: Restart game, Ctrl+R and the console's "reset" discard unsaved progress in both games, as the Restart
+// dialog says, so the reset's OnExitGame (debugconsole.cpp ResetHandler) skips the soft-reset save. Other exits
+// keep it.
+bool gComboResetDiscardsProgress = false;
+#endif
+
 static void Autosave_SoftResetSave() {
+#ifdef COMBO_BUILD
+    if (gComboResetDiscardsProgress) {
+        return;
+    }
+#endif
     if (Autosave_CanSave()) {
         Autosave_PerformSave();
     }

@@ -180,8 +180,8 @@ extern "C" COMBO_EXPORT void MM_SetOnComboReturnCallback(void (*cb)(int kind)) {
     gComboReturnCallback = cb;
 }
 static bool sComboReturnPending = false;
-// ComboShip: Ctrl+R reset while MM is foreground. Like the portal return, but only persists MM if
-// autosave is enabled (an authentic reset otherwise discards unsaved progress). Set via the export.
+// ComboShip: Ctrl+R reset while MM is foreground. Like the portal return, but never persists MM, even with
+// autosave on: a reset discards unsaved progress, as the Restart dialog says. Set via the export.
 static bool sComboResetReturnPending = false;
 extern "C" COMBO_EXPORT void MM_RequestComboReturn(void) {
     sComboResetReturnPending = true;
@@ -1253,11 +1253,10 @@ extern "C" void InitOTR(int argc, char* argv[]) {
             if (sFn)
                 sFn();
         }
-        // Portal return always persists MM; a reset persists only when autosave is enabled. Never
-        // persist outside gameplay: the title/attract path wipes save first (Sram_InitNewSave). An owl
-        // save has already written itself through the flashrom seam.
-        if (!isOwlSaveQuit && (!isReset || CVarGetInteger("gEnhancements.Saving.Autosave", 0)) &&
-            gSaveContext.gameMode == GAMEMODE_NORMAL)
+        // Portal return always persists MM; a reset never does, even with autosave on ("Unsaved progress will be
+        // lost"; MM's autosave keeps its own interval). Never persist outside gameplay: the title/attract path wipes
+        // save first (Sram_InitNewSave). An owl save has already written itself through the flashrom seam.
+        if (!isOwlSaveQuit && !isReset && gSaveContext.gameMode == GAMEMODE_NORMAL)
             SaveManager_SaveCurrentForCombo();
         if (MM_FaroreDeparturePending() && !isReset && !isOwlSaveQuit) {
             if (!MM_DispatchNativeDeparture(gPlayState))

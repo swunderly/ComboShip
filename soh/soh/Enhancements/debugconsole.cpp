@@ -230,7 +230,8 @@ static bool SetPosHandler(std::shared_ptr<Ship::Console> Console, const std::vec
 }
 
 #ifdef COMBO_BUILD
-bool Combo_HandleReset(void); // OTRGlobals.cpp: takes over the reset when MM is the foreground game.
+bool Combo_HandleReset(void);            // OTRGlobals.cpp: takes over the reset when MM is the foreground game.
+extern bool gComboResetDiscardsProgress; // Autosave.cpp: a reset does not write the soft-reset autosave.
 #endif
 
 static bool ResetHandler(std::shared_ptr<Ship::Console> Console, std::vector<std::string> args, std::string* output) {
@@ -246,7 +247,13 @@ static bool ResetHandler(std::shared_ptr<Ship::Console> Console, std::vector<std
     }
     SET_NEXT_GAMESTATE(gGameState, TitleSetup_Init, GameState);
     gGameState->running = false;
+#ifdef COMBO_BUILD
+    gComboResetDiscardsProgress = true;
+#endif
     GameInteractor::Instance->ExecuteHooks<GameInteractor::OnExitGame>(gSaveContext.fileNum);
+#ifdef COMBO_BUILD
+    gComboResetDiscardsProgress = false;
+#endif
     return 0;
 }
 

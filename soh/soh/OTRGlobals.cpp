@@ -4107,7 +4107,7 @@ extern "C" COMBO_EXPORT void SOH_SetComboBootToTitle(void) {
     sComboResetPending = true;
 }
 
-// Handle a reset request. If MM is foreground, bounce back to OOT (MM saves if autosave is on, then
+// Handle a reset request. If MM is foreground, bounce back to OOT (MM does not save, then
 // goes dormant) and flag OOT to boot to the title sequence on resume. Returns true if it took over the
 // reset; false lets the caller run OOT's normal reset (which already lands on the boot sequence).
 bool Combo_HandleReset(void) {
