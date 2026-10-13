@@ -1593,11 +1593,13 @@ void DrawSlot(InventorySlot slot) {
             if (!IsInventoryItemPubliclyAvailable(id)) {
                 continue;
             }
-            if (Kit::PickerEntry(entry++, (const char*)gItemIcons[id],
-                                 gui->GetTextureByName((const char*)gItemIcons[id]), SlotItemName(id))) {
+            ImGui::PushID(pickerIndex);
+            if (Kit::PickerEntry(entry++, "##item", gui->GetTextureByName((const char*)gItemIcons[id]),
+                                 SlotItemName(id))) {
                 AddSlotItem(selectedInventorySlot, id);
                 ImGui::CloseCurrentPopup();
             }
+            ImGui::PopID();
         }
         ImGui::EndPopup();
     }
