@@ -6268,7 +6268,7 @@ extern "C" int Combo_MM_IsLinkAdult(void) {
 // commit.
 static constexpr bool kAdultOcarinaFdCamera = false;
 static constexpr bool kAdultFairyNativeHand = false;
-static constexpr bool kAdultFairyFittedPlacement = true;
+static constexpr bool kAdultFairyFittedPlacement = false;
 static constexpr bool kAdultFairyRecolouredOot = false;
 static_assert(kAdultFairyNativeHand + kAdultFairyFittedPlacement + kAdultFairyRecolouredOot <= 1,
               "B1, B3 and the recoloured hand are alternatives for the Fairy hand");

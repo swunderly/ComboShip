@@ -2246,7 +2246,7 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
     is drawn unmoved as before. On the developer's extracted archive the fit is 9.66 degrees with a residual of at
     most 1.03, and the item's nearest point moves from 0.61 to 0.29 face units from the mouth (OoT's own adult Ocarina
     of Time: 0.13; `mm_adult_fairy_fit_archive_tests.py`, t6 kinematics.md).
-    Switch on (owner-approved 2026-10-12). Not yet checked on the emulator or a phone.
+    Switch off since the revised ruling; kept for A/B runs.
   - **Fairy Ocarina, recoloured (`kAdultFairyRecolouredOot`, owner's revised ruling 2026-10-12).** Adult Link holding
     the Fairy Ocarina is drawn with OoT's own adult hand holding the Ocarina of Time
     (`gLinkAdultRightHandHoldingOotNear/FarDL`, as OoT draws for adult Link with either ocarina, soh
