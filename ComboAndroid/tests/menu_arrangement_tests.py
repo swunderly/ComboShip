@@ -6,6 +6,7 @@ the page body build does.
 """
 import argparse
 from pathlib import Path
+import re
 import subprocess
 import hostcxx
 
@@ -54,6 +55,68 @@ assert 'game.drawWidget && GameDrawsWidget(w)' in render_widget, 'RenderWidget n
 guard = render_widget.find('if (HoldsValuePointer(w))')
 assert 0 <= guard < render_widget.find('switch (w.kind)'), 'a value-pointer control can reach the CVar path'
 
+
+def active(source_text):
+    """The lines the Android build compiles: COMBO_BUILD branches; other conditions keep both branches."""
+    out, stack = [], []
+    for row in source_text.splitlines():
+        directive = row.strip()
+        if directive.startswith('#'):
+            word = directive.lstrip('#').strip()
+            if word.startswith('ifdef COMBO_BUILD'):
+                stack.append(1)
+                continue
+            if word.startswith('ifndef COMBO_BUILD'):
+                stack.append(0)
+                continue
+            if word.startswith('if'):
+                stack.append(-1)
+                continue
+            if word.startswith('el'):
+                if stack[-1] >= 0:
+                    stack[-1] = 1 - stack[-1]
+                continue
+            if word.startswith('endif'):
+                stack.pop()
+                continue
+        if all(state != 0 for state in stack):
+            out.append(row)
+    return '\n'.join(out)
+
+
+def native_names(files):
+    """CVar -> the name its menu widget registers (the first literal of AddWidget's name argument)."""
+    prefixes = {'CVAR_ENHANCEMENT': 'gEnhancements', 'CVAR_CHEAT': 'gCheats', 'CVAR_SETTING': 'gSettings',
+                'CVAR_RANDOMIZER_ENHANCEMENT': 'gRandoEnhancements', 'CVAR_RANDOMIZER_SETTING': 'gRandoSettings',
+                'CVAR_WINDOW': 'gOpenWindows', 'CVAR_DEVELOPER_TOOLS': 'gDeveloperTools', 'CVAR_GENERAL': 'gGeneral',
+                'CVAR_COSMETIC': 'gCosmetics', 'CVAR_AUDIO': 'gAudioEditor', 'CVAR_TRACKER': 'gTrackers',
+                'CVAR_GAMEPLAY_STATS': 'gGameplayStats', 'CVAR_TIME_DISPLAY': 'gTimeDisplay', 'CVAR_REMOTE': 'gRemote'}
+    names = {}
+    pattern = re.compile(r'AddWidget\(\s*\w+\s*,\s*"((?:[^"\\]|\\.)*)"[^;]*?\.CVar\(\s*(?:(CVAR_[A-Z_]+)\(\s*)?"([^"]+)"',
+                         re.S)
+    for rel in files:
+        code_text = active((source / rel).read_text(encoding='utf-8'))
+        for statement in re.split(r'(?=AddWidget\()', code_text):
+            found = pattern.match(statement)
+            if not found:
+                continue
+            name, macro, cvar = found.groups()
+            if macro and macro not in prefixes:
+                continue
+            names.setdefault((prefixes[macro] + '.' + cvar) if macro else cvar, name)
+    return names
+
+
+oot_names = native_names(['soh/soh/SohGui/SohMenuEnhancements.cpp', 'soh/soh/SohGui/SohMenuSettings.cpp',
+                          'soh/soh/SohGui/SohMenuDevTools.cpp', 'soh/soh/SohGui/SohMenu.cpp',
+                          'soh/soh/SohGui/SohMenuRandomizer.cpp', 'soh/soh/SohGui/SohMenuNetwork.cpp',
+                          'soh/soh/Enhancements/ExtraModes/EnemyRandomizer.cpp'])
+mm_names = native_names(['mm/2s2h/BenGui/BenMenu.cpp', 'mm/2s2h/Rando/Menu.cpp'])
+assert len(oot_names) > 350 and len(mm_names) > 250, (len(oot_names), len(mm_names))  # the parser still reads them
+native_table = ''.join('    { { %s, "%s" }, "%s" },\n' % ('true' if oot else 'false', cvar, name)
+                       for oot, names in ((True, oot_names), (False, mm_names))
+                       for cvar, name in sorted(names.items()))
+
 code = r'''
 #include "ComboMenuABI.h"
 #include "ComboMenuLabels.h"
@@ -75,11 +138,20 @@ namespace ComboRando {
 }
 using namespace ComboRando;
 
+// The name each catalogue CVar's native widget registers, read from the games' menu sources.
+const std::map<std::pair<bool, std::string>, const char*> kNativeNames = {
+''' + native_table + r'''};
+const char* NativeName(bool oot, const char* cvar) {
+    const auto found = kNativeNames.find({ oot, cvar });
+    return found != kNativeNames.end() ? found->second : cvar;
+}
+
 struct Laid {
     std::vector<std::string> headings;            // in drawing order
     std::map<std::string, std::string> headingOf; // CVar (or rule/pair label) -> heading it is drawn under
     std::map<std::string, int> columnOf;          // heading -> column
     std::vector<std::string> order;               // CVars in drawing order
+    std::map<std::string, std::vector<std::string>> labelsOf; // heading -> the labels its rows show
 };
 
 bool ReplacedByComboRow(const char* cvar) {
@@ -113,7 +185,7 @@ Laid Lay(const MenuPageLayout& layout, bool oot, bool withNativeExtras) {
         if (!MenuPlacementForGame(row, oot) || std::strcmp(row.scope, layout.scope) || std::strcmp(row.page, layout.page) ||
             key.find(':') != std::string::npos || key.back() == '*' || ReplacedByComboRow(row.key))
             continue;
-        add(CW_CHECKBOX, row.key, row.key, "Native heading");
+        add(CW_CHECKBOX, NativeName(oot, row.key), row.key, "Native heading");
     }
     if (withNativeExtras)
         add(CW_CHECKBOX, "Future upstream row", "gEnhancements.Future.Row", "Upstream heading");
@@ -137,6 +209,13 @@ Laid Lay(const MenuPageLayout& layout, bool oot, bool withNativeExtras) {
         if (widget.index <= -1000)
             laid.headingOf[widget.name] = heading;
         laid.order.push_back(widget.cvar);
+        // The words the row shows: a rule row drops its game suffix (DrawGameplayRuleRow), a native row
+        // takes the label table's name.
+        std::string shown = widget.index <= -1000 ? widget.name : MenuRowLabel(oot, widget.cvar, widget.name);
+        for (const char* suffix : { " (OoT)", " (MM)" })
+            if (const auto at = shown.find(suffix); at != std::string::npos)
+                shown.erase(at);
+        laid.labelsOf[heading].push_back(shown);
     }
     return laid;
 }
@@ -162,6 +241,18 @@ int main() {
                 last = index;
             }
             assert(view.headingOf.at("gEnhancements.Future.Row") == "Upstream heading");
+            // No heading shows two rows with the same words in one world.
+            bool repeated = false;
+            for (const auto& [heading, labels] : view.labelsOf) {
+                std::set<std::string> seen;
+                for (const auto& label : labels)
+                    if (!seen.insert(label).second) {
+                        std::cerr << layout.page << " > " << heading << " (" << (&view == views ? "OoT" : "MM")
+                                  << ") shows " << label << " twice\n";
+                        repeated = true;
+                    }
+            }
+            assert(!repeated);
         }
         // A heading sits in the same column in both views.
         for (const auto& [heading, column] : views[0].columnOf)
@@ -212,6 +303,15 @@ int main() {
     assert(mmItems.headingOf.at("gEnhancements.Masks.FierceDeitysAnywhere") == "Masks & forms");
     const auto mmDifficulty = Lay(*FindMenuPage("gameplay", MenuPage::Difficulty), false, false);
     assert(mmDifficulty.headingOf.at("gEnhancements.DifficultyOptions.BremenChickCount") == "Quest requirements");
+    // OoT's minigames stay in blocks: nothing from another minigame splits the Lost Woods ocarina game.
+    const auto ootDifficulty = Lay(*FindMenuPage("gameplay", MenuPage::Difficulty), true, false);
+    const auto lostWoods = std::find(ootDifficulty.order.begin(), ootDifficulty.order.end(),
+                                     std::string("gEnhancements.CustomizeOcarinaGame"));
+    const auto lostWoodsEnd = std::find(lostWoods, ootDifficulty.order.end(),
+                                        std::string("gEnhancements.OcarinaGame.RoundThreeNotes"));
+    assert(lostWoods != ootDifficulty.order.end() && lostWoodsEnd != ootDifficulty.order.end());
+    for (auto row = lostWoods; row != lostWoodsEnd; ++row)
+        assert(row->find("Ocarina") != std::string::npos);
     const auto ootQuality = Lay(*FindMenuPage("gameplay", MenuPage::QualityOfLife), true, false);
     for (const char* rule : { "gEnhancements.OpenAllHours", "gEnhancements.DayGravePull", "gEnhancements.NightGSAlwaysSpawn" })
         assert(ootQuality.headingOf.at(rule) == "Time of day & cycle");
