@@ -69,7 +69,7 @@ using GetItemID = int;
 constexpr int GI_NONE = 0, GI_RUPEE_BLUE = 0x4C, GI_SHIELD_DEKU = 0x29, GI_HEART_PIECE = 0x7A;
 constexpr int GID_RUPEE_BLUE = 0x6E, GID_SHIELD_DEKU = 0x1F, GID_HEART_PIECE = 0x13, GID_RUPEE_GOLD = 0x71;
 constexpr int ACTOR_EN_ITEM00 = 0x15, ACTOR_EN_SI = 0xF1, ACTOR_EN_GIRLA = 0x10A, ACTOR_BG_YDAN_SP = 0x0F,
-              ACTOR_BG_BOM_GUARD = 0x1A5, ACTOR_BG_SOLID = 0x99, ACTOR_EN_BOX = 0x0A;
+              ACTOR_BG_BOM_GUARD = 0x1A5, ACTOR_BG_SOLID = 0x99, ACTOR_EN_BOX = 0x0A, ACTOR_BG_HAKA_MEGANE = 0xAE;
 constexpr u32 ACTOR_FLAG_REACT_TO_LENS = 1 << 7;
 constexpr uint8_t LENS_MODE_HIDE_ACTORS = 0, LENS_MODE_SHOW_ACTORS = 1;
 constexpr int TRANS_MODE_OFF = 0, TRANS_TRIGGER_OFF = 0, BGCHECK_SCENE = 50;
@@ -130,11 +130,11 @@ void SkinMatrix_Vec3fMtxFMultXYZW(MtxF* mtx, Vec3f* pos, Vec3f* projected, float
 // owned by the scene (bgId BGCHECK_SCENE) or by a moving actor (its bgId), with its exclusion flags
 // (flags_vIA >> 13: 1 camera, 2 entities, 4 projectiles pass through it).
 struct Occluder { Vec3f at; s32 bgId; DynaPolyActor* owner; u16 flags = 0; };
-constexpr u16 kIgnoreCamera = 1, kIgnoreProjectiles = 4;
+constexpr u16 kIgnoreCamera = 1, kIgnoreEntity = 2, kIgnoreProjectiles = 4;
 std::vector<Occluder> occluders;
 DynaPolyActor web{ { ACTOR_BG_YDAN_SP } }, web2{ { ACTOR_BG_YDAN_SP } }, guard{ { ACTOR_BG_BOM_GUARD } },
     door{ { ACTOR_BG_SOLID } }, shelf{ { ACTOR_EN_GIRLA } }, lensChest{ { ACTOR_EN_BOX, ACTOR_FLAG_REACT_TO_LENS } },
-    chest{ { ACTOR_EN_BOX } };
+    chest{ { ACTOR_EN_BOX } }, fakeWall{ { ACTOR_BG_HAKA_MEGANE } };
 int raycasts = 0;
 static float Along(const Vec3f& from, const Vec3f& to, const Vec3f& at) {
     const Vec3f d{ to.x - from.x, to.y - from.y, to.z - from.z };
@@ -184,11 +184,18 @@ s32 BgCheck_CheckLineImpl(CollisionContext* ctx, u16 xpFlags1, u16 xpFlags2, Vec
 s32 BgCheck_CheckLineAgainstDyna(CollisionContext* ctx, u16 xpFlags, Vec3f* from, Vec3f* to, Vec3f* hit,
                                  CollisionPoly** poly, f32* distSq, s32* bgId, Actor* skip, f32 chkDist,
                                  s32 bccFlags) {
-    // Moving collision only: the caller has set *hit, *bgId and the distance before the first actor.
-    assert(ctx == &play.colCtx && xpFlags == kIgnoreProjectiles && *distSq == 1.0e38f && chkDist == 1.0f &&
-           bccFlags == s32(kAllBcc) && hit->x == to->x && hit->y == to->y && hit->z == to->z);
-    assert(play.roomCtx.curRoom.meshHeader && play.roomCtx.curRoom.meshHeader->base.type == 1);
-    return LineFixture(from, to, hit, poly, bgId, skip, xpFlags, true);
+    // Moving collision only: the caller has set *hit, *bgId and the distance before the first actor. The arrow's
+    // line (projectile flags left out) tests only a pre-rendered room's actors this way; the fake-wall check
+    // (nothing left out) tests every room's.
+    assert(ctx == &play.colCtx && *distSq == 1.0e38f && chkDist == 1.0f && bccFlags == s32(kAllBcc) &&
+           hit->x == to->x && hit->y == to->y && hit->z == to->z);
+    const bool pictureRoom = play.roomCtx.curRoom.meshHeader && play.roomCtx.curRoom.meshHeader->base.type == 1;
+    assert(xpFlags == 0 || (xpFlags == kIgnoreProjectiles && pictureRoom));
+    // As z_bgcheck.c's BgCheck_CheckLineAgainstBgActorSSList, a hit also moves the end point it was given.
+    const bool found = LineFixture(from, to, hit, poly, bgId, skip, xpFlags, true);
+    if (found)
+        *to = *hit;
+    return found;
 }
 DynaPolyActor* DynaPoly_GetActor(CollisionContext* ctx, s32 bgId) {
     assert(ctx == &play.colCtx);
@@ -536,7 +543,7 @@ void SeeThrough() {
     prepare(cow, { { { 0, 0, 40 }, 3, &web } });
     Draw(cow);
     Seen(cow, 1, RG_PIECE_OF_HEART, "Piece of Heart");
-    assert(raycasts == 2); // the line continues once, past the web
+    assert(raycasts == 4); // the line continues once, past the web, and so does the fake-wall check
     prepare(cow, { { { 0, 0, 30 }, 3, &web }, { { 0, 0, 60 }, 4, &web2 } });
     Draw(cow);
     Seen(cow, 1, RG_PIECE_OF_HEART, "Piece of Heart");
@@ -556,7 +563,7 @@ void SeeThrough() {
     prepare(bowling, { { { 0, 0, 45 }, 6, &guard, kIgnoreProjectiles } });
     Draw(bowling);
     Seen(bowling, 1, RG_PIECE_OF_HEART, "Piece of Heart");
-    assert(raycasts == 1); // left out of the line, not crossed
+    assert(raycasts == 3); // left out of the arrow's line, not crossed; the fake-wall check passes it
     // ... but the counter's own geometry still hides a prize from a low camera.
     prepare(bowling, { { { 0, 0, 45 }, 6, &guard, kIgnoreProjectiles }, { { 0, 0, 80 }, BGCHECK_SCENE, nullptr } });
     Draw(bowling);
@@ -605,12 +612,51 @@ void Fences() {
     prepare({ { { 0, 0, 30 }, BGCHECK_SCENE, nullptr }, { { 0, 0, 60 }, 3, &door } }, 1);
     Draw(impa);
     Unseen(impa);
+    // Past a web, the line still reaches the door behind it (the line test moves the end point it is given).
+    prepare({ { { 0, 0, 30 }, 3, &web }, { { 0, 0, 60 }, 4, &door } }, 1);
+    Draw(impa);
+    Unseen(impa);
     // The same scene polygon in a 3D room hides it.
     prepare({ { { 0, 0, 50 }, BGCHECK_SCENE, nullptr } }, 0);
     Draw(impa);
     Unseen(impa);
     std::cout << "PASS: fences, grates and invisible walls projectiles pass do not hide rewards; walls, doors and "
                  "camera-only polygons do; a pre-rendered room's picture hides nothing\n";
+}
+
+void FakeWalls() {
+    const auto key = RC_BOTTOM_OF_THE_WELL_MQ_EAST_INNER_ROOM_FREESTANDING_KEY;
+    auto prepare = [&](bool lens, std::vector<Occluder> blockers) {
+        ResetWorld();
+        ctx.GetItemLocation(key)->placed = RG_PIECE_OF_HEART;
+        play.roomCtx.curRoom.lensMode = LENS_MODE_SHOW_ACTORS;
+        play.actorCtx.lensActive = lens;
+        occluders = std::move(blockers);
+    };
+    // The Bottom of the Well's and Shadow Temple's fake walls and floors (BgHakaMegane, gBotw1Col and
+    // object_haka_objects_Col_*) let entities and projectiles through (flags 6) but are drawn opaque with the
+    // Lens off: an item behind one stays unseen, also past a fence, a web or the bowling guard's kind of wall.
+    const Occluder wall{ { 0, 0, 60 }, 3, &fakeWall, u16(kIgnoreEntity | kIgnoreProjectiles) };
+    for (const auto& blockers : std::vector<std::vector<Occluder>>{
+             { wall },
+             { { { 0, 0, 30 }, BGCHECK_SCENE, nullptr, kIgnoreProjectiles }, wall },
+             { { { 0, 0, 30 }, 4, &web }, wall },
+             { { { 0, 0, 30 }, 4, &guard, kIgnoreProjectiles }, wall },
+             { { { 0, 0, 20 }, 4, &web }, { { 0, 0, 40 }, 5, &guard, kIgnoreProjectiles }, wall },
+         }) {
+        prepare(false, blockers);
+        Draw(key);
+        Unseen(key);
+    }
+    // With the Lens on, BgHakaMegane switches its collision off and draws the wall see-through: the item is Seen.
+    prepare(true, {});
+    Draw(key);
+    Seen(key, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    // Other actors' polygons with the same flags still let the line through.
+    prepare(false, { { { 0, 0, 60 }, 3, &door, u16(kIgnoreEntity | kIgnoreProjectiles) } });
+    Draw(key);
+    Seen(key, 1, RG_PIECE_OF_HEART, "Piece of Heart");
+    std::cout << "PASS: the Lens-off fake walls and floors hide rewards behind them, whatever lets the line through\n";
 }
 
 void Foreign() {
@@ -745,7 +791,7 @@ void LensOfTruth() {
     prepare(true, closed);
     Draw(reward);
     Seen(reward, 1, RG_PIECE_OF_HEART, "Piece of Heart");
-    assert(raycasts == 2); // the line continues once, past the chest
+    assert(raycasts == 4); // the line continues once, past the chest, and so does the fake-wall check
     // Up to the edge of the mask's clear area (clip w is 100, the 4:3 frame spans -100..100).
     for (const Vec3f& at : { Vec3f{ 56, 0, 50 }, Vec3f{ -56, 0, 50 }, Vec3f{ 0, 72, 50 }, Vec3f{ 0, -72, 50 },
                              Vec3f{ 40, 51, 50 } }) {
@@ -819,6 +865,7 @@ int main() {
     Hidden();
     SeeThrough();
     Fences();
+    FakeWalls();
     Foreign();
     RepeatsAndResets();
     LensOfTruth();

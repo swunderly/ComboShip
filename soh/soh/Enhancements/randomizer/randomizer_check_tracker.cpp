@@ -96,29 +96,58 @@ static bool LensErased(const Actor* actor, bool insideLens) {
            gPlayState->roomCtx.curRoom.lensMode != LENS_MODE_HIDE_ACTORS;
 }
 
+// The first moving-collision polygon on from-to that `xpFlags` does not leave out, past the actor `passed`.
+// The line test moves the end point it is given to the hit, so it gets a copy.
+static bool DynaLineHit(u16 xpFlags, Vec3f from, Vec3f to, Vec3f* hit, s32* bgId, Actor* passed, u32 bccFlags) {
+    CollisionPoly* poly = nullptr;
+    f32 distSq = 1.0e38f;
+    *hit = to;
+    return BgCheck_CheckLineAgainstDyna(&gPlayState->colCtx, xpFlags, &from, &to, hit, &poly, &distSq, bgId, passed,
+                                        1.0f, bccFlags);
+}
+
+// The Shadow Temple's and Bottom of the Well's fake walls and floors (BgHakaMegane) let entities and projectiles
+// through, but BgHakaMegane_Draw draws them opaque while the Lens of Truth is off. With the Lens on their collision
+// is switched off (BgHakaMegane_UpdateState), so they are found only while they hide what is behind them.
+static bool FakeWallBetween(Vec3f from, Vec3f to, u32 bccFlags) {
+    Actor* passed = nullptr;
+    for (int pass = 0; pass < 8; pass++) {
+        Vec3f hit;
+        s32 bgId = BGCHECK_SCENE;
+        if (!DynaLineHit(0, from, to, &hit, &bgId, passed, bccFlags)) // COLPOLY_IGNORE_NONE
+            return false;
+        DynaPolyActor* owner = DynaPoly_GetActor(&gPlayState->colCtx, bgId);
+        if (owner == nullptr || owner->actor.id == ACTOR_BG_HAKA_MEGANE)
+            return true;
+        from = hit;
+        passed = &owner->actor;
+    }
+    return true;
+}
+
 // The line an arrow flies (BgCheck_ProjectileLineTest: every collision category, both faces, moving
 // collision), continued past each see-through or lens-erased actor it meets. A flat web is crossed once,
-// so each pass excludes only the actor just passed. Polygons flagged for projectiles to pass through
-// (fences, railings, grates, invisible walls) do not block it, as Z-targeting sees past them
-// (Attention_FindActorInCategory); camera-only flags do not count, chests and pillars carry them too.
-// In a pre-rendered room (mesh type 1) Room_DrawBackground2D paints the walls behind every actor
-// without a depth test, so the static scene hides nothing there and only moving collision is tested.
+// so each pass excludes only the actor just passed. Polygons flagged for projectiles to pass through do not
+// block it, as Z-targeting sees past them (Attention_FindActorInCategory): mostly fences, railings, grates and
+// invisible walls, but the flag does not mean see-through. The fake walls above keep blocking, while a few solid
+// surfaces with the flag, such as parts of the Market at night, do not. Camera-only flags do not count, chests
+// and pillars carry them too. In a pre-rendered room (mesh type 1) Room_DrawBackground2D paints the walls behind
+// every actor without a depth test, so the static scene hides nothing there and only moving collision is tested.
 static bool LineOfSight(Vec3f from, Vec3f to, bool insideLens) {
     constexpr u16 kIgnoreProjectiles = 1 << 2; // COLPOLY_IGNORE_PROJECTILES (z_bgcheck.c)
     const MeshHeader* mesh = gPlayState->roomCtx.curRoom.meshHeader;
     const bool pictureRoom = mesh != nullptr && mesh->base.type == 1;
     const u32 bccFlags = BgCheck_GetBccFlags(true, true, true, false, true);
+    const Vec3f eye = from;
     Actor* passed = nullptr;
     for (int pass = 0; pass < 8; pass++) {
         Vec3f hit = to;
         CollisionPoly* poly = nullptr;
         s32 bgId = BGCHECK_SCENE;
-        f32 distSq = 1.0e38f;
-        if (!(pictureRoom ? BgCheck_CheckLineAgainstDyna(&gPlayState->colCtx, kIgnoreProjectiles, &from, &to, &hit,
-                                                         &poly, &distSq, &bgId, passed, 1.0f, bccFlags)
+        if (!(pictureRoom ? DynaLineHit(kIgnoreProjectiles, from, to, &hit, &bgId, passed, bccFlags)
                           : BgCheck_CheckLineImpl(&gPlayState->colCtx, kIgnoreProjectiles, 0, &from, &to, &hit, &poly,
                                                   &bgId, passed, 1.0f, bccFlags)))
-            return true;
+            return !FakeWallBetween(eye, to, bccFlags);
         DynaPolyActor* owner = bgId != BGCHECK_SCENE ? DynaPoly_GetActor(&gPlayState->colCtx, bgId) : nullptr;
         if (owner == nullptr || !(SeeThroughOccluder(&owner->actor) || LensErased(&owner->actor, insideLens)))
             return false;

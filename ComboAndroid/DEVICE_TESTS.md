@@ -35,6 +35,7 @@ Use a randomizer save with Gold Skulltula tokens shuffled. A check you skipped s
 6. Optional: in the Treasure Chest Game's last room, turn on the Lens of Truth with the closed prize chest in the middle of the lens circle: "Treasure Chest Game Reward" turns Seen. With the Lens off, or with the chest at the edge of the screen outside the circle, it stays unmarked.
 7. In Impa's House in Kakariko, look from the front room at the Piece of Heart behind the cow-pen bars, or stand in the pen (back entrance): "Impas House Freestanding PoH" turns Seen.
 8. An item behind a solid wall or a closed door still stays unmarked, and a token behind a web (check 2) still turns Seen. Optional: an item seen across Kakariko's wooden fences or Lake Hylia's bridge rails turns Seen.
+9. Optional, in the Bottom of the Well or the Shadow Temple: with the Lens of Truth off, an item behind a fake wall or under a fake floor stays unmarked. With the Lens on, look at it where the wall has vanished: it turns Seen.
 
 ## Quick checks for Cross-Games Age (unreleased)
 
