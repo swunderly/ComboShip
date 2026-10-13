@@ -19,6 +19,7 @@ python tools/ootmm/export_solver_contract.py --reference /path/to/ootmm-stable-3
 python tools/ootmm/export_oot_wallmaster_sources.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_mm_wallmaster_spawn.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_oot_bindings.py --reference /path/to/ootmm-stable-32.3 --check
+python tools/ootmm/export_m1_contract.py --reference /path/to/ootmm-stable-32.3 --check
 ```
 
 `--output-root` defaults to this repository and can point at a scratch directory.
@@ -116,3 +117,31 @@ re-checks the registry type, one native exit from the parent to the target, the
 Ship `entranceShuffleTable` row and entrance index (or the audited adult-spawn
 alias), the absent reverse, and each file:line of evidence. The probe is not wired
 into generation and no entrance capability is enabled.
+
+The M1 contract exporter writes `m1-contract.json`, the shared fixture for Wallmaster
+Shuffle and One-Ways Shuffle (Own Game). It re-implements the v32.3 pool rules of
+`packages/logic/src/solver/entrances.ts` in Python, independently of `Shuffle.h`, and
+runs them over the pinned registry and every world area file (read with a restricted
+YAML reader that fails closed). It covers the 66 normalized combinations of
+`erWallmasters` and `erOneWays` (none or Own Game) and the five one-way flags, with
+every other er* key at its default: active pools, per-source candidates,
+`can_reset_time`-gated destinations and water-void dead ends. It also records the
+active OoT Wallmaster sources for all 64 vanilla/MQ choices of the six Wallmaster
+dungeons (with the 12-source, 11-destination capacity cases), the Wallmaster and
+one-way source edges with file:line, the `er_enabled` and `isEntranceShuffle` tables,
+the MM logic lines that reach `er_enabled`, the ER-wide runtime sites (`CFG_ER_ANY`,
+`PG_ER` hot water at `0x8010eba0`, `CFG_ER_WALLMASTERS`, `PG_ER_WALLMASTERS`) and the
+spoiler "Entrances" format. For every combination it checks that `processRegions`
+and `propagateDungeons` give the same hint regions and dungeon entrances as without
+entrance shuffle. A sha256 of each cited upstream body is pinned in the exporter, so
+a re-pin fails until the re-implementation is reviewed again.
+
+`entrance_m1_pinned_contract_fixture` checks the fixture against independent
+constants (13 + 4 Wallmaster rows, 23 + 4 edges and 24 soul lines, 11 / 7 and 14 / 14
+candidates, OoT 3<->3 and MM 7<->7 permutations, per-flag counts) and, with the pinned
+checkout, exact reproduction, read-only stale checks and wrong-pin refusal.
+`entrance_m1_shuffle_pools_match_pinned_contract` runs the real `MakePools`,
+`Shuffler` pool construction and `Assignable` candidate filter for every combination
+in the all-vanilla world, and the Wallmaster pool for every vanilla/MQ choice, and
+requires the same pools and candidates. Nothing here enables a setting, a pool or a
+layout format.
