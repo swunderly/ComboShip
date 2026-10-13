@@ -390,3 +390,63 @@ save's whole state — not just play time — is discarded on a combo resume. No
 deliberately preserves `owlSave`, so a read-priority fix alone would let a stale owl save shadow a
 newer cycle save; the delete-on-continue half is required too.
 
+
+## One feature, one place: the menu placement catalogue (T8, 2026-10-13)
+
+The combined menu shows each game's native rows, so the two world views of a page used to follow two
+unrelated native layouts (climb speed on Time savers for OoT but Quality of life for MM). Pages are now
+laid out from one combo-owned catalogue. Rules for every future menu edit:
+
+1. **One feature, one place.** A feature both games have, or a CVar both share, sits on one tab, page
+   and heading, at the same position and with one label in both world views. The world buttons switch
+   whose rows show; they never send the player to another page.
+2. **Fixed headings.** Every page has one heading list in a fixed order. A heading with no rows in the
+   selected world is not drawn. Inside a heading, rows of a feature both games have come first.
+3. **Randomizer tab = seed or logic.** An option stays there only if generation reads it or it is
+   frozen into the file when the seed is made. A live preference goes to Enhancements; a logic-linked
+   ability keeps its pair (logic half on Randomizer > Gameplay rules, in-game half in its Enhancements
+   heading).
+4. **Storage follows the tab.** Randomizer edits the selected file's draft; every other tab edits live
+   CVars.
+5. **Placement, not identity.** Never rename or drop a CVar, choice order, OoT option name or choice
+   text, rule name, logic key, shared-item key or trick tag. Labels change only through
+   `combo/gui/ComboMenuLabels.h`; the native name stays a search word.
+6. **Combo layer first.** Moves are rows in `combo/gui/ComboMenuPlacement.h`, read by `MenuGroupRoute`,
+   so the page list, the page body and search agree. A game file is edited only where the combo layer
+   cannot reach, `COMBO_BUILD`-guarded and listed below. Never rename a native section, sidebar or a
+   heading the catalogue names.
+7. **Routing is static.** Placement depends only on exported menu data, never on CVar values.
+8. **One widget style.** Every checkbox and slider of both games is drawn by comboui: label above,
+   full-width bar with the value and unit inside, `-`/`+`, no keyboard entry, a Default button while
+   changed, one column on a phone.
+9. **Labels.** Two labels change only when the games name one feature differently; units stay honest
+   (climb speed: OoT `+N`, MM `Nx`).
+
+**Combo-owned pieces:** `ComboMenuPlacement.h` (page names, each page's headings and column split, one
+row per native widget keyed by CVar, `widget:`, `heading:`, `sidebar:`, `rule:`, `pair:` or `note:`),
+`ComboMenuLabels.h`, `ArrangeByPlacement` and the rule/pair rows in `ComboMenu.cpp`, and the slider and
+checkbox rows in `ComboWidgetStyle.cpp`. `menu_placement_tests` fails when a new upstream Enhancements
+widget has no row, when a row names a CVar no menu registers, when a shared feature splits, or when a
+CVar the menus offered before the audit loses its widget (fixture
+`ComboAndroid/tests/fixtures/menu-cvars-before-t8.txt`). Add the row by hand; do not regenerate the
+table.
+
+**Menu ABI v3** (`combo/menu/ComboMenuABI.h`, `ComboMenuExport.h`): `CwWidget.format` and
+`isPercentage`, filled by `SohExportPolicy::FillOptions` (`soh/soh/SohGui/SohMenu.cpp`) and
+`BenExportPolicy::FillOptions` (`mm/2s2h/BenGui/BenMenu.cpp`). comboui refuses an older menu, so
+soh, 2ship and comboui must ship together.
+
+**Vendored (`COMBO_BUILD`-guarded):**
+- `mm/2s2h/Rando/Menu.cpp` `Rando::RegisterMenu` — Rando > General registers the live options as
+  ordinary widgets (Containers match contents, Junk items, Trap appearance, the nine trap effects)
+  instead of the custom `DrawGeneralTab`, which combo no longer draws (its seed-generation block was
+  already compiled out, and its pool-balance strip reads global settings, not the selected file's next
+  seed). The combo catalogue files them under Randomizer extras > Item appearance and Extra modes >
+  Traps.
+- `soh/soh/Enhancements/controls/SohInputEditorWindow.cpp` `DrawCameraControlPanel` — the two group
+  titles and five labels use the words of MM's camera rows (First person & aiming, Third-person camera,
+  Move while aiming, Invert X axis, Invert Y axis, Third-person horizontal/vertical sensitivity) through
+  `COMBO_CAMERA_LABEL`. CVars unchanged.
+
+MM's In-Game Timer needs no row: its menu entries are already `#ifndef COMBO_BUILD` and its window is
+forced off at `ComboUI_Register` (see "Combo-owned overlay timers").
