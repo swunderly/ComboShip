@@ -6573,7 +6573,7 @@ extern "C" COMBO_EXPORT void SOH_SetOracleSongAgeArrivals(uint32_t adult, uint32
 // (ComboFairyOcarinaRecolourHands.h). Child Link, the Ocarina of Time and every other list are unchanged. Where the
 // copies cannot be built, or OoT serves another list for that hand (a texture pack's), OoT's own list is drawn, blue as
 // before. Release switch, set in its own commit.
-static constexpr bool kAdultFairyRecolouredOot = false;
+static constexpr bool kAdultFairyRecolouredOot = true;
 // The copies (near, far) for the current OoT manager with the OoT lists they copy, or the manager they could not be
 // built for (once each).
 static std::array<std::shared_ptr<Fast::DisplayList>, 2> sFairyRecolouredSources, sFairyRecolouredCopies;

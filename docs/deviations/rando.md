@@ -2280,9 +2280,9 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
     draw as before, and a mod's custom equipment hand (`customequipment.cpp`, which runs after the hook) still
     replaces it. The copy replaces only the very list it was made from: where OoT serves another list for that hand
     (a texture pack's, through Alternate Assets) or the copies cannot be built (as in MM), OoT's own blue hand is
-    drawn. Nothing is saved, so saves are unaffected. This departs from OoT and OoTMM. Switch off; it is turned on in
-    its own commit. `oot_adult_fairy_recolour_tests.py` checks the whole selection, from the ocarina to the list
-    drawn, and the fallbacks.
+    drawn. Nothing is saved, so saves are unaffected. This departs from OoT and OoTMM. Switch on (owner ruling
+    2026-10-12). Not yet checked on the emulator or a phone. `oot_adult_fairy_recolour_tests.py` checks the whole
+    selection, from the ocarina to the list drawn, and the fallbacks.
   - B1 (`kAdultFairyNativeHand`: OoT's `gLinkAdultRightHandHoldingOotNear/FarDL`, as OoT draws for adult Link with
     either ocarina, soh `z_player_lib.c:346-351`) stays off. B1, B3 and the recoloured hand are alternatives, and a
     static_assert keeps any two of them from being released together.
