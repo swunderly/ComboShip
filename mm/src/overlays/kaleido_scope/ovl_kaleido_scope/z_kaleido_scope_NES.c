@@ -292,6 +292,7 @@ void Kaleido_LoadMapNameStaticLarge(void** segment, u32 texIndex) {
 #ifdef COMBO_BUILD
 extern const char* Combo_MMFaroreItemName(void);
 extern const char* Combo_MMSpellItemName(int item);
+extern const char* Combo_MM_OotItemName(int item);
 #endif
 extern const char* Combo_MM_AdultMaskItemName(void);
 extern const char* Combo_MM_AdultGearItemName(int item);
@@ -314,6 +315,14 @@ void Kaleido_LoadItemNameStatic(void** segment, u32 texIndex) {
     if (texIndex == ITEM_COMBO_DINS_FIRE || texIndex == ITEM_COMBO_NAYRUS_LOVE) {
         *segment = (void*)Combo_MMSpellItemName(texIndex);
         return;
+    }
+    // MM's only name for OoT's Fairy Ocarina is Japanese. Show OoT's own English name when it loads.
+    if (texIndex == ITEM_OCARINA_FAIRY) {
+        const char* ootName = Combo_MM_OotItemName(texIndex);
+        if (ootName != NULL) {
+            *segment = (void*)ootName;
+            return;
+        }
     }
 #endif
     static const char* gItemNameStatics[] = {

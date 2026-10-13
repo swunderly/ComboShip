@@ -5966,6 +5966,19 @@ extern "C" void Combo_MM_LoadFairyOcarinaPauseText(PlayState* play) {
     entry.msg.assign(text, sizeof(text) - 1);
     CustomMessage::LoadCustomMessageIntoFont(entry);
 }
+
+#include "Rando/NativeSpellResources.h"
+// Pause name bar (Kaleido_LoadItemNameStatic) for OoT items whose only MM name is Japanese: OoT's own English name,
+// which every supported OoT ROM has. nullptr keeps MM's native name. Display only; the inventory keeps MM's ids.
+extern "C" const char* Combo_MM_OotItemName(int item) {
+    alignas(2) static const char fairyOcarina[] = "__OTR__@oot:textures/item_name_static/gFairyOcarinaItemNameENGTex";
+    const char* path = item == ITEM_OCARINA_FAIRY ? fairyOcarina : nullptr;
+    auto oot = path ? Ship::CrossRMRegistry::Get("oot") : nullptr;
+    if (!oot)
+        return nullptr;
+    const char* name = path + sizeof("__OTR__@oot:") - 1;
+    return ComboNativeSpells::Valid(oot->LoadResourceProcess(name), name) ? path : nullptr;
+}
 #endif
 
 #ifdef COMBO_BUILD
