@@ -243,13 +243,14 @@ void ExistingBoundaries() {
                                  "starting-item opposite-age Temple probe";
   }
   assert(missing && draws == 0);
-  // All 40 hidden capability bits stay 0, and the reader strips every
-  // non-default value.
+  // No entrance value is admitted by this build (Capabilities.h), and the
+  // reader strips every non-default value.
   assert(std::size(kEntranceSettings) == 40);
+  const auto active = ActiveCapabilities();
   for (const auto &row : kEntranceSettings)
-    assert(row.capabilityValues == 0 && !row.visible());
+    assert(!row.visible(active));
   const auto stripped =
-      ReadEntranceSettings([](const char *, int) { return 1; });
+      ReadEntranceSettings([](const char *, int) { return 1; }, active);
   assert(MakePools(stripped).empty() && !stripped.erIndoorsGameLinks &&
          stripped.erSpawns == Spawns::None);
 }
