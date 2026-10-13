@@ -196,7 +196,7 @@ assert 'FinalizeOotSoulSettings(' in finalize and 'FinalizeOotSoulSettings(' in 
 # again, so the rule lives on the settings side (callback and generation), which the snapshot records.
 assert 'RandomizedEnemies' not in finalize and 'RandomizedEnemies' not in parse
 callback = balanced(settings, settings.index('{', hostcxx.find(settings, 'OPT_CALLBACK(RSK_SHUFFLE_ENEMY_SOULS,')))
-assert 'RandomizedEnemies' in callback and '.Disable("Disabled because Enemy Randomizer is on.")' in callback
+assert 'RandomizedEnemies' in callback and '.Disable("Disabled because Enemy Randomizer is on (Enhancements > Extra modes).")' in callback
 assert hostcxx.contains(callback, 'CVarSetInteger(CVAR_RANDOMIZER_SETTING("SoulsEnemyOot"), RO_GENERIC_OFF);')
 assert hostcxx.contains(settings, '{ CVAR_ENHANCEMENT("RandomizedEnemies") });')
 generation_rules = read(root/'combo/rando/GenerationRules.h')

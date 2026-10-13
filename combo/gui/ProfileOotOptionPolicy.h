@@ -981,7 +981,8 @@ class View {
     void Callback_RSK_SHUFFLE_ENEMY_SOULS() {
         if (CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0)) {
             CVarSetInteger(CVAR_RANDOMIZER_SETTING("SoulsEnemyOot"), RO_GENERIC_OFF);
-            mOptions[RSK_SHUFFLE_ENEMY_SOULS].Disable("Disabled because Enemy Randomizer is on.");
+            mOptions[RSK_SHUFFLE_ENEMY_SOULS].Disable(
+                "Disabled because Enemy Randomizer is on (Enhancements > Extra modes).");
         } else {
             mOptions[RSK_SHUFFLE_ENEMY_SOULS].Enable();
         }
