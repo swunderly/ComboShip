@@ -122,6 +122,7 @@ inline constexpr MenuPageLayout kMenuPages[] = {
     { "media", "Music & sounds", "", 1, 1, { "Editor" } },
     { "settings", "General", "", 4, 2, { "Boot", "Accessibility", "Languages", "Shortcuts" } },
     { "settings", "Controls", "", 4, 2, { "Buttons & aiming", "Ocarina input", "Input timing", "Controller mapping" } },
+    { "settings", "Input Viewer", "Applies to both games.", 0, 0, {  } },
     { "settings", "Notifications", "", 0, 0, {  } },
     { "trackers", "Gameplay Stats", "Ocarina of Time only.", 1, 1, { "Window" } },
     { "trackers", "Time Splits", "", 1, 1, { "Window" } },

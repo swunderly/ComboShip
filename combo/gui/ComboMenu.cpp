@@ -37,6 +37,8 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
+#include <functional>
+#include <unordered_map>
 #include <unordered_set>
 #include "ComboResolve.h"
 
@@ -1771,37 +1773,46 @@ void DrawScreenAndHud(int& game, const HubEntry::Body* advanced) {
     }
 }
 
+// Where the catalogue puts a native row, and the native heading it sat under (game-owned storage).
+struct RowOrigin {
+    const MenuPlacement* placement = nullptr;
+    const char* heading = nullptr;
+};
+using RowOrigins = std::unordered_map<int32_t, RowOrigin>;
+
 void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& scope, const std::string& page,
-                          int subpage, std::vector<CwWidget>& output, uint32_t& columns) {
+                          int subpage, std::vector<CwWidget>& output, uint32_t& columns,
+                          RowOrigins* origins = nullptr) {
     CwSidebar side = *source.sidebar;
     std::vector<CwWidget> grouped;
     std::string currentHeading;
+    const char* nativeHeading = nullptr;
     int sourceColumn = -1;
     for (int i = 0; i < side.widgetCount; ++i) {
         const auto& widget = side.widgets[i];
         if (sourceColumn != widget.column) {
             sourceColumn = widget.column;
             currentHeading.clear();
+            nativeHeading = nullptr;
         }
-        if (widget.kind == CW_SEPARATOR_TEXT)
+        if (widget.kind == CW_SEPARATOR_TEXT) {
             currentHeading = widget.name ? widget.name : "";
+            nativeHeading = widget.name;
+        }
         const auto route = MenuGroupRoute(source.oot, source.section, side.sidebarName, sourceColumn, currentHeading,
                                           widget.cvar ? widget.cvar : "");
-        if (route.scope == scope && route.page == page)
-            grouped.push_back(widget);
+        if (route.scope != scope || route.page != page)
+            continue;
+        grouped.push_back(widget);
+        if (origins)
+            (*origins)[widget.index] = { FindMenuPlacement(source.oot, source.section, side.sidebarName, currentHeading,
+                                                           widget.cvar ? widget.cvar : "",
+                                                           widget.name ? widget.name : ""),
+                                         nativeHeading };
     }
     side.widgets = grouped.data();
     side.widgetCount = (int)grouped.size();
     std::vector<CwWidget> filtered;
-    // OoT's restoration controls are the third Fixes column, which MenuGroupRoute sends to
-    // Restorations; lay them out as one column there.
-    if (source.oot && side.sidebarName && std::strcmp(side.sidebarName, "Fixes") == 0 &&
-        (page == MenuPage::Fixes || page == MenuPage::Restorations)) {
-        if (page == MenuPage::Restorations)
-            for (auto& w : grouped)
-                w.column = 0; // native index, CVar and callbacks are kept
-        side.columnCount = page == MenuPage::Restorations ? 1 : 2;
-    }
     if (page == MenuPage::General && !std::strcmp(source.section, "Settings") &&
         !std::strcmp(source.sidebar->sidebarName, "General")) {
         // Drop desktop-only actions, obsolete native-menu preferences and engine About columns.
@@ -1878,6 +1889,136 @@ void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& sco
     for (int i = 0; i < side.widgetCount; ++i)
         if (!IsRetiredNativeRuleControl(side.widgets[i].cvar))
             output.push_back(side.widgets[i]);
+}
+
+// Native intro lines that describe the old per-game menus, not this page.
+bool IsStaleIntroText(const CwWidget& widget) {
+    static constexpr const char* stale[] = {
+        "Be sure to explore the Presets and Enhancements Menus",
+        "These enhancements are only useful in the Randomizer mode",
+    };
+    if (widget.kind != CW_TEXT || !widget.name)
+        return false;
+    for (const char* text : stale)
+        if (!std::strncmp(widget.name, text, std::strlen(text)))
+            return true;
+    return false;
+}
+
+// Lay a page out from the catalogue: its fixed headings in order (a heading with no rows in this
+// world is not drawn), rows by rank and then native order, each anchored row kept under its
+// anchor, and the same column split in both worlds. Native separators give way to the page's own
+// headings; a row the catalogue does not place keeps its native heading after the fixed ones.
+// Returns the column count; RenderSidebarWidgets keeps one column on a phone.
+uint32_t ArrangeByPlacement(const MenuPageLayout& layout, std::vector<CwWidget>& widgets, const RowOrigins& origins,
+                            uint32_t columns) {
+    if (layout.headingCount == 0) {
+        // No fixed headings: keep native order, minus a heading that only repeats the page title.
+        widgets.erase(std::remove_if(widgets.begin(), widgets.end(),
+                                     [&](const CwWidget& widget) {
+                                         return IsStaleIntroText(widget) ||
+                                                (widget.kind == CW_SEPARATOR_TEXT && widget.name &&
+                                                 !std::strcmp(widget.name, layout.page));
+                                     }),
+                      widgets.end());
+        return columns;
+    }
+    struct Row {
+        CwWidget widget;
+        int heading, rank, order;
+        int anchor = -1;       // native order of the row this one stays under
+        bool sameLine = false; // drawn on its anchor's line
+    };
+    std::vector<const char*> extraHeadings;
+    std::vector<Row> rows;
+    for (const auto& widget : widgets) {
+        if (widget.index >= 0 && (widget.kind == CW_SEPARATOR || widget.kind == CW_SEPARATOR_TEXT))
+            continue;
+        if (IsStaleIntroText(widget))
+            continue;
+        const auto found = origins.find(widget.index);
+        const RowOrigin origin = found != origins.end() ? found->second : RowOrigin{};
+        int heading =
+            origin.placement && origin.placement->heading ? MenuHeadingIndex(layout, origin.placement->heading) : -1;
+        if (heading < 0) {
+            const char* name = origin.heading ? origin.heading : "";
+            auto extra = std::find_if(extraHeadings.begin(), extraHeadings.end(),
+                                      [&](const char* other) { return !std::strcmp(other, name); });
+            if (extra == extraHeadings.end())
+                extra = extraHeadings.insert(extraHeadings.end(), name);
+            heading = layout.headingCount + int(extra - extraHeadings.begin());
+        }
+        rows.push_back({ widget, heading, origin.placement ? origin.placement->rank : 100000, int(rows.size()) });
+    }
+    // Anchors use native order: a sameLine row follows its native predecessor; an "after" row
+    // follows the row with its anchor CVar.
+    for (auto& row : rows) {
+        if (row.widget.sameLine && row.order > 0) {
+            row.anchor = row.order - 1;
+            row.sameLine = true;
+            continue;
+        }
+        const auto found = origins.find(row.widget.index);
+        const char* after =
+            found != origins.end() && found->second.placement ? found->second.placement->after : nullptr;
+        if (!after)
+            continue;
+        for (const auto& other : rows)
+            if (other.widget.cvar && !std::strcmp(other.widget.cvar, after))
+                row.anchor = other.order;
+    }
+    std::stable_sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) {
+        return a.heading != b.heading ? a.heading < b.heading : a.rank != b.rank ? a.rank < b.rank : a.order < b.order;
+    });
+    std::vector<int> position(rows.size());
+    for (int i = 0; i < int(rows.size()); ++i)
+        position[rows[i].order] = i;
+    // Emit in sorted order; a row sorted above its anchor (or sharing its line) waits for it.
+    std::vector<bool> emitted(rows.size());
+    std::vector<Row> arranged;
+    const auto waits = [&](int i) {
+        const auto& row = rows[i];
+        return row.anchor >= 0 && row.anchor != row.order &&
+               (row.sameLine || position[row.order] < position[row.anchor]);
+    };
+    std::function<void(int)> emit = [&](int i) {
+        emitted[i] = true;
+        arranged.push_back(rows[i]);
+        for (int j = 0; j < int(rows.size()); ++j)
+            if (!emitted[j] && waits(j) && rows[j].anchor == rows[i].order) {
+                rows[j].heading = rows[i].heading;
+                emit(j);
+            }
+    };
+    for (int i = 0; i < int(rows.size()); ++i)
+        if (!emitted[i] && (!waits(i) || emitted[position[rows[i].anchor]]))
+            emit(i);
+    for (int i = 0; i < int(rows.size()); ++i)
+        if (!emitted[i]) // an anchor chain that loops: keep the row rather than drop it
+            emit(i);
+    const bool split = layout.split < layout.headingCount;
+    widgets.clear();
+    int heading = -1;
+    for (const auto& row : arranged) {
+        const int column = split && row.heading >= layout.split ? 1 : 0;
+        if (row.heading != heading) {
+            heading = row.heading;
+            const char* name =
+                heading < layout.headingCount ? layout.headings[heading] : extraHeadings[heading - layout.headingCount];
+            if (*name && (layout.headingCount > 1 || heading >= layout.headingCount)) {
+                CwWidget title{};
+                title.index = -1;
+                title.kind = CW_SEPARATOR_TEXT;
+                title.name = name;
+                title.column = column;
+                widgets.push_back(title);
+            }
+        }
+        widgets.push_back(row.widget);
+        widgets.back().column = column;
+        widgets.back().sameLine = row.sameLine;
+    }
+    return split ? 2 : 1;
 }
 } // namespace
 
@@ -2091,6 +2232,16 @@ void ComboMenu::DrawSharedPanel() {
                         choice = 1;
                     ImGui::PopID();
                 };
+                const auto* layout = FindMenuPage(mScope, active->label);
+                if (!seedOptions) {
+                    const char* scopeLine = layout && *layout->scopeLine ? layout->scopeLine
+                                            : (hasOot && hasMm) || active->label == MenuPage::WarpsTravel ? ""
+                                            : hasOot ? "Ocarina of Time only."
+                                            : hasMm  ? "Majora's Mask only."
+                                                     : "";
+                    if (*scopeLine)
+                        ImGui::TextColored(kBreadcrumbColor, "%s", scopeLine);
+                }
                 if (seedOptions && active->label == "Logic & access") {
                     ImGui::BeginDisabled(!ProfileUI::Editable());
                     DrawCombinedGoals();
@@ -2149,6 +2300,7 @@ void ComboMenu::DrawSharedPanel() {
                 auto body = active->bodies.find(bodyKey);
                 if (body == active->bodies.end()) {
                     HubEntry::Body built;
+                    RowOrigins origins;
                     for (const auto& source : active->sources) {
                         if (source.oot != (selectedGame == 0))
                             continue;
@@ -2156,15 +2308,11 @@ void ComboMenu::DrawSharedPanel() {
                         if (!source.oot && subpage >= 0 &&
                             RandomizerWidgetGroup(false, source.sidebar->sidebarName, 0, "") != subpage)
                             continue;
-                        AppendFeatureWidgets(source, mScope, active->label, subpage, built.widgets, built.columns);
+                        AppendFeatureWidgets(source, mScope, active->label, subpage, built.widgets, built.columns,
+                                             &origins);
                     }
-                    if (active->label == MenuPage::Controls || active->label == MenuPage::Saving) {
-                        built.columns = 1;
-                        for (auto& widget : built.widgets)
-                            widget.column = 0;
-                        std::stable_partition(built.widgets.begin(), built.widgets.end(),
-                                              [](const CwWidget& widget) { return widget.kind != CW_CUSTOM; });
-                    }
+                    if (layout)
+                        built.columns = ArrangeByPlacement(*layout, built.widgets, origins, built.columns);
                     body = active->bodies.emplace(bodyKey, std::move(built)).first;
                 }
                 auto& content = body->second;
