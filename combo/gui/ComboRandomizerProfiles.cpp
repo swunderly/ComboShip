@@ -803,19 +803,65 @@ static std::string StartingIcons(int world) {
     auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
     for (const char* group : { "Equipment", "Items", "Masks", "Songs", "Clocks (MM)", "Animal Souls", "Misc. Souls",
                                "NPC Souls", "Other" }) {
-        std::vector<const Json*> groupRows;
+        // OoT's counts and choices (Link's Pocket, Starting Hearts) are full-width rows after the icons, as MM's
+        // Starting Hearts is: an icon cell would squeeze their labels to a letter per line.
+        std::vector<const Json*> groupRows, wideRows;
         for (const auto& row : rows) {
             if (row.value("category", std::string()) != group || (world == 1 && !MmStartingAvailable(row)))
                 continue;
             if (row.contains("visibleKey") &&
                 ReadInteger(row["visibleKey"].get<std::string>().c_str(), 0) != row["visibleValue"].get<int>())
                 continue;
-            groupRows.push_back(&row);
+            const bool wide =
+                world == 0 && (row.at("kind") == "StartingItemCount" || row.value("tiers", Json::array()).empty());
+            (wide ? wideRows : groupRows).push_back(&row);
         }
-        if (groupRows.empty())
+        if (groupRows.empty() && wideRows.empty())
             continue;
         ImGui::SeparatorText(group);
         last = group;
+        const auto unavailableRow = [](const Json& row) {
+            bool unavailable = false;
+            if (row.contains("disabledBy"))
+                unavailable = ReadInteger(row["disabledBy"].get<std::string>().c_str(), 0) != 0;
+            if (row.contains("requiresKey"))
+                unavailable |=
+                    ReadInteger(row["requiresKey"].get<std::string>().c_str(), 0) != row["requiresValue"].get<int>();
+            if (row.contains("modeKey"))
+                unavailable |= ReadInteger(row["modeKey"].get<std::string>().c_str(), 0) == row["noneMode"].get<int>();
+            return unavailable;
+        };
+        const auto drawWideRows = [&] {
+            for (const auto* entry : wideRows) {
+                const auto& row = *entry;
+                const std::string key = row.at("key"), label = row.at("label");
+                const auto& option = catalog.at("oot").at("options").at(key);
+                ImGui::PushID(key.c_str());
+                ImGui::BeginDisabled(unavailableRow(row));
+                if (row.at("kind") == "StartingItemCount") {
+                    // The one slider row: the name above, the count in the bar, - and +, and Default.
+                    CwWidget widget{};
+                    widget.kind = CW_SLIDER_INT;
+                    widget.name = label.c_str();
+                    widget.cvar = key.c_str();
+                    widget.iMax = int(option.at("choices").size()) - 1;
+                    widget.iStep = 1;
+                    widget.iDefault = catalog.at("oot").at("defaults").value(key, 0);
+                    DrawWidget(widget, ComboMenuModel::Get().Oot());
+                } else {
+                    CatalogRow({ { "key", key },
+                                 { "label", label },
+                                 { "kind", "combo" },
+                                 { "choices", option.at("choices") } });
+                }
+                ImGui::EndDisabled();
+                ImGui::PopID();
+            }
+        };
+        if (groupRows.empty()) {
+            drawWideRows();
+            continue;
+        }
         const bool songGroup = std::strcmp(group, "Songs") == 0;
         if (songGroup)
             std::stable_sort(groupRows.begin(), groupRows.end(), [](const Json* a, const Json* b) {
@@ -825,8 +871,10 @@ static std::string StartingIcons(int world) {
             int(ImGui::GetContentRegionAvail().x /
                 ((songGroup ? 32 : 48) + ImGui::GetStyle().FramePadding.x * 2 + ImGui::GetStyle().ItemSpacing.x)),
             1, 6);
-        if (!ImGui::BeginTable(group, columns, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
+        if (!ImGui::BeginTable(group, columns, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings)) {
+            drawWideRows();
             continue;
+        }
         int songRow = -1;
         for (const auto* entry : groupRows) {
             const auto& row = *entry;
@@ -870,47 +918,8 @@ static std::string StartingIcons(int world) {
                     dirty = true;
                 }
             };
-            bool unavailable = false;
-            if (row.contains("disabledBy"))
-                unavailable = ReadInteger(row["disabledBy"].get<std::string>().c_str(), 0) != 0;
-            if (row.contains("requiresKey"))
-                unavailable |=
-                    ReadInteger(row["requiresKey"].get<std::string>().c_str(), 0) != row["requiresValue"].get<int>();
-            if (row.contains("modeKey"))
-                unavailable |= ReadInteger(row["modeKey"].get<std::string>().c_str(), 0) == row["noneMode"].get<int>();
-            ImGui::BeginDisabled(unavailable);
-            if (world == 0 && row.at("kind") == "StartingItemCount") {
-                const auto option = catalog.at("oot").at("options").at(key);
-                const auto& choices = option.at("choices");
-                const auto texture = row.at("tiers").at(0).at("texture").get<std::string>();
-                ImGui::Image(gui ? gui->GetTextureByName(texture) : nullptr, ImVec2(48, 48));
-                ImGui::TextWrapped("%s", row.at("label").get<std::string>().c_str());
-                int value = count;
-                ImGui::BeginDisabled(!Editable());
-                ComboMenu_PushSlider(ComboMenu_ThemeColor());
-                const auto format =
-                    choices.at(std::clamp(value, 0, int(choices.size()) - 1)).at("label").get<std::string>();
-                if (ImGui::SliderInt("##Count", &value, 0, int(choices.size()) - 1, format.c_str(),
-                                     ImGuiSliderFlags_NoInput))
-                    setCount(value);
-                ComboMenu_PopSlider();
-                ImGui::EndDisabled();
-                ImGui::EndDisabled();
-                ImGui::PopID();
-                continue;
-            }
+            ImGui::BeginDisabled(unavailableRow(row));
             const auto tiers = row.value("tiers", Json::array());
-            if (tiers.empty()) {
-                const auto option = catalog.at("oot").at("options").at(key);
-                Json plain = { { "key", key },
-                               { "label", row.at("label") },
-                               { "kind", "combo" },
-                               { "choices", option.at("choices") } };
-                CatalogRow(plain);
-                ImGui::EndDisabled();
-                ImGui::PopID();
-                continue;
-            }
             int maximum = world == 0 ? int(tiers.size()) : row.at("maximum").get<int>();
             if (world == 1 && key == "RI_PROGRESSIVE_WALLET" &&
                 ReadInteger("gRando.Options.RO_SHUFFLE_TYCOON_WALLET", 0))
@@ -983,6 +992,7 @@ static std::string StartingIcons(int world) {
             ImGui::PopID();
         }
         ImGui::EndTable();
+        drawWideRows();
     }
     return last;
 }

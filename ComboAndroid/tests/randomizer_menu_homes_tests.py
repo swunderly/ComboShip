@@ -133,6 +133,21 @@ check('ImGui::Checkbox(' not in body(profiles, 'static void CatalogRow('), 'an M
 check('"defaults"' in body(profiles, 'static void CatalogRow('), 'MM Randomizer sliders have no Default to return to')
 check('{ "gRandoSettings.BigPoeTargetCount", "Big Poes required for reward"' in profiles,
       'Big Poe count does not read "<thing> required for <reward>" like the MM count rules')
+# Starting inventory > Other: OoT's counts (Starting Hearts, Gold Skulltula Tokens) and choices (Link's Pocket) are
+# full-width rows after the icons, the counts the one slider row as MM's Starting Hearts is; inside an icon cell their
+# labels wrapped a letter per line.
+icons = body(profiles, 'static std::string StartingIcons(int world)')
+check('ImGui::SliderInt(' not in icons, 'a starting count is a bare slider, not the one slider row')
+check(re.search(r'row\.at\("kind"\)\s*==\s*"StartingItemCount"\s*\|\|\s*row\.value\("tiers", Json::array\(\)\)\.empty\(\)',
+                icons) is not None, 'OoT starting counts and choices are not taken out of the icon grid')
+wide = body(icons, 'const auto drawWideRows = [&]')
+check('widget.kind = CW_SLIDER_INT;' in wide and 'DrawWidget(widget, ComboMenuModel::Get().Oot());' in wide and
+      '"defaults"' in wide, 'OoT starting counts do not use the slider row with a Default')
+check(icons.index('ImGui::EndTable();') < icons.rindex('drawWideRows();'), 'the wide rows are not drawn after the icons')
+oot_layout = read('soh/soh/ProfileOotStartingLayout.inc')
+check(re.search(r'RSK_STARTING_HEARTS\);[^\n]*\{"category","Other"\},\{"kind","StartingItemCount"\}', oot_layout) and
+      by_option['RO_STARTING_HEALTH']['heading'] == 'Other' and '{"kind","slider"}' in by_option['RO_STARTING_HEALTH']['line'],
+      'Starting Hearts is not a count under Other in both worlds')
 
 # ---- One name for an option both worlds list under the same heading: OoT's display label is MM's row label.
 display = dict(re.findall(r'\{ "(gRandoSettings\.\w+)", "([^"]+)"', body(profiles, 'static constexpr OptionDisplay kOptionDisplay[]')))
