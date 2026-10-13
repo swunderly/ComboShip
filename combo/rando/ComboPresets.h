@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <vector>
 #include "GameplayRules.h"
 #include "SharedItems.h"
@@ -113,5 +114,35 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
         options.insert(options.end(), std::begin(allsanity), std::end(allsanity));
     }
     return options;
+}
+// The gameplay rules a preset turns on in play and in logic (SetLogicRule), by their in-game names. Applying a preset
+// first takes every rule out of logic and keeps the player's own enhancements.
+inline std::vector<PresetOption> CommunityPresetRules(CommunityPreset preset) {
+    if (preset == CommunityPreset::Default)
+        return {};
+    return { { "gCombo.Enhancements.ForeignSongs", 1 } };
+}
+// Values a preset writes as they are, beside its menu options: the checks it fills with junk (OoTMM junkLocations,
+// OoT check numbers and MM check names), and the hidden Shared Ocarina, which OoTMM leaves off (sharedOcarina,
+// data.ts:2704) and only an old file's import can turn on.
+inline nlohmann::json CommunityPresetValues(CommunityPreset) {
+    return { { "gRandoSettings.ExcludedLocations", std::string() },
+             { "gRando.ExcludedChecks", nlohmann::json::array() },
+             { SharedFamilyByIndex(SF_OCARINA).cvar, 0 } };
+}
+// A preset as ProfileComboCatalog exports it to the menu, whose ApplyCommunityPreset applies it.
+inline nlohmann::json CommunityPresetJson(const CommunityPresetInfo& preset) {
+    auto writes = nlohmann::json::object(), rules = nlohmann::json::object();
+    for (const auto& option : CommunityPresetOptions(preset.id))
+        writes[option.key] = option.value;
+    for (const auto& rule : CommunityPresetRules(preset.id))
+        rules[rule.key] = rule.value;
+    return { { "id", int(preset.id) },
+             { "label", preset.name },
+             { "summary", preset.summary },
+             { "help", preset.help },
+             { "writes", writes },
+             { "rules", rules },
+             { "values", CommunityPresetValues(preset.id) } };
 }
 } // namespace ComboRando

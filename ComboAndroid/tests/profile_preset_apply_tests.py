@@ -7,6 +7,7 @@ second tap seemed to apply it. This runs the production WriteInteger and ApplyCo
 .cpp) with counted refreshes on each community preset (ComboPresets.h, as ProfileComboCatalog exports it):
 - the preset refreshes the pool view once, after its writes, and still re-applies the option policy after each write;
 - the preset's values are written, including Goal (Ganon & Majora), and the file is marked for saving;
+- its gameplay rules turn on in play and in logic, other rules leave logic, and its junked checks replace the file's;
 - an ordinary edit outside a preset still refreshes the pool view.
 """
 import argparse
@@ -76,21 +77,24 @@ static void Require(bool condition, const char* message) {
 int main() {
     try {
         // The catalog as the launcher exports it: native defaults, and the presets with their writes.
-        catalog["oot"]["defaults"] = { { "gRandoSettings.LogicRules", 0 }, { "gRandoSettings.ShuffleSongs", 0 } };
-        catalog["mm"]["defaults"] = { { "gRando.Options.RO_LOGIC", 0 }, { "gRando.StartingItems", Json::array() } };
+        catalog["oot"]["defaults"] = { { "gRandoSettings.LogicRules", 0 }, { "gRandoSettings.ShuffleSongs", 0 },
+                                       { "gRandoSettings.ExcludedLocations", "" } };
+        catalog["mm"]["defaults"] = { { "gRando.Options.RO_LOGIC", 0 }, { "gRando.StartingItems", Json::array() },
+                                      { "gRando.ExcludedChecks", Json::array() } };
         for (const auto& preset : kCommunityPresets) {
-            auto writes = Json::object();
-            for (const auto& option : CommunityPresetOptions(preset.id))
-                writes[option.key] = option.value;
-            catalog["combo"]["presets"].push_back({ { "id", int(preset.id) }, { "label", preset.name }, { "writes", writes } });
+            catalog["combo"]["presets"].push_back(CommunityPresetJson(preset)); // as ProfileComboCatalog exports it
             catalog["mm"]["presetStartingItems"][std::to_string(int(preset.id))] = Json::array({ preset.name });
         }
         for (const auto& preset : catalog["combo"]["presets"]) {
-            // A file whose next seed was a 30-piece Triforce Hunt with an MM option of its own.
-            document = { { "oot", { { "settings", Json::object() } } },
-                         { "mm", { { "settings", { { "gRando.Options.RO_SHUFFLE_COWS", 1 } } } } },
+            // A file whose next seed was a 12-piece Triforce Hunt with an MM option, junked checks, a logic rule and
+            // the hidden Shared Ocarina (an old import) of its own.
+            document = { { "oot", { { "settings", { { "gRandoSettings.ExcludedLocations", "12" } } } } },
+                         { "mm", { { "settings", { { "gRando.Options.RO_SHUFFLE_COWS", 1 },
+                                                   { "gRando.ExcludedChecks", Json::array({ "RC_IKANA_GREAT_FAIRY" }) } } } } },
                          { "setupCVars", { { "gCombo.Rando.Goal", 1 }, { "gCombo.Rando.TriforceHunt", 1 },
-                                           { "gCombo.Rando.TriforceTotal", 30 } } } };
+                                           { "gCombo.Rando.TriforceRequired", 9 }, { "gCombo.Rando.TriforceTotal", 12 },
+                                           { "gCombo.Rando.Shared.Ocarina", 1 } } } };
+            SetLogicRule(*FindGameplayRule("gEnhancements.DayGravePull"), 1, WriteInteger);
             policies = pools = 0;
             dirty = false;
             ApplyCommunityPreset(preset);
@@ -102,8 +106,22 @@ int main() {
             Require(!deferPoolViews && dirty, "a preset left its refresh deferred or its draft unsaved");
             for (const auto& write : preset.at("writes").items())
                 Require(ReadInteger(write.key().c_str(), -1) == write.value().get<int>(), "a preset value was not written");
-            Require(ReadInteger("gCombo.Rando.Goal", -1) == 0 && ReadInteger("gCombo.Rando.TriforceTotal", -1) == 15,
+            Require(ReadInteger("gCombo.Rando.Goal", -1) == 0 && ReadInteger("gCombo.Rando.TriforceRequired", -1) == 15 &&
+                        ReadInteger("gCombo.Rando.TriforceTotal", -1) == 15,
                     "a preset kept the file's Triforce Hunt");
+            for (const auto& rule : kGameplayRules) {
+                const int value = preset.at("rules").value(rule.name, 0);
+                Require(ReadInteger(LogicRuleKey(rule.name).c_str(), -1) == value, "a preset left a rule's logic as it was");
+                if (value)
+                    Require(ReadInteger(rule.name, -1) == value, "a preset rule is in logic but off in play");
+            }
+            Require(ReadInteger("gEnhancements.DayGravePull", -1) == 1, "a preset turned off the player's enhancement");
+            Require(document["oot"]["settings"]["gRandoSettings.ExcludedLocations"] ==
+                            preset.at("values").at("gRandoSettings.ExcludedLocations") &&
+                        document["mm"]["settings"]["gRando.ExcludedChecks"] ==
+                            preset.at("values").at("gRando.ExcludedChecks"),
+                    "a preset kept the file's junked checks");
+            Require(ReadInteger("gCombo.Rando.Shared.Ocarina", -1) == 0, "a preset kept an imported Shared Ocarina");
             Require(ReadInteger("gRando.Options.RO_SHUFFLE_COWS", -1) == preset.at("writes").value(
                         "gRando.Options.RO_SHUFFLE_COWS", -1),
                     "a preset kept an MM option it does not set");

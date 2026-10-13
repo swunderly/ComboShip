@@ -1216,10 +1216,15 @@ static void ApplyCommunityPreset(const Json& preset) {
             document[game]["settings"][value.key()] = value.value();
     for (const auto& write : preset.at("writes").items())
         WriteInteger(write.key().c_str(), write.value());
+    // Junked checks and the hidden Shared Ocarina (ComboPresets.h CommunityPresetValues), stored as they are.
+    for (const auto& value : preset.at("values").items())
+        *Field(value.key().c_str(), true) = value.value();
     document["mm"]["settings"]["gRando.StartingItems"] =
         catalog.at("mm").at("presetStartingItems").at(std::to_string(preset.at("id").get<int>()));
-    if (preset.at("id").get<int>() != 0) // the loop above cleared it otherwise
-        SetLogicRule(*FindGameplayRule("gCombo.Enhancements.ForeignSongs"), 1, WriteInteger);
+    // The rules the preset includes in logic also turn on in play; the loop above cleared the others' logic.
+    for (const auto& rule : preset.at("rules").items())
+        if (const auto* found = FindGameplayRule(rule.key().c_str()))
+            SetLogicRule(*found, rule.value().get<int>(), WriteInteger);
     SynchronizeGenerationGuarantee(ReadInteger, WriteInteger);
     deferPoolViews = false;
     RefreshOptionPolicy(true);

@@ -242,10 +242,7 @@ static void ProfileCompleteGeneration() {
 }
 static nlohmann::json ProfileComboCatalog(){
     auto presets=nlohmann::json::array();
-    for(const auto& preset:ComboRando::kCommunityPresets){auto writes=nlohmann::json::object();
-        for(const auto& option:ComboRando::CommunityPresetOptions(preset.id))writes[option.key]=option.value;
-        presets.push_back({{"id",int(preset.id)},{"label",preset.name},{"summary",preset.summary},{"help",preset.help},{"writes",writes}});
-    }
+    for(const auto& preset:ComboRando::kCommunityPresets)presets.push_back(ComboRando::CommunityPresetJson(preset));
     return {{"presets",presets}}; // The menu lays out its own combo options; only presets are read.
 }
 // Start Randomizer prepares the file (the name-entry seed-hash icons need it) and confirming the name
