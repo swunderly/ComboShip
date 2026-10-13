@@ -68,9 +68,12 @@ check('row.value("aliases", std::string())' in menu, 'search does not index the 
 
 # ---- Shared headings: MM card headings come from the page's fixed list, which OoT's rows also use.
 headings_h = read('combo/gui/ComboRandomizerLayout.h')
-pages = {}
-for m in re.finditer(r'\{\s*"([^"]+)",\s*\{([^{}]*)\}\s*\}', body(headings_h, 'inline constexpr RandomizerPageHeadings')):
+pages, second_column = {}, {}
+for m in re.finditer(r'\{\s*"([^"]+)",\s*\{([^{}]*)\},\s*\{([^{}]*)\}\s*\}',
+                     body(headings_h, 'inline constexpr RandomizerPageHeadings')):
     pages[m.group(1)] = re.findall(r'"([^"]+)"', m.group(2))
+    second_column[m.group(1)] = re.findall(r'"([^"]+)"', m.group(3))
+    check(set(second_column[m.group(1)]) <= set(pages[m.group(1)]), f'{m.group(1)}: a second-column heading is not on it')
 route = {'Logic/Conditions': 'Logic & access', 'Check Pool': 'Items & checks', 'Item Pool': 'Items & checks',
          'Dungeon Items': 'Dungeons', 'Traps': 'Hints & traps', 'Hints': 'Hints & traps',
          'Starting Items': 'Starting inventory'}
@@ -80,6 +83,17 @@ for row in rows:
     check(row['heading'] in allowed, f'{row["label"]}: heading {row["heading"]!r} is not one of {page}\'s {allowed}')
 for page in route.values():
     check(page in pages, f'{page} has no fixed heading list')
+# ---- One column rule: an MM card sits in the column of its headings, the same column OoT's rows of that heading use;
+# a card whose headings straddle the columns could not follow it.
+cards = {}
+for row in rows:
+    cards.setdefault((row['page'], row['card']), set()).add(row['heading'] in second_column.get(route[row['page']], []))
+for (page, card), columns in cards.items():
+    check(len(columns) == 1, f'MM card {card} on {page} has headings in both columns')
+custom = body(read('combo/gui/ComboRandomizerProfiles.cpp'), 'void DrawCustom(')
+check('RandomizerHeadingColumn(*layout, heading.c_str())' in custom, "MM cards do not take their headings' column")
+check('RandomizerHeadingColumn(*layout, layout->headings[row.group])' in body(headings_h, 'ArrangeOotRandomizerPage('),
+      "OoT rows do not take their headings' column")
 navigation = read('combo/gui/ComboNavigation.h')
 order = re.findall(r'\{ "([^"]+)", "', body(navigation, 'inline constexpr RandomizerPageInfo kRandomizerPages[]'))
 check(order.index('Dungeons') == order.index('Items & checks') + 1, 'Dungeons does not follow Items & checks')

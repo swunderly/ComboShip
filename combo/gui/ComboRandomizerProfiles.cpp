@@ -1069,24 +1069,30 @@ void DrawCustom(const char* sidebar, int world) {
     }
     if (world == 0)
         return;
+    // Each card sits in the column of its first heading on the page (ComboRandomizerLayout.h), as OoT's rows do.
+    const auto* layout = FindRandomizerPageHeadings(MenuRoute(false, "Rando", name).page);
     std::vector<std::string> cards;
+    std::vector<int> cardColumns;
     for (const auto& row : catalog.at("mm").at("layout"))
         if (row.at("page") == name) {
             const std::string card = row.at("card");
-            if (std::find(cards.begin(), cards.end(), card) == cards.end())
+            if (std::find(cards.begin(), cards.end(), card) == cards.end()) {
                 cards.push_back(card);
+                const auto heading = row.at("heading").get<std::string>();
+                cardColumns.push_back(layout ? RandomizerHeadingColumn(*layout, heading.c_str()) : 0);
+            }
         }
     const float minimum =
         name == "Logic/Conditions" ? ImGui::GetFontSize() * 28 : std::max(400.f, ImGui::GetFontSize() * 20);
-    // A page with one card uses the whole width.
-    const int columns = ImGui::GetContentRegionAvail().x >= minimum * 2 && cards.size() > 1 ? 2 : 1;
+    // A page whose cards all sit in one column uses the whole width.
+    const auto second = std::count(cardColumns.begin(), cardColumns.end(), 1);
+    const int columns =
+        ImGui::GetContentRegionAvail().x >= minimum * 2 && second > 0 && second < std::ptrdiff_t(cards.size()) ? 2 : 1;
     if (cards.empty() || !ImGui::BeginTable("##NativeMmCards", columns,
                                             ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
         return;
-    for (const auto& card : cards) {
-        ImGui::TableNextColumn();
+    const auto drawCard = [&](const std::string& card) {
         ImGui::PushID(card.c_str());
-        ImGui::BeginGroup();
         // A card can hold several headings; rows after the item icons continue under the icons' last group.
         std::string lastHeading = iconHeading;
         iconHeading.clear();
@@ -1115,8 +1121,16 @@ void DrawCustom(const char* sidebar, int world) {
             }
             CatalogRow(row);
         }
-        ImGui::EndGroup();
         ImGui::PopID();
+    };
+    ImGui::TableNextRow();
+    for (int column = 0; column < columns; ++column) {
+        ImGui::TableSetColumnIndex(column);
+        ImGui::BeginGroup();
+        for (size_t i = 0; i < cards.size(); ++i)
+            if (columns == 1 || cardColumns[i] == column)
+                drawCard(cards[i]);
+        ImGui::EndGroup();
     }
     ImGui::EndTable();
     if (name == "Item Pool")

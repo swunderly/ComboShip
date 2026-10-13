@@ -6,7 +6,6 @@
 #include "ComboMenuABI.h"
 #include "ComboNavigation.h"
 #include <algorithm>
-#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <utility>
@@ -16,21 +15,27 @@ namespace ComboRando {
 struct RandomizerPageHeadings {
     const char* page;
     const char* headings[12];
+    const char* secondColumn[6]; // the headings drawn in the second column on wide screens, in both worlds
 };
 // A heading with no rows in the selected world is not drawn. Items & checks lists its Checks headings, then its Items
-// headings; each half shows only on its own subpage.
+// headings; each half shows only on its own subpage, and each half has its own second column. A subpage whose
+// headings all sit in one column is drawn in one column.
 inline constexpr RandomizerPageHeadings kRandomizerPageHeadings[] = {
-    { "Logic & access", { "Logic", "Area access", "Final boss access", "Entrances" } },
+    { "Logic & access",
+      { "Logic", "Area access", "Final boss access", "Entrances" },
+      { "Final boss access", "Entrances" } },
     { "Items & checks",
       { "World & NPCs", "Creatures & collectibles", "Scenery drops", "Shops & merchants", "Item pool",
-        "Abilities & upgrades", "Extra songs", "Souls", "Clocks (MM)", "Cross-game items" } },
+        "Abilities & upgrades", "Extra songs", "Souls", "Clocks (MM)", "Cross-game items" },
+      { "Scenery drops", "Shops & merchants", "Souls", "Clocks (MM)", "Cross-game items" } },
     { "Dungeons",
       { "Dungeon rewards", "Maps & compasses", "Small keys", "Key rings", "Boss keys", "Stray fairies",
-        "Master Quest" } },
-    { "Warps & travel", { "Destination shuffles (OoT)" } },
-    { "Hints & traps", { "Hints", "Static hints", "Traps" } },
+        "Master Quest" },
+      { "Boss keys", "Stray fairies", "Master Quest" } },
+    { "Warps & travel", { "Destination shuffles (OoT)" }, {} },
+    { "Hints & traps", { "Hints", "Static hints", "Traps" }, { "Static hints" } },
     // Item icons first; their last group, Other, holds the rest of the page.
-    { "Starting inventory", {} },
+    { "Starting inventory", {}, {} },
 };
 inline const RandomizerPageHeadings* FindRandomizerPageHeadings(const std::string& page) {
     for (const auto& entry : kRandomizerPageHeadings)
@@ -43,6 +48,13 @@ inline int RandomizerHeadingIndex(const RandomizerPageHeadings& page, const char
         if (!std::strcmp(page.headings[i], heading))
             return i;
     return -1;
+}
+// The wide-screen column of a heading on its page: 1 for the page's second-column headings, else 0.
+inline int RandomizerHeadingColumn(const RandomizerPageHeadings& page, const char* heading) {
+    for (const char* second : page.secondColumn)
+        if (heading && second && !std::strcmp(second, heading))
+            return 1;
+    return 0;
 }
 // The OoT row's heading on a Randomizer page, from its key or its native heading; nullptr keeps it above the headings.
 inline const char* OotRandomizerHeading(const std::string& page, const std::string& key,
@@ -102,8 +114,8 @@ inline const char* OotRandomizerHeading(const std::string& page, const std::stri
 }
 // Regroups an OoT Randomizer body under its page's headings: custom panels first, then rows without a heading, then
 // each heading in the page's order with its rows in native order (a row that leads its heading first). Native
-// separators are replaced by the page's headings. Wide screens split the headings into two columns where the row
-// counts balance; a page without a heading list keeps its rows and columns.
+// separators are replaced by the page's headings. Wide screens draw the page's second-column headings in the second
+// column, as MM's view does; a page without a heading list keeps its rows and columns.
 inline std::vector<CwWidget> ArrangeOotRandomizerPage(const std::string& page, const CwWidget* widgets, int count) {
     std::vector<CwWidget> out(widgets, widgets + std::max(count, 0));
     const auto* layout = FindRandomizerPageHeadings(page);
@@ -136,23 +148,10 @@ inline std::vector<CwWidget> ArrangeOotRandomizerPage(const std::string& page, c
     std::stable_sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) {
         return a.group != b.group ? a.group < b.group : a.lead < b.lead;
     });
-    // Balance the two wide-screen columns at a heading boundary.
-    int total = 0, split = -1, best = 1 << 30;
-    for (const auto& row : rows)
-        total += row.group >= 0;
-    for (int boundary = 1, before = 0; boundary < 12; ++boundary) {
-        for (const auto& row : rows)
-            before += row.group == boundary - 1;
-        const int difference = std::abs(total - 2 * before);
-        if (before > 0 && before < total && difference < best) {
-            best = difference;
-            split = boundary;
-        }
-    }
     out.clear();
     int drawn = -3;
     for (const auto& row : rows) {
-        const int target = split >= 0 && row.group >= split ? 1 : 0;
+        const int target = row.group >= 0 ? RandomizerHeadingColumn(*layout, layout->headings[row.group]) : 0;
         if (row.group >= 0 && row.group != drawn) {
             CwWidget title{};
             title.index = -1;

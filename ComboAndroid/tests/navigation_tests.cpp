@@ -181,7 +181,8 @@ int main() {
         assert((names(arranged) == List{"Logic", "Logic", "Area access", "Starting Age", "Forest", "Final boss access",
                                         "Ganon's Boss Key", "Entrances", "Dungeon Entrances"}));
         assert(arranged[0].index == -1 && arranged[0].kind == CW_SEPARATOR_TEXT && arranged[3].index == logic[2].index);
-        for (int i = 0; i < int(arranged.size()); ++i) assert(arranged[i].column == (i >= 5)); // balanced wide columns
+        // Wide screens draw the page's second-column headings (Final boss access, Entrances) on the right, as MM does.
+        for (int i = 0; i < int(arranged.size()); ++i) assert(arranged[i].column == (i >= 5));
         const CwWidget items[] = {
             row(CW_SEPARATOR_TEXT, "Item Pool Settings", "", 0), row(CW_COMBOBOX, "Item Pool", "gRandoSettings.ItemPool", 0),
             row(CW_SEPARATOR_TEXT, "Additional Items", "", 0), row(CW_CHECKBOX, "Enemy Souls (OoT)", "gRandoSettings.SoulsEnemyOot", 0),
@@ -191,6 +192,29 @@ int main() {
         assert((names(ComboRando::ArrangeOotRandomizerPage("Items & checks", items, 6)) ==
                 List{"Item pool", "Item Pool", "Abilities & upgrades", "Shuffle Swim", "Souls", "Enemy Souls (OoT)",
                      "Shuffle Boss Souls"}));
+        // Items & checks splits each half at the same heading in both worlds, whatever the row counts: Checks at
+        // Scenery drops, Items at Souls (MM's catalog cards take their columns from the same list).
+        const CwWidget checks[] = {
+            row(CW_SEPARATOR_TEXT, "World & NPCs", "", 0), row(CW_CHECKBOX, "A", "gRandoSettings.A", 0),
+            row(CW_CHECKBOX, "B", "gRandoSettings.B", 0), row(CW_CHECKBOX, "C", "gRandoSettings.C", 0),
+            row(CW_CHECKBOX, "D", "gRandoSettings.D", 0), row(CW_CHECKBOX, "E", "gRandoSettings.E", 0),
+            row(CW_SEPARATOR_TEXT, "Creatures & Collectibles", "", 1), row(CW_CHECKBOX, "F", "gRandoSettings.F", 1),
+            row(CW_SEPARATOR_TEXT, "Scenery Drops", "", 1), row(CW_CHECKBOX, "G", "gRandoSettings.G", 1),
+            row(CW_SEPARATOR_TEXT, "Shops & Merchants", "", 0), row(CW_CHECKBOX, "H", "gRandoSettings.H", 0),
+        };
+        const auto checkColumns = ComboRando::ArrangeOotRandomizerPage("Items & checks", checks, 12);
+        assert((names(checkColumns) == List{"World & NPCs", "A", "B", "C", "D", "E", "Creatures & collectibles", "F",
+                                            "Scenery drops", "G", "Shops & merchants", "H"}));
+        for (int i = 0; i < int(checkColumns.size()); ++i) assert(checkColumns[i].column == (i >= 8));
+        for (const auto& w : ComboRando::ArrangeOotRandomizerPage("Items & checks", items, 6))
+            assert(w.column == (std::string(w.name) == "Souls" || std::string(w.name) == "Enemy Souls (OoT)" ||
+                                std::string(w.name) == "Shuffle Boss Souls"));
+        const auto* itemsPage = ComboRando::FindRandomizerPageHeadings("Items & checks");
+        for (const char* heading : {"World & NPCs", "Creatures & collectibles", "Item pool", "Abilities & upgrades",
+                                    "Extra songs"})
+            assert(ComboRando::RandomizerHeadingColumn(*itemsPage, heading) == 0);
+        for (const char* heading : {"Scenery drops", "Shops & merchants", "Souls", "Clocks (MM)", "Cross-game items"})
+            assert(ComboRando::RandomizerHeadingColumn(*itemsPage, heading) == 1);
         const CwWidget dungeons[] = {
             row(CW_SEPARATOR_TEXT, "Dungeon Items", "", 0), row(CW_COMBOBOX, "Maps/Compasses", "gRandoSettings.StartingMapsCompasses", 0),
             row(CW_COMBOBOX, "Small Key Shuffle", "gRandoSettings.Keysanity", 0),
