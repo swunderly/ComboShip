@@ -12,6 +12,16 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## Unreleased
+
+- **Home > Apply preset now also sets Goal back to the preset's goal (Ganon & Majora).** Before, a file whose Goal was Triforce Hunt stayed a hunt.
+- **Apply preset works with one tap.** Applying a preset froze the menu for a few seconds, which left the button looking pressed as if a second tap were needed.
+- **Item tracker: new Trackers > Item Tracker > Groups > "Trade items (MM)" toggle.** It shows MM's trade items, including the MM spells, boots and tunics. It is on by default on seeds with MM spells, boots or tunics. A saved tracker layout keeps its own groups.
+- **Touch C buttons work over an open item tracker on the pause screen**, so you can assign items without closing the tracker. During play, the tracker still takes touches as before.
+- **MM pause Quest page:** with both songs learned in Oath to Order's or Song of Storms' place, Left from the sword or quiver column now returns to Saria's Song or Sun's Song first, mirroring Right.
+
+Tested: 127 automated host tests pass (2 are skipped on Windows). Emulator check: see the release notes.
+
 ## 0.4.3 - 2026-10-13
 
 0.4.3 follows 0.4.1. There was no 0.4.2 release.

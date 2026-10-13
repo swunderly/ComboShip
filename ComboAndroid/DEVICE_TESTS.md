@@ -2,11 +2,11 @@
 
 ## Start here: phone checks for 0.4.3
 
-Nothing in 0.4.3 has been tried on a phone yet. These eight checks matter most; the sections below have the details. In the pause screen, close the item tracker panel before you assign C buttons by touch (known issue).
+Nothing in 0.4.3 has been tried on a phone yet. These eight checks matter most; the sections below have the details.
 
 1. Install over 0.4.1 without uninstalling. Load your saves in OoT and in MM: they load as before, MM Link is still child, and your settings show the same values. The emulator could not test this.
 2. On your 0.4.1 save whose MM spells came from the Save Editor's Give All, cast Din's Fire, Nayru's Love and Farore's Wind from a C button as human Link, in Termina Field and in Woodfall Temple. None plays the "can't use" sound while the magic meter is full. This needs a seed made with those spell options on; a spell the seed was made without still cannot be cast. Details: casting the MM spells, checks 2 and 5.
-3. Home > pick a spare file > Default > Apply preset, then Randomizer > Generate: the seed generates. Apply preset does not change Goal yet, so check Goal under Randomizer > Logic & access first. If the first tap on Apply preset in the confirm dialog only highlights the button, say so.
+3. Home > pick a spare file > Default > Apply preset (one tap on the confirm button applies it), then Randomizer > Generate: the seed generates, and Goal reads Ganon & Majora even if the file had Triforce Hunt.
 4. On a spare file, generate a seed with Cross-Games Age and Randomizer > Warps & travel > Play warp songs across games on. Become adult in OoT, make sure an MM owl statue is activated and Song of Soaring is learned, then play Soaring in OoT to go to MM: Link is OoT's adult Link. Walk, climb, swing a sword, ride Epona, then play the Fairy Ocarina (brown) and the Ocarina of Time (blue). Note the frame rate and anything drawn wrong. Details: Cross-Games Age, checks 4 to 9.
 5. On a spare file, generate a seed with Iron Boots (MM) and Zora Tunic (MM) on. Put both on from C buttons in Zora Cape: Link sinks and walks on the bottom with no drowning timer. Say how the boots look on child Link's feet. Details: Iron Boots, Hover Boots, Goron Tunic and Zora Tunic, checks 2 to 4.
 6. On the Fold's inner display, open Enhancements > Time savers and Randomizer > Items & checks in the OoT and MM views: the same headings in the same columns. On the outer display: one column. Back closes a list, then clears a search, then closes the menu. Details: the menus, checks 4, 9 and 12.
@@ -55,7 +55,7 @@ Checks 2 to 8 matter most: the boots and tunics have only been played on the emu
 6. Generate a seed with Goron Tunic (MM) on: on child Link, wearing it turns his tunic red, or the OoT Goron Tunic colour if one is set in Cosmetics. Take it off: the MM tunic colour comes back, including a custom MM tunic colour. On adult Link (Cross-Games Age) it is always OoTMM's red, and green when taken off, whatever the colour settings.
 7. Wearing boots and a tunic, put on the Deku, Goron or Zora Mask and change back to human: the boots and tunic are off. Pressing the gear button mid sword swing or while shielding does nothing.
 8. With **Shared Iron Boots** on: get the Iron Boots in OoT, go through a portal to MM, and check MM's Iron Boots are owned. Repeat once starting with the MM copy.
-9. A save made before this version loads with no new items and its Link colours unchanged. (The item tracker's Trade Items group has rows for the gear, but the combined item tracker cannot add that group yet: known issue.)
+9. A save made before this version loads with no new items and its Link colours unchanged. (The item tracker's Trade items (MM) group, under Trackers > Item Tracker > Groups, shows the gear rows only on gear seeds.)
 10. On a seed without the gear: lily pads sink as before, Link's tunic and sword and shield colours are unchanged, and the MM tunic colour setting still works. A seed with your usual settings generates, and existing seeds and saves load.
 11. Optional: with "Stone Tower Updrafts without Deku Mask" on and no gear, the seed may expect the Inverted Stone Tower Temple east middle chest and the two updraft bridge pots without the Deku Mask.
 
@@ -117,7 +117,7 @@ Checks 2, 3, 4 and 7 matter most: casting the MM spells had not been played befo
 3. In the Southern Swamp with Swim, cast Nayru's Love and swim through the poisoned water: you should take no damage while it lasts.
 4. With **Shared Din's Fire** on: pick up Din's Fire in OoT, then go to MM: MM's Deed slot holds it. Repeat once starting with the MM copy.
 5. An MM spell placed in an OoT chest shows the spinning OoT spell model, not a blue rupee.
-6. (Skip the Trade Items part: the combined item tracker cannot add that group yet, a known issue.) In the default **Inventory** group, the Deed and Couple slots show the Din's Fire and Nayru's Love icons once you have only the spell there, not the Moon's Tear or a letter. A save from 0.4.0 or earlier loads with no spell rows and no new items.
+6. Turn on Trackers > Item Tracker > Groups > Trade items (MM): the spell rows show on this seed and light up after pickup. In the default **Inventory** group, the Deed and Couple slots show the Din's Fire and Nayru's Love icons once you have only the spell there, not the Moon's Tear or a letter. A save from 0.4.0 or earlier loads with no spell rows and no new items.
 7. With the trick **Burn Igos' curtain with Din's Fire** on, stand at the top of the stairs next to Igos' throne and cast Din's Fire: the left curtain should burn.
 
 ## Quick checks for OoT Enemy Souls (0.4.0)
