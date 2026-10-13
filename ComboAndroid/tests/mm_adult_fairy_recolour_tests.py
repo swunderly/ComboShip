@@ -5,14 +5,17 @@ Synthetic lists and textures only (no ROM-derived data). Checks:
   G_SETTIMG_OTR_HASH that sets the Ocarina of Time texture; it walks 128-bit commands as two slots (a hash that looks
   like a command is not read as one); it refuses a list that sets that texture twice or never, has no end, has commands
   after its end or ends inside a 128-bit command. The commands it treats as 128-bit are the ones libultraship's
-  DisplayListFactory.cpp expands, with gbi.h's opcodes. Textures fit only with the same format, size, scale, flags and
-  byte size.
+  DisplayListFactory.cpp expands, with gbi.h's opcodes. Two lists load a texture alike only with the same
+  G_SETTIMG_OTR_HASH first word and the same 64-bit commands through G_SETTILESIZE, whatever image address a draw left.
 - the runtime in combo/menu/ComboFairyOcarinaHand.h (Combo_FairyRecolouredHandPath and its state), with stand-in
   engine types: the copies are built once per OoT resource manager from OoT's adult lists, cached under the routed
   paths' names (reinserted on every call), drawn through even (2-byte aligned) routed paths, and dropped at teardown;
-  OoT's cached lists are never changed; a custom, dirty, missing or mistyped list, a list without exactly one Ocarina
-  of Time texture, or a Fairy texture that is missing, has no image or is laid out differently gives null (the caller
-  then draws the composite), is logged once, and is not retried for the same manager.
+  OoT's cached lists are never changed. They are built whatever texture OoT serves (a texture pack's HD replacement of
+  either texture, at any scale, or a missing Ocarina of Time texture), since each copy loads the Fairy Ocarina's
+  texture with the commands OoT's child hand loads it with. A custom, dirty, missing or mistyped adult list, an adult
+  list without exactly one Ocarina of Time texture, a child list that is missing, dirty or mistyped or loads the Fairy
+  Ocarina's texture otherwise, or a Fairy texture that is missing or has no image gives null (the caller then draws
+  the composite), is logged once, and is not retried for the same manager.
 The user's archives are checked by mm_adult_fairy_recolour_archive_tests.py (local only).
 """
 from pathlib import Path
@@ -82,6 +85,16 @@ static void Wide2(std::vector<Gfx>& l, uint8_t op, uintptr_t w0, uintptr_t w1, u
 }
 static const uint64_t kFrom = 0x9292A4F4D123CF96ull, kTo = 0x710708B58B22E79Eull, kOther = 0x1111222233334444ull;
 static bool Same(const Gfx& a, const Gfx& b) { return a.words.w0 == b.words.w0 && a.words.w1 == b.words.w1; }
+// The commands after an instrument's G_SETTIMG_OTR_HASH that load and tile it: a block load and a render tile through
+// G_SETTILESIZE.
+static const Gfx kLoad[] = { G(0xF5100000, 0x07080200), G(0xE6000000, 0), G(0xF3000000, 0x070FF200),
+                             G(0xE7000000, 0),          G(0xF5100800, 0x00080200), G(0xF2000000, 0x0003C03C) };
+// An instrument material: its texture (w1: the address an earlier draw left), the load and tiles, the combiner.
+static void Material(std::vector<Gfx>& l, uint64_t texture, uintptr_t address) {
+    Wide2(l, kOpSetTImgHash, 0x100000, address, texture);
+    l.insert(l.end(), std::begin(kLoad), std::end(kLoad));
+    l.push_back(G(0xFC127E03, 0xFFFFFDF8));
+}
 // An adult-hand-like list: the port's marker, a hand material and mesh, the instrument material with `from` set
 // `uses` times, its mesh, and the end.
 static std::vector<Gfx> List(unsigned uses, uint64_t from = kFrom) {
@@ -92,12 +105,8 @@ static std::vector<Gfx> List(unsigned uses, uint64_t from = kFrom) {
     l.push_back(G(0xF5500000, 0x07000000));
     Wide2(l, kOpVtxHash, (8 << 12) | (8 << 1), 0, from); // a vertex array whose hash equals `from`: not a texture
     l.push_back(G(0x06000204, 0x00060802));
-    for (unsigned i = 0; i < uses; ++i) {
-        Wide2(l, kOpSetTImgHash, 0x100000, 0x80001234 + i, from); // w1: the address an earlier draw left
-        l.push_back(G(0xF5100000, 0x07090250));
-        l.push_back(G(0xF3000000, 0x071FF100));
-        l.push_back(G(0xFC127E03, 0xFFFFFDF8));
-    }
+    for (unsigned i = 0; i < uses; ++i)
+        Material(l, from, 0x80001234 + i);
     Wide2(l, kOpVtxHash, (23 << 12) | (23 << 1), 0x80, 0x7777);
     l.push_back(G(0x06000204, 0x00060802));
     Wide2(l, kOpDlHash, 0, 0, from); // a list call with the same hash: not a texture
@@ -167,48 +176,80 @@ static void Swap() {
     std::puts("Refused: set twice, never, no end, commands after the end, cut inside a 128-bit command, empty");
 }
 
-enum class Format { RGBA16, RGBA32 };
-struct Texture {
-    Format Type = Format::RGBA16;
-    unsigned short Width = 32, Height = 16;
-    unsigned Flags = 0;
-    float HByteScale = 1, VPixelScale = 1;
-    unsigned ImageDataSize = 1024;
-};
+// A child-hand-like list: the port's marker, the instrument material with `to` set `uses` times, its mesh, a hand
+// material and mesh, and the end.
+static std::vector<Gfx> Child(unsigned uses, uint64_t to = kTo) {
+    std::vector<Gfx> l;
+    Wide2(l, kOpMarker, 0, 0xBEEFBEEF, 0x6666);
+    l.push_back(G(0xE7000000, 0));
+    for (unsigned i = 0; i < uses; ++i)
+        Material(l, to, 0);
+    Wide2(l, kOpVtxHash, (20 << 12) | (20 << 1), 0, 0x8888);
+    l.push_back(G(0x06000204, 0x00060802));
+    Wide2(l, kOpSetTImgHash, 0x500000, 0, kOther);
+    l.push_back(G(0xF5500000, 0x07000000));
+    Wide2(l, kOpVtxHash, (8 << 12) | (8 << 1), 0x140, 0x8888);
+    l.push_back(G(0x06000204, 0x00060802));
+    l.push_back(G(0xDF000000, 0));
+    return l;
+}
+static size_t At(const std::vector<Gfx>& l, uint64_t texture) {
+    size_t at = l.size();
+    const bool found = FindTexture(l, texture, at);
+    assert(found && at + 1 < l.size());
+    return found ? at : 0;
+}
+// `child` with the command `offset` slots after its Fairy texture's G_SETTIMG_OTR_HASH set to `g`.
+static std::vector<Gfx> Changed(std::vector<Gfx> child, size_t offset, Gfx g) {
+    child[At(child, kTo) + offset] = g;
+    return child;
+}
 
-static void Layout() {
-    const Texture design;
-    Texture fairy;
-    assert(SameLayout(design, fairy));
-    fairy.Type = Format::RGBA32;
-    assert(!SameLayout(design, fairy));
-    fairy = Texture();
-    fairy.Width = 64;
-    assert(!SameLayout(design, fairy));
-    fairy = Texture();
-    fairy.Height = 32;
-    assert(!SameLayout(design, fairy));
-    fairy = Texture();
-    fairy.Flags = 1;
-    assert(!SameLayout(design, fairy));
-    fairy = Texture();
-    fairy.HByteScale = 2;
-    assert(!SameLayout(design, fairy));
-    fairy = Texture();
-    fairy.VPixelScale = 0.5f;
-    assert(!SameLayout(design, fairy));
-    fairy = Texture();
-    fairy.ImageDataSize = 2048;
-    assert(!SameLayout(design, fairy));
-    Texture empty;
-    empty.ImageDataSize = 0;
-    assert(!SameLayout(empty, empty));
-    std::puts("Layout: textures fit only with the same format, size, flags, scales and byte size");
+static void Load() {
+    const std::vector<Gfx> adult = List(1), child = Child(1);
+    std::vector<std::pair<uintptr_t, uintptr_t>> load = { { 1, 2 } };
+    assert(TextureLoad(adult, kFrom, load) && load.size() == 7 && load[0].first == 0x20100000 && load[0].second == 0);
+    for (size_t i = 0; i < 6; ++i)
+        assert(load[i + 1].first == kLoad[i].words.w0 && load[i + 1].second == kLoad[i].words.w1);
+    assert(SameLoad(adult, kFrom, child, kTo));
+    // As left after a draw: the image address in the G_SETTIMG_OTR_HASH's w1 is not compared.
+    assert(SameLoad(adult, kFrom, Changed(child, 0, G(0x20100000, 0x7F001230)), kTo));
+    std::puts("Load: the adult instrument's load and tiles equal the child's; the image address is not compared");
+
+    // Another image format or width, block load, render tile or tile size; a command added or taken out.
+    assert(!SameLoad(adult, kFrom, Changed(child, 0, G(0x20180000, 0)), kTo));
+    assert(!SameLoad(adult, kFrom, Changed(child, 0, G(0x2010001F, 0)), kTo));
+    assert(!SameLoad(adult, kFrom, Changed(child, 4, G(0xF3000000, 0x071FF100)), kTo));
+    assert(!SameLoad(adult, kFrom, Changed(child, 6, G(0xF5101000, 0x00090250)), kTo));
+    assert(!SameLoad(adult, kFrom, Changed(child, 7, G(0xF2000000, 0x0007C03C)), kTo));
+    std::vector<Gfx> extra = child;
+    extra.insert(extra.begin() + At(extra, kTo) + 2, G(0xE7000000, 0));
+    assert(!SameLoad(adult, kFrom, extra, kTo));
+    std::vector<Gfx> fewer = child;
+    fewer.erase(fewer.begin() + At(fewer, kTo) + 3);
+    assert(!SameLoad(adult, kFrom, fewer, kTo));
+    // Not tiled before the next 128-bit command, or before the end.
+    std::vector<Gfx> untiled = child;
+    untiled.erase(untiled.begin() + At(untiled, kTo) + 7);
+    load = { { 1, 2 } };
+    assert(!TextureLoad(untiled, kTo, load) && load.empty() && !SameLoad(adult, kFrom, untiled, kTo));
+    std::vector<Gfx> cut;
+    Wide2(cut, kOpSetTImgHash, 0x100000, 0, kTo);
+    cut.insert(cut.end(), std::begin(kLoad), std::end(kLoad) - 1);
+    cut.push_back(G(0xDF000000, 0));
+    load = { { 1, 2 } };
+    assert(!TextureLoad(cut, kTo, load) && load.empty());
+    // The child sets its texture twice or never; the adult list is checked the same way.
+    assert(!SameLoad(adult, kFrom, Child(2), kTo) && !SameLoad(adult, kFrom, Child(0), kTo));
+    assert(!SameLoad(List(2), kFrom, child, kTo) && !SameLoad(adult, kTo, child, kTo));
+    assert(!SameLoad(adult, kFrom, child, kFrom));
+    std::puts("Load refused: another format, width, block load, tile or tile size, a command more or less, untiled, "
+              "set twice or never");
 }
 
 int main() {
     Swap();
-    Layout();
+    Load();
     std::puts("PASS pure");
 }
 '''
@@ -229,6 +270,7 @@ check('Combo_FairyRecolouredHandPath' not in hand[:recolour_at], 'the recoloured
 
 RUNTIME = r'''
 #include "ComboFairyOcarinaRecolour.h"
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstdio>
@@ -315,6 +357,8 @@ static const char kNear[] = "objects/object_link_boy/gLinkAdultRightHandHoldingO
 static const char kFar[] = "objects/object_link_boy/gLinkAdultRightHandHoldingOotFarDL";
 static const char kDesign[] = "objects/gameplay_keep/gOcarinaofTimeDesignTex";
 static const char kFairy[] = "objects/object_link_child/gLinkChildFairyOcarinaTex";
+static const char kChildNear[] = "objects/object_link_child/gLinkChildRightHandHoldingFairyOcarinaNearDL";
+static const char kChildFar[] = "objects/object_link_child/gLinkChildRightHandHoldingFairyOcarinaFarDL";
 static const char kNearName[] = "combo/runtime/adult_fairy_ocarina_hand_near";
 static const char kFarName[] = "combo/runtime/adult_fairy_ocarina_hand_far";
 static Gfx G(uintptr_t w0, uintptr_t w1) { return Gfx{ { w0, w1 } }; }
@@ -322,26 +366,45 @@ static void Hash(std::vector<Gfx>& l, uintptr_t w0, uint64_t hash) {
     l.push_back(G(w0, 0));
     l.push_back(G(uintptr_t(hash >> 32), uintptr_t(hash & 0xFFFFFFFFu)));
 }
+// An instrument material: its texture, a block load and a render tile through G_SETTILESIZE (tile size `tile`), and
+// the combiner.
+static void Instrument(std::vector<Gfx>& l, uint64_t texture, uintptr_t tile = 0x0003C03C) {
+    Hash(l, 0x20100000, texture);
+    for (const Gfx& g : { G(0xF5100000, 0x07080200), G(0xE6000000, 0), G(0xF3000000, 0x070FF200), G(0xE7000000, 0),
+                          G(0xF5100800, 0x00080200), G(0xF2000000, tile), G(0xFC127E03, 0xFFFFFDF8) })
+        l.push_back(g);
+}
 static std::vector<Gfx> AdultList(unsigned uses, unsigned seed) {
     std::vector<Gfx> l;
     Hash(l, 0x33000000, 0x42);
     Hash(l, 0x20500000, CRC64("objects/object_link_boy/gLinkAdultHandTex"));
     Hash(l, 0x32008010, 0x1000 + seed);
     l.push_back(G(0x06000204, seed));
-    for (unsigned i = 0; i < uses; ++i) {
-        Hash(l, 0x20100000, CRC64(kDesign));
-        l.push_back(G(0xF5100000, 0x07090250));
-    }
+    for (unsigned i = 0; i < uses; ++i)
+        Instrument(l, CRC64(kDesign));
+    Hash(l, 0x32008010, 0x2000 + seed);
     l.push_back(G(0xDF000000, 0));
     return l;
 }
-static std::shared_ptr<Fast::DisplayList> MakeList(const char* path, unsigned uses, unsigned seed) {
+// OoT's child hand holding the Fairy Ocarina: its material `uses` times, its mesh, then the hand.
+static std::vector<Gfx> ChildList(unsigned uses, unsigned seed, uintptr_t tile = 0x0003C03C) {
+    std::vector<Gfx> l;
+    Hash(l, 0x33000000, 0x43);
+    for (unsigned i = 0; i < uses; ++i)
+        Instrument(l, CRC64(kFairy), tile);
+    Hash(l, 0x32008010, 0x3000 + seed);
+    l.push_back(G(0x06000204, seed));
+    Hash(l, 0x20500000, CRC64("objects/object_link_child/gLinkChildHandTex"));
+    l.push_back(G(0xDF000000, 0));
+    return l;
+}
+static std::shared_ptr<Fast::DisplayList> MakeList(const char* path, std::vector<Gfx> instructions) {
     auto init = std::make_shared<Ship::ResourceInitData>();
     init->Path = path;
     init->Type = uint32_t(Fast::ResourceType::DisplayList);
     auto list = std::make_shared<Fast::DisplayList>(init);
     list->UCode = 2;
-    list->Instructions = AdultList(uses, seed);
+    list->Instructions = std::move(instructions);
     return list;
 }
 static std::shared_ptr<Fast::Texture> MakeTexture(const char* path) {
@@ -354,17 +417,27 @@ static std::shared_ptr<Fast::Texture> MakeTexture(const char* path) {
 }
 struct Oot {
     std::shared_ptr<Ship::ResourceManager> rm = std::make_shared<Ship::ResourceManager>();
-    std::shared_ptr<Fast::DisplayList> lists[2] = { MakeList(kNear, 1, 1), MakeList(kFar, 1, 2) };
-    std::vector<Gfx> before[2] = { lists[0]->Instructions, lists[1]->Instructions };
+    // The adult hands (near, far), then the child hands holding the Fairy Ocarina (near, far).
+    std::shared_ptr<Fast::DisplayList> lists[4] = { MakeList(kNear, AdultList(1, 1)), MakeList(kFar, AdultList(1, 2)),
+                                                    MakeList(kChildNear, ChildList(1, 3)),
+                                                    MakeList(kChildFar, ChildList(1, 4)) };
+    std::vector<Gfx> before[4] = { lists[0]->Instructions, lists[1]->Instructions, lists[2]->Instructions,
+                                   lists[3]->Instructions };
     std::shared_ptr<Fast::Texture> design = MakeTexture(kDesign), fairy = MakeTexture(kFairy);
     Oot() {
         rm->files[kNear] = lists[0];
         rm->files[kFar] = lists[1];
+        rm->files[kChildNear] = lists[2];
+        rm->files[kChildFar] = lists[3];
         rm->files[kDesign] = design;
         rm->files[kFairy] = fairy;
     }
+    void Set(int i, std::vector<Gfx> instructions) {
+        lists[i]->Instructions = instructions;
+        before[i] = std::move(instructions);
+    }
     bool Untouched() const {
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 4; ++i) {
             if (lists[i]->Instructions.size() != before[i].size())
                 return false;
             for (size_t k = 0; k < before[i].size(); ++k)
@@ -379,21 +452,8 @@ static void Teardown() {
     for (auto listener : Ship::CrossRMRegistry::listeners)
         listener();
 }
-
-static void Built() {
-    Oot oot;
-    Ship::CrossRMRegistry::oot = oot.rm;
-    assert(Combo_MM_FairyRecolourState() == 0);
-    const char* nearPath = Combo_FairyRecolouredHandPath(0);
-    assert(nearPath && std::strcmp(nearPath, "__OTR__@oot:combo/runtime/adult_fairy_ocarina_hand_near") == 0);
-    assert(!(reinterpret_cast<uintptr_t>(nearPath) & 1));
-    assert(Combo_MM_FairyRecolourState() == 1 && sWarnings == 0);
-    const int loads = oot.rm->loads;
-    assert(loads == 4); // two textures, two lists
-    const char* farPath = Combo_FairyRecolouredHandPath(1);
-    assert(farPath && std::strcmp(farPath, "__OTR__@oot:combo/runtime/adult_fairy_ocarina_hand_far") == 0);
-    assert(!(reinterpret_cast<uintptr_t>(farPath) & 1) && oot.rm->loads == loads);
-    // Each copy: OoT's list with only the texture hash swapped, OoT's ucode and init data; OoT's lists unchanged.
+// Each copy: OoT's adult list with only the texture hash swapped, OoT's ucode and init data; OoT's lists unchanged.
+static void CheckCopies(const Oot& oot) {
     for (int lod = 0; lod < 2; ++lod) {
         auto copy = std::static_pointer_cast<Fast::DisplayList>(oot.rm->cache.at(lod ? kFarName : kNearName));
         assert(copy != oot.lists[lod] && copy->UCode == 2 && copy->GetInitData() == oot.lists[lod]->GetInitData());
@@ -409,6 +469,22 @@ static void Built() {
                    copy->Instructions[k].words.w1 == expected[k].words.w1);
     }
     assert(oot.Untouched());
+}
+
+static void Built() {
+    Oot oot;
+    Ship::CrossRMRegistry::oot = oot.rm;
+    assert(Combo_MM_FairyRecolourState() == 0);
+    const char* nearPath = Combo_FairyRecolouredHandPath(0);
+    assert(nearPath && std::strcmp(nearPath, "__OTR__@oot:combo/runtime/adult_fairy_ocarina_hand_near") == 0);
+    assert(!(reinterpret_cast<uintptr_t>(nearPath) & 1));
+    assert(Combo_MM_FairyRecolourState() == 1 && sWarnings == 0);
+    const int loads = oot.rm->loads;
+    assert(loads == 5); // the Fairy Ocarina texture, two adult lists, two child lists
+    const char* farPath = Combo_FairyRecolouredHandPath(1);
+    assert(farPath && std::strcmp(farPath, "__OTR__@oot:combo/runtime/adult_fairy_ocarina_hand_far") == 0);
+    assert(!(reinterpret_cast<uintptr_t>(farPath) & 1) && oot.rm->loads == loads);
+    CheckCopies(oot);
     // Reinserted on every call, after an eviction too; never rebuilt for the same manager.
     auto nearCopy = oot.rm->cache.at(kNearName);
     oot.rm->cache.erase(kNearName);
@@ -431,6 +507,27 @@ static void Built() {
     assert(!Combo_FairyRecolouredHandPath(0) && Combo_MM_FairyRecolourState() == 0);
     std::puts("Built once per OoT manager: even routed paths, copies reinserted per call, OoT's lists unchanged, "
               "dropped at teardown");
+}
+
+// A texture pack's HD replacement (OTEX v1: its own size, scales and TEX_FLAG_LOAD_AS_RAW).
+static void HD(Fast::Texture& texture, uint16_t scale) {
+    texture.Width = uint16_t(32 * scale);
+    texture.Height = uint16_t(16 * scale);
+    texture.Flags = 1;
+    texture.HByteScale = texture.VPixelScale = float(scale);
+    texture.ImageDataSize = 1024u * scale * scale;
+}
+template <typename Change> static void Accepted(const char* what, Change change) {
+    Oot oot;
+    change(oot);
+    Ship::CrossRMRegistry::oot = oot.rm;
+    const int warnings = sWarnings;
+    assert(Combo_FairyRecolouredHandPath(0) && Combo_FairyRecolouredHandPath(1));
+    assert(Combo_MM_FairyRecolourState() == 1 && sWarnings == warnings);
+    CheckCopies(oot);
+    Teardown();
+    Ship::CrossRMRegistry::oot.reset();
+    std::printf("Built: %s\n", what);
 }
 
 template <typename Break> static void Refused(const char* what, Break breakIt) {
@@ -456,29 +553,42 @@ template <typename Break> static void Refused(const char* what, Break breakIt) {
 
 int main() {
     Built();
+    // The copies draw the Fairy Ocarina's texture as served, with the commands OoT's child hand draws it with, so the
+    // interpreter sizes a replacement from its own metadata as it does there; the Ocarina of Time's is not drawn.
+    Accepted("an HD Ocarina of Time texture, a native Fairy Ocarina texture", [](Oot& o) { HD(*o.design, 4); });
+    Accepted("a native Ocarina of Time texture, an HD Fairy Ocarina texture", [](Oot& o) { HD(*o.fairy, 4); });
+    Accepted("HD textures at different scales", [](Oot& o) {
+        HD(*o.design, 4);
+        HD(*o.fairy, 2);
+    });
+    Accepted("a Fairy Ocarina texture of another format", [](Oot& o) { o.fairy->Type = Fast::TextureType::RGBA32bpp; });
+    Accepted("a missing Ocarina of Time texture", [](Oot& o) { o.rm->files.erase(kDesign); });
+    Accepted("a custom (mod) child list that loads the Fairy Ocarina texture alike",
+             [](Oot& o) { o.lists[2]->GetInitData()->IsCustom = true; });
     Refused("a custom (mod) near list", [](Oot& o) { o.lists[0]->GetInitData()->IsCustom = true; });
     Refused("a dirty far list", [](Oot& o) { o.lists[1]->dirty = true; });
     Refused("a missing far list", [](Oot& o) { o.rm->files.erase(kFar); });
     Refused("a near list that is not a display list", [](Oot& o) { o.rm->files[kNear] = MakeTexture(kNear); });
-    Refused("a far list that sets the Ocarina of Time texture twice", [](Oot& o) {
-        o.lists[1]->Instructions = AdultList(2, 2);
-        o.before[1] = o.lists[1]->Instructions;
-    });
-    Refused("a near list that never sets it", [](Oot& o) {
-        o.lists[0]->Instructions = AdultList(0, 1);
-        o.before[0] = o.lists[0]->Instructions;
-    });
+    Refused("a far list that sets the Ocarina of Time texture twice", [](Oot& o) { o.Set(1, AdultList(2, 2)); });
+    Refused("a near list that never sets it", [](Oot& o) { o.Set(0, AdultList(0, 1)); });
     Refused("a missing Fairy Ocarina texture", [](Oot& o) { o.rm->files.erase(kFairy); });
-    Refused("a missing Ocarina of Time texture", [](Oot& o) { o.rm->files.erase(kDesign); });
     Refused("a Fairy Ocarina texture without an image", [](Oot& o) { o.fairy->ImageData = nullptr; });
     Refused("a dirty Fairy Ocarina texture", [](Oot& o) { o.fairy->dirty = true; });
-    Refused("a Fairy Ocarina texture of another size", [](Oot& o) {
-        o.fairy->Width = 64;
-        o.fairy->ImageDataSize = 2048;
-    });
-    Refused("a Fairy Ocarina texture of another format", [](Oot& o) { o.fairy->Type = Fast::TextureType::RGBA32bpp; });
     Refused("a Fairy Ocarina texture that is a display list",
-            [](Oot& o) { o.rm->files[kFairy] = MakeList(kFairy, 1, 3); });
+            [](Oot& o) { o.rm->files[kFairy] = MakeList(kFairy, AdultList(1, 3)); });
+    Refused("a missing near child list", [](Oot& o) { o.rm->files.erase(kChildNear); });
+    Refused("a dirty far child list", [](Oot& o) { o.lists[3]->dirty = true; });
+    Refused("a far child list that is not a display list",
+            [](Oot& o) { o.rm->files[kChildFar] = MakeTexture(kChildFar); });
+    Refused("a far child list that tiles the Fairy Ocarina texture otherwise",
+            [](Oot& o) { o.Set(3, ChildList(1, 4, 0x0007C07C)); });
+    Refused("a near child list that sets the Fairy Ocarina texture twice", [](Oot& o) { o.Set(2, ChildList(2, 3)); });
+    Refused("a near child list that never sets it", [](Oot& o) { o.Set(2, ChildList(0, 3)); });
+    Refused("a near adult list that does not tile the Ocarina of Time texture", [](Oot& o) {
+        std::vector<Gfx> l = AdultList(1, 1);
+        l.erase(std::find_if(l.begin(), l.end(), [](const Gfx& g) { return g.words.w0 == 0xF2000000; }));
+        o.Set(0, l);
+    });
     std::puts("PASS runtime");
 }
 '''

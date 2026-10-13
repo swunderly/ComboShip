@@ -7,11 +7,12 @@ read, never copied: the lists go to this test's build directory.
 Runs combo/menu/ComboFairyOcarinaRecolour.h on OoT's gLinkAdultRightHandHoldingOotNear/FarDL as
 ComboFairyOcarinaHand.h does on the device, once as extracted and once with the addresses libultraship writes into the
 first slots after a draw, and checks that exactly one slot changes: the hash of gOcarinaofTimeDesignTex becomes that
-of gLinkChildFairyOcarinaTex. Then checks the facts the swap relies on (tooling/claude-cleanup/t10): both textures are
-RGBA16 32x16 in 1024 bytes; in each adult list the instrument's texture load and tile commands are byte for byte the
-ones OoT's child hand uses for the Fairy Ocarina (gLinkChildRightHandHoldingFairyOcarinaNear/FarDL); and at the
-instrument's vertex load the combiner, render mode, texture LUT mode, texture scale, prim and env colours are the same
-in both, and the geometry mode differs at most in culling.
+of gLinkChildFairyOcarinaTex; and that its device check (SameLoad) passes against OoT's child hand holding the Fairy
+Ocarina (gLinkChildRightHandHoldingFairyOcarinaNear/FarDL), as extracted and after a draw. Then checks the facts the
+swap relies on (tooling/claude-cleanup/t10): both textures are RGBA16 32x16 in 1024 bytes; in each adult list the
+instrument's texture load and tile commands are byte for byte the ones OoT's child hand uses for the Fairy Ocarina;
+and at the instrument's vertex load the combiner, render mode, texture LUT mode, texture scale, prim and env colours
+are the same in both, and the geometry mode differs at most in culling.
 """
 from pathlib import Path
 import argparse
@@ -137,9 +138,11 @@ for name in (DESIGN, FAIRY):
 # ---- The production swap on each adult list, as extracted and as left after a draw.
 inputs = work / 'fairy_recolour_inputs.txt'
 with inputs.open('w', encoding='utf-8') as f:
-    for lod, (adult, _) in LISTS.items():
-        s = slots(adult)
-        f.write(f'{lod} {len(s)}\n' + ' '.join(f'{w0} {w1}' for w0, w1 in s) + '\n')
+    for lod, lists in LISTS.items():
+        f.write(f'{lod}\n')
+        for name in lists:
+            s = slots(name)
+            f.write(f'{len(s)}\n' + ' '.join(f'{w0} {w1}' for w0, w1 in s) + '\n')
 
 HARNESS = r'''
 #include "ComboFairyOcarinaRecolour.h"
@@ -149,30 +152,42 @@ HARNESS = r'''
 using namespace ComboFairyOcarinaRecolour;
 struct Gfx { struct { uintptr_t w0, w1; } words; };
 
+static bool Read(FILE* in, std::vector<Gfx>& list) {
+    size_t count;
+    if (std::fscanf(in, "%zu", &count) != 1)
+        return false;
+    list.resize(count);
+    for (auto& g : list) {
+        unsigned long long w0, w1;
+        if (std::fscanf(in, "%llu %llu", &w0, &w1) != 2)
+            return false;
+        g.words.w0 = uintptr_t(w0);
+        g.words.w1 = uintptr_t(w1);
+    }
+    return true;
+}
+// As libultraship leaves a drawn list: addresses in the first slots of its 128-bit commands.
+static std::vector<Gfx> Drawn(std::vector<Gfx> list) {
+    for (size_t i = 0; i + 1 < list.size(); ++i)
+        if (Wide(uint8_t(list[i].words.w0 >> 24))) {
+            list[i].words.w1 += 0x7F000000 + 16 * i;
+            ++i;
+        }
+    return list;
+}
+
 int main(int argc, char** argv) {
     if (argc < 4)
         return 2;
     const uint64_t from = std::strtoull(argv[2], nullptr, 10), to = std::strtoull(argv[3], nullptr, 10);
     FILE* in = std::fopen(argv[1], "r");
     char lod[8];
-    size_t count;
-    while (in && std::fscanf(in, "%7s %zu", lod, &count) == 2) {
-        std::vector<Gfx> list(count);
-        for (auto& g : list) {
-            unsigned long long w0, w1;
-            if (std::fscanf(in, "%llu %llu", &w0, &w1) != 2)
-                return 2;
-            g.words.w0 = uintptr_t(w0);
-            g.words.w1 = uintptr_t(w1);
-        }
+    while (in && std::fscanf(in, "%7s", lod) == 1) {
+        std::vector<Gfx> list, child;
+        if (!Read(in, list) || !Read(in, child))
+            return 2;
         for (int drawn = 0; drawn < 2; ++drawn) {
-            std::vector<Gfx> source = list, copy;
-            if (drawn) // as libultraship leaves a drawn list: addresses in the first slots of its 128-bit commands
-                for (size_t i = 0; i + 1 < source.size(); ++i)
-                    if (Wide(uint8_t(source[i].words.w0 >> 24))) {
-                        source[i].words.w1 += 0x7F000000 + 16 * i;
-                        ++i;
-                    }
+            std::vector<Gfx> source = drawn ? Drawn(list) : list, copy;
             const bool swapped = SwapTexture(source, copy, from, to);
             std::printf("%s%s %d %zu", lod, drawn ? "-drawn" : "", swapped ? 1 : 0, copy.size());
             for (size_t i = 0; i < copy.size() && i < source.size(); ++i)
@@ -180,6 +195,9 @@ int main(int argc, char** argv) {
                     std::printf(" %zu:%llu:%llu", i, (unsigned long long)copy[i].words.w0,
                                 (unsigned long long)copy[i].words.w1);
             std::printf("\n");
+            // The device check against OoT's child hand, both as extracted or both drawn.
+            std::printf("%s%s-load %d\n", lod, drawn ? "-drawn" : "",
+                        SameLoad(source, from, drawn ? Drawn(child) : child, to) ? 1 : 0);
         }
     }
     return in ? 0 : 2;
@@ -198,6 +216,8 @@ for lod, (adult, _) in LISTS.items():
     design_slots = [i + 1 for i, (w0, _) in enumerate(s[:-1]) if w0 >> 24 == 0x20 and
                     (s[i + 1][0] << 32 | s[i + 1][1]) == crc64(DESIGN)]
     for label in (lod, lod + '-drawn'):
+        check(results.get(label + '-load') == ['1'],
+              f'{adult} ({label}): SameLoad refuses it against OoT\'s child hand: {results.get(label + "-load")}')
         r = results.get(label)
         check(r is not None and r[0] == '1' and int(r[1]) == len(s), f'{adult} ({label}): the swap is refused: {r}')
         if not r or r[0] != '1':
@@ -256,7 +276,7 @@ if failures:
     sys.exit(1)
 print(f'Textures: {DESIGN} and {FAIRY} both RGBA16 32x16, 1024 bytes')
 print(f'Swap (production code): near list slot {swap_slots["near"]}, far list slot {swap_slots["far"]}; only that hash '
-      'slot changes, as extracted and after a draw')
+      'slot changes, as extracted and after a draw; SameLoad accepts each against OoT\'s child hand')
 print('Material: texture load and tiles byte for byte the child Fairy Ocarina\'s; combiner, render mode, texture LUT '
       'mode, texture scale, prim and env the same; geometry mode the same apart from culling')
 print(f'PASS: archive {oot_path}')

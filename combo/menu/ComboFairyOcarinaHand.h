@@ -154,14 +154,20 @@ static_assert(ComboFairyOcarinaRecolour::kOpSetTImgHash == G_SETTIMG_OTR_HASH &&
                   ComboFairyOcarinaRecolour::kOpBranchZHash == G_BRANCH_Z_OTR &&
                   ComboFairyOcarinaRecolour::kOpMtxHash == G_MTX_OTR &&
                   ComboFairyOcarinaRecolour::kOpMoveMemHash == G_MOVEMEM_OTR &&
+                  ComboFairyOcarinaRecolour::kOpSetTileSize == G_SETTILESIZE &&
                   ComboFairyOcarinaRecolour::kOpEndDl == G_ENDDL,
               "libultraship opcodes");
 // The recoloured hands: OoT's adult hands holding the Ocarina of Time, near and far, and the texture that colours the
-// Fairy Ocarina in OoT's child hand (ComboFairyOcarinaRecolour.h). Each copy is cached in OoT's manager under its
-// routed path's name; paths in display lists must be even (ResourceMgr_OTRSigCheck).
+// Fairy Ocarina in OoT's child hands, near and far, which show how OoT loads it (ComboFairyOcarinaRecolour.h). Each
+// copy is cached in OoT's manager under its routed path's name; paths in display lists must be even
+// (ResourceMgr_OTRSigCheck).
 static const char* const kFairyRecolouredLists[2] = {
     "objects/object_link_boy/gLinkAdultRightHandHoldingOotNearDL",
     "objects/object_link_boy/gLinkAdultRightHandHoldingOotFarDL",
+};
+static const char* const kFairyRecolouredReferences[2] = {
+    "objects/object_link_child/gLinkChildRightHandHoldingFairyOcarinaNearDL",
+    "objects/object_link_child/gLinkChildRightHandHoldingFairyOcarinaFarDL",
 };
 static const char kFairyRecolouredTexture[] = "objects/object_link_child/gLinkChildFairyOcarinaTex";
 alignas(2) static const char kFairyRecolouredNear[] = "__OTR__@oot:combo/runtime/adult_fairy_ocarina_hand_near";
@@ -177,26 +183,38 @@ static std::shared_ptr<Fast::Texture> Combo_FairyRecolourTexture(Ship::ResourceM
     auto typed = std::static_pointer_cast<Fast::Texture>(texture);
     return typed->ImageData ? typed : nullptr;
 }
+// A display list from OoT's manager, as served.
+static std::shared_ptr<Fast::DisplayList> Combo_FairyRecolourList(Ship::ResourceManager& rm, const char* name) {
+    auto list = rm.LoadResourceProcess(name);
+    if (!list || !list->GetInitData() || list->IsDirty() ||
+        list->GetInitData()->Type != static_cast<uint32_t>(Fast::ResourceType::DisplayList))
+        return nullptr;
+    return std::static_pointer_cast<Fast::DisplayList>(list);
+}
 // Builds both copies from OoT's manager, or says why not. Display lists and textures load nothing nested, so no
-// manager scope is needed. A custom (mod) list is not copied, as for the fit. Nothing cached is changed.
+// manager scope is needed. A custom (mod) adult list is not copied, as for the fit; the child list is only compared,
+// so it is read as served. A texture pack may replace either texture: each copy draws the Fairy Ocarina's texture as
+// served, with the commands OoT's child hand draws it with, so the interpreter sizes a replacement as it does there.
+// Nothing cached is changed.
 static const char* Combo_BuildFairyRecolouredHands(Ship::ResourceManager& rm) {
-    auto design = Combo_FairyRecolourTexture(rm, kFairyPlacementInstrumentTexture);
-    auto fairy = Combo_FairyRecolourTexture(rm, kFairyRecolouredTexture);
-    if (!design || !fairy || !ComboFairyOcarinaRecolour::SameLayout(*design, *fairy))
-        return "the Fairy Ocarina texture cannot be read or is not laid out like the Ocarina of Time's";
+    if (!Combo_FairyRecolourTexture(rm, kFairyRecolouredTexture))
+        return "the Fairy Ocarina texture cannot be read";
     std::array<std::shared_ptr<Fast::DisplayList>, 2> sources, copies;
     for (size_t lod = 0; lod < sources.size(); ++lod) {
-        auto list = rm.LoadResourceProcess(kFairyRecolouredLists[lod]);
-        if (!list || !list->GetInitData() || list->GetInitData()->IsCustom || list->IsDirty() ||
-            list->GetInitData()->Type != static_cast<uint32_t>(Fast::ResourceType::DisplayList))
+        sources[lod] = Combo_FairyRecolourList(rm, kFairyRecolouredLists[lod]);
+        if (!sources[lod] || sources[lod]->GetInitData()->IsCustom)
             return "OoT's adult hand holding the Ocarina of Time cannot be read";
-        sources[lod] = std::static_pointer_cast<Fast::DisplayList>(list);
         copies[lod] = std::make_shared<Fast::DisplayList>(sources[lod]->GetInitData());
         copies[lod]->UCode = sources[lod]->UCode;
         if (!ComboFairyOcarinaRecolour::SwapTexture(sources[lod]->Instructions, copies[lod]->Instructions,
                                                     CRC64(kFairyPlacementInstrumentTexture),
                                                     CRC64(kFairyRecolouredTexture)))
             return "OoT's adult hand does not set the Ocarina of Time texture exactly once";
+        auto reference = Combo_FairyRecolourList(rm, kFairyRecolouredReferences[lod]);
+        if (!reference ||
+            !ComboFairyOcarinaRecolour::SameLoad(sources[lod]->Instructions, CRC64(kFairyPlacementInstrumentTexture),
+                                                 reference->Instructions, CRC64(kFairyRecolouredTexture)))
+            return "OoT's child hand cannot be read or loads the Fairy Ocarina texture otherwise";
     }
     sFairyRecolouredSources = sources;
     sFairyRecolouredCopies = copies;
