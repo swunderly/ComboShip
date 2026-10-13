@@ -1341,7 +1341,7 @@ static const char* SlotItemName(ItemId item) {
 static void DrawRandoItemGives() {
     if (RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) {
         // Time Items Management Section
-        ImGui::SeparatorText("Time Items");
+        ImGui::SeparatorText("Time items");
 
         // Individual time items in 3x2 grid with static positioning
         RandoItemId clockItems[] = { RI_TIME_DAY_1,   RI_TIME_DAY_2,   RI_TIME_DAY_3,
@@ -1405,7 +1405,7 @@ static void DrawRandoItemGives() {
 
     // Queue Randomizer Item Gives section
     ImGui::Spacing();
-    ImGui::SeparatorText("Queue Randomizer Item Gives");
+    ImGui::SeparatorText("Give randomizer item");
 
     static ImGuiTextFilter riFilter;
     UIWidgets::PushStyleCombobox();
@@ -1727,7 +1727,8 @@ void DrawSlot(InventorySlot slot) {
 
 #ifdef COMBO_BUILD
 // ComboShip: the Inventory tab, mirrored by OoT's: Give all, Reset and Restrict to valid items (was "Safe Mode") on top
-// instead of in a side panel under the grid, the shared help line, then the Items and Masks grids.
+// instead of in a side panel under the grid, the shared help line, then the Items and Masks grids. The time-item and
+// give-item controls are on the Randomizer tab.
 void DrawItemsAndMasksTab() {
     namespace Kit = ComboSaveEditorKit;
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
@@ -1758,10 +1759,6 @@ void DrawItemsAndMasksTab() {
         DrawSlot(static_cast<InventorySlot>(i));
     }
     ImGui::EndChild();
-
-    if (gSaveContext.save.shipSaveInfo.saveType == SAVETYPE_RANDO) {
-        DrawRandoItemGives();
-    }
 
     ImGui::EndChild();
     ImGui::PopStyleVar(2);
@@ -2806,6 +2803,181 @@ void ClearAllEquippedItems() {
     }
 }
 
+#ifdef COMBO_BUILD
+// ComboShip: the Player tab with OoT's cards and labels: Position & rotation, Speed, Form, Equipped gear (read from the
+// equipped values; upstream previewed a remembered index), Button items (D-pad in OoT's order) with Clear all, and
+// Player state. "Available while playing." with no game running.
+void DrawPlayerTab() {
+    namespace Kit = ComboSaveEditorKit;
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+    ImGui::BeginChild("playerTab", ImVec2(0, 0), true);
+
+    if (gPlayState == nullptr) {
+        ImGui::TextWrapped("%s", Kit::kNeedsPlay);
+    } else {
+        Player* player = GET_PLAYER(gPlayState);
+        GetPlayerForm(GET_PLAYER_FORM);
+        Kit::BeginCardLayout();
+
+        Kit::BeginCard("playerLocation");
+        ImGui::Text("Position & rotation");
+        UIWidgets::PushStyleCombobox(formColor);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+        ImGui::InputScalar("X##Pos", ImGuiDataType_Float, &player->actor.world.pos.x);
+        ImGui::InputScalar("Y##Pos", ImGuiDataType_Float, &player->actor.world.pos.y);
+        ImGui::InputScalar("Z##Pos", ImGuiDataType_Float, &player->actor.world.pos.z);
+        ComboTouch::Count("X rotation", &player->actor.world.rot.x, -32768, 32767);
+        ComboTouch::Count("Y rotation", &player->actor.world.rot.y, -32768, 32767);
+        ComboTouch::Count("Z rotation", &player->actor.world.rot.z, -32768, 32767);
+        ImGui::PopItemWidth();
+        UIWidgets::PopStyleCombobox();
+        Kit::EndCard();
+
+        Kit::BeginCard("playerSpeed");
+        ImGui::Text("Speed");
+        UIWidgets::PushStyleCombobox(formColor);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+        ImGui::InputScalar("XZ speed", ImGuiDataType_Float, &player->speedXZ);
+        ImGui::InputScalar("Y velocity", ImGuiDataType_Float, &player->actor.velocity.y);
+        ImGui::InputScalar("Ledge height", ImGuiDataType_Float, &player->yDistToLedge);
+        ComboTouch::Count("Invincibility timer", &player->invincibilityTimer, -128, 127);
+        ImGui::InputScalar("Gravity", ImGuiDataType_Float, &player->actor.gravity);
+        ImGui::PopItemWidth();
+        UIWidgets::PopStyleCombobox();
+        Kit::EndCard();
+
+        Kit::BeginCard("playerForm");
+        ImGui::Text("Form");
+        GetPlayerForm(GET_PLAYER_FORM);
+        ImGui::Text("%s Link", curForm);
+        for (int i = PLAYER_FORM_FIERCE_DEITY; i <= PLAYER_FORM_HUMAN; i++) {
+            GetPlayerForm(i);
+            UIWidgets::PushStyleButton(formColor);
+            if (ImGui::Button(curForm)) {
+                s16 objectId = formObject;
+                if (i != PLAYER_FORM_HUMAN) {
+                    gSaveContext.save.equippedMask = PLAYER_MASK_FIERCE_DEITY + i;
+                }
+                gActorOverlayTable[ACTOR_PLAYER].profile->objectId = objectId;
+                func_8012F73C(&gPlayState->objectCtx, player->actor.objectSlot, objectId);
+                player->actor.objectSlot = Object_GetSlot(&gPlayState->objectCtx, GAMEPLAY_KEEP);
+                gSaveContext.save.playerForm = i;
+                s32 objectSlot =
+                    Object_GetSlot(&gPlayState->objectCtx, gActorOverlayTable[ACTOR_PLAYER].profile->objectId);
+                player->actor.objectSlot = objectSlot;
+                player->actor.shape.rot.z = GET_PLAYER_FORM + 1;
+                player->actor.init = PlayerCall_Init;
+                player->actor.update = PlayerCall_Update;
+                player->actor.draw = PlayerCall_Draw;
+                gSaveContext.save.equippedMask = PLAYER_MASK_NONE;
+
+                TransitionFade_SetColor(&gPlayState->unk_18E48, 0x000000);
+                R_TRANS_FADE_FLASH_ALPHA_STEP = -1;
+                Player_PlaySfx(GET_PLAYER(gPlayState), NA_SE_SY_TRANSFORM_MASK_FLASH);
+            }
+            UIWidgets::PopStyleButton();
+            if (i != PLAYER_FORM_HUMAN) {
+                ImGui::SameLine();
+            }
+        }
+        Kit::EndCard();
+
+        Kit::BeginCard("playerGear");
+        ImGui::Text("Equipped gear");
+        if (GET_PLAYER_FORM == PLAYER_FORM_HUMAN) {
+            static const char* swordNames[] = { "None", "Kokiri Sword", "Razor Sword", "Gilded Sword" };
+            static const char* shieldNames[] = { "None", "Hero's Shield", "Mirror Shield" };
+            const int sword = GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD);
+            const int shield = GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD);
+            UIWidgets::PushStyleCombobox(UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5)));
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            if (ImGui::BeginCombo("Sword", sword < 4 ? swordNames[sword] : "Fierce Deity's Sword")) {
+                for (int i = EQUIP_VALUE_SWORD_KOKIRI; i <= EQUIP_VALUE_SWORD_GILDED; i++) {
+                    if (ImGui::Selectable(swordNames[i], sword == i)) {
+                        SET_EQUIP_VALUE(EQUIP_TYPE_SWORD, i);
+                        if (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) == EQUIP_VALUE_SWORD_RAZOR) {
+                            gSaveContext.save.saveInfo.playerData.swordHealth = 100;
+                        }
+                        BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
+                            ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
+                        Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            if (ImGui::BeginCombo("Shield", shield < 3 ? shieldNames[shield] : "Glitched")) {
+                for (int i = EQUIP_VALUE_SHIELD_HERO; i <= EQUIP_VALUE_SHIELD_MIRROR; i++) {
+                    if (ImGui::Selectable(shieldNames[i], shield == i)) {
+                        SET_EQUIP_VALUE(EQUIP_TYPE_SHIELD, i);
+                        Player_SetEquipmentData(gPlayState, player);
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::PopItemWidth();
+            UIWidgets::PopStyleCombobox();
+        } else {
+            ImGui::TextWrapped("No equipment in this form");
+        }
+        Kit::EndCard();
+
+        Kit::BeginCard("currentItems");
+        ImGui::Text("Button items");
+        ImGui::PushItemWidth(ImGui::GetFontSize() * 6);
+        UIWidgets::PushStyleInput();
+        static u8 one = 1;
+        ImGui::InputScalar("B", ImGuiDataType_U8, &CUR_FORM_EQUIP(0), &one, NULL);
+        ImGui::InputScalar("C-Left", ImGuiDataType_U8, &CUR_FORM_EQUIP(1), &one, NULL);
+        ImGui::InputScalar("C-Down", ImGuiDataType_U8, &CUR_FORM_EQUIP(2), &one, NULL);
+        ImGui::InputScalar("C-Right", ImGuiDataType_U8, &CUR_FORM_EQUIP(3), &one, NULL);
+        ImGui::InputScalar("D-pad Up", ImGuiDataType_U8, &DPAD_GET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_D_UP), &one, NULL);
+        ImGui::InputScalar("D-pad Down", ImGuiDataType_U8, &DPAD_GET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_D_DOWN), &one, NULL);
+        ImGui::InputScalar("D-pad Left", ImGuiDataType_U8, &DPAD_GET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_D_LEFT), &one, NULL);
+        ImGui::InputScalar("D-pad Right", ImGuiDataType_U8, &DPAD_GET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_D_RIGHT), &one,
+                           NULL);
+        UIWidgets::PopStyleInput();
+        ImGui::PopItemWidth();
+        if (Kit::Button("Clear all##buttons", Kit::kReset)) {
+            ClearAllEquippedItems();
+        }
+        Kit::EndCard();
+
+        Kit::BeginCard("playerStates");
+        ImGui::Text("Player state");
+        uint32_t states[4] = { player->stateFlags1, player->stateFlags2, player->stateFlags3,
+                               player->meleeWeaponState };
+
+        if (ImGui::BeginTable("stateTable", 4)) {
+            GetPlayerForm(GET_PLAYER_FORM);
+            ImGui::PushStyleVar(ImGuiTableColumnFlags_WidthFixed, 15.0f);
+            ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, formColor);
+            ImGui::TableSetupColumn("State 1");
+            ImGui::TableSetupColumn("State 2");
+            ImGui::TableSetupColumn("State 3");
+            ImGui::TableSetupColumn("Sword State");
+            ImGui::TableHeadersRow();
+            ImGui::TableNextColumn();
+
+            for (int i = 0; i <= 3; i++) {
+                ImGui::Text("%s", std::to_string(states[i]).c_str());
+                ImGui::TableNextColumn();
+            }
+
+            ImGui::PopStyleColor(1);
+            ImGui::PopStyleVar(1);
+            ImGui::EndTable();
+        }
+        Kit::EndCard();
+
+        Kit::EndCardLayout();
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleVar(2);
+    ImGui::PopStyleColor(1);
+}
+#else
 void DrawPlayerTab() {
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
@@ -3010,6 +3182,7 @@ void DrawPlayerTab() {
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(1);
 }
+#endif
 
 const char* regGroupNames[] = {
     "REG  (0)",  "SREG (1)",  "OREG (2)",  "PREG (3)",  "QREG (4)",  "MREG (5)",  "YREG (6)",  "DREG (7)",
@@ -3068,10 +3241,247 @@ void DrawRegEditorTab() {
     ImGui::EndChild();
 }
 
+#ifdef COMBO_BUILD
+// ComboShip: the flags of a named table (week events, temporary events, randomizer flags) whose description or number
+// matches the search, one checkbox each, as OoT's flag tables search. Entries are in bit order, `width` per row.
+template <typename T>
+static void DrawFlagSearchResults(const FlagTable& flagTable, T* rows, size_t rowCount, ImGuiTextFilter& filter,
+                                  UIWidgets::Colors theme) {
+    constexpr size_t width = sizeof(T) * 8;
+    bool hasMatches = false;
+    for (size_t i = 0; i < flagTable.entries.size() && i / width < rowCount; i++) {
+        const std::string label = fmt::format("0x{:03X}: {}", i, flagTable.entries[i].description);
+        if (!filter.PassFilter(label.c_str())) {
+            continue;
+        }
+        hasMatches = true;
+        T& flags = rows[i / width];
+        const T mask = static_cast<T>(1u << (i % width));
+        bool set = (flags & mask) != 0;
+        ImGui::PushID(static_cast<int>(i));
+        if (UIWidgets::Checkbox(label.c_str(), &set, { .color = theme })) {
+            flags = set ? static_cast<T>(flags | mask) : static_cast<T>(flags & ~mask);
+        }
+        ImGui::PopID();
+    }
+    if (!hasMatches) {
+        ImGui::Text("No flags match the current search.");
+    }
+}
+#endif
+
 const char* flagEditorSections[] = { "currentSceneFlags", "weekEventReg",  "eventInf",
                                      "scenesVisible",     "owlActivation", "permanentSceneFlags",
                                      "cycleSceneFlags",   "randoInf",      "collectedHearts" };
 
+#ifdef COMBO_BUILD
+// ComboShip: the Flags tab with OoT's layout: a "Flag type" list with plain names in a fixed order (it showed the code
+// names), groups with plain names and Set all (theme) / Clear all (Red), and a search box on the week event, temporary
+// event and randomizer flag tables. collectedHearts is left out: every MM save in Combo Ship is a randomizer save, for
+// which it only said "Flags are not relevant to rando".
+void DrawFlagsTab() {
+    namespace Kit = ComboSaveEditorKit;
+    const UIWidgets::Colors theme = UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5));
+    const ImVec4 themeColour = UIWidgets::ColorValues.at(theme);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+    ImGui::BeginChild("flagsBox", ImVec2(0, 0), true);
+    static const char* typeNames[] = { "Current scene",    "Saved scene",    "Cycle scene", "Week events",
+                                       "Temporary events", "Scenes visited", "Owl statues", "Randomizer flags" };
+    static const FlagTableType typeTables[] = { CURRENT_SCENE_FLAGS, PERMANENT_SCENE_FLAGS,
+                                                CYCLE_SCENE_FLAGS,   WEEK_EVENT_REG,
+                                                EVENT_INF,           SCENES_VISIBLE,
+                                                OWL_ACTIVATION,      RANDO_INF };
+    static int selectedType = 0;
+    UIWidgets::Combobox("Flag type", &selectedType, typeNames,
+                        { .alignment = UIWidgets::ComponentAlignment::Left,
+                          .labelPosition = UIWidgets::LabelPosition::Near,
+                          .color = theme });
+    const FlagTableType type = typeTables[selectedType];
+
+    if (type == WEEK_EVENT_REG) { // Draw color legend
+        ImGui::TextColored(UIWidgets::ColorValues.at(UIWidgets::Colors::Gray), ICON_FA_SQUARE "Persistent");
+        ImGui::SameLine();
+        ImGui::TextColored(UIWidgets::ColorValues.at(UIWidgets::Colors::LightBlue), ICON_FA_SQUARE "Cycle");
+        ImGui::SameLine();
+        ImGui::TextColored(UIWidgets::ColorValues.at(UIWidgets::Colors::Orange), ICON_FA_SQUARE "Scene/Other");
+    }
+
+    static int16_t selectedScene = 0;
+    if (type == PERMANENT_SCENE_FLAGS || type == CYCLE_SCENE_FLAGS) {
+        UIWidgets::ComboboxWithSearch("Scene", &selectedScene, &sceneList,
+                                      {
+                                          .alignment = UIWidgets::ComponentAlignment::Left,
+                                          .labelPosition = UIWidgets::LabelPosition::None,
+                                          .color = theme,
+                                      });
+        if (gPlayState != NULL) {
+            ImGui::SameLine();
+            if (Kit::Button("Current", themeColour)) {
+                selectedScene = gPlayState->sceneId;
+            }
+        }
+    }
+
+    // One group of 32 flags: its name, Set all and Clear all, then the flags.
+    auto group = [&](const std::string& name, uint32_t& flags) {
+        Kit::BeginCard(name.c_str());
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%s", name.c_str());
+        ImGui::SameLine();
+        if (Kit::Button(("Set all##" + name).c_str(), themeColour)) {
+            flags = UINT32_MAX;
+        }
+        ImGui::SameLine();
+        if (Kit::Button(("Clear all##" + name).c_str(), Kit::kReset)) {
+            flags = 0;
+        }
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
+        UIWidgets::DrawFlagArray32("##" + name, flags, theme);
+        ImGui::PopStyleVar();
+        Kit::EndCard();
+    };
+    // A search box per named flag table.
+    auto search = [&](FlagTableType table) -> ImGuiTextFilter& {
+        static std::map<int, ImGuiTextFilter> filters;
+        ImGuiTextFilter& filter = filters[table];
+        UIWidgets::PushStyleInput(theme);
+        filter.Draw("Search", ImGui::GetFontSize() * 16);
+        UIWidgets::PopStyleInput();
+        return filter;
+    };
+
+    switch (type) {
+        case CURRENT_SCENE_FLAGS: {
+            if (gPlayState == NULL) {
+                ImGui::TextWrapped("%s", Kit::kNeedsPlay);
+                break;
+            }
+            auto& sceneFlags = gPlayState->actorCtx.sceneFlags;
+            Kit::BeginCardLayout(2, 360.0f);
+            for (int i = 0; i < 4; i++) {
+                group(fmt::format("Switch {}", i + 1), sceneFlags.switches[i]);
+            }
+            group("Chest", sceneFlags.chest);
+            group("Room clear", sceneFlags.clearedRoom);
+            group("Temporary room clear", sceneFlags.clearedRoomTemp);
+            for (int i = 0; i < 4; i++) {
+                group(fmt::format("Collectible {}", i + 1), sceneFlags.collectible[i]);
+            }
+            Kit::EndCardLayout();
+            break;
+        }
+        case WEEK_EVENT_REG: {
+            ImGuiTextFilter& filter = search(type);
+            if (filter.IsActive()) {
+                DrawFlagSearchResults(flagTables.at(WEEK_EVENT_REG), gSaveContext.save.saveInfo.weekEventReg,
+                                      ARRAY_COUNT(gSaveContext.save.saveInfo.weekEventReg), filter, theme);
+                break;
+            }
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
+            for (int i = 0; i < 100; i++) {
+                ImGui::PushID(i);
+                ImGui::Text("%02d", i);
+                ImGui::SameLine();
+                UIWidgets::DrawFlagTableArray8Mask(flagTables.at(WEEK_EVENT_REG), i,
+                                                   gSaveContext.save.saveInfo.weekEventReg[i]);
+                ImGui::PopID();
+            }
+            ImGui::PopStyleVar();
+            break;
+        }
+        case EVENT_INF: {
+            ImGuiTextFilter& filter = search(type);
+            if (filter.IsActive()) {
+                DrawFlagSearchResults(flagTables.at(EVENT_INF), gSaveContext.eventInf,
+                                      ARRAY_COUNT(gSaveContext.eventInf), filter, theme);
+                break;
+            }
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
+            for (int i = 0; i < 8; i++) {
+                ImGui::PushID(i);
+                ImGui::Text("%02d", i);
+                ImGui::SameLine();
+                UIWidgets::DrawFlagTableArray8(flagTables.at(EVENT_INF), i, gSaveContext.eventInf[i]);
+                ImGui::PopID();
+            }
+            ImGui::PopStyleVar();
+            break;
+        }
+        case SCENES_VISIBLE:
+            if (Kit::Button("Set all##scenesVisible", themeColour)) {
+                for (int i = 0; i < 7; i++) {
+                    gSaveContext.save.saveInfo.scenesVisible[i] = UINT32_MAX;
+                }
+            }
+            ImGui::SameLine();
+            if (Kit::Button("Clear all##scenesVisible", Kit::kReset)) {
+                for (int i = 0; i < 7; i++) {
+                    gSaveContext.save.saveInfo.scenesVisible[i] = 0;
+                }
+            }
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
+            for (int i = 0; i < 7; i++) {
+                ImGui::PushID(i);
+                UIWidgets::DrawFlagArray32("##", gSaveContext.save.saveInfo.scenesVisible[i], theme);
+                ImGui::PopID();
+            }
+            ImGui::PopStyleVar();
+            break;
+        case OWL_ACTIVATION:
+            DrawOwlStatuesEditor();
+            break;
+        case PERMANENT_SCENE_FLAGS: {
+            auto& sceneFlags = gSaveContext.save.saveInfo.permanentSceneFlags[selectedScene];
+            Kit::BeginCardLayout(2, 360.0f);
+            group("Chest", sceneFlags.chest);
+            group("Switch 1", sceneFlags.switch0);
+            group("Switch 2", sceneFlags.switch1);
+            group("Collectible", sceneFlags.collectible);
+            group("Room clear", sceneFlags.clearedRoom);
+            group("Floors visited (dungeons)", sceneFlags.unk_14);
+            group("Rooms visited", sceneFlags.rooms);
+            Kit::EndCardLayout();
+            break;
+        }
+        case CYCLE_SCENE_FLAGS: {
+            auto& sceneFlags = gSaveContext.cycleSceneFlags[selectedScene];
+            Kit::BeginCardLayout(2, 360.0f);
+            group("Chest", sceneFlags.chest);
+            group("Switch 1", sceneFlags.switch0);
+            group("Switch 2", sceneFlags.switch1);
+            group("Collectible", sceneFlags.collectible);
+            group("Room clear", sceneFlags.clearedRoom);
+            Kit::EndCardLayout();
+            break;
+        }
+        case RANDO_INF: {
+            ImGuiTextFilter& filter = search(type);
+            if (filter.IsActive()) {
+                DrawFlagSearchResults(flagTables.at(RANDO_INF), gSaveContext.save.shipSaveInfo.rando.randoInf,
+                                      ARRAY_COUNT(gSaveContext.save.shipSaveInfo.rando.randoInf), filter, theme);
+                break;
+            }
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
+            for (int i = 0; i < 5; i++) {
+                ImGui::PushID(i);
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("%02d", i);
+                ImGui::SameLine(ImGui::CalcTextSize("000").x + ImGui::GetStyle().ItemSpacing.x);
+                UIWidgets::DrawFlagTableArray16(flagTables.at(RANDO_INF), i,
+                                                gSaveContext.save.shipSaveInfo.rando.randoInf[i]);
+                ImGui::PopID();
+            }
+            ImGui::PopStyleVar();
+            break;
+        }
+        default:
+            break;
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleVar(2);
+}
+#else
 void DrawFlagsTab() {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
@@ -3609,7 +4019,102 @@ void DrawFlagsTab() {
     ImGui::EndChild();
     ImGui::PopStyleVar(2);
 }
+#endif
 
+#ifdef COMBO_BUILD
+// ComboShip: the Randomizer tab: the time-item and give-item controls (moved here from Inventory), Generate Spoiler
+// from Save, and the check list under a collapsed header because it shows where every item is. The cross-send debug
+// button shows only with MM's developer options on (BenMenu.cpp's COMBO_MM_DEBUG_MODE_NAME).
+void DrawRandoTab() {
+    if (CVarGetInteger("gDeveloperTools.DebugEnabledMM", 0)) {
+        if (UIWidgets::Button("Cross-send debug item to OOT", { .size = UIWidgets::Sizes::Inline })) {
+            if (gSaveContext.fileNum == 0xFF) {
+                SPDLOG_WARN("[ComboShip] MM cross-send: no save loaded (fileNum=0x{:X})",
+                            (unsigned)gSaveContext.fileNum);
+            } else if (gMMComboCrossDeliver) {
+                // Deliver an OOT-bound item straight into OOT's resident save NOW (issue #3).
+                gMMComboCrossDeliver(ComboRando::GAME_OOT, "DEBUG_ITEM", "");
+                SPDLOG_INFO("[ComboShip] MM cross-send: delivered DEBUG_ITEM to OOT (slot {})",
+                            (int)gSaveContext.fileNum);
+            }
+        }
+        UIWidgets::Tooltip("ComboShip: deliver a cross-world debug item to OOT's save for the current slot");
+    }
+    DrawRandoItemGives();
+    ImGui::Spacing();
+    if (UIWidgets::Button("Generate Spoiler from Save", { .size = UIWidgets::Sizes::Inline })) {
+        nlohmann::json spoiler = Rando::Spoiler::GenerateFromSaveContext();
+        std::string inputSeed = std::to_string(Ship_Random(0, 1000000));
+        spoiler["inputSeed"] = inputSeed;
+
+        std::string fileName = inputSeed + ".json";
+        Rando::Spoiler::SaveToFile(fileName, spoiler);
+    }
+
+    if (ImGui::CollapsingHeader("Check list (shows item locations)")) {
+        static ImGuiTextFilter rcFilter;
+        UIWidgets::PushStyleCombobox();
+        rcFilter.Draw("##filter", ImGui::GetContentRegionAvail().x);
+        UIWidgets::PopStyleCombobox();
+        if (!rcFilter.IsActive()) {
+            ImGui::SameLine(18.0f);
+            ImGui::Text("Search");
+        }
+
+        ImGui::BeginChild("RandoChild", ImVec2(0, ImGui::GetFontSize() * 30));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 1.0f, 1.0f, 0.2f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 1.0f, 1.0f, 0.1f));
+
+        ImGui::BeginTable("Check List", 5);
+        ImGui::TableSetupColumn("Shuffled", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_WidthFixed,
+                                30.0f);
+        ImGui::TableSetupColumn("Eligible", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_WidthFixed,
+                                30.0f);
+        ImGui::TableSetupColumn("Obtained", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_WidthFixed,
+                                30.0f);
+        ImGui::TableSetupColumn("Check Name");
+        ImGui::TableSetupColumn("Reward");
+        ImGui::TableSetupScrollFreeze(5, 1);
+        ImGui::TableHeadersRow();
+
+        for (auto& [_, randoStaticCheck] : Rando::StaticData::Checks) {
+            RandoSaveCheck& randoSaveCheck = RANDO_SAVE_CHECKS[randoStaticCheck.randoCheckId];
+
+            if (!rcFilter.PassFilter(randoStaticCheck.name) &&
+                !rcFilter.PassFilter(Rando::StaticData::Items[randoSaveCheck.randoItemId].spoilerName)) {
+                continue;
+            }
+
+            if (randoStaticCheck.randoCheckId == RC_UNKNOWN) {
+                continue;
+            }
+            std::string hiddenName = "##";
+            hiddenName += randoStaticCheck.name;
+            ImGui::TableNextColumn();
+            UIWidgets::Checkbox((hiddenName + "shuffled").c_str(), &randoSaveCheck.shuffled);
+            UIWidgets::Tooltip("Shuffled");
+            ImGui::TableNextColumn();
+            UIWidgets::Checkbox((hiddenName + "eligible").c_str(), &randoSaveCheck.eligible);
+            UIWidgets::Tooltip("Eligible");
+            ImGui::TableNextColumn();
+            UIWidgets::Checkbox((hiddenName + "obtained").c_str(), &randoSaveCheck.obtained);
+            UIWidgets::Tooltip("Obtained");
+            ImGui::TableNextColumn();
+            ImGui::TextColored(randoSaveCheck.obtained ? UIWidgets::ColorValues.at(UIWidgets::Colors::Green)
+                                                       : UIWidgets::ColorValues.at(UIWidgets::Colors::White),
+                               "%s", randoStaticCheck.name);
+            ImGui::TableNextColumn();
+            UIWidgets::ComboboxWithSearch((hiddenName + "reward").c_str(), &randoSaveCheck.randoItemId,
+                                          &randoItemIdComboboxMap, { .labelPosition = UIWidgets::LabelPosition::None });
+        }
+
+        ImGui::EndTable();
+        ImGui::PopStyleColor(3);
+        ImGui::EndChild();
+    }
+}
+#else
 void DrawRandoTab() {
 #ifdef COMBO_BUILD
     if (UIWidgets::Button("Cross-send debug item to OOT", { .size = UIWidgets::Sizes::Inline })) {
@@ -3690,6 +4195,7 @@ void DrawRandoTab() {
     ImGui::PopStyleColor(3);
     ImGui::EndChild();
 }
+#endif
 
 #ifdef COMBO_BUILD
 void SaveEditorWindow::DrawElement() {

@@ -538,3 +538,16 @@ take upstream changes into the `#else` branch and port them to the combo branch 
 - `DrawDungeonItemTab`: one card per temple with Map, Compass, Boss key, the small key and stray fairy icons and
   inline bars instead of popups. The small key icon is faded at 0 keys (upstream tested `DUNGEON_KEY_COUNT(i) + 1`,
   which is lit at 0).
+- Flags (`DrawFlagsTab`, combo-only `DrawFlagSearchResults`): the "Flag type" list shows plain names in OoT's order
+  (Current scene, Saved scene, Cycle scene, Week events, Temporary events, Scenes visited, Owl statues, Randomizer
+  flags) instead of code names; groups have plain names ("Switch 1", "Room clear", ...) with Set all (theme) /
+  Clear all (Red); the week event, temporary event and randomizer flag tables get a search box. collectedHearts is
+  left out: every MM save in Combo Ship is a randomizer save, for which it only said "Flags are not relevant to
+  rando".
+- Player (`DrawPlayerTab`): OoT's cards and labels (Position & rotation, Speed, Form, Equipped gear, Button items with
+  the D-pad in OoT's order and Clear all, Player state); the sword and shield dropdowns preview the equipped values
+  (upstream showed a remembered index); "Available while playing." with no game running.
+- Randomizer (`DrawRandoTab`, was "Rando"): the time-item and give-item controls (`DrawRandoItemGives`, headings
+  "Time items" and "Give randomizer item") move here from Inventory; the check-and-reward table, which shows where
+  every item is, sits under a collapsed "Check list (shows item locations)"; "Cross-send debug item to OOT" shows only
+  with MM's developer options on (`gDeveloperTools.DebugEnabledMM`, BenMenu.cpp's `COMBO_MM_DEBUG_MODE_NAME`).

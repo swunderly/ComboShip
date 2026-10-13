@@ -7,7 +7,8 @@ draw their combo branches with combo/gui/ComboSaveEditorKit.h. This reads the ed
 1. The kit: Android sizes are MM's touch sizes, the colours are the values both games' UIWidgets::ColorValues give
    those names, and the tap rule (one possible item toggles, several open a picker) and the clock text, built and run.
 2. Tabs: both editors draw General, Inventory, Equipment, Quest Status, Dungeon Items, Flags, Player in that order;
-   MM then adds Randomizer and, last, Reg Editor. OoT's file number is not editable.
+   MM then adds Randomizer and, last, Reg Editor. OoT's file number is not editable. Quest Status, Flags and Player
+   use the same headings and labels; MM's check list is collapsed and its cross-send button developer-only.
 3. Every CVar the editors read before T8, and the two window CVars, is still read or still has its widget.
 4. OoT's tap rule (Sam's example 1), run on the production GetLegalInventorySlotItems, ToggleInventorySlot, item
    table and item slots: with "Restrict to valid items" on, Boomerang and the other one-item slots toggle while
@@ -131,6 +132,27 @@ for text, game in ((oot, 'OoT'), (mm, 'MM')):
     check('Kit::kHeartPieces' in quest_tab, f'{game} heart pieces are not a Red bar')
 check('"File Number"' not in oot and not re.search(r'&gSaveContext\.fileNum\b', oot),
       'the OoT Save Editor can still edit the file number')
+
+# Flags, Player and Randomizer (spec 6.8-6.10).
+oot_flags = function(oot, 'void DrawFlagsTab() {')
+check('Combobox("Flag type"' in oot_flags and 'TreeNode("Player State")' not in oot_flags and
+      hostcxx.contains(oot_flags, 'if (keepGsCountUpdated && changed)'),
+      'OoT Flags: no Flag type list, player state still there, or the token count is rewritten every frame')
+mm_flags = function(mm, 'void DrawFlagsTab() {')
+check('UIWidgets::Combobox("Flag type"' in mm_flags and 'HEART_FLAGS' not in mm_flags and
+      'collectedHearts' not in mm_flags, 'MM Flags: no Flag type list, or collectedHearts still offered')
+for text, game in ((oot, 'OoT'), (mm, 'MM')):
+    player_tab = function(text, 'void DrawPlayerTab() {')
+    for label in ('"Position & rotation"', '"Speed"', '"XZ speed"', '"Y velocity"', '"Ledge height"',
+                  '"Invincibility timer"', '"Gravity"', '"Equipped gear"', '"Button items"', '"Clear all##buttons"',
+                  '"Player state"', 'Kit::kNeedsPlay'):
+        check(label in player_tab, f'{game} Player tab lacks {label}')
+mm_rando = function(mm, 'void DrawRandoTab() {')
+check(hostcxx.contains(mm_rando, 'if (CVarGetInteger("gDeveloperTools.DebugEnabledMM", 0)) {') and
+      mm_rando.index('gDeveloperTools.DebugEnabledMM') < mm_rando.index('Cross-send debug item to OOT') and
+      mm_rando.index('CollapsingHeader("Check list (shows item locations)")') < mm_rando.index('BeginTable("Check List"') and
+      'DrawRandoItemGives();' in mm_rando and 'DrawRandoItemGives' not in function(mm, 'void DrawItemsAndMasksTab() {'),
+      'MM Randomizer tab: cross-send not developer-only, check list not collapsed, or gives not moved here')
 
 # ---- 3. CVars: what the editors read at android-source 620b2d3c, and the window CVars.
 for text, game, cvars in ((oot, 'OoT', ('CVAR_SETTING("DisableChanges")', 'CVAR_ENHANCEMENT("DpadEquips")')),
