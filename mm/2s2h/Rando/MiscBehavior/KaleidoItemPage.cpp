@@ -3,6 +3,7 @@
 extern "C" int Combo_MM_GearActive(void);
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 #include "2s2h/ShipUtils.h"
+#include <algorithm>
 
 extern "C" {
 #include "z64interface.h"
@@ -157,6 +158,14 @@ std::vector<u8> BuildAvailableItemsList(u8 slot) {
                 availableItems.push_back(ITEM_LETTER_TO_KAFEI);
             }
             break;
+    }
+
+    // ComboShip: a slot can hold an item the save never recorded as owned (the MM spells the 0.4.1 Save Editor's Give
+    // all put in the trade slots). List it as well, so A still switches to a single owned item beside it.
+    const u8 current = gSaveContext.save.saveInfo.inventory.items[slot];
+    if ((slot == SLOT_TRADE_DEED || slot == SLOT_TRADE_KEY_MAMA || slot == SLOT_TRADE_COUPLE) && current != ITEM_NONE &&
+        std::find(availableItems.begin(), availableItems.end(), current) == availableItems.end()) {
+        availableItems.insert(availableItems.begin(), current);
     }
 
     return availableItems;

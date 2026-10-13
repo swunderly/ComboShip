@@ -320,6 +320,7 @@ void Inventory_DeleteItem(int, int slot) { gSaveContext.save.saveInfo.inventory.
     function(editor, 'static ItemId GiveAllSlotItem(InventorySlot slot)') + '\n' + \
     function(editor, 'static void TakeOffComboGear()') + '\n' + \
     function(editor, 'static void ClearSlotItemOwnership()') + '\n' + \
+    function(kaleido, 'u8 GetNextListEntry(const std::vector<u8>& list, u8 current)') + '\n' + \
     function(kaleido, 'std::vector<u8> BuildAvailableItemsList(u8 slot)') + r'''
 u8 gAmmo[256];
 int gUpgrades[8];
@@ -492,7 +493,7 @@ int main() {
                 Pick(item);
                 safeMode = true;
                 assert(gSaveContext.save.saveInfo.inventory.items[SLOT_TRADE_KEY_MAMA] == item && NoOwnership());
-                assert(BuildAvailableItemsList(SLOT_TRADE_KEY_MAMA).empty());
+                assert(BuildAvailableItemsList(SLOT_TRADE_KEY_MAMA) == List({ item })); // nothing to switch to
                 continue;
             }
             Fresh(true, options);
@@ -670,7 +671,19 @@ int main() {
     const SaveContext before = gSaveContext;
     assert(Casts(0) && Casts(1) && Casts(2));
     assert(std::memcmp(&before.save, &gSaveContext.save, sizeof(Save)) == 0);
-    assert(BuildAvailableItemsList(SLOT_TRADE_DEED).empty());
+    // The pause cycle lists the unowned item in its slot, so A switches to the one owned item beside it (the
+    // emulator's File 3: Farore's Wind with the Iron Boots, Nayru's Love with the Hover Boots and the Zora Tunic).
+    assert(BuildAvailableItemsList(SLOT_TRADE_DEED) == List({ ITEM_COMBO_DINS_FIRE }));
+    gSaveContext.save.shipSaveInfo.adultMm.gearTrade2Bits = 2; // Iron Boots
+    gSaveContext.save.shipSaveInfo.adultMm.gearTrade3Bits = 6; // Hover Boots and Zora Tunic
+    const auto mama = BuildAvailableItemsList(SLOT_TRADE_KEY_MAMA);
+    assert(mama == List({ ITEM_COMBO_FARORES_WIND, ITEM_COMBO_BOOTS_IRON }));
+    assert(GetNextListEntry(mama, ITEM_COMBO_FARORES_WIND) == ITEM_COMBO_BOOTS_IRON);
+    assert(BuildAvailableItemsList(SLOT_TRADE_COUPLE) ==
+           List({ ITEM_COMBO_NAYRUS_LOVE, ITEM_COMBO_BOOTS_HOVER, ITEM_COMBO_TUNIC_ZORA }));
+    // Once switched, the owned item is listed only once.
+    slots[SLOT_TRADE_KEY_MAMA] = ITEM_COMBO_BOOTS_IRON;
+    assert(BuildAvailableItemsList(SLOT_TRADE_KEY_MAMA) == List({ ITEM_COMBO_BOOTS_IRON }));
     std::puts("MM spell cast gate, Farore's Wind button and Save Editor ownership: OK");
 }
 '''
