@@ -11,19 +11,12 @@ What is authorized, what is not, and the order the remaining work will be built 
 
 ## Remaining authorized work (October 7 list)
 
-Done earlier: silver rupees and pouches, MM key rings, victory conditions, MM time-of-day items, cross-warp native animation and audio, MM NPC/animal/misc souls, Farore's Wind in MM.
+Done earlier: silver rupees and pouches, MM key rings, victory conditions, MM time-of-day items, cross-warp native animation and audio, MM NPC/animal/misc souls, Farore's Wind in MM; the October 10 code-review cleanup with a one-command test suite, and the Farore's Wind draw fix (0.3.10); OoT enemy souls, "Enemy Souls (OoT)" (0.4.0); Din's Fire and Nayru's Love in MM (0.4.1); the shared MM age and gear groundwork, Iron and Hover Boots, Goron and Zora Tunics in MM, and adult Link in MM, "Cross-Games Age" (0.4.3). See [CHANGELOG.md](CHANGELOG.md) for what each release includes and what is still untested.
 
 Planned order (each step ships when it is complete and tested):
 
-1. **Cleanup fixes** from the October 10 code review, plus a working one-command test suite.
-2. **Farore's Wind draw fix**: an MM Farore's Wind placed in OoT currently draws as a blue rupee.
-3. **OoT enemy souls** (OoTMM `soulsEnemyOot`, "Enemy Souls (OoT)"). The 43 souls already exist but are unreachable; this publishes the setting and fixes the room-clear, boss and pool differences from OoTMM.
-4. **Din's Fire and Nayru's Love in MM** (`spellFireMm`, `spellLoveMm`, shared variants), after re-auditing the MM logic branches they switch on.
-5. **Shared MM player groundwork** for adult Link and MM gear: one age check, one gear check, and saves that never refuse to load because of adult or gear state.
-6. **Iron Boots, Hover Boots, Goron and Zora Tunics in MM** (`bootsIronMm`, `bootsHoverMm`, `tunicGoronMm`, `tunicZoraMm`, shared variants).
-7. **Adult Link in MM** (OoTMM `crossAge`, "Cross-Games Age"). The model comes from OoT's own adult Link in the OoT data the app already extracts from the player's ROM; nothing is bundled in the APK or copied to the phone separately. Adult hands holding MM-only items combine OoT's adult hand with MM's own item model, the way MM builds its child versions.
-8. **Entrance randomization**: Wallmaster and one-way pools, then own-game pools for both games, MM extras, cross-game ("Full") pools, and boss entrances, following OoTMM's `er*` settings. Shipped in milestones.
-9. **Parity check** of the finished APK's logic against OoTMM, comparing like features only; mismatches that are bugs get fixed.
+1. **Entrance randomization**: Wallmaster and one-way pools, then own-game pools for both games, MM extras, cross-game ("Full") pools, and boss entrances, following OoTMM's `er*` settings. Shipped in milestones.
+2. **Parity check** of the finished APK's logic against OoTMM, comparing like features only; mismatches that are bugs get fixed.
 
 ## Not authorized (October 5 list)
 

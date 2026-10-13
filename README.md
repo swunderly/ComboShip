@@ -12,9 +12,9 @@ This fork turns ComboShip into one Android app (APK) for phones and tablets. Bot
 
 **[Get the latest APK from Releases](https://github.com/swunderly/ComboShip/releases/latest)**
 
-Current release: **Combo Ship for Android 0.4.1** (October 11, 2026). File: `ComboShip-Android-0.4.1-arm64.apk`, about 44 MB (46,591,927 bytes). [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.1-android/ComboShip-Android-0.4.1-arm64.apk).
+Current release: **Combo Ship for Android 0.4.3** (October 13, 2026). File: `ComboShip-Android-0.4.3-arm64.apk`, about 45 MB (XXSIZEXX bytes). [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.3-android/ComboShip-Android-0.4.3-arm64.apk).
 
-The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.1) are this fork's own. They are not upstream ComboShip's version numbers.
+The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.3) are this fork's own. They are not upstream ComboShip's version numbers.
 
 ## What you need
 
@@ -36,7 +36,7 @@ Touch controls and game controllers both work. The owner plays on a phone with b
 ## Install and first run
 
 1. Copy your two ROM files to the device first, for example to Download. If a ROM is in a `.zip` file, unzip it first.
-2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.1-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
+2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.3-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
 3. Open the downloaded APK. If Android asks, allow your browser or file manager to install unknown apps. The app is not from Google Play and is signed with a development key, so Google Play Protect may warn you. You can still install it, usually with **More details**, then **Install anyway**.
 4. Open **Combo Ship** and tap **Allow file access**. On Android 11 and newer, Android opens an **All files access** screen: turn on the switch for Combo Ship, then go back. Combo Ship uses this to keep your saves, seeds and backups in a visible `Internal storage/ComboShip` folder that you can copy.
 5. Tap **Choose OoT ROM** and pick your OoT ROM. Then tap **Choose MM ROM** and pick your MM ROM. The app copies them into its folder. Your original files are not changed.
@@ -68,7 +68,7 @@ Touch controls and game controllers both work. The owner plays on a phone with b
 - **Everything on the device.** ROM import, game data extraction and seed generation all run on the phone.
 - **Touch controls.** A multi-touch gamepad with invisible floating sticks, visible fixed sticks, or a visible floating left stick. It has C buttons, D-pad, L, Z, R and Start, with Nintendo, Xbox or GameCube face-button layouts. Buttons can be moved, and their size and opacity can be changed. Layouts are saved per screen shape.
 - **Controllers.** Supported through SDL, and used on the owner's phone alongside touch. The default mapping is L/L1 → L, ZL/L2 → Z and ZR/R2 → R. Remap in **Settings → Controls**. Hide the touch buttons with **Hold Menu → Hide touch controls**.
-- **Phone-sized menus.** Tabs for Home, Enhancements, Randomizer, Video & Audio, Trackers, Settings and Tools. Adjustable menu size, tap for descriptions, multi-word search, sliders for most number settings, and a movable Menu button.
+- **Phone-sized menus.** Tabs for Home, Enhancements, Randomizer, Video & Audio, Trackers, Settings and Tools. Adjustable menu size, tap for descriptions, multi-word search, sliders for most number settings, and a movable Menu button. The OoT and MM menus match: each setting has one place and one name in both games, and the two Save Editors share the same tabs in the same order (MM adds Randomizer and Reg Editor).
 - **Your files, visible.** Saves, seeds, backups and mods live in `Internal storage/ComboShip`. You can move them to private storage or an SD card. Data is copied and checked before a move, and the old copy is kept.
 - **Recovery tools.** Play without mods, startup and crash logs, and a backup ZIP of saves, settings and logs. Restoring a backup is manual.
 - **Lower audio delay.** A smaller audio buffer (48 ms target instead of 128 ms). The real delay on a phone has not been measured.
@@ -81,14 +81,15 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 
 - **Presets.** Default, Beginner and Allsanity on the Home tab. They adapt OoTMM's presets to the options this app supports and are not identical.
 - **Goal.** Ganon & Majora, Any Final Boss, Ganon, Majora, Triforce Hunt, and Triforce Quest (separate Power, Courage and Wisdom pieces).
-- **Shared items.** 27 instead of 17. Added: the five Ocarina buttons, Song of Time, Mirror Shield, Farore's Wind, Din's Fire and Nayru's Love.
-- **OoT spells in MM.** Farore's Wind (MM), Din's Fire (MM) and Nayru's Love (MM), each with a shared version. Cross-Games Farore's Wind lets you warp between the games.
+- **Shared items.** 31 instead of 17. Added: the five Ocarina buttons, Song of Time, Mirror Shield, Farore's Wind, Din's Fire, Nayru's Love, Iron Boots, Hover Boots, Goron Tunic and Zora Tunic.
+- **OoT spells and gear in MM.** Farore's Wind (MM), Din's Fire (MM), Nayru's Love (MM), Iron Boots (MM), Hover Boots (MM), Goron Tunic (MM) and Zora Tunic (MM), each with a shared version. Child Link wears the boots and tunics, as in OoTMM. Cross-Games Farore's Wind lets you warp between the games.
+- **Adult Link in MM.** With **Cross-Games Age** on, Link enters MM at the age he has in OoT, as in OoTMM. Adult Link in MM is OoT's own adult Link, made from the OoT game data the app extracts from your ROM, and he rides OoT's adult Epona. To get to MM as adult, play Song of Soaring in OoT (see Cross-game songs below).
 - **Souls.** Enemy Souls (OoT), covering 43 kinds of OoT enemy. NPC Souls, Animal Souls and Misc. Souls for MM. These add to the Boss Souls and MM enemy souls that SoH and 2Ship already have.
 - **Dungeon items.** OoT silver rupees with puzzle pouches, placed Vanilla, Own Dungeon or Anywhere. MM key rings for the four temples. (Upstream has since added SoH 9.3's own, different silver rupee option. That is not in this build.)
 - **Masks.** OoT uses OoTMM's mask model: masks are shuffled, or you start with them.
-- **Cross-game songs (this fork's own option).** With **Play warp songs across games**, OoT warp songs work in MM and Song of Soaring works in OoT with MM's owl statues. Each uses its own game's animation and sound. There are options for Soaring at any age and for mixing OoT warp pads and MM owls as shuffled destinations. (Upstream added its own, separate version of this on October 11, 2026. That version is not in this build.)
+- **Cross-game songs (this fork's own option).** With **Play warp songs across games**, OoT warp songs work in MM and Song of Soaring works in OoT with MM's owl statues. Each uses its own game's animation and sound. Song of Soaring works in OoT at either age, so adult Link can use it to reach MM once an MM owl statue is activated. There is also an option for mixing OoT warp pads and MM owls as shuffled destinations. (Upstream added its own, separate version of this on October 11, 2026. That version is not in this build.)
 - **Path hints.** OoTMM-style path hints for bosses and the final goal, plus Path of Power, Courage and Wisdom for Triforce Quest.
-- **Tricks and rules.** One searchable Tricks & glitches list, including 15 MM tricks based on OoTMM's. The newest use OoTMM's exact names; older ones keep the fork's own wording. A Gameplay rules page (this fork's own) links enhancements to logic, such as Song of Time age change and Fierce Deity Anywhere. Turning a rule on in Randomizer also turns on the matching enhancement.
+- **Tricks and rules.** One searchable Tricks & glitches list, including 29 MM tricks based on OoTMM's. The newest use OoTMM's exact names; older ones keep the fork's own wording. A Gameplay rules page (this fork's own) links enhancements to logic, such as Song of Time age change and Fierce Deity Anywhere. Turning a rule on in Randomizer also turns on the matching enhancement.
 - **Logic.** OoT and MM logic follow OoTMM v32.3 in many places. Examples: MM combat requirements, renewable ammo, money and magic, MM time of day, and one-time MM rewards that stay collected across a three-day reset. A seed can guarantee **All Locations** or just **Beatable Only**. This is not full OoTMM parity. A dated comparison (October 4, 2026) of 402 OoTMM settings records where it differed then.
 
 ### Trackers and multiplayer (this fork's own changes)
@@ -115,8 +116,8 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - Most testing is automated tests plus an Android 15 emulator. The emulator runs the ARM64 code through translation with a software GPU, usually with audio off.
 - The owner plays the releases on a phone, with touch controls and a game controller. Only a few specific fixes have been confirmed on a phone so far.
 - No build has had a complete seed playthrough.
-- For 0.4.1: 74 automated tests, run on the developer's Windows PC, pass. 2 tests that cannot run on Windows were skipped. Six seeds were generated on the emulator. Each passed the generator's automatic playthrough check, which confirms in logic that the seed can be finished. Nobody played them through.
-- 0.4.1 was not tested on a phone before release, and nobody has cast the new MM spells in play yet, on a phone or the emulator.
+- For 0.4.3: 127 automated tests, run on the developer's Windows PC, pass. 2 tests that cannot run on Windows were skipped. On the emulator, adult Link in MM, the MM boots and tunics, casting the MM spells, the new menus and the fixes were tried in the app. Seeds made with the presets and with the new options each passed the generator's automatic playthrough check, which confirms in logic that the seed can be finished. Nobody played them through.
+- 0.4.3 was not tested on a phone before release. Installing it over 0.4.1 was not tried on the emulator either; only automated tests cover older saves.
 - Not yet checked on a real device: audio delay and quality, keyboards, SD card storage, mods, MM three-day cycle resets, multiplayer over the Internet, and tablets.
 - The SoH and 2Ship enhancements carried over from upstream are not all tested on Android.
 - Only OoT USA 1.0 and MM USA 1.0 ROMs have been used in testing. Master Quest has only been checked as seed data, never in play.
@@ -135,8 +136,9 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - Upstream changes after September 17, 2026 are not included. That means no SoH 9.3 update, no macOS support, and no upstream cross-game teleport songs.
 - MM PvP in multiplayer was unfinished upstream when this fork branched and is not supported here.
 - OoT entrance shuffle (from Ship of Harkinian) is available. On Android only a few focused logic tests cover it so far. MM and cross-game entrance shuffle are not available yet.
+- Known issues in the current release are listed in its [release notes](https://github.com/swunderly/ComboShip/releases/latest) and in the [changelog](ComboAndroid/docs/CHANGELOG.md).
 
-**In development, not in any release yet:** Iron and Hover Boots and Goron and Zora Tunics in MM, adult Link in MM, and MM and cross-game entrance randomization (OoTMM-style). The `android-source` branch may already contain unfinished versions of these. To play, use the APKs from Releases.
+**In development, not in any release yet:** MM and cross-game entrance randomization (OoTMM-style). The `android-source` branch may already contain unfinished work on it. To play, use the APKs from Releases.
 
 ## Reporting problems
 
@@ -153,13 +155,13 @@ Logs are in the ComboShip folder: `native.log`, `last-startup-error.txt`, `java-
 
 ## Building from source
 
-Full steps are in [ComboAndroid/BUILDING.md](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/ComboAndroid/BUILDING.md).
+Full steps are in [ComboAndroid/BUILDING.md](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/ComboAndroid/BUILDING.md).
 
 ```sh
 git clone -b android-source https://github.com/swunderly/ComboShip.git
 ```
 
-To build exactly the 0.4.1 release, use `-b v0.4.1-android` instead. The `android-source` branch can contain unfinished work.
+To build exactly the 0.4.3 release, use `-b v0.4.3-android` instead. The `android-source` branch can contain unfinished work.
 
 You need Git, Python 3.10+, Java 17 or 21, Android SDK platform 35, build-tools 35.0.0, NDK 28.2.13676358, CMake 3.31.5, Ninja and vcpkg at a pinned commit. Windows also needs Visual Studio's C++ desktop workload. Linux also needs the packages listed in the CI workflow, and ccache. The build uses no ROM. It makes a debug-signed APK. Your own APK has a different signature from the release APK, so it cannot update a release install. Back up your saves before you switch.
 
@@ -170,7 +172,7 @@ Branches and docs:
 - `android-source` is the Android port's main branch. Releases are tagged `v<version>-android`.
 - `develop` is an older, unmodified copy of upstream ComboShip's `develop` (last synced October 9, 2026). For current upstream code, use [Varuuna/ComboShip](https://github.com/Varuuna/ComboShip).
 - Any other branches are old or temporary. Use Releases for builds.
-- For 0.4.1: [changelog](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/ComboAndroid/docs/CHANGELOG.md), [roadmap](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/ComboAndroid/docs/ROADMAP.md), [device test checklist](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/ComboAndroid/DEVICE_TESTS.md), and [notes on changes to the vendored SoH and 2Ship code](https://github.com/swunderly/ComboShip/tree/v0.4.1-android/docs/deviations) (started upstream, extended here).
+- For 0.4.3: [changelog](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/ComboAndroid/docs/CHANGELOG.md), [roadmap](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/ComboAndroid/docs/ROADMAP.md), [device test checklist](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/ComboAndroid/DEVICE_TESTS.md), and [notes on changes to the vendored SoH and 2Ship code](https://github.com/swunderly/ComboShip/tree/v0.4.3-android/docs/deviations) (started upstream, extended here).
 - Upstream ComboShip's own README is at [Varuuna/ComboShip](https://github.com/Varuuna/ComboShip#readme).
 
 ## Credits
@@ -184,7 +186,7 @@ This fork stands on the work of many projects:
 - [ZAPDTR](https://github.com/HarbourMasters/ZAPDTR) (Harbour Masters' version of ZAPD by the Zelda Reverse Engineering Team) and [OTRExporter](https://github.com/HarbourMasters/OTRExporter) (Harbour Masters), which also extract game data on the device.
 - [OoT3D Randomizer](https://github.com/gamestabled/OoT3D_Randomizer) and [OoT-Randomizer](https://github.com/OoTRandomizer/OoT-Randomizer), which Ship of Harkinian's randomizer code is partly derived from.
 - The [zeldaret](https://github.com/zeldaret) decompilation projects for OoT and MM.
-- [OoTMM](https://github.com/OoTMM/OoTMM) by the OoTMM Team. OoTMM v32.3 is the reference for this fork's logic, setting names, descriptions and behaviour. Much of the added code and logic data is adapted from OoTMM, including the MM spells, enemy souls, Triforce Quest placement and many logic rules.
+- [OoTMM](https://github.com/OoTMM/OoTMM) by the OoTMM Team. OoTMM v32.3 is the reference for this fork's logic, setting names, descriptions and behaviour. Much of the added code and logic data is adapted from OoTMM, including the MM spells, boots and tunics, adult Link's rules in MM, enemy souls, Triforce Quest placement and many logic rules.
 - The Android ports this one used as references: [linkzenic/Shipwright-Android](https://github.com/linkzenic/Shipwright-Android) for Ship of Harkinian, and the owner's fork [swunderly/2ship2harkinian-Android](https://github.com/swunderly/2ship2harkinian-Android) of [linkzenic/2ship2harkinian-Android](https://github.com/linkzenic/2ship2harkinian-Android) for 2 Ship 2 Harkinian. Thanks also to Waterdish for the Android ports of both games: [Waterdish/Shipwright-Android](https://github.com/Waterdish/Shipwright-Android) and [Waterdish/2ship2harkinian-Android](https://github.com/Waterdish/2ship2harkinian-Android), which linkzenic's 2 Ship 2 Harkinian port was forked from.
 - SDL2, SDL_net and the other libraries whose license notices ship inside the APK under `assets/licenses`.
 
@@ -192,12 +194,12 @@ This fork stands on the work of many projects:
 
 There is no single license for this repository. Each part keeps its own terms.
 
-- Code written for this port in `ComboAndroid/` is under the MIT license ([ComboAndroid/LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/ComboAndroid/LICENSE)). Third-party files in that folder, such as the Gradle wrapper and data taken from OoTMM, keep their own licenses (see [ComboAndroid/licenses/](https://github.com/swunderly/ComboShip/tree/v0.4.1-android/ComboAndroid/licenses)). This does not relicense the games, engines or other dependencies.
+- Code written for this port in `ComboAndroid/` is under the MIT license ([ComboAndroid/LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/ComboAndroid/LICENSE)). Third-party files in that folder, such as the Gradle wrapper and data taken from OoTMM, keep their own licenses (see [ComboAndroid/licenses/](https://github.com/swunderly/ComboShip/tree/v0.4.3-android/ComboAndroid/licenses)). This does not relicense the games, engines or other dependencies.
 - Ship of Harkinian and upstream ComboShip do not publish a license file, so their code keeps its authors' terms. This fork's own changes outside `ComboAndroid/` are not covered by ComboAndroid/LICENSE. This fork does not relicense any upstream code.
 - 2 Ship 2 Harkinian is CC0-1.0 ([LICENSE](https://github.com/2ship2harkinian/2ship2harkinian/blob/develop/LICENSE)).
-- libultraship ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/libultraship/LICENSE)), Fast3D ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/libultraship/src/fast/LICENSE.txt)), ZAPDTR ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/ZAPDTR/LICENSE)), OTRExporter ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/OTRExporter/LICENSE)) and the OoT-Randomizer code ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/soh/soh/Enhancements/randomizer/3drando/LICENSE.md)) are MIT.
-- OoTMM is MIT. A copy of its license is at [ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt) and ships in the APK. Some folders with adapted code also have their own copy, for example [combo/rando/entrances/LICENSE.OoTMM](https://github.com/swunderly/ComboShip/blob/v0.4.1-android/combo/rando/entrances/LICENSE.OoTMM).
-- The APK carries dependency notices under `assets/licenses`. In 0.4.1 the APK does not yet include the Fast3D, ZAPDTR, OTRExporter and OoT-Randomizer texts. They are attached to the [0.4.1 release](https://github.com/swunderly/ComboShip/releases/tag/v0.4.1-android) as `THIRD-PARTY-NOTICES.txt`.
+- libultraship ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/libultraship/LICENSE)), Fast3D ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/libultraship/src/fast/LICENSE.txt)), ZAPDTR ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/ZAPDTR/LICENSE)), OTRExporter ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/OTRExporter/LICENSE)) and the OoT-Randomizer code ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/soh/soh/Enhancements/randomizer/3drando/LICENSE.md)) are MIT.
+- OoTMM is MIT. A copy of its license is at [ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt) and ships in the APK. Some folders with adapted code also have their own copy, for example [combo/rando/entrances/LICENSE.OoTMM](https://github.com/swunderly/ComboShip/blob/v0.4.3-android/combo/rando/entrances/LICENSE.OoTMM).
+- The APK carries dependency notices under `assets/licenses`. In 0.4.3 the APK does not yet include the Fast3D, ZAPDTR, OTRExporter and OoT-Randomizer texts. They are attached to the [0.4.3 release](https://github.com/swunderly/ComboShip/releases/tag/v0.4.3-android) as `THIRD-PARTY-NOTICES.txt`.
 
 ## Disclaimer
 
