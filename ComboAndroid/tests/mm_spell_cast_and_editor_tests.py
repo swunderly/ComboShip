@@ -11,10 +11,13 @@ Builds one program from the production functions and runs it:
    restricted (OoTMM z_parameter.c Interface_GetItemRestriction), on the C buttons and on the D-pad. Termina Field
    and Woodfall Temple are not such scenes.
 3. Save Editor. For every trade-slot item and both seed-option states, the slot picker and Give All record the same
-   ownership as the real pickup (Rando::GiveItem's cases after Rando::IsItemObtainable). After Give All the 2S2H pause
-   cycle (KaleidoItemPage.cpp BuildAvailableItemsList) offers every trade item, so both title deeds, the spells and
-   the gear, and the ocarina slot shows the Ocarina of Time. A non-rando save gets no rando ownership. A save whose
-   spells came from the 0.4.1 Give All (slot set, owned flags 0) casts without any change to the save.
+   ownership as the real pickup (Rando::GiveItem's cases after Rando::IsItemObtainable), except that Farore's Wind,
+   which IsItemObtainable does not gate, is owned only in a seed with Farore's Wind (MM), the only seed that casts it.
+   After Give All the 2S2H pause cycle (KaleidoItemPage.cpp BuildAvailableItemsList) offers every trade item the seed
+   has, so both title deeds, the spells and the gear, and the ocarina slot shows the Ocarina of Time. Reset then
+   clears that ownership, so the cycle offers nothing in the emptied slots, and takes the boots and tunic off Link. A
+   non-rando save gets no rando ownership and Reset leaves its rando state alone. A save whose spells came from the
+   0.4.1 Give All (slot set, owned flags 0) casts without any change to the save.
 """
 from pathlib import Path
 import argparse
@@ -117,6 +120,11 @@ check(picker is not None and 'GrantSlotItemOwnership(id);' in picker.group(1), '
 give_all = function(editor, 'if (UIWidgets::Button("Give All##items"))')
 give_all = give_all[give_all.index('{'):]
 check('GiveAllSlotItem(static_cast<InventorySlot>(i))' in give_all, 'Give All does not use GiveAllSlotItem')
+reset = function(editor, 'if (UIWidgets::Button("Reset##items"))')
+reset = reset[reset.index('{'):]
+check('ClearSlotItemOwnership();' in reset, 'Reset does not clear the ownership Give All records')
+trade_table = re.search(r'static const std::pair<ItemId, RandoInf> kSlotTradeItems\[\] = \{.*?\};', editor, re.S)
+check(trade_table is not None, 'SaveEditor.cpp has no kSlotTradeItems table')
 safe_lists = re.search(r'std::vector<ItemId> safeItemsForInventorySlot\[SLOT_MASK_FIERCE_DEITY \+ 1\] = \{\};', editor)
 check(safe_lists is not None, 'safeItemsForInventorySlot declaration changed')
 
@@ -190,7 +198,7 @@ typedef enum { SAVETYPE_VANILLA, SAVETYPE_RANDO } SaveType;
 struct RespawnData { s32 data, entrance; };
 struct ComboFaroreSaveInfo { u8 owned; RespawnData point[2]; };
 struct RandoSaveInfo { u32 randoSaveOptions[RO_MAX]; u8 ocarinaOwnedBits; };
-struct ComboAdultMmSave { u8 gearTrade2Bits, gearTrade3Bits; };
+struct ComboAdultMmSave { u8 boots, tunic, gearTrade2Bits, gearTrade3Bits; };
 struct ShipSaveInfo { SaveType saveType; RandoSaveInfo rando; ComboFaroreSaveInfo faroresWind; u8 spellFireOwned, spellLoveOwned; ComboAdultMmSave adultMm; };
 struct Inventory { u8 items[48]; };
 struct PlayerData { s16 magic; };
@@ -200,6 +208,7 @@ struct SaveContext { s32 fileNum; Save save; u8 magicCapacity; u8 magicState; };
 SaveContext gSaveContext;
 bool gRandoInf[RANDO_INF_MAX];
 void Flags_SetRandoInf(s32 flag) { gRandoInf[flag] = true; }
+void Flags_ClearRandoInf(s32 flag) { gRandoInf[flag] = false; }
 bool Flags_GetRandoInf(s32 flag) { return gRandoInf[flag]; }
 u8 gItemSlots[256];
 void* gPlayState = nullptr;
@@ -259,7 +268,7 @@ constexpr int NA_SE_SY_ERROR = 0x4806;
 struct PlayerAnimationHeader {};
 const char gPlayerAnim_link_magic_tame[] = "tame";
 struct ActionVar { int actionVar1; };
-struct Player { int transformation, unk_AA5, itemAction; ActionVar av1; int csId, stateFlags3, skelAnime; };
+struct Player { int transformation, unk_AA5, itemAction; ActionVar av1; int csId, stateFlags3, skelAnime, currentBoots; };
 struct Restrictions { u8 songOfSoaring; };
 struct InterfaceContext { Restrictions restrictions; };
 struct PlayState { InterfaceContext interfaceCtx; };
@@ -285,11 +294,22 @@ void func_8082DAD4(Player*) {}
 
 // ---- Save Editor and the 2S2H pause cycle.
 InventorySlot selectedInventorySlot = SLOT_NONE;
-''' + safe_lists.group() + '\n' + \
+enum { PLAYER_BOOTS_HYLIAN = 1 };
+Player gEditorPlayer{};
+#define GET_PLAYER(play) (&gEditorPlayer)
+int gBootDataCalls = 0;
+void func_80123140(void*, Player*) {
+    assert(gSaveContext.save.shipSaveInfo.adultMm.boots == 0); // the use path saves the boots first
+    gBootDataCalls++;
+}
+void Inventory_DeleteItem(int, int slot) { gSaveContext.save.saveInfo.inventory.items[slot] = u8(ITEM_NONE); }
+''' + safe_lists.group() + '\n' + trade_table.group() + '\n' + \
     function(editor, 'static bool IsInventoryItemPubliclyAvailable(ItemId item)') + '\n' + \
     function(editor, 'void initSafeItemsForInventorySlot()') + '\n' + \
     function(editor, 'static bool GrantSlotItemOwnership(ItemId item)') + '\n' + \
     function(editor, 'static ItemId GiveAllSlotItem(InventorySlot slot)') + '\n' + \
+    function(editor, 'static void TakeOffComboGear()') + '\n' + \
+    function(editor, 'static void ClearSlotItemOwnership()') + '\n' + \
     function(kaleido, 'std::vector<u8> BuildAvailableItemsList(u8 slot)') + r'''
 u8 gAmmo[256];
 #define AMMO(item) gAmmo[item]
@@ -299,6 +319,7 @@ void Pick(ItemId id) {
 ''' + picker.group(1) + r'''
 }
 void GiveAll() ''' + give_all + r'''
+void Reset() ''' + reset + r'''
 
 struct Ownership {
     std::vector<bool> inf;
@@ -441,6 +462,18 @@ int main() {
     // 3a. Each trade-slot item: the editor records what the real pickup records, with the seed option off and on.
     for (bool options : { false, true }) {
         for (const auto& [item, randoItem] : trade) {
+            if (item == ITEM_COMBO_FARORES_WIND && !options) {
+                // Not cast in this seed (Combo_MMFaroreEnabled), so the editor does not own it; the picker only sets
+                // the slot.
+                Fresh(true, options);
+                assert(!GrantSlotItemOwnership(item));
+                assert(NoOwnership());
+                selectedInventorySlot = SLOT_TRADE_KEY_MAMA;
+                Pick(item);
+                assert(gSaveContext.save.saveInfo.inventory.items[SLOT_TRADE_KEY_MAMA] == item && NoOwnership());
+                assert(BuildAvailableItemsList(SLOT_TRADE_KEY_MAMA).empty());
+                continue;
+            }
             Fresh(true, options);
             RealPickup(randoItem);
             const Ownership real = Snapshot();
@@ -509,15 +542,24 @@ int main() {
 
     // 3d. Give All in a seed without the MM spell and gear options: those stay unowned and out of the slots, which
     // show the last native item as upstream 2S2H's Give All does (the Tingle Map is native to the couple's slot).
-    // Farore's Wind has no option check in IsItemObtainable, so a pickup and Give All own it here too.
     Fresh(true, false);
     GiveAll();
-    assert(!ship.spellFireOwned && !ship.spellLoveOwned && ship.faroresWind.owned);
+    assert(!ship.spellFireOwned && !ship.spellLoveOwned && !ship.faroresWind.owned);
     assert(ship.adultMm.gearTrade2Bits == 0 && ship.adultMm.gearTrade3Bits == 0);
-    assert(items[SLOT_TRADE_DEED] == ITEM_DEED_OCEAN && items[SLOT_TRADE_KEY_MAMA] == ITEM_COMBO_FARORES_WIND &&
+    assert(items[SLOT_TRADE_DEED] == ITEM_DEED_OCEAN && items[SLOT_TRADE_KEY_MAMA] == ITEM_LETTER_MAMA &&
            items[SLOT_TRADE_COUPLE] == ITEM_TINGLE_MAP);
     assert(BuildAvailableItemsList(SLOT_TRADE_DEED) == List({ ITEM_MOONS_TEAR, ITEM_DEED_LAND, ITEM_DEED_SWAMP,
                                                              ITEM_DEED_OCEAN, ITEM_DEED_MOUNTAIN }));
+    assert(BuildAvailableItemsList(SLOT_TRADE_KEY_MAMA) == List({ ITEM_ROOM_KEY, ITEM_LETTER_MAMA }));
+    // Only Farore's Wind (MM) off: Din's Fire and Nayru's Love still show, the Room Key/Mama slot shows Letter to Mama.
+    Fresh(true, true);
+    gSaveContext.save.shipSaveInfo.rando.randoSaveOptions[RO_MM_SPELL_WIND] = 0;
+    GiveAll();
+    assert(ship.spellFireOwned && ship.spellLoveOwned && !ship.faroresWind.owned);
+    assert(items[SLOT_TRADE_DEED] == ITEM_COMBO_DINS_FIRE && items[SLOT_TRADE_KEY_MAMA] == ITEM_LETTER_MAMA &&
+           items[SLOT_TRADE_COUPLE] == ITEM_COMBO_NAYRUS_LOVE);
+    assert(BuildAvailableItemsList(SLOT_TRADE_KEY_MAMA) == List({ ITEM_COMBO_BOOTS_IRON, ITEM_COMBO_TUNIC_GORON,
+                                                                 ITEM_ROOM_KEY, ITEM_LETTER_MAMA }));
 
     // 3e. Give All in a non-rando save: upstream's native items and the Ocarina of Time, no rando ownership.
     Fresh(false, true);
@@ -525,6 +567,42 @@ int main() {
     assert(NoOwnership());
     assert(items[SLOT_TRADE_DEED] == ITEM_DEED_OCEAN && items[SLOT_TRADE_KEY_MAMA] == ITEM_LETTER_MAMA &&
            items[SLOT_TRADE_COUPLE] == ITEM_TINGLE_MAP && items[SLOT_OCARINA] == ITEM_OCARINA_OF_TIME);
+
+    // 3f. Give All, wear the boots and a tunic, Reset: the slots are empty, the pause cycle offers nothing in them,
+    // nothing stays owned, and Link takes the gear off as using it again does.
+    Fresh(true, true);
+    GiveAll();
+    gSaveContext.save.shipSaveInfo.adultMm.boots = 1;
+    gSaveContext.save.shipSaveInfo.adultMm.tunic = 2;
+    gEditorPlayer = {};
+    gEditorPlayer.transformation = PLAYER_FORM_HUMAN;
+    gEditorPlayer.currentBoots = 6;
+    gPlayState = &gEditorPlayer;
+    gBootDataCalls = 0;
+    Reset();
+    gPlayState = nullptr;
+    assert(NoOwnership());
+    for (int slot : { SLOT_TRADE_DEED, SLOT_TRADE_KEY_MAMA, SLOT_TRADE_COUPLE, SLOT_OCARINA }) {
+        assert(items[slot] == ITEM_NONE);
+        assert(BuildAvailableItemsList(u8(slot)).empty());
+    }
+    assert(ship.adultMm.boots == 0 && ship.adultMm.tunic == 0);
+    assert(gEditorPlayer.currentBoots == PLAYER_BOOTS_HYLIAN && gBootDataCalls == 1);
+    // Outside gameplay only the save changes.
+    Fresh(true, true);
+    GiveAll();
+    gSaveContext.save.shipSaveInfo.adultMm.boots = 2;
+    gBootDataCalls = 0;
+    Reset();
+    assert(NoOwnership() && ship.adultMm.boots == 0 && gBootDataCalls == 0);
+    // A non-rando save: Reset leaves its rando state alone.
+    Fresh(false, true);
+    GiveAll();
+    gRandoInf[RANDO_INF_OBTAINED_DEED_LAND] = true;
+    gSaveContext.save.shipSaveInfo.adultMm.boots = 1;
+    Reset();
+    assert(gRandoInf[RANDO_INF_OBTAINED_DEED_LAND] && ship.adultMm.boots == 1);
+    assert(items[SLOT_TRADE_DEED] == ITEM_NONE && items[SLOT_OCARINA] == ITEM_NONE);
 
     // 4. A save from 0.4.1's Give All: spells in the slots, no owned flags. It casts as it is and nothing changes it.
     Fresh(true, true);

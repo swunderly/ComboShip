@@ -883,23 +883,27 @@ void DrawEquipItemMenu(InventorySlot slot) {
     }
 }
 
+// The native trade items and the flag a rando pickup of each sets (Rando::GiveItem).
+static const std::pair<ItemId, RandoInf> kSlotTradeItems[] = {
+    { ITEM_MOONS_TEAR, RANDO_INF_OBTAINED_MOONS_TEAR },
+    { ITEM_DEED_LAND, RANDO_INF_OBTAINED_DEED_LAND },
+    { ITEM_DEED_SWAMP, RANDO_INF_OBTAINED_DEED_SWAMP },
+    { ITEM_DEED_MOUNTAIN, RANDO_INF_OBTAINED_DEED_MOUNTAIN },
+    { ITEM_DEED_OCEAN, RANDO_INF_OBTAINED_DEED_OCEAN },
+    { ITEM_ROOM_KEY, RANDO_INF_OBTAINED_ROOM_KEY },
+    { ITEM_LETTER_MAMA, RANDO_INF_OBTAINED_LETTER_TO_MAMA },
+    { ITEM_LETTER_TO_KAFEI, RANDO_INF_OBTAINED_LETTER_TO_KAFEI },
+    { ITEM_PENDANT_OF_MEMORIES, RANDO_INF_OBTAINED_PENDANT_OF_MEMORIES },
+};
+
 // Records the ownership a real pickup records (Rando::GiveItem) for an item put in its own slot. A rando save keeps
 // what a shared trade slot holds outside the slot, and the 2S2H pause cycle offers only that, so this lets one slot
 // hold both title deeds. Returns whether the save can own the item: only rando saves have the MM spells and gear, and
-// a seed without a spell's or gear piece's option turns it into junk (Rando::IsItemObtainable).
+// only when the seed has the item's option. Rando::IsItemObtainable checks that option for Din's Fire, Nayru's Love
+// and the gear. It has no case for Farore's Wind, which casts only in a seed with Farore's Wind (MM)
+// (Combo_MMFaroreEnabled), so that option is checked here.
 static bool GrantSlotItemOwnership(ItemId item) {
-    static const std::pair<ItemId, RandoInf> kTradeItems[] = {
-        { ITEM_MOONS_TEAR, RANDO_INF_OBTAINED_MOONS_TEAR },
-        { ITEM_DEED_LAND, RANDO_INF_OBTAINED_DEED_LAND },
-        { ITEM_DEED_SWAMP, RANDO_INF_OBTAINED_DEED_SWAMP },
-        { ITEM_DEED_MOUNTAIN, RANDO_INF_OBTAINED_DEED_MOUNTAIN },
-        { ITEM_DEED_OCEAN, RANDO_INF_OBTAINED_DEED_OCEAN },
-        { ITEM_ROOM_KEY, RANDO_INF_OBTAINED_ROOM_KEY },
-        { ITEM_LETTER_MAMA, RANDO_INF_OBTAINED_LETTER_TO_MAMA },
-        { ITEM_LETTER_TO_KAFEI, RANDO_INF_OBTAINED_LETTER_TO_KAFEI },
-        { ITEM_PENDANT_OF_MEMORIES, RANDO_INF_OBTAINED_PENDANT_OF_MEMORIES },
-    };
-    for (const auto& [tradeItem, flag] : kTradeItems) {
+    for (const auto& [tradeItem, flag] : kSlotTradeItems) {
         if (item == tradeItem) {
             if (IS_RANDO) {
                 Flags_SetRandoInf(flag);
@@ -918,7 +922,8 @@ static bool GrantSlotItemOwnership(ItemId item) {
         if (item != comboItem) {
             continue;
         }
-        if (!IS_RANDO || !Rando::IsItemObtainable(randoItem)) {
+        if (!IS_RANDO || !Rando::IsItemObtainable(randoItem) ||
+            (item == ITEM_COMBO_FARORES_WIND && !RANDO_SAVE_OPTIONS[RO_MM_SPELL_WIND])) {
             return false;
         }
         if (item == ITEM_COMBO_FARORES_WIND) {
@@ -954,6 +959,44 @@ static ItemId GiveAllSlotItem(InventorySlot slot) {
         }
     }
     return shown;
+}
+
+#ifdef COMBO_BUILD
+// Takes off the MM boots and tunic the way using the worn one again does (ComboAdultGearUseNative.h).
+static void TakeOffComboGear() {
+    auto& adultMm = gSaveContext.save.shipSaveInfo.adultMm;
+    const bool boots = adultMm.boots != 0;
+    adultMm.boots = 0;
+    adultMm.tunic = 0;
+    if (boots && gPlayState) {
+        Player* player = GET_PLAYER(gPlayState);
+        if (player != nullptr && player->transformation == PLAYER_FORM_HUMAN) {
+            player->currentBoots = PLAYER_BOOTS_HYLIAN;
+            func_80123140(gPlayState, player);
+        }
+    }
+}
+#endif
+
+// Reset, rando saves: clears the ownership Give All and the picker record, which the 2S2H pause cycle would otherwise
+// put back into the emptied trade and ocarina slots. The removed boots and tunic come off Link.
+static void ClearSlotItemOwnership() {
+    if (!IS_RANDO) {
+        return;
+    }
+    for (const auto& [tradeItem, flag] : kSlotTradeItems) {
+        Flags_ClearRandoInf(flag);
+    }
+    auto& ship = gSaveContext.save.shipSaveInfo;
+    ship.rando.ocarinaOwnedBits = 0;
+#ifdef COMBO_BUILD
+    ship.spellFireOwned = 0;
+    ship.spellLoveOwned = 0;
+    ship.faroresWind.owned = 0;
+    ship.adultMm.gearTrade2Bits = 0;
+    ship.adultMm.gearTrade3Bits = 0;
+    TakeOffComboGear();
+#endif
 }
 
 void NextItemInSlot(InventorySlot slot) {
@@ -1185,6 +1228,7 @@ void DrawItemsAndMasksTab() {
         for (int32_t i = 0; i <= SLOT_MASK_FIERCE_DEITY; i++) {
             Inventory_DeleteItem(gSaveContext.save.saveInfo.inventory.items[i], i);
         }
+        ClearSlotItemOwnership();
         AMMO(ITEM_BOW) = AMMO(ITEM_BOMB) = AMMO(ITEM_BOMBCHU) = AMMO(ITEM_DEKU_STICK) = AMMO(ITEM_DEKU_NUT) =
             AMMO(ITEM_MAGIC_BEANS) = AMMO(ITEM_POWDER_KEG) = 0;
         Inventory_ChangeUpgrade(UPG_BOMB_BAG, 0);

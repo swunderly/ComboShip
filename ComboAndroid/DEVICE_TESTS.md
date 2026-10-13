@@ -61,7 +61,8 @@ On 0.4.1, Din's Fire, Nayru's Love and Farore's Wind (MM) given with the Save Ed
 3. On a new file, get each spell from its check, or with Save Editor > Items & Masks > Queue Randomizer Item Gives > Give Din's Fire, Give Nayru's Love and Give Farore's Wind. Cast each one as in check 2.
 4. On the Clock Tower rooftop or in the Astral Observatory, where Song of Soaring cannot be played, Farore's Wind's C button is greyed out. It lights up again once you leave.
 5. A 0.4.1 save whose spells came from Give All now casts them, with nothing else changed.
-6. If a spell still plays the "can't use" sound, report two things: whether Din's Fire (MM) and Nayru's Love (MM) are greyed out under Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items, and whether the item tracker's Trade Items group shows the spell rows on that save.
+6. Save Editor > Items & Masks > Reset. The trade and ocarina slots are empty, and pressing A on them in the pause menu brings nothing back. Link takes off any MM boots or tunic he was wearing.
+7. If a spell still plays the "can't use" sound, report two things: whether Din's Fire (MM) and Nayru's Love (MM) are greyed out under Randomizer > Items & checks > Majora's Mask > Items > Cross-Game Items, and whether the item tracker's Trade Items group shows the spell rows on that save.
 
 ## Quick checks for Din's Fire (MM) and Nayru's Love (MM) (0.4.1)
 
