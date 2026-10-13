@@ -973,14 +973,8 @@ void DrawNetworkSharedPanel() {
 
     ImGui::Spacing();
     ComboRando::ComboMenu_PushButton(theme);
-    if (ImGui::Button("Restore Defaults", ImVec2(ImGui::GetContentRegionAvail().x / 2, 0))) {
-        CVarSetString(AnchorCVar::Host, "anchor.hm64.org");
-        CVarSetInteger(AnchorCVar::Port, 43383);
-        CVarSetString(AnchorCVar::TeamId, "default");
-        CVarSetString(AnchorCVar::RoomId, "");
-        CVarSetString(AnchorCVar::Name, "");
-        AnchorSaveCVars();
-    }
+    if (ImGui::Button("Restore Defaults", ImVec2(ImGui::GetContentRegionAvail().x / 2, 0)))
+        ImGui::OpenPopup("Restore Anchor defaults?");
     ImGui::SameLine();
     if (ImGui::Button("Global Room", ImVec2(-1.0f, 0.0f))) {
         CVarSetString(AnchorCVar::Host, "anchor.hm64.org");
@@ -993,6 +987,15 @@ void DrawNetworkSharedPanel() {
     ImGui::SetItemTooltip("Always-online public room so you don't have to experience Hyrule alone. "
                           "PVP and syncing are disabled.");
     ImGui::EndDisabled();
+    if (MenuConfirm("Restore Anchor defaults?", "Host, port, team, room and name return to their defaults.",
+                    "Restore defaults")) {
+        CVarSetString(AnchorCVar::Host, "anchor.hm64.org");
+        CVarSetInteger(AnchorCVar::Port, 43383);
+        CVarSetString(AnchorCVar::TeamId, "default");
+        CVarSetString(AnchorCVar::RoomId, "");
+        CVarSetString(AnchorCVar::Name, "");
+        AnchorSaveCVars();
+    }
 
     // --- Enable/Disable (gated by form validity, mirroring soh's isFormValid) ---
     ImGui::Spacing();
@@ -1072,11 +1075,14 @@ void DrawNetworkSharedPanel() {
         ImGui::SeparatorText("Room Settings (Admin Only)");
 
         ComboRando::ComboMenu_PushButton(theme);
-        if (ImGui::Button("Clear All Team State", ImVec2(-1.0f, 0.0f))) {
-            if (sSohAnchorClearTeamState)
-                sSohAnchorClearTeamState();
-        }
+        if (ImGui::Button("Clear All Team State", ImVec2(-1.0f, 0.0f)))
+            ImGui::OpenPopup("Clear all team state?");
         ComboRando::ComboMenu_PopButton();
+        if (MenuConfirm("Clear all team state?",
+                        "Every teammate's shared items and flags in this room are cleared. This cannot be undone.",
+                        "Clear team state") &&
+            sSohAnchorClearTeamState)
+            sSohAnchorClearTeamState();
 
         auto sendRoomState = [&]() {
             if (sSohAnchorSendRoomState)
@@ -2406,34 +2412,26 @@ void ComboMenu::DrawSharedPanel() {
                     "ComboShip, Ship of Harkinian, 2 Ship 2 Harkinian, libultraship and their Android ports.");
                 ImGui::TextWrapped("Your ROMs, extracted game data and saves stay on your device.");
                 break;
-            case HubEntry::COMBO_SESSION:
+            case HubEntry::COMBO_SESSION: {
                 ImGui::TextWrapped("Save in-game before restarting or exiting.");
-                if (ImGui::Button("Restart game"))
+                const float height = ImGui::GetFrameHeight() * 1.25f;
+                ComboMenu_PushButton(ComboMenu_ThemeColor());
+                if (ImGui::Button("Restart game", ImVec2(-FLT_MIN, height)))
                     ImGui::OpenPopup("Restart game?");
-                if (ImGui::Button("Exit Combo Ship"))
-                    ImGui::OpenPopup("Exit Combo Ship?");
-                for (int i = 0; i < 2; ++i) {
-                    if (ImGui::BeginPopupModal(i == 0 ? "Restart game?" : "Exit Combo Ship?", nullptr,
-                                               ImGuiWindowFlags_AlwaysAutoResize)) {
-                        ImGui::TextUnformatted("Unsaved progress will be lost.");
-                        if (ImGui::Button("Cancel"))
-                            ImGui::CloseCurrentPopup();
-                        ImGui::SameLine();
-                        if (ImGui::Button(i == 0 ? "Restart" : "Exit")) {
-                            ImGui::CloseCurrentPopup();
-                            if (i == 1)
-                                Ship::Context::GetRawInstance()->GetWindow()->Close();
-                            else if (auto console = std::static_pointer_cast<Ship::ConsoleWindow>(
-                                         Ship::Context::GetRawInstance()->GetWindow()->GetGui()->GetGuiWindow(
-                                             "Console"))) {
-                                console->Dispatch("reset");
-                                Hide();
-                            }
-                        }
-                        ImGui::EndPopup();
+                if (ImGui::Button("Exit game", ImVec2(-FLT_MIN, height)))
+                    ImGui::OpenPopup("Exit game?");
+                ComboMenu_PopButton();
+                if (MenuConfirm("Restart game?", "Unsaved progress will be lost.", "Restart game")) {
+                    if (auto console = std::static_pointer_cast<Ship::ConsoleWindow>(
+                            Ship::Context::GetRawInstance()->GetWindow()->GetGui()->GetGuiWindow("Console"))) {
+                        console->Dispatch("reset");
+                        Hide();
                     }
                 }
+                if (MenuConfirm("Exit game?", "Unsaved progress will be lost.", "Exit game"))
+                    Ship::Context::GetRawInstance()->GetWindow()->Close();
                 break;
+            }
             default: {
                 if (active->label == "Tricks & glitches") {
                     ProfileUI::DrawTricks();

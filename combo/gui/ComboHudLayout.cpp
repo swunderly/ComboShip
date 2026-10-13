@@ -261,7 +261,13 @@ void DrawHudLayout(int game) {
     }
     if (ImGui::GetContentRegionAvail().x > ImGui::CalcTextSize("Reset all HUD positions").x + 40)
         ImGui::SameLine();
-    if (ImGui::Button("Reset all HUD positions")) {
+    if (ImGui::Button("Reset all HUD positions"))
+        ImGui::OpenPopup("Reset all HUD positions?");
+    ComboMenu_PopButton();
+    if (MenuConfirm("Reset all HUD positions?",
+                    game == 0 ? "Every Ocarina of Time HUD element returns to its default place and size."
+                              : "Every Majora's Mask HUD element returns to its default place and size.",
+                    "Reset all")) {
         for (int i = 0; i < count; ++i)
             Reset(elements[i], game);
         if (game == 0) {
@@ -271,7 +277,6 @@ void DrawHudLayout(int game) {
         }
         Save();
     }
-    ComboMenu_PopButton();
     ImGui::PopID();
     ImGui::PopID();
 }

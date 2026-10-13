@@ -257,20 +257,30 @@ void DrawSelector() {
     MenuTooltip(view == 2
                     ? "Select Next seed or Saved seed to copy settings."
                     : "Copy these settings to a file's next-seed setup. This does not copy or replace saved progress.");
+    static int copyTarget = -1;
+    bool confirmCopy = false;
     if (ImGui::BeginPopup("Copy settings")) {
         for (int destination = 0; destination < 3; ++destination) {
             const std::string label = "To File " + std::to_string(destination + 1) + " next seed";
             ImGui::BeginDisabled(view == 2 || document.is_null());
             if (ImGui::Selectable(label.c_str())) {
-                refreshPending = true;
-                try {
-                    Response(view == 0 ? callbacks.copyDraft(selected, destination)
-                                       : callbacks.copySaved(selected, destination));
-                } catch (const std::exception& e) { error = e.what(); }
+                copyTarget = destination;
+                confirmCopy = true;
             }
             ImGui::EndDisabled();
         }
         ImGui::EndPopup();
+    }
+    if (confirmCopy)
+        ImGui::OpenPopup("Copy settings?");
+    const std::string copyText =
+        "File " + std::to_string(copyTarget + 1) + "'s next-seed settings are replaced by these. Saved progress stays.";
+    if (MenuConfirm("Copy settings?", copyText.c_str(), "Copy settings") && copyTarget >= 0 && view != 2 &&
+        !document.is_null()) {
+        refreshPending = true;
+        try {
+            Response(view == 0 ? callbacks.copyDraft(selected, copyTarget) : callbacks.copySaved(selected, copyTarget));
+        } catch (const std::exception& e) { error = e.what(); }
     }
     if (!error.empty())
         ImGui::TextWrapped("%s", error.c_str());
@@ -1172,7 +1182,14 @@ void DrawHome() {
         ImGui::SeparatorText(preset.at("label").get<std::string>().c_str());
         ImGui::TextWrapped("%s", preset.at("summary").get<std::string>().c_str());
         ImGui::BeginDisabled(!Editable());
-        if (ImGui::Button("Apply preset", ImVec2(-FLT_MIN, ImGui::GetFrameHeight() * 1.25f))) {
+        if (ImGui::Button("Apply preset", ImVec2(-FLT_MIN, ImGui::GetFrameHeight() * 1.25f)))
+            ImGui::OpenPopup("Apply preset?");
+        ImGui::EndDisabled();
+        Tooltip(preset.at("help").get<std::string>().c_str());
+        const std::string presetText = "File " + std::to_string(selected + 1) + "'s next-seed settings become " +
+                                       preset.at("label").get<std::string>() +
+                                       ". Your enhancements and saved progress stay.";
+        if (MenuConfirm("Apply preset?", presetText.c_str(), "Apply preset") && Editable()) {
             document["oot"]["settings"] = Json::object();
             for (auto it = document["mm"]["settings"].begin(); it != document["mm"]["settings"].end();) {
                 if (it.key().rfind("gRando.Options.", 0) == 0 || it.key().rfind("gCombo.Tricks.", 0) == 0)
@@ -1197,8 +1214,6 @@ void DrawHome() {
             RefreshOptionPolicy(true);
             dirty = true;
         }
-        ImGui::EndDisabled();
-        Tooltip(preset.at("help").get<std::string>().c_str());
         ImGui::Spacing();
         ImGui::PopID();
     }
