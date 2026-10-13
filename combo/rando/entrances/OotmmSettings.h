@@ -136,8 +136,13 @@ inline void RestrictEntranceSettings(Settings& settings, const CapabilitySet& ca
 
 // Future profile and menu readers share this boundary (headless --er uses
 // ReadEntranceArgs). Unknown/private CVar values cannot enable a pool whose
-// capability has not shipped.
-template <class Read> Settings ReadEntranceSettings(Read read, const CapabilitySet& caps) {
+// capability has not shipped. As in ReadEntranceArgs, a devOnly row is used only
+// when `capability` selects it: OoTMM's Wallmaster pool always has the OoT
+// sources (packages/logic/src/solver/entrances.ts:657-669), so the MM tranche
+// must not shrink it unasked.
+template <class Read>
+Settings ReadEntranceSettings(Read read, const CapabilitySet& active, std::string_view capability = {}) {
+    const CapabilitySet caps = active.Selected(capability);
     Settings settings;
     for (const auto& row : kEntranceSettings) {
         const int value = read(row.cvar, row.defaultValue);
@@ -166,14 +171,11 @@ inline std::string EntranceSettingsText(const Settings& settings) {
 // Returns the error, or an empty string after setting `settings`.
 inline std::string ReadEntranceArgs(std::span<const std::string> pairs, std::string_view capability,
                                     const CapabilitySet& active, Settings& settings) {
-    CapabilitySet caps = active.WithoutDevOnly();
-    if (!capability.empty()) {
-        if (!CapabilitySet::Known(capability))
-            return "unknown entrance capability '" + std::string(capability) + "'";
-        caps = active.Only(capability);
-        if (caps.Empty())
-            return "entrance capability '" + std::string(capability) + "' is not available in this build";
-    }
+    if (!capability.empty() && !CapabilitySet::Known(capability))
+        return "unknown entrance capability '" + std::string(capability) + "'";
+    const CapabilitySet caps = active.Selected(capability);
+    if (!capability.empty() && caps.Empty())
+        return "entrance capability '" + std::string(capability) + "' is not available in this build";
     Settings requested;
     std::vector<const EntranceSetting*> given;
     for (const auto& pair : pairs) {

@@ -30,7 +30,7 @@ struct Capability {
     // two rows combine only through a companion row that lists them all. A
     // companion is never more open than the rows it names.
     std::span<const std::string_view> companions;
-    // Used only when selected by id (headless --er-capability), and never Public.
+    // Used only when selected by id (CapabilitySet::Selected), and never Public.
     bool devOnly = false;
 };
 
@@ -161,6 +161,11 @@ class CapabilitySet {
             if (kEntranceCapabilities[i].devOnly)
                 set.rows_[i] = 0;
         return set;
+    }
+    // The rows a settings reader uses: Only(id) when an id is selected (headless
+    // --er-capability), otherwise WithoutDevOnly().
+    constexpr CapabilitySet Selected(std::string_view id) const {
+        return id.empty() ? WithoutDevOnly() : Only(id);
     }
     constexpr CapabilitySet operator|(const CapabilitySet& other) const {
         CapabilitySet set = *this;

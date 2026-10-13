@@ -36,7 +36,8 @@ bool Same(const Settings &a, const Settings &b) {
          a.erOneWaysWoods == b.erOneWaysWoods;
 }
 
-Settings Read(const Settings &in, const CapabilitySet &caps) {
+Settings Read(const Settings &in, const CapabilitySet &caps,
+              std::string_view selected = {}) {
   return ReadEntranceSettings(
       [&](const char *cvar, int fallback) {
         for (const auto &row : kEntranceSettings)
@@ -45,7 +46,7 @@ Settings Read(const Settings &in, const CapabilitySet &caps) {
         assert(false);
         return fallback;
       },
-      caps);
+      caps, selected);
 }
 
 void CatalogRows() {
@@ -100,6 +101,9 @@ void CatalogRows() {
   assert(all.Only("unknown-id").Empty());
   assert(!all.WithoutDevOnly().Active("wallmasters-own-game-mm-tranche"));
   assert(all.WithoutDevOnly().Active("wallmasters-own-game-v1"));
+  assert(all.Selected("") == all.WithoutDevOnly());
+  for (const auto id : ids)
+    assert(all.Selected(id) == all.Only(id));
   assert(
       (all.Only("wallmasters-own-game-v1") | all.Only("one-ways-own-game-v1"))
           .Active("one-ways-own-game-v1"));
@@ -233,13 +237,14 @@ void CompanionsAndArrayOrder() {
   auto s = Read(both, all);
   assert(s.erWallmasters == Mode::OwnGame && s.erOneWays == Mode::OwnGame &&
          s.erOneWaysMajor);
-  for (const auto &caps :
-       {noCompanion, all.Only("wallmasters-own-game-mm-tranche"),
-        all.Only("wallmasters-own-game-v1")}) {
+  for (const auto &caps : {noCompanion, all.Only("wallmasters-own-game-v1")}) {
     s = Read(both, caps);
     assert(s.erWallmasters == Mode::OwnGame && s.erOneWays == Mode::None &&
            !s.erOneWaysMajor);
   }
+  s = Read(both, all, "wallmasters-own-game-mm-tranche");
+  assert(s.erWallmasters == Mode::OwnGame && s.erOneWays == Mode::None &&
+         !s.erOneWaysMajor);
   s = Read(both, all.Only("one-ways-own-game-v1"));
   assert(s.erWallmasters == Mode::None && s.erOneWays == Mode::OwnGame &&
          s.erOneWaysMajor);
@@ -257,27 +262,70 @@ void CompanionsAndArrayOrder() {
   assert(Same(s, M1(1, 0, 0)));
 }
 
-// Every M1 combination against several sets: the result is a fixed point the
-// set admits, only resets values, keeps an admitted input whole, and resets a
-// value only when it cannot join the values kept before it (array order).
+// A devOnly row is used only when selected by id, by both readers. In a Phase A
+// dev build (only the MM tranche, at Dev), a menu, profile or imported
+// erWallmasters=ownGame is stripped, as headless --er refuses it without
+// --er-capability: OoTMM's Wallmaster pool always has the OoT sources
+// (packages/logic/src/solver/entrances.ts:657-669), so the tranche must not
+// shrink it unasked.
+void DevOnlyRowsOnlyWhenSelected() {
+  const auto all = CapabilitySet::AtLeast(Stage::Hidden);
+  auto phaseA = all.Only("wallmasters-own-game-mm-tranche");
+  phaseA.devBuild = true;
+  const std::string_view tranche = "wallmasters-own-game-mm-tranche";
+  const auto wallmasters = M1(1, 0, 0);
+  const std::vector<std::string> pair = {"erWallmasters=ownGame"};
+  Settings parsed;
+  assert(Same(Read(wallmasters, phaseA), Settings{}));
+  assert(
+      !FindEntranceSetting("erWallmasters")->supports(1, phaseA.Selected("")));
+  assert(ReadEntranceArgs(pair, "", phaseA, parsed) ==
+         "erWallmasters=ownGame is not available in this build without "
+         "--er-capability");
+  // Selected by id, both readers take it.
+  assert(Same(Read(wallmasters, phaseA, tranche), wallmasters));
+  assert(ReadEntranceArgs(pair, tranche, phaseA, parsed).empty() &&
+         Same(parsed, wallmasters));
+  // A selected row the build does not admit, or an unknown id, admits nothing.
+  assert(
+      Same(Read(wallmasters, phaseA, "wallmasters-own-game-v1"), Settings{}));
+  assert(Same(Read(wallmasters, all, "unknown-id"), Settings{}));
+  // Release rows need no selection, and selecting one uses only that row.
+  assert(Same(Read(wallmasters, all.Only("wallmasters-own-game-v1")),
+              wallmasters));
+  assert(Same(Read(M1(1, 1, 1), all, "one-ways-own-game-v1"), M1(0, 1, 1)));
+}
+
+// Every M1 combination against several sets and selections: the result is a
+// fixed point the selected rows admit, only resets values, keeps an admitted
+// input whole, and resets a value only when it cannot join the values kept
+// before it (array order).
 void ExhaustiveM1Combinations() {
   const auto all = CapabilitySet::AtLeast(Stage::Hidden);
-  const CapabilitySet sets[] = {CapabilitySet::AtLeast(Stage::Public),
-                                ActiveCapabilities(),
-                                all,
-                                all.Only("wallmasters-own-game-v1") |
-                                    all.Only("one-ways-own-game-v1"),
-                                all.Only("wallmasters-own-game-mm-tranche"),
-                                all.Only("one-ways-own-game-v1"),
-                                all.Only("wallmasters-with-one-ways-v1")};
+  const struct {
+    CapabilitySet active;
+    std::string_view selected;
+  } sets[] = {
+      {CapabilitySet::AtLeast(Stage::Public), ""},
+      {ActiveCapabilities(), ""},
+      {all, ""},
+      {all.Only("wallmasters-own-game-v1") | all.Only("one-ways-own-game-v1"),
+       ""},
+      {all.Only("wallmasters-own-game-mm-tranche"), ""},
+      {all, "wallmasters-own-game-mm-tranche"},
+      {all.Only("one-ways-own-game-v1"), ""},
+      {all.Only("wallmasters-with-one-ways-v1"), ""},
+      {all, "wallmasters-with-one-ways-v1"}};
   size_t cases = 0;
-  for (const auto &caps : sets)
+  for (const auto &set : sets)
     for (int w = 0; w < 3; ++w)
       for (int o = 0; o < 3; ++o)
         for (int flags = 0; flags < 32; ++flags) {
+          // The rows the reader uses.
+          const auto caps = set.active.Selected(set.selected);
           const auto in = M1(w, o, flags);
-          const auto out = Read(in, caps);
-          assert(Same(Read(out, caps), out));
+          const auto out = Read(in, set.active, set.selected);
+          assert(Same(Read(out, set.active, set.selected), out));
           assert(AdmitsEntranceSettings(out, caps));
           Settings normalized = in;
           ValidateEntranceSettings(normalized);
@@ -326,6 +374,7 @@ int main() {
   ShippingStripsEverything();
   SetsAdmitExactlyTheCatalog();
   CompanionsAndArrayOrder();
+  DevOnlyRowsOnlyWhenSelected();
   ExhaustiveM1Combinations();
 #ifdef COMBO_ENTRANCE_DEV
   std::cout
