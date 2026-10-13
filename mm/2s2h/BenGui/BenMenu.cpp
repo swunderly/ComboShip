@@ -2274,7 +2274,13 @@ void BenMenu::AddDevTools() {
     AddSidebarEntry("Dev Tools", "Save Editor", 1);
     AddWidget(path, "Popout Save Editor", WIDGET_WINDOW_BUTTON)
         .CVar("gWindows.SaveEditor")
+#ifdef COMBO_BUILD
+        // ComboShip: the same tooltip and search visibility as OoT's pop-out button; search finds the Save Editor page.
+        .HideInSearch(true)
+        .Options(ButtonOptions().Tooltip("Opens the Save Editor in its own window."))
+#else
         .Options(ButtonOptions().Tooltip("Enables the Save Editor window, allowing you to edit your save file."))
+#endif
         .WindowName("Save Editor" COMBO_MM_WINDOW_SUFFIX);
 #ifdef COMBO_BUILD
     AddWidget(path, "Save Editor Inline", WIDGET_CUSTOM).CustomFunction([](WidgetInfo&) {
