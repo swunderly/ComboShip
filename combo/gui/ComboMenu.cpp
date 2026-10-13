@@ -8,6 +8,7 @@
 #include "ComboMenuNavigation.h"
 #include "ComboMenuLayout.h"
 #include "ComboMenuLabels.h"
+#include "ComboRandomizerLayout.h"
 #include "rando/SharedItems.h"
 #include "rando/ComboSeedFormat.h"
 #include "ComboWidgetRender.h"
@@ -506,11 +507,12 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
         const CwWidget* widget = nullptr;
         int targetGame = -1;
         int targetSubpage = -1;
-        std::string heading; // the heading a setting or rule sits under on its page
+        std::string heading; // the heading a setting or rule sits under: <Tab> / <Page> / <Heading> - OoT|MM
     };
     std::vector<Hit> hits;
     auto addLink = [&](MenuSearchKind kind, const char* name, const char* keywords, const char* scope, const char* page,
-                       const char* origin = "", int canonicalBonus = 0, int targetGame = -1, int targetSubpage = -1) {
+                       const char* origin = "", int canonicalBonus = 0, int targetGame = -1, int targetSubpage = -1,
+                       const char* heading = "") {
         int rank = MenuSearchRank(query, name, keywords, kind);
         if (!rank)
             return;
@@ -528,7 +530,7 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                 }
         }
         hits.push_back({ kind, rank, name ? name : "", scope, page, origin, nullptr, nullptr, nullptr, targetGame,
-                         targetSubpage });
+                         targetSubpage, heading ? heading : "" });
     };
     for (const auto& page : kSharedPages) {
         addLink(MenuSearchKind::Page, page.name, page.keywords, page.scope, page.name, page.scopeLabel, 40);
@@ -568,8 +570,8 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                 name == "Zora Tunic (MM)")
                 keywords += " boots tunic gear equipment cross game items extension";
             addLink(MenuSearchKind::Setting, name.c_str(), keywords.c_str(), "randomizer",
-                    MenuRoute(false, "Rando", page).page.c_str(), "MM", 0, 1,
-                    RandomizerWidgetGroup(false, page, 0, ""));
+                    MenuRoute(false, "Rando", page).page.c_str(), "MM", 0, 1, RandomizerWidgetGroup(false, page, 0, ""),
+                    row.value("heading", std::string()).c_str());
         }
     addLink(MenuSearchKind::Setting, "Cross-Games Farore's Wind",
             "farore fw spell warp travel between oot mm cross game world", "randomizer", "Logic & access",
@@ -669,11 +671,20 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                         name == "Allow background inputs" || name == "Search In Sidebar" ||
                         name == "Search Input Autofocus" || name == "Import Settings")
                         continue;
-                    // Non-interactive / opted-out kinds never appear in search.
+                    // Non-interactive / opted-out kinds never appear in search, nor pop-out buttons, whose pages
+                    // are indexed themselves.
                     if (wd.kind == CW_SEPARATOR || wd.kind == CW_SEPARATOR_TEXT || wd.kind == CW_TEXT ||
-                        wd.kind == CW_CUSTOM || wd.hideInSearch)
+                        wd.kind == CW_CUSTOM || wd.kind == CW_WINDOW_BUTTON || wd.hideInSearch)
                         continue;
                     const bool oot = src.game == &model.Oot();
+                    // The seed row of Skip Child Stealth shows only while the selected file has it on (DrawSidebar).
+                    if (route.scope == "randomizer" && wd.cvar &&
+                        !std::strcmp(wd.cvar, "gRandoSettings.SkipChildStealth") && !ProfileUI::ReadInteger(wd.cvar, 0))
+                        continue;
+#ifdef __ANDROID__
+                    if (name == "ImGui Menu Scaling")
+                        continue; // Settings > Interface > Menu size replaces it on Android
+#endif
                     // A Randomizer row the profile page shows under OoTMM's name ranks by it; the native name
                     // stays a keyword.
                     const char* shown = route.scope == "randomizer" ? ProfileUI::OptionDisplayLabel(wd.cvar) : nullptr;
@@ -696,9 +707,18 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                     const auto* placement =
                         FindMenuPlacement(oot, sec.sectionLabel ? sec.sectionLabel : "",
                                           side.sidebarName ? side.sidebarName : "", heading, cvar, name);
+                    // OoT Randomizer rows sit under the page's fixed headings (ComboRandomizerLayout.h).
+                    const char* fixed =
+                        oot && route.scope == "randomizer" ? OotRandomizerHeading(route.page, cvar, heading) : nullptr;
                     hits.push_back({ MenuSearchKind::Setting, rank, label, route.scope, route.page, src.label, nullptr,
-                                     &game, &wd, oot ? 0 : 1, -1,
-                                     placement && placement->heading ? placement->heading : heading });
+                                     &game, &wd, oot ? 0 : 1,
+                                     route.scope == "randomizer"
+                                         ? RandomizerWidgetGroup(oot, side.sidebarName ? side.sidebarName : "",
+                                                                 wd.column, heading, cvar)
+                                         : -1,
+                                     fixed                                  ? fixed
+                                     : placement && placement->heading ? placement->heading
+                                                                            : heading });
                 }
             }
         }
@@ -735,7 +755,22 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                        query.c_str());
     const int cols = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 60.0f ? 2 : 1;
     const float buttonHeight = ImGui::GetFrameHeight() * 1.25f;
+    // Every Open button has the width of the longest label, so a result's actions line up.
+    float openWidth = 0;
+    for (const char* label : { "Open page", "Open technique", "Open Randomizer", "Open Enhancements" })
+        openWidth = std::max(openWidth, ImGui::CalcTextSize(label).x);
+    openWidth += ImGui::GetStyle().FramePadding.x * 4;
     const ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings;
+    // One breadcrumb format: <Tab> / <Page> / <Heading> - OoT|MM.
+    auto breadcrumb = [](const char* scope, const std::string& page, const std::string& heading, int game) {
+        std::string text = std::string(MenuScopeLabel(scope)) + " / " + page;
+        if (!heading.empty() && heading != page)
+            text += " / " + heading;
+        if (game == 0 || game == 1)
+            text += game == 0 ? " - OoT" : " - MM";
+        ImGui::TextColored(kBreadcrumbColor, "%s", text.c_str());
+    };
+    auto openButton = [&](const char* label) { return ImGui::Button(label, ImVec2(openWidth, buttonHeight)); };
     for (const auto& group : groups) {
         if (!group.count)
             continue;
@@ -761,58 +796,50 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
                     ImGui::TextWrapped("%s", hit.label.c_str());
                 ImGui::PushTextWrapPos(0.0f);
                 if (hit.rule) {
+                    const int ruleGame = IsSongTravelRule(hit.rule->name)       ? -1
+                                         : std::strstr(hit.rule->label, "(MM)") ? 1
+                                                                                : 0;
                     if (hit.rule->runtimeOnly) {
-                        ImGui::TextColored(kBreadcrumbColor, "Enhancements / %s / %s", hit.page.c_str(),
-                                           hit.heading.c_str());
-                        if (ImGui::Button("Open Enhancements", ImVec2(0, buttonHeight))) {
+                        breadcrumb("gameplay", hit.page, hit.heading, ruleGame);
+                        if (openButton("Open Enhancements")) {
                             OpenSearchDestination("gameplay", hit.page, hit.rule->name, nullptr,
                                                   std::strstr(hit.rule->label, "(MM)") ? 1 : 0);
                             navigate = true;
                         }
                     } else if (hit.rule->trickGoverned) {
-                        ImGui::TextColored(kBreadcrumbColor, "Randomizer / Tricks & glitches");
-                        if (ImGui::Button("Open technique", ImVec2(-FLT_MIN, buttonHeight))) {
+                        breadcrumb("randomizer", "Tricks & glitches", "", -1);
+                        if (openButton("Open technique")) {
                             OpenSearchDestination(hit.scope, hit.page, nullptr, hit.rule->label);
                             navigate = true;
                         }
                     } else {
-                        ImGui::TextColored(kBreadcrumbColor, "Randomizer / %s / %s", hit.page.c_str(),
-                                           hit.heading.c_str());
-                        const float pairWidth = ImGui::CalcTextSize("Open Randomizer").x +
-                                                ImGui::CalcTextSize("Open Enhancements").x +
-                                                ImGui::GetStyle().FramePadding.x * 4 + ImGui::GetStyle().ItemSpacing.x;
-                        const bool pairFits = ImGui::GetContentRegionAvail().x >= pairWidth;
-                        if (ImGui::Button("Open Randomizer", ImVec2(0, buttonHeight))) {
+                        breadcrumb("randomizer", hit.page, hit.heading, ruleGame);
+                        const bool pairFits =
+                            ImGui::GetContentRegionAvail().x >= openWidth * 2 + ImGui::GetStyle().ItemSpacing.x;
+                        if (openButton("Open Randomizer")) {
                             OpenSearchDestination("randomizer", GameplayRulePage(hit.rule->name, true), hit.rule->name,
-                                                  nullptr,
-                                                  IsSongTravelRule(hit.rule->name)       ? -1
-                                                  : std::strstr(hit.rule->label, "(MM)") ? 1
-                                                                                         : 0);
+                                                  nullptr, ruleGame);
                             navigate = true;
                         }
                         if (pairFits)
                             ImGui::SameLine();
-                        if (ImGui::Button("Open Enhancements", ImVec2(0, buttonHeight))) {
+                        if (openButton("Open Enhancements")) {
                             OpenSearchDestination("gameplay", GameplayRulePage(hit.rule->name, false), hit.rule->name,
-                                                  nullptr,
-                                                  IsSongTravelRule(hit.rule->name)       ? -1
-                                                  : std::strstr(hit.rule->label, "(MM)") ? 1
-                                                                                         : 0);
+                                                  nullptr, ruleGame);
                             navigate = true;
                         }
                     }
-                } else if (hit.widget) {
-                    ImGui::TextColored(kBreadcrumbColor, "%s / %s%s%s - %s", MenuScopeLabel(hit.scope),
-                                       hit.page.c_str(), hit.heading.empty() ? "" : " / ", hit.heading.c_str(),
-                                       hit.targetGame == 1 ? "MM" : "OoT");
                 } else {
-                    ImGui::TextColored(kBreadcrumbColor, "%s / %s", hit.origin.c_str(), hit.page.c_str());
-                    if (ImGui::Button("Open", ImVec2(-FLT_MIN, buttonHeight))) {
+                    // Techniques and catalog links name their game in the origin; native pages in the target.
+                    const int game = hit.origin == "OoT" ? 0 : hit.origin == "MM" ? 1 : hit.targetGame;
+                    breadcrumb(hit.scope.c_str(), hit.page, hit.heading, game);
+                    // A setting is edited in place here; "Open page" shows it among its neighbours, in its world.
+                    if (openButton(hit.kind == MenuSearchKind::Technique ? "Open technique" : "Open page")) {
                         if (hit.targetSubpage >= 0)
                             (hit.page == "Hints & traps" ? mHintSection : mPoolSection) = hit.targetSubpage;
                         OpenSearchDestination(hit.scope, hit.page, nullptr,
                                               hit.kind == MenuSearchKind::Technique ? hit.label.c_str() : nullptr,
-                                              hit.targetGame);
+                                              game);
                         navigate = true;
                     }
                 }
