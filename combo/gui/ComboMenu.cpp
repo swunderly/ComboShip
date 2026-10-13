@@ -2577,17 +2577,16 @@ void ComboMenu::DrawSharedPanel() {
                     }
                     body = active->bodies.emplace(bodyKey, std::move(built)).first;
                 }
-                auto& content = body->second;
-                if (content.game) {
-                    const CwSidebar feature = { active->label.c_str(), content.columns, content.widgets.data(),
-                                                (int)content.widgets.size() };
-                    if (seedOptions)
-                        ProfileUI::DrawSidebar(feature, *content.game, selectedGame);
-                    else
-                        RenderSidebarWidgets(feature, *content.game);
-                }
-                if (layout && !seedOptions && selectedGame == 1 && mScope == "settings" &&
-                    active->label == MenuPage::Controls) {
+                // OoT rows that drive both games, shown in the MM view too: Controls' Controller mapping and
+                // Audio's Volume (the volume sliders mirror into MM). A page's first heading goes above MM's
+                // rows, a later one below them, so both views keep the page's heading order.
+                const char* sharedHeading = !layout || seedOptions || selectedGame != 1 ? nullptr
+                                            : mScope == "settings" && active->label == MenuPage::Controls
+                                                ? "Controller mapping"
+                                            : mScope == "media" && active->label == MenuPage::Audio ? "Volume"
+                                                                                                    : nullptr;
+                const bool sharedFirst = sharedHeading && MenuHeadingIndex(*layout, sharedHeading) == 0;
+                auto drawShared = [&] {
                     const auto mappingKey = std::make_pair(0, -2);
                     auto mapping = active->bodies.find(mappingKey);
                     if (mapping == active->bodies.end()) {
@@ -2600,11 +2599,11 @@ void ComboMenu::DrawSharedPanel() {
                                                      &origins);
                             }
                         built.columns = ArrangeByPlacement(*layout, built.widgets, origins, built.columns);
-                        // Keep the Controller mapping heading and its rows.
+                        // Keep the shared heading and its rows.
                         const auto first =
-                            std::find_if(built.widgets.begin(), built.widgets.end(), [](const CwWidget& w) {
+                            std::find_if(built.widgets.begin(), built.widgets.end(), [&](const CwWidget& w) {
                                 return w.index == -1 && w.kind == CW_SEPARATOR_TEXT && w.name &&
-                                       !std::strcmp(w.name, "Controller mapping");
+                                       !std::strcmp(w.name, sharedHeading);
                             });
                         const auto last = std::find_if(
                             first == built.widgets.end() ? first : first + 1, built.widgets.end(),
@@ -2618,9 +2617,24 @@ void ComboMenu::DrawSharedPanel() {
                     if (mapping->second.game && !mapping->second.widgets.empty()) {
                         const CwSidebar shared = { active->label.c_str(), 1, mapping->second.widgets.data(),
                                                    (int)mapping->second.widgets.size() };
+                        ImGui::PushID("SharedOot"); // OoT and MM widget indexes overlap
                         RenderSidebarWidgets(shared, *mapping->second.game);
+                        ImGui::PopID();
                     }
+                };
+                if (sharedFirst)
+                    drawShared();
+                auto& content = body->second;
+                if (content.game) {
+                    const CwSidebar feature = { active->label.c_str(), content.columns, content.widgets.data(),
+                                                (int)content.widgets.size() };
+                    if (seedOptions)
+                        ProfileUI::DrawSidebar(feature, *content.game, selectedGame);
+                    else
+                        RenderSidebarWidgets(feature, *content.game);
                 }
+                if (sharedHeading && !sharedFirst)
+                    drawShared();
                 ImGui::EndChild();
                 ImGui::PopID();
                 ImGui::PopID();

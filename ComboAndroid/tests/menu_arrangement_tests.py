@@ -54,6 +54,12 @@ render_widget = block('void RenderWidget(', render)
 assert 'game.drawWidget && GameDrawsWidget(w)' in render_widget, 'RenderWidget no longer asks GameDrawsWidget'
 guard = render_widget.find('if (HoldsValuePointer(w))')
 assert 0 <= guard < render_widget.find('switch (w.kind)'), 'a value-pointer control can reach the CVar path'
+# Pages whose OoT rows drive both games show them in the MM view too, in the page's heading order.
+panel = block('void ComboMenu::DrawSharedPanel()')
+for page, heading in (('Controls', 'Controller mapping'), ('Audio', 'Volume')):
+    assert hostcxx.contains(panel, f'active->label == MenuPage::{page} ? "{heading}"'), f'MM view of {page} lacks {heading}'
+assert hostcxx.contains(panel, 'if (sharedFirst) drawShared();') and \
+    hostcxx.contains(panel, 'if (sharedHeading && !sharedFirst) drawShared();'), 'the shared rows lost their place'
 
 
 def active(source_text):
