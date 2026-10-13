@@ -904,40 +904,6 @@ static void SariaPriority() {
         dirty = true;
     }
 }
-static void GlobalTrapPreferences() {
-    if (view != 0 || !active)
-        return;
-    ImGui::SeparatorText("Trap preferences (global)");
-    MenuTooltip("These runtime preferences apply to every file and are not copied with seed settings.");
-    bool changed = false;
-    int behavior = CVarGetInteger("gRando.TrapItems", 0);
-    const char* choices[] = { "Default (Dynamic)", "Static" };
-    ComboMenu_PushCombobox(ComboMenu_ThemeColor());
-    if (ImGui::Combo("Trap Behavior", &behavior, choices, 2)) {
-        CVarSetInteger("gRando.TrapItems", behavior);
-        changed = true;
-    }
-    ComboMenu_PopCombobox();
-    if (ImGui::BeginTable("##GlobalTrapEffects", 2, ImGuiTableFlags_NoSavedSettings)) {
-        for (const auto& row : catalog.at("mm").at("globalTrapEffects")) {
-            ImGui::TableNextColumn();
-            const auto key = row.at("key").get<std::string>();
-            bool value = CVarGetInteger(key.c_str(), 0) != 0;
-            ImGui::PushID(key.c_str());
-            ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
-            if (ImGui::Checkbox(row.at("label").get<std::string>().c_str(), &value)) {
-                CVarSetInteger(key.c_str(), value);
-                changed = true;
-            }
-            ComboMenu_PopCheckbox();
-            Tooltip(row.at("tooltip").get<std::string>().c_str());
-            ImGui::PopID();
-        }
-        ImGui::EndTable();
-    }
-    if (changed)
-        Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
-}
 void DrawCustom(const char* sidebar, int world) {
     const std::string name = sidebar ? sidebar : "";
     if (name == "Starting Items") {
@@ -996,8 +962,10 @@ void DrawCustom(const char* sidebar, int world) {
     ImGui::EndTable();
     if (name == "Item Pool")
         SariaPriority();
+    // Trap disguises and effects are chosen at pickup, not by the seed, so they are live settings.
     if (name == "Traps")
-        GlobalTrapPreferences();
+        ImGui::TextWrapped(
+            "Trap look and effects: Enhancements > Extra modes > Traps and Randomizer extras > Item appearance.");
 }
 void DrawGeneration() {
     if (!active || document.is_null()) {

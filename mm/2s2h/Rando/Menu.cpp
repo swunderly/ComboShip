@@ -1941,27 +1941,6 @@ void MM_AppendProfileMenuMetadata(nlohmann::json& data) {
             checks.push_back(profileText(Rando::StaticData::Checks.at(id).name));
         data["checkGroups"].push_back({ { "label", group.label }, { "tooltip", group.tooltip }, { "checks", checks } });
     }
-    data["globalTrapEffects"].push_back(
-        { { "label", "Freeze" }, { "key", "gRando.Traps.Freeze" }, { "tooltip", "Freezes Link in place." } });
-    data["globalTrapEffects"].push_back({ { "label", "Blast" },
-                                          { "key", "gRando.Traps.Blast" },
-                                          { "tooltip", "Link explodes with Powder Keg force." } });
-    data["globalTrapEffects"].push_back(
-        { { "label", "Shock" }, { "key", "gRando.Traps.Shock" }, { "tooltip", "Shocks Link for a few seconds." } });
-    data["globalTrapEffects"].push_back(
-        { { "label", "Jinx" }, { "key", "gRando.Traps.Jinx" }, { "tooltip", "Afflicts Link with Jinx." } });
-    data["globalTrapEffects"].push_back(
-        { { "label", "Wallet" }, { "key", "gRando.Traps.Wallet" }, { "tooltip", "Links rupees scatter around him." } });
-    data["globalTrapEffects"].push_back({ { "label", "Like Like" },
-                                          { "key", "gRando.Traps.Enemy" },
-                                          { "tooltip", "Spawns a Like Like on top of Link." } });
-    data["globalTrapEffects"].push_back({ { "label", "Time" },
-                                          { "key", "gRando.Traps.Time" },
-                                          { "tooltip", "Advances Time 90 Minutes (Game Time)." } });
-    data["globalTrapEffects"].push_back(
-        { { "label", "Fire" }, { "key", "gRando.Traps.Fire" }, { "tooltip", "Deals Fire to Link." } });
-    data["globalTrapEffects"].push_back(
-        { { "label", "Knockback" }, { "key", "gRando.Traps.Knockback" }, { "tooltip", "Knocks Link back." } });
     data["vanillaIncompatible"] = nlohmann::json::array();
     for (auto id :
          { RO_PLENTIFUL_ITEMS, RO_SHUFFLE_BOSS_SOULS, RO_SHUFFLE_SWIM, RO_CLOCK_SHUFFLE, RO_SHUFFLE_TYCOON_WALLET })
