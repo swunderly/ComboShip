@@ -13,11 +13,13 @@
 #include "ship/window/gui/Gui.h"
 
 namespace {
-std::atomic<bool> menuRequested{false}, menuVisible{true};
+std::atomic<bool> menuRequested{false}, backRequested{false}, menuVisible{true};
 std::atomic<float> requestedScale{0.0f};
 }
 void Ship::Mobile::RequestMenu() { menuRequested = true; }
 bool Ship::Mobile::ConsumeMenuRequest() { return menuRequested.exchange(false); }
+void Ship::Mobile::RequestBack() { backRequested = true; }
+bool Ship::Mobile::ConsumeBackRequest() { return backRequested.exchange(false); }
 void Ship::Mobile::UpdateMenuState(bool visible) { menuVisible = visible; }
 bool Ship::Mobile::IsMenuVisible() { return menuVisible.load(); }
 void Ship::Mobile::RequestMenuScale(float scale) {

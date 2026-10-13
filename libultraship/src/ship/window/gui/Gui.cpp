@@ -253,12 +253,24 @@ void Gui::DrawMenu() {
 #else
         false;
 #endif
-    if (androidMenuRequest || ImGui::IsKeyPressed(TOGGLE_BTN, false) || ImGui::IsKeyPressed(ImGuiKey_Escape, false) ||
-        (ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false) &&
-         Ship::Context::GetRawInstance()->GetConsoleVariables()->GetInteger(CVAR_IMGUI_CONTROLLER_NAV, 0))) {
-        if ((androidMenuRequest || ImGui::IsKeyPressed(ImGuiKey_Escape, false) || ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false)) && GetMenu()) {
+    const bool androidBackRequest =
+#ifdef __ANDROID__
+        Mobile::ConsumeBackRequest();
+#else
+        false;
+#endif
+    // ComboShip: Back steps back one level inside the open menu before it closes the menu.
+    const bool backRequest = androidBackRequest || ImGui::IsKeyPressed(ImGuiKey_Escape, false);
+    const bool backConsumed =
+        backRequest && GetMenu() && GetMenu()->IsVisible() && mMenuBackHandler && mMenuBackHandler();
+    if (!backConsumed &&
+        (androidMenuRequest || backRequest || ImGui::IsKeyPressed(TOGGLE_BTN, false) ||
+         (ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false) &&
+          Ship::Context::GetRawInstance()->GetConsoleVariables()->GetInteger(CVAR_IMGUI_CONTROLLER_NAV, 0)))) {
+        if ((androidMenuRequest || backRequest || ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false)) && GetMenu()) {
             GetMenu()->ToggleVisibility();
-        } else if ((androidMenuRequest || ImGui::IsKeyPressed(TOGGLE_BTN, false) || ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false)) &&
+        } else if ((androidMenuRequest || ImGui::IsKeyPressed(TOGGLE_BTN, false) ||
+                    ImGui::IsKeyPressed(TOGGLE_PAD_BTN, false)) &&
                    GetMenuBar()) {
             GetMenuBar()->ToggleVisibility();
         }
@@ -414,6 +426,10 @@ void Gui::SetMenuBar(std::shared_ptr<GuiMenuBar> menuBar) {
     if (GetMenuBar()) {
         GetMenuBar()->Init();
     }
+}
+
+void Gui::SetMenuBackHandler(std::function<bool()> handler) {
+    mMenuBackHandler = std::move(handler);
 }
 
 void Gui::SetMenu(std::shared_ptr<GuiWindow> menu) {

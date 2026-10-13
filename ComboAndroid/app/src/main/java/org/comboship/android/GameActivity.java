@@ -9,6 +9,7 @@ public final class GameActivity extends SDLActivity {
     private TouchOverlay overlay; private boolean librariesReady, returnToOptions;
     public static native void nativePad(int buttons,float lx,float ly,float rx,float ry,float lt,float rt);
     public static native void nativeMenu();
+    public static native void nativeBack();
     public static native void nativeRelease();
     public static native void nativeQuit();
     public static native boolean nativeControlsSuppressed();
@@ -132,14 +133,15 @@ public final class GameActivity extends SDLActivity {
         super.onNewIntent(intent);
         if(librariesReady && intent.getBooleanExtra(MainActivity.MANAGE,false))confirmExit(true);
     }
-    @Override public void onBackPressed(){if(librariesReady)nativeMenu();else super.onBackPressed();}
+    // Back steps back inside the open menu (popup, search) before it closes it; it opens the menu while playing.
+    @Override public void onBackPressed(){if(librariesReady)nativeBack();else super.onBackPressed();}
     @Override public boolean dispatchKeyEvent(KeyEvent event){
         // SDL's surface consumes keyboard Back before Activity.onBackPressed.
-        // Let an open IME handle Back first; otherwise use it as the menu key.
-        boolean menuKey=event.getKeyCode()==KeyEvent.KEYCODE_BUTTON_SELECT ||
-                (event.getKeyCode()==KeyEvent.KEYCODE_BACK && !SDLActivity.isScreenKeyboardShown());
-        if(librariesReady && menuKey){
-            if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0)nativeMenu();
+        // Let an open IME handle Back first; otherwise Back steps back in the menu, and Select toggles it.
+        boolean select=event.getKeyCode()==KeyEvent.KEYCODE_BUTTON_SELECT;
+        boolean back=event.getKeyCode()==KeyEvent.KEYCODE_BACK && !SDLActivity.isScreenKeyboardShown();
+        if(librariesReady && (select || back)){
+            if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0){if(back)nativeBack();else nativeMenu();}
             return true;
         }
         return super.dispatchKeyEvent(event);

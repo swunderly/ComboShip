@@ -4,6 +4,7 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <functional>
 #include <memory>
 #include <string>
 #include <map>
@@ -149,6 +150,14 @@ class Gui {
     std::shared_ptr<GuiWindow> GetMenu();
 
     /**
+     * @brief Sets a step-back handler for the full-screen menu (ComboShip).
+     *
+     * While the menu is visible, Back (Android Back or Escape) calls the handler first. It returns true when it
+     * consumed the press (closed a popup, cleared a search, ...); the menu then stays open.
+     */
+    void SetMenuBackHandler(std::function<bool()> handler);
+
+    /**
      * @brief Returns true if the menu bar or the full-screen menu window is currently visible.
      */
     bool GetMenuOrMenubarVisible();
@@ -254,6 +263,7 @@ class Gui {
     std::shared_ptr<GameOverlay> mGameOverlay;
     std::shared_ptr<GuiMenuBar> mMenuBar;
     std::shared_ptr<GuiWindow> mMenu;
+    std::function<bool()> mMenuBackHandler;
 };
 } // namespace Ship
 

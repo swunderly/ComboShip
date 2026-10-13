@@ -30,6 +30,7 @@
 #include "ComboTimersWindow.h"      // combo-owned overlay timers (#173)
 #include "rando/ComboPlaythrough.h" // plando: ParseSpoilerPlacements + Suffix/BuildForeignArray + slot paths
 #include <imgui.h>
+#include <imgui_internal.h>                    // ClosePopupToLevel: Back closes the top popup
 #include <libultraship/libultraship.h>         // CVar bridge (CVarGet/Set* incl. color) + color.h (Color_RGBA8)
 #include <ship/window/gui/IconsFontAwesome4.h> // ICON_FA_* for the header action buttons
 #include <memory>
@@ -353,15 +354,8 @@ void ComboMenu::DrawElement() {
             }
         }
         if (!mSearchBuf[0] && mSearchReturn.HasResult()) {
-            if (ImGui::Button("Back to search results", ImVec2(0, ImGui::GetFrameHeight() * 1.25f))) {
-                mScope = mSearchReturn.scope;
-                mHubActive = mSearchReturn.hub;
-                std::snprintf(mSearchBuf, sizeof(mSearchBuf), "%s", mSearchReturn.query.c_str());
-                mSearchReturn.Clear();
-                mRuleFocus.Clear();
-                mResetContentScroll = true;
-                mLastNavSig = mScope + "|" + mHubActive;
-            }
+            if (ImGui::Button("Back to search results", ImVec2(0, ImGui::GetFrameHeight() * 1.25f)))
+                ReturnToSearchResults();
         }
         ImGui::Spacing();
         ImGui::Separator();
@@ -381,6 +375,39 @@ void ComboMenu::DrawElement() {
     }
     ProfileUI::EndFrame();
     ImGui::End();
+}
+
+void ComboMenu::ReturnToSearchResults() {
+    mScope = mSearchReturn.scope;
+    mHubActive = mSearchReturn.hub;
+    std::snprintf(mSearchBuf, sizeof(mSearchBuf), "%s", mSearchReturn.query.c_str());
+    mSearchReturn.Clear();
+    mRuleFocus.Clear();
+    mResetContentScroll = true;
+    mLastNavSig = mScope + "|" + mHubActive;
+}
+
+bool ComboMenu::HandleBack() {
+    if (!IsVisible())
+        return false;
+    if (auto ctx = Ship::Context::GetRawInstance(); ctx && ctx->GetWindow() && ctx->GetWindow()->GetGui())
+        ImGui::SetCurrentContext(ctx->GetWindow()->GetGui()->GetImGuiContext());
+    if (const int popups = ImGui::GetCurrentContext()->OpenPopupStack.Size; popups > 0) {
+        ImGui::ClosePopupToLevel(popups - 1, true);
+        return true;
+    }
+    if (mSearchBuf[0]) {
+        mSearchBuf[0] = 0;
+        mSearchQuery.clear();
+        mRuleFocus.Clear();
+        mSearchReturn.Clear();
+        return true;
+    }
+    if (mSearchReturn.HasResult()) {
+        ReturnToSearchResults();
+        return true;
+    }
+    return false;
 }
 
 void ComboMenu::OpenSearchDestination(const std::string& scope, const std::string& page, const char* rule,
@@ -2596,6 +2623,7 @@ extern "C" COMBO_EXPORT void ComboUI_Register(void) {
     // Match the existing menu-visibility CVar so the in-game menu hotkey toggles us.
     ComboRando::sComboMenu = std::make_shared<ComboRando::ComboMenu>("gOpenWindows.Menu", "Combo Menu");
     gui->SetMenu(ComboRando::sComboMenu);
+    gui->SetMenuBackHandler([] { return ComboRando::sComboMenu && ComboRando::sComboMenu->HandleBack(); });
 
     // Trackers: legacy setting migration, shared appearance, Triforce overlay and the combo windows.
     ComboTrackerUI::Migrate(ComboTrackerUI::Item);

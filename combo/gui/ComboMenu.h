@@ -26,6 +26,10 @@ class ComboMenu final : public Ship::GuiWindow {
     // Open the menu with the Randomizer tab active (file-select "Open Randomizer Settings").
     void OpenAtRandomizer();
 
+    // Back (Android Back, Escape): close the top popup or dropdown, then clear the search, then return to the search
+    // results. Returns false when only closing the menu is left.
+    bool HandleBack();
+
   protected:
     void InitElement() override {
     }
@@ -42,6 +46,7 @@ class ComboMenu final : public Ship::GuiWindow {
     void OpenSearchDestination(const std::string& scope, const std::string& page, const char* rule = nullptr,
                                const char* trick = nullptr, int targetGame = -1);
     void DrawScopeHelp();
+    void ReturnToSearchResults();
 
     char mSearchBuf[256] = { 0 }; // raw global-search input; normalized into mSearchQuery each frame
     std::string mSearchQuery;     // raw multi-word query this frame ("" = not searching)

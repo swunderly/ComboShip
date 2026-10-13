@@ -58,6 +58,7 @@ Java_org_comboship_android_GameActivity_nativePad(JNIEnv*, jclass, jint buttons,
     input.set(static_cast<uint32_t>(buttons), {lx, ly, rx, ry, lt, rt});
 }
 extern "C" JNIEXPORT void JNICALL Java_org_comboship_android_GameActivity_nativeMenu(JNIEnv*, jclass) { Ship::Mobile::RequestMenu(); }
+extern "C" JNIEXPORT void JNICALL Java_org_comboship_android_GameActivity_nativeBack(JNIEnv*, jclass) { Ship::Mobile::RequestBack(); }
 extern "C" JNIEXPORT jboolean JNICALL Java_org_comboship_android_GameActivity_nativeControlsSuppressed(JNIEnv*, jclass) {
     return !gameplayActive.load() || Ship::Mobile::IsMenuVisible();
 }
