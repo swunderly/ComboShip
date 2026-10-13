@@ -12,6 +12,10 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## Unreleased
+
+- **Home > Apply preset follows OoTMM's Default, Beginner and Allsanity presets more closely.** All three now skip Ganon's trials and need all six medallions for the Rainbow Bridge. Default and Allsanity start MM with no items. Beginner starts with Zelda's Letter, Prelude of Light and the Ocarina of Time, shares only the items OoTMM's Beginner shares, and puts junk in the 19 checks OoTMM's Beginner fills with junk. Allsanity uses beatable-only logic and adds the MM spells, boots, tunics and ocarina buttons, shared across games. Some options are close matches rather than exact ones. A file changes only when you apply a preset to it.
+
 ## 0.4.4 - 2026-10-13
 
 - **Home > Apply preset now also sets Goal back to the preset's goal (Ganon & Majora).** Before, a file whose Goal was Triforce Hunt stayed a hunt.
