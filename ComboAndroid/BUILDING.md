@@ -37,7 +37,7 @@ Rerun only the steps after the change, in the existing build directories:
 1. `cmake --build <workspace>/build-android --target ComboShip`
 2. `python ComboAndroid/tools/stage_runtime.py --upstream . --native <workspace>/build-android --sdl <workspace>/build-android/_deps/sdl2-src --ndk <ndk> --app ComboAndroid/app` (records the source commit in `build-info.json`)
 3. Delete `ComboAndroid/app/build/outputs/apk` and `ComboAndroid/app/build/intermediates/apk`, then `gradlew -p ComboAndroid :app:assembleDebug`. Packaging on top of an old APK can leave megabytes of dead space in it.
-4. `python ComboAndroid/tools/verify_apk.py ComboAndroid/app/build/outputs/apk/debug/app-debug.apk`. It rejects an APK with more than 1 MiB of space that no zip entry points at.
+4. `python ComboAndroid/tools/verify_apk.py ComboAndroid/app/build/outputs/apk/debug/app-debug.apk`. It rejects an APK with more than 1 MiB of space that no zip entry points at, and one whose libraries were built with the dev-only CMake option `COMBO_ENTRANCE_DEV`.
 
 Development APKs use the builder's Android debug signing key. An APK from a different builder or CI has a different signature and will not install over an existing app. Keep the signing key for updates, and export saves before changing installation or signing identity. Private keys are not in the repository.
 

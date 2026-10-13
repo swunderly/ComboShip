@@ -17,6 +17,11 @@
 // and tricks, and --master-seed <n> uses n directly instead of hashing --seed. Together they reproduce a
 // reported seed's generation bit-for-bit, which plain --seed cannot.
 //
+// --er <key>=<value> sets an OoTMM entrance setting by its pinned name (repeatable), and
+// --er-capability <id> selects one capability row (combo/rando/entrances/Capabilities.h), such as a
+// dev-only one. A value this build's capabilities do not admit is a setup error. Neither combines with
+// the private --mm-* entrance flags.
+//
 // --playthrough runs two passes, ignoring the seed's No-Logic/Glitchless flag (it always evaluates real
 // gates; permissiveness comes only from tricks): Pass 1 uses the seed's own tricks ("can this player beat
 // it?"); if that sticks, Pass 2 enables every trick to tell "needs more tricks than configured" apart from
@@ -51,6 +56,7 @@
 #include "rando/entrances/MmOrdinaryGenerationSettings.h"
 #include "rando/entrances/MmMixedNativeBridge.h"
 #include "rando/entrances/MmGrottoNativeBridge.h"
+#include "rando/entrances/OotmmSettings.h"
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/FaroreRules.h"
 #include "rando/SpellRules.h"
@@ -182,6 +188,11 @@ int RunHeadless(int argc, char** argv) {
     bool nativeMmMixed = false;
     bool nativeMmGrottos = false;     // private exact-generation validation; no public menu claim
     bool nativeMmWallmasters = false; // internal validation flag; no menu capability claim
+    // OoTMM entrance settings (--er, --er-capability). No generator reads them yet.
+    std::vector<std::string> entrancePairs;
+    std::string entranceCapability;
+    bool entranceArgs = false;
+    ComboRando::Entrances::Settings entranceSettings;
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
         if (a == "--mm-ordinary-indoors")
@@ -226,7 +237,34 @@ int RunHeadless(int argc, char** argv) {
         else if (a == "--master-seed" && i + 1 < argc) {
             masterSeedArg = static_cast<uint32_t>(std::strtoul(argv[++i], nullptr, 10));
             haveMasterSeed = true;
+        } else if (a == "--er" || a == "--er-capability") {
+            if (i + 1 >= argc || argv[i + 1][0] == '\0' || (a == "--er-capability" && !entranceCapability.empty())) {
+                std::cerr << "[comborando] " << a
+                          << (i + 1 >= argc || argv[i + 1][0] == '\0' ? " needs a value\n"
+                                                                      : " can be given only once\n");
+                return 2;
+            }
+            entranceArgs = true;
+            if (a == "--er")
+                entrancePairs.push_back(argv[++i]);
+            else
+                entranceCapability = argv[++i];
         }
+    }
+    if (entranceArgs) {
+        const bool privateMm = nativeMmOrdinaryIndoors || nativeMmOrdinaryTelescopes || nativeMmOrdinaryOverworld ||
+                               nativeMmOrdinaryDungeons || nativeMmMixed || nativeMmGrottos || nativeMmWallmasters;
+        const std::string error =
+            privateMm ? "--er and --er-capability cannot be combined with the --mm-* entrance flags"
+                      : ComboRando::Entrances::ReadEntranceArgs(entrancePairs, entranceCapability,
+                                                                ComboRando::Entrances::ActiveCapabilities(),
+                                                                entranceSettings);
+        if (!error.empty()) {
+            std::cerr << "[comborando] " << error << "\n";
+            return 2;
+        }
+        std::cout << "[comborando] entrance settings: " << ComboRando::Entrances::EntranceSettingsText(entranceSettings)
+                  << "\n";
     }
 
 #ifdef _WIN32

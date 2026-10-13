@@ -4,6 +4,12 @@ import argparse,json,zipfile,hashlib,struct
 from pathlib import Path
 from stage_runtime import REQUIRED,arm64
 from verify_native import verify_runtime
+# Compiled into every library that can admit dev-only entrance capabilities (combo/rando/entrances/Capabilities.h,
+# CMake option COMBO_ENTRANCE_DEV). No release may carry it.
+ENTRANCE_DEV_MARKER=b'ComboShip entrance dev build - not for release'
+def entrance_dev_libraries(libraries):
+    """Names of the (name, bytes) libraries built with COMBO_ENTRANCE_DEV; reads them one at a time."""
+    return sorted(name for name,data in libraries if ENTRANCE_DEV_MARKER in data)
 def unreferenced_bytes(apk,z):
     """Bytes between local entries that no central-directory entry points at (left by incremental packaging)."""
     data=apk.read_bytes();end=0;gaps=0
@@ -20,6 +26,8 @@ def verify(apk):
         if len(names)!=len(set(names)):raise RuntimeError('Duplicate APK entries')
         libs={Path(name).name:name for name in names if name.startswith('lib/arm64-v8a/') and name.endswith('.so')}
         if REQUIRED-libs.keys():raise RuntimeError('APK is missing game runtime libraries')
+        dev=entrance_dev_libraries((name,z.read(name)) for name in names if name.endswith('.so'))
+        if dev:raise RuntimeError(f'COMBO_ENTRANCE_DEV build, not for release: {", ".join(dev)}')
         for name,path in libs.items():arm64(z.read(path),name)
         verify_runtime({name:z.read(path) for name,path in libs.items()},json.loads(z.read('assets/native-exports.json')))
         for name in names:
@@ -29,6 +37,6 @@ def verify(apk):
         for entry in json.loads(z.read('assets/support-manifest.json'))['files']:
             if hashlib.sha256(z.read('assets/runtime/'+entry['path'])).hexdigest()!=entry['sha256']:raise RuntimeError('Support manifest mismatch')
         if 'classes.dex' not in names:raise RuntimeError('No Android application code')
-    print(f'PASS: {apk.name}: ARM64 game libraries, packaged dependencies, native entry points, 16 KiB ELF alignment, support hashes, no ROM filenames. This verifier does not test device operation.')
+    print(f'PASS: {apk.name}: ARM64 game libraries, packaged dependencies, native entry points, 16 KiB ELF alignment, support hashes, no ROM filenames, no entrance dev build. This verifier does not test device operation.')
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('apk',type=Path);verify(p.parse_args().apk)

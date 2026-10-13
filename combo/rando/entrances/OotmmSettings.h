@@ -3,8 +3,11 @@
 #pragma once
 #include "Capabilities.h"
 #include "Shuffle.h"
+#include <algorithm>
 #include <span>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 namespace ComboRando::Entrances {
 struct EntranceChoice {
@@ -131,8 +134,9 @@ inline void RestrictEntranceSettings(Settings& settings, const CapabilitySet& ca
     settings = kept;
 }
 
-// Future profile, headless and menu readers share this boundary. Unknown/private
-// CVar values cannot enable a pool whose capability has not shipped.
+// Future profile and menu readers share this boundary (headless --er uses
+// ReadEntranceArgs). Unknown/private CVar values cannot enable a pool whose
+// capability has not shipped.
 template <class Read> Settings ReadEntranceSettings(Read read, const CapabilitySet& caps) {
     Settings settings;
     for (const auto& row : kEntranceSettings) {
@@ -143,5 +147,77 @@ template <class Read> Settings ReadEntranceSettings(Read read, const CapabilityS
     RestrictEntranceSettings(settings, caps);
     ValidateEntranceSettings(settings);
     return settings;
+}
+
+// "key=value" for each non-default value, in array order.
+inline std::string EntranceSettingsText(const Settings& settings) {
+    std::string text;
+    for (const auto& row : kEntranceSettings) {
+        const int value = row.get(settings);
+        if (value != row.defaultValue && value >= 0 && static_cast<size_t>(value) < row.choices.size())
+            text += (text.empty() ? "" : ", ") + std::string(row.key) + "=" + std::string(row.choices[value].value);
+    }
+    return text.empty() ? "all defaults" : text;
+}
+
+// Headless --er <key>=<value> pairs by pinned OoTMM name, and the --er-capability
+// id (empty when not given). An unknown name, or a value the capabilities do not
+// admit, is an error instead of being stripped; OoTMM's own resets still apply.
+// Returns the error, or an empty string after setting `settings`.
+inline std::string ReadEntranceArgs(std::span<const std::string> pairs, std::string_view capability,
+                                    const CapabilitySet& active, Settings& settings) {
+    CapabilitySet caps = active.WithoutDevOnly();
+    if (!capability.empty()) {
+        if (!CapabilitySet::Known(capability))
+            return "unknown entrance capability '" + std::string(capability) + "'";
+        caps = active.Only(capability);
+        if (caps.Empty())
+            return "entrance capability '" + std::string(capability) + "' is not available in this build";
+    }
+    Settings requested;
+    std::vector<const EntranceSetting*> given;
+    for (const auto& pair : pairs) {
+        const size_t equals = pair.find('=');
+        if (equals == std::string::npos)
+            return "--er needs <key>=<value> (got '" + pair + "')";
+        const std::string key = pair.substr(0, equals), value = pair.substr(equals + 1);
+        const EntranceSetting* row = FindEntranceSetting(key);
+        if (row == nullptr)
+            return "unknown entrance setting '" + key + "'";
+        if (std::find(given.begin(), given.end(), row) != given.end())
+            return "--er sets " + key + " more than once";
+        given.push_back(row);
+        int index = -1;
+        std::string names;
+        for (size_t i = 0; i < row->choices.size(); ++i) {
+            if (row->choices[i].value == value)
+                index = static_cast<int>(i);
+            names += (i == 0 ? "" : ", ") + std::string(row->choices[i].value);
+        }
+        if (index < 0)
+            return "unknown value '" + value + "' for " + key + " (expected " + names + ")";
+        if (!row->supports(index, caps)) {
+            if (!capability.empty())
+                return key + "=" + value + " is not admitted by " + std::string(capability);
+            return key + "=" + value + " is not available in this build" +
+                   (active.Admits(key, value) ? " without --er-capability" : "");
+        }
+        row->set(requested, index);
+    }
+    ValidateEntranceSettings(requested);
+    Settings restricted = requested;
+    RestrictEntranceSettings(restricted, caps);
+    for (size_t i = 0; i < std::size(kEntranceSettings); ++i) {
+        const auto& row = kEntranceSettings[i];
+        if (row.get(restricted) == row.get(requested))
+            continue;
+        Settings before = restricted;
+        for (size_t later = i; later < std::size(kEntranceSettings); ++later)
+            kEntranceSettings[later].set(before, kEntranceSettings[later].defaultValue);
+        return std::string(row.key) + "=" + std::string(row.choices[row.get(requested)].value) +
+               " cannot be combined with " + EntranceSettingsText(before) + " in this build";
+    }
+    settings = requested;
+    return {};
 }
 } // namespace ComboRando::Entrances

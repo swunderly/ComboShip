@@ -665,6 +665,7 @@ else()
 endif()
 
 combo_json_harness_test(entrance_hidden_settings_reference_parity entrance_settings_tests.py)
+combo_json_harness_test(headless_er_args_and_entrance_dev_switch headless_er_args_tests.py)
 
 # Every test gets a timeout, so a hang fails instead of blocking the run.
 set(COMBO_TEST_TIMEOUT 300 CACHE STRING "Default per-test timeout in seconds")
