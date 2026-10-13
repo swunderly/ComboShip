@@ -115,7 +115,20 @@ def tabs(text):
 
 SHARED = ['General', 'Inventory', 'Equipment', 'Quest Status', 'Dungeon Items', 'Flags', 'Player']
 check(tabs(oot) == SHARED, f'OoT Save Editor tabs: {tabs(oot)}')
-check(tabs(mm) == [t for t in SHARED if t != 'Equipment'] + ['Randomizer', 'Reg Editor'], f'MM Save Editor tabs: {tabs(mm)}')
+check(tabs(mm) == SHARED + ['Randomizer', 'Reg Editor'], f'MM Save Editor tabs: {tabs(mm)}')
+# MM's sword, shield, quiver and bomb bag are pickers on Equipment; Quest Status no longer cycles or gives them.
+mm_equipment = function(mm, 'void DrawEquipmentTab() {')
+check(all(f'Kit::LevelPicker("{name}"' in mm_equipment for name in ('Sword', 'Shield', 'Quiver', 'Bomb Bag')),
+      'MM Equipment lacks the sword, shield, quiver or bomb bag picker')
+mm_quest = function(mm, 'void DrawQuestStatusTab() {')
+check('SET_EQUIP_VALUE' not in mm_quest and 'NextQuestInSlot(QUEST_SWORD)' not in mm_quest and
+      'NextQuestInSlot(QUEST_SHIELD)' not in mm_quest, 'MM Quest Status still edits the sword or shield')
+for text, game in ((oot, 'OoT'), (mm, 'MM')):
+    quest_tab = function(text, 'void DrawQuestStatusTab() {')
+    headings = re.findall(r'SeparatorText\("([^"]*)"\)', quest_tab)
+    check(headings[:5] == ['Boss rewards', 'Songs', 'Quest items', 'Gold Skulltula tokens', 'Heart pieces'],
+          f'{game} Quest Status headings: {headings}')
+    check('Kit::kHeartPieces' in quest_tab, f'{game} heart pieces are not a Red bar')
 check('"File Number"' not in oot and not re.search(r'&gSaveContext\.fileNum\b', oot),
       'the OoT Save Editor can still edit the file number')
 

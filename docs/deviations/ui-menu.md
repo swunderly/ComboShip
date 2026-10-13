@@ -519,3 +519,14 @@ take upstream changes into the `#else` branch and port them to the combo branch 
   under the grids for now.
 - Quest Status (`DrawSong`): Goron Lullaby opens a picker (None, Goron Lullaby Intro, Goron Lullaby) instead of
   cycling through them.
+- New Equipment tab (combo-only `DrawEquipmentTab`, `SetSwordValue`, `SetQuiverLevel`, `SetBombBagLevel`; upstream's
+  is commented out): Give all / Reset, then Sword (None, Kokiri, Razor, Gilded) and Shield (None, Hero's, Mirror)
+  pickers moved from Quest Status, where each tap cycled them (still only while playing, as there), and Quiver and
+  Bomb Bag pickers (levels 0-3, ammo cut to the new capacity) that replace the Bow and Bomb tap cycles. Give all /
+  Reset set the sword and shield as Quest Status's did, plus the best or no bags. Boots and tunics stay on Inventory.
+- `DrawQuestStatusTab`: one column with OoT's headings (Boss rewards, Songs, Quest items, Gold Skulltula tokens,
+  Heart pieces); Give all / Reset no longer touch the sword and shield; tokens are theme bars and heart pieces a Red
+  bar (was a Red dropdown).
+- `DrawDungeonItemTab`: one card per temple with Map, Compass, Boss key, the small key and stray fairy icons and
+  inline bars instead of popups. The small key icon is faded at 0 keys (upstream tested `DUNGEON_KEY_COUNT(i) + 1`,
+  which is lit at 0).

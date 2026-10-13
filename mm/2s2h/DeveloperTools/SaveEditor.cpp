@@ -2209,6 +2209,97 @@ ImVec2 DrawSong(QuestItem slot) {
 }
 #endif
 
+#ifdef COMBO_BUILD
+// ComboShip: Quest Status with OoT's headings in the same order: Boss rewards, Songs, Quest items, Gold Skulltula
+// tokens and Heart pieces as bars. The sword and shield moved to Equipment, so Give all and Reset here leave them
+// alone.
+void DrawQuestStatusTab() {
+    namespace Kit = ComboSaveEditorKit;
+    const ImVec4 theme = UIWidgets::ColorValues.at(UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5)));
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+    ImGui::BeginChild("questTab", ImVec2(0, 0), true);
+
+    if (Kit::Button("Give all##quest", Kit::kGiveAll)) {
+        for (int32_t i = QUEST_REMAINS_ODOLWA; i <= QUEST_BOMBERS_NOTEBOOK; i++) {
+            if (i != QUEST_SHIELD && i != QUEST_SWORD) {
+                SET_QUEST_ITEM(i);
+            }
+        }
+    }
+    ImGui::SameLine();
+    if (Kit::Button("Reset##quest", Kit::kReset)) {
+        for (int32_t i = QUEST_REMAINS_ODOLWA; i <= QUEST_BOMBERS_NOTEBOOK; i++) {
+            if (i != QUEST_SHIELD && i != QUEST_SWORD) {
+                REMOVE_QUEST_ITEM(i);
+            }
+        }
+        REMOVE_QUEST_ITEM(QUEST_SONG_LULLABY_INTRO);
+    }
+
+    auto questIcon = [&](QuestItem slot) {
+        const ItemId item = questToItemMap[slot];
+        if (Kit::IconButton(std::to_string(slot).c_str(), gui->GetTextureByName((const char*)gItemIcons[item]),
+                            CHECK_QUEST_ITEM(slot))) {
+            NextQuestInSlot(slot);
+        }
+        Kit::Tooltip(SlotItemName(item));
+    };
+
+    ImGui::SeparatorText("Boss rewards");
+    for (int32_t i = QUEST_REMAINS_ODOLWA; i <= QUEST_REMAINS_TWINMOLD; i++) {
+        if (i != QUEST_REMAINS_ODOLWA) {
+            ImGui::SameLine();
+        }
+        questIcon(static_cast<QuestItem>(i));
+    }
+
+    ImGui::SeparatorText("Songs");
+    auto drawSongRange = [](int32_t start, int32_t end) {
+        for (int32_t i = start; i <= end; i++) {
+            ImVec2 itemSize = DrawSong(static_cast<QuestItem>(i));
+            if (i != end) {
+                float currentCursorX = ImGui::GetCursorPosX();
+                float nextItemMaxX = currentCursorX + ImGui::GetStyle().ItemSpacing.x + itemSize.x;
+                float regionMaxX = ImGui::GetWindowContentRegionMax().x;
+                if (nextItemMaxX <= regionMaxX) {
+                    ImGui::SameLine();
+                }
+            }
+        }
+    };
+    drawSongRange(QUEST_SONG_TIME, QUEST_SONG_SUN);
+    drawSongRange(QUEST_SONG_SONATA, QUEST_SONG_SARIA);
+
+    ImGui::SeparatorText("Quest items");
+    questIcon(QUEST_BOMBERS_NOTEBOOK);
+
+    ImGui::SeparatorText("Gold Skulltula tokens");
+    int swampTokens = Inventory_GetSkullTokenCount(SCENE_KINSTA1);
+    if (Kit::ResourceBar("##swampSkulltulas", &swampTokens, 0, 30, "Swamp tokens: %d", theme)) {
+        gSaveContext.save.saveInfo.skullTokenCount =
+            ((int)(swampTokens & 0xFFFF) << 0x10) | (gSaveContext.save.saveInfo.skullTokenCount & 0xFFFF);
+    }
+    int oceanTokens = Inventory_GetSkullTokenCount(SCENE_KINDAN2);
+    if (Kit::ResourceBar("##oceanSkulltulas", &oceanTokens, 0, 30, "Ocean tokens: %d", theme)) {
+        gSaveContext.save.saveInfo.skullTokenCount =
+            (gSaveContext.save.saveInfo.skullTokenCount & 0xFFFF0000) | (oceanTokens & 0xFFFF);
+    }
+
+    ImGui::SeparatorText("Heart pieces");
+    int32_t pohCount = (gSaveContext.save.saveInfo.inventory.questItems & 0xF0000000) >> 28;
+    if (Kit::ResourceBar("##heartPieces", &pohCount, 0, 3, "Heart pieces: %d", Kit::kHeartPieces)) {
+        gSaveContext.save.saveInfo.inventory.questItems &= ~0xF0000000;
+        gSaveContext.save.saveInfo.inventory.questItems |= (pohCount << 28);
+    }
+
+    ImGui::EndChild();
+    ImGui::PopStyleVar(2);
+    ImGui::PopStyleColor(1);
+}
+#else
 void DrawQuestStatusTab() {
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
@@ -2358,6 +2449,133 @@ void DrawQuestStatusTab() {
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(1);
 }
+#endif
+
+#ifdef COMBO_BUILD
+// ComboShip: Link's sword set as the Quest Status sword cycle set it, to one chosen value.
+static void SetSwordValue(int value) {
+    SET_EQUIP_VALUE(EQUIP_TYPE_SWORD, value);
+    if (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) == EQUIP_VALUE_SWORD_NONE) {
+        BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) = ITEM_NONE;
+    } else {
+        BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
+            ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
+    }
+    if (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) == EQUIP_VALUE_SWORD_RAZOR) {
+        gSaveContext.save.saveInfo.playerData.swordHealth = 100;
+    }
+    Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
+}
+
+// ComboShip: a quiver or bomb bag level, with the ammo it holds cut to the new capacity.
+static void SetQuiverLevel(int level) {
+    Inventory_ChangeUpgrade(UPG_QUIVER, level);
+    AMMO(ITEM_BOW) = MIN(AMMO(ITEM_BOW), CUR_CAPACITY(UPG_QUIVER));
+}
+static void SetBombBagLevel(int level) {
+    Inventory_ChangeUpgrade(UPG_BOMB_BAG, level);
+    AMMO(ITEM_BOMB) = MIN(AMMO(ITEM_BOMB), CUR_CAPACITY(UPG_BOMB_BAG));
+    AMMO(ITEM_BOMBCHU) = MIN(AMMO(ITEM_BOMBCHU), CUR_CAPACITY(UPG_BOMB_BAG));
+}
+
+// ComboShip: the Equipment tab upstream leaves commented out, mirrored by OoT's: Give all and Reset, the sword and
+// shield (moved from Quest Status, where each tap cycled them) and the quiver and bomb bag (which Bow and Bomb taps
+// used to cycle) as pickers with names. The boots and tunics are inventory items in MM and stay on Inventory.
+void DrawEquipmentTab() {
+    namespace Kit = ComboSaveEditorKit;
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    auto icon = [&](ItemId item) { return gui->GetTextureByName((const char*)gItemIcons[item]); };
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+    ImGui::BeginChild("equipmentTab", ImVec2(0, 0), true);
+
+    // Give all and Reset do for the sword and shield what Quest Status's did, and set the best or no bags.
+    if (Kit::Button("Give all##equipment", Kit::kGiveAll)) {
+        SET_EQUIP_VALUE(EQUIP_TYPE_SHIELD, EQUIP_VALUE_SHIELD_MIRROR);
+        if (GET_PLAYER_FORM != PLAYER_FORM_FIERCE_DEITY) {
+            SET_EQUIP_VALUE(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_GILDED);
+            if (gPlayState) {
+                Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
+                BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
+                    ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
+                Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
+            }
+        }
+        SetQuiverLevel(3);
+        SetBombBagLevel(3);
+    }
+    ImGui::SameLine();
+    if (Kit::Button("Reset##equipment", Kit::kReset)) {
+        SET_EQUIP_VALUE(EQUIP_TYPE_SHIELD, EQUIP_VALUE_SHIELD_HERO);
+        if (GET_PLAYER_FORM != PLAYER_FORM_FIERCE_DEITY) {
+            SET_EQUIP_VALUE(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_KOKIRI);
+            if (gPlayState) {
+                Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
+                BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
+                    ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
+                Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
+            }
+        }
+        SetQuiverLevel(0);
+        SetBombBagLevel(0);
+    }
+
+    // The sword and shield change Link himself, so, as on Quest Status, only while playing.
+    ImGui::SeparatorText("Sword and shield");
+    if (!gPlayState) {
+        ImGui::TextDisabled("%s", Kit::kNeedsPlay);
+    }
+    ImGui::BeginDisabled(!gPlayState);
+    if (GET_PLAYER_FORM == PLAYER_FORM_FIERCE_DEITY) {
+        ImGui::BeginGroup();
+        Kit::Icon(icon(ITEM_SWORD_DEITY), true);
+        ImGui::TextUnformatted("Sword");
+        ImGui::EndGroup();
+        Kit::Tooltip("Fierce Deity's Sword");
+    } else {
+        const int sword = Kit::LevelPicker("Sword", GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD),
+                                           { { Kit::kNoTexture, "None" },
+                                             { icon(ITEM_SWORD_KOKIRI), "Kokiri Sword" },
+                                             { icon(ITEM_SWORD_RAZOR), "Razor Sword" },
+                                             { icon(ITEM_SWORD_GILDED), "Gilded Sword" } });
+        if (sword >= 0 && gPlayState) {
+            SetSwordValue(sword);
+        }
+    }
+    ImGui::SameLine();
+    const int shield = Kit::LevelPicker("Shield", GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD),
+                                        { { Kit::kNoTexture, "None" },
+                                          { icon(ITEM_SHIELD_HERO), "Hero's Shield" },
+                                          { icon(ITEM_SHIELD_MIRROR), "Mirror Shield" } });
+    if (shield >= 0 && gPlayState) {
+        SET_EQUIP_VALUE(EQUIP_TYPE_SHIELD, shield);
+        Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
+    }
+    ImGui::EndDisabled();
+
+    ImGui::SeparatorText("Upgrades");
+    const int quiver = Kit::LevelPicker("Quiver", CUR_UPG_VALUE(UPG_QUIVER),
+                                        { { Kit::kNoTexture, "None" },
+                                          { icon(ITEM_QUIVER_30), "Quiver (30)" },
+                                          { icon(ITEM_QUIVER_40), "Large Quiver (40)" },
+                                          { icon(ITEM_QUIVER_50), "Largest Quiver (50)" } });
+    if (quiver >= 0) {
+        SetQuiverLevel(quiver);
+    }
+    ImGui::SameLine();
+    const int bombBag = Kit::LevelPicker("Bomb Bag", CUR_UPG_VALUE(UPG_BOMB_BAG),
+                                         { { Kit::kNoTexture, "None" },
+                                           { icon(ITEM_BOMB_BAG_20), "Bomb Bag (20)" },
+                                           { icon(ITEM_BOMB_BAG_30), "Big Bomb Bag (30)" },
+                                           { icon(ITEM_BOMB_BAG_40), "Biggest Bomb Bag (40)" } });
+    if (bombBag >= 0) {
+        SetBombBagLevel(bombBag);
+    }
+
+    ImGui::EndChild();
+    ImGui::PopStyleVar(2);
+}
+#endif
 
 void SetDungeonItems(uint32_t dungeonItem, uint32_t dungeonId) {
     if (CHECK_DUNGEON_ITEM(dungeonItem, dungeonId)) {
@@ -2371,6 +2589,54 @@ const char* dungeonNames[4] = { "Woodfall Temple", "Snowhead Temple", "Great Bay
 uint32_t smallKeyCounts[4] = { 1, 3, 1, 4 };
 const char* fairyIcons[] = { gDungeonStrayFairyWoodfallIconTex, gDungeonStrayFairySnowheadIconTex,
                              gDungeonStrayFairyGreatBayIconTex, gDungeonStrayFairyStoneTowerIconTex };
+#ifdef COMBO_BUILD
+// ComboShip: the dungeon items as OoT draws them: one card per temple with Map, Compass and Boss key, the small key and
+// stray fairy icons (faded at none; the small key one was lit at 0 keys) and inline bars instead of popups.
+void DrawDungeonItemTab() {
+    namespace Kit = ComboSaveEditorKit;
+    const ImVec4 theme = UIWidgets::ColorValues.at(UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5)));
+    auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+    ImGui::BeginChild("dungeonTab", ImVec2(0, 0), true);
+    Kit::BeginCardLayout(2, Kit::kGridWidth * 5);
+    for (int i = DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE; i <= DUNGEON_SCENE_INDEX_STONE_TOWER_TEMPLE; i++) {
+        ImGui::PushID(i);
+        Kit::BeginCard("dungeon");
+        ImGui::Text("%s", dungeonNames[i]);
+        if (Kit::IconButton("##map", gui->GetTextureByName(gQuestIconDungeonMapTex),
+                            CHECK_DUNGEON_ITEM(DUNGEON_MAP, i))) {
+            SetDungeonItems(DUNGEON_MAP, i);
+        }
+        Kit::Tooltip("Map");
+        ImGui::SameLine();
+        if (Kit::IconButton("##compass", gui->GetTextureByName(gQuestIconCompassTex),
+                            CHECK_DUNGEON_ITEM(DUNGEON_COMPASS, i))) {
+            SetDungeonItems(DUNGEON_COMPASS, i);
+        }
+        Kit::Tooltip("Compass");
+        ImGui::SameLine();
+        if (Kit::IconButton("##bossKey", gui->GetTextureByName(gQuestIconBossKeyTex),
+                            CHECK_DUNGEON_ITEM(DUNGEON_BOSS_KEY, i))) {
+            SetDungeonItems(DUNGEON_BOSS_KEY, i);
+        }
+        Kit::Tooltip("Boss Key");
+        ImGui::SameLine();
+        Kit::Icon(gui->GetTextureByName(gQuestIconSmallKeyTex), DUNGEON_KEY_COUNT(i) > 0);
+        ImGui::SameLine();
+        Kit::Icon(gui->GetTextureByName(fairyIcons[i]), gSaveContext.save.saveInfo.inventory.strayFairies[i] > 0);
+        Kit::ResourceBar("##sKeyCount", &gSaveContext.save.saveInfo.inventory.dungeonKeys[i], -1, smallKeyCounts[i],
+                         "Small keys: %d", theme);
+        Kit::ResourceBar("##strayCount", &gSaveContext.save.saveInfo.inventory.strayFairies[i], 0, 15,
+                         "Stray fairies: %d", theme);
+        Kit::EndCard();
+        ImGui::PopID();
+    }
+    Kit::EndCardLayout();
+    ImGui::EndChild();
+    ImGui::PopStyleVar(2);
+}
+#else
 void DrawDungeonItemTab() {
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
@@ -2467,6 +2733,7 @@ void DrawDungeonItemTab() {
     ImGui::PopStyleVar(3);
     ImGui::PopStyleColor(1);
 }
+#endif
 
 void GetPlayerForm(uint32_t form) {
     switch (form) {
@@ -3441,6 +3708,11 @@ void SaveEditorWindow::DrawElement() {
 
         if (ImGui::BeginTabItem("Inventory")) {
             DrawItemsAndMasksTab();
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Equipment")) {
+            DrawEquipmentTab();
             ImGui::EndTabItem();
         }
 
