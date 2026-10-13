@@ -90,12 +90,20 @@ Placed(const Overrides &overrides) {
 }
 
 // The pools Shuffler::makePools builds, read back from the first candidate
-// check (pool 0, source 0, candidate 0). A Shuffler that places no pool runs
-// only the complete validation.
+// check (pool 0, source 0, candidate 0). When no pool is placed, only the
+// absence of RNG draws and candidate checks is asserted. Whether the complete
+// validation runs is left open: Shuffle.h calls validateComplete, a known
+// divergence from pinned OoTMM, which drops the empty pools
+// (entrances.ts:581-589), keeps worldChanged false (entrances.ts:902) and so
+// skips validate() (entrances.ts:1108-1111).
 Pools RealPools(const Settings &s, const Strings &absent) {
   Pools pools;
+  size_t draws = 0;
   auto b = BaseBindings(absent);
-  b.chooseIndex = [](size_t) { return size_t{0}; };
+  b.chooseIndex = [&draws](size_t) {
+    ++draws;
+    return size_t{0};
+  };
   b.validateAssumed = [&pools](const Overrides &overrides,
                                const Pools &next) -> bool {
     const auto [src, dst] = Placed(overrides);
@@ -104,18 +112,13 @@ Pools RealPools(const Settings &s, const Strings &absent) {
     pools.front().dst.insert(dst);
     throw Stop{};
   };
-  bool completed = false;
-  b.validateComplete = [&completed](const Overrides &overrides) {
-    assert(overrides.size() == 2 && !completed);
-    completed = true;
-    return true;
-  };
+  b.validateComplete = [](const Overrides &) { return true; };
   try {
     Shuffler(s, std::move(b)).run();
   } catch (const Stop &) {
     return pools;
   }
-  assert(completed);
+  assert(draws == 0); // no candidate was offered
   return {};
 }
 
