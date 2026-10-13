@@ -6,6 +6,7 @@
 #include "ComboTrackerBridge.h"
 #include "ComboWidgetStyle.h"
 #include "ComboMenuLayout.h"
+#include "ComboShortcutPicker.h"
 #include "ComboExport.h"
 #include <libultraship/controller/controldeck/ControlDeck.h>
 #include <ship/window/gui/GuiWindow.h>
@@ -85,14 +86,6 @@ void DockBesideGame(Kind kind) {
     if (dock)
         ImGui::SetNextWindowDockID(dock);
 }
-struct Button {
-    const char* name;
-    uint32_t mask;
-};
-constexpr Button buttons[] = { { "L", 0x20 },     { "R", 0x10 },       { "Z", 0x2000 },        { "Start", 0x1000 },
-                               { "A", 0x8000 },   { "B", 0x4000 },     { "Modifier 1", 0x40 }, { "Modifier 2", 0x80 },
-                               { "D-Up", 0x800 }, { "D-Down", 0x400 }, { "D-Left", 0x200 },    { "D-Right", 0x100 },
-                               { "C-Up", 8 },     { "C-Down", 4 },     { "C-Left", 2 },        { "C-Right", 1 } };
 class ItemWindow final : public Ship::GuiWindow {
   public:
     using GuiWindow::GuiWindow;
@@ -297,37 +290,9 @@ void DrawOpenControls(Kind kind) {
                             "shows the tracker while held. On-screen button adds a separate touch control.");
     if (mode == Toggle || mode == Hold) {
         uint32_t mask = Int(kind, "Shortcut", 0x20);
-        std::string shortcut;
-        for (auto b : buttons)
-            if (mask & b.mask) {
-                if (!shortcut.empty())
-                    shortcut += " + ";
-                shortcut += b.name;
-            }
-        ImGui::Text("Shortcut: %s", shortcut.empty() ? "None selected" : shortcut.c_str());
-        if (ImGui::CollapsingHeader("Change shortcut")) {
-            ComboRando::ComboMenu_PushCheckbox(theme);
-            if (ImGui::BeginTable("##buttons", 2)) {
-                for (auto b : buttons) {
-                    ImGui::TableNextColumn();
-                    bool selected = (mask & b.mask) != 0;
-                    if (ImGui::Checkbox(b.name, &selected)) {
-                        mask = selected ? mask | b.mask : mask & ~b.mask;
-                        Set(kind, "Shortcut", mask);
-                        Save();
-                    }
-                    ComboRando::MenuTooltip(
-                        b.mask == 0x40 || b.mask == 0x80
-                            ? "Modifier 1 and 2 are extra virtual buttons. Assign a physical button to them in "
-                              "Settings > Controls (controller editor). They are not automatically ZL or ZR. Select "
-                              "several buttons here to require them together."
-                            : "These are mapped N64 inputs. Default: L/L1 = L, ZL/L2 = Z, ZR/R2 = R. Use the "
-                              "controller editor to assign a spare button to Modifier 1 or 2. All selected inputs form "
-                              "one chord.");
-                }
-                ImGui::EndTable();
-            }
-            ComboRando::ComboMenu_PopCheckbox();
+        if (ComboRando::DrawShortcutPicker("TrackerShortcut", mask, 0x20)) {
+            Set(kind, "Shortcut", mask);
+            Save();
         }
     } else if (mode == OnScreen) {
         const std::string help = std::string(touchLabels[kind]) +

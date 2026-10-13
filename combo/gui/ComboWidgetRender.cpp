@@ -20,6 +20,7 @@
 #include "ComboResolutionEditor.h" // combo-owned Advanced Resolution editor (intercepts broken widgets)
 #include "ComboMenuLayout.h"
 #include "ComboMenuLabels.h"
+#include "ComboShortcutPicker.h"
 #include "ComboResolve.h"
 #include "rando/GenerationRules.h"
 
@@ -412,45 +413,12 @@ void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
             break;
         }
         case CW_BTN_SELECTOR: {
-            // These values are controller button masks, not ordinary numbers. Offer
-            // the same named buttons in both engines instead of a numeric keyboard.
-            int v = CVarGetInteger(w.cvar, w.iDefault);
+            // Controller button masks, not ordinary numbers: the one shortcut picker (ComboShortcutPicker.h).
             ImGui::TextWrapped("%s", label);
-            struct Button {
-                const char* name;
-                int mask;
-            };
-            static const Button buttons[] = {
-                { "A", 0x8000 },      { "B", 0x4000 },       { "Z", 0x2000 },          { "Start", 0x1000 },
-                { "L", 0x0020 },      { "R", 0x0010 },       { "C up", 0x0008 },       { "C down", 0x0004 },
-                { "C left", 0x0002 }, { "C right", 0x0001 }, { "D up", 0x0800 },       { "D down", 0x0400 },
-                { "D left", 0x0200 }, { "D right", 0x0100 }, { "Modifier 1", 0x0040 }, { "Modifier 2", 0x0080 },
-            };
-            ComboMenu_PushCheckbox(themeColor);
-            for (int i = 0; i < IM_ARRAYSIZE(buttons); ++i) {
-                bool enabled = (v & buttons[i].mask) != 0;
-                if (ImGui::Checkbox(buttons[i].name, &enabled)) {
-                    v = enabled ? v | buttons[i].mask : v & ~buttons[i].mask;
-                    changed = true;
-                }
-                if (buttons[i].mask == 0x0040 || buttons[i].mask == 0x0080)
-                    MenuTooltip("Modifier 1 and 2 are extra virtual buttons. Assign a physical button to them in "
-                                "Settings > Controls (controller editor). They are not automatically ZL or ZR. Select "
-                                "several buttons here to require them together.");
-                if ((i + 1) % 4 != 0 && i + 1 < IM_ARRAYSIZE(buttons) &&
-                    ImGui::GetContentRegionAvail().x >
-                        ImGui::GetFrameHeight() + ImGui::CalcTextSize(buttons[i + 1].name).x + 30)
-                    ImGui::SameLine();
-            }
-            ComboMenu_PopCheckbox();
-            ComboMenu_PushButton(themeColor);
-            if (ImGui::Button("Reset shortcut")) {
-                v = w.iDefault;
+            uint32_t mask = uint32_t(CVarGetInteger(w.cvar, w.iDefault));
+            if (DrawShortcutPicker(w.cvar, mask, uint32_t(w.iDefault))) {
+                CVarSetInteger(w.cvar, int(mask));
                 changed = true;
-            }
-            ComboMenu_PopButton();
-            if (changed) {
-                CVarSetInteger(w.cvar, v);
             }
             break;
         }
