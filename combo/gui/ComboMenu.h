@@ -46,6 +46,7 @@ class ComboMenu final : public Ship::GuiWindow {
     void OpenSearchDestination(const std::string& scope, const std::string& page, const char* rule = nullptr,
                                const char* trick = nullptr, int targetGame = -1);
     void DrawScopeHelp();
+    void ClearSearch();
     void ReturnToSearchResults();
 
     char mSearchBuf[256] = { 0 }; // raw global-search input; normalized into mSearchQuery each frame

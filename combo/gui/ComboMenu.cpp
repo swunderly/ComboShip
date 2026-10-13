@@ -300,7 +300,9 @@ void ComboMenu::DrawElement() {
             Hide();
         ComboMenu_PopButton();
         ProfileUI::BeginFrame();
-        ProfileUI::DrawSelector();
+        // Only these tabs read the selected file's settings (Enhancements: its next seed while no run is loaded).
+        if (mScope == "home" || mScope == "randomizer" || mScope == "gameplay")
+            ProfileUI::DrawSelector();
         ImGui::Spacing();
         struct Scope {
             const char* id;
@@ -326,7 +328,7 @@ void ComboMenu::DrawElement() {
                 mScope = scope.id;
                 mHubActive = mSectionSelection[mScope];
                 mRuleFocus.Clear();
-                mSearchReturn.Clear();
+                ClearSearch(); // even on the tab already shown
             }
         }
         if (FindMenuGuide(mScope)) {
@@ -348,9 +350,8 @@ void ComboMenu::DrawElement() {
         if (hasSearch) {
             ImGui::SameLine();
             if (ImGui::Button("Clear##ComboSearch")) {
-                mSearchBuf[0] = 0;
+                ClearSearch();
                 mRuleFocus.Clear();
-                mSearchReturn.Clear();
             }
         }
         if (!mSearchBuf[0] && mSearchReturn.HasResult()) {
@@ -377,6 +378,13 @@ void ComboMenu::DrawElement() {
     ImGui::End();
 }
 
+// Ends the search: its text, its results and the way back to them.
+void ComboMenu::ClearSearch() {
+    mSearchBuf[0] = 0;
+    mSearchQuery.clear();
+    mSearchReturn.Clear();
+}
+
 void ComboMenu::ReturnToSearchResults() {
     mScope = mSearchReturn.scope;
     mHubActive = mSearchReturn.hub;
@@ -397,10 +405,8 @@ bool ComboMenu::HandleBack() {
         return true;
     }
     if (mSearchBuf[0]) {
-        mSearchBuf[0] = 0;
-        mSearchQuery.clear();
+        ClearSearch();
         mRuleFocus.Clear();
-        mSearchReturn.Clear();
         return true;
     }
     if (mSearchReturn.HasResult()) {
@@ -2256,7 +2262,7 @@ void ComboMenu::DrawSharedPanel() {
                 active = it;
                 mHubActive = it->key();
                 mRuleFocus.Clear();
-                mSearchReturn.Clear();
+                ClearSearch(); // even on the page already shown
             }
             ImGui::PopID();
         };
