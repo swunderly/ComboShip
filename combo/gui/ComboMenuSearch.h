@@ -1,4 +1,5 @@
 #pragma once
+#include "ComboMenuLabels.h"
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -120,8 +121,12 @@ inline bool IsSongTravelRule(const char* name) {
 }
 inline const char* GameplayRuleMenuLabel(const char* name, const char* label, bool randomizer) {
     // OoTMM v32.3 names the seed option "Warp Songs and Soaring Spots Shuffle" (data.ts erWarps).
-    return randomizer && name && !std::strcmp(name, kSongTravelRuleKeys[1]) ? "Warp Songs and Soaring Spots Shuffle"
-                                                                            : label;
+    if (randomizer && name && !std::strcmp(name, kSongTravelRuleKeys[1]))
+        return "Warp Songs and Soaring Spots Shuffle";
+    // A rule whose CVar the label table renames shows that name on both tabs, so the two games' halves of one
+    // feature read the same (MM's scarecrow rule: Skip Scarecrow's Song). The rule keeps its key and label.
+    const auto* row = FindMenuLabel(!(label && std::strstr(label, "(MM)")), name);
+    return row && row->label ? row->label : label;
 }
 inline const char* GameplayRuleSearchAliases(const char* name) {
     if (!name)

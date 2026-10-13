@@ -113,6 +113,11 @@ oot_names = native_names(['soh/soh/SohGui/SohMenuEnhancements.cpp', 'soh/soh/Soh
                           'soh/soh/Enhancements/ExtraModes/EnemyRandomizer.cpp'])
 mm_names = native_names(['mm/2s2h/BenGui/BenMenu.cpp', 'mm/2s2h/Rando/Menu.cpp'])
 assert len(oot_names) > 350 and len(mm_names) > 250, (len(oot_names), len(mm_names))  # the parser still reads them
+# OoT's seed options register their widgets from the randomizer's option table.
+for found in re.finditer(r'OPT_[A-Z0-9]+\(\s*RSK_\w+\s*,\s*"((?:[^"\\]|\\.)*)"[^;]*?CVAR_RANDOMIZER_SETTING\("([^"]+)"\)',
+                         (source / 'soh/soh/Enhancements/randomizer/settings.cpp').read_text(encoding='utf-8')):
+    oot_names.setdefault('gRandoSettings.' + found.group(2), found.group(1))
+assert oot_names.get('gRandoSettings.SkipScarecrowsSong') == "Skip Scarecrow's Song"
 native_table = ''.join('    { { %s, "%s" }, "%s" },\n' % ('true' if oot else 'false', cvar, name)
                        for oot, names in ((True, oot_names), (False, mm_names))
                        for cvar, name in sorted(names.items()))
@@ -152,6 +157,7 @@ struct Laid {
     std::map<std::string, int> columnOf;          // heading -> column
     std::vector<std::string> order;               // CVars in drawing order
     std::map<std::string, std::vector<std::string>> labelsOf; // heading -> the labels its rows show
+    std::map<std::string, std::string> labelOf;              // CVar -> the label its row shows
 };
 
 bool ReplacedByComboRow(const char* cvar) {
@@ -216,6 +222,7 @@ Laid Lay(const MenuPageLayout& layout, bool oot, bool withNativeExtras) {
             if (const auto at = shown.find(suffix); at != std::string::npos)
                 shown.erase(at);
         laid.labelsOf[heading].push_back(shown);
+        laid.labelOf[widget.cvar] = shown;
     }
     return laid;
 }
@@ -325,6 +332,13 @@ int main() {
     assert(ootRules.headingOf.at("gEnhancements.TimeTravel") == "Abilities");
     assert(ootRules.headingOf.at("gRandoSettings.SkipScarecrowsSong") == "Quest requirements");
     assert(mmRules.headingOf.at("gEnhancements.Playback.SkipScarecrowSong") == "Quest requirements");
+    // One feature, one name: the scarecrow pair reads "Skip Scarecrow's Song" in both worlds on both tabs.
+    const auto ootTime = Lay(*timeSavers, true, false), mmTime = Lay(*timeSavers, false, false);
+    for (const auto& label : { ootTime.labelOf.at("gEnhancements.InstantScarecrow"),
+                               mmTime.labelOf.at("gEnhancements.Playback.SkipScarecrowSong"),
+                               ootRules.labelOf.at("gRandoSettings.SkipScarecrowsSong"),
+                               mmRules.labelOf.at("gEnhancements.Playback.SkipScarecrowSong") })
+        assert(label == "Skip Scarecrow's Song");
     assert(ootRules.headingOf.at("gRandoSettings.SwordlessEponaItems") == "Seed settings (no logic effect)");
     assert(mmRules.headingOf.at("gEnhancements.Minigames.AlwaysWinDoggyRace") == "Minigames");
     assert(!mmRules.headingOf.count("gEnhancements.DifficultyOptions.BremenChickCount"));

@@ -122,15 +122,27 @@ int main() {
         assert(!RuleRank("nonexistent bank platform xyzzy", rule));
         if (!rule.trickGoverned && !IsSongTravelRule(rule.name)) assert(grouped.insert(rule.name).second);
         if (rule.trickGoverned) assert(!IsSongTravelRule(rule.name));
+        // A rule shows its own label unless the label table names its CVar (one name for both games).
+        const auto* shared = FindMenuLabel(!std::strstr(rule.label, "(MM)"), rule.name);
+        const char* expected = shared && shared->label ? shared->label : rule.label;
         if (std::strcmp(rule.name, destinations->name))
-            assert(GameplayRuleMenuLabel(rule.name, rule.label, true) == rule.label);
-        assert(GameplayRuleMenuLabel(rule.name, rule.label, false) == rule.label);
+            assert(!std::strcmp(GameplayRuleMenuLabel(rule.name, rule.label, true), expected));
+        assert(!std::strcmp(GameplayRuleMenuLabel(rule.name, rule.label, false), expected));
     }
     std::size_t ordinary = 0;
     for (const auto& rule : kGameplayRules) ordinary += !rule.trickGoverned && !IsLegacyGameplayRule(rule.name);
     assert(grouped.size() == ordinary);
     assert(std::string(GameplayRuleMenuLabel(destinations->name, destinations->label, true)) ==
            "Warp Songs and Soaring Spots Shuffle");
+    // MM's scarecrow rule shows OoT's name for the same feature on both tabs; its own words still find it.
+    const auto* scarecrow = FindGameplayRule("gEnhancements.Playback.SkipScarecrowSong");
+    assert(scarecrow && std::strstr(scarecrow->label, "(MM)"));
+    for (bool randomizer : { true, false })
+        assert(std::string(GameplayRuleMenuLabel(scarecrow->name, scarecrow->label, randomizer)) ==
+               MenuRowLabel(true, "gEnhancements.InstantScarecrow", "Skip Playing Scarecrow's Song"));
+    const auto scarecrowWords = std::string(scarecrow->help) + " " + scarecrow->label;
+    assert(MenuSearchRank("teaching a song", "Skip Scarecrow's Song (MM)", scarecrowWords.c_str(),
+                          MenuSearchKind::Rule) > 0);
     for (const auto* query : {"shuffle song warp destinations", "soaring spots"})
         assert(RuleRank(query, *destinations) > 0); // the earlier label and OoTMM's name both find it
     assert(!IsSongTravelRule(nullptr) && !IsSongTravelRule("gCheats.Unrelated"));

@@ -585,11 +585,15 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
     for (const auto& rule : kGameplayRules) {
         if (IsLegacyGameplayRule(rule.name))
             continue;
+        // The rule's own label stays a search word when its pages show a shared one; the result keeps the game.
         const auto keywords = std::string(rule.help) +
                               (rule.runtimeOnly ? " enhancement quality of life " : " randomizer logic ") +
-                              GameplayRuleSearchAliases(rule.name);
-        const auto* label = GameplayRuleMenuLabel(rule.name, rule.label, !rule.runtimeOnly);
-        const int rank = MenuSearchRank(query, label, keywords.c_str(), MenuSearchKind::Rule);
+                              GameplayRuleSearchAliases(rule.name) + " " + rule.label;
+        std::string label = GameplayRuleMenuLabel(rule.name, rule.label, !rule.runtimeOnly);
+        for (const char* suffix : { " (OoT)", " (MM)" })
+            if (std::strstr(rule.label, suffix) && label.find(suffix) == std::string::npos)
+                label += suffix;
+        const int rank = MenuSearchRank(query, label.c_str(), keywords.c_str(), MenuSearchKind::Rule);
         if (rank)
             hits.push_back({ MenuSearchKind::Rule, rank, label, rule.runtimeOnly ? "gameplay" : "randomizer",
                              rule.trickGoverned ? "Tricks & glitches" : GameplayRulePage(rule.name, !rule.runtimeOnly),
@@ -1746,7 +1750,7 @@ bool MakePseudoRow(const char* cvar, bool oot, const std::string& scope, const s
     if (!placement || scope != placement->scope || page != placement->page)
         return false;
     row.index = kRuleRowBase - int32_t(rule - kGameplayRules);
-    row.name = rule->label;
+    row.name = GameplayRuleMenuLabel(rule->name, rule->label, randomizer);
     row.cvar = rule->name;
     return true;
 }
