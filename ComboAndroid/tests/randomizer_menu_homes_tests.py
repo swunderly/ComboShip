@@ -120,6 +120,18 @@ check('"defaults"' in body(profiles, 'static void CatalogRow('), 'MM Randomizer 
 check('{ "gRandoSettings.BigPoeTargetCount", "Big Poes required for reward"' in profiles,
       'Big Poe count does not read "<thing> required for <reward>" like the MM count rules')
 
+# ---- One name for an option both worlds list under the same heading: OoT's display label is MM's row label.
+display = dict(re.findall(r'\{ "(gRandoSettings\.\w+)", "([^"]+)"', body(profiles, 'static constexpr OptionDisplay kOptionDisplay[]')))
+for oot_key, mm_option in (('gRandoSettings.ShuffleBossSouls', 'RO_SHUFFLE_BOSS_SOULS'),
+                           ('gRandoSettings.SoulsEnemyOot', 'RO_SHUFFLE_ENEMY_SOULS'),
+                           ('gRandoSettings.ShuffleFreestanding', 'RO_SHUFFLE_FREESTANDING_ITEMS'),
+                           ('gRandoSettings.ShuffleSwim', 'RO_SHUFFLE_SWIM'),
+                           ('gRandoSettings.ShuffleOcarinaButtons', 'RO_SHUFFLE_OCARINA_BUTTONS'),
+                           ('gRandoSettings.IncludeTycoonWallet', 'RO_SHUFFLE_TYCOON_WALLET')):
+    mm_label = by_option[mm_option]['label']
+    check(display.get(oot_key) == mm_label,
+          f'{oot_key} reads {display.get(oot_key)!r} in the OoT view but MM names it {mm_label!r}')
+
 # ---- Combined goal controls still write their keys.
 goals = body(menu, 'void DrawCombinedGoals()')
 for key in fixture['combinedGoalKeys']:

@@ -309,6 +309,14 @@ static constexpr OptionDisplay kOptionDisplay[] = {
     { "gRandoSettings.FullWallets", "Fill Wallets", nullptr, false },
     // Gameplay rules count rows read "<thing> required for <reward>", as MM's frog and Zora egg rules.
     { "gRandoSettings.BigPoeTargetCount", "Big Poes required for reward", nullptr, false },
+    // Items & checks: one name for an option both worlds list under the same heading, as MM's rows read
+    // (OoTMM's Boss Souls, Enemy Souls and Ocarina Buttons without the game suffix).
+    { "gRandoSettings.ShuffleBossSouls", "Boss Souls", nullptr, false },
+    { "gRandoSettings.SoulsEnemyOot", "Enemy Souls", nullptr, false },
+    { "gRandoSettings.ShuffleFreestanding", "Freestanding Items", nullptr, false },
+    { "gRandoSettings.ShuffleSwim", "Swim", nullptr, false },
+    { "gRandoSettings.ShuffleOcarinaButtons", "Ocarina Buttons", nullptr, false },
+    { "gRandoSettings.IncludeTycoonWallet", "Tycoon's Wallet", nullptr, false },
     { "gRandoSettings.ShuffleSongs", "Song Shuffle", nullptr, false },
     { "gRandoSettings.ShuffleTokens", "Gold Skulltula Tokens Shuffle", nullptr, false },
     { "gRandoSettings.ShuffleCows", "Cow Shuffle", nullptr, false },
