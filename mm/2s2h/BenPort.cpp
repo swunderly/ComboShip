@@ -6269,7 +6269,7 @@ extern "C" int Combo_MM_IsLinkAdult(void) {
 static constexpr bool kAdultOcarinaFdCamera = false;
 static constexpr bool kAdultFairyNativeHand = false;
 static constexpr bool kAdultFairyFittedPlacement = false;
-static constexpr bool kAdultFairyRecolouredOot = false;
+static constexpr bool kAdultFairyRecolouredOot = true;
 static_assert(kAdultFairyNativeHand + kAdultFairyFittedPlacement + kAdultFairyRecolouredOot <= 1,
               "B1, B3 and the recoloured hand are alternatives for the Fairy hand");
 // A1, Camera_KeepOn4: adult Link playing takes ITEM1's Fierce Deity row (CAM_MODE_JUMP, D_801B5410). It is MM data,

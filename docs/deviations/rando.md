@@ -2259,7 +2259,7 @@ Iron Boots, Hover Boots, Goron Tunic and Zora Tunic (MM) and their Shared varian
     resource manager and dropped at teardown. OoT's own lists are never changed, so the OoT side and the Ocarina of
     Time in MM keep OoT's blue. Where the copies cannot be built (a custom list, a missing or differently laid-out
     texture, or a list without exactly one Ocarina of Time texture), the composite is drawn as before. This departs
-    from OoTMM. Switch off.
+    from OoTMM. Switch on (owner's revised ruling 2026-10-12). Not yet checked on the emulator or a phone.
   - B1 (`kAdultFairyNativeHand`: OoT's `gLinkAdultRightHandHoldingOotNear/FarDL`, as OoT draws for adult Link with
     either ocarina, soh `z_player_lib.c:346-351`) stays off. B1, B3 and the recoloured hand are alternatives, and a
     static_assert keeps any two of them from being released together.
