@@ -1427,8 +1427,10 @@ bool DrawRuleCheckbox(const char* label, bool* enabled) {
     ImGui::SetCursorScreenPos(afterLabel);
     return changed;
 }
-void DrawGameplayRules(bool randomizer, const std::string& page, int world,
-                       ComboRando::MenuRuleFocus* focus = nullptr) {
+// One gameplay rule: its logic half on Randomizer (the selected file's next seed), its in-game half
+// on Enhancements, locked while the seed requires it. Drawn inside its catalogue heading or by
+// DrawGameplayRules.
+void DrawGameplayRuleRow(const GameplayRule& rule, bool randomizer, ComboRando::MenuRuleFocus* focus) {
     auto& model = ComboMenuModel::Get();
     // Randomizer edits the selected file's next seed. During a run, Enhancements change the running
     // game: its live rules, which the save keeps per run, under the logic locks restored from its
@@ -1455,10 +1457,95 @@ void DrawGameplayRules(bool randomizer, const std::string& page, int world,
         return randomizer || (nextSeed && rule && !rule->runtimeOnly) ? ProfileUI::ReadInteger(name, fallback)
                                                                       : CVarGetInteger(name, fallback);
     };
+    const auto theme = ComboMenu_ThemeColor();
+    ImGui::PushID(rule.name);
+    ImGui::BeginGroup();
+    const bool focused = focus && focus->Matches(rule.name);
+    if (focused)
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(.65f, .8f, 1.0f, 1.0f));
+    std::string label = GameplayRuleMenuLabel(rule.name, rule.label, randomizer);
+    for (const auto* suffix : { " (OoT)", " (MM)" }) {
+        const auto pos = label.find(suffix);
+        if (pos != std::string::npos)
+            label.erase(pos);
+    }
+    int value = ReadGameplayRule(rule, randomizer, read);
+    const int required = !randomizer && !rule.runtimeOnly ? ReadGameplayRule(rule, true, read) : 0;
+    if (required)
+        value = required;
+    ImGui::BeginDisabled(required || (nextSeed && !rule.runtimeOnly && !ProfileUI::Editable()));
+    bool changed = false;
+    if (rule.maximum == 1) {
+        bool enabled = value != 0;
+        ComboMenu_PushCheckbox(theme);
+        changed = DrawRuleCheckbox(label.c_str(), &enabled);
+        ComboMenu_PopCheckbox();
+        value = enabled;
+    } else if (rule.minimum > 0) {
+        if (value < rule.minimum)
+            value = rule.fallback;
+        ImGui::TextWrapped("%s", label.c_str());
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ComboMenu_PushSlider(theme);
+        changed =
+            ImGui::SliderInt("##RequiredCount", &value, rule.minimum, rule.maximum, "%d", ImGuiSliderFlags_NoInput);
+        ComboMenu_PopSlider();
+    } else {
+        const char* gibdo[] = { "Vanilla", "MM3D", "No trade" };
+        const char* dog[] = { "Off", "With Mask of Truth", "Always" };
+        const char* sticks[] = { "Normal", "Unbreakable", "Always burning" };
+        const char* age[] = { "Off", "Ocarina of Time", "Ocarina of Time + Master Sword", "Either ocarina",
+                              "Either ocarina + Master Sword" };
+        const char** modes = rule.maximum == 4                                                               ? age
+                             : !std::strcmp(rule.name, "gCheats.DekuStick")                                  ? sticks
+                             : !std::strcmp(rule.name, "gEnhancements.DifficultyOptions.GibdoTradeSequence") ? gibdo
+                                                                                                             : dog;
+        ImGui::TextWrapped("%s", label.c_str());
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ComboMenu_PushCombobox(theme);
+        changed = ImGui::Combo("##Ability", &value, modes, rule.maximum + 1);
+        ComboMenu_PopCombobox();
+    }
+    if (focused)
+        ImGui::PopStyleColor();
+    ImGui::EndGroup();
+    ImGui::EndDisabled();
+    if (focus && focus->ConsumeScrollFor(rule.name))
+        ImGui::SetScrollHereY(.15f);
+    // The in-game half says where its logic half is.
+    std::string help = rule.help;
+    if (!randomizer && !rule.runtimeOnly)
+        help += IsSongTravelRule(rule.name) ? "\n\nLogic: Randomizer > Warps & travel."
+                                            : "\n\nLogic: Randomizer > Gameplay rules.";
+    MenuTooltip(help.c_str());
+    if (changed) {
+        if (randomizer && value == 0)
+            ClearLogicRule(rule, apply); // the standalone enhancement stays as the player set it
+        else if (randomizer)
+            SetLogicRule(rule, value, apply);
+        else
+            SetEnhancementRule(rule, value, read, apply);
+    }
+    if (changed && !randomizer) {
+        static auto refresh = (void (*)())Combo_ResolveSym("soh", "SOH_RefreshComboRules");
+        if (refresh)
+            refresh();
+        Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
+    }
+    ImGui::Spacing();
+    ImGui::PopID();
+}
+// The rules of a page that has no catalogue layout, and the cross-game song rules that sit above the
+// world buttons of Enhancements > Warps & travel. Rules on catalogue pages are rows of their heading.
+void DrawGameplayRules(bool randomizer, const std::string& page, int world,
+                       ComboRando::MenuRuleFocus* focus = nullptr) {
+    const bool laidOut = FindMenuPage(randomizer ? "randomizer" : "gameplay", page) != nullptr;
     std::vector<const GameplayRule*> rules;
     for (const auto& rule : kGameplayRules) {
         if (rule.trickGoverned || (randomizer && rule.runtimeOnly) || IsLegacyGameplayRule(rule.name) ||
             GameplayRulePage(rule.name, randomizer) != page)
+            continue;
+        if (laidOut && !(IsSongTravelRule(rule.name) && !randomizer))
             continue;
         if (!IsSongTravelRule(rule.name) && (std::strstr(rule.label, "(MM)") != nullptr) != (world == 1))
             continue;
@@ -1471,134 +1558,137 @@ void DrawGameplayRules(bool randomizer, const std::string& page, int world,
                            ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))
         return;
     for (const auto* item : rules) {
-        const auto& rule = *item;
         ImGui::TableNextColumn();
-        ImGui::PushID(rule.name);
-        ImGui::BeginGroup();
-        const bool focused = focus && focus->Matches(rule.name);
-        if (focused)
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(.65f, .8f, 1.0f, 1.0f));
-        std::string label = GameplayRuleMenuLabel(rule.name, rule.label, randomizer);
-        for (const auto* suffix : { " (OoT)", " (MM)" }) {
-            const auto pos = label.find(suffix);
-            if (pos != std::string::npos)
-                label.erase(pos);
-        }
-        int value = ReadGameplayRule(rule, randomizer, read);
-        const int required = !randomizer && !rule.runtimeOnly ? ReadGameplayRule(rule, true, read) : 0;
-        if (required)
-            value = required;
-        ImGui::BeginDisabled(required || (nextSeed && !rule.runtimeOnly && !ProfileUI::Editable()));
-        bool changed = false;
-        if (rule.maximum == 1) {
-            bool enabled = value != 0;
-            changed = DrawRuleCheckbox(label.c_str(), &enabled);
-            value = enabled;
-        } else if (rule.minimum > 0) {
-            if (value < rule.minimum)
-                value = rule.fallback;
-            ImGui::TextWrapped("%s", label.c_str());
-            ImGui::SetNextItemWidth(-FLT_MIN);
-            changed =
-                ImGui::SliderInt("##RequiredCount", &value, rule.minimum, rule.maximum, "%d", ImGuiSliderFlags_NoInput);
-        } else {
-            const char* gibdo[] = { "Vanilla", "MM3D", "No trade" };
-            const char* dog[] = { "Off", "With Mask of Truth", "Always" };
-            const char* sticks[] = { "Normal", "Unbreakable", "Always burning" };
-            const char* age[] = { "Off", "Ocarina of Time", "Ocarina of Time + Master Sword", "Either ocarina",
-                                  "Either ocarina + Master Sword" };
-            const char** modes = rule.maximum == 4                              ? age
-                                 : !std::strcmp(rule.name, "gCheats.DekuStick") ? sticks
-                                 : !std::strcmp(rule.name, "gEnhancements.DifficultyOptions.GibdoTradeSequence") ? gibdo
-                                                                                                                 : dog;
-            ImGui::TextWrapped("%s", label.c_str());
-            ImGui::SetNextItemWidth(-FLT_MIN);
-            changed = ImGui::Combo("##Ability", &value, modes, rule.maximum + 1);
-        }
-        if (focused)
-            ImGui::PopStyleColor();
-        ImGui::EndGroup();
-        ImGui::EndDisabled();
-        if (focus && focus->ConsumeScrollFor(rule.name))
-            ImGui::SetScrollHereY(.15f);
-        MenuTooltip(rule.help);
-        if (changed) {
-            if (randomizer && value == 0)
-                ClearLogicRule(rule, apply); // the standalone enhancement stays as the player set it
-            else if (randomizer)
-                SetLogicRule(rule, value, apply);
-            else
-                SetEnhancementRule(rule, value, read, apply);
-        }
-        if (changed && !randomizer) {
-            static auto refresh = (void (*)())Combo_ResolveSym("soh", "SOH_RefreshComboRules");
-            if (refresh)
-                refresh();
-            Ship::Context::GetRawInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
-        }
-        ImGui::Spacing();
-        ImGui::PopID();
+        DrawGameplayRuleRow(*item, randomizer, focus);
     }
     ImGui::EndTable();
     ImGui::Spacing();
 }
 
-void DrawPairedPreferences(const std::string& page) {
-    struct Pair {
-        const char* label;
-        const char* oot;
-        const char* mm;
-        const char* help;
-        const char* page;
-    };
-    static const Pair pairs[] = {
-        { "Equip items with the D-pad", "gEnhancements.DpadEquips", "gEnhancements.Dpad.DpadEquips",
-          "Assign items to the D-pad in the pause menu.", MenuPage::Controls },
-        { "Allow unequipping items", "gEnhancements.ItemUnequip", "gEnhancements.Equipment.ItemUnequip",
-          "Press an item's assigned button again in the pause menu to unequip it.", MenuPage::ItemsEquipment },
-        { "Quick magic-arrow equip", "gEnhancements.SkipArrowAnimation", "gEnhancements.Equipment.MagicArrowEquipSpeed",
-          "Skip the long animation when equipping magic arrows.", MenuPage::ItemsEquipment },
-        { "Cycle arrow types", "gEnhancements.BowArrowCycle", "gEnhancements.PlayerActions.ArrowCycle",
-          "Switch arrow types while aiming. Each game retains its native button behavior.", MenuPage::ItemsEquipment },
-        { "Autosave", "gEnhancements.Autosave", "gEnhancements.Saving.Autosave",
-          "OoT saves on its three-minute interval. MM uses its configured interval and persistent owl saves. Save "
-          "manually before exiting.",
-          MenuPage::Saving }
-    };
+// Checkboxes that set one CVar in each game, so both games behave alike.
+struct PairedPreference {
+    const char* label;
+    const char* oot;
+    const char* mm;
+    const char* help;
+    const char* page;
+};
+constexpr PairedPreference kPairedPreferences[] = {
+    { "Equip items with the D-pad", "gEnhancements.DpadEquips", "gEnhancements.Dpad.DpadEquips",
+      "Assign items to the D-pad in the pause menu.", MenuPage::Controls },
+    { "Allow unequipping items", "gEnhancements.ItemUnequip", "gEnhancements.Equipment.ItemUnequip",
+      "Press an item's assigned button again in the pause menu to unequip it.", MenuPage::ItemsEquipment },
+    { "Quick magic-arrow equip", "gEnhancements.SkipArrowAnimation", "gEnhancements.Equipment.MagicArrowEquipSpeed",
+      "Skip the long animation when equipping magic arrows.", MenuPage::ItemsEquipment },
+    { "Cycle arrow types", "gEnhancements.BowArrowCycle", "gEnhancements.PlayerActions.ArrowCycle",
+      "Switch arrow types while aiming. Each game retains its native button behavior.", MenuPage::ItemsEquipment },
+    { "Autosave", "gEnhancements.Autosave", "gEnhancements.Saving.Autosave",
+      "OoT saves on its three-minute interval. MM uses its configured interval and persistent owl saves. Save "
+      "manually before exiting.",
+      MenuPage::Saving }
+};
+void DrawPairedPreferenceRow(const PairedPreference& pair) {
     auto& model = ComboMenuModel::Get();
-    for (const auto& pair : pairs) {
-        if (page != pair.page)
+    const GameMenu* games[] = { &model.Oot(), &model.Mm() };
+    const CwWidget* widgets[] = { FindPreference(*games[0], pair.oot), FindPreference(*games[1], pair.mm) };
+    bool disabled = !widgets[0] || !widgets[1];
+    bool values[2] = {};
+    for (int i = 0; i < 2; ++i) {
+        if (!widgets[i])
             continue;
-        const GameMenu* games[] = { &model.Oot(), &model.Mm() };
-        const CwWidget* widgets[] = { FindPreference(*games[0], pair.oot), FindPreference(*games[1], pair.mm) };
-        bool disabled = !widgets[0] || !widgets[1];
-        bool values[2] = {};
-        for (int i = 0; i < 2; ++i) {
-            if (!widgets[i])
-                continue;
-            values[i] = CVarGetInteger(widgets[i]->cvar, widgets[i]->bDefault) != 0;
-            disabled |= widgets[i]->kind != CW_CHECKBOX || (widgets[i]->hasPreFunc && games[i]->evalDisabled &&
-                                                            games[i]->evalDisabled(widgets[i]->index, nullptr));
-        }
-        ImGui::Spacing();
-        ImGui::BeginDisabled(disabled);
-        bool enabled = values[0] && values[1];
-        ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
-        if (ImGui::Checkbox(pair.label, &enabled)) {
-            for (int i = 0; i < 2; ++i) {
-                CVarSetInteger(widgets[i]->cvar, enabled ? 1 : 0);
-                if (widgets[i]->hasCallback && games[i]->invokeCallback)
-                    games[i]->invokeCallback(widgets[i]->index);
-                if (games[i]->applyCVarChange)
-                    games[i]->applyCVarChange(widgets[i]->cvar);
-            }
-            AnchorSaveCVars();
-        }
-        ComboMenu_PopCheckbox();
-        ImGui::EndDisabled();
-        MenuTooltip(pair.help);
+        values[i] = CVarGetInteger(widgets[i]->cvar, widgets[i]->bDefault) != 0;
+        disabled |= widgets[i]->kind != CW_CHECKBOX || (widgets[i]->hasPreFunc && games[i]->evalDisabled &&
+                                                        games[i]->evalDisabled(widgets[i]->index, nullptr));
     }
+    ImGui::PushID(pair.label);
+    ImGui::Spacing();
+    ImGui::BeginDisabled(disabled);
+    bool enabled = values[0] && values[1];
+    ComboMenu_PushCheckbox(ComboMenu_ThemeColor());
+    if (ImGui::Checkbox(pair.label, &enabled)) {
+        for (int i = 0; i < 2; ++i) {
+            CVarSetInteger(widgets[i]->cvar, enabled ? 1 : 0);
+            if (widgets[i]->hasCallback && games[i]->invokeCallback)
+                games[i]->invokeCallback(widgets[i]->index);
+            if (games[i]->applyCVarChange)
+                games[i]->applyCVarChange(widgets[i]->cvar);
+        }
+        AnchorSaveCVars();
+    }
+    ComboMenu_PopCheckbox();
+    ImGui::EndDisabled();
+    MenuTooltip((std::string(pair.help) + "\n\nChanges both games.").c_str());
+    ImGui::PopID();
 }
+// The pairs of a page that has no catalogue layout; on catalogue pages they are rows of their heading.
+void DrawPairedPreferences(const std::string& scope, const std::string& page) {
+    if (FindMenuPage(scope, page))
+        return;
+    for (const auto& pair : kPairedPreferences)
+        if (page == pair.page)
+            DrawPairedPreferenceRow(pair);
+}
+
+// Rule and pair rows inside their catalogue heading are pseudo-widgets: CW_CUSTOM rows whose index
+// is -1000 - rule or -2000 - pair, with the rule's (or this world's) CVar so anchors find them.
+constexpr int32_t kRuleRowBase = -1000, kPairRowBase = -2000;
+ComboRando::MenuRuleFocus* sRuleRowFocus = nullptr; // the menu's search focus while a page draws
+
+bool MakePseudoRow(const char* cvar, bool oot, const std::string& scope, const std::string& page, CwWidget& row,
+                   const MenuPlacement*& placement) {
+    if (!cvar)
+        return false;
+    row = CwWidget{};
+    row.kind = CW_CUSTOM;
+    for (int i = 0; i < int(sizeof(kPairedPreferences) / sizeof(*kPairedPreferences)); ++i) {
+        const auto& pair = kPairedPreferences[i];
+        if (std::strcmp(cvar, oot ? pair.oot : pair.mm))
+            continue;
+        placement = Detail::FindMenuPlacementKey(oot, std::string("pair:") + pair.label);
+        if (!placement || scope != placement->scope || page != placement->page)
+            return false;
+        row.index = kPairRowBase - i;
+        row.name = pair.label;
+        row.cvar = oot ? pair.oot : pair.mm;
+        return true;
+    }
+    const auto* rule = FindGameplayRule(cvar);
+    if (!rule || std::strcmp(rule->name, cvar) || rule->trickGoverned || IsLegacyGameplayRule(rule->name) ||
+        IsSongTravelRule(rule->name) || (std::strstr(rule->label, "(MM)") != nullptr) == oot)
+        return false;
+    const bool randomizer = scope == "randomizer";
+    if (randomizer && rule->runtimeOnly)
+        return false;
+    placement = FindRulePlacement(rule->name, oot, randomizer);
+    if (!placement || scope != placement->scope || page != placement->page)
+        return false;
+    row.index = kRuleRowBase - int32_t(rule - kGameplayRules);
+    row.name = rule->label;
+    row.cvar = rule->name;
+    return true;
+}
+} // namespace
+
+bool DrawMenuPseudoRow(const CwWidget& widget, bool randomizer) {
+    if (widget.index <= kPairRowBase) {
+        const int pair = kPairRowBase - widget.index;
+        if (pair < int(sizeof(kPairedPreferences) / sizeof(*kPairedPreferences)))
+            DrawPairedPreferenceRow(kPairedPreferences[pair]);
+        return true;
+    }
+    if (widget.index <= kRuleRowBase) {
+        const int rule = kRuleRowBase - widget.index;
+        if (rule < int(sizeof(kGameplayRules) / sizeof(*kGameplayRules))) {
+            ImGui::BeginDisabled(randomizer && !ProfileUI::Editable());
+            DrawGameplayRuleRow(kGameplayRules[rule], randomizer, sRuleRowFocus);
+            ImGui::EndDisabled();
+        }
+        return true;
+    }
+    return false;
+}
+
+namespace {
 void DrawCombinedGoals() {
     const char* guarantees[] = { "All checks reachable", "Beatable seed" };
     int guarantee = std::clamp(ProfileUI::ReadInteger(kCombinedGuarantee, 0), 0, 1);
@@ -1886,9 +1976,37 @@ void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& sco
         side.columnCount = 2;
     }
     columns = std::max(columns, side.columnCount);
-    for (int i = 0; i < side.widgetCount; ++i)
-        if (!IsRetiredNativeRuleControl(side.widgets[i].cvar))
-            output.push_back(side.widgets[i]);
+    for (int i = 0; i < side.widgetCount; ++i) {
+        const auto& widget = side.widgets[i];
+        if (!IsRetiredNativeRuleControl(widget.cvar)) {
+            output.push_back(widget);
+            continue;
+        }
+        CwWidget row;
+        const MenuPlacement* placement = nullptr;
+        if (origins && MakePseudoRow(widget.cvar, source.oot, scope, page, row, placement) &&
+            !origins->count(row.index)) {
+            output.push_back(row);
+            (*origins)[row.index] = { placement, nullptr };
+        }
+    }
+}
+// The rule and pair rows of a catalogue page that no native control of this world stood in for
+// (Randomizer > Gameplay rules, a count with no native widget), after the native rows.
+void AppendPseudoRows(bool oot, const std::string& scope, const std::string& page, std::vector<CwWidget>& output,
+                      RowOrigins& origins) {
+    CwWidget row;
+    const MenuPlacement* placement = nullptr;
+    for (const auto& pair : kPairedPreferences)
+        if (MakePseudoRow(oot ? pair.oot : pair.mm, oot, scope, page, row, placement) && !origins.count(row.index)) {
+            output.push_back(row);
+            origins[row.index] = { placement, nullptr };
+        }
+    for (const auto& rule : kGameplayRules)
+        if (MakePseudoRow(rule.name, oot, scope, page, row, placement) && !origins.count(row.index)) {
+            output.push_back(row);
+            origins[row.index] = { placement, nullptr };
+        }
 }
 
 // Native intro lines that describe the old per-game menus, not this page.
@@ -2242,6 +2360,10 @@ void ComboMenu::DrawSharedPanel() {
                     if (*scopeLine)
                         ImGui::TextColored(kBreadcrumbColor, "%s", scopeLine);
                 }
+                if (!seedOptions && active->label == MenuPage::WarpsTravel) {
+                    ImGui::SeparatorText(GameplayRuleHeading(kSongTravelRuleKeys[0], false));
+                    DrawGameplayRules(false, active->label, -1, &mRuleFocus);
+                }
                 if (seedOptions && active->label == "Logic & access") {
                     ImGui::BeginDisabled(!ProfileUI::Editable());
                     DrawCombinedGoals();
@@ -2290,10 +2412,12 @@ void ComboMenu::DrawSharedPanel() {
                     mResetOptionsScroll = false;
                 }
                 ImGui::BeginDisabled(seedOptions && !ProfileUI::Editable());
-                DrawGameplayRules(seedOptions, active->label, selectedGame, &mRuleFocus);
+                if (seedOptions || active->label != MenuPage::WarpsTravel)
+                    DrawGameplayRules(seedOptions, active->label, selectedGame, &mRuleFocus);
                 ImGui::EndDisabled();
                 if (!seedOptions)
-                    DrawPairedPreferences(active->label);
+                    DrawPairedPreferences(mScope, active->label);
+                sRuleRowFocus = &mRuleFocus;
                 if (mScope == "media" && active->label == MenuPage::Appearance)
                     DrawCosmeticSync();
                 const auto bodyKey = std::make_pair(selectedGame, subpage);
@@ -2311,8 +2435,12 @@ void ComboMenu::DrawSharedPanel() {
                         AppendFeatureWidgets(source, mScope, active->label, subpage, built.widgets, built.columns,
                                              &origins);
                     }
-                    if (layout)
+                    if (layout && selectedGame >= 0) {
+                        AppendPseudoRows(selectedGame == 0, mScope, active->label, built.widgets, origins);
+                        if (!built.game && !built.widgets.empty())
+                            built.game = selectedGame == 0 ? &model.Oot() : &model.Mm();
                         built.columns = ArrangeByPlacement(*layout, built.widgets, origins, built.columns);
+                    }
                     body = active->bodies.emplace(bodyKey, std::move(built)).first;
                 }
                 auto& content = body->second;

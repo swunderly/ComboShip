@@ -20,6 +20,10 @@ struct GameMenu; // from ComboMenuModel.h
 // WrappedText char budget for labels (typically 90/columns).
 void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget = 90);
 
+// Draw a combo-owned row placed among native rows: a gameplay rule (index <= -1000) or a checkbox that
+// sets both games (index <= -2000). Returns false for any other widget. Defined in ComboMenu.cpp.
+bool DrawMenuPseudoRow(const CwWidget& widget, bool randomizer);
+
 // Render all of a sidebar's widgets honoring CwSidebar::columnCount — the faithful multi-column
 // layout of the native menu (1 column => linear). Widgets carry their source column (CwWidget.column,
 // ABI v2). Use this instead of looping RenderWidget so every section gets the right column layout.

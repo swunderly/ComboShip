@@ -216,6 +216,9 @@ static void RefreshSharedReticlePeer(const CwWidget& w, const GameMenu& game) {
 }
 
 void RenderWidget(const CwWidget& w, const GameMenu& game, int widthBudget) {
+    // A gameplay rule or both-games checkbox placed inside its heading.
+    if (w.index <= -1000 && DrawMenuPseudoRow(w, false))
+        return;
     // Every native rendering path must defer these paired controls to the shared pages.
     if (IsRetiredNativeRuleControl(w.cvar))
         return;

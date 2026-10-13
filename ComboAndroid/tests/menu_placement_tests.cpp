@@ -175,6 +175,8 @@ const MenuPlacement* CVarPlacement(bool oot, const std::string& cvar) {
 
 int main() {
     const std::string ootMenus = Joined(kOotMenuFiles), mmMenus = Joined(kMmMenuFiles);
+    // OoT's seed options register their widgets from the randomizer's option table.
+    const std::string ootSeedOptions = Read("soh/soh/Enhancements/randomizer/settings.cpp");
     std::set<std::string> ootWidgets, mmWidgets;
     for (const auto& cvar : CVars(ootMenus))
         ootWidgets.insert(cvar);
@@ -221,6 +223,13 @@ int main() {
             }
             if (!IsCVarKey(row.key))
                 continue;
+            if (!std::strcmp(row.scope, "randomizer")) {
+                const std::string prefix = "gRandoSettings.", key = row.key;
+                assert(oot && key.rfind(prefix, 0) == 0);
+                assert(ootSeedOptions.find("CVAR_RANDOMIZER_SETTING(\"" + key.substr(prefix.size()) + "\")") !=
+                       std::string::npos);
+                continue;
+            }
             const auto& widgets = oot ? ootWidgets : mmWidgets;
             std::string key = row.key;
             bool exists = widgets.count(key) != 0;

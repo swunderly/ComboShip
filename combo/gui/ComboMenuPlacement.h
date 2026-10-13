@@ -126,6 +126,8 @@ inline constexpr MenuPageLayout kMenuPages[] = {
     { "settings", "Notifications", "", 0, 0, {  } },
     { "trackers", "Gameplay Stats", "Ocarina of Time only.", 1, 1, { "Window" } },
     { "trackers", "Time Splits", "", 1, 1, { "Window" } },
+    // The logic halves of the gameplay rules, and the OoT seed options that sit with them.
+    { "randomizer", "Gameplay rules", "", 5, 2, { "Abilities", "Time of day", "Quest requirements", "Minigames", "Seed settings (no logic effect)" } },
 };
 
 inline constexpr MenuPlacement kMenuPlacements[] = {
@@ -749,6 +751,34 @@ inline constexpr MenuPlacement kMenuPlacements[] = {
     { kMenuMm, "heading:Settings/Overlay/Notifications", "settings", "Notifications", nullptr, 1000, nullptr, nullptr, 0 },
     { kMenuMm, "gWindows.HudEditor", "media", "Screen & HUD", "Advanced HUD editor (MM)", 1000, nullptr, nullptr, 0 },
     { kMenuMm, "sidebar:Enhancements/HUD Editor", "media", "Screen & HUD", "Advanced HUD editor (MM)", 1010, nullptr, nullptr, 0 },
+    // Randomizer > Gameplay rules: the logic half of every rule, and OoT's seed options read by its logic,
+    // under the same headings in both worlds. These rows only order the page; routing stays with the
+    // Randomizer clauses of MenuGroupRoute.
+    { kMenuOot, "rule:gEnhancements.BlueFireArrows", "randomizer", "Gameplay rules", "Abilities", 10, nullptr, nullptr, 0 },
+    { kMenuOot, "rule:gEnhancements.SunlightArrows", "randomizer", "Gameplay rules", "Abilities", 20, nullptr, nullptr, 0 },
+    { kMenuOot, "gRandoSettings.SlingBowBeehives", "randomizer", "Gameplay rules", "Abilities", 30, nullptr, nullptr, 0 },
+    { kMenuOot, "rule:gCheats.SuperTunic", "randomizer", "Gameplay rules", "Abilities", 40, nullptr, nullptr, 0 },
+    { kMenuOot, "rule:gCheats.DekuStick", "randomizer", "Gameplay rules", "Abilities", 50, nullptr, nullptr, 0 },
+    { kMenuOot, "rule:gEnhancements.TimeTravel", "randomizer", "Gameplay rules", "Abilities", 60, nullptr, nullptr, 0 },
+    { kMenuMm, "rule:gEnhancements.Masks.FierceDeitysAnywhere", "randomizer", "Gameplay rules", "Abilities", 110, nullptr, nullptr, 0 },
+    { kMenuMm, "rule:gEnhancements.Player.InfiniteDekuHopping", "randomizer", "Gameplay rules", "Abilities", 120, nullptr, nullptr, 0 },
+    { kMenuMm, "rule:gEnhancements.Masks.GoronRollingIgnoresMagic", "randomizer", "Gameplay rules", "Abilities", 130, nullptr, nullptr, 0 },
+    { kMenuMm, "rule:gEnhancements.Masks.BlastMaskKeg", "randomizer", "Gameplay rules", "Abilities", 140, nullptr, nullptr, 0 },
+    { kMenuOot, "rule:gEnhancements.OpenAllHours", "randomizer", "Gameplay rules", "Time of day", 10, nullptr, nullptr, 0 },
+    { kMenuOot, "rule:gEnhancements.DayGravePull", "randomizer", "Gameplay rules", "Time of day", 20, nullptr, nullptr, 0 },
+    { kMenuOot, "rule:gEnhancements.NightGSAlwaysSpawn", "randomizer", "Gameplay rules", "Time of day", 30, nullptr, nullptr, 0 },
+    { kMenuOot, "gRandoSettings.SkipScarecrowsSong", "randomizer", "Gameplay rules", "Quest requirements", 10, nullptr, "scarecrow_logic", 1 },
+    { kMenuMm, "rule:gEnhancements.Playback.SkipScarecrowSong", "randomizer", "Gameplay rules", "Quest requirements", 10, nullptr, "scarecrow_logic", 1 },
+    { kMenuOot, "gRandoSettings.EarlyGrannysShop", "randomizer", "Gameplay rules", "Quest requirements", 20, nullptr, nullptr, 0 },
+    { kMenuOot, "gRandoSettings.SkipPlantingBeans", "randomizer", "Gameplay rules", "Quest requirements", 30, nullptr, nullptr, 0 },
+    { kMenuMm, "rule:gEnhancements.DifficultyOptions.GibdoTradeSequence", "randomizer", "Gameplay rules", "Quest requirements", 110, nullptr, nullptr, 0 },
+    { kMenuMm, "rule:gEnhancements.DifficultyOptions.FrogChoirCount", "randomizer", "Gameplay rules", "Quest requirements", 120, nullptr, nullptr, 0 },
+    { kMenuMm, "rule:gEnhancements.Songs.ZoraEggCount", "randomizer", "Gameplay rules", "Quest requirements", 130, nullptr, nullptr, 0 },
+    { kMenuOot, "gRandoSettings.BigPoeTargetCount", "randomizer", "Gameplay rules", "Minigames", 10, nullptr, nullptr, 0 },
+    { kMenuOot, "gRandoSettings.SkipEponaRace", "randomizer", "Gameplay rules", "Minigames", 20, nullptr, nullptr, 0 },
+    { kMenuMm, "rule:gEnhancements.Minigames.AlwaysWinDoggyRace", "randomizer", "Gameplay rules", "Minigames", 110, nullptr, nullptr, 0 },
+    { kMenuOot, "gRandoSettings.SwordlessEponaItems", "randomizer", "Gameplay rules", "Seed settings (no logic effect)", 10, nullptr, nullptr, 0 },
+    { kMenuOot, "gRandoSettings.SkipChildStealth", "randomizer", "Gameplay rules", "Seed settings (no logic effect)", 20, nullptr, nullptr, 0 },
 };
 // clang-format on
 
@@ -798,6 +828,13 @@ inline const MenuPlacement* FindMenuPlacementKey(bool oot, std::string_view key,
     return nullptr;
 }
 } // namespace Detail
+
+// The row of a combo-drawn gameplay rule: its in-game half on Enhancements, or its logic half on
+// Randomizer > Gameplay rules.
+inline const MenuPlacement* FindRulePlacement(const char* rule, bool oot, bool randomizer) {
+    return rule ? Detail::FindMenuPlacementKey(oot, std::string("rule:") + rule, randomizer ? "randomizer" : "gameplay")
+                : nullptr;
+}
 
 // The row that places one native widget: its CVar (exact, then prefix), else its name when it has
 // no CVar, then its native heading, then its native sidebar. nullptr: not placed, so MenuRoute's

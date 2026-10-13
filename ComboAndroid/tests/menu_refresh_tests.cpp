@@ -13,6 +13,24 @@ int main() {
     assert(count.minimum == 1 && count.maximum == 10 && count.fallback == 10);
     assert(std::string(GameplayRulePage(count.name, true)) == "Gameplay rules");
     assert(std::string(GameplayRulePage(count.name, false)) == "Difficulty");
+    assert(std::string(GameplayRuleHeading(count.name, false)) == "Quest requirements");
+    // Time-of-day rules sit with the other time-of-day conveniences on Quality of life.
+    for (const char* rule :
+         { "gEnhancements.OpenAllHours", "gEnhancements.DayGravePull", "gEnhancements.NightGSAlwaysSpawn" }) {
+        assert(std::string(GameplayRulePage(rule, false)) == "Quality of life");
+        assert(std::string(GameplayRuleHeading(rule, false)) == "Time of day & cycle");
+        assert(std::string(GameplayRuleHeading(rule, true)) == "Time of day");
+    }
+    assert(std::string(GameplayRulePage("gEnhancements.BlueFireArrows", false)) == "Items & equipment");
+    assert(std::string(GameplayRuleHeading("gEnhancements.BlueFireArrows", false)) == "Bow & arrows");
+    // Every rule has a heading for its in-game half, and every logic half one on Randomizer > Gameplay rules.
+    for (const auto& rule : kGameplayRules) {
+        if (IsLegacyGameplayRule(rule.name) || rule.trickGoverned)
+            continue;
+        assert(*GameplayRuleHeading(rule.name, false));
+        if (!rule.runtimeOnly && !IsSongTravelRule(rule.name))
+            assert(*GameplayRuleHeading(rule.name, true));
+    }
     std::map<std::string, int> cv;
     auto read = [&](const char* name, int fallback) { auto it=cv.find(name); return it==cv.end() ? fallback : it->second; };
     auto write = [&](const char* name, int value) { cv[name]=value; };

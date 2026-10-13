@@ -335,6 +335,10 @@ inline const char* GameplayRulePage(const char* name, bool randomizer) {
         return MenuPage::WarpsTravel; // the same page name on both tabs
     if (randomizer)
         return "Gameplay rules";
+    // The in-game half sits in its feature's heading; a rule the catalogue lacks keeps the old pages.
+    for (bool oot : { true, false })
+        if (const auto* row = FindRulePlacement(name, oot, false))
+            return row->page;
     const std::string key = name ? name : "";
     if (key.find("DifficultyOptions") != std::string::npos || key.find("ZoraEggCount") != std::string::npos ||
         key.find("AlwaysWinDoggyRace") != std::string::npos)
@@ -344,6 +348,13 @@ inline const char* GameplayRulePage(const char* name, bool randomizer) {
         key.find("SkipBalladOfWindfish") != std::string::npos || key.find("SkipScarecrowSong") != std::string::npos)
         return MenuPage::TimeSavers;
     return MenuPage::ItemsEquipment;
+}
+// The heading a rule's row sits under on that page ("" when the catalogue has no row for it).
+inline const char* GameplayRuleHeading(const char* name, bool randomizer) {
+    for (bool oot : { true, false })
+        if (const auto* row = FindRulePlacement(name, oot, randomizer))
+            return row->heading ? row->heading : "";
+    return "";
 }
 inline int RandomizerPageOrder(const std::string& page) {
     for (int i = 0; i < int(sizeof(kRandomizerPages) / sizeof(kRandomizerPages[0])); ++i)

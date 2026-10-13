@@ -8,6 +8,7 @@
 #include "ComboTricks.h"
 #include "ComboTricksModel.h"
 #include "ComboRuleWarning.h"
+#include "ComboWidgetRender.h"
 #include "rando/GameplayRules.h"
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/GenerationRules.h"
@@ -405,6 +406,8 @@ void DrawSidebar(const CwSidebar& side, const GameMenu& game, int world) {
         return w.cvar && std::strncmp(w.cvar, prefix, sizeof(prefix) - 1) == 0;
     };
     auto draw = [&](const CwWidget& widget) {
+        if (widget.index <= -1000 && DrawMenuPseudoRow(widget, true))
+            return; // a gameplay rule row inside its heading
         if (world == 0 && isPouch(widget)) {
             if (pouchesDrawn)
                 return;

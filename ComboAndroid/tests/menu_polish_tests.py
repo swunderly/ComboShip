@@ -40,6 +40,7 @@ bool BeginTable(const char*,unsigned,int){return true;} void EndTable(){}
 void TableNextRow(){}void TableSetColumnIndex(unsigned){}void PushID(int){}void PopID(){}void BeginGroup(){}void EndGroup(){}
 }
 constexpr int ImGuiTableFlags_SizingStretchSame=1,ImGuiTableFlags_NoSavedSettings=2;
+namespace ComboRando { int pseudoRows=0; bool DrawMenuPseudoRow(const CwWidget& widget,bool randomizer){assert(randomizer);if(widget.index>-1000)return false;++pseudoRows;return true;} }
 namespace ComboRando::ProfileUI {
 using Json=nlohmann::json;bool active=true;int view=0,selected=1,refreshes=0,silver=0;Json document;
 std::vector<std::string> drawn;bool pouchDisabled=false;
@@ -66,6 +67,10 @@ void Profiles(){
   DrawSidebar(side,game,0);assert(ImGui::headers==1);assert(drawn.size()==(expanded?4:2));
   assert(drawn.front()==keys[0]&&drawn.back()==keys[3]);if(expanded)assert(pouchDisabled==(setting==0));
  }
+ // A gameplay rule row inside its heading is drawn by the menu, never as a custom catalogue page.
+ CwWidget rule{};rule.index=-1003;rule.kind=CW_CUSTOM;rule.cvar="gEnhancements.TimeTravel";rule.name="Song of Time age change (OoT)";
+ CwSidebar rules{"Gameplay rules",1,&rule,1};drawn.clear();pseudoRows=0;DrawSidebar(rules,game,0);
+ assert(pseudoRows==1&&drawn.empty());
 }
 void Navigation(){
  ComboMenuModel model;auto& oot=const_cast<GameMenu&>(model.Oot());auto& mm=const_cast<GameMenu&>(model.Mm());
