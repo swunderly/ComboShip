@@ -952,17 +952,71 @@ static void ToggleInventorySlot(InventorySlot slot, uint8_t item, bool syncButto
         SyncButtonItemsForSlot(slot);
     }
 }
+
+// ComboShip: Give all and Reset on the Inventory tab, as MM's: every slot gets the last item that fits it (the bottles
+// an empty bottle, the child trade slot the Mask of Truth rather than Sold Out), the bags and capacities their largest
+// size and full ammo. Reset empties every slot and its ammo and takes those bags back to none.
+static void GiveAllInventoryItems(bool syncButtons) {
+    for (int i = 0; i < 24; i++) {
+        const InventorySlot slot = static_cast<InventorySlot>(i);
+        if (slot >= SLOT_BOTTLE_1 && slot <= SLOT_BOTTLE_4) {
+            gSaveContext.inventory.items[slot] = ITEM_BOTTLE;
+        } else {
+            auto items = GetLegalInventorySlotItems(slot);
+            std::erase_if(items, [](const ItemMapEntry& entry) { return entry.id == ITEM_SOLD_OUT; });
+            if (!items.empty()) {
+                gSaveContext.inventory.items[slot] = items.back().id;
+            }
+        }
+        if (syncButtons) {
+            SyncButtonItemsForSlot(slot);
+        }
+    }
+    for (int upgrade : { UPG_QUIVER, UPG_BOMB_BAG, UPG_BULLET_BAG, UPG_STICKS, UPG_NUTS }) {
+        Inventory_ChangeUpgrade(upgrade, 3);
+    }
+    AMMO(ITEM_BOW) = CUR_CAPACITY(UPG_QUIVER);
+    AMMO(ITEM_BOMB) = CUR_CAPACITY(UPG_BOMB_BAG);
+    AMMO(ITEM_SLINGSHOT) = CUR_CAPACITY(UPG_BULLET_BAG);
+    AMMO(ITEM_STICK) = CUR_CAPACITY(UPG_STICKS);
+    AMMO(ITEM_NUT) = CUR_CAPACITY(UPG_NUTS);
+    AMMO(ITEM_BOMBCHU) = 50;
+    AMMO(ITEM_BEAN) = 10;
+}
+
+static void ResetInventoryItems(bool syncButtons) {
+    for (int i = 0; i < 24; i++) {
+        gSaveContext.inventory.items[i] = ITEM_NONE;
+        if (syncButtons) {
+            SyncButtonItemsForSlot(static_cast<InventorySlot>(i));
+        }
+    }
+    for (int i = 0; i < 16; i++) {
+        gSaveContext.inventory.ammo[i] = 0;
+    }
+    for (int upgrade : { UPG_QUIVER, UPG_BOMB_BAG, UPG_BULLET_BAG, UPG_STICKS, UPG_NUTS }) {
+        Inventory_ChangeUpgrade(upgrade, 0);
+    }
+}
 #endif
 
 #ifdef COMBO_BUILD
-// ComboShip: the Inventory tab as MM's. The switches sit on top; a slot that can hold one item toggles it, a slot that
-// can hold several (Ocarina, Hookshot, bottles, trade items) opens a picker with None first and item names; each ammo
-// count sits under its icon instead of in a separate Ammo row.
+// ComboShip: the Inventory tab as MM's. Give all, Reset and the switches sit on top; a slot that can hold one item
+// toggles it, a slot that can hold several (Ocarina, Hookshot, bottles, trade items) opens a picker with None first and
+// item names; each ammo count sits under its icon instead of in a separate Ammo row.
 void DrawInventoryTab() {
     namespace Kit = ComboSaveEditorKit;
     static bool restrictToValid = true;
     static bool syncButtons = true;
 
+    if (Kit::Button("Give all##items", Kit::kGiveAll)) {
+        GiveAllInventoryItems(syncButtons);
+    }
+    ImGui::SameLine();
+    if (Kit::Button("Reset##items", Kit::kReset)) {
+        ResetInventoryItems(syncButtons);
+    }
+    ImGui::SameLine();
     Checkbox(Kit::kRestrictLabel, &restrictToValid, checkboxOptionsBase.Tooltip(Kit::kRestrictTooltip));
     ImGui::SameLine();
     Checkbox("Keep C/D-pad buttons in sync", &syncButtons,
@@ -2129,6 +2183,27 @@ void DrawEquipmentTab() {
     const ImVec4 theme = ColorValues.at(THEME_COLOR);
     auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
 
+    // Give all and Reset as MM's Equipment tab: the best gear, or a new file's (Kokiri Tunic and Boots, no upgrades).
+    static const std::pair<int32_t, int> kBestUpgrades[] = { { UPG_BULLET_BAG, 3 }, { UPG_QUIVER, 3 },
+                                                             { UPG_BOMB_BAG, 3 },   { UPG_SCALE, 2 },
+                                                             { UPG_STRENGTH, 3 },   { UPG_STICKS, 3 },
+                                                             { UPG_NUTS, 3 } };
+    if (Kit::Button("Give all##equipment", Kit::kGiveAll)) {
+        gSaveContext.inventory.equipment = 0x7777; // every sword but the broken knife, shield, tunic and boots
+        gSaveContext.bgsFlag = 1;
+        for (const auto& [upgrade, level] : kBestUpgrades) {
+            Inventory_ChangeUpgrade(upgrade, level);
+        }
+    }
+    ImGui::SameLine();
+    if (Kit::Button("Reset##equipment", Kit::kReset)) {
+        gSaveContext.inventory.equipment = 0x1100; // Kokiri Tunic and Kokiri Boots
+        gSaveContext.bgsFlag = 0;
+        for (const auto& [upgrade, level] : kBestUpgrades) {
+            Inventory_ChangeUpgrade(upgrade, 0);
+        }
+    }
+
     ImGui::SeparatorText("Swords, shields, tunics and boots");
     const std::vector<uint8_t> equipmentValues = {
         ITEM_SWORD_KOKIRI, ITEM_SWORD_MASTER,  ITEM_SWORD_BGS,     ITEM_SWORD_BROKEN,
@@ -2471,6 +2546,19 @@ void DrawQuestStatusTab() {
     namespace Kit = ComboSaveEditorKit;
     const ImVec4 theme = ColorValues.at(THEME_COLOR);
     auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+
+    // Give all and Reset as MM's: every medallion, stone, song and quest item; heart pieces and tokens stay.
+    if (Kit::Button("Give all##quest", Kit::kGiveAll)) {
+        for (int32_t i = QUEST_MEDALLION_FOREST; i <= QUEST_GERUDO_CARD; i++) {
+            gSaveContext.inventory.questItems |= 1 << i;
+        }
+    }
+    ImGui::SameLine();
+    if (Kit::Button("Reset##quest", Kit::kReset)) {
+        for (int32_t i = QUEST_MEDALLION_FOREST; i <= QUEST_GERUDO_CARD; i++) {
+            gSaveContext.inventory.questItems &= ~(1 << i);
+        }
+    }
 
     ImGui::SeparatorText("Boss rewards");
     for (int32_t i = QUEST_MEDALLION_FOREST; i < QUEST_MEDALLION_LIGHT + 1; i++) {

@@ -14,6 +14,7 @@ draw their combo branches with combo/gui/ComboSaveEditorKit.h. This reads the ed
    table and item slots: with "Restrict to valid items" on, Boomerang and the other one-item slots toggle while
    Hookshot, Ocarina, bottles and trade slots open the picker. On does what picking the item does (set it, refresh
    the C/D-pad buttons) plus capacity level 1 and full ammo when there is no capacity yet; off does what None does.
+   Give all and Reset do what MM's do: the last item that fits each slot, the largest bags and full ammo, or none.
 """
 from pathlib import Path
 import argparse
@@ -213,7 +214,12 @@ std::vector<int> gSynced;
 static void SyncButtonItemsForSlot(uint8_t slot) { gSynced.push_back(slot); }
 ''' + function(oot_raw, 'static std::vector<ItemMapEntry> GetLegalInventorySlotItems(InventorySlot slot)') + '\n' + \
     function(oot, 'static int AmmoUpgradeForItem(uint8_t item)') + '\n' + \
-    function(oot, 'static void ToggleInventorySlot(InventorySlot slot, uint8_t item, bool syncButtons)') + '\n'
+    function(oot, 'static void ToggleInventorySlot(InventorySlot slot, uint8_t item, bool syncButtons)') + '\n' + \
+    function(oot, 'static void GiveAllInventoryItems(bool syncButtons)') + '\n' + \
+    function(oot, 'static void ResetInventoryItems(bool syncButtons)') + '\n'
+check(hostcxx.contains(inventory, 'if (Kit::Button("Give all##items", Kit::kGiveAll)) { GiveAllInventoryItems(syncButtons); }')
+      and hostcxx.contains(inventory, 'if (Kit::Button("Reset##items", Kit::kReset)) { ResetInventoryItems(syncButtons); }'),
+      'the OoT Inventory tab lacks Give all and Reset')
 
 # ---- 1b and 4. The tap rule and the clock text, built and run.
 code = r'''
@@ -287,6 +293,28 @@ void OotTapRule() {
     Fresh(); // Bombchus have no capacity upgrade: their ammo is left to the count under the icon.
     ToggleInventorySlot(SLOT_BOMBCHU, ITEM_BOMBCHU, true);
     assert(gSaveContext.inventory.ammo[SLOT_BOMBCHU] == 0 && NoUpgrades());
+
+    // Give all as MM's: the last item that fits each slot, empty bottles, the largest bags and full ammo.
+    Fresh();
+    GiveAllInventoryItems(true);
+    const auto& items = gSaveContext.inventory.items;
+    assert(items[SLOT_BOOMERANG] == ITEM_BOOMERANG && items[SLOT_HOOKSHOT] == ITEM_LONGSHOT &&
+           items[SLOT_OCARINA] == ITEM_OCARINA_TIME && items[SLOT_TRADE_CHILD] == ITEM_MASK_TRUTH &&
+           items[SLOT_TRADE_ADULT] == ITEM_CLAIM_CHECK && items[SLOT_NAYRUS_LOVE] == ITEM_NAYRUS_LOVE);
+    for (int slot = SLOT_BOTTLE_1; slot <= SLOT_BOTTLE_4; slot++)
+        assert(items[slot] == ITEM_BOTTLE);
+    for (int slot = 0; slot < 24; slot++)
+        assert(items[slot] != ITEM_NONE && items[slot] != ITEM_SOLD_OUT);
+    assert(gSynced.size() == 24);
+    assert(gUpgrades[UPG_QUIVER] == 3 && gSaveContext.inventory.ammo[SLOT_BOW] == 50 &&
+           gUpgrades[UPG_BOMB_BAG] == 3 && gSaveContext.inventory.ammo[SLOT_BOMB] == 40 &&
+           gSaveContext.inventory.ammo[SLOT_BOMBCHU] == 50 && gSaveContext.inventory.ammo[SLOT_BEAN] == 10);
+    // Reset empties every slot and its ammo and takes the bags back to none.
+    ResetInventoryItems(false);
+    assert(std::all_of(std::begin(items), std::end(items), [](u8 item) { return item == ITEM_NONE; }));
+    assert(std::all_of(std::begin(gSaveContext.inventory.ammo), std::end(gSaveContext.inventory.ammo),
+                       [](s8 ammo) { return ammo == 0; }));
+    assert(NoUpgrades() && gSynced.size() == 24);
 }
 int main() {
     OotTapRule();

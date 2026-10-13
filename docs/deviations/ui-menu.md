@@ -501,6 +501,12 @@ take upstream changes into the `#else` branch and port them to the combo branch 
 - Player (`DrawPlayerTab`): MM's cards and labels (Position & rotation, Speed with "XZ speed", "Ledge height" and the
   rest in MM's names, Age, Equipped gear, Button items with MM's Clear all, Player state with the editable state
   flags under "Edit state flags"); "Available while playing." with no game running.
+- Give all / Reset (owner decision 1 in the T8 spec, copied from MM): Inventory (`GiveAllInventoryItems`,
+  `ResetInventoryItems`: the last item that fits each slot, empty bottles, the child trade slot's Mask of Truth rather
+  than Sold Out, the largest bags and capacities with full ammo; Reset empties the slots and ammo and the bags),
+  Equipment (every sword but the broken knife, shield, tunic and boots, Biggoron's Sword and the best upgrades;
+  Reset is a new file's Kokiri Tunic and Boots with no upgrades) and Quest Status (every medallion, stone, song and
+  quest item; heart pieces and tokens stay). Sam can ask for them to go.
 
 **Pop-out buttons (`soh/soh/SohGui/SohMenuDevTools.cpp`, `mm/2s2h/BenGui/BenMenu.cpp`, `COMBO_BUILD`):** both read
 "Opens the Save Editor in its own window." and both are hidden from search (OoT's already was); search finds the
