@@ -155,9 +155,12 @@ if(EXISTS "${COMBO_PROFILE_TEST_IMGUI}/imgui.h")
         --imgui-include "${COMBO_PROFILE_TEST_IMGUI}")
     combo_harness_test(combo_console_reset_from_mm_boots_oot_title combo_console_reset_tests.py
         --imgui-include "${COMBO_PROFILE_TEST_IMGUI}")
+    combo_harness_test(save_editor_mirrors_tabs_tap_rule_and_cvars save_editor_mirror_tests.py
+        --imgui-include "${COMBO_PROFILE_TEST_IMGUI}")
 else()
     combo_skipped_test(combo_console_foreground_dispatch_and_native_entrance "needs Dear ImGui headers")
     combo_skipped_test(combo_console_reset_from_mm_boots_oot_title "needs Dear ImGui headers")
+    combo_skipped_test(save_editor_mirrors_tabs_tap_rule_and_cvars "needs Dear ImGui headers")
 endif()
 if(COMBO_JSON_INCLUDE_DIR AND EXISTS "${COMBO_PROFILE_TEST_IMGUI}/imgui.cpp")
     combo_json_harness_test(profile_menu_dropdown_refresh_memory_safety profile_menu_dropdown_tests.py
