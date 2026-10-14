@@ -5,8 +5,9 @@
 // determinism, the candidates against the pinned M1 contract
 // (tools/ootmm/m1-contract.json), the output against the capability sets, the
 // Temple pass, scope restoration on every exit path, the install for the fill
-// and playthrough, the seed identity, the NativeBridge.h scopes, and the frozen
-// private MM Wallmaster generator.
+// and playthrough, the seed identity, the NativeBridge.h scopes, the er*
+// settings the MM logic's er_enabled reads while candidates are checked, and
+// the frozen private MM Wallmaster generator.
 #include "rando/ComboPlaythrough.h"
 #include "rando/entrances/UnifiedBridge.h"
 #include <algorithm>
@@ -75,13 +76,17 @@ struct FakeMm {
   static inline CapabilitySet caps = WholeCatalog();
   static inline std::string dump;
   static inline std::vector<Json> overlays;
-  static inline int applies = 0, sets = 0, clears = 0, dumps = 0;
+  static inline Json settings; // the last generation settings document
+  static inline int applies = 0, sets = 0, clears = 0, dumps = 0,
+                    generations = 0;
   static inline bool malformed = false;
   static void reset() {
     ActiveMmUnified().clear();
     ActiveMmUnifiedAssumptions().reset();
+    ActiveMmGenerationSettings().reset();
     overlays.clear();
-    applies = sets = clears = dumps = 0;
+    settings = Json();
+    applies = sets = clears = dumps = generations = 0;
     malformed = false;
   }
   static int apply(const char *text) {
@@ -114,6 +119,24 @@ struct FakeMm {
     ++clears;
     ActiveMmUnifiedAssumptions().reset();
   }
+  // MM_SetEntranceGenerationSettingsForCombo: a bind or an assumption call
+  // leaves these settings alone.
+  static int generation(const char *text) {
+    ++generations;
+    ActiveMmGenerationSettings().reset();
+    if (!text)
+      return 1;
+    try {
+      settings = Json::parse(text);
+      const auto document =
+          DecodeEntranceLayout(settings, LayoutPart::SettingsOnly);
+      ValidateEntranceLayoutSettings(document, caps);
+      ActiveMmGenerationSettings() = document.settings;
+    } catch (const std::exception &) {
+      return 0;
+    }
+    return 1;
+  }
   static const char *snapshot() {
     ++dumps;
     Json seed = Json::object();
@@ -124,10 +147,10 @@ struct FakeMm {
     dump = seed.dump();
     return dump.c_str();
   }
-  static int calls() { return applies + sets + clears + dumps; }
+  static int calls() { return applies + sets + clears + dumps + generations; }
 };
 const NativeFns kMm{FakeMm::apply, FakeMm::assume, FakeMm::clear,
-                    FakeMm::snapshot};
+                    FakeMm::snapshot, FakeMm::generation};
 
 // The Temple probe: the query must name the candidate the MM oracle just saw.
 struct FakeProbe {
@@ -187,11 +210,13 @@ TempleProbeFns Probe() {
 // layout) routes Dampe's Wallmaster to Woodfall Temple. With prizeNeeded,
 // Majora also needs the "Prize item".
 struct Oracles {
-  static inline int mmQueries = 0, cancelAt = 0;
+  // MM queries made while the MM logic's er_enabled (macros_mm.yml:305) is
+  // off.
+  static inline int mmQueries = 0, cancelAt = 0, erOff = 0;
   static inline bool majora = true, prizeNeeded = false;
   static inline std::vector<std::string> owned[2];
   static void reset() {
-    ootResets = mmQueries = cancelAt = 0;
+    ootResets = mmQueries = cancelAt = erOff = 0;
     majora = true;
     prizeNeeded = false;
   }
@@ -223,6 +248,7 @@ struct Oracles {
     static std::string out;
     if (++mmQueries == cancelAt)
       progress.RequestCancel();
+    erOff += !MmUnifiedErEnabled();
     Json checks = {"Mm start"};
     if (majora && (!prizeNeeded || std::find(owned[1].begin(), owned[1].end(),
                                              "Prize item") != owned[1].end()))
@@ -595,13 +621,15 @@ void CheckScopes() {
     assert(ActiveMmUnified().active() && ActiveMmUnified().json() == bound);
     assert(!ActiveMmUnifiedAssumptions() && FakeProbe::releases == released &&
            !FakeProbe::prepared);
+    assert(!ActiveMmGenerationSettings() && FakeMm::generations == 2);
   };
   const auto from = [&] {
     FakeProbe::reset();
     Oracles::reset();
     FakeMm::overlays.clear();
     ApplyUnifiedLayout(kMm, bound, WholeCatalog());
-    FakeMm::applies = FakeMm::sets = FakeMm::clears = FakeMm::dumps = 0;
+    FakeMm::applies = FakeMm::sets = FakeMm::clears = FakeMm::dumps =
+        FakeMm::generations = 0;
   };
   GenerationScope scope(&progress);
   // Success.
@@ -640,7 +668,60 @@ void CheckScopes() {
   ResetAll();
   FakeMm::malformed = true;
   Error<EntranceLayoutError>([&] { Generate(Tranche(6)); });
-  assert(FakeMm::applies == 0 && FakeMm::sets == 0 && FakeProbe::releases == 1);
+  assert(FakeMm::applies == 0 && FakeMm::sets == 0 &&
+         FakeMm::generations == 0 && FakeProbe::releases == 1);
+}
+
+// M1-08: while a layout is generated, the MM logic's er_enabled
+// (macros_mm.yml:305, has_hot_water_er :273) follows the generation's er*
+// settings, as it follows the installed layout's for the fill; nothing else
+// sets them, and every exit clears them.
+void CheckErSettings() {
+  ResetAll();
+  const auto layout = Generate(Tranche(13));
+  assert(Oracles::mmQueries > 0 && Oracles::erOff == 0);
+  assert(FakeMm::generations == 2 && !ActiveMmGenerationSettings());
+  // The settings document of the layout: everything but its routes.
+  auto envelope = layout;
+  envelope.erase("overrides");
+  assert(FakeMm::settings == envelope);
+  // The fill reads the installed layout's settings; a clear turns it off.
+  ApplyUnifiedLayout(kMm, layout, WholeCatalog());
+  assert(MmUnifiedErEnabled() && !ActiveMmGenerationSettings());
+  ApplyNativeSeed(kMm, Json::object(), WholeCatalog());
+  assert(!MmUnifiedErEnabled());
+  // A bind and an assumption call leave the generation's settings alone.
+  assert(FakeMm::generation(envelope.dump().c_str()) == 1);
+  ApplyNativeSeed(kMm, Json::object(), WholeCatalog());
+  FakeMm::clear();
+  assert(MmUnifiedErEnabled());
+  assert(FakeMm::generation(nullptr) == 1 && !MmUnifiedErEnabled());
+  // No Logic still scopes them: the fill needs no candidate check.
+  ResetAll();
+  auto g = Tranche(13);
+  g.access = OotAccess::NO_LOGIC;
+  Generate(g);
+  assert(FakeMm::generations == 2 && !ActiveMmGenerationSettings());
+  // A module without the export, or one that refuses the settings, stops the
+  // generation before any candidate is checked and leaves the module as it
+  // was.
+  for (bool missing : {true, false}) {
+    ResetAll();
+    auto native = kMm;
+    if (missing)
+      native.setGenerationSettings = nullptr;
+    else
+      FakeMm::caps = CapabilitySet::AtLeast(Stage::Public);
+    const auto error = Error<std::runtime_error>(
+        [&] { GenerateEntranceLayout(Tranche(13), native, Probe()); });
+    assert(error == (missing ? "MM entrance generation settings export "
+                               "unavailable"
+                             : "MM entrance generation settings rejected"));
+    assert(FakeMm::sets == 0 && Oracles::mmQueries == 0 &&
+           !ActiveMmGenerationSettings() && !ActiveMmUnified().active() &&
+           FakeProbe::releases == 1);
+    FakeMm::caps = WholeCatalog();
+  }
 }
 
 // The layout is installed for the fill, the requiredness pass and the
@@ -914,7 +995,7 @@ void CheckFrozenPrivateGenerator() {
               Legacy::portal};
   OracleFns m{Legacy::reset, Legacy::owned, Legacy::mmChecks, nullptr};
   const NativeFns native{Legacy::apply, Legacy::assume, Legacy::clear,
-                         Legacy::snapshot};
+                         Legacy::snapshot, nullptr};
   for (const auto &row : frozen) {
     Legacy::sets = 0;
     const auto value = GenerateNativeMmWallmasters(
@@ -992,6 +1073,7 @@ void Run(const char *path, const std::string &mode) {
   CheckLayouts();
   CheckCandidates();
   CheckScopes();
+  CheckErSettings();
   CheckInstallForFill();
   CheckSeedIdentity();
   CheckNativeScopes();
@@ -999,8 +1081,9 @@ void Run(const char *path, const std::string &mode) {
   CheckFrozenPrivateGenerator();
   std::cout << "PASS unified generator: disabled path, refusals before RNG, "
                "Temple pass, pinned 4x7 candidates, deterministic valid "
-               "layouts, scopes on every exit, install for fill and "
-               "playthrough, seed identity, frozen private generator\n";
+               "layouts, scopes on every exit, er_enabled settings while "
+               "candidates are checked, install for fill and playthrough, seed "
+               "identity, frozen private generator\n";
 }
 } // namespace
 

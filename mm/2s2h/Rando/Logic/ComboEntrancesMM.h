@@ -11,6 +11,7 @@ int MM_ApplyEntranceExpansionForCombo(const char* seedJson);
 const char* MM_DumpEntranceExpansionForCombo();
 int MM_SetEntranceExpansionAssumptionsForCombo(const char* candidateJson);
 void MM_ClearEntranceExpansionAssumptionsForCombo();
+int MM_SetEntranceGenerationSettingsForCombo(const char* settingsJson);
 int Combo_MMCompleteOrdinaryEntrance(PlayState* play);
 void Combo_MMClearOrdinaryTransitionMarker(void);
 int Combo_MMWallmasterTransport(PlayState* play, Actor* actor);

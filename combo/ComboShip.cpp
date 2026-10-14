@@ -4437,7 +4437,8 @@ int main(int argc, char** argv) {
     sEntranceNative = { (int (*)(const char*))GetSym(mmModule, "MM_ApplyEntranceExpansionForCombo"),
                         (int (*)(const char*))GetSym(mmModule, "MM_SetEntranceExpansionAssumptionsForCombo"),
                         (void (*)())GetSym(mmModule, "MM_ClearEntranceExpansionAssumptionsForCombo"),
-                        (const char* (*)())GetSym(mmModule, "MM_DumpEntranceExpansionForCombo") };
+                        (const char* (*)())GetSym(mmModule, "MM_DumpEntranceExpansionForCombo"),
+                        (int (*)(const char*))GetSym(mmModule, "MM_SetEntranceGenerationSettingsForCombo") };
     sTempleProbe =
         ComboRando::Entrances::ResolveUnifiedTempleProbe([&](const char* name) { return GetSym(sohModule, name); });
 

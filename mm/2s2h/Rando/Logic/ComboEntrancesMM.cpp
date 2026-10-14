@@ -139,6 +139,24 @@ extern "C" COMBO_EXPORT void MM_ClearEntranceExpansionAssumptionsForCombo() {
     CE::ActiveMmMixedAssumptions().reset();
     CE::ActiveMmUnifiedAssumptions().reset();
 }
+// The er* settings of the unified layout being generated, as its settings document, against this
+// build's capabilities; null clears them. Only the generation sets them (NativeBridge.h
+// GenerationSettingsScope): a bind or an assumption call leaves them as they are.
+extern "C" COMBO_EXPORT int MM_SetEntranceGenerationSettingsForCombo(const char* settingsJson) {
+    CE::ActiveMmGenerationSettings().reset();
+    if (!settingsJson)
+        return 1;
+    try {
+        const auto document =
+            CE::DecodeEntranceLayout(nlohmann::json::parse(settingsJson), CE::LayoutPart::SettingsOnly);
+        CE::ValidateEntranceLayoutSettings(document, CE::ActiveCapabilities());
+        CE::ActiveMmGenerationSettings() = document.settings;
+        return 1;
+    } catch (const std::exception& e) {
+        SPDLOG_ERROR("[ComboShip] Entrance generation settings rejected: {}", e.what());
+        return 0;
+    }
+}
 namespace {
 CE::MmPreviousScene GrottoPreviousScene() {
     const auto& ship = gSaveContext.save.shipSaveInfo;

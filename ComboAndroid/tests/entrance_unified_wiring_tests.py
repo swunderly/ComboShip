@@ -8,7 +8,8 @@ playthrough of that attempt (critic correction C13). An exhausted layout search 
 the attempt, pins a Random start to OoT after an MM start as the other failures do (C24), and in the
 launcher is bounded by the headless budget (C1); every other entrance failure stops generation. The
 layout goes into the consolidated seed before its fileType is stamped, and the launcher's displaySeed
-also hashes it (C5). Nothing else calls the generator.
+also hashes it (C5). Nothing else calls the generator. Both callers resolve every MM entrance export
+into NativeFns in member order, including the one the generator sets its er* settings through (M1-08).
 """
 from pathlib import Path
 import argparse
@@ -120,6 +121,20 @@ assert [m.group(1) for m in re.finditer(r'\bcatch\s*\(([^)]*)\)', handlers)] == 
 ordered(generate, 'consolidated["entranceLayout"] = entranceLayout;', 'ComboRando::StampComboSeedFormat(consolidated);')
 assert re.search(r'templeProbe\s*=\s*ComboRando::Entrances::ResolveUnifiedTempleProbe\(\s*\[&\]\(const char\* name\) '
                  r'\{ return Sym<void\*>\(soh, name\); \}\);', headless)
+
+# --- The MM exports behind NativeFns, in member order; the last carries the generation's er* settings.
+exports = ['MM_ApplyEntranceExpansionForCombo', 'MM_SetEntranceExpansionAssumptionsForCombo',
+           'MM_ClearEntranceExpansionAssumptionsForCombo', 'MM_DumpEntranceExpansionForCombo',
+           'MM_SetEntranceGenerationSettingsForCombo']
+fns = block(read('combo/rando/entrances/NativeBridge.h'), 'struct NativeFns')
+assert re.findall(r'\(\*(\w+)\)', fns) == ['applySeed', 'setAssumptions', 'clearAssumptions', 'dumpSeed',
+                                            'setGenerationSettings'], 'NativeFns members'
+for text, opener in ((ship, 'sEntranceNative = {'), (headless, 'ComboRando::Entrances::NativeFns entranceNative{')):
+    init = text[text.index(opener):]
+    assert re.findall(r'"(MM_\w+)"', init[:init.index(';')]) == exports, opener
+mm_module = read('mm/2s2h/Rando/Logic/ComboEntrancesMM.cpp')
+for name in exports:
+    assert re.search(r'extern "C" COMBO_EXPORT [^\n(]*\b' + name + r'\(', mm_module), name
 
 # --- D1: the bridge reads exactly the CVars of the options that turn on Ship's RSK_SHUFFLE_ENTRANCES.
 native = read('soh/soh/Enhancements/randomizer/settings.cpp')

@@ -216,14 +216,19 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     }
     const auto facts = UnifiedTempleFacts(g);
     TempleProbeRun templeRun(temple, s, facts, areaExists);
+    // Everything of the layout but its routes.
+    EntranceLayout envelope;
+    envelope.required = { required };
+    envelope.devBuild = g.active.devBuild;
+    envelope.settings = s;
+    envelope.ootMq = quests;
     NativeScope restore(native);
+    // The MM logic's er_enabled follows these settings while the candidates are checked
+    // (macros_mm.yml:273, :305), as it follows the installed layout's afterwards.
+    GenerationSettingsScope erSettings(native, EncodeEntranceLayout(envelope).dump());
     AssumedWorld world(g.ootDump, g.mmDump, g.forcedOot);
     const auto layoutOf = [&](const Overrides& rows) {
-        EntranceLayout layout;
-        layout.required = { required };
-        layout.devBuild = g.active.devBuild;
-        layout.settings = s;
-        layout.ootMq = quests;
+        EntranceLayout layout = envelope;
         Overrides routes;
         for (const auto& [src, dst] : rows)
             if (!IsReservedGameLink(src, dst))

@@ -477,7 +477,8 @@ struct FakeMm {
 };
 
 void CheckBind() {
-  const NativeFns native{FakeMm::apply, nullptr, nullptr, FakeMm::snapshot};
+  const NativeFns native{FakeMm::apply, nullptr, nullptr, FakeMm::snapshot,
+                         nullptr};
   const auto seed = Seed(SampleLayout(kWallmasters, true));
   const auto bindError = [&](const Json &value, const NativeFns &fns,
                              const CapabilitySet &caps) {
@@ -506,7 +507,7 @@ void CheckBind() {
   assert(FakeMm::applies == 1);
   assert(bindError(seed, {}, WholeCatalog()) ==
          "MM entrance layout exports unavailable");
-  assert(bindError(seed, {FakeMm::apply, nullptr, nullptr, nullptr},
+  assert(bindError(seed, {FakeMm::apply, nullptr, nullptr, nullptr, nullptr},
                    WholeCatalog()) == "MM entrance layout exports unavailable");
   const auto failing = [&](bool &switch_, const char *message) {
     switch_ = true;
@@ -520,7 +521,7 @@ void CheckBind() {
           "MM entrance layout installed beside grottoEntranceExpansion");
   // A module that installs nothing for the key.
   const NativeFns ignoring{[](const char *) { return 1; }, nullptr, nullptr,
-                           [] { return "{}"; }};
+                           [] { return "{}"; }, nullptr};
   assert(bindError(seed, ignoring, WholeCatalog()) ==
          "MM entrance layout ignored or changed");
   // The seed guard's refusals come first: a private profile beside the layout.

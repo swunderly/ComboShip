@@ -7,6 +7,7 @@
 #pragma once
 #include "rando/ComboSeedFormat.h"
 #include "rando/entrances/CandidateWorld.h"
+#include "rando/entrances/EntranceRuntimeFlags.h"
 #include "rando/entrances/MmWallmasterGraph.h"
 #include <initializer_list>
 #include <map>
@@ -66,6 +67,11 @@ class MmUnifiedLayout {
     const MmUnifiedRoutes& routes() const {
         return table;
     }
+    // The installed layout's er* settings, from which the ER-wide behaviour follows
+    // (EntranceRuntimeFlags.h); null when no layout is installed.
+    const Settings* settings() const {
+        return layout ? &layout->settings : nullptr;
+    }
     std::vector<MmUnifiedRoute> routesFrom(uint32_t source) const {
         const auto it = table.find(source);
         return it == table.end() ? std::vector<MmUnifiedRoute>{} : it->second;
@@ -112,6 +118,27 @@ struct MmUnifiedAssumptions {
 inline std::optional<MmUnifiedAssumptions>& ActiveMmUnifiedAssumptions() {
     static thread_local std::optional<MmUnifiedAssumptions> value;
     return value;
+}
+
+// The er* settings of the layout being generated (UnifiedBridge.h), which the MM logic's er_enabled reads
+// while candidate worlds are checked and no layout is installed yet. Scoped to the native oracle's
+// thread, like the assumptions; set and cleared only by the generation, never by a bind.
+inline std::optional<Settings>& ActiveMmGenerationSettings() {
+    static thread_local std::optional<Settings> value;
+    return value;
+}
+// er_enabled (macros_mm.yml:305) for the MM logic: the generation's settings while it runs, else the
+// installed unified layout's. A private MM profile never counts: its seeds keep the logic they had.
+inline bool MmUnifiedErEnabled() {
+    if (const auto& generation = ActiveMmGenerationSettings())
+        return ErEnabled(*generation);
+    const auto* installed = ActiveMmUnified().settings();
+    return installed && ErEnabled(*installed);
+}
+// isEntranceShuffle (helpers.ts:6-55) for the MM runtime (PG_ER): only the installed layout counts.
+inline bool MmUnifiedEntranceShuffle() {
+    const auto* installed = ActiveMmUnified().settings();
+    return installed && IsEntranceShuffle(*installed);
 }
 
 namespace MmUnifiedDetail {

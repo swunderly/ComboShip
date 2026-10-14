@@ -13,6 +13,8 @@ struct NativeFns {
     int (*setAssumptions)(const char*) = nullptr;
     void (*clearAssumptions)() = nullptr;
     const char* (*dumpSeed)() = nullptr;
+    // The unified generation's er* settings document, or null to clear it (MmUnifiedLayout.h).
+    int (*setGenerationSettings)(const char*) = nullptr;
 };
 // A seed's unified layout, already accepted by the seed-format guard. The MM installer takes the MM
 // routes and must give the same layout back. No OoT installer exists yet, so a layout with an OoT
@@ -125,6 +127,27 @@ class AssumptionScope {
     }
     AssumptionScope(const AssumptionScope&) = delete;
     AssumptionScope& operator=(const AssumptionScope&) = delete;
+};
+// The er* settings of one unified generation, for the MM logic's er_enabled while its candidate worlds
+// are checked (macros_mm.yml:305), cleared on every exit. A settings document of the layout being made
+// (EntranceLayout.h, LayoutPart::SettingsOnly), which the MM module checks against its own capabilities.
+class GenerationSettingsScope {
+    NativeFns native;
+
+  public:
+    GenerationSettingsScope(NativeFns f, const std::string& settings) : native(f) {
+        if (!native.setGenerationSettings)
+            throw std::runtime_error("MM entrance generation settings export unavailable");
+        if (!native.setGenerationSettings(settings.c_str())) {
+            native.setGenerationSettings(nullptr);
+            throw std::runtime_error("MM entrance generation settings rejected");
+        }
+    }
+    ~GenerationSettingsScope() {
+        native.setGenerationSettings(nullptr);
+    }
+    GenerationSettingsScope(const GenerationSettingsScope&) = delete;
+    GenerationSettingsScope& operator=(const GenerationSettingsScope&) = delete;
 };
 inline std::vector<SavedOverride> MmWallmasterRows(const Overrides& overrides) {
     std::vector<SavedOverride> rows;
