@@ -1345,8 +1345,8 @@ void SohInputEditorWindow::DrawOcarinaControlPanel() {
     // ComboShip: the D-pad and right-stick toggles are rows of their own under Settings > Controls > Ocarina input,
     // beside MM's (SohMenuSettings.cpp). The note bindings stay with the other bindings, which both games' views
     // show, so the switch says whose they are.
-    checkOpt.Tooltip("Ocarina of Time only: play the notes with the buttons bound below instead of A and the C "
-                     "buttons.");
+    checkOpt.Tooltip("Ocarina of Time only: the buttons bound below replace A and the C buttons (Notes), L (Disable "
+                     "song detection), and R and Z (Pitch).");
 #else
     SohGui::mSohMenu->MenuDrawItem(dpadOcarina, static_cast<uint32_t>(ImGui::GetContentRegionAvail().x), THEME_COLOR);
     SohGui::mSohMenu->MenuDrawItem(rightStickOcarina, static_cast<uint32_t>(ImGui::GetContentRegionAvail().x),
