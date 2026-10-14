@@ -12,7 +12,7 @@ This fork turns ComboShip into one Android app (APK) for phones and tablets. Bot
 
 **[Get the latest APK from Releases](https://github.com/swunderly/ComboShip/releases/latest)**
 
-Current release: **Combo Ship for Android 0.4.5** (October 14, 2026). File: `ComboShip-Android-0.4.5-arm64.apk`, about 45 MB (XXSIZEXX bytes). [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.5-android/ComboShip-Android-0.4.5-arm64.apk).
+Current release: **Combo Ship for Android 0.4.5** (October 14, 2026). File: `ComboShip-Android-0.4.5-arm64.apk`, about 45 MB (46,825,443 bytes). [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.5-android/ComboShip-Android-0.4.5-arm64.apk).
 
 The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.5) are this fork's own. They are not upstream ComboShip's version numbers.
 
