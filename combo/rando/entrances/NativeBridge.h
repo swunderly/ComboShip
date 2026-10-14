@@ -14,12 +14,33 @@ struct NativeFns {
     void (*clearAssumptions)() = nullptr;
     const char* (*dumpSeed)() = nullptr;
 };
+// A seed's unified layout, already accepted by the seed-format guard. The MM installer takes the MM
+// routes and must give the same layout back. No OoT installer exists yet, so a layout with an OoT
+// route is refused: it can never bind as vanilla routing.
+inline void ApplyNativeLayout(const NativeFns& native, const nlohmann::json& seed, const CapabilitySet& caps) {
+    const auto& value = seed.at("entranceLayout");
+    if (!Validate(DecodeEntranceLayout(value), caps).oot.empty())
+        throw std::runtime_error("OoT entrance layout installer unavailable");
+    if (!native.applySeed || !native.dumpSeed)
+        throw std::runtime_error("MM entrance layout exports unavailable");
+    if (!native.applySeed(seed.dump().c_str()))
+        throw std::runtime_error("MM entrance layout rejected");
+    const auto* text = native.dumpSeed();
+    if (!text)
+        throw std::runtime_error("MM entrance layout roundtrip failed");
+    const auto loaded = nlohmann::json::parse(text);
+    for (const char* key : kLegacyEntranceKeys)
+        if (loaded.contains(key))
+            throw std::runtime_error(std::string("MM entrance layout installed beside ") + key);
+    if (!loaded.contains("entranceLayout") || loaded.at("entranceLayout") != value)
+        throw std::runtime_error("MM entrance layout ignored or changed");
+}
 inline void ApplyNativeSeed(const NativeFns& native, const nlohmann::json& seed, const CapabilitySet& caps) {
     RequireSupportedSeedCapabilities(seed, caps);
-    // A layout this build accepts is still refused until its installer exists, so it can never
-    // bind as vanilla routing.
-    if (seed.contains("entranceLayout"))
-        throw std::runtime_error("Unified entrance layout installer unavailable");
+    if (seed.contains("entranceLayout")) {
+        ApplyNativeLayout(native, seed, caps);
+        return;
+    }
     ValidateMmMixedSeed(seed);
     DecodeMmWallmasterSeed(seed); // reject unsupported data even with an older MM module
     if (seed.contains("ordinaryEntranceExpansion")) {

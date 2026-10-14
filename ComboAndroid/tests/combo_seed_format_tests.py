@@ -245,11 +245,11 @@ int main() {
     assert(reread.json() == devStore.json());
     rejectsBeforeDecode([&] { Profiles::Store(legacy(false), shipping).restore(devStore.json()); });
     assert(Profiles::SeedFromContainer({{"combo", {{"rando", layoutSeed.dump()}}}}, dev) == layoutSeed);
-    // No installer yet: an accepted layout still never binds as vanilla routing.
+    // Without the MM installer's exports an accepted layout still never binds as vanilla routing.
     std::string installer;
     try { Entrances::ApplyNativeSeed(sEntranceNative, layoutSeed, dev); }
     catch (const std::runtime_error& error) { installer = error.what(); }
-    assert(installer == "Unified entrance layout installer unavailable");
+    assert(installer == "MM entrance layout exports unavailable");
     // Seed-level refusals behind the shipping one.
     auto oldType = layoutSeed;
     oldType["fileType"] = kComboSeedFileType;
