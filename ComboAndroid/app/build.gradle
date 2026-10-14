@@ -8,8 +8,8 @@ android {
         applicationId 'org.comboship.android'
         minSdk 28
         targetSdk 35
-        versionCode 64
-        versionName '0.4.6'
+        versionCode 65
+        versionName '0.4.7'
         testInstrumentationRunner project.findProperty('testRunner') ?: 'org.comboship.android.TouchOverlayInstrumentation'
         ndk { abiFilters 'arm64-v8a' }
     }
