@@ -17,22 +17,23 @@ struct CommunityPresetInfo {
 };
 inline constexpr CommunityPresetInfo kCommunityPresets[] = {
     { CommunityPreset::Default, "Default", "Classic combined randomizer",
-      "Based on OoTMM's Default preset, using Combo Ship's supported options. Glitchless logic. The Rainbow Bridge "
-      "needs all six medallions, Ganon's trials are off and you start with Ganon's Boss Key. Swords, ocarinas, the "
-      "Gerudo card and the trade items are shuffled, MM keys stay in their dungeons, a few ice traps hide among both "
-      "games' items and MM starts with no items." },
+      "Based on OoTMM's Default preset, using Combo Ship's supported options. Glitchless logic. Kokiri Forest and the "
+      "Deku Tree are open, the Rainbow Bridge needs all six medallions, Ganon's trials are off and you start with "
+      "Ganon's Boss Key. Swords, ocarinas, the Gerudo card and the trade items are shuffled, MM keys stay in their "
+      "dungeons, a few ice traps hide among both games' items and MM starts with no items." },
     { CommunityPreset::Beginner, "Beginner", "Easier access, strong hints, shared upgrades",
-      "Adapted from OoTMM's Beginner preset. Start with both ocarinas, Zelda's Letter, Prelude of Light, the Hylian "
-      "Shield, Soaring and supplies. Share the upgrades, masks and songs OoTMM's Beginner shares where Combo Ship has "
-      "them. The Door of Time and Kakariko gate are open, one carpenter needs rescuing, the Scarecrow needs no song, "
-      "shops open at any hour and the Bean Seller sells beans. Maps and compasses start collected and OoTMM's junk "
-      "checks hold only junk. Combo Ship does not pre-complete dungeons." },
+      "Adapted from OoTMM's Beginner preset. Start with both ocarinas, Zelda's Letter, Prelude of Light, a random "
+      "song from Impa, the Hylian Shield, Soaring and supplies. Share the upgrades, masks and songs OoTMM's Beginner "
+      "shares where Combo Ship has them. The Door of Time and Kakariko gate are open, one carpenter needs rescuing, "
+      "the Scarecrow needs no song, shops open at any hour and the Bean Seller sells beans. Maps, compasses and MM's "
+      "stray fairies start collected and OoTMM's junk checks hold only junk. Combo Ship does not pre-complete "
+      "dungeons." },
     { CommunityPreset::Allsanity, "Allsanity", "Explore a much larger check pool",
       "Adapted from OoTMM's Allsanity preset. Beatable-only logic. Keys, souls, shops, tokens, NPC rewards, fairies, "
       "freestanding items and scenery drops are shuffled in both worlds, plus OoT's pond fish, with random Master "
       "Quest dungeons and OoT key rings. Adds the MM spells, boots and tunics and the ocarina buttons, all shared "
-      "across games. MM starts with no items. Entrance shuffle, Skip Child Zelda, Cross-Games Age and OoTMM item "
-      "families Combo Ship lacks are left out." },
+      "across games. MM starts with no items. Entrance shuffle, Skip Child Zelda, Cross-Games Age, silver rupee "
+      "pouches, MM key rings and OoTMM item families Combo Ship lacks are left out." },
 };
 struct PresetOption {
     const char* key;
@@ -104,8 +105,10 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
         { "gRandoSettings.ShuffleGerudoToken", 1 }, // shuffleGerudoCard, data.ts:1000
         { "gRandoSettings.ShuffleZeldasLetter", 1 },
         { "gRandoSettings.ShuffleAdultTrade", 1 },
-        { "gRandoSettings.ShuffleWeirdEgg", 1 },     // Malon's check is shuffled (pool_oot.csv:122)
-        { "gRandoSettings.ShuffleMerchants", 1 },    // the Bean Seller is shuffled (fixer.ts:43)
+        { "gRandoSettings.ShuffleWeirdEgg", 1 }, // Malon's check is shuffled (pool_oot.csv:122)
+        // Bean Merchant Only: the Bean Seller is shuffled, Granny and the Carpet Merchant stay vanilla (fixer.ts:43).
+        // So does Medigoron, whose Giant's Knife OoTMM shuffles (pool_oot.csv:445): no choice shuffles him alone.
+        { "gRandoSettings.ShuffleMerchants", 1 },
         { "gRandoSettings.ShuffleScrubs", 1 },       // the three one-time scrubs are shuffled (fixer.ts:73-76)
         { "gRandoSettings.DoorOfTime", 1 },          // closed: only the Song of Time, data.ts:1169
         { "gRandoSettings.ClosedForest", 2 },        // dekuTree open, data.ts:1194
@@ -203,6 +206,8 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                              { "gRandoSettings.ShuffleKeyRingsBottomOfTheWell", 1 },
                              { "gRandoSettings.ShuffleKeyRingsGTG", 1 },
                              { "gRandoSettings.ShuffleKeyRingsGanonsCastle", 1 },
+                             // smallKeyRingMm and silverRupeePouches random (presets.ts:445,447) stay off: Combo
+                             // Ship's MM key rings and silver pouches are plain on/off options, with no coin flip.
                              { "gRandoSettings.SilverRupeeShuffle", 2 },         // presets.ts:446
                              { "gRando.Options.RO_PLACEMENT_STRAY_FAIRIES", 0 }, // presets.ts:449-450
                              { "gRandoSettings.ShuffleGanonBossKey", 5 },        // presets.ts:451

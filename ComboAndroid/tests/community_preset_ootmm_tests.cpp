@@ -290,7 +290,7 @@ int main(int argc, char** argv) {
                { "gRandoSettings.ShuffleGerudoToken", 1 },                     // shuffleGerudoCard, data.ts:1000
                { "gRandoSettings.ShuffleZeldasLetter", 1 },                    // an ordinary location
                { "gRandoSettings.ShuffleWeirdEgg", 1, "Shuffled" },            // Malon's check (pool_oot.csv:122)
-               { "gRandoSettings.ShuffleMerchants", 1, "Bean Merchant Only" }, // Granny and Carpet pinned
+               { "gRandoSettings.ShuffleMerchants", 1, "Bean Merchant Only" }, // Granny, Carpet and Medigoron vanilla
                { "gRandoSettings.DoorOfTime", 1, "Song only" },                // closed, data.ts:1169
                { "gRandoSettings.ClosedForest", 2, "Off" },                    // dekuTree open, data.ts:1194
                { "gRandoSettings.EnableBombchuDrops", 0 },                     // bombchuBehaviorOot free
