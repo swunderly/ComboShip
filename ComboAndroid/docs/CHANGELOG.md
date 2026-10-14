@@ -12,6 +12,12 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## 0.4.9 - 2026-10-14
+
+- **More pickups now say "This is your Nth.", as in OoTMM:** small keys in both games (counting that dungeon's keys found), MM Swamp and Ocean Skulltula tokens, MM Pieces of Heart (pieces toward the next heart) and MM Triforce Pieces. OoT small keys get the count in every key setting, including keys kept in their own dungeon. OoT Gold Skulltula tokens and OoT Triforce Pieces already showed their totals.
+
+Tested: the changed files build. Released for phone testing without host tests or an emulator run. Not tested on a phone.
+
 ## 0.4.8 - 2026-10-14
 
 - **Picking up a shuffled silver rupee now also says how many you have for that room**, as OoTMM does: "You found a Silver Rupee (Spirit Child)! This is your 3rd." A Silver Pouch shows no count.
