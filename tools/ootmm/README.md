@@ -158,3 +158,26 @@ names the `PG_ER` hot-water patch target, `Interface_StartBottleTimer` at
 `mm_er_enabled_sites_flags_and_exports` and
 `mm_er_hot_water_never_cools_under_entrance_shuffle` check it against the contract,
 the production sources and, when it is present, the pinned checkout.
+
+`compare_m1_pinned_node.py` cross-checks that fixture against OoTMM's own TypeScript,
+run by the pinned portable Node v24.21.0 (no npm install; packages come from the
+checkout's `node_modules`). `run_pinned_entrance_pools.mts` serves every OoTMM source
+and data file from its Git blob at the pin, rebuilds `@ootmm/core`'s data with the
+pinned build script in memory, appends one export line to `entrances.ts` so
+`WorldShuffler` and `LogicPassEntrances` can be driven, and builds each combination's
+world as OoTMM does (`options()`, `worldState`, price and song events). It records the
+pools `placePools` builds, the `isAssignableConstraints` candidates, the
+`placeSingleExpr` reset gate, dead ends, `er_enabled` / `isEntranceShuffle`, the
+`changedWorld` + `processRegions` region results, one seeded `WorldShuffler.run()`
+per combination, and the OoT Wallmaster sources of all 64 vanilla/MQ choices (with a
+real attempt for every capacity case). The comparer reports each disagreement with
+both values and the pinned file:line, and never edits the fixture:
+
+```sh
+python tools/ootmm/compare_m1_pinned_node.py --reference /path/to/ootmm-stable-32.3 \
+    --node /path/to/node-v24.21.0/node.exe --out report.json
+```
+
+`entrance_m1_contract_matches_pinned_ootmm_run` runs it (about 100 s on 8 worker
+threads) and checks that the comparer names altered fixture values and altered pinned
+facts; it reports SKIPPED without the pinned Node or the checkout.

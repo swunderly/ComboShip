@@ -142,6 +142,11 @@ set_tests_properties(entrance_temple_pinned_lemmas PROPERTIES SKIP_REGULAR_EXPRE
 combo_python_test(entrance_m1_pinned_contract_fixture entrance_m1_contract_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_m1_contract")
 set_tests_properties(entrance_m1_pinned_contract_fixture PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+# Local only: runs OoTMM's own pool code with the pinned portable Node (tooling/node) on the exact checkout, and
+# reports SKIPPED without them.
+combo_python_test(entrance_m1_contract_matches_pinned_ootmm_run entrance_m1_pinned_node_crosscheck_tests.py
+    --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_m1_pinned_node")
+set_tests_properties(entrance_m1_contract_matches_pinned_ootmm_run PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 combo_harness_test(oot_temple_probe_active_logic_scope temple_active_logic_tests.py)
 # ABI-only evidence (non-engine): bit order and target of the read-only diagnostic.
 combo_harness_test(oot_temple_ages_getter_abi_only oot_temple_ages_getter_tests.py)
@@ -762,3 +767,5 @@ combo_json_harness_test(headless_entrance_saved_settings_and_recorded_replay hea
 set(COMBO_TEST_TIMEOUT 300 CACHE STRING "Default per-test timeout in seconds")
 get_property(combo_all_tests DIRECTORY PROPERTY TESTS)
 set_tests_properties(${combo_all_tests} PROPERTIES TIMEOUT ${COMBO_TEST_TIMEOUT})
+# The pinned OoTMM run builds 130 worlds (about 100 s on 8 Node worker threads when the machine is otherwise idle).
+set_tests_properties(entrance_m1_contract_matches_pinned_ootmm_run PROPERTIES TIMEOUT 900)
