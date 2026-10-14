@@ -8,9 +8,12 @@ second tap seemed to apply it. This runs the production WriteInteger and ApplyCo
 - the preset refreshes the pool view once, after its writes, and still re-applies the option policy after each write;
 - the preset's values are written, including Goal (Ganon & Majora), and the file is marked for saving;
 - its gameplay rules turn on in play and in logic, other rules leave logic, and its junked checks replace the file's;
+- its MM starting items, built by the production MM_DumpProfileCatalog block (BenPort.cpp), are OoTMM's and are
+  written, and a file without its own list keeps 2Ship's four;
 - an ordinary edit outside a preset still refreshes the pool view.
 """
 import argparse
+import re
 import subprocess
 from pathlib import Path
 import hostcxx
@@ -38,17 +41,43 @@ def function(start):
 
 assert hostcxx.contains(text, 'if (MenuConfirm("Apply preset?", presetText.c_str(), "Apply preset") && Editable())'
                               ' ApplyCommunityPreset(preset);'), 'Home no longer applies presets through the tested code'
+# MM_DumpProfileCatalog's starting items per preset (BenPort.cpp), with each item's spoiler name from 2Ship's table.
+benport = (source / 'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8')
+begin = hostcxx.find(benport, 'const std::vector<RandoItemId> base =')
+finish = hostcxx.find(benport, 'data["defaults"]["gRando.StartingItems"] = itemNames(base);', begin)
+mm_starting_items = benport[begin:benport.index(';', finish) + 1]
+spoiler = dict(re.findall(r'RI\((RI_\w+),\s*"[^"]*",\s*("(?:[^"\\]|\\.)*")',
+                          (source / 'mm/2s2h/Rando/StaticData/Items.cpp').read_text(encoding='utf-8')))
+item_ids = sorted(set(re.findall(r'\bRI_\w+\b', mm_starting_items)))
 harness = r'''
 #include <nlohmann/json.hpp>
 #include <cstdio>
 #include <cstring>
+#include <map>
 #include <stdexcept>
 #include <string>
+#include <vector>
 #include "ProfileOotOptionPolicy.h"
 #include "rando/ComboPresets.h"
 #include "rando/GameplayRules.h"
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/GenerationRules.h"
+enum RandoItemId { ''' + ', '.join(item_ids) + r''' };
+namespace Rando::StaticData {
+struct Item {
+    const char* spoilerName;
+};
+static const std::map<RandoItemId, Item> Items = { ''' + \
+    ', '.join(f'{{ {item}, {{ {spoiler[item]} }} }}' for item in item_ids) + r''' };
+} // namespace Rando::StaticData
+static const char* MM_ProfileCatalogText(const char* value) {
+    return value ? value : "";
+}
+static nlohmann::json MmStartingItemsCatalog() {
+    nlohmann::json data;
+''' + mm_starting_items + r'''
+    return data;
+}
 namespace ComboRando::ProfileUI {
 using Json = nlohmann::json;
 static int selected = 0, view = 0, policies = 0, pools = 0;
@@ -79,12 +108,24 @@ int main() {
         // The catalog as the launcher exports it: native defaults, and the presets with their writes.
         catalog["oot"]["defaults"] = { { "gRandoSettings.LogicRules", 0 }, { "gRandoSettings.ShuffleSongs", 0 },
                                        { "gRandoSettings.ExcludedLocations", "" } };
-        catalog["mm"]["defaults"] = { { "gRando.Options.RO_LOGIC", 0 }, { "gRando.StartingItems", Json::array() },
+        // MM's starting items: OoTMM's Default and Allsanity start with nothing (startingItems {}), Beginner with two
+        // swords, the shared Hylian Shield, the Ocarina, Soaring and the Song of Time (presets.ts:1023-1032,1059).
+        const Json mm = MmStartingItemsCatalog();
+        const Json base = Json::array({ "Progressive Sword", "Hero's Shield", "Ocarina of Time", "Song of Time" });
+        Require(mm.at("defaults").at("gRando.StartingItems") == base,
+                "a file without its own MM list lost 2Ship's start");
+        Json beginner = base;
+        beginner.push_back("Progressive Sword");
+        beginner.push_back("Song of Soaring");
+        Require(mm.at("presetStartingItems") ==
+                    Json::object({ { "0", Json::array() }, { "1", beginner }, { "2", Json::array() } }),
+                "a preset's MM starting items are not OoTMM's");
+        catalog["mm"]["defaults"] = { { "gRando.Options.RO_LOGIC", 0 },
+                                      { "gRando.StartingItems", mm.at("defaults").at("gRando.StartingItems") },
                                       { "gRando.ExcludedChecks", Json::array() } };
-        for (const auto& preset : kCommunityPresets) {
+        catalog["mm"]["presetStartingItems"] = mm.at("presetStartingItems");
+        for (const auto& preset : kCommunityPresets)
             catalog["combo"]["presets"].push_back(CommunityPresetJson(preset)); // as ProfileComboCatalog exports it
-            catalog["mm"]["presetStartingItems"][std::to_string(int(preset.id))] = Json::array({ preset.name });
-        }
         for (const auto& preset : catalog["combo"]["presets"]) {
             // A file whose next seed was a 12-piece Triforce Hunt with an MM option, junked checks, a logic rule and
             // the hidden Shared Ocarina (an old import) of its own.
@@ -126,8 +167,9 @@ int main() {
             Require(ReadInteger("gRando.Options.RO_SHUFFLE_COWS", -1) == preset.at("writes").value(
                         "gRando.Options.RO_SHUFFLE_COWS", -1),
                     "a preset kept an MM option it does not set");
-            Require(document["mm"]["settings"]["gRando.StartingItems"] == Json::array({ preset.at("label") }),
-                    "a preset's starting items were not written");
+            Require(document["mm"]["settings"]["gRando.StartingItems"] ==
+                        mm.at("presetStartingItems").at(std::to_string(preset.at("id").get<int>())),
+                    "a preset's MM starting items were not written");
         }
         // An ordinary edit refreshes the pool view at once, as before.
         policies = pools = 0;
