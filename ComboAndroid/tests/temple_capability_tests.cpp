@@ -1,7 +1,8 @@
 // The Temple probe capability gate and code mapping with the real Shuffler
 // (Shuffle.h), registry, hidden settings model and TempleAdapter.h. Native
 // entry points are fakes here; the native probe itself is covered by the
-// temple_probe_* harnesses.
+// temple_probe_* harnesses, and the production wiring (TempleNative.h) by
+// temple_native_wiring_tests.py.
 #include "rando/entrances/OotmmSettings.h"
 #include "rando/entrances/TempleAdapter.h"
 #include <cassert>

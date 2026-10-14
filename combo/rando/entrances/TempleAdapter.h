@@ -1,7 +1,8 @@
 // Combo side of the generation-only opposite-age Temple probe (soh TempleProbe.cpp): the capability
 // gate that must run before any Shuffler is built or any random number drawn, the foreign starting
-// items, and the mapping of the native return codes for Bindings::validateAgeTemple. Only host tests
-// use it: generation does not assign validateAgeTemple, so OoT/Both entrance logic fails closed.
+// items, and the mapping of the native return codes for Bindings::validateAgeTemple. Production code
+// reaches it only through TempleNative.h, which only UnifiedBridge.h may use; nothing assigns
+// validateAgeTemple yet, so OoT/Both entrance logic still fails closed.
 #pragma once
 #include "OotEdgeBindingNames.h"
 #include "TempleCandidate.h"
