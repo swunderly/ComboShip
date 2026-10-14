@@ -25,6 +25,18 @@
       "fork": { "file": "mm/2s2h/Rando/Logic/Logic.h", "define": "ER_ENABLED", "body": "Rando::Logic::NativeMmErEnabled()" }
     }
   ],
+  "carriers": [
+    {
+      "pinned": { "file": "data/macros/macros_mm.yml", "line": 269, "name": "has_hot_water_mtn" },
+      "fork": {
+        "file": "mm/2s2h/Rando/Logic/Logic.h", "define": "CAN_BRING_HOT_WATER_NORTH",
+        "before": "(CAN_ACCESS(HOT_SPRING_WATER) && (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) || (CAN_PLAY_SONG(SOARING) && CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE)) || CAN_USE_FARORE))",
+        "body": "((CAN_ACCESS(HOT_SPRING_WATER) && (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) || (CAN_PLAY_SONG(SOARING) && CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE)) || CAN_USE_FARORE)) || HAS_HOT_WATER_ER)"
+      },
+      "sites": ["data/world/mm/overworld/twin_island.yml:14", "data/world/mm/overworld/twin_island.yml:19"],
+      "why": "CHECK stringifies its condition (Logic.h, LogicString(#condition)) and the MM Check Tracker shows it as the check's tooltip in every build (CheckTracker.cpp Init and CheckTrackerDrawNonLogicalList). Carrying has_hot_water_er in the macro keeps the Goron Elder's text as it was in 0.4.5. Under COMBO_BUILD only the two Twin Islands statements read this macro, each with HAS_BOTTLE, and HAS_HOT_WATER_ER includes HAS_BOTTLE, so each equals its old text with HAS_HOT_WATER_ER ORed beside the hot water alternative, where OoTMM has it (beside has_hot_water_mtn)."
+    }
+  ],
   "sites": [
     {
       "pinned": { "file": "data/macros/macros_mm.yml", "line": 221, "uses": ["has_hot_water_er", "trick_sht_hot_water"] },
@@ -183,11 +195,13 @@
       "status": "mapped",
       "fork": {
         "file": "mm/2s2h/Rando/Logic/Regions/North.cpp", "region": "RR_PATH_TO_GORON_VILLAGE",
+        "via": "CAN_BRING_HOT_WATER_NORTH",
         "before": "EXIT(ENTRANCE(GROTTOS, 5), ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH))",
-        "after": "EXIT(ENTRANCE(GROTTOS, 5), ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH) || HAS_HOT_WATER_ER)",
+        "after": "EXIT(ENTRANCE(GROTTOS, 5), ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH))",
         "alternative": "(HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH)"
       },
-      "effect": "adds"
+      "effect": "adds",
+      "note": "The statement keeps its text; the term comes through CAN_BRING_HOT_WATER_NORTH (carriers)."
     },
     {
       "pinned": {
@@ -198,11 +212,13 @@
       "status": "mapped",
       "fork": {
         "file": "mm/2s2h/Rando/Logic/Regions/North.cpp", "region": "RR_PATH_TO_GORON_VILLAGE",
+        "via": "CAN_BRING_HOT_WATER_NORTH",
         "before": "CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_FIRE_SHORT_RANGE || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE))))",
-        "after": "CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_FIRE_SHORT_RANGE || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE) || HAS_HOT_WATER_ER)))",
+        "after": "CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_FIRE_SHORT_RANGE || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE))))",
         "alternative": "(CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE)"
       },
-      "effect": "adds"
+      "effect": "adds",
+      "note": "The Check Tracker shows this CHECK's condition text as a tooltip, so it keeps its 0.4.5 text; the term comes through CAN_BRING_HOT_WATER_NORTH (carriers)."
     }
   ],
   "runtime": [

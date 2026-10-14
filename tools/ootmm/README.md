@@ -150,7 +150,9 @@ layout format.
 logic line of the contract's `erLogicSites` (the macro closure of `er_enabled`) with
 the fork statement that now carries `has_hot_water_er` or the reason it has none: the
 Snowhead lines reach it only through `trick(MM_SHT_HOT_WATER)`, which the port does
-not have, and the two Goron Elder lines share the fork's one Elder check. It also
+not have, and the two Goron Elder lines share the fork's one Elder check. The two
+Twin Islands lines carry it through `CAN_BRING_HOT_WATER_NORTH` (`carriers`), so the
+Goron Elder's condition text, which the MM Check Tracker shows, stays as it was. It also
 names the `PG_ER` hot-water patch target, `Interface_StartBottleTimer` at
 `0x8010eba0`, from the MM decomp's US symbol map and OoTMM's own link addresses.
 `mm_er_enabled_sites_flags_and_exports` and

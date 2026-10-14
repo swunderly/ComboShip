@@ -7,10 +7,14 @@ it has none. This checks:
     Snowhead trick, which the port does not have; the shared Goron Elder lines have the same thaw
     alternatives;
   - Logic.h defines ER_ENABLED and HAS_HOT_WATER_ER as the receipt maps them (false without COMBO_BUILD),
-    and nothing else in the MM logic uses them;
+    and nothing else in the MM logic uses them; a carrier macro (CAN_BRING_HOT_WATER_NORTH) is its old
+    body with HAS_HOT_WATER_ER ORed on, and in COMBO_BUILD code only its receipt statements read it;
+  - no CHECK names the ER terms: CHECK stringifies its condition and the MM Check Tracker shows that text
+    as a tooltip in every build, so release builds must keep it;
   - each mapped statement is in its region or function; with er_enabled off it evaluates exactly as
     before; with it on it gains a route (or is already subsumed, as the receipt says); and the term sits
-    beside the same existing alternative in the fork as has_hot_water_er sits in OoTMM;
+    beside the same existing alternative in the fork as has_hot_water_er sits in OoTMM (for a statement
+    carried by a macro: its old text with the term ORed beside the alternative equals its new meaning);
   - EntranceRuntimeFlags.h ErEnabled and IsEntranceShuffle against the fixture's 66 combinations
     (Water Voids alone and Anywhere alone are both false), and, with the OoTMM checkout, term by term
     against macros_mm.yml:305 and helpers.ts:6-55;
@@ -107,17 +111,78 @@ for entry in receipt['macros']:
 for define in ('ER_ENABLED', HER):
     check(re.search(r'#else\s*\n(?:#define[^\n]*\n)*#define ' + define + r' false\n', logic_h) is not None,
           f'Logic.h {define} is not false without COMBO_BUILD')
-check(len(re.findall(r'\bHAS_HOT_WATER_ER\b', logic_h)) == 2 and len(re.findall(r'\bER_ENABLED\b', logic_h)) == 3,
-      'Logic.h uses ER_ENABLED or HAS_HOT_WATER_ER outside their defines')
+check(len(re.findall(r'\bHAS_HOT_WATER_ER\b', logic_h)) == 2 + len(receipt['carriers']) and
+      len(re.findall(r'\bER_ENABLED\b', logic_h)) == 3,
+      'Logic.h uses ER_ENABLED or HAS_HOT_WATER_ER outside their defines and the carriers')
+# A carrier is its old body with the term ORed on, nothing else, and carries exactly its receipt rows.
+carriers = {c['fork']['define']: c for c in receipt['carriers']}
+for define, carrier in carriers.items():
+    body = ''.join(t[1] for t in macros_combo.get(define, (None, []))[1])
+    check(cexpr.squash(body) == cexpr.squash(carrier['fork']['body']), f'Logic.h {define} is not {carrier["fork"]["body"]}')
+    check(cexpr.tokenize(carrier['fork']['body']) ==
+          [('op', '(')] + cexpr.tokenize(carrier['fork']['before']) + [('op', '||'), ('id', HER), ('op', ')')],
+          f'{define}: the receipt body is not its old body || {HER}')
+    check(sorted(carrier['sites']) == sorted(n for n, s in rows.items() if s.get('fork', {}).get('via') == define),
+          f'{define}: carries other rows than the receipt lists')
+
+
+def combo_lines(text):
+    """The lines of text that a COMBO_BUILD compile sees (#else of #ifdef COMBO_BUILD dropped)."""
+    out, stack = [], []
+    for line in text.replace('\r\n', '\n').split('\n'):
+        directive = line.strip()[1:].split() if line.strip().startswith('#') else []
+        word = directive[0] if directive else ''
+        if word in ('ifdef', 'ifndef'):
+            stack.append(None if directive[1] != 'COMBO_BUILD' else word == 'ifdef')
+        elif word == 'if':
+            stack.append(None)
+        elif word == 'elif':
+            stack[-1] = None
+        elif word == 'else':
+            stack[-1] = None if stack[-1] is None else not stack[-1]
+        elif word == 'endif':
+            stack.pop()
+        elif all(x is not False for x in stack):
+            out.append(line)
+    return out
+
+
 afters = [cexpr.squash(s['fork']['after']) for s in receipt['sites'] if s['status'] == 'mapped']
+carried = {d: [cexpr.squash(rows[n]['fork']['after']) for n in c['sites'] if n in rows] for d, c in carriers.items()}
+listed = lambda line, statements: any(cexpr.squash(line).rstrip(',;') in s or s in cexpr.squash(line) for s in statements)
 for path in sorted((root / 'mm/2s2h').rglob('*.[ch]*')):
     if path.name == 'Logic.h':
         continue
     text = path.read_text(encoding='utf-8', errors='replace')
     for line in cexpr.strip_comments(text).splitlines():
         if re.search(r'\b(?:HAS_HOT_WATER_ER|ER_ENABLED)\b', line):
-            check(any(cexpr.squash(line).rstrip(',;') in after or after in cexpr.squash(line) for after in afters),
-                  f'{path.relative_to(root)}: unlisted er_enabled site {line.strip()[:100]}')
+            check(listed(line, afters), f'{path.relative_to(root)}: unlisted er_enabled site {line.strip()[:100]}')
+    for line in combo_lines(cexpr.strip_comments(text)):
+        for define, statements in carried.items():
+            if re.search(r'\b' + define + r'\b', line):
+                check(listed(line, statements), f'{path.relative_to(root)}: {define} carries {HER} to an unlisted '
+                      f'statement {line.strip()[:100]}')
+
+# ---- The MM Check Tracker shows every CHECK's condition text (Logic.h CHECK: LogicString(#condition), which
+# expands no macro; CheckTracker.cpp Init keeps it for the tooltip) in every build: no CHECK names an ER term.
+check_define = logic_h[logic_h.index('#define CHECK(check, condition)'):]
+check('LogicString(#condition)' in check_define[:check_define.index('\n#', 1)],
+      'Logic.h CHECK no longer stringifies its condition: revisit the CHECK rule below')
+check('accessLogicFuncs[randoCheckId] = accessLogicFunc.second;' in read('mm/2s2h/Rando/CheckTracker/CheckTracker.cpp'),
+      'CheckTracker.cpp no longer shows CHECK condition text: revisit the CHECK rule below')
+for path in sorted((root / 'mm/2s2h/Rando/Logic').rglob('*.[ch]*')):
+    text = path.read_text(encoding='utf-8', errors='replace')
+    masked = re.sub(r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"', lambda m: ' ' * len(m.group()), text)
+    for m in re.finditer(r'\bCHECK\s*\(', masked):
+        depth = 0
+        for end in range(m.end() - 1, len(masked)):
+            depth += (masked[end] == '(') - (masked[end] == ')')
+            if depth == 0:
+                break
+        call = masked[m.start():end + 1]
+        check(re.search(r'\b(?:HAS_HOT_WATER_ER|ER_ENABLED)\b', call) is None,
+              f'{path.relative_to(root)}: a CHECK names an ER term, which changes its Check Tracker text in release '
+              f'builds; carry it in a macro instead: {" ".join(call.split())[:100]}')
 entrances_mm = read('mm/2s2h/Rando/Logic/ComboEntrancesMM.cpp')
 flags_h = read('combo/rando/entrances/EntranceRuntimeFlags.h')
 unified_h = read('combo/rando/entrances/MmUnifiedLayout.h')
@@ -200,23 +265,30 @@ for name, site in rows.items():
     fork = site['fork']
     text = read(fork['file'])
     macros = dict(macros_combo)
+    old_macros = dict(macros)  # before the change: a carrier with its old body
+    if 'via' in fork:
+        old_macros[fork['via']] = (None, cexpr.tokenize(carriers[fork['via']]['fork']['before']))
+        check(fork['before'] == fork['after'], f'{name}: a statement carried by {fork["via"]} changed its text')
     if 'region' in fork:
         scope = cexpr.region(text, fork['region'])
     else:
         scope = function_text(text, f'static bool {fork["function"]}(')
         local = re.search(r'const bool (\w+) = ([^;]+);', scope)
-        macros[local.group(1)] = (None, cexpr.tokenize(local.group(2)))
+        macros[local.group(1)] = old_macros[local.group(1)] = (None, cexpr.tokenize(local.group(2)))
         combo = scope[scope.index('#ifdef COMBO_BUILD'):scope.index('#else')]
         check(cexpr.squash(fork['after']) in cexpr.squash(combo), f'{name}: not in the COMBO_BUILD branch')
     check(cexpr.squash(fork['after']) in cexpr.squash(scope), f'{name}: {fork["file"]} lacks {fork["after"][:80]}')
-    before, after = tree(expression(fork['before']), macros), tree(expression(fork['after']), macros)
+    before, after = tree(expression(fork['before']), old_macros), tree(expression(fork['after']), macros)
     check(first_difference(before, after, 3000, rng, {ER_KEY: 0}) is None, f'{name}: changes with er_enabled off')
     changed = first_difference(before, after, 3000, rng, {ER_KEY: 1})
     if site['effect'] == 'adds':
         check(changed is not None, f'{name}: gains nothing with er_enabled on')
     else:
         check(site['effect'] == 'subsumed' and changed is None, f'{name}: not subsumed as the receipt says')
-    f_placed = tree(placed(expression(fork['after']), HER, fork['alternative']), macros)
+    if 'via' in fork:  # the old statement with the term ORed beside the alternative
+        f_placed = tree(placed(expression(fork['before']), HER, fork['alternative']), old_macros)
+    else:  # the term moved from where it is to beside the alternative
+        f_placed = tree(placed(expression(fork['after']), HER, fork['alternative']), macros)
     check(first_difference(after, f_placed, 3000, rng, {}) is None,
           f'{name}: HAS_HOT_WATER_ER is not beside {fork["alternative"]}')
     mapped += 1
@@ -248,7 +320,7 @@ if reference is not None:
         for macro in site['pinned']['uses']:
             check(re.search(r'\b' + macro + r'\b', line) is not None, f'{name}: OoTMM line lacks {macro}')
     macros_mm = lines('data/macros/macros_mm.yml')
-    for entry in receipt['macros']:
+    for entry in receipt['macros'] + receipt['carriers']:
         p = entry['pinned']
         check(macros_mm[p['line'] - 1].startswith(f'"{p["name"]}": "' + p.get('expression', '')),
               f'macros_mm.yml:{p["line"]} is not {p["name"]}')

@@ -594,16 +594,19 @@ bool HasUsableBottle();
     ComboRando::FaroreOracle::GbtGeyser(COMBO_MM_TRICK("GbtCentralGeyser"), CAN_USE_MAGIC_ARROW(FIRE), \
                                         CAN_USE_MAGIC_ARROW(ICE), CAN_USE_DINS_FIRE, CAN_USE_FARORE,   \
                                         CAN_USE_NAYRUS_LOVE)
-#define CAN_BRING_HOT_WATER_NORTH                                      \
-    (CAN_ACCESS(HOT_SPRING_WATER) &&                                   \
-     (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) || \
-      (CAN_PLAY_SONG(SOARING) && CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE)) || CAN_USE_FARORE))
 // OoTMM macros_mm.yml:305 er_enabled and :273 has_hot_water_er = er_enabled && has_hot_water_any.
 // has_hot_water_any is the one hot spring water event with a bottle, as CAN_BRING_HOT_WATER_NORTH
 // reads it; under entrance shuffle the water never cools (z_parameter.c). Sites:
 // tools/ootmm/er-enabled-sites.json.
 #define ER_ENABLED Rando::Logic::NativeMmErEnabled()
 #define HAS_HOT_WATER_ER (ER_ENABLED && HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER))
+// twin_island.yml:14, :19 list has_hot_water_er beside has_hot_water_mtn, so it is carried here: the
+// MM Check Tracker shows the Goron Elder CHECK's condition text, which stays as it was.
+#define CAN_BRING_HOT_WATER_NORTH                                                                 \
+    ((CAN_ACCESS(HOT_SPRING_WATER) &&                                                             \
+      (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) ||                           \
+       (CAN_PLAY_SONG(SOARING) && CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE)) || CAN_USE_FARORE)) || \
+     HAS_HOT_WATER_ER)
 #else
 #define CAN_USE_FIRE_SHORT_RANGE CAN_USE_MAGIC_ARROW(FIRE)
 #define CAN_BRING_HOT_WATER_NORTH CAN_ACCESS(HOT_SPRING_WATER)
