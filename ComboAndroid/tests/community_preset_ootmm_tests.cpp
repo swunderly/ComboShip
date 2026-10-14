@@ -201,8 +201,8 @@ int main(int argc, char** argv) {
           { "gRandoSettings.SkipScarecrowsSong", 1 },             // freeScarecrowOot, presets.ts:983
           { "gRandoSettings.BombchuBag", 2 },                     // bombchuBehaviorOot bagSeparate, presets.ts:987
           { "gRandoSettings.EnableBombchuDrops", 1 },             // bags add bombchu drops
-          { "gRandoSettings.ShuffleMerchants", 1 },               // OoTMM's default merchants and scrubs
-          { "gRandoSettings.ShuffleScrubs", 1 },                  //
+          { "gRandoSettings.ShuffleMerchants", 0 },               // Bean Seller plando'd to its bean, 1056
+          { "gRandoSettings.ShuffleScrubs", 1 },                  // OoTMM's default scrubs
           { "gRandoSettings.ShuffleGanonBossKey", 2 },            // ganonBossKey removed
           { "gRandoSettings.IceTrapPercent", 5 },                 //
           { "gRandoSettings.StartingOcarina", 2 }, // OOT_OCARINA and the plando'd Zelda's Letter, presets.ts:1029,1057
@@ -211,6 +211,8 @@ int main(int argc, char** argv) {
           { "gRandoSettings.StartingDekuShield", 1 },     // presets.ts:1025
           { "gRandoSettings.StartingSticks", 1 },         // presets.ts:1026
           { "gRandoSettings.StartingNuts", 1 },           // presets.ts:1024
+          { "gRandoSettings.HintDistribution", 3 },       // hints, presets.ts:1062-1072
+          { "gRando.Options.RO_HINTS_GOSSIP_STONE_STRENGTH", 75 },
           { "gRando.Options.RO_PLACEMENT_BOSS_KEYS", 1 } });
     // Exactly the shared items Beginner turns on (presets.ts:990-1008) that Combo Ship has; the rest stay separate.
     const std::set<std::string> beginnerShared = {
@@ -300,6 +302,7 @@ int main(int argc, char** argv) {
              { "gRandoSettings.MQDungeons", 3 },                 // mqDungeons random, presets.ts:697
              { "gRandoSettings.MQDungeonsDekuTree", 2 },
              { "gRandoSettings.MQDungeonsGanonsCastle", 2 } });
+    Absent(CommunityPreset::Allsanity, allsanity, { "gRando.Options.RO_HINTS_GOSSIP_STONE_STRENGTH" });
     // Every shared item, including the MM spells, boots and tunics with their MM items (presets.ts:601-654).
     for (int i = 0; i < SF_COUNT; ++i)
         if (i != SF_OCARINA)

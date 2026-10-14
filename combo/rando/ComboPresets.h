@@ -23,15 +23,15 @@ inline constexpr CommunityPresetInfo kCommunityPresets[] = {
     { CommunityPreset::Beginner, "Beginner", "Easier access, strong hints, shared upgrades",
       "Adapted from OoTMM's Beginner preset. Start with both ocarinas, Zelda's Letter, Prelude of Light, the Hylian "
       "Shield, Soaring and supplies. Share the upgrades, masks and songs OoTMM's Beginner shares where Combo Ship has "
-      "them. The Door of Time and Kakariko gate are open, one carpenter needs rescuing, the Scarecrow needs no song "
-      "and shops open at any hour. Maps and compasses start collected and OoTMM's junk checks hold only junk. Combo "
-      "Ship does not pre-complete dungeons." },
+      "them. The Door of Time and Kakariko gate are open, one carpenter needs rescuing, the Scarecrow needs no song, "
+      "shops open at any hour and the Bean Seller sells beans. Maps and compasses start collected and OoTMM's junk "
+      "checks hold only junk. Combo Ship does not pre-complete dungeons." },
     { CommunityPreset::Allsanity, "Allsanity", "Explore a much larger check pool",
       "Adapted from OoTMM's Allsanity preset. Beatable-only logic. Keys, souls, shops, tokens, NPC rewards, fairies, "
       "freestanding items and scenery drops are shuffled in both worlds, plus OoT's pond fish, with random Master "
-      "Quest dungeons and key rings. Adds the MM spells, boots and tunics and the ocarina buttons, all shared across "
-      "games. MM starts with no items. Entrance shuffle, Cross-Games Age and OoTMM item families Combo Ship lacks are "
-      "left out." },
+      "Quest dungeons and OoT key rings. Adds the MM spells, boots and tunics and the ocarina buttons, all shared "
+      "across games. MM starts with no items. Entrance shuffle, Skip Child Zelda, Cross-Games Age and OoTMM item "
+      "families Combo Ship lacks are left out." },
 };
 struct PresetOption {
     const char* key;
@@ -128,7 +128,6 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                                       { "gRandoSettings.CompleteMaskQuest", 2 },  // shared masks need OoT's in the pool
                                       { "gRandoSettings.BombchuBag", 2 },         // bagSeparate, presets.ts:557,987
                                       { "gRandoSettings.EnableBombchuDrops", 1 }, // bags add drops, data.ts:1980
-                                      { "gRando.Options.RO_HINTS_GOSSIP_STONE_STRENGTH", 75 },
                                   });
     if (preset == CommunityPreset::Beginner)
         SetPresetOptions(options,
@@ -144,7 +143,9 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                              { "gRandoSettings.ClosedForest", 1 },                   // presets.ts:977
                              { "gRandoSettings.FortressCarpenters", 1 },             // presets.ts:979
                              // kakarikoGate open and skipZelda (presets.ts:978,980): the letter is out of
-                             // the pool and Talon is awake.
+                             // the pool and Talon is awake. Zelda's Letter check holds the letter
+                             // (item_pool.cpp:344-346); Impa's song check, which OoTMM plandos to Prelude of
+                             // Light (presets.ts:1058), gives one random song at the start.
                              { "gRandoSettings.StartingZeldasLetter", 1 },
                              { "gRandoSettings.ShuffleZeldasLetter", 0 },
                              { "gRandoSettings.ShuffleWeirdEgg", 2 },
@@ -156,7 +157,11 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                              { "gRandoSettings.StartingDekuShield", 1 },
                              { "gRandoSettings.StartingSticks", 1 },
                              { "gRandoSettings.StartingNuts", 1 },
-                             { "gRandoSettings.HintDistribution", 3 }, // presets.ts:1061-1071
+                             { "gRandoSettings.ShuffleMerchants", 0 }, // Bean Seller plando'd to its Magic Bean, 1056
+                             // The custom hint list (presets.ts:1062-1072) gives 8 foolish hints and 3 item
+                             // hints where OoTMM's default (hints.ts:20-28) gives 5 and 1.
+                             { "gRandoSettings.HintDistribution", 3 },
+                             { "gRando.Options.RO_HINTS_GOSSIP_STONE_STRENGTH", 75 },
                          });
     if (preset == CommunityPreset::Allsanity)
         SetPresetOptions(options,
@@ -238,8 +243,11 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                              { "gRandoSettings.ShuffleFairySpots", 1 },      // presets.ts:505
                              { "gRandoSettings.ShopsanityPrices", 2 },       // weighted, presets.ts:507-508
                              { "gRandoSettings.ScrubsPrices", 2 },
-                             { "gRandoSettings.StartingAge", 2 },          // presets.ts:512
-                             { "gRandoSettings.ClosedForest", 1 },         // presets.ts:517
+                             { "gRandoSettings.StartingAge", 2 },  // presets.ts:512
+                             { "gRandoSettings.ClosedForest", 1 }, // presets.ts:517
+                             // skipZelda (presets.ts:526) is left out: with a shuffled letter, Start with Zelda's
+                             // Letter does not hand out Zelda's two checks (savefile.cpp:633-646) and opens the
+                             // Kakariko gate, which this preset keeps vanilla (presets.ts:523).
                              { "gRandoSettings.SkipScarecrowsSong", 1 },   // presets.ts:529
                              { "gRando.Options.RO_CROSS_GAME_FARORE", 1 }, // presets.ts:533
                              { "gRandoSettings.FullWallets", 1 },          // fillWallets, presets.ts:545
