@@ -27,6 +27,48 @@ extern "C" {
 extern s16 D_801CFF94[250];
 }
 
+// The count OoTMM's item add returns for an MM item, shown as "This is your Nth." (text_item_get.c:180-189):
+// a small key's dungeon keys found so far, a Swamp or Ocean token's count (30 at most), and a Piece of Heart's
+// pieces toward the next heart, 0 when it completes one (item_add.c). The message is built before the item is
+// given, so count the item being received.
+static int MmCountAfterReceiving(RandoItemId item) {
+    s32 dungeon;
+    switch (item) {
+        case RI_WOODFALL_SMALL_KEY:
+            dungeon = DUNGEON_SCENE_INDEX_WOODFALL_TEMPLE;
+            break;
+        case RI_SNOWHEAD_SMALL_KEY:
+            dungeon = DUNGEON_SCENE_INDEX_SNOWHEAD_TEMPLE;
+            break;
+        case RI_GREAT_BAY_SMALL_KEY:
+            dungeon = DUNGEON_SCENE_INDEX_GREAT_BAY_TEMPLE;
+            break;
+        case RI_STONE_TOWER_SMALL_KEY:
+            dungeon = DUNGEON_SCENE_INDEX_STONE_TOWER_TEMPLE;
+            break;
+        case RI_GS_TOKEN_SWAMP:
+        case RI_GS_TOKEN_OCEAN: {
+            const s16 count = Inventory_GetSkullTokenCount(item == RI_GS_TOKEN_SWAMP ? SCENE_KINSTA1 : SCENE_KINDAN2);
+            return count < 30 ? count + 1 : 0;
+        }
+        case RI_HEART_PIECE:
+            return (GET_QUEST_HEART_PIECE_COUNT + 1) % 4;
+        default:
+            return 0;
+    }
+    return std::max<int>(gSaveContext.save.shipSaveInfo.rando.foundDungeonKeys[dungeon], 0) + 1;
+}
+
+static std::string CountLine(int count) {
+    const int lastTwo = count % 100;
+    const char* suffix = (lastTwo >= 11 && lastTwo <= 13) ? "th"
+                         : lastTwo % 10 == 1              ? "st"
+                         : lastTwo % 10 == 2              ? "nd"
+                         : lastTwo % 10 == 3              ? "rd"
+                                                          : "th";
+    return "\nThis is your %r" + std::to_string(count) + suffix + "%w.";
+}
+
 #ifdef COMBO_BUILD
 
 // ComboShip: cache of MM checks that hold a foreign (OOT-bound) item, built from the pushed
@@ -209,6 +251,7 @@ void Rando::MiscBehavior::CheckQueue() {
                         RandoItemId randoItemId =
                             Rando::ConvertItem(randoSaveCheck.randoItemId, (RandoCheckId)CUSTOM_ITEM_PARAM);
                         std::string prefix = "You found";
+                        int count = MmCountAfterReceiving(randoItemId);
                         std::string message =
                             Rando::StaticData::GetItemName(randoItemId, true, (RandoCheckId)CUSTOM_ITEM_PARAM);
 
@@ -225,6 +268,9 @@ void Rando::MiscBehavior::CheckQueue() {
                                 prefix = "You";
                                 message = "completed the Triforce";
                             }
+                            // OoTMM counts every Triforce Piece (addItemTriforce, item_add.c); a completed Triforce
+                            // keeps its own message.
+                            count = prefix == "You" ? 0 : comboPieces;
 #else
                             if (gSaveContext.save.shipSaveInfo.rando.foundTriforcePieces + 1 >=
                                 RANDO_SAVE_OPTIONS[RO_TRIFORCE_PIECES_REQUIRED]) {
@@ -248,7 +294,8 @@ void Rando::MiscBehavior::CheckQueue() {
                         CustomMessage::Entry entry = {
                             .textboxType = 2,
                             .icon = Rando::StaticData::GetIconForZMessage(randoItemId),
-                            .msg = (prefix == "" ? "" : prefix + " ") + message + (randoItemId == RI_TRAP ? "" : "!"),
+                            .msg = (prefix == "" ? "" : prefix + " ") + message + (randoItemId == RI_TRAP ? "" : "!") +
+                                   (count > 0 && randoItemId != RI_TRAP ? CountLine(count) : ""),
                         };
 
                         if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {

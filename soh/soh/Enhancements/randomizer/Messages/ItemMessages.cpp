@@ -160,6 +160,48 @@ void BuildTriforceMessage(CustomMessage& msg) {
     msg.Format(ITEM_CUSTOM);
 }
 
+// The count OoTMM's item add returns for an OoT item: a single Silver Rupee's room count (sr.c:98-119), or a
+// small key's dungeon keys found so far, 0 once all are found (addSmallKeyOot, item_add.c). Other items: 0.
+static int OotCountAfterReceiving(RandomizerGet rg) {
+    if (const int silver = Rando::SilverRupees::CountAfterReceiving(rg))
+        return silver;
+    int scene;
+    int max;
+    switch (rg) {
+        case RG_FOREST_TEMPLE_SMALL_KEY:
+            scene = SCENE_FOREST_TEMPLE, max = FOREST_TEMPLE_SMALL_KEY_MAX;
+            break;
+        case RG_FIRE_TEMPLE_SMALL_KEY:
+            scene = SCENE_FIRE_TEMPLE, max = FIRE_TEMPLE_SMALL_KEY_MAX;
+            break;
+        case RG_WATER_TEMPLE_SMALL_KEY:
+            scene = SCENE_WATER_TEMPLE, max = WATER_TEMPLE_SMALL_KEY_MAX;
+            break;
+        case RG_SPIRIT_TEMPLE_SMALL_KEY:
+            scene = SCENE_SPIRIT_TEMPLE, max = SPIRIT_TEMPLE_SMALL_KEY_MAX;
+            break;
+        case RG_SHADOW_TEMPLE_SMALL_KEY:
+            scene = SCENE_SHADOW_TEMPLE, max = SHADOW_TEMPLE_SMALL_KEY_MAX;
+            break;
+        case RG_BOTTOM_OF_THE_WELL_SMALL_KEY:
+            scene = SCENE_BOTTOM_OF_THE_WELL, max = BOTTOM_OF_THE_WELL_SMALL_KEY_MAX;
+            break;
+        case RG_GERUDO_TRAINING_GROUND_SMALL_KEY:
+            scene = SCENE_GERUDO_TRAINING_GROUND, max = GERUDO_TRAINING_GROUND_SMALL_KEY_MAX;
+            break;
+        case RG_GERUDO_FORTRESS_SMALL_KEY:
+            scene = SCENE_THIEVES_HIDEOUT, max = GERUDO_FORTRESS_SMALL_KEY_MAX;
+            break;
+        case RG_GANONS_CASTLE_SMALL_KEY:
+            scene = SCENE_INSIDE_GANONS_CASTLE, max = GANONS_CASTLE_SMALL_KEY_MAX;
+            break;
+        default:
+            return 0;
+    }
+    const int found = std::max<int>(gSaveContext.ship.stats.dungeonKeys[scene], 0);
+    return found < max ? found + 1 : 0;
+}
+
 void BuildCustomItemMessage(Player* player, CustomMessage& msg) {
     int16_t rgid;
     msg = CustomMessage("You found [[article]][[color]][[name]]%w!", "Du hast [[article]][[color]][[name]]%w gefunden!",
@@ -189,9 +231,9 @@ void BuildCustomItemMessage(Player* player, CustomMessage& msg) {
     msg.Replace("[[article]]", article);
     msg.Replace("[[color]]", Rando::StaticData::RetrieveItem(static_cast<RandomizerGet>(rgid)).GetColor());
     msg.Replace("[[name]]", name);
-    // OoTMM adds "This is your Nth." for a single Silver Rupee (text_item_get.c:180-189). The message is built
-    // before the item is given, so count the rupee being received.
-    if (const int count = Rando::SilverRupees::CountAfterReceiving(static_cast<RandomizerGet>(rgid)); count > 0) {
+    // OoTMM adds "This is your Nth." for items whose add returns a count (text_item_get.c:180-189). The message
+    // is built before the item is given, so count the item being received.
+    if (const int count = OotCountAfterReceiving(static_cast<RandomizerGet>(rgid)); count > 0) {
         const int lastTwo = count % 100;
         const char* suffix = (lastTwo >= 11 && lastTwo <= 13) ? "th"
                              : lastTwo % 10 == 1              ? "st"
@@ -399,8 +441,8 @@ void BuildSmallKeyMessage(uint16_t* textId, bool* loadFromMessageTable) {
         OTRGlobals::Instance->gRandoContext->GetOption(RSK_GERUDO_KEYS).Is(RO_GERUDO_KEYS_VANILLA)) {
         return;
     }
-    if (player->getItemEntry.getItemId != RG_GERUDO_FORTRESS_SMALL_KEY &&
-        DUNGEON_ITEMS_CAN_BE_OUTSIDE_DUNGEON(RSK_KEYSANITY)) {
+    // Keys the randomizer gives use its message, which adds OoTMM's "This is your Nth." in every key setting.
+    if (player->getItemEntry.modIndex != MOD_RANDOMIZER) {
         return;
     }
     CustomMessage msg;
@@ -419,10 +461,7 @@ void RegisterItemMessages() {
                  (DUNGEON_ITEMS_CAN_BE_OUTSIDE_DUNGEON(RSK_BOSS_KEYSANITY) ||
                   DUNGEON_ITEMS_CAN_BE_OUTSIDE_DUNGEON(RSK_GANONS_BOSS_KEY)),
                  BuildBossKeyMessage);
-    COND_ID_HOOK(OnOpenText, TEXT_ITEM_KEY_SMALL,
-                 (OTRGlobals::Instance->gRandoContext->GetOption(RSK_GERUDO_KEYS).IsNot(RO_GERUDO_KEYS_VANILLA) ||
-                  DUNGEON_ITEMS_CAN_BE_OUTSIDE_DUNGEON(RSK_KEYSANITY)),
-                 BuildSmallKeyMessage);
+    COND_ID_HOOK(OnOpenText, TEXT_ITEM_KEY_SMALL, IS_RANDO, BuildSmallKeyMessage);
 }
 
 static RegisterShipInitFunc initFunc(RegisterItemMessages, { "IS_RANDO" });
