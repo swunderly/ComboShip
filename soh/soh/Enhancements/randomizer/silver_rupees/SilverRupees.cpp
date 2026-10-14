@@ -166,6 +166,18 @@ void AddPool(std::vector<RandomizerGet>& pool) {
             pool.insert(pool.end(), count, item);
     }
 }
+// The count a single Silver Rupee reaches once received: one more than now, capped at its room's total, as
+// SilverRupees_IncCount returns (sr.c:98-119). A pouch, or a puzzle this quest lacks, has no count (0).
+int CountAfterReceiving(RandomizerGet item) {
+    const auto row = FindItem(item);
+    if (!row || row->pouch)
+        return 0;
+    const auto puzzle = GetPuzzle(row->slot, IsMQ(row->slot));
+    if (!puzzle.count)
+        return 0;
+    const int count = gSaveContext.ship.quest.data.randomizer.silverRupeeCounts[row->slot];
+    return std::min<int>(count + 1, puzzle.count);
+}
 void DrawPhysical(Actor* actor, PlayState* play) {
     auto silver = reinterpret_cast<EnGSwitch*>(actor);
     const NativeCheck* check = nullptr;

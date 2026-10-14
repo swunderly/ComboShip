@@ -17,6 +17,7 @@ int PuzzleForItem(RandomizerGet item);
 bool HasPuzzle(Logic* logic, size_t slot);
 void LogicDelta(Logic* logic, RandomizerGet item, bool add);
 void AddPool(std::vector<RandomizerGet>& pool);
+int CountAfterReceiving(RandomizerGet item);
 } // namespace Rando::SilverRupees
 extern "C" {
 #endif

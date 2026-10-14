@@ -18,6 +18,7 @@
 #include "soh/Enhancements/randomizer/hook_handlers.h"
 #include "soh/Enhancements/randomizer/draw.h"
 #include "soh/Enhancements/randomizer/souls/OotSouls.h"
+#include "soh/Enhancements/randomizer/silver_rupees/SilverRupees.h"
 extern "C" int gComboGoalRequired;
 extern "C" int (*gComboOtherTriforceCount)(void);
 #endif
@@ -188,6 +189,17 @@ void BuildCustomItemMessage(Player* player, CustomMessage& msg) {
     msg.Replace("[[article]]", article);
     msg.Replace("[[color]]", Rando::StaticData::RetrieveItem(static_cast<RandomizerGet>(rgid)).GetColor());
     msg.Replace("[[name]]", name);
+    // OoTMM adds "This is your Nth." for a single Silver Rupee (text_item_get.c:180-189). The message is built
+    // before the item is given, so count the rupee being received.
+    if (const int count = Rando::SilverRupees::CountAfterReceiving(static_cast<RandomizerGet>(rgid)); count > 0) {
+        const int lastTwo = count % 100;
+        const char* suffix = (lastTwo >= 11 && lastTwo <= 13) ? "th"
+                             : lastTwo % 10 == 1              ? "st"
+                             : lastTwo % 10 == 2              ? "nd"
+                             : lastTwo % 10 == 3              ? "rd"
+                                                              : "th";
+        msg += "&This is your %r" + std::to_string(count) + suffix + "%w.";
+    }
     if (Rando::StaticData::RetrieveItem(static_cast<RandomizerGet>(rgid)).HasCustomIcon()) {
         msg.AutoFormat(ITEM_CUSTOM);
     } else {
