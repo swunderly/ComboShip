@@ -3,18 +3,18 @@
   "purpose": "Reviewed native anchors for the 23 OoT Wallmaster logic edges of OoTMM v32.3 (unit M1-12): one entry per edge with the native region the capture is evaluated in, the pinned condition in native helpers, the actor-room evidence and a status. tools/ootmm/export_oot_wallmaster_edges.py re-checks every claim against the pinned edge fixture, these sources and, locally, the extracted OoT archive.",
   "principle": "Prefer a native anchor plus the translated pinned condition. Atoms beyond the pinned edge condition are added only where the native anchor region contains places from which the capture is physically impossible without them (ingressAtoms, portAtoms). A combo-only node or event is proposed only where that cannot express the pinned source (a persistent event). The anchor's own native ingress is the port's dungeon logic and is compared, not rewritten.",
   "statuses": {
-    "ready": "native anchor and native condition exist today; M1-14 adds the edge",
+    "ready": "native anchor and native condition exist today; M1-14 adds the edge once no open blocker holds it (workList)",
     "needs-node": "M1-13 must add a COMBO_BUILD region copied from the pinned area first",
     "needs-event": "M1-13 must add COMBO_BUILD events copied from the pinned area first",
+    "needs-evidence": "the native anchor cannot be chosen until an open blocker supplies the actor position (relation provisional); no unit adds the edge",
     "false": "the pinned condition is false in the port (absent settings); no edge"
   },
   "relations": {
     "equal": "the native anchor is entered behind the same gates as the pinned source area",
     "native-stronger": "native needs more to enter the anchor; logic stays conservative",
-    "native-weaker": "native needs less; the entry says why that is the port's own sound rule",
     "native-rule": "the same fight or puzzle under the port's own kill or item rule",
     "equal-with-ingress-atom": "equal once the condition carries the listed ingress atoms",
-    "provisional": "the anchor waits for actor-position evidence (openBlockers)"
+    "provisional": "the anchor waits for actor-position evidence (openBlockers); status needs-evidence"
   },
   "predicateAtoms": {
     "soul_wallmaster": {
@@ -2401,7 +2401,7 @@
       "source": "OOT_WALLMASTER_SPIRIT_STATUE",
       "from": "OOT Spirit Temple Statue",
       "expression": "soul_wallmaster",
-      "status": "ready",
+      "status": "needs-evidence",
       "anchor": {
         "region": "RR_SPIRIT_TEMPLE_MQ_STATUE_ROOM",
         "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
@@ -2460,7 +2460,7 @@
           "pinned": true
         }
       ],
-      "note": "Provisional anchor: if the C17 log puts the trigger on an upper ledge, M1-14 must move the anchor to that native region (MQ_STATUE_ROOM_ADULT, MQ_POT_LEDGE or a hand) before this row is relied on."
+      "note": "Provisional anchor, status needs-evidence: no unit adds this edge until the C17 log shows the trigger position. If it is on an upper ledge the anchor moves to that native region (MQ_STATUE_ROOM_ADULT, MQ_POT_LEDGE or a hand); then the status becomes ready."
     },
     {
       "n": 22,
@@ -2623,7 +2623,7 @@
     "forestMqEastHallway": "Edges 17 and 18: no node. Anchor MQ_BETH_ROOM with SmallKeys(SCENE_FOREST_TEMPLE, 5) and the soul; M1-14 tests 4, 5 and 6 keys (4: no edge).",
     "ganonVanillaSpirit": "Edge 07: no node. Anchor SPIRIT_TRIAL_BEFORE_SWITCH with bombchu, soul and reflected light; M1-14 tests the no-Bow positive case.",
     "ganonMqEndingSuns": "Edge 19: needs-event, two COMBO_BUILD events in MQ_SPIRIT_TRIAL_AFTER_SWITCH copied from ganon_castle_mq.yml:275-276 (D6); M1-14 tests the zombie negatives.",
-    "coarseAreas": "Shadow (09), vanilla BotW (01) and vanilla Spirit (10, 11) are resolved with vanilla actor-room evidence: UPPER_HUGE_PIT, MIDDLE, RUPEE_BRIDGE_NORTH and 2F_MIRROR_ROOM. MQ Spirit statue (21) keeps a provisional main-floor anchor until C17.",
+    "coarseAreas": "Shadow (09), vanilla BotW (01) and vanilla Spirit (10, 11) are resolved with vanilla actor-room evidence: UPPER_HUGE_PIT, MIDDLE, RUPEE_BRIDGE_NORTH and 2F_MIRROR_ROOM. MQ Spirit statue (21) keeps a provisional main-floor anchor (needs-evidence) until C17.",
     "codexCorrection": "Edge 14: the Codex candidate RR_BOTW_MQ_PIT_CAGE is pinned \"Main Room Center Switch Corner\"; the pinned \"Pit Before Cage\" is native RR_BOTW_MQ_FLOORMASTER_ROOM."
   },
   "openBlockers": [
@@ -2648,7 +2648,14 @@
     }
   ],
   "workList": {
-    "M1-13": ["data/world/oot/dungeons_mq/ganon_castle_mq.yml:272"],
-    "M1-14": ["data/world/oot/dungeons/bottom_of_the_well.yml:23", "data/world/oot/dungeons/forest_temple.yml:138", "data/world/oot/dungeons/forest_temple.yml:144", "data/world/oot/dungeons/forest_temple.yml:184", "data/world/oot/dungeons/forest_temple.yml:198", "data/world/oot/dungeons/ganon_castle.yml:177", "data/world/oot/dungeons/ganon_castle.yml:69", "data/world/oot/dungeons/gerudo_training_grounds.yml:27", "data/world/oot/dungeons/shadow_temple.yml:62", "data/world/oot/dungeons/spirit_temple.yml:154", "data/world/oot/dungeons/spirit_temple.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91", "data/world/oot/dungeons_mq/forest_temple_mq.yml:178", "data/world/oot/dungeons_mq/forest_temple_mq.yml:393", "data/world/oot/dungeons_mq/forest_temple_mq.yml:401", "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89"]
+    "M1-13": [],
+    "M1-14": ["data/world/oot/dungeons/bottom_of_the_well.yml:23", "data/world/oot/dungeons/forest_temple.yml:138", "data/world/oot/dungeons/forest_temple.yml:144", "data/world/oot/dungeons/forest_temple.yml:184", "data/world/oot/dungeons/forest_temple.yml:198", "data/world/oot/dungeons/ganon_castle.yml:177", "data/world/oot/dungeons/ganon_castle.yml:69", "data/world/oot/dungeons/gerudo_training_grounds.yml:27", "data/world/oot/dungeons/shadow_temple.yml:62", "data/world/oot/dungeons/spirit_temple.yml:154", "data/world/oot/dungeons/spirit_temple.yml:71"],
+    "blocked": {
+      "C17": {
+        "M1-13": ["data/world/oot/dungeons_mq/ganon_castle_mq.yml:272"],
+        "M1-14": ["data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91", "data/world/oot/dungeons_mq/forest_temple_mq.yml:178", "data/world/oot/dungeons_mq/forest_temple_mq.yml:393", "data/world/oot/dungeons_mq/forest_temple_mq.yml:401", "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89"],
+        "needs-evidence": ["data/world/oot/dungeons_mq/spirit_temple_mq.yml:88"]
+      }
+    }
   }
 }

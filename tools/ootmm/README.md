@@ -209,12 +209,18 @@ reader and the runtime rule parser.
 per edge: the native `RR_*` anchor with file:line, the pinned condition in native
 helpers (soul via `Rando::Souls::Has`, lens with the area's lens trick, reflected light,
 Fire Arrows, bombchu; the port's absent `climb_anywhere` and `hookshot_anywhere` are
-false), the actor-room evidence and a status (ready, needs-node, needs-event, false).
-Its work list is the input of M1-13 (needs-node and needs-event) and M1-14 (ready).
+false), the actor-room evidence and a status (ready, needs-node, needs-event,
+needs-evidence, false). needs-evidence marks a provisional anchor that waits for actor
+positions. Its work list is the input of M1-13 (needs-node and needs-event) and M1-14
+(ready) only for edges no open blocker holds; every other edge waits under
+`workList.blocked.<blocker>` by unit until the blocker closes. No ingress relation may
+loosen the pinned ingress: where the native anchor is entered more freely, the
+condition carries the pinned ingress atom (equal-with-ingress-atom).
 The exporter refuses the export when an edge is missing or extra, a pinned expression
 or source differs, a status disagrees with the expression once absent settings are
-false, a ready condition lacks the native form of a kept atom, an anchor region is not
-defined at its cited line, or any cited evidence line moved.
+false, a condition's AND/OR tree is not the pinned expression in native helpers joined
+with its declared ingress and port atoms, an anchor region is not defined at its cited
+line, any cited evidence line moved, or the work list hands a blocked edge to a unit.
 
 Actor-room evidence comes from the user's own extracted OoT archive (`oot.o2r`,
 `scenes/nonmq/...`), read-only with SoH's binary scene-command layout; never from a ROM

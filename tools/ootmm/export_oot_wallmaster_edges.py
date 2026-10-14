@@ -7,12 +7,14 @@ the pinned macro and event definitions the edge expressions use. The extraction 
 reader (export_m1_contract.py) and the runtime rule parser (export_oot_wallmaster_sources.py).
 
 oot-wallmaster-anchor-audit.json is reviewed input, never generated. Every edge must have exactly one
-entry with the pinned expression and source, a status (ready, needs-node, needs-event, false), and for
-every status but false a native anchor region defined at its cited file:line, a native condition that
-contains the native form of every atom the pinned expression keeps once the port's absent settings
-are false, and evidence lines that still read as cited (pinned lines need the reference). With
---oot-archive the recorded actor-room evidence is also checked against the user's extracted OoT archive
-(read-only; never a ROM file). --check reports drift without writing.
+entry with the pinned expression and source, a status (ready, needs-node, needs-event, needs-evidence,
+false), and for every status but false a native anchor region defined at its cited file:line, a native
+condition whose AND/OR tree is the pinned expression (once the port's absent settings are false) in
+native helpers joined by && with the declared ingress and port atoms, and evidence lines that still
+read as cited (pinned lines need the reference). The work list hands M1-13 and M1-14 only edges no
+open blocker holds; the rest wait under their blocker. With --oot-archive the recorded actor-room
+evidence is also checked against the user's extracted OoT archive (read-only; never a ROM file).
+--check reports drift without writing.
 """
 from pathlib import Path
 import argparse
@@ -31,7 +33,11 @@ OUTPUT = 'tools/ootmm/oot-wallmaster-edges.json'
 AUDIT = 'tools/ootmm/oot-wallmaster-anchor-audit.json'
 MACROS_OOT = 'data/macros/macros_oot.yml'
 MACROS_COMMON = 'data/macros/macros_common.yml'
-STATUSES = ('ready', 'needs-node', 'needs-event', 'false')
+STATUSES = ('ready', 'needs-node', 'needs-event', 'needs-evidence', 'false')
+# The unit each live status feeds; an edge an open blocker holds waits under that blocker instead.
+STATUS_UNITS = {'needs-node': 'M1-13', 'needs-event': 'M1-13', 'ready': 'M1-14', 'needs-evidence': 'needs-evidence'}
+# Ingress comparisons the audit may use. None loosens the pinned ingress: copy OoTMM, never invent.
+RELATIONS = ('equal', 'native-stronger', 'native-rule', 'equal-with-ingress-atom', 'provisional')
 QUEST_DIRS = {'vanilla': 'data/world/oot/dungeons/', 'mq': 'data/world/oot/dungeons_mq/'}
 NATIVE_DIR = 'soh/soh/Enhancements/randomizer/location_access/dungeons/'
 NATIVE_SCENES = {'Forest': 'SCENE_FOREST_TEMPLE', 'Shadow': 'SCENE_SHADOW_TEMPLE', 'Spirit': 'SCENE_SPIRIT_TEMPLE',
@@ -59,7 +65,12 @@ def parse_expression(text):
             break
         tokens.append(match[1])
         pos = match.end()
-    tokens.append(None)
+    return parse_tokens(tokens, text)
+
+
+def parse_tokens(tokens, text):
+    """The &&/||/!/() tree over already split atom tokens (pinned or native); fails closed."""
+    tokens = tokens + [None]
     state = {'i': 0}
 
     def peek():
@@ -101,6 +112,65 @@ def parse_expression(text):
     if peek() is not None:
         raise ValueError(f'Trailing tokens in {text!r}')
     return tree
+
+
+NATIVE_NAME = re.compile(r'[A-Za-z_][A-Za-z0-9_]*(?:(?:::|->|\.)[A-Za-z_][A-Za-z0-9_]*)*')
+NATIVE_CHAIN = re.compile(r'(?:::|->|\.)[A-Za-z_][A-Za-z0-9_]*(?:(?:::|->|\.)[A-Za-z_][A-Za-z0-9_]*)*')
+
+
+def parse_native(text):
+    """A native C++ condition into the same tree; an atom is a name path with its call arguments, which
+    stay opaque ('logic->CanUse(RG_X)'); anything else (comparisons, ternaries, a bare lambda) fails closed."""
+    tokens, pos = [], 0
+    while True:
+        while pos < len(text) and text[pos].isspace():
+            pos += 1
+        if pos == len(text):
+            break
+        operator = next((op for op in ('&&', '||', '!', '(', ')') if text.startswith(op, pos)), None)
+        if operator:
+            tokens.append(operator)
+            pos += len(operator)
+            continue
+        match = NATIVE_NAME.match(text, pos)
+        if not match:
+            raise ValueError(f'Unsupported native condition syntax: {text!r}')
+        end = match.end()
+        while end < len(text) and text[end] == '(':
+            depth = 0
+            for end in range(end, len(text)):
+                depth += {'(': 1, ')': -1}.get(text[end], 0)
+                if depth == 0:
+                    break
+            if depth:
+                raise ValueError(f'Unbalanced native condition: {text!r}')
+            chain = NATIVE_CHAIN.match(text, end + 1)
+            end = chain.end() if chain else end + 1
+        tokens.append(text[pos:end])
+        pos = end
+    return parse_tokens(tokens, text)
+
+
+def canonical(tree):
+    """Flatten nested and/or, drop repeats and sort operands, so only the logical structure compares."""
+    if isinstance(tree, str):
+        return re.sub(r'\s+', '', tree)
+    if tree[0] == 'not':
+        return ('not', canonical(tree[1]))
+    parts = set()
+    for part in (canonical(t) for t in tree[1:]):
+        parts |= set(part[1:]) if isinstance(part, tuple) and part[0] == tree[0] else {part}
+    parts = sorted(parts, key=repr)
+    return parts[0] if len(parts) == 1 else (tree[0], *parts)
+
+
+def show(tree):
+    if isinstance(tree, str):
+        return tree
+    if tree[0] == 'not':
+        return '!' + (show(tree[1]) if isinstance(tree[1], str) else f'({show(tree[1])})')
+    return f' {"&&" if tree[0] == "and" else "||"} '.join(
+        show(t) if isinstance(t, str) or t[0] == 'not' else f'({show(t)})' for t in tree[1:])
 
 
 def atoms(tree):
@@ -344,11 +414,20 @@ def verify_anchor(check, anchor, edge, where):
         check.fail(f'{where}: anchor quest does not match the edge quest')
 
 
+def translate(tree, table):
+    """A reduced pinned tree with every atom replaced by the tree of its native translation."""
+    if isinstance(tree, str):
+        return parse_native(table[tree]['native'])
+    return (tree[0], *(translate(t, table) for t in tree[1:]))
+
+
 def verify_audit(audit, fixture, repo, blobs=None):
     """Return the list of problems; blobs (pinned path -> bytes) enables the pinned evidence lines."""
     check = Checker(repo, blobs)
     if audit.get('upstreamCommit') != PIN:
         check.fail('Audit was reviewed against another reference')
+    if set(audit.get('relations', {})) != set(RELATIONS):
+        check.fail(f'The relations list is not {list(RELATIONS)}: no relation may loosen the pinned ingress')
     atoms_table = audit.get('predicateAtoms', {})
     false_atoms = {name for name, entry in atoms_table.items() if entry.get('native') == 'false'}
     for name, entry in atoms_table.items():
@@ -376,7 +455,12 @@ def verify_audit(audit, fixture, repo, blobs=None):
     if set(entries) != set(edges):
         check.fail(f'Audit edges differ from the fixture: missing {sorted(set(edges) - set(entries))}, '
                    f'extra {sorted(set(entries) - set(edges))}')
-    blocked = {edge for blocker in audit.get('openBlockers', []) for edge in blocker.get('edges', [])}
+    blocked = {}
+    for blocker in audit.get('openBlockers', []):
+        for edge in blocker.get('edges', []):
+            if edge in blocked or not blocker.get('id'):
+                check.fail(f'Open blocker entry for {edge} is unnamed or not the only one')
+            blocked[edge] = blocker.get('id')
     verified_quests = audit.get('archive', {}).get('verifiedQuests', [])
     for edge_id in sorted(set(entries) & set(edges), key=lambda i: edges[i]['n']):
         entry, edge, where = entries[edge_id], edges[edge_id], f'edge {edges[edge_id]["n"]:02d} {edge_id}'
@@ -404,10 +488,19 @@ def verify_audit(audit, fixture, repo, blobs=None):
             check.fail(f'{where}: a {status} edge needs a native anchor')
         if status == 'false':
             continue
-        if (entry.get('ingress') or {}).get('relation') not in audit.get('relations', {}):
+        relation = (entry.get('ingress') or {}).get('relation')
+        if relation not in RELATIONS:
             check.fail(f'{where}: the ingress comparison needs a relation from the relations list')
+        if (relation == 'provisional') != (status == 'needs-evidence'):
+            check.fail(f'{where}: relation provisional and status needs-evidence come together, not {relation} '
+                       f'and {status}')
+        if status == 'needs-evidence' and ((entry.get('actorRoom') or {}).get('status') != 'pending' or
+                                           edge_id not in blocked):
+            check.fail(f'{where}: needs-evidence waits on pending actor-room evidence under an open blocker')
         condition = entry.get('condition') or {}
         native = condition.get('native', '')
+        if (relation == 'equal-with-ingress-atom') != bool(condition.get('ingressAtoms')):
+            check.fail(f'{where}: ingress atoms and the equal-with-ingress-atom relation come together')
         kept = sorted(atoms(reduced)) if not isinstance(reduced, bool) else []
         if sorted(condition.get('pinnedAtoms', [])) != kept:
             check.fail(f'{where}: pinnedAtoms {condition.get("pinnedAtoms")} are not the kept atoms {kept}')
@@ -420,6 +513,16 @@ def verify_audit(audit, fixture, repo, blobs=None):
                 check.fail(f'{where}: extra atom {extra.get("native")!r} is not in the condition or has no evidence')
             for item in extra.get('evidence', []):
                 check.evidence(item, f'{where} extra atom')
+        # The structure, not only the atoms: pinned tree in native helpers && every declared extra atom.
+        try:
+            parts = ([] if reduced else ['false']) if isinstance(reduced, bool) else [translate(reduced, atoms_table)]
+            parts += [parse_native(extra['native'])
+                      for extra in condition.get('ingressAtoms', []) + condition.get('portAtoms', [])]
+            wanted = canonical(('and', *parts)) if parts else 'true'
+            if canonical(parse_native(native)) != wanted:
+                check.fail(f'{where}: condition is not the pinned condition with its declared atoms: {show(wanted)}')
+        except (KeyError, ValueError) as error:
+            check.fail(f'{where}: condition cannot be compared with the pinned expression: {error}')
         if status in ('needs-node', 'needs-event'):
             proposal = entry.get('proposal') or {}
             if not proposal.get('copiedFrom') or not proposal.get('add'):
@@ -450,12 +553,18 @@ def verify_audit(audit, fixture, repo, blobs=None):
         if classify(fixture, extra['dungeon'], extra['wallmaster']['room']) != extra.get('classifiedAs'):
             check.fail(f'Unlogged capture in {extra["dungeon"]} room {extra["wallmaster"]["room"]} is not '
                        f'classified as {extra.get("classifiedAs")}')
+    # M1-13 and M1-14 receive only edges no open blocker holds; the rest wait under their blocker by unit.
     work = audit.get('workList', {})
-    expected = {'M1-13': sorted(i for i, e in entries.items() if e.get('status') in ('needs-node', 'needs-event')),
-                'M1-14': sorted(i for i, e in entries.items() if e.get('status') == 'ready')}
-    for unit, ids in expected.items():
-        if sorted(work.get(unit, [])) != ids:
-            check.fail(f'workList {unit} is not the {unit} edge set')
+    expected = {'M1-13': [], 'M1-14': [], 'blocked': {}}
+    for edge_id, entry in sorted(entries.items(), key=lambda item: str(item[0])):
+        unit = STATUS_UNITS.get(entry.get('status'))
+        if unit and edge_id in blocked:
+            expected['blocked'].setdefault(blocked[edge_id], {}).setdefault(unit, []).append(edge_id)
+        elif unit in ('M1-13', 'M1-14'):
+            expected[unit].append(edge_id)
+    for unit in sorted(set(expected) | set(work)):
+        if work.get(unit) != expected.get(unit):
+            check.fail(f'workList {unit} is not the edge set its statuses and open blockers give')
     return check.errors
 
 

@@ -2,8 +2,9 @@
 
 On every host: the fixture's independent constants (13 sources 0xf10-0xf1c, 23 edges of which 11 vanilla
 and 12 MQ, 24 soul_wallmaster lines, the same edges as the M1 contract), the audit schema (every edge has
-a status, a ready edge has an anchor, a native condition and evidence), the audit's anchors and evidence
-lines in this checkout, and audit mutations the verifier must reject. Locally, the actor-room evidence
+a status, a ready edge has an anchor, a native condition and evidence, edges an open blocker holds never
+reach the M1-13/M1-14 work lists), the native condition parser, the audit's anchors and evidence lines
+in this checkout, and audit mutations the verifier must reject. Locally, the actor-room evidence
 against the user's extracted OoT archive. With the exact OoTMM v32.3 checkout: exporter reproduction,
 read-only stale checks, wrong-HEAD refusal and the pinned evidence lines.
 """
@@ -89,16 +90,32 @@ for bad in ['a &&', '(a || b', 'a b', 'a & b']:
     else:
         raise AssertionError(f'Unsupported expression accepted: {bad!r}')
 
+# The native condition parser: call arguments stay inside their atom, and the tree compares by structure.
+assert edges_tool.parse_native('a->B(x, y) && (c || !d::E(f.g()))') == \
+    ('and', 'a->B(x,y)', ('or', 'c', ('not', 'd::E(f.g())')))
+assert edges_tool.canonical(edges_tool.parse_native('a && (b && c)')) == \
+    edges_tool.canonical(edges_tool.parse_native('c && b && a'))
+assert edges_tool.canonical(edges_tool.parse_native('a || b && c')) != \
+    edges_tool.canonical(edges_tool.parse_native('(a || b) && c'))
+for bad in ['a ? b : c', 'a == b', 'a(', '[]{return a;}()', 'a &&']:
+    try:
+        edges_tool.parse_native(bad)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(f'Unsupported native condition accepted: {bad!r}')
+
 # Audit schema: one entry per edge, every edge has a status, a ready edge has an anchor, a condition and evidence.
 entries = {e['id']: e for e in audit['edges']}
 assert set(entries) == {e['id'] for e in edges} and len(entries) == 23
 by_n = {e['n']: e for e in audit['edges']}
 assert all(e['status'] in edges_tool.STATUSES for e in audit['edges'])
 assert by_n[16]['status'] == 'false' and by_n[19]['status'] == 'needs-event'
-assert {n for n, e in by_n.items() if e['status'] == 'ready'} == set(range(1, 24)) - {16, 19}
+assert by_n[21]['status'] == 'needs-evidence' and by_n[21]['ingress']['relation'] == 'provisional'
+assert {n for n, e in by_n.items() if e['status'] == 'ready'} == set(range(1, 24)) - {16, 19, 21}
 for entry in audit['edges']:
     assert entry['evidence'] and entry['note'], entry['n']
-    if entry['status'] == 'ready':
+    if entry['status'] != 'false':
         assert entry['anchor']['region'].startswith('RR_') and entry['condition']['native'], entry['n']
     room = entry['actorRoom']
     if entry['quest'] == 'vanilla':
@@ -107,12 +124,21 @@ for entry in audit['edges']:
         assert room['status'] == 'pending' and room['blockedBy'] == 'C17' and room['expectedRooms'], entry['n']
 blockers = {b['id']: b for b in audit['openBlockers']}
 assert sorted(blockers['C17']['edges']) == sorted(e['id'] for e in edges if e['quest'] == 'mq')
-assert audit['workList']['M1-13'] == [by_n[19]['id']]
+# Only edges with verified actor rooms and no open blocker reach M1-13/M1-14; C17 holds every MQ edge.
+mq_live = sorted(e['id'] for e in audit['edges'] if e['quest'] == 'mq' and e['status'] != 'false')
+assert audit['workList']['M1-13'] == []
+assert audit['workList']['M1-14'] == sorted(e['id'] for e in audit['edges'] if e['quest'] == 'vanilla')
+assert all(entries[i]['actorRoom']['status'] == 'verified' for i in audit['workList']['M1-14'])
+assert audit['workList']['blocked'] == {'C17': {
+    'M1-13': [by_n[19]['id']], 'needs-evidence': [by_n[21]['id']],
+    'M1-14': [i for i in mq_live if i not in (by_n[19]['id'], by_n[21]['id'])]}}
+# Edge 06 copies the pinned Light End lens gate (ganon_castle.yml:57) instead of the lens-free native ingress.
+assert by_n[6]['ingress']['relation'] == 'equal-with-ingress-atom' and \
+    'ctx->GetTrickOption(RT_LENS_GANON) || logic->CanUse(RG_LENS_OF_TRUTH)' in by_n[6]['condition']['native']
+assert 'native-weaker' not in audit['relations']
 assert by_n[7]['anchor']['region'] == 'RR_GANONS_CASTLE_SPIRIT_TRIAL_BEFORE_SWITCH' and \
     'RG_FAIRY_BOW' not in by_n[7]['condition']['native']  # the capture never needs the Bow
 assert by_n[17]['condition']['native'].startswith('logic->SmallKeys(SCENE_FOREST_TEMPLE, 5) && ')
-# Edge 06 copies the pinned Light End lens gate (ganon_castle.yml:57) instead of the lens-free native ingress.
-assert by_n[6]['ingress']['relation'] == 'equal-with-ingress-atom' and     'ctx->GetTrickOption(RT_LENS_GANON) || logic->CanUse(RG_LENS_OF_TRUTH)' in by_n[6]['condition']['native']
 
 # The verifier: anchors and evidence lines of this checkout (pinned lines need the reference, below).
 assert edges_tool.verify_audit(audit, fixture, source) == []
@@ -147,6 +173,24 @@ mutations = {
     'MQ evidence claimed without an archive': lambda a: edge(a, 12)['actorRoom'].update(
         status='verified', dungeon='BotW', wallmasters=[{'room': 0, 'index': 4, 'role': 'capture'}]),
     'work list out of date': lambda a: a['workList']['M1-14'].pop(),
+    'kept conjunction weakened to ||': lambda a: edge(a, 7)['condition'].update(
+        native=edge(a, 7)['condition']['native'].replace('RG_BOMBCHU_5) &&', 'RG_BOMBCHU_5) ||')),
+    'ingress conjunction weakened to ||': lambda a: edge(a, 17)['condition'].update(
+        native=edge(a, 17)['condition']['native'].replace('5) &&', '5) ||')),
+    'condition widened by || true': lambda a: edge(a, 2)['condition'].update(
+        native=edge(a, 2)['condition']['native'] + ' || true'),
+    'lens ingress dropped from the condition': lambda a: edge(a, 6)['condition'].update(
+        native=edge(a, 6)['condition']['native'].split(' && ', 1)[1]),
+    'ingress relation loosened': lambda a: edge(a, 6)['ingress'].update(relation='native-weaker'),
+    'loosening relation listed': lambda a: a['relations'].update({'native-weaker': 'native needs less'}),
+    'provisional anchor marked ready': lambda a: edge(a, 21).update(status='ready'),
+    'provisional relation dropped': lambda a: edge(a, 21)['ingress'].update(relation='equal'),
+    'blocked edge handed to M1-14': lambda a: a['workList']['M1-14'].append(
+        a['workList']['blocked']['C17']['M1-14'].pop(0)),
+    'pending edge unblocked into M1-14': lambda a: (
+        a['openBlockers'][0]['edges'].remove(edge(a, 14)['id']),
+        a['workList']['blocked']['C17']['M1-14'].remove(edge(a, 14)['id']),
+        a['workList']['M1-14'].append(edge(a, 14)['id']), a['workList']['M1-14'].sort()),
     'absent setting now present': lambda a: a['predicateAtoms']['climb_anywhere']['absent'][0]['tokens'].append('RSK_'),
 }
 for name, change in mutations.items():
