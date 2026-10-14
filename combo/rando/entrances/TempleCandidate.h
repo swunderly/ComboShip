@@ -1,7 +1,7 @@
 // The generation-only opposite-age Temple probe's view (soh TempleProbe.cpp) of one candidate world
 // (CandidateWorld.h, OoTMM packages/logic/src/solver/entrances.ts changedWorld and
 // changeWorldAssumePools, :289-385 at 413573d): the fixed and remaining-pool edges as one list.
-// Used by host tests only; nothing in generation builds or sends it yet.
+// The unified generator (UnifiedBridge.h) sends it through TempleNative.h.
 // MIT, Copyright (c) 2020-2022 OoTMM Team; see LICENSE.OoTMM.
 #pragma once
 #include "CandidateWorld.h"

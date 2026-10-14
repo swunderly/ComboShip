@@ -1,8 +1,8 @@
-"""The opposite-age Temple probe is reachable only through its production wiring, which nothing uses yet.
+"""The opposite-age Temple probe is reachable only through its production wiring.
 
 Static scan. Only the unified generator (combo/rando/entrances/UnifiedBridge.h, M1-07) may assign
 Bindings::validateAgeTemple, and only from a TempleProbeRun (TempleNative.h: the gate, a prepared
-session and the code mapping); until it exists the hook stays unassigned, so active OoT/Both entrance
+session and the code mapping); without it the hook stays unassigned, so active OoT/Both entrance
 logic keeps failing closed at the Shuffler's missing-hook check. Only TempleNative.h names the probe
 exports; nothing but that bridge includes TempleNative.h, and nothing but TempleNative.h uses the
 adapter headers or calls the gate. No source looks up the diagnostic getter. The reserved

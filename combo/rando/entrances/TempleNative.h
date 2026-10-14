@@ -2,7 +2,7 @@
 // validateAgeTemple, packages/logic/src/solver/entrances.ts:265-286 at 413573d): the soh exports
 // found through the launcher's own module lookup, one prepared session per Shuffler run with a
 // cancellation poll, and the validator Bindings::validateAgeTemple gets. Only UnifiedBridge.h may
-// include it, and nothing does yet, so OoT/Both entrance logic still fails closed.
+// include it.
 #pragma once
 #include "TempleAdapter.h"
 #include <functional>

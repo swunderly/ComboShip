@@ -1,9 +1,9 @@
 // Native adaptation of OoTMM packages/logic/src/solver/entrances.ts changedWorld and
 // changeWorldAssumePools (:289-385, at 413573d): one description of a candidate world, built once
 // per candidate and shaped for each consumer. The opposite-age Temple probe reads it through
-// TempleCandidate.h; the per-game overlays below are what the OoT and MM oracle assumptions will
-// read. A committed layout is a candidate with no remaining pools. Nothing in generation builds or
-// sends it yet.
+// TempleCandidate.h; the per-game overlays below are what the OoT and MM oracle assumptions read.
+// A committed layout is a candidate with no remaining pools. The unified generator (UnifiedBridge.h)
+// builds one per candidate.
 // MIT, Copyright (c) 2020-2022 OoTMM Team; see LICENSE.OoTMM.
 #pragma once
 #include "Shuffle.h"

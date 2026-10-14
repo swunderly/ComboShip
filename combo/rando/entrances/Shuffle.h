@@ -369,7 +369,7 @@ struct Bindings {
     // Pinned validateAgeTemple (entrances.ts:265-286): on the SAME changed world/remaining pools,
     // ASSUMED and SPAWN events kept, explore OOT SPAWN at both ages with STARTING items (never the
     // all items of validateAssumed); the starting age's spawn exit is false and the other a bare age
-    // check. True when that age reaches Temple of Time. No production adapter is assigned yet.
+    // check. True when that age reaches Temple of Time. Only UnifiedBridge.h assigns it.
     std::function<bool(const Overrides&, const Pools&)> validateAgeTemple;
     // Supplied from the existing combined accessibility choice, not a new setting.
     bool logicEnabled = true;

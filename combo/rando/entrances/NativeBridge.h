@@ -87,7 +87,11 @@ class NativeScope {
             if (!value)
                 throw std::runtime_error("MM entrance snapshot failed");
             previous = value;
-            DecodeMmWallmasterSeed(nlohmann::json::parse(previous));
+            const auto snapshot = nlohmann::json::parse(previous);
+            DecodeMmWallmasterSeed(snapshot);
+            // An installed unified layout is restored from the same dump.
+            if (snapshot.contains("entranceLayout"))
+                DecodeEntranceLayout(snapshot.at("entranceLayout"));
         }
     }
     ~NativeScope() {
@@ -107,6 +111,13 @@ class AssumptionScope {
         if (!native.setAssumptions || !native.clearAssumptions)
             throw std::runtime_error("MM entrance assumption exports unavailable");
         if (!native.setAssumptions(EncodeMmWallmasterAssumptions(overrides, pools).dump().c_str()))
+            throw std::runtime_error("MM entrance assumption rejected");
+    }
+    // One unified candidate world's MM overlay (CandidateWorld.h EncodeMmOverlay).
+    AssumptionScope(NativeFns f, const std::string& overlay) : native(f) {
+        if (!native.setAssumptions || !native.clearAssumptions)
+            throw std::runtime_error("MM entrance assumption exports unavailable");
+        if (!native.setAssumptions(overlay.c_str()))
             throw std::runtime_error("MM entrance assumption rejected");
     }
     ~AssumptionScope() {
