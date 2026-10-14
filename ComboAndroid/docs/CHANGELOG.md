@@ -12,10 +12,12 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
-## Unreleased
+## 0.4.6 - 2026-10-14
 
 - **Shuffled silver rupees no longer refill a room with new items.** Each time you re-entered a silver rupee room (or entered a second one), its rupees took the next checks' numbers and showed other silver rupee checks' items, so the room kept refilling. Each rupee now always shows its own check, and a collected one stays gone, as in OoTMM. Items already picked up this way are kept; those other checks just count as collected.
 - **A room kept shut by a missing enemy soul opens normally once you have the soul and come back.** Before, it could stay shut until you went through another room with a soul-less enemy.
+
+Tested: 128 automated host tests pass (3 skipped on Windows), including a new check that rooms reset the silver rupee numbering. An independent code review traced the room reset through normal room loads, doorway transitions, scene loads, voids and save loads. Released for phone testing without an emulator run. Not tested on a phone.
 
 ## 0.4.5 - 2026-10-14
 
