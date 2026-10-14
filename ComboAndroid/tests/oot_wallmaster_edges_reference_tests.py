@@ -111,6 +111,8 @@ assert audit['workList']['M1-13'] == [by_n[19]['id']]
 assert by_n[7]['anchor']['region'] == 'RR_GANONS_CASTLE_SPIRIT_TRIAL_BEFORE_SWITCH' and \
     'RG_FAIRY_BOW' not in by_n[7]['condition']['native']  # the capture never needs the Bow
 assert by_n[17]['condition']['native'].startswith('logic->SmallKeys(SCENE_FOREST_TEMPLE, 5) && ')
+# Edge 06 copies the pinned Light End lens gate (ganon_castle.yml:57) instead of the lens-free native ingress.
+assert by_n[6]['ingress']['relation'] == 'equal-with-ingress-atom' and     'ctx->GetTrickOption(RT_LENS_GANON) || logic->CanUse(RG_LENS_OF_TRUTH)' in by_n[6]['condition']['native']
 
 # The verifier: anchors and evidence lines of this checkout (pinned lines need the reference, below).
 assert edges_tool.verify_audit(audit, fixture, source) == []

@@ -944,13 +944,48 @@
         "line": 389
       },
       "condition": {
-        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
-        "pinnedAtoms": ["soul_wallmaster"]
+        "native": "(ctx->GetTrickOption(RT_LENS_GANON) || logic->CanUse(RG_LENS_OF_TRUTH)) && Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"],
+        "ingressAtoms": [
+          {
+            "atom": "has_lens",
+            "native": "ctx->GetTrickOption(RT_LENS_GANON) || logic->CanUse(RG_LENS_OF_TRUTH)",
+            "evidence": [
+              {
+                "file": "data/world/oot/dungeons/ganon_castle.yml",
+                "line": 57,
+                "text": "\"Ganon Castle Light End\": \"silver_rupees_ganon_light && has_lens\"",
+                "pinned": true
+              },
+              {
+                "file": "data/macros/macros_oot.yml",
+                "line": 238,
+                "text": "\"has_lens\": \"has_lens_strict || trick(OOT_LENS)\"",
+                "pinned": true
+              },
+              {
+                "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+                "line": 11,
+                "text": "return ctx->GetTrickOption(RT_LENS_GANON) || logic->CanUse(RG_LENS_OF_TRUTH);"
+              },
+              {
+                "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+                "line": 394,
+                "text": "LOCATION(RC_GANONS_CASTLE_LIGHT_TRIAL_POT_1, logic->CanBreakPots() && (ctx->GetTrickOption(RT_LENS_GANON) || l"
+              },
+              {
+                "file": "soh/soh/Enhancements/randomizer/settings.cpp",
+                "line": 1956,
+                "text": "OPT_TRICK(RT_LENS_GANON, RCQUEST_VANILLA, RA_GANONS_CASTLE, { Tricks::Tag::NOVICE }, \"GCLoT\");"
+              }
+            ]
+          }
+        ]
       },
       "ingress": {
-        "relation": "native-weaker",
+        "relation": "equal-with-ingress-atom",
         "pinned": "Light 2 -> Light End: silver_rupees_ganon_light && has_lens (ganon_castle.yml:57).",
-        "native": "BOULDER_ROOM -> FINAL_ROOM (:386): the light silver-rupee puzzle and the lens with silver rupee logic on; Hookshot or an adult ground jump, without the lens, with it off."
+        "native": "BOULDER_ROOM -> FINAL_ROOM (:386): with silver rupee logic on, the light silver-rupee puzzle and the lens; with it off, Hookshot or an adult ground jump (the port's RT_GROUND_JUMP trick, the puzzle under its own rule) and no lens. The condition carries the pinned has_lens with the Ganon lens trick, as ShadowTrialHeartVisible (:11) and the FINAL_ROOM pots (:394) do."
       },
       "actorRoom": {
         "status": "verified",
@@ -1001,7 +1036,7 @@
             "means": "pot: pinned \"Ganon Castle Pot Light\" (0x080a)"
           }
         ],
-        "argument": "Room 10 (0x0a) is the corridor between the boulder room and the trial room; it is part of native FINAL_ROOM and of pinned Light End. Walking in from room 8 reaches the 200-unit circle around x=-3192 before the fake wall at x=-3479, so the capture itself needs no lens."
+        "argument": "Room 10 (0x0a) is the corridor between the boulder room and the trial room; it is part of native FINAL_ROOM and of pinned Light End. Walking in from room 8 reaches the 200-unit circle around x=-3192 before the fake wall at x=-3479, so the capture itself needs no lens; logic still copies the pinned lens gate (condition)."
       },
       "evidence": [
         {
@@ -1055,7 +1090,7 @@
           "pinned": true
         }
       ],
-      "note": "Native anchor plus the pinned edge condition. With silver rupee logic off native reaches FINAL_ROOM without the lens that pinned Light End requires; that is looser than OoTMM's area model but matches the room: the Wallmaster stands in front of the fake wall. Codex asked to verify this ingress; the archive positions settle it."
+      "note": "Native anchor plus the pinned edge condition and the pinned Light End ingress lens (ganon_castle.yml:57): with silver rupee logic off native reaches FINAL_ROOM without the lens, so the condition copies has_lens (OOT_LENS is the port's RT_LENS_GANON here). The archive shows the Wallmaster in front of the fake wall, so the capture could happen without the lens, but OoTMM does not count it then and the port copies OoTMM."
     },
     {
       "n": 7,
