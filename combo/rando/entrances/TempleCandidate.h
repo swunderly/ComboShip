@@ -19,6 +19,7 @@ struct TempleCandidate {
     std::vector<std::string_view> assumed; // large-pool destinations: unconditional ASSUMED exits (:307-314)
     bool assumedInstalled = true;          // `if (assumedSets)` tests an array, so it is always true (:307)
     std::vector<TempleEdge> portalLinks;   // the reserved game links; Ship's Mask Shop is portal-equivalent
+    uint32_t world = 0;                    // CandidateWorldToken of the world it was built from
 };
 
 inline bool IsLargeTemplePool(const Pool& pool) {
@@ -30,21 +31,24 @@ inline TempleEdge MakeTempleEdge(std::string_view src, std::string_view dst) {
 
 inline TempleCandidate BuildTempleCandidate(const Overrides& overrides, const Pools& pools, const Settings& s) {
     auto w = BuildCandidateWorld(overrides, pools, s);
-    TempleCandidate c{ std::move(w.deleted), std::move(w.fixed), std::move(w.assumed), w.assumedInstalled,
-                       std::move(w.portalLinks) };
+    const auto world = CandidateWorldToken(w);
+    TempleCandidate c{ std::move(w.deleted), std::move(w.fixed),       std::move(w.assumed),
+                       w.assumedInstalled,   std::move(w.portalLinks), world };
     c.edges.insert(c.edges.end(), w.remaining.begin(), w.remaining.end());
     std::sort(c.edges.begin(), c.edges.end());
     return c;
 }
 
-// The candidate token hash, so the all-items pass can later carry the identical candidate token.
+// The query's own digest, the same function as the candidate world token. The candidate itself is
+// named by `world`, the token both oracle overlays carry (EncodeCandidateOverlay).
 inline uint32_t TempleTokenHash(const std::string& s) {
     return CandidateTokenHash(s);
 }
 
-// Canonical request for the native probe: sorted arrays, sorted keys, and a token over everything
-// else. OoT rows are probed; MM-only rows are listed after their game is checked, because no MM
-// change can reach the OoT target in the supported envelope (pinned lemma L4).
+// Canonical request for the native probe: sorted arrays, sorted keys, the candidate world token
+// (`world`, which the native ignores) and a token over everything else. OoT rows are probed;
+// MM-only rows are listed after their game is checked, because no MM change can reach the OoT
+// target in the supported envelope (pinned lemma L4).
 inline std::string EncodeTempleQuery(const TempleCandidate& c) {
     using Json = nlohmann::json;
     auto game = [](std::string_view name) { return Find(name)->game; };
@@ -69,7 +73,8 @@ inline std::string EncodeTempleQuery(const TempleCandidate& c) {
                    { "portalLinks", portals },
                    { "assumed", assumed },
                    { "assumedInstalled", c.assumedInstalled },
-                   { "mm", { { "deleted", mmDeleted }, { "edges", mmEdges } } } };
+                   { "mm", { { "deleted", mmDeleted }, { "edges", mmEdges } } },
+                   { "world", c.world } };
     query["token"] = TempleTokenHash(query.dump());
     return query.dump();
 }

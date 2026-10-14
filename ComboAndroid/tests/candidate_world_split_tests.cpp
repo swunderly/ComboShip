@@ -134,8 +134,9 @@ void CheckOverlay(const CandidateWorld &w, Game game) {
 }
 
 // The Temple probe reads the same world: its candidate is the world with the
-// fixed and remaining edges merged, and its query splits them as the overlays
-// do (own-game M1 pools never cross games).
+// fixed and remaining edges merged, its query splits them as the overlays do
+// (own-game M1 pools never cross games), and it names the world by the token
+// both overlays carry.
 void CheckTempleView(const CandidateWorld &w, const Overrides &overrides,
                      const Pools &pools, const Settings &s) {
   const auto c = BuildTempleCandidate(overrides, pools, s);
@@ -144,8 +145,10 @@ void CheckTempleView(const CandidateWorld &w, const Overrides &overrides,
   std::sort(edges.begin(), edges.end());
   assert(c.deleted == w.deleted && c.edges == edges && c.assumed == w.assumed &&
          c.assumedInstalled == w.assumedInstalled &&
-         c.portalLinks == w.portalLinks);
+         c.portalLinks == w.portalLinks && c.world == CandidateWorldToken(w));
   const auto query = Json::parse(EncodeTempleQuery(c));
+  assert(query.at("world") == Json::parse(EncodeOotOverlay(w)).at("world") &&
+         query.at("world") == Json::parse(EncodeMmOverlay(w)).at("world"));
   for (const auto game : {Game::Oot, Game::Mm}) {
     const auto o = SplitCandidateWorld(w, game);
     const auto &part = game == Game::Oot ? query : query.at("mm");
@@ -386,7 +389,8 @@ void OrDuplicates() {
 }
 
 // The same world gives the same text and token whatever order the pools came
-// in; any other world gives another token. Both overlays carry it.
+// in; any other world gives another token. Both overlays and the Temple query
+// carry it as `world`; the query's own `token` is the digest of its text.
 void OrderIndependentToken() {
   const auto s = FromFixture(Combination(kWidest).at("settings"));
   const auto resolved = ResolvePools(s, Areas({}));
@@ -421,10 +425,20 @@ void OrderIndependentToken() {
          json.at("fixed").size() == 1 && json.at("portalLinks").size() == 2);
   assert(Json::parse(EncodeOotOverlay(wa)).at("world") == token &&
          Json::parse(EncodeMmOverlay(wa)).at("world") == token);
-  assert(TempleTokenHash(json.dump()) == token);
+  auto query =
+      Json::parse(EncodeTempleQuery(BuildTempleCandidate(a, pools, s)));
+  assert(query ==
+         Json::parse(EncodeTempleQuery(BuildTempleCandidate(b, reversed, s))));
+  assert(query.at("world") == token);
+  const uint32_t queryToken = query.at("token");
+  query.erase("token");
+  assert(queryToken == TempleTokenHash(query.dump()) && queryToken != token);
   // Another destination, or the same route still open, is another world.
   a["OOT_WALLMASTER_GTG"] = "OOT_FIELD_OWL";
   assert(CandidateWorldToken(BuildCandidateWorld(a, pools, s)) != token);
+  assert(Json::parse(EncodeTempleQuery(BuildTempleCandidate(a, pools, s)))
+             .at("world") ==
+         CandidateWorldToken(BuildCandidateWorld(a, pools, s)));
   assert(CandidateWorldToken(
              BuildCandidateWorld(resolved.fixed, resolved.pools, s)) != token);
 }
