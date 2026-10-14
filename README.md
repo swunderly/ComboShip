@@ -12,9 +12,9 @@ This fork turns ComboShip into one Android app (APK) for phones and tablets. Bot
 
 **[Get the latest APK from Releases](https://github.com/swunderly/ComboShip/releases/latest)**
 
-Current release: **Combo Ship for Android 0.4.7** (October 14, 2026). File: `ComboShip-Android-0.4.7-arm64.apk`, about 45 MB (46,826,751 bytes). [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.7-android/ComboShip-Android-0.4.7-arm64.apk).
+Current release: **Combo Ship for Android 0.4.8** (October 14, 2026). File: `ComboShip-Android-0.4.8-arm64.apk`, about 45 MB (XXSIZEXX bytes). [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.8-android/ComboShip-Android-0.4.8-arm64.apk).
 
-The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.7) are this fork's own. They are not upstream ComboShip's version numbers.
+The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.8) are this fork's own. They are not upstream ComboShip's version numbers.
 
 ## What you need
 
@@ -36,7 +36,7 @@ Touch controls and game controllers both work. The owner plays on a phone with b
 ## Install and first run
 
 1. Copy your two ROM files to the device first, for example to Download. If a ROM is in a `.zip` file, unzip it first.
-2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.7-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
+2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.8-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
 3. Open the downloaded APK. If Android asks, allow your browser or file manager to install unknown apps. The app is not from Google Play and is signed with a development key, so Google Play Protect may warn you. You can still install it, usually with **More details**, then **Install anyway**.
 4. Open **Combo Ship** and tap **Allow file access**. On Android 11 and newer, Android opens an **All files access** screen: turn on the switch for Combo Ship, then go back. Combo Ship uses this to keep your saves, seeds and backups in a visible `Internal storage/ComboShip` folder that you can copy.
 5. Tap **Choose OoT ROM** and pick your OoT ROM. Then tap **Choose MM ROM** and pick your MM ROM. The app copies them into its folder. Your original files are not changed.
@@ -116,8 +116,8 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - Most testing is automated tests plus an Android 15 emulator. The emulator runs the ARM64 code through translation with a software GPU, usually with audio off.
 - The owner plays the releases on a phone, with touch controls and a game controller. Only a few specific fixes have been confirmed on a phone so far.
 - No build has had a complete seed playthrough.
-- For 0.4.7 (an MM soul room fix): its host test passes; it was not run on the emulator. For 0.4.6 (a silver rupee fix): 128 automated tests pass and the fix had an independent code review; it was not run on the emulator. For 0.4.5: 129 automated tests, run on the developer's Windows PC, pass, and each 0.4.5 change was checked on the emulator, including a seed from the Allsanity and Default presets that passed the generator's automatic playthrough check. For 0.4.4: 128 automated tests pass. 2 tests that cannot run on Windows were skipped. On the emulator, adult Link in MM, the MM boots and tunics, casting the MM spells, the menus and the tracker fixes were tried in the app. The automatic playthrough check confirms in logic that a seed can be finished. Nobody played them through.
-- 0.4.3 to 0.4.7 were not tested on a phone before release. Installing it over 0.4.1 was not tried on the emulator either; only automated tests cover older saves.
+- For 0.4.8 (a silver rupee count in the pickup message): its host tests pass; it was not run on the emulator. For 0.4.7 (an MM soul room fix): its host test passes; it was not run on the emulator. For 0.4.6 (a silver rupee fix): 128 automated tests pass and the fix had an independent code review; it was not run on the emulator. For 0.4.5: 129 automated tests, run on the developer's Windows PC, pass, and each 0.4.5 change was checked on the emulator, including a seed from the Allsanity and Default presets that passed the generator's automatic playthrough check. For 0.4.4: 128 automated tests pass. 2 tests that cannot run on Windows were skipped. On the emulator, adult Link in MM, the MM boots and tunics, casting the MM spells, the menus and the tracker fixes were tried in the app. The automatic playthrough check confirms in logic that a seed can be finished. Nobody played them through.
+- 0.4.3 to 0.4.8 were not tested on a phone before release; the 0.4.6 and 0.4.7 fixes were then confirmed on a phone. Installing it over 0.4.1 was not tried on the emulator either; only automated tests cover older saves.
 - Not yet checked on a real device: audio delay and quality, keyboards, SD card storage, mods, MM three-day cycle resets, multiplayer over the Internet, and tablets.
 - The SoH and 2Ship enhancements carried over from upstream are not all tested on Android.
 - Only OoT USA 1.0 and MM USA 1.0 ROMs have been used in testing. Master Quest has only been checked as seed data, never in play.
@@ -155,13 +155,13 @@ Logs are in the ComboShip folder: `native.log`, `last-startup-error.txt`, `java-
 
 ## Building from source
 
-Full steps are in [ComboAndroid/BUILDING.md](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/ComboAndroid/BUILDING.md).
+Full steps are in [ComboAndroid/BUILDING.md](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/ComboAndroid/BUILDING.md).
 
 ```sh
 git clone -b android-source https://github.com/swunderly/ComboShip.git
 ```
 
-To build exactly the 0.4.7 release, use `-b v0.4.7-android` instead. The `android-source` branch can contain unfinished work.
+To build exactly the 0.4.8 release, use `-b v0.4.8-android` instead. The `android-source` branch can contain unfinished work.
 
 You need Git, Python 3.10+, Java 17 or 21, Android SDK platform 35, build-tools 35.0.0, NDK 28.2.13676358, CMake 3.31.5, Ninja and vcpkg at a pinned commit. Windows also needs Visual Studio's C++ desktop workload. Linux also needs the packages listed in the CI workflow, and ccache. The build uses no ROM. It makes a debug-signed APK. Your own APK has a different signature from the release APK, so it cannot update a release install. Back up your saves before you switch.
 
@@ -172,7 +172,7 @@ Branches and docs:
 - `android-source` is the Android port's main branch. Releases are tagged `v<version>-android`.
 - `develop` is an older, unmodified copy of upstream ComboShip's `develop` (last synced October 9, 2026). For current upstream code, use [Varuuna/ComboShip](https://github.com/Varuuna/ComboShip).
 - Any other branches are old or temporary. Use Releases for builds.
-- For 0.4.7: [changelog](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/ComboAndroid/docs/CHANGELOG.md), [roadmap](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/ComboAndroid/docs/ROADMAP.md), [device test checklist](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/ComboAndroid/DEVICE_TESTS.md), and [notes on changes to the vendored SoH and 2Ship code](https://github.com/swunderly/ComboShip/tree/v0.4.7-android/docs/deviations) (started upstream, extended here).
+- For 0.4.8: [changelog](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/ComboAndroid/docs/CHANGELOG.md), [roadmap](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/ComboAndroid/docs/ROADMAP.md), [device test checklist](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/ComboAndroid/DEVICE_TESTS.md), and [notes on changes to the vendored SoH and 2Ship code](https://github.com/swunderly/ComboShip/tree/v0.4.8-android/docs/deviations) (started upstream, extended here).
 - Upstream ComboShip's own README is at [Varuuna/ComboShip](https://github.com/Varuuna/ComboShip#readme).
 
 ## Credits
@@ -194,12 +194,12 @@ This fork stands on the work of many projects:
 
 There is no single license for this repository. Each part keeps its own terms.
 
-- Code written for this port in `ComboAndroid/` is under the MIT license ([ComboAndroid/LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/ComboAndroid/LICENSE)). Third-party files in that folder, such as the Gradle wrapper and data taken from OoTMM, keep their own licenses (see [ComboAndroid/licenses/](https://github.com/swunderly/ComboShip/tree/v0.4.7-android/ComboAndroid/licenses)). This does not relicense the games, engines or other dependencies.
+- Code written for this port in `ComboAndroid/` is under the MIT license ([ComboAndroid/LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/ComboAndroid/LICENSE)). Third-party files in that folder, such as the Gradle wrapper and data taken from OoTMM, keep their own licenses (see [ComboAndroid/licenses/](https://github.com/swunderly/ComboShip/tree/v0.4.8-android/ComboAndroid/licenses)). This does not relicense the games, engines or other dependencies.
 - Ship of Harkinian and upstream ComboShip do not publish a license file, so their code keeps its authors' terms. This fork's own changes outside `ComboAndroid/` are not covered by ComboAndroid/LICENSE. This fork does not relicense any upstream code.
 - 2 Ship 2 Harkinian is CC0-1.0 ([LICENSE](https://github.com/2ship2harkinian/2ship2harkinian/blob/develop/LICENSE)).
-- libultraship ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/libultraship/LICENSE)), Fast3D ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/libultraship/src/fast/LICENSE.txt)), ZAPDTR ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/ZAPDTR/LICENSE)), OTRExporter ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/OTRExporter/LICENSE)) and the OoT-Randomizer code ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/soh/soh/Enhancements/randomizer/3drando/LICENSE.md)) are MIT.
-- OoTMM is MIT. A copy of its license is at [ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt) and ships in the APK. Some folders with adapted code also have their own copy, for example [combo/rando/entrances/LICENSE.OoTMM](https://github.com/swunderly/ComboShip/blob/v0.4.7-android/combo/rando/entrances/LICENSE.OoTMM).
-- The APK carries dependency notices under `assets/licenses`. In 0.4.7 the APK does not yet include the Fast3D, ZAPDTR, OTRExporter and OoT-Randomizer texts. They are attached to the [0.4.7 release](https://github.com/swunderly/ComboShip/releases/tag/v0.4.7-android) as `THIRD-PARTY-NOTICES.txt`.
+- libultraship ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/libultraship/LICENSE)), Fast3D ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/libultraship/src/fast/LICENSE.txt)), ZAPDTR ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/ZAPDTR/LICENSE)), OTRExporter ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/OTRExporter/LICENSE)) and the OoT-Randomizer code ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/soh/soh/Enhancements/randomizer/3drando/LICENSE.md)) are MIT.
+- OoTMM is MIT. A copy of its license is at [ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt) and ships in the APK. Some folders with adapted code also have their own copy, for example [combo/rando/entrances/LICENSE.OoTMM](https://github.com/swunderly/ComboShip/blob/v0.4.8-android/combo/rando/entrances/LICENSE.OoTMM).
+- The APK carries dependency notices under `assets/licenses`. In 0.4.8 the APK does not yet include the Fast3D, ZAPDTR, OTRExporter and OoT-Randomizer texts. They are attached to the [0.4.8 release](https://github.com/swunderly/ComboShip/releases/tag/v0.4.8-android) as `THIRD-PARTY-NOTICES.txt`.
 
 ## Disclaimer
 

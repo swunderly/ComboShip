@@ -12,6 +12,12 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## 0.4.8 - 2026-10-14
+
+- **Picking up a shuffled silver rupee now also says how many you have for that room**, as OoTMM does: "You found a Silver Rupee (Spirit Child)! This is your 3rd." A Silver Pouch shows no count.
+
+Tested: the silver rupee and item message host tests pass; the change builds. Released for phone testing without an emulator run. Not tested on a phone.
+
 ## 0.4.7 - 2026-10-14
 
 - **An MM room kept shut by a missing enemy soul opens normally once you have the soul and come back.** Before, it could stay shut until you went through another room with a soul-less enemy. This is the MM side of 0.4.6's room fix.
