@@ -1208,7 +1208,7 @@ static void ApplyCommunityPreset(const Json& preset) {
             ++it;
     }
     document["oot"]["settings"]["gRandoSettings.EnabledTricks"] = "";
-    // Presets only drop logic assumptions; the player's own enhancements stay as they are.
+    // Drop every logic assumption; the player's own enhancements stay, except the preset's rules turned on below.
     for (const auto& rule : kGameplayRules)
         ClearLogicRule(rule, WriteInteger);
     for (const char* game : { "oot", "mm" })
@@ -1248,9 +1248,13 @@ void DrawHome() {
             ImGui::OpenPopup("Apply preset?");
         ImGui::EndDisabled();
         Tooltip(preset.at("help").get<std::string>().c_str());
-        const std::string presetText = "File " + std::to_string(selected + 1) + "'s next-seed settings become " +
-                                       preset.at("label").get<std::string>() +
-                                       ". Your enhancements and saved progress stay.";
+        // ApplyCommunityPreset turns the preset's gameplay rules on in play too (SetLogicRule).
+        const std::string presetText =
+            "File " + std::to_string(selected + 1) + "'s next-seed settings become " +
+            preset.at("label").get<std::string>() +
+            (preset.at("rules").empty() ? ". Your enhancements and saved progress stay."
+                                        : ". Gameplay rules the preset uses are switched on; your other enhancements "
+                                          "and saved progress stay.");
         if (MenuConfirm("Apply preset?", presetText.c_str(), "Apply preset") && Editable())
             ApplyCommunityPreset(preset);
         ImGui::Spacing();
