@@ -124,6 +124,11 @@ for found in re.finditer(r'OPT_[A-Z0-9]+\(\s*RSK_\w+\s*,\s*"((?:[^"\\]|\\.)*)"[^
                          (source / 'soh/soh/Enhancements/randomizer/settings.cpp').read_text(encoding='utf-8')):
     oot_names.setdefault('gRandoSettings.' + found.group(2), found.group(1))
 assert oot_names.get('gRandoSettings.SkipScarecrowsSong') == "Skip Scarecrow's Song"
+# OoT's ocarina input switches are widgets of its own menu, under their upstream names, as MM's are of MM's.
+assert oot_names.get('gSettings.CustomOcarina.Dpad') == 'Dpad Ocarina Playback'
+assert oot_names.get('gSettings.CustomOcarina.RightStick') == 'Right Stick Ocarina Playback'
+assert mm_names.get('gEnhancements.Playback.DpadOcarina') == 'D-pad Ocarina'
+assert mm_names.get('gEnhancements.Playback.RightStickOcarina') == 'Right Stick Ocarina'
 native_table = ''.join('    { { %s, "%s" }, "%s" },\n' % ('true' if oot else 'false', cvar, name)
                        for oot, names in ((True, oot_names), (False, mm_names))
                        for cvar, name in sorted(names.items()))
@@ -345,6 +350,15 @@ int main() {
                                ootRules.labelOf.at("gRandoSettings.SkipScarecrowsSong"),
                                mmRules.labelOf.at("gEnhancements.Playback.SkipScarecrowSong") })
         assert(label == "Skip Scarecrow's Song");
+    // Settings > Controls > Ocarina input shows the same two switches, by the same names and in the same order, in
+    // both views; OoT's are rows there, not inside Controller mapping.
+    const auto* controls = FindMenuPage("settings", MenuPage::Controls);
+    const auto ootControls = Lay(*controls, true, false), mmControls = Lay(*controls, false, false);
+    const std::vector<std::string> ocarinaInput = { "D-pad ocarina", "Right stick ocarina" };
+    assert(ootControls.labelsOf.at("Ocarina input") == ocarinaInput);
+    assert(mmControls.labelsOf.at("Ocarina input") == ocarinaInput);
+    for (const char* cvar : { "gSettings.CustomOcarina.Dpad", "gSettings.CustomOcarina.RightStick" })
+        assert(ootControls.headingOf.at(cvar) == "Ocarina input");
     assert(ootRules.headingOf.at("gRandoSettings.SwordlessEponaItems") == "Seed settings (no logic effect)");
     assert(mmRules.headingOf.at("gEnhancements.Minigames.AlwaysWinDoggyRace") == "Minigames");
     assert(!mmRules.headingOf.count("gEnhancements.DifficultyOptions.BremenChickCount"));

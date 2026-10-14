@@ -4,6 +4,7 @@
 // COMBO_BUILD branches the Android build compiles.
 #include "ComboMenuLabels.h"
 #include "ComboNavigation.h"
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <fstream>
@@ -162,7 +163,7 @@ const std::vector<const char*> kOotMenuFiles = {
 const std::vector<const char*> kMmMenuFiles = { "mm/2s2h/BenGui/BenMenu.cpp", "mm/2s2h/BenGui/ResolutionEditor.cpp",
                                                 "mm/2s2h/Rando/Menu.cpp" };
 bool IsCVarKey(const char* key) {
-    for (const char* kind : { "widget:", "heading:", "sidebar:", "rule:", "pair:", "note:" })
+    for (const char* kind : { "widget:", "heading:", "sidebar:", "rule:", "pair:" })
         if (!std::strncmp(key, kind, std::strlen(kind)))
             return false;
     return true;
@@ -301,6 +302,58 @@ int main() {
         assert(!std::strcmp(other.scope, row.scope) && !std::strcmp(other.page, row.page));
         assert(!other.heading || !row.heading || !std::strcmp(other.heading, row.heading));
     }
+    // ... and has a row in each game, so neither view lacks it (OoT's ocarina input rows were once a note).
+    for (const auto& feature : features) {
+        bool games[2] = {};
+        for (const auto& row : kMenuPlacements)
+            if (row.mirrored && row.feature && feature.first == row.feature)
+                for (bool oot : { true, false })
+                    if (MenuPlacementForGame(row, oot))
+                        games[oot] = true;
+        if (!games[0] || !games[1])
+            std::cerr << "Feature " << feature.first << " has rows in one game only\n";
+        assert(games[0] && games[1]);
+    }
+
+    // Settings > Controls > Ocarina input: the same two switches with the same names in both views, each game's on
+    // its own CVars. OoT's are widgets of its menu, searchable under their earlier names, and registered once: the
+    // bindings editor no longer draws them, and keeps Customize Ocarina Controls with the note bindings.
+    const char* ocarinaInput[][2] = { { "gSettings.CustomOcarina.Dpad", "gEnhancements.Playback.DpadOcarina" },
+                                      { "gSettings.CustomOcarina.RightStick",
+                                        "gEnhancements.Playback.RightStickOcarina" } };
+    const char* ocarinaLabels[] = { "D-pad ocarina", "Right stick ocarina" };
+    for (bool oot : { true, false }) {
+        std::vector<std::string> rows;
+        for (const auto& row : kMenuPlacements)
+            if (MenuPlacementForGame(row, oot) && !std::strcmp(row.scope, "settings") &&
+                !std::strcmp(row.page, MenuPage::Controls) && row.heading && !std::strcmp(row.heading, "Ocarina input"))
+                rows.push_back(row.key);
+        assert(rows.size() == 2);
+        for (int i = 0; i < 2; ++i) {
+            const char* cvar = ocarinaInput[i][oot ? 0 : 1];
+            assert(std::count(rows.begin(), rows.end(), cvar) == 1);
+            // Without its own row, an OoT switch would fall back to its sidebar's row: Controller mapping.
+            const auto* row = FindMenuPlacement(oot, "Settings", "Controls", "", cvar);
+            assert(row && !std::strcmp(row->heading, "Ocarina input") && row->mirrored);
+            assert(row->feature && !std::strcmp(row->feature, "dpad_ocarina"));
+            assert(MenuRowLabel(oot, cvar, nullptr) == ocarinaLabels[i]);
+        }
+    }
+    const std::string inputEditor = Active(Read("soh/soh/Enhancements/controls/SohInputEditorWindow.cpp"));
+    const auto ootRegistered = CVars(ootMenus + inputEditor);
+    for (const auto& cvars : ocarinaInput)
+        assert(std::count(ootRegistered.begin(), ootRegistered.end(), cvars[0]) == 1);
+    for (const char* name : { "Dpad Ocarina Playback", "Right Stick Ocarina Playback" }) {
+        const auto at = ootMenus.find(std::string("AddWidget(path, \"") + name + "\", WIDGET_CVAR_CHECKBOX)");
+        assert(at != std::string::npos);
+        assert(ootMenus.substr(at, ootMenus.find(';', at) - at).find("HideInSearch") == std::string::npos);
+    }
+    const std::string ocarinaPanel = Region(inputEditor, "void SohInputEditorWindow::DrawOcarinaControlPanel()");
+    assert(ocarinaPanel.find("dpadOcarina") == std::string::npos);
+    assert(ocarinaPanel.find("rightStickOcarina") == std::string::npos);
+    assert(ocarinaPanel.find("CVAR_SETTING(\"CustomOcarina.Enabled\")") != std::string::npos);
+    assert(Region(inputEditor, "void SohInputEditorWindow::DrawLinkTab()").find("DrawOcarinaControlPanel();") !=
+           std::string::npos);
 
     // Sam's example: climb speed sits on Time savers > Speed-ups in both games, through routing.
     const auto ootClimb =

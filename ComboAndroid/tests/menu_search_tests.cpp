@@ -200,6 +200,35 @@ int main() {
             FindMenuPlacement(oot, "", "", "", oot ? "gEnhancements.ClimbSpeed" : "gEnhancements.Player.ClimbSpeed");
         assert(row && std::string(row->page) == "Time savers" && std::string(row->heading) == "Speed-ups");
     }
+    // The ocarina input switches read alike in both games and answer to that name, to MM's earlier one and to OoT's
+    // earlier "... Ocarina Playback" one; each game's row lands on Settings > Controls > Ocarina input.
+    struct OcarinaRow {
+        bool oot;
+        const char* cvar;
+        const char* native;
+    };
+    const OcarinaRow ocarinaRows[][2] = {
+        { { true, "gSettings.CustomOcarina.Dpad", "Dpad Ocarina Playback" },
+          { false, "gEnhancements.Playback.DpadOcarina", "D-pad Ocarina" } },
+        { { true, "gSettings.CustomOcarina.RightStick", "Right Stick Ocarina Playback" },
+          { false, "gEnhancements.Playback.RightStickOcarina", "Right Stick Ocarina" } },
+    };
+    for (const auto& rows : ocarinaRows) {
+        const auto label = MenuRowLabel(true, rows[0].cvar, rows[0].native);
+        assert(label == MenuRowLabel(false, rows[1].cvar, rows[1].native));
+        assert(settingRank(label.c_str(), true, rows[0].cvar, rows[0].native) ==
+               settingRank(label.c_str(), false, rows[1].cvar, rows[1].native));
+        for (const auto& row : rows) {
+            for (const char* query : { label.c_str(), rows[0].native, rows[1].native })
+                assert(settingRank(query, row.oot, row.cvar, row.native) > 0);
+            const auto* placement = FindMenuPlacement(row.oot, "", "", "", row.cvar);
+            assert(placement && std::string(placement->page) == "Controls" &&
+                   std::string(placement->heading) == "Ocarina input");
+        }
+    }
+    assert(MenuRowLabel(true, "gSettings.CustomOcarina.Dpad", "Dpad Ocarina Playback") == "D-pad ocarina");
+    assert(MenuRowLabel(true, "gSettings.CustomOcarina.RightStick", "Right Stick Ocarina Playback") ==
+           "Right stick ocarina");
     // A rule result names the heading of the half it opens.
     assert(std::string(GameplayRuleHeading("gEnhancements.OpenAllHours", false)) == "Time of day & cycle");
     assert(std::string(GameplayRuleHeading("gEnhancements.OpenAllHours", true)) == "Time of day");
