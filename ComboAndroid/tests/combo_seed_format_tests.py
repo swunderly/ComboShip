@@ -45,6 +45,7 @@ source = r'''
 #include <map>
 #include <memory>
 #include <functional>
+#include <vector>
 #include "ComboRandomizerSavedSeed.h"
 #include "rando/entrances/NativeBridge.h"
 using Json = nlohmann::json;
@@ -68,6 +69,10 @@ namespace SohUtils { bool IsStringEmpty(const char* value) { return !value || !v
 void CVarSetString(const char* key, const char*) { dropped = key; }
 void CVarSetInteger(const char*, int) { ++mutations; }
 static Entrances::NativeFns sEntranceNative;
+// OTRGlobals.cpp's setter, which SaveManager::LoadFile calls with the flags it takes off the page (M1-09).
+std::vector<uint32_t> runtimeFlags;
+void SOH_SetEntranceRuntimeFlags(uint32_t flags) { runtimeFlags.push_back(flags); }
+std::string flaggedPage;
 '''
 source += function(launcher, 'static const char* Combo_ReadGameSave(int game, int fileNum) {') + '\n'
 source += function(launcher, 'static bool TryLoadComboSeedFile(const std::filesystem::path& p, nlohmann::json& out) {') + '\n'
@@ -319,7 +324,9 @@ int main() {
         auto* context = globals.gRandoContext.get();
         gSaveContext.fileNum = 2;
         containerLoads = mutations = popups = 0;
+        runtimeFlags.clear();
         assert(!manager.LoadFile(0, true));
+        assert(runtimeFlags.empty()); // refused before the runtime flags are taken
         assert(manager.comboLoadState == ComboLoadState::Blocked);
         assert(mutations == 0 && containerLoads == 0 && gSaveContext.fileNum == 2);
         assert(globals.gRandoContext.get() == context && manager.saveBlock.at("untouched") == true);
@@ -335,9 +342,23 @@ int main() {
     write(ComboContainerPath(1), {{"oot", nativePage}, {"combo", {{"rando", legacy(false)}}}});
     SaveManager manager;
     mutations = containerLoads = popups = 0;
+    runtimeFlags.clear();
     assert(manager.LoadFile(1, true));
     assert(gSaveContext.fileNum == 1 && mutations > 0 && containerLoads == 1 && popups == 0);
     assert(manager.comboLoadState == ComboLoadState::Ready);
+    assert(runtimeFlags == std::vector<uint32_t>{0}); // no layout: no ER-wide runtime flag
+    // A page with the launcher's runtime flags (Combo_ReadGameSave adds them for a layout this build accepts):
+    // the loader takes them before any save context change and applies the page as stored.
+    Json flagged = nativePage;
+    flagged[kComboEntranceRuntimeFlags] = Entrances::kEntranceRuntimeErAny;
+    flaggedPage = flagged.dump();
+    gComboReadGameSave = [](int, int) -> const char* { return flaggedPage.c_str(); };
+    SaveManager flaggedManager;
+    runtimeFlags.clear();
+    assert(flaggedManager.LoadFile(1, true));
+    assert(runtimeFlags == std::vector<uint32_t>{Entrances::kEntranceRuntimeErAny});
+    assert(flaggedManager.saveBlock == nativePage);
+    gComboReadGameSave = Combo_ReadGameSave;
     std::cout << "PASS legacy bytes/imports, future discriminator, capability rejection and production native "
                  "save preflight before context/slot mutation; the layout acceptance path behind them\n";
 }

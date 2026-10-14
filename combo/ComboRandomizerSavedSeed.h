@@ -39,6 +39,10 @@ inline void ValidateSavedCatalogs(const Json& container, const Entrances::Capabi
     if (data && (native.invisibleRupees != authored.invisibleRupees || native.grass != authored.grass))
         throw UnsupportedKokiriSeedRevision("Saved seed and native Kokiri check catalogs are incompatible");
 }
+// The runtime flags of a container's seed, once ValidateSavedCatalogs has accepted the container.
+inline uint32_t ContainerEntranceRuntimeFlags(const Json& container, const Entrances::CapabilitySet& caps) {
+    return container.is_object() ? SeedEntranceRuntimeFlags(SeedFromContainer(container, caps)) : 0u;
+}
 inline Json ReadSavedContainerFile(const std::filesystem::path& path) {
     if (!std::filesystem::exists(path))
         return Json();

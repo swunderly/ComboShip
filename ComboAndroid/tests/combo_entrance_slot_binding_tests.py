@@ -94,6 +94,10 @@ int applySeed(const char* value) {
 }
 const char* dumpSeed() { dump = installedSeed.dump(); return dump.c_str(); }
 static NativeFns sEntranceNative{applySeed, nullptr, nullptr, dumpSeed};
+// OTRGlobals.cpp's setter: the bound slot's ER-wide runtime flags (M1-09).
+std::vector<uint32_t> runtimeFlags;
+void setRuntimeFlags(uint32_t flags) { runtimeFlags.push_back(flags); calls.push_back("er-flags"); }
+auto SOH_SetEntranceRuntimeFlags = setRuntimeFlags;
 '''
 source += function('static bool InstallEntranceSeed(const nlohmann::json& seed)') + '\n'
 source += function('static void Combo_OnOOTSaveLoad(int fileNum) {') + '\n'
@@ -103,7 +107,7 @@ Json seedFor(int slot) {
 }
 void expectCalls(bool loaded, bool succeeded) {
     std::vector<std::string> expected{"rules", "visited", "restore", "capture", "completion",
-        "entrances", "song", "runtime", "oot-rando", "mm-rando", "hints"};
+        "entrances", "er-flags", "song", "runtime", "oot-rando", "mm-rando", "hints"};
     if (loaded) expected.push_back("mm-save");
     if (loaded && succeeded) expected.push_back("resync");
     expected.insert(expected.end(), {"triforce", "reconcile", "resume"});
@@ -118,6 +122,7 @@ void bind(int slot, bool loaded, bool succeeded) {
     assert(songTravel == saved.at("songTravel"));
     assert(containers[slot]["combo"]["rando"] == saved);
     assert(containers[slot]["combo"]["gameplayRules"].at("slot") == slot);
+    assert(runtimeFlags.back() == 0); // none of these seeds installs a layout that shuffles entrances
 }
 int main() {
     std::vector<SavedOverride> rows;
@@ -157,6 +162,23 @@ int main() {
     const auto epoch = g_ComboContextEpoch;
     Combo_OnOOTSaveLoad(0xff);
     assert(calls.empty() && g_ComboContextEpoch == epoch + 1 && g_MmSaveInMemorySlot == 2);
+    // A unified layout this build refuses binds the rest of the slot, with no ER-wide runtime flag.
+    EntranceLayout tranche;
+    tranche.required = {std::string(kMmTrancheCapability)};
+    tranche.settings.erWallmasters = Mode::OwnGame;
+    Overrides routes;
+    i = 0;
+    for (const auto source : kMmWallmasterSources)
+        routes[LayoutV1::FindRow(source)->name] = LayoutV1::FindRow(kMmBaseWallmasterDestinations[i++])->name;
+    tranche.overrides = routes;
+    auto layoutSeed = seedFor(0);
+    layoutSeed["fileType"] = ComboRando::kEntranceSeedFileType;
+    layoutSeed["version"] = ComboRando::kEntranceSeedVersion;
+    layoutSeed["entranceLayout"] = EncodeEntranceLayout(tranche);
+    containers[0] = {{"combo", {{"rando", layoutSeed}}}};
+    assert(ActiveCapabilities().Empty()); // as shipped in Phase A
+    bind(0, true, true);
+    assert(installedSeed.empty());
     std::cout << "PASS production slot bind continues after entrance rejection; immutable seed, stale layout, "
                  "song/items/hints/rules and dormant MM residency stay slot-isolated\n";
 }

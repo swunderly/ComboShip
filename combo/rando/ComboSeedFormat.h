@@ -1,5 +1,6 @@
 #pragma once
 #include "entrances/EntranceLayout.h"
+#include "entrances/EntranceRuntimeFlags.h"
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -92,5 +93,31 @@ inline void StampComboSeedFormat(nlohmann::json& seed) {
 inline void CheckComboSeedPreflight(const nlohmann::json& nativeSave) {
     if (nativeSave.is_object() && nativeSave.contains(kComboSeedPreflightError))
         throw UnsupportedComboSeedFormat();
+}
+
+// The ER-wide runtime flags (entrances/EntranceRuntimeFlags.h) of a seed whose layout this build already
+// accepted; none without a layout. A layout that does not decode turns nothing on.
+inline uint32_t SeedEntranceRuntimeFlags(const nlohmann::json& seed) {
+    if (!seed.is_object() || !seed.contains("entranceLayout"))
+        return 0;
+    try {
+        return Entrances::EntranceRuntimeFlags(Entrances::DecodeEntranceLayout(seed.at("entranceLayout")).settings);
+    } catch (const std::exception&) { return 0; }
+}
+// The slot seed's runtime flags ride on the native OoT page the launcher hands to a save load, like
+// kComboSeedPreflightError: the native loader must have them before Sram_StageOpenedSave picks the spawn,
+// which runs before the OnLoadGame bind (M1 plan, critic correction C9). The key is not save data:
+// taking it removes it, so the page applied is the page stored.
+inline constexpr const char* kComboEntranceRuntimeFlags = "__comboEntranceRuntimeFlags";
+inline uint32_t TakeComboEntranceRuntimeFlags(nlohmann::json& nativeSave) {
+    if (!nativeSave.is_object())
+        return 0;
+    const auto flags = nativeSave.find(kComboEntranceRuntimeFlags);
+    if (flags == nativeSave.end())
+        return 0;
+    const uint32_t value =
+        flags->is_number_unsigned() ? flags->get<uint32_t>() & Entrances::kEntranceRuntimeFlagsKnown : 0u;
+    nativeSave.erase(flags);
+    return value;
 }
 } // namespace ComboRando

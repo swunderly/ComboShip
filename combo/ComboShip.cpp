@@ -411,6 +411,7 @@ static FnOraclePlaceItem Combo_MM_Rando_PlaceItem = nullptr;
 static FnOracleVoid Combo_MM_Rando_Restore = nullptr;
 static ComboRando::Entrances::NativeFns sEntranceNative;
 static ComboRando::Entrances::TempleProbeFns sTempleProbe;
+static void (*SOH_SetEntranceRuntimeFlags)(uint32_t) = nullptr;
 static bool InstallEntranceSeed(const nlohmann::json& seed) {
     try {
         ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, seed, ComboRando::Entrances::ActiveCapabilities());
@@ -747,6 +748,7 @@ static const char* Combo_ReadGameSave(int game, int fileNum) {
         return "";
     thread_local std::string buf;
     std::lock_guard<std::mutex> lk(g_containerMutex);
+    uint32_t entranceFlags = 0;
     if (game == ComboRando::GAME_OOT) {
         nlohmann::json inspected;
         try {
@@ -755,6 +757,9 @@ static const char* Combo_ReadGameSave(int game, int fileNum) {
                             ? cached->second
                             : ComboRando::Profiles::ReadSavedContainerFile(ComboContainerPath(fileNum));
             ComboRando::Profiles::ValidateSavedCatalogs(inspected, ComboRando::Entrances::ActiveCapabilities());
+            // The accepted layout's ER-wide runtime flags, for the native loader's spawn choice (M1 C9).
+            entranceFlags = ComboRando::Profiles::ContainerEntranceRuntimeFlags(
+                inspected, ComboRando::Entrances::ActiveCapabilities());
         } catch (const ComboRando::UnsupportedComboSeedFormat& error) {
             // Transient page only: native preflight rejects before binding or migrating this slot.
             auto page = inspected.value("oot", nlohmann::json::object());
@@ -780,6 +785,13 @@ static const char* Combo_ReadGameSave(int game, int fileNum) {
     auto& c = LoadOrCreateContainer(fileNum);
     const char* key = (game == ComboRando::GAME_OOT) ? "oot" : "mm";
     auto it = c.find(key);
+    if (entranceFlags && it != c.end() && it->is_object()) {
+        // Transient, like the preflight error: SaveManager takes it off before applying the page.
+        auto page = *it;
+        page[ComboRando::kComboEntranceRuntimeFlags] = entranceFlags;
+        buf = page.dump();
+        return buf.c_str();
+    }
     buf = (it == c.end() || it->is_null()) ? std::string() : it->dump();
     return buf.c_str();
 }
@@ -3845,7 +3857,12 @@ static void Combo_OnOOTSaveLoad(int fileNum) {
         // A rejected legacy layout is logged and cleared by InstallEntranceSeed. Keep binding
         // the existing slot so its items, hints, song travel and dormant MM save cannot remain
         // borrowed from the previously selected file. Do not rewrite the saved seed envelope.
-        InstallEntranceSeed(seedForEntrances);
+        const bool entrancesInstalled = InstallEntranceSeed(seedForEntrances);
+        // The installed layout's ER-wide runtime flags in OoT; a refused layout turns none on. The save
+        // preflight set them for this load's spawn already (Combo_ReadGameSave, M1 C9).
+        if (SOH_SetEntranceRuntimeFlags)
+            SOH_SetEntranceRuntimeFlags(entrancesInstalled ? ComboRando::SeedEntranceRuntimeFlags(seedForEntrances)
+                                                           : 0u);
         InstallSongTravel(rando.empty() ? nlohmann::json() : seedForEntrances.value("songTravel", nlohmann::json()));
         RefreshGameplayRuntime();
         if (!rando.empty()) {
@@ -4459,6 +4476,7 @@ int main(int argc, char** argv) {
         (void (*)(uint32_t, uint32_t))GetSym(mmModule, "MM_SetOracleSongAgeArrivals");
     sAdultMmAgeOracle.UseCrossAgeOracle = (bool (*)())GetSym(mmModule, "MM_UseCrossAgeOracle");
     SOH_SetMmVisited = (void (*)(int))GetSym(sohModule, "SOH_SetMmVisited");
+    SOH_SetEntranceRuntimeFlags = (void (*)(uint32_t))GetSym(sohModule, "SOH_SetEntranceRuntimeFlags");
     SOH_GetSongKnowledge = (uint32_t(*)())GetSym(sohModule, "SOH_GetSongKnowledge");
     MM_GetSongKnowledge = (uint32_t(*)())GetSym(mmModule, "MM_GetSongKnowledge");
     SOH_SetForeignSongKnowledge = (void (*)(uint32_t))GetSym(sohModule, "SOH_SetForeignSongKnowledge");

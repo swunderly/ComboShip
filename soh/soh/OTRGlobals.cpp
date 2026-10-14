@@ -2866,6 +2866,19 @@ extern "C" COMBO_EXPORT void SOH_GetGlobalOptions(int* zTarget, int* audio) {
         *audio = gSaveContext.audioSetting;
 }
 
+#include "rando/entrances/EntranceRuntimeFlags.h"
+// ComboShip (M1): the OoT slot's ER-wide runtime flags (combo/rando/entrances/EntranceRuntimeFlags.h). The
+// save preflight sets them before Sram_StageOpenedSave picks the spawn (SaveManager::LoadFile), and the
+// launcher again when it binds the slot's seed. Runtime-only: no save field holds them.
+static std::atomic<uint32_t> sEntranceRuntimeFlags{ 0 };
+extern "C" COMBO_EXPORT void SOH_SetEntranceRuntimeFlags(uint32_t flags) {
+    sEntranceRuntimeFlags.store(flags & ComboRando::Entrances::kEntranceRuntimeFlagsKnown);
+}
+// OoTMM v32.3 CFG_ER_ANY (packages/generator/lib/combo/randomizer/world-config.ts:30) for this save.
+extern "C" int Combo_OOTEntranceShuffleActive(void) {
+    return IS_RANDO && (sEntranceRuntimeFlags.load() & ComboRando::Entrances::kEntranceRuntimeErAny) != 0;
+}
+
 #include "soh/Enhancements/CrossWarp/CrossWarp.h"
 #include "rando/SongTravelOOT.h"
 #include "rando/ForeignSongs.h"

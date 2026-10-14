@@ -8,6 +8,7 @@
 // MIT, Copyright (c) 2020-2022 OoTMM Team; see LICENSE.OoTMM.
 #pragma once
 #include "Shuffle.h"
+#include <cstdint>
 
 namespace ComboRando::Entrances {
 // helpers.ts:6-55, term by term in its order.
@@ -26,5 +27,14 @@ inline bool ErEnabled(const Settings& s) {
            Active(s.erOverworld) || Active(s.erBoss) || s.erWarps != Warps::None || s.erOneWaysMajor ||
            s.erOneWaysIkana || s.erOneWaysSongs || s.erOneWaysStatues || s.erOneWaysOwls || Active(s.erGrottos) ||
            Active(s.erWallmasters);
+}
+
+// The runtime switches a layout turns on, as bits. They are runtime-only, like OoTMM's configuration
+// flags: the OoT module gets them from the slot's seed (ComboSeedFormat.h), the MM module reads its
+// installed layout (MmUnifiedLayout.h). No save field holds them.
+inline constexpr uint32_t kEntranceRuntimeErAny = 1u << 0; // CFG_ER_ANY, world-config.ts:30
+inline constexpr uint32_t kEntranceRuntimeFlagsKnown = kEntranceRuntimeErAny;
+inline uint32_t EntranceRuntimeFlags(const Settings& s) {
+    return IsEntranceShuffle(s) ? kEntranceRuntimeErAny : 0u;
 }
 } // namespace ComboRando::Entrances

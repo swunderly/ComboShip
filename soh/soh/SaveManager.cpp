@@ -44,6 +44,7 @@ static ComboRando::FnComboWriteSave gComboWriteGameSave = nullptr;
 static const char* (*gComboAnchorJournalProvider)(int fileNum) = nullptr;
 // ComboShip: whole-slot copy (both games + rando) for file-select "copy file"; launcher owns it.
 static void (*gComboCopyContainer)(int from, int to) = nullptr;
+extern "C" void SOH_SetEntranceRuntimeFlags(uint32_t flags); // OTRGlobals.cpp
 #endif
 
 void SaveManager::WriteSaveFile(const std::filesystem::path& savePath, const uintptr_t addr, void* dramAddr,
@@ -1488,6 +1489,9 @@ bool SaveManager::LoadFile(int fileNum, bool initializeFullContext) {
                                       " uses an unsupported Kokiri check catalog revision.");
             return false;
         }
+        // The slot seed's ER-wide runtime flags, which Sram_StageOpenedSave reads when it picks the spawn,
+        // before the OnLoadGame bind runs (M1 plan C9). Taking them leaves the page as stored.
+        SOH_SetEntranceRuntimeFlags(ComboRando::TakeComboEntranceRuntimeFlags(parsedSave));
         // No fileNum, SaveContext or owning randomizer Context changes precede preflight.
         comboLoadState.store(ComboLoadState::Loading);
         applying = true;

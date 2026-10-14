@@ -17,6 +17,7 @@ extern void (*gComboSaveInitCallback)(int fileNum);
 // ComboShip: fired before questType is read so the combo generator can run and call
 // SOH_ApplyRandoPlacements before Randomizer_InitSaveFile consumes the placements.
 extern void (*gComboGenerateCallback)(int fileNum);
+extern int Combo_OOTEntranceShuffleActive(void); // OTRGlobals.cpp
 #else
 void Save_LoadFile(void);
 #endif
@@ -139,7 +140,13 @@ static void Sram_StageOpenedSave(void) {
                 break;
             }
 
-            if (gSaveContext.savedSceneNum != SCENE_LINKS_HOUSE) {
+            // ComboShip (M1): OoTMM v32.3 oot/save.c:37-42 honours a Link's House save only without entrance
+            // shuffle (CFG_ER_ANY). The flag comes from the save preflight, before the OnLoadGame bind (C9).
+            if (gSaveContext.savedSceneNum != SCENE_LINKS_HOUSE
+#ifdef COMBO_BUILD
+                || Combo_OOTEntranceShuffleActive()
+#endif
+            ) {
                 gSaveContext.entranceIndex =
                     (LINK_AGE_IN_YEARS == YEARS_CHILD) ? ENTR_LINKS_HOUSE_CHILD_SPAWN : ENTR_TEMPLE_OF_TIME_WARP_PAD;
             } else {
