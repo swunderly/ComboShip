@@ -41,9 +41,27 @@ Bindings BaseBindings() {
   return b;
 }
 
+// The areas of the 13 OoT Wallmaster rows. Reporting them absent leaves only
+// the 4 MM rows in the WALLMASTERS pool, as the MM tranche will (M1-07).
+bool OotWallmasterArea(std::string_view area) {
+  for (const auto &r : kRegistry)
+    if (r.game == Game::Oot && r.type == Type::Wallmaster && r.from == area)
+      return true;
+  return false;
+}
+Bindings MmWallmastersOnly() {
+  auto b = BaseBindings();
+  b.areaExists = [](std::string_view area) { return !OotWallmasterArea(area); };
+  return b;
+}
+bool IsMm(const Json &row) {
+  return Find(row.get<std::string>())->game == Game::Mm;
+}
+
 // Fake native probe: checks each request, then answers with `answer`.
 int answer = 1, queries = 0, prepares = 0, releases = 0;
 std::string lastQuery;
+std::set<std::string> mmDeleted; // MM rows listed unprobed by any query
 int FakePrepare(const char *json) {
   ++prepares;
   const auto j = Json::parse(json);
@@ -64,6 +82,13 @@ int FakeQuery(const char *json, int (*)(void), uint8_t *ages) {
   for (const auto &e : j["edges"])
     assert(bound.contains(e["src"].get<std::string>()) &&
            bound.contains(e["dst"].get<std::string>()));
+  // MM rows only ever meet MM rows; the probe lists them unprobed (lemma L4).
+  for (const auto &row : j["mm"]["deleted"]) {
+    assert(IsMm(row));
+    mmDeleted.insert(row.get<std::string>());
+  }
+  for (const auto &e : j["mm"]["edges"])
+    assert(IsMm(e["src"]) && IsMm(e["dst"]));
   assert(j["portalLinks"].size() == 2);
   *ages = answer == 1 ? 2 : 0;
   return answer;
@@ -75,7 +100,7 @@ const TempleProbeFns kFns{FakePrepare, FakeQuery, FakeError, FakeRelease,
 
 // What wiring will do: gate first, then build and run the Shuffler.
 Overrides Gated(const Settings &s, const TempleFacts &f, Bindings b) {
-  CheckTempleCapability(s, f, MakePools(s));
+  CheckTempleCapability(s, f, b.areaExists);
   b.validateAgeTemple = MakeTempleValidator(kFns, s);
   TempleProbeSession session(kFns, f);
   return Shuffler(s, std::move(b)).run();
@@ -97,8 +122,11 @@ void UnsupportedBeforeAnyDraw() {
       {"spawns",
        [](Settings &s, TempleFacts &) { s.erSpawns = Spawns::Adult; }},
       {"boss", [](Settings &s, TempleFacts &) { s.erBoss = Mode::OwnGame; }},
-      {"dungeonBeaten",
-       [](Settings &, TempleFacts &f) { f.dungeonBeaten = true; }},
+      {"boss with dungeonBeaten",
+       [](Settings &s, TempleFacts &f) {
+         s.erBoss = Mode::OwnGame;
+         f.dungeonBeaten = true;
+       }},
       {"grottos",
        [](Settings &s, TempleFacts &) { s.erGrottos = Mode::OwnGame; }},
       {"overworld",
@@ -115,7 +143,7 @@ void UnsupportedBeforeAnyDraw() {
          s.erDungeons = Mode::OwnGame;
          s.erMajorDungeons = true;
        }},
-      {"wallmasters",
+      {"wallmasters with the OoT rows",
        [](Settings &s, TempleFacts &) { s.erWallmasters = Mode::OwnGame; }},
       {"mixed",
        [](Settings &s, TempleFacts &) {
@@ -126,6 +154,11 @@ void UnsupportedBeforeAnyDraw() {
        }},
       {"one-ways anywhere (unbound destinations)",
        [](Settings &s, TempleFacts &) { s.erOneWaysAnywhere = true; }},
+      {"one-ways anywhere with MM rows only",
+       [](Settings &s, TempleFacts &) {
+         s.erOneWaysMajor = s.erOneWaysOwls = false;
+         s.erOneWaysAnywhere = true;
+       }},
       {"starting Soaring",
        [](Settings &, TempleFacts &f) {
          f.mmStartingItems = {"Song of Soaring"};
@@ -169,7 +202,84 @@ void UnsupportedBeforeAnyDraw() {
     if (!rejected || draws || queries || prepares)
       std::cerr << "case: " << c.name << '\n';
     assert(rejected && draws == 0 && queries == 0 && prepares == 0);
+    // No Logic: isValidShuffle accepts before building any world
+    // (entrances.ts:388-391), so the gate refuses none of these and no Temple
+    // pass is needed.
+    f.logicEnabled = false;
+    CheckTempleCapability(s, f, BaseBindings().areaExists);
+    assert(!NeedsTemplePass(s, f));
   }
+}
+
+// Own-game alias WALLMASTERS: admitted when every OoT row a candidate can
+// touch is bound. No OoT Wallmaster row is bound yet, so only the MM rows pass.
+void WallmasterRows() {
+  const std::set<std::string> mmSources{
+      "MM_WALLMASTER_BTW_ENTRANCE", "MM_WALLMASTER_BTW_EXIT",
+      "MM_WALLMASTER_BTW_FOUNTAIN", "MM_WALLMASTER_DAMPE"};
+  Settings alone;
+  alone.erWallmasters = Mode::OwnGame;
+  Settings withOneWays = OneWays();
+  withOneWays.erWallmasters = Mode::OwnGame;
+  for (const auto &s : {alone, withOneWays})
+    for (auto age : {TempleStartingAge::Child, TempleStartingAge::Adult})
+      for (bool beaten : {false, true}) {
+        TempleFacts f;
+        f.startingAge = age;
+        f.dungeonBeaten = beaten; // read only with a BOSS pool
+        answer = 1;
+        draws = queries = prepares = releases = 0;
+        mmDeleted.clear();
+        const auto layout = Gated(s, f, MmWallmastersOnly());
+        assert(queries > 0 && draws > 0 && prepares == 1 && releases == 1);
+        std::set<std::string_view> destinations;
+        for (const auto &src : mmSources) {
+          const auto it = layout.find(src);
+          assert(it != layout.end() && Find(it->second)->game == Game::Mm);
+          destinations.insert(it->second);
+          assert(mmDeleted.contains(src));
+        }
+        assert(destinations.size() == mmSources.size()); // alias: no reuse
+        for (const auto &route : layout)
+          assert(Find(route.first)->type != Type::Wallmaster ||
+                 Find(route.first)->game == Game::Mm);
+      }
+  // Any OoT Wallmaster row in the world is refused before any draw, alone or
+  // with one-ways (which give it bound one-way destinations too).
+  size_t rows = 0;
+  for (const auto &r : kRegistry) {
+    if (r.game != Game::Oot || r.type != Type::Wallmaster)
+      continue;
+    ++rows;
+    auto b = BaseBindings();
+    b.areaExists = [&r](std::string_view area) {
+      return !OotWallmasterArea(area) || area == r.from;
+    };
+    assert(ResolvePools(alone, b.areaExists).pools.at(0).src.contains(r.name));
+    for (const auto &s : {alone, withOneWays}) {
+      draws = queries = prepares = 0;
+      std::string why;
+      try {
+        Gated(s, TempleFacts{}, b);
+      } catch (const TempleProbeUnsupported &e) {
+        why = e.what();
+      }
+      assert(why == "Temple probe: OoT row " + std::string(r.name) +
+                        " has no audited native binding");
+      assert(draws == 0 && queries == 0 && prepares == 0);
+    }
+  }
+  assert(rows == 13);
+  // A world with no Wallmaster area at all has no pool to place.
+  auto none = BaseBindings();
+  none.areaExists = [](std::string_view area) {
+    for (const auto &r : kRegistry)
+      if (r.type == Type::Wallmaster && r.from == area)
+        return false;
+    return true;
+  };
+  CheckTempleCapability(alone, TempleFacts{}, none.areaExists);
+  assert(ResolvePools(alone, none.areaExists).pools.empty());
 }
 
 void SupportedEnvelope() {
@@ -282,10 +392,12 @@ void ForeignStartingItems() {
 
 int main() {
   UnsupportedBeforeAnyDraw();
+  WallmasterRows();
   SupportedEnvelope();
   ExistingBoundaries();
   ForeignStartingItems();
   std::cout << "Temple capability gate: unsupported worlds stop before any "
-               "draw, the T1 envelope runs, codes map "
-               "without retry, and the existing hidden boundaries hold\n";
+               "draw (none under No Logic), MM-only Wallmasters and the T1 "
+               "envelope run, codes map without retry, and the existing "
+               "hidden boundaries hold\n";
 }

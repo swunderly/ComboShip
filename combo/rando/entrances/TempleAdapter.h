@@ -26,18 +26,29 @@ enum class TempleStartingAge : uint8_t { Child, Adult, Random };
 // Seed facts the gate needs besides the entrance settings, read once before the Shuffler exists.
 struct TempleFacts {
     TempleStartingAge startingAge = TempleStartingAge::Child; // the resolved RSK_SELECTED_STARTING_AGE
+    bool logicEnabled = true;                                 // Bindings::logicEnabled: false for NO_LOGIC
     bool glitchless = true;                                   // OoT logic rules
     bool shipwrightEntrances = false;                         // any native Ship entrance shuffle
     bool songTravelLogic = false, foreignSongsLogic = false;  // ActiveSongTravel() logic flags
-    bool dungeonBeaten = false;                               // OoTMM regionState dungeonBeaten
+    bool dungeonBeaten = false; // OoTMM regionState dungeonBeaten: read only with a BOSS pool
     std::vector<std::string> ootStartingItems, mmStartingItems, foreignStartingItems;
     std::string_view registry = kRegistrySourceSha256;
 };
 
-// Supported envelope T1: own-game one-ways whose OoT rows all have audited native bindings, no large
-// pool, glitchless logic, no song travel and no starting warp songs or Soaring. Everything else throws
-// here, before any random draw.
-inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const Descriptions& pools) {
+// Whether a Shuffler run calls validateAgeTemple at all: never for logic none, which isValidShuffle
+// accepts before building any world (entrances.ts:388-391), nor without OoT (:411). The same test as
+// Shuffle.h's, so a run that skips the Temple pass never needs a validator.
+inline bool NeedsTemplePass(const Settings& s, const TempleFacts& f) {
+    return f.logicEnabled && s.games != Games::Mm;
+}
+
+// Supported envelope: own-game one-ways and the own-game alias Wallmaster pool, as far as every OoT
+// row a candidate can touch has an audited native binding; no large pool, glitchless logic, no song
+// travel and no starting warp songs or Soaring. Everything else throws here, before any random draw.
+// The pools are the ones the Shuffler will place, resolved with the same areaExists.
+inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const AreaExists& areaExists) {
+    if (!f.logicEnabled)
+        return; // logic none never runs the Temple pass (entrances.ts:388-391)
     auto reject = [](const std::string& why) { throw TempleProbeUnsupported("Temple probe: " + why); };
     if (f.registry != kRegistrySourceSha256 || kOotEdgeBindingRegistry != kRegistrySourceSha256)
         reject("entrance registry identity differs from the audited bindings");
@@ -55,26 +66,34 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
                              s.erOneWays, s.erWallmasters })
         if (mode == Mode::Full)
             reject("Full (cross-game) pools need the reset gate natively (deferred)");
-    if (Active(s.erBoss) || f.dungeonBeaten)
-        reject("boss pools and dungeonBeaten events at SPAWN are deferred");
+    // regionState dungeonBeaten adds boss events at SPAWN only through a BOSS pool (entrances.ts:241-246,
+    // :334-346), so dungeonBeaten alone changes no candidate world.
+    if (Active(s.erBoss))
+        reject("boss pools and their dungeonBeaten events at SPAWN are deferred");
     if (s.erSpawns != Spawns::None || s.erIndoorsGameLinks || Active(s.erMixed) || s.erWarps != Warps::None)
         reject("spawn, game-link, mixed and warp pools are deferred");
-    if (Active(s.erWallmasters))
-        reject("OoT Wallmasters wait for the M1 native edge audit");
+    if (Active(s.erOneWays) && s.erOneWaysAnywhere)
+        reject("one-ways Anywhere (extended destinations) is deferred");
     const std::set<std::string_view> bound(kOotTempleCandidateRows.begin(), kOotTempleCandidateRows.end());
-    for (const auto& pool : pools) {
-        if (pool.name != "ONE_WAYS" || !pool.ownGame)
+    auto requireBound = [&](std::string_view name) {
+        if (Find(name)->game == Game::Oot && !bound.contains(name))
+            reject("OoT row " + std::string(name) + " has no audited native binding");
+    };
+    for (const auto& pool : ResolvePools(s, areaExists).pools) {
+        if (!pool.ownGame || (pool.name != "ONE_WAYS" && !(pool.name == "WALLMASTERS" && pool.alias)))
             reject("pool " + pool.name + " has no native representation yet");
-        size_t sources = 0, destinations = 0;
-        for (const auto& r : kRegistry) {
-            const bool src = pool.src.contains(r.type), dst = pool.dst.contains(r.type);
-            sources += src;
-            destinations += dst;
-            if ((src || dst) && r.game == Game::Oot && !bound.contains(r.name))
-                reject("OoT row " + std::string(r.name) + " has no audited native binding");
-        }
-        if (sources * destinations > 5000 && sources > 50) // entrances.ts:293-294, before area filtering
+        if (IsLargeCandidatePool(pool)) // entrances.ts:293-294
             reject("pool " + pool.name + " would need native ASSUMED exits");
+        // The rows a candidate world deletes or connects (CandidateWorld.h): every source, and every
+        // destination assignable from one; no Wallmaster or one-way row has a reverse. Own-game MM rows
+        // only meet MM rows, which the probe lists without probing them, because no MM change reaches
+        // the OoT target here (lemma L4). No OoT Wallmaster row is bound yet, so only MM ones pass.
+        for (const auto src : pool.src) {
+            requireBound(src);
+            for (const auto dst : pool.dst)
+                if (Assignable(*Find(src), *Find(dst), pool.ownGame, s))
+                    requireBound(dst);
+        }
     }
     static const std::set<std::string> songs{ "Song of Soaring",   "Minuet of Forest",   "Bolero of Fire",
                                               "Serenade of Water", "Nocturne of Shadow", "Requiem of Spirit",
