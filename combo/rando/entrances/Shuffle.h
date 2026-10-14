@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <functional>
 #include <map>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -268,10 +269,97 @@ inline bool Assignable(const Record& src, const Record& dst, bool ownGame, const
     return s.erSelfLoops || !IsSelfLoop(src, dst);
 }
 
+class ShuffleError : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+
+using AreaExists = std::function<bool(std::string_view)>;
+// computeAllEntrances (entrances.ts:179-201): the rows of the selected games whose areas exist.
+inline Names AvailableEntrances(const Settings& s, const AreaExists& areaExists) {
+    Names available;
+    for (const auto& e : kRegistry) {
+        if ((s.games == Games::Oot && e.game != Game::Oot) || (s.games == Games::Mm && e.game != Game::Mm))
+            continue;
+        if (e.from != "NONE" && !areaExists(e.from))
+            continue;
+        if (e.to != "NONE" && !areaExists(e.to))
+            continue;
+        available.insert(e.name);
+    }
+    return available;
+}
+// The game links stay connected unless they are shuffled (entrances.ts:888-911).
+inline Overrides ReservedEntrances(const Settings& s) {
+    Overrides fixed;
+    if (!s.erIndoorsGameLinks) {
+        if (s.games != Games::Mm)
+            fixed["OOT_SHOP_MASKS"] =
+                s.games == Games::Both ? "MM_CLOCK_TOWN_FROM_CLOCK_TOWER" : "OOT_MARKET_FROM_MASK_SHOP";
+        if (s.games != Games::Oot)
+            fixed["MM_CLOCK_TOWER_FROM_CLOCK_TOWN"] =
+                s.games == Games::Both ? "OOT_MARKET_FROM_MASK_SHOP" : "MM_CLOCK_TOWN_FROM_CLOCK_TOWER";
+    }
+    return fixed;
+}
+// entrancesForTypes (entrances.ts:601-606) over the available rows.
+inline Names EntrancesForTypes(const Types& types, const Names& available) {
+    Names result;
+    for (const auto& name : available) {
+        const auto& e = *Find(name);
+        if (!types.contains(e.type))
+            continue;
+        result.insert(name);
+        if (const auto* reverse = Reverse(e)) {
+            // A dangling native region binding is rejected, not added implicitly.
+            if (!available.contains(reverse->name))
+                throw std::invalid_argument("Missing reverse graph area for " + std::string(name));
+            result.insert(reverse->name);
+        }
+    }
+    return result;
+}
+// One pool of placePools (entrances.ts:567-589, 608-626): rows the fixed overrides use and the game
+// links removed. Empty when it has no source.
+inline std::optional<Pool> ResolvePool(const PoolDescription& d, const Names& available, const Overrides& fixed) {
+    Pool p{ d.name, EntrancesForTypes(d.src, available), EntrancesForTypes(d.dst, available), d.ownGame, d.alias };
+    for (const auto& [src, dst] : fixed) {
+        p.src.erase(src);
+        if (!p.alias)
+            p.dst.erase(dst);
+    }
+    p.src.erase("OOT_MARKET_FROM_MASK_SHOP");
+    p.src.erase("MM_CLOCK_TOWN_FROM_CLOCK_TOWER");
+    p.dst.erase("OOT_SHOP_MASKS");
+    p.dst.erase("MM_CLOCK_TOWER_FROM_CLOCK_TOWN");
+    if (p.src.empty()) {
+        if (!p.dst.empty() && !p.alias)
+            throw ShuffleError("Unbalanced pool: " + p.name);
+        return std::nullopt;
+    }
+    if (p.dst.empty())
+        throw ShuffleError("No destinations for pool: " + p.name);
+    return p;
+}
+struct ResolvedPools {
+    Names available;
+    Overrides fixed; // the reserved game links
+    Pools pools;
+};
+// The pools a world gives these settings, before any placement: no bindings, RNG or native
+// support checks. Shuffler::makePools is this plus the support checks.
+inline ResolvedPools ResolvePools(const Settings& s, const AreaExists& areaExists) {
+    ResolvedPools result{ AvailableEntrances(s, areaExists), ReservedEntrances(s), {} };
+    for (const auto& d : MakePools(s))
+        if (auto pool = ResolvePool(d, result.available, result.fixed))
+            result.pools.push_back(std::move(*pool));
+    return result;
+}
+
 // Native graph adapters supply these predicates. Capability checks happen before
 // random sampling. Area filtering matches upstream computeAllEntrances.
 struct Bindings {
-    std::function<bool(std::string_view)> areaExists;
+    AreaExists areaExists;
     std::function<bool(const Record&)> sourceSupported, destinationSupported;
     // Each candidate includes the default and prior overrides AND remaining pools.
     // Build a temporary graph, preserve source predicates, OR duplicate edges,
@@ -291,15 +379,10 @@ struct Bindings {
     std::function<size_t(size_t)> chooseIndex;
 };
 
-class ShuffleError : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-};
-
 class Shuffler {
     Settings settings;
     Bindings bindings;
-    Names available, usedSrc, usedDst;
+    Names available;
     Overrides fixed;
     size_t backtracks = 0;
     bool anyActive = false;
@@ -320,56 +403,19 @@ class Shuffler {
     const Record* coupledReverse(std::string_view name) const {
         return settings.erDecoupled ? nullptr : Reverse(*Find(name));
     }
-    Names forTypes(const Types& types) const {
-        Names result;
-        for (const auto& name : available) {
-            const auto& e = *Find(name);
-            if (!types.contains(e.type))
-                continue;
-            result.insert(name);
-            if (const auto* reverse = Reverse(e)) {
-                // A dangling native region binding is rejected, not added implicitly.
-                if (!available.contains(reverse->name))
-                    throw std::invalid_argument("Missing reverse graph area for " + std::string(name));
-                result.insert(reverse->name);
-            }
-        }
-        return result;
-    }
-    void reserve(std::string_view src, std::string_view dst) {
-        if (!Find(src) || !Find(dst))
-            throw std::invalid_argument("Unknown reserved entrance");
-        fixed[src] = dst;
-        usedSrc.insert(src);
-        usedDst.insert(dst);
-    }
     Pools makePools() const {
         Pools result;
         for (const auto& d : MakePools(settings)) {
-            Pool p{ d.name, forTypes(d.src), forTypes(d.dst), d.ownGame, d.alias };
-            for (const auto& name : usedSrc)
-                p.src.erase(name);
-            if (!p.alias)
-                for (const auto& name : usedDst)
-                    p.dst.erase(name);
-            p.src.erase("OOT_MARKET_FROM_MASK_SHOP");
-            p.src.erase("MM_CLOCK_TOWN_FROM_CLOCK_TOWER");
-            p.dst.erase("OOT_SHOP_MASKS");
-            p.dst.erase("MM_CLOCK_TOWER_FROM_CLOCK_TOWN");
-            if (p.src.empty()) {
-                if (!p.dst.empty() && !p.alias)
-                    throw ShuffleError("Unbalanced pool: " + p.name);
+            auto p = ResolvePool(d, available, fixed);
+            if (!p)
                 continue;
-            }
-            if (p.dst.empty())
-                throw ShuffleError("No destinations for pool: " + p.name);
-            for (const auto& name : p.src)
+            for (const auto& name : p->src)
                 if (!bindings.sourceSupported || !bindings.sourceSupported(*Find(name)))
                     throw std::invalid_argument("Unsupported native source: " + std::string(name));
-            for (const auto& name : p.dst)
+            for (const auto& name : p->dst)
                 if (!bindings.destinationSupported || !bindings.destinationSupported(*Find(name)))
                     throw std::invalid_argument("Unsupported native destination: " + std::string(name));
-            result.push_back(std::move(p));
+            result.push_back(std::move(*p));
         }
         return result;
     }
@@ -433,24 +479,8 @@ class Shuffler {
             throw std::invalid_argument("Entrance graph validation bindings are required");
         if (bindings.logicEnabled && settings.games != Games::Mm && !bindings.validateAgeTemple)
             throw std::invalid_argument("OoT entrance validation requires the starting-item opposite-age Temple probe");
-        for (const auto& e : kRegistry) {
-            if ((settings.games == Games::Oot && e.game != Game::Oot) ||
-                (settings.games == Games::Mm && e.game != Game::Mm))
-                continue;
-            if (e.from != "NONE" && !bindings.areaExists(e.from))
-                continue;
-            if (e.to != "NONE" && !bindings.areaExists(e.to))
-                continue;
-            available.insert(e.name);
-        }
-        if (!settings.erIndoorsGameLinks) {
-            if (settings.games != Games::Mm)
-                reserve("OOT_SHOP_MASKS",
-                        settings.games == Games::Both ? "MM_CLOCK_TOWN_FROM_CLOCK_TOWER" : "OOT_MARKET_FROM_MASK_SHOP");
-            if (settings.games != Games::Oot)
-                reserve("MM_CLOCK_TOWER_FROM_CLOCK_TOWN",
-                        settings.games == Games::Both ? "OOT_MARKET_FROM_MASK_SHOP" : "MM_CLOCK_TOWN_FROM_CLOCK_TOWER");
-        }
+        available = AvailableEntrances(settings, bindings.areaExists);
+        fixed = ReservedEntrances(settings);
     }
     Overrides run() {
         if (!anyActive)
