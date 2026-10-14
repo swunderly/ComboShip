@@ -231,6 +231,9 @@ struct Oracles {
   static uint8_t Portal() { return 1; }
   static uint8_t Adult() { return 1; }
   static uint8_t Child() { return 2; }
+  // A Random starting age: the first OoT reset (EnsureOracleInit) finalizes
+  // the settings again and resolves it anew, child before it, adult after.
+  static uint8_t Rerolled() { return ootResets == 0 ? 2 : 1; }
   static void Place(const char *, const char *) {}
 };
 OracleFns OotOracle() {
@@ -431,6 +434,14 @@ void CheckTemplePass() {
     for (const auto &e : FakeProbe::last["mm"]["edges"])
       assert(e["src"].get<std::string>().starts_with("MM_WALLMASTER_"));
   }
+  // The age Prepare gets is read after that reset, which in a fresh process
+  // resolves a Random starting age again (C13: no precondition drift).
+  ResetAll();
+  g = Tranche();
+  g.oot.GetStartAges = Oracles::Rerolled;
+  Generate(g);
+  assert(FakeProbe::prepares == 1 && FakeProbe::resetsAtPrepare == 1 &&
+         FakeProbe::prepare["startingAge"] == "adult");
   // No Logic: no Temple pass, no candidate check, still a complete install.
   ResetAll();
   g = Tranche();

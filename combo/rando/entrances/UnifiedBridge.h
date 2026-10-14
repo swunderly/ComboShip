@@ -105,7 +105,8 @@ inline bool ShipEntrancesActive(const SettingReader& read) {
     return false;
 }
 
-// The seed facts the Temple pass needs, read after the native pools were prepared.
+// The seed facts the Temple pass needs, read after the native pools were prepared and the OoT oracle's
+// first reset, which can resolve a Random starting age again.
 inline TempleFacts UnifiedTempleFacts(const UnifiedGeneration& g) {
     TempleFacts f;
     const uint8_t ages = g.oot.GetStartAges ? g.oot.GetStartAges() : 0; // adult 1, child 2
@@ -201,15 +202,19 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
                 if (Assignable(*Find(src), *Find(dst), pool.ownGame, s))
                     offered.insert(dst);
 
-    const auto facts = UnifiedTempleFacts(g);
-    // The probe needs the OoT oracle prepared, and its first reset rebuilds the region graph, which
-    // must not happen between Prepare and a query (TempleProbe.cpp P1, P2). Reset it once first, as
-    // the first candidate's all-items check would.
-    if (NeedsTemplePass(s, facts, areaExists)) {
+    // The probe needs the OoT oracle prepared, and its first reset (EnsureOracleInit) rebuilds the
+    // region graph, which must not happen between Prepare and a query (TempleProbe.cpp P1, P2), and
+    // finalizes the OoT settings again, which re-rolls a Random starting age. Reset it once first, as
+    // the first candidate's all-items check would, and read the facts Prepare checks only after it.
+    // Whether the pass runs depends only on the facts' logic flag.
+    TempleFacts logic;
+    logic.logicEnabled = g.access != OotAccess::NO_LOGIC;
+    if (NeedsTemplePass(s, logic, areaExists)) {
         if (!g.oot.Reset)
             throw UnifiedEntranceRefused("Entrance validation requires the OoT reachability oracle");
         g.oot.Reset();
     }
+    const auto facts = UnifiedTempleFacts(g);
     TempleProbeRun templeRun(temple, s, facts, areaExists);
     NativeScope restore(native);
     AssumedWorld world(g.ootDump, g.mmDump, g.forcedOot);
