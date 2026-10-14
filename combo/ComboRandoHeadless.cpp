@@ -57,6 +57,7 @@
 #include "rando/entrances/MmMixedNativeBridge.h"
 #include "rando/entrances/MmGrottoNativeBridge.h"
 #include "rando/entrances/OotmmSettings.h"
+#include "rando/entrances/UnifiedBridge.h"
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/FaroreRules.h"
 #include "rando/SpellRules.h"
@@ -188,7 +189,7 @@ int RunHeadless(int argc, char** argv) {
     bool nativeMmMixed = false;
     bool nativeMmGrottos = false;     // private exact-generation validation; no public menu claim
     bool nativeMmWallmasters = false; // internal validation flag; no menu capability claim
-    // OoTMM entrance settings (--er, --er-capability). No generator reads them yet.
+    // OoTMM entrance settings (--er, --er-capability), read by the unified generator (UnifiedBridge.h).
     std::vector<std::string> entrancePairs;
     std::string entranceCapability;
     bool entranceArgs = false;
@@ -384,6 +385,8 @@ int RunHeadless(int argc, char** argv) {
         Sym<void (*)()>(mm, "MM_ClearEntranceExpansionAssumptionsForCombo"),
         Sym<const char* (*)()>(mm, "MM_DumpEntranceExpansionForCombo")
     };
+    const auto templeProbe =
+        ComboRando::Entrances::ResolveUnifiedTempleProbe([&](const char* name) { return Sym<void*>(soh, name); });
     auto setOotSongs = Sym<void (*)(const char*)>(soh, "SOH_SetSongTravel");
     auto setMmSongs = Sym<void (*)(const char*)>(mm, "MM_SetSongTravel");
     ComboRando::SongTravelMap generatedSongs;
@@ -887,6 +890,7 @@ int RunHeadless(int argc, char** argv) {
         std::string sohDump, mmDump, sohHintDump;
         ComboRando::CombinedFillResult r{};
         nlohmann::json entranceExpansion, ordinaryEntranceExpansion, grottoEntranceExpansion, mixedEntranceExpansion;
+        nlohmann::json entranceLayout;                 // the OoTMM entrance layout (--er), as RunComboFill writes it
         ComboRando::RequirednessResult pareDownResult; // cross-hint verification (headless mirror of RunComboFill)
         // Whole-fill retries with re-derived seeds, identical to RunComboFill (GAP-4) so a headless
         // seed reproduces the in-game one even when early attempts fail (shared budget, same header).
@@ -1031,6 +1035,58 @@ int RunHeadless(int argc, char** argv) {
                     return 2;
                 }
             }
+            // Same placement and failure rules as RunComboFill: only a layout search that used up its 1000
+            // attempts rerolls (within this loop's budget); any other entrance failure is a setup error.
+            try {
+                ComboRando::Entrances::UnifiedGeneration unified;
+                unified.settings = entranceSettings;
+                unified.capability = entranceCapability;
+                unified.active = ComboRando::Entrances::ActiveCapabilities();
+                unified.seed = masterSeed;
+                unified.readSetting = [&](const char* key, int fallback) {
+                    return readRule ? readRule(key, fallback) : fallback;
+                };
+                unified.privateMmProfiles = nativeMmOrdinaryIndoors || nativeMmOrdinaryTelescopes ||
+                                            nativeMmOrdinaryOverworld || nativeMmOrdinaryDungeons || nativeMmMixed ||
+                                            nativeMmGrottos || nativeMmWallmasters ||
+                                            !savedOrdinaryEntrances.is_null() || !savedGrottoEntrances.is_null() ||
+                                            !savedMixedEntrances.is_null();
+                unified.ootDump = sohDump;
+                unified.mmDump = mmDump;
+                unified.forcedOot = forced;
+                unified.oot = oot;
+                unified.mm = mmO;
+                unified.mmStart = mmStart;
+                unified.goal = goal;
+                unified.access = ootAccess;
+                unified.sharedMask = sharedMask;
+                unified.songTravelLogic = generatedSongs.logicEnabled;
+                unified.foreignSongsLogic = generatedSongs.logicForeignSongs;
+                const auto started = std::chrono::steady_clock::now();
+                entranceLayout = ComboRando::Entrances::GenerateEntranceLayout(unified, entranceNative, templeProbe);
+                if (!entranceLayout.is_null()) {
+                    ComboRando::Entrances::ApplyUnifiedLayout(entranceNative, entranceLayout, unified.active);
+                    std::cout << "[comborando] seed " << masterSeed << ": entrance layout with "
+                              << entranceLayout.at("overrides").size() << " routes in "
+                              << std::chrono::duration_cast<std::chrono::milliseconds>(
+                                     std::chrono::steady_clock::now() - started)
+                                     .count()
+                              << " ms\n";
+                }
+            } catch (const ComboRando::Entrances::ShuffleError& error) {
+                entranceLayout = nlohmann::json();
+                r = { "", false, std::string("entrance shuffle found no valid layout: ") + error.what() };
+                std::cerr << "[comborando] seed " << masterSeed
+                          << ": entrance shuffle found no valid layout: " << error.what() << "\n";
+                if (MM_Restore)
+                    MM_Restore();
+                if (mmStart && startCfg == 2)
+                    pinStartOot = true;
+                continue;
+            } catch (const std::exception& error) {
+                std::cerr << "[comborando] entrance layout generation: " << error.what() << "\n";
+                return 2;
+            }
             r = ComboRando::CrossWorldCombinedFill(sohDump, mmDump, masterSeed, oot, mmO, nullptr, forced, ootAccess,
                                                    goal, mmStart ? ComboRando::GAME_MM : ComboRando::GAME_OOT,
                                                    sharedMask);
@@ -1116,6 +1172,8 @@ int RunHeadless(int argc, char** argv) {
                         consolidated["grottoEntranceExpansion"] = grottoEntranceExpansion;
                     if (!mixedEntranceExpansion.is_null())
                         consolidated["mixedEntranceExpansion"] = mixedEntranceExpansion;
+                    if (!entranceLayout.is_null())
+                        consolidated["entranceLayout"] = entranceLayout;
                     consolidated["accessibility"] = {
                         { "version", 1 },
                         { "mode",

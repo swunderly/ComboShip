@@ -53,6 +53,7 @@
 #include "rando/entrances/MmOrdinaryNativeBridge.h"
 #include "rando/entrances/MmOrdinaryGenerationSettings.h"
 #include "rando/entrances/MmMixedNativeBridge.h"
+#include "rando/entrances/UnifiedBridge.h"
 #include "gui/ComboGenProgress.h"
 #include "gui/ProfileOotOptionPolicy.h"
 #include "ComboExtract.h"
@@ -409,6 +410,7 @@ static FnOracleGetChecks Combo_MM_Rando_GetReachableChecks = nullptr;
 static FnOraclePlaceItem Combo_MM_Rando_PlaceItem = nullptr;
 static FnOracleVoid Combo_MM_Rando_Restore = nullptr;
 static ComboRando::Entrances::NativeFns sEntranceNative;
+static ComboRando::Entrances::TempleProbeFns sTempleProbe;
 static bool InstallEntranceSeed(const nlohmann::json& seed) {
     try {
         ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, seed, ComboRando::Entrances::ActiveCapabilities());
@@ -2338,6 +2340,17 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     // setupCVars, imported seeds and old configs can carry; the headless tool's --mm-* flags validate them.
     const auto ordinarySettings = ComboRando::Entrances::MmOrdinaryGenerationSettings(false, false, false, false);
     const bool nativeMmMixed = false, nativeMmGrottos = false, nativeMmWallmasters = false;
+    // OoTMM's Wallmaster and One-Way shuffles (UnifiedBridge.h). A release build admits none of their values
+    // yet, and reading them in-game never uses the dev-only MM tranche.
+    const auto entranceCaps = ComboRando::Entrances::ActiveCapabilities();
+    const ComboRando::Entrances::SettingReader readSetting = [](const char* key, int fallback) {
+        return sReadGameplayRule ? sReadGameplayRule(key, fallback) : fallback;
+    };
+    const auto entranceSettings = ComboRando::Entrances::ReadEntranceSettings(readSetting, entranceCaps);
+    const bool privateMmProfiles = nativeMmMixed || nativeMmGrottos || nativeMmWallmasters ||
+                                   !ComboRando::Entrances::MakePools(ordinarySettings).empty();
+    nlohmann::json entranceLayout;
+    int entranceFailures = 0;
     nlohmann::json playthroughJson = nlohmann::json::array(); // structured sphere playthrough (combined-fill only)
     ComboRando::RequirednessResult pareDownResult;            // cross-hint Phase 3 WotH/foolish classification
     // ComboShip: checkName -> OOT area, computed once from sohHintDump right after the winning attempt's
@@ -2544,6 +2557,45 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                 ComboRando::Entrances::ApplyNativeMmGrottos(sEntranceNative, grottoEntranceExpansion);
             }
         }
+        // This attempt's OoTMM entrance layout, installed for its fill, hints, playthrough and spoiler; the
+        // next attempt's clear removes it. Only a layout search that used up its 1000 attempts rerolls, and
+        // only within the headless budget (C1); any other entrance failure stops generation.
+        try {
+            ComboRando::Entrances::UnifiedGeneration unified;
+            unified.settings = entranceSettings;
+            unified.active = entranceCaps;
+            unified.seed = masterSeed;
+            unified.readSetting = readSetting;
+            unified.privateMmProfiles = privateMmProfiles;
+            unified.ootDump = sohDump;
+            unified.mmDump = mmDump;
+            unified.forcedOot = forcedOot;
+            unified.oot = ootOracle;
+            unified.mm = mmOracle;
+            unified.mmStart = mmStart;
+            unified.goal = goal;
+            unified.access = ootAccess;
+            unified.sharedMask = sharedMask;
+            unified.songTravelLogic = sSongTravel.logicEnabled;
+            unified.foreignSongsLogic = sSongTravel.logicForeignSongs;
+            entranceLayout = ComboRando::Entrances::GenerateEntranceLayout(unified, sEntranceNative, sTempleProbe);
+            if (!entranceLayout.is_null())
+                ComboRando::Entrances::ApplyUnifiedLayout(sEntranceNative, entranceLayout, entranceCaps);
+        } catch (const ComboRando::Entrances::ShuffleError& error) {
+            entranceLayout = nlohmann::json();
+            lastFillError = std::string("Entrance shuffle found no valid layout (") + error.what() +
+                            ") — relax the entrance settings";
+            std::cout << "[ComboShip] RunComboFill: attempt " << (attempt + 1) << attemptBudget
+                      << " failed: " << lastFillError << "\n";
+            if (mmStart && startCfg == 2)
+                pinStartOot = true;
+            Combo_MM_Rando_Restore();
+            if (++entranceFailures >= kFillAttempts) {
+                fail(lastFillError.c_str());
+                return;
+            }
+            continue;
+        }
         // The same combined accessibility policy governs entrance candidates and final item placement.
         auto result = ComboRando::CrossWorldCombinedFill(
             sohDump, mmDump, masterSeed, ootOracle, mmOracle, progress, forcedOot, ootAccess, goal,
@@ -2722,8 +2774,11 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         const nlohmann::json logicSongs = { { "logicEnabled", songs.at("logicEnabled") },
                                             { "logicForeignSongs", songs.at("logicForeignSongs") },
                                             { "destinations", songs.at("destinations") } };
+        // A layout seed also hashes its layout (C5); every other seed hashes the same text as before.
         uint32_t displaySeed =
-            ComboHash((inputSeed + sohDump + mmDump + logicRules.dump() + logicSongs.dump()).c_str());
+            ComboHash(ComboRando::Entrances::SeedIdentityText(
+                          inputSeed + sohDump + mmDump + logicRules.dump() + logicSongs.dump(), entranceLayout)
+                          .c_str());
         g_FinalizeOotApply = ootApply.dump();
         g_FinalizeDisplaySeed = displaySeed;
         g_FinalizeMasterSeed = masterSeed;
@@ -2780,6 +2835,8 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
             consolidated["grottoEntranceExpansion"] = grottoEntranceExpansion;
         if (!mixedEntranceExpansion.is_null())
             consolidated["mixedEntranceExpansion"] = mixedEntranceExpansion;
+        if (!entranceLayout.is_null())
+            consolidated["entranceLayout"] = entranceLayout;
         consolidated["seed"] = inputSeed;
         consolidated["masterSeed"] = masterSeed;
         consolidated["displaySeed"] = displaySeed;
@@ -4381,6 +4438,8 @@ int main(int argc, char** argv) {
                         (int (*)(const char*))GetSym(mmModule, "MM_SetEntranceExpansionAssumptionsForCombo"),
                         (void (*)())GetSym(mmModule, "MM_ClearEntranceExpansionAssumptionsForCombo"),
                         (const char* (*)())GetSym(mmModule, "MM_DumpEntranceExpansionForCombo") };
+    sTempleProbe =
+        ComboRando::Entrances::ResolveUnifiedTempleProbe([&](const char* name) { return GetSym(sohModule, name); });
 
     SOH_SetSongTravel = (void (*)(const char*))GetSym(sohModule, "SOH_SetSongTravel");
     MM_SetSongTravel = (void (*)(const char*))GetSym(mmModule, "MM_SetSongTravel");
