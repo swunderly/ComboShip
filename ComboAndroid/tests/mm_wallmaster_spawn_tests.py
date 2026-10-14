@@ -239,3 +239,15 @@ for combo in (True, False):
                        msvc=['/wd4101'], gnu=['-Wno-unused-variable'])  # native function retains a decomp padding local
     subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
 print('Combo and standalone full spawn paths match pinned MM room-clear behavior.')
+# 2Ship loads room actor lists through z_scene_2SH.cpp, never z_scene.c's Scene_CommandActorList: the live handler
+# must restart the missing-soul room guard, or a room shut by a missing soul stays shut after the soul is owned.
+live = (source / 'mm/2s2h/z_scene_2SH.cpp').read_text(encoding='utf-8-sig')
+body = live[live.index('void Scene_CommandActorList('):]
+body = body[:body.index('\n}\n')]
+assert 'MM_MissingSoulRoomReset(play);' in body, \
+    'z_scene_2SH.cpp Scene_CommandActorList no longer resets the missing-soul room guard'
+assert body.index('MM_MissingSoulRoomReset(play);') < body.index('play->numSetupActors'), \
+    'the missing-soul room guard must reset before the room actors are set up'
+assert re.search(r'Scene_CommandActorList,\s*// SCENE_CMD_ID_ACTOR_LIST', live), \
+    'the 2Ship scene command table no longer routes actor lists to Scene_CommandActorList'
+print('Rooms loaded through z_scene_2SH.cpp reset the missing-soul room guard.')

@@ -68,8 +68,15 @@ void Scene_CommandSpawnList(PlayState* play, SOH::ISceneCommand* cmd) {
     play->objectCtx.slots[play->objectCtx.numEntries].segment = objectPtr;
 }
 
+extern "C" void MM_MissingSoulRoomReset(PlayState* play);
+
 void Scene_CommandActorList(PlayState* play, SOH::ISceneCommand* cmd) {
     SOH::SetActorList* list = (SOH::SetActorList*)cmd;
+
+    // Each room's actor list restarts the missing-soul room guard, as OoTMM resets its room soul state when a
+    // room's actor list loads. The reset in z_scene.c's Scene_CommandActorList never runs, because rooms load
+    // through this table.
+    MM_MissingSoulRoomReset(play);
 
     play->numSetupActors = list->numActors;
     play->actorCtx.halfDaysBit = 0;
