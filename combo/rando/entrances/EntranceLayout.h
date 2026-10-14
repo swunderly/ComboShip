@@ -614,13 +614,14 @@ inline ValidatedLayout Validate(const EntranceLayout& layout, const CapabilitySe
             throw EntranceLayoutError("Entrance layout routes " + std::string(srcName) + ", which no pool shuffles");
         const auto& p = pools[pool->second];
         const auto& src = *LayoutV1::FindRow(srcName);
-        const auto& dst = *LayoutV1::FindRow(dstName);
-        if (!p.dst.contains(dstName) || !LayoutV1::RowAssignable(src, dst, p.ownGame))
+        // Only pool rows are looked up: a layout built in code may name a row outside v1.
+        const auto* dst = p.dst.contains(dstName) ? LayoutV1::FindRow(dstName) : nullptr;
+        if (!dst || !LayoutV1::RowAssignable(src, *dst, p.ownGame))
             throw EntranceLayoutError("Entrance layout cannot route " + std::string(srcName) + " to " +
                                       std::string(dstName));
         if (!used[pool->second].insert(dstName).second)
             throw EntranceLayoutError("Entrance layout uses " + std::string(dstName) + " twice in " + p.name);
-        (src.game == Game::Oot ? result.oot : result.mm).push_back({ &src, &dst });
+        (src.game == Game::Oot ? result.oot : result.mm).push_back({ &src, dst });
     }
     for (size_t i = 0; i < pools.size(); ++i) {
         for (const auto src : pools[i].src)

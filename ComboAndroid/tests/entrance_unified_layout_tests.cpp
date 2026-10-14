@@ -510,6 +510,20 @@ void CheckValidateRejections(const Json &good) {
       dampe = row.at("destination").get<std::string>();
   assert(Rejected(WithRoute(good, "MM_WALLMASTER_BTW_EXIT", dampe))
              .find("twice") != std::string::npos);
+  // A layout built in code (as generation builds one) may name registry rows
+  // outside v1; they are refused, not looked up.
+  for (const bool asSource : {false, true}) {
+    auto built = DecodeEntranceLayout(good);
+    const auto boss = Find("OOT_BOSS_DEKU_TREE")->name;
+    if (asSource)
+      (*built.overrides)[boss] = "OOT_DEKU_TREE";
+    else
+      (*built.overrides)["OOT_WALLMASTER_GTG"] = boss;
+    assert(LayoutError([&] {
+             Validate(built, WholeCatalog());
+           }).find(asSource ? "which no pool shuffles" : "cannot route") !=
+           std::string::npos);
+  }
   // The routes come from the recorded quests: vanilla routes in an MQ Shadow
   // world name a source that does not exist there.
   Rejected(With(good, P("/oot/mq/Shadow"), true));
