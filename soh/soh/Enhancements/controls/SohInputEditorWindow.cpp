@@ -20,8 +20,10 @@ static WidgetInfo freeLook;
 static WidgetInfo mouseControl;
 static WidgetInfo mouseAutoCapture;
 static WidgetInfo mouseDisableThirdPerson;
+#ifndef COMBO_BUILD
 static WidgetInfo rightStickOcarina;
 static WidgetInfo dpadOcarina;
+#endif
 static WidgetInfo dpadPause;
 static WidgetInfo dpadText;
 
@@ -1339,9 +1341,17 @@ void SohInputEditorWindow::DrawOcarinaControlPanel() {
     ImGui::SetCursorPos(ImVec2(cursor.x, cursor.y + 5));
 
     CheckboxOptions checkOpt = CheckboxOptions().Color(THEME_COLOR);
+#ifdef COMBO_BUILD
+    // ComboShip: the D-pad and right-stick toggles are rows of their own under Settings > Controls > Ocarina input,
+    // beside MM's (SohMenuSettings.cpp). The note bindings stay with the other bindings, which both games' views
+    // show, so the switch says whose they are.
+    checkOpt.Tooltip("Ocarina of Time only: play the notes with the buttons bound below instead of A and the C "
+                     "buttons.");
+#else
     SohGui::mSohMenu->MenuDrawItem(dpadOcarina, static_cast<uint32_t>(ImGui::GetContentRegionAvail().x), THEME_COLOR);
     SohGui::mSohMenu->MenuDrawItem(rightStickOcarina, static_cast<uint32_t>(ImGui::GetContentRegionAvail().x),
                                    THEME_COLOR);
+#endif
     CVarCheckbox("Customize Ocarina Controls", CVAR_SETTING("CustomOcarina.Enabled"), checkOpt);
 
     if (!CVarGetInteger(CVAR_SETTING("CustomOcarina.Enabled"), 0)) {
@@ -1891,9 +1901,11 @@ void SohInputEditorWindow::DrawElement() {
 }
 
 void RegisterInputEditorWidgets() {
+#ifndef COMBO_BUILD
     dpadOcarina = { .name = "Dpad Ocarina Playback", .type = WidgetType::WIDGET_CVAR_CHECKBOX };
     dpadOcarina.CVar(CVAR_SETTING("CustomOcarina.Dpad")).Options(CheckboxOptions().Color(THEME_COLOR));
     SohGui::mSohMenu->AddSearchWidget({ dpadOcarina, "Settings", "Controls", "Ocarina Controls", "" });
+#endif
 
     freeLook = { .name = "Free Look", .type = WidgetType::WIDGET_CVAR_CHECKBOX };
     freeLook.CVar(CVAR_SETTING("FreeLook.Enabled"))
@@ -1951,9 +1963,11 @@ void RegisterInputEditorWidgets() {
                               "while still allowing mouse control for first-person aiming and the shield."));
     SohGui::mSohMenu->AddSearchWidget({ mouseDisableThirdPerson, "Settings", "Controls", "Camera Controls" });
 
+#ifndef COMBO_BUILD
     rightStickOcarina = { .name = "Right Stick Ocarina Playback", .type = WidgetType::WIDGET_CVAR_CHECKBOX };
     rightStickOcarina.CVar(CVAR_SETTING("CustomOcarina.RightStick")).Options(CheckboxOptions().Color(THEME_COLOR));
     SohGui::mSohMenu->AddSearchWidget({ rightStickOcarina, "Settings", "Controls", "Ocarina Controls" });
+#endif
 
     dpadPause = { .name = "D-pad Support on Pause Screen", .type = WidgetType::WIDGET_CVAR_CHECKBOX };
     dpadPause.CVar(CVAR_SETTING("DPadOnPause"))

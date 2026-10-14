@@ -1731,7 +1731,7 @@ void DrawPairedPreferences(const std::string& scope, const std::string& page) {
 
 // Rule and pair rows inside their catalogue heading are pseudo-widgets: CW_CUSTOM rows whose index
 // is -1000 - rule or -2000 - pair, with the rule's (or this world's) CVar so anchors find them.
-constexpr int32_t kRuleRowBase = -1000, kPairRowBase = -2000, kNoteRow = -3000;
+constexpr int32_t kRuleRowBase = -1000, kPairRowBase = -2000;
 ComboRando::MenuRuleFocus* sRuleRowFocus = nullptr; // the menu's search focus while a page draws
 
 bool MakePseudoRow(const char* cvar, bool oot, const std::string& scope, const std::string& page, CwWidget& row,
@@ -2571,16 +2571,6 @@ void ComboMenu::DrawSharedPanel() {
                             continue;
                         AppendFeatureWidgets(source, mScope, active->label, subpage, built.widgets, built.columns,
                                              &origins);
-                    }
-                    if (layout && selectedGame == 0 && mScope == "settings" && active->label == MenuPage::Controls) {
-                        CwWidget note{};
-                        note.index = kNoteRow;
-                        note.kind = CW_TEXT;
-                        note.name = "Ocarina of Time: in Controller mapping > Ocarina Controls below.";
-                        built.widgets.push_back(note);
-                        origins[note.index] = {
-                            Detail::FindMenuPlacementKey(true, "note:Settings/Controls/Ocarina input"), nullptr
-                        };
                     }
                     if (layout && selectedGame >= 0) {
                         AppendPseudoRows(selectedGame == 0, mScope, active->label, built.widgets, origins);

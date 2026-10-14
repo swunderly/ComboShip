@@ -78,8 +78,11 @@ inline constexpr MenuLabel kMenuLabels[] = {
     { kMenuOot, "gEnhancements.PauseBufferWindow", "Pause buffer input window", "%d frames", nullptr, nullptr },
     { kMenuMm, "gSettings.SimulatedInputLag", "Simulated input lag", "%d frames", nullptr, nullptr },
     { kMenuOot, "gSettings.SimulatedInputLag", "Simulated input lag", "%d frames", nullptr, nullptr },
-    { kMenuMm, "gEnhancements.Playback.DpadOcarina", "D-pad ocarina", nullptr, nullptr, nullptr },
-    { kMenuMm, "gEnhancements.Playback.RightStickOcarina", "Right stick ocarina", nullptr, nullptr, nullptr },
+    // OoT's earlier names find both games' ocarina input rows.
+    { kMenuMm, "gEnhancements.Playback.DpadOcarina", "D-pad ocarina", nullptr, nullptr, "Dpad Ocarina Playback" },
+    { kMenuOot, "gSettings.CustomOcarina.Dpad", "D-pad ocarina", nullptr, nullptr, nullptr },
+    { kMenuMm, "gEnhancements.Playback.RightStickOcarina", "Right stick ocarina", nullptr, nullptr, "Right Stick Ocarina Playback" },
+    { kMenuOot, "gSettings.CustomOcarina.RightStick", "Right stick ocarina", nullptr, nullptr, nullptr },
     { kMenuMm, "gEnhancements.A11y.NoScreenFlashForEnemyKill", "Disable screen flash on kills", nullptr, nullptr, nullptr },
     { kMenuOot, "gSettings.A11yNoScreenFlashForFinishingBlow", "Disable screen flash on kills", nullptr, nullptr, nullptr },
     { kMenuMm, "gEnhancements.Graphics.3DItemDrops", "3D item drops", nullptr, nullptr, nullptr },

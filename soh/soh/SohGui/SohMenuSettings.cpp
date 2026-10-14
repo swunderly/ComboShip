@@ -481,6 +481,15 @@ void SohMenu::AddMenuSettings() {
             win->Update(); // Gui loop only Updates visible windows; we draw it hidden, so Update first
             win->DrawElement();
         });
+    // ComboShip: the D-pad and right-stick ocarina toggles, which upstream draws inside the bindings
+    // (SohInputEditorWindow::DrawOcarinaControlPanel), as rows of their own, so the combined menu shows them
+    // beside MM's under Settings > Controls > Ocarina input. Upstream names and CVars, MM's tooltips.
+    AddWidget(path, "Dpad Ocarina Playback", WIDGET_CVAR_CHECKBOX)
+        .CVar(CVAR_SETTING("CustomOcarina.Dpad"))
+        .Options(CheckboxOptions().Tooltip("Enables using the D-pad for Ocarina playback."));
+    AddWidget(path, "Right Stick Ocarina Playback", WIDGET_CVAR_CHECKBOX)
+        .CVar(CVAR_SETTING("CustomOcarina.RightStick"))
+        .Options(CheckboxOptions().Tooltip("Enables using the Right Stick for Ocarina playback."));
 #endif
 
 #ifdef COMBO_BUILD

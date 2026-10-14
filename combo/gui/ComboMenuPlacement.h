@@ -13,7 +13,6 @@
 //   "sidebar:<section>/<sidebar>"         the rows of that native sidebar that have no row of their own
 //   "rule:<CVar>"                         a combo-drawn gameplay rule (combo/rando/GameplayRules.h)
 //   "pair:<label>"                        a combo-drawn checkbox that sets one CVar in each game
-//   "note:<section>/<page>/<heading>"     a combo-drawn line of text
 // rank orders rows inside a heading; cross-game equivalents share a rank so both views line up.
 // after keeps a row directly under that CVar, which hides or disables it.
 #pragma once
@@ -614,7 +613,9 @@ inline constexpr MenuPlacement kMenuPlacements[] = {
     { kMenuMm, "gSettings.SimulatedInputLag", "settings", "Controls", "Input timing", 20, nullptr, "sim_input_lag", 1 },
     { kMenuOot, "gSettings.SimulatedInputLag", "settings", "Controls", "Input timing", 20, nullptr, "sim_input_lag", 1 },
     { kMenuMm, "gEnhancements.Playback.DpadOcarina", "settings", "Controls", "Ocarina input", 10, nullptr, "dpad_ocarina", 1 },
-    { kMenuMm, "gEnhancements.Playback.RightStickOcarina", "settings", "Controls", "Ocarina input", 10, nullptr, "dpad_ocarina", 1 },
+    { kMenuOot, "gSettings.CustomOcarina.Dpad", "settings", "Controls", "Ocarina input", 10, nullptr, "dpad_ocarina", 1 },
+    { kMenuMm, "gEnhancements.Playback.RightStickOcarina", "settings", "Controls", "Ocarina input", 20, nullptr, "dpad_ocarina", 1 },
+    { kMenuOot, "gSettings.CustomOcarina.RightStick", "settings", "Controls", "Ocarina input", 20, nullptr, "dpad_ocarina", 1 },
     { kMenuMm, "gEnhancements.A11y.NoScreenFlashForEnemyKill", "settings", "General", "Accessibility", 10, nullptr, "screen_flash", 1 },
     { kMenuOot, "gSettings.A11yNoScreenFlashForFinishingBlow", "settings", "General", "Accessibility", 10, nullptr, "screen_flash", 1 },
     { kMenuMm, "gEnhancements.A11y.NoFinalDayQuakes", "settings", "General", "Accessibility", 20, nullptr, "comfort_a11y", 0 },
@@ -762,8 +763,6 @@ inline constexpr MenuPlacement kMenuPlacements[] = {
     { kMenuBoth, "gSettings.ResetBtn", "settings", "General", "Shortcuts", 10, nullptr, "reset_button", 1 },
     { kMenuOot, "sidebar:Settings/Controls", "settings", "Controls", "Controller mapping", 1000, nullptr, nullptr, 0 },
     { kMenuOot, "sidebar:Settings/Audio", "media", "Audio", "Volume", 1000, nullptr, nullptr, 0 },
-    // OoT's D-pad and right-stick ocarina toggles are inside its controller editor (Controller mapping).
-    { kMenuOot, "note:Settings/Controls/Ocarina input", "settings", "Controls", "Ocarina input", 10, nullptr, nullptr, 0 },
     // MM's ambience volume has no OoT twin; the rest of MM's audio sidebar is driven by OoT's volumes.
     { kMenuMm, "gSettings.Audio.AmbienceVolume", "media", "Audio", "Ambience", 1000, nullptr, nullptr, 0 },
     // MM's camera fixes join the other camera fixes; its native heading has no other rows.
