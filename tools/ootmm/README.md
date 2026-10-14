@@ -163,15 +163,29 @@ the production sources and, when it is present, the pinned checkout.
 run by the pinned portable Node v24.21.0 (no npm install; packages come from the
 checkout's `node_modules`). `run_pinned_entrance_pools.mts` serves every OoTMM source
 and data file from its Git blob at the pin, rebuilds `@ootmm/core`'s data with the
-pinned build script in memory, appends one export line to `entrances.ts` so
-`WorldShuffler` and `LogicPassEntrances` can be driven, and builds each combination's
-world as OoTMM does (`options()`, `worldState`, price and song events). It records the
+pinned build script in memory, and builds each combination's world as OoTMM does
+(`options()`, `worldState`, price and song events). It changes OoTMM code in memory in
+three places, and lists all three in the facts (`inMemoryChanges`):
+
+- `packages/core/build/helpers.ts`: its `node:fs` import resolves to a small shim whose
+  `readFileSync` / `globSync` serve the pinned blobs and whose `writeFileSync` /
+  `mkdirSync` keep the build output in memory;
+- `packages/core/build/helpers.ts`: `const __dirname = "<checkout>/packages/core/build"; `
+  is prefixed to line 1 (tsx ran it as CommonJS, where `__dirname` exists);
+- `packages/logic/src/solver/entrances.ts`: `export { WorldShuffler, LogicPassEntrances };`
+  is appended so those classes can be driven.
+
+A re-pin where `helpers.ts` stops using `__dirname` or those four `fs` functions needs
+the runner's hooks updated. The runner records the
 pools `placePools` builds, the `isAssignableConstraints` candidates, the
 `placeSingleExpr` reset gate, dead ends, `er_enabled` / `isEntranceShuffle`, the
 `changedWorld` + `processRegions` region results, one seeded `WorldShuffler.run()`
 per combination, and the OoT Wallmaster sources of all 64 vanilla/MQ choices (with a
 real attempt for every capacity case). The comparer reports each disagreement with
-both values and the pinned file:line, and never edits the fixture:
+both values and the pinned file:line, and never edits the fixture. The facts also
+record the sha256 of the contract bytes the run read (its sample layouts, rows and
+combination list come from them), so comparing saved facts (`--facts` without
+`--node`) with a changed fixture is reported as a divergence; rerun with `--node`:
 
 ```sh
 python tools/ootmm/compare_m1_pinned_node.py --reference /path/to/ootmm-stable-32.3 \
@@ -180,4 +194,5 @@ python tools/ootmm/compare_m1_pinned_node.py --reference /path/to/ootmm-stable-3
 
 `entrance_m1_contract_matches_pinned_ootmm_run` runs it (about 100 s on 8 worker
 threads) and checks that the comparer names altered fixture values and altered pinned
-facts; it reports SKIPPED without the pinned Node or the checkout.
+facts and rejects saved facts made from another fixture; it reports SKIPPED without the
+pinned Node or the checkout.

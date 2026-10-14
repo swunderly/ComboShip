@@ -10,10 +10,19 @@
 //   Packages (lodash-es, yaml, csv) come from the checkout's node_modules, as for OoTMM itself.
 // - Relative imports without an extension resolve to .ts / index.ts, and JSON imports need no attribute, as in
 //   the bundler-style OoTMM sources (the rules of tooling/node-runner/ts-resolve.mjs).
-// - packages/core/build/index.ts runs first, unchanged; its fs writes are captured in memory and @ootmm/core
-//   reads that fresh build of the pinned data/ instead of packages/core/dist (which is only compared).
+// - packages/core/build/index.ts runs first, unchanged, and @ootmm/core then reads that fresh build of the pinned
+//   data/ instead of packages/core/dist (which is only compared). Its helper packages/core/build/helpers.ts gets
+//   two in-memory changes: (1) its `node:fs` import resolves to a data: URL shim (FS_SHIM_SOURCE) whose
+//   readFileSync / globSync serve the pinned blobs (globSync also requires the checkout to list the same files)
+//   and whose writeFileSync / mkdirSync keep the build output in memory; (2) `const __dirname = <the checkout's
+//   packages/core/build as a JSON string>; ` is prefixed to its line 1, as tsx ran it as CommonJS (__dirname set).
+//   A re-pin where helpers.ts stops using __dirname or these four fs functions (fs/promises, say) breaks here.
 // - packages/logic/src/solver/entrances.ts gets one appended line, `export { WorldShuffler, LogicPassEntrances };`,
-//   so the classes it keeps private can be driven directly. No other line of any OoTMM file changes.
+//   so the classes it keeps private can be driven directly.
+// Those three are the only changes to OoTMM code. Each is recorded when applied, a worker fails unless all three
+// were, and the facts list them (inMemoryChanges). The facts also record the sha256 of the contract bytes read
+// (contract.sha256): sampleLayout, rows and the combination list come from the contract, so the comparer reports
+// facts made from another contract as a divergence.
 //
 // Each combination's world is built as OoTMM builds it: options() (makeSettings + validateSettings, as
 // generator.ts:191), worldState (pipeline.ts:63-76), then price and song events, the passes solvedWorldState
@@ -37,6 +46,20 @@ const M1_KEYS = ['erWallmasters', 'erOneWays', ...M1_FLAGS];
 const SEED = 'combo-ship-m1-c19';
 const ENTRANCES_EXPORT = '\nexport { WorldShuffler, LogicPassEntrances };\n';
 const BLOB_ROOTS = ['data/', 'packages/core/src/', 'packages/core/build/', 'packages/logic/src/'];
+const HELPERS_TS = 'packages/core/build/helpers.ts';
+const ENTRANCES_TS = 'packages/logic/src/solver/entrances.ts';
+// The module helpers.ts imports in place of node:fs; ctx is set up in the worker.
+const FS_SHIM_SOURCE = [
+  'const ctx = globalThis.__pinnedCoreBuild;',
+  'export function readFileSync(file) { return ctx.read(String(file)); }',
+  'export function globSync(pattern, options) { return ctx.glob(pattern, options); }',
+  'export function mkdirSync() {}',
+  'export function writeFileSync(file, data) { ctx.write(String(file), data); }',
+].join('\n');
+// Each in-memory change to OoTMM code, as the facts name it (the text is what the hook applied).
+const CHANGE_FS = `${HELPERS_TS}: import from 'node:fs' resolved to the in-memory shim`;
+const CHANGE_DIRNAME = `${HELPERS_TS}: prefixed to line 1`;
+const CHANGE_EXPORT = `${ENTRANCES_TS}: appended`;
 
 const sha256 = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
 const sorted = (values: Iterable<string>) => [...values].sort();
@@ -55,7 +78,7 @@ function argument(name: string, fallback?: string): string {
 
 async function startWorker() {
   const REFERENCE: string = workerData.reference;
-  const contract = JSON.parse(readFileSync(workerData.contract, 'utf8'));
+  const contract = JSON.parse(workerData.contractText);  // the bytes main hashed, not a second read
   const PIN: string = contract.upstreamCommit;
   const fold = (url: string) => (process.platform === 'win32' ? url.toLowerCase() : url);
   const refUrl = (rel: string) => pathToFileURL(path.join(REFERENCE, rel)).href;
@@ -103,17 +126,12 @@ async function startWorker() {
     },
     write(file: string, data: string) { built.set(path.basename(file), String(data)); },
   };
-  const FS_SHIM = 'data:text/javascript,' + encodeURIComponent([
-    'const ctx = globalThis.__pinnedCoreBuild;',
-    'export function readFileSync(file) { return ctx.read(String(file)); }',
-    'export function globSync(pattern, options) { return ctx.glob(pattern, options); }',
-    'export function mkdirSync() {}',
-    'export function writeFileSync(file, data) { ctx.write(String(file), data); }',
-  ].join('\n'));
+  const FS_SHIM = 'data:text/javascript,' + encodeURIComponent(FS_SHIM_SOURCE);
+  const changes = new Map<string, string>();  // every change made to OoTMM code, recorded as it is applied
 
   const REF_PREFIX = fold(pathToFileURL(REFERENCE + path.sep).href);
-  const HELPERS_URL = fold(refUrl('packages/core/build/helpers.ts'));
-  const ENTRANCES_URL = fold(refUrl('packages/logic/src/solver/entrances.ts'));
+  const HELPERS_URL = fold(refUrl(HELPERS_TS));
+  const ENTRANCES_URL = fold(refUrl(ENTRANCES_TS));
   const DIST_PREFIX = fold(refUrl('packages/core/dist') + '/');
   const SELF_URL = import.meta.url;
   const suffixes = ['.ts', '.tsx', '/index.ts', '/index.tsx'];
@@ -125,6 +143,7 @@ async function startWorker() {
     resolve(specifier, context, nextResolve) {
       const parent = context.parentURL;
       if (parent && fold(parent) === HELPERS_URL && specifier === 'node:fs') {
+        changes.set(CHANGE_FS, FS_SHIM_SOURCE);
         return { url: FS_SHIM, format: 'module', shortCircuit: true };
       }
       if (parent === SELF_URL && specifier.startsWith('@ootmm/')) {
@@ -167,8 +186,11 @@ async function startWorker() {
       let source = serve(relative(fileURLToPath(url)));
       if (key === HELPERS_URL) {
         // helpers.ts is CommonJS-style TypeScript (run by tsx); as an ES module it needs __dirname. Same line 1.
-        source = `const __dirname = ${JSON.stringify(path.dirname(fileURLToPath(url)))}; ` + source;
+        const prefix = `const __dirname = ${JSON.stringify(path.dirname(fileURLToPath(url)))}; `;
+        changes.set(CHANGE_DIRNAME, prefix);
+        source = prefix + source;
       } else if (key === ENTRANCES_URL) {
+        changes.set(CHANGE_EXPORT, ENTRANCES_EXPORT);
         source += ENTRANCES_EXPORT;
       }
       return { ...result, source };
@@ -189,9 +211,12 @@ async function startWorker() {
   if (typeof WorldShuffler !== 'function' || typeof LogicPassEntrances !== 'function') {
     throw new Error('entrances.ts was not loaded through the export hook');
   }
-  for (const file of ['packages/core/src/data/data.ts', 'packages/logic/src/solver/entrances.ts',
-                      'data/defs/entrances.yml']) {
+  for (const file of ['packages/core/src/data/data.ts', ENTRANCES_TS, HELPERS_TS, 'data/defs/entrances.yml']) {
     if (!served.has(file)) throw new Error(`${file} was not served from the pinned blob`);
+  }
+  const expectedChanges = [CHANGE_DIRNAME, CHANGE_EXPORT, CHANGE_FS];
+  if (JSON.stringify(sorted(changes.keys())) !== JSON.stringify(sorted(expectedChanges))) {
+    throw new Error(`In-memory changes applied: ${sorted(changes.keys()).join(' | ')}; expected ${expectedChanges}`);
   }
   const ENTRANCES = core.ENTRANCES;
   const monitor = new core.Monitor({ onLog: () => {}, onWarn: () => {}, onProgress: () => {} });
@@ -429,7 +454,8 @@ async function startWorker() {
     try {
       const result = task.kind === 'combination' ? await combination(task.index)
         : task.kind === 'mq' ? await mqContext(task.bits)
-        : { fixedPoints: settingsFixedPoints(), wallmasterDungeons, distComparison, rows: rows() };
+        : { fixedPoints: settingsFixedPoints(), wallmasterDungeons, distComparison, rows: rows(),
+            inMemoryChanges: Object.fromEntries(sorted(changes.keys()).map(k => [k, changes.get(k)!])) };
       parentPort!.postMessage({ task, result, served: Object.fromEntries(served), packages: [...packages], timing });
     } catch (error: any) {
       parentPort!.postMessage({ task, error: String(error?.stack || error) });
@@ -458,7 +484,10 @@ async function main() {
   const reference = realpathSync.native(path.resolve(argument('--reference')));
   const contractPath = path.resolve(argument('--contract'));
   const out = path.resolve(argument('--out'));
-  const contract = JSON.parse(readFileSync(contractPath, 'utf8'));
+  // Read once: these bytes are hashed into the facts and are the only contract the workers see.
+  const contractBytes = readFileSync(contractPath);
+  const contractText = contractBytes.toString('utf8');
+  const contract = JSON.parse(contractText);
   const jobs = Math.max(1, Number(argument('--jobs', String(Math.min(8, Math.max(1, availableParallelism() - 2))))));
   const started = performance.now();
 
@@ -479,7 +508,7 @@ async function main() {
       let pending = tasks.length;
       const dispatch = (worker: Worker) => { if (next < tasks.length) worker.postMessage(tasks[next++]); };
       for (let i = 0; i < Math.min(jobs, tasks.length); i++) {
-        const worker = new Worker(new URL(import.meta.url), { workerData: { reference, contract: contractPath } });
+        const worker = new Worker(new URL(import.meta.url), { workerData: { reference, contractText } });
         workers.push(worker);
         worker.on('error', reject);
         worker.on('exit', code => { if (pending > 0) reject(new Error(`A worker exited (${code}) with tasks left`)); });
@@ -525,10 +554,11 @@ async function main() {
   }
   const facts = {
     upstreamCommit: contract.upstreamCommit,
+    contract: { path: contractPath, sha256: sha256(contractBytes) },
     node: process.version,
     jobs,
     seed: SEED,
-    injectedLine: ENTRANCES_EXPORT.trim(),
+    inMemoryChanges: meta.inMemoryChanges,
     servedBlobs: Object.fromEntries(Object.entries(served).sort()),
     packages: packageVersions(packageUrls),
     coreBuild: meta.distComparison,

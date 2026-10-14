@@ -9,7 +9,9 @@ with both values and the pinned file:line of the rule involved. It never edits t
         [--facts facts.json] [--out report.json] [--jobs N]
     python tools/ootmm/compare_m1_pinned_node.py --facts facts.json [--out report.json]   # saved facts only
 
-Exit status 0 only when every compared fact agrees.
+Saved facts are evidence only for the contract bytes they were made from: the runner records their sha256
+(facts contract.sha256), and a different --contract is reported as a divergence, so rerun with --node after
+changing the fixture. Exit status 0 only when every compared fact agrees.
 """
 import argparse
 import hashlib
@@ -48,6 +50,8 @@ RULES = {
     'placement': f'{E}:905-934 (run), {E}:500-599 (placePoolsRecursive, placePools), {E}:388-416 (isValidShuffle)',
     'rows': 'packages/core/src/data/data.ts:31-62 (ENTRANCES, from data/defs/entrances.yml)',
     'inputs': 'tools/ootmm/m1-contract.json:inputs (sha256 of the pinned Git blobs)',
+    'contract': 'tools/ootmm/run_pinned_entrance_pools.mts:contract (sha256 of the contract bytes the pinned run '
+                'read; its sampleLayout, rows and combinations came from them; rerun with --node)',
 }
 
 
@@ -66,8 +70,11 @@ class Report:
                                      'source': RULES[rule or kind]})
 
 
-def compare(contract, facts):
+def compare(contract, contract_sha256, facts):
     report = Report()
+    # The facts' sample-layout results, rows and combination list were computed from the contract the run read.
+    report.check('contract', 'facts made from this contract (sha256)', contract_sha256,
+                 (facts.get('contract') or {}).get('sha256'))
     report.check('inputs', 'fixture upstreamCommit', PIN, contract['upstreamCommit'])
     report.check('inputs', 'facts upstreamCommit', contract['upstreamCommit'], facts['upstreamCommit'])
     for path, digest in sorted(facts['servedBlobs'].items()):
@@ -204,14 +211,17 @@ def main():
             run = run_node(args.node, args.reference.resolve(), args.contract.resolve(), facts_path, args.jobs)
         facts_bytes = facts_path.read_bytes()
     facts = json.loads(facts_bytes)
-    report = compare(contract, facts)
+    contract_sha256 = hashlib.sha256(contract_bytes).hexdigest()
+    report = compare(contract, contract_sha256, facts)
     result = {
         'result': 'agree' if not report.divergences else 'diverge',
         'upstreamCommit': PIN,
         'node': facts['node'],
-        'contract': {'path': str(args.contract), 'sha256': hashlib.sha256(contract_bytes).hexdigest()},
+        'contract': {'path': str(args.contract), 'sha256': contract_sha256},
+        'factsContract': facts.get('contract'),
         'factsSha256': hashlib.sha256(facts_bytes).hexdigest(),
-        'injectedLine': facts['injectedLine'],
+        # Every change the runner made to OoTMM code in memory (helpers.ts twice, entrances.ts once).
+        'inMemoryChanges': facts.get('inMemoryChanges'),
         'packages': facts['packages'],
         'coreBuildDiffersFromCheckoutDist': sorted(n for n, v in facts['coreBuild'].items()
                                                    if not v['checkoutDistMatches']),
