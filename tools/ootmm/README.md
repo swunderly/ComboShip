@@ -20,6 +20,7 @@ python tools/ootmm/export_oot_wallmaster_sources.py --reference /path/to/ootmm-s
 python tools/ootmm/export_mm_wallmaster_spawn.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_oot_bindings.py --reference /path/to/ootmm-stable-32.3 --check
 python tools/ootmm/export_m1_contract.py --reference /path/to/ootmm-stable-32.3 --check
+python tools/ootmm/export_oot_wallmaster_edges.py --reference /path/to/ootmm-stable-32.3 --check \n    [--oot-archive /path/to/oot.o2r]
 ```
 
 `--output-root` defaults to this repository and can point at a scratch directory.
@@ -196,3 +197,35 @@ python tools/ootmm/compare_m1_pinned_node.py --reference /path/to/ootmm-stable-3
 threads) and checks that the comparer names altered fixture values and altered pinned
 facts and rejects saved facts made from another fixture; it reports SKIPPED without the
 pinned Node or the checkout.
+
+The OoT Wallmaster edge exporter writes `oot-wallmaster-edges.json`, the pinned edge
+fixture for unit M1-12: the 13 OoT Wallmaster source rows (area presence per quest and
+the `EnWallmas_GetDestEr` room rule), the 23 world exits into their areas (11 vanilla,
+12 MQ) with each source area's own ingress, the 24 `soul_wallmaster` lines, and the
+macro and event definitions the edge expressions use. It reuses the M1 contract world
+reader and the runtime rule parser.
+
+`oot-wallmaster-anchor-audit.json` is reviewed input, not generated. It holds one entry
+per edge: the native `RR_*` anchor with file:line, the pinned condition in native
+helpers (soul via `Rando::Souls::Has`, lens with the area's lens trick, reflected light,
+Fire Arrows, bombchu; the port's absent `climb_anywhere` and `hookshot_anywhere` are
+false), the actor-room evidence and a status (ready, needs-node, needs-event, false).
+Its work list is the input of M1-13 (needs-node and needs-event) and M1-14 (ready).
+The exporter refuses the export when an edge is missing or extra, a pinned expression
+or source differs, a status disagrees with the expression once absent settings are
+false, a ready condition lacks the native form of a kept atom, an anchor region is not
+defined at its cited line, or any cited evidence line moved.
+
+Actor-room evidence comes from the user's own extracted OoT archive (`oot.o2r`,
+`scenes/nonmq/...`), read-only with SoH's binary scene-command layout; never from a ROM
+file. `--oot-archive` checks every recorded Wallmaster actor (room, index, params,
+type, position), the supporting chests, pots and doors, and that every Wallmaster in the
+six vanilla scenes is accounted for. No MQ archive exists locally, so the 12 MQ edges
+carry the rooms the pinned runtime rule and pinned xflag checks predict and stay listed
+under open blocker C17 until a device log or an owner decision closes it.
+
+`oot_wallmaster_edges_pinned_fixture_and_anchor_audit` checks the fixture constants and
+the audit schema and anchors on every host, the archive evidence when an extracted
+archive is found (`COMBO_OOT_ARCHIVE`, or an `oot.o2r` under a `local-roms` folder beside
+the checkout), and, with the pinned checkout, exact reproduction, read-only stale checks
+and wrong-pin refusal. Nothing here adds a native region, an edge, a setting or a layout.

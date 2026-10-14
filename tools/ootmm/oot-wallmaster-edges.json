@@ -1,0 +1,1379 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "scope": "OoT Wallmaster sources and the world exits into their areas, vanilla and MQ dungeon files",
+  "inputs": {
+    "packages/core/build/index.ts": "d564b7a757e91570113c5e0afac25270c54e6f3bc637e12007a2a9643681fc96",
+    "packages/logic/src/world/builder.ts": "88f98cac10bd801f40db3c84bcd72495162f755ad82e90728bb8ee0d7c097aa9",
+    "data/macros/macros_oot.yml": "929f52078756444106ba18aa4c3f0bcb5802e4b7df860563ba84cb820873163e",
+    "data/macros/macros_common.yml": "72e4d141c062e31078f98e65f4391d684d88a1774136dad9e9cae98ef1f2296a",
+    "packages/generator/src/oot/actors/En/En_Wallmas.c": "2d9e7729ea8fc152c3932d368cd1dea9911d103bf71eec35499028448186824d",
+    "data/world/oot/dungeons/bottom_of_the_well.yml": "df669404ba86fdcf7717ed4c85ba279a00dbb8666672e2550ddc37be920d9b45",
+    "data/world/oot/dungeons/forest_temple.yml": "3a299d1ed18360c6f8ef7377f0f6bd85d31e106e15afd47d274ab469defa972d",
+    "data/world/oot/dungeons/ganon_castle.yml": "903359d1e45617990ba38f8342383071baf2d67c2b019f3788255460edf2fab4",
+    "data/world/oot/dungeons/gerudo_training_grounds.yml": "c686229a05cdbf82c710be7962cd5128c43bc493574c910f34002f3c425e2266",
+    "data/world/oot/dungeons/shadow_temple.yml": "442ef7a381d483b22d3af5cc62144869599a831736c2402ae5ce87dad28a8c33",
+    "data/world/oot/dungeons/spirit_temple.yml": "fd9384973b03c07ddedc017acfac288c16665d0cc3209ee8c4f6ffe2a59c6fa3",
+    "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml": "0954dddcb6a5c5110865b780858c9ff81030ba73219a1d3bea491e3c87347317",
+    "data/world/oot/dungeons_mq/forest_temple_mq.yml": "06ab89e05347e36f3c12bb9983f3a0dbee1e50b03660955355a95fbe66beaaaa",
+    "data/world/oot/dungeons_mq/ganon_castle_mq.yml": "a55acc06149850b807789b1bf1fc587d0b87e6b8f09c6287c384aacb60d7510c",
+    "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml": "d2c08979ce1f7bc5d37f2693a506b78b134dcb3ad2e04300e6cf7047a6fd89d4",
+    "data/world/oot/dungeons_mq/spirit_temple_mq.yml": "1fe4ec896e948a3bf32fef51beeb93a3ecfcc7d8365f7fc2631ab507d633f732"
+  },
+  "counts": {
+    "sources": 13,
+    "edges": 23,
+    "vanillaEdges": 11,
+    "mqEdges": 12,
+    "soulWallmasterLines": 24
+  },
+  "sources": [
+    {
+      "name": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "id": "0xf10",
+      "area": "OOT Forest Temple Wallmaster West",
+      "to": "OOT VOID",
+      "quests": ["vanilla", "mq"],
+      "runtime": {
+        "scene": "SCE_OOT_TEMPLE_FOREST",
+        "dungeon": "Forest",
+        "rooms": [],
+        "default": true
+      },
+      "areaLines": [
+        {
+          "quest": "vanilla",
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 11,
+          "exits": {
+            "VOID": "true"
+          }
+        },
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 8,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "id": "0xf11",
+      "area": "OOT Forest Temple Wallmaster East",
+      "to": "OOT VOID",
+      "quests": ["vanilla", "mq"],
+      "runtime": {
+        "scene": "SCE_OOT_TEMPLE_FOREST",
+        "dungeon": "Forest",
+        "rooms": [20],
+        "default": false
+      },
+      "areaLines": [
+        {
+          "quest": "vanilla",
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 16,
+          "exits": {
+            "VOID": "true"
+          }
+        },
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 13,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_SHADOW",
+      "id": "0xf12",
+      "area": "OOT Shadow Temple Wallmaster",
+      "to": "OOT VOID",
+      "quests": ["vanilla"],
+      "runtime": {
+        "scene": "SCE_OOT_TEMPLE_SHADOW",
+        "dungeon": "Shadow",
+        "rooms": [],
+        "default": true
+      },
+      "areaLines": [
+        {
+          "quest": "vanilla",
+          "file": "data/world/oot/dungeons/shadow_temple.yml",
+          "line": 8,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+      "id": "0xf13",
+      "area": "OOT Spirit Temple Wallmaster Child Rupees",
+      "to": "OOT VOID",
+      "quests": ["vanilla"],
+      "runtime": {
+        "scene": "SCE_OOT_TEMPLE_SPIRIT",
+        "dungeon": "Spirit",
+        "rooms": [2],
+        "default": false
+      },
+      "areaLines": [
+        {
+          "quest": "vanilla",
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 18,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+      "id": "0xf14",
+      "area": "OOT Spirit Temple Wallmaster Adult Climb",
+      "to": "OOT VOID",
+      "quests": ["vanilla", "mq"],
+      "runtime": {
+        "scene": "SCE_OOT_TEMPLE_SPIRIT",
+        "dungeon": "Spirit",
+        "rooms": [15],
+        "default": false
+      },
+      "areaLines": [
+        {
+          "quest": "vanilla",
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 23,
+          "exits": {
+            "VOID": "true"
+          }
+        },
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 37,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+      "id": "0xf15",
+      "area": "OOT Spirit Temple Wallmaster Child Sun",
+      "to": "OOT VOID",
+      "quests": ["mq"],
+      "runtime": {
+        "scene": "SCE_OOT_TEMPLE_SPIRIT",
+        "dungeon": "Spirit",
+        "rooms": [8],
+        "default": false
+      },
+      "areaLines": [
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 32,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_SPIRIT_STATUE",
+      "id": "0xf16",
+      "area": "OOT Spirit Temple Wallmaster Statue",
+      "to": "OOT VOID",
+      "quests": ["mq"],
+      "runtime": {
+        "scene": "SCE_OOT_TEMPLE_SPIRIT",
+        "dungeon": "Spirit",
+        "rooms": [5],
+        "default": false
+      },
+      "areaLines": [
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 42,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_BOTW_MAIN",
+      "id": "0xf17",
+      "area": "OOT Bottom of the Well Wallmaster Main",
+      "to": "OOT VOID",
+      "quests": ["vanilla", "mq"],
+      "runtime": {
+        "scene": "SCE_OOT_BOTTOM_OF_THE_WELL",
+        "dungeon": "BotW",
+        "rooms": [0],
+        "default": false
+      },
+      "areaLines": [
+        {
+          "quest": "vanilla",
+          "file": "data/world/oot/dungeons/bottom_of_the_well.yml",
+          "line": 8,
+          "exits": {
+            "VOID": "true"
+          }
+        },
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 14,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_BOTW_BASEMENT",
+      "id": "0xf18",
+      "area": "OOT Bottom of the Well Wallmaster Basement",
+      "to": "OOT VOID",
+      "quests": ["mq"],
+      "runtime": {
+        "scene": "SCE_OOT_BOTTOM_OF_THE_WELL",
+        "dungeon": "BotW",
+        "rooms": [1],
+        "default": false
+      },
+      "areaLines": [
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 19,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_BOTW_PIT",
+      "id": "0xf19",
+      "area": "OOT Bottom of the Well Wallmaster Pit",
+      "to": "OOT VOID",
+      "quests": ["mq"],
+      "runtime": {
+        "scene": "SCE_OOT_BOTTOM_OF_THE_WELL",
+        "dungeon": "BotW",
+        "rooms": [3],
+        "default": false
+      },
+      "areaLines": [
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 24,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_GTG",
+      "id": "0xf1a",
+      "area": "OOT Gerudo Training Grounds Wallmaster",
+      "to": "OOT VOID",
+      "quests": ["vanilla", "mq"],
+      "runtime": {
+        "scene": "SCE_OOT_GERUDO_TRAINING_GROUND",
+        "dungeon": "GTG",
+        "rooms": [],
+        "default": true
+      },
+      "areaLines": [
+        {
+          "quest": "vanilla",
+          "file": "data/world/oot/dungeons/gerudo_training_grounds.yml",
+          "line": 17,
+          "exits": {
+            "VOID": "true"
+          }
+        },
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml",
+          "line": 19,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_GANON_SPIRIT",
+      "id": "0xf1b",
+      "area": "OOT Ganon Castle Spirit Wallmaster",
+      "to": "OOT VOID",
+      "quests": ["vanilla", "mq"],
+      "runtime": {
+        "scene": "SCE_OOT_INSIDE_GANON_CASTLE",
+        "dungeon": "Ganon",
+        "rooms": [],
+        "default": true
+      },
+      "areaLines": [
+        {
+          "quest": "vanilla",
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 14,
+          "exits": {
+            "VOID": "true"
+          }
+        },
+        {
+          "quest": "mq",
+          "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+          "line": 9,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OOT_WALLMASTER_GANON_LIGHT",
+      "id": "0xf1c",
+      "area": "OOT Ganon Castle Light Wallmaster",
+      "to": "OOT VOID",
+      "quests": ["vanilla"],
+      "runtime": {
+        "scene": "SCE_OOT_INSIDE_GANON_CASTLE",
+        "dungeon": "Ganon",
+        "rooms": [10],
+        "default": false
+      },
+      "areaLines": [
+        {
+          "quest": "vanilla",
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 19,
+          "exits": {
+            "VOID": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "n": 1,
+      "id": "data/world/oot/dungeons/bottom_of_the_well.yml:23",
+      "quest": "vanilla",
+      "dungeon": "BotW",
+      "from": "OOT Bottom of the Well Main",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/bottom_of_the_well.yml",
+        "line": 19,
+        "region": "OOT_BOTTOM_OF_THE_WELL"
+      },
+      "source": "OOT_WALLMASTER_BOTW_MAIN",
+      "expression": "soul_wallmaster && has_lens",
+      "atoms": ["has_lens", "soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/bottom_of_the_well.yml",
+          "line": 17,
+          "from": "OOT Bottom of the Well Front Hallway",
+          "expression": "has_nuts || can_use_sword || has_explosives_or_hammer || has_ranged_weapon || can_use_din"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "id": "data/world/oot/dungeons/forest_temple.yml:138",
+      "quest": "vanilla",
+      "dungeon": "Forest",
+      "from": "OOT Forest Temple Twisted 1 Normal",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/forest_temple.yml",
+        "line": 135,
+        "region": "OOT_TEMPLE_FOREST"
+      },
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 128,
+          "from": "OOT Forest Temple Maze",
+          "expression": "(((is_adult || time_travel_at_will) && has_goron_bracelet) || climb_anywhere || hookshot_anywhere) && cond(!setting(hookshotAnywhereOot, off) && !setting(ageChange, none), small_keys_forest(5), small_keys_forest(2))"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "id": "data/world/oot/dungeons/forest_temple.yml:144",
+      "quest": "vanilla",
+      "dungeon": "Forest",
+      "from": "OOT Forest Temple Twisted 1 Alt",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/forest_temple.yml",
+        "line": 141,
+        "region": "OOT_TEMPLE_FOREST"
+      },
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 72,
+          "from": "OOT Forest Temple Garden West Ledge",
+          "expression": "event(FOREST_TWISTED_HALL) && hookshot_anywhere && climb_anywhere"
+        },
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 129,
+          "from": "OOT Forest Temple Maze",
+          "expression": "event(FOREST_TWISTED_HALL) && cond(!setting(hookshotAnywhereOot, off) && !setting(ageChange, none), small_keys_forest(5), small_keys_forest(2))"
+        }
+      ]
+    },
+    {
+      "n": 4,
+      "id": "data/world/oot/dungeons/forest_temple.yml:184",
+      "quest": "vanilla",
+      "dungeon": "Forest",
+      "from": "OOT Forest Temple Twisted 2 Normal",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/forest_temple.yml",
+        "line": 181,
+        "region": "OOT_TEMPLE_FOREST"
+      },
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 172,
+          "from": "OOT Forest Temple Poe 2",
+          "expression": "small_keys_forest(4)"
+        }
+      ]
+    },
+    {
+      "n": 5,
+      "id": "data/world/oot/dungeons/forest_temple.yml:198",
+      "quest": "vanilla",
+      "dungeon": "Forest",
+      "from": "OOT Forest Temple Twisted 2 Alt",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/forest_temple.yml",
+        "line": 195,
+        "region": "OOT_TEMPLE_FOREST"
+      },
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 190,
+          "from": "OOT Forest Temple Rotating Room",
+          "expression": "can_use_bow || can_use_din"
+        }
+      ]
+    },
+    {
+      "n": 6,
+      "id": "data/world/oot/dungeons/ganon_castle.yml:69",
+      "quest": "vanilla",
+      "dungeon": "Ganon",
+      "from": "OOT Ganon Castle Light End",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/ganon_castle.yml",
+        "line": 66,
+        "region": "OOT_GANON_CASTLE"
+      },
+      "source": "OOT_WALLMASTER_GANON_LIGHT",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 57,
+          "from": "OOT Ganon Castle Light 2",
+          "expression": "silver_rupees_ganon_light && has_lens"
+        }
+      ]
+    },
+    {
+      "n": 7,
+      "id": "data/world/oot/dungeons/ganon_castle.yml:177",
+      "quest": "vanilla",
+      "dungeon": "Ganon",
+      "from": "OOT Ganon Castle Spirit 2",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/ganon_castle.yml",
+        "line": 174,
+        "region": "OOT_GANON_CASTLE"
+      },
+      "source": "OOT_WALLMASTER_GANON_SPIRIT",
+      "expression": "(has_bombchu || climb_anywhere || hookshot_anywhere) && soul_wallmaster && can_reflect_light",
+      "atoms": ["can_reflect_light", "climb_anywhere", "has_bombchu", "hookshot_anywhere", "soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 164,
+          "from": "OOT Ganon Castle Spirit",
+          "expression": "silver_rupees_ganon_spirit"
+        }
+      ]
+    },
+    {
+      "n": 8,
+      "id": "data/world/oot/dungeons/gerudo_training_grounds.yml:27",
+      "quest": "vanilla",
+      "dungeon": "GTG",
+      "from": "OOT Gerudo Training Grounds Slopes",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/gerudo_training_grounds.yml",
+        "line": 22,
+        "region": "OOT_GERUDO_TRAINING_GROUNDS"
+      },
+      "source": "OOT_WALLMASTER_GTG",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/gerudo_training_grounds.yml",
+          "line": 5,
+          "from": "OOT Gerudo Training Grounds",
+          "expression": "can_use_sword && soul_enemy(SOUL_ENEMY_STALFOS)"
+        },
+        {
+          "file": "data/world/oot/dungeons/gerudo_training_grounds.yml",
+          "line": 38,
+          "from": "OOT Gerudo Training Grounds Slopes End",
+          "expression": "can_hookshot || climb_anywhere"
+        }
+      ]
+    },
+    {
+      "n": 9,
+      "id": "data/world/oot/dungeons/shadow_temple.yml:62",
+      "quest": "vanilla",
+      "dungeon": "Shadow",
+      "from": "OOT Shadow Temple Open",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/shadow_temple.yml",
+        "line": 55,
+        "region": "OOT_TEMPLE_SHADOW"
+      },
+      "source": "OOT_WALLMASTER_SHADOW",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/shadow_temple.yml",
+          "line": 36,
+          "from": "OOT Shadow Temple Main",
+          "expression": "cond(!setting(climbMostSurfacesOot, off), small_keys_shadow(4), small_keys_shadow(1)) && has_explosives"
+        },
+        {
+          "file": "data/world/oot/dungeons/shadow_temple.yml",
+          "line": 91,
+          "from": "OOT Shadow Temple Invisible Spikes",
+          "expression": "small_keys_shadow(4)"
+        }
+      ]
+    },
+    {
+      "n": 10,
+      "id": "data/world/oot/dungeons/spirit_temple.yml:71",
+      "quest": "vanilla",
+      "dungeon": "Spirit",
+      "from": "OOT Spirit Temple Child Back Right",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/spirit_temple.yml",
+        "line": 67,
+        "region": "OOT_TEMPLE_SPIRIT"
+      },
+      "source": "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 48,
+          "from": "OOT Spirit Temple Child Right",
+          "expression": "silver_rupees_spirit_child"
+        },
+        {
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 57,
+          "from": "OOT Spirit Temple Child Back Left",
+          "expression": "soul_enemy(SOUL_ENEMY_ANUBIS)"
+        }
+      ]
+    },
+    {
+      "n": 11,
+      "id": "data/world/oot/dungeons/spirit_temple.yml:154",
+      "quest": "vanilla",
+      "dungeon": "Spirit",
+      "from": "OOT Spirit Temple Adult Climb",
+      "fromArea": {
+        "file": "data/world/oot/dungeons/spirit_temple.yml",
+        "line": 151,
+        "region": "OOT_TEMPLE_SPIRIT"
+      },
+      "source": "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 134,
+          "from": "OOT Spirit Temple Adult Entrance",
+          "expression": "cond(!setting(climbMostSurfacesOot, off), (has_explosives && can_reflect_light && small_keys_spirit(1)) || small_keys_spirit(3), small_keys_spirit(1))"
+        },
+        {
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 187,
+          "from": "OOT Spirit Temple Statue Adult",
+          "expression": "true"
+        }
+      ]
+    },
+    {
+      "n": 12,
+      "id": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71",
+      "quest": "mq",
+      "dungeon": "BotW",
+      "from": "OOT Bottom of the Well Main Room Center",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+        "line": 68,
+        "region": "OOT_BOTTOM_OF_THE_WELL"
+      },
+      "source": "OOT_WALLMASTER_BOTW_MAIN",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 33,
+          "from": "OOT Bottom of the Well Main",
+          "expression": "event(BOTW_MQ_CENTER_GATES_LOWERED)"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 63,
+          "from": "OOT Bottom of the Well Main Room Center Switch Corner",
+          "expression": "has_hover_boots || trick(OOT_BOTW_MQ_BACKFLIP) || hookshot_anywhere || climb_anywhere"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 103,
+          "from": "OOT Bottom of the Well West Center Room",
+          "expression": "true"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 110,
+          "from": "OOT Bottom of the Well East Center Room",
+          "expression": "true"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 125,
+          "from": "OOT Bottom of the Well Basement Switch Ledge",
+          "expression": "event(BOTW_MQ_GATE_FROM_SWITCH) && climb_anywhere && hookshot_anywhere"
+        }
+      ]
+    },
+    {
+      "n": 13,
+      "id": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91",
+      "quest": "mq",
+      "dungeon": "BotW",
+      "from": "OOT Bottom of the Well Basement",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+        "line": 86,
+        "region": "OOT_BOTTOM_OF_THE_WELL"
+      },
+      "source": "OOT_WALLMASTER_BOTW_BASEMENT",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 35,
+          "from": "OOT Bottom of the Well Main",
+          "expression": "true"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 64,
+          "from": "OOT Bottom of the Well Main Room Center Switch Corner",
+          "expression": "true"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 76,
+          "from": "OOT Bottom of the Well Main Room Center",
+          "expression": "true"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 124,
+          "from": "OOT Bottom of the Well Basement Switch Ledge",
+          "expression": "true"
+        }
+      ]
+    },
+    {
+      "n": 14,
+      "id": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167",
+      "quest": "mq",
+      "dungeon": "BotW",
+      "from": "OOT Bottom of the Well Pit Before Cage",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+        "line": 162,
+        "region": "OOT_BOTTOM_OF_THE_WELL"
+      },
+      "source": "OOT_WALLMASTER_BOTW_PIT",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 160,
+          "from": "OOT Bottom of the Well Main Side Room Before Pit",
+          "expression": "can_hit_triggers_distance || can_boomerang || has_explosives || can_hookshot"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 172,
+          "from": "OOT Bottom of the Well Cage",
+          "expression": "small_keys_botw(2)"
+        }
+      ]
+    },
+    {
+      "n": 15,
+      "id": "data/world/oot/dungeons_mq/forest_temple_mq.yml:178",
+      "quest": "mq",
+      "dungeon": "Forest",
+      "from": "OOT Forest Temple Western Twisting Hallway Block Push Side",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+        "line": 174,
+        "region": "OOT_TEMPLE_FOREST"
+      },
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 172,
+          "from": "OOT Forest Temple Climbing Block Puzzle Room Top Floor",
+          "expression": "small_keys_forest(3)"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 346,
+          "from": "OOT Forest Temple Western Twisting Hallway Red Poe Side",
+          "expression": "event(FOREST_MQ_CLIMBING_BLOCK_ROOM_ALCOVE_SWITCH_CLOSE) || event(FOREST_MQ_CLIMBING_BLOCK_ROOM_ALCOVE_SWITCH_EARLY)"
+        }
+      ]
+    },
+    {
+      "n": 16,
+      "id": "data/world/oot/dungeons_mq/forest_temple_mq.yml:188",
+      "quest": "mq",
+      "dungeon": "Forest",
+      "from": "OOT Forest Temple Floormaster Battle Room Below Hallway",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+        "line": 184,
+        "region": "OOT_TEMPLE_FOREST"
+      },
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "expression": "hookshot_anywhere && climb_anywhere && soul_wallmaster",
+      "atoms": ["climb_anywhere", "hookshot_anywhere", "soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 179,
+          "from": "OOT Forest Temple Western Twisting Hallway Block Push Side",
+          "expression": "cond(hookshot_anywhere || climb_anywhere || trick(OOT_FOREST_MQ_CLIMBING_BLOCK_ROOM_TWIST_SWITCH_EARLY), event(FOREST_MQ_CLIMBING_BLOCK_ROOM_ALCOVE_SWITCH_FAR), true)"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 197,
+          "from": "OOT Forest Temple West Garden Upper Ledge Hallway",
+          "expression": "true"
+        }
+      ]
+    },
+    {
+      "n": 17,
+      "id": "data/world/oot/dungeons_mq/forest_temple_mq.yml:393",
+      "quest": "mq",
+      "dungeon": "Forest",
+      "from": "OOT Forest Temple Eastern Twisting Hallway Blue Poe Side",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+        "line": 387,
+        "region": "OOT_TEMPLE_FOREST"
+      },
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 378,
+          "from": "OOT Forest Temple Blue Poe Paintings Room",
+          "expression": "small_keys_forest(5)"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 398,
+          "from": "OOT Forest Temple Eastern Twisting Hallway Red Pool Side",
+          "expression": "true"
+        }
+      ]
+    },
+    {
+      "n": 18,
+      "id": "data/world/oot/dungeons_mq/forest_temple_mq.yml:401",
+      "quest": "mq",
+      "dungeon": "Forest",
+      "from": "OOT Forest Temple Eastern Twisting Hallway Red Pool Side",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+        "line": 395,
+        "region": "OOT_TEMPLE_FOREST"
+      },
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 391,
+          "from": "OOT Forest Temple Eastern Twisting Hallway Blue Poe Side",
+          "expression": "true"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 406,
+          "from": "OOT Forest Temple Spinning Red Pool Room",
+          "expression": "small_keys_forest(6)"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 417,
+          "from": "OOT Forest Temple Checkerboard Room",
+          "expression": "event(FOREST_MQ_SPINNING_RED_POOLS_FROZEN_EYE) && longshot_anywhere && climb_anywhere"
+        }
+      ]
+    },
+    {
+      "n": 19,
+      "id": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:272",
+      "quest": "mq",
+      "dungeon": "Ganon",
+      "from": "OOT Ganon Castle Spirit Trial Sun Room Sun Side",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+        "line": 267,
+        "region": "OOT_GANON_CASTLE"
+      },
+      "source": "OOT_WALLMASTER_GANON_SPIRIT",
+      "expression": "soul_wallmaster && event(GANON_MQ_SPIRIT_ENDING_SUNS)",
+      "atoms": ["event(GANON_MQ_SPIRIT_ENDING_SUNS)", "soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+          "line": 261,
+          "from": "OOT Ganon Castle Spirit Trial Sun Room Entrance Side",
+          "expression": "event(GANON_MQ_SPIRIT_CRYSTAL) || climb_anywhere || hookshot_anywhere"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+          "line": 288,
+          "from": "OOT Ganon Castle Spirit Trial Ending Room",
+          "expression": "true"
+        }
+      ]
+    },
+    {
+      "n": 20,
+      "id": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220",
+      "quest": "mq",
+      "dungeon": "GTG",
+      "from": "OOT Gerudo Training Grounds Slopes",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml",
+        "line": 217,
+        "region": "OOT_GERUDO_TRAINING_GROUNDS"
+      },
+      "source": "OOT_WALLMASTER_GTG",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml",
+          "line": 213,
+          "from": "OOT Gerudo Training Grounds Left Path First Room",
+          "expression": "event(GTG_IRON_KNUCKLE)"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml",
+          "line": 240,
+          "from": "OOT Gerudo Training Grounds Stalfos Room",
+          "expression": "true"
+        }
+      ]
+    },
+    {
+      "n": 21,
+      "id": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88",
+      "quest": "mq",
+      "dungeon": "Spirit",
+      "from": "OOT Spirit Temple Statue",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+        "line": 85,
+        "region": "OOT_TEMPLE_SPIRIT"
+      },
+      "source": "OOT_WALLMASTER_SPIRIT_STATUE",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 7,
+          "from": "OOT Spirit Temple",
+          "expression": "can_longshot && has_bombchu && can_lift_silver"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 77,
+          "from": "OOT Spirit Temple Child Upper",
+          "expression": "small_keys_spirit(7)"
+        }
+      ]
+    },
+    {
+      "n": 22,
+      "id": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89",
+      "quest": "mq",
+      "dungeon": "Spirit",
+      "from": "OOT Spirit Temple Statue",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+        "line": 85,
+        "region": "OOT_TEMPLE_SPIRIT"
+      },
+      "source": "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+      "expression": "has_fire_arrows && can_reflect_light && soul_wallmaster",
+      "atoms": ["can_reflect_light", "has_fire_arrows", "soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 7,
+          "from": "OOT Spirit Temple",
+          "expression": "can_longshot && has_bombchu && can_lift_silver"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 77,
+          "from": "OOT Spirit Temple Child Upper",
+          "expression": "small_keys_spirit(7)"
+        }
+      ]
+    },
+    {
+      "n": 23,
+      "id": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118",
+      "quest": "mq",
+      "dungeon": "Spirit",
+      "from": "OOT Spirit Temple Sun Block Room",
+      "fromArea": {
+        "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+        "line": 114,
+        "region": "OOT_TEMPLE_SPIRIT"
+      },
+      "source": "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+      "expression": "soul_wallmaster",
+      "atoms": ["soul_wallmaster"],
+      "ingress": [
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 91,
+          "from": "OOT Spirit Temple Statue",
+          "expression": "is_adult || (can_play_time || can_play_emptiness) || has_hover_boots"
+        }
+      ]
+    }
+  ],
+  "events": {
+    "GANON_MQ_SPIRIT_ENDING_SUNS": {
+      "quest": "mq",
+      "area": "OOT Ganon Castle Spirit Trial Sun Room Sun Side",
+      "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+      "line": 276,
+      "expression": "event(GANON_MQ_SPIRIT_ZOMBIES) && (has_sunlight_arrows || (has_fire_arrows && has_mirror_shield))"
+    },
+    "GANON_MQ_SPIRIT_ZOMBIES": {
+      "quest": "mq",
+      "area": "OOT Ganon Castle Spirit Trial Sun Room Sun Side",
+      "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+      "line": 275,
+      "expression": "can_play_sun || has_weapon || can_use_din || can_hammer"
+    }
+  },
+  "macros": {
+    "age_hammer": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 103,
+      "name": "age_hammer",
+      "body": "glitch_equip_swap || is_adult || setting(agelessHammer)"
+    },
+    "age_shield_adult": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 109,
+      "name": "age_shield_adult",
+      "body": "is_adult || setting(agelessShields)"
+    },
+    "bombchu_license": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 69,
+      "name": "bombchu_license",
+      "body": "((setting(bombchuBehaviorOot, free) || setting(bombchuBehaviorOot, bombBag)) && has_bomb_bag) || bombchu_license_bag"
+    },
+    "bombchu_source": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 71,
+      "name": "bombchu_source",
+      "body": "event(BOMBCHU) || bombchu_drops || renewable(BOMBCHU_5) || renewable(BOMBCHU_10) || renewable(BOMBCHU_20) || (setting(sharedBombchu) && (event(MM_BOMBCHU) || renewable(SHARED_BOMBCHU) || renewable(SHARED_BOMBCHU_5) || renewable(SHARED_BOMBCHU_10) || renewable(SHARED_BOMBCHU_20)))"
+    },
+    "can_hammer": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 95,
+      "name": "can_hammer",
+      "body": "age_hammer && has_hammer_raw"
+    },
+    "can_hookshot": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 92,
+      "name": "can_hookshot",
+      "body": "can_hookshot_n(1)"
+    },
+    "can_play_sun": {
+      "file": "data/macros/macros_common.yml",
+      "line": 28,
+      "name": "can_play_sun",
+      "body": "has_song_sun && has_ocarina && ocarina_button_right && ocarina_button_down && ocarina_button_up"
+    },
+    "can_reflect_light": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 146,
+      "name": "can_reflect_light",
+      "body": "has_sunlight_arrows || has_mirror_shield"
+    },
+    "can_use_bow": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 89,
+      "name": "can_use_bow",
+      "body": "age_bow && has_arrows"
+    },
+    "can_use_din": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 10,
+      "name": "can_use_din",
+      "body": "can_use_din_raw"
+    },
+    "can_use_din_raw": {
+      "file": "data/macros/macros_common.yml",
+      "line": 50,
+      "name": "can_use_din_raw",
+      "body": "has_magic && cond(setting(sharedSpellFire), has(SHARED_SPELL_FIRE), has(SPELL_FIRE))"
+    },
+    "can_use_light_arrows": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 168,
+      "name": "can_use_light_arrows",
+      "body": "has_light_arrow && has_magic && can_use_bow"
+    },
+    "can_use_sword": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 133,
+      "name": "can_use_sword",
+      "body": "can_use_sword_kokiri || can_use_sword_master || can_use_sword_goron || can_use_great_fairy_sword"
+    },
+    "climb_anywhere": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 408,
+      "name": "climb_anywhere",
+      "body": "setting(climbMostSurfacesOot, logical)"
+    },
+    "has_bombchu": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 72,
+      "name": "has_bombchu",
+      "body": "bombchu_source && bombchu_license"
+    },
+    "has_fire_arrows": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 174,
+      "name": "has_fire_arrows",
+      "body": "can_use_bow && (has(ARROW_FIRE) || has(SHARED_ARROW_FIRE)) && has_magic"
+    },
+    "has_hammer_raw": {
+      "file": "data/macros/macros_common.yml",
+      "line": 58,
+      "name": "has_hammer_raw",
+      "body": "cond(setting(sharedHammer), has(SHARED_HAMMER), has(HAMMER))"
+    },
+    "has_lens": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 238,
+      "name": "has_lens",
+      "body": "has_lens_strict || trick(OOT_LENS)"
+    },
+    "has_lens_strict": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 175,
+      "name": "has_lens_strict",
+      "body": "has_magic && (has(LENS) || has(SHARED_LENS))"
+    },
+    "has_magic": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 165,
+      "name": "has_magic",
+      "body": "(has(MAGIC_UPGRADE) || has(SHARED_MAGIC_UPGRADE)) && (event(MAGIC) || has_magic_jar || (setting(sharedMagic) && event(MM_MAGIC)) || has_green_potion || has_blue_potion)"
+    },
+    "has_mirror_shield": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 143,
+      "name": "has_mirror_shield",
+      "body": "age_shield_adult && cond(setting(sharedShields), has_mirror_shield_raw_shared, has_mirror_shield_raw_nonshared)"
+    },
+    "has_mirror_shield_raw_nonshared": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 141,
+      "name": "has_mirror_shield_raw_nonshared",
+      "body": "cond(setting(progressiveShieldsOot, progressive), has(SHIELD, 3), has(SHIELD_MIRROR))"
+    },
+    "has_mirror_shield_raw_shared": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 142,
+      "name": "has_mirror_shield_raw_shared",
+      "body": "cond(setting(progressiveShieldsOot, progressive), has(SHARED_SHIELD, 3), has(SHARED_SHIELD_MIRROR))"
+    },
+    "has_ocarina": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 30,
+      "name": "has_ocarina",
+      "body": "glitch_ocarina_items || has(OCARINA) || has(SHARED_OCARINA)"
+    },
+    "has_song_sun": {
+      "file": "data/macros/macros_common.yml",
+      "line": 7,
+      "name": "has_song_sun",
+      "body": "has(SONG_SUN) || has(SHARED_SONG_SUN) || has_shared_count(SONG_NOTE_SUN, SHARED_SONG_NOTE_SUN, 6)"
+    },
+    "has_sunlight_arrows": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 173,
+      "name": "has_sunlight_arrows",
+      "body": "setting(sunlightArrows) && can_use_light_arrows"
+    },
+    "has_weapon": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 186,
+      "name": "has_weapon",
+      "body": "can_use_sword"
+    },
+    "hookshot_anywhere": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 409,
+      "name": "hookshot_anywhere",
+      "body": "can_hookshot && setting(hookshotAnywhereOot, logical)"
+    },
+    "ocarina_button_down": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 22,
+      "name": "ocarina_button_down",
+      "body": "ocarina_button(BUTTON_C_DOWN, SHARED_BUTTON_C_DOWN)"
+    },
+    "ocarina_button_right": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 19,
+      "name": "ocarina_button_right",
+      "body": "ocarina_button(BUTTON_C_RIGHT, SHARED_BUTTON_C_RIGHT)"
+    },
+    "ocarina_button_up": {
+      "file": "data/macros/macros_oot.yml",
+      "line": 21,
+      "name": "ocarina_button_up",
+      "body": "ocarina_button(BUTTON_C_UP, SHARED_BUTTON_C_UP)"
+    },
+    "shared_soul_enemy": {
+      "file": "data/macros/macros_common.yml",
+      "line": 69,
+      "name": "shared_soul_enemy(a, b)",
+      "body": "cond(setting(sharedSoulsEnemy), soul_enemy(b), soul_enemy(a))"
+    },
+    "soul_wallmaster": {
+      "file": "data/macros/macros_common.yml",
+      "line": 71,
+      "name": "soul_wallmaster",
+      "body": "shared_soul_enemy(SOUL_ENEMY_WALLMASTER, SHARED_SOUL_ENEMY_WALLMASTER)"
+    }
+  },
+  "soulWallmasterLines": [
+    {
+      "file": "data/world/oot/dungeons/bottom_of_the_well.yml",
+      "line": 23,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/forest_temple.yml",
+      "line": 138,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/forest_temple.yml",
+      "line": 144,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/forest_temple.yml",
+      "line": 184,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/forest_temple.yml",
+      "line": 198,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/ganon_castle.yml",
+      "line": 69,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/ganon_castle.yml",
+      "line": 177,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/gerudo_training_grounds.yml",
+      "line": 27,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/shadow_temple.yml",
+      "line": 62,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/spirit_temple.yml",
+      "line": 71,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons/spirit_temple.yml",
+      "line": 154,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+      "line": 71,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+      "line": 91,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+      "line": 167,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+      "line": 178,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+      "line": 188,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+      "line": 393,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+      "line": 401,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+      "line": 272,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml",
+      "line": 220,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+      "line": 88,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+      "line": 89,
+      "edge": true
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+      "line": 92,
+      "edge": false
+    },
+    {
+      "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+      "line": 118,
+      "edge": true
+    }
+  ]
+}

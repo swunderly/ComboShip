@@ -1,0 +1,2619 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "purpose": "Reviewed native anchors for the 23 OoT Wallmaster logic edges of OoTMM v32.3 (unit M1-12): one entry per edge with the native region the capture is evaluated in, the pinned condition in native helpers, the actor-room evidence and a status. tools/ootmm/export_oot_wallmaster_edges.py re-checks every claim against the pinned edge fixture, these sources and, locally, the extracted OoT archive.",
+  "principle": "Prefer a native anchor plus the translated pinned condition. Atoms beyond the pinned edge condition are added only where the native anchor region contains places from which the capture is physically impossible without them (ingressAtoms, portAtoms). A combo-only node or event is proposed only where that cannot express the pinned source (a persistent event). The anchor's own native ingress is the port's dungeon logic and is compared, not rewritten.",
+  "statuses": {
+    "ready": "native anchor and native condition exist today; M1-14 adds the edge",
+    "needs-node": "M1-13 must add a COMBO_BUILD region copied from the pinned area first",
+    "needs-event": "M1-13 must add COMBO_BUILD events copied from the pinned area first",
+    "false": "the pinned condition is false in the port (absent settings); no edge"
+  },
+  "relations": {
+    "equal": "the native anchor is entered behind the same gates as the pinned source area",
+    "native-stronger": "native needs more to enter the anchor; logic stays conservative",
+    "native-weaker": "native needs less; the entry says why that is the port's own sound rule",
+    "native-rule": "the same fight or puzzle under the port's own kill or item rule",
+    "equal-with-ingress-atom": "equal once the condition carries the listed ingress atoms",
+    "provisional": "the anchor waits for actor-position evidence (openBlockers)"
+  },
+  "predicateAtoms": {
+    "soul_wallmaster": {
+      "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+      "pinned": [
+        {
+          "file": "data/macros/macros_common.yml",
+          "line": 71,
+          "text": "\"soul_wallmaster\": \"shared_soul_enemy(SOUL_ENEMY_WALLMASTER, SHARED_SOUL_ENEMY_WALLMASTER)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/macros/macros_common.yml",
+          "line": 69,
+          "text": "\"shared_soul_enemy(a, b)\": \"cond(setting(sharedSoulsEnemy), soul_enemy(b), soul_enemy(a))\"",
+          "pinned": true
+        }
+      ],
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/souls/OotSouls.cpp",
+          "line": 102,
+          "text": "bool Has(Logic* logic, OotSoul soul) {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/souls/OotSouls.cpp",
+          "line": 106,
+          "text": "return HaveGeneralOotSoul(Read(logic->GetSaveContext()), Options(), soul);"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/souls/OotSoulState.h",
+          "line": 114,
+          "text": "return index >= 0 && (!GeneralOotSoulShuffled(options, index) || GeneralOotSoulOwned(owned, index));"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/souls/OotSoulData.inc",
+          "line": 4,
+          "text": "OOT_SOUL_ITEM(RG_SOUL_ENEMY_WALLMASTER, 3, OotSoul::ENEMY_WALLMASTER, \"Soul of Wallmasters (OoT)\", \"Soul of Wa"
+        }
+      ],
+      "note": "The port has no shared enemy souls, so shared_soul_enemy reduces to soul_enemy(SOUL_ENEMY_WALLMASTER). Has() is true while the enemy soul family is not shuffled, as soul_enemy is. It is the soul gate, not CanKillEnemy(RE_WALLMASTER): capture needs no weapon."
+    },
+    "has_lens": {
+      "native": "ctx->GetTrickOption(RT_LENS_BOTW) || logic->CanUse(RG_LENS_OF_TRUTH)",
+      "pinned": [
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 238,
+          "text": "\"has_lens\": \"has_lens_strict || trick(OOT_LENS)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 175,
+          "text": "\"has_lens_strict\": \"has_magic && (has(LENS) || has(SHARED_LENS))\"",
+          "pinned": true
+        }
+      ],
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 47,
+          "text": "ENTRANCE(RR_BOTW_MIDDLE,            ctx->GetTrickOption(RT_LENS_BOTW) || logic->CanUse(RG_LENS_OF_TRUTH)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 638,
+          "text": "case RG_LENS_OF_TRUTH:"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 639,
+          "text": "return CanUse(RG_MAGIC_SINGLE);"
+        }
+      ],
+      "note": "Only edge 01 (vanilla BotW) uses has_lens. OOT_LENS is one global trick in OoTMM; the port has one lens trick per area, and native gates the same BotW fake walls with RT_LENS_BOTW (bottom_of_the_well.cpp:47). CanUse(RG_LENS_OF_TRUTH) includes magic, as has_lens_strict does."
+    },
+    "can_reflect_light": {
+      "native": "logic->SunlightArrows() || logic->CanUse(RG_MIRROR_SHIELD)",
+      "pinned": [
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 146,
+          "text": "\"can_reflect_light\": \"has_sunlight_arrows || has_mirror_shield\"",
+          "pinned": true
+        },
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 173,
+          "text": "\"has_sunlight_arrows\": \"setting(sunlightArrows) && can_use_light_arrows\"",
+          "pinned": true
+        },
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 143,
+          "text": "\"has_mirror_shield\": \"age_shield_adult && cond(setting(sharedShields), has_mirror_shield_raw_shared, has_mirro",
+          "pinned": true
+        }
+      ],
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 1866,
+          "text": "bool Logic::SunlightArrows() {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 1867,
+          "text": "return (ctx->GetOption(RSK_SUNLIGHT_ARROWS).Get() ||"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 1869,
+          "text": "CanUse(RG_LIGHT_ARROWS);"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 666,
+          "text": "case RG_MIRROR_SHIELD:"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 667,
+          "text": "return IsAdult; // || MirrorShieldAsChild;"
+        }
+      ],
+      "note": "SunlightArrows() is the sunlight-arrows option plus usable Light Arrows (setting(sunlightArrows) && can_use_light_arrows); CanUse(RG_MIRROR_SHIELD) is adult-only like age_shield_adult."
+    },
+    "has_fire_arrows": {
+      "native": "logic->CanUse(RG_FIRE_ARROWS)",
+      "pinned": [
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 174,
+          "text": "\"has_fire_arrows\": \"can_use_bow && (has(ARROW_FIRE) || has(SHARED_ARROW_FIRE)) && has_magic\"",
+          "pinned": true
+        }
+      ],
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 640,
+          "text": "case RG_FIRE_ARROWS:"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 643,
+          "text": "return CanUse(RG_MAGIC_SINGLE) && CanUse(RG_FAIRY_BOW);"
+        }
+      ],
+      "note": "Usable bow, Fire Arrows and magic in both."
+    },
+    "has_bombchu": {
+      "native": "logic->CanUse(RG_BOMBCHU_5)",
+      "pinned": [
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 72,
+          "text": "\"has_bombchu\": \"bombchu_source && bombchu_license\"",
+          "pinned": true
+        }
+      ],
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 330,
+          "text": "ENTRANCE(RR_GANONS_CASTLE_SPIRIT_TRIAL_AFTER_SWITCH, logic->CanUse(RG_BOMBCHU_5) || (ctx->GetTrickOption(RT_IT"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 714,
+          "text": "case RG_BOMBCHU_5:"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/logic.cpp",
+          "line": 717,
+          "text": "return BombchuRefill() && BombchusEnabled();"
+        }
+      ],
+      "note": "The native form native logic already uses for the same Ganon Spirit trial switch (ganons_castle.cpp:330)."
+    },
+    "climb_anywhere": {
+      "native": "false",
+      "pinned": [
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 408,
+          "text": "\"climb_anywhere\": \"setting(climbMostSurfacesOot, logical)\"",
+          "pinned": true
+        }
+      ],
+      "absent": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/settings.cpp",
+          "tokens": ["climbMostSurfaces", "ClimbMostSurfaces", "CLIMB_MOST_SURFACES"]
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/randomizerTypes.h",
+          "tokens": ["CLIMB_MOST_SURFACES", "ClimbMostSurfaces"]
+        }
+      ],
+      "note": "setting(climbMostSurfacesOot, logical): the port has no such OoT option, so the atom is false (the Codex audit: excluded features keep false semantics)."
+    },
+    "hookshot_anywhere": {
+      "native": "false",
+      "pinned": [
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 409,
+          "text": "\"hookshot_anywhere\": \"can_hookshot && setting(hookshotAnywhereOot, logical)\"",
+          "pinned": true
+        }
+      ],
+      "absent": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/settings.cpp",
+          "tokens": ["hookshotAnywhereOot", "HOOKSHOT_ANYWHERE", "HookshotAnywhere"]
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/randomizerTypes.h",
+          "tokens": ["HOOKSHOT_ANYWHERE", "HookshotAnywhere"]
+        }
+      ],
+      "note": "setting(hookshotAnywhereOot, logical): no such OoT option in the port, so false."
+    },
+    "event(GANON_MQ_SPIRIT_ENDING_SUNS)": {
+      "native": "logic->Get(LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS)",
+      "pinned": [
+        {
+          "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+          "line": 276,
+          "text": "GANON_MQ_SPIRIT_ENDING_SUNS: \"event(GANON_MQ_SPIRIT_ZOMBIES) && (has_sunlight_arrows || (has_fire_arrows && ha",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+          "line": 275,
+          "text": "GANON_MQ_SPIRIT_ZOMBIES: \"can_play_sun || has_weapon || can_use_din || can_hammer\" #Trying to do this room wit",
+          "pinned": true
+        }
+      ],
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 717,
+          "text": "areaTable[RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH] = Region(\"Ganon's Castle MQ Spirit Trial After Switch"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 721,
+          "text": "LOCATION(RC_GANONS_CASTLE_MQ_SPIRIT_TRIAL_SUN_FRONT_LEFT_CHEST,    ((logic->CanUse(RG_FIRE_ARROWS) && logic->C"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 729,
+          "text": "ENTRANCE(RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_FINAL_ROOM,    AnyAgeTime([]{return (logic->CanUse(RG_FIRE_ARROWS) &"
+        }
+      ],
+      "note": "Proposed COMBO_BUILD event (M1-13, D6). Native has no ZOMBIES or ENDING_SUNS flag: the sun chests and the final-room exit use the light condition without the zombie condition."
+    }
+  },
+  "actorFacts": [
+    {
+      "fact": "Wallmaster params: low byte is the type (0 timer, 1 proximity, 2 switch flag, 3 ShadowTag), high byte the switch flag that spawns a type-2 Wallmaster.",
+      "evidence": [
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
+          "line": 132,
+          "text": "this->switchFlag = (u8)(thisx->params >> 0x8);"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
+          "line": 133,
+          "text": "thisx->params = thisx->params & 0xFF;"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.h",
+          "line": 9,
+          "text": "/* 0x01 */ WMT_PROXIMITY,"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.h",
+          "line": 10,
+          "text": "/* 0x02 */ WMT_FLAG,"
+        }
+      ]
+    },
+    {
+      "fact": "A proximity Wallmaster drops on Link once he is within 200 units of its home position in XZ, at any height; a switch-flag Wallmaster drops as soon as its flag is set.",
+      "evidence": [
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
+          "line": 508,
+          "text": "void EnWallmas_WaitForProximity(EnWallmas* this, PlayState* play) {"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
+          "line": 511,
+          "text": "Math_Vec3f_DistXZ(&this->actor.home.pos, &player->actor.world.pos) < 200.0f) {"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
+          "line": 516,
+          "text": "void EnWallmas_WaitForSwitchFlag(EnWallmas* this, PlayState* play) {"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
+          "line": 517,
+          "text": "if (Flags_GetSwitch(play, this->switchFlag) != 0) {"
+        }
+      ]
+    },
+    {
+      "fact": "A switch-flag Wallmaster is removed at spawn while its flag is set. Flags 0x20-0x37 are temporary and kept until the scene is left; 0x38-0x3F are cleared on every room change.",
+      "evidence": [
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
+          "line": 139,
+          "text": "if (thisx->params == WMT_FLAG) {"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
+          "line": 140,
+          "text": "if (Flags_GetSwitch(play, this->switchFlag) != 0) {"
+        },
+        {
+          "file": "soh/src/code/z_actor.c",
+          "line": 677,
+          "text": "if (flag < 0x20) {"
+        },
+        {
+          "file": "soh/src/code/z_actor.c",
+          "line": 680,
+          "text": "play->actorCtx.flags.tempSwch |= (1 << (flag - 0x20));"
+        },
+        {
+          "file": "soh/src/code/z_actor.c",
+          "line": 3233,
+          "text": "actorCtx->flags.tempSwch &= 0xFFFFFF;"
+        }
+      ]
+    },
+    {
+      "fact": "The pinned runtime picks the source row from the actor's own room (this->room), not the current room.",
+      "evidence": [
+        {
+          "file": "packages/generator/src/oot/actors/En/En_Wallmas.c",
+          "line": 10,
+          "text": "room = this->room;",
+          "pinned": true
+        }
+      ]
+    },
+    {
+      "fact": "Chest actors keep their treasure flag in params & 0x1F; native Location::Chest rows carry the same full params, so a chest in an actor list names one native check and one pinned pool row.",
+      "evidence": [
+        {
+          "file": "soh/src/overlays/actors/ovl_En_Box/z_en_box.c",
+          "line": 290,
+          "text": "s32 treasureFlag = this->dyna.actor.params & 0x1F;"
+        }
+      ]
+    },
+    {
+      "fact": "Pinned xflag checks (pots, crates, hearts, icicles) are keyed by (actor room << 8) | actor index, so a pinned pool id names the room of the area that lists it.",
+      "evidence": [
+        {
+          "file": "packages/generator/src/common/xflags.c",
+          "line": 140,
+          "text": "xf->roomId = actor->room;",
+          "pinned": true
+        },
+        {
+          "file": "packages/generator/src/common/xflags.c",
+          "line": 142,
+          "text": "xf->id = actor->actorIndex;",
+          "pinned": true
+        },
+        {
+          "file": "packages/generator/src/common/item/item.c",
+          "line": 447,
+          "text": "key |= (((u32)(q->roomId & 0xff)) << 8);",
+          "pinned": true
+        },
+        {
+          "file": "packages/generator/src/common/item/item.c",
+          "line": 448,
+          "text": "key |= (((u32)(q->id & 0xff)) << 0);",
+          "pinned": true
+        }
+      ]
+    },
+    {
+      "fact": "A light switch keeps its switch flag in (params >> 8) & 0x3F and its type in (params >> 4) & 3; type 3 (BURN) is a fake sun that sets its flag when lit and disappears.",
+      "evidence": [
+        {
+          "file": "soh/src/overlays/actors/ovl_Obj_Lightswitch/z_obj_lightswitch.c",
+          "line": 110,
+          "text": "type = this->actor.params >> 4 & 3;"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_Obj_Lightswitch/z_obj_lightswitch.c",
+          "line": 112,
+          "text": "Flags_SetSwitch(play, this->actor.params >> 8 & 0x3F);"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_Obj_Lightswitch/z_obj_lightswitch.h",
+          "line": 15,
+          "text": "/* 3 */ OBJLIGHTSWITCH_TYPE_BURN     // disappears when turned on"
+        }
+      ]
+    },
+    {
+      "fact": "The Forest Temple hallway object Bg_Mori_Hineri takes its hall from params & 0x8000 (0: the NW hall, 2: the NE hall); the NW hall spawns the Boss Key chest with params 0x27EE (10222), native RC_FOREST_TEMPLE_BOSS_KEY_CHEST.",
+      "evidence": [
+        {
+          "file": "soh/src/overlays/actors/ovl_Bg_Mori_Hineri/z_bg_mori_hineri.c",
+          "line": 82,
+          "text": "this->dyna.actor.params = ((this->dyna.actor.params & 0x8000) >> 0xE);"
+        },
+        {
+          "file": "soh/src/overlays/actors/ovl_Bg_Mori_Hineri/z_bg_mori_hineri.c",
+          "line": 175,
+          "text": "Actor_Spawn(&play->actorCtx, play, ACTOR_EN_BOX, -1515.0f, 1440.0f, -3475.0f, -0x4000, 0x4000, 0, 0x27EE);"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_list.cpp",
+          "line": 390,
+          "text": "locationTable[RC_FOREST_TEMPLE_BOSS_KEY_CHEST] =                                  Location::Chest(RC_FOREST_TE"
+        }
+      ]
+    }
+  ],
+  "archive": {
+    "source": "The user's own extracted OoT archive (oot.o2r, non-MQ resources scenes/nonmq/<scene>_scene/<scene>_room_<n>), read-only with SoH's binary scene-command layout. Never a ROM file. No MQ archive exists locally or on the AVD (C17).",
+    "verifiedQuests": ["vanilla"],
+    "scenes": {
+      "Forest": "Bmori1",
+      "Shadow": "HAKAdan",
+      "Spirit": "jyasinzou",
+      "BotW": "HAKAdanCH",
+      "GTG": "men",
+      "Ganon": "ganontika"
+    },
+    "unloggedCaptures": [
+      {
+        "quest": "vanilla",
+        "dungeon": "Ganon",
+        "classifiedAs": "OOT_WALLMASTER_GANON_SPIRIT",
+        "wallmaster": {
+          "room": 3,
+          "index": 6,
+          "params": "0x2d02",
+          "type": "flag",
+          "pos": [3405, 690, -2166],
+          "role": "unlogged"
+        },
+        "supporting": [
+          {
+            "room": 3,
+            "index": 3,
+            "actor": "0x0111",
+            "params": "0x0e12",
+            "means": "pot: pinned \"Ganon Castle Pot Water\" (0x0303) = native RC_GANONS_CASTLE_WATER_TRIAL_POT_3: room 3 is in the Water trial"
+          }
+        ],
+        "note": "Switch-flag Wallmaster (flag 0x2d) in the Water trial. No pinned logic edge reaches it, so a capture there is never in logic; at runtime it takes the GANON_SPIRIT route (default branch). Copy as is; M1-15/M1-20 should exercise it."
+      },
+      {
+        "quest": "vanilla",
+        "dungeon": "Ganon",
+        "classifiedAs": "OOT_WALLMASTER_GANON_SPIRIT",
+        "wallmaster": {
+          "room": 8,
+          "index": 11,
+          "params": "0x2e02",
+          "type": "flag",
+          "pos": [-2668, 320, -1464],
+          "role": "unlogged"
+        },
+        "supporting": [
+          {
+            "room": 8,
+            "index": 10,
+            "actor": "0x0111",
+            "params": "0x4a2a",
+            "means": "pot: pinned \"Ganon Castle Pot Light\" (0x080a) = native RC_GANONS_CASTLE_LIGHT_TRIAL_BOULDER_POT_1: room 8 is the Light trial boulder room"
+          }
+        ],
+        "note": "Switch-flag Wallmaster (flag 0x2e) in the Light trial boulder room. Not 0x0a, so OoTMM routes it as GANON_SPIRIT, not GANON_LIGHT; no pinned logic edge. Copy as is."
+      }
+    ],
+    "note": "Every Wallmaster actor in the six vanilla scenes is accounted for: 12 under edges (one GTG Wallmaster is out of bounds) and these 2 unlogged ones."
+  },
+  "edges": [
+    {
+      "n": 1,
+      "id": "data/world/oot/dungeons/bottom_of_the_well.yml:23",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_BOTW_MAIN",
+      "from": "OOT Bottom of the Well Main",
+      "expression": "soul_wallmaster && has_lens",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_BOTW_MIDDLE",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+        "line": 62
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER) && (ctx->GetTrickOption(RT_LENS_BOTW) || logic->CanUse(RG_LENS_OF_TRUTH))",
+        "pinnedAtoms": ["has_lens", "soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Main is the whole main room; the lens on the edge is the fake-wall gate into its centre.",
+        "native": "PERIMETER -> MIDDLE needs RT_LENS_BOTW or lens (:47); PIT_CAGE -> MIDDLE needs RT_BOTW_PITS and lens (:120); the two key rooms are only reached from MIDDLE (:133, :141)."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "BotW",
+        "wallmasters": [
+          {
+            "room": 0,
+            "index": 4,
+            "params": "0x0001",
+            "type": "proximity",
+            "pos": [-2, 0, -742],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 0,
+            "index": 20,
+            "actor": "0x000a",
+            "params": "0x504e",
+            "pos": [333, 0, -407],
+            "means": "chest flag 0x0e = native RC_BOTTOM_OF_THE_WELL_CENTER_SKULLTULA_CHEST in MIDDLE (:65) = pinned \"Bottom of the Well Blood Chest\" (Main, has_lens)"
+          },
+          {
+            "rooms": [0, 1],
+            "actor": "0x0023",
+            "pos": [0, -240, -740],
+            "means": "the centre hole down to the basement, under the Wallmaster: native MIDDLE -> B3_OOZE (:72)"
+          },
+          {
+            "rooms": [5, 0],
+            "actor": "0x0009",
+            "pos": [450, 0, -900],
+            "means": "inner east room door (native MIDDLE -> key rooms)"
+          },
+          {
+            "rooms": [6, 0],
+            "actor": "0x0009",
+            "pos": [-410, 0, -900],
+            "means": "inner west room door (native MIDDLE -> key rooms)"
+          }
+        ],
+        "argument": "The only vanilla Wallmaster in the scene triggers within 200 units of (-2, -742): over the centre hole, between the two inner-room doors, inside the lens walls. That is native RR_BOTW_MIDDLE, not the perimeter."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 47,
+          "text": "ENTRANCE(RR_BOTW_MIDDLE,            ctx->GetTrickOption(RT_LENS_BOTW) || logic->CanUse(RG_LENS_OF_TRUTH)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 65,
+          "text": "LOCATION(RC_BOTTOM_OF_THE_WELL_CENTER_SKULLTULA_CHEST, (logic->CanPassEnemy(RE_BIG_SKULLTULA) || logic->TakeDa"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 72,
+          "text": "ENTRANCE(RR_BOTW_B3_OOZE,         true),"
+        },
+        {
+          "file": "data/world/oot/dungeons/bottom_of_the_well.yml",
+          "line": 23,
+          "text": "\"Bottom of the Well Wallmaster Main\": \"soul_wallmaster && has_lens\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/bottom_of_the_well.yml",
+          "line": 37,
+          "text": "\"Bottom of the Well Blood Chest\": \"has_lens\"",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 1863,
+          "text": "Bottom of the Well Blood Chest,                             chest,          NONE,                 BOTTOM_OF_TH",
+          "pinned": true
+        }
+      ],
+      "note": "Resolves the coarse vanilla BotW area: anchor MIDDLE and keep the full pinned condition. Every way into MIDDLE already needs the lens or RT_LENS_BOTW, so the lens term is redundant but literal."
+    },
+    {
+      "n": 2,
+      "id": "data/world/oot/dungeons/forest_temple.yml:138",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "from": "OOT Forest Temple Twisted 1 Normal",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_FOREST_TEMPLE_NW_HALLWAY_TWISTED",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+        "line": 291
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Maze -> Twisted 1 Normal: adult with Goron bracelet and small_keys_forest(2) (hookshotAnywhereOot off).",
+        "native": "BLOCK_PUSH_ROOM_TOP -> NW_HALLWAY_TWISTED: SmallKeys(2) after the block-push climb (:281); RED_POE_ROOM -> it: SmallKeys(3) (:314), pinned Poe 1 side."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "Forest",
+        "wallmasters": [
+          {
+            "room": 19,
+            "index": 0,
+            "params": "0x0001",
+            "type": "proximity",
+            "pos": [-1763, 1467, -3318],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 19,
+            "index": 4,
+            "actor": "0x0068",
+            "params": "0x0320",
+            "means": "Bg_Mori_Hineri, hall 0 (params & 0x8000 clear): the NW hallway that spawns the Boss Key chest 0x27EE = native RC_FOREST_TEMPLE_BOSS_KEY_CHEST (NW_HALLWAY_STRAIGHTENED, forest_temple.cpp:299) = pinned \"Forest Temple Boss Key\" (Twisted 1 Alt, forest_temple.yml:147; pool flag 0x0e)"
+          }
+        ],
+        "argument": "Room 19 holds the one west Wallmaster and the NW hallway object, in both hallway states; runtime room 19 is not 0x14, so it classifies as FOREST_CORRIDOR_WEST."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 281,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_NW_HALLWAY_TWISTED,      logic->SmallKeys(SCENE_FOREST_TEMPLE, 2)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 314,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_NW_HALLWAY_TWISTED, logic->SmallKeys(SCENE_FOREST_TEMPLE, 3)),"
+        },
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 128,
+          "text": "\"Forest Temple Twisted 1 Normal\": \"(((is_adult || time_travel_at_will) && has_goron_bracelet) || climb_anywher",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 139,
+          "text": "\"Forest Temple Poe 1\": \"cond(!setting(hookshotAnywhereOot, off) && !setting(ageChange, none), small_keys_fores",
+          "pinned": true
+        }
+      ],
+      "note": "Pinned \"Twisted 1 Normal\" is the NW hallway in its first state, native NW_HALLWAY_TWISTED (no eye switch yet, Red Poe side with three keys)."
+    },
+    {
+      "n": 3,
+      "id": "data/world/oot/dungeons/forest_temple.yml:144",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "from": "OOT Forest Temple Twisted 1 Alt",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_FOREST_TEMPLE_NW_HALLWAY_STRAIGHTENED",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+        "line": 297
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Maze -> Twisted 1 Alt: event(FOREST_TWISTED_HALL) (hit the switch from the maze) and small_keys_forest(2); the Garden West Ledge entry needs the anywhere settings (false).",
+        "native": "BLOCK_PUSH_ROOM_TOP -> NW_HALLWAY_STRAIGHTENED: CanHitEyeTargets() and SmallKeys(2) (:282)."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "Forest",
+        "wallmasters": [
+          {
+            "room": 19,
+            "index": 0,
+            "params": "0x0001",
+            "type": "proximity",
+            "pos": [-1763, 1467, -3318],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 19,
+            "index": 4,
+            "actor": "0x0068",
+            "params": "0x0320",
+            "means": "Bg_Mori_Hineri, hall 0 (params & 0x8000 clear): the NW hallway that spawns the Boss Key chest 0x27EE = native RC_FOREST_TEMPLE_BOSS_KEY_CHEST (NW_HALLWAY_STRAIGHTENED, forest_temple.cpp:299) = pinned \"Forest Temple Boss Key\" (Twisted 1 Alt, forest_temple.yml:147; pool flag 0x0e)"
+          }
+        ],
+        "argument": "Room 19 holds the one west Wallmaster and the NW hallway object, in both hallway states; runtime room 19 is not 0x14, so it classifies as FOREST_CORRIDOR_WEST."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 282,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_NW_HALLWAY_STRAIGHTENED, logic->CanHitEyeTargets() && logic->SmallKeys(SCENE_FOREST_"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 299,
+          "text": "LOCATION(RC_FOREST_TEMPLE_BOSS_KEY_CHEST, logic->CanOpenLargeChest()),"
+        },
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 129,
+          "text": "\"Forest Temple Twisted 1 Alt\": \"event(FOREST_TWISTED_HALL) && cond(!setting(hookshotAnywhereOot, off) && !sett",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 147,
+          "text": "\"Forest Temple Boss Key\": \"true\"",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 1644,
+          "text": "Forest Temple Boss Key,                                     chest,          NONE,                 TEMPLE_FORES",
+          "pinned": true
+        }
+      ],
+      "note": "Pinned \"Twisted 1 Alt\" holds the Boss Key chest, as native NW_HALLWAY_STRAIGHTENED does."
+    },
+    {
+      "n": 4,
+      "id": "data/world/oot/dungeons/forest_temple.yml:184",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "from": "OOT Forest Temple Twisted 2 Normal",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_FOREST_TEMPLE_NE_HALLWAY_STRAIGHTENED",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+        "line": 350
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Poe 2 (Blue Poe room) -> Twisted 2 Normal: small_keys_forest(4); on to the rotating room with 5.",
+        "native": "BLUE_POE_ROOM -> NE_HALLWAY_STRAIGHTENED: SmallKeys(4) (:347); on to FROZEN_EYE_ROOM with 5 (:353)."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "Forest",
+        "wallmasters": [
+          {
+            "room": 20,
+            "index": 2,
+            "params": "0x0001",
+            "type": "proximity",
+            "pos": [1998, 1472, -3326],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 20,
+            "index": 4,
+            "actor": "0x0068",
+            "params": "0x8521",
+            "means": "Bg_Mori_Hineri, hall 2 (params & 0x8000 set): the NE hallway (no chest)"
+          },
+          {
+            "rooms": [20, 13],
+            "actor": "0x002e",
+            "pos": [1654, 1228, -3320],
+            "means": "door to room 13, the Blue Poe room side"
+          },
+          {
+            "rooms": [14, 20],
+            "actor": "0x002e",
+            "pos": [1999, 1228, -1820],
+            "means": "door to room 14, the far side of the hallway"
+          }
+        ],
+        "argument": "Room 20 (0x14) holds the one east Wallmaster and the NE hallway object; runtime room 0x14 classifies as FOREST_CORRIDOR_EAST."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 347,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_NE_HALLWAY_STRAIGHTENED, logic->SmallKeys(SCENE_FOREST_TEMPLE, 4)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 353,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_FROZEN_EYE_ROOM, logic->SmallKeys(SCENE_FOREST_TEMPLE, 5)),"
+        },
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 172,
+          "text": "\"Forest Temple Twisted 2 Normal\": \"small_keys_forest(4)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 185,
+          "text": "\"Forest Temple Rotating Room\": \"small_keys_forest(5)\"",
+          "pinned": true
+        }
+      ],
+      "note": "The NE hallway starts straight: pinned \"Twisted 2 Normal\" (first state) is native NE_HALLWAY_STRAIGHTENED."
+    },
+    {
+      "n": 5,
+      "id": "data/world/oot/dungeons/forest_temple.yml:198",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "from": "OOT Forest Temple Twisted 2 Alt",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_FOREST_TEMPLE_NE_HALLWAY_TWISTED",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+        "line": 356
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Rotating Room -> Twisted 2 Alt: can_use_bow || can_use_din (shoot the frozen eye); the rotating room is behind small_keys_forest(5).",
+        "native": "FROZEN_EYE_ROOM -> NE_HALLWAY_TWISTED: SmallKeys(5) and Fairy Bow or Din's Fire (:369)."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "Forest",
+        "wallmasters": [
+          {
+            "room": 20,
+            "index": 2,
+            "params": "0x0001",
+            "type": "proximity",
+            "pos": [1998, 1472, -3326],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 20,
+            "index": 4,
+            "actor": "0x0068",
+            "params": "0x8521",
+            "means": "Bg_Mori_Hineri, hall 2 (params & 0x8000 set): the NE hallway (no chest)"
+          },
+          {
+            "rooms": [20, 13],
+            "actor": "0x002e",
+            "pos": [1654, 1228, -3320],
+            "means": "door to room 13, the Blue Poe room side"
+          },
+          {
+            "rooms": [14, 20],
+            "actor": "0x002e",
+            "pos": [1999, 1228, -1820],
+            "means": "door to room 14, the far side of the hallway"
+          }
+        ],
+        "argument": "Room 20 (0x14) holds the one east Wallmaster and the NE hallway object; runtime room 0x14 classifies as FOREST_CORRIDOR_EAST."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 359,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_FALLING_ROOM,    true),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 369,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_NE_HALLWAY_TWISTED,      logic->SmallKeys(SCENE_FOREST_TEMPLE, 5) && (logic->CanUse("
+        },
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 190,
+          "text": "\"Forest Temple Twisted 2 Alt\": \"can_use_bow || can_use_din\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/forest_temple.yml",
+          "line": 199,
+          "text": "\"Forest Temple Checkerboard\": \"true\"",
+          "pinned": true
+        }
+      ],
+      "note": "Pinned \"Twisted 2 Alt\" (after the frozen eye, on to the checkerboard/falling room) is native NE_HALLWAY_TWISTED (on to FALLING_ROOM, :359)."
+    },
+    {
+      "n": 6,
+      "id": "data/world/oot/dungeons/ganon_castle.yml:69",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_GANON_LIGHT",
+      "from": "OOT Ganon Castle Light End",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_GANONS_CASTLE_LIGHT_TRIAL_FINAL_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+        "line": 389
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "native-weaker",
+        "pinned": "Light 2 -> Light End: silver_rupees_ganon_light && has_lens (ganon_castle.yml:57).",
+        "native": "BOULDER_ROOM -> FINAL_ROOM (:386): the light silver-rupee puzzle and the lens with silver rupee logic on; Hookshot or an adult ground jump, without the lens, with it off."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "Ganon",
+        "wallmasters": [
+          {
+            "room": 10,
+            "index": 1,
+            "params": "0x0001",
+            "type": "proximity",
+            "pos": [-3192, -240, -840],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 10,
+            "index": 0,
+            "actor": "0x01b6",
+            "params": "0x0000",
+            "pos": [-3479, -210, -840],
+            "means": "Bg_Gnd_Nisekabe, the fake wall, west of the Wallmaster"
+          },
+          {
+            "rooms": [10, 8],
+            "actor": "0x002e",
+            "pos": [-2919, -240, -840],
+            "means": "door from room 8, the boulder/silver-rupee room (pot 0x080a = pinned \"Ganon Castle Pot Light\" in Light 2 = native RC_GANONS_CASTLE_LIGHT_TRIAL_BOULDER_POT_1 in BOULDER_ROOM)"
+          },
+          {
+            "rooms": [11, 10],
+            "actor": "0x0023",
+            "pos": [-3639, -210, -840],
+            "means": "door to room 11, the trial room (pots 0x0b04/0x0b05 = pinned \"Pot Light End 1/2\" = native RC_GANONS_CASTLE_LIGHT_TRIAL_POT_1/2 in FINAL_ROOM)"
+          },
+          {
+            "room": 11,
+            "index": 4,
+            "actor": "0x0111",
+            "params": "0x7603",
+            "means": "pot: pinned \"Ganon Castle Pot Light End 1\" (0x0b04)"
+          },
+          {
+            "room": 8,
+            "index": 10,
+            "actor": "0x0111",
+            "params": "0x4a2a",
+            "means": "pot: pinned \"Ganon Castle Pot Light\" (0x080a)"
+          }
+        ],
+        "argument": "Room 10 (0x0a) is the corridor between the boulder room and the trial room; it is part of native FINAL_ROOM and of pinned Light End. Walking in from room 8 reaches the 200-unit circle around x=-3192 before the fake wall at x=-3479, so the capture itself needs no lens."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 386,
+          "text": "ENTRANCE(RR_GANONS_CASTLE_LIGHT_TRIAL_FINAL_ROOM, (SilverLogic::Enabled() ? (SilverLogic::Puzzle(RG_RUPEE_SILV"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 394,
+          "text": "LOCATION(RC_GANONS_CASTLE_LIGHT_TRIAL_POT_1, logic->CanBreakPots() && (ctx->GetTrickOption(RT_LENS_GANON) || l"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/ShufflePots.cpp",
+          "line": 475,
+          "text": "locationTable[RC_GANONS_CASTLE_LIGHT_TRIAL_POT_1]          = Location::Pot(RC_GANONS_CASTLE_LIGHT_TRIAL_POT_1,"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/ShufflePots.cpp",
+          "line": 474,
+          "text": "locationTable[RC_GANONS_CASTLE_LIGHT_TRIAL_BOULDER_POT_1]  = Location::Pot(RC_GANONS_CASTLE_LIGHT_TRIAL_BOULDE"
+        },
+        {
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 57,
+          "text": "\"Ganon Castle Light End\": \"silver_rupees_ganon_light && has_lens\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 64,
+          "text": "\"Ganon Castle Pot Light\": \"true\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 73,
+          "text": "\"Ganon Castle Pot Light End 1\": \"true\"",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 2212,
+          "text": "Ganon Castle Pot Light,                                     pot,            NONE,                 INSIDE_GANON",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 2213,
+          "text": "Ganon Castle Pot Light End 1,                               pot,            NONE,                 INSIDE_GANON",
+          "pinned": true
+        }
+      ],
+      "note": "Native anchor plus the pinned edge condition. With silver rupee logic off native reaches FINAL_ROOM without the lens that pinned Light End requires; that is looser than OoTMM's area model but matches the room: the Wallmaster stands in front of the fake wall. Codex asked to verify this ingress; the archive positions settle it."
+    },
+    {
+      "n": 7,
+      "id": "data/world/oot/dungeons/ganon_castle.yml:177",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_GANON_SPIRIT",
+      "from": "OOT Ganon Castle Spirit 2",
+      "expression": "(has_bombchu || climb_anywhere || hookshot_anywhere) && soul_wallmaster && can_reflect_light",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_GANONS_CASTLE_SPIRIT_TRIAL_BEFORE_SWITCH",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+        "line": 324
+      },
+      "condition": {
+        "native": "logic->CanUse(RG_BOMBCHU_5) && Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER) && (logic->SunlightArrows() || logic->CanUse(RG_MIRROR_SHIELD))",
+        "pinnedAtoms": ["can_reflect_light", "has_bombchu", "soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Spirit -> Spirit 2: silver_rupees_ganon_spirit; Spirit 2 spans both sides of the bombchu switch.",
+        "native": "BEAMOS_ROOM -> BEFORE_SWITCH: the spirit silver-rupee gate (:321); BEFORE_SWITCH -> AFTER_SWITCH: bombchu or RT_ITEM_EXTENSION (:330); AFTER_SWITCH -> FINAL_ROOM adds the Bow (:340)."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "Ganon",
+        "wallmasters": [
+          {
+            "room": 18,
+            "index": 18,
+            "params": "0x3b02",
+            "type": "flag",
+            "pos": [-1303, 150, 1126],
+            "role": "capture"
+          },
+          {
+            "room": 18,
+            "index": 20,
+            "params": "0x3c02",
+            "type": "flag",
+            "pos": [-1075, 150, 1269],
+            "role": "capture"
+          },
+          {
+            "room": 18,
+            "index": 22,
+            "params": "0x3d02",
+            "type": "flag",
+            "pos": [-1119, 150, 1097],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 18,
+            "index": 19,
+            "actor": "0x0150",
+            "params": "0x3b30",
+            "means": "BURN light switch, flag 0x3b (spawns Wallmaster 18)"
+          },
+          {
+            "room": 18,
+            "index": 21,
+            "actor": "0x0150",
+            "params": "0x3c30",
+            "means": "BURN light switch, flag 0x3c (spawns Wallmaster 20)"
+          },
+          {
+            "room": 18,
+            "index": 23,
+            "actor": "0x0150",
+            "params": "0x3d30",
+            "means": "BURN light switch, flag 0x3d (spawns Wallmaster 22)"
+          },
+          {
+            "room": 18,
+            "index": 13,
+            "actor": "0x000a",
+            "params": "0x8d72",
+            "means": "chest flag 0x12 = native RC_GANONS_CASTLE_SPIRIT_TRIAL_CRYSTAL_SWITCH_CHEST (BEFORE/AFTER_SWITCH) = pinned \"Ganon Castle Spirit Chest 1\" (Spirit 2)"
+          },
+          {
+            "room": 18,
+            "index": 14,
+            "actor": "0x000a",
+            "params": "0x6954",
+            "means": "chest flag 0x14 = native RC_GANONS_CASTLE_SPIRIT_TRIAL_INVISIBLE_CHEST (AFTER_SWITCH) = pinned \"Ganon Castle Spirit Chest 2\" (Spirit 2)"
+          }
+        ],
+        "argument": "All three Wallmasters of room 18 are switch-flag Wallmasters paired with fake suns: lighting a wrong sun spawns one, which is why the pinned edge needs can_reflect_light and not the Bow. Room 18 is not 0x0a, so it classifies as GANON_SPIRIT."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 321,
+          "text": "ENTRANCE(RR_GANONS_CASTLE_SPIRIT_TRIAL_BEFORE_SWITCH, SilverLogic::Gate(RG_RUPEE_SILVER_GANON_SPIRIT, ctx->Get"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 330,
+          "text": "ENTRANCE(RR_GANONS_CASTLE_SPIRIT_TRIAL_AFTER_SWITCH, logic->CanUse(RG_BOMBCHU_5) || (ctx->GetTrickOption(RT_IT"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 340,
+          "text": "ENTRANCE(RR_GANONS_CASTLE_SPIRIT_TRIAL_FINAL_ROOM,    logic->CanUse(RG_FAIRY_BOW) && (logic->CanUse(RG_MIRROR_"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_list.cpp",
+          "line": 624,
+          "text": "locationTable[RC_GANONS_CASTLE_SPIRIT_TRIAL_CRYSTAL_SWITCH_CHEST] =               Location::Chest(RC_GANONS_CA"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_list.cpp",
+          "line": 625,
+          "text": "locationTable[RC_GANONS_CASTLE_SPIRIT_TRIAL_INVISIBLE_CHEST] =                    Location::Chest(RC_GANONS_CA"
+        },
+        {
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 164,
+          "text": "\"Ganon Castle Spirit 2\": \"silver_rupees_ganon_spirit\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 178,
+          "text": "\"Ganon Castle Spirit End\": \"(has_bombchu || climb_anywhere || hookshot_anywhere) && can_reflect_light && can_u",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/ganon_castle.yml",
+          "line": 181,
+          "text": "\"Ganon Castle Spirit Chest 2\": \"(has_bombchu || climb_anywhere || hookshot_anywhere) && has_lens\"",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 2180,
+          "text": "Ganon Castle Spirit Chest 1,                                chest,          NONE,                 INSIDE_GANON",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 2181,
+          "text": "Ganon Castle Spirit Chest 2,                                chest,          NONE,                 INSIDE_GANON",
+          "pinned": true
+        }
+      ],
+      "note": "Codex blocker \"vanilla Ganon Spirit capture before the Bow-gated final room\": anchor the pre-switch region and carry the whole pinned expression, so the capture needs bombchu and reflected light but no Bow, and native RT_ITEM_EXTENSION does not widen it. No new node. Flags 0x3b-0x3d are cleared on a room change, so the fake suns come back after leaving the room."
+    },
+    {
+      "n": 8,
+      "id": "data/world/oot/dungeons/gerudo_training_grounds.yml:27",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_GTG",
+      "from": "OOT Gerudo Training Grounds Slopes",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/gerudo_training_ground.cpp",
+        "line": 42
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "native-rule",
+        "pinned": "Gerudo Training Grounds -> Slopes: can_use_sword && the Stalfos soul (the sand room fight).",
+        "native": "SAND_ROOM -> BOULDER_ROOM: CanKillEnemy(RE_STALFOS) twice (:39), which also accepts the Megaton Hammer."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "GTG",
+        "wallmasters": [
+          {
+            "room": 2,
+            "index": 5,
+            "params": "0x0001",
+            "type": "proximity",
+            "pos": [-1589, -80, -1329],
+            "role": "capture"
+          },
+          {
+            "room": 2,
+            "index": 4,
+            "params": "0x1102",
+            "type": "flag",
+            "pos": [-2345, 193, -1439],
+            "role": "out-of-bounds"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 2,
+            "index": 9,
+            "actor": "0x0117",
+            "params": "0x1fdc",
+            "means": "silver rupee: room 2 holds the five slope rupees (pinned \"SR Slope ...\" in Slopes, native RG_RUPEE_SILVER_GTG_SLOPES gate :44)"
+          },
+          {
+            "room": 2,
+            "index": 16,
+            "actor": "0x0130",
+            "params": "0x0000",
+            "means": "En_Goroiwa rolling boulder"
+          },
+          {
+            "rooms": [2, 1],
+            "actor": "0x002e",
+            "pos": [-1580, -80, -620],
+            "means": "door from room 1, the sand (Stalfos) room"
+          }
+        ],
+        "argument": "The capturing Wallmaster stands on the slope-room floor; the second one is the out-of-bounds flag Wallmaster SoH also leaves alone. Every GTG room classifies as GTG."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/gerudo_training_ground.cpp",
+          "line": 39,
+          "text": "ENTRANCE(RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM, AnyAgeTime([]{return logic->CanKillEnemy(RE_STALFOS, ED_CLOSE"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/gerudo_training_ground.cpp",
+          "line": 44,
+          "text": "ENTRANCE(RR_GERUDO_TRAINING_GROUND_HEAVY_BLOCK_ROOM, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_SLOPES, AnyAgeTime("
+        },
+        {
+          "file": "soh/soh/Enhancements/ExtraModes/EnemyRandomizer.cpp",
+          "line": 420,
+          "text": "// Don't randomize the OoB wallmaster in the Silver Rupee room because it's only there to"
+        },
+        {
+          "file": "soh/soh/Enhancements/ExtraModes/EnemyRandomizer.cpp",
+          "line": 423,
+          "text": "return !(!isMQ && sceneNum == SCENE_GERUDO_TRAINING_GROUND && roomNum == 2 && posX == -2345);"
+        },
+        {
+          "file": "data/world/oot/dungeons/gerudo_training_grounds.yml",
+          "line": 5,
+          "text": "\"Gerudo Training Grounds Slopes\": \"can_use_sword && soul_enemy(SOUL_ENEMY_STALFOS)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/gerudo_training_grounds.yml",
+          "line": 29,
+          "text": "\"Gerudo Training Grounds SR Slope Front Right\": \"true\"",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 2146,
+          "text": "Gerudo Training Grounds SR Slope Front Right,               sr,             NONE,                 GERUDO_TRAIN",
+          "pinned": true
+        }
+      ],
+      "note": "Native BOULDER_ROOM is the slopes silver-rupee room, as the Codex audit expected."
+    },
+    {
+      "n": 9,
+      "id": "data/world/oot/dungeons/shadow_temple.yml:62",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_SHADOW",
+      "from": "OOT Shadow Temple Open",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_SHADOW_TEMPLE_UPPER_HUGE_PIT",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/shadow_temple.cpp",
+        "line": 129
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "native-stronger",
+        "pinned": "Main -> Open: small_keys_shadow(1) && has_explosives (climbMostSurfacesOot off).",
+        "native": "FIRST_BEAMOS -> B2_TO_B3_CORRIDOR_B2: explosives and SmallKeys(1) (:96), then past the big Skulltulas to UPPER_HUGE_PIT (:119, :125)."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "Shadow",
+        "wallmasters": [
+          {
+            "room": 9,
+            "index": 2,
+            "params": "0x0001",
+            "type": "proximity",
+            "pos": [3778, -386, 1609],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "rooms": [8, 9],
+            "actor": "0x0023",
+            "pos": [4018, -983, 1364],
+            "means": "the upper ledge door from room 8, the B2->B3 corridor with four big Skulltulas"
+          },
+          {
+            "room": 9,
+            "index": 0,
+            "actor": "0x011b",
+            "params": "0x3291",
+            "pos": [3785, -983, 1447],
+            "means": "Navi message spot on that ledge, under the Wallmaster"
+          },
+          {
+            "room": 9,
+            "index": 6,
+            "actor": "0x0117",
+            "params": "0x1fc9",
+            "means": "silver rupee: room 9 is the huge pit (pinned \"SR Pit 1-5\" in Open, native RG_RUPEE_SILVER_SHADOW_PIT gate :149)"
+          },
+          {
+            "room": 8,
+            "index": 0,
+            "actor": "0x0037",
+            "params": "0x0001",
+            "means": "big Skulltula in room 8 (native CanPassEnemy(RE_BIG_SKULLTULA) :125)"
+          }
+        ],
+        "argument": "The Wallmaster's trigger circle sits over the entry ledge where room 8 opens into the huge pit (y=-983), which is where native UPPER_HUGE_PIT starts. Every Shadow room classifies as SHADOW."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/shadow_temple.cpp",
+          "line": 96,
+          "text": "ENTRANCE(RR_SHADOW_TEMPLE_B2_TO_B3_CORRIDOR_B2, logic->HasExplosives() && logic->SmallKeys(SCENE_SHADOW_TEMPLE"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/shadow_temple.cpp",
+          "line": 125,
+          "text": "ENTRANCE(RR_SHADOW_TEMPLE_UPPER_HUGE_PIT,       logic->CanPassEnemy(RE_BIG_SKULLTULA)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/shadow_temple.cpp",
+          "line": 149,
+          "text": "ENTRANCE(RR_SHADOW_TEMPLE_STONE_UMBRELLA, SilverLogic::Gate(RG_RUPEE_SILVER_SHADOW_PIT, true)),"
+        },
+        {
+          "file": "data/world/oot/dungeons/shadow_temple.yml",
+          "line": 36,
+          "text": "\"Shadow Temple Open\": \"cond(!setting(climbMostSurfacesOot, off), small_keys_shadow(4), small_keys_shadow(1)) &",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/shadow_temple.yml",
+          "line": 67,
+          "text": "\"Shadow Temple SR Pit 1\": \"true\"",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 1953,
+          "text": "Shadow Temple SR Pit 1,                                     sr,             NONE,                 TEMPLE_SHADO",
+          "pinned": true
+        }
+      ],
+      "note": "Resolves the coarse Shadow area: pinned Open is the corridor, the huge pit and the scythe room; the Wallmaster is at the top of the pit, so the first native region of the pit is the anchor. Reaching LOWER_HUGE_PIT goes through it."
+    },
+    {
+      "n": 10,
+      "id": "data/world/oot/dungeons/spirit_temple.yml:71",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+      "from": "OOT Spirit Temple Child Back Right",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_NORTH",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+        "line": 86
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "native-stronger",
+        "pinned": "Child Right -> Child Back Right: the child silver rupees; Child Back Left -> it: the Anubis soul.",
+        "native": "1F_ANUBIS -> RUPEE_BRIDGE_NORTH: switch/bracelet/kill Anubis with the Anubis soul (:83); RUPEE_BRIDGE_SOUTH -> NORTH: the silver-rupee bridge event (:110)."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "Spirit",
+        "wallmasters": [
+          {
+            "room": 2,
+            "index": 6,
+            "params": "0x0001",
+            "type": "proximity",
+            "pos": [-552, 30, -1434],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 2,
+            "index": 18,
+            "actor": "0x000a",
+            "params": "0x8840",
+            "pos": [-384, 225, -1242],
+            "means": "chest flag 0x00 = native RC_SPIRIT_TEMPLE_CHILD_EARLY_TORCHES_CHEST in RUPEE_BRIDGE_NORTH (:92) = pinned \"Spirit Temple Child Second Chest\" (Child Back Right)"
+          },
+          {
+            "rooms": [2, 27],
+            "actor": "0x002e",
+            "pos": [-819, 30, -1462],
+            "means": "north door to room 27, the Anubis room (pots 0x1b04-0x1b07 = pinned \"Pot Child Anubis Room 1-4\"; native 1F_ANUBIS)"
+          },
+          {
+            "rooms": [2, 1],
+            "actor": "0x002e",
+            "pos": [-748, 30, -559],
+            "means": "south door to room 1, the child side hub"
+          },
+          {
+            "room": 2,
+            "index": 12,
+            "actor": "0x0117",
+            "params": "0x1fc5",
+            "means": "silver rupee on the bridge (z about -1075; pinned \"SR Child 1-5\", native RG_RUPEE_SILVER_SPIRIT_CHILD gate :88)"
+          }
+        ],
+        "argument": "The trigger circle around z=-1434 lies north of the silver-rupee bridge, by the door to the Anubis room: native RUPEE_BRIDGE_NORTH. Runtime room 0x02 classifies as SPIRIT_CHILD_RUPEES."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 83,
+          "text": "ENTRANCE(RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_NORTH,  AnyAgeTime([]{return (logic->CanHitSwitch() || logic->HasItem(R"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 88,
+          "text": "EVENT_ACCESS(LOGIC_SPIRIT_SILVER_RUPEE_BRIDGE, SilverLogic::Gate(RG_RUPEE_SILVER_SPIRIT_CHILD, logic->HasItem("
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 92,
+          "text": "LOCATION(RC_SPIRIT_TEMPLE_CHILD_EARLY_TORCHES_CHEST, logic->Get(LOGIC_SPIRIT_SILVER_RUPEE_BRIDGE_TORCHES) && l"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_list.cpp",
+          "line": 463,
+          "text": "locationTable[RC_SPIRIT_TEMPLE_CHILD_EARLY_TORCHES_CHEST] =                       Location::Chest(RC_SPIRIT_TE"
+        },
+        {
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 48,
+          "text": "\"Spirit Temple Child Back Right\": \"silver_rupees_spirit_child\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 73,
+          "text": "\"Spirit Temple Child Second Chest\": \"event(SPIRIT_CHEST_CHILD)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 2048,
+          "text": "Spirit Temple Child Second Chest,                           chest,          NONE,                 TEMPLE_SPIRI",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 2100,
+          "text": "Spirit Temple Pot Child Anubis Room 1,                      pot,            NONE,                 TEMPLE_SPIRI",
+          "pinned": true
+        }
+      ],
+      "note": "Codex asked which side of the bridge exposes the actor: the north side, so the anchor does not need the bridge puzzle when entered from the Anubis room."
+    },
+    {
+      "n": 11,
+      "id": "data/world/oot/dungeons/spirit_temple.yml:154",
+      "quest": "vanilla",
+      "source": "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+      "from": "OOT Spirit Temple Adult Climb",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_SPIRIT_TEMPLE_2F_MIRROR_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+        "line": 198
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER) && (logic->HasItem(RG_POWER_BRACELET) || logic->SunlightArrows())",
+        "pinnedAtoms": ["soul_wallmaster"],
+        "portAtoms": [
+          {
+            "native": "logic->HasItem(RG_POWER_BRACELET) || logic->SunlightArrows()",
+            "why": "The capture needs a fake sun lit. Native lights this room's suns with the Power Bracelet (turning the cobra mirror) or sunlight arrows; both are owned unless the port's own skill shuffle or option says otherwise, so the default equals OoTMM.",
+            "evidence": [
+              {
+                "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+                "line": 200,
+                "text": "LOCATION(RC_SPIRIT_TEMPLE_FIRST_MIRROR_LEFT_CHEST,  SpiritShared(RR_SPIRIT_TEMPLE_2F_MIRROR_ROOM, []{return lo"
+              },
+              {
+                "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+                "line": 205,
+                "text": "ENTRANCE(RR_SPIRIT_TEMPLE_STATUE_ROOM_ADULT, logic->HasItem(RG_POWER_BRACELET) || logic->SunlightArrows()),"
+              }
+            ]
+          }
+        ]
+      },
+      "ingress": {
+        "relation": "native-stronger",
+        "pinned": "Adult Entrance -> Adult Climb: small_keys_spirit(1); Statue Adult -> Adult Climb: true.",
+        "native": "ADULT_SIDE_HUB -> 1F_MIRROR_ROOM: SmallKeys(1) (:151); 1F -> 2F: Climb or Longshot (:195); the statue side enters 2F directly (:357)."
+      },
+      "actorRoom": {
+        "status": "verified",
+        "dungeon": "Spirit",
+        "wallmasters": [
+          {
+            "room": 15,
+            "index": 8,
+            "params": "0x3602",
+            "type": "flag",
+            "pos": [832, 734, -713],
+            "role": "capture"
+          }
+        ],
+        "supporting": [
+          {
+            "room": 15,
+            "index": 5,
+            "actor": "0x0150",
+            "params": "0x3630",
+            "pos": [945, 530, -588],
+            "means": "BURN light switch (fake sun), flag 0x36: lit, it spawns the Wallmaster"
+          },
+          {
+            "room": 15,
+            "index": 1,
+            "actor": "0x00fc",
+            "params": "0x0f00",
+            "pos": [1100, 480, -842],
+            "means": "Bg_Jya_Cobra, the turnable mirror on the 2F floor (y=480)"
+          },
+          {
+            "room": 15,
+            "index": 6,
+            "actor": "0x000a",
+            "params": "0x890d",
+            "means": "chest flag 0x0d = native RC_SPIRIT_TEMPLE_FIRST_MIRROR_LEFT_CHEST (2F_MIRROR_ROOM :200) = pinned \"Adult Suns on Wall 1\" (Adult Climb)"
+          },
+          {
+            "room": 15,
+            "index": 7,
+            "actor": "0x000a",
+            "params": "0x8f8e",
+            "means": "chest flag 0x0e = native RC_SPIRIT_TEMPLE_FIRST_MIRROR_RIGHT_CHEST = pinned \"Adult Suns on Wall 2\" (Adult Climb)"
+          }
+        ],
+        "argument": "The room-15 Wallmaster is a switch-flag Wallmaster spawned by the fake sun at the 2F level, beside the suns-on-wall chests both graphs place in this area; room 0x0f classifies as SPIRIT_ADULT_CLIMB."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 151,
+          "text": "ENTRANCE(RR_SPIRIT_TEMPLE_1F_MIRROR_ROOM, logic->SmallKeys(SCENE_SPIRIT_TEMPLE, 1)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 195,
+          "text": "ENTRANCE(RR_SPIRIT_TEMPLE_2F_MIRROR_ROOM, logic->HasItem(RG_CLIMB) || logic->CanUse(RG_LONGSHOT)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 357,
+          "text": "ENTRANCE(RR_SPIRIT_TEMPLE_2F_MIRROR_ROOM,  true),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_list.cpp",
+          "line": 466,
+          "text": "locationTable[RC_SPIRIT_TEMPLE_FIRST_MIRROR_LEFT_CHEST] =                         Location::Chest(RC_SPIRIT_TE"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_list.cpp",
+          "line": 467,
+          "text": "locationTable[RC_SPIRIT_TEMPLE_FIRST_MIRROR_RIGHT_CHEST] =                        Location::Chest(RC_SPIRIT_TE"
+        },
+        {
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 134,
+          "text": "\"Spirit Temple Adult Climb\": \"cond(!setting(climbMostSurfacesOot, off), (has_explosives && can_reflect_light &",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons/spirit_temple.yml",
+          "line": 187,
+          "text": "\"Spirit Temple Adult Climb\": \"true\"",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 2057,
+          "text": "Spirit Temple Adult Suns on Wall 1,                         chest,          NONE,                 TEMPLE_SPIRI",
+          "pinned": true
+        },
+        {
+          "file": "data/pool/pool_oot.csv",
+          "line": 2058,
+          "text": "Spirit Temple Adult Suns on Wall 2,                         chest,          NONE,                 TEMPLE_SPIRI",
+          "pinned": true
+        }
+      ],
+      "note": "Resolves the coarse adult Spirit area: the trigger is a 2F fake sun, so the anchor is 2F_MIRROR_ROOM (the Climb/Longshot step is the port's climb skill; owned by default) with the native means of aiming light in this room. Stricter than OoTMM only under the port's skill shuffles, never looser. At runtime the Wallmaster does not come back while flag 0x36 is set, that is until the temple is left; OoTMM logic does not model that (M1-15/M1-20)."
+    },
+    {
+      "n": 12,
+      "id": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_BOTW_MAIN",
+      "from": "OOT Bottom of the Well Main Room Center",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_BOTW_MQ_MIDDLE",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+        "line": 327
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "native-stronger",
+        "pinned": "Main -> Main Room Center: event(BOTW_MQ_CENTER_GATES_LOWERED) (Zelda's Lullaby); Switch Corner -> it: hover boots or OOT_BOTW_MQ_BACKFLIP.",
+        "native": "PERIMETER -> MQ_MIDDLE: LOGIC_BOTW_MQ_OPENED_GATES (Zelda's Lullaby, :292, :317); PIT_CAGE -> MQ_MIDDLE: RT_BOTW_PITS (:391)."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [0],
+        "areaRoomEvidence": [
+          {
+            "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+            "line": 81,
+            "text": "\"MQ Bottom of the Well Pot Lobby Cage 1\": \"true\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 2542,
+            "text": "MQ Bottom of the Well Pot Lobby Cage 1,                     pot,            NONE,                 BOTTOM_OF_TH",
+            "pinned": true
+          }
+        ],
+        "note": "Pinned Main Room Center lists \"Pot Lobby Cage 1\" with xflag 0x0028: room 0, which runtime classifies as BOTW_MAIN. The MQ actor list is not available (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 317,
+          "text": "ENTRANCE(RR_BOTW_MQ_MIDDLE,            logic->Get(LOGIC_BOTW_MQ_OPENED_GATES)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 329,
+          "text": "LOCATION(RC_BOTTOM_OF_THE_WELL_MQ_MAP_CHEST,         logic->CanOpenLargeChest()),"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 33,
+          "text": "\"Bottom of the Well Main Room Center\": \"event(BOTW_MQ_CENTER_GATES_LOWERED)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 80,
+          "text": "\"MQ Bottom of the Well Map Chest\": \"true\"",
+          "pinned": true
+        }
+      ],
+      "note": "Pinned Main Room Center (map chest, lobby cage pots) is native MQ_MIDDLE (map chest :329)."
+    },
+    {
+      "n": 13,
+      "id": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_BOTW_BASEMENT",
+      "from": "OOT Bottom of the Well Basement",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_BOTW_MQ_B3",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+        "line": 458
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Main, Main Room Center, Switch Corner and Switch Ledge all drop to Basement freely.",
+        "native": "PERIMETER, MQ_MIDDLE, PIT_CAGE and INVISIBLE_PATH drop to MQ_B3 freely (:324, :339, :392, :358)."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [1],
+        "areaRoomEvidence": [
+          {
+            "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+            "line": 96,
+            "text": "\"MQ Bottom of the Well Heart Basement 1\": \"true\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 2557,
+            "text": "MQ Bottom of the Well Heart Basement 1,                     heart,          NONE,                 BOTTOM_OF_TH",
+            "pinned": true
+          }
+        ],
+        "note": "Pinned Basement lists \"Heart Basement 1\" with xflag 0x011b: room 1, BOTW_BASEMENT at runtime. Whether the Wallmaster also reaches the native B3_PLATFORM ledge is a device question (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 324,
+          "text": "ENTRANCE(RR_BOTW_MQ_B3,                true),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 339,
+          "text": "ENTRANCE(RR_BOTW_MQ_B3,             true),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 461,
+          "text": "LOCATION(RC_BOTTOM_OF_THE_WELL_MQ_GS_BASEMENT,                  logic->CanGetEnemyDrop(RE_GOLD_SKULLTULA)),"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 35,
+          "text": "\"Bottom of the Well Basement\": \"true\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 95,
+          "text": "\"MQ Bottom of the Well GS Basement\": \"gs && can_damage_skull\"",
+          "pinned": true
+        }
+      ],
+      "note": "Pinned Basement (GS Basement, hearts) is native MQ_B3 (GS basement :461)."
+    },
+    {
+      "n": 14,
+      "id": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_BOTW_PIT",
+      "from": "OOT Bottom of the Well Pit Before Cage",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_BOTW_MQ_FLOORMASTER_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+        "line": 418
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Main -> Main Side Room Before Pit: is_child; -> Pit Before Cage: a distance trigger, boomerang, explosives or hookshot; Pit Before Cage -> Cage: small_keys_botw(2); Cage event BOTW_MQ_GATE_FROM_SWITCH: explosives.",
+        "native": "PERIMETER -> MQ_CORNER_CRAWLSPACE: crawl (:322); -> MQ_FLOORMASTER_ROOM: CanUseProjectile() (:415); -> MQ_LOCKED_CAGE: SmallKeys(2) (:420); opened middle hole: explosives (:425)."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [3],
+        "areaRoomEvidence": [],
+        "note": "Runtime room 0x03 is BOTW_PIT. No pinned xflag check sits in this area, so only the device log can show the room-3 Wallmaster in the Floormaster room (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 322,
+          "text": "ENTRANCE(RR_BOTW_MQ_CORNER_CRAWLSPACE, logic->CanUse(RG_CRAWL)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 415,
+          "text": "ENTRANCE(RR_BOTW_MQ_FLOORMASTER_ROOM, logic->CanUseProjectile()),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 420,
+          "text": "ENTRANCE(RR_BOTW_MQ_LOCKED_CAGE,       logic->SmallKeys(SCENE_BOTTOM_OF_THE_WELL, 2)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 425,
+          "text": "EVENT_ACCESS(LOGIC_BOTW_MQ_OPENED_MIDDLE_HOLE, logic->HasExplosives()),"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 160,
+          "text": "\"Bottom of the Well Pit Before Cage\": \"can_hit_triggers_distance || can_boomerang || has_explosives || can_hoo",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 166,
+          "text": "\"Bottom of the Well Cage\": \"small_keys_botw(2)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml",
+          "line": 174,
+          "text": "BOTW_MQ_GATE_FROM_SWITCH: \"has_explosives\"",
+          "pinned": true
+        }
+      ],
+      "note": "Corrects the Codex candidate RR_BOTW_MQ_PIT_CAGE: native \"Pit Cage\" is pinned \"Main Room Center Switch Corner\" (blast/smash in, opens the west room). Pinned \"Pit Before Cage\" is the room before the locked cage, native MQ_FLOORMASTER_ROOM, by the matching chain crawlspace -> projectile -> two keys -> cage with the explosive switch."
+    },
+    {
+      "n": 15,
+      "id": "data/world/oot/dungeons_mq/forest_temple_mq.yml:178",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "from": "OOT Forest Temple Western Twisting Hallway Block Push Side",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_FOREST_TEMPLE_MQ_STRAIGHT_HALLWAY",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+        "line": 568
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Climbing Block Puzzle Room Top Floor -> Block Push Side: small_keys_forest(3).",
+        "native": "MQ_BLOCK_PUZZLE_TOP -> MQ_STRAIGHT_HALLWAY: SmallKeys(3) (:560)."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [19],
+        "areaRoomEvidence": [],
+        "note": "Runtime: any Forest room but 0x14 is WEST; vanilla room 19 is the NW hallway. The MQ actor list is not available (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 560,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_MQ_STRAIGHT_HALLWAY,   logic->SmallKeys(SCENE_FOREST_TEMPLE, 3)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 570,
+          "text": "LOCATION(RC_FOREST_TEMPLE_MQ_BOSS_KEY_CHEST, logic->SmallKeys(SCENE_FOREST_TEMPLE, 3) && logic->CanOpenLargeCh"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 172,
+          "text": "\"Forest Temple Western Twisting Hallway Block Push Side\": \"small_keys_forest(3)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 182,
+          "text": "\"MQ Forest Temple Boss Key Chest\": \"event(FOREST_MQ_CLIMBING_BLOCK_ROOM_ALCOVE_SWITCH_FAR)\"",
+          "pinned": true
+        }
+      ],
+      "note": "Pinned Block Push Side holds the MQ Boss Key chest, as native MQ_STRAIGHT_HALLWAY does (:570). Keep the adjacent quantum-key comments in mind if a later unit adds entries into this hallway."
+    },
+    {
+      "n": 16,
+      "id": "data/world/oot/dungeons_mq/forest_temple_mq.yml:188",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "from": "OOT Forest Temple Floormaster Battle Room Below Hallway",
+      "expression": "hookshot_anywhere && climb_anywhere && soul_wallmaster",
+      "status": "false",
+      "anchor": {
+        "region": "RR_FOREST_TEMPLE_MQ_FLOORMASTER_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+        "line": 576
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [19],
+        "areaRoomEvidence": [],
+        "note": "Irrelevant while the edge is false; recorded so a later port of the anywhere settings starts from the same evidence gap."
+      },
+      "evidence": [
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 188,
+          "text": "\"Forest Temple Wallmaster West\": \"hookshot_anywhere && climb_anywhere && soul_wallmaster\"",
+          "pinned": true
+        },
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 408,
+          "text": "\"climb_anywhere\": \"setting(climbMostSurfacesOot, logical)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/macros/macros_oot.yml",
+          "line": 409,
+          "text": "\"hookshot_anywhere\": \"can_hookshot && setting(hookshotAnywhereOot, logical)\"",
+          "pinned": true
+        }
+      ],
+      "note": "hookshot_anywhere && climb_anywhere && soul_wallmaster: both settings are absent from the port, so the edge is false. Do not replace them with ordinary Hookshot or Climb."
+    },
+    {
+      "n": 17,
+      "id": "data/world/oot/dungeons_mq/forest_temple_mq.yml:393",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "from": "OOT Forest Temple Eastern Twisting Hallway Blue Poe Side",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_FOREST_TEMPLE_MQ_BETH_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+        "line": 751
+      },
+      "condition": {
+        "native": "logic->SmallKeys(SCENE_FOREST_TEMPLE, 5) && Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"],
+        "ingressAtoms": [
+          {
+            "atom": "small_keys_forest(5)",
+            "native": "logic->SmallKeys(SCENE_FOREST_TEMPLE, 5)",
+            "evidence": [
+              {
+                "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+                "line": 378,
+                "text": "\"Forest Temple Eastern Twisting Hallway Blue Poe Side\": \"small_keys_forest(5)\"",
+                "pinned": true
+              },
+              {
+                "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+                "line": 765,
+                "text": "ENTRANCE(RR_FOREST_TEMPLE_MQ_FALLING_ROOM,    logic->SmallKeys(SCENE_FOREST_TEMPLE, 5) && AnyAgeTime([]{return"
+              }
+            ]
+          }
+        ]
+      },
+      "ingress": {
+        "relation": "equal-with-ingress-atom",
+        "pinned": "Blue Poe Paintings Room -> Blue Poe Side: small_keys_forest(5); the halves join freely; Red Pool Side -> Spinning Red Pool Room: small_keys_forest(6).",
+        "native": "No hallway region: MQ_BETH_ROOM (the Blue Poe room) goes on to FALLING_ROOM with 5 keys (:765) and to TORCH_SHOT_ROOM with 6 (:766); both pass through the hallway."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [20],
+        "areaRoomEvidence": [
+          {
+            "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+            "line": 381,
+            "text": "\"MQ Forest Temple Pot Blue Poe 1\": \"true\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 2662,
+            "text": "MQ Forest Temple Pot Blue Poe 1,                            pot,            NONE,                 TEMPLE_FORES",
+            "pinned": true
+          },
+          {
+            "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+            "line": 408,
+            "text": "\"MQ Forest Temple Spinning Red Pool Room Small Crate 1\": \"true\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 2677,
+            "text": "MQ Forest Temple Spinning Red Pool Room Small Crate 1,      crate,          NONE,                 TEMPLE_FORES",
+            "pinned": true
+          }
+        ],
+        "note": "The pinned neighbours are room 13 (Blue Poe pot 0x0d05) and room 14 (red pool crate 0x00e07); the vanilla scene joins them through room 20, which runtime classifies as EAST. The MQ actor list is not available (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 756,
+          "text": "LOCATION(RC_FOREST_TEMPLE_MQ_COMPASS_CHEST,  logic->Get(LOGIC_FOREST_BETH) && logic->CanOpenLargeChest()),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 765,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_MQ_FALLING_ROOM,    logic->SmallKeys(SCENE_FOREST_TEMPLE, 5) && AnyAgeTime([]{return"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 766,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_MQ_TORCH_SHOT_ROOM, logic->SmallKeys(SCENE_FOREST_TEMPLE, 6)),"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 378,
+          "text": "\"Forest Temple Eastern Twisting Hallway Blue Poe Side\": \"small_keys_forest(5)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 391,
+          "text": "\"Forest Temple Eastern Twisting Hallway Red Pool Side\": \"true\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 399,
+          "text": "\"Forest Temple Spinning Red Pool Room\": \"small_keys_forest(6)\"",
+          "pinned": true
+        }
+      ],
+      "note": "Codex blocker \"Forest MQ east hallway halves (5 keys in, 6 out)\": both halves are reached only through the fifth-key door from the Blue Poe room (the 6-key door leads further out, and the checkerboard entry needs the anywhere settings). So BETH_ROOM plus SmallKeys(5) is exactly the pinned source; a Beth anchor with the soul alone would skip the fifth key. No new node."
+    },
+    {
+      "n": 18,
+      "id": "data/world/oot/dungeons_mq/forest_temple_mq.yml:401",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "from": "OOT Forest Temple Eastern Twisting Hallway Red Pool Side",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_FOREST_TEMPLE_MQ_BETH_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+        "line": 751
+      },
+      "condition": {
+        "native": "logic->SmallKeys(SCENE_FOREST_TEMPLE, 5) && Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"],
+        "ingressAtoms": [
+          {
+            "atom": "small_keys_forest(5)",
+            "native": "logic->SmallKeys(SCENE_FOREST_TEMPLE, 5)",
+            "evidence": [
+              {
+                "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+                "line": 378,
+                "text": "\"Forest Temple Eastern Twisting Hallway Blue Poe Side\": \"small_keys_forest(5)\"",
+                "pinned": true
+              },
+              {
+                "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+                "line": 398,
+                "text": "\"Forest Temple Eastern Twisting Hallway Blue Poe Side\": \"true\"",
+                "pinned": true
+              },
+              {
+                "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+                "line": 766,
+                "text": "ENTRANCE(RR_FOREST_TEMPLE_MQ_TORCH_SHOT_ROOM, logic->SmallKeys(SCENE_FOREST_TEMPLE, 6)),"
+              }
+            ]
+          }
+        ]
+      },
+      "ingress": {
+        "relation": "equal-with-ingress-atom",
+        "pinned": "Red Pool Side: from Blue Poe Side freely (:398), from the Spinning Red Pool Room with 6 keys (only reachable through this hallway), from the Checkerboard with the anywhere settings (false).",
+        "native": "As edge 17: every way in passes the fifth-key door from MQ_BETH_ROOM."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [20],
+        "areaRoomEvidence": [
+          {
+            "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+            "line": 408,
+            "text": "\"MQ Forest Temple Spinning Red Pool Room Small Crate 1\": \"true\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 2677,
+            "text": "MQ Forest Temple Spinning Red Pool Room Small Crate 1,      crate,          NONE,                 TEMPLE_FORES",
+            "pinned": true
+          }
+        ],
+        "note": "Same hallway room as edge 17 (C17)."
+      },
+      "evidence": [
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 398,
+          "text": "\"Forest Temple Eastern Twisting Hallway Blue Poe Side\": \"true\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 399,
+          "text": "\"Forest Temple Spinning Red Pool Room\": \"small_keys_forest(6)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/forest_temple_mq.yml",
+          "line": 417,
+          "text": "\"Forest Temple Eastern Twisting Hallway Red Pool Side\": \"event(FOREST_MQ_SPINNING_RED_POOLS_FROZEN_EYE) && lon",
+          "pinned": true
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 778,
+          "text": "ENTRANCE(RR_FOREST_TEMPLE_MQ_BETH_ROOM,    logic->SmallKeys(SCENE_FOREST_TEMPLE, 6)),"
+        }
+      ],
+      "note": "Same source row and the same native edge as edge 17; M1-14 may emit it once (the OR of identical edges)."
+    },
+    {
+      "n": 19,
+      "id": "data/world/oot/dungeons_mq/ganon_castle_mq.yml:272",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_GANON_SPIRIT",
+      "from": "OOT Ganon Castle Spirit Trial Sun Room Sun Side",
+      "expression": "soul_wallmaster && event(GANON_MQ_SPIRIT_ENDING_SUNS)",
+      "status": "needs-event",
+      "anchor": {
+        "region": "RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+        "line": 717
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER) && logic->Get(LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS)",
+        "pinnedAtoms": ["event(GANON_MQ_SPIRIT_ENDING_SUNS)", "soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "equal",
+        "pinned": "Sun Room Entrance Side -> Sun Side: event(GANON_MQ_SPIRIT_CRYSTAL) (bombchu); Ending Room -> Sun Side: true.",
+        "native": "MQ_SPIRIT_TRIAL_BEFORE_SWITCH -> AFTER_SWITCH: bombchu (:714); FINAL_ROOM -> AFTER_SWITCH: true (:742)."
+      },
+      "proposal": {
+        "copiedFrom": [
+          {
+            "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+            "line": 275,
+            "text": "GANON_MQ_SPIRIT_ZOMBIES: \"can_play_sun || has_weapon || can_use_din || can_hammer\" #Trying to do this room wit",
+            "pinned": true
+          },
+          {
+            "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+            "line": 276,
+            "text": "GANON_MQ_SPIRIT_ENDING_SUNS: \"event(GANON_MQ_SPIRIT_ZOMBIES) && (has_sunlight_arrows || (has_fire_arrows && ha",
+            "pinned": true
+          }
+        ],
+        "add": ["LogicVal LOGIC_GANON_MQ_SPIRIT_ZOMBIES and LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS (COMBO_BUILD only).", "In RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH: EVENT_ACCESS(LOGIC_GANON_MQ_SPIRIT_ZOMBIES, logic->CanUse(RG_SUNS_SONG) || logic->CanUseSword() || logic->CanUse(RG_DINS_FIRE) || logic->CanUse(RG_MEGATON_HAMMER)) // ganon_castle_mq.yml:275", "In the same region: EVENT_ACCESS(LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS, logic->Get(LOGIC_GANON_MQ_SPIRIT_ZOMBIES) && (logic->SunlightArrows() || (logic->CanUse(RG_FIRE_ARROWS) && logic->CanUse(RG_MIRROR_SHIELD)))) // ganon_castle_mq.yml:276", "Nothing outside the M1 overlay reads the two flags, so non-ER reachability is unchanged (M1-13 proves it)."],
+        "mapping": {
+          "can_play_sun": "logic->CanUse(RG_SUNS_SONG)",
+          "has_weapon": "logic->CanUseSword() (macros_oot.yml:186 has_weapon = can_use_sword; logic.cpp:1528)",
+          "can_use_din": "logic->CanUse(RG_DINS_FIRE)",
+          "can_hammer": "logic->CanUse(RG_MEGATON_HAMMER)",
+          "has_sunlight_arrows": "logic->SunlightArrows()",
+          "has_fire_arrows": "logic->CanUse(RG_FIRE_ARROWS)",
+          "has_mirror_shield": "logic->CanUse(RG_MIRROR_SHIELD)"
+        },
+        "why": "Both are persistent events in OoTMM: zombies cleared by one age and suns lit by the other still count. Native has neither flag, and inventory at the current age is not the same thing."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [18],
+        "areaRoomEvidence": [
+          {
+            "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+            "line": 292,
+            "text": "\"MQ Ganon Pot Spirit End 1\": \"true\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 3203,
+            "text": "MQ Ganon Pot Spirit End 1,                                  pot,            NONE,                 INSIDE_GANON",
+            "pinned": true
+          }
+        ],
+        "note": "The pinned Ending Room pots are room 19 (0x1304); the sun room before it is room 18 in the vanilla scene. Any room but 0x0a classifies as GANON_SPIRIT. MQ actor list not available (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 714,
+          "text": "ENTRANCE(RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH, AnyAgeTime([]{return logic->CanUse(RG_BOMBCHU_5);})),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 721,
+          "text": "LOCATION(RC_GANONS_CASTLE_MQ_SPIRIT_TRIAL_SUN_FRONT_LEFT_CHEST,    ((logic->CanUse(RG_FIRE_ARROWS) && logic->C"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 729,
+          "text": "ENTRANCE(RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_FINAL_ROOM,    AnyAgeTime([]{return (logic->CanUse(RG_FIRE_ARROWS) &"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 742,
+          "text": "ENTRANCE(RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH, true),"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+          "line": 261,
+          "text": "\"Ganon Castle Spirit Trial Sun Room Sun Side\": \"event(GANON_MQ_SPIRIT_CRYSTAL) || climb_anywhere || hookshot_a",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/ganon_castle_mq.yml",
+          "line": 272,
+          "text": "\"Ganon Castle Spirit Wallmaster\": \"soul_wallmaster && event(GANON_MQ_SPIRIT_ENDING_SUNS)\"",
+          "pinned": true
+        }
+      ],
+      "note": "Codex blocker \"MQ Ganon ZOMBIES / ENDING_SUNS\": needs two COMBO_BUILD events copied from the pinned area (D6). The native final-room access (:729) lacks the zombie condition and is not a substitute."
+    },
+    {
+      "n": 20,
+      "id": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_GTG",
+      "from": "OOT Gerudo Training Grounds Slopes",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_GERUDO_TRAINING_GROUND_MQ_BOULDER_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/gerudo_training_ground.cpp",
+        "line": 249
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "native-rule",
+        "pinned": "Left Path First Room -> Slopes: event(GTG_IRON_KNUCKLE) (soul, weapon or sticks, shield or adult); Stalfos Room -> Slopes: true.",
+        "native": "MQ_SAND_ROOM -> MQ_BOULDER_ROOM: CanKillEnemy(RE_IRON_KNUCKLE) (:246); MQ_STALFOS_ROOM -> it: true (:282)."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [2],
+        "areaRoomEvidence": [
+          {
+            "file": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml",
+            "line": 231,
+            "text": "\"MQ Gerudo Training Grounds Icicle Slopes 1\": \"break_icicle\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 3155,
+            "text": "MQ Gerudo Training Grounds Icicle Slopes 1,                 icicle,         NONE,                 GERUDO_TRAIN",
+            "pinned": true
+          }
+        ],
+        "note": "Pinned Slopes lists \"Icicle Slopes 1\" with xflag 0x00209: room 2. Every GTG room classifies as GTG. MQ actor list not available (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/gerudo_training_ground.cpp",
+          "line": 246,
+          "text": "ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_BOULDER_ROOM, AnyAgeTime([]{return logic->CanKillEnemy(RE_IRON_KNUCKLE);"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/gerudo_training_ground.cpp",
+          "line": 267,
+          "text": "ENTRANCE(RR_GERUDO_TRAINING_GROUND_MQ_STALFOS_ROOM, SilverLogic::Gate(RG_RUPEE_SILVER_GTG_SLOPES, AnyAgeTime(["
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml",
+          "line": 213,
+          "text": "\"Gerudo Training Grounds Slopes\": \"event(GTG_IRON_KNUCKLE)\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml",
+          "line": 227,
+          "text": "\"MQ Gerudo Training Grounds SR Slopes Middle\": \"true\"",
+          "pinned": true
+        }
+      ],
+      "note": "Native MQ_BOULDER_ROOM is the MQ slopes silver-rupee room (RG_RUPEE_SILVER_GTG_SLOPES gate :267)."
+    },
+    {
+      "n": 21,
+      "id": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_SPIRIT_STATUE",
+      "from": "OOT Spirit Temple Statue",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_SPIRIT_TEMPLE_MQ_STATUE_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+        "line": 804
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "provisional",
+        "pinned": "Statue is one area for the whole statue room (all floors).",
+        "native": "The statue room is split; MQ_STATUE_ROOM is the main floor every upper region drops to (:797, :898, :903, :921, :932)."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [5],
+        "areaRoomEvidence": [
+          {
+            "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+            "line": 102,
+            "text": "\"MQ Spirit Temple Pot Statue Room Lower 1\": \"true\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 3073,
+            "text": "MQ Spirit Temple Pot Statue Room Lower 1,                   pot,            NONE,                 TEMPLE_SPIRI",
+            "pinned": true
+          }
+        ],
+        "note": "Pinned Statue lists \"Pot Statue Room Lower 1\" with xflag 0x051e: room 5, SPIRIT_STATUE at runtime. Which floor exposes the Wallmaster decides the anchor: the main floor is assumed until the device log shows its position (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 797,
+          "text": "ENTRANCE(RR_SPIRIT_TEMPLE_MQ_STATUE_ROOM,       true),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 809,
+          "text": "EVENT_ACCESS(LOGIC_SPIRIT_MQ_STATUE_ROOM_TORCHES, logic->CanUse(RG_FIRE_ARROWS) || (ctx->GetTrickOption(RT_SPI"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 88,
+          "text": "\"Spirit Temple Wallmaster Statue\": \"soul_wallmaster\"",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 102,
+          "text": "\"MQ Spirit Temple Pot Statue Room Lower 1\": \"true\"",
+          "pinned": true
+        }
+      ],
+      "note": "Provisional anchor: if the C17 log puts the trigger on an upper ledge, M1-14 must move the anchor to that native region (MQ_STATUE_ROOM_ADULT, MQ_POT_LEDGE or a hand) before this row is relied on."
+    },
+    {
+      "n": 22,
+      "id": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+      "from": "OOT Spirit Temple Statue",
+      "expression": "has_fire_arrows && can_reflect_light && soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_SPIRIT_TEMPLE_MQ_STATUE_ROOM_ADULT",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+        "line": 901
+      },
+      "condition": {
+        "native": "logic->CanUse(RG_FIRE_ARROWS) && (logic->SunlightArrows() || logic->CanUse(RG_MIRROR_SHIELD)) && Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["can_reflect_light", "has_fire_arrows", "soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "native-stronger",
+        "pinned": "Statue (any floor) -> Adult Climb Wallmaster: has_fire_arrows && can_reflect_light (TODO in the pinned file).",
+        "native": "The three-suns door is reached from MQ_STATUE_ROOM_ADULT once the statue-room torches are lit (:907, torches :809)."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [15],
+        "areaRoomEvidence": [
+          {
+            "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+            "line": 143,
+            "text": "\"MQ Spirit Temple Pot Adult Climb 1\": \"true\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 3078,
+            "text": "MQ Spirit Temple Pot Adult Climb 1,                         pot,            NONE,                 TEMPLE_SPIRI",
+            "pinned": true
+          }
+        ],
+        "note": "Pinned Adult Lower (the room behind this edge, line 92) lists \"Pot Adult Climb 1\" with xflag 0x0f0e: room 15, SPIRIT_ADULT_CLIMB at runtime, the same three-suns room native gates with the Stalfos and Wallmaster souls (OotSoulEvents.h:36-37). MQ actor list not available (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 809,
+          "text": "EVENT_ACCESS(LOGIC_SPIRIT_MQ_STATUE_ROOM_TORCHES, logic->CanUse(RG_FIRE_ARROWS) || (ctx->GetTrickOption(RT_SPI"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 907,
+          "text": "ENTRANCE(RR_SPIRIT_TEMPLE_MQ_3_SUNS_ROOM_2F,         logic->Get(LOGIC_SPIRIT_MQ_STATUE_ROOM_TORCHES)),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 940,
+          "text": "EVENT_ACCESS(LOGIC_SPIRIT_MQ_3SUNS_ENEMIES, (logic->CanUse(RG_MIRROR_SHIELD) && logic->CanKillEnemy(RE_STALFOS"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/souls/OotSoulEvents.h",
+          "line": 37,
+          "text": "return Has(logic, OotSoul::ENEMY_STALFOS) && Has(logic, OotSoul::ENEMY_WALLMASTER);"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 89,
+          "text": "\"Spirit Temple Wallmaster Adult Climb\": \"has_fire_arrows && can_reflect_light && soul_wallmaster\" # TODO: Chec",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 92,
+          "text": "\"Spirit Temple Adult Lower\": \"has_fire_arrows && can_reflect_light && soul_enemy(SOUL_ENEMY_STALFOS) && soul_w",
+          "pinned": true
+        }
+      ],
+      "note": "Keep the pinned expression as is, including its TODO: Fire Arrows and reflected light, not native LOGIC_SPIRIT_MQ_3SUNS_ENEMIES (Stalfos combat). Anchored on the adult statue ledge where the door is."
+    },
+    {
+      "n": 23,
+      "id": "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118",
+      "quest": "mq",
+      "source": "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+      "from": "OOT Spirit Temple Sun Block Room",
+      "expression": "soul_wallmaster",
+      "status": "ready",
+      "anchor": {
+        "region": "RR_SPIRIT_TEMPLE_MQ_SUN_BLOCK_ROOM",
+        "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+        "line": 837
+      },
+      "condition": {
+        "native": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)",
+        "pinnedAtoms": ["soul_wallmaster"]
+      },
+      "ingress": {
+        "relation": "native-stronger",
+        "pinned": "Statue -> Sun Block Room: is_adult, Song of Time or Elegy, or hover boots.",
+        "native": "MQ_STATUE_ROOM_CHILD -> MQ_FLAMETHROWER_STAIRS: MQSpiritStatueToSunBlock() (:765), then freely into the sun block room (:834)."
+      },
+      "actorRoom": {
+        "status": "pending",
+        "blockedBy": "C17",
+        "expectedRooms": [8],
+        "areaRoomEvidence": [
+          {
+            "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+            "line": 123,
+            "text": "\"MQ Spirit Temple Pot Child Sun Room 1\": \"true\"",
+            "pinned": true
+          },
+          {
+            "file": "data/pool/pool_oot.csv",
+            "line": 3076,
+            "text": "MQ Spirit Temple Pot Child Sun Room 1,                      pot,            NONE,                 TEMPLE_SPIRI",
+            "pinned": true
+          }
+        ],
+        "note": "Pinned Sun Block Room lists \"Pot Child Sun Room 1\" with xflag 0x0816: room 8, SPIRIT_CHILD_SUN at runtime. MQ actor list not available (C17)."
+      },
+      "evidence": [
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 765,
+          "text": "ENTRANCE(RR_SPIRIT_TEMPLE_MQ_FLAMETHROWER_STAIRS, logic->MQSpiritStatueToSunBlock()),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 834,
+          "text": "ENTRANCE(RR_SPIRIT_TEMPLE_MQ_SUN_BLOCK_ROOM, true),"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 839,
+          "text": "LOCATION(RC_SPIRIT_TEMPLE_MQ_SUN_BLOCK_ROOM_CHEST, SpiritShared(RR_SPIRIT_TEMPLE_MQ_SUN_BLOCK_ROOM, []{return"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 847,
+          "text": "ENTRANCE(RR_SPIRIT_TEMPLE_MQ_FLAMETHROWER_STAIRS, logic->HasItem(RG_POWER_BRACELET) || logic->SunlightArrows()"
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 91,
+          "text": "\"Spirit Temple Sun Block Room\": \"is_adult || (can_play_time || can_play_emptiness) || has_hover_boots\" #Adult'",
+          "pinned": true
+        },
+        {
+          "file": "data/world/oot/dungeons_mq/spirit_temple_mq.yml",
+          "line": 121,
+          "text": "\"MQ Spirit Temple Sun Block Room Chest\": \"true\"",
+          "pinned": true
+        }
+      ],
+      "note": "Entering is enough; the sun-block puzzle is the exit gate (:847), not part of the capture."
+    }
+  ],
+  "proposals": {
+    "forestMqEastHallway": "Edges 17 and 18: no node. Anchor MQ_BETH_ROOM with SmallKeys(SCENE_FOREST_TEMPLE, 5) and the soul; M1-14 tests 4, 5 and 6 keys (4: no edge).",
+    "ganonVanillaSpirit": "Edge 07: no node. Anchor SPIRIT_TRIAL_BEFORE_SWITCH with bombchu, soul and reflected light; M1-14 tests the no-Bow positive case.",
+    "ganonMqEndingSuns": "Edge 19: needs-event, two COMBO_BUILD events in MQ_SPIRIT_TRIAL_AFTER_SWITCH copied from ganon_castle_mq.yml:275-276 (D6); M1-14 tests the zombie negatives.",
+    "coarseAreas": "Shadow (09), vanilla BotW (01) and vanilla Spirit (10, 11) are resolved with vanilla actor-room evidence: UPPER_HUGE_PIT, MIDDLE, RUPEE_BRIDGE_NORTH and 2F_MIRROR_ROOM. MQ Spirit statue (21) keeps a provisional main-floor anchor until C17.",
+    "codexCorrection": "Edge 14: the Codex candidate RR_BOTW_MQ_PIT_CAGE is pinned \"Main Room Center Switch Corner\"; the pinned \"Pit Before Cage\" is native RR_BOTW_MQ_FLOORMASTER_ROOM."
+  },
+  "openBlockers": [
+    {
+      "id": "C17",
+      "edges": ["data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167", "data/world/oot/dungeons_mq/forest_temple_mq.yml:178", "data/world/oot/dungeons_mq/forest_temple_mq.yml:188", "data/world/oot/dungeons_mq/forest_temple_mq.yml:393", "data/world/oot/dungeons_mq/forest_temple_mq.yml:401", "data/world/oot/dungeons_mq/ganon_castle_mq.yml:272", "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118"],
+      "needed": "Actor-room evidence for the 12 MQ edges. No MQ archive exists here or on the AVD. Run a dev logging build on a phone with an MQ archive and, for each MQ Wallmaster room, log the scene, actor->room, actor index, params and home position, the capture route and the arrival; or the owner decides that Wallmaster Shuffle is unavailable while any MQ dungeon can be selected, until verified.",
+      "expected": {
+        "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71": [0],
+        "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91": [1],
+        "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167": [3],
+        "data/world/oot/dungeons_mq/forest_temple_mq.yml:178": [19],
+        "data/world/oot/dungeons_mq/forest_temple_mq.yml:188": [19],
+        "data/world/oot/dungeons_mq/forest_temple_mq.yml:393": [20],
+        "data/world/oot/dungeons_mq/forest_temple_mq.yml:401": [20],
+        "data/world/oot/dungeons_mq/ganon_castle_mq.yml:272": [18],
+        "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220": [2],
+        "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88": [5],
+        "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89": [15],
+        "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118": [8]
+      }
+    }
+  ],
+  "workList": {
+    "M1-13": ["data/world/oot/dungeons_mq/ganon_castle_mq.yml:272"],
+    "M1-14": ["data/world/oot/dungeons/bottom_of_the_well.yml:23", "data/world/oot/dungeons/forest_temple.yml:138", "data/world/oot/dungeons/forest_temple.yml:144", "data/world/oot/dungeons/forest_temple.yml:184", "data/world/oot/dungeons/forest_temple.yml:198", "data/world/oot/dungeons/ganon_castle.yml:177", "data/world/oot/dungeons/ganon_castle.yml:69", "data/world/oot/dungeons/gerudo_training_grounds.yml:27", "data/world/oot/dungeons/shadow_temple.yml:62", "data/world/oot/dungeons/spirit_temple.yml:154", "data/world/oot/dungeons/spirit_temple.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91", "data/world/oot/dungeons_mq/forest_temple_mq.yml:178", "data/world/oot/dungeons_mq/forest_temple_mq.yml:393", "data/world/oot/dungeons_mq/forest_temple_mq.yml:401", "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89"]
+  }
+}
