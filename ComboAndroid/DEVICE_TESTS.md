@@ -13,6 +13,15 @@ Nothing in 0.4.3 has been tried on a phone yet. These eight checks matter most; 
 7. In the OoT check tracker, the underwater item in Hyrule Field's Tektite grotto and the Gold Skulltula token behind the cow grotto's web turn Seen once they are on screen. Details: OoT tracker sightings, checks 1 and 2.
 8. In MM, pause and press B: the save prompt has no title text. Then Tools > Session > Restart game: the OoT title screen shows, and neither game was saved. Details: the MM pause menu and Restart game.
 
+## Quick checks for ocarina input (unreleased)
+
+Each game's view has its own two switches: turning D-pad ocarina on in the MM view does not turn it on in OoT. Check 2 matters most: it is the case Sam reported, D-pad ocarina working in MM but not in OoT.
+
+1. Install over 0.4.4 without uninstalling. Settings > Controls > Ocarina input shows "D-pad ocarina" then "Right stick ocarina" in the OoT view, and the same two rows in the MM view. A switch you had turned on before is still on.
+2. Turn on D-pad ocarina in the OoT view. In OoT, take out the ocarina and play with a controller's D-pad: up, left, right and down play the C-up, C-left, C-right and C-down notes. A song you have learned that uses only C notes, played on the D-pad, is recognised. Then in MM, with the MM view's switch on, the D-pad plays notes as before.
+3. Turn on Right stick ocarina in the OoT view: in OoT the right stick plays the same four notes.
+4. Settings > Controls > Controller mapping > Ocarina Controls has Customize Ocarina Controls and its buttons, but no D-pad or right-stick boxes. Its tooltip says it is Ocarina of Time only and names what it replaces: A and the C buttons, L, and R and Z.
+
 ## Quick checks for casting the MM spells (0.4.3)
 
 On 0.4.1, Din's Fire, Nayru's Love and Farore's Wind (MM) given with the Save Editor's Give All played the "can't use" sound everywhere. Use a randomizer seed with all three MM spell options on, and human Link.
