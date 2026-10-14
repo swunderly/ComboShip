@@ -39,7 +39,8 @@ class Repository {
     }
 
   public:
-    Repository(std::filesystem::path file, const Json& legacy) : store(legacy), path(std::move(file)) {
+    Repository(std::filesystem::path file, const Json& legacy, const Entrances::CapabilitySet& caps)
+        : store(legacy, caps), path(std::move(file)) {
         if (std::filesystem::exists(path)) {
             std::ifstream input(path, std::ios::binary);
             Json saved;

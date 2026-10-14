@@ -522,6 +522,8 @@ endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
     add_executable(kokiri_seed_compatibility_tests kokiri_seed_compatibility_tests.cpp)
+    # The seed guard includes the C++20 entrance headers (rando/ComboSeedFormat.h).
+    target_compile_features(kokiri_seed_compatibility_tests PRIVATE cxx_std_20)
     target_include_directories(kokiri_seed_compatibility_tests PRIVATE "${COMBO_SOURCE_DIR}" "${COMBO_JSON_INCLUDE_DIR}")
     if(MSVC)
         target_compile_options(kokiri_seed_compatibility_tests PRIVATE /W4 /WX /UNDEBUG)

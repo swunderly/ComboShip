@@ -62,7 +62,7 @@ void Frame(){++ImGui::frame;ImGui::now+=1./60;BeginFrame();}
 void RepositoryTests(const std::filesystem::path& path){
  using namespace ComboRando::Profiles;
  Json seed={{"fileType","ComboShipRandomizer"},{"oot",{{"settings",Json::object()}}},{"mm",{{"settings",Json::object()}}}};
- Repository repository(path,seed);auto token=repository.revision();
+ Repository repository(path,seed,ComboRando::Entrances::ActiveCapabilities());auto token=repository.revision();
  for(int i=0;i<20;++i)Require(repository.revision()==token,"reading revision changed profile state");
  repository.setDraft(0,seed);Require(repository.revision()>token,"draft mutation missed invalidation");token=repository.revision();
  repository.copyDraft(0,1);Require(repository.revision()>token,"draft copy missed invalidation");token=repository.revision();
@@ -107,5 +107,5 @@ int main(int argc,char** argv){try{Require(argc==2,"temporary path required");Re
 '''
 cpp=out/'menu_reopen.cpp'
 cpp.write_text(code,encoding='utf-8')
-exe=hostcxx.build(a.compiler,cpp,std='c++17',werror=True,includes=[source/'combo',a.json_include])
+exe=hostcxx.build(a.compiler,cpp,std='c++20',werror=True,includes=[source/'combo',a.json_include])
 subprocess.run([str(exe),str(out/'temporary-profiles.json')],check=True, timeout=hostcxx.RUN_TIMEOUT)

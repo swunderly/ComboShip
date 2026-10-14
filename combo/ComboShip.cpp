@@ -411,7 +411,7 @@ static FnOracleVoid Combo_MM_Rando_Restore = nullptr;
 static ComboRando::Entrances::NativeFns sEntranceNative;
 static bool InstallEntranceSeed(const nlohmann::json& seed) {
     try {
-        ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, seed);
+        ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, seed, ComboRando::Entrances::ActiveCapabilities());
         return true;
     } catch (const std::exception& error) {
         std::cerr << "[ComboShip] Entrance seed rejected: " << error.what() << "\n";
@@ -592,15 +592,17 @@ static nlohmann::json Combo_ReadSavedSeedReadonly(int fileNum) {
     const auto cached = g_containerCache.find(fileNum);
     const auto& container =
         cached != g_containerCache.end() ? cached->second : Combo_ReadContainerFileReadonly(fileNum);
-    ComboRando::Profiles::ValidateSavedCatalogs(container);
-    return container.is_null() ? nlohmann::json() : ComboRando::Profiles::SeedFromContainer(container);
+    const auto caps = ComboRando::Entrances::ActiveCapabilities();
+    ComboRando::Profiles::ValidateSavedCatalogs(container, caps);
+    return container.is_null() ? nlohmann::json() : ComboRando::Profiles::SeedFromContainer(container, caps);
 }
 static nlohmann::json Combo_ReadNativeSeedRulesReadonly(int fileNum) {
     ComboRando::Profiles::RequireSlot(fileNum);
     std::lock_guard<std::mutex> lock(g_containerMutex);
     const auto cached = g_containerCache.find(fileNum);
     return ComboRando::Profiles::NativeSeedRulesFromContainer(
-        cached != g_containerCache.end() ? cached->second : Combo_ReadContainerFileReadonly(fileNum));
+        cached != g_containerCache.end() ? cached->second : Combo_ReadContainerFileReadonly(fileNum),
+        ComboRando::Entrances::ActiveCapabilities());
 }
 
 // Save compat is gated on major.minor only: patch releases must never change save-affecting behavior.
@@ -750,7 +752,7 @@ static const char* Combo_ReadGameSave(int game, int fileNum) {
             inspected = cached != g_containerCache.end()
                             ? cached->second
                             : ComboRando::Profiles::ReadSavedContainerFile(ComboContainerPath(fileNum));
-            ComboRando::Profiles::ValidateSavedCatalogs(inspected);
+            ComboRando::Profiles::ValidateSavedCatalogs(inspected, ComboRando::Entrances::ActiveCapabilities());
         } catch (const ComboRando::UnsupportedComboSeedFormat& error) {
             // Transient page only: native preflight rejects before binding or migrating this slot.
             auto page = inspected.value("oot", nlohmann::json::object());
@@ -2393,7 +2395,8 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         // Space each retry's seed far apart (golden-ratio step) so attempts don't correlate.
         masterSeed = baseSeed + uint32_t(attempt) * 0x9E3779B9u;
         InstallSongTravel(SongMapForGeneration(masterSeed));
-        ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, nlohmann::json::object());
+        ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, nlohmann::json::object(),
+                                               ComboRando::Entrances::ActiveCapabilities());
         ResetCrossItemDedupForSeed(masterSeed);
         // Random's last budgeted attempt resolves OOT, so bounded runs never hard-fail on an MM start.
         // Unbounded retries after it may roll MM again; they cannot hard-fail anyway.
@@ -3049,7 +3052,8 @@ static void RunComboPlaythrough(const std::string& inputSeed) {
     for (int attempt = 0; attempt < ComboRando::kFillAttempts && !fill.success; ++attempt) {
         const uint32_t masterSeed = baseSeed + uint32_t(attempt) * 0x9E3779B9u;
         InstallSongTravel(SongMapForGeneration(masterSeed));
-        ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, nlohmann::json::object());
+        ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, nlohmann::json::object(),
+                                               ComboRando::Entrances::ActiveCapabilities());
         const bool mmStart = !pinStartOot && !(startCfg == 2 && attempt + 1 == ComboRando::kFillAttempts) &&
                              ResolveStartingGameMM(startCfg, masterSeed);
         if (SOH_SetComboRandoSeed)
@@ -3266,7 +3270,7 @@ static bool TryLoadComboSeedFile(const std::filesystem::path& p, nlohmann::json&
     try {
         nlohmann::json j;
         in >> j;
-        ComboRando::RequireSupportedSeedDocument(j);
+        ComboRando::RequireSupportedSeedDocument(j, ComboRando::Entrances::ActiveCapabilities());
         ComboRando::Entrances::ValidateMmMixedSeed(j);
         if (j.contains("ordinaryEntranceExpansion")) {
             ComboRando::Entrances::MmOrdinaryLayout proof;
@@ -3354,7 +3358,7 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
     try {
         if (profileSeed) {
             j = *profileSeed;
-            ComboRando::RequireSupportedSeedDocument(j);
+            ComboRando::RequireSupportedSeedDocument(j, ComboRando::Entrances::ActiveCapabilities());
         } else if (!isSilentAutoLoad) {
             // An explicit drop never falls back to another seed: a failed drop is a real error.
             auto dropped = ResolveComboSeedPath(path);
@@ -4796,7 +4800,8 @@ int main(int argc, char** argv) {
                                 { "mm", nlohmann::json::parse(mmCatalog()) },
                                 { "combo", ProfileComboCatalog() } };
             const auto profilePath = ComboRando::ConsolidatedDir() / "settings-profiles.json";
-            sProfiles = std::make_unique<ComboRando::Profiles::Repository>(profilePath, ProfileNativeSnapshot());
+            sProfiles = std::make_unique<ComboRando::Profiles::Repository>(profilePath, ProfileNativeSnapshot(),
+                                                                           ComboRando::Entrances::ActiveCapabilities());
             sProfileLegacyPendingMigration = !sProfiles->view().json().value("legacyPendingMigrationComplete", false);
             static const ComboRandomizerProfileCallbacks callbacks{ 2,
                                                                     ProfileInspect,

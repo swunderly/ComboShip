@@ -17,10 +17,10 @@ inline void RequireSlot(int slot) {
 // Preserve all present and future rule fields. Only derived generation output is
 // removed; settings, tricks, inventories, shared/goal/access/clock/ER/age/warp
 // rules and unknown extensions are carried without a historical field allowlist.
-inline Json SettingsDocument(const Json& seed) {
+inline Json SettingsDocument(const Json& seed, const Entrances::CapabilitySet& caps) {
     if (!seed.is_object())
         throw std::invalid_argument("Randomizer settings document must be an object");
-    RequireSupportedSeedCapabilities(seed);
+    RequireSupportedSettingsCapabilities(seed, caps);
     Json result = seed;
     for (const char* key :
          { "masterSeed", "displaySeed", "file_hash", "foreign", "playthrough", "hints", "comboProfile" })
@@ -40,6 +40,8 @@ inline Json SettingsDocument(const Json& seed) {
          { "entranceExpansion", "ordinaryEntranceExpansion", "grottoEntranceExpansion", "mixedEntranceExpansion" })
         if (result.contains(key) && result[key].is_object())
             result[key].erase("overrides");
+    if (result.contains("entranceLayout") && result["entranceLayout"].is_object())
+        result["entranceLayout"].erase("overrides");
     if (result.contains("entrances") && result["entrances"].is_object() && result["entrances"].contains("oot") &&
         result["entrances"]["oot"].is_array())
         result["entrances"].erase("oot");
@@ -60,15 +62,16 @@ inline void MergeSettings(Json& destination, const Json& source) {
 // transformations. Legacy seeds retain their complete effective settings.
 // Preserve later result fields too, rather than replacing the seed with a
 // historical requested-fields subset.
-inline Json SetupForSeed(const Json& seed) {
-    auto setup = SettingsDocument(seed);
+inline Json SetupForSeed(const Json& seed, const Entrances::CapabilitySet& caps) {
+    RequireSupportedSeedCapabilities(seed, caps); // a seed's layout keeps its routes
+    auto setup = SettingsDocument(seed, caps);
     const auto catalog = ReadKokiriCatalogRevisions(seed.value("oot", Json::object()));
     if (seed.contains("comboProfile")) {
         const auto& profile = seed["comboProfile"];
         if (!profile.is_object() || profile.value("version", 0) != 1 || !profile.contains("settings") ||
             !profile["settings"].is_object())
             throw std::invalid_argument("Malformed requested seed settings");
-        MergeSettings(setup, SettingsDocument(profile["settings"]));
+        MergeSettings(setup, SettingsDocument(profile["settings"], caps));
     }
     // A requested settings profile can never reinterpret an existing seed's
     // reward catalog. Only a newly generated seed selects its new catalog.
@@ -84,6 +87,7 @@ struct Attempt {
 };
 class Store {
     Json document;
+    Entrances::CapabilitySet caps;
     std::optional<Attempt> running;
     uint64_t nextToken = 1;
     static Json EmptyRecord() {
@@ -95,8 +99,8 @@ class Store {
     }
 
   public:
-    explicit Store(Json legacy) {
-        const auto settings = SettingsDocument(legacy);
+    Store(Json legacy, Entrances::CapabilitySet capabilities) : caps(capabilities) {
+        const auto settings = SettingsDocument(legacy, caps);
         document = { { "schemaVersion", 1 },
                      { "legacySetup", settings },
                      { "legacyPendingMigrationComplete", false },
@@ -117,7 +121,7 @@ class Store {
         if (!saved.is_object() || saved.value("schemaVersion", 0) != 1 || !saved.contains("files") ||
             !saved["files"].is_array() || saved["files"].size() != 3 || !saved.contains("legacySetup"))
             throw std::invalid_argument("Unsupported randomizer profile store");
-        SettingsDocument(saved["legacySetup"]);
+        SettingsDocument(saved["legacySetup"], caps);
         for (const auto& file : saved["files"]) {
             if (!file.is_object() || !file.contains("revision") ||
                 (!file["revision"].is_number_unsigned() && !file["revision"].is_number_integer()) ||
@@ -128,12 +132,12 @@ class Store {
                 if (!file.contains(key))
                     throw std::invalid_argument("Incomplete settings file record");
             if (!file["draft"].is_null())
-                SettingsDocument(file["draft"]);
+                SettingsDocument(file["draft"], caps);
             if (!file["generatedInput"].is_null())
-                SettingsDocument(file["generatedInput"]);
+                SettingsDocument(file["generatedInput"], caps);
             if (!file["generated"].is_null() && !SeedDocument(file["generated"]))
                 throw std::invalid_argument("Malformed generated seed snapshot");
-            RequireSupportedSeedCapabilities(file["generated"]);
+            RequireSupportedSeedCapabilities(file["generated"], caps);
             if (!file["lastAttempt"].is_null() && !file["lastAttempt"].is_object())
                 throw std::invalid_argument("Malformed generation status");
         }
@@ -149,7 +153,7 @@ class Store {
         if (!value.is_null())
             return value;
         if (SeedDocument(savedSeed))
-            return SetupForSeed(savedSeed);
+            return SetupForSeed(savedSeed, caps);
         return document["legacySetup"];
     }
     Json inspect(int slot, const Json& savedSeed = Json()) const {
@@ -157,17 +161,18 @@ class Store {
         const auto& file = document["files"][slot];
         return { { "file", slot },
                  { "savedSeed", SeedDocument(savedSeed) ? savedSeed : Json() },
-                 { "savedSettings", SeedDocument(savedSeed) ? SettingsDocument(savedSeed) : Json() },
+                 { "savedSettings", SeedDocument(savedSeed) ? SettingsDocument(savedSeed, caps) : Json() },
                  { "draft", draft(slot, savedSeed) },
                  { "generatedSeed", file["generated"] },
-                 { "generatedSettings", file["generated"].is_null() ? Json() : SettingsDocument(file["generated"]) },
+                 { "generatedSettings",
+                   file["generated"].is_null() ? Json() : SettingsDocument(file["generated"], caps) },
                  { "generatedInput", file["generatedInput"] },
                  { "revision", file["revision"] },
                  { "lastAttempt", file["lastAttempt"] } };
     }
     void setDraft(int slot, const Json& input) {
         RequireSlot(slot);
-        auto next = SettingsDocument(input);
+        auto next = SettingsDocument(input, caps);
         if (document["files"][slot]["revision"].get<uint64_t>() == UINT64_MAX)
             throw std::overflow_error("Settings file revision exhausted");
         auto copy = document;
@@ -181,7 +186,7 @@ class Store {
         RequireSlot(destination);
         if (!SeedDocument(sourceSeed))
             throw std::invalid_argument("Source file has no saved randomizer seed");
-        setDraft(destination, SetupForSeed(sourceSeed));
+        setDraft(destination, SetupForSeed(sourceSeed, caps));
     }
     Attempt begin(int slot, const Json& savedSeed, const std::string& seed) {
         RequireSlot(slot);
@@ -199,7 +204,7 @@ class Store {
         if (success && !SeedDocument(seed))
             throw std::invalid_argument("Generation did not produce a complete seed document");
         if (success)
-            RequireSupportedSeedCapabilities(seed);
+            RequireSupportedSeedCapabilities(seed, caps);
         auto copy = document;
         auto& file = copy["files"][running->slot];
         if (success) {
@@ -227,7 +232,7 @@ class Store {
             throw std::logic_error("Cannot import a seed during generation");
         if (!SeedDocument(seed))
             throw std::invalid_argument("Imported document is not a complete seed");
-        const auto setup = SetupForSeed(seed);
+        const auto setup = SetupForSeed(seed, caps);
         auto next = *this;
         if (copyToDraft)
             next.setDraft(slot, setup);

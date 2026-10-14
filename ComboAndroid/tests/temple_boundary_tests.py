@@ -3,7 +3,8 @@
 Static scan. Bindings::validateAgeTemple stays unassigned, so active OoT/Both entrance logic keeps
 failing closed at the Shuffler's missing-hook check; no combo, launcher or engine source looks up the
 probe exports or the diagnostic getter, or includes the adapter headers; the reserved entrance-layout
-seed format still rejects every layout.
+seed format still rejects every layout, before decoding it, in a build with no active entrance
+capability.
 """
 from pathlib import Path
 import argparse
@@ -44,8 +45,12 @@ shuffle = (source/'combo/rando/entrances/Shuffle.h').read_text(encoding='utf-8')
 assert 'if (bindings.logicEnabled && settings.games != Games::Mm && !bindings.validateAgeTemple)' in shuffle
 assert 'throw std::invalid_argument("OoT entrance validation requires the starting-item opposite-age Temple probe");' in shuffle
 seed = (source/'combo/rando/ComboSeedFormat.h').read_text(encoding='utf-8')
-guard = seed[seed.index('inline void RequireSupportedSeedCapabilities'):]
+guard = seed[seed.index('inline void RequireSupportedLayout'):]
 guard = guard[:guard.index('\n}\n')]
-assert 'if (seed.contains("entranceLayout") || (type != seed.end() && *type == kEntranceSeedFileType))' in guard
-assert 'throw UnsupportedComboSeedFormat();' in guard
+presence = guard.index('if (seed.contains("entranceLayout") || (type != seed.end() && *type == kEntranceSeedFileType)) {')
+empty = guard.index('if (caps.Empty())\n            throw UnsupportedComboSeedFormat();')
+assert presence < empty < guard.index('try {')
+for wrapper in ('RequireSupportedSeedCapabilities', 'RequireSupportedSettingsCapabilities'):
+    body = seed[seed.index('inline void ' + wrapper):]
+    assert 'RequireSupportedLayout(' in body[:body.index('\n}\n')], wrapper
 print('Temple probe unwired: hook unassigned, exports and getter unreferenced, adapter unused, layout guard intact')

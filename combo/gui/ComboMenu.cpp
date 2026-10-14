@@ -1223,7 +1223,7 @@ void PlandoLoad() {
         return;
     }
     try {
-        ComboRando::RequireSupportedSeedDocument(j);
+        ComboRando::RequireSupportedSeedDocument(j, ComboRando::Entrances::ActiveCapabilities());
     } catch (const std::exception& error) {
         sPlando.status = error.what();
         sPlando.statusError = true;

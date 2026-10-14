@@ -1,4 +1,5 @@
 #pragma once
+#include "entrances/EntranceLayout.h"
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -16,7 +17,13 @@ class UnsupportedComboSeedFormat : public std::invalid_argument {
     UnsupportedComboSeedFormat()
         : std::invalid_argument("This seed requires entrance randomization support unavailable in this build") {
     }
+    explicit UnsupportedComboSeedFormat(const std::string& reason)
+        : std::invalid_argument("This seed's entrance layout cannot be used by this build: " + reason) {
+    }
 };
+// The private MM entrance profiles. A seed carries them or an entranceLayout, never both.
+inline constexpr const char* kLegacyEntranceKeys[] = { "entranceExpansion", "ordinaryEntranceExpansion",
+                                                       "grottoEntranceExpansion", "mixedEntranceExpansion" };
 
 // Recognition is separate from capability validation: file drop must route a future combo seed
 // to the combo error path, never let a native single-game reader mistake it for its own spoiler.
@@ -26,21 +33,50 @@ inline bool IsComboSeedDocument(const nlohmann::json& seed) {
     const auto type = seed.find("fileType");
     return type != seed.end() && type->is_string() && (*type == kComboSeedFileType || *type == kEntranceSeedFileType);
 }
-inline void RequireSupportedSeedCapabilities(const nlohmann::json& seed) {
+// A seed's entrance layout against the capabilities of this build. `settingsDocument` also
+// accepts a profile settings document, whose layout has no routes (ComboRandomizerProfiles.h).
+inline void RequireSupportedLayout(const nlohmann::json& seed, const Entrances::CapabilitySet& caps,
+                                   bool settingsDocument) {
     if (!seed.is_object())
         return;
     const auto type = seed.find("fileType");
     // Presence, including null/empty/malformed data, cannot silently select vanilla routing.
-    // Remove this rejection only when the unified layout validator AND installer are ready.
-    if (seed.contains("entranceLayout") || (type != seed.end() && *type == kEntranceSeedFileType))
-        throw UnsupportedComboSeedFormat();
+    if (seed.contains("entranceLayout") || (type != seed.end() && *type == kEntranceSeedFileType)) {
+        // A build with no active entrance capability rejects before decoding, as 0.4.3 and 0.4.4 do.
+        if (caps.Empty())
+            throw UnsupportedComboSeedFormat();
+        try {
+            const auto version = seed.find("version");
+            if (type == seed.end() || *type != kEntranceSeedFileType || version == seed.end() ||
+                !version->is_number_integer() || *version != kEntranceSeedVersion)
+                throw std::invalid_argument("an entrance layout needs fileType " + std::string(kEntranceSeedFileType) +
+                                            " version " + std::to_string(kEntranceSeedVersion));
+            if (!seed.contains("entranceLayout"))
+                throw std::invalid_argument("the seed has no entranceLayout");
+            for (const char* key : kLegacyEntranceKeys)
+                if (seed.contains(key))
+                    throw std::invalid_argument(std::string("an entrance layout cannot be combined with ") + key);
+            const auto& value = seed.at("entranceLayout");
+            if (settingsDocument && value.is_object() && !value.contains("overrides"))
+                Entrances::ValidateEntranceLayoutSettings(
+                    Entrances::DecodeEntranceLayout(value, Entrances::LayoutPart::SettingsOnly), caps);
+            else
+                Entrances::Validate(Entrances::DecodeEntranceLayout(value), caps);
+        } catch (const std::exception& error) { throw UnsupportedComboSeedFormat(error.what()); }
+    }
 }
-inline void RequireSupportedSeedDocument(const nlohmann::json& seed) {
-    RequireSupportedSeedCapabilities(seed);
+inline void RequireSupportedSeedCapabilities(const nlohmann::json& seed, const Entrances::CapabilitySet& caps) {
+    RequireSupportedLayout(seed, caps, false);
+}
+inline void RequireSupportedSettingsCapabilities(const nlohmann::json& document, const Entrances::CapabilitySet& caps) {
+    RequireSupportedLayout(document, caps, true);
+}
+inline void RequireSupportedSeedDocument(const nlohmann::json& seed, const Entrances::CapabilitySet& caps) {
+    RequireSupportedSeedCapabilities(seed, caps);
     if (!IsComboSeedDocument(seed))
         throw std::invalid_argument("Not a ComboShip seed document");
     // Legacy headless writers omitted version; historical readers did not validate it. Keep that
-    // contract for no-layout seeds. Future layout schema versions must be checked by their installer.
+    // contract for no-layout seeds. RequireSupportedLayout checks a layout seed's version.
 }
 inline void StampComboSeedFormat(nlohmann::json& seed) {
     if (!seed.is_object())

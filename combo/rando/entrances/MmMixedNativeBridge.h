@@ -82,7 +82,7 @@ inline void ApplyNativeMmMixed(const NativeFns& native, const nlohmann::json& ex
     current.erase("ordinaryEntranceExpansion");
     current.erase("grottoEntranceExpansion");
     current["mixedEntranceExpansion"] = extension;
-    ApplyNativeSeed(native, current);
+    ApplyNativeSeed(native, current, {}); // a native snapshot never carries a layout
 }
 class MmMixedAssumptionScope {
     NativeFns native;

@@ -1,17 +1,19 @@
 // The unified entrance layout (combo/rando/entrances/EntranceLayout.h): the
 // frozen v1 pool rules against the live ResolvePools (Shuffle.h) and the pinned
 // M1 contract (tools/ootmm/m1-contract.json), the strict codec, every
-// rejection path of Validate. Built twice: as shipped and with
-// COMBO_ENTRANCE_DEV.
-#include "rando/entrances/EntranceLayout.h"
+// rejection path of Validate, and the seed guard of this build. Built twice: as
+// shipped and with COMBO_ENTRANCE_DEV.
+#include "rando/ComboSeedFormat.h"
 #include <cassert>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 
+using namespace ComboRando;
 using namespace ComboRando::Entrances;
 using Json = nlohmann::json;
 using Strings = std::set<std::string>;
@@ -593,6 +595,38 @@ void CheckOneWays(const Json &fixture) {
   Rejected(WithRoute(major, "OOT_LAKE_HYLIA_FROM_VALLEY", "OOT_DEKU_TREE"));
 }
 
+// This build: no capability is active in Phase 0, so the seed guard refuses
+// every layout before decoding it, as 0.4.4 does, dev build or not.
+void CheckBuildGuard(const Json &good) {
+  const auto caps = ActiveCapabilities();
+  assert(caps.Empty());
+#ifdef COMBO_ENTRANCE_DEV
+  assert(caps.devBuild);
+#else
+  assert(!caps.devBuild);
+#endif
+  Json seed = {{"fileType", kEntranceSeedFileType},
+               {"version", kEntranceSeedVersion},
+               {"entranceLayout", good}};
+  RequireSupportedSeedDocument(seed, WholeCatalog());
+  const std::string before = UnsupportedComboSeedFormat().what();
+  for (const auto &layout : {good, Json(), Json::object()}) {
+    seed["entranceLayout"] = layout;
+    for (const auto &check : std::vector<std::function<void()>>{
+             [&] { RequireSupportedSeedDocument(seed, caps); },
+             [&] { RequireSupportedSeedCapabilities(seed, caps); },
+             [&] { RequireSupportedSettingsCapabilities(seed, caps); }}) {
+      std::string message;
+      try {
+        check();
+      } catch (const UnsupportedComboSeedFormat &error) {
+        message = error.what();
+      }
+      assert(message == before);
+    }
+  }
+}
+
 void Run(const char *path) {
   std::ifstream input(path, std::ios::binary);
   const auto fixture = Json::parse(input);
@@ -614,9 +648,10 @@ void Run(const char *path) {
   CheckValidateRejections(good);
   CheckTranche(good);
   CheckOneWays(fixture);
+  CheckBuildGuard(good);
   std::cout << "PASS frozen v1 pools = ResolvePools = pinned contract (66 "
                "combinations, 64 MQ contexts), byte-stable codec, every "
-               "rejection\n";
+               "rejection, Phase 0 guard\n";
 }
 } // namespace
 

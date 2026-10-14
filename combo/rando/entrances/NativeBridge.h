@@ -14,8 +14,12 @@ struct NativeFns {
     void (*clearAssumptions)() = nullptr;
     const char* (*dumpSeed)() = nullptr;
 };
-inline void ApplyNativeSeed(const NativeFns& native, const nlohmann::json& seed) {
-    RequireSupportedSeedCapabilities(seed);
+inline void ApplyNativeSeed(const NativeFns& native, const nlohmann::json& seed, const CapabilitySet& caps) {
+    RequireSupportedSeedCapabilities(seed, caps);
+    // A layout this build accepts is still refused until its installer exists, so it can never
+    // bind as vanilla routing.
+    if (seed.contains("entranceLayout"))
+        throw std::runtime_error("Unified entrance layout installer unavailable");
     ValidateMmMixedSeed(seed);
     DecodeMmWallmasterSeed(seed); // reject unsupported data even with an older MM module
     if (seed.contains("ordinaryEntranceExpansion")) {
@@ -178,7 +182,7 @@ inline nlohmann::json GenerateNativeMmWallmasters(bool enabled, uint32_t seed, c
                                                   const std::string& forcedOot, const OracleFns& oot,
                                                   const OracleFns& mm, bool mmStart, CwGoal goal,
                                                   OotAccess access = OotAccess::ALL_REACHABLE) {
-    ApplyNativeSeed(native, nlohmann::json::object());
+    ApplyNativeSeed(native, nlohmann::json::object(), {});
     if (!enabled)
         return nlohmann::json(); // no pool construction or new RNG on legacy seeds
     if (!native.applySeed || !native.dumpSeed || !native.setAssumptions || !native.clearAssumptions)
@@ -208,7 +212,7 @@ inline nlohmann::json GenerateNativeMmWallmasters(bool enabled, uint32_t seed, c
         return world.validate(oot, mm, mmStart, goal, access);
     };
     bindings.validateComplete = [&](const Overrides& rows) {
-        ApplyNativeSeed(native, { { "entranceExpansion", EncodeMmWallmasterExtension(MmWallmasterRows(rows)) } });
+        ApplyNativeSeed(native, { { "entranceExpansion", EncodeMmWallmasterExtension(MmWallmasterRows(rows)) } }, {});
         return world.validate(oot, mm, mmStart, goal, access);
     };
     const auto rows = Shuffler(settings, std::move(bindings)).run();

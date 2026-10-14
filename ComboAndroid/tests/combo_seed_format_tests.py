@@ -1,4 +1,9 @@
-"""Exercise seed compatibility and production import/save preflight with engine stubs."""
+"""Exercise seed compatibility and production import/save preflight with engine stubs.
+
+The build's capability set is the shipping one, which in Phase 0 admits nothing, so every
+entrance layout is refused before decoding exactly as in 0.4.4. A test-only set (the whole
+catalog) exercises the acceptance path the M1-03 validator adds behind it.
+"""
 from pathlib import Path
 import argparse
 import subprocess
@@ -139,6 +144,19 @@ template<class F> void rejects(F action) {
     try { action(); } catch (const UnsupportedComboSeedFormat&) { rejected = true; }
     assert(rejected);
 }
+// The 0.4.4 refusal, raised before the layout is decoded.
+const std::string kBeforeDecode = UnsupportedComboSeedFormat().what();
+template<class F> void rejectsBeforeDecode(F action) {
+    std::string message;
+    try { action(); } catch (const UnsupportedComboSeedFormat& error) { message = error.what(); }
+    assert(message == kBeforeDecode);
+}
+// A layout the build's capabilities reach, refused by the validator with its reason.
+template<class F> void rejectsLayout(F action) {
+    std::string message;
+    try { action(); } catch (const UnsupportedComboSeedFormat& error) { message = error.what(); }
+    assert(!message.empty() && message != kBeforeDecode);
+}
 Json legacy(bool version) {
     Json seed = {{"fileType", kComboSeedFileType}, {"oot", {{"settings", Json::object()}}},
                  {"mm", {{"settings", Json::object()}}}, {"gearRules", {{"boots", true}}},
@@ -147,21 +165,23 @@ Json legacy(bool version) {
     return seed;
 }
 int main() {
+    const auto shipping = Entrances::ActiveCapabilities();
+    assert(shipping.Empty() && !shipping.devBuild); // Phase 0: no value is open in any build
     for (bool version : {false, true}) {
         auto seed = legacy(version);
         const auto bytes = seed.dump(2);
         StampComboSeedFormat(seed);
         assert(seed.dump(2) == bytes); // Both existing writer contracts remain byte-identical.
-        RequireSupportedSeedDocument(seed);
+        RequireSupportedSeedDocument(seed, shipping);
         assert(IsComboSeedDocument(seed));
         write("seed.json", seed);
         Json imported;
         assert(TryLoadComboSeedFile("seed.json", imported) && imported == seed);
-        Profiles::Store profiles(seed);
+        Profiles::Store profiles(seed, shipping);
         profiles.importSeed(0, seed, true);
         assert(profiles.pendingSeed(0) == seed);
     }
-    RequireSupportedSeedCapabilities(Json{{"settings", {{"native-option", 1}}}});
+    RequireSupportedSeedCapabilities(Json{{"settings", {{"native-option", 1}}}}, shipping);
     assert(!IsComboSeedDocument(Json::array()) && !IsComboSeedDocument(Json{{"fileType", 1}}));
     auto future = legacy(true);
     future["entranceLayout"] = {{"schemaVersion", 1}, {"overrides", Json::array()}};
@@ -172,24 +192,108 @@ int main() {
     for (const Json& layout : {Json(), Json::object(), Json::array(), Json(1)}) {
         auto bad = legacy(false);
         bad["entranceLayout"] = layout;
-        rejects([&] { RequireSupportedSeedDocument(bad); });
-        rejects([&] { Profiles::SettingsDocument(bad); });
-        rejects([&] { Entrances::ApplyNativeSeed(sEntranceNative, bad); });
+        rejectsBeforeDecode([&] { RequireSupportedSeedDocument(bad, shipping); });
+        rejectsBeforeDecode([&] { Profiles::SettingsDocument(bad, shipping); });
+        rejectsBeforeDecode([&] { Entrances::ApplyNativeSeed(sEntranceNative, bad, shipping); });
     }
     for (const Json& version : {Json(), Json(1), Json(2), Json(99), Json("2")}) {
         auto bad = future;
         bad["version"] = version;
-        rejects([&] { RequireSupportedSeedDocument(bad); });
+        rejectsBeforeDecode([&] { RequireSupportedSeedDocument(bad, shipping); });
     }
     auto absent = future;
     absent.erase("entranceLayout");
-    rejects([&] { RequireSupportedSeedDocument(absent); });
+    rejectsBeforeDecode([&] { RequireSupportedSeedDocument(absent, shipping); });
+    // A complete, valid layout (the dev-only MM tranche) is refused just the same.
+    Entrances::EntranceLayout tranche;
+    tranche.required = {"wallmasters-own-game-mm-tranche"};
+    tranche.settings.erWallmasters = Entrances::Mode::OwnGame;
+    tranche.overrides = Entrances::Overrides{{"MM_WALLMASTER_BTW_ENTRANCE", "MM_TEMPLE_WOODFALL"},
+                                             {"MM_WALLMASTER_BTW_EXIT", "MM_TEMPLE_SNOWHEAD"},
+                                             {"MM_WALLMASTER_BTW_FOUNTAIN", "MM_TEMPLE_GREAT_BAY"},
+                                             {"MM_WALLMASTER_DAMPE", "MM_SPIDER_HOUSE_SWAMP"}};
+    auto layoutSeed = legacy(true);
+    layoutSeed["entranceLayout"] = Entrances::EncodeEntranceLayout(tranche);
+    StampComboSeedFormat(layoutSeed);
+    rejectsBeforeDecode([&] { RequireSupportedSeedDocument(layoutSeed, shipping); });
+    rejectsBeforeDecode([&] { RequireSupportedSettingsCapabilities(layoutSeed, shipping); });
+    rejectsBeforeDecode([&] { Profiles::SettingsDocument(layoutSeed, shipping); });
+    rejectsBeforeDecode([&] { Profiles::SetupForSeed(layoutSeed, shipping); });
+    rejectsBeforeDecode([&] { Entrances::ApplyNativeSeed(sEntranceNative, layoutSeed, shipping); });
+    rejectsBeforeDecode([&] { Profiles::SeedFromContainer({{"combo", {{"rando", layoutSeed}}}}, shipping); });
+
+    // The acceptance path, with every catalog value open (tests only; no build has this set).
+    auto dev = Entrances::CapabilitySet::AtLeast(Entrances::Stage::Hidden);
+    dev.devBuild = true;
+    RequireSupportedSeedDocument(layoutSeed, dev);
+    RequireSupportedSettingsCapabilities(layoutSeed, dev);
+    // Settings documents drop the routes and stay valid settings documents, never seeds.
+    const auto settingsDocument = Profiles::SettingsDocument(layoutSeed, dev);
+    auto routeless = layoutSeed["entranceLayout"];
+    routeless.erase("overrides");
+    assert(settingsDocument.at("entranceLayout") == routeless);
+    assert(Profiles::SettingsDocument(settingsDocument, dev) == settingsDocument);
+    rejectsLayout([&] { RequireSupportedSeedDocument(settingsDocument, dev); });
+    rejectsLayout([&] { Profiles::SetupForSeed(settingsDocument, dev); });
+    Profiles::Store devStore(legacy(false), dev);
+    devStore.importSeed(0, layoutSeed, true);
+    assert(devStore.pendingSeed(0) == layoutSeed);
+    assert(devStore.draft(0).at("entranceLayout") == routeless);
+    rejectsLayout([&] { devStore.importSeed(1, settingsDocument, true); });
+    Profiles::Store reread(legacy(false), dev);
+    reread.restore(devStore.json());
+    assert(reread.json() == devStore.json());
+    rejectsBeforeDecode([&] { Profiles::Store(legacy(false), shipping).restore(devStore.json()); });
+    assert(Profiles::SeedFromContainer({{"combo", {{"rando", layoutSeed.dump()}}}}, dev) == layoutSeed);
+    // No installer yet: an accepted layout still never binds as vanilla routing.
+    std::string installer;
+    try { Entrances::ApplyNativeSeed(sEntranceNative, layoutSeed, dev); }
+    catch (const std::runtime_error& error) { installer = error.what(); }
+    assert(installer == "Unified entrance layout installer unavailable");
+    // Seed-level refusals behind the shipping one.
+    auto oldType = layoutSeed;
+    oldType["fileType"] = kComboSeedFileType;
+    rejectsLayout([&] { RequireSupportedSeedDocument(oldType, dev); });
+    auto noLayout = layoutSeed;
+    noLayout.erase("entranceLayout");
+    rejectsLayout([&] { RequireSupportedSeedDocument(noLayout, dev); });
+    for (const Json& version : {Json(), Json(1), Json(99), Json("2"), Json(2.5)}) {
+        auto bad = layoutSeed;
+        bad["version"] = version;
+        rejectsLayout([&] { RequireSupportedSeedDocument(bad, dev); });
+    }
+    auto unversioned = layoutSeed;
+    unversioned.erase("version");
+    rejectsLayout([&] { RequireSupportedSeedDocument(unversioned, dev); });
+    for (const char* key : kLegacyEntranceKeys) {
+        auto both = layoutSeed;
+        both[key] = Json::object();
+        rejectsLayout([&] { RequireSupportedSeedDocument(both, dev); });
+        rejectsLayout([&] { Profiles::SettingsDocument(both, dev); });
+    }
+    for (const Json& layout : {Json(), Json::object(), Json::array(), Json(1)}) {
+        auto bad = layoutSeed;
+        bad["entranceLayout"] = layout;
+        rejectsLayout([&] { RequireSupportedSeedDocument(bad, dev); });
+        rejectsLayout([&] { RequireSupportedSettingsCapabilities(bad, dev); });
+    }
+    auto devLayout = tranche;
+    devLayout.devBuild = true;
+    auto devSeed = layoutSeed;
+    devSeed["entranceLayout"] = Entrances::EncodeEntranceLayout(devLayout);
+    RequireSupportedSeedDocument(devSeed, dev);
+    auto releaseSet = dev;
+    releaseSet.devBuild = false;
+    rejectsLayout([&] { RequireSupportedSeedDocument(devSeed, releaseSet); });
+
     write("future.json", future);
     Json output = {{"untouched", true}};
     assert(!TryLoadComboSeedFile("future.json", output) && output.at("untouched") == true);
+    write("layout.json", layoutSeed);
+    assert(!TryLoadComboSeedFile("layout.json", output) && output.at("untouched") == true);
     char futurePath[] = "future.json";
     assert(Rando_HandleSpoilerDrop(futurePath) && dropped == "ComboDroppedFile" && mutations == 0);
-    Profiles::Store profiles(legacy(false));
+    Profiles::Store profiles(legacy(false), shipping);
     const auto before = profiles.json();
     rejects([&] { profiles.importSeed(0, future, true); });
     assert(profiles.json() == before);
@@ -203,7 +307,7 @@ int main() {
     // type carrying the new field, cannot change native context, fileNum, cache or on-disk bytes.
     auto mislabeled = future;
     mislabeled["fileType"] = kComboSeedFileType;
-    for (const Json& seed : {future, mislabeled}) for (bool cached : {false, true}) {
+    for (const Json& seed : {future, mislabeled, layoutSeed}) for (bool cached : {false, true}) {
         const Json container = {{"oot", nativePage}, {"combo", {{"rando", seed}}}};
         write(ComboContainerPath(0), container);
         g_containerCache.clear();
@@ -225,7 +329,7 @@ int main() {
     }
     // Serialized legacy rando pages use the same capability gate.
     Json stringContainer = {{"oot", nativePage}, {"combo", {{"rando", future.dump()}}}};
-    rejects([&] { Profiles::SeedFromContainer(stringContainer); });
+    rejects([&] { Profiles::SeedFromContainer(stringContainer, shipping); });
     // Supported no-layout seed still binds normally, proving the stubbed native path is usable.
     g_containerCache.clear();
     write(ComboContainerPath(1), {{"oot", nativePage}, {"combo", {{"rando", legacy(false)}}}});
@@ -235,7 +339,7 @@ int main() {
     assert(gSaveContext.fileNum == 1 && mutations > 0 && containerLoads == 1 && popups == 0);
     assert(manager.comboLoadState == ComboLoadState::Ready);
     std::cout << "PASS legacy bytes/imports, future discriminator, capability rejection and production native "
-                 "save preflight before context/slot mutation\n";
+                 "save preflight before context/slot mutation; the layout acceptance path behind them\n";
 }
 '''
 cpp = args.build_dir / 'seed_format.cpp'
@@ -246,10 +350,15 @@ subprocess.run([str(exe)], cwd=args.build_dir, check=True, timeout=hostcxx.RUN_T
 # Full headless/main/UI dependencies are unavailable to this small harness. Verify their actual
 # boundary calls and writer ordering in addition to executing the shared policies above.
 headless = (args.source / 'combo/ComboRandoHeadless.cpp').read_text(encoding='utf-8')
-assert hostcxx.contains(headless, 'spoiler = nlohmann::json::parse(ReadFile(playthroughFile)); ComboRando::RequireSupportedSeedDocument(spoiler);')
-assert hostcxx.find(headless, 'ComboRando::RequireSupportedSeedCapabilities(sj);') < hostcxx.find(headless, 'const auto& oot = sj.contains("oot") ? sj["oot"] : sj;')
+caps = 'ComboRando::Entrances::ActiveCapabilities()'
+assert hostcxx.contains(headless, 'spoiler = nlohmann::json::parse(ReadFile(playthroughFile)); '
+                                  f'ComboRando::RequireSupportedSeedDocument(spoiler, {caps});')
+assert hostcxx.find(headless, f'ComboRando::RequireSupportedSettingsCapabilities(sj, {caps});') < \
+    hostcxx.find(headless, 'const auto& oot = sj.contains("oot") ? sj["oot"] : sj;')
 assert hostcxx.contains(headless, 'ComboRando::StampComboSeedFormat(consolidated); f << consolidated.dump(2);')
 assert hostcxx.contains(launcher, 'ComboRando::StampComboSeedFormat(consolidated); g_ConsolidatedJson = consolidated.dump(2);')
-assert hostcxx.contains(launcher, 'j = *profileSeed; ComboRando::RequireSupportedSeedDocument(j);')
+assert hostcxx.contains(launcher, f'j = *profileSeed; ComboRando::RequireSupportedSeedDocument(j, {caps});')
+assert hostcxx.contains(launcher, f'ComboRando::Profiles::Repository>(profilePath, ProfileNativeSnapshot(), {caps});')
 menu = (args.source / 'combo/gui/ComboMenu.cpp').read_text(encoding='utf-8')
-assert hostcxx.find(menu, 'ComboRando::RequireSupportedSeedDocument(j);') < hostcxx.find(menu, 'sPlando.sohDump = sSohDump ? sSohDump() : "";')
+assert hostcxx.find(menu, f'ComboRando::RequireSupportedSeedDocument(j, {caps});') < \
+    hostcxx.find(menu, 'sPlando.sohDump = sSohDump ? sSohDump() : "";')

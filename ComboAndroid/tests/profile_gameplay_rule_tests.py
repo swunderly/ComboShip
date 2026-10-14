@@ -46,7 +46,7 @@ int main(int argc,char** argv){
  assert(argc==2);
  const auto path=std::filesystem::path(argv[1])/"profiles.json";
  Json setup={{"fileType","ComboShipRandomizer"},{"gameplayRules",CaptureGameplayRules(Read)}};
- sProfiles=std::make_unique<Profiles::Repository>(path,setup);
+ sProfiles=std::make_unique<Profiles::Repository>(path,setup,Entrances::ActiveCapabilities());
  auto commit=[&](int slot){const auto reply=Json::parse(ProfileSetDraft(slot,setup.dump().c_str()));assert(reply.value("success",false));};
  auto put=[&](const char* key,int value){const auto& rule=*FindGameplayRule(key);
   setup["gameplayRules"][LogicRuleKey(rule.name)==key?"logicValues":"values"][rule.name]=value;};
@@ -87,7 +87,7 @@ int main(int argc,char** argv){
  auto saved=sProfiles->view().draft(0);setup["gameplayRules"]["values"][cross.name]="invalid";
  commit(0);assert(Read(cross.name,-1)==0); // invalid imports cannot enable arbitrary runtime rules
  setup=saved;commit(0);
- sProfiles.reset();sProfiles=std::make_unique<Profiles::Repository>(path,Json::object());
+ sProfiles.reset();sProfiles=std::make_unique<Profiles::Repository>(path,Json::object(),Entrances::ActiveCapabilities());
  assert(sProfiles->view().draft(0)["gameplayRules"]==saved["gameplayRules"]);
  std::cout<<"PASS: production profile coupling, independent enhancement, all rule modes, file isolation and reload\n";
 }

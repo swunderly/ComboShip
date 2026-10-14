@@ -404,7 +404,7 @@ int RunHeadless(int argc, char** argv) {
         nlohmann::json spoiler, mmSettings;
         try {
             spoiler = nlohmann::json::parse(ReadFile(playthroughFile));
-            ComboRando::RequireSupportedSeedDocument(spoiler);
+            ComboRando::RequireSupportedSeedDocument(spoiler, ComboRando::Entrances::ActiveCapabilities());
             mmSettings = MmSettingsForPlaythrough(spoiler);
         } catch (const std::exception& e) {
             std::cerr << "[playthrough] could not read/parse '" << playthroughFile << "': " << e.what() << "\n";
@@ -419,7 +419,8 @@ int RunHeadless(int argc, char** argv) {
             return 2;
         }
         try {
-            ComboRando::Entrances::ApplyNativeSeed(entranceNative, spoiler);
+            ComboRando::Entrances::ApplyNativeSeed(entranceNative, spoiler,
+                                                   ComboRando::Entrances::ActiveCapabilities());
         } catch (const std::exception& error) {
             std::cerr << "[playthrough] " << error.what() << "\n";
             return 2;
@@ -554,7 +555,8 @@ int RunHeadless(int argc, char** argv) {
                     entranceRestoreFailed = true;
             }
             try {
-                ComboRando::Entrances::ApplyNativeSeed(entranceNative, spoiler);
+                ComboRando::Entrances::ApplyNativeSeed(entranceNative, spoiler,
+                                                       ComboRando::Entrances::ActiveCapabilities());
             } catch (const std::exception& error) {
                 std::cerr << "[playthrough] " << error.what() << "\n";
                 entranceRestoreFailed = true;
@@ -735,7 +737,7 @@ int RunHeadless(int argc, char** argv) {
         try {
             auto sj = nlohmann::json::parse(ReadFile(settingsFile));
             // Standalone per-game settings remain valid; unsupported combo capabilities do not.
-            ComboRando::RequireSupportedSeedCapabilities(sj);
+            ComboRando::RequireSupportedSettingsCapabilities(sj, ComboRando::Entrances::ActiveCapabilities());
             const auto& oot = sj.contains("oot") ? sj["oot"] : sj;
             const auto& mm = sj.contains("mm") ? sj["mm"] : sj;
             // Combined metadata is outside the native per-game settings snapshots.
@@ -893,7 +895,8 @@ int RunHeadless(int argc, char** argv) {
         for (int attempt = 0; attempt < kFillAttempts; ++attempt) {
             masterSeed = base + attempt * 0x9E3779B9u;
             try {
-                ComboRando::Entrances::ApplyNativeSeed(entranceNative, nlohmann::json::object());
+                ComboRando::Entrances::ApplyNativeSeed(entranceNative, nlohmann::json::object(),
+                                                       ComboRando::Entrances::ActiveCapabilities());
             } catch (const std::exception& error) {
                 std::cerr << error.what() << "\n";
                 return 2;
