@@ -15,6 +15,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace ComboRando;
@@ -24,6 +25,11 @@ using Strings = std::set<std::string>;
 
 namespace {
 Json fixture;
+// Neither refusal is a ShuffleError, which the Shuffler and an outer attempt
+// retry (C1).
+static_assert(!std::is_base_of_v<ShuffleError, UnifiedEntranceRefused> &&
+              !std::is_base_of_v<ShuffleError, TempleProbeUnsupported>);
+int ootResets = 0; // the OoT oracle's resets
 ComboGenProgress progress;
 const std::string kWallmasters = "erWallmasters=ownGame;erOneWays=none";
 
@@ -124,18 +130,20 @@ const NativeFns kMm{FakeMm::apply, FakeMm::assume, FakeMm::clear,
 // The Temple probe: the query must name the candidate the MM oracle just saw.
 struct FakeProbe {
   static inline int prepares = 0, queries = 0, releases = 0;
-  static inline int prepareCode = 0, queryCode = 1;
+  static inline int prepareCode = 0, queryCode = 1, resetsAtPrepare = -1;
   static inline bool prepared = false;
   static inline Json prepare, first, last;
   static void reset() {
     prepares = queries = releases = 0;
     prepareCode = 0;
     queryCode = 1;
+    resetsAtPrepare = -1;
     prepared = false;
     prepare = first = last = Json();
   }
   static int Prepare(const char *json) {
     ++prepares;
+    resetsAtPrepare = ootResets;
     prepare = Json::parse(json);
     prepared = prepareCode == 0;
     return prepareCode;
@@ -176,7 +184,7 @@ TempleProbeFns Probe() {
 // logic graph (MmUnifiedGraphRoutes: candidate assumptions, else the installed
 // layout) routes Dampe's Wallmaster to Woodfall Temple.
 struct Oracles {
-  static inline int ootResets = 0, mmQueries = 0, cancelAt = 0;
+  static inline int mmQueries = 0, cancelAt = 0;
   static inline bool majora = true, prizeNeeded = false;
   static inline std::vector<std::string> owned[2];
   static void reset() {
@@ -295,8 +303,8 @@ std::map<std::string, std::string> Routes(const Json &layout) {
 }
 // Nothing native was called and no Temple session was opened.
 void Untouched() {
-  assert(FakeMm::calls() == 0 && FakeProbe::calls() == 0 &&
-         Oracles::ootResets == 0 && Oracles::mmQueries == 0);
+  assert(FakeMm::calls() == 0 && FakeProbe::calls() == 0 && ootResets == 0 &&
+         Oracles::mmQueries == 0);
 }
 
 // No pool to place: no layout, no read, no native call.
@@ -406,7 +414,7 @@ void CheckTemplePass() {
   ResetAll();
   FakeProbe::queryCode = -1;
   unsupported(Tranche(), "fake probe detail", 1, 1);
-  assert(Oracles::ootResets >= 1 && FakeMm::sets == 1);
+  assert(ootResets >= 1 && FakeMm::sets == 1);
 
   // Prepare gets the resolved age; the OoT oracle is prepared before it.
   for (bool adult : {false, true}) {
@@ -416,6 +424,8 @@ void CheckTemplePass() {
     Generate(g);
     assert(FakeProbe::prepares == 1 && FakeProbe::releases == 1);
     assert(FakeProbe::prepare["startingAge"] == (adult ? "adult" : "child"));
+    // The OoT oracle was prepared before the probe (TempleProbe.cpp P1, P2).
+    assert(FakeProbe::resetsAtPrepare == 1);
     assert(FakeProbe::queries == FakeMm::sets && FakeProbe::queries >= 4);
     // MM rows only, listed under mm, never probed.
     for (const auto &e : FakeProbe::last["mm"]["edges"])
@@ -427,8 +437,8 @@ void CheckTemplePass() {
   g.access = OotAccess::NO_LOGIC;
   g.songTravelLogic = true; // the gate never runs for logic none
   const auto layout = Generate(g);
-  assert(FakeProbe::calls() == 0 && FakeMm::sets == 0 &&
-         Oracles::ootResets == 0 && Oracles::mmQueries == 0);
+  assert(FakeProbe::calls() == 0 && FakeMm::sets == 0 && ootResets == 0 &&
+         Oracles::mmQueries == 0);
   assert(Routes(layout).size() == 4 && !ActiveMmUnified().active());
 }
 
@@ -482,6 +492,32 @@ void CheckLayouts() {
       assert(!ActiveMmUnified().active() && !ActiveMmUnifiedAssumptions());
     }
   assert(distinct.size() > 8);
+  // The stream entrances:ootmm-entrances-v1:<seed>, as M1-07 first drew it.
+  const std::map<uint32_t, std::pair<uint32_t, std::vector<std::string>>>
+      golden = {
+          {1u,
+           {3861620466u,
+            {"MM_TEMPLE_STONE_TOWER_INVERTED", "MM_TEMPLE_GREAT_BAY",
+             "MM_TEMPLE_WOODFALL", "MM_SPIDER_HOUSE_OCEAN"}}},
+          {2u,
+           {3054938091u,
+            {"MM_TEMPLE_STONE_TOWER_INVERTED", "MM_SPIDER_HOUSE_OCEAN",
+             "MM_TEMPLE_SNOWHEAD", "MM_TEMPLE_GREAT_BAY"}}},
+          {3u,
+           {3548060248u,
+            {"MM_TEMPLE_STONE_TOWER_INVERTED", "MM_TEMPLE_WOODFALL",
+             "MM_SPIDER_HOUSE_SWAMP", "MM_TEMPLE_GREAT_BAY"}}},
+      };
+  for (const auto &[seed, expected] : golden) {
+    ResetAll();
+    const auto layout = Generate(Tranche(seed));
+    std::vector<std::string>
+        destinations; // BtW entrance, exit, fountain, Dampe
+    for (const auto &[src, dst] : Routes(layout))
+      destinations.push_back(dst);
+    assert(CwHashName(layout.dump()) == expected.first &&
+           destinations == expected.second);
+  }
   // A release-stamped build writes devBuild false.
   ResetAll();
   auto g = Tranche();

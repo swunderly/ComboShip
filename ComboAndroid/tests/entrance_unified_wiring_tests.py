@@ -104,12 +104,30 @@ for private in ('nativeMmOrdinaryIndoors', 'nativeMmOrdinaryTelescopes', 'native
                 '!savedOrdinaryEntrances.is_null()', '!savedGrottoEntrances.is_null()', '!savedMixedEntrances.is_null()'):
     assert private in generate[:steps[5]].rsplit('unified.privateMmProfiles =', 1)[1].split(';', 1)[0], private
 handler = block(generate, 'catch (const ComboRando::Entrances::ShuffleError& error)')
-for needle in ('entranceLayout = nlohmann::json();', 'MM_Restore();', 'pinStartOot = true;', 'continue;'):
+for needle in ('entranceLayout = nlohmann::json();', 'r = { "", false,', 'MM_Restore();', 'pinStartOot = true;',
+               'continue;'):
     assert needle in handler, needle
 assert 'return 2;' in block(generate[steps[5]:], 'catch (const std::exception& error)')
 ordered(generate, 'consolidated["entranceLayout"] = entranceLayout;', 'ComboRando::StampComboSeedFormat(consolidated);')
 assert re.search(r'templeProbe\s*=\s*ComboRando::Entrances::ResolveUnifiedTempleProbe\(\s*\[&\]\(const char\* name\) '
                  r'\{ return Sym<void\*>\(soh, name\); \}\);', headless)
+
+# --- D1: the bridge reads exactly the CVars of the options that turn on Ship's RSK_SHUFFLE_ENTRANCES.
+native = read('soh/soh/Enhancements/randomizer/settings.cpp')
+derive = native[native.index('// If any of the individual shuffle settings are on, turn on the main Shuffle Entrances option'):]
+derive = derive[:derive.index('mOptions[RSK_SHUFFLE_ENTRANCES].Set(RO_GENERIC_ON);')]
+keys = set(re.findall(r'mOptions\[(RSK_\w+)\]', derive))
+cvars = set()
+for key in keys:
+    match = re.search(r'OPT_(?:U8|BOOL)\(' + key + r',[^;]*?CVAR_RANDOMIZER_SETTING\("(\w+)"\)', native)
+    assert match, key
+    cvars.add('gRandoSettings.' + match.group(1))
+bridge = read('combo/rando/entrances/UnifiedBridge.h')
+listed = bridge[bridge.index('kShipEntranceSettings[] = {'):]
+listed = set(re.findall(r'"(gRandoSettings\.\w+)"', listed[:listed.index('};')]))
+assert len(keys) == 9 and listed == cvars, (sorted(listed), sorted(cvars))
+assert 'CVAR_RANDOMIZER_SETTING("MQDungeons")' in native and 'RO_MQ_DUNGEONS_NONE' in native
+assert '"gRandoSettings.MQDungeons"' in bridge
 
 # --- Nothing else generates a unified layout.
 callers = []
