@@ -6,7 +6,7 @@ The detailed notes written for each release (changes, phone checklists, test evi
 
 ## How these builds were tested
 
-Builds were checked by the developer with automated tests, and most also on an Android emulator. Unless a section says otherwise, a change was not tested on a physical phone, and no build has had a complete seed playthrough. The fixes confirmed on a phone so far are the three regressions reported against the first 0.2.20 test build and the MM menu hitch (gone in 0.3.7). "Tested" lines below repeat the limits stated in the original notes.
+Builds were checked by the developer with automated tests, and most also on an Android emulator. Unless a section says otherwise, a change was not tested on a physical phone, and no build has had a complete seed playthrough. The fixes confirmed on a phone so far are the three regressions reported against the first 0.2.20 test build, the MM menu hitch (gone in 0.3.7), shuffled silver rupees keeping their own checks (0.4.6) and MM rooms shut by a missing soul opening once the soul is owned (0.4.7). "Tested" lines below repeat the limits stated in the original notes.
 
 Install each update over the existing app, so your ROMs, saves and settings are kept. Do not uninstall first or clear app data. Existing saves keep the seed they were created with. New seed options only apply to newly generated seeds.
 
