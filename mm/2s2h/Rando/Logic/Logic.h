@@ -274,6 +274,8 @@ uint64_t FilterNativeMmIngressTimes(s32 entrance, uint64_t arrivalTimes);
 bool RecordMmAccess(uint64_t timeMask);
 void ResetMmAccess();
 bool UpdateMmAccess(); // Consume ACCESS changes as part of every graph fixpoint.
+// OoTMM macros_mm.yml:305 er_enabled over the unified entrance layout's settings (ComboEntrancesMM.cpp).
+bool NativeMmErEnabled();
 class MmAccessScope {
     uint64_t previousIngress;
     bool previousAccess;
@@ -596,9 +598,17 @@ bool HasUsableBottle();
     (CAN_ACCESS(HOT_SPRING_WATER) &&                                   \
      (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) || \
       (CAN_PLAY_SONG(SOARING) && CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE)) || CAN_USE_FARORE))
+// OoTMM macros_mm.yml:305 er_enabled and :273 has_hot_water_er = er_enabled && has_hot_water_any.
+// has_hot_water_any is the one hot spring water event with a bottle, as CAN_BRING_HOT_WATER_NORTH
+// reads it; under entrance shuffle the water never cools (z_parameter.c). Sites:
+// tools/ootmm/er-enabled-sites.json.
+#define ER_ENABLED Rando::Logic::NativeMmErEnabled()
+#define HAS_HOT_WATER_ER (ER_ENABLED && HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER))
 #else
 #define CAN_USE_FIRE_SHORT_RANGE CAN_USE_MAGIC_ARROW(FIRE)
 #define CAN_BRING_HOT_WATER_NORTH CAN_ACCESS(HOT_SPRING_WATER)
+#define ER_ENABLED false
+#define HAS_HOT_WATER_ER false
 #endif
 #define CAN_GROW_BEAN_PLANT      \
     (CAN_ACCESS(BEANS_REFILL) && \

@@ -1,0 +1,235 @@
+{
+  "schema": "ootmm-er-enabled-sites-v1",
+  "upstreamCommit": "413573d",
+  "about": "One receipt for the ER-wide MM logic and runtime of M1-08: every OoTMM v32.3 line that m1-contract.json erLogicSites lists (the macro closure of er_enabled), with the fork statement that carries it or the reason it has none, the flag functions, and the PG_ER hot-water patch. ComboAndroid/tests/mm_er_enabled_logic_tests.py and er_hot_water_runtime_tests.py check it.",
+  "flags": {
+    "erEnabled": {
+      "pinned": { "file": "data/macros/macros_mm.yml", "line": 305, "macro": "er_enabled" },
+      "fork": { "file": "combo/rando/entrances/EntranceRuntimeFlags.h", "function": "ErEnabled", "logic": "ER_ENABLED", "reader": "Rando::Logic::NativeMmErEnabled" },
+      "source": "The unified generation's er* settings while it checks candidate worlds (MM_SetEntranceGenerationSettingsForCombo), else the installed unified layout's. A private MM profile and Song Travel never count (owner decision D5)."
+    },
+    "isEntranceShuffle": {
+      "pinned": { "file": "packages/logic/src/helpers.ts", "lines": [6, 55], "function": "isEntranceShuffle" },
+      "fork": { "file": "combo/rando/entrances/EntranceRuntimeFlags.h", "function": "IsEntranceShuffle", "runtime": "Combo_MMEntranceShuffleActive" },
+      "source": "The installed unified layout's settings only."
+    }
+  },
+  "macros": [
+    {
+      "pinned": { "file": "data/macros/macros_mm.yml", "line": 273, "name": "has_hot_water_er", "expression": "er_enabled && has_hot_water_any" },
+      "fork": { "file": "mm/2s2h/Rando/Logic/Logic.h", "define": "HAS_HOT_WATER_ER", "body": "(ER_ENABLED && HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER))" },
+      "mapping": "has_hot_water_any is HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER): the fork has one hot spring water event for every source and season (Goron Graveyard, the Twin Islands hot spring grotto, Beneath the Well), which CAN_BRING_HOT_WATER_NORTH also reads for has_hot_water_mtn."
+    },
+    {
+      "pinned": { "file": "data/macros/macros_mm.yml", "line": 305, "name": "er_enabled" },
+      "fork": { "file": "mm/2s2h/Rando/Logic/Logic.h", "define": "ER_ENABLED", "body": "Rando::Logic::NativeMmErEnabled()" }
+    }
+  ],
+  "sites": [
+    {
+      "pinned": { "file": "data/macros/macros_mm.yml", "line": 221, "uses": ["has_hot_water_er", "trick_sht_hot_water"] },
+      "status": "n/a",
+      "reason": "trick_sht_hot_water needs trick(MM_SHT_HOT_WATER), which the port does not have: combo/rando/MmTricks.h kMmTricks has no such row, so the macro is false in every seed (packages/core/src/settings/tricks.ts:468 defines the trick; DEFAULT_TRICKS at :834 does not include it)."
+    },
+    {
+      "pinned": { "file": "data/macros/macros_mm.yml", "line": 222, "uses": ["has_hot_water_er", "trick_sht_hot_water_er"] },
+      "status": "n/a",
+      "reason": "trick_sht_hot_water_er needs trick(MM_SHT_HOT_WATER), which the port does not have (see macros_mm.yml:221)."
+    },
+    {
+      "pinned": { "file": "data/macros/macros_mm.yml", "line": 273, "uses": ["er_enabled", "has_hot_water_er"] },
+      "status": "macro",
+      "fork": { "file": "mm/2s2h/Rando/Logic/Logic.h", "define": "HAS_HOT_WATER_ER" }
+    },
+    {
+      "pinned": { "file": "data/macros/macros_mm.yml", "line": 305, "uses": ["er_enabled"] },
+      "status": "macro",
+      "fork": { "file": "mm/2s2h/Rando/Logic/Logic.h", "define": "ER_ENABLED" }
+    },
+    {
+      "pinned": {
+        "file": "data/world/mm/dungeons/beneath_the_well.yml", "line": 106, "uses": ["has_hot_water_er"],
+        "expression": "setting(beneathWell, open) || (can_pass_gibdo && (has_hot_water_well || (has_hot_water_distance && has(OWL_IKANA_CANYON)) || has_hot_water_er))",
+        "alternative": "has_hot_water_well"
+      },
+      "status": "mapped",
+      "fork": {
+        "file": "mm/2s2h/Rando/Logic/Regions/BeneathTheWell.cpp", "region": "RR_BENEATH_THE_WELL_RIGHT_FIRE_KEESE",
+        "before": "CONNECTION(RR_BENEATH_THE_WELL_COW_ROOM, CAN_PASS_GIBDO(HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER)))",
+        "after": "CONNECTION(RR_BENEATH_THE_WELL_COW_ROOM, CAN_PASS_GIBDO((HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER)) || HAS_HOT_WATER_ER))",
+        "alternative": "(HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER))"
+      },
+      "effect": "subsumed",
+      "note": "The fork's well gate already accepts any hot spring water in a bottle (its coarse has_hot_water_well), which contains has_hot_water_er, so the term changes nothing today; it keeps the pinned site if the gate is narrowed."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 32, "uses": ["trick_sht_hot_water"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water, which is false in the port (see macros_mm.yml:221)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 114, "uses": ["trick_sht_hot_water"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water, which is false in the port (see macros_mm.yml:221)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 128, "uses": ["trick_sht_hot_water_er"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water_er, which is false in the port (see macros_mm.yml:222)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 142, "uses": ["trick_sht_hot_water_er"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water_er, which is false in the port (see macros_mm.yml:222)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 203, "uses": ["trick_sht_hot_water"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water, which is false in the port (see macros_mm.yml:221)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 208, "uses": ["trick_sht_hot_water"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water, which is false in the port (see macros_mm.yml:221)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 209, "uses": ["trick_sht_hot_water"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water, which is false in the port (see macros_mm.yml:221)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 239, "uses": ["trick_sht_hot_water_er"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water_er, which is false in the port (see macros_mm.yml:222)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 276, "uses": ["trick_sht_hot_water", "trick_sht_hot_water_er"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water and trick_sht_hot_water_er, which are false in the port (see macros_mm.yml:221, :222)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 335, "uses": ["trick_sht_hot_water", "trick_sht_hot_water_er"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water and trick_sht_hot_water_er, which are false in the port (see macros_mm.yml:221, :222)."
+    },
+    {
+      "pinned": { "file": "data/world/mm/dungeons/snowhead_temple.yml", "line": 354, "uses": ["trick_sht_hot_water_er"] },
+      "status": "n/a",
+      "reason": "Only through trick_sht_hot_water_er, which is false in the port (see macros_mm.yml:222)."
+    },
+    {
+      "pinned": {
+        "file": "data/world/mm/overworld/mountain_village.yml", "line": 117, "uses": ["has_hot_water_er"],
+        "expression": "soul_npc(SOUL_NPC_GORON_ELDER) && is_winter && final_day && has_mask_goron && (can_use_fire_short_range || has_hot_water_er || has_hot_water_mtn || has_hot_water_farore || (has_hot_water_distance && has(OWL_MOUNTAIN_VILLAGE)))",
+        "alternative": "has_hot_water_mtn"
+      },
+      "status": "shared",
+      "sameAs": "data/world/mm/overworld/twin_island.yml:19",
+      "note": "OoTMM lists the Goron Elder twice, on the final day in Mountain Village and on the first two days at Twin Islands, with the same thaw alternatives. The fork has one Goron Elder check for every day, RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, which carries the term for both lines."
+    },
+    {
+      "pinned": {
+        "file": "data/world/mm/overworld/mountain_village.yml", "line": 172, "uses": ["has_hot_water_er"],
+        "expression": "is_spring || (is_winter && (can_use_fire_short_range || has_hot_water_mtn || has_hot_water_er || (has_hot_water_distance && has(OWL_MOUNTAIN_VILLAGE))))",
+        "alternative": "has_hot_water_mtn"
+      },
+      "status": "mapped",
+      "fork": {
+        "file": "mm/2s2h/Rando/Logic/Regions/North.cpp", "function": "BlacksmithCanThaw",
+        "before": "return CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_DINS_FIRE || hotWater;",
+        "after": "return CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_DINS_FIRE || hotWater || HAS_HOT_WATER_ER;",
+        "alternative": "hotWater"
+      },
+      "effect": "adds",
+      "note": "BLACKSMITH_ENABLED is the thaw half of RE_ACCESS_SMITHY (North.cpp RR_MOUNTAIN_SMITHY)."
+    },
+    {
+      "pinned": {
+        "file": "data/world/mm/overworld/termina_field.yml", "line": 35, "uses": ["has_hot_water_er"],
+        "expression": "has_arrows || (has_hot_water_distance && has(OWL_CLOCK_TOWN)) || has_hot_water_farore || has_hot_water_er || short_hook_anywhere || can_use_din",
+        "alternative": "can_use_din"
+      },
+      "status": "mapped",
+      "fork": {
+        "file": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp", "region": "RR_TERMINA_FIELD",
+        "before": "CONNECTION(RR_TERMINA_FIELD_BEFORE_PATH_TO_MOUNTAIN_VILLAGE, CAN_USE_BOW || CAN_USE_DINS_FIRE)",
+        "after": "CONNECTION(RR_TERMINA_FIELD_BEFORE_PATH_TO_MOUNTAIN_VILLAGE, CAN_USE_BOW || CAN_USE_DINS_FIRE || HAS_HOT_WATER_ER)",
+        "alternative": "CAN_USE_DINS_FIRE"
+      },
+      "effect": "adds",
+      "note": "The M1 plan marks this line N/A after critique X6 ('no icicle region exists in TerminaField.cpp'). The region exists (RR_TERMINA_FIELD_BEFORE_PATH_TO_MOUNTAIN_VILLAGE) and this connection has carried the termina_field.yml:35 mapping since bc754e36, so the pinned term is ported."
+    },
+    {
+      "pinned": {
+        "file": "data/world/mm/overworld/termina_field.yml", "line": 651, "uses": ["has_hot_water_er"],
+        "expression": "has_arrows || (has_hot_water_distance && has(OWL_MOUNTAIN_VILLAGE)) || has_hot_water_farore || has_hot_water_mtn || has_hot_water_er || short_hook_anywhere || can_use_din",
+        "alternative": "can_use_din"
+      },
+      "status": "mapped",
+      "fork": {
+        "file": "mm/2s2h/Rando/Logic/Regions/TerminaField.cpp", "region": "RR_TERMINA_FIELD_BEFORE_PATH_TO_MOUNTAIN_VILLAGE",
+        "before": "CONNECTION(RR_TERMINA_FIELD, CAN_USE_BOW || CAN_USE_DINS_FIRE)",
+        "after": "CONNECTION(RR_TERMINA_FIELD, CAN_USE_BOW || CAN_USE_DINS_FIRE || HAS_HOT_WATER_ER)",
+        "alternative": "CAN_USE_DINS_FIRE"
+      },
+      "effect": "adds"
+    },
+    {
+      "pinned": {
+        "file": "data/world/mm/overworld/twin_island.yml", "line": 14, "uses": ["has_hot_water_er"],
+        "expression": "is_spring || (is_winter && (can_use_fire_short_range || has_hot_water_mtn || has_hot_water_er || has_hot_water_farore || (has_hot_water_distance && has(OWL_MOUNTAIN_VILLAGE))))",
+        "alternative": "has_hot_water_mtn"
+      },
+      "status": "mapped",
+      "fork": {
+        "file": "mm/2s2h/Rando/Logic/Regions/North.cpp", "region": "RR_PATH_TO_GORON_VILLAGE",
+        "before": "EXIT(ENTRANCE(GROTTOS, 5), ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH))",
+        "after": "EXIT(ENTRANCE(GROTTOS, 5), ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH) || HAS_HOT_WATER_ER)",
+        "alternative": "(HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH)"
+      },
+      "effect": "adds"
+    },
+    {
+      "pinned": {
+        "file": "data/world/mm/overworld/twin_island.yml", "line": 19, "uses": ["has_hot_water_er"],
+        "expression": "soul_npc(SOUL_NPC_GORON_ELDER) && is_winter && (first_day || second_day) && has_mask_goron && (can_use_fire_short_range || has_hot_water_er || has_hot_water_mtn || has_hot_water_farore || (has_hot_water_distance && has(OWL_MOUNTAIN_VILLAGE)))",
+        "alternative": "has_hot_water_mtn"
+      },
+      "status": "mapped",
+      "fork": {
+        "file": "mm/2s2h/Rando/Logic/Regions/North.cpp", "region": "RR_PATH_TO_GORON_VILLAGE",
+        "before": "CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_FIRE_SHORT_RANGE || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE))))",
+        "after": "CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_FIRE_SHORT_RANGE || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE) || HAS_HOT_WATER_ER)))",
+        "alternative": "(CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE)"
+      },
+      "effect": "adds"
+    }
+  ],
+  "runtime": [
+    {
+      "flag": "PG_ER",
+      "pinned": {
+        "file": "packages/generator/src/mm/patches/hot_water.S", "group": "PG_ER", "address": "0x8010eba0", "instructions": ["jr ra", "nop"],
+        "enabledBy": { "file": "packages/generator/lib/combo/patch-build/index.ts", "line": 58, "text": "ER: isEntranceShuffle(settings)," }
+      },
+      "symbol": {
+        "name": "Interface_StartBottleTimer",
+        "map": "zeldaret/mm tools/disasm/n64-us/functions.txt (main, read 2026-10-14)",
+        "map entries": {
+          "Interface_StartGoronRaceTimer": "0x8010EB50",
+          "Interface_StartBottleTimer": "0x8010EBA0",
+          "Interface_GetCompressedTimerDigits": "0x8010EC54",
+          "Interface_NewDay": "0x8010EE74"
+        },
+        "pinned anchors": [
+          { "file": "packages/generator/src/link_mm.in", "line": 236, "symbol": "Gfx_TextureIA8", "address": "0x8010cd98", "fork": "Gfx_DrawTexRectIA8" },
+          { "file": "packages/generator/src/link_mm.in", "line": 38, "symbol": "Interface_NewDay", "address": "0x8010ee74", "fork": "Interface_NewDay" }
+        ]
+      },
+      "fork": {
+        "file": "mm/src/code/z_parameter.c", "function": "Interface_StartBottleTimer", "gate": "Combo_MMEntranceShuffleActive",
+        "callers": ["Item_GiveImpl", "Inventory_Dpad_UpdateBottleItem", "Inventory_UpdateBottleItem"]
+      }
+    }
+  ]
+}

@@ -145,3 +145,14 @@ checkout, exact reproduction, read-only stale checks and wrong-pin refusal.
 in the all-vanilla world, and the Wallmaster pool for every vanilla/MQ choice, and
 requires the same pools and candidates. Nothing here enables a setting, a pool or a
 layout format.
+
+`er-enabled-sites.json` is a reviewed receipt, not exporter output. It lists every MM
+logic line of the contract's `erLogicSites` (the macro closure of `er_enabled`) with
+the fork statement that now carries `has_hot_water_er` or the reason it has none: the
+Snowhead lines reach it only through `trick(MM_SHT_HOT_WATER)`, which the port does
+not have, and the two Goron Elder lines share the fork's one Elder check. It also
+names the `PG_ER` hot-water patch target, `Interface_StartBottleTimer` at
+`0x8010eba0`, from the MM decomp's US symbol map and OoTMM's own link addresses.
+`mm_er_enabled_sites_flags_and_exports` and
+`mm_er_hot_water_never_cools_under_entrance_shuffle` check it against the contract,
+the production sources and, when it is present, the pinned checkout.

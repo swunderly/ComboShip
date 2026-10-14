@@ -124,6 +124,10 @@ combo_json_harness_test(entrance_registry_and_grotto_metadata entrance_registry_
 combo_harness_test(oot_wallmaster_pinned_source_classifier oot_wallmaster_source_tests.py)
 combo_harness_test(mm_wallmaster_room_clear_spawn_and_soul_guards mm_wallmaster_spawn_tests.py)
 combo_json_harness_test(mm_unified_layout_exports_and_wallmaster_logic mm_unified_logic_tests.py)
+# M1-08: OoTMM er_enabled / has_hot_water_er in the MM logic and the PG_ER hot-water patch, against
+# tools/ootmm/er-enabled-sites.json (and the OoTMM checkout when it is there).
+combo_json_harness_test(mm_er_enabled_sites_flags_and_exports mm_er_enabled_logic_tests.py)
+combo_json_harness_test(mm_er_hot_water_never_cools_under_entrance_shuffle er_hot_water_runtime_tests.py)
 combo_python_test(entrance_pinned_reference_and_exporters entrance_reference_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_reference")
 set_tests_properties(entrance_pinned_reference_and_exporters PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")

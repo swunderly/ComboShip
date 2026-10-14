@@ -1678,7 +1678,18 @@ void Interface_StartGoronRaceTimer(s32 arg0) {
     }
 }
 
+#ifdef COMBO_BUILD
+extern int Combo_MMEntranceShuffleActive(void);
+#endif
+
 void Interface_StartBottleTimer(s16 seconds, s16 timerId) {
+#ifdef COMBO_BUILD
+    // OoTMM v32.3 mm/patches/hot_water.S (PG_ER, on under isEntranceShuffle) makes this function,
+    // 0x8010EBA0 in the US 1.0 symbol map, return at once: hot spring water never cools.
+    if (Combo_MMEntranceShuffleActive()) {
+        return;
+    }
+#endif
     gSaveContext.bottleTimerStates[timerId] = BOTTLE_TIMER_STATE_COUNTING;
     gSaveContext.bottleTimerCurTimes[timerId] = SECONDS_TO_TIMER(seconds);
     gSaveContext.bottleTimerTimeLimits[timerId] = gSaveContext.bottleTimerCurTimes[timerId];

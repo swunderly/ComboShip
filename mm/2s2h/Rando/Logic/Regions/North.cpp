@@ -10,13 +10,13 @@
 using namespace Rando::Logic;
 
 // Pinned Blacksmith cold-water alternatives; distant water requires its owl.
-// The unsupported ER hot-water shortcut is not inferred from ordinary Wind.
+// The ER hot-water shortcut is has_hot_water_er only, never inferred from ordinary Wind.
 static bool BlacksmithCanThaw() {
 #ifdef COMBO_BUILD
     const bool hotWater = HAS_BOTTLE && CAN_ACCESS(HOT_SPRING_WATER) &&
                           (ComboRando::mmResourceAccess.Has(ComboRando::MmHotWaterNorth) ||
                            (CAN_OWL_WARP(OWL_WARP_MOUNTAIN_VILLAGE) && (CAN_PLAY_SONG(SOARING) || CAN_USE_FARORE)));
-    return CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_DINS_FIRE || hotWater;
+    return CAN_USE_MAGIC_ARROW(FIRE) || CAN_USE_DINS_FIRE || hotWater || HAS_HOT_WATER_ER; // mountain_village.yml:172
 #else
     return CAN_USE_MAGIC_ARROW(FIRE) || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH);
 #endif
@@ -399,7 +399,7 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_PATH_TO_GORON_VILLAGE] = RandoRegion{ .sceneId = SCENE_17SETUGEN,
         .checks = {
             // TODO : Add Spring only checks.
-            CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_FIRE_SHORT_RANGE || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE)))), // twin_island.yml:19
+            CHECK(RC_PATH_TO_GORON_VILLAGE_LULLABY_INTRO, (!NativeMmErContextsEnabled() || (NativeMmNorthWinter())) && (CAN_BE_GORON && (CAN_USE_FIRE_SHORT_RANGE || (CAN_BRING_HOT_WATER_NORTH && HAS_BOTTLE) || HAS_HOT_WATER_ER))), // twin_island.yml:19, mountain_village.yml:117
             CHECK(RC_TWIN_ISLANDS_TINGLE_MAP_01,          CAN_USE_PROJECTILE && CAN_AFFORD(RC_TWIN_ISLANDS_TINGLE_MAP_01)),
             CHECK(RC_TWIN_ISLANDS_TINGLE_MAP_02,          CAN_USE_PROJECTILE && CAN_AFFORD(RC_TWIN_ISLANDS_TINGLE_MAP_02)),
             CHECK(RC_TWIN_ISLANDS_UNDERWATER_CHEST_01, COMBO_WORLD53_SELECT((!NativeMmErContextsEnabled() || (NativeMmNorthSpring())) && (CAN_BE_ZORA && CAN_USE_ABILITY(SWIM) && NativeMmNorthSpring()), NativeMmNorthSpring() && MM_LOGIC_UNDERWATER_WALKING)),
@@ -451,7 +451,7 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ENEMY_DROP_SNAPPER, CanKillEnemy(ACTOR_OBJ_SNOWBALL) && CanKillEnemy(ACTOR_EN_KAME)),
         },
         .exits = { //     TO                                     FROM
-            EXIT(ENTRANCE(GROTTOS, 5),                  ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH)), // twin_island.yml:14
+            EXIT(ENTRANCE(GROTTOS, 5),                  ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), NativeMmNorthSpring() || CAN_USE_FIRE_SHORT_RANGE || (HAS_BOTTLE && CAN_BRING_HOT_WATER_NORTH) || HAS_HOT_WATER_ER), // twin_island.yml:14
             // TODO: This can be reached in entrance rando if coming from Goron Racetrack
             EXIT(ENTRANCE(GROTTOS, 24),                 ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), CAN_USE_EXPLOSIVE && (CAN_BE_GORON || CAN_HOOK_SCARECROW)),
             EXIT(ENTRANCE(MOUNTAIN_VILLAGE_WINTER, 2),  ENTRANCE(PATH_TO_GORON_VILLAGE_WINTER, 0), true),

@@ -157,6 +157,11 @@ extern "C" COMBO_EXPORT int MM_SetEntranceGenerationSettingsForCombo(const char*
         return 0;
     }
 }
+// OoTMM v32.3 macros_mm.yml:305 er_enabled, which has_hot_water_er (:273) reads. Song Travel and the
+// private MM profiles never count (owner decision D5).
+bool Rando::Logic::NativeMmErEnabled() {
+    return CE::MmUnifiedErEnabled();
+}
 namespace {
 CE::MmPreviousScene GrottoPreviousScene() {
     const auto& ship = gSaveContext.save.shipSaveInfo;
@@ -324,6 +329,11 @@ extern "C" int Combo_MMCompleteOrdinaryEntrance(PlayState* play) {
 }
 extern "C" COMBO_EXPORT int Combo_MMWallmasterErActive(void) {
     return IS_RANDO && CE::ActiveMmWallmasters().active();
+}
+// OoTMM v32.3 PG_ER (patch-build/index.ts:58, isEntranceShuffle): the installed unified layout shuffles
+// entrances, so hot spring water never cools (mm/patches/hot_water.S, z_parameter.c).
+extern "C" int Combo_MMEntranceShuffleActive(void) {
+    return IS_RANDO && CE::MmUnifiedEntranceShuffle();
 }
 extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
     if (!play || !actor || !IS_RANDO || !CE::ActiveMmWallmasters().active())
