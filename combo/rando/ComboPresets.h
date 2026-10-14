@@ -30,10 +30,11 @@ inline constexpr CommunityPresetInfo kCommunityPresets[] = {
       "collected and OoTMM's junk checks hold only junk. Combo Ship does not pre-complete dungeons." },
     { CommunityPreset::Allsanity, "Allsanity", "Explore a much larger check pool",
       "Adapted from OoTMM's Allsanity preset. Beatable-only logic. Keys, souls, shops, tokens, NPC rewards, fairies, "
-      "freestanding items and scenery drops are shuffled in both worlds, plus OoT's pond fish, with random Master "
-      "Quest dungeons and OoT key rings. Adds the MM spells, boots and tunics and the ocarina buttons, all shared "
-      "across games. MM starts with no items. Entrance shuffle, Skip Child Zelda, Cross-Games Age, silver rupee "
-      "pouches, MM key rings and OoTMM item families Combo Ship lacks are left out." },
+      "freestanding items and scenery drops are shuffled in both worlds, plus OoT's pond fish, with OoT key rings. "
+      "Adds the MM spells, boots and tunics and the ocarina buttons, all shared across games. MM starts with no "
+      "items. Its random Master Quest dungeons need Master Quest game data, which setup does not import. Entrance "
+      "shuffle, Skip Child Zelda, Cross-Games Age, silver rupee pouches, child wallets, MM key rings and OoTMM item "
+      "families Combo Ship lacks are left out." },
 };
 struct PresetOption {
     const char* key;
@@ -180,6 +181,8 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                          {
                              { "gRandoSettings.IncludeTycoonWallet", 1 }, // colossalWallets, presets.ts:410
                              { "gRando.Options.RO_SHUFFLE_TYCOON_WALLET", 1 },
+                             // childWallets (presets.ts:409) stays off: Shared Wallets turns off Shuffle Child's
+                             // Wallet, which MM has no match for (settings.cpp:2855-2857).
                              { "gRandoSettings.SoulsEnemyOot", 1 },          // presets.ts:413
                              { "gRandoSettings.ShuffleBossSouls", 1 },       // presets.ts:415
                              { "gRando.Options.RO_SHUFFLE_ENEMY_SOULS", 1 }, // presets.ts:414-422
@@ -279,7 +282,9 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                              { "gRandoSettings.IceTrapPercent", 3 }, // Rupoors take half the traps, presets.ts:599
                              // MM: 2.5 traps per 100 of its about 2,100 junk items (transform.ts:714-715).
                              { "gRando.Options.RO_TRAP_AMOUNT", 50 },
-                             // mqDungeons random: a coin flip for each dungeon (presets.ts:697)
+                             // mqDungeons random: a coin flip for each dungeon (presets.ts:697). Without Master
+                             // Quest game data, which setup does not import, every dungeon stays normal
+                             // (settings.cpp:2896-2899).
                              { "gRandoSettings.MQDungeons", 3 },
                              { "gRandoSettings.MQDungeonsDekuTree", 2 },
                              { "gRandoSettings.MQDungeonsDodongosCavern", 2 },
