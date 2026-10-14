@@ -208,7 +208,7 @@ void UnsupportedBeforeAnyDraw() {
     // pass is needed.
     f.logicEnabled = false;
     CheckTempleCapability(s, f, BaseBindings().areaExists);
-    assert(!NeedsTemplePass(s, f));
+    assert(!NeedsTemplePass(s, f, BaseBindings().areaExists));
   }
 }
 
@@ -271,7 +271,8 @@ void WallmasterRows() {
     }
   }
   assert(rows == 13);
-  // A world with no Wallmaster area at all has no pool to place.
+  // A world with no Wallmaster area at all has no pool to place, so the run
+  // needs no Temple pass (entrances.ts:500-502, :581-589).
   auto none = BaseBindings();
   none.areaExists = [](std::string_view area) {
     for (const auto &r : kRegistry)
@@ -281,6 +282,8 @@ void WallmasterRows() {
   };
   CheckTempleCapability(alone, TempleFacts{}, none.areaExists);
   assert(ResolvePools(alone, none.areaExists).pools.empty());
+  assert(!NeedsTemplePass(alone, TempleFacts{}, none.areaExists));
+  assert(NeedsTemplePass(alone, TempleFacts{}, MmWallmastersOnly().areaExists));
 }
 
 void SupportedEnvelope() {

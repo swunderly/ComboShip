@@ -4,11 +4,11 @@ Static: the resolver looks up exactly the four exports soh's TempleProbe.h decla
 caller's module lookup only. Compiled harness: the fakes are defined with the declarations copied
 from TempleProbe.h, so the compiler checks that TempleProbeFns has the exports' exact types; then,
 with the real Shuffler, registry, gate and adapter, it checks export resolution, the gate and the
-entry points before Prepare and before any draw, that logic none and games=Mm never prepare or query,
-that MM-only Wallmasters run while any OoT Wallmaster row is refused, the Prepare and Query code
-mapping without retry, Release on success, exception and cancellation, that a query before Prepare or
-after Release is refused, and the cancellation poll. The native probe itself is covered by the
-temple_probe_* harnesses; nothing here runs the engine.
+entry points before Prepare and before any draw, that logic none, games=Mm and a run with no pool to
+place never gate, prepare or query, that MM-only Wallmasters run while any OoT Wallmaster row is
+refused, the Prepare and Query code mapping without retry, Release on success, exception and
+cancellation, that a query before Prepare or after Release is refused, and the cancellation poll.
+The native probe itself is covered by the temple_probe_* harnesses; nothing here runs the engine.
 """
 from pathlib import Path
 import argparse
@@ -251,6 +251,57 @@ void NoTemplePass(const TempleProbeFns& fns) {
     assert(fake.prepares == 0 && fake.queries == 0 && fake.releases == 0);
 }
 
+void NoPoolToPlace(const TempleProbeFns& fns) {
+    // OoTMM validates only while a non-empty pool is left (entrances.ts:500-502, :581-589), so with
+    // nothing to place no seed fact is gated (each of these would be refused with a pool) and
+    // nothing is prepared, queried or released.
+    TempleFacts songTravel, warpSong, glitched, random;
+    songTravel.songTravelLogic = true;
+    warpSong.ootStartingItems = { "Prelude of Light" };
+    glitched.glitchless = false;
+    random.startingAge = TempleStartingAge::Random;
+    // No pool in the settings: the Shuffler neither requires nor calls the hook, so the validator is
+    // empty, the run never asks areaExists, and nothing is placed.
+    for (const auto& f : { TempleFacts{}, songTravel, warpSong, glitched, random }) {
+        Reset();
+        {
+            TempleProbeRun run(fns, Settings{}, f, AreaExists{});
+            assert(!run.Validator());
+        }
+        assert(Generate(fns, Settings{}, f, MakeBindings(false)).empty());
+        assert(fake.prepares == 0 && fake.queries == 0 && fake.releases == 0 && draws == 0);
+    }
+    // Pools in the settings that all resolve empty: one-ways with no flag (every flag defaults to
+    // false, data.ts:3584-3646) and Wallmasters in a world without their areas. The Shuffler still
+    // requires the hook, so the run gives one that refuses a call without a native one; the
+    // Shuffler never calls it and places only the reserved game links.
+    Settings oneWays;
+    oneWays.erOneWays = Mode::OwnGame;
+    auto noWallmasters = MakeBindings(false);
+    noWallmasters.areaExists = [](std::string_view area) {
+        for (const auto& r : kRegistry)
+            if (r.type == Type::Wallmaster && r.from == area)
+                return false;
+        return true;
+    };
+    for (const auto& [s, b] :
+         { std::pair{ oneWays, MakeBindings(false) }, std::pair{ MmWallmasters(), noWallmasters } }) {
+        assert(!MakePools(s).empty() && ResolvePools(s, b.areaExists).pools.empty());
+        for (const auto& f : { TempleFacts{}, songTravel, warpSong, glitched, random }) {
+            Reset();
+            {
+                TempleProbeRun run(fns, s, f, b.areaExists);
+                const auto validator = run.Validator();
+                assert(validator);
+                assert(Unsupported([&] { validator({}, {}); }) ==
+                       "Temple probe: query for a run with no pool to place");
+            }
+            assert(Generate(fns, s, f, b) == ReservedEntrances(s) && ReservedEntrances(s).size() == 2);
+            assert(fake.prepares == 0 && fake.queries == 0 && fake.releases == 0 && draws == 0);
+        }
+    }
+}
+
 void MmOnlyWallmasters(const TempleProbeFns& fns) {
     for (auto age : { TempleStartingAge::Child, TempleStartingAge::Adult }) {
         Reset();
@@ -379,14 +430,16 @@ int main() {
     Resolution();
     const auto fns = ResolveTempleProbe(Lookup);
     NoTemplePass(fns);
+    NoPoolToPlace(fns);
     MmOnlyWallmasters(fns);
     CodeMapping(fns);
     ReleaseOnEveryExit(fns);
     QueryBeforePrepare(fns);
     Poll();
     std::cout << "Temple probe wiring: exports resolved by name with the ABI's types, gate and entry points "
-                 "before Prepare and any draw, no pass for No Logic or games=Mm, MM-only Wallmasters run, "
-                 "codes map without retry, Release on every exit, no query outside a prepared session\n";
+                 "before Prepare and any draw, no pass for No Logic, games=Mm or no pool to place, MM-only "
+                 "Wallmasters run, codes map without retry, Release on every exit, no query outside a "
+                 "prepared session\n";
 }
 '''.replace('@DECLARATIONS@', declarations)
 

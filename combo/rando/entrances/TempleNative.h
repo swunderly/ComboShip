@@ -32,14 +32,24 @@ template <class Lookup> TempleProbeFns ResolveTempleProbe(Lookup&& lookup) {
 // The Temple pass of one Shuffler run: build it before the Shuffler and keep it until the run ends.
 // Every refusal comes before any random draw: the gate, the entry points, then Prepare. Release runs
 // on every exit path, including an exception or a cancellation out of the Shuffler, and a query
-// outside the prepared session is refused. A run that needs no Temple pass (NeedsTemplePass) gates,
-// prepares and queries nothing; facts.logicEnabled must be the same run's Bindings::logicEnabled.
+// outside the prepared session is refused. A run that needs no Temple pass (NeedsTemplePass: logic
+// none, games=Mm, or no pool that resolves to a source) gates, prepares, queries and releases nothing,
+// so building one for a generation with no entrance pool is safe. facts.logicEnabled and areaExists
+// must be the same run's Bindings::logicEnabled and Bindings::areaExists.
 // The return codes map as MapTempleResult says, and TempleProbeUnsupported is never retried.
 class TempleProbeRun {
   public:
     TempleProbeRun(TempleProbeFns fns, const Settings& s, const TempleFacts& facts, const AreaExists& areaExists) {
-        if (!NeedsTemplePass(s, facts))
+        if (!NeedsTemplePass(s, facts, areaExists)) {
+            // Settings that name a pool still make the Shuffler require the hook (Shuffle.h:474-481)
+            // even when every pool resolves empty and place() never calls it, so give it one that
+            // refuses any call without reaching the native probe.
+            if (facts.logicEnabled && s.games != Games::Mm && !MakePools(s).empty())
+                validator = [](const Overrides&, const Pools&) -> bool {
+                    throw TempleProbeUnsupported("Temple probe: query for a run with no pool to place");
+                };
             return;
+        }
         CheckTempleCapability(s, facts, areaExists);
         if (!fns.poll)
             fns.poll = TempleProbeCancelPoll;
@@ -59,7 +69,8 @@ class TempleProbeRun {
     TempleProbeRun(const TempleProbeRun&) = delete;
     TempleProbeRun& operator=(const TempleProbeRun&) = delete;
 
-    // What Bindings::validateAgeTemple gets; empty when the run needs no Temple pass.
+    // What Bindings::validateAgeTemple gets. Empty when the Shuffler neither requires nor calls it
+    // (logic none, games=Mm, no pool in the settings); a refusing one when every pool resolves empty.
     std::function<bool(const Overrides&, const Pools&)> Validator() const {
         return validator;
     }

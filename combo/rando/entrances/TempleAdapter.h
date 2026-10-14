@@ -36,11 +36,15 @@ struct TempleFacts {
     std::string_view registry = kRegistrySourceSha256;
 };
 
-// Whether a Shuffler run calls validateAgeTemple at all: never for logic none, which isValidShuffle
-// accepts before building any world (entrances.ts:388-391), nor without OoT (:411). The same test as
-// Shuffle.h's, so a run that skips the Temple pass never needs a validator.
-inline bool NeedsTemplePass(const Settings& s, const TempleFacts& f) {
-    return f.logicEnabled && s.games != Games::Mm;
+// Whether a Shuffler run can call validateAgeTemple at all: never for logic none, which isValidShuffle
+// accepts before building any world (entrances.ts:388-391), nor without OoT (:411), nor when no pool
+// resolves to a source. placePools drops such pools (:581-589) and placePoolsRecursive validates
+// nothing once none is left (:500-502), as Shuffle.h's place() never calls the hook with no pool. The
+// pools are the ones the Shuffler will place, resolved with the same areaExists; with no pool in the
+// settings at all, areaExists is never called.
+inline bool NeedsTemplePass(const Settings& s, const TempleFacts& f, const AreaExists& areaExists) {
+    return f.logicEnabled && s.games != Games::Mm && !MakePools(s).empty() &&
+           !ResolvePools(s, areaExists).pools.empty();
 }
 
 // Supported envelope: own-game one-ways and the own-game alias Wallmaster pool, as far as every OoT
