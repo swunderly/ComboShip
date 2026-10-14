@@ -9,6 +9,7 @@
 // private MM Wallmaster generator.
 #include "rando/ComboPlaythrough.h"
 #include "rando/entrances/UnifiedBridge.h"
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -16,6 +17,7 @@
 #include <set>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 using namespace ComboRando;
@@ -182,7 +184,8 @@ TempleProbeFns Probe() {
 
 // The reachability oracles. "Wallmaster prize" is reachable only while the MM
 // logic graph (MmUnifiedGraphRoutes: candidate assumptions, else the installed
-// layout) routes Dampe's Wallmaster to Woodfall Temple.
+// layout) routes Dampe's Wallmaster to Woodfall Temple. With prizeNeeded,
+// Majora also needs the "Prize item".
 struct Oracles {
   static inline int mmQueries = 0, cancelAt = 0;
   static inline bool majora = true, prizeNeeded = false;
@@ -221,7 +224,8 @@ struct Oracles {
     if (++mmQueries == cancelAt)
       progress.RequestCancel();
     Json checks = {"Mm start"};
-    if (majora)
+    if (majora && (!prizeNeeded || std::find(owned[1].begin(), owned[1].end(),
+                                             "Prize item") != owned[1].end()))
       checks.push_back("Defeat Majora");
     if (Prize())
       checks.push_back("Wallmaster prize");
@@ -639,8 +643,9 @@ void CheckScopes() {
   assert(FakeMm::applies == 0 && FakeMm::sets == 0 && FakeProbe::releases == 1);
 }
 
-// The layout is installed for the fill and the playthrough of its attempt
-// (C13): an item behind a Wallmaster route is placed and walked.
+// The layout is installed for the fill, the requiredness pass and the
+// playthrough of its attempt (C13): an item behind a Wallmaster route is
+// placed, found required and walked.
 void CheckInstallForFill() {
   ResetAll();
   auto g = Tranche(4);
@@ -654,10 +659,35 @@ void CheckInstallForFill() {
   auto mmDump = Json::parse(g.mmDump);
   mmDump["pool"][1] = {
       {"name", "Prize item"}, {"advancement", true}, {"category", "major"}};
+  Oracles::prizeNeeded = true; // Majora needs the prize item from here on
+  const uint32_t fillSeed = 2; // puts the prize item behind Dampe's route
   const auto fill =
-      CrossWorldCombinedFill(g.ootDump, mmDump.dump(), 4, g.oot, g.mm, nullptr,
-                             "", OotAccess::ALL_REACHABLE);
+      CrossWorldCombinedFill(g.ootDump, mmDump.dump(), fillSeed, g.oot, g.mm,
+                             nullptr, "", OotAccess::ALL_REACHABLE);
   assert(fill.success);
+  bool prizeBehindRoute = false;
+  for (const auto &p :
+       ParseSpoilerPlacements(fill.spoilerJson, g.ootDump, mmDump.dump()))
+    prizeBehindRoute = prizeBehindRoute || (p.item == "Prize item" &&
+                                            p.check == "Wallmaster prize");
+  assert(prizeBehindRoute);
+  // Way of the Hero, barren and paths (Ship, 2Ship and cross hints), with the
+  // launcher's goal and area maps: the Wallmaster-only check is collected,
+  // tested and required, its area is not barren, and it is on the path to
+  // Majora.
+  const std::unordered_map<std::string, std::string> mmAreas = {
+      {"Mm start", "Clock Town"}, {"Wallmaster prize", "Woodfall Temple"}};
+  const auto requiredness = [&] {
+    return PareDownPlaythrough(fill.spoilerJson, g.oot, g.mm, nullptr,
+                               g.ootDump, mmDump.dump(), {}, mmAreas,
+                               MakeCombinedGoal(g.goal), true, g.mmStart);
+  };
+  const auto installed = requiredness();
+  assert(installed.candidateCount == 1 &&
+         installed.requiredByCheck.at("mm:Wallmaster prize") &&
+         installed.areaHasRequired.at("mm:Woodfall Temple"));
+  assert(installed.pathsByCheck.at("mm:Wallmaster prize") ==
+         std::vector<std::string>{"Majora"});
   Json walk = Json::array();
   const auto result =
       RunPlaythrough(fill.spoilerJson, g.oot, g.mm, "unified", nullptr, &walk,
@@ -672,9 +702,14 @@ void CheckInstallForFill() {
   // Without the layout the prize check is out of reach and the fill fails.
   ApplyNativeSeed(kMm, Json::object(), WholeCatalog());
   assert(!ActiveMmUnified().active() && !Oracles::Prize());
-  assert(!CrossWorldCombinedFill(g.ootDump, mmDump.dump(), 4, g.oot, g.mm,
-                                 nullptr, "", OotAccess::ALL_REACHABLE)
+  assert(!CrossWorldCombinedFill(g.ootDump, mmDump.dump(), fillSeed, g.oot,
+                                 g.mm, nullptr, "", OotAccess::ALL_REACHABLE)
               .success);
+  // A requiredness pass without it never collects the prize, so it never
+  // reaches the goal: nothing is tested and no path is found (the stuck
+  // baseline then marks every advancement item required).
+  const auto cleared = requiredness();
+  assert(cleared.candidateCount == 0 && cleared.pathsByCheck.empty());
   // The install checks its round trip and this build's capabilities.
   assert(Has(Error<std::exception>([&] {
                ApplyUnifiedLayout(kMm, layout,
