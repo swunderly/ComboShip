@@ -13,6 +13,9 @@ void EnTest6_DoubleSoTCutscene(EnTest6* thisx, PlayState* play);
 void EnTest6_InvertedSoTCutscene(EnTest6* thisx, PlayState* play);
 void EnTest6_StopDoubleSoTCutscene(EnTest6* thisx, PlayState* play);
 void EnTest6_StopInvertedSoTCutscene(EnTest6* thisx, PlayState* play);
+#ifdef COMBO_BUILD
+void Combo_MMReturnToInitialEntranceAfterSkip(void);
+#endif
 }
 
 #define CVAR_NAME "gEnhancements.Songs.SkipSoTCutscenes"
@@ -62,6 +65,10 @@ void RegisterSkipSoTCutscenes() {
             } else {
                 // Directly to Dawn of... in clock town
                 gSaveContext.save.entrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0);
+#ifdef COMBO_BUILD
+                // With entrance shuffle, the MM initial entrance instead (OoTMM v32.3 mm/play/play.c:736-741).
+                Combo_MMReturnToInitialEntranceAfterSkip();
+#endif
             }
         }
     });

@@ -17,5 +17,9 @@ void Combo_MMClearOrdinaryTransitionMarker(void);
 int Combo_MMWallmasterTransport(PlayState* play, Actor* actor);
 int Combo_MMWallmasterErActive(void);
 int Combo_MMEntranceShuffleActive(void);
+void Combo_MMRecordInitialEntrance(int entrance);
+void Combo_MMReturnToInitialEntranceOnPlayInit(void);
+void Combo_MMReturnToInitialEntranceAfterSkip(void);
+void Combo_MMAfterPlayInit(PlayState* play);
 }
 #endif

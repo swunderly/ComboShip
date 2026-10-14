@@ -4,6 +4,9 @@
 
 extern "C" {
 #include "variables.h"
+#ifdef COMBO_BUILD
+void Combo_MMReturnToInitialEntranceAfterSkip(void);
+#endif
 }
 
 #define CVAR_NAME "gEnhancements.Cutscenes.SkipStoryCutscenes"
@@ -27,6 +30,10 @@ void RegisterSkipMoonCrash() {
             Sram_ResetSaveFromMoonCrash(&gPlayState->sramCtx);
 
             gSaveContext.save.entrance = ENTRANCE(CLOCK_TOWER_INTERIOR, 3);
+#ifdef COMBO_BUILD
+            // With entrance shuffle, the MM initial entrance instead (OoTMM v32.3 mm/play/play.c:736-741).
+            Combo_MMReturnToInitialEntranceAfterSkip();
+#endif
         }
     });
 }

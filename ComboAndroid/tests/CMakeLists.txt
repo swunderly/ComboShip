@@ -128,6 +128,7 @@ combo_json_harness_test(mm_unified_layout_exports_and_wallmaster_logic mm_unifie
 # tools/ootmm/er-enabled-sites.json (and the OoTMM checkout when it is there).
 combo_json_harness_test(mm_er_enabled_sites_flags_and_exports mm_er_enabled_logic_tests.py)
 combo_json_harness_test(mm_er_hot_water_never_cools_under_entrance_shuffle er_hot_water_runtime_tests.py)
+combo_json_harness_test(entrance_er_any_runtime_sites_both_games er_any_runtime_tests.py)
 combo_python_test(entrance_pinned_reference_and_exporters entrance_reference_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_reference")
 set_tests_properties(entrance_pinned_reference_and_exporters PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")

@@ -335,6 +335,66 @@ extern "C" COMBO_EXPORT int Combo_MMWallmasterErActive(void) {
 extern "C" int Combo_MMEntranceShuffleActive(void) {
     return IS_RANDO && CE::MmUnifiedEntranceShuffle();
 }
+// OoTMM v32.3 CFG_ER_ANY in MM (world-config.ts:30, the same isEntranceShuffle as PG_ER): the initial
+// entrance, the Song of Time and moon-crash return to it, and the Stone Tower switch. Runtime-only, as
+// g.initialEntrance is; no save field holds any of it.
+namespace {
+// mm/play/play.c:997-1002, g.initialEntrance: the entrance this MM boot entered by, else Clock Town from
+// the Clock Tower.
+int32_t sMmInitialEntrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0);
+// play.c:467, gLastEntrance: the entrance of the last Play_Init that ran to its end.
+int32_t sMmLastPlayEntrance = -1;
+// play.c:736-741 sends Song of Time and the moon crash to the initial entrance. The season fixup runs
+// again, so a cleared area comes back in its current state (M1 plan C10); `cutscene` is the cutscene
+// index the destination's scene layer will be read from.
+uint32_t InitialEntranceNow(int& cutscene) {
+    return CE::FixMmNativeArrival(static_cast<uint32_t>(sMmInitialEntrance),
+                                  CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE),
+                                  CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE),
+                                  CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_GREAT_BAY_TEMPLE),
+                                  CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_STONE_TOWER_TEMPLE), cutscene);
+}
+} // namespace
+// Every MM boot (title_setup.c), after the arrival and the Cross-Games Age sync (critique X12). The entrance
+// is recorded as its logical, unfixed variant (NormalizeMmSceneVariant undoes FixMmNativeArrival's scene
+// swap), as OoTMM records the requested entrance before applyCustomEntrance (M1 plan C10).
+extern "C" void Combo_MMRecordInitialEntrance(int entrance) {
+    sMmInitialEntrance = Combo_MMEntranceShuffleActive()
+                             ? static_cast<int32_t>(CE::NormalizeMmSceneVariant(static_cast<uint32_t>(entrance)))
+                             : ENTRANCE(SOUTH_CLOCK_TOWN, 0);
+    sMmLastPlayEntrance = -1;
+}
+// The start of Play_Init, before its own season remap, where OoTMM's hookPlay_Init runs: Clock Town from
+// the Song of Time cutscene, or the moon crash's Clock Tower arrival.
+extern "C" void Combo_MMReturnToInitialEntranceOnPlayInit(void) {
+    const s32 entrance = gSaveContext.save.entrance;
+    if (!Combo_MMEntranceShuffleActive() ||
+        !((entrance == ENTRANCE(SOUTH_CLOCK_TOWN, 0) && sMmLastPlayEntrance == ENTRANCE(CUTSCENE, 0)) ||
+          entrance == ENTRANCE(CLOCK_TOWER_INTERIOR, 3)))
+        return;
+    int cutscene = gSaveContext.nextCutsceneIndex;
+    gSaveContext.save.entrance = static_cast<s32>(InitialEntranceNow(cutscene));
+    gSaveContext.nextCutsceneIndex = static_cast<u16>(cutscene);
+}
+// The cutscene skips (SkipSoTCutscenes, SkipMoonCrash) reach the same arrival inside Play_Init, after its
+// season remap moved the next cutscene into the save, so the layer comes from the save's cutscene index.
+extern "C" void Combo_MMReturnToInitialEntranceAfterSkip(void) {
+    if (!Combo_MMEntranceShuffleActive())
+        return;
+    int cutscene = gSaveContext.save.cutsceneIndex;
+    gSaveContext.save.entrance = static_cast<s32>(InitialEntranceNow(cutscene));
+    gSaveContext.save.cutsceneIndex = cutscene;
+}
+// The end of Play_Init, OoTMM's Play_AfterInit (play.c:465-494).
+extern "C" void Combo_MMAfterPlayInit(PlayState* play) {
+    sMmLastPlayEntrance = gSaveContext.save.entrance;
+    if (!play || !Combo_MMEntranceShuffleActive())
+        return;
+    if (play->sceneId == SCENE_F41)
+        Flags_SetSwitch(play, 0x14);
+    else if (play->sceneId == SCENE_F40)
+        Flags_UnsetSwitch(play, 0x14);
+}
 extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
     if (!play || !actor || !IS_RANDO || !CE::ActiveMmWallmasters().active())
         return 0;

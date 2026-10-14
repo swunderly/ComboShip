@@ -122,9 +122,13 @@ void Setup_InitImpl(SetupState* this) {
                 gSaveContext.save.entrance = ENTRANCE(MOUNTAIN_VILLAGE_SPRING, 8);
         }
         // Cross-Games Age: Link takes OoT's age on every entry. Order (critique X12): the arrival above, this age sync,
-        // the entrance randomizer's initial-entrance record (plan F4) when it lands, then the save-load hooks below.
+        // the entrance randomizer's initial-entrance record (plan F4, M1-09), then the save-load hooks below.
         extern int Combo_MM_SyncCrossAgeOnEntry(void);
         Combo_MM_SyncCrossAgeOnEntry();
+        // OoTMM v32.3 mm/play/play.c:997-1002: with entrance shuffle, the entrance this boot entered MM by is
+        // where Song of Time and the moon crash return to (ComboEntrancesMM.cpp).
+        extern void Combo_MMRecordInitialEntrance(int entrance);
+        Combo_MMRecordInitialEntrance(gSaveContext.save.entrance);
         gSaveContext.save.cutsceneIndex = 0;
         // Reset magicLevel like Sram_OpenSave does — re-arms the magic meter grow animation
         // (Interface_Update only steps magicCapacity when magicLevel == 0).

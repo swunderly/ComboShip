@@ -4,6 +4,8 @@
 #include "rando/CrossEntrance.h"
 extern int Combo_MMCompleteOrdinaryEntrance(PlayState* play);
 extern void Combo_MMClearOrdinaryTransitionMarker(void);
+extern void Combo_MMReturnToInitialEntranceOnPlayInit(void);
+extern void Combo_MMAfterPlayInit(PlayState* play);
 #endif
 #include "regs.h"
 #include "functions.h"
@@ -2349,6 +2351,9 @@ void Play_Init(GameState* thisx) {
 
 #ifdef COMBO_BUILD
     Combo_MMFarorePrepareArrival();
+    // OoTMM v32.3 mm/play/play.c:736-741, before the season remap below: with entrance shuffle, Song of Time
+    // and the moon crash return to the MM initial entrance.
+    Combo_MMReturnToInitialEntranceOnPlayInit();
 #endif
 
     if ((gSaveContext.nextCutsceneIndex == 0xFFEF) || (gSaveContext.nextCutsceneIndex == 0xFFF0)) {
@@ -2596,5 +2601,7 @@ void Play_Init(GameState* thisx) {
     GameInteractor_ExecuteOnSceneInit(sceneIdAbsolute, spawnNum);
 #ifdef COMBO_BUILD
     Combo_MMFaroreCaptureDungeon(this);
+    // OoTMM v32.3 mm/play/play.c Play_AfterInit (:467, :484-494): the last entrance, and the Stone Tower switch.
+    Combo_MMAfterPlayInit(this);
 #endif
 }
