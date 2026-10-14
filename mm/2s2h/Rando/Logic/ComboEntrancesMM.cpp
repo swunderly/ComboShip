@@ -10,6 +10,7 @@
 #include "rando/entrances/MmMixedNativeArrival.h"
 #include "rando/entrances/MmGrottoNative.h"
 #include "rando/entrances/MmMarkedSourceTransition.h"
+#include "rando/entrances/MmUnifiedLayout.h"
 #include "rando/entrances/NativeArrival.h"
 extern "C" int MM_GetEffectiveHumanAge(int fileNum);
 extern "C" int MM_CanEntranceArrival(int fileNum, uint32_t logicalId, int age, int crossAge);
@@ -44,14 +45,21 @@ extern "C" COMBO_EXPORT int MM_ApplyEntranceExpansionForCombo(const char* seedJs
     CE::ActiveMmOrdinary().clear();
     CE::ActiveMmGrottos().clear();
     CE::ActiveMmMixed().clear();
+    CE::ActiveMmUnified().clear();
     CE::ActiveMmWallmasterAssumptions().reset();
     CE::ActiveMmOrdinaryAssumptions().reset();
     CE::ActiveMmGrottoAssumptions().reset();
     CE::ActiveMmMixedAssumptions().reset();
+    CE::ActiveMmUnifiedAssumptions().reset();
     try {
         if (!seedJson)
             throw std::invalid_argument("Missing seed JSON");
         const auto seed = nlohmann::json::parse(seedJson);
+        // The unified layout, never beside a private profile, against this build's capabilities.
+        if (seed.contains("entranceLayout")) {
+            CE::ActiveMmUnified().install(seed, CE::ActiveCapabilities());
+            return 1;
+        }
         CE::ValidateMmMixedSeed(seed);
         if (seed.contains("mixedEntranceExpansion"))
             CE::ActiveMmMixed().install(seed.at("mixedEntranceExpansion"));
@@ -68,6 +76,7 @@ extern "C" COMBO_EXPORT int MM_ApplyEntranceExpansionForCombo(const char* seedJs
         CE::ActiveMmGrottos().clear();
         CE::ActiveMmMixed().clear();
         CE::ActiveMmWallmasters().clear();
+        CE::ActiveMmUnified().clear();
         SPDLOG_ERROR("[ComboShip] Entrance expansion seed rejected: {}", e.what());
         return 0; // caller must reject the seed; runtime is already disabled
     }
@@ -77,9 +86,13 @@ extern "C" COMBO_EXPORT int MM_SetEntranceExpansionAssumptionsForCombo(const cha
     CE::ActiveMmOrdinaryAssumptions().reset();
     CE::ActiveMmGrottoAssumptions().reset();
     CE::ActiveMmMixedAssumptions().reset();
+    CE::ActiveMmUnifiedAssumptions().reset();
     try {
         const auto value = nlohmann::json::parse(candidateJson ? candidateJson : "null");
-        if (value.value("profile", std::string()) == "mm-mixed-coupled-assumptions-v1")
+        // A unified candidate world (CandidateWorld.h); an unknown profile still reaches the legacy decoder.
+        if (value.value("profile", std::string()) == CE::kCandidateAssumptionsProfile)
+            CE::ActiveMmUnifiedAssumptions() = CE::DecodeMmUnifiedAssumptions(value);
+        else if (value.value("profile", std::string()) == "mm-mixed-coupled-assumptions-v1")
             CE::ActiveMmMixedAssumptions() = CE::DecodeMmMixedAssumptions(value);
         else if (value.value("profile", std::string()) == "mm-ordinary-coupled-assumptions-v1")
             CE::ActiveMmOrdinaryAssumptions() = CE::DecodeMmOrdinaryAssumptions(value);
@@ -114,6 +127,8 @@ extern "C" COMBO_EXPORT const char* MM_DumpEntranceExpansionForCombo() {
         seed["grottoEntranceExpansion"] = CE::ActiveMmGrottos().json();
     if (CE::ActiveMmMixed().active())
         seed["mixedEntranceExpansion"] = CE::ActiveMmMixed().json();
+    if (CE::ActiveMmUnified().active())
+        seed["entranceLayout"] = CE::ActiveMmUnified().json();
     result = seed.dump();
     return result.c_str();
 }
@@ -122,6 +137,7 @@ extern "C" COMBO_EXPORT void MM_ClearEntranceExpansionAssumptionsForCombo() {
     CE::ActiveMmOrdinaryAssumptions().reset();
     CE::ActiveMmGrottoAssumptions().reset();
     CE::ActiveMmMixedAssumptions().reset();
+    CE::ActiveMmUnifiedAssumptions().reset();
 }
 namespace {
 CE::MmPreviousScene GrottoPreviousScene() {
@@ -317,11 +333,56 @@ namespace Rando::Logic {
 bool NativeMmCanResetTime();
 uint64_t FilterNativeMmIngressTimes(s32 entrance, uint64_t arrivalTimes);
 
+// The unified layout's MM Wallmaster edges (OoTMM v32.3 placeSingleExpr, entrances.ts:203-217). The
+// source keeps its soul_wallmaster edge, a destination without no-sot ANDs can_reset_time, an arrival
+// into MM VOID is a dead end, and no arrival grants ACCESS.
+static bool ExploreMmUnifiedWallmasterEntrances(std::string_view source, uint64_t sourceTimes,
+                                                std::set<RandoRegionId>& reachable,
+                                                std::unordered_map<RandoRegionId, RegionTimeState>& times) {
+    const auto* sourceRecord = CE::Find(source);
+    const auto routes = sourceRecord ? CE::MmUnifiedGraphRoutes(sourceRecord->id) : std::vector<CE::MmUnifiedRoute>{};
+    if (routes.empty())
+        return false;
+    gCurrentRegionTime = sourceTimes;
+    // Pinned source area's edge to its Wallmaster buffer is soul_wallmaster.
+    const auto capturedTimes =
+        TimeLogic::EvaluateConditionTimes([] { return HaveEnemySoul(ACTOR_EN_WALLMAS); }, sourceTimes);
+    const auto capturedFlags = CE::mmFlagResult;
+    for (const auto& route : routes) {
+        if (route.toVoid)
+            continue; // MM VOID has no exits (_system.yml:1)
+        if (route.destination.game != CE::Game::Mm)
+            throw std::runtime_error("MM Wallmaster destination is not an MM entrance");
+        uint64_t arrivalTimes = capturedTimes;
+        if (route.resetTime)
+            arrivalTimes = TimeLogic::EvaluateConditionTimes([] { return NativeMmCanResetTime(); }, arrivalTimes);
+        const auto entrance = static_cast<s32>(route.destination.id);
+        arrivalTimes = FilterNativeMmIngressTimes(entrance, arrivalTimes);
+        if (!arrivalTimes)
+            continue;
+        const auto target = GetRegionIdFromEntrance(entrance);
+        const auto targetRegion = Regions.find(target);
+        if (target == RR_MAX || targetRegion == Regions.end())
+            throw std::runtime_error("MM Wallmaster destination has no native region");
+        RegionTimeState incoming{ arrivalTimes, targetRegion->second.canStayOverTime };
+        incoming.regionalFlags = capturedFlags;
+        const auto previous = times.find(target);
+        if (previous != times.end() && TimeStateCovers(previous->second, incoming))
+            continue;
+        reachable.insert(target);
+        times[target] = MergeTimeStates(times[target], incoming);
+        FindReachableRegions(target, reachable, times);
+    }
+    return false;
+}
+
 bool ExploreMmWallmasterEntrances(RandoRegionId region, uint64_t sourceTimes, std::set<RandoRegionId>& reachable,
                                   std::unordered_map<RandoRegionId, RegionTimeState>& times) {
     const auto source = SourceForRegion(region);
     if (source.empty() || !sourceTimes)
         return false;
+    if (CE::MmUnifiedGraphActive())
+        return ExploreMmUnifiedWallmasterEntrances(source, sourceTimes, reachable, times);
     const auto destinations = CE::MmWallmasterGraphDestinations(source);
     if (destinations.empty())
         return false;
