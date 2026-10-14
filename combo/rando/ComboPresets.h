@@ -25,9 +25,10 @@ inline constexpr CommunityPresetInfo kCommunityPresets[] = {
       "Adapted from OoTMM's Beginner preset. Start with both ocarinas, Zelda's Letter, Prelude of Light, a random "
       "song from Impa, the Hylian Shield, Soaring and supplies. Share the upgrades, masks and songs OoTMM's Beginner "
       "shares where Combo Ship has them. The Door of Time and Kakariko gate are open, one carpenter needs rescuing, "
-      "the Scarecrow needs no song, shops open at any hour and the Bean Seller sells beans. Talon starts awake, so "
-      "Malon's Hyrule Castle check is not in the pool (OoTMM keeps it). Maps, compasses and MM's stray fairies start "
-      "collected and OoTMM's junk checks hold only junk. Combo Ship does not pre-complete dungeons." },
+      "the Scarecrow needs no song, shops open at any hour, Soaring works in OoT at any age and the Bean Seller sells "
+      "beans. Talon starts awake, so Malon's Hyrule Castle check is not in the pool (OoTMM keeps it). Maps, compasses "
+      "and MM's stray fairies start collected and OoTMM's junk checks hold only junk. Combo Ship does not pre-complete "
+      "dungeons." },
     { CommunityPreset::Allsanity, "Allsanity", "Explore a much larger check pool",
       "Adapted from OoTMM's Allsanity preset. Beatable-only logic. Keys, souls, shops, tokens, NPC rewards, fairies, "
       "freestanding items and scenery drops are shuffled in both worlds, plus OoT's pond fish, with OoT key rings. "
@@ -319,6 +320,9 @@ inline std::vector<PresetOption> CommunityPresetRules(CommunityPreset preset) {
                              { "gEnhancements.SunlightArrows", 1 }, // presets.ts:408
                              { "gEnhancements.TimeTravel", 1 }, // ageChange oot: the Ocarina of Time, presets.ts:516
                          });
+    // agelessSoaring: Beginner sets it (presets.ts:1022); Allsanity leaves it at its default, off (data.ts:3240-3246).
+    if (preset == CommunityPreset::Beginner)
+        SetPresetOptions(rules, { { "gCombo.Enhancements.AgelessSoaring", 1 } });
     return rules;
 }
 // Values a preset writes as they are, beside its menu options: the checks it fills with junk (OoTMM junkLocations,

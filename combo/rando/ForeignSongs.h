@@ -23,14 +23,13 @@ inline uint32_t ForeignWarpSources(bool enabled, uint32_t knownSongs, bool instr
             mask |= 1u << i;
     return mask;
 }
+// OoTMM macros_oot.yml:33 and oot/ocarina.c:140-146: OoT plays Soaring as child Link only, unless
+// agelessSoaring (data.ts:3240-3246) is on.
 inline uint32_t ForeignSoaringSources(bool enabled, uint32_t knownOwls, bool instrument, uint32_t buttons, bool child,
                                       bool ageless = false) {
-    // Combo Ship folds OoTMM's ageless Soaring into cross-game songs. Legacy
-    // arguments remain source-compatible with old callers; age is no longer a gate.
-    (void)child;
-    (void)ageless;
-    return enabled && instrument && (buttons & RequiredSongButtons(6)) == RequiredSongButtons(6) ? knownOwls & 0xffc0
-                                                                                                 : 0;
+    return enabled && instrument && (child || ageless) && (buttons & RequiredSongButtons(6)) == RequiredSongButtons(6)
+               ? knownOwls & 0xffc0
+               : 0;
 }
 inline int RecognizeForeignSong(const uint8_t* pitches, int count, uint32_t allowed) {
     if (!pitches || count < 0 || count > 8)

@@ -110,7 +110,8 @@ inline int MenuSearchRank(const std::string& query, const char* name, const char
                                                         : 0);
 }
 inline constexpr const char* kSongTravelRuleKeys[] = { "gCombo.Enhancements.ForeignSongs",
-                                                       "gCombo.Enhancements.SongTravel" };
+                                                       "gCombo.Enhancements.SongTravel",
+                                                       "gCombo.Enhancements.AgelessSoaring" };
 inline bool IsSongTravelRule(const char* name) {
     if (!name)
         return false;
@@ -138,6 +139,8 @@ inline const char* GameplayRuleSearchAliases(const char* name) {
     if (!std::strcmp(name, kSongTravelRuleKeys[1]))
         return "warp destination shuffle shuffled mixed song travel transport transportation saved map cross game "
                "travel shuffle song warp destinations soaring spots";
+    if (!std::strcmp(name, kSongTravelRuleKeys[2])) // OoTMM v32.3 calls it Ageless Song of Soaring (agelessSoaring)
+        return "Ageless Song of Soaring adult Link child age owl cross game songs";
     return "";
 }
 

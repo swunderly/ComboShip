@@ -2889,6 +2889,7 @@ extern "C" int Combo_OOTEntranceShuffleActive(void) {
 #include "soh/Enhancements/CrossWarp/CrossWarp.h"
 #include "rando/SongTravelOOT.h"
 #include "rando/ForeignSongs.h"
+#include "rando/GameplayRules.h"
 #include "soh/Enhancements/custom-message/CustomMessageManager.h"
 #include <atomic>
 static std::atomic<int> sForeignSongRequest{ -1 }, sForeignSongReply{ -2 };
@@ -2944,9 +2945,13 @@ static uint32_t OotSoaringSources(Rando::Logic* logic, uint32_t knowledge, bool 
     for (int i = 0; i < 5; i++)
         if (logic->HasItem(buttons[i]))
             mask |= 1u << i;
-    return ComboRando::ForeignSoaringSources(logical ? ComboRando::ActiveSongTravel().logicForeignSongs
-                                                     : ComboRando::ActiveSongTravel().foreignSongs,
-                                             knowledge, logic->HasItem(RG_FAIRY_OCARINA), mask, child);
+    // OoTMM agelessSoaring: the seed's logic value for logic, the player's own value in play.
+    static const auto& ageless = *ComboRando::FindGameplayRule("gCombo.Enhancements.AgelessSoaring");
+    static const std::string agelessLogic = ComboRando::LogicRuleKey(ageless.name);
+    return ComboRando::ForeignSoaringSources(
+        logical ? ComboRando::ActiveSongTravel().logicForeignSongs : ComboRando::ActiveSongTravel().foreignSongs,
+        knowledge, logic->HasItem(RG_FAIRY_OCARINA), mask, child,
+        ComboRando::ReadGameplayRule(ageless, logical, agelessLogic.c_str(), CVarGetInteger) != 0);
 }
 extern "C" COMBO_EXPORT uint32_t SOH_GetSongKnowledge() {
     return WarpSongMask(OTRGlobals::Instance->gRandoContext->GetLogic().get());

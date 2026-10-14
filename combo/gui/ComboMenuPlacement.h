@@ -744,6 +744,7 @@ inline constexpr MenuPlacement kMenuPlacements[] = {
     { kMenuMm, "rule:gEnhancements.DifficultyOptions.BremenChickCount", "gameplay", "Difficulty", "Quest requirements", 12, nullptr, nullptr, 0 },
     { kMenuMm, "rule:gEnhancements.Songs.ZoraEggCount", "gameplay", "Difficulty", "Quest requirements", 10, nullptr, nullptr, 0 },
     { kMenuBoth, "rule:gCombo.Enhancements.ForeignSongs", "gameplay", "Warps & travel", "Cross-game songs", 10, nullptr, nullptr, 1 },
+    { kMenuBoth, "rule:gCombo.Enhancements.AgelessSoaring", "gameplay", "Warps & travel", "Cross-game songs", 10, nullptr, nullptr, 1 },
     { kMenuBoth, "rule:gCombo.Enhancements.SongTravel", "gameplay", "Warps & travel", "Cross-game songs", 10, nullptr, nullptr, 1 },
     { kMenuMm, "rule:gEnhancements.Masks.GoronRollingIgnoresMagic", "gameplay", "Items & equipment", "Masks & forms", 1070, nullptr, nullptr, 0 },
     { kMenuMm, "rule:gEnhancements.Masks.BlastMaskKeg", "gameplay", "Items & equipment", "Masks & forms", 1010, nullptr, nullptr, 0 },

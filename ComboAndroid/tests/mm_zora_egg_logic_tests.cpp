@@ -53,8 +53,8 @@ int main() {
     assert(read(eggs.name, 7) == 1 && read(LogicRuleKey(eggs.name).c_str(), 0) == 0);
     assert(read(ageless.name, 0) == 1 && read(LogicRuleKey(ageless.name).c_str(), 0) == 0);
     assert(!CanLearnNewWaveBossaNova(read(LogicRuleKey(eggs.name).c_str(), 0), 1, true, true, true));
-    assert(ForeignSoaringSources(true, 1u << 10, true, 26u, false,
-                                 read(LogicRuleKey(ageless.name).c_str(), 0) != 0));
+    assert(!ForeignSoaringSources(true, 1u << 10, true, 26u, false,
+                                  read(LogicRuleKey(ageless.name).c_str(), 0) != 0));
     SetLogicRule(eggs, 3, write);
     SetLogicRule(ageless, 1, write);
     const nlohmann::json seed = {{"gameplayRules", CaptureGameplayRules(read)}};

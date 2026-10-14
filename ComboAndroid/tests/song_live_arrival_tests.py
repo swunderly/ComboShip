@@ -1,8 +1,9 @@
 """Compile the OoT live tracker's song arrivals and the real root arrival block.
 
-SOH_LiveIncomingSongAges, OotSoaringSources and fill.cpp's RR_ROOT arrival
-block come from source. The stubs replace region storage, the loaded saves and
-the MM exports, not the age or option rules.
+SOH_LiveIncomingSongAges, OotSoaringSources, SOH_GetOracleSongSourcesForAge and
+fill.cpp's RR_ROOT arrival block come from source. The stubs replace region
+storage, the loaded saves, the CVar store and the MM exports, not the age or
+option rules.
 """
 from pathlib import Path
 import argparse
@@ -39,6 +40,7 @@ assert hostcxx.contains(fill, 'ComboRando::SongAgeArrivals SOH_LiveIncomingSongA
 globals_cpp = (source/'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
 live_arrivals = function(globals_cpp, 'ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges() {')
 soaring = function(globals_cpp, 'static uint32_t OotSoaringSources(')
+oracle = function(globals_cpp, 'extern "C" COMBO_EXPORT uint32_t SOH_GetOracleSongSourcesForAge(int age) {')
 # The MM export the live arrivals resolve is MM's runtime (not seed) song sources.
 mm_port = (source/'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8')
 assert hostcxx.contains(mm_port, 'extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongSources() { return MmLiveSongSources(false); }')
@@ -55,9 +57,18 @@ prelude = r'''
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
 #include "rando/SongTravel.h"
 #include "rando/ForeignSongs.h"
+#include "rando/GameplayRules.h"
 #include "soh/Enhancements/randomizer/randomizerEnums.h"
+#define COMBO_EXPORT
+// The CVar store: each gameplay rule's value in play and its value in the seed's logic.
+std::map<std::string,int> cvars;
+int32_t CVarGetInteger(const char* name,int32_t fallback) {
+    const auto found=cvars.find(name);
+    return found==cvars.end() ? fallback : found->second;
+}
 struct Region {
     RandomizerRegion randomizerRegionKey=RR_NONE;
     bool childDay=false,childNight=false,adultDay=false,adultNight=false,addedToPool=false;
@@ -76,6 +87,19 @@ struct Logic {
 }
 Rando::Logic liveSave; // the loaded OoT save's items
 std::shared_ptr<Rando::Logic> LiveSongLogic() {return std::make_shared<Rando::Logic>(liveSave);}
+// The seed search's own logic, as SOH_GetOracleSongSourcesForAge reaches it.
+namespace Rando {
+struct Context {
+    std::shared_ptr<Logic> logic=std::make_shared<Logic>();
+    std::shared_ptr<Logic> GetLogic() const {return logic;}
+};
+}
+struct OTRGlobals {
+    static OTRGlobals* Instance;
+    std::shared_ptr<Rando::Context> gRandoContext=std::make_shared<Rando::Context>();
+};
+OTRGlobals otrGlobals;
+OTRGlobals* OTRGlobals::Instance=&otrGlobals;
 bool isRando=true,linkIsChild=true,ootForeground=true;
 #define IS_RANDO isRando
 #define LINK_IS_CHILD linkIsChild
@@ -105,7 +129,7 @@ void Reset() {
     auto& map=ComboRando::ActiveSongTravel();
     map={};map.foreignSongs=map.logicForeignSongs=true;
     ComboRando::OotSongOracle()=false;ComboRando::OotSongArrivals()=0;ComboRando::OotSongAgeArrivals()={};
-    liveSave={};isRando=true;linkIsChild=true;ootForeground=true;sMmVisitedForSongs=false;
+    liveSave={};isRando=true;linkIsChild=true;ootForeground=true;sMmVisitedForSongs=false;cvars.clear();
     // Requiem learned, MM's instrument with A, C-down and C-right, no OoT ocarina and no owls.
     ootKnownSongs=kRequiem;mmInstrument=true;mmButtons=7;mmKnownOwls=0;
     search=Rando::Logic{};search.CalculatingAvailableChecks=true;
@@ -130,9 +154,16 @@ int main() {
     auto gals=Search();
     assert(gals.logicUpdated&&gals.regionPool==colossusOnly);
     assert(colossus.childDay&&!colossus.childNight&&!colossus.Adult());
-    // OoT's own Soaring (OoT ocarina, C-down/C-left/C-up, a known owl) takes adult into MM too...
+    // OoT's own Soaring (OoT ocarina, C-down/C-left/C-up, a known owl) is child Link's alone, as in OoTMM
+    // (macros_oot.yml:33, oot/ocarina.c:140-146)...
     liveSave.items={RG_FAIRY_OCARINA,RG_OCARINA_C_DOWN_BUTTON,RG_OCARINA_C_LEFT_BUTTON,RG_OCARINA_C_UP_BUTTON};
     mmKnownOwls=1u<<6;
+    assert(Arrivals(0,kRequiem));
+    // ...the seed's logic value does not change play...
+    cvars["gCombo.Logic.gCombo.Enhancements.AgelessSoaring"]=1;
+    assert(Arrivals(0,kRequiem));
+    // ...and with the player's Song of Soaring at any age (agelessSoaring) it takes adult into MM too...
+    cvars["gCombo.Enhancements.AgelessSoaring"]=1;
     assert(Arrivals(kRequiem,kRequiem));
     gals=Search();
     assert(gals.logicUpdated&&colossus.childDay&&colossus.adultDay&&!colossus.childNight&&!colossus.adultNight);
@@ -187,6 +218,26 @@ int main() {
     gals=Search();
     assert(gals.logicUpdated&&colossus.childDay&&!colossus.Adult());
 
+    // (b2) The seed search: the root reached by adult alone, the OoT ocarina and D/L/U buttons, MM's Soaring
+    // and one owl. Adult soars only with the seed's ageless Soaring; the player's own value is not logic.
+    for(bool foreign:{false,true}) for(int runtime=0;runtime<2;++runtime) for(int logical=0;logical<2;++logical) {
+        Reset();
+        map.logicForeignSongs=foreign;
+        regions[RR_ROOT].childDay=false;
+        otrGlobals.gRandoContext->logic->items=
+            {RG_FAIRY_OCARINA,RG_OCARINA_C_DOWN_BUTTON,RG_OCARINA_C_LEFT_BUTTON,RG_OCARINA_C_UP_BUTTON};
+        ComboRando::OotForeignKnowledge()=1u<<10;
+        cvars["gCombo.Enhancements.AgelessSoaring"]=runtime;
+        cvars["gCombo.Logic.gCombo.Enhancements.AgelessSoaring"]=logical;
+        assert(SOH_GetOracleSongSourcesForAge(0)==(foreign && logical ? 1u<<10 : 0u));
+        assert(!SOH_GetOracleSongSourcesForAge(1)); // child Link does not reach the root
+        regions[RR_ROOT].childDay=true;
+        assert(SOH_GetOracleSongSourcesForAge(1)==(foreign ? 1u<<10 : 0u)); // child needs no ageless Soaring
+        otrGlobals.gRandoContext->logic->items.erase(RG_FAIRY_OCARINA);
+        assert(!SOH_GetOracleSongSourcesForAge(0) && !SOH_GetOracleSongSourcesForAge(1)); // OoT's own instrument
+    }
+    ComboRando::OotForeignKnowledge()=0;
+
     // (c) A past MM visit counts only while MM is in the foreground, with the dormant OoT save's age.
     for(bool child:{true,false}) {
         Reset();
@@ -208,11 +259,12 @@ int main() {
     regions[RR_MARKET_MASK_SHOP].childDay=true;
     assert(Arrivals(0,0));
     std::cout<<"PASS: MM songs land in OoT only with the ages that can be in MM (portal, per-age OoT departures, "
-               "foreground visit with the dormant age), OoT Soaring keeps its age, the enhancement-only option "
-               "reaches the tracker but not seed searches\n";
+               "foreground visit with the dormant age), OoT Soaring keeps its age and is child-only without "
+               "ageless Soaring (play and seed values kept apart), the enhancement-only option reaches the tracker "
+               "but not seed searches\n";
 }
 '''
-generated = prelude + 'namespace ComboRando {\n' + oot_tables + '\n}\n' + soaring + live_arrivals
+generated = prelude + 'namespace ComboRando {\n' + oot_tables + '\n}\n' + soaring + live_arrivals + oracle
 generated += 'void ProcessRoot(Region* region,GetAccessibleLocationsStruct& gals,Rando::Logic* logic) {\n'
 generated += root_block + '\n}\n' + tests
 test = work/'song_live_arrivals.cpp'

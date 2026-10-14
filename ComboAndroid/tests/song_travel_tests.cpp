@@ -173,19 +173,20 @@ int main() {
         assert(RecognizeForeignSong(pitches,kForeignLengths[song],1u<<song)==-1);
     }
     assert(ForeignSoaringSources(true,1u<<10,true,31,true)==(1u<<10));
-    assert(ForeignSoaringSources(true,1u<<10,true,31,false)==(1u<<10));
+    assert(!ForeignSoaringSources(true,1u<<10,true,31,false)); // OoTMM macros_oot.yml:33: child only by default
     assert(!ForeignSoaringSources(true,1u<<10,false,31,true));
     assert(!ForeignSoaringSources(true,1u<<10,true,15,true));
     assert(!ForeignSoaringSources(true,0,true,31,true));
-    // Ageless changes only the OoT age prerequisite. Exhaust every playable
-    // note mask and native owl-activation word, retaining all other gates.
+    // Ageless lifts only the OoT child-age prerequisite (OoTMM macros_oot.yml:33,
+    // oot/ocarina.c:140-146). Exhaust every playable note mask and native
+    // owl-activation word, retaining all other gates.
     unsigned soaringCases=0;
     for(bool enabled:{false,true}) for(bool instrument:{false,true})
     for(bool child:{false,true}) for(bool ageless:{false,true})
     for(uint32_t buttons=0;buttons<32;buttons++) for(uint32_t owls=0;owls<1024;owls++) {
         const uint32_t known=owls<<6;
         const auto actual=ForeignSoaringSources(enabled,known,instrument,buttons,child,ageless);
-        const auto expected=enabled && instrument && (buttons & 26u)==26u ? known : 0;
+        const auto expected=enabled && instrument && (child || ageless) && (buttons & 26u)==26u ? known : 0;
         assert(actual==expected);
         ++soaringCases;
     }
@@ -194,10 +195,14 @@ int main() {
     assert(!ForeignSoaringSources(true,1u<<10,true,15,false,true));
     assert(!ForeignSoaringSources(true,0,true,31,false,true));
     assert(ForeignSoaringSources(true,1u<<10,true,26,false,true)==(1u<<10));
+    // An OoT warp song in MM takes MM's own instrument and buttons; there is no OoT-ocarina input
+    // (OoTMM mm/ocarina.c:232-242, macros_mm.yml:109-110). Prelude needs C-up, C-right and C-left.
+    assert(ForeignWarpSources(true,1u<<5,true,RequiredSongButtons(5))==(1u<<5) && RequiredSongButtons(5)==28u);
+    assert(!ForeignWarpSources(true,1u<<5,false,31));
 
     // Adult OoT has an instrument and only the D/L/U notes. MM has learned
-    // Soaring + an activated owl but no MM instrument. Cross-game songs gives
-    // both ages the same routes using OoT's instrument, regardless of the legacy age flag.
+    // Soaring + an activated owl but no MM instrument. Cross-game songs lets
+    // adult soar with OoT's instrument only when the seed's logic has ageless Soaring.
     map=SongTravelMap::generate(42,false,true);
     bool agelessRuntime=true,agelessLogic=false;
     assert(ForeignSoaringSources(map.foreignSongs,1u<<10,true,26,false,agelessRuntime)==(1u<<10));
@@ -216,7 +221,7 @@ int main() {
         return result;
     };
     open=false;reached=QuerySongWorlds(oot,mm,{"Ocarina"},{"Soaring","Clock Town owl"},open,adultQuery);
-    assert(open && reached.second.count("Clock Town arrival check"));
+    assert(!open && reached.second.empty()); // the runtime ability alone never strengthens logic
     agelessLogic=true;
     open=false;reached=QuerySongWorlds(oot,mm,{"Ocarina"},{"Soaring","Clock Town owl"},open,adultQuery);
     assert(open && reached.second.count("Clock Town arrival check"));

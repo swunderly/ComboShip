@@ -84,7 +84,12 @@ int main() {
         if (!IsSongTravelRule(rule.name)) assert(std::string(GameplayRulePage(rule.name,true))=="Gameplay rules");
     for (const auto& page : kRandomizerPages) assert(std::string(page.name)!="Difficulty");
     assert(IsLegacyGameplayRule(legacy));
-    assert(IsLegacyGameplayRule("gCombo.Enhancements.AgelessSoaring"));
+    // OoTMM's agelessSoaring is a current choice beside Play warp songs across games, on both tabs.
+    const auto& ageless=*FindGameplayRule("gCombo.Enhancements.AgelessSoaring");
+    assert(!IsLegacyGameplayRule(ageless.name) && IsSongTravelRule(ageless.name));
+    assert(std::string(GameplayRulePage(ageless.name,true))=="Warps & travel");
+    assert(std::string(GameplayRulePage(ageless.name,false))=="Warps & travel");
+    assert(std::string(GameplayRuleHeading(ageless.name,false))=="Cross-game songs");
     assert(!IsLegacyGameplayRule(count.name));
     const auto& cross=*FindGameplayRule("gCombo.Enhancements.ForeignSongs");
     assert(std::string(GameplayRulePage(cross.name,true))=="Warps & travel");

@@ -356,6 +356,7 @@ int main(int argc, char** argv) {
             Expect(CommunityPreset::Beginner, beginner,
                    { { SharedFamilyByIndex(i).cvar, beginnerShared.count(SharedFamilyByIndex(i).cvar) ? 1 : 0 } });
     Check(Rules(CommunityPreset::Beginner) == Values({ { "gCombo.Enhancements.ForeignSongs", 1 },
+                                                       { "gCombo.Enhancements.AgelessSoaring", 1 }, // 1022
                                                        { "gEnhancements.OpenAllHours", 1 }, // openMaskShop, 985
                                                        { "gEnhancements.Playback.SkipScarecrowSong", 1 } }), // 984
           "Beginner's gameplay rules differ from OoTMM's");

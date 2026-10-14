@@ -90,8 +90,9 @@ inline constexpr GameplayRule kGameplayRules[] = {
       1 },
     { "gCombo.Enhancements.ForeignSongs", "Play warp songs across games", 0, 1,
       "Play learned OoT warp songs in MM using MM's instrument and playable song buttons. Play learned Soaring in OoT "
-      "using OoT's instrument and D/L/U buttons, with activated MM owls as destinations. Both Child and Adult Link can "
-      "use Soaring. With no owls, the song still performs and explains that there are no destinations." },
+      "using OoT's instrument and D/L/U buttons, with activated MM owls as destinations. Only Child Link can use "
+      "Soaring unless Song of Soaring at any age (OoT) is on. With no owls, the song still performs and explains that "
+      "there are no destinations." },
     { "gCombo.Enhancements.AgelessSoaring", "Song of Soaring at any age (OoT)", 0, 1,
       "Adult Link can play learned Soaring in OoT. Also requires Play warp songs across games, a usable local "
       "instrument and the D/L/U song buttons. Routes still require an activated source owl; no activated owls produces "
@@ -115,8 +116,7 @@ inline constexpr GameplayRule kGameplayRules[] = {
 };
 
 inline bool IsLegacyGameplayRule(const char* name) {
-    return name && (!std::strcmp(name, "gEnhancements.Masks.BremenOneChick") ||
-                    !std::strcmp(name, "gCombo.Enhancements.AgelessSoaring"));
+    return name && !std::strcmp(name, "gEnhancements.Masks.BremenOneChick");
 }
 inline bool IsBremenCount(const char* name) {
     return name && !std::strcmp(name, "gEnhancements.DifficultyOptions.BremenChickCount");
