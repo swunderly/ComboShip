@@ -5,8 +5,9 @@ Bindings::validateAgeTemple, and only from a TempleProbeRun (TempleNative.h: the
 session and the code mapping); until it exists the hook stays unassigned, so active OoT/Both entrance
 logic keeps failing closed at the Shuffler's missing-hook check. Only TempleNative.h names the probe
 exports; nothing but that bridge includes TempleNative.h, and nothing but TempleNative.h uses the
-adapter headers. No source looks up the diagnostic getter. The reserved entrance-layout seed format
-still rejects every layout, before decoding it, in a build with no active entrance capability.
+adapter headers or calls the gate. No source looks up the diagnostic getter. The reserved
+entrance-layout seed format still rejects every layout, before decoding it, in a build with no active
+entrance capability.
 """
 from pathlib import Path
 import argparse
@@ -50,6 +51,8 @@ for path, text in files('combo', 'ComboAndroid/app/src', 'soh/soh', 'mm/2s2h'):
     if rel not in adapter | {native}:
         assert not re.search(r'#\s*include\s*[<"][^>"]*Temple(Adapter|Candidate)\.h', text), rel
         assert 'MakeTempleValidator' not in text and 'TempleProbeSession' not in text, rel
+        # The gate runs only inside a TempleProbeRun, which skips it when nothing can be queried.
+        assert 'CheckTempleCapability' not in text, rel
     if rel not in {native, bridge}:
         assert not re.search(r'#\s*include\s*[<"][^>"]*TempleNative\.h', text), rel
         assert 'TempleProbeRun' not in text and 'ResolveTempleProbe' not in text, rel
