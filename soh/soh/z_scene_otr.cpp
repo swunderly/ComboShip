@@ -50,9 +50,18 @@ bool Scene_CommandSpawnList(PlayState* play, SOH::ISceneCommand* cmd) {
     return false;
 }
 
+extern "C" void Combo_OotSoulResetRoom(void* play);
+extern "C" void Combo_SilverResetRoom(void);
+
 bool Scene_CommandActorList(PlayState* play, SOH::ISceneCommand* cmd) {
     // SOH::SetActorList* cmdActor = std::static_pointer_cast<SOH::SetActorList>(cmd);
     SOH::SetActorList* cmdActor = (SOH::SetActorList*)cmd;
+
+    // Each room's actor list restarts the per-room state, as OoTMM's ParseSceneRoomHeaders_ActorsList does
+    // (room.c:69-80): silver rupees number themselves in spawn order, and soul-blocked room clears start over.
+    // The resets in z_scene.c's Scene_CommandActorList never run, because rooms load through this table.
+    Combo_OotSoulResetRoom(play);
+    Combo_SilverResetRoom();
 
     play->numSetupActors = cmdActor->numActors;
     play->setupActorList = (ActorEntry*)cmdActor->GetRawPointer();

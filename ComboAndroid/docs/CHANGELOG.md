@@ -12,6 +12,11 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## Unreleased
+
+- **Shuffled silver rupees no longer refill a room with new items.** Each time you re-entered a silver rupee room (or entered a second one), its rupees took the next checks' numbers and showed other silver rupee checks' items, so the room kept refilling. Each rupee now always shows its own check, and a collected one stays gone, as in OoTMM. Items already picked up this way are kept; those other checks just count as collected.
+- **A room kept shut by a missing enemy soul opens normally once you have the soul and come back.** Before, it could stay shut until you went through another room with a soul-less enemy.
+
 ## 0.4.5 - 2026-10-14
 
 - **Home > Apply preset follows OoTMM's Default, Beginner and Allsanity presets more closely.** Some options are close matches rather than exact ones. A file changes only when you apply a preset to it.

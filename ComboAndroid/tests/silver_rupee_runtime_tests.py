@@ -184,3 +184,12 @@ int main(){
 """
 file=work/'silver-runtime.cpp';file.write_text(code)
 subprocess.run([str(hostcxx.build(a.compiler,file,includes=[base/'silver_rupees']))],check=True, timeout=hostcxx.RUN_TIMEOUT)
+# Rooms load through SoH's scene command table (z_scene_otr.cpp), never z_scene.c's: its actor-list command must
+# restart the per-room silver rupee numbering and soul room state, as OoTMM's room.c:69-80 does. Without it the
+# numbering kept counting across rooms and visits, so re-entering a room showed other checks' items each time.
+otr=(source/'soh/soh/z_scene_otr.cpp').read_text(encoding='utf-8')
+body=otr[hostcxx.find(otr,'bool Scene_CommandActorList('):];body=body[:body.index('\n}\n')]
+assert 'Combo_SilverResetRoom();' in body and 'Combo_OotSoulResetRoom(play);' in body,'z_scene_otr.cpp Scene_CommandActorList no longer resets the per-room silver rupee and soul state'
+assert body.index('Combo_SilverResetRoom();')<body.index('play->numSetupActors'),'the room reset must run before the room actors are set up'
+assert re.search(r'Scene_CommandActorList,\s*// SCENE_CMD_ID_ACTOR_LIST',otr),'the OTR scene command table no longer routes actor lists to Scene_CommandActorList'
+print('PASS: rooms loaded through z_scene_otr.cpp reset the silver rupee numbering and soul room state.')
