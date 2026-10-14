@@ -217,12 +217,20 @@ bool Cleared() {
            !CE::ActiveMmUnifiedAssumptions() && !CE::ActiveMmWallmasterAssumptions();
 }
 
-// This build has no capability in Phase 0: the real export refuses every layout, dev build or not.
+// This build: a release build has no capability, so the real export refuses every layout; a Phase A dev
+// build has the MM tranche and installs a tranche layout.
 void PhaseZero() {
     harnessCaps = CE::ActiveCapabilities();
-    assert(harnessCaps.Empty());
     loggedErrors = 0;
+#ifdef COMBO_ENTRANCE_DEV
+    assert(harnessCaps.devBuild && harnessCaps.Active(CE::kMmTrancheCapability));
+    assert(MM_ApplyEntranceExpansionForCombo(Seed().dump().c_str()) == 1 && loggedErrors == 0 &&
+           CE::ActiveMmUnified().active());
+    assert(MM_ApplyEntranceExpansionForCombo("{}") == 1 && Cleared());
+#else
+    assert(harnessCaps.Empty());
     assert(MM_ApplyEntranceExpansionForCombo(Seed().dump().c_str()) == 0 && loggedErrors == 1 && Cleared());
+#endif
 }
 
 void InstallClearRoundTrip() {
@@ -419,7 +427,7 @@ int main() {
     InstallClearRoundTrip();
     Assumptions();
     Logic();
-    std::cout << "MM unified layout: Phase 0 refusal, install/clear/round trip and bind through the real exports, "
+    std::cout << "MM unified layout: this build's capabilities, install/clear/round trip and bind through the real exports, "
                  "pinned 4x7 assumptions, unified Wallmaster logic and the unchanged private profile passed\n";
 }
 '''

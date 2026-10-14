@@ -208,10 +208,16 @@ void CheckRefusals() {
   refused(Json::array(), WholeCatalog(), "no entrance layout");
   for (const auto &bad : {Json(), Json::object(), Json::array(), Json(1)})
     refused({{"entranceLayout", bad}}, WholeCatalog(), "Entrance layout");
-  // This build has no capability in Phase 0, dev build or not; the tranche is
-  // used only by its own id, and a dev layout never by a release build.
+  // A release build has no capability; a Phase A dev build has the tranche.
+  // The tranche is used only by its own id, and a dev layout never by a
+  // release build.
+#ifdef COMBO_ENTRANCE_DEV
+  layout.install(good, ActiveCapabilities());
+  assert(layout.json() == before);
+#else
   assert(ActiveCapabilities().Empty());
   refused(good, ActiveCapabilities(), "does not have");
+#endif
   refused(good, WholeCatalog().WithoutDevOnly(), "does not have");
   auto devLayout = SampleLayout(kWallmasters, true);
   devLayout.devBuild = true;
@@ -477,10 +483,17 @@ void CheckBind() {
                              const CapabilitySet &caps) {
     return Error([&] { ApplyNativeSeed(fns, value, caps); });
   };
-  // This build refuses before decoding and never reaches the MM module.
+  // A release build refuses before decoding and never reaches the MM module;
+  // a Phase A dev build binds the tranche.
+#ifdef COMBO_ENTRANCE_DEV
+  ApplyNativeSeed(native, seed, ActiveCapabilities());
+  assert(FakeMm::applies == 1 && FakeMm::unified.routes().size() == 4);
+  FakeMm::applies = 0;
+#else
   assert(bindError(seed, native, ActiveCapabilities()) ==
          UnsupportedComboSeedFormat().what());
   assert(FakeMm::applies == 0);
+#endif
   // A build with the tranche binds the MM routes and checks the round trip.
   ApplyNativeSeed(native, seed, WholeCatalog());
   assert(FakeMm::applies == 1 && FakeMm::unified.routes().size() == 4 &&

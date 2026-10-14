@@ -215,11 +215,19 @@ int main() {
     Expect({"--er", "erWallmasters=none"}, 0, "[comborando] entrance settings: all defaults\n");
     Expect({"--er", "erSelfLoops=false", "--er", "erOneWays=none", "--er", "erOneWaysMajor=false"}, 0,
            "entrance settings: all defaults");
-    // Phase 0: every non-default value is refused, in shipping and dev builds alike.
+    // Phase A: without --er-capability every non-default value is refused, in shipping and dev builds
+    // alike; a dev build names the dev-only MM tranche for Wallmasters.
     for (const char* pair : {"erWallmasters=ownGame", "erWallmasters=full", "erOneWays=ownGame",
                              "erOneWaysMajor=true", "erOneWaysAnywhere=true", "erDungeons=ownGame",
                              "erSpawns=both", "erDecoupled=true"}) {
-        Expect({"--er", pair}, 2, std::string("[comborando] ") + pair + " is not available in this build\n");
+#ifdef COMBO_ENTRANCE_DEV
+        const bool tranche = std::string(pair) == "erWallmasters=ownGame";
+#else
+        const bool tranche = false;
+#endif
+        Expect({"--er", pair}, 2,
+               std::string("[comborando] ") + pair + " is not available in this build" +
+                   (tranche ? " without --er-capability\n" : "\n"));
         Expect({"--er", pair}, 2, "entrance settings", false);
     }
     Expect({"--er", "erWallmasters"}, 2, "--er needs <key>=<value> (got 'erWallmasters')");
@@ -234,9 +242,20 @@ int main() {
     Expect({"--er-capability"}, 2, "--er-capability needs a value");
     Expect({"--er-capability", "a", "--er-capability", "b"}, 2, "--er-capability can be given only once");
     Expect({"--er-capability", "wallmasters"}, 2, "unknown entrance capability 'wallmasters'");
-    for (const auto& capability : kEntranceCapabilities)
+    for (const auto& capability : kEntranceCapabilities) {
+#ifdef COMBO_ENTRANCE_DEV
+        if (capability.id == "wallmasters-own-game-mm-tranche") {
+            // The dev tool generates the MM tranche (M1-07 emulator runs).
+            Expect({"--er-capability", std::string(capability.id), "--er", "erWallmasters=ownGame"}, 0,
+                   "[comborando] entrance settings: erWallmasters=ownGame\n");
+            Expect({"--er-capability", std::string(capability.id), "--er", "erOneWays=ownGame"}, 2,
+                   "erOneWays=ownGame is not admitted by wallmasters-own-game-mm-tranche");
+            continue;
+        }
+#endif
         Expect({"--er-capability", std::string(capability.id), "--er", "erWallmasters=ownGame"}, 2,
                "entrance capability '" + std::string(capability.id) + "' is not available in this build");
+    }
     // The private MM profiles never combine with --er, whatever the order.
     for (const char* legacy : {"--mm-ordinary-indoors", "--mm-ordinary-telescopes", "--mm-ordinary-overworld",
                                "--mm-ordinary-dungeons", "--mm-mixed", "--mm-grottos", "--mm-wallmasters"}) {

@@ -34,7 +34,7 @@ struct Capability {
     bool devOnly = false;
 };
 
-inline constexpr CapabilityValue kWallmastersMmTrancheValues[] = { { "erWallmasters", "ownGame", Stage::Hidden } };
+inline constexpr CapabilityValue kWallmastersMmTrancheValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
 inline constexpr CapabilityValue kWallmastersOwnGameValues[] = { { "erWallmasters", "ownGame", Stage::Hidden } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
@@ -51,7 +51,7 @@ inline constexpr std::string_view kWallmastersWithOneWaysCompanions[] = { "wallm
                                                                           "one-ways-own-game-v1" };
 
 inline constexpr Capability kEntranceCapabilities[] = {
-    // The dev-only MM Wallmaster tranche.
+    // The dev-only MM Wallmaster tranche: Dev in Phase A (M1-07), never Public.
     { "wallmasters-own-game-mm-tranche", kWallmastersMmTrancheValues, {}, true },
     { "wallmasters-own-game-v1", kWallmastersOwnGameValues, {}, false },
     { "one-ways-own-game-v1", kOneWaysOwnGameValues, {}, false },

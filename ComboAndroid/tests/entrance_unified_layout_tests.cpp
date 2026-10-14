@@ -609,21 +609,41 @@ void CheckOneWays(const Json &fixture) {
   Rejected(WithRoute(major, "OOT_LAKE_HYLIA_FROM_VALLEY", "OOT_DEKU_TREE"));
 }
 
-// This build: no capability is active in Phase 0, so the seed guard refuses
-// every layout before decoding it, as 0.4.4 does, dev build or not.
+// This build. A release build has no active capability, so the seed guard
+// refuses every layout before decoding it, as 0.4.4 does. A Phase A dev build
+// has only the MM tranche: it validates a tranche layout and refuses the rest
+// after decoding.
 void CheckBuildGuard(const Json &good) {
   const auto caps = ActiveCapabilities();
-  assert(caps.Empty());
-#ifdef COMBO_ENTRANCE_DEV
-  assert(caps.devBuild);
-#else
-  assert(!caps.devBuild);
-#endif
   Json seed = {{"fileType", kEntranceSeedFileType},
                {"version", kEntranceSeedVersion},
                {"entranceLayout", good}};
   RequireSupportedSeedDocument(seed, WholeCatalog());
   const std::string before = UnsupportedComboSeedFormat().what();
+#ifdef COMBO_ENTRANCE_DEV
+  assert(caps.devBuild && caps.Active(kMmTrancheCapability) &&
+         caps.WithoutDevOnly().Empty());
+  auto tranche = good;
+  tranche["requires"] = {std::string(kMmTrancheCapability)};
+  tranche["devBuild"] = true;
+  for (const auto &row : good.at("overrides"))
+    if (row.at("source").get<std::string>().starts_with("OOT_"))
+      tranche = WithoutRoute(tranche, row.at("source").get<std::string>());
+  seed["entranceLayout"] = tranche;
+  RequireSupportedSeedDocument(seed, caps);
+  RequireSupportedSettingsCapabilities(seed, caps);
+  for (const auto &layout : {good, Json(), Json::object()}) {
+    seed["entranceLayout"] = layout;
+    std::string message;
+    try {
+      RequireSupportedSeedCapabilities(seed, caps);
+    } catch (const UnsupportedComboSeedFormat &error) {
+      message = error.what();
+    }
+    assert(!message.empty() && message != before);
+  }
+#else
+  assert(caps.Empty() && !caps.devBuild);
   for (const auto &layout : {good, Json(), Json::object()}) {
     seed["entranceLayout"] = layout;
     for (const auto &check : std::vector<std::function<void()>>{
@@ -639,6 +659,7 @@ void CheckBuildGuard(const Json &good) {
       assert(message == before);
     }
   }
+#endif
 }
 
 void Run(const char *path) {
@@ -665,7 +686,7 @@ void Run(const char *path) {
   CheckBuildGuard(good);
   std::cout << "PASS frozen v1 pools = ResolvePools = pinned contract (66 "
                "combinations, 64 MQ contexts), byte-stable codec, every "
-               "rejection, Phase 0 guard\n";
+               "rejection, this build's guard\n";
 }
 } // namespace
 

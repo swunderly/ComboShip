@@ -477,6 +477,9 @@ void CheckLayouts() {
       assert(decoded.ootMq == OotQuests{});
       assert(EncodeEntranceLayout(decoded) == layout);
       Validate(decoded, WholeCatalog());
+      auto devSet = CapabilitySet::AtLeast(Stage::Dev); // Phase A: the tranche
+      devSet.devBuild = true;
+      Validate(decoded, devSet);
       assert(Has(Error<EntranceLayoutError>([&] {
                    Validate(decoded, CapabilitySet::AtLeast(Stage::Public));
                  }),
@@ -893,15 +896,48 @@ void CheckExhausted() {
   assert(!ActiveMmUnified().active() && !ActiveMmUnifiedAssumptions());
 }
 
-void Run(const char *path, bool exhausted) {
+// This build's own capabilities. In-game reading never selects the dev-only
+// tranche, so it generates nothing; headless selects it by id, which only a
+// Phase A dev build admits.
+void CheckThisBuild() {
+  ResetAll();
+  const auto inGame = ReadEntranceSettings([](const char *, int) { return 1; },
+                                           ActiveCapabilities());
+  auto g = Tranche(8);
+  g.settings = inGame;
+  g.capability.clear();
+  g.active = ActiveCapabilities();
+  assert(Generate(g).is_null() && reads == 0);
+  Untouched();
+  g = Tranche(8);
+  g.active = ActiveCapabilities();
+#ifdef COMBO_ENTRANCE_DEV
+  FakeMm::caps = ActiveCapabilities();
+  const auto layout = DecodeEntranceLayout(Generate(g));
+  assert(layout.devBuild && layout.overrides->size() == 4);
+  Validate(layout, ActiveCapabilities());
+  FakeMm::caps = WholeCatalog();
+#else
+  assert(Has(Error<UnifiedEntranceRefused>([&] { Generate(g); }),
+             "not available in this build"));
+  Untouched();
+#endif
+}
+
+void Run(const char *path, const std::string &mode) {
   std::ifstream input(path, std::ios::binary);
   fixture = Json::parse(input);
   assert(fixture.at("upstreamCommit") ==
          std::string(LayoutV1::kUpstreamCommit));
-  if (exhausted) {
+  if (mode == "exhausted") {
     CheckExhausted();
     std::cout << "PASS unified generator: 1000 failed attempts give a "
                  "retryable ShuffleError and leave no layout installed\n";
+    return;
+  }
+  CheckThisBuild();
+  if (mode == "build") {
+    std::cout << "PASS unified generator with this build's capabilities\n";
     return;
   }
   CheckDisabledPath();
@@ -923,6 +959,8 @@ void Run(const char *path, bool exhausted) {
 } // namespace
 
 int main(int argc, char **argv) {
-  assert(argc == 2 || (argc == 3 && std::string(argv[2]) == "exhausted"));
-  Run(argv[1], argc == 3);
+  const std::string mode = argc == 3 ? argv[2] : "";
+  assert((argc == 2 || argc == 3) &&
+         (mode.empty() || mode == "exhausted" || mode == "build"));
+  Run(argv[1], mode);
 }
