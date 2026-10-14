@@ -19,7 +19,8 @@ inline constexpr CommunityPresetInfo kCommunityPresets[] = {
     { CommunityPreset::Default, "Default", "Classic combined randomizer",
       "Based on OoTMM's Default preset, using Combo Ship's supported options. Glitchless logic. The Rainbow Bridge "
       "needs all six medallions, Ganon's trials are off and you start with Ganon's Boss Key. Swords, ocarinas, the "
-      "Gerudo card and the trade items are shuffled, MM keys stay in their dungeons and MM starts with no items." },
+      "Gerudo card and the trade items are shuffled, MM keys stay in their dungeons, a few ice traps hide among both "
+      "games' items and MM starts with no items." },
     { CommunityPreset::Beginner, "Beginner", "Easier access, strong hints, shared upgrades",
       "Adapted from OoTMM's Beginner preset. Start with both ocarinas, Zelda's Letter, Prelude of Light, the Hylian "
       "Shield, Soaring and supplies. Share the upgrades, masks and songs OoTMM's Beginner shares where Combo Ship has "
@@ -78,8 +79,9 @@ inline bool BeginnerSharesFamily(int family) {
 }
 // Corresponding enums/values are validated against each native menu by the preset regression.
 // OoTMM builds its presets on DEFAULT_SETTINGS (makeSettings; presets.ts:7). The base list holds OoTMM's defaults
-// (data.ts) wherever Combo Ship's own default differs, and each preset then sets what its OoTMM preset changes; a
-// setting no list names keeps Combo Ship's default, which matches OoTMM's. Entrance settings are not supported yet.
+// (data.ts) wherever Combo Ship's own default differs, and each preset then sets what its OoTMM preset changes. A
+// setting whose Combo Ship default differs from OoTMM's belongs in the base list; only one whose default matches may
+// go unnamed. Entrance settings are not supported yet.
 // The three keep OoTMM's default goal, Ganon & Majora (Goal 0): the profile derives TriforceHunt from Goal.
 inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) {
     std::vector<PresetOption> options = {
@@ -112,6 +114,10 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
         { "gRandoSettings.ShuffleGanonBossKey", 2 }, // removed: we start with it, data.ts:484
         { "gRandoSettings.EnableBombchuDrops", 0 },  // bombchuBehaviorOot free, data.ts:1972
         { "gRandoSettings.IceTrapPercent", 5 },      // trapIce, trapsQuantity small: 5 per 100 junk, data.ts:2495,2551
+        // OoTMM adds its traps to the combined pool, so they land on MM checks too (transform.ts:693-716). MM takes a
+        // count, not a share: its pool holds about 45 of OoTMM's junk items (groups.ts:337), 5 per 100 of which is 2.
+        { "gRando.Options.RO_SHUFFLE_TRAPS", 1 },
+        { "gRando.Options.RO_TRAP_AMOUNT", 2 },
         { "gRando.Options.RO_PLACEMENT_SMALL_KEYS", 1 },      // own dungeon, data.ts:296
         { "gRando.Options.RO_PLACEMENT_BOSS_KEYS", 1 },       // own dungeon, data.ts:350
         { "gRando.Options.RO_PLACEMENT_STRAY_FAIRIES", 1 },   // chest fairies own dungeon, data.ts:455
@@ -263,6 +269,8 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                              { "gRandoSettings.ShuffleOcarinaButtons", 1 }, // presets.ts:597-598
                              { "gRando.Options.RO_SHUFFLE_OCARINA_BUTTONS", 1 },
                              { "gRandoSettings.IceTrapPercent", 3 }, // Rupoors take half the traps, presets.ts:599
+                             // MM: 2.5 traps per 100 of its about 2,100 junk items (transform.ts:714-715).
+                             { "gRando.Options.RO_TRAP_AMOUNT", 50 },
                              // mqDungeons random: a coin flip for each dungeon (presets.ts:697)
                              { "gRandoSettings.MQDungeons", 3 },
                              { "gRandoSettings.MQDungeonsDekuTree", 2 },

@@ -80,6 +80,7 @@ static const Expected kOotmmDefaults = {
     { "gRandoSettings.GanonTrial", 0 },                   // none, data.ts:1112
     { "gRando.Options.RO_CLOCK_SHUFFLE_PROGRESSIVE", 1 }, // progressiveClocks ascending, data.ts:1803
     { "gRando.Options.RO_HINTS_GOSSIP_STONES", 1 },       // hints on MM's gossip stones too
+    { "gRando.Options.RO_SHUFFLE_TRAPS", 1 },             // trapIce: OoTMM's traps reach MM
 };
 // Combo Ship options with no OoTMM setting, or with one OoTMM leaves off, that no preset may switch on.
 static const std::vector<const char*> kNeverWritten = {
@@ -169,6 +170,7 @@ int main(int argc, char** argv) {
                { "gRandoSettings.ClosedForest", 2 },              // dekuTree open, data.ts:1194
                { "gRandoSettings.EnableBombchuDrops", 0 },        // bombchuBehaviorOot free, data.ts:1972
                { "gRandoSettings.IceTrapPercent", 5 },            // trapIce, trapsQuantity small
+               { "gRando.Options.RO_TRAP_AMOUNT", 2 },            // 5 per 100 of MM's ~45 junk
                { "gRando.Options.RO_PLACEMENT_SMALL_KEYS", 1 },   // smallKeyShuffleMm ownDungeon, data.ts:296
                { "gRando.Options.RO_PLACEMENT_STRAY_FAIRIES", 1 } // strayFairyChestShuffle ownDungeon, data.ts:455
            });
@@ -205,6 +207,7 @@ int main(int argc, char** argv) {
           { "gRandoSettings.ShuffleScrubs", 1 },                  // OoTMM's default scrubs
           { "gRandoSettings.ShuffleGanonBossKey", 2 },            // ganonBossKey removed
           { "gRandoSettings.IceTrapPercent", 5 },                 //
+          { "gRando.Options.RO_TRAP_AMOUNT", 2 },                 //
           { "gRandoSettings.StartingOcarina", 2 }, // OOT_OCARINA and the plando'd Zelda's Letter, presets.ts:1029,1057
           { "gRandoSettings.StartingPreludeOfLight", 1 }, // plando'd Zelda's Song, presets.ts:1058
           { "gRandoSettings.StartingHylianShield", 1 },   // SHARED_SHIELD_HYLIAN, presets.ts:1027
@@ -299,6 +302,7 @@ int main(int argc, char** argv) {
              { "gRandoSettings.ShuffleOcarinaButtons", 1 },      // presets.ts:597
              { "gRando.Options.RO_SHUFFLE_OCARINA_BUTTONS", 1 }, // presets.ts:598
              { "gRandoSettings.IceTrapPercent", 3 },             // trapRupoor halves the ice traps, presets.ts:599
+             { "gRando.Options.RO_TRAP_AMOUNT", 50 },            // 2.5 per 100 of MM's ~2,100 junk
              { "gRandoSettings.MQDungeons", 3 },                 // mqDungeons random, presets.ts:697
              { "gRandoSettings.MQDungeonsDekuTree", 2 },
              { "gRandoSettings.MQDungeonsGanonsCastle", 2 } });
