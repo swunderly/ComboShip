@@ -25,9 +25,9 @@ inline constexpr CommunityPresetInfo kCommunityPresets[] = {
       "Adapted from OoTMM's Beginner preset. Start with both ocarinas, Zelda's Letter, Prelude of Light, a random "
       "song from Impa, the Hylian Shield, Soaring and supplies. Share the upgrades, masks and songs OoTMM's Beginner "
       "shares where Combo Ship has them. The Door of Time and Kakariko gate are open, one carpenter needs rescuing, "
-      "the Scarecrow needs no song, shops open at any hour and the Bean Seller sells beans. Maps, compasses and MM's "
-      "stray fairies start collected and OoTMM's junk checks hold only junk. Combo Ship does not pre-complete "
-      "dungeons." },
+      "the Scarecrow needs no song, shops open at any hour and the Bean Seller sells beans. Talon starts awake, so "
+      "Malon's Hyrule Castle check is not in the pool (OoTMM keeps it). Maps, compasses and MM's stray fairies start "
+      "collected and OoTMM's junk checks hold only junk. Combo Ship does not pre-complete dungeons." },
     { CommunityPreset::Allsanity, "Allsanity", "Explore a much larger check pool",
       "Adapted from OoTMM's Allsanity preset. Beatable-only logic. Keys, souls, shops, tokens, NPC rewards, fairies, "
       "freestanding items and scenery drops are shuffled in both worlds, plus OoT's pond fish, with random Master "
@@ -154,7 +154,10 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                              // kakarikoGate open and skipZelda (presets.ts:978,980): the letter is out of
                              // the pool and Talon is awake. Zelda's Letter check holds the letter
                              // (item_pool.cpp:344-346); Impa's song check, which OoTMM plandos to Prelude of
-                             // Light (presets.ts:1058), gives one random song at the start.
+                             // Light (presets.ts:1058), gives one random song at the start. Skip Waking Talon
+                             // also leaves the Weird Egg on Malon's Hyrule Castle check and marks it collected
+                             // (item_pool.cpp:379-385, savefile.cpp:623-630), so that check is not in the pool,
+                             // unlike OoTMM's Beginner (pool_oot.csv:122): no choice wakes Talon and keeps it.
                              { "gRandoSettings.StartingZeldasLetter", 1 },
                              { "gRandoSettings.ShuffleZeldasLetter", 0 },
                              { "gRandoSettings.ShuffleWeirdEgg", 2 },
