@@ -5433,10 +5433,11 @@ extern "C" COMBO_EXPORT uint32_t MM_ForeignSongChoices() {
 extern "C" COMBO_EXPORT int MM_ForeignSongDestination(int source) {
     return ComboRando::ActiveSongTravel().destination(source);
 }
+// OoTMM recognises an OoT warp song even where Soaring is restricted (mm/ocarina.c:232-242), and
+// refuses it only after its performance (Combo_MMDropRestrictedForeignSong).
 extern "C" int Combo_MMRecognizeForeignSong(const uint8_t* pitches, int count) {
     if (!IS_RANDO || !gPlayState || !ComboRando::ActiveSongTravel().foreignSongs ||
-        gPlayState->msgCtx.ocarinaAction != OCARINA_ACTION_FREE_PLAY ||
-        gPlayState->interfaceCtx.restrictions.songOfSoaring || sForeignSongRequest.load() >= 0)
+        gPlayState->msgCtx.ocarinaAction != OCARINA_ACTION_FREE_PLAY || sForeignSongRequest.load() >= 0)
         return 0;
     uint32_t allowed = MM_GetLiveSongSources() & 63;
     int song = ComboRando::RecognizeForeignSong(pitches, count, allowed);
@@ -5455,6 +5456,16 @@ extern "C" int Combo_MMForeignSongPlayback() {
 }
 extern "C" void Combo_MMForeignSongPerformanceFinished() {
     sForeignSongPerformed = true;
+}
+// Where Soaring is restricted, OoTMM follows an OoT warp song's performance with Soaring's
+// restricted-song text, 0x1B95 (mm/ocarina.c:483-488). The song was published as Soaring, so
+// dropping it here lets the native Soaring path show that text when the played-song textbox closes.
+extern "C" int Combo_MMDropRestrictedForeignSong() {
+    if (sForeignSongRequest.load() < 0 || !gPlayState || !gPlayState->interfaceCtx.restrictions.songOfSoaring)
+        return 0;
+    sForeignSongRequest = -1;
+    sForeignSongPerformed = false;
+    return 1;
 }
 static bool LoadOOTWarpMessage(int song, bool confirmation, CustomMessage::Entry& entry) {
     auto load = (int (*)(int, int, char*, int, int*))Combo_ResolveSym("soh", "SOH_GetWarpMessage");

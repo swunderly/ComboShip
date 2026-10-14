@@ -35,6 +35,17 @@ Each game's view has its own two switches: turning D-pad ocarina on in the MM vi
 3. Turn on Right stick ocarina in the OoT view: in OoT the right stick plays the same four notes.
 4. Settings > Controls > Controller mapping > Ocarina Controls has Customize Ocarina Controls and its buttons, but no D-pad or right-stick boxes. Its tooltip says it is Ocarina of Time only and names what it replaces: A and the C buttons, L, and R and Z.
 
+## Quick checks for cross-game songs (unreleased)
+
+These changes have not been played yet, on the emulator or a phone; the automated tests run the song code with stand-ins for the game. Use a seed with Randomizer > Warps & travel > Play warp songs across games on, an OoT warp song learned, Song of Soaring learned in MM and an MM owl statue activated. Checks 2, 5 and 6 matter most.
+
+1. As child Link in Hyrule Field, play Song of Soaring in OoT: MM's owl map opens. Press B to close it.
+2. On a seed made without Song of Soaring at any age (OoT), as adult Link in Hyrule Field with Enhancements > Warps & travel > Song of Soaring at any age (OoT) off, play Soaring: the notes are not taken as a song, as in OoTMM. Turn the option on while the file is loaded and play it again: the owl map opens. Save, restart the app and load the file: the option is still on.
+3. As child Link inside the Temple of Time or in the Market, play Soaring: after "You played the Song of Soaring", "You can't warp here!" appears and Link puts the ocarina away.
+4. In MM, on the Clock Tower rooftop or in the Astral Observatory, play a learned OoT warp song such as Prelude of Light: after "You played the Prelude of Light", MM's message that your notes echoed but nothing happened appears, and A closes it.
+5. In MM in Termina Field, on a file whose OoT inventory has no ocarina, play Prelude of Light on MM's ocarina: "Warp to the Temple of Time?" appears, and OK warps there. This is the case reported against 0.4.4 (adult Link on a Cross-Games Age seed); try it as adult too if you can.
+6. With the on-screen buttons, take out the ocarina in MM: the note staff appears at once and each on-screen note button plays a note. In two emulator recordings for 0.4.4 the staff and notes were missing for about 24 and 57 seconds after taking the ocarina out, and the cause is not known. If it happens, note how long it lasted, whether a controller's buttons played notes at that moment, and what you did just before.
+
 ## Quick checks for casting the MM spells (0.4.3)
 
 On 0.4.1, Din's Fire, Nayru's Love and Farore's Wind (MM) given with the Save Editor's Give All played the "can't use" sound everywhere. Use a randomizer seed with all three MM spell options on, and human Link.

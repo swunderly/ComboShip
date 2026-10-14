@@ -23,6 +23,7 @@ extern int Combo_MMForeignSongPerformanceActive(void);
 extern int Combo_MMForeignSongPlayback(void);
 extern void Combo_MMForeignSongPerformanceFinished(void);
 extern void Combo_MMForeignSongPlayedText(void);
+extern int Combo_MMDropRestrictedForeignSong(void);
 #endif
 
 #include "2s2h_assets.h"
@@ -4921,7 +4922,9 @@ void Message_DrawMain(PlayState* play, Gfx** gfxP) {
                 msgCtx->stateTimer--;
                 if (msgCtx->stateTimer == 0) {
 #ifdef COMBO_BUILD
-                    if (Combo_MMForeignSongPerformanceActive()) {
+                    // Where Soaring is restricted, the foreign song is dropped and continues below as
+                    // the native Soaring it was published as, which ends in the restricted-song text.
+                    if (Combo_MMForeignSongPerformanceActive() && !Combo_MMDropRestrictedForeignSong()) {
                         // The normal performance has finished. Delay the warp
                         // prompt until now and prevent Soaring's native owl-map
                         // action from consuming this foreign warp song.

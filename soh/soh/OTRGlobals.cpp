@@ -3014,11 +3014,11 @@ extern "C" COMBO_EXPORT uint32_t SOH_ForeignSongChoices() {
 extern "C" COMBO_EXPORT void SOH_ForeignSongChoose(int source) {
     sForeignSongReply = source;
 }
+// OoTMM recognises Soaring even where warp songs are restricted (oot/ocarina.c:140-146), and refuses it
+// only after its performance (UpdateNativeSongDialogue). Scenes' disableWarpSongs flag does not apply.
 extern "C" int Combo_SOHRecognizeForeignSong(const uint8_t* pitches, int count) {
     if (!IS_RANDO || !gPlayState || !ComboRando::ActiveSongTravel().foreignSongs ||
-        gPlayState->msgCtx.ocarinaAction != OCARINA_ACTION_FREE_PLAY ||
-        gPlayState->interfaceCtx.restrictions.warpSongs || gPlayState->msgCtx.disableWarpSongs ||
-        sForeignSongRequest.load() >= 0)
+        gPlayState->msgCtx.ocarinaAction != OCARINA_ACTION_FREE_PLAY || sForeignSongRequest.load() >= 0)
         return 0;
     auto hasSong = (int (*)())Combo_ResolveSym("2ship", "MM_HasLiveSoaringSong");
     // Test song + local instrument/buttons independently of owl activation.
@@ -3112,6 +3112,15 @@ static void UpdateNativeSongDialogue() {
     if (!sNativeSongOpen && !Combo_SOHSoaringMapActive()) {
         if (input.cur.button & (BTN_A | BTN_CUP | BTN_CDOWN | BTN_CLEFT | BTN_CRIGHT))
             return;
+        // OoTMM SetupSoaring (oot/ocarina.c:638-640): where warp songs are restricted, "You can't warp
+        // here!" (0x88C), and HandleSoaring ends the ocarina (912-914).
+        if (gPlayState->interfaceCtx.restrictions.warpSongs) {
+            sForeignSongRequest = -1;
+            sForeignSongPerformed = false;
+            Message_StartTextbox(gPlayState, 0x88C, nullptr);
+            gPlayState->msgCtx.ocarinaMode = 4; // native ocarina END mode
+            return;
+        }
         if (choices && Combo_SOHSoaringMapBegin(gPlayState, choices))
             return;
         sNativeSongSource = -1;
