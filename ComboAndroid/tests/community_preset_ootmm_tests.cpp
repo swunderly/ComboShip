@@ -2,9 +2,9 @@
 // (references/ootmm-stable-32.3: packages/generator/lib/combo/presets.ts, settings in packages/core/src/settings/
 // data.ts). OoTMM builds each preset on DEFAULT_SETTINGS (makeSettings), so Default pins the OoTMM defaults Combo Ship
 // must write because its own default differs, and Beginner and Allsanity pin their own changes, by presets.ts line.
-// A pinned value with more than two choices also pins what it means: the choice's label in SoH's settings.cpp or the
-// enum name of 2Ship's option in Types.h, so a wrong choice number fails here. The junked checks are also checked
-// against the native check tables (argument: the repository root).
+// Every value a preset writes must be pinned. A pinned value with more than two choices also pins what it means: the
+// choice's label in SoH's settings.cpp or the enum name of 2Ship's option in Types.h, so a wrong choice number fails
+// here. The junked checks are also checked against the native check tables (argument: the repository root).
 #include "rando/ComboPresets.h"
 #include <algorithm>
 #include <cstdlib>
@@ -133,10 +133,12 @@ static std::map<std::string, Labels> MmChoices(const std::string& types, const s
     return choices;
 }
 static std::map<std::string, Labels> gChoices;
-static std::map<CommunityPreset, std::set<std::string>> gMeant; // keys with 3+ choices whose meaning was pinned
+static std::map<CommunityPreset, std::set<std::string>> gMeant;  // keys with 3+ choices whose meaning was pinned
+static std::map<CommunityPreset, std::set<std::string>> gPinned; // every key whose value was pinned
 
 static void Expect(CommunityPreset preset, const Values& values, const Expected& expected) {
     for (const auto& pin : expected) {
+        gPinned[preset].insert(pin.key);
         const auto it = values.find(pin.key);
         Check(it != values.end() && it->second == pin.value,
               std::string(Name(preset)) + ": " + pin.key + " should be " + std::to_string(pin.value) + ", is " +
@@ -175,6 +177,7 @@ static std::vector<std::string> DungeonKeys(const std::string& prefix, const Lab
 static const Expected kOotmmDefaults = {
     { "gRandoSettings.LogicRules", 0 },                       // glitchless
     { "gRando.Options.RO_LOGIC", 0, "RO_LOGIC_GLITCHLESS" },  //
+    { "gCombo.Rando.StartingGame", 0 },                       // OoT: OoTMM has no setting and starts there
     { "gCombo.Rando.Goal", 0 },                               // goal both: Ganon & Majora
     { "gCombo.Rando.TriforceHunt", 0 },                       //
     { "gCombo.Rando.TriforceRequired", 20 },                  // triforceGoal, data.ts:91
@@ -374,6 +377,7 @@ int main(int argc, char** argv) {
              { "gRandoSettings.HintDistribution", 1, "Balanced" },      // the default hint list
              { "gRandoSettings.ShuffleSongs", 3, "Anywhere" },          // presets.ts:433
              { "gRandoSettings.ShuffleTokens", 3, "All Tokens" },       // presets.ts:434-435
+             { "gRando.Options.RO_SHUFFLE_GOLD_SKULLTULAS", 1 },        //
              { "gRandoSettings.StartingMapsCompasses", 5, "Anywhere" }, // presets.ts:437
              { "gRandoSettings.Keysanity", 5, "Anywhere" },             // presets.ts:438
              { "gRandoSettings.GerudoKeys", 3, "Anywhere" },            // presets.ts:439
@@ -385,18 +389,34 @@ int main(int argc, char** argv) {
              { "gRando.Options.RO_PLACEMENT_STRAY_FAIRIES", 0, "RO_DUNGEON_ITEM_ANYWHERE" }, // presets.ts:449-450
              { "gRandoSettings.ShuffleGanonBossKey", 5, "Anywhere" },                        // presets.ts:451
              { "gRandoSettings.ShuffleScrubs", 2, "All" },                                   // presets.ts:453
+             { "gRandoSettings.ShuffleCows", 1 },                                            // presets.ts:455
+             { "gRando.Options.RO_SHUFFLE_COWS", 1 },                                        // presets.ts:456
              { "gRandoSettings.Shopsanity", 1, "Specific Count" },                           // shopShuffleOot full, 457
              { "gRandoSettings.ShopsanityCount", 7 },                    // logic caps the count at 7
+             { "gRando.Options.RO_SHUFFLE_SHOPS", 1 },                   // shopShuffleMm full, presets.ts:458
+             { "gRando.Options.RO_SHUFFLE_TINGLE_SHOPS", 1 },            //
+             { "gRando.Options.RO_SHUFFLE_OWL_STATUES", 1 },             // presets.ts:459
              { "gRandoSettings.ShufflePots", 3, "All Pots" },            // presets.ts:460-461
+             { "gRando.Options.RO_SHUFFLE_POT_DROPS", 1 },               //
              { "gRandoSettings.ShuffleCrates", 3, "All Crates" },        // presets.ts:462-464
+             { "gRando.Options.RO_SHUFFLE_CRATE_DROPS", 1 },             //
+             { "gRando.Options.RO_SHUFFLE_BARREL_DROPS", 1 },            // shuffleBarrelsMm, presets.ts:464
+             { "gRandoSettings.ShuffleBeehives", 1 },                    // presets.ts:465
+             { "gRando.Options.RO_SHUFFLE_HIVE_DROPS", 1 },              // presets.ts:466
              { "gRandoSettings.ShuffleGrass", 3, "All Grass" },          // presets.ts:467-469
+             { "gRando.Options.RO_SHUFFLE_GRASS_DROPS", 1 },             //
              { "gRandoSettings.ShuffleRocks", 1 },                       // presets.ts:470
              { "gRandoSettings.ShuffleTrees", 1 },                       // presets.ts:472
+             { "gRando.Options.RO_SHUFFLE_TREE_DROPS", 1 },              // presets.ts:473
              { "gRandoSettings.ShuffleBushes", 1 },                      // presets.ts:474
              { "gRandoSettings.ShuffleBeanFairies", 1 },                 // shuffleSoilOot, presets.ts:476
              { "gRandoSettings.ShuffleFreestanding", 3, "All Items" },   // presets.ts:478-481
+             { "gRando.Options.RO_SHUFFLE_FREESTANDING_ITEMS", 1 },      //
              { "gRandoSettings.ShuffleWonderItems", 3, "All Items" },    // presets.ts:482-483
+             { "gRando.Options.RO_SHUFFLE_WONDER_ITEMS", 1 },            //
+             { "gRando.Options.RO_SHUFFLE_SNOWBALL_DROPS", 1 },          // presets.ts:484
              { "gRandoSettings.ShuffleButterflyFairies", 1 },            // presets.ts:485
+             { "gRando.Options.RO_SHUFFLE_BUTTERFLIES", 1 },             // presets.ts:486
              { "gRandoSettings.ShuffleBoulders", 3, "All Boulders" },    // presets.ts:487-491
              { "gRandoSettings.ShuffleFrogSongRupees", 1 },              // presets.ts:492
              { "gRandoSettings.ShuffleIcicles", 1 },                     // presets.ts:493
@@ -409,6 +429,7 @@ int main(int argc, char** argv) {
              { "gRandoSettings.ShuffleFountainFairies", 1 },             // presets.ts:503
              { "gRandoSettings.ShuffleFairySpots", 1 },                  // presets.ts:505
              { "gRandoSettings.ShuffleWeirdEgg", 1, "Shuffled" },        // the base list: Malon's check
+             { "gRandoSettings.ShuffleZeldasLetter", 1 },                // the base list; skipZelda is left out
              { "gRandoSettings.ShopsanityPrices", 2, "Balanced" },       // weighted, presets.ts:507
              { "gRandoSettings.ScrubsPrices", 2, "Balanced" },           // presets.ts:508
              { "gRandoSettings.StartingAge", 2, "Random" },              // presets.ts:512
@@ -457,9 +478,11 @@ int main(int argc, char** argv) {
                                                         { "gEnhancements.Playback.SkipScarecrowSong", 1 } }), // 530
           "Allsanity's gameplay rules differ from OoTMM's");
 
-    // Every value a preset writes with more than two choices had its meaning pinned above.
+    // Every value a preset writes was pinned above, and one with more than two choices had its meaning pinned too.
     for (const auto& info : kCommunityPresets)
         for (const auto& [key, value] : Options(info.id)) {
+            Check(gPinned[info.id].count(key),
+                  std::string(info.name) + " writes " + key + " = " + std::to_string(value) + " without pinning it");
             const auto labels = gChoices.find(key);
             if (labels != gChoices.end() && labels->second.size() > 2)
                 Check(gMeant[info.id].count(key), std::string(info.name) + " writes " + key + " = " +
