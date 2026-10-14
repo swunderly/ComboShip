@@ -143,6 +143,27 @@ std::vector<std::string> CVars(const std::string& text) {
     }
     return found;
 }
+// The tooltip of the menu widget named name: the string literals inside the .Tooltip(...) of the statement that adds
+// it, joined as the compiler joins them.
+std::string WidgetTooltip(const std::string& menus, const std::string& name) {
+    const auto at = menus.find("AddWidget(path, \"" + name + "\",");
+    assert(at != std::string::npos);
+    const auto open = menus.find(".Tooltip(", at);
+    assert(open != std::string::npos && open < menus.find("AddWidget(", at + 1));
+    std::string text;
+    bool quoted = false;
+    for (auto i = open + std::strlen(".Tooltip("); quoted || menus[i] != ')'; ++i) {
+        if (menus[i] == '"') {
+            quoted = !quoted;
+        } else if (quoted) {
+            if (menus[i] == '\\')
+                text += menus[i++];
+            text += menus[i];
+        }
+    }
+    assert(!text.empty());
+    return text;
+}
 std::string Joined(const std::vector<const char*>& files) {
     std::string text;
     for (const auto* file : files)
@@ -347,6 +368,16 @@ int main() {
         const auto at = ootMenus.find(std::string("AddWidget(path, \"") + name + "\", WIDGET_CVAR_CHECKBOX)");
         assert(at != std::string::npos);
         assert(ootMenus.substr(at, ootMenus.find(';', at) - at).find("HideInSearch") == std::string::npos);
+    }
+    // Each OoT switch shows the same tooltip as its MM twin.
+    const char* ocarinaNames[][2] = { { "Dpad Ocarina Playback", "D-pad Ocarina" },
+                                      { "Right Stick Ocarina Playback", "Right Stick Ocarina" } };
+    for (int i = 0; i < 2; ++i) {
+        const auto oot = MenuRowTooltip(true, ocarinaInput[i][0], WidgetTooltip(ootMenus, ocarinaNames[i][0]).c_str());
+        const auto mm = MenuRowTooltip(false, ocarinaInput[i][1], WidgetTooltip(mmMenus, ocarinaNames[i][1]).c_str());
+        if (oot != mm)
+            std::cerr << "Ocarina input tooltips differ: \"" << oot << "\" in OoT, \"" << mm << "\" in MM\n";
+        assert(oot == mm);
     }
     const std::string ocarinaPanel = Region(inputEditor, "void SohInputEditorWindow::DrawOcarinaControlPanel()");
     assert(ocarinaPanel.find("dpadOcarina") == std::string::npos);
