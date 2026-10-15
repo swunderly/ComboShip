@@ -1,0 +1,377 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "registrySource": "data/defs/entrances.yml",
+  "registrySha256": "b95aee4e8dfb5b9015aca60ad98f11aeb12e86fec42528e9dddd4043119f709d",
+  "scope": "Only the 11 OoT dungeon/minor-dungeon Wallmaster destination identities. No source, actor, runtime installation, Temple capability or MQ actor evidence is certified.",
+  "nativeSourceSha256": {
+    "combo/rando/entrances/OotNativeArrival.h": "f4516cf5ecbc7dea4019c7b49e81c0bef5830e9ba29af637833fa7dda226e213",
+    "soh/include/tables/entrance_table.h": "929f986069926453cd9d4bffdfa8e78f9031d7e2c3b8963f6855102dc05493aa",
+    "soh/soh/Enhancements/randomizer/entrance.cpp": "6ba1c102ddb136828fa93e1b5958701c120ea0698ec1096cb6b8fe37289aca8f",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp": "70d018e26897694cf774c2b11da29a7cd7c23e8054cde2893ce67c8006797437",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/deku_tree.cpp": "75ce2a5c56e1f47b2d93c5fc3cd9e21db795dd9130908223890c7b34c91cc7cc",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/dodongos_cavern.cpp": "c04a35c4b13711abc406351e041633059788a1dfe1789f2c9020d6dd6961522d",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/fire_temple.cpp": "0fac0529df90a586b27442cd8d6994de87f69a972830ad8105391e4f036bb9c4",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp": "eb15314fc3690fcfcb70ad4a55b4460bf1411018799d150f6f3b107f673b9140",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/gerudo_training_ground.cpp": "6aae72bd908932675792f24d0a86e849cf476c171830cc9c53eb1660933d9ef3",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/ice_cavern.cpp": "ae00e41f56c343bd236c8246806a19833282008f286c8dfbe459204554dc71c0",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/jabujabus_belly.cpp": "a09fdf7678957a7e4332f51306256d63ecc00cddb291a4b69041b51628202a4b",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/shadow_temple.cpp": "6678535a6a758a9488245c5b19989125fea74d32b95d84c0c47893e26dcf87c6",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp": "d343d12bb85434e94d1bd7def62bf7fb2de438cef5bbce053c9ccc14ecf0b7c5",
+    "soh/soh/Enhancements/randomizer/location_access/dungeons/water_temple.cpp": "494869b01d160dc83380f50af8575bc8f52570b27eceb38d5cf977e4d1fbd26f",
+    "soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerRegion.h": "8853fe139af04ad2b62af3b1589336f862779f946926e14e73f58ce64b3c7068"
+  },
+  "rows": [
+    {
+      "name": "OOT_BOTTOM_OF_THE_WELL",
+      "logicalId": 152,
+      "type": "dungeon-minor",
+      "area": "OOT Bottom of the Well",
+      "registryLine": 19,
+      "nativeEntrance": "ENTR_BOTTOM_OF_THE_WELL_ENTRANCE",
+      "nativeIndex": 152,
+      "arrivalRegion": "RR_BOTW_ENTRYWAY",
+      "nativeScene": "SCENE_BOTTOM_OF_THE_WELL",
+      "spawn": 0,
+      "nativeParent": "RR_KAK_WELL",
+      "reverse": "OOT_KAKARIKO_FROM_BOTTOM_OF_THE_WELL",
+      "nativeReverse": "ENTR_KAKARIKO_VILLAGE_OUTSIDE_BOTTOM_OF_THE_WELL",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 206,
+          "text": "/* 0x098 */ DEFINE_ENTRANCE(ENTR_BOTTOM_OF_THE_WELL_ENTRANCE, SCENE_BOTTOM_OF_THE_WELL, 0, false, true, TRANS_TYPE_FADE_BLACK_FAST, TRANS_TYPE_FADE_BLACK_FAST)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/bottom_of_the_well.cpp",
+          "line": 11,
+          "text": "areaTable[RR_BOTW_ENTRYWAY] = Region(\"Bottom of the Well Entryway\", SCENE_BOTTOM_OF_THE_WELL, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 285,
+          "text": "{ { EntranceType::Dungeon,      RR_KAK_WELL,                         RR_BOTW_ENTRYWAY,                     ENTR_BOTTOM_OF_THE_WELL_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_DEKU_TREE",
+      "logicalId": 0,
+      "type": "dungeon",
+      "area": "OOT Deku Tree",
+      "registryLine": 11,
+      "nativeEntrance": "ENTR_DEKU_TREE_ENTRANCE",
+      "nativeIndex": 0,
+      "arrivalRegion": "RR_DEKU_TREE_ENTRYWAY",
+      "nativeScene": "SCENE_DEKU_TREE",
+      "spawn": 0,
+      "nativeParent": "RR_KF_OUTSIDE_DEKU_TREE",
+      "reverse": "OOT_KOKIRI_FOREST_FROM_DEKU_TREE",
+      "nativeReverse": "ENTR_KOKIRI_FOREST_OUTSIDE_DEKU_TREE",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 22,
+          "text": "/* 0x000 */ DEFINE_ENTRANCE(ENTR_DEKU_TREE_ENTRANCE, SCENE_DEKU_TREE, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/deku_tree.cpp",
+          "line": 10,
+          "text": "areaTable[RR_DEKU_TREE_ENTRYWAY] = Region(\"Deku Tree Entryway\", SCENE_DEKU_TREE, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 269,
+          "text": "{ { EntranceType::Dungeon,      RR_KF_OUTSIDE_DEKU_TREE,             RR_DEKU_TREE_ENTRYWAY,                ENTR_DEKU_TREE_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_DODONGO_CAVERN",
+      "logicalId": 4,
+      "type": "dungeon",
+      "area": "OOT Dodongo Cavern",
+      "registryLine": 12,
+      "nativeEntrance": "ENTR_DODONGOS_CAVERN_ENTRANCE",
+      "nativeIndex": 4,
+      "arrivalRegion": "RR_DODONGOS_CAVERN_ENTRYWAY",
+      "nativeScene": "SCENE_DODONGOS_CAVERN",
+      "spawn": 0,
+      "nativeParent": "RR_DEATH_MOUNTAIN_TRAIL",
+      "reverse": "OOT_MOUNTAIN_TRAIL_FROM_DODONGO_CAVERN",
+      "nativeReverse": "ENTR_DEATH_MOUNTAIN_TRAIL_OUTSIDE_DODONGOS_CAVERN",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 27,
+          "text": "/* 0x004 */ DEFINE_ENTRANCE(ENTR_DODONGOS_CAVERN_ENTRANCE, SCENE_DODONGOS_CAVERN, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/dodongos_cavern.cpp",
+          "line": 11,
+          "text": "areaTable[RR_DODONGOS_CAVERN_ENTRYWAY] = Region(\"Dodongos Cavern Entryway\", SCENE_DODONGOS_CAVERN, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 271,
+          "text": "{ { EntranceType::Dungeon,      RR_DEATH_MOUNTAIN_TRAIL,             RR_DODONGOS_CAVERN_ENTRYWAY,          ENTR_DODONGOS_CAVERN_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_GERUDO_TRAINING_GROUNDS",
+      "logicalId": 8,
+      "type": "dungeon-minor",
+      "area": "OOT Gerudo Training Grounds",
+      "registryLine": 21,
+      "nativeEntrance": "ENTR_GERUDO_TRAINING_GROUND_ENTRANCE",
+      "nativeIndex": 8,
+      "arrivalRegion": "RR_GERUDO_TRAINING_GROUND_ENTRYWAY",
+      "nativeScene": "SCENE_GERUDO_TRAINING_GROUND",
+      "spawn": 0,
+      "nativeParent": "RR_GF_TO_GTG",
+      "reverse": "OOT_GERUDO_FORTRESS_FROM_GERUDO_TRAINING",
+      "nativeReverse": "ENTR_GERUDOS_FORTRESS_OUTSIDE_GERUDO_TRAINING_GROUND",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 32,
+          "text": "/* 0x008 */ DEFINE_ENTRANCE(ENTR_GERUDO_TRAINING_GROUND_ENTRANCE, SCENE_GERUDO_TRAINING_GROUND, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/gerudo_training_ground.cpp",
+          "line": 11,
+          "text": "areaTable[RR_GERUDO_TRAINING_GROUND_ENTRYWAY] = Region(\"Gerudo Training Ground Entryway\", SCENE_GERUDO_TRAINING_GROUND, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 289,
+          "text": "{ { EntranceType::Dungeon,      RR_GF_TO_GTG,                        RR_GERUDO_TRAINING_GROUND_ENTRYWAY,   ENTR_GERUDO_TRAINING_GROUND_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_ICE_CAVERN",
+      "logicalId": 136,
+      "type": "dungeon-minor",
+      "area": "OOT Ice Cavern",
+      "registryLine": 20,
+      "nativeEntrance": "ENTR_ICE_CAVERN_ENTRANCE",
+      "nativeIndex": 136,
+      "arrivalRegion": "RR_ICE_CAVERN_ENTRYWAY",
+      "nativeScene": "SCENE_ICE_CAVERN",
+      "spawn": 0,
+      "nativeParent": "RR_ZF_LEDGE",
+      "reverse": "OOT_ZORA_FOUNTAIN_FROM_ICE_CAVERN",
+      "nativeReverse": "ENTR_ZORAS_FOUNTAIN_OUTSIDE_ICE_CAVERN",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 187,
+          "text": "/* 0x088 */ DEFINE_ENTRANCE(ENTR_ICE_CAVERN_ENTRANCE, SCENE_ICE_CAVERN, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ice_cavern.cpp",
+          "line": 11,
+          "text": "areaTable[RR_ICE_CAVERN_ENTRYWAY] = Region(\"Ice Cavern Entryway\", SCENE_ICE_CAVERN, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 287,
+          "text": "{ { EntranceType::Dungeon,      RR_ZF_LEDGE,                         RR_ICE_CAVERN_ENTRYWAY,               ENTR_ICE_CAVERN_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_JABU_JABU",
+      "logicalId": 40,
+      "type": "dungeon",
+      "area": "OOT Jabu-Jabu",
+      "registryLine": 13,
+      "nativeEntrance": "ENTR_JABU_JABU_ENTRANCE",
+      "nativeIndex": 40,
+      "arrivalRegion": "RR_JABU_JABUS_BELLY_ENTRYWAY",
+      "nativeScene": "SCENE_JABU_JABU",
+      "spawn": 0,
+      "nativeParent": "RR_ZORAS_FOUNTAIN",
+      "reverse": "OOT_ZORA_FOUNTAIN_FROM_JABU_JABU",
+      "nativeReverse": "ENTR_ZORAS_FOUNTAIN_OUTSIDE_JABU_JABU",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 72,
+          "text": "/* 0x028 */ DEFINE_ENTRANCE(ENTR_JABU_JABU_ENTRANCE, SCENE_JABU_JABU, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/jabujabus_belly.cpp",
+          "line": 10,
+          "text": "areaTable[RR_JABU_JABUS_BELLY_ENTRYWAY] = Region(\"Jabu Jabus Belly Entryway\", SCENE_JABU_JABU, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 273,
+          "text": "{ { EntranceType::Dungeon,      RR_ZORAS_FOUNTAIN,                   RR_JABU_JABUS_BELLY_ENTRYWAY,         ENTR_JABU_JABU_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_TEMPLE_FIRE",
+      "logicalId": 357,
+      "type": "dungeon",
+      "area": "OOT Fire Temple",
+      "registryLine": 15,
+      "nativeEntrance": "ENTR_FIRE_TEMPLE_ENTRANCE",
+      "nativeIndex": 357,
+      "arrivalRegion": "RR_FIRE_TEMPLE_ENTRYWAY",
+      "nativeScene": "SCENE_FIRE_TEMPLE",
+      "spawn": 0,
+      "nativeParent": "RR_DMC_TEMPLE_EXIT",
+      "reverse": "OOT_DEATH_CRATER_FROM_TEMPLE_FIRE",
+      "nativeReverse": "ENTR_DEATH_MOUNTAIN_CRATER_OUTSIDE_TEMPLE",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 443,
+          "text": "/* 0x165 */ DEFINE_ENTRANCE(ENTR_FIRE_TEMPLE_ENTRANCE, SCENE_FIRE_TEMPLE, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/fire_temple.cpp",
+          "line": 10,
+          "text": "areaTable[RR_FIRE_TEMPLE_ENTRYWAY] = Region(\"Fire Temple Entryway\", SCENE_FIRE_TEMPLE, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 277,
+          "text": "{ { EntranceType::Dungeon,      RR_DMC_TEMPLE_EXIT,                  RR_FIRE_TEMPLE_ENTRYWAY,              ENTR_FIRE_TEMPLE_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_TEMPLE_FOREST",
+      "logicalId": 361,
+      "type": "dungeon",
+      "area": "OOT Forest Temple",
+      "registryLine": 14,
+      "nativeEntrance": "ENTR_FOREST_TEMPLE_ENTRANCE",
+      "nativeIndex": 361,
+      "arrivalRegion": "RR_FOREST_TEMPLE_ENTRYWAY",
+      "nativeScene": "SCENE_FOREST_TEMPLE",
+      "spawn": 0,
+      "nativeParent": "RR_SACRED_FOREST_MEADOW",
+      "reverse": "OOT_SACRED_MEADOW_FROM_TEMPLE_FOREST",
+      "nativeReverse": "ENTR_SACRED_FOREST_MEADOW_OUTSIDE_TEMPLE",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 448,
+          "text": "/* 0x169 */ DEFINE_ENTRANCE(ENTR_FOREST_TEMPLE_ENTRANCE, SCENE_FOREST_TEMPLE, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/forest_temple.cpp",
+          "line": 12,
+          "text": "areaTable[RR_FOREST_TEMPLE_ENTRYWAY] = Region(\"Forest Temple Entryway\", SCENE_FOREST_TEMPLE, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 275,
+          "text": "{ { EntranceType::Dungeon,      RR_SACRED_FOREST_MEADOW,             RR_FOREST_TEMPLE_ENTRYWAY,            ENTR_FOREST_TEMPLE_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_TEMPLE_SHADOW",
+      "logicalId": 55,
+      "type": "dungeon",
+      "area": "OOT Shadow Temple",
+      "registryLine": 17,
+      "nativeEntrance": "ENTR_SHADOW_TEMPLE_ENTRANCE",
+      "nativeIndex": 55,
+      "arrivalRegion": "RR_SHADOW_TEMPLE_ENTRYWAY",
+      "nativeScene": "SCENE_SHADOW_TEMPLE",
+      "spawn": 0,
+      "nativeParent": "RR_GRAVEYARD_WARP_PAD_REGION",
+      "reverse": "OOT_GRAVEYARD_FROM_TEMPLE_SHADOW",
+      "nativeReverse": "ENTR_GRAVEYARD_OUTSIDE_TEMPLE",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 90,
+          "text": "/* 0x037 */ DEFINE_ENTRANCE(ENTR_SHADOW_TEMPLE_ENTRANCE, SCENE_SHADOW_TEMPLE, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/shadow_temple.cpp",
+          "line": 11,
+          "text": "areaTable[RR_SHADOW_TEMPLE_ENTRYWAY] = Region(\"Shadow Temple Entryway\", SCENE_SHADOW_TEMPLE, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 283,
+          "text": "{ { EntranceType::Dungeon,      RR_GRAVEYARD_WARP_PAD_REGION,        RR_SHADOW_TEMPLE_ENTRYWAY,            ENTR_SHADOW_TEMPLE_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_TEMPLE_SPIRIT",
+      "logicalId": 130,
+      "type": "dungeon",
+      "area": "OOT Spirit Temple",
+      "registryLine": 18,
+      "nativeEntrance": "ENTR_SPIRIT_TEMPLE_ENTRANCE",
+      "nativeIndex": 130,
+      "arrivalRegion": "RR_SPIRIT_TEMPLE_ENTRYWAY",
+      "nativeScene": "SCENE_SPIRIT_TEMPLE",
+      "spawn": 0,
+      "nativeParent": "RR_DESERT_COLOSSUS",
+      "reverse": "OOT_DESERT_COLOSSUS_FROM_TEMPLE_SPIRIT",
+      "nativeReverse": "ENTR_DESERT_COLOSSUS_OUTSIDE_TEMPLE",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 180,
+          "text": "/* 0x082 */ DEFINE_ENTRANCE(ENTR_SPIRIT_TEMPLE_ENTRANCE, SCENE_SPIRIT_TEMPLE, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/spirit_temple.cpp",
+          "line": 11,
+          "text": "areaTable[RR_SPIRIT_TEMPLE_ENTRYWAY] = Region(\"Spirit Temple Entryway\", SCENE_SPIRIT_TEMPLE, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 281,
+          "text": "{ { EntranceType::Dungeon,      RR_DESERT_COLOSSUS,                  RR_SPIRIT_TEMPLE_ENTRYWAY,            ENTR_SPIRIT_TEMPLE_ENTRANCE },"
+        }
+      ]
+    },
+    {
+      "name": "OOT_TEMPLE_WATER",
+      "logicalId": 16,
+      "type": "dungeon",
+      "area": "OOT Water Temple",
+      "registryLine": 16,
+      "nativeEntrance": "ENTR_WATER_TEMPLE_ENTRANCE",
+      "nativeIndex": 16,
+      "arrivalRegion": "RR_WATER_TEMPLE_ENTRYWAY",
+      "nativeScene": "SCENE_WATER_TEMPLE",
+      "spawn": 0,
+      "nativeParent": "RR_LH_FROM_WATER_TEMPLE",
+      "reverse": "OOT_LAKE_HYLIA_FROM_TEMPLE_WATER",
+      "nativeReverse": "ENTR_LAKE_HYLIA_OUTSIDE_TEMPLE",
+      "evidence": [
+        {
+          "file": "soh/include/tables/entrance_table.h",
+          "line": 42,
+          "text": "/* 0x010 */ DEFINE_ENTRANCE(ENTR_WATER_TEMPLE_ENTRANCE, SCENE_WATER_TEMPLE, 0, false, true, TRANS_TYPE_FADE_BLACK, TRANS_TYPE_FADE_BLACK)"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/water_temple.cpp",
+          "line": 10,
+          "text": "areaTable[RR_WATER_TEMPLE_ENTRYWAY] = Region(\"Water Temple Entryway\", SCENE_WATER_TEMPLE, {}, {}, {"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/entrance.cpp",
+          "line": 279,
+          "text": "{ { EntranceType::Dungeon,      RR_LH_FROM_WATER_TEMPLE,             RR_WATER_TEMPLE_ENTRYWAY,             ENTR_WATER_TEMPLE_ENTRANCE },"
+        }
+      ]
+    }
+  ]
+}

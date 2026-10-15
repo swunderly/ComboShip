@@ -235,3 +235,27 @@ the audit schema and anchors on every host, the archive evidence when an extract
 archive is found (`COMBO_OOT_ARCHIVE`, or an `oot.o2r` under a `local-roms` folder beside
 the checkout), and, with the pinned checkout, exact reproduction, read-only stale checks
 and wrong-pin refusal. Nothing here adds a native region, an edge, a setting or a layout.
+
+`export_oot_wallmaster_arrivals.py` is the independent M1-14 arrival-catalog prerequisite.
+It binds the eight OoT dungeon and three minor-dungeon registry IDs to native entrance
+indices and the eleven distinct `RR_*_ENTRYWAY` regions. Each row must have one native
+Dungeon entrance-table pair, the same pinned reverse index, a defined entryway in the
+entrance's scene, and no native arrival alias. The entryways retain the existing native
+vanilla/MQ dispatch; this catalog does not certify any MQ Wallmaster actor or source edge.
+
+The generated `oot-wallmaster-arrivals.json` records those bindings, source citations,
+the exact registry hash and hashes of the native inputs (UTF-8 with normalized LF).
+`combo_oot_wallmaster_arrivals.inc` carries native enum identifiers; the separate
+`OotWallmasterArrivalNames.h` carries their shared row names. Existing Temple bindings
+are unchanged. Outputs use canonical LF bytes and narrow `.gitattributes` rules.
+
+```sh
+python tools/ootmm/export_oot_wallmaster_arrivals.py --reference /path/to/ootmm-stable-32.3 --check
+```
+
+`oot_wallmaster_arrival_catalog_and_reference` compiles the entries using the real native
+region enum and entrance table, checks `ResolveOotNativeArrival`, matches the eleven
+reviewed indices and the pinned Wallmaster candidate set, and rejects inconsistent or
+ambiguous bindings. With the pinned checkout it also checks deterministic reproduction,
+stale-output refusal without writes, and wrong-HEAD refusal. No native traversal hook,
+installer, public capability or C17 MQ policy is added by this prerequisite.

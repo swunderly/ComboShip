@@ -150,6 +150,8 @@ set_tests_properties(entrance_m1_contract_matches_pinned_ootmm_run PROPERTIES SK
 combo_python_test(oot_wallmaster_edges_pinned_fixture_and_anchor_audit oot_wallmaster_edges_reference_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/oot_wallmaster_edges" "--archive=${COMBO_OOT_ARCHIVE}")
 set_tests_properties(oot_wallmaster_edges_pinned_fixture_and_anchor_audit PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+combo_harness_test(oot_wallmaster_arrival_catalog_and_reference oot_wallmaster_arrivals_tests.py)
+set_tests_properties(oot_wallmaster_arrival_catalog_and_reference PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 combo_harness_test(oot_temple_probe_active_logic_scope temple_active_logic_tests.py)
 # ABI-only evidence (non-engine): bit order and target of the read-only diagnostic.
 combo_harness_test(oot_temple_ages_getter_abi_only oot_temple_ages_getter_tests.py)
