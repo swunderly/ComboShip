@@ -122,7 +122,11 @@ combo_json_harness_test(combo_rejected_entrance_slot_binding combo_entrance_slot
 combo_json_harness_test(combo_seed_format_import_and_save_preflight combo_seed_format_tests.py)
 combo_json_harness_test(entrance_registry_and_grotto_metadata entrance_registry_metadata_tests.py)
 combo_harness_test(oot_wallmaster_pinned_source_classifier oot_wallmaster_source_tests.py)
-combo_harness_test(mm_wallmaster_room_clear_spawn_and_soul_guards mm_wallmaster_spawn_tests.py)
+combo_json_harness_test(mm_wallmaster_room_clear_spawn_and_soul_guards mm_wallmaster_spawn_tests.py)
+combo_json_harness_test(mm_wallmaster_unified_transport mm_wallmaster_transport_tests.py)
+combo_json_harness_test(entrance_spoiler_pinned_format_and_route_identity entrance_spoiler_format_tests.py)
+combo_json_harness_test(entrance_spoiler_output_real_helper_and_launcher entrance_spoiler_output_tests.py)
+combo_json_harness_test(entrance_plando_layout_roundtrip entrance_plando_roundtrip_tests.py)
 combo_json_harness_test(mm_unified_layout_exports_and_wallmaster_logic mm_unified_logic_tests.py)
 # M1-08: OoTMM er_enabled / has_hot_water_er in the MM logic and the PG_ER hot-water patch, against
 # tools/ootmm/er-enabled-sites.json (and the OoTMM checkout when it is there).
@@ -752,6 +756,7 @@ endif()
 
 combo_json_harness_test(entrance_hidden_settings_reference_parity entrance_settings_tests.py)
 combo_json_harness_test(headless_er_args_and_entrance_dev_switch headless_er_args_tests.py)
+combo_json_harness_test(headless_entrance_saved_settings_and_recorded_replay headless_entrance_reproduction_tests.py)
 
 # Every test gets a timeout, so a hang fails instead of blocking the run.
 set(COMBO_TEST_TIMEOUT 300 CACHE STRING "Default per-test timeout in seconds")

@@ -376,7 +376,13 @@ assert hostcxx.contains(headless, 'spoiler = nlohmann::json::parse(ReadFile(play
                                   f'ComboRando::RequireSupportedSeedDocument(spoiler, {caps});')
 assert hostcxx.find(headless, f'ComboRando::RequireSupportedSettingsCapabilities(sj, {caps});') < \
     hostcxx.find(headless, 'const auto& oot = sj.contains("oot") ? sj["oot"] : sj;')
-assert hostcxx.contains(headless, 'ComboRando::StampComboSeedFormat(consolidated); f << consolidated.dump(2);')
+stamp = hostcxx.find(headless, 'ComboRando::StampComboSeedFormat(consolidated);')
+preflight = hostcxx.find(headless, f'ComboRando::RequireSupportedSeedDocument(consolidated, {caps});', stamp)
+opened = hostcxx.find(headless, 'std::ofstream f("saves/combo/comborando.spoiler.json", std::ios::trunc);', preflight)
+written = hostcxx.find(headless, 'f << consolidated.dump(2);', opened)
+closed = hostcxx.find(headless, 'f.close();', written)
+assert stamp < preflight < opened < written < closed < hostcxx.find(headless, 'if (!f)', closed) < \
+    hostcxx.find(headless, 'WriteEntranceSpoilerFile(', closed)
 assert hostcxx.contains(launcher, 'ComboRando::StampComboSeedFormat(consolidated); g_ConsolidatedJson = consolidated.dump(2);')
 assert hostcxx.contains(launcher, f'j = *profileSeed; ComboRando::RequireSupportedSeedDocument(j, {caps});')
 assert hostcxx.contains(launcher, f'ComboRando::Profiles::Repository>(profilePath, ProfileNativeSnapshot(), {caps});')

@@ -1,4 +1,4 @@
-"""Execute the production save-load callback through rejected legacy entrance layouts."""
+"""Execute actual slot binds and pending-seed checks with legacy, dev and shipping layouts."""
 from pathlib import Path
 import argparse
 import subprocess
@@ -32,6 +32,7 @@ source = r'''
 #include <array>
 #include <vector>
 #include "rando/entrances/NativeBridge.h"
+#include "rando/entrances/MmUnifiedLayout.h"
 using Json = nlohmann::json;
 using namespace ComboRando::Entrances;
 std::array<Json, 3> containers;
@@ -85,14 +86,20 @@ void Combo_ResumeMMIfLastSavedThere(int slot) {
 }
 int applySeed(const char* value) {
     const auto seed = Json::parse(value);
-    const auto rows = DecodeMmWallmasterSeed(seed);
     layout.clear();
+    ActiveMmUnified().clear();
+    if (seed.contains("throwOnApply")) throw std::runtime_error("injected native failure");
+    if (seed.contains("entranceLayout")) ActiveMmUnified().install(seed, ActiveCapabilities());
+    const auto rows = DecodeMmWallmasterSeed(seed);
     if (rows) layout.install(*rows);
     installedSeed = seed;
     calls.push_back("entrances");
     return 1;
 }
-const char* dumpSeed() { dump = installedSeed.dump(); return dump.c_str(); }
+const char* dumpSeed() {
+    dump = installedSeed.contains("breakRoundtrip") ? "{}" : installedSeed.dump();
+    return dump.c_str();
+}
 static NativeFns sEntranceNative{applySeed, nullptr, nullptr, dumpSeed};
 // OTRGlobals.cpp's setter: the bound slot's ER-wide runtime flags (M1-09).
 std::vector<uint32_t> runtimeFlags;
@@ -100,6 +107,7 @@ void setRuntimeFlags(uint32_t flags) { runtimeFlags.push_back(flags); calls.push
 auto SOH_SetEntranceRuntimeFlags = setRuntimeFlags;
 '''
 source += function('static bool InstallEntranceSeed(const nlohmann::json& seed)') + '\n'
+source += function('static bool CheckPendingEntranceSeed(const nlohmann::json& seed)') + '\n'
 source += function('static void Combo_OnOOTSaveLoad(int fileNum) {') + '\n'
 source += r'''
 Json seedFor(int slot) {
@@ -122,7 +130,7 @@ void bind(int slot, bool loaded, bool succeeded) {
     assert(songTravel == saved.at("songTravel"));
     assert(containers[slot]["combo"]["rando"] == saved);
     assert(containers[slot]["combo"]["gameplayRules"].at("slot") == slot);
-    assert(runtimeFlags.back() == 0); // none of these seeds installs a layout that shuffles entrances
+    assert(runtimeFlags.back() == (installedSeed.empty() ? 0u : ComboRando::SeedEntranceRuntimeFlags(saved)));
 }
 int main() {
     std::vector<SavedOverride> rows;
@@ -164,6 +172,7 @@ int main() {
     assert(calls.empty() && g_ComboContextEpoch == epoch + 1 && g_MmSaveInMemorySlot == 2);
     // A unified layout this build refuses binds the rest of the slot, with no ER-wide runtime flag.
     EntranceLayout tranche;
+    tranche.devBuild = true;
     tranche.required = {std::string(kMmTrancheCapability)};
     tranche.settings.erWallmasters = Mode::OwnGame;
     Overrides routes;
@@ -176,14 +185,73 @@ int main() {
     layoutSeed["version"] = ComboRando::kEntranceSeedVersion;
     layoutSeed["entranceLayout"] = EncodeEntranceLayout(tranche);
     containers[0] = {{"combo", {{"rando", layoutSeed}}}};
-    assert(ActiveCapabilities().Empty()); // as shipped in Phase A
     bind(0, true, true);
-    assert(installedSeed.empty());
+    if (ActiveCapabilities().Empty()) {
+        assert(installedSeed.empty() && !ActiveMmUnified().active() && runtimeFlags.back() == 0);
+    } else {
+        assert(installedSeed == layoutSeed && ActiveMmUnified().active() && runtimeFlags.back() == 1);
+        const auto immutable = containers[0]["combo"]["rando"];
+        bind(0, false, true); // same-slot reload uses the recorded routes, never a fresh shuffle
+        assert(containers[0]["combo"]["rando"] == immutable && installedSeed == layoutSeed);
+        bind(2, true, true);
+        assert(!ActiveMmUnified().active() && runtimeFlags.back() == 0);
+    }
+    // Original pending-import/finalize behavior installed its layout into another live slot.
+    assert(InstallEntranceSeed(valid));
+    const auto legacyLive = installedSeed;
+    assert(InstallEntranceSeed(seedFor(2)) && installedSeed != legacyLive); // negative control
+    assert(InstallEntranceSeed(valid));
+    auto flagsBefore = runtimeFlags.size();
+    assert(CheckPendingEntranceSeed(seedFor(2)) && installedSeed == legacyLive);
+    assert(layout.destination(kMmWallmasterSources[0]) && runtimeFlags.size() == flagsBefore);
+    auto malformed = valid;
+    malformed["entranceExpansion"]["schemaVersion"] = 99;
+    assert(!CheckPendingEntranceSeed(malformed) && installedSeed == legacyLive);
+    auto failing = seedFor(2);
+    failing["throwOnApply"] = true;
+    assert(!CheckPendingEntranceSeed(failing) && installedSeed == legacyLive);
+    // Failed creation restores the preceding layout; successful creation explicitly commits.
+    try {
+        NativeScope transaction(sEntranceNative);
+        assert(InstallEntranceSeed(seedFor(2)));
+        throw std::runtime_error("MM save creation failed");
+    } catch (const std::runtime_error&) {}
+    assert(installedSeed == legacyLive);
+    {
+        NativeScope transaction(sEntranceNative);
+        assert(InstallEntranceSeed(seedFor(2)));
+        transaction.Commit();
+    }
+    assert(installedSeed == seedFor(2) && !layout.destination(kMmWallmasterSources[0]));
+    const auto noErLive = installedSeed;
+    const bool accepted = CheckPendingEntranceSeed(layoutSeed);
+    assert(accepted == !ActiveCapabilities().Empty());
+    assert(installedSeed == noErLive && !ActiveMmUnified().active());
+    if (!ActiveCapabilities().Empty()) {
+        assert(InstallEntranceSeed(layoutSeed));
+        const auto erLive = installedSeed;
+        assert(CheckPendingEntranceSeed(seedFor(2)) && installedSeed == erLive);
+        assert(ActiveMmUnified().active());
+        auto broken = layoutSeed;
+        broken["breakRoundtrip"] = true;
+        assert(!CheckPendingEntranceSeed(broken) && installedSeed == erLive);
+        assert(ActiveMmUnified().active() && runtimeFlags.size() == flagsBefore);
+    }
     std::cout << "PASS production slot bind continues after entrance rejection; immutable seed, stale layout, "
                  "song/items/hints/rules and dormant MM residency stay slot-isolated\n";
 }
 '''
 cpp = args.build_dir / 'entrance_slot_binding.cpp'
 cpp.write_text(source, encoding='utf-8')
-exe = hostcxx.build(args.compiler, cpp, warnings=False, includes=[args.source / 'combo', args.json_include])
-subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
+for dev in (False, True):
+    exe = hostcxx.build(args.compiler, cpp, warnings=False, includes=[args.source / 'combo', args.json_include],
+                       defines=['COMBO_ENTRANCE_DEV'] if dev else [],
+                       exe=args.build_dir / ('entrance_slot_binding_dev.exe' if dev else 'entrance_slot_binding_ship.exe'))
+    subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
+
+# Pending validation must stay temporary at both actual call sites, and creation commits only after success.
+assert hostcxx.contains(function('static void Combo_FinalizeGenerate()'), 'if (!CheckPendingEntranceSeed(seed))')
+assert hostcxx.contains(function('static int Combo_OnReloadRequestImpl('), 'if (!CheckPendingEntranceSeed(j))')
+creation = function('static void Combo_OnOOTSaveInit(int fileNum)')
+assert hostcxx.find(creation, 'std::make_unique<ComboRando::Entrances::NativeScope>') < hostcxx.find(creation, '!InstallEntranceSeed(seed)')
+assert hostcxx.contains(creation, 'if (mmInitResult == 0) { g_MmSaveInMemorySlot = fileNum; entranceRestore->Commit();')

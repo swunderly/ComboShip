@@ -15,6 +15,7 @@
 #include "menu/ComboRandomizerProfileABI.h"
 #include "rando/ComboPresets.h"
 #include "rando/ComboSeedFormat.h"
+#include "rando/entrances/EntranceSpoilerOutput.h"
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -422,6 +423,13 @@ static bool InstallEntranceSeed(const nlohmann::json& seed) {
             sEntranceNative.applySeed("{}");
         return false;
     }
+}
+// Finalizing or importing a pending seed validates its native layout, but does not bind a slot.
+// Keep the live slot's layout (and therefore its ER runtime switches) on every exit, including
+// rejection: InstallEntranceSeed deliberately clears a rejected layout when it is used for a bind.
+static bool CheckPendingEntranceSeed(const nlohmann::json& seed) {
+    ComboRando::Entrances::NativeScope entranceRestore(sEntranceNative);
+    return InstallEntranceSeed(seed);
 }
 #include "rando/SongTravel.h"
 static void (*SOH_SetSongTravel)(const char*) = nullptr, (*MM_SetSongTravel)(const char*) = nullptr;
@@ -2223,6 +2231,8 @@ static int g_PendingMMFileNum = -1;
 // ComboShip: write a seed's spoiler under its own hash-icon name. Returns the path (empty on failure).
 // Worker-safe: pointing the CVar at it is a separate main-thread step (RememberComboSpoiler).
 static std::filesystem::path WriteComboSpoiler(const nlohmann::json& fileHash, const std::string& json) {
+    const auto seed = nlohmann::json::parse(json);
+    ComboRando::RequireSupportedSeedDocument(seed, ComboRando::Entrances::ActiveCapabilities());
     std::error_code ec;
     std::filesystem::create_directories(ComboRando::ConsolidatedDir(), ec);
     auto path = ComboRando::ComboSpoilerPath(fileHash);
@@ -2232,6 +2242,13 @@ static std::filesystem::path WriteComboSpoiler(const nlohmann::json& fileHash, c
         return {};
     }
     out << json;
+    out.close();
+    if (!out) {
+        std::cerr << "[ComboShip] could not finish spoiler " << path.string() << "\n";
+        return {};
+    }
+    if (!ComboRando::Entrances::WriteEntranceSpoilerFile(path, seed, ComboRando::Entrances::ActiveCapabilities()))
+        std::cerr << "[ComboShip] could not write entrance spoiler beside " << path.string() << "\n";
     return path;
 }
 
@@ -3255,7 +3272,7 @@ static void Combo_FinalizeGenerate() {
             SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision, catalog.invisibleRupees);
         grassRevision = std::make_unique<ComboRando::KokiriGrassCatalogRevisionScope>(
             SOH_GetKokiriGrassRevision, SOH_SetKokiriGrassRevision, catalog.grass);
-        if (!InstallEntranceSeed(seed)) {
+        if (!CheckPendingEntranceSeed(seed)) {
             g_ComboProgress.SetError("Generated MM entrance layout could not be installed");
             g_ComboProgress.success.store(false);
             g_ComboProgress.running.store(false);
@@ -3628,7 +3645,7 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
         if (!isSilentAutoLoad && MM_RestoreRandoSettings)
             MM_RestoreRandoSettings(mmSettings.c_str());
 
-        if (!InstallEntranceSeed(j))
+        if (!CheckPendingEntranceSeed(j))
             return 0;
         // Keep the loaded seed so Start binds it to the chosen slot; recompute the hash-icon filename.
         g_ConsolidatedJson = j.dump(2);
@@ -3703,6 +3720,7 @@ static void Combo_OnOOTSaveInit(int fileNum) {
     // ComboShip: bind the pending consolidated seed to this slot — bake it into the container's
     // combo.rando (self-contained), then push it into both DLLs so foreign data is live immediately.
     nlohmann::json seed;
+    std::unique_ptr<ComboRando::Entrances::NativeScope> entranceRestore;
     if (!g_ConsolidatedJson.empty()) {
         try {
             seed = nlohmann::json::parse(g_ConsolidatedJson);
@@ -3710,6 +3728,13 @@ static void Combo_OnOOTSaveInit(int fileNum) {
         if (!seed.is_null() && SeedNeedsUnavailableMmGear(seed)) {
             std::cerr << "[ComboShip] Save creation rejected: the seed adds MM boots or tunics this device cannot "
                          "run\n";
+            return;
+        }
+        try {
+            entranceRestore = std::make_unique<ComboRando::Entrances::NativeScope>(sEntranceNative);
+        } catch (const std::exception& error) {
+            std::cerr << "[ComboShip] Save creation could not preserve the active entrance layout: " << error.what()
+                      << "\n";
             return;
         }
         if (seed.is_null() || !InstallEntranceSeed(seed)) {
@@ -3770,8 +3795,12 @@ static void Combo_OnOOTSaveInit(int fileNum) {
             !g_PendingMMSettingsJson.empty() && ApplyMmRandoSettingsForSave(g_PendingMMSettingsJson);
         g_MmSaveInMemorySlot = -1;
         const int mmInitResult = MM_InitRandoSaveFile(fileNum, mmPlacements.c_str(), playerName);
-        if (mmInitResult == 0)
+        if (mmInitResult == 0) {
             g_MmSaveInMemorySlot = fileNum;
+            entranceRestore->Commit();
+            if (SOH_SetEntranceRuntimeFlags)
+                SOH_SetEntranceRuntimeFlags(ComboRando::SeedEntranceRuntimeFlags(seed));
+        }
         if (mmInitResult != 0) {
             std::cerr << "[ComboShip] ERROR: MM rando save creation FAILED for slot " << fileNum
                       << " — this slot's MM save has no placements. Re-create it." << std::endl;

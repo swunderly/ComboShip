@@ -51,6 +51,7 @@
 #include "rando/CrossWorldRando.h"
 #include "rando/ComboPlaythrough.h"
 #include "rando/ComboSeedFormat.h"
+#include "rando/entrances/EntranceSpoilerOutput.h"
 #include "rando/GameplayRules.h"
 #include "rando/GenerationRules.h"
 #include "rando/KokiriSeedRevision.h"
@@ -483,6 +484,8 @@ int RunHeadless(int argc, char** argv) {
             std::cerr << "[playthrough] " << error.what() << "\n";
             return 2;
         }
+        std::cout << ComboRando::Entrances::EntranceSpoilerForSeed(spoiler,
+                                                                   ComboRando::Entrances::ActiveCapabilities());
         const auto originalRules = ComboRando::GameplayRulesForSeed(spoiler);
         auto ootSettings = spoiler.value("oot", nlohmann::json::object()).value("settings", nlohmann::json::object());
         // Flat placement map that RunPlaythrough consumes.
@@ -1296,11 +1299,19 @@ int RunHeadless(int argc, char** argv) {
                     consolidated["hints"] =
                         ComboRando::Generate(masterSeed, sohDump, sohHintDump, mmDump, consolidated["foreign"],
                                              r.spoilerJson, pareDownResult);
+                    ComboRando::StampComboSeedFormat(consolidated);
+                    ComboRando::RequireSupportedSeedDocument(consolidated, ComboRando::Entrances::ActiveCapabilities());
                     std::error_code ec;
                     std::filesystem::create_directories("saves/combo", ec);
                     std::ofstream f("saves/combo/comborando.spoiler.json", std::ios::trunc);
-                    ComboRando::StampComboSeedFormat(consolidated);
                     f << consolidated.dump(2);
+                    f.close();
+                    if (!f)
+                        throw std::runtime_error("could not finish consolidated JSON");
+                    if (!ComboRando::Entrances::WriteEntranceSpoilerFile("saves/combo/comborando.spoiler.json",
+                                                                         consolidated,
+                                                                         ComboRando::Entrances::ActiveCapabilities()))
+                        std::cerr << "[comborando]   entrance spoiler write failed\n";
                     std::cout << "[comborando]   consolidated spoiler -> saves/combo/comborando.spoiler.json\n";
                 } catch (const std::exception& e) {
                     std::cerr << "[comborando]   spoiler write failed: " << e.what() << "\n";

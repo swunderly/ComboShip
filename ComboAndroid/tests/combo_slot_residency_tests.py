@@ -50,7 +50,7 @@ cpp=work/'residency.cpp';cpp.write_text(source)
 subprocess.run([str(hostcxx.build(a.compiler,cpp,warnings=False,includes=[a.source/'combo',a.json_include]))],check=True, timeout=hostcxx.RUN_TIMEOUT)
 # Bind path must clear residency before a potentially failed native load/create.
 assert hostcxx.find(text,'g_MmSaveInMemorySlot = -1; // Failure') < hostcxx.find(text,'if (MM_LoadSaveForCombo(fileNum) == 0)')
-assert hostcxx.contains(text,'if (mmInitResult == 0) g_MmSaveInMemorySlot = fileNum;')
+assert hostcxx.contains(text,'if (mmInitResult == 0) { g_MmSaveInMemorySlot = fileNum;')
 progress=text[hostcxx.find(text,'static void Combo_OnTriforceProgress(int game, int fileNum) try'):]
 assert hostcxx.find(progress,'if (g_MmSaveInMemorySlot != fileNum)') < hostcxx.find(progress,'const int total =')
 

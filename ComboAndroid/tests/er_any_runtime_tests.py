@@ -202,8 +202,14 @@ for path in [root / 'combo/ComboShip.cpp', root / 'combo/ComboRandoHeadless.cpp'
         [p for d in ('soh/src', 'soh/soh') for p in sorted((root / d).rglob('*.[ch]*'))]:
     text = path.read_text(encoding='utf-8', errors='replace')
     setters += [path.name] * len(re.findall(r'\bSOH_SetEntranceRuntimeFlags\((?!uint32_t)', text))
-check(sorted(setters) == ['ComboShip.cpp', 'SaveManager.cpp'], f'SOH_SetEntranceRuntimeFlags callers changed: {setters}')
+check(sorted(setters) == ['ComboShip.cpp', 'ComboShip.cpp', 'SaveManager.cpp'],
+      f'SOH_SetEntranceRuntimeFlags callers changed: {setters}')
 launcher = read('combo/ComboShip.cpp')
+check(squash('if (mmInitResult == 0) { g_MmSaveInMemorySlot = fileNum; entranceRestore->Commit(); '
+             'if (SOH_SetEntranceRuntimeFlags) '
+             'SOH_SetEntranceRuntimeFlags(ComboRando::SeedEntranceRuntimeFlags(seed)); }')
+      in squash(function(launcher, 'static void Combo_OnOOTSaveInit(int fileNum) {')),
+      'Combo_OnOOTSaveInit: only successful save creation commits the layout and its flags')
 read_save = squash(function(launcher, 'static const char* Combo_ReadGameSave(int game, int fileNum) {'))
 order(read_save, ['ComboRando::Profiles::ValidateSavedCatalogs(inspected, ComboRando::Entrances::ActiveCapabilities());',
                   'entranceFlags = ComboRando::Profiles::ContainerEntranceRuntimeFlags(inspected, '

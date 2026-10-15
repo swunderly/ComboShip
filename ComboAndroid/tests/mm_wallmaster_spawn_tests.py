@@ -8,6 +8,7 @@ import hostcxx
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
+parser.add_argument('--json-include', type=Path, required=True)
 parser.add_argument('--build-dir', type=Path, required=True)
 parser.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 args = parser.parse_args()
@@ -43,7 +44,7 @@ support = r'''
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include "rando/entrances/Wallmasters.h"
+#include "rando/entrances/MmUnifiedLayout.h"
 namespace CE = ComboRando::Entrances;
 using s16 = int16_t;
 using s32 = int32_t;
@@ -80,6 +81,7 @@ struct ActorContext { int totalLoadedActors; };
 struct ObjectContext {};
 struct PlayState { ObjectContext objectCtx; struct { struct { int num; } curRoom; } roomCtx; };
 bool rando = false, roomClear = false, profileAvailable = true, arenaAvailable = true;
+bool expectedWallmasters = false;
 int soulResult = 1, slot = 4;
 int soulCalls, blockCalls, overlayLoads, overlayFrees, objectCalls, arenaCalls, initCalls, listIndex;
 ActorProfile loadedProfile;
@@ -110,7 +112,7 @@ void Callback(Actor*, PlayState*) {}
 int Config_Flag(int flag) {
     assert(flag == CFG_ER_WALLMASTERS);
 #ifdef COMBO_BUILD
-    return rando && CE::ActiveMmWallmasters().active();
+    return rando && expectedWallmasters;
 #else
     return 0;
 #endif
@@ -133,6 +135,27 @@ void InstallLayout() {
         rows.push_back({std::string(src->name), std::string(dst->name), src->game, dst->game, src->id, dst->id});
     }
     CE::ActiveMmWallmasters().install(rows);
+    expectedWallmasters = true;
+}
+void InstallUnifiedLayout() {
+    CE::EntranceLayout layout;
+    layout.required = {std::string(CE::kMmTrancheCapability)};
+    layout.devBuild = true;
+    layout.settings.erWallmasters = CE::Mode::OwnGame;
+    CE::Overrides routes;
+    for (std::size_t i = 0; i < CE::kMmWallmasterSources.size(); ++i)
+        routes[CE::kMmWallmasterSources[i]] = CE::kMmBaseWallmasterDestinations[i];
+    layout.overrides = routes;
+    const nlohmann::json seed = {{"entranceLayout", CE::EncodeEntranceLayout(layout)}};
+#ifdef COMBO_ENTRANCE_DEV
+    CE::ActiveMmUnified().install(seed, CE::ActiveCapabilities());
+    expectedWallmasters = true;
+#else
+    bool refused = false;
+    try { CE::ActiveMmUnified().install(seed, CE::ActiveCapabilities()); }
+    catch (const std::exception&) { refused = true; }
+    assert(refused && !CE::ActiveMmUnified().active());
+#endif
 }
 '''
 checks = r'''
@@ -142,13 +165,16 @@ int main() {
     unsigned cases = 0;
     // Deliberately vary requested actor and loaded loadedProfile independently: the
     // reference tracks the requested ID, while vanilla's boss exception uses the loadedProfile.
-    for (int installed = 0; installed <= 1; ++installed) {
+    for (int installed = 0; installed <= 2; ++installed) {
         CE::ActiveMmWallmasters().clear();
-        if (installed) InstallLayout();
+        CE::ActiveMmUnified().clear();
+        expectedWallmasters = false;
+        if (installed == 1) InstallLayout();
+        if (installed == 2) InstallUnifiedLayout();
         for (int randomizer = 0; randomizer <= 1; ++randomizer) {
             rando = randomizer != 0;
 #ifdef COMBO_BUILD
-            assert(Combo_MMWallmasterErActive() == (installed && randomizer));
+            assert(Combo_MMWallmasterErActive() == (expectedWallmasters && randomizer));
 #endif
             for (int cleared = 0; cleared <= 1; ++cleared)
             for (s16 requested : std::array<s16, 3>{ACTOR_EN_WALLMAS, ACTOR_OTHER, ACTOR_BOSS_05})
@@ -185,6 +211,7 @@ int main() {
         }
     }
     rando = true;
+    CE::ActiveMmUnified().clear();
     InstallLayout();
     roomClear = true;
     slot = 4;
@@ -221,6 +248,8 @@ int main() {
     assert(child->objectSlot == 6 && child->home.rot.z == 0 && child->csId == 8 && child->halfDaysBits == 9);
     // Clearing a seed layout immediately removes the exception, even in rando.
     CE::ActiveMmWallmasters().clear();
+    CE::ActiveMmUnified().clear();
+    expectedWallmasters = false;
 #ifdef COMBO_BUILD
     assert(!Combo_MMWallmasterErActive());
 #endif
@@ -230,12 +259,13 @@ int main() {
     std::printf("Actual spawn: %u pinned clear-flag cases plus soul/object/boss/allocation/init/layout guards passed\n", cases);
 }
 '''
-for combo in (True, False):
-    cpp = work/('mm_wallmaster_spawn_combo.cpp' if combo else 'mm_wallmaster_spawn_standalone.cpp')
+for combo, dev in ((True, False), (True, True), (False, False)):
+    variant = 'dev' if dev else 'shipping' if combo else 'standalone'
+    cpp = work/('mm_wallmaster_spawn_' + variant + '.cpp')
     cpp.write_text(support + (active if combo else '') + '\n' + fixture['roomClearFunction'] + '\n' + spawn + checks,
                    encoding='utf-8')
-    exe = hostcxx.build(args.compiler, cpp, includes=[source/'combo'],
-                       defines=['COMBO_BUILD'] if combo else [], werror=True,
+    exe = hostcxx.build(args.compiler, cpp, includes=[source/'combo', args.json_include],
+                       defines=(['COMBO_BUILD'] if combo else []) + (['COMBO_ENTRANCE_DEV'] if dev else []), werror=True,
                        msvc=['/wd4101'], gnu=['-Wno-unused-variable'])  # native function retains a decomp padding local
     subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
 print('Combo and standalone full spawn paths match pinned MM room-clear behavior.')

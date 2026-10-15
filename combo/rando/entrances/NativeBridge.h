@@ -102,6 +102,11 @@ class NativeScope {
         if (native.applySeed && !previous.empty())
             native.applySeed(previous.c_str());
     }
+    // A successfully created save now owns the installed layout. Pending generation/import
+    // checks leave this uncommitted, so their temporary table never replaces the live slot's.
+    void Commit() {
+        previous.clear();
+    }
     NativeScope(const NativeScope&) = delete;
     NativeScope& operator=(const NativeScope&) = delete;
 };

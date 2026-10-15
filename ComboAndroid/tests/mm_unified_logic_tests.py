@@ -375,6 +375,9 @@ void Logic() {
             if (src == kSourceNames[i])
                 dst = to;
         assert(Reached(kSources[i]) == std::set<std::string>{dst} && accessWrites == 0);
+        ResetSearch();
+        soulOwned = false;
+        assert(Reached(kSources[i]).empty() && soulChecks == 1);
     }
     // Synthetic routes: a destination without no-sot needs can_reset_time, an arrival into VOID is a
     // dead end, a foreign or regionless arrival fails loudly.

@@ -328,7 +328,8 @@ extern "C" int Combo_MMCompleteOrdinaryEntrance(PlayState* play) {
     return 1;
 }
 extern "C" COMBO_EXPORT int Combo_MMWallmasterErActive(void) {
-    return IS_RANDO && CE::ActiveMmWallmasters().active();
+    const auto* settings = CE::ActiveMmUnified().settings();
+    return IS_RANDO && (CE::ActiveMmWallmasters().active() || (settings && settings->erWallmasters != CE::Mode::None));
 }
 // OoTMM v32.3 PG_ER (patch-build/index.ts:58, isEntranceShuffle): the installed unified layout shuffles
 // entrances, so hot spring water never cools (mm/patches/hot_water.S, z_parameter.c).
@@ -396,6 +397,53 @@ extern "C" void Combo_MMAfterPlayInit(PlayState* play) {
         Flags_UnsetSwitch(play, 0x14);
 }
 extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
+    if (const auto* settings = CE::ActiveMmUnified().settings()) {
+        if (!play || !actor || !IS_RANDO || settings->erWallmasters == CE::Mode::None) {
+            SPDLOG_ERROR("[ComboShip] Unified MM Wallmaster capture is inactive; using native respawn");
+            return 0;
+        }
+        const auto scene = play->sceneId == SCENE_DANPEI2TEST ? CE::SceneContext::MmDampe
+                           : play->sceneId == SCENE_REDEAD    ? CE::SceneContext::MmBeneathWell
+                                                              : CE::SceneContext::Unknown;
+        const auto* source = CE::WallmasterSource(scene, static_cast<uint8_t>(actor->room));
+        if (!source) {
+            SPDLOG_ERROR("[ComboShip] Unmapped MM Wallmaster scene {} room {}; using native respawn", play->sceneId,
+                         actor->room);
+            return 0;
+        }
+        const auto routes = CE::ActiveMmUnified().routesFrom(source->id);
+        if (routes.size() != 1 || routes.front().destination.game != CE::Game::Mm || routes.front().toVoid ||
+            routes.front().destination.id > 0xffffu) {
+            SPDLOG_ERROR("[ComboShip] Unified MM Wallmaster source {} has no native route; using native respawn",
+                         source->name);
+            return 0;
+        }
+        const auto destination = routes.front().destination.id;
+        const int age = MM_GetEffectiveHumanAge(gSaveContext.fileNum);
+        if (age < 0 || !MM_CanEntranceArrival(gSaveContext.fileNum, destination, age, 0)) {
+            SPDLOG_ERROR(
+                "[ComboShip] MM Wallmaster arrival rejected source {} destination {:08x}; using native respawn",
+                source->name, destination);
+            return 0;
+        }
+        int cutscene = gSaveContext.nextCutsceneIndex;
+        const auto native =
+            CE::FixMmNativeArrival(destination, CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE),
+                                   CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE),
+                                   CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_GREAT_BAY_TEMPLE),
+                                   CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_STONE_TOWER_TEMPLE), cutscene);
+        if (native > 0xffffu) {
+            SPDLOG_ERROR("[ComboShip] MM Wallmaster arrival fixup rejected {:08x}; using native respawn", destination);
+            return 0;
+        }
+        Combo_MMFaroreEndCycle();
+        gSaveContext.nextCutsceneIndex = cutscene;
+        play->nextEntrance = static_cast<uint16_t>(native);
+        gSaveContext.respawnFlag = 0;
+        play->transitionTrigger = TRANS_TRIGGER_START;
+        play->transitionType = TRANS_TYPE_FADE_BLACK;
+        return 1;
+    }
     if (!play || !actor || !IS_RANDO || !CE::ActiveMmWallmasters().active())
         return 0;
     const auto scene = play->sceneId == SCENE_DANPEI2TEST ? CE::SceneContext::MmDampe

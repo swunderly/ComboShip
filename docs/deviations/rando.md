@@ -2,6 +2,19 @@
 
 Preserved deviations — keep across upstream merges. See [../UPSTREAM_MERGES.md](../UPSTREAM_MERGES.md) for the merge mechanism.
 
+## Unified entrance spoiler output (M1-10, 2026-10-14)
+
+For a validated unified `entranceLayout`, ComboShip writes OoTMM v32.3's sorted, padded
+`Entrances` section, including the two implicit game links, beside the consolidated JSON as
+`<seed-name>.entrances.txt`. Headless replay also prints that section from the recorded layout.
+The JSON schema and placement readers stay unchanged; plando preserves the recorded layout.
+
+Unlike OoTMM, no-layout seeds do not emit the two default links. This applies M1's layout-only
+output rule and the recommended C8 default: preserve legacy JSON bytes and avoid adding an
+extra artifact to ordinary seeds. Reusing a spoiler filename for a no-layout seed removes its
+old derived entrance text after the new JSON has been written successfully. Unified seeds
+remain behind the development capability gate; this output does not enable a public setting.
+
 ## Cross-World Randomizer (ComboShip feature) — Increment 1 (2026-06-04)
 
 A net-new ComboShip feature (cross-game item delivery), not an upstream adaptation — but it adds
