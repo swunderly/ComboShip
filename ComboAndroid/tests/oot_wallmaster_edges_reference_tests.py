@@ -230,6 +230,21 @@ assert edges_tool.verify_audit(audit, fixture, source, blobs) == []
 assert rejected(lambda a: edge(a, 6)['evidence'][4].update(line=edge(a, 6)['evidence'][4]['line'] + 1), blobs)
 assert rejected(lambda a: a['predicateAtoms']['has_lens']['pinned'][0].update(line=237), blobs)
 
+# Pending actor-room predictions still cite real pinned area/room evidence; a blocker must not let
+# those citations drift silently. Exercise every recorded area-room citation without inventing any.
+altered_room_citations = 0
+for n in range(12, 24):
+    for index in range(len(by_n[n]['actorRoom']['areaRoomEvidence'])):
+        for field, value in [('line', 1), ('text', 'invalid area-room evidence'),
+                             ('file', 'data/macros/macros_common.yml')]:
+            problems = rejected(lambda a, n=n, index=index, field=field, value=value:
+                                edge(a, n)['actorRoom']['areaRoomEvidence'][index].update({field: value}), blobs)
+            assert any(f'edge {n:02d} ' in problem and 'actor-room area evidence' in problem
+                       for problem in problems), f'Unchecked actor-room {field} citation for edge {n}'
+            altered_room_citations += 1
+assert altered_room_citations == 60
+print('All 60 altered pending actor-room evidence citations rejected against pinned blobs.')
+
 
 def run(output, check=False, ref=reference):
     command = [sys.executable, str(source/'tools/ootmm/export_oot_wallmaster_edges.py'), '--reference', str(ref),

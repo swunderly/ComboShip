@@ -532,6 +532,8 @@ def verify_audit(audit, fixture, repo, blobs=None):
     for edge_id in sorted(set(entries) & set(edges), key=lambda i: edges[i]['n']):
         entry, edge, where = entries[edge_id], edges[edge_id], f'edge {edges[edge_id]["n"]:02d} {edge_id}'
         room = entry.get('actorRoom') or {}
+        for item in room.get('areaRoomEvidence', []):
+            check.evidence(item, f'{where} actor-room area evidence')
         if room.get('status') == 'verified':
             if room.get('dungeon') != edge['dungeon'] or edge['quest'] not in verified_quests:
                 check.fail(f'{where}: actor-room evidence names another dungeon or a quest without an archive')
