@@ -242,6 +242,9 @@ int main() {
     Expect({"--er-capability"}, 2, "--er-capability needs a value");
     Expect({"--er-capability", "a", "--er-capability", "b"}, 2, "--er-capability can be given only once");
     Expect({"--er-capability", "wallmasters"}, 2, "unknown entrance capability 'wallmasters'");
+    // --settings may provide the required capability. Defer capability/value validation to the
+    // saved-settings selection helper, which the reproduction harness executes in both builds.
+    Expect({"--settings", "saved.json", "--er", "erWallmasters=ownGame"}, 0, "entrance settings", false);
     for (const auto& capability : kEntranceCapabilities) {
 #ifdef COMBO_ENTRANCE_DEV
         if (capability.id == "wallmasters-own-game-mm-tranche") {

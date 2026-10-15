@@ -16,6 +16,8 @@
 // Exact-seed repro (generate mode): --settings <consolidated.json> restores that seed's OOT/MM settings
 // and tricks, and --master-seed <n> uses n directly instead of hashing --seed. Together they reproduce a
 // reported seed's generation bit-for-bit, which plain --seed cannot.
+// A saved entranceLayout supplies its settings and required capability; explicit --er values override
+// the corresponding saved settings. --playthrough always uses the recorded layout unchanged.
 //
 // --er <key>=<value> sets an OoTMM entrance setting by its pinned name (repeatable), and
 // --er-capability <id> selects one capability row (combo/rando/entrances/Capabilities.h), such as a
@@ -124,6 +126,54 @@ nlohmann::json MmSettingsForPlaythrough(const nlohmann::json& spoiler) {
     settings["gRando.Options.RO_MM_TUNIC_GORON"] = int(gear.tunicGoronMm);
     settings["gRando.Options.RO_MM_TUNIC_ZORA"] = int(gear.tunicZoraMm);
     return settings;
+}
+
+struct HeadlessEntranceSettings {
+    ComboRando::Entrances::Settings settings;
+    std::string capability;
+};
+
+// A saved layout supplies generation defaults, not replacement routes. Validate the original
+// envelope before applying explicit CLI overrides, so a release cannot strip a dev seed's gates.
+HeadlessEntranceSettings EntranceSettingsForHeadless(const nlohmann::json& document,
+                                                     const std::vector<std::string>& pairs,
+                                                     const std::string& capability, bool privateMm,
+                                                     const ComboRando::Entrances::CapabilitySet& active) {
+    namespace CE = ComboRando::Entrances;
+    ComboRando::RequireSupportedSettingsCapabilities(document, active);
+    const bool hasLayout = document.contains("entranceLayout");
+    bool savedPrivate = false;
+    for (const char* key : ComboRando::kLegacyEntranceKeys)
+        savedPrivate |= document.contains(key);
+    if ((hasLayout && privateMm) || ((privateMm || savedPrivate) && (!pairs.empty() || !capability.empty())))
+        throw std::invalid_argument("Unified entrance settings cannot be combined with a private MM entrance profile");
+    HeadlessEntranceSettings result;
+    result.capability = capability;
+    auto merged = pairs;
+    if (hasLayout) {
+        const auto& value = document.at("entranceLayout");
+        const auto layout = CE::DecodeEntranceLayout(value, value.contains("overrides") ? CE::LayoutPart::Seed
+                                                                                        : CE::LayoutPart::SettingsOnly);
+        if (result.capability.empty()) {
+            if (layout.required.size() != 1)
+                throw std::invalid_argument("Headless generation needs one entrance capability");
+            result.capability = layout.required.front();
+        }
+        for (const auto& row : CE::kEntranceSettings) {
+            const std::string prefix = std::string(row.key) + "=";
+            if (std::none_of(pairs.begin(), pairs.end(), [&](const auto& pair) { return pair.starts_with(prefix); }))
+                merged.push_back(prefix + std::string(row.choices[row.get(layout.settings)].value));
+        }
+    }
+    const auto error = CE::ReadEntranceArgs(merged, result.capability, active, result.settings);
+    if (!error.empty())
+        throw std::invalid_argument(error);
+    return result;
+}
+
+void CheckHeadlessEntranceReplay(const nlohmann::json& spoiler, bool entranceArgs, bool privateMm) {
+    if (spoiler.contains("entranceLayout") && (entranceArgs || privateMm))
+        throw std::invalid_argument("Entrance flags cannot override a recorded layout in --playthrough");
 }
 
 // Same module-loading seam as ComboShip.cpp's LoadDll/GetSym (see there for the RTLD notes).
@@ -252,7 +302,7 @@ int RunHeadless(int argc, char** argv) {
                 entranceCapability = argv[++i];
         }
     }
-    if (entranceArgs) {
+    if (entranceArgs && (settingsFile.empty() || !playthroughFile.empty())) {
         const bool privateMm = nativeMmOrdinaryIndoors || nativeMmOrdinaryTelescopes || nativeMmOrdinaryOverworld ||
                                nativeMmOrdinaryDungeons || nativeMmMixed || nativeMmGrottos || nativeMmWallmasters;
         const std::string error =
@@ -409,6 +459,10 @@ int RunHeadless(int argc, char** argv) {
         try {
             spoiler = nlohmann::json::parse(ReadFile(playthroughFile));
             ComboRando::RequireSupportedSeedDocument(spoiler, ComboRando::Entrances::ActiveCapabilities());
+            CheckHeadlessEntranceReplay(spoiler, entranceArgs,
+                                        nativeMmOrdinaryIndoors || nativeMmOrdinaryTelescopes ||
+                                            nativeMmOrdinaryOverworld || nativeMmOrdinaryDungeons || nativeMmMixed ||
+                                            nativeMmGrottos || nativeMmWallmasters);
             mmSettings = MmSettingsForPlaythrough(spoiler);
         } catch (const std::exception& e) {
             std::cerr << "[playthrough] could not read/parse '" << playthroughFile << "': " << e.what() << "\n";
@@ -553,10 +607,15 @@ int RunHeadless(int argc, char** argv) {
                     entranceRestoreFailed = true;
                 }
             } else if (!ootEntrances.empty()) {
-                std::cerr << "[playthrough] spoiler has entrances but soh.dll lacks the apply export — "
-                             "rebuild soh.dll; re-deriving (all-tricks pass may diverge)\n";
-                if (!SOH_ShuffleEntrances || !SOH_ShuffleEntrances(masterSeed))
+                if (spoiler.contains("entranceLayout")) {
+                    std::cerr << "[playthrough] recorded entrances need the soh apply export — no verdict\n";
                     entranceRestoreFailed = true;
+                } else {
+                    std::cerr << "[playthrough] spoiler has entrances but soh.dll lacks the apply export — "
+                                 "rebuild soh.dll; re-deriving (all-tricks pass may diverge)\n";
+                    if (!SOH_ShuffleEntrances || !SOH_ShuffleEntrances(masterSeed))
+                        entranceRestoreFailed = true;
+                }
             }
             try {
                 ComboRando::Entrances::ApplyNativeSeed(entranceNative, spoiler,
@@ -742,6 +801,13 @@ int RunHeadless(int argc, char** argv) {
             auto sj = nlohmann::json::parse(ReadFile(settingsFile));
             // Standalone per-game settings remain valid; unsupported combo capabilities do not.
             ComboRando::RequireSupportedSettingsCapabilities(sj, ComboRando::Entrances::ActiveCapabilities());
+            const auto entrances = EntranceSettingsForHeadless(
+                sj, entrancePairs, entranceCapability,
+                nativeMmOrdinaryIndoors || nativeMmOrdinaryTelescopes || nativeMmOrdinaryOverworld ||
+                    nativeMmOrdinaryDungeons || nativeMmMixed || nativeMmGrottos || nativeMmWallmasters,
+                ComboRando::Entrances::ActiveCapabilities());
+            entranceSettings = entrances.settings;
+            entranceCapability = entrances.capability;
             const auto& oot = sj.contains("oot") ? sj["oot"] : sj;
             const auto& mm = sj.contains("mm") ? sj["mm"] : sj;
             // Combined metadata is outside the native per-game settings snapshots.
