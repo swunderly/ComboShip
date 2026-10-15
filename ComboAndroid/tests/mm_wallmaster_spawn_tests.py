@@ -33,6 +33,14 @@ actor_text = (source/'mm/src/code/z_actor.c').read_text(encoding='utf-8')
 spawn = extract(actor_text, 'Actor* Actor_SpawnAsChildAndCutscene(')
 bridge = (source/'mm/2s2h/Rando/Logic/ComboEntrancesMM.cpp').read_text(encoding='utf-8')
 active = extract(bridge, 'extern "C" COMBO_EXPORT int Combo_MMWallmasterErActive(')
+soul_guard = extract(bridge, 'extern "C" int Combo_MMWallmasterSoulSpawnAllowed(')
+native_souls = (source/'mm/2s2h/Rando/ActorBehavior/ExpandedSoulsNative.cpp').read_text(encoding='utf-8')
+pre_spawn = extract(native_souls, 'extern "C" s32 MM_ExpandedSoulPreSpawn(').replace(
+    'MM_ExpandedSoulPreSpawn(', 'ActualExpandedSoulPreSpawn(', 1)
+flag_reader = extract(actor_text, 's32 Flags_GetRandoInf(')
+types = (source/'mm/2s2h/Rando/Types.h').read_text(encoding='utf-8')
+enum_start = types.rfind('typedef enum {', 0, types.index('RANDO_INF_PURCHASED_BEANS_FROM_SOUTHERN_SWAMP_SCRUB'))
+rando_inf = types[enum_start:types.index('} RandoInf;', enum_start) + len('} RandoInf;')]
 fixture = json.loads((source/'tools/ootmm/mm-wallmaster-spawn-source.json').read_text(encoding='utf-8'))
 assert fixture['revision'] == '413573d22d1d53e8a81931a70927f625b73488b9'
 wrapper = fixture['spawnWrapperFunction']
@@ -91,8 +99,32 @@ uintptr_t gSegments[16]{};
 int currentActorListIndex;
 #define IS_RANDO rando
 #define COMBO_EXPORT
-s32 MM_ExpandedSoulPreSpawn(PlayState*, s16, s32* params) {
+enum { RO_SHUFFLE_ENEMY_SOULS, RO_SHUFFLE_BOSS_SOULS, RO_MM_COMPLETE_SOULS,
+       RO_SHUFFLE_NPC_SOULS, RO_SHUFFLE_ANIMAL_SOULS, RO_SHUFFLE_MISC_SOULS,
+       RO_GENERIC_YES = 1, GAMEMODE_END_CREDITS = 3 };
+struct {
+    int gameMode;
+    struct { struct { struct {
+        uint16_t randoInf[5];
+        int randoSaveOptions[6];
+        uint8_t mmMissingSoulsOwned, expandedSoulsOwned[8];
+    } rando; } shipSaveInfo; } save;
+} gSaveContext{};
+#define RANDO_SAVE_OPTIONS gSaveContext.save.shipSaveInfo.rando.randoSaveOptions
+bool actualSoulPolicy = false;
+// Unrelated expanded/missing families are engine boundaries here. The real requested-actor,
+// installed-layout, option, credits and native randoInf ownership policy runs below.
+namespace Rando {
+using ExpandedSoulsOwnership = std::array<uint8_t, 8>;
+struct ExpandedSoulsOptions { bool enabled, npc, animal, misc; };
+template<class... T> int EvaluateMissingMmSoulPreSpawn(T...) { return 1; }
+template<class... T> int EvaluateExpandedSoulPreSpawn(T...) { return 1; }
+}
+extern "C" s32 ActualExpandedSoulPreSpawn(PlayState*, s16, s32*);
+s32 MM_ExpandedSoulPreSpawn(PlayState* play, s16 actorId, s32* params) {
     ++soulCalls;
+    if (actualSoulPolicy)
+        return ActualExpandedSoulPreSpawn(play, actorId, params);
     *params = 0x14567;
     return soulResult;
 }
@@ -137,25 +169,29 @@ void InstallLayout() {
     CE::ActiveMmWallmasters().install(rows);
     expectedWallmasters = true;
 }
-void InstallUnifiedLayout() {
+void InstallUnifiedLayout(bool enabled = true) {
     CE::EntranceLayout layout;
     layout.required = {std::string(CE::kMmTrancheCapability)};
     layout.devBuild = true;
-    layout.settings.erWallmasters = CE::Mode::OwnGame;
+    layout.settings.erWallmasters = enabled ? CE::Mode::OwnGame : CE::Mode::None;
     CE::Overrides routes;
-    for (std::size_t i = 0; i < CE::kMmWallmasterSources.size(); ++i)
-        routes[CE::kMmWallmasterSources[i]] = CE::kMmBaseWallmasterDestinations[i];
+    if (enabled)
+        for (std::size_t i = 0; i < CE::kMmWallmasterSources.size(); ++i)
+            routes[CE::kMmWallmasterSources[i]] = CE::kMmBaseWallmasterDestinations[i];
     layout.overrides = routes;
     const nlohmann::json seed = {{"entranceLayout", CE::EncodeEntranceLayout(layout)}};
 #ifdef COMBO_ENTRANCE_DEV
-    CE::ActiveMmUnified().install(seed, CE::ActiveCapabilities());
-    expectedWallmasters = true;
-#else
+    if (enabled) {
+        CE::ActiveMmUnified().install(seed, CE::ActiveCapabilities());
+        expectedWallmasters = true;
+        return;
+    }
+#endif
+    // Shipping rejects the tranche; an all-none layout is also invalid in dev.
     bool refused = false;
     try { CE::ActiveMmUnified().install(seed, CE::ActiveCapabilities()); }
     catch (const std::exception&) { refused = true; }
     assert(refused && !CE::ActiveMmUnified().active());
-#endif
 }
 '''
 checks = r'''
@@ -257,17 +293,80 @@ int main() {
     loadedProfile.id = ACTOR_EN_WALLMAS;
     assert(!Actor_SpawnAsChildAndCutscene(&ctx, &play, ACTOR_EN_WALLMAS, 0,0,0,0,0,0,0,0,0,nullptr));
     std::printf("Actual spawn: %u pinned clear-flag cases plus soul/object/boss/allocation/init/layout guards passed\n", cases);
+    // The old matrix mocked the complete soul pre-gate. Execute the real native entry point,
+    // installed layout and flag reader so a Wallmaster cannot slip through that stub again.
+    actualSoulPolicy = true;
+    unsigned ownershipCases = 0;
+    for (int installed = 0; installed < 4; ++installed) {
+        CE::ActiveMmWallmasters().clear();
+        CE::ActiveMmUnified().clear();
+        expectedWallmasters = false;
+        if (installed == 1) InstallLayout();
+        if (installed >= 2) InstallUnifiedLayout(installed == 2);
+        for (int randomizer : {0, 1})
+        for (int shuffled : {0, 1})
+        for (int owned : {0, 1})
+        for (int credits : {0, 1})
+        for (int cleared : {0, 1})
+        for (s16 requested : {s16(ACTOR_EN_WALLMAS), s16(ACTOR_OTHER)}) {
+            rando = randomizer != 0;
+            RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] = shuffled;
+            gSaveContext.gameMode = credits ? GAMEMODE_END_CREDITS : 0;
+            // Use the production enum and reader; unrelated bits must not count as ownership.
+            auto& bits = gSaveContext.save.shipSaveInfo.rando.randoInf;
+            std::memset(bits, 0xff, sizeof(bits));
+            const int flag = RANDO_INF_OBTAINED_SOUL_OF_ENEMY_WALLMASTERS;
+            if (!owned) bits[flag >> 4] &= ~(1u << (flag & 0xf));
+            assert(bool(Flags_GetRandoInf(flag)) == bool(owned));
+            bool shouldBlock = false;
+#if defined(COMBO_BUILD) && defined(COMBO_ENTRANCE_DEV)
+            shouldBlock = installed == 2 && randomizer && shuffled && !owned && !credits &&
+                          requested == ACTOR_EN_WALLMAS;
+#endif
+            roomClear = cleared != 0;
+            loadedProfile = {requested, ACTORCAT_ENEMY, 10, sizeof(Actor), 0, Callback, Callback, Callback, Callback};
+            sActorIdToSpawn = requested;
+            const bool blockedByRoom = GetRoomClearFlagForActor(&play, 7) != 0;
+            ResetCounters();
+            ActorContext policyContext{};
+            const auto saved = gSaveContext;
+            Actor* result = Actor_SpawnAsChildAndCutscene(&policyContext, &play, requested, 0,0,0,0,0,0,0,0,0,nullptr);
+            assert(bool(result) == (!shouldBlock && !blockedByRoom));
+            assert(soulCalls == 1 && blockCalls == int(shouldBlock));
+            assert(overlayLoads == int(!shouldBlock) && objectCalls == int(!shouldBlock));
+            assert(initCalls == int(result != nullptr));
+            assert(std::memcmp(&saved, &gSaveContext, sizeof(saved)) == 0);
+            ++ownershipCases;
+        }
+    }
+    std::printf("Actual unified soul policy: %u ownership/family/layout/credits/room cases passed\n", ownershipCases);
 }
 '''
 for combo, dev in ((True, False), (True, True), (False, False)):
     variant = 'dev' if dev else 'shipping' if combo else 'standalone'
     cpp = work/('mm_wallmaster_spawn_' + variant + '.cpp')
-    cpp.write_text(support + (active if combo else '') + '\n' + fixture['roomClearFunction'] + '\n' + spawn + checks,
+    harness = (rando_inf + '\n' + support + flag_reader + (active + soul_guard if combo else '') + '\n' +
+               pre_spawn + '\n' + fixture['roomClearFunction'] + '\n' + spawn + checks)
+    cpp.write_text(harness,
                    encoding='utf-8')
     exe = hostcxx.build(args.compiler, cpp, includes=[source/'combo', args.json_include],
                        defines=(['COMBO_BUILD'] if combo else []) + (['COMBO_ENTRANCE_DEV'] if dev else []), werror=True,
                        msvc=['/wd4101'], gnu=['-Wno-unused-variable'])  # native function retains a decomp padding local
     subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
+    if combo and dev:
+        # Behavioral negative control: recreate the old native entry point without this guard.
+        without_guard = re.sub(r'#ifdef COMBO_BUILD\s+if \(!Combo_MMWallmasterSoulSpawnAllowed\(actorId\)\)\s+return 0;\s+#endif',
+                               '', pre_spawn)
+        assert without_guard != pre_spawn
+        negative = work/'mm_wallmaster_soul_unguarded.cpp'
+        negative.write_text(harness.replace(pre_spawn, without_guard), encoding='utf-8')
+        negative_exe = hostcxx.build(args.compiler, negative, includes=[source/'combo', args.json_include],
+                                    defines=['COMBO_BUILD', 'COMBO_ENTRANCE_DEV'], werror=True,
+                                    msvc=['/wd4101'], gnu=['-Wno-unused-variable'])
+        result = subprocess.run([str(negative_exe)], capture_output=True, text=True, timeout=hostcxx.RUN_TIMEOUT)
+        assert result.returncode != 0, 'Omitting the real soul guard escaped the ownership regression'
+        assert 'Assertion' in result.stderr or 'assertion' in result.stderr, result.stderr
+        print('Behavioral negative control: pre-fix unguarded spawn fails actual ownership assertion.')
 print('Combo and standalone full spawn paths match pinned MM room-clear behavior.')
 # 2Ship loads room actor lists through z_scene_2SH.cpp, never z_scene.c's Scene_CommandActorList: the live handler
 # must restart the missing-soul room guard, or a room shut by a missing soul stays shut after the soul is owned.

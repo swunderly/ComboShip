@@ -16,6 +16,7 @@ int Combo_MMCompleteOrdinaryEntrance(PlayState* play);
 void Combo_MMClearOrdinaryTransitionMarker(void);
 int Combo_MMWallmasterTransport(PlayState* play, Actor* actor);
 int Combo_MMWallmasterErActive(void);
+int Combo_MMWallmasterSoulSpawnAllowed(int actorId);
 int Combo_MMEntranceShuffleActive(void);
 void Combo_MMRecordInitialEntrance(int entrance);
 void Combo_MMReturnToInitialEntranceOnPlayInit(void);

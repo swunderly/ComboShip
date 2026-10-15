@@ -331,6 +331,15 @@ extern "C" COMBO_EXPORT int Combo_MMWallmasterErActive(void) {
     const auto* settings = CE::ActiveMmUnified().settings();
     return IS_RANDO && (CE::ActiveMmWallmasters().active() || (settings && settings->erWallmasters != CE::Mode::None));
 }
+extern "C" int Combo_MMWallmasterSoulSpawnAllowed(int actorId) {
+    const auto* settings = CE::ActiveMmUnified().settings();
+    // OoTMM v32.3 mm/actors.c:263,443: credits bypass souls; a Wallmaster needs its soul.
+    // Keep the existing invulnerability policy outside the installed unified Wallmaster tranche.
+    return actorId != ACTOR_EN_WALLMAS || !IS_RANDO || !settings || settings->erWallmasters == CE::Mode::None ||
+           gSaveContext.gameMode == GAMEMODE_END_CREDITS ||
+           RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] != RO_GENERIC_YES ||
+           Flags_GetRandoInf(RANDO_INF_OBTAINED_SOUL_OF_ENEMY_WALLMASTERS);
+}
 // OoTMM v32.3 PG_ER (patch-build/index.ts:58, isEntranceShuffle): the installed unified layout shuffles
 // entrances, so hot spring water never cools (mm/patches/hot_water.S, z_parameter.c).
 extern "C" int Combo_MMEntranceShuffleActive(void) {

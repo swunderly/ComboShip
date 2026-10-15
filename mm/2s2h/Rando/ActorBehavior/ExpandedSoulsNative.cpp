@@ -3,6 +3,9 @@
 extern "C" {
 #include "variables.h"
 }
+#ifdef COMBO_BUILD
+extern "C" int Combo_MMWallmasterSoulSpawnAllowed(int actorId);
+#endif
 namespace Rando {
 bool HaveExpandedSoul(ExpandedSoul soul) {
     const unsigned i = static_cast<unsigned>(soul);
@@ -30,6 +33,10 @@ bool RemoveExpandedSoulItem(RandoItemId item) {
 extern "C" s32 MM_ExpandedSoulPreSpawn(PlayState* play, s16 actorId, s32* params) {
     if (!IS_RANDO)
         return 1;
+#ifdef COMBO_BUILD
+    if (!Combo_MMWallmasterSoulSpawnAllowed(actorId))
+        return 0;
+#endif
     const int missing = Rando::EvaluateMissingMmSoulPreSpawn(
         actorId, static_cast<unsigned>(*params), RANDO_SAVE_OPTIONS[RO_MM_COMPLETE_SOULS],
         gSaveContext.gameMode == GAMEMODE_END_CREDITS, RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS],
