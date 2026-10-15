@@ -116,16 +116,25 @@ constexpr const char* SyncItemsAndFlags = "gRemote.Anchor.RoomSettings.SyncItems
 // that plays an edited consolidated spoiler back verbatim. Resolved like the combo-gen syms above.
 typedef const char* (*FnDump)(void);
 typedef int (*FnRequestReload)(const char*);
+typedef int (*FnPlandoFileSelectSlot)(void);
 FnDump sSohDump = nullptr;
 FnDump sMmDump = nullptr;
 FnRequestReload sRequestReload = nullptr;
+FnPlandoFileSelectSlot sPlandoFileSelectSlot = nullptr;
 void ResolvePlandoSyms() {
     if (!sSohDump)
         sSohDump = (FnDump)Combo_ResolveSym("soh", "SOH_DumpRandoStaticData");
     if (!sRequestReload)
         sRequestReload = (FnRequestReload)Combo_ResolveSym("soh", "SOH_RequestComboReload");
+    if (!sPlandoFileSelectSlot)
+        sPlandoFileSelectSlot = (FnPlandoFileSelectSlot)Combo_ResolveSym("soh", "SOH_GetFileSelectSlot");
     if (!sMmDump)
         sMmDump = (FnDump)Combo_ResolveSym("2ship", "MM_DumpRandoStaticData");
+}
+
+int PlandoImportTarget() {
+    const int slot = sPlandoFileSelectSlot ? sPlandoFileSelectSlot() : -1;
+    return slot >= 0 && slot < 3 ? slot : -1;
 }
 
 // Combo plandomizer editable state (single ComboMenu instance -> file-static). rows is the edited
@@ -1253,6 +1262,12 @@ void PlandoLoad() {
 // (SuffixCrossGameItems on native collisions + BuildForeignArray for cross-game entries).
 void PlandoSavePlay() {
     ResolvePlandoSyms();
+    const int targetSlot = PlandoImportTarget();
+    if (targetSlot < 0) {
+        sPlando.status = "Highlight File 1, 2 or 3 on the file-select screen before saving.";
+        sPlando.statusError = true;
+        return;
+    }
     nlohmann::json j;
     try {
         j = nlohmann::json::parse(sPlando.loadedJson);
@@ -1327,7 +1342,7 @@ void PlandoSavePlay() {
     }
     int ok = sRequestReload(path.string().c_str());
     if (ok) {
-        sPlando.status = "Saved. Start a file to play it.";
+        sPlando.status = "Saved for File " + std::to_string(targetSlot + 1) + ". Start that file to play it.";
         sPlando.statusError = false;
     } else {
         sPlando.status = "Reload rejected (be on the file-select screen; no generation running).";
@@ -1373,13 +1388,16 @@ void DrawComboPlandoPanel() {
     if (sPlando.loaded) {
         ImGui::SameLine();
         const bool onFileSelect = sIsOnFileSelect && sIsOnFileSelect();
-        const bool canPlay = sRequestReload && onFileSelect;
+        const int targetSlot = PlandoImportTarget();
+        const bool canPlay = sRequestReload && onFileSelect && targetSlot >= 0;
+        const std::string saveLabel = targetSlot >= 0 ? "Save for File " + std::to_string(targetSlot + 1) : "Save";
         if (!canPlay)
             ImGui::BeginDisabled();
         ComboRando::ComboMenu_PushButton(theme);
-        if (ImGui::Button("Save"))
+        if (ImGui::Button(saveLabel.c_str()))
             PlandoSavePlay();
         ComboRando::ComboMenu_PopButton();
+        ComboRando::MenuTooltip("Imports into the file highlighted on the file-select screen.");
         if (!canPlay)
             ImGui::EndDisabled();
         if (sRequestReload && !onFileSelect) {
