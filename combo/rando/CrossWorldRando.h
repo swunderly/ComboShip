@@ -513,7 +513,12 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                                                  ComboRando::ComboGenProgress* progress = nullptr,
                                                  const std::string& forcedOotJson = "",
                                                  OotAccess ootAccess = OotAccess::ALL_REACHABLE, CwGoal goal = {},
-                                                 GameId startingGame = GAME_OOT, uint32_t sharedMask = 0) {
+                                                 GameId startingGame = GAME_OOT, uint32_t sharedMask = 0
+#ifdef COMBO_RANDO_DIAGNOSTICS
+                                                 ,
+                                                 const std::function<void(const nlohmann::json&)>& trace = {}
+#endif
+) {
     CombinedFillResult result;
     result.success = false;
 
@@ -1130,6 +1135,9 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         std::unordered_set<std::string> ootReachable, mmReachable;
         std::vector<std::string> ootOwned, mmOwned;
         std::unordered_map<std::string, int> spheres;
+#ifdef COMBO_RANDO_DIAGNOSTICS
+        std::unordered_map<std::string, int> placementSpheres;
+#endif
     };
     auto reachableFixpoint = [&](const std::vector<std::string>& ootBase,
                                  const std::vector<std::string>& mmBase) -> FixResult {
@@ -1146,6 +1154,9 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         // mmOwned this call, so re-querying doesn't duplicate them as ootOwned grows.
         size_t sharedGiven[SF_COUNT] = { 0 };
         std::unordered_map<std::string, int> spheres;
+#ifdef COMBO_RANDO_DIAGNOSTICS
+        std::unordered_map<std::string, int> placementSpheres;
+#endif
         int sphere = 1;
         for (;;) {
             if (effectiveSharedMask != 0) {
@@ -1193,12 +1204,24 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
                     if (credit.renewal)
                         externalMmBeanRenewal = true;
                     credited[i] = true;
+#ifdef COMBO_RANDO_DIAGNOSTICS
+                    if (trace)
+                        placementSpheres.emplace(checkKey(placements[i].check), sphere - 1);
+#endif
                     changed = true;
                 }
             }
             if (!changed)
-                return { std::move(ootReachable), std::move(mmReachable), std::move(ootOwned), std::move(mmOwned),
-                         std::move(spheres) };
+                return { std::move(ootReachable),
+                         std::move(mmReachable),
+                         std::move(ootOwned),
+                         std::move(mmOwned),
+                         std::move(spheres)
+#ifdef COMBO_RANDO_DIAGNOSTICS
+                             ,
+                         std::move(placementSpheres)
+#endif
+                };
         }
     };
 
@@ -1622,6 +1645,40 @@ inline CombinedFillResult CrossWorldCombinedFill(const std::string& sohDumpJson,
         const bool needRetry = (ootAccess != OotAccess::NO_LOGIC && !goalOk) ||
                                (everyCheck && (missingOot || missingMm)) ||
                                (ootAccess == OotAccess::NO_LOGIC && mmAdvUnreachable);
+#ifdef COMBO_RANDO_DIAGNOSTICS
+        // Observe the completed validation only: no additional oracle/search/RNG operation.
+        if (trace) {
+            nlohmann::json rows = nlohmann::json::array();
+            for (const auto& p : placements) {
+                const auto key = checkKey(p.check);
+                const auto sphere = vf.placementSpheres.find(key);
+                rows.push_back(
+                    { { "checkGame", p.check.game == GAME_OOT ? "oot" : "mm" },
+                      { "check", p.check.name },
+                      { "itemGame", p.item.game == GAME_OOT ? "oot" : "mm" },
+                      { "item", p.item.name },
+                      { "advancement", p.item.advancement },
+                      { "locked", lockedCheckKeys.count(key) != 0 },
+                      { "reachable", (p.check.game == GAME_OOT ? ootFinal : mmFinal).count(p.check.name) != 0 },
+                      { "sphere",
+                        sphere == vf.placementSpheres.end() ? nlohmann::json() : nlohmann::json(sphere->second) } });
+            }
+            trace({ { "pass", pass },
+                    { "masterSeed", masterSeed },
+                    { "needRetry", needRetry },
+                    { "goalReached", goalOk },
+                    { "ganon", ootWin },
+                    { "majora", mmWin },
+                    { "missingOot", missingOot },
+                    { "missingMm", missingMm },
+                    { "ootOwned", vf.ootOwned },
+                    { "mmOwned", vf.mmOwned },
+                    { "placements", rows },
+                    { "ootQueryCount", ootStats.count },
+                    { "mmQueryCount", mmStats.count },
+                    { "rngState", rng.s } });
+        }
+#endif
         if (needRetry) {
             lastPassError =
                 "Combined " + std::string(everyCheck ? "Every check reachable" : "completion") +

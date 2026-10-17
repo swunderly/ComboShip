@@ -230,6 +230,10 @@ add_compile_definitions(COMBO_BUILD)
 # ComboShip: dev-only OoTMM entrance capabilities (combo/rando/entrances/Capabilities.h). Never on in a
 # release: release.ps1 refuses a cache with it on, and verify_apk.py refuses a library with its dev marker.
 option(COMBO_ENTRANCE_DEV "Compile dev-only entrance capabilities and the dev build marker" OFF)
+option(COMBO_RANDO_DIAGNOSTICS "Compile private headless fill diagnostics (never a release candidate)" OFF)
+if(COMBO_RANDO_DIAGNOSTICS)
+    add_compile_definitions(COMBO_RANDO_DIAGNOSTICS=1)
+endif()
 if(COMBO_ENTRANCE_DEV)
     add_compile_definitions(COMBO_ENTRANCE_DEV=1)
 endif()

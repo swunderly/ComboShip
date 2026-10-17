@@ -234,6 +234,7 @@ int RunHeadless(int argc, char** argv) {
     int startingGameArg = -1;
     // Shared Items: "all", "none", or a comma-separated key list (see SharedItems.h). Empty => menu CVars.
     std::string sharedItemsArg;
+    std::string diagnosticsDir;
     bool nativeMmOrdinaryIndoors = false, nativeMmOrdinaryTelescopes = false;
     bool nativeMmOrdinaryOverworld = false, nativeMmOrdinaryDungeons = false;
     nlohmann::json savedOrdinaryEntrances, savedGrottoEntrances, savedMixedEntrances;
@@ -284,7 +285,13 @@ int RunHeadless(int argc, char** argv) {
             count = std::max(1, std::atoi(argv[++i]));
         else if (a == "--playthrough" && i + 1 < argc)
             playthroughFile = argv[++i];
-        else if (a == "--settings" && i + 1 < argc)
+        else if (a == "--diagnostics-dir") {
+            if (!diagnosticsDir.empty() || i + 1 >= argc || argv[i + 1][0] == '\0' || argv[i + 1][0] == '-') {
+                std::cerr << "[comborando] --diagnostics-dir needs one new directory\n";
+                return 2;
+            }
+            diagnosticsDir = argv[++i];
+        } else if (a == "--settings" && i + 1 < argc)
             settingsFile = argv[++i];
         else if (a == "--master-seed" && i + 1 < argc) {
             masterSeedArg = static_cast<uint32_t>(std::strtoul(argv[++i], nullptr, 10));
@@ -303,6 +310,31 @@ int RunHeadless(int argc, char** argv) {
                 entranceCapability = argv[++i];
         }
     }
+    if (!diagnosticsDir.empty()) {
+#ifdef COMBO_RANDO_DIAGNOSTICS
+        if (count != 1 || !playthroughFile.empty() || !std::filesystem::create_directory(diagnosticsDir)) {
+            std::cerr << "[comborando] diagnostics require one generated seed and a new directory\n";
+            return 2;
+        }
+#else
+        std::cerr << "[comborando] this build has no private fill diagnostics\n";
+        return 2;
+#endif
+    }
+#ifdef COMBO_RANDO_DIAGNOSTICS
+    auto writeDiagnostic = [&](const std::string& name, const nlohmann::json& data) {
+        if (diagnosticsDir.empty())
+            return;
+        auto path = std::filesystem::path(diagnosticsDir) / (name + ".json");
+        if (std::filesystem::exists(path))
+            throw std::runtime_error("Diagnostic output already exists");
+        std::ofstream output(path, std::ios::binary);
+        output << data.dump(2) << '\n';
+        output.close();
+        if (!output)
+            throw std::runtime_error("Could not write diagnostic output");
+    };
+#endif
     if (entranceArgs && (settingsFile.empty() || !playthroughFile.empty())) {
         const bool privateMm = nativeMmOrdinaryIndoors || nativeMmOrdinaryTelescopes || nativeMmOrdinaryOverworld ||
                                nativeMmOrdinaryDungeons || nativeMmMixed || nativeMmGrottos || nativeMmWallmasters;
@@ -352,6 +384,10 @@ int RunHeadless(int argc, char** argv) {
     // OOT entrance shuffle (#90) — without this the validator checks a vanilla entrance graph.
     auto SOH_ShuffleEntrances = Sym<int (*)(uint64_t)>(soh, "SOH_ShuffleEntrancesForCombo");
     auto SOH_DumpEntranceOverrides = Sym<FnDump>(soh, "SOH_DumpEntranceOverrides");
+#ifdef COMBO_RANDO_DIAGNOSTICS
+    auto SOH_EnableOracleDiagnostics = Sym<int (*)(void)>(soh, "SOH_EnableOracleDiagnostics");
+    auto SOH_GetOracleDiagnostics = Sym<FnDump>(soh, "SOH_GetOracleDiagnostics");
+#endif
     auto SOH_ApplyEntranceOverrides = Sym<int (*)(const char*)>(soh, "SOH_ApplyEntranceOverridesForCombo");
     auto MM_Restore = Sym<FnOracleVoid>(mm, "Combo_MM_Rando_Restore");
     auto SOH_DumpEnabledTricks = Sym<FnDump>(soh, "SOH_DumpEnabledTricks");
@@ -1034,6 +1070,23 @@ int RunHeadless(int argc, char** argv) {
                 }
             }
             std::string forced = SOH_GetForced ? SOH_GetForced(masterSeed) : "";
+#ifdef COMBO_RANDO_DIAGNOSTICS
+            const auto diagnosticPrefix =
+                "seed-" + std::to_string(masterSeed) + "-attempt-" + std::to_string(attempt + 1);
+            if (!diagnosticsDir.empty()) {
+                if (!SOH_EnableOracleDiagnostics || !SOH_GetOracleDiagnostics || !SOH_DumpEntranceOverrides ||
+                    !SOH_EnableOracleDiagnostics()) {
+                    std::cerr << "[comborando] headless native diagnostic exports are unavailable\n";
+                    return 2;
+                }
+                writeDiagnostic(diagnosticPrefix + "-before-entrances",
+                                { { "masterSeed", masterSeed },
+                                  { "mmStart", mmStart },
+                                  { "ootDump", nlohmann::json::parse(sohDump) },
+                                  { "mmFixed", nlohmann::json::parse(mmDump).value("fixed", nlohmann::json::array()) },
+                                  { "forced", forced.empty() ? nlohmann::json() : nlohmann::json::parse(forced) } });
+            }
+#endif
             // Same placement as RunComboFill: after the dump/forced read, before the fill, so logic
             // validates the shuffled world. No-op when the entrance options are off.
             if (SOH_ShuffleEntrances && !SOH_ShuffleEntrances(masterSeed)) {
@@ -1042,6 +1095,11 @@ int RunHeadless(int argc, char** argv) {
                     pinStartOot = true;
                 continue;
             }
+#ifdef COMBO_RANDO_DIAGNOSTICS
+            if (!diagnosticsDir.empty())
+                writeDiagnostic(diagnosticPrefix + "-native-entrances",
+                                nlohmann::json::parse(SOH_DumpEntranceOverrides()));
+#endif
             ComboRando::OotAccess ootAccess = ComboRando::OotAccessFromDump(sohDump);
             if (ootAccess != ComboRando::OotAccess::NO_LOGIC && readRule)
                 ootAccess = readRule("gCombo.Rando.Reachability", 0) ? ComboRando::OotAccess::BEATABLE_ONLY
@@ -1157,9 +1215,24 @@ int RunHeadless(int argc, char** argv) {
                 std::cerr << "[comborando] entrance layout generation: " << error.what() << "\n";
                 return 2;
             }
+#ifdef COMBO_RANDO_DIAGNOSTICS
+            std::function<void(const nlohmann::json&)> trace;
+            if (!diagnosticsDir.empty()) {
+                trace = [&](const nlohmann::json& snapshot) {
+                    auto data = snapshot;
+                    data["nativeOotQuery"] = nlohmann::json::parse(SOH_GetOracleDiagnostics());
+                    writeDiagnostic(diagnosticPrefix + "-pass-" + std::to_string(snapshot.at("pass").get<int>()), data);
+                };
+            }
+#endif
             r = ComboRando::CrossWorldCombinedFill(sohDump, mmDump, masterSeed, oot, mmO, nullptr, forced, ootAccess,
                                                    goal, mmStart ? ComboRando::GAME_MM : ComboRando::GAME_OOT,
-                                                   sharedMask);
+                                                   sharedMask
+#ifdef COMBO_RANDO_DIAGNOSTICS
+                                                   ,
+                                                   trace
+#endif
+            );
             if (r.success) {
                 resolvedMmStart = mmStart;
                 // Cross-hint data (Phase 2/3 mirror of RunComboFill, incl. the same area maps so the

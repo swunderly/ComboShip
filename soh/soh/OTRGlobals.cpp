@@ -6263,6 +6263,27 @@ extern "C" COMBO_EXPORT void SOH_SetSeedGenerated(uint8_t g) {
 
 static bool sOracleInitialized = false;
 
+#ifdef COMBO_RANDO_DIAGNOSTICS
+// Private headless observation only. Never enabled by the application or an ordinary build.
+static bool sOracleDiagnostics = false;
+static uint64_t sOracleDiagnosticQuery = 0;
+static nlohmann::json sOracleDiagnosticOwned = nlohmann::json::array();
+static nlohmann::json sOracleDiagnosticLast;
+extern "C" COMBO_EXPORT int SOH_EnableOracleDiagnostics(void) {
+    if (!gComboHeadlessRando)
+        return 0;
+    sOracleDiagnostics = true;
+    sOracleDiagnosticQuery = 0;
+    sOracleDiagnosticLast = nlohmann::json();
+    return 1;
+}
+extern "C" COMBO_EXPORT const char* SOH_GetOracleDiagnostics(void) {
+    static std::string buf;
+    buf = sOracleDiagnosticLast.dump();
+    return buf.c_str();
+}
+#endif
+
 static void EnsureOracleInit() {
     if (sOracleInitialized)
         return;
@@ -6314,6 +6335,10 @@ extern "C" COMBO_EXPORT void Combo_SOH_Rando_SetOwnedItems(const char* itemNames
     auto ctx = OTRGlobals::Instance->gRandoContext;
     try {
         auto items = nlohmann::json::parse(itemNamesJson);
+#ifdef COMBO_RANDO_DIAGNOSTICS
+        if (sOracleDiagnostics)
+            sOracleDiagnosticOwned = items;
+#endif
         for (const auto& name : items) {
             auto it = Rando::StaticData::itemNameToEnum.find(name.get<std::string>());
             if (it == Rando::StaticData::itemNameToEnum.end())
@@ -6369,6 +6394,35 @@ extern "C" COMBO_EXPORT const char* Combo_SOH_Rando_GetReachableChecks(void) {
             out.push_back(name);
     }
     buf = out.dump();
+#ifdef COMBO_RANDO_DIAGNOSTICS
+    if (sOracleDiagnostics) {
+        auto region = [](auto id) {
+            auto* r = RegionTable(id);
+            return nlohmann::json{ { "childDay", r->childDay },
+                                   { "childNight", r->childNight },
+                                   { "adultDay", r->adultDay },
+                                   { "adultNight", r->adultNight } };
+        };
+        const auto logic = ctx->GetLogic();
+        sOracleDiagnosticLast = { { "buildMarker", "ComboShip entrance dev build - not for release" },
+                                  { "query", ++sOracleDiagnosticQuery },
+                                  { "ownedInput", sOracleDiagnosticOwned },
+                                  { "startAge",
+                                    ctx->GetOption(RSK_SELECTED_STARTING_AGE).Is(RO_AGE_ADULT) ? "adult" : "child" },
+                                  { "items",
+                                    { { "RG_MASTER_SWORD", logic->HasItem(RG_MASTER_SWORD) },
+                                      { "RG_FAIRY_OCARINA", logic->HasItem(RG_FAIRY_OCARINA) },
+                                      { "RG_OCARINA_OF_TIME", logic->HasItem(RG_OCARINA_OF_TIME) },
+                                      { "RG_SONG_OF_TIME", logic->HasItem(RG_SONG_OF_TIME) },
+                                      { "RG_KOKIRI_EMERALD", logic->HasItem(RG_KOKIRI_EMERALD) },
+                                      { "RG_GORON_RUBY", logic->HasItem(RG_GORON_RUBY) },
+                                      { "RG_ZORA_SAPPHIRE", logic->HasItem(RG_ZORA_SAPPHIRE) } } },
+                                  { "root", region(RR_ROOT) },
+                                  { "temple", region(RR_TEMPLE_OF_TIME) },
+                                  { "beyondDoorOfTime", region(RR_TOT_BEYOND_DOOR_OF_TIME) },
+                                  { "reachableCount", reachable.size() } };
+    }
+#endif
     return buf.c_str();
 }
 
