@@ -907,6 +907,8 @@ s32 Flags_GetClearTemp(PlayState* play, s32 roomNumber) {
  * Sets a current scene temp clear flag.
  */
 void Flags_SetClearTemp(PlayState* play, s32 roomNumber) {
+    if (!MM_MissingSoulRoomCanClear(play, roomNumber))
+        return;
     play->actorCtx.sceneFlags.clearedRoomTemp |= (1 << roomNumber);
 }
 

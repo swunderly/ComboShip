@@ -191,5 +191,6 @@ otr=(source/'soh/soh/z_scene_otr.cpp').read_text(encoding='utf-8')
 body=otr[hostcxx.find(otr,'bool Scene_CommandActorList('):];body=body[:body.index('\n}\n')]
 assert 'Combo_SilverResetRoom();' in body and 'Combo_OotSoulResetRoom(play);' in body,'z_scene_otr.cpp Scene_CommandActorList no longer resets the per-room silver rupee and soul state'
 assert body.index('Combo_SilverResetRoom();')<body.index('play->numSetupActors'),'the room reset must run before the room actors are set up'
+assert body.index('Combo_OotSoulResetRoom(play);')<body.index('play->numSetupActors'), 'the soul room guard must reset before the room actors are set up'
 assert re.search(r'Scene_CommandActorList,\s*// SCENE_CMD_ID_ACTOR_LIST',otr),'the OTR scene command table no longer routes actor lists to Scene_CommandActorList'
 print('PASS: rooms loaded through z_scene_otr.cpp reset the silver rupee numbering and soul room state.')
