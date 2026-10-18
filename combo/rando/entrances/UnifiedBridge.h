@@ -122,7 +122,7 @@ inline TempleFacts UnifiedTempleFacts(const UnifiedGeneration& g) {
                     : ages == 2 ? TempleStartingAge::Child
                                 : TempleStartingAge::Random;
     f.logicEnabled = g.access != OotAccess::NO_LOGIC;
-    f.glitchless = f.logicEnabled; // RSK_LOGIC_RULES is glitchless or no logic
+    f.glitchless = g.readSetting && g.readSetting("gRandoSettings.LogicRules", 0) == 0;
     f.shipwrightEntrances = ShipEntrancesActive(g.readSetting);
     f.songTravelLogic = g.songTravelLogic;
     f.foreignSongsLogic = g.foreignSongsLogic;

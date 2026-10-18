@@ -443,6 +443,38 @@ int main(int argc, char **argv) {
   const auto actual = DecodeEntranceLayout(
       GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()));
   assert(actual.ootMq == OotQuests{});
+  // The generator must read the same settings-level logic fact as the menu,
+  // rather than assuming that every logic-enabled caller is glitchless.
+  for (int rawLogic : {-1, 2, 99}) {
+    Fake::Reset();
+    auto unsupported = Generation();
+    unsupported.readSetting = [rawLogic](const char *key, int fallback) {
+      return std::string_view(key) == "gRandoSettings.LogicRules" ? rawLogic
+                                                                  : fallback;
+    };
+    UnifiedEntranceStats stats;
+    unsupported.stats = &stats;
+    bool refused = false;
+    try {
+      GenerateEntranceLayout(unsupported, Fake::Native(), Fake::Probe());
+    } catch (const UnifiedEntranceRefused &error) {
+      refused =
+          std::string(error.what()).find("glitchless") != std::string::npos;
+    }
+    assert(refused && stats.randomDraws == 0);
+    Untouched();
+  }
+  Fake::Reset();
+  auto noLogic = Generation();
+  noLogic.access = OotAccess::NO_LOGIC;
+  noLogic.readSetting = [](const char *key, int fallback) {
+    return std::string_view(key) == "gRandoSettings.LogicRules" ? 1 : fallback;
+  };
+  UnifiedEntranceStats noLogicStats;
+  noLogic.stats = &noLogicStats;
+  GenerateEntranceLayout(noLogic, Fake::Native(), Fake::Probe());
+  assert(noLogicStats.randomDraws == 39 && noLogicStats.completeChecks == 1 &&
+         noLogicStats.assumedChecks == 0 && Fake::queries == 0);
   CheckShortcutPoolGuards();
   std::ostringstream quiet;
   auto *previousOutput = std::cout.rdbuf(quiet.rdbuf());
