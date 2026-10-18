@@ -5,6 +5,15 @@ find_package(Threads REQUIRED)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 enable_testing()
 
+add_executable(mm_fixture_policy_tests mm_fixture_policy_tests.cpp)
+target_include_directories(mm_fixture_policy_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../combo")
+if(MSVC)
+    target_compile_options(mm_fixture_policy_tests PRIVATE /UNDEBUG)
+else()
+    target_compile_options(mm_fixture_policy_tests PRIVATE -UNDEBUG)
+endif()
+add_test(NAME mm_dev_fixture_rejects_other_files_and_unknown_rooms COMMAND mm_fixture_policy_tests)
+
 # run_tests.py (next to this file) configures, builds and runs everything below
 # with one command. The tests live in the repository they exercise, so the
 # production sources default to this checkout.

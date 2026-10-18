@@ -42,6 +42,10 @@ static void RegisterComboCommand(const std::string& name, Ship::CommandEntry ent
         Ship::Context::GetRawInstance()->GetWindow()->GetGui()->GetGuiWindow("Console")) \
         ->SendInfoMessage
 
+#if defined(COMBO_BUILD) && defined(COMBO_ENTRANCE_DEV)
+#include "MmM1Fixture.h"
+#endif
+
 static bool ActorSpawnHandler(std::shared_ptr<Ship::Console> Console, const std::vector<std::string>& args,
                               std::string* output) {
     if ((args.size() != 9) && (args.size() != 3) && (args.size() != 6)) {
@@ -284,6 +288,13 @@ static bool QuitHandler(std::shared_ptr<Ship::Console> Console, const std::vecto
 }
 
 void DebugConsole_Init(void) {
+#if defined(COMBO_BUILD) && defined(COMBO_ENTRANCE_DEV)
+    CMD_REGISTER("m1_mm_status", { M1MmFixture::Status, "Read bounded native MM File3 fixture state." });
+    CMD_REGISTER("m1_well_room",
+                 { M1MmFixture::WellRoom,
+                   "DEV File3 only: native Well-room respawn; verify grounding with m1_mm_status.",
+                   { { "room 1|5|7", Ship::ArgumentType::TEXT }, { "clear|unclear", Ship::ArgumentType::TEXT } } });
+#endif
     // Console
     CMD_REGISTER("file_select", { FileSelectHandler, "Returns to the file select." });
     CMD_REGISTER("reset", { ResetHandler, "Resets the game." });
