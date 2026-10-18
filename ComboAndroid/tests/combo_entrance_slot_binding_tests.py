@@ -31,6 +31,8 @@ source = r'''
 #include <mutex>
 #include <array>
 #include <vector>
+#include "rando/GameMode.h"
+ComboGameMode sBoundGameMode = COMBO_MODE_COMBINED;
 #include "rando/entrances/NativeBridge.h"
 #include "rando/entrances/MmUnifiedLayout.h"
 using Json = nlohmann::json;

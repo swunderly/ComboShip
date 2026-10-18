@@ -1,4 +1,8 @@
 #include "SaveManager.h"
+#include "ComboGameMode.h"
+#ifdef COMBO_BUILD
+extern "C" int gMMComboGameMode;
+#endif
 
 #include <fstream>
 #include <filesystem>
@@ -227,6 +231,7 @@ void SaveManager_InitNewSaveForSlot(int mmFileNum, const unsigned char* ootName8
             gSaveContext.save.saveInfo.playerData.playerName[i] = (ootName8[i] <= 0x40) ? ootName8[i] : 0x3E;
         }
     }
+    if (gMMComboGameMode != COMBO_MODE_MM_VANILLA) {
     // ComboShip: a fresh MM save is always entered mid-playthrough from OOT, never via MM's title/intro.
     // Set it up post-first-cycle — Human Link in South Clock Town, no intro, no Tatl arrival — mirroring
     // the SkipIntroSequence + SkipFirstCycle enhancements and the Rando port's OnFileCreate. gPlayState
@@ -248,8 +253,11 @@ void SaveManager_InitNewSaveForSlot(int mmFileNum, const unsigned char* ootName8
     SET_WEEKEVENTREG(WEEKEVENTREG_ENTERED_NORTH_CLOCK_TOWN);
     // ComboShip: stamp RANDO before the write, not after. Every caller re-stamps it moments later, but
     // this function PERSISTS, so leaving it VANILLA opened a window where the container briefly held a
-    // vanilla MM save, which silently disables every IS_RANDO hook. Combo has no vanilla mode.
+    // vanilla MM save, which silently disables every IS_RANDO hook.
     gSaveContext.save.shipSaveInfo.saveType = SAVETYPE_RANDO;
+    } else {
+        gSaveContext.save.shipSaveInfo.saveType = SAVETYPE_VANILLA;
+    } // Vanilla MM keeps Sram_InitNewSave's original opening and inventory.
 #endif
     nlohmann::json j;
     // Fresh json with no owlSave, and Combo_WriteGameSave replaces the whole mm section — that is what

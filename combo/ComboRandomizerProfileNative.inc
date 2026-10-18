@@ -63,8 +63,33 @@ static nlohmann::json ProfileDraftSetup(const nlohmann::json& requested){
     ComboRando::Entrances::NormalizeEntranceDraft(setup,ComboRando::Entrances::ActiveCapabilities());
     return setup;
 }
+static nlohmann::json ProfileModeSetup(const nlohmann::json& requested) {
+    auto setup=ProfileDraftSetup(requested);
+    const auto mode=ComboRando::ReadGameMode(setup);
+    if(ComboRando::CombinedMode(mode))return setup;
+    auto& combo=setup["setupCVars"];
+    const auto goal=ComboRando::SingleGameGoal(mode);
+    combo["gCombo.Rando.Goal"]=ComboRando::CwGoalType(goal);
+    combo["gCombo.Rando.TriforceHunt"]=0;
+    combo["gCombo.Rando.StartingGame"]=ComboRando::ModeStartsMm(mode)?1:0;
+    for(int i=0;i<ComboRando::SF_COUNT;++i)combo[ComboRando::SharedFamilyByIndex(i).cvar]=0;
+    for(const auto& row:ComboRando::Entrances::kEntranceSettings)combo[row.cvar]=0;
+    // These rules connect the two worlds. Mode is immutable for the saved run; ordinary enhancements remain.
+    for(const char* key:{"gCombo.Enhancements.SongTravel","gCombo.Enhancements.ForeignSongs"}){
+        setup["gameplayRules"]["values"][key]=0;
+        setup["gameplayRules"]["logicValues"][key]=0;
+    }
+    setup["songTravel"]=ComboRando::SongTravelMap{}.json();
+    for(const char* game:{"oot","mm"}){
+        const bool enabled=std::string(game)=="oot"?ComboRando::ModeRandomizesOot(mode):ComboRando::ModeRandomizesMm(mode);
+        if(!enabled&&sProfileCatalog.contains(game))setup[game]["settings"]=sProfileCatalog[game]["defaults"];
+    }
+    setup["mm"]["settings"]["gRando.Options.RO_CROSS_GAME_FARORE"]=0;
+    setup["mm"]["settings"]["gRando.Options.RO_MM_CROSS_AGE"]=0;
+    return setup;
+}
 static void ProfileValidateNative(const nlohmann::json& requested) {
-    const auto setup=ProfileDraftSetup(requested);
+    const auto setup=ProfileModeSetup(requested);
     if(!sProfileValidateOot||!sProfileValidateMm||
        !sProfileValidateOot(setup.at("oot").at("settings").dump().c_str())||
        !sProfileValidateMm(setup.at("mm").at("settings").dump().c_str()))
@@ -72,7 +97,7 @@ static void ProfileValidateNative(const nlohmann::json& requested) {
 }
 static void ProfileApplyNative(const nlohmann::json& requested) {
     ProfileValidateNative(requested);
-    const auto setup=ProfileDraftSetup(requested);
+    const auto setup=ProfileModeSetup(requested);
     // ProfileEditableSetup derives setupCVars for legacy seeds from their own goal/start/shared choices.
     const auto& combo=setup.at("setupCVars");
     if(!sProfileApplyCombo(combo.dump().c_str()))throw std::invalid_argument("Invalid shared settings profile");
@@ -262,9 +287,11 @@ static int ProfilePrepareSave(int slot) {
         if(g_GenerateBusy.load()||g_ComboPendingFinalize.load()||sProfileAttempt)return 0;
         auto seed=sProfiles->view().pendingSeed(slot);
         if(!ComboRando::Profiles::SeedDocument(seed))return 0;
+        ComboRando::RequireSupportedSeedDocument(seed,ComboRando::Entrances::ActiveCapabilities());
         if(slot==sProfilePreparedSlot&&g_ComboContextEpoch.load()==sProfilePreparedEpoch&&seed==sProfilePreparedSeed)return 1;
         sProfilePreparedSlot=-1;sProfilePreparedSeed=nullptr;
         if(!Combo_OnReloadRequestImpl(nullptr,&seed))return 0;
+        BindGameMode(seed);
         sProfilePreparedSlot=slot;sProfilePreparedEpoch=g_ComboContextEpoch.load();sProfilePreparedSeed=std::move(seed);
         return 1;
     }catch(const std::exception& e){std::cerr<<"[ComboShip] Profile save preparation rejected: "<<e.what()<<'\n';return 0;}

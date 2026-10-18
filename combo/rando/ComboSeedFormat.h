@@ -1,4 +1,5 @@
 #pragma once
+#include "GameMode.h"
 #include "entrances/EntranceLayout.h"
 #include "entrances/EntranceRuntimeFlags.h"
 #include <nlohmann/json.hpp>
@@ -7,6 +8,7 @@
 
 namespace ComboRando {
 inline constexpr const char* kComboSeedFileType = "ComboShipRandomizer";
+inline constexpr const char* kGameModeSeedFileType = "ComboShipRandomizerGameMode";
 // Older readers only check fileType and ignore version. A seed requiring the future unified
 // entrance installer must therefore use a different type, even when its placements look familiar.
 inline constexpr const char* kEntranceSeedFileType = "ComboShipRandomizerEntranceLayout";
@@ -32,7 +34,7 @@ inline bool IsComboSeedDocument(const nlohmann::json& seed) {
     if (!seed.is_object())
         return false;
     const auto type = seed.find("fileType");
-    return type != seed.end() && type->is_string() && (*type == kComboSeedFileType || *type == kEntranceSeedFileType);
+    return type != seed.end() && type->is_string() && (*type == kComboSeedFileType || *type == kEntranceSeedFileType || *type == kGameModeSeedFileType);
 }
 // A seed's entrance layout against the capabilities of this build. `settingsDocument` also
 // accepts a profile settings document, whose layout has no routes (ComboRandomizerProfiles.h).
@@ -67,9 +69,16 @@ inline void RequireSupportedLayout(const nlohmann::json& seed, const Entrances::
     }
 }
 inline void RequireSupportedSeedCapabilities(const nlohmann::json& seed, const Entrances::CapabilitySet& caps) {
+    ValidateGameModeSeed(seed, false);
+    if (seed.is_object() && seed.value("fileType", std::string()) == kGameModeSeedFileType &&
+        (!seed.contains("version") || !seed["version"].is_number_integer() || seed["version"] != 1))
+        throw std::invalid_argument("Unsupported game-mode seed version");
+    if (seed.is_object() && !CombinedMode(ReadGameMode(seed)) && seed.value("fileType", std::string()) != kGameModeSeedFileType)
+        throw std::invalid_argument("Single-game seed needs the game-mode file type");
     RequireSupportedLayout(seed, caps, false);
 }
 inline void RequireSupportedSettingsCapabilities(const nlohmann::json& document, const Entrances::CapabilitySet& caps) {
+    ValidateGameModeSeed(document, true);
     RequireSupportedLayout(document, caps, true);
 }
 inline void RequireSupportedSeedDocument(const nlohmann::json& seed, const Entrances::CapabilitySet& caps) {
@@ -82,7 +91,11 @@ inline void RequireSupportedSeedDocument(const nlohmann::json& seed, const Entra
 inline void StampComboSeedFormat(nlohmann::json& seed) {
     if (!seed.is_object())
         throw std::invalid_argument("Seed document must be an object");
-    if (seed.contains("entranceLayout")) {
+    if (!CombinedMode(ReadGameMode(seed))) {
+        ValidateGameModeSeed(seed, false);
+        seed["fileType"] = kGameModeSeedFileType;
+        seed["version"] = 1;
+    } else if (seed.contains("entranceLayout")) {
         seed["fileType"] = kEntranceSeedFileType;
         seed["version"] = kEntranceSeedVersion;
     } else {

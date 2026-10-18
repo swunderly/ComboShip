@@ -10,6 +10,7 @@
 #include "ComboTricksModel.h"
 #include "ComboRuleWarning.h"
 #include "ComboWidgetRender.h"
+#include "rando/GameMode.h"
 #include "rando/GameplayRules.h"
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/GenerationRules.h"
@@ -1237,13 +1238,15 @@ void DrawGeneration() {
     const auto generation = snapshot.value("generation", Json::object());
     const bool running = generation.value("running", false);
     std::string seed = document.value("seed", std::string());
-    const auto entranceRefusal = Entrances::Active(MenuEntranceSettings().erWallmasters) ? EntranceUnavailable() : "";
+    const auto entranceRefusal = CombinedMode(ReadGameMode(document)) && Entrances::Active(MenuEntranceSettings().erWallmasters) ? EntranceUnavailable() : "";
     ImGui::BeginDisabled(!Editable() || running || !entranceRefusal.empty());
     if (ImGui::InputTextWithHint("Seed", "(blank = random)", &seed)) {
         document["seed"] = seed;
         dirty = true;
     }
-    if (ImGui::Button("Generate combined seed")) {
+    const auto mode = ReadGameMode(document);
+    const char* action = VanillaMode(mode) ? "Prepare vanilla game" : CombinedMode(mode) ? "Generate combined seed" : "Generate single-game seed";
+    if (ImGui::Button(action)) {
         refreshPending = true;
         try {
             bool committed = true;
@@ -1310,6 +1313,30 @@ static void ApplyCommunityPreset(const Json& preset) {
 void DrawHome() {
     if (!active)
         return;
+    ImGui::SeparatorText("Game mode");
+    int mode = static_cast<int>(ReadGameMode(document));
+    const bool running = snapshot.value("generation", Json::object()).value("running", false);
+    ImGui::BeginDisabled(!Editable() || running);
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 23);
+    if (ImGui::Combo("##GameMode", &mode, kGameModeLabels, 5)) {
+        document["gameMode"] = kGameModeKeys[mode];
+        if (mode != COMBO_MODE_COMBINED)
+            for (const char* key : {"entranceLayout", "entranceExpansion", "ordinaryEntranceExpansion", "grottoEntranceExpansion", "mixedEntranceExpansion"})
+                document.erase(key);
+        dirty = true;
+    }
+    ImGui::EndDisabled();
+    const auto chosen = static_cast<ComboGameMode>(mode);
+    ImGui::TextWrapped(CombinedMode(chosen)
+        ? "Items can move between both games. Finish the selected combined goal."
+        : VanillaMode(chosen)
+        ? "Play the original game without shuffled items. Your enhancement settings still apply."
+        : "Only the selected game's checks and items are shuffled. Defeat its final boss. Cross-game portals, shared items and combined goals are off for this run.");
+    ImGui::TextWrapped("This changes File %d's next run. Existing saves keep their own game mode. Prepare or generate from an empty file, then start it at file select.", selected + 1);
+    DrawGeneration();
+    if (VanillaMode(chosen))
+        return;
+    ImGui::SeparatorText("Presets");
     const int columns = ImGui::GetContentRegionAvail().x >= ImGui::GetFontSize() * 60 ? 3 : MenuColumns(20.f);
     if (!ImGui::BeginTable("##CommunityPresets", columns,
                            ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings))

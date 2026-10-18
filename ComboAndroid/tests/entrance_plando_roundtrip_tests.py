@@ -59,6 +59,7 @@ support = r'''
 namespace fs = std::filesystem;
 namespace CE = ComboRando::Entrances;
 using Json = nlohmann::json;
+void BindGameMode(const Json& seed) { assert(ComboRando::ReadGameMode(seed) == COMBO_MODE_COMBINED); }
 using FnDump = const char* (*)(void);
 using FnRequestReload = int (*)(const char*);
 using FnPlandoFileSelectSlot = int (*)(void);

@@ -69,6 +69,7 @@ assert discard, 'Autosave.cpp no longer defines the reset flag'
 
 cpp = work/'combo_console_reset.cpp'
 cpp.write_text(r'''
+#include "ComboGameMode.h"
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -90,6 +91,7 @@ Console::~Console() = default;
 }
 // MM's return hook and its request flags (BenPort.cpp).
 namespace MmPort {
+int gMMComboGameMode = COMBO_MODE_COMBINED;
 inline void* Combo_ResolveSym(const char* module, const char* name) { return ResolveForTest(module, name); }
 namespace Ship {
 struct Window { virtual ~Window() = default; };

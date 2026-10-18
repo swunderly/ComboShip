@@ -1,3 +1,4 @@
+#include "ComboGameMode.h"
 #include "z_title_setup.h"
 #include "overlays/gamestates/ovl_title/z_title.h"
 #ifdef COMBO_BUILD
@@ -61,6 +62,7 @@ void Setup_InitImpl(SetupState* this) {
     Setup_InitRegs();
 
 #ifdef COMBO_BUILD
+    extern int gMMComboGameMode;
     s32 loadedOwlSave;
 
     if (gComboStartFileNum >= 0) {
@@ -81,6 +83,18 @@ void Setup_InitImpl(SetupState* this) {
                 // or it sticks — and then owl-save write timing stays armed for the whole session.
                 gSaveContext.save.isOwlSave = false;
                 gSaveContext.save.entrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0);
+            }
+        } else if (gMMComboGameMode == COMBO_MODE_MM_VANILLA) {
+            // Vanilla new-cycle loading follows native Sram_OpenSave: the pre-cycle forest intro
+            // remains CUTSCENE; completed first-cycle saves restart in South Clock Town.
+            if (gSaveContext.save.isFirstCycle) {
+                gSaveContext.save.entrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0);
+                gSaveContext.save.day = 0;
+                gSaveContext.save.time = CLOCK_TIME(6, 0) - 1;
+            } else {
+                gSaveContext.save.entrance = ENTRANCE(CUTSCENE, 0);
+                gSaveContext.nextCutsceneIndex = 0;
+                gSaveContext.save.playerForm = PLAYER_FORM_HUMAN;
             }
         } else if (gComboEntryIsResume && CVarGetInteger("gEnhancements.Saving.RememberSaveLocation", 0) &&
                    gSaveContext.save.shipSaveInfo.pauseSaveEntrance != -1) {

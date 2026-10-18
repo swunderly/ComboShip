@@ -1,3 +1,4 @@
+#include "ComboGameMode.h"
 #include "global.h"
 #include "vt.h"
 
@@ -291,9 +292,13 @@ int Sram_InitSave(FileChooseContext* fileChooseCtx) {
     gSaveContext.n64ddFlag = fileChooseCtx->n64ddFlag;
 
 #ifdef COMBO_BUILD
+    extern int gComboGameMode;
+    // Only the OoT randomizer and combined modes create a randomizer OoT page.
+    // MM modes retain a vanilla OoT file-select carrier, never a playable second world.
     // ComboShip: generation is window-driven now; only force the rando quest type here.
     // The combined fill runs on a worker thread before save creation (triggered from the UI).
-    fileChooseCtx->questType[fileChooseCtx->buttonIndex] = QUEST_RANDOMIZER;
+    fileChooseCtx->questType[fileChooseCtx->buttonIndex] =
+        (gComboGameMode == COMBO_MODE_COMBINED || gComboGameMode == COMBO_MODE_OOT_RANDO) ? QUEST_RANDOMIZER : QUEST_NORMAL;
     (void)gComboGenerateCallback; // retained symbol; no longer invoked
 #endif
 

@@ -130,7 +130,8 @@ assert hostcxx.contains(draft_setup, 'ComboRando::ProfileOotPolicy::ApplyToSetup
 for signature in ('static void ProfileValidateNative(const nlohmann::json& requested)',
                   'static void ProfileApplyNative(const nlohmann::json& requested)'):
     function = body(native_inc, signature)
-    assert 'ProfileDraftSetup(requested)' in function and 'ProfileEditableSetup(' not in function, signature
+    assert 'ProfileModeSetup(requested)' in function and 'ProfileEditableSetup(' not in function, signature
+assert 'ProfileDraftSetup(requested)' in body(native_inc, 'static nlohmann::json ProfileModeSetup(const nlohmann::json& requested)')
 assert hostcxx.contains(native_inc, 'value["draft"]=ProfileDraftSetup(value["draft"]);')
 
 code = r'''

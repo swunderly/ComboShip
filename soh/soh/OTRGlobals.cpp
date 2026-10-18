@@ -1649,6 +1649,9 @@ bool VerifyArchiveVersion(OTRVersion version) {
 }
 
 // ComboShip: forward declarations — defined further down with the combo exports.
+#include "ComboGameMode.h"
+extern "C" int gComboGameMode = COMBO_MODE_COMBINED;
+extern "C" COMBO_EXPORT void SOH_SetComboGameMode(int mode) { gComboGameMode = mode; }
 extern "C" void (*gComboSceneSwitchCallback)(int fileNum);
 extern "C" int SOH_FaroreDeparturePending(void);
 extern "C" int SOH_DispatchNativeDeparture(PlayState*);
@@ -1844,7 +1847,7 @@ static void Combo_FinishInit() {
         []() { Combo_SOHSoaringMapClose(gPlayState); });
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnSceneInit>([](int16_t sceneNum) {
         // Cross-game OOT->MM trigger: entering the Happy Mask Shop.
-        if (sceneNum == SCENE_HAPPY_MASK_SHOP) {
+        if (gComboGameMode == COMBO_MODE_COMBINED && sceneNum == SCENE_HAPPY_MASK_SHOP) {
             sComboSwitchFileNum = (int)gSaveContext.fileNum;
             sComboSwitchPending = true;
         }
@@ -1853,6 +1856,10 @@ static void Combo_FinishInit() {
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameStateMainStart>(
         []() { ProcessForeignSongReply(); });
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameFrameUpdate>([]() {
+        if (gComboGameMode != COMBO_MODE_COMBINED) {
+            sComboSwitchPending = false;
+            return;
+        }
         if (sSongDeparture >= 6 || SOH_FaroreDeparturePending()) {
             sComboSwitchPending = true;
             sComboSwitchFileNum = (int)gSaveContext.fileNum;

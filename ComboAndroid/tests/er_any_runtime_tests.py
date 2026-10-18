@@ -433,6 +433,8 @@ mm_program = r'''
 #include <utility>
 #include <vector>
 ''' + includes + r'''
+#include "ComboGameMode.h"
+int gMMComboGameMode = COMBO_MODE_COMBINED;
 #include "rando/entrances/MmRegionalFlags.h" // through 2Ship's Logic.h in the game
 #include "rando/entrances/UnifiedBridge.h"
 #define COMBO_EXPORT
@@ -472,7 +474,7 @@ struct {
         s32 entrance = 0;
         s32 cutsceneIndex = 0;
         int time = 0, day = 0;
-        bool isOwlSave = false;
+        bool isOwlSave = false, isFirstCycle = false;
         int playerForm = PLAYER_FORM_DEKU, equippedMask = PLAYER_MASK_DEKU;
         struct {
             s32 pauseSaveEntrance = -1;
@@ -758,6 +760,17 @@ int main() {
     assert(kSongOfTime == static_cast<s32>(CE::Find("MM_CLOCK_TOWN_FROM_SONG_OF_TIME")->id));
     assert(kMoonCrash == static_cast<s32>(CE::Find("MM_CLOCK_TOWER_MOON_CRASH")->id));
     static_assert(SCENE_F40 == 0x58 && SCENE_F41 == 0x59); // scenes.yml MM_STONE_TOWER(_INVERTED)
+    assert(MM_ApplyEntranceExpansionForCombo("{}") == 1);
+    gMMComboGameMode = COMBO_MODE_MM_VANILLA;
+    gSaveContext.save.isFirstCycle = false;
+    Run(kBoots[0]);
+    assert(gSaveContext.save.entrance == kSongOfTime); // Native forest opening, no combined portal shortcut.
+    gSaveContext.save.isFirstCycle = true;
+    Run(kBoots[0]);
+    assert(gSaveContext.save.entrance == kClockTown);
+    assert(gSaveContext.save.day == 0 && gSaveContext.save.time == CLOCK_TIME(6, 0) - 1);
+    gMMComboGameMode = COMBO_MODE_COMBINED;
+    gSaveContext.save.isFirstCycle = false;
     TruthTable();
     harnessCaps = WholeCatalog();
     // No layout, a private MM profile, a layout this build refuses.

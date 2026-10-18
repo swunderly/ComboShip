@@ -173,6 +173,9 @@ extern "C" COMBO_EXPORT void MM_NotifyComboTransition(void) {
 
 // kind: 0 = portal (walked out the Clock Tower), 1 = Ctrl+R reset, 2 = owl-save quit. Only a portal
 // return continues the session in OOT; the other two end it and boot OOT to its title.
+#include "ComboGameMode.h"
+extern "C" int gMMComboGameMode = COMBO_MODE_COMBINED;
+extern "C" COMBO_EXPORT void MM_SetComboGameMode(int mode) { gMMComboGameMode = mode; }
 extern "C" void (*gComboReturnCallback)(int kind) = nullptr;
 // Shared Items per-frame drain seam (defined with the rest of the Shared Items ABI further down).
 extern "C" void (*gMMComboSharedTick)(void);
@@ -1225,13 +1228,13 @@ extern "C" void InitOTR(int argc, char* argv[]) {
         // GAMEMODE_NORMAL only: MM's attract demo (GAMEMODE_TITLE_SCREEN, after Sram_InitNewSave wiped
         // the save) scene-hops through here, and would both teleport the player to OOT and persist the
         // wiped save over the slot.
-        if (sceneId == SCENE_INSIDETOWER && spawnNum == 1 && gSaveContext.gameMode == GAMEMODE_NORMAL) {
+        if (gMMComboGameMode == COMBO_MODE_COMBINED && sceneId == SCENE_INSIDETOWER && spawnNum == 1 && gSaveContext.gameMode == GAMEMODE_NORMAL) {
             sComboReturnPending = true;
         }
     });
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameStateMainStart>([]() {
         ProcessForeignSongReply();
-        if (sSongDeparture >= 0 || MM_FaroreDeparturePending())
+        if (gMMComboGameMode == COMBO_MODE_COMBINED && (sSongDeparture >= 0 || MM_FaroreDeparturePending()))
             sComboReturnPending = true;
         if (!sComboReturnPending && !sComboResetReturnPending && !sComboOwlSaveQuitPending)
             return;
@@ -2872,9 +2875,9 @@ extern "C" int Combo_LoadMMSaveFile(int mmFileNum) {
     if (result != 0) {
         return result;
     }
-    // No vanilla mode in ComboShip: a non-rando save means the slot was created wrong, and every
-    // IS_RANDO hook stays unregistered (COND_HOOK tests the condition once, at OnSaveLoad).
-    if (gSaveContext.save.shipSaveInfo.saveType != SAVETYPE_RANDO) {
+    // A vanilla MM page is accepted only for a slot explicitly bound to vanilla MM. Other modes
+    // still require the randomizer page that arms their IS_RANDO hooks.
+    if (gSaveContext.save.shipSaveInfo.saveType != (gMMComboGameMode == COMBO_MODE_MM_VANILLA ? SAVETYPE_VANILLA : SAVETYPE_RANDO)) {
         SPDLOG_ERROR("[ComboShip] MM save file{} is not SAVETYPE_RANDO — rebuilding a baseline", mmFileNum);
         // The load above already set fileNum to this slot; re-mark "no save" or it reads as resident.
         SaveManager_MarkNoSaveLoaded();
@@ -3082,6 +3085,13 @@ static bool sMMComboRandoSeedSet = false;
 extern "C" COMBO_EXPORT void MM_SetComboRandoSeed(uint64_t seed) {
     sMMComboRandoSeed = seed;
     sMMComboRandoSeedSet = true;
+}
+
+extern "C" COMBO_EXPORT int MM_InitVanillaSaveFile(int fileNum, const unsigned char* ootName8) {
+    if (fileNum < 0 || fileNum > 2 || gMMComboGameMode != COMBO_MODE_MM_VANILLA) return -1;
+    SaveManager_InitNewSaveForSlot(fileNum + 1, ootName8);
+    gSaveContext.fileNum = (s16)fileNum;
+    return 0;
 }
 
 // ComboShip: create a RANDO MM save for the given OOT slot from a combo placement slice.
