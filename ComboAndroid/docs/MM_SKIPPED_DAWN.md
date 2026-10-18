@@ -7,13 +7,18 @@ returned to 0x2600, but a later native diagnostic still reported day 0 and time
 24888. With skipping disabled, the clock cutscene returned to the same entrance.
 An actual moon crash with story skipping disabled also returned to 0x2600 with
 native Day 0 (time 22680). The HUD first-day symbol did not establish the native
-day value. The reproduction and screenshots are in the October 17 Codex workspace; this
+day value. Story skipping enabled also left Day0 (time31704). Finally, the full
+Song of Time clock cutscene returned to the indoor entrance with Day0 at 7:53am,
+read directly from the native Save Editor while paused. All four reset variants
+therefore require the dawn transition. The reproduction and screenshots are in
+the October 17 Codex workspace; this
 document does not claim that the new APK has passed device verification.
 
 The native skip sets the previous day just before dawn and normally relies on
 EnTest4 in Clock Town to schedule DayTelop. An entrance-shuffle return can instead
 land in a scene without that actor. The adapter now queues a one-shot native
-DayTelop transition for skipped daytime starts and Day0 moon-crash returns,
+DayTelop transition for both ordinary resets, skipped daytime starts, and skipped
+Day0 moon-crash returns,
 consumed at the end of Play_Init.
 DayTelop retains responsibility for first-day flag clearing and incrementing the
 day. The adapter does not edit the day directly or spawn an actor.
@@ -23,7 +28,9 @@ shuffle starts do not queue dawn. Recording a new MM boot clears pending work,
 and consuming a request while the installed layout is inactive discards it.
 No-ER and legacy profiles retain their existing path. Both ordinary and skipped
 moon-crash returns queue dawn only for a restored Day0 main save, so a valid Day1
-save cannot advance to Day2. The native moon-crash save restoration still runs.
+save cannot advance to Day2. An ordinary daytime clock-shuffle reset can also
+queue dawn at 5:59am on its previous day; nighttime starts are left alone.
+The native moon-crash save restoration still runs.
 
 The existing `entrance_er_any_runtime_sites_both_games` host test executes the
 production adapter functions with engine boundaries stubbed. It covers daytime

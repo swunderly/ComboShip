@@ -671,6 +671,33 @@ void Active() {
     PlayState normalDay{};
     Combo_MMAfterPlayInit(&normalDay);
     assert(normalDay.state.running && normalDay.state.init == nullptr);
+    // Unskipped Song of Time has the same Day0 dependency as moon crash: its full clock cutscene
+    // does not advance dawn when the Clock Town arrival is redirected into a scene without EnTest4.
+    gSaveContext.save.day = 0;
+    Played(kSongOfTime);
+    assert(Arrive(kClockTown) == ENTRANCE(STONE_TOWER, 0));
+    PlayState ordinarySong{};
+    Combo_MMAfterPlayInit(&ordinarySong);
+    assert(!ordinarySong.state.running && ordinarySong.state.init == DayTelop_Init);
+    // Daytime clock-shuffle starts advance their previous day; a nighttime start stays untouched.
+    for (int previousDay : {1, 2}) {
+        gSaveContext.save.day = previousDay;
+        gSaveContext.save.time = CLOCK_TIME(6, 0) - 1;
+        Played(kSongOfTime);
+        assert(Arrive(kClockTown) == ENTRANCE(STONE_TOWER, 0));
+        PlayState daytime{};
+        Combo_MMAfterPlayInit(&daytime);
+        assert(!daytime.state.running && daytime.state.init == DayTelop_Init);
+        assert(gSaveContext.save.day == previousDay);
+    }
+    gSaveContext.save.day = 1;
+    gSaveContext.save.time = CLOCK_TIME(18, 0);
+    Played(kSongOfTime);
+    assert(Arrive(kClockTown) == ENTRANCE(STONE_TOWER, 0));
+    PlayState nighttime{};
+    Combo_MMAfterPlayInit(&nighttime);
+    assert(nighttime.state.running && nighttime.state.init == nullptr);
+    gSaveContext.save.time = CLOCK_TIME(6, 0);
     for (const auto& b : kBoots) {
         // The boot itself lands exactly as before; it records the logical variant of where it landed.
         Run(b);

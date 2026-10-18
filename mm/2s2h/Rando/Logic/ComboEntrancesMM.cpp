@@ -387,9 +387,9 @@ extern "C" void Combo_MMReturnToInitialEntranceOnPlayInit(void) {
         !((entrance == ENTRANCE(SOUTH_CLOCK_TOWN, 0) && sMmLastPlayEntrance == ENTRANCE(CUTSCENE, 0)) ||
           entrance == ENTRANCE(CLOCK_TOWER_INTERIOR, 3)))
         return;
-    // Moon crash reloads the cycle-start save before this arrival. Clock Town's EnTest4 normally
-    // advances its Day 0 through DayTelop; a shuffled indoor initial entrance has no such actor.
-    if (entrance == ENTRANCE(CLOCK_TOWER_INTERIOR, 3) && gSaveContext.save.day == 0)
+    // Both reset arrivals rely on Clock Town's EnTest4 to advance dawn. An indoor initial entrance
+    // has no such actor. Clock shuffle can leave the previous day just before its owned daytime.
+    if (gSaveContext.save.day == 0 || (gSaveContext.save.day < 3 && gSaveContext.save.time == CLOCK_TIME(6, 0) - 1))
         Combo_MMQueueResetDawn();
     int cutscene = gSaveContext.nextCutsceneIndex;
     gSaveContext.save.entrance = static_cast<s32>(InitialEntranceNow(cutscene));
