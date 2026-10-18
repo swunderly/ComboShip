@@ -368,10 +368,11 @@ int RunHeadless(int argc, char** argv) {
 
     auto SOH_InitRandoHeadless = Sym<FnVoidV>(soh, "SOH_InitRandoHeadless");
     auto MM_InitRandoHeadless = Sym<FnVoidV>(mm, "MM_InitRandoHeadless");
-    auto SOH_Dump = Sym<FnDump>(soh, "SOH_DumpRandoStaticDataWithEntrances");
-    const bool nativePreparesEntrances = SOH_Dump != nullptr;
-    if (!SOH_Dump)
-        SOH_Dump = Sym<FnDump>(soh, "SOH_DumpRandoStaticData");
+    auto SOH_Dump = Sym<FnDump>(soh, "SOH_DumpRandoStaticData");
+    auto SOH_GenerationDump = Sym<FnDump>(soh, "SOH_DumpRandoStaticDataWithEntrances");
+    const bool nativePreparesEntrances = SOH_GenerationDump != nullptr;
+    if (!SOH_GenerationDump)
+        SOH_GenerationDump = SOH_Dump;
     auto MM_Dump = Sym<FnDump>(mm, "MM_DumpRandoStaticData");
     auto SOH_DumpSettings = Sym<FnDump>(soh, "SOH_DumpRandoSettings");
     auto MM_DumpSettings = Sym<FnDump>(mm, "MM_DumpRandoSettings");
@@ -1054,7 +1055,7 @@ int RunHeadless(int argc, char** argv) {
                                                                   readRule("gRandoSettings.CompleteMaskQuest", 2)));
             if (readRule && writeRule)
                 ComboRando::ApplyOotEnemySoulsAvailability(readRule, writeRule);
-            sohDump = SOH_Dump();
+            sohDump = SOH_GenerationDump();
             mmDump = MM_Dump();
             if (const auto failure = ComboRando::ParseNativePoolFailure(sohDump, mmDump)) {
                 std::cerr << "[comborando] seed " << masterSeed << ": " << failure->error << "\n";

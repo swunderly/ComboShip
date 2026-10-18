@@ -4973,9 +4973,11 @@ static const char* Combo_DumpRandoStaticData(bool prepareEntrances) {
         // Native Fill shuffles entrances before rewards, own-dungeon items and
         // restricted songs. Otherwise a stone can be locked behind adulthood
         // while the Door of Time still requires all three stones.
-        if (prepareEntrances && ctx->GetOption(RSK_SHUFFLE_ENTRANCES)) {
-            if (!sComboRandoSeedSet)
+        if (prepareEntrances) {
+            if (ctx->GetOption(RSK_SHUFFLE_ENTRANCES) && !sComboRandoSeedSet)
                 throw std::runtime_error("Native entrance preparation requires an explicit combo seed");
+            // The shuffle-off path clears a prior seed's override table and
+            // restores vanilla warp text when settings change in this process.
             if (!SOH_ShuffleEntrancesForCombo(sComboRandoSeed))
                 throw std::runtime_error("Native entrance shuffle failed: no valid layout");
         }
