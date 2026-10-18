@@ -622,7 +622,12 @@ void CheckBuildGuard(const Json &good) {
   const std::string before = UnsupportedComboSeedFormat().what();
 #ifdef COMBO_ENTRANCE_DEV
   assert(caps.devBuild && caps.Active(kMmTrancheCapability) &&
-         caps.WithoutDevOnly().Empty());
+         caps.WithoutDevOnly() == caps.Only(kVanillaWallmasterCapability));
+  auto vanilla = good;
+  vanilla["requires"] = {std::string(kVanillaWallmasterCapability)};
+  vanilla["devBuild"] = true;
+  seed["entranceLayout"] = vanilla;
+  RequireSupportedSeedDocument(seed, caps);
   auto tranche = good;
   tranche["requires"] = {std::string(kMmTrancheCapability)};
   tranche["devBuild"] = true;

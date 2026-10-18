@@ -23,6 +23,8 @@
 // --er-capability <id> selects one capability row (combo/rando/entrances/Capabilities.h), such as a
 // dev-only one. A value this build's capabilities do not admit is a setup error. Neither combines with
 // the private --mm-* entrance flags.
+// Private entrance-dev comparison: --er-validation baseline|shortcut selects the candidate-validation
+// path and prints counters. It changes no saved settings and cannot be used by a shipping build or replay.
 //
 // --playthrough runs two passes, ignoring the seed's No-Logic/Glitchless flag (it always evaluates real
 // gates; permissiveness comes only from tricks): Pass 1 uses the seed's own tricks ("can this player beat
@@ -244,6 +246,7 @@ int RunHeadless(int argc, char** argv) {
     // OoTMM entrance settings (--er, --er-capability), read by the unified generator (UnifiedBridge.h).
     std::vector<std::string> entrancePairs;
     std::string entranceCapability;
+    std::string entranceValidationMode;
     bool entranceArgs = false;
     ComboRando::Entrances::Settings entranceSettings;
     for (int i = 1; i < argc; ++i) {
@@ -296,6 +299,18 @@ int RunHeadless(int argc, char** argv) {
         else if (a == "--master-seed" && i + 1 < argc) {
             masterSeedArg = static_cast<uint32_t>(std::strtoul(argv[++i], nullptr, 10));
             haveMasterSeed = true;
+        } else if (a == "--er-validation") {
+#ifdef COMBO_ENTRANCE_DEV
+            if (!entranceValidationMode.empty() || i + 1 >= argc ||
+                (std::string(argv[i + 1]) != "baseline" && std::string(argv[i + 1]) != "shortcut")) {
+                std::cerr << "[comborando] --er-validation needs baseline or shortcut, once\n";
+                return 2;
+            }
+            entranceValidationMode = argv[++i];
+#else
+            std::cerr << "[comborando] --er-validation requires an entrance dev build\n";
+            return 2;
+#endif
         } else if (a == "--er" || a == "--er-capability") {
             if (i + 1 >= argc || argv[i + 1][0] == '\0' || (a == "--er-capability" && !entranceCapability.empty())) {
                 std::cerr << "[comborando] " << a
@@ -309,6 +324,10 @@ int RunHeadless(int argc, char** argv) {
             else
                 entranceCapability = argv[++i];
         }
+    }
+    if (!entranceValidationMode.empty() && !playthroughFile.empty()) {
+        std::cerr << "[comborando] --er-validation cannot change a recorded replay\n";
+        return 2;
     }
     if (!diagnosticsDir.empty()) {
 #ifdef COMBO_RANDO_DIAGNOSTICS
@@ -1201,8 +1220,21 @@ int RunHeadless(int argc, char** argv) {
                 unified.sharedMask = sharedMask;
                 unified.songTravelLogic = generatedSongs.logicEnabled;
                 unified.foreignSongsLogic = generatedSongs.logicForeignSongs;
+                ComboRando::Entrances::UnifiedEntranceStats validationStats;
+                unified.wallmasterShortcut = entranceValidationMode != "baseline";
+                unified.stats = entranceValidationMode.empty() ? nullptr : &validationStats;
                 const auto started = std::chrono::steady_clock::now();
                 entranceLayout = ComboRando::Entrances::GenerateEntranceLayout(unified, entranceNative, templeProbe);
+                if (!entranceValidationMode.empty())
+                    std::cout << "[comborando-er-validation] "
+                              << nlohmann::json{ { "masterSeed", masterSeed },
+                                                 { "mode", entranceValidationMode },
+                                                 { "randomDraws", validationStats.randomDraws },
+                                                 { "assumedChecks", validationStats.assumedChecks },
+                                                 { "completeChecks", validationStats.completeChecks },
+                                                 { "shortcutUsed", validationStats.monotoneShortcutUsed } }
+                                     .dump()
+                              << "\n";
                 if (!entranceLayout.is_null()) {
                     ComboRando::Entrances::ApplyUnifiedLayout(entranceNative, entranceLayout, unified.active);
                     std::cout << "[comborando] seed " << masterSeed << ": entrance layout with "

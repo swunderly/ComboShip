@@ -23,7 +23,10 @@ const Stage kStages[] = {Stage::Hidden, Stage::Dev, Stage::Public};
 // else is Hidden. A unit that opens a value updates this table.
 Stage ExpectedStage(std::string_view id, std::string_view key) {
   (void)key;
-  return id == "wallmasters-own-game-mm-tranche" ? Stage::Dev : Stage::Hidden;
+  return id == "wallmasters-own-game-mm-tranche" ||
+                 id == "wallmasters-own-game-vanilla-v1"
+             ? Stage::Dev
+             : Stage::Hidden;
 }
 
 bool Same(const Settings &a, const Settings &b) {
@@ -138,12 +141,15 @@ void StageSets() {
         }
     }
   }
-  // Phase A: nothing ships; a dev build has only the dev-only MM tranche.
+  // Nothing ships; Dev has the explicit legacy tranche and the vanilla
+  // both-game contract.
   assert(CapabilitySet::AtLeast(Stage::Public).Empty());
   const auto dev = CapabilitySet::AtLeast(Stage::Dev);
-  assert(dev == dev.Only("wallmasters-own-game-mm-tranche") &&
+  assert(dev == (dev.Only("wallmasters-own-game-mm-tranche") |
+                 dev.Only("wallmasters-own-game-vanilla-v1")) &&
          dev.Active("wallmasters-own-game-mm-tranche") &&
-         dev.WithoutDevOnly().Empty());
+         dev.Active("wallmasters-own-game-vanilla-v1") &&
+         dev.WithoutDevOnly() == dev.Only("wallmasters-own-game-vanilla-v1"));
   assert(!CapabilitySet::AtLeast(Stage::Hidden).Empty());
 }
 
@@ -276,10 +282,12 @@ void DevOnlyRowsOnlyWhenSelected() {
   const auto all = CapabilitySet::AtLeast(Stage::Hidden);
   auto phaseA = all.Only("wallmasters-own-game-mm-tranche");
   phaseA.devBuild = true;
-  // It is this build's set in a dev build.
+  // The later vanilla contract joins the build without changing the explicit
+  // tranche's reader rules.
   auto dev = CapabilitySet::AtLeast(Stage::Dev);
   dev.devBuild = true;
-  assert(dev == phaseA);
+  assert(dev == (phaseA | dev.Only("wallmasters-own-game-vanilla-v1")));
+  assert(Same(Read(M1(1, 0, 0), dev), M1(1, 0, 0)));
   const std::string_view tranche = "wallmasters-own-game-mm-tranche";
   const auto wallmasters = M1(1, 0, 0);
   const std::vector<std::string> pair = {"erWallmasters=ownGame"};

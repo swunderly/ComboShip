@@ -384,7 +384,8 @@ void CheckRefusals() {
   // Without the tranche the OoT Wallmaster rows are in the pool, and no OoT
   // row is bound: the pool is never shrunk.
   g = Tranche();
-  g.capability.clear();
+  g.capability = "wallmasters-own-game-v1"; // the old contract still has no
+                                            // verified OoT binding
   refused(g, "OOT_WALLMASTER_");
   // One-ways (any flag) touch rows with no binding yet.
   for (const auto flag :
@@ -1034,6 +1035,15 @@ void CheckThisBuild() {
   g.settings = inGame;
   g.capability.clear();
   g.active = ActiveCapabilities();
+#ifdef COMBO_ENTRANCE_DEV
+  assert(inGame.erWallmasters == Mode::OwnGame);
+  assert(Has(Error<UnifiedEntranceRefused>([&] { Generate(g); }),
+             "all native entrance exports"));
+  Untouched();
+  ResetAll();
+  g.settings =
+      {}; // all-none remains inert even though Dev now admits vanilla rows
+#endif
   assert(Generate(g).is_null() && reads == 0);
   Untouched();
   g = Tranche(8);

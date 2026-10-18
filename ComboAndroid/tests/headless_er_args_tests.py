@@ -219,6 +219,16 @@ int main() {
     // Without --er nothing changes; defaults are accepted by OoTMM name.
     Expect({}, 0, "entrance settings", false);
     Expect({"--seed", "7", "--count", "2"}, 0, "entrance settings", false);
+#ifdef COMBO_ENTRANCE_DEV
+    Expect({"--er-validation", "baseline"}, 0, "entrance settings", false);
+    Expect({"--er-validation", "shortcut"}, 0, "entrance settings", false);
+    Expect({"--er-validation"}, 2, "needs baseline or shortcut, once");
+    Expect({"--er-validation", "all"}, 2, "needs baseline or shortcut, once");
+    Expect({"--er-validation", "baseline", "--er-validation", "shortcut"}, 2, "needs baseline or shortcut, once");
+    Expect({"--er-validation", "baseline", "--playthrough", "seed.json"}, 2, "cannot change a recorded replay");
+#else
+    Expect({"--er-validation", "baseline"}, 2, "requires an entrance dev build");
+#endif
     Expect({"--mm-wallmasters"}, 0, "entrance settings", false);
     Expect({"--er", "erWallmasters=none"}, 0, "[comborando] entrance settings: all defaults\n");
     Expect({"--er", "erSelfLoops=false", "--er", "erOneWays=none", "--er", "erOneWaysMajor=false"}, 0,
@@ -229,13 +239,13 @@ int main() {
                              "erOneWaysMajor=true", "erOneWaysAnywhere=true", "erDungeons=ownGame",
                              "erSpawns=both", "erDecoupled=true"}) {
 #ifdef COMBO_ENTRANCE_DEV
-        const bool tranche = std::string(pair) == "erWallmasters=ownGame";
-#else
-        const bool tranche = false;
+        if (std::string(pair) == "erWallmasters=ownGame") {
+            Expect({"--er", pair}, 0, "entrance settings: erWallmasters=ownGame");
+            continue;
+        }
 #endif
         Expect({"--er", pair}, 2,
-               std::string("[comborando] ") + pair + " is not available in this build" +
-                   (tranche ? " without --er-capability\n" : "\n"));
+               std::string("[comborando] ") + pair + " is not available in this build\n");
         Expect({"--er", pair}, 2, "entrance settings", false);
     }
     Expect({"--er", "erWallmasters"}, 2, "--er needs <key>=<value> (got 'erWallmasters')");
@@ -255,12 +265,12 @@ int main() {
     Expect({"--settings", "saved.json", "--er", "erWallmasters=ownGame"}, 0, "entrance settings", false);
     for (const auto& capability : kEntranceCapabilities) {
 #ifdef COMBO_ENTRANCE_DEV
-        if (capability.id == "wallmasters-own-game-mm-tranche") {
+        if (capability.id == "wallmasters-own-game-mm-tranche" || capability.id == "wallmasters-own-game-vanilla-v1") {
             // The dev tool generates the MM tranche (M1-07 emulator runs).
             Expect({"--er-capability", std::string(capability.id), "--er", "erWallmasters=ownGame"}, 0,
                    "[comborando] entrance settings: erWallmasters=ownGame\n");
             Expect({"--er-capability", std::string(capability.id), "--er", "erOneWays=ownGame"}, 2,
-                   "erOneWays=ownGame is not admitted by wallmasters-own-game-mm-tranche");
+                   "erOneWays=ownGame is not admitted by " + std::string(capability.id));
             continue;
         }
 #endif

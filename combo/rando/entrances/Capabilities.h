@@ -36,6 +36,7 @@ struct Capability {
 
 inline constexpr CapabilityValue kWallmastersMmTrancheValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
 inline constexpr CapabilityValue kWallmastersOwnGameValues[] = { { "erWallmasters", "ownGame", Stage::Hidden } };
+inline constexpr CapabilityValue kWallmastersVanillaValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -57,8 +58,8 @@ inline constexpr Capability kEntranceCapabilities[] = {
     { "one-ways-own-game-v1", kOneWaysOwnGameValues, {}, false },
     // Admits Wallmasters with One-Ways once Wallmaster arrivals at one-way rows are bound.
     { "wallmasters-with-one-ways-v1", kWallmastersWithOneWaysValues, kWallmastersWithOneWaysCompanions, false },
-    // Owner-approved vanilla-first staging (2026-10-18). Kept Hidden until both-game wiring is complete.
-    { "wallmasters-own-game-vanilla-v1", kWallmastersOwnGameValues, {}, false },
+    // Owner-approved vanilla-first staging (2026-10-18). Private validation only; never Public here.
+    { "wallmasters-own-game-vanilla-v1", kWallmastersVanillaValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
 

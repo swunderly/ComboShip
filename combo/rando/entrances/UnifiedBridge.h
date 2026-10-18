@@ -75,11 +75,14 @@ template <class Lookup> TempleProbeFns ResolveUnifiedTempleProbe(Lookup&& lookup
 
 // The one capability id a layout requires: the selected one, or the row that admits the whole
 // combination (Capabilities.h).
-inline std::string UnifiedRequirement(const Settings& s, std::string_view capability) {
+inline std::string UnifiedRequirement(const Settings& s, std::string_view capability,
+                                      const CapabilitySet& active = ActiveCapabilities()) {
     if (!capability.empty())
         return std::string(capability);
     if (Active(s.erWallmasters) && Active(s.erOneWays))
         return "wallmasters-with-one-ways-v1";
+    if (Active(s.erWallmasters) && active.Active(kVanillaWallmasterCapability))
+        return std::string(kVanillaWallmasterCapability);
     return Active(s.erWallmasters) ? "wallmasters-own-game-v1" : "one-ways-own-game-v1";
 }
 
@@ -190,7 +193,7 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
                                      " are not available in this build");
     if (MakePools(s).empty())
         return nlohmann::json();
-    const auto required = UnifiedRequirement(s, g.capability);
+    const auto required = UnifiedRequirement(s, g.capability, g.active);
     const bool vanillaOot = required == kVanillaWallmasterCapability;
     if (!AdmitsEntranceSettings(s, caps.Only(required)))
         throw UnifiedEntranceRefused("Entrance settings " + EntranceSettingsText(s) + " are not admitted by " +
