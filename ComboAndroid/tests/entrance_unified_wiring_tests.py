@@ -1,8 +1,8 @@
 """Where the launcher and the headless tool call the unified entrance generator (UnifiedBridge.h).
 
 Static scan of combo/ComboShip.cpp (RunComboFill) and combo/ComboRandoHeadless.cpp. Each generation
-attempt clears the MM entrance state, prepares the native pools, runs Ship's own entrance shuffle and
-the private MM generators, then generates and installs the OoTMM layout, and only then runs the
+attempt clears the MM entrance state, prepares the native pools and entrance graph (older modules
+retain their post-dump shuffle), runs the private MM generators, then generates and installs the OoTMM layout, and only then runs the
 combined fill; the layout stays installed through the hint dump, the requiredness pass and the
 playthrough of that attempt (critic correction C13). An exhausted layout search (ShuffleError) rerolls
 the attempt, pins a Random start to OoT after an MM start as the other failures do (C24), and in the
@@ -94,11 +94,16 @@ for tool in ('static int RunComboGenTest(', 'static void RunComboPlaythrough('):
 headless = read('combo/ComboRandoHeadless.cpp')
 assert headless.count('GenerateEntranceLayout(') == 1
 generate = headless[headless.index('// ---- Generate + validate mode. ----'):]
-steps = ordered(generate, 'ApplyNativeSeed(entranceNative, nlohmann::json::object(),', 'SOH_Dump()',
+steps = ordered(generate, 'ApplyNativeSeed(entranceNative, nlohmann::json::object(),', 'SOH_GenerationDump()',
                 'SOH_ShuffleEntrances(masterSeed)', 'GenerateNativeMmWallmasters(', 'GenerateNativeMmGrottos(',
                 'GenerateEntranceLayout(unified, entranceNative, templeProbe)',
                 'ApplyUnifiedLayout(entranceNative, entranceLayout, unified.active)', 'CrossWorldCombinedFill(',
                 'SOH_DumpRandoHintData', 'PareDownPlaythrough(')
+assert 'if (!nativePreparesEntrances && SOH_ShuffleEntrances &&' in generate, \
+    'A current native preparation must not be reshuffled after restricted placement'
+replay = block(headless, 'auto runPass =')
+assert 'SOH_Dump()' in replay and 'SOH_GenerationDump()' not in replay, \
+    'Saved-seed replay must retain the legacy metadata dump and recorded entrance apply'
 for clear in ('ApplyNativeSeed(', 'applySeed(', 'ApplyNativeMm'):
     assert clear not in generate[steps[6]:steps[-1]], f'{clear} between the install and the requiredness pass'
 for field in ('capability = entranceCapability', 'active = ComboRando::Entrances::ActiveCapabilities()',

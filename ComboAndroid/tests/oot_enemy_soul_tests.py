@@ -205,8 +205,9 @@ assert hostcxx.contains(generation_rules, 'kOotEnemyRandomizer = "gEnhancements.
 generation_sites = 0
 for name in ['combo/ComboShip.cpp', 'combo/ComboRandoHeadless.cpp']:
     text = read(root/name)
+    dump_name = 'SOH_GenerationDump' if name.endswith('ComboRandoHeadless.cpp') else 'SOH_DumpRandoStaticData'
     for normalize in re.finditer(r'NormalizeOotMaskQuestForGeneration\(', text):
-        dump = re.compile(r'SOH_Dump(?:RandoStaticData)?\(\)').search(text, normalize.end())
+        dump = re.compile(re.escape(dump_name) + r'\(\)').search(text, normalize.end())
         assert dump and 'ApplyOotEnemySoulsAvailability(' in text[normalize.end():dump.start()], (name, 'generation site')
         generation_sites += 1
 assert generation_sites == 4, generation_sites
