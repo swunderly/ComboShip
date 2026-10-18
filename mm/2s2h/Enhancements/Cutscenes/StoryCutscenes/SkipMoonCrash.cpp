@@ -6,6 +6,7 @@ extern "C" {
 #include "variables.h"
 #ifdef COMBO_BUILD
 void Combo_MMReturnToInitialEntranceAfterSkip(void);
+void Combo_MMQueueResetDawn(void);
 #endif
 }
 
@@ -33,6 +34,8 @@ void RegisterSkipMoonCrash() {
 #ifdef COMBO_BUILD
             // With entrance shuffle, the MM initial entrance instead (OoTMM v32.3 mm/play/play.c:736-741).
             Combo_MMReturnToInitialEntranceAfterSkip();
+            if (gSaveContext.save.day == 0)
+                Combo_MMQueueResetDawn();
 #endif
         }
     });

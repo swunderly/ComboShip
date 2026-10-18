@@ -357,7 +357,7 @@ namespace {
 int32_t sMmInitialEntrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0);
 // play.c:467, gLastEntrance: the entrance of the last Play_Init that ran to its end.
 int32_t sMmLastPlayEntrance = -1;
-bool sMmSkippedDawnPending = false;
+bool sMmResetDawnPending = false;
 // play.c:736-741 sends Song of Time and the moon crash to the initial entrance. The season fixup runs
 // again, so a cleared area comes back in its current state (M1 plan C10); `cutscene` is the cutscene
 // index the destination's scene layer will be read from.
@@ -377,7 +377,7 @@ extern "C" void Combo_MMRecordInitialEntrance(int entrance) {
                              ? static_cast<int32_t>(CE::NormalizeMmSceneVariant(static_cast<uint32_t>(entrance)))
                              : ENTRANCE(SOUTH_CLOCK_TOWN, 0);
     sMmLastPlayEntrance = -1;
-    sMmSkippedDawnPending = false;
+    sMmResetDawnPending = false;
 }
 // The start of Play_Init, before its own season remap, where OoTMM's hookPlay_Init runs: Clock Town from
 // the Song of Time cutscene, or the moon crash's Clock Tower arrival.
@@ -387,6 +387,10 @@ extern "C" void Combo_MMReturnToInitialEntranceOnPlayInit(void) {
         !((entrance == ENTRANCE(SOUTH_CLOCK_TOWN, 0) && sMmLastPlayEntrance == ENTRANCE(CUTSCENE, 0)) ||
           entrance == ENTRANCE(CLOCK_TOWER_INTERIOR, 3)))
         return;
+    // Moon crash reloads the cycle-start save before this arrival. Clock Town's EnTest4 normally
+    // advances its Day 0 through DayTelop; a shuffled indoor initial entrance has no such actor.
+    if (entrance == ENTRANCE(CLOCK_TOWER_INTERIOR, 3) && gSaveContext.save.day == 0)
+        Combo_MMQueueResetDawn();
     int cutscene = gSaveContext.nextCutsceneIndex;
     gSaveContext.save.entrance = static_cast<s32>(InitialEntranceNow(cutscene));
     gSaveContext.nextCutsceneIndex = static_cast<u16>(cutscene);
@@ -400,22 +404,22 @@ extern "C" void Combo_MMReturnToInitialEntranceAfterSkip(void) {
     gSaveContext.save.entrance = static_cast<s32>(InitialEntranceNow(cutscene));
     gSaveContext.save.cutsceneIndex = cutscene;
 }
-// The native SoT skip leaves the clock just before dawn and relies on EnTest4 in Clock Town to
-// enter DayTelop. A shuffled initial entrance can be indoors without that actor. Defer the same
-// native gamestate transition until Play_Init finishes; DayTelop owns flag clearing and day advance.
-extern "C" void Combo_MMQueueSkippedDawn(void) {
+// Song of Time skips and moon-crash resets rely on EnTest4 at the native destination to enter
+// DayTelop. A shuffled initial entrance can be indoors without that actor. Defer the same native
+// gamestate transition until Play_Init finishes; DayTelop owns flag clearing and day advance.
+extern "C" void Combo_MMQueueResetDawn(void) {
     if (Combo_MMEntranceShuffleActive())
-        sMmSkippedDawnPending = true;
+        sMmResetDawnPending = true;
 }
 // The end of Play_Init, OoTMM's Play_AfterInit (play.c:465-494).
 extern "C" void Combo_MMAfterPlayInit(PlayState* play) {
     sMmLastPlayEntrance = gSaveContext.save.entrance;
-    const bool skippedDawn = sMmSkippedDawnPending;
-    sMmSkippedDawnPending = false;
+    const bool resetDawn = sMmResetDawnPending;
+    sMmResetDawnPending = false;
     if (!play || !Combo_MMEntranceShuffleActive())
         return;
     // EnTest4 may already have scheduled DayTelop in an outdoor arrival. Never schedule it twice.
-    if (skippedDawn && play->state.running) {
+    if (resetDawn && play->state.running) {
         gSaveContext.gameMode = GAMEMODE_NORMAL;
         gSaveContext.save.time = CLOCK_TIME(6, 0);
         STOP_GAMESTATE(&play->state);

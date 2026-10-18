@@ -134,12 +134,13 @@ check(squash('if ((gSaveContext.save.entrance == ENTRANCE(CUTSCENE, 0) || gSaveC
       'SkipSoTCutscenes no longer keys on the Song of Time cutscene')
 check(squash('} else { gSaveContext.save.entrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0); #ifdef COMBO_BUILD '
              'Combo_MMReturnToInitialEntranceAfterSkip(); '
-             'if (gSaveContext.save.time == CLOCK_TIME(6, 0) - 1) Combo_MMQueueSkippedDawn(); #endif }') in sot and
+             'if (gSaveContext.save.time == CLOCK_TIME(6, 0) - 1) Combo_MMQueueResetDawn(); #endif }') in sot and
       sot.count('Combo_MMReturnToInitialEntranceAfterSkip();') == 1,
       'SkipSoTCutscenes: the Song of Time arrival must return to the initial entrance, the flashback must not')
 moon = squash(read('mm/2s2h/Enhancements/Cutscenes/StoryCutscenes/SkipMoonCrash.cpp'))
 check(squash('gSaveContext.save.entrance = ENTRANCE(CLOCK_TOWER_INTERIOR, 3); #ifdef COMBO_BUILD '
-             'Combo_MMReturnToInitialEntranceAfterSkip(); #endif }') in moon,
+             'Combo_MMReturnToInitialEntranceAfterSkip(); '
+             'if (gSaveContext.save.day == 0) Combo_MMQueueResetDawn(); #endif }') in moon,
       'SkipMoonCrash: the moon crash arrival must return to the initial entrance')
 # No other code writes the moon crash arrival into the save inside Play_Init.
 writers = []
@@ -156,7 +157,7 @@ for name in ('Combo_MMRecordInitialEntrance(', 'Combo_MMReturnToInitialEntranceO
              'Combo_MMReturnToInitialEntranceAfterSkip(', 'Combo_MMAfterPlayInit('):
     check('Combo_MMEntranceShuffleActive()' in function(er_block, 'extern "C" void ' + name),
           f'{name} must read the installed layout')
-check('Combo_MMEntranceShuffleActive()' in function(er_block, 'extern "C" void Combo_MMQueueSkippedDawn('),
+check('Combo_MMEntranceShuffleActive()' in function(er_block, 'extern "C" void Combo_MMQueueResetDawn('),
       'skipped dawn must act only with an installed entrance-shuffle layout')
 for banned in ('ActiveMmGenerationSettings', 'MmUnifiedErEnabled', 'ActiveMmWallmasters'):
     check(banned not in er_block, f'the MM CFG_ER_ANY sites must not read {banned}')
@@ -408,6 +409,8 @@ void TruthTable() {
 
 # ---- Compiled, MM: the boot record, the Song of Time / moon crash return, the Stone Tower switch.
 includes = '\n'.join(re.findall(r'^#include "rando/entrances/[^"]+"$', entrances_mm, re.M))
+queue_decl = re.search(r'void Combo_MMQueueResetDawn\(void\);',
+                       read('mm/2s2h/Rando/Logic/ComboEntrancesMM.h')).group(0)
 file_locals = entrances_mm[hostcxx.find(entrances_mm, 'namespace CE = ComboRando::Entrances;'):
                            hostcxx.find(entrances_mm, 'extern "C" COMBO_EXPORT int MM_ApplyEntranceExpansionForCombo(')]
 exports = '\n'.join(function(entrances_mm, s) for s in (
@@ -497,7 +500,7 @@ struct PlayState {
 std::vector<std::pair<s32, s16>> switches; // +flag set, -flag unset, by scene
 void Flags_SetSwitch(PlayState* play, s32 flag) { switches.push_back({flag, play->sceneId}); }
 void Flags_UnsetSwitch(PlayState* play, s32 flag) { switches.push_back({-flag, play->sceneId}); }
-''' + file_locals + '\n' + exports + '\n' + er_block + r'''
+''' + file_locals + '\n' + exports + '\nextern "C" ' + queue_decl + '\n' + er_block + r'''
 // title_setup.c's combo branch, as far as the record, with its engine calls stubbed.
 int gComboStartFileNum = -1, gComboOwlBlobSlot = -1, gComboEntryIsResume = 0;
 bool rememberSaveLocation = false, synced = false;
@@ -600,7 +603,7 @@ s32 Skip(s32 entrance) {
 // and the Stone Tower switch is left alone.
 void Inert() {
     PlayState play{};
-    Combo_MMQueueSkippedDawn();
+    Combo_MMQueueResetDawn();
     Combo_MMAfterPlayInit(&play);
     assert(play.state.running && play.state.init == nullptr);
     for (const auto& b : kBoots) {
@@ -623,7 +626,7 @@ void Active() {
         PlayState indoor{};
         gSaveContext.save.day = previousDay;
         gSaveContext.save.time = CLOCK_TIME(6, 0) - 1;
-        Combo_MMQueueSkippedDawn();
+        Combo_MMQueueResetDawn();
         Combo_MMAfterPlayInit(&indoor);
         assert(!indoor.state.running && indoor.state.init == DayTelop_Init);
         assert(indoor.state.size == sizeof(DayTelopState));
@@ -637,21 +640,37 @@ void Active() {
     outdoor.state.running = false; // EnTest4 already scheduled native DayTelop
     outdoor.state.init = DayTelop_Init;
     outdoor.state.size = 123;
-    Combo_MMQueueSkippedDawn();
+    Combo_MMQueueResetDawn();
     Combo_MMAfterPlayInit(&outdoor);
     assert(!outdoor.state.running && outdoor.state.size == 123); // no duplicate scheduling
-    Combo_MMQueueSkippedDawn();
+    Combo_MMQueueResetDawn();
     Combo_MMRecordInitialEntrance(ENTRANCE(STONE_TOWER, 0)); // boot clears stale pending work
     PlayState nextBoot{};
     Combo_MMAfterPlayInit(&nextBoot);
     assert(nextBoot.state.running && nextBoot.state.init == nullptr);
-    Combo_MMQueueSkippedDawn();
+    Combo_MMQueueResetDawn();
     harnessRando = false;
     PlayState inactive{};
     Combo_MMAfterPlayInit(&inactive);
     harnessRando = true;
     Combo_MMAfterPlayInit(&inactive);
     assert(inactive.state.running && inactive.state.init == nullptr); // stale request cannot leak
+    // Actual unskipped moon-crash arrival requests the same native DayTelop for the Day0 main save.
+    Combo_MMRecordInitialEntrance(ENTRANCE(STONE_TOWER, 0));
+    gSaveContext.save.day = 0;
+    assert(Arrive(kMoonCrash) == ENTRANCE(STONE_TOWER, 0));
+    PlayState moonArrival{};
+    Combo_MMAfterPlayInit(&moonArrival);
+    assert(!moonArrival.state.running && moonArrival.state.init == DayTelop_Init);
+    PlayState moonReturned{};
+    Combo_MMAfterPlayInit(&moonReturned);
+    assert(moonReturned.state.running && moonReturned.state.init == nullptr);
+    // A main save already on Day1 must not advance to Day2.
+    gSaveContext.save.day = 1;
+    assert(Arrive(kMoonCrash) == ENTRANCE(STONE_TOWER, 0));
+    PlayState normalDay{};
+    Combo_MMAfterPlayInit(&normalDay);
+    assert(normalDay.state.running && normalDay.state.init == nullptr);
     for (const auto& b : kBoots) {
         // The boot itself lands exactly as before; it records the logical variant of where it landed.
         Run(b);

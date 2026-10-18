@@ -21,7 +21,7 @@ int Combo_MMEntranceShuffleActive(void);
 void Combo_MMRecordInitialEntrance(int entrance);
 void Combo_MMReturnToInitialEntranceOnPlayInit(void);
 void Combo_MMReturnToInitialEntranceAfterSkip(void);
-void Combo_MMQueueSkippedDawn(void);
+void Combo_MMQueueResetDawn(void);
 void Combo_MMAfterPlayInit(PlayState* play);
 }
 #endif
