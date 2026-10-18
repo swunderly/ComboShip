@@ -3557,11 +3557,17 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
     }
     try {
         ComboRando::RequireSupportedSeedDocument(j, ComboRando::Entrances::ActiveCapabilities());
+        // Admission must precede every mode's pending-state apply and carrier-file creation.
+        if (SeedNeedsUnavailableMmGear(j)) {
+            std::cerr << "[ComboShip] reload: the seed adds MM boots or tunics, which this device cannot run\n";
+            return 0;
+        }
         const auto mode = ComboRando::ReadGameMode(j);
         if (!ComboRando::ModeRandomizesOot(mode)) {
             if (!CheckPendingEntranceSeed(j)) return 0;
             g_ConsolidatedJson = j.dump(2);
             g_FinalizeDisplaySeed = j.value("displaySeed", 0u);
+            if (SOH_SetComboSeedHash) SOH_SetComboSeedHash(g_FinalizeDisplaySeed);
             g_PendingMMSettingsJson = j.at("mm").value("settings", nlohmann::json::object()).dump();
             g_UserMMSettingsSnapshot = MM_DumpRandoSettings ? MM_DumpRandoSettings() : "{}";
             g_ComboReloadRestoreUserMM = true;
@@ -3569,10 +3575,6 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
             if (SOH_SetSeedGenerated) SOH_SetSeedGenerated(1);
             if (!profileSeed) RememberComboSpoiler(WriteComboSpoiler(j.at("file_hash"), g_ConsolidatedJson));
             return 1;
-        }
-        if (SeedNeedsUnavailableMmGear(j)) {
-            std::cerr << "[ComboShip] reload: the seed adds MM boots or tunics, which this device cannot run\n";
-            return 0;
         }
         const auto catalog = ComboRando::ReadKokiriCatalogRevisions(j.value("oot", nlohmann::json::object()));
         ComboRando::KokiriSeedRevisionScope kokiriRevision(SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision,
