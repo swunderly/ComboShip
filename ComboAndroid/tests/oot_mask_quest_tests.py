@@ -69,6 +69,8 @@ normalizer = 'NormalizeOotMaskQuestForGeneration'
 assert normalizer in profile, 'Profile generation must normalize the unsupported Vanilla request'
 dump = braced(native, 'extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(')
 assert normalizer not in dump, 'Static data inspection must preserve saved seed modes'
+assert normalizer not in braced(native, 'static const char* Combo_DumpRandoStaticData('), \
+    'Shared native preparation must preserve the mode selected by its caller'
 for file in ('combo/ComboShip.cpp', 'combo/ComboRandoHeadless.cpp'):
     assert normalizer in read(root, file), 'Each new-generation caller must normalize before fill'
 for signature in ('extern "C" COMBO_EXPORT void SOH_RestoreRandoSettings(',

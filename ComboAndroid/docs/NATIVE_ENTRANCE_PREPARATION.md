@@ -1,0 +1,27 @@
+# Native entrance preparation before restricted placement
+
+The original `CodexM1ShipEr1015A` recipe (master 322059408, MM start, native
+OoT dungeon entrances enabled) exhausted its existing two attempts. The passive
+8d5bcbdd trace reproduced the same missing-check counts and placement dead ends.
+On its second attempt (master 2976495177), the native table put Deku Tree behind
+the Water Temple entrance. Queen Gohma held the locked Sapphire, the native Door
+of Time required all three stones, and the final native query had no Sapphire,
+Song of Time, Master Sword, or adult root access. Its owned input exactly matched
+the combined fill's final inventory. All eleven Deku Tree checks were unreachable.
+
+The combined path had confined rewards/songs on a vanilla graph before shuffling
+entrances. Native Fill performs these operations in the opposite order.
+
+Generation now resolves `SOH_DumpRandoStaticDataWithEntrances`: native preparation
+finalizes the settings and entrance graph, then confines rewards, dungeon items
+and songs without reinitializing that graph. It returns the actual fixed
+placements to the combined fill. Generation callers skip their old post-dump
+shuffle, which would reset placements. Older native modules keep their legacy
+ABI fallback; catalog callers and recorded-seed replay retain their existing
+exports. No-entrance generation follows the original path byte for byte.
+
+No retry limits, accessibility requirements, player settings, or private entrance
+capabilities are relaxed. Existing recorded layouts are still applied directly.
+Native shuffle failure is a retryable pool-preparation error; a missing explicit
+seed is a setup error. Same-case ARM64 generation/replay and a byte-comparison
+no-ER control are required before treating this as a verified correction.

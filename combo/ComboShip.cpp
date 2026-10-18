@@ -259,6 +259,7 @@ static FnVoidArgless MM_PrepareForTransition = nullptr;
 // ComboShip: headless static-data dump exports
 typedef const char* (*FnDumpData)(void);
 static FnDumpData SOH_DumpRandoStaticData = nullptr;
+static bool sSohDumpPreparesEntrances = false;
 static FnDumpData MM_DumpRandoStaticData = nullptr;
 static FnDumpData SOH_DumpRandoSettings = nullptr; // {cvar:value} OOT rando settings snapshot
 static FnDumpData SOH_DumpEnabledTricks = nullptr; // [NameTag,...] the player's enabled OOT tricks
@@ -2516,15 +2517,15 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         }
         // ComboShip: OOT forced placements (Link's Pocket) the static dump can't carry. The fill
         // reserves these out of the cross pool and commits them so the check isn't left unplaced.
-        // Read BEFORE the entrance shuffle: it reads the live placement ComboFillConfined just made,
-        // and the shuffle's ItemReset would wipe it.
+        // Read the native confined fill's live placement. Older modules still
+        // shuffle below, whose ItemReset would wipe it.
         std::string forcedOot;
         if (SOH_GetForcedPlacements)
             forcedOot = SOH_GetForcedPlacements(masterSeed);
 
-        // ComboShip (#90): OOT entrance shuffle. Runs after the dump (settings finalized) and before the
-        // fill, so logic validates the shuffled world. No-op when the entrance options are off.
-        if (SOH_ShuffleEntrancesForCombo && !SOH_ShuffleEntrancesForCombo(masterSeed)) {
+        // Current native dumps prepare entrances before restricted placements.
+        // Only older modules still need the post-dump shuffle.
+        if (!sSohDumpPreparesEntrances && SOH_ShuffleEntrancesForCombo && !SOH_ShuffleEntrancesForCombo(masterSeed)) {
             // A different masterSeed yields a different layout, so reroll rather than sending the user
             // to the settings; the post-loop check reports it if every attempt fails. Mirrors the loop
             // tail's MM restore, which this skips.
@@ -3041,11 +3042,20 @@ static int RunComboGenTest(int numSeeds, uint32_t seedBase) {
                 std::cerr << "[GENTEST] empty dump — cannot run\n";
                 return -1;
             }
+            if (const auto preparation = ComboRando::ParseNativePoolFailure(sohDump, mmDump)) {
+                result.error = preparation->error;
+                Combo_MM_Rando_Restore();
+                if (!preparation->retryable)
+                    return -1;
+                if (mmStart && startCfg == 2)
+                    pinStartOot = true;
+                continue;
+            }
             std::string forcedOot;
             if (SOH_GetForcedPlacements)
                 forcedOot = SOH_GetForcedPlacements(seed);
             // Per-seed OOT entrance layout, exactly like the real generator (no-op when the options are off).
-            if (SOH_ShuffleEntrancesForCombo && !SOH_ShuffleEntrancesForCombo(seed)) {
+            if (!sSohDumpPreparesEntrances && SOH_ShuffleEntrancesForCombo && !SOH_ShuffleEntrancesForCombo(seed)) {
                 result.error = "OOT entrance shuffle found no valid layout";
                 if (mmStart && startCfg == 2)
                     pinStartOot = true;
@@ -3160,11 +3170,20 @@ static void RunComboPlaythrough(const std::string& inputSeed) {
             std::cerr << "[PLAYTHROUGH] empty static-data dump\n";
             return;
         }
-        // Read before the entrance shuffle: its ItemReset wipes the placement this reads.
+        if (const auto preparation = ComboRando::ParseNativePoolFailure(sohDump, mmDump)) {
+            fill.error = preparation->error;
+            Combo_MM_Rando_Restore();
+            if (!preparation->retryable)
+                return;
+            if (mmStart && startCfg == 2)
+                pinStartOot = true;
+            continue;
+        }
+        // Read before any older module's post-dump shuffle resets placements.
         std::string forcedOot;
         if (SOH_GetForcedPlacements)
             forcedOot = SOH_GetForcedPlacements(masterSeed);
-        if (SOH_ShuffleEntrancesForCombo && !SOH_ShuffleEntrancesForCombo(masterSeed)) {
+        if (!sSohDumpPreparesEntrances && SOH_ShuffleEntrancesForCombo && !SOH_ShuffleEntrancesForCombo(masterSeed)) {
             fill.error = "OOT entrance shuffle found no valid layout";
             if (mmStart && startCfg == 2)
                 pinStartOot = true;
@@ -4339,7 +4358,10 @@ int main(int argc, char** argv) {
     SOH_NotifyComboReturn = (FnVoidArgless)GetSym(sohModule, "SOH_NotifyComboReturn");
     MM_ResumeGame = (FnMMResume)GetSym(mmModule, "MM_ResumeGame");
     MM_PrepareForTransition = (FnVoidArgless)GetSym(mmModule, "MM_PrepareForTransition");
-    SOH_DumpRandoStaticData = (FnDumpData)GetSym(sohModule, "SOH_DumpRandoStaticData");
+    SOH_DumpRandoStaticData = (FnDumpData)GetSym(sohModule, "SOH_DumpRandoStaticDataWithEntrances");
+    sSohDumpPreparesEntrances = SOH_DumpRandoStaticData != nullptr;
+    if (!SOH_DumpRandoStaticData)
+        SOH_DumpRandoStaticData = (FnDumpData)GetSym(sohModule, "SOH_DumpRandoStaticData");
     MM_DumpRandoStaticData = (FnDumpData)GetSym(mmModule, "MM_DumpRandoStaticData");
     SOH_DumpRandoSettings = (FnDumpData)GetSym(sohModule, "SOH_DumpRandoSettings");
     SOH_DumpEnabledTricks = (FnDumpData)GetSym(sohModule, "SOH_DumpEnabledTricks");

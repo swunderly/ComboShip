@@ -61,7 +61,7 @@ void SetAreas();
 #ifdef COMBO_BUILD
 // ComboShip: run only Fill()'s confined-placement prefix, leaving free items in itemPool for the
 // cross-world fill. See fill.cpp / docs/UPSTREAM_MERGES.md.
-void ComboFillConfined();
+void ComboFillConfined(bool preserveEntrances = false);
 #endif
 
 std::vector<RandomizerCheck> GetEmptyLocations(std::vector<RandomizerCheck> allowedLocations);

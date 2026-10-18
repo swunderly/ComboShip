@@ -12,8 +12,10 @@ budgets are unchanged; no extra oracle searches, shuffles or RNG draws are made.
 
 For each built-in attempt, the tool writes generated metadata:
 
-- Before native entrance shuffle: the existing OoT dump, MM fixed placements,
-  forced placements and resolved master/starting world.
+- At the dump boundary: the existing OoT dump, MM fixed placements, forced
+  placements and resolved master/starting world. Current native modules prepare
+  entrances before confined placements; their file is named `after-confined`.
+  Older modules retain the `before-entrances` name and post-dump shuffle.
 - After native entrance shuffle: the actual entrance override table.
 - At each completed final sphere validation: collected inventory, all placements
   with locked/reachable/first-credited-sphere fields, goal state, query counts,

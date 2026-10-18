@@ -1672,12 +1672,15 @@ extern void Combo_SnapshotMinShopItems(); // OTRGlobals.cpp — cache min-set pl
 
 // ComboShip: run only Fill()'s confined-placement steps (skip entrances/Link's Pocket/free fill),
 // leaving confined items placed in ctx and the free pool in itemPool. See UPSTREAM_MERGES.md.
-void ComboFillConfined() {
+void ComboFillConfined(bool preserveEntrances) {
     ComboRando::NativeConfinedSongPreparation songPreparation;
     auto ctx = Rando::Context::GetInstance();
     placementFailure = false;
     ctx->LocationReset();
-    RegionTable_Init();
+    // Generation can prepare the native entrance graph before confined items.
+    // Reinitializing it here would validate rewards/songs against vanilla routes.
+    if (!preserveEntrances)
+        RegionTable_Init();
     ctx->ItemReset();
     ctx->GenerateLocationPool();
     GenerateItemPool();

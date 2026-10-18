@@ -368,7 +368,10 @@ int RunHeadless(int argc, char** argv) {
 
     auto SOH_InitRandoHeadless = Sym<FnVoidV>(soh, "SOH_InitRandoHeadless");
     auto MM_InitRandoHeadless = Sym<FnVoidV>(mm, "MM_InitRandoHeadless");
-    auto SOH_Dump = Sym<FnDump>(soh, "SOH_DumpRandoStaticData");
+    auto SOH_Dump = Sym<FnDump>(soh, "SOH_DumpRandoStaticDataWithEntrances");
+    const bool nativePreparesEntrances = SOH_Dump != nullptr;
+    if (!SOH_Dump)
+        SOH_Dump = Sym<FnDump>(soh, "SOH_DumpRandoStaticData");
     auto MM_Dump = Sym<FnDump>(mm, "MM_DumpRandoStaticData");
     auto SOH_DumpSettings = Sym<FnDump>(soh, "SOH_DumpRandoSettings");
     auto MM_DumpSettings = Sym<FnDump>(mm, "MM_DumpRandoSettings");
@@ -1079,17 +1082,18 @@ int RunHeadless(int argc, char** argv) {
                     std::cerr << "[comborando] headless native diagnostic exports are unavailable\n";
                     return 2;
                 }
-                writeDiagnostic(diagnosticPrefix + "-before-entrances",
+                writeDiagnostic(diagnosticPrefix + (nativePreparesEntrances ? "-after-confined" : "-before-entrances"),
                                 { { "masterSeed", masterSeed },
                                   { "mmStart", mmStart },
+                                  { "nativePreparesEntrances", nativePreparesEntrances },
                                   { "ootDump", nlohmann::json::parse(sohDump) },
                                   { "mmFixed", nlohmann::json::parse(mmDump).value("fixed", nlohmann::json::array()) },
                                   { "forced", forced.empty() ? nlohmann::json() : nlohmann::json::parse(forced) } });
             }
 #endif
-            // Same placement as RunComboFill: after the dump/forced read, before the fill, so logic
-            // validates the shuffled world. No-op when the entrance options are off.
-            if (SOH_ShuffleEntrances && !SOH_ShuffleEntrances(masterSeed)) {
+            // Current native dumps already placed restricted items on this graph.
+            // Keep the post-dump shuffle only for older native modules.
+            if (!nativePreparesEntrances && SOH_ShuffleEntrances && !SOH_ShuffleEntrances(masterSeed)) {
                 std::cerr << "[comborando] seed " << masterSeed << ": entrance shuffle found no valid layout\n";
                 if (mmStart && startCfg == 2)
                     pinStartOot = true;

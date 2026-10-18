@@ -4887,7 +4887,7 @@ extern "C" COMBO_EXPORT int SOH_ApplyEntranceOverridesForCombo(const char* json)
 // items — keeping the generator's permutation coherent with Randomizer_InitSaveFile. Recomputes every
 // call (result depends on live CVar/settings). If the prep throws, falls back to iterating all RC_MAX
 // so the dump always succeeds. Caller MUST invoke this AFTER SOH_Init() returns.
-extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
+static const char* Combo_DumpRandoStaticData(bool prepareEntrances) {
     static std::string cached;
 
     nlohmann::json checks = nlohmann::json::array();
@@ -4970,8 +4970,17 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
         sComboCheckPriceOverrides.clear();
         sComboShuffledSlotsCacheValid = false; // new seed/settings -> fresh slot-set snapshot
         sComboMinShopCacheValid = false;       // fresh min-set placements (re-filled inside ComboFillConfined)
+        // Native Fill shuffles entrances before rewards, own-dungeon items and
+        // restricted songs. Otherwise a stone can be locked behind adulthood
+        // while the Door of Time still requires all three stones.
+        if (prepareEntrances && ctx->GetOption(RSK_SHUFFLE_ENTRANCES)) {
+            if (!sComboRandoSeedSet)
+                throw std::runtime_error("Native entrance preparation requires an explicit combo seed");
+            if (!SOH_ShuffleEntrancesForCombo(sComboRandoSeed))
+                throw std::runtime_error("Native entrance shuffle failed: no valid layout");
+        }
         Combo_SeedShopRng();
-        ComboFillConfined();
+        ComboFillConfined(prepareEntrances && ctx->GetOption(RSK_SHUFFLE_ENTRANCES));
 
         // Barren parity: native CalculateBarren counts a region non-barren if it holds a major item OR
         // (under the shop shield/tunic gate) a shield/tunic. Fold the gate into the exported `major`.
@@ -5106,7 +5115,8 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
         // A failed confined fill is not a valid pool. Never turn lost progression items
         // into padded junk or silently switch to a different check universe.
         const std::string message = e.what();
-        const bool retryable = message.rfind("Native confined fill failed", 0) == 0;
+        const bool retryable = message.rfind("Native confined fill failed", 0) == 0 ||
+                               message.rfind("Native entrance shuffle failed", 0) == 0;
         SPDLOG_WARN("[ComboShip] native pool preparation failed: {}", message);
         cached = nlohmann::json({ { "error", message }, { "retryable", retryable } }).dump();
         return cached.c_str();
@@ -5192,6 +5202,16 @@ extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
         { "accessibility", std::move(accessibility) }
     }.dump();
     return cached.c_str();
+}
+
+// Catalog/legacy callers retain the original vanilla preparation. Generation
+// explicitly requests the native graph before restricted placements and must not
+// shuffle it again after consuming this dump and its forced placements.
+extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticData(void) {
+    return Combo_DumpRandoStaticData(false);
+}
+extern "C" COMBO_EXPORT const char* SOH_DumpRandoStaticDataWithEntrances(void) {
+    return Combo_DumpRandoStaticData(true);
 }
 
 // ComboShip: serialize a HintText's clear/ambiguous/obscure CustomMessage variants to JSON, with
