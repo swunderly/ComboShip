@@ -377,6 +377,10 @@ struct Bindings {
     // This must apply the selected goal/accessibility policy and commit the native layout.
     std::function<bool(const Overrides&)> validateComplete;
     std::function<size_t(size_t)> chooseIndex;
+    // Set only after both validators accept the base world with no Wallmaster routes. The run
+    // checks that every declared/resolved pool is own-game alias WALLMASTERS with VOID sources.
+    // Such edges only add reachability; complete validation always runs. False on every old path.
+    bool monotoneWallmasterBaseProven = false;
 };
 
 class Shuffler {
@@ -386,6 +390,7 @@ class Shuffler {
     Overrides fixed;
     size_t backtracks = 0;
     bool anyActive = false;
+    bool skipMonotoneCandidateChecks = false;
 
     size_t choose(size_t count) {
         if (!count || !bindings.chooseIndex)
@@ -450,7 +455,7 @@ class Shuffler {
             }
             auto completeOverrides = fixed;
             completeOverrides.insert(nextOverrides.begin(), nextOverrides.end());
-            if (bindings.logicEnabled) {
+            if (bindings.logicEnabled && !skipMonotoneCandidateChecks) {
                 if (!bindings.validateAssumed(completeOverrides, nextPools))
                     continue;
                 if (settings.games != Games::Mm && !bindings.validateAgeTemple(completeOverrides, nextPools))
@@ -486,6 +491,13 @@ class Shuffler {
         if (!anyActive)
             return {};
         const auto pools = makePools(); // capabilities checked once before RNG/retries
+        skipMonotoneCandidateChecks =
+            bindings.monotoneWallmasterBaseProven && MakePools(settings).size() == 1 && pools.size() == 1 &&
+            pools.front().name == "WALLMASTERS" && pools.front().ownGame && pools.front().alias &&
+            std::all_of(pools.front().src.begin(), pools.front().src.end(), [](std::string_view name) {
+                const auto* row = Find(name);
+                return row && row->type == Type::Wallmaster && (row->to == "OOT VOID" || row->to == "MM VOID");
+            });
         for (size_t attempt = 0; attempt < 1000; ++attempt) {
             backtracks = 0;
             try {

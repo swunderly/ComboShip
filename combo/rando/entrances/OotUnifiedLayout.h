@@ -15,6 +15,23 @@ inline void RequireVanillaOotQuests(const OotQuests& quests) {
     if (std::any_of(quests.begin(), quests.end(), [](bool mq) { return mq; }))
         throw std::invalid_argument("Wallmaster Shuffle currently supports vanilla OoT dungeons only");
 }
+inline OotQuests DecodeOotAreaContext(const nlohmann::json& value) {
+    if (!value.is_object() || value.size() != 3 ||
+        value.value("profile", std::string{}) != "ootmm-oot-area-context-v1" ||
+        value.value("registry", std::string{}) != kRegistrySourceSha256 || !value.contains("ootMq"))
+        throw std::invalid_argument("Unsupported native OoT quest context");
+    const auto& mq = value.at("ootMq");
+    if (!mq.is_object() || mq.size() != kOotMqDungeons.size())
+        throw std::invalid_argument("Native OoT quest context must name all twelve dungeons");
+    OotQuests result{};
+    for (size_t i = 0; i < result.size(); ++i) {
+        const auto it = mq.find(std::string(kOotMqDungeons[i]));
+        if (it == mq.end() || !it->is_boolean())
+            throw std::invalid_argument("Native OoT quest context needs explicit quest booleans");
+        result[i] = it->get<bool>();
+    }
+    return result;
+}
 inline bool OotUnifiedSourceBound(std::string_view row) {
     return std::find(kOotVanillaWallmasterSources.begin(), kOotVanillaWallmasterSources.end(), row) !=
            kOotVanillaWallmasterSources.end();

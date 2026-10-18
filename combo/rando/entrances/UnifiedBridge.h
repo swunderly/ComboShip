@@ -2,14 +2,15 @@
 // world assumptions, the opposite-age Temple probe and a complete install, and written as the seed's
 // "entranceLayout" (EntranceLayout.h). Adapted from OoTMM v32.3 (413573d)
 // packages/logic/src/solver/entrances.ts (WorldShuffler.run :905-934, LogicPassEntrances :1061-1134).
-// Only the dev-only MM Wallmaster tranche is bound: its OoT Wallmaster areas count as absent, and any
-// other row refuses generation before a random draw. The launcher (ComboShip.cpp RunComboFill) and the
+// The dev-only MM tranche retains its absent-OoT-source contract. The separately named vanilla
+// capability binds both games, with actual native quest context and no MQ admission. The launcher and
 // headless tool call it once per generation attempt, after the native pools and Ship's own entrance
 // shuffle and before the combined fill.
 // MIT, Copyright (c) 2020-2022 OoTMM Team; see LICENSE.OoTMM.
 #pragma once
 #include "NativeBridge.h"
 #include "MmUnifiedLayout.h"
+#include "OotUnifiedLayout.h"
 #include "TempleNative.h"
 #include <functional>
 #include <optional>
@@ -43,6 +44,10 @@ inline constexpr const char* kShipEntranceSettings[] = {
 inline constexpr const char* kMqDungeonsSetting = "gRandoSettings.MQDungeons";
 
 using SettingReader = std::function<int(const char*, int)>;
+struct UnifiedEntranceStats {
+    size_t randomDraws = 0, assumedChecks = 0, completeChecks = 0;
+    bool monotoneShortcutUsed = false;
+};
 
 // One generation attempt.
 struct UnifiedGeneration {
@@ -59,6 +64,8 @@ struct UnifiedGeneration {
     OotAccess access = OotAccess::ALL_REACHABLE;
     uint32_t sharedMask = 0;
     bool songTravelLogic = false, foreignSongsLogic = false; // the installed SongTravelMap's logic flags
+    bool wallmasterShortcut = true; // developer differential seam; never serialized as a seed setting
+    UnifiedEntranceStats* stats = nullptr;
 };
 
 // The soh Temple probe exports, through the caller's module lookup (TempleNative.h).
@@ -76,26 +83,43 @@ inline std::string UnifiedRequirement(const Settings& s, std::string_view capabi
     return Active(s.erWallmasters) ? "wallmasters-own-game-v1" : "one-ways-own-game-v1";
 }
 
-// The rows the unified natives can route: the MM half's (MmUnifiedLayout.h). No OoT row has an
-// installer, a logic overlay or a runtime yet.
-inline bool UnifiedSourceBound(const Record& r) {
-    return r.game == Game::Mm && MmUnifiedSourceBound(r.name);
+// The old MM-only contract stays unchanged; the explicit vanilla contract adds audited OoT rows.
+inline bool UnifiedSourceBound(const Record& r, bool vanillaOot = false) {
+    return (r.game == Game::Mm && MmUnifiedSourceBound(r.name)) ||
+           (vanillaOot && r.game == Game::Oot && OotUnifiedSourceBound(r.name));
 }
-inline bool UnifiedDestinationBound(const Record& r) {
-    return r.game == Game::Mm && MmUnifiedDestinationBound(r.name);
+inline bool UnifiedDestinationBound(const Record& r, bool vanillaOot = false) {
+    return (r.game == Game::Mm && MmUnifiedDestinationBound(r.name)) ||
+           (vanillaOot && r.game == Game::Oot && OotUnifiedDestinationBound(r.name));
 }
 // Every source of every pool, and every destination assignable from one, must be bound: a pool is
 // never shrunk to the rows that are.
-inline void RequireUnifiedCoverage(const Pools& pools, const Settings& s) {
+inline void RequireUnifiedCoverage(const Pools& pools, const Settings& s, bool vanillaOot = false) {
     for (const auto& pool : pools)
         for (const auto src : pool.src) {
             const auto& from = *Find(src);
-            if (!UnifiedSourceBound(from))
+            if (!UnifiedSourceBound(from, vanillaOot))
                 throw UnifiedEntranceRefused(std::string(src) + " has no native entrance binding yet");
             for (const auto dst : pool.dst)
-                if (Assignable(from, *Find(dst), pool.ownGame, s) && !UnifiedDestinationBound(*Find(dst)))
+                if (Assignable(from, *Find(dst), pool.ownGame, s) && !UnifiedDestinationBound(*Find(dst), vanillaOot))
                     throw UnifiedEntranceRefused(std::string(dst) + " has no native entrance binding yet");
         }
+}
+inline OotQuests ReadUnifiedOotQuests(const NativeFns& native) {
+    if (!native.ootAreaContext || !native.applyOotLayout || !native.dumpOotLayout || !native.setOotAssumptions ||
+        !native.clearOotAssumptions || !native.applySeed || !native.dumpSeed || !native.setAssumptions ||
+        !native.clearAssumptions || !native.setGenerationSettings)
+        throw UnifiedEntranceRefused("Vanilla Wallmaster generation needs all native entrance exports");
+    try {
+        const auto* text = native.ootAreaContext();
+        if (!text)
+            throw std::invalid_argument("native OoT quest context unavailable");
+        auto quests = DecodeOotAreaContext(nlohmann::json::parse(text));
+        RequireVanillaOotQuests(quests);
+        return quests;
+    } catch (const std::exception& error) {
+        throw UnifiedEntranceRefused(std::string("Vanilla Wallmaster generation: ") + error.what());
+    }
 }
 
 inline bool ShipEntrancesActive(const SettingReader& read) {
@@ -167,6 +191,7 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     if (MakePools(s).empty())
         return nlohmann::json();
     const auto required = UnifiedRequirement(s, g.capability);
+    const bool vanillaOot = required == kVanillaWallmasterCapability;
     if (!AdmitsEntranceSettings(s, caps.Only(required)))
         throw UnifiedEntranceRefused("Entrance settings " + EntranceSettingsText(s) + " are not admitted by " +
                                      required);
@@ -187,14 +212,16 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
         throw UnifiedEntranceRefused("Entrance generation cannot read Ship's settings");
     if (ShipEntrancesActive(g.readSetting))
         throw UnifiedEntranceRefused("Wallmaster and One-Way shuffles need Ship's own entrance shuffle off");
+    if (vanillaOot && g.readSetting("gEnhancements.RandomizedEnemies", 0))
+        throw UnifiedEntranceRefused("Wallmaster Shuffle needs Enemy Randomizer off");
     // The layout records the quest of every MQ dungeon; until the native quest context exists only
     // the all-vanilla one is known.
-    if (g.readSetting(kMqDungeonsSetting, 0) != 0)
+    if (!vanillaOot && g.readSetting(kMqDungeonsSetting, 0) != 0)
         throw UnifiedEntranceRefused("Entrance layouts need Master Quest dungeons off for now");
-    const OotQuests quests{};
+    const OotQuests quests = vanillaOot ? ReadUnifiedOotQuests(native) : OotQuests{};
     const auto areaExists = areas(quests);
     const auto pools = ResolvePools(s, areaExists).pools;
-    RequireUnifiedCoverage(pools, s);
+    RequireUnifiedCoverage(pools, s, vanillaOot);
     Names offered;
     for (const auto& pool : pools)
         for (const auto src : pool.src)
@@ -214,6 +241,8 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
             throw UnifiedEntranceRefused("Entrance validation requires the OoT reachability oracle");
         g.oot.Reset();
     }
+    if (vanillaOot && ReadUnifiedOotQuests(native) != quests)
+        throw UnifiedEntranceRefused("OoT quest context changed while preparing entrance generation");
     const auto facts = UnifiedTempleFacts(g);
     TempleProbeRun templeRun(temple, s, facts, areaExists);
     // Everything of the layout but its routes.
@@ -241,23 +270,43 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     Bindings b;
     b.logicEnabled = facts.logicEnabled;
     b.areaExists = areaExists;
-    b.sourceSupported = UnifiedSourceBound;
-    b.destinationSupported = [&](const Record& r) { return UnifiedDestinationBound(r) || !offered.contains(r.name); };
+    b.sourceSupported = [vanillaOot](const Record& r) { return UnifiedSourceBound(r, vanillaOot); };
+    b.destinationSupported = [&](const Record& r) {
+        return UnifiedDestinationBound(r, vanillaOot) || !offered.contains(r.name);
+    };
     b.chooseIndex = [&](size_t count) {
         CheckGenerationCancellation();
+        if (g.stats && count)
+            ++g.stats->randomDraws; // CwRng::below consumes exactly one next() for nonzero count.
         return rng.below(static_cast<uint32_t>(count));
     };
     // One candidate world for both games' oracles and the Temple probe (CandidateWorld.h).
     b.validateAssumed = [&](const Overrides& rows, const Pools& remaining) {
+        if (g.stats)
+            ++g.stats->assumedChecks;
         const auto candidate = BuildCandidateWorld(rows, remaining, s);
         AssumptionScope scope(native, EncodeMmOverlay(candidate), EncodeOotOverlay(candidate));
         return world.validate(g.oot, g.mm, g.mmStart, g.goal, g.access);
     };
     b.validateAgeTemple = templeRun.Validator();
     b.validateComplete = [&](const Overrides& rows) {
+        if (g.stats)
+            ++g.stats->completeChecks;
         ApplyUnifiedLayout(native, layoutOf(rows), g.active);
         return world.validate(g.oot, g.mm, g.mmStart, g.goal, g.access);
     };
+    // Removing a synthetic VOID Wallmaster source cannot remove native reachability. Certify the
+    // base once with both inventories, then retain the pinned sampling stream and final validation.
+    // Old contracts and every combination with another declared pool keep the original path.
+    if (vanillaOot && g.wallmasterShortcut && facts.logicEnabled && MakePools(s).size() == 1 && pools.size() == 1 &&
+        pools.front().name == "WALLMASTERS" && pools.front().ownGame && pools.front().alias) {
+        const auto base = ReservedEntrances(s);
+        if (b.validateAssumed(base, {}) && b.validateAgeTemple(base, {})) {
+            b.monotoneWallmasterBaseProven = true;
+            if (g.stats)
+                g.stats->monotoneShortcutUsed = true;
+        }
+    }
     return layoutOf(Shuffler(s, std::move(b)).run());
 }
 } // namespace ComboRando::Entrances
