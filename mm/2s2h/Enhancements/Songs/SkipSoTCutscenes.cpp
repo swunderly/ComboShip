@@ -15,6 +15,7 @@ void EnTest6_StopDoubleSoTCutscene(EnTest6* thisx, PlayState* play);
 void EnTest6_StopInvertedSoTCutscene(EnTest6* thisx, PlayState* play);
 #ifdef COMBO_BUILD
 void Combo_MMReturnToInitialEntranceAfterSkip(void);
+void Combo_MMQueueSkippedDawn(void);
 #endif
 }
 
@@ -68,6 +69,8 @@ void RegisterSkipSoTCutscenes() {
 #ifdef COMBO_BUILD
                 // With entrance shuffle, the MM initial entrance instead (OoTMM v32.3 mm/play/play.c:736-741).
                 Combo_MMReturnToInitialEntranceAfterSkip();
+                if (gSaveContext.save.time == CLOCK_TIME(6, 0) - 1)
+                    Combo_MMQueueSkippedDawn();
 #endif
             }
         }

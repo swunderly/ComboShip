@@ -133,7 +133,8 @@ check(squash('if ((gSaveContext.save.entrance == ENTRANCE(CUTSCENE, 0) || gSaveC
              'ENTRANCE(CUTSCENE, 1)) && gSaveContext.save.cutsceneIndex == 0xFFF7) {') in sot,
       'SkipSoTCutscenes no longer keys on the Song of Time cutscene')
 check(squash('} else { gSaveContext.save.entrance = ENTRANCE(SOUTH_CLOCK_TOWN, 0); #ifdef COMBO_BUILD '
-             'Combo_MMReturnToInitialEntranceAfterSkip(); #endif }') in sot and
+             'Combo_MMReturnToInitialEntranceAfterSkip(); '
+             'if (gSaveContext.save.time == CLOCK_TIME(6, 0) - 1) Combo_MMQueueSkippedDawn(); #endif }') in sot and
       sot.count('Combo_MMReturnToInitialEntranceAfterSkip();') == 1,
       'SkipSoTCutscenes: the Song of Time arrival must return to the initial entrance, the flashback must not')
 moon = squash(read('mm/2s2h/Enhancements/Cutscenes/StoryCutscenes/SkipMoonCrash.cpp'))
@@ -155,6 +156,8 @@ for name in ('Combo_MMRecordInitialEntrance(', 'Combo_MMReturnToInitialEntranceO
              'Combo_MMReturnToInitialEntranceAfterSkip(', 'Combo_MMAfterPlayInit('):
     check('Combo_MMEntranceShuffleActive()' in function(er_block, 'extern "C" void ' + name),
           f'{name} must read the installed layout')
+check('Combo_MMEntranceShuffleActive()' in function(er_block, 'extern "C" void Combo_MMQueueSkippedDawn('),
+      'skipped dawn must act only with an installed entrance-shuffle layout')
 for banned in ('ActiveMmGenerationSettings', 'MmUnifiedErEnabled', 'ActiveMmWallmasters'):
     check(banned not in er_block, f'the MM CFG_ER_ANY sites must not read {banned}')
 check(re.search(r'extern "C" int Combo_MMEntranceShuffleActive\(void\) \{\s*return IS_RANDO && '
@@ -465,6 +468,7 @@ struct {
     struct {
         s32 entrance = 0;
         s32 cutsceneIndex = 0;
+        int time = 0, day = 0;
         bool isOwlSave = false;
         int playerForm = PLAYER_FORM_DEKU, equippedMask = PLAYER_MASK_DEKU;
         struct {
@@ -473,9 +477,22 @@ struct {
     } save;
     u16 nextCutsceneIndex = 0xFFEF;
     bool flashSaveAvailable = false;
+    int gameMode = -1;
 } gSaveContext;
+struct GameState {
+    bool running = true;
+    void (*init)(GameState*) = nullptr;
+    size_t size = 0;
+};
+struct DayTelopState { GameState state; };
+void DayTelop_Init(GameState*) {}
+enum { GAMEMODE_NORMAL = 0 };
+#define CLOCK_TIME(h, m) ((h) * 60 + (m))
+#define STOP_GAMESTATE(state) ((state)->running = false)
+#define SET_NEXT_GAMESTATE(state, next, bytes) ((state)->init = (next), (state)->size = (bytes))
 struct PlayState {
     s16 sceneId;
+    GameState state;
 };
 std::vector<std::pair<s32, s16>> switches; // +flag set, -flag unset, by scene
 void Flags_SetSwitch(PlayState* play, s32 flag) { switches.push_back({flag, play->sceneId}); }
@@ -582,6 +599,10 @@ s32 Skip(s32 entrance) {
 // No site acts: the boot lands where it lands, Song of Time and the moon crash keep their native arrival,
 // and the Stone Tower switch is left alone.
 void Inert() {
+    PlayState play{};
+    Combo_MMQueueSkippedDawn();
+    Combo_MMAfterPlayInit(&play);
+    assert(play.state.running && play.state.init == nullptr);
     for (const auto& b : kBoots) {
         Run(b);
         assert(gSaveContext.save.entrance == b.lands);
@@ -596,6 +617,41 @@ void Inert() {
     assert(switches.empty());
 }
 void Active() {
+    // Reproduction: the SoT skip returns into an indoor scene with no EnTest4 to schedule dawn.
+    // Execute the production queue and after-init functions, observing the native gamestate boundary.
+    for (int previousDay : {0, 1, 2}) { // normal reset and each clock-shuffle daytime start
+        PlayState indoor{};
+        gSaveContext.save.day = previousDay;
+        gSaveContext.save.time = CLOCK_TIME(6, 0) - 1;
+        Combo_MMQueueSkippedDawn();
+        Combo_MMAfterPlayInit(&indoor);
+        assert(!indoor.state.running && indoor.state.init == DayTelop_Init);
+        assert(indoor.state.size == sizeof(DayTelopState));
+        assert(gSaveContext.save.time == CLOCK_TIME(6, 0));
+        assert(gSaveContext.save.day == previousDay); // native DayTelop, not this adapter, advances it
+        PlayState returned{};
+        Combo_MMAfterPlayInit(&returned);
+        assert(returned.state.running && returned.state.init == nullptr); // one-shot consumed
+    }
+    PlayState outdoor{};
+    outdoor.state.running = false; // EnTest4 already scheduled native DayTelop
+    outdoor.state.init = DayTelop_Init;
+    outdoor.state.size = 123;
+    Combo_MMQueueSkippedDawn();
+    Combo_MMAfterPlayInit(&outdoor);
+    assert(!outdoor.state.running && outdoor.state.size == 123); // no duplicate scheduling
+    Combo_MMQueueSkippedDawn();
+    Combo_MMRecordInitialEntrance(ENTRANCE(STONE_TOWER, 0)); // boot clears stale pending work
+    PlayState nextBoot{};
+    Combo_MMAfterPlayInit(&nextBoot);
+    assert(nextBoot.state.running && nextBoot.state.init == nullptr);
+    Combo_MMQueueSkippedDawn();
+    harnessRando = false;
+    PlayState inactive{};
+    Combo_MMAfterPlayInit(&inactive);
+    harnessRando = true;
+    Combo_MMAfterPlayInit(&inactive);
+    assert(inactive.state.running && inactive.state.init == nullptr); // stale request cannot leak
     for (const auto& b : kBoots) {
         // The boot itself lands exactly as before; it records the logical variant of where it landed.
         Run(b);
