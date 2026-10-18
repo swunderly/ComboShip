@@ -113,6 +113,16 @@ int SetAssumptions(const char* candidateJson) {
 void ClearAssumptions() {
     CE::ActiveOotUnifiedAssumptions().reset();
 }
+bool HasVanillaWallmasterLayout() {
+    const auto& layout = CE::ActiveOotUnified();
+    if (!layout.hasOotRoutes())
+        return false;
+    try {
+        const auto quests = ReadQuests();
+        CE::RequireVanillaOotQuests(quests);
+        return quests == *layout.quests();
+    } catch (const std::exception&) { return false; }
+}
 const char* AreaContext() {
     static thread_local std::string result;
     try {

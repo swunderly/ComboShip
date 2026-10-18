@@ -10,5 +10,6 @@ const char* DumpLayout();
 int SetAssumptions(const char* candidateJson);
 void ClearAssumptions();
 const char* AreaContext();
+bool HasVanillaWallmasterLayout();
 } // namespace Rando::ComboEntrances
 #endif

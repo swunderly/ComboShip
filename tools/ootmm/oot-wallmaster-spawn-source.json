@@ -1,0 +1,20 @@
+{
+  "revision": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "sources": [
+    {
+      "path": "packages/generator/src/oot/actors.c",
+      "sha256": "083b281c6bebc0f135b3075998903b74fb9baad5f68d4fe21ca15c4da26d0ca2"
+    },
+    {
+      "path": "packages/generator/src/oot/actors/En/En_Wallmas.c",
+      "sha256": "2d9e7729ea8fc152c3932d368cd1dea9911d103bf71eec35499028448186824d"
+    },
+    {
+      "path": "packages/generator/src/oot/actors/En/En_Wallmas.S",
+      "sha256": "c799bffdbea1a9500c887e640d9c45824bd28833c67ad36ea32f6c7832e69dfe"
+    }
+  ],
+  "roomClearFunction": "static int GetRoomClearFlagForActor(PlayState *play, int flag)\n{\n    int res;\n\n    res = Flags_GetClear(play, flag);\n    if (Config_Flag(CFG_ER_WALLMASTERS) && sActorIdToSpawn == ACTOR_EN_WALLMAS)\n        res = 0;\n    return res;\n}",
+  "transportFunction": "void EnWallmas_TakePlayerEr(PlayState* play, Actor* this)\n{\n    comboClearCustomRespawn(CUSTOM_RESPAWN_MODE_DUNGEON_ENTRANCE);\n    play->nextEntranceIndex = EnWallmas_GetDestEr(this, play);\n    play->transitionTrigger = TRANS_TRIGGER_START;\n    play->transitionType = TRANS_GFX_BLACK;\n    gIsEntranceOverride = 1;\n}",
+  "transportHook": "#include <combo.h>\n\nPATCH_GROUP PG_ER_WALLMASTERS\n\nEnWallmas_TakePlayerEr_Hook:\n  j       EnWallmas_TakePlayerEr\n   or     a1, s0, zero\n\nPATCH_START 0x808728c0\n  jal     EnWallmas_TakePlayerEr_Hook\nPATCH_END\n\nPATCH_GROUP_END\n"
+}

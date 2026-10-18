@@ -2337,3 +2337,22 @@ RNG sampling. The native OoT graph binding is not implemented. Host tests verify
 this boundary with a fixture graph, not real OoT reachability. M0's native OoT
 validation gate remains incomplete, and no unified runtime entrance layout is
 enabled by this foundation.
+
+### Vanilla OoT Wallmaster staging (2026-10-18, private and hidden)
+
+The new vanilla-only contract rejects any MQ layout. Its audited source predicates use the probe's
+active Logic and private Entrance objects; native exit lists are unchanged. This capability remains
+hidden until transport, the isolated Temple probe and generator validation are complete.
+
+The pull-up capture hook matches OoTMM v32.3's En_Wallmas.S call at 0x808728c0. It classifies the actor's
+own room, resolves a verified dungeon arrival once, and writes a black-fade transition directly.
+The port has no custom dungeon-entrance respawn: OoT savewarp derives the dungeon entrance from the
+saved scene in Sram_OpenSave. The adapter clears the native respawn selector; it preserves Farore's
+saved warp and void-out coordinates. It does not call the native respawn routine on success or apply
+Ship's entrance override to an already resolved arrival.
+
+ShadowTag, an unmapped source, a missing route, MQ context, Enemy Randomizer or Ship entrance shuffle
+retain native respawn and log the fallback. Only a committed, matching vanilla OoT Wallmaster layout
+permits Wallmasters to spawn in cleared rooms; assumptions and private MM-only profiles do not.
+The existing soul and object-availability checks still run before this exception. These are host and
+native-compilation proofs; they do not establish a successful gameplay capture or authorize release.

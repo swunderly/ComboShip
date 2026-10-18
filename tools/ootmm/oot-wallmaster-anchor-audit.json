@@ -282,12 +282,12 @@
       "evidence": [
         {
           "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
-          "line": 132,
+          "line": 133,
           "text": "this->switchFlag = (u8)(thisx->params >> 0x8);"
         },
         {
           "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
-          "line": 133,
+          "line": 134,
           "text": "thisx->params = thisx->params & 0xFF;"
         },
         {
@@ -307,22 +307,22 @@
       "evidence": [
         {
           "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
-          "line": 508,
+          "line": 512,
           "text": "void EnWallmas_WaitForProximity(EnWallmas* this, PlayState* play) {"
         },
         {
           "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
-          "line": 511,
+          "line": 515,
           "text": "Math_Vec3f_DistXZ(&this->actor.home.pos, &player->actor.world.pos) < 200.0f) {"
         },
         {
           "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
-          "line": 516,
+          "line": 520,
           "text": "void EnWallmas_WaitForSwitchFlag(EnWallmas* this, PlayState* play) {"
         },
         {
           "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
-          "line": 517,
+          "line": 521,
           "text": "if (Flags_GetSwitch(play, this->switchFlag) != 0) {"
         }
       ]
@@ -332,27 +332,27 @@
       "evidence": [
         {
           "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
-          "line": 139,
+          "line": 140,
           "text": "if (thisx->params == WMT_FLAG) {"
         },
         {
           "file": "soh/src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.c",
-          "line": 140,
+          "line": 141,
           "text": "if (Flags_GetSwitch(play, this->switchFlag) != 0) {"
         },
         {
           "file": "soh/src/code/z_actor.c",
-          "line": 677,
+          "line": 678,
           "text": "if (flag < 0x20) {"
         },
         {
           "file": "soh/src/code/z_actor.c",
-          "line": 680,
+          "line": 681,
           "text": "play->actorCtx.flags.tempSwch |= (1 << (flag - 0x20));"
         },
         {
           "file": "soh/src/code/z_actor.c",
-          "line": 3233,
+          "line": 3234,
           "text": "actorCtx->flags.tempSwch &= 0xFFFFFF;"
         }
       ]
