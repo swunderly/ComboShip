@@ -6751,3 +6751,22 @@ extern "C" Gfx* Combo_OotFairyOcarinaHand(Gfx* nativeHand, s32 lod) {
                : nativeHand;
 }
 #endif
+
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/randomizer/combo_entrance_overlay.h"
+extern "C" COMBO_EXPORT int SOH_SetOotmmEntranceLayout(const char* seedJson) {
+    return Rando::ComboEntrances::SetLayout(seedJson);
+}
+extern "C" COMBO_EXPORT int SOH_SetOotmmEntranceAssumptions(const char* candidateJson) {
+    return Rando::ComboEntrances::SetAssumptions(candidateJson);
+}
+extern "C" COMBO_EXPORT void SOH_ClearOotmmEntranceAssumptions() {
+    Rando::ComboEntrances::ClearAssumptions();
+}
+extern "C" COMBO_EXPORT const char* SOH_DumpOotmmEntranceLayout() {
+    return Rando::ComboEntrances::DumpLayout();
+}
+extern "C" COMBO_EXPORT const char* SOH_GetOotmmAreaContext() {
+    return Rando::ComboEntrances::AreaContext();
+}
+#endif

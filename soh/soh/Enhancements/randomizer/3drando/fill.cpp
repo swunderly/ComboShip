@@ -5,6 +5,7 @@
 #include "rando/GameplayRules.h"
 #include "rando/AgeTravel.h"
 #include "rando/SongTravelOOT.h"
+#include "../combo_entrance_overlay.h"
 #include "../age_change_areas.h"
 ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges(); // OTRGlobals.cpp
 #endif
@@ -182,6 +183,30 @@ static void ValidateSphereZero(GetAccessibleLocationsStruct& gals) {
     }
 }
 
+#ifdef COMBO_BUILD
+// Synthetic Wallmaster edges have no native exit to delete. Run their private Entrance objects through
+// the same age/time propagation, keeping them out of the persistent entrance/playthrough containers.
+static void ProcessComboEntranceOverlay(Region* region, GetAccessibleLocationsStruct& gals, RandomizerGet ignore,
+                                        bool stopOnBeatable, bool addToPlaythrough) {
+    for (auto& exit : Rando::ComboEntrances::OverlayExits(region->randomizerRegionKey)) {
+        Region* destination = exit.GetConnectedRegion();
+        if (!UpdateToDAccess(&exit, destination))
+            continue;
+        gals.logicUpdated = true;
+        if (!gals.sphereZeroComplete) {
+            if (!gals.foundTempleOfTime || !gals.validatedStartingRegion)
+                ValidateOtherEntrance(gals);
+            ValidateSphereZero(gals);
+        }
+        if (!destination->addedToPool) {
+            destination->addedToPool = true;
+            gals.regionPool.push_back(destination->randomizerRegionKey);
+        }
+        ProcessRegion(destination, gals, ignore, stopOnBeatable, addToPlaythrough);
+    }
+}
+#endif
+
 // This function handles each possible exit
 void ProcessExits(Region* region, GetAccessibleLocationsStruct& gals, RandomizerGet ignore = RG_NONE,
                   bool stopOnBeatable = false, bool addToPlaythrough = false) {
@@ -247,6 +272,10 @@ void ProcessExits(Region* region, GetAccessibleLocationsStruct& gals, Randomizer
             }
         }
     }
+#ifdef COMBO_BUILD
+    // Song Travel only redirects native exits; captures retain their audited source predicate.
+    ProcessComboEntranceOverlay(region, gals, ignore, stopOnBeatable, addToPlaythrough);
+#endif
 }
 
 // Get the max number of tokens that can possibly be useful

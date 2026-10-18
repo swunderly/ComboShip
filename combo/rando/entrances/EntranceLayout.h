@@ -22,6 +22,7 @@ namespace ComboRando::Entrances {
 inline constexpr std::string_view kEntranceLayoutSchema = "ootmm-entrance-layout-v1";
 // The dev-only MM tranche: OoT Wallmaster rows are not bound yet, so their areas count as absent.
 inline constexpr std::string_view kMmTrancheCapability = "wallmasters-own-game-mm-tranche";
+inline constexpr std::string_view kVanillaWallmasterCapability = "wallmasters-own-game-vanilla-v1";
 static_assert(CapabilitySet::Known(kMmTrancheCapability) &&
                   kEntranceCapabilities[CapabilityDetail::Find(kMmTrancheCapability)].devOnly,
               "The MM tranche is a devOnly capability");
@@ -575,6 +576,11 @@ inline Pools ValidateEntranceLayoutSettings(const EntranceLayout& layout, const 
     }
     const bool mmTranche =
         std::find(layout.required.begin(), layout.required.end(), kMmTrancheCapability) != layout.required.end();
+    // A new capability contract, not a change to the frozen pool definitions or old profile semantics.
+    if (std::find(layout.required.begin(), layout.required.end(), kVanillaWallmasterCapability) !=
+            layout.required.end() &&
+        std::any_of(layout.ootMq.begin(), layout.ootMq.end(), [](bool mq) { return mq; }))
+        throw EntranceLayoutError("Wallmaster Shuffle currently supports vanilla OoT dungeons only");
     auto pools = LayoutV1::MakePools(layout.settings, layout.ootMq, mmTranche);
     if (pools.empty())
         throw EntranceLayoutError("Entrance layout settings place no entrance");

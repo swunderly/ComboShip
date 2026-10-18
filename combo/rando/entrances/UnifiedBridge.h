@@ -250,10 +250,7 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     // One candidate world for both games' oracles and the Temple probe (CandidateWorld.h).
     b.validateAssumed = [&](const Overrides& rows, const Pools& remaining) {
         const auto candidate = BuildCandidateWorld(rows, remaining, s);
-        const auto ootPart = SplitCandidateWorld(candidate, Game::Oot);
-        if (!ootPart.deleted.empty() || !ootPart.fixed.empty() || !ootPart.remaining.empty())
-            throw UnifiedEntranceRefused("OoT entrance assumptions are not available yet");
-        AssumptionScope scope(native, EncodeMmOverlay(candidate));
+        AssumptionScope scope(native, EncodeMmOverlay(candidate), EncodeOotOverlay(candidate));
         return world.validate(g.oot, g.mm, g.mmStart, g.goal, g.access);
     };
     b.validateAgeTemple = templeRun.Validator();

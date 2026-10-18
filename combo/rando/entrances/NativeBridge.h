@@ -1,4 +1,4 @@
-// Shared launcher/headless adapter for the bounded native MM Wallmaster profile.
+// Shared launcher/headless adapter for native entrance layouts and the frozen private MM profiles.
 #pragma once
 #include "Format.h"
 #include "rando/ComboSeedFormat.h"
@@ -15,16 +15,70 @@ struct NativeFns {
     const char* (*dumpSeed)() = nullptr;
     // The unified generation's er* settings document, or null to clear it (MmUnifiedLayout.h).
     int (*setGenerationSettings)(const char*) = nullptr;
+    int (*applyOotLayout)(const char*) = nullptr;
+    int (*setOotAssumptions)(const char*) = nullptr;
+    void (*clearOotAssumptions)() = nullptr;
+    const char* (*dumpOotLayout)() = nullptr;
+    const char* (*ootAreaContext)() = nullptr;
 };
-// A seed's unified layout, already accepted by the seed-format guard. The MM installer takes the MM
-// routes and must give the same layout back. No OoT installer exists yet, so a layout with an OoT
-// route is refused: it can never bind as vanilla routing.
+class NativeLayoutScope {
+    NativeFns native;
+    std::string previous, previousOot;
+
+  public:
+    explicit NativeLayoutScope(NativeFns f) : native(f) {
+        if (native.applySeed && !native.dumpSeed)
+            throw std::runtime_error("MM entrance snapshot export unavailable");
+        if (bool(native.applyOotLayout) != bool(native.dumpOotLayout))
+            throw std::runtime_error("OoT entrance snapshot exports incomplete");
+        if (native.dumpSeed) {
+            const auto* value = native.dumpSeed();
+            if (!value)
+                throw std::runtime_error("MM entrance snapshot failed");
+            previous = value;
+            const auto snapshot = nlohmann::json::parse(previous);
+            DecodeMmWallmasterSeed(snapshot);
+            if (snapshot.contains("entranceLayout"))
+                DecodeEntranceLayout(snapshot.at("entranceLayout"));
+        }
+        if (native.dumpOotLayout) {
+            const auto* value = native.dumpOotLayout();
+            if (!value)
+                throw std::runtime_error("OoT entrance snapshot failed");
+            previousOot = value;
+            const auto snapshot = nlohmann::json::parse(previousOot);
+            if (!snapshot.is_object())
+                throw std::runtime_error("OoT entrance snapshot malformed");
+            if (snapshot.contains("entranceLayout"))
+                DecodeEntranceLayout(snapshot.at("entranceLayout"));
+        }
+    }
+    ~NativeLayoutScope() {
+        if (native.clearAssumptions)
+            native.clearAssumptions();
+        if (native.clearOotAssumptions)
+            native.clearOotAssumptions();
+        if (native.applySeed && !previous.empty())
+            native.applySeed(previous.c_str());
+        if (native.applyOotLayout && !previousOot.empty())
+            native.applyOotLayout(previousOot.c_str());
+    }
+    void Commit() {
+        previous.clear();
+        previousOot.clear();
+    }
+    NativeLayoutScope(const NativeLayoutScope&) = delete;
+    NativeLayoutScope& operator=(const NativeLayoutScope&) = delete;
+};
+// Install both halves transactionally and require the complete envelope to roundtrip unchanged.
 inline void ApplyNativeLayout(const NativeFns& native, const nlohmann::json& seed, const CapabilitySet& caps) {
     const auto& value = seed.at("entranceLayout");
-    if (!Validate(DecodeEntranceLayout(value), caps).oot.empty())
+    const auto validated = Validate(DecodeEntranceLayout(value), caps);
+    if (!validated.oot.empty() && (!native.applyOotLayout || !native.dumpOotLayout))
         throw std::runtime_error("OoT entrance layout installer unavailable");
     if (!native.applySeed || !native.dumpSeed)
         throw std::runtime_error("MM entrance layout exports unavailable");
+    NativeLayoutScope restore(native);
     if (!native.applySeed(seed.dump().c_str()))
         throw std::runtime_error("MM entrance layout rejected");
     const auto* text = native.dumpSeed();
@@ -36,11 +90,43 @@ inline void ApplyNativeLayout(const NativeFns& native, const nlohmann::json& see
             throw std::runtime_error(std::string("MM entrance layout installed beside ") + key);
     if (!loaded.contains("entranceLayout") || loaded.at("entranceLayout") != value)
         throw std::runtime_error("MM entrance layout ignored or changed");
+    if (native.applyOotLayout) {
+        if (!native.applyOotLayout(seed.dump().c_str()))
+            throw std::runtime_error("OoT entrance layout rejected");
+        const auto* ootText = native.dumpOotLayout();
+        if (!ootText)
+            throw std::runtime_error("OoT entrance layout roundtrip failed");
+        const auto ootLoaded = nlohmann::json::parse(ootText);
+        for (const char* key : kLegacyEntranceKeys)
+            if (ootLoaded.contains(key))
+                throw std::runtime_error("OoT entrance layout installed beside a private MM profile");
+        if (!ootLoaded.contains("entranceLayout") || ootLoaded.at("entranceLayout") != value)
+            throw std::runtime_error("OoT entrance layout ignored or changed");
+    }
+    restore.Commit();
 }
 inline void ApplyNativeSeed(const NativeFns& native, const nlohmann::json& seed, const CapabilitySet& caps) {
     RequireSupportedSeedCapabilities(seed, caps);
     if (seed.contains("entranceLayout")) {
         ApplyNativeLayout(native, seed, caps);
+        return;
+    }
+    if (native.applyOotLayout) {
+        // A normal/legacy MM seed also clears the previous slot's OoT overlay, as one transaction.
+        NativeLayoutScope restore(native);
+        if (!native.applyOotLayout("{}"))
+            throw std::runtime_error("OoT entrance layout clear rejected");
+        const auto* clearedOot = native.dumpOotLayout();
+        if (!clearedOot || nlohmann::json::parse(clearedOot) != nlohmann::json::object())
+            throw std::runtime_error("OoT entrance layout clear ignored or changed");
+        NativeFns mmOnly = native;
+        mmOnly.applyOotLayout = nullptr;
+        mmOnly.setOotAssumptions = nullptr;
+        mmOnly.clearOotAssumptions = nullptr;
+        mmOnly.dumpOotLayout = nullptr;
+        mmOnly.ootAreaContext = nullptr;
+        ApplyNativeSeed(mmOnly, seed, caps);
+        restore.Commit();
         return;
     }
     ValidateMmMixedSeed(seed);
@@ -76,40 +162,7 @@ inline void ApplyNativeSeed(const NativeFns& native, const nlohmann::json& seed,
                 throw std::runtime_error(std::string("MM entrance expansion ignored or changed ") + key);
     }
 }
-class NativeScope {
-    NativeFns native;
-    std::string previous;
-
-  public:
-    explicit NativeScope(NativeFns f) : native(f) {
-        if (native.applySeed && !native.dumpSeed)
-            throw std::runtime_error("MM entrance snapshot export unavailable");
-        if (native.dumpSeed) {
-            const auto* value = native.dumpSeed();
-            if (!value)
-                throw std::runtime_error("MM entrance snapshot failed");
-            previous = value;
-            const auto snapshot = nlohmann::json::parse(previous);
-            DecodeMmWallmasterSeed(snapshot);
-            // An installed unified layout is restored from the same dump.
-            if (snapshot.contains("entranceLayout"))
-                DecodeEntranceLayout(snapshot.at("entranceLayout"));
-        }
-    }
-    ~NativeScope() {
-        if (native.clearAssumptions)
-            native.clearAssumptions();
-        if (native.applySeed && !previous.empty())
-            native.applySeed(previous.c_str());
-    }
-    // A successfully created save now owns the installed layout. Pending generation/import
-    // checks leave this uncommitted, so their temporary table never replaces the live slot's.
-    void Commit() {
-        previous.clear();
-    }
-    NativeScope(const NativeScope&) = delete;
-    NativeScope& operator=(const NativeScope&) = delete;
-};
+using NativeScope = NativeLayoutScope;
 class AssumptionScope {
     NativeFns native;
 
@@ -117,6 +170,8 @@ class AssumptionScope {
     AssumptionScope(NativeFns f, const Overrides& overrides, const Pools& pools) : native(f) {
         if (!native.setAssumptions || !native.clearAssumptions)
             throw std::runtime_error("MM entrance assumption exports unavailable");
+        if (native.clearOotAssumptions)
+            native.clearOotAssumptions();
         if (!native.setAssumptions(EncodeMmWallmasterAssumptions(overrides, pools).dump().c_str()))
             throw std::runtime_error("MM entrance assumption rejected");
     }
@@ -127,8 +182,29 @@ class AssumptionScope {
         if (!native.setAssumptions(overlay.c_str()))
             throw std::runtime_error("MM entrance assumption rejected");
     }
+    AssumptionScope(NativeFns f, const std::string& mmOverlay, const std::string& ootOverlay) : native(f) {
+        const auto oot = nlohmann::json::parse(ootOverlay);
+        const bool needsOot = !oot.at("deleted").empty() || !oot.at("fixed").empty() || !oot.at("remaining").empty();
+        if (!native.setAssumptions || !native.clearAssumptions ||
+            (needsOot && (!native.setOotAssumptions || !native.clearOotAssumptions)) ||
+            (bool(native.setOotAssumptions) != bool(native.clearOotAssumptions)))
+            throw std::runtime_error("Entrance assumption exports unavailable");
+        try {
+            if (native.setOotAssumptions && !native.setOotAssumptions(ootOverlay.c_str()))
+                throw std::runtime_error("OoT entrance assumption rejected");
+            if (!native.setAssumptions(mmOverlay.c_str()))
+                throw std::runtime_error("MM entrance assumption rejected");
+        } catch (...) {
+            native.clearAssumptions();
+            if (native.clearOotAssumptions)
+                native.clearOotAssumptions();
+            throw;
+        }
+    }
     ~AssumptionScope() {
         native.clearAssumptions();
+        if (native.clearOotAssumptions)
+            native.clearOotAssumptions();
     }
     AssumptionScope(const AssumptionScope&) = delete;
     AssumptionScope& operator=(const AssumptionScope&) = delete;

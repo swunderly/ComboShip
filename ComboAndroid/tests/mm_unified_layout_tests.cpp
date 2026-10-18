@@ -515,7 +515,8 @@ void CheckBind() {
     switch_ = false;
   };
   failing(FakeMm::refuse, "MM entrance layout rejected");
-  failing(FakeMm::lose, "MM entrance layout roundtrip failed");
+  // Transaction setup now snapshots before touching the active slot.
+  failing(FakeMm::lose, "MM entrance snapshot failed");
   failing(FakeMm::drift, "MM entrance layout ignored or changed");
   failing(FakeMm::beside,
           "MM entrance layout installed beside grottoEntranceExpansion");

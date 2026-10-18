@@ -475,7 +475,12 @@ int RunHeadless(int argc, char** argv) {
         Sym<int (*)(const char*)>(mm, "MM_SetEntranceExpansionAssumptionsForCombo"),
         Sym<void (*)()>(mm, "MM_ClearEntranceExpansionAssumptionsForCombo"),
         Sym<const char* (*)()>(mm, "MM_DumpEntranceExpansionForCombo"),
-        Sym<int (*)(const char*)>(mm, "MM_SetEntranceGenerationSettingsForCombo")
+        Sym<int (*)(const char*)>(mm, "MM_SetEntranceGenerationSettingsForCombo"),
+        Sym<int (*)(const char*)>(soh, "SOH_SetOotmmEntranceLayout"),
+        Sym<int (*)(const char*)>(soh, "SOH_SetOotmmEntranceAssumptions"),
+        Sym<void (*)()>(soh, "SOH_ClearOotmmEntranceAssumptions"),
+        Sym<const char* (*)()>(soh, "SOH_DumpOotmmEntranceLayout"),
+        Sym<const char* (*)()>(soh, "SOH_GetOotmmAreaContext")
     };
     const auto templeProbe =
         ComboRando::Entrances::ResolveUnifiedTempleProbe([&](const char* name) { return Sym<void*>(soh, name); });

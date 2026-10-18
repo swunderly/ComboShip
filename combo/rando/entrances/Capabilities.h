@@ -57,6 +57,8 @@ inline constexpr Capability kEntranceCapabilities[] = {
     { "one-ways-own-game-v1", kOneWaysOwnGameValues, {}, false },
     // Admits Wallmasters with One-Ways once Wallmaster arrivals at one-way rows are bound.
     { "wallmasters-with-one-ways-v1", kWallmastersWithOneWaysValues, kWallmastersWithOneWaysCompanions, false },
+    // Owner-approved vanilla-first staging (2026-10-18). Kept Hidden until both-game wiring is complete.
+    { "wallmasters-own-game-vanilla-v1", kWallmastersOwnGameValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
 

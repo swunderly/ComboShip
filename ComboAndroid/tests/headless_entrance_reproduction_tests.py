@@ -85,7 +85,7 @@ int ApplySeed(const char* raw) {
 }
 const char* DumpSeed() {
     static std::string value;
-    value = Json{{"entranceLayout", installed.json()}}.dump();
+    value = (installed.active() ? Json{{"entranceLayout", installed.json()}} : Json::object()).dump();
     return value.c_str();
 }
 int Shuffle(uint64_t) { ++shuffleCalls; return 1; }

@@ -1,0 +1,84 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "auditSha256": "b2dcebe7202747c57f55a492128cc511ca68dac51f0af0a2711b6e9b21cd0c02",
+  "scope": "Eleven verified vanilla source predicates; MQ remains deferred and no capability is admitted.",
+  "edges": [
+    {
+      "n": 1,
+      "id": "data/world/oot/dungeons/bottom_of_the_well.yml:23",
+      "source": "OOT_WALLMASTER_BOTW_MAIN",
+      "anchor": "RR_BOTW_MIDDLE",
+      "condition": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER) && (ctx->GetTrickOption(RT_LENS_BOTW) || logic->CanUse(RG_LENS_OF_TRUTH))"
+    },
+    {
+      "n": 2,
+      "id": "data/world/oot/dungeons/forest_temple.yml:138",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "anchor": "RR_FOREST_TEMPLE_NW_HALLWAY_TWISTED",
+      "condition": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)"
+    },
+    {
+      "n": 3,
+      "id": "data/world/oot/dungeons/forest_temple.yml:144",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+      "anchor": "RR_FOREST_TEMPLE_NW_HALLWAY_STRAIGHTENED",
+      "condition": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)"
+    },
+    {
+      "n": 4,
+      "id": "data/world/oot/dungeons/forest_temple.yml:184",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "anchor": "RR_FOREST_TEMPLE_NE_HALLWAY_STRAIGHTENED",
+      "condition": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)"
+    },
+    {
+      "n": 5,
+      "id": "data/world/oot/dungeons/forest_temple.yml:198",
+      "source": "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+      "anchor": "RR_FOREST_TEMPLE_NE_HALLWAY_TWISTED",
+      "condition": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)"
+    },
+    {
+      "n": 6,
+      "id": "data/world/oot/dungeons/ganon_castle.yml:69",
+      "source": "OOT_WALLMASTER_GANON_LIGHT",
+      "anchor": "RR_GANONS_CASTLE_LIGHT_TRIAL_FINAL_ROOM",
+      "condition": "(ctx->GetTrickOption(RT_LENS_GANON) || logic->CanUse(RG_LENS_OF_TRUTH)) && Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)"
+    },
+    {
+      "n": 7,
+      "id": "data/world/oot/dungeons/ganon_castle.yml:177",
+      "source": "OOT_WALLMASTER_GANON_SPIRIT",
+      "anchor": "RR_GANONS_CASTLE_SPIRIT_TRIAL_BEFORE_SWITCH",
+      "condition": "logic->CanUse(RG_BOMBCHU_5) && Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER) && (logic->SunlightArrows() || logic->CanUse(RG_MIRROR_SHIELD))"
+    },
+    {
+      "n": 8,
+      "id": "data/world/oot/dungeons/gerudo_training_grounds.yml:27",
+      "source": "OOT_WALLMASTER_GTG",
+      "anchor": "RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM",
+      "condition": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)"
+    },
+    {
+      "n": 9,
+      "id": "data/world/oot/dungeons/shadow_temple.yml:62",
+      "source": "OOT_WALLMASTER_SHADOW",
+      "anchor": "RR_SHADOW_TEMPLE_UPPER_HUGE_PIT",
+      "condition": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)"
+    },
+    {
+      "n": 10,
+      "id": "data/world/oot/dungeons/spirit_temple.yml:71",
+      "source": "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+      "anchor": "RR_SPIRIT_TEMPLE_RUPEE_BRIDGE_NORTH",
+      "condition": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)"
+    },
+    {
+      "n": 11,
+      "id": "data/world/oot/dungeons/spirit_temple.yml:154",
+      "source": "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+      "anchor": "RR_SPIRIT_TEMPLE_2F_MIRROR_ROOM",
+      "condition": "Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER) && (logic->HasItem(RG_POWER_BRACELET) || logic->SunlightArrows())"
+    }
+  ]
+}

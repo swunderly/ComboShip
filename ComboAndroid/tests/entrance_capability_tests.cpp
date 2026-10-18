@@ -52,7 +52,8 @@ Settings Read(const Settings &in, const CapabilitySet &caps,
 void CatalogRows() {
   const std::vector<std::string_view> ids = {
       "wallmasters-own-game-mm-tranche", "wallmasters-own-game-v1",
-      "one-ways-own-game-v1", "wallmasters-with-one-ways-v1"};
+      "one-ways-own-game-v1", "wallmasters-with-one-ways-v1",
+      "wallmasters-own-game-vanilla-v1"};
   assert(kCapabilityCount == ids.size());
   std::set<std::string_view> unique;
   for (size_t i = 0; i < kCapabilityCount; ++i) {

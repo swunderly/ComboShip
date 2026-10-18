@@ -422,6 +422,8 @@ static bool InstallEntranceSeed(const nlohmann::json& seed) {
         std::cerr << "[ComboShip] Entrance seed rejected: " << error.what() << "\n";
         if (sEntranceNative.applySeed)
             sEntranceNative.applySeed("{}");
+        if (sEntranceNative.applyOotLayout)
+            sEntranceNative.applyOotLayout("{}");
         return false;
     }
 }
@@ -4506,7 +4508,12 @@ int main(int argc, char** argv) {
                         (int (*)(const char*))GetSym(mmModule, "MM_SetEntranceExpansionAssumptionsForCombo"),
                         (void (*)())GetSym(mmModule, "MM_ClearEntranceExpansionAssumptionsForCombo"),
                         (const char* (*)())GetSym(mmModule, "MM_DumpEntranceExpansionForCombo"),
-                        (int (*)(const char*))GetSym(mmModule, "MM_SetEntranceGenerationSettingsForCombo") };
+                        (int (*)(const char*))GetSym(mmModule, "MM_SetEntranceGenerationSettingsForCombo"),
+                        (int (*)(const char*))GetSym(sohModule, "SOH_SetOotmmEntranceLayout"),
+                        (int (*)(const char*))GetSym(sohModule, "SOH_SetOotmmEntranceAssumptions"),
+                        (void (*)())GetSym(sohModule, "SOH_ClearOotmmEntranceAssumptions"),
+                        (const char* (*)())GetSym(sohModule, "SOH_DumpOotmmEntranceLayout"),
+                        (const char* (*)())GetSym(sohModule, "SOH_GetOotmmAreaContext") };
     sTempleProbe =
         ComboRando::Entrances::ResolveUnifiedTempleProbe([&](const char* name) { return GetSym(sohModule, name); });
 

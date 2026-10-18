@@ -133,13 +133,19 @@ exports = ['MM_ApplyEntranceExpansionForCombo', 'MM_SetEntranceExpansionAssumpti
            'MM_SetEntranceGenerationSettingsForCombo']
 fns = block(read('combo/rando/entrances/NativeBridge.h'), 'struct NativeFns')
 assert re.findall(r'\(\*(\w+)\)', fns) == ['applySeed', 'setAssumptions', 'clearAssumptions', 'dumpSeed',
-                                            'setGenerationSettings'], 'NativeFns members'
+    'setGenerationSettings', 'applyOotLayout', 'setOotAssumptions', 'clearOotAssumptions',
+    'dumpOotLayout', 'ootAreaContext'], 'NativeFns members'
+oot_exports = ['SOH_SetOotmmEntranceLayout', 'SOH_SetOotmmEntranceAssumptions',
+               'SOH_ClearOotmmEntranceAssumptions', 'SOH_DumpOotmmEntranceLayout', 'SOH_GetOotmmAreaContext']
 for text, opener in ((ship, 'sEntranceNative = {'), (headless, 'ComboRando::Entrances::NativeFns entranceNative{')):
     init = text[text.index(opener):]
     assert re.findall(r'"(MM_\w+)"', init[:init.index(';')]) == exports, opener
+    assert re.findall(r'"(SOH_\w+)"', init[:init.index(';')]) == oot_exports, opener
 mm_module = read('mm/2s2h/Rando/Logic/ComboEntrancesMM.cpp')
 for name in exports:
     assert re.search(r'extern "C" COMBO_EXPORT [^\n(]*\b' + name + r'\(', mm_module), name
+for name in oot_exports:
+    assert re.search(r'extern "C" COMBO_EXPORT [^\n(]*\b' + name + r'\(', read('soh/soh/OTRGlobals.cpp')), name
 
 # --- D1: the bridge reads exactly the CVars of the options that turn on Ship's RSK_SHUFFLE_ENTRANCES.
 native = read('soh/soh/Enhancements/randomizer/settings.cpp')
