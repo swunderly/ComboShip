@@ -8,7 +8,7 @@
 // outside it are the ::logic handle and every region's flags, both restored on every exit path
 // (TempleProbeCore.h). It never resets, searches, places, collects or draws randomness through the
 // shared engine, and it only runs between oracle queries of a serialized generation. Supported
-// envelope (tranche 1): the bound OoT one-way rows, the vanilla native graph, no large pool, glitchless
+// envelope: the bound OoT one-way rows and vanilla Wallmaster predicates, no large pool, glitchless
 // logic, no song-travel logic and no starting warp songs; anything else is Unsupported.
 
 #include "TempleProbeCore.h"
@@ -19,6 +19,8 @@
 #include "rando/SharedItems.h"
 #include "rando/SongTravel.h"
 #include "rando/entrances/Registry.h"
+#include "rando/entrances/OotWallmasterVanillaNames.h"
+#include "combo_entrance_overlay.h"
 #include "variables.h"
 
 #include <optional>
@@ -250,11 +252,31 @@ struct NativePolicy {
         }
         Overlay<Entrance> overlay;
         for (const auto& name : q.deleted) {
+            if (std::find(E::kOotVanillaWallmasterSources.begin(), E::kOotVanillaWallmasterSources.end(), name) !=
+                E::kOotVanillaWallmasterSources.end()) {
+                if (!Rando::ComboEntrances::VanillaWallmasterContext())
+                    throw Failure(kUnsupported, "Temple Wallmaster source needs vanilla OoT dungeons");
+                continue; // Synthetic VOID source: there is no native exit to delete.
+            }
             const auto& b = Binding(name, TempleBindingRole::Candidate);
             overlay.deleted.push_back(&BoundExit(b.parent, b.target));
         }
         std::sort(overlay.deleted.begin(), overlay.deleted.end(), std::less<const Entrance*>());
         for (const auto& edge : q.edges) {
+            if (std::find(E::kOotVanillaWallmasterSources.begin(), E::kOotVanillaWallmasterSources.end(), edge.src) !=
+                E::kOotVanillaWallmasterSources.end()) {
+                if (std::find(q.deleted.begin(), q.deleted.end(), edge.src) == q.deleted.end())
+                    throw Failure(kUnsupported, "Temple Wallmaster edge did not delete its source");
+                try {
+                    for (auto exit : Rando::ComboEntrances::WallmasterCandidateExits(edge.src, edge.dst)) {
+                        auto owned = std::make_shared<Entrance>(std::move(exit));
+                        overlay.added.push_back({ static_cast<size_t>(owned->GetParentRegionKey()), owned.get(),
+                                                  static_cast<size_t>(owned->GetConnectedRegionKey()) });
+                        overlay.owned.push_back(std::move(owned));
+                    }
+                } catch (const std::exception& error) { throw Failure(kUnsupported, error.what()); }
+                continue;
+            }
             const auto& src = Binding(edge.src, TempleBindingRole::Candidate);
             const auto& dst = Binding(edge.dst, TempleBindingRole::Candidate);
             overlay.added.push_back({ static_cast<size_t>(src.parent), &BoundExit(src.parent, src.target),

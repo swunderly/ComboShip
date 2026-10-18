@@ -14,6 +14,7 @@
 #include <exception>
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -76,6 +77,9 @@ template <class Entrance> struct Overlay {
     std::vector<AddedEdge<Entrance>> added;
     const Entrance* rootSpawn = nullptr; // Root Exits -> opposite spawn, a bare age check
     size_t rootSpawnTarget = 0;
+    // Synthetic source edges are values owned by this query. Pointees stay stable across copy/move;
+    // none belongs to the native region lists or the live installed/assumption overlays.
+    std::vector<std::shared_ptr<Entrance>> owned;
 };
 
 // W2: every region's age/time flags and addedToPool, restored on every exit path.

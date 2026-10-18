@@ -43,6 +43,31 @@ CE::OotQuests ReadQuests() {
 }
 } // namespace
 
+bool VanillaWallmasterContext() {
+    try {
+        CE::RequireVanillaOotQuests(ReadQuests());
+        return true;
+    } catch (const std::exception&) { return false; }
+}
+std::vector<Entrance> WallmasterCandidateExits(std::string_view source, std::string_view destination) {
+    if (!CE::OotUnifiedSourceBound(source) || !CE::OotUnifiedDestinationBound(destination) ||
+        !VanillaWallmasterContext())
+        throw std::invalid_argument("Temple Wallmaster candidate has no verified vanilla binding");
+    const auto arrival =
+        std::find_if(arrivals.begin(), arrivals.end(), [&](const Arrival& a) { return a.row == destination; });
+    if (arrival == arrivals.end())
+        throw std::invalid_argument("Temple Wallmaster arrival is not bound");
+    std::vector<Entrance> result;
+    for (const auto& edge : edges)
+        if (edge.source == source) {
+            Entrance exit(arrival->region, edge.condition, std::string(edge.auditId), false);
+            exit.SetParentRegion(edge.anchor);
+            result.push_back(std::move(exit));
+        }
+    if (result.empty())
+        throw std::invalid_argument("Temple Wallmaster source has no audited predicate");
+    return result;
+}
 std::vector<Entrance> OverlayExits(RandomizerRegion region) {
     if (!CE::ActiveOotUnified().active() && !CE::ActiveOotUnifiedAssumptions())
         return {};
