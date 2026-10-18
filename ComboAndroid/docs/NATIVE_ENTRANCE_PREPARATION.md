@@ -27,3 +27,20 @@ capabilities are relaxed. Existing recorded layouts are still applied directly.
 Native shuffle failure is a retryable pool-preparation error; a missing explicit
 seed is a setup error. Same-case ARM64 generation/replay and a byte-comparison
 no-ER control are required before treating this as a verified correction.
+
+The first ordering candidate, b5e6f22a, kept the original no-ER spoiler byte for
+byte and replayed it successfully, but rejected both original ER attempts during
+native restricted placement. Its preparation had regenerated the pool after
+shuffling and stopped on the first entrance-valid layout. A valid entrance graph
+can still have too few child-accessible reward slots for the closed Door of Time.
+
+Current preparation keeps the native shuffled attempt's pool and starting kit,
+then retries layout and confined placement together within one five-attempt
+native budget, as native Fill does. It calls a single-attempt shuffle helper,
+never nests the public five-attempt wrapper. The outer combined-fill master-seed
+and pass limits stay unchanged. The pool and shuffle use explicit seed+retry
+initialization, while the original master still controls shop choices/prices.
+No-ER generation bypasses this ER-only retry path. Failure messages identify the
+first failed restricted-placement phase, and exhausted native failures retain
+their cause in the headless final error. This candidate still needs real native
+generation/replay, no-ER byte parity and the same-process layout-clear test.

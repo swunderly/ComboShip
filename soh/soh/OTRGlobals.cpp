@@ -4790,6 +4790,31 @@ extern "C" COMBO_EXPORT void SOH_PrepRandoContext(void) {
 // ComboShip: forward decl (defined with the oracle exports below) — see SOH_ShuffleEntrancesForCombo.
 static void EnsureOracleInit();
 
+// One native Fill entrance prologue. Callers own a single five-attempt budget;
+// generation can include confined placement in that same budget, without a
+// nested entrance-retry loop or another master-seed roll.
+static bool Combo_ShuffleEntrancesAttempt(uint64_t seed, bool freshCatalog = false) {
+    auto ctx = OTRGlobals::Instance->gRandoContext;
+    ctx->GetEntranceShuffler()->playthroughEntrances.clear();
+    RegionTable_Init();
+    ctx->ItemReset();
+    if (freshCatalog)
+        ctx->GenerateLocationPool();
+    GenerateItemPool();
+    GenerateStartingInventory();
+    SohUtils::AppendVector(itemPool, GetMinVanillaShopItems(8));
+    Random_Init(seed);
+    int ret = ctx->GetEntranceShuffler()->ShuffleAllEntrances();
+    std::erase_if(itemPool,
+                  [](const auto item) { return Rando::StaticData::RetrieveItem(item).GetItemType() == ITEMTYPE_SHOP; });
+    if (ret == ENTRANCE_SHUFFLE_FAILURE)
+        return false;
+    SetAreas();
+    ctx->GetEntranceShuffler()->CreateEntranceOverrides();
+    CreateWarpSongTexts();
+    return true;
+}
+
 // ComboShip: native Fill()'s entrance-shuffle prologue (3drando/fill.cpp), run headlessly — the combo
 // generator never runs Fill(), so without this the OOT entrance options do nothing in combo seeds.
 // Deterministic per seed, so generation/reload/gentest re-derive the same layout. Call after the
@@ -4809,29 +4834,10 @@ extern "C" COMBO_EXPORT int SOH_ShuffleEntrancesForCombo(uint64_t seed) {
         EnsureOracleInit();
         // Native Fill() retries the whole prologue up to 5x on shuffle failure.
         for (int retry = 0; retry < 5; ++retry) {
-            ctx->GetEntranceShuffler()->playthroughEntrances.clear();
-            RegionTable_Init(); // vanilla graph baseline (needed on retries/regeneration)
-            // GenerateItemPool asserts pool <= EMPTY locations, so drop a prior seed's placements first
-            // (native Fill() ItemResets here too). Callers must read forced placements before this.
-            ctx->ItemReset();
-            GenerateItemPool(); // ValidateEntrances' all-items pass reads itemPool; self-clears
-            GenerateStartingInventory();
-            // Temp shop items (worst-case shopsanity) for world validation, as Fill() does.
-            SohUtils::AppendVector(itemPool, GetMinVanillaShopItems(8));
-            Random_Init(seed + retry);
-            int ret = ctx->GetEntranceShuffler()->ShuffleAllEntrances();
-            std::erase_if(itemPool, [](const auto item) {
-                return Rando::StaticData::RetrieveItem(item).GetItemType() == ITEMTYPE_SHOP;
-            });
-            if (ret == ENTRANCE_SHUFFLE_FAILURE) {
+            if (!Combo_ShuffleEntrancesAttempt(seed + retry)) {
                 SPDLOG_WARN("[ComboShip] SOH_ShuffleEntrancesForCombo: shuffle failed (retry {})", retry);
                 continue;
             }
-            SetAreas();
-            ctx->GetEntranceShuffler()->CreateEntranceOverrides();
-            // Warp song destination texts, as native Fill() does. SOH_ApplyComboHints also calls this,
-            // but only when hints are enabled — without this a hints-off seed shows "No Hint".
-            CreateWarpSongTexts();
             return 1;
         }
         SPDLOG_ERROR("[ComboShip] SOH_ShuffleEntrancesForCombo: no valid layout after 5 retries");
@@ -4973,16 +4979,52 @@ static const char* Combo_DumpRandoStaticData(bool prepareEntrances) {
         // Native Fill shuffles entrances before rewards, own-dungeon items and
         // restricted songs. Otherwise a stone can be locked behind adulthood
         // while the Door of Time still requires all three stones.
-        if (prepareEntrances) {
-            if (ctx->GetOption(RSK_SHUFFLE_ENTRANCES) && !sComboRandoSeedSet)
+        const bool shuffledPreparation = prepareEntrances && ctx->GetOption(RSK_SHUFFLE_ENTRANCES);
+        if (shuffledPreparation) {
+            if (!sComboRandoSeedSet)
                 throw std::runtime_error("Native entrance preparation requires an explicit combo seed");
+            EnsureOracleInit();
+            bool prepared = false;
+            std::string lastFailure;
+            // Native Fill retries its layout and confined placements together.
+            // Reuse that five-attempt budget, never 5x5 nested shuffle attempts.
+            for (int retry = 0; retry < 5; ++retry) {
+                ctx->ClearItemLocations();
+                ctx->LocationReset();
+                sComboShuffledSlotsCacheValid = false;
+                sComboMinShopCacheValid = false;
+                // Pool generation is deterministic too; the native shuffle
+                // itself retains its original seed+retry initialization.
+                Random_Init(sComboRandoSeed + retry);
+                if (!Combo_ShuffleEntrancesAttempt(sComboRandoSeed + retry, true)) {
+                    lastFailure = "Native entrance shuffle failed: no valid layout";
+                    continue;
+                }
+                Combo_SeedShopRng();
+                try {
+                    ComboFillConfined(true);
+                    prepared = true;
+                    SPDLOG_INFO("[ComboShip] native entrance/confined preparation passed (attempt {}/5)", retry + 1);
+                    break;
+                } catch (const std::runtime_error& error) {
+                    lastFailure = error.what();
+                    if (lastFailure.rfind("Native confined fill failed", 0) != 0)
+                        throw;
+                    SPDLOG_WARN("[ComboShip] native entrance/confined preparation attempt {}/5: {}", retry + 1,
+                                lastFailure);
+                }
+            }
+            if (!prepared)
+                throw std::runtime_error("Native confined fill failed after 5 native preparation attempts: " +
+                                         lastFailure);
+        } else {
             // The shuffle-off path clears a prior seed's override table and
             // restores vanilla warp text when settings change in this process.
-            if (!SOH_ShuffleEntrancesForCombo(sComboRandoSeed))
+            if (prepareEntrances && !SOH_ShuffleEntrancesForCombo(sComboRandoSeed))
                 throw std::runtime_error("Native entrance shuffle failed: no valid layout");
+            Combo_SeedShopRng();
+            ComboFillConfined();
         }
-        Combo_SeedShopRng();
-        ComboFillConfined(prepareEntrances && ctx->GetOption(RSK_SHUFFLE_ENTRANCES));
 
         // Barren parity: native CalculateBarren counts a region non-barren if it holds a major item OR
         // (under the shop shield/tunic gate) a shield/tunic. Fold the gate into the exported `major`.

@@ -1676,15 +1676,21 @@ void ComboFillConfined(bool preserveEntrances) {
     ComboRando::NativeConfinedSongPreparation songPreparation;
     auto ctx = Rando::Context::GetInstance();
     placementFailure = false;
-    ctx->LocationReset();
-    // Generation can prepare the native entrance graph before confined items.
-    // Reinitializing it here would validate rewards/songs against vanilla routes.
-    if (!preserveEntrances)
+    // A prepared native entrance attempt already owns its item pool and starting
+    // inventory. Native Fill continues directly to excluded/shops/restricted
+    // placements; regenerating that prefix here discards its prepared state.
+    if (!preserveEntrances) {
+        ctx->LocationReset();
         RegionTable_Init();
-    ctx->ItemReset();
-    ctx->GenerateLocationPool();
-    GenerateItemPool();
-    GenerateStartingInventory();
+        ctx->ItemReset();
+        ctx->GenerateLocationPool();
+        GenerateItemPool();
+        GenerateStartingInventory();
+    }
+    auto requirePlacement = [&](const char* phase) {
+        if (placementFailure)
+            throw std::runtime_error(std::string("Native confined fill failed at ") + phase);
+    };
     FillExcludedLocations();
     SetAreas();
     // Fill()'s native position for shop items + shop/scrub/merchant prices (its shopsanity block runs
@@ -1711,12 +1717,17 @@ void ComboFillConfined(bool preserveEntrances) {
         }
         Combo_SnapshotMinShopItems();
     }
+    requirePlacement("shop minimum items");
     RandomizeDungeonRewards();
+    requirePlacement("dungeon rewards");
     for (auto dungeon : ctx->GetDungeons()->GetDungeonList()) {
         RandomizeOwnDungeon(dungeon);
+        requirePlacement("own-dungeon items");
     }
     PlaceRestrictedSongs(true);
+    requirePlacement("restricted songs");
     RandomizeDungeonItems();
+    requirePlacement("dungeon item settings");
     // ComboShip: keep the Mask Shop Key in OOT — assumed-fill it within OOT so it leaves itemPool and
     // can't enter the cross-world pool and land in MM. Other overworld keys stay cross-world eligible.
     if (ctx->GetOption(RSK_LOCK_OVERWORLD_DOORS)) {
@@ -1732,9 +1743,6 @@ void ComboFillConfined(bool preserveEntrances) {
     // Guard: Buy items are shop-only (placed above, never pooled); strip any that leak into itemPool.
     std::erase_if(itemPool,
                   [](const auto item) { return Rando::StaticData::RetrieveItem(item).GetItemType() == ITEMTYPE_SHOP; });
-    if (placementFailure) {
-        throw std::runtime_error("Native confined fill failed: OoT dungeon items, rewards or songs could not be "
-                                 "placed; retry this seed attempt");
-    }
+    requirePlacement("portal key");
 }
 #endif

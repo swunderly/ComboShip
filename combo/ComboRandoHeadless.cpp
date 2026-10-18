@@ -1059,6 +1059,7 @@ int RunHeadless(int argc, char** argv) {
             mmDump = MM_Dump();
             if (const auto failure = ComboRando::ParseNativePoolFailure(sohDump, mmDump)) {
                 std::cerr << "[comborando] seed " << masterSeed << ": " << failure->error << "\n";
+                r = { "", false, failure->error };
                 if (!failure->retryable)
                     return 2;
                 if (mmStart && startCfg == 2)
