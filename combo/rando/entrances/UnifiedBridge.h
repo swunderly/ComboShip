@@ -291,7 +291,10 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     if (vanillaOot && g.wallmasterShortcut && facts.logicEnabled && MakePools(s).size() == 1 && pools.size() == 1 &&
         pools.front().name == "WALLMASTERS" && pools.front().ownGame && pools.front().alias) {
         const auto base = ReservedEntrances(s);
-        if (b.validateAssumed(base, {}) && b.validateAgeTemple(base, {})) {
+        auto basePools = pools;
+        for (auto& pool : basePools)
+            pool.dst.clear(); // Delete every source, with no fixed or assumed Wallmaster edge.
+        if (b.validateAssumed(base, basePools) && b.validateAgeTemple(base, basePools)) {
             b.monotoneWallmasterBaseProven = true;
             if (g.stats)
                 g.stats->monotoneShortcutUsed = true;

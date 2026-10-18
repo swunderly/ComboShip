@@ -26,6 +26,7 @@ template <class F> static void Reject(F f) {
 struct Fake {
   static inline OotQuests quests{};
   static inline Json contextOverride;
+  static inline Json baseMm, baseOot, baseTemple;
   static inline std::string mmDump, ootDump, contextDump, checks;
   static inline int applies = 0, assumptions = 0, generations = 0, prepares = 0,
                     queries = 0, releases = 0;
@@ -42,6 +43,7 @@ struct Fake {
     ActiveMmGenerationSettings().reset();
     quests = {};
     contextOverride = Json();
+    baseMm = baseOot = baseTemple = Json();
     applies = assumptions = generations = prepares = queries = releases = 0;
     settingsEnemy = settingsMq = 0;
     restricted = changeQuestOnReset = throwOnComplete = prepared = false;
@@ -94,12 +96,18 @@ struct Fake {
   }
   static int AssumeMm(const char *text) {
     ++assumptions;
+    const auto payload = Json::parse(text);
+    if (payload.at("fixed").empty() && payload.at("remaining").empty())
+      baseMm = payload;
     ActiveMmUnifiedAssumptions() =
         DecodeMmUnifiedAssumptions(Json::parse(text));
     return 1;
   }
   static int AssumeOot(const char *text) {
     ++assumptions;
+    const auto payload = Json::parse(text);
+    if (payload.at("fixed").empty() && payload.at("remaining").empty())
+      baseOot = payload;
     ActiveOotUnifiedAssumptions() =
         DecodeOotUnifiedAssumptions(Json::parse(text), quests);
     return 1;
@@ -172,8 +180,12 @@ struct Fake {
     ++queries;
     if (poll && poll())
       return -3;
-    if (rejectEmptyTemple && Json::parse(text).at("deleted").empty())
-      return 0;
+    const auto payload = Json::parse(text);
+    if (payload.at("edges").empty() && payload.at("mm").at("edges").empty()) {
+      baseTemple = payload;
+      if (rejectEmptyTemple)
+        return 0;
+    }
     *ages = startAges == 1 ? 2 : 1;
     return 1;
   }
@@ -240,6 +252,23 @@ static Result Run(uint32_t seed, uint8_t age, bool mmStart, OotAccess access,
   Result result;
   g.stats = &result.stats;
   result.layout = GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+  if (result.stats.monotoneShortcutUsed) {
+    assert(Fake::baseMm.at("deleted").size() == 4 &&
+           Fake::baseOot.at("deleted").size() == 9 &&
+           Fake::baseTemple.at("deleted").size() == 9 &&
+           Fake::baseTemple.at("mm").at("deleted").size() == 4);
+    assert(Fake::baseMm.at("world") == Fake::baseOot.at("world") &&
+           Fake::baseOot.at("world") == Fake::baseTemple.at("world"));
+    for (const auto *payload : {&Fake::baseMm, &Fake::baseOot}) {
+      assert(payload->at("fixed").empty() && payload->at("remaining").empty() &&
+             payload->at("assumed").empty());
+      for (const auto &deleted : payload->at("deleted")) {
+        const auto *row = Find(deleted.at("row").get<std::string>());
+        assert(row && row->type == Type::Wallmaster && IsVoidArea(row->to) &&
+               deleted.at("void") == true);
+      }
+    }
+  }
   assert(!ActiveOotUnified().active() && !ActiveMmUnified().active());
   assert(!ActiveOotUnifiedAssumptions() && !ActiveMmUnifiedAssumptions() &&
          !ActiveMmGenerationSettings());
