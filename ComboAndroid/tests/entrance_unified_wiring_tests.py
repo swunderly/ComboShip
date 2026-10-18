@@ -158,7 +158,8 @@ for key in keys:
     assert match, key
     cvars.add('gRandoSettings.' + match.group(1))
 bridge = read('combo/rando/entrances/UnifiedBridge.h')
-listed = bridge[bridge.index('kShipEntranceSettings[] = {'):]
+availability = read('combo/rando/entrances/EntranceAvailability.h')
+listed = availability[availability.index('kShipEntranceSettings[] = {'):]
 listed = set(re.findall(r'"(gRandoSettings\.\w+)"', listed[:listed.index('};')]))
 assert len(keys) == 9 and listed == cvars, (sorted(listed), sorted(cvars))
 assert 'CVAR_RANDOMIZER_SETTING("MQDungeons")' in native and 'RO_MQ_DUNGEONS_NONE' in native

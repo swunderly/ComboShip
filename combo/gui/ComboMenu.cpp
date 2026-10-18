@@ -11,15 +11,16 @@
 #include "ComboRandomizerLayout.h"
 #include "rando/SharedItems.h"
 #include "rando/ComboSeedFormat.h"
+#include "rando/entrances/OotmmSettings.h"
 #include "ComboWidgetRender.h"
 #include "ComboWidgetStyle.h"
 #include "ComboForeground.h" // dormant-game gate for inline tracker popout buttons
 #include "ComboTrackerBridge.h"
 #include "ComboTrackerCommon.h" // OotActiveSlot
 #include "ComboTrackerSwap.h"
-#include "ComboAnchorRoomWindow.h"  // combo-native floating Anchor room window
-#include "ComboNotesWindow.h"       // combo-owned cross-game Personal Notes window
-#include "ComboHintTracker.h"       // combo-owned unified Hint Tracker (#164)
+#include "ComboAnchorRoomWindow.h" // combo-native floating Anchor room window
+#include "ComboNotesWindow.h"      // combo-owned cross-game Personal Notes window
+#include "ComboHintTracker.h"      // combo-owned unified Hint Tracker (#164)
 #include "ComboCheckTracker.h"
 #include "ComboCheckSnapshot.h"
 #include "rando/GameplayRules.h"
@@ -524,7 +525,7 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
         const CwWidget* widget = nullptr;
         int targetGame = -1;
         int targetSubpage = -1;
-        std::string heading; // the heading a setting or rule sits under: <Tab> / <Page> / <Heading> - OoT|MM
+        std::string heading;    // the heading a setting or rule sits under: <Tab> / <Page> / <Heading> - OoT|MM
         std::string catalogKey; // an MM Randomizer option drawn from its catalog row (ProfileUI::DrawCatalogSetting)
     };
     std::vector<Hit> hits;
@@ -594,6 +595,15 @@ void ComboMenu::DrawSearchResults(const std::string& query) {
             if (hits.size() > before)
                 hits.back().catalogKey = row.value("key", std::string());
         }
+    for (const auto& row : Entrances::kEntranceSettings) {
+        if (!row.visible(Entrances::ActiveCapabilities().Selected("")))
+            continue;
+        const size_t before = hits.size();
+        addLink(MenuSearchKind::Setting, row.name, row.description, "randomizer", "Logic & access", "Randomizer", 0, -1,
+                -1, "Entrances");
+        if (hits.size() > before)
+            hits.back().catalogKey = row.cvar;
+    }
     addLink(MenuSearchKind::Setting, "Cross-Games Farore's Wind",
             "farore fw spell warp travel between oot mm cross game world", "randomizer", "Logic & access",
             "Randomizer");
@@ -1749,7 +1759,7 @@ void DrawPairedPreferences(const std::string& scope, const std::string& page) {
 
 // Rule and pair rows inside their catalogue heading are pseudo-widgets: CW_CUSTOM rows whose index
 // is -1000 - rule or -2000 - pair, with the rule's (or this world's) CVar so anchors find them.
-constexpr int32_t kRuleRowBase = -1000, kPairRowBase = -2000;
+constexpr int32_t kRuleRowBase = -1000, kPairRowBase = -2000, kEntranceRowBase = -3000;
 ComboRando::MenuRuleFocus* sRuleRowFocus = nullptr; // the menu's search focus while a page draws
 
 bool MakePseudoRow(const char* cvar, bool oot, const std::string& scope, const std::string& page, CwWidget& row,
@@ -1770,6 +1780,20 @@ bool MakePseudoRow(const char* cvar, bool oot, const std::string& scope, const s
         row.cvar = oot ? pair.oot : pair.mm;
         return true;
     }
+    const auto caps = Entrances::ActiveCapabilities().Selected("");
+    for (int i = 0; i < int(std::size(Entrances::kEntranceSettings)); ++i) {
+        const auto& setting = Entrances::kEntranceSettings[i];
+        if (std::strcmp(cvar, setting.cvar) || !setting.visible(caps))
+            continue;
+        placement = Detail::FindMenuPlacementKey(oot, std::string("entrance:") + setting.key);
+        if (!placement || scope != placement->scope || page != placement->page)
+            return false;
+        row.index = kEntranceRowBase - i;
+        row.name = setting.name;
+        row.cvar = setting.cvar;
+        row.tooltip = setting.description;
+        return true;
+    }
     const auto* rule = FindGameplayRule(cvar);
     if (!rule || std::strcmp(rule->name, cvar) || rule->trickGoverned || IsLegacyGameplayRule(rule->name) ||
         IsSongTravelRule(rule->name) || (std::strstr(rule->label, "(MM)") != nullptr) == oot)
@@ -1788,6 +1812,11 @@ bool MakePseudoRow(const char* cvar, bool oot, const std::string& scope, const s
 } // namespace
 
 bool DrawMenuPseudoRow(const CwWidget& widget, bool randomizer) {
+    if (widget.index <= kEntranceRowBase && widget.index > kEntranceRowBase - 1000) {
+        if (randomizer)
+            ProfileUI::DrawEntranceSetting(kEntranceRowBase - widget.index);
+        return true;
+    }
     if (widget.index <= kPairRowBase && widget.index > kPairRowBase - 1000) {
         const int pair = kPairRowBase - widget.index;
         if (pair < int(sizeof(kPairedPreferences) / sizeof(*kPairedPreferences)))
@@ -2148,6 +2177,27 @@ void AppendFeatureWidgets(const HubEntry::Source& source, const std::string& sco
 }
 // The rule and pair rows of a catalogue page that no native control of this world stood in for
 // (Randomizer > Gameplay rules, a count with no native widget), after the native rows.
+void AppendEntranceRows(bool oot, const std::string& scope, const std::string& page, std::vector<CwWidget>& output,
+                        RowOrigins& origins, bool addHeading) {
+    CwWidget row;
+    const MenuPlacement* placement = nullptr;
+    bool headingAdded = false;
+    for (const auto& setting : Entrances::kEntranceSettings)
+        if (MakePseudoRow(setting.cvar, oot, scope, page, row, placement) && !origins.count(row.index)) {
+            if (addHeading && !headingAdded) {
+                CwWidget heading{};
+                heading.index = -1;
+                heading.kind = CW_SEPARATOR_TEXT;
+                heading.name = placement->heading;
+                heading.column = 1;
+                output.push_back(heading);
+                headingAdded = true;
+            }
+            row.column = addHeading ? 1 : 0;
+            output.push_back(row);
+            origins[row.index] = { placement, nullptr };
+        }
+}
 void AppendPseudoRows(bool oot, const std::string& scope, const std::string& page, std::vector<CwWidget>& output,
                       RowOrigins& origins) {
     CwWidget row;
@@ -2157,6 +2207,7 @@ void AppendPseudoRows(bool oot, const std::string& scope, const std::string& pag
             output.push_back(row);
             origins[row.index] = { placement, nullptr };
         }
+    AppendEntranceRows(oot, scope, page, output, origins, false);
     for (const auto& rule : kGameplayRules)
         if (MakePseudoRow(rule.name, oot, scope, page, row, placement) && !origins.count(row.index)) {
             output.push_back(row);
@@ -2595,6 +2646,10 @@ void ComboMenu::DrawSharedPanel() {
                         if (!built.game && !built.widgets.empty())
                             built.game = selectedGame == 0 ? &model.Oot() : &model.Mm();
                         built.columns = ArrangeByPlacement(*layout, built.widgets, origins, built.columns);
+                    } else if (seedOptions && active->label == "Logic & access" && selectedGame >= 0) {
+                        AppendEntranceRows(selectedGame == 0, mScope, active->label, built.widgets, origins, true);
+                        if (!built.game && !built.widgets.empty())
+                            built.game = selectedGame == 0 ? &model.Oot() : &model.Mm();
                     }
                     body = active->bodies.emplace(bodyKey, std::move(built)).first;
                 }
@@ -2667,7 +2722,6 @@ void ComboMenu::DrawSharedPanel() {
     ImGui::EndChild();
     ImGui::PopID();
 }
-
 
 } // namespace ComboRando
 

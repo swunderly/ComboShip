@@ -168,6 +168,23 @@ HeadlessEntranceSettings EntranceSettingsForHeadless(const nlohmann::json& docum
                 merged.push_back(prefix + std::string(row.choices[row.get(layout.settings)].value));
         }
     }
+    if (!hasLayout && document.contains("setupCVars")) {
+        const auto& values = document.at("setupCVars");
+        for (const auto& row : CE::kEntranceSettings) {
+            const auto value = values.find(row.cvar);
+            const std::string prefix = std::string(row.key) + "=";
+            if (value == values.end() ||
+                std::any_of(pairs.begin(), pairs.end(), [&](const auto& pair) { return pair.starts_with(prefix); }))
+                continue;
+            if (!value->is_number_integer() || *value < 0 || *value >= int(row.choices.size()))
+                throw std::invalid_argument(std::string("Invalid profile entrance setting ") + row.key);
+            if (value->get<int>() != row.defaultValue)
+                merged.push_back(prefix + std::string(row.choices[value->get<int>()].value));
+        }
+        if ((privateMm || savedPrivate) && !merged.empty())
+            throw std::invalid_argument(
+                "Unified entrance settings cannot be combined with a private MM entrance profile");
+    }
     const auto error = CE::ReadEntranceArgs(merged, result.capability, active, result.settings);
     if (!error.empty())
         throw std::invalid_argument(error);

@@ -41,7 +41,7 @@ def line(signature):
 
 production = block('struct RowOrigin {') + line('using RowOrigins')
 production += block('struct PairedPreference {') + block('constexpr PairedPreference kPairedPreferences[]')
-production += line('constexpr int32_t kRuleRowBase') + block('bool MakePseudoRow(') + block('void AppendPseudoRows(')
+production += line('constexpr int32_t kRuleRowBase') + block('bool MakePseudoRow(') + block('void AppendEntranceRows(') + block('void AppendPseudoRows(')
 production += block('bool IsStaleIntroText(') + block('uint32_t ArrangeByPlacement(')
 # The slider readout of the one widget style (ComboWidgetRender.cpp).
 production += block('struct SliderReadout {', render) + block('static bool ReadoutFits(', render)
@@ -137,7 +137,9 @@ code = r'''
 #include "ComboMenuABI.h"
 #include "ComboMenuLabels.h"
 #include "ComboNavigation.h"
+#include "ComboRandomizerLayout.h"
 #include "rando/GameplayRules.h"
+#include "rando/entrances/OotmmSettings.h"
 #include <algorithm>
 #include <cassert>
 #include <cstring>
@@ -239,6 +241,22 @@ Laid Lay(const MenuPageLayout& layout, bool oot, bool withNativeExtras) {
 }
 
 int main() {
+    for (bool oot : {true, false}) {
+        std::vector<CwWidget> entrances;
+        RowOrigins origins;
+        AppendEntranceRows(oot, "randomizer", "Logic & access", entrances, origins, true);
+        assert(entrances.size() == 2 && origins.size() == 1);
+        assert(std::string(entrances[0].name) == "Entrances" && entrances[1].column == 1);
+        assert(std::string(entrances[1].cvar) == "gCombo.Rando.Entrances.erWallmasters");
+        assert(std::string(entrances[1].name) == "Wallmaster Shuffle");
+        AppendEntranceRows(oot, "randomizer", "Logic & access", entrances, origins, true);
+        assert(entrances.size() == 2); // Cached/native aliases cannot duplicate the row.
+        if (oot) {
+            const auto arranged = ArrangeOotRandomizerPage("Logic & access", entrances.data(), int(entrances.size()));
+            assert(arranged.size() == 2 && std::string(arranged[0].name) == "Entrances");
+            assert(arranged[1].index == entrances[1].index && arranged[1].column == 1);
+        }
+    }
     int pages = 0;
     for (const auto& layout : kMenuPages) {
         if (layout.headingCount < 2)
@@ -420,6 +438,6 @@ int main() {
 '''
 cpp = out / 'menu_arrangement.cpp'
 cpp.write_text(code, encoding='utf-8')
-exe = hostcxx.build(a.compiler, cpp, std='c++17', werror=True,
+exe = hostcxx.build(a.compiler, cpp, std='c++20', werror=True, defines=['COMBO_ENTRANCE_DEV=1'],
                     includes=[source / 'combo', source / 'combo/gui', source / 'combo/menu', a.json_include])
 subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

@@ -13,6 +13,7 @@
 #include "rando/GameplayRules.h"
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/GenerationRules.h"
+#include "rando/entrances/EntranceProfile.h"
 #include "rando/OotMaskQuest.h"
 #include <libultraship/libultraship.h>
 #include <fast/Fast3dGui.h>
@@ -89,6 +90,8 @@ static Json* Field(const char* key, bool create) {
     return create || values.contains(key) ? &values[key] : nullptr;
 }
 int ReadInteger(const char* key, int fallback) {
+    if (view != 0 && std::strncmp(key, "gCombo.Rando.Entrances.", 23) == 0)
+        return Entrances::SavedEntranceValue(document, key, fallback);
     const auto* value = Field(key, false);
     return value && value->is_number_integer() ? value->get<int>() : fallback;
 }
@@ -135,6 +138,7 @@ void WriteInteger(const char* key, int value) {
             ReadInteger("gRandoSettings.ShopsanityCount", 0) > 7)
             *Field("gRandoSettings.ShopsanityCount", true) = 7;
         RefreshOptionPolicy(true);
+        Entrances::NormalizeEntranceDraft(document, Entrances::ActiveCapabilities());
         if (!deferPoolViews)
             RefreshPoolViews();
     }
@@ -287,10 +291,69 @@ void DrawSelector() {
     }
     if (!error.empty())
         ImGui::TextWrapped("%s", error.c_str());
+    static std::set<std::pair<int, uint64_t>> shownEntranceNotices;
+    const auto notice = std::pair{ selected, snapshotRevision };
+    if (view == 0 && snapshot.value("entranceSettingsStripped", false) && !shownEntranceNotices.count(notice)) {
+        ImGui::OpenPopup("Entrance settings updated");
+        if (MenuConfirm(
+                "Entrance settings updated",
+                "Unsupported entrance values were reset to their defaults for this build. Saved seeds stay unchanged.",
+                "OK")) {
+            shownEntranceNotices.insert(notice);
+            dirty = true;
+        }
+    }
 }
 static void Tooltip(const char* help) {
     if (help && help[0])
         MenuTooltip(help);
+}
+static Entrances::Settings MenuEntranceSettings() {
+    return Entrances::ReadEntranceSettings(ReadInteger, Entrances::ActiveCapabilities());
+}
+static std::string EntranceUnavailable() {
+    return Entrances::ProfileWallmasterRefusal(
+        document, catalog.value("oot", Json::object()), [](const char* key, int fallback) {
+            return !std::strcmp(key, kOotEnemyRandomizer) ? CVarGetInteger(key, fallback) : ReadInteger(key, fallback);
+        });
+}
+void DrawEntranceSetting(int index) {
+    if (!active || !document.is_object() || index < 0 || index >= int(std::size(Entrances::kEntranceSettings)))
+        return;
+    const auto& row = Entrances::kEntranceSettings[index];
+    const auto caps = Entrances::ActiveCapabilities().Selected("");
+    if (!row.visible(caps))
+        return;
+    const auto settings = MenuEntranceSettings();
+    if (!row.condition(settings))
+        return;
+    const int value = row.get(settings);
+    const auto unavailable = EntranceUnavailable();
+    ImGui::PushID(row.cvar);
+    ImGui::BeginDisabled(!Editable());
+    ImGui::TextWrapped("%s", row.name);
+    ComboMenu_PushCombobox(ComboMenu_ThemeColor());
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if (ImGui::BeginCombo("##Entrance", row.choices[value].name.data())) {
+        for (int i = 0; i < int(row.choices.size()); ++i) {
+            if (!row.supports(i, caps))
+                continue; // Full and all unadmitted rows remain hidden.
+            const bool blocked = i != row.defaultValue && (!row.condition(settings) || !unavailable.empty());
+            ImGui::BeginDisabled(blocked);
+            if (ImGui::Selectable(row.choices[i].name.data(), i == value))
+                WriteInteger(row.cvar, i);
+            ImGui::EndDisabled();
+            if (blocked)
+                Tooltip(unavailable.empty() ? "This combination is not available in this build." : unavailable.c_str());
+        }
+        ImGui::EndCombo();
+    }
+    ComboMenu_PopCombobox();
+    Tooltip(row.description);
+    ImGui::EndDisabled();
+    if (!unavailable.empty())
+        ImGui::TextWrapped("%s", unavailable.c_str());
+    ImGui::PopID();
 }
 // Display text the profile pages give a native OoT option without renaming it: settings.cpp keeps its names for saved
 // settings, presets and search, where they stay aliases. Labels follow OoTMM v32.3
@@ -381,7 +444,9 @@ void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden) {
     std::string caption = label;
     if (const auto suffix = caption.find("##"); suffix != std::string::npos)
         caption.resize(suffix);
-    ImGui::BeginDisabled(!Editable() || (policy && (policy->disabled || policy->hidden)));
+    const bool blockedByEntrances =
+        Entrances::IsShipEntranceSetting(key) && Entrances::Active(MenuEntranceSettings().erWallmasters);
+    ImGui::BeginDisabled(!Editable() || blockedByEntrances || (policy && (policy->disabled || policy->hidden)));
     switch (w.kind) {
         case CW_SEPARATOR:
             ImGui::Separator();
@@ -456,7 +521,9 @@ void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden) {
             break;
     }
     ImGui::EndDisabled();
-    if (policy && policy->disabled)
+    if (blockedByEntrances)
+        Tooltip("Turn Wallmaster Shuffle off before enabling Ship's own entrance shuffle.");
+    else if (policy && policy->disabled)
         Tooltip(policy->disabledText.c_str());
     else if (display && display->note) {
         const std::string help =
@@ -663,6 +730,12 @@ static void CatalogRow(const Json& row, bool showHidden = false) {
     ImGui::PopID();
 }
 bool DrawCatalogSetting(const char* key) {
+    for (int i = 0; i < int(std::size(Entrances::kEntranceSettings)); ++i)
+        if (key && !std::strcmp(key, Entrances::kEntranceSettings[i].cvar) &&
+            Entrances::kEntranceSettings[i].visible(Entrances::ActiveCapabilities().Selected(""))) {
+            DrawEntranceSetting(i);
+            return true;
+        }
     const auto mm = catalog.is_object() ? catalog.find("mm") : catalog.end();
     if (!key || mm == catalog.end() || !mm->is_object() || !mm->contains("layout"))
         return false;
@@ -1164,7 +1237,8 @@ void DrawGeneration() {
     const auto generation = snapshot.value("generation", Json::object());
     const bool running = generation.value("running", false);
     std::string seed = document.value("seed", std::string());
-    ImGui::BeginDisabled(!Editable() || running);
+    const auto entranceRefusal = Entrances::Active(MenuEntranceSettings().erWallmasters) ? EntranceUnavailable() : "";
+    ImGui::BeginDisabled(!Editable() || running || !entranceRefusal.empty());
     if (ImGui::InputTextWithHint("Seed", "(blank = random)", &seed)) {
         document["seed"] = seed;
         dirty = true;
@@ -1183,6 +1257,8 @@ void DrawGeneration() {
         } catch (const std::exception& e) { error = e.what(); }
     }
     ImGui::EndDisabled();
+    if (!entranceRefusal.empty())
+        ImGui::TextWrapped("%s", entranceRefusal.c_str());
     if (running) {
         ImGui::Text("File %d: %s (%d / %d)", generation.value("file", selected) + 1,
                     generation.value("phase", std::string()).c_str(), generation.value("placed", 0),

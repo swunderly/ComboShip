@@ -37,6 +37,7 @@ harness = r'''
 #include <cassert>
 #include <cstring>
 #include <iostream>
+int CVarGetInteger(const char*, int fallback) { return fallback; }
 #include "profile_widget.inc"
 bool gearReady=true,spellReady[3]={true,true,true};
 extern "C" int FakeSpellOptionReady(int spell){return spell>=1&&spell<=2&&spellReady[spell];}

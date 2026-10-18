@@ -7,6 +7,7 @@
 #include "OotWallmasterVanillaNames.h"
 #include "OotWallmasterArrivalNames.h"
 #include "TempleCandidate.h"
+#include "EntranceAvailability.h"
 #include "gui/ComboGenProgress.h"
 #include "rando/SharedItems.h"
 #include <algorithm>
@@ -26,14 +27,9 @@ class TempleProbeUnsupported : public std::logic_error {
 
 enum class TempleStartingAge : uint8_t { Child, Adult, Random };
 // Seed facts the gate needs besides the entrance settings, read once before the Shuffler exists.
-struct TempleFacts {
+struct TempleFacts : EntranceSettingsFacts {
     TempleStartingAge startingAge = TempleStartingAge::Child; // the resolved RSK_SELECTED_STARTING_AGE
-    bool logicEnabled = true;                                 // Bindings::logicEnabled: false for NO_LOGIC
-    bool glitchless = true;                                   // OoT logic rules
-    bool shipwrightEntrances = false;                         // any native Ship entrance shuffle
-    bool songTravelLogic = false, foreignSongsLogic = false;  // ActiveSongTravel() logic flags
     bool dungeonBeaten = false; // OoTMM regionState dungeonBeaten: read only with a BOSS pool
-    std::vector<std::string> ootStartingItems, mmStartingItems, foreignStartingItems;
     std::string_view registry = kRegistrySourceSha256;
 };
 
@@ -63,12 +59,8 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
         reject("only the combined (games=Both) path is supported");
     if (f.startingAge == TempleStartingAge::Random)
         reject("the starting age must be resolved first");
-    if (!f.glitchless)
-        reject("only glitchless OoT logic is supported");
-    if (f.shipwrightEntrances)
-        reject("Ship's own entrance shuffle must be off");
-    if (f.songTravelLogic || f.foreignSongsLogic)
-        reject("song travel logic needs GLOBAL song sources (deferred)");
+    if (const auto why = TempleSettingsRefusal(f); !why.empty())
+        reject(why);
     for (const Mode mode : { s.erBoss, s.erDungeons, s.erGrottos, s.erRegions, s.erOverworld, s.erIndoors, s.erMixed,
                              s.erOneWays, s.erWallmasters })
         if (mode == Mode::Full)
@@ -110,13 +102,6 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
                 }
         }
     }
-    static const std::set<std::string> songs{ "Song of Soaring",   "Minuet of Forest",   "Bolero of Fire",
-                                              "Serenade of Water", "Nocturne of Shadow", "Requiem of Spirit",
-                                              "Prelude of Light" };
-    for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })
-        for (const auto& item : *list)
-            if (songs.contains(item))
-                reject("starting " + item + " needs GLOBAL song sources (deferred)");
 }
 
 // Foreign starting items come only from the shared-family starters (SharedItems.h): the OoT dump's own

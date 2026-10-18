@@ -12,6 +12,7 @@
 #include "MmUnifiedLayout.h"
 #include "OotUnifiedLayout.h"
 #include "TempleNative.h"
+#include "rando/GenerationRules.h"
 #include <functional>
 #include <optional>
 #include <string>
@@ -27,19 +28,6 @@ class UnifiedEntranceRefused : public std::logic_error {
     using std::logic_error::logic_error;
 };
 
-// Ship's own entrance options: any of them turns on the native RSK_SHUFFLE_ENTRANCES
-// (soh/soh/Enhancements/randomizer/settings.cpp:2905-2915). Every "off" value is option index 0.
-inline constexpr const char* kShipEntranceSettings[] = {
-    "gRandoSettings.ShuffleDungeonsEntrances",
-    "gRandoSettings.ShuffleBossEntrances",
-    "gRandoSettings.ShuffleOverworldEntrances",
-    "gRandoSettings.ShuffleInteriorsEntrances",
-    "gRandoSettings.ShuffleThievesHideoutEntrances",
-    "gRandoSettings.ShuffleGrottosEntrances",
-    "gRandoSettings.ShuffleOwlDrops",
-    "gRandoSettings.ShuffleWarpSongs",
-    "gRandoSettings.ShuffleOverworldSpawns",
-};
 // RSK_MQ_DUNGEON_RANDOM; option 0 (RO_MQ_DUNGEONS_NONE) keeps every dungeon vanilla (settings.cpp:2900-2903).
 inline constexpr const char* kMqDungeonsSetting = "gRandoSettings.MQDungeons";
 
@@ -123,13 +111,6 @@ inline OotQuests ReadUnifiedOotQuests(const NativeFns& native) {
     } catch (const std::exception& error) {
         throw UnifiedEntranceRefused(std::string("Vanilla Wallmaster generation: ") + error.what());
     }
-}
-
-inline bool ShipEntrancesActive(const SettingReader& read) {
-    for (const char* key : kShipEntranceSettings)
-        if (read(key, 0) != 0)
-            return true;
-    return false;
 }
 
 // The seed facts the Temple pass needs, read after the native pools were prepared and the OoT oracle's
@@ -247,6 +228,12 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     if (vanillaOot && ReadUnifiedOotQuests(native) != quests)
         throw UnifiedEntranceRefused("OoT quest context changed while preparing entrance generation");
     const auto facts = UnifiedTempleFacts(g);
+    if (vanillaOot) {
+        auto settingsFacts = static_cast<const EntranceSettingsFacts&>(facts);
+        settingsFacts.enemyRandomizer = g.readSetting("gEnhancements.RandomizedEnemies", 0) != 0;
+        if (const auto why = ComboRando::EntranceGenerationRefusal(settingsFacts); !why.empty())
+            throw UnifiedEntranceRefused(why);
+    }
     TempleProbeRun templeRun(temple, s, facts, areaExists);
     // Everything of the layout but its routes.
     EntranceLayout envelope;

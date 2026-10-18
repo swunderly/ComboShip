@@ -150,8 +150,9 @@ inline std::vector<CwWidget> ArrangeOotRandomizerPage(const std::string& page, c
         if (widget.kind == CW_SEPARATOR)
             continue;
         const std::string key = widget.cvar ? widget.cvar : "";
-        const int group =
-            widget.kind == CW_CUSTOM ? -2 : RandomizerHeadingIndex(*layout, OotRandomizerHeading(page, key, heading));
+        const int group = widget.kind == CW_CUSTOM && widget.index > -3000
+                              ? -2
+                              : RandomizerHeadingIndex(*layout, OotRandomizerHeading(page, key, heading));
         rows.push_back({ group, key == "gRandoSettings.StartingAge" ? 0 : 1, i, widget });
     }
     std::stable_sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) {

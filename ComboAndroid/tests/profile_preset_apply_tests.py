@@ -60,6 +60,7 @@ harness = r'''
 #include "ProfileOotOptionPolicy.h"
 #include "rando/ComboPresets.h"
 #include "rando/GameplayRules.h"
+#include "rando/entrances/EntranceProfile.h"
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/GenerationRules.h"
 enum RandoItemId { ''' + ', '.join(item_ids) + r''' };

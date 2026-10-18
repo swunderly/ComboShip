@@ -4559,6 +4559,8 @@ extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void) {
                             { "options", nlohmann::json::object() },
                             { "tricks", nlohmann::json::array() },
                             { "checks", nlohmann::json::array() } };
+    data["hasOriginal"] = OTRGlobals::Instance->HasOriginal();
+    data["hasMasterQuest"] = OTRGlobals::Instance->HasMasterQuest();
     auto settings = Rando::Settings::GetInstance();
     for (const auto& option : settings->GetAllOptions()) {
         const auto& key = option.GetCVarName();

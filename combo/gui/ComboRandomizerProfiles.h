@@ -20,6 +20,7 @@ int SelectedSlot();
 bool DrawUnavailableSettings();
 int ReadInteger(const char*, int);
 void WriteInteger(const char*, int);
+void DrawEntranceSetting(int index);
 void DrawSidebar(const CwSidebar&, const GameMenu&, int);
 // showHidden draws a row these settings hide greyed out instead of not at all (a search result still shows it).
 void DrawWidget(const CwWidget&, const GameMenu&, bool showHidden = false);

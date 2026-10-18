@@ -1,5 +1,6 @@
 #pragma once
 #include "GameplayRules.h"
+#include "entrances/EntranceAvailability.h"
 #include <optional>
 
 namespace ComboRando {
@@ -23,9 +24,13 @@ template <class Read, class Write> void SynchronizeGenerationGuarantee(Read read
 // seed was made with and a reload, which never reads the Enemy Randomizer, reproduces it on any machine.
 inline constexpr const char* kOotEnemySouls = "gRandoSettings.SoulsEnemyOot";
 inline constexpr const char* kOotEnemyRandomizer = "gEnhancements.RandomizedEnemies";
+
 template <class Read, class Write> void ApplyOotEnemySoulsAvailability(Read read, Write write) {
     if (read(kOotEnemyRandomizer, 0))
         write(kOotEnemySouls, 0);
+}
+inline std::string EntranceGenerationRefusal(const Entrances::EntranceSettingsFacts& facts) {
+    return Entrances::WallmasterSettingsRefusal(facts);
 }
 inline bool IsRetiredNativeRuleControl(const char* key) {
     if (!key)

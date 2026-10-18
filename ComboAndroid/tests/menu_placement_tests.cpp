@@ -4,6 +4,7 @@
 // COMBO_BUILD branches the Android build compiles.
 #include "ComboMenuLabels.h"
 #include "ComboNavigation.h"
+#include "ComboRandomizerLayout.h"
 #include <algorithm>
 #include <cassert>
 #include <cstring>
@@ -184,10 +185,11 @@ const std::vector<const char*> kOotMenuFiles = {
 const std::vector<const char*> kMmMenuFiles = { "mm/2s2h/BenGui/BenMenu.cpp", "mm/2s2h/BenGui/ResolutionEditor.cpp",
                                                 "mm/2s2h/Rando/Menu.cpp" };
 bool IsCVarKey(const char* key) {
-    for (const char* kind : { "widget:", "heading:", "sidebar:", "rule:", "pair:" })
-        if (!std::strncmp(key, kind, std::strlen(kind)))
-            return false;
-    return true;
+  for (const char *kind :
+       {"widget:", "heading:", "sidebar:", "rule:", "pair:", "entrance:"})
+    if (!std::strncmp(key, kind, std::strlen(kind)))
+      return false;
+  return true;
 }
 const MenuPlacement* CVarPlacement(bool oot, const std::string& cvar) {
     if (cvar.find("randomizedEnemySpawnTable") != std::string::npos)
@@ -226,6 +228,13 @@ int main() {
         const auto* page = FindMenuPage(row.scope, row.page);
         if (!page)
             std::cerr << "No page for " << row.key << ": " << row.scope << "/" << row.page << '\n';
+        if (!page && std::string(row.scope) == "randomizer") {
+          const auto *randomizerPage = FindRandomizerPageHeadings(row.page);
+          assert(randomizerPage &&
+                 RandomizerHeadingIndex(*randomizerPage, row.heading) >= 0);
+          assert(std::string(row.key).rfind("entrance:", 0) == 0);
+          continue;
+        }
         assert(page);
         if (row.heading && MenuHeadingIndex(*page, row.heading) < 0)
             std::cerr << "No heading " << row.heading << " on " << row.page << " for " << row.key << '\n';

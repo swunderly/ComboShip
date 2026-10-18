@@ -1,5 +1,6 @@
 // Included after the actual native reload implementation. This adapter owns no
 // gameplay save writes; save creation calls the checked preparation callback.
+#include "rando/entrances/EntranceProfile.h"
 static nlohmann::json ProfileNativeSnapshot() {
     auto read=[](FnDumpData fn) { if(!fn) throw std::runtime_error("Profile settings export unavailable");
         const char* raw=fn(); if(!raw) throw std::runtime_error("Profile settings snapshot unavailable");
@@ -59,6 +60,7 @@ static nlohmann::json ProfileEditableSetup(nlohmann::json setup){
 static nlohmann::json ProfileDraftSetup(const nlohmann::json& requested){
     auto setup=ProfileEditableSetup(requested);
     if(sProfileCatalog.contains("oot"))ComboRando::ProfileOotPolicy::ApplyToSetup(sProfileCatalog["oot"],setup);
+    ComboRando::Entrances::NormalizeEntranceDraft(setup,ComboRando::Entrances::ActiveCapabilities());
     return setup;
 }
 static void ProfileValidateNative(const nlohmann::json& requested) {
@@ -109,6 +111,8 @@ static uint64_t ProfileRevision() {
 static const char* ProfileInspect(int slot) {return ProfileResponse([&] {
     if(!sProfiles)throw std::runtime_error("Settings profiles unavailable");
     auto value=sProfiles->view().inspect(slot,Combo_ReadSavedSeedReadonly(slot));value["catalog"]=sProfileCatalog;
+    auto entranceDraft=value["draft"];
+    value["entranceSettingsStripped"]=ComboRando::Entrances::NormalizeEntranceDraft(entranceDraft,ComboRando::Entrances::ActiveCapabilities());
     value["draft"]=ProfileDraftSetup(value["draft"]);
     for(const char* key:{"savedSettings","generatedSettings"})if(value.contains(key)&&value[key].is_object())value[key]=ProfileEditableSetup(value[key]);
     value["nativeSavedRules"]=Combo_ReadNativeSeedRulesReadonly(slot);
@@ -243,7 +247,7 @@ static void ProfileCompleteGeneration() {
 static nlohmann::json ProfileComboCatalog(){
     auto presets=nlohmann::json::array();
     for(const auto& preset:ComboRando::kCommunityPresets)presets.push_back(ComboRando::CommunityPresetJson(preset));
-    return {{"presets",presets}}; // The menu lays out its own combo options; only presets are read.
+    return {{"presets",presets},{"entrances",ComboRando::Entrances::EntranceProfileCatalog(ComboRando::Entrances::ActiveCapabilities())}};
 }
 // Start Randomizer prepares the file (the name-entry seed-hash icons need it) and confirming the name
 // prepares it again. Reuse the first preparation while nothing has replaced what it left: the same file,

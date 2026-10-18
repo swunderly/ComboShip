@@ -131,6 +131,7 @@ inline constexpr MenuPageLayout kMenuPages[] = {
 };
 
 inline constexpr MenuPlacement kMenuPlacements[] = {
+    { kMenuBoth, "entrance:erWallmasters", "randomizer", "Logic & access", "Entrances", 5, nullptr, nullptr, 1 },
     { kMenuOot, "gCheats.EnableBetaQuest", "gameplay", "Cheats", "Beta Quest", 1000, nullptr, nullptr, 0 },
     { kMenuOot, "gCheats.BetaQuestWorld", "gameplay", "Cheats", "Beta Quest", 1010, "gCheats.EnableBetaQuest", nullptr, 0 },
     { kMenuOot, "gCheats.EasyISG", "gameplay", "Cheats", "Glitch aids", 10, nullptr, "isg", 0 },
