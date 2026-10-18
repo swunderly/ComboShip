@@ -42,6 +42,10 @@ check(block == ['OFF'], 'root CMakeLists.txt must declare COMBO_ENTRANCE_DEV OFF
 check(cmake.count('COMBO_ENTRANCE_DEV') == 3, 'COMBO_ENTRANCE_DEV is used only by its option block')
 check(cmake.index('COMBO_ENTRANCE_DEV') < cmake.index('add_subdirectory(soh'),
       'the option must come before the game and combo subprojects')
+diagnostic_block = re.findall(r'option\(COMBO_RANDO_DIAGNOSTICS "[^"]+" (\w+)\)\s*'
+                             r'if\(COMBO_RANDO_DIAGNOSTICS\)\s*'
+                             r'add_compile_definitions\(COMBO_RANDO_DIAGNOSTICS=1\)\s*endif\(\)', cmake)
+check(diagnostic_block == ['OFF'], 'private diagnostics must have their own default-OFF compile switch')
 SKIP_DIRS = {'.git', 'assets', 'x64', '_deps'}
 CPP = ('.c', '.cc', '.cpp', '.h', '.hpp', '.inc')
 
@@ -67,12 +71,13 @@ check(marker is not None, 'Capabilities.h defines kEntranceDevMarker')
 marker = marker.group(1)
 
 
-def unguarded(text, needles):
-    """Line numbers holding a needle outside the dev branch of #ifdef COMBO_ENTRANCE_DEV."""
+def unguarded(text, needles, allowed_macros=('COMBO_ENTRANCE_DEV',)):
+    """Line numbers holding a needle outside an explicitly allowed compile branch."""
     stack, hits = [], []
+    macros = '(?:' + '|'.join(map(re.escape, allowed_macros)) + ')'
     for number, line in enumerate(text.splitlines(), 1):
         directive = re.sub(r'^#\s*', '#', line.strip())
-        if re.match(r'#ifdef\s+COMBO_ENTRANCE_DEV\b|#if\s+defined\s*\(?\s*COMBO_ENTRANCE_DEV\s*\)?\s*$', directive):
+        if re.match(r'#ifdef\s+' + macros + r'\b|#if\s+defined\s*\(?\s*' + macros + r'\s*\)?\s*$', directive):
             stack.append(True)
             continue
         if directive.startswith('#if'):
@@ -98,7 +103,10 @@ for top in ('combo', 'soh', 'mm', 'ComboAndroid/app'):
         relative = path.relative_to(root).as_posix()
         scanned += 1
         check(not re.search(r'#\s*define\s+COMBO_ENTRANCE_DEV\b', text), f'{relative} defines COMBO_ENTRANCE_DEV')
-        hits = unguarded(text, dev_needles)
+        # Diagnostics must carry the verifier's non-release marker too, but
+        # cannot gain any entrance capability symbol through that compile flag.
+        hits = unguarded(text, dev_needles[1:])
+        hits += unguarded(text, dev_needles[:1], ('COMBO_ENTRANCE_DEV', 'COMBO_RANDO_DIAGNOSTICS'))
         check(not hits, f'{relative}:{hits} uses a dev-only entrance symbol outside #ifdef COMBO_ENTRANCE_DEV')
         # Builds take their capabilities from ActiveCapabilities(); only tests build other sets.
         if relative != 'combo/rando/entrances/Capabilities.h':
