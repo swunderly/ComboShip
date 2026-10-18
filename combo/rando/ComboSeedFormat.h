@@ -18,10 +18,10 @@ inline constexpr const char* kComboSeedPreflightError = "__comboSeedFormatError"
 class UnsupportedComboSeedFormat : public std::invalid_argument {
   public:
     UnsupportedComboSeedFormat()
-        : std::invalid_argument("This seed requires entrance randomization support unavailable in this build") {
+        : std::invalid_argument("This seed requires randomizer support unavailable in this build") {
     }
     explicit UnsupportedComboSeedFormat(const std::string& reason)
-        : std::invalid_argument("This seed's entrance layout cannot be used by this build: " + reason) {
+        : std::invalid_argument("This seed cannot be used by this build: " + reason) {
     }
 };
 // The private MM entrance profiles. A seed carries them or an entranceLayout, never both.
@@ -68,17 +68,29 @@ inline void RequireSupportedLayout(const nlohmann::json& seed, const Entrances::
         } catch (const std::exception& error) { throw UnsupportedComboSeedFormat(error.what()); }
     }
 }
+// Saved native-page preflight catches this typed error before loading/migrating a slot. A plain
+// invalid_argument is intentionally handled differently by the legacy malformed-container path.
+inline void RequireSupportedGameMode(const nlohmann::json& seed, bool settingsDocument) {
+    try {
+        ValidateGameModeSeed(seed, settingsDocument);
+        if (!settingsDocument && seed.is_object()) {
+            const bool modeFile = seed.value("fileType", std::string()) == kGameModeSeedFileType;
+            if (modeFile && (!seed.contains("gameMode") || !seed.contains("version") ||
+                             !seed["version"].is_number_integer() || seed["version"] != 1))
+                throw std::invalid_argument("Unsupported game-mode seed version or missing mode");
+            if (!CombinedMode(ReadGameMode(seed)) && !modeFile)
+                throw std::invalid_argument("Single-game seed needs the game-mode file type");
+        }
+    } catch (const std::exception& error) {
+        throw UnsupportedComboSeedFormat(std::string("Game mode: ") + error.what());
+    }
+}
 inline void RequireSupportedSeedCapabilities(const nlohmann::json& seed, const Entrances::CapabilitySet& caps) {
-    ValidateGameModeSeed(seed, false);
-    if (seed.is_object() && seed.value("fileType", std::string()) == kGameModeSeedFileType &&
-        (!seed.contains("version") || !seed["version"].is_number_integer() || seed["version"] != 1))
-        throw std::invalid_argument("Unsupported game-mode seed version");
-    if (seed.is_object() && !CombinedMode(ReadGameMode(seed)) && seed.value("fileType", std::string()) != kGameModeSeedFileType)
-        throw std::invalid_argument("Single-game seed needs the game-mode file type");
+    RequireSupportedGameMode(seed, false);
     RequireSupportedLayout(seed, caps, false);
 }
 inline void RequireSupportedSettingsCapabilities(const nlohmann::json& document, const Entrances::CapabilitySet& caps) {
-    ValidateGameModeSeed(document, true);
+    RequireSupportedGameMode(document, true);
     RequireSupportedLayout(document, caps, true);
 }
 inline void RequireSupportedSeedDocument(const nlohmann::json& seed, const Entrances::CapabilitySet& caps) {

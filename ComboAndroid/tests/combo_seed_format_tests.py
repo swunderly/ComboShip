@@ -312,7 +312,19 @@ int main() {
     // type carrying the new field, cannot change native context, fileNum, cache or on-disk bytes.
     auto mislabeled = future;
     mislabeled["fileType"] = kComboSeedFileType;
-    for (const Json& seed : {future, mislabeled, layoutSeed}) for (bool cached : {false, true}) {
+    Json solo = {{"fileType", kGameModeSeedFileType}, {"version", 1}, {"gameMode", "mm-vanilla"},
+        {"startingGame", "MM"}, {"goal", {{"type", "majora"}}}, {"foreign", Json::array()},
+        {"sharedItems", Json::array()}, {"oot", {{"placements", Json::object()}}},
+        {"mm", {{"placements", Json::object()}}}};
+    RequireSupportedSeedDocument(solo, shipping);
+    Json unknownMode = solo; unknownMode["gameMode"] = "future-game-mode";
+    Json unsupportedVersion = solo; unsupportedVersion["version"] = 2;
+    Json wrongGoal = solo; wrongGoal["goal"]["type"] = "bosses";
+    Json wrongStart = solo; wrongStart["startingGame"] = "OOT";
+    Json missingMode = solo; missingMode.erase("gameMode");
+    Json foreignSolo = solo; foreignSolo["foreign"].push_back({{"check", "foreign"}});
+    for (const Json& seed : {future, mislabeled, layoutSeed, unknownMode, unsupportedVersion, wrongGoal,
+                            wrongStart, missingMode, foreignSolo}) for (bool cached : {false, true}) {
         const Json container = {{"oot", nativePage}, {"combo", {{"rando", seed}}}};
         write(ComboContainerPath(0), container);
         g_containerCache.clear();

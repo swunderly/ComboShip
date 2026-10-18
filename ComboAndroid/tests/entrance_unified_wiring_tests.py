@@ -81,7 +81,8 @@ handlers = loop[steps[5]:steps[7]]
 assert len(re.findall(r'\bcatch\s*\(', handlers)) == 1, 'only an exhausted layout search may reroll'
 assert not re.search(r'\bcatch\s*\(\s*(?:\.\.\.|(?:const\s+)?std::exception)', handlers), 'generic entrance handler'
 assert re.search(r'ComboHash\(ComboRando::Entrances::SeedIdentityText\(\s*inputSeed \+ sohDump \+ mmDump \+ '
-                 r'logicRules\.dump\(\) \+ logicSongs\.dump\(\), entranceLayout\)\s*\.c_str\(\)\)', fill)
+                 r'logicRules\.dump\(\) \+ logicSongs\.dump\(\) \+\s*'
+                 r'\(combinedMode \? "" : ComboRando::kGameModeKeys\[gameMode\]\), entranceLayout\)\s*\.c_str\(\)\)', fill)
 ordered(fill, 'consolidated["entranceLayout"] = entranceLayout;', 'ComboRando::StampComboSeedFormat(consolidated);')
 assert 'if (!entranceLayout.is_null())\n            consolidated["entranceLayout"] = entranceLayout;' in fill
 assert re.search(r'sTempleProbe\s*=\s*ComboRando::Entrances::ResolveUnifiedTempleProbe\(\s*\[&\]\(const char\* name\) '

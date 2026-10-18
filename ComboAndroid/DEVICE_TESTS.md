@@ -1,5 +1,18 @@
 # Device validation still required
 
+## Home game modes (0.4.10)
+
+Use an empty file for each new run; leave existing progress alone. In Home, select the file's Next seed, choose Game mode, and generate or prepare it. Start the prepared file at file select.
+
+- OoT randomizer: pickups belong to OoT, the Happy Mask Shop stays in OoT, and Ganon is the goal.
+- MM randomizer: the run starts in MM, pickups belong to MM, leaving the Clock Tower stays in MM, and Majora is the goal.
+- Vanilla OoT: the original opening and ordinary unshuffled items; the Happy Mask Shop stays in OoT.
+- Vanilla MM: the original forest opening and first cycle; no free combined-mode ocarina, Deku Mask or songs. The Clock Tower stays in MM. After completing the first cycle, save/reload and check the normal clock start; also check an owl-save resume.
+- Combined: both games and cross-game pickups still work. An old combined file still plays as before.
+- Save/reload each mode, then switch between files with different modes. The Home selector changes only next-run settings; it must not change an existing run's mode. In MM, reset and owl-save quit should return to the shared selector.
+
+Still due from earlier builds: adult Epona fence jump, adult chest, Goron Tunic hot floor, OoT D-pad ocarina, and pickup counts for silver rupees, keys and MM tokens/hearts. The silver rupee reset and MM soul room reset were already confirmed on Sam's phone. Also check an MM room held shut by a missing soul before and after obtaining that soul, including its temporary clear door.
+
 ## Start here: phone checks for 0.4.3
 
 Nothing in 0.4.3 has been tried on a phone yet. These eight checks matter most; the sections below have the details.

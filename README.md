@@ -12,9 +12,12 @@ This fork turns ComboShip into one Android app (APK) for phones and tablets. Bot
 
 **[Get the latest APK from Releases](https://github.com/swunderly/ComboShip/releases/latest)**
 
-Current release: **Combo Ship for Android 0.4.9** (October 14, 2026). File: `ComboShip-Android-0.4.9-arm64.apk`, about 45 MB (46,826,283 bytes). [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.9-android/ComboShip-Android-0.4.9-arm64.apk).
+Current release: **Combo Ship for Android 0.4.10** (October 18, 2026). File: `ComboShip-Android-0.4.10-arm64.apk`. [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.10-android/ComboShip-Android-0.4.10-arm64.apk).
 
-The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.9) are this fork's own. They are not upstream ComboShip's version numbers.
+Home > Game mode lets each new file use the combined randomizer, just the OoT randomizer, just the MM randomizer, vanilla OoT or vanilla MM. Select a file's Next seed, choose the mode, then generate or prepare it from an empty file and start it at file select. Existing saves keep their own mode. Vanilla games retain your enhancement settings. Solo randomizers use their own items and final boss, with cross-game travel and shared items off.
+
+
+The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.10) are this fork's own. They are not upstream ComboShip's version numbers.
 
 ## What you need
 
@@ -36,7 +39,7 @@ Touch controls and game controllers both work. The owner plays on a phone with b
 ## Install and first run
 
 1. Copy your two ROM files to the device first, for example to Download. If a ROM is in a `.zip` file, unzip it first.
-2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.9-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
+2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.10-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
 3. Open the downloaded APK. If Android asks, allow your browser or file manager to install unknown apps. The app is not from Google Play and is signed with a development key, so Google Play Protect may warn you. You can still install it, usually with **More details**, then **Install anyway**.
 4. Open **Combo Ship** and tap **Allow file access**. On Android 11 and newer, Android opens an **All files access** screen: turn on the switch for Combo Ship, then go back. Combo Ship uses this to keep your saves, seeds and backups in a visible `Internal storage/ComboShip` folder that you can copy.
 5. Tap **Choose OoT ROM** and pick your OoT ROM. Then tap **Choose MM ROM** and pick your MM ROM. The app copies them into its folder. Your original files are not changed.
@@ -161,7 +164,7 @@ Full steps are in [ComboAndroid/BUILDING.md](https://github.com/swunderly/ComboS
 git clone -b android-source https://github.com/swunderly/ComboShip.git
 ```
 
-To build exactly the 0.4.9 release, use `-b v0.4.9-android` instead. The `android-source` branch can contain unfinished work.
+To build exactly the 0.4.10 release, use `-b v0.4.10-android` instead. The `android-source` branch can contain unfinished work.
 
 You need Git, Python 3.10+, Java 17 or 21, Android SDK platform 35, build-tools 35.0.0, NDK 28.2.13676358, CMake 3.31.5, Ninja and vcpkg at a pinned commit. Windows also needs Visual Studio's C++ desktop workload. Linux also needs the packages listed in the CI workflow, and ccache. The build uses no ROM. It makes a debug-signed APK. Your own APK has a different signature from the release APK, so it cannot update a release install. Back up your saves before you switch.
 

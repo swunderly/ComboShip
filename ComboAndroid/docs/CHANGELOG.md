@@ -12,6 +12,16 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## 0.4.10 - 2026-10-18
+
+- **Home > Game mode** offers Combined randomizer, OoT randomizer, MM randomizer, Vanilla Ocarina of Time and Vanilla Majora's Mask. Choose a file's **Next seed**, select its mode, then generate or prepare it from an empty file and start it at file select. Changing the next-run settings does not convert an existing save. Each saved file keeps its mode across restarts.
+- A single-game randomizer shuffles only that game's checks and items and finishes with its own final boss. Shared items, combined goals and cross-game travel are disabled for that run. Its native settings still apply. Unified Wallmaster entrance shuffle remains a development-only feature; it is not enabled by this release.
+- Vanilla runs use ordinary game saves without shuffled items. Vanilla MM starts with the original opening, rather than the combined randomizer's post-first-cycle kit. Enhancement settings still apply. MM's reset and owl-save quit return to the shared file selector.
+- Unsupported or inconsistent game-mode seed data is refused before loading a saved file, without changing that file's progress.
+- MM's missing-enemy-soul room guard also blocks temporary room clears, matching its permanent clear guard. The separate OoT neighbour-room soul reset issue remains open.
+
+Host tests cover single-world item pools, completion failures, settings-file isolation, the production MM save constructor, vanilla MM arrival and saved-container compatibility refusal. These checks are not gameplay tests. The new modes have not been tried on a phone or in the emulator; see the release notes for the build and independent review results and the short phone checks.
+
 ## 0.4.9 - 2026-10-14
 
 - **More pickups now say "This is your Nth.", as in OoTMM:** small keys in both games (counting that dungeon's keys found), MM Swamp and Ocean Skulltula tokens, MM Pieces of Heart (pieces toward the next heart) and MM Triforce Pieces. OoT small keys get the count in every key setting, including keys kept in their own dungeon. OoT Gold Skulltula tokens and OoT Triforce Pieces already showed their totals.
