@@ -34,7 +34,7 @@ Nothing here has been played yet, on the emulator or a phone; host tests cover t
 13. Bottom of the Well (child): 7 rooms. The two rolling boulders in room 1 roll along their tracks (`paths=mq:2`).
 14. Ice Cavern (adult): 12 rooms (`paths=mq:5`).
     - The rolling boulders in rooms 0, 2, 4 and 8 roll along their tracks; none sits still or vanishes.
-    - Room 7: open the chest that held the Iron Boots in the original game. Sheik appears and gives the Sheik in Ice Cavern item, and the check is collected, although MQ Ice Cavern has no Serenade cutscene setup (as in OoTMM).
+    - Room 7: open the chest that held the Iron Boots in the original game. Sheik appears and gives the Sheik in Ice Cavern item, and the check is collected, although MQ Ice Cavern drops the scene's alternate setup 4 (as in OoTMM).
 15. Gerudo Training Ground (adult): 11 rooms. Collect one silver rupee set: its door or chest opens.
 16. Ganon's Castle (adult): 20 rooms. Every line shows `collision=patched:16:0`. In the Forest Trial (room 6), shoot the eye switch beside one fan with an arrow: the arrow reaches it and the MQ Forest Trial Eye Switch Chest appears. Melt the frozen eye switch beside the other fan with a Fire Arrow, then shoot it: the MQ Forest Trial Frozen Eye Switch Chest appears. These are the 16 polygons OoTMM's patch lets arrows through.
 
