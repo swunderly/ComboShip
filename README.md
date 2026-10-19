@@ -99,7 +99,7 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 ### Trackers and multiplayer (this fork's own changes)
 
 - **Trackers.** Check, Item and Hint trackers share one set of access modes: while paused, a button, on-screen CT/IT/HT buttons, or a side panel next to the game. The MM check tracker keeps items you have **Seen** apart from items a hint told you about (**Hinted**).
-- **Multiplayer.** Anchor co-op from upstream is kept (**Tools → Multiplayer**). This fork makes one sync carry both OoT and MM progress, so rejoining recovers both games. It blocks duplicate items and rejects progress from a different seed. Every player needs the same Combo Ship build and the same seed. With Wallmaster Shuffle, every player must load the same seed file. From 0.4.12, the room window says under a teammate's name when nothing is shared because of a different seed or version.
+- **Multiplayer.** Anchor co-op from upstream is kept (**Tools → Multiplayer**). This fork makes one sync carry both OoT and MM progress, so rejoining recovers both games. It blocks duplicate items and rejects progress from a different seed. Every player needs the same Combo Ship build and the same seed. With Wallmaster Shuffle, every player must load the same seed file. From 0.4.12, the room window says under a teammate's name when progress may not be shared because of a different seed or version.
 
 ## FAQ
 
