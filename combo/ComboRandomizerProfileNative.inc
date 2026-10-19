@@ -88,6 +88,21 @@ static nlohmann::json ProfileModeSetup(const nlohmann::json& requested) {
     setup["mm"]["settings"]["gRando.Options.RO_MM_CROSS_AGE"]=0;
     return setup;
 }
+// OoTMM v32.3 offers Wallmaster Shuffle only when both games are played (EntranceAvailability.h). ProfileModeSetup turns
+// every entrance setting off for a solo run, so its generation would quietly drop the shuffle the player chose; refuse
+// the draft's own value instead, with the sentence the menu shows. Vanilla preparation ignores the setting.
+static void ProfileRefuseSoloEntrances(const nlohmann::json& requested) {
+    const auto setup=ProfileDraftSetup(requested);
+    const auto mode=ComboRando::ReadGameMode(setup);
+    if(ComboRando::CombinedMode(mode)||ComboRando::VanillaMode(mode))return;
+    const auto& values=setup.at("setupCVars");
+    const auto settings=ComboRando::Entrances::ReadEntranceSettings([&](const char* key,int fallback){
+        const auto it=values.find(key);return it!=values.end()&&it->is_number_integer()?it->get<int>():fallback;},
+        ComboRando::Entrances::ActiveCapabilities());
+    if(ComboRando::Entrances::MakePools(settings).empty())return;
+    ComboRando::Entrances::EntranceSettingsFacts solo;solo.combinedMode=false;
+    throw std::invalid_argument(ComboRando::EntranceGenerationRefusal(solo).player);
+}
 static void ProfileValidateNative(const nlohmann::json& requested) {
     const auto setup=ProfileModeSetup(requested);
     if(!sProfileValidateOot||!sProfileValidateMm||
@@ -224,6 +239,8 @@ static void ProfileBeginGeneration(int slot,const char* seed) {
     if(g_GenerateBusy.load()||g_ComboPendingFinalize.load())throw std::runtime_error("Generation already running");
     if(sProfileFailurePending)ProfileFinishFailedAttempt(sProfileFailureError);
     ProfileRestoreGenerationSetup(); // Retry any prior restoration failure before taking a new snapshot.
+    // Before anything is recorded or applied. The file-select Generate reaches here too (Combo_OnGenerateThreaded).
+    ProfileRefuseSoloEntrances(sProfiles->view().draft(slot,Combo_ReadSavedSeedReadonly(slot)));
     auto previous=ProfileNativeSnapshot(); // A failed snapshot cannot strand a running attempt.
     sProfileAttempt=sProfiles->begin(slot,Combo_ReadSavedSeedReadonly(slot),seed?seed:"");
     sProfileOriginalSetup=std::move(previous);sProfileOriginalRuleSlot=sGameplayRulesSlot;

@@ -2376,8 +2376,10 @@ hidden. Player-facing summary: `ComboAndroid/docs/CHANGELOG.md`, Unreleased.
 row, its tooltip, the Generate button and generation, which checks again before any entrance draw.
 The player sees one plain sentence per reason (owner decision D3); the developer text stays in logs
 and exceptions. Port-only reasons, in order: a solo or vanilla Home mode (vanilla preparation ignores
-the CVar); Ship's own OoT entrance shuffle (D1, mutual grey-out); SoH Enemy Randomizer (D2; 2Ship has
-no enemy randomizer, so MM has nothing to gate); and, unless OoT logic is No Logic, glitched logic, Song
+the CVar; a solo draft is refused when either Generate button starts, in `ProfileBeginGeneration`,
+because applying it through `ProfileModeSetup` turns every entrance setting off); Ship's own OoT
+entrance shuffle (D1, mutual grey-out); SoH Enemy Randomizer (D2; 2Ship has no enemy randomizer, so MM
+has nothing to gate); and, unless OoT logic is No Logic, glitched logic, Song
 Travel or foreign-song logic, or a starting OoT warp song or Song of Soaring (D4: the Temple probe
 cannot validate these yet). Master Quest is refused in the menu (MQ data installed with MQ Dungeon
 Setting not None, or MQ-only data), in generation (any MQ quest; no RNG draw) and in the seed validator,

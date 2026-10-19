@@ -2418,8 +2418,10 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         return sReadGameplayRule ? sReadGameplayRule(key, fallback) : fallback;
     };
     const auto entranceSettings = ComboRando::Entrances::ReadEntranceSettings(readSetting, entranceCaps);
-    // A solo seed cannot carry an entrance layout (ValidateGameModeSeed), so refuse a selected pool here, before any
-    // dump, entrance draw or fill, and leave the setting as it is. Vanilla runs returned above and ignore it.
+    // A solo seed cannot carry an entrance layout (ValidateGameModeSeed). Backstop only: ProfileBeginGeneration refuses
+    // the player's own choice first, and ProfileModeSetup turns these settings off for a solo run, so a pool seen here
+    // means one of them changed. Refuse it before any dump, entrance draw or fill, and leave the setting as it is.
+    // Vanilla runs returned above and ignore it.
     if (!combinedMode && !ComboRando::Entrances::MakePools(entranceSettings).empty()) {
         ComboRando::Entrances::EntranceSettingsFacts modeFacts;
         modeFacts.combinedMode = false;

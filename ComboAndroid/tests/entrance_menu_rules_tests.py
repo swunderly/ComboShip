@@ -28,7 +28,8 @@ for dev in (0, 1):
         msvc=['/bigobj', '/O2'], gnu=['-O2'], exe=a.build_dir/f'menu_rules_{dev}.exe')
     subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
 # The profile page uses the same predicate on the draft's own Home mode. Its Generate button refuses the setting in
-# every randomizer mode, as RunComboFill does, not only in combined mode; vanilla preparation ignores it (A-08).
+# every randomizer mode, as generation does (ProfileBeginGeneration for a solo mode), not only in combined mode; vanilla
+# preparation ignores it (A-08).
 profiles = (a.source/'combo/gui/ComboRandomizerProfiles.cpp').read_text(encoding='utf-8')
 def body(signature):
     start = hostcxx.find(profiles, signature)

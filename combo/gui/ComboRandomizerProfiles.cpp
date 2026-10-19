@@ -1240,8 +1240,9 @@ void DrawGeneration() {
     const bool running = generation.value("running", false);
     std::string seed = document.value("seed", std::string());
     const auto mode = ReadGameMode(document);
-    // Every randomizer mode refuses the setting here as generation does, solo modes with their own reason. Vanilla
-    // preparation ignores it, so only the Entrances row shows the reason there.
+    // Every randomizer mode refuses the setting here as generation does: a solo mode with its own reason, which
+    // ProfileBeginGeneration gives from the draft before ProfileModeSetup turns the setting off, and combined mode
+    // before any entrance draw. Vanilla preparation ignores it, so only the Entrances row shows the reason there.
     const auto entranceRefusal =
         !VanillaMode(mode) && Entrances::Active(MenuEntranceSettings().erWallmasters) ? EntranceUnavailable() : "";
     ImGui::BeginDisabled(!Editable() || running || !entranceRefusal.empty());
