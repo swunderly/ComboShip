@@ -4,6 +4,7 @@
 #include "SeedContext.h"
 #include "combo_entrance_overlay.h"
 #include "overlays/actors/ovl_En_Wallmas/z_en_wallmas.h"
+#include "soh/Enhancements/CrossWarp/FaroresWind.h"
 #include "rando/entrances/OotUnifiedLayout.h"
 #include "rando/entrances/OotWallmasterSource.h"
 #include "rando/entrances/OotNativeArrival.h"
@@ -62,9 +63,11 @@ extern "C" int Combo_OOTWallmasterTransport(PlayState* play, Actor* actor) {
         SPDLOG_WARN("[ComboShip] OoT Wallmaster arrival has no native binding; using native respawn");
         return 0;
     }
-    // OoT's dungeon savewarp is scene-derived (z_sram.c Sram_OpenSave); it has no custom
-    // dungeon-entrance respawn to clear. Reset only the native respawn selector. The new scene
-    // records its own normal entrance; Farore's saved warp and the void-out coordinates are intact.
+    // OoTMM v32.3 clears its dungeon-entrance respawn first (oot/actors/En/En_Wallmas.c:50). Here that is
+    // Cross-Games Farore's Wind's dungeon record, which deaths and voids otherwise return to; the arrival scene
+    // records its own. OoT's dungeon savewarp is scene-derived (z_sram.c Sram_OpenSave). Reset the native
+    // respawn selector too; Farore's saved warp and the void-out coordinates are intact.
+    Combo_OotFaroreClearDungeon();
     gSaveContext.respawnFlag = 0;
     // Already resolved: never pass the arrival through Entrance_OverrideNextIndex a second time.
     play->nextEntranceIndex = static_cast<uint16_t>(arrival->entrance);

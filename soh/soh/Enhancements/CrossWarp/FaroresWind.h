@@ -31,6 +31,7 @@ int Combo_OotFaroreReturn(PlayState*);
 void Combo_OotFaroreStorePoint(PlayState*);
 void Combo_OotFaroreDispel(void);
 void Combo_OotFaroreCaptureDungeon(PlayState*);
+void Combo_OotFaroreClearDungeon(void);
 void Combo_OotFaroreDeathWarp(PlayState*);
 #ifdef __cplusplus
 }

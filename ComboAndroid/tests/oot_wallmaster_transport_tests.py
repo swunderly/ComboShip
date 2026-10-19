@@ -81,7 +81,15 @@ struct PlayState {
     int sceneNum = 0, nextEntranceIndex = -123, transitionTrigger = -456, transitionType = -789;
     struct { struct { int num = 0; } curRoom; } roomCtx;
 };
-struct Save { int respawnFlag = 77, farore = 88, voidPosition = 99; } gSaveContext;
+struct Save { int respawnFlag = 77, farore = 88, voidPosition = 99, faroreDungeon = 66; } gSaveContext;
+// Cross-Games Farore's Wind's dungeon record (FaroresWind.cpp): a capture forgets it before it sets up the transition.
+PlayState* capturing = nullptr;
+int dungeonClears = 0;
+void Combo_OotFaroreClearDungeon() {
+    assert(capturing && capturing->nextEntranceIndex == -123 && capturing->transitionTrigger == -456);
+    ++dungeonClears;
+    gSaveContext.faroreDungeon = 0;
+}
 namespace Rando {
 struct Context {
     bool shuffle = false;
@@ -114,6 +122,7 @@ bool SpawnRejected(PlayState* play, int actorId, int category, int objBankIndex)
 void CheckUnchanged(const PlayState& play) {
     assert(play.nextEntranceIndex == -123 && play.transitionTrigger == -456 && play.transitionType == -789);
     assert(gSaveContext.respawnFlag == 77 && gSaveContext.farore == 88 && gSaveContext.voidPosition == 99);
+    assert(gSaveContext.faroreDungeon == 66);
 }
 int main(int argc, char** argv) {
     assert(argc == 2);
@@ -130,6 +139,7 @@ int main(int argc, char** argv) {
     assert(overrides.size() == 13);
     layout.overrides = overrides;
     PlayState play;
+    capturing = &play;
     EnWallmas actor;
     play.sceneNum = SCENE_FOREST_TEMPLE;
     assert(!Combo_OOTWallmasterTransport(&play, &actor.actor)); CheckUnchanged(play);
@@ -143,6 +153,7 @@ int main(int argc, char** argv) {
         CE::OotWallmasterScene::SpiritTemple, CE::OotWallmasterScene::BottomOfTheWell,
         CE::OotWallmasterScene::GerudoTrainingGround, CE::OotWallmasterScene::InsideGanonsCastle,
         CE::OotWallmasterScene::Unknown};
+    int captures = 0;
     for (size_t s = 0; s < std::size(scenes); ++s) for (unsigned room = 0; room < 256; ++room) {
         play = {}; gSaveContext = {};
         play.sceneNum = scenes[s]; play.roomCtx.curRoom.num = (room + 1) & 255;
@@ -158,6 +169,7 @@ int main(int argc, char** argv) {
         assert(native && play.nextEntranceIndex == static_cast<int>(native->entrance));
         assert(play.transitionTrigger == TRANS_TRIGGER_START && play.transitionType == TRANS_TYPE_FADE_BLACK);
         assert(gSaveContext.respawnFlag == 0 && gSaveContext.farore == 88 && gSaveContext.voidPosition == 99);
+        assert(gSaveContext.faroreDungeon == 0 && dungeonClears == ++captures);
     }
     play = {}; play.sceneNum = SCENE_FOREST_TEMPLE; gSaveContext = {};
     actor.actor.room = 0;
@@ -188,7 +200,9 @@ int main(int argc, char** argv) {
     assert(!Combo_OOTWallmasterTransport(&play, &actor.actor));
     assert(SpawnRejected(&play, ACTOR_EN_WALLMAS, ACTORCAT_ENEMY, 0));
     CE::ActiveOotUnifiedAssumptions().reset();
-    std::cout << "PASS 1792 actor-room captures, native fallbacks, direct arrivals and cleared-room spawn guard\n";
+    assert(captures > 0 && dungeonClears == captures); // Only a capture that moves Link forgets the dungeon.
+    std::cout << "PASS 1792 actor-room captures, native fallbacks, direct arrivals, Farore dungeon record and "
+                 "cleared-room spawn guard\n";
 }
 ''', encoding='utf-8')
 exe = hostcxx.build(a.compiler, cpp, includes=[source/'combo', a.json_include, source/'soh/include'],
@@ -227,3 +241,48 @@ int main() {
 ''', encoding='utf-8')
 native_exe = hostcxx.build(a.compiler, native_cpp)
 subprocess.run([str(native_exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
+
+# Combo_OotFaroreClearDungeon forgets Cross-Games Farore's Wind's dungeon record as the scene hook does outside a
+# dungeon: only with Cross-Games Farore's Wind on, reading the shared copy first and writing the cleared one back.
+# Without it, a death after a capture returns to the entrance of the dungeon the capture left. OoTMM v32.3 clears
+# that record first (oot/actors/En/En_Wallmas.c:50, comboClearCustomRespawn(CUSTOM_RESPAWN_MODE_DUNGEON_ENTRANCE)).
+farore = (source/'soh/soh/Enhancements/CrossWarp/FaroresWind.cpp').read_text(encoding='utf-8')
+clear = function(farore, 'extern "C" void Combo_OotFaroreClearDungeon(void)')
+outside = function(farore, 'extern "C" void Combo_OotFaroreCaptureDungeon(PlayState* play)')
+outside = outside[hostcxx.find(outside, 'default:'):]
+for statement in ('gSaveContext.ship.faroresWind.sharedCurrentDungeon = {};',
+                  'gSaveContext.ship.faroresWind.currentDungeon = {};'):
+    assert hostcxx.contains(outside, statement) and hostcxx.contains(clear, statement), statement
+farore_cpp = work/'farore_clear_dungeon.cpp'
+farore_cpp.write_text(r'''
+#include <cassert>
+#include <string>
+#include <vector>
+struct Respawn { int entranceIndex = 0, playerParams = 0; bool operator==(const Respawn&) const = default; };
+struct Shared { bool valid = false; int game = 0, entrance = 0, playerParams = 0;
+                bool operator==(const Shared&) const = default; };
+struct { struct { struct { Respawn currentDungeon; Shared sharedCurrentDungeon; } faroresWind; } ship; } gSaveContext;
+const Respawn forest{0x169, 0xdff};
+Shared store{true, 0, 0x169, 0xdff}; // the copy both games share
+bool sCross = false;
+std::vector<std::string> calls;
+void ReadDungeon() { calls.push_back("read"); gSaveContext.ship.faroresWind.sharedCurrentDungeon = store; }
+void WriteDungeon() {
+    calls.push_back("write");
+    assert(gSaveContext.ship.faroresWind.currentDungeon == Respawn{});
+    store = gSaveContext.ship.faroresWind.sharedCurrentDungeon;
+}
+''' + clear + r'''
+int main() {
+    gSaveContext.ship.faroresWind.currentDungeon = forest;
+    Combo_OotFaroreClearDungeon(); // Cross-Games Farore's Wind off: its record is not in use
+    assert(calls.empty() && gSaveContext.ship.faroresWind.currentDungeon == forest && store.valid);
+    sCross = true;
+    Combo_OotFaroreClearDungeon();
+    assert((calls == std::vector<std::string>{"read", "write"}) && store == Shared{});
+    assert(gSaveContext.ship.faroresWind.currentDungeon == Respawn{} &&
+           gSaveContext.ship.faroresWind.sharedCurrentDungeon == Shared{});
+}
+''', encoding='utf-8')
+farore_exe = hostcxx.build(a.compiler, farore_cpp)
+subprocess.run([str(farore_exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)

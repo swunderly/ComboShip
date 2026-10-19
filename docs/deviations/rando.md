@@ -2348,10 +2348,14 @@ hidden until transport, the isolated Temple probe and generator validation are c
 
 The pull-up capture hook matches OoTMM v32.3's En_Wallmas.S call at 0x808728c0. It classifies the actor's
 own room, resolves a verified dungeon arrival once, and writes a black-fade transition directly.
-The port has no custom dungeon-entrance respawn: OoT savewarp derives the dungeon entrance from the
-saved scene in Sram_OpenSave. The adapter clears the native respawn selector; it preserves Farore's
-saved warp and void-out coordinates. It does not call the native respawn routine on success or apply
-Ship's entrance override to an already resolved arrival.
+Before that, as OoTMM's `EnWallmas_TakePlayerEr` clears `CUSTOM_RESPAWN_MODE_DUNGEON_ENTRANCE`
+(`oot/actors/En/En_Wallmas.c:50`), it forgets Cross-Games Farore's Wind's dungeon record
+(`Combo_OotFaroreClearDungeon`, `FaroresWind.cpp`). Deaths, respawn voids and a Farore's Wind cast in
+the arrival dungeon would otherwise use the entrance of the dungeon the capture left; the arrival scene
+records its own. OoT savewarp derives the dungeon entrance from the saved scene in Sram_OpenSave and
+needs nothing. The adapter also clears the native respawn selector; it preserves Farore's saved warp
+and void-out coordinates. It does not call the native respawn routine on success or apply Ship's
+entrance override to an already resolved arrival.
 
 ShadowTag, an unmapped source, a missing route, MQ context, Enemy Randomizer or Ship entrance shuffle
 retain native respawn and log the fallback. Only a committed, matching vanilla OoT Wallmaster layout

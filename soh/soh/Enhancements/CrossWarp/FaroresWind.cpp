@@ -396,6 +396,17 @@ extern "C" void Combo_OotFaroreCaptureDungeon(PlayState* play) {
     }
     WriteDungeon();
 }
+// A Wallmaster capture leaves the dungeon it was entered by: forget its entrance, as the default branch above does
+// outside a dungeon, so the arrival scene records its own. OoTMM v32.3 EnWallmas_TakePlayerEr clears its
+// dungeon-entrance respawn first (oot/actors/En/En_Wallmas.c:50).
+extern "C" void Combo_OotFaroreClearDungeon(void) {
+    if (!sCross)
+        return;
+    ReadDungeon();
+    gSaveContext.ship.faroresWind.sharedCurrentDungeon = {};
+    gSaveContext.ship.faroresWind.currentDungeon = {};
+    WriteDungeon();
+}
 extern "C" void Combo_OotFaroreDeathWarp(PlayState* play) {
     if (!sCross)
         return;
