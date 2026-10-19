@@ -378,6 +378,148 @@ if not failures:
     print(run.stdout + run.stderr, end='')
     check(run.returncode == 0, 'the finalize harness failed')
 
+# The menus, in every install state: SoH's native options (settings.cpp CreateOptions), the profile catalogue
+# (OTRGlobals.cpp SOH_DumpProfileCatalog), the profile editor's copy of the native gate (ProfileOotOptionPolicy.h) and
+# its Wallmaster refusal (EntranceProfile.h), all from the production lines.
+options_gate = between(settings, '// Don\'t show any MQ options if both quests aren\'t available', '// clang-format on',
+                       hostcxx.find(settings, 'void Settings::CreateOptions()'))
+can_play = function(read('soh/soh/ResourceManagerHelpers.cpp'),
+                    'extern "C" uint32_t ResourceMgr_GameCanPlayMasterQuest()')
+catalogue = between(otr, 'data["hasOriginal"] = OTRGlobals::Instance->HasOriginal();',
+                    'auto settings = Rando::Settings::GetInstance();',
+                    hostcxx.find(otr, 'extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void)'))
+menus = r'''
+#include <cstdint>
+#include <cstdio>
+#include <map>
+#include <stdexcept>
+#include <string>
+#include <nlohmann/json.hpp>
+#include "ProfileOotOptionPolicy.h"
+#include "rando/entrances/EntranceProfile.h"
+#include "mq/MqMode.h"
+#include "randomizerEnums.h"
+
+struct OTRGlobals {
+    static OTRGlobals* Instance;
+    bool original = true, archive = false, bundled = false;
+    bool HasOriginal() { return original; }
+    bool HasMasterQuest() { return archive; }
+    bool HasBundledMasterQuest() { return bundled; }
+};
+OTRGlobals* OTRGlobals::Instance = nullptr;
+''' + can_play + r'''
+struct NativeOption {
+    bool disabled = false;
+    std::string disabledText;
+    void Disable(std::string text) { disabled = true; disabledText = std::move(text); }
+    void Enable() { disabled = false; disabledText.clear(); }
+};
+// settings.cpp Settings::CreateOptions: the Master Quest gate.
+struct Settings {
+    std::map<int, NativeOption> mOptions;
+    void CreateMqOptions() {
+''' + options_gate + r'''
+    }
+};
+static nlohmann::json Catalogue() {
+    nlohmann::json data = { { "options", nlohmann::json::object() } };
+''' + catalogue + r'''
+    return data;
+}
+static void Require(bool condition, const std::string& message) {
+    if (!condition)
+        throw std::runtime_error(message);
+}
+static const int kMqOptions[] = { RSK_MQ_DUNGEON_RANDOM, RSK_MQ_DUNGEON_COUNT, RSK_MQ_DUNGEON_SET, RSK_MQ_DEKU_TREE,
+                                  RSK_MQ_DODONGOS_CAVERN, RSK_MQ_JABU_JABU, RSK_MQ_FOREST_TEMPLE, RSK_MQ_FIRE_TEMPLE,
+                                  RSK_MQ_WATER_TEMPLE, RSK_MQ_SPIRIT_TEMPLE, RSK_MQ_SHADOW_TEMPLE,
+                                  RSK_MQ_BOTTOM_OF_THE_WELL, RSK_MQ_ICE_CAVERN, RSK_MQ_GTG, RSK_MQ_GANONS_CASTLE };
+static const char* kNative = "This option has been disabled because only one type of O2R has been loaded";
+
+int main() {
+    try {
+        OTRGlobals globals;
+        OTRGlobals::Instance = &globals;
+        int states = 0;
+        for (int state = 0; state < 8; state++) {
+            globals.original = state & 1;
+            globals.archive = (state & 2) != 0;
+            globals.bundled = (state & 4) != 0;
+            if (globals.bundled && !globals.original)
+                continue; // the bundled data plays only over a vanilla oot.o2r (OTRGlobals::SetBundledMasterQuest)
+            states++;
+            const std::string where = "state " + std::to_string(state) + ": ";
+            const bool available = (globals.archive || globals.bundled) && globals.original;
+            // Native options: disabled with SoH's own text exactly when MQ cannot be played beside the vanilla game.
+            Settings native;
+            native.CreateMqOptions();
+            for (int key : kMqOptions) {
+                const auto& option = native.mOptions.at(key);
+                Require(option.disabled == !available && option.disabledText == (available ? "" : kNative),
+                        where + "native MQ option " + std::to_string(key));
+            }
+            // SoH's own gate is unchanged without the bundled data.
+            if (!globals.bundled)
+                Require(available == (globals.archive && globals.original), where + "SoH's gate without bundled data");
+            // The catalogue says the same, and which data a new seed's MQ dungeons use.
+            const auto catalogue = Catalogue();
+            Require(catalogue.at("mqPlayable") == available, where + "catalogue mqPlayable");
+            Require(catalogue.at("hasMasterQuest") == globals.archive && catalogue.at("hasOriginal") == globals.original,
+                    where + "hasMasterQuest keeps meaning a real oot-mq.o2r");
+            Require(catalogue.at("mqSource") == (globals.bundled   ? ComboMq::kMqDataSourceBundled
+                                                 : globals.archive ? "oot-mq.o2r"
+                                                                   : "none"),
+                    where + "catalogue mqSource");
+            // The profile editor disables the same rows with the same text.
+            for (int mqMode = 0; mqMode < 4; mqMode++) {
+                ComboRando::ProfileOotPolicy::View view(catalogue, [&](const char* key, int fallback) {
+                    return std::string(key) == "gRandoSettings.MQDungeons" ? mqMode : fallback;
+                });
+                for (int key : kMqOptions) {
+                    const auto& row = view.mOptions.at(key);
+                    Require(row.disabled == !available && row.disabledText == (available ? "" : kNative),
+                            where + "profile MQ row " + std::to_string(key));
+                }
+                // Wallmaster Shuffle stays refused with MQ selected wherever MQ can be played: the player sees the
+                // plain Master Quest sentence, and the log keeps the developer text (EntranceAvailability.h).
+                nlohmann::json draft = { { "mm", { { "settings", nlohmann::json::object() } } } };
+                const auto refusal = ComboRando::Entrances::ProfileWallmasterRefusal(
+                    draft, catalogue, [&](const char* key, int fallback) {
+                        return std::string(key) == "gRandoSettings.MQDungeons" ? mqMode : fallback;
+                    });
+                const bool refused = (globals.archive && !globals.original) || (available && mqMode != 0);
+                Require(refusal.player ==
+                                (refused ? "Wallmaster Shuffle does not support Master Quest dungeons yet." : "") &&
+                            refusal.log == (refused ? "Wallmaster Shuffle currently supports vanilla dungeons only" : ""),
+                        where + "Wallmaster refusal with MQ mode " + std::to_string(mqMode));
+            }
+        }
+        Require(states == 6, "six install states");
+        // A catalogue without mqPlayable (never written by this build) keeps the rows unavailable.
+        auto old = Catalogue();
+        old.erase("mqPlayable");
+        ComboRando::ProfileOotPolicy::View view(old, [](const char*, int fallback) { return fallback; });
+        Require(view.mOptions.at(RSK_MQ_DUNGEON_RANDOM).disabled, "a catalogue without mqPlayable");
+        std::puts("PASS: the native options, catalogue, profile rows and Wallmaster refusal agree in every state");
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "FAIL: %s\n", e.what());
+        return 1;
+    }
+    return 0;
+}
+'''
+if not failures:
+    cpp = out / 'mq_menu_gates.cpp'
+    cpp.write_text(menus, encoding='utf-8')
+    exe = hostcxx.build(args.compiler, cpp, std='c++20', warnings=False,
+                        includes=[repo / 'combo/gui', repo / 'combo', repo / 'soh/soh/Enhancements/randomizer',
+                                  args.json_include],
+                        defines=['COMBO_BUILD'], msvc=['/Zc:preprocessor', '/utf-8', '/bigobj'])
+    run = subprocess.run([str(exe)], cwd=out, capture_output=True, text=True, timeout=hostcxx.RUN_TIMEOUT)
+    print(run.stdout + run.stderr, end='')
+    check(run.returncode == 0, 'the menu harness failed')
+
 
 def body(text, signature):
     start = text.index('{', hostcxx.find(text, signature))

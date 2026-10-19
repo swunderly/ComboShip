@@ -1258,6 +1258,58 @@ class View {
         }
     }
 #undef CVAR_RANDOMIZER_SETTING
+    // settings.cpp CreateOptions' Master Quest gate, from the catalogue's mqPlayable (both quests: a vanilla oot.o2r
+    // and MQ from a real oot-mq.o2r or OoTMM's bundled data). A catalogue without it cannot show the rows available.
+    void RefreshMasterQuestAvailability(bool mqPlayable) {
+        if (!mqPlayable) {
+            mOptions[RSK_MQ_DUNGEON_RANDOM].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_DUNGEON_COUNT].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_DUNGEON_SET].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_DEKU_TREE].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_DODONGOS_CAVERN].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_JABU_JABU].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_FOREST_TEMPLE].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_FIRE_TEMPLE].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_WATER_TEMPLE].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_SPIRIT_TEMPLE].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_SHADOW_TEMPLE].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_BOTTOM_OF_THE_WELL].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_ICE_CAVERN].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_GTG].Disable("This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_GANONS_CASTLE].Disable(
+                "This option has been disabled because only one type of O2R has been loaded");
+        } else {
+            // If any MQ Options are available, show the MQ Dungeon Randomization Combobox
+            mOptions[RSK_MQ_DUNGEON_RANDOM].Enable();
+            mOptions[RSK_MQ_DUNGEON_COUNT].Enable();
+            mOptions[RSK_MQ_DUNGEON_SET].Enable();
+            mOptions[RSK_MQ_DEKU_TREE].Enable();
+            mOptions[RSK_MQ_DODONGOS_CAVERN].Enable();
+            mOptions[RSK_MQ_JABU_JABU].Enable();
+            mOptions[RSK_MQ_FOREST_TEMPLE].Enable();
+            mOptions[RSK_MQ_FIRE_TEMPLE].Enable();
+            mOptions[RSK_MQ_WATER_TEMPLE].Enable();
+            mOptions[RSK_MQ_SPIRIT_TEMPLE].Enable();
+            mOptions[RSK_MQ_SHADOW_TEMPLE].Enable();
+            mOptions[RSK_MQ_BOTTOM_OF_THE_WELL].Enable();
+            mOptions[RSK_MQ_ICE_CAVERN].Enable();
+            mOptions[RSK_MQ_GTG].Enable();
+            mOptions[RSK_MQ_GANONS_CASTLE].Enable();
+        }
+    }
     // The combo Starting Game rule for the menu: an explicit MM start forces both Mask Shop exclusions.
     // Under Random they stay editable; the force is silent when MM rolls.
     void RefreshComboStartingGameUI() {
@@ -1342,6 +1394,9 @@ class View {
         callbacks[RSK_LOGIC_RULES] = [this] { Callback_RSK_LOGIC_RULES(); };
         for (const auto& row : callbacks)
             row.second();
+        const auto mqPlayable = catalog.find("mqPlayable");
+        RefreshMasterQuestAvailability(mqPlayable != catalog.end() && mqPlayable->is_boolean() &&
+                                       mqPlayable->get<bool>());
         RefreshComboStartingGameUI();
     }
     const Option* Find(const char* key) const {

@@ -9,7 +9,8 @@
 using namespace ComboRando;
 using namespace ComboRando::Entrances;
 using Json = nlohmann::json;
-static const Json assets{{"hasOriginal", true}, {"hasMasterQuest", false}};
+static const Json assets{
+    {"hasOriginal", true}, {"hasMasterQuest", false}, {"mqPlayable", false}};
 static const char *wall = "gCombo.Rando.Entrances.erWallmasters";
 template <class F> void Reject(F fn) {
   bool failed = false;
@@ -171,18 +172,46 @@ int main() {
   const std::string mqLog =
       "Wallmaster Shuffle currently supports vanilla dungeons only";
   assert(mq == kWallmasterMasterQuestText);
+  // Every catalogue state (OTRGlobals.cpp SOH_DumpProfileCatalog): MQ selected
+  // is refused wherever MQ can be played, from a real oot-mq.o2r or OoTMM's
+  // bundled data (mqPlayable), and an MQ-only install is always refused.
+  for (int state = 0; state < 8; ++state) {
+    const bool original = state & 1, archive = state & 2, bundled = state & 4;
+    if (bundled && !original)
+      continue; // The bundled data needs the vanilla oot.o2r.
+    const bool playable = (archive || bundled) && original;
+    Json catalogue{{"hasOriginal", original},
+                   {"hasMasterQuest", archive},
+                   {"mqPlayable", playable}};
+    for (int mqMode : {0, 1, 2, 3}) {
+      settings["gRandoSettings.MQDungeons"] = mqMode;
+      const bool refused = (archive && !original) || (playable && mqMode != 0);
+      const auto why = ProfileWallmasterRefusal(draft, catalogue, read);
+      if (refused)
+        plain(why, mq, mqLog);
+      else
+        assert(why.empty());
+    }
+  }
   auto mqAssets = assets;
   mqAssets["hasMasterQuest"] = true;
+  mqAssets["mqPlayable"] = true;
   plain(ProfileWallmasterRefusal(draft, mqAssets, read), mq, mqLog);
   settings.clear();
   assert(ProfileWallmasterRefusal(draft, mqAssets, read).empty());
   mqAssets["hasOriginal"] = false;
+  mqAssets["mqPlayable"] = false;
   plain(ProfileWallmasterRefusal(draft, mqAssets, read), mq, mqLog);
   const std::string data =
       "Wallmaster Shuffle cannot read the OoT dungeon data.";
+  const std::string dataLog =
+      "Wallmaster Shuffle cannot verify the available dungeon data";
   assert(data == kWallmasterDungeonDataText);
-  plain(ProfileWallmasterRefusal(draft, Json::object(), read), data,
-        "Wallmaster Shuffle cannot verify the available dungeon data");
+  plain(ProfileWallmasterRefusal(draft, Json::object(), read), data, dataLog);
+  // A catalogue that does not say whether MQ can be played is refused.
+  auto unknown = assets;
+  unknown.erase("mqPlayable");
+  plain(ProfileWallmasterRefusal(draft, unknown, read), data, dataLog);
   // Solo mode, Ship ER, Enemy Randomizer, glitched logic, the two song logic
   // options, six warp songs and Soaring, Master Quest and unknown dungeon data.
   assert(sentences.size() == 15);

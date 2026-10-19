@@ -51,4 +51,24 @@ for key in callbacks[0]:
         assert 'callbacks[%s]' % key in policy, ('callback not registered in the profile policy', key)
 different = sorted(key for key in callbacks[0] if normalize(callbacks[0][key]) != normalize(callbacks[1][key]))
 assert not different, ('profile policy callbacks differ from settings.cpp', different)
-print('PASS: %d option callbacks and helpers match settings.cpp' % len(callbacks[0]))
+
+# CreateOptions' Master Quest gate is not a callback. The policy disables and enables the same rows with the same text,
+# on the profile catalogue's mqPlayable, which SOH_DumpProfileCatalog computes with the native gate's own condition.
+start = native.index("// Don't show any MQ options if both quests aren't available")
+gate = native[start:native.index('// clang-format on', start)]
+condition = 'ResourceMgr_GameCanPlayMasterQuest() && OTRGlobals::Instance->HasOriginal()'
+assert '#ifdef COMBO_BUILD' in gate and 'if (!(%s)) {' % condition in gate, 'settings.cpp: the native MQ gate changed'
+native_rows = gate[gate.index('#endif') + len('#endif'):gate.index('} else {')], body(gate, gate.index('} else {') + 7)
+found = re.search(r'void RefreshMasterQuestAvailability\(bool mqPlayable\)\s*\{', policy)
+assert found, 'the profile policy lost its copy of the MQ gate'
+copy = body(policy, found.end() - 1)
+policy_rows = copy[copy.index('if (!mqPlayable) {') + len('if (!mqPlayable) {'):copy.index('} else {')], \
+    body(copy, copy.index('} else {') + 7)
+assert all(normalize(a) == normalize(b) for a, b in zip(native_rows, policy_rows)), \
+    'the profile policy disables or enables the MQ rows differently from settings.cpp'
+assert native_rows[0].count('.Disable(') == 15 and native_rows[1].count('.Enable()') == 15
+assert re.search(r'RefreshMasterQuestAvailability\(mqPlayable != catalog\.end\(\) && mqPlayable->is_boolean\(\) &&\s*'
+                 r'mqPlayable->get<bool>\(\)\);', policy), 'the policy must read the catalogue\'s mqPlayable'
+catalogue = (root / 'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
+assert 'data["mqPlayable"] = %s;' % condition in catalogue, 'the catalogue\'s mqPlayable must be the native condition'
+print('PASS: %d option callbacks and helpers and the Master Quest gate match settings.cpp' % len(callbacks[0]))

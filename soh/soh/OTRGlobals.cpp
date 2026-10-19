@@ -4660,6 +4660,13 @@ extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void) {
                             { "checks", nlohmann::json::array() } };
     data["hasOriginal"] = OTRGlobals::Instance->HasOriginal();
     data["hasMasterQuest"] = OTRGlobals::Instance->HasMasterQuest();
+    // hasMasterQuest keeps meaning a real oot-mq.o2r. mqPlayable: the Master Quest rows can be chosen, settings.cpp's
+    // CreateOptions gate (both quests, MQ from oot-mq.o2r or OoTMM's bundled data). mqSource: the MQ data a new
+    // seed's dungeons would use.
+    data["mqPlayable"] = ResourceMgr_GameCanPlayMasterQuest() && OTRGlobals::Instance->HasOriginal();
+    data["mqSource"] = OTRGlobals::Instance->HasBundledMasterQuest() ? ComboMq::kMqDataSourceBundled
+                       : data["hasMasterQuest"].get<bool>()          ? "oot-mq.o2r"
+                                                                     : "none";
     auto settings = Rando::Settings::GetInstance();
     for (const auto& option : settings->GetAllOptions()) {
         const auto& key = option.GetCVarName();

@@ -107,10 +107,13 @@ EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nloh
     auto why = WallmasterSettingsRefusal(ProfileEntranceFacts(draft, read));
     if (!why.empty())
         return why;
-    if (!ootCatalog.contains("hasMasterQuest") || !ootCatalog.contains("hasOriginal"))
+    if (!ootCatalog.contains("hasMasterQuest") || !ootCatalog.contains("hasOriginal") ||
+        !ootCatalog.contains("mqPlayable"))
         return { kWallmasterDungeonDataText, "Wallmaster Shuffle cannot verify the available dungeon data" };
-    if (ootCatalog.at("hasMasterQuest").get<bool>() &&
-        (!ootCatalog.at("hasOriginal").get<bool>() || read("gRandoSettings.MQDungeons", 0) != 0))
+    // Only Master Quest is loaded, or MQ dungeons are selected where they can be played (mqPlayable: a real
+    // oot-mq.o2r or OoTMM's bundled MQ data). Without MQ data the native settings keep every dungeon vanilla.
+    if ((ootCatalog.at("hasMasterQuest").get<bool>() && !ootCatalog.at("hasOriginal").get<bool>()) ||
+        (ootCatalog.at("mqPlayable").get<bool>() && read("gRandoSettings.MQDungeons", 0) != 0))
         return { kWallmasterMasterQuestText, "Wallmaster Shuffle currently supports vanilla dungeons only" };
     return {};
 }
