@@ -332,6 +332,21 @@ void ObjOshihiki_SetColor(ObjOshihiki* this, PlayState* play) {
     }
 }
 
+// The block's switch as Init reads it to pick which blocks spawn.
+static s32 ObjOshihiki_GetSwitchFlag(PlayState* play, s32 flag) {
+#ifdef COMBO_BUILD
+    // ComboShip: OoTMM's ObjOshihiki_GetSwitchFlag, patched over this read (src/oot/actors/Obj/Obj_Oshihiki.c:5-13):
+    // a child in MQ Spirit sees switch 0x09 unset, so the silver block an adult pushed into the room-6 hole (params
+    // 0x9C7) stays away and the one it started as (0x9C3) is back. Bundled MQ only; a real oot-mq.o2r keeps SoH's
+    // randomizer hook (hook_handlers.cpp), which kills the block in the hole instead.
+    if (play->sceneNum == SCENE_SPIRIT_TEMPLE && ResourceMgr_SceneUsesBundledMq(play->sceneNum) && LINK_IS_CHILD &&
+        flag == 0x09) {
+        return 0;
+    }
+#endif
+    return Flags_GetSwitch(play, flag);
+}
+
 void ObjOshihiki_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
     ObjOshihiki* this = (ObjOshihiki*)thisx;
@@ -339,7 +354,7 @@ void ObjOshihiki_Init(Actor* thisx, PlayState* play2) {
     ObjOshihiki_CheckType(this, play);
 
     if ((((this->dyna.actor.params >> 8) & 0xFF) >= 0) && (((this->dyna.actor.params >> 8) & 0xFF) <= 0x3F)) {
-        if (Flags_GetSwitch(play, (this->dyna.actor.params >> 8) & 0x3F)) {
+        if (ObjOshihiki_GetSwitchFlag(play, (this->dyna.actor.params >> 8) & 0x3F)) {
             switch (this->dyna.actor.params & 0xF) {
                 case PUSHBLOCK_SMALL_START_ON:
                 case PUSHBLOCK_MEDIUM_START_ON:

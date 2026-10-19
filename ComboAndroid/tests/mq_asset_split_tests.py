@@ -92,14 +92,17 @@ ASSET_GAME = {'soh/src/code/z_scene_table.c': 7, 'soh/soh/z_play_otr.cpp': 1}
 # The bundled answer: OoTMM's scene and room command overrides (mq.c:220-411) and its minimap and pause-map marks
 # (mq.c:452-515) key on it, and so do the gameplay rules where OoTMM's data differs from a real oot-mq.o2r (U6): MQ
 # Water's door flags (dungeon.cpp) and FixWaterMQLock.cpp, which only an archive door needs; and OoTMM's own MQ rules
-# that SoH lacks: MQ Shadow's new-save switch 7 (savefile.cpp).
+# that SoH lacks: MQ Shadow's new-save switch 7 (savefile.cpp) and MQ Spirit's push-block switch read
+# (z_obj_oshihiki.c), which replaces SoH's kill hook (hook_handlers.cpp) for bundled MQ.
 BUNDLED_SCENE = {
     'soh/soh/Enhancements/randomizer/ComboMqRuntime.cpp': 1,
     'soh/soh/Enhancements/randomizer/dungeon.cpp': 1,
     'soh/soh/Enhancements/randomizer/savefile.cpp': 1,
+    'soh/src/overlays/actors/ovl_Obj_Oshihiki/z_obj_oshihiki.c': 1,
 }
 BUNDLED_GAME = {
     'soh/soh/Enhancements/Fixes/FixWaterMQLock.cpp': 1,
+    'soh/soh/Enhancements/randomizer/hook_handlers.cpp': 1,
     'soh/src/code/z_map_mark.c': 1,
     'soh/src/overlays/misc/ovl_kaleido_scope/z_lmap_mark.c': 1,
 }

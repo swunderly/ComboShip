@@ -8,6 +8,9 @@ from a real oot-mq.o2r (archive) and a vanilla one:
   switch 3 to 4, leaves a bundled door alone.
 - MQ Shadow's switch 7 on a new save (src/oot/save.c:136-139): Randomizer_InitSaveFile sets it for a bundled MQ
   Shadow, after Sram_InitSave has made the file a randomizer file, so the resolver reads the seed.
+- MQ Spirit's room-6 silver blocks (src/oot/actors/Obj/Obj_Oshihiki.c:5-13): for a child, Obj_Oshihiki's Init reads
+  switch 0x09 as unset in a bundled MQ Spirit, and SoH's kill hook (hook_handlers.cpp) runs only for archive MQ. The
+  three blocks come from the bins.
 """
 from pathlib import Path
 import argparse
@@ -25,6 +28,7 @@ work = args.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import hostcxx  # noqa: E402
+import mq_bins  # noqa: E402
 
 rando = repo / 'soh/soh/Enhancements/randomizer'
 failures = []
@@ -198,7 +202,102 @@ int main() {
 }
 '''
 
-PROGRAMS = {'doors': doors, 'new_save': new_save}
+# --- MQ Spirit's silver blocks in room 6 ---------------------------------------------------------------------------
+# OoTMM patches the switch read in Obj_Oshihiki's Init (0x80a4f574, the call after ObjOshihiki_CheckType in the
+# overlay at 0x80a4efc0): a child in MQ Spirit reads switch 0x09 as unset (src/oot/actors/Obj/Obj_Oshihiki.c:5-13).
+# SoH instead kills the block in the hole for a child (hook_handlers.cpp). Bundled MQ follows OoTMM; archive keeps SoH.
+oshihiki = read(repo / 'soh/src/overlays/actors/ovl_Obj_Oshihiki/z_obj_oshihiki.c')
+hooks = read(rando / 'hook_handlers.cpp')
+actor_init = function(hooks, 'void RandomizerOnActorInitHandler(void* actorRef)')
+spirit_hook = block(actor_init, 'if (actor->id == ACTOR_OBJ_OSHIHIKI && LINK_IS_CHILD')
+check('Actor_Kill(actor);' in spirit_hook and 'actor->params == 0x9C7' in spirit_hook,
+      'hook_handlers.cpp: SoH\'s MQ Spirit block hook moved')
+decoded = mq_bins.decode(*mq_bins.load(repo / 'combo/mq/data'))
+blocks = [actor[7] & 0xFFFF for room in decoded['rooms'] if (room['dungeon'], room['room']) == (6, 6)
+          for actor in room['actors'] if actor[0] & 0xFFFF == 0x00FF]
+check(blocks == [0x09C3, 0x09C7, 0x3FC3], f'MQ Spirit room 6 push blocks changed: {[hex(b) for b in blocks]}')
+init_code = function(oshihiki, 'void ObjOshihiki_Init(Actor* thisx, PlayState* play2)')
+init_code = '\n'.join(line for line in init_code.splitlines() if 'osSyncPrintf' not in line and '//' not in line)
+
+spirit = r'''#include <cstdint>
+#include <cstdio>
+#define COMBO_BUILD 1
+using s8 = int8_t; using s16 = int16_t; using s32 = int32_t; using u8 = uint8_t; using u32 = uint32_t;
+enum { SCENE_FOREST_TEMPLE = 3, SCENE_SPIRIT_TEMPLE = 6 };
+enum { ACTOR_OBJ_OSHIHIKI = 0x00FF };
+enum { PUSHBLOCK_SMALL_START_ON, PUSHBLOCK_MEDIUM_START_ON, PUSHBLOCK_LARGE_START_ON, PUSHBLOCK_HUGE_START_ON,
+       PUSHBLOCK_SMALL_START_OFF, PUSHBLOCK_MEDIUM_START_OFF, PUSHBLOCK_LARGE_START_OFF, PUSHBLOCK_HUGE_START_OFF };
+#define MASS_IMMOVABLE 0xFF
+#define LINK_AGE_ADULT 0
+#define LINK_AGE_CHILD 1
+struct { s32 linkAge; } gSaveContext;
+#define LINK_IS_CHILD (gSaveContext.linkAge == LINK_AGE_CHILD)
+struct Actor { s16 id; s16 params; s8 room; struct { u8 mass; } colChkInfo; bool killed; };
+struct DynaPolyActor { Actor actor; };
+struct ObjOshihiki { DynaPolyActor dyna; };
+struct PlayState { s16 sceneNum; u32 swch; };
+PlayState* gPlayState = nullptr;
+bool gGameMq = false, gBundled = false;
+extern "C" uint32_t ResourceMgr_IsGameMasterQuest() { return gGameMq; }
+extern "C" uint32_t ResourceMgr_GameUsesBundledMq() { return gBundled; }
+extern "C" uint32_t ResourceMgr_SceneUsesBundledMq(s16) { return gBundled; }
+s32 Flags_GetSwitch(PlayState* play, s32 flag) { return flag < 32 ? (play->swch >> flag) & 1 : 0; }
+void Actor_Kill(Actor* actor) { actor->killed = true; }
+static int sInitChain[1];
+void Actor_ProcessInitChain(Actor*, int*) {}
+void ObjOshihiki_CheckType(ObjOshihiki*, PlayState*) {}
+void ObjOshihiki_SetScale(ObjOshihiki*, PlayState*) {}
+void ObjOshihiki_SetTexture(ObjOshihiki*, PlayState*) {}
+void ObjOshihiki_SetColor(ObjOshihiki*, PlayState*) {}
+void ObjOshihiki_RestoreFireTempleBlock(ObjOshihiki*, PlayState*) {}
+void ObjOshihiki_ResetFloors(ObjOshihiki*) {}
+void ObjOshihiki_SetupOnActor(ObjOshihiki*, PlayState*) {}
+''' + function(oshihiki, 'static s32 ObjOshihiki_GetSwitchFlag(PlayState* play, s32 flag)') + '\n' + init_code + r'''
+void SpiritBlockHook(Actor* actor) {
+''' + spirit_hook + r'''
+}
+#define REQUIRE(x) do { if (!(x)) { fprintf(stderr, "failed: %s at line %d\n", #x, __LINE__); return 1; } } while (0)
+static const s16 kBlocks[] = { @BLOCKS@ };
+// Spawns MQ Spirit room 6's push blocks as the room list does (Init, then the randomizer's actor-init hook) and
+// returns which of them stay: bit i for kBlocks[i].
+static int Spawn(s16 scene, bool child, bool switch9) {
+    PlayState play{ scene, switch9 ? 1u << 9 : 0u };
+    gPlayState = &play;
+    gSaveContext.linkAge = child ? LINK_AGE_CHILD : LINK_AGE_ADULT;
+    int present = 0;
+    for (int i = 0; i < (int)(sizeof(kBlocks) / sizeof(kBlocks[0])); i++) {
+        ObjOshihiki block{ { { ACTOR_OBJ_OSHIHIKI, kBlocks[i], 6, { 0 }, false } } };
+        ObjOshihiki_Init(&block.dyna.actor, &play);
+        SpiritBlockHook(&block.dyna.actor);
+        present |= block.dyna.actor.killed ? 0 : 1 << i;
+    }
+    return present;
+}
+int main() {
+    const int above = 1, hole = 2, fixed = 4; // 0x9C3 (start on), 0x9C7 (start off), 0x3FC3 (no switch)
+    // Bundled MQ: OoTMM's read. A child sees the room as before any push, whatever switch 0x09 says.
+    gGameMq = gBundled = true;
+    REQUIRE(Spawn(SCENE_SPIRIT_TEMPLE, true, true) == (above | fixed));
+    REQUIRE(Spawn(SCENE_SPIRIT_TEMPLE, true, false) == (above | fixed));
+    REQUIRE(Spawn(SCENE_SPIRIT_TEMPLE, false, true) == (hole | fixed));
+    REQUIRE(Spawn(SCENE_SPIRIT_TEMPLE, false, false) == (above | fixed));
+    // Another dungeon's blocks read their real switch.
+    REQUIRE(Spawn(SCENE_FOREST_TEMPLE, true, true) == (hole | fixed));
+    // A real oot-mq.o2r keeps SoH's hook: a child after the push finds neither block.
+    gBundled = false;
+    REQUIRE(Spawn(SCENE_SPIRIT_TEMPLE, true, true) == fixed);
+    REQUIRE(Spawn(SCENE_SPIRIT_TEMPLE, true, false) == (above | fixed));
+    REQUIRE(Spawn(SCENE_SPIRIT_TEMPLE, false, true) == (hole | fixed));
+    // Vanilla: native reads.
+    gGameMq = false;
+    REQUIRE(Spawn(SCENE_SPIRIT_TEMPLE, true, true) == (hole | fixed));
+    puts("spirit block: a bundled MQ child reads switch 0x09 unset (OoTMM); archive MQ keeps SoH's kill hook");
+    return 0;
+}
+'''
+spirit = re.sub(r'\bthis\b', 'self', spirit).replace('@BLOCKS@', ', '.join(hex(b) for b in blocks))
+
+PROGRAMS = {'doors': doors, 'new_save': new_save, 'spirit_block': spirit}
 for name, code in PROGRAMS.items():
     source = work / f'mq_gameplay_{name}.cpp'
     source.write_text(code, encoding='utf-8')

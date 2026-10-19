@@ -2851,6 +2851,11 @@ void RandomizerOnActorInitHandler(void* actorRef) {
     // In MQ Spirit, remove the large silver block in the hole as child so the chest in the silver block hallway
     // can be guaranteed accessible
     if (actor->id == ACTOR_OBJ_OSHIHIKI && LINK_IS_CHILD && ResourceMgr_IsGameMasterQuest() &&
+#ifdef COMBO_BUILD
+        // ComboShip: a bundled MQ Spirit follows OoTMM instead: the block reads switch 0x09 as unset for a child
+        // (z_obj_oshihiki.c ObjOshihiki_GetSwitchFlag, OoTMM src/oot/actors/Obj/Obj_Oshihiki.c:5-13).
+        !ResourceMgr_GameUsesBundledMq() &&
+#endif
         gPlayState->sceneNum == SCENE_SPIRIT_TEMPLE && actor->room == 6 && // Spirit Temple silver block hallway
         actor->params == 0x9C7                                             // Silver block that is marked as in the hole
     ) {
