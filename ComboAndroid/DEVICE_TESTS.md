@@ -1,5 +1,22 @@
 # Device validation still required
 
+## Wallmaster Shuffle (0.4.12, unreleased)
+
+Nothing here has been tried on a phone yet, and no OoT Wallmaster capture has been seen in play. Checks 3, 4 and 7 matter most. Use the exact release build, a spare file in Combined randomizer mode, and Randomizer > Logic & access > Entrances > Wallmaster Shuffle set to Own Game. Tools > Save Editor can give items, keys and souls to save time.
+
+Each seed writes a file ending in `.entrances.txt` next to its spoiler in `ComboShip/Randomizer`. On a Wallmaster's line, the text after `->` is where it should send Link, for example `OOT Deku Tree from ...`. For each capture, note the APK checksum, the seed, that line and what happened. A capture that lands anywhere else blocks the release.
+
+1. Generate two or three seeds with Wallmaster Shuffle on. Each one finishes; note how long each took.
+2. In both world views, the row offers None and Own Game. Turn on Enhancements > Extra modes > Enemy randomizer: Own Game greys out and "Turn off Enemy Randomizer to use Wallmaster Shuffle." shows under the row. With Own Game already set, the Generate button is disabled and shows the same sentence. Turn Enemy Randomizer off. With Own Game set, Ship's OoT entrance rows (for example Dungeon Entrances) are greyed out with "Turn off Wallmaster Shuffle to use this option." Set Home > Game mode to OoT randomizer: "Wallmaster Shuffle works only in combined mode." In vanilla OoT, the row shows that sentence but Prepare vanilla game still works.
+3. **Forest Temple, as adult.** Let the west and the east Wallmasters grab Link (lines `OOT Forest Temple Wallmaster West` and `OOT Forest Temple Wallmaster East`). Each time: a black fade, then Link stands at the start of the dungeon the line names, not back at the Forest Temple's entrance. If it is easy, also try a capture that sends Link to a dungeon he normally enters at the other age.
+4. **Bottom of the Well, as child.** The main room's Wallmaster (`OOT Bottom of the Well Wallmaster Main`) does the same. Walk back into that room: the Wallmaster drops again and sends Link to the same place.
+5. **A cleared room.** In a Wallmaster room whose other enemies are defeated (or whose Room clear flag is set in Save Editor > Flags), leave and come back: the Wallmaster still drops and still sends Link to the same place. Doors that opened stay open, and no reward appears again.
+6. **After arriving.** Void out (fall into a pit), die, and save and reload: Link comes back at sensible places in the new dungeon and does not loop. Save, force-stop the app and load the file: the same Wallmaster still sends Link to the same place. Set Farore's Wind in the Wallmaster's dungeon, get grabbed, then use Farore's Wind: Link returns to its warp point. Go OoT to MM to OoT and use a route again.
+7. **MM: one capture** in Beneath the Graveyard on night 3 (`MM Beneath The Graveyard Night 3 Wallmaster`) or in Beneath the Well (`MM Beneath The Well Wallmaster ...`): Link arrives at the start of the temple or Spider House the line names.
+8. **MM rules on a Wallmaster seed.** Play the Song of Time: the new cycle starts where Link last entered MM (South Clock Town after the usual door from OoT). Fill a bottle with hot spring water and wait more than a minute: it stays hot. On a seed without Wallmaster Shuffle, it cools as before.
+9. Optional: with Shadow Tag Mode on (Enhancements > Extra modes > Challenges), its chasing Wallmaster sends Link where it normally does. On a Wallmaster seed, an adult OoT save made in Link's House loads at the Temple of Time. With enemy souls shuffled, no Wallmaster appears until Link has the Wallmaster soul.
+10. Install over 0.4.11 without uninstalling. A 0.4.10 or 0.4.11 combined save, one with Ship's OoT entrance shuffle on and one without, load and play as before: Wallmasters are not shuffled, and the Song of Time goes to South Clock Town.
+
 ## Home game modes (0.4.10)
 
 Use an empty file for each new run; leave existing progress alone. In Home, select the file's Next seed, choose Game mode, and generate or prepare it. Start the prepared file at file select.

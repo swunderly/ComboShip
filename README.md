@@ -91,6 +91,7 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 - **Dungeon items.** OoT silver rupees with puzzle pouches, placed Vanilla, Own Dungeon or Anywhere. MM key rings for the four temples. (Upstream has since added SoH 9.3's own, different silver rupee option. That is not in this build.)
 - **Masks.** OoT uses OoTMM's mask model: masks are shuffled, or you start with them.
 - **Cross-game songs (this fork's own option).** With **Play warp songs across games**, OoT warp songs work in MM and Song of Soaring works in OoT with MM's owl statues. Each uses its own game's animation and sound. As in OoTMM, only child Link can play Song of Soaring in OoT unless **Song of Soaring at any age (OoT)** is also on. With it, adult Link can use it to reach MM once an MM owl statue is activated. There is also an option for mixing OoT warp pads and MM owls as shuffled destinations. (Upstream added its own, separate version of this on October 11, 2026. That version is not in this build.)
+- **Wallmaster Shuffle (from 0.4.12).** OoTMM's Wallmaster Shuffle with its Own Game choice, under Randomizer > Logic & access > Entrances. A Wallmaster that grabs Link takes him to the start of a dungeon in the same game, chosen when the seed is made. It works only in the combined randomizer and with vanilla dungeons, not Master Quest. Seeds made with it also follow OoTMM's general entrance shuffle rules, for example hot spring water in MM never cools. The [changelog](ComboAndroid/docs/CHANGELOG.md) lists what greys it out and what else changes.
 - **Path hints.** OoTMM-style path hints for bosses and the final goal, plus Path of Power, Courage and Wisdom for Triforce Quest.
 - **Tricks and rules.** One searchable Tricks & glitches list, including 29 MM tricks based on OoTMM's. The newest use OoTMM's exact names; older ones keep the fork's own wording. A Gameplay rules page (this fork's own) links enhancements to logic, such as Song of Time age change and Fierce Deity Anywhere. Turning a rule on in Randomizer also turns on the matching enhancement.
 - **Logic.** OoT and MM logic follow OoTMM v32.3 in many places. Examples: MM combat requirements, renewable ammo, money and magic, MM time of day, and one-time MM rewards that stay collected across a three-day reset. A seed can guarantee **All Locations** or just **Beatable Only**. This is not full OoTMM parity. A dated comparison (October 4, 2026) of 402 OoTMM settings records where it differed then.
@@ -98,7 +99,7 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 ### Trackers and multiplayer (this fork's own changes)
 
 - **Trackers.** Check, Item and Hint trackers share one set of access modes: while paused, a button, on-screen CT/IT/HT buttons, or a side panel next to the game. The MM check tracker keeps items you have **Seen** apart from items a hint told you about (**Hinted**).
-- **Multiplayer.** Anchor co-op from upstream is kept (**Tools → Multiplayer**). This fork makes one sync carry both OoT and MM progress, so rejoining recovers both games. It blocks duplicate items and rejects progress from a different seed. Every player needs the same Combo Ship build and the same seed.
+- **Multiplayer.** Anchor co-op from upstream is kept (**Tools → Multiplayer**). This fork makes one sync carry both OoT and MM progress, so rejoining recovers both games. It blocks duplicate items and rejects progress from a different seed. Every player needs the same Combo Ship build and the same seed. With Wallmaster Shuffle, every player must load the same seed file. From 0.4.12, the room window says under a teammate's name when nothing is shared because of a different seed or version.
 
 ## FAQ
 
@@ -106,7 +107,7 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 
 **Do I need an emulator or a PC?** No. The games run as native Android code. Setup and seed generation happen on the device. You only need your ROM files on the device.
 
-**Can I play co-op?** Yes, through Anchor, if everyone has the same build and seed. So far it has only been tested with two emulators on a local server.
+**Can I play co-op?** Yes, through Anchor, if everyone has the same build and seed. So far it has only been tested with two emulators on a local server. Co-op also works with Wallmaster Shuffle (from 0.4.12) when everyone loads the same seed file; the [changelog](ComboAndroid/docs/CHANGELOG.md) says what its co-op check covered.
 
 **Does it work on Windows, Linux or Mac?** Not this fork. Use [upstream ComboShip](https://github.com/Varuuna/ComboShip).
 
@@ -134,14 +135,15 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - Seeds and patches from the OoTMM website do not work.
 - MM accepts USA ROMs only (N64 1.0 or GameCube).
 - Master Quest dungeon options stay greyed out. They need both normal and Master Quest OoT data, and setup imports one OoT ROM.
+- Wallmaster Shuffle (from 0.4.12) works only in the combined randomizer. It does not support Master Quest dungeons yet. Some settings grey it out, such as Ship's own OoT entrance shuffles, Enemy Randomizer and some warp song options; the [changelog](ComboAndroid/docs/CHANGELOG.md) lists them.
 - Importing settings from another SoH or 2Ship install is not supported.
 - Restoring a backup is manual: copy the files back into the ComboShip folder.
 - Upstream changes after September 17, 2026 are not included. That means no SoH 9.3 update, no macOS support, and no upstream cross-game teleport songs.
 - MM PvP in multiplayer was unfinished upstream when this fork branched and is not supported here.
-- OoT entrance shuffle (from Ship of Harkinian) is available. On Android only a few focused logic tests cover it so far. MM and cross-game entrance shuffle are not available yet.
+- OoT entrance shuffle (from Ship of Harkinian) is available. On Android only a few focused logic tests cover it so far. Of OoTMM's entrance shuffles, only Wallmaster Shuffle with Own Game is available (from 0.4.12). Apart from Wallmasters, MM entrance shuffle and cross-game entrance shuffle are not available yet.
 - Known issues in the current release are listed in its [release notes](https://github.com/swunderly/ComboShip/releases/latest) and in the [changelog](ComboAndroid/docs/CHANGELOG.md).
 
-**In development, not in any release yet:** MM and cross-game entrance randomization (OoTMM-style). The `android-source` branch may already contain unfinished work on it. To play, use the APKs from Releases.
+**In development, not in any release yet:** the rest of OoTMM-style entrance randomization, including Wallmaster Shuffle with Master Quest dungeons, and MM and cross-game entrance shuffle beyond Wallmasters. The `android-source` branch may already contain unfinished work on it. To play, use the APKs from Releases.
 
 ## Reporting problems
 

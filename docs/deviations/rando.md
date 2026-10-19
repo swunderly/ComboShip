@@ -12,8 +12,10 @@ The JSON schema and placement readers stay unchanged; plando preserves the recor
 Unlike OoTMM, no-layout seeds do not emit the two default links. This applies M1's layout-only
 output rule and the recommended C8 default: preserve legacy JSON bytes and avoid adding an
 extra artifact to ordinary seeds. Reusing a spoiler filename for a no-layout seed removes its
-old derived entrance text after the new JSON has been written successfully. Unified seeds
-remain behind the development capability gate; this output does not enable a public setting.
+old derived entrance text after the new JSON has been written successfully. This output does not
+enable a public setting by itself. Since 2026-10-19, vanilla Wallmaster Shuffle seeds are public and
+get this file (see "Wallmaster Shuffle (Own Game), vanilla dungeons: public" below); every other
+unified layout stays behind the development capability gate.
 
 ## Cross-World Randomizer (ComboShip feature) — Increment 1 (2026-06-04)
 
@@ -2356,3 +2358,71 @@ retain native respawn and log the fallback. Only a committed, matching vanilla O
 permits Wallmasters to spawn in cleared rooms; assumptions and private MM-only profiles do not.
 The existing soul and object-availability checks still run before this exception. These are host and
 native-compilation proofs; they do not establish a successful gameplay capture or authorize release.
+The 2026-10-19 section below makes this capability public for 0.4.12.
+
+## Wallmaster Shuffle (Own Game), vanilla dungeons: public (2026-10-19)
+
+Planned for 0.4.12. `wallmasters-own-game-vanilla-v1` (`erWallmasters=ownGame`) is the only public
+entrance capability (`Capabilities.h`, pinned by a `static_assert`). Shipping builds show the OoTMM
+v32.3 row "Wallmaster Shuffle" under Randomizer > Logic & access > Entrances in both world views, with
+None and Own Game. Full, One-Ways, the general `wallmasters-own-game-v1` id and every other er* row stay
+hidden. Player-facing summary: `ComboAndroid/docs/CHANGELOG.md`, Unreleased.
+
+**Where it is refused.** One shared predicate (`EntranceAvailability.h`, `EntranceProfile.h`) feeds the
+row, its tooltip, the Generate button and generation, which checks again before any entrance draw.
+The player sees one plain sentence per reason (owner decision D3); the developer text stays in logs
+and exceptions. Port-only reasons, in order: a solo or vanilla Home mode (vanilla preparation ignores
+the CVar); Ship's own OoT entrance shuffle (D1, mutual grey-out); SoH Enemy Randomizer (D2; 2Ship has
+no enemy randomizer, so MM has nothing to gate); and, unless OoT logic is No Logic, glitched logic, Song
+Travel or foreign-song logic, or a starting OoT warp song or Song of Soaring (D4: the Temple probe
+cannot validate these yet). Master Quest is refused in the menu (MQ data installed with MQ Dungeon
+Setting not None, or MQ-only data), in generation (any MQ quest; no RNG draw) and in the seed validator,
+by owner decision ("proceed with vanilla first"). OoTMM itself supports MQ Wallmasters.
+
+**Native respawn fallbacks (D7, port-only).** OoTMM leaves these undefined. The port keeps the native
+Wallmaster respawn and logs the reason when: the Wallmaster is SoH's Shadow Tag Mode one
+(`WMT_SHADOWTAG`); its scene or room is unmapped; the layout has no route or no native binding for
+it; Enemy Randomizer is on at play time; the loaded seed has Ship entrance shuffle; or, in MM, the
+arrival preflight rejects the destination. Logic still counted the route in those cases, so turning on
+Enemy Randomizer after generating can strand a player. There is no in-game block; the changelog tells
+players to keep it off.
+
+**ER-wide side effects, copied from OoTMM v32.3 (D10).** OoTMM turns these on whenever
+`isEntranceShuffle` is true (`CFG_ER_ANY` and the `PG_ER` patches); `er_enabled` drives the MM logic
+macro `has_hot_water_er`. Both read only OoTMM's er* settings, never Combo Ship's Song Travel (D5), so
+today only Wallmaster Shuffle seeds get them (`EntranceRuntimeFlags.h`):
+- MM Song of Time and moon crash return to the MM initial entrance, the entrance the current MM boot
+  arrived by, instead of South Clock Town (`ComboEntrancesMM.cpp`, `title_setup.c`, `z_play.c`,
+  `SkipSoTCutscenes.cpp`, `SkipMoonCrash.cpp`). The season fixup runs again on return (C10). Fork-only
+  MM resumes (owl save, Remember Save Location, an MM-start file, cross-game Farore's Wind) have no
+  OoTMM equivalent and use where the boot lands. An indoor initial entrance has no `EnTest4`, so the
+  port queues the native DayTelop transition after `Play_Init`.
+- OoT: a Link's House save is not honoured; the age spawn is used, so an adult loads at the Temple of
+  Time (`z_sram.c`). Remember Save Location is checked first and keeps its place. The flag comes from
+  the save preflight, before the OnLoadGame bind (C9).
+- MM hot spring water never cools (`z_parameter.c` `Interface_StartBottleTimer`, OoTMM
+  `hot_water.S`), and MM logic uses `has_hot_water_er` at every pinned site. Logic and runtime land
+  together.
+- MM Stone Tower switch 0x14 is set in the inverted scene and cleared in the normal one, at the end of
+  `Play_Init` (OoTMM `Play_AfterInit`).
+- Not ported: OoTMM's end-of-game save at Ganon's Tower (not applicable to the port's ending) and the
+  MM boss time speed that reads the initial entrance (needs boss entrance shuffle).
+
+**MM start (C24).** OoTMM has no starting-game setting; MM and Random starts are port-only. The
+opposite-age Temple of Time probe keeps OoTMM's pinned formula (the virtual OoT spawn seeded at both
+ages) for every start; there is no MM-start variant. A Random start that falls back to OoT after a
+failed MM-start attempt (`pinStartOot`) also falls back after an entrance shuffle failure
+(`ComboShip.cpp`, `RunComboFill`).
+
+**Co-op.** Nothing sends the entrance layout over the network; each client installs it from its own
+seed, and captures, respawns and positions stay local. Layout seeds without a `displaySeed` get their
+own co-op identity (see `anchor.md`, 2026-10-19), so both players must load the same seed file.
+
+**Old seeds and saves.** Seeds without a layout generate byte-identically (whole-host corpus
+fingerprint unchanged), get no entrance spoiler file and set no ER-wide flag. Older builds refuse a
+layout seed before decoding it.
+
+**Known issue, not caused by this change.** The OoT soul room guard tracks one room. When a room is
+held shut by a missing soul and the neighbouring room loads (`En_Holl`), the guard resets for the new
+room and the blocked room can clear early. It is unfixed and can show up in Wallmaster dungeons next
+to the cleared-room spawn exception.

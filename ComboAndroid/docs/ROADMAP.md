@@ -15,7 +15,7 @@ Done earlier: silver rupees and pouches, MM key rings, victory conditions, MM ti
 
 Planned order (each step ships when it is complete and tested):
 
-1. **Entrance randomization**: Wallmaster and one-way pools, then own-game pools for both games, MM extras, cross-game ("Full") pools, and boss entrances, following OoTMM's `er*` settings. Shipped in milestones.
+1. **Entrance randomization**: Wallmaster and one-way pools, then own-game pools for both games, MM extras, cross-game ("Full") pools, and boss entrances, following OoTMM's `er*` settings. Shipped in milestones. First milestone, planned for 0.4.12 and not released yet: Wallmaster Shuffle with Own Game, in the combined randomizer with vanilla dungeons (see [CHANGELOG.md](CHANGELOG.md), Unreleased). Still to come: Wallmaster Shuffle with Master Quest dungeons, then the rest of the list above.
 2. **Parity check** of the finished APK's logic against OoTMM, comparing like features only; mismatches that are bugs get fixed.
 
 ## Not authorized (October 5 list)
