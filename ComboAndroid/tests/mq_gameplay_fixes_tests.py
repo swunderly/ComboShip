@@ -10,12 +10,16 @@ from a real oot-mq.o2r (archive) and a vanilla one:
   Shadow, after Sram_InitSave has made the file a randomizer file, so the resolver reads the seed.
 - Fire's first door (0x17) and Water's water-raise door (0x15), which OoTMM opens only in vanilla dungeons
   (src/oot/doors.c:47-53): SoH's new-save switches stay off for a bundled seed's MQ dungeons, through the real resolver.
+- Small-key maxima (src/common/data.c:31-81): randomizer.h's macros give a bundled seed's MQ dungeons OoTMM's MQ
+  counts, and DungeonInfo's mqKeyCount agrees.
 - MQ Spirit's room-6 silver blocks (src/oot/actors/Obj/Obj_Oshihiki.c:5-13): for a child, Obj_Oshihiki's Init reads
   switch 0x09 as unset in a bundled MQ Spirit, and SoH's kill hook (hook_handlers.cpp) runs only for archive MQ. The
   three blocks come from the bins.
 """
 from pathlib import Path
 import argparse
+import hashlib
+import os
 import re
 import subprocess
 import sys
@@ -68,6 +72,27 @@ def block(text, needle):
     """The whole line holding `needle` (in an `if (...) {` line), through its closing brace."""
     start = text.rindex('\n', 0, hostcxx.find(text, needle)) + 1
     return function(text[start:], text[start:text.index('\n', start)].strip())
+
+
+# The OoTMM v32.3 (413573d2) checkout beside this one, if any: the pinned tables below are re-read from it.
+reference = os.environ.get('COMBO_OOTMM_REFERENCE')
+reference = Path(reference) if reference else next(
+    (parent / 'references/ootmm-stable-32.3' for parent in repo.parents
+     if (parent / 'references/ootmm-stable-32.3/packages/generator/src/common/sr.c').is_file()), None)
+
+
+def ootmm_file(path, blob):
+    """The text of an OoTMM v32.3 file whose git blob is `blob`, or None without such a checkout."""
+    source = reference / path if reference else None
+    if not (source and source.is_file()):
+        print(f'No OoTMM v32.3 checkout here; {path} was not re-read (set COMBO_OOTMM_REFERENCE)')
+        return None
+    data = source.read_bytes().replace(b'\r\n', b'\n')  # a core.autocrlf checkout; git hashes the LF form
+    if hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest() != blob:
+        print(f'{source} is not the v32.3 blob; the pinned table was not re-read')
+        return None
+    print(f'OoTMM {path} read from {reference}')
+    return data.decode('utf-8')
 
 
 # --- MQ Water's locked doors -----------------------------------------------------------------------------------------
@@ -280,6 +305,67 @@ int main() {
 }
 '''
 
+# --- Small-key maxima ----------------------------------------------------------------------------------------------
+# OoTMM's MQ key counts (src/common/data.c:31-81, comboInitData). SoH has the same numbers in randomizer.h's
+# *_SMALL_KEY_MAX macros (on the gameplay predicate) and DungeonInfo's mqKeyCount, so nothing changes; this runs the
+# production macros on the real resolver to show a bundled seed's MQ dungeons get OoTMM's maxima.
+OOTMM_MQ_KEYS = {'FOREST_TEMPLE': 6, 'FIRE_TEMPLE': 5, 'WATER_TEMPLE': 2, 'SHADOW_TEMPLE': 6, 'SPIRIT_TEMPLE': 7,
+                 'BOTTOM_OF_THE_WELL': 2, 'GERUDO_TRAINING_GROUND': 3, 'INSIDE_GANONS_CASTLE': 3}
+OOTMM_SCENE = {'SCE_OOT_TEMPLE_FOREST': 'FOREST_TEMPLE', 'SCE_OOT_TEMPLE_FIRE': 'FIRE_TEMPLE',
+               'SCE_OOT_TEMPLE_WATER': 'WATER_TEMPLE', 'SCE_OOT_TEMPLE_SHADOW': 'SHADOW_TEMPLE',
+               'SCE_OOT_TEMPLE_SPIRIT': 'SPIRIT_TEMPLE', 'SCE_OOT_BOTTOM_OF_THE_WELL': 'BOTTOM_OF_THE_WELL',
+               'SCE_OOT_GERUDO_TRAINING_GROUND': 'GERUDO_TRAINING_GROUND',
+               'SCE_OOT_INSIDE_GANON_CASTLE': 'INSIDE_GANONS_CASTLE'}
+data_c = ootmm_file('packages/generator/src/common/data.c', 'afa6112bcee5a3b5110ae4ff7f6ea6c769143af8')
+if data_c:
+    mq_keys = {OOTMM_SCENE[scene]: int(count) for scene, count in re.findall(
+        r'if \(Config_IsMq\(MQ_\w+\)\)\s*\{\s*g\.maxKeysOot\[(SCE_OOT_\w+)\] = (\d+);', data_c)}
+    check(mq_keys == OOTMM_MQ_KEYS, f'data.c MQ key maxima differ: {mq_keys}')
+macros = re.findall(r'#define \w+_SMALL_KEY_MAX \(ResourceMgr_IsSceneMasterQuest\(SCENE_(\w+)\) \? \d+ : \d+\)',
+                    read(rando / 'randomizer.h'))
+check(sorted(macros) == sorted(OOTMM_MQ_KEYS), f'randomizer.h key macros cover {macros}')
+mq_counts = {scene: int(mq) for mq, scene in re.findall(r'RA_\w+, \d+, (\d+),\s*RSK_MQ_\w+,\s*SCENE_(\w+),',
+                                                         dungeon_cpp)}
+for scene, count in OOTMM_MQ_KEYS.items():
+    check(mq_counts.get(scene) == count, f'DungeonInfo mqKeyCount for {scene} is {mq_counts.get(scene)}, OoTMM {count}')
+check(all(mq_counts.get(scene) == 0 for scene in ('DEKU_TREE', 'DODONGOS_CAVERN', 'JABU_JABU', 'ICE_CAVERN')),
+      'dungeons without small keys must keep none in MQ')
+macro_lines = '\n'.join(re.findall(r'#define \w+_SMALL_KEY_MAX \(ResourceMgr_IsSceneMasterQuest\(SCENE_\w+\)[^\n]*',
+                                   read(rando / 'randomizer.h')))
+key_counts = r'''#include <cstdint>
+#include <cstdio>
+#include "mq/MqMode.h"
+using s16 = int16_t;
+enum SceneID { SCENE_FOREST_TEMPLE = 3, SCENE_FIRE_TEMPLE = 4, SCENE_WATER_TEMPLE = 5, SCENE_SPIRIT_TEMPLE = 6,
+               SCENE_SHADOW_TEMPLE = 7, SCENE_BOTTOM_OF_THE_WELL = 8, SCENE_GERUDO_TRAINING_GROUND = 0x0B,
+               SCENE_INSIDE_GANONS_CASTLE = 0x0D };
+ComboMq::MqModeInputs gInputs;
+extern "C" uint32_t ResourceMgr_IsSceneMasterQuest(s16) { return ComboMq::ResolveMqMode(gInputs).gameplayMq; }
+''' + macro_lines + r'''
+#define REQUIRE(x) do { if (!(x)) { fprintf(stderr, "failed: %s at line %d\n", #x, __LINE__); return 1; } } while (0)
+int main() {
+    // Every dungeon MQ from the bundled data, on an install without oot-mq.o2r.
+    gInputs.hasOriginal = true;
+    gInputs.bundledAvailable = true;
+    gInputs.quest = ComboMq::QuestKind::Randomizer;
+    gInputs.seedSource = ComboMq::SeedMqSource::Bundled;
+    gInputs.dungeon = ComboMq::DungeonQuest::MasterQuest;
+    REQUIRE(FOREST_TEMPLE_SMALL_KEY_MAX == @FOREST_TEMPLE@ && FIRE_TEMPLE_SMALL_KEY_MAX == @FIRE_TEMPLE@ &&
+            WATER_TEMPLE_SMALL_KEY_MAX == @WATER_TEMPLE@ && SPIRIT_TEMPLE_SMALL_KEY_MAX == @SPIRIT_TEMPLE@ &&
+            SHADOW_TEMPLE_SMALL_KEY_MAX == @SHADOW_TEMPLE@ && BOTTOM_OF_THE_WELL_SMALL_KEY_MAX == @BOTTOM_OF_THE_WELL@ &&
+            GERUDO_TRAINING_GROUND_SMALL_KEY_MAX == @GERUDO_TRAINING_GROUND@ &&
+            GANONS_CASTLE_SMALL_KEY_MAX == @INSIDE_GANONS_CASTLE@);
+    // The same seed's vanilla dungeons keep SoH's vanilla maxima (not OoTMM's MQ ones).
+    gInputs.dungeon = ComboMq::DungeonQuest::Vanilla;
+    REQUIRE(FOREST_TEMPLE_SMALL_KEY_MAX == 5 && WATER_TEMPLE_SMALL_KEY_MAX == 6 && SPIRIT_TEMPLE_SMALL_KEY_MAX == 5 &&
+            GERUDO_TRAINING_GROUND_SMALL_KEY_MAX == 9 && GANONS_CASTLE_SMALL_KEY_MAX == 2);
+    puts("key counts: a bundled seed's MQ dungeons get OoTMM's MQ small-key maxima");
+    return 0;
+}
+'''
+for scene, count in OOTMM_MQ_KEYS.items():
+    key_counts = key_counts.replace(f'@{scene}@', str(count))
+
 # --- MQ Spirit's silver blocks in room 6 ---------------------------------------------------------------------------
 # OoTMM patches the switch read in Obj_Oshihiki's Init (0x80a4f574, the call after ObjOshihiki_CheckType in the
 # overlay at 0x80a4efc0): a child in MQ Spirit reads switch 0x09 as unset (src/oot/actors/Obj/Obj_Oshihiki.c:5-13).
@@ -375,7 +461,8 @@ int main() {
 '''
 spirit = re.sub(r'\bthis\b', 'self', spirit).replace('@BLOCKS@', ', '.join(hex(b) for b in blocks))
 
-PROGRAMS = {'doors': doors, 'new_save': new_save, 'save_doors': save_doors, 'spirit_block': spirit}
+PROGRAMS = {'doors': doors, 'new_save': new_save, 'save_doors': save_doors, 'key_counts': key_counts,
+            'spirit_block': spirit}
 for name, code in PROGRAMS.items():
     source = work / f'mq_gameplay_{name}.cpp'
     source.write_text(code, encoding='utf-8')
