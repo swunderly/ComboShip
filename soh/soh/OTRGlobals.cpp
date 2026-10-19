@@ -4865,6 +4865,37 @@ extern "C" COMBO_EXPORT int SOH_SetKokiriGrassCatalogRevision(int revision) {
     return ctx && ctx->SetKokiriGrassCatalogRevision(revision) ? 1 : 0;
 }
 
+// ComboShip: the bound seed's Master Quest data source (combo/mq/MqMode.h SeedMqSource) for the launcher's
+// ComboMq::MqDataSourceScope; -1 without a context.
+extern "C" COMBO_EXPORT int SOH_GetMqDataSource(void) {
+    const auto ctx = Rando::Context::GetInstance();
+    return ctx ? static_cast<int>(ctx->GetMqDataSource()) : -1;
+}
+extern "C" COMBO_EXPORT int SOH_SetMqDataSource(int source) {
+    const auto ctx = Rando::Context::GetInstance();
+    return ctx && source >= 0 && ctx->SetMqDataSource(static_cast<ComboMq::SeedMqSource>(source)) ? 1 : 0;
+}
+// ComboShip: OoTMM's bundled Master Quest data can be played on this install (OTRGlobals::HasBundledMasterQuest).
+extern "C" COMBO_EXPORT int SOH_HasBundledMasterQuest(void) {
+    return OTRGlobals::Instance != nullptr && OTRGlobals::Instance->HasBundledMasterQuest() ? 1 : 0;
+}
+// ComboShip: the bound context's Master Quest dungeons, one bit per DungeonKey (OoTMM's MQ dungeon ids); -1
+// without a context.
+extern "C" COMBO_EXPORT int SOH_GetMqDungeonMask(void) {
+    const auto ctx = Rando::Context::GetInstance();
+    if (!ctx) {
+        return -1;
+    }
+    int mask = 0;
+    const auto dungeons = ctx->GetDungeons()->GetDungeonList();
+    for (size_t i = 0; i < dungeons.size(); i++) {
+        if (dungeons[i]->IsMQ()) {
+            mask |= 1 << i;
+        }
+    }
+    return mask;
+}
+
 extern "C" COMBO_EXPORT void SOH_PrepRandoContext(void) {
     try {
         auto ctx = OTRGlobals::Instance->gRandoContext;

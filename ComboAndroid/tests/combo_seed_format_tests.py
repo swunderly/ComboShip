@@ -47,6 +47,7 @@ source = r'''
 #include <map>
 #include <memory>
 #include <functional>
+#include <tuple>
 #include <vector>
 #include "ComboRandomizerSavedSeed.h"
 #include "rando/entrances/NativeBridge.h"
@@ -106,6 +107,9 @@ struct Settings {
 struct OTRGlobals {
     std::shared_ptr<Rando::Context> gRandoContext = std::make_shared<Rando::Context>();
     static OTRGlobals* Instance;
+    bool archiveMq = false, bundledMq = false;
+    bool HasMasterQuest() { return archiveMq; }
+    bool HasBundledMasterQuest() { return bundledMq; }
 };
 OTRGlobals globals;
 OTRGlobals* OTRGlobals::Instance = &globals;
@@ -405,6 +409,39 @@ int main() {
     assert(gSaveContext.fileNum == 1 && mutations > 0 && containerLoads == 1 && popups == 0);
     assert(manager.comboLoadState == ComboLoadState::Ready);
     assert(runtimeFlags == std::vector<uint32_t>{0}); // no layout: no ER-wide runtime flag
+    // Master Quest data source (combo/mq/MqSeedMarker.h): a save whose seed records the bundled data and has MQ
+    // dungeons is refused before any context or slot change where that data is off; an unmarked save is not, so
+    // file select keeps SoH's own rule for it.
+    auto mqPage = [&](const Json& data) {
+        Json page = nativePage;
+        page["sections"]["randomizer"] = {{"version", 1}, {"data", data}};
+        return page;
+    };
+    const Json marked = mqPage({{"mqDataSource", "ootmm-32.3"}, {"masterQuestDungeonCount", 2}});
+    const Json unknown = mqPage({{"mqDataSource", "ootmm-40.0"}, {"masterQuestDungeonCount", 0}});
+    const Json unmarked = mqPage({{"masterQuestDungeonCount", 2}});
+    for (const auto& [page, archive, bundled, loads] :
+         {std::tuple{marked, true, false, false}, std::tuple{unknown, true, true, false},
+          std::tuple{marked, false, true, true}, std::tuple{unmarked, false, false, true}}) {
+        globals.archiveMq = archive;
+        globals.bundledMq = bundled;
+        g_containerCache.clear();
+        write(ComboContainerPath(1), {{"oot", page}, {"combo", {{"rando", legacy(false)}}}});
+        SaveManager mqManager;
+        auto* context = globals.gRandoContext.get();
+        gSaveContext.fileNum = 2;
+        mutations = popups = 0;
+        runtimeFlags.clear();
+        assert(mqManager.LoadFile(1, true) == loads);
+        if (!loads) {
+            assert(mutations == 0 && popups == 1 && popupTitle == "Master Quest data unavailable");
+            assert(gSaveContext.fileNum == 2 && globals.gRandoContext.get() == context && runtimeFlags.empty());
+            assert(mqManager.comboLoadState == ComboLoadState::Blocked);
+        } else {
+            assert(popups == 0 && gSaveContext.fileNum == 1);
+        }
+    }
+    globals.archiveMq = globals.bundledMq = false;
     // A page with the launcher's runtime flags (Combo_ReadGameSave adds them for a layout this build accepts):
     // the loader takes them before any save context change and applies the page as stored.
     Json flagged = nativePage;

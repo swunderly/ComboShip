@@ -51,6 +51,7 @@ static ComboGameMode sBoundGameMode = COMBO_MODE_COMBINED;
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/GenerationRules.h"
 #include "rando/KokiriSeedRevision.h"
+#include "mq/MqSeedMarker.h"
 #include "rando/entrances/NativeBridge.h"
 #include "rando/entrances/MmGrottoNativeBridge.h"
 #include "rando/entrances/MmOrdinaryNativeBridge.h"
@@ -285,6 +286,14 @@ static ComboRando::FnGetKokiriSeedRevision SOH_GetKokiriSeedRevision = nullptr;
 static ComboRando::FnSetKokiriSeedRevision SOH_SetKokiriSeedRevision = nullptr;
 static ComboRando::FnGetKokiriSeedRevision SOH_GetKokiriGrassRevision = nullptr;
 static ComboRando::FnSetKokiriSeedRevision SOH_SetKokiriGrassRevision = nullptr;
+// The seed's Master Quest data source (combo/mq/MqSeedMarker.h), bound like the Kokiri revisions above.
+static ComboMq::FnGetMqDataSource SOH_GetMqDataSource = nullptr;
+static ComboMq::FnSetMqDataSource SOH_SetMqDataSource = nullptr;
+static ComboMq::FnHasBundledMq SOH_HasBundledMasterQuest = nullptr;
+static ComboMq::FnGetMqDungeonMask SOH_GetMqDungeonMask = nullptr;
+static bool BundledMqAvailable() {
+    return SOH_HasBundledMasterQuest && SOH_HasBundledMasterQuest();
+}
 static FnTakeStr MM_RestoreRandoSettings = nullptr;
 static FnTakeStr SOH_SetCheckPrices = nullptr;
 static FnTakeStr MM_SetCheckPrices = nullptr;
@@ -2335,6 +2344,9 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                                                        ComboRando::kKokiriModernRevision);
     ComboRando::KokiriGrassCatalogRevisionScope grassRevision(SOH_GetKokiriGrassRevision, SOH_SetKokiriGrassRevision,
                                                               ComboRando::kKokiriGrassModernRevision);
+    // A new seed's Master Quest dungeons use OoTMM's bundled data whenever this install has it (combo/mq/MqMode.h).
+    const auto mqSource = ComboMq::SourceForNewSeed(BundledMqAvailable());
+    ComboMq::MqDataSourceScope mqDataSource(SOH_GetMqDataSource, SOH_SetMqDataSource, mqSource);
     ComboRando::Entrances::NativeScope entranceRestore(sEntranceNative);
     ComboRando::CheckGenerationCancellation();
     struct SongRestore {
@@ -2949,6 +2961,7 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                                 { "iceTrapModels", ootIceTrapModels } };
         consolidated["oot"][ComboRando::kKokiriSeedRevision] = ComboRando::kKokiriModernRevision;
         consolidated["oot"][ComboRando::kKokiriGrassCatalogRevision] = ComboRando::kKokiriGrassModernRevision;
+        ComboMq::StampSeedMq(consolidated["oot"], mqSource, SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1);
         consolidated["mm"] = { { "settings", parseOrEmpty(MM_DumpRandoSettings) },
                                { "placements", mmSpoiler },
                                { "prices", pricesOf(mmDump) } };
@@ -3348,6 +3361,7 @@ static void Combo_FinalizeGenerate() {
     ++g_ComboContextEpoch;
     std::unique_ptr<ComboRando::KokiriSeedRevisionScope> kokiriRevision;
     std::unique_ptr<ComboRando::KokiriGrassCatalogRevisionScope> grassRevision;
+    std::unique_ptr<ComboMq::MqDataSourceScope> mqDataSource;
     try {
         const auto seed = nlohmann::json::parse(g_ConsolidatedJson);
         const auto catalog = ComboRando::ReadKokiriCatalogRevisions(seed.value("oot", nlohmann::json::object()));
@@ -3355,6 +3369,9 @@ static void Combo_FinalizeGenerate() {
             SOH_GetKokiriSeedRevision, SOH_SetKokiriSeedRevision, catalog.invisibleRupees);
         grassRevision = std::make_unique<ComboRando::KokiriGrassCatalogRevisionScope>(
             SOH_GetKokiriGrassRevision, SOH_SetKokiriGrassRevision, catalog.grass);
+        mqDataSource = std::make_unique<ComboMq::MqDataSourceScope>(
+            SOH_GetMqDataSource, SOH_SetMqDataSource,
+            ComboMq::ReadMqDataSource(seed.value("oot", nlohmann::json::object())));
         if (!CheckPendingEntranceSeed(seed)) {
             g_ComboProgress.SetError("Generated MM entrance layout could not be installed");
             g_ComboProgress.success.store(false);
@@ -3400,6 +3417,7 @@ static void Combo_FinalizeGenerate() {
     g_ComboReloadRestoreUserMM = false;
     kokiriRevision->Keep();
     grassRevision->Keep();
+    mqDataSource->Keep();
     g_ComboProgress.running.store(false);
 }
 
@@ -3576,6 +3594,11 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
             std::cerr << "[ComboShip] reload: the seed adds MM boots or tunics, which this device cannot run\n";
             return 0;
         }
+        if (!ComboMq::SeedMqPlayable(j.value("oot", nlohmann::json::object()), BundledMqAvailable())) {
+            std::cerr << "[ComboShip] reload: the seed has Master Quest dungeons from OoTMM's bundled data, which "
+                         "needs an NTSC-U 1.0 Ocarina of Time ROM\n";
+            return 0;
+        }
         const auto mode = ComboRando::ReadGameMode(j);
         if (!ComboRando::ModeRandomizesOot(mode)) {
             if (!CheckPendingEntranceSeed(j)) return 0;
@@ -3595,6 +3618,8 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
                                                            catalog.invisibleRupees);
         ComboRando::KokiriGrassCatalogRevisionScope grassRevision(SOH_GetKokiriGrassRevision,
                                                                   SOH_SetKokiriGrassRevision, catalog.grass);
+        ComboMq::MqDataSourceScope mqDataSource(SOH_GetMqDataSource, SOH_SetMqDataSource,
+                                                ComboMq::ReadMqDataSource(j.value("oot", nlohmann::json::object())));
         // Reproducing entrances must use the seed's own gameplay rules too. Silent startup
         // restores the menu's choices afterwards; a failed import always restores them.
         struct RuleRestoreGuard {
@@ -3700,6 +3725,13 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
             MM_SetComboRandoSeed(masterSeed);
         if (SOH_PrepRandoContext)
             SOH_PrepRandoContext();
+        // A bundled-MQ seed records its MQ dungeons; the replay must roll the same ones.
+        if (!ComboMq::ReplayKeepsMqDungeons(oot, SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1)) {
+            std::cerr << "[ComboShip] reload: the seed's Master Quest dungeons did not reproduce, aborting\n";
+            if (isSilentAutoLoad && SOH_RestoreRandoSettings)
+                SOH_RestoreRandoSettings(userOotSnapshot.c_str());
+            return 0;
+        }
         if (oot.contains("resolvedSeedRules") &&
             (!sProfileApplyResolvedRules || !sProfileApplyResolvedRules(oot["resolvedSeedRules"].dump().c_str())))
             return 0;
@@ -3774,6 +3806,7 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
         std::cout << "[ComboShip] reloaded combo seed from " << file << "\n";
         kokiriRevision.Keep();
         grassRevision.Keep();
+        mqDataSource.Keep();
         ruleGuard.keep = !isSilentAutoLoad;
         return 1;
     } catch (const std::exception& e) {
@@ -4481,6 +4514,10 @@ int main(int argc, char** argv) {
         (ComboRando::FnGetKokiriSeedRevision)GetSym(sohModule, "SOH_GetKokiriGrassCatalogRevision");
     SOH_SetKokiriGrassRevision =
         (ComboRando::FnSetKokiriSeedRevision)GetSym(sohModule, "SOH_SetKokiriGrassCatalogRevision");
+    SOH_GetMqDataSource = (ComboMq::FnGetMqDataSource)GetSym(sohModule, "SOH_GetMqDataSource");
+    SOH_SetMqDataSource = (ComboMq::FnSetMqDataSource)GetSym(sohModule, "SOH_SetMqDataSource");
+    SOH_HasBundledMasterQuest = (ComboMq::FnHasBundledMq)GetSym(sohModule, "SOH_HasBundledMasterQuest");
+    SOH_GetMqDungeonMask = (ComboMq::FnGetMqDungeonMask)GetSym(sohModule, "SOH_GetMqDungeonMask");
     MM_RestoreRandoSettings = (FnTakeStr)GetSym(mmModule, "MM_RestoreRandoSettings");
     SOH_SetCheckPrices = (FnTakeStr)GetSym(sohModule, "SOH_SetCheckPrices");
     MM_SetCheckPrices = (FnTakeStr)GetSym(mmModule, "MM_SetCheckPrices");

@@ -13,6 +13,9 @@ typedef struct {
     u16 health;
     u32 requiresMasterQuest;
     u32 requiresOriginal;
+#ifdef COMBO_BUILD
+    u8 mqDataSource; // ComboShip: the seed's Master Quest data source (combo/mq/MqMode.h SeedMqSource)
+#endif
     u8 seedHash[5];
     u8 randoSave;
     char buildVersion[50];

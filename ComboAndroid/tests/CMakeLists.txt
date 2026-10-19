@@ -527,6 +527,29 @@ if(COMBO_SOURCE_DIR)
     add_test(NAME mq_mode_resolver_truth_table COMMAND mq_mode_resolver_tests)
     # SoH's MQ predicate split: the ten asset callers ask the asset answer, all others the gameplay answer.
     combo_python_test(mq_predicates_split_gameplay_and_assets mq_asset_split_tests.py)
+    # Where saves, spoilers, the launcher and the headless generator write, bind and enforce the MQ marker.
+    combo_python_test(mq_seed_marker_wired_through_saves_and_seeds mq_seed_marker_wiring_tests.py)
+endif()
+
+if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
+    # The per-seed and per-save MQ data-source marker (combo/mq/MqSeedMarker.h) through saves, seeds and profiles.
+    add_executable(mq_seed_marker_tests mq_seed_marker_tests.cpp)
+    # The saved-seed header includes the C++20 entrance headers (rando/ComboSeedFormat.h).
+    target_compile_features(mq_seed_marker_tests PRIVATE cxx_std_20)
+    target_include_directories(mq_seed_marker_tests PRIVATE "${COMBO_SOURCE_DIR}" "${COMBO_JSON_INCLUDE_DIR}")
+    if(MSVC)
+        target_compile_options(mq_seed_marker_tests PRIVATE /W4 /WX /UNDEBUG)
+    else()
+        target_compile_options(mq_seed_marker_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    endif()
+    add_test(NAME mq_seed_marker_round_trip COMMAND mq_seed_marker_tests)
+    # Local only: every .combosav under a local-roms folder beside the checkout still reads as Legacy.
+    add_test(NAME mq_seed_marker_keeps_local_saves_legacy COMMAND mq_seed_marker_tests --local "${COMBO_REPO_DIR}")
+    set_tests_properties(mq_seed_marker_keeps_local_saves_legacy PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+else()
+    foreach(test mq_seed_marker_round_trip mq_seed_marker_keeps_local_saves_legacy)
+        combo_skipped_test(${test} "${COMBO_NEEDS_JSON}")
+    endforeach()
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)

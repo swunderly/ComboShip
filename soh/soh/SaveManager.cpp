@@ -4,6 +4,7 @@
 #include "ComboExport.h"
 #include "rando/KokiriSeedRevision.h"
 #include "rando/ComboSeedFormat.h"
+#include "mq/MqSeedMarker.h"
 #endif
 #include "OTRGlobals.h"
 #include "Enhancements/game-interactor/GameInteractor.h"
@@ -172,6 +173,9 @@ SaveManager::SaveManager() {
         info.randoSave = 0;
         info.requiresMasterQuest = 0;
         info.requiresOriginal = 0;
+#ifdef COMBO_BUILD
+        info.mqDataSource = 0;
+#endif
 
         info.buildVersionMajor = 0;
         info.buildVersionMinor = 0;
@@ -190,6 +194,9 @@ void SaveManager::LoadRandomizer() {
     const auto catalog = ComboRando::ReadKokiriCatalogRevisions(*SaveManager::Instance->currentJsonContext);
     randoContext->SetKokiriSeedRevision(catalog.invisibleRupees);
     randoContext->SetKokiriGrassCatalogRevision(catalog.grass);
+    // The seed's Master Quest data source (combo/mq/MqSeedMarker.h); absent is Legacy. LoadFile already refused a
+    // marker this build does not know.
+    randoContext->SetMqDataSource(ComboMq::MqDataSourceOf(*SaveManager::Instance->currentJsonContext));
 #endif
     SaveManager::Instance->LoadArray("itemLocations", RC_MAX, [&](size_t i) {
         SaveManager::Instance->LoadStruct("", [&]() {
@@ -330,6 +337,9 @@ void SaveManager::SaveRandomizer(SaveContext* saveContext, int sectionID, bool f
     SaveManager::Instance->SaveData(ComboRando::kKokiriSeedRevision, randoContext->GetKokiriSeedRevision());
     SaveManager::Instance->SaveData(ComboRando::kKokiriGrassCatalogRevision,
                                     randoContext->GetKokiriGrassCatalogRevision());
+    if (const char* mqMarker = ComboMq::MarkerForSeedMqSource(randoContext->GetMqDataSource())) {
+        SaveManager::Instance->SaveData(ComboMq::kMqDataSourceKey, std::string(mqMarker));
+    }
 #endif
 
     SaveManager::Instance->SaveArray("itemLocations", RC_MAX, [&](size_t i) {
@@ -713,6 +723,9 @@ void SaveManager::StartupCheckAndInitMeta(int fileNum) {
         // If the file is not marked as Master Quest, it could still theoretically be a rando save with all 12 MQ
         // dungeons, in which case we don't actually require a vanilla OTR.
         fileMetaInfo[fileNum].requiresOriginal = randoBlock["masterQuestDungeonCount"] < 12;
+#ifdef COMBO_BUILD
+        fileMetaInfo[fileNum].mqDataSource = static_cast<u8>(ComboMq::MqDataSourceOf(randoBlock));
+#endif
     }
 
     fileMetaInfo[fileNum].buildVersionMajor = metaSaveBlock["sections"]["sohStats"]["data"]["buildVersionMajor"];
@@ -769,6 +782,10 @@ void SaveManager::InitMeta(int fileNum) {
     // in which case we don't actually require a vanilla OTR.
     fileMetaInfo[fileNum].requiresOriginal =
         !IS_MASTER_QUEST && (!IS_RANDO || randoContext->GetDungeons()->CountMQ() < 12);
+#ifdef COMBO_BUILD
+    fileMetaInfo[fileNum].mqDataSource =
+        static_cast<u8>(IS_RANDO ? randoContext->GetMqDataSource() : ComboMq::SeedMqSource::Legacy);
+#endif
 
     fileMetaInfo[fileNum].buildVersionMajor = gSaveContext.ship.stats.buildVersionMajor;
     fileMetaInfo[fileNum].buildVersionMinor = gSaveContext.ship.stats.buildVersionMinor;
@@ -1487,6 +1504,20 @@ bool SaveManager::LoadFile(int fileNum, bool initializeFullContext) {
             SohGui::RegisterPopup("Unsupported seed revision",
                                   "The save in slot " + std::to_string(fileNum + 1) +
                                       " uses an unsupported Kokiri check catalog revision.");
+            return false;
+        }
+        // A save whose seed records a Master Quest data source this install lacks (combo/mq/MqMode.h): the bundled
+        // OoTMM data off this ROM version, or a marker this build does not know. Saves without the marker pass.
+        const auto mqNeeds = ComboMq::ReadSaveMqNeeds(parsedSave);
+        if (ComboMq::SaveRefusedForMq(mqNeeds, OTRGlobals::Instance->HasMasterQuest(),
+                                      OTRGlobals::Instance->HasBundledMasterQuest())) {
+            SPDLOG_ERROR("Master Quest data source rejected slot {}", fileNum);
+            SohGui::RegisterPopup("Master Quest data unavailable",
+                                  "The save in slot " + std::to_string(fileNum + 1) +
+                                      (mqNeeds.source == ComboMq::SeedMqSource::Bundled
+                                           ? " has Master Quest dungeons from OoTMM's bundled data, which needs an "
+                                             "NTSC-U 1.0 Ocarina of Time ROM."
+                                           : " uses a Master Quest data source this version does not know."));
             return false;
         }
         // The slot seed's ER-wide runtime flags, which Sram_StageOpenedSave reads when it picks the spawn,

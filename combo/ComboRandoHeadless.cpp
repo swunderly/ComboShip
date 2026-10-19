@@ -57,6 +57,7 @@
 #include "rando/GameplayRules.h"
 #include "rando/GenerationRules.h"
 #include "rando/KokiriSeedRevision.h"
+#include "mq/MqSeedMarker.h"
 #include "rando/entrances/MmOrdinaryNativeBridge.h"
 #include "rando/entrances/MmOrdinaryGenerationSettings.h"
 #include "rando/entrances/MmMixedNativeBridge.h"
@@ -416,6 +417,9 @@ int RunHeadless(int argc, char** argv) {
     auto SOH_SetKokiriRevision = Sym<ComboRando::FnSetKokiriSeedRevision>(soh, "SOH_SetKokiriSeedRevision");
     auto SOH_SetKokiriGrassRevision =
         Sym<ComboRando::FnSetKokiriSeedRevision>(soh, "SOH_SetKokiriGrassCatalogRevision");
+    auto SOH_SetMqDataSource = Sym<ComboMq::FnSetMqDataSource>(soh, "SOH_SetMqDataSource");
+    auto SOH_HasBundledMq = Sym<ComboMq::FnHasBundledMq>(soh, "SOH_HasBundledMasterQuest");
+    auto SOH_GetMqDungeonMask = Sym<ComboMq::FnGetMqDungeonMask>(soh, "SOH_GetMqDungeonMask");
     auto SOH_PrepContext = Sym<FnVoidV>(soh, "SOH_PrepRandoContext");
     auto MM_RestoreSettings = Sym<FnTakeStr>(mm, "MM_RestoreRandoSettings");
     auto SOH_SetSeed = Sym<FnSetSeed>(soh, "SOH_SetComboRandoSeed");
@@ -552,8 +556,10 @@ int RunHeadless(int argc, char** argv) {
         }
         try {
             const auto catalog = ComboRando::ReadKokiriCatalogRevisions(spoiler.value("oot", nlohmann::json::object()));
+            const auto mqSource = ComboMq::ReadMqDataSource(spoiler.value("oot", nlohmann::json::object()));
             ComboRando::ApplyKokiriSeedRevision(SOH_SetKokiriRevision, catalog.invisibleRupees);
             ComboRando::ApplyKokiriSeedRevision(SOH_SetKokiriGrassRevision, catalog.grass);
+            ComboMq::ApplyMqDataSource(SOH_SetMqDataSource, mqSource);
         } catch (const std::exception& error) {
             std::cerr << "[playthrough] " << error.what() << "\n";
             return 2;
@@ -871,6 +877,7 @@ int RunHeadless(int argc, char** argv) {
     // ---- Generate + validate mode. ----
     int kokiriRevision = ComboRando::kKokiriModernRevision;
     int grassRevision = ComboRando::kKokiriGrassModernRevision;
+    auto mqSource = ComboMq::SourceForNewSeed(SOH_HasBundledMq && SOH_HasBundledMq());
     nlohmann::json savedGoal;
     int savedStartingGame = -1;
     bool hasSavedSharedItems = false;
@@ -921,6 +928,7 @@ int RunHeadless(int argc, char** argv) {
             const auto catalog = ComboRando::ReadKokiriCatalogRevisions(oot);
             kokiriRevision = catalog.invisibleRupees;
             grassRevision = catalog.grass;
+            mqSource = ComboMq::ReadMqDataSource(oot);
             if (oot.contains("settings"))
                 SOH_RestoreSettings(oot["settings"].dump().c_str());
             if (mm.contains("settings"))
@@ -958,6 +966,7 @@ int RunHeadless(int argc, char** argv) {
     try {
         ComboRando::ApplyKokiriSeedRevision(SOH_SetKokiriRevision, kokiriRevision);
         ComboRando::ApplyKokiriSeedRevision(SOH_SetKokiriGrassRevision, grassRevision);
+        ComboMq::ApplyMqDataSource(SOH_SetMqDataSource, mqSource);
     } catch (const std::exception& error) {
         std::cerr << "[comborando] " << error.what() << "\n";
         return 2;
@@ -1414,6 +1423,8 @@ int RunHeadless(int argc, char** argv) {
                                             { "iceTrapModels", iceTrapModelsOf(sohDump) } };
                     consolidated["oot"][ComboRando::kKokiriSeedRevision] = kokiriRevision;
                     consolidated["oot"][ComboRando::kKokiriGrassCatalogRevision] = grassRevision;
+                    ComboMq::StampSeedMq(consolidated["oot"], mqSource,
+                                         SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1);
                     consolidated["mm"] = { { "settings", nlohmann::json::parse(MM_DumpSettings()) },
                                            { "placements", mmPl },
                                            { "prices", pricesOf(mmDump) } };

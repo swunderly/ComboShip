@@ -148,9 +148,15 @@ s16 sWindowContentColors[2][3] = {
 
 static int FileChoose_IsSaveCompatible(const SaveFileMetaInfo* restrict meta) {
     bool valid = true;
+#ifdef COMBO_BUILD
+    // ComboShip: the save's Master Quest data source decides (combo/mq/MqMode.h CanPlayMqDungeons). For a save
+    // without the marker that is the rule below: requiresMasterQuest needs a real oot-mq.o2r.
+    valid = valid && ResourceMgr_SaveMqPlayable(meta->mqDataSource, meta->requiresMasterQuest);
+#else
     if (meta->requiresMasterQuest) {
         valid = valid && ResourceMgr_GameHasMasterQuest();
     }
+#endif
     if (meta->requiresOriginal) {
         valid = valid && ResourceMgr_GameHasOriginal();
     }

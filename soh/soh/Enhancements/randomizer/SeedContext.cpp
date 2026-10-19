@@ -1,6 +1,7 @@
 #include "SeedContext.h"
 #ifdef COMBO_BUILD
 #include "rando/KokiriSeedRevision.h"
+#include "mq/MqSeedMarker.h"
 #endif
 #include "static_data.h"
 #include "silver_rupees/SilverRupees.h"
@@ -461,6 +462,7 @@ void Context::ParseSpoiler(const char* spoilerFileName) {
 #ifdef COMBO_BUILD
     const int previousKokiriRevision = GetKokiriSeedRevision();
     const int previousGrassRevision = GetKokiriGrassCatalogRevision();
+    const auto previousMqSource = GetMqDataSource();
 #endif
     std::ifstream spoilerFileStream(SohUtils::Sanitize(spoilerFileName));
     if (!spoilerFileStream) {
@@ -474,8 +476,10 @@ void Context::ParseSpoiler(const char* spoilerFileName) {
         spoilerFileStream.close();
 #ifdef COMBO_BUILD
         const auto catalog = ComboRando::ReadKokiriCatalogRevisions(spoilerFileJson);
+        const auto mqSource = ComboMq::ReadMqDataSource(spoilerFileJson); // absent is Legacy
         SetKokiriSeedRevision(catalog.invisibleRupees);
         SetKokiriGrassCatalogRevision(catalog.grass);
+        SetMqDataSource(mqSource);
 #endif
         ParseHashIconIndexesJson(spoilerFileJson);
         Rando::Settings::GetInstance()->ParseJson(spoilerFileJson);
@@ -491,6 +495,7 @@ void Context::ParseSpoiler(const char* spoilerFileName) {
 #ifdef COMBO_BUILD
         SetKokiriSeedRevision(previousKokiriRevision);
         SetKokiriGrassCatalogRevision(previousGrassRevision);
+        SetMqDataSource(previousMqSource);
 #endif
         LUSLOG_ERROR("Failed to load Spoiler File: %s", spoilerFileName);
     }

@@ -71,7 +71,7 @@ inline Json NativeSeedRulesFromContainer(const Json& container, const Entrances:
     if (data && data->is_object())
         for (const char* field :
              { "randoSettings", "requiredTrials", "trickOptions", "masterQuestDungeonCount", "masterQuestDungeons",
-               "entrances", "kokiriInvisibleRupeeRevision", "kokiriGrassCatalogRevision" })
+               "entrances", "kokiriInvisibleRupeeRevision", "kokiriGrassCatalogRevision", ComboMq::kMqDataSourceKey })
             if (data->contains(field))
                 result["oot"][field] = data->at(field);
     if (data && data->is_object()) {

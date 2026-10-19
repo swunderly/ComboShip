@@ -2,6 +2,7 @@
 #include <nlohmann/json.hpp>
 #include "rando/KokiriSeedRevision.h"
 #include "rando/ComboSeedFormat.h"
+#include "mq/MqSeedMarker.h"
 #include <array>
 #include <cstdint>
 #include <stdexcept>
@@ -29,7 +30,8 @@ inline Json SettingsDocument(const Json& seed, const Entrances::CapabilitySet& c
         if (result.contains(game)) {
             if (!result[game].is_object())
                 throw std::invalid_argument("Malformed game settings document");
-            for (const char* output : { "placements", "prices", "iceTrapModels", "resolvedSeedRules" })
+            for (const char* output :
+                 { "placements", "prices", "iceTrapModels", "resolvedSeedRules", ComboMq::kMqDungeonsKey })
                 result[game].erase(output);
             if (result[game].contains("settings") && !result[game]["settings"].is_object())
                 throw std::invalid_argument("Malformed native settings snapshot");
@@ -66,6 +68,7 @@ inline Json SetupForSeed(const Json& seed, const Entrances::CapabilitySet& caps)
     RequireSupportedSeedCapabilities(seed, caps); // a seed's layout keeps its routes
     auto setup = SettingsDocument(seed, caps);
     const auto catalog = ReadKokiriCatalogRevisions(seed.value("oot", Json::object()));
+    const auto mqSource = ComboMq::ReadMqDataSource(seed.value("oot", Json::object()));
     if (seed.contains("comboProfile")) {
         const auto& profile = seed["comboProfile"];
         if (!profile.is_object() || profile.value("version", 0) != 1 || !profile.contains("settings") ||
@@ -77,6 +80,8 @@ inline Json SetupForSeed(const Json& seed, const Entrances::CapabilitySet& caps)
     // reward catalog. Only a newly generated seed selects its new catalog.
     setup["oot"][kKokiriSeedRevision] = catalog.invisibleRupees;
     setup["oot"][kKokiriGrassCatalogRevision] = catalog.grass;
+    // Likewise its Master Quest data source (combo/mq/MqSeedMarker.h); a Legacy seed's setup has none.
+    ComboMq::WriteMqDataSource(setup["oot"], mqSource);
     return setup;
 }
 struct Attempt {

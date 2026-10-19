@@ -24,6 +24,7 @@ reload = text[start:end]
 program = r'''
 #include "rando/GameMode.h"
 #include "rando/GearRules.h"
+#include "mq/MqSeedMarker.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>
@@ -53,6 +54,9 @@ void (*SOH_SetSeedGenerated)(uint8_t) = SetReady;
 bool CheckPendingEntranceSeed(const Json&) { ++entranceQueries; return entranceAllowed; }
 std::string WriteComboSpoiler(const Json&, const std::string&) { ++writes; return "seed.json"; }
 void RememberComboSpoiler(const std::string&) {}
+bool bundledMq = true;
+int mqQueries = 0;
+bool BundledMqAvailable() { ++mqQueries; return bundledMq; }
 '''
 program += gear
 program += '\nint Reload(const Json& j, bool profileSeed) {\n' + reload + '\nreturn 2;\n}\n'
@@ -63,6 +67,7 @@ void Reset() {
     g_UserMMSettingsSnapshot = "before-user"; g_FinalizeDisplaySeed = 444;
     g_ComboReloadRestoreUserMM = false; lastHash = 444; lastSeed = 0;
     allowed = entranceAllowed = true; MM_GearOptionsAllowed = GearAllowed;
+    bundledMq = true; mqQueries = 0;
 }
 void Unchanged() {
     assert(g_ConsolidatedJson == "before" && g_PendingMMSettingsJson == "before-mm");
@@ -86,6 +91,28 @@ int main() {
             }
         }
         j.erase("gearRules");
+        // A seed whose MQ dungeons come from the bundled data is refused before any mutation where that data is
+        // off (another ROM version); one with no MQ dungeon, and every unmarked seed, passes as before.
+        for (bool profile : {false, true}) {
+            Json mq = j;
+            mq["oot"] = {{"mqDataSource", "ootmm-32.3"}, {"masterQuestDungeons", Json::array({3, 6})}};
+            Reset(); bundledMq = false;
+            assert(Reload(mq, profile) == 0); assert(mqQueries == 1); Unchanged();
+            Json unknown = j;
+            unknown["oot"] = {{"mqDataSource", "ootmm-40.0"}, {"masterQuestDungeons", Json::array()}};
+            Reset();
+            bool refused = false;
+            try { Reload(unknown, profile); } catch (const ComboMq::UnsupportedMqDataSource&) { refused = true; }
+            assert(refused); Unchanged(); // production's catch returns 0
+            if (ComboRando::ModeRandomizesOot(ComboRando::ReadGameMode(j))) continue;
+            for (const Json& oot : {Json::object(), Json{{"mqDataSource", "ootmm-32.3"},
+                                                         {"masterQuestDungeons", Json::array()}}}) {
+                Json playable = j;
+                playable["oot"] = oot;
+                Reset(); bundledMq = false;
+                assert(Reload(playable, profile) == 1);
+            }
+        }
         if (ComboRando::ModeRandomizesOot(ComboRando::ReadGameMode(j))) continue;
         for (bool profile : {false, true}) {
             Reset();
@@ -104,4 +131,5 @@ cpp = a.build_dir / 'home_mode_reload.cpp'
 cpp.write_text(program, encoding='utf-8')
 exe = hostcxx.build(a.compiler, cpp, includes=[a.source / 'combo', a.json_include], werror=True)
 subprocess.run([str(exe)], cwd=a.build_dir, check=True, timeout=hostcxx.RUN_TIMEOUT)
-print('Production reload admits gear before mutations and restores solo/vanilla name-entry hash icons.')
+print('Production reload admits gear and bundled MQ data before mutations and restores solo/vanilla name-entry '
+      'hash icons.')

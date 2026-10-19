@@ -357,6 +357,10 @@ void SpoilerLog_Write() {
 #ifdef COMBO_BUILD
     jsonData["kokiriInvisibleRupeeRevision"] = ctx->GetKokiriSeedRevision();
     jsonData["kokiriGrassCatalogRevision"] = ctx->GetKokiriGrassCatalogRevision();
+    // The Master Quest data source (combo/mq/MqMode.h); a Legacy seed writes none, as before.
+    if (const char* mqMarker = ComboMq::MarkerForSeedMqSource(ctx->GetMqDataSource())) {
+        jsonData[ComboMq::kMqDataSourceKey] = mqMarker;
+    }
 #endif
 
     // Write Hash
