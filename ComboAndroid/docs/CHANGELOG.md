@@ -17,7 +17,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 - **Song of Soaring at any age (OoT) is an option again, as OoTMM's Ageless Song of Soaring.** It is on the Warps & travel page of both the Randomizer and Enhancements tabs. With it off, as in OoTMM, only child Link can play Soaring in OoT, and logic only uses child Soaring. The Beginner preset turns it on, as OoTMM's Beginner does. **Files you already started keep Soaring at any age** automatically, as before, so an adult route to MM in a running file still works.
 - **Cross-game warp songs now get an answer where OoTMM does not allow them.** An OoT warp song played in MM where Song of Soaring cannot be used, such as the Clock Tower rooftop, the Astral Observatory or the Moon, now plays and then shows MM's message that your notes echoed but nothing happened. Song of Soaring played in OoT where OoTMM blocks it, such as inside the Temple of Time, in the Market, in houses and in shops, now plays and then shows "You can't warp here!". Before, the notes were ignored and nothing appeared.
 
-Tested: host tests pass; the change builds. Released for phone testing without an emulator run. Not tested on a phone.
+Tested: 169 automated host tests pass (2 skipped on Windows), including new checks that old runs keep Soaring at any age and new ones follow the option. Released for phone testing without an emulator run. Not tested on a phone.
 
 ## 0.4.10 - 2026-10-18
 
