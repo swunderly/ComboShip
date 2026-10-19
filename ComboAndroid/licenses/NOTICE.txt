@@ -9,6 +9,12 @@ Apache License 2.0. https://github.com/JetBrains/kotlin
 Gradle 8.11.1 wrapper/build tooling: Gradle and contributors. See Gradle-LICENSE.txt.
 https://github.com/gradle/gradle
 
+Master Quest dungeon data: combo/mq/data/mq_rooms.bin, mq_scenes.bin and mq_maps.bin from
+OoTMM v32.3, Copyright (c) 2020-2022 OoTMM Team, MIT License. See OoTMM-MIT-LICENSE.txt.
+https://github.com/OoTMM/OoTMM
+OoTMM extracted these files from the Ocarina of Time Master Quest ROM. They are compiled
+into the native library unchanged; combo/mq/README.md gives their source and checksums.
+
 Native dependency licenses are collected from the pinned upstream and build trees
 into the APK's assets/licenses directory by tools/stage_runtime.py. Source and
 patch provenance is documented in ../README.md and ../BUILDING.md.

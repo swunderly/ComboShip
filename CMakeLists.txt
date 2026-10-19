@@ -309,6 +309,10 @@ endif()
 # Sub-projects - Game-specific builds
 ################################################################################
 add_subdirectory(soh ${CMAKE_BINARY_DIR}/soh)
+# ComboShip: OoTMM v32.3's Master Quest data and its decoder (combo/mq/README.md) compile into soh, so the
+# app, the desktop build and the headless generator all carry the same pinned copy.
+include("${CMAKE_SOURCE_DIR}/combo/mq/ComboMq.cmake")
+combo_mq_add_sources(soh)
 
 add_subdirectory(mm ${CMAKE_BINARY_DIR}/mm)
 

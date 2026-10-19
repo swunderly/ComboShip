@@ -492,6 +492,25 @@ if(COMBO_SOURCE_DIR)
     add_test(NAME mm_enhancement_logic COMMAND mm_enhancement_logic_tests)
 endif()
 
+if(COMBO_SOURCE_DIR)
+    # combo/mq: OoTMM v32.3's Master Quest bins, embedded and pinned exactly as in the soh build, and their decoder.
+    include("${COMBO_SOURCE_DIR}/mq/ComboMq.cmake")
+    add_executable(combo_mq_data_tests combo_mq_data_tests.cpp)
+    combo_mq_add_sources(combo_mq_data_tests)
+    target_include_directories(combo_mq_data_tests PRIVATE "${COMBO_SOURCE_DIR}")
+    target_compile_definitions(combo_mq_data_tests PRIVATE COMBO_MQ_DATA_DIR="${COMBO_SOURCE_DIR}/mq/data"
+        _CRT_SECURE_NO_WARNINGS)
+    if(MSVC)
+        target_compile_options(combo_mq_data_tests PRIVATE /W4 /WX /UNDEBUG)
+    else()
+        target_compile_options(combo_mq_data_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    endif()
+    add_test(NAME mq_bundled_data_counts_fixes_and_fail_closed COMMAND combo_mq_data_tests)
+    combo_python_test(mq_bins_pins_reference_reader_and_notices mq_bins_reference_tests.py
+        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/mq_bins_reference"
+        --exe $<TARGET_FILE:combo_mq_data_tests> --cmake "${CMAKE_COMMAND}")
+endif()
+
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
     # Use the actual first (COMBO_BUILD) definitions from MM's production
     # header. Fail configuration if a renamed/missing macro stops coverage.
