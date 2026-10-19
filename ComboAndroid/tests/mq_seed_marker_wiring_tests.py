@@ -6,10 +6,10 @@ mq_seed_marker_tests.cpp checks the marker's helpers; this scan checks that the 
   greys it out and, when it is chosen, shows LoadFile's explanation, while a save without the marker keeps SoH's own
   rule;
 - SoH's spoiler writes and reads the marker like the Kokiri revisions;
-- a new Combo seed (in game and headless) binds the bundled source when the install has it and stamps it with its MQ
-  dungeons into the seed document, except an MM-only seed, which rolls no OoT dungeons and records none; a reloaded
-  or replayed seed binds its own recorded source, is refused before any
-  state changes when its MQ data is missing, and must roll the MQ dungeons it recorded.
+- a new Combo seed (in game, headless and in the COMBO_GENTEST and COMBO_PLAYTHROUGH tools) binds the bundled source
+  when the install has it and stamps it with its MQ dungeons into the seed document, except an MM-only seed, which
+  rolls no OoT dungeons and records none; a reloaded or replayed seed binds its own recorded source, is refused before
+  any state changes when its MQ data is missing, and must roll the MQ dungeons it recorded.
 """
 from pathlib import Path
 import argparse
@@ -135,6 +135,17 @@ check(re.search(r'ComboMq::StampSeedMq\(consolidated\["oot"\],\s*ComboRando::Mod
       'a new seed document must record its source and MQ dungeons; an MM-only seed rolls none and records none')
 check(fill.count('ComboMq::StampSeedMq(') == 1, 'RunComboFill stamps the seed document once')
 check('mqDataSource.Keep()' not in fill, 'the generation scope must give the source back; finalize binds it')
+# The developer generators (COMBO_GENTEST, COMBO_PLAYTHROUGH) bind RunComboFill's source before their first dump, so
+# they roll the MQ dungeons a new seed would.
+bind = body(ship, 'static std::unique_ptr<ComboMq::MqDataSourceScope> BindNewSeedMqSource(const char* tag)')
+check(re.search(r'return std::make_unique<ComboMq::MqDataSourceScope>\(SOH_GetMqDataSource, SOH_SetMqDataSource,\s*'
+                r'ComboMq::SourceForNewSeed\(BundledMqAvailable\(\)\)\);', bind),
+      'the developer generators must bind the bundled source when the install has it')
+for name, tag in (('static int RunComboGenTest(', 'GENTEST'), ('static void RunComboPlaythrough(', 'PLAYTHROUGH')):
+    tool = body(ship, name)
+    check(re.search(r'const auto mqDataSource = BindNewSeedMqSource\("\[' + tag + r'\]"\);\s*if \(!mqDataSource\)\s*'
+                    r'return', tool), f'{name} must bind the new-seed MQ source')
+    before(tool, 'BindNewSeedMqSource(', 'SOH_DumpRandoStaticData()', f'{name} must bind the MQ source before a dump')
 finalize = body(ship, 'static void Combo_FinalizeGenerate()')
 check(re.search(r'mqDataSource = std::make_unique<ComboMq::MqDataSourceScope>\(\s*SOH_GetMqDataSource, '
                 r'SOH_SetMqDataSource,\s*ComboMq::ReadMqDataSource\(seed\.value\("oot", nlohmann::json::object\(\)\)\)\);',

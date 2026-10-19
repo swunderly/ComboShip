@@ -3051,6 +3051,18 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     g_GenerateBusy = false;
 }
 
+// RunComboFill's Master Quest data source, for the developer generators below: the bundled data whenever this
+// install has it, so they roll a new seed's MQ dungeons. Null, with the reason printed, when it cannot be bound.
+static std::unique_ptr<ComboMq::MqDataSourceScope> BindNewSeedMqSource(const char* tag) {
+    try {
+        return std::make_unique<ComboMq::MqDataSourceScope>(SOH_GetMqDataSource, SOH_SetMqDataSource,
+                                                            ComboMq::SourceForNewSeed(BundledMqAvailable()));
+    } catch (const std::exception& error) {
+        std::cerr << tag << " " << error.what() << "\n";
+        return nullptr;
+    }
+}
+
 // ComboShip: headless cross-world generation TEST (COMBO_GENTEST=<count>). Runs the combined fill
 // over a seed range; a seed "succeeds" only if every advancement check in both games is reachable
 // from an empty start (honoring the OOT->MM portal gate) — i.e. provably 100%-completable. Uses the
@@ -3067,6 +3079,9 @@ static int RunComboGenTest(int numSeeds, uint32_t seedBase) {
         std::cerr << "[GENTEST] dump functions not resolved — cannot run\n";
         return -1;
     }
+    const auto mqDataSource = BindNewSeedMqSource("[GENTEST]");
+    if (!mqDataSource)
+        return -1;
     ComboRando::OracleFns ootOracle = {
         Combo_SOH_Rando_Reset,      Combo_SOH_Rando_SetOwnedItems, Combo_SOH_Rando_GetReachableChecks,
         Combo_SOH_Rando_PlaceItem,  Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals,
@@ -3199,6 +3214,9 @@ static void RunComboPlaythrough(const std::string& inputSeed) {
         std::cerr << "[PLAYTHROUGH] dump functions not resolved\n";
         return;
     }
+    const auto mqDataSource = BindNewSeedMqSource("[PLAYTHROUGH]");
+    if (!mqDataSource)
+        return;
     ComboRando::OracleFns ootOracle = {
         Combo_SOH_Rando_Reset,      Combo_SOH_Rando_SetOwnedItems, Combo_SOH_Rando_GetReachableChecks,
         Combo_SOH_Rando_PlaceItem,  Combo_SOH_Rando_GetPortalOpen, SOH_SetSongArrivals,
