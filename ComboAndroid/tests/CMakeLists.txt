@@ -556,6 +556,19 @@ if(COMBO_SOURCE_DIR)
     # Actor_Spawn guard, and no cached resource written.
     combo_harness_test(mq_runtime_wired_into_scene_commands mq_runtime_wiring_tests.py
         --blobs "${CMAKE_BINARY_DIR}/generated/combo_mq")
+    # The developer MQ room log (combo/mq/MqRoomLog.h): its exact lines, and tools/mq_walk_compare.py on the lines a
+    # correct runtime logs for every MQ room in the bins and on deliberately wrong ones.
+    add_executable(mq_room_log_tests mq_room_log_tests.cpp)
+    combo_mq_add_sources(mq_room_log_tests)
+    target_include_directories(mq_room_log_tests PRIVATE "${COMBO_SOURCE_DIR}")
+    if(MSVC)
+        target_compile_options(mq_room_log_tests PRIVATE /W4 /WX /UNDEBUG)
+    else()
+        target_compile_options(mq_room_log_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    endif()
+    add_test(NAME mq_room_log_lines COMMAND mq_room_log_tests)
+    combo_python_test(mq_walk_compare_checks_room_logs_against_bins mq_walk_compare_tests.py
+        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/mq_walk_compare" --exe $<TARGET_FILE:mq_room_log_tests>)
     # OoTMM's MQ minimap and pause-map marks (combo/mq/MqMaps.h) in SoH's own map-mark data files: the bins exactly,
     # drawn like SoH's MQ tables but for OoTMM's two Fire Temple chests, and picked only for a bundled-MQ dungeon.
     combo_harness_test(mq_map_marks_from_bins_for_bundled_mq mq_map_marks_tests.py

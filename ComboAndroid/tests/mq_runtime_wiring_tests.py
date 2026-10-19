@@ -7,8 +7,9 @@ Scene_CommandAlternateHeaderList, the collision and path commands and the actor-
 transition-actor-list bodies (z_scene_otr.cpp) are extracted verbatim and run on engine stubs: stub headers that
 hold SoH's own list, path and collision structs, copied out of its headers. Two programs run them.
 
-The first records ComboMq_BeginScene, ComboMq_BeginRoom and ComboMq_RunCommand. Checks:
-- the scene and room hooks run just before their commands, for the resource those commands come from;
+The first records ComboMq_BeginScene, ComboMq_BeginRoom, ComboMq_RunCommand and ComboMq_LogRoom. Checks:
+- the scene and room hooks run just before their commands, for the resource those commands come from, and the
+  developer room log once the room's commands have run;
 - ComboMq_RunCommand is asked only at depth 1, for every command up to the end marker, and a command it runs does
   not also run its vanilla handler; an alternate header's commands run vanilla, and Ice Cavern's 0x18 replaced by
   its paths never runs its alternate header (mq.c:328-340);
@@ -24,10 +25,14 @@ collision, Ice Cavern's alternate headers and a scene outside the dungeons. Chec
 - a vanilla load of the same resources, and any scene outside the 12 dungeons, sets the resources' own lists;
 - a reload refills the scene lists and collision at the same addresses; a copy whose collision resource is replaced
   is kept with its resource, so a save state's pointer into it stays valid; a collision that cannot be patched stays
-  vanilla with the reason logged.
+  vanilla with the reason logged;
+- the developer room log (combo/mq/MqRoomLog.h) logs nothing and asks only its CVar while that is off, and with it on
+  logs one line per dungeon room load with exactly the lists the PlayState holds (MQ, vanilla, or a collision that
+  could not be patched), nothing outside the dungeons, and changes nothing in the PlayState.
 
 Also scanned:
 - Actor_Spawn refuses a negative id before ActorDB_Retrieve under COMBO_BUILD (mq.c:398-410, actors.c:342);
+- the room log returns before anything else while its CVar is off and writes nothing through the PlayState;
 - the MQ runtime never writes a cached resource: no GetRawPointer, no const_cast, no write through the collision
   resource.
 """
@@ -212,21 +217,32 @@ class SetCollisionHeader : public ISceneCommand {
 };
 } // namespace SOH
 ''',
-    # The log macros still compile their arguments; the harness counts the errors.
+    # The log macros still compile their arguments; the harness counts the errors and keeps a line logged as "{}".
     'spdlog/spdlog.h': r'''#pragma once
+#include <string>
+#include <vector>
 extern int gSpdlogErrors;
+extern std::vector<std::string> gSpdlogLines;
 template <class... Args> void SpdlogStub(bool error, const char*, const Args&...) { gSpdlogErrors += error; }
+inline void SpdlogStub(bool error, const char*, const std::string& text) {
+    gSpdlogErrors += error;
+    gSpdlogLines.push_back(text);
+}
 #define SPDLOG_INFO(...) SpdlogStub(false, __VA_ARGS__)
 #define SPDLOG_ERROR(...) SpdlogStub(true, __VA_ARGS__)
 ''',
 }
+# The developer CVars the glue reads (libultraship's bridge), answered by the harness.
+stub_headers['libultraship/bridge/consolevariablebridge.h'] = (
+    '#pragma once\n#include <cstdint>\nint32_t CVarGetInteger(const char* name, int32_t defaultValue);\n')
 for name, text in stub_headers.items():
     (stubs / name).parent.mkdir(parents=True, exist_ok=True)
     (stubs / name).write_text(text, encoding='utf-8')
 # Every engine header ComboMqRuntime.cpp includes is a stub here, never one of soh's own.
 runtime_text = (source / 'soh/soh/Enhancements/randomizer/ComboMqRuntime.cpp').read_text(encoding='utf-8')
 for include in re.findall(r'#include [<"]([^>"]+)[>"]', runtime_text):
-    check(include in stub_headers or include in ('ComboMqRuntime.h', 'mq/MqRuntime.h') or '.' not in include,
+    check(include in stub_headers or include in ('ComboMqRuntime.h', 'mq/MqRuntime.h', 'mq/MqRoomLog.h') or
+          '.' not in include,
           f'ComboMqRuntime.cpp includes {include}, which the glue harness has no stub for')
 
 # Both programs: the stubs, the scene commands the extracted functions cast to, and the engine calls they make.
@@ -332,6 +348,7 @@ code = prelude + r'''
 std::vector<std::pair<const void*, size_t>> planned;
 void ComboMq_BeginScene(PlayState*, SOH::Scene* scene) { Log("BeginScene", scene); }
 void ComboMq_BeginRoom(PlayState*, SOH::Scene* room) { Log("BeginRoom", room); }
+void ComboMq_LogRoom(PlayState*) { Log("LogRoom"); }
 bool ComboMq_RunCommand(PlayState*, SOH::Scene* resource, size_t index) {
     Log("RunCommand", resource, index);
     for (auto& entry : planned)
@@ -512,6 +529,16 @@ void CheckRoom() {
         Expect(events[0].what == "BeginRoom" && events[0].resource == R, "the room hook runs first, for the room");
         Expect(At("RunCommand") < At("Player_SetBootData") && At("Player_SetBootData") <
                At("Actor_SpawnTransitionActors"), "the room's commands run before its transition actors spawn");
+        size_t lastCommand = 0;
+        int logs = 0;
+        for (size_t i = 0; i < events.size(); i++) {
+            if (events[i].what == "RunCommand" || events[i].what == "Vanilla")
+                lastCommand = i;
+            logs += events[i].what == "LogRoom";
+        }
+        Expect(logs == 1 && At("LogRoom") > lastCommand && At("LogRoom") < At("Player_SetBootData") &&
+                   events[At("LogRoom")].depth == 0,
+               "the room log runs once, after the room's commands and before Player_SetBootData");
         if (layer == 0) {
             Expect((Asked() == std::vector<std::pair<const void*, size_t>>{ { R, 0 }, { R, 1 }, { R, 2 } }),
                    "RunCommand is asked for each room command before the end marker");
@@ -608,8 +635,21 @@ check(result.returncode == 0 and result.stdout.strip() == 'ok',
 # The second program runs the real ComboMqRuntime.cpp on Fire Temple, Ice Cavern and Hyrule Field.
 glue = prelude + r'''
 #include "soh/Enhancements/randomizer/ComboMqRuntime.h"
+#include "mq/MqRoomLog.h"
+#include <libultraship/bridge/consolevariablebridge.h>
+#include <map>
 #include <set>
+#include <tuple>
 int gSpdlogErrors = 0;
+std::vector<std::string> gSpdlogLines;
+// The developer CVars set, and every name the glue asked for.
+std::map<std::string, int> gCVars;
+std::vector<std::string> gCVarsAsked;
+int32_t CVarGetInteger(const char* name, int32_t defaultValue) {
+    gCVarsAsked.push_back(name);
+    auto found = gCVars.find(name);
+    return found == gCVars.end() ? defaultValue : found->second;
+}
 // The scenes ResourceMgr_SceneUsesBundledMq calls bundled MQ (the resolver, combo/mq/MqMode.h).
 std::set<s16> bundledScenes;
 extern "C" uint32_t ResourceMgr_SceneUsesBundledMq(s16 sceneNum) {
@@ -1013,8 +1053,154 @@ void CheckRealRuntime() {
     ExpectVanillaRoom(play, vanillaA, "a Hyrule Field room");
 }
 
+// The room log lines logged since `from`.
+std::vector<std::string> RoomLogLines(size_t from) {
+    std::vector<std::string> lines;
+    for (size_t i = from; i < gSpdlogLines.size(); i++)
+        if (gSpdlogLines[i].rfind(ComboMq::kRoomLogTag, 0) == 0)
+            lines.push_back(gSpdlogLines[i]);
+    return lines;
+}
+// The PlayState fields the room log reads, to show it writes none of them.
+struct Readback {
+    u8 numSetupActors;
+    ActorEntry* setupActorList;
+    u8 objects, objectsStart;
+    std::vector<s16> objectIds;
+    u8 numTransitions;
+    TransitionActorEntry* transitions;
+    Path* paths;
+    CollisionHeader* collision;
+    explicit Readback(const PlayState& play)
+        : numSetupActors(play.numSetupActors), setupActorList(play.setupActorList), objects(play.objectCtx.num),
+          objectsStart(play.objectCtx.unk_09), numTransitions(play.transiActorCtx.numActors),
+          transitions(play.transiActorCtx.list), paths(play.setupPathList), collision(play.colCtx.colHeader) {
+        for (const ObjectStatus& status : play.objectCtx.status)
+            objectIds.push_back(status.id);
+    }
+    bool operator==(const Readback& o) const {
+        return numSetupActors == o.numSetupActors && setupActorList == o.setupActorList && objects == o.objects &&
+               objectsStart == o.objectsStart && objectIds == o.objectIds && numTransitions == o.numTransitions &&
+               transitions == o.transitions && paths == o.paths && collision == o.collision;
+    }
+};
+// The polygons and surface types Fire Temple's patches change in `polys` and `surfaces`, counted here.
+std::pair<size_t, size_t> FireChanges(const std::vector<SOH::CollisionPoly>& polys,
+                                      const std::vector<SOH::SurfaceType>& surfaces) {
+    std::vector<SOH::CollisionPoly> p = polys;
+    std::vector<SOH::SurfaceType> s = surfaces;
+    const ComboMq::Scene& fire = gData->dungeons[ComboMq::kFireTemple].scene;
+    for (const ComboMq::PolyPatch& patch : fire.polyPatches) {
+        p[patch.id].type = patch.type;
+        p[patch.id].flags_vIA = static_cast<u16>((p[patch.id].flags_vIA & 0x1fff) | (patch.flags << 13));
+    }
+    for (const ComboMq::SurfacePatch& patch : fire.surfacePatches) {
+        s[patch.id].data[0] = patch.hi;
+        s[patch.id].data[1] = patch.lo;
+    }
+    size_t changedPolys = 0, changedSurfaces = 0;
+    for (size_t i = 0; i < p.size(); i++)
+        changedPolys += std::memcmp(&p[i], &polys[i], sizeof(SOH::CollisionPoly)) != 0;
+    for (size_t i = 0; i < s.size(); i++)
+        changedSurfaces += std::memcmp(&s[i], &surfaces[i], sizeof(SOH::SurfaceType)) != 0;
+    return { changedPolys, changedSurfaces };
+}
+// What a Fire Temple room load leaves in the PlayState, written out from the bins and the fake resources.
+ComboMq::RoomLog FireRoomLog(bool mq, int num, int layer, const FakeRoom& room, const FakeScene& scene) {
+    ComboMq::RoomLog log;
+    log.scene = kFireScene;
+    log.room = num;
+    log.dungeon = ComboMq::kFireTemple;
+    log.mq = mq;
+    log.layer = layer;
+    if (!mq) {
+        for (const ActorEntry& actor : room.actors->actorList)
+            log.actorList.push_back({ actor.id, static_cast<uint16_t>(actor.params) });
+        log.objectList = room.objects->objects;
+        log.transitionCount = scene.transitions->transitionActorList.size();
+        return log;
+    }
+    const ComboMq::Room& mqRoom = *gData->FindRoom(ComboMq::kFireTemple, num);
+    const ComboMq::Scene& mqScene = gData->dungeons[ComboMq::kFireTemple].scene;
+    log.actors = log.objects = log.transitions = log.paths = ComboMq::LogSource::Mq;
+    for (const ComboMq::ActorEntryPOD& actor : mqRoom.actors)
+        log.actorList.push_back({ actor.id, static_cast<uint16_t>(actor.params) });
+    log.objectList = mqRoom.objects;
+    log.transitionCount = mqScene.transitions.size();
+    log.pathCount = mqScene.paths.size();
+    return log;
+}
+
+void CheckRoomLog() {
+    bundledScenes = { kFireScene, kHyruleField };
+    gSaveContext.sceneLayer = 2;
+    auto collision = Collision(4857, 68);
+    const std::vector<SOH::CollisionPoly> polys = collision->polygons;
+    const std::vector<SOH::SurfaceType> surfaces = collision->surfaceTypes;
+    auto scene = std::make_unique<FakeScene>(std::move(collision));
+    FakeRoom room(1);
+    PlayState play;
+
+    // Off by default: the glue asks only for its CVar, logs nothing and leaves the PlayState as the commands did.
+    gCVars.clear();
+    gCVarsAsked.clear();
+    size_t from = gSpdlogLines.size();
+    LoadScene(play, kFireScene, *scene);
+    LoadRoom(play, room, kRoomA);
+    ExpectMqRoom(play, room, ComboMq::kFireTemple, kRoomA, "MQ room A with the room log off");
+    Expect(RoomLogLines(from).empty() && gCVarsAsked == std::vector<std::string>{ ComboMq::kRoomLogCVar },
+           "with its CVar off the room log asks only for gCombo.Debug.MqRoomLog and logs nothing");
+
+    // On: one line per room load, read back from the PlayState, which it does not change.
+    gCVars[ComboMq::kRoomLogCVar] = 1;
+    from = gSpdlogLines.size();
+    LoadRoom(play, room, kRoomA);
+    const Readback before(play);
+    ComboMq_LogRoom(&play);
+    Expect(Readback(play) == before, "the room log writes nothing the game reads");
+    ComboMq::RoomLog want = FireRoomLog(true, kRoomA, 2, room, *scene);
+    want.collision = ComboMq::LogCollision::Patched;
+    std::tie(want.changedPolys, want.changedSurfaces) = FireChanges(polys, surfaces);
+    std::vector<std::string> lines = RoomLogLines(from);
+    Expect(lines.size() == 2 && lines[0] == ComboMq::FormatRoomLog(want) && lines[1] == lines[0],
+           "an MQ room logs the bins' lists, the MQ scene lists and the patched collision:\n  " +
+               (lines.empty() ? std::string("(none)") : lines[0]) + "\n  " + ComboMq::FormatRoomLog(want));
+    Expect(want.changedPolys > 500 && want.changedSurfaces > 30, "Fire Temple's patches change its collision");
+
+    // The same dungeon left vanilla: the resources' own lists.
+    bundledScenes.erase(kFireScene);
+    LoadScene(play, kFireScene, *scene);
+    from = gSpdlogLines.size();
+    LoadRoom(play, room, kRoomA);
+    lines = RoomLogLines(from);
+    Expect(lines.size() == 1 && lines[0] == ComboMq::FormatRoomLog(FireRoomLog(false, kRoomA, 2, room, *scene)),
+           "a vanilla Fire Temple room logs the resources' lists:\n  " + (lines.empty() ? std::string() : lines[0]));
+
+    // An MQ scene whose collision could not be patched.
+    bundledScenes.insert(kFireScene);
+    auto unpatchable = std::make_unique<FakeScene>(Collision(100, 4));
+    LoadScene(play, kFireScene, *unpatchable);
+    from = gSpdlogLines.size();
+    LoadRoom(play, room, kRoomB);
+    want = FireRoomLog(true, kRoomB, 2, room, *unpatchable);
+    want.collision = ComboMq::LogCollision::Failed;
+    lines = RoomLogLines(from);
+    Expect(lines.size() == 1 && lines[0] == ComboMq::FormatRoomLog(want),
+           "an unpatched collision logs failed:\n  " + (lines.empty() ? std::string() : lines[0]));
+
+    // Outside the 12 dungeons nothing is logged, even when the predicate answers bundled MQ.
+    auto field = std::make_unique<FakeScene>(Collision(10, 2));
+    LoadScene(play, kHyruleField, *field);
+    from = gSpdlogLines.size();
+    LoadRoom(play, room, kRoomA);
+    Expect(RoomLogLines(from).empty(), "a room outside the dungeons is not logged");
+    gCVars.clear();
+    gSaveContext.sceneLayer = 0;
+}
+
 int main() {
     CheckRealRuntime();
+    CheckRoomLog();
     std::puts("ok");
     return 0;
 }
@@ -1058,7 +1244,9 @@ for case, call in (('TransitionActors', r'SceneBuffer& buffer = state\.sceneBuff
                                         r'OTRScene_SetTransitionActorList\(play, buffer\.Transitions\(\), '
                                         r'buffer\.TransitionCount\(\)\);'),
                    ('RoomActors', r'OTRScene_SetActorList\(play, state\.room->actors, state\.room->numActors\);'),
-                   ('RoomObjects', r'OTRScene_SetObjectList\(play, state\.room->objects, state\.room->numObjects\);')):
+                   # The room log notes that the MQ objects went into the bank.
+                   ('RoomObjects', r'OTRScene_SetObjectList\(play, state\.room->objects, state\.room->numObjects\);'
+                                   r'\s*state\.roomObjectsSet = true;')):
     check(re.search(r'case ComboMq::CommandOverride::' + case + r':\s*\{?\s*' + call + r'\s*return true;', runtime),
           f'ComboMqRuntime.cpp: the {case} override must run the vanilla command body')
 check(re.search(r'case ComboMq::CommandOverride::Paths:\s*case ComboMq::CommandOverride::PathsInsteadOfAlternateHeaders:'
@@ -1068,6 +1256,13 @@ check(re.search(r'case ComboMq::CommandOverride::Paths:\s*case ComboMq::CommandO
 check(re.search(r'ComboMq::DungeonFromScene\(play->sceneNum\);\s*if \(dungeon < 0 \|\| '
                 r'!ResourceMgr_SceneUsesBundledMq\(play->sceneNum\)\)', runtime),
       'ComboMqRuntime.cpp: an MQ scene is a bundled-MQ dungeon scene (mqDungeonId, Config_IsMq)')
+log_room = function(runtime, 'void ComboMq_LogRoom(')
+check(re.match(r'void ComboMq_LogRoom\(PlayState\* play\) \{\s*if \(!CVarGetInteger\(ComboMq::kRoomLogCVar, 0\)\)\s*'
+               r'return;', log_room),
+      'ComboMq_LogRoom must return first thing while its developer CVar is off')
+check(not re.search(r'play->[\w.\[\]>-]*\s*[-+*/|&^]?=(?!=)', log_room) and
+      not re.search(r'state\.[\w.\[\]>-]*\s*=(?!=)', log_room),
+      'ComboMq_LogRoom writes nothing through the PlayState or the runtime state')
 room = function(runtime, 'void ComboMq_BeginRoom(')
 check(room.index('state.roomBuffers.Swap();') < room.index('BundledScene(play, dungeon)'),
       'ComboMq_BeginRoom must swap the room buffers before it looks for an MQ room (mq.c:367)')
@@ -1078,5 +1273,6 @@ if failures:
 print('PASS: the scene and room hooks run just before their commands; only the top-level header is asked for '
       'overrides and a replaced command skips its vanilla handler; the refactored list commands match the '
       'originals; the real ComboMqRuntime.cpp sets the bins\' lists, swaps the room buffers, hands BgCheck a '
-      'patched copy that outlives its replacement, and leaves vanilla loads alone; Actor_Spawn refuses a negative '
-      'id first; no cached resource is written')
+      'patched copy that outlives its replacement, and leaves vanilla loads alone; the developer room log is off by '
+      'default and logs what each dungeon room load set; Actor_Spawn refuses a negative id first; no cached '
+      'resource is written')

@@ -1,12 +1,15 @@
 #include "ComboMqRuntime.h"
 #ifdef COMBO_BUILD
+#include "mq/MqRoomLog.h"
 #include "mq/MqRuntime.h"
 #include "soh/ResourceManagerHelpers.h"
 #include "soh/resource/type/Scene.h"
 #include "soh/resource/type/CollisionHeader.h"
 #include "soh/resource/type/scenecommand/SetCollisionHeader.h"
+#include <libultraship/bridge/consolevariablebridge.h>
 #include <spdlog/spdlog.h>
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
@@ -51,6 +54,10 @@ struct Runtime {
     std::vector<std::unique_ptr<CollisionCopy>> replacedCollisions;
     RoomBuffers roomBuffers;             // sMqBufferRoom and sMqBufferRoom2 (mq.c:86-91)
     RoomBuffers::Buffer* room = nullptr; // the buffer holding the planned room's lists
+    // For the developer room log only (ComboMq_LogRoom): the planned scene's collision could not be patched, and
+    // the planned room's MQ objects went into the object bank.
+    bool collisionFailed = false;
+    bool roomObjectsSet = false;
 };
 
 Runtime& State() {
@@ -109,6 +116,14 @@ bool PatchCollisionCopy(std::unique_ptr<CollisionCopy>& copy, int dungeon, const
     return false;
 }
 
+// How many entries of the patched copy differ from the resource's, for the room log.
+template <class T> size_t ChangedEntries(const std::vector<T>& patched, const std::vector<T>& source) {
+    size_t changed = 0;
+    for (size_t i = 0; i < patched.size() && i < source.size(); i++)
+        changed += std::memcmp(&patched[i], &source[i], sizeof(T)) != 0;
+    return changed;
+}
+
 } // namespace
 
 void ComboMq_BeginScene(PlayState* play, SOH::Scene* scene) {
@@ -116,6 +131,7 @@ void ComboMq_BeginScene(PlayState* play, SOH::Scene* scene) {
     state.scenePlan = {};
     state.roomPlan = {};
     state.sceneDungeon = -1;
+    state.collisionFailed = false;
     int dungeon;
     const ComboMq::Data* data = BundledScene(play, dungeon);
     if (data == nullptr || scene == nullptr)
@@ -132,8 +148,10 @@ void ComboMq_BeginScene(PlayState* play, SOH::Scene* scene) {
         collisions.resize(plan.commands.size());
     for (size_t i = 0; i < plan.commands.size(); i++)
         if (plan.commands[i] == ComboMq::CommandOverride::Collision &&
-            !PatchCollisionCopy(collisions[i], dungeon, mq, scene->commands[i].get()))
+            !PatchCollisionCopy(collisions[i], dungeon, mq, scene->commands[i].get())) {
             plan.commands[i] = ComboMq::CommandOverride::None;
+            state.collisionFailed = true;
+        }
     state.scenePlan = std::move(plan);
     state.sceneDungeon = dungeon;
     SPDLOG_INFO("[ComboShip] Master Quest scene {0:#x} (OoTMM dungeon {1}): {2} transition actors, {3} paths",
@@ -146,6 +164,7 @@ void ComboMq_BeginRoom(PlayState* play, SOH::Scene* room) {
     state.roomBuffers.Swap();
     state.roomPlan = {};
     state.room = nullptr;
+    state.roomObjectsSet = false;
     int dungeon;
     const ComboMq::Data* data = BundledScene(play, dungeon);
     if (data == nullptr || room == nullptr)
@@ -185,9 +204,51 @@ bool ComboMq_RunCommand(PlayState* play, SOH::Scene* resource, size_t index) {
             return true;
         case ComboMq::CommandOverride::RoomObjects:
             OTRScene_SetObjectList(play, state.room->objects, state.room->numObjects);
+            state.roomObjectsSet = true;
             return true;
         default:
             return false;
     }
+}
+
+void ComboMq_LogRoom(PlayState* play) {
+    if (!CVarGetInteger(ComboMq::kRoomLogCVar, 0))
+        return;
+    int dungeon;
+    const bool mq = BundledScene(play, dungeon) != nullptr;
+    if (dungeon < 0)
+        return;
+    Runtime& state = State();
+    ComboMq::RoomLog log;
+    log.scene = play->sceneNum;
+    log.room = play->roomCtx.curRoom.num;
+    log.dungeon = dungeon;
+    log.mq = mq;
+    log.layer = gSaveContext.sceneLayer;
+    // Read back from the PlayState, so the line shows what the room's commands left, MQ or not.
+    log.actors = state.room != nullptr && play->setupActorList == state.room->actors ? ComboMq::LogSource::Mq
+                                                                                     : ComboMq::LogSource::Vanilla;
+    for (int i = 0; play->setupActorList != nullptr && i < play->numSetupActors; i++)
+        log.actorList.push_back({ play->setupActorList[i].id, static_cast<uint16_t>(play->setupActorList[i].params) });
+    log.objects = state.roomObjectsSet ? ComboMq::LogSource::Mq : ComboMq::LogSource::Vanilla;
+    // The bank holds -id for an object until it has loaded (OTRfunc_800982FC).
+    for (int i = play->objectCtx.unk_09; i < play->objectCtx.num && i < OBJECT_EXCHANGE_BANK_MAX; i++)
+        log.objectList.push_back(static_cast<int16_t>(ABS(play->objectCtx.status[i].id)));
+    SceneBuffer& buffer = state.sceneBuffers[dungeon];
+    log.transitions =
+        play->transiActorCtx.list == buffer.Transitions() ? ComboMq::LogSource::Mq : ComboMq::LogSource::Vanilla;
+    log.transitionCount = play->transiActorCtx.numActors;
+    if (buffer.Paths() != nullptr && play->setupPathList == buffer.Paths()) {
+        log.paths = ComboMq::LogSource::Mq;
+        log.pathCount = buffer.PathCount();
+    }
+    log.collision = state.collisionFailed ? ComboMq::LogCollision::Failed : ComboMq::LogCollision::Vanilla;
+    for (const std::unique_ptr<CollisionCopy>& copy : state.collisions[dungeon])
+        if (copy != nullptr && copy->source != nullptr && (const void*)play->colCtx.colHeader == &copy->header) {
+            log.collision = ComboMq::LogCollision::Patched;
+            log.changedPolys = ChangedEntries(copy->patched.polys, copy->source->polygons);
+            log.changedSurfaces = ChangedEntries(copy->patched.surfaces, copy->source->surfaceTypes);
+        }
+    SPDLOG_INFO("{}", ComboMq::FormatRoomLog(log));
 }
 #endif

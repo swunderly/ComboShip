@@ -519,6 +519,10 @@ extern "C" s32 OTRfunc_800973FC(PlayState* play, RoomContext* roomCtx) {
             ComboMq_BeginRoom(play, (SOH::Scene*)roomCtx->roomToLoad);
 #endif
             OTRScene_ExecuteCommands(play, (SOH::Scene*)roomCtx->roomToLoad);
+#ifdef COMBO_BUILD
+            // ComboShip: the developer Master Quest room log, off unless its CVar is set (combo/mq/MqRoomLog.h).
+            ComboMq_LogRoom(play);
+#endif
 
             Player_SetBootData(play, GET_PLAYER(play));
             Actor_SpawnTransitionActors(play, &play->actorCtx);

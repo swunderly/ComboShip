@@ -24,4 +24,8 @@ void ComboMq_BeginRoom(PlayState* play, SOH::Scene* room);
 // command runs unchanged. OTRScene_ExecuteCommands calls it only for the top-level header (depth 1), which is
 // the only one mq.c rewrites.
 bool ComboMq_RunCommand(PlayState* play, SOH::Scene* resource, size_t index);
+// The developer room log (combo/mq/MqRoomLog.h): OTRfunc_800973FC calls it just after the room's commands ran. With
+// the CVar ComboMq::kRoomLogCVar set it logs one line for a room of the 12 dungeons, with the lists the PlayState
+// then holds and where each comes from; otherwise, and for every other scene, it does nothing.
+void ComboMq_LogRoom(PlayState* play);
 #endif
