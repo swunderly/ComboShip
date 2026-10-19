@@ -12,6 +12,8 @@ from a real oot-mq.o2r (archive) and a vanilla one:
   (src/oot/doors.c:47-53): SoH's new-save switches stay off for a bundled seed's MQ dungeons, through the real resolver.
 - Small-key maxima (src/common/data.c:31-81): randomizer.h's macros give a bundled seed's MQ dungeons OoTMM's MQ
   counts, and DungeonInfo's mqKeyCount agrees.
+- MQ scrub prices (packages/logic/src/price.ts:97-130): SoH's MQ scrub rows charge OoTMM's MQ prices item for item;
+  by physical scrub only MQ Dodongo's Cavern's shield and potion scrubs differ (OoTMM's pool labels).
 - MQ Spirit's room-6 silver blocks (src/oot/actors/Obj/Obj_Oshihiki.c:5-13): for a child, Obj_Oshihiki's Init reads
   switch 0x09 as unset in a bundled MQ Spirit, and SoH's kill hook (hook_handlers.cpp) runs only for archive MQ. The
   three blocks come from the bins.
@@ -365,6 +367,84 @@ int main() {
 '''
 for scene, count in OOTMM_MQ_KEYS.items():
     key_counts = key_counts.replace(f'@{scene}@', str(count))
+
+# --- MQ scrub prices -----------------------------------------------------------------------------------------------
+# OoTMM's logic gives MQ dungeons their own vanilla scrub prices (packages/logic/src/price.ts:15-22, 97-130, indexed by
+# the scrub id of each pool row, data/pool/pool_oot.csv), and En_Dns charges prices[id] for the id its params give
+# (src/oot/actors/En/En_Dns.c:98-118). SoH's MQ scrub rows (location_list.cpp) carry the MQ game's prices, used
+# whether scrubs are shuffled or not. Item for item they equal OoTMM's; nothing changes. By physical scrub they differ
+# only in MQ Dodongo's Cavern: OoTMM's pool gives ids 0x1e and 0x1f each other's item (Staircase: red potion, Tunnel
+# Side: Deku shield), while En_Dns gives the shield scrub (room 2, SoH's Staircase) 0x1f and the potion scrub 0x1e, so
+# OoTMM charges the shield scrub 40 and the potion scrub 50; SoH keeps the game's 50 and 40.
+OOTMM_MQ_SCRUB_PRICES = {'DT': [50], 'DC': [40, 15, 50, 40], 'JJ': [0], 'GC': [40, 40, 70, 40, 20]}
+SCRUB_BASE = {'DT': 0x1b, 'DC': 0x1c, 'JJ': 0x20, 'GC': 0x21}  # OOT_SCRUBS: 27 overworld ids, then these
+OOTMM_MQ_SCRUB_ROWS = {  # pool_oot.csv "MQ ... Scrub" rows: (dungeon, id) -> vanilla item
+    ('DT', 0x1b): 'SHIELD_DEKU', ('DC', 0x1c): 'DEKU_SEEDS_30', ('DC', 0x1d): 'STICK', ('DC', 0x1f): 'POTION_RED',
+    ('DC', 0x1e): 'SHIELD_DEKU', ('GC', 0x21): 'POTION_GREEN', ('GC', 0x22): 'BOMBS_5', ('GC', 0x23): 'ARROWS_10',
+    ('GC', 0x24): 'POTION_RED', ('GC', 0x25): 'NUTS_5'}
+EN_DNS_IDS = {  # En_Dns.c KEY(scene, 0, item) -> id; item is the En_Dns params (SCRUB_ITEM_*)
+    ('DT', 0x04): 0x1b, ('DC', 0x03): 0x1c, ('DC', 0x01): 0x1d, ('DC', 0x00): 0x1e, ('DC', 0x07): 0x1e,
+    ('DC', 0x04): 0x1f, ('JJ', 0x00): 0x20, ('GC', 0x08): 0x21, ('GC', 0x05): 0x22, ('GC', 0x06): 0x23,
+    ('GC', 0x07): 0x24, ('GC', 0x00): 0x25}
+POOL_ITEM_PARAMS = {'SHIELD_DEKU': 0x04, 'DEKU_SEEDS_30': 0x03, 'STICK': 0x01, 'POTION_RED': 0x07,
+                    'POTION_GREEN': 0x08, 'BOMBS_5': 0x05, 'ARROWS_10': 0x06, 'NUTS_5': 0x00}
+SCRUB_DUNGEONS = {'DT': ('SCENE_DEKU_TREE', 'DEKU_TREE', 'SCE_OOT_DEKU_TREE', 0),
+                  'DC': ('SCENE_DODONGOS_CAVERN', 'DODONGO_CAVERN', 'SCE_OOT_DODONGO_CAVERN', 1),
+                  'JJ': ('SCENE_JABU_JABU', 'INSIDE_JABU_JABU', 'SCE_OOT_INSIDE_JABU_JABU', 2),
+                  'GC': ('SCENE_INSIDE_GANONS_CASTLE', 'INSIDE_GANON_CASTLE', 'SCE_OOT_INSIDE_GANON_CASTLE', 11)}
+price_ts = ootmm_file('packages/logic/src/price.ts', '86f6e336ac0c1d1286a94ff176e8ab1edd24c6e5')
+if price_ts:
+    read_prices = {name: [int(v) for v in values.split(',')] for name, values in
+                   re.findall(r'OOT_SCRUBS_(DT|DC|JJ|GC)_MQ: \[([\d,\s]+)\]', price_ts)}
+    check(read_prices == OOTMM_MQ_SCRUB_PRICES, f'price.ts MQ scrub prices differ: {read_prices}')
+    check(re.search(r'OOT_SCRUBS_OVERWORLD: \[([\d,\s]+)\]', price_ts)[1].count(',') + 1 == SCRUB_BASE['DT'],
+          'price.ts: the dungeon scrub ids no longer start at 0x1b')
+pool = ootmm_file('data/pool/pool_oot.csv', '446d2639ddf1fc13c473e3e5cfa5245369dffb4a')
+if pool:
+    scene_dungeon = {pool_scene: key for key, (_, pool_scene, _, _) in SCRUB_DUNGEONS.items()}
+    read_rows = {(scene_dungeon[scene], int(rid, 16)): item for scene, rid, item in re.findall(
+        r'^MQ [^,]*Scrub[^,]*,\s*scrub,\s*\w+,\s*(\w+),\s*(0x[0-9a-f]+),\s*(\w+)', pool, flags=re.M)}
+    check(read_rows == OOTMM_MQ_SCRUB_ROWS, f'pool_oot.csv MQ scrub rows differ: {read_rows}')
+en_dns = ootmm_file('packages/generator/src/oot/actors/En/En_Dns.c', '53e58bd40f0974a94273b538a327b1e6362a0828')
+if en_dns:
+    codes = {name: int(value, 16) for name, value in re.findall(r'#define SCRUB_ITEM_(\w+)\s+(0x[0-9a-f]+)', en_dns)}
+    scene_key = {sce: key for key, (_, _, sce, _) in SCRUB_DUNGEONS.items()}
+    read_ids = {(scene_key[scene], codes[item]): int(rid, 16) for scene, item, rid in re.findall(
+        r'case KEY\((SCE_OOT_\w+), 0, SCRUB_ITEM_(\w+)\):\s*return (0x[0-9a-f]+);', en_dns) if scene in scene_key}
+    check(read_ids == EN_DNS_IDS, f'En_Dns.c dungeon scrub ids differ: {read_ids}')
+ootmm_price = {(key, rid): OOTMM_MQ_SCRUB_PRICES[key][rid - SCRUB_BASE[key]] for key, rid in
+               [(key, SCRUB_BASE[key] + i) for key in SCRUB_BASE for i in range(len(OOTMM_MQ_SCRUB_PRICES[key]))]}
+# SoH's MQ scrub rows: (scene, params) -> vanilla price. IdentifyScrub reads params 0x06 as 0x03 (hook_handlers.cpp).
+soh_scrubs = {(scene, int(params, 16)): int(price) for scene, params, price in re.findall(
+    r'Location::Base\(RC_\w+,\s*RCQUEST_MQ,\s*RCTYPE_SCRUB,\s*ACTOR_EN_DNS,\s*(SCENE_\w+),\s*(0x[0-9A-Fa-f]+),'
+    r'[^;]*?,\s*(\d+)\);', read(rando / 'location_list.cpp'))}
+check(hostcxx.contains(function(read(rando / 'hook_handlers.cpp'),
+                                'static ScrubIdentity IdentifyScrub(s32 sceneNum, s32 actorParams, s32 respawnData)'),
+                       'if (actorParams == 0x06) actorParams = 0x03;'), 'hook_handlers.cpp: IdentifyScrub changed')
+by_item, by_scrub = [], []
+for key, (scene, _, _, dungeon) in SCRUB_DUNGEONS.items():
+    placed = sorted(actor[7] & 0xFFFF for room in mq_bins.decode_rooms(mq_bins.load(repo / 'combo/mq/data')[0])
+                    if room['dungeon'] == dungeon for actor in room['actors'] if actor[0] & 0xFFFF == 0x0195)
+    rows = sorted(params for (row_scene, params) in soh_scrubs if row_scene == scene)
+    check(sorted(0x03 if params == 0x06 else params for params in placed) == rows,
+          f'{key}: MQ scrubs in the bins {placed}, SoH rows {rows}')
+    for params in placed:
+        soh_price = soh_scrubs.get((scene, 0x03 if params == 0x06 else params))
+        # By item: the OoTMM row whose vanilla item this scrub sells.
+        item_ids = [rid for (row_key, rid), item in OOTMM_MQ_SCRUB_ROWS.items()
+                    if row_key == key and POOL_ITEM_PARAMS[item] == params]
+        check(len(item_ids) == 1, f'{key} scrub 0x{params:02x}: OoTMM rows {item_ids}')
+        if item_ids and ootmm_price[(key, item_ids[0])] != soh_price:
+            by_item.append((key, params, ootmm_price[(key, item_ids[0])], soh_price))
+        # By physical scrub: the id En_Dns gives these params.
+        if ootmm_price[(key, EN_DNS_IDS[(key, params)])] != soh_price:
+            by_scrub.append((key, params, ootmm_price[(key, EN_DNS_IDS[(key, params)])], soh_price))
+check(not by_item, f'MQ scrub prices differ from OoTMM item for item (dungeon, params, OoTMM, SoH): {by_item}')
+check(sorted(by_scrub) == [('DC', 0x04, 40, 50), ('DC', 0x07, 50, 40)],
+      f'MQ scrub prices by physical scrub (dungeon, params, OoTMM, SoH): {by_scrub}; only MQ DC\'s shield and potion '
+      'scrubs should differ (OoTMM\'s pool labels ids 0x1e and 0x1f the other way round)')
+print(f'scrub prices: SoH\'s MQ scrub prices equal OoTMM\'s item for item ({len(soh_scrubs)} scrubs); by physical '
+      f'scrub only MQ DC\'s shield and potion scrubs differ')
 
 # --- MQ Spirit's silver blocks in room 6 ---------------------------------------------------------------------------
 # OoTMM patches the switch read in Obj_Oshihiki's Init (0x80a4f574, the call after ObjOshihiki_CheckType in the
