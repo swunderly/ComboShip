@@ -137,7 +137,7 @@ void func_800995DC(PlayState* play) {
 
     { s32 pad; }
 
-    if (ResourceMgr_IsGameMasterQuest()) {
+    if (ResourceMgr_GameUsesMqAssets()) {
         gSPSegment(POLY_OPA_DISP++, 0x08, SEGMENTED_TO_VIRTUAL(D_8012A2F8_MQ[gSaveContext.nightFlag]));
     } else {
         gSPSegment(POLY_OPA_DISP++, 0x08, SEGMENTED_TO_VIRTUAL(D_8012A2F8[gSaveContext.nightFlag]));
@@ -181,7 +181,7 @@ void func_80099878(PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     gameplayFrames = play->gameplayFrames;
-    if (ResourceMgr_IsGameMasterQuest()) {
+    if (ResourceMgr_GameUsesMqAssets()) {
         gSPSegment(POLY_OPA_DISP++, 0x08, SEGMENTED_TO_VIRTUAL(gDCEntranceTextures_MQ[gSaveContext.nightFlag]));
         gSPSegment(POLY_OPA_DISP++, 0x09,
                    SEGMENTED_TO_VIRTUAL(sDCLavaFloorTextures_MQ[(s32)(gameplayFrames & 14) >> 1]));
@@ -465,7 +465,7 @@ void func_8009B0FC(PlayState* play) {
     spAC = play->roomCtx.unk_74[1] & 0xFF;
     gameplayFrames = play->gameplayFrames;
 
-    if (ResourceMgr_IsGameMasterQuest()) {
+    if (ResourceMgr_GameUsesMqAssets()) {
         gSPSegment(POLY_XLU_DISP++, 0x08, SEGMENTED_TO_VIRTUAL(D_8012A330_MQ[gSaveContext.nightFlag]));
     } else {
         gSPSegment(POLY_XLU_DISP++, 0x08, SEGMENTED_TO_VIRTUAL(D_8012A330[gSaveContext.nightFlag]));
@@ -695,7 +695,7 @@ void func_8009C3EC(PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     gameplayFrames = play->gameplayFrames;
-    if (ResourceMgr_IsGameMasterQuest()) {
+    if (ResourceMgr_GameUsesMqAssets()) {
         gSPSegment(POLY_XLU_DISP++, 0x08, SEGMENTED_TO_VIRTUAL(sIceCavernEntranceTextures_MQ[gSaveContext.nightFlag]));
     } else {
         gSPSegment(POLY_XLU_DISP++, 0x08, SEGMENTED_TO_VIRTUAL(sIceCavernEntranceTextures[gSaveContext.nightFlag]));
@@ -802,7 +802,7 @@ void func_8009CC00(PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     gameplayFrames = play->gameplayFrames;
-    if (ResourceMgr_IsGameMasterQuest()) {
+    if (ResourceMgr_GameUsesMqAssets()) {
         gSPSegment(POLY_XLU_DISP++, 0x08, SEGMENTED_TO_VIRTUAL(sGTGEntranceTextures_MQ[gSaveContext.nightFlag]));
     } else {
         gSPSegment(POLY_XLU_DISP++, 0x08, SEGMENTED_TO_VIRTUAL(sGTGEntranceTextures[gSaveContext.nightFlag]));
@@ -978,7 +978,7 @@ void func_8009D758(PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     gameplayFrames = play->gameplayFrames;
-    if (ResourceMgr_IsGameMasterQuest()) {
+    if (ResourceMgr_GameUsesMqAssets()) {
         gSPSegment(POLY_XLU_DISP++, 0x08,
                    SEGMENTED_TO_VIRTUAL(sForestTempleEntranceTextures_MQ[gSaveContext.nightFlag]));
     } else {
@@ -1013,7 +1013,7 @@ void func_8009D974(PlayState* play) {
 
     { s32 pad[2]; }
 
-    if (ResourceMgr_IsGameMasterQuest()) {
+    if (ResourceMgr_GameUsesMqAssets()) {
         gSPSegment(POLY_XLU_DISP++, 0x08,
                    SEGMENTED_TO_VIRTUAL(sSpiritTempleEntranceTextures_MQ[gSaveContext.nightFlag]));
     } else {

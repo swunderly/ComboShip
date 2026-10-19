@@ -52,7 +52,7 @@ bool OotRawArrivalBound(uint32_t id, int age) {
         return false;
     const bool dungeon = (scene >= SCENE_DEKU_TREE && scene <= SCENE_ICE_CAVERN) ||
                          scene == SCENE_GERUDO_TRAINING_GROUND || scene == SCENE_INSIDE_GANONS_CASTLE;
-    const std::string version = dungeon ? (ResourceMgr_IsSceneMasterQuest(scene) ? "mq" : "nonmq") : "shared";
+    const std::string version = dungeon ? (ResourceMgr_SceneUsesMqAssets(scene) ? "mq" : "nonmq") : "shared";
     const std::string name = gSceneTable[scene].sceneFile.fileName;
     return CEArrival::ValidateOwnedNativeSpawn(owner, "scenes/" + version + "/" + name + "/" + name, layer,
                                                entrance.spawn, arrival->returning ? arrival->grotto->returnRoom : -1,

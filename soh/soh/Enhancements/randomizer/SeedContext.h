@@ -13,6 +13,9 @@
 #include <map>
 #include <set>
 #include <nlohmann/json.hpp>
+#ifdef COMBO_BUILD
+#include "mq/MqMode.h"
+#endif
 
 #define RAND_GET_OPTION(option) Rando::Context::GetInstance()->GetOption(option)
 
@@ -62,6 +65,17 @@ class Context {
         if (revision != 0 && revision != 1)
             return false;
         mKokiriGrassCatalogRevision = revision;
+        return true;
+    }
+    // ComboShip: where this seed's Master Quest dungeons get their data (combo/mq/MqMode.h). Legacy until a seed
+    // or save records a source; ResourceMgr_IsSceneMasterQuest reads it.
+    ComboMq::SeedMqSource GetMqDataSource() const {
+        return mMqDataSource;
+    }
+    bool SetMqDataSource(ComboMq::SeedMqSource source) {
+        if (source != ComboMq::SeedMqSource::Legacy && source != ComboMq::SeedMqSource::Bundled)
+            return false;
+        mMqDataSource = source;
         return true;
     }
 #endif
@@ -219,6 +233,7 @@ class Context {
 #ifdef COMBO_BUILD
     int mKokiriGrassCatalogRevision = 0;
     int mKokiriSeedRevision = 0; // Each context/file starts in legacy mode until an explicit seed binds.
+    ComboMq::SeedMqSource mMqDataSource = ComboMq::SeedMqSource::Legacy; // likewise
 #endif
     std::array<Hint, RH_MAX> hintTable = {};
     std::array<ItemLocation, RC_MAX> itemLocationTable = {};

@@ -62,6 +62,7 @@
 #include "soh/Enhancements/randomizer/randomizer_check_objects.h" // ComboShip: GetRCAreaName/AreaIsDungeon for hint dump
 #include "soh/Enhancements/randomizer/trial.h"                    // ComboShip: GetTrials() for resolved trial dump
 #include "../../combo/rando/ComboProfileTrialRules.h"
+#include "../../combo/mq/ComboMqData.h" // ComboShip: bundled Master Quest data, for HasBundledMasterQuest
 #include "soh/Enhancements/randomizer/randomizerEnumStrings.h"    // ComboShip: EnumToString<RandomizerHintTextKey>()
 #include "soh/Enhancements/randomizer/hint.h" // ComboShip: Rando::Hint/AddHint for SOH_ApplyComboHints
 #include "Enhancements/gameplaystats.h"
@@ -329,6 +330,9 @@ typedef struct {
 std::shared_ptr<Fast::Fast3dWindow> sohFast3dWindow;
 static OTRVersion DetectOTRVersion(std::string path, bool isMq);
 static bool VerifyArchiveVersion(OTRVersion version);
+#ifdef COMBO_BUILD
+static uint32_t ReadGameVersionFromO2r(const std::string& path);
+#endif
 std::string portArchivePath = "";
 static bool sohArchiveVersionMatch = false;
 
@@ -439,8 +443,14 @@ OTRGlobals::OTRGlobals(HeadlessRandoTag) {
     // check) so IsQuestOfLocationActive keeps the right dungeon locations in the pool.
     hasOriginal = std::filesystem::exists(Ship::Context::LocateFileAcrossAppDirs("oot.o2r", appShortName));
     hasMasterQuest = std::filesystem::exists(Ship::Context::LocateFileAcrossAppDirs("oot-mq.o2r", appShortName));
+    // Bundled MQ follows Initialize's rule, from oot.o2r's version file without mounting it.
+    std::vector<uint32_t> originalVersions;
+    if (hasOriginal)
+        originalVersions.push_back(
+            ReadGameVersionFromO2r(Ship::Context::LocateFileAcrossAppDirs("oot.o2r", appShortName)));
     if (!hasOriginal && !hasMasterQuest)
         hasOriginal = true; // fallback: assume vanilla so the location pool isn't empty
+    SetBundledMasterQuest(originalVersions);
 }
 #endif
 
@@ -1048,6 +1058,9 @@ void OTRGlobals::Initialize() {
     }
 
     auto versions = context->GetResourceManager()->GetArchiveManager()->GetGameVersions();
+#ifdef COMBO_BUILD
+    std::vector<uint32_t> originalVersions; // the vanilla archives, for the bundled MQ gate below
+#endif
 
     for (uint32_t version : versions) {
         if (!ValidHashes.contains(version)) {
@@ -1081,12 +1094,50 @@ void OTRGlobals::Initialize() {
             case OOT_PAL_GC_DBG1:
             case OOT_PAL_GC_DBG2:
                 hasOriginal = true;
+#ifdef COMBO_BUILD
+                originalVersions.push_back(version);
+#endif
                 break;
             default:
                 break;
         }
     }
+#ifdef COMBO_BUILD
+    switch (SetBundledMasterQuest(originalVersions)) {
+        case ComboMq::BundledMqStatus::Available:
+            SPDLOG_INFO("Bundled Master Quest data (OoTMM v32.3) is available");
+            break;
+        case ComboMq::BundledMqStatus::NoVanillaRom:
+            SPDLOG_INFO("Bundled Master Quest data is off: it needs a vanilla oot.o2r");
+            break;
+        case ComboMq::BundledMqStatus::UnsupportedVersion:
+            SPDLOG_INFO("Bundled Master Quest data is off: it is verified only on an NTSC-U 1.0 OoT ROM");
+            break;
+        case ComboMq::BundledMqStatus::DataInvalid:
+            SPDLOG_ERROR("Bundled Master Quest data is off: {}", ComboMq::BundledError());
+            break;
+    }
+#endif
 }
+
+#ifdef COMBO_BUILD
+// ComboShip: OoTMM v32.3's Master Quest data (combo/mq) plays only over the vanilla ROM it was made for, NTSC-U 1.0
+// (combo/mq/MqMode.h BundledMqAvailability). Anything else keeps SoH's archive-only Master Quest.
+static_assert(ComboMq::kBundledMqRomVersion == OOT_NTSC_US_10, "bundled MQ data is verified on NTSC-U 1.0");
+ComboMq::BundledMqStatus OTRGlobals::SetBundledMasterQuest(const std::vector<uint32_t>& originalVersions) {
+    auto status = ComboMq::BundledMqAvailability(hasOriginal, originalVersions.data(), originalVersions.size(), true);
+    // The embedded bins are decoded only when the ROM allows them.
+    if (status == ComboMq::BundledMqStatus::Available && ComboMq::Bundled() == nullptr) {
+        status = ComboMq::BundledMqStatus::DataInvalid;
+    }
+    bundledMasterQuest = status == ComboMq::BundledMqStatus::Available;
+    return status;
+}
+
+bool OTRGlobals::HasBundledMasterQuest() {
+    return bundledMasterQuest;
+}
+#endif
 
 OTRGlobals::~OTRGlobals() {
 }
@@ -1625,6 +1676,25 @@ OTRVersion ReadPortVersionFromOTR(std::string otrPath) {
 
     return version;
 }
+
+#ifdef COMBO_BUILD
+// ComboShip: the game version an archive records (Archive::Load reads the same "version" file), or
+// UNKNOWN_GAME_VERSION. For the headless generator's bundled-MQ gate, which mounts no archives.
+static uint32_t ReadGameVersionFromO2r(const std::string& path) {
+    auto archive = std::make_shared<Ship::O2rArchive>(path);
+    if (archive->Open()) {
+        auto t = archive->LoadFile("version");
+        if (t != nullptr && t->IsLoaded && t->Buffer->size() >= 5) {
+            auto stream = std::make_shared<Ship::MemoryStream>(t->Buffer->data(), t->Buffer->size());
+            auto reader = std::make_shared<Ship::BinaryReader>(stream);
+            Ship::Endianness endianness = (Ship::Endianness)reader->ReadUByte();
+            reader->SetEndianness(endianness);
+            return reader->ReadUInt32();
+        }
+    }
+    return UNKNOWN_GAME_VERSION;
+}
+#endif
 
 // Checks the program version stored in the otr and compares the major value to soh
 // For Windows/Mac/Linux if the version doesn't match, offer to

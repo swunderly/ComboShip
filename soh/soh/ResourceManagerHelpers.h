@@ -26,6 +26,15 @@ extern "C" {
 #include "z64bgcheck.h"
 uint32_t ResourceMgr_IsGameMasterQuest();
 uint32_t ResourceMgr_IsSceneMasterQuest(s16 sceneNum);
+uint32_t ResourceMgr_GameUsesMqAssets();
+uint32_t ResourceMgr_SceneUsesMqAssets(s16 sceneNum);
+#ifdef COMBO_BUILD
+uint32_t ResourceMgr_GameUsesBundledMq();
+uint32_t ResourceMgr_SceneUsesBundledMq(s16 sceneNum);
+uint32_t ResourceMgr_GameHasBundledMasterQuest();
+uint32_t ResourceMgr_GameCanPlayMasterQuest();
+uint32_t ResourceMgr_SaveMqPlayable(uint8_t mqDataSource, uint32_t requiresMasterQuest);
+#endif
 uint32_t ResourceMgr_GameHasMasterQuest();
 uint32_t ResourceMgr_GameHasOriginal();
 uint32_t ResourceMgr_GetNumGameVersions();

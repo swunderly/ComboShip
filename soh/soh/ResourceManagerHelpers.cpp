@@ -165,7 +165,39 @@ extern "C" bool ResourceMgr_IsPalLoaded() {
     return _message_0xFFFC_nes != NULL;
 }
 
+#ifdef COMBO_BUILD
+// ComboShip: the Master Quest mode resolver's inputs for a scene (combo/mq/MqMode.h), read where SoH's
+// IsSceneMasterQuest read them, plus the loaded seed's data-source marker.
+static ComboMq::MqModeInputs MqModeInputsForScene(s16 sceneNum) {
+    ComboMq::MqModeInputs in;
+    u8 mqMode = CVarGetInteger(CVAR_GENERAL("BetterDebugWarpScreenMQMode"), WARP_MODE_OVERRIDE_OFF);
+    in.debugWarp = mqMode == WARP_MODE_OVERRIDE_MQ_AS_VANILLA   ? ComboMq::DebugWarpOverride::ForceMq
+                   : mqMode == WARP_MODE_OVERRIDE_VANILLA_AS_MQ ? ComboMq::DebugWarpOverride::ForceVanilla
+                                                                : ComboMq::DebugWarpOverride::Off;
+    in.hasOriginal = OTRGlobals::Instance->HasOriginal();
+    in.hasArchiveMq = OTRGlobals::Instance->HasMasterQuest();
+    in.bundledAvailable = OTRGlobals::Instance->HasBundledMasterQuest();
+    in.quest = IS_MASTER_QUEST ? ComboMq::QuestKind::MasterQuest
+               : IS_RANDO      ? ComboMq::QuestKind::Randomizer
+                               : ComboMq::QuestKind::Other;
+    const auto& randoContext = OTRGlobals::Instance->gRandoContext;
+    if (IS_RANDO && randoContext != nullptr) {
+        auto dungeon = randoContext->GetDungeons()->GetDungeonFromScene(sceneNum);
+        in.dungeon = dungeon == nullptr ? ComboMq::DungeonQuest::NotADungeon
+                     : dungeon->IsMQ()  ? ComboMq::DungeonQuest::MasterQuest
+                                        : ComboMq::DungeonQuest::Vanilla;
+        in.seedSource = randoContext->GetMqDataSource();
+    }
+    return in;
+}
+#endif
+
+// The gameplay answer: this scene plays as Master Quest. In COMBO_BUILD a seed marked for the bundled data answers
+// from its own DungeonInfo::IsMQ; every other file gets SoH's answer below.
 u32 IsSceneMasterQuest(s16 sceneNum) {
+#ifdef COMBO_BUILD
+    return ComboMq::ResolveMqMode(MqModeInputsForScene(sceneNum)).gameplayMq;
+#else
     u8 mqMode = CVarGetInteger(CVAR_GENERAL("BetterDebugWarpScreenMQMode"), WARP_MODE_OVERRIDE_OFF);
     if (mqMode == WARP_MODE_OVERRIDE_MQ_AS_VANILLA) {
         return true;
@@ -193,6 +225,7 @@ u32 IsSceneMasterQuest(s16 sceneNum) {
     }
 
     return false;
+#endif
 }
 
 extern "C" uint32_t ResourceMgr_GameHasMasterQuest() {
@@ -210,6 +243,50 @@ extern "C" uint32_t ResourceMgr_IsSceneMasterQuest(s16 sceneNum) {
 extern "C" uint32_t ResourceMgr_IsGameMasterQuest() {
     return gPlayState != NULL ? IsSceneMasterQuest(gPlayState->sceneNum) : 0;
 }
+
+// The asset answer: read this scene's files from a real oot-mq.o2r's scenes/mq tree. Equal to
+// ResourceMgr_IsSceneMasterQuest for every file without the bundled marker. A bundled-MQ seed keeps the vanilla
+// files, as OoTMM does (src/oot/mq.c patches lists into the vanilla scenes).
+extern "C" uint32_t ResourceMgr_SceneUsesMqAssets(s16 sceneNum) {
+#ifdef COMBO_BUILD
+    return ComboMq::ResolveMqMode(MqModeInputsForScene(sceneNum)).assetsMq;
+#else
+    return IsSceneMasterQuest(sceneNum);
+#endif
+}
+
+extern "C" uint32_t ResourceMgr_GameUsesMqAssets() {
+    return gPlayState != NULL ? ResourceMgr_SceneUsesMqAssets(gPlayState->sceneNum) : 0;
+}
+
+#ifdef COMBO_BUILD
+// ComboShip: this scene is Master Quest from OoTMM's bundled data (combo/mq). The scene and room command overrides
+// and the bundled map marks key on this; it is false for every file without the bundled marker.
+extern "C" uint32_t ResourceMgr_SceneUsesBundledMq(s16 sceneNum) {
+    return ComboMq::ResolveMqMode(MqModeInputsForScene(sceneNum)).source == ComboMq::MqDataSource::Bundled;
+}
+
+extern "C" uint32_t ResourceMgr_GameUsesBundledMq() {
+    return gPlayState != NULL ? ResourceMgr_SceneUsesBundledMq(gPlayState->sceneNum) : 0;
+}
+
+extern "C" uint32_t ResourceMgr_GameHasBundledMasterQuest() {
+    return OTRGlobals::Instance->HasBundledMasterQuest();
+}
+
+// Master Quest dungeons can be played here from some source: a real oot-mq.o2r or the bundled data.
+extern "C" uint32_t ResourceMgr_GameCanPlayMasterQuest() {
+    return OTRGlobals::Instance->HasMasterQuest() || OTRGlobals::Instance->HasBundledMasterQuest();
+}
+
+// Whether a save with this marker (ComboMq::SeedMqSource) and MQ requirement can be played on this install. For a
+// save without the marker this is SoH's FileChoose_IsSaveCompatible rule: requiresMasterQuest needs the archive.
+extern "C" uint32_t ResourceMgr_SaveMqPlayable(uint8_t mqDataSource, uint32_t requiresMasterQuest) {
+    return ComboMq::CanPlayMqDungeons(static_cast<ComboMq::SeedMqSource>(mqDataSource), requiresMasterQuest ? 1 : 0,
+                                      OTRGlobals::Instance->HasMasterQuest(),
+                                      OTRGlobals::Instance->HasBundledMasterQuest());
+}
+#endif
 
 extern "C" void ResourceMgr_LoadDirectory(const char* resName) {
     Ship::Context::GetRawInstance()->GetResourceManager()->LoadResources(resName);
@@ -280,7 +357,7 @@ extern "C" void ResourceMgr_UnloadOriginalWhenAltExists(const char* resName) {
 
 std::shared_ptr<Ship::IResource> ResourceMgr_GetResourceByNameHandlingMQ(const char* path) {
     std::string Path = path;
-    if (ResourceMgr_IsGameMasterQuest()) {
+    if (ResourceMgr_GameUsesMqAssets()) {
         size_t pos = 0;
         if ((pos = Path.find("/nonmq/", 0)) != std::string::npos) {
             Path.replace(pos, 7, "/mq/");

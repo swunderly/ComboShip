@@ -20,6 +20,10 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
+#ifdef COMBO_BUILD
+#include "mq/MqMode.h"
+#endif
 
 struct ExtensionEntry {
     std::string path;
@@ -76,11 +80,20 @@ class OTRGlobals {
     void RunExtract(int argc, char* argv[]);
     bool HasMasterQuest();
     bool HasOriginal();
+#ifdef COMBO_BUILD
+    // ComboShip: OoTMM v32.3's Master Quest data (combo/mq) can be played here: COMBO_BUILD, a vanilla NTSC-U 1.0
+    // oot.o2r and bins that decode. Never sets hasMasterQuest, which keeps meaning a real oot-mq.o2r.
+    bool HasBundledMasterQuest();
+#endif
     uint32_t GetInterpolationFPS();
 
   private:
     bool hasMasterQuest;
     bool hasOriginal;
+#ifdef COMBO_BUILD
+    bool bundledMasterQuest = false;
+    ComboMq::BundledMqStatus SetBundledMasterQuest(const std::vector<uint32_t>& originalVersions);
+#endif
     ImFont* CreateFontWithSize(float size, std::string fontPath, bool isJapaneseFont = false);
 };
 #endif

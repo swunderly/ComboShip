@@ -525,6 +525,8 @@ if(COMBO_SOURCE_DIR)
         target_compile_options(mq_mode_resolver_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     endif()
     add_test(NAME mq_mode_resolver_truth_table COMMAND mq_mode_resolver_tests)
+    # SoH's MQ predicate split: the ten asset callers ask the asset answer, all others the gameplay answer.
+    combo_python_test(mq_predicates_split_gameplay_and_assets mq_asset_split_tests.py)
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
