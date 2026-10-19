@@ -15,9 +15,9 @@ placed actor of a shuffled kind must be claimed by exactly one location.
   its room, so SoH never spawns them either.
 - Silver rupees: SilverRupeeState.h's MasterQuest table equals OoTMM v32.3 src/common/sr.c, and the bins' rupees,
   through SoH's PhysicalId and SilverRupeeData.inc, give each puzzle that many rupees and one tracker with its flag.
-- Locked doors: the switch flags of locked En_Door and Door_Shutter transition actors equal dungeon.cpp's MQ door flags
-  in every dungeon but Water, where the bins give {2, 21} and SoH {4, 21} (expected until unit U6 changes
-  dungeon.cpp; this test then fails until the expectation is removed).
+- Locked doors: the switch flags of locked En_Door and Door_Shutter transition actors equal the MQ door flags
+  dungeon.cpp gives a bundled seed in every dungeon. For Water that is kBundledMqWaterDoorFlags {2, 21}, while the
+  MQDoorFlags row keeps {4, 21} for a real oot-mq.o2r, whose door FixWaterMQLock.cpp moves to switch 4.
 - Wallmasters (C17): En_Wallmas rooms per dungeon.
 - Sheik in Ice Cavern: the Serenade Sheik is in a main room list beside the iron boots chest the rando hooks read, so
   the check survives OoTMM dropping Ice Cavern's alternate setup 4.
@@ -456,9 +456,18 @@ for _, info in calls(read(rando / 'dungeon.cpp'), r'=\s*DungeonInfo\('):
     if info[-4] in DUNGEON_OF:  # ..., scene, vanillaDoorFlags, randoDoorFlags, mqDoorFlags
         door_flags[DUNGEON_OF[info[-4]]] = {int(flag) for flag in re.findall(r'\d+', info[-1])}
 check(len(door_flags) == 12, f'dungeon.cpp door flags for {sorted(door_flags)}')
-# Expected failure until unit U6: SoH's MQ Water door flags {4, 21} follow FixWaterMQLock.cpp (params 22659 -> 22660,
-# transition 0x16 from switch 3 to 4); OoTMM's make_mq.ts:226-229 makes that door switch 2.
-KNOWN_DOOR_DIFFERENCES = {WATER: ({2, 21}, {4, 21})}
+# A bundled seed's MQ Water flags (U6): dungeon.cpp's GetDoorFlags returns kBundledMqWaterDoorFlags when
+# ResourceMgr_SceneUsesBundledMq, because OoTMM's make_mq.ts:226-229 makes transition 0x16 switch 2. The MQDoorFlags
+# row keeps {4, 21} for a real oot-mq.o2r, whose door FixWaterMQLock.cpp moves from switch 3 to 4 (22659 -> 22660).
+dungeon_cpp = read(rando / 'dungeon.cpp')
+bundled_water = re.search(r'kBundledMqWaterDoorFlags = \{([^}]*)\}', dungeon_cpp)
+check(bundled_water and hostcxx.contains(dungeon_cpp, 'if (scene == SCENE_WATER_TEMPLE && '
+                                                       'ResourceMgr_SceneUsesBundledMq(scene)) {'
+                                                       'return &kBundledMqWaterDoorFlags;'),
+      'dungeon.cpp: GetDoorFlags must give a bundled MQ Water seed kBundledMqWaterDoorFlags')
+bundled_door_flags = dict(door_flags)
+if bundled_water:
+    bundled_door_flags[WATER] = {int(flag) for flag in re.findall(r'\d+', bundled_water[1])}
 for dungeon in range(12):
     locked = set()
     for transition in scene_data[dungeon]['transitions']:
@@ -467,20 +476,19 @@ for dungeon in range(12):
             locked.add(params & 0x3F)
         elif actor == ACTOR['ACTOR_DOOR_SHUTTER'] and (params >> 6) & 0xF == locked_shutter:  # z_door_shutter.c:245
             locked.add(params & 0x3F)
-    soh_flags = door_flags.get(dungeon)
-    if dungeon in KNOWN_DOOR_DIFFERENCES:
-        check((locked, soh_flags) == KNOWN_DOOR_DIFFERENCES[dungeon],
-              f'{NAMES[dungeon]} locked doors: bins {locked}, SoH {soh_flags}; if U6 fixed dungeon.cpp, remove the '
-              'expected difference')
-    else:
-        check(locked == soh_flags, f'{NAMES[dungeon]} locked doors: bins {sorted(locked)}, SoH {sorted(soh_flags)}')
+    soh_flags = bundled_door_flags.get(dungeon)
+    check(locked == soh_flags, f'{NAMES[dungeon]} locked doors: bins {sorted(locked)}, SoH {sorted(soh_flags)}')
     doors_in_rooms = actors_of(dungeon, 'ACTOR_EN_DOOR', 'ACTOR_DOOR_SHUTTER')
     check(not doors_in_rooms, f'{NAMES[dungeon]}: doors in room lists {doors_in_rooms}')
 water_fix = read(soh / 'soh/Enhancements/Fixes/FixWaterMQLock.cpp')
 water_door = scene_data[WATER]['transitions'][0x16]
-check(hostcxx.contains(water_fix, 'enDoor->actor.params == 22659') and 22659 == (0x16 << 10) | 0x0083 and
-      water_door[4] == ACTOR['ACTOR_EN_DOOR'] and water_door[9] == 0x0082,
-      f'MQ Water transition 0x16 is {water_door}; FixWaterMQLock.cpp no longer targets it')
+check(hostcxx.contains(water_fix, 'enDoor->actor.params == 22659') and hostcxx.contains(water_fix, '= 22660;') and
+      22659 == (0x16 << 10) | 0x0083 and water_door[4] == ACTOR['ACTOR_EN_DOOR'] and water_door[9] == 0x0082 and
+      door_flags.get(WATER) == {22660 & 0x3F, 21},
+      f'MQ Water transition 0x16 is {water_door}, archive MQ flags {door_flags.get(WATER)}; FixWaterMQLock.cpp no '
+      'longer targets the archive\'s door or dungeon.cpp no longer counts its new switch')
+check(hostcxx.contains(water_fix, '!ResourceMgr_GameUsesBundledMq() &&'),
+      'FixWaterMQLock.cpp must leave a bundled MQ Water door alone (archive only)')
 
 # --- Wallmasters (C17) ---------------------------------------------------------------------------------------------
 wallmasters = Counter((NAMES[dungeon], room) for dungeon in range(12)
@@ -494,4 +502,4 @@ if failures:
     sys.exit(1)
 print(f'PASS: {len(rows)} MQ and shared dungeon rows match the OoTMM v32.3 bins and claim every placed actor once '
       f'({sum(counted.values())}); the six broken actors are unplaceable and unlisted; silver puzzles, locked doors '
-      '(Water held as the known difference) and Wallmaster rooms agree; the Serenade Sheik needs no alternate setup')
+      '(bundled MQ Water on switch 2) and Wallmaster rooms agree; the Serenade Sheik needs no alternate setup')

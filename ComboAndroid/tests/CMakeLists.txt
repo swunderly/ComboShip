@@ -560,6 +560,9 @@ if(COMBO_SOURCE_DIR)
     # drawn like SoH's MQ tables but for OoTMM's two Fire Temple chests, and picked only for a bundled-MQ dungeon.
     combo_harness_test(mq_map_marks_from_bins_for_bundled_mq mq_map_marks_tests.py
         --blobs "${CMAKE_BINARY_DIR}/generated/combo_mq")
+    # OoTMM's smaller MQ gameplay rules (Config_IsMq outside mq.c) on the production code, for a bundled-MQ dungeon
+    # against archive MQ and vanilla.
+    combo_harness_test(mq_gameplay_rules_follow_ootmm_for_bundled_mq mq_gameplay_fixes_tests.py)
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)

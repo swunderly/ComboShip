@@ -90,9 +90,14 @@ ASSET_SCENE = {'soh/soh/Enhancements/CrossWarp/CrossEntrance.inc.h': 1}
 ASSET_GAME = {'soh/src/code/z_scene_table.c': 7, 'soh/soh/z_play_otr.cpp': 1}
 
 # The bundled answer: OoTMM's scene and room command overrides (mq.c:220-411) and its minimap and pause-map marks
-# (mq.c:452-515) key on it.
-BUNDLED_SCENE = {'soh/soh/Enhancements/randomizer/ComboMqRuntime.cpp': 1}
+# (mq.c:452-515) key on it, and so do the gameplay rules where OoTMM's data differs from a real oot-mq.o2r (U6): MQ
+# Water's door flags (dungeon.cpp) and FixWaterMQLock.cpp, which only an archive door needs.
+BUNDLED_SCENE = {
+    'soh/soh/Enhancements/randomizer/ComboMqRuntime.cpp': 1,
+    'soh/soh/Enhancements/randomizer/dungeon.cpp': 1,
+}
 BUNDLED_GAME = {
+    'soh/soh/Enhancements/Fixes/FixWaterMQLock.cpp': 1,
     'soh/src/code/z_map_mark.c': 1,
     'soh/src/overlays/misc/ovl_kaleido_scope/z_lmap_mark.c': 1,
 }

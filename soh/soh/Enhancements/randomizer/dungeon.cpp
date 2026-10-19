@@ -3,10 +3,20 @@
 #include "3drando/pool_functions.hpp"
 #include "static_data.h"
 #include "SeedContext.h"
+#ifdef COMBO_BUILD
+#include "soh/ResourceManagerHelpers.h"
+#endif
 
 namespace Rando {
 extern "C" PlayState* gPlayState;
 extern "C" SaveContext gSaveContext;
+
+#ifdef COMBO_BUILD
+// ComboShip: MQ Water's locked doors in OoTMM's bundled data. Transition actor 0x16 is the door SoH's
+// FixWaterMQLock.cpp moves from switch 3 to switch 4 in a real oot-mq.o2r, so MQDoorFlags below has {4, 21}; OoTMM's
+// bins move that door to switch 2 instead (scripts/make_mq.ts:226-229), so a bundled seed spends its keys on {2, 21}.
+static const std::vector<uint8_t> kBundledMqWaterDoorFlags = { 2, 21 };
+#endif
 
 DungeonInfo::DungeonInfo(std::string name_, const RandomizerHintTextKey hintKey_, const RandomizerGet map_,
                          const RandomizerGet compass_, const RandomizerGet smallKey_, const RandomizerGet keyRing_,
@@ -146,6 +156,11 @@ int8_t DungeonInfo::GetTotalSmallKeys(SaveContext* saveContext) const {
 
 const std::vector<uint8_t>* DungeonInfo::GetDoorFlags() const {
     if (IsMQ()) {
+#ifdef COMBO_BUILD
+        if (scene == SCENE_WATER_TEMPLE && ResourceMgr_SceneUsesBundledMq(scene)) {
+            return &kBundledMqWaterDoorFlags;
+        }
+#endif
         return &MQDoorFlags;
     }
     if (IS_RANDO) {

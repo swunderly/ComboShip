@@ -15,6 +15,11 @@ static constexpr int32_t CVAR_MQ_WATER_LOCK_DEFAULT = 0;
 static void OnInitEnDoor(void* refActor) {
     EnDoor* enDoor = reinterpret_cast<EnDoor*>(refActor);
     if (gPlayState->sceneNum == SCENE_WATER_TEMPLE && ResourceMgr_IsGameMasterQuest() &&
+#ifdef COMBO_BUILD
+        // ComboShip: only a real oot-mq.o2r's door. OoTMM's bundled MQ Water already moved it to switch 2
+        // (scripts/make_mq.ts:226-229), which dungeon.cpp counts for a bundled seed.
+        !ResourceMgr_GameUsesBundledMq() &&
+#endif
         enDoor->actor.params == 22659) {
         enDoor->actor.params = 22660;
     }
