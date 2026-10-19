@@ -167,13 +167,14 @@ check(re.search(r'if \(IS_RANDO && randoContext != nullptr\)', inputs),
       'MqModeInputsForScene: the dungeon and marker are read only for a randomizer file')
 
 # Direct uses of the MQ archive flag stay where they were: settings and catalog gates, the debug warp screen, the
-# quest carousel and the resolver's inputs, plus SaveManager::LoadFile's refusal of a marked save. A new one must be
-# reviewed against the bundled source first. settings.cpp's option gate asks OTRGlobals::CanPlayMasterQuest (the
-# archive or the bundled data, U7); its two finalize gates keep the archive flag.
+# quest carousel and the resolver's inputs, plus SaveManager::LoadFile's refusal of a marked save and file select's
+# explanation of the same refusal (Save_ExplainMqRefusal, beside the bundled flag). A new one must be reviewed against
+# the bundled source first. settings.cpp's option gate asks OTRGlobals::CanPlayMasterQuest (the archive or the bundled
+# data, U7); its two finalize gates keep the archive flag.
 ARCHIVE_FLAG = {
     'soh/soh/Enhancements/randomizer/settings.cpp': 2,
     'soh/soh/OTRGlobals.cpp': 1,
-    'soh/soh/SaveManager.cpp': 1,
+    'soh/soh/SaveManager.cpp': 2,
 }
 found = {}
 for path, text in TEXTS.items():
