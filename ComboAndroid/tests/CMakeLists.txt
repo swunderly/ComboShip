@@ -509,6 +509,13 @@ if(COMBO_SOURCE_DIR)
     combo_python_test(mq_bins_pins_reference_reader_and_notices mq_bins_reference_tests.py
         --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/mq_bins_reference"
         --exe $<TARGET_FILE:combo_mq_data_tests> --cmake "${CMAKE_COMMAND}")
+    # The bins against SoH's own MQ tables: locations, broken actors, silver rupees, locked doors, Wallmasters, maps.
+    combo_harness_test(mq_bins_match_soh_location_door_and_silver_tables mq_soh_table_parity_tests.py)
+    combo_python_test(mq_bins_maps_draw_like_soh_mq_maps mq_map_parity_tests.py)
+    # Local only: the vanilla commands, collision and alternate headers mq.c patches, in the user's extracted oot.o2r
+    # (COMBO_OOT_ARCHIVE, or an oot.o2r under a local-roms folder beside the checkout); reported as skipped without it.
+    combo_python_test(mq_bins_fit_user_vanilla_oot_archive mq_local_archive_tests.py "--archive=${COMBO_OOT_ARCHIVE}")
+    set_tests_properties(mq_bins_fit_user_vanilla_oot_archive PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)

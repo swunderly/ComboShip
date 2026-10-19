@@ -588,20 +588,28 @@ class ResourceReader:
         return self.data[self.at - size:self.at].decode('utf-8')
 
 
-def scene_commands(data):
-    """Binary scene/room commands (soh/soh/resource/importer/scenecommand); unknown ones fail closed."""
+def scene_commands(data, commands=None):
+    """Binary scene/room commands (soh/soh/resource/importer/scenecommand); unknown ones fail closed.
+
+    Given a list, commands also receives (command id, detail) for every command, in order: the entry count of
+    0x00, 0x01, 0x0B, 0x0E and 0x13, the resource path of 0x03 and 0x17, the path names of 0x0D, the header paths of
+    0x18 ('' for an unset layer), and None otherwise. Alternate headers are then recorded instead of refused (the MQ
+    archive check in ComboAndroid/tests/mq_local_archive_tests.py reads Jabu-Jabu's and Ice Cavern's layer 4).
+    """
     reader = ResourceReader(data)
     actors, transitions = [], []
     for _ in range(reader.take('I')):
         command = reader.take('i')
+        detail = None
         if command in (0x00, 0x01):  # SetStartPositionList, SetActorList
             entries = [reader.take('H3h3hH') for _ in range(reader.take('I'))]
+            detail = len(entries)
             if command == 0x01:
                 actors += [{'actor': e[0], 'pos': list(e[1:4]), 'params': e[7]} for e in entries]
         elif command in (0x02, 0x19):  # SetCsCamera, SetCameraSettings
             reader.take('bi')
         elif command in (0x03, 0x17):  # SetCollisionHeader, SetCutscenes
-            reader.string()
+            detail = reader.string()
         elif command == 0x04:  # SetRoomList
             for _ in range(reader.take('i')):
                 reader.string()
@@ -632,24 +640,25 @@ def scene_commands(data):
                 reader.string()
                 reader.string()
         elif command in (0x0B, 0x13):  # SetObjectList, SetExitList
-            reader.take(f'{reader.take("I")}H')
+            detail = reader.take('I')
+            reader.take(f'{detail}H')
         elif command == 0x0C:  # SetLightList
             for _ in range(reader.take('I')):
                 reader.take('B3h4Bh')
         elif command == 0x0D:  # SetPathways
-            for _ in range(reader.take('I')):
-                reader.string()
+            detail = [reader.string() for _ in range(reader.take('I'))]
         elif command == 0x0E:  # SetTransitionActorList
-            for _ in range(reader.take('I')):
+            detail = reader.take('I')
+            for _ in range(detail):
                 front, _, back, _, actor, x, y, z, _, params = reader.take('BBBBh3hhH')
                 transitions.append({'rooms': [front, back], 'actor': actor, 'pos': [x, y, z], 'params': params})
         elif command == 0x0F:  # SetLightingSettings
             for _ in range(reader.take('i')):
                 reader.take('18bhH')
         elif command == 0x18:  # SetAlternateHeaders
-            for _ in range(reader.take('I')):
-                if reader.string():
-                    raise ValueError('Alternate headers are not modelled')
+            detail = [reader.string() for _ in range(reader.take('I'))]
+            if commands is None and any(detail):
+                raise ValueError('Alternate headers are not modelled')
         elif command in (0x05, 0x11):  # SetWind, SetSkyboxSettings
             reader.take('4b')
         elif command in (0x10, 0x15):  # SetTimeSettings, SetSoundSettings
@@ -662,6 +671,8 @@ def scene_commands(data):
             reader.take('b')
         elif command != 0x14:  # EndMarker
             raise ValueError(f'Unknown scene command 0x{command:x}')
+        if commands is not None:
+            commands.append((command, detail))
     if reader.at != len(data):
         raise ValueError('Trailing bytes after the scene commands')
     return actors, transitions
