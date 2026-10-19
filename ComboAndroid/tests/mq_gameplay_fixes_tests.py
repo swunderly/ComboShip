@@ -14,6 +14,8 @@ from a real oot-mq.o2r (archive) and a vanilla one:
   counts, and DungeonInfo's mqKeyCount agrees.
 - MQ scrub prices (packages/logic/src/price.ts:97-130): SoH's MQ scrub rows charge OoTMM's MQ prices item for item;
   by physical scrub only MQ Dodongo's Cavern's shield and potion scrubs differ (OoTMM's pool labels).
+- Ruto (src/oot/play/play.c:65-86): OoTMM sets her top-floor flag on Jabu-Jabu entry only when Jabu-Jabu is not MQ;
+  Combo never sets it outside En_Ru1, which matches the MQ case.
 - MQ Spirit's room-6 silver blocks (src/oot/actors/Obj/Obj_Oshihiki.c:5-13): for a child, Obj_Oshihiki's Init reads
   switch 0x09 as unset in a bundled MQ Spirit, and SoH's kill hook (hook_handlers.cpp) runs only for archive MQ. The
   three blocks come from the bins.
@@ -445,6 +447,25 @@ check(sorted(by_scrub) == [('DC', 0x04, 40, 50), ('DC', 0x07, 50, 40)],
       'scrubs should differ (OoTMM\'s pool labels ids 0x1e and 0x1f the other way round)')
 print(f'scrub prices: SoH\'s MQ scrub prices equal OoTMM\'s item for item ({len(soh_scrubs)} scrubs); by physical '
       f'scrub only MQ DC\'s shield and potion scrubs differ')
+
+# --- Ruto in Jabu-Jabu ---------------------------------------------------------------------------------------------
+# OoTMM's eventFixes puts Ruto on the first floor on every entry to Jabu-Jabu, but only when Jabu-Jabu is not MQ
+# (src/oot/play/play.c:65-86: EV_OOT_INF_RUTO_TOP_FLOOR, SoH's INFTABLE_147). Combo has none of those Ruto fixes, so
+# MQ Jabu-Jabu already matches OoTMM: only En_Ru1 itself sets INFTABLE_147 (z_en_ru1.c), once Link carries her up.
+# A port of the fix must keep OoTMM's MQ exception.
+ruto_setters = {}
+for tree in ('soh/soh', 'soh/src', 'combo'):
+    for path in sorted((repo / tree).rglob('*')):
+        if path.suffix in ('.c', '.cpp', '.h', '.inc'):
+            text = path.read_text(encoding='utf-8', errors='replace')
+            count = len(re.findall(r'Flags_SetInfTable\(\s*(?:INFTABLE_147|0x147)\s*\)|infTable\[(?:20|0x14)\]\s*\|=',
+                                   text))
+            if count:
+                ruto_setters[path.relative_to(repo).as_posix()] = count
+check(ruto_setters == {'soh/src/overlays/actors/ovl_En_Ru1/z_en_ru1.c': 1},
+      f'Ruto\'s top-floor flag (INFTABLE_147) is set by {ruto_setters}; OoTMM sets it on entry only when Jabu-Jabu is '
+      'not MQ (play.c:76)')
+print('ruto: only En_Ru1 sets the top-floor flag, so MQ Jabu-Jabu places Ruto as OoTMM does')
 
 # --- MQ Spirit's silver blocks in room 6 ---------------------------------------------------------------------------
 # OoTMM patches the switch read in Obj_Oshihiki's Init (0x80a4f574, the call after ObjOshihiki_CheckType in the
