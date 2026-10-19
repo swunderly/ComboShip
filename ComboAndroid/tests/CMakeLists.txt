@@ -549,6 +549,10 @@ if(COMBO_SOURCE_DIR)
     # The engine glue: overrides only for the top-level header, the scene and room hooks before their commands,
     # the Actor_Spawn guard, and no cached resource written.
     combo_harness_test(mq_runtime_wired_into_scene_commands mq_runtime_wiring_tests.py)
+    # OoTMM's MQ minimap and pause-map marks (combo/mq/MqMaps.h) in SoH's own map-mark data files: the bins exactly,
+    # drawn like SoH's MQ tables but for OoTMM's two Fire Temple chests, and picked only for a bundled-MQ dungeon.
+    combo_harness_test(mq_map_marks_from_bins_for_bundled_mq mq_map_marks_tests.py
+        --blobs "${CMAKE_BINARY_DIR}/generated/combo_mq")
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)

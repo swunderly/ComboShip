@@ -1,4 +1,8 @@
 #include "global.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/randomizer/ComboMqMaps.h"
+#include <string.h>
+#endif
 
 static MapMarkData sMapMarkDekuTreeVanilla[] = {
     // Deku Tree minimap 0
@@ -2907,3 +2911,54 @@ MapMarkData* gMapMarkDataTableMq[] = {
     sMapMarkFireTempleMq, sMapMarkWaterTempleMq,    sMapMarkSpiritTempleMq,  sMapMarkShadowTempleMq,
     sMapMarkBottomWellMq, sMapMarkIceCavernMq,
 };
+
+#ifdef COMBO_BUILD
+// ComboShip: OoTMM's Master Quest minimap marks, for a dungeon that is MQ from the bundled data (z_map_mark.c). On
+// every map-mark load in an MQ dungeon OoTMM copies the dungeon's block of mq_scenes.bin over the start of the vanilla
+// table it has just loaded (src/oot/mq.c:479-515): the MQ ROM's marks, with OoTMM's chest in Fire Temple room 3
+// (scripts/make_mq.ts:285-294). Here a copy of each vanilla table gets its block on first use (combo/mq/MqMaps.h), and
+// the vanilla tables stay as they are.
+static MapMarkData sMapMarkDekuTreeBundledMq[ARRAY_COUNT(sMapMarkDekuTreeVanilla)];
+static MapMarkData sMapMarkDodongosCavernBundledMq[ARRAY_COUNT(sMapMarkDodongosCavernVanilla)];
+static MapMarkData sMapMarkJabuJabuBellyBundledMq[ARRAY_COUNT(sMapMarkJabuJabuBellyVanilla)];
+static MapMarkData sMapMarkForestTempleBundledMq[ARRAY_COUNT(sMapMarkForestTempleVanilla)];
+static MapMarkData sMapMarkFireTempleBundledMq[ARRAY_COUNT(sMapMarkFireTempleVanilla)];
+static MapMarkData sMapMarkWaterTempleBundledMq[ARRAY_COUNT(sMapMarkWaterTempleVanilla)];
+static MapMarkData sMapMarkSpiritTempleBundledMq[ARRAY_COUNT(sMapMarkSpiritTempleVanilla)];
+static MapMarkData sMapMarkShadowTempleBundledMq[ARRAY_COUNT(sMapMarkShadowTempleVanilla)];
+static MapMarkData sMapMarkBottomWellBundledMq[ARRAY_COUNT(sMapMarkBottomWellVanilla)];
+static MapMarkData sMapMarkIceCavernBundledMq[ARRAY_COUNT(sMapMarkIceCavernVanilla)];
+
+static MapMarkData* sMapMarkDataTableBundledMq[] = {
+    sMapMarkDekuTreeBundledMq,     sMapMarkDodongosCavernBundledMq, sMapMarkJabuJabuBellyBundledMq,
+    sMapMarkForestTempleBundledMq, sMapMarkFireTempleBundledMq,     sMapMarkWaterTempleBundledMq,
+    sMapMarkSpiritTempleBundledMq, sMapMarkShadowTempleBundledMq,   sMapMarkBottomWellBundledMq,
+    sMapMarkIceCavernBundledMq,
+};
+
+static const s32 sMapMarkDataTableBundledMqRooms[] = {
+    ARRAY_COUNT(sMapMarkDekuTreeBundledMq),      ARRAY_COUNT(sMapMarkDodongosCavernBundledMq),
+    ARRAY_COUNT(sMapMarkJabuJabuBellyBundledMq), ARRAY_COUNT(sMapMarkForestTempleBundledMq),
+    ARRAY_COUNT(sMapMarkFireTempleBundledMq),    ARRAY_COUNT(sMapMarkWaterTempleBundledMq),
+    ARRAY_COUNT(sMapMarkSpiritTempleBundledMq),  ARRAY_COUNT(sMapMarkShadowTempleBundledMq),
+    ARRAY_COUNT(sMapMarkBottomWellBundledMq),    ARRAY_COUNT(sMapMarkIceCavernBundledMq),
+};
+
+MapMarkData** ComboMq_GetMapMarkDataTable(void) {
+    static s32 sFilled = 0; // 1 once filled, -1 when the bundled data cannot fill it
+    s32 i;
+
+    if (sFilled == 0) {
+        sFilled = 1;
+        for (i = 0; i < ARRAY_COUNT(sMapMarkDataTableBundledMq); i++) {
+            // The vanilla marks, as in OoTMM's freshly loaded overlay, then the MQ block over them.
+            memcpy(sMapMarkDataTableBundledMq[i], gMapMarkDataTableVanilla[i],
+                   sMapMarkDataTableBundledMqRooms[i] * sizeof(MapMarkData));
+            if (!ComboMq_OverlayMinimapMarks(i, sMapMarkDataTableBundledMq[i], sMapMarkDataTableBundledMqRooms[i])) {
+                sFilled = -1;
+            }
+        }
+    }
+    return (sFilled > 0) ? sMapMarkDataTableBundledMq : NULL;
+}
+#endif

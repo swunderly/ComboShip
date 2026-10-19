@@ -5,6 +5,9 @@
 #include "soh/ResourceManagerHelpers.h"
 #include "soh/Enhancements/cosmetics/cosmeticsTypes.h"
 #include "soh/Enhancements/savestate_serialize.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/randomizer/ComboMqMaps.h"
+#endif
 
 typedef struct {
     /* 0x00 */ void* texture;
@@ -70,6 +73,16 @@ void MapMark_Init(PlayState* play) {
 
     // Overlay_Load(overlay->vromStart, overlay->vromEnd, overlay->vramStart, overlay->vramEnd, overlay->loadedRamAddr);
 
+#ifdef COMBO_BUILD
+    // ComboShip: a dungeon that is MQ from the bundled data shows OoTMM's MQ minimap marks (src/oot/mq.c:479-515),
+    // which add a Fire Temple chest to SoH's MQ table below.
+    if (ResourceMgr_GameUsesBundledMq()) {
+        sLoadedMarkDataTable = ComboMq_GetMapMarkDataTable();
+        if (sLoadedMarkDataTable != NULL) {
+            return;
+        }
+    }
+#endif
     if (ResourceMgr_IsGameMasterQuest()) {
         sLoadedMarkDataTable = gMapMarkDataTableMq;
     } else {

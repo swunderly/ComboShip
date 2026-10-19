@@ -1,6 +1,9 @@
 #include "z_kaleido_scope.h"
 #include "textures/parameter_static/parameter_static.h"
 #include "soh/ResourceManagerHelpers.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/randomizer/ComboMqMaps.h"
+#endif
 
 typedef struct {
     /* 0x00 */ void* texture;
@@ -37,6 +40,16 @@ extern PauseMapMarksData gPauseMapMarkDataTable[];
 extern PauseMapMarksData gPauseMapMarkDataTableMasterQuest[];
 
 void PauseMapMark_Init(PlayState* play) {
+#ifdef COMBO_BUILD
+    // ComboShip: a dungeon that is MQ from the bundled data shows OoTMM's MQ pause-map marks (src/oot/mq.c:452-477),
+    // which add a Fire Temple chest to SoH's MQ table below.
+    if (ResourceMgr_GameUsesBundledMq()) {
+        gLoadedPauseMarkDataTable = ComboMq_GetPauseMapMarkDataTable();
+        if (gLoadedPauseMarkDataTable != NULL) {
+            return;
+        }
+    }
+#endif
     if (ResourceMgr_IsGameMasterQuest()) {
         gLoadedPauseMarkDataTable = gPauseMapMarkDataTableMasterQuest;
     } else {

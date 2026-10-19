@@ -1,4 +1,7 @@
 #include "z_kaleido_scope.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/randomizer/ComboMqMaps.h"
+#endif
 
 static const Vtx sMarkBossVtx[] = {
     VTX(-4, 4, 0, 0, 0, 255, 255, 255, 255),
@@ -1046,3 +1049,23 @@ PauseMapMarksData gPauseMapMarkDataTableMasterQuest[] = {
         { PAUSE_MAP_MARK_NONE, 0, NULL, 0, 0, { 0 } },
     },
 };
+
+#ifdef COMBO_BUILD
+// ComboShip: OoTMM's Master Quest pause-map marks, for a dungeon that is MQ from the bundled data (z_lmap_mark.c). On
+// every pause in an MQ dungeon OoTMM loads mq_maps.bin, the MQ ROM's table with its sixth Fire Temple chest on floor 17
+// (scripts/make_mq.ts:395-412), over this table of the kaleido overlay and points its marks at the overlay's chest
+// vertices (src/oot/mq.c:452-477). Here a separate table gets it on first use (combo/mq/MqMaps.h).
+static PauseMapMarksData sPauseMapMarkDataTableBundledMq[ARRAY_COUNT(gPauseMapMarkDataTableMasterQuest)];
+
+PauseMapMarksData* ComboMq_GetPauseMapMarkDataTable(void) {
+    static s32 sFilled = 0; // 1 once filled, -1 when the bundled data cannot fill it
+
+    if (sFilled == 0) {
+        sFilled = ComboMq_FillPauseMapMarks(sPauseMapMarkDataTableBundledMq,
+                                            ARRAY_COUNT(sPauseMapMarkDataTableBundledMq), sMarkChestVtx)
+                      ? 1
+                      : -1;
+    }
+    return (sFilled > 0) ? sPauseMapMarkDataTableBundledMq : NULL;
+}
+#endif
