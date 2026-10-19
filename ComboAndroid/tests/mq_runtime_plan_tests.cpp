@@ -15,7 +15,9 @@
 //   mq.c's order, inputs untouched, out-of-range ids refused.
 // `--archive-fixture <file>` runs the same plans and patches on the vanilla
 // command lists and collision of the user's own oot.o2r, as written by
-// mq_runtime_archive_tests.py (local only).
+// mq_runtime_archive_tests.py (local only). `--command-fixture <file>` runs
+// the plans alone on the vanilla command ids committed in
+// fixtures/mq-vanilla-command-ids.txt.
 #include "ComboMqBlobs.h"
 #include "mq/ComboMqData.h"
 #include "mq/MqRuntime.h"
@@ -695,7 +697,8 @@ void CheckCollisionPatcher(const Data &data) {
   ExpectRefused(kGanonsCastle, ganon, 2410, 40, "Ganon polygon 2410 of 2410");
 }
 
-// --- The user's vanilla archive (mq_runtime_archive_tests.py) ---
+// --- The vanilla headers: fixtures/mq-vanilla-command-ids.txt, or the user's
+// archive (mq_runtime_archive_tests.py) ---
 
 struct Fixture {
   std::map<int, std::vector<uint8_t>> scenes;
@@ -710,6 +713,10 @@ Fixture ReadFixture(const char *path) {
   Fixture fixture;
   std::string kind;
   while (in >> kind) {
+    if (kind[0] == '#') { // a comment line
+      std::getline(in, kind);
+      continue;
+    }
     int dungeon = 0;
     size_t count = 0;
     if (kind == "scene" || kind == "room") {
@@ -758,8 +765,8 @@ Fixture ReadFixture(const char *path) {
   return fixture;
 }
 
-int RunArchive(const Data &data, const char *path) {
-  const Fixture fixture = ReadFixture(path);
+// The plans on the vanilla scene and room command ids of the 12 dungeons.
+void CheckVanillaCommandPlans(const Data &data, const Fixture &fixture) {
   assert(fixture.scenes.size() == 12 && fixture.rooms.size() == 220);
   const std::vector<RawRoom> raws = RawRooms();
 
@@ -841,6 +848,24 @@ int RunArchive(const Data &data, const char *path) {
   for (const auto &[key, ids] : fixture.rooms)
     for (size_t i = 0; i < ids.size(); i++)
       assert(vanilla.At(&ids, i) == CommandOverride::None);
+}
+
+// The committed command ids, in CI.
+int RunCommandFixture(const Data &data, const char *path) {
+  const Fixture fixture = ReadFixture(path);
+  Expect(fixture.polys.empty() && fixture.surfaces.empty(),
+         "the command fixture holds command ids only");
+  CheckVanillaCommandPlans(data, fixture);
+  std::printf("PASS: on %s, the 12 vanilla scenes and 220 rooms take exactly "
+              "mq.c's overrides with the bins' lists, and a vanilla load "
+              "takes none\n",
+              path);
+  return 0;
+}
+
+int RunArchive(const Data &data, const char *path) {
+  const Fixture fixture = ReadFixture(path);
+  CheckVanillaCommandPlans(data, fixture);
 
   // Collision: the vanilla Fire and Ganon lists patched exactly, the
   // vanilla lists untouched.
@@ -882,6 +907,8 @@ int main(int argc, char **argv) {
   }
   if (argc == 3 && std::string(argv[1]) == "--archive-fixture")
     return RunArchive(*data, argv[2]);
+  if (argc == 3 && std::string(argv[1]) == "--command-fixture")
+    return RunCommandFixture(*data, argv[2]);
   CheckPlans(*data);
   CheckRoomBuffers(*data);
   CheckSceneBuffers(*data);

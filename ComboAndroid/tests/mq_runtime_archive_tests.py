@@ -12,6 +12,8 @@ mq_runtime_plan_tests --archive-fixture on it, which checks that:
 - a vanilla load replaces nothing;
 - the patched Fire collision differs from vanilla in exactly 553 polygons and 33 surface types and Ganon's in its
   16 polygons, each as mq.c writes it, and the vanilla lists are untouched.
+It also checks that fixtures/mq-vanilla-command-ids.txt, the command ids the scene and room plans run on in CI
+(mq_runtime_plan_tests --command-fixture), are exactly the archive's; --write-fixture rewrites it from the archive.
 Local only: the archive comes from --archive, COMBO_OOT_ARCHIVE, or the first oot.o2r under a local-roms folder
 beside the checkout; without one, or for an archive other than NTSC-U 1.0 (the only version the bundled data is
 verified against), the test reports SKIPPED.
@@ -29,6 +31,7 @@ p.add_argument('--source', type=Path, required=True)
 p.add_argument('--build-dir', type=Path, required=True)
 p.add_argument('--exe', type=Path, required=True, help='mq_runtime_plan_tests built by CMake')
 p.add_argument('--archive', default='')
+p.add_argument('--write-fixture', action='store_true', help='rewrite fixtures/mq-vanilla-command-ids.txt and exit')
 a = p.parse_args()
 root = a.source.resolve()
 sys.path.insert(0, str(root / 'tools/ootmm'))
@@ -102,6 +105,24 @@ with zipfile.ZipFile(archive) as z:
             lines += [' '.join(map(str, poly)) for poly in polys]
             lines.append(f'surfaces {dungeon} {len(surfaces)}')
             lines += [f'{data0} {data1}' for data0, data1 in surfaces]
+
+# The committed command ids: only which commands each vanilla header has, in order, and how many.
+committed = Path(__file__).resolve().parent / 'fixtures/mq-vanilla-command-ids.txt'
+command_lines = [line for line in lines if line.startswith(('scene ', 'room '))]
+if a.write_fixture:
+    header = ['# The vanilla scene and room headers of OoTMM\'s 12 Master Quest dungeons as SoH command ids, in order',
+              '# (SOH::SceneCommandID), read from an NTSC-U 1.0 oot.o2r by mq_runtime_archive_tests.py --write-fixture.',
+              '# Command ids and their counts only. mq_runtime_plan_tests --command-fixture plans the MQ overrides on',
+              '# them; mq_runtime_archive_tests.py checks them against the archive.',
+              '# scene <OoTMM dungeon> <command count> <command ids>',
+              '# room <OoTMM dungeon> <room> <command count> <command ids>']
+    committed.write_text('\n'.join(header + command_lines) + '\n', encoding='utf-8', newline='\n')
+    print(f'wrote {committed}: {len(command_lines)} headers')
+    sys.exit(0)
+recorded = [line for line in committed.read_text(encoding='utf-8').splitlines() if line and not line.startswith('#')]
+if recorded != command_lines:
+    print(f'FAIL: {committed.name} is not the archive\'s command ids; rewrite it with --write-fixture')
+    sys.exit(1)
 
 work = a.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)

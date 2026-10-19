@@ -540,8 +540,13 @@ if(COMBO_SOURCE_DIR)
         target_compile_options(mq_runtime_plan_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     endif()
     add_test(NAME mq_runtime_overrides_buffers_and_collision_patches COMMAND mq_runtime_plan_tests)
+    # The scene and room plans on the vanilla headers' command ids, committed from an NTSC-U 1.0 oot.o2r (command ids
+    # and counts only).
+    add_test(NAME mq_runtime_plans_on_vanilla_command_ids COMMAND mq_runtime_plan_tests
+        --command-fixture "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mq-vanilla-command-ids.txt")
     # Local only: the same plans and patches on the vanilla command lists and collision of the user's oot.o2r
-    # (COMBO_OOT_ARCHIVE, or an oot.o2r under a local-roms folder beside the checkout); skipped without it.
+    # (COMBO_OOT_ARCHIVE, or an oot.o2r under a local-roms folder beside the checkout), and the committed command ids
+    # against it; skipped without it.
     combo_python_test(mq_runtime_on_user_vanilla_oot_archive mq_runtime_archive_tests.py
         --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/mq_runtime_archive"
         --exe $<TARGET_FILE:mq_runtime_plan_tests> "--archive=${COMBO_OOT_ARCHIVE}")
