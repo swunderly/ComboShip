@@ -12,6 +12,20 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## Unreleased
+
+Planned as 0.4.13. Nothing in this section is in a release yet.
+
+- **Master Quest dungeons can now be played from your normal OoT ROM, as in OoTMM.** Combo Ship now carries OoTMM's Master Quest dungeon data, so any of the 12 OoT dungeons can be its Master Quest version without a Master Quest ROM. For now this needs an OoT USA 1.0 (NTSC-U 1.0) ROM; with other versions the dungeons stay normal. As in OoTMM, Master Quest dungeons keep your ROM's normal models and textures.
+- **The Master Quest dungeon options are unlocked.** Search "MQ Dungeon Setting" in the Randomizer tab: None, Set Number, Random or Selection Only, with a choice for each dungeon. The seed views and the spoiler log list the seed's Master Quest dungeons.
+- **Allsanity's Master Quest setting now takes effect.** With a USA 1.0 ROM, a new seed from Allsanity settings, including a file you applied them to before, makes each OoT dungeon Master Quest on a coin flip, as OoTMM's Allsanity does. Before, every dungeon stayed normal.
+- **Master Quest Ice Cavern skips Sheik's Serenade of Water cutscene, as in OoTMM.** Sheik's check there works as usual.
+- **Master Quest Dodongo's Cavern keeps the game's scrub prices.** With vanilla scrub prices, MQ Deku Scrub Staircase asks 50 rupees and MQ Deku Scrub Side Room Near Lower Lizalfos 40; OoTMM charges them the other way round.
+- **Wallmaster Shuffle does not work with Master Quest dungeons yet.** With a USA 1.0 ROM and MQ Dungeon Setting not None, Own Game is greyed out and "Wallmaster Shuffle does not support Master Quest dungeons yet." shows under the row; if Own Game is already set, the Generate button is disabled and shows the same sentence. A seed file that has a Master Quest dungeon and Wallmaster Shuffle is refused. With Wallmaster Shuffle set to None, Master Quest dungeons work as described above.
+- **Seeds and saves made before this version are unaffected:** their dungeons stay as they were.
+
+Tested: _to be filled in after the emulator and phone runs._
+
 ## 0.4.12 - 2026-10-21
 
 - **New option: Wallmaster Shuffle, the first of OoTMM's entrance shuffles.** It is under Randomizer > Logic & access > Entrances, in both games' views, with OoTMM v32.3's name and description: "Enables the ability for Wallmasters to take you to random locations within their own game or across both games, based on other entrance settings". The choices are None (the default) and Own Game. OoTMM's third choice, Full, which sends Wallmasters across the games, is not offered yet.

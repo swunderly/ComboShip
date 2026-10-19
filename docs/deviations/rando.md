@@ -2084,7 +2084,9 @@ same way as the Shared Items reader: resolve by `isMagicAcquired`/`isDoubleMagic
   its soul hook sees them (`src/oot/mq.c` `kMqBrokenActors`, `src/oot/patches/broken_actors.S`). SoH keeps them
   and calls the soul hook before the object check, so `Actor_Spawn` skips the hook for an actor-list spawn whose
   object is not loaded (`gMapLoading`). Such an actor cannot spawn either way, so its missing soul never keeps the
-  room shut, and logic copies OoTMM's restoreBrokenActors-off rules (no Keese soul for that room).
+  room shut, and logic copies OoTMM's restoreBrokenActors-off rules (no Keese soul for that room). In a dungeon that
+  is MQ from OoTMM's bundled data, Combo now deletes the six MQ ones from the room lists exactly as OoTMM does (id
+  0xffff, which `Actor_Spawn` refuses; `ComboMqRuntime.cpp`).
 - **Old saves and seeds.** 0.3.10 read every OoT soul family as off, yet a 0.3.10 save can store 1 in
   `RSK_COMPLETE_OOT_SOULS` and `RSK_SHUFFLE_ENEMY_SOULS` (Randomize All Settings, a profile or a seed snapshot
   could set the hidden CVars), with no souls in its pool. `RSK_OOT_SOULS_PUBLISHED`, appended before `RSK_MAX`,

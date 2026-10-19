@@ -29,7 +29,7 @@ The app is not on Google Play. You install the APK yourself. It does not check f
 
 | Game | Accepted ROMs | Tested on Android |
 | --- | --- | --- |
-| Ocarina of Time | The versions Ship of Harkinian accepts. Use a normal ROM, not Master Quest. | N64 USA 1.0, SHA-1 `ad69c91157f6705e8ab06c79fe08aad47bb57ba7` |
+| Ocarina of Time | The versions Ship of Harkinian accepts. Use a normal ROM, not Master Quest. Builds after 0.4.12 have the Master Quest dungeons built in, for the USA 1.0 ROM. | N64 USA 1.0, SHA-1 `ad69c91157f6705e8ab06c79fe08aad47bb57ba7` |
 | Majora's Mask | N64 USA 1.0 or GameCube USA only. PAL and Japanese ROMs are not accepted. | N64 USA 1.0, SHA-1 `d6133ace5afaa0882cf214cf88daba39e266c078` |
 
 You can check a ROM at [ship.equipment](https://ship.equipment/) (OoT) and [2ship.equipment](https://2ship.equipment/) (MM).
@@ -88,6 +88,7 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 - **OoT spells and gear in MM.** Farore's Wind (MM), Din's Fire (MM), Nayru's Love (MM), Iron Boots (MM), Hover Boots (MM), Goron Tunic (MM) and Zora Tunic (MM), each with a shared version. Child Link wears the boots and tunics, as in OoTMM. Cross-Games Farore's Wind lets you warp between the games.
 - **Adult Link in MM.** With **Cross-Games Age** on, Link enters MM at the age he has in OoT, as in OoTMM. Adult Link in MM is OoT's own adult Link, made from the OoT game data the app extracts from your ROM, and he rides OoT's adult Epona. To get to MM as adult, play Song of Soaring in OoT with **Song of Soaring at any age (OoT)** on (see Cross-game songs below).
 - **Souls.** Enemy Souls (OoT), covering 43 kinds of OoT enemy. NPC Souls, Animal Souls and Misc. Souls for MM. These add to the Boss Souls and MM enemy souls that SoH and 2Ship already have.
+- **Master Quest dungeons (not in a release yet).** With an OoT USA 1.0 ROM, any of the 12 OoT dungeons can be its Master Quest version, played from your normal ROM with OoTMM's Master Quest data, as in OoTMM. Like OoTMM, they keep the normal ROM's models and textures. Allsanity makes each one Master Quest on a coin flip, as OoTMM's does. For now they need Wallmaster Shuffle off.
 - **Dungeon items.** OoT silver rupees with puzzle pouches, placed Vanilla, Own Dungeon or Anywhere. MM key rings for the four temples. (Upstream has since added SoH 9.3's own, different silver rupee option. That is not in this build.)
 - **Masks.** OoT uses OoTMM's mask model: masks are shuffled, or you start with them.
 - **Cross-game songs (this fork's own option).** With **Play warp songs across games**, OoT warp songs work in MM and Song of Soaring works in OoT with MM's owl statues. Each uses its own game's animation and sound. As in OoTMM, only child Link can play Song of Soaring in OoT unless **Song of Soaring at any age (OoT)** is also on. With it, adult Link can use it to reach MM once an MM owl statue is activated. There is also an option for mixing OoT warp pads and MM owls as shuffled destinations. (Upstream added its own, separate version of this on October 11, 2026. That version is not in this build.)
@@ -124,7 +125,7 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - 0.4.3 to 0.4.11 were not tested on a phone before release; the 0.4.6 and 0.4.7 fixes were then confirmed on a phone. 0.4.12's Wallmaster Shuffle was checked on the owner's phone with a release candidate before release. Installing it over 0.4.1 was not tried on the emulator either; only automated tests cover older saves.
 - Not yet checked on a real device: audio delay and quality, keyboards, SD card storage, mods, MM three-day cycle resets, multiplayer over the Internet, and tablets.
 - The SoH and 2Ship enhancements carried over from upstream are not all tested on Android.
-- Only OoT USA 1.0 and MM USA 1.0 ROMs have been used in testing. Master Quest has only been checked as seed data, never in play.
+- Only OoT USA 1.0 and MM USA 1.0 ROMs have been used in testing. The unreleased Master Quest dungeons have not been played yet, on the emulator or a phone; only automated tests cover them.
 - This port was written largely by AI coding agents, with code reviews between releases (for example, a full review before 0.3.10 found and fixed 187 problems).
 
 ## Known limits
@@ -134,8 +135,8 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - 64-bit ARM only.
 - Seeds and patches from the OoTMM website do not work.
 - MM accepts USA ROMs only (N64 1.0 or GameCube).
-- Master Quest dungeon options stay greyed out. They need both normal and Master Quest OoT data, and setup imports one OoT ROM.
-- Wallmaster Shuffle (from 0.4.12) works only in the combined randomizer. It does not support Master Quest dungeons yet. Some settings grey it out, such as Ship's own OoT entrance shuffles, Enemy Randomizer and some warp song options; the [changelog](ComboAndroid/docs/CHANGELOG.md) lists them.
+- Setup imports one OoT ROM, a normal one, so up to 0.4.12 the Master Quest options stay greyed out. Unreleased builds after 0.4.12 play Master Quest dungeons from that ROM with OoTMM's data, which fits only the USA 1.0 ROM; with any other OoT version the options stay greyed out.
+- Wallmaster Shuffle (from 0.4.12) works only in the combined randomizer. It does not support Master Quest dungeons yet: a seed with Master Quest dungeons and Wallmaster Shuffle is refused with "Wallmaster Shuffle does not support Master Quest dungeons yet.", and Master Quest dungeons work with Wallmaster Shuffle off. Some settings grey it out, such as Ship's own OoT entrance shuffles, Enemy Randomizer and some warp song options; the [changelog](ComboAndroid/docs/CHANGELOG.md) lists them.
 - Importing settings from another SoH or 2Ship install is not supported.
 - Restoring a backup is manual: copy the files back into the ComboShip folder.
 - Upstream changes after September 17, 2026 are not included. That means no SoH 9.3 update, no macOS support, and no upstream cross-game teleport songs.
@@ -191,7 +192,7 @@ This fork stands on the work of many projects:
 - [ZAPDTR](https://github.com/HarbourMasters/ZAPDTR) (Harbour Masters' version of ZAPD by the Zelda Reverse Engineering Team) and [OTRExporter](https://github.com/HarbourMasters/OTRExporter) (Harbour Masters), which also extract game data on the device.
 - [OoT3D Randomizer](https://github.com/gamestabled/OoT3D_Randomizer) and [OoT-Randomizer](https://github.com/OoTRandomizer/OoT-Randomizer), which Ship of Harkinian's randomizer code is partly derived from.
 - The [zeldaret](https://github.com/zeldaret) decompilation projects for OoT and MM.
-- [OoTMM](https://github.com/OoTMM/OoTMM) by the OoTMM Team. OoTMM v32.3 is the reference for this fork's logic, setting names, descriptions and behaviour. Much of the added code and logic data is adapted from OoTMM, including the MM spells, boots and tunics, adult Link's rules in MM, enemy souls, Triforce Quest placement and many logic rules. The Master Quest dungeon data in [combo/mq](combo/mq/README.md) is OoTMM's, unchanged.
+- [OoTMM](https://github.com/OoTMM/OoTMM) by the OoTMM Team. OoTMM v32.3 is the reference for this fork's logic, setting names, descriptions and behaviour. Much of the added code and logic data is adapted from OoTMM, including the MM spells, boots and tunics, adult Link's rules in MM, enemy souls, Triforce Quest placement and many logic rules. The Master Quest dungeon data in [combo/mq](combo/mq/README.md) is OoTMM's, unchanged, and the code that plays it follows OoTMM's.
 - The Android ports this one used as references: [linkzenic/Shipwright-Android](https://github.com/linkzenic/Shipwright-Android) for Ship of Harkinian, and the owner's fork [swunderly/2ship2harkinian-Android](https://github.com/swunderly/2ship2harkinian-Android) of [linkzenic/2ship2harkinian-Android](https://github.com/linkzenic/2ship2harkinian-Android) for 2 Ship 2 Harkinian. Thanks also to Waterdish for the Android ports of both games: [Waterdish/Shipwright-Android](https://github.com/Waterdish/Shipwright-Android) and [Waterdish/2ship2harkinian-Android](https://github.com/Waterdish/2ship2harkinian-Android), which linkzenic's 2 Ship 2 Harkinian port was forked from.
 - SDL2, SDL_net and the other libraries whose license notices ship inside the APK under `assets/licenses`.
 
@@ -204,7 +205,7 @@ There is no single license for this repository. Each part keeps its own terms.
 - 2 Ship 2 Harkinian is CC0-1.0 ([LICENSE](https://github.com/2ship2harkinian/2ship2harkinian/blob/develop/LICENSE)).
 - libultraship ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.9-android/libultraship/LICENSE)), Fast3D ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.9-android/libultraship/src/fast/LICENSE.txt)), ZAPDTR ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.9-android/ZAPDTR/LICENSE)), OTRExporter ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.9-android/OTRExporter/LICENSE)) and the OoT-Randomizer code ([LICENSE](https://github.com/swunderly/ComboShip/blob/v0.4.9-android/soh/soh/Enhancements/randomizer/3drando/LICENSE.md)) are MIT.
 - OoTMM is MIT. A copy of its license is at [ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt](https://github.com/swunderly/ComboShip/blob/v0.4.9-android/ComboAndroid/licenses/OoTMM-MIT-LICENSE.txt) and ships in the APK. Some folders with adapted code also have their own copy, for example [combo/rando/entrances/LICENSE.OoTMM](https://github.com/swunderly/ComboShip/blob/v0.4.9-android/combo/rando/entrances/LICENSE.OoTMM).
-- The three Master Quest data files in `combo/mq/data` come from OoTMM v32.3 and are under OoTMM's MIT license (copy in `combo/mq/LICENSE.OoTMM`). They are data that OoTMM extracted from the Master Quest ROM: actor, door and path lists, map marks and collision patches, with no models, textures, sound or code. They are compiled into the app unchanged. [combo/mq/README.md](combo/mq/README.md) gives their source and checksums.
+- The three Master Quest data files in `combo/mq/data` come from OoTMM v32.3. They are data that OoTMM extracted from the Master Quest release, bundled with the maintainer's approval under OoTMM's MIT license (copy in `combo/mq/LICENSE.OoTMM`): actor, door and path lists, map marks and collision patches, with no models, textures, sound or code. They are compiled into the app unchanged. [combo/mq/README.md](combo/mq/README.md) gives their source and checksums.
 - The APK carries dependency notices under `assets/licenses`. In 0.4.9 the APK does not yet include the Fast3D, ZAPDTR, OTRExporter and OoT-Randomizer texts. They are attached to the [0.4.9 release](https://github.com/swunderly/ComboShip/releases/tag/v0.4.9-android) as `THIRD-PARTY-NOTICES.txt`.
 
 ## Disclaimer
