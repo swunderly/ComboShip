@@ -2,11 +2,11 @@
 
 Static scan of combo/ComboShip.cpp and combo/gui/ComboAnchorRoomWindow.cpp. multiplayer_protocol_tests.cpp
 runs SeedIdentity, StampClientState and TeammateWarning themselves. A Wallmaster corpus seed comes from the
-headless generator, which writes no displaySeed; corpus rows share master seeds across start contexts. So the
-slot's sync seed, the journal commit and the icons of an imported layout seed all take SeedIdentity, and two
-different layout seeds never sync (M1 plan, critic correction C5). Both games' client states carry that
-identity, and the room window tells a teammate on another seed or version why nothing is shared, in plain
-sentences and across games.
+headless generator, which gives a layout seed the app's displaySeed; older headless layout seeds have none,
+and corpus rows share master seeds across start contexts. So the slot's sync seed, the journal commit and the
+icons of an imported layout seed all take SeedIdentity, and two different layout seeds never sync (M1 plan,
+critic correction C5). Both games' client states carry that identity, and the room window tells a teammate on
+another seed or version why nothing is shared, in plain sentences and across games.
 """
 from pathlib import Path
 import argparse
@@ -67,6 +67,11 @@ try:
 except ValueError as error:
     sys.exit(f'FAIL: an imported layout seed does not show its identity, or is not kept as read: {error}')
 require(not re.search(r'\bj\s*\[\s*"displaySeed"\s*\]\s*=', reload_), 'the import writes a displaySeed into the seed')
+# The headless tool writes a layout seed's displaySeed itself, so every device reads its identity from the file.
+headless = read('combo/ComboRandoHeadless.cpp')
+require(hostcxx.contains(headless, 'if (!entranceLayout.is_null()) consolidated["displaySeed"] = '
+                                   'ComboHash(ComboRando::Entrances::GeneratedSeedIdentityText('),
+        'a headless layout seed has no displaySeed')
 
 # Both games' client states go through Send; each reports the slot's identity.
 send = body(ship, 'static void Send(const char* json) {')

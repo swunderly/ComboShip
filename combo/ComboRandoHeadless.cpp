@@ -1377,6 +1377,13 @@ int RunHeadless(int argc, char** argv) {
                         consolidated["mixedEntranceExpansion"] = mixedEntranceExpansion;
                     if (!entranceLayout.is_null())
                         consolidated["entranceLayout"] = entranceLayout;
+                    // A layout seed carries the app's seed identity (RunComboFill's displaySeed, the same formula),
+                    // so its file icons and its co-op identity come from the file, the same on every device that
+                    // loads it. A seed without a layout stays as before: byte-identical, keeping its master seed.
+                    if (!entranceLayout.is_null())
+                        consolidated["displaySeed"] = ComboHash(ComboRando::Entrances::GeneratedSeedIdentityText(
+                            seed, sohDump, mmDump, consolidated["gameplayRules"], consolidated["songTravel"], "",
+                            entranceLayout));
                     consolidated["accessibility"] = {
                         { "version", 1 },
                         { "mode",

@@ -412,6 +412,9 @@ def corpus_row(row, results):
             oot.get('gRandoSettings.SoulsEnemyOot') != row['souls'] or \
             mm.get('gRando.Options.RO_SHUFFLE_ENEMY_SOULS') != row['souls']:
         stop(f'{rid}: the seed does not have the requested settings (a config CVar did not apply)')
+    # Its File 3 icons and co-op identity (ComboAnchorProtocol.h SeedIdentity); the 0.4.12 headless tool writes it.
+    if not isinstance(doc.get('displaySeed'), int):
+        stop(f'{rid}: the seed has no displaySeed; was it made by the release candidate\'s comborando?')
     placements = {'oot': doc['oot'].get('placements'), 'mm': doc['mm'].get('placements'), 'foreign': doc.get('foreign')}
     entry = {'id': rid, 'seed': f'seeds/{rid}.json', 'entrances': f'seeds/{rid}.entrances.txt',
              'config': f'inputs/{row["config"]}',

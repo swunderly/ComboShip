@@ -127,16 +127,25 @@ inline uint32_t Fnv1a(const std::string& text) {
 
 // A seed's co-op identity: the comboSeed of every progress packet, the seed each client reports to its
 // teammates, and the file icons of an imported seed. A seed the app generated carries it as displaySeed,
-// which covers its input seed, settings and entrance layout (C5). The headless generator writes no
-// displaySeed, and a master seed alone tells neither settings nor layouts apart (the release corpus reuses
-// each master seed across its start contexts), so a layout seed without one is identified by its whole
-// content. Any other seed keeps its master seed, as before.
+// which covers its input seed, settings and entrance layout (C5); the headless generator writes the same
+// for a layout seed. A master seed alone tells neither settings nor layouts apart (the release corpus reuses
+// each master seed across its start contexts), so a layout seed without a displaySeed, from an older
+// headless build, is identified by its content. That leaves out its item placements and foreign[]: the
+// Plandomizer's Save writes them again with item-name suffixes from the importing device's own pools
+// (ComboMenu.cpp PlandoSavePlay), so they can differ between two devices' copies of one file. A Plandomizer
+// edit so keeps the seed's identity, as it keeps an app seed's displaySeed. Any other seed keeps its master
+// seed, as before.
 inline uint32_t SeedIdentity(const Json& seed) {
     if (!seed.is_object())
         return 0;
     if (seed.contains("displaySeed") || !seed.contains("entranceLayout"))
         return seed.value("displaySeed", seed.value("masterSeed", 0u));
-    return Fnv1a(seed.dump());
+    auto content = seed;
+    content.erase("foreign");
+    for (const char* game : { "oot", "mm" })
+        if (content.contains(game) && content[game].is_object())
+            content[game].erase("placements");
+    return Fnv1a(content.dump());
 }
 
 // Both games' client states (HANDSHAKE clientState, UPDATE_CLIENT_STATE state) carry the protocol and,

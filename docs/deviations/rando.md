@@ -2422,8 +2422,10 @@ failed MM-start attempt (`pinStartOot`) also falls back after an entrance shuffl
 (`ComboShip.cpp`, `RunComboFill`).
 
 **Co-op.** Nothing sends the entrance layout over the network; each client installs it from its own
-seed, and captures, respawns and positions stay local. Layout seeds without a `displaySeed` get their
-own co-op identity (see `anchor.md`, 2026-10-19), so both players must load the same seed file.
+seed, and captures, respawns and positions stay local. A seed's co-op identity is its `displaySeed`,
+which the headless tool now writes for a layout seed as the app does; an older headless layout seed
+without one gets an identity from its content (see `anchor.md`, 2026-10-19). Both players must load the
+same seed file.
 
 **Old seeds and saves.** Seeds without a layout generate byte-identically (whole-host corpus
 fingerprint unchanged), get no entrance spoiler file and set no ER-wide flag. Older builds refuse a

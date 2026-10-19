@@ -89,6 +89,9 @@ for needle in ('masterSeed = base + attempt * 0x9E3779B9u;',
                'ResolveStartingGameMM(startCfg, masterSeed);',
                'return (ComboHash("startingGame:" + std::to_string(masterSeed)) & 1u) != 0;',
                'consolidated["startingGame"] = resolvedMmStart ? "MM" : "OOT";',
+               # A corpus seed's File 3 icons and co-op identity: its own displaySeed, as an app seed's.
+               'if (!entranceLayout.is_null()) consolidated["displaySeed"] = '
+               'ComboHash(ComboRando::Entrances::GeneratedSeedIdentityText(',
                'f << consolidated.dump(2);'):
     require(hostcxx.contains(headless, needle), 'headless rule moved: ' + needle)
 attempts = int(re.search(r'constexpr int kFillAttempts = (\d+);', read('combo/rando/CrossWorldRando.h')).group(1))

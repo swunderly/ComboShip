@@ -811,6 +811,41 @@ void CheckSeedIdentity() {
   const auto other = Generate(Tranche(10));
   assert(other != layout &&
          SeedIdentityText("x", other) != SeedIdentityText("x", layout));
+  // The app's displaySeed text, which the headless tool shares: the input seed,
+  // both dumps, the logic parts of the rules and the song map, a solo mode and
+  // the layout, in that order.
+  const Json rules = {{"version", 2},
+                      {"values", {{"runtime", 1}}},
+                      {"logicValues", {{"logic", 1}}},
+                      {"mmTricks", {{"trick", 1}}},
+                      {"ootTricks", "a,b"}};
+  const Json songs = {{"enabled", true},
+                      {"logicEnabled", false},
+                      {"logicForeignSongs", true},
+                      {"destinations", {{"Minuet", "Bolero"}}}};
+  const auto logic = Json{{"logicValues", rules["logicValues"]},
+                          {"mmTricks", rules["mmTricks"]},
+                          {"ootTricks", rules["ootTricks"]}}
+                         .dump() +
+                     Json{{"logicEnabled", false},
+                          {"logicForeignSongs", true},
+                          {"destinations", songs["destinations"]}}
+                         .dump();
+  assert(GeneratedSeedIdentityText("seed", "oot", "mm", rules, songs, "",
+                                   layout) ==
+         SeedIdentityText("seedootmm" + logic, layout));
+  assert(GeneratedSeedIdentityText("seed", "oot", "mm", rules, songs,
+                                   "oot-randomizer", Json()) ==
+         "seedootmm" + logic + "oot-randomizer");
+  // Per-run enhancement values change neither the icons nor the sync seed.
+  auto runtime = rules;
+  runtime["values"]["runtime"] = 2;
+  auto playSongs = songs;
+  playSongs["enabled"] = false;
+  assert(
+      GeneratedSeedIdentityText("seed", "oot", "mm", runtime, playSongs, "",
+                                layout) ==
+      GeneratedSeedIdentityText("seed", "oot", "mm", rules, songs, "", layout));
 }
 
 // NativeBridge.h: the scopes carry the unified MM state.

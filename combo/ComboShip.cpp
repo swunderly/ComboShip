@@ -2863,22 +2863,12 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         // Combo_FinalizeGenerate, which the main-thread file-select poll runs once it sees done.
         // The OOT seed-hash folds in input-seed + both settings dumps so the icons identify seed and
         // settings (same seed+settings -> matching icons across players). Only the rule and song-map
-        // parts that shape logic count: per-run enhancement values (e.g. Shorter Ballad) must not
-        // change the icons or the Anchor sync seed for players of the same seed.
-        const auto rules = SnapshotGameplayRules();
-        const auto songs = sSongTravel.json();
-        const nlohmann::json logicRules = { { "logicValues", rules.at("logicValues") },
-                                            { "mmTricks", rules.at("mmTricks") },
-                                            { "ootTricks", rules.at("ootTricks") } };
-        const nlohmann::json logicSongs = { { "logicEnabled", songs.at("logicEnabled") },
-                                            { "logicForeignSongs", songs.at("logicForeignSongs") },
-                                            { "destinations", songs.at("destinations") } };
+        // parts that shape logic count (GeneratedSeedIdentityText, which the headless tool shares).
         // A layout seed also hashes its layout (C5); every other seed hashes the same text as before.
-        uint32_t displaySeed =
-            ComboHash(ComboRando::Entrances::SeedIdentityText(
-                          inputSeed + sohDump + mmDump + logicRules.dump() + logicSongs.dump() +
-                              (combinedMode ? "" : ComboRando::kGameModeKeys[gameMode]), entranceLayout)
-                          .c_str());
+        uint32_t displaySeed = ComboHash(ComboRando::Entrances::GeneratedSeedIdentityText(
+                                             inputSeed, sohDump, mmDump, SnapshotGameplayRules(), sSongTravel.json(),
+                                             combinedMode ? "" : ComboRando::kGameModeKeys[gameMode], entranceLayout)
+                                             .c_str());
         g_FinalizeOotApply = ootApply.dump();
         g_FinalizeDisplaySeed = displaySeed;
         g_FinalizeMasterSeed = masterSeed;

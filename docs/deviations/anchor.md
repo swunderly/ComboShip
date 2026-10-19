@@ -354,8 +354,17 @@ corpus seeds (different layouts and placements) synced with each other, showed t
 (`displaySeed` 0), and shared the in-memory cross-item dedup set within one session.
 
 Combo-owned, no vendored change:
+- `combo/ComboRandoHeadless.cpp`: the headless generator now writes a layout seed's `displaySeed` with the
+  app's formula (`GeneratedSeedIdentityText`, `UnifiedBridge.h`, shared with `RunComboFill`), so a corpus
+  seed's identity and file icons come from the file, as an app seed's do. A seed without a layout gets
+  none, so its output stays byte-identical to older builds' (the release procedure's no-ER A/B).
 - `combo/network/ComboAnchorProtocol.h` `SeedIdentity`: `displaySeed` when present; a layout seed without
-  one is identified by FNV-1a over its whole document; any other seed keeps its master seed (unchanged).
+  one (from an older headless build) is identified by FNV-1a over its document without its item placements
+  and `foreign[]`; any other seed keeps its master seed (unchanged). The Plandomizer's Save writes the
+  placements and `foreign[]` again with item-name suffixes from the importing device's own pools
+  (`ComboMenu.cpp` `PlandoSavePlay`), so two devices' copies of one file could differ there; everything
+  else in the file is kept as read. A Plandomizer edit therefore keeps the seed's identity, as it keeps an
+  app seed's `displaySeed`.
   `combo/ComboShip.cpp` uses it for the slot's sync seed (`LoadComboCompletion`), the Anchor journal commit
   (`Combo_WriteGameSave`) and an imported layout seed's icons. The imported seed is still kept as read.
 - `StampClientState`: the HANDSHAKE client state now carries the sync seed too, like UPDATE_CLIENT_STATE,

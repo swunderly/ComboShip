@@ -78,29 +78,46 @@ int main() {
     // A stand-in layout: the identity reads any layout as data.
     Json layout = {{"settings", {{"erWallmasters", "ownGame"}}},
                    {"overrides", Json::array({Json::array({"wallmaster-source", "destination-a"})})}};
-    // A seed the app made keeps its displaySeed; a headless seed without a layout keeps its master seed.
+    // A seed the app made, and a headless layout seed, keep their displaySeed; a headless seed without a layout
+    // keeps its master seed.
     Json app = {{"masterSeed", 7u}, {"displaySeed", 99u}, {"entranceLayout", layout}};
     assert(SeedIdentity(app) == 99u);
     app.erase("entranceLayout");
     assert(SeedIdentity(app) == 99u);
     assert(SeedIdentity(Json{{"masterSeed", 7u}, {"startingGame", "OOT"}}) == 7u);
     assert(SeedIdentity(Json()) == 0 && SeedIdentity(Json("seed")) == 0);
-    // Headless corpus rows share a master seed across start contexts. Each layout seed is its own world.
+    // A layout seed from an older headless build has no displaySeed. Corpus rows share a master seed across start
+    // contexts, and each layout seed is its own world.
     Json child = {{"masterSeed", 7u},
                   {"startingGame", "OOT"},
-                  {"oot", {{"settings", {{"StartingAge", 0}}}}},
+                  {"oot", {{"settings", {{"StartingAge", 0}}}, {"placements", {{"KF Chest", "Mirror Shield (OOT)"}}}}},
+                  {"mm", {{"settings", Json::object()}, {"placements", {{"Bank", "Mirror Shield (MM)"}}}}},
+                  {"foreign", Json::array({{{"checkGame", "oot"}, {"itemName", "Deku Mask"}}})},
+                  {"hints", {{"version", 1}}},
                   {"entranceLayout", layout}};
-    auto adult = child, mmStart = child, otherRoute = child, noLayout = child;
+    auto adult = child, mmStart = child, otherRoute = child, otherHints = child, noLayout = child;
     adult["oot"]["settings"]["StartingAge"] = 1;
     mmStart["startingGame"] = "MM";
     otherRoute["entranceLayout"]["overrides"][0][1] = "destination-b";
+    otherHints["hints"]["version"] = 2;
     noLayout.erase("entranceLayout");
+    auto content = child;
+    content.erase("foreign");
+    content["oot"].erase("placements");
+    content["mm"].erase("placements");
     const uint32_t identity = SeedIdentity(child);
-    assert(identity == Fnv1a(child.dump()) && identity != 7u && SeedIdentity(noLayout) == 7u);
-    for (const auto* other : {&adult, &mmStart, &otherRoute})
+    assert(identity == Fnv1a(content.dump()) && identity != 7u && SeedIdentity(noLayout) == 7u);
+    for (const auto* other : {&adult, &mmStart, &otherRoute, &otherHints})
         assert(SeedIdentity(*other) != identity);
-    // Both players' copies of one file, and the copy a slot keeps, have one identity.
+    // Both players' copies of one file, and the copy a slot keeps, have one identity. That holds after the
+    // Plandomizer's Save on either device too, which writes the placements and foreign[] again with item-name
+    // suffixes from that device's own pools (ComboMenu.cpp PlandoSavePlay).
     assert(SeedIdentity(Json::parse(child.dump(2))) == identity);
+    auto plando = child;
+    plando["oot"]["placements"]["KF Chest"] = "Mirror Shield";
+    plando["mm"]["placements"]["Bank"] = "Mirror Shield";
+    plando["foreign"][0]["displayName"] = "Deku Mask (MM)";
+    assert(plando != child && SeedIdentity(plando) == identity);
     // So the team state of one row is refused by a player of another (the launcher's PumpSync refuses
     // their progress packets by the same comboSeed).
     assert(Expand(Combine(oot, mm, identity), SeedIdentity(adult)).empty());

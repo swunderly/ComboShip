@@ -164,6 +164,22 @@ inline std::string SeedIdentityText(std::string text, const nlohmann::json& layo
         text += layout.dump();
     return text;
 }
+// The text a generated seed's displaySeed hashes, in the app (RunComboFill) and the headless tool alike: the input
+// seed, both settings dumps and only the rule and song-map parts that shape logic, so per-run enhancement values
+// (e.g. Shorter Ballad) never change the icons or the Anchor sync seed of one seed; then a solo run's mode, and the
+// layout. rules is SnapshotGameplayRules' block and songs the SongTravelMap's json().
+inline std::string GeneratedSeedIdentityText(const std::string& inputSeed, const std::string& ootDump,
+                                             const std::string& mmDump, const nlohmann::json& rules,
+                                             const nlohmann::json& songs, const std::string& mode,
+                                             const nlohmann::json& layout) {
+    const nlohmann::json logicRules = { { "logicValues", rules.at("logicValues") },
+                                        { "mmTricks", rules.at("mmTricks") },
+                                        { "ootTricks", rules.at("ootTricks") } };
+    const nlohmann::json logicSongs = { { "logicEnabled", songs.at("logicEnabled") },
+                                        { "logicForeignSongs", songs.at("logicForeignSongs") },
+                                        { "destinations", songs.at("destinations") } };
+    return SeedIdentityText(inputSeed + ootDump + mmDump + logicRules.dump() + logicSongs.dump() + mode, layout);
+}
 
 // The layout of one generation attempt, or null when no pool is placed. In order:
 // 1. normalize the settings and check them against this build's capabilities;

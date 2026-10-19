@@ -8,8 +8,9 @@ playthrough of that attempt (critic correction C13). An exhausted layout search 
 the attempt, pins a Random start to OoT after an MM start as the other failures do (C24), and in the
 launcher is bounded by the headless budget (C1); every other entrance failure stops generation. The
 layout goes into the consolidated seed before its fileType is stamped, and the launcher's displaySeed
-also hashes it (C5). Nothing else calls the generator. Both callers resolve every MM entrance export
-into NativeFns in member order, including the one the generator sets its er* settings through (M1-08).
+also hashes it (C5); the headless tool gives a layout seed the same displaySeed. Nothing else calls the
+generator. Both callers resolve every MM entrance export into NativeFns in member order, including the
+one the generator sets its er* settings through (M1-08).
 """
 from pathlib import Path
 import argparse
@@ -85,9 +86,9 @@ assert loop.count('catch (const ComboRando::Entrances::') == 2, 'other entrance 
 handlers = loop[steps[5]:steps[7]]
 assert len(re.findall(r'\bcatch\s*\(', handlers)) == 2, 'only an exhausted layout search may reroll'
 assert not re.search(r'\bcatch\s*\(\s*(?:\.\.\.|(?:const\s+)?std::exception)', handlers), 'generic entrance handler'
-assert re.search(r'ComboHash\(ComboRando::Entrances::SeedIdentityText\(\s*inputSeed \+ sohDump \+ mmDump \+ '
-                 r'logicRules\.dump\(\) \+ logicSongs\.dump\(\) \+\s*'
-                 r'\(combinedMode \? "" : ComboRando::kGameModeKeys\[gameMode\]\), entranceLayout\)\s*\.c_str\(\)\)', fill)
+assert re.search(r'ComboHash\(ComboRando::Entrances::GeneratedSeedIdentityText\(\s*inputSeed, sohDump, mmDump, '
+                 r'SnapshotGameplayRules\(\), sSongTravel\.json\(\),\s*'
+                 r'combinedMode \? "" : ComboRando::kGameModeKeys\[gameMode\], entranceLayout\)\s*\.c_str\(\)\)', fill)
 ordered(fill, 'consolidated["entranceLayout"] = entranceLayout;', 'ComboRando::StampComboSeedFormat(consolidated);')
 assert 'if (!entranceLayout.is_null())\n            consolidated["entranceLayout"] = entranceLayout;' in fill
 assert re.search(r'sTempleProbe\s*=\s*ComboRando::Entrances::ResolveUnifiedTempleProbe\(\s*\[&\]\(const char\* name\) '
@@ -130,6 +131,15 @@ handlers = generate[steps[5]:steps[7]]
 assert [m.group(1) for m in re.finditer(r'\bcatch\s*\(([^)]*)\)', handlers)] == [
     'const ComboRando::Entrances::ShuffleError& error', 'const std::exception& error'], 'headless entrance handlers'
 ordered(generate, 'consolidated["entranceLayout"] = entranceLayout;', 'ComboRando::StampComboSeedFormat(consolidated);')
+# A layout seed gets the launcher's displaySeed: the same text, from the rules and song map the seed records, with the
+# headless tool's input seed. A seed without a layout gets none, so it stays byte-identical to older builds' output.
+stamp = re.search(r'if \(!entranceLayout\.is_null\(\)\)\s*consolidated\["displaySeed"\] = ComboHash\('
+                  r'ComboRando::Entrances::GeneratedSeedIdentityText\(\s*seed, sohDump, mmDump, '
+                  r'consolidated\["gameplayRules"\], consolidated\["songTravel"\], "",\s*entranceLayout\)\);', generate)
+assert stamp and generate.count('consolidated["displaySeed"]') == 1, 'the headless layout seed has no app identity'
+ordered(generate, 'consolidated["gameplayRules"]["ootTricks"] = getCsv ? getCsv() : "";',
+        'consolidated["songTravel"] = generatedSongs.json();', 'consolidated["displaySeed"] = ',
+        'ComboRando::StampComboSeedFormat(consolidated);')
 assert re.search(r'templeProbe\s*=\s*ComboRando::Entrances::ResolveUnifiedTempleProbe\(\s*\[&\]\(const char\* name\) '
                  r'\{ return Sym<void\*>\(soh, name\); \}\);', headless)
 
