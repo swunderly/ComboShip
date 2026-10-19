@@ -10,13 +10,15 @@ set(COMBO_MQ_BINS
     kMqMaps   "${COMBO_MQ_DIR}/data/mq_maps.bin"   43f8f13fa1b8290f661dbc66d2e89cfcc6f59169e70ae5fa1ad629ac657bffaa
 )
 
-# combo_mq_add_sources(<target>): compile the pinned bins and the decoder (ComboMqData.cpp) into <target>.
+# combo_mq_add_sources(<target>): compile the pinned bins and the decoder (ComboMqData.cpp) into <target>, with the
+# header-only runtime planner (MqRuntime.h).
 function(combo_mq_add_sources target)
     set(generated "${CMAKE_BINARY_DIR}/generated/combo_mq")
     combo_embed_binaries("${generated}" ComboMqBlobs ComboMq::Blobs ${COMBO_MQ_BINS})
     target_sources(${target} PRIVATE
         "${COMBO_MQ_DIR}/ComboMqData.h"
         "${COMBO_MQ_DIR}/ComboMqData.cpp"
+        "${COMBO_MQ_DIR}/MqRuntime.h"
         "${generated}/ComboMqBlobs.h"
         "${generated}/ComboMqBlobs.cpp"
     )

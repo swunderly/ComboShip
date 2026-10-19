@@ -529,6 +529,23 @@ if(COMBO_SOURCE_DIR)
     combo_python_test(mq_predicates_split_gameplay_and_assets mq_asset_split_tests.py)
     # Where saves, spoilers, the launcher and the headless generator write, bind and enforce the MQ marker.
     combo_python_test(mq_seed_marker_wired_through_saves_and_seeds mq_seed_marker_wiring_tests.py)
+    # OoTMM's mq.c scene and room hooks as SoH's command runner plans them (combo/mq/MqRuntime.h): the overrides,
+    # the room and scene buffers against the bins, and the collision patcher.
+    add_executable(mq_runtime_plan_tests mq_runtime_plan_tests.cpp)
+    combo_mq_add_sources(mq_runtime_plan_tests)
+    target_include_directories(mq_runtime_plan_tests PRIVATE "${COMBO_SOURCE_DIR}")
+    if(MSVC)
+        target_compile_options(mq_runtime_plan_tests PRIVATE /W4 /WX /UNDEBUG)
+    else()
+        target_compile_options(mq_runtime_plan_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    endif()
+    add_test(NAME mq_runtime_overrides_buffers_and_collision_patches COMMAND mq_runtime_plan_tests)
+    # Local only: the same plans and patches on the vanilla command lists and collision of the user's oot.o2r
+    # (COMBO_OOT_ARCHIVE, or an oot.o2r under a local-roms folder beside the checkout); skipped without it.
+    combo_python_test(mq_runtime_on_user_vanilla_oot_archive mq_runtime_archive_tests.py
+        --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/mq_runtime_archive"
+        --exe $<TARGET_FILE:mq_runtime_plan_tests> "--archive=${COMBO_OOT_ARCHIVE}")
+    set_tests_properties(mq_runtime_on_user_vanilla_oot_archive PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
