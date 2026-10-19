@@ -15,14 +15,15 @@ The first records ComboMq_BeginScene, ComboMq_BeginRoom and ComboMq_RunCommand. 
 - the refactored list commands behave exactly as the handlers they replaced, transcribed below.
 
 The second links the real ComboMqRuntime.cpp, the decoder and the embedded bins, and loads Fire Temple: the MQ scene,
-rooms A, B and A, the same scene and room vanilla, the MQ scene and room A again, then an unpatchable collision,
-Ice Cavern's alternate headers and a scene outside the dungeons. Checks:
+rooms A, B and A, the same scene and room vanilla, the MQ scene and room A again, then a replaced and an unpatchable
+collision, Ice Cavern's alternate headers and a scene outside the dungeons. Checks:
 - an MQ scene's 0x0E and 0x0D set the bins' transition actors and paths, its 0x03 hands BgCheck a copied header with
   mq.c's patches, and the resource's own lists stay untouched (mq.c:142-218, 300-359);
 - an MQ room's 0x01 and 0x0B set the bins' lists through the vanilla bodies, in buffers swapped on every room load,
   MQ or not, so the previous room's lists stay intact (mq.c:79-91, 361-411);
 - a vanilla load of the same resources, and any scene outside the 12 dungeons, sets the resources' own lists;
-- a reload refills the scene lists and collision at the same addresses; a collision that cannot be patched stays
+- a reload refills the scene lists and collision at the same addresses; a copy whose collision resource is replaced
+  is kept with its resource, so a save state's pointer into it stays valid; a collision that cannot be patched stays
   vanilla with the reason logged.
 
 Also scanned:
@@ -879,11 +880,13 @@ void CheckRealRuntime() {
                (roomA->actors[0].id != roomB->actors[0].id || roomA->actors[0].pos.x != roomB->actors[0].pos.x),
            "Fire Temple's MQ rooms A and B have actors and objects, and differ");
 
-    // Fire Temple from the bundled MQ data, with a pristine copy of its collision's lists.
+    // Fire Temple from the bundled MQ data. The test keeps only weak and pristine views of the collision; the
+    // scene's command holds it, as the resource cache does.
     bundledScenes = { kFireScene, kIceScene, kHyruleField };
     auto collision = Collision(4857, 68);
     const std::vector<SOH::CollisionPoly> polys = collision->polygons;
     const std::vector<SOH::SurfaceType> surfaces = collision->surfaceTypes;
+    const std::weak_ptr<SOH::CollisionHeader> firstCollision = collision;
     auto scene = std::make_unique<FakeScene>(std::move(collision));
     FakeRoom vanillaA(1), vanillaB(2);
     PlayState play;
@@ -941,6 +944,20 @@ void CheckRealRuntime() {
     Expect(play.setupActorList == bufferA, "the vanilla room load swapped the room buffers (mq.c:367)");
     ExpectResourceUntouched(*scene->collision->collisionHeader, polys, surfaces, "MQ scene again");
 
+    // The cache replaces the collision resource. The new one gets its own copy; the old copy, which a save state
+    // may still point at, stays with its resource and its patched lists.
+    auto replaced = std::make_unique<FakeScene>(Collision(4857, 68));
+    scene.reset();
+    Expect(!firstCollision.expired(), "the patched copy holds its collision resource");
+    LoadScene(play, kFireScene, *replaced);
+    ExpectMqSceneLists(play, *replaced, fire, "replaced collision");
+    ExpectPatchedCollision(play.colCtx.colHeader, *replaced->collision->GetPointer(), polys, surfaces,
+                           "replaced collision");
+    Expect(play.colCtx.colHeader != mqCollision, "a replaced collision resource gets a new copy");
+    Expect(!firstCollision.expired(), "the replaced copy keeps its collision resource");
+    ExpectPatchedCollision(mqCollision, *firstCollision.lock()->GetPointer(), polys, surfaces, "the replaced copy");
+    const CollisionHeader* const replacedCollision = play.colCtx.colHeader;
+
     // A collision that cannot be patched exactly, or did not load, stays vanilla with the reason logged; the
     // scene's other lists are still MQ.
     auto shortCollision = Collision(100, 4);
@@ -956,6 +973,12 @@ void CheckRealRuntime() {
     ExpectMqSceneLists(play, *missing, fire, "missing collision");
     Expect(play.colCtx.colHeader == nullptr && gSpdlogErrors == errors + 2,
            "a collision that did not load stays vanilla, with the reason logged");
+    LoadScene(play, kFireScene, *replaced);
+    Expect(play.colCtx.colHeader != replacedCollision && play.colCtx.colHeader != mqCollision,
+           "the copy replaced by another resource is kept, and a new one patched");
+    ExpectPatchedCollision(play.colCtx.colHeader, *replaced->collision->GetPointer(), polys, surfaces, "replaced again");
+    ExpectPatchedCollision(replacedCollision, *replaced->collision->GetPointer(), polys, surfaces, "the kept copy");
+    ExpectPatchedCollision(mqCollision, *firstCollision.lock()->GetPointer(), polys, surfaces, "the first copy");
 
     // Ice Cavern on layer 4: its 0x18 sets the MQ paths in place of its alternate header, which never runs, and
     // the rest of the top-level header runs with the MQ transition actors (mq.c:328-340).
@@ -1055,5 +1078,5 @@ if failures:
 print('PASS: the scene and room hooks run just before their commands; only the top-level header is asked for '
       'overrides and a replaced command skips its vanilla handler; the refactored list commands match the '
       'originals; the real ComboMqRuntime.cpp sets the bins\' lists, swaps the room buffers, hands BgCheck a '
-      'patched copy, and leaves vanilla loads alone; Actor_Spawn refuses a negative '
+      'patched copy that outlives its replacement, and leaves vanilla loads alone; Actor_Spawn refuses a negative '
       'id first; no cached resource is written')

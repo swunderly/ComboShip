@@ -38,7 +38,7 @@ struct CollisionCopy {
 // bins: no destructor at exit releases a cached resource after the resource manager is gone. Each dungeon has its
 // own scene buffer and collision copies, refilled in place on every load of that dungeon, so the lists and header
 // the PlayState points at keep their addresses for as long as the game runs, as the cached resources' do (a SoH
-// save state restores those pointers from any scene).
+// save state restores those pointers from any scene). A copy whose collision resource was replaced is kept too.
 struct Runtime {
     ComboMq::CommandPlan scenePlan;                   // the scene header being loaded and its overrides
     ComboMq::CommandPlan roomPlan;                    // the room header being loaded and its overrides
@@ -46,6 +46,9 @@ struct Runtime {
     SceneBuffer sceneBuffers[ComboMq::kDungeonCount]; // sMqBufferScene (mq.c:88)
     // The patched collision of each planned 0x03 command, by dungeon and command index.
     std::vector<std::unique_ptr<CollisionCopy>> collisions[ComboMq::kDungeonCount];
+    // Copies of collision resources the cache has since replaced (an alternate-asset toggle reloads one). A save
+    // state taken before may still point at their headers, so they are never freed.
+    std::vector<std::unique_ptr<CollisionCopy>> replacedCollisions;
     RoomBuffers roomBuffers;             // sMqBufferRoom and sMqBufferRoom2 (mq.c:86-91)
     RoomBuffers::Buffer* room = nullptr; // the buffer holding the planned room's lists
 };
@@ -87,8 +90,11 @@ bool PatchCollisionCopy(std::unique_ptr<CollisionCopy>& copy, int dungeon, const
         // Only the resource's own lists have a known length.
         error = "the scene's collision lists were replaced";
     } else {
-        // The same collision is patched into the same copy again, which keeps its storage.
-        if (copy == nullptr || copy->source != source)
+        // The same collision is patched into the same copy again, which keeps its storage. Another collision gets a
+        // new copy, and the patched copy it replaces is kept (replacedCollisions).
+        if (copy != nullptr && copy->source != nullptr && copy->source != source)
+            State().replacedCollisions.push_back(std::move(copy));
+        if (copy == nullptr)
             copy = std::make_unique<CollisionCopy>();
         if (ComboMq::PatchCollision(dungeon, scene, source->polygons.data(), source->polygons.size(),
                                     source->surfaceTypes.data(), source->surfaceTypes.size(), copy->patched, error)) {
