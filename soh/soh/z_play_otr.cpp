@@ -6,6 +6,9 @@
 #include <spdlog/spdlog.h>
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 #include "global.h"
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/randomizer/ComboMqRuntime.h"
+#endif
 
 extern "C" void Play_InitScene(PlayState* play, s32 spawn);
 extern "C" void Play_InitEnvironment(PlayState* play, s16 skyboxId);
@@ -91,6 +94,10 @@ void OTRPlay_InitScene(PlayState* play, s32 spawn) {
     func_80096FD4(play, &play->roomCtx.curRoom);
     YREG(15) = 0;
     gSaveContext.worldMapArea = 0;
+#ifdef COMBO_BUILD
+    // ComboShip: OoTMM's scene hook, just before the scene's commands run (src/oot/mq.c:426-437).
+    ComboMq_BeginScene(play, (SOH::Scene*)play->sceneSegment);
+#endif
     OTRScene_ExecuteCommands(play, (SOH::Scene*)play->sceneSegment);
 
     GameInteractor_ExecuteAfterSceneCommands(play->sceneNum);

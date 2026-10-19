@@ -2,7 +2,7 @@
 
 This folder holds the Master Quest (MQ) dungeon data that [OoTMM](https://github.com/OoTMM/OoTMM) uses to turn the vanilla Ocarina of Time dungeons into their MQ versions, and a decoder for it. This data lets MQ dungeons be played from the vanilla OoT ROM alone, as in OoTMM, without an MQ ROM.
 
-**Status:** the data is compiled in, but the game does not use it yet. The port of OoTMM's runtime code (`mq.c`) is still in progress.
+**Status:** the scene and room hooks of OoTMM's runtime code (`mq.c`) are ported, so a seed that records this data plays its MQ dungeons' actor, object, door and path lists and collision patches. The map marks are not ported yet, and the generator does not yet offer MQ dungeons.
 
 ## The files
 
@@ -32,7 +32,8 @@ Some MQ changes are not in the files. OoTMM makes them at runtime in `packages/g
 - [ComboMq.cmake](ComboMq.cmake) pins the three SHA-256 values. [CMake/ComboEmbedBinary.cmake](../../CMake/ComboEmbedBinary.cmake) compiles the files into the `soh` library as byte arrays and stops the configuration if a file does not match its pin. The Android app, the desktop build and the headless generator all get the same copy. The app needs no extra files at runtime.
 - [ComboMqData.h](ComboMqData.h) and [ComboMqData.cpp](ComboMqData.cpp) decode the big-endian files once into native structs. The decoder checks every count, offset and size, and refuses a damaged copy. It follows the formats of `make_mq.ts` and `mq.c`; the comments in the header give the details.
 - [MqMode.h](MqMode.h) decides, per dungeon scene, whether it plays as MQ and where its data comes from: a real `oot-mq.o2r`, this bundled data, or nowhere. The bundled data is used only over an NTSC-U 1.0 vanilla ROM, and only for a seed that records it. [MqSeedMarker.h](MqSeedMarker.h) reads and writes that per-seed and per-save record (`"mqDataSource": "ootmm-32.3"` with the seed's MQ dungeons). Seeds and saves without it keep SoH's behaviour. SoH's `ResourceMgr_IsSceneMasterQuest` answers from `MqMode.h`; scene and texture paths ask `ResourceMgr_SceneUsesMqAssets`, which is false for bundled seeds.
-- Host tests: `ComboAndroid/tests/combo_mq_data_tests.cpp` checks the counts, the fixes above and the refusal of damaged copies. `ComboAndroid/tests/mq_bins_reference_tests.py` checks the pins and compares the decoder with an independent reader (`mq_bins.py`).
+- [MqRuntime.h](MqRuntime.h) is `mq.c`'s scene and room hooks as pure code: which commands of a vanilla scene or room header the MQ lists replace, the room and scene buffers, and the collision patcher. `soh/soh/Enhancements/randomizer/ComboMqRuntime.cpp` runs them in SoH's command runner on owned copies, never on the cached scene resources.
+- Host tests: `ComboAndroid/tests/combo_mq_data_tests.cpp` checks the counts, the fixes above and the refusal of damaged copies. `ComboAndroid/tests/mq_bins_reference_tests.py` checks the pins and compares the decoder with an independent reader (`mq_bins.py`). `mq_runtime_plan_tests.cpp`, `mq_runtime_archive_tests.py` and `mq_runtime_wiring_tests.py` check the runtime against the bins, the user's vanilla archive and SoH's command runner.
 
 ## Updating
 

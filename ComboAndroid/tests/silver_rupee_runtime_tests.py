@@ -187,8 +187,11 @@ subprocess.run([str(hostcxx.build(a.compiler,file,includes=[base/'silver_rupees'
 # Rooms load through SoH's scene command table (z_scene_otr.cpp), never z_scene.c's: its actor-list command must
 # restart the per-room silver rupee numbering and soul room state, as OoTMM's room.c:69-80 does. Without it the
 # numbering kept counting across rooms and visits, so re-entering a room showed other checks' items each time.
+# The command's body is OTRScene_SetActorList, which a Master Quest room's list also runs (ComboMqRuntime.cpp).
 otr=(source/'soh/soh/z_scene_otr.cpp').read_text(encoding='utf-8')
-body=otr[hostcxx.find(otr,'bool Scene_CommandActorList('):];body=body[:body.index('\n}\n')]
+command=otr[hostcxx.find(otr,'bool Scene_CommandActorList('):];command=command[:command.index('\n}\n')]
+assert hostcxx.contains(command,'OTRScene_SetActorList(play, (ActorEntry*)cmdActor->GetRawPointer(), cmdActor->numActors);'),'z_scene_otr.cpp Scene_CommandActorList no longer runs the shared actor-list body'
+body=otr[hostcxx.find(otr,'void OTRScene_SetActorList('):];body=body[:body.index('\n}\n')]
 assert 'Combo_SilverResetRoom();' in body and 'Combo_OotSoulResetRoom(play);' in body,'z_scene_otr.cpp Scene_CommandActorList no longer resets the per-room silver rupee and soul state'
 assert body.index('Combo_SilverResetRoom();')<body.index('play->numSetupActors'),'the room reset must run before the room actors are set up'
 assert body.index('Combo_OotSoulResetRoom(play);')<body.index('play->numSetupActors'), 'the soul room guard must reset before the room actors are set up'

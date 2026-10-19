@@ -3349,6 +3349,14 @@ Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 pos
     s32 objBankIndex;
     u32 temp;
 
+#ifdef COMBO_BUILD
+    // ComboShip: OoTMM removes Master Quest's broken room actors by setting their id to 0xffff (src/oot/mq.c:398-410),
+    // and its spawn wrapper refuses a negative id before anything else sees it (src/oot/actors.c:342).
+    if (actorId < 0) {
+        return NULL;
+    }
+#endif
+
     ActorDBEntry* dbEntry = ActorDB_Retrieve(actorId);
 
     assert(dbEntry->valid);

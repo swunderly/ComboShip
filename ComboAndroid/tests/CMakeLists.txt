@@ -546,6 +546,9 @@ if(COMBO_SOURCE_DIR)
         --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/mq_runtime_archive"
         --exe $<TARGET_FILE:mq_runtime_plan_tests> "--archive=${COMBO_OOT_ARCHIVE}")
     set_tests_properties(mq_runtime_on_user_vanilla_oot_archive PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+    # The engine glue: overrides only for the top-level header, the scene and room hooks before their commands,
+    # the Actor_Spawn guard, and no cached resource written.
+    combo_harness_test(mq_runtime_wired_into_scene_commands mq_runtime_wiring_tests.py)
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)

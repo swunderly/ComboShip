@@ -5,7 +5,8 @@ a real oot-mq.o2r's scenes/mq tree. OoTMM plays MQ from the vanilla scene files 
 them), so for a seed marked for the bundled data the two answers differ (combo/mq/MqMode.h). This scan checks:
 - the ten asset callers (the /nonmq/ rewrite, the scene path, CrossEntrance's spawn check and the seven _MQ texture
   branches of z_scene_table.c) ask the asset predicate, and every other caller still asks the gameplay predicate;
-- no new caller of either predicate, and no new direct use of the MQ archive flag, appears without updating this list;
+- no new caller of either predicate or of the bundled-MQ predicate (the scene and room command overrides), and no new
+  direct use of the MQ archive flag, appears without updating this list;
 - both predicates come from the resolver, with SoH's inputs mapped as SoH read them;
 - randomizer.h's *_SMALL_KEY_MAX macros agree with DungeonInfo's key counts, so the macro (gameplay predicate) and
   DungeonInfo::GetSmallKeyCount (the seed's IsMQ) give the same count for a bundled seed;
@@ -88,10 +89,16 @@ GAMEPLAY_GAME = {
 ASSET_SCENE = {'soh/soh/Enhancements/CrossWarp/CrossEntrance.inc.h': 1}
 ASSET_GAME = {'soh/src/code/z_scene_table.c': 7, 'soh/soh/z_play_otr.cpp': 1}
 
+# The bundled answer: OoTMM's scene and room command overrides (mq.c:220-411) key on it.
+BUNDLED_SCENE = {'soh/soh/Enhancements/randomizer/ComboMqRuntime.cpp': 1}
+BUNDLED_GAME = {}
+
 for name, expected in (('ResourceMgr_IsSceneMasterQuest', GAMEPLAY_SCENE),
                        ('ResourceMgr_IsGameMasterQuest', GAMEPLAY_GAME),
                        ('ResourceMgr_SceneUsesMqAssets', ASSET_SCENE),
-                       ('ResourceMgr_GameUsesMqAssets', ASSET_GAME)):
+                       ('ResourceMgr_GameUsesMqAssets', ASSET_GAME),
+                       ('ResourceMgr_SceneUsesBundledMq', BUNDLED_SCENE),
+                       ('ResourceMgr_GameUsesBundledMq', BUNDLED_GAME)):
     found = uses(name)
     check(found == expected, f'{name} callers changed: {found} != {expected}')
 

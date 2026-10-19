@@ -30,6 +30,10 @@
 #include "soh/resource/type/scenecommand/SetEchoSettings.h"
 #include "soh/resource/type/scenecommand/SetAlternateHeaders.h"
 #include <spdlog/spdlog.h>
+#ifdef COMBO_BUILD
+#include "soh/Enhancements/randomizer/ComboMqRuntime.h"
+#include "mq/MqRuntime.h"
+#endif
 
 extern Ship::IResource* OTRPlay_LoadFile(PlayState* play, const char* fileName);
 extern "C" s32 Object_Spawn(ObjectContext* objectCtx, s16 objectId);
@@ -53,18 +57,23 @@ bool Scene_CommandSpawnList(PlayState* play, SOH::ISceneCommand* cmd) {
 extern "C" void Combo_OotSoulResetRoom(void* play);
 extern "C" void Combo_SilverResetRoom(void);
 
-bool Scene_CommandActorList(PlayState* play, SOH::ISceneCommand* cmd) {
-    // SOH::SetActorList* cmdActor = std::static_pointer_cast<SOH::SetActorList>(cmd);
-    SOH::SetActorList* cmdActor = (SOH::SetActorList*)cmd;
-
+// The actor-list command's body, also run for a Master Quest room's list (ComboMqRuntime.cpp).
+void OTRScene_SetActorList(PlayState* play, ActorEntry* actors, u32 numActors) {
     // Each room's actor list restarts the per-room state, as OoTMM's ParseSceneRoomHeaders_ActorsList does
     // (room.c:69-80): silver rupees number themselves in spawn order, and soul-blocked room clears start over.
     // The resets in z_scene.c's Scene_CommandActorList never run, because rooms load through this table.
     Combo_OotSoulResetRoom(play);
     Combo_SilverResetRoom();
 
-    play->numSetupActors = cmdActor->numActors;
-    play->setupActorList = (ActorEntry*)cmdActor->GetRawPointer();
+    play->numSetupActors = numActors;
+    play->setupActorList = actors;
+}
+
+bool Scene_CommandActorList(PlayState* play, SOH::ISceneCommand* cmd) {
+    // SOH::SetActorList* cmdActor = std::static_pointer_cast<SOH::SetActorList>(cmd);
+    SOH::SetActorList* cmdActor = (SOH::SetActorList*)cmd;
+
+    OTRScene_SetActorList(play, (ActorEntry*)cmdActor->GetRawPointer(), cmdActor->numActors);
 
     return false;
 }
@@ -148,15 +157,11 @@ bool OTRfunc_800982FC(ObjectContext* objectCtx, s32 bankIndex, s16 objectId) {
     return false;
 }
 
-bool Scene_CommandObjectList(PlayState* play, SOH::ISceneCommand* cmd) {
-    // SOH::SetObjectList* cmdObj = static_pointer_cast<SOH::SetObjectList>(cmd);
-    SOH::SetObjectList* cmdObj = (SOH::SetObjectList*)cmd;
-
+// The object-list command's body, also run for a Master Quest room's list (ComboMqRuntime.cpp).
+void OTRScene_SetObjectList(PlayState* play, const s16* objects, size_t numObjects) {
     s32 i;
     s32 j;
     s32 k;
-    // s16* objectEntry = SEGMENTED_TO_VIRTUAL(cmd->objectList.segment);
-    s16* objectEntry = (s16*)cmdObj->GetRawPointer();
 
     k = 0;
     i = play->objectCtx.unk_09;
@@ -164,7 +169,7 @@ bool Scene_CommandObjectList(PlayState* play, SOH::ISceneCommand* cmd) {
     // Loop until a mismatch in the object lists
     // Then clear all object ids past that in the context object list and kill actors for those objects
     for (i = play->objectCtx.unk_09, k = 0; i < play->objectCtx.num; i++, k++) {
-        if (k >= cmdObj->objects.size() || play->objectCtx.status[i].id != cmdObj->objects[k]) {
+        if (k >= numObjects || play->objectCtx.status[i].id != objects[k]) {
             for (j = i; j < play->objectCtx.num; j++) {
                 play->objectCtx.status[j].id = OBJECT_INVALID;
             }
@@ -174,13 +179,21 @@ bool Scene_CommandObjectList(PlayState* play, SOH::ISceneCommand* cmd) {
     }
 
     // Continuing from the last index, add the remaining object ids from the command object list
-    for (; k < cmdObj->objects.size(); k++, i++) {
+    for (; k < numObjects; k++, i++) {
         if (i < OBJECT_EXCHANGE_BANK_MAX - 1) {
-            OTRfunc_800982FC(&play->objectCtx, i, cmdObj->objects[k]);
+            OTRfunc_800982FC(&play->objectCtx, i, objects[k]);
         }
     }
 
     play->objectCtx.num = i;
+}
+
+bool Scene_CommandObjectList(PlayState* play, SOH::ISceneCommand* cmd) {
+    // SOH::SetObjectList* cmdObj = static_pointer_cast<SOH::SetObjectList>(cmd);
+    SOH::SetObjectList* cmdObj = (SOH::SetObjectList*)cmd;
+
+    // s16* objectEntry = SEGMENTED_TO_VIRTUAL(cmd->objectList.segment);
+    OTRScene_SetObjectList(play, cmdObj->objects.data(), cmdObj->objects.size());
 
     return false;
 }
@@ -204,18 +217,24 @@ bool Scene_CommandPathList(PlayState* play, SOH::ISceneCommand* cmd) {
     return false;
 }
 
-bool Scene_CommandTransitionActorList(PlayState* play, SOH::ISceneCommand* cmd) {
-    // SOH::SetTransitionActorList* cmdActor = static_pointer_cast<SOH::SetTransitionActorList>(cmd);
-    SOH::SetTransitionActorList* cmdActor = (SOH::SetTransitionActorList*)cmd;
-
-    play->transiActorCtx.numActors = cmdActor->numTransitionActors;
-    play->transiActorCtx.list = (TransitionActorEntry*)cmdActor->GetRawPointer();
+// The transition-actor-list command's body, also run for a Master Quest scene's list (ComboMqRuntime.cpp).
+void OTRScene_SetTransitionActorList(PlayState* play, TransitionActorEntry* actors, u32 numActors) {
+    play->transiActorCtx.numActors = numActors;
+    play->transiActorCtx.list = actors;
 
     // Loops transition actors and sets them to default values (not spawned yet)
     // used as fix for doors / crawlspaces not loading after they've already been loaded once.
     for (s32 i = 0; i < play->transiActorCtx.numActors; i++) {
         play->transiActorCtx.list[i].id = ABS(play->transiActorCtx.list[i].id);
     }
+}
+
+bool Scene_CommandTransitionActorList(PlayState* play, SOH::ISceneCommand* cmd) {
+    // SOH::SetTransitionActorList* cmdActor = static_pointer_cast<SOH::SetTransitionActorList>(cmd);
+    SOH::SetTransitionActorList* cmdActor = (SOH::SetTransitionActorList*)cmd;
+
+    OTRScene_SetTransitionActorList(play, (TransitionActorEntry*)cmdActor->GetRawPointer(),
+                                    cmdActor->numTransitionActors);
 
     return false;
 }
@@ -441,8 +460,18 @@ bool (*sceneCommands[])(PlayState*, SOH::ISceneCommand*) = {
     Scene_CommandMiscSettings,        // SCENE_CMD_ID_MISC_SETTINGS
 };
 
+#ifdef COMBO_BUILD
+// How deeply OTRScene_ExecuteCommands is nested (ComboMq::CommandDepth).
+static int sCommandDepth = 0;
+#endif
+
 s32 OTRScene_ExecuteCommands(PlayState* play, SOH::Scene* scene) {
     SOH::SceneCommandID cmdCode;
+#ifdef COMBO_BUILD
+    // ComboShip: OoTMM's Master Quest hooks rewrite only the scene or room header itself (src/oot/mq.c:316, 377).
+    // An alternate header runs nested, from Scene_CommandAlternateHeaderList, and keeps its vanilla lists.
+    ComboMq::CommandDepth depth(sCommandDepth);
+#endif
 
     for (int i = 0; i < scene->commands.size(); i++) {
         auto sceneCmd = scene->commands[i];
@@ -459,6 +488,11 @@ s32 OTRScene_ExecuteCommands(PlayState* play, SOH::Scene* scene) {
         }
 
         if ((int)cmdCode <= 0x19) {
+#ifdef COMBO_BUILD
+            if (depth.IsTopLevel() && ComboMq_RunCommand(play, scene, i)) {
+                continue;
+            }
+#endif
             if (sceneCommands[(int)cmdCode](play, sceneCmd.get()))
                 break;
         } else {
@@ -480,6 +514,10 @@ extern "C" s32 OTRfunc_800973FC(PlayState* play, RoomContext* roomCtx) {
             roomCtx->curRoom.segment = roomCtx->unk_34;
             gSegments[3] = VIRTUAL_TO_PHYSICAL(roomCtx->unk_34);
 
+#ifdef COMBO_BUILD
+            // ComboShip: OoTMM's room hook, just before the room's commands run (src/oot/mq.c:413-424).
+            ComboMq_BeginRoom(play, (SOH::Scene*)roomCtx->roomToLoad);
+#endif
             OTRScene_ExecuteCommands(play, (SOH::Scene*)roomCtx->roomToLoad);
 
             Player_SetBootData(play, GET_PLAYER(play));
