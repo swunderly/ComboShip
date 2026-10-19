@@ -8,11 +8,12 @@ This reads those lines from any log (native.log, the logs/ folder, logcat), igno
 other line, and checks each against the bins (combo/mq/data, read by ComboAndroid/tests/mq_bins.py):
 
 - quest=mq: the room's actors (id and params, the six broken actors removed as id ffff) and objects equal its
-  entry in mq_rooms.bin, or stay vanilla for a room without one; the scene's transition actors and paths are the
-  MQ ones with the bins' counts (paths only where the dungeon has MQ paths); Fire Temple's and Ganon's Castle's
-  collision is the patched copy, changing exactly as many polygons and surface types as the patches name, and every
-  other dungeon's is vanilla. In Jabu-Jabu and Ice Cavern a cutscene layer (4 and up) runs the vanilla alternate
-  header, as in OoTMM, so vanilla lists there are noted, not failed.
+  entry in mq_rooms.bin, or stay vanilla for a room without one. The ten rooms the bins give no actors log
+  actors=mq:0 too: their vanilla header has no actor list to rewrite, and they spawn none. The scene's transition
+  actors and paths are the MQ ones with the bins' counts (paths only where the dungeon has MQ paths); Fire Temple's
+  and Ganon's Castle's collision is the patched copy, changing exactly as many polygons and surface types as the
+  patches name, and every other dungeon's is vanilla. In Jabu-Jabu and Ice Cavern a cutscene layer (4 and up) runs the
+  vanilla alternate header, as in OoTMM, so vanilla lists there are noted, not failed.
 - quest=vanilla (a dungeon the seed left vanilla, or a vanilla save): nothing is MQ.
 
 It prints each failure, which rooms of each dungeon were seen as child (layers 0-1) and adult (2-3), and exits 1 on

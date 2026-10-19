@@ -9,6 +9,7 @@
 #include <libultraship/bridge/consolevariablebridge.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -225,9 +226,15 @@ void ComboMq_LogRoom(PlayState* play) {
     log.dungeon = dungeon;
     log.mq = mq;
     log.layer = gSaveContext.sceneLayer;
-    // Read back from the PlayState, so the line shows what the room's commands left, MQ or not.
-    log.actors = state.room != nullptr && play->setupActorList == state.room->actors ? ComboMq::LogSource::Mq
-                                                                                     : ComboMq::LogSource::Vanilla;
+    // Read back from the PlayState, so the line shows what the room's commands left, MQ or not. The ten MQ rooms the
+    // bins give no actors have no 0x01 in their vanilla header for mq.c to rewrite (mq.c:386-389): they spawn none,
+    // which is the MQ room's own empty list, so they log mq:0 too.
+    const bool actorCommand = std::find(state.roomPlan.commands.begin(), state.roomPlan.commands.end(),
+                                        ComboMq::CommandOverride::RoomActors) != state.roomPlan.commands.end();
+    log.actors = state.room != nullptr &&
+                         (play->setupActorList == state.room->actors || (state.room->numActors == 0 && !actorCommand))
+                     ? ComboMq::LogSource::Mq
+                     : ComboMq::LogSource::Vanilla;
     for (int i = 0; play->setupActorList != nullptr && i < play->numSetupActors; i++)
         log.actorList.push_back({ play->setupActorList[i].id, static_cast<uint16_t>(play->setupActorList[i].params) });
     log.objects = state.roomObjectsSet ? ComboMq::LogSource::Mq : ComboMq::LogSource::Vanilla;

@@ -119,6 +119,8 @@ RoomLog MqRoom(int dungeon, const Room &room, const Scene &scene, int layer) {
   log.dungeon = dungeon;
   log.mq = true;
   log.layer = layer;
+  // MQ also for the ten rooms without actors, whose vanilla header has no
+  // 0x01: they spawn none, the MQ room's own empty list (ComboMq_LogRoom).
   log.actors = LogSource::Mq;
   for (size_t i = 0; i < buffer.numActors; i++)
     log.actorList.push_back(

@@ -28,7 +28,8 @@ collision, Ice Cavern's alternate headers and a scene outside the dungeons. Chec
   vanilla with the reason logged;
 - the developer room log (combo/mq/MqRoomLog.h) logs nothing and asks only its CVar while that is off, and with it on
   logs one line per dungeon room load with exactly the lists the PlayState holds (MQ, vanilla, or a collision that
-  could not be patched), nothing outside the dungeons, and changes nothing in the PlayState.
+  could not be patched; an MQ room without actors, whose vanilla header has no 0x01, logs actors=mq:0), nothing
+  outside the dungeons, and changes nothing in the PlayState.
 
 Also scanned:
 - Actor_Spawn refuses a negative id before ActorDB_Retrieve under COMBO_BUILD (mq.c:398-410, actors.c:342);
@@ -1166,6 +1167,25 @@ void CheckRoomLog() {
            "an MQ room logs the bins' lists, the MQ scene lists and the patched collision:\n  " +
                (lines.empty() ? std::string("(none)") : lines[0]) + "\n  " + ComboMq::FormatRoomLog(want));
     Expect(want.changedPolys > 500 && want.changedSurfaces > 30, "Fire Temple's patches change its collision");
+
+    // An MQ room the bins give no actors, whose vanilla header has no 0x01 (Fire Temple's room 26, one of ten): mq.c
+    // has no actor list to rewrite and the room spawns none, the MQ room's own empty list, so it logs actors=mq:0.
+    constexpr int kActorlessRoom = 26;
+    const ComboMq::Room* actorlessMq = gData->FindRoom(ComboMq::kFireTemple, kActorlessRoom);
+    Expect(actorlessMq != nullptr && actorlessMq->actors.empty() && !actorlessMq->objects.empty(),
+           "Fire Temple's MQ room 26 has objects and no actors");
+    FakeRoom actorless(3);
+    actorless.header->commands = { Make<SOH::ISceneCommand>(0x16), Make<SOH::ISceneCommand>(0x08),
+                                   Make<SOH::ISceneCommand>(0x0A), actorless.objects, Make<SOH::ISceneCommand>(0x14) };
+    from = gSpdlogLines.size();
+    LoadRoom(play, actorless, kActorlessRoom);
+    want = FireRoomLog(true, kActorlessRoom, 2, actorless, *scene);
+    want.collision = ComboMq::LogCollision::Patched;
+    std::tie(want.changedPolys, want.changedSurfaces) = FireChanges(polys, surfaces);
+    lines = RoomLogLines(from);
+    Expect(want.actorList.empty() && lines.size() == 1 && lines[0] == ComboMq::FormatRoomLog(want),
+           "an MQ room without actors or a 0x01 logs actors=mq:0:\n  " +
+               (lines.empty() ? std::string("(none)") : lines[0]) + "\n  " + ComboMq::FormatRoomLog(want));
 
     // The same dungeon left vanilla: the resources' own lists.
     bundledScenes.erase(kFireScene);

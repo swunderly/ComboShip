@@ -3,11 +3,12 @@
 mq_room_log_tests --emit-sample writes, through the production line format (combo/mq/MqRoomLog.h), the lines a
 correct runtime logs for every MQ room in the bins as child and as adult, and a vanilla line for each dungeon. The
 comparer reads them back from behind the prefixes a phone's native.log and logcat add, among other log lines. Checks:
-- every room matches the bins, every dungeon's rooms are seen at both ages, and --require-all passes;
+- every room matches the bins, every dungeon's rooms are seen at both ages, and --require-all passes; the ten rooms
+  the bins give no actors log actors=mq:0, as the runtime does;
 - each kind of wrong line fails with its reason: a changed actor, a kept broken actor, a dropped object, a vanilla
-  list in an MQ room, a wrong transition or path count, missing or unexpected paths, collision left vanilla, failed,
-  patched elsewhere or with other counts, an MQ list in a vanilla dungeon, the wrong dungeon, an MQ room the bins
-  lack, and a line it cannot read;
+  list in an MQ room (also in one without actors), a wrong transition or path count, missing or unexpected paths,
+  collision left vanilla, failed, patched elsewhere or with other counts, an MQ list in a vanilla dungeon, the wrong
+  dungeon, an MQ room the bins lack, and a line it cannot read;
 - a room never seen fails only with --require-all, and a log with no room lines fails;
 - Jabu-Jabu's and Ice Cavern's cutscene layer keeps vanilla lists with a note, and no other dungeon's does.
 """
@@ -64,6 +65,15 @@ check(code == 0 and out.rstrip().endswith('OK'), f'the correct sample does not p
 check('452 room lines: 220 distinct MQ rooms matched the bins, 12 vanilla lines' in out, f'the summary:\n{out}')
 for name, count in (('DT', 12), ('Fire', 27), ('Spirit', 29), ('Ice', 12), ('Ganon', 20)):
     check(f'  {name}: {count}/{count} rooms (child {count}, adult {count})' in out, f'{name} coverage:\n{out}')
+# The ten MQ rooms the bins give no actors log actors=mq:0 at both ages, as ComboMq_LogRoom does: their vanilla header
+# has no actor list to rewrite, and they spawn none (DT 11, DC 16, JJ 15, Forest 22, Fire 26, Water 22, Spirit 11 and
+# 28, Shadow 22, Ice 10).
+ACTORLESS = {(0, 11), (1, 16), (2, 15), (3, 22), (4, 26), (5, 22), (6, 11), (6, 28), (7, 22), (9, 10)}
+actorless = [(int(m.group(2)), int(m.group(1))) for m in
+             (re.search(r' room=(\d+) dungeon=(\d+) quest=mq layer=\d+ actors=mq:0 .* actorList=- ', line)
+              for line in lines) if m]
+check(set(actorless) == ACTORLESS and len(actorless) == 2 * len(ACTORLESS),
+      f'the actorless MQ rooms log actors=mq:0 at both ages: {sorted(actorless)}')
 
 
 def find(pattern):
@@ -106,6 +116,9 @@ WRONG = [
      'objectList: ', 'objects differ from the MQ room objects'),
     ('vanilla actors in an MQ room', mutated(r'dungeon=7 ' + MQ, sub(r'actors=mq:', 'actors=vanilla:')),
      'actors are vanilla, expected the MQ room actors'),
+    ('vanilla actors in an MQ room without actors', mutated(r'scene=0x00 room=11 .*' + MQ + 'actors=mq:0 ',
+                                                             sub(r'actors=mq:0 ', 'actors=vanilla:0 ')),
+     'DT room 11: actors are vanilla, expected the MQ room actors'),
     ('a transition count', mutated(r'dungeon=5 ' + MQ,
                                    lambda line: re.sub(r'transitions=mq:(\d+)',
                                                        lambda m: f'transitions=mq:{int(m.group(1)) + 1}', line)),
