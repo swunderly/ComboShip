@@ -13,8 +13,8 @@ Master Quest dungeon data: combo/mq/data/mq_rooms.bin, mq_scenes.bin and mq_maps
 OoTMM v32.3, Copyright (c) 2020-2022 OoTMM Team, MIT License. See OoTMM-MIT-LICENSE.txt.
 https://github.com/OoTMM/OoTMM
 They are data that OoTMM extracted from the Master Quest release, bundled with the
-maintainer's approval under OoTMM's MIT license. They are compiled into the native library
-unchanged; combo/mq/README.md gives their source and checksums.
+approval of this fork's maintainer under OoTMM's MIT license. They are compiled into the
+native library unchanged; combo/mq/README.md gives their source and checksums.
 
 Native dependency licenses are collected from the pinned upstream and build trees
 into the APK's assets/licenses directory by tools/stage_runtime.py. Source and
