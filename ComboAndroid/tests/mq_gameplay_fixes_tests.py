@@ -8,6 +8,8 @@ from a real oot-mq.o2r (archive) and a vanilla one:
   switch 3 to 4, leaves a bundled door alone.
 - MQ Shadow's switch 7 on a new save (src/oot/save.c:136-139): Randomizer_InitSaveFile sets it for a bundled MQ
   Shadow, after Sram_InitSave has made the file a randomizer file, so the resolver reads the seed.
+- Fire's first door (0x17) and Water's water-raise door (0x15), which OoTMM opens only in vanilla dungeons
+  (src/oot/doors.c:47-53): SoH's new-save switches stay off for a bundled seed's MQ dungeons, through the real resolver.
 - MQ Spirit's room-6 silver blocks (src/oot/actors/Obj/Obj_Oshihiki.c:5-13): for a child, Obj_Oshihiki's Init reads
   switch 0x09 as unset in a bundled MQ Spirit, and SoH's kill hook (hook_handlers.cpp) runs only for archive MQ. The
   three blocks come from the bins.
@@ -202,6 +204,82 @@ int main() {
 }
 '''
 
+# OoTMM opens two doors only in vanilla dungeons (src/oot/doors.c:47-53): Fire's first door (switch 0x17, without small
+# key shuffle) and Water's water-raise door (0x15). SoH sets those switches on a new save, also only when the dungeon is
+# not MQ (savefile.cpp). Here the production lines run on the real resolver (combo/mq/MqMode.h) with the inputs a new
+# randomizer save has, so a bundled seed's MQ dungeons keep both doors locked.
+keysanity = statement(init_save, 'u8 keysanity =')
+fire_door = block(init_save, 'ResourceMgr_IsSceneMasterQuest(SCENE_FIRE_TEMPLE)')
+water_door = block(init_save, 'ResourceMgr_IsSceneMasterQuest(SCENE_WATER_TEMPLE)')
+check('(1 << 0x17)' in fire_door and '!keysanity' in fire_door and '(1 << 0x15)' in water_door,
+      'savefile.cpp: the Fire and Water door switches moved')
+save_doors = r'''#include <cstdint>
+#include <cstdio>
+#include "mq/MqMode.h"
+#define COMBO_BUILD 1
+using s16 = int16_t; using u8 = uint8_t; using u32 = uint32_t;
+enum SceneID { SCENE_FIRE_TEMPLE = 4, SCENE_WATER_TEMPLE = 5, SCENE_SHADOW_TEMPLE = 7 };
+enum { RSK_KEYSANITY };
+enum { RO_DUNGEON_ITEM_LOC_STARTWITH, RO_DUNGEON_ITEM_LOC_VANILLA, RO_DUNGEON_ITEM_LOC_OWN_DUNGEON,
+       RO_DUNGEON_ITEM_LOC_ANY_DUNGEON, RO_DUNGEON_ITEM_LOC_OVERWORLD, RO_DUNGEON_ITEM_LOC_ANYWHERE };
+struct SavedSceneFlags { u32 chest, swch, clear, collect; };
+struct { SavedSceneFlags sceneFlags[16]; } gSaveContext;
+int gKeysanity = RO_DUNGEON_ITEM_LOC_OWN_DUNGEON;
+int Randomizer_GetSettingValue(int) { return gKeysanity; }
+// ResourceManagerHelpers.cpp's two predicates, on the resolver's inputs for each scene.
+ComboMq::MqModeInputs gInputs;
+u32 gMqScenes = 0; // the seed's MQ dungeons (DungeonInfo::IsMQ), a bit per scene
+static ComboMq::MqModeInputs InputsFor(s16 scene) {
+    ComboMq::MqModeInputs in = gInputs;
+    in.dungeon = ((gMqScenes >> scene) & 1) ? ComboMq::DungeonQuest::MasterQuest : ComboMq::DungeonQuest::Vanilla;
+    return in;
+}
+extern "C" uint32_t ResourceMgr_IsSceneMasterQuest(s16 scene) { return ComboMq::ResolveMqMode(InputsFor(scene)).gameplayMq; }
+extern "C" uint32_t ResourceMgr_SceneUsesBundledMq(s16 scene) {
+    return ComboMq::ResolveMqMode(InputsFor(scene)).source == ComboMq::MqDataSource::Bundled;
+}
+// Randomizer_InitSaveFile's MQ-dependent lines, in their production order.
+static void NewSave() {
+    for (auto& flags : gSaveContext.sceneFlags)
+        flags = {};
+''' + '\n'.join((keysanity, fire_door, water_door, shadow)) + r'''
+}
+static bool Swch(int scene, int flag) { return (gSaveContext.sceneFlags[scene].swch >> flag) & 1; }
+#define REQUIRE(x) do { if (!(x)) { fprintf(stderr, "failed: %s at line %d\n", #x, __LINE__); return 1; } } while (0)
+int main() {
+    const u32 mq = (1u << SCENE_FIRE_TEMPLE) | (1u << SCENE_WATER_TEMPLE) | (1u << SCENE_SHADOW_TEMPLE);
+    // A new randomizer save of a bundled seed, on an install with the bundled data and no oot-mq.o2r.
+    gInputs.hasOriginal = true;
+    gInputs.bundledAvailable = true;
+    gInputs.quest = ComboMq::QuestKind::Randomizer;
+    gInputs.seedSource = ComboMq::SeedMqSource::Bundled;
+    gMqScenes = mq;
+    NewSave();
+    REQUIRE(!Swch(SCENE_FIRE_TEMPLE, 0x17) && !Swch(SCENE_WATER_TEMPLE, 0x15) && Swch(SCENE_SHADOW_TEMPLE, 7));
+    gMqScenes = 0;
+    NewSave();
+    REQUIRE(Swch(SCENE_FIRE_TEMPLE, 0x17) && Swch(SCENE_WATER_TEMPLE, 0x15) && !Swch(SCENE_SHADOW_TEMPLE, 7));
+    gKeysanity = RO_DUNGEON_ITEM_LOC_ANYWHERE;
+    NewSave();
+    REQUIRE(!Swch(SCENE_FIRE_TEMPLE, 0x17) && Swch(SCENE_WATER_TEMPLE, 0x15));
+    gKeysanity = RO_DUNGEON_ITEM_LOC_OWN_DUNGEON;
+    // A seed without the marker on an install with a real oot-mq.o2r: SoH's doors, no switch 7.
+    gInputs.seedSource = ComboMq::SeedMqSource::Legacy;
+    gInputs.hasArchiveMq = true;
+    gMqScenes = mq;
+    NewSave();
+    REQUIRE(!Swch(SCENE_FIRE_TEMPLE, 0x17) && !Swch(SCENE_WATER_TEMPLE, 0x15) && !Swch(SCENE_SHADOW_TEMPLE, 7));
+    // Why Sram_InitSave sets the quest first: before it, a bundled seed's MQ dungeons would read as vanilla.
+    gInputs.seedSource = ComboMq::SeedMqSource::Bundled;
+    gInputs.hasArchiveMq = false;
+    gInputs.quest = ComboMq::QuestKind::Other;
+    NewSave();
+    REQUIRE(Swch(SCENE_FIRE_TEMPLE, 0x17) && Swch(SCENE_WATER_TEMPLE, 0x15) && !Swch(SCENE_SHADOW_TEMPLE, 7));
+    puts("save doors: a bundled seed's MQ Fire and Water keep doors 0x17 and 0x15 locked, as OoTMM's doors.c does");
+    return 0;
+}
+'''
+
 # --- MQ Spirit's silver blocks in room 6 ---------------------------------------------------------------------------
 # OoTMM patches the switch read in Obj_Oshihiki's Init (0x80a4f574, the call after ObjOshihiki_CheckType in the
 # overlay at 0x80a4efc0): a child in MQ Spirit reads switch 0x09 as unset (src/oot/actors/Obj/Obj_Oshihiki.c:5-13).
@@ -297,11 +375,11 @@ int main() {
 '''
 spirit = re.sub(r'\bthis\b', 'self', spirit).replace('@BLOCKS@', ', '.join(hex(b) for b in blocks))
 
-PROGRAMS = {'doors': doors, 'new_save': new_save, 'spirit_block': spirit}
+PROGRAMS = {'doors': doors, 'new_save': new_save, 'save_doors': save_doors, 'spirit_block': spirit}
 for name, code in PROGRAMS.items():
     source = work / f'mq_gameplay_{name}.cpp'
     source.write_text(code, encoding='utf-8')
-    exe = hostcxx.build(args.compiler or hostcxx.DEFAULT_COMPILER, source, warnings=False)
+    exe = hostcxx.build(args.compiler or hostcxx.DEFAULT_COMPILER, source, warnings=False, includes=[repo / 'combo'])
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=hostcxx.RUN_TIMEOUT)
     print(result.stdout.strip())
     check(result.returncode == 0, f'{name}: {result.stdout}{result.stderr}'.strip())
