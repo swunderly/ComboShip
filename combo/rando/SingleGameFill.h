@@ -2,6 +2,7 @@
 #include "CrossWorldRando.h"
 #include "GameMode.h"
 #include "ComboSeedFormat.h"
+#include "../mq/MqSeedMarker.h"
 
 namespace ComboRando {
 inline OracleFns InactiveGameOracle() {
@@ -48,6 +49,9 @@ inline nlohmann::json PrepareVanillaRun(nlohmann::json setup, const nlohmann::js
         seed[game]["prices"] = nlohmann::json::object();
         seed[game].erase("resolvedSeedRules");
     }
+    // A vanilla game rolls no Master Quest dungeons, so it records no MQ data source. A draft made from a bundled
+    // seed keeps that seed's (SetupForSeed), which a reload would refuse as a malformed MQ record without its dungeons.
+    ComboMq::WriteMqDataSource(seed["oot"], ComboMq::SeedMqSource::Legacy);
     seed["comboProfile"] = { { "version", 1 }, { "file", slot }, { "settings", setup } };
     StampComboSeedFormat(seed);
     return seed;

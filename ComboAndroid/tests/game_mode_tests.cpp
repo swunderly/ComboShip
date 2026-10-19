@@ -70,6 +70,25 @@ int main() {
         assert(seed["file_hash"] == Json::array({1,23,45,67,89}));
         assert(ReadGameMode(seed["comboProfile"]["settings"]) == mode);
         RequireSupportedSeedDocument(seed, Entrances::CapabilitySet{});
+        // A draft made from a bundled Master Quest seed keeps its data source
+        // (SetupForSeed). A vanilla game rolls no MQ dungeons, so its seed
+        // records none, and the reload's MQ check admits it.
+        Json bundled = Seed(COMBO_MODE_OOT_RANDO);
+        ComboMq::StampSeedMq(bundled["oot"], ComboMq::SeedMqSource::Bundled,
+                             1 << 3);
+        auto draft =
+            Profiles::SetupForSeed(bundled, Entrances::CapabilitySet{});
+        assert(ComboMq::MqDataSourceOf(draft["oot"]) ==
+               ComboMq::SeedMqSource::Bundled);
+        draft["gameMode"] = kGameModeKeys[mode];
+        auto fromBundled = PrepareVanillaRun(
+            Profiles::SettingsDocument(draft, Entrances::CapabilitySet{}),
+            Json::object(), "new", 42, 123456789, 2);
+        assert(ComboMq::MqDataSourceOf(fromBundled["oot"]) ==
+               ComboMq::SeedMqSource::Legacy);
+        assert(ComboMq::RecordedMqDungeonMask(fromBundled["oot"]) == -1);
+        assert(ComboMq::SeedMqPlayable(fromBundled["oot"], false));
+        RequireSupportedSeedDocument(fromBundled, Entrances::CapabilitySet{});
     }
     Refuses([] { PrepareVanillaRun(Json::object(), Json::object(), "", 0, 0, 0); });
     Json dump = {{"checks", {{{"name", "Start"}}, {{"name", "Second"}}}},
