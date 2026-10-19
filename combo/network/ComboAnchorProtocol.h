@@ -1,6 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -112,5 +113,58 @@ inline std::vector<Json> Expand(const Json& packet, uint32_t seed) {
         }
     }
     return result;
+}
+
+// FNV-1a 32-bit, the launcher's ComboHash.
+inline uint32_t Fnv1a(const std::string& text) {
+    uint32_t hash = 2166136261u;
+    for (const unsigned char c : text) {
+        hash ^= c;
+        hash *= 16777619u;
+    }
+    return hash;
+}
+
+// A seed's co-op identity: the comboSeed of every progress packet, the seed each client reports to its
+// teammates, and the file icons of an imported seed. A seed the app generated carries it as displaySeed,
+// which covers its input seed, settings and entrance layout (C5). The headless generator writes no
+// displaySeed, and a master seed alone tells neither settings nor layouts apart (the release corpus reuses
+// each master seed across its start contexts), so a layout seed without one is identified by its whole
+// content. Any other seed keeps its master seed, as before.
+inline uint32_t SeedIdentity(const Json& seed) {
+    if (!seed.is_object())
+        return 0;
+    if (seed.contains("displaySeed") || !seed.contains("entranceLayout"))
+        return seed.value("displaySeed", seed.value("masterSeed", 0u));
+    return Fnv1a(seed.dump());
+}
+
+// Both games' client states (HANDSHAKE clientState, UPDATE_CLIENT_STATE state) carry the protocol and,
+// once a save is loaded, the launcher's seed identity in place of the game's own seed. Teammates in
+// either game then compare one value.
+inline void StampClientState(Json& state, uint32_t identity) {
+    state["comboProtocol"] = Version;
+    if (state.value("isSaveLoaded", false))
+        state["seed"] = identity;
+}
+
+// Why this player and a teammate do not share progress, as plain sentences for the room window, or
+// empty. Both rows come from the launcher roster. Other teams may play other seeds.
+inline constexpr const char* kTeammateOtherSeed = "This player loaded a different seed, so items and checks are not "
+                                                  "shared. Load the same seed file on both devices.";
+inline constexpr const char* kTeammateOtherVersion =
+    "This player has a different version of Combo Ship. Use the same version on both devices.";
+inline std::string TeammateWarning(const Json& self, const Json& peer) {
+    if (!self.is_object() || !peer.is_object() || peer.value("self", false) || !peer.value("online", false))
+        return {};
+    std::string warning;
+    if (self.value("teamId", std::string("default")) == peer.value("teamId", std::string("default")) &&
+        self.value("isSaveLoaded", false) && peer.value("isSaveLoaded", false) &&
+        self.value("seed", 0u) != peer.value("seed", 0u))
+        warning = kTeammateOtherSeed;
+    const auto version = self.value("clientVersion", std::string());
+    if (!version.empty() && peer.value("clientVersion", std::string()) != version)
+        warning += (warning.empty() ? "" : "\n") + std::string(kTeammateOtherVersion);
+    return warning;
 }
 } // namespace ComboAnchorProtocol

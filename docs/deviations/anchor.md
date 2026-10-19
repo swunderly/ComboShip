@@ -344,3 +344,23 @@ on `HasLoadedRandoSave` ("don't ask for a state we can't consume"). Left unchang
 sequence and this fix's own playtest table depend on the dormant boot-time resync *request* still going
 out while no slot is loaded yet (that's what proves the refusal path works); it's the *reply* that's now
 correctly refused by `HandlePacket_UpdateTeamState`'s `HasLoadedRandoSave` guard.
+
+## Co-op seed identity for layout seeds, and plain refusals (2026-10-19)
+
+**Why:** progress and team state sync only between clients whose `comboSeed` matches the slot's sync seed.
+That was the seed's `displaySeed`, else its master seed. The headless generator writes no `displaySeed`,
+and the Wallmaster release corpus reuses each master seed across its start contexts, so two different
+corpus seeds (different layouts and placements) synced with each other, showed the same file icons
+(`displaySeed` 0), and shared the in-memory cross-item dedup set within one session.
+
+Combo-owned, no vendored change:
+- `combo/network/ComboAnchorProtocol.h` `SeedIdentity`: `displaySeed` when present; a layout seed without
+  one is identified by FNV-1a over its whole document; any other seed keeps its master seed (unchanged).
+  `combo/ComboShip.cpp` uses it for the slot's sync seed (`LoadComboCompletion`), the Anchor journal commit
+  (`Combo_WriteGameSave`) and an imported layout seed's icons. The imported seed is still kept as read.
+- `StampClientState`: the HANDSHAKE client state now carries the sync seed too, like UPDATE_CLIENT_STATE,
+  so the server's cached roster never reports a game's own seed.
+- `TeammateWarning` and `combo/gui/ComboAnchorRoomWindow.cpp`: a same-team teammate on another seed is
+  flagged in either game (both report the one sync seed), only when both have a save loaded, and the reason
+  is shown as a plain sentence under the name instead of a hover tooltip. `PumpSync` logs a refused
+  progress packet once per client and seed.

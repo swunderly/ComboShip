@@ -979,7 +979,8 @@ static void Combo_WriteGameSave(int game, int fileNum, const char* json) {
                     { "crossChecks", sAppliedCrossChecks } };
     }
     const auto& rando = Combo_JsonFieldOrEmptyObject(c["combo"], "rando");
-    if (journal.is_object() && journal.value("seed", 0u) == rando.value("displaySeed", rando.value("masterSeed", 0u))) {
+    // The journal was taken under LoadComboCompletion's sync seed; it belongs to this slot only while that holds.
+    if (journal.is_object() && journal.value("seed", 0u) == ComboAnchorProtocol::SeedIdentity(rando)) {
         ComboAnchorProtocol::CommitGameCounters(c["combo"]["anchorEvents"], journal["events"], game);
         auto savedChecks = c["combo"].value("anchorCrossChecks", std::set<std::string>{});
         const auto prefix = ComboAnchorProtocol::GamePrefix(game);
@@ -1627,13 +1628,11 @@ static void Send(const char* json) {
         sRequest = std::move(p);
         return;
     }
+    // The server keeps the handshake's client state until the next update; both report the sync seed.
     if (type == "HANDSHAKE")
-        p["clientState"]["comboProtocol"] = ComboAnchorProtocol::Version;
-    if (type == "UPDATE_CLIENT_STATE") {
-        p["state"]["comboProtocol"] = ComboAnchorProtocol::Version;
-        if (p["state"].value("isSaveLoaded", false))
-            p["state"]["seed"] = sSyncSeed.load();
-    }
+        ComboAnchorProtocol::StampClientState(p["clientState"], sSyncSeed.load());
+    if (type == "UPDATE_CLIENT_STATE")
+        ComboAnchorProtocol::StampClientState(p["state"], sSyncSeed.load());
     if (ComboAnchorProtocol::IsProgress(p)) {
         p["comboProtocol"] = ComboAnchorProtocol::Version;
         p["comboSeed"] = sSyncSeed.load();
@@ -1701,8 +1700,15 @@ static void PumpSync() {
             }
             if (ComboAnchorProtocol::IsProgress(p) && type != "UPDATE_TEAM_STATE" &&
                 (p.value("comboProtocol", 0) != ComboAnchorProtocol::Version ||
-                 p.value("comboSeed", 0u) != sSyncSeed.load()))
+                 p.value("comboSeed", 0u) != sSyncSeed.load())) {
+                // Logged once per teammate and seed; the room window tells the player why.
+                static std::set<std::pair<uint32_t, uint32_t>> sRefused;
+                if (sRefused.emplace(p.value("clientId", 0u), p.value("comboSeed", 0u)).second)
+                    std::cerr << "[ComboShip][Anchor] Not sharing progress from client " << p.value("clientId", 0u)
+                              << ": seed " << p.value("comboSeed", 0u) << " is not this slot's seed "
+                              << sSyncSeed.load() << std::endl;
                 continue;
+            }
             auto packets = ComboAnchorProtocol::Expand(p, sSyncSeed.load());
             if (type == "UPDATE_TEAM_STATE" && packets.size() >= 2 && p.contains("state")) {
                 std::scoped_lock journalLock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
@@ -1903,7 +1909,8 @@ static void LoadComboCompletion(int slot) {
         BindGameMode(rando);
         // displaySeed also incorporates settings/placements; the typed seed alone
         // can describe different randomizers and must not authorize save sharing.
-        ComboAnchor::sSyncSeed = rando.value("displaySeed", rando.value("masterSeed", 0u));
+        // A headless layout seed has none and is identified by its content (SeedIdentity).
+        ComboAnchor::sSyncSeed = ComboAnchorProtocol::SeedIdentity(rando);
         {
             std::scoped_lock journalLock(sAnchorJournalMutex, sAppliedCrossChecksMutex);
             if (sAnchorJournalSlot != slot || sAnchorJournalSeed != ComboAnchor::sSyncSeed.load()) {
@@ -3615,7 +3622,9 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
         InstallSongTravel(j.value("songTravel", nlohmann::json()));
         uint32_t masterSeed = j.value("masterSeed", 0u);
         ResetCrossItemDedupForSeed(masterSeed);
-        uint32_t displaySeed = j.value("displaySeed", 0u);
+        // A headless layout seed has no displaySeed: its icons show its co-op identity, as the slot will.
+        uint32_t displaySeed =
+            j.contains("entranceLayout") ? ComboAnchorProtocol::SeedIdentity(j) : j.value("displaySeed", 0u);
         // ComboShip (#136): push the seed's goal before anything re-derives OOT's settings-scoped pool
         // or MM's — the forced wincon/hunt toggle decides what those pools contain.
         {

@@ -72,5 +72,78 @@ int main() {
     CommitGameCounters(delayedSave, captured, 1);
     assert(delayedSave["mm:player-a-session-1"] == 5);
     assert(AcceptEvent(delayedSave, event));
-    std::cout << "PASS: combined state, server cache, queue routing, seed and protocol isolation\n";
+
+    // Seed identity (C5). FNV-1a as the launcher's ComboHash.
+    assert(Fnv1a("") == 2166136261u && Fnv1a("a") == 0xe40c292cu);
+    // A stand-in layout: the identity reads any layout as data.
+    Json layout = {{"settings", {{"erWallmasters", "ownGame"}}},
+                   {"overrides", Json::array({Json::array({"wallmaster-source", "destination-a"})})}};
+    // A seed the app made keeps its displaySeed; a headless seed without a layout keeps its master seed.
+    Json app = {{"masterSeed", 7u}, {"displaySeed", 99u}, {"entranceLayout", layout}};
+    assert(SeedIdentity(app) == 99u);
+    app.erase("entranceLayout");
+    assert(SeedIdentity(app) == 99u);
+    assert(SeedIdentity(Json{{"masterSeed", 7u}, {"startingGame", "OOT"}}) == 7u);
+    assert(SeedIdentity(Json()) == 0 && SeedIdentity(Json("seed")) == 0);
+    // Headless corpus rows share a master seed across start contexts. Each layout seed is its own world.
+    Json child = {{"masterSeed", 7u},
+                  {"startingGame", "OOT"},
+                  {"oot", {{"settings", {{"StartingAge", 0}}}}},
+                  {"entranceLayout", layout}};
+    auto adult = child, mmStart = child, otherRoute = child, noLayout = child;
+    adult["oot"]["settings"]["StartingAge"] = 1;
+    mmStart["startingGame"] = "MM";
+    otherRoute["entranceLayout"]["overrides"][0][1] = "destination-b";
+    noLayout.erase("entranceLayout");
+    const uint32_t identity = SeedIdentity(child);
+    assert(identity == Fnv1a(child.dump()) && identity != 7u && SeedIdentity(noLayout) == 7u);
+    for (const auto* other : {&adult, &mmStart, &otherRoute})
+        assert(SeedIdentity(*other) != identity);
+    // Both players' copies of one file, and the copy a slot keeps, have one identity.
+    assert(SeedIdentity(Json::parse(child.dump(2))) == identity);
+    // So the team state of one row is refused by a player of another (the launcher's PumpSync refuses
+    // their progress packets by the same comboSeed).
+    assert(Expand(Combine(oot, mm, identity), SeedIdentity(adult)).empty());
+    assert(Expand(Combine(oot, mm, identity), identity).size() == 2);
+
+    // Both games report that identity in their client state once a save is loaded.
+    Json state = {{"isSaveLoaded", true}, {"seed", 5u}};
+    StampClientState(state, identity);
+    assert(state["seed"] == identity && state["comboProtocol"] == Version);
+    Json fileSelect = {{"isSaveLoaded", false}, {"seed", 0u}};
+    StampClientState(fileSelect, identity);
+    assert(fileSelect["seed"] == 0u && fileSelect["comboProtocol"] == Version);
+
+    // The room window's plain refusal, from the launcher roster's rows.
+    Json me = {{"self", true},     {"online", true}, {"teamId", "team"},       {"isSaveLoaded", true},
+               {"seed", identity}, {"game", "oot"},  {"clientVersion", "0412"}};
+    auto mate = me;
+    mate["self"] = false;
+    mate["game"] = "mm";
+    assert(TeammateWarning(me, mate).empty()); // same seed, the other game
+    mate["seed"] = SeedIdentity(adult);
+    assert(TeammateWarning(me, mate) == kTeammateOtherSeed); // compared across games too
+    // An older build cannot load a layout seed: it reports another seed and another version.
+    mate["clientVersion"] = "0411";
+    assert(TeammateWarning(me, mate) == std::string(kTeammateOtherSeed) + "\n" + kTeammateOtherVersion);
+    mate["seed"] = identity;
+    assert(TeammateWarning(me, mate) == kTeammateOtherVersion);
+    mate["clientVersion"] = "0412";
+    mate["seed"] = SeedIdentity(adult);
+    for (const char* key : {"isSaveLoaded", "online"}) {
+        auto quiet = mate;
+        quiet[key] = false;
+        assert(TeammateWarning(me, quiet).empty()); // file select or offline: nothing to compare
+    }
+    auto atFileSelect = me, otherTeam = mate, ownRow = mate;
+    atFileSelect["isSaveLoaded"] = false;
+    otherTeam["teamId"] = "rivals";
+    ownRow["self"] = true;
+    assert(TeammateWarning(atFileSelect, mate).empty() && TeammateWarning(me, otherTeam).empty());
+    assert(TeammateWarning(me, ownRow).empty() && TeammateWarning(Json(), mate).empty());
+    for (const std::string sentence : {kTeammateOtherSeed, kTeammateOtherVersion})
+        assert(sentence.find('!') == std::string::npos && sentence.find("mismatch") == std::string::npos &&
+               sentence.find("break") == std::string::npos && sentence.back() == '.');
+    std::cout << "PASS: combined state, server cache, queue routing, seed and protocol isolation, seed identity "
+                 "of layout seeds, client state seeds and the room window's plain refusal\n";
 }

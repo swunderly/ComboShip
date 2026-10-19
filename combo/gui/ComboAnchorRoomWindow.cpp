@@ -10,6 +10,7 @@
 #include <string>
 #include <set>
 #include "ComboResolve.h"
+#include "network/ComboAnchorProtocol.h" // TeammateWarning
 
 namespace ComboRando {
 
@@ -119,17 +120,11 @@ void ComboAnchorRoomWindow::DrawElement() {
 
     // Own team: prefer the self entry's teamId (== gRemote.Anchor.TeamId), fall back to the CVar.
     std::string ownTeam = CVarGetString(kCvarTeamId, "default");
-    std::string selfVersion;
-    uint32_t selfSeed = 0;
-    int selfGame = 0;
-    bool haveSelf = false;
+    nlohmann::json selfRow; // null until the roster names this client
     for (auto& c : clients) {
         if (c.value("self", false)) {
             ownTeam = c.value("teamId", ownTeam);
-            selfVersion = c.value("clientVersion", std::string());
-            selfSeed = c.value("seed", (uint32_t)0);
-            selfGame = (c.value("game", std::string("oot")) == "mm") ? 1 : 0;
-            haveSelf = true;
+            selfRow = c;
             break;
         }
     }
@@ -214,21 +209,15 @@ void ComboAnchorRoomWindow::DrawElement() {
                 ImGui::PopStyleVar();
             }
 
-            // Version/seed mismatch vs the self entry. Seed compare only within the same game (cross-game
-            // seed verification is out of scope; MM/OOT report their own seeds).
-            bool versionMismatch =
-                haveSelf && !self && !selfVersion.empty() && c.value("clientVersion", std::string()) != selfVersion;
-            bool seedMismatch = haveSelf && !self && peerGame == selfGame && online && c.value("isSaveLoaded", false) &&
-                                c.value("seed", (uint32_t)0) != selfSeed;
-            if (versionMismatch) {
+            // Why this teammate's progress is not shared, in plain sentences shown under the name. The
+            // launcher reports one seed identity for both games, so seeds compare across games too.
+            const std::string warning = ComboAnchorProtocol::TeammateWarning(selfRow, c);
+            if (!warning.empty()) {
                 ImGui::SameLine();
                 ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", ICON_FA_EXCLAMATION_TRIANGLE);
-                ImGui::SetItemTooltip("Incompatible version! Will not work together!");
-            }
-            if (seedMismatch) {
-                ImGui::SameLine();
-                ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", ICON_FA_EXCLAMATION_TRIANGLE);
-                ImGui::SetItemTooltip("Seed mismatch! Continuing will break things!");
+                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ImGui::GetFontSize() * 22.0f);
+                ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.7f, 1.0f), "%s", warning.c_str());
+                ImGui::PopTextWrapPos();
             }
 
             ImGui::PopID();
