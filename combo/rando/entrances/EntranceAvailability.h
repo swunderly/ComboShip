@@ -64,8 +64,9 @@ inline EntranceRefusal EnemyRandomizerRefusal() {
 inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
     if (!f.logicEnabled)
         return {};
+    // Ship's Logic row offers only Glitchless and No Logic; any other value comes from an old or edited profile.
     if (!f.glitchless)
-        return { "Wallmaster Shuffle does not support glitched logic.", "only glitchless OoT logic is supported" };
+        return { "Set Logic to Glitchless to use Wallmaster Shuffle.", "only glitchless OoT logic is supported" };
     if (f.shipwrightEntrances)
         return { kWallmasterShipEntrancesText, "Ship's own entrance shuffle must be off" };
     if (f.songTravelLogic)

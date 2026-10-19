@@ -55,3 +55,12 @@ assert hostcxx.contains(refused, 'std::cerr << "[ComboShip] RunComboFill: entran
                         'error.what() << "\\n";')
 assert hostcxx.contains(refused, 'fail(error.player().c_str());')
 assert hostcxx.contains(ship, 'fail(ComboRando::EntranceGenerationRefusal(modeFacts).player.c_str());')
+# Each sentence names a row the player can find under that name (EntranceAvailability.h).
+named = {
+    'soh/soh/Enhancements/randomizer/settings.cpp': 'OPT_U8(RSK_LOGIC_RULES, "Logic", {"Glitchless", "No Logic"},',
+    'soh/soh/Enhancements/ExtraModes/EnemyRandomizer.cpp': 'AddWidget(path, "Enemy Randomizer", WIDGET_CVAR_COMBOBOX)',
+    'combo/gui/ComboMenuSearch.h': 'return "Warp Songs and Soaring Spots Shuffle";',
+    'combo/rando/GameplayRules.h': '{ "gCombo.Enhancements.ForeignSongs", "Play warp songs across games",',
+}
+for path, row in named.items():
+    assert hostcxx.contains((a.source/path).read_text(encoding='utf-8'), row), (path, row)

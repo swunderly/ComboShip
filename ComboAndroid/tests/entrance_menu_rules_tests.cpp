@@ -134,8 +134,9 @@ int main() {
     check(player, "song travel logic needs GLOBAL song sources (deferred)");
     settings.clear();
   }
+  // Ship's Logic row offers Glitchless (0) and No Logic (1) only.
   settings[kNativeLogicRule] = 2;
-  check("Wallmaster Shuffle does not support glitched logic.",
+  check("Set Logic to Glitchless to use Wallmaster Shuffle.",
         "only glitchless OoT logic is supported");
   settings.clear();
   const auto song = [&](const std::string &name) {
