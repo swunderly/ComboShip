@@ -1606,21 +1606,21 @@ void Settings::CreateOptions() {
     OPT_U8(RSK_DAMAGE_MULTIPLIER, "Damage Multiplier", {"x1/2", "x1", "x2", "x4", "x8", "x16", "OHKO"}, OptionCategory::Setting, "", "", WIDGET_CVAR_SLIDER_INT, RO_DAMAGE_MULTIPLIER_DEFAULT);
     // Don't show any MQ options if both quests aren't available
     if (!(OTRGlobals::Instance->CanPlayMasterQuest() && OTRGlobals::Instance->HasOriginal())) { // ComboShip: MQ from oot-mq.o2r or OoTMM's bundled data
-        mOptions[RSK_MQ_DUNGEON_RANDOM].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_DUNGEON_COUNT].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_DUNGEON_SET].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_DEKU_TREE].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_DODONGOS_CAVERN].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_JABU_JABU].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_FOREST_TEMPLE].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_FIRE_TEMPLE].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_WATER_TEMPLE].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_SPIRIT_TEMPLE].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_SHADOW_TEMPLE].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_BOTTOM_OF_THE_WELL].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_ICE_CAVERN].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_GTG].Disable("This option has been disabled because only one type of O2R has been loaded");
-        mOptions[RSK_MQ_GANONS_CASTLE].Disable("This option has been disabled because only one type of O2R has been loaded");
+        mOptions[RSK_MQ_DUNGEON_RANDOM].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_DUNGEON_COUNT].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_DUNGEON_SET].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_DEKU_TREE].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_DODONGOS_CAVERN].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_JABU_JABU].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_FOREST_TEMPLE].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_FIRE_TEMPLE].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_WATER_TEMPLE].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_SPIRIT_TEMPLE].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_SHADOW_TEMPLE].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_BOTTOM_OF_THE_WELL].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_ICE_CAVERN].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_GTG].Disable(MasterQuestDisabledText());
+        mOptions[RSK_MQ_GANONS_CASTLE].Disable(MasterQuestDisabledText());
     } else {
         // If any MQ Options are available, show the MQ Dungeon Randomization Combobox
         mOptions[RSK_MQ_DUNGEON_RANDOM].Enable();
@@ -2733,6 +2733,16 @@ void Settings::CreateOptions() {
     mOptionGroups[RSG_DETAILED_LOGIC] =
         OptionGroup("Detailed Logic Settings",
                     { &mOptionGroups[RSG_LOGIC], &mOptionGroups[RSG_TRICKS], &mOptionGroups[RSG_EXCLUDES] });
+}
+
+const char* Settings::MasterQuestDisabledText() {
+#ifdef COMBO_BUILD
+    // ComboShip: with the vanilla game loaded, the MQ options are off only because neither a real oot-mq.o2r nor
+    // OoTMM's bundled MQ data, which needs a USA 1.0 ROM, can play MQ here.
+    return ComboMq::MqOptionsDisabledText(OTRGlobals::Instance->HasOriginal());
+#else
+    return "This option has been disabled because only one type of O2R has been loaded";
+#endif
 }
 
 std::unordered_map<std::string, RandomizerSettingKey> Settings::PopulateOptionNameToEnum() {

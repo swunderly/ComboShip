@@ -15,7 +15,8 @@ accessor (OTRGlobals.cpp) and the seed marker (combo/mq/MqSeedMarker.h), and che
 - the launcher and the headless generator set the master seed before every finalize, and the headless replay checks
   the recorded MQ dungeons as the in-game reload does;
 - the native options, the profile catalogue (mqPlayable, mqSource), the profile editor's rows and its Wallmaster
-  refusal agree in every install state;
+  refusal agree in every install state, and the greyed-out rows say why: only the MQ archive is loaded, or, with the
+  vanilla game, MQ needs an OoT USA 1.0 ROM;
 - the seed lists its MQ dungeons by SoH's names, as SoH's and OoTMM's spoilers do, and the seed views show them;
 - Allsanity's help says its MQ dungeons are OoTMM's coin flips and what they need;
 - the check tracker keeps SoH's spoiler behaviour (the owner's default): a dungeon whose quest was rolled stays hidden
@@ -390,6 +391,7 @@ if not failures:
 options_gate = between(settings, '// Don\'t show any MQ options if both quests aren\'t available', '// clang-format on',
                        hostcxx.find(settings, 'void Settings::CreateOptions()'))
 can_play = function(otr, 'bool OTRGlobals::CanPlayMasterQuest()')
+disabled_text = function(settings, 'const char* Settings::MasterQuestDisabledText()')
 catalogue = between(otr, 'data["hasOriginal"] = OTRGlobals::Instance->HasOriginal();',
                     'auto settings = Rando::Settings::GetInstance();',
                     hostcxx.find(otr, 'extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void)'))
@@ -422,13 +424,15 @@ struct NativeOption {
     void Disable(std::string text) { disabled = true; disabledText = std::move(text); }
     void Enable() { disabled = false; disabledText.clear(); }
 };
-// settings.cpp Settings::CreateOptions: the Master Quest gate.
+// settings.cpp Settings::CreateOptions: the Master Quest gate, and why it greys the rows out.
 struct Settings {
     std::map<int, NativeOption> mOptions;
+    const char* MasterQuestDisabledText();
     void CreateMqOptions() {
 ''' + options_gate + r'''
     }
 };
+''' + disabled_text + r'''
 static nlohmann::json Catalogue() {
     nlohmann::json data = { { "options", nlohmann::json::object() } };
 ''' + catalogue + r'''
@@ -442,7 +446,10 @@ static const int kMqOptions[] = { RSK_MQ_DUNGEON_RANDOM, RSK_MQ_DUNGEON_COUNT, R
                                   RSK_MQ_DODONGOS_CAVERN, RSK_MQ_JABU_JABU, RSK_MQ_FOREST_TEMPLE, RSK_MQ_FIRE_TEMPLE,
                                   RSK_MQ_WATER_TEMPLE, RSK_MQ_SPIRIT_TEMPLE, RSK_MQ_SHADOW_TEMPLE,
                                   RSK_MQ_BOTTOM_OF_THE_WELL, RSK_MQ_ICE_CAVERN, RSK_MQ_GTG, RSK_MQ_GANONS_CASTLE };
-static const char* kNative = "This option has been disabled because only one type of O2R has been loaded";
+// Why the rows are greyed out: SoH's reason when only the MQ archive is loaded; with the vanilla game, the bundled
+// data's USA 1.0 ROM.
+static const char* kOnlyMq = "This option has been disabled because only one type of O2R has been loaded";
+static const char* kNeedsUsaRom = "This option has been disabled because Master Quest dungeons need an OoT USA 1.0 ROM";
 
 int main() {
     try {
@@ -458,13 +465,14 @@ int main() {
             states++;
             const std::string where = "state " + std::to_string(state) + ": ";
             const bool available = (globals.hasMasterQuest || globals.bundledMasterQuest) && globals.hasOriginal;
-            // Native options: disabled with SoH's own text exactly when MQ cannot be played beside the vanilla game.
+            const std::string reason = available ? "" : globals.hasOriginal ? kNeedsUsaRom : kOnlyMq;
+            // Native options: disabled exactly when MQ cannot be played beside the vanilla game, saying why.
             Settings native;
             native.CreateMqOptions();
             for (int key : kMqOptions) {
                 const auto& option = native.mOptions.at(key);
-                Require(option.disabled == !available && option.disabledText == (available ? "" : kNative),
-                        where + "native MQ option " + std::to_string(key));
+                Require(option.disabled == !available && option.disabledText == reason,
+                        where + "native MQ option " + std::to_string(key) + ": " + option.disabledText);
             }
             // SoH's own gate is unchanged without the bundled data.
             if (!globals.bundledMasterQuest)
@@ -485,8 +493,8 @@ int main() {
                 });
                 for (int key : kMqOptions) {
                     const auto& row = view.mOptions.at(key);
-                    Require(row.disabled == !available && row.disabledText == (available ? "" : kNative),
-                            where + "profile MQ row " + std::to_string(key));
+                    Require(row.disabled == !available && row.disabledText == reason,
+                            where + "profile MQ row " + std::to_string(key) + ": " + row.disabledText);
                 }
                 // Wallmaster Shuffle stays refused with MQ selected wherever MQ can be played: the player sees the
                 // plain Master Quest sentence, and the log keeps the developer text (EntranceAvailability.h).

@@ -5,6 +5,7 @@
 #include <string>
 #include <functional>
 #include <algorithm>
+#include "../mq/MqMode.h"
 namespace ComboRando::ProfileOotPolicy {
 #include "../../soh/soh/Enhancements/randomizer/randomizerEnums.h"
 static constexpr int IMFLAG_SEPARATOR_BOTTOM = 1;
@@ -62,6 +63,7 @@ struct Option {
 class View {
     std::function<int(const char*, int)> read;
     std::map<std::string, int> effective;
+    bool catalogHasOriginal = false; // the catalogue's hasOriginal
     int CVarGetInteger(const char* key, int fallback) {
         auto it = effective.find(key);
         return it != effective.end() ? it->second : read(key, fallback);
@@ -1258,39 +1260,29 @@ class View {
         }
     }
 #undef CVAR_RANDOMIZER_SETTING
+    // settings.cpp Settings::MasterQuestDisabledText, from the catalogue's hasOriginal.
+    const char* MasterQuestDisabledText() const {
+        return ComboMq::MqOptionsDisabledText(catalogHasOriginal);
+    }
     // settings.cpp CreateOptions' Master Quest gate, from the catalogue's mqPlayable (both quests: a vanilla oot.o2r
     // and MQ from a real oot-mq.o2r or OoTMM's bundled data). A catalogue without it cannot show the rows available.
     void RefreshMasterQuestAvailability(bool mqPlayable) {
         if (!mqPlayable) {
-            mOptions[RSK_MQ_DUNGEON_RANDOM].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_DUNGEON_COUNT].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_DUNGEON_SET].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_DEKU_TREE].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_DODONGOS_CAVERN].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_JABU_JABU].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_FOREST_TEMPLE].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_FIRE_TEMPLE].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_WATER_TEMPLE].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_SPIRIT_TEMPLE].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_SHADOW_TEMPLE].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_BOTTOM_OF_THE_WELL].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_ICE_CAVERN].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_GTG].Disable("This option has been disabled because only one type of O2R has been loaded");
-            mOptions[RSK_MQ_GANONS_CASTLE].Disable(
-                "This option has been disabled because only one type of O2R has been loaded");
+            mOptions[RSK_MQ_DUNGEON_RANDOM].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_DUNGEON_COUNT].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_DUNGEON_SET].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_DEKU_TREE].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_DODONGOS_CAVERN].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_JABU_JABU].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_FOREST_TEMPLE].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_FIRE_TEMPLE].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_WATER_TEMPLE].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_SPIRIT_TEMPLE].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_SHADOW_TEMPLE].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_BOTTOM_OF_THE_WELL].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_ICE_CAVERN].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_GTG].Disable(MasterQuestDisabledText());
+            mOptions[RSK_MQ_GANONS_CASTLE].Disable(MasterQuestDisabledText());
         } else {
             // If any MQ Options are available, show the MQ Dungeon Randomization Combobox
             mOptions[RSK_MQ_DUNGEON_RANDOM].Enable();
@@ -1394,6 +1386,8 @@ class View {
         callbacks[RSK_LOGIC_RULES] = [this] { Callback_RSK_LOGIC_RULES(); };
         for (const auto& row : callbacks)
             row.second();
+        const auto hasOriginal = catalog.find("hasOriginal");
+        catalogHasOriginal = hasOriginal != catalog.end() && hasOriginal->is_boolean() && hasOriginal->get<bool>();
         const auto mqPlayable = catalog.find("mqPlayable");
         RefreshMasterQuestAvailability(mqPlayable != catalog.end() && mqPlayable->is_boolean() &&
                                        mqPlayable->get<bool>());

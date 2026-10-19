@@ -146,6 +146,11 @@ class Settings {
      * @brief Create the list of description strings for `Option`s.
      */
     void CreateOptionDescriptions();
+    /**
+     * @brief Why CreateOptions disables the Master Quest options. ComboShip: with the vanilla game loaded, OoTMM's
+     * bundled MQ data needs a USA 1.0 ROM (combo/mq/MqMode.h MqOptionsDisabledText); otherwise SoH's reason.
+     */
+    const char* MasterQuestDisabledText();
     static std::shared_ptr<Settings> mInstance;
     std::shared_ptr<Context> mContext = nullptr;
     std::array<Option, RSK_MAX> mOptions = {};

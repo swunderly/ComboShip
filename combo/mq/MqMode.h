@@ -65,6 +65,14 @@ constexpr BundledMqStatus BundledMqAvailability(bool hasOriginal, const uint32_t
     return dataDecodes ? BundledMqStatus::Available : BundledMqStatus::DataInvalid;
 }
 
+// Why the Master Quest options are greyed out (settings.cpp CreateOptions and the profile editor), where MQ cannot be
+// played beside the vanilla game. With the vanilla oot.o2r loaded, no oot-mq.o2r is either, and the bundled data
+// plays only over a USA 1.0 ROM; without it, SoH's own reason holds: only the MQ archive is loaded.
+constexpr const char* MqOptionsDisabledText(bool hasOriginal) {
+    return hasOriginal ? "This option has been disabled because Master Quest dungeons need an OoT USA 1.0 ROM"
+                       : "This option has been disabled because only one type of O2R has been loaded";
+}
+
 // The marker a newly generated Combo seed records: the bundled data whenever this install has it, so its MQ
 // dungeons are OoTMM's, the same on every device. Without it the seed stays Legacy.
 constexpr SeedMqSource SourceForNewSeed(bool bundledAvailable) {

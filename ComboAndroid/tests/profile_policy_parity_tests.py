@@ -72,4 +72,16 @@ assert re.search(r'RefreshMasterQuestAvailability\(mqPlayable != catalog\.end\(\
                  r'mqPlayable->get<bool>\(\)\);', policy), 'the policy must read the catalogue\'s mqPlayable'
 catalogue = (root / 'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
 assert 'data["mqPlayable"] = %s;' % condition in catalogue, 'the catalogue\'s mqPlayable must be the native condition'
+# Both say why the rows are greyed out with the same text from the same fact, the vanilla game being loaded
+# (combo/mq/MqMode.h MqOptionsDisabledText), which the catalogue publishes as hasOriginal.
+found = re.search(r'const char\* Settings::MasterQuestDisabledText\(\)\s*\{', native)
+assert found and 'return ComboMq::MqOptionsDisabledText(OTRGlobals::Instance->HasOriginal());' in \
+    body(native, found.end() - 1), 'settings.cpp must give MqOptionsDisabledText\'s reason for the MQ rows'
+found = re.search(r'const char\* MasterQuestDisabledText\(\) const\s*\{', policy)
+assert found and 'return ComboMq::MqOptionsDisabledText(catalogHasOriginal);' in body(policy, found.end() - 1), \
+    'the profile policy must give the same reason'
+assert re.search(r'catalogHasOriginal = hasOriginal != catalog\.end\(\) && hasOriginal->is_boolean\(\) && '
+                 r'hasOriginal->get<bool>\(\);', policy) and \
+    'data["hasOriginal"] = OTRGlobals::Instance->HasOriginal();' in catalogue, \
+    'the profile policy must read the catalogue\'s hasOriginal'
 print('PASS: %d option callbacks and helpers and the Master Quest gate match settings.cpp' % len(callbacks[0]))
