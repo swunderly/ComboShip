@@ -164,6 +164,14 @@ inline bool SaveRefusedForMq(const SaveMqNeeds& needs, bool hasArchiveMq, bool b
     return needs.source != SeedMqSource::Legacy &&
            !CanPlayMqDungeons(needs.source, needs.mqDungeonCount, hasArchiveMq, bundledAvailable);
 }
+// What the player is told about a save SaveRefusedForMq refuses: LoadFile's popup, which file select also shows when
+// such a save is chosen (it greys the save out, so LoadFile is never reached from there).
+inline constexpr const char* kSaveMqRefusalTitle = "Master Quest data unavailable";
+inline const char* SaveMqRefusalText(SeedMqSource source) {
+    return source == SeedMqSource::Bundled
+               ? "This save uses Master Quest dungeons from OoTMM's data, which needs an OoT USA 1.0 ROM."
+               : "This save uses a Master Quest data source this version does not know.";
+}
 
 // soh.dll's C exports (OTRGlobals.cpp) for the launcher and the headless generator.
 using FnGetMqDataSource = int (*)();

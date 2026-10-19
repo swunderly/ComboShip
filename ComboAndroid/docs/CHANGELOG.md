@@ -16,7 +16,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 Planned as 0.4.13. Nothing in this section is in a release yet.
 
-- **Master Quest dungeons can now be played from your normal OoT ROM, as in OoTMM.** Combo Ship now carries OoTMM's Master Quest dungeon data, so any of the 12 OoT dungeons can be its Master Quest version without a Master Quest ROM. For now this needs an OoT USA 1.0 (NTSC-U 1.0) ROM; with other versions the dungeons stay normal. As in OoTMM, Master Quest dungeons keep your ROM's normal models and textures.
+- **Master Quest dungeons can now be played from your normal OoT ROM, as in OoTMM.** Combo Ship now carries OoTMM's Master Quest dungeon data, so any of the 12 OoT dungeons can be its Master Quest version without a Master Quest ROM. For now this needs an OoT USA 1.0 ROM; with other versions the dungeons stay normal. As in OoTMM, Master Quest dungeons keep your ROM's normal models and textures.
 - **The Master Quest dungeon options are unlocked.** Search "MQ Dungeon Setting" in the Randomizer tab: None, Set Number, Random or Selection Only, with a choice for each dungeon. The seed views and the spoiler log list the seed's Master Quest dungeons.
 - **Allsanity's Master Quest setting now takes effect.** With a USA 1.0 ROM, a new seed from Allsanity settings, including a file you applied them to before, makes each OoT dungeon Master Quest on a coin flip, as OoTMM's Allsanity does. Before, every dungeon stayed normal.
 - **Master Quest Ice Cavern skips Sheik's Serenade of Water cutscene, as in OoTMM.** Sheik's check there works as usual.

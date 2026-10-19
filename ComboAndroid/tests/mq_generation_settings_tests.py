@@ -612,7 +612,8 @@ presets = read('combo/rando/ComboPresets.h')
 allsanity_help = ''.join(re.findall(r'"((?:[^"\\]|\\.)*)"', between(presets, '{ CommunityPreset::Allsanity,', '},')))
 check('setup does not import' not in presets and 'settings.cpp:2896' not in presets,
       'ComboPresets.h still says Master Quest is unavailable')
-check('Master Quest on a coin flip, as in OoTMM' in allsanity_help and 'NTSC-U 1.0' in allsanity_help,
+check('Master Quest on a coin flip, as in OoTMM' in allsanity_help and 'OoT USA 1.0 ROM' in allsanity_help and
+      'NTSC' not in allsanity_help,
       f'the Allsanity help must say its MQ dungeons are OoTMM\'s coin flips and what they need: {allsanity_help}')
 
 # The check tracker keeps SoH's spoiler behaviour (owner default): a dungeon whose quest was rolled stays hidden until

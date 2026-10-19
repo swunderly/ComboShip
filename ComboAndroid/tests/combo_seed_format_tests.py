@@ -56,7 +56,7 @@ using namespace ComboRando;
 std::mutex g_containerMutex;
 std::map<int, Json> g_containerCache;
 int containerLoads = 0, mutations = 0, drains = 0, popups = 0;
-std::string popupTitle, dropped;
+std::string popupTitle, popupMessage, dropped;
 std::filesystem::path ComboContainerPath(int slot) { return "slot" + std::to_string(slot) + ".combosav"; }
 bool ComboIsValidSlot(int slot) { return slot >= 0 && slot < 3; }
 Json& LoadOrCreateContainer(int slot) {
@@ -66,7 +66,11 @@ Json& LoadOrCreateContainer(int slot) {
     return g_containerCache.at(slot);
 }
 namespace SohGui {
-void RegisterPopup(const std::string& title, const std::string&) { ++popups; popupTitle = title; }
+void RegisterPopup(const std::string& title, const std::string& message) {
+    ++popups;
+    popupTitle = title;
+    popupMessage = message;
+}
 }
 namespace SohUtils { bool IsStringEmpty(const char* value) { return !value || !value[0]; } }
 void CVarSetString(const char* key, const char*) { dropped = key; }
@@ -126,9 +130,16 @@ void Randomizer_RepairLegacyMaskInventory() { ++mutations; }
 constexpr int QUEST_RANDOMIZER = 1;
 constexpr const char* FILE_TYPE_SAVE_RANDO = "RandoSave";
 enum class ComboLoadState { Blocked, Loading, Ready };
+// The SaveFileMetaInfo fields file select's MQ explanation reads (SaveManager.h).
+struct SaveFileMetaInfo {
+    unsigned requiresMasterQuest = 0;
+    unsigned char mqDataSource = 0;
+};
 class SaveManager {
   public:
     static constexpr int MaxFiles = 3;
+    static SaveManager* Instance;
+    SaveFileMetaInfo fileMetaInfo[MaxFiles];
     std::atomic<ComboLoadState> comboLoadState{ComboLoadState::Ready};
     std::mutex saveMtx;
     Json saveBlock = {{"untouched", true}};
@@ -141,8 +152,10 @@ class SaveManager {
     void InitMeta(int) { ++mutations; }
     bool LoadFile(int fileNum, bool initializeFullContext);
 };
+SaveManager* SaveManager::Instance = nullptr;
 '''
 source += function(native, 'bool SaveManager::LoadFile(int fileNum, bool initializeFullContext) {') + '\n'
+source += function(native, 'extern "C" void Save_ExplainMqRefusal(int fileNum) {') + '\n'
 source += r'''
 void write(const std::filesystem::path& path, const Json& value) {
     std::ofstream output(path); output << value.dump(2);
@@ -418,6 +431,9 @@ int main() {
         return page;
     };
     const Json marked = mqPage({{"mqDataSource", "ootmm-32.3"}, {"masterQuestDungeonCount", 2}});
+    const std::string kBundledRefusal =
+        "This save uses Master Quest dungeons from OoTMM's data, which needs an OoT USA 1.0 ROM.";
+    const std::string kUnknownRefusal = "This save uses a Master Quest data source this version does not know.";
     const Json unknown = mqPage({{"mqDataSource", "ootmm-40.0"}, {"masterQuestDungeonCount", 0}});
     const Json unmarked = mqPage({{"masterQuestDungeonCount", 2}});
     for (const auto& [page, archive, bundled, loads] :
@@ -435,12 +451,35 @@ int main() {
         assert(mqManager.LoadFile(1, true) == loads);
         if (!loads) {
             assert(mutations == 0 && popups == 1 && popupTitle == "Master Quest data unavailable");
+            assert(popupMessage == (page == marked ? kBundledRefusal : kUnknownRefusal));
             assert(gSaveContext.fileNum == 2 && globals.gRandoContext.get() == context && runtimeFlags.empty());
             assert(mqManager.comboLoadState == ComboLoadState::Blocked);
         } else {
             assert(popups == 0 && gSaveContext.fileNum == 1);
         }
     }
+    // File select greys out a save it cannot open and only plays an error sound when it is chosen. For a save whose
+    // MQ data source is the reason, Save_ExplainMqRefusal shows LoadFile's popup; any other save gets none.
+    SaveManager selectManager;
+    SaveManager::Instance = &selectManager;
+    for (const auto& [source, needsMq, archive, bundled, message] :
+         {std::tuple{1, 1u, true, false, kBundledRefusal}, std::tuple{1, 1u, false, true, std::string()},
+          std::tuple{1, 0u, false, false, std::string()}, std::tuple{2, 0u, true, true, kUnknownRefusal},
+          std::tuple{0, 1u, false, true, std::string()}}) {
+        globals.archiveMq = archive;
+        globals.bundledMq = bundled;
+        selectManager.fileMetaInfo[2] = {needsMq, static_cast<unsigned char>(source)};
+        popups = 0;
+        popupMessage.clear();
+        Save_ExplainMqRefusal(2);
+        assert(popups == (message.empty() ? 0 : 1) && popupMessage == message);
+        assert(message.empty() || popupTitle == "Master Quest data unavailable");
+    }
+    popups = 0;
+    Save_ExplainMqRefusal(-1);
+    Save_ExplainMqRefusal(SaveManager::MaxFiles);
+    assert(popups == 0);
+    SaveManager::Instance = nullptr;
     globals.archiveMq = globals.bundledMq = false;
     // A page with the launcher's runtime flags (Combo_ReadGameSave adds them for a layout this build accepts):
     // the loader takes them before any save context change and applies the page as stored.

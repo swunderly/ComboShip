@@ -236,6 +236,8 @@ extern "C" {
 #endif
 // Explicit result belongs to this attempted slot; no sticky last-success query.
 int Save_TryLoadFile(int fileNum, int initializeFullContext);
+// File select: say why a greyed-out save cannot be opened, when its Master Quest data is the reason.
+void Save_ExplainMqRefusal(int fileNum);
 #ifdef __cplusplus
 }
 #endif

@@ -1512,12 +1512,7 @@ bool SaveManager::LoadFile(int fileNum, bool initializeFullContext) {
         if (ComboMq::SaveRefusedForMq(mqNeeds, OTRGlobals::Instance->HasMasterQuest(),
                                       OTRGlobals::Instance->HasBundledMasterQuest())) {
             SPDLOG_ERROR("Master Quest data source rejected slot {}", fileNum);
-            SohGui::RegisterPopup("Master Quest data unavailable",
-                                  "The save in slot " + std::to_string(fileNum + 1) +
-                                      (mqNeeds.source == ComboMq::SeedMqSource::Bundled
-                                           ? " has Master Quest dungeons from OoTMM's bundled data, which needs an "
-                                             "NTSC-U 1.0 Ocarina of Time ROM."
-                                           : " uses a Master Quest data source this version does not know."));
+            SohGui::RegisterPopup(ComboMq::kSaveMqRefusalTitle, ComboMq::SaveMqRefusalText(mqNeeds.source));
             return false;
         }
         // The slot seed's ER-wide runtime flags, which Sram_StageOpenedSave reads when it picks the spawn,
@@ -3123,6 +3118,20 @@ extern "C" int Save_TryLoadFile(int fileNum, int initializeFullContext) {
     if (fileNum < 0 || fileNum >= SaveManager::MaxFiles || (initializeFullContext != 0 && initializeFullContext != 1))
         return 0;
     return SaveManager::Instance->LoadFile(fileNum, initializeFullContext != 0) ? 1 : 0;
+}
+
+// File select greys out a save it cannot open (FileChoose_IsSaveCompatible) and only plays an error sound when it is
+// chosen. When the reason is the save's Master Quest data source, this shows LoadFile's own explanation.
+extern "C" void Save_ExplainMqRefusal(int fileNum) {
+    if (fileNum < 0 || fileNum >= SaveManager::MaxFiles)
+        return;
+    const SaveFileMetaInfo& meta = SaveManager::Instance->fileMetaInfo[fileNum];
+    ComboMq::SaveMqNeeds needs;
+    needs.source = static_cast<ComboMq::SeedMqSource>(meta.mqDataSource);
+    needs.mqDungeonCount = meta.requiresMasterQuest ? 1 : 0; // CanPlayMqDungeons asks only whether there are any
+    if (ComboMq::SaveRefusedForMq(needs, OTRGlobals::Instance->HasMasterQuest(),
+                                  OTRGlobals::Instance->HasBundledMasterQuest()))
+        SohGui::RegisterPopup(ComboMq::kSaveMqRefusalTitle, ComboMq::SaveMqRefusalText(needs.source));
 }
 #else
 extern "C" void Save_LoadFile(void) {

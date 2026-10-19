@@ -3,7 +3,8 @@
 mq_seed_marker_tests.cpp checks the marker's helpers; this scan checks that the game and the launcher use them:
 - the save's randomizer section writes the marker only for a bundled seed and reads it back on load;
 - SaveManager::LoadFile refuses a marked save this install cannot play, before it binds anything, and file select
-  greys it out, while a save without the marker keeps SoH's own rule;
+  greys it out and, when it is chosen, shows LoadFile's explanation, while a save without the marker keeps SoH's own
+  rule;
 - SoH's spoiler writes and reads the marker like the Kokiri revisions;
 - a new Combo seed (in game and headless) binds the bundled source when the install has it and stamps it with its MQ
   dungeons into the seed document, except an MM-only seed, which rolls no OoT dungeons and records none; a reloaded
@@ -84,6 +85,22 @@ check(re.search(r'#ifdef COMBO_BUILD\s*valid = valid && ResourceMgr_SaveMqPlayab
                 r'valid = valid && ResourceMgr_GameHasMasterQuest\(\);\s*\}\s*#endif\s*'
                 r'if \(meta->requiresOriginal\)', choose),
       'file select must use the per-save MQ rule and keep SoH\'s requiresOriginal check')
+# A greyed-out save chosen at file select only plays an error sound, so LoadFile's popup is never reached from there:
+# file select shows the same explanation when the save's MQ data source is the reason.
+main_menu = body(code('soh/src/overlays/gamestates/ovl_file_choose/z_file_choose.c'),
+                 'void FileChoose_UpdateMainMenu(GameState* thisx)')
+check(re.search(r'\} else if \(!FileChoose_IsSaveCompatible\(Save_GetSaveMetaInfo\(this->buttonIndex\)\)\) \{\s*'
+                r'Audio_PlaySoundGeneral\(NA_SE_SY_FSEL_ERROR,[^;]*;\s*#ifdef COMBO_BUILD\s*'
+                r'Save_ExplainMqRefusal\(this->buttonIndex\);\s*#endif\s*\}', main_menu),
+      'choosing a greyed-out save at file select must explain an MQ data refusal')
+explain = body(save, 'extern "C" void Save_ExplainMqRefusal(int fileNum)')
+check('ComboMq::SaveRefusedForMq(needs, OTRGlobals::Instance->HasMasterQuest(),' in explain and
+      'SohGui::RegisterPopup(ComboMq::kSaveMqRefusalTitle, ComboMq::SaveMqRefusalText(needs.source));' in explain,
+      'file select\'s explanation must use LoadFile\'s refusal and text')
+check('SohGui::RegisterPopup(ComboMq::kSaveMqRefusalTitle, ComboMq::SaveMqRefusalText(mqNeeds.source));' in load_file,
+      'LoadFile\'s MQ refusal popup must use the shared text')
+check(re.search(r'void Save_ExplainMqRefusal\(int fileNum\);', code('soh/soh/SaveManager.h')),
+      'SaveManager.h must declare Save_ExplainMqRefusal for file select')
 
 # SoH's spoiler.
 spoiler = body(code('soh/soh/Enhancements/randomizer/3drando/spoiler_log.cpp'), 'void SpoilerLog_Write()')

@@ -34,7 +34,7 @@ inline constexpr CommunityPresetInfo kCommunityPresets[] = {
       "freestanding items and scenery drops are shuffled in both worlds, plus OoT's pond fish, with OoT key rings. "
       "Adds the MM spells, boots and tunics and the ocarina buttons, all shared across games. MM starts with no "
       "items. Each OoT dungeon is Master Quest on a coin flip, as in OoTMM, using OoTMM's Master Quest data, which "
-      "needs an NTSC-U 1.0 OoT ROM; with another ROM version the dungeons stay normal unless Master Quest game data "
+      "needs an OoT USA 1.0 ROM; with another ROM version the dungeons stay normal unless Master Quest game data "
       "is installed. Entrance shuffle, Skip Child Zelda, Cross-Games Age, silver rupee pouches, child wallets, MM key "
       "rings and OoTMM item families Combo Ship lacks are left out." },
 };
