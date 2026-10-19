@@ -74,11 +74,16 @@ for needle in ('entranceLayout = nlohmann::json();', 'lastFillError =', 'pinStar
                'Combo_MM_Rando_Restore();', 'if (++entranceFailures >= kFillAttempts) {', 'fail(lastFillError.c_str());',
                'continue;'):
     assert needle in handler, needle
-assert loop.count('catch (const ComboRando::Entrances::') == 1, 'other entrance failures must stop generation'
-# C1: the generator's only handler is the ShuffleError one. A generic one would reroll a deterministic
+# A refusal stops generation with its plain sentence (owner decision D3, P1-03) and logs the developer text.
+refusal = block(loop, 'catch (const ComboRando::Entrances::UnifiedEntranceRefused& error)')
+for needle in ('<< error.what() <<', 'Combo_MM_Rando_Restore();', 'fail(error.player().c_str());', 'return;'):
+    assert needle in refusal, needle
+assert 'continue;' not in refusal and 'entranceFailures' not in refusal, 'a refusal is never retried'
+assert loop.count('catch (const ComboRando::Entrances::') == 2, 'other entrance failures must stop generation'
+# C1: the generator's only rerolling handler is the ShuffleError one. A generic one would reroll a deterministic
 # refusal, forever when retryUntilSuccess is set.
 handlers = loop[steps[5]:steps[7]]
-assert len(re.findall(r'\bcatch\s*\(', handlers)) == 1, 'only an exhausted layout search may reroll'
+assert len(re.findall(r'\bcatch\s*\(', handlers)) == 2, 'only an exhausted layout search may reroll'
 assert not re.search(r'\bcatch\s*\(\s*(?:\.\.\.|(?:const\s+)?std::exception)', handlers), 'generic entrance handler'
 assert re.search(r'ComboHash\(ComboRando::Entrances::SeedIdentityText\(\s*inputSeed \+ sohDump \+ mmDump \+ '
                  r'logicRules\.dump\(\) \+ logicSongs\.dump\(\) \+\s*'

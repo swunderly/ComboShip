@@ -5,6 +5,7 @@
 #include "rando/entrances/TempleAdapter.h"
 #include <cassert>
 #include <iostream>
+#include <set>
 using namespace ComboRando;
 using namespace ComboRando::Entrances;
 using Json = nlohmann::json;
@@ -53,12 +54,24 @@ int main() {
     return settings.value(key, fallback);
   };
   assert(ProfileWallmasterRefusal(draft, assets, read).empty());
+  // Every reason shows one plain sentence on the row, its tooltip, the Generate
+  // button and the generation error (owner decision D3). The developer text is
+  // kept, for logs and exceptions only.
+  std::set<std::string> sentences;
+  const auto plain = [&](const EntranceRefusal &why, const std::string &player,
+                         const std::string &log) {
+    assert(why.player == player && why.log == log);
+    for (const char *word : {"GLOBAL", "deferred", "One-Way", "Ship's own"})
+      assert(why.player.find(word) == std::string::npos);
+    sentences.insert(why.player);
+  };
   // Only combined mode generates a layout. The row shows the solo reason ahead
   // of every other one in the two solo and the two vanilla Home modes.
   EntranceSettingsFacts solo;
   solo.combinedMode = false;
   const auto combinedOnly = EntranceGenerationRefusal(solo);
-  assert(combinedOnly == "Wallmaster Shuffle works only in combined mode.");
+  plain(combinedOnly, "Wallmaster Shuffle works only in combined mode.",
+        "Wallmaster Shuffle works only in combined mode.");
   for (int mode = 0; mode < 5; ++mode) {
     auto moded = draft;
     moded["gameMode"] = kGameModeKeys[mode];
@@ -77,69 +90,107 @@ int main() {
       settings.clear();
     }
   }
-  const auto check = [&] {
+  const auto check = [&](const std::string &player, const std::string &log) {
     const auto menu = ProfileWallmasterRefusal(draft, assets, read);
     const auto facts = ProfileEntranceFacts(draft, read);
     assert(!menu.empty() && menu == EntranceGenerationRefusal(facts));
+    plain(menu, player, log);
     if (!facts.shipwrightEntrances && !facts.enemyRandomizer) {
       TempleFacts temple;
       static_cast<EntranceSettingsFacts &>(temple) = facts;
       Settings s;
       s.erWallmasters = Mode::OwnGame;
-      Reject([&] {
+      bool rejected = false;
+      try {
         CheckTempleCapability(s, temple, [](std::string_view) { return true; });
-      });
-      assert(menu == TempleSettingsRefusal(temple));
+      } catch (const TempleProbeUnsupported &error) {
+        rejected = error.what() == "Temple probe: " + log;
+      }
+      assert(rejected && menu == TempleSettingsRefusal(temple));
     }
   };
+  const std::string ship =
+      "Turn off the other OoT entrance shuffles to use Wallmaster Shuffle.";
   for (const char *key : kShipEntranceSettings) {
     settings[key] = 1;
-    check();
+    check(ship, "Wallmaster and One-Way shuffles need Ship's own entrance "
+                "shuffle off");
     assert(IsShipEntranceSetting(key));
     settings.erase(key);
   }
+  const std::string enemy =
+      "Turn off Enemy Randomizer to use Wallmaster Shuffle.";
   settings[kOotEnemyRandomizer] = 1;
-  check();
+  check(enemy, "Wallmaster Shuffle needs Enemy Randomizer off");
   settings.clear();
-  for (const char *key :
-       {"gCombo.Rando.SongTravel", "gCombo.Rando.ForeignSongs"}) {
+  for (const auto &[key, player] :
+       {std::pair{"gCombo.Rando.SongTravel",
+                  "Turn off Warp Songs and Soaring Spots Shuffle to use "
+                  "Wallmaster Shuffle."},
+        std::pair{"gCombo.Rando.ForeignSongs",
+                  "Turn off \"Play warp songs across games\" to use "
+                  "Wallmaster Shuffle."}}) {
     settings[key] = 1;
-    check();
+    check(player, "song travel logic needs GLOBAL song sources (deferred)");
     settings.clear();
   }
   settings[kNativeLogicRule] = 2;
-  check();
+  check("Wallmaster Shuffle does not support glitched logic.",
+        "only glitchless OoT logic is supported");
   settings.clear();
-  for (const char *key :
-       {"StartingMinuetOfForest", "StartingBoleroOfFire",
-        "StartingSerenadeOfWater", "StartingRequiemOfSpirit",
-        "StartingNocturneOfShadow", "StartingPreludeOfLight"}) {
+  const auto song = [&](const std::string &name) {
+    const std::string use =
+        " from the starting items to use Wallmaster Shuffle.";
+    check("Remove " + name + use,
+          "starting " + name + " needs GLOBAL song sources (deferred)");
+  };
+  for (const auto &[key, name] :
+       {std::pair{"StartingMinuetOfForest", "Minuet of Forest"},
+        std::pair{"StartingBoleroOfFire", "Bolero of Fire"},
+        std::pair{"StartingSerenadeOfWater", "Serenade of Water"},
+        std::pair{"StartingRequiemOfSpirit", "Requiem of Spirit"},
+        std::pair{"StartingNocturneOfShadow", "Nocturne of Shadow"},
+        std::pair{"StartingPreludeOfLight", "Prelude of Light"}}) {
     settings[std::string("gRandoSettings.") + key] = 1;
-    check();
+    song(name);
     settings.clear();
   }
   draft["mm"]["settings"]["gRando.StartingItems"] = {"Song of Time",
                                                      "Song of Soaring"};
-  check();
+  song("Song of Soaring");
   settings[kNativeLogicRule] = 1;
   settings["gCombo.Rando.SongTravel"] = 1;
   assert(ProfileWallmasterRefusal(draft, assets, read)
              .empty()); // No Logic does not run Temple.
   settings[kOotEnemyRandomizer] = 1;
-  check();
+  check(enemy, "Wallmaster Shuffle needs Enemy Randomizer off");
   settings.clear();
   draft["mm"]["settings"].erase("gRando.StartingItems");
   settings["gRandoSettings.MQDungeons"] = 2;
   assert(ProfileWallmasterRefusal(draft, assets, read)
              .empty()); // Native forces vanilla without MQ data.
+  // MQ data with an MQ selection, and MQ data alone, give one sentence, the
+  // one the generator gives for a Master Quest dungeon.
+  const std::string mq =
+      "Wallmaster Shuffle does not support Master Quest dungeons yet.";
+  const std::string mqLog =
+      "Wallmaster Shuffle currently supports vanilla dungeons only";
+  assert(mq == kWallmasterMasterQuestText);
   auto mqAssets = assets;
   mqAssets["hasMasterQuest"] = true;
-  assert(!ProfileWallmasterRefusal(draft, mqAssets, read).empty());
+  plain(ProfileWallmasterRefusal(draft, mqAssets, read), mq, mqLog);
   settings.clear();
   assert(ProfileWallmasterRefusal(draft, mqAssets, read).empty());
   mqAssets["hasOriginal"] = false;
-  assert(!ProfileWallmasterRefusal(draft, mqAssets, read).empty());
-  assert(!ProfileWallmasterRefusal(draft, Json::object(), read).empty());
+  plain(ProfileWallmasterRefusal(draft, mqAssets, read), mq, mqLog);
+  const std::string data =
+      "Wallmaster Shuffle cannot read the OoT dungeon data.";
+  assert(data == kWallmasterDungeonDataText);
+  plain(ProfileWallmasterRefusal(draft, Json::object(), read), data,
+        "Wallmaster Shuffle cannot verify the available dungeon data");
+  // Solo mode, Ship ER, Enemy Randomizer, glitched logic, the two song logic
+  // options, six warp songs and Soaring, Master Quest and unknown dungeon data.
+  assert(sentences.size() == 15);
   auto raw = draft;
   raw["setupCVars"][wall] = 2;
   raw["setupCVars"]["gCombo.Rando.Entrances.erOneWays"] = 1;
@@ -206,6 +257,8 @@ int main() {
   assert(MakePools(
              EntranceSettingsForHeadless(profile, {}, "", false, caps).settings)
              .empty());
-  std::cout << "PASS: shared menu/generation/Temple refusals, vanilla asset "
-               "policy, capability choices and detached draft normalization\n";
+  std::cout << "PASS: shared menu/generation/Temple refusals, "
+            << sentences.size()
+            << " plain refusal sentences, vanilla asset policy, capability "
+               "choices and detached draft normalization\n";
 }

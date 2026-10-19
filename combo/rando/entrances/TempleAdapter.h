@@ -60,7 +60,7 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
     if (f.startingAge == TempleStartingAge::Random)
         reject("the starting age must be resolved first");
     if (const auto why = TempleSettingsRefusal(f); !why.empty())
-        reject(why);
+        reject(why.log);
     for (const Mode mode : { s.erBoss, s.erDungeons, s.erGrottos, s.erRegions, s.erOverworld, s.erIndoors, s.erMixed,
                              s.erOneWays, s.erWallmasters })
         if (mode == Mode::Full)

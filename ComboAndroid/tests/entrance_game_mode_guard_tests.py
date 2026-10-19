@@ -40,7 +40,7 @@ ordered(fill, 'const auto gameMode = sProfileAttempt ?', 'if (ComboRando::Vanill
         'ComboRando::PrepareVanillaRun(', 'publish.result = 2;',
         'ReadEntranceSettings(readSetting, entranceCaps);',
         'if (!combinedMode && !ComboRando::Entrances::MakePools(entranceSettings).empty()) {',
-        'fail(ComboRando::EntranceGenerationRefusal(modeFacts).c_str());', 'return;',
+        'fail(ComboRando::EntranceGenerationRefusal(modeFacts).player.c_str());', 'return;',
         'nlohmann::json entranceLayout;', 'for (uint64_t attempt = 0;', 'SOH_DumpRandoStaticData()',
         'GenerateEntranceLayout(unified, sEntranceNative, sTempleProbe)', 'CrossWorldCombinedFill(')
 for needle in ('sWriteGameplayRule', 'DumpRandoStaticData', 'InactiveGameDump', 'GenerateEntranceLayout',
@@ -121,7 +121,7 @@ int main() {
     const auto caps = Entrances::ActiveCapabilities();
     Entrances::EntranceSettingsFacts solo;
     solo.combinedMode = false;
-    const auto reason = EntranceGenerationRefusal(solo);
+    const auto reason = EntranceGenerationRefusal(solo).player;
     assert(reason == "Wallmaster Shuffle works only in combined mode.");
     int refused = 0, pooled = 0, cases = 0;
     for (const auto& row : Entrances::kEntranceSettings)

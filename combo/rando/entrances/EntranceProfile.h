@@ -103,15 +103,15 @@ template <class Read> EntranceSettingsFacts ProfileEntranceFacts(const nlohmann:
 }
 // Asset facts come from the native profile catalogue, not an unapplied MQ CVar.
 template <class Read>
-std::string ProfileWallmasterRefusal(const nlohmann::json& draft, const nlohmann::json& ootCatalog, Read read) {
-    const auto why = WallmasterSettingsRefusal(ProfileEntranceFacts(draft, read));
+EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nlohmann::json& ootCatalog, Read read) {
+    auto why = WallmasterSettingsRefusal(ProfileEntranceFacts(draft, read));
     if (!why.empty())
         return why;
     if (!ootCatalog.contains("hasMasterQuest") || !ootCatalog.contains("hasOriginal"))
-        return "Wallmaster Shuffle cannot verify the available dungeon data";
+        return { kWallmasterDungeonDataText, "Wallmaster Shuffle cannot verify the available dungeon data" };
     if (ootCatalog.at("hasMasterQuest").get<bool>() &&
         (!ootCatalog.at("hasOriginal").get<bool>() || read("gRandoSettings.MQDungeons", 0) != 0))
-        return "Wallmaster Shuffle currently supports vanilla dungeons only";
+        return { kWallmasterMasterQuestText, "Wallmaster Shuffle currently supports vanilla dungeons only" };
     return {};
 }
 } // namespace ComboRando::Entrances

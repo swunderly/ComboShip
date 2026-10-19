@@ -2416,7 +2416,7 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     if (!combinedMode && !ComboRando::Entrances::MakePools(entranceSettings).empty()) {
         ComboRando::Entrances::EntranceSettingsFacts modeFacts;
         modeFacts.combinedMode = false;
-        fail(ComboRando::EntranceGenerationRefusal(modeFacts).c_str());
+        fail(ComboRando::EntranceGenerationRefusal(modeFacts).player.c_str());
         return;
     }
     const bool privateMmProfiles = nativeMmMixed || nativeMmGrottos || nativeMmWallmasters ||
@@ -2678,6 +2678,13 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                 return;
             }
             continue;
+        } catch (const ComboRando::Entrances::UnifiedEntranceRefused& error) {
+            // Never retried (C1). The log keeps the developer text; the player sees the plain sentence (D3).
+            std::cerr << "[ComboShip] RunComboFill: entrance generation refused: " << error.what() << "\n";
+            if (Combo_MM_Rando_Restore)
+                Combo_MM_Rando_Restore();
+            fail(error.player().c_str());
+            return;
         }
         // The same combined accessibility policy governs entrance candidates and final item placement.
         auto result = ComboRando::CrossWorldCombinedFill(

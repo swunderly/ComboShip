@@ -312,11 +312,12 @@ static void Tooltip(const char* help) {
 static Entrances::Settings MenuEntranceSettings() {
     return Entrances::ReadEntranceSettings(ReadInteger, Entrances::ActiveCapabilities());
 }
+// The plain sentence the row, its tooltip and the Generate button show (owner decision D3).
 static std::string EntranceUnavailable() {
-    return Entrances::ProfileWallmasterRefusal(
-        document, catalog.value("oot", Json::object()), [](const char* key, int fallback) {
-            return !std::strcmp(key, kOotEnemyRandomizer) ? CVarGetInteger(key, fallback) : ReadInteger(key, fallback);
-        });
+    const auto read = [](const char* key, int fallback) {
+        return !std::strcmp(key, kOotEnemyRandomizer) ? CVarGetInteger(key, fallback) : ReadInteger(key, fallback);
+    };
+    return Entrances::ProfileWallmasterRefusal(document, catalog.value("oot", Json::object()), read).player;
 }
 void DrawEntranceSetting(int index) {
     if (!active || !document.is_object() || index < 0 || index >= int(std::size(Entrances::kEntranceSettings)))
@@ -523,7 +524,7 @@ void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden) {
     }
     ImGui::EndDisabled();
     if (blockedByEntrances)
-        Tooltip("Turn Wallmaster Shuffle off before enabling Ship's own entrance shuffle.");
+        Tooltip("Turn off Wallmaster Shuffle to use this option.");
     else if (policy && policy->disabled)
         Tooltip(policy->disabledText.c_str());
     else if (display && display->note) {

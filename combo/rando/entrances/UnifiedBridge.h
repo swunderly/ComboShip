@@ -26,6 +26,17 @@ namespace ComboRando::Entrances {
 class UnifiedEntranceRefused : public std::logic_error {
   public:
     using std::logic_error::logic_error;
+    // A settings or dungeon data reason: what() keeps the developer text for logs (EntranceAvailability.h).
+    explicit UnifiedEntranceRefused(const EntranceRefusal& why) : std::logic_error(why.log), sentence(why.player) {
+    }
+    // The generation error the player sees: the reason's plain sentence (owner decision D3), or the developer text
+    // of an internal fault, which has none.
+    std::string player() const {
+        return sentence.empty() ? what() : sentence;
+    }
+
+  private:
+    std::string sentence;
 };
 
 // RSK_MQ_DUNGEON_RANDOM; option 0 (RO_MQ_DUNGEONS_NONE) keeps every dungeon vanilla (settings.cpp:2900-2903).
@@ -101,15 +112,18 @@ inline OotQuests ReadUnifiedOotQuests(const NativeFns& native) {
         !native.clearOotAssumptions || !native.applySeed || !native.dumpSeed || !native.setAssumptions ||
         !native.clearAssumptions || !native.setGenerationSettings)
         throw UnifiedEntranceRefused("Vanilla Wallmaster generation needs all native entrance exports");
+    bool decoded = false;
     try {
         const auto* text = native.ootAreaContext();
         if (!text)
             throw std::invalid_argument("native OoT quest context unavailable");
         auto quests = DecodeOotAreaContext(nlohmann::json::parse(text));
+        decoded = true;
         RequireVanillaOotQuests(quests);
         return quests;
     } catch (const std::exception& error) {
-        throw UnifiedEntranceRefused(std::string("Vanilla Wallmaster generation: ") + error.what());
+        throw UnifiedEntranceRefused(EntranceRefusal{ decoded ? kWallmasterMasterQuestText : kWallmasterDungeonDataText,
+                                                      std::string("Vanilla Wallmaster generation: ") + error.what() });
     }
 }
 
@@ -195,13 +209,14 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     if (!g.readSetting)
         throw UnifiedEntranceRefused("Entrance generation cannot read Ship's settings");
     if (ShipEntrancesActive(g.readSetting))
-        throw UnifiedEntranceRefused("Wallmaster and One-Way shuffles need Ship's own entrance shuffle off");
+        throw UnifiedEntranceRefused(ShipEntrancesRefusal());
     if (vanillaOot && g.readSetting("gEnhancements.RandomizedEnemies", 0))
-        throw UnifiedEntranceRefused("Wallmaster Shuffle needs Enemy Randomizer off");
+        throw UnifiedEntranceRefused(EnemyRandomizerRefusal());
     // The layout records the quest of every MQ dungeon; until the native quest context exists only
     // the all-vanilla one is known.
     if (!vanillaOot && g.readSetting(kMqDungeonsSetting, 0) != 0)
-        throw UnifiedEntranceRefused("Entrance layouts need Master Quest dungeons off for now");
+        throw UnifiedEntranceRefused(
+            EntranceRefusal{ kWallmasterMasterQuestText, "Entrance layouts need Master Quest dungeons off for now" });
     const OotQuests quests = vanillaOot ? ReadUnifiedOotQuests(native) : OotQuests{};
     const auto areaExists = areas(quests);
     const auto pools = ResolvePools(s, areaExists).pools;

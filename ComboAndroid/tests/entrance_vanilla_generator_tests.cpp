@@ -3,6 +3,7 @@
 // native seed corpus or gameplay.
 #include "rando/entrances/UnifiedBridge.h"
 #include <cassert>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -291,6 +292,88 @@ static Result Run(uint32_t seed, uint8_t age, bool mmStart, OotAccess access,
   ApplyNativeSeed(Fake::Native(), Json::object(), Caps());
   return result;
 }
+// A refusal is thrown before any native state changes.
+static UnifiedEntranceRefused
+Refusal(const UnifiedGeneration &g, const NativeFns &native = Fake::Native()) {
+  try {
+    GenerateEntranceLayout(g, native, Fake::Probe());
+  } catch (const UnifiedEntranceRefused &error) {
+    Untouched();
+    return error;
+  }
+  assert(!"a refusal was expected");
+  std::abort();
+}
+// The generation error shows the plain sentence the menu shows for the same
+// reason (GenerationRules, owner decision D3); what() keeps the developer text.
+static void CheckPlainRefusals() {
+  const auto same = [](const UnifiedGeneration &g,
+                       const EntranceSettingsFacts &facts) {
+    Fake::Reset();
+    const auto error = Refusal(g);
+    const auto rules = EntranceGenerationRefusal(facts);
+    assert(!rules.empty() && error.player() == rules.player &&
+           error.what() == rules.log);
+  };
+  const auto reading = [](std::string key, int value) {
+    return [key, value](const char *read, int fallback) {
+      return read == key ? value : fallback;
+    };
+  };
+  UnifiedGeneration g;
+  EntranceSettingsFacts facts;
+  for (const char *key : kShipEntranceSettings) {
+    g = Generation();
+    g.readSetting = reading(key, 1);
+    facts = {};
+    facts.shipwrightEntrances = true;
+    same(g, facts);
+  }
+  g = Generation();
+  g.readSetting = reading("gEnhancements.RandomizedEnemies", 1);
+  facts = {};
+  facts.enemyRandomizer = true;
+  same(g, facts);
+  g = Generation();
+  g.songTravelLogic = true;
+  facts = {};
+  facts.songTravelLogic = true;
+  same(g, facts);
+  g = Generation();
+  g.foreignSongsLogic = true;
+  facts = {};
+  facts.foreignSongsLogic = true;
+  same(g, facts);
+  for (bool mm : {false, true}) {
+    g = Generation();
+    auto dump = Json::parse(mm ? g.mmDump : g.ootDump);
+    const std::string song = mm ? "Song of Soaring" : "Prelude of Light";
+    dump["sharedStartingItems"] = {song};
+    (mm ? g.mmDump : g.ootDump) = dump.dump();
+    facts = {};
+    (mm ? facts.mmStartingItems : facts.ootStartingItems) = {song};
+    same(g, facts);
+  }
+  g = Generation();
+  g.readSetting = reading("gRandoSettings.LogicRules", 2);
+  facts = {};
+  facts.glitchless = false;
+  same(g, facts);
+  // Master Quest and unreadable dungeon data use the menu's sentences; an
+  // internal fault has no plain sentence and shows its developer text.
+  Fake::Reset();
+  Fake::quests[3] = true;
+  assert(Refusal(Generation()).player() == kWallmasterMasterQuestText);
+  Fake::Reset();
+  Fake::contextOverride = Json::array();
+  assert(Refusal(Generation()).player() == kWallmasterDungeonDataText);
+  Fake::Reset();
+  auto missing = Fake::Native();
+  missing.applySeed = nullptr;
+  const auto fault = Refusal(Generation(), missing);
+  assert(fault.player() == fault.what());
+  Fake::Reset();
+}
 static void CheckShortcutPoolGuards() {
   for (int variant = 0; variant < 4; ++variant) {
     Settings s;
@@ -476,6 +559,7 @@ int main(int argc, char **argv) {
   assert(noLogicStats.randomDraws == 39 && noLogicStats.completeChecks == 1 &&
          noLogicStats.assumedChecks == 0 && Fake::queries == 0);
   CheckShortcutPoolGuards();
+  CheckPlainRefusals();
   std::ostringstream quiet;
   auto *previousOutput = std::cout.rdbuf(quiet.rdbuf());
   size_t pairs = 0, shortcuts = 0;

@@ -29,7 +29,7 @@ template <class Read, class Write> void ApplyOotEnemySoulsAvailability(Read read
     if (read(kOotEnemyRandomizer, 0))
         write(kOotEnemySouls, 0);
 }
-inline std::string EntranceGenerationRefusal(const Entrances::EntranceSettingsFacts& facts) {
+inline Entrances::EntranceRefusal EntranceGenerationRefusal(const Entrances::EntranceSettingsFacts& facts) {
     return Entrances::WallmasterSettingsRefusal(facts);
 }
 inline bool IsRetiredNativeRuleControl(const char* key) {

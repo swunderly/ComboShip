@@ -38,30 +38,58 @@ inline bool IsShipEntranceSetting(std::string_view key) {
             return true;
     return false;
 }
-inline std::string TempleSettingsRefusal(const EntranceSettingsFacts& f) {
+// Why Wallmaster Shuffle is unavailable. The player sees one plain sentence per reason on the Entrances row, its
+// tooltip, the Generate button and the generation error (owner decision D3); logs and exceptions keep the developer
+// text. Both are empty when nothing refuses it.
+struct EntranceRefusal {
+    std::string player, log;
+    bool empty() const {
+        return player.empty();
+    }
+    bool operator==(const EntranceRefusal& other) const {
+        return player == other.player && log == other.log;
+    }
+};
+inline constexpr const char* kWallmasterShipEntrancesText =
+    "Turn off the other OoT entrance shuffles to use Wallmaster Shuffle.";
+inline constexpr const char* kWallmasterMasterQuestText =
+    "Wallmaster Shuffle does not support Master Quest dungeons yet.";
+inline constexpr const char* kWallmasterDungeonDataText = "Wallmaster Shuffle cannot read the OoT dungeon data.";
+inline EntranceRefusal ShipEntrancesRefusal() {
+    return { kWallmasterShipEntrancesText, "Wallmaster and One-Way shuffles need Ship's own entrance shuffle off" };
+}
+inline EntranceRefusal EnemyRandomizerRefusal() {
+    return { "Turn off Enemy Randomizer to use Wallmaster Shuffle.", "Wallmaster Shuffle needs Enemy Randomizer off" };
+}
+inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
     if (!f.logicEnabled)
         return {};
     if (!f.glitchless)
-        return "only glitchless OoT logic is supported";
+        return { "Wallmaster Shuffle does not support glitched logic.", "only glitchless OoT logic is supported" };
     if (f.shipwrightEntrances)
-        return "Ship's own entrance shuffle must be off";
-    if (f.songTravelLogic || f.foreignSongsLogic)
-        return "song travel logic needs GLOBAL song sources (deferred)";
+        return { kWallmasterShipEntrancesText, "Ship's own entrance shuffle must be off" };
+    if (f.songTravelLogic)
+        return { "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster Shuffle.",
+                 "song travel logic needs GLOBAL song sources (deferred)" };
+    if (f.foreignSongsLogic)
+        return { "Turn off \"Play warp songs across games\" to use Wallmaster Shuffle.",
+                 "song travel logic needs GLOBAL song sources (deferred)" };
     for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })
         for (const auto& item : *list)
             for (std::string_view song : { "Song of Soaring", "Minuet of Forest", "Bolero of Fire", "Serenade of Water",
                                            "Nocturne of Shadow", "Requiem of Spirit", "Prelude of Light" })
                 if (item == song)
-                    return "starting " + item + " needs GLOBAL song sources (deferred)";
+                    return { "Remove " + item + " from the starting items to use Wallmaster Shuffle.",
+                             "starting " + item + " needs GLOBAL song sources (deferred)" };
     return {};
 }
-inline std::string WallmasterSettingsRefusal(const EntranceSettingsFacts& f) {
+inline EntranceRefusal WallmasterSettingsRefusal(const EntranceSettingsFacts& f) {
     if (!f.combinedMode)
-        return "Wallmaster Shuffle works only in combined mode.";
+        return { "Wallmaster Shuffle works only in combined mode.", "Wallmaster Shuffle works only in combined mode." };
     if (f.shipwrightEntrances)
-        return "Wallmaster and One-Way shuffles need Ship's own entrance shuffle off";
+        return ShipEntrancesRefusal();
     if (f.enemyRandomizer)
-        return "Wallmaster Shuffle needs Enemy Randomizer off";
+        return EnemyRandomizerRefusal();
     return TempleSettingsRefusal(f);
 }
 } // namespace ComboRando::Entrances

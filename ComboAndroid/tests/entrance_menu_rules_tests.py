@@ -40,3 +40,18 @@ assert hostcxx.contains(generation, 'const auto entranceRefusal = !VanillaMode(m
                         'Entrances::Active(MenuEntranceSettings().erWallmasters) ? EntranceUnavailable() : "";'), \
     'Generate must refuse Wallmaster Shuffle in the solo modes'
 assert hostcxx.contains(generation, 'ImGui::BeginDisabled(!Editable() || running || !entranceRefusal.empty());')
+# P1-03 (owner decision D3): the row, its tooltip and the Generate button show the plain sentence, and so does the
+# generation error, whose log line keeps the developer text. The OoT entrance rows name no developer concept.
+assert hostcxx.contains(body('static std::string EntranceUnavailable()'), '.player;')
+assert hostcxx.contains(body('void DrawWidget(const CwWidget& w'), 'if (blockedByEntrances) '
+                        'Tooltip("Turn off Wallmaster Shuffle to use this option.");')
+for word in ('GLOBAL', 'deferred', 'One-Way', "Ship's own"):
+    assert word not in profiles, word
+ship = (a.source/'combo/ComboShip.cpp').read_text(encoding='utf-8')
+refused = ship[hostcxx.find(ship, 'GenerateEntranceLayout(unified, sEntranceNative, sTempleProbe);'):]
+refused = refused[hostcxx.find(refused, '} catch (const ComboRando::Entrances::UnifiedEntranceRefused& error) {'):]
+refused = refused[:hostcxx.find(refused, 'return;')]
+assert hostcxx.contains(refused, 'std::cerr << "[ComboShip] RunComboFill: entrance generation refused: " << '
+                        'error.what() << "\\n";')
+assert hostcxx.contains(refused, 'fail(error.player().c_str());')
+assert hostcxx.contains(ship, 'fail(ComboRando::EntranceGenerationRefusal(modeFacts).player.c_str());')
