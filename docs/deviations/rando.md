@@ -2435,3 +2435,33 @@ layout seed before decoding it.
 held shut by a missing soul and the neighbouring room loads (`En_Holl`), the guard resets for the new
 room and the blocked room can clear early. It is unfixed and can show up in Wallmaster dungeons next
 to the cleared-room spawn exception.
+
+## Master Quest from OoTMM's bundled data: gameplay rules (MQ port U6, 2026-10-19)
+
+Besides the scene and room data (`src/oot/mq.c`), OoTMM v32.3 reads its MQ flag in a few gameplay rules. For a
+dungeon that is MQ from the bundled data (`ResourceMgr_SceneUsesBundledMq`) the port follows them; a dungeon from a
+real `oot-mq.o2r` and every vanilla dungeon keep SoH's behaviour.
+
+- **MQ Water's door flags.** OoTMM's bins put transition actor 0x16 on switch 2 (`scripts/make_mq.ts:226-229`),
+  so a bundled seed counts spent keys on {2, 21} (`dungeon.cpp` `GetDoorFlags`). SoH's {4, 21} stays for the
+  archive, whose door `FixWaterMQLock.cpp` moves to switch 4; that fix now leaves a bundled door alone.
+- **MQ Shadow's switch 7.** A new save starts with it set (`src/oot/save.c:136-139`), so the room-0 eye switch's
+  two clear blocks (Bg_Gnd_Darkmeiro 0x701) are already there. This only opens access; SoH's MQ Shadow logic does
+  not count on the blocks, so it can only ask for more than the game needs.
+- **MQ Spirit's room-6 silver blocks.** A child reads switch 0x09 as unset in Obj_Oshihiki's Init
+  (`src/oot/actors/Obj/Obj_Oshihiki.c:5-13`), so a child always finds the room as before the adult's push: the
+  hole empty and the block above in place. SoH's randomizer hook, which kills the block in the hole and so also
+  leaves the block above gone, now runs only for the archive. The hole is open for a child either way, which is
+  what SoH's logic assumes.
+- **Already OoTMM's, unchanged:** the MQ small-key maxima (`src/common/data.c:31-81`), the MQ silver rupee sets
+  (`src/common/sr.c:36-82`), Fire's door 0x17 and Water's door 0x15 left locked in MQ (`src/oot/doors.c:47-53`),
+  Ruto's top-floor flag never set for MQ Jabu-Jabu (`src/oot/play/play.c:76`; Combo has none of OoTMM's Ruto
+  fixes), and the MQ Ganon's Castle chest offset (`src/common/csmc/csmc_chest.c:101-108`), which only follows
+  OoTMM's chest resize, which SoH does not do.
+- **Ice Cavern's alternate setup 4** (the Serenade cutscene header) is gone in MQ, as in OoTMM
+  (`src/oot/mq.c:328-339`). The Sheik in Ice Cavern check does not need it: it is the Serenade flag, which En_Xc
+  sets from the main room list.
+- **MQ scrub prices** stay SoH's MQ rows, which equal OoTMM's MQ arrays (`packages/logic/src/price.ts:97-130`) item
+  for item. OoTMM's pool labels MQ Dodongo's Cavern's scrub ids 0x1e and 0x1f the other way round from En_Dns,
+  so OoTMM charges the Deku shield scrub (SoH's Staircase) 40 and the red potion scrub 50; the port keeps the
+  game's 50 and 40.
