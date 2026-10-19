@@ -18,6 +18,8 @@ from a real oot-mq.o2r (archive) and a vanilla one:
   Combo never sets it outside En_Ru1, which matches the MQ case.
 - Ice Cavern's alternate setup 4, gone in MQ (src/oot/mq.c:328-339): the Serenade check is its flag, which En_Xc sets
   from the main room list whether or not its cutscene (played in place, skipped in the randomizer) runs.
+- Chest positions (src/common/csmc/csmc_chest.c:94-119): OoTMM moves MQ Ganon's Castle chest 0x04 after resizing it;
+  SoH never resizes chests, so there is nothing to move.
 - MQ Spirit's room-6 silver blocks (src/oot/actors/Obj/Obj_Oshihiki.c:5-13): for a child, Obj_Oshihiki's Init reads
   switch 0x09 as unset in a bundled MQ Spirit, and SoH's kill hook (hook_handlers.cpp) runs only for archive MQ. The
   three blocks come from the bins.
@@ -498,6 +500,31 @@ song_cases = song_cases[:song_cases.index('break;')]
 check(hostcxx.contains(song_cases, '|| IS_RANDO) { *should = false;'),
       'timesaver_hook_handlers.cpp: the randomizer must skip the Serenade cutscene')
 print('ice cavern: the Serenade check is its flag, set from the main room list without setup 4')
+
+# --- Chest positions -----------------------------------------------------------------------------------------------
+# OoTMM's container-matches-contents resizes chests (big for major items and boss keys, small otherwise) and moves two
+# that would clip once resized (src/common/csmc/csmc_chest.c:94-119): Ganon's Castle's major chest, flag 0x04 in MQ and
+# 0x11 in vanilla, back 10 units, and Spirit's small chest 0x04. SoH's containers-match-contents changes textures only:
+# EnBox keeps the size its params give (z_en_box.c), so no chest grows or shrinks and neither move applies, MQ or not.
+en_box = read(repo / 'soh/src/overlays/actors/ovl_En_Box/z_en_box.c')
+type_writes = len(re.findall(r'->type\s*=(?!=)', en_box))
+check(type_writes == 1 and hostcxx.contains(en_box, 'this->type = thisx->params >> 12 & 0xF;'),
+      f'z_en_box.c: a chest\'s type (its size) must come from its params alone ({type_writes} writes)')
+update_texture = function(en_box, 'void EnBox_UpdateTexture(EnBox* this, PlayState* play)')
+size_switch = block(update_texture, 'switch (this->type) {')
+check(update_texture.count('Actor_SetScale') == size_switch.count('Actor_SetScale') == 2,
+      'z_en_box.c: EnBox_UpdateTexture must size a chest by its type only')
+resized = {}
+for tree in ('soh/soh', 'combo'):
+    for path in sorted((repo / tree).rglob('*')):
+        if path.suffix in ('.c', '.cpp', '.h', '.inc'):
+            count = len(re.findall(r'\b(?:chest|enBox|box)->(?:type\s*=(?!=)|dyna\.actor\.world\.pos\.[xz]\s*[-+]=)',
+                                   path.read_text(encoding='utf-8', errors='replace')))
+            if count:
+                resized[path.relative_to(repo).as_posix()] = count
+check(not resized, f'chest size or position changed outside EnBox: {resized}; OoTMM\'s csmc_chest.c:101-119 moves '
+      'Ganon\'s Castle chest 0x04 (MQ) / 0x11 and Spirit chest 0x04 once it resizes them')
+print('chests: SoH never resizes a chest, so OoTMM\'s resize offsets (MQ Ganon chest 0x04) have nothing to correct')
 
 # --- MQ Spirit's silver blocks in room 6 ---------------------------------------------------------------------------
 # OoTMM patches the switch read in Obj_Oshihiki's Init (0x80a4f574, the call after ObjOshihiki_CheckType in the
