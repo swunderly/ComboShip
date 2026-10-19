@@ -71,6 +71,10 @@ inline nlohmann::json GameplayRulesForSeed(const nlohmann::json& seed,
     auto rules = captured ? saved : CaptureGameplayRules([](const char*, int fallback) { return fallback; });
     if (adopt)
         rules["values"] = UpgradeGameplayRules(baseline)["values"];
+    if (!captured) { // a save from before rules were stored: Soaring at any age, as then (kSoaringAgeRuleKey)
+        rules["values"][kAgelessSoaringRule] = 1;
+        rules["logicValues"][kAgelessSoaringRule] = 1;
+    }
     if (!captured || rules["version"] == 1) {
         const auto map = SongTravelMap::parse(seed.value("songTravel", nlohmann::json()));
         for (const auto& pair : { std::pair{ "gCombo.Enhancements.ForeignSongs", map.foreignSongs },

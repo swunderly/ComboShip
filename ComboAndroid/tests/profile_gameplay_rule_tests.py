@@ -75,6 +75,16 @@ int main(int argc,char** argv){
  assert(ballad.runtimeOnly);setup["gameplayRules"]["values"][ballad.name]=1;
  setup["gameplayRules"]["logicValues"][ballad.name]=1;
  assert(NormalizeGameplayRuleSnapshot(setup["gameplayRules"])["logicValues"][ballad.name]==0);
+ // Runs from before Soaring followed OoTMM's age rule keep Soaring at any age; rules captured since keep theirs.
+ {
+  auto old=CaptureGameplayRules([](const char*,int fallback){return fallback;});
+  old.erase(kSoaringAgeRuleKey);old["values"][kAgelessSoaringRule]=0;old["logicValues"][kAgelessSoaringRule]=0;
+  const auto kept=NormalizeGameplayRuleSnapshot(old);
+  assert(kept["values"][kAgelessSoaringRule]==1 && kept["logicValues"][kAgelessSoaringRule]==1);
+  const auto fresh=CaptureGameplayRules([](const char*,int fallback){return fallback;});
+  assert(fresh.contains(kSoaringAgeRuleKey) && NormalizeGameplayRuleSnapshot(fresh)["values"][kAgelessSoaringRule]==0);
+  assert(GameplayRulesForSeed(Json::object())["logicValues"][kAgelessSoaringRule]==1); // no stored rules: old save
+ }
  // A next-seed draft never takes away an ability the loaded run's own logic assumes.
  const auto beforeRunLogic=setup;
  const auto& frogs=*FindGameplayRule("gEnhancements.DifficultyOptions.FrogChoirCount");

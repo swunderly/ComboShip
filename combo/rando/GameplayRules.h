@@ -163,9 +163,20 @@ template <class Read> int ReadGameplayRule(const GameplayRule& rule, bool logica
     return ReadGameplayRule(rule, logical, logical ? LogicRuleKey(rule.name).c_str() : nullptr, read);
 }
 // Convert the old one-chick toggle only when no count was saved. Explicit new counts win.
+// Song of Soaring in OoT follows OoTMM's age rule only in runs made since that change (macros_oot.yml:33):
+// rules captured since then carry kSoaringAgeRuleKey. Older seeds and saves played Soaring at any age, so
+// a block without the key keeps that, in play and in logic.
+inline constexpr const char* kSoaringAgeRuleKey = "soaringAgeRule";
+inline constexpr const char* kAgelessSoaringRule = "gCombo.Enhancements.AgelessSoaring";
 inline nlohmann::json UpgradeGameplayRules(nlohmann::json block) {
     if (!block.is_object())
         return block;
+    if (!block.contains(kSoaringAgeRuleKey)) {
+        for (const char* field : { "values", "logicValues" })
+            if (block.contains(field) && block[field].is_object())
+                block[field][kAgelessSoaringRule] = 1;
+        block[kSoaringAgeRuleKey] = 1;
+    }
     for (const char* field : { "values", "logicValues" }) {
         if (!block.contains(field) || !block[field].is_object())
             continue;
@@ -230,7 +241,11 @@ template <class Read> nlohmann::json CaptureGameplayRules(Read read) {
     nlohmann::json tricks = nlohmann::json::object();
     for (const auto& trick : kMmTricks)
         tricks[trick.key] = int(trick.publicOption && read(trick.key, 0) != 0); // see IsHiddenMmTrick
-    return { { "version", 2 }, { "values", values }, { "logicValues", logic }, { "mmTricks", tricks } };
+    return { { "version", 2 },
+             { "values", values },
+             { "logicValues", logic },
+             { "mmTricks", tricks },
+             { kSoaringAgeRuleKey, 1 } };
 }
 template <class Write> void ApplyGameplayRules(const nlohmann::json& input, Write write) {
     const auto rules = UpgradeGameplayRules(input);
