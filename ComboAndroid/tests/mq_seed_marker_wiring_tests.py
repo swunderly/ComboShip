@@ -6,7 +6,8 @@ mq_seed_marker_tests.cpp checks the marker's helpers; this scan checks that the 
   greys it out, while a save without the marker keeps SoH's own rule;
 - SoH's spoiler writes and reads the marker like the Kokiri revisions;
 - a new Combo seed (in game and headless) binds the bundled source when the install has it and stamps it with its MQ
-  dungeons into the seed document; a reloaded or replayed seed binds its own recorded source, is refused before any
+  dungeons into the seed document, except an MM-only seed, which rolls no OoT dungeons and records none; a reloaded
+  or replayed seed binds its own recorded source, is refused before any
   state changes when its MQ data is missing, and must roll the MQ dungeons it recorded.
 """
 from pathlib import Path
@@ -112,8 +113,10 @@ fill = body(ship, 'static void RunComboFill(')
 check(re.search(r'const auto mqSource = ComboMq::SourceForNewSeed\(BundledMqAvailable\(\)\);\s*'
                 r'ComboMq::MqDataSourceScope mqDataSource\(SOH_GetMqDataSource, SOH_SetMqDataSource, mqSource\);',
                 fill), 'a new seed must bind the bundled source when the install has it')
-check('ComboMq::StampSeedMq(consolidated["oot"], mqSource, SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1);'
-      in fill, 'a new seed document must record its source and MQ dungeons')
+check(re.search(r'ComboMq::StampSeedMq\(consolidated\["oot"\],\s*ComboRando::ModeRandomizesOot\(gameMode\) \? mqSource '
+                r': ComboMq::SeedMqSource::Legacy,\s*SOH_GetMqDungeonMask \? SOH_GetMqDungeonMask\(\) : -1\);', fill),
+      'a new seed document must record its source and MQ dungeons; an MM-only seed rolls none and records none')
+check(fill.count('ComboMq::StampSeedMq(') == 1, 'RunComboFill stamps the seed document once')
 check('mqDataSource.Keep()' not in fill, 'the generation scope must give the source back; finalize binds it')
 finalize = body(ship, 'static void Combo_FinalizeGenerate()')
 check(re.search(r'mqDataSource = std::make_unique<ComboMq::MqDataSourceScope>\(\s*SOH_GetMqDataSource, '

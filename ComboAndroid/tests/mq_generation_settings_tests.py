@@ -562,7 +562,8 @@ ship = read('combo/ComboShip.cpp')
 fill = body(ship, 'static void RunComboFill(')
 order(fill, ['masterSeed = baseSeed + uint32_t(attempt) * 0x9E3779B9u;', 'SOH_SetComboRandoSeed(masterSeed);',
              'SOH_DumpRandoStaticData()', 'consolidated["masterSeed"] = masterSeed;',
-             'ComboMq::StampSeedMq(consolidated["oot"], mqSource,'], 'generation')
+             'ComboMq::StampSeedMq(consolidated["oot"], ComboRando::ModeRandomizesOot(gameMode) ? mqSource'],
+      'generation')
 reload = ship[hostcxx.find(ship, 'if (SOH_RestoreRandoSettings)\n            SOH_RestoreRandoSettings(ootSettings.c_str());'):]
 order(reload, ['SOH_SetComboRandoSeed(masterSeed);', 'SOH_PrepRandoContext();',
                'if (!ComboMq::ReplayKeepsMqDungeons(oot, SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1))'],

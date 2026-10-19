@@ -2961,7 +2961,10 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                                 { "iceTrapModels", ootIceTrapModels } };
         consolidated["oot"][ComboRando::kKokiriSeedRevision] = ComboRando::kKokiriModernRevision;
         consolidated["oot"][ComboRando::kKokiriGrassCatalogRevision] = ComboRando::kKokiriGrassModernRevision;
-        ComboMq::StampSeedMq(consolidated["oot"], mqSource, SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1);
+        // An MM-only seed never rolls OoT's dungeons, so the native mask is an earlier seed's: it records none.
+        ComboMq::StampSeedMq(consolidated["oot"],
+                             ComboRando::ModeRandomizesOot(gameMode) ? mqSource : ComboMq::SeedMqSource::Legacy,
+                             SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1);
         consolidated["mm"] = { { "settings", parseOrEmpty(MM_DumpRandoSettings) },
                                { "placements", mmSpoiler },
                                { "prices", pricesOf(mmDump) } };
