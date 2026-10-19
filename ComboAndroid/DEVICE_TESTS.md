@@ -1,5 +1,49 @@
 # Device validation still required
 
+## Master Quest dungeons (unreleased)
+
+Nothing here has been played yet, on the emulator or a phone; host tests cover the data and the code. Run the whole list on the emulator first, then checks 1-4, 9, 12, 17 and 18 on a phone (note the frame rate). Use an OoT USA 1.0 ROM: the bundled Master Quest data plays only on that version. Keep the logs and a screenshot of each check.
+
+**Room log and seeds**
+
+1. Turn on the developer room log: with the app closed, open `ComboShip/comboship.json` and add `"MqRoomLog": 1` under `"CVars"` → `"gCombo"` → `"Debug"` (add the objects that are missing). From then on every room load in the 12 dungeons writes one `[ComboShip MQ room]` line to `ComboShip/native.log`. Set it back to 0 when you are done; it is off by default.
+2. After each session, copy `native.log` (and `native.previous.log` if the app restarted) to the PC and run `python tools/mq_walk_compare.py native.log native.previous.log` from the source checkout. It must end in `OK`. Its per-dungeon lines show the rooms seen as child and as adult; once every dungeon is done, `--require-all` must pass too.
+3. On a spare file, search "MQ Dungeon Setting", choose Set Number and set MQ Dungeon Count to 12, then generate. The saved and generated seed views show "Master Quest dungeons:" with all 12 names, and the spoiler log lists them. Use the Save Editor for the items each dungeon needs. If you use the debug warp screen, leave its MQ setting alone: it switches to a real Master Quest archive, not the bundled data.
+4. On another spare file, apply the Allsanity preset and generate: the seed view lists the dungeons that came up Master Quest, and only those play as MQ (the log's `quest=` field).
+
+**In every dungeon**, with the log on: walk every room at each age listed, until the comparer shows all of that dungeon's rooms. Open one chest and collect one Gold Skulltula token: the item is given and the check tracker marks the check. Nothing crashes, no door is missing, and Link never falls through a floor.
+
+5. Deku Tree (child): 12 rooms. Room 11 has no actors in MQ (`actors=mq:0`).
+6. Dodongo's Cavern (child and adult): 17 rooms. Rooms 9 and 10 each hold one of OoTMM's six broken actors (a bush whose object never loads): no crash, and the log shows `ffff` as actor 0 of room 9 and actor 6 of room 10. Collect all the silver rupees on the staircase: each pickup message counts them, and the last one opens the way on. With Scrubs Shuffle All and Scrubs Prices Vanilla, MQ Deku Scrub Staircase asks 50 rupees and MQ Deku Scrub Side Room Near Lower Lizalfos 40, the game's prices (OoTMM charges 40 and 50).
+7. Jabu-Jabu's Belly (child): 16 rooms. Ruto behaves as in the original MQ game: find her and carry her as it asks. Combo never moves her to the first floor (OoTMM's fix for that skips MQ Jabu-Jabu). Room 7's Ruto is a broken actor: the log shows `ffff` as its actor 1.
+8. Forest Temple (adult): 23 rooms.
+9. Fire Temple (adult): 27 rooms. Every Fire line shows `collision=patched:553:33`.
+   - On a new save with Small Key Shuffle set to Vanilla or Own Dungeon, the locked door in the entrance room (room 0, to room 15) is still locked: there SoH unlocks the vanilla door with the same flag, and OoTMM leaves MQ's locked.
+   - Room 3 (the Flare Dancer room with the MQ Megaton Hammer Chest), with the Fire Temple compass: the minimap shows a chest mark until you open that chest, and the pause map's 1F shows six chest marks (SoH's own MQ map shows five).
+   - Room 4 (the MQ Compass Chest room): shoot a Fire Arrow at the high unlit torch. It lights: OoTMM's patch lets arrows through the collision around it.
+   - Room 5 (the Lizalfos maze): OoTMM's patch changes the camera there. Note any camera that snaps or looks into a wall.
+10. Water Temple (adult): 23 rooms.
+    - On a new save, the locked door between the central room (room 0) and room 5 is still locked (SoH unlocks the vanilla one).
+    - Open the locked door between rooms 15 and 12 with a small key: the key count drops by one, the door stays open after you leave and come back, and save, reload and the check tracker still count that key as spent.
+    - Room 5's moving hookshot platform follows its track (`paths=mq:2`).
+11. Spirit Temple (child, then adult on the same save): 29 rooms.
+    - Child, room 1 (the Torch Slug room just past the crawlspace): its two Keese are broken actors (`ffff` as actors 2 and 3). With Enemy Souls (OoT) on and no Keese soul, defeat the Torch Slugs: the doors open.
+    - Adult, room 6 (the silver block hallway): push the silver block into the hole. Then as child, enter room 6 again: the block is back in its first place, the hole is empty, and child Link can still get through to the hallway chest.
+    - Adult, room 23 (the big wall with the sliding panels): its broken Skullwalltula (`ffff` as actor 0) does not crash the room; collect its silver rupees.
+12. Shadow Temple (adult): 23 rooms. On a new save, room 0's two clear blocks are already there before you shoot its eye switch (OoTMM's switch 7).
+13. Bottom of the Well (child): 7 rooms. The two rolling boulders in room 1 roll along their tracks (`paths=mq:2`).
+14. Ice Cavern (adult): 12 rooms (`paths=mq:5`).
+    - The rolling boulders in rooms 0, 2, 4 and 8 roll along their tracks; none sits still or vanishes.
+    - Room 7: open the chest that held the Iron Boots in the original game. Sheik appears and gives the Sheik in Ice Cavern item, and the check is collected, although MQ Ice Cavern has no Serenade cutscene setup (as in OoTMM).
+15. Gerudo Training Ground (adult): 11 rooms. Collect one silver rupee set: its door or chest opens.
+16. Ganon's Castle (adult): 20 rooms. Every line shows `collision=patched:16:0`. In the Forest Trial (room 6), shoot the eye switch beside one fan with an arrow: the arrow reaches it and the MQ Forest Trial Eye Switch Chest appears. Melt the frozen eye switch beside the other fan with a Fire Arrow, then shoot it: the MQ Forest Trial Frozen Eye Switch Chest appears. These are the 16 polygons OoTMM's patch lets arrows through.
+
+**Saves and sessions**
+
+17. Save inside an MQ dungeon, quit and reload: you start at its entrance and it is still MQ. Then warp to another MQ dungeon and enter it: MQ too.
+18. In one session: play the MQ file, return to file select, load a file whose seed has no MQ dungeons (or an old save) and enter the same dungeons: they are vanilla, and the log says `quest=vanilla` with nothing MQ. Then load the MQ file again: MQ again.
+19. A save or seed made before this version loads and plays as before, with every dungeon vanilla.
+
 ## Wallmaster Shuffle (0.4.12, unreleased)
 
 Nothing here has been tried on a phone yet, and no OoT Wallmaster capture has been seen in play. Checks 3, 4 and 7 matter most. Use the exact release build, a spare file in Combined randomizer mode, and Randomizer > Logic & access > Entrances > Wallmaster Shuffle set to Own Game. Tools > Save Editor can give items, keys and souls to save time.
