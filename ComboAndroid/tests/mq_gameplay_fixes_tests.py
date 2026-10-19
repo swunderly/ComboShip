@@ -1,11 +1,12 @@
 """OoTMM v32.3's smaller Master Quest gameplay rules for a dungeon that is MQ from the bundled data (MQ port unit U6).
 
-Besides the scene and room data (mq.c), OoTMM reads its MQ flag (Config_IsMq) in a few gameplay rules. This harness
-compiles the production code each rule touches, with engine stubs, and runs it for a bundled MQ dungeon, a dungeon
-from a real oot-mq.o2r (archive) and a vanilla one:
-- MQ Water's locked doors: OoTMM's bins put transition 0x16 on switch 2 (scripts/make_mq.ts:226-229), so a bundled seed
-  counts {2, 21} as spent keys (dungeon.cpp GetDoorFlags), and FixWaterMQLock.cpp, which moves the archive's door from
-  switch 3 to 4, leaves a bundled door alone.
+Besides the scene and room data (mq.c), OoTMM reads its MQ flag (Config_IsMq) in a few gameplay rules. Where a rule
+is code, this harness compiles the production lines it touches with engine stubs and runs them for a bundled MQ
+dungeon, a dungeon from a real oot-mq.o2r (archive) and a vanilla one; where it is data, it compares SoH's tables with
+OoTMM's, re-read from a pinned OoTMM v32.3 checkout when one is beside this one:
+- MQ Water's locked doors: OoTMM's bins put transition 0x16 on switch 2 (scripts/make_mq.ts:226-229), so a bundled
+  seed counts {2, 21} as spent keys (dungeon.cpp GetDoorFlags), and FixWaterMQLock.cpp, which moves the archive's door
+  from switch 3 to 4, leaves a bundled door alone.
 - MQ Shadow's switch 7 on a new save (src/oot/save.c:136-139): Randomizer_InitSaveFile sets it for a bundled MQ
   Shadow, after Sram_InitSave has made the file a randomizer file, so the resolver reads the seed.
 - Fire's first door (0x17) and Water's water-raise door (0x15), which OoTMM opens only in vanilla dungeons
@@ -142,7 +143,8 @@ doors += statement(dungeon_cpp, 'static const std::vector<uint8_t> kBundledMqWat
 doors += function(dungeon_cpp, 'const std::vector<uint8_t>* DungeonInfo::GetDoorFlags() const') + '\n'
 doors += function(dungeon_cpp, 'int8_t FindUsedSmallKeys(') + '\n'
 doors += function(water_fix, 'static void OnInitEnDoor(void* refActor)') + '\n'
-doors += r'''#define REQUIRE(x) do { if (!(x)) { fprintf(stderr, "failed: %s at line %d\n", #x, __LINE__); return 1; } } while (0)
+doors += r'''#define REQUIRE(x) \
+    do { if (!(x)) { fprintf(stderr, "failed: %s at line %d\n", #x, __LINE__); return 1; } } while (0)
 using Flags = std::vector<uint8_t>;
 int main() {
     DungeonInfo water{ false, SCENE_WATER_TEMPLE, { @WATER0@ }, { @WATER1@ }, { @WATER2@ } };
@@ -231,7 +233,8 @@ int main() {
     ShadowSwitch();
     gBundledScenes = 0;
     ShadowSwitch();
-    REQUIRE(gSaveContext.sceneFlags[SCENE_SHADOW_TEMPLE].swch == 0 && gSaveContext.sceneFlags[SCENE_WATER_TEMPLE].swch == 0);
+    REQUIRE(gSaveContext.sceneFlags[SCENE_SHADOW_TEMPLE].swch == 0 &&
+            gSaveContext.sceneFlags[SCENE_WATER_TEMPLE].swch == 0);
     puts("new save: bundled MQ Shadow starts with switch 7, archive MQ and vanilla without");
     return 0;
 }
@@ -267,7 +270,9 @@ static ComboMq::MqModeInputs InputsFor(s16 scene) {
     in.dungeon = ((gMqScenes >> scene) & 1) ? ComboMq::DungeonQuest::MasterQuest : ComboMq::DungeonQuest::Vanilla;
     return in;
 }
-extern "C" uint32_t ResourceMgr_IsSceneMasterQuest(s16 scene) { return ComboMq::ResolveMqMode(InputsFor(scene)).gameplayMq; }
+extern "C" uint32_t ResourceMgr_IsSceneMasterQuest(s16 scene) {
+    return ComboMq::ResolveMqMode(InputsFor(scene)).gameplayMq;
+}
 extern "C" uint32_t ResourceMgr_SceneUsesBundledMq(s16 scene) {
     return ComboMq::ResolveMqMode(InputsFor(scene)).source == ComboMq::MqDataSource::Bundled;
 }
@@ -360,7 +365,8 @@ int main() {
     gInputs.dungeon = ComboMq::DungeonQuest::MasterQuest;
     REQUIRE(FOREST_TEMPLE_SMALL_KEY_MAX == @FOREST_TEMPLE@ && FIRE_TEMPLE_SMALL_KEY_MAX == @FIRE_TEMPLE@ &&
             WATER_TEMPLE_SMALL_KEY_MAX == @WATER_TEMPLE@ && SPIRIT_TEMPLE_SMALL_KEY_MAX == @SPIRIT_TEMPLE@ &&
-            SHADOW_TEMPLE_SMALL_KEY_MAX == @SHADOW_TEMPLE@ && BOTTOM_OF_THE_WELL_SMALL_KEY_MAX == @BOTTOM_OF_THE_WELL@ &&
+            SHADOW_TEMPLE_SMALL_KEY_MAX == @SHADOW_TEMPLE@ &&
+            BOTTOM_OF_THE_WELL_SMALL_KEY_MAX == @BOTTOM_OF_THE_WELL@ &&
             GERUDO_TRAINING_GROUND_SMALL_KEY_MAX == @GERUDO_TRAINING_GROUND@ &&
             GANONS_CASTLE_SMALL_KEY_MAX == @INSIDE_GANONS_CASTLE@);
     // The same seed's vanilla dungeons keep SoH's vanilla maxima (not OoTMM's MQ ones).
@@ -492,7 +498,8 @@ while hostcxx.contains(serenade_cs, 'if (GameInteractor_Should(VB_PLAY_SERENADE_
     serenade_cs = serenade_cs.replace(cut, '')
 eligible = block(serenade_cs, 'VB_BE_ELIGIBLE_FOR_SERENADE_OF_WATER')
 check('Flags_SetEventChkInf(EVENTCHKINF_LEARNED_SERENADE_OF_WATER);' in eligible and
-      'Flags_SetEventChkInf' not in cutscene_only and 'Cutscene_SetSegment(play, &gIceCavernSerenadeCs);' in cutscene_only,
+      'Flags_SetEventChkInf' not in cutscene_only and
+      'Cutscene_SetSegment(play, &gIceCavernSerenadeCs);' in cutscene_only,
       'z_en_xc.c: EnXc_SerenadeCS must set the Serenade flag outside its cutscene branches')
 timesavers = read(repo / 'soh/soh/Enhancements/TimeSavers/timesaver_hook_handlers.cpp')
 song_cases = timesavers[hostcxx.find(timesavers, 'case VB_PLAY_SERENADE_OF_WATER_CS:'):]
