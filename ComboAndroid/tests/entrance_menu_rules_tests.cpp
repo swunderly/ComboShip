@@ -53,6 +53,30 @@ int main() {
     return settings.value(key, fallback);
   };
   assert(ProfileWallmasterRefusal(draft, assets, read).empty());
+  // Only combined mode generates a layout. The row shows the solo reason ahead
+  // of every other one in the two solo and the two vanilla Home modes.
+  EntranceSettingsFacts solo;
+  solo.combinedMode = false;
+  const auto combinedOnly = EntranceGenerationRefusal(solo);
+  assert(combinedOnly == "Wallmaster Shuffle works only in combined mode.");
+  for (int mode = 0; mode < 5; ++mode) {
+    auto moded = draft;
+    moded["gameMode"] = kGameModeKeys[mode];
+    for (const char *other :
+         {"", kOotEnemyRandomizer, "gRandoSettings.ShuffleDungeonsEntrances"}) {
+      if (*other)
+        settings[other] = 1;
+      const auto facts = ProfileEntranceFacts(moded, read);
+      const auto menu = ProfileWallmasterRefusal(moded, assets, read);
+      assert(facts.combinedMode == (mode == COMBO_MODE_COMBINED));
+      assert(menu == EntranceGenerationRefusal(facts));
+      if (mode != COMBO_MODE_COMBINED)
+        assert(menu == combinedOnly);
+      else
+        assert(menu.empty() == !*other);
+      settings.clear();
+    }
+  }
   const auto check = [&] {
     const auto menu = ProfileWallmasterRefusal(draft, assets, read);
     const auto facts = ProfileEntranceFacts(draft, read);

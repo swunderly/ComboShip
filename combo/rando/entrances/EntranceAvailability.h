@@ -10,6 +10,9 @@ struct EntranceSettingsFacts {
     bool logicEnabled = true, glitchless = true;
     bool shipwrightEntrances = false, enemyRandomizer = false;
     bool songTravelLogic = false, foreignSongsLogic = false;
+    // Home game mode (GameMode.h). OoTMM v32.3 offers Own Game only when both games are played
+    // (packages/core/src/settings/data.ts:3551, hasOoTMM :7); solo and vanilla runs have no entrance layout.
+    bool combinedMode = true;
     std::vector<std::string> ootStartingItems, mmStartingItems, foreignStartingItems;
 };
 inline constexpr const char* kShipEntranceSettings[] = {
@@ -53,6 +56,8 @@ inline std::string TempleSettingsRefusal(const EntranceSettingsFacts& f) {
     return {};
 }
 inline std::string WallmasterSettingsRefusal(const EntranceSettingsFacts& f) {
+    if (!f.combinedMode)
+        return "Wallmaster Shuffle works only in combined mode.";
     if (f.shipwrightEntrances)
         return "Wallmaster and One-Way shuffles need Ship's own entrance shuffle off";
     if (f.enemyRandomizer)

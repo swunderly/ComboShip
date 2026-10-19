@@ -78,6 +78,7 @@ inline nlohmann::json EntranceProfileCatalog(const CapabilitySet& active) {
 
 template <class Read> EntranceSettingsFacts ProfileEntranceFacts(const nlohmann::json& draft, Read read) {
     EntranceSettingsFacts f;
+    f.combinedMode = CombinedMode(ReadGameMode(draft));
     const int logic = read("gRandoSettings.LogicRules", 0);
     f.logicEnabled = logic != 1;
     f.glitchless = logic == 0;

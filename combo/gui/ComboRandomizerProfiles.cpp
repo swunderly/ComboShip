@@ -1238,13 +1238,16 @@ void DrawGeneration() {
     const auto generation = snapshot.value("generation", Json::object());
     const bool running = generation.value("running", false);
     std::string seed = document.value("seed", std::string());
-    const auto entranceRefusal = CombinedMode(ReadGameMode(document)) && Entrances::Active(MenuEntranceSettings().erWallmasters) ? EntranceUnavailable() : "";
+    const auto mode = ReadGameMode(document);
+    // Every randomizer mode refuses the setting here as generation does, solo modes with their own reason. Vanilla
+    // preparation ignores it, so only the Entrances row shows the reason there.
+    const auto entranceRefusal =
+        !VanillaMode(mode) && Entrances::Active(MenuEntranceSettings().erWallmasters) ? EntranceUnavailable() : "";
     ImGui::BeginDisabled(!Editable() || running || !entranceRefusal.empty());
     if (ImGui::InputTextWithHint("Seed", "(blank = random)", &seed)) {
         document["seed"] = seed;
         dirty = true;
     }
-    const auto mode = ReadGameMode(document);
     const char* action = VanillaMode(mode) ? "Prepare vanilla game" : CombinedMode(mode) ? "Generate combined seed" : "Generate single-game seed";
     if (ImGui::Button(action)) {
         refreshPending = true;
