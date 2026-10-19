@@ -75,9 +75,10 @@ using ComboRando::RequireSupportedSeedCapabilities;
 using ComboRando::UnsupportedComboSeedFormat;
 using Json = nlohmann::json;
 
-// The capability ids with a Public value. Each one needs a coverage model
-// below; only the vanilla Wallmaster id has one.
-static const std::set<std::string_view> kExpectedPublic = {};
+// The capability ids with a Public value (M1 plan P1-05). Each one needs a
+// coverage model below; only the vanilla Wallmaster id has one.
+static const std::set<std::string_view> kExpectedPublic = {
+    kVanillaWallmasterCapability};
 
 static constexpr unsigned kQuestMasks = 1u << kOotMqDungeons.size();
 static OotQuests Quests(unsigned mask) {
@@ -603,7 +604,7 @@ int main() {
 
   const auto tables = RealTables();
   // This build's own settings, then the vanilla id by name, as this build
-  // would hold it, so the proof already runs before the id is Public.
+  // would hold it, so the proof runs whatever the id's stage.
   auto vanilla =
       CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability);
   vanilla.devBuild = active.devBuild;

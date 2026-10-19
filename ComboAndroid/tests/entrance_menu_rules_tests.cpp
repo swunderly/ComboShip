@@ -24,21 +24,14 @@ int main() {
   const auto caps = ActiveCapabilities();
   const auto *row = FindEntranceSetting("erWallmasters");
   assert(row);
-#if COMBO_ENTRANCE_DEV
+  // Both builds offer the row with None and Own Game (P1-05).
   assert(row->visible(caps.Selected("")) &&
          row->supports(1, caps.Selected("")));
-#else
-  assert(!row->visible(caps.Selected("")));
-#endif
   assert(!row->supports(2, caps.Selected(""))); // Full stays hidden.
   const auto catalogue = EntranceProfileCatalog(caps);
-#if COMBO_ENTRANCE_DEV
   assert(catalogue.size() == 1 && catalogue[0]["choices"].size() == 2);
   assert(catalogue[0]["label"] == row->name &&
          catalogue[0]["description"] == row->description);
-#else
-  assert(catalogue.empty());
-#endif
   for (bool oot : {true, false}) {
     const auto *placement =
         Detail::FindMenuPlacementKey(oot, "entrance:erWallmasters");
@@ -209,10 +202,12 @@ int main() {
   raw["setupCVars"] = "malformed";
   Reject([&] { NormalizeEntranceDraft(raw, caps); });
 
+  // A seed made by this build: a dev build marks its layouts devBuild, which a
+  // shipping build refuses before any conversion.
   EntranceLayout layout;
   layout.required = {std::string(kVanillaWallmasterCapability)};
   layout.settings.erWallmasters = Mode::OwnGame;
-  layout.devBuild = true;
+  layout.devBuild = caps.devBuild;
   auto imported = draft;
   imported["fileType"] = kEntranceSeedFileType;
   imported["version"] = 2;
@@ -222,7 +217,15 @@ int main() {
   imported["setupCVars"][wall] = 0;
   assert(SavedEntranceValue(imported, wall, 0) == 1); // Saved view follows the layout.
   imported["setupCVars"].erase(wall);
-#if COMBO_ENTRANCE_DEV
+#if !COMBO_ENTRANCE_DEV
+  auto devSeed = imported;
+  layout.devBuild = true;
+  devSeed["entranceLayout"] = EncodeEntranceLayout(layout);
+  Reject([&] {
+    NormalizeEntranceDraft(devSeed, caps);
+  }); // Shipping guard before any conversion.
+  assert(devSeed.contains("entranceLayout"));
+#endif
   assert(!NormalizeEntranceDraft(imported, caps));
   assert(!imported.contains("entranceLayout") &&
          imported["fileType"] == kComboSeedFileType);
@@ -232,20 +235,11 @@ int main() {
   assert(!NormalizeEntranceDraft(imported, caps));
   assert(imported["setupCVars"][wall] ==
          0); // Old envelope cannot turn a cleared row back on.
-#else
-  Reject([&] {
-    NormalizeEntranceDraft(imported, caps);
-  }); // Shipping guard before any conversion.
-#endif
   assert(originalSeedSettings.contains("entranceLayout"));
   Json profile = draft;
   profile["setupCVars"][wall] = 1;
-#if COMBO_ENTRANCE_DEV
   assert(EntranceSettingsForHeadless(profile, {}, "", false, caps)
              .settings.erWallmasters == Mode::OwnGame);
-#else
-  Reject([&] { EntranceSettingsForHeadless(profile, {}, "", false, caps); });
-#endif
   assert(EntranceSettingsForHeadless(profile, {"erWallmasters=none"}, "", false,
                                      caps)
              .settings.erWallmasters == Mode::None);

@@ -100,8 +100,21 @@ int main(int argc, char **argv) {
   const auto fixture = Json::parse(input);
   const auto layout = Sample(fixture);
   const auto seed = Seed(layout);
-  assert(!ActiveCapabilities().Active(kVanillaWallmasterCapability));
-  Reject([&] { Validate(layout, ActiveCapabilities()); });
+  // A shipping build admits the vanilla contract (P1-05): a v2 seed binds in
+  // both games through the launcher, and a dev layout is refused.
+  const auto shipping = ActiveCapabilities();
+  assert(shipping.Active(kVanillaWallmasterCapability) && !shipping.devBuild);
+  Validate(layout, shipping);
+  const Json v2{{"fileType", ComboRando::kEntranceSeedFileType},
+                {"version", ComboRando::kEntranceSeedVersion},
+                {"entranceLayout", EncodeEntranceLayout(layout)}};
+  ApplyNativeSeed(Fake::Fns(), v2, shipping);
+  assert(Fake::mm.routes().size() == 4 && Fake::oot.routes().size() == 9);
+  ApplyNativeSeed(Fake::Fns(), Json::object(), shipping);
+  assert(!Fake::mm.active() && !Fake::oot.active());
+  auto devLayout = layout;
+  devLayout.devBuild = true;
+  Reject([&] { Validate(devLayout, shipping); });
   OotUnifiedLayout installed;
   installed.install(seed, Caps());
   assert(installed.routes().size() == 9 &&

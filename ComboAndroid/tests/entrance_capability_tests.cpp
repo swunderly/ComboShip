@@ -19,14 +19,14 @@ const std::set<std::string_view> kM1Keys = {
 const Stage kStages[] = {Stage::Hidden, Stage::Dev, Stage::Public};
 
 // The stage of every catalog value, as section 6 of the M1 plan stages them.
-// Phase A: only the dev-only MM tranche is open, at Dev (M1-07); everything
-// else is Hidden. A unit that opens a value updates this table.
+// The dev-only MM tranche is open at Dev (M1-07); the vanilla Wallmaster
+// contract is Public (P1-05); everything else is Hidden. A unit that opens a
+// value updates this table.
 Stage ExpectedStage(std::string_view id, std::string_view key) {
   (void)key;
-  return id == "wallmasters-own-game-mm-tranche" ||
-                 id == "wallmasters-own-game-vanilla-v1"
-             ? Stage::Dev
-             : Stage::Hidden;
+  if (id == "wallmasters-own-game-vanilla-v1")
+    return Stage::Public;
+  return id == "wallmasters-own-game-mm-tranche" ? Stage::Dev : Stage::Hidden;
 }
 
 bool Same(const Settings &a, const Settings &b) {
@@ -141,9 +141,14 @@ void StageSets() {
         }
     }
   }
-  // Nothing ships; Dev has the explicit legacy tranche and the vanilla
-  // both-game contract.
-  assert(CapabilitySet::AtLeast(Stage::Public).Empty());
+  // Only the vanilla both-game contract ships; Dev adds the explicit legacy
+  // tranche.
+  const auto shipping = CapabilitySet::AtLeast(Stage::Public);
+  assert(!shipping.Empty() &&
+         shipping == shipping.Only("wallmasters-own-game-vanilla-v1"));
+  for (const auto &row : kEntranceCapabilities)
+    assert(shipping.Active(row.id) ==
+           (row.id == "wallmasters-own-game-vanilla-v1"));
   const auto dev = CapabilitySet::AtLeast(Stage::Dev);
   assert(dev == (dev.Only("wallmasters-own-game-mm-tranche") |
                  dev.Only("wallmasters-own-game-vanilla-v1")) &&
@@ -167,15 +172,18 @@ void ActiveSetFollowsTheBuild() {
       assert(!CapabilitySet::AtLeast(Stage::Public).Active(row.id));
 }
 
-// The shipping set strips every non-default value from every source a reader
-// sees (ActiveSetFollowsTheBuild shows a shipping build uses that set).
+// The shipping set strips every non-default value but Wallmaster Shuffle (Own
+// Game) from every source a reader sees (ActiveSetFollowsTheBuild shows a
+// shipping build uses that set).
 void ShippingStripsEverything() {
   {
     const auto caps = CapabilitySet::AtLeast(Stage::Public);
     for (const auto &row : kEntranceSettings) {
-      assert(!row.visible(caps));
+      const bool wallmasters = std::string_view(row.key) == "erWallmasters";
+      assert(row.visible(caps) == wallmasters);
       for (const int value : kInjected)
-        assert(row.supports(value, caps) == (value == row.defaultValue));
+        assert(row.supports(value, caps) ==
+               (value == row.defaultValue || (wallmasters && value == 1)));
     }
     for (const int injected : kInjected) {
       size_t reads = 0;
@@ -188,8 +196,12 @@ void ShippingStripsEverything() {
             return injected;
           },
           caps);
-      assert(reads == std::size(kEntranceSettings) && MakePools(s).empty());
-      assert(Same(s, Settings{}));
+      Settings expected;
+      if (injected == 1)
+        expected.erWallmasters = Mode::OwnGame;
+      assert(reads == std::size(kEntranceSettings) &&
+             MakePools(s).empty() == (injected != 1));
+      assert(Same(s, expected));
     }
   }
 }

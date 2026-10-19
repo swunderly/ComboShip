@@ -419,12 +419,22 @@ int main(int argc, char **argv) {
   g.settings = {};
   assert(GenerateEntranceLayout(g, {}, {}).is_null());
   Untouched();
-  // Public still refuses before any native state changes. Hidden tests opt in
-  // by exact id.
-  g = Generation();
-  g.active = CapabilitySet::AtLeast(Stage::Public);
-  Reject([&] { GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()); });
-  Untouched();
+  // The shipping set (P1-05) generates the dev set's layout, marked as a
+  // shipping layout, which it accepts; it refuses the dev one.
+  const auto shipping = CapabilitySet::AtLeast(Stage::Public);
+  Fake::Reset();
+  const auto devLayout =
+      GenerateEntranceLayout(Generation(7), Fake::Native(), Fake::Probe());
+  Fake::Reset();
+  g = Generation(7);
+  g.active = shipping;
+  const auto shipped = GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+  auto expected = DecodeEntranceLayout(devLayout);
+  assert(expected.devBuild);
+  expected.devBuild = false;
+  assert(EncodeEntranceLayout(expected) == shipped);
+  Validate(DecodeEntranceLayout(shipped), shipping);
+  Reject([&] { Validate(DecodeEntranceLayout(devLayout), shipping); });
   for (unsigned mask = 1; mask < 4096; ++mask) {
     Fake::Reset();
     for (size_t i = 0; i < Fake::quests.size(); ++i)

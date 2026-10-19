@@ -2,8 +2,9 @@
 
 Compiled harness: the four entrance exports and the Rando::Logic Wallmaster exploration are taken
 from mm/2s2h/Rando/Logic/ComboEntrancesMM.cpp with the real combo/rando/entrances headers and stubs
-for the 2Ship region search. It checks that this build's capabilities refuse every layout (Phase 0),
-then, with every catalog value open (tests only), that a layout installs, dumps unchanged, installs
+for the 2Ship region search. It checks that this build's capabilities refuse the dev-only tranche layout
+in a shipping build, which installs only the vanilla contract (P1-05), then, with every catalog value open
+(tests only), that a layout installs, dumps unchanged, installs
 again from the dump and binds through the launcher's ApplyNativeSeed; that every bind clears the
 unified table and a layout beside a private MM profile is refused; that the unified assumption
 profile is decoded before the legacy fallback and gives the pinned 4x7 MM Wallmaster table
@@ -83,10 +84,11 @@ for combination in fixture['combinations']:
                         pinned[src] = sorted(group['destinations'])
 assert len(pinned) == 4 and all(len(d) == 7 for d in pinned.values())
 pinned_cpp = '\n'.join('    {"%s", {%s}},' % (src, ', '.join('"%s"' % d for d in dsts)) for src, dsts in sorted(pinned.items()))
-sample = [row for row in next(c for c in fixture['combinations']
-                              if c['id'] == 'erWallmasters=ownGame;erOneWays=none')['sampleLayout']
-          if row[0].startswith('MM_')]
+vanilla = next(c for c in fixture['combinations']
+               if c['id'] == 'erWallmasters=ownGame;erOneWays=none')['sampleLayout']
+sample = [row for row in vanilla if row[0].startswith('MM_')]
 sample_cpp = '\n'.join('    {"%s", "%s"},' % (src, dst) for src, dst in sample)
+vanilla_cpp = '\n'.join('    {"%s", "%s"},' % (src, dst) for src, dst in vanilla)
 
 prelude = r'''
 #define NOMINMAX
@@ -172,6 +174,9 @@ const Targets kPinned = {
 const std::vector<std::pair<std::string, std::string>> kSample = {
 ''' + sample_cpp + r'''
 };
+const std::vector<std::pair<std::string, std::string>> kVanillaSample = {
+''' + vanilla_cpp + r'''
+};
 const RandoRegionId kSources[] = {RR_BENEATH_THE_GRAVEYARD_DAMPE, RR_BENEATH_THE_WELL_FREEZARD_ROOM,
                                   RR_BENEATH_THE_WELL_TWO_SPIKED_BARS, RR_BENEATH_THE_WELL_FOUR_SPIKED_BARS};
 const char* kSourceNames[] = {"MM_WALLMASTER_DAMPE", "MM_WALLMASTER_BTW_ENTRANCE", "MM_WALLMASTER_BTW_FOUNTAIN",
@@ -217,8 +222,8 @@ bool Cleared() {
            !CE::ActiveMmUnifiedAssumptions() && !CE::ActiveMmWallmasterAssumptions();
 }
 
-// This build: a release build has no capability, so the real export refuses every layout; a Phase A dev
-// build has the MM tranche and installs a tranche layout.
+// This build: a release build has only the vanilla contract (P1-05), so the real export refuses the
+// tranche layout and installs the MM half of a vanilla one; a dev build also installs a tranche layout.
 void PhaseZero() {
     harnessCaps = CE::ActiveCapabilities();
     loggedErrors = 0;
@@ -228,8 +233,22 @@ void PhaseZero() {
            CE::ActiveMmUnified().active());
     assert(MM_ApplyEntranceExpansionForCombo("{}") == 1 && Cleared());
 #else
-    assert(harnessCaps.Empty());
+    assert(!harnessCaps.devBuild && harnessCaps.Active(CE::kVanillaWallmasterCapability) &&
+           !harnessCaps.Active(CE::kMmTrancheCapability));
     assert(MM_ApplyEntranceExpansionForCombo(Seed().dump().c_str()) == 0 && loggedErrors == 1 && Cleared());
+    CE::EntranceLayout vanilla;
+    vanilla.required = {std::string(CE::kVanillaWallmasterCapability)};
+    vanilla.settings.erWallmasters = CE::Mode::OwnGame;
+    CE::Overrides routes;
+    for (const auto& [src, dst] : kVanillaSample)
+        routes[CE::LayoutV1::FindRow(src)->name] = CE::LayoutV1::FindRow(dst)->name;
+    vanilla.overrides = routes;
+    const Json vanillaSeed = {{"fileType", ComboRando::kEntranceSeedFileType},
+                              {"version", ComboRando::kEntranceSeedVersion},
+                              {"entranceLayout", CE::EncodeEntranceLayout(vanilla)}};
+    assert(MM_ApplyEntranceExpansionForCombo(vanillaSeed.dump().c_str()) == 1 && loggedErrors == 1 &&
+           CE::ActiveMmUnified().routes().size() == 4);
+    assert(MM_ApplyEntranceExpansionForCombo("{}") == 1 && Cleared());
 #endif
 }
 

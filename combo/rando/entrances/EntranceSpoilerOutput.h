@@ -6,7 +6,7 @@
 
 namespace ComboRando::Entrances {
 // Recorded routes only: never generate a layout while displaying a spoiler. The seed guard runs
-// before any file is opened, including in release builds which admit no unified layout yet.
+// before any file is opened, so a layout this build does not admit writes nothing.
 inline std::string EntranceSpoilerForSeed(const nlohmann::json& seed, const CapabilitySet& caps) {
     RequireSupportedSeedDocument(seed, caps);
     if (!seed.contains("entranceLayout"))

@@ -2404,8 +2404,8 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     // setupCVars, imported seeds and old configs can carry; the headless tool's --mm-* flags validate them.
     const auto ordinarySettings = ComboRando::Entrances::MmOrdinaryGenerationSettings(false, false, false, false);
     const bool nativeMmMixed = false, nativeMmGrottos = false, nativeMmWallmasters = false;
-    // OoTMM's Wallmaster and One-Way shuffles (UnifiedBridge.h). A release build admits none of their values
-    // yet, and reading them in-game never uses the dev-only MM tranche.
+    // OoTMM's Wallmaster and One-Way shuffles (UnifiedBridge.h). A release build admits only Wallmaster
+    // Shuffle (Own Game) with vanilla dungeons, and reading them in-game never uses the dev-only MM tranche.
     const auto entranceCaps = ComboRando::Entrances::ActiveCapabilities();
     const ComboRando::Entrances::SettingReader readSetting = [](const char* key, int fallback) {
         return sReadGameplayRule ? sReadGameplayRule(key, fallback) : fallback;

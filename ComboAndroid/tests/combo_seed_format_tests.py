@@ -1,11 +1,13 @@
 """Exercise seed compatibility and production import/save preflight with engine stubs.
 
-The build's capability set is the shipping one, which in Phase 0 admits nothing, so every
-entrance layout is refused before decoding exactly as in 0.4.4. A test-only set (the whole
-catalog) exercises the acceptance path the M1-03 validator adds behind it.
+The build's capability set is the shipping one, which admits only the vanilla Wallmaster
+contract (P1-05): a vanilla layout seed is accepted, and every other layout is decoded and
+refused with its reason. A build with no capability, as 0.4.4, refuses before decoding. A
+test-only set (the whole catalog) exercises the acceptance path the M1-03 validator adds.
 """
 from pathlib import Path
 import argparse
+import json
 import subprocess
 
 import hostcxx
@@ -149,7 +151,7 @@ template<class F> void rejects(F action) {
     try { action(); } catch (const UnsupportedComboSeedFormat&) { rejected = true; }
     assert(rejected);
 }
-// The 0.4.4 refusal, raised before the layout is decoded.
+// The 0.4.4 refusal, raised before the layout is decoded by a build with no capability.
 const std::string kBeforeDecode = UnsupportedComboSeedFormat().what();
 template<class F> void rejectsBeforeDecode(F action) {
     std::string message;
@@ -171,7 +173,8 @@ Json legacy(bool version) {
 }
 int main() {
     const auto shipping = Entrances::ActiveCapabilities();
-    assert(shipping.Empty() && !shipping.devBuild); // Phase 0: no value is open in any build
+    assert(!shipping.devBuild && shipping == Entrances::CapabilitySet::AtLeast(Entrances::Stage::Public) &&
+           shipping.Active(Entrances::kVanillaWallmasterCapability)); // P1-05: only the vanilla contract
     for (bool version : {false, true}) {
         auto seed = legacy(version);
         const auto bytes = seed.dump(2);
@@ -197,19 +200,19 @@ int main() {
     for (const Json& layout : {Json(), Json::object(), Json::array(), Json(1)}) {
         auto bad = legacy(false);
         bad["entranceLayout"] = layout;
-        rejectsBeforeDecode([&] { RequireSupportedSeedDocument(bad, shipping); });
-        rejectsBeforeDecode([&] { Profiles::SettingsDocument(bad, shipping); });
-        rejectsBeforeDecode([&] { Entrances::ApplyNativeSeed(sEntranceNative, bad, shipping); });
+        rejectsLayout([&] { RequireSupportedSeedDocument(bad, shipping); });
+        rejectsLayout([&] { Profiles::SettingsDocument(bad, shipping); });
+        rejectsLayout([&] { Entrances::ApplyNativeSeed(sEntranceNative, bad, shipping); });
     }
     for (const Json& version : {Json(), Json(1), Json(2), Json(99), Json("2")}) {
         auto bad = future;
         bad["version"] = version;
-        rejectsBeforeDecode([&] { RequireSupportedSeedDocument(bad, shipping); });
+        rejectsLayout([&] { RequireSupportedSeedDocument(bad, shipping); });
     }
     auto absent = future;
     absent.erase("entranceLayout");
-    rejectsBeforeDecode([&] { RequireSupportedSeedDocument(absent, shipping); });
-    // A complete, valid layout (the dev-only MM tranche) is refused just the same.
+    rejectsLayout([&] { RequireSupportedSeedDocument(absent, shipping); });
+    // A complete, valid layout of another contract (the dev-only MM tranche) is refused too.
     Entrances::EntranceLayout tranche;
     tranche.required = {"wallmasters-own-game-mm-tranche"};
     tranche.settings.erWallmasters = Entrances::Mode::OwnGame;
@@ -220,12 +223,55 @@ int main() {
     auto layoutSeed = legacy(true);
     layoutSeed["entranceLayout"] = Entrances::EncodeEntranceLayout(tranche);
     StampComboSeedFormat(layoutSeed);
-    rejectsBeforeDecode([&] { RequireSupportedSeedDocument(layoutSeed, shipping); });
-    rejectsBeforeDecode([&] { RequireSupportedSettingsCapabilities(layoutSeed, shipping); });
-    rejectsBeforeDecode([&] { Profiles::SettingsDocument(layoutSeed, shipping); });
-    rejectsBeforeDecode([&] { Profiles::SetupForSeed(layoutSeed, shipping); });
-    rejectsBeforeDecode([&] { Entrances::ApplyNativeSeed(sEntranceNative, layoutSeed, shipping); });
-    rejectsBeforeDecode([&] { Profiles::SeedFromContainer({{"combo", {{"rando", layoutSeed}}}}, shipping); });
+    rejectsLayout([&] { RequireSupportedSeedDocument(layoutSeed, shipping); });
+    rejectsLayout([&] { RequireSupportedSettingsCapabilities(layoutSeed, shipping); });
+    rejectsLayout([&] { Profiles::SettingsDocument(layoutSeed, shipping); });
+    rejectsLayout([&] { Profiles::SetupForSeed(layoutSeed, shipping); });
+    rejectsLayout([&] { Entrances::ApplyNativeSeed(sEntranceNative, layoutSeed, shipping); });
+    rejectsLayout([&] { Profiles::SeedFromContainer({{"combo", {{"rando", layoutSeed}}}}, shipping); });
+    // A build with no active capability still refuses before decoding, as 0.4.3 and 0.4.4 do.
+    rejectsBeforeDecode([&] { RequireSupportedSeedDocument(layoutSeed, Entrances::CapabilitySet{}); });
+    rejectsBeforeDecode([&] { RequireSupportedSeedDocument(future, Entrances::CapabilitySet{}); });
+
+    // The shipping set's own contract (P1-05): a vanilla Wallmaster seed passes the seed guard, the
+    // profile view and the saved-slot reader. A dev build's vanilla seed, a Master Quest dungeon and a
+    // private MM profile beside it are decoded and refused.
+    Entrances::EntranceLayout vanilla;
+    vanilla.required = {std::string(Entrances::kVanillaWallmasterCapability)};
+    vanilla.settings.erWallmasters = Entrances::Mode::OwnGame;
+    vanilla.overrides = Entrances::Overrides{@VANILLA_ROUTES@};
+    auto vanillaSeed = legacy(true);
+    vanillaSeed["entranceLayout"] = Entrances::EncodeEntranceLayout(vanilla);
+    StampComboSeedFormat(vanillaSeed);
+    RequireSupportedSeedDocument(vanillaSeed, shipping);
+    RequireSupportedSettingsCapabilities(vanillaSeed, shipping);
+    auto vanillaRouteless = vanillaSeed["entranceLayout"];
+    vanillaRouteless.erase("overrides");
+    assert(Profiles::SettingsDocument(vanillaSeed, shipping).at("entranceLayout") == vanillaRouteless);
+    Profiles::Store shippingStore(legacy(false), shipping);
+    shippingStore.importSeed(0, vanillaSeed, true);
+    assert(shippingStore.pendingSeed(0) == vanillaSeed);
+    assert(shippingStore.draft(0).at("entranceLayout") == vanillaRouteless);
+    Profiles::Store shippingReread(legacy(false), shipping);
+    shippingReread.restore(shippingStore.json());
+    assert(shippingReread.json() == shippingStore.json());
+    assert(Profiles::SeedFromContainer({{"combo", {{"rando", vanillaSeed.dump()}}}}, shipping) == vanillaSeed);
+    auto devVanilla = vanilla;
+    devVanilla.devBuild = true;
+    auto mqVanilla = vanilla;
+    mqVanilla.ootMq[Entrances::OotMqIndex("Forest")] = true;
+    for (const auto& layout : {devVanilla, mqVanilla}) {
+        auto refused = vanillaSeed;
+        refused["entranceLayout"] = Entrances::EncodeEntranceLayout(layout);
+        rejectsLayout([&] { RequireSupportedSeedDocument(refused, shipping); });
+        rejectsLayout([&] { Profiles::SettingsDocument(refused, shipping); });
+        rejectsLayout([&] { Profiles::SeedFromContainer({{"combo", {{"rando", refused}}}}, shipping); });
+    }
+    for (const char* key : kLegacyEntranceKeys) {
+        auto both = vanillaSeed;
+        both[key] = Json::object();
+        rejectsLayout([&] { RequireSupportedSeedDocument(both, shipping); });
+    }
 
     // The acceptance path, with every catalog value open (tests only; no build has this set).
     auto dev = Entrances::CapabilitySet::AtLeast(Entrances::Stage::Hidden);
@@ -248,7 +294,7 @@ int main() {
     Profiles::Store reread(legacy(false), dev);
     reread.restore(devStore.json());
     assert(reread.json() == devStore.json());
-    rejectsBeforeDecode([&] { Profiles::Store(legacy(false), shipping).restore(devStore.json()); });
+    rejectsLayout([&] { Profiles::Store(legacy(false), shipping).restore(devStore.json()); });
     assert(Profiles::SeedFromContainer({{"combo", {{"rando", layoutSeed.dump()}}}}, dev) == layoutSeed);
     // Without the MM installer's exports an accepted layout still never binds as vanilla routing.
     std::string installer;
@@ -375,6 +421,11 @@ int main() {
                  "save preflight before context/slot mutation; the layout acceptance path behind them\n";
 }
 '''
+# The pinned sample layout of the vanilla Wallmaster pool (tools/ootmm/m1-contract.json).
+contract = json.loads((args.source / 'tools/ootmm/m1-contract.json').read_text(encoding='utf-8'))
+sample = next(c for c in contract['combinations'] if c['id'] == 'erWallmasters=ownGame;erOneWays=none')['sampleLayout']
+assert len(sample) == 13
+source = source.replace('@VANILLA_ROUTES@', ', '.join('{"%s", "%s"}' % (src, dst) for src, dst in sample))
 cpp = args.build_dir / 'seed_format.cpp'
 cpp.write_text(source, encoding='utf-8')
 exe = hostcxx.build(args.compiler, cpp, warnings=False, includes=[args.source / 'combo', args.json_include])

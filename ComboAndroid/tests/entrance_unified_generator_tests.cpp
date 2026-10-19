@@ -1025,8 +1025,10 @@ void CheckExhausted() {
 }
 
 // This build's own capabilities. In-game reading never selects the dev-only
-// tranche, so it generates nothing; headless selects it by id, which only a
-// Phase A dev build admits.
+// tranche: it reads Wallmaster Shuffle (Own Game) through the vanilla
+// contract, Public since P1-05, which needs the OoT exports these MM-only
+// fakes lack. Headless selects the tranche by id, which only a dev build
+// admits.
 void CheckThisBuild() {
   ResetAll();
   const auto inGame = ReadEntranceSettings([](const char *, int) { return 1; },
@@ -1035,15 +1037,12 @@ void CheckThisBuild() {
   g.settings = inGame;
   g.capability.clear();
   g.active = ActiveCapabilities();
-#ifdef COMBO_ENTRANCE_DEV
   assert(inGame.erWallmasters == Mode::OwnGame);
   assert(Has(Error<UnifiedEntranceRefused>([&] { Generate(g); }),
              "all native entrance exports"));
   Untouched();
   ResetAll();
-  g.settings =
-      {}; // all-none remains inert even though Dev now admits vanilla rows
-#endif
+  g.settings = {}; // all-none remains inert
   assert(Generate(g).is_null() && reads == 0);
   Untouched();
   g = Tranche(8);

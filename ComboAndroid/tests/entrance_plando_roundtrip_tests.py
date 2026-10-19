@@ -7,6 +7,7 @@ Sibling text is deliberately misleading; it must not become an item source or mo
 """
 from pathlib import Path
 import argparse
+import json
 import re
 import subprocess
 import uuid
@@ -114,7 +115,10 @@ const char* OotDump() { ++dumpCalls; return R"({"items":[{"name":"Kokiri Sword"}
 const char* MmDump() { ++dumpCalls; return R"({"items":[{"name":"Deku Mask"}],"pool":[{"name":"Deku Mask","advancement":true}]})"; }
 '''
 tests = r'''
-Json BaseSeed(bool unified) {
+// Kinds: a legacy seed; a layout seed this build makes (the dev tranche, or the vanilla contract a
+// shipping build admits, P1-05); a dev build's layout seed, which a shipping build refuses.
+enum SeedKind { kLegacy, kOwnLayout, kDevLayout };
+Json BaseSeed(SeedKind kind) {
     Json seed = {
         {"fileType", "ComboShipRandomizer"}, {"seed", "m1-plando"}, {"file_hash", {1,2,3,4,5}},
         {"sharedItems", Json::array()}, {"faroreRules", {{"crossAge", true}}},
@@ -126,16 +130,22 @@ Json BaseSeed(bool unified) {
             {{"checkGame", "mm"}, {"checkName", "MM Foreign Check"}, {"itemGame", "oot"}, {"itemName", "Kokiri Sword"}, {"advancement", true}}
         })}
     };
-    if (unified) {
+    const bool tranche = kind == kDevLayout || (kind == kOwnLayout && CE::ActiveCapabilities().devBuild);
+    if (kind != kLegacy) {
         CE::EntranceLayout layout;
-        layout.required = {std::string(CE::kMmTrancheCapability)};
-        layout.devBuild = true;
         layout.settings.erWallmasters = CE::Mode::OwnGame;
-        layout.overrides = CE::Overrides{
-            {"MM_WALLMASTER_DAMPE", "MM_TEMPLE_WOODFALL"},
-            {"MM_WALLMASTER_BTW_ENTRANCE", "MM_TEMPLE_SNOWHEAD"},
-            {"MM_WALLMASTER_BTW_FOUNTAIN", "MM_TEMPLE_GREAT_BAY"},
-            {"MM_WALLMASTER_BTW_EXIT", "MM_TEMPLE_STONE_TOWER"}};
+        if (tranche) {
+            layout.required = {std::string(CE::kMmTrancheCapability)};
+            layout.devBuild = true;
+            layout.overrides = CE::Overrides{
+                {"MM_WALLMASTER_DAMPE", "MM_TEMPLE_WOODFALL"},
+                {"MM_WALLMASTER_BTW_ENTRANCE", "MM_TEMPLE_SNOWHEAD"},
+                {"MM_WALLMASTER_BTW_FOUNTAIN", "MM_TEMPLE_GREAT_BAY"},
+                {"MM_WALLMASTER_BTW_EXIT", "MM_TEMPLE_STONE_TOWER"}};
+        } else {
+            layout.required = {std::string(CE::kVanillaWallmasterCapability)};
+            layout.overrides = CE::Overrides{@VANILLA_ROUTES@};
+        }
         seed["entranceLayout"] = CE::EncodeEntranceLayout(layout);
         ComboRando::StampComboSeedFormat(seed);
     }
@@ -161,16 +171,17 @@ void VerifyRows(const std::vector<ComboRando::CwPlacedItem>& rows, bool edited) 
         }
     }
 }
-void Case(const fs::path& root, bool unified, int loadMode) {
+void Case(const fs::path& root, SeedKind kind, int loadMode) {
     fs::create_directories(root); fs::current_path(root);
-    const auto seed = BaseSeed(unified);
+    const bool unified = kind != kLegacy;
+    const auto seed = BaseSeed(kind);
     const std::string original = seed.dump(2);
     const fs::path input = ComboRando::ComboSpoilerPath(seed.at("file_hash"));
     auto sibling = input; sibling.replace_extension(".txt");
     const std::string misleading = R"({"oot":{"placements":{"TEXT ONLY CHECK":"TEXT ONLY ITEM"}},"entranceLayout":{"overrides":[]}})";
     Write(input, original); Write(sibling, misleading);
     sProfiles = std::make_unique<ComboRando::Profiles::Repository>("Randomizer/settings-profiles.json", Json::object(), CE::ActiveCapabilities());
-    auto otherSeed = BaseSeed(false); otherSeed["seed"] = "other-file"; otherSeed["startingGame"] = "OOT";
+    auto otherSeed = BaseSeed(kLegacy); otherSeed["seed"] = "other-file"; otherSeed["startingGame"] = "OOT";
     sProfiles->importSeed(2, otherSeed, true);
     nativeSlot = 0; profileSelected = 2; sProfilePreparedSlot = -1; sProfilePreparedSeed = nullptr;
     appliedSeed = nullptr; nativeApplies = 0;
@@ -183,15 +194,13 @@ void Case(const fs::path& root, bool unified, int loadMode) {
         Write("Save/file3.combosav", Json{{"combo", {{"rando", seed}}}}.dump());
     }
     PlandoLoad();
-#ifndef COMBO_ENTRANCE_DEV
-    if (unified) {
+    if (kind == kDevLayout) {
         assert(!sPlando.loaded && sPlando.statusError && sPlando.rows.empty());
         assert(dumpCalls == 0 && reloadCalls == 0 && reloadedPath.empty());
         assert(!fs::exists(ComboRando::ComboSpoilerPath(seed.at("file_hash"), "Combo-Plando")));
         assert(Read(input) == original && Read(sibling) == misleading);
         return;
     }
-#endif
     assert(sPlando.loaded && !sPlando.statusError && dumpCalls == 2);
     assert(Json::parse(sPlando.loadedJson) == seed);
     VerifyRows(sPlando.rows, false);
@@ -244,12 +253,21 @@ void Case(const fs::path& root, bool unified, int loadMode) {
 int main(int argc, char** argv) {
     assert(argc == 2); const fs::path root = fs::absolute(argv[1]); assert(!fs::exists(root));
     sSohDump = OotDump; sMmDump = MmDump; sRequestReload = Reload; sPlandoFileSelectSlot = NativeSlot;
-    for (bool unified : {false, true})
+    std::vector<SeedKind> kinds{kLegacy, kOwnLayout};
+    if (!CE::ActiveCapabilities().devBuild)
+        kinds.push_back(kDevLayout);
+    for (const auto kind : kinds)
         for (int mode = 0; mode < 3; ++mode)
-            Case(root / ((unified ? "unified-" : "legacy-") + std::to_string(mode)), unified, mode);
+            Case(root / (std::string(kind == kLegacy ? "legacy-" : kind == kOwnLayout ? "unified-" : "dev-") +
+                         std::to_string(mode)), kind, mode);
     std::puts("Actual plando dropdown/slot/pending Load and repeated Save & Play preserve metadata/routes; sibling text ignored");
 }
 '''
+# The pinned sample layout of the vanilla Wallmaster pool (tools/ootmm/m1-contract.json).
+contract = json.loads((source/'tools/ootmm/m1-contract.json').read_text(encoding='utf-8'))
+sample = next(c for c in contract['combinations'] if c['id'] == 'erWallmasters=ownGame;erOneWays=none')['sampleLayout']
+assert len(sample) == 13
+tests = tests.replace('@VANILLA_ROUTES@', ', '.join('{"%s", "%s"}' % (src, dst) for src, dst in sample))
 for dev in (False, True):
     variant = 'dev' if dev else 'shipping'
     cpp = work/('entrance_plando_' + variant + '.cpp')
@@ -258,4 +276,4 @@ for dev in (False, True):
                        defines=['_CRT_SECURE_NO_WARNINGS'] + (['COMBO_ENTRANCE_DEV=1'] if dev else []),
                        werror=True, msvc=['/bigobj'], gnu=['-Wno-missing-field-initializers'])
     subprocess.run([str(exe), str(work/(variant + '-' + uuid.uuid4().hex))], check=True, timeout=hostcxx.RUN_TIMEOUT)
-print('Plando v2/legacy round trips and shipping refusal passed.')
+print('Plando v2/legacy round trips, the shipping vanilla layout and the shipping dev-seed refusal passed.')

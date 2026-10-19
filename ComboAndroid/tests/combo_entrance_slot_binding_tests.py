@@ -1,6 +1,7 @@
 """Execute actual slot binds and pending-seed checks with legacy, dev and shipping layouts."""
 from pathlib import Path
 import argparse
+import json
 import subprocess
 
 import hostcxx
@@ -35,6 +36,7 @@ source = r'''
 ComboGameMode sBoundGameMode = COMBO_MODE_COMBINED;
 #include "rando/entrances/NativeBridge.h"
 #include "rando/entrances/MmUnifiedLayout.h"
+#include "rando/entrances/OotUnifiedLayout.h"
 using Json = nlohmann::json;
 using namespace ComboRando::Entrances;
 std::array<Json, 3> containers;
@@ -103,6 +105,19 @@ const char* dumpSeed() {
     return dump.c_str();
 }
 static NativeFns sEntranceNative{applySeed, nullptr, nullptr, dumpSeed};
+// The OoT layout exports, attached for the vanilla layout's bind.
+OotUnifiedLayout ootLayout;
+std::string ootDump;
+int applyOot(const char* value) {
+    const auto seed = Json::parse(value);
+    ootLayout.clear();
+    if (seed.contains("entranceLayout")) ootLayout.install(seed, ActiveCapabilities());
+    return 1;
+}
+const char* dumpOot() {
+    ootDump = (ootLayout.active() ? Json{{"entranceLayout", ootLayout.json()}} : Json::object()).dump();
+    return ootDump.c_str();
+}
 // OTRGlobals.cpp's setter: the bound slot's ER-wide runtime flags (M1-09).
 std::vector<uint32_t> runtimeFlags;
 void setRuntimeFlags(uint32_t flags) { runtimeFlags.push_back(flags); calls.push_back("er-flags"); }
@@ -187,8 +202,12 @@ int main() {
     layoutSeed["version"] = ComboRando::kEntranceSeedVersion;
     layoutSeed["entranceLayout"] = EncodeEntranceLayout(tranche);
     containers[0] = {{"combo", {{"rando", layoutSeed}}}};
+    // Only a dev build admits the tranche; a shipping build has only the vanilla contract (P1-05).
+    bool admitsTranche = true;
+    try { Validate(tranche, ActiveCapabilities()); } catch (const std::exception&) { admitsTranche = false; }
+    assert(admitsTranche == ActiveCapabilities().devBuild);
     bind(0, true, true);
-    if (ActiveCapabilities().Empty()) {
+    if (!admitsTranche) {
         assert(installedSeed.empty() && !ActiveMmUnified().active() && runtimeFlags.back() == 0);
     } else {
         assert(installedSeed == layoutSeed && ActiveMmUnified().active() && runtimeFlags.back() == 1);
@@ -198,6 +217,31 @@ int main() {
         bind(2, true, true);
         assert(!ActiveMmUnified().active() && runtimeFlags.back() == 0);
     }
+    // The vanilla layout, which every build admits, binds both games with its slot, keeps its recorded
+    // routes on a same-slot reload and sets the ER-wide runtime flag; the next slot clears both games.
+    EntranceLayout vanilla;
+    vanilla.devBuild = ActiveCapabilities().devBuild;
+    vanilla.required = {std::string(kVanillaWallmasterCapability)};
+    vanilla.settings.erWallmasters = Mode::OwnGame;
+    vanilla.overrides = Overrides{@VANILLA_ROUTES@};
+    auto vanillaSeed = seedFor(1);
+    vanillaSeed["fileType"] = ComboRando::kEntranceSeedFileType;
+    vanillaSeed["version"] = ComboRando::kEntranceSeedVersion;
+    vanillaSeed["entranceLayout"] = EncodeEntranceLayout(vanilla);
+    const auto previousSlot1 = containers[1];
+    containers[1] = {{"combo", {{"rando", vanillaSeed}}}};
+    sEntranceNative.applyOotLayout = applyOot;
+    sEntranceNative.dumpOotLayout = dumpOot;
+    bind(1, true, true);
+    assert(installedSeed == vanillaSeed && ActiveMmUnified().routes().size() == 4 &&
+           ootLayout.routes().size() == 9 && runtimeFlags.back() == 1);
+    bind(1, false, true);
+    assert(installedSeed == vanillaSeed && ootLayout.routes().size() == 9);
+    bind(2, true, true);
+    assert(!ActiveMmUnified().active() && !ootLayout.active() && runtimeFlags.back() == 0);
+    sEntranceNative.applyOotLayout = nullptr;
+    sEntranceNative.dumpOotLayout = nullptr;
+    containers[1] = previousSlot1;
     // Original pending-import/finalize behavior installed its layout into another live slot.
     assert(InstallEntranceSeed(valid));
     const auto legacyLive = installedSeed;
@@ -227,9 +271,9 @@ int main() {
     assert(installedSeed == seedFor(2) && !layout.destination(kMmWallmasterSources[0]));
     const auto noErLive = installedSeed;
     const bool accepted = CheckPendingEntranceSeed(layoutSeed);
-    assert(accepted == !ActiveCapabilities().Empty());
+    assert(accepted == admitsTranche);
     assert(installedSeed == noErLive && !ActiveMmUnified().active());
-    if (!ActiveCapabilities().Empty()) {
+    if (admitsTranche) {
         assert(InstallEntranceSeed(layoutSeed));
         const auto erLive = installedSeed;
         assert(CheckPendingEntranceSeed(seedFor(2)) && installedSeed == erLive);
@@ -243,6 +287,11 @@ int main() {
                  "song/items/hints/rules and dormant MM residency stay slot-isolated\n";
 }
 '''
+# The pinned sample layout of the vanilla Wallmaster pool (tools/ootmm/m1-contract.json).
+contract = json.loads((args.source / 'tools/ootmm/m1-contract.json').read_text(encoding='utf-8'))
+sample = next(c for c in contract['combinations'] if c['id'] == 'erWallmasters=ownGame;erOneWays=none')['sampleLayout']
+assert len(sample) == 13
+source = source.replace('@VANILLA_ROUTES@', ', '.join('{"%s", "%s"}' % (src, dst) for src, dst in sample))
 cpp = args.build_dir / 'entrance_slot_binding.cpp'
 cpp.write_text(source, encoding='utf-8')
 for dev in (False, True):

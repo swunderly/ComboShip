@@ -609,10 +609,9 @@ void CheckOneWays(const Json &fixture) {
   Rejected(WithRoute(major, "OOT_LAKE_HYLIA_FROM_VALLEY", "OOT_DEKU_TREE"));
 }
 
-// This build. A release build has no active capability, so the seed guard
-// refuses every layout before decoding it, as 0.4.4 does. A Phase A dev build
-// has only the MM tranche: it validates a tranche layout and refuses the rest
-// after decoding.
+// This build. A release build admits only the vanilla Wallmaster contract
+// (P1-05): it validates a vanilla layout and refuses every other layout after
+// decoding it. A dev build adds the MM tranche and accepts dev layouts.
 void CheckBuildGuard(const Json &good) {
   const auto caps = ActiveCapabilities();
   Json seed = {{"fileType", kEntranceSeedFileType},
@@ -648,9 +647,26 @@ void CheckBuildGuard(const Json &good) {
     assert(!message.empty() && message != before);
   }
 #else
-  assert(caps.Empty() && !caps.devBuild);
-  for (const auto &layout : {good, Json(), Json::object()}) {
-    seed["entranceLayout"] = layout;
+  assert(!caps.devBuild && caps == CapabilitySet::AtLeast(Stage::Public) &&
+         caps == caps.Only(kVanillaWallmasterCapability) &&
+         caps.Active(kVanillaWallmasterCapability));
+  auto layout = DecodeEntranceLayout(good);
+  layout.required = {std::string(kVanillaWallmasterCapability)};
+  const auto vanilla = EncodeEntranceLayout(layout);
+  seed["entranceLayout"] = vanilla;
+  RequireSupportedSeedDocument(seed, caps);
+  RequireSupportedSeedCapabilities(seed, caps);
+  RequireSupportedSettingsCapabilities(seed, caps);
+  // Everything else is decoded and refused: a dev seed, the hidden general and
+  // One-Ways contracts, the MM tranche, a Master Quest dungeon, a malformed
+  // layout and any layout beside a private MM profile.
+  const auto refuse = [&](const Json &value, bool legacy,
+                          const std::string &reason) {
+    seed = {{"fileType", kEntranceSeedFileType},
+            {"version", kEntranceSeedVersion},
+            {"entranceLayout", value}};
+    if (legacy)
+      seed["entranceExpansion"] = Json::object();
     for (const auto &check : std::vector<std::function<void()>>{
              [&] { RequireSupportedSeedDocument(seed, caps); },
              [&] { RequireSupportedSeedCapabilities(seed, caps); },
@@ -661,9 +677,31 @@ void CheckBuildGuard(const Json &good) {
       } catch (const UnsupportedComboSeedFormat &error) {
         message = error.what();
       }
-      assert(message == before);
+      assert(!message.empty() && message != before &&
+             message.find(reason) != std::string::npos);
     }
+  };
+  std::vector<std::pair<Json, std::string>> refused;
+  for (const auto *id :
+       {"wallmasters-own-game-v1", "one-ways-own-game-v1",
+        "wallmasters-with-one-ways-v1", "wallmasters-own-game-mm-tranche"}) {
+    auto other = vanilla;
+    other["requires"] = {id};
+    refused.emplace_back(other, "which this build does not have");
   }
+  auto dev = vanilla;
+  dev["devBuild"] = true;
+  refused.emplace_back(dev, "comes from a dev build");
+  auto mq = layout;
+  mq.ootMq[OotMqIndex("Spirit")] = true;
+  refused.emplace_back(EncodeEntranceLayout(mq), "vanilla OoT dungeons only");
+  refused.emplace_back(Json(), "");
+  refused.emplace_back(Json::object(), "");
+  for (const auto &[value, reason] : refused)
+    refuse(value, false, reason);
+  refused.emplace_back(vanilla, "");
+  for (const auto &item : refused)
+    refuse(item.first, true, "cannot be combined with entranceExpansion");
 #endif
 }
 

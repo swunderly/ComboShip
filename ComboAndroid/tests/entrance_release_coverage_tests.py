@@ -8,8 +8,10 @@ the ones the game uses are pinned below. No engine, archive, device or gameplay 
 """
 from pathlib import Path
 import argparse
+import importlib.util
 import re
 import subprocess
+import sys
 import hostcxx
 
 p = argparse.ArgumentParser()
@@ -209,3 +211,11 @@ for dev in (0, 1):
                         msvc=['/Zc:preprocessor', '/bigobj', '/O2'], gnu=['-O2'],
                         exe=work/f'release_coverage_{dev}.exe')
     subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
+
+# The release gate (verify_apk.py) still refuses only the dev build: a Public capability adds no dev marker.
+sys.path.insert(0, str(source/'ComboAndroid/tools'))
+spec = importlib.util.spec_from_file_location('verify_apk', source/'ComboAndroid/tools/verify_apk.py')
+verify_apk = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(verify_apk)
+binaries = [(f'release_coverage_{dev}.exe', (work/f'release_coverage_{dev}.exe').read_bytes()) for dev in (0, 1)]
+assert verify_apk.entrance_dev_libraries(binaries) == ['release_coverage_1.exe']

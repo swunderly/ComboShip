@@ -208,15 +208,23 @@ void CheckRefusals() {
   refused(Json::array(), WholeCatalog(), "no entrance layout");
   for (const auto &bad : {Json(), Json::object(), Json::array(), Json(1)})
     refused({{"entranceLayout", bad}}, WholeCatalog(), "Entrance layout");
-  // A release build has no capability; a Phase A dev build has the tranche.
-  // The tranche is used only by its own id, and a dev layout never by a
-  // release build.
+  // A release build has only the vanilla contract (P1-05); a dev build adds
+  // the tranche. The tranche is used only by its own id, and a dev layout
+  // never by a release build.
 #ifdef COMBO_ENTRANCE_DEV
   layout.install(good, ActiveCapabilities());
   assert(layout.json() == before);
 #else
-  assert(ActiveCapabilities().Empty());
+  assert(ActiveCapabilities() == CapabilitySet::AtLeast(Stage::Public) &&
+         ActiveCapabilities().Active(kVanillaWallmasterCapability));
   refused(good, ActiveCapabilities(), "does not have");
+  auto vanilla = SampleLayout(kWallmasters);
+  vanilla.required = {std::string(kVanillaWallmasterCapability)};
+  MmUnifiedLayout shipped;
+  shipped.install(Seed(vanilla), ActiveCapabilities());
+  assert(shipped.routes().size() == 4);
+  vanilla.devBuild = true;
+  refused(Seed(vanilla), ActiveCapabilities(), "dev build");
 #endif
   refused(good, WholeCatalog().WithoutDevOnly(), "does not have");
   auto devLayout = SampleLayout(kWallmasters, true);
@@ -484,15 +492,16 @@ void CheckBind() {
                              const CapabilitySet &caps) {
     return Error([&] { ApplyNativeSeed(fns, value, caps); });
   };
-  // A release build refuses before decoding and never reaches the MM module;
-  // a Phase A dev build binds the tranche.
+  // A release build decodes the tranche seed and refuses it without reaching
+  // the MM module; a dev build binds the tranche.
 #ifdef COMBO_ENTRANCE_DEV
   ApplyNativeSeed(native, seed, ActiveCapabilities());
   assert(FakeMm::applies == 1 && FakeMm::unified.routes().size() == 4);
   FakeMm::applies = 0;
 #else
-  assert(bindError(seed, native, ActiveCapabilities()) ==
-         UnsupportedComboSeedFormat().what());
+  const auto refusal = bindError(seed, native, ActiveCapabilities());
+  assert(refusal != UnsupportedComboSeedFormat().what() &&
+         Has(refusal, "does not have"));
   assert(FakeMm::applies == 0);
 #endif
   // A build with the tranche binds the MM routes and checks the round trip.

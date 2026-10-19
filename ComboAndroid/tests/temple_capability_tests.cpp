@@ -376,15 +376,19 @@ void ExistingBoundaries() {
                                  "starting-item opposite-age Temple probe";
   }
   assert(missing && draws == 0);
-  // No entrance value is admitted by this build (Capabilities.h), and the
-  // reader strips every non-default value.
+  // This build admits only Wallmaster Shuffle (Own Game) (Capabilities.h), and
+  // the reader strips every other non-default value.
   assert(std::size(kEntranceSettings) == 40);
   const auto active = ActiveCapabilities();
   for (const auto &row : kEntranceSettings)
-    assert(!row.visible(active));
+    assert(row.visible(active) ==
+           (std::string_view(row.key) == "erWallmasters"));
   const auto stripped =
       ReadEntranceSettings([](const char *, int) { return 1; }, active);
-  assert(MakePools(stripped).empty() && !stripped.erIndoorsGameLinks &&
+  const auto pools = MakePools(stripped);
+  assert(pools.size() == 1 && pools[0].name == "WALLMASTERS" &&
+         stripped.erWallmasters == Mode::OwnGame &&
+         stripped.erOneWays == Mode::None && !stripped.erIndoorsGameLinks &&
          stripped.erSpawns == Spawns::None);
 }
 
