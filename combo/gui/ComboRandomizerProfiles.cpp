@@ -16,6 +16,7 @@
 #include "rando/GenerationRules.h"
 #include "rando/entrances/EntranceProfile.h"
 #include "rando/OotMaskQuest.h"
+#include "mq/MqSeedMarker.h"
 #include <libultraship/libultraship.h>
 #include <fast/Fast3dGui.h>
 #include <imgui.h>
@@ -552,6 +553,13 @@ void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden) {
             }
             ImGui::TextWrapped("Required trials: %s", text.empty() ? "None" : text.c_str());
         }
+    }
+    // A bundled-MQ seed's Master Quest dungeons, as it records them; a seed without the marker shows nothing.
+    if (view != 0 && !std::strcmp(key, "gRandoSettings.MQDungeons")) {
+        const auto& seed = InspectedSeed();
+        if (seed.is_object() && seed.contains("oot"))
+            if (const auto text = ComboMq::RecordedMqDungeonsText(seed.at("oot")); !text.empty())
+                ImGui::TextWrapped("Master Quest dungeons: %s", text.c_str());
     }
     ImGui::PopID();
 }

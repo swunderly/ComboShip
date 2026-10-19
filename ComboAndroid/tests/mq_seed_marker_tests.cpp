@@ -87,6 +87,9 @@ void CheckSeedDocument() {
   StampSeedMq(bundled, SeedMqSource::Bundled, mask);
   assert(bundled["mqDataSource"] == "ootmm-32.3");
   assert(bundled["masterQuestDungeons"] == json::array({3, 6, 11}));
+  // And by SoH's dungeon names, as SoH's and OoTMM's spoilers list them.
+  assert(bundled["masterQuestDungeonNames"] ==
+         json::array({"Forest Temple", "Spirit Temple", "Ganon's Castle"}));
   assert(RecordedMqDungeonMask(bundled) == mask);
   assert(SeedMqPlayable(bundled, true));
   // Refused cleanly where the bundled data is off (another ROM version).
@@ -99,11 +102,14 @@ void CheckSeedDocument() {
   json none = json::object();
   StampSeedMq(none, SeedMqSource::Bundled, 0);
   assert(none["masterQuestDungeons"] == json::array());
+  assert(none["masterQuestDungeonNames"] == json::array());
   assert(SeedMqPlayable(none, false));
 
   json all = json::object();
   StampSeedMq(all, SeedMqSource::Bundled, kMqDungeonMaskAll);
   assert(all["masterQuestDungeons"].size() == 12);
+  assert(all["masterQuestDungeonNames"].front() == "Deku Tree" &&
+         all["masterQuestDungeonNames"].back() == "Ganon's Castle");
   assert(RecordedMqDungeonMask(all) == kMqDungeonMaskAll);
 
   // The generated dungeons must be known to stamp a bundled seed.
@@ -205,9 +211,11 @@ void CheckSavedSeedPaths() {
              source == SeedMqSource::Bundled ? "x" : "ootmm-32.3"}}}}}};
     const auto setup = ComboRando::Profiles::SetupForSeed(doc, caps);
     assert(MqDataSourceOf(setup["oot"]) == source);
-    assert(!setup["oot"].contains("masterQuestDungeons"));
+    assert(!setup["oot"].contains("masterQuestDungeons") &&
+           !setup["oot"].contains("masterQuestDungeonNames"));
     const auto settings = ComboRando::Profiles::SettingsDocument(doc, caps);
-    assert(!settings["oot"].contains("masterQuestDungeons"));
+    assert(!settings["oot"].contains("masterQuestDungeons") &&
+           !settings["oot"].contains("masterQuestDungeonNames"));
     assert(MqDataSourceOf(settings["oot"]) == source);
   }
   json future = {{"fileType", "ComboShipRandomizer"},
@@ -319,7 +327,8 @@ int CheckLocalSaves(const std::filesystem::path &repo) {
       seeds++;
       const auto seedOot = raw.value("oot", json::object());
       assert(ReadMqDataSource(seedOot) == SeedMqSource::Legacy);
-      assert(!seedOot.contains("masterQuestDungeons"));
+      assert(!seedOot.contains("masterQuestDungeons") &&
+             !seedOot.contains("masterQuestDungeonNames"));
       assert(SeedMqPlayable(seedOot, false));
       assert(ReplayKeepsMqDungeons(seedOot, 0));
     }

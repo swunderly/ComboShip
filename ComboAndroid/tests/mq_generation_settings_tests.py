@@ -571,6 +571,34 @@ order(replay, ['SOH_SetSeed(masterSeed);', 'SOH_Dump()', 'SOH_PrepContext();',
 check(hostcxx.contains(headless, 'ComboMq::RecordedMqDungeonMask(spoiler.value("oot", nlohmann::json::object()));'),
       'the headless replay must refuse a malformed MQ record before it runs')
 
+# The spoiler lists a bundled seed's MQ dungeons by name, as SoH's spoiler (spoiler_log.cpp WriteMasterQuestDungeons:
+# DungeonInfo::GetName of each MQ dungeon) and OoTMM's (spoiler.ts writeWorldFlags) do: the names are SoH's, in the
+# DungeonKey order of the ids, and the profile's seed views show them.
+dungeon_rows = re.findall(r'DungeonInfo\(\s*"([^"]+)".*?(RSK_MQ_\w+)', read('soh/soh/Enhancements/randomizer/dungeon.cpp'),
+                          re.S)
+marker = read('combo/mq/MqSeedMarker.h')
+table = re.search(r'kMqDungeonNames\[kMqSeedDungeonCount\] = \{(.*?)\};', marker, re.S)
+names = re.findall(r'"([^"]+)"', table.group(1)) if table else []
+order_keys = re.findall(r'RANDO_ENUM_ITEM\((RSK_MQ_\w+)\)',
+                        read('soh/soh/Enhancements/randomizer/randomizerEnums/RandomizerSettingKey.h'))[3:]
+check([name for name, _ in dungeon_rows] == names and [key for _, key in dungeon_rows] == order_keys,
+      f'MqSeedMarker.h kMqDungeonNames must be dungeon.cpp\'s names in DungeonKey order: {names} != {dungeon_rows}')
+check(re.search(r'WriteMasterQuestDungeons\(\) \{.*?jsonData\["masterQuestDungeons"\]\.push_back\(dungeon->GetName\(\)\);',
+                read('soh/soh/Enhancements/randomizer/3drando/spoiler_log.cpp'), re.S),
+      'SoH\'s spoiler lists MQ dungeons by DungeonInfo name')
+stamp = body(marker, 'inline void StampSeedMq(')
+check('oot[kMqDungeonsKey] = MqDungeonIds(mqDungeonMask);' in stamp and
+      'oot[kMqDungeonNamesKey] = MqDungeonNames(mqDungeonMask);' in stamp and
+      stamp.index('WriteMqDataSource(oot, SeedMqSource::Legacy);') < stamp.index('oot[kMqDungeonsKey]'),
+      'a bundled seed records its MQ dungeons by id and name; a Legacy seed records neither')
+profile_ui = read('combo/gui/ComboRandomizerProfiles.cpp')
+check(re.search(r'if \(view != 0 && !std::strcmp\(key, "gRandoSettings\.MQDungeons"\)\) \{.*?'
+                r'ComboMq::RecordedMqDungeonsText\(seed\.at\("oot"\)\); !text\.empty\(\)\)\s*'
+                r'ImGui::TextWrapped\("Master Quest dungeons: %s", text\.c_str\(\)\);', profile_ui, re.S),
+      'the saved and generated seed views show a bundled seed\'s MQ dungeons under the MQ setting')
+check('ComboMq::kMqDungeonNamesKey' in body(read('combo/ComboRandomizerProfiles.h'), 'inline Json SettingsDocument('),
+      'a settings document drops the seed\'s MQ dungeon names, a generation output')
+
 if failures:
     print('FAIL:\n  ' + '\n  '.join(failures))
     sys.exit(1)

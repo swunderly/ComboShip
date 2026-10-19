@@ -30,8 +30,8 @@ inline Json SettingsDocument(const Json& seed, const Entrances::CapabilitySet& c
         if (result.contains(game)) {
             if (!result[game].is_object())
                 throw std::invalid_argument("Malformed game settings document");
-            for (const char* output :
-                 { "placements", "prices", "iceTrapModels", "resolvedSeedRules", ComboMq::kMqDungeonsKey })
+            for (const char* output : { "placements", "prices", "iceTrapModels", "resolvedSeedRules",
+                                        ComboMq::kMqDungeonsKey, ComboMq::kMqDungeonNamesKey })
                 result[game].erase(output);
             if (result[game].contains("settings") && !result[game]["settings"].is_object())
                 throw std::invalid_argument("Malformed native settings snapshot");

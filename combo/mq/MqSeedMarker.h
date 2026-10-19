@@ -4,9 +4,9 @@
 // SoH's behaviour: vanilla, or the real oot-mq.o2r when one is installed.
 //
 // A seed made with the bundled data records the source and its MQ dungeons:
-//   "mqDataSource": "ootmm-32.3", "masterQuestDungeons": [ids]
+//   "mqDataSource": "ootmm-32.3", "masterQuestDungeons": [ids], "masterQuestDungeonNames": [names]
 // The ids are OoTMM's dungeon ids (include/combo/dungeon.h MQ_*, the bits of Config_IsMq's mask), which are SoH's
-// DungeonKey order, as the save's own "masterQuestDungeons" already stores them.
+// DungeonKey order, as the save's own "masterQuestDungeons" already stores them. The names are for people.
 #include "MqMode.h"
 
 #include <nlohmann/json.hpp>
@@ -25,6 +25,15 @@ inline constexpr const char* kMqDungeonsKey = "masterQuestDungeons";
 // OoTMM's 12 MQ dungeons (ComboMqData.h kDungeonCount; SoH's DungeonKey DEKU_TREE..GANONS_CASTLE).
 inline constexpr int kMqSeedDungeonCount = 12;
 inline constexpr int kMqDungeonMaskAll = (1 << kMqSeedDungeonCount) - 1;
+// The same dungeons by name, for people reading the seed: SoH's names (dungeon.cpp DungeonInfo), as SoH's spoiler
+// lists its MQ dungeons (spoiler_log.cpp WriteMasterQuestDungeons) and OoTMM's lists its Master Quest Dungeons
+// (packages/generator/lib/combo/spoiler.ts writeWorldFlags). The ids stay the record a replay is checked against.
+inline constexpr const char* kMqDungeonNamesKey = "masterQuestDungeonNames";
+inline constexpr const char* kMqDungeonNames[kMqSeedDungeonCount] = {
+    "Deku Tree",          "Dodongo's Cavern", "Jabu Jabu's Belly",      "Forest Temple",
+    "Fire Temple",        "Water Temple",     "Spirit Temple",          "Shadow Temple",
+    "Bottom of the Well", "Ice Cavern",       "Gerudo Training Ground", "Ganon's Castle",
+};
 
 // The marker of an object, never throwing: absent is Legacy, anything but a known string is Unsupported.
 inline SeedMqSource MqDataSourceOf(const nlohmann::json& object) {
@@ -61,6 +70,13 @@ inline nlohmann::json MqDungeonIds(int mask) {
             ids.push_back(id);
     return ids;
 }
+inline nlohmann::json MqDungeonNames(int mask) {
+    auto names = nlohmann::json::array();
+    for (int id = 0; id < kMqSeedDungeonCount; id++)
+        if (mask & (1 << id))
+            names.push_back(kMqDungeonNames[id]);
+    return names;
+}
 // The mask of a list of dungeon ids; -1 when the list is malformed.
 inline int MqDungeonMaskOf(const nlohmann::json& ids) {
     if (!ids.is_array())
@@ -75,8 +91,8 @@ inline int MqDungeonMaskOf(const nlohmann::json& ids) {
     return mask;
 }
 
-// Stamps a new seed document's "oot" section: a bundled seed records its source and MQ dungeons; a Legacy seed
-// records nothing.
+// Stamps a new seed document's "oot" section: a bundled seed records its source and MQ dungeons, by id and by name;
+// a Legacy seed records nothing.
 inline void StampSeedMq(nlohmann::json& oot, SeedMqSource source, int mqDungeonMask) {
     if (source != SeedMqSource::Bundled) {
         WriteMqDataSource(oot, SeedMqSource::Legacy);
@@ -86,6 +102,7 @@ inline void StampSeedMq(nlohmann::json& oot, SeedMqSource source, int mqDungeonM
         throw std::runtime_error("Master Quest dungeons of the generated seed are unavailable");
     WriteMqDataSource(oot, source);
     oot[kMqDungeonsKey] = MqDungeonIds(mqDungeonMask);
+    oot[kMqDungeonNamesKey] = MqDungeonNames(mqDungeonMask);
 }
 // The MQ dungeons a seed document records: -1 for a Legacy seed (they are re-derived from its settings). Throws for
 // an unknown marker or a malformed bundled record.
@@ -96,6 +113,19 @@ inline int RecordedMqDungeonMask(const nlohmann::json& oot) {
     if (mask < 0)
         throw UnsupportedMqDataSource("Malformed Master Quest dungeons in the seed");
     return mask;
+}
+// The text a seed view shows for a bundled seed's MQ dungeons ("None" when it has none). Empty for a seed without the
+// marker, which records none, and for a malformed record.
+inline std::string RecordedMqDungeonsText(const nlohmann::json& oot) {
+    if (MqDataSourceOf(oot) != SeedMqSource::Bundled)
+        return {};
+    const int mask = MqDungeonMaskOf(oot.value(kMqDungeonsKey, nlohmann::json()));
+    if (mask < 0)
+        return {};
+    std::string text;
+    for (const auto& name : MqDungeonNames(mask))
+        text += (text.empty() ? "" : ", ") + name.get<std::string>();
+    return text.empty() ? "None" : text;
 }
 // Whether this install can play a seed document's recorded MQ dungeons, before regenerating it. A Legacy seed records
 // none and is decided as before, by its regenerated dungeons and SoH's file rule.
