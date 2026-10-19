@@ -4621,6 +4621,14 @@ extern "C" COMBO_EXPORT void SOH_SetComboRandoSeed(uint64_t seed) {
     sComboRandoSeed = seed;
     sComboRandoSeedSet = true;
 }
+// Settings finalization rolls a bundled seed's Master Quest dungeons from it (settings.cpp).
+bool Combo_GetRandoSeed(uint64_t* seed) {
+    if (!sComboRandoSeedSet || seed == nullptr) {
+        return false;
+    }
+    *seed = sComboRandoSeed;
+    return true;
+}
 #endif
 
 // ComboShip: snapshot every OOT rando option as {cvarName: value}. The combo orchestrator stores

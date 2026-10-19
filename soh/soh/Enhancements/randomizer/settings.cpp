@@ -2893,8 +2893,16 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
         mOptions[RSK_MQ_DUNGEON_SET].Set(RO_GENERIC_OFF);
     }
 
+#ifdef COMBO_BUILD
+    // ComboShip: a seed that records OoTMM's bundled Master Quest data (combo/mq/MqMode.h) plays its MQ dungeons
+    // without oot-mq.o2r, as OoTMM plays them from the vanilla ROM. Every other seed, including every seed and replay
+    // made before the marker, keeps SoH's rule below.
+    const bool bundledMq = GetMqDataSource() == ComboMq::SeedMqSource::Bundled;
+#else
+    const bool bundledMq = false;
+#endif
     // If we don't have MQ, set all dungeons to Vanilla
-    if (OTRGlobals::Instance->HasOriginal() && !OTRGlobals::Instance->HasMasterQuest()) {
+    if (OTRGlobals::Instance->HasOriginal() && !OTRGlobals::Instance->HasMasterQuest() && !bundledMq) {
         mOptions[RSK_MQ_DUNGEON_RANDOM].Set(RO_MQ_DUNGEONS_NONE);
     }
 
@@ -2989,6 +2997,18 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
 
     // TODO: RandomizeAllSettings(true) when implementing the ability to randomize the options themselves.
     std::array<DungeonInfo*, 12> dungeons = this->GetDungeons()->GetDungeonList();
+#ifdef COMBO_BUILD
+    // ComboShip: a bundled-MQ seed rolls its MQ dungeons on a stream of their own, from its combo master seed
+    // (combo/mq/MqMode.h MqRollSeed), as OoTMM resolves mqDungeons from the seed (packages/logic/src/world/flags.ts).
+    // So the generation, its oracle, a reload and a headless replay all roll the dungeons the seed records, wherever
+    // the shared stream is. The shared stream is put back after the roll, so every later roll is unchanged.
+    const uint64_t sharedRandoState = rando_state;
+    uint64_t comboSeed = 0;
+    const bool mqOwnStream = bundledMq && Combo_GetRandoSeed(&comboSeed);
+    if (mqOwnStream) {
+        Random_Init(ComboMq::MqRollSeed(comboSeed));
+    }
+#endif
 
     // reset the MQ vars
     for (auto dungeon : dungeons) {
@@ -3106,6 +3126,11 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
             mOptions[dungeon->GetMQSetting()].Set(RO_MQ_SET_VANILLA);
         }
     }
+#ifdef COMBO_BUILD
+    if (mqOwnStream) {
+        rando_state = sharedRandoState;
+    }
+#endif
 
     // Set key ring for each dungeon
     for (const auto dungeon : dungeons) {

@@ -557,6 +557,7 @@ int RunHeadless(int argc, char** argv) {
         try {
             const auto catalog = ComboRando::ReadKokiriCatalogRevisions(spoiler.value("oot", nlohmann::json::object()));
             const auto mqSource = ComboMq::ReadMqDataSource(spoiler.value("oot", nlohmann::json::object()));
+            ComboMq::RecordedMqDungeonMask(spoiler.value("oot", nlohmann::json::object())); // throws if malformed
             ComboRando::ApplyKokiriSeedRevision(SOH_SetKokiriRevision, catalog.invisibleRupees);
             ComboRando::ApplyKokiriSeedRevision(SOH_SetKokiriGrassRevision, catalog.grass);
             ComboMq::ApplyMqDataSource(SOH_SetMqDataSource, mqSource);
@@ -679,6 +680,13 @@ int RunHeadless(int argc, char** argv) {
             SOH_RestoreSettings(os.dump().c_str());
             applyPlaythroughRules(allTricks);
             SOH_PrepContext();
+            // A bundled-MQ seed plays the MQ dungeons it records; the replay rolls them from its master seed and
+            // must roll the same ones, as the in-game reload requires (combo/mq/MqSeedMarker.h).
+            if (!ComboMq::ReplayKeepsMqDungeons(ootSeed, SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1)) {
+                std::cerr << "[playthrough] the seed's Master Quest dungeons did not reproduce — no verdict\n";
+                nativePreparationFailed = true;
+                return ComboRando::PlaythroughResult{};
+            }
             // The player's trials are the ones generation resolved, as the in-game reload applies them.
             if (hasResolvedTrials && (!SOH_ApplyResolvedSeedRules ||
                                       !SOH_ApplyResolvedSeedRules(ootSeed.at("resolvedSeedRules").dump().c_str()))) {

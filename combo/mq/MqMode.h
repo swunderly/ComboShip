@@ -71,6 +71,27 @@ constexpr SeedMqSource SourceForNewSeed(bool bundledAvailable) {
     return bundledAvailable ? SeedMqSource::Bundled : SeedMqSource::Legacy;
 }
 
+// The stream a bundled seed rolls its MQ dungeons on (settings.cpp Context::FinalizeSettings): FNV-1a of
+// "mqDungeons:ootmm-32.3:<combo master seed>", named like the launcher's other per-seed streams. OoTMM resolves
+// mqDungeons once from the seed's random (packages/logic/src/world/flags.ts:45-75); a stream of their own makes every
+// finalize of the seed (generation, the oracle, a reload, a headless replay) roll the same MQ dungeons, wherever the
+// shared rando stream happens to be.
+inline constexpr const char* kMqRollStream = "mqDungeons:ootmm-32.3:";
+constexpr uint32_t MqRollSeed(uint64_t comboSeed) {
+    uint32_t hash = 2166136261u;
+    for (const char* c = kMqRollStream; *c != '\0'; c++)
+        hash = (hash ^ static_cast<unsigned char>(*c)) * 16777619u;
+    char digits[20] = {};
+    int count = 0;
+    do {
+        digits[count++] = static_cast<char>('0' + comboSeed % 10);
+        comboSeed /= 10;
+    } while (comboSeed != 0);
+    while (count > 0)
+        hash = (hash ^ static_cast<unsigned char>(digits[--count])) * 16777619u;
+    return hash;
+}
+
 // Whether this install can play a save or seed with `mqDungeonCount` MQ dungeons and this marker. Legacy is SoH's
 // file-select rule (requiresMasterQuest needs a real oot-mq.o2r); a marker this build does not know never plays.
 constexpr bool CanPlayMqDungeons(SeedMqSource source, size_t mqDungeonCount, bool hasArchiveMq, bool bundledAvailable) {

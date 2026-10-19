@@ -96,6 +96,11 @@ class OTRGlobals {
 #endif
     ImFont* CreateFontWithSize(float size, std::string fontPath, bool isJapaneseFont = false);
 };
+#ifdef COMBO_BUILD
+// ComboShip: the combo master seed of the seed being generated or replayed (SOH_SetComboRandoSeed); false before one
+// is set.
+bool Combo_GetRandoSeed(uint64_t* seed);
+#endif
 #endif
 
 #ifndef __cplusplus

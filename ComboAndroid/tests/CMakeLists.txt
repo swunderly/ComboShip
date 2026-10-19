@@ -563,6 +563,9 @@ if(COMBO_SOURCE_DIR)
     # OoTMM's smaller MQ gameplay rules (Config_IsMq outside mq.c) on the production code, for a bundled-MQ dungeon
     # against archive MQ and vanilla.
     combo_harness_test(mq_gameplay_rules_follow_ootmm_for_bundled_mq mq_gameplay_fixes_tests.py)
+    # The generator's MQ gates and roll (settings.cpp FinalizeSettings) on the production code: a bundled seed rolls
+    # its MQ dungeons from its master seed and a reload rolls the same ones; a seed without the marker is unchanged.
+    combo_json_harness_test(mq_generation_rolls_and_keeps_master_quest_dungeons mq_generation_settings_tests.py)
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
