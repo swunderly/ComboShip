@@ -33,9 +33,10 @@ inline constexpr CommunityPresetInfo kCommunityPresets[] = {
       "Adapted from OoTMM's Allsanity preset. Beatable-only logic. Keys, souls, shops, tokens, NPC rewards, fairies, "
       "freestanding items and scenery drops are shuffled in both worlds, plus OoT's pond fish, with OoT key rings. "
       "Adds the MM spells, boots and tunics and the ocarina buttons, all shared across games. MM starts with no "
-      "items. Its random Master Quest dungeons need Master Quest game data, which setup does not import. Entrance "
-      "shuffle, Skip Child Zelda, Cross-Games Age, silver rupee pouches, child wallets, MM key rings and OoTMM item "
-      "families Combo Ship lacks are left out." },
+      "items. Each OoT dungeon is Master Quest on a coin flip, as in OoTMM, using OoTMM's Master Quest data, which "
+      "needs an NTSC-U 1.0 OoT ROM; with another ROM version the dungeons stay normal unless Master Quest game data "
+      "is installed. Entrance shuffle, Skip Child Zelda, Cross-Games Age, silver rupee pouches, child wallets, MM key "
+      "rings and OoTMM item families Combo Ship lacks are left out." },
 };
 struct PresetOption {
     const char* key;
@@ -283,9 +284,9 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                              { "gRandoSettings.IceTrapPercent", 3 }, // Rupoors take half the traps, presets.ts:599
                              // MM: 2.5 traps per 100 of its about 2,100 junk items (transform.ts:714-715).
                              { "gRando.Options.RO_TRAP_AMOUNT", 50 },
-                             // mqDungeons random: a coin flip for each dungeon (presets.ts:697). Without Master
-                             // Quest game data, which setup does not import, every dungeon stays normal
-                             // (settings.cpp:2896-2899).
+                             // mqDungeons random: a coin flip for each dungeon (presets.ts:697, flags.ts:61), rolled
+                             // from the seed. It plays from OoTMM's bundled MQ data (combo/mq) on an NTSC-U 1.0 OoT
+                             // ROM; without MQ data every dungeon stays normal (settings.cpp FinalizeSettings).
                              { "gRandoSettings.MQDungeons", 3 },
                              { "gRandoSettings.MQDungeonsDekuTree", 2 },
                              { "gRandoSettings.MQDungeonsDodongosCavern", 2 },

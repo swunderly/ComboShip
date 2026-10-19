@@ -228,8 +228,11 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
         throw UnifiedEntranceRefused(ShipEntrancesRefusal());
     if (vanillaOot && g.readSetting("gEnhancements.RandomizedEnemies", 0))
         throw UnifiedEntranceRefused(EnemyRandomizerRefusal());
-    // The layout records the quest of every MQ dungeon; until the native quest context exists only
-    // the all-vanilla one is known.
+    // The layout records the quest of every MQ dungeon, and only the vanilla Wallmaster capability
+    // reads the native quest context (and requires it all vanilla). Every other capability needs the
+    // MQ setting off. MQ dungeons can be played (a real oot-mq.o2r or OoTMM's bundled data, combo/mq),
+    // so a profile that selects them, Allsanity's for one, is refused here with One-Ways or MM
+    // Wallmasters, before any random draw.
     if (!vanillaOot && g.readSetting(kMqDungeonsSetting, 0) != 0)
         throw UnifiedEntranceRefused(
             EntranceRefusal{ kWallmasterMasterQuestText, "Entrance layouts need Master Quest dungeons off for now" });

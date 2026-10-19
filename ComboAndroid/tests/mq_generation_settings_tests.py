@@ -13,7 +13,13 @@ accessor (OTRGlobals.cpp) and the seed marker (combo/mq/MqSeedMarker.h), and che
 - Allsanity's 13 Master Quest writes (ComboPresets.h) now give a coin flip per dungeon, and none without the data;
 - the seed records the rolled dungeons (StampSeedMq) and a reload's roll matches them (ReplayKeepsMqDungeons);
 - the launcher and the headless generator set the master seed before every finalize, and the headless replay checks
-  the recorded MQ dungeons as the in-game reload does.
+  the recorded MQ dungeons as the in-game reload does;
+- the native options, the profile catalogue (mqPlayable, mqSource), the profile editor's rows and its Wallmaster
+  refusal agree in every install state;
+- the seed lists its MQ dungeons by SoH's names, as SoH's and OoTMM's spoilers do, and the seed views show them;
+- Allsanity's help says its MQ dungeons are OoTMM's coin flips and what they need;
+- the check tracker keeps SoH's spoiler behaviour (the owner's default): a dungeon whose quest was rolled stays hidden
+  until visited, and no Combo row turns MQ spoilers on.
 """
 from pathlib import Path
 import argparse
@@ -598,6 +604,33 @@ check(re.search(r'if \(view != 0 && !std::strcmp\(key, "gRandoSettings\.MQDungeo
       'the saved and generated seed views show a bundled seed\'s MQ dungeons under the MQ setting')
 check('ComboMq::kMqDungeonNamesKey' in body(read('combo/ComboRandomizerProfiles.h'), 'inline Json SettingsDocument('),
       'a settings document drops the seed\'s MQ dungeon names, a generation output')
+
+# Allsanity's help no longer says its MQ dungeons need data setup does not import: they take effect, as in OoTMM.
+presets = read('combo/rando/ComboPresets.h')
+allsanity_help = ''.join(re.findall(r'"((?:[^"\\]|\\.)*)"', between(presets, '{ CommunityPreset::Allsanity,', '},')))
+check('setup does not import' not in presets and 'settings.cpp:2896' not in presets,
+      'ComboPresets.h still says Master Quest is unavailable')
+check('Master Quest on a coin flip, as in OoTMM' in allsanity_help and 'NTSC-U 1.0' in allsanity_help,
+      f'the Allsanity help must say its MQ dungeons are OoTMM\'s coin flips and what they need: {allsanity_help}')
+
+# The check tracker keeps SoH's spoiler behaviour (owner default): a dungeon whose quest was rolled stays hidden until
+# visited, a dungeon of fixed quest is shown, and no Combo row turns MQ spoilers on. Rows follow the seed's quests.
+snapshot = read('combo/menu/ComboCheckTrackerOOT.inc')
+check(hostcxx.contains(snapshot, 'if (!IsAreaSpoiled(area) && !CVarGetInteger(CVAR_TRACKER_CHECK("MQSpoilers"), 0)) {')
+      and hostcxx.contains(snapshot, 'COMBO_CHECK_AREA_HIDDEN'),
+      'the Combo tracker hides an unspoiled dungeon unless MQ spoilers are on')
+combo_mq_spoilers = sorted(p.relative_to(repo).as_posix() for p in (repo / 'combo').rglob('*')
+                           if p.suffix in ('.h', '.cpp', '.inc') and 'MQSpoilers' in p.read_text(encoding='utf-8',
+                                                                                                 errors='replace'))
+check(combo_mq_spoilers == ['combo/menu/ComboCheckTrackerOOT.inc'],
+      f'no Combo menu row may set the MQ spoiler option: {combo_mq_spoilers}')
+tracker = read('soh/soh/Enhancements/randomizer/randomizer_check_tracker.cpp')
+check(re.search(r'RSK_MQ_DUNGEON_RANDOM\) == RO_MQ_DUNGEONS_NONE \|\|.*?RO_MQ_SET_RANDOM\).*?'
+                r'SetAreaSpoiled\(static_cast<RandomizerCheckArea>\(i\)\);', tracker, re.S),
+      'SoH spoils a dungeon area at load only when its quest is not random')
+check(hostcxx.contains(read('soh/soh/Enhancements/randomizer/SeedContext.cpp'),
+                       'loc->GetQuest() == RCQUEST_MQ && mDungeons->GetDungeonFromScene(loc->GetScene())->IsMQ()'),
+      'tracker rows follow the seed\'s own dungeon quests')
 
 if failures:
     print('FAIL:\n  ' + '\n  '.join(failures))
