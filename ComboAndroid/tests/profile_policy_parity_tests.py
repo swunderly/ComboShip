@@ -56,9 +56,10 @@ assert not different, ('profile policy callbacks differ from settings.cpp', diff
 # on the profile catalogue's mqPlayable, which SOH_DumpProfileCatalog computes with the native gate's own condition.
 start = native.index("// Don't show any MQ options if both quests aren't available")
 gate = native[start:native.index('// clang-format on', start)]
-condition = 'ResourceMgr_GameCanPlayMasterQuest() && OTRGlobals::Instance->HasOriginal()'
-assert '#ifdef COMBO_BUILD' in gate and 'if (!(%s)) {' % condition in gate, 'settings.cpp: the native MQ gate changed'
-native_rows = gate[gate.index('#endif') + len('#endif'):gate.index('} else {')], body(gate, gate.index('} else {') + 7)
+condition = 'OTRGlobals::Instance->CanPlayMasterQuest() && OTRGlobals::Instance->HasOriginal()'
+opening = 'if (!(%s)) {' % condition
+assert opening in gate, 'settings.cpp: the native MQ gate changed'
+native_rows = body(gate, gate.index(opening) + len(opening) - 1), body(gate, gate.index('} else {') + 7)
 found = re.search(r'void RefreshMasterQuestAvailability\(bool mqPlayable\)\s*\{', policy)
 assert found, 'the profile policy lost its copy of the MQ gate'
 copy = body(policy, found.end() - 1)

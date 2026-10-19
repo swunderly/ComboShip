@@ -1160,6 +1160,14 @@ bool OTRGlobals::HasMasterQuest() {
     return hasMasterQuest;
 }
 
+bool OTRGlobals::CanPlayMasterQuest() {
+#ifdef COMBO_BUILD
+    return hasMasterQuest || bundledMasterQuest;
+#else
+    return hasMasterQuest;
+#endif
+}
+
 bool OTRGlobals::HasOriginal() {
     return hasOriginal;
 }
@@ -4663,7 +4671,7 @@ extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void) {
     // hasMasterQuest keeps meaning a real oot-mq.o2r. mqPlayable: the Master Quest rows can be chosen, settings.cpp's
     // CreateOptions gate (both quests, MQ from oot-mq.o2r or OoTMM's bundled data). mqSource: the MQ data a new
     // seed's dungeons would use.
-    data["mqPlayable"] = ResourceMgr_GameCanPlayMasterQuest() && OTRGlobals::Instance->HasOriginal();
+    data["mqPlayable"] = OTRGlobals::Instance->CanPlayMasterQuest() && OTRGlobals::Instance->HasOriginal();
     data["mqSource"] = OTRGlobals::Instance->HasBundledMasterQuest() ? ComboMq::kMqDataSourceBundled
                        : data["hasMasterQuest"].get<bool>()          ? "oot-mq.o2r"
                                                                      : "none";

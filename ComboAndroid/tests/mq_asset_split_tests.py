@@ -168,9 +168,10 @@ check(re.search(r'if \(IS_RANDO && randoContext != nullptr\)', inputs),
 
 # Direct uses of the MQ archive flag stay where they were: settings and catalog gates, the debug warp screen, the
 # quest carousel and the resolver's inputs, plus SaveManager::LoadFile's refusal of a marked save. A new one must be
-# reviewed against the bundled source first.
+# reviewed against the bundled source first. settings.cpp's option gate asks OTRGlobals::CanPlayMasterQuest (the
+# archive or the bundled data, U7); its two finalize gates keep the archive flag.
 ARCHIVE_FLAG = {
-    'soh/soh/Enhancements/randomizer/settings.cpp': 3,
+    'soh/soh/Enhancements/randomizer/settings.cpp': 2,
     'soh/soh/OTRGlobals.cpp': 1,
     'soh/soh/SaveManager.cpp': 1,
 }
@@ -180,9 +181,11 @@ for path, text in TEXTS.items():
     if count and not path.startswith('soh/soh/ResourceManagerHelpers.'):
         found[path] = count
 check(found == ARCHIVE_FLAG, f'HasMasterQuest() callers changed: {found} != {ARCHIVE_FLAG}')
-check(len(re.findall(r'(?:->|\.)HasMasterQuest\(\)', helpers)) == 5,
+check(len(re.findall(r'(?:->|\.)HasMasterQuest\(\)', helpers)) == 4,
       'ResourceManagerHelpers.cpp: HasMasterQuest() only in the inputs, the legacy branch, '
-      'ResourceMgr_GameHasMasterQuest, ResourceMgr_GameCanPlayMasterQuest and ResourceMgr_SaveMqPlayable')
+      'ResourceMgr_GameHasMasterQuest and ResourceMgr_SaveMqPlayable')
+check('return OTRGlobals::Instance->CanPlayMasterQuest();' in body(helpers, 'uint32_t ResourceMgr_GameCanPlayMasterQuest()'),
+      'ResourceMgr_GameCanPlayMasterQuest must be OTRGlobals::CanPlayMasterQuest')
 GAME_HAS_MQ = {
     'soh/src/overlays/gamestates/ovl_file_choose/z_file_choose.c': 3,
     'soh/src/overlays/gamestates/ovl_file_choose/z_file_nameset_PAL.c': 2,

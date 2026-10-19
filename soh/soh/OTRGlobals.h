@@ -80,6 +80,8 @@ class OTRGlobals {
     void RunExtract(int argc, char* argv[]);
     bool HasMasterQuest();
     bool HasOriginal();
+    // Master Quest dungeons can be played: a real oot-mq.o2r or, in COMBO_BUILD, OoTMM's bundled MQ data.
+    bool CanPlayMasterQuest();
 #ifdef COMBO_BUILD
     // ComboShip: OoTMM v32.3's Master Quest data (combo/mq) can be played here: COMBO_BUILD, a vanilla NTSC-U 1.0
     // oot.o2r and bins that decode. Never sets hasMasterQuest, which keeps meaning a real oot-mq.o2r.

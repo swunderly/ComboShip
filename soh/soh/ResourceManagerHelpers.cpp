@@ -276,7 +276,7 @@ extern "C" uint32_t ResourceMgr_GameHasBundledMasterQuest() {
 
 // Master Quest dungeons can be played here from some source: a real oot-mq.o2r or the bundled data.
 extern "C" uint32_t ResourceMgr_GameCanPlayMasterQuest() {
-    return OTRGlobals::Instance->HasMasterQuest() || OTRGlobals::Instance->HasBundledMasterQuest();
+    return OTRGlobals::Instance->CanPlayMasterQuest();
 }
 
 // Whether a save with this marker (ComboMq::SeedMqSource) and MQ requirement can be played on this install. For a

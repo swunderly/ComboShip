@@ -389,8 +389,7 @@ if not failures:
 # its Wallmaster refusal (EntranceProfile.h), all from the production lines.
 options_gate = between(settings, '// Don\'t show any MQ options if both quests aren\'t available', '// clang-format on',
                        hostcxx.find(settings, 'void Settings::CreateOptions()'))
-can_play = function(read('soh/soh/ResourceManagerHelpers.cpp'),
-                    'extern "C" uint32_t ResourceMgr_GameCanPlayMasterQuest()')
+can_play = function(otr, 'bool OTRGlobals::CanPlayMasterQuest()')
 catalogue = between(otr, 'data["hasOriginal"] = OTRGlobals::Instance->HasOriginal();',
                     'auto settings = Rando::Settings::GetInstance();',
                     hostcxx.find(otr, 'extern "C" COMBO_EXPORT const char* SOH_DumpProfileCatalog(void)'))
@@ -406,12 +405,14 @@ menus = r'''
 #include "mq/MqMode.h"
 #include "randomizerEnums.h"
 
+// OTRGlobals: the loaded archives (Initialize) and the bundled data's gate (SetBundledMasterQuest).
 struct OTRGlobals {
     static OTRGlobals* Instance;
-    bool original = true, archive = false, bundled = false;
-    bool HasOriginal() { return original; }
-    bool HasMasterQuest() { return archive; }
-    bool HasBundledMasterQuest() { return bundled; }
+    bool hasOriginal = true, hasMasterQuest = false, bundledMasterQuest = false;
+    bool HasOriginal() { return hasOriginal; }
+    bool HasMasterQuest() { return hasMasterQuest; }
+    bool HasBundledMasterQuest() { return bundledMasterQuest; }
+    bool CanPlayMasterQuest();
 };
 OTRGlobals* OTRGlobals::Instance = nullptr;
 ''' + can_play + r'''
@@ -449,14 +450,14 @@ int main() {
         OTRGlobals::Instance = &globals;
         int states = 0;
         for (int state = 0; state < 8; state++) {
-            globals.original = state & 1;
-            globals.archive = (state & 2) != 0;
-            globals.bundled = (state & 4) != 0;
-            if (globals.bundled && !globals.original)
+            globals.hasOriginal = state & 1;
+            globals.hasMasterQuest = (state & 2) != 0;
+            globals.bundledMasterQuest = (state & 4) != 0;
+            if (globals.bundledMasterQuest && !globals.hasOriginal)
                 continue; // the bundled data plays only over a vanilla oot.o2r (OTRGlobals::SetBundledMasterQuest)
             states++;
             const std::string where = "state " + std::to_string(state) + ": ";
-            const bool available = (globals.archive || globals.bundled) && globals.original;
+            const bool available = (globals.hasMasterQuest || globals.bundledMasterQuest) && globals.hasOriginal;
             // Native options: disabled with SoH's own text exactly when MQ cannot be played beside the vanilla game.
             Settings native;
             native.CreateMqOptions();
@@ -466,15 +467,15 @@ int main() {
                         where + "native MQ option " + std::to_string(key));
             }
             // SoH's own gate is unchanged without the bundled data.
-            if (!globals.bundled)
-                Require(available == (globals.archive && globals.original), where + "SoH's gate without bundled data");
+            if (!globals.bundledMasterQuest)
+                Require(available == (globals.hasMasterQuest && globals.hasOriginal), where + "SoH's gate without bundled data");
             // The catalogue says the same, and which data a new seed's MQ dungeons use.
             const auto catalogue = Catalogue();
             Require(catalogue.at("mqPlayable") == available, where + "catalogue mqPlayable");
-            Require(catalogue.at("hasMasterQuest") == globals.archive && catalogue.at("hasOriginal") == globals.original,
+            Require(catalogue.at("hasMasterQuest") == globals.hasMasterQuest && catalogue.at("hasOriginal") == globals.hasOriginal,
                     where + "hasMasterQuest keeps meaning a real oot-mq.o2r");
-            Require(catalogue.at("mqSource") == (globals.bundled   ? ComboMq::kMqDataSourceBundled
-                                                 : globals.archive ? "oot-mq.o2r"
+            Require(catalogue.at("mqSource") == (globals.bundledMasterQuest   ? ComboMq::kMqDataSourceBundled
+                                                 : globals.hasMasterQuest ? "oot-mq.o2r"
                                                                    : "none"),
                     where + "catalogue mqSource");
             // The profile editor disables the same rows with the same text.
@@ -494,7 +495,7 @@ int main() {
                     draft, catalogue, [&](const char* key, int fallback) {
                         return std::string(key) == "gRandoSettings.MQDungeons" ? mqMode : fallback;
                     });
-                const bool refused = (globals.archive && !globals.original) || (available && mqMode != 0);
+                const bool refused = (globals.hasMasterQuest && !globals.hasOriginal) || (available && mqMode != 0);
                 Require(refusal.player ==
                                 (refused ? "Wallmaster Shuffle does not support Master Quest dungeons yet." : "") &&
                             refusal.log == (refused ? "Wallmaster Shuffle currently supports vanilla dungeons only" : ""),
