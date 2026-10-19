@@ -103,7 +103,8 @@ int main() {
     }
   };
   const std::string ship =
-      "Turn off the other OoT entrance shuffles to use Wallmaster Shuffle.";
+      "Turn off the other OoT entrance shuffles, and Warp Songs and Owl Drops "
+      "on the Warps & travel page, to use Wallmaster Shuffle.";
   for (const char *key : kShipEntranceSettings) {
     settings[key] = 1;
     check(ship, "Wallmaster and One-Way shuffles need Ship's own entrance "

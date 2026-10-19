@@ -50,8 +50,11 @@ struct EntranceRefusal {
         return player == other.player && log == other.log;
     }
 };
+// The menu shows two of kShipEntranceSettings, Warp Songs and Owl Drops, on Warps & travel (ComboNavigation.h), not
+// beside Wallmaster Shuffle under Entrances, so the sentence names them and their page.
 inline constexpr const char* kWallmasterShipEntrancesText =
-    "Turn off the other OoT entrance shuffles to use Wallmaster Shuffle.";
+    "Turn off the other OoT entrance shuffles, and Warp Songs and Owl Drops on the Warps & travel page, to use "
+    "Wallmaster Shuffle.";
 inline constexpr const char* kWallmasterMasterQuestText =
     "Wallmaster Shuffle does not support Master Quest dungeons yet.";
 inline constexpr const char* kWallmasterDungeonDataText = "Wallmaster Shuffle cannot read the OoT dungeon data.";

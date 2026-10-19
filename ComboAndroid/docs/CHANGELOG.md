@@ -24,7 +24,7 @@ Planned as 0.4.12. Nothing in this section is in a release yet.
   - Each seed made with it gets an extra file ending in `.entrances.txt` next to its spoiler in the `ComboShip/Randomizer` folder. It lists where each Wallmaster leads, in OoTMM's format.
 - **Wallmaster Shuffle works only in the combined randomizer, and only with vanilla dungeons.** While something conflicts, Own Game is greyed out and a sentence under the row says what to change. If Own Game is already set, the Generate button is disabled and shows the same sentence. The sentences are:
   - "Wallmaster Shuffle works only in combined mode." (Home > Game mode is OoT randomizer, MM randomizer, vanilla OoT or vanilla MM. Preparing a vanilla game ignores the option.)
-  - "Turn off the other OoT entrance shuffles to use Wallmaster Shuffle." (Ship's own OoT entrance shuffles, in the same Entrances section.) While Wallmaster Shuffle is on, those rows are greyed out instead, with "Turn off Wallmaster Shuffle to use this option."
+  - "Turn off the other OoT entrance shuffles, and Warp Songs and Owl Drops on the Warps & travel page, to use Wallmaster Shuffle." (Ship's own OoT entrance shuffles: the OoT rows in the same Entrances section, and Warp Songs and Owl Drops under Randomizer > Warps & travel > Destination shuffles (OoT).) While Wallmaster Shuffle is on, those rows are greyed out instead, with "Turn off Wallmaster Shuffle to use this option."
   - "Turn off Enemy Randomizer to use Wallmaster Shuffle."
   - "Set Logic to Glitchless to use Wallmaster Shuffle." (Only an old or edited settings profile can show this.)
   - "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster Shuffle." and "Turn off "Play warp songs across games" to use Wallmaster Shuffle."

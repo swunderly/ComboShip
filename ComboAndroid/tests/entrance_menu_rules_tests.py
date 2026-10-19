@@ -1,6 +1,7 @@
 """Compile the shared entrance availability/draft boundary in DEV and SHIPPING."""
 from pathlib import Path
 import argparse
+import re
 import subprocess
 import hostcxx
 p = argparse.ArgumentParser()
@@ -65,3 +66,27 @@ named = {
 }
 for path, row in named.items():
     assert hostcxx.contains((a.source/path).read_text(encoding='utf-8'), row), (path, row)
+# Ship's OoT entrance shuffles (reason 2). The menu moves some of them off the Entrances heading the Wallmaster row is
+# under (ComboNavigation.h MenuGroupRoute), so the sentence names each moved row by the label the player sees, and its
+# page.
+availability = (a.source/'combo/rando/entrances/EntranceAvailability.h').read_text(encoding='utf-8')
+listed = availability[hostcxx.find(availability, 'inline constexpr const char* kShipEntranceSettings[] = {'):]
+ship_keys = re.findall(r'"gRandoSettings\.(\w+)"', listed[:listed.index('};')])
+assert len(ship_keys) == 9, ship_keys
+declaration = availability[hostcxx.find(availability, 'inline constexpr const char* kWallmasterShipEntrancesText ='):]
+sentence = ''.join(re.findall(r'"([^"]*)"', declaration[:declaration.index(';')]))
+navigation = (a.source/'combo/gui/ComboNavigation.h').read_text(encoding='utf-8')
+oot_logic = navigation[hostcxx.find(navigation, 'if (oot && section == "Randomizer" && page == "Logic/Access") {'):]
+oot_logic = oot_logic[:oot_logic.index('\n    }\n')]
+routes = re.findall(r'if \(([^)]*)\)\s*return \{ "randomizer", "([^"]+)" \};', oot_logic)
+moved = {key: page for condition, page in routes for key in re.findall(r'key == "gRandoSettings\.(\w+)"', condition)}
+native = (a.source/'soh/soh/Enhancements/randomizer/settings.cpp').read_text(encoding='utf-8')
+named_rows = []
+for key in ship_keys:
+    option = r'OPT_\w+\(RSK_\w+, "([^"]+)",[^\n]*CVAR_RANDOMIZER_SETTING\("' + key + r'"\)'
+    label = re.search(option, native).group(1)
+    assert not re.search(r'\{ "gRandoSettings\.' + key + r'", "', profiles), f'{key} is renamed on the profile page'
+    if key in moved:
+        assert label in sentence and moved[key] in sentence, (key, label, moved[key], sentence)
+        named_rows.append(label)
+assert sorted(named_rows) == ['Owl Drops', 'Warp Songs'], named_rows
