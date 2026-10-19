@@ -547,8 +547,10 @@ if(COMBO_SOURCE_DIR)
         --exe $<TARGET_FILE:mq_runtime_plan_tests> "--archive=${COMBO_OOT_ARCHIVE}")
     set_tests_properties(mq_runtime_on_user_vanilla_oot_archive PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
     # The engine glue: overrides only for the top-level header, the scene and room hooks before their commands,
-    # the Actor_Spawn guard, and no cached resource written.
-    combo_harness_test(mq_runtime_wired_into_scene_commands mq_runtime_wiring_tests.py)
+    # the real ComboMqRuntime.cpp's lists, buffers and collision copies through SoH's scene and room loads, the
+    # Actor_Spawn guard, and no cached resource written.
+    combo_harness_test(mq_runtime_wired_into_scene_commands mq_runtime_wiring_tests.py
+        --blobs "${CMAKE_BINARY_DIR}/generated/combo_mq")
     # OoTMM's MQ minimap and pause-map marks (combo/mq/MqMaps.h) in SoH's own map-mark data files: the bins exactly,
     # drawn like SoH's MQ tables but for OoTMM's two Fire Temple chests, and picked only for a bundled-MQ dungeon.
     combo_harness_test(mq_map_marks_from_bins_for_bundled_mq mq_map_marks_tests.py
