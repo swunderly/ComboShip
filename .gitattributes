@@ -19,3 +19,5 @@ combo/rando/entrances/OotWallmasterVanillaNames.h text eol=lf
 soh/soh/Enhancements/randomizer/combo_oot_wallmaster_edges.inc text eol=lf
 tools/ootmm/oot-wallmaster-vanilla-overlay.json text eol=lf
 tools/ootmm/oot-wallmaster-spawn-source.json text eol=lf
+# Release fixtures that manifest.json hashes: stored and checked out byte for byte.
+ComboAndroid/tests/fixtures/wallmasters-vanilla-v1/** -text
