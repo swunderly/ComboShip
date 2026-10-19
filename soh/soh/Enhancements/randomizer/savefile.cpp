@@ -679,6 +679,14 @@ extern "C" void Randomizer_InitSaveFile() {
         gSaveContext.sceneFlags[SCENE_WATER_TEMPLE].swch |= (1 << 0x15);
     }
 
+#ifdef COMBO_BUILD
+    // ComboShip: OoTMM sets MQ Shadow's switch 7 on a new save (src/oot/save.c:136-139): the room-0 eye switch
+    // (Obj_Switch 0x712) that shows that room's clear blocks (Bg_Gnd_Darkmeiro 0x701). Bundled MQ only.
+    if (ResourceMgr_SceneUsesBundledMq(SCENE_SHADOW_TEMPLE)) {
+        gSaveContext.sceneFlags[SCENE_SHADOW_TEMPLE].swch |= (1 << 7);
+    }
+#endif
+
     int doorOfTime = Randomizer_GetSettingValue(RSK_DOOR_OF_TIME);
     switch (doorOfTime) {
         case RO_DOOROFTIME_OPEN:

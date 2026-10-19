@@ -6,6 +6,8 @@ from a real oot-mq.o2r (archive) and a vanilla one:
 - MQ Water's locked doors: OoTMM's bins put transition 0x16 on switch 2 (scripts/make_mq.ts:226-229), so a bundled seed
   counts {2, 21} as spent keys (dungeon.cpp GetDoorFlags), and FixWaterMQLock.cpp, which moves the archive's door from
   switch 3 to 4, leaves a bundled door alone.
+- MQ Shadow's switch 7 on a new save (src/oot/save.c:136-139): Randomizer_InitSaveFile sets it for a bundled MQ
+  Shadow, after Sram_InitSave has made the file a randomizer file, so the resolver reads the seed.
 """
 from pathlib import Path
 import argparse
@@ -54,6 +56,12 @@ def statement(text, needle):
     """The whole line holding `needle`, through the next ';'."""
     start = text.rindex('\n', 0, hostcxx.find(text, needle)) + 1
     return text[start:text.index(';', start) + 1]
+
+
+def block(text, needle):
+    """The whole line holding `needle` (in an `if (...) {` line), through its closing brace."""
+    start = text.rindex('\n', 0, hostcxx.find(text, needle)) + 1
+    return function(text[start:], text[start:text.index('\n', start)].strip())
 
 
 # --- MQ Water's locked doors -----------------------------------------------------------------------------------------
@@ -150,7 +158,47 @@ for key, prefix in (('WATER_TEMPLE', 'WATER'), ('FIRE_TEMPLE', 'FIRE')):
     for index, flags in enumerate(rows[key]):
         doors = doors.replace(f'@{prefix}{index}@', flags)
 
-PROGRAMS = {'doors': doors}
+# --- A new save's MQ flags (savefile.cpp Randomizer_InitSaveFile) ---------------------------------------------------
+savefile = read(rando / 'savefile.cpp')
+init_save = function(savefile, 'extern "C" void Randomizer_InitSaveFile()')
+shadow = block(init_save, 'ResourceMgr_SceneUsesBundledMq(SCENE_SHADOW_TEMPLE)')
+# The resolver sees the seed's MQ choice there: Sram_InitSave makes the file a randomizer file first (IS_RANDO).
+sram = read(repo / 'soh/src/code/z_sram.c')
+check(re.search(r'gSaveContext\.ship\.quest\.id = QUEST_RANDOMIZER;\s*Randomizer_InitSaveFile\(\);', sram),
+      'z_sram.c: Sram_InitSave must set the randomizer quest just before Randomizer_InitSaveFile')
+
+new_save = r'''#include <cstdint>
+#include <cstdio>
+#define COMBO_BUILD 1
+using s16 = int16_t; using u32 = uint32_t;
+enum SceneID { SCENE_FIRE_TEMPLE = 4, SCENE_WATER_TEMPLE = 5, SCENE_SHADOW_TEMPLE = 7 };
+struct SavedSceneFlags { u32 chest, swch, clear, collect; };
+struct { SavedSceneFlags sceneFlags[16]; } gSaveContext;
+u32 gBundledScenes = 0; // bit per scene: ResourceMgr_SceneUsesBundledMq
+extern "C" uint32_t ResourceMgr_SceneUsesBundledMq(s16 scene) { return (gBundledScenes >> scene) & 1; }
+void ShadowSwitch() {
+''' + shadow + r'''
+}
+#define REQUIRE(x) do { if (!(x)) { fprintf(stderr, "failed: %s at line %d\n", #x, __LINE__); return 1; } } while (0)
+int main() {
+    // OoTMM's switch 7 for a bundled MQ Shadow (save.c:136-139), on top of what the save already has.
+    gSaveContext.sceneFlags[SCENE_SHADOW_TEMPLE].swch = 1u << 21;
+    gBundledScenes = 1u << SCENE_SHADOW_TEMPLE;
+    ShadowSwitch();
+    REQUIRE(gSaveContext.sceneFlags[SCENE_SHADOW_TEMPLE].swch == ((1u << 21) | (1u << 7)));
+    // Vanilla or archive MQ Shadow (another dungeon bundled) leaves the save alone.
+    gSaveContext.sceneFlags[SCENE_SHADOW_TEMPLE].swch = 0;
+    gBundledScenes = 1u << SCENE_WATER_TEMPLE;
+    ShadowSwitch();
+    gBundledScenes = 0;
+    ShadowSwitch();
+    REQUIRE(gSaveContext.sceneFlags[SCENE_SHADOW_TEMPLE].swch == 0 && gSaveContext.sceneFlags[SCENE_WATER_TEMPLE].swch == 0);
+    puts("new save: bundled MQ Shadow starts with switch 7, archive MQ and vanilla without");
+    return 0;
+}
+'''
+
+PROGRAMS = {'doors': doors, 'new_save': new_save}
 for name, code in PROGRAMS.items():
     source = work / f'mq_gameplay_{name}.cpp'
     source.write_text(code, encoding='utf-8')
