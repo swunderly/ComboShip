@@ -16,6 +16,8 @@ from a real oot-mq.o2r (archive) and a vanilla one:
   by physical scrub only MQ Dodongo's Cavern's shield and potion scrubs differ (OoTMM's pool labels).
 - Ruto (src/oot/play/play.c:65-86): OoTMM sets her top-floor flag on Jabu-Jabu entry only when Jabu-Jabu is not MQ;
   Combo never sets it outside En_Ru1, which matches the MQ case.
+- Ice Cavern's alternate setup 4, gone in MQ (src/oot/mq.c:328-339): the Serenade check is its flag, which En_Xc sets
+  from the main room list whether or not its cutscene (played in place, skipped in the randomizer) runs.
 - MQ Spirit's room-6 silver blocks (src/oot/actors/Obj/Obj_Oshihiki.c:5-13): for a child, Obj_Oshihiki's Init reads
   switch 0x09 as unset in a bundled MQ Spirit, and SoH's kill hook (hook_handlers.cpp) runs only for archive MQ. The
   three blocks come from the bins.
@@ -466,6 +468,36 @@ check(ruto_setters == {'soh/src/overlays/actors/ovl_En_Ru1/z_en_ru1.c': 1},
       f'Ruto\'s top-floor flag (INFTABLE_147) is set by {ruto_setters}; OoTMM sets it on entry only when Jabu-Jabu is '
       'not MQ (play.c:76)')
 print('ruto: only En_Ru1 sets the top-floor flag, so MQ Jabu-Jabu places Ruto as OoTMM does')
+
+# --- Ice Cavern's alternate setup 4 and the Serenade check ----------------------------------------------------------
+# OoTMM turns MQ Ice Cavern's alternate-header command (0x18) into its path list, so the scene's only alternate setup,
+# 4 (the Serenade cutscene header), is gone in MQ (src/oot/mq.c:328-339); ComboMqRuntime does the same (U4,
+# mq_runtime_wired_into_scene_commands loads it on layer 4). Nothing in the Serenade check needs that setup:
+# - the check is the Serenade flag, collected from any quest (ShuffleSongs.cpp, RCQUEST_BOTH, EventChkInf);
+# - En_Xc sets that flag in the main room list (mq_bins_match_soh_location_door_and_silver_tables finds the Serenade
+#   Sheik beside chest 0x02), whether or not its cutscene plays, and plays the cutscene in place from the scene file
+#   (Cutscene_SetSegment), never through a scene setup;
+# - the randomizer skips that cutscene anyway (timesaver_hook_handlers.cpp).
+songs = read(rando / 'ShuffleSongs.cpp')
+check(re.search(r'locationTable\[RC_SHEIK_IN_ICE_CAVERN\]\s*=\s*Location::Base\(RC_SHEIK_IN_ICE_CAVERN,\s*RCQUEST_BOTH,'
+                r'[^;]*SpoilerCollectionCheck::EventChkInf\(EVENTCHKINF_LEARNED_SERENADE_OF_WATER\)', songs),
+      'ShuffleSongs.cpp: Sheik in Ice Cavern must be the Serenade flag in either quest')
+serenade_cs = function(read(repo / 'soh/src/overlays/actors/ovl_En_Xc/z_en_xc.c'), 's32 EnXc_SerenadeCS(EnXc* this, ')
+cutscene_only = ''
+while hostcxx.contains(serenade_cs, 'if (GameInteractor_Should(VB_PLAY_SERENADE_OF_WATER_CS, true)) {'):
+    cut = block(serenade_cs, 'if (GameInteractor_Should(VB_PLAY_SERENADE_OF_WATER_CS, true)) {')
+    cutscene_only += cut
+    serenade_cs = serenade_cs.replace(cut, '')
+eligible = block(serenade_cs, 'VB_BE_ELIGIBLE_FOR_SERENADE_OF_WATER')
+check('Flags_SetEventChkInf(EVENTCHKINF_LEARNED_SERENADE_OF_WATER);' in eligible and
+      'Flags_SetEventChkInf' not in cutscene_only and 'Cutscene_SetSegment(play, &gIceCavernSerenadeCs);' in cutscene_only,
+      'z_en_xc.c: EnXc_SerenadeCS must set the Serenade flag outside its cutscene branches')
+timesavers = read(repo / 'soh/soh/Enhancements/TimeSavers/timesaver_hook_handlers.cpp')
+song_cases = timesavers[hostcxx.find(timesavers, 'case VB_PLAY_SERENADE_OF_WATER_CS:'):]
+song_cases = song_cases[:song_cases.index('break;')]
+check(hostcxx.contains(song_cases, '|| IS_RANDO) { *should = false;'),
+      'timesaver_hook_handlers.cpp: the randomizer must skip the Serenade cutscene')
+print('ice cavern: the Serenade check is its flag, set from the main room list without setup 4')
 
 # --- MQ Spirit's silver blocks in room 6 ---------------------------------------------------------------------------
 # OoTMM patches the switch read in Obj_Oshihiki's Init (0x80a4f574, the call after ObjOshihiki_CheckType in the
