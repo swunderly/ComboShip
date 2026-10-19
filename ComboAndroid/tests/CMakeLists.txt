@@ -516,6 +516,15 @@ if(COMBO_SOURCE_DIR)
     # (COMBO_OOT_ARCHIVE, or an oot.o2r under a local-roms folder beside the checkout); reported as skipped without it.
     combo_python_test(mq_bins_fit_user_vanilla_oot_archive mq_local_archive_tests.py "--archive=${COMBO_OOT_ARCHIVE}")
     set_tests_properties(mq_bins_fit_user_vanilla_oot_archive PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+    # Which MQ mode each scene plays in (combo/mq/MqMode.h): the whole truth table against SoH's own rule.
+    add_executable(mq_mode_resolver_tests mq_mode_resolver_tests.cpp)
+    target_include_directories(mq_mode_resolver_tests PRIVATE "${COMBO_SOURCE_DIR}" "${COMBO_REPO_DIR}/soh/soh")
+    if(MSVC)
+        target_compile_options(mq_mode_resolver_tests PRIVATE /W4 /WX /UNDEBUG)
+    else()
+        target_compile_options(mq_mode_resolver_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    endif()
+    add_test(NAME mq_mode_resolver_truth_table COMMAND mq_mode_resolver_tests)
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
