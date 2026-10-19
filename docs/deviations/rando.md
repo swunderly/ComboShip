@@ -2360,6 +2360,7 @@ entrance override to an already resolved arrival.
 ShadowTag, an unmapped source, a missing route, MQ context, Enemy Randomizer or Ship entrance shuffle
 retain native respawn and log the fallback. Only a committed, matching vanilla OoT Wallmaster layout
 permits Wallmasters to spawn in cleared rooms; assumptions and private MM-only profiles do not.
+Shadow Tag's Wallmaster (`WMT_SHADOWTAG`) keeps the native cleared-room rule, as it keeps its respawn.
 The existing soul and object-availability checks still run before this exception. These are host and
 native-compilation proofs; they do not establish a successful gameplay capture or authorize release.
 The 2026-10-19 section below makes this capability public for 0.4.12.

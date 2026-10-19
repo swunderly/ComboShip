@@ -6,7 +6,7 @@ struct Actor;
 extern "C" {
 #endif
 int Combo_OOTWallmasterTransport(struct PlayState* play, struct Actor* actor);
-int Combo_OOTWallmasterSpawnInClearedRoom(struct PlayState* play, int actorId);
+int Combo_OOTWallmasterSpawnInClearedRoom(struct PlayState* play, int actorId, int params);
 #ifdef __cplusplus
 }
 #endif

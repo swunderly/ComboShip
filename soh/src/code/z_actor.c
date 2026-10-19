@@ -3381,7 +3381,7 @@ Actor* Actor_Spawn(ActorContext* actorCtx, PlayState* play, s16 actorId, f32 pos
 
     if ((objBankIndex < 0) || ((dbEntry->category == ACTORCAT_ENEMY) && Flags_GetClear(play, play->roomCtx.curRoom.num)
 #ifdef COMBO_BUILD
-                               && !Combo_OOTWallmasterSpawnInClearedRoom(play, actorId)
+                               && !Combo_OOTWallmasterSpawnInClearedRoom(play, actorId, params)
 #endif
                                    )) {
         // "No data bank!! <data bank＝%d> (profilep->bank=%d)"

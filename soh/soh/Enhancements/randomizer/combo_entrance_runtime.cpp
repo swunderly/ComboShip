@@ -75,7 +75,9 @@ extern "C" int Combo_OOTWallmasterTransport(PlayState* play, Actor* actor) {
     play->transitionType = TRANS_TYPE_FADE_BLACK;
     return 1;
 }
-extern "C" int Combo_OOTWallmasterSpawnInClearedRoom(PlayState* play, int actorId) {
-    return actorId == ACTOR_EN_WALLMAS && RuntimeWallmastersActive(play);
+// Shadow Tag's Wallmaster (WMT_SHADOWTAG) is never shuffled, as in the transport above, so it keeps the native
+// cleared-room rule too.
+extern "C" int Combo_OOTWallmasterSpawnInClearedRoom(PlayState* play, int actorId, int params) {
+    return actorId == ACTOR_EN_WALLMAS && params != WMT_SHADOWTAG && RuntimeWallmastersActive(play);
 }
 #endif

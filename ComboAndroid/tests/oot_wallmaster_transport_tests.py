@@ -114,7 +114,7 @@ void NativeCapture(EnWallmas* self, PlayState* play) {
 struct ActorDB { int category; };
 int clearFlag = 0;
 int Flags_GetClear(PlayState*, int) { return clearFlag; }
-bool SpawnRejected(PlayState* play, int actorId, int category, int objBankIndex) {
+bool SpawnRejected(PlayState* play, int actorId, int category, int objBankIndex, int params = 0) {
     ActorDB db{category}; auto* dbEntry = &db;
     return
 ''' + condition + r''';
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
         Rando::Context::GetInstance()->shuffle = disabled == 2;
         Rando::ComboEntrances::quests[0] = disabled == 3;
         assert(!Combo_OOTWallmasterTransport(&play, &actor.actor)); CheckUnchanged(play);
-        assert(!Combo_OOTWallmasterSpawnInClearedRoom(&play, ACTOR_EN_WALLMAS));
+        assert(!Combo_OOTWallmasterSpawnInClearedRoom(&play, ACTOR_EN_WALLMAS, 0));
     }
     isRando = true; enemyRandomizer = 0; Rando::Context::GetInstance()->shuffle = false;
     Rando::ComboEntrances::quests = {};
@@ -186,12 +186,15 @@ int main(int argc, char** argv) {
     assert(!Combo_OOTWallmasterTransport(&play, &actor.actor)); CheckUnchanged(play);
     assert(!Combo_OOTWallmasterTransport(nullptr, &actor.actor));
     assert(!Combo_OOTWallmasterTransport(&play, nullptr));
+    // Every Wallmaster but Shadow Tag's (params 3, ShadowTag.cpp), which is never shuffled, spawns in a cleared room.
     for (int object : {-1, 0}) for (int clear : {0, 1}) for (int category : {0, ACTORCAT_ENEMY})
-        for (int id : {int(ACTOR_EN_WALLMAS), int(ACTOR_EN_TEST), int(ACTOR_EN_GOMA)}) {
-            clearFlag = clear;
-            const bool expected = object < 0 || (category == ACTORCAT_ENEMY && clear && id != ACTOR_EN_WALLMAS);
-            assert(SpawnRejected(&play, id, category, object) == expected);
-        }
+        for (int id : {int(ACTOR_EN_WALLMAS), int(ACTOR_EN_TEST), int(ACTOR_EN_GOMA)})
+            for (int params : {0, 1, 2, 3}) {
+                clearFlag = clear;
+                const bool shuffled = id == ACTOR_EN_WALLMAS && params != WMT_SHADOWTAG;
+                const bool expected = object < 0 || (category == ACTORCAT_ENEMY && clear && !shuffled);
+                assert(SpawnRejected(&play, id, category, object, params) == expected);
+            }
     CE::ActiveOotUnified().clear(); clearFlag = 1;
     assert(SpawnRejected(&play, ACTOR_EN_WALLMAS, ACTORCAT_ENEMY, 0));
     // Assumptions alone must never enable live transport or the spawn exception.
