@@ -153,6 +153,11 @@ set_tests_properties(entrance_pinned_reference_and_exporters PROPERTIES SKIP_REG
 combo_python_test(entrance_temple_pinned_lemmas entrance_temple_reference_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_temple_reference")
 set_tests_properties(entrance_temple_pinned_lemmas PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+# Lemma S1: with no starting song, OoTMM's song exits are false in validateAgeTemple, so the cross-game song options
+# cannot change the Temple probe's answer.
+combo_python_test(entrance_temple_pinned_song_lemma entrance_temple_song_lemma_tests.py
+    --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_temple_song_lemma")
+set_tests_properties(entrance_temple_pinned_song_lemma PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 combo_python_test(entrance_m1_pinned_contract_fixture entrance_m1_contract_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_m1_contract")
 set_tests_properties(entrance_m1_pinned_contract_fixture PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
