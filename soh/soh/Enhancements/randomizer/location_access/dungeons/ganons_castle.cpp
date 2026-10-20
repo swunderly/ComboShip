@@ -714,7 +714,14 @@ void RegionTable_Init_GanonsCastle() {
         ENTRANCE(RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH, AnyAgeTime([]{return logic->CanUse(RG_BOMBCHU_5);})),
     });
 
-    areaTable[RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH] = Region("Ganon's Castle MQ Spirit Trial After Switch", SCENE_INSIDE_GANONS_CASTLE, {}, {
+    areaTable[RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH] = Region("Ganon's Castle MQ Spirit Trial After Switch", SCENE_INSIDE_GANONS_CASTLE, {
+#ifdef COMBO_BUILD
+        //Events
+        //OoTMM ganon_castle_mq.yml:275-276 (Sun Room Sun Side); only the MQ Spirit Wallmaster edge reads them
+        EVENT_ACCESS(LOGIC_GANON_MQ_SPIRIT_ZOMBIES,     logic->CanUse(RG_SUNS_SONG) || logic->CanUseSword() || logic->CanUse(RG_DINS_FIRE) || logic->CanUse(RG_MEGATON_HAMMER)),
+        EVENT_ACCESS(LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS, logic->Get(LOGIC_GANON_MQ_SPIRIT_ZOMBIES) && (logic->SunlightArrows() || (logic->CanUse(RG_FIRE_ARROWS) && logic->CanUse(RG_MIRROR_SHIELD)))),
+#endif
+    }, {
         //Locations
         LOCATION(RC_GANONS_CASTLE_MQ_SPIRIT_TRIAL_INVISIBLE_CHEST,         (ctx->GetTrickOption(RT_LENS_GANON_MQ) || logic->CanUse(RG_LENS_OF_TRUTH)) && logic->HasItem(RG_OPEN_CHEST)),
         //better names for these would be nice.

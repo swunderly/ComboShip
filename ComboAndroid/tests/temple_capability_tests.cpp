@@ -78,8 +78,7 @@ int FakeQuery(const char *json, int (*)(void), uint8_t *ages) {
          j["assumedInstalled"] == true && j["assumed"].empty());
   std::set<std::string_view> bound(kOotTempleCandidateRows.begin(),
                                    kOotTempleCandidateRows.end());
-  bound.insert(kOotVanillaWallmasterSources.begin(),
-               kOotVanillaWallmasterSources.end());
+  bound.insert(kOotWallmasterSources.begin(), kOotWallmasterSources.end());
   bound.insert(kOotWallmasterArrivalRows.begin(),
                kOotWallmasterArrivalRows.end());
   for (const auto &row : j["deleted"])
@@ -217,8 +216,8 @@ void UnsupportedBeforeAnyDraw() {
 }
 
 // Own-game alias WALLMASTERS: admitted when every OoT row a candidate can
-// touch is bound. Vanilla OoT sources now pass; MQ and one-way arrivals stay
-// deferred.
+// touch is bound. Every OoT source now passes, the four MQ-only ones too (U11);
+// one-way arrivals stay deferred.
 void WallmasterRows() {
   const std::set<std::string> mmSources{
       "MM_WALLMASTER_BTW_ENTRANCE", "MM_WALLMASTER_BTW_EXIT",
@@ -250,8 +249,8 @@ void WallmasterRows() {
           assert(Find(route.first)->type != Type::Wallmaster ||
                  Find(route.first)->game == Game::Mm);
       }
-  // Check each OoT source independently: vanilla alone passes. MQ sources and
-  // the unimplemented Wallmaster-to-one-way arrivals reject before any draw.
+  // Check each OoT source independently: alone it passes, vanilla or MQ-only.
+  // The unimplemented Wallmaster-to-one-way arrivals reject before any draw.
   size_t rows = 0;
   for (const auto &r : kRegistry) {
     if (r.game != Game::Oot || r.type != Type::Wallmaster)
@@ -264,11 +263,10 @@ void WallmasterRows() {
     assert(ResolvePools(alone, b.areaExists).pools.at(0).src.contains(r.name));
     for (const auto &s : {alone, withOneWays}) {
       draws = queries = prepares = 0;
-      const bool vanilla =
-          std::find(kOotVanillaWallmasterSources.begin(),
-                    kOotVanillaWallmasterSources.end(),
-                    r.name) != kOotVanillaWallmasterSources.end();
-      if (vanilla && s.erOneWays == Mode::None) {
+      assert(std::find(kOotWallmasterSources.begin(),
+                       kOotWallmasterSources.end(),
+                       r.name) != kOotWallmasterSources.end());
+      if (s.erOneWays == Mode::None) {
         const auto layout = Gated(s, TempleFacts{}, b);
         assert(layout.contains(r.name) && draws > 0 && queries > 0 &&
                prepares == 1);
@@ -280,12 +278,8 @@ void WallmasterRows() {
       } catch (const TempleProbeUnsupported &e) {
         why = e.what();
       }
-      if (vanilla)
-        assert(why.starts_with("Temple probe: OoT Wallmaster arrival ") &&
-               why.ends_with(" is deferred"));
-      else
-        assert(why == "Temple probe: OoT row " + std::string(r.name) +
-                          " has no audited native binding");
+      assert(why.starts_with("Temple probe: OoT Wallmaster arrival ") &&
+             why.ends_with(" is deferred"));
       assert(draws == 0 && queries == 0 && prepares == 0);
     }
   }

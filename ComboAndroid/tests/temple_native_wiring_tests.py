@@ -5,8 +5,8 @@ caller's module lookup only. Compiled harness: the fakes are defined with the de
 from TempleProbe.h, so the compiler checks that TempleProbeFns has the exports' exact types; then,
 with the real Shuffler, registry, gate and adapter, it checks export resolution, the gate and the
 entry points before Prepare and before any draw, that logic none, games=Mm and a run with no pool to
-place never gate, prepare or query, that MM-only Wallmasters run while any OoT Wallmaster row is
-refused, the Prepare and Query code mapping without retry, Release on success, exception and
+place never gate, prepare or query, that MM-only Wallmasters run while an OoT Wallmaster arrival at
+an unbound one-way row is refused, the Prepare and Query code mapping without retry, Release on success, exception and
 cancellation, that a query before Prepare or after Release is refused, and the cancellation poll.
 The native probe itself is covered by the temple_probe_* harnesses; nothing here runs the engine.
 """
@@ -319,10 +319,14 @@ void MmOnlyWallmasters(const TempleProbeFns& fns) {
                 routes += Find(src)->game == Game::Mm && Find(dst)->game == Game::Mm;
         assert(routes == 4 && layout.size() == 4 + 2);
     }
-    // Any OoT Wallmaster row: the gate refuses it before Prepare and before any draw.
+    // Every OoT Wallmaster source is bound now, the MQ-only ones too (U11). An OoT Wallmaster arrival at a one-way
+    // row is not: the gate refuses it before Prepare and before any draw.
     Reset();
-    const auto why = Unsupported([&] { Generate(fns, MmWallmasters(), {}, MakeBindings(false)); });
-    assert(why.starts_with("Temple probe: OoT row OOT_WALLMASTER_") && why.ends_with(" has no audited native binding"));
+    auto withOneWays = MmWallmasters();
+    withOneWays.erOneWays = Mode::OwnGame;
+    withOneWays.erOneWaysMajor = true;
+    const auto why = Unsupported([&] { Generate(fns, withOneWays, {}, MakeBindings(false)); });
+    assert(why.starts_with("Temple probe: OoT Wallmaster arrival ") && why.ends_with(" is deferred"));
     assert(fake.prepares == 0 && fake.queries == 0 && fake.releases == 0 && draws == 0);
 }
 

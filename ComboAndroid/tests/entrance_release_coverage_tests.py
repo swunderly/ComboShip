@@ -62,14 +62,15 @@ def combo_build(text):
 
 # OoT logic: the audited Wallmaster edges the overlay and the Temple probe build from.
 overlay = read(RANDO + 'combo_entrance_overlay.cpp')
-for needle in ('const std::array<SourceEdge, 11> edges = { {\n#include "combo_oot_wallmaster_edges.inc"',
+for needle in ('const std::array<SourceEdge, 22> edges = { {\n#include "combo_oot_wallmaster_edges.inc"',
                'const std::array<Arrival, 11> arrivals = { {\n#include "combo_oot_wallmaster_arrivals.inc"',
-               'for (const auto& edge : edges) if (edge.source == source) {',
+               'for (const auto& edge : edges) '
+               'if (edge.source == source && CE::OotWallmasterEdgeInQuests(edge.auditId, quests)) {',
                'Entrance exit(arrival->region, edge.condition, std::string(edge.auditId), false);'):
     assert hostcxx.contains(overlay, needle), needle
 edges_inc = read(RANDO + 'combo_oot_wallmaster_edges.inc')
 edges = re.findall(r'^\{ "([^"]+)", "(OOT_WALLMASTER_\w+)", (RR_\w+), \[\] \{$', edges_inc, re.M)
-assert len(edges) == edges_inc.count('\n{ "') == 11, edges
+assert len(edges) == edges_inc.count('\n{ "') == 22, edges
 arrivals = re.findall(r'^\{ "OOT_\w+", 0x[0-9a-f]+u, ENTR_\w+, (RR_\w+) \},$', read(RANDO + 'combo_oot_wallmaster_arrivals.inc'),
                       re.M)
 assert len(arrivals) == 11

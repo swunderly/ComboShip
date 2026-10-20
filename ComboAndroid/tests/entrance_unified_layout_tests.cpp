@@ -611,7 +611,8 @@ void CheckOneWays(const Json &fixture) {
 
 // This build. A release build admits only the vanilla Wallmaster contract
 // (P1-05): it validates a vanilla layout and refuses every other layout after
-// decoding it. A dev build adds the MM tranche and accepts dev layouts.
+// decoding it. A dev build adds the MM tranche and the staged Master Quest
+// contract (U11), and accepts dev layouts.
 void CheckBuildGuard(const Json &good) {
   const auto caps = ActiveCapabilities();
   Json seed = {{"fileType", kEntranceSeedFileType},
@@ -621,11 +622,18 @@ void CheckBuildGuard(const Json &good) {
   const std::string before = UnsupportedComboSeedFormat().what();
 #ifdef COMBO_ENTRANCE_DEV
   assert(caps.devBuild && caps.Active(kMmTrancheCapability) &&
-         caps.WithoutDevOnly() == caps.Only(kVanillaWallmasterCapability));
+         caps.WithoutDevOnly() == (caps.Only(kVanillaWallmasterCapability) |
+                                   caps.Only(kQuestsWallmasterCapability)));
   auto vanilla = good;
   vanilla["requires"] = {std::string(kVanillaWallmasterCapability)};
   vanilla["devBuild"] = true;
   seed["entranceLayout"] = vanilla;
+  RequireSupportedSeedDocument(seed, caps);
+  // A Master Quest dungeon takes the quests id, which a dev build has.
+  auto quests = vanilla;
+  quests["requires"] = {std::string(kQuestsWallmasterCapability)};
+  quests["oot"]["mq"]["DT"] = true;
+  seed["entranceLayout"] = quests;
   RequireSupportedSeedDocument(seed, caps);
   auto tranche = good;
   tranche["requires"] = {std::string(kMmTrancheCapability)};
@@ -684,11 +692,18 @@ void CheckBuildGuard(const Json &good) {
   std::vector<std::pair<Json, std::string>> refused;
   for (const auto *id :
        {"wallmasters-own-game-v1", "one-ways-own-game-v1",
-        "wallmasters-with-one-ways-v1", "wallmasters-own-game-mm-tranche"}) {
+        "wallmasters-with-one-ways-v1", "wallmasters-own-game-mm-tranche",
+        "wallmasters-own-game-quests-v1"}) {
     auto other = vanilla;
     other["requires"] = {id};
     refused.emplace_back(other, "which this build does not have");
   }
+  // The staged Master Quest contract (U11): a seed with a Master Quest dungeon.
+  auto quests = layout;
+  quests.required = {std::string(kQuestsWallmasterCapability)};
+  quests.ootMq[OotMqIndex("DT")] = true;
+  refused.emplace_back(EncodeEntranceLayout(quests),
+                       "which this build does not have");
   auto dev = vanilla;
   dev["devBuild"] = true;
   refused.emplace_back(dev, "comes from a dev build");

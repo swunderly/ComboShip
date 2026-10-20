@@ -264,12 +264,12 @@
         },
         {
           "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
-          "line": 721,
+          "line": 728,
           "text": "LOCATION(RC_GANONS_CASTLE_MQ_SPIRIT_TRIAL_SUN_FRONT_LEFT_CHEST,    ((logic->CanUse(RG_FIRE_ARROWS) && logic->C"
         },
         {
           "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
-          "line": 729,
+          "line": 736,
           "text": "ENTRANCE(RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_FINAL_ROOM,    AnyAgeTime([]{return (logic->CanUse(RG_FIRE_ARROWS) &"
         }
       ],
@@ -2396,7 +2396,7 @@
       "source": "OOT_WALLMASTER_GANON_SPIRIT",
       "from": "OOT Ganon Castle Spirit Trial Sun Room Sun Side",
       "expression": "soul_wallmaster && event(GANON_MQ_SPIRIT_ENDING_SUNS)",
-      "status": "needs-event",
+      "status": "ready",
       "anchor": {
         "region": "RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH",
         "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
@@ -2409,7 +2409,7 @@
       "ingress": {
         "relation": "equal",
         "pinned": "Sun Room Entrance Side -> Sun Side: event(GANON_MQ_SPIRIT_CRYSTAL) (bombchu); Ending Room -> Sun Side: true.",
-        "native": "MQ_SPIRIT_TRIAL_BEFORE_SWITCH -> AFTER_SWITCH: bombchu (:714); FINAL_ROOM -> AFTER_SWITCH: true (:742)."
+        "native": "MQ_SPIRIT_TRIAL_BEFORE_SWITCH -> AFTER_SWITCH: bombchu (:714); FINAL_ROOM -> AFTER_SWITCH: true (:749)."
       },
       "proposal": {
         "copiedFrom": [
@@ -2503,17 +2503,17 @@
         },
         {
           "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
-          "line": 721,
+          "line": 728,
           "text": "LOCATION(RC_GANONS_CASTLE_MQ_SPIRIT_TRIAL_SUN_FRONT_LEFT_CHEST,    ((logic->CanUse(RG_FIRE_ARROWS) && logic->C"
         },
         {
           "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
-          "line": 729,
+          "line": 736,
           "text": "ENTRANCE(RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_FINAL_ROOM,    AnyAgeTime([]{return (logic->CanUse(RG_FIRE_ARROWS) &"
         },
         {
           "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
-          "line": 742,
+          "line": 749,
           "text": "ENTRANCE(RR_GANONS_CASTLE_MQ_SPIRIT_TRIAL_AFTER_SWITCH, true),"
         },
         {
@@ -2527,9 +2527,19 @@
           "line": 272,
           "text": "\"Ganon Castle Spirit Wallmaster\": \"soul_wallmaster && event(GANON_MQ_SPIRIT_ENDING_SUNS)\"",
           "pinned": true
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 721,
+          "text": "EVENT_ACCESS(LOGIC_GANON_MQ_SPIRIT_ZOMBIES,     logic->CanUse(RG_SUNS_SONG) || logic->CanUseSword() || logic->"
+        },
+        {
+          "file": "soh/soh/Enhancements/randomizer/location_access/dungeons/ganons_castle.cpp",
+          "line": 722,
+          "text": "EVENT_ACCESS(LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS, logic->Get(LOGIC_GANON_MQ_SPIRIT_ZOMBIES) && (logic->SunlightA"
         }
       ],
-      "note": "Codex blocker \"MQ Ganon ZOMBIES / ENDING_SUNS\": needs two COMBO_BUILD events copied from the pinned area (D6). The native final-room access (:729) lacks the zombie condition and is not a substitute."
+      "note": "The two COMBO_BUILD events are copied from the pinned area (D6) into AFTER_SWITCH (LogicVal.h LOGIC_GANON_MQ_SPIRIT_ZOMBIES and LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS). The native final-room access lacks the zombie condition and is not a substitute."
     },
     {
       "n": 20,
@@ -3038,15 +3048,15 @@
   "proposals": {
     "forestMqEastHallway": "Edges 17 and 18: no node. Anchor MQ_BETH_ROOM with SmallKeys(SCENE_FOREST_TEMPLE, 5) and the soul; M1-14 tests 4, 5 and 6 keys (4: no edge).",
     "ganonVanillaSpirit": "Edge 07: no node. Anchor SPIRIT_TRIAL_BEFORE_SWITCH with bombchu, soul and reflected light; M1-14 tests the no-Bow positive case.",
-    "ganonMqEndingSuns": "Edge 19: needs-event, two COMBO_BUILD events in MQ_SPIRIT_TRIAL_AFTER_SWITCH copied from ganon_castle_mq.yml:275-276 (D6); M1-14 tests the zombie negatives.",
+    "ganonMqEndingSuns": "Edge 19: the two COMBO_BUILD events GANON_MQ_SPIRIT_ZOMBIES and GANON_MQ_SPIRIT_ENDING_SUNS are in MQ_SPIRIT_TRIAL_AFTER_SWITCH, copied from ganon_castle_mq.yml:275-276 (D6); only the Wallmaster edge reads them.",
     "coarseAreas": "Shadow (09), vanilla BotW (01) and vanilla Spirit (10, 11) are resolved with vanilla actor-room evidence: UPPER_HUGE_PIT, MIDDLE, RUPEE_BRIDGE_NORTH and 2F_MIRROR_ROOM. MQ Spirit statue (21) is resolved with the bundled MQ room lists: the main floor (MQ_STATUE_ROOM).",
     "codexCorrection": "Edge 14: the Codex candidate RR_BOTW_MQ_PIT_CAGE is pinned \"Main Room Center Switch Corner\"; the pinned \"Pit Before Cage\" is native RR_BOTW_MQ_FLOORMASTER_ROOM.",
     "mqSunBlock": "Edge 23: the bundled MQ room lists show both room-8 Wallmasters are spawned by lit floor suns, so the condition carries the native light means as a port atom, as edge 11 does."
   },
   "openBlockers": [],
   "workList": {
-    "M1-13": ["data/world/oot/dungeons_mq/ganon_castle_mq.yml:272"],
-    "M1-14": ["data/world/oot/dungeons/bottom_of_the_well.yml:23", "data/world/oot/dungeons/forest_temple.yml:138", "data/world/oot/dungeons/forest_temple.yml:144", "data/world/oot/dungeons/forest_temple.yml:184", "data/world/oot/dungeons/forest_temple.yml:198", "data/world/oot/dungeons/ganon_castle.yml:177", "data/world/oot/dungeons/ganon_castle.yml:69", "data/world/oot/dungeons/gerudo_training_grounds.yml:27", "data/world/oot/dungeons/shadow_temple.yml:62", "data/world/oot/dungeons/spirit_temple.yml:154", "data/world/oot/dungeons/spirit_temple.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91", "data/world/oot/dungeons_mq/forest_temple_mq.yml:178", "data/world/oot/dungeons_mq/forest_temple_mq.yml:393", "data/world/oot/dungeons_mq/forest_temple_mq.yml:401", "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89"],
+    "M1-13": [],
+    "M1-14": ["data/world/oot/dungeons/bottom_of_the_well.yml:23", "data/world/oot/dungeons/forest_temple.yml:138", "data/world/oot/dungeons/forest_temple.yml:144", "data/world/oot/dungeons/forest_temple.yml:184", "data/world/oot/dungeons/forest_temple.yml:198", "data/world/oot/dungeons/ganon_castle.yml:177", "data/world/oot/dungeons/ganon_castle.yml:69", "data/world/oot/dungeons/gerudo_training_grounds.yml:27", "data/world/oot/dungeons/shadow_temple.yml:62", "data/world/oot/dungeons/spirit_temple.yml:154", "data/world/oot/dungeons/spirit_temple.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:167", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:71", "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml:91", "data/world/oot/dungeons_mq/forest_temple_mq.yml:178", "data/world/oot/dungeons_mq/forest_temple_mq.yml:393", "data/world/oot/dungeons_mq/forest_temple_mq.yml:401", "data/world/oot/dungeons_mq/ganon_castle_mq.yml:272", "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml:220", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:118", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:88", "data/world/oot/dungeons_mq/spirit_temple_mq.yml:89"],
     "blocked": {}
   }
 }

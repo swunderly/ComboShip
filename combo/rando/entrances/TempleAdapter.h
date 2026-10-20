@@ -4,7 +4,7 @@
 // reaches it only through TempleNative.h, which only UnifiedBridge.h may use.
 #pragma once
 #include "OotEdgeBindingNames.h"
-#include "OotWallmasterVanillaNames.h"
+#include "OotWallmasterSourceNames.h"
 #include "OotWallmasterArrivalNames.h"
 #include "TempleCandidate.h"
 #include "EntranceAvailability.h"
@@ -74,7 +74,7 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
     if (Active(s.erOneWays) && s.erOneWaysAnywhere)
         reject("one-ways Anywhere (extended destinations) is deferred");
     std::set<std::string_view> bound(kOotTempleCandidateRows.begin(), kOotTempleCandidateRows.end());
-    bound.insert(kOotVanillaWallmasterSources.begin(), kOotVanillaWallmasterSources.end());
+    bound.insert(kOotWallmasterSources.begin(), kOotWallmasterSources.end());
     bound.insert(kOotWallmasterArrivalRows.begin(), kOotWallmasterArrivalRows.end());
     auto requireBound = [&](std::string_view name) {
         if (Find(name)->game == Game::Oot && !bound.contains(name))
@@ -88,8 +88,10 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
         // The rows a candidate world deletes or connects (CandidateWorld.h): every source, and every
         // destination assignable from one; no Wallmaster or one-way row has a reverse. Own-game MM rows
         // only meet MM rows, which the probe lists without probing them, because no MM change reaches
-        // the OoT target here (lemma L4). The nine vanilla Wallmaster sources and eleven dungeon
-        // arrivals share M1-14's audited table; MQ and Wallmaster-to-one-way pairs stay unbound.
+        // the OoT target here (lemma L4). The thirteen Wallmaster sources (nine vanilla, four only an
+        // MQ dungeon has) and eleven dungeon arrivals share M1-14's audited table; the pools resolve
+        // with the quest context's areaExists, so a context offers only its own sources.
+        // Wallmaster-to-one-way pairs stay unbound.
         for (const auto src : pool.src) {
             requireBound(src);
             for (const auto dst : pool.dst)

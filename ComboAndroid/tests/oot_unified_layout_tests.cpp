@@ -1,11 +1,12 @@
-// Vanilla scope, frozen-pool coverage, candidate precedence and two-module
-// rollback.
+// Vanilla scope, the Master Quest contexts of the quests id (U11), frozen-pool
+// coverage, candidate precedence and two-module rollback.
 #include "rando/entrances/MmUnifiedLayout.h"
 #include "rando/entrances/NativeBridge.h"
 #include "rando/entrances/OotUnifiedLayout.h"
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <set>
 using namespace ComboRando::Entrances;
 using Json = nlohmann::json;
 static CapabilitySet Caps() { return CapabilitySet::AtLeast(Stage::Hidden); }
@@ -123,8 +124,8 @@ int main(int argc, char **argv) {
     if (Find(src)->game == Game::Oot)
       assert(installed.routesFrom(Find(src)->id) ==
              std::vector<OotUnifiedRoute>{{Find(dst)->id}});
-  // Every nonempty MQ context fails, including dungeons without a capture
-  // source. No pool shrinking.
+  // With the frozen vanilla id every nonempty MQ context fails, including
+  // dungeons without a capture source. No pool shrinking.
   for (unsigned mask = 1; mask < 4096; ++mask) {
     auto mq = layout;
     for (size_t i = 0; i < mq.ootMq.size(); ++i)
@@ -133,6 +134,65 @@ int main(int argc, char **argv) {
     Reject([&] { installed.install(Seed(mq), Caps()); });
     assert(installed.json() == seed.at("entranceLayout"));
   }
+  // The quests id binds every MQ context its sources can fill: each OoT source
+  // of the context's own pool to a dungeon entrance of its own, the MM routes
+  // kept. Exactly the contexts the pinned contract lists as capacity shortfalls
+  // have more OoT sources than entrances, so no layout at all; a build without
+  // the quests id refuses every one of these layouts.
+  std::set<std::set<std::string>> shortfalls;
+  for (const auto &row : fixture.at("mqSources").at("capacityShortfalls"))
+    shortfalls.insert(row.at("mq").get<std::set<std::string>>());
+  const auto dungeons =
+      fixture.at("mqSources").at("dungeons").get<std::vector<std::string>>();
+  const auto vanillaOnly = Caps().Only(kVanillaWallmasterCapability);
+  size_t bound = 0, short_ = 0;
+  for (unsigned mask = 1; mask < 4096; ++mask) {
+    auto mq = layout;
+    mq.required = {std::string(kQuestsWallmasterCapability)};
+    std::set<std::string> projection;
+    for (size_t i = 0; i < mq.ootMq.size(); ++i)
+      mq.ootMq[i] = (mask & (1u << i)) != 0;
+    for (const auto &dungeon : dungeons)
+      if (mq.ootMq[OotMqIndex(dungeon)])
+        projection.insert(dungeon);
+    Overrides rows;
+    for (const auto &[src, dst] : *layout.overrides)
+      if (Find(src)->game == Game::Mm)
+        rows[src] = dst;
+    std::vector<std::string_view> sources;
+    for (const auto &pool : LayoutV1::MakePools(mq.settings, mq.ootMq, false))
+      for (const auto src : pool.src)
+        if (Find(src)->game == Game::Oot)
+          sources.push_back(src);
+    for (size_t i = 0; i < sources.size(); ++i)
+      rows[sources[i]] =
+          kOotWallmasterArrivalRows[i % kOotWallmasterArrivalRows.size()];
+    mq.overrides = rows;
+    if (sources.size() > kOotWallmasterArrivalRows.size()) {
+      assert(shortfalls.contains(projection) && sources.size() == 12);
+      Reject([&] { Validate(mq, Caps()); }); // one entrance taken twice
+      ++short_;
+      continue;
+    }
+    assert(!shortfalls.contains(projection));
+    Validate(mq, Caps());
+    OotUnifiedLayout mqInstalled;
+    mqInstalled.install(Seed(mq), Caps());
+    assert(mqInstalled.routes().size() == sources.size() &&
+           *mqInstalled.quests() == mq.ootMq);
+    for (const auto src : sources)
+      assert(OotUnifiedSourceInQuests(*Find(src), mq.ootMq) &&
+             mqInstalled.routesFrom(Find(src)->id).size() == 1);
+    OotUnifiedLayout refusedInstall;
+    Reject([&] { refusedInstall.install(Seed(mq), vanillaOnly); });
+    assert(!refusedInstall.active());
+    ++bound;
+  }
+  assert(short_ == 256 && bound == 4095 - 256);
+  // The quests id never names an all-vanilla layout: those keep the vanilla id.
+  auto vanillaQuests = layout;
+  vanillaQuests.required = {std::string(kQuestsWallmasterCapability)};
+  Reject([&] { Validate(vanillaQuests, Caps()); });
   for (const char *key : ComboRando::kLegacyEntranceKeys) {
     auto mixed = seed;
     mixed[key] = Json::object();
@@ -217,9 +277,25 @@ int main(int argc, char **argv) {
     }
     Reject([&] { DecodeOotUnifiedAssumptions(bad, {}); });
   }
+  // A Master Quest context is assumed only with the quests id; its sources must
+  // exist there (MQ Shadow has none, so the vanilla candidate names one too
+  // many).
   OotQuests mq{};
   mq[0] = true;
-  Reject([&] { DecodeOotUnifiedAssumptions(overlay, mq); });
+  Reject([&] { DecodeOotUnifiedAssumptions(overlay, mq, vanillaOnly); });
+  assert(DecodeOotUnifiedAssumptions(overlay, mq, Caps()).routes.size() == 9);
+  OotQuests mqShadow{};
+  mqShadow[OotMqIndex("Shadow")] = true;
+  Reject([&] { DecodeOotUnifiedAssumptions(overlay, mqShadow, Caps()); });
+  OotQuests allMq{};
+  allMq.fill(true);
+  const auto mqPools = LayoutV1::MakePools(layout.settings, allMq, false);
+  const auto mqOverlay = Json::parse(
+      EncodeOotOverlay(BuildCandidateWorld({}, mqPools, layout.settings)));
+  const auto mqDecoded = DecodeOotUnifiedAssumptions(mqOverlay, allMq, Caps());
+  assert(mqDecoded.routes.size() == 10 &&
+         mqDecoded.routes.contains(Find("OOT_WALLMASTER_SPIRIT_STATUE")->id));
+  Reject([&] { DecodeOotUnifiedAssumptions(mqOverlay, OotQuests{}, Caps()); });
   const auto empty = EncodeOotOverlay(BuildCandidateWorld({}, {}, {}));
   assert(DecodeOotUnifiedAssumptions(Json::parse(empty), mq).routes.empty());
   auto native = Fake::Fns();
@@ -286,7 +362,9 @@ int main(int argc, char **argv) {
   missing.setOotAssumptions = nullptr;
   Reject([&] { AssumptionScope scope(missing, mmOverlay, ootOverlay); });
   ActiveOotUnified().clear();
-  std::cout << "PASS vanilla nine-source/eleven-arrival overlay, all MQ "
-               "contexts rejected, both-module rollback\n";
+  std::cout
+      << "PASS vanilla nine-source/eleven-arrival overlay, every MQ "
+         "context rejected by the vanilla id, 3839 bound by the quests id "
+         "and 256 capacity shortfalls, both-module rollback\n";
   return 0;
 }

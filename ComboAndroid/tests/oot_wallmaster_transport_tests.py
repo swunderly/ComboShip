@@ -1,4 +1,5 @@
-"""Execute the real vanilla capture adapter, actor hook and cleared-room condition with native enums.
+"""Execute the real capture adapter, actor hook and cleared-room condition with native enums, for a vanilla
+and an all-Master-Quest layout.
 
 Source/room parity is independently checked by oot_wallmaster_source_tests.py. No gameplay is claimed.
 """
@@ -100,7 +101,7 @@ namespace ComboEntrances {
 CE::OotQuests quests{};
 CE::OotQuests ReadQuests() { return quests; }
 ''' + function((randomizer/'combo_entrance_overlay.cpp').read_text(encoding='utf-8'),
-               'bool HasVanillaWallmasterLayout()') + r'''
+               'bool HasWallmasterLayout()') + r'''
 }
 }
 ''' + runtime + r'''
@@ -144,9 +145,6 @@ int main(int argc, char** argv) {
     play.sceneNum = SCENE_FOREST_TEMPLE;
     assert(!Combo_OOTWallmasterTransport(&play, &actor.actor)); CheckUnchanged(play);
     NativeCapture(&actor, &play); assert(respawns == 1 && sfx == 1); CheckUnchanged(play);
-    CE::ActiveOotUnified().install({{"entranceLayout", CE::EncodeEntranceLayout(layout)}},
-                                 CE::CapabilitySet::AtLeast(CE::Stage::Hidden));
-    assert(Rando::ComboEntrances::HasVanillaWallmasterLayout());
     const int scenes[] = {SCENE_FOREST_TEMPLE, SCENE_SHADOW_TEMPLE, SCENE_SPIRIT_TEMPLE,
         SCENE_BOTTOM_OF_THE_WELL, SCENE_GERUDO_TRAINING_GROUND, SCENE_INSIDE_GANONS_CASTLE, SCENE_LINKS_HOUSE};
     const CE::OotWallmasterScene contexts[] = {CE::OotWallmasterScene::ForestTemple, CE::OotWallmasterScene::ShadowTemple,
@@ -154,23 +152,62 @@ int main(int argc, char** argv) {
         CE::OotWallmasterScene::GerudoTrainingGround, CE::OotWallmasterScene::InsideGanonsCastle,
         CE::OotWallmasterScene::Unknown};
     int captures = 0;
-    for (size_t s = 0; s < std::size(scenes); ++s) for (unsigned room = 0; room < 256; ++room) {
-        play = {}; gSaveContext = {};
-        play.sceneNum = scenes[s]; play.roomCtx.curRoom.num = (room + 1) & 255;
-        actor.actor.room = static_cast<signed char>(room);
-        const auto* source = CE::OotWallmasterSource(contexts[s], static_cast<uint8_t>(room));
-        const bool bound = source && CE::OotUnifiedSourceBound(source->name);
-        const auto before = respawns;
-        NativeCapture(&actor, &play);
-        assert(respawns == before + (bound ? 0 : 1));
-        if (!bound) { CheckUnchanged(play); continue; }
-        const auto destination = CE::Find(overrides.at(source->name))->id;
-        const auto native = CE::ResolveOotNativeArrival(destination);
-        assert(native && play.nextEntranceIndex == static_cast<int>(native->entrance));
-        assert(play.transitionTrigger == TRANS_TRIGGER_START && play.transitionType == TRANS_TYPE_FADE_BLACK);
-        assert(gSaveContext.respawnFlag == 0 && gSaveContext.farore == 88 && gSaveContext.voidPosition == 99);
-        assert(gSaveContext.faroreDungeon == 0 && dungeonClears == ++captures);
-    }
+    // Every actor room of every capture scene: a source the layout routes moves Link, any other keeps the native
+    // respawn (a vanilla layout routes none of the MQ-only sources, and an MQ one none of the removed ones).
+    const auto sweep = [&](const CE::Overrides& routed) {
+        int moved = 0;
+        for (size_t s = 0; s < std::size(scenes); ++s) for (unsigned room = 0; room < 256; ++room) {
+            play = {}; gSaveContext = {};
+            play.sceneNum = scenes[s]; play.roomCtx.curRoom.num = (room + 1) & 255;
+            actor.actor.room = static_cast<signed char>(room);
+            const auto* source = CE::OotWallmasterSource(contexts[s], static_cast<uint8_t>(room));
+            const bool bound = source && routed.contains(source->name);
+            const auto before = respawns;
+            NativeCapture(&actor, &play);
+            assert(respawns == before + (bound ? 0 : 1));
+            if (!bound) { CheckUnchanged(play); continue; }
+            const auto destination = CE::Find(routed.at(source->name))->id;
+            const auto native = CE::ResolveOotNativeArrival(destination);
+            assert(native && play.nextEntranceIndex == static_cast<int>(native->entrance));
+            assert(play.transitionTrigger == TRANS_TRIGGER_START && play.transitionType == TRANS_TYPE_FADE_BLACK);
+            assert(gSaveContext.respawnFlag == 0 && gSaveContext.farore == 88 && gSaveContext.voidPosition == 99);
+            assert(gSaveContext.faroreDungeon == 0 && dungeonClears == ++captures);
+            ++moved;
+        }
+        return moved;
+    };
+    // An all-MQ layout (the quests capability): its ten OoT sources, the MQ-only ones included, each to its own
+    // dungeon, and the same MM routes.
+    CE::OotQuests allMq{};
+    allMq.fill(true);
+    CE::EntranceLayout mqLayout = layout;
+    mqLayout.required = {std::string(CE::kQuestsWallmasterCapability)};
+    mqLayout.ootMq = allMq;
+    CE::Overrides mqRoutes;
+    for (const auto& [src, dst] : overrides)
+        if (CE::Find(src)->game == CE::Game::Mm)
+            mqRoutes[src] = dst;
+    size_t next = 0;
+    for (const auto pool : CE::LayoutV1::MakePools(mqLayout.settings, allMq, false))
+        for (const auto src : pool.src)
+            if (CE::Find(src)->game == CE::Game::Oot)
+                mqRoutes[src] = CE::kOotWallmasterArrivalRows[next++];
+    assert(next == 10 && mqRoutes.contains("OOT_WALLMASTER_SPIRIT_STATUE") && !mqRoutes.contains("OOT_WALLMASTER_SHADOW"));
+    mqLayout.overrides = mqRoutes;
+    Rando::ComboEntrances::quests = allMq;
+    CE::ActiveOotUnified().install({{"entranceLayout", CE::EncodeEntranceLayout(mqLayout)}},
+                                 CE::CapabilitySet::AtLeast(CE::Stage::Hidden));
+    assert(Rando::ComboEntrances::HasWallmasterLayout());
+    const int mqCaptures = sweep(mqRoutes);
+    // Spirit 5, 8 and 15, BotW 0, 1 and 3, GTG (every room) and Ganon (every room but the Light trial's 0x0a) are MQ
+    // captures; Forest every room. Shadow and Ganon's Light trial keep the native respawn.
+    assert(mqCaptures == 256 + 3 + 3 + 256 + 255);
+    Rando::ComboEntrances::quests = {};
+    assert(!Rando::ComboEntrances::HasWallmasterLayout()); // the loaded dungeons are not the layout's
+    CE::ActiveOotUnified().install({{"entranceLayout", CE::EncodeEntranceLayout(layout)}},
+                                 CE::CapabilitySet::AtLeast(CE::Stage::Hidden));
+    assert(Rando::ComboEntrances::HasWallmasterLayout());
+    sweep(overrides);
     play = {}; play.sceneNum = SCENE_FOREST_TEMPLE; gSaveContext = {};
     actor.actor.room = 0;
     for (int disabled = 0; disabled < 4; ++disabled) {
@@ -204,8 +241,8 @@ int main(int argc, char** argv) {
     assert(SpawnRejected(&play, ACTOR_EN_WALLMAS, ACTORCAT_ENEMY, 0));
     CE::ActiveOotUnifiedAssumptions().reset();
     assert(captures > 0 && dungeonClears == captures); // Only a capture that moves Link forgets the dungeon.
-    std::cout << "PASS 1792 actor-room captures, native fallbacks, direct arrivals, Farore dungeon record and "
-                 "cleared-room spawn guard\n";
+    std::cout << "PASS 1792 actor-room captures per vanilla and all-MQ layout, native fallbacks, direct arrivals, "
+                 "Farore dungeon record and cleared-room spawn guard\n";
 }
 ''', encoding='utf-8')
 exe = hostcxx.build(a.compiler, cpp, includes=[source/'combo', a.json_include, source/'soh/include'],

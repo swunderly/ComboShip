@@ -1,16 +1,20 @@
 // C4 release-configuration coverage proof (M1 plan A-10, P1-04). Built twice by
 // entrance_release_coverage_tests.py, with and without COMBO_ENTRANCE_DEV.
 //
-// It pins which capability ids are Public. Then, for this build's capabilities
-// and for the vanilla Wallmaster id named explicitly, it enumerates
-// erWallmasters x all 4096 OoT quest masks. For the all-vanilla mask every
-// source and every destination assignable from one must have a logic edge row,
-// an arrival region, a native arrival at both ages, a runtime source
-// classification, a Temple binding and a spoiler name, each read from the
-// native tables the app builds (release_coverage_native.inc). Every other mask
-// must be refused by Validate, the seed guard, both installers, the generator
-// (before any draw or native change) and the menu. Dropping any one binding
-// must report a gap (negative control).
+// It pins which capability ids are Public. Then, for this build's capabilities,
+// for the vanilla Wallmaster id named explicitly and for the vanilla and Master
+// Quest ids together, it enumerates erWallmasters x all 4096 OoT quest masks.
+// For every mask a set admits, every source and every destination assignable
+// from one must have a logic edge row of the mask's quest, an arrival region,
+// a native arrival at both ages, a runtime source classification, a Temple
+// binding and a spoiler name, each read from the native tables the app builds
+// (release_coverage_native.inc), and layouts routing every destination must
+// validate, pass the seed guard and install in both games. A mask with more
+// OoT sources than dungeon entrances (MQ Spirit and BotW with vanilla Shadow
+// and Ganon) is refused by the generator with the capacity sentence; every
+// other mask a set does not admit is refused by Validate, the seed guard, both
+// installers, the generator (before any draw or native change) and the menu.
+// Dropping any one binding must report a gap (negative control).
 #include "rando/GenerationRules.h"
 #include "rando/entrances/EntranceProfile.h"
 #include "rando/entrances/EntranceSpoiler.h"
@@ -123,8 +127,8 @@ static Tables RealTables() {
   // CheckTempleCapability's bound OoT rows (TempleAdapter.h).
   t.templeBound.insert(kOotTempleCandidateRows.begin(),
                        kOotTempleCandidateRows.end());
-  t.templeBound.insert(kOotVanillaWallmasterSources.begin(),
-                       kOotVanillaWallmasterSources.end());
+  t.templeBound.insert(kOotWallmasterSources.begin(),
+                       kOotWallmasterSources.end());
   t.templeBound.insert(kOotWallmasterArrivalRows.begin(),
                        kOotWallmasterArrivalRows.end());
   // The spoiler names its rows by the frozen v1 labels (EntranceSpoiler.h).
@@ -153,7 +157,8 @@ static Rows PoolRows(const Pools &pools, const Settings &s) {
 }
 
 // Every missing binding of the rows, by row name. Empty when all are bound.
-static std::vector<std::string> Gaps(const Tables &t, const Rows &rows) {
+static std::vector<std::string> Gaps(const Tables &t, const Rows &rows,
+                                     const OotQuests &quests = {}) {
   std::vector<std::string> gaps;
   const auto gap = [&](std::string_view row, const std::string &what) {
     gaps.push_back(std::string(row) + ": " + what);
@@ -187,10 +192,11 @@ static std::vector<std::string> Gaps(const Tables &t, const Rows &rows) {
     if (!record || record->game != Game::Oot ||
         record->type != Type::Wallmaster)
       gap(src, "not an OoT Wallmaster row");
-    // Logic: an audited edge from a native region (combo_entrance_overlay.cpp).
+    // Logic: an audited edge of the source's quest from a native region
+    // (combo_entrance_overlay.cpp, OotWallmasterSourceNames.h).
     std::set<std::string_view> anchorScenes;
     for (const auto &edge : t.ootEdges)
-      if (edge.source == src) {
+      if (edge.source == src && OotWallmasterEdgeInQuests(edge.audit, quests)) {
         if (regionScene(edge.anchor).empty())
           gap(src, "edge " + std::string(edge.audit) + " has no native region");
         anchorScenes.insert(regionScene(edge.anchor));
@@ -361,7 +367,8 @@ static std::vector<Overrides> CoveringLayouts(const Rows &rows) {
 static EntranceLayout Layout(const Settings &s, const CapabilitySet &caps,
                              unsigned mask, const Overrides &routes) {
   EntranceLayout layout;
-  layout.required = {std::string(kVanillaWallmasterCapability)};
+  layout.required = {std::string(mask ? kQuestsWallmasterCapability
+                                      : kVanillaWallmasterCapability)};
   layout.devBuild = caps.devBuild;
   layout.settings = s;
   layout.ootMq = Quests(mask);
@@ -400,7 +407,57 @@ struct Native {
     return {Change, Change, Clear, Dump, Change,
             Change, Change, Clear, Dump, Context};
   }
+  // The OoT oracle's reset, which finalizes the settings again before the
+  // quest context is read, and a resolved child start.
+  static inline int resets = 0;
+  static void Reset() { ++resets; }
+  static uint8_t ChildStart() { return 2; }
 };
+// More OoT Wallmasters than dungeon entrances (m1-contract.json
+// mqSources.capacityShortfalls): MQ Spirit and BotW, vanilla Shadow and Ganon.
+static bool Shortfall(const OotQuests &quests) {
+  return quests[OotMqIndex("Spirit")] && quests[OotMqIndex("BotW")] &&
+         !quests[OotMqIndex("Shadow")] && !quests[OotMqIndex("Ganon")];
+}
+// The Wallmaster dungeons only: masks that agree on them have the same rows.
+static unsigned WallmasterProjection(unsigned mask) {
+  unsigned projection = 0;
+  for (const auto dungeon :
+       {"Forest", "Spirit", "Shadow", "BotW", "GTG", "Ganon"})
+    projection = projection * 2 + ((mask >> OotMqIndex(dungeon)) & 1u);
+  return projection;
+}
+// The generator's answer for one mask: its UnifiedEntranceRefused sentence, or
+// "" when it passed the quest, coverage and capacity gates and stopped at the
+// Temple session these fakes leave out, before any draw or native change.
+static std::string Generation(const Settings &s, const CapabilitySet &caps,
+                              unsigned mask) {
+  Native::quests = Quests(mask);
+  Native::changes = Native::resets = 0;
+  UnifiedEntranceStats stats;
+  UnifiedGeneration g;
+  g.settings = s;
+  g.active = caps;
+  g.seed = mask;
+  g.readSetting = [](const char *, int fallback) { return fallback; };
+  g.ootDump = g.mmDump = "{}";
+  g.oot.Reset = Native::Reset;
+  g.oot.GetStartAges = Native::ChildStart;
+  g.stats = &stats;
+  std::string sentence = "no refusal";
+  try {
+    GenerateEntranceLayout(g, Native::Fns(), {});
+  } catch (const UnifiedEntranceRefused &error) {
+    sentence = error.player();
+  } catch (const TempleProbeUnsupported &error) {
+    assert(std::string(error.what()) ==
+           "Temple probe: native entry points are missing");
+    sentence = "";
+  }
+  // The quest context is read after the oracle's first reset.
+  assert(stats.randomDraws == 0 && Native::changes == 0 && Native::resets == 1);
+  return sentence;
+}
 
 // Proves one capability set: returns the number of admitted settings x masks.
 static size_t Prove(const char *name, const CapabilitySet &caps,
@@ -417,6 +474,7 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
            catalog[0]["choices"].size() == 2);
   else
     assert(catalog.empty());
+  const bool questsActive = caps.Active(kQuestsWallmasterCapability);
   for (const Mode mode : {Mode::None, Mode::OwnGame, Mode::Full}) {
     Settings s;
     s.erWallmasters = mode;
@@ -448,19 +506,43 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
       }
       continue;
     }
-    // Every admitted combination is the vanilla id's own.
+    // Every admitted combination is the vanilla id's own; a Master Quest
+    // context moves it to the quests id once the quest context is read.
     const auto required = UnifiedRequirement(s, "", caps);
     assert(required == kVanillaWallmasterCapability);
     assert(AdmitsEntranceSettings(s, selected.Only(required)));
-    Rows vanillaRows;
-    std::vector<Overrides> layouts;
+    std::set<unsigned> covered; // Wallmaster-dungeon projections laid out
+    std::vector<Overrides> vanillaLayouts;
+    size_t shortfalls = 0;
     for (unsigned mask = 0; mask < kQuestMasks; ++mask) {
       const auto quests = Quests(mask);
       const AreaExists areaExists = [&](std::string_view area) {
         return LayoutV1::AreaExists(area, quests, false);
       };
-      if (mask == 0) {
-        const auto pools = ResolvePools(s, areaExists).pools;
+      const auto pools = ResolvePools(s, areaExists).pools;
+      const auto rows = PoolRows(pools, s);
+      const bool short_ = rows.ootSources.size() > rows.ootDestinations.size();
+      assert(short_ == Shortfall(quests));
+      if (mask == 0 || questsActive) {
+        if (short_) {
+          // OoTMM cannot place these (UnifiedBridge.h
+          // RequireWallmasterCapacity): refused with the capacity sentence
+          // before any draw or native change, after the oracle's reset; no
+          // layout validates.
+          assert(Generation(s, caps, mask) == kWallmasterCapacityText);
+          for (const auto &routes : vanillaLayouts) {
+            bool refused = false;
+            try {
+              Validate(Layout(s, caps, mask, routes), caps);
+            } catch (const EntranceLayoutError &) {
+              refused = true;
+            }
+            assert(refused);
+          }
+          ++shortfalls;
+          ++proved;
+          continue;
+        }
         // The live generator's pools are the frozen v1 pools Validate uses.
         const auto frozen = LayoutV1::MakePools(s, quests, false);
         assert(pools.size() == frozen.size());
@@ -470,14 +552,14 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
                  pools[i].dst == frozen[i].dst &&
                  pools[i].ownGame == frozen[i].ownGame &&
                  pools[i].alias == frozen[i].alias);
-        vanillaRows = PoolRows(pools, s);
-        assert(vanillaRows.ootSources.size() == 9 &&
-               vanillaRows.mmSources.size() == 4 &&
-               vanillaRows.ootDestinations.size() == 11 &&
-               vanillaRows.mmDestinations.size() == 7);
-        const auto gaps = Gaps(tables, vanillaRows);
+        assert(rows.ootSources.size() >= 7 && rows.ootSources.size() <= 11 &&
+               rows.mmSources.size() == 4 &&
+               rows.ootDestinations.size() == 11 &&
+               rows.mmDestinations.size() == 7);
+        assert(mask != 0 || rows.ootSources.size() == 9);
+        const auto gaps = Gaps(tables, rows, quests);
         for (const auto &line : gaps)
-          std::cerr << name << ": " << line << '\n';
+          std::cerr << name << " mask " << mask << ": " << line << '\n';
         assert(gaps.empty());
         RequireUnifiedCoverage(pools, s, true);
         for (const auto age :
@@ -486,39 +568,60 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
           facts.startingAge = age;
           CheckTempleCapability(s, facts, areaExists);
         }
+        assert(Generation(s, caps, mask).empty());
         // Layouts routing every destination validate, pass the seed guard,
-        // install in both games and name every route in the spoiler.
-        layouts = CoveringLayouts(vanillaRows);
-        Names routed;
-        for (const auto &routes : layouts) {
-          const auto layout = Layout(s, caps, mask, routes);
-          const auto validated = Validate(layout, caps);
-          const auto seed = Seed(layout);
-          RequireSupportedSeedCapabilities(seed, caps);
-          OotUnifiedLayout oot;
-          MmUnifiedLayout mm;
-          oot.install(seed, caps);
-          mm.install(seed, caps);
-          assert(oot.routes().size() == 9 && mm.routes().size() == 4);
-          const auto spoiler = FormatEntranceSpoiler(&validated);
-          for (const auto &[src, dst] : routes) {
-            const auto *from = LayoutV1::FindRow(src);
-            const auto *to = LayoutV1::FindRow(dst);
-            assert(spoiler.find(std::string(from->from) + " to " +
-                                std::string(from->to) + " (" +
-                                std::string(src) + ")") != std::string::npos);
-            assert(spoiler.find(std::string(to->to) + " from " +
-                                std::string(to->from) + " (" +
-                                std::string(dst) + ")") != std::string::npos);
-            routed.insert(dst);
+        // install in both games and name every route in the spoiler, once per
+        // set of Wallmaster dungeon quests.
+        if (covered.insert(WallmasterProjection(mask)).second) {
+          const auto layouts = CoveringLayouts(rows);
+          if (mask == 0)
+            vanillaLayouts = layouts;
+          Names routed;
+          for (const auto &routes : layouts) {
+            const auto layout = Layout(s, caps, mask, routes);
+            const auto validated = Validate(layout, caps);
+            const auto seed = Seed(layout);
+            RequireSupportedSeedCapabilities(seed, caps);
+            OotUnifiedLayout oot;
+            MmUnifiedLayout mm;
+            oot.install(seed, caps);
+            mm.install(seed, caps);
+            assert(oot.routes().size() == rows.ootSources.size() &&
+                   mm.routes().size() == 4);
+            const auto spoiler = FormatEntranceSpoiler(&validated);
+            for (const auto &[src, dst] : routes) {
+              const auto *from = LayoutV1::FindRow(src);
+              const auto *to = LayoutV1::FindRow(dst);
+              assert(spoiler.find(std::string(from->from) + " to " +
+                                  std::string(from->to) + " (" +
+                                  std::string(src) + ")") != std::string::npos);
+              assert(spoiler.find(std::string(to->to) + " from " +
+                                  std::string(to->from) + " (" +
+                                  std::string(dst) + ")") != std::string::npos);
+              routed.insert(dst);
+            }
           }
+          assert(routed.size() == 18);
+          // The frozen vanilla id never takes a Master Quest mask, and the
+          // quests id never an all-vanilla one.
+          auto other = Layout(s, caps, mask, layouts.front());
+          other.required = {std::string(mask ? kVanillaWallmasterCapability
+                                             : kQuestsWallmasterCapability)};
+          bool refused = false;
+          try {
+            Validate(other, CapabilitySet::AtLeast(Stage::Hidden));
+          } catch (const EntranceLayoutError &) {
+            refused = true;
+          }
+          assert(refused);
         }
-        assert(routed.size() == 18);
         ++proved;
         continue;
       }
-      // Any Master Quest dungeon: refused before anything changes.
-      const auto layout = Layout(s, caps, mask, layouts.front());
+      // Any Master Quest dungeon without the quests id: refused before
+      // anything changes.
+      auto layout = Layout(s, caps, mask, vanillaLayouts.front());
+      layout.required = {std::string(kVanillaWallmasterCapability)};
       bool refused = false;
       try {
         Validate(layout, caps);
@@ -528,47 +631,40 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
                   "only";
       }
       assert(refused);
-      refused = false;
-      try {
-        RequireSupportedSeedCapabilities(Seed(layout), caps);
-      } catch (const UnsupportedComboSeedFormat &) {
-        refused = true;
+      for (const auto *id :
+           {&kVanillaWallmasterCapability, &kQuestsWallmasterCapability}) {
+        layout.required = {std::string(*id)};
+        refused = false;
+        try {
+          RequireSupportedSeedCapabilities(Seed(layout), caps);
+        } catch (const UnsupportedComboSeedFormat &) {
+          refused = true;
+        }
+        assert(refused);
+        OotUnifiedLayout oot;
+        MmUnifiedLayout mm;
+        refused = false;
+        try {
+          oot.install(Seed(layout), caps);
+        } catch (const std::exception &) {
+          refused = true;
+        }
+        assert(refused && !oot.active());
+        refused = false;
+        try {
+          mm.install(Seed(layout), caps);
+        } catch (const std::exception &) {
+          refused = true;
+        }
+        assert(refused && !mm.active());
       }
-      assert(refused);
-      OotUnifiedLayout oot;
-      MmUnifiedLayout mm;
-      refused = false;
-      try {
-        oot.install(Seed(layout), caps);
-      } catch (const std::exception &) {
-        refused = true;
-      }
-      assert(refused && !oot.active());
-      refused = false;
-      try {
-        mm.install(Seed(layout), caps);
-      } catch (const std::exception &) {
-        refused = true;
-      }
-      assert(refused && !mm.active());
-      Native::quests = quests;
-      Native::changes = 0;
-      UnifiedEntranceStats stats;
-      UnifiedGeneration g;
-      g.settings = s;
-      g.active = caps;
-      g.seed = mask;
-      g.readSetting = [](const char *, int fallback) { return fallback; };
-      g.stats = &stats;
-      refused = false;
-      try {
-        GenerateEntranceLayout(g, Native::Fns(), {});
-      } catch (const UnifiedEntranceRefused &error) {
-        refused = error.player() == kWallmasterMasterQuestText;
-      }
-      assert(refused && stats.randomDraws == 0 && Native::changes == 0);
+      assert(Generation(s, caps, mask) == kWallmasterMasterQuestText);
       ++proved;
     }
+    // Exactly the shortfall masks: MQ Spirit and BotW with vanilla Shadow and
+    // Ganon, any of the other eight dungeons.
+    assert(shortfalls == (questsActive ? 256u : 0u));
+    assert(covered.size() == (questsActive ? 64u - 4u : 1u));
   }
   return proved;
 }
@@ -603,22 +699,30 @@ int main() {
         assert(!row.supports(value, active.Selected("")));
 
   const auto tables = RealTables();
-  // This build's own settings, then the vanilla id by name, as this build
-  // would hold it, so the proof runs whatever the id's stage.
+  // This build's own settings, then the vanilla id by name and the vanilla and
+  // Master Quest ids together, as this build would hold them, so the proof
+  // runs whatever the ids' stages.
   auto vanilla =
       CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability);
   vanilla.devBuild = active.devBuild;
+  auto withQuests =
+      vanilla |
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kQuestsWallmasterCapability);
+  withQuests.devBuild = active.devBuild;
   const size_t build = Prove("build", active, tables);
   const size_t named = Prove("vanilla id", vanilla, tables);
-  assert(named == 2 * kQuestMasks);
+  const size_t both = Prove("vanilla and quests ids", withQuests, tables);
+  assert(named == 2 * kQuestMasks && both == 2 * kQuestMasks);
   assert(build ==
          (active.Active(kVanillaWallmasterCapability) ? 2 : 1) * kQuestMasks);
 
-  // The menu refuses every state in which native can choose a Master Quest
-  // dungeon: MQ data alone, or playable MQ data (a real oot-mq.o2r or OoTMM's
-  // bundled data over the vanilla oot.o2r: the catalogue's mqPlayable) with any
-  // MQ Dungeon Setting but None. Without MQ data, or with None, native keeps
-  // every dungeon vanilla (settings.cpp; the harness pins those lines).
+  // With the vanilla id alone, the menu refuses every state in which native
+  // can choose a Master Quest dungeon: MQ data alone, or playable MQ data (a
+  // real oot-mq.o2r or OoTMM's bundled data over the vanilla oot.o2r: the
+  // catalogue's mqPlayable) with any MQ Dungeon Setting but None. Without MQ
+  // data, or with None, native keeps every dungeon vanilla (settings.cpp; the
+  // harness pins those lines). With the Master Quest id it refuses none of
+  // these: no MQ Dungeon Setting alone forces the capacity shortfall.
   const Json draft{{"fileType", kComboSeedFileType},
                    {"version", 1},
                    {"setupCVars", Json::object()},
@@ -638,11 +742,16 @@ int main() {
                        ? setting
                        : fallback;
           };
-          const auto why = ProfileWallmasterRefusal(draft, catalog, read);
+          const auto why =
+              ProfileWallmasterRefusal(draft, catalog, read, vanilla);
           const bool mqPossible =
               (masterQuest && !original) || (playable && setting != 0);
           assert(mqPossible ? why.player == kWallmasterMasterQuestText
                             : why.empty());
+          assert(ProfileWallmasterRefusal(draft, catalog, read, withQuests)
+                     .empty());
+          assert(ProfileWallmasterRefusal(draft, catalog, read) ==
+                 ProfileWallmasterRefusal(draft, catalog, read, active));
         }
       }
 
@@ -732,8 +841,8 @@ int main() {
     }));
   }
   std::cout << "PASS: " << kExpectedPublic.size() << " Public id(s); " << build
-            << " build and " << named
-            << " vanilla-id settings x quest masks; 9+4 sources and 11+7 "
-               "destinations bound; "
+            << " build, " << named << " vanilla-id and " << both
+            << " vanilla+quests settings x quest masks; 7 to 11 OoT + 4 MM "
+               "sources and 11+7 destinations bound, 256 capacity refusals; "
             << drops.size() << " dropped bindings caught\n";
 }

@@ -263,10 +263,11 @@ int main() {
     Expect({"--settings", "saved.json", "--er", "erWallmasters=ownGame"}, 0, "entrance settings", false);
     for (const auto& capability : kEntranceCapabilities) {
         // Every build has the vanilla contract; the dev tool also generates the MM tranche (M1-07 emulator
-        // runs).
+        // runs) and the staged Master Quest contract (U11).
         bool admitted = capability.id == "wallmasters-own-game-vanilla-v1";
 #ifdef COMBO_ENTRANCE_DEV
-        admitted = admitted || capability.id == "wallmasters-own-game-mm-tranche";
+        admitted = admitted || capability.id == "wallmasters-own-game-mm-tranche" ||
+                   capability.id == "wallmasters-own-game-quests-v1";
 #endif
         if (admitted) {
             Expect({"--er-capability", std::string(capability.id), "--er", "erWallmasters=ownGame"}, 0,

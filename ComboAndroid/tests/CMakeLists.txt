@@ -898,6 +898,12 @@ combo_json_harness_test(entrance_vanilla_generator_and_whole_host_fill_different
 combo_json_harness_test(entrance_menu_and_generation_availability entrance_menu_rules_tests.py)
 combo_json_harness_test(entrance_solo_modes_refuse_before_generation entrance_game_mode_guard_tests.py)
 combo_json_harness_test(entrance_release_configuration_coverage entrance_release_coverage_tests.py)
+# 0.4.12's own seed guard (combo/ at tag v0.4.12-rc1) refuses a Master Quest Wallmaster seed and loads an all-vanilla
+# one of this build; reported as skipped without the tag.
+combo_json_harness_test(entrance_quests_seeds_refused_by_0412 entrance_quests_seed_guard_tests.py)
+if(TEST entrance_quests_seeds_refused_by_0412)
+    set_tests_properties(entrance_quests_seeds_refused_by_0412 PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+endif()
 # C6: the release-built Wallmaster corpus and File 3 saves under fixtures/wallmasters-vanilla-v1/, reported as
 # skipped until they are committed.
 combo_json_harness_test(entrance_release_corpus_and_file3_saves entrance_corpus_tests.py)

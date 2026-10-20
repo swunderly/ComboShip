@@ -14,7 +14,9 @@ struct SourceEdge {
     RandomizerRegion anchor;
     ConditionFn condition;
 };
-const std::array<SourceEdge, 11> edges = { {
+// Eleven vanilla and eleven MQ edges. An edge is anchored in its quest's native regions, which the other quest's
+// dungeon never reaches, so one table serves every quest context.
+const std::array<SourceEdge, 22> edges = { {
 #include "combo_oot_wallmaster_edges.inc"
 } };
 struct Arrival {
@@ -43,23 +45,25 @@ CE::OotQuests ReadQuests() {
 }
 } // namespace
 
-bool VanillaWallmasterContext() {
+bool WallmasterQuestContextAdmitted() {
     try {
-        CE::RequireVanillaOotQuests(ReadQuests());
+        CE::RequireAdmittedOotQuests(ReadQuests(), CE::ActiveCapabilities());
         return true;
     } catch (const std::exception&) { return false; }
 }
 std::vector<Entrance> WallmasterCandidateExits(std::string_view source, std::string_view destination) {
-    if (!CE::OotUnifiedSourceBound(source) || !CE::OotUnifiedDestinationBound(destination) ||
-        !VanillaWallmasterContext())
-        throw std::invalid_argument("Temple Wallmaster candidate has no verified vanilla binding");
+    const auto* row = CE::Find(source);
+    if (!row || !CE::OotUnifiedDestinationBound(destination) || !WallmasterQuestContextAdmitted() ||
+        !CE::OotUnifiedSourceInQuests(*row, ReadQuests()))
+        throw std::invalid_argument("Temple Wallmaster candidate has no verified binding in these dungeons");
     const auto arrival =
         std::find_if(arrivals.begin(), arrivals.end(), [&](const Arrival& a) { return a.row == destination; });
     if (arrival == arrivals.end())
         throw std::invalid_argument("Temple Wallmaster arrival is not bound");
+    const auto quests = ReadQuests();
     std::vector<Entrance> result;
     for (const auto& edge : edges)
-        if (edge.source == source) {
+        if (edge.source == source && CE::OotWallmasterEdgeInQuests(edge.auditId, quests)) {
             Entrance exit(arrival->region, edge.condition, std::string(edge.auditId), false);
             exit.SetParentRegion(edge.anchor);
             result.push_back(std::move(exit));
@@ -102,13 +106,10 @@ int SetLayout(const char* seedJson) {
             throw std::invalid_argument("OoT entrance seed must be an object");
         if (!seed.contains("entranceLayout"))
             return 1; // Private MM profiles and ordinary seeds leave OoT native.
+        // The installer binds the quests the layout's capability admits: vanilla for the frozen vanilla id.
         CE::ActiveOotUnified().install(seed, CE::ActiveCapabilities());
-        if (CE::ActiveOotUnified().hasOotRoutes()) {
-            const auto quests = ReadQuests();
-            CE::RequireVanillaOotQuests(quests);
-            if (quests != *CE::ActiveOotUnified().quests())
-                throw std::invalid_argument("OoT entrance layout quest context does not match the loaded seed");
-        }
+        if (CE::ActiveOotUnified().hasOotRoutes() && ReadQuests() != *CE::ActiveOotUnified().quests())
+            throw std::invalid_argument("OoT entrance layout quest context does not match the loaded seed");
         return 1;
     } catch (const std::exception& e) {
         CE::ActiveOotUnified().clear();
@@ -138,14 +139,13 @@ int SetAssumptions(const char* candidateJson) {
 void ClearAssumptions() {
     CE::ActiveOotUnifiedAssumptions().reset();
 }
-bool HasVanillaWallmasterLayout() {
+// Routes installed for the dungeons being played: the layout's quests, which its capability admitted.
+bool HasWallmasterLayout() {
     const auto& layout = CE::ActiveOotUnified();
     if (!layout.hasOotRoutes())
         return false;
     try {
-        const auto quests = ReadQuests();
-        CE::RequireVanillaOotQuests(quests);
-        return quests == *layout.quests();
+        return ReadQuests() == *layout.quests();
     } catch (const std::exception&) { return false; }
 }
 const char* AreaContext() {

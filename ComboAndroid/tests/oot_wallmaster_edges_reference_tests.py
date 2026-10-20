@@ -112,11 +112,15 @@ entries = {e['id']: e for e in audit['edges']}
 assert set(entries) == {e['id'] for e in edges} and len(entries) == 23
 by_n = {e['n']: e for e in audit['edges']}
 assert all(e['status'] in edges_tool.STATUSES for e in audit['edges'])
-assert by_n[16]['status'] == 'false' and by_n[19]['status'] == 'needs-event'
+assert by_n[16]['status'] == 'false' and by_n[19]['status'] == 'ready'
+# Edge 19 reads the two COMBO_BUILD events copied from the pinned Sun Room Sun Side (ganon_castle_mq.yml:275-276).
+assert 'logic->Get(LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS)' in by_n[19]['condition']['native']
+assert [e['text'].split(',')[0] for e in by_n[19]['evidence'] if e['text'].startswith('EVENT_ACCESS(')] == \
+    ['EVENT_ACCESS(LOGIC_GANON_MQ_SPIRIT_ZOMBIES', 'EVENT_ACCESS(LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS']
 # Edge 21's anchor was chosen from MQ Spirit room 5's positions once C17 closed: the main floor.
 assert by_n[21]['status'] == 'ready' and by_n[21]['ingress']['relation'] == 'native-stronger'
 assert by_n[21]['anchor']['region'] == 'RR_SPIRIT_TEMPLE_MQ_STATUE_ROOM'
-assert {n for n, e in by_n.items() if e['status'] == 'ready'} == set(range(1, 24)) - {16, 19}
+assert {n for n, e in by_n.items() if e['status'] == 'ready'} == set(range(1, 24)) - {16}
 for entry in audit['edges']:
     assert entry['evidence'] and entry['note'], entry['n']
     if entry['status'] != 'false':
@@ -131,7 +135,7 @@ assert audit['archive']['mqSource'] == {'file': 'combo/mq/data/mq_rooms.bin', 's
                                         'dungeonIds': edges_tool.MQ_DUNGEON_IDS}
 assert audit['openBlockers'] == []  # C17 closed offline from the bundled MQ room lists
 # Every edge has verified actor rooms and no blocker: the statuses alone give the work lists.
-assert audit['workList'] == {'M1-13': [by_n[19]['id']],
+assert audit['workList'] == {'M1-13': [],
                              'M1-14': sorted(e['id'] for e in audit['edges'] if e['status'] == 'ready'),
                              'blocked': {}}
 # Edge 23: both MQ sun-block Wallmasters are spawned by lit floor suns, so the native light means is a port atom.
@@ -172,7 +176,7 @@ mutations = {
     'edge missing': lambda a: a['edges'].pop(5),
     'pinned expression changed': lambda a: edge(a, 9).update(expression='true'),
     'ready edge without evidence': lambda a: edge(a, 3).update(evidence=[]),
-    'needs-event without proposal': lambda a: edge(a, 19).pop('proposal'),
+    'needs-event without proposal': lambda a: (edge(a, 19).update(status='needs-event'), edge(a, 19).pop('proposal')),
     'MQ room evidence reopened without a blocker': lambda a: edge(a, 12)['actorRoom'].update(status='pending'),
     'capture room of another source': lambda a: edge(a, 10)['actorRoom']['wallmasters'][0].update(room=15),
     'MQ evidence without its quest source': lambda a: a['archive']['verifiedQuests'].remove('mq-ootmm-32.3'),
@@ -192,8 +196,9 @@ mutations = {
     'loosening relation listed': lambda a: a['relations'].update({'native-weaker': 'native needs less'}),
     'provisional relation on a ready edge': lambda a: edge(a, 21)['ingress'].update(relation='provisional'),
     'needs-evidence without a blocker': lambda a: edge(a, 21).update(status='needs-evidence'),
-    'needs-event edge handed to M1-14': lambda a: (
-        a['workList']['M1-14'].append(a['workList']['M1-13'].pop()), a['workList']['M1-14'].sort()),
+    'needs-event edge left in M1-14': lambda a: edge(a, 19).update(status='needs-event'),
+    'ganon events dropped from the condition': lambda a: edge(a, 19)['condition'].update(
+        native='Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)'),
     'absent setting now present': lambda a: a['predicateAtoms']['climb_anywhere']['absent'][0]['tokens'].append('RSK_'),
 }
 for name, change in mutations.items():

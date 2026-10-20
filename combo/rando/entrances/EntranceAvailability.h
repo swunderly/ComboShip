@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace ComboRando::Entrances {
@@ -58,6 +59,16 @@ inline constexpr const char* kWallmasterShipEntrancesText =
 inline constexpr const char* kWallmasterMasterQuestText =
     "Wallmaster Shuffle does not support Master Quest dungeons yet.";
 inline constexpr const char* kWallmasterDungeonDataText = "Wallmaster Shuffle cannot read the OoT dungeon data.";
+// Master Quest Spirit Temple and Bottom of the Well with a vanilla Shadow Temple and Ganon's Castle have 12 OoT
+// Wallmasters for 11 dungeon entrances, which OoTMM cannot place (UnifiedBridge.h RequireWallmasterCapacity). Either
+// row set to Vanilla removes every such context; the sentence names the menu's own rows and choice.
+inline constexpr const char* kWallmasterCapacityText =
+    "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.";
+inline EntranceRefusal WallmasterCapacityRefusal(
+    std::string log = "Master Quest Spirit Temple and Bottom of the Well with vanilla Shadow Temple and Ganon's Castle "
+                      "have more OoT Wallmasters than dungeon entrances") {
+    return { kWallmasterCapacityText, std::move(log) };
+}
 inline EntranceRefusal ShipEntrancesRefusal() {
     return { kWallmasterShipEntrancesText, "Wallmaster and One-Way shuffles need Ship's own entrance shuffle off" };
 }

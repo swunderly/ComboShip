@@ -1,19 +1,29 @@
-// Vanilla OoT half of the unified layout and candidate-world overlay. Source bindings are generated
-// from the pinned actor/anchor audit. MQ is rejected, never converted into a smaller source pool.
+// OoT half of the unified layout and candidate-world overlay. Source bindings are generated from the
+// pinned actor/anchor audit. The frozen vanilla capability rejects MQ, never converting it into a smaller
+// source pool; the quests capability binds the quest context the layout records.
 #pragma once
 #include "rando/ComboSeedFormat.h"
 #include "rando/entrances/CandidateWorld.h"
 #include "rando/entrances/OotWallmasterArrivalNames.h"
-#include "rando/entrances/OotWallmasterVanillaNames.h"
+#include "rando/entrances/OotWallmasterSourceNames.h"
 #include <map>
 #include <optional>
 #include <set>
 #include <vector>
 
 namespace ComboRando::Entrances {
+inline bool AnyMasterQuest(const OotQuests& quests) {
+    return std::any_of(quests.begin(), quests.end(), [](bool mq) { return mq; });
+}
 inline void RequireVanillaOotQuests(const OotQuests& quests) {
-    if (std::any_of(quests.begin(), quests.end(), [](bool mq) { return mq; }))
+    if (AnyMasterQuest(quests))
         throw std::invalid_argument("Wallmaster Shuffle currently supports vanilla OoT dungeons only");
+}
+// Before a layout exists (generation, candidate assumptions, the Temple probe), a Master Quest dungeon is
+// admitted only while this build has the quests capability.
+inline void RequireAdmittedOotQuests(const OotQuests& quests, const CapabilitySet& caps) {
+    if (!caps.Active(kQuestsWallmasterCapability))
+        RequireVanillaOotQuests(quests);
 }
 inline OotQuests DecodeOotAreaContext(const nlohmann::json& value) {
     if (!value.is_object() || value.size() != 3 ||
@@ -33,8 +43,19 @@ inline OotQuests DecodeOotAreaContext(const nlohmann::json& value) {
     return result;
 }
 inline bool OotUnifiedSourceBound(std::string_view row) {
-    return std::find(kOotVanillaWallmasterSources.begin(), kOotVanillaWallmasterSources.end(), row) !=
-           kOotVanillaWallmasterSources.end();
+    return std::find(kOotWallmasterSources.begin(), kOotWallmasterSources.end(), row) != kOotWallmasterSources.end();
+}
+// A bound source that exists in these quests: its area is in the quest's dungeon file (LayoutV1::AreaExists).
+inline bool OotUnifiedSourceInQuests(const Record& row, const OotQuests& quests) {
+    return row.game == Game::Oot && OotUnifiedSourceBound(row.name) && LayoutV1::AreaExists(row.from, quests, false);
+}
+// The audited edge applies to these quests: its dungeon has the edge's quest (kOotWallmasterEdgeQuests). An edge of
+// the other quest is anchored in regions that quest's dungeon never reaches.
+inline bool OotWallmasterEdgeInQuests(std::string_view auditId, const OotQuests& quests) {
+    for (const auto& edge : kOotWallmasterEdgeQuests)
+        if (edge.auditId == auditId)
+            return quests[OotMqIndex(edge.dungeon)] == edge.mq;
+    throw std::invalid_argument("OoT Wallmaster edge " + std::string(auditId) + " has no audited quest");
 }
 inline bool OotUnifiedDestinationBound(std::string_view row) {
     return std::find(kOotWallmasterArrivalRows.begin(), kOotWallmasterArrivalRows.end(), row) !=
@@ -84,16 +105,19 @@ class OotUnifiedLayout {
         const auto validated = Validate(decoded, caps);
         OotUnifiedRoutes next;
         if (!validated.oot.empty()) {
-            RequireVanillaOotQuests(decoded.ootMq);
-            if (decoded.required != std::vector<std::string>{ std::string(kVanillaWallmasterCapability) })
-                throw std::invalid_argument("OoT Wallmaster routes require the vanilla capability");
+            // The frozen vanilla id binds all-vanilla dungeons; the quests id a context with a Master Quest dungeon,
+            // which Validate requires of it.
+            if (decoded.required == std::vector<std::string>{ std::string(kVanillaWallmasterCapability) })
+                RequireVanillaOotQuests(decoded.ootMq);
+            else if (decoded.required != std::vector<std::string>{ std::string(kQuestsWallmasterCapability) })
+                throw std::invalid_argument("OoT Wallmaster routes require the vanilla or Master Quest capability");
         }
         for (const auto& route : validated.oot) {
             const auto& src = *route.source;
             const auto& dst = *route.destination;
-            if (!OotUnifiedSourceBound(src.name) || !OotUnifiedDestinationBound(dst.name) || src.game != Game::Oot ||
-                dst.game != Game::Oot)
-                throw std::invalid_argument("OoT entrance route has no verified vanilla binding");
+            if (!OotUnifiedSourceInQuests(src, decoded.ootMq) || !OotUnifiedDestinationBound(dst.name) ||
+                src.game != Game::Oot || dst.game != Game::Oot)
+                throw std::invalid_argument("OoT entrance route has no verified binding");
             const auto* liveSrc = Find(src.name);
             const auto* liveDst = Find(dst.name);
             if (!liveSrc || !liveDst || liveSrc->id != src.id || liveDst->id != dst.id)
@@ -134,17 +158,19 @@ inline bool Flag(const nlohmann::json& value) {
         throw std::invalid_argument("OoT entrance assumption flags must be booleans");
     return value.get<bool>();
 }
-inline const Record& Source(const nlohmann::json& value) {
+inline const Record& Source(const nlohmann::json& value, const OotQuests& quests) {
     const auto* row = Find(Text(value));
-    if (!row || row->game != Game::Oot || !OotUnifiedSourceBound(row->name))
-        throw std::invalid_argument("OoT entrance assumptions need a verified vanilla Wallmaster source");
+    if (!row || !OotUnifiedSourceInQuests(*row, quests))
+        throw std::invalid_argument("OoT entrance assumptions need a verified Wallmaster source of these dungeons");
     return *row;
 }
 } // namespace OotUnifiedDetail
 
 // Each candidate's OoT portion uses the original source condition. Multiple destinations are ORed;
-// no arrival grants ACCESS. Synthetic Wallmaster sources have no native exit to delete.
-inline OotUnifiedAssumptions DecodeOotUnifiedAssumptions(const nlohmann::json& value, const OotQuests& quests) {
+// no arrival grants ACCESS. Synthetic Wallmaster sources have no native exit to delete. A Master Quest
+// context is admitted only while `caps` has the quests capability, and every source must exist in it.
+inline OotUnifiedAssumptions DecodeOotUnifiedAssumptions(const nlohmann::json& value, const OotQuests& quests,
+                                                         const CapabilitySet& caps = ActiveCapabilities()) {
     using namespace OotUnifiedDetail;
     RequireKeys(value, { "profile", "game", "registry", "world", "deleted", "fixed", "remaining", "assumed" });
     if (Text(value.at("profile")) != "ootmm-entrance-assumptions-v1" || Text(value.at("game")) != "oot" ||
@@ -159,25 +185,25 @@ inline OotUnifiedAssumptions DecodeOotUnifiedAssumptions(const nlohmann::json& v
         if (!value.at(key).is_array())
             throw std::invalid_argument("Malformed OoT entrance assumption arrays");
     if (!value.at("deleted").empty() || !value.at("fixed").empty() || !value.at("remaining").empty())
-        RequireVanillaOotQuests(quests);
+        RequireAdmittedOotQuests(quests, caps);
     OotUnifiedAssumptions result;
     result.world = static_cast<uint32_t>(world.get<uint64_t>());
     std::set<std::string_view> deleted;
     for (const auto& row : value.at("deleted")) {
         RequireKeys(row, { "row", "void" });
-        const auto& src = Source(row.at("row"));
+        const auto& src = Source(row.at("row"), quests);
         if (Flag(row.at("void")) != IsVoidArea(src.to) || !deleted.insert(src.name).second)
             throw std::invalid_argument("Invalid or duplicate OoT deleted source");
     }
     for (const char* part : { "fixed", "remaining" })
         for (const auto& edge : value.at(part)) {
             RequireKeys(edge, { "src", "dst", "resetTime", "void" });
-            const auto& src = Source(edge.at("src"));
+            const auto& src = Source(edge.at("src"), quests);
             const auto* dst = Find(Text(edge.at("dst")));
             if (!deleted.contains(src.name) || !dst || dst->game != Game::Oot ||
                 !OotUnifiedDestinationBound(dst->name) || Flag(edge.at("resetTime")) || Flag(edge.at("void")) ||
                 !LayoutV1::RowAssignable(src, *dst, true))
-                throw std::invalid_argument("OoT entrance assumption route has no vanilla binding");
+                throw std::invalid_argument("OoT entrance assumption route has no verified binding");
             result.routes[src.id].push_back({ dst->id });
         }
     return result;

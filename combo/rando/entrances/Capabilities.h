@@ -37,6 +37,7 @@ struct Capability {
 inline constexpr CapabilityValue kWallmastersMmTrancheValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
 inline constexpr CapabilityValue kWallmastersOwnGameValues[] = { { "erWallmasters", "ownGame", Stage::Hidden } };
 inline constexpr CapabilityValue kWallmastersVanillaValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
+inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -61,6 +62,9 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // Owner-approved vanilla-first staging (2026-10-18): Public from 0.4.12 (M1 plan P1-05), combined mode and
     // vanilla dungeons only. Its id and rules are frozen; Master Quest support takes a new id.
     { "wallmasters-own-game-vanilla-v1", kWallmastersVanillaValues, {}, false },
+    // The same Own Game rules where at least one OoT dungeon is Master Quest (design unit U11): the bundled MQ
+    // Wallmaster edges, sources and capture rooms. An all-vanilla seed keeps the vanilla id above.
+    { "wallmasters-own-game-quests-v1", kWallmastersQuestsValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
 

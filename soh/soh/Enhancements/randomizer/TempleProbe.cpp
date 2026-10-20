@@ -8,8 +8,9 @@
 // outside it are the ::logic handle and every region's flags, both restored on every exit path
 // (TempleProbeCore.h). It never resets, searches, places, collects or draws randomness through the
 // shared engine, and it only runs between oracle queries of a serialized generation. Supported
-// envelope: the bound OoT one-way rows and vanilla Wallmaster predicates, no large pool, glitchless
-// logic, no song-travel logic and no starting warp songs; anything else is Unsupported.
+// envelope: the bound OoT one-way rows and the verified Wallmaster predicates of the loaded quests, no
+// large pool, glitchless logic, no song-travel logic and no starting warp songs; anything else is
+// Unsupported.
 
 #include "TempleProbeCore.h"
 #include "location_access.h"
@@ -19,7 +20,7 @@
 #include "rando/SharedItems.h"
 #include "rando/SongTravel.h"
 #include "rando/entrances/Registry.h"
-#include "rando/entrances/OotWallmasterVanillaNames.h"
+#include "rando/entrances/OotWallmasterSourceNames.h"
 #include "combo_entrance_overlay.h"
 #include "variables.h"
 
@@ -252,10 +253,10 @@ struct NativePolicy {
         }
         Overlay<Entrance> overlay;
         for (const auto& name : q.deleted) {
-            if (std::find(E::kOotVanillaWallmasterSources.begin(), E::kOotVanillaWallmasterSources.end(), name) !=
-                E::kOotVanillaWallmasterSources.end()) {
-                if (!Rando::ComboEntrances::VanillaWallmasterContext())
-                    throw Failure(kUnsupported, "Temple Wallmaster source needs vanilla OoT dungeons");
+            if (std::find(E::kOotWallmasterSources.begin(), E::kOotWallmasterSources.end(), name) !=
+                E::kOotWallmasterSources.end()) {
+                if (!Rando::ComboEntrances::WallmasterQuestContextAdmitted())
+                    throw Failure(kUnsupported, "Temple Wallmaster source is not admitted in these OoT dungeons");
                 continue; // Synthetic VOID source: there is no native exit to delete.
             }
             const auto& b = Binding(name, TempleBindingRole::Candidate);
@@ -263,8 +264,8 @@ struct NativePolicy {
         }
         std::sort(overlay.deleted.begin(), overlay.deleted.end(), std::less<const Entrance*>());
         for (const auto& edge : q.edges) {
-            if (std::find(E::kOotVanillaWallmasterSources.begin(), E::kOotVanillaWallmasterSources.end(), edge.src) !=
-                E::kOotVanillaWallmasterSources.end()) {
+            if (std::find(E::kOotWallmasterSources.begin(), E::kOotWallmasterSources.end(), edge.src) !=
+                E::kOotWallmasterSources.end()) {
                 if (std::find(q.deleted.begin(), q.deleted.end(), edge.src) == q.deleted.end())
                     throw Failure(kUnsupported, "Temple Wallmaster edge did not delete its source");
                 try {

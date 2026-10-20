@@ -136,22 +136,52 @@ int main() {
     const auto isolated = policy.Resolve(q);
     assert(isolated.added[0].target == RR_ICE_CAVERN_ENTRYWAY);
     CE::ActiveOotUnifiedAssumptions().reset(); CE::ActiveOotUnified().clear();
+    // An MQ-only source does not exist in the vanilla Spirit Temple.
     Unsupported([&] { policy.Resolve(Query("OOT_WALLMASTER_SPIRIT_STATUE", "OOT_ICE_CAVERN")); });
     Unsupported([&] { policy.Resolve(Query("OOT_WALLMASTER_GTG", "OOT_FIELD_OWL")); });
     Unsupported([&] { auto bad = q; bad.deleted.clear(); policy.Resolve(bad); });
-    Rando::Context::GetInstance()->dungeons.rows[0].mq = true;
-    Unsupported([&] { policy.Resolve(q); });
-    Rando::Context::GetInstance()->dungeons.rows[0].mq = false;
+    // A Master Quest dungeon: admitted with the quests id (this dev build has it), where the source exists.
+    auto& dungeons = Rando::Context::GetInstance()->dungeons.rows;
+    assert(CE::ActiveCapabilities().Active(CE::kQuestsWallmasterCapability));
+    dungeons[0].mq = true; // MQ Deku Tree: GTG is unchanged
+    assert(policy.Resolve(q).added.size() == 1);
+    dungeons[0].mq = false;
+    dungeons[7].mq = true; // MQ Shadow Temple has no Wallmaster
+    Unsupported([&] { policy.Resolve(Query("OOT_WALLMASTER_SHADOW", "OOT_ICE_CAVERN")); });
+    for (auto& row : dungeons) row.mq = true;
+    // Every dungeon MQ: the factory hands out the loaded quest's edges only, each from its MQ anchor.
+    const auto statue = policy.Resolve(Query("OOT_WALLMASTER_SPIRIT_STATUE", "OOT_ICE_CAVERN"));
+    assert(statue.added.size() == 1 && statue.added[0].parent == RR_SPIRIT_TEMPLE_MQ_STATUE_ROOM);
+    const auto east = policy.Resolve(Query("OOT_WALLMASTER_FOREST_CORRIDOR_EAST", "OOT_ICE_CAVERN"));
+    assert(east.added.size() == 2 && east.added[0].parent == RR_FOREST_TEMPLE_MQ_BETH_ROOM &&
+           east.added[1].parent == RR_FOREST_TEMPLE_MQ_BETH_ROOM);
+    const auto pit = policy.Resolve(Query("OOT_WALLMASTER_BOTW_PIT", "OOT_DEKU_TREE"));
+    assert(pit.added.size() == 1 && pit.added[0].parent == RR_BOTW_MQ_FLOORMASTER_ROOM &&
+           pit.added[0].target == RR_DEKU_TREE_ENTRYWAY);
+    Unsupported([&] { policy.Resolve(Query("OOT_WALLMASTER_GANON_LIGHT", "OOT_ICE_CAVERN")); });
+    for (auto& row : dungeons) row.mq = false;
     CE::TempleFacts facts;
-    CE::CheckTempleCapability(settings, facts, [](std::string_view area) {
-        return CE::LayoutV1::AreaExists(area, {}, false);
-    });
+    for (unsigned mask = 0; mask < 4096; ++mask) {
+        CE::OotQuests quests{};
+        for (size_t i = 0; i < quests.size(); ++i) quests[i] = (mask >> i) & 1u;
+        // Every OoT Wallmaster source is bound (U11); the pools hold the context's own.
+        CE::CheckTempleCapability(settings, facts, [&](std::string_view area) {
+            return CE::LayoutV1::AreaExists(area, quests, false);
+        });
+    }
     bool rejected = false;
-    try { CE::CheckTempleCapability(settings, facts, [](std::string_view) { return true; }); }
-    catch (const CE::TempleProbeUnsupported&) { rejected = true; }
-    assert(rejected); // MQ-only source rows remain unbound before a draw.
+    auto withOneWays = settings;
+    withOneWays.erOneWays = CE::Mode::OwnGame;
+    withOneWays.erOneWaysMajor = true;
+    try {
+        CE::CheckTempleCapability(withOneWays, facts, [](std::string_view area) {
+            return CE::LayoutV1::AreaExists(area, {}, false);
+        });
+    } catch (const CE::TempleProbeUnsupported&) { rejected = true; }
+    assert(rejected); // Wallmaster arrivals at one-way rows remain unbound before a draw.
     logic = live; Rando::ProbeLogicActive() = false;
-    std::cout << "PASS isolated native Temple Resolve, 121 shared predicate edges, both ages and soul negatives\n";
+    std::cout << "PASS isolated native Temple Resolve, 121 shared vanilla predicate edges, the MQ ones of the "
+                 "loaded quests, both ages and soul negatives\n";
 }
 ''', encoding='utf-8')
 exe = hostcxx.build(a.compiler, cpp, includes=[source/'combo', a.json_include, randomizer,

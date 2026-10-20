@@ -1,11 +1,17 @@
 // Both-game generator and full host-fill differential. Native engines/oracles
 // are explicit fakes; this proves the production algorithm/transactions, not a
-// native seed corpus or gameplay.
+// native seed corpus or gameplay. The vanilla id named explicitly refuses every
+// Master Quest context; chosen by settings in a build with the Master Quest id
+// (U11), every all-vanilla seed is byte for byte the vanilla id's, and every
+// Master Quest context generates under the quests id except the capacity
+// shortfalls of tools/ootmm/m1-contract.json, which are refused before any
+// draw. The quest context is the one read after the oracle's first reset.
 #include "rando/entrances/UnifiedBridge.h"
 #include <cassert>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
 using namespace ComboRando;
 using namespace ComboRando::Entrances;
@@ -35,6 +41,9 @@ struct Fake {
   static inline uint8_t startAges = 2;
   static inline bool restricted = false, changeQuestOnReset = false,
                      throwOnComplete = false, prepared = false;
+  // The quests the oracle's first reset finalizes, when they differ from the
+  // dump's (a native roll on the shared stream).
+  static inline std::optional<OotQuests> questsOnReset;
   static inline bool rejectEmptyTemple = false;
   static void Reset() {
     ActiveMmUnified().clear();
@@ -48,6 +57,7 @@ struct Fake {
     applies = assumptions = generations = prepares = queries = releases = 0;
     settingsEnemy = settingsMq = 0;
     restricted = changeQuestOnReset = throwOnComplete = prepared = false;
+    questsOnReset.reset();
     rejectEmptyTemple = false;
   }
   static int ApplyMm(const char *text) {
@@ -65,7 +75,8 @@ struct Fake {
     ActiveOotUnifiedAssumptions().reset();
     const auto j = Json::parse(text);
     if (j.contains("entranceLayout")) {
-      RequireVanillaOotQuests(quests);
+      // The installer binds the quests the layout's id admits
+      // (combo_entrance_overlay.cpp SetLayout).
       ActiveOotUnified().install(j, Caps());
       assert(*ActiveOotUnified().quests() == quests);
     }
@@ -110,7 +121,7 @@ struct Fake {
     if (payload.at("fixed").empty() && payload.at("remaining").empty())
       baseOot = payload;
     ActiveOotUnifiedAssumptions() =
-        DecodeOotUnifiedAssumptions(Json::parse(text), quests);
+        DecodeOotUnifiedAssumptions(Json::parse(text), quests, Caps());
     return 1;
   }
   static void ClearMm() { ActiveMmUnifiedAssumptions().reset(); }
@@ -134,6 +145,8 @@ struct Fake {
   static void OracleReset() {
     if (changeQuestOnReset)
       quests[0] = true;
+    if (questsOnReset)
+      quests = *std::exchange(questsOnReset, std::nullopt);
   }
   static void Owned(const char *) {}
   static void Place(const char *, const char *) {}
@@ -241,12 +254,17 @@ struct Result {
 };
 static Result Run(uint32_t seed, uint8_t age, bool mmStart, OotAccess access,
                   bool shortcut, bool restricted = false,
-                  bool templeBaseFalse = false) {
+                  bool templeBaseFalse = false,
+                  const CapabilitySet *chosenBySettings = nullptr) {
   Fake::Reset();
   Fake::startAges = age;
   Fake::restricted = restricted;
   Fake::rejectEmptyTemple = templeBaseFalse;
   auto g = Generation(seed);
+  if (chosenBySettings) { // in-game: no id named, this set's own choice
+    g.capability.clear();
+    g.active = *chosenBySettings;
+  }
   g.mmStart = mmStart;
   g.access = access;
   g.wallmasterShortcut = shortcut;
@@ -412,8 +430,120 @@ static void CheckShortcutPoolGuards() {
       assert(assumptions > 0 && temple > 0);
   }
 }
+// Every Master Quest context, the id chosen by settings in a build with the
+// Master Quest id: the capacity shortfalls the pinned contract lists are
+// refused before any draw or native change with the menu's sentence; every
+// other context generates a quests-id layout of its own sources.
+static void CheckQuestContexts(const Json &contract) {
+  std::set<std::set<std::string>> shortfalls;
+  for (const auto &row : contract.at("mqSources").at("capacityShortfalls"))
+    shortfalls.insert(row.at("mq").get<std::set<std::string>>());
+  const auto dungeons =
+      contract.at("mqSources").at("dungeons").get<std::vector<std::string>>();
+  assert(shortfalls.size() == 4 && dungeons.size() == 6);
+  size_t refused = 0, generated = 0;
+  // Co-op's seed identity covers the layout (SeedIdentityText), so two players
+  // whose Master Quest dungeons differ never share one.
+  std::set<std::string> identities;
+  for (unsigned mask = 1; mask < 4096; ++mask) {
+    Fake::Reset();
+    std::set<std::string> projection;
+    for (size_t i = 0; i < Fake::quests.size(); ++i)
+      Fake::quests[i] = (mask & (1u << i)) != 0;
+    for (const auto &dungeon : dungeons)
+      if (Fake::quests[OotMqIndex(dungeon)])
+        projection.insert(dungeon);
+    UnifiedEntranceStats stats;
+    auto g = Generation(mask);
+    g.capability.clear();
+    g.stats = &stats;
+    if (shortfalls.contains(projection)) {
+      const auto error = Refusal(g);
+      assert(error.player() == kWallmasterCapacityText &&
+             stats.randomDraws == 0);
+      ++refused;
+      continue;
+    }
+    const auto layout = DecodeEntranceLayout(
+        GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()));
+    assert(layout.required == std::vector<std::string>{std::string(
+                                  kQuestsWallmasterCapability)} &&
+           layout.ootMq == Fake::quests && stats.randomDraws > 0);
+    const auto validated = Validate(layout, Caps());
+    for (const auto &route : validated.oot)
+      assert(OotUnifiedSourceInQuests(*route.source, Fake::quests));
+    auto frozen = layout;
+    frozen.required = {std::string(kVanillaWallmasterCapability)};
+    Reject([&] { Validate(frozen, Caps()); });
+    assert(!ActiveOotUnified().active() && !ActiveMmUnified().active());
+    identities.insert(SeedIdentityText("seed", EncodeEntranceLayout(layout)));
+    ++generated;
+  }
+  assert(refused == 256 && generated == 4095 - 256 &&
+         identities.size() == generated);
+}
+// The quest context is the one the oracle's first reset finalizes, not the
+// dump's: the layout records it, and its id follows it.
+static void CheckQuestsReadAfterReset() {
+  OotQuests spiritMq{};
+  spiritMq[OotMqIndex("Spirit")] = true;
+  for (const bool mqAfter : {true, false}) {
+    Fake::Reset();
+    Fake::quests = mqAfter ? OotQuests{} : spiritMq;
+    Fake::questsOnReset = mqAfter ? spiritMq : OotQuests{};
+    auto g = Generation(3);
+    g.capability.clear();
+    const auto layout = DecodeEntranceLayout(
+        GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()));
+    assert(layout.ootMq == (mqAfter ? spiritMq : OotQuests{}));
+    assert(layout.required == std::vector<std::string>{std::string(
+                                  mqAfter ? kQuestsWallmasterCapability
+                                          : kVanillaWallmasterCapability)});
+  }
+  // A dump context the reset replaces is never read: an unreadable one passes.
+  Fake::Reset();
+  Fake::contextOverride = Json::array();
+  Fake::questsOnReset = OotQuests{};
+  auto g = Generation(3);
+  bool readBeforeReset = false;
+  g.oot.Reset = [] {
+    Fake::contextOverride = Json();
+    Fake::OracleReset();
+  };
+  try {
+    GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+  } catch (const UnifiedEntranceRefused &) {
+    readBeforeReset = true;
+  }
+  assert(!readBeforeReset);
+}
+// All-vanilla seeds made in game (no id named) are byte for byte the vanilla
+// id's, whether the build has the Master Quest id or not.
+static void CheckVanillaBytes() {
+  const auto shipping = CapabilitySet::AtLeast(Stage::Public);
+  for (uint32_t seed = 1; seed <= 40; ++seed)
+    for (uint8_t age : {uint8_t(1), uint8_t(2)})
+      for (auto access : {OotAccess::ALL_REACHABLE, OotAccess::BEATABLE_ONLY,
+                          OotAccess::NO_LOGIC}) {
+        const auto named = Run(seed, age, (seed % 2) != 0, access, true);
+        auto withQuests = Caps();
+        const auto quests = Run(seed, age, (seed % 2) != 0, access, true, false,
+                                false, &withQuests);
+        assert(quests.completeSeed == named.completeSeed &&
+               quests.layout == named.layout);
+        const auto shipped = Run(seed, age, (seed % 2) != 0, access, true,
+                                 false, false, &shipping);
+        auto expected = DecodeEntranceLayout(named.layout);
+        expected.devBuild = false;
+        assert(DecodeEntranceLayout(shipped.layout).required ==
+                   expected.required &&
+               EncodeEntranceLayout(expected) == shipped.layout);
+      }
+}
 int main(int argc, char **argv) {
-  assert(argc == 2);
+  assert(argc == 3);
+  std::ifstream contractFile(argv[2]);
+  const auto contract = Json::parse(contractFile);
   Fake::Reset();
   auto g = Generation();
   g.settings = {};
@@ -478,11 +608,12 @@ int main(int argc, char **argv) {
     Reject([&] { GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()); });
     Untouched();
   }
+  // The vanilla id named explicitly reads the context after the reset too, and
+  // refuses the Master Quest dungeon it finds there.
   Fake::Reset();
   Fake::changeQuestOnReset = true;
   g = Generation();
-  Reject([&] { GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()); });
-  Untouched();
+  assert(Refusal(g).player() == kWallmasterMasterQuestText);
   Fake::Reset();
   Fake::settingsEnemy = 1;
   g = Generation();
@@ -570,6 +701,8 @@ int main(int argc, char **argv) {
          noLogicStats.assumedChecks == 0 && Fake::queries == 0);
   CheckShortcutPoolGuards();
   CheckPlainRefusals();
+  CheckQuestContexts(contract);
+  CheckQuestsReadAfterReset();
   std::ostringstream quiet;
   auto *previousOutput = std::cout.rdbuf(quiet.rdbuf());
   size_t pairs = 0, shortcuts = 0;
@@ -633,7 +766,11 @@ int main(int argc, char **argv) {
          !Fake::prepared);
   assert(!ActiveMmGenerationSettings() && !ActiveOotUnifiedAssumptions() &&
          !ActiveMmUnifiedAssumptions());
+  CheckVanillaBytes();
   std::cout.rdbuf(previousOutput);
+  // The base build's whole-host corpus (P1-05, 0.4.12): the vanilla id's seeds
+  // are unchanged byte for byte.
+  assert(corpus == 844767829324957485ull);
   Json report{{"scope", "Real generator and combined fill with explicit fake "
                         "native modules/oracles"},
               {"differentialPairs", pairs},
@@ -641,6 +778,8 @@ int main(int argc, char **argv) {
               {"fallbackPairs", 20},
               {"templeFallbackPairs", 20},
               {"nativeQuestContextsRejected", 4095},
+              {"questContextsGenerated", 4095 - 256},
+              {"questContextsRefusedForCapacity", 256},
               {"corpusFnv64", corpus},
               {"nativeSeedCorpusOrGameplay", false}};
   std::ofstream(argv[1]) << report.dump(2) << '\n';

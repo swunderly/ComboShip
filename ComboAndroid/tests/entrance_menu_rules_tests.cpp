@@ -23,6 +23,11 @@ template <class F> void Reject(F fn) {
 }
 int main() {
   const auto caps = ActiveCapabilities();
+  // The frozen vanilla id alone, and the catalog with the Master Quest id
+  // (U11), whatever this build's stages.
+  const auto vanillaOnly =
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability);
+  const auto withQuests = CapabilitySet::AtLeast(Stage::Hidden);
   const auto *row = FindEntranceSetting("erWallmasters");
   assert(row);
   // Both builds offer the row with None and Own Game (P1-05).
@@ -172,9 +177,10 @@ int main() {
   const std::string mqLog =
       "Wallmaster Shuffle currently supports vanilla dungeons only";
   assert(mq == kWallmasterMasterQuestText);
-  // Every catalogue state (OTRGlobals.cpp SOH_DumpProfileCatalog): MQ selected
-  // is refused wherever MQ can be played, from a real oot-mq.o2r or OoTMM's
-  // bundled data (mqPlayable), and an MQ-only install is always refused.
+  // Every catalogue state (OTRGlobals.cpp SOH_DumpProfileCatalog): with the
+  // frozen vanilla id only, MQ selected is refused wherever MQ can be played,
+  // from a real oot-mq.o2r or OoTMM's bundled data (mqPlayable), and an MQ-only
+  // install is always refused.
   for (int state = 0; state < 8; ++state) {
     const bool original = state & 1, archive = state & 2, bundled = state & 4;
     if (bundled && !original)
@@ -186,22 +192,124 @@ int main() {
     for (int mqMode : {0, 1, 2, 3}) {
       settings["gRandoSettings.MQDungeons"] = mqMode;
       const bool refused = (archive && !original) || (playable && mqMode != 0);
-      const auto why = ProfileWallmasterRefusal(draft, catalogue, read);
+      const auto why =
+          ProfileWallmasterRefusal(draft, catalogue, read, vanillaOnly);
       if (refused)
         plain(why, mq, mqLog);
       else
         assert(why.empty());
+      // The Master Quest id takes every one of these states: no selection of
+      // the MQ Dungeon Setting alone fixes the four dungeons the capacity
+      // needs.
+      assert(
+          ProfileWallmasterRefusal(draft, catalogue, read, withQuests).empty());
     }
   }
   auto mqAssets = assets;
   mqAssets["hasMasterQuest"] = true;
   mqAssets["mqPlayable"] = true;
-  plain(ProfileWallmasterRefusal(draft, mqAssets, read), mq, mqLog);
+  plain(ProfileWallmasterRefusal(draft, mqAssets, read, vanillaOnly), mq,
+        mqLog);
   settings.clear();
-  assert(ProfileWallmasterRefusal(draft, mqAssets, read).empty());
+  assert(ProfileWallmasterRefusal(draft, mqAssets, read, vanillaOnly).empty());
   mqAssets["hasOriginal"] = false;
   mqAssets["mqPlayable"] = false;
-  plain(ProfileWallmasterRefusal(draft, mqAssets, read), mq, mqLog);
+  plain(ProfileWallmasterRefusal(draft, mqAssets, read, vanillaOnly), mq,
+        mqLog);
+  // An MQ-only install plays all twelve MQ: Shadow and Ganon too, so no
+  // capacity shortfall.
+  assert(ProfileWallmasterRefusal(draft, mqAssets, read, withQuests).empty());
+  // The build's own set: the frozen sentence until the Master Quest id opens.
+  assert(ProfileWallmasterRefusal(draft, mqAssets, read).player ==
+         (caps.Active(kQuestsWallmasterCapability) ? "" : mq));
+
+  // With the Master Quest id, a selection whose every native roll (settings.cpp
+  // Context::FinalizeSettings) makes Spirit Temple and Bottom of the Well MQ
+  // and Shadow Temple and Ganon's Castle vanilla can never place its 12 OoT
+  // Wallmasters, in OoTMM either: refused with one sentence naming the rows.
+  const std::string capacity = "Set Spirit Temple Quest or Bottom of the Well "
+                               "Quest to Vanilla to use Wallmaster Shuffle.";
+  const std::string capacityLog =
+      "Master Quest Spirit Temple and Bottom of the Well with vanilla Shadow "
+      "Temple and Ganon's Castle have more OoT Wallmasters than dungeon "
+      "entrances";
+  assert(capacity == kWallmasterCapacityText);
+  auto playable = assets;
+  playable["mqPlayable"] = true;
+  const auto quest = [&](const char *dungeon, int value) {
+    settings[std::string("gRandoSettings.MQDungeons") + dungeon] = value;
+  };
+  struct Case {
+    int mode, presets, count, spirit, botw, shadow, ganon, others;
+    bool forced;
+  };
+  // mode: Set Number 1, Random 2, Selection Only 3; quest: Vanilla 0, MQ 1,
+  // Random 2; count -1 leaves the native default (12).
+  const Case cases[] = {
+      {3, 0, -1, 1, 1, 0, 0, 0, true},  {3, 0, -1, 1, 1, 0, 0, 2, true},
+      {3, 0, -1, 1, 1, 1, 0, 0, false}, {3, 0, -1, 1, 1, 0, 2, 0, false},
+      {3, 0, -1, 2, 1, 0, 0, 0, false}, {3, 0, -1, 2, 2, 2, 2, 2, false},
+      {1, 1, 2, 1, 1, 2, 2, 2, true},   {1, 1, 3, 1, 1, 2, 2, 2, false},
+      {1, 1, 10, 2, 2, 0, 0, 2, true},  {1, 1, 9, 2, 2, 0, 0, 2, false},
+      {1, 0, 12, 0, 0, 0, 0, 0, false}, {1, 0, 0, 0, 0, 0, 0, 0, false},
+      {1, 0, 5, 0, 0, 0, 0, 0, false},  {2, 1, -1, 1, 1, 0, 0, 2, true},
+      {2, 1, -1, 1, 2, 0, 0, 0, false}, {2, 0, -1, 0, 0, 0, 0, 0, false},
+  };
+  for (const auto &c : cases) {
+    settings.clear();
+    settings["gRandoSettings.MQDungeons"] = c.mode;
+    settings["gRandoSettings.MQDungeonsSelection"] = c.presets;
+    if (c.count >= 0)
+      settings["gRandoSettings.MQDungeonCount"] = c.count;
+    for (const char *other :
+         {"DekuTree", "DodongosCavern", "JabuJabu", "ForestTemple",
+          "FireTemple", "WaterTemple", "IceCavern", "GTG"})
+      quest(other, c.others);
+    quest("SpiritTemple", c.spirit);
+    quest("BottomOfTheWell", c.botw);
+    quest("ShadowTemple", c.shadow);
+    quest("GanonsCastle", c.ganon);
+    assert(MqWallmasterShortfallForced(read, false) == c.forced);
+    const auto why =
+        ProfileWallmasterRefusal(draft, playable, read, withQuests);
+    if (c.forced)
+      plain(why, capacity, capacityLog);
+    else
+      assert(why.empty());
+    // Without MQ data the native settings keep every dungeon vanilla.
+    assert(ProfileWallmasterRefusal(draft, assets, read, withQuests).empty());
+    // The frozen vanilla id keeps its own sentence for every MQ selection.
+    plain(ProfileWallmasterRefusal(draft, playable, read, vanillaOnly), mq,
+          mqLog);
+  }
+  // The roll model itself: Selection's Random dungeons are coin flips, Set
+  // Number fixes its candidates when it picks none or all of them, and Random
+  // picks any number.
+  settings.clear();
+  settings["gRandoSettings.MQDungeons"] = 3;
+  quest("SpiritTemple", 1);
+  quest("ShadowTemple", 2);
+  auto range = MqRollRange(read, false);
+  assert(range[OotMqIndex("Spirit")] == MqRoll::MasterQuest &&
+         range[OotMqIndex("Shadow")] == MqRoll::Either &&
+         range[OotMqIndex("DT")] == MqRoll::Vanilla);
+  settings["gRandoSettings.MQDungeons"] = 1;
+  settings["gRandoSettings.MQDungeonCount"] = 12;
+  range = MqRollRange(read, false);
+  assert(std::all_of(range.begin(), range.end(),
+                     [](MqRoll roll) { return roll == MqRoll::MasterQuest; }));
+  settings["gRandoSettings.MQDungeonCount"] = 4;
+  range = MqRollRange(read, false);
+  assert(std::all_of(range.begin(), range.end(),
+                     [](MqRoll roll) { return roll == MqRoll::Either; }));
+  settings["gRandoSettings.MQDungeons"] = 0;
+  range = MqRollRange(read, false);
+  assert(std::all_of(range.begin(), range.end(),
+                     [](MqRoll roll) { return roll == MqRoll::Vanilla; }));
+  range = MqRollRange(read, true);
+  assert(std::all_of(range.begin(), range.end(),
+                     [](MqRoll roll) { return roll == MqRoll::MasterQuest; }));
+  settings.clear();
   const std::string data =
       "Wallmaster Shuffle cannot read the OoT dungeon data.";
   const std::string dataLog =
@@ -213,8 +321,9 @@ int main() {
   unknown.erase("mqPlayable");
   plain(ProfileWallmasterRefusal(draft, unknown, read), data, dataLog);
   // Solo mode, Ship ER, Enemy Randomizer, glitched logic, the two song logic
-  // options, six warp songs and Soaring, Master Quest and unknown dungeon data.
-  assert(sentences.size() == 15);
+  // options, six warp songs and Soaring, Master Quest, the Master Quest
+  // Wallmaster capacity and unknown dungeon data.
+  assert(sentences.size() == 16);
   auto raw = draft;
   raw["setupCVars"][wall] = 2;
   raw["setupCVars"]["gCombo.Rando.Entrances.erOneWays"] = 1;

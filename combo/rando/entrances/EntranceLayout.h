@@ -23,9 +23,14 @@ inline constexpr std::string_view kEntranceLayoutSchema = "ootmm-entrance-layout
 // The dev-only MM tranche: OoT Wallmaster rows are not bound yet, so their areas count as absent.
 inline constexpr std::string_view kMmTrancheCapability = "wallmasters-own-game-mm-tranche";
 inline constexpr std::string_view kVanillaWallmasterCapability = "wallmasters-own-game-vanilla-v1";
+// Own Game Wallmasters with at least one Master Quest dungeon; an all-vanilla layout takes the vanilla id.
+inline constexpr std::string_view kQuestsWallmasterCapability = "wallmasters-own-game-quests-v1";
 static_assert(CapabilitySet::Known(kMmTrancheCapability) &&
                   kEntranceCapabilities[CapabilityDetail::Find(kMmTrancheCapability)].devOnly,
               "The MM tranche is a devOnly capability");
+static_assert(CapabilitySet::Known(kQuestsWallmasterCapability) &&
+                  !kEntranceCapabilities[CapabilityDetail::Find(kQuestsWallmasterCapability)].devOnly,
+              "The Master Quest Wallmaster capability is an ordinary staged row");
 
 class EntranceLayoutError : public std::invalid_argument {
   public:
@@ -577,10 +582,18 @@ inline Pools ValidateEntranceLayoutSettings(const EntranceLayout& layout, const 
     const bool mmTranche =
         std::find(layout.required.begin(), layout.required.end(), kMmTrancheCapability) != layout.required.end();
     // A new capability contract, not a change to the frozen pool definitions or old profile semantics.
+    const bool anyMq = std::any_of(layout.ootMq.begin(), layout.ootMq.end(), [](bool mq) { return mq; });
     if (std::find(layout.required.begin(), layout.required.end(), kVanillaWallmasterCapability) !=
             layout.required.end() &&
-        std::any_of(layout.ootMq.begin(), layout.ootMq.end(), [](bool mq) { return mq; }))
+        anyMq)
         throw EntranceLayoutError("Wallmaster Shuffle currently supports vanilla OoT dungeons only");
+    // The quests id is the vanilla id's rules for a context with a Master Quest dungeon, so every all-vanilla layout
+    // keeps the one id builds before it read.
+    if (std::find(layout.required.begin(), layout.required.end(), kQuestsWallmasterCapability) !=
+            layout.required.end() &&
+        !anyMq)
+        throw EntranceLayoutError(std::string("Entrance layout requires ") + std::string(kQuestsWallmasterCapability) +
+                                  " without a Master Quest dungeon");
     auto pools = LayoutV1::MakePools(layout.settings, layout.ootMq, mmTranche);
     if (pools.empty())
         throw EntranceLayoutError("Entrance layout settings place no entrance");

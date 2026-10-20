@@ -35,7 +35,7 @@ bool RuntimeWallmastersActive(PlayState* play) {
     return play && IS_RANDO && CE::ActiveOotUnified().hasOotRoutes() &&
            !CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0) &&
            !Rando::Context::GetInstance()->GetOption(RSK_SHUFFLE_ENTRANCES) &&
-           Rando::ComboEntrances::HasVanillaWallmasterLayout();
+           Rando::ComboEntrances::HasWallmasterLayout();
 }
 } // namespace
 

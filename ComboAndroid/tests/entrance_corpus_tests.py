@@ -125,7 +125,7 @@ overlay = body(read('soh/soh/Enhancements/randomizer/combo_entrance_overlay.cpp'
                'int SetLayout(const char* seedJson) {')
 for needle in ('return 1; // Private MM profiles and ordinary seeds leave OoT native.',
                'CE::ActiveOotUnified().install(seed, CE::ActiveCapabilities());',
-               'CE::RequireVanillaOotQuests(quests);'):
+               'if (CE::ActiveOotUnified().hasOotRoutes() && ReadQuests() != *CE::ActiveOotUnified().quests())'):
     require(hostcxx.contains(overlay, needle), 'the OoT installer changed: ' + needle)
 
 # The launcher functions entrance_corpus_tests.cpp runs, copied unchanged, with this checkout's release line.
