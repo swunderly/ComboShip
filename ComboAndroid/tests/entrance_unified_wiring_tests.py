@@ -6,7 +6,10 @@ retain their post-dump shuffle), runs the private MM generators, then generates 
 combined fill; the layout stays installed through the hint dump, the requiredness pass and the
 playthrough of that attempt (critic correction C13). An exhausted layout search (ShuffleError) rerolls
 the attempt, pins a Random start to OoT after an MM start as the other failures do (C24), and in the
-launcher is bounded by the headless budget (C1); every other entrance failure stops generation. The
+launcher is bounded by the headless budget (C1). A capacity shortfall of the Master Quest dungeons
+(WallmasterCapacityShortfall) stops generation on the first attempt, the seed's own roll, as OoTMM's
+seed fails, and on a later attempt, which rolled them again, fails that attempt alone, as a ShuffleError
+does, without counting toward that budget; every other entrance failure stops generation. The
 layout goes into the consolidated seed before its fileType is stamped, and the launcher's displaySeed
 also hashes it (C5); the headless tool gives a layout seed the same displaySeed. Nothing else calls the
 generator. Both callers resolve every MM entrance export into NativeFns in member order, including the
@@ -68,23 +71,38 @@ for field in ('settings = entranceSettings', 'active = entranceCaps', 'seed = ma
               'privateMmProfiles = privateMmProfiles', 'ootDump = sohDump', 'mmDump = mmDump',
               'forcedOot = forcedOot', 'oot = ootOracle', 'mm = mmOracle', 'mmStart = mmStart', 'goal = goal',
               'access = ootAccess', 'sharedMask = sharedMask', 'songTravelLogic = sSongTravel.logicEnabled',
-              'foreignSongsLogic = sSongTravel.logicForeignSongs'):
+              'foreignSongsLogic = sSongTravel.logicForeignSongs', 'mqSource = mqSource'):
     assert f'unified.{field};' in loop, field
+# The Master Quest data source the seed is stamped with (MqMode.h SourceForNewSeed) is the one generation admits.
+ordered(fill, 'const auto mqSource = ComboMq::SourceForNewSeed(BundledMqAvailable());', 'unified.mqSource = mqSource;',
+        'ComboMq::StampSeedMq(consolidated["oot"],')
 handler = block(loop, 'catch (const ComboRando::Entrances::ShuffleError& error)')
 for needle in ('entranceLayout = nlohmann::json();', 'lastFillError =', 'pinStartOot = true;',
                'Combo_MM_Rando_Restore();', 'if (++entranceFailures >= kFillAttempts) {', 'fail(lastFillError.c_str());',
                'continue;'):
     assert needle in handler, needle
+# A capacity shortfall: on the seed's own roll (the first attempt) it stops generation with its plain sentence, as
+# OoTMM's seed fails; on a later attempt, which rolled the Master Quest dungeons again, it fails that attempt alone,
+# as a ShuffleError does, but never counts toward the ShuffleError budget, so a good roll is never stopped by it.
+shortfall = block(loop, 'catch (const ComboRando::Entrances::WallmasterCapacityShortfall& error)')
+ordered(shortfall, '<< error.what() <<', 'Combo_MM_Rando_Restore();',
+        'if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(attempt)) {', 'fail(error.player().c_str());',
+        'return;', 'entranceLayout = nlohmann::json();', 'lastFillError =', 'pinStartOot = true;', 'continue;')
+assert 'entranceFailures' not in shortfall, 'a rerolled shortfall is not an exhausted layout search'
 # A refusal stops generation with its plain sentence (owner decision D3, P1-03) and logs the developer text.
 refusal = block(loop, 'catch (const ComboRando::Entrances::UnifiedEntranceRefused& error)')
 for needle in ('<< error.what() <<', 'Combo_MM_Rando_Restore();', 'fail(error.player().c_str());', 'return;'):
     assert needle in refusal, needle
 assert 'continue;' not in refusal and 'entranceFailures' not in refusal, 'a refusal is never retried'
-assert loop.count('catch (const ComboRando::Entrances::') == 2, 'other entrance failures must stop generation'
-# C1: the generator's only rerolling handler is the ShuffleError one. A generic one would reroll a deterministic
-# refusal, forever when retryUntilSuccess is set.
+assert loop.count('catch (const ComboRando::Entrances::') == 3, 'other entrance failures must stop generation'
+# C1: the generator's only rerolling handlers are the ShuffleError and the shortfall ones, in that order before the
+# refusal that derives from the latter. A generic one would reroll a deterministic refusal, forever when
+# retryUntilSuccess is set.
 handlers = loop[steps[5]:steps[7]]
-assert len(re.findall(r'\bcatch\s*\(', handlers)) == 2, 'only an exhausted layout search may reroll'
+assert [m.group(1) for m in re.finditer(r'\bcatch\s*\(([^)]*)\)', handlers)] == [
+    'const ComboRando::Entrances::ShuffleError& error', 'const ComboRando::Entrances::WallmasterCapacityShortfall& error',
+    'const ComboRando::Entrances::UnifiedEntranceRefused& error'], 'only an exhausted layout search or a rerolled ' \
+    'shortfall may reroll'
 assert not re.search(r'\bcatch\s*\(\s*(?:\.\.\.|(?:const\s+)?std::exception)', handlers), 'generic entrance handler'
 assert re.search(r'ComboHash\(ComboRando::Entrances::GeneratedSeedIdentityText\(\s*inputSeed, sohDump, mmDump, '
                  r'SnapshotGameplayRules\(\), sSongTravel\.json\(\),\s*'
@@ -115,8 +133,11 @@ for clear in ('ApplyNativeSeed(', 'applySeed(', 'ApplyNativeMm'):
     assert clear not in generate[steps[6]:steps[-1]], f'{clear} between the install and the requiredness pass'
 for field in ('capability = entranceCapability', 'active = ComboRando::Entrances::ActiveCapabilities()',
               'settings = entranceSettings', 'seed = masterSeed', 'forcedOot = forced', 'oot = oot', 'mm = mmO',
-              'songTravelLogic = generatedSongs.logicEnabled', 'foreignSongsLogic = generatedSongs.logicForeignSongs'):
+              'songTravelLogic = generatedSongs.logicEnabled', 'foreignSongsLogic = generatedSongs.logicForeignSongs',
+              'mqSource = mqSource'):
     assert f'unified.{field};' in generate, field
+ordered(generate, 'auto mqSource = ComboMq::SourceForNewSeed(', 'mqSource = ComboMq::ReadMqDataSource(oot);',
+        'unified.mqSource = mqSource;', 'ComboMq::StampSeedMq(consolidated["oot"], mqSource,')
 for private in ('nativeMmOrdinaryIndoors', 'nativeMmOrdinaryTelescopes', 'nativeMmOrdinaryOverworld',
                 'nativeMmOrdinaryDungeons', 'nativeMmMixed', 'nativeMmGrottos', 'nativeMmWallmasters',
                 '!savedOrdinaryEntrances.is_null()', '!savedGrottoEntrances.is_null()', '!savedMixedEntrances.is_null()'):
@@ -126,10 +147,16 @@ for needle in ('entranceLayout = nlohmann::json();', 'r = { "", false,', 'MM_Res
                'continue;'):
     assert needle in handler, needle
 assert 'return 2;' in block(generate[steps[5]:], 'catch (const std::exception& error)')
-# The same two handlers in order and no other: a reroll, then exit 2 for everything else.
+# As the launcher: a capacity shortfall exits 2 on the first attempt and rerolls a later one.
+shortfall = block(generate, 'catch (const ComboRando::Entrances::WallmasterCapacityShortfall& error)')
+ordered(shortfall, 'if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(attempt)) {', 'error.player()',
+        'return 2;', 'entranceLayout = nlohmann::json();', 'r = { "", false,', 'MM_Restore();', 'pinStartOot = true;',
+        'continue;')
+# The same three handlers in order and no other: the two rerolls, then exit 2 for everything else.
 handlers = generate[steps[5]:steps[7]]
 assert [m.group(1) for m in re.finditer(r'\bcatch\s*\(([^)]*)\)', handlers)] == [
-    'const ComboRando::Entrances::ShuffleError& error', 'const std::exception& error'], 'headless entrance handlers'
+    'const ComboRando::Entrances::ShuffleError& error', 'const ComboRando::Entrances::WallmasterCapacityShortfall& error',
+    'const std::exception& error'], 'headless entrance handlers'
 ordered(generate, 'consolidated["entranceLayout"] = entranceLayout;', 'ComboRando::StampComboSeedFormat(consolidated);')
 # A layout seed gets the launcher's displaySeed: the same text, from the rules and song map the seed records, with the
 # headless tool's input seed. A seed without a layout gets none, so it stays byte-identical to older builds' output.

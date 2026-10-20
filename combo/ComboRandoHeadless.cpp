@@ -1228,7 +1228,8 @@ int RunHeadless(int argc, char** argv) {
                 }
             }
             // Same placement and failure rules as RunComboFill: only a layout search that used up its 1000
-            // attempts rerolls (within this loop's budget); any other entrance failure is a setup error.
+            // attempts rerolls (within this loop's budget), and so does a retry whose rerolled Master Quest
+            // dungeons have more Wallmasters than entrances; any other entrance failure is a setup error.
             try {
                 ComboRando::Entrances::UnifiedGeneration unified;
                 unified.settings = entranceSettings;
@@ -1254,6 +1255,7 @@ int RunHeadless(int argc, char** argv) {
                 unified.sharedMask = sharedMask;
                 unified.songTravelLogic = generatedSongs.logicEnabled;
                 unified.foreignSongsLogic = generatedSongs.logicForeignSongs;
+                unified.mqSource = mqSource;
                 ComboRando::Entrances::UnifiedEntranceStats validationStats;
                 unified.wallmasterShortcut = entranceValidationMode != "baseline";
                 unified.stats = entranceValidationMode.empty() ? nullptr : &validationStats;
@@ -1283,6 +1285,21 @@ int RunHeadless(int argc, char** argv) {
                 r = { "", false, std::string("entrance shuffle found no valid layout: ") + error.what() };
                 std::cerr << "[comborando] seed " << masterSeed
                           << ": entrance shuffle found no valid layout: " << error.what() << "\n";
+                if (MM_Restore)
+                    MM_Restore();
+                if (mmStart && startCfg == 2)
+                    pinStartOot = true;
+                continue;
+            } catch (const ComboRando::Entrances::WallmasterCapacityShortfall& error) {
+                // As RunComboFill: the seed's own roll (the first attempt) stops generation, as OoTMM's seed fails;
+                // a later attempt rolled the Master Quest dungeons again and fails alone.
+                std::cerr << "[comborando] seed " << masterSeed << ": " << error.what() << "\n";
+                if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(attempt)) {
+                    std::cerr << "[comborando] entrance layout generation: " << error.player() << "\n";
+                    return 2;
+                }
+                entranceLayout = nlohmann::json();
+                r = { "", false, std::string("entrance generation refused: ") + error.what() };
                 if (MM_Restore)
                     MM_Restore();
                 if (mmStart && startCfg == 2)

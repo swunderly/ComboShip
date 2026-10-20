@@ -2,6 +2,7 @@
 #include "EntranceLayout.h"
 #include "EntranceAvailability.h"
 #include "rando/ComboSeedFormat.h"
+#include "mq/MqMode.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <array>
@@ -166,6 +167,14 @@ template <class Read> bool MqWallmasterShortfallForced(Read read, bool mqOnly) {
     return is("Spirit", MqRoll::MasterQuest) && is("BotW", MqRoll::MasterQuest) && is("Shadow", MqRoll::Vanilla) &&
            is("Ganon", MqRoll::Vanilla);
 }
+// Whether a new seed's Master Quest dungeons use OoTMM's bundled data: the catalogue's mqSource (OTRGlobals.cpp
+// SOH_DumpProfileCatalog), which is the source the launcher stamps on the seed (MqMode.h SourceForNewSeed). A
+// catalogue without it is not bundled.
+inline bool CatalogueMqBundled(const nlohmann::json& ootCatalog) {
+    const auto source = ootCatalog.find("mqSource");
+    return source != ootCatalog.end() && source->is_string() &&
+           source->get_ref<const std::string&>() == ComboMq::kMqDataSourceBundled;
+}
 // Asset facts come from the native profile catalogue, not an unapplied MQ CVar. `caps` are the build's.
 template <class Read>
 EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nlohmann::json& ootCatalog, Read read,
@@ -180,9 +189,15 @@ EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nloh
     // oot-mq.o2r or OoTMM's bundled MQ data). Without MQ data the native settings keep every dungeon vanilla.
     const bool mqOnly = ootCatalog.at("hasMasterQuest").get<bool>() && !ootCatalog.at("hasOriginal").get<bool>();
     if (mqOnly || (ootCatalog.at("mqPlayable").get<bool>() && read("gRandoSettings.MQDungeons", 0) != 0)) {
-        // The frozen vanilla id takes no Master Quest dungeon; the quests id takes every context it can place.
+        // The frozen vanilla id takes no Master Quest dungeon. The quests id takes every context it can place, but
+        // only from the bundled data, whose roll is the seed's own (UnifiedBridge.h AdmitsMasterQuestContext): a real
+        // oot-mq.o2r (Legacy) rolls on the shared stream, which the oracle's reset can leave elsewhere. An MQ-only
+        // install is always Legacy (the bundled data needs the vanilla oot.o2r).
         if (!caps.Active(kQuestsWallmasterCapability))
             return { kWallmasterMasterQuestText, "Wallmaster Shuffle currently supports vanilla dungeons only" };
+        if (!CatalogueMqBundled(ootCatalog))
+            return { kWallmasterMasterQuestText,
+                     "Wallmaster Shuffle supports Master Quest dungeons only from OoTMM's bundled data" };
         if (MqWallmasterShortfallForced(read, mqOnly))
             return WallmasterCapacityRefusal();
     }

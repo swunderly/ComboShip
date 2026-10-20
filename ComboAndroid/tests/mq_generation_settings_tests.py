@@ -14,9 +14,15 @@ accessor (OTRGlobals.cpp) and the seed marker (combo/mq/MqSeedMarker.h), and che
 - the seed records the rolled dungeons (StampSeedMq) and a reload's roll matches them (ReplayKeepsMqDungeons);
 - the launcher and the headless generator set the master seed before every finalize, and the headless replay checks
   the recorded MQ dungeons as the in-game reload does;
+- the menu's model of the roll (EntranceProfile.h MqRollRange, MqWallmasterShortfallForced) against the roll itself,
+  over the MQ settings modes: every rolled dungeon stays within its modelled range, and the model calls a selection
+  forced exactly when every roll leaves more OoT Wallmasters than dungeon entrances (m1-contract.json
+  capacityShortfalls); Allsanity's coin flips land there about once in sixteen seeds;
 - the native options, the profile catalogue (mqPlayable, mqSource), the profile editor's rows and its Wallmaster
   refusal agree in every install state, and the greyed-out rows say why: only the MQ archive is loaded, or, with the
-  vanilla game, MQ needs an OoT USA 1.0 ROM;
+  vanilla game, MQ needs an OoT USA 1.0 ROM; the Master Quest Wallmaster id takes MQ selections only from the bundled
+  data, and a selection it refuses as forced always shows the Spirit Temple and Bottom of the Well rows its sentence
+  names;
 - the seed lists its MQ dungeons by SoH's names, as SoH's and OoTMM's spoilers do, and the seed views show them;
 - Allsanity's help says its MQ dungeons are OoTMM's coin flips and what they need;
 - the check tracker keeps SoH's spoiler behaviour (the owner's default): a dungeon whose quest was rolled stays hidden
@@ -24,6 +30,7 @@ accessor (OTRGlobals.cpp) and the seed marker (combo/mq/MqSeedMarker.h), and che
 """
 from pathlib import Path
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -102,6 +109,15 @@ seed_set = function(otr, 'extern "C" COMBO_EXPORT void SOH_SetComboRandoSeed(uin
 seed_get = function(otr, 'bool Combo_GetRandoSeed(uint64_t* seed)')
 mask_export = function(otr, 'extern "C" COMBO_EXPORT int SOH_GetMqDungeonMask(void)')
 
+# The Master Quest contexts with more OoT Wallmasters than dungeon entrances, over the six Wallmaster dungeons
+# (tools/ootmm/m1-contract.json, which the generator tests pin to RequireWallmasterCapacity).
+contract = json.loads(read('tools/ootmm/m1-contract.json'))['mqSources']
+check(contract['dungeons'] == ['Forest', 'Spirit', 'Shadow', 'BotW', 'GTG', 'Ganon'] and
+      len(contract['capacityShortfalls']) == 4, 'm1-contract.json: the six Wallmaster dungeons and four shortfalls')
+wallmaster_dungeons = ', '.join(f'"{d}"' for d in contract['dungeons'])
+shortfall_rows = ',\n'.join('    { ' + ', '.join(f'"{d}"' for d in row['mq']) + ' }'
+                            for row in contract['capacityShortfalls'])
+
 seeds = [0, 1, 7, 412070000, 4294967295, 18446744073709551615]
 pins = '\n'.join(f'    static_assert(ComboMq::MqRollSeed({s}ull) == {fnv1a("mqDungeons:ootmm-32.3:" + str(s))}u);'
                  for s in seeds)
@@ -126,6 +142,7 @@ harness = r'''
 #include "randomizerEnums.h"
 #include "mq/MqSeedMarker.h"
 #include "rando/ComboPresets.h"
+#include "rando/entrances/EntranceProfile.h"
 #define MAX_MQ_DUNGEON_COUNT 12
 
 namespace ShipUtils {
@@ -233,6 +250,58 @@ static void Require(bool condition, const std::string& message) {
 }
 static const auto kLegacy = ComboMq::SeedMqSource::Legacy;
 static const auto kBundled = ComboMq::SeedMqSource::Bundled;
+
+// m1-contract.json mqSources: the Wallmaster dungeons, and the ones Master Quest in each capacity shortfall.
+static const std::vector<std::string> kWallmasterDungeons = { ''' + wallmaster_dungeons + r''' };
+static const std::set<std::set<std::string>> kShortfalls = {
+''' + shortfall_rows + r'''
+};
+// A rolled mask (SOH_GetMqDungeonMask, DungeonKey order) is a capacity shortfall.
+static bool Shortfall(int mask) {
+    std::set<std::string> mq;
+    for (const auto& dungeon : kWallmasterDungeons)
+        if (mask & (1 << ComboRando::Entrances::OotMqIndex(dungeon)))
+            mq.insert(dungeon);
+    return kShortfalls.count(mq) != 0;
+}
+// The menu's model of the roll (EntranceProfile.h) against the roll itself for one selection, on master seeds of a
+// bundled seed. Every roll stays within the modelled range, and the model calls the selection forced exactly when
+// every roll is a shortfall: a forced selection is sampled kSamples times; any other is sampled until a roll that is
+// not a shortfall turns up (kMaxSamples at most). Returns how many sampled rolls were shortfalls.
+struct RollStats {
+    int selections = 0, forced = 0, mixed = 0;
+};
+static void CompareRoll(const Values& rules, RollStats& stats) {
+    constexpr int kSamples = 64, kMaxSamples = 4096;
+    const auto read = [&](const char* key, int fallback) {
+        const auto row = kMqCvars.find(key);
+        return row != kMqCvars.end() ? rules.at(row->second) : fallback;
+    };
+    const auto range = ComboRando::Entrances::MqRollRange(read, false);
+    const bool forced = ComboRando::Entrances::MqWallmasterShortfallForced(read, false);
+    bool every = true, any = false;
+    int samples = 0;
+    for (; samples < kSamples || (!forced && every && samples < kMaxSamples); samples++) {
+        SOH_SetComboRandoSeed(412070000ull + 7919ull * samples);
+        const int mask = Finalize(rules, kBundled);
+        for (int i = 0; i < 12; i++) {
+            const bool mq = (mask >> i) & 1;
+            Require(range[i] == ComboRando::Entrances::MqRoll::Either ||
+                        mq == (range[i] == ComboRando::Entrances::MqRoll::MasterQuest),
+                    "dungeon " + std::to_string(i) + " rolled outside MqRollRange");
+        }
+        every = every && Shortfall(mask);
+        any = any || Shortfall(mask);
+    }
+    std::string selection;
+    for (const auto& [key, value] : rules)
+        selection += " " + std::to_string(key) + "=" + std::to_string(value);
+    Require(forced == every, std::string(forced ? "a forced selection rolled a placeable context:"
+                                                : "every roll of an unforced selection was a shortfall:") + selection);
+    stats.selections++;
+    stats.forced += forced;
+    stats.mixed += any && !every;
+}
 
 int main() {
     try {
@@ -353,6 +422,43 @@ int main() {
             const int chosen = Finalize(selection, kBundled);
             Require((chosen & ~(1 | (1 << 6))) == 0 && (chosen & 1), "Selection: fixed quests stay fixed");
         }
+
+        // The menu's model of the roll against the roll (settings.cpp Context::FinalizeSettings), over None, Set
+        // Number with every count, Random and Selection Only, with Set Dungeon Quests off and on, and every quest
+        // (Vanilla, Master Quest, Random) of the four dungeons the capacity depends on, the other eight sharing one.
+        for (int i = 0; i < 12; i++)
+            Require(kMqCvars.at(ComboRando::Entrances::kMqDungeonQuestSettings[i]) == RSK_MQ_DEKU_TREE + i,
+                    "kMqDungeonQuestSettings must be the per-dungeon CVars in DungeonKey order");
+        RollStats rolls;
+        CompareRoll(Rules({}), rolls);
+        const int keyDungeons[] = { RSK_MQ_SPIRIT_TEMPLE, RSK_MQ_BOTTOM_OF_THE_WELL, RSK_MQ_SHADOW_TEMPLE,
+                                    RSK_MQ_GANONS_CASTLE };
+        for (int mode : { RO_MQ_DUNGEONS_SET_NUMBER, RO_MQ_DUNGEONS_RANDOM_NUMBER, RO_MQ_DUNGEONS_SELECTION })
+            for (int presets : { 0, 1 })
+                for (int count = 0; count <= (mode == RO_MQ_DUNGEONS_SET_NUMBER ? 12 : 0); count++)
+                    for (int quests = 0; quests < 81; quests++)
+                        for (int others : { RO_MQ_SET_VANILLA, RO_MQ_SET_MQ, RO_MQ_SET_RANDOM }) {
+                            Values rules = Rules({ { RSK_MQ_DUNGEON_RANDOM, mode },
+                                                   { RSK_MQ_DUNGEON_COUNT, mode == RO_MQ_DUNGEONS_SET_NUMBER ? count : 12 },
+                                                   { RSK_MQ_DUNGEON_SET, presets } });
+                            for (int i = 0; i < 12; i++)
+                                rules[RSK_MQ_DEKU_TREE + i] = others;
+                            for (int k = 0, rest = quests; k < 4; k++, rest /= 3)
+                                rules[keyDungeons[k]] = rest % 3;
+                            CompareRoll(rules, rolls);
+                        }
+        Require(rolls.selections == 1 + 2 * 81 * 3 * (13 + 1 + 1), "every MQ selection compared");
+        Require(rolls.forced > 0 && rolls.mixed > 0, "forced selections and random rolls that can land on a shortfall");
+        // Allsanity's coin flips: Spirit and BotW Master Quest and Shadow and Ganon vanilla, about one in sixteen.
+        int allsanityShortfalls = 0;
+        for (int s = 0; s < 2000; s++) {
+            SOH_SetComboRandoSeed(900000000ull + s);
+            allsanityShortfalls += Shortfall(Finalize(allsanity, kBundled));
+        }
+        Require(allsanityShortfalls > 2000 * 3 / 64 && allsanityShortfalls < 2000 * 5 / 64,
+                "Allsanity lands on a shortfall in " + std::to_string(allsanityShortfalls) + " of 2000 seeds");
+        std::printf("MQ roll model: %d selections, %d forced, %d with random shortfalls; Allsanity %d/2000\n",
+                    rolls.selections, rolls.forced, rolls.mixed, allsanityShortfalls);
 
         // A seed without the marker on the same install: every dungeon vanilla, and no random number is drawn, so
         // the seed finalizes exactly as before.
@@ -496,21 +602,81 @@ int main() {
                     Require(row.disabled == !available && row.disabledText == reason,
                             where + "profile MQ row " + std::to_string(key) + ": " + row.disabledText);
                 }
-                // Wallmaster Shuffle stays refused with MQ selected wherever MQ can be played: the player sees the
-                // plain Master Quest sentence, and the log keeps the developer text (EntranceAvailability.h).
+                // Wallmaster Shuffle with MQ selected wherever MQ can be played: the frozen vanilla id refuses it,
+                // and so does the Master Quest id unless a new seed's MQ dungeons are OoTMM's bundled data (the
+                // catalogue's mqSource), whose roll is the seed's own. The player sees the plain Master Quest
+                // sentence, and the log keeps the developer text (EntranceAvailability.h). No MQ mode alone forces
+                // the capacity shortfall.
                 nlohmann::json draft = { { "mm", { { "settings", nlohmann::json::object() } } } };
-                const auto refusal = ComboRando::Entrances::ProfileWallmasterRefusal(
-                    draft, catalogue, [&](const char* key, int fallback) {
-                        return std::string(key) == "gRandoSettings.MQDungeons" ? mqMode : fallback;
-                    });
-                const bool refused = (globals.hasMasterQuest && !globals.hasOriginal) || (available && mqMode != 0);
-                Require(refusal.player ==
-                                (refused ? "Wallmaster Shuffle does not support Master Quest dungeons yet." : "") &&
-                            refusal.log == (refused ? "Wallmaster Shuffle currently supports vanilla dungeons only" : ""),
-                        where + "Wallmaster refusal with MQ mode " + std::to_string(mqMode));
+                const bool mqPossible = (globals.hasMasterQuest && !globals.hasOriginal) || (available && mqMode != 0);
+                using ComboRando::Entrances::CapabilitySet;
+                using ComboRando::Entrances::Stage;
+                const auto vanillaOnly = CapabilitySet::AtLeast(Stage::Hidden).Only(
+                    ComboRando::Entrances::kVanillaWallmasterCapability);
+                const auto withQuests = CapabilitySet::AtLeast(Stage::Hidden);
+                for (const auto& caps : { vanillaOnly, withQuests, ComboRando::Entrances::ActiveCapabilities() }) {
+                    const auto refusal = ComboRando::Entrances::ProfileWallmasterRefusal(
+                        draft, catalogue,
+                        [&](const char* key, int fallback) {
+                            return std::string(key) == "gRandoSettings.MQDungeons" ? mqMode : fallback;
+                        },
+                        caps);
+                    const bool quests = caps.Active(ComboRando::Entrances::kQuestsWallmasterCapability);
+                    const bool refused = mqPossible && (!quests || !globals.bundledMasterQuest);
+                    const std::string log =
+                        !refused  ? ""
+                        : !quests ? "Wallmaster Shuffle currently supports vanilla dungeons only"
+                                  : "Wallmaster Shuffle supports Master Quest dungeons only from OoTMM's bundled data";
+                    Require(refusal.player ==
+                                    (refused ? "Wallmaster Shuffle does not support Master Quest dungeons yet." : "") &&
+                                refusal.log == log,
+                            where + "Wallmaster refusal with MQ mode " + std::to_string(mqMode));
+                }
             }
         }
         Require(states == 6, "six install states");
+        // A selection the Master Quest id refuses as forced always shows the rows its sentence names: Spirit Temple
+        // Quest and Bottom of the Well Quest, editable, in the profile editor as in the native menu (both show the
+        // per-dungeon rows with Selection Only, or with Set Dungeon Quests on).
+        globals.hasOriginal = true;
+        globals.hasMasterQuest = false;
+        globals.bundledMasterQuest = true;
+        const auto bundledCatalogue = Catalogue();
+        int forcedSelections = 0;
+        const int keyDungeons[] = { RSK_MQ_SPIRIT_TEMPLE, RSK_MQ_BOTTOM_OF_THE_WELL, RSK_MQ_SHADOW_TEMPLE,
+                                    RSK_MQ_GANONS_CASTLE };
+        for (int mode = 0; mode < 4; mode++)
+            for (int presets : { 0, 1 })
+                for (int count = 0; count <= 12; count++)
+                    for (int quests = 0; quests < 81; quests++)
+                        for (int others = 0; others < 3; others++) {
+                            std::map<std::string, int> cvars = { { "gRandoSettings.MQDungeons", mode },
+                                                                 { "gRandoSettings.MQDungeonsSelection", presets },
+                                                                 { "gRandoSettings.MQDungeonCount", count } };
+                            for (const char* key : ComboRando::Entrances::kMqDungeonQuestSettings)
+                                cvars[key] = others;
+                            for (int k = 0, rest = quests; k < 4; k++, rest /= 3)
+                                cvars[ComboRando::Entrances::kMqDungeonQuestSettings[keyDungeons[k] -
+                                                                                    RSK_MQ_DEKU_TREE]] = rest % 3;
+                            const auto read = [&](const char* key, int fallback) {
+                                const auto it = cvars.find(key);
+                                return it != cvars.end() ? it->second : fallback;
+                            };
+                            if (!ComboRando::Entrances::MqWallmasterShortfallForced(read, false))
+                                continue;
+                            forcedSelections++;
+                            nlohmann::json draft = { { "mm", { { "settings", nlohmann::json::object() } } } };
+                            Require(ComboRando::Entrances::ProfileWallmasterRefusal(
+                                        draft, bundledCatalogue, read, ComboRando::Entrances::CapabilitySet::AtLeast(
+                                                                           ComboRando::Entrances::Stage::Hidden))
+                                            .player == ComboRando::Entrances::kWallmasterCapacityText,
+                                    "a forced selection shows the capacity sentence");
+                            ComboRando::ProfileOotPolicy::View view(bundledCatalogue, read);
+                            for (int key : { RSK_MQ_SPIRIT_TEMPLE, RSK_MQ_BOTTOM_OF_THE_WELL })
+                                Require(!view.mOptions.at(key).hidden && !view.mOptions.at(key).disabled,
+                                        "a forced selection hides or disables row " + std::to_string(key));
+                        }
+        Require(forcedSelections > 0, "forced selections exist");
         // A catalogue without mqPlayable (never written by this build) keeps the rows unavailable.
         auto old = Catalogue();
         old.erase("mqPlayable");

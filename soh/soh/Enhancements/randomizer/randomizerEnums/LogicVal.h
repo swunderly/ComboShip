@@ -339,7 +339,9 @@ RANDO_ENUM_ITEM(LOGIC_SHADOW_TRIAL_FIRST_CHEST)
 RANDO_ENUM_ITEM(LOGIC_SHADOW_TRIAL_LOWER_SWITCH)
 RANDO_ENUM_ITEM(LOGIC_SHADOW_TRIAL_RUSTED_SWITCH)
 #ifdef COMBO_BUILD
-// Derived search events only. Append to retain existing logic IDs.
+// ComboShip's own logic events: the derived search events, then two region events of the MQ Ganon Spirit trial. The
+// region events shift the ids of the LOGIC_SR_* events after this block, which is harmless: logic ids are never saved
+// (Logic::inLogic is runtime state that Logic::Reset clears), so no file holds one.
 RANDO_ENUM_ITEM(LOGIC_RENEWABLE_SEEDS)
 RANDO_ENUM_ITEM(LOGIC_RENEWABLE_ARROWS)
 RANDO_ENUM_ITEM(LOGIC_RENEWABLE_BOMBS)

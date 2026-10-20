@@ -56,7 +56,7 @@ Nothing here has been tried yet; host tests cover the routes, the logic and the 
 6. **Ganon's Castle (adult).** Room 18, the Spirit trial's sun room: light a wrong sun and a Wallmaster drops (`OOT Ganon Castle Spirit Wallmaster`).
 7. **Shadow Temple.** Its Master Quest version has no Wallmaster: walk it with the log on and none appears.
 8. Choose Selection Only, set Spirit Temple Quest and Bottom of the Well Quest to Master Quest and Shadow Temple Quest and Ganon's Castle Quest to Vanilla. Own Game is greyed out with "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle." under the row; with Own Game already set, the Generate button is disabled and shows the same sentence. Set either of the two to Vanilla: both clear.
-9. Apply the Allsanity preset, set Wallmaster Shuffle to Own Game and generate several seeds with the Seed field blank. About one in sixteen comes up with that combination and stops with the same sentence, as OoTMM's generation does; the others finish, and their seed views list their Master Quest dungeons.
+9. Apply the Allsanity preset, set Wallmaster Shuffle to Own Game and generate several seeds with the Seed field blank. About one seed in sixteen rolls that combination for its own Master Quest dungeons and stops at once with "This seed's Master Quest dungeons have more Wallmasters than Wallmaster Shuffle can place. Try another seed."; only the seed's first roll can stop it, never a retry after a failed fill. The others finish, and their seed views list their Master Quest dungeons.
 10. A seed without Master Quest dungeons from this build loads in 0.4.12. A seed with one is refused there.
 
 ## Wallmaster Shuffle (0.4.12, unreleased)

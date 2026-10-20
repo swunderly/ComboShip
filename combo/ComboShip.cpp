@@ -2663,7 +2663,8 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         }
         // This attempt's OoTMM entrance layout, installed for its fill, hints, playthrough and spoiler; the
         // next attempt's clear removes it. Only a layout search that used up its 1000 attempts rerolls, and
-        // only within the headless budget (C1); any other entrance failure stops generation.
+        // only within the headless budget (C1), and so does a retry whose rerolled Master Quest dungeons have
+        // more Wallmasters than entrances; any other entrance failure stops generation.
         try {
             ComboRando::Entrances::UnifiedGeneration unified;
             unified.settings = entranceSettings;
@@ -2682,6 +2683,7 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
             unified.sharedMask = sharedMask;
             unified.songTravelLogic = sSongTravel.logicEnabled;
             unified.foreignSongsLogic = sSongTravel.logicForeignSongs;
+            unified.mqSource = mqSource;
             entranceLayout = ComboRando::Entrances::GenerateEntranceLayout(unified, sEntranceNative, sTempleProbe);
             if (!entranceLayout.is_null())
                 ComboRando::Entrances::ApplyUnifiedLayout(sEntranceNative, entranceLayout, entranceCaps);
@@ -2698,6 +2700,23 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                 fail(lastFillError.c_str());
                 return;
             }
+            continue;
+        } catch (const ComboRando::Entrances::WallmasterCapacityShortfall& error) {
+            // This attempt's Master Quest dungeons have more OoT Wallmasters than entrances. The seed's own roll (the
+            // first attempt) stops generation with the plain sentence, as OoTMM's seed fails; a later attempt rolled
+            // them again, and fails alone, as above, without counting as an entrance failure.
+            std::cerr << "[ComboShip] RunComboFill: attempt " << (attempt + 1) << attemptBudget
+                      << ": entrance generation refused: " << error.what() << "\n";
+            if (Combo_MM_Rando_Restore)
+                Combo_MM_Rando_Restore();
+            if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(attempt)) {
+                fail(error.player().c_str());
+                return;
+            }
+            entranceLayout = nlohmann::json();
+            lastFillError = error.what();
+            if (mmStart && startCfg == 2)
+                pinStartOot = true;
             continue;
         } catch (const ComboRando::Entrances::UnifiedEntranceRefused& error) {
             // Never retried (C1). The log keeps the developer text; the player sees the plain sentence (D3).

@@ -56,18 +56,29 @@ struct EntranceRefusal {
 inline constexpr const char* kWallmasterShipEntrancesText =
     "Turn off the other OoT entrance shuffles, and Warp Songs and Owl Drops on the Warps & travel page, to use "
     "Wallmaster Shuffle.";
+// Master Quest dungeons that Wallmaster Shuffle cannot take: any, for the frozen vanilla id, and any played from data
+// other than OoTMM's bundled data (a real oot-mq.o2r), whose roll is not the seed's own (UnifiedBridge.h).
 inline constexpr const char* kWallmasterMasterQuestText =
     "Wallmaster Shuffle does not support Master Quest dungeons yet.";
 inline constexpr const char* kWallmasterDungeonDataText = "Wallmaster Shuffle cannot read the OoT dungeon data.";
 // Master Quest Spirit Temple and Bottom of the Well with a vanilla Shadow Temple and Ganon's Castle have 12 OoT
-// Wallmasters for 11 dungeon entrances, which OoTMM cannot place (UnifiedBridge.h RequireWallmasterCapacity). Either
-// row set to Vanilla removes every such context; the sentence names the menu's own rows and choice.
+// Wallmasters for 11 dungeon entrances, which OoTMM cannot place (UnifiedBridge.h RequireWallmasterCapacity).
+// Two sentences. Where every roll of the MQ settings is such a context (EntranceProfile.h MqWallmasterShortfallForced),
+// the row, its tooltip and the Generate button name the rows that fix it: the per-dungeon rows, which those settings
+// always show, and either one set to Vanilla removes every such context. Where a random roll lands on one on the
+// seed's own first attempt, generation stops with the second, as OoTMM's seed fails; another seed rolls again.
 inline constexpr const char* kWallmasterCapacityText =
     "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.";
-inline EntranceRefusal WallmasterCapacityRefusal(
-    std::string log = "Master Quest Spirit Temple and Bottom of the Well with vanilla Shadow Temple and Ganon's Castle "
-                      "have more OoT Wallmasters than dungeon entrances") {
+inline constexpr const char* kWallmasterCapacitySeedText =
+    "This seed's Master Quest dungeons have more Wallmasters than Wallmaster Shuffle can place. Try another seed.";
+inline constexpr const char* kWallmasterCapacityLog =
+    "Master Quest Spirit Temple and Bottom of the Well with vanilla Shadow Temple and Ganon's Castle have more OoT "
+    "Wallmasters than dungeon entrances";
+inline EntranceRefusal WallmasterCapacityRefusal(std::string log = kWallmasterCapacityLog) {
     return { kWallmasterCapacityText, std::move(log) };
+}
+inline EntranceRefusal WallmasterSeedCapacityRefusal(std::string log = kWallmasterCapacityLog) {
+    return { kWallmasterCapacitySeedText, std::move(log) };
 }
 inline EntranceRefusal ShipEntrancesRefusal() {
     return { kWallmasterShipEntrancesText, "Wallmaster and One-Way shuffles need Ship's own entrance shuffle off" };

@@ -4,15 +4,17 @@
 // packages/logic/src/solver/entrances.ts (WorldShuffler.run :905-934, LogicPassEntrances :1061-1134).
 // The dev-only MM tranche retains its absent-OoT-source contract. The separately named vanilla
 // capability binds both games, with actual native quest context and no MQ admission; the quests
-// capability binds the same rules where a Master Quest dungeon is played. The launcher and headless tool
-// call it once per generation attempt, after the native pools and Ship's own entrance shuffle and before
-// the combined fill.
+// capability binds the same rules where a Master Quest dungeon of OoTMM's bundled data is played. The
+// launcher and headless tool call it once per generation attempt, after the native pools and Ship's own
+// entrance shuffle and before the combined fill.
 // MIT, Copyright (c) 2020-2022 OoTMM Team; see LICENSE.OoTMM.
 #pragma once
 #include "NativeBridge.h"
+#include "EntranceProfile.h"
 #include "MmUnifiedLayout.h"
 #include "OotUnifiedLayout.h"
 #include "TempleNative.h"
+#include "mq/MqMode.h"
 #include "rando/GenerationRules.h"
 #include <functional>
 #include <optional>
@@ -39,6 +41,21 @@ class UnifiedEntranceRefused : public std::logic_error {
   private:
     std::string sentence;
 };
+// The refusal of a Master Quest context with more OoT Wallmasters than dungeon entrances (RequireWallmasterCapacity).
+// It depends on the Master Quest dungeons the attempt rolled, so its caller can tell the seed's own roll from a
+// retry's (WallmasterShortfallStopsGeneration).
+class WallmasterCapacityShortfall : public UnifiedEntranceRefused {
+  public:
+    using UnifiedEntranceRefused::UnifiedEntranceRefused;
+};
+// OoTMM resolves a seed's Master Quest dungeons once (packages/logic/src/world/flags.ts:45-75) and fails the seed when
+// they leave more Wallmasters than entrances. The port's first generation attempt (0) is the seed's own roll: its
+// shortfall stops generation, as OoTMM's seed fails. Each later attempt rerolls the dungeons from its own master seed
+// (ComboShip.cpp RunComboFill, ComboRandoHeadless.cpp), so its shortfall fails only that attempt, as a ShuffleError
+// does, and generation goes on.
+constexpr bool WallmasterShortfallStopsGeneration(uint64_t attempt) {
+    return attempt == 0;
+}
 
 // RSK_MQ_DUNGEON_RANDOM; option 0 (RO_MQ_DUNGEONS_NONE) keeps every dungeon vanilla (settings.cpp:2919-2922).
 inline constexpr const char* kMqDungeonsSetting = "gRandoSettings.MQDungeons";
@@ -66,6 +83,9 @@ struct UnifiedGeneration {
     bool songTravelLogic = false, foreignSongsLogic = false; // the installed SongTravelMap's logic flags
     bool wallmasterShortcut = true; // developer differential seam; never serialized as a seed setting
     UnifiedEntranceStats* stats = nullptr;
+    // Where the seed's Master Quest dungeons come from (MqMode.h SourceForNewSeed, or a restored seed's marker). Only
+    // Bundled admits a Master Quest context (AdmitsMasterQuestContext).
+    ComboMq::SeedMqSource mqSource = ComboMq::SeedMqSource::Legacy;
 };
 
 // The soh Temple probe exports, through the caller's module lookup (TempleNative.h).
@@ -93,17 +113,24 @@ inline bool BindsOotWallmasters(std::string_view required) {
     return required == kVanillaWallmasterCapability || required == kQuestsWallmasterCapability;
 }
 // Whether the generation may read a Master Quest context: the quests id, or the vanilla id chosen by
-// settings (not selected by name) in a build that has the quests id too.
+// settings (not selected by name) in a build that has the quests id too, and in either case only for
+// OoTMM's bundled data. A bundled seed rolls its Master Quest dungeons on a stream of their own from its
+// master seed (settings.cpp, MqMode.h MqRollSeed), so every finalize of an attempt rolls the same ones, as
+// OoTMM resolves them once per seed. Legacy data (a real oot-mq.o2r) rolls them on the shared stream,
+// which the oracle's first reset can leave elsewhere, so it keeps the vanilla dungeons only.
 inline bool AdmitsMasterQuestContext(std::string_view required, std::string_view capability,
-                                     const CapabilitySet& active) {
+                                     const CapabilitySet& active, ComboMq::SeedMqSource source) {
+    if (source != ComboMq::SeedMqSource::Bundled)
+        return false;
     return required == kQuestsWallmasterCapability || (capability.empty() && required == kVanillaWallmasterCapability &&
                                                        active.Active(kQuestsWallmasterCapability));
 }
 // The id for the native quest context: a Master Quest dungeon moves the vanilla id to the quests id, so an
-// all-vanilla seed keeps the frozen vanilla id, and with it its exact bytes. A selected id is kept.
+// all-vanilla seed keeps the frozen vanilla id and the layout 0.4.12 makes. A selected id is kept.
 inline std::string UnifiedQuestRequirement(const std::string& required, const OotQuests& quests,
-                                           std::string_view capability, const CapabilitySet& active) {
-    if (AnyMasterQuest(quests) && AdmitsMasterQuestContext(required, capability, active))
+                                           std::string_view capability, const CapabilitySet& active,
+                                           ComboMq::SeedMqSource source) {
+    if (AnyMasterQuest(quests) && AdmitsMasterQuestContext(required, capability, active, source))
         return std::string(kQuestsWallmasterCapability);
     return required;
 }
@@ -135,10 +162,12 @@ inline void RequireUnifiedCoverage(const Pools& pools, const Settings& s, bool o
 // destinations they can take can never be placed, and OoTMM then fails the seed: "Too many backtracks" (:556-560) in
 // each of LogicPassEntrances.run's 1000 attempts (:1119-1134), on the Master Quest dungeons it resolved once from the
 // seed (world/flags.ts:45-75, builder.ts:173-175, pipeline.ts:63-87), which nothing re-rolls (generator.ts:108).
-// Refused here, never retried, before any random draw. Only Master Quest Spirit Temple and Bottom of the Well with a
-// vanilla Shadow Temple and Ganon's Castle do it: 12 OoT Wallmasters for 11 dungeon entrances
-// (tools/ootmm/m1-contract.json mqSources.capacityShortfalls).
-inline void RequireWallmasterCapacity(const Pools& pools, const Settings& s) {
+// Refused here, before any random draw. Only Master Quest Spirit Temple and Bottom of the Well with a vanilla Shadow
+// Temple and Ganon's Castle do it: 12 OoT Wallmasters for 11 dungeon entrances (tools/ootmm/m1-contract.json
+// mqSources.capacityShortfalls). That refusal is a WallmasterCapacityShortfall, with the sentence for settings whose
+// every roll is such a context (`forced`, EntranceProfile.h MqWallmasterShortfallForced) or for a random roll that
+// landed on one; any other pool's shortfall would not depend on the roll and stops generation.
+inline void RequireWallmasterCapacity(const Pools& pools, const Settings& s, bool forced = false) {
     for (const auto& pool : pools)
         for (const Game game : { Game::Oot, Game::Mm }) {
             size_t sources = 0;
@@ -157,7 +186,8 @@ inline void RequireWallmasterCapacity(const Pools& pools, const Settings& s) {
             const auto log = pool.name + " has " + std::to_string(sources) + " sources for " +
                              std::to_string(destinations.size()) + " destinations; OoTMM cannot place them";
             if (game == Game::Oot && pool.name == "WALLMASTERS")
-                throw UnifiedEntranceRefused(WallmasterCapacityRefusal(log));
+                throw WallmasterCapacityShortfall(forced ? WallmasterCapacityRefusal(log)
+                                                         : WallmasterSeedCapacityRefusal(log));
             throw UnifiedEntranceRefused(log);
         }
 }
@@ -167,7 +197,7 @@ inline void RequireOotWallmasterExports(const NativeFns& native) {
         !native.clearAssumptions || !native.setGenerationSettings)
         throw UnifiedEntranceRefused("OoT Wallmaster generation needs all native entrance exports");
 }
-// The native quest context, read once the oracle's first reset has finalized the OoT settings. A Master Quest
+// The native quest context, read from the dump's finalize and again after the oracle's first reset. A Master Quest
 // dungeon is refused unless `admitMq` (AdmitsMasterQuestContext).
 inline OotQuests ReadUnifiedOotQuests(const NativeFns& native, bool admitMq = false) {
     RequireOotWallmasterExports(native);
@@ -246,11 +276,13 @@ inline std::string GeneratedSeedIdentityText(const std::string& inputSeed, const
 // 2. no pool to place: no layout, no random draw, no native call (OoTMM keeps worldChanged false and
 //    validates nothing, entrances.ts:581-589, :1101-1112);
 // 3. before any random draw: the private MM profiles and Ship's own entrance shuffle (owner decision
-//    D1), the OoT oracle's first reset, the quest context and the capability it needs, the coverage of
-//    every pool row, the capacity of every pool, then the Temple gate and its Prepare;
+//    D1), the quest context and the capability it needs, the coverage of every pool row, the capacity
+//    of every pool, the OoT oracle's first reset and the same quest context after it, then the Temple
+//    gate and its Prepare;
 // 4. the Shuffler with games=Both on the stream "entrances:ootmm-entrances-v1:<seed>".
-// A ShuffleError (no layout in the pinned 1000 attempts) may be retried by another outer attempt;
-// every other exception stops generation. The final check of OoTMM's validate(), the solver
+// A ShuffleError (no layout in the pinned 1000 attempts) may be retried by another outer attempt, and
+// so may a WallmasterCapacityShortfall after the first (WallmasterShortfallStopsGeneration); every
+// other exception stops generation. The final check of OoTMM's validate(), the solver
 // (logicPassSolverValidate, :1083), is the combined fill's own: it places the items on the installed
 // layout under the same accessibility policy and fails the attempt if that cannot be done.
 inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const NativeFns& native,
@@ -297,51 +329,41 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
         throw UnifiedEntranceRefused(
             EntranceRefusal{ kWallmasterMasterQuestText, "Entrance layouts need Master Quest dungeons off for now" });
 
-    // The probe needs the OoT oracle prepared, and its first reset (EnsureOracleInit) rebuilds the
-    // region graph, which must not happen between Prepare and a query (TempleProbe.cpp P1, P2), and
-    // finalizes the OoT settings again, which re-rolls a Random starting age and the Master Quest
-    // dungeons. Reset it once first, as the first candidate's all-items check would, and read the quest
-    // context and the facts Prepare checks only after it: the oracle, the fill and the seed all use that
-    // finalize's dungeons. A bundled-MQ seed rolls them on a stream of their own from its master seed
-    // (settings.cpp, combo/mq/MqMode.h MqRollSeed), so every finalize of the attempt rolls the same ones.
-    // Whether the pass runs depends only on the facts' logic flag; a WALLMASTERS pool keeps its MM
-    // sources and a ONE_WAYS pool has no quest-only row, so not on the quests either.
-    TempleFacts logic;
-    logic.logicEnabled = g.access != OotAccess::NO_LOGIC;
-    const bool templePass = NeedsTemplePass(s, logic, areas(OotQuests{}));
-    const auto placeable = [&](const AreaExists& areaExists) {
-        auto pools = ResolvePools(s, areaExists).pools;
-        RequireUnifiedCoverage(pools, s, ootBound);
-        RequireWallmasterCapacity(pools, s);
-        return pools;
-    };
-    // A capability that reads no quest context refuses its pools before the oracle is touched; one that
-    // does needs every native export first.
-    if (!ootBound)
-        placeable(areas(OotQuests{}));
-    else
-        RequireOotWallmasterExports(native);
-    if (templePass) {
-        if (!g.oot.Reset)
-            throw UnifiedEntranceRefused("Entrance validation requires the OoT reachability oracle");
-        g.oot.Reset();
-    }
-    const OotQuests quests =
-        ootBound ? ReadUnifiedOotQuests(native, AdmitsMasterQuestContext(settingsRequired, g.capability, g.active))
-                 : OotQuests{};
-    const auto required = UnifiedQuestRequirement(settingsRequired, quests, g.capability, g.active);
+    // The quest context of the dump's finalize, and the id it needs. Only a bundled seed's Master Quest
+    // dungeons are admitted (AdmitsMasterQuestContext).
+    const bool admitMq = ootBound && AdmitsMasterQuestContext(settingsRequired, g.capability, g.active, g.mqSource);
+    const OotQuests quests = ootBound ? ReadUnifiedOotQuests(native, admitMq) : OotQuests{};
+    const auto required = UnifiedQuestRequirement(settingsRequired, quests, g.capability, g.active, g.mqSource);
     if (required == kQuestsWallmasterCapability && !AnyMasterQuest(quests))
         throw UnifiedEntranceRefused(std::string(kQuestsWallmasterCapability) + " needs a Master Quest dungeon");
     const auto areaExists = areas(quests);
-    if (NeedsTemplePass(s, logic, areaExists) != templePass)
-        throw UnifiedEntranceRefused("Entrance pools changed with the OoT quest context");
-    const auto pools = placeable(areaExists);
+    const auto pools = ResolvePools(s, areaExists).pools;
+    RequireUnifiedCoverage(pools, s, ootBound);
+    RequireWallmasterCapacity(pools, s, MqWallmasterShortfallForced(g.readSetting, false));
     Names offered;
     for (const auto& pool : pools)
         for (const auto src : pool.src)
             for (const auto dst : pool.dst)
                 if (Assignable(*Find(src), *Find(dst), pool.ownGame, s))
                     offered.insert(dst);
+
+    // The probe needs the OoT oracle prepared, and its first reset (EnsureOracleInit) rebuilds the
+    // region graph, which must not happen between Prepare and a query (TempleProbe.cpp P1, P2), and
+    // finalizes the OoT settings again, which re-rolls a Random starting age and the Master Quest
+    // dungeons. Reset it once first, as the first candidate's all-items check would, and read the facts
+    // Prepare checks only after it. The quest context after it must be the one read above, for either
+    // id: the oracle, the fill and the seed play that finalize's dungeons, and the layout records the
+    // dump's. A bundled seed's roll is the same in both finalizes, so this holds for every bundled seed;
+    // a refusal here is an internal fault, without a plain sentence.
+    TempleFacts logic;
+    logic.logicEnabled = g.access != OotAccess::NO_LOGIC;
+    if (NeedsTemplePass(s, logic, areaExists)) {
+        if (!g.oot.Reset)
+            throw UnifiedEntranceRefused("Entrance validation requires the OoT reachability oracle");
+        g.oot.Reset();
+    }
+    if (ootBound && ReadUnifiedOotQuests(native, admitMq) != quests)
+        throw UnifiedEntranceRefused("OoT quest context changed while preparing entrance generation");
     const auto facts = UnifiedTempleFacts(g);
     if (ootBound) {
         auto settingsFacts = static_cast<const EntranceSettingsFacts&>(facts);

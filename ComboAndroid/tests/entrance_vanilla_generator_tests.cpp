@@ -3,9 +3,11 @@
 // native seed corpus or gameplay. The vanilla id named explicitly refuses every
 // Master Quest context; chosen by settings in a build with the Master Quest id
 // (U11), every all-vanilla seed is byte for byte the vanilla id's, and every
-// Master Quest context generates under the quests id except the capacity
-// shortfalls of tools/ootmm/m1-contract.json, which are refused before any
-// draw. The quest context is the one read after the oracle's first reset.
+// Master Quest context of OoTMM's bundled data generates under the quests id
+// except the capacity shortfalls of tools/ootmm/m1-contract.json, which are
+// refused before any draw. Legacy Master Quest data is refused with either id.
+// The quest context read before the oracle's first reset must be the one after
+// it, for either id.
 #include "rando/entrances/UnifiedBridge.h"
 #include <cassert>
 #include <cstdlib>
@@ -13,6 +15,7 @@
 #include <iostream>
 #include <set>
 #include <sstream>
+#include <type_traits>
 using namespace ComboRando;
 using namespace ComboRando::Entrances;
 using Json = nlohmann::json;
@@ -233,6 +236,8 @@ static UnifiedGeneration Generation(uint32_t seed = 1) {
   g.mm = Fake::Mm();
   g.ootDump = Dump(false);
   g.mmDump = Dump(true);
+  // A new seed on an install with OoTMM's bundled MQ data (MqMode.h).
+  g.mqSource = ComboMq::SeedMqSource::Bundled;
   g.readSetting = [](const char *key, int fallback) {
     if (std::string_view(key) == "gEnhancements.RandomizedEnemies")
       return Fake::settingsEnemy;
@@ -430,10 +435,23 @@ static void CheckShortcutPoolGuards() {
       assert(assumptions > 0 && temple > 0);
   }
 }
+// A capacity shortfall: its own refusal type, so the caller can retry it after
+// the seed's own roll; refused before any draw or native change.
+static UnifiedEntranceRefused Shortfall(const UnifiedGeneration &g) {
+  try {
+    GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+  } catch (const WallmasterCapacityShortfall &error) {
+    Untouched();
+    return error;
+  }
+  assert(!"a capacity shortfall was expected");
+  std::abort();
+}
 // Every Master Quest context, the id chosen by settings in a build with the
 // Master Quest id: the capacity shortfalls the pinned contract lists are
-// refused before any draw or native change with the menu's sentence; every
-// other context generates a quests-id layout of its own sources.
+// refused before any draw or native change, with the sentence for a random
+// roll that landed there; every other context generates a quests-id layout of
+// its own sources.
 static void CheckQuestContexts(const Json &contract) {
   std::set<std::set<std::string>> shortfalls;
   for (const auto &row : contract.at("mqSources").at("capacityShortfalls"))
@@ -458,8 +476,11 @@ static void CheckQuestContexts(const Json &contract) {
     g.capability.clear();
     g.stats = &stats;
     if (shortfalls.contains(projection)) {
-      const auto error = Refusal(g);
-      assert(error.player() == kWallmasterCapacityText &&
+      const auto error = Shortfall(g);
+      assert(error.player() == kWallmasterCapacitySeedText &&
+             error.what() == std::string("WALLMASTERS has 12 sources for 11 "
+                                         "destinations; OoTMM cannot place "
+                                         "them") &&
              stats.randomDraws == 0);
       ++refused;
       continue;
@@ -482,40 +503,163 @@ static void CheckQuestContexts(const Json &contract) {
   assert(refused == 256 && generated == 4095 - 256 &&
          identities.size() == generated);
 }
-// The quest context is the one the oracle's first reset finalizes, not the
-// dump's: the layout records it, and its id follows it.
-static void CheckQuestsReadAfterReset() {
-  OotQuests spiritMq{};
+// The quest context of the dump's finalize must be the one the oracle's first
+// reset finalizes, for either id (0.4.12's check): the layout records the
+// dump's, and the oracle, the fill and the seed play the reset's. A bundled
+// seed rolls the same dungeons in both; a native roll on the shared stream
+// (Legacy data) may not, and is refused before any draw or native change, with
+// no plain sentence. Both reads are the gated ones: an unreadable dump context
+// is refused even when the reset would make it readable.
+static void CheckQuestsAcrossReset() {
+  OotQuests spiritMq{}, spiritForestMq{};
   spiritMq[OotMqIndex("Spirit")] = true;
-  for (const bool mqAfter : {true, false}) {
+  spiritForestMq = spiritMq;
+  spiritForestMq[OotMqIndex("Forest")] = true;
+  const std::string changed =
+      "OoT quest context changed while preparing entrance generation";
+  // The same context on both sides generates, under the id it needs.
+  for (const auto &same : {OotQuests{}, spiritMq}) {
     Fake::Reset();
-    Fake::quests = mqAfter ? OotQuests{} : spiritMq;
-    Fake::questsOnReset = mqAfter ? spiritMq : OotQuests{};
+    Fake::quests = same;
+    Fake::questsOnReset = same;
     auto g = Generation(3);
     g.capability.clear();
     const auto layout = DecodeEntranceLayout(
         GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()));
-    assert(layout.ootMq == (mqAfter ? spiritMq : OotQuests{}));
-    assert(layout.required == std::vector<std::string>{std::string(
-                                  mqAfter ? kQuestsWallmasterCapability
-                                          : kVanillaWallmasterCapability)});
+    assert(layout.ootMq == same &&
+           layout.required ==
+               std::vector<std::string>{std::string(
+                   AnyMasterQuest(same) ? kQuestsWallmasterCapability
+                                        : kVanillaWallmasterCapability)});
   }
-  // A dump context the reset replaces is never read: an unreadable one passes.
+  struct Case {
+    OotQuests dump, reset;
+    std::string_view capability; // empty: chosen by settings
+    const char *player;          // nullptr: the developer text
+  };
+  const Case cases[] = {
+      // Chosen by settings: the dump's context sets the id, vanilla or quests.
+      {{}, spiritMq, "", nullptr},
+      {spiritMq, {}, "", nullptr},
+      {spiritMq, spiritForestMq, "", nullptr},
+      // The quests id named.
+      {spiritMq, {}, kQuestsWallmasterCapability, nullptr},
+      {spiritMq, spiritForestMq, kQuestsWallmasterCapability, nullptr},
+      // The vanilla id named: the reset's context is refused by its own gate.
+      {{}, spiritMq, kVanillaWallmasterCapability, kWallmasterMasterQuestText},
+  };
+  for (const auto &c : cases) {
+    Fake::Reset();
+    Fake::quests = c.dump;
+    Fake::questsOnReset = c.reset;
+    auto g = Generation(3);
+    g.capability = std::string(c.capability);
+    UnifiedEntranceStats stats;
+    g.stats = &stats;
+    const auto error = Refusal(g);
+    if (c.player)
+      assert(error.player() == c.player);
+    else
+      assert(error.what() == changed && error.player() == changed);
+    assert(stats.randomDraws == 0 && !Fake::questsOnReset);
+  }
+  // An unreadable dump context is refused before the reset, which would have
+  // made it readable.
   Fake::Reset();
   Fake::contextOverride = Json::array();
   Fake::questsOnReset = OotQuests{};
   auto g = Generation(3);
-  bool readBeforeReset = false;
   g.oot.Reset = [] {
     Fake::contextOverride = Json();
     Fake::OracleReset();
   };
-  try {
-    GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
-  } catch (const UnifiedEntranceRefused &) {
-    readBeforeReset = true;
+  assert(Refusal(g).player() == kWallmasterDungeonDataText &&
+         Fake::questsOnReset);
+}
+// Only OoTMM's bundled data admits a Master Quest context. Legacy data (a real
+// oot-mq.o2r, whose roll is on the shared stream) and an unknown source keep
+// the refusal of 0.4.12, with either id and whatever this build's stages, and
+// an all-vanilla seed of either source is the same seed.
+static void CheckMqDataSource() {
+  size_t refused = 0;
+  for (const auto source :
+       {ComboMq::SeedMqSource::Legacy, ComboMq::SeedMqSource::Unsupported})
+    for (unsigned mask = 1; mask < 4096; ++mask)
+      for (const std::string_view capability :
+           {std::string_view(), kQuestsWallmasterCapability,
+            kVanillaWallmasterCapability}) {
+        Fake::Reset();
+        for (size_t i = 0; i < Fake::quests.size(); ++i)
+          Fake::quests[i] = (mask & (1u << i)) != 0;
+        UnifiedEntranceStats stats;
+        auto g = Generation(mask);
+        g.capability = std::string(capability);
+        g.mqSource = source;
+        g.stats = &stats;
+        const auto error = Refusal(g);
+        assert(error.player() == kWallmasterMasterQuestText &&
+               stats.randomDraws == 0);
+        ++refused;
+      }
+  assert(refused == 2 * 4095 * 3);
+  for (uint32_t seed = 1; seed <= 4; ++seed) {
+    std::string layouts[2];
+    for (int i = 0; i < 2; ++i) {
+      Fake::Reset();
+      auto g = Generation(seed);
+      g.capability.clear();
+      g.mqSource =
+          i ? ComboMq::SeedMqSource::Legacy : ComboMq::SeedMqSource::Bundled;
+      layouts[i] =
+          GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()).dump();
+    }
+    assert(layouts[0] == layouts[1]);
+    assert(DecodeEntranceLayout(Json::parse(layouts[0])).required ==
+           std::vector<std::string>{std::string(kVanillaWallmasterCapability)});
   }
-  assert(!readBeforeReset);
+}
+// The capacity sentences: the generation error of a random roll, and the
+// menu's sentence when the MQ settings force the shortfall (every roll lands
+// there, EntranceProfile.h MqWallmasterShortfallForced), should generation be
+// reached anyway.
+static void CheckCapacitySentences() {
+  assert(std::string(kWallmasterCapacitySeedText) ==
+         "This seed's Master Quest dungeons have more Wallmasters than "
+         "Wallmaster Shuffle can place. Try another seed.");
+  assert(std::string(kWallmasterCapacityText) ==
+         "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to "
+         "use Wallmaster Shuffle.");
+  for (const bool forced : {false, true}) {
+    Fake::Reset();
+    Fake::quests[OotMqIndex("Spirit")] = Fake::quests[OotMqIndex("BotW")] =
+        true;
+    auto g = Generation(5);
+    g.capability.clear();
+    // Selection Only: Spirit and BotW Master Quest, Shadow and Ganon vanilla,
+    // and, unless forced, the Shadow Temple a coin flip.
+    g.readSetting = [forced](const char *key, int fallback) {
+      const std::string_view k(key);
+      if (k == kMqDungeonsSetting)
+        return 3;
+      if (k == "gRandoSettings.MQDungeonsSpiritTemple" ||
+          k == "gRandoSettings.MQDungeonsBottomOfTheWell")
+        return 1;
+      if (k == "gRandoSettings.MQDungeonsShadowTemple")
+        return forced ? 0 : 2;
+      return fallback;
+    };
+    const auto error = Shortfall(g);
+    assert(error.player() ==
+           (forced ? kWallmasterCapacityText : kWallmasterCapacitySeedText));
+  }
+  // The seed's own roll (the first attempt) stops generation; a retry's roll
+  // fails only that attempt.
+  static_assert(WallmasterShortfallStopsGeneration(0) &&
+                !WallmasterShortfallStopsGeneration(1) &&
+                !WallmasterShortfallStopsGeneration(7));
+  static_assert(
+      std::is_base_of_v<UnifiedEntranceRefused, WallmasterCapacityShortfall> &&
+      !std::is_base_of_v<ShuffleError, WallmasterCapacityShortfall>);
 }
 // All-vanilla seeds made in game (no id named) are byte for byte the vanilla
 // id's, whether the build has the Master Quest id or not.
@@ -702,7 +846,9 @@ int main(int argc, char **argv) {
   CheckShortcutPoolGuards();
   CheckPlainRefusals();
   CheckQuestContexts(contract);
-  CheckQuestsReadAfterReset();
+  CheckQuestsAcrossReset();
+  CheckMqDataSource();
+  CheckCapacitySentences();
   std::ostringstream quiet;
   auto *previousOutput = std::cout.rdbuf(quiet.rdbuf());
   size_t pairs = 0, shortcuts = 0;
@@ -780,6 +926,7 @@ int main(int argc, char **argv) {
               {"nativeQuestContextsRejected", 4095},
               {"questContextsGenerated", 4095 - 256},
               {"questContextsRefusedForCapacity", 256},
+              {"nonBundledQuestContextsRefused", 2 * 4095 * 3},
               {"corpusFnv64", corpus},
               {"nativeSeedCorpusOrGameplay", false}};
   std::ofstream(argv[1]) << report.dump(2) << '\n';

@@ -14,6 +14,8 @@
 // and Ganon) is refused by the generator with the capacity sentence; every
 // other mask a set does not admit is refused by Validate, the seed guard, both
 // installers, the generator (before any draw or native change) and the menu.
+// Master Quest data other than OoTMM's bundled data is refused by the
+// generator and the menu with either set.
 // Dropping any one binding must report a gap (negative control).
 #include "rando/GenerationRules.h"
 #include "rando/entrances/EntranceProfile.h"
@@ -430,8 +432,9 @@ static unsigned WallmasterProjection(unsigned mask) {
 // The generator's answer for one mask: its UnifiedEntranceRefused sentence, or
 // "" when it passed the quest, coverage and capacity gates and stopped at the
 // Temple session these fakes leave out, before any draw or native change.
-static std::string Generation(const Settings &s, const CapabilitySet &caps,
-                              unsigned mask) {
+static std::string
+Generation(const Settings &s, const CapabilitySet &caps, unsigned mask,
+           ComboMq::SeedMqSource source = ComboMq::SeedMqSource::Bundled) {
   Native::quests = Quests(mask);
   Native::changes = Native::resets = 0;
   UnifiedEntranceStats stats;
@@ -444,6 +447,7 @@ static std::string Generation(const Settings &s, const CapabilitySet &caps,
   g.oot.Reset = Native::Reset;
   g.oot.GetStartAges = Native::ChildStart;
   g.stats = &stats;
+  g.mqSource = source;
   std::string sentence = "no refusal";
   try {
     GenerateEntranceLayout(g, Native::Fns(), {});
@@ -454,8 +458,10 @@ static std::string Generation(const Settings &s, const CapabilitySet &caps,
            "Temple probe: native entry points are missing");
     sentence = "";
   }
-  // The quest context is read after the oracle's first reset.
-  assert(stats.randomDraws == 0 && Native::changes == 0 && Native::resets == 1);
+  // The quest context is refused before the oracle's first reset, and read
+  // again after it.
+  assert(stats.randomDraws == 0 && Native::changes == 0 &&
+         Native::resets == (sentence.empty() ? 1 : 0));
   return sentence;
 }
 
@@ -526,10 +532,10 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
       if (mask == 0 || questsActive) {
         if (short_) {
           // OoTMM cannot place these (UnifiedBridge.h
-          // RequireWallmasterCapacity): refused with the capacity sentence
-          // before any draw or native change, after the oracle's reset; no
-          // layout validates.
-          assert(Generation(s, caps, mask) == kWallmasterCapacityText);
+          // RequireWallmasterCapacity): refused with the sentence for a
+          // random roll before any draw, native change or reset; no layout
+          // validates.
+          assert(Generation(s, caps, mask) == kWallmasterCapacitySeedText);
           for (const auto &routes : vanillaLayouts) {
             bool refused = false;
             try {
@@ -569,6 +575,10 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
           CheckTempleCapability(s, facts, areaExists);
         }
         assert(Generation(s, caps, mask).empty());
+        // Master Quest data other than the bundled data keeps 0.4.12's
+        // refusal; an all-vanilla mask generates from either source.
+        assert(Generation(s, caps, mask, ComboMq::SeedMqSource::Legacy) ==
+               (mask ? kWallmasterMasterQuestText : ""));
         // Layouts routing every destination validate, pass the seed guard,
         // install in both games and name every route in the spoiler, once per
         // set of Wallmaster dungeon quests.
@@ -659,6 +669,8 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
         assert(refused && !mm.active());
       }
       assert(Generation(s, caps, mask) == kWallmasterMasterQuestText);
+      assert(Generation(s, caps, mask, ComboMq::SeedMqSource::Legacy) ==
+             kWallmasterMasterQuestText);
       ++proved;
     }
     // Exactly the shortfall masks: MQ Spirit and BotW with vanilla Shadow and
@@ -721,8 +733,10 @@ int main() {
   // real oot-mq.o2r or OoTMM's bundled data over the vanilla oot.o2r: the
   // catalogue's mqPlayable) with any MQ Dungeon Setting but None. Without MQ
   // data, or with None, native keeps every dungeon vanilla (settings.cpp; the
-  // harness pins those lines). With the Master Quest id it refuses none of
-  // these: no MQ Dungeon Setting alone forces the capacity shortfall.
+  // harness pins those lines). With the Master Quest id it refuses the same
+  // states unless a new seed's MQ dungeons are OoTMM's bundled data (the
+  // catalogue's mqSource): no MQ Dungeon Setting alone forces the capacity
+  // shortfall.
   const Json draft{{"fileType", kComboSeedFileType},
                    {"version", 1},
                    {"setupCVars", Json::object()},
@@ -736,7 +750,10 @@ int main() {
         for (int setting = 0; setting < 4; ++setting) {
           const Json catalog{{"hasOriginal", original},
                              {"hasMasterQuest", masterQuest},
-                             {"mqPlayable", playable}};
+                             {"mqPlayable", playable},
+                             {"mqSource", bundled       ? "ootmm-32.3"
+                                          : masterQuest ? "oot-mq.o2r"
+                                                        : "none"}};
           const auto read = [&](const char *key, int fallback) {
             return std::string_view(key) == "gRandoSettings.MQDungeons"
                        ? setting
@@ -749,7 +766,8 @@ int main() {
           assert(mqPossible ? why.player == kWallmasterMasterQuestText
                             : why.empty());
           assert(ProfileWallmasterRefusal(draft, catalog, read, withQuests)
-                     .empty());
+                     .player ==
+                 (mqPossible && !bundled ? kWallmasterMasterQuestText : ""));
           assert(ProfileWallmasterRefusal(draft, catalog, read) ==
                  ProfileWallmasterRefusal(draft, catalog, read, active));
         }

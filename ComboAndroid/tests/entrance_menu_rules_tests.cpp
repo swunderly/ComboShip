@@ -176,11 +176,16 @@ int main() {
       "Wallmaster Shuffle does not support Master Quest dungeons yet.";
   const std::string mqLog =
       "Wallmaster Shuffle currently supports vanilla dungeons only";
+  const std::string legacyLog = "Wallmaster Shuffle supports Master Quest "
+                                "dungeons only from OoTMM's bundled data";
   assert(mq == kWallmasterMasterQuestText);
   // Every catalogue state (OTRGlobals.cpp SOH_DumpProfileCatalog): with the
   // frozen vanilla id only, MQ selected is refused wherever MQ can be played,
   // from a real oot-mq.o2r or OoTMM's bundled data (mqPlayable), and an MQ-only
-  // install is always refused.
+  // install is always refused. The Master Quest id takes them only where a new
+  // seed's MQ dungeons are OoTMM's bundled data (mqSource "ootmm-32.3"): with a
+  // real oot-mq.o2r alone (Legacy) they roll on the shared stream, and keep the
+  // same sentence.
   for (int state = 0; state < 8; ++state) {
     const bool original = state & 1, archive = state & 2, bundled = state & 4;
     if (bundled && !original)
@@ -188,7 +193,11 @@ int main() {
     const bool playable = (archive || bundled) && original;
     Json catalogue{{"hasOriginal", original},
                    {"hasMasterQuest", archive},
-                   {"mqPlayable", playable}};
+                   {"mqPlayable", playable},
+                   {"mqSource", bundled   ? "ootmm-32.3"
+                                : archive ? "oot-mq.o2r"
+                                          : "none"}};
+    assert(CatalogueMqBundled(catalogue) == bundled);
     for (int mqMode : {0, 1, 2, 3}) {
       settings["gRandoSettings.MQDungeons"] = mqMode;
       const bool refused = (archive && !original) || (playable && mqMode != 0);
@@ -198,16 +207,27 @@ int main() {
         plain(why, mq, mqLog);
       else
         assert(why.empty());
-      // The Master Quest id takes every one of these states: no selection of
-      // the MQ Dungeon Setting alone fixes the four dungeons the capacity
-      // needs.
-      assert(
-          ProfileWallmasterRefusal(draft, catalogue, read, withQuests).empty());
+      // With the bundled data the Master Quest id takes every one of these
+      // states: no selection of the MQ Dungeon Setting alone fixes the four
+      // dungeons the capacity needs. Legacy data keeps the refusal.
+      const auto quests =
+          ProfileWallmasterRefusal(draft, catalogue, read, withQuests);
+      if (refused && !bundled)
+        plain(quests, mq, legacyLog);
+      else
+        assert(quests.empty());
+      // A catalogue without mqSource is not bundled.
+      auto old = catalogue;
+      old.erase("mqSource");
+      assert(!CatalogueMqBundled(old) &&
+             ProfileWallmasterRefusal(draft, old, read, withQuests).player ==
+                 (refused ? mq : ""));
     }
   }
   auto mqAssets = assets;
   mqAssets["hasMasterQuest"] = true;
   mqAssets["mqPlayable"] = true;
+  mqAssets["mqSource"] = "oot-mq.o2r";
   plain(ProfileWallmasterRefusal(draft, mqAssets, read, vanillaOnly), mq,
         mqLog);
   settings.clear();
@@ -216,12 +236,11 @@ int main() {
   mqAssets["mqPlayable"] = false;
   plain(ProfileWallmasterRefusal(draft, mqAssets, read, vanillaOnly), mq,
         mqLog);
-  // An MQ-only install plays all twelve MQ: Shadow and Ganon too, so no
-  // capacity shortfall.
-  assert(ProfileWallmasterRefusal(draft, mqAssets, read, withQuests).empty());
-  // The build's own set: the frozen sentence until the Master Quest id opens.
-  assert(ProfileWallmasterRefusal(draft, mqAssets, read).player ==
-         (caps.Active(kQuestsWallmasterCapability) ? "" : mq));
+  // An MQ-only install plays all twelve MQ from a real oot-mq.o2r: Legacy
+  // data, refused with either id, whatever this build's stages.
+  plain(ProfileWallmasterRefusal(draft, mqAssets, read, withQuests), mq,
+        legacyLog);
+  assert(ProfileWallmasterRefusal(draft, mqAssets, read).player == mq);
 
   // With the Master Quest id, a selection whose every native roll (settings.cpp
   // Context::FinalizeSettings) makes Spirit Temple and Bottom of the Well MQ
@@ -234,8 +253,21 @@ int main() {
       "Temple and Ganon's Castle have more OoT Wallmasters than dungeon "
       "entrances";
   assert(capacity == kWallmasterCapacityText);
+  // The generation error of a random roll that lands there on the seed's own
+  // first attempt (UnifiedBridge.h WallmasterShortfallStopsGeneration).
+  const std::string seedCapacity =
+      "This seed's Master Quest dungeons have more Wallmasters than Wallmaster "
+      "Shuffle can place. Try another seed.";
+  assert(seedCapacity == kWallmasterCapacitySeedText);
+  plain(WallmasterSeedCapacityRefusal(), seedCapacity, capacityLog);
   auto playable = assets;
   playable["mqPlayable"] = true;
+  playable["mqSource"] = "ootmm-32.3";
+  // The same selections from a real oot-mq.o2r (Legacy): the Master Quest
+  // sentence, never the capacity one.
+  auto legacy = playable;
+  legacy["hasMasterQuest"] = true;
+  legacy["mqSource"] = "oot-mq.o2r";
   const auto quest = [&](const char *dungeon, int value) {
     settings[std::string("gRandoSettings.MQDungeons") + dungeon] = value;
   };
@@ -276,6 +308,8 @@ int main() {
       plain(why, capacity, capacityLog);
     else
       assert(why.empty());
+    plain(ProfileWallmasterRefusal(draft, legacy, read, withQuests), mq,
+          legacyLog);
     // Without MQ data the native settings keep every dungeon vanilla.
     assert(ProfileWallmasterRefusal(draft, assets, read, withQuests).empty());
     // The frozen vanilla id keeps its own sentence for every MQ selection.
@@ -322,8 +356,8 @@ int main() {
   plain(ProfileWallmasterRefusal(draft, unknown, read), data, dataLog);
   // Solo mode, Ship ER, Enemy Randomizer, glitched logic, the two song logic
   // options, six warp songs and Soaring, Master Quest, the Master Quest
-  // Wallmaster capacity and unknown dungeon data.
-  assert(sentences.size() == 16);
+  // Wallmaster capacity (forced, and a seed's roll) and unknown dungeon data.
+  assert(sentences.size() == 17);
   auto raw = draft;
   raw["setupCVars"][wall] = 2;
   raw["setupCVars"]["gCombo.Rando.Entrances.erOneWays"] = 1;
