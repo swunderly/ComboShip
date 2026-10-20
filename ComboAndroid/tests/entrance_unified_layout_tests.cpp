@@ -609,10 +609,29 @@ void CheckOneWays(const Json &fixture) {
   Rejected(WithRoute(major, "OOT_LAKE_HYLIA_FROM_VALLEY", "OOT_DEKU_TREE"));
 }
 
+// The song travel map of a seed with "Play warp songs across games" in logic.
+Json ForeignSongs() {
+  SongTravelMap map;
+  map.foreignSongs = map.logicForeignSongs = true;
+  return map.json();
+}
+// Refused by the seed guard with `reason`.
+void SeedRefused(const Json &seed, const CapabilitySet &caps,
+                 const std::string &reason) {
+  std::string message;
+  try {
+    RequireSupportedSeedDocument(seed, caps);
+  } catch (const UnsupportedComboSeedFormat &error) {
+    message = error.what();
+  }
+  assert(message.find(reason) != std::string::npos);
+}
+
 // This build. A release build admits only the two Own Game Wallmaster
 // contracts, vanilla (P1-05) and Master Quest (U11): it validates their layouts
 // and refuses every other layout after decoding it. A dev build adds the MM
-// tranche and accepts dev layouts.
+// tranche and the staged foreign-song contract (limits design, Stage 1), and
+// accepts dev layouts. In both, an id must carry the seed's song facts.
 void CheckBuildGuard(const Json &good) {
   const auto caps = ActiveCapabilities();
   Json seed = {{"fileType", kEntranceSeedFileType},
@@ -623,7 +642,8 @@ void CheckBuildGuard(const Json &good) {
 #ifdef COMBO_ENTRANCE_DEV
   assert(caps.devBuild && caps.Active(kMmTrancheCapability) &&
          caps.WithoutDevOnly() == (caps.Only(kVanillaWallmasterCapability) |
-                                   caps.Only(kQuestsWallmasterCapability)));
+                                   caps.Only(kQuestsWallmasterCapability) |
+                                   caps.Only(kSongsWallmasterCapability)));
   auto vanilla = good;
   vanilla["requires"] = {std::string(kVanillaWallmasterCapability)};
   vanilla["devBuild"] = true;
@@ -635,6 +655,20 @@ void CheckBuildGuard(const Json &good) {
   quests["oot"]["mq"]["DT"] = true;
   seed["entranceLayout"] = quests;
   RequireSupportedSeedDocument(seed, caps);
+  // Foreign-song logic takes the songs id, in either quest context, which a
+  // dev build has; neither other id takes it, and the songs id needs it.
+  for (const auto *base : {&vanilla, &quests}) {
+    auto songs = *base;
+    songs["requires"] = {std::string(kSongsWallmasterCapability)};
+    seed["entranceLayout"] = songs;
+    seed["songTravel"] = ForeignSongs();
+    RequireSupportedSeedDocument(seed, caps);
+    seed["entranceLayout"] = *base;
+    SeedRefused(seed, caps, "which does not admit foreign-song logic");
+    seed["entranceLayout"] = songs;
+    seed.erase("songTravel");
+    SeedRefused(seed, caps, "without foreign-song logic");
+  }
   auto tranche = good;
   tranche["requires"] = {std::string(kMmTrancheCapability)};
   tranche["devBuild"] = true;
@@ -693,11 +727,28 @@ void CheckBuildGuard(const Json &good) {
   std::vector<std::pair<Json, std::string>> refused;
   for (const auto *id :
        {"wallmasters-own-game-v1", "one-ways-own-game-v1",
-        "wallmasters-with-one-ways-v1", "wallmasters-own-game-mm-tranche"}) {
+        "wallmasters-with-one-ways-v1", "wallmasters-own-game-mm-tranche",
+        "wallmasters-own-game-songs-v1"}) {
     auto other = vanilla;
     other["requires"] = {id};
     refused.emplace_back(other, "which this build does not have");
   }
+  // The staged foreign-song contract: a seed with that logic is refused under
+  // the vanilla id, as under the songs id, which this build does not have yet;
+  // with No Logic it has no song facts and loads.
+  seed = {{"fileType", kEntranceSeedFileType},
+          {"version", kEntranceSeedVersion},
+          {"entranceLayout", vanilla},
+          {"songTravel", ForeignSongs()}};
+  SeedRefused(seed, caps, "which does not admit foreign-song logic");
+  seed["accessibility"] = {{"version", 1}, {"mode", "noLogic"}};
+  RequireSupportedSeedDocument(seed, caps);
+  auto songs = layout;
+  songs.required = {std::string(kSongsWallmasterCapability)};
+  seed["entranceLayout"] = EncodeEntranceLayout(songs);
+  seed.erase("accessibility");
+  SeedRefused(seed, caps, "which this build does not have");
+  seed.erase("songTravel");
   // The Master Quest contract (U11): a seed with a Master Quest dungeon loads;
   // the quests id with all-vanilla dungeons does not, they keep the vanilla id.
   auto quests = layout;

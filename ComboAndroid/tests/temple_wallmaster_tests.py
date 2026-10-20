@@ -60,6 +60,64 @@ void Connect(RandomizerRegion from, RandomizerRegion to, ConditionFn condition) 
 QueryRequest Query(std::string src, std::string dst) {
     QueryRequest q; q.deleted.push_back(src); q.edges.push_back({src, dst}); return q;
 }
+// Probe inertness under foreign-song logic (limits design, Stage 1; lemma S1). A world where both spawns reach every
+// anchor of the context's candidate edges and every arrival leads to the Temple of Time, so each candidate's answer
+// is its own predicate at the opposite age. Every candidate edge alone, and all of them together, at both starting
+// ages and over several inventories, must give the same Search answer with the song state off and adversarially on:
+// the foreign-song flags, and arrival and knowledge masks that would put a song landing in the Temple of Time.
+std::vector<int> InertAnswers(NativePolicy& policy, const QueryRequest& full, Rando::Logic& probe) {
+    const auto overlay = policy.Resolve(full);
+    ClearRegions();
+    Connect(RR_ROOT_EXITS, RR_ADULT_SPAWN, [] { return logic->IsAdult; });
+    Connect(RR_ROOT_EXITS, RR_CHILD_SPAWN, [] { return logic->IsChild; });
+    std::set<size_t> anchors, arrivals;
+    for (const auto& edge : overlay.added) {
+        anchors.insert(edge.parent);
+        arrivals.insert(edge.target);
+    }
+    for (const auto anchor : anchors) {
+        Connect(RR_ADULT_SPAWN, static_cast<RandomizerRegion>(anchor), [] { return true; });
+        Connect(RR_CHILD_SPAWN, static_cast<RandomizerRegion>(anchor), [] { return true; });
+    }
+    for (const auto arrival : arrivals)
+        Connect(static_cast<RandomizerRegion>(arrival), RR_TEMPLE_OF_TIME, [] { return true; });
+    std::vector<int> answers;
+    for (int inventory = 0; inventory < 4; ++inventory)
+        for (bool startingChild : {false, true}) {
+            sPrepared->startingChild = startingChild;
+            const bool all = inventory >= 2;
+            probe.lens = probe.bombchu = probe.mirror = probe.bracelet = probe.sunlight = all;
+            probe.fireArrows = probe.endingSuns = all;
+            probe.forestKeys = all ? 5 : 0;
+            probe.adultOnly = inventory == 3;
+            probe.souls = {};
+            Rando::Souls::ChangeGeneralOotSoul(probe.souls,
+                Rando::Souls::GeneralOotSoulIndex(Rando::Souls::OotSoul::ENEMY_WALLMASTER), inventory != 1);
+            const auto run = [&](const QueryRequest& q) {
+                auto candidate = policy.Resolve(q);
+                uint8_t ages = 0;
+                RegionFlagGuard guard(regions);
+                const int result = Search(regions, probe, candidate, RR_ROOT, RR_TEMPLE_OF_TIME, startingChild,
+                                          [] { return false; }, ages);
+                assert(result == kReached || result == kNotReached);
+                answers.push_back(result);
+                answers.push_back(ages);
+            };
+            for (const auto& edge : full.edges)
+                run(Query(edge.src, edge.dst));
+            run(full);
+        }
+    return answers;
+}
+void SongState(bool on) {
+    auto& songs = ComboRando::ActiveSongTravel();
+    songs = {};
+    songs.foreignSongs = songs.logicForeignSongs = on;
+    ComboRando::OotSongArrivals() = on ? 0xffffu : 0u;
+    ComboRando::OotSongAgeArrivals() = on ? ComboRando::SongAgeArrivals{true, {0xffffu, 0xffffu}}
+                                          : ComboRando::SongAgeArrivals{};
+    ComboRando::OotForeignKnowledge() = ComboRando::MmForeignKnowledge() = on ? 0x7fu : 0u;
+}
 void Graph() {
     ClearRegions();
     Connect(RR_ROOT_EXITS, RR_ADULT_SPAWN, [] { return logic->IsAdult; });
@@ -179,9 +237,32 @@ int main() {
         });
     } catch (const CE::TempleProbeUnsupported&) { rejected = true; }
     assert(rejected); // Wallmaster arrivals at one-way rows remain unbound before a draw.
+    // Probe inertness under foreign-song logic, over the candidate edges of the vanilla context (121 resolved
+    // edges), the all-Master Quest one and Forest and Spirit Master Quest.
+    size_t inert = 0, reached = 0, unreached = 0;
+    for (const unsigned mask : {0u, 0xfffu, (1u << CE::OotMqIndex("Forest")) | (1u << CE::OotMqIndex("Spirit"))}) {
+        CE::OotQuests quests{};
+        for (size_t i = 0; i < quests.size(); ++i)
+            dungeons[i].mq = quests[i] = ((mask >> i) & 1u) != 0;
+        const auto candidate = CE::BuildTempleCandidate({}, CE::LayoutV1::MakePools(settings, quests, false), settings);
+        const auto all = ParseQuery(CE::EncodeTempleQuery(candidate).c_str(), CE::kRegistrySourceSha256);
+        assert(mask != 0 || (policy.Resolve(all).added.size() == 121 && all.edges.size() == 99));
+        SongState(false);
+        const auto off = InertAnswers(policy, all, *privateLogic);
+        SongState(true);
+        const auto on = InertAnswers(policy, all, *privateLogic);
+        SongState(false);
+        assert(off == on && off.size() == 4 * 2 * 2 * (all.edges.size() + 1));
+        for (size_t i = 0; i < off.size(); i += 2)
+            (off[i] == kReached ? reached : unreached) += 1;
+        inert += off.size() / 2;
+    }
+    for (auto& row : dungeons) row.mq = false;
+    assert(reached > 0 && unreached > 0); // the predicates decide, so the comparison is not vacuous
     logic = live; Rando::ProbeLogicActive() = false;
     std::cout << "PASS isolated native Temple Resolve, 121 shared vanilla predicate edges, the MQ ones of the "
-                 "loaded quests, both ages and soul negatives\n";
+                 "loaded quests, both ages and soul negatives; " << inert << " Searches over three quest contexts "
+                 "answer the same with foreign-song logic on and off\n";
 }
 ''', encoding='utf-8')
 exe = hostcxx.build(a.compiler, cpp, includes=[source/'combo', a.json_include, randomizer,

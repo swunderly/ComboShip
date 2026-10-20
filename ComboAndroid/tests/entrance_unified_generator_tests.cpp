@@ -438,6 +438,23 @@ void CheckTemplePass() {
   g = Tranche();
   g.mmDump = Dump({"Mm start"}, {"Song of Soaring"});
   unsupported(g, "Song of Soaring", 0, 0);
+  // Foreign-song logic: the gate takes it (lemma S1), but only
+  // wallmasters-own-game-songs-v1 carries it, so the MM tranche refuses it
+  // after the oracle's reset and before Prepare, any draw or MM call.
+  ResetAll();
+  g = Tranche();
+  g.foreignSongsLogic = true;
+  assert(Has(Error<UnifiedEntranceRefused>([&] { Generate(g); }),
+             "wallmasters-own-game-mm-tranche does not admit foreign-song "
+             "logic"));
+  assert(FakeProbe::calls() == 0 && FakeMm::calls() == 0 &&
+         Oracles::mmQueries == 0 && !ActiveMmUnified().active());
+  // With No Logic it has no song facts.
+  ResetAll();
+  g = Tranche();
+  g.foreignSongsLogic = true;
+  g.access = OotAccess::NO_LOGIC;
+  assert(Routes(Generate(g)).size() == 4);
   ResetAll();
   g = Tranche();
   g.oot.GetStartAges = nullptr;

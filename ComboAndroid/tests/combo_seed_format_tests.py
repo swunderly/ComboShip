@@ -313,6 +313,82 @@ int main() {
     assert(reread.json() == devStore.json());
     rejectsLayout([&] { Profiles::Store(legacy(false), shipping).restore(devStore.json()); });
     assert(Profiles::SeedFromContainer({{"combo", {{"rando", layoutSeed.dump()}}}}, dev) == layoutSeed);
+    // The song facts a layout's id carries (limits design, Stage 1): "Play warp songs across games" in logic takes
+    // wallmasters-own-game-songs-v1 in either quest context; the vanilla and quests ids refuse it and the songs id
+    // needs it. No id takes song destination shuffle or a starting warp song or Soaring under logic. No Logic has no
+    // song facts. A profile settings document carries none; a song map that does not parse is refused.
+    {
+        const auto all = Entrances::CapabilitySet::AtLeast(Entrances::Stage::Hidden);
+        SongTravelMap foreignMap, shuffleMap;
+        foreignMap.foreignSongs = foreignMap.logicForeignSongs = true;
+        shuffleMap.enabled = shuffleMap.logicEnabled = true;
+        auto mqLayout = vanilla;
+        mqLayout.ootMq[Entrances::OotMqIndex("Water")] = true;
+        const auto seedOf = [&](const Entrances::EntranceLayout& base, std::string_view id, const Json& songs,
+                                bool noLogic) {
+            auto layout = base;
+            layout.required = {std::string(id)};
+            auto seed = vanillaSeed;
+            seed["entranceLayout"] = Entrances::EncodeEntranceLayout(layout);
+            if (!songs.is_null())
+                seed["songTravel"] = songs;
+            seed["accessibility"] = {{"version", 1}, {"mode", noLogic ? "noLogic" : "everyCheck"}};
+            return seed;
+        };
+        const auto refusedFor = [&](const Json& seed, const std::string& reason) {
+            std::string message;
+            try { RequireSupportedSeedDocument(seed, all); }
+            catch (const UnsupportedComboSeedFormat& error) { message = error.what(); }
+            assert(message.find(reason) != std::string::npos);
+            rejectsLayout([&] { Profiles::SeedFromContainer({{"combo", {{"rando", seed}}}}, all); });
+        };
+        const auto songsId = Entrances::kSongsWallmasterCapability;
+        const std::string_view quests = Entrances::kQuestsWallmasterCapability,
+                               plain = Entrances::kVanillaWallmasterCapability;
+        for (const auto* base : {&vanilla, &mqLayout}) {
+            const auto other = base == &vanilla ? plain : quests;
+            const auto songs = seedOf(*base, songsId, foreignMap.json(), false);
+            RequireSupportedSeedDocument(songs, all);
+            RequireSupportedSettingsCapabilities(songs, all);
+            assert(Profiles::SeedFromContainer({{"combo", {{"rando", songs.dump()}}}}, all) == songs);
+            refusedFor(seedOf(*base, other, foreignMap.json(), false), "which does not admit foreign-song logic");
+            RequireSupportedSeedDocument(seedOf(*base, other, foreignMap.json(), true), all);
+            RequireSupportedSeedDocument(seedOf(*base, other, SongTravelMap{}.json(), false), all);
+            refusedFor(seedOf(*base, songsId, Json(), false), "without foreign-song logic");
+            refusedFor(seedOf(*base, songsId, SongTravelMap{}.json(), false), "without foreign-song logic");
+            refusedFor(seedOf(*base, songsId, foreignMap.json(), true), "without foreign-song logic");
+            // A profile settings document drops the routes and the song facts with them.
+            const auto document = Profiles::SettingsDocument(seedOf(*base, songsId, Json(), false), all);
+            RequireSupportedSettingsCapabilities(document, all);
+            // Destination shuffle and starting songs, refused under every id.
+            for (const auto id : {std::string_view(songsId), other}) {
+                const auto songsMap = id == songsId ? foreignMap.json() : SongTravelMap{}.json();
+                auto shuffled = seedOf(*base, id, shuffleMap.json(), false);
+                if (id == songsId)
+                    shuffled["songTravel"]["logicForeignSongs"] = true;
+                refusedFor(shuffled, "song travel logic");
+                auto prelude = seedOf(*base, id, songsMap, false);
+                prelude["oot"]["settings"]["gRandoSettings.StartingPreludeOfLight"] = 1;
+                refusedFor(prelude, "starting Prelude of Light");
+                auto soaring = seedOf(*base, id, songsMap, false);
+                soaring["mm"]["settings"]["gRando.StartingItems"] = {"Song of Time", "Song of Soaring"};
+                refusedFor(soaring, "starting Song of Soaring");
+                prelude["accessibility"]["mode"] = "noLogic";
+                if (id != songsId)
+                    RequireSupportedSeedDocument(prelude, all);
+            }
+        }
+        auto malformed = seedOf(vanilla, plain, foreignMap.json(), false);
+        malformed["songTravel"]["destinations"] = Json::array();
+        refusedFor(malformed, "Invalid song travel map");
+        // This build's shipping set takes the songs id once it is Public, and refuses it while it is staged.
+        const auto songs = seedOf(vanilla, songsId, foreignMap.json(), false);
+        if (shipping.Active(songsId))
+            RequireSupportedSeedDocument(songs, shipping);
+        else
+            rejectsLayout([&] { RequireSupportedSeedDocument(songs, shipping); });
+        refusedFor(seedOf(vanilla, plain, foreignMap.json(), false), "which does not admit foreign-song logic");
+    }
     // Without the MM installer's exports an accepted layout still never binds as vanilla routing.
     std::string installer;
     try { Entrances::ApplyNativeSeed(sEntranceNative, layoutSeed, dev); }

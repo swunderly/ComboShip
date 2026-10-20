@@ -900,6 +900,9 @@ combo_json_harness_test(oot_vanilla_wallmaster_predicates_and_age_time_traversal
 combo_json_harness_test(oot_vanilla_wallmaster_capture_and_cleared_room_spawn oot_wallmaster_transport_tests.py)
 combo_json_harness_test(oot_temple_wallmaster_shared_predicates_and_isolation temple_wallmaster_tests.py)
 combo_json_harness_test(entrance_vanilla_generator_and_whole_host_fill_differential entrance_vanilla_generator_tests.py)
+# The same generator with "Play warp songs across games" in logic (limits design, Stage 1): the songs id in every quest
+# context and the shortcut differential with the songs on.
+combo_json_harness_test(entrance_songs_generator_and_shortcut_differential entrance_vanilla_generator_tests.py --songs)
 combo_json_harness_test(entrance_menu_and_generation_availability entrance_menu_rules_tests.py)
 combo_json_harness_test(entrance_solo_modes_refuse_before_generation entrance_game_mode_guard_tests.py)
 combo_json_harness_test(entrance_release_configuration_coverage entrance_release_coverage_tests.py)
@@ -908,6 +911,12 @@ combo_json_harness_test(entrance_release_configuration_coverage entrance_release
 combo_json_harness_test(entrance_quests_seeds_refused_by_0412 entrance_quests_seed_guard_tests.py)
 if(TEST entrance_quests_seeds_refused_by_0412)
     set_tests_properties(entrance_quests_seeds_refused_by_0412 PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+endif()
+# 0.4.12 and the Master Quest Wallmaster build (b4f69772) refuse a seed with "Play warp songs across games" in logic
+# and load this build's seeds without it; reported as skipped without that history.
+combo_json_harness_test(entrance_songs_seeds_refused_by_older_builds entrance_songs_seed_guard_tests.py)
+if(TEST entrance_songs_seeds_refused_by_older_builds)
+    set_tests_properties(entrance_songs_seeds_refused_by_older_builds PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 endif()
 # C6: the release-built Wallmaster corpus and File 3 saves under fixtures/wallmasters-vanilla-v1/, reported as
 # skipped until they are committed.

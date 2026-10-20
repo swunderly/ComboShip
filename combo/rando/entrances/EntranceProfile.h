@@ -90,12 +90,7 @@ template <class Read> EntranceSettingsFacts ProfileEntranceFacts(const nlohmann:
     f.enemyRandomizer = read("gEnhancements.RandomizedEnemies", 0) != 0;
     f.songTravelLogic = read("gCombo.Rando.SongTravel", 0) != 0;
     f.foreignSongsLogic = read("gCombo.Rando.ForeignSongs", 0) != 0;
-    for (const auto& [key, name] : { std::pair{ "StartingMinuetOfForest", "Minuet of Forest" },
-                                     std::pair{ "StartingBoleroOfFire", "Bolero of Fire" },
-                                     std::pair{ "StartingSerenadeOfWater", "Serenade of Water" },
-                                     std::pair{ "StartingRequiemOfSpirit", "Requiem of Spirit" },
-                                     std::pair{ "StartingNocturneOfShadow", "Nocturne of Shadow" },
-                                     std::pair{ "StartingPreludeOfLight", "Prelude of Light" } })
+    for (const auto& [key, name] : kOotStartingSongSettings)
         if (read((std::string("gRandoSettings.") + key).c_str(), 0))
             f.ootStartingItems.emplace_back(name);
     const auto mm = draft.value("mm", nlohmann::json::object()).value("settings", nlohmann::json::object());
@@ -179,7 +174,7 @@ inline bool CatalogueMqBundled(const nlohmann::json& ootCatalog) {
 template <class Read>
 EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nlohmann::json& ootCatalog, Read read,
                                          const CapabilitySet& caps = ActiveCapabilities()) {
-    auto why = WallmasterSettingsRefusal(ProfileEntranceFacts(draft, read));
+    auto why = WallmasterSettingsRefusal(ProfileEntranceFacts(draft, read), caps);
     if (!why.empty())
         return why;
     if (!ootCatalog.contains("hasMasterQuest") || !ootCatalog.contains("hasOriginal") ||

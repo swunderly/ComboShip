@@ -9,8 +9,8 @@
 // (TempleProbeCore.h). It never resets, searches, places, collects or draws randomness through the
 // shared engine, and it only runs between oracle queries of a serialized generation. Supported
 // envelope: the bound OoT one-way rows and the verified Wallmaster predicates of the loaded quests, no
-// large pool, glitchless logic, no song-travel logic and no starting warp songs; anything else is
-// Unsupported.
+// large pool, glitchless logic, no song-destination shuffle logic and no starting warp songs; foreign-song
+// logic changes nothing it reads (lemma S1). Anything else is Unsupported.
 
 #include "TempleProbeCore.h"
 #include "location_access.h"
@@ -188,8 +188,10 @@ struct NativePolicy {
         if (ctx->GetOption(RSK_SHUFFLE_ENTRANCES)) {
             throw Failure(kUnsupported, "Ship entrance randomizer is on");
         }
+        // Destination shuffle needs a song node. Foreign-song logic is inert here: without a starting warp
+        // song or Soaring, refused below and by the gate, no OoTMM song exit opens (lemma S1).
         const auto& songs = ComboRando::ActiveSongTravel();
-        if (songs.logicEnabled || songs.logicForeignSongs) {
+        if (songs.logicEnabled) {
             throw Failure(kUnsupported, "song travel logic is not supported");
         }
         if (logic.get() != ctx->GetLogic().get()) {

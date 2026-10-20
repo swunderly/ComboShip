@@ -186,9 +186,33 @@ int main(int argc, char **argv) {
     OotUnifiedLayout refusedInstall;
     Reject([&] { refusedInstall.install(Seed(mq), vanillaOnly); });
     assert(!refusedInstall.active());
+    // The songs id (limits design, Stage 1) binds the same routes in every
+    // context; its song facts are the seed's (ComboSeedFormat.h).
+    if (mask % 16 == 1) {
+      auto songs = mq;
+      songs.required = {std::string(kSongsWallmasterCapability)};
+      OotUnifiedLayout songsInstalled;
+      songsInstalled.install(Seed(songs), Caps());
+      assert(songsInstalled.routes() == mqInstalled.routes() &&
+             *songsInstalled.quests() == mq.ootMq);
+      Reject([&] { refusedInstall.install(Seed(songs), vanillaOnly); });
+    }
     ++bound;
   }
   assert(short_ == 256 && bound == 4095 - 256);
+  // The songs id on all-vanilla dungeons binds the vanilla id's routes, and
+  // admits a Master Quest context before any layout exists, as the quests id
+  // does; the vanilla id alone does not.
+  auto vanillaSongs = layout;
+  vanillaSongs.required = {std::string(kSongsWallmasterCapability)};
+  OotUnifiedLayout songsInstalled;
+  songsInstalled.install(Seed(vanillaSongs), Caps());
+  assert(songsInstalled.routes() == installed.routes());
+  OotQuests forestMq{};
+  forestMq[OotMqIndex("Forest")] = true;
+  RequireAdmittedOotQuests(forestMq, Caps().Only(kSongsWallmasterCapability));
+  RequireAdmittedOotQuests(forestMq, Caps().Only(kQuestsWallmasterCapability));
+  Reject([&] { RequireAdmittedOotQuests(forestMq, vanillaOnly); });
   // The quests id never names an all-vanilla layout: those keep the vanilla id.
   auto vanillaQuests = layout;
   vanillaQuests.required = {std::string(kQuestsWallmasterCapability)};

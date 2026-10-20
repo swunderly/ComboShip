@@ -7,7 +7,9 @@
 // except the capacity shortfalls of tools/ootmm/m1-contract.json, which are
 // refused before any draw. Legacy Master Quest data is refused with either id.
 // The quest context read before the oracle's first reset must be the one after
-// it, for either id.
+// it, for either id. Run with a third argument, "songs", it checks foreign-song
+// logic instead (limits design, Stage 1): the songs id in every quest context,
+// and the shortcut differential with the songs on.
 #include "rando/entrances/UnifiedBridge.h"
 #include <cassert>
 #include <cstdlib>
@@ -15,6 +17,7 @@
 #include <iostream>
 #include <set>
 #include <sstream>
+#include <tuple>
 #include <type_traits>
 using namespace ComboRando;
 using namespace ComboRando::Entrances;
@@ -260,7 +263,8 @@ struct Result {
 static Result Run(uint32_t seed, uint8_t age, bool mmStart, OotAccess access,
                   bool shortcut, bool restricted = false,
                   bool templeBaseFalse = false,
-                  const CapabilitySet *chosenBySettings = nullptr) {
+                  const CapabilitySet *chosenBySettings = nullptr,
+                  bool foreignSongs = false) {
   Fake::Reset();
   Fake::startAges = age;
   Fake::restricted = restricted;
@@ -270,6 +274,7 @@ static Result Run(uint32_t seed, uint8_t age, bool mmStart, OotAccess access,
     g.capability.clear();
     g.active = *chosenBySettings;
   }
+  g.foreignSongsLogic = foreignSongs;
   g.mmStart = mmStart;
   g.access = access;
   g.wallmasterShortcut = shortcut;
@@ -334,7 +339,7 @@ static void CheckPlainRefusals() {
                        const EntranceSettingsFacts &facts) {
     Fake::Reset();
     const auto error = Refusal(g);
-    const auto rules = EntranceGenerationRefusal(facts);
+    const auto rules = EntranceGenerationRefusal(facts, g.active);
     assert(!rules.empty() && error.player() == rules.player &&
            error.what() == rules.log);
   };
@@ -362,11 +367,47 @@ static void CheckPlainRefusals() {
   facts = {};
   facts.songTravelLogic = true;
   same(g, facts);
+  // Foreign-song logic in a build without wallmasters-own-game-songs-v1 (it is
+  // staged at Dev): the menu's sentence, chosen by settings.
   g = Generation();
+  g.capability.clear();
+  g.active =
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability) |
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kQuestsWallmasterCapability);
+  g.active.devBuild = true;
   g.foreignSongsLogic = true;
   facts = {};
   facts.foreignSongsLogic = true;
   same(g, facts);
+  // With the songs id, an id named by name must match the seed's song facts,
+  // before any draw or native change; this is developer text, not a sentence.
+  for (const auto &[id, foreign, why] :
+       {std::tuple{kVanillaWallmasterCapability, true,
+                   " does not admit foreign-song logic"},
+        std::tuple{kQuestsWallmasterCapability, true,
+                   " does not admit foreign-song logic"},
+        std::tuple{
+            kSongsWallmasterCapability, false,
+            " needs foreign-song logic, which this seed does not have"}}) {
+    Fake::Reset();
+    if (id == kQuestsWallmasterCapability)
+      Fake::quests[OotMqIndex("Forest")] = true;
+    g = Generation();
+    g.capability = std::string(id);
+    g.foreignSongsLogic = foreign;
+    const auto error = Refusal(g);
+    assert(error.what() == std::string(id) + why &&
+           error.player() == error.what());
+  }
+  // No Logic: the songs id has no song facts to carry.
+  Fake::Reset();
+  g = Generation();
+  g.capability = std::string(kSongsWallmasterCapability);
+  g.foreignSongsLogic = true;
+  g.access = OotAccess::NO_LOGIC;
+  assert(Refusal(g).what() ==
+         std::string(kSongsWallmasterCapability) +
+             " needs foreign-song logic, which this seed does not have");
   for (bool mm : {false, true}) {
     g = Generation();
     auto dump = Json::parse(mm ? g.mmDump : g.ootDump);
@@ -684,10 +725,249 @@ static void CheckVanillaBytes() {
                EncodeEntranceLayout(expected) == shipped.layout);
       }
 }
+// "Play warp songs across games" in the seed's logic (limits design, Stage 1),
+// chosen by settings in a build with wallmasters-own-game-songs-v1: every quest
+// context of OoTMM's bundled data takes the songs id, the capacity shortfalls
+// of tools/ootmm/m1-contract.json are refused as without the songs, Legacy
+// Master Quest data keeps its refusal, and No Logic keeps the vanilla or quests
+// id. The songs id has the same rules: a layout with its id swapped for the one
+// the context takes without the songs validates and has that generation's
+// routes. Co-op identities differ from the seeds without the songs. A build
+// without the songs id refuses the songs with the menu's sentence.
+static size_t CheckSongContexts(const Json &contract) {
+  std::set<std::set<std::string>> shortfalls;
+  for (const auto &row : contract.at("mqSources").at("capacityShortfalls"))
+    shortfalls.insert(row.at("mq").get<std::set<std::string>>());
+  const auto dungeons =
+      contract.at("mqSources").at("dungeons").get<std::vector<std::string>>();
+  const auto quests = [](unsigned mask) {
+    OotQuests result{};
+    for (size_t i = 0; i < result.size(); ++i)
+      result[i] = (mask & (1u << i)) != 0;
+    return result;
+  };
+  size_t refused = 0, generated = 0, compared = 0;
+  for (unsigned mask = 0; mask < 4096; ++mask) {
+    Fake::Reset();
+    Fake::quests = quests(mask);
+    std::set<std::string> projection;
+    for (const auto &dungeon : dungeons)
+      if (Fake::quests[OotMqIndex(dungeon)])
+        projection.insert(dungeon);
+    UnifiedEntranceStats stats;
+    auto g = Generation(mask);
+    g.capability.clear();
+    g.foreignSongsLogic = true;
+    g.stats = &stats;
+    if (shortfalls.contains(projection)) {
+      const auto error = Shortfall(g);
+      assert(error.player() == kWallmasterCapacitySeedText &&
+             stats.randomDraws == 0);
+      ++refused;
+      continue;
+    }
+    const auto encoded =
+        GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+    const auto layout = DecodeEntranceLayout(encoded);
+    assert(layout.required == std::vector<std::string>{std::string(
+                                  kSongsWallmasterCapability)} &&
+           layout.ootMq == Fake::quests && stats.randomDraws > 0);
+    for (const auto &route : Validate(layout, Caps()).oot)
+      assert(OotUnifiedSourceInQuests(*route.source, Fake::quests));
+    auto without = layout;
+    without.required = {std::string(mask ? kQuestsWallmasterCapability
+                                         : kVanillaWallmasterCapability)};
+    Validate(without, Caps());
+    assert(SeedIdentityText("seed", encoded) !=
+           SeedIdentityText("seed", EncodeEntranceLayout(without)));
+    assert(!ActiveOotUnified().active() && !ActiveMmUnified().active());
+    if (mask % 64 == 0) {
+      Fake::Reset();
+      Fake::quests = layout.ootMq;
+      auto plain = Generation(mask);
+      plain.capability.clear();
+      const auto expected = DecodeEntranceLayout(
+          GenerateEntranceLayout(plain, Fake::Native(), Fake::Probe()));
+      assert(expected.required == without.required &&
+             expected.overrides == layout.overrides);
+      ++compared;
+    }
+    ++generated;
+  }
+  // Of the 64 contexts compared, the 4 with MQ Spirit and BotW and vanilla
+  // Shadow and Ganon are shortfalls.
+  assert(refused == 256 && generated == 4096 - 256 && compared == 60);
+  // Only OoTMM's bundled data admits a Master Quest context, with the songs
+  // too; an all-vanilla seed from Legacy data takes the songs id.
+  for (const unsigned mask : {1u, 0x80u, 0xfffu}) {
+    Fake::Reset();
+    Fake::quests = quests(mask);
+    auto g = Generation(mask);
+    g.capability.clear();
+    g.foreignSongsLogic = true;
+    g.mqSource = ComboMq::SeedMqSource::Legacy;
+    assert(Refusal(g).player() == kWallmasterMasterQuestText);
+  }
+  Fake::Reset();
+  auto g = Generation(3);
+  g.capability.clear();
+  g.foreignSongsLogic = true;
+  g.mqSource = ComboMq::SeedMqSource::Legacy;
+  assert(DecodeEntranceLayout(
+             GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()))
+             .required ==
+         std::vector<std::string>{std::string(kSongsWallmasterCapability)});
+  // No Logic: no Temple pass and no song facts, so the seed is the one made
+  // without the songs, under the vanilla or quests id.
+  for (const unsigned mask : {0u, 1u}) {
+    std::string layouts[2];
+    for (const bool foreign : {false, true}) {
+      Fake::Reset();
+      Fake::quests = quests(mask);
+      g = Generation(mask);
+      g.capability.clear();
+      g.foreignSongsLogic = foreign;
+      g.access = OotAccess::NO_LOGIC;
+      layouts[foreign] =
+          GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()).dump();
+    }
+    assert(layouts[0] == layouts[1] &&
+           DecodeEntranceLayout(Json::parse(layouts[1])).required ==
+               std::vector<std::string>{
+                   std::string(mask ? kQuestsWallmasterCapability
+                                    : kVanillaWallmasterCapability)});
+  }
+  // A build without the songs id refuses them, before any draw or native
+  // change, with the menu's sentence; the shipping set does so while the id is
+  // staged.
+  const auto withoutSongs =
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability) |
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kQuestsWallmasterCapability);
+  const auto shipping = CapabilitySet::AtLeast(Stage::Public);
+  for (const auto *set : {&withoutSongs, &shipping}) {
+    Fake::Reset();
+    g = Generation(4);
+    g.capability.clear();
+    g.active = *set;
+    g.foreignSongsLogic = true;
+    EntranceSettingsFacts facts;
+    facts.foreignSongsLogic = true;
+    const auto rules = EntranceGenerationRefusal(facts, *set);
+    if (set->Active(kSongsWallmasterCapability)) {
+      assert(rules.empty() &&
+             DecodeEntranceLayout(
+                 GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()))
+                     .required == std::vector<std::string>{
+                                      std::string(kSongsWallmasterCapability)});
+      continue;
+    }
+    const auto error = Refusal(g);
+    assert(error.player() == rules.player && error.what() == rules.log &&
+           rules.player == "Turn off \"Play warp songs across games\" to use "
+                           "Wallmaster Shuffle.");
+  }
+  return generated;
+}
+// The shortcut differential with the songs on (limits design, Stage 1), over
+// the 200 seeds, both ages, both starting games and the three accessibility
+// modes of the vanilla corpus: chosen by settings in a build with the songs id,
+// every seed with logic takes it, and the monotone shortcut gives the full
+// search's seed byte for byte. With the id swapped back, every seed is the
+// vanilla id's (the 0.4.12 corpus, corpusFnv64 844767829324957485), so the
+// songs change nothing but the id; No Logic seeds keep the vanilla id. The
+// co-op identity of a songs seed differs from the seed without the songs.
+static Json SongDifferential() {
+  const auto all = Caps();
+  const std::string songsId = "\"requires\":[\"" +
+                              std::string(kSongsWallmasterCapability) + "\"]",
+                    vanillaId = "\"requires\":[\"" +
+                                std::string(kVanillaWallmasterCapability) +
+                                "\"]";
+  size_t pairs = 0, shortcuts = 0;
+  uint64_t corpus = 14695981039346656037ull;
+  std::ostringstream quiet;
+  auto *previousOutput = std::cout.rdbuf(quiet.rdbuf());
+  for (uint32_t seed = 1; seed <= 200; ++seed)
+    for (uint8_t age : {uint8_t(1), uint8_t(2)})
+      for (bool mmStart : {false, true})
+        for (auto access : {OotAccess::ALL_REACHABLE, OotAccess::BEATABLE_ONLY,
+                            OotAccess::NO_LOGIC}) {
+          quiet.str("");
+          quiet.clear();
+          const auto full =
+              Run(seed, age, mmStart, access, false, false, false, &all, true);
+          const auto fast =
+              Run(seed, age, mmStart, access, true, false, false, &all, true);
+          assert(full.completeSeed == fast.completeSeed &&
+                 full.layout == fast.layout);
+          assert(full.stats.randomDraws == fast.stats.randomDraws &&
+                 fast.stats.randomDraws == 39);
+          assert(!full.stats.monotoneShortcutUsed);
+          const bool logic = access != OotAccess::NO_LOGIC;
+          assert(DecodeEntranceLayout(fast.layout).required ==
+                 std::vector<std::string>{
+                     std::string(logic ? kSongsWallmasterCapability
+                                       : kVanillaWallmasterCapability)});
+          if (logic) {
+            assert(fast.stats.monotoneShortcutUsed &&
+                   fast.stats.assumedChecks == 1 && fast.temple == 1);
+            assert(full.stats.assumedChecks == 13 && full.temple == 13);
+            ++shortcuts;
+          } else
+            assert(!fast.stats.monotoneShortcutUsed && fast.temple == 0);
+          auto bytes = fast.completeSeed;
+          const auto at = bytes.find(songsId);
+          assert(logic == (at != std::string::npos) &&
+                 bytes.find(songsId, at + 1) == std::string::npos);
+          if (logic)
+            bytes.replace(at, songsId.size(), vanillaId);
+          for (unsigned char byte : bytes)
+            corpus = (corpus ^ byte) * 1099511628211ull;
+          ++pairs;
+        }
+  assert(corpus == 844767829324957485ull);
+  // Co-op: the app's seed identity covers the song map's logic flags and the
+  // layout's id (GeneratedSeedIdentityText), so a songs seed never shares one
+  // with the seed made without the songs, under logic or No Logic.
+  const Json rules = {{"logicValues", Json::object()},
+                      {"mmTricks", Json::object()},
+                      {"ootTricks", ""}};
+  SongTravelMap plainSongs, songs;
+  songs.foreignSongs = songs.logicForeignSongs = true;
+  const auto songSeed = Run(9, 2, false, OotAccess::ALL_REACHABLE, true, false,
+                            false, &all, true);
+  const auto plainSeed = Run(9, 2, false, OotAccess::ALL_REACHABLE, true, false,
+                             false, &all, false);
+  const auto identity = [&](const SongTravelMap &map, const Json &layout) {
+    return GeneratedSeedIdentityText("9", "oot", "mm", rules, map.json(), "",
+                                     layout);
+  };
+  assert(identity(songs, songSeed.layout) !=
+             identity(plainSongs, plainSeed.layout) &&
+         identity(songs, songSeed.layout) !=
+             identity(songs, plainSeed.layout) &&
+         identity(songs, plainSeed.layout) !=
+             identity(plainSongs, plainSeed.layout));
+  std::cout.rdbuf(previousOutput);
+  return Json{{"songDifferentialPairs", pairs},
+              {"songShortcutPairs", shortcuts},
+              {"songCorpusFnv64AsVanilla", corpus}};
+}
 int main(int argc, char **argv) {
-  assert(argc == 3);
+  assert(argc == 3 || (argc == 4 && std::string_view(argv[3]) == "songs"));
   std::ifstream contractFile(argv[2]);
   const auto contract = Json::parse(contractFile);
+  if (argc == 4) {
+    const size_t contexts = CheckSongContexts(contract);
+    auto report = SongDifferential();
+    report["scope"] = "Real generator and combined fill with explicit fake "
+                      "native modules/oracles, foreign-song logic on";
+    report["songQuestContextsGenerated"] = contexts;
+    report["nativeSeedCorpusOrGameplay"] = false;
+    std::ofstream(argv[1]) << report.dump(2) << '\n';
+    std::cout << report.dump() << '\n';
+    return 0;
+  }
   Fake::Reset();
   auto g = Generation();
   g.settings = {};

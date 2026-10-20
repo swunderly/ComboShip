@@ -46,8 +46,11 @@ inline bool NeedsTemplePass(const Settings& s, const TempleFacts& f, const AreaE
 
 // Supported envelope: own-game one-ways and the own-game alias Wallmaster pool, as far as every OoT
 // row a candidate can touch has an audited native binding; no large pool, glitchless logic, no song
-// travel and no starting warp songs or Soaring. Everything else throws here, before any random draw.
-// The pools are the ones the Shuffler will place, resolved with the same areaExists.
+// travel and no starting warp songs or Soaring. Foreign-song logic is inside it: without a starting song
+// every OoTMM song exit is false here (lemma S1), so the probe, which reaches no song, answers as OoTMM
+// does. Which ids take it is the generator's rule (UnifiedBridge.h UnifiedSongRequirement), not the
+// probe's. Everything else throws here, before any random draw. The pools are the ones the Shuffler
+// will place, resolved with the same areaExists.
 inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const AreaExists& areaExists) {
     if (!f.logicEnabled)
         return; // logic none never runs the Temple pass (entrances.ts:388-391)

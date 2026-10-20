@@ -1,5 +1,7 @@
 #pragma once
 #include "GameMode.h"
+#include "SongTravel.h"
+#include "entrances/EntranceAvailability.h"
 #include "entrances/EntranceLayout.h"
 #include "entrances/EntranceRuntimeFlags.h"
 #include <nlohmann/json.hpp>
@@ -36,8 +38,60 @@ inline bool IsComboSeedDocument(const nlohmann::json& seed) {
     const auto type = seed.find("fileType");
     return type != seed.end() && type->is_string() && (*type == kComboSeedFileType || *type == kEntranceSeedFileType || *type == kGameModeSeedFileType);
 }
+// The song facts of a seed, which its layout's capability id must carry (limits design §3): whether OoT
+// logic is on (the seed's accessibility is not No Logic, so a Temple pass ran), the song travel map's logic
+// flags, and the starting warp songs and Song of Soaring of both games' settings, read as the profile reads
+// them (EntranceProfile.h ProfileEntranceFacts). No shared item family is a song (SharedItems.h). A missing
+// part counts as off; a song travel map that does not parse is refused.
+inline Entrances::EntranceSettingsFacts SeedEntranceFacts(const nlohmann::json& seed) {
+    Entrances::EntranceSettingsFacts f;
+    const auto part = [&](const nlohmann::json& object, const char* key) -> const nlohmann::json* {
+        const auto it = object.find(key);
+        return it != object.end() && it->is_object() ? &*it : nullptr;
+    };
+    if (const auto* access = part(seed, "accessibility")) {
+        const auto mode = access->find("mode");
+        f.logicEnabled = !(mode != access->end() && mode->is_string() && *mode == "noLogic");
+    }
+    const auto songs = SongTravelMap::parse(seed.value("songTravel", nlohmann::json()));
+    f.songTravelLogic = songs.logicEnabled;
+    f.foreignSongsLogic = songs.logicForeignSongs;
+    const auto* oot = part(seed, "oot");
+    if (const auto* settings = oot ? part(*oot, "settings") : nullptr)
+        for (const auto& [key, name] : Entrances::kOotStartingSongSettings) {
+            const auto value = settings->find(std::string("gRandoSettings.") + key);
+            if (value != settings->end() && value->is_number_integer() && *value != 0)
+                f.ootStartingItems.emplace_back(name);
+        }
+    const auto* mm = part(seed, "mm");
+    if (const auto* settings = mm ? part(*mm, "settings") : nullptr)
+        if (const auto items = settings->find("gRando.StartingItems"); items != settings->end() && items->is_array())
+            for (const auto& item : *items)
+                if (item.is_string())
+                    f.mmStartingItems.push_back(item.get<std::string>());
+    return f;
+}
+// A layout's capability ids against the seed's song facts. Under logic, no id takes song destination shuffle
+// or a starting warp song or Soaring (the Temple gate's refusals, EntranceAvailability.h), only the songs id
+// takes foreign-song logic, and the songs id needs it, as an id must be needed (EntranceLayout.h
+// ValidateEntranceLayoutSettings). With No Logic a seed has no song facts and keeps the vanilla or quests id.
+inline void RequireSeedEntranceFacts(const Entrances::EntranceLayout& layout,
+                                     const Entrances::EntranceSettingsFacts& f) {
+    if (const auto why = Entrances::TempleSettingsRefusal(f); !why.empty())
+        throw std::invalid_argument("Entrance layout seed: " + why.log);
+    const bool foreign = f.logicEnabled && f.foreignSongsLogic;
+    const bool songs = std::find(layout.required.begin(), layout.required.end(),
+                                 Entrances::kSongsWallmasterCapability) != layout.required.end();
+    if (foreign && !songs)
+        throw std::invalid_argument("Entrance layout requires " + layout.required.front() +
+                                    ", which does not admit foreign-song logic");
+    if (!foreign && songs)
+        throw std::invalid_argument("Entrance layout requires " + std::string(Entrances::kSongsWallmasterCapability) +
+                                    " without foreign-song logic");
+}
 // A seed's entrance layout against the capabilities of this build. `settingsDocument` also
-// accepts a profile settings document, whose layout has no routes (ComboRandomizerProfiles.h).
+// accepts a profile settings document, whose layout has no routes (ComboRandomizerProfiles.h); it
+// skips the routes and the song facts.
 inline void RequireSupportedLayout(const nlohmann::json& seed, const Entrances::CapabilitySet& caps,
                                    bool settingsDocument) {
     if (!seed.is_object())
@@ -63,8 +117,12 @@ inline void RequireSupportedLayout(const nlohmann::json& seed, const Entrances::
             if (settingsDocument && value.is_object() && !value.contains("overrides"))
                 Entrances::ValidateEntranceLayoutSettings(
                     Entrances::DecodeEntranceLayout(value, Entrances::LayoutPart::SettingsOnly), caps);
-            else
-                Entrances::Validate(Entrances::DecodeEntranceLayout(value), caps);
+            else {
+                const auto layout = Entrances::DecodeEntranceLayout(value);
+                Entrances::Validate(layout, caps);
+                if (!settingsDocument)
+                    RequireSeedEntranceFacts(layout, SeedEntranceFacts(seed));
+            }
         } catch (const std::exception& error) { throw UnsupportedComboSeedFormat(error.what()); }
     }
 }

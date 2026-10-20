@@ -38,6 +38,7 @@ inline constexpr CapabilityValue kWallmastersMmTrancheValues[] = { { "erWallmast
 inline constexpr CapabilityValue kWallmastersOwnGameValues[] = { { "erWallmasters", "ownGame", Stage::Hidden } };
 inline constexpr CapabilityValue kWallmastersVanillaValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
+inline constexpr CapabilityValue kWallmastersSongsValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -66,8 +67,16 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // Wallmaster edges, sources and capture rooms. An all-vanilla seed keeps the vanilla id above. Public from
     // 0.4.13; its id and rules are frozen from then on.
     { "wallmasters-own-game-quests-v1", kWallmastersQuestsValues, {}, false },
+    // The same Own Game rules with "Play warp songs across games" in the seed's logic (OoTMM's songSoaringOot and
+    // song*Mm item settings), in either quest context (limits design, Stage 1). With no starting warp song or Soaring,
+    // which every Wallmaster id refuses, OoTMM's Temple check is the same with or without them (lemma S1). A seed
+    // without that logic keeps the vanilla or quests id, so its layout is the one earlier builds make.
+    { "wallmasters-own-game-songs-v1", kWallmastersSongsValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
+// The Own Game Wallmaster id whose seeds have foreign-song logic (EntranceAvailability.h, UnifiedBridge.h,
+// ComboSeedFormat.h); the vanilla and quests ids are in EntranceLayout.h.
+inline constexpr std::string_view kSongsWallmasterCapability = "wallmasters-own-game-songs-v1";
 
 namespace CapabilityDetail {
 constexpr size_t Find(std::string_view id) {

@@ -1,4 +1,5 @@
 #pragma once
+#include "Capabilities.h"
 #include <string>
 #include <string_view>
 #include <utility>
@@ -15,6 +16,12 @@ struct EntranceSettingsFacts {
     // (packages/core/src/settings/data.ts:3551, hasOoTMM :7); solo and vanilla runs have no entrance layout.
     bool combinedMode = true;
     std::vector<std::string> ootStartingItems, mmStartingItems, foreignStartingItems;
+};
+// The OoT starting warp song options (settings.cpp RSK_STARTING_*): their CVars under gRandoSettings. and the songs.
+inline constexpr std::pair<const char*, const char*> kOotStartingSongSettings[] = {
+    { "StartingMinuetOfForest", "Minuet of Forest" },     { "StartingBoleroOfFire", "Bolero of Fire" },
+    { "StartingSerenadeOfWater", "Serenade of Water" },   { "StartingRequiemOfSpirit", "Requiem of Spirit" },
+    { "StartingNocturneOfShadow", "Nocturne of Shadow" }, { "StartingPreludeOfLight", "Prelude of Light" },
 };
 inline constexpr const char* kShipEntranceSettings[] = {
     "gRandoSettings.ShuffleDungeonsEntrances",
@@ -86,6 +93,9 @@ inline EntranceRefusal ShipEntrancesRefusal() {
 inline EntranceRefusal EnemyRandomizerRefusal() {
     return { "Turn off Enemy Randomizer to use Wallmaster Shuffle.", "Wallmaster Shuffle needs Enemy Randomizer off" };
 }
+// What the Temple probe cannot validate yet. Foreign-song logic ("Play warp songs across games") is not here: with no
+// starting warp song or Soaring, which this refuses, it cannot change OoTMM's Temple check (lemma S1,
+// entrance_temple_song_lemma_tests.py), so the probe takes it as it is.
 inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
     if (!f.logicEnabled)
         return {};
@@ -97,9 +107,6 @@ inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
     if (f.songTravelLogic)
         return { "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster Shuffle.",
                  "song travel logic needs GLOBAL song sources (deferred)" };
-    if (f.foreignSongsLogic)
-        return { "Turn off \"Play warp songs across games\" to use Wallmaster Shuffle.",
-                 "song travel logic needs GLOBAL song sources (deferred)" };
     for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })
         for (const auto& item : *list)
             for (std::string_view song : { "Song of Soaring", "Minuet of Forest", "Bolero of Fire", "Serenade of Water",
@@ -109,13 +116,21 @@ inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
                              "starting " + item + " needs GLOBAL song sources (deferred)" };
     return {};
 }
-inline EntranceRefusal WallmasterSettingsRefusal(const EntranceSettingsFacts& f) {
+// Foreign-song logic needs wallmasters-own-game-songs-v1 (UnifiedBridge.h UnifiedSongRequirement), staged at Dev: a
+// build without that id keeps this sentence. `caps` are the build's.
+inline EntranceRefusal WallmasterSettingsRefusal(const EntranceSettingsFacts& f,
+                                                 const CapabilitySet& caps = ActiveCapabilities()) {
     if (!f.combinedMode)
         return { "Wallmaster Shuffle works only in combined mode.", "Wallmaster Shuffle works only in combined mode." };
     if (f.shipwrightEntrances)
         return ShipEntrancesRefusal();
     if (f.enemyRandomizer)
         return EnemyRandomizerRefusal();
-    return TempleSettingsRefusal(f);
+    if (auto why = TempleSettingsRefusal(f); !why.empty())
+        return why;
+    if (f.logicEnabled && f.foreignSongsLogic && !caps.Active(kSongsWallmasterCapability))
+        return { "Turn off \"Play warp songs across games\" to use Wallmaster Shuffle.",
+                 "foreign-song logic needs wallmasters-own-game-songs-v1, which this build does not have" };
+    return {};
 }
 } // namespace ComboRando::Entrances

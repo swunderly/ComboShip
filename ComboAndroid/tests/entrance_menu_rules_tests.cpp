@@ -123,17 +123,56 @@ int main() {
   settings[kOotEnemyRandomizer] = 1;
   check(enemy, "Wallmaster Shuffle needs Enemy Randomizer off");
   settings.clear();
-  for (const auto &[key, player] :
-       {std::pair{"gCombo.Rando.SongTravel",
-                  "Turn off Warp Songs and Soaring Spots Shuffle to use "
-                  "Wallmaster Shuffle."},
-        std::pair{"gCombo.Rando.ForeignSongs",
-                  "Turn off \"Play warp songs across games\" to use "
-                  "Wallmaster Shuffle."}}) {
-    settings[key] = 1;
-    check(player, "song travel logic needs GLOBAL song sources (deferred)");
-    settings.clear();
+  settings["gCombo.Rando.SongTravel"] = 1;
+  check("Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster "
+        "Shuffle.",
+        "song travel logic needs GLOBAL song sources (deferred)");
+  settings.clear();
+  // "Play warp songs across games" (limits design, Stage 1): the Temple gate
+  // takes it (lemma S1), and so do the menu and generation wherever the
+  // build has wallmasters-own-game-songs-v1, staged at Dev. A build without it
+  // keeps the sentence; with No Logic nothing refuses it.
+  const auto withoutSongs =
+      vanillaOnly |
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kQuestsWallmasterCapability);
+  assert(withQuests.Active(kSongsWallmasterCapability) &&
+         !withoutSongs.Active(kSongsWallmasterCapability));
+  settings["gCombo.Rando.ForeignSongs"] = 1;
+  {
+    const auto facts = ProfileEntranceFacts(draft, read);
+    TempleFacts temple;
+    static_cast<EntranceSettingsFacts &>(temple) = facts;
+    Settings s;
+    s.erWallmasters = Mode::OwnGame;
+    CheckTempleCapability(s, temple, [](std::string_view) { return true; });
+    assert(facts.foreignSongsLogic && TempleSettingsRefusal(temple).empty());
+    for (const auto &set :
+         {withQuests, withQuests.Only(kSongsWallmasterCapability)})
+      assert(ProfileWallmasterRefusal(draft, assets, read, set).empty() &&
+             EntranceGenerationRefusal(facts, set).empty());
+    const auto refused =
+        ProfileWallmasterRefusal(draft, assets, read, withoutSongs);
+    plain(refused,
+          "Turn off \"Play warp songs across games\" to use Wallmaster "
+          "Shuffle.",
+          "foreign-song logic needs wallmasters-own-game-songs-v1, which this "
+          "build does not have");
+    assert(refused == EntranceGenerationRefusal(facts, withoutSongs));
+    // This build's own set: the menu and generation agree on it.
+    const auto menu = ProfileWallmasterRefusal(draft, assets, read);
+    assert(menu == EntranceGenerationRefusal(facts) &&
+           menu.empty() == caps.Active(kSongsWallmasterCapability));
+    // A starting song is refused first, by every set.
+    settings["gRandoSettings.StartingPreludeOfLight"] = 1;
+    for (const auto &set : {withQuests, withoutSongs})
+      assert(ProfileWallmasterRefusal(draft, assets, read, set).player ==
+             "Remove Prelude of Light from the starting items to use "
+             "Wallmaster Shuffle.");
+    settings.erase("gRandoSettings.StartingPreludeOfLight");
+    settings[kNativeLogicRule] = 1;
+    assert(ProfileWallmasterRefusal(draft, assets, read, withoutSongs).empty());
   }
+  settings.clear();
   // Ship's Logic row offers Glitchless (0) and No Logic (1) only.
   settings[kNativeLogicRule] = 2;
   check("Set Logic to Glitchless to use Wallmaster Shuffle.",

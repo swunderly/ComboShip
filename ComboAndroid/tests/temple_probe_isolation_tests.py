@@ -55,10 +55,12 @@ assert not re.search(r'(?<![\w.>])logic\s*=[^=]', probe + core)
 assert 'if (ComboRando::OotSongOracle()) {' in probe
 check = stubs.function(probe, 'static void CheckContext()')
 for needle in ['gPlayState != nullptr', 'mSaveContext == &gSaveContext', 'OotOracleInitialized()',
-               'RO_LOGIC_GLITCHLESS', 'RSK_SHUFFLE_ENTRANCES', 'songs.logicEnabled || songs.logicForeignSongs',
+               'RO_LOGIC_GLITCHLESS', 'RSK_SHUFFLE_ENTRANCES', 'if (songs.logicEnabled) {',
                'logic.get() != ctx->GetLogic().get()', 'RR_ROOT_EXITS', 'BoundExit(b.parent, b.target);',
                'IsWarpSong(rg)']:
     assert needle in check, needle
+# Foreign-song logic is inert in the probe (lemma S1): only song destination shuffle is refused.
+assert 'logicForeignSongs' not in check and 'logicForeignSongs' not in core
 run_query = stubs.function(core, 'int RunQuery(Policy& policy, const char* json, int (*poll)(void), uint8_t* agesOut)')
 order = [run_query.index(step) for step in ['DepthGuard depth;', 'policy.Check();', 'policy.Resolve(',
                                             'policy.MakeLogic();', 'RegionFlagGuard', 'ScopedLogic',
