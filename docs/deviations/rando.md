@@ -2385,7 +2385,8 @@ because applying it through `ProfileModeSetup` turns every entrance setting off)
 entrance shuffle (D1, mutual grey-out); SoH Enemy Randomizer (D2; 2Ship has no enemy randomizer, so MM
 has nothing to gate); and, unless OoT logic is No Logic, glitched logic, Song
 Travel or foreign-song logic, or a starting OoT warp song or Song of Soaring (D4: the Temple probe
-cannot validate these yet). Master Quest is refused in the menu (MQ data installed with MQ Dungeon
+cannot validate these yet; the section on cross-game songs below lifts foreign-song logic under a new
+id). Master Quest is refused in the menu (MQ data installed with MQ Dungeon
 Setting not None, or MQ-only data), in generation (any MQ quest; no RNG draw) and in the seed validator,
 by owner decision ("proceed with vanilla first"). OoTMM itself supports MQ Wallmasters; the section on bundled
 Master Quest dungeons below adds them under a new id for 0.4.13.
@@ -2541,3 +2542,42 @@ dungeons yet." (`kWallmasterMasterQuestText`), as before.
   FinalizeSettings, the `!bundledMq` gate), so the setting alone is not refused there.
 - One-Ways and MM Wallmasters still need the MQ setting off. With Wallmaster Shuffle set to None, Master Quest
   dungeons play as described above.
+
+## Wallmaster Shuffle with cross-game songs (2026-10-20)
+
+Planned for 0.4.13 (Wallmaster limits design, Stage 1). OoTMM v32.3 ties nothing in Wallmaster Shuffle to its song
+item settings: "Play warp songs across games" is the port's form of `songSoaringOot` and `songMinuetMm` to
+`songPreludeMm` (`packages/core/src/settings/data.ts:2192-2198`, `:2264-2310`), and Song of Soaring at any age (OoT)
+is `agelessSoaring` (`:3240-3246`); none changes the WALLMASTERS pool (`packages/logic/src/solver/entrances.ts:657-669`).
+0.4.12 refused "Play warp songs across games" in logic with Wallmaster Shuffle (D4) because the opposite-age Temple
+probe has no song node. A new capability, `wallmasters-own-game-songs-v1` (`Capabilities.h`), staged at Dev, lifts
+that refusal.
+
+- **Why the probe needs no song node (lemma S1).** OoTMM's `validateAgeTemple` (`entrances.ts:265-287`) explores
+  with the starting items only. Every exit into a warp-song or Soaring area, the 21 of both `_system.yml` files and
+  Pirates' Fortress, needs `can_play_tp_*` or `can_play_soaring`, and those need the song itself
+  (`macros_common.yml:4-41`, `macros_oot.yml:33`, `macros_mm.yml:113`). With no warp song or Soaring at the start,
+  which every Wallmaster id still refuses, no song exit opens, with or without the cross-game songs or Ageless
+  Soaring. The other exits of GLOBAL and WARP_SONGS (to EGGS, ACCESS and WARP_SONGS) are unconditional but end in
+  areas with no other way out. `entrance_temple_song_lemma_tests.py` pins this to the exact OoTMM blobs, and the
+  probe gives the same answer for every candidate edge with the song state on and off
+  (`temple_wallmaster_tests.py`). The native probe now refuses only song destination shuffle (`TempleProbe.cpp`).
+- **Which id a seed takes.** Generation picks the oldest id that covers the seed: `wallmasters-own-game-vanilla-v1`
+  without Master Quest dungeons or foreign-song logic, `wallmasters-own-game-quests-v1` with Master Quest dungeons
+  and no foreign-song logic, and the songs id with foreign-song logic in either quest context (`UnifiedBridge.h`
+  `UnifiedSongRequirement`, `UnifiedQuestRequirement`). A seed without that logic is the one earlier builds make,
+  byte for byte; with No Logic no Temple pass runs, so a seed has no song facts and keeps the older ids. Otherwise
+  the songs id has the same rules: Master Quest only from OoTMM's bundled data, and the same capacity refusals. A
+  songs seed's routes are the vanilla or quests id's routes for the same seed.
+- **Seed facts.** The song logic is in the seed's `songTravel` map, not in the entrance layout, so the seed guard
+  (`ComboSeedFormat.h` `RequireSeedEntranceFacts`) checks the layout's id against it: only the songs id takes
+  foreign-song logic, and the songs id needs it; under logic no id takes song destination shuffle or a starting
+  warp song or Song of Soaring. It reads the seed's accessibility, its `songTravel` logic flags and both games'
+  starting-song settings. Profile settings documents carry no routes and skip it. Generation refuses an id named
+  by name (headless `--er-capability`) that does not match the facts, before any draw. 0.4.12 and the build with
+  only the quests id refuse a songs seed with "requires unknown capability" (`entrance_songs_seed_guard_tests.py`).
+- **Still refused (port limits).** A starting warp song or Soaring (it needs a song node in the probe), Warp Songs
+  and Soaring Spots Shuffle (OoTMM's `erWarps`, which also gives Wallmasters the warp pads and owl statues as
+  destinations), Full, and every other entrance shuffle keep their refusals.
+- **While the id is staged,** a build without it keeps "Turn off "Play warp songs across games" to use Wallmaster
+  Shuffle." in the menu, on the Generate button and in generation.

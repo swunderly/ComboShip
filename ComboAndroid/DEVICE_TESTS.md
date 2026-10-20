@@ -59,6 +59,18 @@ Nothing here has been tried yet; host tests cover the routes, the logic and the 
 9. Apply the Allsanity preset, set Wallmaster Shuffle to Own Game and generate several seeds with the Seed field blank. About one seed in sixteen rolls that combination for its own Master Quest dungeons and stops at once with "This seed's Master Quest dungeons have more Wallmasters than Wallmaster Shuffle can place. Try another seed."; only the seed's first roll can stop it, never a retry after a failed fill. The others finish, and their seed views list their Master Quest dungeons.
 10. A seed without Master Quest dungeons from this build loads in 0.4.12. A seed with one is refused there.
 
+## Wallmaster Shuffle with cross-game songs (0.4.13, unreleased)
+
+Nothing here has been tried yet; host tests cover the generator, the seed check and the Temple check. Run the list on the emulator, then checks 2 to 6 on a phone. Use a spare file in Combined randomizer mode with Randomizer > Logic & access > Entrances > Wallmaster Shuffle set to Own Game, Randomizer > Warps & travel > Play warp songs across games on, and no warp song or Song of Soaring among the starting items. Tools > Save Editor can give songs, items and souls. For each capture, note the APK checksum, the seed, its `.entrances.txt` line and where Link landed.
+
+1. **Seeds from the release build.** With the release build's headless generator, make one seed with these options for each combination of: child or adult start, OoT or MM start, Song of Soaring at any age (OoT) on or off, and all dungeons normal or MQ Dungeon Count 12. Each one finishes, its `entranceLayout` requires `wallmasters-own-game-songs-v1`, and it loads in the app.
+2. Generate two or three seeds in the app. No sentence shows under the Wallmaster Shuffle row and the Generate button works. Note how long each seed took.
+3. In MM, with Requiem of Spirit learned and an ocarina, play Requiem: Link arrives at Desert Colossus in OoT.
+4. With Song of Soaring learned and an MM owl statue activated, play Soaring in OoT as child Link (or as adult with Song of Soaring at any age on) and pick that owl: Link arrives there in MM. Then play the Song of Time: the new cycle starts at that owl, where Link last entered MM, as OoTMM does on any seed with an entrance shuffle.
+5. After that trip, one OoT capture (for example `OOT Bottom of the Well Wallmaster Main`, as child) and one MM capture (`MM Beneath The Graveyard Night 3 Wallmaster` or `MM Beneath The Well Wallmaster ...`): each lands where its line says.
+6. Add Prelude of Light to the starting items: Own Game greys out with "Remove Prelude of Light from the starting items to use Wallmaster Shuffle." Remove it and turn on Warp Songs and Soaring Spots Shuffle: "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster Shuffle." Turn it off again: Own Game is offered.
+7. A seed from check 2 is refused by 0.4.12. A seed made with Play warp songs across games off still loads there.
+
 ## Wallmaster Shuffle (0.4.12, unreleased)
 
 Nothing here has been tried on a phone yet, and no OoT Wallmaster capture has been seen in play. Checks 3, 4 and 7 matter most. Use the exact release build, a spare file in Combined randomizer mode, and Randomizer > Logic & access > Entrances > Wallmaster Shuffle set to Own Game. Tools > Save Editor can give items, keys and souls to save time.
