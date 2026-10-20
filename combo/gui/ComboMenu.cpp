@@ -31,6 +31,7 @@
 #include "menu/ComboTrickABI.h"
 #include "ComboTimersWindow.h"      // combo-owned overlay timers (#173)
 #include "rando/ComboPlaythrough.h" // plando: ParseSpoilerPlacements + Suffix/BuildForeignArray + slot paths
+#include "rando/PlandoSeed.h"       // plando: the seed <-> rows round trip
 #include <imgui.h>
 #include <imgui_internal.h>                    // ClosePopupToLevel: Back closes the top popup
 #include <libultraship/libultraship.h>         // CVar bridge (CVarGet/Set* incl. color) + color.h (Color_RGBA8)
@@ -154,6 +155,7 @@ struct PlandoState {
     std::string loadedJson; // original consolidated file text (write-back base)
     std::string sohDump, mmDump;
     std::vector<ComboRando::CwPlacedItem> rows;
+    std::vector<ComboRando::CwPlacedItem> loadedRows; // rows as read from loadedJson: Save keeps unedited ones as is
     std::vector<PlandoPickItem> items;
     std::vector<std::string> spoilerNames; // selectable spoilers in the Randomizer folder (display stems)
     std::vector<std::string> spoilerPaths; // parallel full paths
@@ -1185,12 +1187,13 @@ void PlandoBuildItems() {
 }
 
 // Load the current pending/slot consolidated spoiler into the editable model (the #73 fix — the
-// vendored OOT plando can't parse the consolidated schema). Flattens oot/mm.placements + foreign[]
-// into the shape ParseSpoilerPlacements expects, resolving foreign checks to their real cross-game item.
+// vendored OOT plando can't parse the consolidated schema). PlandoRowsFromSeed flattens oot/mm.placements
+// + foreign[] into rows, resolving foreign checks to their real cross-game item.
 void PlandoLoad() {
     ResolvePlandoSyms();
     sPlando.loaded = false;
     sPlando.rows.clear();
+    sPlando.loadedRows.clear();
     // Load the spoiler picked in the dropdown; else the active slot's baked rando (combo.rando in its
     // .combosav container), else the pending generated seed.
     sPlando.loadedJson.clear();
@@ -1252,24 +1255,16 @@ void PlandoLoad() {
     sPlando.mmDump = sMmDump ? sMmDump() : "";
     PlandoBuildItems();
 
-    nlohmann::json flat;
-    flat["oot"] = j.value("oot", nlohmann::json::object()).value("placements", nlohmann::json::object());
-    flat["mm"] = j.value("mm", nlohmann::json::object()).value("placements", nlohmann::json::object());
-    flat["foreign"] = j.value("foreign", nlohmann::json::array());
-    sPlando.rows = ComboRando::ParseSpoilerPlacements(flat.dump(), sPlando.sohDump, sPlando.mmDump);
-    std::sort(sPlando.rows.begin(), sPlando.rows.end(), [](const auto& a, const auto& b) {
-        if (a.checkGame != b.checkGame)
-            return a.checkGame < b.checkGame;
-        return a.check < b.check;
-    });
+    sPlando.rows = ComboRando::PlandoRowsFromSeed(j, sPlando.sohDump, sPlando.mmDump);
+    sPlando.loadedRows = sPlando.rows;
     sPlando.loaded = true;
     sPlando.statusError = false;
     sPlando.status = "Loaded " + std::to_string(sPlando.rows.size()) + " placements from " + srcLabel;
 }
 
 // Serialize the edited model back to the consolidated schema and play it verbatim. Preserves the
-// original file and replaces only oot/mm.placements + foreign[], mirroring the generator's emit
-// (SuffixCrossGameItems on native collisions + BuildForeignArray for cross-game entries).
+// original file and rewrites only the edited rows of oot/mm.placements + foreign[], mirroring the
+// generator's emit (PlandoSeedFromRows); an unedited seed is saved exactly as loaded.
 void PlandoSavePlay() {
     ResolvePlandoSyms();
     const int targetSlot = PlandoImportTarget();
@@ -1287,48 +1282,9 @@ void PlandoSavePlay() {
         return;
     }
 
-    nlohmann::json ootPl = nlohmann::json::object();
-    nlohmann::json mmPl = nlohmann::json::object();
-    nlohmann::json foreignRaw = nlohmann::json::array();
-    // Trap disguises and item categories can't be recomputed here; carry them over for rows whose
-    // item is unchanged.
-    std::unordered_map<std::string, nlohmann::json> priorForeign;
-    for (const auto& fm : j.value("foreign", nlohmann::json::array())) {
-        priorForeign[fm.value("checkGame", "") + "|" + fm.value("checkName", "")] = fm;
-    }
-    for (const auto& r : sPlando.rows) {
-        // The check's own game stores the REAL foreign item's bare name; the sentinel is injected at
-        // apply time by Combo_OnReloadRequest, never written here.
-        (r.checkGame == ComboRando::GAME_OOT ? ootPl : mmPl)[r.check] = r.item;
-        if (r.checkGame != r.itemGame) {
-            const std::string cg = r.checkGame == ComboRando::GAME_OOT ? "oot" : "mm";
-            nlohmann::json marker = { { "checkGame", cg },
-                                      { "checkName", r.check },
-                                      { "itemGame", r.itemGame == ComboRando::GAME_OOT ? "oot" : "mm" },
-                                      { "itemName", r.item },
-                                      { "displayName", r.item }, // BuildForeignArray appends the game suffix
-                                      { "advancement", r.advancement } };
-            auto pf = priorForeign.find(cg + "|" + r.check);
-            if (pf != priorForeign.end() && pf->second.value("itemName", "") == r.item) {
-                for (const char* k : { "fakeItemName", "fakeDisplayName", "fakeTrickName", "category" })
-                    if (pf->second.contains(k))
-                        marker[k] = pf->second[k];
-            }
-            foreignRaw.push_back(std::move(marker));
-        }
-    }
-    // Shared Items: the loaded seed's own effective mask — plando doesn't change which families are
-    // shared, only where items land.
-    const uint32_t plandoSharedMask = ComboRando::SharedMaskFromKeys(j.value("sharedItems", nlohmann::json::array()));
-    // Native cross-game name collisions get their own-game suffix; foreign checks are skipped (their
-    // real item travels in foreign[]). Exactly the generator's write path.
-    ComboRando::SuffixCrossGameItems(ootPl, mmPl, foreignRaw, sPlando.sohDump, sPlando.mmDump,
-                                     ComboRando::SharedUntaggedNames(plandoSharedMask));
-    nlohmann::json foreign = ComboRando::BuildForeignArray(foreignRaw, plandoSharedMask);
-
-    j["oot"]["placements"] = ootPl;
-    j["mm"]["placements"] = mmPl;
-    j["foreign"] = foreign;
+    // Trap flags and disguises, item categories and advancement can't be recomputed here, so a row the
+    // player did not edit keeps the seed's own entry.
+    j = ComboRando::PlandoSeedFromRows(std::move(j), sPlando.rows, sPlando.loadedRows, sPlando.sohDump, sPlando.mmDump);
 
     std::error_code ec;
     std::filesystem::create_directories(ComboRando::ConsolidatedDir(), ec);
@@ -1345,6 +1301,7 @@ void PlandoSavePlay() {
         out << j.dump(2);
     }
     sPlando.loadedJson = j.dump(2); // keep in sync for a follow-up edit
+    sPlando.loadedRows = sPlando.rows;
     if (!sRequestReload) {
         sPlando.status = "Reload export unavailable (soh.dll not loaded).";
         sPlando.statusError = true;

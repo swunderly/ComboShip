@@ -55,6 +55,7 @@ support = r'''
 #include <string>
 #include <unordered_set>
 #include "rando/ComboPlaythrough.h"
+#include "rando/PlandoSeed.h"
 #include "rando/ComboSeedFormat.h"
 #include "ComboRandomizerProfileRepository.h"
 namespace fs = std::filesystem;

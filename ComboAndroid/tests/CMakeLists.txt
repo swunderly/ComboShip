@@ -139,6 +139,8 @@ combo_json_harness_test(mm_wallmaster_unified_transport mm_wallmaster_transport_
 combo_json_harness_test(entrance_spoiler_pinned_format_and_route_identity entrance_spoiler_format_tests.py)
 combo_json_harness_test(entrance_spoiler_output_real_helper_and_launcher entrance_spoiler_output_tests.py)
 combo_json_harness_test(entrance_plando_layout_roundtrip entrance_plando_roundtrip_tests.py)
+# Randomizer > Plandomizer Load then Save keeps every committed corpus seed exactly (trap, advancement, order).
+combo_json_harness_test(plando_load_save_keeps_corpus_seeds_exact plando_seed_roundtrip_tests.py)
 combo_json_harness_test(mm_unified_layout_exports_and_wallmaster_logic mm_unified_logic_tests.py)
 # M1-08: OoTMM er_enabled / has_hot_water_er in the MM logic and the PG_ER hot-water patch, against
 # tools/ootmm/er-enabled-sites.json (and the OoTMM checkout when it is there).
