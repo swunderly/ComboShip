@@ -10772,5 +10772,75 @@
       "bytes": 180365,
       "sha256": "c98eb3ab5a2dc5391e64c281713024f938ab102e1a5edbc593019758b76f53da"
     }
+  ],
+  "laterReleases": [
+    {
+      "sourceCommit": "bac6edf1ca32a8b9d6ce2a63cdb2a29234a5bcf5",
+      "versionName": "0.4.12",
+      "versionCode": 70,
+      "build": "SHIPPING",
+      "apkSha256": "36524713b0a46abcaa5eb93e5a49efc86e8a6b1507e8097f20fcd233a45133be",
+      "comborandoSha256": "1c2d6aed1a8495e9d7d245c963ffdde15b29dbf3d63ccd07064924f7407d8585",
+      "outsideGeneration": [
+        {
+          "path": "ComboAndroid/docs/CHANGELOG.md",
+          "reason": "Release notes; not compiled into or packaged with the app or comborando."
+        },
+        {
+          "path": "ComboAndroid/tests/CMakeLists.txt",
+          "reason": "Host test registration; not part of the Android or comborando build."
+        },
+        {
+          "path": "ComboAndroid/tests/entrance_corpus_tests.py",
+          "reason": "Host corpus test; not part of the Android or comborando build."
+        },
+        {
+          "path": "ComboAndroid/tests/entrance_plando_roundtrip_tests.py",
+          "reason": "Host Plandomizer test; not part of the Android or comborando build."
+        },
+        {
+          "path": "ComboAndroid/tests/plando_seed_roundtrip_tests.py",
+          "reason": "New host Plandomizer test; not part of the Android or comborando build."
+        },
+        {
+          "path": "ComboAndroid/tools/wallmaster_corpus.py",
+          "reason": "Host corpus tool (provenance, later-rc, sample); not packaged with the app or comborando."
+        },
+        {
+          "path": "combo/gui/ComboMenu.cpp",
+          "reason": "Plandomizer menu Load and Save only; built into libcomboui.so, which comborando neither links nor loads, and it does not run while a seed is generated."
+        },
+        {
+          "path": "combo/rando/PlandoSeed.h",
+          "reason": "New header for the Plandomizer's Load and Save, included only by combo/gui/ComboMenu.cpp; no generator or comborando source includes it."
+        }
+      ],
+      "sample": {
+        "status": "pending",
+        "rows": [
+          "mm-completion-souls0",
+          "mm-completion-souls1",
+          "mm-everyCheck-souls0-00",
+          "mm-everyCheck-souls1",
+          "mm-noLogic-souls0",
+          "mm-noLogic-souls1",
+          "oot-adult-completion-souls0",
+          "oot-adult-completion-souls1",
+          "oot-adult-everyCheck-souls0-00",
+          "oot-adult-everyCheck-souls1",
+          "oot-adult-noLogic-souls0",
+          "oot-adult-noLogic-souls1",
+          "oot-child-completion-souls0",
+          "oot-child-completion-souls1",
+          "oot-child-everyCheck-souls0-00",
+          "oot-child-everyCheck-souls1",
+          "oot-child-noLogic-souls0",
+          "oot-child-noLogic-souls1",
+          "oot-randomage-everyCheck-souls0-00",
+          "random-everyCheck-souls0-00",
+          "random-fallback-010"
+        ]
+      }
+    }
   ]
 }
