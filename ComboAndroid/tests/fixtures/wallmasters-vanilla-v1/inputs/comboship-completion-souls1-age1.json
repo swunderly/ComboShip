@@ -1,0 +1,28 @@
+{
+  "CVars": {
+    "gCombo": {
+      "Rando": {
+        "SongTravel": 0,
+        "ForeignSongs": 0,
+        "Reachability": 1
+      },
+      "Enhancements": {
+        "SongTravel": 0,
+        "ForeignSongs": 0
+      }
+    },
+    "gRandoSettings": {
+      "StartingAge": 1,
+      "ClosedForest": 2,
+      "DoorOfTime": 2,
+      "LogicRules": 0,
+      "SoulsEnemyOot": 1
+    },
+    "gRando": {
+      "Options": {
+        "RO_LOGIC": 0,
+        "RO_SHUFFLE_ENEMY_SOULS": 1
+      }
+    }
+  }
+}
