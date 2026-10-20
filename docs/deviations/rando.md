@@ -2386,7 +2386,8 @@ has nothing to gate); and, unless OoT logic is No Logic, glitched logic, Song
 Travel or foreign-song logic, or a starting OoT warp song or Song of Soaring (D4: the Temple probe
 cannot validate these yet). Master Quest is refused in the menu (MQ data installed with MQ Dungeon
 Setting not None, or MQ-only data), in generation (any MQ quest; no RNG draw) and in the seed validator,
-by owner decision ("proceed with vanilla first"). OoTMM itself supports MQ Wallmasters.
+by owner decision ("proceed with vanilla first"). OoTMM itself supports MQ Wallmasters; the section on bundled
+Master Quest dungeons below adds them under a new id for 0.4.13.
 
 **Native respawn fallbacks (D7, port-only).** OoTMM leaves these undefined. The port keeps the native
 Wallmaster respawn and logs the reason when: the Wallmaster is SoH's Shadow Tag Mode one
@@ -2471,16 +2472,51 @@ real `oot-mq.o2r` and every vanilla dungeon keep SoH's behaviour.
 ## Wallmaster Shuffle with bundled Master Quest dungeons (2026-10-19)
 
 Planned for 0.4.13, after the 0.4.12 Wallmaster Shuffle release. With OoTMM's bundled MQ data, Master Quest
-dungeons can be chosen on a USA 1.0 `oot.o2r` without `oot-mq.o2r`, so the port-only vanilla-dungeons rule for
-Wallmaster Shuffle (owner decision; OoTMM itself supports MQ Wallmasters) now applies on ordinary installs. What it
-refuses is unchanged, and the player sees the same sentence, "Wallmaster Shuffle does not support Master Quest
-dungeons yet." (`kWallmasterMasterQuestText`); the developer text stays in logs.
-- **Menu, tooltip and Generate button** (`ProfileWallmasterRefusal`, `EntranceProfile.h`): refused when the
-  catalogue's `mqPlayable` (a real `oot-mq.o2r` or the bundled data, beside the vanilla game) is set and MQ Dungeon
-  Setting is not None, or when only MQ data is loaded. A catalogue without `mqPlayable` gets the dungeon-data
-  sentence. Without playable MQ data native forces None (`settings.cpp` FinalizeSettings, the `!bundledMq` gate), so
-  the setting alone is not refused there.
-- **Generation and seed files** keep their checks: the vanilla capability reads the native quest context after the
-  bundled roll and refuses any MQ quest before any entrance draw (`UnifiedBridge.h`), One-Ways and MM Wallmasters
-  still need the MQ setting off, and the layout contract refuses a seed with an MQ dungeon.
-- With Wallmaster Shuffle set to None, Master Quest dungeons play as described above.
+dungeons can be chosen on a USA 1.0 `oot.o2r` without `oot-mq.o2r`. OoTMM v32.3 shuffles their Wallmasters too,
+and so does the port, through a new capability: `wallmasters-own-game-quests-v1` (`Capabilities.h`), staged at Dev
+until device captures are in. It has the vanilla id's rules (Own Game, combined mode, the same refusals) and binds a
+context with at least one Master Quest dungeon. `wallmasters-own-game-vanilla-v1` keeps its frozen id and rules:
+it still binds all-vanilla dungeons only, and every all-vanilla seed keeps it, so those seeds are byte for byte what
+0.4.12 makes and loads. A build without the quests id (0.4.12, or this branch's shipping build while the id is
+staged) refuses a seed that needs it before decoding its routes ("requires unknown capability" in 0.4.12, "which this
+build does not have" here), and refuses Own Game with Master Quest dungeons with "Wallmaster Shuffle does not
+support Master Quest dungeons yet." (`kWallmasterMasterQuestText`), as before.
+
+- **Edges and evidence.** The 11 live MQ edges of the pinned anchor audit (`tools/ootmm/oot-wallmaster-anchor-audit.json`;
+  edge 16 is false in the port) join the 11 vanilla ones in `combo_oot_wallmaster_edges.inc`; each is anchored in its
+  quest's native regions, so a dungeon of the other quest never reaches it. Their actor rooms come from the bundled
+  `mq_rooms.bin` (16 MQ Wallmasters in Forest 19 and 20, Spirit 5, 8 and 15, BotW 0, 1 and 3, GTG 2 and Ganon 18;
+  MQ Shadow has none), which closed blocker C17. Edge 21 (Spirit statue) is anchored on the main floor, where room
+  5's proximity Wallmaster triggers beside the compass chest. The Temple probe binds the four MQ-only sources
+  (Spirit child sun and statue, BotW basement and pit) and hands out only the loaded quest's edges.
+- **Edge 19 (Ganon MQ Spirit trial)** needs two persistent events native has no equivalent for: COMBO_BUILD
+  `LOGIC_GANON_MQ_SPIRIT_ZOMBIES` and `LOGIC_GANON_MQ_SPIRIT_ENDING_SUNS` in `MQ_SPIRIT_TRIAL_AFTER_SWITCH`
+  (`ganons_castle.cpp`), copied from `ganon_castle_mq.yml:275-276`. Nothing else reads them.
+- **Stricter than OoTMM, only under the port's skill shuffle.** Both Wallmasters of MQ Spirit's sun block room
+  (edge 23) are switch-flag ones spawned by lit floor suns, so the capture carries the native means of lighting
+  them (Power Bracelet, the port's grab skill, or sunlight arrows), as vanilla edge 11 does; with the grab skill
+  owned from the start, as by default, the condition is OoTMM's. Edges 17 and 18 (MQ Forest east hallway) are
+  anchored in the Blue Poe room with the fifth small key, which every way into the hallway passes.
+- **More Wallmasters than dungeons.** MQ Spirit and BotW with a vanilla Shadow Temple and Ganon's Castle have 12 OoT
+  Wallmasters for 11 dungeon entrances (`m1-contract.json` `mqSources.capacityShortfalls`). OoTMM cannot place them:
+  `placePoolsRecursive` consumes the destination it routes (`packages/logic/src/solver/entrances.ts:529-536`), so it
+  ends in "Too many backtracks" (`:556-560`) in each of `LogicPassEntrances.run`'s 1000 attempts (`:1119-1134`), on
+  the MQ dungeons it resolved once from the seed (`world/flags.ts:45-75`, `world/builder.ts:173-175`); nothing
+  re-rolls them (`pipeline.ts:63-87`, `generator.ts:108`), so the seed fails. The port refuses the same contexts
+  before any entrance draw, never retried, with "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to
+  use Wallmaster Shuffle." (`kWallmasterCapacityText`, `UnifiedBridge.h` `RequireWallmasterCapacity`). The menu and
+  Generate button show it when every roll of the MQ settings lands there (`EntranceProfile.h`
+  `MqWallmasterShortfallForced`, a model of `settings.cpp`'s roll); with random choices a seed whose roll lands
+  there stops with it at generation, as OoTMM's does. The port's own outer generation attempts re-derive the master
+  seed and so roll the MQ dungeons again after a failed fill; that predates this capability and is unchanged.
+- **Quest context.** Generation reads the native quest context after the OoT oracle's first reset, which finalizes
+  the settings again (`UnifiedBridge.h`); the layout records that context. A bundled-MQ seed rolls its dungeons on a
+  stream of its own from its master seed (`MqMode.h` `MqRollSeed`), so every finalize of an attempt agrees. Captures
+  run only while the loaded dungeons are the layout's (`HasWallmasterLayout`).
+- **Menu, tooltip and Generate button** (`ProfileWallmasterRefusal`, `EntranceProfile.h`): with the quests id, Master
+  Quest selections are offered except the forced shortfall above; without it, refused as before when the
+  catalogue's `mqPlayable` is set and MQ Dungeon Setting is not None, or when only MQ data is loaded. A catalogue
+  without `mqPlayable` gets the dungeon-data sentence. Without playable MQ data native forces None (`settings.cpp`
+  FinalizeSettings, the `!bundledMq` gate), so the setting alone is not refused there.
+- One-Ways and MM Wallmasters still need the MQ setting off. With Wallmaster Shuffle set to None, Master Quest
+  dungeons play as described above.

@@ -44,6 +44,21 @@ Nothing here has been played yet, on the emulator or a phone; host tests cover t
 18. In one session: play the MQ file, return to file select, load a file whose seed has no MQ dungeons (or an old save) and enter the same dungeons: they are vanilla, and the log says `quest=vanilla` with nothing MQ. Then load the MQ file again: MQ again.
 19. A save or seed made before this version loads and plays as before, with every dungeon vanilla.
 
+## Wallmaster Shuffle with Master Quest dungeons (0.4.13, unreleased)
+
+Nothing here has been tried yet; host tests cover the routes, the logic and the capture code. Run the list on the emulator, then checks 2, 4, 8 and 9 on a phone. Use an OoT USA 1.0 ROM, a spare file in Combined randomizer mode with Wallmaster Shuffle set to Own Game, and a build in which Own Game stays available with Master Quest dungeons chosen (an entrance dev build until that is public). Keep the Master Quest room log on (check 1 above): the room line of each capture must say `quest=mq`. As in the Wallmaster Shuffle list below, the seed's `.entrances.txt` line names where each Wallmaster sends Link; for each capture note the APK checksum, the seed, that line and where Link landed. Landing anywhere else blocks the release. Tools > Save Editor can give items, keys and souls.
+
+1. Choose Set Number with MQ Dungeon Count 12 and generate. `.entrances.txt` lists `OOT Spirit Temple Wallmaster Child Sun`, `OOT Spirit Temple Wallmaster Statue`, `OOT Bottom of the Well Wallmaster Basement` and `OOT Bottom of the Well Wallmaster Pit`, and no Shadow Temple or Ganon's Castle Light Wallmaster: those rooms have none in Master Quest.
+2. **Forest Temple (adult).** Room 19, the west hallway with the Boss Key chest: the Wallmaster there (`OOT Forest Temple Wallmaster West`) sends Link to the start of the dungeon its line names. Room 20, the east hallway behind the Blue Poe room's locked door: the same with `OOT Forest Temple Wallmaster East`.
+3. **Spirit Temple.** Room 5, the statue room's main floor near the compass chest (`... Statue`). Room 8, the sun block room, as child: light a floor sun with the sun block's light and a Wallmaster drops (`... Child Sun`). Room 15, the three suns room, as adult: stand on the floor, or light a wrong sun (`... Adult Climb`).
+4. **Bottom of the Well (child).** Room 0, the main room's centre behind the gates (`... Main`). Room 1, the basement: stand on its floor (`... Basement`). Room 3, the Floormaster room before the locked cage (`... Pit`).
+5. **Gerudo Training Ground (adult).** Room 2, the slope room with the silver rupees (`OOT Gerudo Training Grounds Wallmaster`).
+6. **Ganon's Castle (adult).** Room 18, the Spirit trial's sun room: light a wrong sun and a Wallmaster drops (`OOT Ganon Castle Spirit Wallmaster`).
+7. **Shadow Temple.** Its Master Quest version has no Wallmaster: walk it with the log on and none appears.
+8. Choose Selection Only, set Spirit Temple Quest and Bottom of the Well Quest to Master Quest and Shadow Temple Quest and Ganon's Castle Quest to Vanilla. Own Game is greyed out with "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle." under the row; with Own Game already set, the Generate button is disabled and shows the same sentence. Set either of the two to Vanilla: both clear.
+9. Apply the Allsanity preset, set Wallmaster Shuffle to Own Game and generate several seeds with the Seed field blank. About one in sixteen comes up with that combination and stops with the same sentence, as OoTMM's generation does; the others finish, and their seed views list their Master Quest dungeons.
+10. A seed without Master Quest dungeons from this build loads in 0.4.12. A seed with one is refused there.
+
 ## Wallmaster Shuffle (0.4.12, unreleased)
 
 Nothing here has been tried on a phone yet, and no OoT Wallmaster capture has been seen in play. Checks 3, 4 and 7 matter most. Use the exact release build, a spare file in Combined randomizer mode, and Randomizer > Logic & access > Entrances > Wallmaster Shuffle set to Own Game. Tools > Save Editor can give items, keys and souls to save time.
