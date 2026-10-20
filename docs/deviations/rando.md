@@ -2467,3 +2467,20 @@ real `oot-mq.o2r` and every vanilla dungeon keep SoH's behaviour.
   for item. OoTMM's pool labels MQ Dodongo's Cavern's scrub ids 0x1e and 0x1f the other way round from En_Dns,
   so OoTMM charges the Deku shield scrub (SoH's Staircase) 40 and the red potion scrub 50; the port keeps the
   game's 50 and 40.
+
+## Wallmaster Shuffle with bundled Master Quest dungeons (2026-10-19)
+
+Planned for 0.4.13, after the 0.4.12 Wallmaster Shuffle release. With OoTMM's bundled MQ data, Master Quest
+dungeons can be chosen on a USA 1.0 `oot.o2r` without `oot-mq.o2r`, so the port-only vanilla-dungeons rule for
+Wallmaster Shuffle (owner decision; OoTMM itself supports MQ Wallmasters) now applies on ordinary installs. What it
+refuses is unchanged, and the player sees the same sentence, "Wallmaster Shuffle does not support Master Quest
+dungeons yet." (`kWallmasterMasterQuestText`); the developer text stays in logs.
+- **Menu, tooltip and Generate button** (`ProfileWallmasterRefusal`, `EntranceProfile.h`): refused when the
+  catalogue's `mqPlayable` (a real `oot-mq.o2r` or the bundled data, beside the vanilla game) is set and MQ Dungeon
+  Setting is not None, or when only MQ data is loaded. A catalogue without `mqPlayable` gets the dungeon-data
+  sentence. Without playable MQ data native forces None (`settings.cpp` FinalizeSettings, the `!bundledMq` gate), so
+  the setting alone is not refused there.
+- **Generation and seed files** keep their checks: the vanilla capability reads the native quest context after the
+  bundled roll and refuses any MQ quest before any entrance draw (`UnifiedBridge.h`), One-Ways and MM Wallmasters
+  still need the MQ setting off, and the layout contract refuses a seed with an MQ dungeon.
+- With Wallmaster Shuffle set to None, Master Quest dungeons play as described above.

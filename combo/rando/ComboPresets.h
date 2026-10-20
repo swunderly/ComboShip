@@ -184,7 +184,7 @@ inline std::vector<PresetOption> CommunityPresetOptions(CommunityPreset preset) 
                              { "gRandoSettings.IncludeTycoonWallet", 1 }, // colossalWallets, presets.ts:410
                              { "gRando.Options.RO_SHUFFLE_TYCOON_WALLET", 1 },
                              // childWallets (presets.ts:409) stays off: Shared Wallets turns off Shuffle Child's
-                             // Wallet, which MM has no match for (settings.cpp:2855-2857).
+                             // Wallet, which MM has no match for (settings.cpp:2865-2867).
                              { "gRandoSettings.SoulsEnemyOot", 1 },          // presets.ts:413
                              { "gRandoSettings.ShuffleBossSouls", 1 },       // presets.ts:415
                              { "gRando.Options.RO_SHUFFLE_ENEMY_SOULS", 1 }, // presets.ts:414-422

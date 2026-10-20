@@ -1,6 +1,6 @@
 # Device validation still required
 
-## Master Quest dungeons (unreleased)
+## Master Quest dungeons (0.4.13, unreleased)
 
 Nothing here has been played yet, on the emulator or a phone; host tests cover the data and the code. Run the whole list on the emulator first, then checks 1-4, 9, 12, 17 and 18 on a phone (note the frame rate). Use an OoT USA 1.0 ROM: the bundled Master Quest data plays only on that version. Keep the logs and a screenshot of each check.
 
@@ -8,7 +8,7 @@ Nothing here has been played yet, on the emulator or a phone; host tests cover t
 
 1. Turn on the developer room log: with the app closed, open `ComboShip/comboship.json` and add `"MqRoomLog": 1` under `"CVars"` → `"gCombo"` → `"Debug"` (add the objects that are missing). From then on every room load in the 12 dungeons writes one `[ComboShip MQ room]` line to `ComboShip/native.log`. Set it back to 0 when you are done; it is off by default.
 2. After each session, copy `native.log` (and `native.previous.log` if the app restarted) to the PC and run `python tools/mq_walk_compare.py native.log native.previous.log` from the source checkout. It must end in `OK`. Its per-dungeon lines show the rooms seen as child and as adult; once every dungeon is done, `--require-all` must pass too. Ten MQ rooms have no actors, and their lines show `actors=mq:0`: Deku Tree 11, Dodongo's Cavern 16, Jabu-Jabu 15, Forest 22, Fire 26, Water 22, Spirit 11 and 28, Shadow 22 and Ice Cavern 10.
-3. On a spare file, search "MQ Dungeon Setting", choose Set Number and set MQ Dungeon Count to 12, then generate. The saved and generated seed views show "Master Quest dungeons:" with all 12 names, and the spoiler log lists them. Use the Save Editor for the items each dungeon needs. If you use the debug warp screen, leave its MQ setting alone: it switches to a real Master Quest archive, not the bundled data.
+3. On a spare file, search "MQ Dungeon Setting", choose Set Number and set MQ Dungeon Count to 12. Randomizer > Logic & access > Entrances > Wallmaster Shuffle now has Own Game greyed out, with "Wallmaster Shuffle does not support Master Quest dungeons yet." under the row. Then generate. The saved and generated seed views show "Master Quest dungeons:" with all 12 names, and the spoiler log lists them. Use the Save Editor for the items each dungeon needs. If you use the debug warp screen, leave its MQ setting alone: it switches to a real Master Quest archive, not the bundled data.
 4. On another spare file, apply the Allsanity preset and generate: the seed view lists the dungeons that came up Master Quest, and only those play as MQ (the log's `quest=` field).
 
 **In every dungeon**, with the log on: walk every room at each age listed, until the comparer shows all of that dungeon's rooms. Open one chest and collect one Gold Skulltula token: the item is given and the check tracker marks the check. Nothing crashes, no door is missing, and Link never falls through a floor.

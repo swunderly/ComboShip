@@ -196,9 +196,11 @@ lines += [f'    {{ 0x{value:x}u, "{region}" }},' for value, region in sorted(mm_
 lines += ['};', '']
 (work/'release_coverage_native.inc').write_text('\n'.join(lines), encoding='utf-8', newline='\n')
 
-# Native keeps every dungeon vanilla without MQ data or with MQ Dungeon Setting None; the menu admits only those.
+# Native keeps every dungeon vanilla without MQ data (no oot-mq.o2r, and a seed that does not record OoTMM's bundled
+# MQ data) or with MQ Dungeon Setting None; the menu admits only those.
 settings = read(RANDO + 'settings.cpp')
-for needle in ('if (OTRGlobals::Instance->HasOriginal() && !OTRGlobals::Instance->HasMasterQuest()) { '
+for needle in ('const bool bundledMq = GetMqDataSource() == ComboMq::SeedMqSource::Bundled;',
+               'if (OTRGlobals::Instance->HasOriginal() && !OTRGlobals::Instance->HasMasterQuest() && !bundledMq) { '
                'mOptions[RSK_MQ_DUNGEON_RANDOM].Set(RO_MQ_DUNGEONS_NONE); }',
                'if (mOptions[RSK_MQ_DUNGEON_RANDOM].Is(RO_MQ_DUNGEONS_NONE)) { mOptions[RSK_MQ_DUNGEON_COUNT].Set(0); '
                'mOptions[RSK_MQ_DUNGEON_SET].Set(RO_GENERIC_OFF); }'):

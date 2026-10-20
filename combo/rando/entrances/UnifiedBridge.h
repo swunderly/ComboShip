@@ -39,7 +39,7 @@ class UnifiedEntranceRefused : public std::logic_error {
     std::string sentence;
 };
 
-// RSK_MQ_DUNGEON_RANDOM; option 0 (RO_MQ_DUNGEONS_NONE) keeps every dungeon vanilla (settings.cpp:2900-2903).
+// RSK_MQ_DUNGEON_RANDOM; option 0 (RO_MQ_DUNGEONS_NONE) keeps every dungeon vanilla (settings.cpp:2919-2922).
 inline constexpr const char* kMqDungeonsSetting = "gRandoSettings.MQDungeons";
 
 using SettingReader = std::function<int(const char*, int)>;

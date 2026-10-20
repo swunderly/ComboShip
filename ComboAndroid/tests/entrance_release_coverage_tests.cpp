@@ -615,27 +615,35 @@ int main() {
          (active.Active(kVanillaWallmasterCapability) ? 2 : 1) * kQuestMasks);
 
   // The menu refuses every state in which native can choose a Master Quest
-  // dungeon: MQ data alone, or MQ data with any MQ Dungeon Setting but None.
-  // Without MQ data, or with None, native keeps every dungeon vanilla
-  // (settings.cpp; the harness pins those lines).
+  // dungeon: MQ data alone, or playable MQ data (a real oot-mq.o2r or OoTMM's
+  // bundled data over the vanilla oot.o2r: the catalogue's mqPlayable) with any
+  // MQ Dungeon Setting but None. Without MQ data, or with None, native keeps
+  // every dungeon vanilla (settings.cpp; the harness pins those lines).
   const Json draft{{"fileType", kComboSeedFileType},
                    {"version", 1},
                    {"setupCVars", Json::object()},
                    {"mm", {{"settings", Json::object()}}}};
   for (const bool original : {true, false})
     for (const bool masterQuest : {true, false})
-      for (int setting = 0; setting < 4; ++setting) {
-        const Json catalog{{"hasOriginal", original},
-                           {"hasMasterQuest", masterQuest}};
-        const auto read = [&](const char *key, int fallback) {
-          return std::string_view(key) == "gRandoSettings.MQDungeons"
-                     ? setting
-                     : fallback;
-        };
-        const auto why = ProfileWallmasterRefusal(draft, catalog, read);
-        const bool mqPossible = masterQuest && (!original || setting != 0);
-        assert(mqPossible ? why.player == kWallmasterMasterQuestText
-                          : why.empty());
+      for (const bool bundled : {false, true}) {
+        if (bundled && !original)
+          continue; // The bundled data plays only over the vanilla oot.o2r.
+        const bool playable = (masterQuest || bundled) && original;
+        for (int setting = 0; setting < 4; ++setting) {
+          const Json catalog{{"hasOriginal", original},
+                             {"hasMasterQuest", masterQuest},
+                             {"mqPlayable", playable}};
+          const auto read = [&](const char *key, int fallback) {
+            return std::string_view(key) == "gRandoSettings.MQDungeons"
+                       ? setting
+                       : fallback;
+          };
+          const auto why = ProfileWallmasterRefusal(draft, catalog, read);
+          const bool mqPossible =
+              (masterQuest && !original) || (playable && setting != 0);
+          assert(mqPossible ? why.player == kWallmasterMasterQuestText
+                            : why.empty());
+        }
       }
 
   // Negative control: dropping any one binding reports a gap for its row.
