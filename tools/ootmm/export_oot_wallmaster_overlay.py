@@ -21,7 +21,7 @@ def build(reference):
     if errors:
         raise ValueError('Anchor audit does not hold: ' + '; '.join(errors))
     allowed = set(audit['workList']['M1-14'])
-    rows = [e for e in audit['edges'] if e['id'] in allowed]
+    rows = [e for e in audit['edges'] if e['id'] in allowed and e['quest'] == 'vanilla']
     if len(rows) != 11 or {e['quest'] for e in rows} != {'vanilla'} or any(
             e['status'] != 'ready' or e['actorRoom']['status'] != 'verified' for e in rows):
         raise ValueError('Expected exactly eleven ready vanilla edges with verified actor rooms')

@@ -12,12 +12,14 @@ false), and for every status but false a native anchor region defined at its cit
 condition whose AND/OR tree is the pinned expression (once the port's absent settings are false) in
 native helpers joined by && with the declared ingress and port atoms, and evidence lines that still
 read as cited (pinned lines need the reference). The work list hands M1-13 and M1-14 only edges no
-open blocker holds; the rest wait under their blocker. With --oot-archive the recorded actor-room
-evidence is also checked against the user's extracted OoT archive (read-only; never a ROM file).
---check reports drift without writing.
+open blocker holds; the rest wait under their blocker. The MQ edges' actor-room evidence is checked
+against the MQ room lists this repository bundles (combo/mq/data/mq_rooms.bin, OoTMM's own data at a
+pinned sha256). With --oot-archive the vanilla actor-room evidence is also checked against the user's
+extracted OoT archive (read-only; never a ROM file). --check reports drift without writing.
 """
 from pathlib import Path
 import argparse
+import hashlib
 import json
 import re
 import struct
@@ -47,6 +49,13 @@ RUNTIME_SCENES = {'ForestTemple': 'Forest', 'ShadowTemple': 'Shadow', 'SpiritTem
                   'BottomOfTheWell': 'BotW', 'GerudoTrainingGround': 'GTG', 'InsideGanonsCastle': 'Ganon'}
 WALLMASTER_ACTOR = 0x0011
 WALLMASTER_TYPES = {0: 'timer', 1: 'proximity', 2: 'flag', 3: 'shadowtag'}  # z_en_wallmas.h WMT_*
+# The quest name under archive.verifiedQuests that an edge's actor-room evidence must come from.
+QUEST_EVIDENCE = {'vanilla': 'vanilla', 'mq': 'mq-ootmm-32.3'}
+# OoTMM v32.3's packed MQ room lists, bundled unchanged (combo/mq/README.md, ComboMq.cmake), and the dungeon ids it
+# keys them by (packages/generator/scripts/make_mq.ts:16-29 DUNGEONS; include/combo/dungeon.h MQ_*).
+MQ_ROOMS = 'combo/mq/data/mq_rooms.bin'
+MQ_ROOMS_SHA256 = '3b3e1f836124f756560382e7ae033bfb7bd84570b2b1c5ea228655728cb6f636'
+MQ_DUNGEON_IDS = {'Forest': 3, 'Spirit': 6, 'Shadow': 7, 'BotW': 8, 'GTG': 10, 'Ganon': 11}
 
 
 # --- Pinned expressions -------------------------------------------------------------------------
@@ -535,7 +544,7 @@ def verify_audit(audit, fixture, repo, blobs=None):
         for item in room.get('areaRoomEvidence', []):
             check.evidence(item, f'{where} actor-room area evidence')
         if room.get('status') == 'verified':
-            if room.get('dungeon') != edge['dungeon'] or edge['quest'] not in verified_quests:
+            if room.get('dungeon') != edge['dungeon'] or QUEST_EVIDENCE[edge['quest']] not in verified_quests:
                 check.fail(f'{where}: actor-room evidence names another dungeon or a quest without an archive')
             captures = [wm for wm in room.get('wallmasters', []) if wm.get('role') == 'capture']
             if not captures:
@@ -543,6 +552,8 @@ def verify_audit(audit, fixture, repo, blobs=None):
             for wm in captures:
                 if classify(fixture, edge['dungeon'], wm['room']) != edge['source']:
                     check.fail(f'{where}: room {wm["room"]} does not classify as {edge["source"]} at runtime')
+                if 'expectedRooms' in room and wm['room'] not in room['expectedRooms']:
+                    check.fail(f'{where}: capture room {wm["room"]} is not the predicted {room["expectedRooms"]}')
         elif room.get('status') == 'pending':
             if edge_id not in blocked or not room.get('expectedRooms'):
                 check.fail(f'{where}: pending actor-room evidence needs expectedRooms and an openBlockers entry')
@@ -697,10 +708,55 @@ def hexint(value):
 
 def verify_archive(audit, archive_path, quest='vanilla'):
     """Problems with the audit's actor-room claims against an extracted archive (opened read-only)."""
-    errors = []
     scenes = audit['archive']['scenes']
     with zipfile.ZipFile(archive_path) as archive:
         loaded = {dungeon: read_archive_scene(archive, quest, scene) for dungeon, scene in scenes.items()}
+    return verify_actor_rooms(audit, loaded, quest)
+
+
+# --- Bundled MQ room lists (OoTMM's data, this checkout) ------------------------------------------
+
+def read_mq_rooms(data):
+    """(OoTMM dungeon id, room) -> actor list of OoTMM's packed MQ rooms (scripts/make_mq.ts:71-191).
+
+    A 0x20-byte header holds the entry count; entry i (from 1) at 0x20 * i is u32 size, u32 offset, u8 dungeon,
+    u8 room, u16 actor count, u16 actor offset (inside the entry's data), then the object list. An actor is the
+    big-endian ROM actor entry: s16 id, s16 x, y, z, s16 rx, ry, rz, u16 params. A room without an actor list has
+    count 0.
+    """
+    count = struct.unpack_from('>I', data, 0)[0]
+    rooms = {}
+    for i in range(1, count + 1):
+        size, offset, dungeon, room, actor_count, actor_at = struct.unpack_from('>IIBBHH', data, 0x20 * i)
+        body = data[offset:offset + size]
+        if len(body) != size or actor_at + 0x10 * actor_count > size or (dungeon, room) in rooms:
+            raise ValueError(f'Malformed MQ room entry {i}')
+        actors = []
+        for k in range(actor_count):
+            actor, x, y, z, _, _, _, params = struct.unpack_from('>h3h3hH', body, actor_at + 0x10 * k)
+            actors.append({'actor': actor, 'pos': [x, y, z], 'params': params})
+        rooms[(dungeon, room)] = actors
+    return rooms
+
+
+def load_mq_rooms(path):
+    """Dungeon -> (room -> actors, no transition actors) for the six Wallmaster dungeons, as read_archive_scene."""
+    data = Path(path).read_bytes()
+    if hashlib.sha256(data).hexdigest() != MQ_ROOMS_SHA256:
+        raise ValueError(f'{path} is not OoTMM v32.3 mq_rooms.bin')
+    rooms = read_mq_rooms(data)
+    return {dungeon: ({room: actors for (d, room), actors in rooms.items() if d == ident}, [])
+            for dungeon, ident in MQ_DUNGEON_IDS.items()}
+
+
+def verify_mq_rooms(audit, path=None):
+    """Problems with the MQ actor-room claims against the bundled MQ room lists."""
+    return verify_actor_rooms(audit, load_mq_rooms(path or REPO/MQ_ROOMS), 'mq')
+
+
+def verify_actor_rooms(audit, loaded, quest):
+    """Problems with the actor-room claims of one quest: dungeon -> (room -> actors, transition actors)."""
+    errors = []
     claimed = set()
 
     def actor_matches(dungeon, item, where):
@@ -764,6 +820,7 @@ def main():
     # The reviewed audit and the sources it cites are this checkout's; --output-root only receives the fixture.
     audit = json.loads((REPO/AUDIT).read_text(encoding='utf-8'))
     errors = verify_audit(audit, fixture, REPO, contract.pinned_blobs(args.reference, pinned_items(audit)))
+    errors += verify_mq_rooms(audit)
     if args.oot_archive:
         errors += verify_archive(audit, args.oot_archive)
     if errors:
@@ -771,7 +828,7 @@ def main():
     publish(args.output_root, {OUTPUT: fixture_bytes(fixture)}, args.check)
     statuses = {s: sum(e['status'] == s for e in audit['edges']) for s in STATUSES}
     print(f'{"Verified" if args.check else "Exported"} {fixture["counts"]["edges"]} OoT Wallmaster edges and '
-          f'{fixture["counts"]["sources"]} sources; audit {statuses}'
+          f'{fixture["counts"]["sources"]} sources; audit {statuses}; MQ actor rooms verified from {MQ_ROOMS}'
           f'{"; archive actor rooms verified" if args.oot_archive else ""}')
 
 

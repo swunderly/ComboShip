@@ -4,9 +4,11 @@ On every host: the fixture's independent constants (13 sources 0xf10-0xf1c, 23 e
 and 12 MQ, 24 soul_wallmaster lines, the same edges as the M1 contract), the audit schema (every edge has
 a status, a ready edge has an anchor, a native condition and evidence, edges an open blocker holds never
 reach the M1-13/M1-14 work lists), the native condition parser, the audit's anchors and evidence lines
-in this checkout, and audit mutations the verifier must reject. Locally, the actor-room evidence
-against the user's extracted OoT archive. With the exact OoTMM v32.3 checkout: exporter reproduction,
-read-only stale checks, wrong-HEAD refusal and the pinned evidence lines.
+in this checkout, and audit mutations the verifier must reject. Also on every host, the 12 MQ edges'
+actor-room evidence against the MQ room lists this repository bundles (combo/mq/data/mq_rooms.bin, which
+closed blocker C17). Locally, the vanilla actor-room evidence against the user's extracted OoT archive.
+With the exact OoTMM v32.3 checkout: exporter reproduction, read-only stale checks, wrong-HEAD refusal and
+the pinned evidence lines.
 """
 from pathlib import Path
 import argparse
@@ -111,27 +113,30 @@ assert set(entries) == {e['id'] for e in edges} and len(entries) == 23
 by_n = {e['n']: e for e in audit['edges']}
 assert all(e['status'] in edges_tool.STATUSES for e in audit['edges'])
 assert by_n[16]['status'] == 'false' and by_n[19]['status'] == 'needs-event'
-assert by_n[21]['status'] == 'needs-evidence' and by_n[21]['ingress']['relation'] == 'provisional'
-assert {n for n, e in by_n.items() if e['status'] == 'ready'} == set(range(1, 24)) - {16, 19, 21}
+# Edge 21's anchor was chosen from MQ Spirit room 5's positions once C17 closed: the main floor.
+assert by_n[21]['status'] == 'ready' and by_n[21]['ingress']['relation'] == 'native-stronger'
+assert by_n[21]['anchor']['region'] == 'RR_SPIRIT_TEMPLE_MQ_STATUE_ROOM'
+assert {n for n, e in by_n.items() if e['status'] == 'ready'} == set(range(1, 24)) - {16, 19}
 for entry in audit['edges']:
     assert entry['evidence'] and entry['note'], entry['n']
     if entry['status'] != 'false':
         assert entry['anchor']['region'].startswith('RR_') and entry['condition']['native'], entry['n']
     room = entry['actorRoom']
-    if entry['quest'] == 'vanilla':
-        assert room['status'] == 'verified' and any(w['role'] == 'capture' for w in room['wallmasters']), entry['n']
-    else:
-        assert room['status'] == 'pending' and room['blockedBy'] == 'C17' and room['expectedRooms'], entry['n']
-blockers = {b['id']: b for b in audit['openBlockers']}
-assert sorted(blockers['C17']['edges']) == sorted(e['id'] for e in edges if e['quest'] == 'mq')
-# Only edges with verified actor rooms and no open blocker reach M1-13/M1-14; C17 holds every MQ edge.
-mq_live = sorted(e['id'] for e in audit['edges'] if e['quest'] == 'mq' and e['status'] != 'false')
-assert audit['workList']['M1-13'] == []
-assert audit['workList']['M1-14'] == sorted(e['id'] for e in audit['edges'] if e['quest'] == 'vanilla')
-assert all(entries[i]['actorRoom']['status'] == 'verified' for i in audit['workList']['M1-14'])
-assert audit['workList']['blocked'] == {'C17': {
-    'M1-13': [by_n[19]['id']], 'needs-evidence': [by_n[21]['id']],
-    'M1-14': [i for i in mq_live if i not in (by_n[19]['id'], by_n[21]['id'])]}}
+    assert room['status'] == 'verified' and any(w['role'] == 'capture' for w in room['wallmasters']), entry['n']
+    if entry['quest'] == 'mq':  # the rooms C17 predicted are the rooms the bundled MQ data has
+        assert all(w['room'] in room['expectedRooms'] for w in room['wallmasters']), entry['n']
+assert audit['archive']['verifiedQuests'] == ['vanilla', 'mq-ootmm-32.3']
+assert audit['archive']['mqSource'] == {'file': 'combo/mq/data/mq_rooms.bin', 'sha256': edges_tool.MQ_ROOMS_SHA256,
+                                        'origin': audit['archive']['mqSource']['origin'],
+                                        'dungeonIds': edges_tool.MQ_DUNGEON_IDS}
+assert audit['openBlockers'] == []  # C17 closed offline from the bundled MQ room lists
+# Every edge has verified actor rooms and no blocker: the statuses alone give the work lists.
+assert audit['workList'] == {'M1-13': [by_n[19]['id']],
+                             'M1-14': sorted(e['id'] for e in audit['edges'] if e['status'] == 'ready'),
+                             'blocked': {}}
+# Edge 23: both MQ sun-block Wallmasters are spawned by lit floor suns, so the native light means is a port atom.
+assert [a['native'] for a in by_n[23]['condition']['portAtoms']] == \
+    ['logic->HasItem(RG_POWER_BRACELET) || logic->SunlightArrows()']
 # Edge 06 copies the pinned Light End lens gate (ganon_castle.yml:57) instead of the lens-free native ingress.
 assert by_n[6]['ingress']['relation'] == 'equal-with-ingress-atom' and \
     'ctx->GetTrickOption(RT_LENS_GANON) || logic->CanUse(RG_LENS_OF_TRUTH)' in by_n[6]['condition']['native']
@@ -168,10 +173,12 @@ mutations = {
     'pinned expression changed': lambda a: edge(a, 9).update(expression='true'),
     'ready edge without evidence': lambda a: edge(a, 3).update(evidence=[]),
     'needs-event without proposal': lambda a: edge(a, 19).pop('proposal'),
-    'pending edge not blocked': lambda a: a['openBlockers'][0]['edges'].pop(),
+    'MQ room evidence reopened without a blocker': lambda a: edge(a, 12)['actorRoom'].update(status='pending'),
     'capture room of another source': lambda a: edge(a, 10)['actorRoom']['wallmasters'][0].update(room=15),
-    'MQ evidence claimed without an archive': lambda a: edge(a, 12)['actorRoom'].update(
-        status='verified', dungeon='BotW', wallmasters=[{'room': 0, 'index': 4, 'role': 'capture'}]),
+    'MQ evidence without its quest source': lambda a: a['archive']['verifiedQuests'].remove('mq-ootmm-32.3'),
+    'MQ capture outside the predicted rooms': lambda a: edge(a, 13)['actorRoom'].update(expectedRooms=[3]),
+    'sun-block port atom dropped': lambda a: edge(a, 23)['condition'].update(
+        native='Rando::Souls::Has(logic.get(), Rando::Souls::OotSoul::ENEMY_WALLMASTER)'),
     'work list out of date': lambda a: a['workList']['M1-14'].pop(),
     'kept conjunction weakened to ||': lambda a: edge(a, 7)['condition'].update(
         native=edge(a, 7)['condition']['native'].replace('RG_BOMBCHU_5) &&', 'RG_BOMBCHU_5) ||')),
@@ -183,19 +190,53 @@ mutations = {
         native=edge(a, 6)['condition']['native'].split(' && ', 1)[1]),
     'ingress relation loosened': lambda a: edge(a, 6)['ingress'].update(relation='native-weaker'),
     'loosening relation listed': lambda a: a['relations'].update({'native-weaker': 'native needs less'}),
-    'provisional anchor marked ready': lambda a: edge(a, 21).update(status='ready'),
-    'provisional relation dropped': lambda a: edge(a, 21)['ingress'].update(relation='equal'),
-    'blocked edge handed to M1-14': lambda a: a['workList']['M1-14'].append(
-        a['workList']['blocked']['C17']['M1-14'].pop(0)),
-    'pending edge unblocked into M1-14': lambda a: (
-        a['openBlockers'][0]['edges'].remove(edge(a, 14)['id']),
-        a['workList']['blocked']['C17']['M1-14'].remove(edge(a, 14)['id']),
-        a['workList']['M1-14'].append(edge(a, 14)['id']), a['workList']['M1-14'].sort()),
+    'provisional relation on a ready edge': lambda a: edge(a, 21)['ingress'].update(relation='provisional'),
+    'needs-evidence without a blocker': lambda a: edge(a, 21).update(status='needs-evidence'),
+    'needs-event edge handed to M1-14': lambda a: (
+        a['workList']['M1-14'].append(a['workList']['M1-13'].pop()), a['workList']['M1-14'].sort()),
     'absent setting now present': lambda a: a['predicateAtoms']['climb_anywhere']['absent'][0]['tokens'].append('RSK_'),
 }
 for name, change in mutations.items():
     assert rejected(change), f'Audit mutation not rejected: {name}'
 print(f'Edge fixture constants, audit schema, anchors and {len(mutations)} rejected audit mutations verified.')
+
+# Every host: the MQ actor-room evidence against the bundled MQ room lists (C17), which the bundled-MQ runtime loads.
+mq_bin = source/edges_tool.MQ_ROOMS
+assert edges_tool.verify_mq_rooms(audit, mq_bin) == []
+mq_rooms = edges_tool.load_mq_rooms(mq_bin)
+found = sorted((dungeon, room, index, f'0x{actor["params"]:04x}') for dungeon, (rooms_of, _) in mq_rooms.items()
+               for room, actors in rooms_of.items() for index, actor in enumerate(actors)
+               if actor['actor'] == edges_tool.WALLMASTER_ACTOR)
+# The En_Wallmas actors of the MQ bins (the design's C17 table); MQ Shadow has none.
+assert found == sorted([('Forest', 19, 0, '0x0001'), ('Forest', 20, 2, '0x0001'), ('Spirit', 5, 0, '0x0001'),
+                        ('Spirit', 5, 20, '0x3302'), ('Spirit', 8, 18, '0x3a02'), ('Spirit', 8, 20, '0x3b02'),
+                        ('Spirit', 15, 2, '0x0000'), ('Spirit', 15, 7, '0x3a02'), ('Spirit', 15, 9, '0x3b02'),
+                        ('Spirit', 15, 11, '0x3d02'), ('BotW', 0, 3, '0x0001'), ('BotW', 1, 4, '0x0000'),
+                        ('BotW', 3, 0, '0x0000'), ('GTG', 2, 17, '0x0001'), ('GTG', 2, 21, '0x1102'),
+                        ('Ganon', 18, 24, '0x3902')]), found
+# Edge 21's anchor: the room-5 proximity Wallmaster on the main floor, the switch-flag one above the inner left hand.
+assert mq_rooms['Spirit'][0][5][0]['pos'] == [66, 353, -1188] and \
+    mq_rooms['Spirit'][0][5][20]['pos'] == [426, 1041, -1237]
+
+
+def mutated(n, change):
+    copied = copy.deepcopy(audit)
+    change({e['n']: e for e in copied['edges']}[n])
+    return edges_tool.verify_mq_rooms(copied, mq_bin)
+
+
+assert any('edge 21' in e for e in mutated(21, lambda e: e['actorRoom']['wallmasters'][0].update(pos=[60, 353, -1188])))
+assert any('not accounted for' in e for e in mutated(22, lambda e: e['actorRoom']['wallmasters'].pop(0)))
+assert any('type 0' in e for e in mutated(13, lambda e: e['actorRoom']['wallmasters'][0].update(type='proximity')))
+damaged_bin = work/'mq_rooms_damaged.bin'
+damaged_bin.write_bytes(mq_bin.read_bytes()[:-1] + bytes([mq_bin.read_bytes()[-1] ^ 1]))
+try:
+    edges_tool.verify_mq_rooms(audit, damaged_bin)
+except ValueError as error:
+    assert 'not OoTMM v32.3 mq_rooms.bin' in str(error)
+else:
+    raise AssertionError('A changed MQ room list was read')
+print('All 12 MQ edges verified from the pinned bundled MQ room lists: 16 Wallmasters in 10 rooms.')
 
 # Local only: the actor-room evidence against the user's extracted OoT archive (never a ROM file).
 archive = args.archive or os.environ.get('COMBO_OOT_ARCHIVE', '')
@@ -230,8 +271,8 @@ assert edges_tool.verify_audit(audit, fixture, source, blobs) == []
 assert rejected(lambda a: edge(a, 6)['evidence'][4].update(line=edge(a, 6)['evidence'][4]['line'] + 1), blobs)
 assert rejected(lambda a: a['predicateAtoms']['has_lens']['pinned'][0].update(line=237), blobs)
 
-# Pending actor-room predictions still cite real pinned area/room evidence; a blocker must not let
-# those citations drift silently. Exercise every recorded area-room citation without inventing any.
+# The MQ actor-room records keep the pinned area/room evidence C17 predicted them from; those citations must not
+# drift silently. Exercise every recorded area-room citation without inventing any.
 altered_room_citations = 0
 for n in range(12, 24):
     for index in range(len(by_n[n]['actorRoom']['areaRoomEvidence'])):
@@ -243,7 +284,7 @@ for n in range(12, 24):
                        for problem in problems), f'Unchecked actor-room {field} citation for edge {n}'
             altered_room_citations += 1
 assert altered_room_citations == 60
-print('All 60 altered pending actor-room evidence citations rejected against pinned blobs.')
+print('All 60 altered MQ actor-room area evidence citations rejected against pinned blobs.')
 
 
 def run(output, check=False, ref=reference):

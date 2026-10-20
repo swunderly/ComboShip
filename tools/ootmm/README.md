@@ -222,19 +222,24 @@ false, a condition's AND/OR tree is not the pinned expression in native helpers 
 with its declared ingress and port atoms, an anchor region is not defined at its cited
 line, any cited evidence line moved, or the work list hands a blocked edge to a unit.
 
-Actor-room evidence comes from the user's own extracted OoT archive (`oot.o2r`,
+Vanilla actor-room evidence comes from the user's own extracted OoT archive (`oot.o2r`,
 `scenes/nonmq/...`), read-only with SoH's binary scene-command layout; never from a ROM
 file. `--oot-archive` checks every recorded Wallmaster actor (room, index, params,
 type, position), the supporting chests, pots and doors, and that every Wallmaster in the
-six vanilla scenes is accounted for. No MQ archive exists locally, so the 12 MQ edges
-carry the rooms the pinned runtime rule and pinned xflag checks predict and stay listed
-under open blocker C17 until a device log or an owner decision closes it.
+six vanilla scenes is accounted for. MQ actor-room evidence comes from the MQ room lists
+this repository bundles (`combo/mq/data/mq_rooms.bin`, OoTMM v32.3's own data at a
+pinned sha256, which the bundled-MQ runtime loads), so every run checks the 12 MQ edges
+the same way: their 16 Wallmasters in Forest rooms 19 and 20, Spirit rooms 5, 8 and 15,
+BotW rooms 0, 1 and 3, GTG room 2 and Ganon room 18 (MQ Shadow has none) are the rooms
+the pinned runtime rule and pinned xflag checks predicted. That closed blocker C17
+(`verifiedQuests` `vanilla` and `mq-ootmm-32.3`).
 
 `oot_wallmaster_edges_pinned_fixture_and_anchor_audit` checks the fixture constants and
-the audit schema and anchors on every host, the archive evidence when an extracted
-archive is found (`COMBO_OOT_ARCHIVE`, or an `oot.o2r` under a `local-roms` folder beside
-the checkout), and, with the pinned checkout, exact reproduction, read-only stale checks
-and wrong-pin refusal. Nothing here adds a native region, an edge, a setting or a layout.
+the audit schema and anchors on every host, the MQ evidence against the bundled room
+lists, the vanilla archive evidence when an extracted archive is found
+(`COMBO_OOT_ARCHIVE`, or an `oot.o2r` under a `local-roms` folder beside the checkout),
+and, with the pinned checkout, exact reproduction, read-only stale checks and wrong-pin
+refusal. Nothing here adds a native region, an edge, a setting or a layout.
 
 `export_oot_wallmaster_arrivals.py` is the independent M1-14 arrival-catalog prerequisite.
 It binds the eight OoT dungeon and three minor-dungeon registry IDs to native entrance
@@ -258,4 +263,4 @@ region enum and entrance table, checks `ResolveOotNativeArrival`, matches the el
 reviewed indices and the pinned Wallmaster candidate set, and rejects inconsistent or
 ambiguous bindings. With the pinned checkout it also checks deterministic reproduction,
 stale-output refusal without writes, and wrong-HEAD refusal. No native traversal hook,
-installer, public capability or C17 MQ policy is added by this prerequisite.
+installer, public capability or MQ policy is added by this prerequisite.
