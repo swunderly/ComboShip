@@ -392,7 +392,9 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     if (ootBound) {
         auto settingsFacts = static_cast<const EntranceSettingsFacts&>(facts);
         settingsFacts.enemyRandomizer = g.readSetting("gEnhancements.RandomizedEnemies", 0) != 0;
-        if (const auto why = ComboRando::EntranceGenerationRefusal(settingsFacts, g.active); !why.empty())
+        if (const auto why = ComboRando::EntranceGenerationRefusal(settingsFacts); !why.empty())
+            throw UnifiedEntranceRefused(why);
+        if (const auto why = ForeignSongsRefusal(settingsFacts, g.active); !why.empty())
             throw UnifiedEntranceRefused(why);
     }
     // The id carries the seed's song facts (ComboSeedFormat.h RequireSeedEntranceFacts): only the songs id

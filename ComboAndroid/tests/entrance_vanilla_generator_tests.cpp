@@ -339,7 +339,9 @@ static void CheckPlainRefusals() {
                        const EntranceSettingsFacts &facts) {
     Fake::Reset();
     const auto error = Refusal(g);
-    const auto rules = EntranceGenerationRefusal(facts, g.active);
+    auto rules = EntranceGenerationRefusal(facts);
+    if (rules.empty()) // a build without the songs id (EntranceProfile.h)
+      rules = ForeignSongsRefusal(facts, g.active);
     assert(!rules.empty() && error.player() == rules.player &&
            error.what() == rules.log);
   };
@@ -852,7 +854,8 @@ static size_t CheckSongContexts(const Json &contract) {
     g.foreignSongsLogic = true;
     EntranceSettingsFacts facts;
     facts.foreignSongsLogic = true;
-    const auto rules = EntranceGenerationRefusal(facts, *set);
+    assert(EntranceGenerationRefusal(facts).empty());
+    const auto rules = ForeignSongsRefusal(facts, *set);
     if (set->Active(kSongsWallmasterCapability)) {
       assert(rules.empty() &&
              DecodeEntranceLayout(

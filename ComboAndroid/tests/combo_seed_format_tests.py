@@ -316,7 +316,7 @@ int main() {
     // The song facts a layout's id carries (limits design, Stage 1): "Play warp songs across games" in logic takes
     // wallmasters-own-game-songs-v1 in either quest context; the vanilla and quests ids refuse it and the songs id
     // needs it. No id takes song destination shuffle or a starting warp song or Soaring under logic. No Logic has no
-    // song facts. A profile settings document carries none; a song map that does not parse is refused.
+    // song facts. A profile settings document carries none, and neither does a song map that does not parse.
     {
         const auto all = Entrances::CapabilitySet::AtLeast(Entrances::Stage::Hidden);
         SongTravelMap foreignMap, shuffleMap;
@@ -378,9 +378,14 @@ int main() {
                     RequireSupportedSeedDocument(prelude, all);
             }
         }
+        // A song map that does not parse has no song facts here (loading it fails on its own): the old id passes this
+        // guard and the songs id is refused.
         auto malformed = seedOf(vanilla, plain, foreignMap.json(), false);
         malformed["songTravel"]["destinations"] = Json::array();
-        refusedFor(malformed, "Invalid song travel map");
+        RequireSupportedSeedDocument(malformed, all);
+        malformed = seedOf(vanilla, songsId, foreignMap.json(), false);
+        malformed["songTravel"]["destinations"] = Json::array();
+        refusedFor(malformed, "without foreign-song logic");
         // This build's shipping set takes the songs id once it is Public, and refuses it while it is staged.
         const auto songs = seedOf(vanilla, songsId, foreignMap.json(), false);
         if (shipping.Active(songsId))

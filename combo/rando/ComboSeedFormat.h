@@ -42,7 +42,8 @@ inline bool IsComboSeedDocument(const nlohmann::json& seed) {
 // logic is on (the seed's accessibility is not No Logic, so a Temple pass ran), the song travel map's logic
 // flags, and the starting warp songs and Song of Soaring of both games' settings, read as the profile reads
 // them (EntranceProfile.h ProfileEntranceFacts). No shared item family is a song (SharedItems.h). A missing
-// part counts as off; a song travel map that does not parse is refused.
+// part counts as off, and so does a song travel map that does not parse: such a seed fails to load anyway
+// (ComboShip.cpp InstallSongTravel), and with no song facts the songs id is refused.
 inline Entrances::EntranceSettingsFacts SeedEntranceFacts(const nlohmann::json& seed) {
     Entrances::EntranceSettingsFacts f;
     const auto part = [&](const nlohmann::json& object, const char* key) -> const nlohmann::json* {
@@ -53,7 +54,10 @@ inline Entrances::EntranceSettingsFacts SeedEntranceFacts(const nlohmann::json& 
         const auto mode = access->find("mode");
         f.logicEnabled = !(mode != access->end() && mode->is_string() && *mode == "noLogic");
     }
-    const auto songs = SongTravelMap::parse(seed.value("songTravel", nlohmann::json()));
+    SongTravelMap songs;
+    try {
+        songs = SongTravelMap::parse(seed.value("songTravel", nlohmann::json()));
+    } catch (const std::exception&) {}
     f.songTravelLogic = songs.logicEnabled;
     f.foreignSongsLogic = songs.logicForeignSongs;
     const auto* oot = part(seed, "oot");

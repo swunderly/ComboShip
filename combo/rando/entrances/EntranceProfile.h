@@ -170,11 +170,23 @@ inline bool CatalogueMqBundled(const nlohmann::json& ootCatalog) {
     return source != ootCatalog.end() && source->is_string() &&
            source->get_ref<const std::string&>() == ComboMq::kMqDataSourceBundled;
 }
+// Foreign-song logic needs wallmasters-own-game-songs-v1 (UnifiedBridge.h UnifiedSongRequirement), staged at Dev: a
+// build without that id refuses it in the menu, on the Generate button and in generation (UnifiedBridge.h), after
+// every reason WallmasterSettingsRefusal gives. The Temple gate takes it (lemma S1). `caps` are the build's.
+inline EntranceRefusal ForeignSongsRefusal(const EntranceSettingsFacts& f, const CapabilitySet& caps) {
+    if (f.logicEnabled && f.foreignSongsLogic && !caps.Active(kSongsWallmasterCapability))
+        return { "Turn off \"Play warp songs across games\" to use Wallmaster Shuffle.",
+                 "foreign-song logic needs wallmasters-own-game-songs-v1, which this build does not have" };
+    return {};
+}
 // Asset facts come from the native profile catalogue, not an unapplied MQ CVar. `caps` are the build's.
 template <class Read>
 EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nlohmann::json& ootCatalog, Read read,
                                          const CapabilitySet& caps = ActiveCapabilities()) {
-    auto why = WallmasterSettingsRefusal(ProfileEntranceFacts(draft, read), caps);
+    const auto facts = ProfileEntranceFacts(draft, read);
+    auto why = WallmasterSettingsRefusal(facts);
+    if (why.empty())
+        why = ForeignSongsRefusal(facts, caps);
     if (!why.empty())
         return why;
     if (!ootCatalog.contains("hasMasterQuest") || !ootCatalog.contains("hasOriginal") ||

@@ -137,6 +137,12 @@ int main() {
       CapabilitySet::AtLeast(Stage::Hidden).Only(kQuestsWallmasterCapability);
   assert(withQuests.Active(kSongsWallmasterCapability) &&
          !withoutSongs.Active(kSongsWallmasterCapability));
+  // What generation refuses with these capabilities (UnifiedBridge.h).
+  const auto generation = [](const EntranceSettingsFacts &facts,
+                             const CapabilitySet &set) {
+    const auto why = EntranceGenerationRefusal(facts);
+    return why.empty() ? ForeignSongsRefusal(facts, set) : why;
+  };
   settings["gCombo.Rando.ForeignSongs"] = 1;
   {
     const auto facts = ProfileEntranceFacts(draft, read);
@@ -149,7 +155,10 @@ int main() {
     for (const auto &set :
          {withQuests, withQuests.Only(kSongsWallmasterCapability)})
       assert(ProfileWallmasterRefusal(draft, assets, read, set).empty() &&
-             EntranceGenerationRefusal(facts, set).empty());
+             generation(facts, set).empty());
+    // The shared refusal of the Ship rows, Enemy Randomizer, Logic and Temple
+    // never names it.
+    assert(EntranceGenerationRefusal(facts).empty());
     const auto refused =
         ProfileWallmasterRefusal(draft, assets, read, withoutSongs);
     plain(refused,
@@ -157,10 +166,10 @@ int main() {
           "Shuffle.",
           "foreign-song logic needs wallmasters-own-game-songs-v1, which this "
           "build does not have");
-    assert(refused == EntranceGenerationRefusal(facts, withoutSongs));
+    assert(refused == generation(facts, withoutSongs));
     // This build's own set: the menu and generation agree on it.
     const auto menu = ProfileWallmasterRefusal(draft, assets, read);
-    assert(menu == EntranceGenerationRefusal(facts) &&
+    assert(menu == generation(facts, caps) &&
            menu.empty() == caps.Active(kSongsWallmasterCapability));
     // A starting song is refused first, by every set.
     settings["gRandoSettings.StartingPreludeOfLight"] = 1;

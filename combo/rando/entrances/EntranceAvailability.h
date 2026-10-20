@@ -1,5 +1,4 @@
 #pragma once
-#include "Capabilities.h"
 #include <string>
 #include <string_view>
 #include <utility>
@@ -116,21 +115,13 @@ inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
                              "starting " + item + " needs GLOBAL song sources (deferred)" };
     return {};
 }
-// Foreign-song logic needs wallmasters-own-game-songs-v1 (UnifiedBridge.h UnifiedSongRequirement), staged at Dev: a
-// build without that id keeps this sentence. `caps` are the build's.
-inline EntranceRefusal WallmasterSettingsRefusal(const EntranceSettingsFacts& f,
-                                                 const CapabilitySet& caps = ActiveCapabilities()) {
+inline EntranceRefusal WallmasterSettingsRefusal(const EntranceSettingsFacts& f) {
     if (!f.combinedMode)
         return { "Wallmaster Shuffle works only in combined mode.", "Wallmaster Shuffle works only in combined mode." };
     if (f.shipwrightEntrances)
         return ShipEntrancesRefusal();
     if (f.enemyRandomizer)
         return EnemyRandomizerRefusal();
-    if (auto why = TempleSettingsRefusal(f); !why.empty())
-        return why;
-    if (f.logicEnabled && f.foreignSongsLogic && !caps.Active(kSongsWallmasterCapability))
-        return { "Turn off \"Play warp songs across games\" to use Wallmaster Shuffle.",
-                 "foreign-song logic needs wallmasters-own-game-songs-v1, which this build does not have" };
-    return {};
+    return TempleSettingsRefusal(f);
 }
 } // namespace ComboRando::Entrances
