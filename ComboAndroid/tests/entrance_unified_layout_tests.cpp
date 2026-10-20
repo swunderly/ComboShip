@@ -609,10 +609,10 @@ void CheckOneWays(const Json &fixture) {
   Rejected(WithRoute(major, "OOT_LAKE_HYLIA_FROM_VALLEY", "OOT_DEKU_TREE"));
 }
 
-// This build. A release build admits only the vanilla Wallmaster contract
-// (P1-05): it validates a vanilla layout and refuses every other layout after
-// decoding it. A dev build adds the MM tranche and the staged Master Quest
-// contract (U11), and accepts dev layouts.
+// This build. A release build admits only the two Own Game Wallmaster
+// contracts, vanilla (P1-05) and Master Quest (U11): it validates their layouts
+// and refuses every other layout after decoding it. A dev build adds the MM
+// tranche and accepts dev layouts.
 void CheckBuildGuard(const Json &good) {
   const auto caps = ActiveCapabilities();
   Json seed = {{"fileType", kEntranceSeedFileType},
@@ -656,7 +656,8 @@ void CheckBuildGuard(const Json &good) {
   }
 #else
   assert(!caps.devBuild && caps == CapabilitySet::AtLeast(Stage::Public) &&
-         caps == caps.Only(kVanillaWallmasterCapability) &&
+         caps == (caps.Only(kVanillaWallmasterCapability) |
+                  caps.Only(kQuestsWallmasterCapability)) &&
          caps.Active(kVanillaWallmasterCapability));
   auto layout = DecodeEntranceLayout(good);
   layout.required = {std::string(kVanillaWallmasterCapability)};
@@ -692,18 +693,23 @@ void CheckBuildGuard(const Json &good) {
   std::vector<std::pair<Json, std::string>> refused;
   for (const auto *id :
        {"wallmasters-own-game-v1", "one-ways-own-game-v1",
-        "wallmasters-with-one-ways-v1", "wallmasters-own-game-mm-tranche",
-        "wallmasters-own-game-quests-v1"}) {
+        "wallmasters-with-one-ways-v1", "wallmasters-own-game-mm-tranche"}) {
     auto other = vanilla;
     other["requires"] = {id};
     refused.emplace_back(other, "which this build does not have");
   }
-  // The staged Master Quest contract (U11): a seed with a Master Quest dungeon.
+  // The Master Quest contract (U11): a seed with a Master Quest dungeon loads;
+  // the quests id with all-vanilla dungeons does not, they keep the vanilla id.
   auto quests = layout;
   quests.required = {std::string(kQuestsWallmasterCapability)};
   quests.ootMq[OotMqIndex("DT")] = true;
+  seed["entranceLayout"] = EncodeEntranceLayout(quests);
+  RequireSupportedSeedDocument(seed, caps);
+  RequireSupportedSeedCapabilities(seed, caps);
+  RequireSupportedSettingsCapabilities(seed, caps);
+  quests.ootMq = {};
   refused.emplace_back(EncodeEntranceLayout(quests),
-                       "which this build does not have");
+                       "without a Master Quest dungeon");
   auto dev = vanilla;
   dev["devBuild"] = true;
   refused.emplace_back(dev, "comes from a dev build");

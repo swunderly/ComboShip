@@ -20,15 +20,15 @@ const Stage kStages[] = {Stage::Hidden, Stage::Dev, Stage::Public};
 
 // The stage of every catalog value, as section 6 of the M1 plan stages them.
 // The dev-only MM tranche is open at Dev (M1-07); the vanilla Wallmaster
-// contract is Public (P1-05); the Master Quest Wallmaster contract is staged at
-// Dev (U11); everything else is Hidden. A unit that opens a value updates this
-// table.
+// contract is Public (P1-05), and so is the Master Quest Wallmaster contract
+// from 0.4.13 (U11); everything else is Hidden. A unit that opens a value
+// updates this table.
 Stage ExpectedStage(std::string_view id, std::string_view key) {
   (void)key;
   if (id == "wallmasters-own-game-vanilla-v1")
     return Stage::Public;
   if (id == "wallmasters-own-game-quests-v1")
-    return Stage::Dev;
+    return Stage::Public;
   return id == "wallmasters-own-game-mm-tranche" ? Stage::Dev : Stage::Hidden;
 }
 
@@ -146,14 +146,16 @@ void StageSets() {
         }
     }
   }
-  // Only the vanilla both-game contract ships; Dev adds the explicit legacy
-  // tranche and the staged Master Quest contract.
+  // Only the two Own Game Wallmaster contracts ship, vanilla and Master Quest;
+  // Dev adds the explicit legacy tranche.
   const auto shipping = CapabilitySet::AtLeast(Stage::Public);
   assert(!shipping.Empty() &&
-         shipping == shipping.Only("wallmasters-own-game-vanilla-v1"));
+         shipping == (shipping.Only("wallmasters-own-game-vanilla-v1") |
+                      shipping.Only("wallmasters-own-game-quests-v1")));
   for (const auto &row : kEntranceCapabilities)
     assert(shipping.Active(row.id) ==
-           (row.id == "wallmasters-own-game-vanilla-v1"));
+           (row.id == "wallmasters-own-game-vanilla-v1" ||
+            row.id == "wallmasters-own-game-quests-v1"));
   const auto dev = CapabilitySet::AtLeast(Stage::Dev);
   assert(dev == (dev.Only("wallmasters-own-game-mm-tranche") |
                  dev.Only("wallmasters-own-game-vanilla-v1") |

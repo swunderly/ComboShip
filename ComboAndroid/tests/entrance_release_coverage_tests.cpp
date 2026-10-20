@@ -81,10 +81,10 @@ using ComboRando::RequireSupportedSeedCapabilities;
 using ComboRando::UnsupportedComboSeedFormat;
 using Json = nlohmann::json;
 
-// The capability ids with a Public value (M1 plan P1-05). Each one needs a
-// coverage model below; only the vanilla Wallmaster id has one.
+// The capability ids with a Public value (M1 plan P1-05, U11). Each one needs a
+// coverage model below; the two Own Game Wallmaster ids have one, Prove's.
 static const std::set<std::string_view> kExpectedPublic = {
-    kVanillaWallmasterCapability};
+    kVanillaWallmasterCapability, kQuestsWallmasterCapability};
 
 static constexpr unsigned kQuestMasks = 1u << kOotMqDungeons.size();
 static OotQuests Quests(unsigned mask) {
@@ -693,7 +693,8 @@ int main() {
     assert(any == kExpectedPublic.contains(row.id) && (!any || all));
   }
   for (const auto id : kExpectedPublic)
-    assert(id == kVanillaWallmasterCapability);
+    assert(id == kVanillaWallmasterCapability ||
+           id == kQuestsWallmasterCapability);
 #ifdef COMBO_ENTRANCE_DEV
   auto dev = CapabilitySet::AtLeast(Stage::Dev);
   dev.devBuild = true;

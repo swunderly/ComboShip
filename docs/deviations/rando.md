@@ -2370,7 +2370,8 @@ The 2026-10-19 section below makes this capability public for 0.4.12.
 ## Wallmaster Shuffle (Own Game), vanilla dungeons: public (2026-10-19)
 
 Planned for 0.4.12. `wallmasters-own-game-vanilla-v1` (`erWallmasters=ownGame`) is the only public
-entrance capability (`Capabilities.h`, pinned by a `static_assert`). Shipping builds show the OoTMM
+entrance capability of 0.4.12; 0.4.13 adds its Master Quest counterpart (below), and a `static_assert` in
+`Capabilities.h` keeps those two the only public rows. Shipping builds show the OoTMM
 v32.3 row "Wallmaster Shuffle" under Randomizer > Logic & access > Entrances in both world views, with
 None and Own Game. Full, One-Ways, the general `wallmasters-own-game-v1` id and every other er* row stay
 hidden. Player-facing summary: `ComboAndroid/docs/CHANGELOG.md`, Unreleased.
@@ -2473,16 +2474,16 @@ real `oot-mq.o2r` and every vanilla dungeon keep SoH's behaviour.
 
 Planned for 0.4.13, after the 0.4.12 Wallmaster Shuffle release. With OoTMM's bundled MQ data, Master Quest
 dungeons can be chosen on a USA 1.0 `oot.o2r` without `oot-mq.o2r`. OoTMM v32.3 shuffles their Wallmasters too,
-and so does the port, through a new capability: `wallmasters-own-game-quests-v1` (`Capabilities.h`), staged at Dev
-until device captures are in. It has the vanilla id's rules (Own Game, combined mode, the same refusals) and binds a
-context with at least one Master Quest dungeon of OoTMM's bundled data. `wallmasters-own-game-vanilla-v1` keeps its
-frozen id and rules: it still binds all-vanilla dungeons only, and every all-vanilla seed keeps it. Without Master
-Quest dungeons, Wallmaster Shuffle makes the same routes as 0.4.12, and such a seed should load in 0.4.12; the seed
-file now also carries the `mqDataSource` marker, and that load has not been checked on a device yet. A build without
-the quests id (0.4.12, or this branch's shipping build while the id is staged) refuses a seed that needs it before
-decoding its routes ("requires unknown capability" in 0.4.12, "which this build does not have" here), and refuses
-Own Game with Master Quest dungeons with "Wallmaster Shuffle does not support Master Quest dungeons yet."
-(`kWallmasterMasterQuestText`), as before.
+and so does the port, through a new capability: `wallmasters-own-game-quests-v1` (`Capabilities.h`), Public from
+0.4.13 (one commit, which can be reverted alone to stage it at Dev again). It has the vanilla id's rules (Own Game,
+combined mode, the same refusals) and binds a context with at least one Master Quest dungeon of OoTMM's bundled data.
+`wallmasters-own-game-vanilla-v1` keeps its frozen id and rules: it still binds all-vanilla dungeons only, and every
+all-vanilla seed keeps it. Without Master Quest dungeons, Wallmaster Shuffle makes the same routes as 0.4.12, and such
+a seed should load in 0.4.12; the seed file now also carries the `mqDataSource` marker, and that load has not been
+checked on a device yet. A build without the quests id (0.4.12, or a build with the id staged) refuses a seed that
+needs it before decoding its routes ("requires unknown capability" in 0.4.12, "which this build does not have" with
+the id staged), and refuses Own Game with Master Quest dungeons with "Wallmaster Shuffle does not support Master Quest
+dungeons yet." (`kWallmasterMasterQuestText`), as before.
 
 - **Edges and evidence.** The 11 live MQ edges of the pinned anchor audit (`tools/ootmm/oot-wallmaster-anchor-audit.json`;
   edge 16 is false in the port) join the 11 vanilla ones in `combo_oot_wallmaster_edges.inc`; each is anchored in its

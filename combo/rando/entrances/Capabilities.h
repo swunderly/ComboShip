@@ -37,7 +37,7 @@ struct Capability {
 inline constexpr CapabilityValue kWallmastersMmTrancheValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
 inline constexpr CapabilityValue kWallmastersOwnGameValues[] = { { "erWallmasters", "ownGame", Stage::Hidden } };
 inline constexpr CapabilityValue kWallmastersVanillaValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
-inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
+inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -63,7 +63,8 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // vanilla dungeons only. Its id and rules are frozen; Master Quest support takes a new id.
     { "wallmasters-own-game-vanilla-v1", kWallmastersVanillaValues, {}, false },
     // The same Own Game rules where at least one OoT dungeon is Master Quest (design unit U11): the bundled MQ
-    // Wallmaster edges, sources and capture rooms. An all-vanilla seed keeps the vanilla id above.
+    // Wallmaster edges, sources and capture rooms. An all-vanilla seed keeps the vanilla id above. Public from
+    // 0.4.13; its id and rules are frozen from then on.
     { "wallmasters-own-game-quests-v1", kWallmastersQuestsValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
@@ -100,12 +101,13 @@ constexpr bool DevOnlyNeverPublic() {
                 return false;
     return true;
 }
-// Only the vanilla Wallmaster row is Public (owner decision 2026-10-18, M1 plan P1-05). Opening
-// another row is a separate, reviewed release decision.
-constexpr bool OnlyVanillaWallmastersPublic() {
+// Only the Own Game Wallmaster rows are Public: vanilla dungeons (owner decision 2026-10-18, M1 plan P1-05) and,
+// from 0.4.13, Master Quest dungeons (U11). Opening another row is a separate, reviewed release decision.
+constexpr bool OnlyOwnGameWallmastersPublic() {
     for (const auto& row : kEntranceCapabilities)
         for (const auto& value : row.values)
-            if (value.stage == Stage::Public && row.id != "wallmasters-own-game-vanilla-v1")
+            if (value.stage == Stage::Public && row.id != "wallmasters-own-game-vanilla-v1" &&
+                row.id != "wallmasters-own-game-quests-v1")
                 return false;
     return true;
 }
@@ -142,7 +144,7 @@ constexpr bool CompanionsAreClosed() {
 static_assert(CapabilityDetail::IdsAreUnique(), "Capability ids must be unique");
 static_assert(CapabilityDetail::RowsFitTheirMask(), "A capability row has 1 to 32 values");
 static_assert(CapabilityDetail::DevOnlyNeverPublic(), "A devOnly capability can never be Public");
-static_assert(CapabilityDetail::OnlyVanillaWallmastersPublic(), "Only the vanilla Wallmaster row is Public");
+static_assert(CapabilityDetail::OnlyOwnGameWallmastersPublic(), "Only the Own Game Wallmaster rows are Public");
 static_assert(CapabilityDetail::FullNeverAdmitted(), "Full is never admitted");
 static_assert(CapabilityDetail::CompanionsAreClosed(), "Companion rows must stay within the rows they name");
 
