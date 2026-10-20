@@ -394,12 +394,10 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
         settingsFacts.enemyRandomizer = g.readSetting("gEnhancements.RandomizedEnemies", 0) != 0;
         if (const auto why = ComboRando::EntranceGenerationRefusal(settingsFacts); !why.empty())
             throw UnifiedEntranceRefused(why);
-        if (const auto why = ForeignSongsRefusal(settingsFacts, g.active); !why.empty())
-            throw UnifiedEntranceRefused(why);
     }
     // The id carries the seed's song facts (ComboSeedFormat.h RequireSeedEntranceFacts): only the songs id
-    // takes foreign-song logic, and it needs it. Reached only with an id selected by name, or another
-    // pool's id; the menu's refusal above covers a build without the songs id.
+    // takes foreign-song logic, and it needs it. Every build has the songs id, so this is reached only with
+    // an id selected by name, or another pool's id.
     if (songFacts && required != kSongsWallmasterCapability)
         throw UnifiedEntranceRefused(required + " does not admit foreign-song logic");
     if (!songFacts && required == kSongsWallmasterCapability)

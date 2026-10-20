@@ -129,20 +129,10 @@ int main() {
         "song travel logic needs GLOBAL song sources (deferred)");
   settings.clear();
   // "Play warp songs across games" (limits design, Stage 1): the Temple gate
-  // takes it (lemma S1), and so do the menu and generation wherever the
-  // build has wallmasters-own-game-songs-v1, staged at Dev. A build without it
-  // keeps the sentence; with No Logic nothing refuses it.
-  const auto withoutSongs =
-      vanillaOnly |
-      CapabilitySet::AtLeast(Stage::Hidden).Only(kQuestsWallmasterCapability);
-  assert(withQuests.Active(kSongsWallmasterCapability) &&
-         !withoutSongs.Active(kSongsWallmasterCapability));
-  // What generation refuses with these capabilities (UnifiedBridge.h).
-  const auto generation = [](const EntranceSettingsFacts &facts,
-                             const CapabilitySet &set) {
-    const auto why = EntranceGenerationRefusal(facts);
-    return why.empty() ? ForeignSongsRefusal(facts, set) : why;
-  };
+  // takes it (lemma S1), and so do the menu and generation, which agree: every
+  // build has wallmasters-own-game-songs-v1, and its sentence is gone, whatever
+  // the capability set. A starting song is still refused.
+  assert(caps.Active(kSongsWallmasterCapability));
   settings["gCombo.Rando.ForeignSongs"] = 1;
   {
     const auto facts = ProfileEntranceFacts(draft, read);
@@ -152,34 +142,17 @@ int main() {
     s.erWallmasters = Mode::OwnGame;
     CheckTempleCapability(s, temple, [](std::string_view) { return true; });
     assert(facts.foreignSongsLogic && TempleSettingsRefusal(temple).empty());
-    for (const auto &set :
-         {withQuests, withQuests.Only(kSongsWallmasterCapability)})
-      assert(ProfileWallmasterRefusal(draft, assets, read, set).empty() &&
-             generation(facts, set).empty());
-    // The shared refusal of the Ship rows, Enemy Randomizer, Logic and Temple
-    // never names it.
+    for (const auto &set : {caps, vanillaOnly, withQuests})
+      assert(ProfileWallmasterRefusal(draft, assets, read, set).empty());
     assert(EntranceGenerationRefusal(facts).empty());
-    const auto refused =
-        ProfileWallmasterRefusal(draft, assets, read, withoutSongs);
-    plain(refused,
-          "Turn off \"Play warp songs across games\" to use Wallmaster "
-          "Shuffle.",
-          "foreign-song logic needs wallmasters-own-game-songs-v1, which this "
-          "build does not have");
-    assert(refused == generation(facts, withoutSongs));
-    // This build's own set: the menu and generation agree on it.
-    const auto menu = ProfileWallmasterRefusal(draft, assets, read);
-    assert(menu == generation(facts, caps) &&
-           menu.empty() == caps.Active(kSongsWallmasterCapability));
-    // A starting song is refused first, by every set.
     settings["gRandoSettings.StartingPreludeOfLight"] = 1;
-    for (const auto &set : {withQuests, withoutSongs})
-      assert(ProfileWallmasterRefusal(draft, assets, read, set).player ==
-             "Remove Prelude of Light from the starting items to use "
-             "Wallmaster Shuffle.");
-    settings.erase("gRandoSettings.StartingPreludeOfLight");
-    settings[kNativeLogicRule] = 1;
-    assert(ProfileWallmasterRefusal(draft, assets, read, withoutSongs).empty());
+    const auto menu = ProfileWallmasterRefusal(draft, assets, read);
+    plain(menu,
+          "Remove Prelude of Light from the starting items to use Wallmaster "
+          "Shuffle.",
+          "starting Prelude of Light needs GLOBAL song sources (deferred)");
+    assert(menu ==
+           EntranceGenerationRefusal(ProfileEntranceFacts(draft, read)));
   }
   settings.clear();
   // Ship's Logic row offers Glitchless (0) and No Logic (1) only.
@@ -402,10 +375,13 @@ int main() {
   auto unknown = assets;
   unknown.erase("mqPlayable");
   plain(ProfileWallmasterRefusal(draft, unknown, read), data, dataLog);
-  // Solo mode, Ship ER, Enemy Randomizer, glitched logic, the two song logic
-  // options, six warp songs and Soaring, Master Quest, the Master Quest
+  // Solo mode, Ship ER, Enemy Randomizer, glitched logic, song destination
+  // shuffle, six warp songs and Soaring, Master Quest, the Master Quest
   // Wallmaster capacity (forced, and a seed's roll) and unknown dungeon data.
-  assert(sentences.size() == 17);
+  // "Play warp songs across games" has none since 0.4.13.
+  assert(sentences.size() == 16);
+  for (const auto &sentence : sentences)
+    assert(sentence.find("across games") == std::string::npos);
   auto raw = draft;
   raw["setupCVars"][wall] = 2;
   raw["setupCVars"]["gCombo.Rando.Entrances.erOneWays"] = 1;

@@ -386,12 +386,11 @@ int main() {
         malformed = seedOf(vanilla, songsId, foreignMap.json(), false);
         malformed["songTravel"]["destinations"] = Json::array();
         refusedFor(malformed, "without foreign-song logic");
-        // This build's shipping set takes the songs id once it is Public, and refuses it while it is staged.
+        // This build's shipping set takes the songs id (Public from 0.4.13).
         const auto songs = seedOf(vanilla, songsId, foreignMap.json(), false);
-        if (shipping.Active(songsId))
-            RequireSupportedSeedDocument(songs, shipping);
-        else
-            rejectsLayout([&] { RequireSupportedSeedDocument(songs, shipping); });
+        assert(shipping.Active(songsId));
+        RequireSupportedSeedDocument(songs, shipping);
+        assert(Profiles::SeedFromContainer({{"combo", {{"rando", songs}}}}, shipping) == songs);
         refusedFor(seedOf(vanilla, plain, foreignMap.json(), false), "which does not admit foreign-song logic");
     }
     // Without the MM installer's exports an accepted layout still never binds as vanilla routing.

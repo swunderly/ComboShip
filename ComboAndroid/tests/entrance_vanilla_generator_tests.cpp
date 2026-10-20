@@ -339,9 +339,7 @@ static void CheckPlainRefusals() {
                        const EntranceSettingsFacts &facts) {
     Fake::Reset();
     const auto error = Refusal(g);
-    auto rules = EntranceGenerationRefusal(facts);
-    if (rules.empty()) // a build without the songs id (EntranceProfile.h)
-      rules = ForeignSongsRefusal(facts, g.active);
+    const auto rules = EntranceGenerationRefusal(facts);
     assert(!rules.empty() && error.player() == rules.player &&
            error.what() == rules.log);
   };
@@ -369,8 +367,10 @@ static void CheckPlainRefusals() {
   facts = {};
   facts.songTravelLogic = true;
   same(g, facts);
-  // Foreign-song logic in a build without wallmasters-own-game-songs-v1 (it is
-  // staged at Dev): the menu's sentence, chosen by settings.
+  // Foreign-song logic has no sentence: every build has
+  // wallmasters-own-game-songs-v1. A capability set without it (no build has
+  // one) refuses it before any draw or native change, as an internal fault.
+  Fake::Reset();
   g = Generation();
   g.capability.clear();
   g.active =
@@ -380,7 +380,13 @@ static void CheckPlainRefusals() {
   g.foreignSongsLogic = true;
   facts = {};
   facts.foreignSongsLogic = true;
-  same(g, facts);
+  assert(EntranceGenerationRefusal(facts).empty());
+  {
+    const auto error = Refusal(g);
+    assert(error.what() == std::string(kVanillaWallmasterCapability) +
+                               " does not admit foreign-song logic" &&
+           error.player() == error.what());
+  }
   // With the songs id, an id named by name must match the seed's song facts,
   // before any draw or native change; this is developer text, not a sentence.
   for (const auto &[id, foreign, why] :
@@ -734,8 +740,8 @@ static void CheckVanillaBytes() {
 // Master Quest data keeps its refusal, and No Logic keeps the vanilla or quests
 // id. The songs id has the same rules: a layout with its id swapped for the one
 // the context takes without the songs validates and has that generation's
-// routes. Co-op identities differ from the seeds without the songs. A build
-// without the songs id refuses the songs with the menu's sentence.
+// routes. Co-op identities differ from the seeds without the songs. The
+// shipping set takes the songs id.
 static size_t CheckSongContexts(const Json &contract) {
   std::set<std::set<std::string>> shortfalls;
   for (const auto &row : contract.at("mqSources").at("capacityShortfalls"))
@@ -839,35 +845,31 @@ static size_t CheckSongContexts(const Json &contract) {
                    std::string(mask ? kQuestsWallmasterCapability
                                     : kVanillaWallmasterCapability)});
   }
-  // A build without the songs id refuses them, before any draw or native
-  // change, with the menu's sentence; the shipping set does so while the id is
-  // staged.
+  // The shipping set takes the songs id; a set without it (no build has one)
+  // refuses foreign-song logic before any draw or native change, as an internal
+  // fault, since no sentence is left for it.
   const auto withoutSongs =
       CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability) |
       CapabilitySet::AtLeast(Stage::Hidden).Only(kQuestsWallmasterCapability);
   const auto shipping = CapabilitySet::AtLeast(Stage::Public);
+  assert(shipping.Active(kSongsWallmasterCapability));
   for (const auto *set : {&withoutSongs, &shipping}) {
     Fake::Reset();
     g = Generation(4);
     g.capability.clear();
     g.active = *set;
     g.foreignSongsLogic = true;
-    EntranceSettingsFacts facts;
-    facts.foreignSongsLogic = true;
-    assert(EntranceGenerationRefusal(facts).empty());
-    const auto rules = ForeignSongsRefusal(facts, *set);
     if (set->Active(kSongsWallmasterCapability)) {
-      assert(rules.empty() &&
-             DecodeEntranceLayout(
+      assert(DecodeEntranceLayout(
                  GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()))
-                     .required == std::vector<std::string>{
-                                      std::string(kSongsWallmasterCapability)});
+                 .required ==
+             std::vector<std::string>{std::string(kSongsWallmasterCapability)});
       continue;
     }
     const auto error = Refusal(g);
-    assert(error.player() == rules.player && error.what() == rules.log &&
-           rules.player == "Turn off \"Play warp songs across games\" to use "
-                           "Wallmaster Shuffle.");
+    assert(error.what() == std::string(kVanillaWallmasterCapability) +
+                               " does not admit foreign-song logic" &&
+           error.player() == error.what());
   }
   return generated;
 }

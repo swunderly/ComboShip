@@ -38,7 +38,7 @@ inline constexpr CapabilityValue kWallmastersMmTrancheValues[] = { { "erWallmast
 inline constexpr CapabilityValue kWallmastersOwnGameValues[] = { { "erWallmasters", "ownGame", Stage::Hidden } };
 inline constexpr CapabilityValue kWallmastersVanillaValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
-inline constexpr CapabilityValue kWallmastersSongsValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
+inline constexpr CapabilityValue kWallmastersSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -70,7 +70,8 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // The same Own Game rules with "Play warp songs across games" in the seed's logic (OoTMM's songSoaringOot and
     // song*Mm item settings), in either quest context (limits design, Stage 1). With no starting warp song or Soaring,
     // which every Wallmaster id refuses, OoTMM's Temple check is the same with or without them (lemma S1). A seed
-    // without that logic keeps the vanilla or quests id, so its layout is the one earlier builds make.
+    // without that logic keeps the vanilla or quests id, so its layout is the one earlier builds make. Public from
+    // 0.4.13; its id and rules are frozen from then on.
     { "wallmasters-own-game-songs-v1", kWallmastersSongsValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
@@ -111,12 +112,13 @@ constexpr bool DevOnlyNeverPublic() {
     return true;
 }
 // Only the Own Game Wallmaster rows are Public: vanilla dungeons (owner decision 2026-10-18, M1 plan P1-05) and,
-// from 0.4.13, Master Quest dungeons (U11). Opening another row is a separate, reviewed release decision.
+// from 0.4.13, Master Quest dungeons (U11) and cross-game songs (limits design, Stage 1). Opening another row is a
+// separate, reviewed release decision.
 constexpr bool OnlyOwnGameWallmastersPublic() {
     for (const auto& row : kEntranceCapabilities)
         for (const auto& value : row.values)
             if (value.stage == Stage::Public && row.id != "wallmasters-own-game-vanilla-v1" &&
-                row.id != "wallmasters-own-game-quests-v1")
+                row.id != "wallmasters-own-game-quests-v1" && row.id != "wallmasters-own-game-songs-v1")
                 return false;
     return true;
 }

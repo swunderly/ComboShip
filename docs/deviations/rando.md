@@ -2550,8 +2550,9 @@ item settings: "Play warp songs across games" is the port's form of `songSoaring
 `songPreludeMm` (`packages/core/src/settings/data.ts:2192-2198`, `:2264-2310`), and Song of Soaring at any age (OoT)
 is `agelessSoaring` (`:3240-3246`); none changes the WALLMASTERS pool (`packages/logic/src/solver/entrances.ts:657-669`).
 0.4.12 refused "Play warp songs across games" in logic with Wallmaster Shuffle (D4) because the opposite-age Temple
-probe has no song node. A new capability, `wallmasters-own-game-songs-v1` (`Capabilities.h`), staged at Dev, lifts
-that refusal.
+probe has no song node. A new capability, `wallmasters-own-game-songs-v1` (`Capabilities.h`), lifts that refusal. It
+is Public from 0.4.13 (one commit, which can be reverted alone to stage it at Dev again), and a `static_assert` keeps
+the three Own Game Wallmaster rows the only Public ones.
 
 - **Why the probe needs no song node (lemma S1).** OoTMM's `validateAgeTemple` (`entrances.ts:265-287`) explores
   with the starting items only. Every exit into a warp-song or Soaring area, the 21 of both `_system.yml` files and
@@ -2579,5 +2580,7 @@ that refusal.
 - **Still refused (port limits).** A starting warp song or Soaring (it needs a song node in the probe), Warp Songs
   and Soaring Spots Shuffle (OoTMM's `erWarps`, which also gives Wallmasters the warp pads and owl statues as
   destinations), Full, and every other entrance shuffle keep their refusals.
-- **While the id is staged,** a build without it keeps "Turn off "Play warp songs across games" to use Wallmaster
-  Shuffle." in the menu, on the Generate button and in generation.
+- **The sentence is gone.** 0.4.12's "Turn off "Play warp songs across games" to use Wallmaster Shuffle." no longer
+  shows anywhere. With the id staged at Dev, a shipping build showed it again in the menu, on the Generate button and
+  in generation (`EntranceProfile.h` `ForeignSongsRefusal`, removed with the flip to Public). A capability set without
+  the songs id, which no build has now, refuses foreign-song logic in generation with developer text only.
