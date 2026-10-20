@@ -10,8 +10,12 @@ all three accessibility modes and souls on and off, and hold at least one save. 
 checks the documents themselves, built with and without COMBO_ENTRANCE_DEV, against production launcher functions
 copied unchanged from combo/ComboShip.cpp.
 
-Without the fixture directory (or with it empty) the test still builds the checker, then reports SKIPPED. A manifest
-that is empty or partial, or that does not match its files, fails, and so does any fixture these checks refuse.
+A later release candidate may use the corpus only as the manifest's laterReleases records it (wallmaster_corpus.py
+later-rc and sample): every file it changes outside the fixtures is allowlisted with a one-line reason, and a sample of
+rows its own comborando regenerated matches byte for byte. Without the fixture directory (or with it empty) the test
+still builds the checker, then reports SKIPPED. A manifest that is empty or partial, or that does not match its files,
+fails, and so does any fixture these checks refuse. Every seed is still checked while the File 3 save or a later
+release candidate's sample is missing; the test then lists each as PENDING and fails.
 """
 from pathlib import Path, PurePosixPath
 import argparse
@@ -267,8 +271,65 @@ for key, needed in (('requested start', {'oot', 'mm', 'random'}), ('resolved sta
     missing = sorted(needed - seen.get(key, set()), key=str)
     require(not missing, f'partial corpus: no seed with {key} {missing}')
 
+# Later release candidates (wallmaster_corpus.py later-rc and sample). One may use this corpus, made by the release
+# candidate above, only when each file it changes outside these fixtures is on its allowlist with a one-line reason
+# saying why it is outside seed generation, and its own comborando regenerated the recorded sample rows byte for byte.
+# Until that sample is recorded the release candidate is pending, and this test fails saying so.
+pending = []  # (short, full) release items still to come
+FIXTURE_PREFIX = 'ComboAndroid/tests/fixtures/wallmasters-vanilla-v1/'
+later = manifest.get('laterReleases', [])
+require(isinstance(later, list), 'laterReleases is not a list')
+commits = {release['sourceCommit']}
+by_id = {row['id']: row for row in seeds}
+for record in later:
+    commit = record.get('sourceCommit') if isinstance(record, dict) else None
+    require(isinstance(commit, str) and re.fullmatch(r'[0-9a-f]{40}', commit) and commit not in commits,
+            f'bad or repeated later release candidate {commit!r}')
+    commits.add(commit)
+    rc = commit[:12]
+    require(isinstance(record.get('versionName'), str) and
+            all(re.fullmatch(r'[0-9a-f]{64}', str(record.get(key))) for key in ('apkSha256', 'comborandoSha256')),
+            f'{rc}: the record has no version, APK hash or comborando hash')
+    allowed = set()
+    for entry in record.get('outsideGeneration') or []:
+        path, reason = (entry.get('path'), entry.get('reason')) if isinstance(entry, dict) else (None, None)
+        require(isinstance(path, str) and path not in allowed and not path.startswith(FIXTURE_PREFIX) and
+                isinstance(reason, str) and reason.strip() and '\n' not in reason and '\r' not in reason,
+                f'{rc}: bad allowlist entry {entry!r}; each file needs a path and a one-line reason')
+        allowed.add(path)
+    git = shutil.which('git')
+    diff = subprocess.run([git, '-C', str(source), 'diff', '--name-only', release['sourceCommit'], commit],
+                          capture_output=True, text=True) if git else None
+    if diff is not None and diff.returncode == 0:
+        unlisted = sorted(path for path in diff.stdout.splitlines()
+                          if not path.startswith(FIXTURE_PREFIX) and path not in allowed)
+        require(not unlisted, f'{rc} changes files since {release["sourceCommit"][:12]} that its allowlist does not '
+                              f'list: {unlisted}')
+    else:
+        print(f'NOTE: this checkout cannot diff {rc} against {release["sourceCommit"][:12]}; '
+              'wallmaster_corpus.py provenance checks its allowlist.')
+    sample = record.get('sample') or {}
+    rows = sample.get('rows')
+    require(isinstance(rows, list) and rows and len(set(rows)) == len(rows) and all(r in documents for r in rows),
+            f'{rc}: its sample rows are not corpus seeds')
+    if sample.get('status') == 'pending':
+        pending.append((f'the {rc} regeneration sample',
+                        f'later release candidate {record["versionName"]} {rc}: its comborando (SHA-256 '
+                        f'{record["comborandoSha256"]}) has not regenerated the {len(rows)} sample rows yet; '
+                        'wallmaster_corpus.py sample records them'))
+        continue
+    results = {r.get('id'): r for r in sample.get('results') or [] if isinstance(r, dict)}
+    require(sample.get('status') == 'identical' and sample.get('comborandoSha256') == record['comborandoSha256'] and
+            sorted(results) == sorted(rows), f'{rc}: the sample is neither pending nor complete for its comborando')
+    for rid in rows:
+        require(results[rid].get('seedSha256') == listed[by_id[rid]['seed']]['sha256'] and
+                results[rid].get('entrancesSha256') == listed[by_id[rid]['entrances']]['sha256'],
+                f'{rc}: the regenerated {rid} is not the corpus row byte for byte')
+
 saves = manifest.get('saves')
-require(isinstance(saves, list) and saves, 'the manifest lists no File 3 save (C6 needs a save bound to a corpus seed)')
+require(isinstance(saves, list), 'the manifest has no save list')
+if not saves:
+    pending.append(('the File 3 save', 'the manifest lists no File 3 save (C6 needs a save bound to a corpus seed)'))
 ids = set()
 for row in saves:
     sid = row.get('id')
@@ -284,5 +345,10 @@ for dev, checker in enumerate(checkers):
     sandbox.mkdir()
     if subprocess.run([str(checker), str(manifest_path), str(sandbox)], timeout=hostcxx.RUN_TIMEOUT).returncode:
         sys.exit(1)
+for _, item in pending:
+    print('PENDING: ' + item)
+require(not pending, f'the {len(seeds)} corpus seeds pass, but these are pending: '
+                     f'{", ".join(short for short, _ in pending)}')
 print(f'PASS {len(seeds)} corpus seeds and {len(saves)} File 3 saves from {release["versionName"]} '
-      f'({release["sourceCommit"][:12]}): manifest hashes, requests, start rule, coverage and identities')
+      f'({release["sourceCommit"][:12]}), {len(later)} later release candidates: manifest hashes, requests, start '
+      'rule, coverage, identities and later samples')
