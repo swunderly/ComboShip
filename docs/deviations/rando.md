@@ -2554,15 +2554,16 @@ probe has no song node. A new capability, `wallmasters-own-game-songs-v1` (`Capa
 is Public from 0.4.13 (one commit, which can be reverted alone to stage it at Dev again), and a `static_assert` keeps
 the three Own Game Wallmaster rows the only Public ones.
 
-- **Why the probe needs no song node (lemma S1).** OoTMM's `validateAgeTemple` (`entrances.ts:265-287`) explores
-  with the starting items only. Every exit into a warp-song or Soaring area, the 21 of both `_system.yml` files and
-  Pirates' Fortress, needs `can_play_tp_*` or `can_play_soaring`, and those need the song itself
-  (`macros_common.yml:4-41`, `macros_oot.yml:33`, `macros_mm.yml:113`). With no warp song or Soaring at the start,
-  which every Wallmaster id still refuses, no song exit opens, with or without the cross-game songs or Ageless
-  Soaring. The other exits of GLOBAL and WARP_SONGS (to EGGS, ACCESS and WARP_SONGS) are unconditional but end in
-  areas with no other way out. `entrance_temple_song_lemma_tests.py` pins this to the exact OoTMM blobs, and the
-  probe gives the same answer for every candidate edge with the song state on and off
-  (`temple_wallmaster_tests.py`). The native probe now refuses only song destination shuffle (`TempleProbe.cpp`).
+- **Why the probe needs no song node (lemma S1).** OoTMM's `validateAgeTemple` (`entrances.ts:265-287`) explores with
+  the starting items only. Every exit into a warp-song or Soaring area, 21 in several world files (both `_system.yml`
+  files, Pirates' Fortress, Great Bay Coast, Pinnacle Rock and Zora Cape), needs `can_play_tp_*` or
+  `can_play_soaring`, and those need the song itself (`macros_common.yml:4-41`, `macros_oot.yml:33`,
+  `macros_mm.yml:113`). With no warp song or Soaring at the start, which every Wallmaster id still refuses, no song
+  exit opens, with or without the cross-game songs or Ageless Soaring. The other exits of GLOBAL and WARP_SONGS (to
+  EGGS, ACCESS and WARP_SONGS) are unconditional but end in areas with no other way out.
+  `entrance_temple_song_lemma_tests.py` pins this to the exact OoTMM blobs, and the probe gives the same answer for
+  every candidate edge with the song state on and off (`temple_wallmaster_tests.py`). The native probe now refuses
+  only song destination shuffle (`TempleProbe.cpp`).
 - **Which id a seed takes.** Generation picks the oldest id that covers the seed: `wallmasters-own-game-vanilla-v1`
   without Master Quest dungeons or foreign-song logic, `wallmasters-own-game-quests-v1` with Master Quest dungeons
   and no foreign-song logic, and the songs id with foreign-song logic in either quest context (`UnifiedBridge.h`

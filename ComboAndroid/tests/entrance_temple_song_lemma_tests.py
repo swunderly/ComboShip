@@ -121,7 +121,8 @@ for s in SONGS:
     assert set(oot[f'SONG_TP_{s}']) == {'region', 'age_change', 'exits'} and len(oot[f'SONG_TP_{s}']['exits']) == 1
 
 # 2. Every exit into a song area, in every pinned world file, has the song's macro as a top-level conjunct: the
-# GLOBAL and WARP_SONGS song exits above, and MM SOARING exits elsewhere (Pirates' Fortress, behind the Zora Mask).
+# GLOBAL and WARP_SONGS song exits above, and MM SOARING exits in several other MM world files (Pirates' Fortress,
+# Great Bay Coast, Pinnacle Rock and Zora Cape, most behind the Zora Mask).
 song_targets = {**{f'SONG_TP_{s}': f'can_play_tp_{s.lower()}' for s in SONGS},
                 **{f'OOT SONG_TP_{s}': f'can_play_tp_{s.lower()}' for s in SONGS},
                 'MM SOARING': 'can_play_soaring', 'SOARING': 'can_play_soaring'}
