@@ -967,6 +967,10 @@ endif()
 # skipped until they are committed.
 combo_json_harness_test(entrance_release_corpus_and_file3_saves entrance_corpus_tests.py)
 set_tests_properties(entrance_release_corpus_and_file3_saves PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+# The 0.4.13 release corpus under fixtures/wallmasters-0413/ (the four Wallmaster ids, the capacity refusals, Master
+# Quest seeds and regenerated 0.4.12 rows), reported as skipped until it is committed.
+combo_json_harness_test(entrance_release_corpus_0413 entrance_corpus_0413_tests.py)
+set_tests_properties(entrance_release_corpus_0413 PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 combo_json_harness_test(headless_er_args_and_entrance_dev_switch headless_er_args_tests.py)
 combo_json_harness_test(headless_entrance_saved_settings_and_recorded_replay headless_entrance_reproduction_tests.py)
 
