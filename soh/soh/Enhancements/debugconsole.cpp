@@ -52,6 +52,9 @@ static void RegisterComboCommand(const std::string& name, Ship::CommandEntry ent
 #else
 #define CMD_REGISTER Ship::Context::GetRawInstance()->GetConsole()->AddCommand
 #endif
+#if defined(COMBO_BUILD) && defined(COMBO_MQ_WALK_DEV)
+#include "soh/Enhancements/randomizer/ComboMqWalk.h" // ComboShip: the developer Master Quest walker
+#endif
 // TODO: Commands should be using the output passed in.
 #define ERROR_MESSAGE                                                                    \
     std::reinterpret_pointer_cast<Ship::ConsoleWindow>(                                  \
@@ -1567,6 +1570,10 @@ static bool CrossSendHandler(std::shared_ptr<Ship::Console> Console, const std::
 #endif
 
 void DebugConsole_Init(void) {
+#if defined(COMBO_BUILD) && defined(COMBO_MQ_WALK_DEV)
+    // ComboShip: the developer Master Quest walker and its adb command file (combo/mq/MqWalk.h); never in a release.
+    ComboMqWalk_Init(RegisterComboCommand);
+#endif
     // Console
     CMD_REGISTER("file_select", { FileSelectHandler, "Returns to the file select." });
     CMD_REGISTER("reset", { ResetHandler, "Resets the game." });

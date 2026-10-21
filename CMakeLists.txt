@@ -237,6 +237,12 @@ option(COMBO_RANDO_DIAGNOSTICS "Compile private headless fill diagnostics (never
 if(COMBO_RANDO_DIAGNOSTICS)
     add_compile_definitions(COMBO_RANDO_DIAGNOSTICS=1)
 endif()
+# ComboShip: the developer Master Quest room walker, teleport and adb command file (combo/mq/MqWalk.h). Never on in
+# a release: verify_apk.py refuses a library that carries its marker.
+option(COMBO_MQ_WALK_DEV "Compile the dev-only Master Quest room walker and its adb command file" OFF)
+if(COMBO_MQ_WALK_DEV)
+    add_compile_definitions(COMBO_MQ_WALK_DEV=1)
+endif()
 
 find_package(Python3 REQUIRED)
 

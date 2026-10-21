@@ -10,6 +10,14 @@ ENTRANCE_DEV_MARKER=b'ComboShip entrance dev build - not for release'
 def entrance_dev_libraries(libraries):
     """Names of the (name, bytes) libraries built with COMBO_ENTRANCE_DEV; reads them one at a time."""
     return sorted(name for name,data in libraries if ENTRANCE_DEV_MARKER in data)
+# The developer Master Quest walker (combo/mq/MqWalk.h, CMake option COMBO_MQ_WALK_DEV): its marker, its log tag, its
+# adb command file and its glue's exported entry point. No release may carry any of them. (Not the bare glue name: an
+# unstripped shipping library still names the empty ComboMqWalk.cpp in its debug information.)
+MQ_WALK_DEV_NEEDLES=(b'ComboShip MQ walker dev build - not for release',b'[ComboShip MQ walk]',
+    b'mq-walk-commands',b'ComboMqWalk_Init')
+def mq_walk_dev_libraries(libraries):
+    """Names of the (name, bytes) libraries that carry the MQ walker; reads them one at a time."""
+    return sorted(name for name,data in libraries if any(needle in data for needle in MQ_WALK_DEV_NEEDLES))
 def unreferenced_bytes(apk,z):
     """Bytes between local entries that no central-directory entry points at (left by incremental packaging)."""
     data=apk.read_bytes();end=0;gaps=0
@@ -28,6 +36,8 @@ def verify(apk):
         if REQUIRED-libs.keys():raise RuntimeError('APK is missing game runtime libraries')
         dev=entrance_dev_libraries((name,z.read(name)) for name in names if name.endswith('.so'))
         if dev:raise RuntimeError(f'COMBO_ENTRANCE_DEV build, not for release: {", ".join(dev)}')
+        walker=mq_walk_dev_libraries((name,z.read(name)) for name in names if name.endswith('.so'))
+        if walker:raise RuntimeError(f'COMBO_MQ_WALK_DEV build, not for release: {", ".join(walker)}')
         for name,path in libs.items():arm64(z.read(path),name)
         verify_runtime({name:z.read(path) for name,path in libs.items()},json.loads(z.read('assets/native-exports.json')))
         for name in names:
@@ -37,6 +47,6 @@ def verify(apk):
         for entry in json.loads(z.read('assets/support-manifest.json'))['files']:
             if hashlib.sha256(z.read('assets/runtime/'+entry['path'])).hexdigest()!=entry['sha256']:raise RuntimeError('Support manifest mismatch')
         if 'classes.dex' not in names:raise RuntimeError('No Android application code')
-    print(f'PASS: {apk.name}: ARM64 game libraries, packaged dependencies, native entry points, 16 KiB ELF alignment, support hashes, no ROM filenames, no entrance dev build. This verifier does not test device operation.')
+    print(f'PASS: {apk.name}: ARM64 game libraries, packaged dependencies, native entry points, 16 KiB ELF alignment, support hashes, no ROM filenames, no entrance dev build, no MQ walker dev build. This verifier does not test device operation.')
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('apk',type=Path);verify(p.parse_args().apk)
