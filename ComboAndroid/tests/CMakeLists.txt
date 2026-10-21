@@ -956,8 +956,9 @@ combo_json_harness_test(entrance_songs_seeds_refused_by_older_builds entrance_so
 if(TEST entrance_songs_seeds_refused_by_older_builds)
     set_tests_properties(entrance_songs_seeds_refused_by_older_builds PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 endif()
-# 0.4.12 and the 0.4.13 candidate without Stage 2 (0b7b2d50) refuse a Wallmaster seed that starts with an OoT warp song
-# and load this build's seeds without one; reported as skipped without that history.
+# 0.4.12 and the 0.4.13 candidate without Stage 2 (found by content) refuse a Wallmaster seed that starts with an OoT
+# warp song and load this build's seeds without one; each is checked on its own, and reported as skipped only when a
+# shallow clone lacks its history.
 combo_json_harness_test(entrance_warp_songs_seeds_refused_by_older_builds entrance_warp_songs_seed_guard_tests.py)
 if(TEST entrance_warp_songs_seeds_refused_by_older_builds)
     set_tests_properties(entrance_warp_songs_seeds_refused_by_older_builds PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
@@ -975,7 +976,7 @@ get_property(combo_all_tests DIRECTORY PROPERTY TESTS)
 set_tests_properties(${combo_all_tests} PROPERTIES TIMEOUT ${COMBO_TEST_TIMEOUT})
 # The pinned OoTMM run builds 130 worlds (about 100 s on 8 Node worker threads when the machine is otherwise idle).
 set_tests_properties(entrance_m1_contract_matches_pinned_ootmm_run PROPERTIES TIMEOUT 900)
-# The pinned validateAgeTemple run builds 63 worlds (about 65 s on 4 Node worker threads).
+# The pinned validateAgeTemple run builds 77 worlds (about 65 s on 4 Node worker threads).
 set_tests_properties(entrance_temple_song_facts_match_pinned_ootmm_run PROPERTIES TIMEOUT 900)
 
 if(COMBO_JSON_INCLUDE_DIR)

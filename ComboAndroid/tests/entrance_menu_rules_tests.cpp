@@ -228,8 +228,9 @@ int main(int argc, char **argv) {
   // name counts too.
   for (const char *soaring : {"Song of Soaring", "RI_SONG_SOARING"}) {
     draft["mm"]["settings"]["gRando.StartingItems"] = {"RI_SONG_TIME", soaring};
-    check("Remove Song of Soaring" + use,
-          "starting Song of Soaring needs a Temple check through MM (deferred)");
+    check(
+        "Remove Song of Soaring" + use,
+        "starting Song of Soaring needs a Temple check through MM (deferred)");
   }
   settings["gRandoSettings.StartingPreludeOfLight"] = 1;
   check("Remove Song of Soaring" + use,

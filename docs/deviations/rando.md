@@ -2593,20 +2593,24 @@ the three Own Game Wallmaster rows the only Public ones.
 
 Planned for 0.4.13 (Wallmaster limits design, Stage 2). OoTMM v32.3 lets a seed start with any OoT warp song under
 Wallmaster Shuffle. The port refused one with every Wallmaster id ("Remove <song> from the starting items to use
-Wallmaster Shuffle.", D4), because its opposite-age Temple probe could not play songs; the port's Beginner preset, for
-one, starts with Prelude of Light (`ComboPresets.h`; OoTMM's Beginner places it on Zelda's song check instead,
-`packages/generator/lib/combo/presets.ts:1058`). A new capability, `wallmasters-own-game-songs-v2`
+Wallmaster Shuffle.", D4), because its opposite-age Temple probe could not play songs (the port's Beginner preset, for
+one, starts with Prelude of Light: see the next section). A new capability, `wallmasters-own-game-songs-v2`
 (`Capabilities.h`), staged at Dev, lifts that refusal for the six OoT warp songs.
 
 - **What OoTMM checks.** `validateAgeTemple` (`packages/logic/src/solver/entrances.ts:265-287`) searches with the
-  starting items only, from SPAWN, where only the opposite age may leave. Every OoT area exits to the virtual area
-  GLOBAL, and GLOBAL leads to the six `SONG_TP_*` areas on `can_play_tp_*` (`data/world/oot/overworld/_system.yml:23-70`):
-  the song, an ocarina and its notes, with no age term (`data/macros/macros_common.yml:40-45`).
+  starting items only, from SPAWN, where only the opposite age may leave. Most OoT areas, the two spawn areas among
+  them, exit to the virtual area GLOBAL, and GLOBAL leads to the six `SONG_TP_*` areas on `can_play_tp_*`
+  (`data/world/oot/overworld/_system.yml:23-70`): the song, an ocarina and its notes, with no age term
+  (`data/macros/macros_common.yml:40-45`).
 - **The probe's GLOBAL node.** The probe (`TempleProbeCore.h`, `TempleProbe.cpp`) now has a virtual GLOBAL node. The
   opposite age enters it at its spawn region, because Link's House and the Temple of Time exit to GLOBAL
   unconditionally (lemma L3, `kokiri_forest.yml:4`, `temple_of_time.yml:4`). It takes that region's age and time
-  flags, which gain night once any region of that age passes hours, as OoTMM's GLOBAL, a still area, takes the time
-  of the areas exiting to it. Its edges are Ship's six warp songs of Root Exits (`root.cpp:47-52`), bound as a new
+  flags, so the probe's GLOBAL has day from the start and gains night once a region of that age passes hours. That is
+  not OoTMM's time: its GLOBAL, a still area (`builder.ts:332`), has no time until an area exiting to it has some,
+  which first comes from a flowing area. This cannot change the answer. The adult spawns in the Temple of Time; the
+  child always reaches Hyrule Field, which flows (Closed Forest On, which could keep it in the forest, forces a child
+  start); and no exit gated on day or night lies between a non-flowing warp landing and the Temple of Time or a
+  flowing area. Its edges are Ship's six warp songs of Root Exits (`root.cpp:47-52`), bound as a new
   role, `global`, of the audited bindings (`tools/ootmm/oot-edge-audit.json`, `combo_oot_edge_bindings.inc`) to the
   rows `OOT_WARP_SONG_*` (`data/defs/entrances.yml:174-179`), under their native condition, `logic->CanUse` of the
   song: the song, an ocarina and the same notes (`logic.cpp` `CanUse`), evaluated in Root Exits' region. The starting
@@ -2617,8 +2621,9 @@ one, starts with Prelude of Light (`ComboPresets.h`; OoTMM's Beginner places it 
   `:266-272`). MM leads back only through the Clock Tower link to the Market and MM's warp songs. So, for either age,
   MM is reached only after the Temple, and an MM warp song (the cross-game songs) cannot help.
 - **Evidence.** `entrance_temple_global_lemma_tests.py` pins these lemmas to the exact OoTMM blobs.
-  `run_pinned_entrance_pools.mts --temple` runs OoTMM's own `validateAgeTemple` on 63 cases (starting age, Deku Tree
-  open or closed or a crafted Closed Forest, five instruments, no song or one of the six), recorded in
+  `run_pinned_entrance_pools.mts --temple` runs OoTMM's own `validateAgeTemple` on 77 cases (starting age, Deku Tree
+  open or closed or a crafted Closed Forest, that forest also with "Play warp songs across games" and with every
+  dungeon Master Quest, five instruments, no song or one of the six), recorded in
   `tools/ootmm/temple-song-facts.json`. In each, the answer is the songless walk from the spawn area or, when the
   song plays, from its landing, and an age in MM has the Market and the Temple. `temple_global_parity_tests.py` runs
   the production probe core and GLOBAL edges on those cases and gives OoTMM's answer and ages in all of them. The
@@ -2641,6 +2646,25 @@ one, starts with Prelude of Light (`ComboPresets.h`; OoTMM's Beginner places it 
 - **While the id is staged,** a build without it keeps "Remove <song> from the starting items to use Wallmaster
   Shuffle." for a starting warp song, in the menu, on the Generate button and in generation (`EntranceProfile.h`
   `StartingWarpSongsRefusal`).
+
+## Beginner preset: Prelude of Light as a starting item (since 2026-10-13)
+
+Since the community presets follow OoTMM v32.3 (`ComboPresets.h`), the port's Beginner preset starts with Prelude of
+Light (`gRandoSettings.StartingPreludeOfLight`). OoTMM's Beginner has no such starting item: it plandos
+`SHARED_SONG_TP_LIGHT` onto Zelda's Song (`packages/generator/lib/combo/presets.ts:1058`) and sets `skipZelda`
+(`presets.ts:980`), which makes Zelda's Song a location of `OOT SPAWN` (`packages/logic/src/world/transform.ts:1942-1945`,
+`makeLocationStarting`). The port has no Skip Child Zelda, so it gives the song as a starting item instead.
+
+- **In play** Link has Prelude from the start either way.
+- **Wallmaster Shuffle.** OoTMM's opposite-age Temple check (`validateAgeTemple`) searches with the starting items
+  only, before any item is placed, so it does not count a song on a SPAWN location. The port's probe counts the
+  starting Prelude (its GLOBAL node, previous section), so a Beginner seed with Wallmaster Shuffle under logic takes
+  `wallmasters-own-game-songs-v2` and needs 0.4.13 or newer (once its starting Song of Soaring is removed, which every
+  Wallmaster id still refuses). The answer is unchanged. Beginner's starting age is Random: with a child start the
+  adult spawns in the Temple of Time; with an adult start the child walks there without the song in Beginner's world
+  (Deku Tree closed, the port's Closed Forest Deku Only), as OoTMM's recorded run shows (`temple-song-facts.json`,
+  `dekuTreeClosed`, no song). So the probe's answer with Prelude is OoTMM's without it, and the seed's routes are the
+  ones it would have without the song.
 
 ## OoT scene restrictions: OoTMM's table in new seeds (2026-10-21)
 

@@ -160,9 +160,13 @@ struct DepthGuard {
 // reached. The virtual GLOBAL node is entered at the opposite spawn region (`rootSpawnTarget`): Link's
 // House and the Temple of Time exit to GLOBAL unconditionally and the spawn regions lead only to them
 // (lemma L3), so GLOBAL takes that region's age and time flags, which only the opposite age ever holds.
-// Those collect every hour a region of that age passes, through the root (ApplyTimePass), as OoTMM's
-// GLOBAL, a still area, takes the time of each area exiting to it. Its warp songs are evaluated as
-// their native parent, Root Exits, evaluates them. Events and time of day use the real Region code; no
+// The probe's GLOBAL therefore has day from the start, from the root, and gains night once a region of
+// that age passes hours (ApplyTimePass). OoTMM's GLOBAL, a still area, has no time until an area exiting
+// to it has some, which first comes from a flowing area. This cannot change the answer: the adult spawns
+// in the Temple of Time, the child always reaches Hyrule Field, which flows (Closed Forest On forces a
+// child start), and no exit gated on day or night lies between a non-flowing warp landing and the Temple
+// of Time or a flowing area. Its warp songs are evaluated as their native parent, Root Exits, evaluates
+// them. Events and time of day use the real Region code; no
 // age ever changes (lemma L2) and no location is evaluated (Detail1). Reads the opposite age's flags of
 // `target`.
 template <class Regions, class Logic, class Entrance, class Cancelled>

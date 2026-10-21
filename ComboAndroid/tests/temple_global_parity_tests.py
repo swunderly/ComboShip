@@ -2,7 +2,8 @@
 
 tools/ootmm/temple-song-facts.json records the pinned validateAgeTemple run (run_pinned_entrance_pools.mts --temple)
 on every case of tools/ootmm/temple-song-fixtures.json: a starting age, a world (dekuTree open, dekuTree closed as the
-Beginner preset sets it, or a crafted Closed Forest), an instrument (no ocarina, the Fairy Ocarina, shuffled buttons,
+Beginner preset sets it, or a crafted Closed Forest, alone, with "Play warp songs across games" or with every dungeon
+Master Quest), an instrument (no ocarina, the Fairy Ocarina, shuffled buttons,
 a missing C-Left, shared buttons without C-Down) and no starting warp song or one of the six OoT ones. Each songless
 case also records whether the opposite age walks to the Temple of Time from its spawn area and from each warp-song
 landing.
@@ -114,7 +115,7 @@ for group in facts['groups']:
         cases.append({'id': case['id'], 'startingChild': group['startingAge'] == 'child',
                       'items': items(instrument, case['song']), 'walks': walks, 'temple': case['temple'],
                       'songDecides': case['temple'] != group['walks'][group['spawnArea']]})
-assert len(cases) == 63 and sum(c['songDecides'] for c in cases) > 0
+assert len(cases) == 77 and sum(c['songDecides'] for c in cases) > 0
 (work/'cases.json').write_text(json.dumps(cases, indent=1), encoding='utf-8')
 
 pinned = stubs.pinned(source)

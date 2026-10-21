@@ -41,7 +41,7 @@
 //
 // Each case is a group of the fixture (a starting age, a world and an instrument) with no starting warp song or
 // with one OoT warp song. Its world is built as above with erWallmasters ownGame and the fixture's settings and
-// starting items; a crafted world then replaces the fixture's exits on that world before any shuffler sees it
+// starting items (each world setting is checked to be applied); a crafted world then replaces the fixture's exits on that world before any shuffler sees it
 // (recorded in the facts). The shuffler stops at its first random draw as above, and validateAgeTemple runs,
 // unchanged, on changedWorld(game links, pools), the first world isValidShuffle hands it. In this mode only,
 // Pathfinder.prototype.run is wrapped to keep the state it returns during that call, which gives the areas each age
@@ -524,6 +524,13 @@ async function startWorker() {
   // One world: its validateAgeTemple answer and what each age reached in that search.
   async function templeWorld(fx: any, c: any, song: string | null) {
     const state = await buildState(templeSettings(fx, c, song));
+    // The world's own settings reach OoTMM as written (a set, such as mqDungeons, through its resolved flags).
+    for (const [key, value] of Object.entries(fx.worlds[c.world].settings) as [string, any][]) {
+      const applied = value?.type === 'specific'
+        ? value.values.every((v: string) => state.worlds[0].resolvedFlags[key].has(v))
+        : state.settings[key] === value;
+      if (!applied) throw new Error(`World setting ${key} of ${c.world} not applied`);
+    }
     const crafted = craft(fx, c, state);
     const { shuffler, pools } = timed('pools', () => capturePools(state, state.settings));
     const world = shuffler.changedWorld({ ...shuffler.overrides }, pools);

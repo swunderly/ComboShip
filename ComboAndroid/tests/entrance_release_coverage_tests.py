@@ -6,12 +6,14 @@ and the scene of every OoT region, the OoT and MM runtime capture scenes, the MM
 regions and the MM region that receives each entrance. The production lines that make those tables
 the ones the game uses are pinned below. No engine, archive, device or gameplay is exercised.
 """
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import argparse
 import importlib.util
 import re
 import subprocess
 import sys
+import time
 import hostcxx
 
 p = argparse.ArgumentParser()
@@ -207,18 +209,44 @@ for needle in ('const bool bundledMq = GetMqDataSource() == ComboMq::SeedMqSourc
                'mOptions[RSK_MQ_DUNGEON_SET].Set(RO_GENERIC_OFF); }'):
     assert hostcxx.contains(settings, needle), needle
 
-for dev in (0, 1):
-    exe = hostcxx.build(a.compiler, source/'ComboAndroid/tests/entrance_release_coverage_tests.cpp',
-                        includes=[source/'combo', a.json_include, source/'soh', source/'soh/include', work],
-                        defines=(['COMBO_ENTRANCE_DEV=1'] if dev else []) + ['_CRT_SECURE_NO_WARNINGS'],
-                        msvc=['/Zc:preprocessor', '/bigobj', '/O2'], gnu=['-O2'],
-                        exe=work/f'release_coverage_{dev}.exe')
-    subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
+# Each process must finish within hostcxx.RUN_TIMEOUT, the binding limit, even on a loaded machine (CTest's timeout
+# only bounds the whole harness). Each proof over all 4096 quest masks takes tens of seconds, so the proof runs in two
+# parts (the .cpp's argv[1]), and the release and dev builds' four processes run at once. Each build compiles in its
+# own directory, so the two compilations can run at once too.
+PARTS = ('ids', 'songs')
+
+
+def compile_build(dev):
+    (work/f'build_{dev}').mkdir(exist_ok=True)
+    return hostcxx.build(a.compiler, source/'ComboAndroid/tests/entrance_release_coverage_tests.cpp',
+                         includes=[source/'combo', a.json_include, source/'soh', source/'soh/include', work],
+                         defines=(['COMBO_ENTRANCE_DEV=1'] if dev else []) + ['_CRT_SECURE_NO_WARNINGS'],
+                         msvc=['/Zc:preprocessor', '/bigobj', '/O2'], gnu=['-O2'],
+                         exe=work/f'build_{dev}'/f'release_coverage_{dev}.exe')
+
+
+def prove(job):
+    exe, part = job
+    started = time.monotonic()
+    result = subprocess.run([str(exe), part], capture_output=True, text=True, timeout=hostcxx.RUN_TIMEOUT)
+    return exe, part, result, time.monotonic() - started
+
+
+with ThreadPoolExecutor(max_workers=2) as pool:
+    exes = list(pool.map(compile_build, (0, 1)))
+with ThreadPoolExecutor(max_workers=len(exes) * len(PARTS)) as pool:
+    runs = list(pool.map(prove, [(exe, part) for exe in exes for part in PARTS]))
+for exe, part, result, seconds in runs:
+    output = (result.stdout + result.stderr).strip()
+    print(f'{exe.name} {part} ({seconds:.0f} s of {hostcxx.RUN_TIMEOUT}): {output}')
+failed = [f'{exe.name} {part} exited with {result.returncode}' for exe, part, result, _ in runs if result.returncode]
+if failed:
+    sys.exit('FAIL: ' + '; '.join(failed))
 
 # The release gate (verify_apk.py) still refuses only the dev build: a Public capability adds no dev marker.
 sys.path.insert(0, str(source/'ComboAndroid/tools'))
 spec = importlib.util.spec_from_file_location('verify_apk', source/'ComboAndroid/tools/verify_apk.py')
 verify_apk = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(verify_apk)
-binaries = [(f'release_coverage_{dev}.exe', (work/f'release_coverage_{dev}.exe').read_bytes()) for dev in (0, 1)]
+binaries = [(exe.name, exe.read_bytes()) for exe in exes]
 assert verify_apk.entrance_dev_libraries(binaries) == ['release_coverage_1.exe']

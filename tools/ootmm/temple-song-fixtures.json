@@ -17,6 +17,19 @@
       "note": "Crafted: the port's Closed Forest On, which OoTMM does not have. Ship's Kokiri Forest exit to the Lost Woods bridge needs an adult or the Deku Tree beaten (kokiri_forest.cpp:125); with starting items only the child cannot beat it, so the crafted exit is adult only. Ship forces a child start with it (settings.cpp), so this world is a probe test, not a seed the port makes with an adult start.",
       "settings": { "dekuTree": "closed" },
       "exits": { "OOT Kokiri Forest": { "OOT Lost Woods Bridge from Forest": "adult" } }
+    },
+    "closedForestForeignSongs": {
+      "note": "The crafted Closed Forest with the port's \"Play warp songs across games\", OoTMM's songSoaringOot and song*Mm (ComboPresets.h): the MM warp songs and Soaring in OoT exist, none at the start (lemma S1).",
+      "settings": { "dekuTree": "closed", "songSoaringOot": true, "songMinuetMm": true, "songBoleroMm": true,
+                    "songSerenadeMm": true, "songRequiemMm": true, "songNocturneMm": true, "songPreludeMm": true },
+      "exits": { "OOT Kokiri Forest": { "OOT Lost Woods Bridge from Forest": "adult" } }
+    },
+    "closedForestMasterQuest": {
+      "note": "The crafted Closed Forest with every OoT dungeon Master Quest (mqDungeons, all twelve), as the songs-v2 id admits from OoTMM's bundled data.",
+      "settings": { "dekuTree": "closed",
+                    "mqDungeons": { "type": "specific", "values": ["DT", "DC", "JJ", "Forest", "Fire", "Water", "Spirit",
+                                                                   "Shadow", "BotW", "IC", "GTG", "Ganon"] } },
+      "exits": { "OOT Kokiri Forest": { "OOT Lost Woods Bridge from Forest": "adult" } }
     }
   },
   "instruments": {
@@ -58,6 +71,8 @@
     { "startingAge": "adult", "world": "closedForest", "instrument": "noCLeft" },
     { "startingAge": "adult", "world": "closedForest", "instrument": "sharedNoCDown" },
     { "startingAge": "child", "world": "dekuTreeClosed", "instrument": "ocarina" },
-    { "startingAge": "child", "world": "closedForest", "instrument": "none" }
+    { "startingAge": "child", "world": "closedForest", "instrument": "none" },
+    { "startingAge": "adult", "world": "closedForestForeignSongs", "instrument": "ocarina" },
+    { "startingAge": "adult", "world": "closedForestMasterQuest", "instrument": "ocarina" }
   ]
 }

@@ -213,7 +213,23 @@ for path in port:
 shared = (source/'combo/rando/SharedItems.h').read_text(encoding='utf-8')
 families = re.findall(r'^\s+(SF_[A-Z_]+)[,=]', shared[shared.index('enum'):shared.index('SF_COUNT')], re.M)
 assert families and not [f for f in families if re.search('MINUET|BOLERO|SERENADE|REQUIEM|NOCTURNE|PRELUDE|SOAR', f)]
-availability = (source/'combo/rando/entrances/EntranceAvailability.h').read_text(encoding='utf-8')
+# 2Ship has no OoT warp song item: no RandoItemId (Rando/Types.h) and no row of its item table (Items.cpp RI(): the id,
+# which seeds and profiles store as MM's starting items, and the display name, which generation's MM dump uses unless
+# it is ambiguous, GetItemDisplayName) is one. So MM's starting items never hold an OoT warp song, nor does the foreign
+# list (no shared family is a song, above): StartingWarpSong reads both lists, but only OoT's starting songs fill it.
+OOT_WARP_SONGS = {'Minuet of Forest', 'Bolero of Fire', 'Serenade of Water', 'Requiem of Spirit', 'Nocturne of Shadow',
+                  'Prelude of Light'}
+mm_types = (source/'mm/2s2h/Rando/Types.h').read_text(encoding='utf-8')
+mm_ids = re.findall(r'^\s+(RI_\w+)', mm_types[mm_types.index('    RI_UNKNOWN,'):mm_types.index('} RandoItemId;')], re.M)
+assert 'RI_SONG_SOARING' in mm_ids and len(mm_ids) > 300, len(mm_ids)
+assert not [i for i in mm_ids if re.search('MINUET|BOLERO|SERENADE|REQUIEM|NOCTURNE|PRELUDE|SONG_TP|WARP', i)], mm_ids
+mm_items = (source/'mm/2s2h/Rando/StaticData/Items.cpp').read_text(encoding='utf-8')
+assert 'id, #id, article, name, type, itemId, getItemId, drawId' in mm_items
+mm_rows = re.findall(r'RI\((RI_\w+),\s*"[^"]*",\s*"((?:[^"\\]|\\.)*)"', mm_items)
+assert ('RI_SONG_SOARING', 'Song of Soaring') in mm_rows
+assert {i for i, _ in mm_rows} == set(mm_ids) - {'RI_MAX', 'RI_MAX_TRAP'}
+assert not [row for row in mm_rows if row[1] in OOT_WARP_SONGS], mm_rows
+availability =(source/'combo/rando/entrances/EntranceAvailability.h').read_text(encoding='utf-8')
 refusal = availability[availability.index('inline EntranceRefusal TempleSettingsRefusal('):]
 refusal = refusal[:refusal.index('\n}\n')]
 assert 'for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })' in refusal

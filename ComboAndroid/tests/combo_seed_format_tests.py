@@ -397,8 +397,8 @@ int main() {
         assert(Profiles::SeedFromContainer({{"combo", {{"rando", songs}}}}, shipping) == songs);
         refusedFor(seedOf(vanilla, plain, foreignMap.json(), false), "which does not admit foreign-song logic");
         // A starting OoT warp song under logic (limits design, Stage 2) takes wallmasters-own-game-songs-v2, in either
-        // quest context, with foreign-song logic or without, read from the OoT settings or the MM starting items as
-        // generation reads them; every earlier id refuses it (above), and the songs-v2 id needs one. A starting Soaring
+        // quest context, with foreign-song logic or without, read from the OoT settings (MM's starting items hold
+        // none); every earlier id refuses it (above), and the songs-v2 id needs one. A starting Soaring
         // and destination shuffle stay refused under it. With No Logic there is no song, so the songs-v2 id is refused.
         const auto v2 = Entrances::kStartingSongsWallmasterCapability;
         for (const auto* base : {&vanilla, &mqLayout})
@@ -417,9 +417,11 @@ int main() {
                     refusedFor(old, std::string("which does not admit a starting ") + name);
                 }
                 refusedFor(seedOf(*base, v2, map, false), "without a starting warp song");
+                // MM's starting items, as a seed stores them (2Ship's spoiler names), never hold an OoT warp song:
+                // 2Ship has no such item (entrance_temple_song_lemma_tests.py), so they never make one.
                 auto mmSide = seedOf(*base, v2, map, false);
-                mmSide["mm"]["settings"]["gRando.StartingItems"] = {"Song of Time", "Requiem of Spirit"};
-                RequireSupportedSeedDocument(mmSide, all);
+                mmSide["mm"]["settings"]["gRando.StartingItems"] = {"RI_SONG_TIME", "RI_OCARINA"};
+                refusedFor(mmSide, "without a starting warp song");
                 auto soaring = seedOf(*base, v2, map, false);
                 soaring["oot"]["settings"]["gRandoSettings.StartingPreludeOfLight"] = 1;
                 soaring["mm"]["settings"]["gRando.StartingItems"] = {"Song of Time", "Song of Soaring"};

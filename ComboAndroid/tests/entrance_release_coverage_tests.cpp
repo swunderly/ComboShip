@@ -1,5 +1,9 @@
 // C4 release-configuration coverage proof (M1 plan A-10, P1-04). Built twice by
-// entrance_release_coverage_tests.py, with and without COMBO_ENTRANCE_DEV.
+// entrance_release_coverage_tests.py, with and without COMBO_ENTRANCE_DEV, and
+// run in two parts at once (argv[1]: "ids", the proofs without song facts, the
+// menu and the negative control; "songs", the proofs with song facts), so each
+// process stays well within the harness's time limit; with no argument every
+// part runs.
 //
 // It pins which capability ids are Public. Then, for this build's capabilities,
 // for the vanilla Wallmaster id named explicitly and for the vanilla and Master
@@ -727,7 +731,10 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
   return proved;
 }
 
-int main() {
+int main(int argc, char **argv) {
+  const std::string_view part = argc > 1 ? argv[1] : "";
+  assert(argc <= 2 && (part.empty() || part == "ids" || part == "songs"));
+  const bool ids = part != "songs", songs = part != "ids";
   const auto active = ActiveCapabilities();
   // Exactly the expected rows are Public, with every value.
   for (const auto &row : kEntranceCapabilities) {
@@ -773,18 +780,27 @@ int main() {
       vanilla |
       CapabilitySet::AtLeast(Stage::Hidden).Only(kSongsWallmasterCapability);
   withSongs.devBuild = active.devBuild;
+  // The settings x masks this build admits: both erWallmasters values with the
+  // vanilla id, Own Game alone without it.
+  const size_t admitted =
+      (active.Active(kVanillaWallmasterCapability) ? 2 : 1) * kQuestMasks;
+  if (songs) {
+    // Foreign-song logic: this build, and the vanilla and songs ids alone.
+    const size_t buildSongs = Prove("build, songs", active, tables, true);
+    const size_t songIds =
+        Prove("vanilla and songs ids", withSongs, tables, true);
+    assert(buildSongs == admitted && songIds == 2 * kQuestMasks);
+    std::cout << "PASS songs: " << buildSongs << " build and " << songIds
+              << " vanilla+songs settings x quest masks with foreign-song "
+                 "logic\n";
+  }
+  if (!ids)
+    return 0;
   const size_t build = Prove("build", active, tables);
   const size_t named = Prove("vanilla id", vanilla, tables);
   const size_t both = Prove("vanilla and quests ids", withQuests, tables);
-  // Foreign-song logic: this build, and the vanilla and songs ids alone.
-  const size_t buildSongs = Prove("build, songs", active, tables, true);
-  const size_t songIds =
-      Prove("vanilla and songs ids", withSongs, tables, true);
-  assert(named == 2 * kQuestMasks && both == 2 * kQuestMasks &&
-         songIds == 2 * kQuestMasks);
-  assert(build ==
-         (active.Active(kVanillaWallmasterCapability) ? 2 : 1) * kQuestMasks);
-  assert(buildSongs == build);
+  assert(build == admitted && named == 2 * kQuestMasks &&
+         both == 2 * kQuestMasks);
 
   // With the vanilla id alone, the menu refuses every state in which native
   // can choose a Master Quest dungeon: MQ data alone, or playable MQ data (a
@@ -916,11 +932,9 @@ int main() {
       return line.rfind(std::string(row) + ": ", 0) == 0;
     }));
   }
-  std::cout << "PASS: " << kExpectedPublic.size() << " Public id(s); " << build
-            << " build, " << named << " vanilla-id and " << both
-            << " vanilla+quests settings x quest masks, and " << buildSongs
-            << " build and " << songIds
-            << " vanilla+songs with foreign-song logic; 7 to 11 OoT + 4 MM "
+  std::cout << "PASS ids: " << kExpectedPublic.size() << " Public id(s); "
+            << build << " build, " << named << " vanilla-id and " << both
+            << " vanilla+quests settings x quest masks; 7 to 11 OoT + 4 MM "
                "sources and 11+7 destinations bound, 256 capacity refusals; "
             << drops.size() << " dropped bindings caught\n";
 }
