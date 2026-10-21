@@ -484,6 +484,13 @@ class Walker {
             Abort(game, f.inPlay ? "scene-changed" : "left-play", false);
             return;
         }
+        if (phase_ == Phase::Settle) {
+            if (--countdown_ <= 0)
+                Next(game);
+            return;
+        }
+        // Request and Loading always have a room left: Next and Abort enter them only then. (Settle, above, follows
+        // the last room too.)
         const int room = steps_[step_];
         switch (phase_) {
             case Phase::Request:
@@ -526,9 +533,6 @@ class Walker {
                 countdown_ = settle_;
                 return;
             case Phase::Settle:
-                if (--countdown_ <= 0)
-                    Next(game);
-                return;
             case Phase::Begin:
                 return;
         }
