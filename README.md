@@ -12,12 +12,12 @@ This fork turns ComboShip into one Android app (APK) for phones and tablets. Bot
 
 **[Get the latest APK from Releases](https://github.com/swunderly/ComboShip/releases/latest)**
 
-Current release: **Combo Ship for Android 0.4.11** (October 19, 2026). File: `ComboShip-Android-0.4.11-arm64.apk`. [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.11-android/ComboShip-Android-0.4.11-arm64.apk).
+Current release: **Combo Ship for Android 0.4.12** (October 21, 2026). File: `ComboShip-Android-0.4.12-arm64.apk`. [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.12-android/ComboShip-Android-0.4.12-arm64.apk).
 
 Home > Game mode lets each new file use the combined randomizer, just the OoT randomizer, just the MM randomizer, vanilla OoT or vanilla MM. Select a file's Next seed, choose the mode, then generate or prepare it from an empty file and start it at file select. Existing saves keep their own mode. Vanilla games retain your enhancement settings. Solo randomizers use their own items and final boss, with cross-game travel and shared items off.
 
 
-The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.11) are this fork's own. They are not upstream ComboShip's version numbers.
+The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.12) are this fork's own. They are not upstream ComboShip's version numbers.
 
 ## What you need
 
@@ -39,7 +39,7 @@ Touch controls and game controllers both work. The owner plays on a phone with b
 ## Install and first run
 
 1. Copy your two ROM files to the device first, for example to Download. If a ROM is in a `.zip` file, unzip it first.
-2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.11-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
+2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.12-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
 3. Open the downloaded APK. If Android asks, allow your browser or file manager to install unknown apps. The app is not from Google Play and is signed with a development key, so Google Play Protect may warn you. You can still install it, usually with **More details**, then **Install anyway**.
 4. Open **Combo Ship** and tap **Allow file access**. On Android 11 and newer, Android opens an **All files access** screen: turn on the switch for Combo Ship, then go back. Combo Ship uses this to keep your saves, seeds and backups in a visible `Internal storage/ComboShip` folder that you can copy.
 5. Tap **Choose OoT ROM** and pick your OoT ROM. Then tap **Choose MM ROM** and pick your MM ROM. The app copies them into its folder. Your original files are not changed.
@@ -121,7 +121,7 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - The owner plays the releases on a phone, with touch controls and a game controller. Only a few specific fixes have been confirmed on a phone so far.
 - No build has had a complete seed playthrough.
 - For 0.4.9 (more pickup counts): it builds; it had no host test or emulator run. For 0.4.8 (a silver rupee count in the pickup message): its host tests pass; it was not run on the emulator. For 0.4.7 (an MM soul room fix): its host test passes; it was not run on the emulator. For 0.4.6 (a silver rupee fix): 128 automated tests pass and the fix had an independent code review; it was not run on the emulator. For 0.4.5: 129 automated tests, run on the developer's Windows PC, pass, and each 0.4.5 change was checked on the emulator, including a seed from the Allsanity and Default presets that passed the generator's automatic playthrough check. For 0.4.4: 128 automated tests pass. 2 tests that cannot run on Windows were skipped. On the emulator, adult Link in MM, the MM boots and tunics, casting the MM spells, the menus and the tracker fixes were tried in the app. The automatic playthrough check confirms in logic that a seed can be finished. Nobody played them through.
-- 0.4.3 to 0.4.11 were not tested on a phone before release; the 0.4.6 and 0.4.7 fixes were then confirmed on a phone. Installing it over 0.4.1 was not tried on the emulator either; only automated tests cover older saves.
+- 0.4.3 to 0.4.11 were not tested on a phone before release; the 0.4.6 and 0.4.7 fixes were then confirmed on a phone. 0.4.12's Wallmaster Shuffle was checked on the owner's phone with a release candidate before release. Installing it over 0.4.1 was not tried on the emulator either; only automated tests cover older saves.
 - Not yet checked on a real device: audio delay and quality, keyboards, SD card storage, mods, MM three-day cycle resets, multiplayer over the Internet, and tablets.
 - The SoH and 2Ship enhancements carried over from upstream are not all tested on Android.
 - Only OoT USA 1.0 and MM USA 1.0 ROMs have been used in testing. Master Quest has only been checked as seed data, never in play.
@@ -166,7 +166,7 @@ Full steps are in [ComboAndroid/BUILDING.md](https://github.com/swunderly/ComboS
 git clone -b android-source https://github.com/swunderly/ComboShip.git
 ```
 
-To build exactly the 0.4.11 release, use `-b v0.4.11-android` instead. The `android-source` branch can contain unfinished work.
+To build exactly the 0.4.12 release, use `-b v0.4.12-android` instead. The `android-source` branch can contain unfinished work.
 
 You need Git, Python 3.10+, Java 17 or 21, Android SDK platform 35, build-tools 35.0.0, NDK 28.2.13676358, CMake 3.31.5, Ninja and vcpkg at a pinned commit. Windows also needs Visual Studio's C++ desktop workload. Linux also needs the packages listed in the CI workflow, and ccache. The build uses no ROM. It makes a debug-signed APK. Your own APK has a different signature from the release APK, so it cannot update a release install. Back up your saves before you switch.
 
