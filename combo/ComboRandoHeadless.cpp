@@ -57,6 +57,7 @@
 #include "rando/GameplayRules.h"
 #include "rando/GenerationRules.h"
 #include "rando/KokiriSeedRevision.h"
+#include "rando/OotSceneRestrictions.h"
 #include "mq/MqSeedMarker.h"
 #include "rando/entrances/MmOrdinaryNativeBridge.h"
 #include "rando/entrances/MmOrdinaryGenerationSettings.h"
@@ -886,6 +887,7 @@ int RunHeadless(int argc, char** argv) {
     int kokiriRevision = ComboRando::kKokiriModernRevision;
     int grassRevision = ComboRando::kKokiriGrassModernRevision;
     auto mqSource = ComboMq::SourceForNewSeed(SOH_HasBundledMq && SOH_HasBundledMq());
+    bool ootmmSceneRestrictions = true; // a new seed plays OoT with OoTMM's scene restriction table
     nlohmann::json savedGoal;
     int savedStartingGame = -1;
     bool hasSavedSharedItems = false;
@@ -937,6 +939,7 @@ int RunHeadless(int argc, char** argv) {
             kokiriRevision = catalog.invisibleRupees;
             grassRevision = catalog.grass;
             mqSource = ComboMq::ReadMqDataSource(oot);
+            ootmmSceneRestrictions = ComboRando::OotmmSceneRestrictionsMarked(oot);
             if (oot.contains("settings"))
                 SOH_RestoreSettings(oot["settings"].dump().c_str());
             if (mm.contains("settings"))
@@ -1448,6 +1451,9 @@ int RunHeadless(int argc, char** argv) {
                                             { "iceTrapModels", iceTrapModelsOf(sohDump) } };
                     consolidated["oot"][ComboRando::kKokiriSeedRevision] = kokiriRevision;
                     consolidated["oot"][ComboRando::kKokiriGrassCatalogRevision] = grassRevision;
+                    // OoTMM's scene restriction table, as RunComboFill's seeds; a reproduction keeps its seed's own.
+                    if (ootmmSceneRestrictions)
+                        ComboRando::StampOotmmSceneRestrictions(consolidated["oot"]);
                     ComboMq::StampSeedMq(consolidated["oot"], mqSource,
                                          SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1);
                     consolidated["mm"] = { { "settings", nlohmann::json::parse(MM_DumpSettings()) },

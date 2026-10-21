@@ -51,6 +51,7 @@ static ComboGameMode sBoundGameMode = COMBO_MODE_COMBINED;
 #include "rando/GameplayRuleSnapshots.h"
 #include "rando/GenerationRules.h"
 #include "rando/KokiriSeedRevision.h"
+#include "rando/OotSceneRestrictions.h"
 #include "mq/MqSeedMarker.h"
 #include "rando/entrances/NativeBridge.h"
 #include "rando/entrances/MmGrottoNativeBridge.h"
@@ -425,6 +426,7 @@ static FnOracleVoid Combo_MM_Rando_Restore = nullptr;
 static ComboRando::Entrances::NativeFns sEntranceNative;
 static ComboRando::Entrances::TempleProbeFns sTempleProbe;
 static void (*SOH_SetEntranceRuntimeFlags)(uint32_t) = nullptr;
+static void (*SOH_SetOotmmSceneRestrictions)(int) = nullptr; // OotSceneRestrictions.h, set at each slot bind
 static bool InstallEntranceSeed(const nlohmann::json& seed) {
     try {
         ComboRando::Entrances::ApplyNativeSeed(sEntranceNative, seed, ComboRando::Entrances::ActiveCapabilities());
@@ -2981,6 +2983,9 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
                                 { "iceTrapModels", ootIceTrapModels } };
         consolidated["oot"][ComboRando::kKokiriSeedRevision] = ComboRando::kKokiriModernRevision;
         consolidated["oot"][ComboRando::kKokiriGrassCatalogRevision] = ComboRando::kKokiriGrassModernRevision;
+        // OoT plays with OoTMM's scene restriction table; seeds without the marker keep Ship's.
+        if (ComboRando::ModeRandomizesOot(gameMode))
+            ComboRando::StampOotmmSceneRestrictions(consolidated["oot"]);
         // An MM-only seed never rolls OoT's dungeons, so the native mask is an earlier seed's: it records none.
         ComboMq::StampSeedMq(consolidated["oot"],
                              ComboRando::ModeRandomizesOot(gameMode) ? mqSource : ComboMq::SeedMqSource::Legacy,
@@ -4036,19 +4041,27 @@ static void Combo_ResumeMMIfLastSavedThere(int fileNum);
 // slot's MM save is already live in memory — reloading from disk would clobber newer progress.
 static void Combo_OnOOTSaveLoad(int fileNum) {
     ++g_ComboContextEpoch; // loading the save recreated the OoT rando context
+    // Ship's scene restriction table unless this slot's seed records OoTMM's (OotSceneRestrictions.h). Cleared first,
+    // so no early return below leaves the previous file's table.
+    if (SOH_SetOotmmSceneRestrictions)
+        SOH_SetOotmmSceneRestrictions(0);
     if (!ComboIsValidSlot(fileNum))
         return;
     nlohmann::json rules;
+    bool ootmmSceneRestrictions = false;
     {
         std::lock_guard<std::mutex> lk(g_containerMutex);
         auto& c = LoadOrCreateContainer(fileNum);
         const auto originalSeed = c["combo"].value("rando", nlohmann::json::object());
+        ootmmSceneRestrictions = ComboRando::SeedUsesOotmmSceneRestrictions(originalSeed);
         rules = ComboRando::GameplayRulesForRun(originalSeed, c["combo"].value("gameplayRules", nlohmann::json()),
                                                 RuleBaseline());
         c["combo"]["gameplayRules"] = rules; // persisted migration, separate from immutable seed data
         if (SOH_SetMmVisited)
             SOH_SetMmVisited((c["combo"].value("visitedGames", 0) & 2) || c["combo"].value("lastGame", 0) == 1);
     }
+    if (SOH_SetOotmmSceneRestrictions)
+        SOH_SetOotmmSceneRestrictions(ootmmSceneRestrictions);
     RestoreGameplayRules(rules, fileNum);
     CaptureSaveRules(fileNum);
     LoadComboCompletion(fileNum); // refresh both-bosses-beaten flags for this slot
@@ -4712,6 +4725,7 @@ int main(int argc, char** argv) {
     sAdultMmAgeOracle.UseCrossAgeOracle = (bool (*)())GetSym(mmModule, "MM_UseCrossAgeOracle");
     SOH_SetMmVisited = (void (*)(int))GetSym(sohModule, "SOH_SetMmVisited");
     SOH_SetEntranceRuntimeFlags = (void (*)(uint32_t))GetSym(sohModule, "SOH_SetEntranceRuntimeFlags");
+    SOH_SetOotmmSceneRestrictions = (void (*)(int))GetSym(sohModule, "SOH_SetOotmmSceneRestrictions");
     SOH_GetSongKnowledge = (uint32_t(*)())GetSym(sohModule, "SOH_GetSongKnowledge");
     MM_GetSongKnowledge = (uint32_t(*)())GetSym(mmModule, "MM_GetSongKnowledge");
     SOH_SetForeignSongKnowledge = (void (*)(uint32_t))GetSym(sohModule, "SOH_SetForeignSongKnowledge");

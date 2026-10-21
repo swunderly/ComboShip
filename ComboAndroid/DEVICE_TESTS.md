@@ -4,6 +4,16 @@
 
 1. MM view: Enhancements > Time savers > Cutscenes > Skip story cutscenes ON. With the Deku Princess in a bottle, enter the Deku King's chamber and let her out next to the king. The screen fades once and Link stands in the chamber; it does not keep fading and reloading. The princess stands by the king afterwards.
 
+## OoT scene restrictions as in OoTMM (0.4.13, unreleased)
+
+Nothing here has been played yet; host tests run the table and the warp-song code from source. Run the list on the emulator first. Use a new seed made with this build in Combined randomizer mode on a spare file, and give the items with Tools > Save Editor: adult Link, magic, Farore's Wind, an ocarina and Prelude of Light (plus Song of Soaring and Randomizer > Warps & travel > Play warp songs across games for check 4). Leave Enhancements > Warps & travel > Better Farore's Wind off.
+
+1. **Farore's Wind in the Gerudo Training Ground.** Cast Farore's Wind in the entrance room: the warp point is set (in 0.4.12 the spell could not be used there). Leave, cast it again and choose to return: Link comes back to that point. If you can, cast it inside Ganon's Castle too.
+2. **A warp song refused in the Windmill.** In the Windmill, play Prelude of Light: after "You played the Prelude of Light", "You can't warp here!" appears and Link puts the ocarina away. If you can, try the same in Dampé's grave. In the Gerudo Training Ground the same song asks "Warp to the Temple of Time?".
+3. **The ocarina at Granny's.** In Granny's Potion Shop in Kakariko, the ocarina's button is not greyed out: take it out and play Zelda's Lullaby, then Prelude of Light, which asks "Warp to the Temple of Time?". If you can, check the Shooting Gallery the same way.
+4. In Granny's Potion Shop, play Song of Soaring: "You can't warp here!". In the Gerudo Training Ground (with Song of Soaring at any age (OoT) on, as adult) it opens MM's owl map.
+5. **Older files are unchanged.** Load a file started on 0.4.12, or import a seed made by 0.4.12 into a new file: in the Windmill Prelude of Light asks "Warp to the Temple of Time?", Farore's Wind can't be cast in the Gerudo Training Ground, and the ocarina's button is greyed out in Granny's Potion Shop. On a Vanilla Ocarina of Time file, Prelude of Light shows "You can't warp here!" in the Windmill and the Gerudo Training Ground.
+
 ## Master Quest dungeons (0.4.13, unreleased)
 
 Nothing here has been played yet, on the emulator or a phone; host tests cover the data and the code. Run the whole list on the emulator first, then checks 1-4, 9, 12, 17 and 18 on a phone (note the frame rate). Use an OoT USA 1.0 ROM: the bundled Master Quest data plays only on that version. Keep the logs and a screenshot of each check.
@@ -133,7 +143,7 @@ These changes have not been played yet, on the emulator or a phone; the automate
 
 1. As child Link in Hyrule Field, play Song of Soaring in OoT: MM's owl map opens. Press B to close it.
 2. On a seed made without Song of Soaring at any age (OoT), as adult Link in Hyrule Field with Enhancements > Warps & travel > Song of Soaring at any age (OoT) off, play Soaring: the notes are not taken as a song, as in OoTMM. Turn the option on while the file is loaded and play it again: the owl map opens. Save, restart the app and load the file: the option is still on.
-3. As child Link in the Windmill, play Soaring: after "You played the Song of Soaring", "You can't warp here!" appears and Link puts the ocarina away. If you can, check the same as adult Link in the Gerudo Training Ground or Dampé's grave, with Enhancements > Warps & travel > Song of Soaring at any age (OoT) on. In the Temple of Time, the Market and houses, Soaring works, as in OoTMM.
+3. As child Link in the Windmill, play Soaring: after "You played the Song of Soaring", "You can't warp here!" appears and Link puts the ocarina away. If you can, check the same as adult Link in Dampé's grave, with Enhancements > Warps & travel > Song of Soaring at any age (OoT) on, and, on a seed made before 0.4.13, in the Gerudo Training Ground (on a newer seed Soaring works there, as in OoTMM). In the Temple of Time, the Market and houses, Soaring works, as in OoTMM.
 4. In MM, on the Clock Tower rooftop or in the Astral Observatory, play a learned OoT warp song such as Prelude of Light: after "You played the Prelude of Light", MM's message that your notes echoed but nothing happened appears, and A closes it.
 5. In MM in Termina Field, on a file whose OoT inventory has no ocarina, play Prelude of Light on MM's ocarina: "Warp to the Temple of Time?" appears, and OK warps there. This is the case reported against 0.4.4 (adult Link on a Cross-Games Age seed); try it as adult too if you can.
 6. With the on-screen buttons, take out the ocarina in MM: the note staff appears at once and each on-screen note button plays a note. In two emulator recordings for 0.4.4 the staff and notes were missing for about 24 and 57 seconds after taking the ocarina out, and the cause is not known. If it happens, note how long it lasted, whether a controller's buttons played notes at that moment, and what you did just before.

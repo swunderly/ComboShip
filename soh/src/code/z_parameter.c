@@ -1328,6 +1328,12 @@ void func_80083108(PlayState* play) {
     }
 }
 
+#ifdef COMBO_BUILD
+// ComboShip: the bytes OoTMM v32.3 writes in sRestrictionFlags (combo/rando/OotSceneRestrictions.h), in a randomizer
+// save whose seed follows OoTMM's table (OTRGlobals.cpp).
+void Combo_ApplyOotSceneRestrictions(PlayState* play);
+#endif
+
 void Interface_SetSceneRestrictions(PlayState* play) {
     InterfaceContext* interfaceCtx = &play->interfaceCtx;
     s16 i;
@@ -1376,6 +1382,9 @@ void Interface_SetSceneRestrictions(PlayState* play) {
                          interfaceCtx->restrictions.farores, interfaceCtx->restrictions.dinsNayrus,
                          interfaceCtx->restrictions.all);
             osSyncPrintf(VT_RST);
+#ifdef COMBO_BUILD
+            Combo_ApplyOotSceneRestrictions(play);
+#endif
             if (CVarGetInteger(CVAR_ENHANCEMENT("BetterFarore"), 0)) {
                 if (currentScene == SCENE_GERUDO_TRAINING_GROUND || currentScene == SCENE_INSIDE_GANONS_CASTLE) {
                     interfaceCtx->restrictions.farores = 0;

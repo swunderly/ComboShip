@@ -72,6 +72,14 @@ combo_json_harness_test(oot_silver_native_routes_and_coverage silver_route_tests
 combo_json_harness_test(oot_enemy_souls_policy_names_settings_and_receipt oot_enemy_soul_tests.py)
 combo_harness_test(cross_warp_native_presentation_and_skips song_presentation_tests.py)
 combo_harness_test(cross_game_songs_refused_after_playing_where_restricted foreign_song_restriction_tests.py)
+# OoT's scene restriction table as OoTMM v32.3 writes it, in seeds that record it; older seeds and saves and vanilla
+# saves keep SoH's. The pin to OoTMM's file is reported as skipped without the OoTMM checkout.
+combo_json_harness_test(oot_scene_restrictions_table_and_old_saves oot_scene_restrictions_tests.py --check table)
+combo_json_harness_test(oot_scene_restrictions_warp_song_refusal oot_scene_restrictions_tests.py --check warp)
+combo_json_harness_test(oot_scene_restrictions_pinned_to_ootmm oot_scene_restrictions_reference_tests.py)
+if(TEST oot_scene_restrictions_pinned_to_ootmm)
+    set_tests_properties(oot_scene_restrictions_pinned_to_ootmm PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+endif()
 combo_harness_test(cross_warp_soaring_prerendered_room_camera soaring_prerender_camera_tests.py)
 combo_harness_test(cross_warp_native_audio_and_dialect warp_audio_tests.py)
 combo_harness_test(oot_early_frog_native_predicate_and_reward early_frog_rules_tests.py)

@@ -2964,6 +2964,34 @@ extern "C" int Combo_OOTEntranceShuffleActive(void) {
     return IS_RANDO && (sEntranceRuntimeFlags.load() & ComboRando::Entrances::kEntranceRuntimeErAny) != 0;
 }
 
+#include "rando/OotSceneRestrictions.h"
+// ComboShip: OoT's scene restriction table as OoTMM v32.3 patches it (combo/rando/OotSceneRestrictions.h), in a
+// randomizer save whose seed has the marker. The launcher sets it each time it binds a slot (Combo_OnOOTSaveLoad, on
+// OnLoadGame, before Play_Init reads the table); a seed without the marker keeps Ship's table. Runtime-only.
+static std::atomic<bool> sOotmmSceneRestrictions{ false };
+extern "C" COMBO_EXPORT void SOH_SetOotmmSceneRestrictions(int enabled) {
+    sOotmmSceneRestrictions.store(enabled != 0);
+}
+extern "C" int Combo_OotmmSceneRestrictions(void) {
+    return IS_RANDO && sOotmmSceneRestrictions.load();
+}
+// Interface_SetSceneRestrictions, once it has decoded the scene's entry: the bytes OoTMM writes in that entry, decoded
+// the same way (two bits per restriction, high bits first).
+extern "C" void Combo_ApplyOotSceneRestrictions(PlayState* play) {
+    if (!Combo_OotmmSceneRestrictions())
+        return;
+    auto& r = play->interfaceCtx.restrictions;
+    u8* const fields[3][4] = { { &r.hGauge, &r.bButton, &r.aButton, &r.bottles },
+                               { &r.tradeItems, &r.hookshot, &r.ocarina, &r.warpSongs },
+                               { &r.sunsSong, &r.farores, &r.dinsNayrus, &r.all } };
+    ComboRando::ForEachOotmmSceneRestrictionByte(static_cast<uint8_t>(play->sceneNum), [&](int field, uint8_t value) {
+        if (field < 1 || field > 3)
+            return;
+        for (int i = 0; i < 4; i++)
+            *fields[field - 1][i] = (value >> (6 - 2 * i)) & 0x03;
+    });
+}
+
 #include "soh/Enhancements/CrossWarp/CrossWarp.h"
 #include "rando/SongTravelOOT.h"
 #include "rando/ForeignSongs.h"

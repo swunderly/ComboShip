@@ -37,6 +37,7 @@ ComboGameMode sBoundGameMode = COMBO_MODE_COMBINED;
 #include "rando/entrances/NativeBridge.h"
 #include "rando/entrances/MmUnifiedLayout.h"
 #include "rando/entrances/OotUnifiedLayout.h"
+#include "rando/OotSceneRestrictions.h"
 using Json = nlohmann::json;
 using namespace ComboRando::Entrances;
 std::array<Json, 3> containers;
@@ -122,6 +123,10 @@ const char* dumpOot() {
 std::vector<uint32_t> runtimeFlags;
 void setRuntimeFlags(uint32_t flags) { runtimeFlags.push_back(flags); calls.push_back("er-flags"); }
 auto SOH_SetEntranceRuntimeFlags = setRuntimeFlags;
+// OTRGlobals.cpp's setter: OoTMM's scene restriction table for the bound slot (OotSceneRestrictions.h).
+std::vector<int> sceneTables;
+void setSceneTable(int enabled) { sceneTables.push_back(enabled); }
+auto SOH_SetOotmmSceneRestrictions = setSceneTable;
 '''
 source += function('static bool InstallEntranceSeed(const nlohmann::json& seed)') + '\n'
 source += function('static bool CheckPendingEntranceSeed(const nlohmann::json& seed)') + '\n'
@@ -141,8 +146,11 @@ void expectCalls(bool loaded, bool succeeded) {
 void bind(int slot, bool loaded, bool succeeded) {
     const auto saved = containers[slot]["combo"]["rando"];
     calls.clear();
+    sceneTables.clear();
     Combo_OnOOTSaveLoad(slot);
     expectCalls(loaded, succeeded);
+    // Ship's table first, then the slot seed's own: OoTMM's only with the marker.
+    assert((sceneTables == std::vector<int>{0, int(ComboRando::SeedUsesOotmmSceneRestrictions(saved))}));
     assert(ootSeed == saved && mmSeed == saved);
     assert(songTravel == saved.at("songTravel"));
     assert(containers[slot]["combo"]["rando"] == saved);
@@ -183,10 +191,23 @@ int main() {
     bind(2, true, true);
     assert(g_MmSaveInMemorySlot == 2 && !layout.destination(kMmWallmasterSources[0]));
     assert(installedSeed.at("slot") == 2);
+    // A seed made since the port follows OoTMM's scene restriction table binds it; the same file with a seed from
+    // before the marker goes back to Ship's table.
+    const auto unmarked = containers[2];
+    auto marked = seedFor(2);
+    ComboRando::StampOotmmSceneRestrictions(marked["oot"]);
+    containers[2] = {{"combo", {{"rando", marked}}}};
+    bind(2, false, true);
+    assert(sceneTables.back() == 1);
+    containers[2] = unmarked;
+    bind(2, false, true);
+    assert(sceneTables.back() == 0);
     calls.clear();
+    sceneTables.clear();
     const auto epoch = g_ComboContextEpoch;
     Combo_OnOOTSaveLoad(0xff);
     assert(calls.empty() && g_ComboContextEpoch == epoch + 1 && g_MmSaveInMemorySlot == 2);
+    assert((sceneTables == std::vector<int>{0})); // no file: Ship's table
     // A unified layout this build refuses binds the rest of the slot, with no ER-wide runtime flag.
     EntranceLayout tranche;
     tranche.devBuild = true;

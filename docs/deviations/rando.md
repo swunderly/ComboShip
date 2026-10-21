@@ -2588,36 +2588,94 @@ the three Own Game Wallmaster rows the only Public ones.
   in generation (`EntranceProfile.h` `ForeignSongsRefusal`, removed with the flip to Public). A capability set without
   the songs id, which no build has now, refuses foreign-song logic in generation with developer text only.
 
-## OoT scene warp restrictions: Ship's randomizer rule, not OoTMM's patch (2026-10-21)
+## OoT scene restrictions: OoTMM's table in new seeds (2026-10-21)
 
-Recorded for 0.4.13; nothing here changes play yet. Where OoT lets Link warp is set per scene by `sRestrictionFlags`
-(`soh/src/code/z_parameter.c`, unchanged from the decomp): `warpSongs` is `flags2 & 0x03`, and `ocarina` is
-`(flags2 & 0x0C) >> 2`. Every scene with `warpSongs` 1 or 2 also restricts the ocarina, so no song is played there
-(boss rooms, the minigames, Hyrule Castle's courtyards, Granny's Potion Shop, the Chamber of the Sages, the castle's
-collapse). `warpSongs` 3, with the ocarina allowed, is set only in the Gerudo Training Ground, the Windmill and
-Dampé's grave, and inside Ganon's Castle.
+Planned for 0.4.13. Where OoT lets Link warp, cast spells and play the ocarina is set per scene by `sRestrictionFlags`
+(`soh/src/code/z_parameter.c`, OoT USA 1.0's table, unchanged from the decomp): each entry is `{ scene, flags1, flags2,
+flags3 }`, and `Interface_SetSceneRestrictions` decodes each flags byte two bits per restriction, high bits first
+(flags2: `tradeItems`, `hookshot`, `ocarina`, `warpSongs`; flags3: `sunsSong`, `farores`, `dinsNayrus`, `all`).
 
-- **OoT's own warp songs.** Vanilla refuses them with "You can't warp here!" where `warpSongs` is 3. SoH's randomizer
-  does not (`z_message_PAL.c:3792`, `warpSongs == 3 && !IS_RANDO`), so in a randomizer save they work in all three
-  places. The port keeps that.
-- **Song of Soaring in OoT.** The port refuses it wherever `warpSongs` is non-zero (`OTRGlobals.cpp`, after OoTMM's
-  `SetupSoaring`, `oot/ocarina.c:638-640`), so it shows "You can't warp here!" in the three places.
-- **OoTMM v32.3** patches the table instead (`packages/generator/src/oot/patches/scene_restrictions.S`). It clears
-  `warpSongs` and the Farore's Wind restriction of the Gerudo Training Ground (`0x800f7472`, `0x800f7473`) and of
-  inside Ganon's Castle (`0x800f74ca`, `0x800f74cb`), and the ocarina restriction of Granny's Potion Shop
-  (`0x800f73e6`, `0x15` to `0x11`) and the Shooting Gallery (`0x800f73aa`, `0x55` to `0x51`). The Windmill keeps
-  `warpSongs` 3. Its warp-song hook (`oot/ocarina.S` `Ocarina_ShouldIgnoreWarpSong`, at `0x800df1bc`) only decides
-  which songs count as warp songs and keeps vanilla's `warpSongs == 3` refusal. The addresses are the entries of
-  OoT USA 1.0's table, which starts at `0x800f7350`, checked against that ROM's `code` file: entry 22 is the
-  Shooting Gallery, 37 Granny's Potion Shop, 72 the Gerudo Training Ground, 93 the Windmill and 94 inside Ganon's
-  Castle, in the decomp's order.
+**What OoTMM v32.3 does.** `packages/generator/src/oot/patches/scene_restrictions.S` writes six bytes of the table at
+OoT USA 1.0's addresses. It has no `PATCH_GROUP`, so it is in every seed OoTMM generates, whatever the settings (in an
+MM-only seed OoT is not played). The table starts at `0x800f7350`, which was checked against that ROM's `code` file:
+its 100 entries and end marker are SoH's, byte for byte.
 
-| Place | OoTMM v32.3 | Port (Ship's randomizer) |
-| --- | --- | --- |
-| Gerudo Training Ground, inside Ganon's Castle | Warp songs, Soaring and Farore's Wind work | Warp songs work; Soaring shows "You can't warp here!"; Farore's Wind only with Better Farore's Wind |
-| Windmill and Dampé's grave | Warp songs and Soaring show "You can't warp here!" | Warp songs work; Soaring shows "You can't warp here!" |
-| Granny's Potion Shop, Shooting Gallery | The ocarina can be used; warp songs work; Soaring shows "You can't warp here!" | The ocarina can't be used |
+| Address | Entry | Byte | Before | After | Change |
+| --- | --- | --- | --- | --- | --- |
+| `0x800f7472` | 72, Gerudo Training Ground | flags2 | `0x03` | `0x00` | `warpSongs` 3 to 0 |
+| `0x800f74ca` | 94, inside Ganon's Castle | flags2 | `0x03` | `0x00` | `warpSongs` 3 to 0 |
+| `0x800f7473` | 72, Gerudo Training Ground | flags3 | `0x10` | `0x00` | `farores` 1 to 0 |
+| `0x800f74cb` | 94, inside Ganon's Castle | flags3 | `0x10` | `0x00` | `farores` 1 to 0 |
+| `0x800f73e6` | 37, Granny's Potion Shop | flags2 | `0x15` | `0x11` | `ocarina` 1 to 0 (`hookshot` 1, `warpSongs` 1 kept) |
+| `0x800f73aa` | 22, Shooting Gallery | flags2 | `0x55` | `0x51` | `ocarina` 1 to 0 (`tradeItems`, `hookshot`, `warpSongs` 1 kept) |
 
-Following OoTMM would mean applying its six table bytes and, in combined runs, refusing the warp songs where
-`warpSongs` is 3 again (SoH's `!IS_RANDO` exception). It is not done yet: it changes play in both directions, and
-waits for a decision.
+No other field changes: flags1 (`hGauge`, `bButton`, `aButton`, `bottles`), `sunsSong`, `dinsNayrus` and `all` keep
+their values. OoTMM's warp-song hook (`oot/ocarina.S` `Ocarina_ShouldIgnoreWarpSong`, five instructions at
+`0x800df1bc`) only decides which songs count as warp songs; vanilla's `disableWarpSongs || warpSongs == 3` refusal
+("You can't warp here!", `0x88C`), which starts at `0x800df1d4`, is left as it is. With OoTMM's table only the
+Windmill and Dampé's grave keep `warpSongs` 3, so they are the only places that refuse OoT's warp songs while the
+ocarina can be used. Song of Soaring in OoT is refused wherever `warpSongs` is not 0 (`oot/ocarina.c:638-640`).
+
+**What the port does.** A seed records that it follows OoTMM's table in its `oot` section:
+`"sceneRestrictions": "ootmm-32.3"` (`combo/rando/OotSceneRestrictions.h`). Absence is Ship's table, so every seed and
+save made before keeps SoH's behaviour.
+- **Written** by `RunComboFill` for each seed that randomizes OoT (Combined randomizer and OoT randomizer), and by
+  comborando for its seeds. A comborando reproduction (`--settings` from a seed) keeps that seed's marker or its
+  absence, like the Kokiri and Master Quest records, so a seed from before reproduces byte for byte. MM randomizer
+  seeds have none (OoT is not played) and `PrepareVanillaRun` drops it, so a vanilla file never has it.
+- **Bound** at each slot bind (`ComboShip.cpp` `Combo_OnOOTSaveLoad`, run by `OnLoadGame` before `Play_Init` reads the
+  table): `SOH_SetOotmmSceneRestrictions` is cleared first, so no early return keeps the previous file's table, then set
+  from the slot's seed (`SeedUsesOotmmSceneRestrictions`: the marker, in a mode that randomizes OoT).
+- **Used** only in a randomizer save (`OTRGlobals.cpp` `Combo_OotmmSceneRestrictions`: the flag and `IS_RANDO`).
+  `Interface_SetSceneRestrictions` then decodes OoTMM's bytes for the scene's entry over SoH's
+  (`Combo_ApplyOotSceneRestrictions`, after the decode and before SoH's Better Farore's Wind), and `z_message_PAL.c`
+  refuses OoT's warp songs where `warpSongs` is 3, as vanilla does, instead of SoH's randomizer exception
+  (`warpSongs == 3 && !IS_RANDO`). Soaring's refusal (`OTRGlobals.cpp` `UpdateNativeSongDialogue`) already reads
+  `warpSongs`, so it follows the table.
+- **Why a seed field.** The gameplay rule block of a run is captured again from the live CVars at every save and
+  normalized with the current keys, so a rule key would need a hidden CVar to keep a run's choice; the seed is
+  immutable seed data. The field is outside the seed identity (`GeneratedSeedIdentityText`), so file icons and co-op
+  identity do not change. It is not a menu option: OoTMM has no setting for it.
+
+| Place | New seeds (OoTMM v32.3) | Seeds and files from before (Ship's randomizer) | Vanilla OoT |
+| --- | --- | --- | --- |
+| Gerudo Training Ground, inside Ganon's Castle | Warp songs, Soaring and Farore's Wind work | Warp songs work; Soaring shows "You can't warp here!"; Farore's Wind only with Better Farore's Wind | Warp songs refused; Farore's Wind only with Better Farore's Wind |
+| Windmill and Dampé's grave | Warp songs and Soaring show "You can't warp here!" | Warp songs work; Soaring shows "You can't warp here!" | Warp songs refused |
+| Granny's Potion Shop, Shooting Gallery | The ocarina can be used; warp songs work; Soaring shows "You can't warp here!" | The ocarina can't be used | The ocarina can't be used |
+
+**Logic needs no change.** Neither logic uses a warp song, Farore's Wind or the ocarina in these places, so the table
+changes nothing in generation: the same settings place the same items, and a new seed differs from an earlier one
+only by the marker.
+- SoH's warp songs are exits of `RR_ROOT_EXITS` (`location_access/root.cpp:43-53`), whose scene is `SCENE_ID_MAX`,
+  where `Logic::ItemUseAllowed` allows every item (`logic.cpp:465`); they never depend on where Link is.
+  `ItemUseAllowed` forbids Farore's Wind in the Gerudo Training Ground and inside Ganon's Castle (`logic.cpp:469-498`)
+  and the ocarina in Granny's Potion Shop and the Shooting Galleries (`logic.cpp:561-567`), but nothing there uses
+  them: no region of `gerudo_training_ground.cpp` or `ganons_castle.cpp` uses Farore's Wind, a warp song or the
+  ocarina; Granny's Potion Shop needs the Odd Mushroom or the Claim Check (`kakariko.cpp:259-272`) and the galleries a
+  wallet and the bow (`kakariko.cpp:234-241`, `market.cpp:173-180`). Farore's Wind is used only by the Water Temple's
+  Farore's Wind tricks (`water_temple.cpp:389-405`, `:862-883`). The Windmill uses Song of Storms and the Fairy Ocarina
+  (`kakariko.cpp:198-217`), which both tables allow. Each place is left on foot.
+- OoTMM's warp songs are exits of `GLOBAL` (`data/world/oot/overworld/_system.yml:23-34`), reached from any area with
+  an exit to it, among them Link's House and the Temple of Time, the two spawns. The Gerudo Training Ground, Ganon's
+  Castle, the Windmill, Dampé's grave, Granny's Potion Shop and both Shooting Galleries have no `GLOBAL` exit
+  (`dungeons/gerudo_training_grounds.yml`, `dungeons/ganon_castle.yml`, `overworld/kakariko.yml:173-186`, `:206-221`,
+  `overworld/graveyard.yml:97-107`, `overworld/market.yml:259-264`), so OoTMM's logic does not use the songs there
+  either, even where its table allows them. OoTMM's OoT logic never uses `can_use_farore` (`macros_oot.yml:11`; the
+  macro appears only in MM world files).
+- The opposite-age Temple probe explores with the starting items only and refuses a starting warp song
+  (`TempleProbe.cpp:207-211`, lemma S1 above); it reads no scene restriction.
+
+**Seeds and the corpus.** `entrance_corpus_tests.py` checks the committed 0.4.12 seeds and their records against this
+build's launcher functions; it does not regenerate them, and it passes. Those seeds have no marker
+(`oot_scene_restrictions_tests.py` checks all 116), so their files keep Ship's table. A later release candidate whose
+comborando regenerates corpus rows (`wallmaster_corpus.py sample`) now writes the marker into each seed, so the rows
+differ from the 0.4.12 fixtures by that one field (placements, routes and `.entrances.txt` are the same); that release
+needs its own corpus, as the tool says, unless the sample comparison leaves the field out.
+
+Tests: `oot_scene_restrictions_reference_tests.py` decodes `scene_restrictions.S` from the pinned OoTMM blob and pins
+`kOotmmSceneRestrictionBytes` to it, each byte to its labelled change, and OoTMM's warp-song patch to before the
+refusal (skipped only without the OoTMM checkout). `oot_scene_restrictions_tests.py --check table` runs
+`Interface_SetSceneRestrictions` from source for all 100 scenes against SoH's own function on SoH's table and on
+OoTMM's, in a vanilla save and in randomizer saves with and without the marker, and checks the marker and its writers;
+`--check warp` runs `MSGMODE_SONG_PLAYED_ACT` for every warp song, `warpSongs` value and table, then each place above.
+`combo_entrance_slot_binding_tests.py` binds slots with and without the marker.
