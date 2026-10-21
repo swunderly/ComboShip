@@ -2586,3 +2586,37 @@ the three Own Game Wallmaster rows the only Public ones.
   shows anywhere. With the id staged at Dev, a shipping build showed it again in the menu, on the Generate button and
   in generation (`EntranceProfile.h` `ForeignSongsRefusal`, removed with the flip to Public). A capability set without
   the songs id, which no build has now, refuses foreign-song logic in generation with developer text only.
+
+## OoT scene warp restrictions: Ship's randomizer rule, not OoTMM's patch (2026-10-21)
+
+Recorded for 0.4.13; nothing here changes play yet. Where OoT lets Link warp is set per scene by `sRestrictionFlags`
+(`soh/src/code/z_parameter.c`, unchanged from the decomp): `warpSongs` is `flags2 & 0x03`, and `ocarina` is
+`(flags2 & 0x0C) >> 2`. Every scene with `warpSongs` 1 or 2 also restricts the ocarina, so no song is played there
+(boss rooms, the minigames, Hyrule Castle's courtyards, Granny's Potion Shop, the Chamber of the Sages, the castle's
+collapse). `warpSongs` 3, with the ocarina allowed, is set only in the Gerudo Training Ground, the Windmill and
+Dampé's grave, and inside Ganon's Castle.
+
+- **OoT's own warp songs.** Vanilla refuses them with "You can't warp here!" where `warpSongs` is 3. SoH's randomizer
+  does not (`z_message_PAL.c:3792`, `warpSongs == 3 && !IS_RANDO`), so in a randomizer save they work in all three
+  places. The port keeps that.
+- **Song of Soaring in OoT.** The port refuses it wherever `warpSongs` is non-zero (`OTRGlobals.cpp`, after OoTMM's
+  `SetupSoaring`, `oot/ocarina.c:638-640`), so it shows "You can't warp here!" in the three places.
+- **OoTMM v32.3** patches the table instead (`packages/generator/src/oot/patches/scene_restrictions.S`). It clears
+  `warpSongs` and the Farore's Wind restriction of the Gerudo Training Ground (`0x800f7472`, `0x800f7473`) and of
+  inside Ganon's Castle (`0x800f74ca`, `0x800f74cb`), and the ocarina restriction of Granny's Potion Shop
+  (`0x800f73e6`, `0x15` to `0x11`) and the Shooting Gallery (`0x800f73aa`, `0x55` to `0x51`). The Windmill keeps
+  `warpSongs` 3. Its warp-song hook (`oot/ocarina.S` `Ocarina_ShouldIgnoreWarpSong`, at `0x800df1bc`) only decides
+  which songs count as warp songs and keeps vanilla's `warpSongs == 3` refusal. The addresses are the entries of
+  OoT USA 1.0's table, which starts at `0x800f7350`, checked against that ROM's `code` file: entry 22 is the
+  Shooting Gallery, 37 Granny's Potion Shop, 72 the Gerudo Training Ground, 93 the Windmill and 94 inside Ganon's
+  Castle, in the decomp's order.
+
+| Place | OoTMM v32.3 | Port (Ship's randomizer) |
+| --- | --- | --- |
+| Gerudo Training Ground, inside Ganon's Castle | Warp songs, Soaring and Farore's Wind work | Warp songs work; Soaring shows "You can't warp here!"; Farore's Wind only with Better Farore's Wind |
+| Windmill and Dampé's grave | Warp songs and Soaring show "You can't warp here!" | Warp songs work; Soaring shows "You can't warp here!" |
+| Granny's Potion Shop, Shooting Gallery | The ocarina can be used; warp songs work; Soaring shows "You can't warp here!" | The ocarina can't be used |
+
+Following OoTMM would mean applying its six table bytes and, in combined runs, refusing the warp songs where
+`warpSongs` is 3 again (SoH's `!IS_RANDO` exception). It is not done yet: it changes play in both directions, and
+waits for a decision.
