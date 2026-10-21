@@ -1367,21 +1367,34 @@ def check_row_0413(row, results, corpus_dir):
         return 'refusal', {**entry, 'refusal': {
             'sentence': expect['sentence'], 'forced': expect['sentence'] == FORCED_SENTENCE,
             'firstAttemptMqDungeons': expect['mqDungeons'], 'exits': [2, 2], 'written': []}}, {}
-    # A seed row.
+    # A seed row. A failed replay still leaves a seed whose facts are checked and recorded with the failure.
     allowed = (0, 1) if row['accessibility'] == 'noLogic' else (0,)
-    if result.get('generationExit') != 0 or result.get('reproExit') != 0 or result.get('reproIdentical') is not True \
-            or result.get('playthroughExit') not in allowed or \
-            (row['kind'] == 'pin' and (result.get('pinExit') != 0 or result.get('pinIdentical') is not True)):
-        tail = [line for line in log.get('generation.log', []) if line.startswith('[comborando]')][-6:]
+    tail = [line for line in log.get('generation.log', []) if line.startswith('[comborando]')][-6:]
+    if result.get('generationExit') != 0 or not (folder/'seed.json').is_file():
         return 'failure', {**entry, 'expected': expect, 'observed': {'result': result, 'generation': tail},
-                           'problems': ['the native run failed']}, {}
+                           'problems': ['the generation failed']}, {}
+    if result.get('reproExit') != 0 or result.get('reproIdentical') is not True or \
+            (row['kind'] == 'pin' and (result.get('pinExit') != 0 or result.get('pinIdentical') is not True)):
+        problems.append(f'the native run failed: reproduction exit {result.get("reproExit")} identical '
+                        f'{result.get("reproIdentical")}' + (f', pin exit {result.get("pinExit")} identical '
+                                                            f'{result.get("pinIdentical")}' if row['kind'] == 'pin'
+                                                            else ''))
+    # The recorded-seed replay alone failing keeps the seed as a fixture, marked with the replay's verdict; the
+    # manifest then needs that row acknowledged (cmd_manifest_0413).
+    replay_failure = None
+    if result.get('playthroughExit') not in allowed:
+        replay_failure = {'playthroughExit': result.get('playthroughExit'),
+                          'lines': [line for line in log.get('playthrough.log', [])
+                                    if line.startswith(('[playthrough]', '[PLAYTHROUGH]')) or 'rejected' in line][-8:]}
+
+    def optional(name):
+        return (folder/name).read_bytes() if (folder/name).is_file() else None
+
     seed = (folder/'seed.json').read_bytes()
-    entrances = (folder/'seed.entrances.txt').read_bytes() if (folder/'seed.entrances.txt').is_file() else None
-    if seed != (folder/'repro.json').read_bytes() or entrances != (
-            (folder/'repro.entrances.txt').read_bytes() if (folder/'repro.entrances.txt').is_file() else None):
+    entrances = optional('seed.entrances.txt')
+    if seed != optional('repro.json') or entrances != optional('repro.entrances.txt'):
         problems.append('the reproduction differs from the seed')
-    if row['kind'] == 'pin' and (seed != (folder/'pin.json').read_bytes() or entrances != (
-            folder/'pin.entrances.txt').read_bytes()):
+    if row['kind'] == 'pin' and (seed != optional('pin.json') or entrances != optional('pin.entrances.txt')):
         problems.append('the 0.4.12 command line (--er-capability) gives other bytes')
     if (entrances is None) != (row['kind'] == 'plain'):
         problems.append('an entrance spoiler exactly when the seed has an entrance layout')
@@ -1466,8 +1479,17 @@ def check_row_0413(row, results, corpus_dir):
             'placementsIdentical': canonical_sha256(placements) == canonical_sha256(old_placements),
             'routesIdentical': routes == old_routes,
             'differences': [{'path': '.'.join(map(str, p)), 'kind': k, 'value': new} for p, k, _, new in diffs]}
+    if replay_failure and not problems:
+        entry['replayFailure'] = replay_failure
+    elif replay_failure:
+        problems.append(f'the recorded-seed replay failed too: {replay_failure}')
     if problems:
-        return 'failure', {**entry, 'expected': expect, 'problems': problems}, {}
+        # A failed row has no seed fixture; the seed stays with the run's evidence, named here by its hashes.
+        evidence = {key: entry.pop(key) for key in ('seed', 'entrances') if key in entry}
+        return 'failure', {**entry, 'evidence': {'seedSha256': sha256(seed), 'entrancesSha256':
+                                                 sha256(entrances) if entrances is not None else None,
+                                                 'files': sorted(evidence.values())},
+                           'expected': expect, 'problems': problems}, {}
     return 'seed', entry, outputs
 
 
@@ -1493,13 +1515,16 @@ def cmd_manifest_0413(args):
     host_only = one_line_map(args.host_only, 'host-only file')
     checked = [(row, *check_row_0413(row, results, corpus_dir)) for row in plan['rows']]
     failures = [(row, entry) for row, kind, entry, _ in checked if kind == 'failure']
-    unacknowledged = [entry for row, entry in failures if row['id'] not in acknowledged]
-    stale = sorted(set(acknowledged) - {row['id'] for row, _ in failures})
+    replays = [(row, entry) for row, kind, entry, _ in checked if kind == 'seed' and 'replayFailure' in entry]
+    unacknowledged = [entry for row, entry in failures + replays if row['id'] not in acknowledged]
+    stale = sorted(set(acknowledged) - {row['id'] for row, _ in failures + replays})
     for entry in unacknowledged:
         print(json.dumps(entry, indent=2)[:6000])
     if unacknowledged or stale:
         stop(f'rows failed: {[e["id"] for e in unacknowledged]}; acknowledged rows that did not fail: {stale}. '
              'Nothing was written.')
+    for row, entry in replays:
+        entry['recordedFailure'] = acknowledged[row['id']]
     seeds = [entry for _, kind, entry, _ in checked if kind == 'seed']
     refusals = [entry for _, kind, entry, _ in checked if kind == 'refusal']
     recorded = [{**entry, 'note': acknowledged[row['id']]} for row, entry in failures]
@@ -1520,14 +1545,16 @@ def cmd_manifest_0413(args):
     refresh_files(fixtures, manifest)
     groups = {}
     for entry in seeds + refusals + recorded:
-        status = 'failure' if entry in recorded else 'pass'
+        status = 'failure' if entry in recorded else 'replay failure' if 'recordedFailure' in entry else 'pass'
         groups.setdefault(entry['group'], {}).setdefault(status, 0)
         groups[entry['group']][status] += 1
-    print(f'Wrote {len(seeds)} seeds, {len(refusals)} refusals and {len(recorded)} recorded failures to {fixtures}: '
-          f'{json.dumps(groups, sort_keys=True)}')
+    print(f'Wrote {len(seeds)} seeds ({len(replays)} with a recorded replay failure), {len(refusals)} refusals and '
+          f'{len(recorded)} recorded failures to {fixtures}: {json.dumps(groups, sort_keys=True)}')
     for entry in seeds:
         print(f'  {entry["id"]:40} {entry["facts"]["capability"] or "(no layout)":33} attempt '
-              f'{entry["result"]["attempt"]} MQ {entry["facts"]["masterQuestDungeons"]}')
+              f'{entry["result"]["attempt"]} MQ {entry["facts"]["masterQuestDungeons"]}' +
+              (f'  REPLAY FAILED (exit {entry["replayFailure"]["playthroughExit"]})' if 'replayFailure' in entry
+               else ''))
 
 
 # ---- 0.4.13 corpus: provenance -----------------------------------------------------------------------------------------

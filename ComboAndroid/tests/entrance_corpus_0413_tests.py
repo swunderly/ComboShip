@@ -21,8 +21,10 @@ entrance_corpus_0413_tests.cpp then checks the documents, built with and without
 seed guard, the frozen layout rules of each id, the slot bind into both games with the seed's own quest context, the
 entrance spoiler, the ER runtime flag, the profile view, the scene restriction and Master Quest readers.
 
-Without the fixture directory the test builds the checker and reports SKIPPED. A recorded failure (a row whose run did
-not do what the plan expected) is listed as RECORDED FAILURE with its note; it has no seed fixture.
+Without the fixture directory the test builds the checker and reports SKIPPED. A recorded failure is listed as RECORDED
+FAILURE with its note: a row whose run did not do what the plan expected has no seed fixture, and a seed whose
+generation and reproduction passed but whose recorded-seed replay (--playthrough) failed is kept, with that verdict,
+and checked like every other seed.
 """
 from pathlib import Path, PurePosixPath
 import argparse
@@ -254,8 +256,16 @@ for rid, (kind, entry) in sorted(entries.items()):
     problems, _ = wc.settings_facts(doc, cvars)
     require(not problems, where + f'settings not applied: {problems}')
     playthrough = (0, 1) if row['accessibility'] == 'noLogic' else (0,)
-    require(entry['native'].get('generationExit') == 0 and entry['native'].get('playthroughExit') in playthrough and
-            entry['native'].get('repro') == 'identical', where + f'the native run {entry["native"]} did not pass')
+    require(entry['native'].get('generationExit') == 0 and entry['native'].get('repro') == 'identical' and
+            entry['native'].get('pin', 'identical') == 'identical', where + f'the native run {entry["native"]} failed')
+    if entry['native'].get('playthroughExit') not in playthrough:
+        # The recorded-seed replay alone failed: kept as a fixture with its verdict and a one-line note.
+        replay = entry.get('replayFailure') or {}
+        require(replay.get('playthroughExit') == entry['native'].get('playthroughExit') and
+                wc.one_line(entry.get('recordedFailure')), where + 'a failed replay needs its recorded verdict and note')
+        print(f'RECORDED FAILURE {rid} (replay exit {replay["playthroughExit"]}): {entry["recordedFailure"]}')
+    else:
+        require('replayFailure' not in entry and 'recordedFailure' not in entry, where + 'a passing replay with a note')
     # OoTMM's scene restriction table and the bundled Master Quest record, on every new combined seed.
     mask = wc.mq_roll(final, cvars)
     require(oot.get(wc.SCENE_RESTRICTIONS_KEY) == wc.SCENE_RESTRICTIONS, where + 'no OoTMM scene restriction marker')
