@@ -1,5 +1,9 @@
 # Device validation still required
 
+## Deku Princess skip (0.4.13, unreleased)
+
+1. MM view: Enhancements > Time savers > Cutscenes > Skip story cutscenes ON. With the Deku Princess in a bottle, enter the Deku King's chamber and let her out next to the king. The screen fades once and Link stands in the chamber; it does not keep fading and reloading. The princess stands by the king afterwards.
+
 ## Master Quest dungeons (0.4.13, unreleased)
 
 Nothing here has been played yet, on the emulator or a phone; host tests cover the data and the code. Run the whole list on the emulator first, then checks 1-4, 9, 12, 17 and 18 on a phone (note the frame rate). Use an OoT USA 1.0 ROM: the bundled Master Quest data plays only on that version. Keep the logs and a screenshot of each check.
