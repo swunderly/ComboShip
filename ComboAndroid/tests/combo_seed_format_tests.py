@@ -431,13 +431,12 @@ int main() {
                 shuffled["oot"]["settings"]["gRandoSettings.StartingPreludeOfLight"] = 1;
                 refusedFor(shuffled, "song travel logic");
             }
-        // This build's shipping set takes the songs-v2 id once it is Public, and refuses it while it is staged.
+        // This build's shipping set takes the songs-v2 id (Public from 0.4.13).
         auto startingSong = seedOf(vanilla, v2, SongTravelMap{}.json(), false);
         startingSong["oot"]["settings"]["gRandoSettings.StartingPreludeOfLight"] = 1;
-        if (shipping.Active(v2))
-            RequireSupportedSeedDocument(startingSong, shipping);
-        else
-            rejectsLayout([&] { RequireSupportedSeedDocument(startingSong, shipping); });
+        assert(shipping.Active(v2));
+        RequireSupportedSeedDocument(startingSong, shipping);
+        assert(Profiles::SeedFromContainer({{"combo", {{"rando", startingSong}}}}, shipping) == startingSong);
     }
     // Without the MM installer's exports an accepted layout still never binds as vanilla routing.
     std::string installer;

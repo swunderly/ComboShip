@@ -2426,8 +2426,8 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     const auto ordinarySettings = ComboRando::Entrances::MmOrdinaryGenerationSettings(false, false, false, false);
     const bool nativeMmMixed = false, nativeMmGrottos = false, nativeMmWallmasters = false;
     // OoTMM's Wallmaster and One-Way shuffles (UnifiedBridge.h). A release build admits only Wallmaster Shuffle
-    // (Own Game), with vanilla dungeons or OoTMM's bundled Master Quest ones, and with or without cross-game songs in
-    // logic; reading them in-game never uses the dev-only MM tranche.
+    // (Own Game), with vanilla dungeons or OoTMM's bundled Master Quest ones, with or without cross-game songs in
+    // logic and with or without a starting OoT warp song; reading them in-game never uses the dev-only MM tranche.
     const auto entranceCaps = ComboRando::Entrances::ActiveCapabilities();
     const ComboRando::Entrances::SettingReader readSetting = [](const char* key, int fallback) {
         return sReadGameplayRule ? sReadGameplayRule(key, fallback) : fallback;

@@ -21,7 +21,9 @@
 // Master Quest data other than OoTMM's bundled data is refused by the
 // generator and the menu with either set. With foreign-song logic ("Play warp
 // songs across games"), the same proof runs for this build and for the vanilla
-// and songs ids, every seed taking wallmasters-own-game-songs-v1.
+// and songs ids, every seed taking wallmasters-own-game-songs-v1; with a
+// starting OoT warp song, for this build, every seed taking
+// wallmasters-own-game-songs-v2.
 // Dropping any one binding must report a gap (negative control).
 #include "rando/GenerationRules.h"
 #include "rando/entrances/EntranceProfile.h"
@@ -88,11 +90,14 @@ using ComboRando::UnsupportedComboSeedFormat;
 using Json = nlohmann::json;
 
 // The capability ids with a Public value (M1 plan P1-05, U11, limits design
-// Stage 1). Each one needs a coverage model below; the three Own Game
-// Wallmaster ids have one, Prove's (the songs id with `songs`).
+// Stages 1 and 2). Each one needs a coverage model below; the four Own Game
+// Wallmaster ids have one, Prove's (the songs ids with their song facts).
 static const std::set<std::string_view> kExpectedPublic = {
     kVanillaWallmasterCapability, kQuestsWallmasterCapability,
-    kSongsWallmasterCapability};
+    kSongsWallmasterCapability, kStartingSongsWallmasterCapability};
+// A seed's song facts: none, foreign-song logic (the songs id) or a starting
+// OoT warp song (the songs-v2 id).
+enum class SongFacts { None, Foreign, Starting };
 
 static constexpr unsigned kQuestMasks = 1u << kOotMqDungeons.size();
 static OotQuests Quests(unsigned mask) {
@@ -376,27 +381,33 @@ static std::vector<Overrides> CoveringLayouts(const Rows &rows) {
 
 static EntranceLayout Layout(const Settings &s, const CapabilitySet &caps,
                              unsigned mask, const Overrides &routes,
-                             bool songs = false) {
+                             SongFacts songs = SongFacts::None) {
   EntranceLayout layout;
-  layout.required = {std::string(songs  ? kSongsWallmasterCapability
-                                 : mask ? kQuestsWallmasterCapability
-                                        : kVanillaWallmasterCapability)};
+  layout.required = {std::string(
+      songs == SongFacts::Starting  ? kStartingSongsWallmasterCapability
+      : songs == SongFacts::Foreign ? kSongsWallmasterCapability
+      : mask                        ? kQuestsWallmasterCapability
+                                    : kVanillaWallmasterCapability)};
   layout.devBuild = caps.devBuild;
   layout.settings = s;
   layout.ootMq = Quests(mask);
   layout.overrides = routes;
   return layout;
 }
-// A seed of the layout, whose song map has foreign-song logic when `songs`.
-static Json Seed(const EntranceLayout &layout, bool songs = false) {
+// A seed of the layout, whose song map has foreign-song logic, or whose OoT
+// settings start with Prelude of Light, as `songs` says.
+static Json Seed(const EntranceLayout &layout,
+                 SongFacts songs = SongFacts::None) {
   Json seed{{"fileType", kEntranceSeedFileType},
             {"version", kEntranceSeedVersion},
             {"entranceLayout", EncodeEntranceLayout(layout)}};
-  if (songs) {
+  if (songs == SongFacts::Foreign) {
     ComboRando::SongTravelMap map;
     map.foreignSongs = map.logicForeignSongs = true;
     seed["songTravel"] = map.json();
   }
+  if (songs == SongFacts::Starting)
+    seed["oot"]["settings"]["gRandoSettings.StartingPreludeOfLight"] = 1;
   return seed;
 }
 
@@ -452,17 +463,19 @@ static unsigned WallmasterProjection(unsigned mask) {
 static std::string
 Generation(const Settings &s, const CapabilitySet &caps, unsigned mask,
            ComboMq::SeedMqSource source = ComboMq::SeedMqSource::Bundled,
-           bool songs = false) {
+           SongFacts songs = SongFacts::None) {
   Native::quests = Quests(mask);
   Native::changes = Native::resets = 0;
   UnifiedEntranceStats stats;
   UnifiedGeneration g;
   g.settings = s;
   g.active = caps;
-  g.foreignSongsLogic = songs;
+  g.foreignSongsLogic = songs == SongFacts::Foreign;
   g.seed = mask;
   g.readSetting = [](const char *, int fallback) { return fallback; };
   g.ootDump = g.mmDump = "{}";
+  if (songs == SongFacts::Starting)
+    g.ootDump = Json{{"sharedStartingItems", {"Prelude of Light"}}}.dump();
   g.oot.Reset = Native::Reset;
   g.oot.GetStartAges = Native::ChildStart;
   g.stats = &stats;
@@ -486,10 +499,11 @@ Generation(const Settings &s, const CapabilitySet &caps, unsigned mask,
 
 // Proves one capability set: returns the number of admitted settings x masks.
 // With `songs`, every seed has foreign-song logic ("Play warp songs across
-// games", limits design Stage 1) and takes the songs id in every quest context:
-// the same rows, routes and refusals, and its seed facts.
+// games", limits design Stage 1) and takes the songs id, or starts with an OoT
+// warp song (Stage 2) and takes the songs-v2 id, in every quest context: the
+// same rows, routes and refusals, and its seed facts.
 static size_t Prove(const char *name, const CapabilitySet &caps,
-                    const Tables &tables, bool songs = false) {
+                    const Tables &tables, SongFacts songs = SongFacts::None) {
   size_t proved = 0;
   const auto selected = caps.Selected("");
   // The menu offers the row, with None and Own Game, exactly when Own Game is
@@ -502,8 +516,11 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
            catalog[0]["choices"].size() == 2);
   else
     assert(catalog.empty());
-  const bool questsActive = songs ? caps.Active(kSongsWallmasterCapability)
-                                  : caps.Active(kQuestsWallmasterCapability);
+  const bool questsActive =
+      songs == SongFacts::Starting
+          ? caps.Active(kStartingSongsWallmasterCapability)
+      : songs == SongFacts::Foreign ? caps.Active(kSongsWallmasterCapability)
+                                    : caps.Active(kQuestsWallmasterCapability);
   for (const Mode mode : {Mode::None, Mode::OwnGame, Mode::Full}) {
     Settings s;
     s.erWallmasters = mode;
@@ -540,11 +557,16 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
     const auto required = UnifiedRequirement(s, "", caps);
     assert(required == kVanillaWallmasterCapability);
     assert(AdmitsEntranceSettings(s, selected.Only(required)));
-    if (songs)
+    if (songs == SongFacts::Foreign)
       assert(
           UnifiedSongRequirement(required, true, "", caps) ==
               kSongsWallmasterCapability &&
           AdmitsEntranceSettings(s, selected.Only(kSongsWallmasterCapability)));
+    if (songs == SongFacts::Starting)
+      assert(UnifiedWarpSongRequirement(required, true, "", caps) ==
+                 kStartingSongsWallmasterCapability &&
+             AdmitsEntranceSettings(
+                 s, selected.Only(kStartingSongsWallmasterCapability)));
     std::set<unsigned> covered; // Wallmaster-dungeon projections laid out
     std::vector<Overrides> vanillaLayouts;
     size_t shortfalls = 0;
@@ -645,7 +667,7 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
           // The frozen vanilla id never takes a Master Quest mask, and the
           // quests id never an all-vanilla one. The id each would take
           // without the songs validates the songs layout's routes, but never
-          // a seed with foreign-song logic, and the songs id needs it.
+          // a seed with the song facts, and the songs id needs them.
           auto other = Layout(s, caps, mask, layouts.front());
           other.required = {std::string(mask ? kVanillaWallmasterCapability
                                              : kQuestsWallmasterCapability)};
@@ -656,18 +678,18 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
             refused = true;
           }
           assert(refused);
-          if (songs) {
+          if (songs != SongFacts::None) {
             auto all = CapabilitySet::AtLeast(Stage::Hidden);
             all.devBuild = caps.devBuild;
             const auto plain = Layout(s, caps, mask, layouts.front());
             Validate(plain, all);
-            for (const auto &[layout, foreign] :
-                 {std::pair{plain, true},
-                  std::pair{Layout(s, caps, mask, layouts.front(), true),
-                            false}}) {
+            for (const auto &[layout, facts] :
+                 {std::pair{plain, songs},
+                  std::pair{Layout(s, caps, mask, layouts.front(), songs),
+                            SongFacts::None}}) {
               refused = false;
               try {
-                RequireSupportedSeedCapabilities(Seed(layout, foreign), all);
+                RequireSupportedSeedCapabilities(Seed(layout, facts), all);
               } catch (const UnsupportedComboSeedFormat &) {
                 refused = true;
               }
@@ -748,7 +770,8 @@ int main(int argc, char **argv) {
   for (const auto id : kExpectedPublic)
     assert(id == kVanillaWallmasterCapability ||
            id == kQuestsWallmasterCapability ||
-           id == kSongsWallmasterCapability);
+           id == kSongsWallmasterCapability ||
+           id == kStartingSongsWallmasterCapability);
 #ifdef COMBO_ENTRANCE_DEV
   auto dev = CapabilitySet::AtLeast(Stage::Dev);
   dev.devBuild = true;
@@ -786,13 +809,19 @@ int main(int argc, char **argv) {
       (active.Active(kVanillaWallmasterCapability) ? 2 : 1) * kQuestMasks;
   if (songs) {
     // Foreign-song logic: this build, and the vanilla and songs ids alone.
-    const size_t buildSongs = Prove("build, songs", active, tables, true);
+    const size_t buildSongs =
+        Prove("build, songs", active, tables, SongFacts::Foreign);
     const size_t songIds =
-        Prove("vanilla and songs ids", withSongs, tables, true);
-    assert(buildSongs == admitted && songIds == 2 * kQuestMasks);
+        Prove("vanilla and songs ids", withSongs, tables, SongFacts::Foreign);
+    // A starting OoT warp song: this build.
+    const size_t buildStarting =
+        Prove("build, starting song", active, tables, SongFacts::Starting);
+    assert(buildSongs == admitted && songIds == 2 * kQuestMasks &&
+           buildStarting == admitted);
     std::cout << "PASS songs: " << buildSongs << " build and " << songIds
               << " vanilla+songs settings x quest masks with foreign-song "
-                 "logic\n";
+                 "logic, "
+              << buildStarting << " build with a starting warp song\n";
   }
   if (!ids)
     return 0;

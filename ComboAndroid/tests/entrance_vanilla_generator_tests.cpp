@@ -436,9 +436,10 @@ static void CheckPlainRefusals() {
     (mm ? facts.mmStartingItems : facts.ootStartingItems) = {"Song of Soaring"};
     same(g, facts);
   }
-  // A starting OoT warp song (limits design, Stage 2) has the menu's sentence
-  // in a set without wallmasters-own-game-songs-v2, as a build where it is
-  // staged: after the oracle's reset, before any draw or native change.
+  // A starting OoT warp song (limits design, Stage 2) has no sentence: every
+  // build has wallmasters-own-game-songs-v2. A set without it (no build has
+  // one) refuses the song before any draw or native change, as an internal
+  // fault.
   const auto withoutStartingSongs =
       CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability) |
       CapabilitySet::AtLeast(Stage::Hidden).Only(kQuestsWallmasterCapability) |
@@ -457,9 +458,9 @@ static void CheckPlainRefusals() {
         : facts.ootStartingItems) = {"Nocturne of Shadow"};
     assert(EntranceGenerationRefusal(facts).empty());
     const auto error = Refusal(g);
-    const auto menu = StartingWarpSongsRefusal(facts, g.active);
-    assert(!menu.empty() && error.player() == menu.player &&
-           error.what() == menu.log);
+    assert(error.what() == std::string(kVanillaWallmasterCapability) +
+                               " does not admit a starting warp song" &&
+           error.player() == error.what());
   }
   // With the songs-v2 id an id named by name must match the starting song,
   // before any draw or native change (developer text). No Logic has none.
@@ -1035,8 +1036,8 @@ static Json SongDifferential() {
 // the song, Legacy Master Quest data keeps its refusal, and No Logic keeps the
 // earlier ids and their layout. The songs-v2 id has the same rules: a layout
 // with its id swapped for the one the context takes without the song
-// validates and has that generation's routes. While the id is staged, the
-// shipping set refuses the song with the menu's sentence.
+// validates and has that generation's routes. The shipping set takes the
+// songs-v2 id.
 static size_t CheckWarpContexts(const Json &contract) {
   std::set<std::set<std::string>> shortfalls;
   for (const auto &row : contract.at("mqSources").at("capacityShortfalls"))
@@ -1146,26 +1147,18 @@ static size_t CheckWarpContexts(const Json &contract) {
                    std::string(mask ? kQuestsWallmasterCapability
                                     : kVanillaWallmasterCapability)});
   }
-  // The shipping set takes the songs-v2 id once it is Public; while it is
-  // staged, it refuses the song with the menu's sentence, before any draw or
-  // native change.
+  // The shipping set takes the songs-v2 id (Public from 0.4.13).
   const auto shipping = CapabilitySet::AtLeast(Stage::Public);
+  assert(shipping.Active(kStartingSongsWallmasterCapability));
   Fake::Reset();
   g = Generation(4);
   g.capability.clear();
   g.active = shipping;
   g.ootDump = WarpDump();
-  if (shipping.Active(kStartingSongsWallmasterCapability)) {
-    assert(DecodeEntranceLayout(
-               GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()))
-               .required == std::vector<std::string>{std::string(
-                                kStartingSongsWallmasterCapability)});
-  } else {
-    const auto error = Refusal(g);
-    assert(error.player() ==
-           "Remove Prelude of Light from the starting items to use Wallmaster "
-           "Shuffle.");
-  }
+  assert(DecodeEntranceLayout(
+             GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()))
+             .required == std::vector<std::string>{
+                              std::string(kStartingSongsWallmasterCapability)});
   return generated;
 }
 // The shortcut differential with a starting OoT warp song (limits design,

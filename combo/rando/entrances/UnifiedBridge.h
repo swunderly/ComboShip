@@ -431,13 +431,11 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
         settingsFacts.enemyRandomizer = g.readSetting("gEnhancements.RandomizedEnemies", 0) != 0;
         if (const auto why = ComboRando::EntranceGenerationRefusal(settingsFacts); !why.empty())
             throw UnifiedEntranceRefused(why);
-        if (const auto why = StartingWarpSongsRefusal(settingsFacts, g.active); !why.empty())
-            throw UnifiedEntranceRefused(why);
     }
     // The id carries the seed's song facts (ComboSeedFormat.h RequireSeedEntranceFacts): only the songs ids
     // take foreign-song logic, and the songs id needs it; only the songs-v2 id takes a starting warp song,
-    // and it needs one. Every build has the songs id, and a build without the songs-v2 id refuses a starting
-    // warp song above, so this is reached only with an id selected by name, or another pool's id.
+    // and it needs one. Every build has both, so this is reached only with an id selected by name, or another
+    // pool's id.
     if (songFacts && required != kSongsWallmasterCapability && required != kStartingSongsWallmasterCapability)
         throw UnifiedEntranceRefused(required + " does not admit foreign-song logic");
     if (!songFacts && required == kSongsWallmasterCapability)

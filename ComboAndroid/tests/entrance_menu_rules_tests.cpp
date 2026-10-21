@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
       CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability);
   const auto withQuests = CapabilitySet::AtLeast(Stage::Hidden);
   // Every Own Game Wallmaster id but the starting-song one (limits design,
-  // Stage 2), as in a build where it is staged.
+  // Stage 2), as in a build without it, which none is now.
   const auto withoutStartingSongs =
       withQuests.Only(kVanillaWallmasterCapability) |
       withQuests.Only(kQuestsWallmasterCapability) |
@@ -156,16 +156,8 @@ int main(int argc, char **argv) {
     settings["gRandoSettings.StartingPreludeOfLight"] = 1;
     assert(
         EntranceGenerationRefusal(ProfileEntranceFacts(draft, read)).empty());
-    assert(ProfileWallmasterRefusal(draft, assets, read, withQuests).empty());
-    const auto menu =
-        ProfileWallmasterRefusal(draft, assets, read, withoutStartingSongs);
-    plain(menu,
-          "Remove Prelude of Light from the starting items to use Wallmaster "
-          "Shuffle.",
-          "starting Prelude of Light needs wallmasters-own-game-songs-v2, "
-          "which this build does not have");
-    assert(menu == StartingWarpSongsRefusal(ProfileEntranceFacts(draft, read),
-                                            withoutStartingSongs));
+    for (const auto &set : {caps, withQuests, withoutStartingSongs})
+      assert(ProfileWallmasterRefusal(draft, assets, read, set).empty());
   }
   settings.clear();
   // Ship's Logic row offers Glitchless (0) and No Logic (1) only.
@@ -175,11 +167,12 @@ int main(int argc, char **argv) {
   settings.clear();
   const std::string use = " from the starting items to use Wallmaster Shuffle.";
   // A starting OoT warp song (limits design, Stage 2): the Temple gate takes it
-  // (the probe's GLOBAL node, lemma L3) and so does every set with the
-  // songs-v2 id. A set without it, as a build where it is staged, refuses it
-  // with the sentence every Wallmaster id gave before, in the menu and in
-  // generation (UnifiedBridge.h, entrance_vanilla_generator_tests.cpp), after
-  // every other reason WallmasterSettingsRefusal gives. No Logic has no song.
+  // (the probe's GLOBAL node, lemma L3), and so do the menu and generation,
+  // which agree: every build has wallmasters-own-game-songs-v2, and the
+  // sentence "Remove <song> from the starting items to use Wallmaster
+  // Shuffle." is gone for the six songs, whatever the capability set. A set
+  // without the id, which no build has, refuses the song in generation with
+  // developer text only (entrance_vanilla_generator_tests.cpp).
   for (const auto &[key, name] :
        {std::pair{"StartingMinuetOfForest", "Minuet of Forest"},
         std::pair{"StartingBoleroOfFire", "Bolero of Fire"},
@@ -197,31 +190,17 @@ int main(int argc, char **argv) {
     assert(StartingWarpSong(facts) == name &&
            TempleSettingsRefusal(temple).empty() &&
            EntranceGenerationRefusal(facts).empty());
-    assert(ProfileWallmasterRefusal(draft, assets, read, withQuests).empty());
-    assert(ProfileWallmasterRefusal(draft, assets, read).empty() ==
-           caps.Active(kStartingSongsWallmasterCapability));
-    for (const auto &set : {vanillaOnly, withoutStartingSongs}) {
-      const auto menu = ProfileWallmasterRefusal(draft, assets, read, set);
-      plain(menu, "Remove " + std::string(name) + use,
-            "starting " + std::string(name) +
-                " needs wallmasters-own-game-songs-v2, which this build does "
-                "not have");
-      assert(menu == StartingWarpSongsRefusal(facts, set));
-    }
-    settings[kOotEnemyRandomizer] = 1; // another reason comes first
-    assert(ProfileWallmasterRefusal(draft, assets, read, vanillaOnly).player ==
-           "Turn off Enemy Randomizer to use Wallmaster Shuffle.");
-    settings[kNativeLogicRule] = 1;
-    settings.erase(kOotEnemyRandomizer);
-    assert(ProfileWallmasterRefusal(draft, assets, read, vanillaOnly).empty());
+    assert(caps.Active(kStartingSongsWallmasterCapability));
+    for (const auto &set :
+         {caps, vanillaOnly, withQuests, withoutStartingSongs})
+      assert(ProfileWallmasterRefusal(draft, assets, read, set).empty());
     settings.clear();
   }
   // The MM side's names count too, as the seed guard reads them.
   draft["mm"]["settings"]["gRando.StartingItems"] = {"Minuet of Forest"};
   assert(StartingWarpSong(ProfileEntranceFacts(draft, read)) ==
              "Minuet of Forest" &&
-         !ProfileWallmasterRefusal(draft, assets, read, vanillaOnly).empty() &&
-         ProfileWallmasterRefusal(draft, assets, read, withQuests).empty());
+         ProfileWallmasterRefusal(draft, assets, read, vanillaOnly).empty());
   // A starting Song of Soaring stays refused by every id: it needs a Temple
   // check through MM. MM's starting items as the menu writes them are 2Ship's
   // spoiler names, the MM_DumpProfileCatalog values (BenPort.cpp); the display
@@ -432,12 +411,14 @@ int main(int argc, char **argv) {
   unknown.erase("mqPlayable");
   plain(ProfileWallmasterRefusal(draft, unknown, read), data, dataLog);
   // Solo mode, Ship ER, Enemy Randomizer, glitched logic, song destination
-  // shuffle, six warp songs and Soaring, Master Quest, the Master Quest
-  // Wallmaster capacity (forced, and a seed's roll) and unknown dungeon data.
-  // "Play warp songs across games" has none since 0.4.13.
-  assert(sentences.size() == 16);
+  // shuffle, Soaring, Master Quest, the Master Quest Wallmaster capacity
+  // (forced, and a seed's roll) and unknown dungeon data. "Play warp songs
+  // across games" and the six warp songs have none since 0.4.13.
+  assert(sentences.size() == 10);
   for (const auto &sentence : sentences)
-    assert(sentence.find("across games") == std::string::npos);
+    assert(sentence.find("across games") == std::string::npos &&
+           (sentence.find("Remove ") == std::string::npos ||
+            sentence.find("Song of Soaring") != std::string::npos));
   auto raw = draft;
   raw["setupCVars"][wall] = 2;
   raw["setupCVars"]["gCombo.Rando.Entrances.erOneWays"] = 1;

@@ -708,7 +708,8 @@ void CheckBuildGuard(const Json &good) {
   assert(!caps.devBuild && caps == CapabilitySet::AtLeast(Stage::Public) &&
          caps == (caps.Only(kVanillaWallmasterCapability) |
                   caps.Only(kQuestsWallmasterCapability) |
-                  caps.Only(kSongsWallmasterCapability)) &&
+                  caps.Only(kSongsWallmasterCapability) |
+                  caps.Only(kStartingSongsWallmasterCapability)) &&
          caps.Active(kVanillaWallmasterCapability));
   auto layout = DecodeEntranceLayout(good);
   layout.required = {std::string(kVanillaWallmasterCapability)};
@@ -773,6 +774,27 @@ void CheckBuildGuard(const Json &good) {
     RequireSupportedSeedDocument(seed, caps);
     seed["entranceLayout"] = EncodeEntranceLayout(songs);
     SeedRefused(seed, caps, "without foreign-song logic");
+    // The starting-song contract (limits design, Stage 2): a seed that starts
+    // with an OoT warp song loads under the songs-v2 id, with foreign-song
+    // logic or without, and is refused under every earlier id; the songs-v2
+    // id needs one.
+    seed.erase("accessibility");
+    auto warp = songs;
+    warp.required = {std::string(kStartingSongsWallmasterCapability)};
+    seed["entranceLayout"] = EncodeEntranceLayout(warp);
+    seed["oot"]["settings"]["gRandoSettings.StartingRequiemOfSpirit"] = 1;
+    RequireSupportedSeedDocument(seed, caps);
+    RequireSupportedSeedCapabilities(seed, caps);
+    seed.erase("songTravel");
+    RequireSupportedSeedDocument(seed, caps);
+    for (const auto &earlier : {old, songs}) {
+      seed["entranceLayout"] = EncodeEntranceLayout(earlier);
+      SeedRefused(seed, caps,
+                  "which does not admit a starting Requiem of Spirit");
+    }
+    seed.erase("oot");
+    seed["entranceLayout"] = EncodeEntranceLayout(warp);
+    SeedRefused(seed, caps, "without a starting warp song");
   }
   seed.erase("songTravel");
   seed.erase("accessibility");

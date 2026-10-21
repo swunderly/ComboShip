@@ -39,7 +39,7 @@ inline constexpr CapabilityValue kWallmastersOwnGameValues[] = { { "erWallmaster
 inline constexpr CapabilityValue kWallmastersVanillaValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
-inline constexpr CapabilityValue kWallmastersStartingSongsValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
+inline constexpr CapabilityValue kWallmastersStartingSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -77,7 +77,8 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // The same Own Game rules for a seed that starts with an OoT warp song under logic, with or without foreign-song
     // logic, in either quest context (limits design, Stage 2). The Temple probe plays the song from its GLOBAL node
     // (lemma L3); song destination shuffle and a starting Song of Soaring stay refused. A seed without such a song
-    // keeps the vanilla, quests or songs-v1 id, so its layout is the one earlier builds make.
+    // keeps the vanilla, quests or songs-v1 id, so its layout is the one earlier builds make. Public from 0.4.13; its
+    // id and rules are frozen from then on.
     { "wallmasters-own-game-songs-v2", kWallmastersStartingSongsValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
@@ -120,13 +121,14 @@ constexpr bool DevOnlyNeverPublic() {
     return true;
 }
 // Only the Own Game Wallmaster rows are Public: vanilla dungeons (owner decision 2026-10-18, M1 plan P1-05) and,
-// from 0.4.13, Master Quest dungeons (U11) and cross-game songs (limits design, Stage 1). Opening another row is a
-// separate, reviewed release decision.
+// from 0.4.13, Master Quest dungeons (U11), cross-game songs (limits design, Stage 1) and starting OoT warp songs
+// (Stage 2). Opening another row is a separate, reviewed release decision.
 constexpr bool OnlyOwnGameWallmastersPublic() {
     for (const auto& row : kEntranceCapabilities)
         for (const auto& value : row.values)
             if (value.stage == Stage::Public && row.id != "wallmasters-own-game-vanilla-v1" &&
-                row.id != "wallmasters-own-game-quests-v1" && row.id != "wallmasters-own-game-songs-v1")
+                row.id != "wallmasters-own-game-quests-v1" && row.id != "wallmasters-own-game-songs-v1" &&
+                row.id != "wallmasters-own-game-songs-v2")
                 return false;
     return true;
 }

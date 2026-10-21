@@ -2595,7 +2595,9 @@ Planned for 0.4.13 (Wallmaster limits design, Stage 2). OoTMM v32.3 lets a seed 
 Wallmaster Shuffle. The port refused one with every Wallmaster id ("Remove <song> from the starting items to use
 Wallmaster Shuffle.", D4), because its opposite-age Temple probe could not play songs (the port's Beginner preset, for
 one, starts with Prelude of Light: see the next section). A new capability, `wallmasters-own-game-songs-v2`
-(`Capabilities.h`), staged at Dev, lifts that refusal for the six OoT warp songs.
+(`Capabilities.h`), lifts that refusal for the six OoT warp songs. It is Public from 0.4.13 (one commit, which can be
+reverted alone to stage it at Dev again), and a `static_assert` keeps the four Own Game Wallmaster rows the only
+Public ones.
 
 - **What OoTMM checks.** `validateAgeTemple` (`packages/logic/src/solver/entrances.ts:265-287`) searches with the
   starting items only, from SPAWN, where only the opposite age may leave. Most OoT areas, the two spawn areas among
@@ -2643,9 +2645,11 @@ one, starts with Prelude of Light: see the next section). A new capability, `wal
   Shuffle, Full and the other entrance shuffles keep their refusals. The menu and the seed guard now read MM's saved
   starting Soaring (`RI_SONG_SOARING`) as generation reads it (`MmStartingItemName`); before, only generation
   refused it.
-- **While the id is staged,** a build without it keeps "Remove <song> from the starting items to use Wallmaster
-  Shuffle." for a starting warp song, in the menu, on the Generate button and in generation (`EntranceProfile.h`
-  `StartingWarpSongsRefusal`).
+- **The sentence is gone for the six warp songs.** "Remove <song> from the starting items to use Wallmaster
+  Shuffle." now shows only for Song of Soaring. With the id staged at Dev, a shipping build kept it for a starting
+  warp song in the menu, on the Generate button and in generation (`EntranceProfile.h` `StartingWarpSongsRefusal`,
+  removed with the flip to Public). A capability set without the songs-v2 id, which no build has now, refuses a
+  starting warp song in generation with developer text only.
 
 ## Beginner preset: Prelude of Light as a starting item (since 2026-10-13)
 
