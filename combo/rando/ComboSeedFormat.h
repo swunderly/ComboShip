@@ -41,7 +41,8 @@ inline bool IsComboSeedDocument(const nlohmann::json& seed) {
 // The song facts of a seed, which its layout's capability id must carry (limits design §3): whether OoT
 // logic is on (the seed's accessibility is not No Logic, so a Temple pass ran), the song travel map's logic
 // flags, and the starting warp songs and Song of Soaring of both games' settings, read as the profile reads
-// them (EntranceProfile.h ProfileEntranceFacts). No shared item family is a song (SharedItems.h). A missing
+// them (EntranceProfile.h ProfileEntranceFacts): MM's by 2Ship's spoiler names, as the seed stores them
+// (MmStartingItemName). No shared item family is a song (SharedItems.h). A missing
 // part counts as off, and so does a song travel map that does not parse: such a seed fails to load anyway
 // (ComboShip.cpp InstallSongTravel), and with no song facts the songs id is refused.
 inline Entrances::EntranceSettingsFacts SeedEntranceFacts(const nlohmann::json& seed) {
@@ -72,7 +73,7 @@ inline Entrances::EntranceSettingsFacts SeedEntranceFacts(const nlohmann::json& 
         if (const auto items = settings->find("gRando.StartingItems"); items != settings->end() && items->is_array())
             for (const auto& item : *items)
                 if (item.is_string())
-                    f.mmStartingItems.push_back(item.get<std::string>());
+                    f.mmStartingItems.push_back(Entrances::MmStartingItemName(item.get<std::string>()));
     return f;
 }
 // A layout's capability ids against the seed's song facts. Under logic, no id takes song destination shuffle

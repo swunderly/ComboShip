@@ -22,6 +22,13 @@ inline constexpr std::pair<const char*, const char*> kOotStartingSongSettings[] 
     { "StartingSerenadeOfWater", "Serenade of Water" },   { "StartingRequiemOfSpirit", "Requiem of Spirit" },
     { "StartingNocturneOfShadow", "Nocturne of Shadow" }, { "StartingPreludeOfLight", "Prelude of Light" },
 };
+// One of MM's starting items (gRando.StartingItems) by the name the refusals compare. Seeds and profiles store 2Ship's
+// spoiler names, which are the item ids (Items.cpp RI(), #id: "RI_SONG_SOARING"); only generation's dump uses display
+// names (BenPort.cpp sharedStartingItems: "Song of Soaring"). Both spellings give the display name. Soaring is the only
+// MM item a refusal names, as 2Ship has no OoT warp song item; any other item keeps its stored name.
+inline std::string MmStartingItemName(std::string_view item) {
+    return item == "RI_SONG_SOARING" ? "Song of Soaring" : std::string(item);
+}
 inline constexpr const char* kShipEntranceSettings[] = {
     "gRandoSettings.ShuffleDungeonsEntrances",
     "gRandoSettings.ShuffleBossEntrances",
@@ -106,11 +113,12 @@ inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
     if (f.songTravelLogic)
         return { "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster Shuffle.",
                  "song travel logic needs GLOBAL song sources (deferred)" };
+    // The readers store MM's items by display name (MmStartingItemName); facts made elsewhere may not.
     for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })
-        for (const auto& item : *list)
+        for (const auto& stored : *list)
             for (std::string_view song : { "Song of Soaring", "Minuet of Forest", "Bolero of Fire", "Serenade of Water",
                                            "Nocturne of Shadow", "Requiem of Spirit", "Prelude of Light" })
-                if (item == song)
+                if (const auto item = MmStartingItemName(stored); item == song)
                     return { "Remove " + item + " from the starting items to use Wallmaster Shuffle.",
                              "starting " + item + " needs GLOBAL song sources (deferred)" };
     return {};

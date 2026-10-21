@@ -213,6 +213,11 @@ assert ('for (std::string_view song : { "Song of Soaring", "Minuet of Forest", "
         '                                           "Nocturne of Shadow", "Requiem of Spirit", "Prelude of Light" })'
         in availability)
 assert 'for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })' in availability
+# MM's starting items are read by 2Ship's spoiler names (RI_SONG_SOARING) in seeds and profiles, by display names in
+# generation; the refusal takes both.
+assert 'if (const auto item = MmStartingItemName(stored); item == song)' in availability
+for reader in ('combo/rando/ComboSeedFormat.h', 'combo/rando/entrances/EntranceProfile.h'):
+    assert 'MmStartingItemName(item.get<std::string>())' in (source/reader).read_text(encoding='utf-8'), reader
 probe = (source/'soh/soh/Enhancements/randomizer/TempleProbe.cpp').read_text(encoding='utf-8')
 assert 'throw Failure(kUnsupported, "starting warp songs are not supported");' in probe
 assert 'if (!IsSharedStarterName(name) || IsWarpSong(it->second)) {' in probe

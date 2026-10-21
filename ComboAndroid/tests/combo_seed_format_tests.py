@@ -370,8 +370,11 @@ int main() {
                 auto prelude = seedOf(*base, id, songsMap, false);
                 prelude["oot"]["settings"]["gRandoSettings.StartingPreludeOfLight"] = 1;
                 refusedFor(prelude, "starting Prelude of Light");
+                // MM's starting items as a seed stores them: 2Ship's spoiler names (BenPort.cpp).
                 auto soaring = seedOf(*base, id, songsMap, false);
-                soaring["mm"]["settings"]["gRando.StartingItems"] = {"Song of Time", "Song of Soaring"};
+                soaring["mm"]["settings"]["gRando.StartingItems"] = {"RI_SONG_TIME", "RI_SONG_SOARING"};
+                refusedFor(soaring, "starting Song of Soaring");
+                soaring["mm"]["settings"]["gRando.StartingItems"] = {"Song of Soaring"};
                 refusedFor(soaring, "starting Song of Soaring");
                 prelude["accessibility"]["mode"] = "noLogic";
                 if (id != songsId)

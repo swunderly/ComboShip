@@ -23,11 +23,21 @@ def extract(signature):
     return headless[start:end]
 (a.build_dir/'headless_settings.inc').write_text('#include "rando/entrances/EntranceProfile.h"\n' + extract('struct HeadlessEntranceSettings {') + ';\n' +
     extract('HeadlessEntranceSettings EntranceSettingsForHeadless('), encoding='utf-8', newline='\n')
+# A seed of the 0.4.12 release, as it was dumped (BenPort.cpp MM_DumpRandoSettings writes MM's starting items by
+# 2Ship's spoiler names, which Items.cpp's RI() makes from the item ids). The MM menu writes the same names: its
+# catalogue values are the spoiler names (MM_DumpProfileCatalog).
+released = a.source/'ComboAndroid/tests/fixtures/wallmasters-vanilla-v1/seeds/mm-everyCheck-souls0-00.json'
+benport = (a.source/'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8')
+assert hostcxx.contains(benport, 'const char* name = Rando::StaticData::Items[rid].spoilerName;')
+assert hostcxx.contains(benport, 'nlohmann::json row = { { "value", MM_ProfileCatalogText(item.spoilerName) },')
+items = (a.source/'mm/2s2h/Rando/StaticData/Items.cpp').read_text(encoding='utf-8')
+assert hostcxx.contains(items, 'id, #id, article, name, type, itemId, getItemId, drawId')
+assert hostcxx.contains(items, 'RI(RI_SONG_SOARING,               "the",  "Song of Soaring",')
 for dev in (0, 1):
     exe = hostcxx.build(a.compiler, a.source/'ComboAndroid/tests/entrance_menu_rules_tests.cpp',
         includes=[a.source/'combo', a.json_include, a.build_dir], defines=(['COMBO_ENTRANCE_DEV=1'] if dev else []) + ['_CRT_SECURE_NO_WARNINGS'],
         msvc=['/bigobj', '/O2'], gnu=['-O2'], exe=a.build_dir/f'menu_rules_{dev}.exe')
-    subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
+    subprocess.run([str(exe), str(released)], check=True, timeout=hostcxx.RUN_TIMEOUT)
 # The profile page uses the same predicate on the draft's own Home mode. Its Generate button refuses the setting in
 # every randomizer mode, as generation does (ProfileBeginGeneration for a solo mode), not only in combined mode; vanilla
 # preparation ignores it (A-08).

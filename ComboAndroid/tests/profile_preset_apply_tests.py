@@ -41,13 +41,14 @@ def function(start):
 
 assert hostcxx.contains(text, 'if (MenuConfirm("Apply preset?", presetText.c_str(), "Apply preset") && Editable())'
                               ' ApplyCommunityPreset(preset);'), 'Home no longer applies presets through the tested code'
-# MM_DumpProfileCatalog's starting items per preset (BenPort.cpp), with each item's spoiler name from 2Ship's table.
+# MM_DumpProfileCatalog's starting items per preset (BenPort.cpp), with each item's spoiler name from 2Ship's table:
+# the item id itself (Items.cpp RI(), #id), so the catalogue, like a seed, names Soaring RI_SONG_SOARING.
 benport = (source / 'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8')
 begin = hostcxx.find(benport, 'const std::vector<RandoItemId> base =')
 finish = hostcxx.find(benport, 'data["defaults"]["gRando.StartingItems"] = itemNames(base);', begin)
 mm_starting_items = benport[begin:benport.index(';', finish) + 1]
-spoiler = dict(re.findall(r'RI\((RI_\w+),\s*"[^"]*",\s*("(?:[^"\\]|\\.)*")',
-                          (source / 'mm/2s2h/Rando/StaticData/Items.cpp').read_text(encoding='utf-8')))
+items_table = (source / 'mm/2s2h/Rando/StaticData/Items.cpp').read_text(encoding='utf-8')
+assert hostcxx.contains(items_table, 'id, #id, article, name, type, itemId, getItemId, drawId')
 item_ids = sorted(set(re.findall(r'\bRI_\w+\b', mm_starting_items)))
 harness = r'''
 #include <nlohmann/json.hpp>
@@ -69,7 +70,7 @@ struct Item {
     const char* spoilerName;
 };
 static const std::map<RandoItemId, Item> Items = { ''' + \
-    ', '.join(f'{{ {item}, {{ {spoiler[item]} }} }}' for item in item_ids) + r''' };
+    ', '.join(f'{{ {item}, {{ "{item}" }} }}' for item in item_ids) + r''' };
 } // namespace Rando::StaticData
 static const char* MM_ProfileCatalogText(const char* value) {
     return value ? value : "";
@@ -112,12 +113,12 @@ int main() {
         // MM's starting items: OoTMM's Default and Allsanity start with nothing (startingItems {}), Beginner with two
         // swords, the shared Hylian Shield, the Ocarina, Soaring and the Song of Time (presets.ts:1023-1032,1059).
         const Json mm = MmStartingItemsCatalog();
-        const Json base = Json::array({ "Progressive Sword", "Hero's Shield", "Ocarina of Time", "Song of Time" });
+        const Json base = Json::array({ "RI_PROGRESSIVE_SWORD", "RI_SHIELD_HERO", "RI_OCARINA", "RI_SONG_TIME" });
         Require(mm.at("defaults").at("gRando.StartingItems") == base,
                 "a file without its own MM list lost 2Ship's start");
         Json beginner = base;
-        beginner.push_back("Progressive Sword");
-        beginner.push_back("Song of Soaring");
+        beginner.push_back("RI_PROGRESSIVE_SWORD");
+        beginner.push_back("RI_SONG_SOARING");
         Require(mm.at("presetStartingItems") ==
                     Json::object({ { "0", Json::array() }, { "1", beginner }, { "2", Json::array() } }),
                 "a preset's MM starting items are not OoTMM's");

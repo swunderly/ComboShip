@@ -2572,11 +2572,13 @@ the three Own Game Wallmaster rows the only Public ones.
   songs seed's routes are the vanilla or quests id's routes for the same seed.
 - **Seed facts.** The song logic is in the seed's `songTravel` map, not in the entrance layout, so the seed guard
   (`ComboSeedFormat.h` `RequireSeedEntranceFacts`) checks the layout's id against it: only the songs id takes
-  foreign-song logic, and the songs id needs it; under logic no id takes song destination shuffle or a starting
-  warp song or Song of Soaring. It reads the seed's accessibility, its `songTravel` logic flags and both games'
-  starting-song settings. Profile settings documents carry no routes and skip it. Generation refuses an id named
-  by name (headless `--er-capability`) that does not match the facts, before any draw. 0.4.12 and the build with
-  only the quests id refuse a songs seed with "requires unknown capability" (`entrance_songs_seed_guard_tests.py`).
+  foreign-song logic, and the songs id needs it; under logic no id takes song destination shuffle or a starting warp
+  song or Song of Soaring. It reads the seed's accessibility, its `songTravel` logic flags and both games'
+  starting-song settings, MM's by 2Ship's spoiler names (`RI_SONG_SOARING`), which seeds and profiles store and the
+  profile menu reads the same way (`EntranceAvailability.h` `MmStartingItemName`; 0.4.12's menu missed MM's Soaring).
+  Profile settings documents carry no routes and skip it. Generation refuses an id named by name (headless
+  `--er-capability`) that does not match the facts, before any draw. 0.4.12 and the build with only the quests id
+  refuse a songs seed with "requires unknown capability" (`entrance_songs_seed_guard_tests.py`).
 - **Still refused (port limits).** A starting warp song or Soaring (it needs a song node in the probe), Warp Songs
   and Soaring Spots Shuffle (OoTMM's `erWarps`, which also gives Wallmasters the warp pads and owl statues as
   destinations), Full, and every other entrance shuffle keep their refusals.

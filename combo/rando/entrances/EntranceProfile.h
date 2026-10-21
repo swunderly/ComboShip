@@ -97,7 +97,7 @@ template <class Read> EntranceSettingsFacts ProfileEntranceFacts(const nlohmann:
     if (const auto it = mm.find("gRando.StartingItems"); it != mm.end() && it->is_array())
         for (const auto& item : *it)
             if (item.is_string())
-                f.mmStartingItems.push_back(item.get<std::string>());
+                f.mmStartingItems.push_back(MmStartingItemName(item.get<std::string>()));
     return f;
 }
 // What the native Master Quest roll can make of one dungeon (settings.cpp Context::FinalizeSettings).

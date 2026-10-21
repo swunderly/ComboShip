@@ -165,6 +165,10 @@ void UnsupportedBeforeAnyDraw() {
        }},
       {"starting Soaring",
        [](Settings &, TempleFacts &f) {
+         f.mmStartingItems = {"RI_SONG_SOARING"};
+       }},
+      {"starting Soaring by its display name",
+       [](Settings &, TempleFacts &f) {
          f.mmStartingItems = {"Song of Soaring"};
        }},
       {"starting OoT warp song",
@@ -188,7 +192,7 @@ void UnsupportedBeforeAnyDraw() {
       {"foreign songs logic with a starting Soaring",
        [](Settings &, TempleFacts &f) {
          f.foreignSongsLogic = true;
-         f.mmStartingItems = {"Song of Soaring"};
+         f.mmStartingItems = {"RI_SONG_SOARING"};
        }},
       {"glitched logic",
        [](Settings &, TempleFacts &f) { f.glitchless = false; }},

@@ -4,6 +4,7 @@
 #include "rando/entrances/EntranceProfile.h"
 #include "rando/entrances/TempleAdapter.h"
 #include <cassert>
+#include <fstream>
 #include <iostream>
 #include <set>
 using namespace ComboRando;
@@ -21,7 +22,8 @@ template <class F> void Reject(F fn) {
   }
   assert(failed);
 }
-int main() {
+int main(int argc, char **argv) {
+  assert(argc == 2); // a seed of the 0.4.12 release
   const auto caps = ActiveCapabilities();
   // The frozen vanilla id alone, and the catalog with the Master Quest id
   // (U11), whatever this build's stages.
@@ -177,8 +179,12 @@ int main() {
     song(name);
     settings.clear();
   }
-  draft["mm"]["settings"]["gRando.StartingItems"] = {"Song of Time",
-                                                     "Song of Soaring"};
+  // MM's starting items as the menu writes them: 2Ship's spoiler names, the
+  // MM_DumpProfileCatalog values (BenPort.cpp). The display name counts too.
+  draft["mm"]["settings"]["gRando.StartingItems"] = {"RI_SONG_TIME",
+                                                     "RI_SONG_SOARING"};
+  song("Song of Soaring");
+  draft["mm"]["settings"]["gRando.StartingItems"] = {"Song of Soaring"};
   song("Song of Soaring");
   settings[kNativeLogicRule] = 1;
   settings["gCombo.Rando.SongTravel"] = 1;
@@ -449,6 +455,61 @@ int main() {
   assert(MakePools(
              EntranceSettingsForHeadless(profile, {}, "", false, caps).settings)
              .empty());
+  // A seed of the 0.4.12 release (fixtures/wallmasters-vanilla-v1) as it was
+  // dumped, whose MM starting items are 2Ship's spoiler names. With Soaring
+  // added as the MM menu adds it, the menu, generation, the Temple gate and the
+  // seed guard refuse it with one sentence, under its own id and the songs id.
+  {
+    std::ifstream file(argv[1]);
+    const auto released = Json::parse(file);
+    assert(released.at("mm").at("settings").at("gRando.StartingItems") ==
+           Json::array({"RI_PROGRESSIVE_SWORD", "RI_SHIELD_HERO", "RI_OCARINA",
+                        "RI_SONG_TIME"}));
+    const auto seedRead = [&](const char *key, int fallback) {
+      return released.at("oot").at("settings").value(key, fallback);
+    };
+    SongTravelMap foreign;
+    foreign.foreignSongs = foreign.logicForeignSongs = true;
+    auto songsLayout = DecodeEntranceLayout(released.at("entranceLayout"));
+    assert(songsLayout.required ==
+           std::vector{std::string(kVanillaWallmasterCapability)});
+    songsLayout.required = {std::string(kSongsWallmasterCapability)};
+    auto songsSeed = released;
+    songsSeed["entranceLayout"] = EncodeEntranceLayout(songsLayout);
+    songsSeed["songTravel"] = foreign.json();
+    const std::string sentence = "Remove Song of Soaring from the starting "
+                                 "items to use Wallmaster Shuffle.",
+                      log = "starting Song of Soaring needs GLOBAL song "
+                            "sources (deferred)";
+    const Json *seeds[] = {&released, &songsSeed};
+    for (const auto *seed : seeds) {
+      RequireSupportedSeedCapabilities(*seed, caps);
+      assert(ProfileWallmasterRefusal(*seed, assets, seedRead).empty());
+      auto soaring = *seed;
+      soaring["mm"]["settings"]["gRando.StartingItems"].push_back(
+          "RI_SONG_SOARING");
+      const auto facts = SeedEntranceFacts(soaring);
+      assert(facts.mmStartingItems.back() == "Song of Soaring");
+      assert(ProfileEntranceFacts(soaring, seedRead).mmStartingItems ==
+             facts.mmStartingItems);
+      const auto menu = ProfileWallmasterRefusal(soaring, assets, seedRead);
+      plain(menu, sentence, log);
+      // Generation reads the MM dump's display names (BenPort.cpp
+      // sharedStartingItems).
+      TempleFacts generated;
+      static_cast<EntranceSettingsFacts &>(generated) = facts;
+      generated.mmStartingItems = {"Song of Time", "Song of Soaring"};
+      assert(menu == EntranceGenerationRefusal(generated) &&
+             menu == TempleSettingsRefusal(generated));
+      std::string why;
+      try {
+        RequireSupportedSeedCapabilities(soaring, caps);
+      } catch (const UnsupportedComboSeedFormat &error) {
+        why = error.what();
+      }
+      assert(why.find(log) != std::string::npos);
+    }
+  }
   std::cout << "PASS: shared menu/generation/Temple refusals, "
             << sentences.size()
             << " plain refusal sentences, vanilla asset policy, capability "
