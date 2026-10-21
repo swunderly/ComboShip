@@ -9534,7 +9534,16 @@
       }
     }
   ],
-  "saves": [],
+  "saves": [
+    {
+      "id": "file3-mm-everyCheck-souls0-00",
+      "file": "saves/file3-mm-everyCheck-souls0-00.combosav",
+      "slot": 2,
+      "corpusSeed": "mm-everyCheck-souls0-00",
+      "checkpoint": "MM: pause-menu owl save in South Clock Town on arrival; OoT: pause-menu save in the Market outside the Happy Mask Shop, reached through the Clock Tower door",
+      "playerName": "Link"
+    }
+  ],
   "fallbackSearch": {
     "firstMaster": 412070200,
     "tried": 11,
@@ -9611,6 +9620,16 @@
       "path": "inputs/plan.json",
       "bytes": 131381,
       "sha256": "4ee076d363f826563e3c5ad7394ce0559f1a7d3a89e55ff1a77f6bc857980747"
+    },
+    {
+      "path": "RUN-NOTE.txt",
+      "bytes": 927,
+      "sha256": "1826dea682d17e20cf64eab2bdc38263ef1187f827b603eb6067409e4c687489"
+    },
+    {
+      "path": "saves/file3-mm-everyCheck-souls0-00.combosav",
+      "bytes": 940390,
+      "sha256": "36b88281b909b882fd1817eb9063fa0c82d298d68a9f35c5f9e07d5233f54a0b"
     },
     {
       "path": "seeds/mm-completion-souls0.entrances.txt",
@@ -10816,7 +10835,7 @@
         }
       ],
       "sample": {
-        "status": "pending",
+        "status": "identical",
         "rows": [
           "mm-completion-souls0",
           "mm-completion-souls1",
@@ -10839,6 +10858,114 @@
           "oot-randomage-everyCheck-souls0-00",
           "random-everyCheck-souls0-00",
           "random-fallback-010"
+        ],
+        "comborandoSha256": "1c2d6aed1a8495e9d7d245c963ffdde15b29dbf3d63ccd07064924f7407d8585",
+        "results": [
+          {
+            "id": "mm-completion-souls0",
+            "seedSha256": "becf50dcf87ddde9d5c96311e10d28ca599c8cdde280914c9013ac672148a415",
+            "entrancesSha256": "024f524a4395b7b2c955af9b6de1601f860b5e90fbc37b0622ede81cc97ea858"
+          },
+          {
+            "id": "mm-completion-souls1",
+            "seedSha256": "c7c8e6b4c08ffe1eec12c2ce2072a03477ba7148abb12010d9e2bb52ac808b36",
+            "entrancesSha256": "b3739bcc48b01e735d3928ca8e6e71d5de7ae525019799bf872f9c1f9b805d94"
+          },
+          {
+            "id": "mm-everyCheck-souls0-00",
+            "seedSha256": "9d3b0eaac9940316eddc21a71170ba5913ae41de48798f79b6230ccb13e47ded",
+            "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+          },
+          {
+            "id": "mm-everyCheck-souls1",
+            "seedSha256": "99f822e82fccc96e5a667aece9abefd4f5187f966b4328cacf6dbf7e3c029114",
+            "entrancesSha256": "88c84d6e4b7c3962fe39e1d4f0f095e6a4090b954ae10a52e1a3aef6e4da0072"
+          },
+          {
+            "id": "mm-noLogic-souls0",
+            "seedSha256": "c7148a758ab7aab9de7e7f6d90a17783786e416831c7d45cdce0665c5c89e607",
+            "entrancesSha256": "1ad2ccbc7844d62953aae8ee9bfa7b37622427c0bb5fe5c1001926a35800ac26"
+          },
+          {
+            "id": "mm-noLogic-souls1",
+            "seedSha256": "00ccf624f20ccc23eaecc6f5caed33e41faeac13266b5ee825ef7e86db5b9c38",
+            "entrancesSha256": "6683600ed5bfaff421a3667fa1bb911677cd610c7d0cc065a215646cc0c8320b"
+          },
+          {
+            "id": "oot-adult-completion-souls0",
+            "seedSha256": "94a02e344e318d7a6217b863fde9d9b001830ae676784b0170d49012f6bc6b0a",
+            "entrancesSha256": "6f474f2a874d5465db2ecedbe69a17004f832e2fa4816fb1543dd28e300ff069"
+          },
+          {
+            "id": "oot-adult-completion-souls1",
+            "seedSha256": "1a363df44bed5a5d604fd32164df0b415038b497330352fd258889690b4d668e",
+            "entrancesSha256": "f87a264d7b6d299e1a6c8870a95b33ddf5bd8f0d50837d995cc692c98797213c"
+          },
+          {
+            "id": "oot-adult-everyCheck-souls0-00",
+            "seedSha256": "28de5e3089bf8e5bf0209e0967a12b2f79d2c346a4ae00d5c8c31cdde70559b3",
+            "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+          },
+          {
+            "id": "oot-adult-everyCheck-souls1",
+            "seedSha256": "c0d576dcd9f16bdd7536c86ba96378191987eedf86325f3401bbf1832f38546d",
+            "entrancesSha256": "6dfeb62d51aae82032e07323ca736ef453147f84b60e60ef9aec6bd6da1e070e"
+          },
+          {
+            "id": "oot-adult-noLogic-souls0",
+            "seedSha256": "2e5a30c93e8e902b13f352344100ffe799940ed0bfc6ff10a3cacbacd464a730",
+            "entrancesSha256": "49f0854f77820a2a90ee4d302a2cad49df56219cbe13affc6c5abbecd73c9ff4"
+          },
+          {
+            "id": "oot-adult-noLogic-souls1",
+            "seedSha256": "00784df1b4af379270f7dcd836d99adf62b7b0c30f6d5084aa79a69272b5dc63",
+            "entrancesSha256": "7c54d016aedede31a26702869095c059d7ca60ca80d76795802a22768d9c6a79"
+          },
+          {
+            "id": "oot-child-completion-souls0",
+            "seedSha256": "325523e17c4f394dbffea43d37a2da712130a6bb79c4243cb64771e5a212e265",
+            "entrancesSha256": "f1878c17114054ab979f98200916f7692013c670077f55d5e5c78d1949193704"
+          },
+          {
+            "id": "oot-child-completion-souls1",
+            "seedSha256": "9a782f077b9fd64c98e5ce0b82a58d4f8317081d43a2235b455986ab47d6cb1f",
+            "entrancesSha256": "fca4868860bcb298fe1ae3256362f9558cbf3981341fb3c3a21286f504fbfcec"
+          },
+          {
+            "id": "oot-child-everyCheck-souls0-00",
+            "seedSha256": "4ce1d32d5078c2cba14523905c6e1906023def796f99fba8d07fb61d75c8a1d3",
+            "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+          },
+          {
+            "id": "oot-child-everyCheck-souls1",
+            "seedSha256": "bfce512c181c6ba6122427ca453a3e353a6ce05c4f8a7c8dc21533c7ea3a476c",
+            "entrancesSha256": "5b4d03dde0089d1a629119c55a837caef472fde68ebd8765da28725cf2d145e0"
+          },
+          {
+            "id": "oot-child-noLogic-souls0",
+            "seedSha256": "beb9162ae0852bee281a5218c5f8f457725cc7b297b2c0c60c3e208ee45a2bf6",
+            "entrancesSha256": "d89d94b51c52c929f969764886f76f91bcaa80f2d4538524e25a014f28d8ce2f"
+          },
+          {
+            "id": "oot-child-noLogic-souls1",
+            "seedSha256": "dde33e92435a71e28faf3db5083a6885b01b2415807040ec92c6c626d0e04643",
+            "entrancesSha256": "6ec424062d99dca0147fa531da5d8affb6d1e174e73461ed8c1ad3322a92b222"
+          },
+          {
+            "id": "oot-randomage-everyCheck-souls0-00",
+            "seedSha256": "bf9e032b6b98a39240c6abec2b6f6aadd93060e0747f4814b0dc105ee128adb9",
+            "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+          },
+          {
+            "id": "random-everyCheck-souls0-00",
+            "seedSha256": "e5ba4be38459cb6b4a1bc58182be8e28e9fade8f1be7091b18c2011ff38097fc",
+            "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+          },
+          {
+            "id": "random-fallback-010",
+            "seedSha256": "c98eb3ab5a2dc5391e64c281713024f938ab102e1a5edbc593019758b76f53da",
+            "entrancesSha256": "44e33a137b166d5e26c2af6db460957fa86bd399f08f5c24420086edeb63674d"
+          }
         ]
       }
     }

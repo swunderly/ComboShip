@@ -1,0 +1,12 @@
+Run note for this corpus (0.4.12 release candidate, 116 rows)
+
+inputs/plan.json records a generation and reproduction limit of 900 s ("timeouts": {"generation": 900}).
+Two reproductions hit that limit on the emulator (exit 124, an infrastructure timeout with no error):
+oot-adult-everyCheck-souls0-08 and oot-adult-everyCheck-souls0-17. The two shards stopped there, as planned.
+The remaining 83 rows (including those two) then ran with the same bundle, the same comborando and the
+unchanged run_row, with one change: a limit of 1800 s instead of 900 s. Both reruns produced seeds
+byte-identical to the timed-out attempts. Every row's generation exited 0 and every reproduction was
+identical. plan.json was not edited, so it still says 900 s.
+
+Evidence (kept with the run records, not committed): tooling/claude-cleanup/gates-0412/corpus/
+(receipt.json, shards-start.txt, timeouts/, phase2/run-phase2.sh, timing-summary.json).
