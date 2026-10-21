@@ -8,9 +8,11 @@ without that logic: an all-vanilla one (wallmasters-own-game-vanilla-v1) and a M
 them, with their shipping set and their whole catalog alike:
 - 0.4.12 (combo/ at tag v0.4.12-android) refuses both songs seeds and the Master Quest one, which name a capability
   it does not know (EntranceLayout.h ValidateEntranceLayoutSettings), and loads the all-vanilla one;
-- the quests catalogue (combo/ at cda22efd, the Master Quest Wallmaster build) refuses both songs seeds the same way
-  and loads the other two.
-Reports SKIPPED when the checkout has neither the tag nor the commit (a shallow clone).
+- the quests catalogue (combo/ at the parent of the first commit that adds wallmasters-own-game-songs-v1 to
+  Capabilities.h, found by content: the Master Quest Wallmaster build, whose combo/ is cda22efd's) refuses both songs
+  seeds the same way and loads the other two.
+Each older build is checked on its own. One that this checkout's history lacks is SKIPPED only in a shallow clone,
+and the report says which builds ran; in a full clone the test fails and says what to fetch.
 """
 from pathlib import Path
 import argparse
@@ -29,20 +31,45 @@ p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 source, work = a.source.resolve(), a.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
-OLDER = [('v0.4.12-android', '33c972f1c42428ff52da2e0a99e5884f57f9db03', False),
-         ('cda22efd', 'cda22efd1c3587a3409b65ab5054b3a24c47753d', True)]
+SONGS_ID, CAPABILITIES = 'wallmasters-own-game-songs-v1', 'combo/rando/entrances/Capabilities.h'
+
+
+def git(*command):
+    return subprocess.run(['git', '-C', str(source), *command], capture_output=True, text=True, timeout=300)
 
 
 def resolve(rev):
-    found = subprocess.run(['git', '-C', str(source), 'rev-parse', '--verify', '--quiet', rev + '^{commit}'],
-                           capture_output=True, text=True, timeout=60)
+    found = git('rev-parse', '--verify', '--quiet', rev + '^{commit}')
     return found.stdout.strip() if found.returncode == 0 else None
 
 
-missing = [rev for rev, _, _ in OLDER if resolve(rev) is None]
-if missing:
-    print(f'SKIPPED: this checkout lacks {", ".join(missing)} (fetch the fork\'s tags and history to run the older '
-          'seed guards)')
+def quests_base():
+    """The parent of the first commit that adds the songs id to the capability catalogue, or None."""
+    added = git('log', '--reverse', '--format=%H', '-S', SONGS_ID, '--', CAPABILITIES)
+    first = added.stdout.split()[0] if added.returncode == 0 and added.stdout.split() else None
+    return resolve(first + '^') if first else None
+
+
+shallow = git('rev-parse', '--is-shallow-repository')
+if shallow.returncode != 0:
+    sys.exit(f'FAIL: {source} is not a git checkout, so the older seed guards cannot be read from its history')
+shallow = shallow.stdout.strip() == 'true'
+# (label, how to find it, what to fetch, whether that build knows the quests id)
+OLDER = [('v0.4.12-android', lambda: resolve('v0.4.12-android'), "the fork's tags (git fetch --tags)", False),
+         ('quests catalogue', quests_base, f'the history that adds {SONGS_ID} to {CAPABILITIES}', True)]
+builds, skipped = [], []
+for label, find, fetch, knows_quests in OLDER:
+    commit = find()
+    if commit:
+        builds.append((label, commit, knows_quests))
+    elif shallow:
+        skipped.append(label)
+    else:
+        sys.exit(f'FAIL: this checkout is not shallow but has no {label} build; fetch {fetch} to run its seed guard')
+lacking = ' and '.join(f'the {label} build' for label in skipped)
+if not builds:
+    print(f'SKIPPED: this shallow checkout lacks {lacking} (fetch the full history and the tags to run the older seed '
+          'guards)')
     sys.exit(0)
 
 # This build's seeds.
@@ -137,8 +164,10 @@ int main(int argc, char** argv) {
     std::cout << "refuses both foreign-song Wallmaster seeds and loads the others it knows\n";
 }
 ''', encoding='utf-8')
-for rev, commit, knows_quests in OLDER:
-    assert resolve(rev) == commit, rev
+for label, commit, knows_quests in builds:
+    if label == 'v0.4.12-android':
+        assert commit == '33c972f1c42428ff52da2e0a99e5884f57f9db03', commit
+    rev = label.replace(' ', '-')
     old = work/rev
     archive = subprocess.run(['git', '-C', str(source), 'archive', '--format=tar', commit, 'combo'],
                              capture_output=True, check=True, timeout=300).stdout
@@ -151,5 +180,7 @@ for rev, commit, knows_quests in OLDER:
                         defines=['_CRT_SECURE_NO_WARNINGS'], msvc=['/bigobj'], exe=work/f'guard_{rev}.exe')
     subprocess.run([str(exe), *map(str, seeds), '1' if knows_quests else '0'], check=True,
                    timeout=hostcxx.RUN_TIMEOUT)
-    print(f'PASS {rev} ({commit[:8]}) refuses both wallmasters-own-game-songs-v1 seeds of this build and loads its '
-          'seeds without foreign-song logic' + (' (vanilla and Master Quest)' if knows_quests else ' (all-vanilla)'))
+    print(f'PASS {label} ({commit[:8]}) refuses both {SONGS_ID} seeds of this build and loads its seeds without '
+          'foreign-song logic' + (' (vanilla and Master Quest)' if knows_quests else ' (all-vanilla)'))
+if skipped:
+    print(f'SKIPPED: this shallow checkout lacks {lacking}; the other older seed guard passed')
