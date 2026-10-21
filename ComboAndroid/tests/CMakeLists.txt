@@ -906,13 +906,13 @@ combo_json_harness_test(entrance_songs_generator_and_shortcut_differential entra
 combo_json_harness_test(entrance_menu_and_generation_availability entrance_menu_rules_tests.py)
 combo_json_harness_test(entrance_solo_modes_refuse_before_generation entrance_game_mode_guard_tests.py)
 combo_json_harness_test(entrance_release_configuration_coverage entrance_release_coverage_tests.py)
-# 0.4.12's own seed guard (combo/ at tag v0.4.12-rc1) refuses a Master Quest Wallmaster seed and loads an all-vanilla
-# one of this build; reported as skipped without the tag.
+# 0.4.12's own seed guard (combo/ at tag v0.4.12-android) refuses a Master Quest Wallmaster seed and loads an
+# all-vanilla one of this build; reported as skipped without the tag.
 combo_json_harness_test(entrance_quests_seeds_refused_by_0412 entrance_quests_seed_guard_tests.py)
 if(TEST entrance_quests_seeds_refused_by_0412)
     set_tests_properties(entrance_quests_seeds_refused_by_0412 PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 endif()
-# 0.4.12 and the Master Quest Wallmaster build (b4f69772) refuse a seed with "Play warp songs across games" in logic
+# 0.4.12 and the Master Quest Wallmaster build (cda22efd) refuse a seed with "Play warp songs across games" in logic
 # and load this build's seeds without it; reported as skipped without that history.
 combo_json_harness_test(entrance_songs_seeds_refused_by_older_builds entrance_songs_seed_guard_tests.py)
 if(TEST entrance_songs_seeds_refused_by_older_builds)

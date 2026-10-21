@@ -2,10 +2,10 @@
 
 This build writes two Wallmaster Shuffle (Own Game) seeds with its own headers: one with Master Quest dungeons,
 which requires wallmasters-own-game-quests-v1, and one all-vanilla, which requires the frozen
-wallmasters-own-game-vanilla-v1. The 0.4.12 release candidate's own seed guard (combo/ at tag v0.4.12-rc1, read
+wallmasters-own-game-vanilla-v1. The 0.4.12 release's own seed guard (combo/ at tag v0.4.12-android, read
 from this checkout's history) is then compiled and run on both: it must refuse the first, which names a capability
 0.4.12 does not know (EntranceLayout.h ValidateEntranceLayoutSettings), and accept the second, with its shipping
-set and its whole catalog alike. Reports SKIPPED when the checkout has no v0.4.12-rc1 tag (a shallow clone).
+set and its whole catalog alike. Reports SKIPPED when the checkout has no v0.4.12-android tag (a shallow clone).
 """
 from pathlib import Path
 import argparse
@@ -24,7 +24,7 @@ p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 source, work = a.source.resolve(), a.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
-TAG, COMMIT = 'v0.4.12-rc1', '3151532966517b945c902a0b379ad913b8fe7cfb'
+TAG, COMMIT = 'v0.4.12-android', '33c972f1c42428ff52da2e0a99e5884f57f9db03'
 
 found = subprocess.run(['git', '-C', str(source), 'rev-parse', '--verify', '--quiet', TAG + '^{commit}'],
                        capture_output=True, text=True, timeout=60)

@@ -6,9 +6,9 @@ wallmasters-own-game-songs-v1, once with all-vanilla dungeons and once with Mast
 without that logic: an all-vanilla one (wallmasters-own-game-vanilla-v1) and a Master Quest one
 (wallmasters-own-game-quests-v1). Two older seed guards are then compiled from this checkout's history and run on
 them, with their shipping set and their whole catalog alike:
-- 0.4.12 (combo/ at tag v0.4.12-rc1) refuses both songs seeds and the Master Quest one, which name a capability it does
-  not know (EntranceLayout.h ValidateEntranceLayoutSettings), and loads the all-vanilla one;
-- the quests catalogue (combo/ at b4f69772, the Master Quest Wallmaster build) refuses both songs seeds the same way
+- 0.4.12 (combo/ at tag v0.4.12-android) refuses both songs seeds and the Master Quest one, which name a capability
+  it does not know (EntranceLayout.h ValidateEntranceLayoutSettings), and loads the all-vanilla one;
+- the quests catalogue (combo/ at cda22efd, the Master Quest Wallmaster build) refuses both songs seeds the same way
   and loads the other two.
 Reports SKIPPED when the checkout has neither the tag nor the commit (a shallow clone).
 """
@@ -29,8 +29,8 @@ p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 a = p.parse_args()
 source, work = a.source.resolve(), a.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
-OLDER = [('v0.4.12-rc1', '3151532966517b945c902a0b379ad913b8fe7cfb', False),
-         ('b4f69772', 'b4f697721ae7b76ea64ccd2d14dc42cd0eea9505', True)]
+OLDER = [('v0.4.12-android', '33c972f1c42428ff52da2e0a99e5884f57f9db03', False),
+         ('cda22efd', 'cda22efd1c3587a3409b65ab5054b3a24c47753d', True)]
 
 
 def resolve(rev):
