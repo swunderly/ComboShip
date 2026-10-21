@@ -5,8 +5,10 @@ SOARING areas is false in validateAgeTemple, so "Play warp songs across games" (
 song*Mm) and Ageless Song of Soaring (agelessSoaring) cannot change its answer. A song exit is an exit into a
 warp-song or Soaring area: OoT SONG_TP_* and MM SOARING, MM SOARING and OOT SONG_TP_*. The other exits of those
 areas are unconditional but lead only to virtual dead ends (EGGS, ACCESS) or to WARP_SONGS, whose own exits are
-ACCESS and song exits; they do not depend on any song setting. The Temple probe (TempleProbe.cpp) therefore needs
-no song node while no song starts in either game, which the port refuses for every Wallmaster id.
+ACCESS and song exits; they do not depend on any song setting. The Temple probe (TempleProbe.cpp) therefore needed
+no song node while no song starts in either game, which every Wallmaster id but wallmasters-own-game-songs-v2 refuses.
+That id (Stage 2) takes a starting OoT warp song through the probe's GLOBAL node (entrance_temple_global_lemma_tests.py);
+a starting Song of Soaring stays refused under every id.
 
 Contract evidence only, not behaviour. Skipped without the optional checkout, and failing (never skipped) when the
 checkout is at another revision.
@@ -199,8 +201,9 @@ for key in ('songEventsShuffleOot', 'songEventsShuffleMm'):
     assert block[:block.index('}')].rstrip().endswith('default: false'), key
 
 # 6. The port side of the hypothesis: it has no Song Events Shuffle, no song notes and no shared warp song or Soaring
-# family, and every Wallmaster id refuses a starting warp song or Song of Soaring in either game before any draw
-# (EntranceAvailability.h). The native probe takes a starting OoT warp song through its GLOBAL node (Stage 2, lemma L3,
+# family; every Wallmaster id refuses a starting Song of Soaring in either game before any draw, and every id but
+# wallmasters-own-game-songs-v2 a starting OoT warp song (EntranceAvailability.h, EntranceProfile.h, UnifiedBridge.h,
+# ComboSeedFormat.h). The native probe takes a starting OoT warp song through its GLOBAL node (Stage 2, lemma L3,
 # entrance_temple_global_lemma_tests.py), and still refuses a warp song among the foreign starting items.
 port = [p for root in ('combo', 'soh/soh', 'mm/2s2h') for p in (source/root).rglob('*')
         if p.suffix in ('.h', '.cpp', '.c', '.inc', '.hpp')]
@@ -211,15 +214,20 @@ shared = (source/'combo/rando/SharedItems.h').read_text(encoding='utf-8')
 families = re.findall(r'^\s+(SF_[A-Z_]+)[,=]', shared[shared.index('enum'):shared.index('SF_COUNT')], re.M)
 assert families and not [f for f in families if re.search('MINUET|BOLERO|SERENADE|REQUIEM|NOCTURNE|PRELUDE|SOAR', f)]
 availability = (source/'combo/rando/entrances/EntranceAvailability.h').read_text(encoding='utf-8')
-assert ('for (std::string_view song : { "Song of Soaring", "Minuet of Forest", "Bolero of Fire", "Serenade of Water",\n'
-        '                                           "Nocturne of Shadow", "Requiem of Spirit", "Prelude of Light" })'
-        in availability)
-assert 'for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })' in availability
+refusal = availability[availability.index('inline EntranceRefusal TempleSettingsRefusal('):]
+refusal = refusal[:refusal.index('\n}\n')]
+assert 'for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })' in refusal
 # MM's starting items are read by 2Ship's spoiler names (RI_SONG_SOARING) in seeds and profiles, by display names in
 # generation; the refusal takes both.
-assert 'if (const auto item = MmStartingItemName(stored); item == song)' in availability
+assert 'if (const auto item = MmStartingItemName(stored); item == "Song of Soaring")' in refusal
 for reader in ('combo/rando/ComboSeedFormat.h', 'combo/rando/entrances/EntranceProfile.h'):
     assert 'MmStartingItemName(item.get<std::string>())' in (source/reader).read_text(encoding='utf-8'), reader
+warp = availability[availability.index('inline std::string StartingWarpSong('):]
+warp = warp[:warp.index('\n}\n')]
+assert 'for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })' in warp
+assert 'for (const auto& setting : kOotStartingSongSettings)' in warp
+seed_format = (source/'combo/rando/ComboSeedFormat.h').read_text(encoding='utf-8')
+assert 'if (!song.empty() && !startingSongs)' in seed_format and 'if (song.empty() && startingSongs)' in seed_format
 probe = (source/'soh/soh/Enhancements/randomizer/TempleProbe.cpp').read_text(encoding='utf-8')
 assert 'overlay.global = GlobalEdges();' in probe and 'starting warp songs are not supported' not in probe
 assert 'if (!IsSharedStarterName(name) || IsWarpSong(it->second)) {' in probe

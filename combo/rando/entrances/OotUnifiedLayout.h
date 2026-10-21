@@ -1,6 +1,6 @@
 // OoT half of the unified layout and candidate-world overlay. Source bindings are generated from the
 // pinned actor/anchor audit. The frozen vanilla capability rejects MQ, never converting it into a smaller
-// source pool; the quests and songs capabilities bind the quest context the layout records.
+// source pool; the quests and both songs capabilities bind the quest context the layout records.
 #pragma once
 #include "rando/ComboSeedFormat.h"
 #include "rando/entrances/CandidateWorld.h"
@@ -20,9 +20,10 @@ inline void RequireVanillaOotQuests(const OotQuests& quests) {
         throw std::invalid_argument("Wallmaster Shuffle currently supports vanilla OoT dungeons only");
 }
 // Before a layout exists (generation, candidate assumptions, the Temple probe), a Master Quest dungeon is
-// admitted only while this build has the quests or the songs capability.
+// admitted only while this build has the quests or a songs capability.
 inline void RequireAdmittedOotQuests(const OotQuests& quests, const CapabilitySet& caps) {
-    if (!caps.Active(kQuestsWallmasterCapability) && !caps.Active(kSongsWallmasterCapability))
+    if (!caps.Active(kQuestsWallmasterCapability) && !caps.Active(kSongsWallmasterCapability) &&
+        !caps.Active(kStartingSongsWallmasterCapability))
         RequireVanillaOotQuests(quests);
 }
 inline OotQuests DecodeOotAreaContext(const nlohmann::json& value) {
@@ -106,13 +107,14 @@ class OotUnifiedLayout {
         OotUnifiedRoutes next;
         if (!validated.oot.empty()) {
             // The frozen vanilla id binds all-vanilla dungeons; the quests id a context with a Master Quest dungeon,
-            // which Validate requires of it; the songs id either.
+            // which Validate requires of it; the songs ids either.
             if (decoded.required == std::vector<std::string>{ std::string(kVanillaWallmasterCapability) })
                 RequireVanillaOotQuests(decoded.ootMq);
             else if (decoded.required != std::vector<std::string>{ std::string(kQuestsWallmasterCapability) } &&
-                     decoded.required != std::vector<std::string>{ std::string(kSongsWallmasterCapability) })
+                     decoded.required != std::vector<std::string>{ std::string(kSongsWallmasterCapability) } &&
+                     decoded.required != std::vector<std::string>{ std::string(kStartingSongsWallmasterCapability) })
                 throw std::invalid_argument(
-                    "OoT Wallmaster routes require the vanilla, Master Quest or foreign-song capability");
+                    "OoT Wallmaster routes require the vanilla, Master Quest or a songs capability");
         }
         for (const auto& route : validated.oot) {
             const auto& src = *route.source;

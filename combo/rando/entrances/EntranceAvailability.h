@@ -29,6 +29,17 @@ inline constexpr std::pair<const char*, const char*> kOotStartingSongSettings[] 
 inline std::string MmStartingItemName(std::string_view item) {
     return item == "RI_SONG_SOARING" ? "Song of Soaring" : std::string(item);
 }
+// The first OoT warp song among the starting items of either game, or empty. A seed with one under logic takes
+// wallmasters-own-game-songs-v2 (UnifiedBridge.h UnifiedWarpSongRequirement, ComboSeedFormat.h); every earlier
+// Wallmaster id refuses it.
+inline std::string StartingWarpSong(const EntranceSettingsFacts& f) {
+    for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })
+        for (const auto& item : *list)
+            for (const auto& setting : kOotStartingSongSettings)
+                if (item == setting.second)
+                    return item;
+    return {};
+}
 inline constexpr const char* kShipEntranceSettings[] = {
     "gRandoSettings.ShuffleDungeonsEntrances",
     "gRandoSettings.ShuffleBossEntrances",
@@ -100,8 +111,11 @@ inline EntranceRefusal EnemyRandomizerRefusal() {
     return { "Turn off Enemy Randomizer to use Wallmaster Shuffle.", "Wallmaster Shuffle needs Enemy Randomizer off" };
 }
 // What the Temple probe cannot validate yet. Foreign-song logic ("Play warp songs across games") is not here: with no
-// starting warp song or Soaring, which this refuses, it cannot change OoTMM's Temple check (lemma S1,
-// entrance_temple_song_lemma_tests.py), so the probe takes it as it is.
+// starting song it cannot change OoTMM's Temple check (lemma S1, entrance_temple_song_lemma_tests.py), so the probe
+// takes it as it is. Nor is a starting OoT warp song: the probe plays it from its GLOBAL node (lemma L3,
+// entrance_temple_global_lemma_tests.py), and MM adds no Temple path while song destinations stay put and Soaring does
+// not start (the Mask Shop lemma). A starting Song of Soaring could reach MM's owls first, which needs a Temple check
+// through MM.
 inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
     if (!f.logicEnabled)
         return {};
@@ -116,11 +130,9 @@ inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
     // The readers store MM's items by display name (MmStartingItemName); facts made elsewhere may not.
     for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })
         for (const auto& stored : *list)
-            for (std::string_view song : { "Song of Soaring", "Minuet of Forest", "Bolero of Fire", "Serenade of Water",
-                                           "Nocturne of Shadow", "Requiem of Spirit", "Prelude of Light" })
-                if (const auto item = MmStartingItemName(stored); item == song)
-                    return { "Remove " + item + " from the starting items to use Wallmaster Shuffle.",
-                             "starting " + item + " needs GLOBAL song sources (deferred)" };
+            if (const auto item = MmStartingItemName(stored); item == "Song of Soaring")
+                return { "Remove " + item + " from the starting items to use Wallmaster Shuffle.",
+                         "starting " + item + " needs a Temple check through MM (deferred)" };
     return {};
 }
 inline EntranceRefusal WallmasterSettingsRefusal(const EntranceSettingsFacts& f) {

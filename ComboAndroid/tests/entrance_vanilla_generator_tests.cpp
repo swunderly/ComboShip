@@ -9,7 +9,9 @@
 // The quest context read before the oracle's first reset must be the one after
 // it, for either id. Run with a third argument, "songs", it checks foreign-song
 // logic instead (limits design, Stage 1): the songs id in every quest context,
-// and the shortcut differential with the songs on.
+// and the shortcut differential with the songs on; with "warp", a starting OoT
+// warp song (Stage 2): the songs-v2 id in every quest context, and the shortcut
+// differential with the song.
 #include "rando/entrances/UnifiedBridge.h"
 #include <cassert>
 #include <cstdlib>
@@ -229,6 +231,12 @@ static std::string Dump(bool mm) {
       {"sharedStartingItems", Json::array()}}
       .dump();
 }
+// An OoT dump whose native starting inventory holds an OoT warp song.
+static std::string WarpDump(const std::string &song = "Prelude of Light") {
+  auto dump = Json::parse(Dump(false));
+  dump["sharedStartingItems"] = {song};
+  return dump.dump();
+}
 static UnifiedGeneration Generation(uint32_t seed = 1) {
   UnifiedGeneration g;
   g.settings.erWallmasters = Mode::OwnGame;
@@ -264,7 +272,7 @@ static Result Run(uint32_t seed, uint8_t age, bool mmStart, OotAccess access,
                   bool shortcut, bool restricted = false,
                   bool templeBaseFalse = false,
                   const CapabilitySet *chosenBySettings = nullptr,
-                  bool foreignSongs = false) {
+                  bool foreignSongs = false, const std::string &warpSong = "") {
   Fake::Reset();
   Fake::startAges = age;
   Fake::restricted = restricted;
@@ -275,6 +283,8 @@ static Result Run(uint32_t seed, uint8_t age, bool mmStart, OotAccess access,
     g.active = *chosenBySettings;
   }
   g.foreignSongsLogic = foreignSongs;
+  if (!warpSong.empty())
+    g.ootDump = WarpDump(warpSong);
   g.mmStart = mmStart;
   g.access = access;
   g.wallmasterShortcut = shortcut;
@@ -416,16 +426,76 @@ static void CheckPlainRefusals() {
   assert(Refusal(g).what() ==
          std::string(kSongsWallmasterCapability) +
              " needs foreign-song logic, which this seed does not have");
+  // A starting Song of Soaring, in either game's list, is refused by every id.
   for (bool mm : {false, true}) {
     g = Generation();
     auto dump = Json::parse(mm ? g.mmDump : g.ootDump);
-    const std::string song = mm ? "Song of Soaring" : "Prelude of Light";
-    dump["sharedStartingItems"] = {song};
+    dump["sharedStartingItems"] = {"Song of Soaring"};
     (mm ? g.mmDump : g.ootDump) = dump.dump();
     facts = {};
-    (mm ? facts.mmStartingItems : facts.ootStartingItems) = {song};
+    (mm ? facts.mmStartingItems : facts.ootStartingItems) = {"Song of Soaring"};
     same(g, facts);
   }
+  // A starting OoT warp song (limits design, Stage 2) has the menu's sentence
+  // in a set without wallmasters-own-game-songs-v2, as a build where it is
+  // staged: after the oracle's reset, before any draw or native change.
+  const auto withoutStartingSongs =
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability) |
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kQuestsWallmasterCapability) |
+      CapabilitySet::AtLeast(Stage::Hidden).Only(kSongsWallmasterCapability);
+  for (const bool mm : {false, true}) {
+    Fake::Reset();
+    g = Generation();
+    g.capability.clear();
+    g.active = withoutStartingSongs;
+    g.active.devBuild = true;
+    auto dump = Json::parse(mm ? g.mmDump : g.ootDump);
+    dump["sharedStartingItems"] = {"Nocturne of Shadow"};
+    (mm ? g.mmDump : g.ootDump) = dump.dump();
+    facts = {};
+    (mm ? facts.mmStartingItems
+        : facts.ootStartingItems) = {"Nocturne of Shadow"};
+    assert(EntranceGenerationRefusal(facts).empty());
+    const auto error = Refusal(g);
+    const auto menu = StartingWarpSongsRefusal(facts, g.active);
+    assert(!menu.empty() && error.player() == menu.player &&
+           error.what() == menu.log);
+  }
+  // With the songs-v2 id an id named by name must match the starting song,
+  // before any draw or native change (developer text). No Logic has none.
+  for (const auto &[id, warp, foreign, why] :
+       {std::tuple{kVanillaWallmasterCapability, true, false,
+                   " does not admit a starting warp song"},
+        std::tuple{kQuestsWallmasterCapability, true, false,
+                   " does not admit a starting warp song"},
+        std::tuple{kSongsWallmasterCapability, true, true,
+                   " does not admit a starting warp song"},
+        std::tuple{
+            kStartingSongsWallmasterCapability, false, false,
+            " needs a starting warp song, which this seed does not have"},
+        std::tuple{kStartingSongsWallmasterCapability, false, true,
+                   " needs a starting warp song, which this seed does not "
+                   "have"}}) {
+    Fake::Reset();
+    if (id == kQuestsWallmasterCapability)
+      Fake::quests[OotMqIndex("Forest")] = true;
+    g = Generation();
+    g.capability = std::string(id);
+    g.foreignSongsLogic = foreign;
+    if (warp)
+      g.ootDump = WarpDump();
+    const auto error = Refusal(g);
+    assert(error.what() == std::string(id) + why &&
+           error.player() == error.what());
+  }
+  Fake::Reset();
+  g = Generation();
+  g.capability = std::string(kStartingSongsWallmasterCapability);
+  g.ootDump = WarpDump();
+  g.access = OotAccess::NO_LOGIC;
+  assert(Refusal(g).what() ==
+         std::string(kStartingSongsWallmasterCapability) +
+             " needs a starting warp song, which this seed does not have");
   g = Generation();
   g.readSetting = reading("gRandoSettings.LogicRules", 2);
   facts = {};
@@ -958,10 +1028,219 @@ static Json SongDifferential() {
               {"songShortcutPairs", shortcuts},
               {"songCorpusFnv64AsVanilla", corpus}};
 }
+// A starting OoT warp song (limits design, Stage 2), chosen by settings in a
+// build with wallmasters-own-game-songs-v2: every quest context of OoTMM's
+// bundled data takes the songs-v2 id, with foreign-song logic or without, the
+// capacity shortfalls of tools/ootmm/m1-contract.json are refused as without
+// the song, Legacy Master Quest data keeps its refusal, and No Logic keeps the
+// earlier ids and their layout. The songs-v2 id has the same rules: a layout
+// with its id swapped for the one the context takes without the song
+// validates and has that generation's routes. While the id is staged, the
+// shipping set refuses the song with the menu's sentence.
+static size_t CheckWarpContexts(const Json &contract) {
+  std::set<std::set<std::string>> shortfalls;
+  for (const auto &row : contract.at("mqSources").at("capacityShortfalls"))
+    shortfalls.insert(row.at("mq").get<std::set<std::string>>());
+  const auto dungeons =
+      contract.at("mqSources").at("dungeons").get<std::vector<std::string>>();
+  const auto quests = [](unsigned mask) {
+    OotQuests result{};
+    for (size_t i = 0; i < result.size(); ++i)
+      result[i] = (mask & (1u << i)) != 0;
+    return result;
+  };
+  const char *songs[] = {"Minuet of Forest",  "Bolero of Fire",
+                         "Serenade of Water", "Nocturne of Shadow",
+                         "Requiem of Spirit", "Prelude of Light"};
+  size_t refused = 0, generated = 0, compared = 0;
+  for (unsigned mask = 0; mask < 4096; ++mask) {
+    Fake::Reset();
+    Fake::quests = quests(mask);
+    std::set<std::string> projection;
+    for (const auto &dungeon : dungeons)
+      if (Fake::quests[OotMqIndex(dungeon)])
+        projection.insert(dungeon);
+    UnifiedEntranceStats stats;
+    auto g = Generation(mask);
+    g.capability.clear();
+    g.ootDump = WarpDump(songs[mask % 6]);
+    g.foreignSongsLogic = mask % 2 == 1;
+    g.stats = &stats;
+    if (shortfalls.contains(projection)) {
+      const auto error = Shortfall(g);
+      assert(error.player() == kWallmasterCapacitySeedText &&
+             stats.randomDraws == 0);
+      ++refused;
+      continue;
+    }
+    const auto encoded =
+        GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+    const auto layout = DecodeEntranceLayout(encoded);
+    assert(layout.required == std::vector<std::string>{std::string(
+                                  kStartingSongsWallmasterCapability)} &&
+           layout.ootMq == Fake::quests && stats.randomDraws > 0);
+    for (const auto &route : Validate(layout, Caps()).oot)
+      assert(OotUnifiedSourceInQuests(*route.source, Fake::quests));
+    auto without = layout;
+    without.required = {std::string(g.foreignSongsLogic
+                                        ? kSongsWallmasterCapability
+                                    : mask ? kQuestsWallmasterCapability
+                                           : kVanillaWallmasterCapability)};
+    Validate(without, Caps());
+    assert(SeedIdentityText("seed", encoded) !=
+           SeedIdentityText("seed", EncodeEntranceLayout(without)));
+    assert(!ActiveOotUnified().active() && !ActiveMmUnified().active());
+    if (mask % 64 == 0 || mask % 64 == 1) {
+      Fake::Reset();
+      Fake::quests = layout.ootMq;
+      auto plain = Generation(mask);
+      plain.capability.clear();
+      plain.foreignSongsLogic = g.foreignSongsLogic;
+      const auto expected = DecodeEntranceLayout(
+          GenerateEntranceLayout(plain, Fake::Native(), Fake::Probe()));
+      assert(expected.required == without.required &&
+             expected.overrides == layout.overrides);
+      ++compared;
+    }
+    ++generated;
+  }
+  assert(refused == 256 && generated == 4096 - 256 && compared == 120);
+  // Only OoTMM's bundled data admits a Master Quest context, with the song
+  // too; an all-vanilla seed from Legacy data takes the songs-v2 id.
+  for (const unsigned mask : {1u, 0x80u, 0xfffu}) {
+    Fake::Reset();
+    Fake::quests = quests(mask);
+    auto g = Generation(mask);
+    g.capability.clear();
+    g.ootDump = WarpDump();
+    g.mqSource = ComboMq::SeedMqSource::Legacy;
+    assert(Refusal(g).player() == kWallmasterMasterQuestText);
+  }
+  Fake::Reset();
+  auto g = Generation(3);
+  g.capability.clear();
+  g.ootDump = WarpDump();
+  g.mqSource = ComboMq::SeedMqSource::Legacy;
+  assert(DecodeEntranceLayout(
+             GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()))
+             .required == std::vector<std::string>{
+                              std::string(kStartingSongsWallmasterCapability)});
+  // No Logic: no Temple pass and no song facts, so the seed is the one made
+  // without the song, under the vanilla or quests id.
+  for (const unsigned mask : {0u, 1u}) {
+    std::string layouts[2];
+    for (const bool warp : {false, true}) {
+      Fake::Reset();
+      Fake::quests = quests(mask);
+      g = Generation(mask);
+      g.capability.clear();
+      if (warp)
+        g.ootDump = WarpDump();
+      g.access = OotAccess::NO_LOGIC;
+      layouts[warp] =
+          GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()).dump();
+    }
+    assert(layouts[0] == layouts[1] &&
+           DecodeEntranceLayout(Json::parse(layouts[1])).required ==
+               std::vector<std::string>{
+                   std::string(mask ? kQuestsWallmasterCapability
+                                    : kVanillaWallmasterCapability)});
+  }
+  // The shipping set takes the songs-v2 id once it is Public; while it is
+  // staged, it refuses the song with the menu's sentence, before any draw or
+  // native change.
+  const auto shipping = CapabilitySet::AtLeast(Stage::Public);
+  Fake::Reset();
+  g = Generation(4);
+  g.capability.clear();
+  g.active = shipping;
+  g.ootDump = WarpDump();
+  if (shipping.Active(kStartingSongsWallmasterCapability)) {
+    assert(DecodeEntranceLayout(
+               GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()))
+               .required == std::vector<std::string>{std::string(
+                                kStartingSongsWallmasterCapability)});
+  } else {
+    const auto error = Refusal(g);
+    assert(error.player() ==
+           "Remove Prelude of Light from the starting items to use Wallmaster "
+           "Shuffle.");
+  }
+  return generated;
+}
+// The shortcut differential with a starting OoT warp song (limits design,
+// Stage 2), over the 200 seeds, both ages, both starting games and the three
+// accessibility modes of the vanilla corpus, each seed with one of the six
+// songs and every other one with foreign-song logic too: chosen by settings in
+// a build with the songs-v2 id, every seed with logic takes it, and the
+// monotone shortcut gives the full search's seed byte for byte. With the id
+// swapped back, every layout is the one the same seed makes without the song
+// (the vanilla or songs id); No Logic seeds keep the vanilla id and layout.
+static Json WarpDifferential() {
+  const auto all = Caps();
+  const char *songs[] = {"Minuet of Forest",  "Bolero of Fire",
+                         "Serenade of Water", "Nocturne of Shadow",
+                         "Requiem of Spirit", "Prelude of Light"};
+  size_t pairs = 0, shortcuts = 0;
+  std::ostringstream quiet;
+  auto *previousOutput = std::cout.rdbuf(quiet.rdbuf());
+  for (uint32_t seed = 1; seed <= 200; ++seed)
+    for (uint8_t age : {uint8_t(1), uint8_t(2)})
+      for (bool mmStart : {false, true})
+        for (auto access : {OotAccess::ALL_REACHABLE, OotAccess::BEATABLE_ONLY,
+                            OotAccess::NO_LOGIC}) {
+          quiet.str("");
+          quiet.clear();
+          const bool foreign = seed % 2 == 0;
+          const std::string song = songs[seed % 6];
+          const auto full = Run(seed, age, mmStart, access, false, false, false,
+                                &all, foreign, song);
+          const auto fast = Run(seed, age, mmStart, access, true, false, false,
+                                &all, foreign, song);
+          assert(full.completeSeed == fast.completeSeed &&
+                 full.layout == fast.layout);
+          assert(full.stats.randomDraws == fast.stats.randomDraws &&
+                 fast.stats.randomDraws == 39);
+          assert(!full.stats.monotoneShortcutUsed);
+          const bool logic = access != OotAccess::NO_LOGIC;
+          const auto plain = Run(seed, age, mmStart, access, true, false, false,
+                                 &all, foreign);
+          auto swapped = DecodeEntranceLayout(fast.layout);
+          assert(swapped.required ==
+                 std::vector<std::string>{
+                     std::string(logic ? kStartingSongsWallmasterCapability
+                                       : kVanillaWallmasterCapability)});
+          if (logic) {
+            assert(fast.stats.monotoneShortcutUsed &&
+                   fast.stats.assumedChecks == 1 && fast.temple == 1);
+            assert(full.stats.assumedChecks == 13 && full.temple == 13);
+            ++shortcuts;
+          } else
+            assert(!fast.stats.monotoneShortcutUsed && fast.temple == 0);
+          swapped.required = DecodeEntranceLayout(plain.layout).required;
+          assert(EncodeEntranceLayout(swapped) == plain.layout);
+          ++pairs;
+        }
+  std::cout.rdbuf(previousOutput);
+  return Json{{"warpDifferentialPairs", pairs},
+              {"warpShortcutPairs", shortcuts}};
+}
 int main(int argc, char **argv) {
-  assert(argc == 3 || (argc == 4 && std::string_view(argv[3]) == "songs"));
+  assert(argc == 3 || (argc == 4 && (std::string_view(argv[3]) == "songs" ||
+                                     std::string_view(argv[3]) == "warp")));
   std::ifstream contractFile(argv[2]);
   const auto contract = Json::parse(contractFile);
+  if (argc == 4 && std::string_view(argv[3]) == "warp") {
+    const size_t contexts = CheckWarpContexts(contract);
+    auto report = WarpDifferential();
+    report["scope"] = "Real generator and combined fill with explicit fake "
+                      "native modules/oracles, a starting OoT warp song";
+    report["warpQuestContextsGenerated"] = contexts;
+    report["nativeSeedCorpusOrGameplay"] = false;
+    std::ofstream(argv[1]) << report.dump(2) << '\n';
+    std::cout << report.dump() << '\n';
+    return 0;
+  }
   if (argc == 4) {
     const size_t contexts = CheckSongContexts(contract);
     auto report = SongDifferential();

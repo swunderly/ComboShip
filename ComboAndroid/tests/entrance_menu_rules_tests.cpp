@@ -30,6 +30,12 @@ int main(int argc, char **argv) {
   const auto vanillaOnly =
       CapabilitySet::AtLeast(Stage::Hidden).Only(kVanillaWallmasterCapability);
   const auto withQuests = CapabilitySet::AtLeast(Stage::Hidden);
+  // Every Own Game Wallmaster id but the starting-song one (limits design,
+  // Stage 2), as in a build where it is staged.
+  const auto withoutStartingSongs =
+      withQuests.Only(kVanillaWallmasterCapability) |
+      withQuests.Only(kQuestsWallmasterCapability) |
+      withQuests.Only(kSongsWallmasterCapability);
   const auto *row = FindEntranceSetting("erWallmasters");
   assert(row);
   // Both builds offer the row with None and Own Game (P1-05).
@@ -133,7 +139,7 @@ int main(int argc, char **argv) {
   // "Play warp songs across games" (limits design, Stage 1): the Temple gate
   // takes it (lemma S1), and so do the menu and generation, which agree: every
   // build has wallmasters-own-game-songs-v1, and its sentence is gone, whatever
-  // the capability set. A starting song is still refused.
+  // the capability set. A starting warp song needs the songs-v2 id.
   assert(caps.Active(kSongsWallmasterCapability));
   settings["gCombo.Rando.ForeignSongs"] = 1;
   {
@@ -148,13 +154,18 @@ int main(int argc, char **argv) {
       assert(ProfileWallmasterRefusal(draft, assets, read, set).empty());
     assert(EntranceGenerationRefusal(facts).empty());
     settings["gRandoSettings.StartingPreludeOfLight"] = 1;
-    const auto menu = ProfileWallmasterRefusal(draft, assets, read);
+    assert(
+        EntranceGenerationRefusal(ProfileEntranceFacts(draft, read)).empty());
+    assert(ProfileWallmasterRefusal(draft, assets, read, withQuests).empty());
+    const auto menu =
+        ProfileWallmasterRefusal(draft, assets, read, withoutStartingSongs);
     plain(menu,
           "Remove Prelude of Light from the starting items to use Wallmaster "
           "Shuffle.",
-          "starting Prelude of Light needs GLOBAL song sources (deferred)");
-    assert(menu ==
-           EntranceGenerationRefusal(ProfileEntranceFacts(draft, read)));
+          "starting Prelude of Light needs wallmasters-own-game-songs-v2, "
+          "which this build does not have");
+    assert(menu == StartingWarpSongsRefusal(ProfileEntranceFacts(draft, read),
+                                            withoutStartingSongs));
   }
   settings.clear();
   // Ship's Logic row offers Glitchless (0) and No Logic (1) only.
@@ -162,12 +173,13 @@ int main(int argc, char **argv) {
   check("Set Logic to Glitchless to use Wallmaster Shuffle.",
         "only glitchless OoT logic is supported");
   settings.clear();
-  const auto song = [&](const std::string &name) {
-    const std::string use =
-        " from the starting items to use Wallmaster Shuffle.";
-    check("Remove " + name + use,
-          "starting " + name + " needs GLOBAL song sources (deferred)");
-  };
+  const std::string use = " from the starting items to use Wallmaster Shuffle.";
+  // A starting OoT warp song (limits design, Stage 2): the Temple gate takes it
+  // (the probe's GLOBAL node, lemma L3) and so does every set with the
+  // songs-v2 id. A set without it, as a build where it is staged, refuses it
+  // with the sentence every Wallmaster id gave before, in the menu and in
+  // generation (UnifiedBridge.h, entrance_vanilla_generator_tests.cpp), after
+  // every other reason WallmasterSettingsRefusal gives. No Logic has no song.
   for (const auto &[key, name] :
        {std::pair{"StartingMinuetOfForest", "Minuet of Forest"},
         std::pair{"StartingBoleroOfFire", "Bolero of Fire"},
@@ -176,16 +188,53 @@ int main(int argc, char **argv) {
         std::pair{"StartingNocturneOfShadow", "Nocturne of Shadow"},
         std::pair{"StartingPreludeOfLight", "Prelude of Light"}}) {
     settings[std::string("gRandoSettings.") + key] = 1;
-    song(name);
+    const auto facts = ProfileEntranceFacts(draft, read);
+    TempleFacts temple;
+    static_cast<EntranceSettingsFacts &>(temple) = facts;
+    Settings s;
+    s.erWallmasters = Mode::OwnGame;
+    CheckTempleCapability(s, temple, [](std::string_view) { return true; });
+    assert(StartingWarpSong(facts) == name &&
+           TempleSettingsRefusal(temple).empty() &&
+           EntranceGenerationRefusal(facts).empty());
+    assert(ProfileWallmasterRefusal(draft, assets, read, withQuests).empty());
+    assert(ProfileWallmasterRefusal(draft, assets, read).empty() ==
+           caps.Active(kStartingSongsWallmasterCapability));
+    for (const auto &set : {vanillaOnly, withoutStartingSongs}) {
+      const auto menu = ProfileWallmasterRefusal(draft, assets, read, set);
+      plain(menu, "Remove " + std::string(name) + use,
+            "starting " + std::string(name) +
+                " needs wallmasters-own-game-songs-v2, which this build does "
+                "not have");
+      assert(menu == StartingWarpSongsRefusal(facts, set));
+    }
+    settings[kOotEnemyRandomizer] = 1; // another reason comes first
+    assert(ProfileWallmasterRefusal(draft, assets, read, vanillaOnly).player ==
+           "Turn off Enemy Randomizer to use Wallmaster Shuffle.");
+    settings[kNativeLogicRule] = 1;
+    settings.erase(kOotEnemyRandomizer);
+    assert(ProfileWallmasterRefusal(draft, assets, read, vanillaOnly).empty());
     settings.clear();
   }
-  // MM's starting items as the menu writes them: 2Ship's spoiler names, the
-  // MM_DumpProfileCatalog values (BenPort.cpp). The display name counts too.
-  draft["mm"]["settings"]["gRando.StartingItems"] = {"RI_SONG_TIME",
-                                                     "RI_SONG_SOARING"};
-  song("Song of Soaring");
-  draft["mm"]["settings"]["gRando.StartingItems"] = {"Song of Soaring"};
-  song("Song of Soaring");
+  // The MM side's names count too, as the seed guard reads them.
+  draft["mm"]["settings"]["gRando.StartingItems"] = {"Minuet of Forest"};
+  assert(StartingWarpSong(ProfileEntranceFacts(draft, read)) ==
+             "Minuet of Forest" &&
+         !ProfileWallmasterRefusal(draft, assets, read, vanillaOnly).empty() &&
+         ProfileWallmasterRefusal(draft, assets, read, withQuests).empty());
+  // A starting Song of Soaring stays refused by every id: it needs a Temple
+  // check through MM. MM's starting items as the menu writes them are 2Ship's
+  // spoiler names, the MM_DumpProfileCatalog values (BenPort.cpp); the display
+  // name counts too.
+  for (const char *soaring : {"Song of Soaring", "RI_SONG_SOARING"}) {
+    draft["mm"]["settings"]["gRando.StartingItems"] = {"RI_SONG_TIME", soaring};
+    check("Remove Song of Soaring" + use,
+          "starting Song of Soaring needs a Temple check through MM (deferred)");
+  }
+  settings["gRandoSettings.StartingPreludeOfLight"] = 1;
+  check("Remove Song of Soaring" + use,
+        "starting Song of Soaring needs a Temple check through MM (deferred)");
+  settings.clear();
   settings[kNativeLogicRule] = 1;
   settings["gCombo.Rando.SongTravel"] = 1;
   assert(ProfileWallmasterRefusal(draft, assets, read)
@@ -479,8 +528,8 @@ int main(int argc, char **argv) {
     songsSeed["songTravel"] = foreign.json();
     const std::string sentence = "Remove Song of Soaring from the starting "
                                  "items to use Wallmaster Shuffle.",
-                      log = "starting Song of Soaring needs GLOBAL song "
-                            "sources (deferred)";
+                      log = "starting Song of Soaring needs a Temple check "
+                            "through MM (deferred)";
     const Json *seeds[] = {&released, &songsSeed};
     for (const auto *seed : seeds) {
       RequireSupportedSeedCapabilities(*seed, caps);

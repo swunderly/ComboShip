@@ -170,13 +170,27 @@ inline bool CatalogueMqBundled(const nlohmann::json& ootCatalog) {
     return source != ootCatalog.end() && source->is_string() &&
            source->get_ref<const std::string&>() == ComboMq::kMqDataSourceBundled;
 }
+// A starting OoT warp song under logic needs wallmasters-own-game-songs-v2 (UnifiedBridge.h
+// UnifiedWarpSongRequirement), staged at Dev: a build without that id refuses it in the menu, on the Generate button
+// and in generation (UnifiedBridge.h), after every reason WallmasterSettingsRefusal gives, with the sentence every
+// Wallmaster id gave before. The Temple gate takes it (lemma L3). `caps` are the build's.
+inline EntranceRefusal StartingWarpSongsRefusal(const EntranceSettingsFacts& f, const CapabilitySet& caps) {
+    if (const auto song = StartingWarpSong(f);
+        f.logicEnabled && !song.empty() && !caps.Active(kStartingSongsWallmasterCapability))
+        return { "Remove " + song + " from the starting items to use Wallmaster Shuffle.",
+                 "starting " + song + " needs wallmasters-own-game-songs-v2, which this build does not have" };
+    return {};
+}
 // Asset facts come from the native profile catalogue, not an unapplied MQ CVar. `caps` are the build's.
 // Foreign-song logic is not refused: every build has wallmasters-own-game-songs-v1, which takes it
 // (UnifiedBridge.h UnifiedSongRequirement), and the Temple gate takes it (lemma S1).
 template <class Read>
 EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nlohmann::json& ootCatalog, Read read,
                                          const CapabilitySet& caps = ActiveCapabilities()) {
-    auto why = WallmasterSettingsRefusal(ProfileEntranceFacts(draft, read));
+    const auto facts = ProfileEntranceFacts(draft, read);
+    auto why = WallmasterSettingsRefusal(facts);
+    if (why.empty())
+        why = StartingWarpSongsRefusal(facts, caps);
     if (!why.empty())
         return why;
     if (!ootCatalog.contains("hasMasterQuest") || !ootCatalog.contains("hasOriginal") ||

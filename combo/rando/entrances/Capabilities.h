@@ -39,6 +39,7 @@ inline constexpr CapabilityValue kWallmastersOwnGameValues[] = { { "erWallmaster
 inline constexpr CapabilityValue kWallmastersVanillaValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
+inline constexpr CapabilityValue kWallmastersStartingSongsValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -73,11 +74,18 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // without that logic keeps the vanilla or quests id, so its layout is the one earlier builds make. Public from
     // 0.4.13; its id and rules are frozen from then on.
     { "wallmasters-own-game-songs-v1", kWallmastersSongsValues, {}, false },
+    // The same Own Game rules for a seed that starts with an OoT warp song under logic, with or without foreign-song
+    // logic, in either quest context (limits design, Stage 2). The Temple probe plays the song from its GLOBAL node
+    // (lemma L3); song destination shuffle and a starting Song of Soaring stay refused. A seed without such a song
+    // keeps the vanilla, quests or songs-v1 id, so its layout is the one earlier builds make.
+    { "wallmasters-own-game-songs-v2", kWallmastersStartingSongsValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
 // The Own Game Wallmaster id whose seeds have foreign-song logic (EntranceAvailability.h, UnifiedBridge.h,
 // ComboSeedFormat.h); the vanilla and quests ids are in EntranceLayout.h.
 inline constexpr std::string_view kSongsWallmasterCapability = "wallmasters-own-game-songs-v1";
+// The Own Game Wallmaster id whose seeds start with an OoT warp song under logic (the same files).
+inline constexpr std::string_view kStartingSongsWallmasterCapability = "wallmasters-own-game-songs-v2";
 
 namespace CapabilityDetail {
 constexpr size_t Find(std::string_view id) {

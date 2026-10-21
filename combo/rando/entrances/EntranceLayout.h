@@ -34,6 +34,9 @@ static_assert(CapabilitySet::Known(kQuestsWallmasterCapability) &&
 static_assert(CapabilitySet::Known(kSongsWallmasterCapability) &&
                   !kEntranceCapabilities[CapabilityDetail::Find(kSongsWallmasterCapability)].devOnly,
               "The foreign-song Wallmaster capability is an ordinary staged row");
+static_assert(CapabilitySet::Known(kStartingSongsWallmasterCapability) &&
+                  !kEntranceCapabilities[CapabilityDetail::Find(kStartingSongsWallmasterCapability)].devOnly,
+              "The starting-song Wallmaster capability is an ordinary staged row");
 
 class EntranceLayoutError : public std::invalid_argument {
   public:
@@ -597,7 +600,7 @@ inline Pools ValidateEntranceLayoutSettings(const EntranceLayout& layout, const 
         !anyMq)
         throw EntranceLayoutError(std::string("Entrance layout requires ") + std::string(kQuestsWallmasterCapability) +
                                   " without a Master Quest dungeon");
-    // The songs id takes either quest context. Its song facts are the seed's, outside the layout:
+    // The songs ids take either quest context. Their song facts are the seed's, outside the layout:
     // ComboSeedFormat.h RequireSeedEntranceFacts checks them.
     auto pools = LayoutV1::MakePools(layout.settings, layout.ootMq, mmTranche);
     if (pools.empty())

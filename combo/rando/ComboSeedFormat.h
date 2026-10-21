@@ -44,7 +44,7 @@ inline bool IsComboSeedDocument(const nlohmann::json& seed) {
 // them (EntranceProfile.h ProfileEntranceFacts): MM's by 2Ship's spoiler names, as the seed stores them
 // (MmStartingItemName). No shared item family is a song (SharedItems.h). A missing
 // part counts as off, and so does a song travel map that does not parse: such a seed fails to load anyway
-// (ComboShip.cpp InstallSongTravel), and with no song facts the songs id is refused.
+// (ComboShip.cpp InstallSongTravel), and with no song facts the songs ids are refused.
 inline Entrances::EntranceSettingsFacts SeedEntranceFacts(const nlohmann::json& seed) {
     Entrances::EntranceSettingsFacts f;
     const auto part = [&](const nlohmann::json& object, const char* key) -> const nlohmann::json* {
@@ -77,17 +77,29 @@ inline Entrances::EntranceSettingsFacts SeedEntranceFacts(const nlohmann::json& 
     return f;
 }
 // A layout's capability ids against the seed's song facts. Under logic, no id takes song destination shuffle
-// or a starting warp song or Soaring (the Temple gate's refusals, EntranceAvailability.h), only the songs id
-// takes foreign-song logic, and the songs id needs it, as an id must be needed (EntranceLayout.h
-// ValidateEntranceLayoutSettings). With No Logic a seed has no song facts and keeps the vanilla or quests id.
+// or a starting Song of Soaring (the Temple gate's refusals, EntranceAvailability.h); only the songs-v2 id
+// takes a starting OoT warp song, and it needs one; only the songs ids take foreign-song logic, and the songs
+// id needs it; as an id must be needed (EntranceLayout.h ValidateEntranceLayoutSettings). With No Logic a seed
+// has no song facts and keeps the vanilla or quests id.
 inline void RequireSeedEntranceFacts(const Entrances::EntranceLayout& layout,
                                      const Entrances::EntranceSettingsFacts& f) {
     if (const auto why = Entrances::TempleSettingsRefusal(f); !why.empty())
         throw std::invalid_argument("Entrance layout seed: " + why.log);
+    const auto has = [&](std::string_view id) {
+        return std::find(layout.required.begin(), layout.required.end(), id) != layout.required.end();
+    };
     const bool foreign = f.logicEnabled && f.foreignSongsLogic;
-    const bool songs = std::find(layout.required.begin(), layout.required.end(),
-                                 Entrances::kSongsWallmasterCapability) != layout.required.end();
-    if (foreign && !songs)
+    const auto song = f.logicEnabled ? Entrances::StartingWarpSong(f) : std::string();
+    const bool songs = has(Entrances::kSongsWallmasterCapability);
+    const bool startingSongs = has(Entrances::kStartingSongsWallmasterCapability);
+    if (!song.empty() && !startingSongs)
+        throw std::invalid_argument("Entrance layout requires " + layout.required.front() +
+                                    ", which does not admit a starting " + song);
+    if (song.empty() && startingSongs)
+        throw std::invalid_argument("Entrance layout requires " +
+                                    std::string(Entrances::kStartingSongsWallmasterCapability) +
+                                    " without a starting warp song");
+    if (foreign && !songs && !startingSongs)
         throw std::invalid_argument("Entrance layout requires " + layout.required.front() +
                                     ", which does not admit foreign-song logic");
     if (!foreign && songs)

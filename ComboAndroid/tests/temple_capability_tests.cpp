@@ -171,17 +171,15 @@ void UnsupportedBeforeAnyDraw() {
        [](Settings &, TempleFacts &f) {
          f.mmStartingItems = {"Song of Soaring"};
        }},
-      {"starting OoT warp song",
+      {"starting Soaring with a starting warp song",
        [](Settings &, TempleFacts &f) {
          f.ootStartingItems = {"Prelude of Light"};
+         f.mmStartingItems = {"Song of Soaring"};
        }},
-      {"MM-side OoT warp song",
+      {"song travel logic with a starting warp song",
        [](Settings &, TempleFacts &f) {
-         f.mmStartingItems = {"Minuet of Forest"};
-       }},
-      {"foreign warp song",
-       [](Settings &, TempleFacts &f) {
-         f.foreignStartingItems = {"Serenade of Water"};
+         f.songTravelLogic = true;
+         f.ootStartingItems = {"Prelude of Light"};
        }},
       {"song travel logic",
        [](Settings &, TempleFacts &f) { f.songTravelLogic = true; }},
@@ -348,6 +346,66 @@ void ForeignSongsAdmitted() {
   assert(EncodeTemplePrepare(off) == EncodeTemplePrepare(on));
 }
 
+// A starting OoT warp song (limits design, Stage 2): the probe plays it from
+// its GLOBAL node as OoTMM does (lemma L3), and through MM no path reaches the
+// Temple first (the Mask Shop lemma), so the gate takes it in any of the three
+// starting lists, with foreign-song logic or without, for every supported pool
+// and both ages, and hands the native probe the same prepare request: the song
+// is in the native starting inventory, which the probe reads itself. The fake
+// probe answers alike, so the run is the one without the song. Which ids take
+// it is the generator's rule (UnifiedBridge.h UnifiedWarpSongRequirement).
+void StartingWarpSongsAdmitted() {
+  Settings wallmasters;
+  wallmasters.erWallmasters = Mode::OwnGame;
+  for (const auto &s : {OneWays(), wallmasters})
+    for (auto age : {TempleStartingAge::Child, TempleStartingAge::Adult})
+      for (bool foreign : {false, true}) {
+        Overrides layouts[4];
+        size_t counts[4][2];
+        for (int list = 0; list < 4; ++list) {
+          TempleFacts f;
+          f.startingAge = age;
+          f.foreignSongsLogic = foreign;
+          if (list == 1)
+            f.ootStartingItems = {"Kokiri Sword", "Prelude of Light"};
+          else if (list == 2)
+            f.mmStartingItems = {"Minuet of Forest"};
+          else if (list == 3)
+            f.ootStartingItems = {"Bolero of Fire", "Serenade of Water",
+                                  "Nocturne of Shadow", "Requiem of Spirit"};
+          assert(TempleSettingsRefusal(f).empty() &&
+                 StartingWarpSong(f).empty() == (list == 0));
+          answer = 1;
+          draws = queries = prepares = releases = 0;
+          layouts[list] =
+              Gated(s, f,
+                    s.erWallmasters == Mode::OwnGame ? MmWallmastersOnly()
+                                                     : BaseBindings());
+          assert(draws > 0 && queries > 0 && prepares == 1 && releases == 1);
+          counts[list][0] = draws;
+          counts[list][1] = queries;
+          TempleFacts plain;
+          plain.startingAge = age;
+          assert(EncodeTemplePrepare(f) == EncodeTemplePrepare(plain));
+        }
+        for (int list = 1; list < 4; ++list)
+          assert(layouts[list] == layouts[0] &&
+                 counts[list][0] == counts[0][0] &&
+                 counts[list][1] == counts[0][1]);
+      }
+  // A starting Soaring stays refused next to one, and so does song destination
+  // shuffle, before any draw (UnsupportedBeforeAnyDraw); under No Logic the
+  // gate refuses neither.
+  TempleFacts soaring;
+  soaring.ootStartingItems = {"Prelude of Light"};
+  soaring.mmStartingItems = {"Song of Soaring"};
+  assert(TempleSettingsRefusal(soaring).player ==
+         "Remove Song of Soaring from the starting items to use Wallmaster "
+         "Shuffle.");
+  soaring.logicEnabled = false;
+  assert(TempleSettingsRefusal(soaring).empty());
+}
+
 void SupportedEnvelope() {
   for (auto age : {TempleStartingAge::Child, TempleStartingAge::Adult}) {
     TempleFacts f;
@@ -464,11 +522,13 @@ int main() {
   UnsupportedBeforeAnyDraw();
   WallmasterRows();
   ForeignSongsAdmitted();
+  StartingWarpSongsAdmitted();
   SupportedEnvelope();
   ExistingBoundaries();
   ForeignStartingItems();
   std::cout << "Temple capability gate: unsupported worlds stop before any "
                "draw (none under No Logic), MM-only Wallmasters and the T1 "
-               "envelope run, foreign-song logic runs as without it, codes "
-               "map without retry, and the existing hidden boundaries hold\n";
+               "envelope run, foreign-song logic and starting warp songs run "
+               "as without them, codes map without retry, and the existing "
+               "hidden boundaries hold\n";
 }

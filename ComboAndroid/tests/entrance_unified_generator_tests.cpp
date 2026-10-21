@@ -455,6 +455,24 @@ void CheckTemplePass() {
   g.foreignSongsLogic = true;
   g.access = OotAccess::NO_LOGIC;
   assert(Routes(Generate(g)).size() == 4);
+  // A starting OoT warp song (limits design, Stage 2): the gate takes it (the
+  // probe's GLOBAL node), but only wallmasters-own-game-songs-v2 carries it, so
+  // the MM tranche refuses it the same way; with No Logic it has none.
+  for (const bool noLogic : {false, true}) {
+    ResetAll();
+    g = Tranche();
+    g.ootDump = Dump({"Oot start"}, {"Prelude of Light"});
+    if (noLogic) {
+      g.access = OotAccess::NO_LOGIC;
+      assert(Routes(Generate(g)).size() == 4);
+      continue;
+    }
+    assert(Has(Error<UnifiedEntranceRefused>([&] { Generate(g); }),
+               "wallmasters-own-game-mm-tranche does not admit a starting warp "
+               "song"));
+    assert(FakeProbe::calls() == 0 && FakeMm::calls() == 0 &&
+           Oracles::mmQueries == 0 && !ActiveMmUnified().active());
+  }
   ResetAll();
   g = Tranche();
   g.oot.GetStartAges = nullptr;

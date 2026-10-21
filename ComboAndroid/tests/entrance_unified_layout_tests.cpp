@@ -641,9 +641,11 @@ void CheckBuildGuard(const Json &good) {
   const std::string before = UnsupportedComboSeedFormat().what();
 #ifdef COMBO_ENTRANCE_DEV
   assert(caps.devBuild && caps.Active(kMmTrancheCapability) &&
-         caps.WithoutDevOnly() == (caps.Only(kVanillaWallmasterCapability) |
-                                   caps.Only(kQuestsWallmasterCapability) |
-                                   caps.Only(kSongsWallmasterCapability)));
+         caps.WithoutDevOnly() ==
+             (caps.Only(kVanillaWallmasterCapability) |
+              caps.Only(kQuestsWallmasterCapability) |
+              caps.Only(kSongsWallmasterCapability) |
+              caps.Only(kStartingSongsWallmasterCapability)));
   auto vanilla = good;
   vanilla["requires"] = {std::string(kVanillaWallmasterCapability)};
   vanilla["devBuild"] = true;
@@ -668,6 +670,20 @@ void CheckBuildGuard(const Json &good) {
     seed["entranceLayout"] = songs;
     seed.erase("songTravel");
     SeedRefused(seed, caps, "without foreign-song logic");
+    // A starting OoT warp song takes the songs-v2 id (limits design, Stage 2),
+    // which a dev build has, in either quest context; no earlier id takes it,
+    // and the songs-v2 id needs it.
+    auto warp = *base;
+    warp["requires"] = {std::string(kStartingSongsWallmasterCapability)};
+    seed["entranceLayout"] = warp;
+    seed["oot"]["settings"]["gRandoSettings.StartingNocturneOfShadow"] = 1;
+    RequireSupportedSeedDocument(seed, caps);
+    seed["entranceLayout"] = *base;
+    SeedRefused(seed, caps,
+                "which does not admit a starting Nocturne of Shadow");
+    seed.erase("oot");
+    seed["entranceLayout"] = warp;
+    SeedRefused(seed, caps, "without a starting warp song");
   }
   auto tranche = good;
   tranche["requires"] = {std::string(kMmTrancheCapability)};

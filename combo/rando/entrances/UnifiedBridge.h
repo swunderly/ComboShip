@@ -4,10 +4,11 @@
 // packages/logic/src/solver/entrances.ts (WorldShuffler.run :905-934, LogicPassEntrances :1061-1134).
 // The dev-only MM tranche retains its absent-OoT-source contract. The separately named vanilla
 // capability binds both games, with actual native quest context and no MQ admission; the quests
-// capability binds the same rules where a Master Quest dungeon of OoTMM's bundled data is played, and the
-// songs capability the same rules, in either quest context, for a seed with foreign-song logic. The
-// launcher and headless tool call it once per generation attempt, after the native pools and Ship's own
-// entrance shuffle and before the combined fill.
+// capability binds the same rules where a Master Quest dungeon of OoTMM's bundled data is played, the
+// songs capability the same rules, in either quest context, for a seed with foreign-song logic, and the
+// songs-v2 capability the same rules again for a seed that starts with an OoT warp song. The launcher and
+// headless tool call it once per generation attempt, after the native pools and Ship's own entrance
+// shuffle and before the combined fill.
 // MIT, Copyright (c) 2020-2022 OoTMM Team; see LICENSE.OoTMM.
 #pragma once
 #include "NativeBridge.h"
@@ -96,8 +97,9 @@ template <class Lookup> TempleProbeFns ResolveUnifiedTempleProbe(Lookup&& lookup
 
 // The one capability id a layout requires: the selected one, or the row that admits the whole
 // combination (Capabilities.h). Own Game Wallmasters take the vanilla id here; UnifiedSongRequirement
-// moves foreign-song logic to the songs id, and UnifiedQuestRequirement a Master Quest context to the
-// quests id once the native quest context is read. Each seed so takes the oldest id that admits it.
+// moves foreign-song logic to the songs id, UnifiedWarpSongRequirement a starting OoT warp song to the
+// songs-v2 id, and UnifiedQuestRequirement a Master Quest context to the quests id once the native quest
+// context is read. Each seed so takes the oldest id that admits it.
 inline std::string UnifiedRequirement(const Settings& s, std::string_view capability,
                                       const CapabilitySet& active = ActiveCapabilities()) {
     if (!capability.empty())
@@ -126,12 +128,44 @@ inline std::string UnifiedSongRequirement(const std::string& required, bool song
         return std::string(kSongsWallmasterCapability);
     return required;
 }
+// The starting items of both games, as the Temple pass reads them (UnifiedTempleFacts): the OoT dump's
+// sharedStartingItems (the whole native StartingInventory), the MM dump's, and the shared-family starters.
+// Dumps that do not read give none here; UnifiedTempleFacts refuses them later, as it did before.
+inline EntranceSettingsFacts UnifiedStartingItems(const UnifiedGeneration& g) {
+    EntranceSettingsFacts f;
+    try {
+        const auto starting = [](const std::string& dump) {
+            return nlohmann::json::parse(dump).value("sharedStartingItems", std::vector<std::string>{});
+        };
+        f.ootStartingItems = starting(g.ootDump);
+        f.mmStartingItems = starting(g.mmDump);
+        f.foreignStartingItems = NormalizeForeignStartingItems(g.sharedMask, g.ootDump, g.mmDump);
+    } catch (const std::exception&) { return {}; }
+    return f;
+}
+// The seed fact the songs-v2 id carries: an OoT warp song among the starting items of either game
+// (EntranceAvailability.h StartingWarpSong), which only matters while logic is on. No Logic runs no Temple
+// pass, so such a seed keeps the earlier ids and the layout earlier builds make.
+inline bool UnifiedWarpSongFacts(const EntranceSettingsFacts& starting, OotAccess access) {
+    return !StartingWarpSong(starting).empty() && access != OotAccess::NO_LOGIC;
+}
+// The id for a starting warp song: it moves the vanilla or songs id chosen by settings to the songs-v2 id,
+// which takes foreign-song logic too, in a build that has it. A selected id is kept; GenerateEntranceLayout
+// refuses one that does not match the facts.
+inline std::string UnifiedWarpSongRequirement(const std::string& required, bool warpFacts, std::string_view capability,
+                                              const CapabilitySet& active) {
+    if (warpFacts && capability.empty() &&
+        (required == kVanillaWallmasterCapability || required == kSongsWallmasterCapability) &&
+        active.Active(kStartingSongsWallmasterCapability))
+        return std::string(kStartingSongsWallmasterCapability);
+    return required;
+}
 // The OoT Wallmaster ids bind the audited OoT rows; every other id keeps its MM-only contract.
 inline bool BindsOotWallmasters(std::string_view required) {
     return required == kVanillaWallmasterCapability || required == kQuestsWallmasterCapability ||
-           required == kSongsWallmasterCapability;
+           required == kSongsWallmasterCapability || required == kStartingSongsWallmasterCapability;
 }
-// Whether the generation may read a Master Quest context: the quests or songs id, or the vanilla id
+// Whether the generation may read a Master Quest context: the quests or a songs id, or the vanilla id
 // chosen by settings (not selected by name) in a build that has the quests id too, and in every case only
 // for OoTMM's bundled data. A bundled seed rolls its Master Quest dungeons on a stream of their own from
 // its master seed (settings.cpp, MqMode.h MqRollSeed), so every finalize of an attempt rolls the same
@@ -142,12 +176,13 @@ inline bool AdmitsMasterQuestContext(std::string_view required, std::string_view
     if (source != ComboMq::SeedMqSource::Bundled)
         return false;
     return required == kQuestsWallmasterCapability || required == kSongsWallmasterCapability ||
+           required == kStartingSongsWallmasterCapability ||
            (capability.empty() && required == kVanillaWallmasterCapability &&
             active.Active(kQuestsWallmasterCapability));
 }
 // The id for the native quest context: a Master Quest dungeon moves the vanilla id to the quests id, so an
-// all-vanilla seed keeps the frozen vanilla id and the layout 0.4.12 makes. A selected id is kept, and so is
-// the songs id, which takes either quest context.
+// all-vanilla seed keeps the frozen vanilla id and the layout 0.4.12 makes. A selected id is kept, and so are
+// the songs ids, which take either quest context.
 inline std::string UnifiedQuestRequirement(const std::string& required, const OotQuests& quests,
                                            std::string_view capability, const CapabilitySet& active,
                                            ComboMq::SeedMqSource source) {
@@ -320,8 +355,10 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     if (MakePools(s).empty())
         return nlohmann::json();
     const bool songFacts = UnifiedSongFacts(g.foreignSongsLogic, g.access);
-    const auto settingsRequired =
-        UnifiedSongRequirement(UnifiedRequirement(s, g.capability, g.active), songFacts, g.capability, g.active);
+    const bool warpFacts = UnifiedWarpSongFacts(UnifiedStartingItems(g), g.access);
+    const auto settingsRequired = UnifiedWarpSongRequirement(
+        UnifiedSongRequirement(UnifiedRequirement(s, g.capability, g.active), songFacts, g.capability, g.active),
+        warpFacts, g.capability, g.active);
     const bool ootBound = BindsOotWallmasters(settingsRequired);
     if (!AdmitsEntranceSettings(s, caps.Only(settingsRequired)))
         throw UnifiedEntranceRefused("Entrance settings " + EntranceSettingsText(s) + " are not admitted by " +
@@ -394,14 +431,21 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
         settingsFacts.enemyRandomizer = g.readSetting("gEnhancements.RandomizedEnemies", 0) != 0;
         if (const auto why = ComboRando::EntranceGenerationRefusal(settingsFacts); !why.empty())
             throw UnifiedEntranceRefused(why);
+        if (const auto why = StartingWarpSongsRefusal(settingsFacts, g.active); !why.empty())
+            throw UnifiedEntranceRefused(why);
     }
-    // The id carries the seed's song facts (ComboSeedFormat.h RequireSeedEntranceFacts): only the songs id
-    // takes foreign-song logic, and it needs it. Every build has the songs id, so this is reached only with
-    // an id selected by name, or another pool's id.
-    if (songFacts && required != kSongsWallmasterCapability)
+    // The id carries the seed's song facts (ComboSeedFormat.h RequireSeedEntranceFacts): only the songs ids
+    // take foreign-song logic, and the songs id needs it; only the songs-v2 id takes a starting warp song,
+    // and it needs one. Every build has the songs id, and a build without the songs-v2 id refuses a starting
+    // warp song above, so this is reached only with an id selected by name, or another pool's id.
+    if (songFacts && required != kSongsWallmasterCapability && required != kStartingSongsWallmasterCapability)
         throw UnifiedEntranceRefused(required + " does not admit foreign-song logic");
     if (!songFacts && required == kSongsWallmasterCapability)
         throw UnifiedEntranceRefused(required + " needs foreign-song logic, which this seed does not have");
+    if (warpFacts && required != kStartingSongsWallmasterCapability)
+        throw UnifiedEntranceRefused(required + " does not admit a starting warp song");
+    if (!warpFacts && required == kStartingSongsWallmasterCapability)
+        throw UnifiedEntranceRefused(required + " needs a starting warp song, which this seed does not have");
     TempleProbeRun templeRun(temple, s, facts, areaExists);
     // Everything of the layout but its routes.
     EntranceLayout envelope;
