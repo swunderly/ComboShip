@@ -2580,13 +2580,67 @@ the three Own Game Wallmaster rows the only Public ones.
   Profile settings documents carry no routes and skip it. Generation refuses an id named by name (headless
   `--er-capability`) that does not match the facts, before any draw. 0.4.12 and the build with only the quests id
   refuse a songs seed with "requires unknown capability" (`entrance_songs_seed_guard_tests.py`).
-- **Still refused (port limits).** A starting warp song or Soaring (it needs a song node in the probe), Warp Songs
-  and Soaring Spots Shuffle (OoTMM's `erWarps`, which also gives Wallmasters the warp pads and owl statues as
-  destinations), Full, and every other entrance shuffle keep their refusals.
+- **Still refused (port limits).** A starting warp song or Soaring (it needs a song node in the probe; the section
+  on starting warp songs below adds one for the warp songs), Warp Songs and Soaring Spots Shuffle (OoTMM's `erWarps`,
+  which also gives Wallmasters the warp pads and owl statues as destinations), Full, and every other entrance shuffle
+  keep their refusals.
 - **The sentence is gone.** 0.4.12's "Turn off "Play warp songs across games" to use Wallmaster Shuffle." no longer
   shows anywhere. With the id staged at Dev, a shipping build showed it again in the menu, on the Generate button and
   in generation (`EntranceProfile.h` `ForeignSongsRefusal`, removed with the flip to Public). A capability set without
   the songs id, which no build has now, refuses foreign-song logic in generation with developer text only.
+
+## Wallmaster Shuffle with a starting warp song (2026-10-21)
+
+Planned for 0.4.13 (Wallmaster limits design, Stage 2). OoTMM v32.3 lets a seed start with any OoT warp song under
+Wallmaster Shuffle. The port refused one with every Wallmaster id ("Remove <song> from the starting items to use
+Wallmaster Shuffle.", D4), because its opposite-age Temple probe could not play songs; the port's Beginner preset, for
+one, starts with Prelude of Light (`ComboPresets.h`; OoTMM's Beginner places it on Zelda's song check instead,
+`packages/generator/lib/combo/presets.ts:1058`). A new capability, `wallmasters-own-game-songs-v2`
+(`Capabilities.h`), staged at Dev, lifts that refusal for the six OoT warp songs.
+
+- **What OoTMM checks.** `validateAgeTemple` (`packages/logic/src/solver/entrances.ts:265-287`) searches with the
+  starting items only, from SPAWN, where only the opposite age may leave. Every OoT area exits to the virtual area
+  GLOBAL, and GLOBAL leads to the six `SONG_TP_*` areas on `can_play_tp_*` (`data/world/oot/overworld/_system.yml:23-70`):
+  the song, an ocarina and its notes, with no age term (`data/macros/macros_common.yml:40-45`).
+- **The probe's GLOBAL node.** The probe (`TempleProbeCore.h`, `TempleProbe.cpp`) now has a virtual GLOBAL node. The
+  opposite age enters it at its spawn region, because Link's House and the Temple of Time exit to GLOBAL
+  unconditionally (lemma L3, `kokiri_forest.yml:4`, `temple_of_time.yml:4`). It takes that region's age and time
+  flags, which gain night once any region of that age passes hours, as OoTMM's GLOBAL, a still area, takes the time
+  of the areas exiting to it. Its edges are Ship's six warp songs of Root Exits (`root.cpp:47-52`), bound as a new
+  role, `global`, of the audited bindings (`tools/ootmm/oot-edge-audit.json`, `combo_oot_edge_bindings.inc`) to the
+  rows `OOT_WARP_SONG_*` (`data/defs/entrances.yml:174-179`), under their native condition, `logic->CanUse` of the
+  song: the song, an ocarina and the same notes (`logic.cpp` `CanUse`), evaluated in Root Exits' region. The starting
+  age never warps, and nothing outside the probe's private Logic and the region flags it restores is written.
+- **MM adds no Temple path (the Mask Shop lemma).** With no song destination shuffle and no starting Song of Soaring,
+  an age reaches MM in that search only through the Market's Mask Shop door, the reserved game link, and the Market
+  reaches the Temple of Time through two unconditional exits that no own-game pool touches (`market.yml:25`,
+  `:266-272`). MM leads back only through the Clock Tower link to the Market and MM's warp songs. So, for either age,
+  MM is reached only after the Temple, and an MM warp song (the cross-game songs) cannot help.
+- **Evidence.** `entrance_temple_global_lemma_tests.py` pins these lemmas to the exact OoTMM blobs.
+  `run_pinned_entrance_pools.mts --temple` runs OoTMM's own `validateAgeTemple` on 63 cases (starting age, Deku Tree
+  open or closed or a crafted Closed Forest, five instruments, no song or one of the six), recorded in
+  `tools/ootmm/temple-song-facts.json`. In each, the answer is the songless walk from the spawn area or, when the
+  song plays, from its landing, and an age in MM has the Market and the Temple. `temple_global_parity_tests.py` runs
+  the production probe core and GLOBAL edges on those cases and gives OoTMM's answer and ages in all of them. The
+  rest of Ship's world, which the probe searches natively, is checked on a device (DEVICE_TESTS.md).
+- **Which id a seed takes.** Generation picks the oldest id that covers the seed (`UnifiedBridge.h`): a seed with an
+  OoT warp song among either game's starting items under logic takes the songs-v2 id, in either quest context and
+  with foreign-song logic or without (`UnifiedWarpSongRequirement`); every other seed keeps the vanilla, quests or
+  songs id and is byte for byte the one earlier builds make. With No Logic no Temple pass runs, so a seed has no song
+  facts and keeps the earlier ids.
+- **Seed facts.** The seed guard (`ComboSeedFormat.h` `RequireSeedEntranceFacts`) refuses an earlier id with a
+  starting warp song under logic ("which does not admit a starting <song>") and the songs-v2 id without one. 0.4.12
+  and the 0.4.13 candidate without this stage refuse a songs-v2 seed with "requires unknown capability"
+  (`entrance_warp_songs_seed_guard_tests.py`).
+- **Still refused (port limits).** A starting Song of Soaring: OoT's GLOBAL also leads to MM SOARING, and with an owl
+  statue at the start a path through MM could reach the Temple first, which needs a Temple check through MM (Stage
+  5). So the Beginner preset, which starts with Soaring in MM, still needs it removed. Warp Songs and Soaring Spots
+  Shuffle, Full and the other entrance shuffles keep their refusals. The menu and the seed guard now read MM's saved
+  starting Soaring (`RI_SONG_SOARING`) as generation reads it (`MmStartingItemName`); before, only generation
+  refused it.
+- **While the id is staged,** a build without it keeps "Remove <song> from the starting items to use Wallmaster
+  Shuffle." for a starting warp song, in the menu, on the Generate button and in generation (`EntranceProfile.h`
+  `StartingWarpSongsRefusal`).
 
 ## OoT scene restrictions: OoTMM's table in new seeds (2026-10-21)
 
@@ -2662,8 +2716,9 @@ only by the marker.
   `overworld/graveyard.yml:97-107`, `overworld/market.yml:259-264`), so OoTMM's logic does not use the songs there
   either, even where its table allows them. OoTMM's OoT logic never uses `can_use_farore` (`macros_oot.yml:11`; the
   macro appears only in MM world files).
-- The opposite-age Temple probe explores with the starting items only and refuses a starting warp song
-  (`TempleProbe.cpp:207-211`, lemma S1 above); it reads no scene restriction.
+- The opposite-age Temple probe explores with the starting items only and reads no scene restriction. It plays a
+  starting warp song only from its GLOBAL node, entered at the opposite age's spawn region (the section on starting
+  warp songs above).
 
 **Seeds and the corpus.** `entrance_corpus_tests.py` checks the committed 0.4.12 seeds and their records against this
 build's launcher functions; it does not regenerate them, and it passes. Those seeds have no marker
