@@ -39,6 +39,8 @@ Rerun only the steps after the change, in the existing build directories:
 3. Delete `ComboAndroid/app/build/outputs/apk` and `ComboAndroid/app/build/intermediates/apk`, then `gradlew -p ComboAndroid :app:assembleDebug`. Packaging on top of an old APK can leave megabytes of dead space in it.
 4. `python ComboAndroid/tools/verify_apk.py ComboAndroid/app/build/outputs/apk/debug/app-debug.apk`. It rejects an APK with more than 1 MiB of space that no zip entry points at, and one whose libraries were built with the dev-only CMake option `COMBO_ENTRANCE_DEV` or `COMBO_MQ_WALK_DEV`.
 
+A developer APK for the Master Quest emulator walk is built the same way with `-DCOMBO_MQ_WALK_DEV=ON` in its own build directory. It adds the console commands `mq_walk`, `mq_tp`, `mq_wait`, `mq_status`, `mq_log` and `mq_stop`, and an adb command file that `tools/mq_walk_driver.py` writes (see `DEVICE_TESTS.md`). `verify_apk.py` refuses it, so it can never be a release.
+
 Development APKs use the builder's Android debug signing key. An APK from a different builder or CI has a different signature and will not install over an existing app. Keep the signing key for updates, and export saves before changing installation or signing identity. Private keys are not in the repository.
 
 ## Tests
