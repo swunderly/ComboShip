@@ -37,7 +37,8 @@ void RegisterSkipPrincessDelivery() {
             *should = false;
         }
     });
-    COND_HOOK(OnSceneInit, CVAR, [](s8 sceneId, s8 spawnNum) { sTransitionQueued = false; });
+    // Unconditionally registered, so turning the skip off and on again mid-delivery cannot leave the flag set.
+    COND_HOOK(OnSceneInit, true, [](s8 sceneId, s8 spawnNum) { sTransitionQueued = false; });
 }
 
 static RegisterShipInitFunc initFunc(RegisterSkipPrincessDelivery, { CVAR_NAME });
