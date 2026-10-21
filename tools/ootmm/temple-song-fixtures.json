@@ -1,0 +1,63 @@
+{
+  "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+  "purpose": "Inputs of the pinned validateAgeTemple run for the Temple probe's GLOBAL node (Wallmaster limits design, Stage 2): run_pinned_entrance_pools.mts --temple builds each group's world with no starting warp song and with each OoT warp song alone, and records OoTMM's answer, what each age reached and the songless walks. temple-song-facts.json holds the recorded run.",
+  "songs": ["FOREST", "FIRE", "WATER", "SHADOW", "SPIRIT", "LIGHT"],
+  "worlds": {
+    "dekuTreeOpen": {
+      "note": "OoTMM's default dekuTree open (data.ts:1194), the port's Closed Forest Off (ComboPresets.h).",
+      "settings": { "dekuTree": "open" },
+      "exits": {}
+    },
+    "dekuTreeClosed": {
+      "note": "dekuTree closed, the port's Closed Forest Deku Only, as the Beginner preset sets it (presets.ts:977).",
+      "settings": { "dekuTree": "closed" },
+      "exits": {}
+    },
+    "closedForest": {
+      "note": "Crafted: the port's Closed Forest On, which OoTMM does not have. Ship's Kokiri Forest exit to the Lost Woods bridge needs an adult or the Deku Tree beaten (kokiri_forest.cpp:125); with starting items only the child cannot beat it, so the crafted exit is adult only. Ship forces a child start with it (settings.cpp), so this world is a probe test, not a seed the port makes with an adult start.",
+      "settings": { "dekuTree": "closed" },
+      "exits": { "OOT Kokiri Forest": { "OOT Lost Woods Bridge from Forest": "adult" } }
+    }
+  },
+  "instruments": {
+    "none": {
+      "note": "No ocarina; the buttons are not shuffled.",
+      "settings": {},
+      "items": {}
+    },
+    "ocarina": {
+      "note": "The Fairy Ocarina; the buttons are not shuffled, so every note plays (macros_oot.yml:17).",
+      "settings": {},
+      "items": { "OOT_OCARINA": 1 }
+    },
+    "buttons": {
+      "note": "Ocarina buttons shuffled (OoT) and all five at the start.",
+      "settings": { "ocarinaButtonsShuffleOot": true },
+      "items": { "OOT_OCARINA": 1, "OOT_BUTTON_A": 1, "OOT_BUTTON_C_RIGHT": 1, "OOT_BUTTON_C_LEFT": 1,
+                 "OOT_BUTTON_C_UP": 1, "OOT_BUTTON_C_DOWN": 1 }
+    },
+    "noCLeft": {
+      "note": "Ocarina buttons shuffled (OoT) and every one but C-Left at the start: Bolero and Requiem still play.",
+      "settings": { "ocarinaButtonsShuffleOot": true },
+      "items": { "OOT_OCARINA": 1, "OOT_BUTTON_A": 1, "OOT_BUTTON_C_RIGHT": 1, "OOT_BUTTON_C_UP": 1,
+                 "OOT_BUTTON_C_DOWN": 1 }
+    },
+    "sharedNoCDown": {
+      "note": "Shared ocarina buttons (both games shuffled) and every shared one but C-Down at the start.",
+      "settings": { "ocarinaButtonsShuffleOot": true, "ocarinaButtonsShuffleMm": true, "sharedOcarinaButtons": true },
+      "items": { "OOT_OCARINA": 1, "SHARED_BUTTON_A": 1, "SHARED_BUTTON_C_RIGHT": 1, "SHARED_BUTTON_C_LEFT": 1,
+                 "SHARED_BUTTON_C_UP": 1 }
+    }
+  },
+  "groups": [
+    { "startingAge": "adult", "world": "dekuTreeOpen", "instrument": "ocarina" },
+    { "startingAge": "adult", "world": "dekuTreeClosed", "instrument": "ocarina" },
+    { "startingAge": "adult", "world": "closedForest", "instrument": "ocarina" },
+    { "startingAge": "adult", "world": "closedForest", "instrument": "none" },
+    { "startingAge": "adult", "world": "closedForest", "instrument": "buttons" },
+    { "startingAge": "adult", "world": "closedForest", "instrument": "noCLeft" },
+    { "startingAge": "adult", "world": "closedForest", "instrument": "sharedNoCDown" },
+    { "startingAge": "child", "world": "dekuTreeClosed", "instrument": "ocarina" },
+    { "startingAge": "child", "world": "closedForest", "instrument": "none" }
+  ]
+}

@@ -166,6 +166,15 @@ set_tests_properties(entrance_temple_pinned_lemmas PROPERTIES SKIP_REGULAR_EXPRE
 combo_python_test(entrance_temple_pinned_song_lemma entrance_temple_song_lemma_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_temple_song_lemma")
 set_tests_properties(entrance_temple_pinned_song_lemma PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+# Stage 2's lemmas for the Temple probe's GLOBAL node (L3, the song edges and notes, the Mask Shop), and the recorded
+# pinned validateAgeTemple run (tools/ootmm/temple-song-facts.json) that checks them on OoTMM's own searches.
+combo_python_test(entrance_temple_pinned_global_lemmas entrance_temple_global_lemma_tests.py
+    --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_temple_global_lemma")
+set_tests_properties(entrance_temple_pinned_global_lemmas PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+# Local only: reruns that validateAgeTemple run with the pinned portable Node; SKIPPED without it.
+combo_python_test(entrance_temple_song_facts_match_pinned_ootmm_run entrance_temple_song_facts_pinned_tests.py
+    --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_temple_song_facts")
+set_tests_properties(entrance_temple_song_facts_match_pinned_ootmm_run PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 combo_python_test(entrance_m1_pinned_contract_fixture entrance_m1_contract_tests.py
     --build-dir "${CMAKE_CURRENT_BINARY_DIR}/harness/entrance_m1_contract")
 set_tests_properties(entrance_m1_pinned_contract_fixture PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
@@ -955,6 +964,8 @@ get_property(combo_all_tests DIRECTORY PROPERTY TESTS)
 set_tests_properties(${combo_all_tests} PROPERTIES TIMEOUT ${COMBO_TEST_TIMEOUT})
 # The pinned OoTMM run builds 130 worlds (about 100 s on 8 Node worker threads when the machine is otherwise idle).
 set_tests_properties(entrance_m1_contract_matches_pinned_ootmm_run PROPERTIES TIMEOUT 900)
+# The pinned validateAgeTemple run builds 63 worlds (about 65 s on 4 Node worker threads).
+set_tests_properties(entrance_temple_song_facts_match_pinned_ootmm_run PROPERTIES TIMEOUT 900)
 
 if(COMBO_JSON_INCLUDE_DIR)
     add_executable(game_mode_tests game_mode_tests.cpp)

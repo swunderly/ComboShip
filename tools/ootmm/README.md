@@ -198,6 +198,23 @@ threads) and checks that the comparer names altered fixture values and altered p
 facts and rejects saved facts made from another fixture; it reports SKIPPED without the
 pinned Node or the checkout.
 
+With `--temple temple-song-fixtures.json` in place of `--contract`, the same runner
+calls OoTMM's own `validateAgeTemple` for the Temple probe's GLOBAL node (Wallmaster
+limits design, Stage 2): every case of the fixture (a starting age, a world, an
+instrument, and no starting warp song or one) with what each age reached, plus, for
+each songless case, the walk to the Temple of Time from the spawn area and from each
+warp-song landing. It writes no time or path, so `temple-song-facts.json` is its exact
+output:
+
+```sh
+node --experimental-transform-types --no-warnings tools/ootmm/run_pinned_entrance_pools.mts \
+    --reference /path/to/ootmm-stable-32.3 --temple tools/ootmm/temple-song-fixtures.json \
+    --out tools/ootmm/temple-song-facts.json --jobs 4
+```
+
+`entrance_temple_song_facts_match_pinned_ootmm_run` reruns it and requires those bytes;
+`entrance_temple_pinned_global_lemmas` checks the lemmas on the recorded facts.
+
 The OoT Wallmaster edge exporter writes `oot-wallmaster-edges.json`, the pinned edge
 fixture for unit M1-12: the 13 OoT Wallmaster source rows (area presence per quest and
 the `EnWallmas_GetDestEr` room rule), the 23 world exits into their areas (11 vanilla,

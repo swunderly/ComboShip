@@ -1,0 +1,3056 @@
+{
+ "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
+ "fixture": {
+  "sha256": "2d71e0210fa709c8351dd117a167ca6891933dc995eef55f255d71a1834e623e"
+ },
+ "node": "v24.21.0",
+ "seed": "combo-ship-m1-c19",
+ "inMemoryChanges": [
+  "packages/core/build/helpers.ts: import from 'node:fs' resolved to the in-memory shim",
+  "packages/core/build/helpers.ts: prefixed to line 1",
+  "packages/logic/src/solver/entrances.ts: appended"
+ ],
+ "observation": "Pathfinder.prototype.run wrapped to keep the state validateAgeTemple searched; its value is unchanged",
+ "servedBlobs": {
+  "data/defs/drawgi.yml": "757d3cfb80bc40cfd4e77e634e55eefa0de4684f317f8e150137317358f52748",
+  "data/defs/entrances.yml": "b95aee4e8dfb5b9015aca60ad98f11aeb12e86fec42528e9dddd4043119f709d",
+  "data/defs/gi.yml": "1c2998f8e62174dce19d73fe73d09bb8255844ef19ec2c198c9bc51b4ab05c31",
+  "data/defs/hints.yml": "777813cf9cbe778517447305450fa61dd6857f21880b25352cfe452d60065882",
+  "data/defs/link-animations.yml": "f643cad5efff54e26e8dcfb0666a58530f3ce2ff221a86bfc9c5ce2a796e88be",
+  "data/defs/npc.yml": "68c0bf3309f6fbf812e909d9e53daa45a6709987dd881a2f3e760bfee43cd69c",
+  "data/defs/regions.yml": "eb939533f84088014e667a9c7a825a0f4bc8b84fc0bc45890a0bc3e2ad5243b7",
+  "data/defs/scenes.yml": "a7e638800521a79b38ba774a172cef02a1ce88f013010f389b64cc99fdfebb1d",
+  "data/files/files-mm.txt": "bd63d6781d77d61def8d7f81508ca57297b99e98deb11f0eb5034ff1840ec902",
+  "data/files/files-oot.txt": "fe3cb926c567b159f8e75207c9176bef0a10085ed6bd3ebda87c4f0c4d5e5248",
+  "data/gossips/gossips_mm.csv": "fe30d0a8ea278fd064e369f1ab591d4c388572dabd451592bf4c510583dec9a3",
+  "data/gossips/gossips_oot.csv": "1b931a93a060628c6742bb91cdc0a1598291f99a6aaba3c59cd9f2731b70ad9a",
+  "data/macros/macros_common.yml": "72e4d141c062e31078f98e65f4391d684d88a1774136dad9e9cae98ef1f2296a",
+  "data/macros/macros_mm.yml": "8ac09785d4bd2ec93ae21f5ce89bfc967577616f01e68b5d3be91107c3e90fad",
+  "data/macros/macros_oot.yml": "929f52078756444106ba18aa4c3f0bcb5802e4b7df860563ba84cb820873163e",
+  "data/pool/pool_mm.csv": "5a7e2666aa3eb9a840ac9a22b89ecbd4ff7d86a4c7116d08a56dc1bcb8de1f55",
+  "data/pool/pool_oot.csv": "2dd70e0549001cfd38eaf2fa780aaaad2bac7b4170353afde60781fcc8840ee5",
+  "data/world/mm/boss/goht.yml": "31b537925b6cb4697780950f08e54409d896bf91492dba47f7871b76a6fdb9c5",
+  "data/world/mm/boss/gyorg.yml": "a8a95983cff55796efc327fc92f386aa7d22bc234cb067b69a745d7968c8f38d",
+  "data/world/mm/boss/odolwa.yml": "7ff845c39ec7a3d0c71799730ec6cd134febd896156de922fa2c40b337addbe7",
+  "data/world/mm/boss/twinmold.yml": "4f28db47cdd8ff16a08b867df867e18698015bdadb532e2f273ac4245624366a",
+  "data/world/mm/dungeons/ancient_castle_of_ikana.yml": "4bc4a71fb26ff2307917bea7e80429baf9d9c347a6a11e4ce0d98395555ad7b9",
+  "data/world/mm/dungeons/beneath_the_well.yml": "18c6e020e4a89afbce8ec1bc279bae1fbf5c846efe83630d67a04903e56d9b95",
+  "data/world/mm/dungeons/great_bay_temple.yml": "ecb72cdd3fc5c250b73cef41039bd170b53dcc0cf77df310f819b8dc3c98ed8c",
+  "data/world/mm/dungeons/moon.yml": "ac78723e33bca909f0f99116d1ae87ade16c1e3a9ec7fa8b1f5279963a90cbd5",
+  "data/world/mm/dungeons/ocean_spider_house.yml": "eb3f3dfaa1f7779c908b65ad49980c1e4e675aed4fbe770e9c975dc80bde1de3",
+  "data/world/mm/dungeons/pirate_fortress.yml": "0c3af93860253ea6addd6418c0fd5c11ab7e8f13a505c4924ffc56a5cdd17804",
+  "data/world/mm/dungeons/secret_shrine.yml": "100c5f0eb8617a5926ed37fa149f4bd0421601a37fcc596123f02d7c46af3a90",
+  "data/world/mm/dungeons/snowhead_temple.yml": "21e197da13f4d7c73b1e52034913db8defe1734972aca5ce6e90d5318ed625aa",
+  "data/world/mm/dungeons/stone_tower_temple.yml": "a4bc1afa472df1b4377f793365450a94f98465244d116859f4ba3213a5193d4d",
+  "data/world/mm/dungeons/stone_tower_temple_inverted.yml": "204ae23dde71f99457779c6ffb83b397e6faf96d6a9d706b40b995c3e644d685",
+  "data/world/mm/dungeons/swamp_spider_house.yml": "2af474faa18476b4f3ee7335e50e26e0d6771fae8b0fa8955b9ae9707d62f4b0",
+  "data/world/mm/dungeons/woodfall_temple.yml": "64d6058e80286b4c7e076d30ac33201f18e2fbea6a7ed696a639e766dcd3179d",
+  "data/world/mm/jp/deku_palace_jp.yml": "5663716458d3b20b9e907d708a27a5e39c594c0c19463dbffeb8f60d0cd8726c",
+  "data/world/mm/overworld/_system.yml": "98f258280c8a048b59ccc2ffbb58886e4c66b8af746f6f70393f76b4fb9e0df2",
+  "data/world/mm/overworld/clock_town.yml": "d7d72c70e167e8e41d3d76aea4890178266752d90e0a412622717b2173f5bf80",
+  "data/world/mm/overworld/deku_palace.yml": "8aba3ca84177b6f144288aa8b0cb02a7293aca8bf1d782f128a6ae028ee78d1f",
+  "data/world/mm/overworld/deku_shrine.yml": "86932e334e43d6e71ce2ee4ccd80b709c1da905b0e26d2a127678eb0d2e67bd0",
+  "data/world/mm/overworld/goron_village.yml": "7e3de51e3ea719f87ffd920ea777fac818681212fde97b18a44914a29d5116fd",
+  "data/world/mm/overworld/great_bay_coast.yml": "9983a6b14600e9faac68dd0f094341d9a1b3f458e1d37d4902914b234b41d0a7",
+  "data/world/mm/overworld/ikana_graveyard.yml": "5662ce1c98f5392719fa4dc688a9d19f76f8a3f88a8d294063c3781ecc5400a6",
+  "data/world/mm/overworld/ikana_valley.yml": "3d74f123331130225929895ddc3c09d84449764f87ca3549c1cb200712b8f34d",
+  "data/world/mm/overworld/milk_road.yml": "7a2ae58d374891f6dd2d4cadb218b00758b954aa25ef7388952f674c1831f6eb",
+  "data/world/mm/overworld/mountain_village.yml": "11f70a37141cc2b7a2b6600d98aa0eb06a70ae456596d6b7ff27ad44fb17e6fc",
+  "data/world/mm/overworld/path_to_mountain_village.yml": "c7d69d6899bafe9a0f079ae205f9a88b8ad447602cba3d38c1edda101a87e3cd",
+  "data/world/mm/overworld/path_to_snowhead.yml": "a88f9b4fe714235fc3ec0c0483bf8c7b5ae0df09990002383e0a2a1b2d65cd41",
+  "data/world/mm/overworld/pinnacle_rock.yml": "460d47584cac0a562d2f10bbbad89daa9a67afca9e70dc6a27b9c639a15bb680",
+  "data/world/mm/overworld/road_to_ikana.yml": "eb77a5e64977c5db02989bc49b303a3d4695f72c684aefa70368e2b87efd1f67",
+  "data/world/mm/overworld/road_to_swamp.yml": "947451f9308c5441cc73c8f8238db6d9feb12f36dd1069f21e2efeb347857bd4",
+  "data/world/mm/overworld/romani_ranch.yml": "457b57b05f9e115d8a2bd2eb99ead577e50f8ebb2bf4d036a8206a6d33dc6a0d",
+  "data/world/mm/overworld/snowhead.yml": "5e0c917e33e102f03f5e1ef3773058cad7330c8ed2d4d2d802f8ebdfd18a325c",
+  "data/world/mm/overworld/southern_swamp.yml": "ca9047961fe27442790c6942fa95b6f75bcd8d347479e5550fcd1acd8077cce8",
+  "data/world/mm/overworld/stone_tower.yml": "582e4aa2d61c8dff819786aa8c7701701386d25fed648b92b5297bc96dab4166",
+  "data/world/mm/overworld/termina_field.yml": "3fb53670b2d25937edb84ca2dd114b5b0183750771e408e693573d41da670ea2",
+  "data/world/mm/overworld/twin_island.yml": "332050c7ab729367740aec07d5aac3b58157a6f9adf3c89b2cb2790597d132e6",
+  "data/world/mm/overworld/woodfall.yml": "b4e5679b2e20fee6421f47a4101c2934dd6b30edd37f6f8cd5983bde0a518141",
+  "data/world/mm/overworld/woods_of_mystery.yml": "ec000983bc1b18fc84622178a683ac697323038e3cd3a5b9d34ebf1260b9d9bd",
+  "data/world/mm/overworld/zora_cape.yml": "a6fdb77da07c7fb2b59dcceb6ae19462a61a7bc851d2aeb86d47166d8a45533d",
+  "data/world/mm/overworld/zora_hall.yml": "8255717aa8fd5159f1679f217e2e5e48b327c7d0a27ceba5ae3ae8e9877444c3",
+  "data/world/mm/us/deku_palace_us.yml": "477a581b811fce141cd27d584dcf3d97916a955ac217a2a7cab6b1a741342db9",
+  "data/world/oot/boss/barinade.yml": "a70ca4394abd58e32025bed29f0612c59ade9521730e0545a3433a45fe1f0292",
+  "data/world/oot/boss/bongo_bongo.yml": "c89c13d6f36149c27468614d86186083cfb5dc29177336785ed7549f18743e11",
+  "data/world/oot/boss/gohma.yml": "36e87ae62dcacbd74fc5bbacb99619c9165a07d4abf4f90f188823428edeef62",
+  "data/world/oot/boss/king_dodongo.yml": "9f47b4a9869de1a21fe4ccc08672a375216df135f16c7832b7da84db1a03cc44",
+  "data/world/oot/boss/morpha.yml": "92a244fdcd57eaee52181b6185e14027c4d7e40cdb912234a75dd18f5a326921",
+  "data/world/oot/boss/phantom_ganon.yml": "9ea2597767ba9f4b4070f98e54d5890588cb8b03a98c3e7f88880e5865a4ab51",
+  "data/world/oot/boss/twinrova.yml": "fc8718f5ad6999732d5d82a0558360322bac25dea3b02fac4448b5be051cb263",
+  "data/world/oot/boss/volvagia.yml": "576c6cc1442821465b9d68dcf7445a95334d77c3c4747d2fd81a3101d4b719a2",
+  "data/world/oot/dungeons/bottom_of_the_well.yml": "df669404ba86fdcf7717ed4c85ba279a00dbb8666672e2550ddc37be920d9b45",
+  "data/world/oot/dungeons/deku_tree.yml": "e6d5b6771560aaf30e53a35ec2b41c61a038534d067ce416e9266290132ed335",
+  "data/world/oot/dungeons/dodongo_cavern.yml": "bc97d37da7999f47febf2080b83f1a2456a77f2cf173ef4b36835dab077eb0d3",
+  "data/world/oot/dungeons/fire_temple.yml": "9f1c69c46cec38bd28e6c0435ad69a51b554ffaec79d39c6f55334369cd74bea",
+  "data/world/oot/dungeons/forest_temple.yml": "3a299d1ed18360c6f8ef7377f0f6bd85d31e106e15afd47d274ab469defa972d",
+  "data/world/oot/dungeons/ganon_castle.yml": "903359d1e45617990ba38f8342383071baf2d67c2b019f3788255460edf2fab4",
+  "data/world/oot/dungeons/ganon_tower.yml": "26187fb1bb42f474cdc9efc36513b93c0bd2102210f895dfb90daafd3f489531",
+  "data/world/oot/dungeons/gerudo_fortress.yml": "087e5b090791258a651def329a8a3fbe8f68b3d847fbb92022d268bbd06270a6",
+  "data/world/oot/dungeons/gerudo_training_grounds.yml": "c686229a05cdbf82c710be7962cd5128c43bc493574c910f34002f3c425e2266",
+  "data/world/oot/dungeons/ice_cavern.yml": "a85ae701fc0824f8a3bed96952dd48f1e1be19981d862ea7b0ef82d5ba55d008",
+  "data/world/oot/dungeons/jabu_jabu.yml": "71df5580f7e437aa6023794e782435d7ceb2ad427f91e57399a2844105da83d6",
+  "data/world/oot/dungeons/shadow_temple.yml": "442ef7a381d483b22d3af5cc62144869599a831736c2402ae5ce87dad28a8c33",
+  "data/world/oot/dungeons/spirit_temple.yml": "fd9384973b03c07ddedc017acfac288c16665d0cc3209ee8c4f6ffe2a59c6fa3",
+  "data/world/oot/dungeons/treasure_chest_game.yml": "e6435ed3dc3362c688605d96b93f0b840942e3d321d0a5d855f953f75142bb3b",
+  "data/world/oot/dungeons/water_temple.yml": "ffc0a2c6fc362a010a1e5a8bf5bf7e1fa82be464f80f3ceb30168a5bc6423357",
+  "data/world/oot/dungeons_mq/bottom_of_the_well_mq.yml": "0954dddcb6a5c5110865b780858c9ff81030ba73219a1d3bea491e3c87347317",
+  "data/world/oot/dungeons_mq/deku_tree_mq.yml": "0235732966f825d530fc7d34ba78c0498adefa0484bd074d4a53cabbb3a56724",
+  "data/world/oot/dungeons_mq/dodongo_cavern_mq.yml": "2c29b562c3aeb055e57afcfb7c3958aa70656d3bddcf581cb1ff610c19789e9b",
+  "data/world/oot/dungeons_mq/fire_temple_mq.yml": "5e2b3386f73b86d4a2a20ed68dfa2dde93fc79c5b0ca55fb25a1081c74ceed24",
+  "data/world/oot/dungeons_mq/forest_temple_mq.yml": "06ab89e05347e36f3c12bb9983f3a0dbee1e50b03660955355a95fbe66beaaaa",
+  "data/world/oot/dungeons_mq/ganon_castle_mq.yml": "a55acc06149850b807789b1bf1fc587d0b87e6b8f09c6287c384aacb60d7510c",
+  "data/world/oot/dungeons_mq/gerudo_training_grounds_mq.yml": "d2c08979ce1f7bc5d37f2693a506b78b134dcb3ad2e04300e6cf7047a6fd89d4",
+  "data/world/oot/dungeons_mq/ice_cavern_mq.yml": "651eaa3a5aae2709ae07db2493803cdf52b8e0e769697bc17347bd1953d0ec23",
+  "data/world/oot/dungeons_mq/jabu_jabu_mq.yml": "c074c878cd5f69e68802c26ece328833d97c7699fc3343d9cee5cc7c526e98c3",
+  "data/world/oot/dungeons_mq/shadow_temple_mq.yml": "2f69a3f99d6ec0d9fa90deb267de3a1f7e0aef4ef46c3d6963411749c90420be",
+  "data/world/oot/dungeons_mq/spirit_temple_mq.yml": "1fe4ec896e948a3bf32fef51beeb93a3ecfcc7d8365f7fc2631ab507d633f732",
+  "data/world/oot/dungeons_mq/water_temple_mq.yml": "cb54ea030c9ea76c34b4322fd5116e497be29f159aabeec032419161e3e5a590",
+  "data/world/oot/overworld/_system.yml": "fe161feb3eb72d3018b02c02e1627cef21a1edb5669813afa00136aba616226b",
+  "data/world/oot/overworld/death_mountain_crater.yml": "5afb923432b35ded828f64911f7bcedc4d5a8c279e018f37f33158d4a4303736",
+  "data/world/oot/overworld/death_mountain_trail.yml": "b8853cddb8de06263d6b125d5859f55ba94bcb6ab5d7f7aace7b4f5f72447231",
+  "data/world/oot/overworld/desert_colossus.yml": "0af6c00a6c42edb7f24370f9eee1f1ca114f9b5047fb1f6f215ea03b8f927c38",
+  "data/world/oot/overworld/gerudo_fortress.yml": "0e66284cefb7dbef3d49293ca8e2d2a4c28a233d1c51cbb24361fdb2776a14a9",
+  "data/world/oot/overworld/gerudo_valley.yml": "9b1060d382465c02c2308a858b75b296ec8b6ab029209c4b2c8bc076b7463ccf",
+  "data/world/oot/overworld/goron_city.yml": "3ef39b1980e6282b762f958bcc9b0c30ba7faddae2a988b76420be91c54e202f",
+  "data/world/oot/overworld/graveyard.yml": "5515a419e87e064201677ef8eeb46869a7ed2641cc76092938da19a5c81d5ed7",
+  "data/world/oot/overworld/haunted_wasteland.yml": "2ce940b3889d5d644f18ccf81dc0a96d6a386cab5b2d6568eb01997a0714efa4",
+  "data/world/oot/overworld/hyrule_field.yml": "bc6aff0e37269ec8e8cda84a4de1d8eda47423620c2b620dee017c5e9e3ff60b",
+  "data/world/oot/overworld/hyrule_ganon_castle.yml": "457371307b22b948092830448cea3e34e92d44e0c2d48d6631c4145760901edf",
+  "data/world/oot/overworld/kakariko.yml": "6054524a7b8636d705525df44d0aed8e056cbac558fe54157573009e8187f547",
+  "data/world/oot/overworld/kokiri_forest.yml": "89bff4ecab76b9b126e3fa002c31e139575fc697bcc2f28e933fcf17a119760e",
+  "data/world/oot/overworld/lake_hylia.yml": "b8628559b7e4be792392a1c4b02ddbe4d0a5d2f50ceb7d505f79cd82499985df",
+  "data/world/oot/overworld/lon_lon_ranch.yml": "28fc442bfc544d996a648bdf1890ae4bc007782240b89b50f4d1216ceaf01076",
+  "data/world/oot/overworld/lost_woods.yml": "e5052535fd8b00ca28c48bd7b5a7d0c7ef62046b63005f1bcc900b23145267d7",
+  "data/world/oot/overworld/market.yml": "641c69a9f69da5b5a06608229319e5e34e2bbde01759e4b51ab5965eff82124d",
+  "data/world/oot/overworld/sacred_forest_meadow.yml": "eeba5c7faff87d66d557c759efd88522a83f4f125e67575322461bd879e17d49",
+  "data/world/oot/overworld/temple_of_time.yml": "e809b07e7ec4675e1e09e47a3c174cedb9a0585388f08230aed9991e7238c94a",
+  "data/world/oot/overworld/zora_domain.yml": "fdcaf0fb815af74b1aa2baf43ef3ecffaff7b0b17a65e6f135549e5bc310871a",
+  "data/world/oot/overworld/zora_fountain.yml": "332795dc8130d64176f127f7d574a209684be332ff5899074071adf99bbb4ccd",
+  "data/world/oot/overworld/zora_river.yml": "afbe10b5b69b6adf8400b7af873a642d899e13c3543584fa6f91e9fcaf759a5f",
+  "packages/core/build/helpers.ts": "a633e15ad9544a184a2ac137e18cc3aba5d90ae70124056d85ab7a63b2f5c3ce",
+  "packages/core/build/index.ts": "d564b7a757e91570113c5e0afac25270c54e6f3bc637e12007a2a9643681fc96",
+  "packages/core/src/cosmetics/color.ts": "d2c1e865534c9400cbff8a9f36f7931f1bcb54af50846d14ae010422adb54539",
+  "packages/core/src/cosmetics/data.ts": "8c0c80f9f90063ed7d86e68cf4de4c7041e9d35e96a4ae7aa5ab998ce949c7a9",
+  "packages/core/src/cosmetics/index.ts": "bda40b622e5e705791a077d82853c3a83a5fc23f25d9e2c193470d9057073451",
+  "packages/core/src/cosmetics/util.ts": "7ebf1317f5177a32d806e3b578c7bdbaaa10056ddbd0523ce191d42aa6668fce",
+  "packages/core/src/data/animations.ts": "50a04618bffd2fb80e5026b3ad9cbe97c24dcfd108c27e65e564a0e5e802bfc6",
+  "packages/core/src/data/data.ts": "aa74b9a7708442ba34aac052ad12d2e4c5c4dd638cc4c86c16ba43506ff4e7fe",
+  "packages/core/src/data/hint-locations.ts": "a2c8992ab58316d8af321a315f65c5e0ed92de5423972e4e353ed21cfd9af804",
+  "packages/core/src/data/index.ts": "d219f2463f255b9e3ed8113817b20589aa01d46e876c34e01e2288514d518e0e",
+  "packages/core/src/defines.ts": "ea7a3936a18d39d949d9d9300bb650c78c8a5bee1169caa20535dbee5863d7ab",
+  "packages/core/src/gossips.ts": "40daa3d5dc3c893692b481d5c9beaa1461d45c4a05bc72c968085ebd01bc3c9c",
+  "packages/core/src/index.ts": "9dfe713fd3078be9bf6d1cf99ba511e5dd0b2690e9d184c5d8aa3df92da1517f",
+  "packages/core/src/items/defs.ts": "cbf3895bda622690d0bdcec6f8d7abd8c03a5317032f681a5a01c943fd6bab83",
+  "packages/core/src/items/groups.ts": "09b0795bdbf38185c4a75882a4e319d7a6d7843f62e8cf6ea8ea348179e54989",
+  "packages/core/src/items/helpers.ts": "a8551cb44cb4dae5c65094c7952e6ce0dfd84cf641b2cf6d589ec538ee925288",
+  "packages/core/src/items/index.ts": "7c6454dfbd9e3e2b40cdbac54f093934858a67055e36a02b3510ca24f31e6f19",
+  "packages/core/src/items/util.ts": "179d6bf5b1efb5ae393db9e520c0391100ddcd53b48d34dd032164c79507127a",
+  "packages/core/src/monitor.ts": "d4f8ac89e227ac5501ee7a4d1bbab771def2368bad4c3d610ca70d12835b929a",
+  "packages/core/src/options.ts": "67ec3f5a8c5d13e03713f49e9f66e23b31ca62b88f2bf64a4d63f37ec665256c",
+  "packages/core/src/random-settings.ts": "2decfefb88d3ec2a1e7b80876a1b00ce1da1b9dc041ce15b597724c880c0373d",
+  "packages/core/src/random.ts": "8a4711026d5d8bf000f558238c1e91b30fee6819e72e51b954d4d176e4ccea03",
+  "packages/core/src/regions.ts": "b109318d86c03125a6fc5a521ae0cd6e7b9177886a716a058adff3018ffd0483",
+  "packages/core/src/settings/data.ts": "123a63834897d3f64e22e2bbb9cfec04bbdd8f6ab13255d4300ad8bad6deeb8f",
+  "packages/core/src/settings/hints.ts": "640c1cbff1bfafef381a52e5e0ecc742a462c58ad6cb137214830b1bde19444d",
+  "packages/core/src/settings/index.ts": "cb7f226e431245bce496064df1ca7007c9194e05041de7aea71f0e708a595ecf",
+  "packages/core/src/settings/patch.ts": "63842994ab866fc973fd3e1f08b28be350e05b85816c24edd3d864a87a668efd",
+  "packages/core/src/settings/special-conds.ts": "d3b82eafa1cbf3bf6dafffb16f38b500ab71c872f7b364129f092d15bc90c6a6",
+  "packages/core/src/settings/string.ts": "86657713836a2b69ed8a9f4fb7c0125caa770f539b4f2046be2e587bb1c5c1f1",
+  "packages/core/src/settings/tricks.ts": "49cc523d7516272d5bc2178851d591becc05979302f40045089bc928372aab5b",
+  "packages/core/src/settings/util.ts": "ed8cd8023f4e93067a7717bdd7dad9b7c2e8f6bd1a33c4a721565fdfdcbae4a8",
+  "packages/core/src/song-events.ts": "48a48dac9c85a234e6306a88ce18e7ee687273315d7206c3d0896c55321a68dc",
+  "packages/core/src/util.ts": "3d50d3b420102e878f3bb869bbff292d80aa680ca5bad41031133bbf2c092304",
+  "packages/logic/src/age.ts": "d7fbbc85c0386a1bd00c83ebd093a6d5cd70023e9d857a26f7e7e778aede9eca",
+  "packages/logic/src/analysis/analysis-foolish.ts": "3af938098bcf51dea0452fdccbb8a8c72c2fc4ea4f4da81ee69a1c32bb25e801",
+  "packages/logic/src/analysis/analysis-path.ts": "c0beed28ed93b6ced7ae79a57214e058f0a0668cd85516f4a26bef2d22bc46d8",
+  "packages/logic/src/analysis/analysis.ts": "1a28567ac1e829ef0f2625b0fcbb684ce6d2a2686a5595617aeec4e960b33f62",
+  "packages/logic/src/analysis/events.ts": "b733a73fd9fd66769df99ccf69a0bb5728a0b232b6ced584b5d0feb9508c0916",
+  "packages/logic/src/analysis/index.ts": "84138f73e94496ead3cde6c82577b02a30961c7c293f63c0a3470e7dd7ef6d98",
+  "packages/logic/src/data/boss.ts": "dc2361ca5978cefaea7a6799f060b86b03d7f1394bcf582457b773210dea4387",
+  "packages/logic/src/data/dungeons.ts": "5d0dffc366d391809388879f4bdd7e67279e7ec68fcd1b25daf746188598736a",
+  "packages/logic/src/data/index.ts": "615fa7f4502ade391166e2114581ef48c5971f43a5e1fe22faecbd4cf78f5d00",
+  "packages/logic/src/data/shared-items.ts": "7b0c64c1065da2c3a132a819748bf5d0dbda4f11febd1688826446676368f1d4",
+  "packages/logic/src/data/traps.ts": "e5d58c0c44ab0e83ffde68b9e7649c5b58fdaa5b63574f15c6bd866a17787f22",
+  "packages/logic/src/error.ts": "6bf826ef5c9cc85357b3d23181312255e89d8d13f639a640ebb1c8acfb30abda",
+  "packages/logic/src/expr/builder.ts": "ab5ca1ee568142e7c577f77edc6346ef7c9afe085805b2924875de913c235e25",
+  "packages/logic/src/expr/compile.ts": "bcff0bc68a8c20c07ed6b17ca48bb5e06ebf9f9a8241ca4839f316c8c94e6227",
+  "packages/logic/src/expr/data.ts": "6da892b5ffe7f871307e0887a596347df5451a2fa98df3c0d53ad1ef2bf23dcc",
+  "packages/logic/src/expr/index.ts": "cf82ae6d09e53a4ad31d5a093c84488befd7875ad45c32b3a7017ea7a3420206",
+  "packages/logic/src/expr/memo.ts": "b6f30d479d3e9e0823855d2b16112a303016071c363d8587fcffadbd5a0bfb1d",
+  "packages/logic/src/expr/parser.ts": "b3dc74f9dd9c56c773d15e17511b9c6210c39f17c17a06fc21cb6cfe805a5434",
+  "packages/logic/src/helpers.ts": "12bbd547a10e96e949edce9274f5d98d12b046763a730a49aa88b47ee226ccd7",
+  "packages/logic/src/hints.ts": "b68fbe3a8058968b6a73d5ace79f4fcd671c82972a5c4943619473628f871439",
+  "packages/logic/src/index.ts": "c7eaa2fbed576ca4ee8e6f0c171f4fe3452962e18048bb5c272fc1b2565ffa4b",
+  "packages/logic/src/item-properties.ts": "21a084b7ca680b0e86fd858eb4c8269672a051592c5ed0abda2002291afee692",
+  "packages/logic/src/locations.ts": "c9fca888ed4403673e00f30656e1018d1d1f3e66d303ca2ef5fedb7ded566b8f",
+  "packages/logic/src/misc/config.ts": "fd3630d64de958ca217d8aac55e3572dcfb29ae85b0b4baadc1289ab89da50ff",
+  "packages/logic/src/misc/fixer.ts": "1f2eeef0155d7c1e6085655e5ed6fa7a34e6b8396abf8d70d91b5447efedd171",
+  "packages/logic/src/misc/hash.ts": "9c2ed85cbd4356428ef61dd6de7bb15adea8e6a7f664475a412336df24484884",
+  "packages/logic/src/misc/index.ts": "faccccd00e99b9614e20be308c8e1666f0ddd48e64447ea750af7f77f87e3d5a",
+  "packages/logic/src/misc/song-events.ts": "81584e437d0a3740a50ea3db94fb2ee685b088cf07dd219b0842c6a85a9161fd",
+  "packages/logic/src/pathfind/index.ts": "0efcef7eefb2bd476f3344c30ab23790b88a2cade319352e99f06ad4eca3fdb3",
+  "packages/logic/src/pathfind/pathfind.ts": "9d95c72835d6c171632db823a1a9929b5543c9e674ebb90839608ad7896124b2",
+  "packages/logic/src/pipeline.ts": "8b5e38e828615f609a7d45aaa2bd1b7ae546f2ec107c459694aba37df91d6b2f",
+  "packages/logic/src/price.ts": "6fa50697bfe053269c9637ebb0884619855afce0f2ab1b95d17108242b328006",
+  "packages/logic/src/solver/cloak.ts": "ec358540012abd9a2262ddda21b1e4279c26cdfea98a40f3beeacaf172f21608",
+  "packages/logic/src/solver/entrances.ts": "fa3bd74313c06f50082d097a66539ced5c1d78709fd548a63d2ef40297b45f0b",
+  "packages/logic/src/solver/index.ts": "ebc38bf4bf32119ae91517b5b3019e03fb7f523ef4d7569375e77fe8757877a9",
+  "packages/logic/src/solver/minimize.ts": "170708e1fcea5bb0692f7a28e973cc409e6c80dbdbb82b3aaffe0ab224ae76cf",
+  "packages/logic/src/solver/solve.ts": "c266d38ea03021128579e88047492f25b097315ee8c26ed38a3c025c8e7c3f77",
+  "packages/logic/src/world/builder.ts": "88f98cac10bd801f40db3c84bcd72495162f755ad82e90728bb8ee0d7c097aa9",
+  "packages/logic/src/world/flags.ts": "dae7af275a269fb5282250da42dabaa4a1857ab9109c005c0f7f7cdb92b79e96",
+  "packages/logic/src/world/index.ts": "80fd8c4cfc4ce504602b9c1edf182a269b24e6effbba4fe6df3048be57181def",
+  "packages/logic/src/world/optimizer.ts": "1bddf58eaa22397671b7f9c602d4c020b8e14cac8d07d92bfc4aed1ee25781e4",
+  "packages/logic/src/world/transform.ts": "9ed8055d4a0a4b61480546c8d9746ebdcf95a101641dd3cbf0efbc6eddef145c"
+ },
+ "packages": {
+  "csv": "6.5.1",
+  "csv-generate": "4.6.2",
+  "csv-parse": "6.2.1",
+  "csv-stringify": "6.9.0",
+  "lodash-es": "4.17.21",
+  "pako": "2.1.0",
+  "stream-transform": "3.6.0",
+  "uint8array-extras": "1.5.0",
+  "yaml": "2.8.1"
+ },
+ "groups": [
+  {
+   "startingAge": "adult",
+   "world": "dekuTreeOpen",
+   "instrument": "ocarina",
+   "opposite": "child",
+   "spawnArea": "OOT Link's House",
+   "walks": {
+    "OOT Link's House": true,
+    "OOT Sacred Meadow": true,
+    "OOT Death Mountain Crater Warp": false,
+    "OOT Lake Hylia": true,
+    "OOT Graveyard Upper": true,
+    "OOT Desert Colossus": false,
+    "OOT Temple of Time": true
+   },
+   "cases": [
+    {
+     "id": "startingAge=adult;world=dekuTreeOpen;instrument=ocarina;song=none",
+     "song": null,
+     "row": null,
+     "landing": null,
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 90,
+       "global": true,
+       "songAreas": [],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "open",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeOpen;instrument=ocarina;song=FOREST",
+     "song": "FOREST",
+     "row": "OOT_WARP_SONG_MEADOW",
+     "landing": "OOT Sacred Meadow",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 93,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FOREST"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "open",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FOREST=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeOpen;instrument=ocarina;song=FIRE",
+     "song": "FIRE",
+     "row": "OOT_WARP_SONG_CRATER",
+     "landing": "OOT Death Mountain Crater Warp",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 93,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FIRE"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "open",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FIRE=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeOpen;instrument=ocarina;song=WATER",
+     "song": "WATER",
+     "row": "OOT_WARP_SONG_LAKE",
+     "landing": "OOT Lake Hylia",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 91,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_WATER"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "open",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_WATER=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeOpen;instrument=ocarina;song=SHADOW",
+     "song": "SHADOW",
+     "row": "OOT_WARP_SONG_GRAVE",
+     "landing": "OOT Graveyard Upper",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 92,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SHADOW"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "open",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SHADOW=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeOpen;instrument=ocarina;song=SPIRIT",
+     "song": "SPIRIT",
+     "row": "OOT_WARP_SONG_DESERT",
+     "landing": "OOT Desert Colossus",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 97,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SPIRIT"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "open",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SPIRIT=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeOpen;instrument=ocarina;song=LIGHT",
+     "song": "LIGHT",
+     "row": "OOT_WARP_SONG_TEMPLE",
+     "landing": "OOT Temple of Time",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 91,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_LIGHT"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "open",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_LIGHT=1"
+     ]
+    }
+   ]
+  },
+  {
+   "startingAge": "adult",
+   "world": "dekuTreeClosed",
+   "instrument": "ocarina",
+   "opposite": "child",
+   "spawnArea": "OOT Link's House",
+   "walks": {
+    "OOT Link's House": true,
+    "OOT Sacred Meadow": true,
+    "OOT Death Mountain Crater Warp": false,
+    "OOT Lake Hylia": true,
+    "OOT Graveyard Upper": true,
+    "OOT Desert Colossus": false,
+    "OOT Temple of Time": true
+   },
+   "cases": [
+    {
+     "id": "startingAge=adult;world=dekuTreeClosed;instrument=ocarina;song=none",
+     "song": null,
+     "row": null,
+     "landing": null,
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 87,
+       "global": true,
+       "songAreas": [],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeClosed;instrument=ocarina;song=FOREST",
+     "song": "FOREST",
+     "row": "OOT_WARP_SONG_MEADOW",
+     "landing": "OOT Sacred Meadow",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 90,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FOREST"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FOREST=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeClosed;instrument=ocarina;song=FIRE",
+     "song": "FIRE",
+     "row": "OOT_WARP_SONG_CRATER",
+     "landing": "OOT Death Mountain Crater Warp",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 90,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FIRE"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FIRE=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeClosed;instrument=ocarina;song=WATER",
+     "song": "WATER",
+     "row": "OOT_WARP_SONG_LAKE",
+     "landing": "OOT Lake Hylia",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 88,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_WATER"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_WATER=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeClosed;instrument=ocarina;song=SHADOW",
+     "song": "SHADOW",
+     "row": "OOT_WARP_SONG_GRAVE",
+     "landing": "OOT Graveyard Upper",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 89,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SHADOW"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SHADOW=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeClosed;instrument=ocarina;song=SPIRIT",
+     "song": "SPIRIT",
+     "row": "OOT_WARP_SONG_DESERT",
+     "landing": "OOT Desert Colossus",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 94,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SPIRIT"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SPIRIT=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=dekuTreeClosed;instrument=ocarina;song=LIGHT",
+     "song": "LIGHT",
+     "row": "OOT_WARP_SONG_TEMPLE",
+     "landing": "OOT Temple of Time",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 88,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_LIGHT"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_LIGHT=1"
+     ]
+    }
+   ]
+  },
+  {
+   "startingAge": "adult",
+   "world": "closedForest",
+   "instrument": "ocarina",
+   "opposite": "child",
+   "spawnArea": "OOT Link's House",
+   "walks": {
+    "OOT Link's House": false,
+    "OOT Sacred Meadow": false,
+    "OOT Death Mountain Crater Warp": false,
+    "OOT Lake Hylia": true,
+    "OOT Graveyard Upper": true,
+    "OOT Desert Colossus": false,
+    "OOT Temple of Time": true
+   },
+   "cases": [
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=ocarina;song=none",
+     "song": null,
+     "row": null,
+     "landing": null,
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=ocarina;song=FOREST",
+     "song": "FOREST",
+     "row": "OOT_WARP_SONG_MEADOW",
+     "landing": "OOT Sacred Meadow",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 23,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FOREST"
+       ],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FOREST=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=ocarina;song=FIRE",
+     "song": "FIRE",
+     "row": "OOT_WARP_SONG_CRATER",
+     "landing": "OOT Death Mountain Crater Warp",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 23,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FIRE"
+       ],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FIRE=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=ocarina;song=WATER",
+     "song": "WATER",
+     "row": "OOT_WARP_SONG_LAKE",
+     "landing": "OOT Lake Hylia",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 87,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_WATER"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_WATER=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=ocarina;song=SHADOW",
+     "song": "SHADOW",
+     "row": "OOT_WARP_SONG_GRAVE",
+     "landing": "OOT Graveyard Upper",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 88,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SHADOW"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SHADOW=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=ocarina;song=SPIRIT",
+     "song": "SPIRIT",
+     "row": "OOT_WARP_SONG_DESERT",
+     "landing": "OOT Desert Colossus",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 27,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SPIRIT"
+       ],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SPIRIT=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=ocarina;song=LIGHT",
+     "song": "LIGHT",
+     "row": "OOT_WARP_SONG_TEMPLE",
+     "landing": "OOT Temple of Time",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 87,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_LIGHT"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_LIGHT=1"
+     ]
+    }
+   ]
+  },
+  {
+   "startingAge": "adult",
+   "world": "closedForest",
+   "instrument": "none",
+   "opposite": "child",
+   "spawnArea": "OOT Link's House",
+   "walks": {
+    "OOT Link's House": false,
+    "OOT Sacred Meadow": false,
+    "OOT Death Mountain Crater Warp": false,
+    "OOT Lake Hylia": true,
+    "OOT Graveyard Upper": true,
+    "OOT Desert Colossus": false,
+    "OOT Temple of Time": true
+   },
+   "cases": [
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=none;song=none",
+     "song": null,
+     "row": null,
+     "landing": null,
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": []
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=none;song=FOREST",
+     "song": "FOREST",
+     "row": "OOT_WARP_SONG_MEADOW",
+     "landing": "OOT Sacred Meadow",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_FOREST=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=none;song=FIRE",
+     "song": "FIRE",
+     "row": "OOT_WARP_SONG_CRATER",
+     "landing": "OOT Death Mountain Crater Warp",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_FIRE=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=none;song=WATER",
+     "song": "WATER",
+     "row": "OOT_WARP_SONG_LAKE",
+     "landing": "OOT Lake Hylia",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_WATER=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=none;song=SHADOW",
+     "song": "SHADOW",
+     "row": "OOT_WARP_SONG_GRAVE",
+     "landing": "OOT Graveyard Upper",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_SHADOW=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=none;song=SPIRIT",
+     "song": "SPIRIT",
+     "row": "OOT_WARP_SONG_DESERT",
+     "landing": "OOT Desert Colossus",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_SPIRIT=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=none;song=LIGHT",
+     "song": "LIGHT",
+     "row": "OOT_WARP_SONG_TEMPLE",
+     "landing": "OOT Temple of Time",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_LIGHT=1"
+     ]
+    }
+   ]
+  },
+  {
+   "startingAge": "adult",
+   "world": "closedForest",
+   "instrument": "buttons",
+   "opposite": "child",
+   "spawnArea": "OOT Link's House",
+   "walks": {
+    "OOT Link's House": false,
+    "OOT Sacred Meadow": false,
+    "OOT Death Mountain Crater Warp": false,
+    "OOT Lake Hylia": true,
+    "OOT Graveyard Upper": true,
+    "OOT Desert Colossus": false,
+    "OOT Temple of Time": true
+   },
+   "cases": [
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=buttons;song=none",
+     "song": null,
+     "row": null,
+     "landing": null,
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_LEFT=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=buttons;song=FOREST",
+     "song": "FOREST",
+     "row": "OOT_WARP_SONG_MEADOW",
+     "landing": "OOT Sacred Meadow",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 23,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FOREST"
+       ],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_LEFT=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FOREST=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=buttons;song=FIRE",
+     "song": "FIRE",
+     "row": "OOT_WARP_SONG_CRATER",
+     "landing": "OOT Death Mountain Crater Warp",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 23,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FIRE"
+       ],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_LEFT=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FIRE=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=buttons;song=WATER",
+     "song": "WATER",
+     "row": "OOT_WARP_SONG_LAKE",
+     "landing": "OOT Lake Hylia",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 87,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_WATER"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_LEFT=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_WATER=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=buttons;song=SHADOW",
+     "song": "SHADOW",
+     "row": "OOT_WARP_SONG_GRAVE",
+     "landing": "OOT Graveyard Upper",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 88,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SHADOW"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_LEFT=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SHADOW=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=buttons;song=SPIRIT",
+     "song": "SPIRIT",
+     "row": "OOT_WARP_SONG_DESERT",
+     "landing": "OOT Desert Colossus",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 27,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SPIRIT"
+       ],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_LEFT=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SPIRIT=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=buttons;song=LIGHT",
+     "song": "LIGHT",
+     "row": "OOT_WARP_SONG_TEMPLE",
+     "landing": "OOT Temple of Time",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 87,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_LIGHT"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_LEFT=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_LIGHT=1"
+     ]
+    }
+   ]
+  },
+  {
+   "startingAge": "adult",
+   "world": "closedForest",
+   "instrument": "noCLeft",
+   "opposite": "child",
+   "spawnArea": "OOT Link's House",
+   "walks": {
+    "OOT Link's House": false,
+    "OOT Sacred Meadow": false,
+    "OOT Death Mountain Crater Warp": false,
+    "OOT Lake Hylia": true,
+    "OOT Graveyard Upper": true,
+    "OOT Desert Colossus": false,
+    "OOT Temple of Time": true
+   },
+   "cases": [
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=noCLeft;song=none",
+     "song": null,
+     "row": null,
+     "landing": null,
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=noCLeft;song=FOREST",
+     "song": "FOREST",
+     "row": "OOT_WARP_SONG_MEADOW",
+     "landing": "OOT Sacred Meadow",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FOREST=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=noCLeft;song=FIRE",
+     "song": "FIRE",
+     "row": "OOT_WARP_SONG_CRATER",
+     "landing": "OOT Death Mountain Crater Warp",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 23,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FIRE"
+       ],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FIRE=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=noCLeft;song=WATER",
+     "song": "WATER",
+     "row": "OOT_WARP_SONG_LAKE",
+     "landing": "OOT Lake Hylia",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_WATER=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=noCLeft;song=SHADOW",
+     "song": "SHADOW",
+     "row": "OOT_WARP_SONG_GRAVE",
+     "landing": "OOT Graveyard Upper",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SHADOW=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=noCLeft;song=SPIRIT",
+     "song": "SPIRIT",
+     "row": "OOT_WARP_SONG_DESERT",
+     "landing": "OOT Desert Colossus",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 27,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SPIRIT"
+       ],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SPIRIT=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=noCLeft;song=LIGHT",
+     "song": "LIGHT",
+     "row": "OOT_WARP_SONG_TEMPLE",
+     "landing": "OOT Temple of Time",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_BUTTON_A=1",
+      "OOT_BUTTON_C_DOWN=1",
+      "OOT_BUTTON_C_RIGHT=1",
+      "OOT_BUTTON_C_UP=1",
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_LIGHT=1"
+     ]
+    }
+   ]
+  },
+  {
+   "startingAge": "adult",
+   "world": "closedForest",
+   "instrument": "sharedNoCDown",
+   "opposite": "child",
+   "spawnArea": "OOT Link's House",
+   "walks": {
+    "OOT Link's House": false,
+    "OOT Sacred Meadow": false,
+    "OOT Death Mountain Crater Warp": false,
+    "OOT Lake Hylia": true,
+    "OOT Graveyard Upper": true,
+    "OOT Desert Colossus": false,
+    "OOT Temple of Time": true
+   },
+   "cases": [
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=sharedNoCDown;song=none",
+     "song": null,
+     "row": null,
+     "landing": null,
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": true,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "SHARED_BUTTON_A=1",
+      "SHARED_BUTTON_C_LEFT=1",
+      "SHARED_BUTTON_C_RIGHT=1",
+      "SHARED_BUTTON_C_UP=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=sharedNoCDown;song=FOREST",
+     "song": "FOREST",
+     "row": "OOT_WARP_SONG_MEADOW",
+     "landing": "OOT Sacred Meadow",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 23,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FOREST"
+       ],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": true,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FOREST=1",
+      "SHARED_BUTTON_A=1",
+      "SHARED_BUTTON_C_LEFT=1",
+      "SHARED_BUTTON_C_RIGHT=1",
+      "SHARED_BUTTON_C_UP=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=sharedNoCDown;song=FIRE",
+     "song": "FIRE",
+     "row": "OOT_WARP_SONG_CRATER",
+     "landing": "OOT Death Mountain Crater Warp",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": true,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FIRE=1",
+      "SHARED_BUTTON_A=1",
+      "SHARED_BUTTON_C_LEFT=1",
+      "SHARED_BUTTON_C_RIGHT=1",
+      "SHARED_BUTTON_C_UP=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=sharedNoCDown;song=WATER",
+     "song": "WATER",
+     "row": "OOT_WARP_SONG_LAKE",
+     "landing": "OOT Lake Hylia",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": true,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_WATER=1",
+      "SHARED_BUTTON_A=1",
+      "SHARED_BUTTON_C_LEFT=1",
+      "SHARED_BUTTON_C_RIGHT=1",
+      "SHARED_BUTTON_C_UP=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=sharedNoCDown;song=SHADOW",
+     "song": "SHADOW",
+     "row": "OOT_WARP_SONG_GRAVE",
+     "landing": "OOT Graveyard Upper",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": true,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SHADOW=1",
+      "SHARED_BUTTON_A=1",
+      "SHARED_BUTTON_C_LEFT=1",
+      "SHARED_BUTTON_C_RIGHT=1",
+      "SHARED_BUTTON_C_UP=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=sharedNoCDown;song=SPIRIT",
+     "song": "SPIRIT",
+     "row": "OOT_WARP_SONG_DESERT",
+     "landing": "OOT Desert Colossus",
+     "temple": false,
+     "ages": {
+      "child": {
+       "areas": 20,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": true,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SPIRIT=1",
+      "SHARED_BUTTON_A=1",
+      "SHARED_BUTTON_C_LEFT=1",
+      "SHARED_BUTTON_C_RIGHT=1",
+      "SHARED_BUTTON_C_UP=1"
+     ]
+    },
+    {
+     "id": "startingAge=adult;world=closedForest;instrument=sharedNoCDown;song=LIGHT",
+     "song": "LIGHT",
+     "row": "OOT_WARP_SONG_TEMPLE",
+     "landing": "OOT Temple of Time",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 87,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_LIGHT"
+       ],
+       "mm": true,
+       "market": true,
+       "temple": true
+      },
+      "adult": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "adult",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": true,
+      "sharedOcarinaButtons": true,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_LIGHT=1",
+      "SHARED_BUTTON_A=1",
+      "SHARED_BUTTON_C_LEFT=1",
+      "SHARED_BUTTON_C_RIGHT=1",
+      "SHARED_BUTTON_C_UP=1"
+     ]
+    }
+   ]
+  },
+  {
+   "startingAge": "child",
+   "world": "dekuTreeClosed",
+   "instrument": "ocarina",
+   "opposite": "adult",
+   "spawnArea": "OOT Temple of Time",
+   "walks": {
+    "OOT Temple of Time": true,
+    "OOT Sacred Meadow": true,
+    "OOT Death Mountain Crater Warp": false,
+    "OOT Lake Hylia": true,
+    "OOT Graveyard Upper": true,
+    "OOT Desert Colossus": false
+   },
+   "cases": [
+    {
+     "id": "startingAge=child;world=dekuTreeClosed;instrument=ocarina;song=none",
+     "song": null,
+     "row": null,
+     "landing": null,
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 71,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=dekuTreeClosed;instrument=ocarina;song=FOREST",
+     "song": "FOREST",
+     "row": "OOT_WARP_SONG_MEADOW",
+     "landing": "OOT Sacred Meadow",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 77,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FOREST"
+       ],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FOREST=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=dekuTreeClosed;instrument=ocarina;song=FIRE",
+     "song": "FIRE",
+     "row": "OOT_WARP_SONG_CRATER",
+     "landing": "OOT Death Mountain Crater Warp",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 73,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_FIRE"
+       ],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_FIRE=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=dekuTreeClosed;instrument=ocarina;song=WATER",
+     "song": "WATER",
+     "row": "OOT_WARP_SONG_LAKE",
+     "landing": "OOT Lake Hylia",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 72,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_WATER"
+       ],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_WATER=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=dekuTreeClosed;instrument=ocarina;song=SHADOW",
+     "song": "SHADOW",
+     "row": "OOT_WARP_SONG_GRAVE",
+     "landing": "OOT Graveyard Upper",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 73,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SHADOW"
+       ],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SHADOW=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=dekuTreeClosed;instrument=ocarina;song=SPIRIT",
+     "song": "SPIRIT",
+     "row": "OOT_WARP_SONG_DESERT",
+     "landing": "OOT Desert Colossus",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 76,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_SPIRIT"
+       ],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_SPIRIT=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=dekuTreeClosed;instrument=ocarina;song=LIGHT",
+     "song": "LIGHT",
+     "row": "OOT_WARP_SONG_TEMPLE",
+     "landing": "OOT Temple of Time",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 72,
+       "global": true,
+       "songAreas": [
+        "OOT SONG_TP_LIGHT"
+       ],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_OCARINA=1",
+      "OOT_SONG_TP_LIGHT=1"
+     ]
+    }
+   ]
+  },
+  {
+   "startingAge": "child",
+   "world": "closedForest",
+   "instrument": "none",
+   "opposite": "adult",
+   "spawnArea": "OOT Temple of Time",
+   "walks": {
+    "OOT Temple of Time": true,
+    "OOT Sacred Meadow": true,
+    "OOT Death Mountain Crater Warp": false,
+    "OOT Lake Hylia": true,
+    "OOT Graveyard Upper": true,
+    "OOT Desert Colossus": false
+   },
+   "cases": [
+    {
+     "id": "startingAge=child;world=closedForest;instrument=none;song=none",
+     "song": null,
+     "row": null,
+     "landing": null,
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 71,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": []
+    },
+    {
+     "id": "startingAge=child;world=closedForest;instrument=none;song=FOREST",
+     "song": "FOREST",
+     "row": "OOT_WARP_SONG_MEADOW",
+     "landing": "OOT Sacred Meadow",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 71,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_FOREST=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=closedForest;instrument=none;song=FIRE",
+     "song": "FIRE",
+     "row": "OOT_WARP_SONG_CRATER",
+     "landing": "OOT Death Mountain Crater Warp",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 71,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_FIRE=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=closedForest;instrument=none;song=WATER",
+     "song": "WATER",
+     "row": "OOT_WARP_SONG_LAKE",
+     "landing": "OOT Lake Hylia",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 71,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_WATER=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=closedForest;instrument=none;song=SHADOW",
+     "song": "SHADOW",
+     "row": "OOT_WARP_SONG_GRAVE",
+     "landing": "OOT Graveyard Upper",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 71,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_SHADOW=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=closedForest;instrument=none;song=SPIRIT",
+     "song": "SPIRIT",
+     "row": "OOT_WARP_SONG_DESERT",
+     "landing": "OOT Desert Colossus",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 71,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_SPIRIT=1"
+     ]
+    },
+    {
+     "id": "startingAge=child;world=closedForest;instrument=none;song=LIGHT",
+     "song": "LIGHT",
+     "row": "OOT_WARP_SONG_TEMPLE",
+     "landing": "OOT Temple of Time",
+     "temple": true,
+     "ages": {
+      "child": {
+       "areas": 2,
+       "global": false,
+       "songAreas": [],
+       "mm": false,
+       "market": false,
+       "temple": false
+      },
+      "adult": {
+       "areas": 71,
+       "global": true,
+       "songAreas": [],
+       "mm": false,
+       "market": true,
+       "temple": true
+      }
+     },
+     "crafted": [
+      "OOT Kokiri Forest -> OOT Lost Woods Bridge from Forest: adult"
+     ],
+     "normalized": {
+      "startingAge": "child",
+      "dekuTree": "closed",
+      "ocarinaButtonsShuffleOot": false,
+      "sharedOcarinaButtons": false,
+      "erWallmasters": "ownGame",
+      "logic": "allLocations",
+      "games": "ootmm"
+     },
+     "startingItems": [
+      "OOT_SONG_TP_LIGHT=1"
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -32,6 +32,23 @@
 // candidate, reset, dead-end, region and settings facts come from OoTMM's own methods on that state, so none
 // depends on the RNG. One unmodified WorldShuffler.run() per combination (seeded as worldState seeds it) is also
 // recorded; its layout depends on the RNG, so only whether it placed and where it may place are compared.
+//
+// With --temple <fixture> instead of --contract (tools/ootmm/temple-song-fixtures.json), it runs OoTMM's own
+// validateAgeTemple (entrances.ts:265-287) instead, for the Temple probe's GLOBAL node (limits design, Stage 2):
+//
+//   node --experimental-transform-types --no-warnings tools/ootmm/run_pinned_entrance_pools.mts \
+//        --reference <ootmm-stable-32.3> --temple tools/ootmm/temple-song-fixtures.json --out <facts.json> [--jobs N]
+//
+// Each case is a group of the fixture (a starting age, a world and an instrument) with no starting warp song or
+// with one OoT warp song. Its world is built as above with erWallmasters ownGame and the fixture's settings and
+// starting items; a crafted world then replaces the fixture's exits on that world before any shuffler sees it
+// (recorded in the facts). The shuffler stops at its first random draw as above, and validateAgeTemple runs,
+// unchanged, on changedWorld(game links, pools), the first world isValidShuffle hands it. In this mode only,
+// Pathfinder.prototype.run is wrapped to keep the state it returns during that call, which gives the areas each age
+// reached; the value it returns is unchanged. For the songless case of each group, the same world is also
+// searched from each warp-song landing and from the opposite age's spawn area: a clone whose SPAWN has one exit, to
+// that area at the opposite age, run as validateAgeTemple runs its own (`walks`). The facts hold no time or path,
+// so a rerun with the same checkout writes the same bytes (tools/ootmm/temple-song-facts.json).
 import { registerHooks } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { existsSync, globSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
@@ -66,6 +83,16 @@ const sorted = (values: Iterable<string>) => [...values].sort();
 const combinationId = (s: any) =>
   [`erWallmasters=${s.erWallmasters}`, `erOneWays=${s.erOneWays}`, ...M1_FLAGS.filter(f => s[f])].join(';');
 const m1Settings = (s: any) => Object.fromEntries(M1_KEYS.map(k => [k, s[k]]));
+
+// --temple: one task per group (a starting age, a world and an instrument), in the fixture's order.
+const templeGroups = (fx: any) => fx.groups.map(({ startingAge, world, instrument }: any) => {
+  if (!['child', 'adult'].includes(startingAge) || !fx.worlds[world] || !fx.instruments[instrument]) {
+    throw new Error(`Unknown temple group ${startingAge} ${world} ${instrument}`);
+  }
+  return { startingAge, world, instrument };
+});
+const templeCaseId = (g: any, song: string | null) =>
+  `startingAge=${g.startingAge};world=${g.world};instrument=${g.instrument};song=${song ?? 'none'}`;
 
 function argument(name: string, fallback?: string): string {
   const index = process.argv.indexOf(name);
@@ -450,10 +477,121 @@ async function startWorker() {
     return sorted(result);
   }
 
+  // ---------------------------------------- --temple: validateAgeTemple ----------------------------------------
+  // The pathfinder states validateAgeTemple computes, read through a wrapper that returns the same value. It is
+  // installed by the first --temple task, so the M1 runs never see it.
+  let pathfinderStates: any[] | null = null;
+  let pathfinderWrapped = false;
+  const watchPathfinder = () => {
+    if (pathfinderWrapped) return;
+    pathfinderWrapped = true;
+    const pathfinderRun = logic.Pathfinder.prototype.run;
+    logic.Pathfinder.prototype.run = function (this: any, ...rest: any[]) {
+      const result = pathfinderRun.apply(this, rest);
+      if (pathfinderStates) pathfinderStates.push(result);
+      return result;
+    };
+  };
+  const AGE_NAME = (age: any) => (age === logic.AGE_CHILD ? 'child' : 'adult');
+  // The six one-way-song rows (entrances.yml:174-179), by the song area they leave: SONG_TP_<song> -> landing.
+  const warpLanding = (song: string) => {
+    const rows = Object.keys(ENTRANCES).filter(n => ENTRANCES[n].type === 'one-way-song' &&
+                                                   ENTRANCES[n].from === `OOT SONG_TP_${song}`);
+    if (rows.length !== 1) throw new Error(`Expected one warp song row for ${song}, found ${rows}`);
+    return { row: rows[0], landing: ENTRANCES[rows[0]].to as string };
+  };
+  const templeSettings = (fx: any, c: any, song: string | null) => {
+    const world = fx.worlds[c.world], instrument = fx.instruments[c.instrument];
+    const startingItems = { ...instrument.items, ...(song ? { [`OOT_SONG_TP_${song}`]: 1 } : {}) };
+    return { ...world.settings, ...instrument.settings, startingAge: c.startingAge, erWallmasters: 'ownGame',
+             startingItems };
+  };
+  const craft = (fx: any, c: any, state: any) => {
+    const crafted: string[] = [];
+    for (const [from, exits] of Object.entries(fx.worlds[c.world].exits || {}) as [string, any][]) {
+      for (const [to, rule] of Object.entries(exits) as [string, string][]) {
+        const area = state.worlds[0].areas[from];
+        if (!area || !(to in area.exits)) throw new Error(`Crafted exit ${from} -> ${to} is not in the world`);
+        area.exits[to] = rule === 'adult' ? logic.exprAge(logic.AGE_ADULT) : rule === 'child'
+          ? logic.exprAge(logic.AGE_CHILD) : rule === 'false' ? logic.exprFalse() : (() => {
+            throw new Error(`Unknown crafted rule ${rule}`);
+          })();
+        crafted.push(`${from} -> ${to}: ${rule}`);
+      }
+    }
+    return crafted;
+  };
+  // One world: its validateAgeTemple answer and what each age reached in that search.
+  async function templeWorld(fx: any, c: any, song: string | null) {
+    const state = await buildState(templeSettings(fx, c, song));
+    const crafted = craft(fx, c, state);
+    const { shuffler, pools } = timed('pools', () => capturePools(state, state.settings));
+    const world = shuffler.changedWorld({ ...shuffler.overrides }, pools);
+    let temple = false, runs: any[] = [];
+    watchPathfinder();
+    pathfinderStates = runs;
+    try {
+      temple = timed('temple', () => shuffler.validateAgeTemple(world));
+    } finally {
+      pathfinderStates = null;
+    }
+    if (runs.length !== 1) throw new Error(`validateAgeTemple ran ${runs.length} searches`);
+    const ws = runs[0].ws[0];
+    const ages: Record<string, any> = {};
+    for (const age of [logic.AGE_CHILD, logic.AGE_ADULT]) {
+      const areas: Map<string, any> = ws.ages[age].areas;
+      const names = [...areas.keys()];
+      ages[AGE_NAME(age)] = {
+        areas: names.length,
+        global: areas.has('OOT GLOBAL'),
+        songAreas: sorted(names.filter(a => a.startsWith('OOT SONG_TP_'))),
+        mm: names.some(a => a.startsWith('MM ')),
+        market: areas.has('OOT Market'),
+        temple: areas.has('OOT Temple of Time'),
+      };
+    }
+    return { state, shuffler, world, temple, ages, crafted,
+             normalized: Object.fromEntries(['startingAge', 'dekuTree', 'ocarinaButtonsShuffleOot',
+                                             'sharedOcarinaButtons', 'erWallmasters', 'logic', 'games']
+                                             .map(k => [k, state.settings[k]])),
+             startingItems: sorted([...state.startingItems].map(([pi, n]: [any, number]) => `${pi.item.id}=${n}`)) };
+  }
+  // A songless world searched from one area at the opposite age, as validateAgeTemple searches from SPAWN.
+  function walk(base: any, opposite: any, area: string) {
+    const world = logic.cloneWorld(base.world);
+    if (!world.areas[area]) throw new Error(`No area ${area}`);
+    world.areas['OOT SPAWN'].exits = { [area]: logic.exprAge(opposite) };
+    const worlds = [...base.state.worlds];
+    worlds[0] = world;
+    const pathfinder = new logic.Pathfinder(worlds, base.state.settings, base.state.startingItems);
+    const state = timed('walk', () => pathfinder.run(null, { recursive: true, singleWorld: 0 }));
+    return state.ws[0].ages[opposite].areas.has('OOT Temple of Time');
+  }
+  // One starting age, world and instrument: the songless case with its walks, then each song alone.
+  async function templeGroup(index: number) {
+    const fx = contract;
+    const group = templeGroups(fx)[index];
+    const opposite = group.startingAge === 'child' ? logic.AGE_ADULT : logic.AGE_CHILD;
+    const songs = fx.songs.map((s: string) => ({ song: s, ...warpLanding(s) }));
+    const base = await templeWorld(fx, group, null);
+    const spawnArea = opposite === logic.AGE_CHILD ? "OOT Link's House" : 'OOT Temple of Time';
+    const walks: Record<string, boolean> = {};
+    for (const area of [spawnArea, ...songs.map((s: any) => s.landing)]) walks[area] = walk(base, opposite, area);
+    const cases = [];
+    for (const { song, row, landing } of [{ song: null, row: null, landing: null }, ...songs]) {
+      const result = song === null ? base : await templeWorld(fx, group, song);
+      cases.push({ id: templeCaseId(group, song), song, row, landing, temple: result.temple, ages: result.ages,
+                   crafted: result.crafted, normalized: result.normalized, startingItems: result.startingItems });
+    }
+    return { ...group, opposite: AGE_NAME(opposite), spawnArea, walks, cases,
+             inMemoryChanges: Object.fromEntries(sorted(changes.keys()).map(k => [k, changes.get(k)!])) };
+  }
+
   parentPort!.on('message', async (task: any) => {
     try {
       const result = task.kind === 'combination' ? await combination(task.index)
         : task.kind === 'mq' ? await mqContext(task.bits)
+        : task.kind === 'temple' ? await templeGroup(task.index)
         : { fixedPoints: settingsFixedPoints(), wallmasterDungeons, distComparison, rows: rows(),
             inMemoryChanges: Object.fromEntries(sorted(changes.keys()).map(k => [k, changes.get(k)!])) };
       parentPort!.postMessage({ task, result, served: Object.fromEntries(served), packages: [...packages], timing });
@@ -480,7 +618,73 @@ function packageVersions(urls: Iterable<string>) {
   return Object.fromEntries(Object.entries(versions).sort());
 }
 
+// --temple: every group of the fixture, merged in its order. Timing and paths stay out of the facts' cases.
+async function mainTemple() {
+  const reference = realpathSync.native(path.resolve(argument('--reference')));
+  const fixturePath = path.resolve(argument('--temple'));
+  const out = path.resolve(argument('--out'));
+  const fixtureBytes = readFileSync(fixturePath);
+  const contractText = fixtureBytes.toString('utf8');
+  const fixture = JSON.parse(contractText);
+  const jobs = Math.max(1, Number(argument('--jobs', String(Math.min(8, Math.max(1, availableParallelism() - 2))))));
+  const started = performance.now();
+  const tasks = templeGroups(fixture).map((_: any, index: number) => ({ kind: 'temple', index }));
+  const results = new Map<number, any>();
+  const served: Record<string, string> = {};
+  const packageUrls = new Set<string>();
+  const timings: Record<string, number>[] = [];
+  const workers: Worker[] = [];
+  try {
+    await new Promise<void>((resolve, reject) => {
+      let next = 0;
+      let pending = tasks.length;
+      const dispatch = (worker: Worker) => { if (next < tasks.length) worker.postMessage(tasks[next++]); };
+      for (let i = 0; i < Math.min(jobs, tasks.length); i++) {
+        const worker = new Worker(new URL(import.meta.url), { workerData: { reference, contractText } });
+        workers.push(worker);
+        worker.on('error', reject);
+        worker.on('exit', code => { if (pending > 0) reject(new Error(`A worker exited (${code}) with tasks left`)); });
+        worker.on('message', (message: any) => {
+          if (message.ready) return dispatch(worker);
+          if (message.error) return reject(new Error(`${JSON.stringify(message.task)}: ${message.error}`));
+          results.set(message.task.index, message.result);
+          Object.assign(served, message.served);
+          message.packages.forEach((u: string) => packageUrls.add(u));
+          timings[i] = message.timing;
+          if (--pending === 0) return resolve();
+          dispatch(worker);
+        });
+      }
+    });
+  } finally {
+    await Promise.all(workers.map(w => w.terminate()));
+  }
+  const workerSeconds: Record<string, number> = {};
+  for (const t of timings) for (const [k, v] of Object.entries(t || {})) workerSeconds[k] = (workerSeconds[k] || 0) + v;
+  const groups = tasks.map((t: any) => results.get(t.index));
+  const changes = groups.map((g: any) => JSON.stringify(g.inMemoryChanges));
+  if (new Set(changes).size !== 1) throw new Error('Workers applied different in-memory changes');
+  const facts = {
+    upstreamCommit: fixture.upstreamCommit,
+    fixture: { sha256: sha256(fixtureBytes) },
+    node: process.version,
+    seed: SEED,
+    // Their names only: the __dirname prefix holds this checkout's path.
+    inMemoryChanges: Object.keys(groups[0].inMemoryChanges),
+    observation: 'Pathfinder.prototype.run wrapped to keep the state validateAgeTemple searched; its value is unchanged',
+    servedBlobs: Object.fromEntries(Object.entries(served).sort()),
+    packages: packageVersions(packageUrls),
+    groups: groups.map(({ inMemoryChanges, ...g }: any) => g),
+  };
+  writeFileSync(out, JSON.stringify(facts, null, 1) + '\n');
+  const seconds = Object.entries(workerSeconds).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(', ');
+  console.log(`Pinned OoTMM validateAgeTemple: ${groups.length} groups, ` +
+              `${groups.reduce((n: number, g: any) => n + g.cases.length, 0)} cases in ` +
+              `${((performance.now() - started) / 1000).toFixed(1)} s with ${jobs} workers (${seconds}) -> ${out}`);
+}
+
 async function main() {
+  if (process.argv.includes('--temple')) return mainTemple();
   const reference = realpathSync.native(path.resolve(argument('--reference')));
   const contractPath = path.resolve(argument('--contract'));
   const out = path.resolve(argument('--out'));
