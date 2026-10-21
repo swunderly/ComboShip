@@ -200,7 +200,8 @@ for key in ('songEventsShuffleOot', 'songEventsShuffleMm'):
 
 # 6. The port side of the hypothesis: it has no Song Events Shuffle, no song notes and no shared warp song or Soaring
 # family, and every Wallmaster id refuses a starting warp song or Song of Soaring in either game before any draw
-# (EntranceAvailability.h), with the native probe refusing a starting warp song again (TempleProbe.cpp).
+# (EntranceAvailability.h). The native probe takes a starting OoT warp song through its GLOBAL node (Stage 2, lemma L3,
+# entrance_temple_global_lemma_tests.py), and still refuses a warp song among the foreign starting items.
 port = [p for root in ('combo', 'soh/soh', 'mm/2s2h') for p in (source/root).rglob('*')
         if p.suffix in ('.h', '.cpp', '.c', '.inc', '.hpp')]
 for path in port:
@@ -220,7 +221,7 @@ assert 'if (const auto item = MmStartingItemName(stored); item == song)' in avai
 for reader in ('combo/rando/ComboSeedFormat.h', 'combo/rando/entrances/EntranceProfile.h'):
     assert 'MmStartingItemName(item.get<std::string>())' in (source/reader).read_text(encoding='utf-8'), reader
 probe = (source/'soh/soh/Enhancements/randomizer/TempleProbe.cpp').read_text(encoding='utf-8')
-assert 'throw Failure(kUnsupported, "starting warp songs are not supported");' in probe
+assert 'overlay.global = GlobalEdges();' in probe and 'starting warp songs are not supported' not in probe
 assert 'if (!IsSharedStarterName(name) || IsWarpSong(it->second)) {' in probe
 
 print('Lemma S1 verified at', registry.PIN + ':', f'{len(entries)} song exits, each behind its song item;',

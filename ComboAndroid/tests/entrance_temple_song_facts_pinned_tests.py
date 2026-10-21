@@ -3,8 +3,9 @@
 tools/ootmm/run_pinned_entrance_pools.mts --temple runs the exact OoTMM v32.3 code on every case of
 tools/ootmm/temple-song-fixtures.json (a starting age, a world, an instrument, no starting warp song or one) and
 writes no time or path, so the same checkout writes the same bytes. This reruns it and requires
-tools/ootmm/temple-song-facts.json byte for byte, which entrance_temple_global_lemma_tests.py reads. A fixture case
-the world does not have (a crafted exit that is not there) fails the run.
+tools/ootmm/temple-song-facts.json byte for byte, which entrance_temple_global_lemma_tests.py and
+temple_global_parity_tests.py read. A fixture case the world does not have (a crafted exit that is not there) fails
+the run.
 
 Reports SKIPPED when the pinned Node (COMBO_PINNED_NODE, or tooling/node/node-v24.21.0-* above this checkout) or the
 OoTMM checkout with its node_modules (COMBO_OOTMM_REFERENCE, or references/ootmm-stable-32.3) is absent.

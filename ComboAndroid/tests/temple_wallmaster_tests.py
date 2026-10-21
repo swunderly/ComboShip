@@ -1,6 +1,8 @@
 """Real native Resolve, shared audited predicates and opposite-age Search, with engine stubs.
 
-The independent Temple isolation suite still executes RunQuery and restoration on every exit path.
+Resolve binds the virtual GLOBAL node's warp songs too (limits design, Stage 2), and the Master Quest contexts are
+searched with a starting warp song. The independent Temple isolation suite still executes RunQuery and restoration
+on every exit path.
 """
 from pathlib import Path
 import argparse
@@ -34,7 +36,7 @@ cpp.write_text(prelude(source) + r'''
 #include "TempleProbeCore.h"
 #include <iostream>
 using namespace Rando::TempleProbe;
-enum class TempleBindingRole : uint8_t { Candidate, RootPolicy };
+enum class TempleBindingRole : uint8_t { Candidate, RootPolicy, Global };
 struct TempleBinding {
     std::string_view name; uint32_t id; TempleBindingRole role;
     RandomizerRegion parent, target; int16_t index;
@@ -46,6 +48,8 @@ struct Prepared { bool startingChild = true; };
 std::optional<Prepared> sPrepared = Prepared{};
 ''' + function(probe, 'const TempleBinding& Binding(') + '\n' +
 function(probe, 'const Entrance& BoundExit(') + '\n' +
+function(probe, 'const Entrance& WarpLanding(') + '\n' +
+function(probe, 'std::vector<AddedEdge<Entrance>> GlobalEdges()') + '\n' +
 'struct NativePolicy {\n' + resolve + '\n};\n' + r'''
 namespace CE = ComboRando::Entrances;
 template<class F> void Unsupported(F f) {
@@ -57,6 +61,21 @@ void Connect(RandomizerRegion from, RandomizerRegion to, ConditionFn condition) 
     regions[from].exits.emplace_back(to, condition, "native", true);
     regions[from].exits.back().SetParentRegion(from);
 }
+// Root Exits' six warp songs (root.cpp:47-52), each to its pad, which Resolve binds as GLOBAL edges.
+const std::pair<RandomizerRegion, RandomizerRegion> kWarps[] = {
+    {RR_MINUET_OF_FOREST_WARP, RR_SACRED_FOREST_MEADOW}, {RR_BOLERO_OF_FIRE_WARP, RR_DMC_PAD_ENTRY},
+    {RR_SERENADE_OF_WATER_WARP, RR_LAKE_HYLIA}, {RR_NOCTURNE_OF_SHADOW_WARP, RR_GRAVEYARD_WARP_PAD_REGION},
+    {RR_REQUIEM_OF_SPIRIT_WARP, RR_DESERT_COLOSSUS}, {RR_PRELUDE_OF_LIGHT_WARP, RR_TEMPLE_OF_TIME}};
+void Warps() {
+    Connect(RR_ROOT_EXITS, RR_MINUET_OF_FOREST_WARP, [] { return logic->CanUse(RG_MINUET_OF_FOREST); });
+    Connect(RR_ROOT_EXITS, RR_BOLERO_OF_FIRE_WARP, [] { return logic->CanUse(RG_BOLERO_OF_FIRE); });
+    Connect(RR_ROOT_EXITS, RR_SERENADE_OF_WATER_WARP, [] { return logic->CanUse(RG_SERENADE_OF_WATER); });
+    Connect(RR_ROOT_EXITS, RR_NOCTURNE_OF_SHADOW_WARP, [] { return logic->CanUse(RG_NOCTURNE_OF_SHADOW); });
+    Connect(RR_ROOT_EXITS, RR_REQUIEM_OF_SPIRIT_WARP, [] { return logic->CanUse(RG_REQUIEM_OF_SPIRIT); });
+    Connect(RR_ROOT_EXITS, RR_PRELUDE_OF_LIGHT_WARP, [] { return logic->CanUse(RG_PRELUDE_OF_LIGHT); });
+    for (const auto& [warp, pad] : kWarps)
+        Connect(warp, pad, [] { return true; });
+}
 QueryRequest Query(std::string src, std::string dst) {
     QueryRequest q; q.deleted.push_back(src); q.edges.push_back({src, dst}); return q;
 }
@@ -66,10 +85,11 @@ QueryRequest Query(std::string src, std::string dst) {
 // ages and over several inventories, must give the same Search answer with the song state off and adversarially on:
 // the foreign-song flags, and arrival and knowledge masks that would put a song landing in the Temple of Time.
 std::vector<int> InertAnswers(NativePolicy& policy, const QueryRequest& full, Rando::Logic& probe) {
-    const auto overlay = policy.Resolve(full);
     ClearRegions();
     Connect(RR_ROOT_EXITS, RR_ADULT_SPAWN, [] { return logic->IsAdult; });
     Connect(RR_ROOT_EXITS, RR_CHILD_SPAWN, [] { return logic->IsChild; });
+    Warps();
+    const auto overlay = policy.Resolve(full);
     std::set<size_t> anchors, arrivals;
     for (const auto& edge : overlay.added) {
         anchors.insert(edge.parent);
@@ -122,6 +142,7 @@ void Graph() {
     ClearRegions();
     Connect(RR_ROOT_EXITS, RR_ADULT_SPAWN, [] { return logic->IsAdult; });
     Connect(RR_ROOT_EXITS, RR_CHILD_SPAWN, [] { return logic->IsChild; });
+    Warps();
     Connect(RR_ADULT_SPAWN, RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM, [] { return true; });
     Connect(RR_CHILD_SPAWN, RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM, [] { return true; });
     Connect(RR_ICE_CAVERN_ENTRYWAY, RR_TEMPLE_OF_TIME, [] { return true; });
@@ -133,6 +154,18 @@ int main() {
     const auto q = Query("OOT_WALLMASTER_GTG", "OOT_ICE_CAVERN");
     auto resolved = policy.Resolve(q);
     assert(resolved.deleted.empty() && resolved.added.size() == 1 && resolved.owned.size() == 1);
+    // GLOBAL: Root Exits' six warp songs, each from its native parent to its warp region, never owned.
+    assert(resolved.global.size() == 6);
+    for (size_t i = 0; i < 6; ++i)
+        assert(resolved.global[i].parent == RR_ROOT_EXITS &&
+               std::any_of(std::begin(kWarps), std::end(kWarps), [&](const auto& w) {
+                   return w.first == resolved.global[i].target;
+               }) &&
+               resolved.global[i].entrance->GetParentRegionKey() == RR_ROOT_EXITS);
+    // A warp region that does not lead only to its pad is refused.
+    regions[RR_PRELUDE_OF_LIGHT_WARP].exits.clear();
+    Unsupported([&] { policy.Resolve(q); });
+    Graph();
     assert(resolved.added[0].parent == RR_GERUDO_TRAINING_GROUND_BOULDER_ROOM);
     assert(resolved.added[0].target == RR_ICE_CAVERN_ENTRYWAY);
     // Query-owned pointers remain valid when the overlay is copied or moved.
@@ -259,10 +292,38 @@ int main() {
     }
     for (auto& row : dungeons) row.mq = false;
     assert(reached > 0 && unreached > 0); // the predicates decide, so the comparison is not vacuous
+    // GLOBAL in the same three quest contexts: with a starting Prelude the opposite age warps to the Temple of
+    // Time in every candidate world, every inventory (ENDING_SUNS and the souls included) and both starting ages;
+    // with Minuet it lands in the Sacred Forest Meadow, which leads nowhere here, so the answers are the songless
+    // ones.
+    size_t warped = 0;
+    for (const unsigned mask : {0u, 0xfffu, (1u << CE::OotMqIndex("Forest")) | (1u << CE::OotMqIndex("Spirit"))}) {
+        CE::OotQuests quests{};
+        for (size_t i = 0; i < quests.size(); ++i)
+            dungeons[i].mq = quests[i] = ((mask >> i) & 1u) != 0;
+        const auto candidate = CE::BuildTempleCandidate({}, CE::LayoutV1::MakePools(settings, quests, false), settings);
+        const auto all = ParseQuery(CE::EncodeTempleQuery(candidate).c_str(), CE::kRegistrySourceSha256);
+        SongState(false);
+        privateLogic->warpSongs = {};
+        const auto songless = InertAnswers(policy, all, *privateLogic);
+        privateLogic->warpSongs = {RG_MINUET_OF_FOREST};
+        assert(InertAnswers(policy, all, *privateLogic) == songless);
+        privateLogic->warpSongs = {RG_PRELUDE_OF_LIGHT};
+        const auto prelude = InertAnswers(policy, all, *privateLogic);
+        assert(prelude.size() == songless.size());
+        for (size_t i = 0; i < prelude.size(); i += 2) {
+            const bool startingChild = (i / (2 * (all.edges.size() + 1))) % 2 == 1;
+            assert(prelude[i] == kReached && prelude[i + 1] == (startingChild ? 1 : 2));
+        }
+        warped += prelude.size() / 2;
+        privateLogic->warpSongs = {};
+    }
+    for (auto& row : dungeons) row.mq = false;
     logic = live; Rando::ProbeLogicActive() = false;
     std::cout << "PASS isolated native Temple Resolve, 121 shared vanilla predicate edges, the MQ ones of the "
                  "loaded quests, both ages and soul negatives; " << inert << " Searches over three quest contexts "
-                 "answer the same with foreign-song logic on and off\n";
+                 "answer the same with foreign-song logic on and off; GLOBAL's six warp songs bound, and " << warped
+              << " Searches warp to the Temple with a starting Prelude\n";
 }
 ''', encoding='utf-8')
 exe = hostcxx.build(a.compiler, cpp, includes=[source/'combo', a.json_include, randomizer,

@@ -66,7 +66,8 @@ bool EdgePropagate(Logic& logic, const Entrance& entrance, const Region& parent,
 }
 
 // The candidate world as a value: native exits skipped, exits added under a source row's original
-// condition, and the root's one synthesized exit. Region exit lists are never modified.
+// condition, the root's one synthesized exit and the virtual GLOBAL node's warp-song exits. Region exit
+// lists are never modified.
 template <class Entrance> struct AddedEdge {
     size_t parent;
     const Entrance* entrance;
@@ -77,6 +78,9 @@ template <class Entrance> struct Overlay {
     std::vector<AddedEdge<Entrance>> added;
     const Entrance* rootSpawn = nullptr; // Root Exits -> opposite spawn, a bare age check
     size_t rootSpawnTarget = 0;
+    // GLOBAL (oot _system.yml:23-34): the warp songs of Root Exits under their native condition, each with
+    // its native parent, the region the condition is evaluated in, and its warp region.
+    std::vector<AddedEdge<Entrance>> global;
     // Synthetic source edges are values owned by this query. Pointees stay stable across copy/move;
     // none belongs to the native region lists or the live installed/assumption overlays.
     std::vector<std::shared_ptr<Entrance>> owned;
@@ -152,9 +156,15 @@ struct DepthGuard {
 
 // The pinned recursive search without item collection. Region `root` stands for the virtual
 // OOT SPAWN, seeded day-only at both ages like AccessReset; its only exit is the opposite spawn
-// (ASSUMED is empty in the supported envelope), so Root Exits, warp songs and the starting spawn
-// are never reached. Events and time of day use the real Region code; no age ever changes (lemma
-// L2) and no location is evaluated (Detail1). Reads the opposite age's flags of `target`.
+// (ASSUMED is empty in the supported envelope), so neither Root Exits nor the starting spawn is ever
+// reached. The virtual GLOBAL node is entered at the opposite spawn region (`rootSpawnTarget`): Link's
+// House and the Temple of Time exit to GLOBAL unconditionally and the spawn regions lead only to them
+// (lemma L3), so GLOBAL takes that region's age and time flags, which only the opposite age ever holds.
+// Those collect every hour a region of that age passes, through the root (ApplyTimePass), as OoTMM's
+// GLOBAL, a still area, takes the time of each area exiting to it. Its warp songs are evaluated as
+// their native parent, Root Exits, evaluates them. Events and time of day use the real Region code; no
+// age ever changes (lemma L2) and no location is evaluated (Detail1). Reads the opposite age's flags of
+// `target`.
 template <class Regions, class Logic, class Entrance, class Cancelled>
 int Search(Regions& regions, Logic& logic, const Overlay<Entrance>& overlay, size_t root, size_t target,
            bool startingChild, Cancelled&& cancelled, uint8_t& ages) {
@@ -206,6 +216,13 @@ int Search(Regions& regions, Logic& logic, const Overlay<Entrance>& overlay, siz
                 if (edge.parent == node) {
                     follow(*edge.entrance, edge.target);
                 }
+            }
+            if (node == overlay.rootSpawnTarget && !overlay.global.empty()) {
+                for (const auto& edge : overlay.global) {
+                    logic.CurrentRegionKey = static_cast<decltype(logic.CurrentRegionKey)>(edge.parent);
+                    follow(*edge.entrance, edge.target);
+                }
+                logic.CurrentRegionKey = static_cast<decltype(logic.CurrentRegionKey)>(node);
             }
         }
     } while (updated);

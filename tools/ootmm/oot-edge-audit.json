@@ -80,6 +80,108 @@
         {"file": "combo/rando/entrances/OotNativeArrival.h", "line": 67, "text": "case 0xf20:"}
       ],
       "note": "Root policy only. OoTMM's 0xf20 is a logical id that loads as 0x5f4 (OotNativeArrival.h playAdjustEntrance alias); Ship repurposes 0x282 for the same adult spawn so it differs from Prelude. The synthesized root edge RR_ROOT -> RR_ADULT_SPAWN uses logic->IsAdult, the pinned exprAge(AGE_ADULT); 'OOT SPAWN ADULT' -> 'OOT Temple of Time' is \"true\" (_system.yml:21)."
+    },
+    {
+      "name": "OOT_WARP_SONG_MEADOW",
+      "role": "global",
+      "song": "RG_MINUET_OF_FOREST",
+      "parent": "RR_ROOT_EXITS",
+      "target": "RR_MINUET_OF_FOREST_WARP",
+      "landing": "RR_SACRED_FOREST_MEADOW",
+      "nativeEntrance": "ENTR_SACRED_FOREST_MEADOW_WARP_PAD",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 47, "text": "ENTRANCE(RR_MINUET_OF_FOREST_WARP,   logic->CanUse(RG_MINUET_OF_FOREST)),"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 65, "text": "areaTable[RR_MINUET_OF_FOREST_WARP] = Region(\"Minuet of Forest Warp\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 67, "text": "ENTRANCE(RR_SACRED_FOREST_MEADOW, true),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 554, "text": "{ { EntranceType::WarpSong, RR_MINUET_OF_FOREST_WARP,   RR_SACRED_FOREST_MEADOW,      ENTR_SACRED_FOREST_MEADOW_WARP_PAD },"}
+      ],
+      "note": "GLOBAL only. OoTMM's GLOBAL -> 'SONG_TP_FOREST' is can_play_tp_forest (_system.yml:27) and 'SONG_TP_FOREST' -> 'Sacred Meadow' is \"true\" (_system.yml:40), this row's areas (entrances.yml:174). Ship's Root Exits -> RR_MINUET_OF_FOREST_WARP is logic->CanUse(RG_MINUET_OF_FOREST) (the song, an ocarina and the same notes, logic.cpp CanUse) and the warp region's only exit is the pad. The probe follows it from its virtual GLOBAL node, which the opposite age enters at its spawn region (lemma L3)."
+    },
+    {
+      "name": "OOT_WARP_SONG_CRATER",
+      "role": "global",
+      "song": "RG_BOLERO_OF_FIRE",
+      "parent": "RR_ROOT_EXITS",
+      "target": "RR_BOLERO_OF_FIRE_WARP",
+      "landing": "RR_DMC_PAD_ENTRY",
+      "nativeEntrance": "ENTR_DEATH_MOUNTAIN_CRATER_WARP_PAD",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 48, "text": "ENTRANCE(RR_BOLERO_OF_FIRE_WARP,     logic->CanUse(RG_BOLERO_OF_FIRE)),"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 70, "text": "areaTable[RR_BOLERO_OF_FIRE_WARP] = Region(\"Bolero of Fire Warp\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 72, "text": "ENTRANCE(RR_DMC_PAD_ENTRY, true),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 556, "text": "{ { EntranceType::WarpSong, RR_BOLERO_OF_FIRE_WARP,     RR_DMC_PAD_ENTRY,             ENTR_DEATH_MOUNTAIN_CRATER_WARP_PAD },"}
+      ],
+      "note": "GLOBAL only. OoTMM's GLOBAL -> 'SONG_TP_FIRE' is can_play_tp_fire (_system.yml:28) and 'SONG_TP_FIRE' -> 'Death Mountain Crater Warp' is \"true\" (_system.yml:46), this row's areas (entrances.yml:175). Ship's Root Exits -> RR_BOLERO_OF_FIRE_WARP is logic->CanUse(RG_BOLERO_OF_FIRE) (the song, an ocarina and the same notes, logic.cpp CanUse) and the warp region's only exit is the pad. The probe follows it from its virtual GLOBAL node, which the opposite age enters at its spawn region (lemma L3)."
+    },
+    {
+      "name": "OOT_WARP_SONG_LAKE",
+      "role": "global",
+      "song": "RG_SERENADE_OF_WATER",
+      "parent": "RR_ROOT_EXITS",
+      "target": "RR_SERENADE_OF_WATER_WARP",
+      "landing": "RR_LAKE_HYLIA",
+      "nativeEntrance": "ENTR_LAKE_HYLIA_WARP_PAD",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 49, "text": "ENTRANCE(RR_SERENADE_OF_WATER_WARP,  logic->CanUse(RG_SERENADE_OF_WATER)),"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 75, "text": "areaTable[RR_SERENADE_OF_WATER_WARP] = Region(\"Serenade of Water Warp\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 77, "text": "ENTRANCE(RR_LAKE_HYLIA, true),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 558, "text": "{ { EntranceType::WarpSong, RR_SERENADE_OF_WATER_WARP,  RR_LAKE_HYLIA,                ENTR_LAKE_HYLIA_WARP_PAD },"}
+      ],
+      "note": "GLOBAL only. OoTMM's GLOBAL -> 'SONG_TP_WATER' is can_play_tp_water (_system.yml:29) and 'SONG_TP_WATER' -> 'Lake Hylia' is \"true\" (_system.yml:52), this row's areas (entrances.yml:176). Ship's Root Exits -> RR_SERENADE_OF_WATER_WARP is logic->CanUse(RG_SERENADE_OF_WATER) (the song, an ocarina and the same notes, logic.cpp CanUse) and the warp region's only exit is the pad. The probe follows it from its virtual GLOBAL node, which the opposite age enters at its spawn region (lemma L3)."
+    },
+    {
+      "name": "OOT_WARP_SONG_GRAVE",
+      "role": "global",
+      "song": "RG_NOCTURNE_OF_SHADOW",
+      "parent": "RR_ROOT_EXITS",
+      "target": "RR_NOCTURNE_OF_SHADOW_WARP",
+      "landing": "RR_GRAVEYARD_WARP_PAD_REGION",
+      "nativeEntrance": "ENTR_GRAVEYARD_WARP_PAD",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 50, "text": "ENTRANCE(RR_NOCTURNE_OF_SHADOW_WARP, logic->CanUse(RG_NOCTURNE_OF_SHADOW)),"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 85, "text": "areaTable[RR_NOCTURNE_OF_SHADOW_WARP] = Region(\"Nocturne of Shadow Warp\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 87, "text": "ENTRANCE(RR_GRAVEYARD_WARP_PAD_REGION, true),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 562, "text": "{ { EntranceType::WarpSong, RR_NOCTURNE_OF_SHADOW_WARP, RR_GRAVEYARD_WARP_PAD_REGION, ENTR_GRAVEYARD_WARP_PAD },"}
+      ],
+      "note": "GLOBAL only. OoTMM's GLOBAL -> 'SONG_TP_SHADOW' is can_play_tp_shadow (_system.yml:30) and 'SONG_TP_SHADOW' -> 'Graveyard Upper' is \"true\" (_system.yml:58), this row's areas (entrances.yml:177). Ship's Root Exits -> RR_NOCTURNE_OF_SHADOW_WARP is logic->CanUse(RG_NOCTURNE_OF_SHADOW) (the song, an ocarina and the same notes, logic.cpp CanUse) and the warp region's only exit is the pad. The probe follows it from its virtual GLOBAL node, which the opposite age enters at its spawn region (lemma L3)."
+    },
+    {
+      "name": "OOT_WARP_SONG_DESERT",
+      "role": "global",
+      "song": "RG_REQUIEM_OF_SPIRIT",
+      "parent": "RR_ROOT_EXITS",
+      "target": "RR_REQUIEM_OF_SPIRIT_WARP",
+      "landing": "RR_DESERT_COLOSSUS",
+      "nativeEntrance": "ENTR_DESERT_COLOSSUS_WARP_PAD",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 51, "text": "ENTRANCE(RR_REQUIEM_OF_SPIRIT_WARP,  logic->CanUse(RG_REQUIEM_OF_SPIRIT)),"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 80, "text": "areaTable[RR_REQUIEM_OF_SPIRIT_WARP] = Region(\"Requiem of Spirit Warp\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 82, "text": "ENTRANCE(RR_DESERT_COLOSSUS, true),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 560, "text": "{ { EntranceType::WarpSong, RR_REQUIEM_OF_SPIRIT_WARP,  RR_DESERT_COLOSSUS,           ENTR_DESERT_COLOSSUS_WARP_PAD },"}
+      ],
+      "note": "GLOBAL only. OoTMM's GLOBAL -> 'SONG_TP_SPIRIT' is can_play_tp_spirit (_system.yml:31) and 'SONG_TP_SPIRIT' -> 'Desert Colossus' is \"true\" (_system.yml:64), this row's areas (entrances.yml:178). Ship's Root Exits -> RR_REQUIEM_OF_SPIRIT_WARP is logic->CanUse(RG_REQUIEM_OF_SPIRIT) (the song, an ocarina and the same notes, logic.cpp CanUse) and the warp region's only exit is the pad. The probe follows it from its virtual GLOBAL node, which the opposite age enters at its spawn region (lemma L3)."
+    },
+    {
+      "name": "OOT_WARP_SONG_TEMPLE",
+      "role": "global",
+      "song": "RG_PRELUDE_OF_LIGHT",
+      "parent": "RR_ROOT_EXITS",
+      "target": "RR_PRELUDE_OF_LIGHT_WARP",
+      "landing": "RR_TEMPLE_OF_TIME",
+      "nativeEntrance": "ENTR_TEMPLE_OF_TIME_WARP_PAD",
+      "indexRule": "equal",
+      "evidence": [
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 52, "text": "ENTRANCE(RR_PRELUDE_OF_LIGHT_WARP,   logic->CanUse(RG_PRELUDE_OF_LIGHT)),"},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 90, "text": "areaTable[RR_PRELUDE_OF_LIGHT_WARP] = Region(\"Prelude of Light Warp\""},
+        {"file": "soh/soh/Enhancements/randomizer/location_access/root.cpp", "line": 92, "text": "ENTRANCE(RR_TEMPLE_OF_TIME, true),"},
+        {"file": "soh/soh/Enhancements/randomizer/entrance.cpp", "line": 564, "text": "{ { EntranceType::WarpSong, RR_PRELUDE_OF_LIGHT_WARP,   RR_TEMPLE_OF_TIME,            ENTR_TEMPLE_OF_TIME_WARP_PAD },"}
+      ],
+      "note": "GLOBAL only. OoTMM's GLOBAL -> 'SONG_TP_LIGHT' is can_play_tp_light (_system.yml:32) and 'SONG_TP_LIGHT' -> 'Temple of Time' is \"true\" (_system.yml:70), this row's areas (entrances.yml:179). Ship's Root Exits -> RR_PRELUDE_OF_LIGHT_WARP is logic->CanUse(RG_PRELUDE_OF_LIGHT) (the song, an ocarina and the same notes, logic.cpp CanUse) and the warp region's only exit is the pad. The probe follows it from its virtual GLOBAL node, which the opposite age enters at its spawn region (lemma L3)."
     }
   ]
 }

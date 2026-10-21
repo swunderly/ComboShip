@@ -220,6 +220,17 @@ for song, row in song_rows.items():
     m = re.search(rf'\{{ EntranceType::WarpSong, {WARP[song]},\s+({landings[song]}),\s+(ENTR_\w+) \}}', entrance_cpp)
     assert m and indices[m.group(2)] == row['id'], (song, m and m.group(2))
 
+# The probe binds exactly these six rows as its GLOBAL node's edges (oot-edge-audit.json role global, regenerated and
+# re-verified by export_oot_bindings.py), each from Root Exits to its warp region with the pad as landing, and adds them
+# to every query (TempleProbe.cpp Resolve, GlobalEdges).
+globals_ = {r['name']: r for r in audit['rows'] if r['role'] == 'global'}
+assert sorted(globals_) == sorted(r['name'] for r in song_rows.values())
+for song, row in song_rows.items():
+    bound = globals_[row['name']]
+    assert (bound['song'], bound['parent'], bound['target'], bound['landing']) ==         (SONGS[song], 'RR_ROOT_EXITS', WARP[song], landings[song]), bound
+probe = (randomizer/'TempleProbe.cpp').read_text(encoding='utf-8')
+assert 'overlay.global = GlobalEdges();' in probe and 'if (b.role == TempleBindingRole::Global) {' in probe
+
 # 3. The Mask Shop. "Market Mask Shop" is entered only from the Market (market.yml:31), a child-only door, and that
 # door is the reserved game link OOT_SHOP_MASKS -> MM Clock Town (entrances.ts:888-903), which validateAgeTemple's
 # world installs (isValidShuffle's changedWorld); the link back lands in the Market. The Market reaches the Temple of

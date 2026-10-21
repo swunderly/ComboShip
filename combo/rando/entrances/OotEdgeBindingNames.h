@@ -19,4 +19,13 @@ inline constexpr std::array<std::string_view, 2> kOotTempleRootPolicyRows = {
     "OOT_SPAWN_ADULT",
     "OOT_SPAWN_CHILD",
 };
+// Root Exits' warp songs, the edges of the probe's virtual GLOBAL node (limits design, Stage 2).
+inline constexpr std::array<std::string_view, 6> kOotTempleGlobalRows = {
+    "OOT_WARP_SONG_CRATER",
+    "OOT_WARP_SONG_DESERT",
+    "OOT_WARP_SONG_GRAVE",
+    "OOT_WARP_SONG_LAKE",
+    "OOT_WARP_SONG_MEADOW",
+    "OOT_WARP_SONG_TEMPLE",
+};
 } // namespace ComboRando::Entrances

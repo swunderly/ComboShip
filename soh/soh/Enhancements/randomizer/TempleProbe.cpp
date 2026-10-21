@@ -9,8 +9,9 @@
 // (TempleProbeCore.h). It never resets, searches, places, collects or draws randomness through the
 // shared engine, and it only runs between oracle queries of a serialized generation. Supported
 // envelope: the bound OoT one-way rows and the verified Wallmaster predicates of the loaded quests, no
-// large pool, glitchless logic, no song-destination shuffle logic and no starting warp songs; foreign-song
-// logic changes nothing it reads (lemma S1). Anything else is Unsupported.
+// large pool, glitchless logic and no song-destination shuffle logic. Starting warp songs warp from the
+// virtual GLOBAL node (TempleProbeCore.h, lemma L3); foreign-song logic changes nothing it reads (lemma
+// S1). Anything else is Unsupported.
 
 #include "TempleProbeCore.h"
 #include "location_access.h"
@@ -34,7 +35,7 @@ namespace {
 using namespace Rando::TempleProbe;
 using Rando::Entrance;
 
-enum class TempleBindingRole : uint8_t { Candidate, RootPolicy };
+enum class TempleBindingRole : uint8_t { Candidate, RootPolicy, Global };
 struct TempleBinding {
     std::string_view name;
     uint32_t id;
@@ -98,6 +99,31 @@ const Entrance& BoundExit(RandomizerRegion parent, RandomizerRegion target) {
         throw Failure(kUnsupported, "binding does not match one vanilla native exit");
     }
     return *found;
+}
+
+// A GLOBAL row's warp region leads only to its pad, unshuffled (export_oot_bindings.py verifies the landing).
+const Entrance& WarpLanding(RandomizerRegion warp) {
+    const auto& exits = areaTable[warp].exits;
+    if (exits.size() != 1 || exits.front().GetOriginalConnectedRegionKey() != exits.front().GetConnectedRegionKey() ||
+        exits.front().IsShuffled()) {
+        throw Failure(kUnsupported, "a warp song region does not lead to its vanilla pad");
+    }
+    return exits.front();
+}
+
+// The virtual GLOBAL node's exits: the six warp songs of Root Exits (root.cpp:47-52), whose landings are
+// OoTMM's SONG_TP_* (oot _system.yml:36-70), under their native condition, logic->CanUse of the song:
+// the song, an ocarina and its notes, as can_play_tp_* (macros_common.yml:40-45).
+std::vector<AddedEdge<Entrance>> GlobalEdges() {
+    std::vector<AddedEdge<Entrance>> edges;
+    for (const auto& b : kBindings) {
+        if (b.role == TempleBindingRole::Global) {
+            WarpLanding(b.target);
+            edges.push_back(
+                { static_cast<size_t>(b.parent), &BoundExit(b.parent, b.target), static_cast<size_t>(b.target) });
+        }
+    }
+    return edges;
 }
 
 uint16_t Price(RandomizerCheck check) {
@@ -188,8 +214,9 @@ struct NativePolicy {
         if (ctx->GetOption(RSK_SHUFFLE_ENTRANCES)) {
             throw Failure(kUnsupported, "Ship entrance randomizer is on");
         }
-        // Destination shuffle needs a song node. Foreign-song logic is inert here: without a starting warp
-        // song or Soaring, refused below and by the gate, no OoTMM song exit opens (lemma S1).
+        // Destination shuffle moves the landings. Foreign-song logic is inert here: an MM song is reached only
+        // through MM, after the Temple of Time (the Mask Shop lemma), and Soaring, which the gate refuses at the
+        // start, is the only OoTMM song exit into MM (lemmas S1 and L3).
         const auto& songs = ComboRando::ActiveSongTravel();
         if (songs.logicEnabled) {
             throw Failure(kUnsupported, "song travel logic is not supported");
@@ -204,11 +231,7 @@ struct NativePolicy {
         for (const auto& b : kBindings) {
             BoundExit(b.parent, b.target);
         }
-        for (const RandomizerGet rg : StartingInventory) {
-            if (IsWarpSong(rg)) {
-                throw Failure(kUnsupported, "starting warp songs are not supported");
-            }
-        }
+        GlobalEdges();
     }
 
     void Check() const {
@@ -291,6 +314,8 @@ struct NativePolicy {
             Binding(sPrepared->startingChild ? "OOT_SPAWN_ADULT" : "OOT_SPAWN_CHILD", TempleBindingRole::RootPolicy);
         overlay.rootSpawn = &BoundExit(RR_ROOT_EXITS, spawn.parent);
         overlay.rootSpawnTarget = spawn.parent;
+        // GLOBAL: the opposite age warps from its spawn region with the starting warp songs (lemma L3).
+        overlay.global = GlobalEdges();
         return overlay;
     }
 

@@ -57,8 +57,16 @@ check = stubs.function(probe, 'static void CheckContext()')
 for needle in ['gPlayState != nullptr', 'mSaveContext == &gSaveContext', 'OotOracleInitialized()',
                'RO_LOGIC_GLITCHLESS', 'RSK_SHUFFLE_ENTRANCES', 'if (songs.logicEnabled) {',
                'logic.get() != ctx->GetLogic().get()', 'RR_ROOT_EXITS', 'BoundExit(b.parent, b.target);',
-               'IsWarpSong(rg)']:
+               'GlobalEdges();']:
     assert needle in check, needle
+# Starting warp songs warp from the virtual GLOBAL node (limits design, Stage 2): no native refusal is left, the
+# GLOBAL edges are Root Exits' own, and a warp region must lead only to its vanilla pad.
+raw_probe = (randomizer/'TempleProbe.cpp').read_text(encoding='utf-8')
+assert 'starting warp songs are not supported' not in raw_probe and 'StartingInventory' not in check
+for needle in ['if (b.role == TempleBindingRole::Global) {', 'WarpLanding(b.target);',
+               '&BoundExit(b.parent, b.target)']:
+    assert needle in stubs.function(probe, 'std::vector<AddedEdge<Entrance>> GlobalEdges()'), needle
+assert 'overlay.global = GlobalEdges();' in stubs.function(probe, 'Overlay<Entrance> Resolve(const QueryRequest& q) const')
 # Foreign-song logic is inert in the probe (lemma S1): only song destination shuffle is refused.
 assert 'logicForeignSongs' not in check and 'logicForeignSongs' not in core
 run_query = stubs.function(core, 'int RunQuery(Policy& policy, const char* json, int (*poll)(void), uint8_t* agesOut)')
@@ -140,6 +148,27 @@ int main() {
     expectRestored(before, o, kReached);
     assert(o.ages == 2 && o.error.empty());
 
+    // GLOBAL (limits design, Stage 2): a query that warps restores everything too, and so does one whose warp
+    // song's predicate throws or that the poll cancels while the warp is open.
+    policy.starting = { PRELUDE, OCARINA, NOTE };
+    o = Run(policy, Query());
+    expectRestored(before, o, kReached);
+    assert(o.ages == 2 && o.error.empty());
+    gPolls = 0;
+    expectRestored(before, Run(policy, Query(), CancelOnSecondPass), kCancelled);
+    assert(gPolls == 2);
+    for (auto it = areaTable[RR_ROOT_EXITS].exits.begin(); it != areaTable[RR_ROOT_EXITS].exits.end(); ++it)
+        if (it->GetConnectedRegionKey() == RR_PRELUDE_WARP) {
+            areaTable[RR_ROOT_EXITS].exits.erase(it);
+            break;
+        }
+    Link(RR_ROOT_EXITS, RR_PRELUDE_WARP, []() -> bool { throw std::runtime_error("warp predicate"); });
+    o = Run(policy, Query());
+    expectRestored(before, o, kInternal);
+    assert(o.error.find("warp predicate") != std::string::npos);
+    LiveState();
+    before = Take();
+
     policy.starting = {};
     expectRestored(before, Run(policy, Query()), kNotReached);
     expectRestored(before, Run(policy, Query({ "ROW_UNBOUND" })), kUnsupported);
@@ -202,7 +231,7 @@ int main() {
 
     // The handle must still be the Context's Logic afterwards.
     std::cout << "Temple probe isolation: live Logic, region flags and generation globals restored on success, "
-                 "false, unsupported, throw, cancel, nesting and failed preconditions\n";
+                 "false, unsupported, throw, cancel, nesting and failed preconditions, GLOBAL warps included\n";
 }
 '''
 cpp = work/'temple_probe_isolation.cpp'

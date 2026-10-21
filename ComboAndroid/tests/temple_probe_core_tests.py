@@ -1,9 +1,10 @@
 """The production Temple probe core (TempleProbeCore.h) on the host, against the pinned contract.
 
 Compiles the real core with the real Region/Entrance/Event age-time code (extracted) and runs the
-host-runnable rows of the contract's matrix on small native-shaped graphs. Also pins the native code
-the probe reuses or mirrors, and checks the generated bindings agree with the audit. Real-engine,
-device and pinned-TypeScript differentials are not run here.
+host-runnable rows of the contract's matrix on small native-shaped graphs, the virtual GLOBAL node of
+starting warp songs included (limits design, Stage 2). Also pins the native code the probe reuses or
+mirrors, and checks the generated bindings agree with the audit. Real-engine and device differentials
+are not run here; temple_global_parity_tests.py compares GLOBAL with the pinned validateAgeTemple run.
 """
 from pathlib import Path
 import argparse
@@ -68,12 +69,26 @@ audit = json.loads((source/'tools/ootmm/oot-edge-audit.json').read_text(encoding
 inc = (randomizer/'combo_oot_edge_bindings.inc').read_text(encoding='utf-8')
 names = (source/'combo/rando/entrances/OotEdgeBindingNames.h').read_text(encoding='utf-8')
 rows = re.findall(r'\{ "(\w+)", 0x[0-9a-f]+u, TempleBindingRole::(\w+), (RR_\w+), (RR_\w+), (ENTR_\w+) \},', inc)
-assert sorted((n, {'Candidate': 'candidate', 'RootPolicy': 'rootPolicy'}[r], p, t, e) for n, r, p, t, e in rows) == \
+roles = {'Candidate': 'candidate', 'RootPolicy': 'rootPolicy', 'Global': 'global'}
+assert sorted((n, roles[r], p, t, e) for n, r, p, t, e in rows) == \
        sorted((r['name'], r['role'], r['parent'], r['target'], r['nativeEntrance']) for r in audit['rows'])
-candidates = re.search(r'kOotTempleCandidateRows = \{([^}]*)\}', names).group(1)
-roots = re.search(r'kOotTempleRootPolicyRows = \{([^}]*)\}', names).group(1)
-assert re.findall(r'"(\w+)"', candidates) == sorted(r['name'] for r in audit['rows'] if r['role'] == 'candidate')
-assert re.findall(r'"(\w+)"', roots) == sorted(r['name'] for r in audit['rows'] if r['role'] == 'rootPolicy')
+for role, array in (('candidate', 'kOotTempleCandidateRows'), ('rootPolicy', 'kOotTempleRootPolicyRows'),
+                    ('global', 'kOotTempleGlobalRows')):
+    listed = re.search(array + r' = \{([^}]*)\}', names).group(1)
+    assert re.findall(r'"(\w+)"', listed) == sorted(r['name'] for r in audit['rows'] if r['role'] == role), role
+# GLOBAL binds the six warp songs of Root Exits, which no other role touches.
+assert sorted(r['target'] for r in audit['rows'] if r['role'] == 'global') == sorted(
+    f'RR_{s}_WARP' for s in ('MINUET_OF_FOREST', 'BOLERO_OF_FIRE', 'SERENADE_OF_WATER', 'NOCTURNE_OF_SHADOW',
+                             'REQUIEM_OF_SPIRIT', 'PRELUDE_OF_LIGHT'))
+assert all(r['parent'] == 'RR_ROOT_EXITS' for r in audit['rows'] if r['role'] == 'global')
+# The core follows GLOBAL's edges only from the opposite spawn region, in their native parent's region key.
+search = stubs.function(core, 'int Search(Regions& regions, Logic& logic, const Overlay<Entrance>& overlay, '
+                              'size_t root, size_t target,')
+for needle in ['if (node == overlay.rootSpawnTarget && !overlay.global.empty()) {',
+               'logic.CurrentRegionKey = static_cast<decltype(logic.CurrentRegionKey)>(edge.parent);',
+               'follow(*edge.entrance, edge.target);',
+               'logic.CurrentRegionKey = static_cast<decltype(logic.CurrentRegionKey)>(node);']:
+    assert needle in search, needle
 assert audit['registrySha256'] in names and audit['registrySha256'] in inc
 
 tests = r'''
@@ -93,9 +108,27 @@ int main() {
     childStart.startingChild = true;
     o = Run(childStart, Query());
     assert(o.code == kReached && o.ages == 1);     // adult only, through the adult spawn
-    // A starting Prelude never helps: Root Exits' warp songs are not part of the probe graph.
-    adultStart.starting = { PRELUDE };
+    // GLOBAL (limits design, Stage 2): a starting Prelude takes the opposite child from its spawn to the
+    // Temple of Time, with an ocarina and its note; without either, or without the song, there is no route.
+    adultStart.starting = { PRELUDE, OCARINA, NOTE };
+    o = Run(adultStart, Query());
+    assert(o.code == kReached && o.ages == 2);
+    for (const std::set<int>& missing : { std::set<int>{ PRELUDE, NOTE }, std::set<int>{ OCARINA, PRELUDE },
+                                          std::set<int>{ OCARINA, NOTE } }) {
+        adultStart.starting = missing;
+        o = Run(adultStart, Query());
+        assert(o.code == kNotReached && o.ages == 0);
+    }
+    // Only the policy's GLOBAL edges warp: Root Exits itself is never reached.
+    adultStart.starting = { PRELUDE, OCARINA, NOTE };
+    adultStart.global = false;
     assert(Run(adultStart, Query()).code == kNotReached);
+    adultStart.global = true;
+    // The starting age never warps: a child start with Prelude still reaches the Temple only as adult.
+    childStart.starting = { PRELUDE, OCARINA, NOTE };
+    o = Run(childStart, Query());
+    assert(o.code == kReached && o.ages == 1);
+    childStart.starting = {};
 
     // Beyond the Door of Time is not the target.
     World();
@@ -147,6 +180,17 @@ int main() {
     assert(Run(adultStart, Query()).code == kReached);
     areaTable[RR_A].timePass = areaTable[RR_KF_LINKS_HOUSE].timePass = false;
     assert(Run(adultStart, Query()).code == kNotReached);
+    // GLOBAL takes the opposite spawn region's time: night once a region of that age passes hours, so the
+    // night-only Serenade lands at C and walks to the Temple. With no such region GLOBAL stays day-only.
+    World();
+    adultStart.starting = { SERENADE, OCARINA, NOTE };
+    o = Run(adultStart, Query());
+    assert(o.code == kReached && o.ages == 2);
+    areaTable[RR_A].timePass = areaTable[RR_KF_LINKS_HOUSE].timePass = false;
+    assert(Run(adultStart, Query()).code == kNotReached);
+    areaTable[RR_A].timePass = true; // A region beyond Link's House: its hours reach GLOBAL through the root.
+    assert(Run(adultStart, Query()).code == kReached);
+    adultStart.starting = {};
 
     // A deleted source plus an added edge carries the source row's own condition.
     World();
@@ -202,8 +246,9 @@ int main() {
                    nativeResult.adultDay == areaTable[RR_B].adultDay &&
                    nativeResult.adultNight == areaTable[RR_B].adultNight);
         }
-    std::cout << "Temple probe core: opposite-age target, root policy, no collection or age change, overlay, "
-                 "isolation between candidates, containment and the UpdateToDAccess mirror verified on host stubs\n";
+    std::cout << "Temple probe core: opposite-age target, root policy, GLOBAL warp songs at the opposite spawn "
+                 "with its time, no collection or age change, overlay, isolation between candidates, containment "
+                 "and the UpdateToDAccess mirror verified on host stubs\n";
 }
 '''
 cpp = work/'temple_probe_core.cpp'

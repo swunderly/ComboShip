@@ -60,10 +60,10 @@ def prelude(source):
 #define StopPerformanceTimer(timer) ((void)0)
 enum RandomizerRegion {
     RR_NONE, RR_ROOT, RR_ROOT_EXITS, RR_CHILD_SPAWN, RR_ADULT_SPAWN, RR_KF_LINKS_HOUSE, RR_TOT_ENTRANCE,
-    RR_TEMPLE_OF_TIME, RR_TOT_BEYOND_DOOR_OF_TIME, RR_A, RR_B, RR_C, RR_D, RR_MAX
+    RR_TEMPLE_OF_TIME, RR_TOT_BEYOND_DOOR_OF_TIME, RR_A, RR_B, RR_C, RR_D, RR_PRELUDE_WARP, RR_SERENADE_WARP, RR_MAX
 };
 enum LogicVal { LOGIC_NONE, LOGIC_EVENT_A, LOGIC_EVENT_B, LOGIC_SETTING_EVENT, LOGIC_MAX };
-enum StubItem { PRELUDE = 1, KEY, SWORD, BOOTS, SONG_OF_TIME };
+enum StubItem { PRELUDE = 1, KEY, SWORD, BOOTS, SONG_OF_TIME, OCARINA, NOTE, SERENADE };
 struct SaveContext { uint8_t bytes[64]; };
 namespace Rando {
 struct Logic {
@@ -129,9 +129,16 @@ Region* RegionTable(RandomizerRegion key) { return &areaTable[key]; }
         '\n}\n' + p['UpdateToDAccess'] + '\n#include "TempleProbeCore.h"\n' + r'''
 using namespace Rando::TempleProbe;
 
-// A small native-shaped world: Root -> Root Exits -> both spawns and a Prelude warp, the spawns'
-// vanilla targets, a child route Link's House -> A -> (KEY) -> ToT Entrance -> ToT, and the door.
+// A small native-shaped world: Root -> Root Exits -> both spawns and two warp songs, the spawns' vanilla
+// targets, a child route Link's House -> A -> (KEY) -> ToT Entrance -> ToT, and the door. The warp songs,
+// which the policy binds as GLOBAL edges as TempleProbe.cpp binds Root Exits' six, need the song, an
+// ocarina and a note, and Root Exits' region key: Prelude lands in ToT, Serenade (night only) at C, which
+// leads to ToT Entrance.
 bool True() { return true; }
+bool Playable(int song) {
+    return logic->HasItem(song) && logic->HasItem(OCARINA) && logic->HasItem(NOTE) &&
+           logic->CurrentRegionKey == RR_ROOT_EXITS;
+}
 void Link(RandomizerRegion from, RandomizerRegion to, ConditionFn condition) {
     areaTable[from].exits.emplace_back(to, condition, from);
 }
@@ -141,7 +148,11 @@ void World() {
     Link(RR_ROOT, RR_ROOT_EXITS, True);
     Link(RR_ROOT_EXITS, RR_CHILD_SPAWN, [] { return logic->IsChild; });
     Link(RR_ROOT_EXITS, RR_ADULT_SPAWN, [] { return logic->IsAdult; });
-    Link(RR_ROOT_EXITS, RR_TEMPLE_OF_TIME, [] { return logic->HasItem(PRELUDE); }); // never followed
+    Link(RR_ROOT_EXITS, RR_PRELUDE_WARP, [] { return Playable(PRELUDE); });
+    Link(RR_ROOT_EXITS, RR_SERENADE_WARP, [] { return Playable(SERENADE) && logic->AtNight; });
+    Link(RR_PRELUDE_WARP, RR_TEMPLE_OF_TIME, True);
+    Link(RR_SERENADE_WARP, RR_C, True);
+    Link(RR_C, RR_TOT_ENTRANCE, True);
     Link(RR_CHILD_SPAWN, RR_KF_LINKS_HOUSE, True);
     Link(RR_ADULT_SPAWN, RR_TEMPLE_OF_TIME, True);
     Link(RR_KF_LINKS_HOUSE, RR_A, True);
@@ -175,6 +186,7 @@ struct StubPolicy {
     std::set<int> starting;
     bool scope = false;
     const Entrance* rootSpawnOverride = nullptr;
+    bool global = true; // bind Root Exits' warp songs as the GLOBAL node's edges
     std::function<void()> check = [] {};
     std::function<void()> onApply = [] {};
     int applied = 0;
@@ -211,6 +223,10 @@ struct StubPolicy {
         const auto spawn = startingChild ? RR_ADULT_SPAWN : RR_CHILD_SPAWN;
         overlay.rootSpawn = rootSpawnOverride ? rootSpawnOverride : Exit(RR_ROOT_EXITS, spawn);
         overlay.rootSpawnTarget = spawn;
+        if (global)
+            for (const auto warp : { RR_PRELUDE_WARP, RR_SERENADE_WARP })
+                overlay.global.push_back({ static_cast<size_t>(RR_ROOT_EXITS), Exit(RR_ROOT_EXITS, warp),
+                                           static_cast<size_t>(warp) });
         return overlay;
     }
 };

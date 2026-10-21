@@ -41,7 +41,9 @@ enum NativeEntrance {
 #include "tables/entrance_table.h"
 #undef DEFINE_ENTRANCE
 };
-enum RandomizerGet { RG_NONE, RG_LENS_OF_TRUTH, RG_BOMBCHU_5, RG_MIRROR_SHIELD, RG_POWER_BRACELET, RG_FIRE_ARROWS };
+enum RandomizerGet { RG_NONE, RG_LENS_OF_TRUTH, RG_BOMBCHU_5, RG_MIRROR_SHIELD, RG_POWER_BRACELET, RG_FIRE_ARROWS,
+    RG_MINUET_OF_FOREST, RG_BOLERO_OF_FIRE, RG_SERENADE_OF_WATER, RG_NOCTURNE_OF_SHADOW, RG_REQUIEM_OF_SPIRIT,
+    RG_PRELUDE_OF_LIGHT };
 enum DungeonKey { DEKU_TREE, DODONGOS_CAVERN, JABU_JABUS_BELLY, FOREST_TEMPLE, FIRE_TEMPLE,
     WATER_TEMPLE, SPIRIT_TEMPLE, SHADOW_TEMPLE, BOTTOM_OF_THE_WELL, ICE_CAVERN, GERUDO_TRAINING_GROUND, GANONS_CASTLE };
 enum Trick { RT_LENS_BOTW, RT_LENS_GANON };
@@ -58,7 +60,10 @@ struct Logic {
     bool adultOnly = false;
     Souls::GeneralOotSoulsOwnership souls{};
     Souls::GeneralOotSoulOptions soulOptions{true, true, true, true, true};
+    std::set<RandomizerGet> warpSongs; // playable warp songs, at any age, with an ocarina and their notes
     bool CanUse(RandomizerGet item) {
+        if (item >= RG_MINUET_OF_FOREST)
+            return warpSongs.count(item) != 0;
         const bool usable = !adultOnly || IsAdult;
         return usable && ((item == RG_LENS_OF_TRUTH && lens) || (item == RG_BOMBCHU_5 && bombchu) ||
                           (item == RG_MIRROR_SHIELD && mirror) || (item == RG_FIRE_ARROWS && fireArrows));
