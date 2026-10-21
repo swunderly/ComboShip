@@ -907,7 +907,7 @@ combo_json_harness_test(entrance_menu_and_generation_availability entrance_menu_
 combo_json_harness_test(entrance_solo_modes_refuse_before_generation entrance_game_mode_guard_tests.py)
 combo_json_harness_test(entrance_release_configuration_coverage entrance_release_coverage_tests.py)
 # 0.4.12's own seed guard (combo/ at tag v0.4.12-android) refuses a Master Quest Wallmaster seed and loads an
-# all-vanilla one of this build; reported as skipped without the tag.
+# all-vanilla one of this build; reported as skipped only when a shallow clone lacks the tag.
 combo_json_harness_test(entrance_quests_seeds_refused_by_0412 entrance_quests_seed_guard_tests.py)
 if(TEST entrance_quests_seeds_refused_by_0412)
     set_tests_properties(entrance_quests_seeds_refused_by_0412 PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")

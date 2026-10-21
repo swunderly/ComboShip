@@ -5,7 +5,8 @@ which requires wallmasters-own-game-quests-v1, and one all-vanilla, which requir
 wallmasters-own-game-vanilla-v1. The 0.4.12 release's own seed guard (combo/ at tag v0.4.12-android, read
 from this checkout's history) is then compiled and run on both: it must refuse the first, which names a capability
 0.4.12 does not know (EntranceLayout.h ValidateEntranceLayoutSettings), and accept the second, with its shipping
-set and its whole catalog alike. Reports SKIPPED when the checkout has no v0.4.12-android tag (a shallow clone).
+set and its whole catalog alike. A checkout without the v0.4.12-android tag reports SKIPPED only when it is a shallow
+clone; in a full clone the test fails and says what to fetch.
 """
 from pathlib import Path
 import argparse
@@ -26,11 +27,22 @@ source, work = a.source.resolve(), a.build_dir.resolve()
 work.mkdir(parents=True, exist_ok=True)
 TAG, COMMIT = 'v0.4.12-android', '33c972f1c42428ff52da2e0a99e5884f57f9db03'
 
-found = subprocess.run(['git', '-C', str(source), 'rev-parse', '--verify', '--quiet', TAG + '^{commit}'],
-                       capture_output=True, text=True, timeout=60)
+
+def git(*command):
+    return subprocess.run(['git', '-C', str(source), *command], capture_output=True, text=True, timeout=300)
+
+
+shallow = git('rev-parse', '--is-shallow-repository')
+if shallow.returncode != 0:
+    sys.exit(f'FAIL: {source} is not a git checkout, so the 0.4.12 seed guard cannot be read from its history')
+found = git('rev-parse', '--verify', '--quiet', TAG + '^{commit}')
 if found.returncode != 0:
-    print(f'SKIPPED: this checkout has no {TAG} tag (fetch the tags of the fork to run the 0.4.12 guard)')
-    sys.exit(0)
+    if shallow.stdout.strip() == 'true':
+        print(f'SKIPPED: this shallow checkout lacks the {TAG} tag (fetch the full history and the tags to run the '
+              '0.4.12 seed guard)')
+        sys.exit(0)
+    sys.exit(f'FAIL: this checkout is not shallow but has no {TAG} tag; fetch the fork\'s tags (git fetch --tags) to '
+             'run its seed guard')
 assert found.stdout.strip() == COMMIT, found.stdout
 old = work/'v0412'
 archive = subprocess.run(['git', '-C', str(source), 'archive', '--format=tar', TAG, 'combo'],
