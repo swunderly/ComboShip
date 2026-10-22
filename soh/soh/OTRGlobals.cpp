@@ -6325,6 +6325,21 @@ extern "C" COMBO_EXPORT int SOH_GetActiveFileNum(void) {
 }
 
 #ifdef COMBO_BUILD
+// ComboShip: the file OoT is playing (0-2), or -1 on the title and file screens: the OoT Save Editor's own test for a
+// loaded file. The launcher's Save Editor seam (gui/ComboSaveEditorAccess.h) asks it while OoT is in front.
+extern "C" COMBO_EXPORT int SOH_GetPlayingFileNum(void) {
+    if (gSaveContext.gameMode == GAMEMODE_TITLE_SCREEN || gSaveContext.gameMode == GAMEMODE_FILE_SELECT)
+        return -1;
+    return gSaveContext.fileNum >= 0 && gSaveContext.fileNum <= 2 ? (int)gSaveContext.fileNum : -1;
+}
+// ComboShip: the launcher's Combo_DormantSaveEditSlot: the file whose dormant save a game may edit and write now.
+extern "C" int (*gComboSaveEditorDormantSlot)(int game) = nullptr;
+extern "C" COMBO_EXPORT void SOH_SetSaveEditorDormantSlot(int (*fn)(int game)) {
+    gComboSaveEditorDormantSlot = fn;
+}
+#endif
+
+#ifdef COMBO_BUILD
 // ComboShip (#173): combo owns the timer overlay; these feed it OOT's half. Play time is the in-game
 // (non-RTA) value on purpose — the RTA branch is wall clock and would double-count time spent in MM.
 extern "C" COMBO_EXPORT uint64_t SOH_GetPlaytimeDeciseconds(void) {

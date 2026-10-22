@@ -562,6 +562,37 @@ Save Editor page itself. Window keys and window CVars are unchanged.
   every item is, sits under a collapsed "Check list (shows item locations)"; "Cross-send debug item to OOT" shows only
   with MM's developer options on (`gDeveloperTools.DebugEnabledMM`, BenMenu.cpp's `COMBO_MM_DEBUG_MODE_NAME`).
 
+## Save Editor of the game that is not running (0.4.14)
+
+**Why:** the menu shows both Save Editors whichever game runs, but a game reloads its file when it next starts
+(both `title_setup.c`), so an edit to the dormant game's save in memory was lost on the switch. MM's song taps did
+not even change memory (`NextQuestInSlot` returned without a play state) and "Give randomizer item" queued a get-item
+event that only a running MM drains and that MM clears on load (`CheckQueueReset`). The owner gave Song of Soaring
+this way from OoT and OoT could not play it.
+
+**Rule (`combo/gui/ComboSaveEditorAccess.h`):** an editor is Live while its game runs, Dormant when the launcher
+vouches for the file (`combo/ComboShip.cpp` `Combo_DormantSaveEditSlot`, pushed into both games through
+`SOH_SetSaveEditorDormantSlot` / `MM_SetSaveEditorDormantSlot`; OoT reports the file it plays through
+`SOH_GetPlayingFileNum`), else it shows only the no-file line. MM's dormant save counts only while
+`g_MmSaveInMemorySlot` is the file OoT plays, the residency the tracker peek and the dormant grants rely on; OoT's
+while MM runs that file. Combined mode only. In Dormant, `DrawElement` snapshots the save before the tabs, and when a
+control changed it and none is active (a drag is written once, when let go) writes it with the dormant grants'
+writer: MM `SaveManager_SaveCurrentForCombo`, OoT `SaveManager::SaveFile`. Live editing is unchanged.
+
+**MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp` (all `COMBO_BUILD`):** `MmEditAccess` and `WriteDormantMmEdits` next
+to `DrawElement`; `NextQuestInSlot` needs a play state only for the sword and shield; `DrawRandoItemGives` gives
+through `Combo_MM_GiveDormantResolved` (as `MM_GrantCrossItem`) when Dormant; the Equipment sword and shield can be
+set when Dormant (Player_Init dresses Link from the save) and Give all / Reset set the B button without a play state;
+Player, Current scene, Cycle scene and Temporary events show "Switch to Majora's Mask to edit this." when Dormant,
+since MM rebuilds them when it starts. `initSafeItemsForInventorySlot` builds the slot lists again whenever an item's
+slot or public availability changed (Player_Init gives the gear and the Adult Mask their slots), where it used to
+build them once per session.
+
+**OoT, `soh/soh/Enhancements/debugger/debugSaveEditor.cpp` (all `COMBO_BUILD`):** `OotEditAccess` and
+`WriteDormantOotEdits` next to `DrawElement`; Player, Current scene and Temporary events show "Switch to Ocarina of
+Time to edit this." when Dormant, and General's Advanced entrance, cutscene and timer rows are greyed out under it
+(OoT's resume clears the context and sets the arrival).
+
 ## Randomizer tab and menu navigation audit (T8, 2026-10-13)
 
 **Why:** Sam's 2026-10-12 menu audit (`tooling/claude-cleanup/t8/menu-spec.md`, sections 5, 7 and 8.3). The

@@ -2,7 +2,9 @@
 #include "OwlStatueEditor.h"
 #include "gui/ComboTouchSlider.h"
 #ifdef COMBO_BUILD
+#include "gui/ComboSaveEditorAccess.h"
 #include "gui/ComboSaveEditorKit.h"
+#include <cstring>
 #endif
 #include <fast/Fast3dGui.h>
 #include "2s2h/BenGui/UIWidgets.hpp"
@@ -27,6 +29,13 @@ extern "C" int Combo_MM_GearOptionReady(void);
 extern "C" void Combo_MMSpellGrantItem(int spell);
 extern "C" void Combo_MMFaroreGrantItem(void);
 extern "C" int MM_GrantAdultGearItem(int fileNum, int item);
+// While OoT is in front (gui/ComboSaveEditorAccess.h): the launcher's answer to which file's dormant MM save may be
+// edited and written (BenPort.cpp), the writer the dormant grants use (SaveManager.cpp), and the dormant give of a
+// resolved item that MM_GrantCrossItem uses (BenPort.cpp).
+extern "C" int (*gMMComboDormantSaveEditSlot)(int game);
+bool Combo_MmIsForeground(void);
+void SaveManager_SaveCurrentForCombo();
+void Combo_MM_GiveDormantResolved(RandoItemId rid);
 #endif
 
 #include "interface/icon_item_dungeon_static/icon_item_dungeon_static.h"
@@ -127,6 +136,17 @@ std::vector<ItemId> safeItemsForInventorySlot[SLOT_MASK_FIERCE_DEITY + 1] = {};
 
 using namespace UIWidgets;
 
+#ifdef COMBO_BUILD
+// ComboShip: how this frame's edits reach MM's save, set by SaveEditorWindow::DrawElement. Dormant while OoT is in
+// front: MM's save is then only in memory and MM reloads it from its file when it next starts, so the editor writes
+// each edit to the file at once (gui/ComboSaveEditorAccess.h). Live while MM runs, which saves its own file.
+static ComboSaveEditorAccess::Access sMmEditAccess = ComboSaveEditorAccess::Access::Live;
+static ComboSaveEditorAccess::DormantWrite sMmDormantWrite;
+static bool MmEditDormant() {
+    return sMmEditAccess == ComboSaveEditorAccess::Access::Dormant;
+}
+#endif
+
 // Public availability is independent of startup resource readiness and saved RO flags, except for the MM gear,
 // which is offered only where its runtime is released and prepared (Combo_MM_GearOptionReady).
 // The Adult Mask stays unavailable until actual native gameplay is validated.
@@ -205,6 +225,25 @@ static bool IsNativeAdultDiagnosticQueueAvailable(RandoItemId item) {
 }
 
 void initSafeItemsForInventorySlot() {
+#ifdef COMBO_BUILD
+    // ComboShip: built from what the lists depend on, and built again whenever that changed. The gear and the Adult
+    // Mask get their slots only when Player_Init installs them (ComboAdultGearIconResources.h,
+    // ComboAdultMaskIconResources.h) and the gear is offered only while its runtime is ready, so lists built once (by
+    // the Item Tracker at boot, or on the first open) left the Goron Tunic out of its trade slot for the session. The
+    // Item Tracker primes them too: in combo the Save Editor window can lose the duplicate-name race.
+    static std::vector<u8> sBuiltFrom;
+    std::vector<u8> inputs(sizeof(gItemSlots));
+    for (size_t i = 0; i < sizeof(gItemSlots); i++) {
+        inputs[i] = IsInventoryItemPubliclyAvailable(static_cast<ItemId>(i)) ? gItemSlots[i] : SLOT_NONE;
+    }
+    if (inputs == sBuiltFrom) {
+        return;
+    }
+    sBuiltFrom = std::move(inputs);
+    for (auto& items : safeItemsForInventorySlot) {
+        items.clear();
+    }
+#else
     // Idempotent: the Item Tracker also primes this (combo: the Save Editor window that used to be the
     // sole caller can be rejected as a duplicate name, so its InitElement never runs). Re-running would
     // double the per-slot lists.
@@ -213,6 +252,7 @@ void initSafeItemsForInventorySlot() {
         return;
     }
     sInitialized = true;
+#endif
     for (int i = 0; i < sizeof(gItemSlots); i++) {
         if (!IsInventoryItemPubliclyAvailable(static_cast<ItemId>(i))) {
             continue;
@@ -1462,6 +1502,13 @@ static void DrawRandoItemGives() {
         std::string buttonLabel = "Give ";
         buttonLabel += randoStaticItem.name;
         if (UIWidgets::Button(buttonLabel.c_str())) {
+            if (MmEditDormant()) {
+                // ComboShip: from OoT, MM has no play state to run a get-item event in, and MM clears the queue when
+                // it next loads the save, so the item goes straight into the save as a cross-game item does
+                // (MM_GrantCrossItem), which also writes the file.
+                Combo_MM_GiveDormantResolved(Rando::ConvertItem(randoItemId));
+                continue;
+            }
             GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
                 .showGetItemCutscene = Rando::StaticData::ShouldShowGetItemCutscene(Rando::ConvertItem(randoItemId)),
                 .param = (int16_t)randoItemId,
@@ -2103,10 +2150,20 @@ std::map<QuestItem, ItemId> questToItemMap = {
 };
 
 void NextQuestInSlot(QuestItem slot) {
+#ifdef COMBO_BUILD
+    // ComboShip: only the sword and shield change Link. Songs, boss remains and the notebook are bits of the save,
+    // which the editor also edits while OoT is in front and MM has no play state: returning for them made those taps
+    // do nothing there (the song looked tapped and stayed unlearned).
+    if (!gPlayState && (slot == QUEST_SWORD || slot == QUEST_SHIELD)) {
+        return;
+    }
+    Player* player = gPlayState ? GET_PLAYER(gPlayState) : nullptr;
+#else
     if (!gPlayState) {
         return;
     }
     Player* player = GET_PLAYER(gPlayState);
+#endif
     if (slot == QUEST_SONG_LULLABY || slot == QUEST_SONG_LULLABY_INTRO) {
         if (CHECK_QUEST_ITEM(QUEST_SONG_LULLABY)) {
             REMOVE_QUEST_ITEM(QUEST_SONG_LULLABY);
@@ -2525,10 +2582,11 @@ void DrawEquipmentTab() {
             SET_EQUIP_VALUE(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_GILDED);
             if (gPlayState) {
                 Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
-                BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
-                    ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
-                Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
             }
+            // The B button is in the save too, so it follows the sword without a play state (from OoT).
+            BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
+                ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
+            Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
         }
         SetQuiverLevel(3);
         SetBombBagLevel(3);
@@ -2540,21 +2598,24 @@ void DrawEquipmentTab() {
             SET_EQUIP_VALUE(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_KOKIRI);
             if (gPlayState) {
                 Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
-                BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
-                    ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
-                Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
             }
+            // The B button is in the save too, so it follows the sword without a play state (from OoT).
+            BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
+                ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
+            Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
         }
         SetQuiverLevel(0);
         SetBombBagLevel(0);
     }
 
-    // The sword and shield change Link himself, so, as on Quest Status, only while playing.
+    // The sword and shield change Link himself, so, as on Quest Status, only while playing, or from OoT: MM dresses
+    // Link from the save when it next starts.
+    const bool canEquip = gPlayState != nullptr || MmEditDormant();
     ImGui::SeparatorText("Sword and shield");
-    if (!gPlayState) {
+    if (!canEquip) {
         ImGui::TextDisabled("%s", Kit::kNeedsPlay);
     }
-    ImGui::BeginDisabled(!gPlayState);
+    ImGui::BeginDisabled(!canEquip);
     if (GET_PLAYER_FORM == PLAYER_FORM_FIERCE_DEITY) {
         ImGui::BeginGroup();
         Kit::Icon(icon(ITEM_SWORD_DEITY), true);
@@ -2567,7 +2628,7 @@ void DrawEquipmentTab() {
                                              { icon(ITEM_SWORD_KOKIRI), "Kokiri Sword" },
                                              { icon(ITEM_SWORD_RAZOR), "Razor Sword" },
                                              { icon(ITEM_SWORD_GILDED), "Gilded Sword" } });
-        if (sword >= 0 && gPlayState) {
+        if (sword >= 0 && canEquip) {
             SetSwordValue(sword);
         }
     }
@@ -2576,9 +2637,11 @@ void DrawEquipmentTab() {
                                         { { Kit::kNoTexture, "None" },
                                           { icon(ITEM_SHIELD_HERO), "Hero's Shield" },
                                           { icon(ITEM_SHIELD_MIRROR), "Mirror Shield" } });
-    if (shield >= 0 && gPlayState) {
+    if (shield >= 0 && canEquip) {
         SET_EQUIP_VALUE(EQUIP_TYPE_SHIELD, shield);
-        Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
+        if (gPlayState) {
+            Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
+        }
     }
     ImGui::EndDisabled();
 
@@ -2847,7 +2910,7 @@ void DrawPlayerTab() {
     ImGui::BeginChild("playerTab", ImVec2(0, 0), true);
 
     if (gPlayState == nullptr) {
-        ImGui::TextWrapped("%s", Kit::kNeedsPlay);
+        ImGui::TextWrapped("%s", MmEditDormant() ? ComboSaveEditorAccess::kSwitchToMm : Kit::kNeedsPlay);
     } else {
         Player* player = GET_PLAYER(gPlayState);
         GetPlayerForm(GET_PLAYER_FORM);
@@ -3386,7 +3449,7 @@ void DrawFlagsTab() {
     switch (type) {
         case CURRENT_SCENE_FLAGS: {
             if (gPlayState == NULL) {
-                ImGui::TextWrapped("%s", Kit::kNeedsPlay);
+                ImGui::TextWrapped("%s", MmEditDormant() ? ComboSaveEditorAccess::kSwitchToMm : Kit::kNeedsPlay);
                 break;
             }
             auto& sceneFlags = gPlayState->actorCtx.sceneFlags;
@@ -3423,6 +3486,11 @@ void DrawFlagsTab() {
             break;
         }
         case EVENT_INF: {
+            // ComboShip: temporary events are not in the file, and MM clears them when it next starts.
+            if (MmEditDormant()) {
+                ImGui::TextWrapped("%s", ComboSaveEditorAccess::kSwitchToMm);
+                break;
+            }
             ImGuiTextFilter& filter = search(type);
             if (filter.IsActive()) {
                 DrawFlagSearchResults(flagTables.at(EVENT_INF), gSaveContext.eventInf,
@@ -3477,6 +3545,11 @@ void DrawFlagsTab() {
             break;
         }
         case CYCLE_SCENE_FLAGS: {
+            // ComboShip: not in the file either; MM copies the saved scene flags over them when it next starts.
+            if (MmEditDormant()) {
+                ImGui::TextWrapped("%s", ComboSaveEditorAccess::kSwitchToMm);
+                break;
+            }
             auto& sceneFlags = gSaveContext.cycleSceneFlags[selectedScene];
             Kit::BeginCardLayout(2, 360.0f);
             group("Chest", sceneFlags.chest);
@@ -4230,10 +4303,36 @@ void DrawRandoTab() {
 #endif
 
 #ifdef COMBO_BUILD
+// ComboShip: this frame's access to MM's save (gui/ComboSaveEditorAccess.h). From OoT the editor edits MM's dormant
+// save only for the file the launcher vouches for: the file being played, whose current MM save is the one in memory.
+static ComboSaveEditorAccess::Access MmEditAccess() {
+    namespace Edit = ComboSaveEditorAccess;
+    const bool foreground = Combo_MmIsForeground();
+    const int dormantSlot = !foreground && gMMComboDormantSaveEditSlot ? gMMComboDormantSaveEditSlot(Edit::kMm) : -1;
+    return Edit::Decide(foreground, gSaveContext.fileNum < 3 && IS_RANDO, gSaveContext.fileNum, dormantSlot);
+}
+
+// ComboShip: after the tabs drew, writes MM's file when they changed its dormant save and the change has settled, with
+// the writer the dormant grants use (it writes gSaveContext.fileNum's file, which MmEditAccess matched).
+static void WriteDormantMmEdits(const Save& before) {
+    const bool changed = MmEditDormant() && memcmp(&before, &gSaveContext.save, sizeof(Save)) != 0;
+    if (sMmDormantWrite.Step(sMmEditAccess, changed, ImGui::IsAnyItemActive())) {
+        SaveManager_SaveCurrentForCombo();
+    }
+}
+
 void SaveEditorWindow::DrawElement() {
-    if (gSaveContext.fileNum >= 3 || !IS_RANDO) {
+    sMmEditAccess = MmEditAccess();
+    if (sMmEditAccess == ComboSaveEditorAccess::Access::NoFile) {
+        sMmDormantWrite.Step(sMmEditAccess, false, false);
         ImGui::TextWrapped("%s", ComboSaveEditorKit::kNoMmFile);
         return;
+    }
+    initSafeItemsForInventorySlot();
+    static Save sBefore; // the save before this frame's controls ran, to see whether they changed it
+    if (MmEditDormant()) {
+        ImGui::TextWrapped("%s", ComboSaveEditorAccess::kDormantMm);
+        memcpy(&sBefore, &gSaveContext.save, sizeof(Save));
     }
     UIWidgets::PushStyleTabs(UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5)));
     if (ImGui::BeginTabBar("SaveContextTabBar", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton)) {
@@ -4293,6 +4392,7 @@ void SaveEditorWindow::DrawElement() {
         ImGui::EndTabBar();
     }
     UIWidgets::PopStyleTabs();
+    WriteDormantMmEdits(sBefore);
 }
 #else
 void SaveEditorWindow::DrawElement() {

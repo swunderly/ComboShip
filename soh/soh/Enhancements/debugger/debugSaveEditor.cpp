@@ -1,7 +1,9 @@
 #include "debugSaveEditor.h"
 #include "gui/ComboTouchSlider.h"
 #ifdef COMBO_BUILD
+#include "gui/ComboSaveEditorAccess.h"
 #include "gui/ComboSaveEditorKit.h"
+#include <cstring>
 #endif
 #include "soh/Enhancements/randomizer/randomizerTypes.h"
 #include "soh/Enhancements/randomizer/randomizer.h"
@@ -78,6 +80,21 @@ ButtonOptions buttonOptionsBase;
 CheckboxOptions checkboxOptionsBase;
 ComboboxOptions comboboxOptionsBase;
 static std::map<std::string, ImGuiTextFilter> flagTableFilters;
+
+#ifdef COMBO_BUILD
+// ComboShip: which game runs, and the launcher's answer to which file's dormant OoT save may be edited and written
+// while MM is in front (both OTRGlobals.cpp; gui/ComboSaveEditorAccess.h).
+bool Combo_OotIsForeground(void);
+extern "C" int (*gComboSaveEditorDormantSlot)(int game);
+// How this frame's edits reach OoT's save, set by SaveEditorWindow::DrawElement. Dormant while MM is in front: OoT's
+// save is then only in memory and OoT reloads it from its file when it next starts, so the editor writes each edit to
+// the file at once. Live while OoT runs, which saves its own file.
+static ComboSaveEditorAccess::Access sOotEditAccess = ComboSaveEditorAccess::Access::Live;
+static ComboSaveEditorAccess::DormantWrite sOotDormantWrite;
+static bool OotEditDormant() {
+    return sOotEditAccess == ComboSaveEditorAccess::Access::Dormant;
+}
+#endif
 
 // Modification of gAmmoItems that replaces ITEM_NONE with the item in inventory slot it represents
 u8 gAllAmmoItems[] = {
@@ -452,6 +469,11 @@ void DrawInfoTab() {
         Tooltip("Total number of deaths");
         PopStyleInput();
 
+        // ComboShip: OoT sets these itself when it next starts (the arrival, and a fresh context for the timers).
+        if (OotEditDormant()) {
+            ImGui::TextWrapped("%s", ComboSaveEditorAccess::kSwitchToOot);
+        }
+        ImGui::BeginDisabled(OotEditDormant());
         PushStyleInput(THEME_COLOR);
         ImGui::InputScalar("Entrance Index", ImGuiDataType_S32, &gSaveContext.entranceIndex);
         Tooltip("From which entrance did Link arrive?");
@@ -486,6 +508,7 @@ void DrawInfoTab() {
         ComboTouch::Count("Sub-Timer Seconds", &gSaveContext.subTimerSeconds, 0, 32767);
         Tooltip("Time, in seconds");
         PopStyleInput();
+        ImGui::EndDisabled();
 
         Combobox("Audio", &gSaveContext.audioSetting, audioMap, comboboxOptionsBase.Tooltip("Sound setting"));
 
@@ -1484,7 +1507,7 @@ void DrawFlagsTab() {
 
     if (flagType == 0) {
         if (gPlayState == nullptr) {
-            ImGui::TextWrapped("%s", Kit::kNeedsPlay);
+            ImGui::TextWrapped("%s", OotEditDormant() ? ComboSaveEditorAccess::kSwitchToOot : Kit::kNeedsPlay);
             return;
         }
         ActorContext* act = &gPlayState->actorCtx;
@@ -1613,6 +1636,11 @@ void DrawFlagsTab() {
         }
     } else {
         const FlagTable& flagTable = flagTables[tables[flagType - 3]];
+        // ComboShip: temporary events are not in the file, and OoT clears them when it next starts.
+        if (flagTable.flagTableType == EVENT_INF && OotEditDormant()) {
+            ImGui::TextWrapped("%s", ComboSaveEditorAccess::kSwitchToOot);
+            return;
+        }
         ImGui::PushID(flagTable.name);
         ImGuiTextFilter& flagFilter = flagTableFilters[flagTable.name];
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16);
@@ -2840,7 +2868,7 @@ void DrawDungeonItemsTab() {
 void DrawPlayerTab() {
     namespace Kit = ComboSaveEditorKit;
     if (gPlayState == nullptr) {
-        ImGui::TextWrapped("%s", Kit::kNeedsPlay);
+        ImGui::TextWrapped("%s", OotEditDormant() ? ComboSaveEditorAccess::kSwitchToOot : Kit::kNeedsPlay);
         return;
     }
     Player* player = GET_PLAYER(gPlayState);
@@ -3447,11 +3475,37 @@ void ResetBaseOptions() {
 }
 
 #ifdef COMBO_BUILD
+// ComboShip: this frame's access to OoT's save (gui/ComboSaveEditorAccess.h). No editable tabs on the title and file
+// screens, the same one line as MM; from MM the editor edits OoT's dormant save only for the file MM runs.
+static ComboSaveEditorAccess::Access OotEditAccess() {
+    namespace Edit = ComboSaveEditorAccess;
+    const bool foreground = Combo_OotIsForeground();
+    const int dormantSlot = !foreground && gComboSaveEditorDormantSlot ? gComboSaveEditorDormantSlot(Edit::kOot) : -1;
+    const bool hasFile =
+        gSaveContext.gameMode != GAMEMODE_TITLE_SCREEN && gSaveContext.gameMode != GAMEMODE_FILE_SELECT;
+    return Edit::Decide(foreground, hasFile, gSaveContext.fileNum, dormantSlot);
+}
+
+// ComboShip: after the tabs drew, writes OoT's file when they changed its dormant save and the change has settled, with
+// the writer the dormant grants use (SaveFile writes only gSaveContext.fileNum, which OotEditAccess matched).
+static void WriteDormantOotEdits(const SaveContext& before) {
+    const bool changed = OotEditDormant() && memcmp(&before, &gSaveContext, sizeof(SaveContext)) != 0;
+    if (sOotDormantWrite.Step(sOotEditAccess, changed, ImGui::IsAnyItemActive()) && SaveManager::Instance) {
+        SaveManager::Instance->SaveFile(gSaveContext.fileNum);
+    }
+}
+
 void SaveEditorWindow::DrawElement() {
-    // ComboShip: no editable tabs on the title and file screens, the same one line as MM.
-    if (gSaveContext.gameMode == GAMEMODE_TITLE_SCREEN || gSaveContext.gameMode == GAMEMODE_FILE_SELECT) {
+    sOotEditAccess = OotEditAccess();
+    if (sOotEditAccess == ComboSaveEditorAccess::Access::NoFile) {
+        sOotDormantWrite.Step(sOotEditAccess, false, false);
         ImGui::TextWrapped("%s", ComboSaveEditorKit::kNoOotFile);
         return;
+    }
+    static SaveContext sBefore; // the save before this frame's controls ran, to see whether they changed it
+    if (OotEditDormant()) {
+        ImGui::TextWrapped("%s", ComboSaveEditorAccess::kDormantOot);
+        memcpy(&sBefore, &gSaveContext, sizeof(SaveContext));
     }
     PushStyleTabs(THEME_COLOR);
     ImGui::BeginDisabled(CVarGetInteger(CVAR_SETTING("DisableChanges"), 0));
@@ -3483,6 +3537,7 @@ void SaveEditorWindow::DrawElement() {
 
     ImGui::EndDisabled();
     PopStyleTabs();
+    WriteDormantOotEdits(sBefore);
 }
 #else
 void SaveEditorWindow::DrawElement() {

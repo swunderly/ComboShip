@@ -16,6 +16,7 @@
 #include "rando/ComboPresets.h"
 #include "rando/ComboSeedFormat.h"
 #include "rando/entrances/EntranceSpoilerOutput.h"
+#include "gui/ComboSaveEditorAccess.h"
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -322,6 +323,12 @@ static FnDumpData SOH_GetComboSpoilerPath = nullptr;
 typedef void (*FnSetComboSaveIO)(ComboRando::FnComboReadSave, ComboRando::FnComboWriteSave);
 static FnSetComboSaveIO SOH_SetComboSaveIO = nullptr;
 static FnSetComboSaveIO MM_SetComboSaveIO = nullptr;
+// The Save Editors' dormant-save seam (gui/ComboSaveEditorAccess.h): each game asks which file's dormant save it may
+// edit and write (Combo_DormantSaveEditSlot), and the launcher asks OoT which file it is playing.
+typedef void (*FnSetDormantSaveEditSlot)(int (*)(int game));
+static FnSetDormantSaveEditSlot SOH_SetSaveEditorDormantSlot = nullptr;
+static FnSetDormantSaveEditSlot MM_SetSaveEditorDormantSlot = nullptr;
+static int (*SOH_GetPlayingFileNum)(void) = nullptr;
 using FnSetAnchorJournalProvider = void (*)(const char* (*)(int));
 static FnSetAnchorJournalProvider SOH_SetAnchorJournalProvider = nullptr;
 static FnTakeStr SOH_LoadComboRando = nullptr;
@@ -4219,6 +4226,17 @@ static void Combo_ResumeMMIfLastSavedThere(int fileNum) {
     SOH_ParkForComboMMResume(); // drops out of OOT's game loop; the launcher then enters MM
 }
 
+// ComboShip: the file whose dormant save `game` (GameId) the Save Editor may edit and write now, or -1
+// (gui/ComboSaveEditorAccess.h). MM's dormant save counts only while it is the current save of the file OoT is playing
+// (g_MmSaveInMemorySlot, the residency the tracker peek and the dormant grants rely on); OoT's while MM runs that file.
+// Registered into both games, which call it from the menu on the game thread.
+static int Combo_DormantSaveEditSlot(int game) {
+    const int foreground = ComboAnchor::sActiveGame.load();
+    const int ootPlaying = foreground == ComboRando::GAME_OOT && SOH_GetPlayingFileNum ? SOH_GetPlayingFileNum() : -1;
+    return ComboSaveEditorAccess::DormantSlot(game, foreground, ComboRando::CombinedMode(sBoundGameMode), ootPlaying,
+                                              g_PendingMMFileNum, g_MmSaveInMemorySlot);
+}
+
 static bool FaroreSlot(int fileNum) {
     return ComboIsValidSlot(fileNum) && fileNum == g_comboCompletionSlot;
 }
@@ -4879,6 +4897,9 @@ int main(int argc, char** argv) {
     // Cross-game erase seam (issue #1)
     SOH_SetComboSaveIO = (FnSetComboSaveIO)GetSym(sohModule, "SOH_SetComboSaveIO");
     MM_SetComboSaveIO = (FnSetComboSaveIO)GetSym(mmModule, "MM_SetComboSaveIO");
+    SOH_SetSaveEditorDormantSlot = (FnSetDormantSaveEditSlot)GetSym(sohModule, "SOH_SetSaveEditorDormantSlot");
+    MM_SetSaveEditorDormantSlot = (FnSetDormantSaveEditSlot)GetSym(mmModule, "MM_SetSaveEditorDormantSlot");
+    SOH_GetPlayingFileNum = (int (*)(void))GetSym(sohModule, "SOH_GetPlayingFileNum");
     SOH_SetAnchorJournalProvider = (FnSetAnchorJournalProvider)GetSym(sohModule, "SOH_SetAnchorJournalProvider");
     SOH_LoadComboRando = (FnTakeStr)GetSym(sohModule, "SOH_LoadComboRando");
     MM_LoadComboRando = (FnTakeStr)GetSym(mmModule, "MM_LoadComboRando");
@@ -5293,6 +5314,11 @@ int main(int argc, char** argv) {
         SOH_SetComboSaveIO(&Combo_ReadGameSave, &Combo_WriteGameSave);
     if (MM_SetComboSaveIO)
         MM_SetComboSaveIO(&Combo_ReadGameSave, &Combo_WriteGameSave);
+    // The Save Editors write a dormant game's save only for the file this answers (gui/ComboSaveEditorAccess.h).
+    if (SOH_SetSaveEditorDormantSlot)
+        SOH_SetSaveEditorDormantSlot(&Combo_DormantSaveEditSlot);
+    if (MM_SetSaveEditorDormantSlot)
+        MM_SetSaveEditorDormantSlot(&Combo_DormantSaveEditSlot);
     if (SOH_SetAnchorJournalProvider)
         SOH_SetAnchorJournalProvider(&Combo_SnapshotAnchorJournal);
     if (SOH_SetCopyContainer)

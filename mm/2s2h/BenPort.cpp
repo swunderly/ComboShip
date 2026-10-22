@@ -3331,6 +3331,13 @@ extern "C" COMBO_EXPORT void MM_SetComboSaveIO(ComboRando::FnComboReadSave r, Co
     SaveManager_SetComboSaveIO(r, w);
 }
 
+// ComboShip: the launcher's Combo_DormantSaveEditSlot: the file whose dormant save a game may edit and write now. The
+// Save Editor asks it while OoT is in front (gui/ComboSaveEditorAccess.h).
+extern "C" int (*gMMComboDormantSaveEditSlot)(int game) = nullptr;
+extern "C" COMBO_EXPORT void MM_SetSaveEditorDormantSlot(int (*fn)(int game)) {
+    gMMComboDormantSaveEditSlot = fn;
+}
+
 // ComboShip: receive the consolidated combo spoiler (foreign map + cross-hints), pushed once per
 // save-load; store the blob and invalidate MM's lookup caches so they rebuild from it. Idempotent.
 extern "C" COMBO_EXPORT void MM_LoadComboRando(const char* json) {
