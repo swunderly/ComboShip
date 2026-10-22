@@ -19,7 +19,9 @@ plan-0413 planned the run and manifest-0413 wrote the manifest. Here:
   file it changes outside this directory since the release candidate before it, with its effect on generation
   (unchanged, or expected for the rows it regenerates) and a one-line reason; the rows it regenerated are their
   fixtures (madeBy) and record their random settings choices; it replayed the seeds whose recorded replay failed,
-  refused the recorded refusal failures as planned, and regenerated its sample byte for byte. A pending one fails;
+  refused the recorded refusal failures as planned, and regenerated its sample byte for byte. It may be of a later
+  version (0.4.14 RC1), never older than the one before it, and its sample also remakes every row an earlier one
+  regenerated. A pending one fails;
 - with git, the commit that made the manifest differs from the corpus's current release candidate (its own, or the last
   later one) only in this directory and the host-only files it lists, each with a one-line reason.
 entrance_corpus_0413_tests.cpp then checks the documents, built with and without COMBO_ENTRANCE_DEV: exact bytes, the

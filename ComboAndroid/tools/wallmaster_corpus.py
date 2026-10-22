@@ -30,15 +30,32 @@ The 0.4.13 corpus (ComboAndroid/tests/fixtures/wallmasters-0413/) has its own co
                    (unchanged, or expected for the rows it regenerates) and a one-line reason.
   sample-0413      Check its pulled results and record them: the regenerated rows replace their fixtures (madeBy), and
                    the host-only files become those the fixture commit changes since this release candidate.
+                   A later release candidate may be of a later version (0.4.14 RC1 for the 0.4.13 corpus), and its
+                   sample also remakes every row an earlier one regenerated (a07 and d06 since RC2).
+
+The 0.4.14 corpus (ComboAndroid/tests/fixtures/wallmasters-0414/), Full Wallmaster Shuffle (erWallmasters=full,
+wallmasters-full-v1), has its own:
+  plan-0414        Stage the 0.4.14 bundle: Full seeds with vanilla and Master Quest dungeons (the Spirit Temple and
+                   Bottom of the Well context Own Game refuses among them), cross-game songs and Ageless Soaring, a
+                   starting OoT warp song, Cross-Games Age and No Logic, and 0.4.12 corpus rows regenerated with
+                   their own command line, which must equal the 0.4.13 corpus's regenerations byte for byte.
+  manifest-0414    Check the pulled results row by row (the Full id and LayoutV2 setting, both games' Wallmasters on
+                   distinct ones of the 18 shared destinations, the routes into the other game and their lines in
+                   OoTMM's entrance spoiler text, oot.resolvedChoices exactly when a random choice exists) and write
+                   the fixture directory.
+  provenance-0414  Show that the fixture commit differs from the release candidate only in that directory and in the
+                   allowlisted host-only files, each with a reason; an earlier corpus's manifest may only gain this
+                   release candidate's later-release record.
 
 Nothing here runs on or talks to a device. The device scripts run headless only: comborando, no app, no save and
-no gameplay. ComboAndroid/tests/entrance_corpus_tests.py checks the 0.4.12 fixtures this writes and
-ComboAndroid/tests/entrance_corpus_0413_tests.py the 0.4.13 ones.
+no gameplay. ComboAndroid/tests/entrance_corpus_tests.py checks the 0.4.12 fixtures this writes,
+ComboAndroid/tests/entrance_corpus_0413_tests.py the 0.4.13 ones and entrance_corpus_0414_tests.py the 0.4.14 ones.
 """
 from pathlib import Path, PurePosixPath
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -412,6 +429,215 @@ def verify_results(results):
         digest, name = line[:64], line[66:]  # sha256sum: digest, a space, ' ' or '*', the path
         if sha256((results/name).read_bytes()) != digest:
             stop(f'{results/name} does not match results.sha256')
+
+
+# The only pre-receipt runs admitted by the 0.4.14 gate. These exact paused pulls and their device evidence are
+# retained, never rewritten. This is an explicit legacy attestation, not a way to assign an arbitrary run to an RC.
+LEGACY_EXECUTIONS_0414 = {
+    '4a824346b0584e3c9e324d6d5b4afdf7b42bff81d12684b6882e4f4fdc91241a': (
+        'b2202b40c25ff0dad177b42bc576cf1dc1389ce09cf384d267b3dbb6f3af66ef',
+        'c691576f67250fb5465eeb0df6d1bc372090bad54ca7e5098d4863f690df0966'),
+    'a7516bef291881b5017a32c69cb35bdd8d812f088d728e11fcc4e30606abafda': (
+        '4918d7484a32a8ea50554a7dff4156710f31a60004fa6f7fc62b85eb2f4aadae',
+        'c13609e79f1d6250603b5147c330268511e64f81776a2ab95b18c55c25795273')}
+LEGACY_EVIDENCE_0414 = {
+    'bundle-verify-device.txt': '406f390d0f88ce25d1e4a851c30c15ee1c8c629160ae767ff46be402963228ed',
+    'workers-start.txt': '184123dd65e55c75ad645f77401daa9f4f7ab68aaaa54f650cf715cd88cb44f4',
+    'session-precheck.txt': '7375d05f130ba6c99469c0af1024185e6f263f8335df3aec71c626a55f5941e3',
+    'close.txt': '04aa0a958af95e3893a457915a52204f2fc459a8bc2100a1381fedc68322e5eb',
+    'guard/guard-provenance.json': '0301f47eb6d0c8426bb10fc1b88f70d904205a6bb5ad280d5e356a13035402e8'}
+EXECUTION_SCHEMA = 'comboship-corpus-execution-v1'
+
+
+def execution_hashes(bundle):
+    """Identity of the supplied plan and the actual generator/libraries, checked against the plan's release."""
+    plan = load(bundle/'plan.json')
+    paths = ['bundle.sha256', 'plan.json'] + sorted(p.relative_to(bundle).as_posix()
+                                                   for p in (bundle/'bin').iterdir() if p.is_file())
+    hashes = {name: sha256((bundle/name).read_bytes()) for name in paths}
+    expected = {'bin/comborando': plan['release']['comborandoSha256'],
+                **{'bin/' + name: digest for name, digest in plan['release']['libraries'].items()}}
+    if any(hashes.get(name) != digest for name, digest in expected.items()):
+        stop('execution identity: actual generator/libraries differ from the release in plan.json')
+    return hashes
+
+
+def execution_inventory(text):
+    """A strict sha256sum inventory, with safe, unique relative paths."""
+    found = {}
+    for line in text.splitlines():
+        if not re.fullmatch(r'[0-9a-f]{64}  [^\r\n]+', line):
+            stop('execution binding: malformed hash inventory')
+        digest, name = line[:64], line[66:]
+        path = PurePosixPath(name)
+        if path.is_absolute() or '..' in path.parts or '\\' in name or name in found:
+            stop('execution binding: unsafe or repeated inventory path')
+        found[name] = digest
+    return found
+
+
+def verify_execution_bindings(bundle, results):
+    """Require each row's captured worker-start identity and artifact binding; retain both in the manifest.
+
+    Legacy rows are limited to the exact two paused RC1 inventories above. Native receipts are captured before the
+    queue runs, then carried with that row through collection and merges. Changing --bundle cannot relabel a run.
+    """
+    expected, records = execution_hashes(bundle), []
+    for result in sorted(results.glob('*/result.json')):
+        folder = result.parent
+        receipt_path, binding_path = folder/'execution-receipt.json', folder/'execution-binding.sha256'
+        if not receipt_path.is_file() or not binding_path.is_file():
+            stop(f'{folder.name}: missing execution receipt or row binding')
+        receipt = load(receipt_path)
+        if receipt.get('schema') != EXECUTION_SCHEMA or receipt.get('hashes') != expected:
+            stop(f'{folder.name}: execution identity differs from the supplied bundle/plan/generator')
+        bound = execution_inventory(binding_path.read_text(encoding='utf-8'))
+        actual = {p.name for p in folder.iterdir() if p.is_file()} - {'execution-binding.sha256'}
+        if set(bound) != actual or any(sha256((folder/name).read_bytes()) != digest
+                                       for name, digest in bound.items()):
+            stop(f'{folder.name}: execution row binding differs from its artifacts')
+        if receipt.get('kind') == 'device-start':
+            if receipt.get('worker') != str(load(result).get('worker')) or not re.fullmatch(
+                    r'[0-9a-f-]{36}', str(receipt.get('bootId'))):
+                stop(f'{folder.name}: execution receipt has no matching worker/boot identity')
+        elif receipt.get('kind') == 'legacy-attestation':
+            old_path = folder/'legacy-results.sha256'
+            old_digest = sha256(old_path.read_bytes()) if old_path.is_file() else None
+            pair = LEGACY_EXECUTIONS_0414.get(old_digest)
+            if pair != (expected['plan.json'], expected['bundle.sha256']) or \
+                    receipt.get('evidence') != LEGACY_EVIDENCE_0414 or receipt.get('legacyResultsSha256') != old_digest:
+                stop(f'{folder.name}: legacy attestation is not one of the exact paused RC1 runs')
+            old = execution_inventory(old_path.read_text(encoding='utf-8'))
+            original = {name[len(folder.name) + 1:]: digest for name, digest in old.items()
+                        if name.startswith(folder.name + '/')}
+            if not original or any(bound.get(name) != digest for name, digest in original.items()) or \
+                    set(bound) != set(original) | {'legacy-results.sha256', 'execution-receipt.json'}:
+                stop(f'{folder.name}: legacy row differs from its exact paused artifacts')
+        else:
+            stop(f'{folder.name}: unknown execution receipt kind')
+        records.append({'row': folder.name, 'receipt': receipt,
+                        'receiptText': receipt_path.read_text(encoding='utf-8'),
+                        'resultText': result.read_text(encoding='utf-8'),
+                        'receiptSha256': sha256(receipt_path.read_bytes()),
+                        'binding': binding_path.read_text(encoding='utf-8'),
+                        **({'legacyInventoryText': old_path.read_text(encoding='utf-8')}
+                           if receipt.get('kind') == 'legacy-attestation' else {})})
+    if not records:
+        stop('no execution-bound row results')
+    return records
+
+
+def check_execution_records(records, plan_sha, release, rows, fail=stop):
+    """Check the execution evidence retained in a fixture manifest, including exact row coverage."""
+    if not isinstance(records, list) or sorted(r.get('row', '') for r in records) != sorted(rows):
+        fail('execution records do not cover every planned result exactly once')
+    for record in records:
+        receipt = record.get('receipt') or {}
+        text = record.get('receiptText', '')
+        if sha256(text.encode('utf-8')) != record.get('receiptSha256') or json.loads(text) != receipt:
+            fail('execution receipt text/hash differs')
+        hashes = receipt.get('hashes') or {}
+        wanted = {'plan.json': plan_sha, 'bin/comborando': release['comborandoSha256'],
+                  **{'bin/' + n: digest for n, digest in release['libraries'].items()}}
+        if receipt.get('schema') != EXECUTION_SCHEMA or any(hashes.get(n) != d for n, d in wanted.items()):
+            fail('execution receipt names another plan or generator')
+        bound = execution_inventory(record.get('binding', ''))
+        if bound.get('execution-receipt.json') != record['receiptSha256'] or 'result.json' not in bound:
+            fail('execution row binding does not name its receipt and native result')
+        result_text = record.get('resultText', '')
+        if sha256(result_text.encode('utf-8')) != bound['result.json']:
+            fail('execution native result differs from its binding')
+        if receipt.get('kind') == 'legacy-attestation':
+            old = receipt.get('legacyResultsSha256')
+            if LEGACY_EXECUTIONS_0414.get(old) != (hashes.get('plan.json'), hashes.get('bundle.sha256')) or \
+                    receipt.get('evidence') != LEGACY_EVIDENCE_0414 or bound.get('legacy-results.sha256') != old:
+                fail('execution legacy attestation is not an exact preserved RC1 run')
+            inventory_text = record.get('legacyInventoryText', '')
+            if sha256(inventory_text.encode('utf-8')) != old:
+                fail('execution legacy inventory differs from its exact preserved RC1 run')
+            inventory = execution_inventory(inventory_text)
+            prefix = record['row'] + '/'
+            original = {name[len(prefix):]: digest for name, digest in inventory.items() if name.startswith(prefix)}
+            if not original or any(bound.get(name) != digest for name, digest in original.items()) or \
+                    set(bound) != set(original) | {'legacy-results.sha256', 'execution-receipt.json'}:
+                fail('execution legacy artifacts are not members of their exact historical inventory')
+        elif receipt.get('kind') == 'device-start':
+            if receipt.get('worker') != str(json.loads(result_text).get('worker')) or not re.fullmatch(
+                    r'[0-9a-f-]{36}', str(receipt.get('bootId'))):
+                fail('execution native worker or boot identity differs')
+        else:
+            fail('unknown execution receipt kind')
+
+
+def check_execution_artifacts(records, artifacts, fail=stop):
+    """Link retained execution bindings to the fixture bytes/results the host test actually checks."""
+    by_row = {record['row']: execution_inventory(record['binding']) for record in records}
+    for row, expected in artifacts.items():
+        if row not in by_row or any(by_row[row].get(name) != digest for name, digest in expected.items()):
+            fail(f'{row}: fixture artifacts differ from their recorded execution binding')
+
+
+BOUND_QUEUE_SH = r'''#!/system/bin/sh
+# Bound queue: capture actual execution identity before any row runs. Args: bundle oot mm worker.
+D=$1 OOT=$2 MM=$3 WORKER=$4
+MODE=@MODE@
+. "$D/run-common.sh"
+cd "$D" || exit 2
+sha256sum -c bundle.sha256 > "verify-$WORKER.log" 2>&1 || exit 2
+chmod 755 bin/comborando || exit 2
+mkdir -p rows claims || exit 2
+RECEIPT="$D/execution-$WORKER.json"
+[ ! -e "$RECEIPT" ] || exit 2
+printf '{"schema":"comboship-corpus-execution-v1","kind":"device-start","bootId":"%s","worker":"%s","hashes":{' \
+    "$(cat /proc/sys/kernel/random/boot_id)" "$WORKER" > "$RECEIPT"
+sep=
+for f in bundle.sha256 plan.json bin/*; do
+    digest=$(sha256sum "$f") || exit 2
+    digest=${digest%% *}
+    printf '%s"%s":"%s"' "$sep" "$f" "$digest" >> "$RECEIPT"
+    sep=,
+done
+printf '}}\n' >> "$RECEIPT"
+sha256sum "$OOT" "$MM" > "archives-before-$WORKER.txt" || exit 2
+failed=0
+while read -r task id config world policy label master kind; do
+    claim=$id row=$id
+    [ "$MODE" != rc0413 ] || claim=$task-$id
+    case "$task" in sample|replay) row=$task-$id ;; esac
+    mkdir "claims/$claim" 2>/dev/null || continue
+    echo "$WORKER" > "claims/$claim/worker"
+    case "$task" in
+        full|regenerate|refusal) run_row "$id" "$config" "$world" "$policy" "$label" "$master" "$kind" ;;
+        regress) regress_row "$id" "$config" "$world" "$label" "$master" ;;
+        replay) replay_row "$id" "$config" "$policy" ;;
+        sample) sample_row "$id" "$config" "$world" "$label" "$master" "$kind" ;;
+        *) false ;;
+    esac || { failed=1; echo "$task $id" >> "failed-$WORKER.txt"; }
+    [ -f "rows/$row/result.json" ] && cp "$RECEIPT" "rows/$row/execution-receipt.json" || exit 2
+done < tasks.txt
+sha256sum "$OOT" "$MM" > "archives-after-$WORKER.txt" || exit 2
+echo "$failed" > "worker-$WORKER.done"
+exit "$failed"
+'''
+
+
+def bound_collector():
+    # Keep the collector's artifact selection, adding the row's captured receipt and a binding of every artifact.
+    needle = '    # What each run wrote under its saves/ (a refusal writes nothing there).'
+    replacement = '''    [ -f "$C/execution-receipt.json" ] && cp "$C/execution-receipt.json" "$R/" || exit 2
+''' + needle
+    text = COLLECT_SH_0413.replace(needle, replacement)
+    needle = 'done\nfor f in archives-*.txt verify-*.log worker-*.done failed-*.txt; do'
+    replacement = '''    (cd "$R" && find . -type f | sed 's|^\\./||' | sort | xargs sha256sum) > "$C/execution-binding.sha256"
+    cp "$C/execution-binding.sha256" "$R/" || exit 2
+''' + needle
+    return text.replace(needle, replacement)
+
+
+def check_legacy_replan(out, legacy):
+    if legacy and (sha256((out/'plan.json').read_bytes()), sha256((out/'bundle.sha256').read_bytes())) not in \
+            LEGACY_EXECUTIONS_0414.values():
+        stop('--legacy-unbound-replan is limited to the two exact preserved 0.4.14 RC1 bundles')
 
 
 def corpus_row(row, results):
@@ -1657,10 +1883,12 @@ GENERATION_EFFECTS = ('unchanged', 'expected')
 TASK_ORDER_0413 = ('regenerate', 'refusal', 'sample', 'replay')  # the queue order: the longest tasks first
 
 
-def later_tasks_0413(manifest, planned, regenerate, groups):
+def later_tasks_0413(manifest, planned, regenerate, groups, earlier=()):
     """The tasks of a later release candidate that regenerates the rows `regenerate`: those rows, the recorded refusal
     failures, the corpus seeds whose recorded replay failed (replay) and the sample: the first seed (by id) of each
-    group in `groups` and start request, among the seeds it does not regenerate."""
+    group in `groups` and start request, among the seeds it does not regenerate, and every seed an earlier later
+    release candidate regenerated (`earlier`, their fixtures say madeBy), which it does not regenerate either: those
+    bytes came from a later generator than the corpus's, so each later one must make them again."""
     seeds = {seed['id']: seed for seed in manifest['seeds']}
     for rid in regenerate:
         if rid not in seeds:
@@ -1674,8 +1902,23 @@ def later_tasks_0413(manifest, planned, regenerate, groups):
     for rid in sorted(seeds):
         if rid not in regenerate and seeds[rid]['group'] in groups:
             chosen.setdefault((seeds[rid]['group'], seeds[rid]['request']['startingGame']), rid)
-    return {'regenerate': sorted(regenerate), 'refusal': refusals, 'sample': sorted(chosen.values()),
+    remade = {rid for rid in earlier if rid in seeds and rid not in regenerate}
+    return {'regenerate': sorted(regenerate), 'refusal': refusals, 'sample': sorted(set(chosen.values()) | remade),
             'replay': replays}
+
+
+def version_key(name):
+    """'0.4.13' as (0, 4, 13), for ordering release names; None for anything else."""
+    parts = name.split('.') if isinstance(name, str) else []
+    return tuple(int(p) for p in parts) if len(parts) == 3 and all(p.isdigit() for p in parts) else None
+
+
+def later_version_ok(corpus, previous, name):
+    """A later release candidate of a corpus is of the corpus's version or a later one, and never older than the
+    release candidate before it (0.4.14 RC1 for the 0.4.13 corpus: laterReleases holds later releases too)."""
+    key = version_key(name)
+    return key is not None and version_key(corpus) is not None and key >= version_key(corpus) and \
+        (previous is None or (version_key(previous) is not None and key >= version_key(previous)))
 
 
 LATER_COMMON_SH_0413 = r'''
@@ -1771,10 +2014,13 @@ def cmd_plan_rc_0413(args):
         stop(f'{rc} is already recorded in {fixtures/"manifest.json"}')
     if not descends(args.repo, previous, rc):
         stop(f'{rc} does not descend from the corpus\'s current release candidate {previous}')
-    if args.version_name != manifest['release']['versionName']:
-        stop(f'a later release candidate of the {manifest["release"]["versionName"]} corpus has that version name')
+    if not later_version_ok(manifest['release']['versionName'], later[-1]['versionName'] if later else None,
+                            args.version_name):
+        stop(f'a later release candidate of the {manifest["release"]["versionName"]} corpus has that version or a '
+             f'later one, not {args.version_name}')
     regenerate = one_line_map(args.regenerate, 'row id') if args.regenerate else {}
-    tasks = later_tasks_0413(manifest, planned, list(regenerate), args.groups)
+    earlier = {item['id'] for record in later for item in record.get('regenerated') or []}
+    tasks = later_tasks_0413(manifest, planned, list(regenerate), args.groups, earlier)
     libraries, comborando, apk = stage_binaries(args.apk, args.comborando, out/'bin')
     release = {'versionName': args.version_name, 'versionCode': args.version_code, 'sourceCommit': rc,
                'build': 'SHIPPING', 'apkSha256': apk, 'comborandoSha256': comborando, 'libraries': libraries}
@@ -1802,18 +2048,24 @@ def cmd_plan_rc_0413(args):
                          f'{row["masterSeed"]} {row["kind"]}\n')
     write_text(out/'tasks.txt', ''.join(lines))
     timeout = str(LATER_TIMEOUT_0413)
-    for name, text in (('run-common.sh', COMMON_SH_0413 + LATER_COMMON_SH_0413), ('run-later.sh', LATER_QUEUE_SH_0413),
-                       ('collect.sh', COLLECT_SH_0413)):
+    legacy = args.legacy_unbound_replan
+    queue = LATER_QUEUE_SH_0413 if legacy else BOUND_QUEUE_SH.replace('@MODE@', 'rc0413')
+    collector = COLLECT_SH_0413 if legacy else bound_collector()
+    for name, text in (('run-common.sh', COMMON_SH_0413 + LATER_COMMON_SH_0413), ('run-later.sh', queue),
+                       ('collect.sh', collector)):
         write_text(out/name, text.replace('@GENERATION@', timeout).replace('@PLAYTHROUGH@', timeout))
     later_plan = {'schema': LATER_PLAN_SCHEMA_0413, 'release': release,
                   'corpus': {'sourceCommit': manifest['release']['sourceCommit'], 'previous': previous,
                              'manifestSha256': sha256(manifest_bytes)},
                   'timeouts': {'generation': LATER_TIMEOUT_0413, 'playthrough': LATER_TIMEOUT_0413},
                   'sampleGroups': args.groups, 'tasks': items}
+    if not legacy:
+        later_plan['executionBinding'] = EXECUTION_SCHEMA
     write_json(out/'plan.json', later_plan)
     files = sorted(path for path in out.rglob('*') if path.is_file())
     write_text(out/'bundle.sha256', ''.join(f'{sha256(path.read_bytes())}  {path.relative_to(out).as_posix()}\n'
                                             for path in files))
+    check_legacy_replan(out, legacy)
     print(f'Planned {len(items)} tasks for {rc[:12]} in {out}: ' +
           ', '.join(f'{task} {len(tasks[task])}' for task in TASK_ORDER_0413))
     for item in items:
@@ -1886,6 +2138,8 @@ def cmd_sample_0413(args):
             record['plan']['sha256'] != sha256(plan_bytes):
         stop(f'{fixtures/"manifest.json"} has no pending record of {rc} for {bundle/"plan.json"}; run later-rc-0413')
     verify_results(results)
+    execution = verify_execution_bindings(bundle, results) if version_key(later_plan['release']['versionName']) >= \
+        version_key('0.4.14') else None
     planned = {row['id']: row for row in load(fixtures/manifest['plan'])['rows']}
     seeds = {seed['id']: seed for seed in manifest['seeds']}
     hashes = {entry['path']: entry['sha256'] for entry in manifest['files']}
@@ -1966,6 +2220,8 @@ def cmd_sample_0413(args):
     record.update({'status': 'checked', 'regenerated': regenerated, 'replays': replays, 'refusals': refusals,
                    'sample': {**record['sample'], 'results': sample},
                    'run': {'resultsSha256': sha256((results/'results.sha256').read_bytes())}})
+    if execution is not None:
+        record['run']['executionBindings'] = execution
     # The release candidate the fixture commit is now compared with is this one: the host-only files are those the
     # fixture commit changes since it.
     manifest['hostOnlyFiles'] = [{'path': path, 'reason': host_only[path]} for path in sorted(host_only)]
@@ -2017,10 +2273,12 @@ def check_later_releases_0413(manifest, plan, files, diff, descends_from, fail=s
         seen.add(rc)
         short = rc[:12]
         later_regenerated = set().union(*regenerated_by[index + 1:]) if index + 1 < len(records) else set()
-        if record.get('versionName') != manifest['release']['versionName'] or record.get('build') != 'SHIPPING' or \
+        if not later_version_ok(manifest['release']['versionName'],
+                                previous.get('versionName') if index else None, record.get('versionName')) or \
+                record.get('build') != 'SHIPPING' or \
                 not hex_of(record.get('apkSha256'), 64) or not hex_of(record.get('comborandoSha256'), 64):
-            fail(f'{short}: not a {manifest["release"]["versionName"]} SHIPPING release candidate with its APK and '
-                 'comborando hashes')
+            fail(f'{short}: not a SHIPPING release candidate of {manifest["release"]["versionName"]} or later (and '
+                 'not older than the one before it) with its APK and comborando hashes')
         if descends_from(previous['sourceCommit'], rc) is False:
             fail(f'{short} does not descend from {previous["sourceCommit"][:12]}, the release candidate before it')
         effects = {}
@@ -2046,7 +2304,8 @@ def check_later_releases_0413(manifest, plan, files, diff, descends_from, fail=s
         if ('expected' in effects.values()) != bool(regenerate):
             fail(f'{short}: files expected to change generation go with regenerated rows, and only with them')
         sample = record.get('sample') or {}
-        tasks = later_tasks_0413(manifest, planned, list(regenerate), sample.get('groups') or '')
+        tasks = later_tasks_0413(manifest, planned, list(regenerate), sample.get('groups') or '',
+                                 set().union(*regenerated_by[:index]))
         if sorted(regenerate) != tasks['regenerate'] or \
                 [item.get('id') for item in record.get('replays') or []] != tasks['replay'] or \
                 [item.get('id') for item in record.get('refusals') or []] != tasks['refusal'] or \
@@ -2056,6 +2315,11 @@ def check_later_releases_0413(manifest, plan, files, diff, descends_from, fail=s
             fail(f'PENDING: the later release candidate {short} has not recorded its run yet: regenerate '
                  f'{tasks["regenerate"]}, refusals {tasks["refusal"]}, replays {tasks["replay"]} and the sample '
                  f'{tasks["sample"]} with its comborando (SHA-256 {record.get("comborandoSha256")}), then sample-0413')
+        if version_key(record['versionName']) >= version_key('0.4.14'):
+            execution_rows = [rid if task in ('regenerate', 'refusal') else f'{task}-{rid}'
+                              for task, ids in tasks.items() for rid in ids]
+            check_execution_records((record.get('run') or {}).get('executionBindings'), record['plan']['sha256'],
+                                    record, execution_rows, fail=fail)
         for rid, item in regenerate.items():
             seed = seeds.get(rid)
             if rid in later_regenerated:
@@ -2091,12 +2355,784 @@ def check_later_releases_0413(manifest, plan, files, diff, descends_from, fail=s
                     results[rid].get('seedSha256') != files.get(seeds[rid]['seed']) or
                     results[rid].get('entrancesSha256') != files.get(seeds[rid].get('entrances'))):
                 fail(f'{short}: the regenerated sample row {rid} is not its fixture byte for byte')
+        if version_key(record['versionName']) >= version_key('0.4.14'):
+            artifacts = {}
+            for task, items in (('regenerate', record['regenerated']), ('sample', sample['results']),
+                                ('replay', record['replays'])):
+                for item in items:
+                    row = item['id'] if task == 'regenerate' else f'{task}-{item["id"]}'
+                    artifacts[row] = {'seed.json': item['seedSha256']}
+                    if task != 'replay':
+                        artifacts[row]['seed.entrances.txt'] = item.get('entrancesSha256')
+            check_execution_artifacts(record['run']['executionBindings'], artifacts, fail=fail)
         previous = record
     for rid, seed in seeds.items():
         if 'madeBy' in seed and not any(record['sourceCommit'] == seed['madeBy'] and rid in ids
                                         for record, ids in zip(records, regenerated_by)):
             fail(f'{rid}: made by {seed["madeBy"]}, which does not record regenerating it')
     return records
+
+
+# ---- 0.4.14 corpus: Full Wallmaster Shuffle ------------------------------------------------------------------------
+# OoTMM v32.3's Full value (erWallmasters=full): one WALLMASTERS pool with ownGame false, every Wallmaster of both
+# games sharing 18 dungeon destinations (11 OoT, 7 MM), under the frozen LayoutV2 rules of wallmasters-full-v1
+# (Capabilities.h, EntranceLayout.h). Every Full seed requires that id, whatever its song facts and quest context.
+FIXTURES_0414 = 'ComboAndroid/tests/fixtures/wallmasters-0414'
+PLAN_SCHEMA_0414 = 'comboship-wallmasters-corpus-plan-0414-v1'
+MANIFEST_SCHEMA_0414 = 'comboship-wallmasters-0414-fixtures-v1'
+FULL_ID = 'wallmasters-full-v1'
+FULL_ER = ['--er', 'erWallmasters=full']
+LIMIT_0414 = 1800  # generation, replay and reproduction alike (the 0.4.13 corpus's limit)
+CROSS_AGE = {'gRando.Options.RO_MM_CROSS_AGE': 1}  # Cross-Games Age (OoTMM main.cross crossAge)
+RANDOM_TRIALS = {'gRandoSettings.GanonTrial': 2}  # a Random Number of Ganon's Trials: a random settings choice
+# 0.4.12 corpus rows (wallmasters-vanilla-v1) the 0.4.14 generator makes again with their own 0.4.12 command line. The
+# 0.4.13 corpus regenerated each of them (its e- rows), so each must be that 0.4.13 fixture byte for byte; the 0.4.12
+# fixture differs from it by the regressionAdditions alone, which entrance_release_corpus_0413 checks.
+VANILLA_REGRESSION_0414 = ('oot-child-everyCheck-souls0-00', 'mm-everyCheck-souls0-00', 'random-fallback-010',
+                           'oot-adult-noLogic-souls0')
+LAYOUT_SOURCE = 'combo/rando/entrances/EntranceLayout.h'
+CONTRACT_SOURCE = 'tools/ootmm/m1-contract.json'
+# The earlier corpora whose manifest a 0.4.14 fixture commit may change: only by adding its release candidate's
+# later-release record (later-rc-0413 and sample-0413, or later-rc and sample).
+EARLIER_MANIFESTS_0414 = (FIXTURES_0413 + '/manifest.json', FIXTURES + '/manifest.json')
+
+
+def any_mq(mask):
+    return mask != 0
+
+
+def rows_0414():
+    """The 0.4.14 rows, in queue order, each (id, group, start request, flat CVars, master seed or (first, rule)):
+    a Full with vanilla dungeons, b Full with Master Quest dungeons (all 12, random counts, and Spirit Temple and Bottom
+    of the Well Master Quest with Shadow Temple and Ganon's Castle vanilla, which Own Game refuses), c Full with
+    "Play warp songs across games" and Ageless Soaring, or a starting OoT warp song, d Full with Cross-Games Age, e No
+    Logic Full."""
+    a, b, c, d, e = 414070000, 414070100, 414070200, 414070300, 414070400
+    spirit_botw = mq_selection(mq=('Spirit', 'BotW'))
+    spec = {
+        # (a) vanilla dungeons: each start, a random age, souls on and off, a beatable-only row, random trials.
+        'a01-full-oot-child': ('a', 'oot', base_0413(0), a + 0),
+        'a02-full-oot-adult': ('a', 'oot', base_0413(1), a + 1),
+        'a03-full-mm': ('a', 'mm', base_0413(0), a + 2),
+        'a04-full-random': ('a', 'random', base_0413(0), a + 3),
+        'a05-full-oot-randomage': ('a', 'oot', base_0413(2), a + 4),
+        'a06-full-oot-child-souls': ('a', 'oot', base_0413(0, 'everyCheck', 1), a + 5),
+        'a07-full-mm-completion-souls': ('a', 'mm', base_0413(0, 'completion', 1), a + 6),
+        'a08-full-oot-adult-souls-trials': ('a', 'oot', {**base_0413(1, 'everyCheck', 1), **RANDOM_TRIALS}, a + 7),
+        # (b) Master Quest dungeons.
+        'b01-full-mq12-oot-child': ('b', 'oot', {**base_0413(0), **MQ_ALL}, b + 0),
+        'b02-full-mq12-mm': ('b', 'mm', {**base_0413(0), **MQ_ALL}, b + 1),
+        'b03-full-mq-randomnumber-oot-adult': ('b', 'oot', {**base_0413(1), **MQ_RANDOM_NUMBER}, (b + 2, any_mq)),
+        'b04-full-mq-count6-random': ('b', 'random', {**base_0413(0), **mq_count(6)}, b + 3),
+        'b05-full-mq-spirit-botw-oot-child': ('b', 'oot', {**base_0413(0), **spirit_botw}, b + 4),
+        'b06-full-mq-spirit-botw-mm-souls': ('b', 'mm', {**base_0413(0, 'everyCheck', 1), **mq_selection(
+            mq=('Spirit', 'BotW', 'Forest', 'Water'), random=('DT', 'DC', 'JJ', 'Fire', 'IC', 'GTG'))}, b + 5),
+        'b07-full-mq-capacity-roll-oot-adult': ('b', 'oot', {**base_0413(1), **mq_selection(random='all')},
+                                                (b + 90, capacity_shortfall)),
+        # (c) cross-game songs and Ageless Soaring, and a starting OoT warp song.
+        'c01-full-songs-oot-child': ('c', 'oot', {**base_0413(0), **FOREIGN_SONGS}, c + 0),
+        'c02-full-songs-ageless-oot-adult': ('c', 'oot', {**base_0413(1), **FOREIGN_SONGS, **AGELESS_SOARING}, c + 1),
+        'c03-full-songs-ageless-mm': ('c', 'mm', {**base_0413(0), **FOREIGN_SONGS, **AGELESS_SOARING}, c + 2),
+        'c04-full-minuet-oot-adult': ('c', 'oot', {**base_0413(1), **starting('Minuet of Forest')}, c + 3),
+        'c05-full-serenade-songs-mq12-oot-child': ('c', 'oot', {**base_0413(0), **starting('Serenade of Water'),
+                                                                **FOREIGN_SONGS, **MQ_ALL}, c + 4),
+        'c06-full-prelude-songs-ageless-random': ('c', 'random', {**base_0413(0), **starting('Prelude of Light'),
+                                                                  **FOREIGN_SONGS, **AGELESS_SOARING}, c + 5),
+        # (d) Cross-Games Age: adult Link stays adult in MM.
+        'd01-full-crossage-oot-adult': ('d', 'oot', {**base_0413(1), **CROSS_AGE}, d + 0),
+        'd02-full-crossage-songs-ageless-oot-randomage': ('d', 'oot', {**base_0413(2), **CROSS_AGE, **FOREIGN_SONGS,
+                                                                       **AGELESS_SOARING}, d + 1),
+        # (e) No Logic.
+        'e01-full-nologic-songs-oot-adult': ('e', 'oot', {**base_0413(1, 'noLogic'), **FOREIGN_SONGS}, e + 0),
+        'e02-full-nologic-mq-spirit-botw-random': ('e', 'random', {**base_0413(0, 'noLogic'), **spirit_botw}, e + 1),
+    }
+    order = ['a01-full-oot-child', 'b05-full-mq-spirit-botw-oot-child', 'c02-full-songs-ageless-oot-adult',
+             'd01-full-crossage-oot-adult', 'a03-full-mm', 'b07-full-mq-capacity-roll-oot-adult',
+             'e01-full-nologic-songs-oot-adult', 'a05-full-oot-randomage', 'b01-full-mq12-oot-child',
+             'c05-full-serenade-songs-mq12-oot-child', 'a02-full-oot-adult', 'b02-full-mq12-mm',
+             'c01-full-songs-oot-child', 'd02-full-crossage-songs-ageless-oot-randomage', 'a04-full-random',
+             'b03-full-mq-randomnumber-oot-adult', 'c03-full-songs-ageless-mm', 'e02-full-nologic-mq-spirit-botw-random',
+             'a06-full-oot-child-souls', 'b04-full-mq-count6-random', 'c04-full-minuet-oot-adult',
+             'a07-full-mm-completion-souls', 'b06-full-mq-spirit-botw-mm-souls', 'c06-full-prelude-songs-ageless-random',
+             'a08-full-oot-adult-souls-trials']
+    assert sorted(order) == sorted(spec) and len(set(order)) == len(order)
+    return [(rid, *spec[rid]) for rid in order]
+
+
+def own_game_refusal(cvars, mask):
+    """The capacity sentence Own Game would stop these settings with on this roll, or None: Full has no capacity
+    refusal (its 18 destinations hold its at most 16 sources), so such a row must generate under Full."""
+    if shortfall_forced(cvars):
+        return FORCED_SENTENCE
+    return SEED_SENTENCE if capacity_shortfall(mask) else None
+
+
+def plan_row_0414(rid, group, world, cvars, master, config_bytes):
+    choice = None
+    if isinstance(master, tuple):
+        first, want = master
+        master = first_master(first, cvars, want)
+        choice = {'from': first, 'rule': want.__name__,
+                  'why': {'any_mq': 'the first master seed whose first attempt rolls at least one Master Quest dungeon',
+                          'capacity_shortfall': 'the first master seed whose first attempt rolls the Master Quest '
+                                                'context Own Game refuses (Spirit Temple and Bottom of the Well Master '
+                                                'Quest, Shadow Temple and Ganon\'s Castle vanilla)'}[want.__name__]}
+    label = f'Wallmaster0414-{rid}'
+    row = {'id': rid, 'group': group, 'kind': 'full', 'label': label, 'masterSeed': master, 'startingGame': world,
+           'ootStartingAge': cvars.get('gRandoSettings.StartingAge', 0), 'accessibility': policy_of(cvars),
+           'souls': cvars.get('gRandoSettings.SoulsEnemyOot', 0), 'cvars': cvars}
+    if choice:
+        row['masterChoice'] = choice
+    row['config'] = f'comboship-{rid}.json'
+    config_bytes[row['config']] = (json.dumps(nest_cvars(cvars), indent=2, ensure_ascii=False) + '\n').encode('utf-8')
+    mask = mq_roll(master, cvars)
+    row['expect'] = {'outcome': 'seed', 'capability': FULL_ID, 'firstAttemptMqDungeons': mq_names(mask),
+                     'ownGameRefusal': own_game_refusal(cvars, mask),
+                     'crossAge': bool(cvars.get('gRando.Options.RO_MM_CROSS_AGE', 0))}
+    command = ['comborando', '--seed', label, '--count', '1', '--master-seed', str(master), '--starting-game', world]
+    row['generate'] = command + FULL_ER
+    row['playthrough'] = ['comborando', '--playthrough', SPOILER]
+    row['repro'] = command + ['--settings', f'<the generated {SPOILER}>']
+    return row
+
+
+def regression_rows_0414(corpus_0412_dir, corpus_0413_dir, config_bytes, seed_bytes):
+    """The 0.4.12 corpus rows regenerated with their 0.4.12 command line, each to equal the 0.4.13 corpus's
+    regeneration of it (its e- row) byte for byte."""
+    vanilla = load(corpus_0412_dir/'manifest.json')
+    corpus13 = load(corpus_0413_dir/'manifest.json')
+    rows = []
+    for rid in VANILLA_REGRESSION_0414:
+        old = next(s for s in vanilla['seeds'] if s['id'] == rid)
+        same = next((s for s in corpus13['seeds'] if s['id'] == 'e-' + rid), None)
+        if not same or (same.get('regression') or {}).get('corpusSeed') != rid or 'madeBy' in same:
+            stop(f'the 0.4.13 corpus has no regenerated row e-{rid} made by its own release candidate')
+        request = old['request']
+        config = '0412-' + PurePosixPath(old['config']).name
+        config_bytes[config] = (corpus_0412_dir/old['config']).read_bytes()
+        tid = 'v-' + rid
+        for key, suffix in (('seed', '.json'), ('entrances', '.entrances.txt')):
+            seed_bytes[f'seeds/{tid}{suffix}'] = (corpus_0413_dir/same[key]).read_bytes()
+        command = ['comborando', '--seed', request['label'], '--count', '1', '--master-seed',
+                   str(request['masterSeed']), '--starting-game', request['startingGame']]
+        rows.append({
+            'id': tid, 'corpus': FIXTURES, 'corpusSeed': rid, 'config': config,
+            'label': request['label'], 'masterSeed': request['masterSeed'], 'startingGame': request['startingGame'],
+            'accessibility': request['accessibility'], 'generate': command + ENTRANCE_ARGS,
+            'expect': {
+                'sameAs': {'corpus': FIXTURES_0413, 'seed': same['id'],
+                           'seedSha256': sha256((corpus_0413_dir/same['seed']).read_bytes()),
+                           'entrancesSha256': sha256((corpus_0413_dir/same['entrances']).read_bytes())},
+                'corpusFixture': {'seedSha256': sha256((corpus_0412_dir/old['seed']).read_bytes()),
+                                  'entrancesSha256': sha256((corpus_0412_dir/old['entrances']).read_bytes()),
+                                  'differsBy': [{'path': '.'.join(p), 'value': v}
+                                                for p, v in REGRESSION_ADDITIONS.items()]}}})
+    return rows
+
+
+COMMON_SH_0414 = r'''# Sourced by run-queue.sh of wallmaster_corpus.py plan-0414. Headless only: no app, save or gameplay.
+# Every process has its own directory, data root and config; the archives are read in place, never copied.
+set -u
+SPOILER=saves/combo/comborando.spoiler.json
+ENTRANCES=saves/combo/comborando.spoiler.entrances.txt
+stage() {  # case-dir config bin-dir
+    mkdir -p "$1/data" &&
+        ln -s "$3/libsoh.so" "$1/libsoh.so" && ln -s "$3/lib2ship.so" "$1/lib2ship.so" &&
+        ln -s "$OOT" "$1/data/oot.o2r" && ln -s "$MM" "$1/data/mm.o2r" &&
+        cp "$D/configs/$2" "$1/data/comboship.json"
+}
+rando() {  # case-dir bin-dir log timeout comborando-arguments...
+    dir=$1 bin=$2 log=$3 limit=$4
+    shift 4
+    (cd "$dir" && COMBOSHIP_DATA_DIR="$dir/data" timeout "$limit" "$bin/comborando" "$@" < /dev/null > "$log" 2>&1)
+}
+# One Full Wallmaster row: generate with erWallmasters=full (generation picks the id), replay the recorded seed
+# (--playthrough), then reproduce it from its own settings and master seed (--settings, --master-seed) and compare
+# both outputs byte for byte. A Full seed has an entrance layout, so it has both files.
+run_row() {  # id config starting-game policy label master
+    id=$1 config=$2 world=$3 policy=$4 label=$5 master=$6
+    C=$D/rows/$id
+    [ ! -e "$C" ] || { echo "row $id already exists" >&2; return 2; }
+    stage "$C/gen" "$config" "$D/bin" && stage "$C/repro" "$config" "$D/bin" || return 2
+    t0=$(date +%s)
+    rando "$C/gen" "$D/bin" generation.log @LIMIT@ --seed "$label" --count 1 --master-seed "$master" \
+        --starting-game "$world" --er erWallmasters=full
+    gen=$?
+    t1=$(date +%s) t2=$(date +%s)
+    play=-1 repro=-1 same=false
+    if [ "$gen" -eq 0 ] && [ -f "$C/gen/$SPOILER" ] && [ -f "$C/gen/$ENTRANCES" ]; then
+        rando "$C/gen" "$D/bin" playthrough.log @LIMIT@ --playthrough "$C/gen/$SPOILER"
+        play=$?
+        t2=$(date +%s)
+        rando "$C/repro" "$D/bin" repro.log @LIMIT@ --seed "$label" --count 1 --master-seed "$master" \
+            --starting-game "$world" --settings "$C/gen/$SPOILER"
+        repro=$?
+        [ -f "$C/repro/$SPOILER" ] && [ -f "$C/repro/$ENTRANCES" ] && cmp -s "$C/gen/$SPOILER" "$C/repro/$SPOILER" &&
+            cmp -s "$C/gen/$ENTRANCES" "$C/repro/$ENTRANCES" && same=true
+    fi
+    t3=$(date +%s)
+    printf '{"id":"%s","task":"full","worker":"%s","generationExit":%s,"playthroughExit":%s,"reproExit":%s,' \
+        "$id" "$WORKER" "$gen" "$play" "$repro" > "$C/result.json"
+    printf '"reproIdentical":%s,"generationSeconds":%s,"playthroughSeconds":%s,"reproSeconds":%s}\n' \
+        "$same" "$((t1 - t0))" "$((t2 - t1))" "$((t3 - t2))" >> "$C/result.json"
+    [ "$gen" -eq 0 ] && [ "$repro" -eq 0 ] && [ "$same" = true ] || return 1
+    # No Logic promises no beatability: its real-logic verdict 1 is kept as recorded, never counted as beatable.
+    [ "$play" -eq 0 ] || { [ "$policy" = noLogic ] && [ "$play" -eq 1 ]; }
+}
+# One 0.4.12 corpus row, made again with its own 0.4.12 command line (the vanilla id named) and compared byte for byte
+# with the seed it must equal (seeds/<id>.json and .entrances.txt: the 0.4.13 corpus's regeneration of it).
+regress_row() {  # id config starting-game label master
+    id=$1 config=$2 world=$3 label=$4 master=$5
+    C=$D/rows/$id
+    [ ! -e "$C" ] || { echo "row $id already exists" >&2; return 2; }
+    stage "$C/gen" "$config" "$D/bin" || return 2
+    t0=$(date +%s)
+    rando "$C/gen" "$D/bin" generation.log @LIMIT@ --seed "$label" --count 1 --master-seed "$master" \
+        --starting-game "$world" --er erWallmasters=ownGame --er-capability wallmasters-own-game-vanilla-v1
+    gen=$?
+    t1=$(date +%s)
+    same=false
+    [ "$gen" -eq 0 ] && cmp -s "$D/seeds/$id.json" "$C/gen/$SPOILER" &&
+        cmp -s "$D/seeds/$id.entrances.txt" "$C/gen/$ENTRANCES" && same=true
+    printf '{"id":"%s","task":"regress","worker":"%s","generationExit":%s,"identical":%s,"generationSeconds":%s}\n' \
+        "$id" "$WORKER" "$gen" "$same" "$((t1 - t0))" > "$C/result.json"
+    [ "$gen" -eq 0 ] && [ "$same" = true ]
+}
+'''
+
+QUEUE_SH_0414 = r'''#!/system/bin/sh
+# sh run-queue.sh <bundle dir> <oot.o2r> <mm.o2r> <worker>: the tasks of tasks.txt in order, each claimed by one worker
+# (an atomic mkdir under claims/), so the workers share one queue. A failing task is added to failed-<worker>.txt
+# and the worker goes on with the next; its row directory stays as it is.
+D=$1 OOT=$2 MM=$3 WORKER=$4
+. "$D/run-common.sh"
+cd "$D" || exit 2
+sha256sum -c bundle.sha256 > "verify-$WORKER.log" 2>&1 || exit 2
+chmod 755 bin/comborando || exit 2
+mkdir -p rows claims || exit 2
+sha256sum "$OOT" "$MM" > "archives-before-$WORKER.txt" || exit 2
+failed=0
+while read -r task id config world policy label master; do
+    mkdir "claims/$id" 2>/dev/null || continue
+    echo "$WORKER" > "claims/$id/worker"
+    case "$task" in
+        full) run_row "$id" "$config" "$world" "$policy" "$label" "$master" ;;
+        regress) regress_row "$id" "$config" "$world" "$label" "$master" ;;
+        *) false ;;
+    esac || { failed=1; echo "$task $id" >> "failed-$WORKER.txt"; }
+done < tasks.txt
+sha256sum "$OOT" "$MM" > "archives-after-$WORKER.txt" || exit 2
+echo "$failed" > "worker-$WORKER.done"
+exit "$failed"
+'''
+
+
+def queue_order_0414(rows, regression):
+    """The queue: the first Full row, then the regression rows each followed by the next Full row, then the rest."""
+    full = [('full', row) for row in rows]
+    order = full[:1]
+    for i, row in enumerate(regression):
+        order += [('regress', row)] + full[1 + i:2 + i]
+    return order + full[1 + len(regression):]
+
+
+def cmd_plan_0414(args):
+    out = args.out.resolve()
+    if out.exists():
+        stop(f'{out} already exists; plan into a new directory')
+    if len(args.source_commit) != 40 or any(c not in '0123456789abcdef' for c in args.source_commit):
+        stop('--source-commit must be the full 40-character commit')
+    corpus_0412, corpus_0413 = args.corpus_0412.resolve(), args.corpus_0413.resolve()
+    libraries, comborando, apk = stage_binaries(args.apk, args.comborando, out/'bin')
+    release = {'versionName': args.version_name, 'versionCode': args.version_code, 'sourceCommit': args.source_commit,
+               'build': 'SHIPPING', 'apkSha256': apk, 'comborandoSha256': comborando, 'libraries': libraries}
+    config_bytes, seed_bytes = {}, {}
+    rows = [plan_row_0414(*spec, config_bytes) for spec in rows_0414()]
+    regression = regression_rows_0414(corpus_0412, corpus_0413, config_bytes, seed_bytes)
+    for name, data in sorted(config_bytes.items()):
+        (out/'configs').mkdir(parents=True, exist_ok=True)
+        (out/'configs'/name).write_bytes(data)
+    for name, data in sorted(seed_bytes.items()):
+        (out/name).parent.mkdir(parents=True, exist_ok=True)
+        (out/name).write_bytes(data)
+    queue = queue_order_0414(rows, regression)
+    write_text(out/'tasks.txt', ''.join(
+        f'{task} {r["id"]} {r["config"]} {r["startingGame"]} {r["accessibility"]} {r["label"]} {r["masterSeed"]}\n'
+        for task, r in queue))
+    plan = {'schema': PLAN_SCHEMA_0414, 'capability': FULL_ID, 'release': release,
+            'timeouts': {'generation': LIMIT_0414, 'playthrough': LIMIT_0414, 'reproduction': LIMIT_0414},
+            'corpus0412': {'sourceCommit': load(corpus_0412/'manifest.json')['release']['sourceCommit'],
+                           'manifestSha256': sha256((corpus_0412/'manifest.json').read_bytes())},
+            'rows': rows, 'regression': regression, 'queue': [r['id'] for _, r in queue]}
+    legacy = args.legacy_unbound_replan
+    if not legacy:
+        plan['executionBinding'] = EXECUTION_SCHEMA
+    queue = QUEUE_SH_0414 if legacy else BOUND_QUEUE_SH.replace('@MODE@', 'full')
+    collector = COLLECT_SH_0413 if legacy else bound_collector()
+    for name, text in (('run-common.sh', COMMON_SH_0414), ('run-queue.sh', queue),
+                       ('collect.sh', collector)):
+        write_text(out/name, text.replace('@LIMIT@', str(LIMIT_0414)))
+    write_json(out/'plan.json', plan)
+    files = sorted(path for path in out.rglob('*') if path.is_file())
+    write_text(out/'bundle.sha256', ''.join(f'{sha256(path.read_bytes())}  {path.relative_to(out).as_posix()}\n'
+                                            for path in files))
+    check_legacy_replan(out, legacy)
+    groups = {}
+    for row in rows:
+        groups[row['group']] = groups.get(row['group'], 0) + 1
+    print(f'Planned {len(rows)} Full rows ({", ".join(f"{g} {n}" for g, n in sorted(groups.items()))}) and '
+          f'{len(regression)} regression rows in {out}:')
+    for row in rows:
+        e = row['expect']
+        print(f'  {row["id"]:46} {row["startingGame"]:6} age {row["ootStartingAge"]} {row["accessibility"]:10} '
+              f'souls {row["souls"]} master {row["masterSeed"]}  MQ {e["firstAttemptMqDungeons"]}' +
+              (f'  Own Game: {e["ownGameRefusal"][:40]}' if e['ownGameRefusal'] else '') +
+              ('  crossAge' if e['crossAge'] else ''))
+    for row in regression:
+        print(f'  {row["id"]:46} {row["startingGame"]:6} master {row["masterSeed"]}  = {FIXTURES_0413} '
+              f'{row["expect"]["sameAs"]["seed"]}')
+    print(f'Bundle hashes: {out/"bundle.sha256"}; comborando {comborando}; APK {apk}.')
+
+
+# ---- 0.4.14 corpus: rules the checks share with entrance_corpus_0414_tests.py ------------------------------------------
+def layout_rows(text):
+    """EntranceLayout.h LayoutV1::kRows (which LayoutV2 shares) by name: (game, from, to), and its game links."""
+    start = text.index('inline constexpr Record kRows[] = {')
+    block = text[start:text.index('\n};', start)]
+    rows = {m.group(1): (m.group(2), m.group(4), m.group(5)) for m in re.finditer(
+        r'\{\s*"([A-Z0-9_]+)",\s*Game::(Oot|Mm),\s*0x[0-9a-fA-F]+u,\s*Type::\w+,\s*"([^"]*)",\s*"([^"]*)",\s*"([^"]*)"',
+        block)}
+    links = re.search(r'kGameLinks = \{ \{\s*\{ "(\w+)", "(\w+)" \},\s*\{ "(\w+)", "(\w+)" \},\s*\} \};', text)
+    if not rows or not links:
+        stop(f'{LAYOUT_SOURCE}: kRows or kGameLinks moved')
+    return rows, [(links.group(1), links.group(2)), (links.group(3), links.group(4))]
+
+
+def spoiler_line(rows, source, destination):
+    """One row of OoTMM's entrance spoiler (spoiler.ts:254-266, EntranceSpoiler.h): key and value."""
+    _, src_from, src_to = rows[source]
+    _, dst_from, dst_to = rows[destination]
+    return f'{src_from} to {src_to} ({source})', f'{dst_to} from {dst_from} ({destination})'
+
+
+def entrance_spoiler_text(rows, links, routes):
+    """EntranceSpoiler.h FormatEntranceSpoiler for these routes: every route, the game links, sorted by key (byte
+    order, as std::map and JavaScript's sort of these ASCII labels), padded to the longest key."""
+    lines = dict(spoiler_line(rows, src, dst) for src, dst in list(routes) + links)
+    width = max(len(key) for key in lines)
+    return 'Entrances\n' + ''.join(f'  {key.ljust(width)} -> {lines[key]}\n' for key in sorted(lines))
+
+
+def full_contract(contract):
+    """From tools/ootmm/m1-contract.json: the Full pool's 18 shared destinations and its MM sources, and OoT's
+    Wallmaster sources for each Master Quest context of the six Wallmaster dungeons."""
+    pool = contract['fullWallmasters']['combination']['pools'][0]
+    candidate = pool['candidates'][0]
+    if pool['name'] != 'WALLMASTERS' or pool['ownGame'] or not pool['alias'] or len(candidate['destinations']) != 18:
+        stop(f'{CONTRACT_SOURCE}: fullWallmasters is not one shared pool of 18 destinations')
+    mm_sources = sorted(s for s in candidate['sources'] if s.startswith('MM_'))
+    oot_sources = {frozenset(row['mq']): sorted(row['ootSources']) for row in contract['mqSources']['table']}
+    return set(candidate['destinations']), mm_sources, oot_sources, contract['mqSources']['dungeons']
+
+
+def random_choices(oot_settings):
+    """The random choices a seed's recorded OoT settings make (SeedChoices.h KeyRingsRandom, TrialsRandom,
+    StartingAgeRandom), as the record keys they add to oot.resolvedChoices. A bundled Master Quest roll is recorded by
+    the Master Quest marker instead, never here."""
+    s = oot_settings
+    choices = set()
+    if s.get('gRandoSettings.StartingAge') == 2:
+        choices.add('startingAge')
+    trial, trials = s.get('gRandoSettings.GanonTrial', 1), s.get('gRandoSettings.GanonTrialCount', 6)
+    if trial == 2 or (trial == 1 and 0 < trials < 6):
+        choices.add('requiredTrials')
+    mode, count = s.get('gRandoSettings.ShuffleKeyRings', 0), s.get('gRandoSettings.ShuffleKeyRingsRandomCount', 8)
+    dungeons = ('ForestTemple', 'FireTemple', 'WaterTemple', 'SpiritTemple', 'ShadowTemple', 'BottomOfTheWell', 'GTG',
+                'GanonsCastle')
+    any_random = any(s.get('gRandoSettings.ShuffleKeyRings' + d, 0) == 1 for d in dungeons)
+    if mode == 2 and count == 8:
+        stop('a Key Ring Count of 8 needs the Gerudo Fortress rules to tell; no 0.4.14 row has one')
+    if mode == 1 or (mode == 2 and 0 < count < 8) or (mode == 3 and any_random):
+        choices.add('keyRings')
+    return choices
+
+
+def settings_facts_0414(doc, cvars):
+    """settings_facts, and Cross-Games Age as requested in MM's settings and the seed's Farore rules."""
+    problems, notes = settings_facts(doc, cvars)
+    cross = cvars.get('gRando.Options.RO_MM_CROSS_AGE', 0)
+    if doc['mm']['settings'].get('gRando.Options.RO_MM_CROSS_AGE') != cross or \
+            (doc.get('faroreRules') or {}).get('crossAge') is not bool(cross):
+        problems.append({'crossAge': {'requested': cross,
+                                      'recorded': [doc['mm']['settings'].get('gRando.Options.RO_MM_CROSS_AGE'),
+                                                   (doc.get('faroreRules') or {}).get('crossAge')]}})
+    return problems, notes
+
+
+def full_layout_facts(doc, mask, contract_facts, rows, links, entrances_text):
+    """(problems, facts) of a Full seed's layout: the id, LayoutV2's one setting, the quest context, every source of
+    both games routed once to a distinct one of the 18 shared destinations, the routes into the other game, and the
+    entrance spoiler, which must be OoTMM's text for its routes (cross-game rows included)."""
+    destinations, mm_sources, oot_sources, wm_dungeons = contract_facts
+    problems = []
+    layout = doc.get('entranceLayout') or {}
+    if layout.get('requires') != [FULL_ID]:
+        problems.append(f'the layout requires {layout.get("requires")}, not [{FULL_ID}]')
+    settings = layout.get('settings') or {}
+    if layout.get('devBuild') is not False or settings.get('erWallmasters') != 'full' or \
+            any(value not in (False, 'none') for key, value in settings.items() if key != 'erWallmasters'):
+        problems.append('not a shipping Full Wallmaster layout (erWallmasters=full, every other key at its default)')
+    if (layout.get('oot') or {}).get('mq') != {name: bool(mask >> i & 1) for i, name in enumerate(MQ_DUNGEONS)}:
+        problems.append(f'the layout\'s oot.mq {(layout.get("oot") or {}).get("mq")} is not {mq_names(mask)}')
+    routes = [[r.get('source'), r.get('destination')] for r in layout.get('overrides') or []]
+    sources = [src for src, _ in routes]
+    mq6 = frozenset(d for d in wm_dungeons if mask >> MQ_INDEX[d] & 1)
+    want_sources = sorted(oot_sources[mq6] + mm_sources)
+    if sorted(sources) != want_sources:
+        problems.append(f'the sources {sorted(sources)} are not both games\' Wallmasters of this quest context '
+                        f'{want_sources}')
+    used = [dst for _, dst in routes]
+    if len(set(used)) != len(used) or not set(used) <= destinations:
+        problems.append(f'the destinations {used} are not distinct ones of the 18 Full destinations')
+    game = lambda name: 'oot' if name.startswith('OOT_') else 'mm'
+    oot_to_mm = sorted([s, d] for s, d in routes if game(s) == 'oot' and game(d) == 'mm')
+    mm_to_oot = sorted([s, d] for s, d in routes if game(s) == 'mm' and game(d) == 'oot')
+    if any(name not in rows for pair in routes for name in pair):
+        problems.append('a route names a row LayoutV1::kRows does not have')
+    else:
+        want_text = entrance_spoiler_text(rows, links, routes)
+        if entrances_text != want_text:
+            problems.append('the entrance spoiler is not OoTMM\'s text for the layout\'s routes')
+        listed = set(entrances_text.splitlines()[1:])
+        for src, dst in oot_to_mm + mm_to_oot:
+            key, value = spoiler_line(rows, src, dst)
+            if not any(line.startswith('  ' + key) and line.endswith(' -> ' + value) for line in listed):
+                problems.append(f'the entrance spoiler does not list the cross-game route {src} -> {dst}')
+    facts = {'capability': (layout.get('requires') or [None])[0], 'routes': len(routes),
+             'ootSources': len(oot_sources[mq6]), 'mmSources': len(mm_sources),
+             'ootToMm': oot_to_mm, 'mmToOot': mm_to_oot}
+    return problems, facts, routes
+
+
+def full_seed_facts(row, seed, entrances, contract_facts, rows, links):
+    """(problems, recorded) for a Full seed's bytes against its planned row: the label, start rule, age, accessibility
+    and enemy souls, the settings the config sets (Cross-Games Age included), the scene restriction and Master Quest
+    markers, oot.resolvedChoices exactly when the recorded settings make a random choice, and the layout
+    (full_layout_facts). `recorded` is what the manifest keeps of it: result, facts, identity and, when a config value
+    shows otherwise in the seed's dumps, settingsRecordedOtherwise."""
+    problems = []
+    doc = json.loads(seed)
+    cvars = row['cvars']
+    attempt, start, fallback = start_of(row, doc['masterSeed'])
+    oot = doc['oot']
+    mask = mq_roll(doc['masterSeed'], cvars)
+    if doc.get('seed') != row['label'] or doc.get('startingGame') != start:
+        problems.append(f'label {doc.get("seed")} or start {doc.get("startingGame")} is not the request ({start})')
+    if oot['settings'].get('gRandoSettings.StartingAge') != row['ootStartingAge'] or \
+            doc['accessibility']['mode'] != row['accessibility'] or \
+            oot['settings'].get('gRandoSettings.SoulsEnemyOot') != row['souls'] or \
+            doc['mm']['settings'].get('gRando.Options.RO_SHUFFLE_ENEMY_SOULS') != row['souls']:
+        problems.append('the age, accessibility or enemy souls are not the request')
+    if not isinstance(doc.get('displaySeed'), int):
+        problems.append('a layout seed without its displaySeed')
+    if oot.get(SCENE_RESTRICTIONS_KEY) != SCENE_RESTRICTIONS:
+        problems.append(f'oot.{SCENE_RESTRICTIONS_KEY} is {oot.get(SCENE_RESTRICTIONS_KEY)!r}')
+    if oot.get(MQ_SOURCE_KEY) != MQ_SOURCE or oot.get(MQ_DUNGEONS_KEY) != [i for i in range(12) if mask >> i & 1] or \
+            oot.get(MQ_NAMES_KEY) is None:
+        problems.append(f'the Master Quest record is not the bundled roll {mq_names(mask)} of master seed '
+                        f'{doc["masterSeed"]}')
+    setting_problems, notes = settings_facts_0414(doc, cvars)
+    problems += [f'setting not applied: {p}' for p in setting_problems]
+    choices = random_choices(oot['settings'])
+    recorded = oot.get('resolvedChoices')
+    if (recorded is not None) != bool(choices) or \
+            (recorded is not None and (set(recorded) != choices | {'version'} or recorded.get('version') != 1)):
+        problems.append(f'oot.resolvedChoices {recorded!r} is not the record of the random choices {sorted(choices)}')
+    if 'startingAge' in choices and recorded and \
+            recorded.get('startingAge') != ('adult' if oot['settings'].get('gRandoSettings.SelectedStartingAge')
+                                            else 'child'):
+        problems.append('the recorded starting age is not the selected one')
+    layout_problems, facts, routes = full_layout_facts(doc, mask, contract_facts, rows, links,
+                                                       entrances.decode('utf-8'))
+    problems += layout_problems
+    placements = {'oot': oot.get('placements'), 'mm': doc['mm'].get('placements'), 'foreign': doc.get('foreign')}
+    result = {'result': {'masterSeed': doc['masterSeed'], 'attempt': attempt, 'startingGame': start,
+                         'startFallback': fallback},
+              'facts': {'capability': facts['capability'], 'sceneRestrictions': oot.get(SCENE_RESTRICTIONS_KEY),
+                        'mqDataSource': oot.get(MQ_SOURCE_KEY), 'masterQuestDungeons': mq_names(mask),
+                        'ownGameRefusal': own_game_refusal(cvars, mask),
+                        'crossAge': bool(cvars.get('gRando.Options.RO_MM_CROSS_AGE', 0)),
+                        'resolvedChoices': recorded, 'routes': facts['routes'], 'ootSources': facts['ootSources'],
+                        'mmSources': facts['mmSources']},
+              'identity': {'placementsSha256': canonical_sha256(placements), 'routes': routes,
+                           'ootToMm': facts['ootToMm'], 'mmToOot': facts['mmToOot']}}
+    if notes:
+        result['settingsRecordedOtherwise'] = notes
+    return problems, result
+
+
+def check_row_0414(row, results, contract_facts, rows, links):
+    """('seed', entry, fixture files) for a Full row that passed (or whose recorded-seed replay alone failed: kept with
+    that verdict), or ('failure', entry, {}) with its problems."""
+    rid, expect = row['id'], row['expect']
+    folder = results/rid
+    request = {key: row[key] for key in ('label', 'masterSeed', 'startingGame', 'ootStartingAge', 'accessibility',
+                                         'souls')}
+    entry = {'id': rid, 'group': row['group'], 'kind': row['kind'], 'config': f'inputs/{row["config"]}',
+             'request': request}
+    if not (folder/'result.json').is_file():
+        return 'failure', {**entry, 'problems': ['the row did not run (no result.json)']}, {}
+    result = load(folder/'result.json')
+    log = {name: (folder/name).read_text(encoding='utf-8', errors='replace').splitlines()
+           for name in ('generation.log', 'repro.log', 'playthrough.log') if (folder/name).is_file()}
+    times = {key: result.get(key) for key in ('generationSeconds', 'playthroughSeconds', 'reproSeconds')}
+    tail = [line for line in log.get('generation.log', []) if line.startswith('[comborando]')][-6:]
+    if result.get('generationExit') != 0 or not (folder/'seed.json').is_file():
+        return 'failure', {**entry, 'expected': expect, 'observed': {'result': result, 'generation': tail},
+                           'problems': ['the generation failed' + (' (the 1800 s limit)' if
+                                                                   result.get('generationExit') == 124 else '')]}, {}
+    problems = []
+    if result.get('reproExit') != 0 or result.get('reproIdentical') is not True:
+        problems.append(f'the reproduction failed: exit {result.get("reproExit")}, identical '
+                        f'{result.get("reproIdentical")}')
+    allowed = (0, 1) if row['accessibility'] == 'noLogic' else (0,)
+    replay_failure = None
+    if result.get('playthroughExit') not in allowed:
+        replay_failure = {'playthroughExit': result.get('playthroughExit'),
+                          'lines': [line for line in log.get('playthrough.log', [])
+                                    if line.startswith(('[playthrough]', '[PLAYTHROUGH]')) or 'rejected' in line][-8:]}
+
+    def optional(name):
+        return (folder/name).read_bytes() if (folder/name).is_file() else None
+
+    seed, entrances = (folder/'seed.json').read_bytes(), optional('seed.entrances.txt')
+    if seed != optional('repro.json') or entrances != optional('repro.entrances.txt'):
+        problems.append('the reproduction differs from the seed')
+    if entrances is None:
+        return 'failure', {**entry, 'expected': expect, 'problems': problems + ['a Full seed without its entrance '
+                                                                                'spoiler']}, {}
+    seed_problems, recorded_facts = full_seed_facts(row, seed, entrances, contract_facts, rows, links)
+    problems += seed_problems
+    entry.update({'seed': f'seeds/{rid}.json', 'entrances': f'seeds/{rid}.entrances.txt', **recorded_facts,
+                  'native': {'generationExit': 0, 'playthroughExit': result['playthroughExit'], 'repro': 'identical'},
+                  'seconds': times})
+    if replay_failure and not problems:
+        entry['replayFailure'] = replay_failure
+    elif replay_failure:
+        problems.append(f'the recorded-seed replay failed too: {replay_failure}')
+    if problems:
+        evidence = {key: entry.pop(key) for key in ('seed', 'entrances') if key in entry}
+        return 'failure', {**entry, 'evidence': {'seedSha256': sha256(seed), 'entrancesSha256': sha256(entrances),
+                                                 'files': sorted(evidence.values())},
+                           'expected': expect, 'problems': problems}, {}
+    return 'seed', entry, {entry['seed']: seed, entry['entrances']: entrances}
+
+
+def check_regression_0414(row, results, corpus_0412_dir, corpus_0413_dir):
+    """A regenerated 0.4.12 corpus row: (entry, problems). It must be its 0.4.13 regeneration byte for byte, and so
+    differ from its 0.4.12 fixture by the regressionAdditions alone."""
+    folder = results/row['id']
+    result = load(folder/'result.json') if (folder/'result.json').is_file() else {}
+    seed = (folder/'seed.json').read_bytes() if (folder/'seed.json').is_file() else None
+    entrances = (folder/'seed.entrances.txt').read_bytes() if (folder/'seed.entrances.txt').is_file() else None
+    same, old = row['expect']['sameAs'], row['expect']['corpusFixture']
+    vanilla = next(s for s in load(corpus_0412_dir/'manifest.json')['seeds'] if s['id'] == row['corpusSeed'])
+    corpus13 = next(s for s in load(corpus_0413_dir/'manifest.json')['seeds'] if s['id'] == same['seed'])
+    problems = []
+    if result.get('generationExit') != 0 or seed is None:
+        return {'id': row['id'], 'result': result}, ['the generation failed']
+    if sha256((corpus_0413_dir/corpus13['seed']).read_bytes()) != same['seedSha256'] or \
+            sha256((corpus_0412_dir/vanilla['seed']).read_bytes()) != old['seedSha256']:
+        problems.append('the committed fixtures are not the ones the plan names')
+    identical = sha256(seed) == same['seedSha256'] and entrances is not None and \
+        sha256(entrances) == same['entrancesSha256']
+    if not identical or result.get('identical') is not True:
+        problems.append(f'not byte-identical to {FIXTURES_0413} {same["seed"]}')
+    diffs = json_diff(json.loads((corpus_0412_dir/vanilla['seed']).read_bytes()), json.loads(seed))
+    explained = all(kind == 'added' and tuple(path) in REGRESSION_ADDITIONS and REGRESSION_ADDITIONS[tuple(path)] == new
+                    for path, kind, _, new in diffs) and {tuple(p) for p, _, _, _ in diffs} == set(REGRESSION_ADDITIONS)
+    if not explained:
+        problems.append('differs from the 0.4.12 fixture beyond the regressionAdditions: ' +
+                        json.dumps([['.'.join(map(str, p)), k] for p, k, _, _ in diffs])[:2000])
+    if entrances is not None and sha256(entrances) != old['entrancesSha256']:
+        problems.append('the entrance spoiler differs from the 0.4.12 fixture\'s')
+    entry = {'id': row['id'], 'corpus': FIXTURES, 'corpusSeed': row['corpusSeed'],
+             'commandLine': 'the 0.4.12 corpus row\'s own (--er erWallmasters=ownGame --er-capability '
+                            f'{CAPABILITY})', 'seedSha256': sha256(seed),
+             'entrancesSha256': sha256(entrances) if entrances is not None else None,
+             'sameAs': {'corpus': FIXTURES_0413, 'seed': same['seed']},
+             'differencesFromCorpusFixture': [{'path': '.'.join(map(str, p)), 'kind': k, 'value': v}
+                                              for p, k, _, v in diffs],
+             'generationSeconds': result.get('generationSeconds')}
+    return entry, problems
+
+
+def cmd_manifest_0414(args):
+    bundle, results, fixtures = args.bundle.resolve(), args.results.resolve(), args.out.resolve()
+    repo = args.repo.resolve()
+    plan = load(bundle/'plan.json')
+    if plan.get('schema') != PLAN_SCHEMA_0414:
+        stop(f'{bundle/"plan.json"} is not a 0.4.14 corpus plan')
+    if fixtures.exists() and any(fixtures.iterdir()):
+        stop(f'{fixtures} is not empty')
+    corpus_0412, corpus_0413 = args.corpus_0412.resolve(), args.corpus_0413.resolve()
+    if plan['corpus0412']['manifestSha256'] != sha256((corpus_0412/'manifest.json').read_bytes()):
+        stop(f'{corpus_0412} is not the 0.4.12 corpus the plan regenerates rows of')
+    verify_results(results)
+    execution = verify_execution_bindings(bundle, results)
+    rows, links = layout_rows((repo/LAYOUT_SOURCE).read_text(encoding='utf-8'))
+    contract_facts = full_contract(load(repo/CONTRACT_SOURCE))
+    acknowledged = one_line_map(args.recorded_failures, 'row id') if args.recorded_failures else {}
+    host_only = one_line_map(args.host_only, 'host-only file')
+    if not all(host_only_path_0414(path) for path in host_only):
+        stop(f'{args.host_only}: each host-only file is a host test or tool, .gitattributes or an earlier corpus\'s '
+             'manifest')
+    checked = [(row, *check_row_0414(row, results, contract_facts, rows, links)) for row in plan['rows']]
+    failures = [(row, entry) for row, kind, entry, _ in checked if kind == 'failure']
+    replays = [(row, entry) for row, kind, entry, _ in checked if kind == 'seed' and 'replayFailure' in entry]
+    regression = [(row, *check_regression_0414(row, results, corpus_0412, corpus_0413)) for row in plan['regression']]
+    for row, entry, problems in regression:
+        if problems:
+            print(json.dumps({**entry, 'problems': problems}, indent=2)[:4000])
+    if any(problems for _, _, problems in regression):
+        stop(f'regression rows differ: {[row["id"] for row, _, problems in regression if problems]}. Nothing was '
+             'written: stop and report.')
+    unacknowledged = [entry for row, entry in failures + replays if row['id'] not in acknowledged]
+    stale = sorted(set(acknowledged) - {row['id'] for row, _ in failures + replays})
+    for entry in unacknowledged:
+        print(json.dumps(entry, indent=2)[:6000])
+    if unacknowledged or stale:
+        stop(f'rows failed: {[e["id"] for e in unacknowledged]}; acknowledged rows that did not fail: {stale}. '
+             'Nothing was written.')
+    for row, entry in replays:
+        entry['recordedFailure'] = acknowledged[row['id']]
+    seeds = [entry for _, kind, entry, _ in checked if kind == 'seed']
+    recorded = [{**entry, 'note': acknowledged[row['id']]} for row, entry in failures]
+    for _, _, _, outputs in checked:
+        for name, data in outputs.items():
+            (fixtures/name).parent.mkdir(parents=True, exist_ok=True)
+            (fixtures/name).write_bytes(data)
+    (fixtures/'inputs').mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(bundle/'plan.json', fixtures/'inputs/plan.json')
+    for name in sorted({row['config'] for row in plan['rows'] + plan['regression']}):
+        shutil.copyfile(bundle/'configs'/name, fixtures/'inputs'/name)
+    execution_files = []
+    for record in execution:
+        name = f'inputs/execution/{record["row"]}.json'
+        write_json(fixtures/name, record)
+        execution_files.append({'row': record['row'], 'path': name})
+    manifest = {'schema': MANIFEST_SCHEMA_0414, 'capabilities': [FULL_ID], 'release': plan['release'],
+                'plan': 'inputs/plan.json', 'corpus0412': plan['corpus0412'], 'seeds': seeds, 'failures': recorded,
+                'regression': [entry for _, entry, _ in regression],
+                'executionBindings': execution,
+                'executionEvidenceFiles': execution_files,
+                'hostOnlyFiles': [{'path': path, 'reason': host_only[path]} for path in sorted(host_only)]}
+    refresh_files(fixtures, manifest)
+    groups = {}
+    for entry in seeds + recorded:
+        status = 'failure' if entry in recorded else 'replay failure' if 'recordedFailure' in entry else 'pass'
+        groups.setdefault(entry['group'], {}).setdefault(status, 0)
+        groups[entry['group']][status] += 1
+    print(f'Wrote {len(seeds)} Full seeds ({len(replays)} with a recorded replay failure) and {len(recorded)} recorded '
+          f'failures to {fixtures}: {json.dumps(groups, sort_keys=True)}; {len(regression)} regression rows identical')
+    for entry in seeds:
+        f = entry['facts']
+        print(f'  {entry["id"]:46} attempt {entry["result"]["attempt"]} start {entry["result"]["startingGame"]} '
+              f'routes {f["routes"]} (OoT->MM {len(entry["identity"]["ootToMm"])}, MM->OoT '
+              f'{len(entry["identity"]["mmToOot"])}) MQ {f["masterQuestDungeons"]} choices {f["resolvedChoices"]} '
+              f'seconds {entry["seconds"]}')
+
+
+# ---- 0.4.14 corpus: provenance -----------------------------------------------------------------------------------------
+def host_only_path_0414(path):
+    """Files a 0.4.14 fixture commit may change besides its fixtures: host tests and tools (never another fixture),
+    .gitattributes lines for this directory, and an earlier corpus's manifest, whose only change is this release
+    candidate's later-release record (earlier_manifest_change)."""
+    return path == '.gitattributes' or path in EARLIER_MANIFESTS_0414 or (
+        path.startswith(('ComboAndroid/tests/', 'ComboAndroid/tools/')) and
+        not path.startswith('ComboAndroid/tests/fixtures/'))
+
+
+def earlier_manifest_change(old, new, rc):
+    """None when `new` is `old` with one more later-release record, of `rc` and complete, and (for the 0.4.13 corpus)
+    its host-only files listed again for that release candidate; otherwise what else changed."""
+    if set(old) - {'laterReleases'} != set(new) - {'laterReleases'}:
+        return 'its keys changed'
+    allowed = {'laterReleases', 'hostOnlyFiles'} if old.get('schema') == MANIFEST_SCHEMA_0413 else {'laterReleases'}
+    changed = sorted(key for key in set(old) | set(new) if key not in allowed and old.get(key) != new.get(key))
+    if changed:
+        return f'it changes {changed}'
+    before, after = old.get('laterReleases') or [], new.get('laterReleases') or []
+    if after[:len(before)] != before or len(after) != len(before) + 1:
+        return 'it does not add exactly one later-release record after the ones it had'
+    record = after[-1]
+    done = record.get('status') == 'checked' if old.get('schema') == MANIFEST_SCHEMA_0413 else \
+        (record.get('sample') or {}).get('status') == 'identical'
+    if record.get('sourceCommit') != rc or not done:
+        return f'its new record is of {record.get("sourceCommit")}, or still pending, not a complete record of {rc}'
+    return None
+
+
+def provenance_problems_0414(manifest, rc, changed, show):
+    """Problems of a 0.4.14 fixture commit that changes the files `changed` since the release candidate `rc` (the
+    corpus's own or its last later one): every other file outside its directory is one of its manifest's host-only
+    files, each with a one-line reason; .gitattributes changes only lines for this directory; an earlier corpus's
+    manifest only adds this release candidate's record. show(revision, path) returns a file's text, or None."""
+    problems = []
+    reasons = {}
+    for entry in manifest.get('hostOnlyFiles') or []:
+        path, reason = entry.get('path'), entry.get('reason')
+        if not isinstance(path, str) or path in reasons or not host_only_path_0414(path) or not one_line(reason):
+            problems.append(f'bad host-only entry {entry!r}: a host test or tool, .gitattributes or an earlier '
+                            'corpus\'s manifest, with a one-line reason')
+            continue
+        reasons[path] = reason
+    fixtures = [p for p in changed if p.startswith(FIXTURES_0414 + '/')]
+    outside = sorted(p for p in changed if not p.startswith(FIXTURES_0414 + '/'))
+    missing, extra = sorted(set(outside) - set(reasons)), sorted(set(reasons) - set(outside))
+    if not fixtures or missing or extra:
+        problems.append(f'the fixture commit must change {FIXTURES_0414}/ and exactly the host-only files its manifest '
+                        f'lists: not listed {missing}, listed but unchanged {extra}')
+    if '.gitattributes' in reasons:
+        old, new = (show(rc, '.gitattributes') or '').splitlines(), (show('fixture', '.gitattributes') or '').splitlines()
+        added = [line for line in new if line not in old]
+        if any(line not in new for line in old) or any(FIXTURES_0414 not in line and not line.startswith('#')
+                                                       for line in added):
+            problems.append(f'.gitattributes changes more than lines for {FIXTURES_0414}: {added}')
+    for path in EARLIER_MANIFESTS_0414:
+        if path in reasons:
+            old, new = show(rc, path), show('fixture', path)
+            why = earlier_manifest_change(json.loads(old), json.loads(new), rc) if old and new else 'it is missing'
+            if why:
+                problems.append(f'{path}: {why}')
+    return problems, reasons
+
+
+def cmd_provenance_0414(args):
+    rc = git(args.repo, 'rev-parse', '--verify', args.rc + '^{commit}')
+    fixture = git(args.repo, 'rev-parse', '--verify', args.fixtures_commit + '^{commit}')
+    if not descends(args.repo, rc, fixture):
+        stop(f'{fixture} does not descend from the release candidate {rc}')
+    manifest = json.loads(git(args.repo, 'show', f'{fixture}:{FIXTURES_0414}/manifest.json'))
+    if manifest.get('schema') != MANIFEST_SCHEMA_0414:
+        stop(f'the manifest at {fixture[:12]} is not a 0.4.14 corpus manifest')
+    if manifest['release']['sourceCommit'] != rc:
+        stop(f'the manifest at {fixture[:12]} names {manifest["release"]["sourceCommit"]}, not {rc}')
+    changed = git(args.repo, 'diff', '--name-only', rc, fixture).splitlines()
+
+    def show(revision, path):
+        run = subprocess.run(['git', '-C', str(args.repo), 'show', f'{fixture if revision == "fixture" else revision}:'
+                              f'{path}'], capture_output=True, text=True, encoding='utf-8')
+        return run.stdout if run.returncode == 0 else None
+    problems, reasons = provenance_problems_0414(manifest, rc, changed, show)
+    if problems:
+        stop('; '.join(problems))
+    print(git(args.repo, 'log', '--oneline', f'{rc}..{fixture}'))
+    for path in sorted(reasons):
+        print(f'  host-only {path}: {reasons[path]}')
+    fixtures = [p for p in changed if p.startswith(FIXTURES_0414 + '/')]
+    print(f'PASS: {fixture[:12]} differs from the release candidate {rc[:12]} in {len(fixtures)} files under '
+          f'{FIXTURES_0414}/ and {len(reasons)} host-only files, each listed in its manifest with a reason.')
 
 
 def main():
@@ -2183,6 +3219,8 @@ def main():
     plan_rc.add_argument('--groups', default=SAMPLE_GROUPS_0413, help='the groups its sample draws from (abcde)')
     plan_rc.add_argument('--out', type=Path, required=True, help='new bundle directory')
     plan_rc.add_argument('--repo', type=Path, default=Path('.'))
+    plan_rc.add_argument('--legacy-unbound-replan', action='store_true',
+                         help='reproduce only an exact preserved 0.4.14 RC1 bundle; modern plans bind execution')
     later13 = commands.add_parser('later-rc-0413', help='record a later 0.4.13 release candidate (pending its run)')
     later13.add_argument('--fixtures', type=Path, default=Path(FIXTURES_0413))
     later13.add_argument('--bundle', type=Path, required=True, help='its bundle from plan-rc-0413')
@@ -2201,13 +3239,44 @@ def main():
                           help='JSON object: each file the fixture commit changes outside the fixtures since this '
                                'release candidate -> why it is host-only, in one line (replaces hostOnlyFiles)')
     sample13.add_argument('--repo', type=Path, default=Path('.'))
+    plan14 = commands.add_parser('plan-0414', help='stage the 0.4.14 Full Wallmaster device bundle and plan.json')
+    plan14.add_argument('--apk', type=Path, required=True, help='the signed SHIPPING release candidate APK')
+    plan14.add_argument('--comborando', type=Path, required=True, help='comborando built in the same build tree')
+    plan14.add_argument('--source-commit', required=True, help='the release candidate\'s full source commit')
+    plan14.add_argument('--version-name', required=True)
+    plan14.add_argument('--version-code', type=int, required=True)
+    plan14.add_argument('--corpus-0412', type=Path, default=Path(FIXTURES),
+                        help='the 0.4.12 fixtures whose rows the regression regenerates')
+    plan14.add_argument('--corpus-0413', type=Path, default=Path(FIXTURES_0413),
+                        help='the 0.4.13 fixtures whose e- rows those regenerations must equal')
+    plan14.add_argument('--out', type=Path, required=True, help='new bundle directory')
+    plan14.add_argument('--legacy-unbound-replan', action='store_true',
+                        help='reproduce only an exact preserved 0.4.14 RC1 bundle; modern plans bind execution')
+    manifest14 = commands.add_parser('manifest-0414', help='write the 0.4.14 fixture directory from pulled results')
+    manifest14.add_argument('--bundle', type=Path, required=True, help='the planned bundle (plan.json, configs/)')
+    manifest14.add_argument('--results', type=Path, required=True, help='results/ pulled from the device')
+    manifest14.add_argument('--out', type=Path, required=True, help=f'the fixture directory, {FIXTURES_0414}')
+    manifest14.add_argument('--corpus-0412', type=Path, default=Path(FIXTURES))
+    manifest14.add_argument('--corpus-0413', type=Path, default=Path(FIXTURES_0413))
+    manifest14.add_argument('--repo', type=Path, default=Path('.'),
+                            help=f'the checkout whose {LAYOUT_SOURCE} and {CONTRACT_SOURCE} the checks read')
+    manifest14.add_argument('--host-only', type=Path, required=True,
+                            help='JSON object: each file the fixture commit changes outside the fixtures -> why it is '
+                                 'host-only, in one line')
+    manifest14.add_argument('--recorded-failures', type=Path,
+                            help='JSON object: each failed row id -> a one-line note; the manifest records them')
+    provenance14 = commands.add_parser('provenance-0414', help='check the 0.4.14 fixture commit against the RC')
+    provenance14.add_argument('--rc', required=True, help='the release candidate\'s source commit or tag')
+    provenance14.add_argument('--fixtures-commit', default='HEAD')
+    provenance14.add_argument('--repo', type=Path, default=Path('.'))
     args = parser.parse_args()
     if args.command == 'plan' and bool(args.old_apk) != bool(args.old_comborando):
         parser.error('--old-apk and --old-comborando go together')
     run = {'plan': cmd_plan, 'manifest': cmd_manifest, 'add-save': cmd_add_save, 'provenance': cmd_provenance,
            'later-rc': cmd_later_rc, 'sample': cmd_sample, 'plan-0413': cmd_plan_0413,
            'manifest-0413': cmd_manifest_0413, 'provenance-0413': cmd_provenance_0413,
-           'plan-rc-0413': cmd_plan_rc_0413, 'later-rc-0413': cmd_later_rc_0413, 'sample-0413': cmd_sample_0413}
+           'plan-rc-0413': cmd_plan_rc_0413, 'later-rc-0413': cmd_later_rc_0413, 'sample-0413': cmd_sample_0413,
+           'plan-0414': cmd_plan_0414, 'manifest-0414': cmd_manifest_0414, 'provenance-0414': cmd_provenance_0414}
     run[args.command](args)
 
 

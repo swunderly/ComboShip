@@ -1021,6 +1021,12 @@ set_tests_properties(entrance_release_corpus_and_file3_saves PROPERTIES SKIP_REG
 # Quest seeds and regenerated 0.4.12 rows), reported as skipped until it is committed.
 combo_json_harness_test(entrance_release_corpus_0413 entrance_corpus_0413_tests.py)
 set_tests_properties(entrance_release_corpus_0413 PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+# The 0.4.14 Full Wallmaster corpus under fixtures/wallmasters-0414/ (wallmasters-full-v1 seeds with routes between the
+# games and their entrance spoiler lines, Master Quest dungeons with the Spirit Temple and Bottom of the Well context
+# Own Game refuses, cross-game songs, a starting warp song, Cross-Games Age, No Logic, and 0.4.12 rows regenerated),
+# reported as skipped until it is committed.
+combo_json_harness_test(entrance_release_corpus_0414 entrance_corpus_0414_tests.py)
+set_tests_properties(entrance_release_corpus_0414 PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 combo_json_harness_test(headless_er_args_and_entrance_dev_switch headless_er_args_tests.py)
 combo_json_harness_test(headless_entrance_saved_settings_and_recorded_replay headless_entrance_reproduction_tests.py)
 
