@@ -2837,8 +2837,8 @@ tricks. With the seed's Starting Age set to Child its replay passes Pass 1; set 
   seed has OoTMM's bundled MQ data or none, so MQ dungeons are no choice in either corpus):
   - 0.4.13 corpus (`wallmasters-0413`): `a07-songs-oot-randomage-ageless` (Random starting age) and
     `d06-allsanity-oot` (a Key Ring Selection with every dungeon Random, and a Random starting age). Their age and
-    rings now come from streams of their own, so they can differ from RC1's, and each gains `oot.resolvedChoices`: both
-    are to be regenerated with RC2 (`ComboAndroid/tests/fixtures/wallmasters-0413-RC2-NOTE.txt`). The other 41 seeds,
+    rings now come from streams of their own, so they can differ from RC1's, and each gains `oot.resolvedChoices`: RC2
+    (`70930d69`) regenerated both; the committed seeds are RC2's (manifest `laterReleases`). The other 41 seeds,
     the six regenerated 0.4.12 rows (`e-*`) among them, have a fixed age and no random trials or key rings.
   - 0.4.12 corpus (`wallmasters-vanilla-v1`): the 20 `oot-randomage-everyCheck-souls0-*` rows (config
     `comboship-everyCheck-souls0-age2.json`, Random starting age). `oot-randomage-everyCheck-souls0-00` is in the
