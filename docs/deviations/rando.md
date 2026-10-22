@@ -2660,6 +2660,65 @@ Public ones.
   removed with the flip to Public). A capability set without the songs-v2 id, which no build has now, refuses a
   starting warp song in generation with developer text only.
 
+## Full Wallmaster Shuffle (2026-10-22)
+
+Planned for 0.4.14 (Wallmaster limits design, Stage 3). OoTMM v32.3's third Wallmaster value, Full
+(`packages/core/src/settings/data.ts:3545-3555`, no description of its own), makes one WALLMASTERS pool with
+`ownGame: false` (`packages/logic/src/solver/entrances.ts:657-669`): every Wallmaster of both games, 13 with normal
+dungeons and 11 to 16 with Master Quest ones, can lead to any of 18 dungeon entrances, the 11 OoT ones of Own Game
+and MM's seven (`dungeon` and `dungeon-sh`, all `no-sot`, so no Song of Time gate). A capture sets the entrance
+override (`packages/generator/src/oot/actors/En/En_Wallmas.c:48-55`, `mm/actors/En/En_Wallmas.c:26-33`), and a
+foreign entrance switches games (`oot/play/play.c:738-756`, `:620-625`, `mm/play/play.c:893-912`), saving first
+(`common/switch.c:75-85`). The pathfinder keeps Link's age on every exit and ORs MM's day 1 on an OoT-to-MM one
+(`packages/logic/src/pathfind/pathfind.ts:596-599`); MM's `is_child` is `!setting(crossAge) || age(child)`
+(`data/macros/macros_mm.yml:59-60`). `tools/ootmm/m1-contract.json` (`fullWallmasters`) records the pool, its 18
+shared destinations, its source counts per Master Quest context and these sites, from the pinned OoTMM run.
+
+- **The id and its rules.** `wallmasters-full-v1` (`Capabilities.h`) is the only id that admits a value `full`, and
+  only for `erWallmasters` (a `static_assert`). Its rules are a new frozen rule set, `LayoutV2` (`EntranceLayout.h`),
+  which covers that one key; `LayoutV1` stays as it was and still refuses Full. `Validate` returns the routes into
+  the other game apart (`ootToMm`, `mmToOot`), and only the Full id may install them. The seed envelope keeps the v1
+  schema string, so 0.4.12 and 0.4.13 RC1 refuse a Full seed by its unknown id ("requires unknown capability
+  wallmasters-full-v1") before they read its routes (`entrance_full_seed_guard_tests.py`). Generation picks the
+  Full id for every Full seed, in either quest context; None and Own Game seeds keep the older ids and are byte for
+  byte the seeds 0.4.13 makes. The seed guard lets the Full id take any song facts ("Play warp songs across games"
+  in logic, a starting warp song) and still refuses a starting Song of Soaring and song destination shuffle.
+- **Logic across the games.** Each oracle search records, instead of an edge, the dungeons of the other game that
+  its reached Wallmaster sources lead to, per age (`CrossWallmasters.h`): OoT at each age the source's edge holds
+  there (`fill.cpp`), MM at the age it searches (`ComboEntrancesMM.cpp`). The cross-world fixpoint
+  (`CrossWorldRando.h` `QuerySongWorlds`, `QueryAgeSongWorlds`) hands them to the other game as arrivals, through
+  two new `OracleFns` exports. OoT roots an arrival at Root like a warp-song arrival, with Root's day and night. MM
+  roots it at its start time, the port's day 1 (its owned slices under Clock Shuffle), which is OoTMM's day-1 grant.
+  An arrival also opens MM, as the Mask Shop portal does. Without Cross-Games Age, MM's one search lands its routes
+  in OoT at every age that is in MM; with it, MM searches each entry age and a route lands at the age it was reached
+  at. Each new state bit can be added once, so the pass bounds grow by the bits (29 and 36). Without a route into
+  the other game no bit is set, and every earlier seed queries the oracles pass for pass as before
+  (`cross_game_wallmaster_fixpoint_tests.cpp`). Candidate worlds carry the foreign edges as the installed layout
+  does (`OotUnifiedLayout.h`, `MmUnifiedLayout.h`).
+- **Temple check (fails closed).** Full's routes only add edges, so a candidate passes the opposite-age Temple
+  check whenever the world without Wallmaster routes does, and the monotone shortcut now accepts the Full pool:
+  that base world is certified once and every candidate skips the check (`UnifiedBridge.h`, `Shuffle.h`). When the
+  base world fails, OoTMM's `validateAgeTemple` (`entrances.ts:265-287`) would probe each candidate, but this
+  port's probe cannot search MM yet (limits design, Stage 5). So a candidate with routes into the other game stops
+  generation with `TempleProbeUnsupported` ("Temple probe: a cross-game Wallmaster candidate needs a Temple check
+  through MM (deferred)"), and nothing stays installed. The player sees that developer text, not a plain
+  sentence. Full alongside another entrance pool is refused the same way.
+- **Master Quest.** Full's 18 destinations hold its at most 16 sources, so it has no capacity refusal
+  (`capacityShortfalls` is empty in the contract). `MqWallmasterShortfallForced` and the menu's sentence are Own
+  Game's alone; each menu choice shows the sentence for its own value (`ComboRandomizerProfiles.cpp`).
+- **Captures.** A route into the other game leaves through the port's cross-game entrance flight
+  (`CrossEntrance.inc.h`). The capture ends the dungeon record as an own-game capture does and queues the departure;
+  the native respawn then runs as the transition, and at its end the flight checks the launcher's preflight again
+  (`ComboShip.cpp` `Combo_PreflightEntranceDeparture`), saves, and arms the arrival in the other game. A departure
+  refused when it is queued, or at the end of the transition, keeps the native respawn to the dungeon's entrance,
+  and each refusal is logged (owner decision D7). The flight carries Link's age under the seed's Cross-Games Age
+  rules, as the Farore flight does.
+- **Spoiler.** `.entrances.txt` and the spoiler log list the routes into the other game with the others
+  (`EntranceSpoiler.h`; OoTMM `packages/generator/lib/combo/spoiler.ts:237-272`).
+- **Port limits.** The live check tracker does not follow routes into the other game; it can show a check as out of
+  reach that logic reaches that way. In co-op, a capture moves only the player it grabs, as the Mask Shop door
+  does. The menu offers Full only in a build that has the id.
+
 ## Beginner preset: Prelude of Light as a starting item (since 2026-10-13)
 
 Since the community presets follow OoTMM v32.3 (`ComboPresets.h`), the port's Beginner preset starts with Prelude of
