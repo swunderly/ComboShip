@@ -272,6 +272,30 @@ int main() {
     Profiles::Store shippingReread(legacy(false), shipping);
     shippingReread.restore(shippingStore.json());
     assert(shippingReread.json() == shippingStore.json());
+    // A seed made in the app also records the draft it was requested with (comboProfile): a plain settings document,
+    // fileType ComboShipRandomizer version 1. Merging it keeps the layout's file type, so the import, a copy of its
+    // settings, a file without a draft and the pending-seed migration all store a valid setup (0.4.13 RC2 emulator
+    // finding; plando_app_seed_import_tests.py runs the whole Plandomizer path).
+    auto appSeed = vanillaSeed;
+    appSeed["comboProfile"] = {{"version", 1}, {"file", 2}, {"revision", 1},
+                               {"settings", {{"fileType", kComboSeedFileType}, {"version", 1}, {"seed", "app"},
+                                             {"setupCVars", {{"gCombo.Rando.Goal", 0}}}}}};
+    Profiles::Store appStore(legacy(false), shipping);
+    appStore.importSeed(1, appSeed, true);
+    assert(appStore.pendingSeed(1) == appSeed);
+    const auto appDraft = appStore.draft(1);
+    assert(appDraft.at("fileType") == kEntranceSeedFileType && appDraft.at("version") == kEntranceSeedVersion);
+    assert(appDraft.at("entranceLayout") == vanillaRouteless && appDraft.at("seed") == "app");
+    appStore.copySaved(1, 0, appSeed);
+    assert(appStore.draft(0) == appDraft && Profiles::Store(legacy(false), shipping).draft(2, appSeed) == appDraft);
+    Profiles::Store appMigrated(legacy(false), shipping);
+    appMigrated.migrateLegacyPending(appSeed);
+    Profiles::Store(legacy(false), shipping).restore(appMigrated.json());
+    // Without a layout the requested file type and version stay.
+    auto plainApp = legacy(false);
+    plainApp["comboProfile"] = appSeed["comboProfile"];
+    const auto plainSetup = Profiles::SetupForSeed(plainApp, shipping);
+    assert(plainSetup.at("fileType") == kComboSeedFileType && plainSetup.at("version") == 1);
     assert(Profiles::SeedFromContainer({{"combo", {{"rando", vanillaSeed.dump()}}}}, shipping) == vanillaSeed);
     auto devVanilla = vanilla;
     devVanilla.devBuild = true;

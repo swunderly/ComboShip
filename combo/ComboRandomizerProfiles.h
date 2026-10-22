@@ -76,6 +76,15 @@ inline Json SetupForSeed(const Json& seed, const Entrances::CapabilitySet& caps)
             !profile["settings"].is_object())
             throw std::invalid_argument("Malformed requested seed settings");
         MergeSettings(setup, SettingsDocument(profile["settings"], caps));
+        // The requested settings are the file's draft, a plain settings document (fileType ComboShipRandomizer
+        // version 1, its entrance settings in setupCVars: NormalizeEntranceDraft), so the merge gave the seed's layout
+        // the plain file type. The file type and version follow the content, as StampComboSeedFormat makes them: a
+        // layout needs its own (RequireSupportedLayout), or setDraft and restore refuse this setup (0.4.13 RC2
+        // emulator finding).
+        if (setup.contains("entranceLayout")) {
+            setup["fileType"] = kEntranceSeedFileType;
+            setup["version"] = kEntranceSeedVersion;
+        }
     }
     // A requested settings profile can never reinterpret an existing seed's
     // reward catalog. Only a newly generated seed selects its new catalog.
@@ -83,6 +92,10 @@ inline Json SetupForSeed(const Json& seed, const Entrances::CapabilitySet& caps)
     setup["oot"][kKokiriGrassCatalogRevision] = catalog.grass;
     // Likewise its Master Quest data source (combo/mq/MqSeedMarker.h); a Legacy seed's setup has none.
     ComboMq::WriteMqDataSource(setup["oot"], mqSource);
+    // A draft, a generation input and a copy are made from this setup and checked again only when stored; an
+    // import with no draft (migrateLegacyPending) stores it unchecked, and the next restore would then refuse the
+    // whole store. Refuse a setup that is not a settings document here instead.
+    RequireSupportedSettingsCapabilities(setup, caps);
     return setup;
 }
 struct Attempt {
