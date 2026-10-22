@@ -2678,11 +2678,12 @@ shared destinations, its source counts per Master Quest context and these sites,
   only for `erWallmasters` (a `static_assert`). Its rules are a new frozen rule set, `LayoutV2` (`EntranceLayout.h`),
   which covers that one key; `LayoutV1` stays as it was and still refuses Full. `Validate` returns the routes into
   the other game apart (`ootToMm`, `mmToOot`), and only the Full id may install them. The seed envelope keeps the v1
-  schema string, so 0.4.12 and 0.4.13 RC1 refuse a Full seed by its unknown id ("requires unknown capability
-  wallmasters-full-v1") before they read its routes (`entrance_full_seed_guard_tests.py`). Generation picks the
-  Full id for every Full seed, in either quest context; None and Own Game seeds keep the older ids and are byte for
-  byte the seeds 0.4.13 makes. The seed guard lets the Full id take any song facts ("Play warp songs across games"
-  in logic, a starting warp song) and still refuses a starting Song of Soaring and song destination shuffle.
+  schema string, so 0.4.12, 0.4.13 RC1 and the 0.4.13 release refuse a Full seed by its unknown id ("requires
+  unknown capability wallmasters-full-v1") before they read its routes (`entrance_full_seed_guard_tests.py`).
+  Generation picks the Full id for every Full seed, in either quest context; None and Own Game seeds keep the older
+  ids and are byte for byte the seeds 0.4.13 makes. The seed guard lets the Full id take any song facts ("Play warp
+  songs across games" in logic, a starting warp song) and still refuses a starting Song of Soaring and song
+  destination shuffle.
 - **Logic across the games.** Each oracle search records, instead of an edge, the dungeons of the other game that
   its reached Wallmaster sources lead to, per age (`CrossWallmasters.h`): OoT at each age the source's edge holds
   there (`fill.cpp`), MM at the age it searches (`ComboEntrancesMM.cpp`). The cross-world fixpoint

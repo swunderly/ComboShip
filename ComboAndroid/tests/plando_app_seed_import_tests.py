@@ -14,8 +14,10 @@ and ProfilePrepareSave (combo/ComboRandomizerProfileNative.inc) and the real pro
 0.4.13 release corpus (fixtures/wallmasters-0413: each Wallmaster capability id, Master Quest dungeons, recorded
 settings choices, Allsanity, No Logic) and three 0.4.12 rows (fixtures/wallmasters-vanilla-v1, among them the co-op
 check's seed), each given the version and comboProfile the app writes, and over a composite of the emulator's seed A
-(Allsanity settings, a Wallmaster layout, Master Quest dungeons, a recorded starting age and key rings). Only the native
-seed apply, the module exports and the file-select queries are stubbed. Each seed must save for File 2 byte for byte as
+(Allsanity settings, a Wallmaster layout, Master Quest dungeons, a recorded starting age and key rings). A Full
+Wallmaster seed of seed A's shape (its layout made Full, with routes into the other game both ways) joins them in a
+build that ships wallmasters-full-v1; a build that stages the id below Public refuses it, as 0.4.13 does. Only the
+native seed apply, the module exports and the file-select queries are stubbed. Each seed must save for File 2 byte for byte as
 the app wrote it, become File 2's pending seed without touching File 3's, prepare File 2's save, survive a restart of
 the profile store and leave File 2 a next-seed draft the settings menu reads. A layout seed requested from a copied
 Wallmaster file's raw draft, copying a saved seed's settings, a file with no draft and the one-time pending-seed
@@ -81,6 +83,8 @@ support = r'''
 #include "rando/PlandoSeed.h"
 #include "rando/ComboSeedFormat.h"
 #include "rando/entrances/EntranceProfile.h"
+#include "rando/entrances/OotWallmasterArrivalNames.h"
+#include "rando/entrances/Wallmasters.h"
 #include "ComboRandomizerProfileRepository.h"
 namespace fs = std::filesystem;
 namespace CE = ComboRando::Entrances;
@@ -439,11 +443,50 @@ int Run(int argc, char** argv) {
         seeds.emplace_back("seed-a-shape",
                            AppSeed(composite, RequestedSettings(composite, input, allsanity06, allsanity06)));
     }
+    // A Full Wallmaster seed (wallmasters-full-v1) of seed A's shape: the same seed with its layout made Full, in
+    // c04's Master Quest context, its MM Wallmasters sent to OoT dungeons and its OoT ones to MM dungeons and the rest
+    // of OoT's (entrance_full_seed_guard_tests.py). The import path reads neither its routes nor its record.
+    const bool fullShipped = kCaps.Active(CE::kFullWallmasterCapability);
+    {
+        const auto allsanity06 = Load(corpus / "seeds/d06-allsanity-oot.json");
+        auto full = Load(corpus / "seeds/c04-mq-randomnumber-oot-child.json");
+        auto layout = CE::DecodeEntranceLayout(full.at("entranceLayout"));
+        layout.settings.erWallmasters = CE::Mode::Full;
+        layout.required = {std::string(CE::kFullWallmasterCapability)};
+        std::vector<std::string_view> destinations(CE::kOotWallmasterArrivalRows.begin(),
+                                                   CE::kOotWallmasterArrivalRows.end());
+        destinations.insert(destinations.begin() + 4, CE::kMmBaseWallmasterDestinations.begin(),
+                            CE::kMmBaseWallmasterDestinations.end());
+        CE::Overrides routes;
+        size_t next = 0;
+        for (const auto src : CE::LayoutV2::MakePools(layout.settings, layout.ootMq)[0].src)
+            routes[src] = destinations[next++];
+        layout.overrides = routes;
+        const auto validated = CE::Validate(layout, CE::CapabilitySet::AtLeast(CE::Stage::Hidden));
+        assert(!validated.ootToMm.empty() && !validated.mmToOot.empty());
+        full["entranceLayout"] = CE::EncodeEntranceLayout(layout);
+        full["oot"]["resolvedChoices"] = allsanity06.at("oot").at("resolvedChoices");
+        const auto input = Load(corpus / "inputs/comboship-d06-allsanity-oot.json");
+        if (fullShipped) {
+            layoutSeeds.push_back(full);
+            seeds.emplace_back("full-wallmasters-shape",
+                               AppSeed(full, RequestedSettings(full, input, allsanity06, allsanity06)));
+        } else {
+            bool refused = false;
+            try {
+                ComboRando::RequireSupportedSeedDocument(full, kCaps);
+            } catch (const ComboRando::UnsupportedComboSeedFormat&) { refused = true; }
+            assert(refused);
+        }
+    }
     // The shapes named in the finding: Wallmaster (each id), Master Quest, recorded choices, Allsanity and seed A.
     for (const char* id : {"e-oot-child-everyCheck-souls0-00", "0412-oot-child-everyCheck-souls0-00",
                            "c01-mq12-oot-child", "a01-songs-oot-child", "b01-beginner-oot-child-1",
                            "a07-songs-oot-randomage-ageless", "d06-allsanity-oot", "seed-a-shape"})
         assert(std::count_if(seeds.begin(), seeds.end(), [&](const auto& seed) { return seed.first == id; }) == 1);
+    assert(std::count_if(seeds.begin(), seeds.end(), [](const auto& seed) {
+               return seed.first == "full-wallmasters-shape";
+           }) == (fullShipped ? 1 : 0));
     fs::create_directories(root);
     // Short case directories: Windows paths stay under MAX_PATH below a deep ctest build directory.
     for (size_t i = 0; i < seeds.size(); ++i)
@@ -452,6 +495,8 @@ int Run(int argc, char** argv) {
     RefusalCases(root / "r", seeds.front().second);
     std::printf("Plandomizer Save imported %zu app-made seeds into File 2 exactly as made (%zu with a layout, also "
                 "from a copied draft)\n", seeds.size(), layoutSeeds.size());
+    std::puts(fullShipped ? "A Full Wallmaster seed with recorded choices imported like the others"
+                          : "This build stages wallmasters-full-v1, so it refuses a Full Wallmaster seed");
     return 0;
 }
 int main(int argc, char** argv) {

@@ -3,13 +3,14 @@
 This build writes Full Wallmaster seeds (limits design, Stage 3), which require wallmasters-full-v1: all-vanilla and
 with Master Quest dungeons, without song facts, with "Play warp songs across games" in logic and with a starting
 Prelude of Light, each with routes between the games in both directions. It also writes one Own Game seed of each
-earlier id (vanilla, quests, songs-v1, songs-v2). Two older seed guards are then compiled from this checkout's history
-and run on them, with their shipping set and their whole catalog alike:
+earlier id (vanilla, quests, songs-v1, songs-v2). Three older seed guards are then compiled from this checkout's
+history and run on them, with their shipping set and their whole catalog alike:
 - 0.4.12 (combo/ at tag v0.4.12-android) refuses the four Full seeds, which name a capability it does not know
   (EntranceLayout.h ValidateEntranceLayoutSettings: "requires unknown capability"), and loads the all-vanilla one;
-- 0.4.13 RC1 (combo/ at tag v0.4.13-rc1, an ancestor of the first commit that adds wallmasters-full-v1 to
-  Capabilities.h, with the same catalogue as that commit's parent) refuses the four Full seeds the same way, before
-  reading their routes or song facts, and loads all four Own Game seeds.
+- 0.4.13 RC1 (combo/ at tag v0.4.13-rc1) and the 0.4.13 release (combo/ at tag v0.4.13-android, the build this one
+  starts from) each refuse the four Full seeds the same way, before reading their routes or song facts, and load all
+  four Own Game seeds. Both are ancestors of the first commit that adds wallmasters-full-v1 to Capabilities.h, with
+  the same catalogue as that commit's parent.
 Each older build is checked on its own. One that this checkout's history lacks is SKIPPED only in a shallow clone,
 and the report says which builds ran; in a full clone the test fails and says what to fetch.
 """
@@ -55,7 +56,8 @@ if shallow.returncode != 0:
 shallow = shallow.stdout.strip() == 'true'
 # (label, how to find it, what to fetch, whether that build knows the 0.4.13 ids)
 OLDER = [('v0.4.12-android', lambda: resolve('v0.4.12-android'), "the fork's tags (git fetch --tags)", False),
-         ('v0.4.13-rc1', lambda: resolve('v0.4.13-rc1'), "the fork's tags (git fetch --tags)", True)]
+         ('v0.4.13-rc1', lambda: resolve('v0.4.13-rc1'), "the fork's tags (git fetch --tags)", True),
+         ('v0.4.13-android', lambda: resolve('v0.4.13-android'), "the fork's tags (git fetch --tags)", True)]
 builds, skipped = [], []
 for label, find, fetch, knows in OLDER:
     commit = find()
@@ -70,13 +72,13 @@ if not builds:
     print(f'SKIPPED: this shallow checkout lacks {lacking} (fetch the full history and the tags to run the older seed '
           'guards)')
     sys.exit(0)
-# The RC1 tag is the build this stage starts from: the Full id is new after it, and nothing between them changes the
-# capability catalogue.
+# The Full id is new after RC1 and after the 0.4.13 release this build starts from, and nothing between them and the
+# commit that adds it changes the capability catalogue.
 base = full_base()
-rc1 = next((commit for label, commit, _ in builds if label == 'v0.4.13-rc1'), None)
-if rc1 and base:
-    assert git('merge-base', '--is-ancestor', rc1, base).returncode == 0, (rc1, base)
-    assert git('diff', '--quiet', rc1, base, '--', CAPABILITIES).returncode == 0, (rc1, base)
+for label, commit, _ in builds:
+    if base and label in ('v0.4.13-rc1', 'v0.4.13-android'):
+        assert git('merge-base', '--is-ancestor', commit, base).returncode == 0, (label, commit, base)
+        assert git('diff', '--quiet', commit, base, '--', CAPABILITIES).returncode == 0, (label, commit, base)
 
 # This build's seeds: four Full ones, then the vanilla, quests, songs-v1 and songs-v2 ones.
 writer = work/'write_seeds.cpp'
@@ -207,6 +209,8 @@ int main(int argc, char** argv) {
 for label, commit, knows in builds:
     if label == 'v0.4.12-android':
         assert commit == '33c972f1c42428ff52da2e0a99e5884f57f9db03', commit
+    if label == 'v0.4.13-android':
+        assert commit == 'a5a0bdabea402e1de8196d005988996b463c14f4', commit
     old = work/label
     archive = subprocess.run(['git', '-C', str(source), 'archive', '--format=tar', commit, 'combo'],
                              capture_output=True, check=True, timeout=300).stdout

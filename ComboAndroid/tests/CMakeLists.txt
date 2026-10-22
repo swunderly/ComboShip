@@ -1006,9 +1006,9 @@ combo_json_harness_test(entrance_warp_songs_seeds_refused_by_older_builds entran
 if(TEST entrance_warp_songs_seeds_refused_by_older_builds)
     set_tests_properties(entrance_warp_songs_seeds_refused_by_older_builds PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 endif()
-# 0.4.12 and 0.4.13 RC1 refuse a Full Wallmaster seed ("requires unknown capability wallmasters-full-v1", limits design
-# Stage 3) and load this build's Own Game seeds they know; each is checked on its own, and reported as skipped only
-# when a shallow clone lacks its history.
+# 0.4.12, 0.4.13 RC1 and the 0.4.13 release refuse a Full Wallmaster seed ("requires unknown capability
+# wallmasters-full-v1", limits design Stage 3) and load this build's Own Game seeds they know; each is checked on its
+# own, and reported as skipped only when a shallow clone lacks its history.
 combo_json_harness_test(entrance_full_seeds_refused_by_older_builds entrance_full_seed_guard_tests.py)
 if(TEST entrance_full_seeds_refused_by_older_builds)
     set_tests_properties(entrance_full_seeds_refused_by_older_builds PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
