@@ -12,6 +12,17 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
+## Unreleased
+
+Planned as 0.4.14. Nothing in this section is in a release yet.
+
+- **Fix: the Save Editor of the game you are not playing now changes that game's save.** With OoT in front, Tools > Save Editor > Majora's Mask > Quest Status only highlighted a song when you tapped it, and Randomizer > Give randomizer item gave nothing. Song of Soaring given this way stayed unlearned, so OoT could not play it either. Other changes, such as items or owl statues, did show, but were lost when MM started. The OoT Save Editor had the same problem while MM was in front. Now these changes apply at once and are saved to that game's file straight away, as the editor's first line says, so they are kept when you switch games. They are kept even if you then leave the game you are playing without saving it.
+  - A few things only exist while the game runs: Link himself (Player tab), the current scene's flags, MM's cycle scene flags and temporary events, and OoT's timers and arrival. From the other game they say "Switch to Majora's Mask to edit this." or "Switch to Ocarina of Time to edit this."
+  - On the title and file screens, after a Restart game, and in a one-game file, the other game's editor says "Load a Majora's Mask file to edit it." (or the OoT one) and changes nothing.
+  - The MM Save Editor's Inventory now lists the Goron Tunic and the other MM gear in their slots. The lists were made once per session, before MM gives the gear its slots, so the gear could be missing until the app restarted.
+
+Tested: _to be filled in after the emulator and phone runs._
+
 ## 0.4.13 - 2026-10-22
 
 - **Master Quest dungeons can now be played from your normal OoT ROM, as in OoTMM.** Combo Ship now carries OoTMM's Master Quest dungeon data, so any of the 12 OoT dungeons can be its Master Quest version without a Master Quest ROM. For now this needs an OoT USA 1.0 ROM; with other versions the dungeons stay normal. As in OoTMM, Master Quest dungeons keep your ROM's normal models and textures.
