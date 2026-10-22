@@ -360,6 +360,16 @@ if(COMBO_SOURCE_DIR)
             target_compile_options(song_travel_tests PRIVATE -Wall -Wextra -UNDEBUG)
         endif()
         add_test(NAME cross_game_song_routes COMMAND song_travel_tests)
+        add_executable(cross_game_wallmaster_fixpoint_tests cross_game_wallmaster_fixpoint_tests.cpp)
+        target_include_directories(cross_game_wallmaster_fixpoint_tests PRIVATE "${COMBO_SOURCE_DIR}"
+            "${COMBO_JSON_INCLUDE_DIR}")
+        target_compile_features(cross_game_wallmaster_fixpoint_tests PRIVATE cxx_std_20)
+        if(MSVC)
+            target_compile_options(cross_game_wallmaster_fixpoint_tests PRIVATE /W4 /UNDEBUG /bigobj)
+        else()
+            target_compile_options(cross_game_wallmaster_fixpoint_tests PRIVATE -Wall -Wextra -UNDEBUG)
+        endif()
+        add_test(NAME cross_game_wallmaster_fixpoint COMMAND cross_game_wallmaster_fixpoint_tests)
         add_executable(gameplay_rules_tests gameplay_rules_tests.cpp)
         target_include_directories(gameplay_rules_tests PRIVATE "${COMBO_SOURCE_DIR}" "${COMBO_JSON_INCLUDE_DIR}")
         if(MSVC)
@@ -968,6 +978,9 @@ combo_json_harness_test(entrance_songs_generator_and_shortcut_differential entra
 # With a starting OoT warp song (limits design, Stage 2): the songs-v2 id in every quest context and the shortcut
 # differential with the song.
 combo_json_harness_test(entrance_warp_songs_generator_and_shortcut_differential entrance_vanilla_generator_tests.py --warp)
+# Full Wallmasters (limits design, Stage 3): the Full id in every quest context, the Temple probe asked about the base
+# world alone and failing closed on a cross-game candidate, and fake oracles exchanging cross-game arrivals.
+combo_json_harness_test(entrance_full_wallmasters_generator_and_cross_game_oracles entrance_vanilla_generator_tests.py --full)
 combo_json_harness_test(entrance_menu_and_generation_availability entrance_menu_rules_tests.py)
 combo_json_harness_test(entrance_solo_modes_refuse_before_generation entrance_game_mode_guard_tests.py)
 combo_json_harness_test(entrance_release_configuration_coverage entrance_release_coverage_tests.py)
@@ -989,6 +1002,13 @@ endif()
 combo_json_harness_test(entrance_warp_songs_seeds_refused_by_older_builds entrance_warp_songs_seed_guard_tests.py)
 if(TEST entrance_warp_songs_seeds_refused_by_older_builds)
     set_tests_properties(entrance_warp_songs_seeds_refused_by_older_builds PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+endif()
+# 0.4.12 and 0.4.13 RC1 refuse a Full Wallmaster seed ("requires unknown capability wallmasters-full-v1", limits design
+# Stage 3) and load this build's Own Game seeds they know; each is checked on its own, and reported as skipped only
+# when a shallow clone lacks its history.
+combo_json_harness_test(entrance_full_seeds_refused_by_older_builds entrance_full_seed_guard_tests.py)
+if(TEST entrance_full_seeds_refused_by_older_builds)
+    set_tests_properties(entrance_full_seeds_refused_by_older_builds PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 endif()
 # C6: the release-built Wallmaster corpus and File 3 saves under fixtures/wallmasters-vanilla-v1/, reported as
 # skipped until they are committed.

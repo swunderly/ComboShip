@@ -11,7 +11,11 @@
 // logic instead (limits design, Stage 1): the songs id in every quest context,
 // and the shortcut differential with the songs on; with "warp", a starting OoT
 // warp song (Stage 2): the songs-v2 id in every quest context, and the shortcut
-// differential with the song.
+// differential with the song; with "full", Full Wallmasters (Stage 3): the Full
+// id in every quest context with no capacity refusal, the Temple probe asked
+// only about the base world and failing closed on a cross-game candidate, and
+// fake oracles that exchange cross-game arrivals, so only a layout with the
+// routes the fake prizes need validates and fills.
 #include "rando/entrances/UnifiedBridge.h"
 #include <cassert>
 #include <cstdlib>
@@ -53,6 +57,10 @@ struct Fake {
   // dump's (a native roll on the shared stream).
   static inline std::optional<OotQuests> questsOnReset;
   static inline bool rejectEmptyTemple = false;
+  // Full Wallmasters: the arrivals each fake oracle receives (CrossWallmasters.h bits, adult 0 and child 1), and
+  // `crossing`: the prizes need an OoT source routed to Woodfall Temple and an MM one to the Deku Tree.
+  static inline std::array<uint32_t, 2> ootArrivals{}, mmArrivals{};
+  static inline bool crossing = false;
   static void Reset() {
     ActiveMmUnified().clear();
     ActiveOotUnified().clear();
@@ -67,6 +75,8 @@ struct Fake {
     restricted = changeQuestOnReset = throwOnComplete = prepared = false;
     questsOnReset.reset();
     rejectEmptyTemple = false;
+    ootArrivals = mmArrivals = {};
+    crossing = false;
   }
   static int ApplyMm(const char *text) {
     ++applies;
@@ -120,7 +130,7 @@ struct Fake {
     if (payload.at("fixed").empty() && payload.at("remaining").empty())
       baseMm = payload;
     ActiveMmUnifiedAssumptions() =
-        DecodeMmUnifiedAssumptions(Json::parse(text));
+        DecodeMmUnifiedAssumptions(Json::parse(text), Caps());
     return 1;
   }
   static int AssumeOot(const char *text) {
@@ -172,12 +182,37 @@ struct Fake {
       return r.destination.id == Find("MM_TEMPLE_WOODFALL")->id;
     });
   }
+  // The departures of each game's sources into the other (every source is reached at both ages here), from the
+  // candidate or the installed layout, as the native searches read them.
+  static uint32_t OotDepartures(int) {
+    uint32_t mask = 0;
+    for (const auto source : kOotWallmasterSources)
+      for (const auto &route : OotUnifiedGraphForeignRoutes(Find(source)->id))
+        mask |= 1u << MmWallmasterArrivalIndex(Find(Entrances::Game::Mm, route.destination)->name);
+    return mask;
+  }
+  static uint32_t MmDepartures(int) {
+    uint32_t mask = 0;
+    for (const auto source : kMmWallmasterSources)
+      for (const auto &route : MmUnifiedGraphRoutes(Find(source)->id))
+        if (route.destination.game == Entrances::Game::Oot)
+          mask |= 1u << OotWallmasterArrivalIndex(Find(Entrances::Game::Oot, route.destination.id)->name);
+    return mask;
+  }
+  static void OotEntranceArrivals(uint32_t adult, uint32_t child) { ootArrivals = {adult, child}; }
+  static void MmEntranceArrivals(uint32_t adult, uint32_t child) { mmArrivals = {adult, child}; }
+  static bool Arrived(const std::array<uint32_t, 2> &arrivals, int bit) {
+    return ((arrivals[0] | arrivals[1]) >> bit) & 1u;
+  }
   static const char *Checks(bool mm) {
     if (throwOnComplete && ActiveOotUnified().active() &&
         !ActiveOotUnifiedAssumptions())
       throw std::runtime_error("final validation must run");
     Json names = mm ? Json{"Mm start"} : Json{"Oot start"};
-    if (!restricted || (mm ? MmRoute() : OotRoute())) {
+    const bool crossed =
+        !crossing || (mm ? Arrived(mmArrivals, MmWallmasterArrivalIndex("MM_TEMPLE_WOODFALL"))
+                         : Arrived(ootArrivals, OotWallmasterArrivalIndex("OOT_DEKU_TREE")));
+    if (crossed && (!restricted || (mm ? MmRoute() : OotRoute()))) {
       names.push_back(mm ? "Mm prize" : "Oot prize");
       names.push_back(mm ? "Defeat Majora" : "Ganon");
     }
@@ -192,6 +227,19 @@ struct Fake {
     return f;
   }
   static OracleFns Mm() { return {OracleReset, Owned, MmChecks, Place}; }
+  // With the Full Wallmaster channel (CrossWorldRando.h OracleFns).
+  static OracleFns FullOot() {
+    auto f = Oot();
+    f.GetEntranceSourcesForAge = OotDepartures;
+    f.SetEntranceAgeArrivals = OotEntranceArrivals;
+    return f;
+  }
+  static OracleFns FullMm() {
+    auto f = Mm();
+    f.GetEntranceSourcesForAge = MmDepartures;
+    f.SetEntranceAgeArrivals = MmEntranceArrivals;
+    return f;
+  }
   static int Prepare(const char *) {
     ++prepares;
     prepared = true;
@@ -549,7 +597,10 @@ static void CheckShortcutPoolGuards() {
     b.chooseIndex = [](size_t) { return size_t(0); };
     b.monotoneWallmasterBaseProven = true;
     assert(!Shuffler(s, b).run().empty() && complete == 1);
-    if (variant == 0)
+    // Own Game and Full Wallmasters alone (the same alias pool, with ownGame
+    // false for Full: limits design, Stage 3) take the proven base; any other
+    // pool probes every candidate.
+    if (variant == 0 || variant == 3)
       assert(assumptions == 0 && temple == 0);
     else
       assert(assumptions > 0 && temple > 0);
@@ -1229,11 +1280,167 @@ static Json WarpDifferential() {
   return Json{{"warpDifferentialPairs", pairs},
               {"warpShortcutPairs", shortcuts}};
 }
+// Full Wallmasters (limits design, Stage 3), the id chosen by settings: every quest context of OoTMM's bundled data
+// generates under wallmasters-full-v1, the capacity shortfall contexts of the Own Game pool included, with any song
+// facts; the monotone shortcut certifies the base world once, so the Temple probe is asked only about it; without
+// the shortcut, or when the base fails the Temple check, a cross-game candidate fails closed. With fake oracles that
+// exchange cross-game arrivals, only layouts with the routes the prizes need validate and fill.
+static Json CheckFullContexts(const Json &contract) {
+  const auto quests = [](unsigned mask) {
+    OotQuests result{};
+    for (size_t i = 0; i < result.size(); ++i)
+      result[i] = (mask & (1u << i)) != 0;
+    return result;
+  };
+  std::set<std::set<std::string>> shortfalls;
+  for (const auto &row : contract.at("mqSources").at("capacityShortfalls"))
+    shortfalls.insert(row.at("mq").get<std::set<std::string>>());
+  const auto dungeons = contract.at("mqSources").at("dungeons").get<std::vector<std::string>>();
+  const auto full = [&](unsigned mask) {
+    auto g = Generation(mask);
+    g.settings.erWallmasters = Mode::Full;
+    g.capability.clear();
+    return g;
+  };
+  size_t generated = 0, shortfallContexts = 0, crossRoutes = 0;
+  for (unsigned mask = 0; mask < 4096; ++mask) {
+    Fake::Reset();
+    Fake::quests = quests(mask);
+    std::set<std::string> projection;
+    for (const auto &dungeon : dungeons)
+      if (Fake::quests[OotMqIndex(dungeon)])
+        projection.insert(dungeon);
+    UnifiedEntranceStats stats;
+    auto g = full(mask);
+    g.foreignSongsLogic = mask % 3 == 1;
+    if (mask % 3 == 2)
+      g.ootDump = WarpDump();
+    g.stats = &stats;
+    const auto encoded = GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+    const auto layout = DecodeEntranceLayout(encoded);
+    assert(layout.required == std::vector<std::string>{std::string(kFullWallmasterCapability)} &&
+           layout.settings.erWallmasters == Mode::Full && layout.ootMq == Fake::quests);
+    const auto validated = Validate(layout, Caps());
+    const size_t sources =
+        validated.oot.size() + validated.mm.size() + validated.ootToMm.size() + validated.mmToOot.size();
+    assert(sources == LayoutV2::MakePools(layout.settings, Fake::quests)[0].src.size() && sources <= 16);
+    crossRoutes += validated.ootToMm.size() + validated.mmToOot.size();
+    // One certified base, one Temple query and one complete check, whatever the context.
+    assert(stats.monotoneShortcutUsed && stats.assumedChecks == 1 && stats.completeChecks == 1 &&
+           Fake::queries == 1 && stats.randomDraws > 0);
+    shortfallContexts += shortfalls.contains(projection);
+    ++generated;
+  }
+  assert(generated == 4096 && shortfallContexts == 256 && crossRoutes > 4096);
+  // Legacy MQ data keeps the Master Quest sentence; an all-vanilla Legacy seed generates.
+  for (const unsigned mask : {1u, 0x80u, 0xfffu}) {
+    Fake::Reset();
+    Fake::quests = quests(mask);
+    auto g = full(mask);
+    g.mqSource = ComboMq::SeedMqSource::Legacy;
+    assert(Refusal(g).player() == kWallmasterMasterQuestText);
+  }
+  // A build without the Full id refuses it before anything changes (the menu never offers it there).
+  Fake::Reset();
+  auto g = full(5);
+  g.active = Caps().Only(kVanillaWallmasterCapability);
+  assert(std::string(Refusal(g).what()) == "Entrance settings erWallmasters=full are not available in this build");
+  // Fails closed until the Temple check searches MM (Stage 5): without the shortcut every candidate is probed, and
+  // the first one has cross-game edges; and the same when the base world fails the Temple check, which leaves the
+  // shortcut unproven. Either way nothing stays installed.
+  for (const bool baseFails : {false, true}) {
+    Fake::Reset();
+    Fake::rejectEmptyTemple = baseFails;
+    auto failing = full(6);
+    failing.wallmasterShortcut = baseFails;
+    std::string why;
+    try {
+      GenerateEntranceLayout(failing, Fake::Native(), Fake::Probe());
+    } catch (const TempleProbeUnsupported &error) {
+      why = error.what();
+    }
+    assert(why == "Temple probe: a cross-game Wallmaster candidate needs a Temple check through MM (deferred)");
+    assert(!ActiveOotUnified().active() && !ActiveMmUnified().active() && !Fake::prepared &&
+           !ActiveOotUnifiedAssumptions() && !ActiveMmUnifiedAssumptions());
+  }
+  // Fake oracles with the cross-game channel, on installed Full layouts: each prize needs a route across, an OoT
+  // source routed to Woodfall Temple for MM's and an MM one routed to the Deku Tree for OoT's. The combined check
+  // reaches both prizes exactly when the layout has both routes; without the channel it never does. A layout that has
+  // them fills through those arrivals. (Generation itself never depends on them: the base world, which has no
+  // Wallmaster route, proves every candidate, and a base world that fails fails closed, above.)
+  size_t crossingSeeds = 0, reached = 0, unreached = 0;
+  for (uint32_t seed = 1; seed <= 200 && (reached < 3 || unreached < 3); ++seed) {
+    Fake::Reset();
+    auto c = full(seed);
+    const auto encoded = GenerateEntranceLayout(c, Fake::Native(), Fake::Probe());
+    const auto layout = DecodeEntranceLayout(encoded);
+    bool toWoodfall = false, toDeku = false;
+    for (const auto &[src, dst] : *layout.overrides) {
+      toWoodfall |= Find(src)->game == Entrances::Game::Oot && dst == "MM_TEMPLE_WOODFALL";
+      toDeku |= Find(src)->game == Entrances::Game::Mm && dst == "OOT_DEKU_TREE";
+    }
+    ApplyUnifiedLayout(Fake::Native(), encoded, Caps());
+    Fake::crossing = true;
+    const AssumedWorld world(c.ootDump, c.mmDump, "");
+    const bool both = world.validate(Fake::FullOot(), Fake::FullMm(), false, c.goal, OotAccess::BEATABLE_ONLY);
+    assert(both == (toWoodfall && toDeku));
+    assert(!world.validate(Fake::Oot(), Fake::Mm(), false, c.goal, OotAccess::BEATABLE_ONLY));
+    if (both) {
+      const auto oot = Fake::FullOot(), mm = Fake::FullMm();
+      const auto filled = CrossWorldCombinedFill(c.ootDump, c.mmDump, seed, oot, mm, nullptr, "",
+                                                 OotAccess::ALL_REACHABLE, c.goal, GAME_OOT);
+      assert(filled.success);
+      ++reached;
+    } else {
+      ++unreached;
+    }
+    Fake::crossing = false;
+    ApplyNativeSeed(Fake::Native(), Json::object(), Caps());
+    ++crossingSeeds;
+  }
+  assert(reached >= 3 && unreached >= 3);
+  // The Shuffler's own shortcut differential for Full: with validators that accept every candidate, skipping the
+  // candidate checks draws the same stream and makes the same layout.
+  size_t pairs = 0;
+  for (uint32_t seed = 1; seed <= 200; ++seed) {
+    Overrides layouts[2];
+    for (const bool proven : {false, true}) {
+      Settings s;
+      s.erWallmasters = Mode::Full;
+      Bindings b;
+      b.areaExists = [](std::string_view area) { return LayoutV1::AreaExists(area, {}, false); };
+      b.sourceSupported = b.destinationSupported = [](const Record &) { return true; };
+      b.validateAssumed = b.validateAgeTemple = [](const Overrides &, const Pools &) { return true; };
+      b.validateComplete = [](const Overrides &) { return true; };
+      CwRng rng(seed);
+      b.chooseIndex = [&](size_t count) { return size_t(rng.below(static_cast<uint32_t>(count))); };
+      b.monotoneWallmasterBaseProven = proven;
+      layouts[proven] = Shuffler(s, std::move(b)).run();
+    }
+    assert(layouts[0] == layouts[1]);
+    ++pairs;
+  }
+  return {{"scope", "Real generator and combined fill with explicit fake native modules/oracles, Full Wallmasters"},
+          {"fullQuestContextsGenerated", generated},
+          {"ownGameShortfallContextsGenerated", shortfallContexts},
+          {"crossRoutes", crossRoutes},
+          {"crossingSeedsFilled", crossingSeeds},
+          {"shortcutPairs", pairs},
+          {"nativeSeedCorpusOrGameplay", false}};
+}
+
 int main(int argc, char **argv) {
   assert(argc == 3 || (argc == 4 && (std::string_view(argv[3]) == "songs" ||
-                                     std::string_view(argv[3]) == "warp")));
+                                     std::string_view(argv[3]) == "warp" ||
+                                     std::string_view(argv[3]) == "full")));
   std::ifstream contractFile(argv[2]);
   const auto contract = Json::parse(contractFile);
+  if (argc == 4 && std::string_view(argv[3]) == "full") {
+    const auto report = CheckFullContexts(contract);
+    std::ofstream(argv[1]) << report.dump(2) << '\n';
+    std::cout << report.dump() << '\n';
+    return 0;
+  }
   if (argc == 4 && std::string_view(argv[3]) == "warp") {
     const size_t contexts = CheckWarpContexts(contract);
     auto report = WarpDifferential();

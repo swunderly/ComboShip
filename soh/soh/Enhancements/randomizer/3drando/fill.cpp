@@ -7,6 +7,7 @@
 #include "rando/SongTravelOOT.h"
 #include "../combo_entrance_overlay.h"
 #include "../age_change_areas.h"
+#include "rando/entrances/CrossWallmasters.h"
 ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges(); // OTRGlobals.cpp
 #endif
 
@@ -203,6 +204,21 @@ static void ProcessComboEntranceOverlay(Region* region, GetAccessibleLocationsSt
             gals.regionPool.push_back(destination->randomizerRegionKey);
         }
         ProcessRegion(destination, gals, ignore, stopOnBeatable, addToPlaythrough);
+    }
+    // Full Wallmasters: an edge into MM is never an OoT exit. During an oracle search the MM destination is recorded
+    // for each age whose access and audited condition reach the source; the cross-world fixpoint roots it in MM.
+    if (!ComboRando::OotSongOracle())
+        return;
+    auto& departures = ComboRando::Entrances::OotWallmasterDepartures().masks;
+    for (auto& [exit, bit] : Rando::ComboEntrances::ForeignOverlayExits(region->randomizerRegionKey)) {
+        const bool adult = (region->adultDay && exit.CheckConditionAtAgeTime(logic->IsAdult, logic->AtDay)) ||
+                           (region->adultNight && exit.CheckConditionAtAgeTime(logic->IsAdult, logic->AtNight));
+        const bool child = (region->childDay && exit.CheckConditionAtAgeTime(logic->IsChild, logic->AtDay)) ||
+                           (region->childNight && exit.CheckConditionAtAgeTime(logic->IsChild, logic->AtNight));
+        if (adult)
+            departures[0] |= 1u << bit;
+        if (child)
+            departures[1] |= 1u << bit;
     }
 }
 #endif
@@ -634,6 +650,33 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
                     }
                 }
             }
+    }
+    // Full Wallmasters: an MM capture lands in an OoT dungeon at each OoT age Link can have in MM (the fixpoint's
+    // masks, adult 0 and child 1), rooted here as the cross-game songs are, with the root's day and night. Oracle
+    // searches only: the tracker and the native playthrough never see MM.
+    if (region->randomizerRegionKey == RR_ROOT && ComboRando::OotSongOracle() &&
+        ComboRando::Entrances::OotWallmasterArrivals().any()) {
+        const auto& arrivals = ComboRando::Entrances::OotWallmasterArrivals().masks;
+        const bool day = region->childDay || region->adultDay, night = region->childNight || region->adultNight;
+        for (int bit = 0; bit < int(ComboRando::Entrances::kOotWallmasterArrivalRows.size()); ++bit) {
+            const bool adult = (arrivals[0] >> bit) & 1, child = (arrivals[1] >> bit) & 1;
+            if (!adult && !child)
+                continue;
+            auto* target = RegionTable(Rando::ComboEntrances::WallmasterArrivalRegion(bit));
+            const bool expanded = (child && day && !target->childDay) || (child && night && !target->childNight) ||
+                                  (adult && day && !target->adultDay) || (adult && night && !target->adultNight);
+            target->childDay |= child && day;
+            target->childNight |= child && night;
+            target->adultDay |= adult && day;
+            target->adultNight |= adult && night;
+            if (expanded) {
+                gals.logicUpdated = true;
+                if (!target->addedToPool) {
+                    target->addedToPool = true;
+                    gals.regionPool.push_back(target->randomizerRegionKey);
+                }
+            }
+        }
     }
 #endif
     ProcessExits(region, gals, ignore, stopOnBeatable, addToPlaythrough);

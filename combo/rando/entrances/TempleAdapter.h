@@ -50,8 +50,11 @@ inline bool NeedsTemplePass(const Settings& s, const TempleFacts& f, const AreaE
 // song exit is false here (lemma S1). So are starting OoT warp songs, which the probe plays from its
 // GLOBAL node as OoTMM does (lemma L3), and through MM no path reaches the target first (the Mask Shop
 // lemma). Which ids take them is the generator's rule (UnifiedBridge.h UnifiedSongRequirement,
-// UnifiedWarpSongRequirement), not the probe's. Everything else throws here, before any random draw. The
-// pools are the ones the Shuffler will place, resolved with the same areaExists.
+// UnifiedWarpSongRequirement), not the probe's. Full's Wallmaster pool (the same alias pool with ownGame false)
+// is inside it too: the probe searches OoT alone, so it answers only a candidate without a cross-game edge, which
+// the base world of the monotone shortcut is (UnifiedBridge.h); the validator refuses any other (Stage 5 adds the
+// Temple check through MM). Everything else throws here, before any random draw. The pools are the ones the
+// Shuffler will place, resolved with the same areaExists.
 inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const AreaExists& areaExists) {
     if (!f.logicEnabled)
         return; // logic none never runs the Temple pass (entrances.ts:388-391)
@@ -65,10 +68,13 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
         reject("the starting age must be resolved first");
     if (const auto why = TempleSettingsRefusal(f); !why.empty())
         reject(why.log);
-    for (const Mode mode : { s.erBoss, s.erDungeons, s.erGrottos, s.erRegions, s.erOverworld, s.erIndoors, s.erMixed,
-                             s.erOneWays, s.erWallmasters })
+    for (const Mode mode :
+         { s.erBoss, s.erDungeons, s.erGrottos, s.erRegions, s.erOverworld, s.erIndoors, s.erMixed, s.erOneWays })
         if (mode == Mode::Full)
             reject("Full (cross-game) pools need the reset gate natively (deferred)");
+    const bool fullWallmasters = s.erWallmasters == Mode::Full;
+    if (fullWallmasters && MakePools(s).size() != 1)
+        reject("Full Wallmasters with another pool need a Temple check through MM (deferred)");
     // regionState dungeonBeaten adds boss events at SPAWN only through a BOSS pool (entrances.ts:241-246,
     // :334-346), so dungeonBeaten alone changes no candidate world.
     if (Active(s.erBoss))
@@ -85,7 +91,8 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
             reject("OoT row " + std::string(name) + " has no audited native binding");
     };
     for (const auto& pool : ResolvePools(s, areaExists).pools) {
-        if (!pool.ownGame || (pool.name != "ONE_WAYS" && !(pool.name == "WALLMASTERS" && pool.alias)))
+        const bool fullPool = fullWallmasters && pool.name == "WALLMASTERS" && pool.alias && !pool.ownGame;
+        if ((!pool.ownGame && !fullPool) || (pool.name != "ONE_WAYS" && !(pool.name == "WALLMASTERS" && pool.alias)))
             reject("pool " + pool.name + " has no native representation yet");
         if (IsLargeCandidatePool(pool)) // entrances.ts:293-294
             reject("pool " + pool.name + " would need native ASSUMED exits");
@@ -95,13 +102,15 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
         // the OoT target here (lemma L4). The thirteen Wallmaster sources (nine vanilla, four only an
         // MQ dungeon has) and eleven dungeon arrivals share M1-14's audited table; the pools resolve
         // with the quest context's areaExists, so a context offers only its own sources.
-        // Wallmaster-to-one-way pairs stay unbound.
+        // Wallmaster-to-one-way pairs stay unbound. A Full pair between the games is never probed (the
+        // validator refuses it), and its OoT end is one of the same audited sources and arrivals.
         for (const auto src : pool.src) {
             requireBound(src);
             for (const auto dst : pool.dst)
                 if (Assignable(*Find(src), *Find(dst), pool.ownGame, s)) {
                     requireBound(dst);
-                    if (Find(src)->game == Game::Oot && Find(src)->type == Type::Wallmaster &&
+                    if (Find(src)->game == Game::Oot && Find(dst)->game == Game::Oot &&
+                        Find(src)->type == Type::Wallmaster &&
                         std::find(kOotWallmasterArrivalRows.begin(), kOotWallmasterArrivalRows.end(), dst) ==
                             kOotWallmasterArrivalRows.end())
                         reject("OoT Wallmaster arrival " + std::string(dst) + " is deferred");
@@ -180,10 +189,21 @@ class TempleProbeSession {
     TempleProbeFns fns;
 };
 
+// A candidate world with an edge between the games (Full Wallmasters) needs the Temple check through MM, which the
+// probe does not have (limits design, Stage 5): refused, never answered from OoT alone. The monotone shortcut probes
+// only the base world, which has no Wallmaster edge at all.
+inline bool CrossGameTempleCandidate(const TempleCandidate& c) {
+    return std::any_of(c.edges.begin(), c.edges.end(),
+                       [](const TempleEdge& e) { return Find(e.src)->game != Find(e.dst)->game; });
+}
 inline std::function<bool(const Overrides&, const Pools&)> MakeTempleValidator(const TempleProbeFns& fns,
                                                                                const Settings& s) {
     return [fns, s](const Overrides& overrides, const Pools& pools) {
-        const auto query = EncodeTempleQuery(BuildTempleCandidate(overrides, pools, s));
+        const auto candidate = BuildTempleCandidate(overrides, pools, s);
+        if (CrossGameTempleCandidate(candidate))
+            throw TempleProbeUnsupported("Temple probe: a cross-game Wallmaster candidate needs a Temple check "
+                                         "through MM (deferred)");
+        const auto query = EncodeTempleQuery(candidate);
         uint8_t ages = 0;
         return MapTempleResult(fns.query(query.c_str(), fns.poll, &ages), fns);
     };

@@ -233,13 +233,15 @@ int main() {
     Expect({"--er", "erWallmasters=none"}, 0, "[comborando] entrance settings: all defaults\n");
     Expect({"--er", "erSelfLoops=false", "--er", "erOneWays=none", "--er", "erOneWaysMajor=false"}, 0,
            "entrance settings: all defaults");
-    // Without --er-capability, shipping and dev builds alike admit only erWallmasters=ownGame, through the
-    // vanilla contract (Public since P1-05), and refuse every other non-default value.
+    // Without --er-capability, shipping and dev builds alike admit erWallmasters=ownGame, through the vanilla
+    // contract (Public since P1-05), and erWallmasters=full where the build has wallmasters-full-v1 (limits
+    // design, Stage 3), and refuse every other non-default value.
+    const bool full = ActiveCapabilities().Active(kFullWallmasterCapability);
     for (const char* pair : {"erWallmasters=ownGame", "erWallmasters=full", "erOneWays=ownGame",
                              "erOneWaysMajor=true", "erOneWaysAnywhere=true", "erDungeons=ownGame",
                              "erSpawns=both", "erDecoupled=true"}) {
-        if (std::string(pair) == "erWallmasters=ownGame") {
-            Expect({"--er", pair}, 0, "entrance settings: erWallmasters=ownGame");
+        if (std::string(pair) == "erWallmasters=ownGame" || (full && std::string(pair) == "erWallmasters=full")) {
+            Expect({"--er", pair}, 0, std::string("entrance settings: ") + pair);
             continue;
         }
         Expect({"--er", pair}, 2,
@@ -271,6 +273,14 @@ int main() {
 #ifdef COMBO_ENTRANCE_DEV
         admitted = admitted || capability.id == "wallmasters-own-game-mm-tranche";
 #endif
+        // The Full id admits erWallmasters=full alone.
+        if (capability.id == kFullWallmasterCapability && full) {
+            Expect({"--er-capability", std::string(capability.id), "--er", "erWallmasters=full"}, 0,
+                   "[comborando] entrance settings: erWallmasters=full\n");
+            Expect({"--er-capability", std::string(capability.id), "--er", "erWallmasters=ownGame"}, 2,
+                   "erWallmasters=ownGame is not admitted by " + std::string(capability.id));
+            continue;
+        }
         if (admitted) {
             Expect({"--er-capability", std::string(capability.id), "--er", "erWallmasters=ownGame"}, 0,
                    "[comborando] entrance settings: erWallmasters=ownGame\n");
@@ -298,7 +308,12 @@ int main() {
                "erWallmasters=ownGame, erOneWays=ownGame, erOneWaysMajor=true");
     // OoTMM's own conds still reset a flag whose erOneWays is none.
     ExpectArgs({"erOneWaysMajor=true"}, "", all, "", "all defaults");
-    ExpectArgs({"erWallmasters=full"}, "", all, "erWallmasters=full is not available in this build");
+    ExpectArgs({"erWallmasters=full"}, "", all, "", "erWallmasters=full");
+    ExpectArgs({"erWallmasters=full", "erOneWays=ownGame"}, "", all,
+               "erOneWays=ownGame cannot be combined with erWallmasters=full in this build");
+    ExpectArgs({"erWallmasters=full"}, "", all.Only("wallmasters-own-game-vanilla-v1"),
+               "erWallmasters=full is not available in this build");
+    ExpectArgs({"erOneWays=full"}, "", all, "erOneWays=full is not available in this build");
     ExpectArgs({"erDungeons=ownGame"}, "", all, "erDungeons=ownGame is not available in this build");
     ExpectArgs({"erOneWays=ownGame", "erWallmasters=ownGame"}, "", noCompanion,
                "erOneWays=ownGame cannot be combined with erWallmasters=ownGame in this build");

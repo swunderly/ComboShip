@@ -378,7 +378,8 @@ struct Bindings {
     std::function<bool(const Overrides&)> validateComplete;
     std::function<size_t(size_t)> chooseIndex;
     // Set only after both validators accept the base world with no Wallmaster routes. The run
-    // checks that every declared/resolved pool is own-game alias WALLMASTERS with VOID sources.
+    // checks that every declared/resolved pool is the alias WALLMASTERS pool (own-game, or Full's)
+    // with VOID sources.
     // Such edges only add reachability; complete validation always runs. False on every old path.
     bool monotoneWallmasterBaseProven = false;
 };
@@ -491,9 +492,11 @@ class Shuffler {
         if (!anyActive)
             return {};
         const auto pools = makePools(); // capabilities checked once before RNG/retries
+        // Full's pool is the same alias pool with ownGame false (UnifiedBridge.h).
         skipMonotoneCandidateChecks =
             bindings.monotoneWallmasterBaseProven && MakePools(settings).size() == 1 && pools.size() == 1 &&
-            pools.front().name == "WALLMASTERS" && pools.front().ownGame && pools.front().alias &&
+            pools.front().name == "WALLMASTERS" && (pools.front().ownGame || settings.erWallmasters == Mode::Full) &&
+            pools.front().alias &&
             std::all_of(pools.front().src.begin(), pools.front().src.end(), [](std::string_view name) {
                 const auto* row = Find(name);
                 return row && row->type == Type::Wallmaster && (row->to == "OOT VOID" || row->to == "MM VOID");

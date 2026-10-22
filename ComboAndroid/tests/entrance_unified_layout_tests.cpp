@@ -1,9 +1,12 @@
 // The unified entrance layout (combo/rando/entrances/EntranceLayout.h): the
 // frozen v1 pool rules against the live ResolvePools (Shuffle.h) and the pinned
-// M1 contract (tools/ootmm/m1-contract.json), the strict codec, every
-// rejection path of Validate, and the seed guard of this build. Built twice: as
-// shipped and with COMBO_ENTRANCE_DEV.
+// M1 contract (tools/ootmm/m1-contract.json), the frozen v2 rules (Full
+// Wallmasters) the same way, the strict codec, every rejection path of
+// Validate, and the seed guard of this build. Built twice: as shipped and with
+// COMBO_ENTRANCE_DEV.
 #include "rando/ComboSeedFormat.h"
+#include "rando/entrances/CrossWallmasters.h"
+#include "rando/entrances/EntranceSpoiler.h"
 #include <cassert>
 #include <fstream>
 #include <functional>
@@ -645,7 +648,8 @@ void CheckBuildGuard(const Json &good) {
              (caps.Only(kVanillaWallmasterCapability) |
               caps.Only(kQuestsWallmasterCapability) |
               caps.Only(kSongsWallmasterCapability) |
-              caps.Only(kStartingSongsWallmasterCapability)));
+              caps.Only(kStartingSongsWallmasterCapability) |
+              caps.Only(kFullWallmasterCapability)));
   auto vanilla = good;
   vanilla["requires"] = {std::string(kVanillaWallmasterCapability)};
   vanilla["devBuild"] = true;
@@ -826,6 +830,157 @@ void CheckBuildGuard(const Json &good) {
 #endif
 }
 
+// Full Wallmasters (limits design, Stage 3): the frozen v2 pool equals the live
+// ResolvePools and the pinned contract's fullWallmasters section, in every
+// vanilla/MQ context; LayoutV1 still refuses Full and LayoutV2 everything else;
+// Validate lists the routes between the games apart; and only the Full id
+// takes a Full layout, with any song facts.
+EntranceLayout FullLayout(const Overrides &routes, const OotQuests &quests = {}) {
+  EntranceLayout layout;
+  layout.required = {std::string(kFullWallmasterCapability)};
+  layout.devBuild = true;
+  layout.settings.erWallmasters = Mode::Full;
+  layout.ootMq = quests;
+  layout.overrides = routes;
+  return layout;
+}
+// The pool's sources in name order (MM first), each to the next of both games'
+// 18 destinations, starting at `offset`: OoT and MM sources then cross.
+Overrides Rotated(const Pool &pool, size_t offset) {
+  std::vector<std::string_view> destinations(kOotWallmasterArrivalRows.begin(),
+                                             kOotWallmasterArrivalRows.end());
+  destinations.insert(destinations.end(), kMmBaseWallmasterDestinations.begin(),
+                      kMmBaseWallmasterDestinations.end());
+  Overrides routes;
+  size_t i = offset;
+  for (const auto src : pool.src)
+    routes[src] = destinations[i++ % destinations.size()];
+  return routes;
+}
+void CheckFull(const Json &fixture) {
+  const auto &full = fixture.at("fullWallmasters");
+  const auto &combination = full.at("combination");
+  assert(combination.at("id") == "erWallmasters=full;erOneWays=none");
+  Settings s;
+  s.erWallmasters = Mode::Full;
+  const auto &presence = fixture.at("registryAreaPresence");
+  // The pinned pool, in the all-vanilla world, with its one candidate set.
+  const auto pools = LayoutV2::MakePools(s, {});
+  assert(pools.size() == 1);
+  const auto &pinned = combination.at("pools").at(0);
+  assert(pinned.at("name") == pools[0].name && !pinned.at("ownGame").get<bool>() &&
+         pinned.at("alias").get<bool>() && !pools[0].ownGame && pools[0].alias);
+  assert(ToStrings(pools[0].dst) == pinned.at("dst").get<Strings>());
+  Strings candidates;
+  for (const auto dst : pools[0].dst)
+    if (LayoutV1::RowAssignable(*LayoutV1::FindRow(*pools[0].src.begin()),
+                                *LayoutV1::FindRow(dst), false))
+      candidates.emplace(dst);
+  assert(pinned.at("candidates").size() == 1 &&
+         candidates == pinned.at("candidates").at(0).at("destinations").get<Strings>() &&
+         ToStrings(pools[0].src) == pinned.at("candidates").at(0).at("sources").get<Strings>() &&
+         candidates.size() == full.at("sharedCandidates").get<size_t>());
+  // Frozen v2 = live ResolvePools in every vanilla/MQ context of the table.
+  for (const auto &row : fixture.at("mqSources").at("table")) {
+    const auto quests = Quests(row.at("mq").get<Strings>());
+    const auto frozen = LayoutV2::MakePools(s, quests);
+    SamePools(frozen, ResolvePools(s, LiveAreas(presence, quests)).pools);
+    Strings oot;
+    for (const auto src : frozen[0].src)
+      if (LayoutV1::FindRow(src)->game == Game::Oot)
+        oot.emplace(src);
+    assert(oot == row.at("ootSources").get<Strings>());
+    // No context is short: 16 sources at most for 18 destinations.
+    assert(frozen[0].src.size() <= candidates.size());
+    // A rotated layout validates, its crossing routes apart.
+    for (size_t offset = 0; offset < 18; offset += 6) {
+      const auto validated = Validate(FullLayout(Rotated(frozen[0], offset), quests), WholeCatalog());
+      for (const auto &route : validated.oot)
+        assert(route.source->game == Game::Oot && route.destination->game == Game::Oot);
+      for (const auto &route : validated.mm)
+        assert(route.source->game == Game::Mm && route.destination->game == Game::Mm);
+      for (const auto &route : validated.ootToMm)
+        assert(route.source->game == Game::Oot && route.destination->game == Game::Mm);
+      for (const auto &route : validated.mmToOot)
+        assert(route.source->game == Game::Mm && route.destination->game == Game::Oot);
+      assert(validated.oot.size() + validated.mm.size() + validated.ootToMm.size() + validated.mmToOot.size() ==
+             frozen[0].src.size());
+    }
+  }
+  // The sample layout of the fixture crosses both ways, and the spoiler lists every row as OoTMM writes it.
+  Overrides sample;
+  for (const auto &pair : combination.at("sampleLayout"))
+    sample[LayoutV1::FindRow(pair[0].get<std::string>())->name] =
+        LayoutV1::FindRow(pair[1].get<std::string>())->name;
+  const auto validated = Validate(FullLayout(sample), WholeCatalog());
+  assert(!validated.ootToMm.empty() && validated.mmToOot.empty() && !validated.oot.empty());
+  const auto mmToOot = Validate(FullLayout(Rotated(pools[0], 0)), WholeCatalog());
+  assert(!mmToOot.mmToOot.empty());
+  const auto spoiler = FormatEntranceSpoiler(&validated);
+  assert(spoiler.find("OOT Bottom of the Well Wallmaster Main to OOT VOID (OOT_WALLMASTER_BOTW_MAIN)") !=
+             std::string::npos &&
+         spoiler.find("-> MM Stone Tower Temple Inverted from MM Stone Tower Top Inverted "
+                      "(MM_TEMPLE_STONE_TOWER_INVERTED)") != std::string::npos);
+  // The envelope round-trips byte for byte, with the v1 schema string: older builds refuse it by its id.
+  const auto encoded = EncodeEntranceLayout(FullLayout(sample));
+  assert(encoded.at("schema").get<std::string>() == kEntranceLayoutSchema &&
+         encoded.at("settings").at("erWallmasters").get<std::string>() == "full" &&
+         EncodeEntranceLayout(DecodeEntranceLayout(encoded)) == encoded);
+  // LayoutV1 stays frozen: it refuses Full, and LayoutV2 refuses everything else.
+  assert(LayoutError([&] { LayoutV1::MakePools(s, {}, false); }) ==
+         "Layout v1 covers own-game Wallmaster and One-Way shuffles only");
+  for (const auto &[wallmasters, oneWays] :
+       {std::pair{Mode::OwnGame, Mode::None}, std::pair{Mode::None, Mode::None}}) {
+    Settings other;
+    other.erWallmasters = wallmasters;
+    other.erOneWays = oneWays;
+    assert(LayoutError([&] { LayoutV2::MakePools(other, {}); }) == "Layout v2 covers Full Wallmaster Shuffle only");
+  }
+  Settings withOneWays = s;
+  withOneWays.erOneWays = Mode::OwnGame;
+  withOneWays.erOneWaysMajor = true;
+  assert(LayoutError([&] { LayoutV2::MakePools(withOneWays, {}); }) == "Layout v2 does not cover erOneWays");
+  // Only the Full id takes a Full layout, and the Full id takes nothing else.
+  for (const auto id : {kVanillaWallmasterCapability, kQuestsWallmasterCapability, kSongsWallmasterCapability,
+                        kStartingSongsWallmasterCapability}) {
+    auto other = FullLayout(sample);
+    other.required = {std::string(id)};
+    assert(LayoutError([&] { Validate(other, WholeCatalog()); }) ==
+           "Entrance layout settings are not admitted by its required capabilities");
+  }
+  auto ownGame = FullLayout({});
+  ownGame.settings.erWallmasters = Mode::OwnGame;
+  assert(LayoutError([&] { Validate(ownGame, WholeCatalog()); }) ==
+         "Entrance layout settings are not admitted by its required capabilities");
+  // A route the Full pool does not have, a destination used twice and a missing source are refused.
+  auto twice = sample;
+  twice.begin()->second = std::next(twice.begin())->second;
+  assert(LayoutError([&] { Validate(FullLayout(twice), WholeCatalog()); }).find(" twice in WALLMASTERS") !=
+         std::string::npos);
+  auto exit = sample;
+  exit.begin()->second = "OOT_KOKIRI_FOREST_FROM_DEKU_TREE";
+  assert(LayoutError([&] { Validate(FullLayout(exit), WholeCatalog()); }).starts_with("Entrance layout cannot route"));
+  auto missing = sample;
+  missing.erase(missing.begin());
+  assert(LayoutError([&] { Validate(FullLayout(missing), WholeCatalog()); }).starts_with("Entrance layout has no route"));
+  // A build without the Full id refuses the layout by name.
+  assert(LayoutError([&] { Validate(FullLayout(sample), WholeCatalog().Only(kVanillaWallmasterCapability)); }) ==
+         "Entrance layout requires wallmasters-full-v1, which this build does not have");
+  // The seed guard: the Full id carries any song facts (its settings need it), and every refusal of the Temple gate
+  // still applies.
+  Json seed = {{"fileType", kEntranceSeedFileType}, {"version", kEntranceSeedVersion},
+               {"entranceLayout", EncodeEntranceLayout(FullLayout(sample))}};
+  RequireSupportedSeedDocument(seed, WholeCatalog());
+  ComboRando::SongTravelMap foreign;
+  foreign.foreignSongs = foreign.logicForeignSongs = true;
+  seed["songTravel"] = foreign.json();
+  RequireSupportedSeedDocument(seed, WholeCatalog());
+  seed["oot"]["settings"]["gRandoSettings.StartingPreludeOfLight"] = 1;
+  RequireSupportedSeedDocument(seed, WholeCatalog());
+  seed["mm"]["settings"]["gRando.StartingItems"] = {"RI_SONG_SOARING"};
+  SeedRefused(seed, WholeCatalog(), "starting Song of Soaring needs a Temple check through MM");
+}
+
 void Run(const char *path) {
   std::ifstream input(path, std::ios::binary);
   const auto fixture = Json::parse(input);
@@ -848,9 +1003,10 @@ void Run(const char *path) {
   CheckTranche(good);
   CheckOneWays(fixture);
   CheckBuildGuard(good);
+  CheckFull(fixture);
   std::cout << "PASS frozen v1 pools = ResolvePools = pinned contract (66 "
-               "combinations, 64 MQ contexts), byte-stable codec, every "
-               "rejection, this build's guard\n";
+               "combinations, 64 MQ contexts), frozen v2 Full pool likewise, "
+               "byte-stable codec, every rejection, this build's guard\n";
 }
 } // namespace
 

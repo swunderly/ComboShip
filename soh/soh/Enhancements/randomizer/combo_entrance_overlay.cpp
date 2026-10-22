@@ -96,6 +96,41 @@ std::vector<Entrance> OverlayExits(RandomizerRegion region) {
     }
     return result;
 }
+// The Full pool's foreign routes from this anchor: the same audited edges, each with the MM destination's bit
+// (CrossWallmasters.h). The Entrance names the anchor as both ends, so its condition can be evaluated at each age
+// and time; the oracle records the destination instead of traversing anything (fill.cpp).
+std::vector<std::pair<Entrance, int>> ForeignOverlayExits(RandomizerRegion region) {
+    if (!CE::ActiveOotUnified().active() && !CE::ActiveOotUnifiedAssumptions())
+        return {};
+    std::vector<std::pair<Entrance, int>> result;
+    for (const auto& edge : edges) {
+        if (edge.anchor != region)
+            continue;
+        const auto* source = CE::Find(edge.source);
+        if (!source)
+            throw std::runtime_error("OoT Wallmaster source registry changed");
+        for (const auto& route : CE::OotUnifiedGraphForeignRoutes(source->id)) {
+            const auto* destination = CE::Find(CE::Game::Mm, route.destination);
+            const int bit = destination ? CE::MmWallmasterArrivalIndex(destination->name) : -1;
+            if (bit < 0)
+                throw std::runtime_error("OoT Wallmaster route into MM is not bound");
+            Entrance exit(region, edge.condition, std::string(edge.auditId), false);
+            exit.SetParentRegion(region);
+            result.emplace_back(std::move(exit), bit);
+        }
+    }
+    return result;
+}
+// The native region an arrival from MM roots, by its bit (CrossWallmasters.h): the dungeon's entryway.
+RandomizerRegion WallmasterArrivalRegion(int bit) {
+    if (bit < 0 || bit >= int(CE::kOotWallmasterArrivalRows.size()))
+        throw std::invalid_argument("Unknown OoT Wallmaster arrival bit");
+    const auto row = CE::kOotWallmasterArrivalRows[bit];
+    const auto arrival = std::find_if(arrivals.begin(), arrivals.end(), [&](const Arrival& a) { return a.row == row; });
+    if (arrival == arrivals.end())
+        throw std::runtime_error("OoT Wallmaster arrival is not bound");
+    return arrival->region;
+}
 
 int SetLayout(const char* seedJson) {
     CE::ActiveOotUnified().clear();

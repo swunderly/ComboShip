@@ -371,7 +371,7 @@ exports = '\n'.join(function(entrances_mm, s) for s in (
     'bool Rando::Logic::NativeMmErEnabled(',
     'extern "C" int Combo_MMEntranceShuffleActive(',
 ))
-assert exports.count('CE::ActiveCapabilities()') == 2
+assert exports.count('CE::ActiveCapabilities()') == 3
 exports = exports.replace('CE::ActiveCapabilities()', 'HarnessCapabilities()')
 
 combos = []

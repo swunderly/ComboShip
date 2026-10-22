@@ -38,14 +38,26 @@ int main(int argc, char **argv) {
       withQuests.Only(kSongsWallmasterCapability);
   const auto *row = FindEntranceSetting("erWallmasters");
   assert(row);
-  // Both builds offer the row with None and Own Game (P1-05).
+  // Both builds offer the row with None and Own Game (P1-05), and Full where
+  // the build has wallmasters-full-v1 (limits design, Stage 3), by OoTMM's
+  // value name, under the row's own description (data.ts:3545-3555: Full has
+  // no description of its own).
+  const bool full = caps.Active(kFullWallmasterCapability);
   assert(row->visible(caps.Selected("")) &&
          row->supports(1, caps.Selected("")));
-  assert(!row->supports(2, caps.Selected(""))); // Full stays hidden.
+  assert(row->supports(2, caps.Selected("")) == full);
   const auto catalogue = EntranceProfileCatalog(caps);
-  assert(catalogue.size() == 1 && catalogue[0]["choices"].size() == 2);
+  assert(catalogue.size() == 1 &&
+         catalogue[0]["choices"].size() == (full ? 3u : 2u));
   assert(catalogue[0]["label"] == row->name &&
          catalogue[0]["description"] == row->description);
+  if (full)
+    assert(catalogue[0]["choices"][2] ==
+           (Json{{"value", 2}, {"label", "Full"}, {"description", ""}}));
+  assert(std::string(row->description) ==
+         "Enables the ability for Wallmasters to take you to random locations "
+         "within their own game or across both games, based on other entrance "
+         "settings");
   for (bool oot : {true, false}) {
     const auto *placement =
         Detail::FindMenuPlacementKey(oot, "entrance:erWallmasters");
@@ -364,6 +376,14 @@ int main(int argc, char **argv) {
       plain(why, capacity, capacityLog);
     else
       assert(why.empty());
+    // Full gives every source both games' 18 dungeons, so it is never short:
+    // the same selections are offered with Full, as generation places them.
+    assert(!MqWallmasterShortfallForced(read, false, Mode::Full));
+    assert(ProfileWallmasterRefusal(draft, playable, read, withQuests,
+                                    Mode::Full)
+               .empty());
+    plain(ProfileWallmasterRefusal(draft, legacy, read, withQuests, Mode::Full),
+          mq, legacyLog);
     plain(ProfileWallmasterRefusal(draft, legacy, read, withQuests), mq,
           legacyLog);
     // Without MQ data the native settings keep every dungeon vanilla.
@@ -426,7 +446,8 @@ int main(int argc, char **argv) {
   raw["futureExtension"] = {{"preserve", 123}};
   const auto immutable = raw;
   assert(NormalizeEntranceDraft(raw, caps));
-  assert(raw["setupCVars"][wall] == 0);
+  // Full stays only where this build has wallmasters-full-v1, and alone.
+  assert(raw["setupCVars"][wall] == (caps.Active(kFullWallmasterCapability) ? 2 : 0));
   assert(raw["setupCVars"]["gCombo.Rando.Entrances.erOneWays"] == 0);
   assert(raw["setupCVars"]["gRandoSettings.ShuffleWarpSongs"] == 1);
   assert(raw["futureExtension"] == immutable["futureExtension"]);
@@ -479,7 +500,12 @@ int main(int argc, char **argv) {
              .settings.erWallmasters == Mode::None);
   Reject([&] { EntranceSettingsForHeadless(profile, {}, "", true, caps); });
   profile["setupCVars"][wall] = 2;
-  Reject([&] { EntranceSettingsForHeadless(profile, {}, "", false, caps); });
+  // Full is a profile value only where this build has wallmasters-full-v1.
+  if (caps.Active(kFullWallmasterCapability))
+    assert(EntranceSettingsForHeadless(profile, {}, "", false, caps)
+               .settings.erWallmasters == Mode::Full);
+  else
+    Reject([&] { EntranceSettingsForHeadless(profile, {}, "", false, caps); });
   profile["setupCVars"][wall] = uint64_t(1) << 40;
   Reject([&] { EntranceSettingsForHeadless(profile, {}, "", false, caps); });
   profile.erase("setupCVars");

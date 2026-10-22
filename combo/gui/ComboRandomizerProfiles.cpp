@@ -314,12 +314,21 @@ static void Tooltip(const char* help) {
 static Entrances::Settings MenuEntranceSettings() {
     return Entrances::ReadEntranceSettings(ReadInteger, Entrances::ActiveCapabilities());
 }
-// The plain sentence the row, its tooltip and the Generate button show (owner decision D3).
-static std::string EntranceUnavailable() {
+// The plain sentence the row, its tooltip and the Generate button show (owner decision D3), for one Wallmaster value:
+// the Master Quest capacity refusal is Own Game's alone (EntranceProfile.h MqWallmasterShortfallForced).
+static std::string EntranceUnavailable(Entrances::Mode wallmasters) {
     const auto read = [](const char* key, int fallback) {
         return !std::strcmp(key, kOotEnemyRandomizer) ? CVarGetInteger(key, fallback) : ReadInteger(key, fallback);
     };
-    return Entrances::ProfileWallmasterRefusal(document, catalog.value("oot", Json::object()), read).player;
+    return Entrances::ProfileWallmasterRefusal(document, catalog.value("oot", Json::object()), read,
+                                               Entrances::ActiveCapabilities(), wallmasters)
+        .player;
+}
+// The choice `value` of `row` as a Wallmaster mode, for the sentence above; Own Game for every other row.
+static Entrances::Mode EntranceChoiceMode(const Entrances::EntranceSetting& row, int value) {
+    return std::string_view(row.key) == "erWallmasters" && value == int(Entrances::Mode::Full)
+               ? Entrances::Mode::Full
+               : Entrances::Mode::OwnGame;
 }
 void DrawEntranceSetting(int index) {
     if (!active || !document.is_object() || index < 0 || index >= int(std::size(Entrances::kEntranceSettings)))
@@ -332,7 +341,7 @@ void DrawEntranceSetting(int index) {
     if (!row.condition(settings))
         return;
     const int value = row.get(settings);
-    const auto unavailable = EntranceUnavailable();
+    const auto unavailable = EntranceUnavailable(EntranceChoiceMode(row, value));
     ImGui::PushID(row.cvar);
     ImGui::BeginDisabled(!Editable());
     ImGui::TextWrapped("%s", row.name);
@@ -341,14 +350,15 @@ void DrawEntranceSetting(int index) {
     if (ImGui::BeginCombo("##Entrance", row.choices[value].name.data())) {
         for (int i = 0; i < int(row.choices.size()); ++i) {
             if (!row.supports(i, caps))
-                continue; // Full and all unadmitted rows remain hidden.
-            const bool blocked = i != row.defaultValue && (!row.condition(settings) || !unavailable.empty());
+                continue; // Every value this build does not admit stays hidden.
+            const auto why = i == value ? unavailable : EntranceUnavailable(EntranceChoiceMode(row, i));
+            const bool blocked = i != row.defaultValue && (!row.condition(settings) || !why.empty());
             ImGui::BeginDisabled(blocked);
             if (ImGui::Selectable(row.choices[i].name.data(), i == value))
                 WriteInteger(row.cvar, i);
             ImGui::EndDisabled();
             if (blocked)
-                Tooltip(unavailable.empty() ? "This combination is not available in this build." : unavailable.c_str());
+                Tooltip(why.empty() ? "This combination is not available in this build." : why.c_str());
         }
         ImGui::EndCombo();
     }
@@ -1271,8 +1281,9 @@ void DrawGeneration() {
     // Every randomizer mode refuses the setting here as generation does: a solo mode with its own reason, which
     // ProfileBeginGeneration gives from the draft before ProfileModeSetup turns the setting off, and combined mode
     // before any entrance draw. Vanilla preparation ignores it, so only the Entrances row shows the reason there.
+    const auto wallmasters = MenuEntranceSettings().erWallmasters;
     const auto entranceRefusal =
-        !VanillaMode(mode) && Entrances::Active(MenuEntranceSettings().erWallmasters) ? EntranceUnavailable() : "";
+        !VanillaMode(mode) && Entrances::Active(wallmasters) ? EntranceUnavailable(wallmasters) : "";
     ImGui::BeginDisabled(!Editable() || running || !entranceRefusal.empty());
     if (ImGui::InputTextWithHint("Seed", "(blank = random)", &seed)) {
         document["seed"] = seed;

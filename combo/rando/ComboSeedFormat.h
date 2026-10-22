@@ -77,10 +77,11 @@ inline Entrances::EntranceSettingsFacts SeedEntranceFacts(const nlohmann::json& 
     return f;
 }
 // A layout's capability ids against the seed's song facts. Under logic, no id takes song destination shuffle
-// or a starting Song of Soaring (the Temple gate's refusals, EntranceAvailability.h); only the songs-v2 id
-// takes a starting OoT warp song, and it needs one; only the songs ids take foreign-song logic, and the songs
-// id needs it; as an id must be needed (EntranceLayout.h ValidateEntranceLayoutSettings). With No Logic a seed
-// has no song facts and keeps the vanilla or quests id.
+// or a starting Song of Soaring (the Temple gate's refusals, EntranceAvailability.h); only the songs-v2 and Full
+// ids take a starting OoT warp song, and the songs-v2 id needs one; only the songs ids and the Full id take
+// foreign-song logic, and the songs id needs it; as an id must be needed (EntranceLayout.h
+// ValidateEntranceLayoutSettings). The Full id is needed by its settings (erWallmasters=full), whatever the song
+// facts. With No Logic a seed has no song facts and keeps the vanilla or quests id.
 inline void RequireSeedEntranceFacts(const Entrances::EntranceLayout& layout,
                                      const Entrances::EntranceSettingsFacts& f) {
     if (const auto why = Entrances::TempleSettingsRefusal(f); !why.empty())
@@ -92,6 +93,8 @@ inline void RequireSeedEntranceFacts(const Entrances::EntranceLayout& layout,
     const auto song = f.logicEnabled ? Entrances::StartingWarpSong(f) : std::string();
     const bool songs = has(Entrances::kSongsWallmasterCapability);
     const bool startingSongs = has(Entrances::kStartingSongsWallmasterCapability);
+    if (has(Entrances::kFullWallmasterCapability))
+        return;
     if (!song.empty() && !startingSongs)
         throw std::invalid_argument("Entrance layout requires " + layout.required.front() +
                                     ", which does not admit a starting " + song);

@@ -1,9 +1,10 @@
 """Compile the OoT live tracker's song arrivals and the real root arrival block.
 
 SOH_LiveIncomingSongAges, OotSoaringSources, SOH_GetOracleSongSourcesForAge and
-fill.cpp's RR_ROOT arrival block come from source. The stubs replace region
-storage, the loaded saves, the CVar store and the MM exports, not the age or
-option rules.
+fill.cpp's RR_ROOT arrival block come from source, Full Wallmaster arrivals from
+MM included (CrossWallmasters.h), with the arrival regions of
+combo_oot_wallmaster_arrivals.inc. The stubs replace region storage, the loaded
+saves, the CVar store and the MM exports, not the age or option rules.
 """
 from pathlib import Path
 import argparse
@@ -45,6 +46,12 @@ oracle = function(globals_cpp, 'extern "C" COMBO_EXPORT uint32_t SOH_GetOracleSo
 mm_port = (source/'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8')
 assert hostcxx.contains(mm_port, 'extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongSources() { return MmLiveSongSources(false); }')
 oot_header = (source/'combo/rando/SongTravelOOT.h').read_text(encoding='utf-8')
+# The OoT Wallmaster arrivals' regions, in their row order (combo_entrance_overlay.cpp WallmasterArrivalRegion).
+arrival_rows = re.findall(r'\{ "(OOT_\w+)", 0x[0-9a-f]+u, \w+, (RR_\w+) \}',
+                          (source/'soh/soh/Enhancements/randomizer/combo_oot_wallmaster_arrivals.inc').read_text(
+                              encoding='utf-8'))
+assert len(arrival_rows) == 11 and [row for row, _ in arrival_rows] == sorted(row for row, _ in arrival_rows)
+arrival_regions = ', '.join(region for _, region in arrival_rows)
 oot_tables = '\n'.join(re.findall(
     r'inline constexpr RandomizerRegion kOotSong(?:Regions|Sources)\[\].*?;', oot_header, re.S))
 assert oot_tables.count('inline constexpr') == 2
@@ -61,6 +68,7 @@ prelude = r'''
 #include "rando/SongTravel.h"
 #include "rando/ForeignSongs.h"
 #include "rando/GameplayRules.h"
+#include "rando/entrances/CrossWallmasters.h"
 #include "soh/Enhancements/randomizer/randomizerEnums.h"
 #define COMBO_EXPORT
 // The CVar store: each gameplay rule's value in play and its value in the seed's logic.
@@ -254,6 +262,37 @@ int main() {
         gals=Search();
         assert(!gals.logicUpdated&&!colossus.Child()&&!colossus.Adult());
     }
+    // (d) Full Wallmasters: an MM capture lands in an OoT dungeon at the ages the fixpoint gives, adult 0 and child 1,
+    // with the root's day and night, as the songs do; the tracker and other searches never root one.
+    namespace CE=ComboRando::Entrances;
+    const int forestBit=CE::OotWallmasterArrivalIndex("OOT_TEMPLE_FOREST"),dekuBit=CE::OotWallmasterArrivalIndex("OOT_DEKU_TREE");
+    const Region& forest=regions[Rando::ComboEntrances::WallmasterArrivalRegion(forestBit)];
+    const Region& deku=regions[Rando::ComboEntrances::WallmasterArrivalRegion(dekuBit)];
+    assert(forest.randomizerRegionKey==RR_FOREST_TEMPLE_ENTRYWAY&&deku.randomizerRegionKey==RR_DEKU_TREE_ENTRYWAY);
+    Reset();
+    regions[RR_ROOT].childNight=true;
+    CE::OotWallmasterArrivals()={{1u<<forestBit,1u<<dekuBit}};
+    gals=Search();
+    assert(!forest.Adult()&&!forest.Child()&&!deku.Adult()&&!deku.Child());
+    ComboRando::OotSongOracle()=true;
+    gals=Search();
+    assert(gals.logicUpdated&&forest.adultDay&&forest.adultNight&&!forest.Child());
+    assert(deku.childDay&&deku.childNight&&!deku.Adult());
+    assert(gals.regionPool.size()==2);
+    gals=Search(); // already rooted: nothing more to add
+    assert(!gals.logicUpdated&&gals.regionPool.empty());
+    // The arrival's ages are the fixpoint's; its times are the root's, by either age: a root by day alone gives day.
+    Reset();
+    regions[RR_ROOT].childDay=false;
+    ComboRando::OotSongOracle()=true;
+    CE::OotWallmasterArrivals()={{1u<<forestBit,1u<<forestBit}};
+    gals=Search();
+    assert(forest.adultDay&&!forest.adultNight&&forest.childDay&&!forest.childNight);
+    CE::OotWallmasterArrivals()={};
+    Reset();
+    gals=Search();
+    assert(!forest.Adult()&&!forest.Child());
+
     Reset();
     isRando=false;
     regions[RR_MARKET_MASK_SHOP].childDay=true;
@@ -265,6 +304,9 @@ int main() {
 }
 '''
 generated = prelude + 'namespace ComboRando {\n' + oot_tables + '\n}\n' + soaring + live_arrivals + oracle
+generated += ('namespace Rando::ComboEntrances {\nRandomizerRegion WallmasterArrivalRegion(int bit) {\n'
+              '    static const RandomizerRegion arrivalRegions[] = {' + arrival_regions + '};\n'
+              '    assert(bit >= 0 && bit < 11);\n    return arrivalRegions[bit];\n}\n}\n')
 generated += 'void ProcessRoot(Region* region,GetAccessibleLocationsStruct& gals,Rando::Logic* logic) {\n'
 generated += root_block + '\n}\n' + tests
 test = work/'song_live_arrivals.cpp'

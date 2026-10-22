@@ -3,6 +3,7 @@
 #include "rando/entrances/MmOrdinaryGraph.h"
 #include "rando/entrances/MmGrottoGraph.h"
 #include "rando/entrances/MmMixedGraph.h"
+#include "rando/entrances/CrossWallmasters.h"
 #endif
 #include "2s2h/ShipInit.hpp"
 
@@ -580,6 +581,34 @@ void FindReachableRegions(RandoRegionId currentRegion, std::set<RandoRegionId>& 
                 regionTimeStates[target] = MergeTimeStates(regionTimeStates[target], incoming);
                 FindReachableRegions(target, reachableRegions, regionTimeStates);
             }
+    }
+#endif
+#ifdef COMBO_BUILD
+    // Full Wallmasters (CrossWallmasters.h): an OoT capture lands in an MM dungeon at the OoT age being searched,
+    // rooted here as the cross-game songs are, at this region's start time, the port's day 1 (OoTMM ORs day 1 into
+    // an OoT-to-MM exit, pathfind.ts:596-599). Every Full MM destination is no-sot: no can_reset_time gate.
+    if (currentRegion == RR_MAX && ComboRando::MmSongOracle() && gSaveContext.save.linkAge <= 1) {
+        const uint32_t arrivals = ComboRando::Entrances::MmWallmasterArrivals().masks[gSaveContext.save.linkAge];
+        for (size_t bit = 0; bit < ComboRando::Entrances::kMmBaseWallmasterDestinations.size(); ++bit) {
+            if (!(arrivals & (1u << bit)))
+                continue;
+            const auto* row = ComboRando::Entrances::Find(ComboRando::Entrances::kMmBaseWallmasterDestinations[bit]);
+            if (!row || row->game != ComboRando::Entrances::Game::Mm || !row->noSongOfTime)
+                throw std::runtime_error("Full Wallmaster MM arrival is not a no-sot MM entrance");
+            const auto entrance = static_cast<s32>(row->id);
+            const auto target = GetRegionIdFromEntrance(entrance);
+            if (target == RR_MAX || !Regions.contains(target))
+                throw std::runtime_error("Full Wallmaster MM arrival has no native region");
+            const uint64_t arrivalTimes = FilterNativeMmIngressTimes(entrance, currentTime);
+            if (!arrivalTimes)
+                continue;
+            RegionTimeState incoming{ .timeSlices = arrivalTimes, .canStayOverTime = Regions[target].canStayOverTime };
+            if (reachableRegions.count(target) && TimeStateCovers(regionTimeStates[target], incoming))
+                continue;
+            reachableRegions.insert(target);
+            regionTimeStates[target] = MergeTimeStates(regionTimeStates[target], incoming);
+            FindReachableRegions(target, reachableRegions, regionTimeStates);
+        }
     }
 #endif
 #ifdef COMBO_BUILD

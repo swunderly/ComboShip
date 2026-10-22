@@ -94,7 +94,7 @@ extern "C" COMBO_EXPORT int MM_SetEntranceExpansionAssumptionsForCombo(const cha
         const auto value = nlohmann::json::parse(candidateJson ? candidateJson : "null");
         // A unified candidate world (CandidateWorld.h); an unknown profile still reaches the legacy decoder.
         if (value.value("profile", std::string()) == CE::kCandidateAssumptionsProfile)
-            CE::ActiveMmUnifiedAssumptions() = CE::DecodeMmUnifiedAssumptions(value);
+            CE::ActiveMmUnifiedAssumptions() = CE::DecodeMmUnifiedAssumptions(value, CE::ActiveCapabilities());
         else if (value.value("profile", std::string()) == "mm-mixed-coupled-assumptions-v1")
             CE::ActiveMmMixedAssumptions() = CE::DecodeMmMixedAssumptions(value);
         else if (value.value("profile", std::string()) == "mm-ordinary-coupled-assumptions-v1")
@@ -505,7 +505,9 @@ uint64_t FilterNativeMmIngressTimes(s32 entrance, uint64_t arrivalTimes);
 
 // The unified layout's MM Wallmaster edges (OoTMM v32.3 placeSingleExpr, entrances.ts:203-217). The
 // source keeps its soul_wallmaster edge, a destination without no-sot ANDs can_reset_time, an arrival
-// into MM VOID is a dead end, and no arrival grants ACCESS.
+// into MM VOID is a dead end, and no arrival grants ACCESS. A Full route into an OoT dungeon is not
+// traversed here: during an oracle search the source, once its edge holds, records that dungeon at the
+// age being searched (CrossWallmasters.h), and the cross-world fixpoint roots it in OoT.
 static bool ExploreMmUnifiedWallmasterEntrances(std::string_view source, uint64_t sourceTimes,
                                                 std::set<RandoRegionId>& reachable,
                                                 std::unordered_map<RandoRegionId, RegionTimeState>& times) {
@@ -521,8 +523,16 @@ static bool ExploreMmUnifiedWallmasterEntrances(std::string_view source, uint64_
     for (const auto& route : routes) {
         if (route.toVoid)
             continue; // MM VOID has no exits (_system.yml:1)
-        if (route.destination.game != CE::Game::Mm)
-            throw std::runtime_error("MM Wallmaster destination is not an MM entrance");
+        if (route.destination.game != CE::Game::Mm) {
+            const auto* destination = CE::Find(route.destination.game, route.destination.id);
+            const int bit = destination ? CE::OotWallmasterArrivalIndex(destination->name) : -1;
+            if (route.destination.game != CE::Game::Oot || bit < 0 || route.resetTime)
+                throw std::runtime_error("MM Wallmaster destination is not a bound OoT dungeon");
+            const auto age = gSaveContext.save.linkAge;
+            if (capturedTimes && ComboRando::MmSongOracle() && age <= 1)
+                CE::MmWallmasterDepartures().masks[age] |= 1u << bit;
+            continue;
+        }
         uint64_t arrivalTimes = capturedTimes;
         if (route.resetTime)
             arrivalTimes = TimeLogic::EvaluateConditionTimes([] { return NativeMmCanResetTime(); }, arrivalTimes);

@@ -24,6 +24,12 @@
 // and songs ids, every seed taking wallmasters-own-game-songs-v1; with a
 // starting OoT warp song, for this build, every seed taking
 // wallmasters-own-game-songs-v2.
+// Full Wallmasters (limits design, Stage 3) have a part of their own ("full"):
+// where this build admits them, every quest mask takes wallmasters-full-v1 with
+// any song facts, its live pools are the frozen LayoutV2 pools, no mask is
+// short, every row is bound, and layouts that cross the games in both
+// directions validate, pass the seed guard, install in both games and name
+// every route in the spoiler; where it does not, Full is refused everywhere.
 // Dropping any one binding must report a gap (negative control).
 #include "rando/GenerationRules.h"
 #include "rando/entrances/EntranceProfile.h"
@@ -507,13 +513,15 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
   size_t proved = 0;
   const auto selected = caps.Selected("");
   // The menu offers the row, with None and Own Game, exactly when Own Game is
-  // admitted.
-  Settings ownGame;
+  // admitted, and Full too when it is admitted.
+  Settings ownGame, full;
   ownGame.erWallmasters = Mode::OwnGame;
+  full.erWallmasters = Mode::Full;
   const auto catalog = EntranceProfileCatalog(caps);
   if (AdmitsEntranceSettings(ownGame, selected))
     assert(catalog.size() == 1 && catalog[0]["key"] == "erWallmasters" &&
-           catalog[0]["choices"].size() == 2);
+           catalog[0]["choices"].size() ==
+               (AdmitsEntranceSettings(full, selected) ? 3u : 2u));
   else
     assert(catalog.empty());
   const bool questsActive =
@@ -526,10 +534,12 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
     s.erWallmasters = mode;
     ValidateEntranceSettings(s);
     const bool admitted = AdmitsEntranceSettings(s, selected);
-    // Full stays hidden; None is always admitted.
-    assert(mode != Mode::Full || !admitted);
+    // Full only with its own id, and proved by ProveFull; None is always
+    // admitted.
+    assert(mode != Mode::Full ||
+           admitted == caps.Active(kFullWallmasterCapability));
     assert(mode != Mode::None || admitted);
-    if (!admitted)
+    if (!admitted || mode == Mode::Full)
       continue;
     // The menu offers exactly the admitted choice, and reading the setting in
     // game keeps it.
@@ -552,7 +562,7 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
       }
       continue;
     }
-    // Every admitted combination is the vanilla id's own; a Master Quest
+    // Every admitted Own Game combination is the vanilla id's own; a Master Quest
     // context moves it to the quests id once the quest context is read.
     const auto required = UnifiedRequirement(s, "", caps);
     assert(required == kVanillaWallmasterCapability);
@@ -753,10 +763,175 @@ static size_t Prove(const char *name, const CapabilitySet &caps,
   return proved;
 }
 
+// Layouts that together route every destination across the games: layout i
+// sends the j-th source of both games, in name order, to destination i + j of
+// both games' 18. Every Full source can take every Full destination (polarity
+// In, never a self-loop: entrances.ts:459-498).
+static std::vector<Overrides> FullCoveringLayouts(const Rows &rows) {
+  std::vector<std::string_view> sources(rows.mmSources.begin(),
+                                        rows.mmSources.end()),
+      destinations(rows.ootDestinations.begin(), rows.ootDestinations.end());
+  sources.insert(sources.end(), rows.ootSources.begin(), rows.ootSources.end());
+  destinations.insert(destinations.end(), rows.mmDestinations.begin(),
+                      rows.mmDestinations.end());
+  assert(sources.size() <= destinations.size() && destinations.size() == 18);
+  std::vector<Overrides> layouts;
+  for (size_t i = 0; i < destinations.size(); ++i) {
+    Overrides routes;
+    for (size_t j = 0; j < sources.size(); ++j) {
+      const auto dst = destinations[(i + j) % destinations.size()];
+      assert(LayoutV1::RowAssignable(*LayoutV1::FindRow(sources[j]),
+                                     *LayoutV1::FindRow(dst), false));
+      routes[sources[j]] = dst;
+    }
+    layouts.push_back(std::move(routes));
+  }
+  return layouts;
+}
+static EntranceLayout FullLayout(const CapabilitySet &caps, unsigned mask,
+                                 const Overrides &routes) {
+  EntranceLayout layout;
+  layout.required = {std::string(kFullWallmasterCapability)};
+  layout.devBuild = caps.devBuild;
+  layout.settings.erWallmasters = Mode::Full;
+  layout.ootMq = Quests(mask);
+  layout.overrides = routes;
+  return layout;
+}
+// Full Wallmasters for one capability set and song facts: the number of quest
+// masks proved, all 4096 where the set admits Full, none where it does not.
+static size_t ProveFull(const char *name, const CapabilitySet &caps,
+                        const Tables &tables, SongFacts songs) {
+  Settings s;
+  s.erWallmasters = Mode::Full;
+  ValidateEntranceSettings(s);
+  assert(s.erWallmasters == Mode::Full);
+  const auto selected = caps.Selected("");
+  const bool admitted = AdmitsEntranceSettings(s, selected);
+  assert(admitted == caps.Active(kFullWallmasterCapability));
+  const auto read = [](const char *key, int fallback) {
+    return std::string_view(key) == "gCombo.Rando.Entrances.erWallmasters"
+               ? static_cast<int>(Mode::Full)
+               : fallback;
+  };
+  if (!admitted) {
+    // The menu never offers it, reading it in game drops it, and generation
+    // refuses it before anything changes.
+    assert(ReadEntranceSettings(read, caps).erWallmasters == Mode::None);
+    assert(Generation(s, caps, 0, ComboMq::SeedMqSource::Bundled, songs) ==
+           "Entrance settings erWallmasters=full are not available in this "
+           "build");
+    return 0;
+  }
+  assert(ReadEntranceSettings(read, caps).erWallmasters == Mode::Full);
+  // The Full id whatever the song facts; the songs requirements keep it.
+  const auto required = UnifiedRequirement(s, "", caps);
+  assert(required == kFullWallmasterCapability &&
+         UnifiedSongRequirement(required, true, "", caps) == required &&
+         UnifiedWarpSongRequirement(required, true, "", caps) == required &&
+         BindsOotWallmasters(required));
+  size_t proved = 0, crossOot = 0, crossMm = 0;
+  std::set<unsigned> covered;
+  for (unsigned mask = 0; mask < kQuestMasks; ++mask) {
+    const auto quests = Quests(mask);
+    const AreaExists areaExists = [&](std::string_view area) {
+      return LayoutV1::AreaExists(area, quests, false);
+    };
+    const auto pools = ResolvePools(s, areaExists).pools;
+    const auto frozen = LayoutV2::MakePools(s, quests);
+    assert(pools.size() == 1 && frozen.size() == 1 &&
+           pools[0].name == "WALLMASTERS" && pools[0].src == frozen[0].src &&
+           pools[0].dst == frozen[0].dst && !pools[0].ownGame &&
+           !frozen[0].ownGame && pools[0].alias && frozen[0].alias);
+    const auto rows = PoolRows(pools, s);
+    // Never short: at most 12 OoT and 4 MM sources for 11 + 7 destinations,
+    // even where the Own Game pool is (MQ Spirit and BotW, vanilla Shadow and
+    // Ganon).
+    assert(rows.ootSources.size() >= 7 && rows.ootSources.size() <= 12 &&
+           rows.mmSources.size() == 4 && rows.ootDestinations.size() == 11 &&
+           rows.mmDestinations.size() == 7);
+    assert(!Shortfall(quests) || rows.ootSources.size() == 12);
+    const auto gaps = Gaps(tables, rows, quests);
+    for (const auto &line : gaps)
+      std::cerr << name << " Full mask " << mask << ": " << line << '\n';
+    assert(gaps.empty());
+    RequireUnifiedCoverage(pools, s, true);
+    RequireWallmasterCapacity(pools, s, true);
+    for (const auto age : {TempleStartingAge::Child, TempleStartingAge::Adult}) {
+      TempleFacts facts;
+      facts.startingAge = age;
+      CheckTempleCapability(s, facts, areaExists);
+    }
+    assert(Generation(s, caps, mask, ComboMq::SeedMqSource::Bundled, songs)
+               .empty());
+    assert(Generation(s, caps, mask, ComboMq::SeedMqSource::Legacy, songs) ==
+           (mask ? kWallmasterMasterQuestText : ""));
+    if (covered.insert(WallmasterProjection(mask)).second) {
+      Names routed;
+      for (const auto &routes : FullCoveringLayouts(rows)) {
+        const auto layout = FullLayout(caps, mask, routes);
+        const auto validated = Validate(layout, caps);
+        crossOot += validated.ootToMm.size();
+        crossMm += validated.mmToOot.size();
+        assert(validated.oot.size() + validated.ootToMm.size() ==
+                   rows.ootSources.size() &&
+               validated.mm.size() + validated.mmToOot.size() == 4);
+        // The seed guard takes it with and without this proof's song facts.
+        for (const auto facts : {SongFacts::None, songs})
+          RequireSupportedSeedCapabilities(Seed(layout, facts), caps);
+        const auto seed = Seed(layout, songs);
+        OotUnifiedLayout oot;
+        MmUnifiedLayout mm;
+        oot.install(seed, caps);
+        mm.install(seed, caps);
+        size_t ootRoutes = 0;
+        for (const auto src : rows.ootSources)
+          ootRoutes += oot.routesFrom(Find(src)->id).size() +
+                       oot.foreignRoutesFrom(Find(src)->id).size();
+        assert(ootRoutes == rows.ootSources.size() && mm.routes().size() == 4);
+        const auto spoiler = FormatEntranceSpoiler(&validated);
+        for (const auto &[src, dst] : routes) {
+          const auto *from = LayoutV1::FindRow(src);
+          const auto *to = LayoutV1::FindRow(dst);
+          assert(spoiler.find(std::string(from->from) + " to " +
+                              std::string(from->to) + " (" + std::string(src) +
+                              ") ") != std::string::npos);
+          assert(spoiler.find(std::string(to->to) + " from " +
+                              std::string(to->from) + " (" + std::string(dst) +
+                              ")") != std::string::npos);
+          routed.insert(dst);
+        }
+        // No earlier id admits a Full layout, nor the Full id Own Game.
+        for (const auto id : {kVanillaWallmasterCapability,
+                              kQuestsWallmasterCapability,
+                              kSongsWallmasterCapability,
+                              kStartingSongsWallmasterCapability}) {
+          auto other = layout;
+          other.required = {std::string(id)};
+          bool refused = false;
+          try {
+            Validate(other, CapabilitySet::AtLeast(Stage::Hidden));
+          } catch (const EntranceLayoutError &) {
+            refused = true;
+          }
+          assert(refused);
+        }
+      }
+      assert(routed.size() == 18);
+    }
+    ++proved;
+  }
+  assert(covered.size() == 64u && crossOot > 0 && crossMm > 0);
+  return proved;
+}
+
 int main(int argc, char **argv) {
   const std::string_view part = argc > 1 ? argv[1] : "";
-  assert(argc <= 2 && (part.empty() || part == "ids" || part == "songs"));
-  const bool ids = part != "songs", songs = part != "ids";
+  assert(argc <= 2 &&
+         (part.empty() || part == "ids" || part == "songs" || part == "full"));
+  const bool ids = part.empty() || part == "ids",
+             songs = part.empty() || part == "songs",
+             fullPart = part.empty() || part == "full";
   const auto active = ActiveCapabilities();
   // Exactly the expected rows are Public, with every value.
   for (const auto &row : kEntranceCapabilities) {
@@ -771,7 +946,8 @@ int main(int argc, char **argv) {
     assert(id == kVanillaWallmasterCapability ||
            id == kQuestsWallmasterCapability ||
            id == kSongsWallmasterCapability ||
-           id == kStartingSongsWallmasterCapability);
+           id == kStartingSongsWallmasterCapability ||
+           id == kFullWallmasterCapability);
 #ifdef COMBO_ENTRANCE_DEV
   auto dev = CapabilitySet::AtLeast(Stage::Dev);
   dev.devBuild = true;
@@ -789,6 +965,20 @@ int main(int argc, char **argv) {
         assert(!row.supports(value, active.Selected("")));
 
   const auto tables = RealTables();
+  if (fullPart) {
+    // Full Wallmasters, for this build, with each kind of song fact.
+    size_t proved = 0;
+    for (const auto facts :
+         {SongFacts::None, SongFacts::Foreign, SongFacts::Starting})
+      proved += ProveFull("build, Full", active, tables, facts);
+    assert(proved ==
+           (active.Active(kFullWallmasterCapability) ? 3 * kQuestMasks : 0u));
+    std::cout << "PASS full: " << proved
+              << " settings x quest masks with Full Wallmasters, with none, "
+                 "foreign-song and starting-song facts\n";
+    if (part == "full")
+      return 0;
+  }
   // This build's own settings, then the vanilla id by name and the vanilla and
   // Master Quest ids together, as this build would hold them, so the proof
   // runs whatever the ids' stages.

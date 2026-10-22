@@ -461,6 +461,51 @@ int main() {
         assert(shipping.Active(v2));
         RequireSupportedSeedDocument(startingSong, shipping);
         assert(Profiles::SeedFromContainer({{"combo", {{"rando", startingSong}}}}, shipping) == startingSong);
+        // Full Wallmasters (limits design, Stage 3) take wallmasters-full-v1 in either quest context, with any song
+        // facts: its settings need it, so the guard neither asks for foreign-song logic or a starting warp song nor
+        // refuses them; a starting Soaring and destination shuffle stay refused. Full settings under an earlier id,
+        // and Own Game settings under the Full id, are refused; so is a Full seed in a build without the id.
+        const auto fullId = Entrances::kFullWallmasterCapability;
+        for (const auto* base : {&vanilla, &mqLayout}) {
+            auto full = *base;
+            full.settings.erWallmasters = Entrances::Mode::Full;
+            for (const bool noLogic : {false, true})
+                for (const auto& map : {SongTravelMap{}.json(), foreignMap.json()})
+                    for (const bool prelude : {false, true}) {
+                        auto seed = seedOf(full, fullId, map, noLogic);
+                        if (prelude)
+                            seed["oot"]["settings"]["gRandoSettings.StartingPreludeOfLight"] = 1;
+                        RequireSupportedSeedDocument(seed, all);
+                        assert(Profiles::SeedFromContainer({{"combo", {{"rando", seed.dump()}}}}, all) == seed);
+                        auto soaring = seed;
+                        soaring["mm"]["settings"]["gRando.StartingItems"] = {"RI_SONG_SOARING"};
+                        if (noLogic)
+                            RequireSupportedSeedDocument(soaring, all);
+                        else
+                            refusedFor(soaring, "starting Song of Soaring");
+                    }
+            auto shuffled = seedOf(full, fullId, shuffleMap.json(), false);
+            refusedFor(shuffled, "song travel logic");
+            for (const auto id : {plain, quests, std::string_view(songsId), std::string_view(v2)})
+                refusedFor(seedOf(full, id, foreignMap.json(), false),
+                           "settings are not admitted by its required capabilities");
+            refusedFor(seedOf(*base, fullId, SongTravelMap{}.json(), false),
+                       "settings are not admitted by its required capabilities");
+            // The settings document of a Full seed keeps its id and drops the routes.
+            RequireSupportedSettingsCapabilities(
+                Profiles::SettingsDocument(seedOf(full, fullId, Json(), false), all), all);
+        }
+        auto fullVanilla = vanilla;
+        fullVanilla.settings.erWallmasters = Entrances::Mode::Full;
+        const auto fullSeed = seedOf(fullVanilla, fullId, SongTravelMap{}.json(), false);
+        if (shipping.Active(fullId)) {
+            RequireSupportedSeedDocument(fullSeed, shipping);
+        } else {
+            std::string message;
+            try { RequireSupportedSeedDocument(fullSeed, shipping); }
+            catch (const UnsupportedComboSeedFormat& error) { message = error.what(); }
+            assert(message.find("requires wallmasters-full-v1, which this build does not have") != std::string::npos);
+        }
     }
     // Without the MM installer's exports an accepted layout still never binds as vanilla routing.
     std::string installer;

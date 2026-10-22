@@ -3004,6 +3004,7 @@ extern "C" void Combo_ApplyOotSceneRestrictions(PlayState* play) {
 #include "rando/SongTravelOOT.h"
 #include "rando/ForeignSongs.h"
 #include "rando/GameplayRules.h"
+#include "rando/entrances/CrossWallmasters.h"
 #include "soh/Enhancements/custom-message/CustomMessageManager.h"
 #include <atomic>
 static std::atomic<int> sForeignSongRequest{ -1 }, sForeignSongReply{ -2 };
@@ -6688,6 +6689,10 @@ extern "C" COMBO_EXPORT const char* Combo_SOH_Rando_GetReachableChecks(void) {
     // Fixed card reachability is separate from randomized-pool/tracker eligibility.
     if (std::find(candidates.begin(), candidates.end(), RC_TH_FREED_CARPENTERS) == candidates.end())
         candidates.push_back(RC_TH_FREED_CARPENTERS);
+#ifdef COMBO_BUILD
+    // Full Wallmasters: this search records the MM destinations its reached sources route to (fill.cpp).
+    ComboRando::Entrances::OotWallmasterDepartures() = {};
+#endif
     auto reachable = ReachabilitySearch(candidates);
     ComboRando::OotSongOracle() = false;
 #ifdef COMBO_BUILD
@@ -6944,6 +6949,18 @@ extern "C" COMBO_EXPORT uint32_t SOH_GetOracleSongSourcesForAge(int age) {
 #ifdef COMBO_BUILD
 extern "C" COMBO_EXPORT void SOH_SetOracleSongAgeArrivals(uint32_t adult, uint32_t child) {
     ComboRando::OotSongAgeArrivals() = { true, { adult & 63, child & 63 } };
+}
+// Full Wallmasters (CrossWallmasters.h): the MM destinations (MM bits) of the OoT sources the last search reached at
+// an age (adult 0, child 1), and the arrivals from MM's sources (OoT bits) the next searches root at RR_ROOT.
+extern "C" COMBO_EXPORT uint32_t SOH_GetOracleEntranceSourcesForAge(int age) {
+    if (age < 0 || age > 1)
+        return 0;
+    return ComboRando::Entrances::OotWallmasterDepartures().masks[age] &
+           ComboRando::Entrances::kMmWallmasterArrivalBits;
+}
+extern "C" COMBO_EXPORT void SOH_SetOracleEntranceAgeArrivals(uint32_t adult, uint32_t child) {
+    constexpr auto bits = ComboRando::Entrances::kOotWallmasterArrivalBits;
+    ComboRando::Entrances::OotWallmasterArrivals() = { { adult & bits, child & bits } };
 }
 #endif
 

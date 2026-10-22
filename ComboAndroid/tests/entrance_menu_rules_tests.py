@@ -45,16 +45,26 @@ profiles = (a.source/'combo/gui/ComboRandomizerProfiles.cpp').read_text(encoding
 def body(signature):
     start = hostcxx.find(profiles, signature)
     return profiles[start:profiles.index('\n}\n', start)]
-assert hostcxx.contains(body('static std::string EntranceUnavailable()'), 'Entrances::ProfileWallmasterRefusal(document,')
-assert hostcxx.contains(body('void DrawEntranceSetting(int index)'), 'const auto unavailable = EntranceUnavailable();')
+# Each Wallmaster choice gets the sentence for its own mode (limits design, Stage 3): the Master Quest capacity
+# refusal is Own Game's alone, so Full can stay offered where Own Game is greyed out.
+unavailable = body('static std::string EntranceUnavailable(Entrances::Mode wallmasters)')
+assert hostcxx.contains(unavailable, 'Entrances::ProfileWallmasterRefusal(document,')
+assert hostcxx.contains(unavailable, 'Entrances::ActiveCapabilities(), wallmasters)')
+assert hostcxx.contains(body('static Entrances::Mode EntranceChoiceMode('),
+                        'value == int(Entrances::Mode::Full) ? Entrances::Mode::Full')
+setting = body('void DrawEntranceSetting(int index)')
+assert hostcxx.contains(setting, 'const auto unavailable = EntranceUnavailable(EntranceChoiceMode(row, value));')
+assert hostcxx.contains(setting, 'const auto why = i == value ? unavailable : '
+                        'EntranceUnavailable(EntranceChoiceMode(row, i));')
 generation = body('void DrawGeneration()')
+assert hostcxx.contains(generation, 'const auto wallmasters = MenuEntranceSettings().erWallmasters;')
 assert hostcxx.contains(generation, 'const auto entranceRefusal = !VanillaMode(mode) && '
-                        'Entrances::Active(MenuEntranceSettings().erWallmasters) ? EntranceUnavailable() : "";'), \
+                        'Entrances::Active(wallmasters) ? EntranceUnavailable(wallmasters)'), \
     'Generate must refuse Wallmaster Shuffle in the solo modes'
 assert hostcxx.contains(generation, 'ImGui::BeginDisabled(!Editable() || running || !entranceRefusal.empty());')
 # P1-03 (owner decision D3): the row, its tooltip and the Generate button show the plain sentence, and so does the
 # generation error, whose log line keeps the developer text. The OoT entrance rows name no developer concept.
-assert hostcxx.contains(body('static std::string EntranceUnavailable()'), '.player;')
+assert hostcxx.contains(unavailable, '.player;')
 assert hostcxx.contains(body('void DrawWidget(const CwWidget& w'), 'if (blockedByEntrances) '
                         'Tooltip("Turn off Wallmaster Shuffle to use this option.");')
 for word in ('GLOBAL', 'deferred', 'One-Way', "Ship's own"):

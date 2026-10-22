@@ -51,6 +51,12 @@ uint32_t OotSources(int age) {return ootSources.at(age);}
 uint32_t MmSources(int age) {return (entryAges & (1 << age)) ? mmSources.at(age) : 0;}
 void OotArrivals(uint32_t adult, uint32_t child) {ootArrivals = {adult, child};}
 void MmArrivals(uint32_t adult, uint32_t child) {mmArrivals = {adult, child}; ++mmAgeArrivalCalls;}
+// Full Wallmasters (CrossWallmasters.h): each engine's departures after a search and arrivals before one.
+std::array<uint32_t, 2> ootDepartures{}, mmDepartures{}, ootEntrances{}, mmEntrances{};
+uint32_t OotDepartures(int age) {return ootDepartures.at(age);}
+uint32_t MmDepartures(int age) {return (!crossAge || (entryAges & (1 << age))) ? mmDepartures.at(age) : 0;}
+void OotEntranceArrivals(uint32_t adult, uint32_t child) {ootEntrances = {adult, child};}
+void MmEntranceArrivals(uint32_t adult, uint32_t child) {mmEntrances = {adult, child};}
 template<class T, class F> T Export(F fn) {
     if constexpr (std::is_same_v<T, F>) return fn;
     assert(false && "wrong symbol ABI"); return nullptr;
@@ -67,6 +73,10 @@ template<class T> T Sym(int module, const char* symbol) {
     BIND(2, "MM_GetOracleSongSourcesForAge", MmSources)
     BIND(2, "MM_SetOracleSongAgeArrivals", MmArrivals)
     BIND(2, "MM_UseCrossAgeOracle", UseCrossAge)
+    BIND(1, "SOH_GetOracleEntranceSourcesForAge", OotDepartures)
+    BIND(1, "SOH_SetOracleEntranceAgeArrivals", OotEntranceArrivals)
+    BIND(2, "MM_GetOracleEntranceSourcesForAge", MmDepartures)
+    BIND(2, "MM_SetOracleEntranceAgeArrivals", MmEntranceArrivals)
 #undef BIND
     assert(false && "unexpected export name"); return nullptr;
 }
@@ -79,6 +89,10 @@ prelude += 'nlohmann::json MmSettingsForPlaythrough(' + headless.split(
 assert hostcxx.contains(headless, 'mmSettings = MmSettingsForPlaythrough(spoiler);')
 assert hostcxx.contains(headless, 'nlohmann::json ms = mmSettings;')
 assert hostcxx.contains(headless, 'MM_RestoreSettings(ms.dump().c_str());')
+# The launcher attaches the same four Full Wallmaster exports (ComboShip.cpp AttachAdultAgeOracle).
+for export in ('SOH_GetOracleEntranceSourcesForAge', 'SOH_SetOracleEntranceAgeArrivals',
+               'MM_GetOracleEntranceSourcesForAge', 'MM_SetOracleEntranceAgeArrivals'):
+    assert hostcxx.contains(launcher, f'"{export}"') and hostcxx.contains(headless, f'"{export}"'), export
 for name, text in [('Headless', headless), ('Launcher', launcher)]:
     prelude += ('Json Write' + name + '(const std::string& mmDump) {\n'
                 'Json consolidated = Json::object();\n' + writer(text) + '\nreturn consolidated;\n}\n')
@@ -141,6 +155,32 @@ void TestOracle() {
     auto result = QuerySongWorlds(oot, mm, {}, {}, open, query);
     assert(!open && result.second.empty() && entryAges == 0);
     assert(mmArrivals[0] == 0 && mmArrivals[1] == 0);
+    // Full Wallmasters through the bound exports: an OoT capture at an age opens MM at that age alone, and MM's
+    // capture lands back in OoT at it; both engines' arrivals are empty again when the query returns.
+    assert(oot.GetEntranceSourcesForAge && oot.SetEntranceAgeArrivals && mm.GetEntranceSourcesForAge &&
+           mm.SetEntranceAgeArrivals);
+    for (bool cross : {false, true}) for (int age : {0, 1}) {
+        crossAge = cross; portalAges = 0; entryAges = 0;
+        ootDepartures = mmDepartures = {}; ootDepartures[age] = 1u << 2; mmDepartures = {1u << 5, 1u << 5};
+        std::array<uint32_t, 2> seenOot{}, seenMm{};
+        auto watch = [&](const OracleFns& oracle, const std::vector<std::string>& owned) -> Checks {
+            for (int a : {0, 1}) {
+                seenOot[a] |= ootEntrances[a];
+                seenMm[a] |= mmEntrances[a];
+            }
+            return query(oracle, owned);
+        };
+        open = false;
+        result = QuerySongWorlds(oot, mm, {}, {}, open, watch);
+        assert(open);
+        if (cross)
+            assert(entryAges == (1 << age) && seenMm[age] == (1u << 2) && seenMm[1 - age] == 0);
+        else
+            assert(seenMm[0] == (1u << 2) && seenMm[1] == (1u << 2)); // MM's one search
+        assert(seenOot[age] == (1u << 5) && seenOot[1 - age] == 0);
+        assert(ootEntrances == (std::array<uint32_t, 2>{}) && mmEntrances == (std::array<uint32_t, 2>{}));
+    }
+    ootDepartures = mmDepartures = {};
 }
 void TestWriter() {
     const char* options[] = {"RO_MM_SPELL_WIND", "RO_CROSS_GAME_FARORE", "RO_MM_CROSS_AGE",

@@ -2,11 +2,12 @@
 // records under "entranceLayout", its strict codec and its validator. Adapted from OoTMM
 // v32.3 (413573d) packages/logic/src/solver/entrances.ts; see LICENSE.OoTMM.
 //
-// Validate() recomputes the pools from LayoutV1, a frozen copy of the pinned pool rules and
-// rows, never from the live Shuffle.h or Registry.h, so a layout keeps validating when the
-// live rules change or the reference is re-pinned (M1 plan, critic correction C6). A test
-// keeps the copy equal to ResolvePools and to tools/ootmm/m1-contract.json. Nothing here
-// installs a layout.
+// Validate() recomputes the pools from LayoutV1 or LayoutV2, frozen copies of the pinned pool
+// rules and rows, never from the live Shuffle.h or Registry.h, so a layout keeps validating when
+// the live rules change or the reference is re-pinned (M1 plan, critic correction C6). The
+// layout's capability id picks the rule set: LayoutV2 for wallmasters-full-v1, LayoutV1 for
+// every earlier id. Tests keep both equal to ResolvePools and to tools/ootmm/m1-contract.json.
+// Nothing here installs a layout.
 #pragma once
 #include "OotmmSettings.h"
 #include <algorithm>
@@ -37,6 +38,9 @@ static_assert(CapabilitySet::Known(kSongsWallmasterCapability) &&
 static_assert(CapabilitySet::Known(kStartingSongsWallmasterCapability) &&
                   !kEntranceCapabilities[CapabilityDetail::Find(kStartingSongsWallmasterCapability)].devOnly,
               "The starting-song Wallmaster capability is an ordinary staged row");
+static_assert(CapabilitySet::Known(kFullWallmasterCapability) &&
+                  !kEntranceCapabilities[CapabilityDetail::Find(kFullWallmasterCapability)].devOnly,
+              "The Full Wallmaster capability is an ordinary staged row");
 
 class EntranceLayoutError : public std::invalid_argument {
   public:
@@ -389,6 +393,59 @@ inline Pools MakePools(const Settings& s, const OotQuests& quests, bool mmTranch
 }
 } // namespace LayoutV1
 
+// Frozen copy of the pinned rules for every layout v2 capability id (limits design, Stage 3): Full
+// Wallmaster Shuffle alone, on LayoutV1's frozen rows, area rules, game links and assignability at
+// the same pin. Never edit it to follow Shuffle.h or Registry.h, nor LayoutV1: a new rule set gets
+// a new copy and new capability ids.
+namespace LayoutV2 {
+inline constexpr std::string_view kUpstreamCommit = LayoutV1::kUpstreamCommit;
+inline constexpr std::string_view kRegistrySha256 = LayoutV1::kRegistrySha256;
+// The settings v2 covers; every other key stays at its default.
+inline constexpr std::string_view kKeys[] = { "erWallmasters" };
+
+// makePools (entrances.ts:863-879) for erWallmasters=full alone: no simple pool, so poolsTypesDst is
+// empty and poolWallmasters (:657-669) gives the dungeon types with ownGame false (:668). The pool's
+// members follow placePools (:567-589) and poolEntrancesForTypes (:601-626), as LayoutV1's do.
+inline Pools MakePools(const Settings& s, const OotQuests& quests) {
+    for (const auto& row : kEntranceSettings)
+        if (row.get(s) != row.defaultValue && std::find(std::begin(kKeys), std::end(kKeys), row.key) == std::end(kKeys))
+            throw EntranceLayoutError(std::string("Layout v2 does not cover ") + row.key);
+    if (s.games != Games::Both || s.erWarps != Warps::None || s.erOneWaysSongs || s.erOneWaysStatues ||
+        s.erOneWaysWoods || s.erWallmasters != Mode::Full)
+        throw EntranceLayoutError("Layout v2 covers Full Wallmaster Shuffle only");
+    const Types src{ Type::Wallmaster }, dst{ Type::Dungeon, Type::DungeonMinor, Type::DungeonSh };
+    Names available;
+    for (const auto& row : LayoutV1::kRows)
+        if (LayoutV1::AreaExists(row.from, quests, false) && LayoutV1::AreaExists(row.to, quests, false))
+            available.insert(row.name);
+    const auto forTypes = [&](const Types& types) {
+        Names result;
+        for (const auto name : available) {
+            const auto& row = *LayoutV1::FindRow(name);
+            if (!types.contains(row.type))
+                continue;
+            result.insert(name);
+            if (!row.reverse.empty()) {
+                if (!available.contains(row.reverse))
+                    throw EntranceLayoutError("Missing reverse area for " + std::string(name));
+                result.insert(row.reverse);
+            }
+        }
+        return result;
+    };
+    Pool p{ "WALLMASTERS", forTypes(src), forTypes(dst), false, true };
+    for (const auto& [from, to] : LayoutV1::kGameLinks)   // used by connectGamesDefault (entrances.ts:628-635)
+        p.src.erase(from);                                // an alias pool keeps its destinations
+    for (const auto& [from, to] : LayoutV1::kGameLinks) { // the game-link fixup (entrances.ts:616-620)
+        p.src.erase(to);
+        p.dst.erase(from);
+    }
+    if (p.src.empty() || p.dst.empty())
+        throw EntranceLayoutError("Layout v2 has an empty Wallmaster pool");
+    return { std::move(p) };
+}
+} // namespace LayoutV2
+
 // What a seed stores under "entranceLayout".
 struct EntranceLayout {
     std::string upstreamCommit{ LayoutV1::kUpstreamCommit }, registrySha256{ LayoutV1::kRegistrySha256 };
@@ -600,9 +657,12 @@ inline Pools ValidateEntranceLayoutSettings(const EntranceLayout& layout, const 
         !anyMq)
         throw EntranceLayoutError(std::string("Entrance layout requires ") + std::string(kQuestsWallmasterCapability) +
                                   " without a Master Quest dungeon");
-    // The songs ids take either quest context. Their song facts are the seed's, outside the layout:
+    // The songs ids and the Full id take either quest context. Their song facts are the seed's, outside the layout:
     // ComboSeedFormat.h RequireSeedEntranceFacts checks them.
-    auto pools = LayoutV1::MakePools(layout.settings, layout.ootMq, mmTranche);
+    const bool v2 =
+        std::find(layout.required.begin(), layout.required.end(), kFullWallmasterCapability) != layout.required.end();
+    auto pools = v2 ? LayoutV2::MakePools(layout.settings, layout.ootMq)
+                    : LayoutV1::MakePools(layout.settings, layout.ootMq, mmTranche);
     if (pools.empty())
         throw EntranceLayoutError("Entrance layout settings place no entrance");
     return pools;
@@ -613,9 +673,11 @@ struct LayoutRoute {
     const Record* source = nullptr;
     const Record* destination = nullptr;
 };
-// The routes by source game, each sorted by source name.
+// The routes by source game, each sorted by source name. A route whose destination is in the other game (only
+// LayoutV2's Full pool has them) is listed apart, by its source game, so a reader of own-game routes never meets one.
 struct ValidatedLayout {
     std::vector<LayoutRoute> oot, mm;
+    std::vector<LayoutRoute> ootToMm, mmToOot;
 };
 // A layout against this build's capabilities and the frozen v1 pools: every available
 // source routed exactly once and nothing else, every destination in its pool and
@@ -648,7 +710,10 @@ inline ValidatedLayout Validate(const EntranceLayout& layout, const CapabilitySe
                                       std::string(dstName));
         if (!used[pool->second].insert(dstName).second)
             throw EntranceLayoutError("Entrance layout uses " + std::string(dstName) + " twice in " + p.name);
-        (src.game == Game::Oot ? result.oot : result.mm).push_back({ &src, dst });
+        if (src.game == dst->game)
+            (src.game == Game::Oot ? result.oot : result.mm).push_back({ &src, dst });
+        else
+            (src.game == Game::Oot ? result.ootToMm : result.mmToOot).push_back({ &src, dst });
     }
     for (size_t i = 0; i < pools.size(); ++i) {
         for (const auto src : pools[i].src)

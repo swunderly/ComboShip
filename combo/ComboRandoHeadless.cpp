@@ -507,6 +507,10 @@ int RunHeadless(int argc, char** argv) {
     mmO.GetSongSourcesForAge = Sym<uint32_t (*)(int)>(mm, "MM_GetOracleSongSourcesForAge");
     mmO.SetSongAgeArrivals = Sym<void (*)(uint32_t, uint32_t)>(mm, "MM_SetOracleSongAgeArrivals");
     mmO.UseCrossAgeOracle = Sym<bool (*)()>(mm, "MM_UseCrossAgeOracle");
+    oot.GetEntranceSourcesForAge = Sym<uint32_t (*)(int)>(soh, "SOH_GetOracleEntranceSourcesForAge");
+    oot.SetEntranceAgeArrivals = Sym<void (*)(uint32_t, uint32_t)>(soh, "SOH_SetOracleEntranceAgeArrivals");
+    mmO.GetEntranceSourcesForAge = Sym<uint32_t (*)(int)>(mm, "MM_GetOracleEntranceSourcesForAge");
+    mmO.SetEntranceAgeArrivals = Sym<void (*)(uint32_t, uint32_t)>(mm, "MM_SetOracleEntranceAgeArrivals");
 
     if (!SOH_InitRandoHeadless || !MM_InitRandoHeadless || !SOH_Dump || !MM_Dump || !oot.Reset || !oot.SetOwnedItems ||
         !oot.GetReachableChecks || !oot.PlaceItem || !oot.GetPortalOpen || !mmO.Reset || !mmO.SetOwnedItems ||

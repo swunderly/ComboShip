@@ -62,7 +62,8 @@ logic = function('namespace Rando::Logic {')
 unified = function('static bool ExploreMmUnifiedWallmasterEntrances(')
 
 # The installer reads this build's capabilities once; the harness swaps in a settable set.
-assert apply_export.count('CE::ActiveCapabilities()') == 1 and exports.count('ActiveCapabilities') == 1
+# The installer and the candidate decoder (Full's foreign routes) read them.
+assert apply_export.count('CE::ActiveCapabilities()') == 1 and exports.count('ActiveCapabilities') == 2
 exports = exports.replace('CE::ActiveCapabilities()', 'HarnessCapabilities()')
 # The unified profile is decoded before the legacy fallback, and every reset names the unified state.
 assumptions = function('extern "C" COMBO_EXPORT int MM_SetEntranceExpansionAssumptionsForCombo(')
@@ -108,6 +109,8 @@ static int loggedErrors = 0;
 template <class... A> void LogError(const char*, const A&...) { ++loggedErrors; }
 #define SPDLOG_ERROR(...) LogError(__VA_ARGS__)
 using s32 = int32_t;
+// The MM save's age: the Full departure records the age being searched.
+struct { struct { uint8_t linkAge = 1; } save; } gSaveContext;
 enum RandoRegionId {
     RR_BENEATH_THE_GRAVEYARD_DAMPE = 1,
     RR_BENEATH_THE_WELL_FREEZARD_ROOM,
@@ -321,6 +324,30 @@ void Assumptions() {
     refused["assumed"] = {"MM_TEMPLE_WOODFALL"};
     assert(MM_SetEntranceExpansionAssumptionsForCombo(refused.dump().c_str()) == 0);
     assert(!CE::ActiveMmUnifiedAssumptions() && !CE::ActiveMmWallmasterAssumptions());
+    // Full: a candidate's MM part routes each MM source to both games' 18 dungeons; its OoT ones are decoded as
+    // foreign routes, without a reset gate, only while the build has the Full capability.
+    {
+        CE::Settings full;
+        full.erWallmasters = CE::Mode::Full;
+        const CE::Overrides links = {{"OOT_SHOP_MASKS", "MM_CLOCK_TOWN_FROM_CLOCK_TOWER"},
+                                     {"MM_CLOCK_TOWER_FROM_CLOCK_TOWN", "OOT_MARKET_FROM_MASK_SHOP"}};
+        const auto overlay =
+            CE::EncodeMmOverlay(CE::BuildCandidateWorld(links, CE::LayoutV2::MakePools(full, {}), full));
+        assert(MM_SetEntranceExpansionAssumptionsForCombo(overlay.c_str()) == 1);
+        for (const auto& [source, routes] : CE::ActiveMmUnifiedAssumptions()->routes) {
+            size_t oot = 0;
+            for (const auto& route : routes) {
+                oot += route.destination.game == CE::Game::Oot;
+                assert(!route.resetTime && !route.toVoid);
+            }
+            assert(routes.size() == 18 && oot == 11);
+        }
+        MM_ClearEntranceExpansionAssumptionsForCombo();
+        const auto saved = harnessCaps;
+        harnessCaps = saved.Only(CE::kVanillaWallmasterCapability);
+        assert(MM_SetEntranceExpansionAssumptionsForCombo(overlay.c_str()) == 0 && !CE::ActiveMmUnifiedAssumptions());
+        harnessCaps = saved;
+    }
     // An unknown profile still reaches the legacy decoder, which refuses it.
     auto unknown = Json::parse(TrancheOverlay());
     unknown["profile"] = "ootmm-entrance-assumptions-v2";
@@ -415,13 +442,36 @@ void Logic() {
     canResetTime = true;
     assert(Reached(RR_BENEATH_THE_GRAVEYARD_DAMPE) == std::set<std::string>{"MM_SWAMP_FROM_IKANA_CANYON"});
     assert(resetChecks == 1 && accessWrites == 0);
-    for (const auto destination : {CE::Key{CE::Game::Oot, 0x169u}, CE::Key{CE::Game::Mm, 0xfffeu}}) {
-        synthetic.routes[0xff00u] = {{destination, false, false}};
+    // An OoT row outside the Full pool (the Mask Shop door), a gated OoT route or an unknown MM one fails loudly.
+    for (const auto& [destination, gate] : {std::pair{CE::Key{CE::Game::Oot, 0x530u}, false},
+                                            std::pair{CE::Key{CE::Game::Oot, 0x169u}, true},
+                                            std::pair{CE::Key{CE::Game::Mm, 0xfffeu}, false}}) {
+        synthetic.routes[0xff00u] = {{destination, gate, false}};
         CE::ActiveMmUnifiedAssumptions() = synthetic;
         bool threw = false;
         try { Reached(RR_BENEATH_THE_GRAVEYARD_DAMPE); } catch (const std::runtime_error&) { threw = true; }
         assert(threw);
     }
+    // Full: an OoT dungeon of the pool is never traversed here. During an oracle search, once the soul edge holds,
+    // it is recorded at the age being searched (CrossWallmasters.h), for the fixpoint to root in OoT.
+    synthetic.routes[0xff00u] = {CE::MakeMmUnifiedRoute(*CE::Find("OOT_TEMPLE_FOREST"))};
+    CE::ActiveMmUnifiedAssumptions() = synthetic;
+    const uint32_t forest = 1u << CE::OotWallmasterArrivalIndex("OOT_TEMPLE_FOREST");
+    for (const bool oracle : {false, true})
+        for (const uint8_t age : {uint8_t(0), uint8_t(1)})
+            for (const bool soul : {false, true}) {
+                ResetSearch();
+                soulOwned = soul;
+                ComboRando::MmSongOracle() = oracle;
+                gSaveContext.save.linkAge = age;
+                CE::MmWallmasterDepartures() = {};
+                assert(Reached(RR_BENEATH_THE_GRAVEYARD_DAMPE).empty() && filterCalls.empty() && resetChecks == 0);
+                const auto& recorded = CE::MmWallmasterDepartures().masks;
+                assert(recorded[age] == (oracle && soul ? forest : 0u) && recorded[1 - age] == 0u);
+            }
+    ComboRando::MmSongOracle() = false;
+    gSaveContext.save.linkAge = 1;
+    CE::MmWallmasterDepartures() = {};
     // The private profile's logic is unchanged and never mixed with the unified one: candidate
     // assumptions of either kind come before an installed layout of either kind.
     CE::ActiveMmUnifiedAssumptions().reset();

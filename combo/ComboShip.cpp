@@ -483,6 +483,11 @@ static void AttachAdultAgeOracle(ComboRando::OracleFns& oot, ComboRando::OracleF
     mm.GetSongSourcesForAge = sAdultMmAgeOracle.GetSongSourcesForAge;
     mm.SetSongAgeArrivals = sAdultMmAgeOracle.SetSongAgeArrivals;
     mm.UseCrossAgeOracle = sAdultMmAgeOracle.UseCrossAgeOracle;
+    // Full Wallmasters' cross-game routes (rando/entrances/CrossWallmasters.h).
+    oot.GetEntranceSourcesForAge = sAdultOotAgeOracle.GetEntranceSourcesForAge;
+    oot.SetEntranceAgeArrivals = sAdultOotAgeOracle.SetEntranceAgeArrivals;
+    mm.GetEntranceSourcesForAge = sAdultMmAgeOracle.GetEntranceSourcesForAge;
+    mm.SetEntranceAgeArrivals = sAdultMmAgeOracle.SetEntranceAgeArrivals;
 }
 static void (*SOH_SetSongArrivals)(uint32_t) = nullptr, (*MM_SetSongArrivals)(uint32_t) = nullptr;
 static uint32_t (*SOH_GetSongSources)() = nullptr, (*MM_GetSongSources)() = nullptr;
@@ -4823,6 +4828,14 @@ int main(int argc, char** argv) {
     sAdultMmAgeOracle.SetSongAgeArrivals =
         (void (*)(uint32_t, uint32_t))GetSym(mmModule, "MM_SetOracleSongAgeArrivals");
     sAdultMmAgeOracle.UseCrossAgeOracle = (bool (*)())GetSym(mmModule, "MM_UseCrossAgeOracle");
+    sAdultOotAgeOracle.GetEntranceSourcesForAge =
+        (uint32_t (*)(int))GetSym(sohModule, "SOH_GetOracleEntranceSourcesForAge");
+    sAdultOotAgeOracle.SetEntranceAgeArrivals =
+        (void (*)(uint32_t, uint32_t))GetSym(sohModule, "SOH_SetOracleEntranceAgeArrivals");
+    sAdultMmAgeOracle.GetEntranceSourcesForAge =
+        (uint32_t (*)(int))GetSym(mmModule, "MM_GetOracleEntranceSourcesForAge");
+    sAdultMmAgeOracle.SetEntranceAgeArrivals =
+        (void (*)(uint32_t, uint32_t))GetSym(mmModule, "MM_SetOracleEntranceAgeArrivals");
     SOH_SetMmVisited = (void (*)(int))GetSym(sohModule, "SOH_SetMmVisited");
     SOH_SetEntranceRuntimeFlags = (void (*)(uint32_t))GetSym(sohModule, "SOH_SetEntranceRuntimeFlags");
     SOH_SetOotmmSceneRestrictions = (void (*)(int))GetSym(sohModule, "SOH_SetOotmmSceneRestrictions");

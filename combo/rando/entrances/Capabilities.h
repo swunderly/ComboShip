@@ -40,6 +40,7 @@ inline constexpr CapabilityValue kWallmastersVanillaValues[] = { { "erWallmaster
 inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersStartingSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
+inline constexpr CapabilityValue kWallmastersFullValues[] = { { "erWallmasters", "full", Stage::Dev } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -80,6 +81,12 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // keeps the vanilla, quests or songs-v1 id, so its layout is the one earlier builds make. Public from 0.4.13; its
     // id and rules are frozen from then on.
     { "wallmasters-own-game-songs-v2", kWallmastersStartingSongsValues, {}, false },
+    // Full Wallmasters (limits design, Stage 3): OoTMM's WALLMASTERS pool with ownGame false
+    // (packages/logic/src/solver/entrances.ts:657-669), so a Wallmaster can send Link to a dungeon of either game.
+    // Its rules are the frozen LayoutV2 (EntranceLayout.h). It takes either quest context, foreign-song logic and a
+    // starting OoT warp song, as the songs-v2 id does; song destination shuffle and a starting Song of Soaring stay
+    // refused. The Temple probe checks only the base world (UnifiedBridge.h, the monotone shortcut).
+    { "wallmasters-full-v1", kWallmastersFullValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
 // The Own Game Wallmaster id whose seeds have foreign-song logic (EntranceAvailability.h, UnifiedBridge.h,
@@ -87,6 +94,8 @@ inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
 inline constexpr std::string_view kSongsWallmasterCapability = "wallmasters-own-game-songs-v1";
 // The Own Game Wallmaster id whose seeds start with an OoT warp song under logic (the same files).
 inline constexpr std::string_view kStartingSongsWallmasterCapability = "wallmasters-own-game-songs-v2";
+// The Full Wallmaster id: the only row that admits a "full" value (FullOnlyForWallmasters).
+inline constexpr std::string_view kFullWallmasterCapability = "wallmasters-full-v1";
 
 namespace CapabilityDetail {
 constexpr size_t Find(std::string_view id) {
@@ -132,11 +141,12 @@ constexpr bool OnlyOwnGameWallmastersPublic() {
                 return false;
     return true;
 }
-// Full stays hidden until cross-game entrances exist.
-constexpr bool FullNeverAdmitted() {
+// Full is admitted only for Wallmasters, by the Full Wallmaster row alone, whose cross-game routes the oracles,
+// the runtime and LayoutV2 carry. Every other pool's Full needs its own cross-game rows first.
+constexpr bool FullOnlyForWallmasters() {
     for (const auto& row : kEntranceCapabilities)
         for (const auto& value : row.values)
-            if (value.value == "full")
+            if (value.value == "full" && (row.id != kFullWallmasterCapability || value.key != "erWallmasters"))
                 return false;
     return true;
 }
@@ -166,7 +176,7 @@ static_assert(CapabilityDetail::IdsAreUnique(), "Capability ids must be unique")
 static_assert(CapabilityDetail::RowsFitTheirMask(), "A capability row has 1 to 32 values");
 static_assert(CapabilityDetail::DevOnlyNeverPublic(), "A devOnly capability can never be Public");
 static_assert(CapabilityDetail::OnlyOwnGameWallmastersPublic(), "Only the Own Game Wallmaster rows are Public");
-static_assert(CapabilityDetail::FullNeverAdmitted(), "Full is never admitted");
+static_assert(CapabilityDetail::FullOnlyForWallmasters(), "Only wallmasters-full-v1 admits Full, for Wallmasters");
 static_assert(CapabilityDetail::CompanionsAreClosed(), "Companion rows must stay within the rows they name");
 
 // The values one build admits. Bit j of a row's mask admits that row's values[j].

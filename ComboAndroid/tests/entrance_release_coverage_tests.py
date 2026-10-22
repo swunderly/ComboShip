@@ -210,10 +210,11 @@ for needle in ('const bool bundledMq = GetMqDataSource() == ComboMq::SeedMqSourc
     assert hostcxx.contains(settings, needle), needle
 
 # Each process must finish within hostcxx.RUN_TIMEOUT, the binding limit, even on a loaded machine (CTest's timeout
-# only bounds the whole harness). Each proof over all 4096 quest masks takes tens of seconds, so the proof runs in two
-# parts (the .cpp's argv[1]), and the release and dev builds' four processes run at once. Each build compiles in its
+# only bounds the whole harness). Each proof over all 4096 quest masks takes tens of seconds, so the proof runs in three
+# parts (the .cpp's argv[1]: Own Game without and with song facts, and Full), and the release and dev builds' six
+# processes run at once. Each build compiles in its
 # own directory, so the two compilations can run at once too.
-PARTS = ('ids', 'songs')
+PARTS = ('ids', 'songs', 'full')
 
 
 def compile_build(dev):

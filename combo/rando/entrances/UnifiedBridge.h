@@ -6,7 +6,9 @@
 // capability binds both games, with actual native quest context and no MQ admission; the quests
 // capability binds the same rules where a Master Quest dungeon of OoTMM's bundled data is played, the
 // songs capability the same rules, in either quest context, for a seed with foreign-song logic, and the
-// songs-v2 capability the same rules again for a seed that starts with an OoT warp song. The launcher and
+// songs-v2 capability the same rules again for a seed that starts with an OoT warp song. The Full capability
+// places OoTMM's same pool with ownGame false, under the frozen LayoutV2 rules, so a Wallmaster may send Link to a
+// dungeon of either game; it takes every quest context and song fact the songs-v2 id takes. The launcher and
 // headless tool call it once per generation attempt, after the native pools and Ship's own entrance
 // shuffle and before the combined fill.
 // MIT, Copyright (c) 2020-2022 OoTMM Team; see LICENSE.OoTMM.
@@ -106,7 +108,8 @@ template <class Lookup> TempleProbeFns ResolveUnifiedTempleProbe(Lookup&& lookup
 }
 
 // The one capability id a layout requires: the selected one, or the row that admits the whole
-// combination (Capabilities.h). Own Game Wallmasters take the vanilla id here; UnifiedSongRequirement
+// combination (Capabilities.h). Full Wallmasters take the Full id, the only one that admits them, whatever
+// the song facts and quest context. Own Game Wallmasters take the vanilla id here; UnifiedSongRequirement
 // moves foreign-song logic to the songs id, UnifiedWarpSongRequirement a starting OoT warp song to the
 // songs-v2 id, and UnifiedQuestRequirement a Master Quest context to the quests id once the native quest
 // context is read. Each seed so takes the oldest id that admits it.
@@ -114,6 +117,8 @@ inline std::string UnifiedRequirement(const Settings& s, std::string_view capabi
                                       const CapabilitySet& active = ActiveCapabilities()) {
     if (!capability.empty())
         return std::string(capability);
+    if (s.erWallmasters == Mode::Full)
+        return std::string(kFullWallmasterCapability);
     if (Active(s.erWallmasters) && Active(s.erOneWays))
         return "wallmasters-with-one-ways-v1";
     if (Active(s.erWallmasters) && active.Active(kVanillaWallmasterCapability))
@@ -173,9 +178,10 @@ inline std::string UnifiedWarpSongRequirement(const std::string& required, bool 
 // The OoT Wallmaster ids bind the audited OoT rows; every other id keeps its MM-only contract.
 inline bool BindsOotWallmasters(std::string_view required) {
     return required == kVanillaWallmasterCapability || required == kQuestsWallmasterCapability ||
-           required == kSongsWallmasterCapability || required == kStartingSongsWallmasterCapability;
+           required == kSongsWallmasterCapability || required == kStartingSongsWallmasterCapability ||
+           required == kFullWallmasterCapability;
 }
-// Whether the generation may read a Master Quest context: the quests or a songs id, or the vanilla id
+// Whether the generation may read a Master Quest context: the quests, a songs or the Full id, or the vanilla id
 // chosen by settings (not selected by name) in a build that has the quests id too, and in every case only
 // for OoTMM's bundled data. A bundled seed rolls its Master Quest dungeons on a stream of their own from
 // its master seed (settings.cpp, MqMode.h MqRollSeed), so every finalize of an attempt rolls the same
@@ -186,13 +192,13 @@ inline bool AdmitsMasterQuestContext(std::string_view required, std::string_view
     if (source != ComboMq::SeedMqSource::Bundled)
         return false;
     return required == kQuestsWallmasterCapability || required == kSongsWallmasterCapability ||
-           required == kStartingSongsWallmasterCapability ||
+           required == kStartingSongsWallmasterCapability || required == kFullWallmasterCapability ||
            (capability.empty() && required == kVanillaWallmasterCapability &&
             active.Active(kQuestsWallmasterCapability));
 }
 // The id for the native quest context: a Master Quest dungeon moves the vanilla id to the quests id, so an
 // all-vanilla seed keeps the frozen vanilla id and the layout 0.4.12 makes. A selected id is kept, and so are
-// the songs ids, which take either quest context.
+// the songs ids and the Full id, which take either quest context.
 inline std::string UnifiedQuestRequirement(const std::string& required, const OotQuests& quests,
                                            std::string_view capability, const CapabilitySet& active,
                                            ComboMq::SeedMqSource source) {
@@ -233,15 +239,20 @@ inline void RequireUnifiedCoverage(const Pools& pools, const Settings& s, bool o
 // Temple and Ganon's Castle do it: 12 OoT Wallmasters for 11 dungeon entrances (tools/ootmm/m1-contract.json
 // mqSources.capacityShortfalls). That refusal is a WallmasterCapacityShortfall, with the sentence for settings whose
 // every roll is such a context (`forced`, EntranceProfile.h MqWallmasterShortfallForced) or for a random roll that
-// landed on one; any other pool's shortfall would not depend on the roll and stops generation.
+// landed on one; any other pool's shortfall would not depend on the roll and stops generation. The count follows the
+// pool: an own-game pool's sources of one game take that game's destinations, and a cross-game pool's sources of both
+// games share them all, so Full's 18 destinations hold its 16 sources at most (m1-contract.json fullWallmasters) and
+// Full never meets the Master Quest shortfall.
 inline void RequireWallmasterCapacity(const Pools& pools, const Settings& s, bool forced = false) {
-    for (const auto& pool : pools)
-        for (const Game game : { Game::Oot, Game::Mm }) {
+    for (const auto& pool : pools) {
+        const auto groups = pool.ownGame ? std::vector<std::optional<Game>>{ Game::Oot, Game::Mm }
+                                         : std::vector<std::optional<Game>>{ std::nullopt };
+        for (const auto game : groups) {
             size_t sources = 0;
             Names destinations;
             for (const auto src : pool.src) {
                 const auto& from = *Find(src);
-                if (pool.ownGame && from.game != game)
+                if (game && from.game != *game)
                     continue;
                 ++sources;
                 for (const auto dst : pool.dst)
@@ -257,6 +268,7 @@ inline void RequireWallmasterCapacity(const Pools& pools, const Settings& s, boo
                     forced ? WallmasterCapacityRefusal(log) : WallmasterSeedCapacityRefusal(log), forced);
             throw UnifiedEntranceRefused(log);
         }
+    }
 }
 inline void RequireOotWallmasterExports(const NativeFns& native) {
     if (!native.ootAreaContext || !native.applyOotLayout || !native.dumpOotLayout || !native.setOotAssumptions ||
@@ -410,7 +422,7 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     const auto areaExists = areas(quests);
     const auto pools = ResolvePools(s, areaExists).pools;
     RequireUnifiedCoverage(pools, s, ootBound);
-    RequireWallmasterCapacity(pools, s, MqWallmasterShortfallForced(g.readSetting, false));
+    RequireWallmasterCapacity(pools, s, MqWallmasterShortfallForced(g.readSetting, false, s.erWallmasters));
     Names offered;
     for (const auto& pool : pools)
         for (const auto src : pool.src)
@@ -443,14 +455,15 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
             throw UnifiedEntranceRefused(why);
     }
     // The id carries the seed's song facts (ComboSeedFormat.h RequireSeedEntranceFacts): only the songs ids
-    // take foreign-song logic, and the songs id needs it; only the songs-v2 id takes a starting warp song,
-    // and it needs one. Every build has both, so this is reached only with an id selected by name, or another
-    // pool's id.
-    if (songFacts && required != kSongsWallmasterCapability && required != kStartingSongsWallmasterCapability)
+    // and the Full id take foreign-song logic, and the songs id needs it; only the songs-v2 id and the Full id
+    // take a starting warp song, and the songs-v2 id needs one. Every build has both songs ids, so this is
+    // reached only with an id selected by name, or another pool's id.
+    const bool full = required == kFullWallmasterCapability;
+    if (songFacts && required != kSongsWallmasterCapability && required != kStartingSongsWallmasterCapability && !full)
         throw UnifiedEntranceRefused(required + " does not admit foreign-song logic");
     if (!songFacts && required == kSongsWallmasterCapability)
         throw UnifiedEntranceRefused(required + " needs foreign-song logic, which this seed does not have");
-    if (warpFacts && required != kStartingSongsWallmasterCapability)
+    if (warpFacts && required != kStartingSongsWallmasterCapability && !full)
         throw UnifiedEntranceRefused(required + " does not admit a starting warp song");
     if (!warpFacts && required == kStartingSongsWallmasterCapability)
         throw UnifiedEntranceRefused(required + " needs a starting warp song, which this seed does not have");
@@ -507,9 +520,14 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     };
     // Removing a synthetic VOID Wallmaster source cannot remove native reachability. Certify the
     // base once with both inventories, then retain the pinned sampling stream and final validation.
-    // Old contracts and every combination with another declared pool keep the original path.
+    // Old contracts and every combination with another declared pool keep the original path. Full's pool
+    // is the same alias pool with ownGame false: its edges, in either game and across games, still only add
+    // reachability (an arrival keeps the age, and the day-1 grant only adds time), so the same base proves
+    // every candidate. Without the shortcut each candidate is probed, and the Temple probe refuses a
+    // cross-game candidate (TempleAdapter.h): such a seed fails closed until the probe searches MM.
     if (ootBound && g.wallmasterShortcut && facts.logicEnabled && MakePools(s).size() == 1 && pools.size() == 1 &&
-        pools.front().name == "WALLMASTERS" && pools.front().ownGame && pools.front().alias) {
+        pools.front().name == "WALLMASTERS" && pools.front().alias &&
+        (pools.front().ownGame || s.erWallmasters == Mode::Full)) {
         const auto base = ReservedEntrances(s);
         auto basePools = pools;
         for (auto& pool : basePools)

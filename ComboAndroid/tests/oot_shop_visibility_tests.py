@@ -127,6 +127,9 @@ struct OTRGlobals {
 MockRandomizer mockRandomizer;OTRGlobals globals{&mockRandomizer,Rando::ctx};OTRGlobals* OTRGlobals::Instance=&globals;
 namespace RandomizerCheckObjects {bool AreaIsDungeon(int){return false;}bool AreaIsOverworld(int){return true;}}
 namespace ComboRando {bool& OotSongOracle(){static bool value=false;return value;}}
+// The Full Wallmaster departures each oracle search starts afresh (CrossWallmasters.h).
+namespace ComboRando::Entrances {struct WallmasterAgeMasks {unsigned masks[2]{};};
+WallmasterAgeMasks& OotWallmasterDepartures(){static WallmasterAgeMasks value;return value;}}
 struct Region {bool Child(){return true;}bool Adult(){return true;}} region;
 Region* RegionTable(int){return &region;}
 bool sComboPortalOpen=false;

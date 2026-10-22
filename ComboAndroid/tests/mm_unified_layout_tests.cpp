@@ -286,6 +286,35 @@ void CheckAssumptions() {
   MmUnifiedLayout installed;
   installed.install(Seed(committed), WholeCatalog());
   assert(fixed.routes == installed.routes());
+  // A Full layout: each MM source routed to an OoT dungeon keeps that route,
+  // by the OoT registry id, beside the ones routed in MM; only the Full id
+  // carries such a route.
+  {
+    EntranceLayout full;
+    full.required = {std::string(kFullWallmasterCapability)};
+    full.devBuild = true;
+    full.settings.erWallmasters = Mode::Full;
+    Overrides routes;
+    size_t oot = 0, mm = 0;
+    for (const auto &pool : LayoutV2::MakePools(full.settings, OotQuests{}))
+      for (const auto src : pool.src)
+        routes[src] = Find(src)->game == Game::Oot || oot < 2
+                          ? kOotWallmasterArrivalRows[oot++]
+                          : kMmBaseWallmasterDestinations[mm++];
+    full.overrides = routes;
+    MmUnifiedLayout crossing;
+    crossing.install(Seed(full), WholeCatalog());
+    size_t intoOot = 0;
+    for (const auto &[id, rs] : crossing.routes())
+      for (const auto &route : rs) {
+        intoOot += route.destination.game == Game::Oot;
+        assert(!route.resetTime && !route.toVoid);
+      }
+    assert(crossing.routes().size() == 4 && intoOot == 2 && oot == 11 && mm == 2);
+    const auto withoutFull = WholeCatalog().Only(kVanillaWallmasterCapability);
+    assert(Has(Error([&] { crossing.install(Seed(full), withoutFull); }),
+               "which this build does not have"));
+  }
   // Part placed, part open: the placed source keeps its one edge, the others
   // every assignable one left; a pair both fixed and open stays twice (OR).
   auto partial = kGameLinks;
@@ -362,14 +391,34 @@ void CheckAssumptions() {
   auto undeleted = good;
   undeleted["deleted"].erase(0);
   refused(undeleted, "without deleting");
-  // A foreign arrival, and the one-way and water-void arrivals that only
-  // one-ways add to the Wallmaster pool.
+  // A foreign arrival without the Full capability, and the one-way and
+  // water-void arrivals that only one-ways add to the Wallmaster pool.
+  const auto withoutFull = WholeCatalog().Only(kVanillaWallmasterCapability);
   for (const char *arrival :
        {"OOT_DEKU_TREE", "MM_SWAMP_FROM_IKANA_CANYON", "MM_VOID_GREAT_BAY"}) {
     auto unbound = good;
     unbound["remaining"][0]["dst"] = arrival;
-    refused(unbound, "no unified MM binding");
+    assert(Has(Error([&] { DecodeMmUnifiedAssumptions(unbound, withoutFull); }),
+               "no unified MM binding"));
   }
+  // With it (limits design, Stage 3), an OoT dungeon of the Full pool is a
+  // foreign route, without a reset gate; no other OoT row is, nor a gated one.
+  auto foreign = good;
+  foreign["remaining"][0]["dst"] = "OOT_DEKU_TREE";
+  const auto source = Find(foreign["remaining"][0]["src"].get<std::string>());
+  const auto withFull = DecodeMmUnifiedAssumptions(foreign, WholeCatalog());
+  const auto &routes = withFull.routes.at(source->id);
+  assert(std::count(routes.begin(), routes.end(),
+                    MmUnifiedRoute{{Game::Oot, Find("OOT_DEKU_TREE")->id},
+                                   false, false}) == 1);
+  auto shop = foreign;
+  shop["remaining"][0]["dst"] = "OOT_SHOP_MASKS";
+  assert(Has(Error([&] { DecodeMmUnifiedAssumptions(shop, WholeCatalog()); }),
+             "no unified MM binding"));
+  auto gated = foreign;
+  gated["remaining"][0]["resetTime"] = true;
+  assert(Has(Error([&] { DecodeMmUnifiedAssumptions(gated, WholeCatalog()); }),
+             "wrongly"));
   auto nowhere = good;
   nowhere["remaining"][0]["dst"] = "NOT_A_ROW";
   refused(nowhere, "unknown destination");

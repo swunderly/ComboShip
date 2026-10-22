@@ -5363,6 +5363,7 @@ extern "C" COMBO_EXPORT void MM_TriggerTriforceCredits(int dormant) try {
 
 #include "rando/SongTravelMM.h"
 #include "rando/ForeignSongs.h"
+#include "rando/entrances/CrossWallmasters.h"
 #include "2s2h/CustomMessage/CustomMessage.h"
 #include <atomic>
 static std::atomic<int> sForeignSongRequest{ -1 }, sForeignSongReply{ -2 };
@@ -5684,6 +5685,8 @@ extern "C" COMBO_EXPORT const char* Combo_MM_Rando_GetReachableChecks(void) {
     if (sMM_OracleExternalBeans && INV_CONTENT(ITEM_MAGIC_BEANS) == ITEM_MAGIC_BEANS)
         RANDO_EVENTS[RE_ACCESS_BEANS_REFILL] = true;
     ComboRando::MmSongOracle() = true;
+    // Full Wallmasters: this search records the OoT dungeons its reached sources route to (ComboEntrancesMM.cpp).
+    ComboRando::Entrances::MmWallmasterDepartures() = {};
     static std::string buf;
     struct RestoreOracleAge {
         u8 age;
@@ -6505,6 +6508,18 @@ extern "C" COMBO_EXPORT uint32_t MM_GetOracleSongSourcesForAge(int age) {
 #ifdef COMBO_BUILD
 extern "C" COMBO_EXPORT void MM_SetOracleSongAgeArrivals(uint32_t adult, uint32_t child) {
     ComboRando::MmSongAgeArrivals() = { true, { adult & 0xffc0, child & 0xffc0 } };
+}
+// Full Wallmasters (CrossWallmasters.h): the OoT dungeons (OoT bits) of the MM sources the last search reached at an
+// age it searched (adult 0, child 1), and the arrivals from OoT's sources (MM bits) the next searches root at RR_MAX.
+extern "C" COMBO_EXPORT uint32_t MM_GetOracleEntranceSourcesForAge(int age) {
+    if (age < 0 || age > 1)
+        return 0;
+    return ComboRando::Entrances::MmWallmasterDepartures().masks[age] &
+           ComboRando::Entrances::kOotWallmasterArrivalBits;
+}
+extern "C" COMBO_EXPORT void MM_SetOracleEntranceAgeArrivals(uint32_t adult, uint32_t child) {
+    constexpr auto bits = ComboRando::Entrances::kMmWallmasterArrivalBits;
+    ComboRando::Entrances::MmWallmasterArrivals() = { { adult & bits, child & bits } };
 }
 // MM open at the start is entered as child: v32.3 has no MM starting age, and an MM start forces OoT child
 // (settings.cpp, gComboStartingGameMM).

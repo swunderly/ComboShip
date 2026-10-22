@@ -155,8 +155,11 @@ template <class Read> std::array<MqRoll, kOotMqDungeons.size()> MqRollRange(Read
 }
 // Every roll of these settings is a quest context with more OoT Wallmasters than dungeon entrances: Spirit Temple
 // and Bottom of the Well always Master Quest, Shadow Temple and Ganon's Castle always vanilla
-// (UnifiedBridge.h RequireWallmasterCapacity). Such a selection can never generate, in OoTMM either.
-template <class Read> bool MqWallmasterShortfallForced(Read read, bool mqOnly) {
+// (UnifiedBridge.h RequireWallmasterCapacity). Such a selection can never generate, in OoTMM either. Only an
+// own-game pool is short there: Full's pool gives every source both games' 18 dungeons, so it never is.
+template <class Read> bool MqWallmasterShortfallForced(Read read, bool mqOnly, Mode wallmasters = Mode::OwnGame) {
+    if (wallmasters != Mode::OwnGame)
+        return false;
     const auto range = MqRollRange(read, mqOnly);
     const auto is = [&](std::string_view dungeon, MqRoll roll) { return range[OotMqIndex(dungeon)] == roll; };
     return is("Spirit", MqRoll::MasterQuest) && is("BotW", MqRoll::MasterQuest) && is("Shadow", MqRoll::Vanilla) &&
@@ -174,10 +177,12 @@ inline bool CatalogueMqBundled(const nlohmann::json& ootCatalog) {
 // Foreign-song logic is not refused: every build has wallmasters-own-game-songs-v1, which takes it
 // (UnifiedBridge.h UnifiedSongRequirement), and the Temple gate takes it (lemma S1). Nor is a starting OoT warp song:
 // every build has wallmasters-own-game-songs-v2, which takes it (UnifiedWarpSongRequirement), and the Temple gate
-// takes it (lemma L3).
+// takes it (lemma L3). `wallmasters` is the value asked about: the Master Quest capacity refusal is Own Game's alone,
+// and every other reason applies to Own Game and Full alike.
 template <class Read>
 EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nlohmann::json& ootCatalog, Read read,
-                                         const CapabilitySet& caps = ActiveCapabilities()) {
+                                         const CapabilitySet& caps = ActiveCapabilities(),
+                                         Mode wallmasters = Mode::OwnGame) {
     auto why = WallmasterSettingsRefusal(ProfileEntranceFacts(draft, read));
     if (!why.empty())
         return why;
@@ -197,7 +202,7 @@ EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nloh
         if (!CatalogueMqBundled(ootCatalog))
             return { kWallmasterMasterQuestText,
                      "Wallmaster Shuffle supports Master Quest dungeons only from OoTMM's bundled data" };
-        if (MqWallmasterShortfallForced(read, mqOnly))
+        if (MqWallmasterShortfallForced(read, mqOnly, wallmasters))
             return WallmasterCapacityRefusal();
     }
     return {};
