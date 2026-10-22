@@ -155,6 +155,7 @@ harness = r'''
 #include <vector>
 #include <nlohmann/json.hpp>
 #define COMBO_EXPORT
+#define SPDLOG_ERROR(...) ((void)0)
 #include "randomizerEnums.h"
 #include "mq/MqSeedMarker.h"
 #include "rando/ComboPresets.h"

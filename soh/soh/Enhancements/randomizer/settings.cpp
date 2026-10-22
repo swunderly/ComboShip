@@ -3021,6 +3021,16 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
                   "SeedChoices.h reads SoH's option values");
     uint64_t choiceSeed = 0;
     const bool seededChoices = GetSeedChoicesMode() == SC::Mode::Seeded && Combo_GetRandoSeed(&choiceSeed);
+    if (GetSeedChoicesMode() == SC::Mode::Seeded && !seededChoices) {
+        // Every generation, reload and replay sets the combo seed before its finalize, so this is a launcher bug: the
+        // choices fall back to SoH's draw from the shared stream, and a record goes unused. Said once per process.
+        static const bool reported = [] {
+            SPDLOG_ERROR("[ComboShip] FinalizeSettings: Seeded settings choices without a combo seed; drawing them "
+                         "from the shared stream");
+            return true;
+        }();
+        (void)reported;
+    }
     const auto& choiceRecord = GetSeedChoicesRecord();
     mResolvedSeedChoices = {};
     // One Seeded choice drawn from its own stream (SeedChoices.h RollSeed); Close puts the shared stream back.

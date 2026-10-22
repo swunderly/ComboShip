@@ -16,6 +16,7 @@
 #include "rando/GenerationRules.h"
 #include "rando/entrances/EntranceProfile.h"
 #include "rando/OotMaskQuest.h"
+#include "rando/SeedChoices.h"
 #include "mq/MqSeedMarker.h"
 #include <libultraship/libultraship.h>
 #include <fast/Fast3dGui.h>
@@ -539,10 +540,24 @@ void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden) {
         ImGui::TextDisabled("%s", display->note);
         ImGui::PopTextWrapPos();
     }
-    if (view != 0 && !std::strcmp(key, "gRandoSettings.GanonTrial")) {
+    // The starting age and trials the seed records (rando/SeedChoices.h). An older seed that draws a random starting
+    // age or random trials again for each new file says so once, under its age row or, with a fixed age, its trials.
+    const bool ageRow = !std::strcmp(key, "gRandoSettings.StartingAge");
+    const bool trialRow = !std::strcmp(key, "gRandoSettings.GanonTrial");
+    if (view != 0 && (ageRow || trialRow)) {
         const auto& seed = InspectedSeed();
-        if (seed.is_object() && seed.contains("oot") && seed["oot"].contains("resolvedSeedRules")) {
-            const auto trials = seed["oot"]["resolvedSeedRules"].value("requiredTrials", Json::array());
+        SeedChoices::SeedView choices;
+        try {
+            choices = SeedChoices::SeedChoicesView(seed, seed.is_object() && ModeRandomizesOot(ReadGameMode(seed)));
+        } catch (const std::exception&) {} // a malformed record shows nothing; loading the seed refuses it
+        if (ageRow && choices.adult)
+            ImGui::TextWrapped("Starting age: %s", *choices.adult ? "Adult" : "Child");
+        Json trials;
+        if (choices.requiredTrials)
+            trials = SeedChoices::Bits(*choices.requiredTrials, SeedChoices::kTrialCount);
+        else if (seed.is_object() && seed.contains("oot") && seed["oot"].contains("resolvedSeedRules"))
+            trials = seed["oot"]["resolvedSeedRules"].value("requiredTrials", Json::array());
+        if (trialRow && trials.is_array()) {
             std::string text;
             for (const auto& id : trials) {
                 if (!text.empty())
@@ -552,6 +567,11 @@ void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden) {
                             .value(std::to_string(id.get<int>()), std::string("Unknown trial"));
             }
             ImGui::TextWrapped("Required trials: %s", text.empty() ? "None" : text.c_str());
+        }
+        if (ageRow ? choices.unrecordedAge : choices.unrecordedTrials && !choices.unrecordedAge) {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, .8f, .35f, 1.0f)); // DrawRuleChangeWarning's
+            ImGui::TextWrapped("%s", SeedChoices::kUnrecordedChoicesWarning);
+            ImGui::PopStyleColor();
         }
     }
     // A bundled-MQ seed's Master Quest dungeons, as it records them; a seed without the marker shows nothing.

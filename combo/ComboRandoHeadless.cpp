@@ -631,7 +631,7 @@ int RunHeadless(int argc, char** argv) {
             std::cerr << "[playthrough] " << error.what() << "\n";
             return 2;
         }
-        bool choicesRerolled = false;
+        uint8_t rerolledKinds = 0; // the kinds of choice a seed without the record drew again (SeedChoices.h Kind)
 
         // Prices are part of the seed: an unknown price can never be treated as buyable, so a spoiler
         // without them can't be validated honestly. Hard-fail rather than emit an optimistic verdict.
@@ -705,6 +705,28 @@ int RunHeadless(int argc, char** argv) {
                 nativePreparationFailed = true;
                 return ComboRando::PlaythroughResult{};
             }
+            // The random choices the seed records, checked on the dump's finalize, which uses the seed's own settings
+            // as the app's reload does (the record wins there). The glitchless re-prep below can force a choice the
+            // seed's settings leave random: a No Logic seed with a closed Door of Time and no shuffled ocarina, or a
+            // closed forest without entrance shuffle, starts as a child there (settings.cpp), and reports no age.
+            try {
+                const char* resolvedText = SOH_DumpSeedChoices();
+                const auto resolved = nlohmann::json::parse(resolvedText ? resolvedText : "null");
+                if (!ComboRando::SeedChoices::ReplayKeepsChoices(ootSeed, resolved)) {
+                    std::cerr << "[playthrough] "
+                              << (ComboRando::SeedChoices::LostMasterQuestChoice(ootSeed, resolved)
+                                      ? ComboRando::SeedChoices::kMasterQuestDataRefusal
+                                      : "the seed's recorded settings choices did not reproduce")
+                              << " — no verdict\n";
+                    nativePreparationFailed = true;
+                    return ComboRando::PlaythroughResult{};
+                }
+                rerolledKinds |= ComboRando::SeedChoices::ReRolledKinds(ootSeed, resolved);
+            } catch (const std::exception& error) {
+                std::cerr << "[playthrough] " << error.what() << " — no verdict\n";
+                nativePreparationFailed = true;
+                return ComboRando::PlaythroughResult{};
+            }
             // NOW force glitchless for traversal (real gates); the dump above froze the seed's slot
             // set in the DLL-side cache, so this re-prep can't shrink it.
             nlohmann::json os = ootSettings;
@@ -721,15 +743,6 @@ int RunHeadless(int argc, char** argv) {
                 nativePreparationFailed = true;
                 return ComboRando::PlaythroughResult{};
             }
-            // So do the random choices it records, and the oracle's own finalize keeps them (the record wins there).
-            const char* resolvedText = SOH_DumpSeedChoices();
-            const auto resolved = nlohmann::json::parse(resolvedText ? resolvedText : "null");
-            if (!ComboRando::SeedChoices::ReplayKeepsChoices(ootSeed, resolved)) {
-                std::cerr << "[playthrough] the seed's recorded settings choices did not reproduce — no verdict\n";
-                nativePreparationFailed = true;
-                return ComboRando::PlaythroughResult{};
-            }
-            choicesRerolled = choicesRerolled || ComboRando::SeedChoices::ReRollsChoices(ootSeed, resolved);
             // The player's trials are the ones generation resolved, as the in-game reload applies them.
             if (hasResolvedTrials && (!SOH_ApplyResolvedSeedRules ||
                                       !SOH_ApplyResolvedSeedRules(ootSeed.at("resolvedSeedRules").dump().c_str()))) {
@@ -860,14 +873,6 @@ int RunHeadless(int argc, char** argv) {
                 it.value().get<int>() == 1)
                 ootNoLogic = true;
 
-        // Older spoilers did not record which trials generation picked. When only some (or a random
-        // number) are required, the replay re-derives them and may judge a different set.
-        const int trialMode = ootSettings.value("gRandoSettings.GanonTrial", 1);
-        const int trialCount = ootSettings.value("gRandoSettings.GanonTrialCount", 6);
-        if (!hasResolvedTrials && (trialMode == 2 || (trialMode == 1 && trialCount > 0 && trialCount < 6)))
-            std::cout << "[playthrough] note: this spoiler predates recorded Ganon's trials; the replay re-derives "
-                         "them, so the verdict is approximate\n";
-
         // Pass 1 — the seed's own settings + enabled tricks: "can this player beat it?"
         const auto trickCsv = originalRules["ootTricks"].get<std::string>();
         const auto ootTrickCount = trickCsv.empty() ? 0 : 1 + std::count(trickCsv.begin(), trickCsv.end(), ',');
@@ -884,10 +889,15 @@ int RunHeadless(int argc, char** argv) {
             std::cerr << "[playthrough] could not restore the seed's entrance layout — no verdict\n";
             return 2;
         }
-        if (choicesRerolled)
-            std::cout << "[playthrough] note: this seed predates recorded settings choices; its random Key Rings, "
-                         "Ganon's Trials, starting age or Master Quest dungeons are drawn again for the replay, so "
-                         "the verdict is approximate\n";
+        // A seed without the record draws the random choices its finalize reported again. The trials a profile seed
+        // records in resolvedSeedRules are applied over that draw, so only an older seed without them names them.
+        uint8_t redrawnKinds = rerolledKinds;
+        if (hasResolvedTrials)
+            redrawnKinds &= static_cast<uint8_t>(~ComboRando::SeedChoices::kKindTrials);
+        if (redrawnKinds)
+            std::cout << "[playthrough] note: this seed predates recorded settings choices, so the replay draws its "
+                         "random "
+                      << ComboRando::SeedChoices::KindNames(redrawnKinds) << " again and the verdict is approximate\n";
         if (r1.beatable) {
             if (int bad = affordabilityViolations(pt1)) {
                 std::cout << "[playthrough] RESULT: FAIL — beatable but " << bad

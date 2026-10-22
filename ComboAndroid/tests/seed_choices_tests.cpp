@@ -219,6 +219,109 @@ void CheckSeedDocument() {
   assert(oot == legacy);
 }
 
+void CheckKinds() {
+  // Version 1 knows every kind this build draws; no other version is known.
+  assert(KindsOfVersion(1) ==
+         (kKindKeyRings | kKindTrials | kKindStartingAge | kKindMasterQuest));
+  assert(KindsOfVersion(0) == 0 && KindsOfVersion(2) == 0);
+  assert(KindsOf(Full()) == KindsOfVersion(1) && KindsOf(Choices{}) == 0);
+  // A record compares only the kinds its version knows: a later build's
+  // finalize reporting a kind the record's version lacks keeps the seed.
+  auto rings = Full();
+  rings.requiredTrials.reset();
+  rings.adult.reset();
+  rings.masterQuest.reset();
+  assert(OnlyKinds(Full(), kKindKeyRings) == rings);
+  assert(OnlyKinds(Full(), KindsOfVersion(1)) == Full());
+  assert(OnlyKinds(Full(), 0).Empty());
+  // The kinds a seed without the record draws again, named for a note.
+  const json legacy = {{"settings", json::object()}};
+  assert(ReRolledKinds(legacy, Encode(Full())) == KindsOfVersion(1));
+  assert(ReRolledKinds(legacy, json::object()) == 0);
+  assert(ReRolledKinds({{kKey, Encode(Full())}}, Encode(Full())) == 0);
+  assert(KindNames(kKindStartingAge) == "starting age");
+  assert(KindNames(kKindKeyRings | kKindStartingAge) ==
+         "Key Rings and starting age");
+  assert(KindNames(KindsOfVersion(1)) == "Master Quest dungeons, Key Rings, "
+                                         "Ganon's Trials and starting age");
+  assert(KindNames(0).empty());
+}
+
+void CheckMasterQuestData() {
+  // A seed whose random MQ dungeons came from oot-mq.o2r, reloaded where the
+  // finalize cannot roll them (it then reports no MQ choice, or other
+  // dungeons), is told why; any other refusal is not.
+  const json oot = {{kKey, Encode(Full())}};
+  auto none = Full();
+  none.masterQuest.reset();
+  assert(!ReplayKeepsChoices(oot, Encode(none)) &&
+         LostMasterQuestChoice(oot, Encode(none)));
+  auto other = Full();
+  other.masterQuest = static_cast<uint16_t>(1u << 3);
+  assert(LostMasterQuestChoice(oot, Encode(other)));
+  auto age = Full();
+  age.adult = false;
+  assert(!ReplayKeepsChoices(oot, Encode(age)) &&
+         !LostMasterQuestChoice(oot, Encode(age)));
+  assert(!LostMasterQuestChoice(json::object(), Encode(none)));
+  assert(std::string(kMasterQuestDataRefusal).find("oot-mq.o2r") !=
+         std::string::npos);
+}
+
+void CheckSeedView() {
+  // A seed that records its choices shows them.
+  json seed = {{"startingGame", "OOT"},
+               {"oot",
+                {{"settings", {{"gRandoSettings.StartingAge", 2}}},
+                 {kKey, Encode(Full())}}}};
+  auto view = SeedChoicesView(seed, true);
+  assert(view.adult == true && view.requiredTrials == Full().requiredTrials &&
+         !view.UnrecordedWarning());
+  // A seed without the record whose starting age or trials are random warns.
+  seed["oot"].erase(kKey);
+  view = SeedChoicesView(seed, true);
+  assert(!view.adult && !view.requiredTrials && view.UnrecordedWarning() &&
+         view.unrecordedAge && !view.unrecordedTrials);
+  assert(std::string(kUnrecordedChoicesWarning) ==
+         "This seed was made before Combo Ship recorded its random starting "
+         "age and trials, so a new file may start differently than the seed "
+         "was made for.");
+  // An MM start always starts OoT as a child, so its age is not drawn.
+  seed["startingGame"] = "MM";
+  assert(!SeedChoicesView(seed, true).UnrecordedWarning());
+  seed["startingGame"] = "OOT";
+  // Nor is an age the settings fix, or an MM-only seed's.
+  seed["oot"]["settings"]["gRandoSettings.StartingAge"] = 1;
+  assert(!SeedChoicesView(seed, true).UnrecordedWarning());
+  seed["oot"]["settings"]["gRandoSettings.StartingAge"] = 2;
+  assert(!SeedChoicesView(seed, false).UnrecordedWarning());
+  // Random trials warn, unless the seed records them in resolvedSeedRules,
+  // which a reload applies; all, none or skipped trials never do.
+  seed["oot"]["settings"] = {{"gRandoSettings.GanonTrial", 2}};
+  view = SeedChoicesView(seed, true);
+  assert(view.UnrecordedWarning() && view.unrecordedTrials &&
+         !view.unrecordedAge);
+  seed["oot"]["settings"] = {{"gRandoSettings.GanonTrial", 1},
+                             {"gRandoSettings.GanonTrialCount", 3}};
+  assert(SeedChoicesView(seed, true).UnrecordedWarning());
+  seed["oot"]["resolvedSeedRules"] = {{"requiredTrials", json::array({1})}};
+  assert(!SeedChoicesView(seed, true).UnrecordedWarning());
+  seed["oot"].erase("resolvedSeedRules");
+  for (const json &fixed : {json({{"gRandoSettings.GanonTrial", 0}}),
+                            json({{"gRandoSettings.GanonTrial", 1},
+                                  {"gRandoSettings.GanonTrialCount", 6}}),
+                            json({{"gRandoSettings.GanonTrial", 1},
+                                  {"gRandoSettings.GanonTrialCount", 0}}),
+                            json::object()}) {
+    seed["oot"]["settings"] = fixed;
+    assert(!SeedChoicesView(seed, true).UnrecordedWarning());
+  }
+  // A malformed record is refused, as its load refuses it.
+  seed["oot"][kKey] = json::object();
+  assert(Throws([&] { (void)SeedChoicesView(seed, true); }));
+  assert(!SeedChoicesView(json::array(), true).UnrecordedWarning());
+}
+
 // A native context's mode and record, as soh's exports keep them.
 int nativeMode = 0;
 std::string nativeRecord = "{}";
@@ -305,6 +408,9 @@ int main() {
   CheckStreams();
   CheckRecord();
   CheckSeedDocument();
+  CheckKinds();
+  CheckMasterQuestData();
+  CheckSeedView();
   CheckScope();
   CheckSettingsDocument();
   std::puts("PASS: seed choices record, streams, scope and settings document");

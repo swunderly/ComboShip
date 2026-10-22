@@ -3833,7 +3833,12 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
         // And the random choices it records; one its settings do not make random is a malformed record.
         const auto resolvedChoices = ResolvedSeedChoices();
         if (!ComboRando::SeedChoices::ReplayKeepsChoices(oot, resolvedChoices)) {
-            std::cerr << "[ComboShip] reload: the seed's recorded settings choices did not reproduce, aborting\n";
+            // A seed whose random MQ dungeons came from oot-mq.o2r, on an install without both OoT archives, is told
+            // why, as SeedMqPlayable's refusal of a bundled seed is.
+            if (ComboRando::SeedChoices::LostMasterQuestChoice(oot, resolvedChoices))
+                std::cerr << "[ComboShip] reload: " << ComboRando::SeedChoices::kMasterQuestDataRefusal << "\n";
+            else
+                std::cerr << "[ComboShip] reload: the seed's recorded settings choices did not reproduce, aborting\n";
             if (isSilentAutoLoad && SOH_RestoreRandoSettings)
                 SOH_RestoreRandoSettings(userOotSnapshot.c_str());
             return 0;

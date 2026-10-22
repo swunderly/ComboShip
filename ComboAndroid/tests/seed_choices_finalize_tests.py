@@ -18,6 +18,10 @@ the context's choice state (SeedContext.h) and the record (combo/rando/SeedChoic
   that finalize uses, and a record a seed's settings do not make random is refused;
 - Allsanity's own settings (ComboPresets.h) make the Key Rings and the starting age random, with even odds, and d06's
   master seed resolves what the host build of the generator records for it;
+- a No Logic seed with a Random starting age whose settings force a child start with logic records and keeps its age
+  on its own finalize, while the Glitchless finalize --playthrough walks reports no age, so the replay checks the
+  record on its dump's finalize;
+- a Seeded finalize without a combo seed draws as SoH does and says so once;
 and that the launcher (RunComboFill, the reload, Combo_FinalizeGenerate) and the headless tool (generation and
 --playthrough) bind and record the choices in that order.
 """
@@ -82,6 +86,10 @@ preamble = between(finalize, '#ifdef COMBO_BUILD // ComboShip: the random choice
                    'std::array<DungeonInfo*, 12> dungeons = this->GetDungeons()->GetDungeonList();')
 choices = between(finalize, 'std::array<DungeonInfo*, 12> dungeons = this->GetDungeons()->GetDungeonList();',
                   '// TODO: Random Starting Time')
+# Logic's forced child start, which runs before the choices: a seed with logic, a closed Door of Time and no shuffled
+# ocarina, or a closed forest without entrance shuffle, starts as a child.
+forced_child = between(finalize, '// With certain access settings, the seed is only beatable if Starting Age is set '
+                       'to Child.', '// If we only have MQ, set all dungeons to MQ')
 check(hostcxx.contains(finalize, 'const bool bundledMq = GetMqDataSource() == ComboMq::SeedMqSource::Bundled;'),
       'FinalizeSettings: the bundled-MQ flag the choices read')
 seed_context = read('soh/soh/Enhancements/randomizer/SeedContext.h')
@@ -128,6 +136,8 @@ harness = r'''
 #include <vector>
 #include <nlohmann/json.hpp>
 #define COMBO_EXPORT
+static int gLoggedErrors = 0;
+#define SPDLOG_ERROR(...) (gLoggedErrors++)
 #include "randomizerEnums.h"
 #include "mq/MqMode.h"
 #include "rando/ComboPresets.h"
@@ -227,10 +237,10 @@ class Context {
     static std::shared_ptr<Context> GetInstance() { return instance; }
     static std::shared_ptr<Context> instance;
 ''' + context_methods + r'''
-    // settings.cpp Context::FinalizeSettings: the choice preamble, the MQ roll, Key Rings, Ganon's Trials, the
-    // entrance pool flags and the starting age.
+    // settings.cpp Context::FinalizeSettings: logic's forced child start, the choice preamble, the MQ roll, Key Rings,
+    // Ganon's Trials, the entrance pool flags and the starting age.
     void FinalizeChoices() {
-''' + preamble + choices + r'''
+''' + forced_child + preamble + choices + r'''
     }
   private:
 ''' + context_members + r'''
@@ -286,9 +296,11 @@ static void Bind(SC::Mode mode, const nlohmann::json& record = nlohmann::json::o
     Require(SOH_SetSeedChoices(static_cast<int>(mode), record.dump().c_str()) == 1, "the context takes the mode");
 }
 // The finalize's inputs: SoH's menu defaults (Key Rings off, Normal carpenters, vanilla Gerudo keys, trials Set Number
-// 6, a child start), then the given values.
+// 6, a child start), an open Door of Time and forest, then the given values.
 static Values Rules(std::initializer_list<std::pair<const int, int>> values) {
-    Values rules{ { RSK_KEYRINGS, RO_KEYRINGS_OFF }, { RSK_KEYRINGS_RANDOM_COUNT, 8 },
+    Values rules{ { RSK_LOGIC_RULES, RO_LOGIC_GLITCHLESS }, { RSK_DOOR_OF_TIME, RO_DOOROFTIME_OPEN },
+                  { RSK_FOREST, RO_CLOSED_FOREST_OFF }, { RSK_SHUFFLE_OCARINA, RO_GENERIC_OFF },
+                  { RSK_KEYRINGS, RO_KEYRINGS_OFF }, { RSK_KEYRINGS_RANDOM_COUNT, 8 },
                   { RSK_GERUDO_FORTRESS, RO_GF_CARPENTERS_NORMAL }, { RSK_GERUDO_KEYS, RO_GERUDO_KEYS_VANILLA },
                   { RSK_GANONS_TRIALS, RO_GANONS_TRIALS_SET_NUMBER }, { RSK_TRIAL_COUNT, 6 },
                   { RSK_STARTING_AGE, RO_AGE_CHILD }, { RSK_SELECTED_STARTING_AGE, RO_AGE_CHILD },
@@ -321,6 +333,15 @@ int main() {
             Require(allsanity.at(key) == RO_KEYRING_FOR_DUNGEON_RANDOM, "Allsanity: every key ring a coin flip");
         const Values beginner = Preset(ComboRando::CommunityPreset::Beginner);
         Require(beginner.at(RSK_STARTING_AGE) == RO_AGE_RANDOM, "Beginner: a Random starting age (presets.ts:975)");
+
+        // A Seeded finalize before any combo seed (a launcher bug: every generation, reload and replay sets it first)
+        // draws as SoH does, from the shared stream, and logs that once.
+        Bind(SC::Mode::Seeded);
+        const uint64_t unseeded = garbage();
+        const auto first = Finalize(allsanity, unseeded);
+        Require(first.stream != unseeded && Finalize(allsanity, garbage()).resolved.contains("startingAge") &&
+                    gLoggedErrors == 1,
+                "a Seeded finalize without a combo seed draws from the shared stream and logs once");
 
         // Legacy, every seed without the record: RC1's draws, from the shared stream. The same seed re-rolls with the
         // stream, as d06's replay did; the finalize reports what it drew.
@@ -398,7 +419,8 @@ int main() {
         int compared = 0;
         for (int keyRings : { RO_KEYRINGS_OFF, RO_KEYRINGS_COUNT, RO_KEYRINGS_SELECTION })
             for (int count : { 0, 8, 9 })
-                for (int dungeon : { RO_KEYRING_FOR_DUNGEON_OFF, RO_KEYRING_FOR_DUNGEON_ON })
+                for (int dungeon :
+                     { RO_KEYRING_FOR_DUNGEON_OFF, RO_KEYRING_FOR_DUNGEON_RANDOM, RO_KEYRING_FOR_DUNGEON_ON })
                     for (int carpenters : { RO_GF_CARPENTERS_NORMAL, RO_GF_CARPENTERS_FAST })
                         for (int gerudoKeys : { RO_GERUDO_KEYS_VANILLA, RO_GERUDO_KEYS_ANYWHERE })
                             for (int trials : { RO_GANONS_TRIALS_SKIP, RO_GANONS_TRIALS_SET_NUMBER })
@@ -409,6 +431,11 @@ int main() {
                                         // A count between none and all is random; the menu caps it at the
                                         // rings (settings.cpp RSK_KEYRINGS_RANDOM_COUNT's callback).
                                         if (keyRings == RO_KEYRINGS_COUNT && count != 0 && count != rings)
+                                            continue;
+                                        // A Selection with a dungeon set to Random is a random choice. Off ignores the
+                                        // rings, and a Count of none or all sets every ring to Yes or No first.
+                                        if (keyRings == RO_KEYRINGS_SELECTION &&
+                                            dungeon == RO_KEYRING_FOR_DUNGEON_RANDOM)
                                             continue;
                                         Values rules = Rules({ { RSK_KEYRINGS, keyRings },
                                                                { RSK_KEYRINGS_RANDOM_COUNT, count },
@@ -432,7 +459,24 @@ int main() {
                                                 "a finalize without a random choice reports none");
                                         compared++;
                                     }
-        Require(compared > 300, "every finalize without a random choice compared");
+        Require(compared > 450, "every finalize without a random choice compared");
+        // A Selection whose only Random ring is Gerudo Fortress's: SoH never draws it (any value but No is a ring,
+        // item_pool.cpp), so it is no random choice either, with or without Fortress keys to ring.
+        for (int gerudoKeys : { RO_GERUDO_KEYS_VANILLA, RO_GERUDO_KEYS_ANYWHERE })
+            for (int dungeon : { RO_KEYRING_FOR_DUNGEON_OFF, RO_KEYRING_FOR_DUNGEON_ON }) {
+                Values rules = Rules({ { RSK_KEYRINGS, RO_KEYRINGS_SELECTION }, { RSK_GERUDO_KEYS, gerudoKeys },
+                                       { RSK_KEYRINGS_GERUDO_FORTRESS, RO_KEYRING_FOR_DUNGEON_RANDOM } });
+                for (int key = RSK_KEYRINGS_FOREST_TEMPLE; key <= RSK_KEYRINGS_GANONS_CASTLE; key++)
+                    rules[key] = dungeon;
+                const uint64_t shared = garbage();
+                SOH_SetComboRandoSeed(compared++);
+                Bind(SC::Mode::Legacy);
+                const auto legacy = Finalize(rules, shared);
+                Bind(SC::Mode::Seeded);
+                const auto seeded = Finalize(rules, shared);
+                Require(seeded == legacy && seeded.resolved == nlohmann::json::object(),
+                        "a Gerudo Fortress-only Selection is unchanged and records nothing");
+            }
 
         // Each random choice alone: Random and Count key rings resolve into each ring's Yes or No, a set number of
         // trials picks which, a random number picks how many, and every one keeps its record.
@@ -490,6 +534,40 @@ int main() {
                     "an unknown mode or record changes nothing");
         }
 
+        // A No Logic seed with a Random starting age, whose settings force a child start with logic (a closed Door of
+        // Time without a shuffled ocarina, or a closed forest without entrance shuffle), records its age, and its own
+        // finalize keeps it. --playthrough walks a Glitchless finalize (ComboRandoHeadless.cpp), which forces the child
+        // start and reports no age: a record check there refuses every such seed, so the replay checks the record on
+        // its dump's finalize, with the seed's own settings.
+        for (const auto& forced : { Rules({ { RSK_DOOR_OF_TIME, RO_DOOROFTIME_CLOSED } }),
+                                    Rules({ { RSK_FOREST, RO_CLOSED_FOREST_ON } }) }) {
+            Values noLogic = forced;
+            noLogic[RSK_LOGIC_RULES] = RO_LOGIC_NO_LOGIC;
+            noLogic[RSK_STARTING_AGE] = RO_AGE_RANDOM;
+            Values glitchless = noLogic;
+            glitchless[RSK_LOGIC_RULES] = RO_LOGIC_GLITCHLESS;
+            std::set<std::string> ages;
+            for (uint64_t s = 1; s <= 16; s++) {
+                SOH_SetComboRandoSeed(s * 7919);
+                Bind(SC::Mode::Seeded);
+                const auto generated = Finalize(noLogic, garbage());
+                nlohmann::json oot = nlohmann::json::object();
+                SC::StampSeedChoices(oot, generated.resolved);
+                Require(oot.contains(SC::kKey) && oot[SC::kKey].contains("startingAge"),
+                        "a No Logic seed records its random starting age");
+                ages.insert(oot[SC::kKey]["startingAge"].get<std::string>());
+                Bind(SC::Mode::Seeded, oot.at(SC::kKey));
+                const auto own = Finalize(noLogic, garbage());
+                Require(own.SamePlay(generated) && SC::ReplayKeepsChoices(oot, own.resolved),
+                        "the seed's own finalize keeps its recorded age");
+                const auto walked = Finalize(glitchless, garbage());
+                Require(walked.options.at(RSK_SELECTED_STARTING_AGE) == RO_AGE_CHILD &&
+                            !walked.resolved.contains("startingAge") && !SC::ReplayKeepsChoices(oot, walked.resolved),
+                        "the Glitchless finalize forces a child start and reports no age");
+            }
+            Require(ages.size() == 2, "the No Logic seeds start at either age");
+        }
+
         // d06, the corpus row: the host build of this generator records Forest, Fire, Water, Spirit, Shadow, Bottom
         // of the Well and Ganon's Castle rings, Gerudo Fortress's, and a child start for master seed 419070006.
         Bind(SC::Mode::Seeded);
@@ -534,7 +612,9 @@ reload = function(ship, 'static int Combo_OnReloadRequestImpl(')
 ordered(reload, 'ComboRando::SeedChoices::RecordedChoices(j.value("oot", nlohmann::json::object()))',
         'ComboRando::SeedChoices::ModeForRecord(recordedChoices)', 'SOH_RestoreRandoSettings(ootSettings.c_str());',
         'SOH_PrepRandoContext();', 'ComboMq::ReplayKeepsMqDungeons(oot,',
-        'ComboRando::SeedChoices::ReplayKeepsChoices(oot, resolvedChoices)', 'return 0;',
+        'ComboRando::SeedChoices::ReplayKeepsChoices(oot, resolvedChoices)',
+        'ComboRando::SeedChoices::LostMasterQuestChoice(oot, resolvedChoices)',
+        'ComboRando::SeedChoices::kMasterQuestDataRefusal', 'return 0;',
         'sProfileApplyResolvedRules(oot["resolvedSeedRules"]', 'SOH_ShuffleEntrancesForCombo(masterSeed)',
         'CheckPendingEntranceSeed(j)', 'seedChoices.Keep();')
 finish = function(ship, 'static void Combo_FinalizeGenerate()')
@@ -555,12 +635,29 @@ ordered(generate, 'ComboRando::SeedChoices::Mode::Seeded, std::nullopt);', 'for 
         'SOH_GenerationDump()', 'ComboMq::StampSeedMq(consolidated["oot"], mqSource,',
         'ComboRando::SeedChoices::StampSeedChoices(', 'ComboRando::StampComboSeedFormat(consolidated);')
 play = headless[hostcxx.find(headless, '// ---- Playthrough mode'):hostcxx.find(headless, '// ---- Generate + validate')]
+# The record is checked on the dump's finalize, with the seed's own settings, before the Glitchless re-prep.
 ordered(play, 'const auto recorded = ComboRando::SeedChoices::RecordedChoices(ootSeed);',
         'ComboRando::SeedChoices::ModeForRecord(recorded), recorded);', 'auto runPass =', 'SOH_Dump()',
-        'SOH_PrepContext();', 'ComboMq::ReplayKeepsMqDungeons(ootSeed,',
-        'ComboRando::SeedChoices::ReplayKeepsChoices(ootSeed, resolved)', 'nativePreparationFailed = true;',
-        'ComboRando::SeedChoices::ReRollsChoices(ootSeed, resolved)', 'SOH_ApplyEntranceOverrides(',
-        'auto r1 = runPass(false, &pt1);', 'if (choicesRerolled)', 'if (r1.beatable) {')
+        'ComboRando::ParseNativePoolFailure(sohDump, mmDump)',
+        'ComboRando::SeedChoices::ReplayKeepsChoices(ootSeed, resolved)',
+        'ComboRando::SeedChoices::LostMasterQuestChoice(ootSeed, resolved)', 'nativePreparationFailed = true;',
+        'rerolledKinds |= ComboRando::SeedChoices::ReRolledKinds(ootSeed, resolved);', 'SOH_PrepContext();',
+        'ComboMq::ReplayKeepsMqDungeons(ootSeed,', 'SOH_ApplyEntranceOverrides(', 'auto r1 = runPass(false, &pt1);',
+        'redrawnKinds &= static_cast<uint8_t>(~ComboRando::SeedChoices::kKindTrials);', 'if (redrawnKinds)',
+        'ComboRando::SeedChoices::KindNames(redrawnKinds)', 'if (r1.beatable) {')
+check(play.count('SeedChoices::ReplayKeepsChoices(') == 1 and 'predates recorded Ganon' not in play,
+      '--playthrough checks the record once and names the trials it draws again in its one note')
+
+# The seed view shows the recorded starting age and trials, and warns for an older seed that draws them again.
+seed_view = function(read('combo/gui/ComboRandomizerProfiles.cpp'),
+                     'void DrawWidget(const CwWidget& w, const GameMenu& game, bool showHidden)')
+check(all(hostcxx.contains(seed_view, needle) for needle in (
+    'SeedChoices::SeedChoicesView(seed, seed.is_object() && ModeRandomizesOot(ReadGameMode(seed)));',
+    'ImGui::TextWrapped("Starting age: %s", *choices.adult ? "Adult" : "Child");',
+    'trials = SeedChoices::Bits(*choices.requiredTrials, SeedChoices::kTrialCount);',
+    'if (ageRow ? choices.unrecordedAge : choices.unrecordedTrials && !choices.unrecordedAge) {',
+    'ImGui::TextWrapped("%s", SeedChoices::kUnrecordedChoicesWarning);')),
+      'the seed view shows the recorded age and trials and the older-seed warning')
 
 # A settings document and a vanilla run drop the record, a generation output.
 check(hostcxx.contains(function(read('combo/ComboRandomizerProfiles.h'), 'inline Json SettingsDocument('),

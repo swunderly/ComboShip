@@ -26,6 +26,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace ComboRando::SeedChoices {
 
@@ -125,6 +126,47 @@ struct Choices {
 inline constexpr uint16_t kKeyRingDungeons = 0xDF8; // Forest, Fire, Water, Spirit, Shadow, BotW, GTG, Ganon's Castle
 inline constexpr int kTrialCount = 6;
 inline constexpr int kDungeonCount = 12;
+
+// The kinds of choice, as bits of a mask, and the kinds a record of each version holds. A reload or replay compares
+// only the kinds its record's version knows, so a later build that adds a kind still keeps a seed recorded before
+// it, whose finalize then reports the new kind as well.
+enum Kind : uint8_t { kKindKeyRings = 1, kKindTrials = 2, kKindStartingAge = 4, kKindMasterQuest = 8 };
+inline constexpr uint8_t KindsOfVersion(int version) {
+    return static_cast<uint8_t>(version == 1 ? kKindKeyRings | kKindTrials | kKindStartingAge | kKindMasterQuest : 0);
+}
+inline uint8_t KindsOf(const Choices& choices) {
+    return static_cast<uint8_t>((choices.keyRings ? kKindKeyRings : 0) | (choices.requiredTrials ? kKindTrials : 0) |
+                                (choices.adult ? kKindStartingAge : 0) | (choices.masterQuest ? kKindMasterQuest : 0));
+}
+inline Choices OnlyKinds(Choices choices, uint8_t kinds) {
+    if (!(kinds & kKindKeyRings))
+        choices.keyRings.reset();
+    if (!(kinds & kKindTrials))
+        choices.requiredTrials.reset();
+    if (!(kinds & kKindStartingAge))
+        choices.adult.reset();
+    if (!(kinds & kKindMasterQuest))
+        choices.masterQuest.reset();
+    return choices;
+}
+// The kinds of a mask named for a note, in the finalize's order: "Key Rings, Ganon's Trials and starting age".
+inline std::string KindNames(uint8_t kinds) {
+    static constexpr std::pair<uint8_t, const char*> kNames[] = { { kKindMasterQuest, "Master Quest dungeons" },
+                                                                  { kKindKeyRings, "Key Rings" },
+                                                                  { kKindTrials, "Ganon's Trials" },
+                                                                  { kKindStartingAge, "starting age" } };
+    std::string text;
+    int left = 0;
+    for (const auto& [kind, name] : kNames)
+        left += (kinds & kind) != 0;
+    for (const auto& [kind, name] : kNames)
+        if (kinds & kind) {
+            text += name;
+            left--;
+            text += left > 1 ? ", " : left == 1 ? " and " : "";
+        }
+    return text;
+}
 
 inline nlohmann::json Bits(uint32_t bits, int count) {
     auto ids = nlohmann::json::array();
@@ -229,15 +271,71 @@ inline void StampSeedChoices(nlohmann::json& oot, const nlohmann::json& resolved
     else
         oot[kKey] = Encode(choices);
 }
-// Whether a reload or replay resolved the choices its seed records. Always true for a seed without the record.
+// Whether a reload or replay resolved the choices its seed records, in the kinds the record's version knows. Always
+// true for a seed without the record.
 inline bool ReplayKeepsChoices(const nlohmann::json& oot, const nlohmann::json& resolved) {
     const auto record = RecordedChoices(oot);
-    return !record || Decode(resolved) == *record;
+    if (!record)
+        return true;
+    const uint8_t known = KindsOfVersion(oot.at(kKey).at("version").get<int>());
+    return OnlyKinds(Decode(resolved), known) == OnlyKinds(*record, known);
 }
-// Whether a seed without the record has settings that make a choice random (`resolved`, what its Legacy finalize drew
-// from the shared stream): its reload and its replay re-roll that choice, as they always have.
+// The kinds of choice a seed without the record has settings that make random (`resolved`, what its Legacy finalize
+// drew from the shared stream): its reload and its replay re-roll them, as they always have. None with the record.
+inline uint8_t ReRolledKinds(const nlohmann::json& oot, const nlohmann::json& resolved) {
+    return RecordedChoices(oot) ? 0 : KindsOf(Decode(resolved));
+}
 inline bool ReRollsChoices(const nlohmann::json& oot, const nlohmann::json& resolved) {
-    return !RecordedChoices(oot) && !Decode(resolved).Empty();
+    return ReRolledKinds(oot, resolved) != 0;
+}
+// Whether a reload or replay refused for its record lost the seed's random Master Quest dungeons. A seed without
+// OoTMM's bundled data rolls them from the Master Quest game data (oot-mq.o2r), and the finalize rolls them only where
+// both OoT archives are installed (soh settings.cpp sets every dungeon vanilla without oot-mq.o2r, and every one
+// Master Quest without oot.o2r).
+inline bool LostMasterQuestChoice(const nlohmann::json& oot, const nlohmann::json& resolved) {
+    const auto record = RecordedChoices(oot);
+    return record && record->masterQuest && Decode(resolved).masterQuest != record->masterQuest;
+}
+inline constexpr const char* kMasterQuestDataRefusal =
+    "the seed has random Master Quest dungeons from Master Quest game data, which needs both oot.o2r and oot-mq.o2r";
+
+// What a seed view shows of the starting age and Ganon's Trials: the choices the seed records. A seed without the
+// record whose settings make its starting age or its trials random gets kUnrecordedChoicesWarning instead: nothing
+// migrates it, so a new file draws them again. Profile seeds record their trials in resolvedSeedRules, which a reload
+// applies, and an MM start always starts OoT as a child (settings.cpp), so neither draws them again.
+inline constexpr const char* kUnrecordedChoicesWarning =
+    "This seed was made before Combo Ship recorded its random starting age and trials, so a new file may start "
+    "differently than the seed was made for.";
+struct SeedView {
+    std::optional<bool> adult;
+    std::optional<uint8_t> requiredTrials;
+    bool unrecordedAge = false, unrecordedTrials = false; // why the warning shows: a random age, random trials
+    bool UnrecordedWarning() const {
+        return unrecordedAge || unrecordedTrials;
+    }
+};
+// `seed` is a seed document; `randomizesOot` is whether its game mode randomizes OoT. Throws for a malformed record.
+inline SeedView SeedChoicesView(const nlohmann::json& seed, bool randomizesOot) {
+    SeedView view;
+    if (!randomizesOot || !seed.is_object() || !seed.contains("oot") || !seed.at("oot").is_object())
+        return view;
+    const auto& oot = seed.at("oot");
+    if (const auto record = RecordedChoices(oot)) {
+        view.adult = record->adult;
+        view.requiredTrials = record->requiredTrials;
+        return view;
+    }
+    const auto settings = oot.value("settings", nlohmann::json::object());
+    const auto number = [&](const char* key, int fallback) {
+        const auto it = settings.find(key);
+        return it != settings.end() && it->is_number_integer() ? it->get<int>() : fallback;
+    };
+    view.unrecordedAge = StartingAgeRandom(number("gRandoSettings.StartingAge", 0)) &&
+                         seed.value("startingGame", std::string("OOT")) != "MM";
+    view.unrecordedTrials = TrialsRandom(number("gRandoSettings.GanonTrial", 1),
+                                         number("gRandoSettings.GanonTrialCount", kTrialCount), kTrialCount) &&
+                            !oot.contains("resolvedSeedRules");
+    return view;
 }
 
 // The native context's mode and record for a launcher scope (soh OTRGlobals.cpp SOH_GetSeedChoicesMode,
