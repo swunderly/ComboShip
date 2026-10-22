@@ -91,8 +91,13 @@ extern "C" int (*gComboSaveEditorDormantSlot)(int game);
 // the file at once. Live while OoT runs, which saves its own file.
 static ComboSaveEditorAccess::Access sOotEditAccess = ComboSaveEditorAccess::Access::Live;
 static ComboSaveEditorAccess::DormantWrite sOotDormantWrite;
+static int sOotDrawnFrame = -2; // the ImGui frame the editor last drew in
 static bool OotEditDormant() {
     return sOotEditAccess == ComboSaveEditorAccess::Access::Dormant;
+}
+// The play state the editor may use: none from MM, whatever OoT left in gPlayState.
+static PlayState* OotEditPlay() {
+    return OotEditDormant() ? nullptr : gPlayState;
 }
 #endif
 
@@ -288,6 +293,15 @@ static int KeepEightPlayerNameChars(ImGuiInputTextCallbackData* data) {
     return 0;
 }
 
+// ComboShip: the magic level OoT's save gives Link. OoT zeroes magicLevel when it loads a file, and its next frame
+// derives it from the two magic flags (Interface_Update); a dormant grant of the double meter zeroes it the same way.
+static int OotSaveMagicLevel() {
+    if (gSaveContext.magicLevel == 0 && gSaveContext.isMagicAcquired) {
+        return gSaveContext.isDoubleMagicAcquired ? MAGIC_LEVEL_DOUBLE : MAGIC_LEVEL_SINGLE;
+    }
+    return std::clamp<int>(gSaveContext.magicLevel, MAGIC_LEVEL_NONE, MAGIC_LEVEL_DOUBLE);
+}
+
 // ComboShip: the General tab, laid out as the MM Save Editor's: Player, Health, Magic, Rupees and Time cards with the
 // same coloured bars and Max/Reset buttons, then everything else under a collapsed Advanced card. Max and Reset do
 // what MM's do for the same resource, with OoT's new-file values.
@@ -376,42 +390,42 @@ void DrawInfoTab() {
         gSaveContext.inventory.defenseHearts =
             gSaveContext.isDoubleDefenseAcquired ? 20 : 0; // Set to get the border drawn in the UI
     }
+    // Values change only when edited: drawing the tab writes nothing (from MM it would otherwise save the file).
     int16_t hearts = gSaveContext.healthCapacity / 16;
     if (Kit::ResourceBar("##maxHearts", &hearts, 1, 20, "Max hearts: %d", Kit::kHealth)) {
         gSaveContext.healthCapacity = static_cast<int16_t>(hearts * 16);
-    }
-    if (gSaveContext.health > gSaveContext.healthCapacity) {
-        gSaveContext.health = gSaveContext.healthCapacity; // Clamp health to new max
+        gSaveContext.health = std::min(gSaveContext.health, gSaveContext.healthCapacity); // Clamp health to new max
     }
     Kit::ResourceBar("##health", &gSaveContext.health, 0, gSaveContext.healthCapacity, "Health: %d", Kit::kHealth);
     Kit::Tooltip("16 units per heart");
     Kit::EndCard();
 
+    // The meter's size follows the level, set when the level is edited (the HUD draws magicCapacity).
+    auto setMagicLevel = [](int level) {
+        gSaveContext.magicLevel = static_cast<s8>(level);
+        gSaveContext.isMagicAcquired = level > MAGIC_LEVEL_NONE;
+        gSaveContext.isDoubleMagicAcquired = level == MAGIC_LEVEL_DOUBLE;
+        gSaveContext.magicCapacity = static_cast<s16>(level * 0x30);
+        gSaveContext.magic = static_cast<s8>(std::min<int>(gSaveContext.magic, gSaveContext.magicCapacity));
+    };
     Kit::BeginCard("magicCard");
     if (Kit::Button("Max Magic", Kit::kMagic)) {
-        gSaveContext.magicLevel = MAGIC_LEVEL_DOUBLE;
-        gSaveContext.isMagicAcquired = true;
-        gSaveContext.isDoubleMagicAcquired = true;
+        setMagicLevel(MAGIC_LEVEL_DOUBLE);
         gSaveContext.magic = MAGIC_LEVEL_DOUBLE * 0x30;
     }
     ImGui::SameLine();
     if (Kit::Button("Reset##magic", Kit::kReset)) {
-        gSaveContext.magicLevel = MAGIC_LEVEL_NONE;
-        gSaveContext.isMagicAcquired = false;
-        gSaveContext.isDoubleMagicAcquired = false;
+        setMagicLevel(MAGIC_LEVEL_NONE);
         gSaveContext.magic = 0;
     }
-    const int magicLevel = std::clamp<int>(gSaveContext.magicLevel, MAGIC_LEVEL_NONE, MAGIC_LEVEL_DOUBLE);
-    if (Kit::ResourceBar("##magicLevel", &gSaveContext.magicLevel, MAGIC_LEVEL_NONE, MAGIC_LEVEL_DOUBLE,
+    // From MM, the level the save gives Link (OoT's load zeroes magicLevel until its first frame).
+    int magicLevel = OotEditDormant() ? OotSaveMagicLevel()
+                                      : std::clamp<int>(gSaveContext.magicLevel, MAGIC_LEVEL_NONE, MAGIC_LEVEL_DOUBLE);
+    if (Kit::ResourceBar("##magicLevel", &magicLevel, MAGIC_LEVEL_NONE, MAGIC_LEVEL_DOUBLE,
                          Kit::kMagicLevelNames[magicLevel], Kit::kMagic)) {
-        gSaveContext.isMagicAcquired = gSaveContext.magicLevel > 0;
-        gSaveContext.isDoubleMagicAcquired = gSaveContext.magicLevel == 2;
+        setMagicLevel(magicLevel);
     }
-    gSaveContext.magicCapacity = gSaveContext.magicLevel * 0x30; // Set to get the bar drawn in the UI
-    if (gSaveContext.magic > gSaveContext.magicCapacity) {
-        gSaveContext.magic = static_cast<s8>(gSaveContext.magicCapacity); // Clamp magic to new max
-    }
-    Kit::ResourceBar("##magic", &gSaveContext.magic, 0, gSaveContext.magicCapacity, "Magic: %d", Kit::kMagic);
+    Kit::ResourceBar("##magic", &gSaveContext.magic, 0, magicLevel * 0x30, "Magic: %d", Kit::kMagic);
     Kit::Tooltip("48 units per magic level");
     Kit::EndCard();
 
@@ -469,7 +483,16 @@ void DrawInfoTab() {
         Tooltip("Total number of deaths");
         PopStyleInput();
 
-        // ComboShip: OoT sets these itself when it next starts (the arrival, and a fresh context for the timers).
+        // ComboShip: in the file, and OoT keeps it when it next starts from MM (title_setup.c), so it can be edited
+        // from MM too.
+        PushStyleInput(THEME_COLOR);
+        ComboTouch::Count("Navi Timer", &gSaveContext.naviTimer, 0, 3000);
+        Tooltip("Navi wants to talk at 600 units, decides not to at 3000.");
+        PopStyleInput();
+
+        // ComboShip: from MM, these cannot reach the file. OoT sets the arrival and the cutscene itself when it next
+        // starts, the file does not hold the timers or the 64DD flag, and Audio and Z Target Mode are settings of the
+        // game, saved apart from the files (SaveManager::SaveGlobal).
         if (OotEditDormant()) {
             ImGui::TextWrapped("%s", ComboSaveEditorAccess::kSwitchToOot);
         }
@@ -482,11 +505,6 @@ void DrawInfoTab() {
         PushStyleInput(THEME_COLOR);
         ImGui::InputScalar("Cutscene Index", ImGuiDataType_S32, &gSaveContext.cutsceneIndex);
         Tooltip("Which cutscene is this?");
-        PopStyleInput();
-
-        PushStyleInput(THEME_COLOR);
-        ComboTouch::Count("Navi Timer", &gSaveContext.naviTimer, 0, 3000);
-        Tooltip("Navi wants to talk at 600 units, decides not to at 3000.");
         PopStyleInput();
 
         PushStyleInput(THEME_COLOR);
@@ -508,15 +526,16 @@ void DrawInfoTab() {
         ComboTouch::Count("Sub-Timer Seconds", &gSaveContext.subTimerSeconds, 0, 32767);
         Tooltip("Time, in seconds");
         PopStyleInput();
-        ImGui::EndDisabled();
 
-        Combobox("Audio", &gSaveContext.audioSetting, audioMap, comboboxOptionsBase.Tooltip("Sound setting"));
+        Combobox("Audio", &gSaveContext.audioSetting, audioMap,
+                 comboboxOptionsBase.Tooltip("Sound setting. A setting of the game, for every file."));
 
         Checkbox("64 DD file?", (bool*)&gSaveContext.n64ddFlag,
                  checkboxOptionsBase.Tooltip("WARNING! If you save, your file may be locked! Use caution!"));
 
         Combobox("Z Target Mode", &gSaveContext.zTargetSetting, zTargetMap,
-                 comboboxOptionsBase.Tooltip("Z-Targeting behavior"));
+                 comboboxOptionsBase.Tooltip("Z-Targeting behavior. A setting of the game, for every file."));
+        ImGui::EndDisabled();
 
         static std::array<const char*, 7> minigameHS = { "Horseback Archery", "Big Poe Points",
                                                          "Fishing",           "Malon's Obstacle Course",
@@ -947,11 +966,16 @@ void DrawBGSItemFlag(uint8_t itemID) {
 // Re-sync any C/D-pad button that mirrors an edited inventory slot (buttonItems[i] == items[cButtonSlots[i-1]]),
 // so a raw item edit doesn't leave the button showing stale contents.
 static void SyncButtonItemsForSlot(uint8_t slot) {
+#ifdef COMBO_BUILD
+    PlayState* play = OotEditPlay(); // from MM, OoT's play state is not the editor's to touch
+#else
+    PlayState* play = gPlayState;
+#endif
     for (size_t i = 1; i < ARRAY_COUNT(gSaveContext.equips.buttonItems); i++) {
         if (gSaveContext.equips.cButtonSlots[i - 1] == slot) {
             gSaveContext.equips.buttonItems[i] = gSaveContext.inventory.items[slot];
-            if (gPlayState != nullptr) {
-                Interface_LoadItemIcon1(gPlayState, static_cast<u16>(i));
+            if (play != nullptr) {
+                Interface_LoadItemIcon1(play, static_cast<u16>(i));
             }
         }
     }
@@ -1506,7 +1530,7 @@ void DrawFlagsTab() {
     };
 
     if (flagType == 0) {
-        if (gPlayState == nullptr) {
+        if (OotEditPlay() == nullptr) {
             ImGui::TextWrapped("%s", OotEditDormant() ? ComboSaveEditorAccess::kSwitchToOot : Kit::kNeedsPlay);
             return;
         }
@@ -1555,7 +1579,7 @@ void DrawFlagsTab() {
                              [](int scene) { return SohUtils::GetSceneName(scene); });
         PopStyleCombobox();
         // Don't show current scene button if there is no current scene
-        if (gPlayState != nullptr) {
+        if (OotEditPlay() != nullptr) {
             ImGui::SameLine();
             if (Button("Current", buttonOptionsBase.Tooltip("Open flags for current scene"))) {
                 selectedSceneFlagMap = gPlayState->sceneNum;
@@ -2867,7 +2891,7 @@ void DrawDungeonItemsTab() {
 // (with MM's Clear all) and Player state, which also holds the editable state flags that were on Flags.
 void DrawPlayerTab() {
     namespace Kit = ComboSaveEditorKit;
-    if (gPlayState == nullptr) {
+    if (OotEditPlay() == nullptr) {
         ImGui::TextWrapped("%s", OotEditDormant() ? ComboSaveEditorAccess::kSwitchToOot : Kit::kNeedsPlay);
         return;
     }
@@ -3490,15 +3514,27 @@ static ComboSaveEditorAccess::Access OotEditAccess() {
 // the writer the dormant grants use (SaveFile writes only gSaveContext.fileNum, which OotEditAccess matched).
 static void WriteDormantOotEdits(const SaveContext& before) {
     const bool changed = OotEditDormant() && memcmp(&before, &gSaveContext, sizeof(SaveContext)) != 0;
-    if (sOotDormantWrite.Step(sOotEditAccess, changed, ImGui::IsAnyItemActive()) && SaveManager::Instance) {
+    if (sOotDormantWrite.Step(sOotEditAccess, gSaveContext.fileNum, changed, ImGui::IsAnyItemActive()) &&
+        SaveManager::Instance) {
+        SaveManager::Instance->SaveFile(gSaveContext.fileNum);
+    }
+}
+
+// ComboShip: the Gui runs this every frame, shown or not. A dormant change still waiting for its control when the
+// editor stopped being drawn (the menu closed or left the page mid-drag, or with a text field still focused) is written
+// now if the same file is still edited from MM, and dropped otherwise, so nothing is written later for another file.
+void SaveEditorWindow::UpdateElement() {
+    if (sOotDormantWrite.Pending() && ComboSaveEditorAccess::StoppedDrawing(ImGui::GetFrameCount(), sOotDrawnFrame) &&
+        sOotDormantWrite.Stopped(OotEditAccess(), gSaveContext.fileNum) && SaveManager::Instance) {
         SaveManager::Instance->SaveFile(gSaveContext.fileNum);
     }
 }
 
 void SaveEditorWindow::DrawElement() {
+    sOotDrawnFrame = ImGui::GetFrameCount();
     sOotEditAccess = OotEditAccess();
     if (sOotEditAccess == ComboSaveEditorAccess::Access::NoFile) {
-        sOotDormantWrite.Step(sOotEditAccess, false, false);
+        sOotDormantWrite.Step(sOotEditAccess, gSaveContext.fileNum, false, false);
         ImGui::TextWrapped("%s", ComboSaveEditorKit::kNoOotFile);
         return;
     }

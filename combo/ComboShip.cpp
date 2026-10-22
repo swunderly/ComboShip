@@ -244,6 +244,9 @@ static FnIsOnFileSelect SOH_IsOnFileSelect = nullptr;
 // OOT slot whose MM save is live in MM's dormant memory (-1 = none). Guards Combo_OnOOTSaveLoad
 // against reloading stale disk state over MM's in-memory progress after round trips.
 static int g_MmSaveInMemorySlot = -1;
+// OOT slot whose OOT save OOT last loaded (-1 = none, or that slot was erased or copied over since). While MM runs, the
+// OOT Save Editor writes OOT's dormant save only for this slot (gui/ComboSaveEditorAccess.h).
+static int g_OotSaveInMemorySlot = -1;
 static FnSetSceneSwitchCallback SOH_SetOnSceneSwitchCallback = nullptr;
 static FnMMRunGame MM_RunGame = nullptr;
 static FnSOHDeinit SOH_Deinit = nullptr;
@@ -753,6 +756,8 @@ static void EraseComboContainer(int slot) {
         // and any dormant MM write would put the erased save back into the slot.
         if (g_MmSaveInMemorySlot == slot)
             g_MmSaveInMemorySlot = -1;
+        if (g_OotSaveInMemorySlot == slot)
+            g_OotSaveInMemorySlot = -1;
         std::error_code ec;
         std::filesystem::remove(ComboContainerPath(slot), ec);
     }
@@ -777,6 +782,8 @@ static void Combo_CopyContainer(int from, int to) {
         ++g_profileSavedSeedRevision;
         if (g_MmSaveInMemorySlot == to)
             g_MmSaveInMemorySlot = -1; // the destination's MM save just changed under us
+        if (g_OotSaveInMemorySlot == to)
+            g_OotSaveInMemorySlot = -1; // and its OOT save
         FlushContainer(to);
     }
     // ComboShip (#182): the destination's owl save came from the donor, so MM's descent cache is wrong.
@@ -4117,6 +4124,7 @@ static void Combo_ResumeMMIfLastSavedThere(int fileNum);
 // slot's MM save is already live in memory — reloading from disk would clobber newer progress.
 static void Combo_OnOOTSaveLoad(int fileNum) {
     ++g_ComboContextEpoch; // loading the save recreated the OoT rando context
+    g_OotSaveInMemorySlot = ComboIsValidSlot(fileNum) ? fileNum : -1; // OOT's memory now holds this slot's save
     // Ship's scene restriction table unless this slot's seed records OoTMM's (OotSceneRestrictions.h). Cleared first,
     // so no early return below leaves the previous file's table.
     if (SOH_SetOotmmSceneRestrictions)
@@ -4228,13 +4236,14 @@ static void Combo_ResumeMMIfLastSavedThere(int fileNum) {
 
 // ComboShip: the file whose dormant save `game` (GameId) the Save Editor may edit and write now, or -1
 // (gui/ComboSaveEditorAccess.h). MM's dormant save counts only while it is the current save of the file OoT is playing
-// (g_MmSaveInMemorySlot, the residency the tracker peek and the dormant grants rely on); OoT's while MM runs that file.
-// Registered into both games, which call it from the menu on the game thread.
+// (g_MmSaveInMemorySlot, the residency the tracker peek and the dormant grants rely on); OoT's while MM runs that file
+// and OoT's memory holds that file's save (g_OotSaveInMemorySlot). Registered into both games, which call it from the
+// menu on the game thread.
 static int Combo_DormantSaveEditSlot(int game) {
     const int foreground = ComboAnchor::sActiveGame.load();
     const int ootPlaying = foreground == ComboRando::GAME_OOT && SOH_GetPlayingFileNum ? SOH_GetPlayingFileNum() : -1;
     return ComboSaveEditorAccess::DormantSlot(game, foreground, ComboRando::CombinedMode(sBoundGameMode), ootPlaying,
-                                              g_PendingMMFileNum, g_MmSaveInMemorySlot);
+                                              g_PendingMMFileNum, g_MmSaveInMemorySlot, g_OotSaveInMemorySlot);
 }
 
 static bool FaroreSlot(int fileNum) {

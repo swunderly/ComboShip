@@ -456,5 +456,9 @@ class SaveEditorWindow final : public Ship::GuiWindow {
 
     void InitElement() override;
     void DrawElement() override;
+#ifdef COMBO_BUILD
+    void UpdateElement() override; // ComboShip: writes or drops a dormant edit once the editor is not drawn
+#else
     void UpdateElement() override{};
+#endif
 };

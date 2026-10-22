@@ -314,6 +314,7 @@ void func_80123140(void*, Player*) {
     gBootDataCalls++;
 }
 void Inventory_DeleteItem(int, int slot) { gSaveContext.save.saveInfo.inventory.items[slot] = u8(ITEM_NONE); }
+PlayState* MmEditPlay() { return static_cast<PlayState*>(gPlayState); } // MM in front: its play state, if any
 ''' + safe_lists.group() + '\n' + trade_table.group() + '\n' + \
     function(editor, 'static bool IsInventoryItemPubliclyAvailable(ItemId item)') + '\n' + \
     function(editor, 'void initSafeItemsForInventorySlot()') + '\n' + \

@@ -42,7 +42,7 @@ using Json = nlohmann::json;
 using namespace ComboRando::Entrances;
 std::array<Json, 3> containers;
 std::mutex g_containerMutex;
-int g_ComboContextEpoch = 0, g_MmSaveInMemorySlot = -1, completionSlot = -1;
+int g_ComboContextEpoch = 0, g_MmSaveInMemorySlot = -1, g_OotSaveInMemorySlot = -1, completionSlot = -1;
 int nativeLoads = 0, resyncs = 0, loadResult = 0;
 std::vector<std::string> calls;
 Json installedSeed, songTravel, ootSeed, mmSeed;
@@ -148,6 +148,7 @@ void bind(int slot, bool loaded, bool succeeded) {
     calls.clear();
     sceneTables.clear();
     Combo_OnOOTSaveLoad(slot);
+    assert(g_OotSaveInMemorySlot == slot); // OoT's memory holds this file's save (the Save Editor's dormant rule)
     expectCalls(loaded, succeeded);
     // Ship's table first, then the slot seed's own: OoTMM's only with the marker.
     assert((sceneTables == std::vector<int>{0, int(ComboRando::SeedUsesOotmmSceneRestrictions(saved))}));
@@ -206,7 +207,8 @@ int main() {
     sceneTables.clear();
     const auto epoch = g_ComboContextEpoch;
     Combo_OnOOTSaveLoad(0xff);
-    assert(calls.empty() && g_ComboContextEpoch == epoch + 1 && g_MmSaveInMemorySlot == 2);
+    assert(calls.empty() && g_ComboContextEpoch == epoch + 1 && g_MmSaveInMemorySlot == 2 &&
+           g_OotSaveInMemorySlot == -1);
     assert((sceneTables == std::vector<int>{0})); // no file: Ship's table
     // A unified layout this build refuses binds the rest of the slot, with no ER-wide runtime flag.
     EntranceLayout tranche;

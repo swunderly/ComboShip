@@ -142,8 +142,28 @@ using namespace UIWidgets;
 // each edit to the file at once (gui/ComboSaveEditorAccess.h). Live while MM runs, which saves its own file.
 static ComboSaveEditorAccess::Access sMmEditAccess = ComboSaveEditorAccess::Access::Live;
 static ComboSaveEditorAccess::DormantWrite sMmDormantWrite;
+static Save sMmBefore;         // the save before this frame's controls ran, to see whether they changed it
+static int sMmDrawnFrame = -2; // the ImGui frame the editor last drew in
 static bool MmEditDormant() {
     return sMmEditAccess == ComboSaveEditorAccess::Access::Dormant;
+}
+// The play state the editor may use: none from OoT, whatever MM left in gPlayState (the eager boot can leave one).
+static PlayState* MmEditPlay() {
+    return MmEditDormant() ? nullptr : gPlayState;
+}
+// The file now holds MM's memory, written by the dormant Give itself: nothing is left for the editor to write.
+static void MmDormantSaveWritten() {
+    memcpy(&sMmBefore, &gSaveContext.save, sizeof(Save));
+    sMmDormantWrite.Written();
+}
+// The magic level MM's save gives Link. MM zeroes magicLevel when it loads a file, and its next frame derives it from
+// the two magic flags (Interface_Update).
+static int MmSaveMagicLevel() {
+    const auto& player = gSaveContext.save.saveInfo.playerData;
+    if (player.magicLevel == 0 && player.isMagicAcquired) {
+        return player.isDoubleMagicAcquired ? 2 : 1;
+    }
+    return CLAMP(player.magicLevel, 0, MAGIC_LEVEL_MAX);
 }
 #endif
 
@@ -370,9 +390,15 @@ void UpdateGameTime(u16 gameTime) {
 
     gSaveContext.save.time = gameTime;
 
+#ifdef COMBO_BUILD
+    if (gPlayState == NULL || MmEditDormant()) { // ComboShip: from OoT the save's time is all there is to set
+        return;
+    }
+#else
     if (gPlayState == NULL) {
         return;
     }
+#endif
 
     // Clear weather from day 2
     gWeatherMode = WEATHER_MODE_CLEAR;
@@ -431,20 +457,28 @@ void DrawTempleClears() {
     bool open;
     bool inverted = false;
     bool inStoneTower = false;
+#ifdef COMBO_BUILD
+    PlayState* play = MmEditPlay();
+#else
+    PlayState* play = gPlayState;
+#endif
 
-    if (gPlayState != NULL) {
-        inStoneTower = Play_GetOriginalSceneId(gPlayState->sceneId) == SCENE_F40;
-        inverted = Flags_GetSwitch(gPlayState, 20);
+    if (play != NULL) {
+        inStoneTower = Play_GetOriginalSceneId(play->sceneId) == SCENE_F40;
+        inverted = Flags_GetSwitch(play, 20);
     }
 
     ImGui::Columns(2, nullptr, false);
 
+    // ComboShip: ticking "cleared" opens the temple too. The open flags used to be set for every cleared temple each
+    // frame the section was drawn: a write to the save with no edit, which from OoT the editor then saved to MM's file.
     // Left column: Cleared checkboxes
     // Woodfall
     cleared = CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE);
     if (UIWidgets::Checkbox("Woodfall cleared", &cleared)) {
         if (cleared) {
             SET_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE);
+            SET_WEEKEVENTREG(WEEKEVENTREG_20_01);
         } else {
             CLEAR_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE);
         }
@@ -455,6 +489,7 @@ void DrawTempleClears() {
     if (UIWidgets::Checkbox("Snowhead cleared", &cleared)) {
         if (cleared) {
             SET_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE);
+            SET_WEEKEVENTREG(WEEKEVENTREG_30_01);
         } else {
             CLEAR_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE);
         }
@@ -465,6 +500,10 @@ void DrawTempleClears() {
     if (UIWidgets::Checkbox("Great Bay cleared", &cleared)) {
         if (cleared) {
             SET_WEEKEVENTREG(WEEKEVENTREG_CLEARED_GREAT_BAY_TEMPLE);
+            // 53_20 is if the turtle is raised
+            // 93_08 determines if a long or short cutscene should play
+            SET_WEEKEVENTREG(WEEKEVENTREG_53_20);
+            SET_WEEKEVENTREG(WEEKEVENTREG_93_08);
         } else {
             CLEAR_WEEKEVENTREG(WEEKEVENTREG_CLEARED_GREAT_BAY_TEMPLE);
         }
@@ -482,15 +521,10 @@ void DrawTempleClears() {
 
     ImGui::NextColumn();
 
-    // Right column: Open/Inverted checkboxes
+    // Right column: Open/Inverted checkboxes. A cleared temple shows as open.
     // Woodfall
     cleared = CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE);
-    if (cleared) {
-        open = true;
-        SET_WEEKEVENTREG(WEEKEVENTREG_20_01);
-    } else {
-        open = CHECK_WEEKEVENTREG(WEEKEVENTREG_20_01);
-    }
+    open = cleared || CHECK_WEEKEVENTREG(WEEKEVENTREG_20_01);
     if (UIWidgets::Checkbox("Woodfall Open", &open, { { .disabled = cleared } })) {
         if (open) {
             SET_WEEKEVENTREG(WEEKEVENTREG_20_01);
@@ -501,12 +535,7 @@ void DrawTempleClears() {
 
     // Snowhead
     cleared = CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE);
-    if (cleared) {
-        open = true;
-        SET_WEEKEVENTREG(WEEKEVENTREG_30_01);
-    } else {
-        open = CHECK_WEEKEVENTREG(WEEKEVENTREG_30_01);
-    }
+    open = cleared || CHECK_WEEKEVENTREG(WEEKEVENTREG_30_01);
     if (UIWidgets::Checkbox("Snowhead Open", &open, { { .disabled = cleared } })) {
         if (open) {
             SET_WEEKEVENTREG(WEEKEVENTREG_30_01);
@@ -517,15 +546,7 @@ void DrawTempleClears() {
 
     // Great Bay
     cleared = CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_GREAT_BAY_TEMPLE);
-    if (cleared) {
-        open = true;
-        // 53_20 is if the turtle is raised
-        // 93_08 determines if a long or short cutscene should play
-        SET_WEEKEVENTREG(WEEKEVENTREG_53_20);
-        SET_WEEKEVENTREG(WEEKEVENTREG_93_08);
-    } else {
-        open = CHECK_WEEKEVENTREG(WEEKEVENTREG_53_20);
-    }
+    open = cleared || CHECK_WEEKEVENTREG(WEEKEVENTREG_53_20);
     if (UIWidgets::Checkbox("Great Bay Open", &open, { { .disabled = cleared } })) {
         if (open) {
             SET_WEEKEVENTREG(WEEKEVENTREG_53_20);
@@ -541,9 +562,9 @@ void DrawTempleClears() {
             "Stone Tower Inverted", &inverted,
             { { .disabled = !inStoneTower, .disabledTooltip = "Can only invert while in Stone Tower" } })) {
         if (inverted) {
-            Flags_SetSwitch(gPlayState, 20);
+            Flags_SetSwitch(play, 20);
         } else {
-            Flags_UnsetSwitch(gPlayState, 20);
+            Flags_UnsetSwitch(play, 20);
         }
     }
 
@@ -632,8 +653,10 @@ void DrawGeneralTab() {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 8.0f));
     static char playerNameBuf[9];
+    // The name is written only when edited. With CallbackAlways it was rewritten every frame the field was focused,
+    // through a text round trip that turns some codes into others (code 63, '-', comes back as 45).
     ImGui::InputText("##playerNameInput", getPlayerName(playerNameBuf), 9,
-                     ImGuiInputTextFlags_CallbackAlways | ImGuiInputTextFlags_AutoSelectAll, setPlayerName);
+                     ImGuiInputTextFlags_CallbackEdit | ImGuiInputTextFlags_AutoSelectAll, setPlayerName);
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(1);
 
@@ -644,7 +667,15 @@ void DrawGeneralTab() {
 
     ImGui::Spacing();
     UIWidgets::Checkbox("Has Tatl", (bool*)&gSaveContext.save.hasTatl, { .color = theme });
+    // From OoT, MM's memory is the file's current save, which MM's writer keeps any owl save beside; this flag would
+    // only mislabel it.
+    ImGui::BeginDisabled(MmEditDormant());
     UIWidgets::Checkbox("Is Owl Save", (bool*)&gSaveContext.save.isOwlSave, { .color = theme });
+    ImGui::EndDisabled();
+    if (MmEditDormant()) {
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", ComboSaveEditorAccess::kSwitchToMm);
+    }
     UIWidgets::Checkbox("Finished Intro Sequence", (bool*)&gSaveContext.save.isFirstCycle, { .color = theme });
     Kit::EndCard();
 
@@ -714,9 +745,13 @@ void DrawGeneralTab() {
             CLEAR_WEEKEVENTREG(WEEKEVENTREG_DRANK_CHATEAU_ROMANI);
         }
     }
-    const int magicLevel = CLAMP(gSaveContext.save.saveInfo.playerData.magicLevel, 0, MAGIC_LEVEL_MAX);
-    if (Kit::ResourceBar("##magicLevelSlider", &gSaveContext.save.saveInfo.playerData.magicLevel, 0, MAGIC_LEVEL_MAX,
-                         Kit::kMagicLevelNames[magicLevel], Kit::kMagic)) {
+    // From OoT, the level the save gives Link and a bar sized from it: magicCapacity is MM's runtime meter, which
+    // only MM's play sets, so it can be 0 or another file's there.
+    int magicLevel = MmEditDormant() ? MmSaveMagicLevel()
+                                     : CLAMP(gSaveContext.save.saveInfo.playerData.magicLevel, 0, MAGIC_LEVEL_MAX);
+    if (Kit::ResourceBar("##magicLevelSlider", &magicLevel, 0, MAGIC_LEVEL_MAX, Kit::kMagicLevelNames[magicLevel],
+                         Kit::kMagic)) {
+        gSaveContext.save.saveInfo.playerData.magicLevel = static_cast<s8>(magicLevel);
         gSaveContext.magicCapacity = gSaveContext.save.saveInfo.playerData.magicLevel * MAGIC_NORMAL_METER;
         gSaveContext.save.saveInfo.playerData.magic =
             MIN(gSaveContext.save.saveInfo.playerData.magic, gSaveContext.magicCapacity);
@@ -737,8 +772,9 @@ void DrawGeneralTab() {
                 break;
         }
     }
-    Kit::ResourceBar("##magicSlider", &gSaveContext.save.saveInfo.playerData.magic, 0, gSaveContext.magicCapacity,
-                     "Magic: %d", Kit::kMagic);
+    Kit::ResourceBar("##magicSlider", &gSaveContext.save.saveInfo.playerData.magic, 0,
+                     MmEditDormant() ? magicLevel * MAGIC_NORMAL_METER : gSaveContext.magicCapacity, "Magic: %d",
+                     Kit::kMagic);
     Kit::EndCard();
 
     Kit::BeginCard("currencyCard");
@@ -796,7 +832,7 @@ void DrawGeneralTab() {
     if (Kit::ResourceBar("##dayInput", &gSaveContext.save.day, 0, 4, "Day: %d", themeColour)) {
         gSaveContext.save.eventDayCount = CURRENT_DAY;
 
-        if (gPlayState != nullptr) {
+        if (MmEditPlay() != nullptr) {
             Interface_NewDay(gPlayState, CURRENT_DAY);
             // Inverting setup actors forces half-day actors to kill/respawn for new day
             gPlayState->numSetupActors = -gPlayState->numSetupActors;
@@ -1141,42 +1177,47 @@ void DrawAmmoInput(InventorySlot slot) {
 
 void DrawEquipItemMenu(InventorySlot slot) {
     ItemId currentItemId = static_cast<ItemId>(gSaveContext.save.saveInfo.inventory.items[slot]);
+#ifdef COMBO_BUILD
+    PlayState* play = MmEditPlay(); // ComboShip: none from OoT, which leaves the icons to MM's next start
+#else
+    PlayState* play = gPlayState;
+#endif
 
     if (ImGui::BeginMenu("Equip")) {
         if (ImGui::MenuItem("C-Left")) {
             SET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_C_LEFT, currentItemId);
             SET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_C_LEFT, slot);
-            Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_C_LEFT);
+            Interface_LoadItemIconImpl(play, EQUIP_SLOT_C_LEFT);
         }
         if (ImGui::MenuItem("C-Down")) {
             SET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_C_DOWN, currentItemId);
             SET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_C_DOWN, slot);
-            Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_C_DOWN);
+            Interface_LoadItemIconImpl(play, EQUIP_SLOT_C_DOWN);
         }
         if (ImGui::MenuItem("C-Right")) {
             SET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_C_RIGHT, currentItemId);
             SET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_C_RIGHT, slot);
-            Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_C_RIGHT);
+            Interface_LoadItemIconImpl(play, EQUIP_SLOT_C_RIGHT);
         }
         if (ImGui::MenuItem("D-Right")) {
             DPAD_SET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_D_RIGHT, currentItemId);
             DPAD_SET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_D_RIGHT, slot);
-            Interface_Dpad_LoadItemIconImpl(gPlayState, EQUIP_SLOT_D_RIGHT);
+            Interface_Dpad_LoadItemIconImpl(play, EQUIP_SLOT_D_RIGHT);
         }
         if (ImGui::MenuItem("D-Left")) {
             DPAD_SET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_D_LEFT, currentItemId);
             DPAD_SET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_D_LEFT, slot);
-            Interface_Dpad_LoadItemIconImpl(gPlayState, EQUIP_SLOT_D_LEFT);
+            Interface_Dpad_LoadItemIconImpl(play, EQUIP_SLOT_D_LEFT);
         }
         if (ImGui::MenuItem("D-Down")) {
             DPAD_SET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_D_DOWN, currentItemId);
             DPAD_SET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_D_DOWN, slot);
-            Interface_Dpad_LoadItemIconImpl(gPlayState, EQUIP_SLOT_D_DOWN);
+            Interface_Dpad_LoadItemIconImpl(play, EQUIP_SLOT_D_DOWN);
         }
         if (ImGui::MenuItem("D-Up")) {
             DPAD_SET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_D_UP, currentItemId);
             DPAD_SET_CUR_FORM_BTN_SLOT(EQUIP_SLOT_D_UP, slot);
-            Interface_Dpad_LoadItemIconImpl(gPlayState, EQUIP_SLOT_D_UP);
+            Interface_Dpad_LoadItemIconImpl(play, EQUIP_SLOT_D_UP);
         }
         ImGui::EndMenu();
     }
@@ -1264,11 +1305,12 @@ static void TakeOffComboGear() {
     const bool boots = adultMm.boots != 0;
     adultMm.boots = 0;
     adultMm.tunic = 0;
-    if (boots && gPlayState) {
-        Player* player = GET_PLAYER(gPlayState);
+    PlayState* play = MmEditPlay();
+    if (boots && play) {
+        Player* player = GET_PLAYER(play);
         if (player != nullptr && player->transformation == PLAYER_FORM_HUMAN) {
             player->currentBoots = PLAYER_BOOTS_HYLIAN;
-            func_80123140(gPlayState, player);
+            func_80123140(play, player);
         }
     }
 }
@@ -1505,8 +1547,9 @@ static void DrawRandoItemGives() {
             if (MmEditDormant()) {
                 // ComboShip: from OoT, MM has no play state to run a get-item event in, and MM clears the queue when
                 // it next loads the save, so the item goes straight into the save as a cross-game item does
-                // (MM_GrantCrossItem), which also writes the file.
+                // (MM_GrantCrossItem), which also writes the file. The editor then has nothing left to write.
                 Combo_MM_GiveDormantResolved(Rando::ConvertItem(randoItemId));
+                MmDormantSaveWritten();
                 continue;
             }
             GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
@@ -2154,15 +2197,17 @@ void NextQuestInSlot(QuestItem slot) {
     // ComboShip: only the sword and shield change Link. Songs, boss remains and the notebook are bits of the save,
     // which the editor also edits while OoT is in front and MM has no play state: returning for them made those taps
     // do nothing there (the song looked tapped and stayed unlearned).
-    if (!gPlayState && (slot == QUEST_SWORD || slot == QUEST_SHIELD)) {
+    PlayState* play = MmEditPlay();
+    if (!play && (slot == QUEST_SWORD || slot == QUEST_SHIELD)) {
         return;
     }
-    Player* player = gPlayState ? GET_PLAYER(gPlayState) : nullptr;
+    Player* player = play ? GET_PLAYER(play) : nullptr;
 #else
-    if (!gPlayState) {
+    PlayState* play = gPlayState;
+    if (!play) {
         return;
     }
-    Player* player = GET_PLAYER(gPlayState);
+    Player* player = GET_PLAYER(play);
 #endif
     if (slot == QUEST_SONG_LULLABY || slot == QUEST_SONG_LULLABY_INTRO) {
         if (CHECK_QUEST_ITEM(QUEST_SONG_LULLABY)) {
@@ -2189,7 +2234,7 @@ void NextQuestInSlot(QuestItem slot) {
         if (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) == EQUIP_VALUE_SWORD_RAZOR) {
             gSaveContext.save.saveInfo.playerData.swordHealth = 100;
         }
-        Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
+        Interface_LoadItemIconImpl(play, EQUIP_SLOT_B);
     } else if (slot == QUEST_SHIELD) {
         uint32_t currentShield = GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD);
         if (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SHIELD) == EQUIP_VALUE_SHIELD_NONE) {
@@ -2199,7 +2244,7 @@ void NextQuestInSlot(QuestItem slot) {
         } else {
             SET_EQUIP_VALUE(EQUIP_TYPE_SHIELD, EQUIP_VALUE_SHIELD_NONE);
         }
-        Player_SetEquipmentData(gPlayState, player);
+        Player_SetEquipmentData(play, player);
     } else {
         if (CHECK_QUEST_ITEM(slot)) {
             REMOVE_QUEST_ITEM(slot);
@@ -2550,7 +2595,7 @@ static void SetSwordValue(int value) {
     if (GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) == EQUIP_VALUE_SWORD_RAZOR) {
         gSaveContext.save.saveInfo.playerData.swordHealth = 100;
     }
-    Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
+    Interface_LoadItemIconImpl(MmEditPlay(), EQUIP_SLOT_B);
 }
 
 // ComboShip: a quiver or bomb bag level, with the ammo it holds cut to the new capacity.
@@ -2571,6 +2616,7 @@ void DrawEquipmentTab() {
     namespace Kit = ComboSaveEditorKit;
     auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
     auto icon = [&](ItemId item) { return gui->GetTextureByName((const char*)gItemIcons[item]); };
+    PlayState* play = MmEditPlay();
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
     ImGui::BeginChild("equipmentTab", ImVec2(0, 0), true);
@@ -2580,13 +2626,13 @@ void DrawEquipmentTab() {
         SET_EQUIP_VALUE(EQUIP_TYPE_SHIELD, EQUIP_VALUE_SHIELD_MIRROR);
         if (GET_PLAYER_FORM != PLAYER_FORM_FIERCE_DEITY) {
             SET_EQUIP_VALUE(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_GILDED);
-            if (gPlayState) {
-                Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
+            if (play) {
+                Player_SetEquipmentData(play, GET_PLAYER(play));
             }
             // The B button is in the save too, so it follows the sword without a play state (from OoT).
             BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
                 ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
-            Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
+            Interface_LoadItemIconImpl(play, EQUIP_SLOT_B);
         }
         SetQuiverLevel(3);
         SetBombBagLevel(3);
@@ -2596,13 +2642,13 @@ void DrawEquipmentTab() {
         SET_EQUIP_VALUE(EQUIP_TYPE_SHIELD, EQUIP_VALUE_SHIELD_HERO);
         if (GET_PLAYER_FORM != PLAYER_FORM_FIERCE_DEITY) {
             SET_EQUIP_VALUE(EQUIP_TYPE_SWORD, EQUIP_VALUE_SWORD_KOKIRI);
-            if (gPlayState) {
-                Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
+            if (play) {
+                Player_SetEquipmentData(play, GET_PLAYER(play));
             }
             // The B button is in the save too, so it follows the sword without a play state (from OoT).
             BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_B) =
                 ITEM_SWORD_KOKIRI + GET_CUR_EQUIP_VALUE(EQUIP_TYPE_SWORD) - EQUIP_VALUE_SWORD_KOKIRI;
-            Interface_LoadItemIconImpl(gPlayState, EQUIP_SLOT_B);
+            Interface_LoadItemIconImpl(play, EQUIP_SLOT_B);
         }
         SetQuiverLevel(0);
         SetBombBagLevel(0);
@@ -2610,7 +2656,7 @@ void DrawEquipmentTab() {
 
     // The sword and shield change Link himself, so, as on Quest Status, only while playing, or from OoT: MM dresses
     // Link from the save when it next starts.
-    const bool canEquip = gPlayState != nullptr || MmEditDormant();
+    const bool canEquip = play != nullptr || MmEditDormant();
     ImGui::SeparatorText("Sword and shield");
     if (!canEquip) {
         ImGui::TextDisabled("%s", Kit::kNeedsPlay);
@@ -2639,8 +2685,8 @@ void DrawEquipmentTab() {
                                           { icon(ITEM_SHIELD_MIRROR), "Mirror Shield" } });
     if (shield >= 0 && canEquip) {
         SET_EQUIP_VALUE(EQUIP_TYPE_SHIELD, shield);
-        if (gPlayState) {
-            Player_SetEquipmentData(gPlayState, GET_PLAYER(gPlayState));
+        if (play) {
+            Player_SetEquipmentData(play, GET_PLAYER(play));
         }
     }
     ImGui::EndDisabled();
@@ -2909,7 +2955,7 @@ void DrawPlayerTab() {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
     ImGui::BeginChild("playerTab", ImVec2(0, 0), true);
 
-    if (gPlayState == nullptr) {
+    if (MmEditPlay() == nullptr) {
         ImGui::TextWrapped("%s", MmEditDormant() ? ComboSaveEditorAccess::kSwitchToMm : Kit::kNeedsPlay);
     } else {
         Player* player = GET_PLAYER(gPlayState);
@@ -3410,7 +3456,7 @@ void DrawFlagsTab() {
                                           .labelPosition = UIWidgets::LabelPosition::None,
                                           .color = theme,
                                       });
-        if (gPlayState != NULL) {
+        if (MmEditPlay() != NULL) {
             ImGui::SameLine();
             if (Kit::Button("Current", themeColour)) {
                 selectedScene = gPlayState->sceneId;
@@ -3448,11 +3494,12 @@ void DrawFlagsTab() {
 
     switch (type) {
         case CURRENT_SCENE_FLAGS: {
-            if (gPlayState == NULL) {
+            PlayState* play = MmEditPlay();
+            if (play == NULL) {
                 ImGui::TextWrapped("%s", MmEditDormant() ? ComboSaveEditorAccess::kSwitchToMm : Kit::kNeedsPlay);
                 break;
             }
-            auto& sceneFlags = gPlayState->actorCtx.sceneFlags;
+            auto& sceneFlags = play->actorCtx.sceneFlags;
             Kit::BeginCardLayout(2, 360.0f);
             for (int i = 0; i < 4; i++) {
                 group(fmt::format("Switch {}", i + 1), sceneFlags.switches[i]);
@@ -4210,8 +4257,15 @@ void DrawRandoTab() {
                                                        : UIWidgets::ColorValues.at(UIWidgets::Colors::White),
                                "%s", randoStaticCheck.name);
             ImGui::TableNextColumn();
-            UIWidgets::ComboboxWithSearch((hiddenName + "reward").c_str(), &randoSaveCheck.randoItemId,
-                                          &randoItemIdComboboxMap, { .labelPosition = UIWidgets::LabelPosition::None });
+            // ComboShip: the list writes only a reward picked from it. Drawn on the check's own reward, it set every
+            // reward it does not list to its first entry: writes to the save with no edit, from OoT saved to the file.
+            RandoItemId reward = randoSaveCheck.randoItemId;
+            if (!randoItemIdComboboxMap.contains(reward)) {
+                ImGui::Text("%d", static_cast<int>(reward));
+            } else if (UIWidgets::ComboboxWithSearch((hiddenName + "reward").c_str(), &reward, &randoItemIdComboboxMap,
+                                                     { .labelPosition = UIWidgets::LabelPosition::None })) {
+                randoSaveCheck.randoItemId = reward;
+            }
         }
 
         ImGui::EndTable();
@@ -4316,23 +4370,33 @@ static ComboSaveEditorAccess::Access MmEditAccess() {
 // the writer the dormant grants use (it writes gSaveContext.fileNum's file, which MmEditAccess matched).
 static void WriteDormantMmEdits(const Save& before) {
     const bool changed = MmEditDormant() && memcmp(&before, &gSaveContext.save, sizeof(Save)) != 0;
-    if (sMmDormantWrite.Step(sMmEditAccess, changed, ImGui::IsAnyItemActive())) {
+    if (sMmDormantWrite.Step(sMmEditAccess, gSaveContext.fileNum, changed, ImGui::IsAnyItemActive())) {
+        SaveManager_SaveCurrentForCombo();
+    }
+}
+
+// ComboShip: the Gui runs this every frame, shown or not. A dormant change still waiting for its control when the
+// editor stopped being drawn (the menu closed or left the page mid-drag, or with a text field still focused) is written
+// now if the same file is still edited from OoT, and dropped otherwise, so nothing is written later for another file.
+void SaveEditorWindow::UpdateElement() {
+    if (sMmDormantWrite.Pending() && ComboSaveEditorAccess::StoppedDrawing(ImGui::GetFrameCount(), sMmDrawnFrame) &&
+        sMmDormantWrite.Stopped(MmEditAccess(), gSaveContext.fileNum)) {
         SaveManager_SaveCurrentForCombo();
     }
 }
 
 void SaveEditorWindow::DrawElement() {
+    sMmDrawnFrame = ImGui::GetFrameCount();
     sMmEditAccess = MmEditAccess();
     if (sMmEditAccess == ComboSaveEditorAccess::Access::NoFile) {
-        sMmDormantWrite.Step(sMmEditAccess, false, false);
+        sMmDormantWrite.Step(sMmEditAccess, gSaveContext.fileNum, false, false);
         ImGui::TextWrapped("%s", ComboSaveEditorKit::kNoMmFile);
         return;
     }
     initSafeItemsForInventorySlot();
-    static Save sBefore; // the save before this frame's controls ran, to see whether they changed it
     if (MmEditDormant()) {
         ImGui::TextWrapped("%s", ComboSaveEditorAccess::kDormantMm);
-        memcpy(&sBefore, &gSaveContext.save, sizeof(Save));
+        memcpy(&sMmBefore, &gSaveContext.save, sizeof(Save));
     }
     UIWidgets::PushStyleTabs(UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5)));
     if (ImGui::BeginTabBar("SaveContextTabBar", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton)) {
@@ -4392,7 +4456,7 @@ void SaveEditorWindow::DrawElement() {
         ImGui::EndTabBar();
     }
     UIWidgets::PopStyleTabs();
-    WriteDormantMmEdits(sBefore);
+    WriteDormantMmEdits(sMmBefore);
 }
 #else
 void SaveEditorWindow::DrawElement() {

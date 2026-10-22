@@ -6552,6 +6552,14 @@ extern "C" COMBO_EXPORT void SOH_ParkForComboMMResume(void) {
         return;
     gGameState->init = nullptr;
     gGameState->running = false;
+    // FileChoose_LoadGame, the only caller's load, staged the meter for that first Play frame: magic 0 with the saved
+    // amount in magicFillTarget, and magicLevel 0 until Interface_Update derives it from the magic flags. Parked, the
+    // frame never comes while OOT's save stays in memory, and every dormant OOT write (the cross-game grants, the
+    // Save Editor) would save magic 0. Undo the staging as that frame would; OOT's next start reloads and stages it.
+    gSaveContext.magic = static_cast<s8>(gSaveContext.magicFillTarget);
+    gSaveContext.magicLevel =
+        static_cast<s8>(gSaveContext.isMagicAcquired ? gSaveContext.isDoubleMagicAcquired + 1 : 0);
+    gSaveContext.magicCapacity = static_cast<s16>(gSaveContext.magicLevel * MAGIC_NORMAL_METER);
 }
 
 extern "C" COMBO_EXPORT void SOH_SetSeedGenerated(uint8_t g) {
