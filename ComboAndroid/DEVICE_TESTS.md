@@ -1,10 +1,10 @@
 # Device validation still required
 
-## Deku Princess skip (0.4.13, unreleased)
+## Deku Princess skip (0.4.13)
 
 1. MM view: Enhancements > Time savers > Cutscenes > Skip story cutscenes ON. With the Deku Princess in a bottle, enter the Deku King's chamber and let her out next to the king. The screen fades once and Link stands in the chamber; it does not keep fading and reloading. The princess stands by the king afterwards.
 
-## Random starting age and trials recorded in the seed (0.4.13, unreleased)
+## Random starting age and trials recorded in the seed (0.4.13)
 
 Nothing here has been tried yet; host tests cover the record, the finalize, the reload's and the replay's checks and the seed view. Run the list on the emulator. Allsanity skips Ganon's Trials, so for checks 1 and 2 also set Ganon's Trials to Random Number before generating. Note each file's starting age and the trial barriers inside Ganon's Castle (Tools > Save Editor can give the items to reach them).
 
@@ -14,14 +14,14 @@ Nothing here has been tried yet; host tests cover the record, the finalize, the 
 4. An existing 0.4.12 file loads unchanged.
 5. A seed with an explicit age, made on the device, matches its corpus row byte for byte. With this build's headless generator, regenerate a 0.4.13 corpus row whose Starting Age is Child or Adult, for example `d00-u7-none-oot-child`: its config from `ComboAndroid/tests/fixtures/wallmasters-0413/inputs/` and `--seed <label> --count 1 --master-seed <masterSeed> --starting-game <startingGame>` from that row in `inputs/plan.json`, plus `--er erWallmasters=ownGame` for a row of kind `er` or `pin`. The seed and its `.entrances.txt` are the committed files under `seeds/`.
 
-## Cross-game departures keep the room's flags (0.4.13, unreleased)
+## Cross-game departures keep the room's flags (0.4.13)
 
 Nothing here has been tried yet; a host test runs the departure saves from source. Run the list on the emulator, on a spare file in Combined randomizer mode with Randomizer > Warps & travel > Play warp songs across games on. Tools > Save Editor can give songs, keys and Farore's Wind.
 
 1. In OoT, open a chest and unlock a door with a small key in one room, for example in the Forest Temple. Cross games with Soaring from that room, come back, and check that both are still open. The key stays spent. If you can, repeat with a cross-game warp song and with Farore's Wind.
 2. In MM, open a chest and unlock a door in one room, for example in Woodfall Temple, without saving. Cross to OoT with an OoT warp song from that room (for example Requiem of Spirit), come back, and check that both are still open. If you can, repeat with Farore's Wind. Then take the Clock Tower door to OoT and back: earlier rooms' chests and doors stay open, as before.
 
-## OoT scene restrictions as in OoTMM (0.4.13, unreleased)
+## OoT scene restrictions as in OoTMM (0.4.13)
 
 Nothing here has been played yet; host tests run the table and the warp-song code from source. Run the list on the emulator first. Use a new seed made with this build in Combined randomizer mode on a spare file, and give the items with Tools > Save Editor: adult Link, magic, Farore's Wind, an ocarina and Prelude of Light (plus Song of Soaring and Randomizer > Warps & travel > Play warp songs across games for check 4). Leave Enhancements > Warps & travel > Better Farore's Wind off.
 
@@ -31,7 +31,7 @@ Nothing here has been played yet; host tests run the table and the warp-song cod
 4. In Granny's Potion Shop, play Song of Soaring: "You can't warp here!". In the Gerudo Training Ground (with Song of Soaring at any age (OoT) on, as adult) it opens MM's owl map.
 5. **Older files are unchanged.** Load a file started on 0.4.12, or import a seed made by 0.4.12 into a new file: in the Windmill Prelude of Light asks "Warp to the Temple of Time?", Farore's Wind can't be cast in the Gerudo Training Ground, and the ocarina's button is greyed out in Granny's Potion Shop. On a Vanilla Ocarina of Time file, Prelude of Light shows "You can't warp here!" in the Windmill and the Gerudo Training Ground.
 
-## Master Quest dungeons (0.4.13, unreleased)
+## Master Quest dungeons (0.4.13)
 
 Nothing here has been played yet, on the emulator or a phone; host tests cover the data and the code. Run the whole list on the emulator first, then checks 1-4, 9, 12, 17 and 18 on a phone (note the frame rate). Use an OoT USA 1.0 ROM: the bundled Master Quest data plays only on that version. Keep the logs and a screenshot of each check.
 
@@ -85,7 +85,7 @@ A DEV APK is built like a release with `-DCOMBO_MQ_WALK_DEV=ON` in its own build
 18. In one session: play the MQ file, return to file select, load a file whose seed has no MQ dungeons (or an old save) and enter the same dungeons: they are vanilla, and the log says `quest=vanilla` with nothing MQ. Then load the MQ file again: MQ again.
 19. A save or seed made before this version loads and plays as before, with every dungeon vanilla.
 
-## Wallmaster Shuffle with Master Quest dungeons (0.4.13, unreleased)
+## Wallmaster Shuffle with Master Quest dungeons (0.4.13)
 
 Nothing here has been tried yet; host tests cover the routes, the logic and the capture code. Run the list on the emulator, then checks 2, 4, 8 and 9 on a phone. Use an OoT USA 1.0 ROM, a spare file in Combined randomizer mode with Wallmaster Shuffle set to Own Game. Keep the Master Quest room log on (check 1 above): the room line of each capture must say `quest=mq`. As in the Wallmaster Shuffle list below, the seed's `.entrances.txt` line names where each Wallmaster sends Link; for each capture note the APK checksum, the seed, that line and where Link landed. Landing anywhere else blocks the release. Tools > Save Editor can give items, keys and souls. On the emulator, the DEV APK's `tools/mq_walk_driver.py wallmaster <dungeon> <room>` reaches each room below (Developer walk, above); for a capture made that way, note the DEV APK's checksum.
 
@@ -100,7 +100,7 @@ Nothing here has been tried yet; host tests cover the routes, the logic and the 
 9. Apply the Allsanity preset, set Wallmaster Shuffle to Own Game and generate several seeds with the Seed field blank. About one seed in sixteen rolls that combination for its own Master Quest dungeons and stops at once with "This seed's Master Quest dungeons have more Wallmasters than Wallmaster Shuffle can place. Try another seed."; only the seed's first roll can stop it, never a retry after a failed fill. The others finish, and their seed views list their Master Quest dungeons.
 10. A seed without Master Quest dungeons from this build loads in 0.4.12. A seed with one is refused there.
 
-## Wallmaster Shuffle with a starting warp song (0.4.13, unreleased)
+## Wallmaster Shuffle with a starting warp song (0.4.13)
 
 Nothing here has been tried yet; host tests cover the Temple check, the generator and the seed check, and compare the Temple check with OoTMM's own on small worlds. Run the list on the emulator, then checks 2 to 4 on a phone. Use a spare file in Combined randomizer mode with Randomizer > Logic & access > Entrances > Wallmaster Shuffle set to Own Game. The Beginner preset starts with Prelude of Light and the Ocarina of Time in OoT, and with Song of Soaring in MM; a starting Song of Soaring still greys out Wallmaster Shuffle, so remove it from MM's starting items wherever this list uses Beginner. For each capture, note the APK checksum, the seed, its `.entrances.txt` line and where Link landed.
 
@@ -110,7 +110,7 @@ Nothing here has been tried yet; host tests cover the Temple check, the generato
 4. Turn on Warp Songs and Soaring Spots Shuffle: "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster Shuffle." Turn it off again: Own Game is offered.
 5. A seed from check 2 is refused by 0.4.12. Remove Prelude of Light from the same settings and generate again, keeping Master Quest dungeons and Play warp songs across games off as Beginner has them: that seed still loads in 0.4.12.
 
-## Wallmaster Shuffle with cross-game songs (0.4.13, unreleased)
+## Wallmaster Shuffle with cross-game songs (0.4.13)
 
 Nothing here has been tried yet; host tests cover the generator, the seed check and the Temple check. Run the list on the emulator, then checks 2 to 6 on a phone. Use a spare file in Combined randomizer mode with Randomizer > Logic & access > Entrances > Wallmaster Shuffle set to Own Game, Randomizer > Warps & travel > Play warp songs across games on, and no warp song or Song of Soaring among the starting items. Tools > Save Editor can give songs, items and souls. For each capture, note the APK checksum, the seed, its `.entrances.txt` line and where Link landed.
 
@@ -122,7 +122,7 @@ Nothing here has been tried yet; host tests cover the generator, the seed check 
 6. Add Song of Soaring to MM's starting items: Own Game greys out with "Remove Song of Soaring from the starting items to use Wallmaster Shuffle." Remove it and turn on Warp Songs and Soaring Spots Shuffle: "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster Shuffle." Turn it off again: Own Game is offered. (A starting OoT warp song such as Prelude of Light no longer greys it out; see the list above.)
 7. A seed from check 2 is refused by 0.4.12. A seed made with Play warp songs across games off still loads there.
 
-## Wallmaster Shuffle (0.4.12, unreleased)
+## Wallmaster Shuffle (0.4.12)
 
 Nothing here has been tried on a phone yet, and no OoT Wallmaster capture has been seen in play. Checks 3, 4 and 7 matter most. Use the exact release build, a spare file in Combined randomizer mode, and Randomizer > Logic & access > Entrances > Wallmaster Shuffle set to Own Game. Tools > Save Editor can give items, keys and souls to save time.
 

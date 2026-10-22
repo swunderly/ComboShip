@@ -12,12 +12,12 @@ This fork turns ComboShip into one Android app (APK) for phones and tablets. Bot
 
 **[Get the latest APK from Releases](https://github.com/swunderly/ComboShip/releases/latest)**
 
-Current release: **Combo Ship for Android 0.4.12** (October 21, 2026). File: `ComboShip-Android-0.4.12-arm64.apk`. [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.12-android/ComboShip-Android-0.4.12-arm64.apk).
+Current release: **Combo Ship for Android 0.4.13** (October 22, 2026). File: `ComboShip-Android-0.4.13-arm64.apk`. [Direct download](https://github.com/swunderly/ComboShip/releases/download/v0.4.13-android/ComboShip-Android-0.4.13-arm64.apk).
 
 Home > Game mode lets each new file use the combined randomizer, just the OoT randomizer, just the MM randomizer, vanilla OoT or vanilla MM. Select a file's Next seed, choose the mode, then generate or prepare it from an empty file and start it at file select. Existing saves keep their own mode. Vanilla games retain your enhancement settings. Solo randomizers use their own items and final boss, with cross-game travel and shared items off.
 
 
-The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.12) are this fork's own. They are not upstream ComboShip's version numbers.
+The app is not on Google Play. You install the APK yourself. It does not check for updates, so look here for new versions. Combo Ship for Android's version numbers (0.1.0 to 0.4.13) are this fork's own. They are not upstream ComboShip's version numbers.
 
 ## What you need
 
@@ -29,7 +29,7 @@ The app is not on Google Play. You install the APK yourself. It does not check f
 
 | Game | Accepted ROMs | Tested on Android |
 | --- | --- | --- |
-| Ocarina of Time | The versions Ship of Harkinian accepts. Use a normal ROM, not Master Quest. Builds after 0.4.12 have the Master Quest dungeons built in, for the USA 1.0 ROM. | N64 USA 1.0, SHA-1 `ad69c91157f6705e8ab06c79fe08aad47bb57ba7` |
+| Ocarina of Time | The versions Ship of Harkinian accepts. Use a normal ROM, not Master Quest. From 0.4.13 the Master Quest dungeons are built in, for the USA 1.0 ROM. | N64 USA 1.0, SHA-1 `ad69c91157f6705e8ab06c79fe08aad47bb57ba7` |
 | Majora's Mask | N64 USA 1.0 or GameCube USA only. PAL and Japanese ROMs are not accepted. | N64 USA 1.0, SHA-1 `d6133ace5afaa0882cf214cf88daba39e266c078` |
 
 You can check a ROM at [ship.equipment](https://ship.equipment/) (OoT) and [2ship.equipment](https://2ship.equipment/) (MM).
@@ -39,7 +39,7 @@ Touch controls and game controllers both work. The owner plays on a phone with b
 ## Install and first run
 
 1. Copy your two ROM files to the device first, for example to Download. If a ROM is in a `.zip` file, unzip it first.
-2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.12-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
+2. On the device, open the [latest release](https://github.com/swunderly/ComboShip/releases/latest). Under **Assets**, tap `ComboShip-Android-0.4.13-arm64.apk`, not "Source code". If your browser warns about the file, choose **Download anyway**.
 3. Open the downloaded APK. If Android asks, allow your browser or file manager to install unknown apps. The app is not from Google Play and is signed with a development key, so Google Play Protect may warn you. You can still install it, usually with **More details**, then **Install anyway**.
 4. Open **Combo Ship** and tap **Allow file access**. On Android 11 and newer, Android opens an **All files access** screen: turn on the switch for Combo Ship, then go back. Combo Ship uses this to keep your saves, seeds and backups in a visible `Internal storage/ComboShip` folder that you can copy.
 5. Tap **Choose OoT ROM** and pick your OoT ROM. Then tap **Choose MM ROM** and pick your MM ROM. The app copies them into its folder. Your original files are not changed.
@@ -88,7 +88,7 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 - **OoT spells and gear in MM.** Farore's Wind (MM), Din's Fire (MM), Nayru's Love (MM), Iron Boots (MM), Hover Boots (MM), Goron Tunic (MM) and Zora Tunic (MM), each with a shared version. Child Link wears the boots and tunics, as in OoTMM. Cross-Games Farore's Wind lets you warp between the games.
 - **Adult Link in MM.** With **Cross-Games Age** on, Link enters MM at the age he has in OoT, as in OoTMM. Adult Link in MM is OoT's own adult Link, made from the OoT game data the app extracts from your ROM, and he rides OoT's adult Epona. To get to MM as adult, play Song of Soaring in OoT with **Song of Soaring at any age (OoT)** on (see Cross-game songs below).
 - **Souls.** Enemy Souls (OoT), covering 43 kinds of OoT enemy. NPC Souls, Animal Souls and Misc. Souls for MM. These add to the Boss Souls and MM enemy souls that SoH and 2Ship already have.
-- **Master Quest dungeons (not in a release yet).** With an OoT USA 1.0 ROM, any of the 12 OoT dungeons can be its Master Quest version, played from your normal ROM with OoTMM's Master Quest data, as in OoTMM. Like OoTMM, they keep the normal ROM's models and textures. Allsanity makes each one Master Quest on a coin flip, as OoTMM's does. Wallmaster Shuffle shuffles their Wallmasters too, as in OoTMM.
+- **Master Quest dungeons (from 0.4.13).** With an OoT USA 1.0 ROM, any of the 12 OoT dungeons can be its Master Quest version, played from your normal ROM with OoTMM's Master Quest data, as in OoTMM. Like OoTMM, they keep the normal ROM's models and textures. Allsanity makes each one Master Quest on a coin flip, as OoTMM's does. Wallmaster Shuffle shuffles their Wallmasters too, as in OoTMM.
 - **Dungeon items.** OoT silver rupees with puzzle pouches, placed Vanilla, Own Dungeon or Anywhere. MM key rings for the four temples. (Upstream has since added SoH 9.3's own, different silver rupee option. That is not in this build.)
 - **Masks.** OoT uses OoTMM's mask model: masks are shuffled, or you start with them.
 - **Cross-game songs (this fork's own option).** With **Play warp songs across games**, OoT warp songs work in MM and Song of Soaring works in OoT with MM's owl statues. Each uses its own game's animation and sound. As in OoTMM, only child Link can play Song of Soaring in OoT unless **Song of Soaring at any age (OoT)** is also on. With it, adult Link can use it to reach MM once an MM owl statue is activated. There is also an option for mixing OoT warp pads and MM owls as shuffled destinations. (Upstream added its own, separate version of this on October 11, 2026. That version is not in this build.)
@@ -108,7 +108,7 @@ Upstream ComboShip already shuffles items across both games. It has cross-game h
 
 **Do I need an emulator or a PC?** No. The games run as native Android code. Setup and seed generation happen on the device. You only need your ROM files on the device.
 
-**Can I play co-op?** Yes, through Anchor, if everyone has the same build and seed. So far it has only been tested with two emulators on a local server. Co-op also works with Wallmaster Shuffle (from 0.4.12) when everyone loads the same seed file; the [changelog](ComboAndroid/docs/CHANGELOG.md) says what its co-op check covered.
+**Can I play co-op?** Yes, through Anchor, if everyone has the same build and seed. So far it has only been tested with two emulators on a local server. Co-op also works with Wallmaster Shuffle (from 0.4.12) when everyone loads the same seed file; the [changelog](ComboAndroid/docs/CHANGELOG.md) says what its co-op check covered. In 0.4.12, a Wallmaster seed made in the app could not be saved for a file with Randomizer > Plandomizer, which the second player needs; this works from 0.4.13.
 
 **Does it work on Windows, Linux or Mac?** Not this fork. Use [upstream ComboShip](https://github.com/Varuuna/ComboShip).
 
@@ -122,10 +122,10 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - The owner plays the releases on a phone, with touch controls and a game controller. Only a few specific fixes have been confirmed on a phone so far.
 - No build has had a complete seed playthrough.
 - For 0.4.9 (more pickup counts): it builds; it had no host test or emulator run. For 0.4.8 (a silver rupee count in the pickup message): its host tests pass; it was not run on the emulator. For 0.4.7 (an MM soul room fix): its host test passes; it was not run on the emulator. For 0.4.6 (a silver rupee fix): 128 automated tests pass and the fix had an independent code review; it was not run on the emulator. For 0.4.5: 129 automated tests, run on the developer's Windows PC, pass, and each 0.4.5 change was checked on the emulator, including a seed from the Allsanity and Default presets that passed the generator's automatic playthrough check. For 0.4.4: 128 automated tests pass. 2 tests that cannot run on Windows were skipped. On the emulator, adult Link in MM, the MM boots and tunics, casting the MM spells, the menus and the tracker fixes were tried in the app. The automatic playthrough check confirms in logic that a seed can be finished. Nobody played them through.
-- 0.4.3 to 0.4.11 were not tested on a phone before release; the 0.4.6 and 0.4.7 fixes were then confirmed on a phone. 0.4.12's Wallmaster Shuffle was checked on the owner's phone with a release candidate before release. Installing it over 0.4.1 was not tried on the emulator either; only automated tests cover older saves.
+- 0.4.3 to 0.4.11 were not tested on a phone before release; the 0.4.6 and 0.4.7 fixes were then confirmed on a phone. 0.4.12's Wallmaster Shuffle was checked on the owner's phone with a release candidate before release. 0.4.13 was tested on the emulator only. Installing it over 0.4.1 was not tried on the emulator either; only automated tests cover older saves.
 - Not yet checked on a real device: audio delay and quality, keyboards, SD card storage, mods, MM three-day cycle resets, multiplayer over the Internet, and tablets.
 - The SoH and 2Ship enhancements carried over from upstream are not all tested on Android.
-- Only OoT USA 1.0 and MM USA 1.0 ROMs have been used in testing. The unreleased Master Quest dungeons have not been played yet, on the emulator or a phone; only automated tests cover them.
+- Only OoT USA 1.0 and MM USA 1.0 ROMs have been used in testing. The Master Quest dungeons (from 0.4.13) were checked room by room on the emulator, but none has been played through.
 - This port was written largely by AI coding agents, with code reviews between releases (for example, a full review before 0.3.10 found and fixed 187 problems).
 
 ## Known limits
@@ -135,8 +135,8 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - 64-bit ARM only.
 - Seeds and patches from the OoTMM website do not work.
 - MM accepts USA ROMs only (N64 1.0 or GameCube).
-- Setup imports one OoT ROM, a normal one, so up to 0.4.12 the Master Quest options stay greyed out. Unreleased builds after 0.4.12 play Master Quest dungeons from that ROM with OoTMM's data, which fits only the USA 1.0 ROM; with any other OoT version the options stay greyed out.
-- Wallmaster Shuffle (from 0.4.12) works only in the combined randomizer. In 0.4.12 it does not support Master Quest dungeons. Unreleased builds after 0.4.12 support them, except Master Quest Spirit Temple and Bottom of the Well with a normal Shadow Temple and Ganon's Castle, which OoTMM cannot make either. When the Master Quest settings always give that combination, Own Game is refused with "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle."; when a seed's random Master Quest dungeons give it, generation stops with "This seed's Master Quest dungeons have more Wallmasters than Wallmaster Shuffle can place. Try another seed." A seed with Master Quest dungeons and Wallmaster Shuffle does not load in 0.4.12. In 0.4.12, Play warp songs across games and a warp song among the starting items grey it out. Unreleased builds after 0.4.12 allow both, as OoTMM does (Play warp songs across games with Song of Soaring at any age (OoT) on or off); a seed made that way with logic on does not load in 0.4.12. Some settings still grey it out: Ship's own OoT entrance shuffles, Enemy Randomizer, Song of Soaring among the starting items (the Beginner preset starts with it in MM), and Warp Songs and Soaring Spots Shuffle. OoTMM allows the last two, and later versions of the port are planned to as well, along with OoTMM's Full choice and its other entrance shuffles. The [changelog](ComboAndroid/docs/CHANGELOG.md) lists them.
+- Setup imports one OoT ROM, a normal one. Up to 0.4.12 the Master Quest options stay greyed out; from 0.4.13 Master Quest dungeons play from that ROM with OoTMM's data, which fits only the USA 1.0 ROM; with any other OoT version the options stay greyed out.
+- Wallmaster Shuffle (from 0.4.12) works only in the combined randomizer. In 0.4.12 it does not support Master Quest dungeons. From 0.4.13 it supports them, except Master Quest Spirit Temple and Bottom of the Well with a normal Shadow Temple and Ganon's Castle, which OoTMM cannot make either. When the Master Quest settings always give that combination, Own Game is refused with "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle."; when a seed's random Master Quest dungeons give it, generation stops with "This seed's Master Quest dungeons have more Wallmasters than Wallmaster Shuffle can place. Try another seed." A seed with Master Quest dungeons and Wallmaster Shuffle does not load in 0.4.12. In 0.4.12, Play warp songs across games and a warp song among the starting items grey it out. From 0.4.13 both are allowed, as OoTMM does (Play warp songs across games with Song of Soaring at any age (OoT) on or off); a seed made that way with logic on does not load in 0.4.12. Some settings still grey it out: Ship's own OoT entrance shuffles, Enemy Randomizer, Song of Soaring among the starting items (the Beginner preset starts with it in MM), and Warp Songs and Soaring Spots Shuffle. OoTMM allows the last two, and later versions of the port are planned to as well, along with OoTMM's Full choice and its other entrance shuffles. The [changelog](ComboAndroid/docs/CHANGELOG.md) lists them.
 - Importing settings from another SoH or 2Ship install is not supported.
 - Restoring a backup is manual: copy the files back into the ComboShip folder.
 - Upstream changes after September 17, 2026 are not included. That means no SoH 9.3 update, no macOS support, and no upstream cross-game teleport songs.
@@ -144,7 +144,7 @@ These are early builds. Expect bugs, and keep backups of your saves.
 - OoT entrance shuffle (from Ship of Harkinian) is available. On Android only a few focused logic tests cover it so far. Of OoTMM's entrance shuffles, only Wallmaster Shuffle with Own Game is available (from 0.4.12). Apart from Wallmasters, MM entrance shuffle and cross-game entrance shuffle are not available yet.
 - Known issues in the current release are listed in its [release notes](https://github.com/swunderly/ComboShip/releases/latest) and in the [changelog](ComboAndroid/docs/CHANGELOG.md).
 
-**In development, not in any release yet:** Wallmaster Shuffle with Master Quest dungeons, with Play warp songs across games and with a starting OoT warp song (planned with 0.4.13), the rest of OoTMM-style entrance randomization, and MM and cross-game entrance shuffle beyond Wallmasters. The `android-source` branch may already contain unfinished work on it. To play, use the APKs from Releases.
+**In development, not in any release yet:** OoTMM's Full Wallmaster Shuffle (Wallmasters that send Link between the games), the rest of OoTMM-style entrance randomization, and MM and cross-game entrance shuffle beyond Wallmasters. The `android-source` branch may already contain unfinished work on it. To play, use the APKs from Releases.
 
 ## Reporting problems
 
@@ -167,7 +167,7 @@ Full steps are in [ComboAndroid/BUILDING.md](https://github.com/swunderly/ComboS
 git clone -b android-source https://github.com/swunderly/ComboShip.git
 ```
 
-To build exactly the 0.4.12 release, use `-b v0.4.12-android` instead. The `android-source` branch can contain unfinished work.
+To build exactly the 0.4.13 release, use `-b v0.4.13-android` instead. The `android-source` branch can contain unfinished work.
 
 You need Git, Python 3.10+, Java 17 or 21, Android SDK platform 35, build-tools 35.0.0, NDK 28.2.13676358, CMake 3.31.5, Ninja and vcpkg at a pinned commit. Windows also needs Visual Studio's C++ desktop workload. Linux also needs the packages listed in the CI workflow, and ccache. The build uses no ROM. It makes a debug-signed APK. Your own APK has a different signature from the release APK, so it cannot update a release install. Back up your saves before you switch.
 
