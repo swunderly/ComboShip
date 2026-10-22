@@ -4,6 +4,23 @@
 
 1. MM view: Enhancements > Time savers > Cutscenes > Skip story cutscenes ON. With the Deku Princess in a bottle, enter the Deku King's chamber and let her out next to the king. The screen fades once and Link stands in the chamber; it does not keep fading and reloading. The princess stands by the king afterwards.
 
+## Random starting age and trials recorded in the seed (0.4.13, unreleased)
+
+Nothing here has been tried yet; host tests cover the record, the finalize, the reload's and the replay's checks and the seed view. Run the list on the emulator. Allsanity skips Ganon's Trials, so for checks 1 and 2 also set Ganon's Trials to Random Number before generating. Note each file's starting age and the trial barriers inside Ganon's Castle (Tools > Save Editor can give the items to reach them).
+
+1. Generate an Allsanity seed and start a file. Restart the app, then start a second file from the same seed. Both files have the same age and the same trial barriers. The seed view shows "Starting age: ..." under Starting Age and the same "Required trials: ..." under Ganon's Trials.
+2. Copy the seed to a second emulator and load it with the Plandomizer. Same age and trials.
+3. Load a 0.4.12 Allsanity seed. It loads; only the age may differ. Its seed view shows "This seed was made before Combo Ship recorded its random starting age and trials, so a new file may start differently than the seed was made for."
+4. An existing 0.4.12 file loads unchanged.
+5. A seed with an explicit age, made on the device, matches its corpus row byte for byte. With this build's headless generator, regenerate a 0.4.13 corpus row whose Starting Age is Child or Adult, for example `d00-u7-none-oot-child`: its config from `ComboAndroid/tests/fixtures/wallmasters-0413/inputs/` and `--seed <label> --count 1 --master-seed <masterSeed> --starting-game <startingGame>` from that row in `inputs/plan.json`, plus `--er erWallmasters=ownGame` for a row of kind `er` or `pin`. The seed and its `.entrances.txt` are the committed files under `seeds/`.
+
+## Cross-game departures keep the room's flags (0.4.13, unreleased)
+
+Nothing here has been tried yet; a host test runs the departure saves from source. Run the list on the emulator, on a spare file in Combined randomizer mode with Randomizer > Warps & travel > Play warp songs across games on. Tools > Save Editor can give songs, keys and Farore's Wind.
+
+1. In OoT, open a chest and unlock a door with a small key in one room, for example in the Forest Temple. Cross games with Soaring from that room, come back, and check that both are still open. The key stays spent. If you can, repeat with a cross-game warp song and with Farore's Wind.
+2. In MM, open a chest and unlock a door in one room, for example in Woodfall Temple, without saving. Cross to OoT with an OoT warp song from that room (for example Requiem of Spirit), come back, and check that both are still open. If you can, repeat with Farore's Wind. Then take the Clock Tower door to OoT and back: earlier rooms' chests and doors stay open, as before.
+
 ## OoT scene restrictions as in OoTMM (0.4.13, unreleased)
 
 Nothing here has been played yet; host tests run the table and the warp-song code from source. Run the list on the emulator first. Use a new seed made with this build in Combined randomizer mode on a spare file, and give the items with Tools > Save Editor: adult Link, magic, Farore's Wind, an ocarina and Prelude of Light (plus Song of Soaring and Randomizer > Warps & travel > Play warp songs across games for check 4). Leave Enhancements > Warps & travel > Better Farore's Wind off.

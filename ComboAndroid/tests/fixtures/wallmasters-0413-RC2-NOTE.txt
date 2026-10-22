@@ -1,0 +1,24 @@
+0.4.13 corpus (wallmasters-0413/): rows to regenerate with RC2
+
+RC2 records a new seed's random OoT settings choices (oot.resolvedChoices, combo/rando/SeedChoices.h) and draws
+them from streams of their own. Two committed seeds have such a choice, so RC2 makes them differently from RC1:
+
+- a07-songs-oot-randomage-ageless: Random starting age.
+- d06-allsanity-oot: a Key Ring Selection with every dungeon Random, and a Random starting age.
+
+Regenerate both with RC2's headless generator, with the same row commands, before the corpus is used for RC2. The
+manifest is not edited here: the 0.4.13 corpus test checks that the commit holding manifest.json differs from the
+release candidate only in wallmasters-0413/ and its listed host-only files, so the manifest changes only with a run.
+
+A host build of RC2's generation code (Windows, made from a copy of the source with temporary MSVC fixes, as for
+RC1's findings: build-host-0413fix/) gave, with the RC1 row commands:
+- a07: oot.resolvedChoices {"version": 1, "startingAge": "child"}; the .entrances.txt is RC1's byte for byte.
+- d06: oot.resolvedChoices {"version": 1, "keyRings": {"dungeons": [3, 4, 5, 6, 7, 8, 11], "gerudoFortress": true},
+  "startingAge": "child"}.
+- The other 41 seeds (no random choice) are the committed seeds and .entrances.txt byte for byte, and the 96
+  0.4.12 rows without a random choice give their committed entrance spoiler byte for byte and differ from their
+  0.4.12 seed only by the regression additions (after turning the host's CRLF line ends back to LF).
+
+The 0.4.12 corpus (wallmasters-vanilla-v1/) has 20 rows with a Random starting age (oot-randomage-everyCheck-souls0-*);
+its later-RC sample (0.4.12 RC2) includes oot-randomage-everyCheck-souls0-00. The 0.4.13 corpus regenerates only six
+0.4.12 rows (e-*), none of them random. See docs/deviations/rando.md, "Random settings choices recorded in the seed".
