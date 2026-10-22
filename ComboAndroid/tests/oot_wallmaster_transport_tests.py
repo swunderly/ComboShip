@@ -1,7 +1,10 @@
 """Execute the real capture adapter, actor hook and cleared-room condition with native enums, for a vanilla
-and an all-Master-Quest layout.
+and an all-Master-Quest layout, and for a Full layout whose OoT sources depart to MM dungeons.
 
-Source/room parity is independently checked by oot_wallmaster_source_tests.py. No gameplay is claimed.
+A Full route into MM queues the cross-game entrance departure (CrossEntrance.inc.h) and lets the native respawn run
+as its transition, after forgetting Cross-Games Farore's Wind's dungeon record; a refused departure keeps the native
+respawn alone and the record (D7). Source/room parity is independently checked by oot_wallmaster_source_tests.py.
+No gameplay is claimed.
 """
 from pathlib import Path
 import argparse
@@ -59,6 +62,7 @@ cpp.write_text(r'''
 #define COMBO_BUILD
 #define SPDLOG_DEBUG(...) ((void)0)
 #define SPDLOG_WARN(...) ((void)0)
+#define SPDLOG_INFO(...) ((void)0)
 #define CVAR_ENHANCEMENT(x) x
 #define IS_RANDO isRando
 #include <cassert>
@@ -90,6 +94,15 @@ void Combo_OotFaroreClearDungeon() {
     assert(capturing && capturing->nextEntranceIndex == -123 && capturing->transitionTrigger == -456);
     ++dungeonClears;
     gSaveContext.faroreDungeon = 0;
+}
+// CrossEntrance.inc.h: the Full departure to an MM dungeon, queued before anything else changes.
+int requestResult = 1, requests = 0;
+uint32_t requested = 0;
+int Combo_OotRequestWallmasterDeparture(uint32_t mmId) {
+    assert(capturing && capturing->nextEntranceIndex == -123 && gSaveContext.faroreDungeon == 66);
+    ++requests;
+    requested = mmId;
+    return requestResult;
 }
 namespace Rando {
 struct Context {
@@ -241,6 +254,59 @@ int main(int argc, char** argv) {
     assert(SpawnRejected(&play, ACTOR_EN_WALLMAS, ACTORCAT_ENEMY, 0));
     CE::ActiveOotUnifiedAssumptions().reset();
     assert(captures > 0 && dungeonClears == captures); // Only a capture that moves Link forgets the dungeon.
+    // Full: the vanilla OoT sources route to the seven MM dungeons first, then to OoT ones; MM's four to OoT. A
+    // route into MM queues its departure and keeps the native respawn as the transition; an own-game one moves Link
+    // as before. Every capture classifies the same rooms as the own-game layout's.
+    {
+        CE::EntranceLayout full;
+        full.required = {std::string(CE::kFullWallmasterCapability)};
+        full.settings.erWallmasters = CE::Mode::Full;
+        CE::Overrides routes;
+        size_t mm = 0, oot = 0;
+        for (const auto& pool : CE::LayoutV2::MakePools(full.settings, {}))
+            for (const auto src : pool.src)
+                routes[src] = CE::Find(src)->game == CE::Game::Oot && mm < CE::kMmBaseWallmasterDestinations.size()
+                                  ? CE::kMmBaseWallmasterDestinations[mm++]
+                                  : CE::kOotWallmasterArrivalRows[oot++];
+        assert(mm == 7 && oot == 2 + 4);
+        full.overrides = routes;
+        CE::ActiveOotUnified().install({{"entranceLayout", CE::EncodeEntranceLayout(full)}},
+                                     CE::CapabilitySet::AtLeast(CE::Stage::Hidden));
+        assert(Rando::ComboEntrances::HasWallmasterLayout());
+        int departures = 0, moved = 0, clearsBefore = dungeonClears;
+        for (const int result : {1, 0}) {
+            requestResult = result;
+            for (size_t s = 0; s < std::size(scenes); ++s) for (unsigned room = 0; room < 256; ++room) {
+                play = {}; gSaveContext = {};
+                play.sceneNum = scenes[s]; play.roomCtx.curRoom.num = (room + 1) & 255;
+                actor.actor.room = static_cast<signed char>(room);
+                const auto* source = CE::OotWallmasterSource(contexts[s], static_cast<uint8_t>(room));
+                const bool routed = source && routes.contains(source->name);
+                const auto* to = routed ? CE::Find(routes.at(source->name)) : nullptr;
+                const int before = respawns, asked = requests, cleared = dungeonClears;
+                NativeCapture(&actor, &play);
+                if (!to || to->game == CE::Game::Oot) {
+                    assert(requests == asked);
+                    if (!to) { assert(respawns == before + 1); CheckUnchanged(play); continue; }
+                    assert(respawns == before && dungeonClears == cleared + 1);
+                    assert(play.nextEntranceIndex == static_cast<int>(CE::ResolveOotNativeArrival(to->id)->entrance));
+                    ++moved;
+                    continue;
+                }
+                // Into MM: one request for the MM id; the native respawn always runs; the record is forgotten only
+                // when the departure was queued.
+                assert(requests == asked + 1 && requested == to->id && respawns == before + 1);
+                assert(dungeonClears == cleared + result && gSaveContext.faroreDungeon == (result ? 0 : 66));
+                assert(play.nextEntranceIndex == -123 && play.transitionTrigger == -456 && play.transitionType == -789);
+                assert(gSaveContext.respawnFlag == 77 && gSaveContext.farore == 88 && gSaveContext.voidPosition == 99);
+                departures += result;
+            }
+        }
+        // In name order the BotW, Forest, Ganon, GTG and Shadow sources reach MM; the two Spirit ones stay in OoT.
+        assert(departures > 0 && moved > 0 && dungeonClears == clearsBefore + departures + moved);
+        requestResult = 1;
+        CE::ActiveOotUnified().clear();
+    }
     std::cout << "PASS 1792 actor-room captures per vanilla and all-MQ layout, native fallbacks, direct arrivals, "
                  "Farore dungeon record and cleared-room spawn guard\n";
 }

@@ -18,6 +18,7 @@ extern "C" {
 extern "C" int MM_GetEffectiveHumanAge(int fileNum);
 extern "C" int MM_CanEntranceArrival(int fileNum, uint32_t logicalId, int age, int crossAge);
 extern "C" void Combo_MMFaroreEndCycle(void);
+extern "C" int Combo_MMRequestWallmasterDeparture(uint32_t ootId); // CrossEntrance.inc.h
 #include <spdlog/spdlog.h>
 
 namespace CE = ComboRando::Entrances;
@@ -446,6 +447,27 @@ extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
             return 0;
         }
         const auto routes = CE::ActiveMmUnified().routesFrom(source->id);
+        // Full Wallmasters: a route into OoT leaves MM through the cross-game entrance flight (CrossEntrance.inc.h),
+        // the port's form of OoTMM's override and game switch (mm/actors/En/En_Wallmas.c:26-33, mm/play/play.c:893-912,
+        // which saves before switching). The capture ends the dungeon record first, as an own-game one does, and
+        // queues the departure; the native respawn then runs as the transition, and its end leaves for OoT (z_play.c
+        // Combo_MMFinishEntranceDeparture) after the launcher's preflight runs again. A departure refused when it is
+        // queued, or at the end of that transition, keeps the native respawn, and both are logged (D7).
+        if (routes.size() == 1 && routes.front().destination.game == CE::Game::Oot) {
+            const auto* row = CE::Find(CE::Game::Oot, routes.front().destination.id);
+            if (!row || !CE::MmForeignDestinationBound(*row)) {
+                SPDLOG_ERROR("[ComboShip] MM Wallmaster source {} has no bound OoT destination; using native respawn",
+                             source->name);
+                return 0;
+            }
+            if (!Combo_MMRequestWallmasterDeparture(routes.front().destination.id)) {
+                SPDLOG_ERROR("[ComboShip] MM Wallmaster departure to {} refused; using native respawn", row->name);
+                return 0;
+            }
+            SPDLOG_INFO("[ComboShip] MM Wallmaster source {} departs to {}", source->name, row->name);
+            Combo_MMFaroreEndCycle();
+            return 0;
+        }
         if (routes.size() != 1 || routes.front().destination.game != CE::Game::Mm || routes.front().toVoid ||
             routes.front().destination.id > 0xffffu) {
             SPDLOG_ERROR("[ComboShip] Unified MM Wallmaster source {} has no native route; using native respawn",

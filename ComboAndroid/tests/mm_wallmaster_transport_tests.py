@@ -63,6 +63,9 @@ bool rando = true;
 int logs = 0;
 template<class... A> void Log(const char*, const A&...) { ++logs; }
 #define SPDLOG_ERROR(...) Log(__VA_ARGS__)
+int infos = 0;
+template<class... A> void Info(const char*, const A&...) { ++infos; }
+#define SPDLOG_INFO(...) Info(__VA_ARGS__)
 enum { SCENE_DANPEI2TEST = 4, SCENE_REDEAD = 5, TRANS_TRIGGER_START = 6,
        TRANS_TYPE_FADE_BLACK = 7, WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE = 0,
        WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE = 1, WEEKEVENTREG_CLEARED_GREAT_BAY_TEMPLE = 2,
@@ -100,9 +103,17 @@ uint32_t TrackedFixMmNativeArrival(uint32_t id, bool wf, bool sh, bool gb, bool 
 void Combo_MMFaroreEndCycle() {
     Unchanged(); ++cycleCalls;
     if (CE::ActiveMmUnified().active())
-        assert((order == std::vector<std::string>{"age", "preflight", "fix"}));
+        assert((order == std::vector<std::string>{"age", "preflight", "fix"}) ||
+               (order == std::vector<std::string>{"request"}));
     else assert(order.empty());
     order.push_back("end-cycle");
+}
+// CrossEntrance.inc.h: the Full departure to an OoT dungeon, queued before anything else changes.
+int requestResult = 1;
+int Combo_MMRequestWallmasterDeparture(uint32_t ootId) {
+    assert(order.empty() && ootId == expectedDestination); Unchanged();
+    order.push_back("request");
+    return requestResult;
 }
 void Audio_PlaySfx(int sound) { assert(sound == NA_SE_OC_ABYSS); }
 void func_80169FDC(PlayState*) { ++fallbackCalls; Unchanged(); }
@@ -110,7 +121,7 @@ struct EnWallmas { Actor actor; int timer; };
 void Reset(PlayState& play, int scene = SCENE_DANPEI2TEST) {
     play = {scene, 1234, 20, 21, 22}; currentPlay = &play; initialPlay = play;
     gSaveContext = {2, 0x321, -3, 456}; initialSave = gSaveContext;
-    logs = fallbackCalls = cycleCalls = 0; order.clear(); effectiveAge = preflightResult = 1;
+    logs = infos = fallbackCalls = cycleCalls = 0; order.clear(); effectiveAge = preflightResult = requestResult = 1;
 }
 '''
 tests = r'''
@@ -209,6 +220,46 @@ int main() {
     assert(!Bind(bad)); Reset(play); Capture(&actor, &play);
     assert(fallbackCalls == 1 && !Combo_MMWallmasterErActive()); Unchanged();
 #endif
+    // Full: each MM source routed to an OoT dungeon queues its departure, ends the dungeon cycle and keeps the native
+    // respawn as the transition; a refused departure keeps the native respawn alone and logs (D7). Full is admitted
+    // where this build's catalogue has it.
+    {
+        CE::EntranceLayout full;
+        full.required = {std::string(CE::kFullWallmasterCapability)};
+        full.settings.erWallmasters = CE::Mode::Full;
+        CE::Overrides routes;
+        size_t oot = 0, mm = 0;
+        for (const auto& pool : CE::LayoutV2::MakePools(full.settings, {}))
+            for (const auto src : pool.src)
+                routes[src] = CE::Find(src)->game == CE::Game::Mm ? CE::kOotWallmasterArrivalRows[oot++]
+                              : mm < CE::kMmBaseWallmasterDestinations.size() ? CE::kMmBaseWallmasterDestinations[mm++]
+                                                                              : CE::kOotWallmasterArrivalRows[oot++];
+        assert(oot == 4 + 2 && mm == 7);
+        full.overrides = routes;
+        const Json seed{{"fileType", ComboRando::kEntranceSeedFileType}, {"version", ComboRando::kEntranceSeedVersion},
+                        {"entranceLayout", CE::EncodeEntranceLayout(full)}};
+        const bool admitted = CE::ActiveCapabilities().Active(CE::kFullWallmasterCapability);
+        assert((Bind(seed) != 0) == admitted);
+        if (admitted) {
+            for (const int result : {1, 0})
+            for (size_t src = 0; src < 4; ++src) {
+                Reset(play, src == 0 ? SCENE_DANPEI2TEST : SCENE_REDEAD);
+                requestResult = result;
+                actor.actor.room = src == 0 ? 99 : src == 1 ? 1 : src == 2 ? 5 : 7;
+                const auto* row = CE::Find(routes.at(CE::kMmWallmasterSources[src]));
+                assert(row->game == CE::Game::Oot);
+                expectedDestination = row->id;
+                Capture(&actor, &play);
+                assert(fallbackCalls == 1 && cycleCalls == result && logs == 1 - result && infos == result);
+                assert(order == (result ? std::vector<std::string>{"request", "end-cycle"}
+                                        : std::vector<std::string>{"request"}));
+                Unchanged();
+                ++cases;
+            }
+        } else {
+            Reset(play); Capture(&actor, &play); assert(fallbackCalls == 1 && cycleCalls == 0); Unchanged();
+        }
+    }
     // Existing private profile remains available in shipping and dev, with no new preflight/fixup.
     assert(Bind(LegacySeed()) && Combo_MMWallmasterErActive());
     Reset(play); actor.actor.room = 91; effectiveAge = -1; preflightResult = 0;

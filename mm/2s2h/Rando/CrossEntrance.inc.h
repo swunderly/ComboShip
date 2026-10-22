@@ -116,6 +116,12 @@ extern "C" COMBO_EXPORT int MM_RequestEntranceDeparture(int file, int destinatio
         return 0;
     return sMmEntranceFlight.queue({ file, 1, destination, age, crossAge, id });
 }
+// A Full Wallmaster capture's departure to an OoT dungeon (ComboEntrancesMM.cpp), under the seed's Cross-Games Age as
+// the Farore rules hold it: the launcher's preflight refuses any other value (ComboShip.cpp
+// Combo_PreflightEntranceDeparture).
+extern "C" int Combo_MMRequestWallmasterDeparture(uint32_t ootId) {
+    return MM_RequestEntranceDeparture(gSaveContext.fileNum, 0, ootId, sCrossAge ? 1 : 0);
+}
 extern "C" COMBO_EXPORT int Combo_MMFinishEntranceDeparture(void* state) {
     auto* play = static_cast<PlayState*>(state);
     if (!play || play != gPlayState)

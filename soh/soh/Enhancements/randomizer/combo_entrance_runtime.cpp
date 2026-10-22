@@ -37,6 +37,28 @@ bool RuntimeWallmastersActive(PlayState* play) {
            !Rando::Context::GetInstance()->GetOption(RSK_SHUFFLE_ENTRANCES) &&
            Rando::ComboEntrances::HasWallmasterLayout();
 }
+
+// Full Wallmasters: a route into MM leaves OoT through the cross-game entrance flight (CrossEntrance.inc.h), the port's
+// form of OoTMM's override and game switch (oot/actors/En/En_Wallmas.c:48-55, oot/play/play.c:738-756, which saves
+// before switching, common/switch.c:75-85). The capture forgets the dungeon record first, as an own-game one does, and
+// queues the departure; the native respawn then runs as the transition, and its end leaves for MM (z_play.c
+// Combo_OotFinishEntranceDeparture), with the launcher's preflight checked again. A departure refused when it is
+// queued, or at the end of that transition, keeps the native respawn, and both are logged (D7).
+int OotCrossGameCapture(const CE::Record& source, uint32_t destination) {
+    const auto* row = CE::Find(CE::Game::Mm, destination);
+    if (!row || !CE::OotForeignDestinationBound(*row)) {
+        SPDLOG_WARN("[ComboShip] OoT Wallmaster source {} has no bound MM destination; using native respawn",
+                    source.name);
+        return 0;
+    }
+    if (!Combo_OotRequestWallmasterDeparture(destination)) {
+        SPDLOG_WARN("[ComboShip] OoT Wallmaster departure to {} refused; using native respawn", row->name);
+        return 0;
+    }
+    SPDLOG_INFO("[ComboShip] OoT Wallmaster source {} departs to {}", source.name, row->name);
+    Combo_OotFaroreClearDungeon();
+    return 0;
+}
 } // namespace
 
 extern "C" int Combo_OOTWallmasterTransport(PlayState* play, Actor* actor) {
@@ -50,6 +72,14 @@ extern "C" int Combo_OOTWallmasterTransport(PlayState* play, Actor* actor) {
         SPDLOG_WARN("[ComboShip] Unmapped OoT Wallmaster scene {} room {}; using native respawn", play->sceneNum,
                     actor->room);
         return 0;
+    }
+    if (const auto foreign = CE::ActiveOotUnified().foreignRoutesFrom(source->id); !foreign.empty()) {
+        if (foreign.size() != 1 || !CE::ActiveOotUnified().routesFrom(source->id).empty()) {
+            SPDLOG_WARN("[ComboShip] OoT Wallmaster source {} has no single committed route; using native respawn",
+                        source->name);
+            return 0;
+        }
+        return OotCrossGameCapture(*source, foreign.front().destination);
     }
     const auto routes = CE::ActiveOotUnified().routesFrom(source->id);
     if (routes.size() != 1) {
