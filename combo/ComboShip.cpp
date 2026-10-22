@@ -2723,13 +2723,14 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
             continue;
         } catch (const ComboRando::Entrances::WallmasterCapacityShortfall& error) {
             // This attempt's Master Quest dungeons have more OoT Wallmasters than entrances. The seed's own roll (the
-            // first attempt) stops generation with the plain sentence, as OoTMM's seed fails; a later attempt rolled
-            // them again, and fails alone, as above, without counting as an entrance failure.
+            // first attempt) stops generation with the plain sentence, as OoTMM's seed fails, and so does a context the
+            // settings force on every roll, on any attempt; a later attempt's random roll fails alone, as above,
+            // without counting as an entrance failure.
             std::cerr << "[ComboShip] RunComboFill: attempt " << (attempt + 1) << attemptBudget
                       << ": entrance generation refused: " << error.what() << "\n";
             if (Combo_MM_Rando_Restore)
                 Combo_MM_Rando_Restore();
-            if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(attempt)) {
+            if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(error.forced(), attempt)) {
                 fail(error.player().c_str());
                 return;
             }

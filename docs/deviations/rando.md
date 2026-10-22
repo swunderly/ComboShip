@@ -2513,7 +2513,10 @@ dungeons yet." (`kWallmasterMasterQuestText`), as before.
   - When every roll of the MQ settings lands there (`EntranceProfile.h` `MqWallmasterShortfallForced`, a model of
     `settings.cpp`'s roll), Own Game is greyed out and the row, its tooltip and the Generate button say "Set Spirit
     Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle." (`kWallmasterCapacityText`).
-    Only Selection Only, or Set Dungeon Quests on, can force it, and both show those two rows.
+    Only Selection Only, or Set Dungeon Quests on, can force it, and both show those two rows. A generation that
+    reaches such settings anyway (the headless tool, or settings changed under the menu) stops with that sentence on
+    whichever attempt first reaches the check: an earlier attempt can fail first for a reason a retry clears, as the
+    0.4.13 corpus row c09 failed its native pool on attempt 0 (`WallmasterCapacityShortfall::forced`).
   - When a random roll lands there, as about one Allsanity seed in sixteen does (Spirit and BotW Master Quest,
     Shadow and Ganon vanilla, each a coin flip), generation stops with "This seed's Master Quest dungeons have more
     Wallmasters than Wallmaster Shuffle can place. Try another seed." (`kWallmasterCapacitySeedText`), shown as other

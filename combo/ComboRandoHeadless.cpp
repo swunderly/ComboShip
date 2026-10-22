@@ -1353,10 +1353,10 @@ int RunHeadless(int argc, char** argv) {
                     pinStartOot = true;
                 continue;
             } catch (const ComboRando::Entrances::WallmasterCapacityShortfall& error) {
-                // As RunComboFill: the seed's own roll (the first attempt) stops generation, as OoTMM's seed fails;
-                // a later attempt rolled the Master Quest dungeons again and fails alone.
+                // As RunComboFill: the seed's own roll (the first attempt) stops generation, as OoTMM's seed fails, and
+                // so does a context the settings force, on any attempt; a later attempt's random roll fails alone.
                 std::cerr << "[comborando] seed " << masterSeed << ": " << error.what() << "\n";
-                if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(attempt)) {
+                if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(error.forced(), attempt)) {
                     std::cerr << "[comborando] entrance layout generation: " << error.player() << "\n";
                     return 2;
                 }

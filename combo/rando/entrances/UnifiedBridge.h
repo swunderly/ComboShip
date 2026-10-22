@@ -44,19 +44,29 @@ class UnifiedEntranceRefused : public std::logic_error {
     std::string sentence;
 };
 // The refusal of a Master Quest context with more OoT Wallmasters than dungeon entrances (RequireWallmasterCapacity).
-// It depends on the Master Quest dungeons the attempt rolled, so its caller can tell the seed's own roll from a
-// retry's (WallmasterShortfallStopsGeneration).
+// It depends on the Master Quest dungeons the attempt rolled, unless the settings force it on every roll (`forced`),
+// so its caller can tell the seed's own roll from a retry's and a forced context from either
+// (WallmasterShortfallStopsGeneration).
 class WallmasterCapacityShortfall : public UnifiedEntranceRefused {
   public:
-    using UnifiedEntranceRefused::UnifiedEntranceRefused;
+    WallmasterCapacityShortfall(const EntranceRefusal& why, bool forced)
+        : UnifiedEntranceRefused(why), mForced(forced) {
+    }
+    bool forced() const {
+        return mForced;
+    }
+
+  private:
+    bool mForced;
 };
 // OoTMM resolves a seed's Master Quest dungeons once (packages/logic/src/world/flags.ts:45-75) and fails the seed when
 // they leave more Wallmasters than entrances. The port's first generation attempt (0) is the seed's own roll: its
 // shortfall stops generation, as OoTMM's seed fails. Each later attempt rerolls the dungeons from its own master seed
 // (ComboShip.cpp RunComboFill, ComboRandoHeadless.cpp), so its shortfall fails only that attempt, as a ShuffleError
-// does, and generation goes on.
-constexpr bool WallmasterShortfallStopsGeneration(uint64_t attempt) {
-    return attempt == 0;
+// does, and generation goes on. A forced shortfall comes back on every roll, so it stops generation on whichever
+// attempt first reaches it: the first can fail earlier for a reason a retry clears, such as its native pool.
+constexpr bool WallmasterShortfallStopsGeneration(bool forced, uint64_t attempt) {
+    return forced || attempt == 0;
 }
 
 // RSK_MQ_DUNGEON_RANDOM; option 0 (RO_MQ_DUNGEONS_NONE) keeps every dungeon vanilla (settings.cpp:2919-2922).
@@ -243,8 +253,8 @@ inline void RequireWallmasterCapacity(const Pools& pools, const Settings& s, boo
             const auto log = pool.name + " has " + std::to_string(sources) + " sources for " +
                              std::to_string(destinations.size()) + " destinations; OoTMM cannot place them";
             if (game == Game::Oot && pool.name == "WALLMASTERS")
-                throw WallmasterCapacityShortfall(forced ? WallmasterCapacityRefusal(log)
-                                                         : WallmasterSeedCapacityRefusal(log));
+                throw WallmasterCapacityShortfall(
+                    forced ? WallmasterCapacityRefusal(log) : WallmasterSeedCapacityRefusal(log), forced);
             throw UnifiedEntranceRefused(log);
         }
 }
@@ -338,7 +348,7 @@ inline std::string GeneratedSeedIdentityText(const std::string& inputSeed, const
 //    gate and its Prepare;
 // 4. the Shuffler with games=Both on the stream "entrances:ootmm-entrances-v1:<seed>".
 // A ShuffleError (no layout in the pinned 1000 attempts) may be retried by another outer attempt, and
-// so may a WallmasterCapacityShortfall after the first (WallmasterShortfallStopsGeneration); every
+// so may a WallmasterCapacityShortfall of a random roll after the first (WallmasterShortfallStopsGeneration); every
 // other exception stops generation. The final check of OoTMM's validate(), the solver
 // (logicPassSolverValidate, :1083), is the combined fill's own: it places the items on the installed
 // layout under the same accessibility policy and fails the attempt if that cannot be done.

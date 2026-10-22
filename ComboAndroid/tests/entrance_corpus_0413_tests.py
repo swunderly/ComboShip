@@ -111,8 +111,9 @@ for capability in wc.WALLMASTER_IDS:
     require(re.search(r'\{\s*"' + re.escape(capability) + r'",\s*\w+,\s*\{\},\s*false\s*\}', capabilities),
             f'{capability} is no shipping capability row (Capabilities.h)')
 bridge = read('combo/rando/entrances/UnifiedBridge.h')
-require(hostcxx.contains(body(bridge, 'constexpr bool WallmasterShortfallStopsGeneration(uint64_t attempt) {'),
-                         'return attempt == 0;'), 'only the first attempt\'s shortfall stops generation')
+require(hostcxx.contains(body(bridge, 'constexpr bool WallmasterShortfallStopsGeneration(bool forced, '
+                                      'uint64_t attempt) {'), 'return forced || attempt == 0;'),
+        'only the first attempt\'s shortfall of a random roll stops generation, and a forced one on any attempt')
 require(hostcxx.contains(bridge, 'pool.name + " has " + std::to_string(sources) + " sources for " +') and
         hostcxx.contains(bridge, '" destinations; OoTMM cannot place them"'), 'the capacity log line changed')
 headless = read('combo/ComboRandoHeadless.cpp')

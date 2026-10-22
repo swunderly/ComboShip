@@ -555,9 +555,9 @@ static void CheckShortcutPoolGuards() {
       assert(assumptions > 0 && temple > 0);
   }
 }
-// A capacity shortfall: its own refusal type, so the caller can retry it after
-// the seed's own roll; refused before any draw or native change.
-static UnifiedEntranceRefused Shortfall(const UnifiedGeneration &g) {
+// A capacity shortfall: its own refusal type, so the caller can retry a random
+// roll's after the seed's own roll; refused before any draw or native change.
+static WallmasterCapacityShortfall Shortfall(const UnifiedGeneration &g) {
   try {
     GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
   } catch (const WallmasterCapacityShortfall &error) {
@@ -597,7 +597,7 @@ static void CheckQuestContexts(const Json &contract) {
     g.stats = &stats;
     if (shortfalls.contains(projection)) {
       const auto error = Shortfall(g);
-      assert(error.player() == kWallmasterCapacitySeedText &&
+      assert(error.player() == kWallmasterCapacitySeedText && !error.forced() &&
              error.what() == std::string("WALLMASTERS has 12 sources for 11 "
                                          "destinations; OoTMM cannot place "
                                          "them") &&
@@ -771,12 +771,23 @@ static void CheckCapacitySentences() {
     const auto error = Shortfall(g);
     assert(error.player() ==
            (forced ? kWallmasterCapacityText : kWallmasterCapacitySeedText));
+    assert(error.forced() == forced);
+    // A forced context stops generation on whichever attempt reaches it (the
+    // 0.4.13 corpus row c09 reached it on attempt 1, after attempt 0's native
+    // pool failed), with the settings sentence; a random roll's stops only on
+    // the seed's own first attempt.
+    for (uint64_t attempt : {0, 1, 4})
+      assert(WallmasterShortfallStopsGeneration(error.forced(), attempt) ==
+             (forced || attempt == 0));
   }
-  // The seed's own roll (the first attempt) stops generation; a retry's roll
-  // fails only that attempt.
-  static_assert(WallmasterShortfallStopsGeneration(0) &&
-                !WallmasterShortfallStopsGeneration(1) &&
-                !WallmasterShortfallStopsGeneration(7));
+  // The seed's own roll (the first attempt) stops generation; a retry's random
+  // roll fails only that attempt; a forced context stops it on any attempt.
+  static_assert(WallmasterShortfallStopsGeneration(false, 0) &&
+                !WallmasterShortfallStopsGeneration(false, 1) &&
+                !WallmasterShortfallStopsGeneration(false, 7) &&
+                WallmasterShortfallStopsGeneration(true, 0) &&
+                WallmasterShortfallStopsGeneration(true, 1) &&
+                WallmasterShortfallStopsGeneration(true, 7));
   static_assert(
       std::is_base_of_v<UnifiedEntranceRefused, WallmasterCapacityShortfall> &&
       !std::is_base_of_v<ShuffleError, WallmasterCapacityShortfall>);
@@ -840,7 +851,7 @@ static size_t CheckSongContexts(const Json &contract) {
     g.stats = &stats;
     if (shortfalls.contains(projection)) {
       const auto error = Shortfall(g);
-      assert(error.player() == kWallmasterCapacitySeedText &&
+      assert(error.player() == kWallmasterCapacitySeedText && !error.forced() &&
              stats.randomDraws == 0);
       ++refused;
       continue;
@@ -1069,7 +1080,7 @@ static size_t CheckWarpContexts(const Json &contract) {
     g.stats = &stats;
     if (shortfalls.contains(projection)) {
       const auto error = Shortfall(g);
-      assert(error.player() == kWallmasterCapacitySeedText &&
+      assert(error.player() == kWallmasterCapacitySeedText && !error.forced() &&
              stats.randomDraws == 0);
       ++refused;
       continue;

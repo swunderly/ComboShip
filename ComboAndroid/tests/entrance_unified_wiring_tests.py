@@ -9,9 +9,9 @@ the attempt, pins a Random start to OoT after an MM start as the other failures 
 launcher is bounded by the headless budget (C1). A capacity shortfall of the Master Quest dungeons
 (WallmasterCapacityShortfall) stops generation on the first attempt, the seed's own roll, as OoTMM's
 seed fails, and on a later attempt, which rolled them again, fails that attempt alone, as a ShuffleError
-does, without counting toward that budget; every other entrance failure stops generation. The headless
-replay installs the recorded layout only after each pass finalizes the seed, as the launcher's reload
-checks it. The
+does, without counting toward that budget, unless the settings force it on every roll, which stops
+generation on any attempt; every other entrance failure stops generation. The headless replay installs
+the recorded layout only after each pass finalizes the seed, as the launcher's reload checks it. The
 layout goes into the consolidated seed before its fileType is stamped, and the launcher's displaySeed
 also hashes it (C5); the headless tool gives a layout seed the same displaySeed. Nothing else calls the
 generator. Both callers resolve every MM entrance export into NativeFns in member order, including the
@@ -88,7 +88,7 @@ for needle in ('entranceLayout = nlohmann::json();', 'lastFillError =', 'pinStar
 # as a ShuffleError does, but never counts toward the ShuffleError budget, so a good roll is never stopped by it.
 shortfall = block(loop, 'catch (const ComboRando::Entrances::WallmasterCapacityShortfall& error)')
 ordered(shortfall, '<< error.what() <<', 'Combo_MM_Rando_Restore();',
-        'if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(attempt)) {', 'fail(error.player().c_str());',
+        'if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(error.forced(), attempt)) {', 'fail(error.player().c_str());',
         'return;', 'entranceLayout = nlohmann::json();', 'lastFillError =', 'pinStartOot = true;', 'continue;')
 assert 'entranceFailures' not in shortfall, 'a rerolled shortfall is not an exhausted layout search'
 # A refusal stops generation with its plain sentence (owner decision D3, P1-03) and logs the developer text.
@@ -164,7 +164,7 @@ for needle in ('entranceLayout = nlohmann::json();', 'r = { "", false,', 'MM_Res
 assert 'return 2;' in block(generate[steps[5]:], 'catch (const std::exception& error)')
 # As the launcher: a capacity shortfall exits 2 on the first attempt and rerolls a later one.
 shortfall = block(generate, 'catch (const ComboRando::Entrances::WallmasterCapacityShortfall& error)')
-ordered(shortfall, 'if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(attempt)) {', 'error.player()',
+ordered(shortfall, 'if (ComboRando::Entrances::WallmasterShortfallStopsGeneration(error.forced(), attempt)) {', 'error.player()',
         'return 2;', 'entranceLayout = nlohmann::json();', 'r = { "", false,', 'MM_Restore();', 'pinStartOot = true;',
         'continue;')
 # The same three handlers in order and no other: the two rerolls, then exit 2 for everything else.
