@@ -3,7 +3,7 @@
     "mode": "everyCheck",
     "version": 1
   },
-  "displaySeed": 1041531796,
+  "displaySeed": 3425743094,
   "entranceLayout": {
     "devBuild": false,
     "oot": {
@@ -427,44 +427,80 @@
     {
       "advancement": true,
       "category": "major",
-      "checkGame": "mm",
-      "checkName": "Beneath The Graveyard Dampe Chest",
-      "displayName": "Bottle with Ruto's Letter (OOT)",
-      "itemGame": "oot",
-      "itemName": "Bottle with Ruto's Letter"
-    },
-    {
-      "advancement": true,
-      "category": "major",
       "checkGame": "oot",
-      "checkName": "Kak Open Grotto Chest",
-      "displayName": "Mountain Title Deed (MM)",
+      "checkName": "LH Child Fishing",
+      "displayName": "Sonata of Awakening (MM)",
       "itemGame": "mm",
-      "itemName": "Mountain Title Deed"
+      "itemName": "Sonata of Awakening"
     },
     {
       "advancement": true,
       "category": "major",
       "checkGame": "oot",
-      "checkName": "Kak 50 Gold Skulltula Reward",
+      "checkName": "LW Target in Woods",
+      "displayName": "Mirror Shield (MM)",
+      "itemGame": "mm",
+      "itemName": "Mirror Shield"
+    },
+    {
+      "advancement": true,
+      "category": "strayFairy",
+      "checkGame": "oot",
+      "checkName": "ZR Frogs in the Rain",
+      "displayName": "Snowhead Stray Fairy (MM)",
+      "itemGame": "mm",
+      "itemName": "Snowhead Stray Fairy"
+    },
+    {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "oot",
+      "checkName": "Colossus Freestanding PoH",
+      "displayName": "Ocean Title Deed (MM)",
+      "itemGame": "mm",
+      "itemName": "Ocean Title Deed"
+    },
+    {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "oot",
+      "checkName": "KF Mido Bottom Left Chest",
+      "displayName": "New Wave Bossa Nova (MM)",
+      "itemGame": "mm",
+      "itemName": "New Wave Bossa Nova"
+    },
+    {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Woods Of Mystery Grotto Chest",
+      "displayName": "Greg the Green Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Greg the Green Rupee"
+    },
+    {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Pirate Fortress Interior Sewers Chest 03",
+      "displayName": "Nayru's Love (OOT)",
+      "itemGame": "oot",
+      "itemName": "Nayru's Love"
+    },
+    {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "oot",
+      "checkName": "GF HBA 1500 Points",
       "displayName": "Swamp Title Deed (MM)",
       "itemGame": "mm",
       "itemName": "Swamp Title Deed"
     },
     {
       "advancement": true,
-      "category": "major",
-      "checkGame": "mm",
-      "checkName": "Stock Pot Inn Guest Room Chest",
-      "displayName": "Progressive Bomb Bag (OOT)",
-      "itemGame": "oot",
-      "itemName": "Progressive Bomb Bag"
-    },
-    {
-      "advancement": true,
       "category": "lesser",
       "checkGame": "oot",
-      "checkName": "Market Shooting Gallery",
+      "checkName": "Spirit Temple Sun Block Room Chest",
       "displayName": "Stone Tower Compass (MM)",
       "itemGame": "mm",
       "itemName": "Stone Tower Compass"
@@ -473,7 +509,7 @@
       "advancement": true,
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Bomb Shop Item 04 Or Curiosity Shop Item",
+      "checkName": "Great Bay Temple Sf Green Pipe 3 Barrel",
       "displayName": "Bombchus (5) (OOT)",
       "itemGame": "oot",
       "itemName": "Bombchus (5)"
@@ -482,16 +518,25 @@
       "advancement": true,
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Termina Field Kamaro Mask",
+      "checkName": "Snowhead Temple Boss Heart Container",
       "displayName": "Light Arrows (OOT)",
       "itemGame": "oot",
       "itemName": "Light Arrows"
     },
     {
       "advancement": true,
+      "category": "strayFairy",
+      "checkGame": "oot",
+      "checkName": "Bottom of the Well Center Skulltula Chest",
+      "displayName": "Snowhead Stray Fairy (MM)",
+      "itemGame": "mm",
+      "itemName": "Snowhead Stray Fairy"
+    },
+    {
+      "advancement": true,
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Path To Snowhead Grotto Chest",
+      "checkName": "Clock Town West Lottery",
       "displayName": "Ice Arrows (OOT)",
       "itemGame": "oot",
       "itemName": "Ice Arrows"
@@ -499,26 +544,26 @@
     {
       "advancement": true,
       "category": "major",
-      "checkGame": "oot",
-      "checkName": "Water Temple Boss Key Chest",
-      "displayName": "Song of Soaring (MM)",
-      "itemGame": "mm",
-      "itemName": "Song of Soaring"
-    },
-    {
-      "advancement": true,
-      "category": "major",
       "checkGame": "mm",
-      "checkName": "Moon Fierce Deity Mask",
+      "checkName": "Woodfall Temple Sf Pre Boss Left",
       "displayName": "Progressive Wallet (OOT)",
       "itemGame": "oot",
       "itemName": "Progressive Wallet"
     },
     {
       "advancement": true,
+      "category": "strayFairy",
+      "checkGame": "oot",
+      "checkName": "Kak 50 Gold Skulltula Reward",
+      "displayName": "Stone Tower Stray Fairy (MM)",
+      "itemGame": "mm",
+      "itemName": "Stone Tower Stray Fairy"
+    },
+    {
+      "advancement": true,
       "category": "major",
       "checkGame": "oot",
-      "checkName": "Deku Tree Compass Room Side Chest",
+      "checkName": "Wasteland Chest",
       "displayName": "Empty Bottle (MM)",
       "itemGame": "mm",
       "itemName": "Empty Bottle"
@@ -527,25 +572,25 @@
       "advancement": true,
       "category": "strayFairy",
       "checkGame": "oot",
-      "checkName": "Shadow Temple Spike Walls Left Chest",
+      "checkName": "Bottom of the Well Lens of Truth Chest",
       "displayName": "Great Bay Stray Fairy (MM)",
       "itemGame": "mm",
       "itemName": "Great Bay Stray Fairy"
     },
     {
       "advancement": true,
-      "category": "strayFairy",
+      "category": "major",
       "checkGame": "oot",
-      "checkName": "DMT Freestanding PoH",
-      "displayName": "Stone Tower Stray Fairy (MM)",
+      "checkName": "Fire Temple Boulder Maze Upper Chest",
+      "displayName": "Light Arrows (MM)",
       "itemGame": "mm",
-      "itemName": "Stone Tower Stray Fairy"
+      "itemName": "Light Arrows"
     },
     {
       "advancement": true,
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Ikana Graveyard Grotto",
+      "checkName": "Stock Pot Inn Room Key",
       "displayName": "Progressive Hookshot (OOT)",
       "itemGame": "oot",
       "itemName": "Progressive Hookshot"
@@ -554,7 +599,7 @@
       "advancement": true,
       "category": "lesser",
       "checkGame": "oot",
-      "checkName": "GC Rolling Goron as Adult",
+      "checkName": "Gift from Rauru",
       "displayName": "Great Fairy's Sword (MM)",
       "itemGame": "mm",
       "itemName": "Great Fairy's Sword"
@@ -563,7 +608,7 @@
       "advancement": true,
       "category": "major",
       "checkGame": "oot",
-      "checkName": "LW Target in Woods",
+      "checkName": "Deku Tree Compass Room Side Chest",
       "displayName": "Bottle of Milk (MM)",
       "itemGame": "mm",
       "itemName": "Bottle of Milk"
@@ -572,34 +617,34 @@
       "advancement": true,
       "category": "mask",
       "checkGame": "oot",
-      "checkName": "LH Freestanding PoH",
+      "checkName": "GV Waterfall Freestanding PoH",
       "displayName": "Romani's Mask (MM)",
       "itemGame": "mm",
       "itemName": "Romani's Mask"
     },
     {
       "advancement": true,
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Clock Tower Roof Ocarina",
+      "displayName": "Progressive Stick Capacity (OOT)",
+      "itemGame": "oot",
+      "itemName": "Progressive Stick Capacity"
+    },
+    {
+      "advancement": true,
       "category": "smallKey",
       "checkGame": "oot",
-      "checkName": "Market Treasure Chest Game Reward",
+      "checkName": "GC Maze Right Chest",
       "displayName": "Stone Tower Small Key (MM)",
       "itemGame": "mm",
       "itemName": "Stone Tower Small Key"
     },
     {
       "advancement": true,
-      "category": "strayFairy",
-      "checkGame": "oot",
-      "checkName": "LLR Talons Chickens",
-      "displayName": "Stone Tower Stray Fairy (MM)",
-      "itemGame": "mm",
-      "itemName": "Stone Tower Stray Fairy"
-    },
-    {
-      "advancement": true,
       "category": "major",
       "checkGame": "oot",
-      "checkName": "Bottom of the Well Lens of Truth Chest",
+      "checkName": "LLR Freestanding PoH",
       "displayName": "Hookshot (MM)",
       "itemGame": "mm",
       "itemName": "Hookshot"
@@ -608,25 +653,43 @@
       "advancement": true,
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Hags Potion Shop Kotake",
+      "checkName": "Zora Cape Grotto Chest",
       "displayName": "Bombchus (10) (OOT)",
       "itemGame": "oot",
       "itemName": "Bombchus (10)"
     },
     {
       "advancement": true,
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Bomb Shop Item 04 Or Curiosity Shop Item",
+      "displayName": "Bottle with Poe (OOT)",
+      "itemGame": "oot",
+      "itemName": "Bottle with Poe"
+    },
+    {
+      "advancement": true,
       "category": "mask",
       "checkGame": "oot",
-      "checkName": "Dodongos Cavern Bomb Flower Platform Chest",
+      "checkName": "Forest Temple Falling Ceiling Room Chest",
       "displayName": "Blast Mask (MM)",
       "itemGame": "mm",
       "itemName": "Blast Mask"
     },
     {
       "advancement": true,
+      "category": "lesser",
+      "checkGame": "oot",
+      "checkName": "GC Pot Freestanding PoH",
+      "displayName": "Magic Bean (MM)",
+      "itemGame": "mm",
+      "itemName": "Magic Bean"
+    },
+    {
+      "advancement": true,
       "category": "mask",
       "checkGame": "oot",
-      "checkName": "LH Underwater Item",
+      "checkName": "LLR Talons Chickens",
       "displayName": "Great Fairy Mask (MM)",
       "itemGame": "mm",
       "itemName": "Great Fairy Mask"
@@ -635,43 +698,52 @@
       "advancement": true,
       "category": "strayFairy",
       "checkGame": "oot",
-      "checkName": "KF Mido Bottom Right Chest",
+      "checkName": "Graveyard Shield Grave Chest",
+      "displayName": "Clock Town Stray Fairy (MM)",
+      "itemGame": "mm",
+      "itemName": "Clock Town Stray Fairy"
+    },
+    {
+      "advancement": true,
+      "category": "strayFairy",
+      "checkGame": "oot",
+      "checkName": "GF Chest",
       "displayName": "Woodfall Stray Fairy (MM)",
       "itemGame": "mm",
       "itemName": "Woodfall Stray Fairy"
     },
     {
       "advancement": true,
+      "category": "strayFairy",
+      "checkGame": "oot",
+      "checkName": "Gerudo Training Ground Eye Statue Chest",
+      "displayName": "Snowhead Stray Fairy (MM)",
+      "itemGame": "mm",
+      "itemName": "Snowhead Stray Fairy"
+    },
+    {
+      "advancement": true,
       "category": "mask",
       "checkGame": "oot",
-      "checkName": "ZR Frogs in the Rain",
+      "checkName": "Kak 10 Gold Skulltula Reward",
       "displayName": "Stone Mask (MM)",
       "itemGame": "mm",
       "itemName": "Stone Mask"
     },
     {
       "advancement": true,
-      "category": "major",
-      "checkGame": "mm",
-      "checkName": "Clock Town East Treasure Chest Game Human",
-      "displayName": "Boomerang (OOT)",
-      "itemGame": "oot",
-      "itemName": "Boomerang"
-    },
-    {
-      "advancement": true,
       "category": "strayFairy",
       "checkGame": "oot",
-      "checkName": "Bottom of the Well Freestanding Key",
-      "displayName": "Woodfall Stray Fairy (MM)",
+      "checkName": "GV Crate Freestanding PoH",
+      "displayName": "Great Bay Stray Fairy (MM)",
       "itemGame": "mm",
-      "itemName": "Woodfall Stray Fairy"
+      "itemName": "Great Bay Stray Fairy"
     },
     {
       "advancement": true,
       "category": "major",
       "checkGame": "oot",
-      "checkName": "Market Bombchu Bowling First Prize",
+      "checkName": "Ice Cavern Compass Chest",
       "displayName": "Progressive Wallet (MM)",
       "itemGame": "mm",
       "itemName": "Progressive Wallet"
@@ -680,7 +752,7 @@
       "advancement": true,
       "category": "smallKey",
       "checkGame": "oot",
-      "checkName": "Dodongos Cavern Bomb Bag Chest",
+      "checkName": "Market Shooting Gallery",
       "displayName": "Stone Tower Small Key (MM)",
       "itemGame": "mm",
       "itemName": "Stone Tower Small Key"
@@ -689,25 +761,34 @@
       "advancement": true,
       "category": "major",
       "checkGame": "oot",
-      "checkName": "Forest Temple Eye Switch Chest",
+      "checkName": "DMC Volcano Freestanding PoH",
+      "displayName": "Epona's Song (MM)",
+      "itemGame": "mm",
+      "itemName": "Epona's Song"
+    },
+    {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "oot",
+      "checkName": "LH Adult Fishing",
       "displayName": "Song of Healing (MM)",
       "itemGame": "mm",
       "itemName": "Song of Healing"
     },
     {
       "advancement": true,
-      "category": "strayFairy",
+      "category": "smallKey",
       "checkGame": "oot",
-      "checkName": "GC Maze Right Chest",
-      "displayName": "Woodfall Stray Fairy (MM)",
+      "checkName": "Spirit Temple Statue Room Northeast Chest",
+      "displayName": "Great Bay Small Key (MM)",
       "itemGame": "mm",
-      "itemName": "Woodfall Stray Fairy"
+      "itemName": "Great Bay Small Key"
     },
     {
       "advancement": true,
       "category": "strayFairy",
       "checkGame": "oot",
-      "checkName": "LH Lab Dive",
+      "checkName": "Jabu Jabus Belly Barinade Heart Container",
       "displayName": "Stone Tower Stray Fairy (MM)",
       "itemGame": "mm",
       "itemName": "Stone Tower Stray Fairy"
@@ -716,61 +797,61 @@
       "advancement": true,
       "category": "strayFairy",
       "checkGame": "oot",
-      "checkName": "HF Southeast Grotto Chest",
-      "displayName": "Stone Tower Stray Fairy (MM)",
+      "checkName": "HF Near Market Grotto Chest",
+      "displayName": "Snowhead Stray Fairy (MM)",
       "itemGame": "mm",
-      "itemName": "Stone Tower Stray Fairy"
+      "itemName": "Snowhead Stray Fairy"
     },
     {
       "advancement": true,
-      "category": "major",
-      "checkGame": "mm",
-      "checkName": "Termina Field Peahat Grotto Chest",
-      "displayName": "Fire Arrows (OOT)",
-      "itemGame": "oot",
-      "itemName": "Fire Arrows"
-    },
-    {
-      "advancement": true,
-      "category": "major",
-      "checkGame": "mm",
-      "checkName": "Clock Town East Honey Darling Any Day",
-      "displayName": "Progressive Slingshot (OOT)",
-      "itemGame": "oot",
-      "itemName": "Progressive Slingshot"
+      "category": "mask",
+      "checkGame": "oot",
+      "checkName": "Shadow Temple Invisible Floormaster Chest",
+      "displayName": "Garo's Mask (MM)",
+      "itemGame": "mm",
+      "itemName": "Garo's Mask"
     },
     {
       "advancement": true,
       "category": "lesser",
       "checkGame": "oot",
-      "checkName": "Wasteland Chest",
+      "checkName": "LH Underwater Item",
       "displayName": "Woodfall Compass (MM)",
       "itemGame": "mm",
       "itemName": "Woodfall Compass"
     },
     {
       "advancement": true,
+      "category": "mask",
+      "checkGame": "oot",
+      "checkName": "Graveyard Dampe Race Freestanding PoH",
+      "displayName": "Zora Mask (MM)",
+      "itemGame": "mm",
+      "itemName": "Zora Mask"
+    },
+    {
+      "advancement": true,
+      "category": "strayFairy",
+      "checkGame": "oot",
+      "checkName": "Kak Impas House Freestanding PoH",
+      "displayName": "Snowhead Stray Fairy (MM)",
+      "itemGame": "mm",
+      "itemName": "Snowhead Stray Fairy"
+    },
+    {
+      "advancement": true,
       "category": "major",
       "checkGame": "oot",
-      "checkName": "GV Crate Freestanding PoH",
+      "checkName": "Shadow Temple Invisible Blades Visible Chest",
       "displayName": "Progressive Goron Lullaby (MM)",
       "itemGame": "mm",
       "itemName": "Progressive Goron Lullaby"
     },
     {
       "advancement": true,
-      "category": "strayFairy",
-      "checkGame": "oot",
-      "checkName": "LLR Freestanding PoH",
-      "displayName": "Great Bay Stray Fairy (MM)",
-      "itemGame": "mm",
-      "itemName": "Great Bay Stray Fairy"
-    },
-    {
-      "advancement": true,
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Pirate Fortress Interior Hookshot Chest",
+      "checkName": "Woodfall Temple Sf Maze Bubble",
       "displayName": "Bombchus (10) (OOT)",
       "itemGame": "oot",
       "itemName": "Bombchus (10)"
@@ -779,7 +860,16 @@
       "advancement": true,
       "category": "strayFairy",
       "checkGame": "oot",
-      "checkName": "Market ToT Light Arrow Cutscene",
+      "checkName": "Kak Man on Roof",
+      "displayName": "Woodfall Stray Fairy (MM)",
+      "itemGame": "mm",
+      "itemName": "Woodfall Stray Fairy"
+    },
+    {
+      "advancement": true,
+      "category": "strayFairy",
+      "checkGame": "oot",
+      "checkName": "LW Deku Theater Skull Mask",
       "displayName": "Woodfall Stray Fairy (MM)",
       "itemGame": "mm",
       "itemName": "Woodfall Stray Fairy"
@@ -788,34 +878,16 @@
       "advancement": true,
       "category": "major",
       "checkGame": "oot",
-      "checkName": "Gift from Rauru",
-      "displayName": "Letter to Kafei (MM)",
+      "checkName": "Dodongos Cavern Bomb Flower Platform Chest",
+      "displayName": "Letter to Mama (MM)",
       "itemGame": "mm",
-      "itemName": "Letter to Kafei"
-    },
-    {
-      "advancement": true,
-      "category": "major",
-      "checkGame": "mm",
-      "checkName": "Astral Observatory Passage Chest",
-      "displayName": "Bottle with Fish (OOT)",
-      "itemGame": "oot",
-      "itemName": "Bottle with Fish"
-    },
-    {
-      "advancement": true,
-      "category": "major",
-      "checkGame": "mm",
-      "checkName": "Woodfall Temple Map Chest",
-      "displayName": "Progressive Scale (OOT)",
-      "itemGame": "oot",
-      "itemName": "Progressive Scale"
+      "itemName": "Letter to Mama"
     },
     {
       "advancement": true,
       "category": "lesser",
       "checkGame": "mm",
-      "checkName": "Lone Peak Shrine Boulder Chest",
+      "checkName": "Great Bay Temple Green Pipe 2 Upper Chest",
       "displayName": "Goron Tunic (OOT)",
       "itemGame": "oot",
       "itemName": "Goron Tunic"
@@ -824,34 +896,25 @@
       "advancement": true,
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Stone Tower Temple Inverted East Middle Chest",
-      "displayName": "Goron Mask (OOT)",
+      "checkName": "Stone Tower Temple Inverted Giant Mask",
+      "displayName": "Progressive Bomb Bag (OOT)",
       "itemGame": "oot",
-      "itemName": "Goron Mask"
+      "itemName": "Progressive Bomb Bag"
     },
     {
       "advancement": true,
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Ikana Canyon Scrub Huge Rupee",
-      "displayName": "Bunny Hood (OOT)",
+      "checkName": "Clock Town West Bank Piece Of Heart",
+      "displayName": "Keaton Mask (OOT)",
       "itemGame": "oot",
-      "itemName": "Bunny Hood"
-    },
-    {
-      "advancement": true,
-      "category": "smallKey",
-      "checkGame": "oot",
-      "checkName": "DMC Volcano Freestanding PoH",
-      "displayName": "Snowhead Small Key (MM)",
-      "itemGame": "mm",
-      "itemName": "Snowhead Small Key"
+      "itemName": "Keaton Mask"
     },
     {
       "advancement": true,
       "category": "mask",
       "checkGame": "oot",
-      "checkName": "Spirit Temple Near Four Armos Chest",
+      "checkName": "ZF Iceberg Freestanding PoH",
       "displayName": "Goron Mask (MM)",
       "itemGame": "mm",
       "itemName": "Goron Mask"
@@ -860,7 +923,25 @@
       "advancement": true,
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Clock Town Great Fairy Alt",
+      "checkName": "Mountain Village Smithy Razor Sword",
+      "displayName": "Mask of Truth (OOT)",
+      "itemGame": "oot",
+      "itemName": "Mask of Truth"
+    },
+    {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Keaton Quiz",
+      "displayName": "Iron Boots (OOT)",
+      "itemGame": "oot",
+      "itemName": "Iron Boots"
+    },
+    {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Zora Hall Scrub Piece Of Heart",
       "displayName": "Biggoron's Sword (OOT)",
       "itemGame": "oot",
       "itemName": "Biggoron's Sword"
@@ -869,7 +950,7 @@
       "advancement": true,
       "category": "strayFairy",
       "checkGame": "oot",
-      "checkName": "HF Near Market Grotto Chest",
+      "checkName": "LH Freestanding PoH",
       "displayName": "Stone Tower Stray Fairy (MM)",
       "itemGame": "mm",
       "itemName": "Stone Tower Stray Fairy"
@@ -877,47 +958,38 @@
     {
       "advancement": true,
       "category": "major",
-      "checkGame": "oot",
-      "checkName": "Bottom of the Well Center Skulltula Chest",
-      "displayName": "Ice Arrows (MM)",
-      "itemGame": "mm",
-      "itemName": "Ice Arrows"
-    },
-    {
-      "advancement": true,
-      "category": "major",
       "checkGame": "mm",
-      "checkName": "Deku Playground Any Day",
-      "displayName": "Gerudo Mask (OOT)",
+      "checkName": "Pirate Fortress Interior Sewers Piece Of Heart",
+      "displayName": "Progressive Bow (OOT)",
       "itemGame": "oot",
-      "itemName": "Gerudo Mask"
-    },
-    {
-      "advancement": true,
-      "category": "strayFairy",
-      "checkGame": "oot",
-      "checkName": "Fire Temple Map Chest",
-      "displayName": "Woodfall Stray Fairy (MM)",
-      "itemGame": "mm",
-      "itemName": "Woodfall Stray Fairy"
+      "itemName": "Progressive Bow"
     },
     {
       "advancement": true,
       "category": "mask",
       "checkGame": "oot",
-      "checkName": "Spirit Temple Boss Key Chest",
+      "checkName": "OGC Great Fairy Reward",
       "displayName": "Kafei's Mask (MM)",
       "itemGame": "mm",
       "itemName": "Kafei's Mask"
     },
     {
       "advancement": true,
+      "category": "mask",
+      "checkGame": "oot",
+      "checkName": "ZD King Zora Thawed",
+      "displayName": "Mask of Truth (MM)",
+      "itemGame": "mm",
+      "itemName": "Mask of Truth"
+    },
+    {
+      "advancement": true,
       "category": "strayFairy",
       "checkGame": "oot",
-      "checkName": "Graveyard Dampe Gravedigging Tour",
-      "displayName": "Snowhead Stray Fairy (MM)",
+      "checkName": "Ganon's Castle Light Trial Second Right Chest",
+      "displayName": "Woodfall Stray Fairy (MM)",
       "itemGame": "mm",
-      "itemName": "Snowhead Stray Fairy"
+      "itemName": "Woodfall Stray Fairy"
     },
     {
       "advancement": true,
@@ -932,78 +1004,69 @@
       "advancement": true,
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Deku Palace Grotto Chest",
+      "checkName": "Moon Trial Link Piece Of Heart",
       "displayName": "Farore's Wind (OOT)",
       "itemGame": "oot",
       "itemName": "Farore's Wind"
     },
     {
       "advancement": true,
-      "category": "strayFairy",
-      "checkGame": "oot",
-      "checkName": "HF Tektite Grotto Freestanding PoH",
-      "displayName": "Snowhead Stray Fairy (MM)",
-      "itemGame": "mm",
-      "itemName": "Snowhead Stray Fairy"
-    },
-    {
-      "advancement": true,
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Great Bay Temple Baba Chest",
-      "displayName": "Progressive Nut Capacity (OOT)",
-      "itemGame": "oot",
-      "itemName": "Progressive Nut Capacity"
-    },
-    {
-      "advancement": true,
-      "category": "major",
-      "checkGame": "oot",
-      "checkName": "Shadow Temple Invisible Spikes Chest",
-      "displayName": "Bottle with Red Potion (MM)",
-      "itemGame": "mm",
-      "itemName": "Bottle with Red Potion"
-    },
-    {
-      "advancement": true,
-      "category": "major",
-      "checkGame": "mm",
-      "checkName": "Great Bay Temple Boss Key",
+      "checkName": "Stock Pot Inn Guest Room Chest",
       "displayName": "Progressive Wallet (OOT)",
       "itemGame": "oot",
       "itemName": "Progressive Wallet"
     },
     {
       "advancement": true,
+      "category": "strayFairy",
+      "checkGame": "oot",
+      "checkName": "GC Maze Center Chest",
+      "displayName": "Stone Tower Stray Fairy (MM)",
+      "itemGame": "mm",
+      "itemName": "Stone Tower Stray Fairy"
+    },
+    {
+      "advancement": true,
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Mountain Village Don Gero Mask",
+      "checkName": "Clock Town Great Fairy",
+      "displayName": "Progressive Bow (OOT)",
+      "itemGame": "oot",
+      "itemName": "Progressive Bow"
+    },
+    {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Clock Town East Honey Darling Any Day",
       "displayName": "Megaton Hammer (OOT)",
       "itemGame": "oot",
       "itemName": "Megaton Hammer"
     },
     {
       "advancement": true,
-      "category": "strayFairy",
-      "checkGame": "oot",
-      "checkName": "LW Ocarina Memory Game",
-      "displayName": "Woodfall Stray Fairy (MM)",
-      "itemGame": "mm",
-      "itemName": "Woodfall Stray Fairy"
-    },
-    {
-      "advancement": true,
       "category": "lesser",
       "checkGame": "mm",
-      "checkName": "Southern Swamp Song Of Soaring",
+      "checkName": "Ikana Canyon Scrub Piece Of Heart",
       "displayName": "Zora Tunic (OOT)",
       "itemGame": "oot",
       "itemName": "Zora Tunic"
     },
     {
+      "advancement": true,
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Gorman Track Garo Mask",
+      "displayName": "Din's Fire (OOT)",
+      "itemGame": "oot",
+      "itemName": "Din's Fire"
+    },
+    {
       "category": "lesser",
       "checkGame": "mm",
-      "checkName": "Clock Tower Roof Song Of Time",
+      "checkName": "Stone Tower Temple Inverted Death Armos Chest",
       "displayName": "Huge Rupee (OOT)",
       "itemGame": "oot",
       "itemName": "Huge Rupee"
@@ -1011,7 +1074,7 @@
     {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Mountain Village Smithy Razor Sword",
+      "checkName": "Mayors Office Kafeis Mask",
       "displayName": "Purple Rupee (OOT)",
       "itemGame": "oot",
       "itemName": "Purple Rupee"
@@ -1019,7 +1082,7 @@
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Clock Town Great Fairy",
+      "checkName": "Pinnacle Rock Chest 01",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
@@ -1027,31 +1090,23 @@
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Stone Tower Temple Inverted East Lower Chest",
+      "checkName": "Path To Goron Village Lullaby Intro",
+      "displayName": "Piece of Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Piece of Heart"
+    },
+    {
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Clock Town North Tree Piece Of Heart",
       "displayName": "Heart Container (OOT)",
       "itemGame": "oot",
       "itemName": "Heart Container"
     },
     {
-      "category": "health",
-      "checkGame": "oot",
-      "checkName": "Forest Temple Raised Island Courtyard Chest",
-      "displayName": "Heart Piece (MM)",
-      "itemGame": "mm",
-      "itemName": "Heart Piece"
-    },
-    {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Path To Goron Village Lullaby Intro",
-      "displayName": "Arrows (10) (OOT)",
-      "itemGame": "oot",
-      "itemName": "Arrows (10)"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Goron Racetrack Gold Dust",
+      "checkName": "Snowhead Temple Map Chest",
       "displayName": "Bombs (5) (OOT)",
       "itemGame": "oot",
       "itemName": "Bombs (5)"
@@ -1059,7 +1114,7 @@
     {
       "category": "health",
       "checkGame": "oot",
-      "checkName": "Dodongos Cavern Map Chest",
+      "checkName": "Ganon's Castle Light Trial Lullaby Chest",
       "displayName": "Heart Container (MM)",
       "itemGame": "mm",
       "itemName": "Heart Container"
@@ -1067,7 +1122,7 @@
     {
       "category": "health",
       "checkGame": "oot",
-      "checkName": "Ganon's Castle Light Trial Lullaby Chest",
+      "checkName": "KF Mido Top Right Chest",
       "displayName": "Heart Piece (MM)",
       "itemGame": "mm",
       "itemName": "Heart Piece"
@@ -1075,7 +1130,15 @@
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Pirate Fortress Interior Sewers Chest 03",
+      "checkName": "Beneath The Graveyard Piece Of Heart",
+      "displayName": "Piece of Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Piece of Heart"
+    },
+    {
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Clock Town West Sisters Piece Of Heart",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
@@ -1091,7 +1154,15 @@
     {
       "category": "health",
       "checkGame": "oot",
-      "checkName": "GC Rolling Goron as Child",
+      "checkName": "KF Storms Grotto Chest",
+      "displayName": "Heart Piece (MM)",
+      "itemGame": "mm",
+      "itemName": "Heart Piece"
+    },
+    {
+      "category": "health",
+      "checkGame": "oot",
+      "checkName": "Bottom of the Well Right Bottom Fake Wall Chest",
       "displayName": "Heart Piece (MM)",
       "itemGame": "mm",
       "itemName": "Heart Piece"
@@ -1099,18 +1170,10 @@
     {
       "category": "junk",
       "checkGame": "oot",
-      "checkName": "Bottom of the Well Right Bottom Fake Wall Chest",
+      "checkName": "Bottom of the Well Freestanding Key",
       "displayName": "Red Rupee (MM)",
       "itemGame": "mm",
       "itemName": "Red Rupee"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Woodfall Temple Sf Maze Skulltula",
-      "displayName": "Recovery Heart (OOT)",
-      "itemGame": "oot",
-      "itemName": "Recovery Heart"
     },
     {
       "category": "junk",
@@ -1121,17 +1184,9 @@
       "itemName": "Recovery Heart"
     },
     {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Stock Pot Inn Couples Mask",
-      "displayName": "Piece of Heart (OOT)",
-      "itemGame": "oot",
-      "itemName": "Piece of Heart"
-    },
-    {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Goron Village Medigoron",
+      "checkName": "Mountain Village Don Gero Mask",
       "displayName": "Recovery Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Recovery Heart"
@@ -1139,31 +1194,47 @@
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Stone Tower Temple Water Sun Switch Chest",
-      "displayName": "Heart Container (OOT)",
-      "itemGame": "oot",
-      "itemName": "Heart Container"
-    },
-    {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Termina Field Tree Stump Chest",
+      "checkName": "Goron Village Medigoron",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
     },
     {
       "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Pirate Fortress Plaza Lower Chest",
+      "displayName": "Recovery Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Recovery Heart"
+    },
+    {
+      "category": "lesser",
+      "checkGame": "mm",
+      "checkName": "Woodfall Temple Center Chest",
+      "displayName": "Huge Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Huge Rupee"
+    },
+    {
+      "category": "junk",
       "checkGame": "oot",
       "checkName": "Shadow Temple Early Silver Rupee Chest",
-      "displayName": "Green Potion Refill (MM)",
+      "displayName": "Purple Rupee (MM)",
       "itemGame": "mm",
-      "itemName": "Green Potion Refill"
+      "itemName": "Purple Rupee"
+    },
+    {
+      "category": "health",
+      "checkGame": "oot",
+      "checkName": "Colossus Great Fairy Reward",
+      "displayName": "Double Defense (MM)",
+      "itemGame": "mm",
+      "itemName": "Double Defense"
     },
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Ikana Canyon Ghost Hut Piece Of Heart",
+      "checkName": "Pinnacle Rock Chest 02",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
@@ -1171,71 +1242,75 @@
     {
       "category": "lesser",
       "checkGame": "mm",
-      "checkName": "Woodfall Temple Dark Chest",
+      "checkName": "Moon Trial Goron Piece Of Heart",
       "displayName": "Piece of Heart (WINNER) (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart (WINNER)"
     },
     {
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Beneath The Graveyard Dampe Chest",
+      "displayName": "Ice Trap (OOT)",
+      "fakeDisplayName": "Gerudo Mask (OOT)",
+      "fakeItemName": "Gerudo Mask",
+      "fakeTrickName": "Gerudo Veil (OOT)",
+      "itemGame": "oot",
+      "itemName": "Ice Trap",
+      "trap": true
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Great Bay Temple Sf Pre Boss Underwater",
+      "displayName": "Recovery Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Recovery Heart"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Clock Town East Treasure Chest Game Goron",
+      "displayName": "Arrows (30) (OOT)",
+      "itemGame": "oot",
+      "itemName": "Arrows (30)"
+    },
+    {
       "category": "junk",
       "checkGame": "oot",
-      "checkName": "Deku Tree Basement Chest",
+      "checkName": "KF Mido Top Left Chest",
       "displayName": "Red Rupee (MM)",
       "itemGame": "mm",
       "itemName": "Red Rupee"
     },
     {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Stone Tower Temple Light Arrow Chest",
-      "displayName": "Purple Rupee (OOT)",
-      "itemGame": "oot",
-      "itemName": "Purple Rupee"
-    },
-    {
       "category": "health",
       "checkGame": "oot",
-      "checkName": "Colossus Freestanding PoH",
+      "checkName": "DMC Upper Grotto Chest",
       "displayName": "Heart Container (MM)",
       "itemGame": "mm",
       "itemName": "Heart Container"
     },
     {
-      "category": "health",
-      "checkGame": "oot",
-      "checkName": "DMT Storms Grotto Chest",
-      "displayName": "Heart Piece (MM)",
-      "itemGame": "mm",
-      "itemName": "Heart Piece"
-    },
-    {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Pinnacle Rock Reunite Seahorse",
-      "displayName": "Piece of Heart (OOT)",
-      "itemGame": "oot",
-      "itemName": "Piece of Heart"
-    },
-    {
-      "category": "health",
-      "checkGame": "oot",
-      "checkName": "LW Deku Theater Mask of Truth",
-      "displayName": "Heart Piece (MM)",
-      "itemGame": "mm",
-      "itemName": "Heart Piece"
-    },
-    {
       "category": "junk",
-      "checkGame": "oot",
-      "checkName": "Bottom of the Well Like Like Chest",
-      "displayName": "Red Rupee (MM)",
-      "itemGame": "mm",
+      "checkGame": "mm",
+      "checkName": "Woodfall Temple Sf Entrance",
+      "displayName": "Red Rupee (OOT)",
+      "itemGame": "oot",
       "itemName": "Red Rupee"
     },
     {
+      "category": "health",
+      "checkGame": "oot",
+      "checkName": "Bottom of the Well Like Like Chest",
+      "displayName": "Heart Piece (MM)",
+      "itemGame": "mm",
+      "itemName": "Heart Piece"
+    },
+    {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Great Bay Temple Green Pipe 2 Lower Chest",
+      "checkName": "Stone Tower Inverted Chest 03",
       "displayName": "Red Rupee (OOT)",
       "itemGame": "oot",
       "itemName": "Red Rupee"
@@ -1243,10 +1318,26 @@
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Great Bay Temple Boss Heart Container",
+      "checkName": "Great Bay Temple Green Pipe 2 Lower Chest",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
+    },
+    {
+      "category": "health",
+      "checkGame": "oot",
+      "checkName": "Shadow Temple Invisible Spikes Chest",
+      "displayName": "Heart Piece (MM)",
+      "itemGame": "mm",
+      "itemName": "Heart Piece"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Great Bay Temple Boss Heart Container",
+      "displayName": "Blue Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Blue Rupee"
     },
     {
       "category": "health",
@@ -1265,93 +1356,17 @@
       "itemName": "Heart Piece"
     },
     {
-      "category": "junk",
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Stone Tower Temple Inverted East Upper Chest",
+      "displayName": "Piece of Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Piece of Heart"
+    },
+    {
+      "category": "health",
       "checkGame": "oot",
       "checkName": "Gerudo Training Ground Heavy Block First Chest",
-      "displayName": "Red Rupee (MM)",
-      "itemGame": "mm",
-      "itemName": "Red Rupee"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Zora Cape Waterfall Piece Of Heart",
-      "displayName": "Bombs (5) (OOT)",
-      "itemGame": "oot",
-      "itemName": "Bombs (5)"
-    },
-    {
-      "category": "junk",
-      "checkGame": "oot",
-      "checkName": "Ganon's Castle Light Trial Second Left Chest",
-      "displayName": "Bombchu (MM)",
-      "itemGame": "mm",
-      "itemName": "Bombchu"
-    },
-    {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Kafeis Hideout Keaton Mask",
-      "displayName": "Piece of Heart (OOT)",
-      "itemGame": "oot",
-      "itemName": "Piece of Heart"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Snowhead Temple Boss Key",
-      "displayName": "Bombs (10) (OOT)",
-      "itemGame": "oot",
-      "itemName": "Bombs (10)"
-    },
-    {
-      "category": "major",
-      "checkGame": "mm",
-      "checkName": "Stone Tower Temple Under West Garden Ledge Chest",
-      "displayName": "Ice Trap (OOT)",
-      "fakeDisplayName": "Gerudo Mask (OOT)",
-      "fakeItemName": "Gerudo Mask",
-      "fakeTrickName": "Gerudo Veil (OOT)",
-      "itemGame": "oot",
-      "itemName": "Ice Trap",
-      "trap": true
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Woodfall Temple Boss Container",
-      "displayName": "Bombs (20) (OOT)",
-      "itemGame": "oot",
-      "itemName": "Bombs (20)"
-    },
-    {
-      "category": "junk",
-      "checkGame": "oot",
-      "checkName": "Ganon's Castle Forest Trial Chest",
-      "displayName": "5 Bombchus (MM)",
-      "itemGame": "mm",
-      "itemName": "5 Bombchus"
-    },
-    {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Swamp Shooting Gallery High Score",
-      "displayName": "Piece of Heart (OOT)",
-      "itemGame": "oot",
-      "itemName": "Piece of Heart"
-    },
-    {
-      "category": "junk",
-      "checkGame": "oot",
-      "checkName": "Ganon's Castle Light Trial First Left Chest",
-      "displayName": "5 Bombchus (MM)",
-      "itemGame": "mm",
-      "itemName": "5 Bombchus"
-    },
-    {
-      "category": "health",
-      "checkGame": "oot",
-      "checkName": "Spirit Temple Sun Block Room Chest",
       "displayName": "Heart Piece (MM)",
       "itemGame": "mm",
       "itemName": "Heart Piece"
@@ -1359,7 +1374,83 @@
     {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Woodfall Temple Sf Main Deku Baba",
+      "checkName": "Stock Pot Inn Grandma Short Story",
+      "displayName": "Bombs (5) (OOT)",
+      "itemGame": "oot",
+      "itemName": "Bombs (5)"
+    },
+    {
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Lone Peak Shrine Boulder Chest",
+      "displayName": "Piece of Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Piece of Heart"
+    },
+    {
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Snowhead Temple Boss Key",
+      "displayName": "Ice Trap (OOT)",
+      "fakeDisplayName": "Spirit Temple Small Key (OOT)",
+      "fakeItemName": "Spirit Temple Small Key",
+      "fakeTrickName": "Light Temple Small Key (OOT)",
+      "itemGame": "oot",
+      "itemName": "Ice Trap",
+      "trap": true
+    },
+    {
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Moon Trial Zora Piece Of Heart",
+      "displayName": "Piece of Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Piece of Heart"
+    },
+    {
+      "category": "health",
+      "checkGame": "oot",
+      "checkName": "Ganon's Castle Forest Trial Chest",
+      "displayName": "Heart Piece (MM)",
+      "itemGame": "mm",
+      "itemName": "Heart Piece"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Swamp Shooting Gallery High Score",
+      "displayName": "Purple Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Purple Rupee"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
+      "checkName": "Bottom of the Well Fire Keese Chest",
+      "displayName": "Red Rupee (MM)",
+      "itemGame": "mm",
+      "itemName": "Red Rupee"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
+      "checkName": "GC Rolling Goron as Adult",
+      "displayName": "Bombchu (MM)",
+      "itemGame": "mm",
+      "itemName": "Bombchu"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
+      "checkName": "Ganon's Castle Spirit Trial Invisible Chest",
+      "displayName": "Small Magic Refill (MM)",
+      "itemGame": "mm",
+      "itemName": "Small Magic Refill"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Stone Tower Inverted Chest 01",
       "displayName": "Blue Rupee (OOT)",
       "itemGame": "oot",
       "itemName": "Blue Rupee"
@@ -1367,7 +1458,7 @@
     {
       "category": "health",
       "checkGame": "oot",
-      "checkName": "LH Adult Fishing",
+      "checkName": "Ganon's Castle Light Trial First Left Chest",
       "displayName": "Heart Piece (MM)",
       "itemGame": "mm",
       "itemName": "Heart Piece"
@@ -1375,7 +1466,7 @@
     {
       "category": "lesser",
       "checkGame": "mm",
-      "checkName": "Stock Pot Inn Toilet Hand",
+      "checkName": "Pirate Fortress Interior Sewers Chest 02",
       "displayName": "Huge Rupee (OOT)",
       "itemGame": "oot",
       "itemName": "Huge Rupee"
@@ -1383,15 +1474,7 @@
     {
       "category": "junk",
       "checkGame": "oot",
-      "checkName": "GC Maze Center Chest",
-      "displayName": "Red Rupee (MM)",
-      "itemGame": "mm",
-      "itemName": "Red Rupee"
-    },
-    {
-      "category": "junk",
-      "checkGame": "oot",
-      "checkName": "Graveyard Dampe Race Freestanding PoH",
+      "checkName": "Kak Anju as Adult",
       "displayName": "Red Rupee (MM)",
       "itemGame": "mm",
       "itemName": "Red Rupee"
@@ -1399,31 +1482,31 @@
     {
       "category": "health",
       "checkGame": "oot",
-      "checkName": "Spirit Temple Hallway Left Invisible Chest",
+      "checkName": "Kak 30 Gold Skulltula Reward",
       "displayName": "Heart Container (MM)",
       "itemGame": "mm",
       "itemName": "Heart Container"
     },
     {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Moon Trial Link Iron Knuckle Chest",
+      "displayName": "Purple Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Purple Rupee"
+    },
+    {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Twin Islands Underwater Chest 02",
+      "checkName": "Great Bay Temple Sf Central Room Underwater Pot",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
     },
     {
       "category": "health",
-      "checkGame": "mm",
-      "checkName": "Clock Town Scrub Deed",
-      "displayName": "Heart Container (OOT)",
-      "itemGame": "oot",
-      "itemName": "Heart Container"
-    },
-    {
-      "category": "health",
       "checkGame": "oot",
-      "checkName": "Gerudo Training Ground Freestanding Key",
+      "checkName": "LH Sun",
       "displayName": "Heart Piece (MM)",
       "itemGame": "mm",
       "itemName": "Heart Piece"
@@ -1431,15 +1514,7 @@
     {
       "category": "health",
       "checkGame": "oot",
-      "checkName": "Ganon's Castle Shadow Trial Front Chest",
-      "displayName": "Heart Piece (MM)",
-      "itemGame": "mm",
-      "itemName": "Heart Piece"
-    },
-    {
-      "category": "health",
-      "checkGame": "oot",
-      "checkName": "Shadow Temple Falling Spikes Upper Chest",
+      "checkName": "Graveyard Dampe Gravedigging Tour",
       "displayName": "Heart Piece (MM)",
       "itemGame": "mm",
       "itemName": "Heart Piece"
@@ -1447,18 +1522,26 @@
     {
       "category": "junk",
       "checkGame": "oot",
-      "checkName": "GC Pot Freestanding PoH",
+      "checkName": "Ganon's Castle Shadow Trial Front Chest",
+      "displayName": "10 Bombchus (MM)",
+      "itemGame": "mm",
+      "itemName": "10 Bombchus"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
+      "checkName": "Shadow Temple Falling Spikes Upper Chest",
       "displayName": "Red Rupee (MM)",
       "itemGame": "mm",
       "itemName": "Red Rupee"
     },
     {
-      "category": "health",
+      "category": "junk",
       "checkGame": "mm",
-      "checkName": "Clock Town West Bank Piece Of Heart",
-      "displayName": "Piece of Heart (OOT)",
+      "checkName": "Clock Town East Treasure Chest Game Deku",
+      "displayName": "Deku Nuts (5) (OOT)",
       "itemGame": "oot",
-      "itemName": "Piece of Heart"
+      "itemName": "Deku Nuts (5)"
     },
     {
       "category": "health",
@@ -1471,14 +1554,6 @@
     {
       "category": "junk",
       "checkGame": "oot",
-      "checkName": "Forest Temple Well Chest",
-      "displayName": "Red Rupee (MM)",
-      "itemGame": "mm",
-      "itemName": "Red Rupee"
-    },
-    {
-      "category": "junk",
-      "checkGame": "oot",
       "checkName": "HC Great Fairy Reward",
       "displayName": "Silver Rupee (MM)",
       "itemGame": "mm",
@@ -1487,7 +1562,7 @@
     {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Gorman Track Garo Mask",
+      "checkName": "Stone Tower Temple Inverted Boss Heart Container",
       "displayName": "Blue Rupee (OOT)",
       "itemGame": "oot",
       "itemName": "Blue Rupee"
@@ -1502,32 +1577,16 @@
     },
     {
       "category": "junk",
-      "checkGame": "oot",
-      "checkName": "Fire Temple Boulder Maze Upper Chest",
-      "displayName": "Red Rupee (MM)",
-      "itemGame": "mm",
-      "itemName": "Red Rupee"
-    },
-    {
-      "category": "junk",
       "checkGame": "mm",
-      "checkName": "Southern Swamp Piece Of Heart",
+      "checkName": "Moon Trial Deku Piece Of Heart",
       "displayName": "Recovery Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Recovery Heart"
     },
     {
       "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Moon Trial Deku Piece Of Heart",
-      "displayName": "Blue Rupee (OOT)",
-      "itemGame": "oot",
-      "itemName": "Blue Rupee"
-    },
-    {
-      "category": "junk",
       "checkGame": "oot",
-      "checkName": "Shadow Temple Invisible Blades Visible Chest",
+      "checkName": "Gerudo Training Ground Heavy Block Fourth Chest",
       "displayName": "Red Rupee (MM)",
       "itemGame": "mm",
       "itemName": "Red Rupee"
@@ -1535,26 +1594,18 @@
     {
       "category": "junk",
       "checkGame": "oot",
-      "checkName": "Gerudo Training Ground Maze Path Final Chest",
+      "checkName": "Deku Tree Slingshot Room Side Chest",
       "displayName": "Purple Rupee (MM)",
       "itemGame": "mm",
       "itemName": "Purple Rupee"
     },
     {
-      "category": "health",
-      "checkGame": "oot",
-      "checkName": "Deku Tree Slingshot Room Side Chest",
-      "displayName": "Heart Piece (MM)",
-      "itemGame": "mm",
-      "itemName": "Heart Piece"
-    },
-    {
       "category": "junk",
       "checkGame": "mm",
       "checkName": "Pirate Fortress Interior Aquarium Chest",
-      "displayName": "Purple Rupee (OOT)",
+      "displayName": "Blue Rupee (OOT)",
       "itemGame": "oot",
-      "itemName": "Purple Rupee"
+      "itemName": "Blue Rupee"
     },
     {
       "category": "health",
@@ -1565,17 +1616,25 @@
       "itemName": "Heart Piece"
     },
     {
-      "category": "health",
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Beneath The Well Mirror Shield",
+      "displayName": "Purple Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Purple Rupee"
+    },
+    {
+      "category": "junk",
       "checkGame": "oot",
       "checkName": "Spirit Temple Twinrova Heart Container",
-      "displayName": "Heart Piece (MM)",
+      "displayName": "Red Rupee (MM)",
       "itemGame": "mm",
-      "itemName": "Heart Piece"
+      "itemName": "Red Rupee"
     },
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Woodfall Near Owl Chest",
+      "checkName": "Doggy Racetrack Piece Of Heart",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
@@ -1583,7 +1642,7 @@
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Great Bay Temple Sf Compass Room Tunnel Pot",
+      "checkName": "Zora Cape Ledge Chest 01",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
@@ -1592,102 +1651,22 @@
       "category": "junk",
       "checkGame": "mm",
       "checkName": "Stone Tower Temple Mirrors Room Center Chest",
-      "displayName": "Blue Rupee (OOT)",
+      "displayName": "Purple Rupee (OOT)",
       "itemGame": "oot",
-      "itemName": "Blue Rupee"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Woodfall Temple Sf Pre Boss Bottom Right",
-      "displayName": "Blue Rupee (OOT)",
-      "itemGame": "oot",
-      "itemName": "Blue Rupee"
-    },
-    {
-      "category": "junk",
-      "checkGame": "oot",
-      "checkName": "LW Deku Theater Skull Mask",
-      "displayName": "Red Rupee (MM)",
-      "itemGame": "mm",
-      "itemName": "Red Rupee"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Doggy Racetrack Chest",
-      "displayName": "Bombs (5) (OOT)",
-      "itemGame": "oot",
-      "itemName": "Bombs (5)"
-    },
-    {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Stone Tower Temple Water Bridge Chest",
-      "displayName": "Heart Container (OOT)",
-      "itemGame": "oot",
-      "itemName": "Heart Container"
-    },
-    {
-      "category": "lesser",
-      "checkGame": "mm",
-      "checkName": "Snowhead Great Fairy",
-      "displayName": "Deku Shield (OOT)",
-      "itemGame": "oot",
-      "itemName": "Deku Shield"
-    },
-    {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Great Bay Great Fairy",
-      "displayName": "Piece of Heart (OOT)",
-      "itemGame": "oot",
-      "itemName": "Piece of Heart"
-    },
-    {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Goron Shrine Full Lullaby",
-      "displayName": "Piece of Heart (OOT)",
-      "itemGame": "oot",
-      "itemName": "Piece of Heart"
-    },
-    {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Clock Town North Bomb Lady",
-      "displayName": "Heart Container (OOT)",
-      "itemGame": "oot",
-      "itemName": "Heart Container"
-    },
-    {
-      "category": "junk",
-      "checkGame": "oot",
-      "checkName": "Kak Windmill Freestanding PoH",
-      "displayName": "Purple Rupee (MM)",
-      "itemGame": "mm",
       "itemName": "Purple Rupee"
     },
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Great Bay Temple Sf Central Room Barrel",
+      "checkName": "Deku Palace Grotto Chest",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
     },
     {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Zora Cape Grotto Chest",
-      "displayName": "Blue Rupee (OOT)",
-      "itemGame": "oot",
-      "itemName": "Blue Rupee"
-    },
-    {
       "category": "health",
       "checkGame": "oot",
-      "checkName": "ZF Bottom Freestanding PoH",
+      "checkName": "ZF Great Fairy Reward",
       "displayName": "Heart Piece (MM)",
       "itemGame": "mm",
       "itemName": "Heart Piece"
@@ -1695,43 +1674,19 @@
     {
       "category": "major",
       "checkGame": "mm",
-      "checkName": "Milk Bar Circus Leader Mask",
+      "checkName": "Clock Town East Honey Darling All Days",
       "displayName": "Ice Trap (OOT)",
-      "fakeDisplayName": "Spirit Temple Small Key (OOT)",
-      "fakeItemName": "Spirit Temple Small Key",
-      "fakeTrickName": "Light Temple Small Key (OOT)",
+      "fakeDisplayName": "Claim Check (OOT)",
+      "fakeItemName": "Claim Check",
+      "fakeTrickName": "Clay Check (OOT)",
       "itemGame": "oot",
       "itemName": "Ice Trap",
       "trap": true
     },
     {
-      "category": "junk",
-      "checkGame": "oot",
-      "checkName": "Kak 10 Gold Skulltula Reward",
-      "displayName": "Silver Rupee (MM)",
-      "itemGame": "mm",
-      "itemName": "Silver Rupee"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Secret Shrine Piece Of Heart Chest",
-      "displayName": "Arrows (10) (OOT)",
-      "itemGame": "oot",
-      "itemName": "Arrows (10)"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Clock Town East Treasure Chest Game Zora",
-      "displayName": "Bombs (10) (OOT)",
-      "itemGame": "oot",
-      "itemName": "Bombs (10)"
-    },
-    {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Great Bay Coast Mikau",
+      "checkName": "Woodfall Great Fairy",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
@@ -1739,23 +1694,31 @@
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Twin Islands Underwater Chest 01",
+      "checkName": "Great Bay Great Fairy",
+      "displayName": "Heart Container (OOT)",
+      "itemGame": "oot",
+      "itemName": "Heart Container"
+    },
+    {
+      "category": "lesser",
+      "checkGame": "mm",
+      "checkName": "Snowhead Temple Icicle Room Chest",
+      "displayName": "Deku Shield (OOT)",
+      "itemGame": "oot",
+      "itemName": "Deku Shield"
+    },
+    {
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Clock Town North Bomb Lady",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
     },
     {
       "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Tourist Information Pictobox",
-      "displayName": "Blue Rupee (OOT)",
-      "itemGame": "oot",
-      "itemName": "Blue Rupee"
-    },
-    {
-      "category": "junk",
       "checkGame": "oot",
-      "checkName": "Kak Anju as Child",
+      "checkName": "Kak Windmill Freestanding PoH",
       "displayName": "Red Rupee (MM)",
       "itemGame": "mm",
       "itemName": "Red Rupee"
@@ -1763,39 +1726,15 @@
     {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Snowhead Temple Compass Room Ledge Chest",
-      "displayName": "Recovery Heart (OOT)",
+      "checkName": "Ikana Great Fairy",
+      "displayName": "Deku Stick (1) (OOT)",
       "itemGame": "oot",
-      "itemName": "Recovery Heart"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Snowhead Temple Block Room Hidden Chest",
-      "displayName": "Bombs (5) (OOT)",
-      "itemGame": "oot",
-      "itemName": "Bombs (5)"
-    },
-    {
-      "category": "health",
-      "checkGame": "oot",
-      "checkName": "Ganon's Castle Light Trial First Right Chest",
-      "displayName": "Heart Piece (MM)",
-      "itemGame": "mm",
-      "itemName": "Heart Piece"
-    },
-    {
-      "category": "health",
-      "checkGame": "oot",
-      "checkName": "Ice Cavern Freestanding PoH",
-      "displayName": "Heart Piece (MM)",
-      "itemGame": "mm",
-      "itemName": "Heart Piece"
+      "itemName": "Deku Stick (1)"
     },
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Cremia Escort",
+      "checkName": "Milk Bar Circus Leader Mask",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
@@ -1803,7 +1742,147 @@
     {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Zora Hall Scrub Potion Refill",
+      "checkName": "Secret Shrine Piece Of Heart Chest",
+      "displayName": "Blue Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Blue Rupee"
+    },
+    {
+      "category": "health",
+      "checkGame": "oot",
+      "checkName": "LW Skull Kid",
+      "displayName": "Heart Piece (MM)",
+      "itemGame": "mm",
+      "itemName": "Heart Piece"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
+      "checkName": "Dodongos Cavern Bomb Bag Chest",
+      "displayName": "Purple Rupee (MM)",
+      "itemGame": "mm",
+      "itemName": "Purple Rupee"
+    },
+    {
+      "category": "major",
+      "checkGame": "mm",
+      "checkName": "Mountain Village Tunnel Grotto Chest",
+      "displayName": "Ice Trap (OOT)",
+      "fakeDisplayName": "Progressive Hookshot (OOT)",
+      "fakeItemName": "Progressive Hookshot",
+      "fakeTrickName": "Progressive Rope (OOT)",
+      "itemGame": "oot",
+      "itemName": "Ice Trap",
+      "trap": true
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Snowhead Temple Sf Compass Room Crate",
+      "displayName": "Arrows (10) (OOT)",
+      "itemGame": "oot",
+      "itemName": "Arrows (10)"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Ocean Spider House Wallet",
+      "displayName": "Bombs (10) (OOT)",
+      "itemGame": "oot",
+      "itemName": "Bombs (10)"
+    },
+    {
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Great Bay Temple Green Pipe 1 Chest",
+      "displayName": "Piece of Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Piece of Heart"
+    },
+    {
+      "category": "health",
+      "checkGame": "oot",
+      "checkName": "KF Mido Bottom Right Chest",
+      "displayName": "Heart Piece (MM)",
+      "itemGame": "mm",
+      "itemName": "Heart Piece"
+    },
+    {
+      "category": "lesser",
+      "checkGame": "mm",
+      "checkName": "Twin Islands Underwater Chest 01",
+      "displayName": "Huge Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Huge Rupee"
+    },
+    {
+      "category": "health",
+      "checkGame": "oot",
+      "checkName": "Kak Anju as Child",
+      "displayName": "Heart Piece (MM)",
+      "itemGame": "mm",
+      "itemName": "Heart Piece"
+    },
+    {
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Snowhead Temple Compass Room Ledge Chest",
+      "displayName": "Piece of Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Piece of Heart"
+    },
+    {
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Snowhead Temple Block Room Hidden Chest",
+      "displayName": "Piece of Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Piece of Heart"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
+      "checkName": "Market ToT Light Arrow Cutscene",
+      "displayName": "Red Rupee (MM)",
+      "itemGame": "mm",
+      "itemName": "Red Rupee"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Ikana Canyon Scrub Huge Rupee",
+      "displayName": "Bombs (5) (OOT)",
+      "itemGame": "oot",
+      "itemName": "Bombs (5)"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
+      "checkName": "GC Maze Left Chest",
+      "displayName": "5 Bombchus (MM)",
+      "itemGame": "mm",
+      "itemName": "5 Bombchus"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
+      "checkName": "Ice Cavern Freestanding PoH",
+      "displayName": "Red Rupee (MM)",
+      "itemGame": "mm",
+      "itemName": "Red Rupee"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Termina Field Bio Baba Grotto",
+      "displayName": "Recovery Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Recovery Heart"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Cremia Escort",
       "displayName": "Arrows (5) (OOT)",
       "itemGame": "oot",
       "itemName": "Arrows (5)"
@@ -1817,25 +1896,33 @@
       "itemName": "Piece of Heart"
     },
     {
-      "category": "health",
-      "checkGame": "mm",
-      "checkName": "Secret Shrine Garo Master Chest",
-      "displayName": "Piece of Heart (OOT)",
-      "itemGame": "oot",
-      "itemName": "Piece of Heart"
-    },
-    {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Great Bay Temple Compass Chest",
+      "checkName": "Stone Tower Temple Wind Room Jail Chest",
       "displayName": "Recovery Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Recovery Heart"
     },
     {
+      "category": "health",
+      "checkGame": "oot",
+      "checkName": "LH Lab Dive",
+      "displayName": "Heart Piece (MM)",
+      "itemGame": "mm",
+      "itemName": "Heart Piece"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Secret Shrine Garo Master Chest",
+      "displayName": "Deku Stick (1) (OOT)",
+      "itemGame": "oot",
+      "itemName": "Deku Stick (1)"
+    },
+    {
       "category": "lesser",
       "checkGame": "mm",
-      "checkName": "Woodfall Temple Sf Maze Beehive",
+      "checkName": "Great Bay Temple Compass Chest",
       "displayName": "Huge Rupee (OOT)",
       "itemGame": "oot",
       "itemName": "Huge Rupee"
@@ -1843,10 +1930,18 @@
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Mountain Village Waterfall Chest",
+      "checkName": "Snowhead Temple Block Room Ledge Chest",
       "displayName": "Heart Container (OOT)",
       "itemGame": "oot",
       "itemName": "Heart Container"
+    },
+    {
+      "category": "health",
+      "checkGame": "mm",
+      "checkName": "Woodfall Temple Sf Maze Beehive",
+      "displayName": "Piece of Heart (OOT)",
+      "itemGame": "oot",
+      "itemName": "Piece of Heart"
     },
     {
       "category": "health",
@@ -1857,33 +1952,45 @@
       "itemName": "Piece of Heart"
     },
     {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Woodfall Temple Water Chest",
+      "displayName": "Purple Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Purple Rupee"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
+      "checkName": "Shadow Temple After Wind Enemy Chest",
+      "displayName": "Red Rupee (MM)",
+      "itemGame": "mm",
+      "itemName": "Red Rupee"
+    },
+    {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Snowhead Temple Central Room Bottom Chest",
+      "checkName": "Stone Tower Temple Before Water Bridge Chest",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
     },
     {
-      "category": "health",
-      "checkGame": "oot",
-      "checkName": "GV Waterfall Freestanding PoH",
-      "displayName": "Heart Piece (MM)",
-      "itemGame": "mm",
-      "itemName": "Heart Piece"
-    },
-    {
-      "category": "health",
+      "category": "major",
       "checkGame": "mm",
       "checkName": "Deku Kings Chamber Monkey",
-      "displayName": "Piece of Heart (OOT)",
+      "displayName": "Ice Trap (OOT)",
+      "fakeDisplayName": "Goron Mask (OOT)",
+      "fakeItemName": "Goron Mask",
+      "fakeTrickName": "Goron Garb (OOT)",
       "itemGame": "oot",
-      "itemName": "Piece of Heart"
+      "itemName": "Ice Trap",
+      "trap": true
     },
     {
       "category": "health",
       "checkGame": "mm",
-      "checkName": "Woodfall Entrance Chest",
+      "checkName": "Stock Pot Inn Letter To Kafei",
       "displayName": "Piece of Heart (OOT)",
       "itemGame": "oot",
       "itemName": "Piece of Heart"
@@ -1891,23 +1998,15 @@
     {
       "category": "lesser",
       "checkGame": "mm",
-      "checkName": "Great Bay Coast Fisherman Minigame",
-      "displayName": "Hylian Shield (OOT)",
+      "checkName": "Pirate Fortress Entrance Chest 01",
+      "displayName": "Deku Shield (OOT)",
       "itemGame": "oot",
-      "itemName": "Hylian Shield"
+      "itemName": "Deku Shield"
     },
     {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Ancient Castle Of Ikana Piece Of Heart",
-      "displayName": "Bombs (5) (OOT)",
-      "itemGame": "oot",
-      "itemName": "Bombs (5)"
-    },
-    {
-      "category": "junk",
-      "checkGame": "mm",
-      "checkName": "Clock Town West Postman Minigame",
+      "checkName": "Pirate Fortress Interior Silver Rupee Chest",
       "displayName": "Deku Nuts (10) (OOT)",
       "itemGame": "oot",
       "itemName": "Deku Nuts (10)"
@@ -1931,31 +2030,39 @@
     {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Romani Ranch Eponas Song",
+      "checkName": "Great Bay Temple Boss Key",
       "displayName": "Bombs (5) (OOT)",
       "itemGame": "oot",
       "itemName": "Bombs (5)"
     },
     {
-      "category": "health",
+      "category": "lesser",
       "checkGame": "mm",
-      "checkName": "Stone Tower Temple Inverted Boss Key",
-      "displayName": "Piece of Heart (OOT)",
+      "checkName": "Romani Ranch Eponas Song",
+      "displayName": "Huge Rupee (OOT)",
       "itemGame": "oot",
-      "itemName": "Piece of Heart"
-    },
-    {
-      "category": "junk",
-      "checkGame": "oot",
-      "checkName": "Kak Impas House Freestanding PoH",
-      "displayName": "Purple Rupee (MM)",
-      "itemGame": "mm",
-      "itemName": "Purple Rupee"
+      "itemName": "Huge Rupee"
     },
     {
       "category": "junk",
       "checkGame": "mm",
-      "checkName": "Clock Town Laundry Guru Guru",
+      "checkName": "Woodfall Temple Bow Chest",
+      "displayName": "Red Rupee (OOT)",
+      "itemGame": "oot",
+      "itemName": "Red Rupee"
+    },
+    {
+      "category": "lesser",
+      "checkGame": "mm",
+      "checkName": "Goron Village Piece Of Heart",
+      "displayName": "Deku Shield (OOT)",
+      "itemGame": "oot",
+      "itemName": "Deku Shield"
+    },
+    {
+      "category": "junk",
+      "checkGame": "mm",
+      "checkName": "Astral Observatory Moon Tear",
       "displayName": "Red Rupee (OOT)",
       "itemGame": "oot",
       "itemName": "Red Rupee"
@@ -1979,6 +2086,14 @@
     {
       "category": "junk",
       "checkGame": "oot",
+      "checkName": "Market Bombchu Bowling First Prize",
+      "displayName": "Red Rupee (MM)",
+      "itemGame": "mm",
+      "itemName": "Red Rupee"
+    },
+    {
+      "category": "junk",
+      "checkGame": "oot",
       "checkName": "Graveyard Royal Family's Tomb Chest",
       "displayName": "10 Bombchus (MM)",
       "itemGame": "mm",
@@ -1989,9 +2104,9 @@
       "checkGame": "mm",
       "checkName": "Mountain Village Frog Choir",
       "displayName": "Ice Trap (OOT)",
-      "fakeDisplayName": "Claim Check (OOT)",
-      "fakeItemName": "Claim Check",
-      "fakeTrickName": "Clay Check (OOT)",
+      "fakeDisplayName": "Fire Arrows (OOT)",
+      "fakeItemName": "Fire Arrows",
+      "fakeTrickName": "Bomb Arrow (OOT)",
       "itemGame": "oot",
       "itemName": "Ice Trap",
       "trap": true
@@ -2114,11 +2229,7 @@
     "mm": {
       "gossipPool": [
         {
-          "text": "Ice Arrows can be found hoarded in Bottom of the Well (OOT)",
-          "weight": 3
-        },
-        {
-          "text": "Woodfall Stray Fairy can be found hoarded in Bottom of the Well (OOT)",
+          "text": "Snowhead Stray Fairy can be found hoarded in Bottom of the Well (OOT)",
           "weight": 1
         },
         {
@@ -2130,20 +2241,16 @@
           "weight": 3
         },
         {
-          "text": "Hookshot can be found hoarded in Bottom of the Well (OOT)",
+          "text": "Great Bay Stray Fairy can be found hoarded in Bottom of the Well (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Ocean Title Deed can be found at Desert Colossus (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Epona's Song can be found at Death Mountain Crater (OOT)",
           "weight": 3
-        },
-        {
-          "text": "Nayru's Love can be found at Desert Colossus (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "Deku Stick Capacity can be found at Death Mountain Crater (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "Snowhead Small Key can be found at Death Mountain Crater (OOT)",
-          "weight": 1
         },
         {
           "text": "Stone Tower Stray Fairy can be found at Death Mountain Crater (OOT)",
@@ -2154,27 +2261,27 @@
           "weight": 1
         },
         {
-          "text": "Stone Tower Stray Fairy can be found at Death Mountain Trail (OOT)",
+          "text": "a goron mask can be found at Death Mountain Trail (OOT)",
           "weight": 1
         },
         {
-          "text": "Empty Bottle can be found hoarded in Deku Tree (OOT)",
+          "text": "a Fish Bottle can be found at Death Mountain Trail (OOT)",
           "weight": 1
         },
         {
-          "text": "Deku Stick Capacity can be found hoarded in Deku Tree (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "the Claim Check can be found hoarded in Deku Tree (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "Stone Tower Small Key can be found hoarded in Dodongo's Cavern (OOT)",
+          "text": "a Strength Upgrade can be found hoarded in Deku Tree (OOT)",
           "weight": 3
         },
         {
-          "text": "Blast Mask can be found hoarded in Dodongo's Cavern (OOT)",
+          "text": "Bottle of Milk can be found hoarded in Deku Tree (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Ruto's Letter can be found hoarded in Deku Tree (OOT)",
+          "weight": 3
+        },
+        {
+          "text": "Letter to Mama can be found hoarded in Dodongo's Cavern (OOT)",
           "weight": 1
         },
         {
@@ -2190,19 +2297,39 @@
           "weight": 3
         },
         {
-          "text": "Woodfall Stray Fairy can be found hoarded in Fire Temple (OOT)",
+          "text": "Light Arrows can be found hoarded in Fire Temple (OOT)",
+          "weight": 3
+        },
+        {
+          "text": "a Bomb Bag can be found hoarded in Fire Temple (OOT)",
+          "weight": 3
+        },
+        {
+          "text": "a Slingshot can be found hoarded in Fire Temple (OOT)",
           "weight": 1
         },
         {
-          "text": "a Magic Meter can be found hoarded in Fire Temple (OOT)",
-          "weight": 3
-        },
-        {
-          "text": "Song of Healing can be found hoarded in Forest Temple (OOT)",
-          "weight": 3
+          "text": "Blast Mask can be found hoarded in Forest Temple (OOT)",
+          "weight": 1
         },
         {
           "text": "Bombchus (20 pieces) can be found hoarded in Forest Temple (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Deku Stick Capacity can be found hoarded in Forest Temple (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Stone Tower Stray Fairy can be found at Goron City (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Stone Tower Small Key can be found at Goron City (OOT)",
+          "weight": 3
+        },
+        {
+          "text": "Magic Bean can be found at Goron City (OOT)",
           "weight": 1
         },
         {
@@ -2210,27 +2337,31 @@
           "weight": 1
         },
         {
-          "text": "Woodfall Stray Fairy can be found at Goron City (OOT)",
+          "text": "Woodfall Stray Fairy can be found at Gerudo Fortress (OOT)",
           "weight": 1
         },
         {
-          "text": "Great Fairy's Sword can be found at Goron City (OOT)",
+          "text": "Swamp Title Deed can be found at Gerudo Fortress (OOT)",
           "weight": 1
         },
         {
-          "text": "a spooky mask can be found at Gerudo Valley (OOT)",
+          "text": "Deku Nut Capacity can be found at Gerudo Valley (OOT)",
           "weight": 1
         },
         {
-          "text": "Progressive Goron Lullaby can be found at Gerudo Valley (OOT)",
-          "weight": 3
+          "text": "Great Bay Stray Fairy can be found at Gerudo Valley (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Romani's Mask can be found at Gerudo Valley (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Woodfall Stray Fairy can be found hoarded in Ganon's Castle (OOT)",
+          "weight": 1
         },
         {
           "text": "Bottle of Chateau Romani can be found hoarded in Ganon's Castle (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "a mask of truth can be found hoarded in Ganon's Castle (OOT)",
           "weight": 1
         },
         {
@@ -2242,15 +2373,19 @@
           "weight": 1
         },
         {
-          "text": "All-Night Mask can be found hoarded in Gerudo Training Ground (OOT)",
+          "text": "Snowhead Stray Fairy can be found hoarded in Gerudo Training Ground (OOT)",
           "weight": 1
+        },
+        {
+          "text": "a Magic Meter can be found hoarded in Gerudo Training Ground (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "All-Night Mask can be found hoarded in Gerudo Training Ground (OOT)",
+          "weight": 3
         },
         {
           "text": "Lens of Truth can be found hoarded in Gerudo Training Ground (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "the Iron Boots can be found hoarded in Gerudo Training Ground (OOT)",
           "weight": 1
         },
         {
@@ -2258,35 +2393,35 @@
           "weight": 1
         },
         {
-          "text": "Din's Fire can be found hoarded in Gerudo Training Ground (OOT)",
-          "weight": 3
+          "text": "a zora mask can be found hoarded in Gerudo Training Ground (OOT)",
+          "weight": 1
         },
         {
           "text": "Kamaro's Mask can be found hoarded in Gerudo Training Ground (OOT)",
           "weight": 1
         },
         {
-          "text": "Letter to Kafei can be found at Hyrule Market (OOT)",
+          "text": "Great Fairy's Sword can be found at Hyrule Market (OOT)",
           "weight": 1
         },
         {
-          "text": "Snowhead Stray Fairy can be found at Graveyard (OOT)",
-          "weight": 1
+          "text": "Zora Mask can be found at Graveyard (OOT)",
+          "weight": 3
         },
         {
           "text": "Mask of Scents can be found at Graveyard (OOT)",
           "weight": 1
         },
         {
-          "text": "a Slingshot can be found at Graveyard (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "a Bomb Bag can be found at Graveyard (OOT)",
+          "text": "the Hover Boots can be found at Graveyard (OOT)",
           "weight": 3
         },
         {
-          "text": "Stone Tower Stray Fairy can be found at Hyrule Field (OOT)",
+          "text": "Clock Town Stray Fairy can be found at Graveyard (OOT)",
+          "weight": 3
+        },
+        {
+          "text": "Snowhead Stray Fairy can be found at Hyrule Field (OOT)",
           "weight": 1
         },
         {
@@ -2294,11 +2429,15 @@
           "weight": 1
         },
         {
-          "text": "Stone Tower Stray Fairy can be found at Hyrule Field (OOT)",
+          "text": "a spooky mask can be found at Hyrule Field (OOT)",
           "weight": 1
         },
         {
-          "text": "Snowhead Stray Fairy can be found at Hyrule Field (OOT)",
+          "text": "Progressive Wallet can be found hoarded in Ice Cavern (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Stone Tower Stray Fairy can be found hoarded in Jabu Jabu's Belly (OOT)",
           "weight": 1
         },
         {
@@ -2306,11 +2445,11 @@
           "weight": 3
         },
         {
-          "text": "Woodfall Stray Fairy can be found at Kokiri Forest (OOT)",
-          "weight": 1
+          "text": "New Wave Bossa Nova can be found at Kokiri Forest (OOT)",
+          "weight": 3
         },
         {
-          "text": "a Slingshot can be found at Kakariko Village (OOT)",
+          "text": "Stone Mask can be found at Kakariko Village (OOT)",
           "weight": 1
         },
         {
@@ -2318,19 +2457,19 @@
           "weight": 1
         },
         {
-          "text": "Swamp Title Deed can be found at Kakariko Village (OOT)",
-          "weight": 3
-        },
-        {
-          "text": "the Hover Boots can be found at Kakariko Village (OOT)",
-          "weight": 3
-        },
-        {
-          "text": "a Fairy Bow can be found at Kakariko Village (OOT)",
+          "text": "Stone Tower Stray Fairy can be found at Kakariko Village (OOT)",
           "weight": 1
         },
         {
-          "text": "Mountain Title Deed can be found at Kakariko Village (OOT)",
+          "text": "Snowhead Stray Fairy can be found at Kakariko Village (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Woodfall Stray Fairy can be found at Kakariko Village (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "the Fire Arrows can be found at Kakariko Village (OOT)",
           "weight": 1
         },
         {
@@ -2338,11 +2477,15 @@
           "weight": 1
         },
         {
-          "text": "a Poe Bottle can be found at Lake Hylia (OOT)",
+          "text": "the Claim Check can be found at Kakariko Village (OOT)",
           "weight": 1
         },
         {
-          "text": "Romani's Mask can be found at Lake Hylia (OOT)",
+          "text": "Song of Healing can be found at Lake Hylia (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Sonata of Awakening can be found at Lake Hylia (OOT)",
           "weight": 1
         },
         {
@@ -2350,15 +2493,15 @@
           "weight": 1
         },
         {
-          "text": "Great Fairy Mask can be found at Lake Hylia (OOT)",
+          "text": "Woodfall Compass can be found at Lake Hylia (OOT)",
           "weight": 1
         },
         {
-          "text": "Great Bay Stray Fairy can be found at Lon Lon Ranch (OOT)",
-          "weight": 1
+          "text": "Hookshot can be found at Lon Lon Ranch (OOT)",
+          "weight": 3
         },
         {
-          "text": "Stone Tower Stray Fairy can be found at Lon Lon Ranch (OOT)",
+          "text": "Great Fairy Mask can be found at Lon Lon Ranch (OOT)",
           "weight": 1
         },
         {
@@ -2366,7 +2509,7 @@
           "weight": 1
         },
         {
-          "text": "Bottle of Milk can be found at Lost Woods (OOT)",
+          "text": "Mirror Shield can be found at Lost Woods (OOT)",
           "weight": 1
         },
         {
@@ -2378,39 +2521,31 @@
           "weight": 1
         },
         {
-          "text": "Progressive Wallet can be found at Hyrule Market (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "Greg can be found at Hyrule Market (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "Stone Tower Compass can be found at Hyrule Market (OOT)",
-          "weight": 1
-        },
-        {
-          "text": "Woodfall Stray Fairy can be found at Hyrule Market (OOT)",
-          "weight": 1
-        },
-        {
           "text": "Stone Tower Small Key can be found at Hyrule Market (OOT)",
           "weight": 3
         },
         {
+          "text": "a Slingshot can be found at Hyrule Market (OOT)",
+          "weight": 1
+        },
+        {
+          "text": "Kafei's Mask can be found at Hyrule Castle (OOT)",
+          "weight": 1
+        },
+        {
           "text": "Great Bay Stray Fairy can be found hoarded in Shadow Temple (OOT)",
           "weight": 1
         },
         {
-          "text": "a Strength Upgrade can be found hoarded in Shadow Temple (OOT)",
+          "text": "Progressive Goron Lullaby can be found hoarded in Shadow Temple (OOT)",
           "weight": 3
         },
         {
-          "text": "Bottle with Red Potion can be found hoarded in Shadow Temple (OOT)",
+          "text": "Garo's Mask can be found hoarded in Shadow Temple (OOT)",
           "weight": 1
         },
         {
-          "text": "Great Bay Stray Fairy can be found hoarded in Shadow Temple (OOT)",
+          "text": "a Slingshot can be found hoarded in Shadow Temple (OOT)",
           "weight": 1
         },
         {
@@ -2418,7 +2553,7 @@
           "weight": 3
         },
         {
-          "text": "Saria's Song can be found at Hyrule Market (OOT)",
+          "text": "the Minuet of Forest can be found at Hyrule Market (OOT)",
           "weight": 1
         },
         {
@@ -2430,7 +2565,7 @@
           "weight": 1
         },
         {
-          "text": "the Song of Time can be found hoarded in Ice Cavern (OOT)",
+          "text": "Saria's Song can be found hoarded in Ice Cavern (OOT)",
           "weight": 1
         },
         {
@@ -2439,14 +2574,14 @@
         },
         {
           "text": "the Bolero of Fire can be found at Hyrule Castle (OOT)",
-          "weight": 1
+          "weight": 3
         },
         {
           "text": "the Serenade of Water can be found at Lon Lon Ranch (OOT)",
           "weight": 1
         },
         {
-          "text": "the Minuet of Forest can be found at Hyrule Field (OOT)",
+          "text": "the Song of Time can be found at Hyrule Field (OOT)",
           "weight": 1
         },
         {
@@ -2462,7 +2597,7 @@
           "weight": 3
         },
         {
-          "text": "Kafei's Mask can be found hoarded in Spirit Temple (OOT)",
+          "text": "a bunny hood can be found hoarded in Spirit Temple (OOT)",
           "weight": 1
         },
         {
@@ -2478,23 +2613,23 @@
           "weight": 1
         },
         {
-          "text": "a Fairy Bow can be found hoarded in Spirit Temple (OOT)",
+          "text": "Great Bay Small Key can be found hoarded in Spirit Temple (OOT)",
           "weight": 1
         },
         {
-          "text": "Goron Mask can be found hoarded in Spirit Temple (OOT)",
-          "weight": 3
+          "text": "Stone Tower Compass can be found hoarded in Spirit Temple (OOT)",
+          "weight": 1
         },
         {
           "text": "Great Bay Boss Key can be found hoarded in Spirit Temple (OOT)",
           "weight": 3
         },
         {
-          "text": "Woodfall Compass can be found at Haunted Wasteland (OOT)",
+          "text": "Empty Bottle can be found at Haunted Wasteland (OOT)",
           "weight": 1
         },
         {
-          "text": "Song of Soaring can be found hoarded in Water Temple (OOT)",
+          "text": "a Zora Scale can be found hoarded in Water Temple (OOT)",
           "weight": 1
         },
         {
@@ -2506,11 +2641,19 @@
           "weight": 1
         },
         {
-          "text": "a keaton mask can be found at Zora's River (OOT)",
+          "text": "Mask of Truth can be found at Zora's Domain (OOT)",
           "weight": 1
         },
         {
-          "text": "Stone Mask can be found at Zora's River (OOT)",
+          "text": "the Boomerang can be found at Zora's Fountain (OOT)",
+          "weight": 3
+        },
+        {
+          "text": "Goron Mask can be found at Zora's Fountain (OOT)",
+          "weight": 3
+        },
+        {
+          "text": "a gerudo mask can be found at Zora's River (OOT)",
           "weight": 1
         },
         {
@@ -2518,14 +2661,8 @@
           "weight": 1
         },
         {
-          "text": "a zora mask can be found at Zora's River (OOT)",
+          "text": "Snowhead Stray Fairy can be found at Zora's River (OOT)",
           "weight": 1
-        },
-        {
-          "pathArea": "mm:in Beneath Graveyard and Dampe's House",
-          "pathTarget": "Bongo Bongo",
-          "text": "They say that Beneath Graveyard and Dampe's House is on the Path to Bongo Bongo.",
-          "weight": 3
         },
         {
           "pathArea": "mm:in Beneath the Graveyard",
@@ -2534,75 +2671,75 @@
           "weight": 3
         },
         {
-          "pathArea": "mm:in Clock Tower Rooftop",
-          "pathTarget": "Twinmold",
-          "text": "They say that Clock Tower Rooftop is on the Path to Twinmold.",
-          "weight": 3
-        },
-        {
           "pathArea": "mm:in East Clock Town",
-          "pathTarget": "Barinade",
-          "text": "They say that East Clock Town is on the Path to Barinade.",
+          "pathTarget": "Twinmold",
+          "text": "They say that East Clock Town is on the Path to Twinmold.",
           "weight": 3
         },
         {
-          "pathArea": "mm:in Goron Village",
-          "pathTarget": "Twinmold",
-          "text": "They say that Goron Village is on the Path to Twinmold.",
+          "pathArea": "mm:in Goht's Lair",
+          "pathTarget": "Ganon",
+          "text": "They say that Goht's Lair is on the Path to Ganon.",
+          "weight": 3
+        },
+        {
+          "pathArea": "mm:in Gorman Track",
+          "pathTarget": "Bongo Bongo",
+          "text": "They say that Gorman Track is on the Path to Bongo Bongo.",
           "weight": 3
         },
         {
           "pathArea": "mm:in Ikana Canyon",
-          "pathTarget": "Bongo Bongo",
-          "text": "They say that Ikana Canyon is on the Path to Bongo Bongo.",
-          "weight": 3
-        },
-        {
-          "pathArea": "mm:in Ikana Graveyard",
-          "pathTarget": "Ganon",
-          "text": "They say that Ikana Graveyard is on the Path to Ganon.",
-          "weight": 3
-        },
-        {
-          "pathArea": "mm:in Lone Peak Shrine",
-          "pathTarget": "Gyorg",
-          "text": "They say that Lone Peak Shrine is on the Path to Gyorg.",
+          "pathTarget": "Barinade",
+          "text": "They say that Ikana Canyon is on the Path to Barinade.",
           "weight": 3
         },
         {
           "pathArea": "mm:in Mountain Village",
-          "pathTarget": "Twinmold",
-          "text": "They say that Mountain Village is on the Path to Twinmold.",
+          "pathTarget": "Barinade",
+          "text": "They say that Mountain Village is on the Path to Barinade.",
+          "weight": 3
+        },
+        {
+          "pathArea": "mm:in North Clock Town",
+          "pathTarget": "Goht",
+          "text": "They say that North Clock Town is on the Path to Goht.",
+          "weight": 3
+        },
+        {
+          "pathArea": "mm:in Path to Goron Village",
+          "pathTarget": "Gyorg",
+          "text": "They say that Path to Goron Village is on the Path to Gyorg.",
+          "weight": 3
+        },
+        {
+          "pathArea": "mm:in Pirates' Fortress Moat",
+          "pathTarget": "Odolwa",
+          "text": "They say that Pirates' Fortress Moat is on the Path to Odolwa.",
           "weight": 3
         },
         {
           "pathArea": "mm:in Secret Shrine",
-          "pathTarget": "Ganon",
-          "text": "They say that Secret Shrine is on the Path to Ganon.",
+          "pathTarget": "Barinade",
+          "text": "They say that Secret Shrine is on the Path to Barinade.",
           "weight": 3
         },
         {
           "pathArea": "mm:in South Clock Town",
-          "pathTarget": "Goht",
-          "text": "They say that South Clock Town is on the Path to Goht.",
+          "pathTarget": "Ganon",
+          "text": "They say that South Clock Town is on the Path to Ganon.",
           "weight": 3
         },
         {
           "pathArea": "mm:in Stone Tower Temple",
-          "pathTarget": "Goht",
-          "text": "They say that Stone Tower Temple is on the Path to Goht.",
+          "pathTarget": "Ganon",
+          "text": "They say that Stone Tower Temple is on the Path to Ganon.",
           "weight": 3
         },
         {
           "pathArea": "mm:in Termina Field",
-          "pathTarget": "Barinade",
-          "text": "They say that Termina Field is on the Path to Barinade.",
-          "weight": 3
-        },
-        {
-          "pathArea": "mm:in Waterfall Rapids",
-          "pathTarget": "Bongo Bongo",
-          "text": "They say that Waterfall Rapids is on the Path to Bongo Bongo.",
+          "pathTarget": "Twinmold",
+          "text": "They say that Termina Field is on the Path to Twinmold.",
           "weight": 3
         },
         {
@@ -2618,27 +2755,33 @@
           "weight": 3
         },
         {
-          "pathArea": "mm:in Zora Cape",
+          "pathArea": "mm:in Woods of Mystery",
           "pathTarget": "Gyorg",
-          "text": "They say that Zora Cape is on the Path to Gyorg.",
+          "text": "They say that Woods of Mystery is on the Path to Gyorg.",
           "weight": 3
         },
         {
           "pathArea": "oot:Bottom of the Well",
-          "pathTarget": "Barinade",
-          "text": "They say that Bottom of the Well is on the Path to Barinade.",
+          "pathTarget": "Ganon",
+          "text": "They say that Bottom of the Well is on the Path to Ganon.",
           "weight": 3
         },
         {
           "pathArea": "oot:Death Mountain Crater",
+          "pathTarget": "Barinade",
+          "text": "They say that Death Mountain Crater is on the Path to Barinade.",
+          "weight": 3
+        },
+        {
+          "pathArea": "oot:Deku Tree",
           "pathTarget": "Twinmold",
-          "text": "They say that Death Mountain Crater is on the Path to Twinmold.",
+          "text": "They say that Deku Tree is on the Path to Twinmold.",
           "weight": 3
         },
         {
           "pathArea": "oot:Desert Colossus",
-          "pathTarget": "Twinmold",
-          "text": "They say that Desert Colossus is on the Path to Twinmold.",
+          "pathTarget": "Gyorg",
+          "text": "They say that Desert Colossus is on the Path to Gyorg.",
           "weight": 3
         },
         {
@@ -2649,32 +2792,32 @@
         },
         {
           "pathArea": "oot:Fire Temple",
-          "pathTarget": "Goht",
-          "text": "They say that Fire Temple is on the Path to Goht.",
-          "weight": 3
-        },
-        {
-          "pathArea": "oot:Forest Temple",
-          "pathTarget": "Ganon",
-          "text": "They say that Forest Temple is on the Path to Ganon.",
+          "pathTarget": "Bongo Bongo",
+          "text": "They say that Fire Temple is on the Path to Bongo Bongo.",
           "weight": 3
         },
         {
           "pathArea": "oot:Gerudo Training Ground",
-          "pathTarget": "Bongo Bongo",
-          "text": "They say that Gerudo Training Ground is on the Path to Bongo Bongo.",
+          "pathTarget": "Twinmold",
+          "text": "They say that Gerudo Training Ground is on the Path to Twinmold.",
           "weight": 3
         },
         {
-          "pathArea": "oot:Gerudo Valley",
-          "pathTarget": "Goht",
-          "text": "They say that Gerudo Valley is on the Path to Goht.",
+          "pathArea": "oot:Goron City",
+          "pathTarget": "Twinmold",
+          "text": "They say that Goron City is on the Path to Twinmold.",
           "weight": 3
         },
         {
           "pathArea": "oot:Graveyard",
+          "pathTarget": "Goht",
+          "text": "They say that Graveyard is on the Path to Goht.",
+          "weight": 3
+        },
+        {
+          "pathArea": "oot:Hyrule Castle",
           "pathTarget": "Gyorg",
-          "text": "They say that Graveyard is on the Path to Gyorg.",
+          "text": "They say that Hyrule Castle is on the Path to Gyorg.",
           "weight": 3
         },
         {
@@ -2691,8 +2834,20 @@
         },
         {
           "pathArea": "oot:Kakariko Village",
-          "pathTarget": "Barinade",
-          "text": "They say that Kakariko Village is on the Path to Barinade.",
+          "pathTarget": "Gyorg",
+          "text": "They say that Kakariko Village is on the Path to Gyorg.",
+          "weight": 3
+        },
+        {
+          "pathArea": "oot:Kokiri Forest",
+          "pathTarget": "Gyorg",
+          "text": "They say that Kokiri Forest is on the Path to Gyorg.",
+          "weight": 3
+        },
+        {
+          "pathArea": "oot:Lon Lon Ranch",
+          "pathTarget": "Twinmold",
+          "text": "They say that Lon Lon Ranch is on the Path to Twinmold.",
           "weight": 3
         },
         {
@@ -2703,63 +2858,77 @@
         },
         {
           "pathArea": "oot:Spirit Temple",
-          "pathTarget": "Twinmold",
-          "text": "They say that Spirit Temple is on the Path to Twinmold.",
+          "pathTarget": "Gyorg",
+          "text": "They say that Spirit Temple is on the Path to Gyorg.",
+          "weight": 3
+        },
+        {
+          "pathArea": "oot:Zora's Fountain",
+          "pathTarget": "Ganon",
+          "text": "They say that Zora's Fountain is on the Path to Ganon.",
           "weight": 3
         }
       ],
       "itemLocations": {
         "10 Bombchus": "in Graveyard (OOT)",
         "30 Arrows": "in Gerudo Training Ground (OOT)",
-        "5 Bombchus": "in Ganon's Castle (OOT)",
+        "5 Bombchus": "in Goron City (OOT)",
         "All-Night Mask": "in Gerudo Training Ground (OOT)",
-        "Blast Mask": "in Dodongo's Cavern (OOT)",
-        "Bombchu": "in Ganon's Castle (OOT)",
+        "Blast Mask": "in Forest Temple (OOT)",
+        "Bombchu": "in Goron City (OOT)",
         "Bottle of Chateau Romani": "in Ganon's Castle (OOT)",
-        "Bottle of Milk": "in Lost Woods (OOT)",
-        "Bottle with Red Potion": "in Shadow Temple (OOT)",
+        "Bottle of Milk": "in Deku Tree (OOT)",
+        "Clock Town Stray Fairy": "in Graveyard (OOT)",
         "Couples Mask": "in Kakariko Village (OOT)",
         "Don Gero Mask": "in Dodongo's Cavern (OOT)",
+        "Double Defense": "in Desert Colossus (OOT)",
         "Elegy of Emptiness": "in Fire Temple (OOT)",
-        "Empty Bottle": "in Deku Tree (OOT)",
-        "Goron Mask": "in Spirit Temple (OOT)",
+        "Empty Bottle": "in Haunted Wasteland (OOT)",
+        "Epona's Song": "in Death Mountain Crater (OOT)",
+        "Garo's Mask": "in Shadow Temple (OOT)",
+        "Goron Mask": "in Zora's Fountain (OOT)",
         "Great Bay Boss Key": "in Spirit Temple (OOT)",
-        "Great Bay Stray Fairy": "in Lon Lon Ranch (OOT)",
-        "Great Fairy Mask": "in Lake Hylia (OOT)",
-        "Great Fairy's Sword": "in Goron City (OOT)",
-        "Green Potion Refill": "in Shadow Temple (OOT)",
-        "Heart Container": "in Spirit Temple (OOT)",
+        "Great Bay Small Key": "in Spirit Temple (OOT)",
+        "Great Bay Stray Fairy": "in Gerudo Valley (OOT)",
+        "Great Fairy Mask": "in Lon Lon Ranch (OOT)",
+        "Great Fairy's Sword": "in Hyrule Market (OOT)",
+        "Heart Container": "in Kakariko Village (OOT)",
         "Heart Piece": "in Forest Temple (OOT)",
-        "Hookshot": "in Bottom of the Well (OOT)",
-        "Ice Arrows": "in Bottom of the Well (OOT)",
-        "Kafei's Mask": "in Spirit Temple (OOT)",
+        "Hookshot": "in Lon Lon Ranch (OOT)",
+        "Kafei's Mask": "in Hyrule Castle (OOT)",
         "Kamaro's Mask": "in Gerudo Training Ground (OOT)",
         "Lens of Truth": "in Gerudo Training Ground (OOT)",
-        "Letter to Kafei": "in Hyrule Market (OOT)",
+        "Letter to Mama": "in Dodongo's Cavern (OOT)",
+        "Light Arrows": "in Fire Temple (OOT)",
+        "Magic Bean": "in Goron City (OOT)",
         "Mask of Scents": "in Graveyard (OOT)",
-        "Mountain Title Deed": "in Kakariko Village (OOT)",
+        "Mask of Truth": "in Zora's Domain (OOT)",
+        "Mirror Shield": "in Lost Woods (OOT)",
+        "New Wave Bossa Nova": "in Kokiri Forest (OOT)",
         "Oath to Order": "in Dodongo's Cavern (OOT)",
+        "Ocean Title Deed": "in Desert Colossus (OOT)",
         "Progressive Bomb Bag": "in Gerudo Training Ground (OOT)",
-        "Progressive Goron Lullaby": "in Gerudo Valley (OOT)",
+        "Progressive Goron Lullaby": "in Shadow Temple (OOT)",
         "Progressive Sword": "in Bottom of the Well (OOT)",
-        "Progressive Wallet": "in Hyrule Market (OOT)",
-        "Purple Rupee": "in Kakariko Village (OOT)",
-        "Red Rupee": "in Kakariko Village (OOT)",
-        "Romani's Mask": "in Lake Hylia (OOT)",
-        "Silver Rupee": "in Kakariko Village (OOT)",
+        "Progressive Wallet": "in Ice Cavern (OOT)",
+        "Purple Rupee": "in Dodongo's Cavern (OOT)",
+        "Red Rupee": "in Hyrule Market (OOT)",
+        "Romani's Mask": "in Gerudo Valley (OOT)",
+        "Silver Rupee": "in Hyrule Castle (OOT)",
+        "Small Magic Refill": "in Ganon's Castle (OOT)",
         "Snowhead Compass": "in Hyrule Field (OOT)",
-        "Snowhead Small Key": "in Death Mountain Crater (OOT)",
-        "Snowhead Stray Fairy": "in Hyrule Field (OOT)",
-        "Song of Healing": "in Forest Temple (OOT)",
-        "Song of Soaring": "in Water Temple (OOT)",
-        "Stone Mask": "in Zora's River (OOT)",
-        "Stone Tower Compass": "in Hyrule Market (OOT)",
+        "Snowhead Stray Fairy": "in Kakariko Village (OOT)",
+        "Sonata of Awakening": "in Lake Hylia (OOT)",
+        "Song of Healing": "in Lake Hylia (OOT)",
+        "Stone Mask": "in Kakariko Village (OOT)",
+        "Stone Tower Compass": "in Spirit Temple (OOT)",
         "Stone Tower Map": "in Spirit Temple (OOT)",
-        "Stone Tower Small Key": "in Dodongo's Cavern (OOT)",
-        "Stone Tower Stray Fairy": "in Hyrule Field (OOT)",
-        "Swamp Title Deed": "in Kakariko Village (OOT)",
-        "Woodfall Compass": "in Haunted Wasteland (OOT)",
-        "Woodfall Stray Fairy": "in Lost Woods (OOT)"
+        "Stone Tower Small Key": "in Hyrule Market (OOT)",
+        "Stone Tower Stray Fairy": "in Goron City (OOT)",
+        "Swamp Title Deed": "in Gerudo Fortress (OOT)",
+        "Woodfall Compass": "in Lake Hylia (OOT)",
+        "Woodfall Stray Fairy": "in Ganon's Castle (OOT)",
+        "Zora Mask": "in Graveyard (OOT)"
       }
     },
     "oot": [
@@ -2833,9 +3002,9 @@
         "checkName": "__GANONDORF__",
         "messages": [
           {
-            "de": "Ha ha ha... Du wirst mich niemals besiegen, indem Du meine Blitze zurückschlägst...^und die Pfeile entfesselst, die %rTermina Field%w zu finden sind!",
-            "en": "Ha ha ha... You'll never beat me by reflecting my lightning bolts and unleashing the arrows from %rTermina Field%w!",
-            "fr": "Ha ha ha... Pauvre fou! Tu ne pourras jamais me vaincre sans les flèches que j'ai cachées dans %rTermina Field%w!"
+            "de": "Ha ha ha... Du wirst mich niemals besiegen, indem Du meine Blitze zurückschlägst...^und die Pfeile entfesselst, die %rGoht's Lair%w zu finden sind!",
+            "en": "Ha ha ha... You'll never beat me by reflecting my lightning bolts and unleashing the arrows from %rGoht's Lair%w!",
+            "fr": "Ha ha ha... Pauvre fou! Tu ne pourras jamais me vaincre sans les flèches que j'ai cachées dans %rGoht's Lair%w!"
           }
         ],
         "type": "ganondorf"
@@ -2844,9 +3013,9 @@
         "checkName": "__STATIC__RH_SHEIK_HINT",
         "messages": [
           {
-            "de": "Ich habe Ganondorf sagen hören, daß er die %yLicht-Pfeile%w %rTermina Field%w verlegt hat.",
-            "en": "I overheard Ganondorf say that he misplaced the %yLight Arrows%w in %rTermina Field%w.",
-            "fr": "J'ai entendu dire que Ganondorf aurait caché les %yFlèches de Lumière%w dans %rTermina Field%w."
+            "de": "Ich habe Ganondorf sagen hören, daß er die %yLicht-Pfeile%w %rGoht's Lair%w verlegt hat.",
+            "en": "I overheard Ganondorf say that he misplaced the %yLight Arrows%w in %rGoht's Lair%w.",
+            "fr": "J'ai entendu dire que Ganondorf aurait caché les %yFlèches de Lumière%w dans %rGoht's Lair%w."
           }
         ],
         "type": "static"
@@ -2855,9 +3024,9 @@
         "checkName": "__ALTAR_CHILD__",
         "messages": [
           {
-            "de": "Drei Heilige Steine, zu finden in Hyrule...^$0%gKokiri Forest%w...^$1%rWater Temple%w...^$2%bDodongo's Cavern%w...^$oJener auf dem Weg des Helden...&Der Pfad zur Zukunft sei geöffnet...",
-            "en": "3 Spiritual Stones found in Hyrule...^$0%gKokiri Forest%w...^$1%rWater Temple%w...^$2%bDodongo's Cavern%w...^$oYe who may become a Hero...&The path to the future is open...",
-            "fr": "Les trois Pierres Ancestrales cachées&dans Hyrule...$0%gKokiri Forest%w...^$1%rWater Temple%w...^$2%bDodongo's Cavern%w...^$oÀ celui qui a quête de devenir&héros...&Le futur vous accueille béant..."
+            "de": "Drei Heilige Steine, zu finden in Hyrule...^$0%gKokiri Forest%w...^$1%rDodongo's Cavern%w...^$2%bFire Temple%w...^$oJener auf dem Weg des Helden...&Der Pfad zur Zukunft sei geöffnet...",
+            "en": "3 Spiritual Stones found in Hyrule...^$0%gKokiri Forest%w...^$1%rDodongo's Cavern%w...^$2%bFire Temple%w...^$oYe who may become a Hero...&The path to the future is open...",
+            "fr": "Les trois Pierres Ancestrales cachées&dans Hyrule...$0%gKokiri Forest%w...^$1%rDodongo's Cavern%w...^$2%bFire Temple%w...^$oÀ celui qui a quête de devenir&héros...&Le futur vous accueille béant..."
           }
         ],
         "type": "altarChild"
@@ -2866,9 +3035,9 @@
         "checkName": "__ALTAR_ADULT__",
         "messages": [
           {
-            "de": "Beherrscht das Böse die Welt, verweilen die Weisen, erweckt von der Stimme des Heiligen Reiches, noch in den %rfünf Tempeln%w.^$8%ySpirit Temple%w...^$3%gDeku Tree%w...^$4%rForest Temple%w...^$5%bFire Temple%w...^$6%yShadow Temple%w...^$7%pJabu Jabu's Belly%w...^$6Die Weisen, die darauf warten,&daß der Held das %rAmulett des Schattens, Amulett der Geister%w&und die %yLicht-Pfeile%w sammelt.^$bUnd der %pSchlüssel des Bösen%w,&wird in der großen Truhe&%cim Teufelsturm%w zu finden sein.^$kZusammen mit dem Auserwählten werden diese ihre Kräfte&einsetzen, um der Welt den&Frieden wiederzugeben.",
-            "en": "An awakening voice from the Sacred Realm will call those destined to be Sages, who dwell in the %rfive temples%w.^$8%ySpirit Temple%w...^$3%gDeku Tree%w...^$4%rForest Temple%w...^$5%bFire Temple%w...^$6%yShadow Temple%w...^$7%pJabu Jabu's Belly%w...^$6The awakened ones require the %rShadow and Spirit Medallions%w as well as the %yLight Arrows%w.^$bAnd the %pevil one%w's key will be kept in a big chest %cinside its tower%w.^$kTogether with the Hero of Time, the awakened ones will return the light of peace to the world...",
-            "fr": "Quand le mal aura triomphé, une voix du Saint Royaume appellera ceux cachés dans les %rcinq temples%w, destinés^à être Sages.^$8%ySpirit Temple%w...^$3%gDeku Tree%w...^$4%rForest Temple%w...^$5%bFire Temple%w...^$6%yShadow Temple%w...^$7%pJabu Jabu's Belly%w...^$6Les êtres de sagesse attendront le héros muni des %rMédaillons de l'Ombre et l'Esprit%w et des %yFlèches de Lumière%w.^$bAussi, la %pclé du Malin%w sera encoffrée %cdans sa tour%w.^$kEnsemble avec le Héros du Temps, ces Sages emprisonneront le mal et réinstaureront la lumière de paix dans le monde..."
+            "de": "Beherrscht das Böse die Welt, verweilen die Weisen, erweckt von der Stimme des Heiligen Reiches, noch in den %rfünf Tempeln%w.^$8%ySpirit Temple%w...^$3%gWater Temple%w...^$4%rForest Temple%w...^$5%bDeku Tree%w...^$6%yShadow Temple%w...^$7%pJabu Jabu's Belly%w...^$6Die Weisen, die darauf warten,&daß der Held das %rAmulett des Schattens, Amulett der Geister%w&und die %yLicht-Pfeile%w sammelt.^$bUnd der %pSchlüssel des Bösen%w,&wird in der großen Truhe&%cim Teufelsturm%w zu finden sein.^$kZusammen mit dem Auserwählten werden diese ihre Kräfte&einsetzen, um der Welt den&Frieden wiederzugeben.",
+            "en": "An awakening voice from the Sacred Realm will call those destined to be Sages, who dwell in the %rfive temples%w.^$8%ySpirit Temple%w...^$3%gWater Temple%w...^$4%rForest Temple%w...^$5%bDeku Tree%w...^$6%yShadow Temple%w...^$7%pJabu Jabu's Belly%w...^$6The awakened ones require the %rShadow and Spirit Medallions%w as well as the %yLight Arrows%w.^$bAnd the %pevil one%w's key will be kept in a big chest %cinside its tower%w.^$kTogether with the Hero of Time, the awakened ones will return the light of peace to the world...",
+            "fr": "Quand le mal aura triomphé, une voix du Saint Royaume appellera ceux cachés dans les %rcinq temples%w, destinés^à être Sages.^$8%ySpirit Temple%w...^$3%gWater Temple%w...^$4%rForest Temple%w...^$5%bDeku Tree%w...^$6%yShadow Temple%w...^$7%pJabu Jabu's Belly%w...^$6Les êtres de sagesse attendront le héros muni des %rMédaillons de l'Ombre et l'Esprit%w et des %yFlèches de Lumière%w.^$bAussi, la %pclé du Malin%w sera encoffrée %cdans sa tour%w.^$kEnsemble avec le Héros du Temps, ces Sages emprisonneront le mal et réinstaureront la lumière de paix dans le monde..."
           }
         ],
         "type": "altarAdult"
@@ -2890,9 +3059,9 @@
         "hintedCheck": "Song from Ocarina of Time",
         "messages": [
           {
-            "de": "Man erzählt sich, daß die %rOkarina der Zeit%w %gdas Menuett des Waldes%w lehre.",
-            "en": "They say that the %rOcarina of Time%w teaches %gthe Minuet of Forest%w.",
-            "fr": "Selon moi, l'%rOcarina du Temps%w est accompagné par %gle menuet de la forêt%w."
+            "de": "Man erzählt sich, daß die %rOkarina der Zeit%w %gdie Hymne der Zeit%w lehre.",
+            "en": "They say that the %rOcarina of Time%w teaches %gthe Song of Time%w.",
+            "fr": "Selon moi, l'%rOcarina du Temps%w est accompagné par %gle chant du temps%w."
           }
         ],
         "type": "always"
@@ -2914,9 +3083,9 @@
         "hintedCheck": "DMT Trade Claim Check",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %rBiggoron%w %gein Deku-Schild%w fertige.",
-            "en": "They say that %rBiggoron%w crafts %ga Deku Shield%w.",
-            "fr": "Selon moi, %rBiggoron%w fabrique %gun Bouclier Mojo%w."
+            "de": "Man erzählt sich, daß %rBiggoron%w %gBomben (5 Stück)€%w fertige.",
+            "en": "They say that %rBiggoron%w crafts %gBombs (5 pieces)%w.",
+            "fr": "Selon moi, %rBiggoron%w fabrique %gune demi-dizaine de bombes%w."
           }
         ],
         "type": "always"
@@ -2926,9 +3095,9 @@
         "hintedCheck": "Kak 30 Gold Skulltula Reward",
         "messages": [
           {
-            "de": "Man erzählt sich, daß das Vernichten von %r30 Goldenen Skulltulas%w %geine Feen-Schleuder%w enthülle.",
-            "en": "They say that slaying %r30 Gold Skulltulas%w reveals %ga Slingshot%w.",
-            "fr": "Selon moi, détruire %r30 Skulltulas d'or%w donne %gun Lance-Pierre%w."
+            "de": "Man erzählt sich, daß das Vernichten von %r30 Goldenen Skulltulas%w %gHeart Container%w enthülle.",
+            "en": "They say that slaying %r30 Gold Skulltulas%w reveals %gHeart Container%w.",
+            "fr": "Selon moi, détruire %r30 Skulltulas d'or%w donne %gHeart Container%w."
           }
         ],
         "type": "always"
@@ -2950,9 +3119,9 @@
         "hintedCheck": "Kak 50 Gold Skulltula Reward",
         "messages": [
           {
-            "de": "Man erzählt sich, daß das Vernichten von %r50 Goldenen Skulltulas%w %gSwamp Title Deed%w enthülle.",
-            "en": "They say that slaying %r50 Gold Skulltulas%w reveals %gSwamp Title Deed%w.",
-            "fr": "Selon moi, détruire %r50 Skulltulas d'or%w donne %gSwamp Title Deed%w."
+            "de": "Man erzählt sich, daß das Vernichten von %r50 Goldenen Skulltulas%w %gStone Tower Stray Fairy%w enthülle.",
+            "en": "They say that slaying %r50 Gold Skulltulas%w reveals %gStone Tower Stray Fairy%w.",
+            "fr": "Selon moi, détruire %r50 Skulltulas d'or%w donne %gStone Tower Stray Fairy%w."
           }
         ],
         "type": "always"
@@ -2963,8 +3132,8 @@
         "messages": [
           {
             "de": "Man erzählt sich, daß die letzte Belohnung der %rFrösche des Zora-Flußes%w %g!!!%w |sei|seien|.",
-            "en": "They say that the final reward from the %rFrogs of Zora's River%w is %ga keaton mask%w.",
-            "fr": "Selon moi, la dernière récompense des %rgrenouilles de la Rivière Zora%w est %gle Masque du Renard%w."
+            "en": "They say that the final reward from the %rFrogs of Zora's River%w is %ga gerudo mask%w.",
+            "fr": "Selon moi, la dernière récompense des %rgrenouilles de la Rivière Zora%w est %gle Masque de Gerudo%w."
           }
         ],
         "type": "always"
@@ -2973,20 +3142,21 @@
         "checkName": "__STONE__14",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %g!!!%w %rDeku Scrub Playground%w zu finden |sei|seien|.",
-            "en": "They say that %ga gerudo mask%w can be found at %rDeku Scrub Playground%w.",
-            "fr": "Selon moi, %gle Masque de Gerudo%w se trouve dans %rDeku Scrub Playground%w."
+            "de": "Man erzählt sich, daß %geine Zora-Rüstung%w %rIkana Canyon%w zu finden |sei|seien|.",
+            "en": "They say that %ga Zora Tunic%w can be found at %rIkana Canyon%w.",
+            "fr": "Selon moi, %gune Tunique Zora%w se trouve dans %rIkana Canyon%w."
           }
         ],
         "type": "Random"
       },
       {
         "checkName": "__STONE__15",
+        "hintedCheck": "LLR Talons Chickens",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gdas Biggoron-Schwert%w %rNorth Clock Town%w zu finden |sei|seien|.",
-            "en": "They say that %gthe Biggoron Sword%w can be found at %rNorth Clock Town%w.",
-            "fr": "Selon moi, %gl'Épée de Biggoron%w se trouve dans %rNorth Clock Town%w."
+            "de": "Man erzählt sich, daß das %rFinden von Super-Hühnern%w %gGreat Fairy Mask%w einbrächte.",
+            "en": "They say that %rfinding Super Cuccos%w is rewarded with %gGreat Fairy Mask%w.",
+            "fr": "Selon moi, %rtrouver des Super Cocottes%w donne %gGreat Fairy Mask%w."
           }
         ],
         "type": "Overworld"
@@ -2995,35 +3165,35 @@
         "checkName": "__STONE__16",
         "messages": [
           {
-            "de": "They say that Gerudo Training Ground is on the Path to Bongo Bongo.",
-            "en": "They say that Gerudo Training Ground is on the Path to Bongo Bongo.",
-            "fr": "They say that Gerudo Training Ground is on the Path to Bongo Bongo."
+            "de": "They say that Kakariko Village is on the Path to Gyorg.",
+            "en": "They say that Kakariko Village is on the Path to Gyorg.",
+            "fr": "They say that Kakariko Village is on the Path to Gyorg."
           }
         ],
-        "pathArea": "oot:Gerudo Training Ground",
-        "pathTarget": "Bongo Bongo",
+        "pathArea": "oot:Kakariko Village",
+        "pathTarget": "Gyorg",
         "type": "WotH"
       },
       {
         "checkName": "__STONE__17",
         "messages": [
           {
-            "de": "They say that Dodongo's Cavern is on the Path to Twinmold.",
-            "en": "They say that Dodongo's Cavern is on the Path to Twinmold.",
-            "fr": "They say that Dodongo's Cavern is on the Path to Twinmold."
+            "de": "They say that Woodfall Temple is on the Path to Gyorg.",
+            "en": "They say that Woodfall Temple is on the Path to Gyorg.",
+            "fr": "They say that Woodfall Temple is on the Path to Gyorg."
           }
         ],
-        "pathArea": "oot:Dodongo's Cavern",
-        "pathTarget": "Twinmold",
+        "pathArea": "mm:in Woodfall Temple",
+        "pathTarget": "Gyorg",
         "type": "WotH"
       },
       {
         "checkName": "__STONE__18",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gZeldas Wiegenlied%w %rDesert Colossus%w zu finden |sei|seien|.",
-            "en": "They say that %gZelda's Lullaby%w can be found at %rDesert Colossus%w.",
-            "fr": "Selon moi, %gla berceuse de Zelda%w se trouve dans %rDesert Colossus%w."
+            "de": "Man erzählt sich, daß %gGreat Bay Stray Fairy%w %rNorth Clock Town%w zu finden |sei|seien|.",
+            "en": "They say that %gGreat Bay Stray Fairy%w can be found at %rNorth Clock Town%w.",
+            "fr": "Selon moi, %gGreat Bay Stray Fairy%w se trouve dans %rNorth Clock Town%w."
           }
         ],
         "type": "Random"
@@ -3032,9 +3202,9 @@
         "checkName": "__STONE__19",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gProgressive Bomb Bag%w %rWoodfall Temple%w zu finden |sei|seien|.",
-            "en": "They say that %gProgressive Bomb Bag%w can be found at %rWoodfall Temple%w.",
-            "fr": "Selon moi, %gProgressive Bomb Bag%w se trouve dans %rWoodfall Temple%w."
+            "de": "Man erzählt sich, daß %gGreat Bay Stray Fairy%w %rEast Clock Town%w zu finden |sei|seien|.",
+            "en": "They say that %gGreat Bay Stray Fairy%w can be found at %rEast Clock Town%w.",
+            "fr": "Selon moi, %gGreat Bay Stray Fairy%w se trouve dans %rEast Clock Town%w."
           }
         ],
         "type": "Random"
@@ -3043,9 +3213,9 @@
         "checkName": "__STONE__20",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %rSpirit Temple%w %gGoron Mask%w |horte|horten|.",
-            "en": "They say that %rSpirit Temple%w hoards %gGoron Mask%w.",
-            "fr": "Selon moi, %rSpirit Temple%w recèle %gGoron Mask%w."
+            "de": "Man erzählt sich, daß %gdie Gleitstiefel€%w %rGraveyard%w zu finden |sei|seien|.",
+            "en": "They say that %gthe Hover Boots%w can be found at %rGraveyard%w.",
+            "fr": "Selon moi, %gune paire de Bottes des airs%w se trouve dans %rGraveyard%w."
           }
         ],
         "type": "NamedItem"
@@ -3054,9 +3224,9 @@
         "checkName": "__STONE__21",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gein Fanghaken%w %rWoodfall Temple%w zu finden |sei|seien|.",
-            "en": "They say that %ga Hookshot%w can be found at %rWoodfall Temple%w.",
-            "fr": "Selon moi, %gun Grappin%w se trouve dans %rWoodfall Temple%w."
+            "de": "Man erzählt sich, daß %gKrabbelminen (10 Stück)€%w %rZora Hall%w zu finden |sei|seien|.",
+            "en": "They say that %gBombchus (10 pieces)%w can be found at %rZora Hall%w.",
+            "fr": "Selon moi, %gune dizaine de Missiles%w se trouve dans %rZora Hall%w."
           }
         ],
         "type": "Random"
@@ -3065,23 +3235,23 @@
         "checkName": "__STONE__22",
         "messages": [
           {
-            "de": "They say that Graveyard is on the Path to Gyorg.",
-            "en": "They say that Graveyard is on the Path to Gyorg.",
-            "fr": "They say that Graveyard is on the Path to Gyorg."
+            "de": "They say that Gorman Track is on the Path to Bongo Bongo.",
+            "en": "They say that Gorman Track is on the Path to Bongo Bongo.",
+            "fr": "They say that Gorman Track is on the Path to Bongo Bongo."
           }
         ],
-        "pathArea": "oot:Graveyard",
-        "pathTarget": "Gyorg",
+        "pathArea": "mm:in Gorman Track",
+        "pathTarget": "Bongo Bongo",
         "type": "WotH"
       },
       {
         "checkName": "__STONE__23",
-        "hintedCheck": "Song from Saria",
+        "hintedCheck": "Sheik in Ice Cavern",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %rtief im Wald%w, Salia %gdie Hymne der Sonne%w lehre.",
-            "en": "They say that %rdeep in the forest%w, Saria teaches %gthe Sun's Song%w.",
-            "fr": "Selon moi, la %rfille de la forêt%w donne %gle chant du soleil%w."
+            "de": "Man erzählt sich, daß die %rgefrorene Kaverne%w %gSalias Lied%w ertönen lasse.",
+            "en": "They say that the %rfrozen cavern%w echoes with %gSaria's Song%w.",
+            "fr": "Selon moi, Sheik confiera, %rdans une caverne enneigée%w, %gle chant de Saria%w."
           }
         ],
         "type": "Song"
@@ -3090,9 +3260,9 @@
         "checkName": "__STONE__24",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gSnowhead Stray Fairy%w %rTermina Field%w zu finden |sei|seien|.",
-            "en": "They say that %gSnowhead Stray Fairy%w can be found at %rTermina Field%w.",
-            "fr": "Selon moi, %gSnowhead Stray Fairy%w se trouve dans %rTermina Field%w."
+            "de": "Man erzählt sich, daß %rGerudo Training Ground%w %gAll-Night Mask%w |horte|horten|.",
+            "en": "They say that %rGerudo Training Ground%w hoards %gAll-Night Mask%w.",
+            "fr": "Selon moi, %rGerudo Training Ground%w recèle %gAll-Night Mask%w."
           }
         ],
         "type": "Random"
@@ -3101,75 +3271,30 @@
         "checkName": "__STONE__25",
         "messages": [
           {
-            "de": "They say that Clock Tower Rooftop is on the Path to Twinmold.",
-            "en": "They say that Clock Tower Rooftop is on the Path to Twinmold.",
-            "fr": "They say that Clock Tower Rooftop is on the Path to Twinmold."
+            "de": "They say that Hyrule Castle is on the Path to Goht.",
+            "en": "They say that Hyrule Castle is on the Path to Goht.",
+            "fr": "They say that Hyrule Castle is on the Path to Goht."
           }
         ],
-        "pathArea": "mm:in Clock Tower Rooftop",
-        "pathTarget": "Twinmold",
+        "pathArea": "oot:Hyrule Castle",
+        "pathTarget": "Goht",
         "type": "WotH"
       },
       {
         "checkName": "__STONE__26",
         "messages": [
           {
-            "de": "They say that Kakariko Village is on the Path to Twinmold.",
-            "en": "They say that Kakariko Village is on the Path to Twinmold.",
-            "fr": "They say that Kakariko Village is on the Path to Twinmold."
+            "de": "They say that Ikana Canyon is on the Path to Barinade.",
+            "en": "They say that Ikana Canyon is on the Path to Barinade.",
+            "fr": "They say that Ikana Canyon is on the Path to Barinade."
           }
         ],
-        "pathArea": "oot:Kakariko Village",
-        "pathTarget": "Twinmold",
+        "pathArea": "mm:in Ikana Canyon",
+        "pathTarget": "Barinade",
         "type": "WotH"
       },
       {
         "checkName": "__STONE__27",
-        "messages": [
-          {
-            "de": "Man erzählt sich, daß %rJabu Jabu's Belly%w %gdas Auge der Wahrheit%w |horte|horten|.",
-            "en": "They say that %rJabu Jabu's Belly%w hoards %gthe Lens of Truth%w.",
-            "fr": "Selon moi, %rJabu Jabu's Belly%w recèle %gle Monocle de Vérité%w."
-          }
-        ],
-        "type": "NamedItem"
-      },
-      {
-        "checkName": "__STONE__28",
-        "hintedCheck": "LH Underwater Item",
-        "messages": [
-          {
-            "de": "Man erzählt sich, daß der %rversunkene Schatz eines Sees%w %gGreat Fairy Mask%w |sei|seien|.",
-            "en": "They say that the %rsunken treasure in a lake%w is %gGreat Fairy Mask%w.",
-            "fr": "Selon moi, le %rtrésor au fond du lac%w est %gGreat Fairy Mask%w."
-          }
-        ],
-        "type": "Overworld"
-      },
-      {
-        "checkName": "__STONE__29",
-        "messages": [
-          {
-            "de": "Man erzählt sich, daß %gSnowhead Stray Fairy%w %rPinnacle Rock%w zu finden |sei|seien|.",
-            "en": "They say that %gSnowhead Stray Fairy%w can be found at %rPinnacle Rock%w.",
-            "fr": "Selon moi, %gSnowhead Stray Fairy%w se trouve dans %rPinnacle Rock%w."
-          }
-        ],
-        "type": "Random"
-      },
-      {
-        "checkName": "__STONE__30",
-        "messages": [
-          {
-            "de": "Man erzählt sich, daß %gMask of Truth%w %rGreat Bay Temple%w zu finden |sei|seien|.",
-            "en": "They say that %gMask of Truth%w can be found at %rGreat Bay Temple%w.",
-            "fr": "Selon moi, %gMask of Truth%w se trouve dans %rGreat Bay Temple%w."
-          }
-        ],
-        "type": "Random"
-      },
-      {
-        "checkName": "__STONE__31",
         "messages": [
           {
             "de": "Man erzählt sich, daß %gProgressive Goron Lullaby%w %rStone Tower Temple%w zu finden |sei|seien|.",
@@ -3180,12 +3305,57 @@
         "type": "NamedItem"
       },
       {
-        "checkName": "__STONE__32",
+        "checkName": "__STONE__28",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gBomber's Notebook%w %rGreat Bay Coast%w zu finden |sei|seien|.",
-            "en": "They say that %gBomber's Notebook%w can be found at %rGreat Bay Coast%w.",
-            "fr": "Selon moi, %gBomber's Notebook%w se trouve dans %rGreat Bay Coast%w."
+            "de": "Man erzählt sich, daß %g!!!%w %rMountain Village%w zu finden |sei|seien|.",
+            "en": "They say that %ga mask of truth%w can be found at %rMountain Village%w.",
+            "fr": "Selon moi, %gle Masque de Vérité%w se trouve dans %rMountain Village%w."
+          }
+        ],
+        "type": "Overworld"
+      },
+      {
+        "checkName": "__STONE__29",
+        "messages": [
+          {
+            "de": "Man erzählt sich, daß %gCaptain's Hat%w %rSouth Clock Town%w zu finden |sei|seien|.",
+            "en": "They say that %gCaptain's Hat%w can be found at %rSouth Clock Town%w.",
+            "fr": "Selon moi, %gCaptain's Hat%w se trouve dans %rSouth Clock Town%w."
+          }
+        ],
+        "type": "Random"
+      },
+      {
+        "checkName": "__STONE__30",
+        "messages": [
+          {
+            "de": "Man erzählt sich, daß %gMask of Scents%w %rGraveyard%w zu finden |sei|seien|.",
+            "en": "They say that %gMask of Scents%w can be found at %rGraveyard%w.",
+            "fr": "Selon moi, %gMask of Scents%w se trouve dans %rGraveyard%w."
+          }
+        ],
+        "type": "Random"
+      },
+      {
+        "checkName": "__STONE__31",
+        "messages": [
+          {
+            "de": "Man erzählt sich, daß %rSpirit Temple%w %gGreat Bay Boss Key%w |horte|horten|.",
+            "en": "They say that %rSpirit Temple%w hoards %gGreat Bay Boss Key%w.",
+            "fr": "Selon moi, %rSpirit Temple%w recèle %gGreat Bay Boss Key%w."
+          }
+        ],
+        "type": "NamedItem"
+      },
+      {
+        "checkName": "__STONE__32",
+        "hintedCheck": "GF Chest",
+        "messages": [
+          {
+            "de": "Man erzählt sich, daß auf einem %rDach in der Wüste%w %gWoodfall Stray Fairy%w |läge|lägen|.",
+            "en": "They say that on a %rrooftop in the desert%w lies %gWoodfall Stray Fairy%w.",
+            "fr": "Selon moi, sur un %rtoit du désert%w gît %gWoodfall Stray Fairy%w."
           }
         ],
         "type": "Overworld"
@@ -3194,20 +3364,20 @@
         "checkName": "__STONE__33",
         "messages": [
           {
-            "de": "Man erzählt sich, daß es %reine törichte Entscheidung%w sei %pZora's Fountain%w Schätze zu plündern.",
-            "en": "They say that plundering %rZora's Fountain%w is %pa foolish choice%w.",
-            "fr": "Selon moi, explorer %rZora's Fountain%w est %pfutile%w."
+            "de": "Man erzählt sich, daß %gRomani's Mask%w %rGerudo Valley%w zu finden |sei|seien|.",
+            "en": "They say that %gRomani's Mask%w can be found at %rGerudo Valley%w.",
+            "fr": "Selon moi, %gRomani's Mask%w se trouve dans %rGerudo Valley%w."
           }
         ],
-        "type": "Foolish"
+        "type": "Random"
       },
       {
         "checkName": "__STONE__34",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gMirror Shield%w %rEast Clock Town%w zu finden |sei|seien|.",
-            "en": "They say that %gMirror Shield%w can be found at %rEast Clock Town%w.",
-            "fr": "Selon moi, %gMirror Shield%w se trouve dans %rEast Clock Town%w."
+            "de": "Man erzählt sich, daß %gSnowhead Stray Fairy%w %rNorth Clock Town%w zu finden |sei|seien|.",
+            "en": "They say that %gSnowhead Stray Fairy%w can be found at %rNorth Clock Town%w.",
+            "fr": "Selon moi, %gSnowhead Stray Fairy%w se trouve dans %rNorth Clock Town%w."
           }
         ],
         "type": "Random"
@@ -3216,9 +3386,9 @@
         "checkName": "__STONE__35",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gder Spiegel-Schild%w %rSouth Clock Town%w zu finden |sei|seien|.",
-            "en": "They say that %gthe Mirror Shield%w can be found at %rSouth Clock Town%w.",
-            "fr": "Selon moi, %gle Bouclier Miroir%w se trouve dans %rSouth Clock Town%w."
+            "de": "Man erzählt sich, daß %gein Fanghaken%w %rWoodfall Temple%w zu finden |sei|seien|.",
+            "en": "They say that %ga Hookshot%w can be found at %rWoodfall Temple%w.",
+            "fr": "Selon moi, %gun Grappin%w se trouve dans %rWoodfall Temple%w."
           }
         ],
         "type": "NamedItem"
@@ -3227,9 +3397,9 @@
         "checkName": "__STONE__36",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gSnowhead Stray Fairy%w %rEast Clock Town%w zu finden |sei|seien|.",
-            "en": "They say that %gSnowhead Stray Fairy%w can be found at %rEast Clock Town%w.",
-            "fr": "Selon moi, %gSnowhead Stray Fairy%w se trouve dans %rEast Clock Town%w."
+            "de": "Man erzählt sich, daß %gGreat Bay Stray Fairy%w %rEast Clock Town%w zu finden |sei|seien|.",
+            "en": "They say that %gGreat Bay Stray Fairy%w can be found at %rEast Clock Town%w.",
+            "fr": "Selon moi, %gGreat Bay Stray Fairy%w se trouve dans %rEast Clock Town%w."
           }
         ],
         "type": "Random"
@@ -3238,9 +3408,9 @@
         "checkName": "__STONE__37",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %geine Goronen-Rüstung%w %rLone Peak Shrine%w zu finden |sei|seien|.",
-            "en": "They say that %ga Goron Tunic%w can be found at %rLone Peak Shrine%w.",
-            "fr": "Selon moi, %gune Tunique Goron%w se trouve dans %rLone Peak Shrine%w."
+            "de": "Man erzählt sich, daß %gFire Arrows%w %rWest Clock Town%w zu finden |sei|seien|.",
+            "en": "They say that %gFire Arrows%w can be found at %rWest Clock Town%w.",
+            "fr": "Selon moi, %gFire Arrows%w se trouve dans %rWest Clock Town%w."
           }
         ],
         "type": "NamedItem"
@@ -3249,9 +3419,9 @@
         "checkName": "__STONE__38",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %gSnowhead Stray Fairy%w %rWest Clock Town%w zu finden |sei|seien|.",
-            "en": "They say that %gSnowhead Stray Fairy%w can be found at %rWest Clock Town%w.",
-            "fr": "Selon moi, %gSnowhead Stray Fairy%w se trouve dans %rWest Clock Town%w."
+            "de": "Man erzählt sich, daß %gSong of Soaring%w %rWest Clock Town%w zu finden |sei|seien|.",
+            "en": "They say that %gSong of Soaring%w can be found at %rWest Clock Town%w.",
+            "fr": "Selon moi, %gSong of Soaring%w se trouve dans %rWest Clock Town%w."
           }
         ],
         "type": "Random"
@@ -3260,9 +3430,9 @@
         "checkName": "__STONE__39",
         "messages": [
           {
-            "de": "Man erzählt sich, daß %geine Kraftsteigerung%w %rWoodfall Temple%w zu finden |sei|seien|.",
-            "en": "They say that %ga Strength Upgrade%w can be found at %rWoodfall Temple%w.",
-            "fr": "Selon moi, %gune Amélioration de Force%w se trouve dans %rWoodfall Temple%w."
+            "de": "Man erzählt sich, daß %gder Bumerang%w %rZora's Fountain%w zu finden |sei|seien|.",
+            "en": "They say that %gthe Boomerang%w can be found at %rZora's Fountain%w.",
+            "fr": "Selon moi, %gle Boomerang%w se trouve dans %rZora's Fountain%w."
           }
         ],
         "type": "NamedItem"
@@ -3277,137 +3447,137 @@
   "masterSeed": 413070006,
   "mm": {
     "placements": {
-      "Ancient Castle Of Ikana Boss": "Woodfall Stray Fairy",
-      "Ancient Castle Of Ikana Piece Of Heart": "Bombs (5)",
-      "Astral Observatory Moon Tear": "Postman's Hat",
-      "Astral Observatory Passage Chest": "Bottle with Fish",
+      "Ancient Castle Of Ikana Boss": "Silver Rupee",
+      "Ancient Castle Of Ikana Piece Of Heart": "Pictograph Box",
+      "Astral Observatory Moon Tear": "Red Rupee",
+      "Astral Observatory Passage Chest": "Heart Piece",
       "Beneath The Graveyard Chest": "Snowhead Boss Key",
-      "Beneath The Graveyard Dampe Chest": "Bottle with Ruto's Letter",
-      "Beneath The Graveyard Piece Of Heart": "Silver Rupee",
-      "Beneath The Graveyard Song Of Storms": "Silver Rupee",
+      "Beneath The Graveyard Dampe Chest": "Ice Trap",
+      "Beneath The Graveyard Piece Of Heart": "Piece of Heart",
+      "Beneath The Graveyard Song Of Storms": "Snowhead Stray Fairy",
       "Beneath The Well Keese Chest": "Progressive Sword",
-      "Beneath The Well Mirror Shield": "Red Rupee (MM)",
+      "Beneath The Well Mirror Shield": "Purple Rupee",
       "Beneath The Well Skulltulla Chest": "Progressive Magic Meter",
       "Bomb Shop Item 03": "Great Bay Stray Fairy",
-      "Bomb Shop Item 04 Or Curiosity Shop Item": "Bombchus (5)",
-      "Clock Tower Roof Ocarina": "Stone Tower Boss Key",
-      "Clock Tower Roof Song Of Time": "Huge Rupee",
+      "Bomb Shop Item 04 Or Curiosity Shop Item": "Bottle with Poe",
+      "Clock Tower Roof Ocarina": "Progressive Stick Capacity",
+      "Clock Tower Roof Song Of Time": "Postman's Hat",
       "Clock Town Bombers Notebook": "Snowhead Stray Fairy",
-      "Clock Town East Honey Darling All Days": "Heart Piece",
-      "Clock Town East Honey Darling Any Day": "Progressive Slingshot",
+      "Clock Town East Honey Darling All Days": "Ice Trap",
+      "Clock Town East Honey Darling Any Day": "Megaton Hammer",
       "Clock Town East Postman Hat": "Great Bay Stray Fairy",
-      "Clock Town East Shooting Gallery High Score": "Purple Rupee (MM)",
+      "Clock Town East Shooting Gallery High Score": "Heart Piece",
       "Clock Town East Shooting Gallery Perfect Score": "Woodfall Stray Fairy",
-      "Clock Town East Treasure Chest Game Deku": "10 Bombchus",
-      "Clock Town East Treasure Chest Game Goron": "Mirror Shield (MM)",
-      "Clock Town East Treasure Chest Game Human": "Boomerang",
-      "Clock Town East Treasure Chest Game Zora": "Bombs (10)",
-      "Clock Town East Upper Chest": "Snowhead Stray Fairy",
-      "Clock Town Great Fairy": "Piece of Heart",
-      "Clock Town Great Fairy Alt": "Biggoron's Sword",
+      "Clock Town East Treasure Chest Game Deku": "Deku Nuts (5)",
+      "Clock Town East Treasure Chest Game Goron": "Arrows (30)",
+      "Clock Town East Treasure Chest Game Human": "Great Bay Stray Fairy",
+      "Clock Town East Treasure Chest Game Zora": "Silver Rupee",
+      "Clock Town East Upper Chest": "Progressive Bomb Bag (MM)",
+      "Clock Town Great Fairy": "Progressive Bow",
+      "Clock Town Great Fairy Alt": "Great Bay Stray Fairy",
       "Clock Town Laundry Frog": "White Frog",
-      "Clock Town Laundry Guru Guru": "Red Rupee",
-      "Clock Town North Bomb Lady": "Heart Container",
-      "Clock Town North Tree Piece Of Heart": "Heart Piece",
+      "Clock Town Laundry Guru Guru": "Snowhead Stray Fairy",
+      "Clock Town North Bomb Lady": "Piece of Heart",
+      "Clock Town North Tree Piece Of Heart": "Heart Container",
       "Clock Town Postbox": "Great Bay Stray Fairy",
-      "Clock Town Scrub Deed": "Heart Container",
-      "Clock Town South Chest Lower": "Great Bay Small Key",
+      "Clock Town Scrub Deed": "Mountain Title Deed",
+      "Clock Town South Chest Lower": "Red Rupee (MM)",
       "Clock Town South Chest Upper": "Mirror Shield",
       "Clock Town South Owl Statue": "Clock Town Owl Statue",
-      "Clock Town South Platform Piece Of Heart": "Light Arrows (MM)",
+      "Clock Town South Platform Piece Of Heart": "Captain's Hat",
       "Clock Town Stray Fairy": "Progressive Magic",
-      "Clock Town West Bank Adults Wallet": "Woodfall Boss Key",
-      "Clock Town West Bank Interest": "Captain's Hat",
-      "Clock Town West Bank Piece Of Heart": "Piece of Heart",
-      "Clock Town West Lottery": "Snowhead Stray Fairy",
-      "Clock Town West Postman Minigame": "Deku Nuts (10)",
-      "Clock Town West Sisters Piece Of Heart": "Stone Tower Stray Fairy",
-      "Cremia Escort": "Piece of Heart",
-      "Curiosity Shop Special Item": "Snowhead Stray Fairy",
-      "Deku Kings Chamber Monkey": "Piece of Heart",
-      "Deku Palace Grotto Chest": "Farore's Wind",
-      "Deku Palace Piece Of Heart": "5 Bombchus",
-      "Deku Playground All Days": "Heart Piece",
-      "Deku Playground Any Day": "Gerudo Mask",
-      "Deku Shrine Mask Of Scents": "Land Title Deed",
-      "Doggy Racetrack Chest": "Bombs (5)",
-      "Doggy Racetrack Piece Of Heart": "Heart Piece",
+      "Clock Town West Bank Adults Wallet": "Song of Soaring",
+      "Clock Town West Bank Interest": "Woodfall Stray Fairy",
+      "Clock Town West Bank Piece Of Heart": "Keaton Mask",
+      "Clock Town West Lottery": "Ice Arrows",
+      "Clock Town West Postman Minigame": "Fire Arrows (MM)",
+      "Clock Town West Sisters Piece Of Heart": "Piece of Heart",
+      "Cremia Escort": "Arrows (5)",
+      "Curiosity Shop Special Item": "Red Rupee (MM)",
+      "Deku Kings Chamber Monkey": "Ice Trap",
+      "Deku Palace Grotto Chest": "Piece of Heart",
+      "Deku Palace Piece Of Heart": "Heart Piece",
+      "Deku Playground All Days": "Magic Bean (MM)",
+      "Deku Playground Any Day": "Blue Rupee (MM)",
+      "Deku Shrine Mask Of Scents": "Red Rupee (MM)",
+      "Doggy Racetrack Chest": "Purple Rupee (MM)",
+      "Doggy Racetrack Piece Of Heart": "Piece of Heart",
       "Giants Chamber Oath To Order": "Great Bay Stray Fairy",
-      "Gorman Track Garo Mask": "Blue Rupee",
+      "Gorman Track Garo Mask": "Din's Fire",
       "Goron Graveyard Darmani": "Recovery Heart",
-      "Goron Racetrack Gold Dust": "Bombs (5)",
-      "Goron Shrine Full Lullaby": "Piece of Heart",
-      "Goron Village Medigoron": "Recovery Heart",
-      "Goron Village Piece Of Heart": "Keaton Mask (MM)",
+      "Goron Racetrack Gold Dust": "Heart Piece",
+      "Goron Shrine Full Lullaby": "Silver Rupee",
+      "Goron Village Medigoron": "Piece of Heart",
+      "Goron Village Piece Of Heart": "Deku Shield",
       "Goron Village Scrub Bomb Bag": "Heart Piece",
-      "Goron Village Scrub Deed": "Heart Piece",
+      "Goron Village Scrub Deed": "Purple Rupee (MM)",
       "Great Bay Coast Fisherman Grotto Chest": "Heart Piece",
-      "Great Bay Coast Fisherman Minigame": "Hylian Shield",
+      "Great Bay Coast Fisherman Minigame": "Purple Rupee (MM)",
       "Great Bay Coast Marine Lab Fish Piece Of Heart": "Bomber's Notebook",
-      "Great Bay Coast Mikau": "Piece of Heart",
-      "Great Bay Coast New Wave Bossa Nova": "Junk",
+      "Great Bay Coast Mikau": "Red Rupee (MM)",
+      "Great Bay Coast New Wave Bossa Nova": "Heart Piece",
       "Great Bay Coast Owl Statue": "Great Bay Coast Owl Statue",
-      "Great Bay Coast Piece Of Heart": "10 Deku Nuts",
-      "Great Bay Great Fairy": "Piece of Heart",
-      "Great Bay Temple Baba Chest": "Progressive Nut Capacity",
-      "Great Bay Temple Boss Heart Container": "Piece of Heart",
-      "Great Bay Temple Boss Key": "Progressive Wallet",
+      "Great Bay Coast Piece Of Heart": "Red Rupee (MM)",
+      "Great Bay Great Fairy": "Heart Container",
+      "Great Bay Temple Baba Chest": "Moon's Tear",
+      "Great Bay Temple Boss Heart Container": "Blue Rupee",
+      "Great Bay Temple Boss Key": "Bombs (5)",
       "Great Bay Temple Boss Warp": "Gyorg's Remains",
-      "Great Bay Temple Compass Chest": "Recovery Heart",
-      "Great Bay Temple Compass Room Underwater": "Heart Container (MM)",
+      "Great Bay Temple Compass Chest": "Huge Rupee",
+      "Great Bay Temple Compass Room Underwater": "Silver Rupee",
       "Great Bay Temple Entrance Chest": "Progressive Bow (MM)",
       "Great Bay Temple Gekko Frog": "Pink Frog",
-      "Great Bay Temple Green Pipe 1 Chest": "Woodfall Small Key",
-      "Great Bay Temple Green Pipe 2 Lower Chest": "Red Rupee",
-      "Great Bay Temple Green Pipe 2 Upper Chest": "Mask of Truth (MM)",
+      "Great Bay Temple Green Pipe 1 Chest": "Piece of Heart",
+      "Great Bay Temple Green Pipe 2 Lower Chest": "Piece of Heart",
+      "Great Bay Temple Green Pipe 2 Upper Chest": "Goron Tunic",
       "Great Bay Temple Green Pipe 3 Chest": "Giant's Mask",
       "Great Bay Temple Ice Arrow Chest": "Heart Piece",
       "Great Bay Temple Map Chest": "Woodfall Stray Fairy",
-      "Great Bay Temple Sf Central Room Barrel": "Piece of Heart",
-      "Great Bay Temple Sf Central Room Underwater Pot": "Silver Rupee",
-      "Great Bay Temple Sf Compass Room Tunnel Pot": "Piece of Heart",
-      "Great Bay Temple Sf Green Pipe 3 Barrel": "Heart Piece",
+      "Great Bay Temple Sf Central Room Barrel": "Heart Piece",
+      "Great Bay Temple Sf Central Room Underwater Pot": "Piece of Heart",
+      "Great Bay Temple Sf Compass Room Tunnel Pot": "Heart Piece",
+      "Great Bay Temple Sf Green Pipe 3 Barrel": "Bombchus (5)",
       "Great Bay Temple Sf Map Room Pot": "Great Bay Stray Fairy",
-      "Great Bay Temple Sf Pre Boss Above Water": "Heart Piece",
-      "Great Bay Temple Sf Pre Boss Underwater": "Red Rupee (MM)",
+      "Great Bay Temple Sf Pre Boss Above Water": "Great Bay Stray Fairy",
+      "Great Bay Temple Sf Pre Boss Underwater": "Recovery Heart",
       "Great Bay Temple Sf Water Wheel Platform": "Progressive Bow (MM)",
-      "Great Bay Temple Sf Water Wheel Skulltula": "Silver Rupee",
-      "Hags Potion Shop Kotake": "Bombchus (10)",
-      "Ikana Canyon Ghost Hut Piece Of Heart": "Piece of Heart",
-      "Ikana Canyon Grotto Chest": "Zora Mask (MM)",
+      "Great Bay Temple Sf Water Wheel Skulltula": "Purple Rupee (MM)",
+      "Hags Potion Shop Kotake": "Room Key",
+      "Ikana Canyon Ghost Hut Piece Of Heart": "Red Rupee (MM)",
+      "Ikana Canyon Grotto Chest": "Keaton Mask (MM)",
       "Ikana Canyon Owl Statue": "Ikana Canyon Owl Statue",
-      "Ikana Canyon Scrub Huge Rupee": "Bunny Hood",
-      "Ikana Canyon Scrub Piece Of Heart": "Red Rupee (MM)",
+      "Ikana Canyon Scrub Huge Rupee": "Bombs (5)",
+      "Ikana Canyon Scrub Piece Of Heart": "Zora Tunic",
       "Ikana Canyon Scrub Potion Refill": "Progressive Magic",
-      "Ikana Graveyard Captain Mask": "Blue Rupee (MM)",
-      "Ikana Graveyard Grotto": "Progressive Hookshot",
-      "Ikana Great Fairy": "Red Rupee (MM)",
-      "Kafeis Hideout Keaton Mask": "Piece of Heart",
+      "Ikana Graveyard Captain Mask": "Woodfall Small Key",
+      "Ikana Graveyard Grotto": "Red Rupee (MM)",
+      "Ikana Great Fairy": "Deku Stick (1)",
+      "Kafeis Hideout Keaton Mask": "Woodfall Stray Fairy",
       "Kafeis Hideout Letter To Mama": "Pendant of Memories",
       "Kafeis Hideout Pendant Of Memories": "Snowhead Stray Fairy",
-      "Keaton Quiz": "Stone Tower Small Key",
-      "Lone Peak Shrine Boulder Chest": "Goron Tunic",
+      "Keaton Quiz": "Iron Boots",
+      "Lone Peak Shrine Boulder Chest": "Piece of Heart",
       "Lone Peak Shrine Invisible Chest": "Progressive Scale",
       "Lone Peak Shrine Lens Chest": "Piece of Heart",
-      "Mayors Office Kafeis Mask": "Heart Piece",
-      "Mayors Office Piece Of Heart": "Magic Bean (MM)",
-      "Milk Bar Circus Leader Mask": "Ice Trap",
+      "Mayors Office Kafeis Mask": "Purple Rupee",
+      "Mayors Office Piece Of Heart": "Stone Tower Stray Fairy",
+      "Milk Bar Circus Leader Mask": "Piece of Heart",
       "Milk Bar Madame Aroma": "Woodfall Map",
       "Milk Road Owl Statue": "Milk Road Owl Statue",
-      "Moon Fierce Deity Mask": "Progressive Wallet",
-      "Moon Trial Deku Piece Of Heart": "Blue Rupee",
-      "Moon Trial Goron Piece Of Heart": "Double Defense (MM)",
-      "Moon Trial Link Garo Master Chest": "Magic Bean (MM)",
-      "Moon Trial Link Iron Knuckle Chest": "Red Rupee (MM)",
-      "Moon Trial Link Piece Of Heart": "Snowhead Stray Fairy",
-      "Moon Trial Zora Piece Of Heart": "Heart Piece",
-      "Mountain Village Don Gero Mask": "Megaton Hammer",
+      "Moon Fierce Deity Mask": "Silver Rupee",
+      "Moon Trial Deku Piece Of Heart": "Recovery Heart",
+      "Moon Trial Goron Piece Of Heart": "Piece of Heart (WINNER)",
+      "Moon Trial Link Garo Master Chest": "Heart Piece",
+      "Moon Trial Link Iron Knuckle Chest": "Purple Rupee",
+      "Moon Trial Link Piece Of Heart": "Farore's Wind",
+      "Moon Trial Zora Piece Of Heart": "Piece of Heart",
+      "Mountain Village Don Gero Mask": "Recovery Heart",
       "Mountain Village Frog Choir": "Ice Trap",
       "Mountain Village Owl Statue": "Mountain Village Owl Statue",
-      "Mountain Village Smithy Gilded Sword": "Blue Rupee (MM)",
-      "Mountain Village Smithy Razor Sword": "Purple Rupee",
-      "Mountain Village Tunnel Grotto Chest": "Red Rupee (MM)",
-      "Mountain Village Waterfall Chest": "Heart Container",
+      "Mountain Village Smithy Gilded Sword": "Red Rupee (MM)",
+      "Mountain Village Smithy Razor Sword": "Mask of Truth",
+      "Mountain Village Tunnel Grotto Chest": "Ice Trap",
+      "Mountain Village Waterfall Chest": "Powder Keg",
       "Music Box House Father": "Piece of Heart",
       "Ocean Skulltula 2nd Room Behind Skull 01": "Ocean Gold Skulltula Token",
       "Ocean Skulltula 2nd Room Behind Skull 02": "Ocean Gold Skulltula Token",
@@ -3440,113 +3610,113 @@
       "Ocean Skulltula Storage Room Crate": "Ocean Gold Skulltula Token",
       "Ocean Skulltula Storage Room Jar": "Ocean Gold Skulltula Token",
       "Ocean Spider House Chest Piece Of Heart": "Bottle With Gold Dust",
-      "Ocean Spider House Wallet": "Heart Piece",
-      "Path To Goron Village Lullaby Intro": "Arrows (10)",
-      "Path To Snowhead Grotto Chest": "Ice Arrows",
-      "Path To Snowhead Piece Of Heart": "Red Rupee (MM)",
-      "Pinnacle Rock Chest 01": "Snowhead Stray Fairy",
-      "Pinnacle Rock Chest 02": "Room Key",
-      "Pinnacle Rock Reunite Seahorse": "Piece of Heart",
-      "Pirate Fortress Entrance Chest 01": "Bombchu",
+      "Ocean Spider House Wallet": "Bombs (10)",
+      "Path To Goron Village Lullaby Intro": "Piece of Heart",
+      "Path To Snowhead Grotto Chest": "Woodfall Stray Fairy",
+      "Path To Snowhead Piece Of Heart": "Heart Piece",
+      "Pinnacle Rock Chest 01": "Piece of Heart",
+      "Pinnacle Rock Chest 02": "Piece of Heart",
+      "Pinnacle Rock Reunite Seahorse": "Heart Piece",
+      "Pirate Fortress Entrance Chest 01": "Deku Shield",
       "Pirate Fortress Entrance Chest 02": "Snowhead Stray Fairy",
-      "Pirate Fortress Entrance Chest 03": "Sonata of Awakening",
-      "Pirate Fortress Interior Aquarium Chest": "Purple Rupee",
-      "Pirate Fortress Interior Hookshot Chest": "Bombchus (10)",
+      "Pirate Fortress Entrance Chest 03": "Woodfall Boss Key",
+      "Pirate Fortress Interior Aquarium Chest": "Blue Rupee",
+      "Pirate Fortress Interior Hookshot Chest": "Heart Piece",
       "Pirate Fortress Interior Sewers Chest 01": "Woodfall Stray Fairy",
-      "Pirate Fortress Interior Sewers Chest 02": "Purple Rupee (MM)",
-      "Pirate Fortress Interior Sewers Chest 03": "Piece of Heart",
-      "Pirate Fortress Interior Sewers Piece Of Heart": "Stone Tower Stray Fairy",
-      "Pirate Fortress Interior Silver Rupee Chest": "Purple Rupee (MM)",
-      "Pirate Fortress Plaza Lower Chest": "Huge Rupee (MM)",
-      "Pirate Fortress Plaza Upper Chest": "Stone Tower Stray Fairy",
+      "Pirate Fortress Interior Sewers Chest 02": "Huge Rupee",
+      "Pirate Fortress Interior Sewers Chest 03": "Nayru's Love",
+      "Pirate Fortress Interior Sewers Piece Of Heart": "Progressive Bow",
+      "Pirate Fortress Interior Silver Rupee Chest": "Deku Nuts (10)",
+      "Pirate Fortress Plaza Lower Chest": "Recovery Heart",
+      "Pirate Fortress Plaza Upper Chest": "Woodfall Stray Fairy",
       "Road To Ikana Chest": "Red Rupee (MM)",
       "Road To Ikana Grotto Chest": "Snowhead Small Key",
       "Road To Ikana Stone Mask": "Snowhead Map",
-      "Road To Southern Swamp Grotto Chest": "Snowhead Stray Fairy",
-      "Road To Southern Swamp Piece Of Heart": "Great Bay Stray Fairy",
+      "Road To Southern Swamp Grotto Chest": "Junk",
+      "Road To Southern Swamp Piece Of Heart": "Stone Tower Stray Fairy",
       "Romani Ranch Aliens": "Fierce Deity Mask",
-      "Romani Ranch Eponas Song": "Bombs (5)",
+      "Romani Ranch Eponas Song": "Huge Rupee",
       "Romani Ranch Grog": "Stone Tower Stray Fairy",
-      "Secret Shrine Dinolfos Chest": "Red Rupee (MM)",
-      "Secret Shrine Garo Master Chest": "Piece of Heart",
-      "Secret Shrine Piece Of Heart Chest": "Arrows (10)",
+      "Secret Shrine Dinolfos Chest": "Blue Rupee (MM)",
+      "Secret Shrine Garo Master Chest": "Deku Stick (1)",
+      "Secret Shrine Piece Of Heart Chest": "Blue Rupee",
       "Secret Shrine Wart Chest": "Deku Mask",
       "Secret Shrine Wizzrobe Chest": "Progressive Bow (MM)",
-      "Snowhead Great Fairy": "Deku Shield",
+      "Snowhead Great Fairy": "Blue Rupee (MM)",
       "Snowhead Owl Statue": "Snowhead Owl Statue",
-      "Snowhead Temple Block Room Hidden Chest": "Bombs (5)",
-      "Snowhead Temple Block Room Ledge Chest": "Heart Piece",
-      "Snowhead Temple Boss Heart Container": "Heart Piece",
-      "Snowhead Temple Boss Key": "Bombs (10)",
+      "Snowhead Temple Block Room Hidden Chest": "Piece of Heart",
+      "Snowhead Temple Block Room Ledge Chest": "Heart Container",
+      "Snowhead Temple Boss Heart Container": "Light Arrows",
+      "Snowhead Temple Boss Key": "Ice Trap",
       "Snowhead Temple Boss Warp": "Goht's Remains",
       "Snowhead Temple Bridge Room Chest": "Stone Tower Stray Fairy",
       "Snowhead Temple Central Room Alcove Chest": "Piece of Heart",
-      "Snowhead Temple Central Room Bottom Chest": "Piece of Heart",
+      "Snowhead Temple Central Room Bottom Chest": "Heart Piece",
       "Snowhead Temple Compass Chest": "Snowhead Stray Fairy",
-      "Snowhead Temple Compass Room Ledge Chest": "Recovery Heart",
+      "Snowhead Temple Compass Room Ledge Chest": "Piece of Heart",
       "Snowhead Temple Fire Arrow Chest": "Stone Tower Stray Fairy",
       "Snowhead Temple Icicle Room Alcove Chest": "Great Spin Attack",
-      "Snowhead Temple Icicle Room Chest": "Silver Rupee",
+      "Snowhead Temple Icicle Room Chest": "Deku Shield",
       "Snowhead Temple Map Alcove Chest": "Piece of Heart",
-      "Snowhead Temple Map Chest": "Heart Piece",
-      "Snowhead Temple Pillars Room Chest": "Red Rupee (MM)",
-      "Snowhead Temple Sf Bridge Pillar": "Red Rupee (MM)",
+      "Snowhead Temple Map Chest": "Bombs (5)",
+      "Snowhead Temple Pillars Room Chest": "10 Deku Nuts",
+      "Snowhead Temple Sf Bridge Pillar": "Silver Rupee",
       "Snowhead Temple Sf Bridge Under Platform": "Silver Rupee",
-      "Snowhead Temple Sf Compass Room Crate": "Great Bay Stray Fairy",
+      "Snowhead Temple Sf Compass Room Crate": "Arrows (10)",
       "Snowhead Temple Sf Dinolfos 01": "Heart Piece",
-      "Snowhead Temple Sf Dinolfos 02": "Heart Piece",
-      "Snowhead Temple Sf Dual Switches": "Powder Keg",
+      "Snowhead Temple Sf Dinolfos 02": "Red Rupee (MM)",
+      "Snowhead Temple Sf Dual Switches": "Heart Container (MM)",
       "Snowhead Temple Sf Map Room": "Heart Piece",
-      "Snowhead Temple Sf Snow Room": "Heart Piece",
+      "Snowhead Temple Sf Snow Room": "Snowhead Stray Fairy",
       "Southern Swamp Frog": "Blue Frog",
       "Southern Swamp Grotto Chest": "Song of Storms (MM)",
       "Southern Swamp Owl Statue": "Southern Swamp Owl Statue",
-      "Southern Swamp Piece Of Heart": "Recovery Heart",
+      "Southern Swamp Piece Of Heart": "Red Rupee (MM)",
       "Southern Swamp Scrub Beans": "Blue Potion Refill (MM)",
-      "Southern Swamp Scrub Deed": "Garo's Mask",
-      "Southern Swamp Song Of Soaring": "Zora Tunic",
+      "Southern Swamp Scrub Deed": "Purple Rupee (MM)",
+      "Southern Swamp Song Of Soaring": "Heart Piece",
       "Starting Item Deku Mask": "Great Bay Stray Fairy",
       "Starting Item Song Of Healing": "Recovery Heart",
-      "Stock Pot Inn Couples Mask": "Piece of Heart",
-      "Stock Pot Inn Grandma Long Story": "Woodfall Stray Fairy",
-      "Stock Pot Inn Grandma Short Story": "Heart Piece",
-      "Stock Pot Inn Guest Room Chest": "Progressive Bomb Bag",
-      "Stock Pot Inn Letter To Kafei": "Moon's Tear",
-      "Stock Pot Inn Room Key": "Heart Piece",
-      "Stock Pot Inn Staff Room Chest": "Woodfall Stray Fairy",
-      "Stock Pot Inn Toilet Hand": "Huge Rupee",
-      "Stone Tower Inverted Chest 01": "Bombchu",
-      "Stone Tower Inverted Chest 02": "Purple Rupee (MM)",
-      "Stone Tower Inverted Chest 03": "Stone Tower Stray Fairy",
+      "Stock Pot Inn Couples Mask": "Woodfall Stray Fairy",
+      "Stock Pot Inn Grandma Long Story": "Stone Tower Small Key",
+      "Stock Pot Inn Grandma Short Story": "Bombs (5)",
+      "Stock Pot Inn Guest Room Chest": "Progressive Wallet",
+      "Stock Pot Inn Letter To Kafei": "Piece of Heart",
+      "Stock Pot Inn Room Key": "Progressive Hookshot",
+      "Stock Pot Inn Staff Room Chest": "Heart Piece",
+      "Stock Pot Inn Toilet Hand": "Silver Rupee",
+      "Stone Tower Inverted Chest 01": "Blue Rupee",
+      "Stone Tower Inverted Chest 02": "Huge Rupee (MM)",
+      "Stone Tower Inverted Chest 03": "Red Rupee",
       "Stone Tower Owl Statue": "Stone Tower Owl Statue",
-      "Stone Tower Temple Before Water Bridge Chest": "Great Bay Stray Fairy",
+      "Stone Tower Temple Before Water Bridge Chest": "Piece of Heart",
       "Stone Tower Temple Center Across Water Chest": "Great Bay Stray Fairy",
-      "Stone Tower Temple Center Sun Block Chest": "Red Rupee (MM)",
-      "Stone Tower Temple Compass Chest": "Purple Rupee (MM)",
+      "Stone Tower Temple Center Sun Block Chest": "Heart Piece",
+      "Stone Tower Temple Compass Chest": "Red Rupee (MM)",
       "Stone Tower Temple Entrance Chest": "Progressive Goron Lullaby",
       "Stone Tower Temple Entrance Switch Chest": "Red Rupee",
-      "Stone Tower Temple Inverted Boss Heart Container": "Red Rupee (MM)",
-      "Stone Tower Temple Inverted Boss Key": "Piece of Heart",
+      "Stone Tower Temple Inverted Boss Heart Container": "Blue Rupee",
+      "Stone Tower Temple Inverted Boss Key": "Purple Rupee (MM)",
       "Stone Tower Temple Inverted Boss Warp": "Twinmold's Remains",
-      "Stone Tower Temple Inverted Death Armos Chest": "Red Rupee (MM)",
-      "Stone Tower Temple Inverted East Lower Chest": "Heart Container",
-      "Stone Tower Temple Inverted East Middle Chest": "Goron Mask",
-      "Stone Tower Temple Inverted East Upper Chest": "Pictograph Box",
+      "Stone Tower Temple Inverted Death Armos Chest": "Huge Rupee",
+      "Stone Tower Temple Inverted East Lower Chest": "Heart Piece",
+      "Stone Tower Temple Inverted East Middle Chest": "Red Rupee (MM)",
+      "Stone Tower Temple Inverted East Upper Chest": "Piece of Heart",
       "Stone Tower Temple Inverted Entrance Chest": "Heart Piece",
-      "Stone Tower Temple Inverted Giant Mask": "Heart Piece",
-      "Stone Tower Temple Inverted Wizzrobe Chest": "Purple Rupee (MM)",
-      "Stone Tower Temple Light Arrow Chest": "Purple Rupee",
+      "Stone Tower Temple Inverted Giant Mask": "Progressive Bomb Bag",
+      "Stone Tower Temple Inverted Wizzrobe Chest": "Heart Piece",
+      "Stone Tower Temple Light Arrow Chest": "Red Rupee (MM)",
       "Stone Tower Temple Map Chest": "Great Bay Compass",
-      "Stone Tower Temple Mirrors Room Center Chest": "Blue Rupee",
+      "Stone Tower Temple Mirrors Room Center Chest": "Purple Rupee",
       "Stone Tower Temple Mirrors Room Right Chest": "Great Bay Stray Fairy",
       "Stone Tower Temple Under West Garden Lava Chest": "Circus Leader's Mask",
-      "Stone Tower Temple Under West Garden Ledge Chest": "Ice Trap",
-      "Stone Tower Temple Water Bridge Chest": "Heart Container",
-      "Stone Tower Temple Water Sun Switch Chest": "Heart Container",
-      "Stone Tower Temple Wind Room Jail Chest": "Woodfall Stray Fairy",
-      "Stone Tower Temple Wind Room Ledge Chest": "Blue Rupee (MM)",
-      "Swamp Shooting Gallery High Score": "Piece of Heart",
-      "Swamp Shooting Gallery Perfect Score": "Red Rupee (MM)",
+      "Stone Tower Temple Under West Garden Ledge Chest": "Heart Piece",
+      "Stone Tower Temple Water Bridge Chest": "Purple Rupee (MM)",
+      "Stone Tower Temple Water Sun Switch Chest": "Heart Piece",
+      "Stone Tower Temple Wind Room Jail Chest": "Recovery Heart",
+      "Stone Tower Temple Wind Room Ledge Chest": "Land Title Deed",
+      "Swamp Shooting Gallery High Score": "Purple Rupee",
+      "Swamp Shooting Gallery Perfect Score": "Letter to Kafei",
       "Swamp Skulltula Gold Room Hive": "Swamp Gold Skulltula Token",
       "Swamp Skulltula Gold Room Near Ceiling": "Swamp Gold Skulltula Token",
       "Swamp Skulltula Gold Room Pillar": "Swamp Gold Skulltula Token",
@@ -3578,67 +3748,67 @@
       "Swamp Skulltula Tree Room Tree 02": "Swamp Gold Skulltula Token",
       "Swamp Skulltula Tree Room Tree 03": "Swamp Gold Skulltula Token",
       "Swamp Spider House Mask Of Truth": "Snowhead Small Key",
-      "Swordsman School Piece Of Heart": "Epona's Song (MM)",
-      "Termina Field Bio Baba Grotto": "Heart Piece",
+      "Swordsman School Piece Of Heart": "Stone Tower Boss Key",
+      "Termina Field Bio Baba Grotto": "Recovery Heart",
       "Termina Field Dodongo Grotto Chest": "Stone Tower Stray Fairy",
-      "Termina Field Gossip Stone Grotto": "Bombchu",
+      "Termina Field Gossip Stone Grotto": "Heart Piece",
       "Termina Field Grotto Scrub": "Gibdo Mask",
-      "Termina Field Kamaro Mask": "Light Arrows",
-      "Termina Field Peahat Grotto Chest": "Fire Arrows",
-      "Termina Field Pillar Grotto Chest": "Snowhead Stray Fairy",
-      "Termina Field Tall Grass Chest": "Red Rupee (MM)",
+      "Termina Field Kamaro Mask": "Bombchu",
+      "Termina Field Peahat Grotto Chest": "Bottle with Red Potion (MM)",
+      "Termina Field Pillar Grotto Chest": "Ice Arrows (MM)",
+      "Termina Field Tall Grass Chest": "Heart Piece",
       "Termina Field Tall Grass Grotto Chest": "Stone Tower Small Key",
-      "Termina Field Tree Stump Chest": "Piece of Heart",
+      "Termina Field Tree Stump Chest": "Snowhead Stray Fairy",
       "Termina Field Water Chest": "Great Bay Map",
-      "Tourist Information Archery": "Woodfall Stray Fairy",
+      "Tourist Information Archery": "Red Rupee (MM)",
       "Tourist Information Good Photo": "Progressive Bomb Bag",
-      "Tourist Information Pictobox": "Blue Rupee",
-      "Twin Islands Frozen Grotto Chest": "Heart Piece",
+      "Tourist Information Pictobox": "Purple Rupee (MM)",
+      "Twin Islands Frozen Grotto Chest": "Red Rupee (MM)",
       "Twin Islands Ramp Grotto Chest": "Bunny Hood (MM)",
-      "Twin Islands Underwater Chest 01": "Piece of Heart",
-      "Twin Islands Underwater Chest 02": "Piece of Heart",
-      "Waterfall Rapids Beaver Race 01": "New Wave Bossa Nova",
-      "Waterfall Rapids Beaver Race 02": "Ocean Title Deed",
-      "Woodfall Entrance Chest": "Piece of Heart",
-      "Woodfall Great Fairy": "Purple Rupee (MM)",
-      "Woodfall Near Owl Chest": "Piece of Heart",
+      "Twin Islands Underwater Chest 01": "Huge Rupee",
+      "Twin Islands Underwater Chest 02": "Heart Piece",
+      "Waterfall Rapids Beaver Race 01": "Green Potion Refill (MM)",
+      "Waterfall Rapids Beaver Race 02": "Stone Tower Stray Fairy",
+      "Woodfall Entrance Chest": "Bombchu",
+      "Woodfall Great Fairy": "Piece of Heart",
+      "Woodfall Near Owl Chest": "Heart Piece",
       "Woodfall Owl Statue": "Woodfall Owl Statue",
-      "Woodfall Piece Of Heart Chest": "Red Rupee (MM)",
-      "Woodfall Temple Boss Container": "Bombs (20)",
+      "Woodfall Piece Of Heart Chest": "Heart Piece",
+      "Woodfall Temple Boss Container": "5 Bombchus",
       "Woodfall Temple Boss Key Chest": "Bremen Mask",
       "Woodfall Temple Boss Warp": "Odolwa's Remains",
-      "Woodfall Temple Bow Chest": "Letter to Mama",
-      "Woodfall Temple Center Chest": "Purple Rupee (MM)",
+      "Woodfall Temple Bow Chest": "Red Rupee",
+      "Woodfall Temple Center Chest": "Huge Rupee",
       "Woodfall Temple Compass Chest": "Deku Shield",
-      "Woodfall Temple Dark Chest": "Piece of Heart (WINNER)",
+      "Woodfall Temple Dark Chest": "Red Rupee (MM)",
       "Woodfall Temple Entrance Chest": "Strength Upgrade",
       "Woodfall Temple Gekko Frog": "Cyan Frog",
-      "Woodfall Temple Map Chest": "Progressive Scale",
-      "Woodfall Temple Sf Entrance": "Red Rupee (MM)",
+      "Woodfall Temple Map Chest": "Red Rupee (MM)",
+      "Woodfall Temple Sf Entrance": "Red Rupee",
       "Woodfall Temple Sf Main Bubble": "Stone of Agony",
-      "Woodfall Temple Sf Main Deku Baba": "Blue Rupee",
+      "Woodfall Temple Sf Main Deku Baba": "Heart Piece",
       "Woodfall Temple Sf Main Pot": "Purple Rupee (MM)",
-      "Woodfall Temple Sf Maze Beehive": "Huge Rupee",
-      "Woodfall Temple Sf Maze Bubble": "Red Rupee (MM)",
-      "Woodfall Temple Sf Maze Skulltula": "Recovery Heart",
-      "Woodfall Temple Sf Pre Boss Bottom Right": "Blue Rupee",
-      "Woodfall Temple Sf Pre Boss Left": "Heart Piece",
+      "Woodfall Temple Sf Maze Beehive": "Piece of Heart",
+      "Woodfall Temple Sf Maze Bubble": "Bombchus (10)",
+      "Woodfall Temple Sf Maze Skulltula": "Snowhead Small Key",
+      "Woodfall Temple Sf Pre Boss Bottom Right": "Stone Tower Stray Fairy",
+      "Woodfall Temple Sf Pre Boss Left": "Progressive Wallet",
       "Woodfall Temple Sf Pre Boss Pillar": "Skull Mask",
       "Woodfall Temple Sf Pre Boss Top Right": "Progressive Hookshot",
-      "Woodfall Temple Sf Water Room Beehive": "Progressive Bomb Bag (MM)",
-      "Woodfall Temple Water Chest": "Silver Rupee",
-      "Woods Of Mystery Grotto Chest": "Clock Town Stray Fairy",
-      "Zora Cape Grotto Chest": "Blue Rupee",
-      "Zora Cape Ledge Chest 01": "Heart Piece",
-      "Zora Cape Ledge Chest 02": "Heart Piece",
+      "Woodfall Temple Sf Water Room Beehive": "Bombchu",
+      "Woodfall Temple Water Chest": "Purple Rupee",
+      "Woods Of Mystery Grotto Chest": "Greg the Green Rupee",
+      "Zora Cape Grotto Chest": "Bombchus (10)",
+      "Zora Cape Ledge Chest 01": "Piece of Heart",
+      "Zora Cape Ledge Chest 02": "Red Rupee (MM)",
       "Zora Cape Owl Statue": "Zora Cape Owl Statue",
-      "Zora Cape Underwater Chest": "Fire Arrows (MM)",
-      "Zora Cape Waterfall Piece Of Heart": "Bombs (5)",
+      "Zora Cape Underwater Chest": "Woodfall Stray Fairy",
+      "Zora Cape Waterfall Piece Of Heart": "Heart Piece",
       "Zora Hall Evans Piece Of Heart": "Bombchus (10)",
-      "Zora Hall Scene Lights": "Heart Piece",
-      "Zora Hall Scrub Deed": "Silver Rupee",
-      "Zora Hall Scrub Piece Of Heart": "Heart Piece",
-      "Zora Hall Scrub Potion Refill": "Arrows (5)"
+      "Zora Hall Scene Lights": "Silver Rupee",
+      "Zora Hall Scrub Deed": "Stone Tower Stray Fairy",
+      "Zora Hall Scrub Piece Of Heart": "Biggoron's Sword",
+      "Zora Hall Scrub Potion Refill": "Woodfall Stray Fairy"
     },
     "prices": {
       "Bomb Shop Item 03": 171,
@@ -3852,56 +4022,56 @@
     "placements": {
       "Barinade": "Shadow Medallion",
       "Bongo Bongo": "Spirit Medallion",
-      "Bottom of the Well Back Left Bombable Chest": "Piece of Heart",
-      "Bottom of the Well Center Skulltula Chest": "Ice Arrows",
+      "Bottom of the Well Back Left Bombable Chest": "Heart Container (OOT)",
+      "Bottom of the Well Center Skulltula Chest": "Snowhead Stray Fairy",
       "Bottom of the Well Compass Chest": "Bottom of the Well Map",
-      "Bottom of the Well Fire Keese Chest": "Purple Rupee (OOT)",
-      "Bottom of the Well Freestanding Key": "Woodfall Stray Fairy",
+      "Bottom of the Well Fire Keese Chest": "Red Rupee",
+      "Bottom of the Well Freestanding Key": "Red Rupee",
       "Bottom of the Well Front Center Bombable Chest": "Progressive Sword",
       "Bottom of the Well Front Left Fake Wall Chest": "Bottom of the Well Small Key",
       "Bottom of the Well GS East Inner Room": "Gold Skulltula Token",
       "Bottom of the Well GS Like Like Cage": "Gold Skulltula Token",
       "Bottom of the Well GS West Inner Room": "Gold Skulltula Token",
       "Bottom of the Well Invisible Chest": "Strength Upgrade",
-      "Bottom of the Well Lens of Truth Chest": "Hookshot",
-      "Bottom of the Well Like Like Chest": "Red Rupee",
+      "Bottom of the Well Lens of Truth Chest": "Great Bay Stray Fairy",
+      "Bottom of the Well Like Like Chest": "Heart Piece",
       "Bottom of the Well Map Chest": "Bottom of the Well Small Key",
-      "Bottom of the Well Right Bottom Fake Wall Chest": "Red Rupee",
+      "Bottom of the Well Right Bottom Fake Wall Chest": "Heart Piece",
       "Bottom of the Well Underwater Front Chest": "Bottom of the Well Small Key",
       "Bottom of the Well Underwater Left Chest": "Bottom of the Well Compass",
-      "Colossus Freestanding PoH": "Heart Container",
+      "Colossus Freestanding PoH": "Ocean Title Deed",
       "Colossus GS Bean Patch": "Gold Skulltula Token",
       "Colossus GS Hill": "Gold Skulltula Token",
       "Colossus GS Tree": "Gold Skulltula Token",
-      "Colossus Great Fairy Reward": "Nayru's Love (OOT)",
+      "Colossus Great Fairy Reward": "Double Defense",
       "DMC GS Bean Patch": "Gold Skulltula Token",
       "DMC GS Crate": "Gold Skulltula Token",
-      "DMC Great Fairy Reward": "Progressive Stick Capacity",
-      "DMC Upper Grotto Chest": "Arrows (30)",
-      "DMC Volcano Freestanding PoH": "Snowhead Small Key",
+      "DMC Great Fairy Reward": "Heart Container (OOT)",
+      "DMC Upper Grotto Chest": "Heart Container",
+      "DMC Volcano Freestanding PoH": "Epona's Song",
       "DMC Wall Freestanding PoH": "Stone Tower Stray Fairy",
       "DMT Chest": "Bottle with Bugs",
-      "DMT Freestanding PoH": "Stone Tower Stray Fairy",
+      "DMT Freestanding PoH": "Goron Mask (OOT)",
       "DMT GS Above Dodongos Cavern": "Gold Skulltula Token",
       "DMT GS Bean Patch": "Gold Skulltula Token",
       "DMT GS Falling Rocks Path": "Gold Skulltula Token",
       "DMT GS Near Kak": "Gold Skulltula Token",
       "DMT Great Fairy Reward": "Heart Piece",
-      "DMT Storms Grotto Chest": "Heart Piece",
-      "DMT Trade Claim Check": "Deku Shield",
-      "Deku Tree Basement Chest": "Red Rupee",
+      "DMT Storms Grotto Chest": "Bottle with Fish",
+      "DMT Trade Claim Check": "Bombs (5)",
+      "Deku Tree Basement Chest": "Strength Upgrade",
       "Deku Tree Compass Chest": "Great Deku Tree Compass",
-      "Deku Tree Compass Room Side Chest": "Empty Bottle",
+      "Deku Tree Compass Room Side Chest": "Bottle of Milk",
       "Deku Tree GS Basement Back Room": "Gold Skulltula Token",
       "Deku Tree GS Basement Gate": "Gold Skulltula Token",
       "Deku Tree GS Basement Vines": "Gold Skulltula Token",
       "Deku Tree GS Compass Room": "Gold Skulltula Token",
-      "Deku Tree Map Chest": "Progressive Stick Capacity",
+      "Deku Tree Map Chest": "Bottle with Ruto's Letter",
       "Deku Tree Queen Gohma Heart Container": "Great Deku Tree Map",
-      "Deku Tree Slingshot Chest": "Claim Check",
-      "Deku Tree Slingshot Room Side Chest": "Heart Piece",
-      "Dodongos Cavern Bomb Bag Chest": "Stone Tower Small Key",
-      "Dodongos Cavern Bomb Flower Platform Chest": "Blast Mask",
+      "Deku Tree Slingshot Chest": "Deku Shield",
+      "Deku Tree Slingshot Room Side Chest": "Purple Rupee",
+      "Dodongos Cavern Bomb Bag Chest": "Purple Rupee",
+      "Dodongos Cavern Bomb Flower Platform Chest": "Letter to Mama",
       "Dodongos Cavern Boss Room Chest": "Dodongo's Cavern Map",
       "Dodongos Cavern Compass Chest": "Oath to Order",
       "Dodongos Cavern End Of Bridge Chest": "Dodongo's Cavern Compass",
@@ -3911,14 +4081,14 @@
       "Dodongos Cavern GS Side Room Near Lower Lizalfos": "Gold Skulltula Token",
       "Dodongos Cavern GS Vines Above Stairs": "Gold Skulltula Token",
       "Dodongos Cavern King Dodongo Heart Container": "Don Gero Mask",
-      "Dodongos Cavern Map Chest": "Heart Container",
+      "Dodongos Cavern Map Chest": "Arrows (10)",
       "Fire Temple Big Lava Room Blocked Door Chest": "Fire Temple Small Key",
       "Fire Temple Big Lava Room Lower Open Door Chest": "Fire Temple Small Key",
       "Fire Temple Boss Key Chest": "Fire Temple Small Key",
       "Fire Temple Boulder Maze Lower Chest": "Fire Temple Small Key",
       "Fire Temple Boulder Maze Shortcut Chest": "Fire Temple Small Key",
       "Fire Temple Boulder Maze Side Room Chest": "Elegy of Emptiness",
-      "Fire Temple Boulder Maze Upper Chest": "Red Rupee",
+      "Fire Temple Boulder Maze Upper Chest": "Light Arrows",
       "Fire Temple Compass Chest": "Fire Temple Boss Key",
       "Fire Temple Flare Dancer Chest": "Fire Temple Small Key",
       "Fire Temple GS Boss Key Loop": "Gold Skulltula Token",
@@ -3927,17 +4097,17 @@
       "Fire Temple GS Scarecrow Top": "Gold Skulltula Token",
       "Fire Temple GS Song of Time Room": "Gold Skulltula Token",
       "Fire Temple Highest Goron Chest": "Fire Temple Small Key",
-      "Fire Temple Map Chest": "Woodfall Stray Fairy",
+      "Fire Temple Map Chest": "Progressive Bomb Bag (OOT)",
       "Fire Temple Megaton Hammer Chest": "Fire Temple Compass",
-      "Fire Temple Near Boss Chest": "Progressive Magic Meter",
+      "Fire Temple Near Boss Chest": "Progressive Slingshot",
       "Fire Temple Scarecrow Chest": "Fire Temple Map",
       "Fire Temple Volvagia Heart Container": "Fire Temple Small Key",
       "Forest Temple Basement Chest": "Forest Temple Boss Key",
       "Forest Temple Blue Poe Chest": "Heart Piece",
       "Forest Temple Boss Key Chest": "Forest Temple Map",
       "Forest Temple Bow Chest": "Forest Temple Small Key",
-      "Forest Temple Eye Switch Chest": "Song of Healing",
-      "Forest Temple Falling Ceiling Room Chest": "Blue Rupee (OOT)",
+      "Forest Temple Eye Switch Chest": "Piece of Heart",
+      "Forest Temple Falling Ceiling Room Chest": "Blast Mask",
       "Forest Temple First Room Chest": "Forest Temple Small Key",
       "Forest Temple First Stalfos Chest": "Forest Temple Small Key",
       "Forest Temple Floormaster Chest": "Forest Temple Small Key",
@@ -3948,19 +4118,19 @@
       "Forest Temple GS Raised Island Courtyard": "Gold Skulltula Token",
       "Forest Temple Map Chest": "Bombchus (20)",
       "Forest Temple Phantom Ganon Heart Container": "Forest Temple Compass",
-      "Forest Temple Raised Island Courtyard Chest": "Heart Piece",
+      "Forest Temple Raised Island Courtyard Chest": "Arrows (10)",
       "Forest Temple Red Poe Chest": "Forest Temple Small Key",
-      "Forest Temple Well Chest": "Red Rupee",
+      "Forest Temple Well Chest": "Progressive Stick Capacity",
       "GC Darunias Joy": "Heart Piece",
       "GC GS Boulder Maze": "Gold Skulltula Token",
       "GC GS Center Platform": "Gold Skulltula Token",
-      "GC Maze Center Chest": "Red Rupee",
-      "GC Maze Left Chest": "Progressive Bow (OOT)",
-      "GC Maze Right Chest": "Woodfall Stray Fairy",
+      "GC Maze Center Chest": "Stone Tower Stray Fairy",
+      "GC Maze Left Chest": "5 Bombchus",
+      "GC Maze Right Chest": "Stone Tower Small Key",
       "GC Medigoron": "Giant's Knife",
-      "GC Pot Freestanding PoH": "Red Rupee",
-      "GC Rolling Goron as Adult": "Great Fairy's Sword",
-      "GC Rolling Goron as Child": "Heart Piece",
+      "GC Pot Freestanding PoH": "Magic Bean",
+      "GC Rolling Goron as Adult": "Bombchu",
+      "GC Rolling Goron as Child": "Progressive Bow (OOT)",
       "GC Shop Item 1": "Buy Bombs (5) [25]",
       "GC Shop Item 2": "Buy Bombs (10)",
       "GC Shop Item 3": "Buy Bombs (20)",
@@ -3970,71 +4140,71 @@
       "GC Shop Item 7": "Buy Red Potion [40]",
       "GC Shop Item 8": "Buy Heart",
       "GF 1 Torch Carpenter": "Gerudo Fortress Small Key",
-      "GF Chest": "Piece of Heart",
+      "GF Chest": "Woodfall Stray Fairy",
       "GF Dead End Carpenter": "Gerudo Fortress Small Key",
       "GF Double Cell Carpenter": "Gerudo Fortress Small Key",
       "GF Freed All Carpenters": "Gerudo Membership Card",
       "GF GS Archery Range": "Gold Skulltula Token",
       "GF GS Top Floor": "Gold Skulltula Token",
-      "GF HBA 1000 Points": "Deku Nuts (5)",
-      "GF HBA 1500 Points": "Purple Rupee (OOT)",
+      "GF HBA 1000 Points": "Piece of Heart",
+      "GF HBA 1500 Points": "Swamp Title Deed",
       "GF Steep Slope Carpenter": "Gerudo Fortress Small Key",
-      "GV Chest": "Spooky Mask",
-      "GV Crate Freestanding PoH": "Progressive Goron Lullaby",
+      "GV Chest": "Progressive Nut Capacity",
+      "GV Crate Freestanding PoH": "Great Bay Stray Fairy",
       "GV GS Bean Patch": "Gold Skulltula Token",
       "GV GS Behind Tent": "Gold Skulltula Token",
       "GV GS Pillar": "Gold Skulltula Token",
       "GV GS Small Bridge": "Gold Skulltula Token",
-      "GV Waterfall Freestanding PoH": "Heart Piece",
+      "GV Waterfall Freestanding PoH": "Romani's Mask",
       "Ganon": "Triforce",
-      "Ganon's Castle Forest Trial Chest": "5 Bombchus",
-      "Ganon's Castle Light Trial First Left Chest": "5 Bombchus",
-      "Ganon's Castle Light Trial First Right Chest": "Heart Piece",
+      "Ganon's Castle Forest Trial Chest": "Heart Piece",
+      "Ganon's Castle Light Trial First Left Chest": "Heart Piece",
+      "Ganon's Castle Light Trial First Right Chest": "Blue Rupee (OOT)",
       "Ganon's Castle Light Trial Invisible Enemies Chest": "Ganon's Castle Small Key",
-      "Ganon's Castle Light Trial Lullaby Chest": "Heart Piece",
-      "Ganon's Castle Light Trial Second Left Chest": "Bombchu",
-      "Ganon's Castle Light Trial Second Right Chest": "Huge Rupee (OOT)",
-      "Ganon's Castle Light Trial Third Left Chest": "Recovery Heart (OOT)",
-      "Ganon's Castle Light Trial Third Right Chest": "Ice Trap",
-      "Ganon's Castle Shadow Trial Front Chest": "Heart Piece",
+      "Ganon's Castle Light Trial Lullaby Chest": "Heart Container",
+      "Ganon's Castle Light Trial Second Left Chest": "Bombs (10)",
+      "Ganon's Castle Light Trial Second Right Chest": "Woodfall Stray Fairy",
+      "Ganon's Castle Light Trial Third Left Chest": "Piece of Heart",
+      "Ganon's Castle Light Trial Third Right Chest": "Blue Rupee (OOT)",
+      "Ganon's Castle Shadow Trial Front Chest": "10 Bombchus",
       "Ganon's Castle Shadow Trial Golden Gauntlets Chest": "Bottle of Chateau Romani",
       "Ganon's Castle Spirit Trial Crystal Switch Chest": "Heart Piece",
-      "Ganon's Castle Spirit Trial Invisible Chest": "Mask of Truth (OOT)",
+      "Ganon's Castle Spirit Trial Invisible Chest": "Small Magic Refill",
       "Ganon's Castle Tower Boss Key Chest": "Ganon's Castle Boss Key",
       "Ganon's Castle Water Trial Left Chest": "Ganon's Castle Small Key",
       "Ganon's Castle Water Trial Right Chest": "Woodfall Stray Fairy",
       "Gerudo Training Ground Beamos Chest": "Progressive Bomb Bag",
       "Gerudo Training Ground Before Heavy Block Chest": "Training Ground Small Key",
-      "Gerudo Training Ground Eye Statue Chest": "Piece of Heart",
-      "Gerudo Training Ground Freestanding Key": "Heart Piece",
+      "Gerudo Training Ground Eye Statue Chest": "Snowhead Stray Fairy",
+      "Gerudo Training Ground Freestanding Key": "Progressive Magic Meter",
       "Gerudo Training Ground Hammer Room Clear Chest": "All-Night Mask",
       "Gerudo Training Ground Hammer Room Switch Chest": "Lens of Truth",
-      "Gerudo Training Ground Heavy Block First Chest": "Red Rupee",
-      "Gerudo Training Ground Heavy Block Fourth Chest": "Iron Boots (OOT)",
+      "Gerudo Training Ground Heavy Block First Chest": "Heart Piece",
+      "Gerudo Training Ground Heavy Block Fourth Chest": "Red Rupee",
       "Gerudo Training Ground Heavy Block Second Chest": "Training Ground Small Key",
       "Gerudo Training Ground Heavy Block Third Chest": "Training Ground Small Key",
       "Gerudo Training Ground Hidden Ceiling Chest": "Training Ground Small Key",
       "Gerudo Training Ground Lobby Left Chest": "Training Ground Small Key",
       "Gerudo Training Ground Lobby Right Chest": "Stone Tower Stray Fairy",
-      "Gerudo Training Ground Maze Path Final Chest": "Purple Rupee",
+      "Gerudo Training Ground Maze Path Final Chest": "Zora Mask (OOT)",
       "Gerudo Training Ground Maze Path First Chest": "Training Ground Small Key",
-      "Gerudo Training Ground Maze Path Second Chest": "Din's Fire (OOT)",
+      "Gerudo Training Ground Maze Path Second Chest": "Recovery Heart (OOT)",
       "Gerudo Training Ground Maze Path Third Chest": "30 Arrows",
       "Gerudo Training Ground Maze Right Central Chest": "Heart Piece",
       "Gerudo Training Ground Maze Right Side Chest": "Training Ground Small Key",
       "Gerudo Training Ground Near Scarecrow Chest": "Kamaro's Mask",
       "Gerudo Training Ground Stalfos Chest": "Training Ground Small Key",
       "Gerudo Training Ground Underwater Silver Rupee Chest": "Training Ground Small Key",
-      "Gift from Rauru": "Letter to Kafei",
-      "Graveyard Dampe Gravedigging Tour": "Snowhead Stray Fairy",
-      "Graveyard Dampe Race Freestanding PoH": "Red Rupee",
+      "Gift from Rauru": "Great Fairy's Sword",
+      "Graveyard Dampe Gravedigging Tour": "Heart Piece",
+      "Graveyard Dampe Race Freestanding PoH": "Zora Mask",
       "Graveyard Freestanding PoH": "Piece of Heart",
       "Graveyard GS Bean Patch": "Gold Skulltula Token",
       "Graveyard GS Wall": "Gold Skulltula Token",
       "Graveyard Heart Piece Grave Chest": "Mask of Scents",
-      "Graveyard Hookshot Chest": "Progressive Slingshot",
+      "Graveyard Hookshot Chest": "Hover Boots (OOT)",
       "Graveyard Royal Family's Tomb Chest": "10 Bombchus",
-      "Graveyard Shield Grave Chest": "Progressive Bomb Bag (OOT)",
+      "Graveyard Shield Grave Chest": "Clock Town Stray Fairy",
       "HC GS Storms Grotto": "Gold Skulltula Token",
       "HC GS in Tree": "Gold Skulltula Token",
       "HC Great Fairy Reward": "Silver Rupee",
@@ -4043,19 +4213,19 @@
       "HC Zeldas Letter": "Zelda's Letter",
       "HF GS Cow Grotto": "Gold Skulltula Token",
       "HF GS Stone Bridge Tree Grotto": "Gold Skulltula Token",
-      "HF Near Market Grotto Chest": "Stone Tower Stray Fairy",
+      "HF Near Market Grotto Chest": "Snowhead Stray Fairy",
       "HF Ocarina of Time Item": "Progressive Ocarina (OOT)",
       "HF Open Grotto Chest": "Snowhead Compass",
-      "HF Southeast Grotto Chest": "Stone Tower Stray Fairy",
-      "HF Tektite Grotto Freestanding PoH": "Snowhead Stray Fairy",
-      "Ice Cavern Compass Chest": "Blue Rupee (OOT)",
-      "Ice Cavern Freestanding PoH": "Heart Piece",
+      "HF Southeast Grotto Chest": "Spooky Mask",
+      "HF Tektite Grotto Freestanding PoH": "Heart Container (OOT)",
+      "Ice Cavern Compass Chest": "Progressive Wallet",
+      "Ice Cavern Freestanding PoH": "Red Rupee",
       "Ice Cavern GS Heart Piece Room": "Gold Skulltula Token",
       "Ice Cavern GS Push Block Room": "Gold Skulltula Token",
       "Ice Cavern GS Spinning Scythe Room": "Gold Skulltula Token",
       "Ice Cavern Iron Boots Chest": "Ice Cavern Map",
       "Ice Cavern Map Chest": "Ice Cavern Compass",
-      "Jabu Jabus Belly Barinade Heart Container": "Deku Shield",
+      "Jabu Jabus Belly Barinade Heart Container": "Stone Tower Stray Fairy",
       "Jabu Jabus Belly Boomerang Chest": "Lens of Truth (OOT)",
       "Jabu Jabus Belly Compass Chest": "Jabu-Jabu's Belly Compass",
       "Jabu Jabus Belly GS Lobby Basement Lower": "Gold Skulltula Token",
@@ -4067,10 +4237,10 @@
       "KF GS House of Twins": "Gold Skulltula Token",
       "KF GS Know It All House": "Gold Skulltula Token",
       "KF Kokiri Sword Chest": "Kokiri Sword (OOT)",
-      "KF Mido Bottom Left Chest": "Recovery Heart (OOT)",
-      "KF Mido Bottom Right Chest": "Woodfall Stray Fairy",
-      "KF Mido Top Left Chest": "Recovery Heart (OOT)",
-      "KF Mido Top Right Chest": "Heart Container (OOT)",
+      "KF Mido Bottom Left Chest": "New Wave Bossa Nova",
+      "KF Mido Bottom Right Chest": "Heart Piece",
+      "KF Mido Top Left Chest": "Red Rupee",
+      "KF Mido Top Right Chest": "Heart Piece",
       "KF Shop Item 1": "Buy Deku Shield",
       "KF Shop Item 2": "Buy Deku Nut (5)",
       "KF Shop Item 3": "Buy Deku Nut (10)",
@@ -4079,14 +4249,14 @@
       "KF Shop Item 6": "Buy Arrows (10)",
       "KF Shop Item 7": "Buy Arrows (30)",
       "KF Shop Item 8": "Buy Heart",
-      "KF Storms Grotto Chest": "Heart Container (OOT)",
-      "Kak 10 Gold Skulltula Reward": "Silver Rupee",
-      "Kak 20 Gold Skulltula Reward": "Deku Stick (1)",
-      "Kak 30 Gold Skulltula Reward": "Progressive Slingshot",
+      "KF Storms Grotto Chest": "Heart Piece",
+      "Kak 10 Gold Skulltula Reward": "Stone Mask",
+      "Kak 20 Gold Skulltula Reward": "Heart Container (OOT)",
+      "Kak 30 Gold Skulltula Reward": "Heart Container",
       "Kak 40 Gold Skulltula Reward": "Couples Mask",
-      "Kak 50 Gold Skulltula Reward": "Swamp Title Deed",
-      "Kak Anju as Adult": "Hover Boots (OOT)",
-      "Kak Anju as Child": "Red Rupee",
+      "Kak 50 Gold Skulltula Reward": "Stone Tower Stray Fairy",
+      "Kak Anju as Adult": "Red Rupee",
+      "Kak Anju as Child": "Heart Piece",
       "Kak Bazaar Item 1": "Buy Hylian Shield",
       "Kak Bazaar Item 2": "Buy Bombs (5) [35]",
       "Kak Bazaar Item 3": "Buy Deku Nut (5)",
@@ -4102,9 +4272,9 @@
       "Kak GS Tree": "Gold Skulltula Token",
       "Kak GS Watchtower": "Gold Skulltula Token",
       "Kak Granny's Shop": "Blue Potion Refill (OOT)",
-      "Kak Impas House Freestanding PoH": "Purple Rupee",
-      "Kak Man on Roof": "Progressive Bow (OOT)",
-      "Kak Open Grotto Chest": "Mountain Title Deed",
+      "Kak Impas House Freestanding PoH": "Snowhead Stray Fairy",
+      "Kak Man on Roof": "Woodfall Stray Fairy",
+      "Kak Open Grotto Chest": "Fire Arrows (OOT)",
       "Kak Potion Shop Item 1": "Buy Green Potion",
       "Kak Potion Shop Item 2": "Buy Blue Fire",
       "Kak Potion Shop Item 3": "Buy Red Potion [30]",
@@ -4114,36 +4284,36 @@
       "Kak Potion Shop Item 7": "Buy Poe",
       "Kak Potion Shop Item 8": "Buy Fish",
       "Kak Redead Grotto Chest": "Progressive Nut Capacity",
-      "Kak Shooting Gallery Reward": "Ice Trap",
-      "Kak Windmill Freestanding PoH": "Purple Rupee",
-      "King Dodongo": "Zora's Sapphire",
-      "LH Adult Fishing": "Heart Piece",
-      "LH Child Fishing": "Bottle with Poe",
-      "LH Freestanding PoH": "Romani's Mask",
+      "Kak Shooting Gallery Reward": "Claim Check",
+      "Kak Windmill Freestanding PoH": "Red Rupee",
+      "King Dodongo": "Goron's Ruby",
+      "LH Adult Fishing": "Song of Healing",
+      "LH Child Fishing": "Sonata of Awakening",
+      "LH Freestanding PoH": "Stone Tower Stray Fairy",
       "LH GS Bean Patch": "Gold Skulltula Token",
       "LH GS Lab Crate": "Gold Skulltula Token",
       "LH GS Lab Wall": "Gold Skulltula Token",
       "LH GS Small Island": "Gold Skulltula Token",
       "LH GS Tree": "Gold Skulltula Token",
-      "LH Lab Dive": "Stone Tower Stray Fairy",
-      "LH Sun": "Purple Rupee (OOT)",
-      "LH Underwater Item": "Great Fairy Mask",
-      "LLR Freestanding PoH": "Great Bay Stray Fairy",
+      "LH Lab Dive": "Heart Piece",
+      "LH Sun": "Heart Piece",
+      "LH Underwater Item": "Woodfall Compass",
+      "LLR Freestanding PoH": "Hookshot",
       "LLR GS Back Wall": "Gold Skulltula Token",
       "LLR GS House Window": "Gold Skulltula Token",
       "LLR GS Rain Shed": "Gold Skulltula Token",
       "LLR GS Tree": "Gold Skulltula Token",
-      "LLR Talons Chickens": "Stone Tower Stray Fairy",
-      "LW Deku Theater Mask of Truth": "Heart Piece",
-      "LW Deku Theater Skull Mask": "Red Rupee",
+      "LLR Talons Chickens": "Great Fairy Mask",
+      "LW Deku Theater Mask of Truth": "Piece of Heart",
+      "LW Deku Theater Skull Mask": "Woodfall Stray Fairy",
       "LW GS Above Theater": "Gold Skulltula Token",
       "LW GS Bean Patch Near Bridge": "Gold Skulltula Token",
       "LW GS Bean Patch Near Theater": "Gold Skulltula Token",
       "LW Gift From Saria": "Progressive Ocarina (OOT)",
-      "LW Near Shortcuts Grotto Chest": "Red Rupee (OOT)",
-      "LW Ocarina Memory Game": "Woodfall Stray Fairy",
-      "LW Skull Kid": "Piece of Heart",
-      "LW Target in Woods": "Bottle of Milk",
+      "LW Near Shortcuts Grotto Chest": "Arrows (10)",
+      "LW Ocarina Memory Game": "Bombs (20)",
+      "LW Skull Kid": "Heart Piece",
+      "LW Target in Woods": "Mirror Shield",
       "Link's Pocket": "Kokiri's Emerald",
       "Market 10 Big Poes": "Great Bay Stray Fairy",
       "Market Bazaar Item 1": "Buy Hylian Shield",
@@ -4154,7 +4324,7 @@
       "Market Bazaar Item 6": "Buy Arrows (50)",
       "Market Bazaar Item 7": "Buy Deku Stick (1)",
       "Market Bazaar Item 8": "Buy Arrows (30)",
-      "Market Bombchu Bowling First Prize": "Progressive Wallet",
+      "Market Bombchu Bowling First Prize": "Red Rupee",
       "Market Bombchu Bowling Second Prize": "Progressive Wallet",
       "Market Bombchu Shop Item 1": "Buy Bombchu (10)",
       "Market Bombchu Shop Item 2": "Buy Bombchu (10)",
@@ -4165,7 +4335,7 @@
       "Market Bombchu Shop Item 7": "Buy Bombchu (20)",
       "Market Bombchu Shop Item 8": "Buy Bombchu (20)",
       "Market GS Guard House": "Gold Skulltula Token",
-      "Market Lost Dog": "Greg the Green Rupee",
+      "Market Lost Dog": "Piece of Heart",
       "Market Potion Shop Item 1": "Buy Green Potion",
       "Market Potion Shop Item 2": "Buy Blue Fire",
       "Market Potion Shop Item 3": "Buy Red Potion [30]",
@@ -4174,25 +4344,25 @@
       "Market Potion Shop Item 6": "Buy Bottle Bug",
       "Market Potion Shop Item 7": "Buy Poe",
       "Market Potion Shop Item 8": "Buy Fish",
-      "Market Shooting Gallery": "Stone Tower Compass",
-      "Market ToT Light Arrow Cutscene": "Woodfall Stray Fairy",
+      "Market Shooting Gallery": "Stone Tower Small Key",
+      "Market ToT Light Arrow Cutscene": "Red Rupee",
       "Market ToT Master Sword": "Master Sword",
-      "Market Treasure Chest Game Reward": "Stone Tower Small Key",
-      "Morpha": "Goron's Ruby",
-      "OGC Great Fairy Reward": "Deku Shield",
+      "Market Treasure Chest Game Reward": "Progressive Slingshot",
+      "Morpha": "Forest Medallion",
+      "OGC Great Fairy Reward": "Kafei's Mask",
       "Phantom Ganon": "Fire Medallion",
-      "Queen Gohma": "Forest Medallion",
+      "Queen Gohma": "Water Medallion",
       "SFM GS": "Gold Skulltula Token",
-      "SFM Wolfos Grotto Chest": "Huge Rupee (OOT)",
-      "Shadow Temple After Wind Enemy Chest": "Purple Rupee (OOT)",
-      "Shadow Temple After Wind Hidden Chest": "Piece of Heart",
+      "SFM Wolfos Grotto Chest": "Piece of Heart",
+      "Shadow Temple After Wind Enemy Chest": "Red Rupee",
+      "Shadow Temple After Wind Hidden Chest": "Blue Rupee (OOT)",
       "Shadow Temple Bongo Bongo Heart Container": "Shadow Temple Compass",
       "Shadow Temple Boss Key Chest": "Shadow Temple Boss Key",
       "Shadow Temple Compass Chest": "Shadow Temple Map",
-      "Shadow Temple Early Silver Rupee Chest": "Green Potion Refill",
+      "Shadow Temple Early Silver Rupee Chest": "Purple Rupee",
       "Shadow Temple Falling Spikes Lower Chest": "Shadow Temple Small Key",
       "Shadow Temple Falling Spikes Switch Chest": "Great Bay Stray Fairy",
-      "Shadow Temple Falling Spikes Upper Chest": "Heart Piece",
+      "Shadow Temple Falling Spikes Upper Chest": "Red Rupee",
       "Shadow Temple Freestanding Key": "Shadow Temple Small Key",
       "Shadow Temple GS Falling Spikes Room": "Gold Skulltula Token",
       "Shadow Temple GS Like Like Room": "Gold Skulltula Token",
@@ -4201,31 +4371,31 @@
       "Shadow Temple GS Triple Giant Pot": "Gold Skulltula Token",
       "Shadow Temple Hover Boots Chest": "Shadow Temple Small Key",
       "Shadow Temple Invisible Blades Invisible Chest": "Shadow Temple Small Key",
-      "Shadow Temple Invisible Blades Visible Chest": "Red Rupee",
-      "Shadow Temple Invisible Floormaster Chest": "Strength Upgrade",
-      "Shadow Temple Invisible Spikes Chest": "Bottle with Red Potion",
-      "Shadow Temple Map Chest": "Arrows (10)",
-      "Shadow Temple Spike Walls Left Chest": "Great Bay Stray Fairy",
+      "Shadow Temple Invisible Blades Visible Chest": "Progressive Goron Lullaby",
+      "Shadow Temple Invisible Floormaster Chest": "Garo's Mask",
+      "Shadow Temple Invisible Spikes Chest": "Heart Piece",
+      "Shadow Temple Map Chest": "Recovery Heart (OOT)",
+      "Shadow Temple Spike Walls Left Chest": "Progressive Slingshot",
       "Shadow Temple Wind Hint Chest": "Shadow Temple Small Key",
       "Sheik at Colossus": "Zelda's Lullaby",
-      "Sheik at Temple": "Saria's Song (OOT)",
+      "Sheik at Temple": "Minuet of Forest",
       "Sheik in Crater": "Song of Storms (OOT)",
       "Sheik in Forest": "Prelude of Light",
-      "Sheik in Ice Cavern": "Song of Time (OOT)",
+      "Sheik in Ice Cavern": "Saria's Song (OOT)",
       "Sheik in Kakariko": "Nocturne of Shadow",
       "Song from Impa": "Bolero of Fire",
       "Song from Malon": "Serenade of Water",
-      "Song from Ocarina of Time": "Minuet of Forest",
+      "Song from Ocarina of Time": "Song of Time (OOT)",
       "Song from Royal Family's Tomb": "Epona's Song (OOT)",
       "Song from Saria": "Sun's Song (OOT)",
       "Song from Windmill": "Requiem of Spirit",
-      "Spirit Temple Boss Key Chest": "Kafei's Mask",
+      "Spirit Temple Boss Key Chest": "Bunny Hood (OOT)",
       "Spirit Temple Child Bridge Chest": "Spirit Temple Boss Key",
       "Spirit Temple Child Climb East Chest": "Spirit Temple Map",
       "Spirit Temple Child Climb North Chest": "Stone Tower Map",
       "Spirit Temple Child Early Torches Chest": "Spirit Temple Small Key",
       "Spirit Temple Compass Chest": "Spirit Temple Small Key",
-      "Spirit Temple Early Adult Right Chest": "Ice Trap",
+      "Spirit Temple Early Adult Right Chest": "Purple Rupee (OOT)",
       "Spirit Temple First Mirror Left Chest": "Spirit Temple Compass",
       "Spirit Temple First Mirror Right Chest": "Progressive Bomb Bag",
       "Spirit Temple GS Boulder Room": "Gold Skulltula Token",
@@ -4233,23 +4403,23 @@
       "Spirit Temple GS Lobby": "Gold Skulltula Token",
       "Spirit Temple GS Metal Fence": "Gold Skulltula Token",
       "Spirit Temple GS Sun on Floor Room": "Gold Skulltula Token",
-      "Spirit Temple Hallway Left Invisible Chest": "Heart Container",
+      "Spirit Temple Hallway Left Invisible Chest": "Heart Container (OOT)",
       "Spirit Temple Hallway Right Invisible Chest": "Empty Bottle",
       "Spirit Temple Map Chest": "Spirit Temple Small Key",
-      "Spirit Temple Mirror Shield Chest": "Progressive Bow (OOT)",
-      "Spirit Temple Near Four Armos Chest": "Goron Mask",
+      "Spirit Temple Mirror Shield Chest": "Bombs (5)",
+      "Spirit Temple Near Four Armos Chest": "Hylian Shield",
       "Spirit Temple Silver Gauntlets Chest": "Spirit Temple Small Key",
       "Spirit Temple Statue Room Hand Chest": "Spirit Temple Small Key",
-      "Spirit Temple Statue Room Northeast Chest": "Deku Stick (1)",
-      "Spirit Temple Sun Block Room Chest": "Heart Piece",
+      "Spirit Temple Statue Room Northeast Chest": "Great Bay Small Key",
+      "Spirit Temple Sun Block Room Chest": "Stone Tower Compass",
       "Spirit Temple Topmost Chest": "Great Bay Boss Key",
-      "Spirit Temple Twinrova Heart Container": "Heart Piece",
+      "Spirit Temple Twinrova Heart Container": "Red Rupee",
       "Twinrova": "Light Medallion",
-      "Volvagia": "Water Medallion",
+      "Volvagia": "Zora's Sapphire",
       "Wasteland Carpet Salesman": "Bombchus (10)",
-      "Wasteland Chest": "Woodfall Compass",
+      "Wasteland Chest": "Empty Bottle",
       "Wasteland GS": "Gold Skulltula Token",
-      "Water Temple Boss Key Chest": "Song of Soaring",
+      "Water Temple Boss Key Chest": "Progressive Scale",
       "Water Temple Central Bow Target Chest": "Water Temple Boss Key",
       "Water Temple Central Pillar Chest": "Hylian Shield",
       "Water Temple Compass Chest": "Water Temple Map",
@@ -4268,7 +4438,7 @@
       "ZD Chest": "Snowhead Stray Fairy",
       "ZD Diving Minigame": "Double Defense (OOT)",
       "ZD GS Frozen Waterfall": "Gold Skulltula Token",
-      "ZD King Zora Thawed": "Red Rupee (OOT)",
+      "ZD King Zora Thawed": "Mask of Truth",
       "ZD Shop Item 1": "Buy Zora Tunic",
       "ZD Shop Item 2": "Buy Arrows (10)",
       "ZD Shop Item 3": "Buy Heart",
@@ -4277,22 +4447,22 @@
       "ZD Shop Item 6": "Buy Arrows (50)",
       "ZD Shop Item 7": "Buy Fish",
       "ZD Shop Item 8": "Buy Red Potion [50]",
-      "ZF Bottom Freestanding PoH": "Heart Piece",
+      "ZF Bottom Freestanding PoH": "Boomerang",
       "ZF GS Above The Log": "Gold Skulltula Token",
       "ZF GS Hidden Cave": "Gold Skulltula Token",
       "ZF GS Tree": "Gold Skulltula Token",
-      "ZF Great Fairy Reward": "Piece of Heart",
-      "ZF Iceberg Freestanding PoH": "Arrows (10)",
-      "ZR Frogs Ocarina Game": "Keaton Mask (OOT)",
-      "ZR Frogs in the Rain": "Stone Mask",
+      "ZF Great Fairy Reward": "Heart Piece",
+      "ZF Iceberg Freestanding PoH": "Goron Mask",
+      "ZR Frogs Ocarina Game": "Gerudo Mask",
+      "ZR Frogs in the Rain": "Snowhead Stray Fairy",
       "ZR GS Above Bridge": "Gold Skulltula Token",
       "ZR GS Ladder": "Gold Skulltula Token",
       "ZR GS Near Raised Grottos": "Gold Skulltula Token",
       "ZR GS Tree": "Gold Skulltula Token",
       "ZR Magic Bean Salesman": "Magic Bean (OOT)",
-      "ZR Near Domain Freestanding PoH": "Huge Rupee (OOT)",
+      "ZR Near Domain Freestanding PoH": "Piece of Heart",
       "ZR Near Open Grotto Freestanding PoH": "Snowhead Stray Fairy",
-      "ZR Open Grotto Chest": "Zora Mask (OOT)"
+      "ZR Open Grotto Chest": "Blue Rupee (OOT)"
     },
     "prices": {
       "GC Medigoron": 200,
@@ -4363,6 +4533,10 @@
       "ZD Shop Item 7": 200,
       "ZD Shop Item 8": 50,
       "ZR Magic Bean Salesman": 60
+    },
+    "resolvedChoices": {
+      "startingAge": "child",
+      "version": 1
     },
     "sceneRestrictions": "ootmm-32.3",
     "settings": {

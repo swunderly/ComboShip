@@ -452,7 +452,7 @@
       },
       "native": {
         "generationExit": 0,
-        "playthroughExit": 3,
+        "playthroughExit": 0,
         "repro": "identical"
       },
       "facts": {
@@ -467,22 +467,10 @@
         ]
       },
       "identity": {
-        "placementsSha256": "0d171dd8560c47f18e7dd174ba0fad14d7a941b0878b4ae553a2215405699476",
+        "placementsSha256": "fcd401c5bd70a7dc27bac739287d7aa33b6483efde6492b508a365eb3a18060c",
         "routes": []
       },
-      "replayFailure": {
-        "playthroughExit": 3,
-        "lines": [
-          "[playthrough] seed 'Wallmaster0413-d06-allsanity-oot' — Pass 1 (0 OoT / 0 MM enabled trick(s), starts in OOT)",
-          "[PLAYTHROUGH] seed 'Wallmaster0413-d06-allsanity-oot' - NOT beatable",
-          "[PLAYTHROUGH] collected 574 items across 3 spheres through the reachability fixed point",
-          "[playthrough] Pass 1 stuck (neither Ganon nor Majora is reachable) — retrying with ALL tricks",
-          "[PLAYTHROUGH] seed 'Wallmaster0413-d06-allsanity-oot' - BEATABLE at sphere 10",
-          "[PLAYTHROUGH] collected 4814 items across 14 spheres through the reachability fixed point",
-          "[playthrough] RESULT: beatable ONLY with tricks beyond the seed's settings (sphere 10). With the seed's tricks, Pass 1 got stuck: neither Ganon nor Majora is reachable."
-        ]
-      },
-      "recordedFailure": "Allsanity preset (MQ coin flips, no Wallmaster Shuffle): generation PASS and reproduction byte-identical, but the recorded-seed replay is stuck at sphere 3 with the seed's settings and beatable only with all tricks (playthrough exit 3); the seed records each key ring only as Random."
+      "madeBy": "70930d69ea2961b5356644ce7dcd261c28247715"
     },
     {
       "id": "d04-mq-count4-random",
@@ -1450,7 +1438,7 @@
         "masterQuestDungeons": []
       },
       "identity": {
-        "placementsSha256": "61c375d1a076da2b2d523078c2f62d5486c04a907a9bddd30cbe13a2aadc83af",
+        "placementsSha256": "d8ea907162652c277d21a15c1820199de80a08b4d5568982f86d8ebeba39982a",
         "routes": [
           [
             "MM_WALLMASTER_BTW_ENTRANCE",
@@ -1506,7 +1494,8 @@
           ]
         ]
       },
-      "entrances": "seeds/a07-songs-oot-randomage-ageless.entrances.txt"
+      "entrances": "seeds/a07-songs-oot-randomage-ageless.entrances.txt",
+      "madeBy": "70930d69ea2961b5356644ce7dcd261c28247715"
     },
     {
       "id": "a08-songs-random",
@@ -4127,24 +4116,16 @@
   ],
   "hostOnlyFiles": [
     {
-      "path": ".gitattributes",
-      "reason": "Git checkout attribute (-text) that keeps the new fixture files byte-exact; read by git only, never by a build."
-    },
-    {
-      "path": "ComboAndroid/tests/CMakeLists.txt",
-      "reason": "Host test registration of entrance_release_corpus_0413; not part of the Android or comborando build."
-    },
-    {
-      "path": "ComboAndroid/tests/entrance_corpus_0413_tests.cpp",
-      "reason": "New host checker the 0.4.13 corpus test compiles; not part of the Android or comborando build."
-    },
-    {
       "path": "ComboAndroid/tests/entrance_corpus_0413_tests.py",
-      "reason": "New host test of the 0.4.13 corpus fixtures; not part of the Android or comborando build."
+      "reason": "Host test of the 0.4.13 corpus: checks its later release candidates and the provenance against the current one; not part of the Android or comborando build."
+    },
+    {
+      "path": "ComboAndroid/tests/fixtures/wallmasters-0413-RC2-NOTE.txt",
+      "reason": "Retired: the note naming the rows RC2 regenerates (a07, d06), settled by this run; no build or test read it."
     },
     {
       "path": "ComboAndroid/tools/wallmaster_corpus.py",
-      "reason": "Host corpus tool (plan-0413, manifest-0413, provenance-0413); not packaged with the app or comborando."
+      "reason": "Host corpus tool: later release candidates of the 0.4.13 corpus (plan-rc-0413, later-rc-0413, sample-0413), a forced refusal on any attempt, provenance against the current one; not packaged with the app or comborando."
     }
   ],
   "files": [
@@ -4445,8 +4426,8 @@
     },
     {
       "path": "seeds/a07-songs-oot-randomage-ageless.json",
-      "bytes": 177201,
-      "sha256": "6d42b88a4ebc267e6f69999642cfbe3af3b3928a156427e15c19638116dc3b7f"
+      "bytes": 182078,
+      "sha256": "59085876a091dd53981f20f31bee926249af5199e394b7ccaabdf2b0d4450844"
     },
     {
       "path": "seeds/a08-songs-random.entrances.txt",
@@ -4670,8 +4651,8 @@
     },
     {
       "path": "seeds/d06-allsanity-oot.json",
-      "bytes": 939981,
-      "sha256": "db2c97b3315071ad276c9263b9b68257e5a3d000712a719d27a20de14e71f39a"
+      "bytes": 945991,
+      "sha256": "bd2715e45188d424e845fad0f6658dd248faddf117dd7f2bdfb7a433d5126734"
     },
     {
       "path": "seeds/d07-u7-all-mm-beatable-souls.json",
@@ -4767,6 +4748,433 @@
       "path": "seeds/f03-nologic-mq12-mm.json",
       "bytes": 181052,
       "sha256": "ad493754fd76df687c142a6b8105230fdf46aaac5859e306c103c7c808e9647f"
+    }
+  ],
+  "laterReleases": [
+    {
+      "versionName": "0.4.13",
+      "versionCode": 71,
+      "sourceCommit": "70930d69ea2961b5356644ce7dcd261c28247715",
+      "build": "SHIPPING",
+      "apkSha256": "e0b4ce2673125aa4618938dfd9c3447e2cfb670f4d645825597377248818643f",
+      "comborandoSha256": "7c588659c28d352ee8b9a58cd6375017666bfaa607f03059fbd4713587c89eef",
+      "libraries": {
+        "lib2ship.so": "35950852164f7ab9824a1535db8c5007ddd4ae3e98bedf0d9f3b0d918bbf0e4e",
+        "libSDL2.so": "e74542b0e7d377449a0aa1d6ca11f9663d5be71e5ccc348d692547b9c4a1bd6b",
+        "libSDL2_net.so": "8834c0f5b4320e13453f96ef087e8b37acbaae2feb49b3a3b96e530b0de3b4c3",
+        "libc++_shared.so": "cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c",
+        "libcomboship.so": "961ed9a2eae57db9e486cc87592c8596c1c55daa4ee85cfe39cc25a6f2402aad",
+        "libcomboui.so": "340a8d25305e2d33071e7907823cacc308447d73b54d29f7b1d75af8d7ef6c8c",
+        "libsoh.so": "faeea194dc84d85224f3718b7945a78a2f3a590baa73b3353ef472835ab8336a",
+        "libultraship.so": "d0e7d59a33bee665e47d11643c9c0987b3a52346d4618fc34f3595eccb6b6cc5"
+      },
+      "plan": {
+        "schema": "comboship-wallmasters-0413-later-rc-plan-v1",
+        "sha256": "a12eae252915c1041185c471e6c73988e04f771f5eacd863f41fcb2923a83edc",
+        "timeouts": {
+          "generation": 1800,
+          "playthrough": 1800
+        }
+      },
+      "changedFiles": [
+        {
+          "path": ".gitattributes",
+          "generation": "unchanged",
+          "reason": "Adds the -text checkout attribute for the wallmasters-0413 fixture files; read by git only, never compiled into the APK or comborando."
+        },
+        {
+          "path": "ComboAndroid/DEVICE_TESTS.md",
+          "generation": "unchanged",
+          "reason": "Docs only: device checklists for recorded seed choices and the departure save fix; not built."
+        },
+        {
+          "path": "ComboAndroid/docs/CHANGELOG.md",
+          "generation": "unchanged",
+          "reason": "Docs only: 0.4.13 changelog entries (recorded random choices, departure save fix); not built."
+        },
+        {
+          "path": "ComboAndroid/tests/CMakeLists.txt",
+          "generation": "unchanged",
+          "reason": "Host test project (ComboAndroidTests) registrations; no Android or comborando build adds ComboAndroid/tests."
+        },
+        {
+          "path": "ComboAndroid/tests/combo_console_reset_tests.py",
+          "generation": "unchanged",
+          "reason": "Host test of the MM portal-return save storing its flags first; built only by the host test project, never into the APK or comborando."
+        },
+        {
+          "path": "ComboAndroid/tests/cross_game_departure_save_tests.py",
+          "generation": "unchanged",
+          "reason": "New host test of the OoT and MM departure-save flag stores (gameplay code); never built into the APK or comborando."
+        },
+        {
+          "path": "ComboAndroid/tests/entrance_corpus_0413_tests.cpp",
+          "generation": "unchanged",
+          "reason": "New host checker of the 0.4.13 corpus fixtures; built only by the host test project."
+        },
+        {
+          "path": "ComboAndroid/tests/entrance_corpus_0413_tests.py",
+          "generation": "unchanged",
+          "reason": "New host test of the 0.4.13 corpus fixtures, manifest and provenance; reads files only, never part of generation."
+        },
+        {
+          "path": "ComboAndroid/tests/entrance_unified_wiring_tests.py",
+          "generation": "unchanged",
+          "reason": "Host source-text test updated for the two-argument shortfall stop and the replay layout install after finalize; not built into the APK or comborando."
+        },
+        {
+          "path": "ComboAndroid/tests/entrance_vanilla_generator_tests.cpp",
+          "generation": "unchanged",
+          "reason": "Host test updated for WallmasterCapacityShortfall::forced() and the two-argument shortfall stop; built only by the host test project."
+        },
+        {
+          "path": "ComboAndroid/tests/er_any_runtime_tests.py",
+          "generation": "unchanged",
+          "reason": "Host source-scan test allowing the departure save's new savedSceneNum writer in OTRGlobals.cpp; not built into the APK or comborando."
+        },
+        {
+          "path": "ComboAndroid/tests/fixtures/wallmasters-0413-RC2-NOTE.txt",
+          "generation": "unchanged",
+          "reason": "Plain-text note naming the rows RC2 regenerates (a07, d06); no build or test reads it."
+        },
+        {
+          "path": "ComboAndroid/tests/mq_generation_settings_tests.py",
+          "generation": "unchanged",
+          "reason": "Host harness compiling extracted finalize lines to check MasterQuestRandom and the Legacy-MQ choice; not part of the APK or comborando."
+        },
+        {
+          "path": "ComboAndroid/tests/seed_choices_finalize_tests.py",
+          "generation": "unchanged",
+          "reason": "New host harness compiling the production finalize lines (Seeded against Legacy, records); host-only."
+        },
+        {
+          "path": "ComboAndroid/tests/seed_choices_tests.cpp",
+          "generation": "unchanged",
+          "reason": "New host unit test of SeedChoices.h; built only by the host test project."
+        },
+        {
+          "path": "ComboAndroid/tools/wallmaster_corpus.py",
+          "generation": "unchanged",
+          "reason": "Host corpus tool (plan-0413, manifest-0413, provenance-0413); stages and checks device runs, never built into or called by comborando."
+        },
+        {
+          "path": "combo/ComboRandoHeadless.cpp",
+          "generation": "expected",
+          "reason": "Expected: generation binds the Seeded choices scope and stamps oot.resolvedChoices, both no-ops without a random choice (a07 and d06 have one); the forced-shortfall stop is refusal-only; the rest is --playthrough only."
+        },
+        {
+          "path": "combo/ComboRandomizerProfiles.h",
+          "generation": "unchanged",
+          "reason": "App header, not included by comborando: SettingsDocument also drops oot.resolvedChoices from a settings document; no generation effect."
+        },
+        {
+          "path": "combo/ComboShip.cpp",
+          "generation": "unchanged",
+          "reason": "App launcher (libcomboship), not compiled into comborando: RunComboFill and reload get the same choices scope, record and forced stop; comborando output cannot change."
+        },
+        {
+          "path": "combo/gui/ComboRandomizerProfiles.cpp",
+          "generation": "unchanged",
+          "reason": "Seed view UI in libcomboui (recorded age and trials, unrecorded-choice note); not loaded by comborando."
+        },
+        {
+          "path": "combo/rando/SeedChoices.h",
+          "generation": "expected",
+          "reason": "Expected: new random-choice predicates, per-choice streams and the resolvedChoices record; with no choice random nothing is drawn from them and nothing is recorded (a07 and d06 have one)."
+        },
+        {
+          "path": "combo/rando/SingleGameFill.h",
+          "generation": "unchanged",
+          "reason": "Vanilla-run setup included only by ComboShip.cpp: also drops resolvedChoices; not compiled into comborando."
+        },
+        {
+          "path": "combo/rando/entrances/UnifiedBridge.h",
+          "generation": "unchanged",
+          "reason": "Refusal-only: a forced MQ Wallmaster shortfall now stops on any attempt with exit 2 and the player sentence; it recurs on every roll, so RC1 wrote no seed for such settings either (c09)."
+        },
+        {
+          "path": "docs/deviations/rando.md",
+          "generation": "unchanged",
+          "reason": "Docs only: forced shortfall, replay layout order and recorded settings choices notes; not built."
+        },
+        {
+          "path": "mm/2s2h/BenPort.cpp",
+          "generation": "unchanged",
+          "reason": "lib2ship gameplay hook: stores scene and cycle flags before the MM cross-game departure save; never runs in headless generation."
+        },
+        {
+          "path": "mm/2s2h/Rando/CrossEntrance.inc.h",
+          "generation": "unchanged",
+          "reason": "lib2ship gameplay code: copies live and cycle flags into the saved flags before an entrance-departure save; never runs in headless generation."
+        },
+        {
+          "path": "mm/2s2h/Rando/FaroresWind.cpp",
+          "generation": "unchanged",
+          "reason": "lib2ship gameplay code: the Combo_MMStoreDepartureFlags wrapper, called only from the departure-save hook; no generation path."
+        },
+        {
+          "path": "mm/2s2h/Rando/FaroresWind.h",
+          "generation": "unchanged",
+          "reason": "Declares Combo_MMStoreDepartureFlags, a gameplay departure-save helper; no generation effect."
+        },
+        {
+          "path": "soh/soh/Enhancements/randomizer/SeedContext.h",
+          "generation": "expected",
+          "reason": "Expected: the context's choice mode, record and resolved choices (default Legacy); they change a finalize only for a random choice, through settings.cpp (a07 and d06)."
+        },
+        {
+          "path": "soh/soh/Enhancements/randomizer/settings.cpp",
+          "generation": "expected",
+          "reason": "Expected: a Seeded finalize draws only the choices its settings make random (age, key rings, trials, non-bundled MQ) from streams of their own and restores rando_state; every other draw is RC1's (a07 and d06 change)."
+        },
+        {
+          "path": "soh/soh/OTRGlobals.cpp",
+          "generation": "expected",
+          "reason": "Expected: new seed-choice exports (mode, record, dump that is empty without a random choice) used by comborando for a07 and d06; the Combo_FinishInit departure flag store is gameplay only."
+        }
+      ],
+      "status": "checked",
+      "regenerated": [
+        {
+          "id": "a07-songs-oot-randomage-ageless",
+          "reason": "Random starting age: RC2 draws it from a stream of its own (SeedChoices.h) and records oot.resolvedChoices, so RC1's seed stays valid only as an RC1 artifact.",
+          "corpusSeedSha256": "6d42b88a4ebc267e6f69999642cfbe3af3b3928a156427e15c19638116dc3b7f",
+          "corpusEntrancesSha256": "805449a7e1e03e9caeeda28d90f0061e622c4b2c06b8f0521001ba3ebde19001",
+          "corpusPlaythroughExit": 0,
+          "seedSha256": "59085876a091dd53981f20f31bee926249af5199e394b7ccaabdf2b0d4450844",
+          "entrancesSha256": "805449a7e1e03e9caeeda28d90f0061e622c4b2c06b8f0521001ba3ebde19001",
+          "playthroughExit": 0,
+          "repro": "identical",
+          "resolvedChoices": {
+            "startingAge": "child",
+            "version": 1
+          },
+          "differences": {
+            "displaySeed": 1,
+            "foreign": 1,
+            "hints.mm": 50,
+            "hints.oot": 119,
+            "mm.placements": 210,
+            "oot.placements": 140,
+            "oot.resolvedChoices": 1
+          }
+        },
+        {
+          "id": "d06-allsanity-oot",
+          "reason": "Key Ring Selection with every dungeon Random and a Random starting age: RC2 draws both from streams of their own and records oot.resolvedChoices, so RC1's seed stays valid only as an RC1 artifact.",
+          "corpusSeedSha256": "db2c97b3315071ad276c9263b9b68257e5a3d000712a719d27a20de14e71f39a",
+          "corpusEntrancesSha256": null,
+          "corpusPlaythroughExit": 3,
+          "seedSha256": "bd2715e45188d424e845fad0f6658dd248faddf117dd7f2bdfb7a433d5126734",
+          "entrancesSha256": null,
+          "playthroughExit": 0,
+          "repro": "identical",
+          "resolvedChoices": {
+            "keyRings": {
+              "dungeons": [
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                11
+              ],
+              "gerudoFortress": true
+            },
+            "startingAge": "child",
+            "version": 1
+          },
+          "differences": {
+            "foreign": 1,
+            "hints.mm": 183,
+            "hints.oot": 140,
+            "mm.placements": 2401,
+            "oot.iceTrapModels": 8,
+            "oot.placements": 2058,
+            "oot.resolvedChoices": 1
+          }
+        }
+      ],
+      "replays": [
+        {
+          "id": "a09-songs-oot-adult-ageless-mq12",
+          "seedSha256": "945c393ef9ffd345606ac770330c7783ccca1e948a666a9a1b23f956d979dfc2",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "a10-songs-mm-mq12",
+          "seedSha256": "2082716c61eca1632274c59ba08cd614d79dbaa2798bedd5570c7ff03d689ccf",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "b08-nocturne-oot-adult-mq12",
+          "seedSha256": "3baf459b3f906c1a8ea3960f468384749def13a655b8addae093af37af937d0e",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "c01-mq12-oot-child",
+          "seedSha256": "db771dc74be1787b43aba4579cb93dabae0a87c132745238fed530955de5fc55",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "c02-mq12-oot-adult",
+          "seedSha256": "9911404c57dd379d76021865089f6a8a63b220439ad2c50e68a6c8ee8d01c16e",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "c03-mq12-mm",
+          "seedSha256": "4091ac808cf52d3fd8c1da23d3478603747f0244d83a6adc094e62b330a662a7",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "c04-mq-randomnumber-oot-child",
+          "seedSha256": "6e9e450c03ac42029c0aa7ce74d2e3727db3c6c6596c11545b79a83f08046a0e",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "c05-mq-count6-oot-adult",
+          "seedSha256": "649f2407ce8589a0906180111cc427832d2624d970b099878337de4d28a8c6d4",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "c06-mq-selection-oot-child",
+          "seedSha256": "4024ca8d3e4e513fa2696c7f3a018e58c0f622c6a1885eea54cf1b438f27d67c",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "c07-mq-selection-random-mm",
+          "seedSha256": "1af884edcbbbe2eb23c08ec6451f91936776b9676c6af2c3b912321233203e40",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "c08-mq12-oot-adult-beatable-souls",
+          "seedSha256": "9a7d8ba28085873b316edbb1cd4b0233617766d6c0d3b3e899b24bc7eccb0650",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 0
+        },
+        {
+          "id": "f03-nologic-mq12-mm",
+          "seedSha256": "ad493754fd76df687c142a6b8105230fdf46aaac5859e306c103c7c808e9647f",
+          "corpusPlaythroughExit": 2,
+          "playthroughExit": 1
+        }
+      ],
+      "refusals": [
+        {
+          "id": "c09-capacity-forced-oot-child",
+          "sentence": "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.",
+          "forced": true,
+          "firstAttemptMqDungeons": [
+            "Spirit",
+            "BotW"
+          ],
+          "exits": [
+            2,
+            2
+          ],
+          "written": [],
+          "attempt": 1
+        }
+      ],
+      "sample": {
+        "groups": "abcde",
+        "rows": [
+          "a01-songs-oot-child",
+          "a05-songs-mm",
+          "a08-songs-random",
+          "b01-beginner-oot-child-1",
+          "b05-beginner-mm",
+          "c01-mq12-oot-child",
+          "c03-mq12-mm",
+          "d00-u7-none-oot-child",
+          "d03-u7-random-number-mm",
+          "d04-mq-count4-random",
+          "e-mm-completion-souls1",
+          "e-oot-adult-everyCheck-souls0-00",
+          "e-random-fallback-010"
+        ],
+        "results": [
+          {
+            "id": "a01-songs-oot-child",
+            "seedSha256": "753ec1382b61809ddc839fa2c7df8c5a897ce6b28437e3e83e6e59eabf670f7a",
+            "entrancesSha256": "fbd0a9c640a948f6668a2dea089fa4016af908bfcc0b3079ac77f47190da3e29"
+          },
+          {
+            "id": "a05-songs-mm",
+            "seedSha256": "2ab6458e00baec1fc2f70df3fb034e0ae6611413f0e420cf1beb74e979c9f3af",
+            "entrancesSha256": "94ce44b9ed48d18f0939a3bbb8c89b5c36db6519d7ce420d0c8c236eda6523be"
+          },
+          {
+            "id": "a08-songs-random",
+            "seedSha256": "7dfc85cfba46691ae05e2a965489a3161827b0357b975aaf8f720762cb793099",
+            "entrancesSha256": "747aa78f3060e3a3fe06eba8a55d55a40b5147fa70a65ddf8ba1e43e7a55540a"
+          },
+          {
+            "id": "b01-beginner-oot-child-1",
+            "seedSha256": "d7078472a395dda6b4c84bc82cf4bcce2900e658d1df307dd6dfaad08f1bd711",
+            "entrancesSha256": "21a570514e178d8464d6d052db72c657000c6ccd9d460883bc978947737f2d39"
+          },
+          {
+            "id": "b05-beginner-mm",
+            "seedSha256": "56869c14fc255d9800c45394d27000073af149ba88ca8cbe5348365bdfab0735",
+            "entrancesSha256": "c79f4976c8cfb26b98dbfdffb702a5439245586cb6b5a9f646e3aac2db9f5f09"
+          },
+          {
+            "id": "c01-mq12-oot-child",
+            "seedSha256": "db771dc74be1787b43aba4579cb93dabae0a87c132745238fed530955de5fc55",
+            "entrancesSha256": "3318b223e8e0f6e7e4c07785ba54ac1c5a25ed221968921ac76621fb073acd22"
+          },
+          {
+            "id": "c03-mq12-mm",
+            "seedSha256": "4091ac808cf52d3fd8c1da23d3478603747f0244d83a6adc094e62b330a662a7",
+            "entrancesSha256": "52828cd99d9e50e3dc892e5d1e52d5a2ed3653702027560fe8b84b2457fff373"
+          },
+          {
+            "id": "d00-u7-none-oot-child",
+            "seedSha256": "bc7336c4c22128d0922893061e4208fba815a76b63269084420cc02001e435c4",
+            "entrancesSha256": null
+          },
+          {
+            "id": "d03-u7-random-number-mm",
+            "seedSha256": "c19ff7bba8b2968d9968e6e7792f9151abfb94dc444b0d5fda8e3c96ed5cca47",
+            "entrancesSha256": null
+          },
+          {
+            "id": "d04-mq-count4-random",
+            "seedSha256": "c4462d371c7c8b4ae03ff21eb7cba7ee0b6ce27016aabc8686517e94cda808c1",
+            "entrancesSha256": null
+          },
+          {
+            "id": "e-mm-completion-souls1",
+            "seedSha256": "57599e14c20b3b5e545b27ce03ff2590c6ee5923a23200efc2f0efd107b099b5",
+            "entrancesSha256": "b3739bcc48b01e735d3928ca8e6e71d5de7ae525019799bf872f9c1f9b805d94"
+          },
+          {
+            "id": "e-oot-adult-everyCheck-souls0-00",
+            "seedSha256": "34b33ab91785f0def50b207abf25145630b1b1e823c368397535291dfd8721ae",
+            "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+          },
+          {
+            "id": "e-random-fallback-010",
+            "seedSha256": "bfd02c21f4bf4debd402b8ccd62f7c2e1abdd6289c839a30bec09b2ee1c6dac5",
+            "entrancesSha256": "44e33a137b166d5e26c2af6db460957fa86bd399f08f5c24420086edeb63674d"
+          }
+        ]
+      },
+      "run": {
+        "resultsSha256": "eb40ac2ee83edd9248be26d2a1e5490ec2fcfef0493d1ebf51e7f1fa5f591ca6"
+      }
     }
   ]
 }
