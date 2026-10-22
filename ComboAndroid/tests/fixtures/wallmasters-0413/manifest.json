@@ -1,0 +1,4772 @@
+{
+  "schema": "comboship-wallmasters-0413-fixtures-v1",
+  "capabilities": [
+    "wallmasters-own-game-vanilla-v1",
+    "wallmasters-own-game-quests-v1",
+    "wallmasters-own-game-songs-v1",
+    "wallmasters-own-game-songs-v2"
+  ],
+  "release": {
+    "versionName": "0.4.13",
+    "versionCode": 71,
+    "sourceCommit": "dbf7e4591a7b7dd9dfe984a6c714ecda2dc406ae",
+    "build": "SHIPPING",
+    "apkSha256": "f791fe4aab3a02843dca9b2d1f8235b1f7141a2b9253c5fc9ee7dc8daca20b98",
+    "comborandoSha256": "919d8e27419fe1d05f3882c012f76de70f030d7163929f754f03d1ea6f312a2a",
+    "libraries": {
+      "lib2ship.so": "076322a100b3704eddb87e706e3effa93490b1961f89b2d59b9ef119f61535dc",
+      "libSDL2.so": "e74542b0e7d377449a0aa1d6ca11f9663d5be71e5ccc348d692547b9c4a1bd6b",
+      "libSDL2_net.so": "8834c0f5b4320e13453f96ef087e8b37acbaae2feb49b3a3b96e530b0de3b4c3",
+      "libc++_shared.so": "cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c",
+      "libcomboship.so": "ddabdf1553701d423101acef3b88b0b9fb9c21925108927fffef42e5096c1d34",
+      "libcomboui.so": "26729d5aa23a9a3469dcff0c00ee92f008d41efa1a3824584ac2320918d5a894",
+      "libsoh.so": "99cf6f22d3bc4d55c3ec5e9ac9f229276a5d13c1d13566441c960bc5ef1131ab",
+      "libultraship.so": "d0e7d59a33bee665e47d11643c9c0987b3a52346d4618fc34f3595eccb6b6cc5"
+    }
+  },
+  "plan": "inputs/plan.json",
+  "presets": "inputs/presets.json",
+  "corpus0412": {
+    "sourceCommit": "3151532966517b945c902a0b379ad913b8fe7cfb",
+    "manifestSha256": "82b7668eaf8a89f28f729601446b604a4b90118192dc090f78d5e362abee07a2"
+  },
+  "regressionAdditions": [
+    {
+      "path": "oot.sceneRestrictions",
+      "value": "ootmm-32.3"
+    },
+    {
+      "path": "oot.mqDataSource",
+      "value": "ootmm-32.3"
+    },
+    {
+      "path": "oot.masterQuestDungeons",
+      "value": []
+    },
+    {
+      "path": "oot.masterQuestDungeonNames",
+      "value": []
+    }
+  ],
+  "seeds": [
+    {
+      "id": "d02-u7-selection-random-oot-child",
+      "group": "d",
+      "kind": "plain",
+      "config": "inputs/comboship-d02-u7-selection-random-oot-child.json",
+      "request": {
+        "label": "Wallmaster0413-d02-u7-selection-random-oot-child",
+        "masterSeed": 419070002,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/d02-u7-selection-random-oot-child.json",
+      "result": {
+        "masterSeed": 419070002,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": null,
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Spirit",
+          "Shadow",
+          "IC",
+          "GTG"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "200a3cc3c1b502c16ded3cf38142b024ad936688a5e034cd0a1a76f16e11ff76",
+        "routes": []
+      }
+    },
+    {
+      "id": "d03-u7-random-number-mm",
+      "group": "d",
+      "kind": "plain",
+      "config": "inputs/comboship-d03-u7-random-number-mm.json",
+      "request": {
+        "label": "Wallmaster0413-d03-u7-random-number-mm",
+        "masterSeed": 419070003,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/d03-u7-random-number-mm.json",
+      "result": {
+        "masterSeed": 419070003,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": null,
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "701bfa78446374d7bcb03fac5e7e9415e07c89bf361ed3fdb38a5d9863ec6ce2",
+        "routes": []
+      }
+    },
+    {
+      "id": "a01-songs-oot-child",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a01-songs-oot-child.json",
+      "request": {
+        "label": "Wallmaster0413-a01-songs-oot-child",
+        "masterSeed": 413070000,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a01-songs-oot-child.json",
+      "result": {
+        "masterSeed": 413070000,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "f057075059af4f38e25685ad12e0e2b387754790f23d495fbec2f3f1aa8085bd",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_FIRE"
+          ]
+        ]
+      },
+      "entrances": "seeds/a01-songs-oot-child.entrances.txt"
+    },
+    {
+      "id": "b01-beginner-oot-child-1",
+      "group": "b",
+      "kind": "er",
+      "config": "inputs/comboship-b01-beginner-oot-child-1.json",
+      "request": {
+        "label": "Wallmaster0413-b01-beginner-oot-child-1",
+        "masterSeed": 413070100,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/b01-beginner-oot-child-1.json",
+      "result": {
+        "masterSeed": 413070100,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v2",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "1f7466654c811d2399b9c7cb84ec68505bf9d43e725962c23f88d1f200600edd",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_DODONGO_CAVERN"
+          ]
+        ]
+      },
+      "entrances": "seeds/b01-beginner-oot-child-1.entrances.txt"
+    },
+    {
+      "id": "e-oot-child-everyCheck-souls0-00",
+      "group": "e",
+      "kind": "pin",
+      "config": "inputs/0412-comboship-everyCheck-souls0-age0.json",
+      "request": {
+        "label": "Wallmaster0412-oot-child-everyCheck-souls0-00",
+        "masterSeed": 412070000,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/e-oot-child-everyCheck-souls0-00.json",
+      "result": {
+        "masterSeed": 412070000,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical",
+        "pin": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-vanilla-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "dc5c359081e858e213eca1b6c222eeaae9a20ecb1ce0dcf6ce4b71c48fc6d7a4",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ]
+        ]
+      },
+      "entrances": "seeds/e-oot-child-everyCheck-souls0-00.entrances.txt",
+      "regression": {
+        "corpusSeed": "oot-child-everyCheck-souls0-00",
+        "corpusSeedSha256": "4ce1d32d5078c2cba14523905c6e1906023def796f99fba8d07fb61d75c8a1d3",
+        "corpusEntrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3",
+        "entrancesIdentical": true,
+        "placementsIdentical": true,
+        "routesIdentical": true,
+        "differences": [
+          {
+            "path": "oot.masterQuestDungeonNames",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.masterQuestDungeons",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.mqDataSource",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          },
+          {
+            "path": "oot.sceneRestrictions",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "d06-allsanity-oot",
+      "group": "d",
+      "kind": "plain",
+      "config": "inputs/comboship-d06-allsanity-oot.json",
+      "request": {
+        "label": "Wallmaster0413-d06-allsanity-oot",
+        "masterSeed": 419070006,
+        "startingGame": "oot",
+        "ootStartingAge": 2,
+        "accessibility": "completion",
+        "souls": 1
+      },
+      "seed": "seeds/d06-allsanity-oot.json",
+      "result": {
+        "masterSeed": 419070006,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 3,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": null,
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "Forest",
+          "Shadow",
+          "IC"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "0d171dd8560c47f18e7dd174ba0fad14d7a941b0878b4ae553a2215405699476",
+        "routes": []
+      },
+      "replayFailure": {
+        "playthroughExit": 3,
+        "lines": [
+          "[playthrough] seed 'Wallmaster0413-d06-allsanity-oot' — Pass 1 (0 OoT / 0 MM enabled trick(s), starts in OOT)",
+          "[PLAYTHROUGH] seed 'Wallmaster0413-d06-allsanity-oot' - NOT beatable",
+          "[PLAYTHROUGH] collected 574 items across 3 spheres through the reachability fixed point",
+          "[playthrough] Pass 1 stuck (neither Ganon nor Majora is reachable) — retrying with ALL tricks",
+          "[PLAYTHROUGH] seed 'Wallmaster0413-d06-allsanity-oot' - BEATABLE at sphere 10",
+          "[PLAYTHROUGH] collected 4814 items across 14 spheres through the reachability fixed point",
+          "[playthrough] RESULT: beatable ONLY with tricks beyond the seed's settings (sphere 10). With the seed's tricks, Pass 1 got stuck: neither Ganon nor Majora is reachable."
+        ]
+      },
+      "recordedFailure": "Allsanity preset (MQ coin flips, no Wallmaster Shuffle): generation PASS and reproduction byte-identical, but the recorded-seed replay is stuck at sphere 3 with the seed's settings and beatable only with all tricks (playthrough exit 3); the seed records each key ring only as Random."
+    },
+    {
+      "id": "d04-mq-count4-random",
+      "group": "d",
+      "kind": "plain",
+      "config": "inputs/comboship-d04-mq-count4-random.json",
+      "request": {
+        "label": "Wallmaster0413-d04-mq-count4-random",
+        "masterSeed": 419070004,
+        "startingGame": "random",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/d04-mq-count4-random.json",
+      "result": {
+        "masterSeed": 419070004,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": null,
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "Forest",
+          "IC",
+          "GTG"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "1a6a3d2cb66fbb8e9c23396129ff73e3c081351ff6e121389bb4ccae391d17d2",
+        "routes": []
+      }
+    },
+    {
+      "id": "b03-beginner-oot-adult-1",
+      "group": "b",
+      "kind": "er",
+      "config": "inputs/comboship-b03-beginner-oot-adult-1.json",
+      "request": {
+        "label": "Wallmaster0413-b03-beginner-oot-adult-1",
+        "masterSeed": 413070102,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/b03-beginner-oot-adult-1.json",
+      "result": {
+        "masterSeed": 413070102,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v2",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "10c6d4e9e18ee52736c047f3dea6d8f24a1e0882c80d7a55015e2cc7dc1260a0",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_FOREST"
+          ]
+        ]
+      },
+      "entrances": "seeds/b03-beginner-oot-adult-1.entrances.txt"
+    },
+    {
+      "id": "e-mm-everyCheck-souls0-00",
+      "group": "e",
+      "kind": "pin",
+      "config": "inputs/0412-comboship-everyCheck-souls0-age0.json",
+      "request": {
+        "label": "Wallmaster0412-mm-everyCheck-souls0-00",
+        "masterSeed": 412070000,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/e-mm-everyCheck-souls0-00.json",
+      "result": {
+        "masterSeed": 412070000,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical",
+        "pin": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-vanilla-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "dc5c359081e858e213eca1b6c222eeaae9a20ecb1ce0dcf6ce4b71c48fc6d7a4",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ]
+        ]
+      },
+      "entrances": "seeds/e-mm-everyCheck-souls0-00.entrances.txt",
+      "regression": {
+        "corpusSeed": "mm-everyCheck-souls0-00",
+        "corpusSeedSha256": "9d3b0eaac9940316eddc21a71170ba5913ae41de48798f79b6230ccb13e47ded",
+        "corpusEntrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3",
+        "entrancesIdentical": true,
+        "placementsIdentical": true,
+        "routesIdentical": true,
+        "differences": [
+          {
+            "path": "oot.masterQuestDungeonNames",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.masterQuestDungeons",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.mqDataSource",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          },
+          {
+            "path": "oot.sceneRestrictions",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a05-songs-mm",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a05-songs-mm.json",
+      "request": {
+        "label": "Wallmaster0413-a05-songs-mm",
+        "masterSeed": 413070004,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a05-songs-mm.json",
+      "result": {
+        "masterSeed": 413070004,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "e570f23904d47c3a8dce634fd6eb69f750918555976f6725941faaed06dc426e",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_DEKU_TREE"
+          ]
+        ]
+      },
+      "entrances": "seeds/a05-songs-mm.entrances.txt"
+    },
+    {
+      "id": "c04-mq-randomnumber-oot-child",
+      "group": "c",
+      "kind": "er",
+      "config": "inputs/comboship-c04-mq-randomnumber-oot-child.json",
+      "request": {
+        "label": "Wallmaster0413-c04-mq-randomnumber-oot-child",
+        "masterSeed": 413070203,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/c04-mq-randomnumber-oot-child.json",
+      "result": {
+        "masterSeed": 413070203,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-quests-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "GTG"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "e76acc9bf084b65f0a2271b1271d423d5e54b3e395edc2eb8132e774269e9470",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_TEMPLE_FIRE"
+          ]
+        ]
+      },
+      "entrances": "seeds/c04-mq-randomnumber-oot-child.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 17:30:58.384] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "c01-mq12-oot-child",
+      "group": "c",
+      "kind": "er",
+      "config": "inputs/comboship-c01-mq12-oot-child.json",
+      "request": {
+        "label": "Wallmaster0413-c01-mq12-oot-child",
+        "masterSeed": 413070200,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/c01-mq12-oot-child.json",
+      "result": {
+        "masterSeed": 413070200,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-quests-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "9268fb72188080c825f7903897afc8edbd4af3950e285ce7d65d50fd3c4dff8a",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_ICE_CAVERN"
+          ]
+        ]
+      },
+      "entrances": "seeds/c01-mq12-oot-child.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 17:59:16.195] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "a02-songs-oot-child-ageless",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a02-songs-oot-child-ageless.json",
+      "request": {
+        "label": "Wallmaster0413-a02-songs-oot-child-ageless",
+        "masterSeed": 413070001,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a02-songs-oot-child-ageless.json",
+      "result": {
+        "masterSeed": 413070001,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "358508a5d26c255d3a99cef03649c5c379a57a88d6605c6b6003b2f50226d4da",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_FIRE"
+          ]
+        ]
+      },
+      "entrances": "seeds/a02-songs-oot-child-ageless.entrances.txt"
+    },
+    {
+      "id": "a03-songs-oot-adult",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a03-songs-oot-adult.json",
+      "request": {
+        "label": "Wallmaster0413-a03-songs-oot-adult",
+        "masterSeed": 413070002,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a03-songs-oot-adult.json",
+      "result": {
+        "masterSeed": 413070002,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "6091ae257a649bffeaad67737817d4bc8cac2c9f78fbd89d0fcab5c429cbaa78",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_WATER"
+          ]
+        ]
+      },
+      "entrances": "seeds/a03-songs-oot-adult.entrances.txt"
+    },
+    {
+      "id": "a04-songs-oot-adult-ageless",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a04-songs-oot-adult-ageless.json",
+      "request": {
+        "label": "Wallmaster0413-a04-songs-oot-adult-ageless",
+        "masterSeed": 413070003,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a04-songs-oot-adult-ageless.json",
+      "result": {
+        "masterSeed": 413070003,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "dbf150bf40da7daa5b632f5da262a478a9668026598f8ccd79757418a3b67969",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_FIRE"
+          ]
+        ]
+      },
+      "entrances": "seeds/a04-songs-oot-adult-ageless.entrances.txt"
+    },
+    {
+      "id": "a06-songs-mm-ageless",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a06-songs-mm-ageless.json",
+      "request": {
+        "label": "Wallmaster0413-a06-songs-mm-ageless",
+        "masterSeed": 413070005,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a06-songs-mm-ageless.json",
+      "result": {
+        "masterSeed": 413070005,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "ccded7e86cee3cd4abcc2ee696818e252faa2e47d732a0a4b7e54cf793d359ba",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ]
+        ]
+      },
+      "entrances": "seeds/a06-songs-mm-ageless.entrances.txt"
+    },
+    {
+      "id": "a07-songs-oot-randomage-ageless",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a07-songs-oot-randomage-ageless.json",
+      "request": {
+        "label": "Wallmaster0413-a07-songs-oot-randomage-ageless",
+        "masterSeed": 413070006,
+        "startingGame": "oot",
+        "ootStartingAge": 2,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a07-songs-oot-randomage-ageless.json",
+      "result": {
+        "masterSeed": 413070006,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "61c375d1a076da2b2d523078c2f62d5486c04a907a9bddd30cbe13a2aadc83af",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_SPIRIT"
+          ]
+        ]
+      },
+      "entrances": "seeds/a07-songs-oot-randomage-ageless.entrances.txt"
+    },
+    {
+      "id": "a08-songs-random",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a08-songs-random.json",
+      "request": {
+        "label": "Wallmaster0413-a08-songs-random",
+        "masterSeed": 413070007,
+        "startingGame": "random",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a08-songs-random.json",
+      "result": {
+        "masterSeed": 413070007,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "0d23b6a05b6be0ae9ffbc95d3ef9aa38a1998125a39cfbe420d2976c15caac00",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_DODONGO_CAVERN"
+          ]
+        ]
+      },
+      "entrances": "seeds/a08-songs-random.entrances.txt"
+    },
+    {
+      "id": "a09-songs-oot-adult-ageless-mq12",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a09-songs-oot-adult-ageless-mq12.json",
+      "request": {
+        "label": "Wallmaster0413-a09-songs-oot-adult-ageless-mq12",
+        "masterSeed": 413070008,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a09-songs-oot-adult-ageless-mq12.json",
+      "result": {
+        "masterSeed": 413070008,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "625a9557e376f5c07771de133572f7a4650875c39df1a384a9d456d9b56a5dee",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_TEMPLE_WATER"
+          ]
+        ]
+      },
+      "entrances": "seeds/a09-songs-oot-adult-ageless-mq12.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 19:09:20.739] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "a10-songs-mm-mq12",
+      "group": "a",
+      "kind": "er",
+      "config": "inputs/comboship-a10-songs-mm-mq12.json",
+      "request": {
+        "label": "Wallmaster0413-a10-songs-mm-mq12",
+        "masterSeed": 413070009,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/a10-songs-mm-mq12.json",
+      "result": {
+        "masterSeed": 413070009,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "3193965a5599f8e37e02e203ad8a93e626d84dbd0bbb3c0becfee411562a7655",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_TEMPLE_SPIRIT"
+          ]
+        ]
+      },
+      "entrances": "seeds/a10-songs-mm-mq12.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 19:25:54.123] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "b02-beginner-oot-child-2",
+      "group": "b",
+      "kind": "er",
+      "config": "inputs/comboship-b02-beginner-oot-child-2.json",
+      "request": {
+        "label": "Wallmaster0413-b02-beginner-oot-child-2",
+        "masterSeed": 413070101,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/b02-beginner-oot-child-2.json",
+      "result": {
+        "masterSeed": 413070101,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v2",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "10c209bd60839e3ae6ae775102ae7960701c0fb691801bc0b711b15cbc375f16",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_FOREST"
+          ]
+        ]
+      },
+      "entrances": "seeds/b02-beginner-oot-child-2.entrances.txt"
+    },
+    {
+      "id": "b04-beginner-oot-adult-2",
+      "group": "b",
+      "kind": "er",
+      "config": "inputs/comboship-b04-beginner-oot-adult-2.json",
+      "request": {
+        "label": "Wallmaster0413-b04-beginner-oot-adult-2",
+        "masterSeed": 413070103,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/b04-beginner-oot-adult-2.json",
+      "result": {
+        "masterSeed": 413070103,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v2",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "ac846b1d081ad07b341439c7592e59a2a74694c6af63434672efe50afed097c0",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_FIRE"
+          ]
+        ]
+      },
+      "entrances": "seeds/b04-beginner-oot-adult-2.entrances.txt"
+    },
+    {
+      "id": "b05-beginner-mm",
+      "group": "b",
+      "kind": "er",
+      "config": "inputs/comboship-b05-beginner-mm.json",
+      "request": {
+        "label": "Wallmaster0413-b05-beginner-mm",
+        "masterSeed": 413070104,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/b05-beginner-mm.json",
+      "result": {
+        "masterSeed": 413070104,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v2",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "81ce76a31cb9faefdc36cc75224603d5eddad09381cfed5fea0592f9e9317c16",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_JABU_JABU"
+          ]
+        ]
+      },
+      "entrances": "seeds/b05-beginner-mm.entrances.txt"
+    },
+    {
+      "id": "b06-minuet-oot-adult",
+      "group": "b",
+      "kind": "er",
+      "config": "inputs/comboship-b06-minuet-oot-adult.json",
+      "request": {
+        "label": "Wallmaster0413-b06-minuet-oot-adult",
+        "masterSeed": 413070105,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/b06-minuet-oot-adult.json",
+      "result": {
+        "masterSeed": 413070105,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v2",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "89206637bbc197bc3390be1bf160517c380ef6aeedd63b1b78e29258f1aba8ac",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_JABU_JABU"
+          ]
+        ]
+      },
+      "entrances": "seeds/b06-minuet-oot-adult.entrances.txt"
+    },
+    {
+      "id": "b07-serenade-oot-adult-songs",
+      "group": "b",
+      "kind": "er",
+      "config": "inputs/comboship-b07-serenade-oot-adult-songs.json",
+      "request": {
+        "label": "Wallmaster0413-b07-serenade-oot-adult-songs",
+        "masterSeed": 413070106,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/b07-serenade-oot-adult-songs.json",
+      "result": {
+        "masterSeed": 413070106,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v2",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "c20a605d119e3b68f3ccd2a57f3fcde64fc512d79539ef1f0365fa34b95b7951",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_WATER"
+          ]
+        ]
+      },
+      "entrances": "seeds/b07-serenade-oot-adult-songs.entrances.txt"
+    },
+    {
+      "id": "b08-nocturne-oot-adult-mq12",
+      "group": "b",
+      "kind": "er",
+      "config": "inputs/comboship-b08-nocturne-oot-adult-mq12.json",
+      "request": {
+        "label": "Wallmaster0413-b08-nocturne-oot-adult-mq12",
+        "masterSeed": 413070107,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/b08-nocturne-oot-adult-mq12.json",
+      "result": {
+        "masterSeed": 413070107,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-songs-v2",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "9733903030dae07645f1c4fc2646cd47f0cbd673d4e133332366c79b789cc61e",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_TEMPLE_FOREST"
+          ]
+        ]
+      },
+      "entrances": "seeds/b08-nocturne-oot-adult-mq12.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 20:16:22.720] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "c02-mq12-oot-adult",
+      "group": "c",
+      "kind": "er",
+      "config": "inputs/comboship-c02-mq12-oot-adult.json",
+      "request": {
+        "label": "Wallmaster0413-c02-mq12-oot-adult",
+        "masterSeed": 413070201,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/c02-mq12-oot-adult.json",
+      "result": {
+        "masterSeed": 413070201,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-quests-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "3fce88be09b140544e0459ae676f2514852609595efbf7a53ae1bf6f607d83f5",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_TEMPLE_WATER"
+          ]
+        ]
+      },
+      "entrances": "seeds/c02-mq12-oot-adult.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 20:20:39.338] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "c03-mq12-mm",
+      "group": "c",
+      "kind": "er",
+      "config": "inputs/comboship-c03-mq12-mm.json",
+      "request": {
+        "label": "Wallmaster0413-c03-mq12-mm",
+        "masterSeed": 413070202,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/c03-mq12-mm.json",
+      "result": {
+        "masterSeed": 413070202,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-quests-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "edecbe16a93c79f0beb0809e07738d0a122d114b4b09f36d59827c0bb96db4dc",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_TEMPLE_FIRE"
+          ]
+        ]
+      },
+      "entrances": "seeds/c03-mq12-mm.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 20:34:33.305] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "c05-mq-count6-oot-adult",
+      "group": "c",
+      "kind": "er",
+      "config": "inputs/comboship-c05-mq-count6-oot-adult.json",
+      "request": {
+        "label": "Wallmaster0413-c05-mq-count6-oot-adult",
+        "masterSeed": 413070204,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/c05-mq-count6-oot-adult.json",
+      "result": {
+        "masterSeed": 413070204,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-quests-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "JJ",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "e26d7644b0effa935d88e0e5ca6f435e82a86a3f4010ec02d6255a508f55d7f0",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_TEMPLE_SHADOW"
+          ]
+        ]
+      },
+      "entrances": "seeds/c05-mq-count6-oot-adult.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 20:42:10.451] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "c06-mq-selection-oot-child",
+      "group": "c",
+      "kind": "er",
+      "config": "inputs/comboship-c06-mq-selection-oot-child.json",
+      "request": {
+        "label": "Wallmaster0413-c06-mq-selection-oot-child",
+        "masterSeed": 413070205,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/c06-mq-selection-oot-child.json",
+      "result": {
+        "masterSeed": 413070205,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-quests-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "Forest",
+          "Fire",
+          "Spirit",
+          "Shadow",
+          "GTG"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "411f49ad6bd26212cfc63b335446d054650d3b9a3d1c3a7a954bb8d6eca73bd5",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_TEMPLE_FOREST"
+          ]
+        ]
+      },
+      "entrances": "seeds/c06-mq-selection-oot-child.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 20:47:34.910] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "c07-mq-selection-random-mm",
+      "group": "c",
+      "kind": "er",
+      "config": "inputs/comboship-c07-mq-selection-random-mm.json",
+      "request": {
+        "label": "Wallmaster0413-c07-mq-selection-random-mm",
+        "masterSeed": 413070206,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/c07-mq-selection-random-mm.json",
+      "result": {
+        "masterSeed": 413070206,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-quests-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "Fire"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "9a5154e930bdfd413bb1208b648ae91f66bb4f0e2a187076df0d28360be5515a",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_SHADOW"
+          ]
+        ]
+      },
+      "entrances": "seeds/c07-mq-selection-random-mm.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 21:01:54.565] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "c08-mq12-oot-adult-beatable-souls",
+      "group": "c",
+      "kind": "er",
+      "config": "inputs/comboship-c08-mq12-oot-adult-beatable-souls.json",
+      "request": {
+        "label": "Wallmaster0413-c08-mq12-oot-adult-beatable-souls",
+        "masterSeed": 413070207,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "completion",
+        "souls": 1
+      },
+      "seed": "seeds/c08-mq12-oot-adult-beatable-souls.json",
+      "result": {
+        "masterSeed": 413070207,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-quests-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "c16b72828c6a24029a95907e6f65ad872c734b55e8020db807fd99097c3e0236",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ]
+        ]
+      },
+      "entrances": "seeds/c08-mq12-oot-adult-beatable-souls.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 21:10:04.630] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    },
+    {
+      "id": "d00-u7-none-oot-child",
+      "group": "d",
+      "kind": "plain",
+      "config": "inputs/comboship-d00-u7-none-oot-child.json",
+      "request": {
+        "label": "Wallmaster0413-d00-u7-none-oot-child",
+        "masterSeed": 419070000,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/d00-u7-none-oot-child.json",
+      "result": {
+        "masterSeed": 419070000,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": null,
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "8d206e699a8788fa99c5481b5aa4597d9d33f07b583f87242e83c87c485d611e",
+        "routes": []
+      }
+    },
+    {
+      "id": "d01-u7-all-oot-adult",
+      "group": "d",
+      "kind": "plain",
+      "config": "inputs/comboship-d01-u7-all-oot-adult.json",
+      "request": {
+        "label": "Wallmaster0413-d01-u7-all-oot-adult",
+        "masterSeed": 419070001,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/d01-u7-all-oot-adult.json",
+      "result": {
+        "masterSeed": 419070001,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": null,
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "2c8badfc93e5192bcfe055965ff531da3fd2dd0c679d089988d55fce675c92be",
+        "routes": []
+      }
+    },
+    {
+      "id": "d05-mq-capacity-context-oot-child",
+      "group": "d",
+      "kind": "plain",
+      "config": "inputs/comboship-d05-mq-capacity-context-oot-child.json",
+      "request": {
+        "label": "Wallmaster0413-d05-mq-capacity-context-oot-child",
+        "masterSeed": 419070005,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/d05-mq-capacity-context-oot-child.json",
+      "result": {
+        "masterSeed": 419070005,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": null,
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "Spirit",
+          "BotW"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "0a6a0b3ce8eb5c66ad6868986ab2a885c1ace816efc837a5f755efee69337ac2",
+        "routes": []
+      }
+    },
+    {
+      "id": "d07-u7-all-mm-beatable-souls",
+      "group": "d",
+      "kind": "plain",
+      "config": "inputs/comboship-d07-u7-all-mm-beatable-souls.json",
+      "request": {
+        "label": "Wallmaster0413-d07-u7-all-mm-beatable-souls",
+        "masterSeed": 419070007,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "completion",
+        "souls": 1
+      },
+      "seed": "seeds/d07-u7-all-mm-beatable-souls.json",
+      "result": {
+        "masterSeed": 419070007,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": null,
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "96760044f36df3d8cde6095e5f9ecf501ac1c92e5eeb69f702ec26da4743d44c",
+        "routes": []
+      }
+    },
+    {
+      "id": "e-oot-adult-everyCheck-souls0-00",
+      "group": "e",
+      "kind": "pin",
+      "config": "inputs/0412-comboship-everyCheck-souls0-age1.json",
+      "request": {
+        "label": "Wallmaster0412-oot-adult-everyCheck-souls0-00",
+        "masterSeed": 412070000,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/e-oot-adult-everyCheck-souls0-00.json",
+      "result": {
+        "masterSeed": 412070000,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical",
+        "pin": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-vanilla-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "fe4435506445a55a2c834cd3b70c20bf74822fd9b0f95be8a41f3c11718f71ca",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ]
+        ]
+      },
+      "entrances": "seeds/e-oot-adult-everyCheck-souls0-00.entrances.txt",
+      "regression": {
+        "corpusSeed": "oot-adult-everyCheck-souls0-00",
+        "corpusSeedSha256": "28de5e3089bf8e5bf0209e0967a12b2f79d2c346a4ae00d5c8c31cdde70559b3",
+        "corpusEntrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3",
+        "entrancesIdentical": true,
+        "placementsIdentical": true,
+        "routesIdentical": true,
+        "differences": [
+          {
+            "path": "oot.masterQuestDungeonNames",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.masterQuestDungeons",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.mqDataSource",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          },
+          {
+            "path": "oot.sceneRestrictions",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "e-random-fallback-010",
+      "group": "e",
+      "kind": "pin",
+      "config": "inputs/0412-comboship-everyCheck-souls0-age0.json",
+      "request": {
+        "label": "Wallmaster0412-random-fallback-010",
+        "masterSeed": 412070210,
+        "startingGame": "random",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "seed": "seeds/e-random-fallback-010.json",
+      "result": {
+        "masterSeed": 3066505979,
+        "attempt": 1,
+        "startingGame": "OOT",
+        "startFallback": true
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical",
+        "pin": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-vanilla-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "7149481ac1a0326ad7b8d98ce2da2025a06367b755db3a4cef1b6a2facb8576c",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_WATER"
+          ]
+        ]
+      },
+      "entrances": "seeds/e-random-fallback-010.entrances.txt",
+      "regression": {
+        "corpusSeed": "random-fallback-010",
+        "corpusSeedSha256": "c98eb3ab5a2dc5391e64c281713024f938ab102e1a5edbc593019758b76f53da",
+        "corpusEntrancesSha256": "44e33a137b166d5e26c2af6db460957fa86bd399f08f5c24420086edeb63674d",
+        "entrancesIdentical": true,
+        "placementsIdentical": true,
+        "routesIdentical": true,
+        "differences": [
+          {
+            "path": "oot.masterQuestDungeonNames",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.masterQuestDungeons",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.mqDataSource",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          },
+          {
+            "path": "oot.sceneRestrictions",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "e-mm-completion-souls1",
+      "group": "e",
+      "kind": "pin",
+      "config": "inputs/0412-comboship-completion-souls1-age0.json",
+      "request": {
+        "label": "Wallmaster0412-mm-completion-souls1",
+        "masterSeed": 412070112,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "completion",
+        "souls": 1
+      },
+      "seed": "seeds/e-mm-completion-souls1.json",
+      "result": {
+        "masterSeed": 412070112,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical",
+        "pin": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-vanilla-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "83cf0cb5f2d77b919037dbdd448622ef8f492dc564bb0e00eb5f3b8b695d313b",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_FIRE"
+          ]
+        ]
+      },
+      "entrances": "seeds/e-mm-completion-souls1.entrances.txt",
+      "regression": {
+        "corpusSeed": "mm-completion-souls1",
+        "corpusSeedSha256": "c7c8e6b4c08ffe1eec12c2ce2072a03477ba7148abb12010d9e2bb52ac808b36",
+        "corpusEntrancesSha256": "b3739bcc48b01e735d3928ca8e6e71d5de7ae525019799bf872f9c1f9b805d94",
+        "entrancesIdentical": true,
+        "placementsIdentical": true,
+        "routesIdentical": true,
+        "differences": [
+          {
+            "path": "oot.masterQuestDungeonNames",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.masterQuestDungeons",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.mqDataSource",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          },
+          {
+            "path": "oot.sceneRestrictions",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "e-oot-adult-noLogic-souls0",
+      "group": "e",
+      "kind": "pin",
+      "config": "inputs/0412-comboship-noLogic-souls0-age1.json",
+      "request": {
+        "label": "Wallmaster0412-oot-adult-noLogic-souls0",
+        "masterSeed": 412070108,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "noLogic",
+        "souls": 0
+      },
+      "seed": "seeds/e-oot-adult-noLogic-souls0.json",
+      "result": {
+        "masterSeed": 412070108,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 1,
+        "repro": "identical",
+        "pin": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-vanilla-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "62624f1487e6b045a1cbe6fca84465efc21d7b1161538621083e36d0ac40427f",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_SNOWHEAD"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_JABU_JABU"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_TEMPLE_WATER"
+          ]
+        ]
+      },
+      "entrances": "seeds/e-oot-adult-noLogic-souls0.entrances.txt",
+      "regression": {
+        "corpusSeed": "oot-adult-noLogic-souls0",
+        "corpusSeedSha256": "2e5a30c93e8e902b13f352344100ffe799940ed0bfc6ff10a3cacbacd464a730",
+        "corpusEntrancesSha256": "49f0854f77820a2a90ee4d302a2cad49df56219cbe13affc6c5abbecd73c9ff4",
+        "entrancesIdentical": true,
+        "placementsIdentical": true,
+        "routesIdentical": true,
+        "differences": [
+          {
+            "path": "oot.masterQuestDungeonNames",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.masterQuestDungeons",
+            "kind": "added",
+            "value": []
+          },
+          {
+            "path": "oot.mqDataSource",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          },
+          {
+            "path": "oot.sceneRestrictions",
+            "kind": "added",
+            "value": "ootmm-32.3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "f01-nologic-songs-oot-adult",
+      "group": "f",
+      "kind": "er",
+      "config": "inputs/comboship-f01-nologic-songs-oot-adult.json",
+      "request": {
+        "label": "Wallmaster0413-f01-nologic-songs-oot-adult",
+        "masterSeed": 413070500,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "noLogic",
+        "souls": 0
+      },
+      "seed": "seeds/f01-nologic-songs-oot-adult.json",
+      "result": {
+        "masterSeed": 413070500,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 0,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-vanilla-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "734e2bb1a196e37808b45d59d246fe7bf691c76402ad543b0426cf9ab4894f5b",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_WATER"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_JABU_JABU"
+          ]
+        ]
+      },
+      "entrances": "seeds/f01-nologic-songs-oot-adult.entrances.txt"
+    },
+    {
+      "id": "f02-nologic-prelude-songs-oot-child",
+      "group": "f",
+      "kind": "er",
+      "config": "inputs/comboship-f02-nologic-prelude-songs-oot-child.json",
+      "request": {
+        "label": "Wallmaster0413-f02-nologic-prelude-songs-oot-child",
+        "masterSeed": 413070501,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "noLogic",
+        "souls": 0
+      },
+      "seed": "seeds/f02-nologic-prelude-songs-oot-child.json",
+      "result": {
+        "masterSeed": 413070501,
+        "attempt": 0,
+        "startingGame": "OOT",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 1,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-vanilla-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": []
+      },
+      "identity": {
+        "placementsSha256": "7b90b3d578a715d175a255571b16fd19da0e394e2e65a048518eed86404d1447",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_TEMPLE_GREAT_BAY"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER_INVERTED"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_LIGHT",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_SHADOW",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES",
+            "OOT_JABU_JABU"
+          ]
+        ]
+      },
+      "entrances": "seeds/f02-nologic-prelude-songs-oot-child.entrances.txt"
+    },
+    {
+      "id": "f03-nologic-mq12-mm",
+      "group": "f",
+      "kind": "er",
+      "config": "inputs/comboship-f03-nologic-mq12-mm.json",
+      "request": {
+        "label": "Wallmaster0413-f03-nologic-mq12-mm",
+        "masterSeed": 413070502,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "noLogic",
+        "souls": 0
+      },
+      "seed": "seeds/f03-nologic-mq12-mm.json",
+      "result": {
+        "masterSeed": 413070502,
+        "attempt": 0,
+        "startingGame": "MM",
+        "startFallback": false
+      },
+      "native": {
+        "generationExit": 0,
+        "playthroughExit": 2,
+        "repro": "identical"
+      },
+      "facts": {
+        "capability": "wallmasters-own-game-quests-v1",
+        "sceneRestrictions": "ootmm-32.3",
+        "mqDataSource": "ootmm-32.3",
+        "masterQuestDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ]
+      },
+      "identity": {
+        "placementsSha256": "ff63603c156d946ae03e0dfd70fff10d3ed97c804afca9a526454a66a575b3e1",
+        "routes": [
+          [
+            "MM_WALLMASTER_BTW_ENTRANCE",
+            "MM_SPIDER_HOUSE_SWAMP"
+          ],
+          [
+            "MM_WALLMASTER_BTW_EXIT",
+            "MM_SPIDER_HOUSE_OCEAN"
+          ],
+          [
+            "MM_WALLMASTER_BTW_FOUNTAIN",
+            "MM_TEMPLE_WOODFALL"
+          ],
+          [
+            "MM_WALLMASTER_DAMPE",
+            "MM_TEMPLE_STONE_TOWER"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_BASEMENT",
+            "OOT_DODONGO_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_MAIN",
+            "OOT_TEMPLE_FIRE"
+          ],
+          [
+            "OOT_WALLMASTER_BOTW_PIT",
+            "OOT_BOTTOM_OF_THE_WELL"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_EAST",
+            "OOT_DEKU_TREE"
+          ],
+          [
+            "OOT_WALLMASTER_FOREST_CORRIDOR_WEST",
+            "OOT_TEMPLE_SPIRIT"
+          ],
+          [
+            "OOT_WALLMASTER_GANON_SPIRIT",
+            "OOT_ICE_CAVERN"
+          ],
+          [
+            "OOT_WALLMASTER_GTG",
+            "OOT_TEMPLE_SHADOW"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB",
+            "OOT_GERUDO_TRAINING_GROUNDS"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_CHILD_SUN",
+            "OOT_TEMPLE_FOREST"
+          ],
+          [
+            "OOT_WALLMASTER_SPIRIT_STATUE",
+            "OOT_JABU_JABU"
+          ]
+        ]
+      },
+      "entrances": "seeds/f03-nologic-mq12-mm.entrances.txt",
+      "replayFailure": {
+        "playthroughExit": 2,
+        "lines": [
+          "[2026-10-21 22:56:55.297] [error] [combo_entrance_overlay.cpp:116] [ComboShip] OoT entrance layout rejected: OoT entrance layout quest context does not match the loaded seed",
+          "[playthrough] OoT entrance layout rejected"
+        ]
+      },
+      "recordedFailure": "Master Quest Wallmaster seed: generation PASS and reproduction byte-identical, but the headless replay (--playthrough) installs the layout before the seed's MQ roll and rejects it ('quest context does not match the loaded seed', exit 2)."
+    }
+  ],
+  "refusals": [
+    {
+      "id": "c10-capacity-forced-mm",
+      "group": "c",
+      "kind": "refusal",
+      "config": "inputs/comboship-c10-capacity-forced-mm.json",
+      "request": {
+        "label": "Wallmaster0413-c10-capacity-forced-mm",
+        "masterSeed": 413070209,
+        "startingGame": "mm",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "refusal": {
+        "sentence": "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.",
+        "forced": true,
+        "firstAttemptMqDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "BotW",
+          "IC",
+          "GTG"
+        ],
+        "exits": [
+          2,
+          2
+        ],
+        "written": []
+      }
+    },
+    {
+      "id": "c11-capacity-roll-oot-adult",
+      "group": "c",
+      "kind": "refusal",
+      "config": "inputs/comboship-c11-capacity-roll-oot-adult.json",
+      "request": {
+        "label": "Wallmaster0413-c11-capacity-roll-oot-adult",
+        "masterSeed": 413070296,
+        "startingGame": "oot",
+        "ootStartingAge": 1,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "refusal": {
+        "sentence": "This seed's Master Quest dungeons have more Wallmasters than Wallmaster Shuffle can place. Try another seed.",
+        "forced": false,
+        "firstAttemptMqDungeons": [
+          "JJ",
+          "Water",
+          "Spirit",
+          "BotW",
+          "IC"
+        ],
+        "exits": [
+          2,
+          2
+        ],
+        "written": []
+      }
+    }
+  ],
+  "failures": [
+    {
+      "id": "c09-capacity-forced-oot-child",
+      "group": "c",
+      "kind": "refusal",
+      "config": "inputs/comboship-c09-capacity-forced-oot-child.json",
+      "request": {
+        "label": "Wallmaster0413-c09-capacity-forced-oot-child",
+        "masterSeed": 413070208,
+        "startingGame": "oot",
+        "ootStartingAge": 0,
+        "accessibility": "everyCheck",
+        "souls": 0
+      },
+      "expected": {
+        "outcome": "refusal",
+        "sentence": "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.",
+        "mqDungeons": [
+          "Spirit",
+          "BotW"
+        ],
+        "firstAttemptMqDungeons": [
+          "Spirit",
+          "BotW"
+        ]
+      },
+      "observed": {
+        "exits": [
+          1,
+          1
+        ],
+        "lines": [
+          "[comborando] entrance settings: erWallmasters=ownGame",
+          "[comborando] validating 1 seed(s) from masterSeed 413070208 (both bosses)",
+          "[comborando] seed 413070208: OoT: Native confined fill failed at restricted songs",
+          "[comborando] seed 3067505977: WALLMASTERS has 12 sources for 11 destinations; OoTMM cannot place them",
+          "[comborando]   seed 'Wallmaster0413-c09-capacity-forced-oot-child' (3067505977) FAIL: entrance generation refused: WALLMASTERS has 12 sources for 11 destinations; OoTMM cannot place them",
+          "[comborando] RESULT: FAIL — 0/1 completable, 3275 ms"
+        ]
+      },
+      "problems": [
+        "exits 1 and 1, refused False; expected 2 and 2 with the player sentence",
+        "generation.log lacks ['[comborando] seed 413070208: WALLMASTERS has 12 sources for 11 destinations; OoTMM cannot place them', '[comborando] entrance layout generation: Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.']",
+        "repro.log lacks ['[comborando] seed 413070208: WALLMASTERS has 12 sources for 11 destinations; OoTMM cannot place them', '[comborando] entrance layout generation: Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.']"
+      ],
+      "note": "Forced capacity selection (Spirit and Bottom of the Well MQ, rest vanilla): attempt 0 failed native OoT pool preparation (confined fill at restricted songs, retryable), so the shortfall came on attempt 1, which fails alone; generation ended with exit 1 and developer text, not the forced sentence."
+    }
+  ],
+  "hostOnlyFiles": [
+    {
+      "path": ".gitattributes",
+      "reason": "Git checkout attribute (-text) that keeps the new fixture files byte-exact; read by git only, never by a build."
+    },
+    {
+      "path": "ComboAndroid/tests/CMakeLists.txt",
+      "reason": "Host test registration of entrance_release_corpus_0413; not part of the Android or comborando build."
+    },
+    {
+      "path": "ComboAndroid/tests/entrance_corpus_0413_tests.cpp",
+      "reason": "New host checker the 0.4.13 corpus test compiles; not part of the Android or comborando build."
+    },
+    {
+      "path": "ComboAndroid/tests/entrance_corpus_0413_tests.py",
+      "reason": "New host test of the 0.4.13 corpus fixtures; not part of the Android or comborando build."
+    },
+    {
+      "path": "ComboAndroid/tools/wallmaster_corpus.py",
+      "reason": "Host corpus tool (plan-0413, manifest-0413, provenance-0413); not packaged with the app or comborando."
+    }
+  ],
+  "files": [
+    {
+      "path": "inputs/0412-comboship-completion-souls1-age0.json",
+      "bytes": 490,
+      "sha256": "151359cb857deb78ad8a5fce4bd6e17bb7829e8cb3982bfe94cd64e48db635ff"
+    },
+    {
+      "path": "inputs/0412-comboship-everyCheck-souls0-age0.json",
+      "bytes": 490,
+      "sha256": "9722952c3cec3956811346226d7a75901eadd197ba5cc5365f07c7d16b9ca3f2"
+    },
+    {
+      "path": "inputs/0412-comboship-everyCheck-souls0-age1.json",
+      "bytes": 490,
+      "sha256": "6f3f09ffc6b2c69c4b11e756499e5a9b24ad8d7b225423db3ffc0aa192bc38ee"
+    },
+    {
+      "path": "inputs/0412-comboship-noLogic-souls0-age1.json",
+      "bytes": 490,
+      "sha256": "476d0f61c0f3dbe88602031077992befdab79ed2e47b9aceeafaf5105aa8e0ad"
+    },
+    {
+      "path": "inputs/comboship-a01-songs-oot-child.json",
+      "bytes": 490,
+      "sha256": "fe52b2dd9a6a3db5212ef0084ae63feae216625e375bff8abc4ab30134e1997b"
+    },
+    {
+      "path": "inputs/comboship-a02-songs-oot-child-ageless.json",
+      "bytes": 647,
+      "sha256": "8fb208c7e93daa2afa5f2d84f7d8d7464ee148c1ed251debece9ccbee6bb6c98"
+    },
+    {
+      "path": "inputs/comboship-a03-songs-oot-adult.json",
+      "bytes": 490,
+      "sha256": "144eb2a6c5b2e72aeb3a89d53d53a33c3341be3d5efde7c65722d1037e4c7e42"
+    },
+    {
+      "path": "inputs/comboship-a04-songs-oot-adult-ageless.json",
+      "bytes": 647,
+      "sha256": "d42a167bea5a4f94acac82539809c55775f70c5cbe5d283bb9e1dfa37ab6d464"
+    },
+    {
+      "path": "inputs/comboship-a05-songs-mm.json",
+      "bytes": 490,
+      "sha256": "fe52b2dd9a6a3db5212ef0084ae63feae216625e375bff8abc4ab30134e1997b"
+    },
+    {
+      "path": "inputs/comboship-a06-songs-mm-ageless.json",
+      "bytes": 647,
+      "sha256": "8fb208c7e93daa2afa5f2d84f7d8d7464ee148c1ed251debece9ccbee6bb6c98"
+    },
+    {
+      "path": "inputs/comboship-a07-songs-oot-randomage-ageless.json",
+      "bytes": 647,
+      "sha256": "742717427bd0473e869a8c241f7f232689c86ebc0d14b3fd8b3ed505345f936a"
+    },
+    {
+      "path": "inputs/comboship-a08-songs-random.json",
+      "bytes": 490,
+      "sha256": "fe52b2dd9a6a3db5212ef0084ae63feae216625e375bff8abc4ab30134e1997b"
+    },
+    {
+      "path": "inputs/comboship-a09-songs-oot-adult-ageless-mq12.json",
+      "bytes": 698,
+      "sha256": "3f55bff726c8c4432d4317fb484b6ab833218b80ff71dfbea814873cbbfe7ed0"
+    },
+    {
+      "path": "inputs/comboship-a10-songs-mm-mq12.json",
+      "bytes": 541,
+      "sha256": "5f2b8a5a74333ce9980a7d7d9a37430d441564a29f3ef24bd4e2a6d91f61d193"
+    },
+    {
+      "path": "inputs/comboship-b01-beginner-oot-child-1.json",
+      "bytes": 3975,
+      "sha256": "c0bce15d8318a5d19c23f63fcab6fae7837ee3a6116f7a12af825b5b02153e64"
+    },
+    {
+      "path": "inputs/comboship-b02-beginner-oot-child-2.json",
+      "bytes": 3975,
+      "sha256": "c0bce15d8318a5d19c23f63fcab6fae7837ee3a6116f7a12af825b5b02153e64"
+    },
+    {
+      "path": "inputs/comboship-b03-beginner-oot-adult-1.json",
+      "bytes": 3975,
+      "sha256": "c915ec5bc68fec2c9b7ca93847bcbb5a79efcc5985a1da3380f731b818032f39"
+    },
+    {
+      "path": "inputs/comboship-b04-beginner-oot-adult-2.json",
+      "bytes": 3975,
+      "sha256": "c915ec5bc68fec2c9b7ca93847bcbb5a79efcc5985a1da3380f731b818032f39"
+    },
+    {
+      "path": "inputs/comboship-b05-beginner-mm.json",
+      "bytes": 3975,
+      "sha256": "c0bce15d8318a5d19c23f63fcab6fae7837ee3a6116f7a12af825b5b02153e64"
+    },
+    {
+      "path": "inputs/comboship-b06-minuet-oot-adult.json",
+      "bytes": 525,
+      "sha256": "5a911d8cb84be638afca84b68b968ddb7257c99b78448724bae6d2e98ef633d2"
+    },
+    {
+      "path": "inputs/comboship-b07-serenade-oot-adult-songs.json",
+      "bytes": 526,
+      "sha256": "744dce34af76787a0647e301dbbcf74d3ecb7b7c6584840ce7bbff2f006e7544"
+    },
+    {
+      "path": "inputs/comboship-b08-nocturne-oot-adult-mq12.json",
+      "bytes": 578,
+      "sha256": "5005c4cdb6122f47054ff2510846645c683eed9a05cf6f226e2e34debfe010d4"
+    },
+    {
+      "path": "inputs/comboship-c01-mq12-oot-child.json",
+      "bytes": 541,
+      "sha256": "dd20d699a3333ac9e7a5ffca1a0e38d6d4b090248f1aad2161f0c850ce2812cf"
+    },
+    {
+      "path": "inputs/comboship-c02-mq12-oot-adult.json",
+      "bytes": 541,
+      "sha256": "60f5d2af28734ea0dfc9cd14d350b7e2f7af7887fe5639aeddf5d07aade7898b"
+    },
+    {
+      "path": "inputs/comboship-c03-mq12-mm.json",
+      "bytes": 541,
+      "sha256": "dd20d699a3333ac9e7a5ffca1a0e38d6d4b090248f1aad2161f0c850ce2812cf"
+    },
+    {
+      "path": "inputs/comboship-c04-mq-randomnumber-oot-child.json",
+      "bytes": 513,
+      "sha256": "3592def708c3c880c9a7726ed732de3aa95a4f6be6a61f0cd809c6c25c45aa4e"
+    },
+    {
+      "path": "inputs/comboship-c05-mq-count6-oot-adult.json",
+      "bytes": 540,
+      "sha256": "e117186714dda8f9515e013dad3e3ba203e054c8637369b4a3367d86134fd2e9"
+    },
+    {
+      "path": "inputs/comboship-c06-mq-selection-oot-child.json",
+      "bytes": 915,
+      "sha256": "8b6da91781c6683e188474892fa5ef7a58ce042974f85657665491c518aa3bd6"
+    },
+    {
+      "path": "inputs/comboship-c07-mq-selection-random-mm.json",
+      "bytes": 915,
+      "sha256": "10ba4f41cb34c235905708be6b7973759be11c79c8d9873ea2f2fd9ed694f96f"
+    },
+    {
+      "path": "inputs/comboship-c08-mq12-oot-adult-beatable-souls.json",
+      "bytes": 541,
+      "sha256": "e86ad59d2a4024b9a9f205b0d483991b4f93176fa8a9bba8cdadc14a054f8b8c"
+    },
+    {
+      "path": "inputs/comboship-c09-capacity-forced-oot-child.json",
+      "bytes": 915,
+      "sha256": "6d2b1b4a329dec9ac328dfd38572954e01c0b827f869463552fd0b1a4b1a57ad"
+    },
+    {
+      "path": "inputs/comboship-c10-capacity-forced-mm.json",
+      "bytes": 915,
+      "sha256": "2e00789f23eaf7ce3c02fd1a6542f3fe76ebd05bc6a6eb67b5994b849fa9665d"
+    },
+    {
+      "path": "inputs/comboship-c11-capacity-roll-oot-adult.json",
+      "bytes": 915,
+      "sha256": "4b78fdae1ab4e19dc72503565dd7a18b8845772815b18752b4e4458ef26588d3"
+    },
+    {
+      "path": "inputs/comboship-d00-u7-none-oot-child.json",
+      "bytes": 513,
+      "sha256": "1b581cc71892afd4ac557f33ddbc4fae54556351de148a2b08a769189a49b81b"
+    },
+    {
+      "path": "inputs/comboship-d01-u7-all-oot-adult.json",
+      "bytes": 541,
+      "sha256": "60f5d2af28734ea0dfc9cd14d350b7e2f7af7887fe5639aeddf5d07aade7898b"
+    },
+    {
+      "path": "inputs/comboship-d02-u7-selection-random-oot-child.json",
+      "bytes": 915,
+      "sha256": "10ba4f41cb34c235905708be6b7973759be11c79c8d9873ea2f2fd9ed694f96f"
+    },
+    {
+      "path": "inputs/comboship-d03-u7-random-number-mm.json",
+      "bytes": 513,
+      "sha256": "3592def708c3c880c9a7726ed732de3aa95a4f6be6a61f0cd809c6c25c45aa4e"
+    },
+    {
+      "path": "inputs/comboship-d04-mq-count4-random.json",
+      "bytes": 540,
+      "sha256": "b9e651dca091435b5596f4d26cef7b3e213c6d0695ffd17be06b9996873dd2f4"
+    },
+    {
+      "path": "inputs/comboship-d05-mq-capacity-context-oot-child.json",
+      "bytes": 915,
+      "sha256": "6d2b1b4a329dec9ac328dfd38572954e01c0b827f869463552fd0b1a4b1a57ad"
+    },
+    {
+      "path": "inputs/comboship-d06-allsanity-oot.json",
+      "bytes": 5741,
+      "sha256": "aace3c3f446c19460dda8957672c1eae74b6682007f64037a570319644c2d846"
+    },
+    {
+      "path": "inputs/comboship-d07-u7-all-mm-beatable-souls.json",
+      "bytes": 541,
+      "sha256": "8f297725e9fb2b67f4120c573540c561b270b80fcf54f4f95c1dd2d1822c6540"
+    },
+    {
+      "path": "inputs/comboship-f01-nologic-songs-oot-adult.json",
+      "bytes": 490,
+      "sha256": "6d0fd93fe23491b83857107ca9bd9841ae9d79c2b6277192a784efebd1fa1b61"
+    },
+    {
+      "path": "inputs/comboship-f02-nologic-prelude-songs-oot-child.json",
+      "bytes": 525,
+      "sha256": "a070c575a021b3b8ad46ce01de5810bccbcb108d4309981dca832db6a38ee1d5"
+    },
+    {
+      "path": "inputs/comboship-f03-nologic-mq12-mm.json",
+      "bytes": 541,
+      "sha256": "9a98f4a4efdeedd129b71a9c156081326cced101fc96f51885d494ff5891bb2e"
+    },
+    {
+      "path": "inputs/plan.json",
+      "bytes": 127986,
+      "sha256": "733c379209cfaa1cecd0b22f958481266c69da06b4f1ac1ea14d484a8b3c3c7a"
+    },
+    {
+      "path": "inputs/presets.json",
+      "bytes": 22667,
+      "sha256": "e43514c083a1aef322f37bb34fa73eaa6a19d2815c67e98e23952b1d0079fb06"
+    },
+    {
+      "path": "seeds/a01-songs-oot-child.entrances.txt",
+      "bytes": 2526,
+      "sha256": "fbd0a9c640a948f6668a2dea089fa4016af908bfcc0b3079ac77f47190da3e29"
+    },
+    {
+      "path": "seeds/a01-songs-oot-child.json",
+      "bytes": 170845,
+      "sha256": "753ec1382b61809ddc839fa2c7df8c5a897ce6b28437e3e83e6e59eabf670f7a"
+    },
+    {
+      "path": "seeds/a02-songs-oot-child-ageless.entrances.txt",
+      "bytes": 2503,
+      "sha256": "3a1fe01b53e41d854c15ea13c7b4e948a6547bd17cdb3e74f4348a418217eb7a"
+    },
+    {
+      "path": "seeds/a02-songs-oot-child-ageless.json",
+      "bytes": 176317,
+      "sha256": "e32cd7f3f0a9b659ff4c7bfa0404c14197e895d0d146ef45429c5049fa2bf9cf"
+    },
+    {
+      "path": "seeds/a03-songs-oot-adult.entrances.txt",
+      "bytes": 2509,
+      "sha256": "9adcc1e69ec95506631fae19d4d0e4d55ec824f3a75aa2e037f470fc8d587cf1"
+    },
+    {
+      "path": "seeds/a03-songs-oot-adult.json",
+      "bytes": 179335,
+      "sha256": "755214dbfee30d5295aeb115ddbfe6a59e737ed54d42098c6aa0b2d68c3e28c4"
+    },
+    {
+      "path": "seeds/a04-songs-oot-adult-ageless.entrances.txt",
+      "bytes": 2479,
+      "sha256": "e9a9dc489f2fc3698e0ffcfa48b9f8f9771eb8498fd0b99f1709249640f781e4"
+    },
+    {
+      "path": "seeds/a04-songs-oot-adult-ageless.json",
+      "bytes": 179931,
+      "sha256": "cbb56a01d736756524d1ef1b4c99ecb778d78eae8dd9e23d1d71b058c70f1116"
+    },
+    {
+      "path": "seeds/a05-songs-mm.entrances.txt",
+      "bytes": 2507,
+      "sha256": "94ce44b9ed48d18f0939a3bbb8c89b5c36db6519d7ce420d0c8c236eda6523be"
+    },
+    {
+      "path": "seeds/a05-songs-mm.json",
+      "bytes": 173973,
+      "sha256": "2ab6458e00baec1fc2f70df3fb034e0ae6611413f0e420cf1beb74e979c9f3af"
+    },
+    {
+      "path": "seeds/a06-songs-mm-ageless.entrances.txt",
+      "bytes": 2523,
+      "sha256": "e2a728b75ef0ed7a7ed969cf2a84c358128ad17da738730e7ec40e64f5333437"
+    },
+    {
+      "path": "seeds/a06-songs-mm-ageless.json",
+      "bytes": 176045,
+      "sha256": "c2cefaf42eaad98330182ab893616f2387f94d14f68e2110e25ad22ee9704459"
+    },
+    {
+      "path": "seeds/a07-songs-oot-randomage-ageless.entrances.txt",
+      "bytes": 2471,
+      "sha256": "805449a7e1e03e9caeeda28d90f0061e622c4b2c06b8f0521001ba3ebde19001"
+    },
+    {
+      "path": "seeds/a07-songs-oot-randomage-ageless.json",
+      "bytes": 177201,
+      "sha256": "6d42b88a4ebc267e6f69999642cfbe3af3b3928a156427e15c19638116dc3b7f"
+    },
+    {
+      "path": "seeds/a08-songs-random.entrances.txt",
+      "bytes": 2531,
+      "sha256": "747aa78f3060e3a3fe06eba8a55d55a40b5147fa70a65ddf8ba1e43e7a55540a"
+    },
+    {
+      "path": "seeds/a08-songs-random.json",
+      "bytes": 178238,
+      "sha256": "7dfc85cfba46691ae05e2a965489a3161827b0357b975aaf8f720762cb793099"
+    },
+    {
+      "path": "seeds/a09-songs-oot-adult-ageless-mq12.entrances.txt",
+      "bytes": 2634,
+      "sha256": "de70c97785adda93cf6431a40c84a65f170c92a83cf98ca927e691ad1d09645f"
+    },
+    {
+      "path": "seeds/a09-songs-oot-adult-ageless-mq12.json",
+      "bytes": 171463,
+      "sha256": "945c393ef9ffd345606ac770330c7783ccca1e948a666a9a1b23f956d979dfc2"
+    },
+    {
+      "path": "seeds/a10-songs-mm-mq12.entrances.txt",
+      "bytes": 2623,
+      "sha256": "2d6058af111d7e75fb09ce57f7b217f0ab2f49f127c927c766b8ab3d739aa17d"
+    },
+    {
+      "path": "seeds/a10-songs-mm-mq12.json",
+      "bytes": 175665,
+      "sha256": "2082716c61eca1632274c59ba08cd614d79dbaa2798bedd5570c7ff03d689ccf"
+    },
+    {
+      "path": "seeds/b01-beginner-oot-child-1.entrances.txt",
+      "bytes": 2498,
+      "sha256": "21a570514e178d8464d6d052db72c657000c6ccd9d460883bc978947737f2d39"
+    },
+    {
+      "path": "seeds/b01-beginner-oot-child-1.json",
+      "bytes": 171099,
+      "sha256": "d7078472a395dda6b4c84bc82cf4bcce2900e658d1df307dd6dfaad08f1bd711"
+    },
+    {
+      "path": "seeds/b02-beginner-oot-child-2.entrances.txt",
+      "bytes": 2468,
+      "sha256": "f362434269d791243b7561903cefaeb502d7c79c4c9f50e27071ec34044383a6"
+    },
+    {
+      "path": "seeds/b02-beginner-oot-child-2.json",
+      "bytes": 176199,
+      "sha256": "6983c473f0ec1a2c357baf43b0635b43c5ec1a314a68d063aecc2ea7b9ec6b3b"
+    },
+    {
+      "path": "seeds/b03-beginner-oot-adult-1.entrances.txt",
+      "bytes": 2482,
+      "sha256": "c7f6f69c756e7fe12ff123c87d4aeccf8ffa4469a6c879191e05bed2e1af7589"
+    },
+    {
+      "path": "seeds/b03-beginner-oot-adult-1.json",
+      "bytes": 175413,
+      "sha256": "a0b7b4fec988f1c881bb50f3d737145a6083882368d0815a23f8a3cd9b57c09b"
+    },
+    {
+      "path": "seeds/b04-beginner-oot-adult-2.entrances.txt",
+      "bytes": 2528,
+      "sha256": "fbd906ab97a7f630d59c2a60b64c2e0f8121430aef4aade0d03fa81cab1c632b"
+    },
+    {
+      "path": "seeds/b04-beginner-oot-adult-2.json",
+      "bytes": 175463,
+      "sha256": "a6386281b983cf58e2ed9e0f707990a7ea56be4ab28d70b2eae3870c633c9533"
+    },
+    {
+      "path": "seeds/b05-beginner-mm.entrances.txt",
+      "bytes": 2498,
+      "sha256": "c79f4976c8cfb26b98dbfdffb702a5439245586cb6b5a9f646e3aac2db9f5f09"
+    },
+    {
+      "path": "seeds/b05-beginner-mm.json",
+      "bytes": 176141,
+      "sha256": "56869c14fc255d9800c45394d27000073af149ba88ca8cbe5348365bdfab0735"
+    },
+    {
+      "path": "seeds/b06-minuet-oot-adult.entrances.txt",
+      "bytes": 2480,
+      "sha256": "4c700444a1ca97542d9321123664a18eadf7f1b31e1f1b3c0847395196ef5637"
+    },
+    {
+      "path": "seeds/b06-minuet-oot-adult.json",
+      "bytes": 175082,
+      "sha256": "f2c4bfa73d656c8d24f3ea01ab7fa355f61d4f581fc6f38443a86688f9247944"
+    },
+    {
+      "path": "seeds/b07-serenade-oot-adult-songs.entrances.txt",
+      "bytes": 2510,
+      "sha256": "0bc1586cd605ee1d8452aca5d18a6a28792ccfc871936063627b929b6a7a29bc"
+    },
+    {
+      "path": "seeds/b07-serenade-oot-adult-songs.json",
+      "bytes": 174716,
+      "sha256": "9330aaef74f9db637179a240a7e785cb31261a6de236991c8a401d7976310c32"
+    },
+    {
+      "path": "seeds/b08-nocturne-oot-adult-mq12.entrances.txt",
+      "bytes": 2649,
+      "sha256": "35fc15eec9cb6e103039a45d61a5c58f6d968b32f91d3df62f74f5059522b87a"
+    },
+    {
+      "path": "seeds/b08-nocturne-oot-adult-mq12.json",
+      "bytes": 176897,
+      "sha256": "3baf459b3f906c1a8ea3960f468384749def13a655b8addae093af37af937d0e"
+    },
+    {
+      "path": "seeds/c01-mq12-oot-child.entrances.txt",
+      "bytes": 2638,
+      "sha256": "3318b223e8e0f6e7e4c07785ba54ac1c5a25ed221968921ac76621fb073acd22"
+    },
+    {
+      "path": "seeds/c01-mq12-oot-child.json",
+      "bytes": 179875,
+      "sha256": "db771dc74be1787b43aba4579cb93dabae0a87c132745238fed530955de5fc55"
+    },
+    {
+      "path": "seeds/c02-mq12-oot-adult.entrances.txt",
+      "bytes": 2623,
+      "sha256": "4600d20cb1d7273e91a5889ecee44f4a352bd3e16e9ca70e372b296b76eb3f12"
+    },
+    {
+      "path": "seeds/c02-mq12-oot-adult.json",
+      "bytes": 183772,
+      "sha256": "9911404c57dd379d76021865089f6a8a63b220439ad2c50e68a6c8ee8d01c16e"
+    },
+    {
+      "path": "seeds/c03-mq12-mm.entrances.txt",
+      "bytes": 2650,
+      "sha256": "52828cd99d9e50e3dc892e5d1e52d5a2ed3653702027560fe8b84b2457fff373"
+    },
+    {
+      "path": "seeds/c03-mq12-mm.json",
+      "bytes": 179669,
+      "sha256": "4091ac808cf52d3fd8c1da23d3478603747f0244d83a6adc094e62b330a662a7"
+    },
+    {
+      "path": "seeds/c04-mq-randomnumber-oot-child.entrances.txt",
+      "bytes": 2800,
+      "sha256": "b6ab8131a6c75c9799b1d564094aa2faa4a5fba1a48d3f98f567e035ac92669c"
+    },
+    {
+      "path": "seeds/c04-mq-randomnumber-oot-child.json",
+      "bytes": 181420,
+      "sha256": "6e9e450c03ac42029c0aa7ce74d2e3727db3c6c6596c11545b79a83f08046a0e"
+    },
+    {
+      "path": "seeds/c05-mq-count6-oot-adult.entrances.txt",
+      "bytes": 2808,
+      "sha256": "471a59326754b8142fead45c9ef8cf6f6025835546d105d82f1f641fa2ad3c9f"
+    },
+    {
+      "path": "seeds/c05-mq-count6-oot-adult.json",
+      "bytes": 179582,
+      "sha256": "649f2407ce8589a0906180111cc427832d2624d970b099878337de4d28a8c6d4"
+    },
+    {
+      "path": "seeds/c06-mq-selection-oot-child.entrances.txt",
+      "bytes": 2461,
+      "sha256": "a010fc07279b116aaada1443000e1655dd4f483b8cfe8d7fd86044c228a67cb3"
+    },
+    {
+      "path": "seeds/c06-mq-selection-oot-child.json",
+      "bytes": 181650,
+      "sha256": "4024ca8d3e4e513fa2696c7f3a018e58c0f622c6a1885eea54cf1b438f27d67c"
+    },
+    {
+      "path": "seeds/c07-mq-selection-random-mm.entrances.txt",
+      "bytes": 2514,
+      "sha256": "fb041c859a72ee326fda518891a56fba9458efde4afb49f07e78ec94679a11b7"
+    },
+    {
+      "path": "seeds/c07-mq-selection-random-mm.json",
+      "bytes": 172308,
+      "sha256": "1af884edcbbbe2eb23c08ec6451f91936776b9676c6af2c3b912321233203e40"
+    },
+    {
+      "path": "seeds/c08-mq12-oot-adult-beatable-souls.entrances.txt",
+      "bytes": 2642,
+      "sha256": "351cd961b8893e43da15efbcede8165b97a982fde63482556bafeed327c842d0"
+    },
+    {
+      "path": "seeds/c08-mq12-oot-adult-beatable-souls.json",
+      "bytes": 184041,
+      "sha256": "9a7d8ba28085873b316edbb1cd4b0233617766d6c0d3b3e899b24bc7eccb0650"
+    },
+    {
+      "path": "seeds/d00-u7-none-oot-child.json",
+      "bytes": 174756,
+      "sha256": "bc7336c4c22128d0922893061e4208fba815a76b63269084420cc02001e435c4"
+    },
+    {
+      "path": "seeds/d01-u7-all-oot-adult.json",
+      "bytes": 169852,
+      "sha256": "6e07a632f2b0ca6494e3748a7af3f417623cc96a1cf92994cb90602a374796ac"
+    },
+    {
+      "path": "seeds/d02-u7-selection-random-oot-child.json",
+      "bytes": 177341,
+      "sha256": "cc6749d3f43cfecc93f63acb32a456f8e68440130396729aa9cda48df452a30e"
+    },
+    {
+      "path": "seeds/d03-u7-random-number-mm.json",
+      "bytes": 172920,
+      "sha256": "c19ff7bba8b2968d9968e6e7792f9151abfb94dc444b0d5fda8e3c96ed5cca47"
+    },
+    {
+      "path": "seeds/d04-mq-count4-random.json",
+      "bytes": 175228,
+      "sha256": "c4462d371c7c8b4ae03ff21eb7cba7ee0b6ce27016aabc8686517e94cda808c1"
+    },
+    {
+      "path": "seeds/d05-mq-capacity-context-oot-child.json",
+      "bytes": 178447,
+      "sha256": "e2eca0a7c174d77bd8514cbd130980b6447bea4f28a8e3ebe52d336924daecf9"
+    },
+    {
+      "path": "seeds/d06-allsanity-oot.json",
+      "bytes": 939981,
+      "sha256": "db2c97b3315071ad276c9263b9b68257e5a3d000712a719d27a20de14e71f39a"
+    },
+    {
+      "path": "seeds/d07-u7-all-mm-beatable-souls.json",
+      "bytes": 183284,
+      "sha256": "47f529e7531abfccb51c4349aafc85d0c1fb1d024b377922732850dd23ce372a"
+    },
+    {
+      "path": "seeds/e-mm-completion-souls1.entrances.txt",
+      "bytes": 2497,
+      "sha256": "b3739bcc48b01e735d3928ca8e6e71d5de7ae525019799bf872f9c1f9b805d94"
+    },
+    {
+      "path": "seeds/e-mm-completion-souls1.json",
+      "bytes": 179795,
+      "sha256": "57599e14c20b3b5e545b27ce03ff2590c6ee5923a23200efc2f0efd107b099b5"
+    },
+    {
+      "path": "seeds/e-mm-everyCheck-souls0-00.entrances.txt",
+      "bytes": 2505,
+      "sha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+    },
+    {
+      "path": "seeds/e-mm-everyCheck-souls0-00.json",
+      "bytes": 177004,
+      "sha256": "e32c6e94debb259f5b861db150925fd9e6429b7110a8f3e97244c113209674f6"
+    },
+    {
+      "path": "seeds/e-oot-adult-everyCheck-souls0-00.entrances.txt",
+      "bytes": 2505,
+      "sha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+    },
+    {
+      "path": "seeds/e-oot-adult-everyCheck-souls0-00.json",
+      "bytes": 178521,
+      "sha256": "34b33ab91785f0def50b207abf25145630b1b1e823c368397535291dfd8721ae"
+    },
+    {
+      "path": "seeds/e-oot-adult-noLogic-souls0.entrances.txt",
+      "bytes": 2468,
+      "sha256": "49f0854f77820a2a90ee4d302a2cad49df56219cbe13affc6c5abbecd73c9ff4"
+    },
+    {
+      "path": "seeds/e-oot-adult-noLogic-souls0.json",
+      "bytes": 183824,
+      "sha256": "6619420ad5aba0eeb9f0e38ead0302154950f35a0983b485439f12655e93995b"
+    },
+    {
+      "path": "seeds/e-oot-child-everyCheck-souls0-00.entrances.txt",
+      "bytes": 2505,
+      "sha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+    },
+    {
+      "path": "seeds/e-oot-child-everyCheck-souls0-00.json",
+      "bytes": 177012,
+      "sha256": "d8d3e392ea0d8eba5d8f91c7b172410d1c962760c25a6c596c981bc844157fdc"
+    },
+    {
+      "path": "seeds/e-random-fallback-010.entrances.txt",
+      "bytes": 2503,
+      "sha256": "44e33a137b166d5e26c2af6db460957fa86bd399f08f5c24420086edeb63674d"
+    },
+    {
+      "path": "seeds/e-random-fallback-010.json",
+      "bytes": 180504,
+      "sha256": "bfd02c21f4bf4debd402b8ccd62f7c2e1abdd6289c839a30bec09b2ee1c6dac5"
+    },
+    {
+      "path": "seeds/f01-nologic-songs-oot-adult.entrances.txt",
+      "bytes": 2524,
+      "sha256": "32ab6e3fc691e69cf38f037945d06fb0eee709bf639afb4b58db1d3283eaccbc"
+    },
+    {
+      "path": "seeds/f01-nologic-songs-oot-adult.json",
+      "bytes": 187037,
+      "sha256": "0bc1013ab8f4655670fc60d6de95116ea5905704f3cba19cd4cc282af258771f"
+    },
+    {
+      "path": "seeds/f02-nologic-prelude-songs-oot-child.entrances.txt",
+      "bytes": 2554,
+      "sha256": "bb33fd3e0e60a642ffdce2bd7ec02f89cf4678274eadcde3c00fc89127bd07ad"
+    },
+    {
+      "path": "seeds/f02-nologic-prelude-songs-oot-child.json",
+      "bytes": 184324,
+      "sha256": "f5f8c611d3a63929e7cfb454b3e4baf4c4071eab24f7b45f35d1bfa07d7c7e02"
+    },
+    {
+      "path": "seeds/f03-nologic-mq12-mm.entrances.txt",
+      "bytes": 2656,
+      "sha256": "6c3183b40edcce2f9721879964009bcb73c97e726555c10b8fadc53c90c9f1fc"
+    },
+    {
+      "path": "seeds/f03-nologic-mq12-mm.json",
+      "bytes": 181052,
+      "sha256": "ad493754fd76df687c142a6b8105230fdf46aaac5859e306c103c7c808e9647f"
+    }
+  ]
+}

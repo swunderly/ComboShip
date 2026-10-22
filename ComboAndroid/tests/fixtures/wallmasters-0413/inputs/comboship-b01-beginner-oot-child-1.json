@@ -1,0 +1,149 @@
+{
+  "CVars": {
+    "gCombo": {
+      "Enhancements": {
+        "AgelessSoaring": 1,
+        "ForeignSongs": 1
+      },
+      "Logic": {
+        "gCombo": {
+          "Enhancements": {
+            "AgelessSoaring": 1
+          }
+        },
+        "gEnhancements": {
+          "OpenAllHours": 1,
+          "Playback": {
+            "SkipScarecrowSong": 1
+          }
+        }
+      },
+      "Rando": {
+        "ForeignSongs": 1,
+        "Goal": 0,
+        "Reachability": 0,
+        "Shared": {
+          "BombBags": 1,
+          "BombchuBags": 1,
+          "Bows": 1,
+          "BunnyHood": 1,
+          "EponasSong": 1,
+          "FireArrows": 1,
+          "GoronMask": 1,
+          "Hookshot": 1,
+          "IceArrows": 1,
+          "KeatonMask": 1,
+          "Lens": 1,
+          "LightArrows": 1,
+          "Magic": 1,
+          "MaskOfTruth": 1,
+          "MirrorShield": 1,
+          "Ocarina": 0,
+          "OcarinaA": 0,
+          "OcarinaCDown": 0,
+          "OcarinaCLeft": 0,
+          "OcarinaCRight": 0,
+          "OcarinaCUp": 0,
+          "SongOfStorms": 1,
+          "SongOfTime": 0,
+          "SpellFire": 0,
+          "SpellLove": 0,
+          "SpellWind": 0,
+          "Wallets": 1,
+          "ZoraMask": 1,
+          "bootsHover": 0,
+          "bootsIron": 0,
+          "tunicGoron": 0,
+          "tunicZora": 0
+        },
+        "StartingGame": 0,
+        "TriforceHunt": 0,
+        "TriforceRequired": 20,
+        "TriforceTotal": 30
+      }
+    },
+    "gEnhancements": {
+      "OpenAllHours": 1,
+      "Playback": {
+        "SkipScarecrowSong": 1
+      }
+    },
+    "gRando": {
+      "ExcludedChecks": [
+        "RC_BENEATH_THE_GRAVEYARD_DAMPE_CHEST",
+        "RC_DEKU_PLAYGROUND_ALL_DAYS",
+        "RC_GORON_RACETRACK_GOLD_DUST",
+        "RC_GREAT_BAY_GREAT_FAIRY",
+        "RC_CLOCK_TOWN_EAST_HONEY_DARLING_ALL_DAYS",
+        "RC_IKANA_GREAT_FAIRY",
+        "RC_GREAT_BAY_COAST_NEW_WAVE_BOSSA_NOVA",
+        "RC_MOON_FIERCE_DEITY_MASK",
+        "RC_MOUNTAIN_VILLAGE_FROG_CHOIR",
+        "RC_OCEAN_SPIDER_HOUSE_WALLET",
+        "RC_PINNACLE_ROCK_REUNITE_SEAHORSE",
+        "RC_SNOWHEAD_GREAT_FAIRY",
+        "RC_STOCK_POT_INN_COUPLES_MASK",
+        "RC_SWAMP_SPIDER_HOUSE_MASK_OF_TRUTH",
+        "RC_CLOCK_TOWN_EAST_SHOOTING_GALLERY_PERFECT_SCORE",
+        "RC_WATERFALL_RAPIDS_BEAVER_RACE_02",
+        "RC_WOODFALL_GREAT_FAIRY"
+      ],
+      "Options": {
+        "RO_CLOCK_SHUFFLE_PROGRESSIVE": 1,
+        "RO_HINTS_GOSSIP_STONES": 1,
+        "RO_HINTS_GOSSIP_STONE_STRENGTH": 75,
+        "RO_LOGIC": 0,
+        "RO_PLACEMENT_BOSS_KEYS": 1,
+        "RO_PLACEMENT_SMALL_KEYS": 2,
+        "RO_PLACEMENT_STRAY_FAIRIES": 2,
+        "RO_SHUFFLE_TRAPS": 1,
+        "RO_STARTING_MAPS_AND_COMPASSES": 1,
+        "RO_TRAP_AMOUNT": 2
+      },
+      "StartingItems": [
+        "RI_PROGRESSIVE_SWORD",
+        "RI_SHIELD_HERO",
+        "RI_OCARINA",
+        "RI_SONG_TIME",
+        "RI_PROGRESSIVE_SWORD"
+      ]
+    },
+    "gRandoSettings": {
+      "BombchuBag": 2,
+      "ClosedForest": 1,
+      "CompleteMaskQuest": 2,
+      "DoorOfTime": 2,
+      "EnableBombchuDrops": 1,
+      "ExcludedLocations": "149,150",
+      "FortressCarpenters": 1,
+      "GanonTrial": 0,
+      "GerudoKeys": 0,
+      "GossipStoneHints": 1,
+      "HintClarity": 2,
+      "HintDistribution": 3,
+      "IceTrapPercent": 5,
+      "LogicRules": 0,
+      "RainbowBridge": 3,
+      "ShuffleAdultTrade": 1,
+      "ShuffleGanonBossKey": 2,
+      "ShuffleGerudoToken": 0,
+      "ShuffleKokiriSword": 1,
+      "ShuffleMasterSword": 1,
+      "ShuffleMerchants": 0,
+      "ShuffleOcarinas": 1,
+      "ShuffleScrubs": 1,
+      "ShuffleWeirdEgg": 2,
+      "ShuffleZeldasLetter": 0,
+      "SkipScarecrowsSong": 1,
+      "StartingAge": 0,
+      "StartingDekuShield": 1,
+      "StartingHylianShield": 1,
+      "StartingMapsCompasses": 0,
+      "StartingNuts": 1,
+      "StartingOcarina": 2,
+      "StartingPreludeOfLight": 1,
+      "StartingSticks": 1,
+      "StartingZeldasLetter": 1
+    }
+  }
+}
