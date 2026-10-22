@@ -713,7 +713,8 @@ void CheckBuildGuard(const Json &good) {
          caps == (caps.Only(kVanillaWallmasterCapability) |
                   caps.Only(kQuestsWallmasterCapability) |
                   caps.Only(kSongsWallmasterCapability) |
-                  caps.Only(kStartingSongsWallmasterCapability)) &&
+                  caps.Only(kStartingSongsWallmasterCapability) |
+                  caps.Only(kFullWallmasterCapability)) &&
          caps.Active(kVanillaWallmasterCapability));
   auto layout = DecodeEntranceLayout(good);
   layout.required = {std::string(kVanillaWallmasterCapability)};

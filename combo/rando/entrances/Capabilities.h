@@ -40,7 +40,7 @@ inline constexpr CapabilityValue kWallmastersVanillaValues[] = { { "erWallmaster
 inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersStartingSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
-inline constexpr CapabilityValue kWallmastersFullValues[] = { { "erWallmasters", "full", Stage::Dev } };
+inline constexpr CapabilityValue kWallmastersFullValues[] = { { "erWallmasters", "full", Stage::Public } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -85,7 +85,8 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // (packages/logic/src/solver/entrances.ts:657-669), so a Wallmaster can send Link to a dungeon of either game.
     // Its rules are the frozen LayoutV2 (EntranceLayout.h). It takes either quest context, foreign-song logic and a
     // starting OoT warp song, as the songs-v2 id does; song destination shuffle and a starting Song of Soaring stay
-    // refused. The Temple probe checks only the base world (UnifiedBridge.h, the monotone shortcut).
+    // refused. The Temple probe checks only the base world (UnifiedBridge.h, the monotone shortcut). Public from
+    // 0.4.14; its id and rules are frozen from then on.
     { "wallmasters-full-v1", kWallmastersFullValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
@@ -129,15 +130,15 @@ constexpr bool DevOnlyNeverPublic() {
                 return false;
     return true;
 }
-// Only the Own Game Wallmaster rows are Public: vanilla dungeons (owner decision 2026-10-18, M1 plan P1-05) and,
-// from 0.4.13, Master Quest dungeons (U11), cross-game songs (limits design, Stage 1) and starting OoT warp songs
-// (Stage 2). Opening another row is a separate, reviewed release decision.
-constexpr bool OnlyOwnGameWallmastersPublic() {
+// Only the Wallmaster rows are Public: Own Game with vanilla dungeons (owner decision 2026-10-18, M1 plan P1-05)
+// and, from 0.4.13, Master Quest dungeons (U11), cross-game songs (limits design, Stage 1) and starting OoT warp
+// songs (Stage 2); and from 0.4.14 Full (Stage 3). Opening another row is a separate, reviewed release decision.
+constexpr bool OnlyWallmasterRowsPublic() {
     for (const auto& row : kEntranceCapabilities)
         for (const auto& value : row.values)
             if (value.stage == Stage::Public && row.id != "wallmasters-own-game-vanilla-v1" &&
                 row.id != "wallmasters-own-game-quests-v1" && row.id != "wallmasters-own-game-songs-v1" &&
-                row.id != "wallmasters-own-game-songs-v2")
+                row.id != "wallmasters-own-game-songs-v2" && row.id != kFullWallmasterCapability)
                 return false;
     return true;
 }
@@ -175,7 +176,7 @@ constexpr bool CompanionsAreClosed() {
 static_assert(CapabilityDetail::IdsAreUnique(), "Capability ids must be unique");
 static_assert(CapabilityDetail::RowsFitTheirMask(), "A capability row has 1 to 32 values");
 static_assert(CapabilityDetail::DevOnlyNeverPublic(), "A devOnly capability can never be Public");
-static_assert(CapabilityDetail::OnlyOwnGameWallmastersPublic(), "Only the Own Game Wallmaster rows are Public");
+static_assert(CapabilityDetail::OnlyWallmasterRowsPublic(), "Only the Wallmaster rows are Public");
 static_assert(CapabilityDetail::FullOnlyForWallmasters(), "Only wallmasters-full-v1 admits Full, for Wallmasters");
 static_assert(CapabilityDetail::CompanionsAreClosed(), "Companion rows must stay within the rows they name");
 

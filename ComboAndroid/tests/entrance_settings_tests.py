@@ -100,13 +100,13 @@ int main(int argc, char** argv) {
     Settings defaults;
     assert(!defaults.erMajorDungeons && !defaults.erIndoorsMajor && MakePools(defaults).empty());
     Json metadata = Json::array(), result = Json::array();
-    // The shipping build admits only Wallmaster Shuffle (Own Game) (P1-05).
+    // The shipping build admits only Wallmaster Shuffle: Own Game (P1-05) and Full (limits design, Stage 3).
     const auto shipping = ActiveCapabilities();
     for (const auto& row : kEntranceSettings) {
         const bool wallmasters = std::string_view(row.key) == "erWallmasters";
         assert(row.get(defaults) == 0 && row.defaultValue == 0 && row.visible(shipping) == wallmasters);
         assert(row.supports(0, shipping) && !row.supports(-1, shipping) && row.supports(1, shipping) == wallmasters &&
-               !row.supports(2, shipping));
+               row.supports(2, shipping) == wallmasters && !row.supports(3, shipping));
         Json choices = Json::array();
         for (const auto& choice : row.choices)
             choices.push_back({{"value", choice.value}, {"name", choice.name}, {"description", choice.description}});
@@ -119,9 +119,10 @@ int main(int argc, char** argv) {
             assert(std::string_view(cvar).starts_with("gCombo.Rando.Entrances."));
             assert(defaultValue == 0); ++calls; return injected;
         }, shipping);
-        assert(calls == std::size(kEntranceSettings) && MakePools(guarded).empty() == (injected != 1));
+        const bool admitted = injected == 1 || injected == 2;
+        assert(calls == std::size(kEntranceSettings) && MakePools(guarded).empty() == !admitted);
         for (const auto& row : kEntranceSettings)
-            assert(row.get(guarded) == (injected == 1 && std::string_view(row.key) == "erWallmasters" ? 1 : 0));
+            assert(row.get(guarded) == (admitted && std::string_view(row.key) == "erWallmasters" ? injected : 0));
     }
     // The private v1 helper must keep its old pools after default corrections.
     for (int mask = 0; mask < 16; ++mask) {

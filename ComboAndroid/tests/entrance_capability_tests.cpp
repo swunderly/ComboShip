@@ -23,9 +23,9 @@ const Stage kStages[] = {Stage::Hidden, Stage::Dev, Stage::Public};
 // contract is Public (P1-05), and so are the Master Quest (U11), the
 // foreign-song (limits design, Stage 1) and the starting-song (Stage 2)
 // Wallmaster contracts from 0.4.13; Full Wallmasters (Stage 3) are at
-// kFullStage; everything else is Hidden. A unit that opens a value updates
-// this table.
-constexpr Stage kFullStage = Stage::Dev;
+// kFullStage, Public from 0.4.14; everything else is Hidden. A unit that opens
+// a value updates this table.
+constexpr Stage kFullStage = Stage::Public;
 Stage ExpectedStage(std::string_view id, std::string_view key) {
   (void)key;
   if (id == "wallmasters-full-v1")
@@ -164,20 +164,23 @@ void StageSets() {
         }
     }
   }
-  // Only the four Own Game Wallmaster contracts ship, vanilla, Master Quest,
-  // foreign songs and starting songs; Dev adds the explicit legacy tranche.
+  // Only the Wallmaster contracts ship: the four Own Game ones, vanilla, Master
+  // Quest, foreign songs and starting songs, and Full (from 0.4.14); Dev adds
+  // the explicit legacy tranche.
   const auto shipping = CapabilitySet::AtLeast(Stage::Public);
   assert(!shipping.Empty() &&
          shipping == (shipping.Only("wallmasters-own-game-vanilla-v1") |
                       shipping.Only("wallmasters-own-game-quests-v1") |
                       shipping.Only("wallmasters-own-game-songs-v1") |
-                      shipping.Only("wallmasters-own-game-songs-v2")));
+                      shipping.Only("wallmasters-own-game-songs-v2") |
+                      shipping.Only("wallmasters-full-v1")));
   for (const auto &row : kEntranceCapabilities)
     assert(shipping.Active(row.id) ==
            (row.id == "wallmasters-own-game-vanilla-v1" ||
             row.id == "wallmasters-own-game-quests-v1" ||
             row.id == "wallmasters-own-game-songs-v1" ||
-            row.id == "wallmasters-own-game-songs-v2"));
+            row.id == "wallmasters-own-game-songs-v2" ||
+            row.id == "wallmasters-full-v1"));
   const auto dev = CapabilitySet::AtLeast(Stage::Dev);
   assert(dev == (dev.Only("wallmasters-own-game-mm-tranche") |
                  dev.Only("wallmasters-own-game-vanilla-v1") |
@@ -220,8 +223,8 @@ void ActiveSetFollowsTheBuild() {
 }
 
 // The shipping set strips every non-default value but Wallmaster Shuffle (Own
-// Game) from every source a reader sees (ActiveSetFollowsTheBuild shows a
-// shipping build uses that set).
+// Game and, from 0.4.14, Full) from every source a reader sees
+// (ActiveSetFollowsTheBuild shows a shipping build uses that set).
 void ShippingStripsEverything() {
   {
     const auto caps = CapabilitySet::AtLeast(Stage::Public);
@@ -230,7 +233,8 @@ void ShippingStripsEverything() {
       assert(row.visible(caps) == wallmasters);
       for (const int value : kInjected)
         assert(row.supports(value, caps) ==
-               (value == row.defaultValue || (wallmasters && value == 1)));
+               (value == row.defaultValue ||
+                (wallmasters && (value == 1 || value == 2))));
     }
     for (const int injected : kInjected) {
       size_t reads = 0;
@@ -246,8 +250,10 @@ void ShippingStripsEverything() {
       Settings expected;
       if (injected == 1)
         expected.erWallmasters = Mode::OwnGame;
+      if (injected == 2)
+        expected.erWallmasters = Mode::Full;
       assert(reads == std::size(kEntranceSettings) &&
-             MakePools(s).empty() == (injected != 1));
+             MakePools(s).empty() == (injected != 1 && injected != 2));
       assert(Same(s, expected));
     }
   }

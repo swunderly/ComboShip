@@ -2662,8 +2662,10 @@ Public ones.
 
 ## Full Wallmaster Shuffle (2026-10-22)
 
-Planned for 0.4.14 (Wallmaster limits design, Stage 3). OoTMM v32.3's third Wallmaster value, Full
-(`packages/core/src/settings/data.ts:3545-3555`, no description of its own), makes one WALLMASTERS pool with
+Planned for 0.4.14 (Wallmaster limits design, Stage 3). It is Public from 0.4.14 (one commit, which can be reverted
+alone to stage it at Dev again), and a `static_assert` keeps the Wallmaster rows the only Public ones. OoTMM v32.3's
+third Wallmaster value, Full (`packages/core/src/settings/data.ts:3545-3555`, no description of its own), makes one
+WALLMASTERS pool with
 `ownGame: false` (`packages/logic/src/solver/entrances.ts:657-669`): every Wallmaster of both games, 13 with normal
 dungeons and 11 to 16 with Master Quest ones, can lead to any of 18 dungeon entrances, the 11 OoT ones of Own Game
 and MM's seven (`dungeon` and `dungeon-sh`, all `no-sot`, so no Song of Time gate). A capture sets the entrance

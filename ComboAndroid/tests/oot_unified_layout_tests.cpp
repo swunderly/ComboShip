@@ -299,7 +299,23 @@ int main(int argc, char **argv) {
       bad["registry"] = "wrong";
       break;
     }
-    Reject([&] { DecodeOotUnifiedAssumptions(bad, {}); });
+    // Case 9 is refused only without the Full id (below).
+    Reject([&] { DecodeOotUnifiedAssumptions(bad, {}, vanillaOnly); });
+  }
+  // With the Full id (limits design, Stage 3), an MM dungeon of the Full pool
+  // is a foreign route, kept apart from the OoT ones.
+  {
+    auto foreign = overlay;
+    foreign["remaining"][0]["dst"] = "MM_TEMPLE_WOODFALL";
+    const auto from =
+        Find(foreign["remaining"][0]["src"].get<std::string>())->id;
+    const auto decoded = DecodeOotUnifiedAssumptions(foreign, {}, Caps());
+    assert(decoded.foreign.at(from).size() == 1 &&
+           decoded.foreign.at(from)[0].destination ==
+               Find("MM_TEMPLE_WOODFALL")->id);
+    auto shop = overlay;
+    shop["remaining"][0]["dst"] = "MM_CLOCK_TOWN_FROM_CLOCK_TOWER";
+    Reject([&] { DecodeOotUnifiedAssumptions(shop, {}, Caps()); });
   }
   // A Master Quest context is assumed only with the quests id; its sources must
   // exist there (MQ Shadow has none, so the vanilla candidate names one too

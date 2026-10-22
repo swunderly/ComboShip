@@ -96,11 +96,13 @@ using ComboRando::UnsupportedComboSeedFormat;
 using Json = nlohmann::json;
 
 // The capability ids with a Public value (M1 plan P1-05, U11, limits design
-// Stages 1 and 2). Each one needs a coverage model below; the four Own Game
-// Wallmaster ids have one, Prove's (the songs ids with their song facts).
+// Stages 1 to 3). Each one needs a coverage model below; the four Own Game
+// Wallmaster ids have one, Prove's (the songs ids with their song facts), and
+// the Full id has ProveFull's.
 static const std::set<std::string_view> kExpectedPublic = {
     kVanillaWallmasterCapability, kQuestsWallmasterCapability,
-    kSongsWallmasterCapability, kStartingSongsWallmasterCapability};
+    kSongsWallmasterCapability, kStartingSongsWallmasterCapability,
+    kFullWallmasterCapability};
 // A seed's song facts: none, foreign-song logic (the songs id) or a starting
 // OoT warp song (the songs-v2 id).
 enum class SongFacts { None, Foreign, Starting };
