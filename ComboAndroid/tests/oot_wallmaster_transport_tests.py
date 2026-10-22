@@ -1,9 +1,9 @@
 """Execute the real capture adapter, actor hook and cleared-room condition with native enums, for a vanilla
 and an all-Master-Quest layout, and for a Full layout whose OoT sources depart to MM dungeons.
 
-A Full route into MM queues the cross-game entrance departure (CrossEntrance.inc.h) and lets the native respawn run
-as its transition, after forgetting Cross-Games Farore's Wind's dungeon record; a refused departure keeps the native
-respawn alone and the record (D7). Source/room parity is independently checked by oot_wallmaster_source_tests.py.
+A Full route into MM queues the cross-game entrance departure (CrossEntrance.inc.h) first and, only once it is
+queued, forgets Cross-Games Farore's Wind's dungeon record; the native respawn runs as its transition. A refused
+departure keeps the native respawn alone and the record (D7). Source/room parity is independently checked by oot_wallmaster_source_tests.py.
 No gameplay is claimed.
 """
 from pathlib import Path

@@ -40,10 +40,10 @@ bool RuntimeWallmastersActive(PlayState* play) {
 
 // Full Wallmasters: a route into MM leaves OoT through the cross-game entrance flight (CrossEntrance.inc.h), the port's
 // form of OoTMM's override and game switch (oot/actors/En/En_Wallmas.c:48-55, oot/play/play.c:738-756, which saves
-// before switching, common/switch.c:75-85). The capture forgets the dungeon record first, as an own-game one does, and
-// queues the departure; the native respawn then runs as the transition, and its end leaves for MM (z_play.c
-// Combo_OotFinishEntranceDeparture), with the launcher's preflight checked again. A departure refused when it is
-// queued, or at the end of that transition, keeps the native respawn, and both are logged (D7).
+// before switching, common/switch.c:75-85). The capture queues the departure first, and only if the queue succeeds
+// forgets the dungeon record, as an own-game one does; the native respawn then runs as the transition, and its end
+// leaves for MM (z_play.c Combo_OotFinishEntranceDeparture), with the launcher's preflight checked again. A departure
+// refused when it is queued, or at the end of that transition, keeps the native respawn, and both are logged (D7).
 int OotCrossGameCapture(const CE::Record& source, uint32_t destination) {
     const auto* row = CE::Find(CE::Game::Mm, destination);
     if (!row || !CE::OotForeignDestinationBound(*row)) {

@@ -10,10 +10,22 @@
 #include "soh/resource/type/scenecommand/SetRoomList.h"
 #include "soh/resource/type/scenecommand/SetStartPositionList.h"
 #include "rando/entrances/NativeSceneArrival.h"
+#include "soh/Enhancements/game-interactor/GameInteractor.h"
+#include "soh/ShipInit.hpp"
 #include <ship/resource/CrossRMRegistry.h>
+#include <spdlog/spdlog.h>
 namespace CEArrival = ComboRando::Entrances;
 namespace {
 CEArrival::NativeEntranceFlight sOotEntranceFlight;
+// A queued departure belongs to the play state that queued it (a Full Wallmaster capture's). A reset or a quit during
+// its fade, or any other end of that play state, forgets it, so the next transition of a reloaded file is never sent
+// to the other game. An arrival armed for OoT stays: the combo return fires OnExitGame before it consumes the arrival
+// (title_setup.c).
+void RegisterOotEntranceFlightHooks() {
+    COND_HOOK(OnExitGame, true, [](int32_t) { sOotEntranceFlight.cancelDeparture(); });
+    COND_HOOK(OnPlayDestroy, true, []() { sOotEntranceFlight.cancelDeparture(); });
+}
+RegisterShipInitFunc sOotEntranceFlightHooks(RegisterOotEntranceFlightHooks);
 bool OotRawArrivalBound(uint32_t id, int age) {
     const auto* record = CEArrival::Find(CEArrival::Game::Oot, id);
     const auto arrival = CEArrival::ResolveOotNativeArrival(id);
@@ -96,7 +108,7 @@ extern "C" COMBO_EXPORT int SOH_RequestEntranceDeparture(int file, int destinati
     // Pinned ReloadSword indexes a four-entry native equipment field.
     if ((gSaveContext.equips.equipment & 0xf) > 3)
         return 0;
-    return sOotEntranceFlight.queue({ file, 0, destination, gSaveContext.linkAge, crossAge, id });
+    return sOotEntranceFlight.queue({ file, 0, destination, gSaveContext.linkAge, crossAge, id }, gPlayState);
 }
 // A Full Wallmaster capture's departure to an MM dungeon (combo_entrance_runtime.cpp), under the seed's Cross-Games
 // Age as the Farore rules hold it: the launcher's preflight refuses any other value (ComboShip.cpp
@@ -111,8 +123,8 @@ extern "C" COMBO_EXPORT int Combo_OotFinishEntranceDeparture(void* state) {
     const int horse = AREG(6);
     const u8 button = gSaveContext.equips.buttonItems[0];
     const bool swordless = Flags_GetInfTable(INFTABLE_SWORDLESS) != 0;
-    return sOotEntranceFlight.finish(
-        gSaveContext.fileNum, 0,
+    const auto end = sOotEntranceFlight.finish(
+        gSaveContext.fileNum, 0, play,
         [play](const auto&) {
             if ((gSaveContext.equips.equipment & 0xf) > 3)
                 return false;
@@ -123,6 +135,11 @@ extern "C" COMBO_EXPORT int Combo_OotFinishEntranceDeparture(void* state) {
             }
             if (play->sceneNum == SCENE_BOMBCHU_BOWLING_ALLEY && Flags_GetSwitch(play, 0x38))
                 OotReloadEntranceSword(play);
+            // Pinned Save_DoSave(SF_OWL) (oot/save.c:398-414, from comboGameSwitch, common/switch.c:75-85): the
+            // scene's live chest, switch, clear and collect flags (PlayStoreFlags) and the scene number, as the pause
+            // menu's save does. Play_Destroy stores them only after this save, so without it they would be lost.
+            Play_SaveSceneFlags(play);
+            gSaveContext.savedSceneNum = play->sceneNum;
             SaveManager::Instance->SaveFile(gSaveContext.fileNum);
             SaveManager::Instance->ThreadPoolWait();
             return true;
@@ -138,6 +155,12 @@ extern "C" COMBO_EXPORT int Combo_OotFinishEntranceDeparture(void* state) {
             SaveManager::Instance->SaveFile(gSaveContext.fileNum);
             SaveManager::Instance->ThreadPoolWait();
         });
+    // A pending departure refused here keeps the native transition (D7); nothing queued is the ordinary case.
+    if (CEArrival::DepartureRefused(end))
+        SPDLOG_WARN("[ComboShip] OoT entrance departure refused at the end of its transition: {}; using the native "
+                    "transition",
+                    CEArrival::DepartureEndText(end));
+    return end == CEArrival::DepartureEnd::Departed;
 }
 extern "C" COMBO_EXPORT int SOH_ConsumeEntranceArrival() {
     const auto arrival = sOotEntranceFlight.takeArrival(gSaveContext.fileNum, 0);

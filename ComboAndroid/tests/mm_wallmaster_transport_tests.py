@@ -220,8 +220,9 @@ int main() {
     assert(!Bind(bad)); Reset(play); Capture(&actor, &play);
     assert(fallbackCalls == 1 && !Combo_MMWallmasterErActive()); Unchanged();
 #endif
-    // Full: each MM source routed to an OoT dungeon queues its departure, ends the dungeon cycle and keeps the native
-    // respawn as the transition; a refused departure keeps the native respawn alone and logs (D7). Full is admitted
+    // Full: each MM source routed to an OoT dungeon queues its departure first, ends the dungeon record only once it
+    // is queued, and keeps the native respawn as the transition; a refused departure keeps the native respawn alone and
+    // logs (D7). Full is admitted
     // where this build's catalogue has it.
     {
         CE::EntranceLayout full;

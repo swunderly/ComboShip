@@ -243,13 +243,15 @@ check(squash('#endif play->nextEntranceIndex = ENTR_CHAMBER_OF_THE_SAGES_0; gSav
       in ganon, 'the finished-goal Ganon ending changed')
 # OoTMM's endGame writes the saved scene (gSave.info.sceneId) for the end of the game. The port writes the saved
 # scene only as the current play's scene (pause menu and Play_PerformSave, which autosave and the Triforce Hunt
-# completion use, and the cross-game departure save in OTRGlobals.cpp, as OoTMM's departure owl save does), for a new
-# file, for the oracle's context, and when copying a slot: never an end-of-game place.
+# completion use, and the cross-game departure saves, in OTRGlobals.cpp and the entrance departure's in
+# CrossEntrance.inc.h, as OoTMM's departure owl save does), for a new file, for the oracle's context, and when
+# copying a slot: never an end-of-game place.
 scene_writers = {}
 for path in [p for d in ('soh/src', 'soh/soh', 'soh/include', 'combo') for p in sorted((root / d).rglob('*.[ch]*'))]:
     for value in re.findall(r'\bsavedSceneNum\s*=(?!=)\s*([^;]+);', path.read_text(encoding='utf-8', errors='replace')):
         scene_writers.setdefault(path.name, []).append(value.strip())
 check(scene_writers == {'z_play.c': ['play->sceneNum'], 'z_kaleido_scope_PAL.c': ['play->sceneNum'],
+                        'CrossEntrance.inc.h': ['play->sceneNum'],
                         'logic.cpp': ['SCENE_LINKS_HOUSE'], 'savefile.cpp': ['-1'],
                         'OTRGlobals.cpp': ['gPlayState->sceneNum'],
                         'SaveManager.cpp': ['SCENE_LINKS_HOUSE', '0x51', '0x51', 'src.savedSceneNum']},

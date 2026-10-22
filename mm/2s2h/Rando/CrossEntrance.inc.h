@@ -9,13 +9,24 @@
 #include "2s2h/resource/type/scenecommand/SetRoomList.h"
 #include "2s2h/resource/type/scenecommand/SetStartPositionList.h"
 #include "rando/entrances/NativeSceneArrival.h"
+#include "2s2h/GameInteractor/GameInteractor.h"
+#include "2s2h/ShipInit.hpp"
 #include <ship/resource/CrossRMRegistry.h>
+#include <spdlog/spdlog.h>
 extern "C" int MM_GetEffectiveHumanAge(int fileNum);
 extern "C" int MM_CanFaroreTransitionAge(int fileNum, int age);
 extern "C" int MM_ApplyFaroreTransitionAge(int fileNum, int age);
 namespace CEMmArrival = ComboRando::Entrances;
 namespace {
 CEMmArrival::NativeEntranceFlight sMmEntranceFlight;
+// A queued departure belongs to the play state that queued it (a Full Wallmaster capture's): any end of that play
+// state forgets it. A reset or a quit leaves MM through the launcher, which cancels the whole flight
+// (MM_CancelEntranceFlight); this also covers a play state that ends inside MM. A finished departure stays for
+// graph.c, which consumes it after Play_Destroy.
+void RegisterMmEntranceFlightHooks() {
+    COND_HOOK(OnPlayDestroy, true, []() { sMmEntranceFlight.cancelDeparture(); });
+}
+RegisterShipInitFunc sMmEntranceFlightHooks(RegisterMmEntranceFlightHooks);
 bool MmArrivalBound(uint32_t id) {
     bool bound = false;
     for (const auto& row : CEMmArrival::kMmGrottoGraphBindings)
@@ -114,7 +125,7 @@ extern "C" COMBO_EXPORT int MM_RequestEntranceDeparture(int file, int destinatio
     const int age = crossAge ? (sOotAge ? sOotAge(file) : -1) : MM_GetEffectiveHumanAge(file);
     if (crossAge && !MM_CanFaroreTransitionAge(file, age))
         return 0;
-    return sMmEntranceFlight.queue({ file, 1, destination, age, crossAge, id });
+    return sMmEntranceFlight.queue({ file, 1, destination, age, crossAge, id }, gPlayState);
 }
 // A Full Wallmaster capture's departure to an OoT dungeon (ComboEntrancesMM.cpp), under the seed's Cross-Games Age as
 // the Farore rules hold it: the launcher's preflight refuses any other value (ComboShip.cpp
@@ -128,8 +139,8 @@ extern "C" COMBO_EXPORT int Combo_MMFinishEntranceDeparture(void* state) {
         return 0;
     const int originalAge = MM_GetEffectiveHumanAge(gSaveContext.fileNum);
     const auto originalForm = gSaveContext.save.playerForm, originalMask = gSaveContext.save.equippedMask;
-    return sMmEntranceFlight.finish(
-        gSaveContext.fileNum, 1,
+    const auto end = sMmEntranceFlight.finish(
+        gSaveContext.fileNum, 1, play,
         [play, originalForm, originalMask](const auto& request) {
             // Exact pinned comboTransitionOverrideMM cleanup, before the native owl save.
             if (MmEntranceNeedsFdCleanup(play)) {
@@ -152,6 +163,12 @@ extern "C" COMBO_EXPORT int Combo_MMFinishEntranceDeparture(void* state) {
             gSaveContext.save.equippedMask = originalMask;
             SaveManager_SaveCurrentForCombo();
         });
+    // A pending departure refused here keeps the native transition (D7); nothing queued is the ordinary case.
+    if (CEMmArrival::DepartureRefused(end))
+        SPDLOG_ERROR("[ComboShip] MM entrance departure refused at the end of its transition: {}; using the native "
+                     "transition",
+                     CEMmArrival::DepartureEndText(end));
+    return end == CEMmArrival::DepartureEnd::Departed;
 }
 extern "C" COMBO_EXPORT int MM_ConsumeFinishedEntranceDeparture() {
     return sMmEntranceFlight.takeFinished();

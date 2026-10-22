@@ -74,7 +74,10 @@ void TitleSetup_InitImpl(GameState* gameState) {
     }
 #endif
 #ifdef COMBO_BUILD
-    SaveContext_Init(); // Ordinary boot, with no pending file load.
+    // Ordinary boot, with no pending file load: a reset or a quit to the title. Nothing queued or armed in the
+    // cross-game entrance flight belongs to the file loaded next.
+    SOH_CancelEntranceFlight();
+    SaveContext_Init();
 #endif
     gameState->running = false;
     SET_NEXT_GAMESTATE(gameState, Title_Init, TitleContext);

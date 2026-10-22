@@ -153,6 +153,9 @@ combo_harness_test(oot_wallmaster_pinned_source_classifier oot_wallmaster_source
 combo_json_harness_test(mm_wallmaster_room_clear_spawn_and_soul_guards mm_wallmaster_spawn_tests.py)
 combo_json_harness_test(mm_missing_soul_temporary_and_permanent_clear mm_soul_room_clear_tests.py)
 combo_json_harness_test(mm_wallmaster_unified_transport mm_wallmaster_transport_tests.py)
+# The cross-game entrance flight's departure end in both engines: the scene flags stored before the save, refusal
+# logs, and a departure forgotten on a reset, a quit or the end of the play state that queued it.
+combo_harness_test(cross_game_departure_flag_store_reset_and_refusal_logs cross_game_departure_flight_tests.py)
 combo_json_harness_test(entrance_spoiler_pinned_format_and_route_identity entrance_spoiler_format_tests.py)
 combo_json_harness_test(entrance_spoiler_output_real_helper_and_launcher entrance_spoiler_output_tests.py)
 combo_json_harness_test(entrance_plando_layout_roundtrip entrance_plando_roundtrip_tests.py)

@@ -449,10 +449,11 @@ extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
         const auto routes = CE::ActiveMmUnified().routesFrom(source->id);
         // Full Wallmasters: a route into OoT leaves MM through the cross-game entrance flight (CrossEntrance.inc.h),
         // the port's form of OoTMM's override and game switch (mm/actors/En/En_Wallmas.c:26-33, mm/play/play.c:893-912,
-        // which saves before switching). The capture ends the dungeon record first, as an own-game one does, and
-        // queues the departure; the native respawn then runs as the transition, and its end leaves for OoT (z_play.c
-        // Combo_MMFinishEntranceDeparture) after the launcher's preflight runs again. A departure refused when it is
-        // queued, or at the end of that transition, keeps the native respawn, and both are logged (D7).
+        // which saves before switching). The capture queues the departure first, and only if the queue succeeds ends
+        // the dungeon record, as an own-game one does; the native respawn then runs as the transition, and its end
+        // leaves for OoT (z_play.c Combo_MMFinishEntranceDeparture) after the launcher's preflight runs again. A
+        // departure refused when it is queued, or at the end of that transition, keeps the native respawn, and both
+        // are logged (D7).
         if (routes.size() == 1 && routes.front().destination.game == CE::Game::Oot) {
             const auto* row = CE::Find(CE::Game::Oot, routes.front().destination.id);
             if (!row || !CE::MmForeignDestinationBound(*row)) {
