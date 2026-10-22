@@ -1945,6 +1945,14 @@ static void Combo_FinishInit() {
         if (!sComboSwitchPending)
             return;
         sComboSwitchPending = false;
+        // The room's chest, switch, clear and collect flags live in play->actorCtx.flags until Play_Destroy, after
+        // this save, and the return loads this save (title_setup.c). Store them first, with the scene, as every native
+        // save does (Play_PerformSave) and as OoTMM's departure does (common/switch.c comboGameSwitch:
+        // Save_DoSave(play, SF_OWL), oot/save.c PlayStoreFlags).
+        if (gPlayState != nullptr) {
+            Play_SaveSceneFlags(gPlayState);
+            gSaveContext.savedSceneNum = gPlayState->sceneNum;
+        }
         SaveManager::Instance->SaveFile(sComboSwitchFileNum);
         SaveManager::Instance->ThreadPoolWait();
         if (SOH_FaroreDeparturePending()) {

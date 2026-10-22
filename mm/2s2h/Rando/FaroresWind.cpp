@@ -520,4 +520,10 @@ extern "C" void* Combo_MMFaroreTexture() {
     return Combo_MMFarorePrepareResources() ? sOwners[0]->GetRawPointer() : nullptr;
 }
 #include "CrossEntrance.inc.h"
+// The hook's departure save (BenPort.cpp: a song, Farore's Wind, the Clock Tower door) stores the flags as the
+// entrance departure does (MmStoreCycleSceneFlags); outside gameplay there is no scene to store.
+extern "C" void Combo_MMStoreDepartureFlags(PlayState* play) {
+    if (play != nullptr)
+        MmStoreCycleSceneFlags(play);
+}
 #endif

@@ -55,6 +55,23 @@ bool MmArrivalBound(uint32_t id) {
                                                      false);
     } catch (...) { return false; }
 }
+// Pinned Save_DoSave(SF_OWL) before the game switch (mm/save.c:180-199, from comboGameSwitch, common/switch.c:75-85):
+// PlayStoreFlags stores this scene's live flags in the cycle flags, and PrepareSave (func_8014546C) copies the cycle
+// flags into the saved ones, as every scene load already does (Interface_NewDay). The save then holds this cycle's
+// progress, this visit's included, and the return trip rebuilds the cycle flags from it (title_setup.c). isOwlSave
+// stays as it is: the save is the same normal save the Clock Tower door writes.
+void MmStoreCycleSceneFlags(PlayState* play) {
+    Play_SaveCycleSceneFlags(play);
+    for (size_t i = 0; i < ARRAY_COUNT(gSaveContext.cycleSceneFlags); i++) {
+        auto& saved = gSaveContext.save.saveInfo.permanentSceneFlags[i];
+        const auto& cycle = gSaveContext.cycleSceneFlags[i];
+        saved.chest = cycle.chest;
+        saved.switch0 = cycle.switch0;
+        saved.switch1 = cycle.switch1;
+        saved.clearedRoom = cycle.clearedRoom;
+        saved.collectible = cycle.collectible;
+    }
+}
 bool MmEntranceNeedsFdCleanup(PlayState* play) {
     if (!play || gSaveContext.save.playerForm != PLAYER_FORM_FIERCE_DEITY ||
         CVarGetInteger("gEnhancements.Masks.FierceDeitysAnywhere", 0))
@@ -118,6 +135,7 @@ extern "C" COMBO_EXPORT int Combo_MMFinishEntranceDeparture(void* state) {
                 gSaveContext.save.equippedMask = originalMask;
                 return false;
             }
+            MmStoreCycleSceneFlags(play);
             SaveManager_SaveCurrentForCombo();
             return true;
         },

@@ -1259,8 +1259,10 @@ extern "C" void InitOTR(int argc, char* argv[]) {
         // Portal return always persists MM; a reset never does, even with autosave on ("Unsaved progress will be
         // lost"; MM's autosave keeps its own interval). Never persist outside gameplay: the title/attract path wipes
         // save first (Sram_InitNewSave). An owl save has already written itself through the flashrom seam.
-        if (!isOwlSaveQuit && !isReset && gSaveContext.gameMode == GAMEMODE_NORMAL)
+        if (!isOwlSaveQuit && !isReset && gSaveContext.gameMode == GAMEMODE_NORMAL) {
+            Combo_MMStoreDepartureFlags(gPlayState); // the room's and the cycle's flags, as MM's own saves store them
             SaveManager_SaveCurrentForCombo();
+        }
         if (MM_FaroreDeparturePending() && !isReset && !isOwlSaveQuit) {
             if (!MM_DispatchNativeDeparture(gPlayState))
                 return;

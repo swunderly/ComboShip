@@ -53,6 +53,8 @@ void Combo_MMFaroreDrawPointer(PlayState* play);
 void Combo_MMFaroreInitPointer(PlayState* play);
 void Combo_MMFaroreDestroyPointer(PlayState* play);
 void* Combo_MMFaroreTexture(void);
+// Stores the scene and cycle flags into the permanent flags a cross-game departure save writes.
+void Combo_MMStoreDepartureFlags(PlayState* play);
 #define COMBO_FARORE_CROSS_ENTRANCE 0xfffd
 #ifdef __cplusplus
 }
