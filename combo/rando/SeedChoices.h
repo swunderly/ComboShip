@@ -6,9 +6,9 @@
 // - the starting age, when it is Random;
 // - the Master Quest dungeons of a seed without OoTMM's bundled MQ data. A bundled seed rolls its own from the seed
 //   and records them already (combo/mq/MqMode.h MqRollSeed, MqSeedMarker.h).
-// SoH draws them wherever the shared stream happens to be: a finalize after another draw, the reachability oracle's
-// own first finalize (OTRGlobals.cpp EnsureOracleInit), an app reload or a headless replay drew them again,
-// differently, while each reload of an older seed still does.
+// SoH draws them wherever the shared stream happens to be, so the reachability oracle's own first finalize
+// (OTRGlobals.cpp EnsureOracleInit), an app reload and a headless replay each drew them again, differently. An older
+// seed's reload still does.
 //
 // A seed generated from now on draws each one that its settings make random from a stream of its own, named for the
 // choice and the combo master seed (Mode::Seeded), so every finalize of the seed resolves it the same, and records
@@ -24,7 +24,6 @@
 
 #include <cstdint>
 #include <optional>
-#include <set>
 #include <stdexcept>
 #include <string>
 
@@ -46,8 +45,8 @@ inline constexpr const char* ChoiceStream(Choice choice) {
            : choice == Choice::Trials ? "trials:soh-finalize-v1:"
                                       : "startingAge:soh-finalize-v1:";
 }
-// FNV-1a of "<stream><combo master seed in decimal>", as ComboMq::MqRollSeed names the Master Quest stream. A Legacy
-// seed's random Master Quest dungeons are drawn from that MQ stream, as a bundled seed's are.
+// FNV-1a of "<stream><combo master seed in decimal>", as ComboMq::MqRollSeed names the Master Quest stream. A Seeded
+// seed without the bundled MQ data draws its random Master Quest dungeons from that MQ stream, as a bundled seed does.
 constexpr uint32_t RollSeed(Choice choice, uint64_t comboSeed) {
     uint32_t hash = 2166136261u;
     for (const char* c = ChoiceStream(choice); *c != '\0'; c++)

@@ -2795,7 +2795,8 @@ generation (`OTRGlobals.cpp` `EnsureOracleInit`), an app reload (`ComboShip.cpp`
 `comborando --playthrough`. Every Allsanity or Beginner seed reloaded in another session could start Link at the other
 age than its fill assumed; trials re-rolled for seeds without `resolvedSeedRules`; a Legacy-MQ seed could reload other
 MQ dungeons than its placements. Key rings alone do not change play: the placements carry the rings and keys the pool
-had, and logic counts keys by item. This is in every release since at least 0.4.5 (`v0.4.5-android` and `v0.4.12-android` have the same finalize and reload).
+had, and logic counts keys by item. This is in every release since at least 0.4.5 (`v0.4.5-android` and
+`v0.4.12-android` have the same finalize and reload).
 
 The 0.4.13 RC1 corpus row d06 (Allsanity, no Wallmaster Shuffle) showed it. A host build of RC1's comborando
 regenerates the device's seed byte for byte and, instrumented, prints each finalize: generation drew key rings Water,
@@ -2826,6 +2827,8 @@ tricks. With the seed's Starting Age set to Child its replay passes Pass 1; set 
 - **Older seeds are not migrated.** A seed without the record (everything made before, from the app or comborando)
   finalizes Legacy, exactly as it loads today, re-rolling any random choice; `--playthrough` notes that its verdict
   is approximate. Its existing save files are unaffected: a save stores the resolved settings it was created with.
+  A build before this one ignores the record, so it loads a new seed with a random choice as it loads any seed, drawing
+  the choice again.
 
 Tests: `seed_choices_tests.cpp` (which choices are random, the streams, the record, the scope, the settings document);
 `seed_choices_finalize_tests.py` compiles the production finalize lines and checks Legacy re-rolls, Seeded draws from
