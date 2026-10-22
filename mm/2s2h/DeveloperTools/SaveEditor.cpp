@@ -4218,57 +4218,60 @@ void DrawRandoTab() {
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 1.0f, 1.0f, 0.2f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 1.0f, 1.0f, 0.1f));
 
-        ImGui::BeginTable("Check List", 5);
-        ImGui::TableSetupColumn("Shuffled", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_WidthFixed,
-                                30.0f);
-        ImGui::TableSetupColumn("Eligible", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_WidthFixed,
-                                30.0f);
-        ImGui::TableSetupColumn("Obtained", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_WidthFixed,
-                                30.0f);
-        ImGui::TableSetupColumn("Check Name");
-        ImGui::TableSetupColumn("Reward");
-        ImGui::TableSetupScrollFreeze(5, 1);
-        ImGui::TableHeadersRow();
+        if (ImGui::BeginTable("Check List", 5)) {
+            ImGui::TableSetupColumn("Shuffled", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_WidthFixed,
+                                    30.0f);
+            ImGui::TableSetupColumn("Eligible", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_WidthFixed,
+                                    30.0f);
+            ImGui::TableSetupColumn("Obtained", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_WidthFixed,
+                                    30.0f);
+            ImGui::TableSetupColumn("Check Name");
+            ImGui::TableSetupColumn("Reward");
+            ImGui::TableSetupScrollFreeze(5, 1);
+            ImGui::TableHeadersRow();
 
-        for (auto& [_, randoStaticCheck] : Rando::StaticData::Checks) {
-            RandoSaveCheck& randoSaveCheck = RANDO_SAVE_CHECKS[randoStaticCheck.randoCheckId];
+            for (auto& [_, randoStaticCheck] : Rando::StaticData::Checks) {
+                RandoSaveCheck& randoSaveCheck = RANDO_SAVE_CHECKS[randoStaticCheck.randoCheckId];
 
-            if (!rcFilter.PassFilter(randoStaticCheck.name) &&
-                !rcFilter.PassFilter(Rando::StaticData::Items[randoSaveCheck.randoItemId].spoilerName)) {
-                continue;
+                if (!rcFilter.PassFilter(randoStaticCheck.name) &&
+                    !rcFilter.PassFilter(Rando::StaticData::Items[randoSaveCheck.randoItemId].spoilerName)) {
+                    continue;
+                }
+
+                if (randoStaticCheck.randoCheckId == RC_UNKNOWN) {
+                    continue;
+                }
+                std::string hiddenName = "##";
+                hiddenName += randoStaticCheck.name;
+                ImGui::TableNextColumn();
+                UIWidgets::Checkbox((hiddenName + "shuffled").c_str(), &randoSaveCheck.shuffled);
+                UIWidgets::Tooltip("Shuffled");
+                ImGui::TableNextColumn();
+                UIWidgets::Checkbox((hiddenName + "eligible").c_str(), &randoSaveCheck.eligible);
+                UIWidgets::Tooltip("Eligible");
+                ImGui::TableNextColumn();
+                UIWidgets::Checkbox((hiddenName + "obtained").c_str(), &randoSaveCheck.obtained);
+                UIWidgets::Tooltip("Obtained");
+                ImGui::TableNextColumn();
+                ImGui::TextColored(randoSaveCheck.obtained ? UIWidgets::ColorValues.at(UIWidgets::Colors::Green)
+                                                           : UIWidgets::ColorValues.at(UIWidgets::Colors::White),
+                                   "%s", randoStaticCheck.name);
+                ImGui::TableNextColumn();
+                // ComboShip: the list writes only a reward picked from it. Drawn on the check's own reward, it set
+                // every reward it does not list to its first entry: writes to the save with no edit, from OoT saved to
+                // the file.
+                RandoItemId reward = randoSaveCheck.randoItemId;
+                if (!randoItemIdComboboxMap.contains(reward)) {
+                    ImGui::Text("%d", static_cast<int>(reward));
+                } else if (UIWidgets::ComboboxWithSearch((hiddenName + "reward").c_str(), &reward,
+                                                         &randoItemIdComboboxMap,
+                                                         { .labelPosition = UIWidgets::LabelPosition::None })) {
+                    randoSaveCheck.randoItemId = reward;
+                }
             }
 
-            if (randoStaticCheck.randoCheckId == RC_UNKNOWN) {
-                continue;
-            }
-            std::string hiddenName = "##";
-            hiddenName += randoStaticCheck.name;
-            ImGui::TableNextColumn();
-            UIWidgets::Checkbox((hiddenName + "shuffled").c_str(), &randoSaveCheck.shuffled);
-            UIWidgets::Tooltip("Shuffled");
-            ImGui::TableNextColumn();
-            UIWidgets::Checkbox((hiddenName + "eligible").c_str(), &randoSaveCheck.eligible);
-            UIWidgets::Tooltip("Eligible");
-            ImGui::TableNextColumn();
-            UIWidgets::Checkbox((hiddenName + "obtained").c_str(), &randoSaveCheck.obtained);
-            UIWidgets::Tooltip("Obtained");
-            ImGui::TableNextColumn();
-            ImGui::TextColored(randoSaveCheck.obtained ? UIWidgets::ColorValues.at(UIWidgets::Colors::Green)
-                                                       : UIWidgets::ColorValues.at(UIWidgets::Colors::White),
-                               "%s", randoStaticCheck.name);
-            ImGui::TableNextColumn();
-            // ComboShip: the list writes only a reward picked from it. Drawn on the check's own reward, it set every
-            // reward it does not list to its first entry: writes to the save with no edit, from OoT saved to the file.
-            RandoItemId reward = randoSaveCheck.randoItemId;
-            if (!randoItemIdComboboxMap.contains(reward)) {
-                ImGui::Text("%d", static_cast<int>(reward));
-            } else if (UIWidgets::ComboboxWithSearch((hiddenName + "reward").c_str(), &reward, &randoItemIdComboboxMap,
-                                                     { .labelPosition = UIWidgets::LabelPosition::None })) {
-                randoSaveCheck.randoItemId = reward;
-            }
+            ImGui::EndTable();
         }
-
-        ImGui::EndTable();
         ImGui::PopStyleColor(3);
         ImGui::EndChild();
     }
