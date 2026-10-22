@@ -163,6 +163,27 @@ assert {frozenset(s['mq']) for s in mq['capacityShortfalls']} == twelve
 for shortfall in mq['capacityShortfalls']:
     assert shortfall['ootSources'] == 12 and alone['id'] in shortfall['combinations']
     assert full['id'] not in shortfall['combinations'] and anywhere['id'] in shortfall['combinations']
+# Full (limits design, Stage 3): the same alias pool with ownGame false (entrances.ts:657-669). Every source of both games
+# shares one set of 18 destinations, Wallmasters alone's 11 OoT and 7 MM ones (all no-sot, so no can_reset_time), and no
+# vanilla/MQ context has more sources than that: at most 12 OoT and 4 MM, so Full never meets the MQ shortfall.
+fw = data['fullWallmasters']
+fw_entry = fw['combination']
+assert fw_entry['id'] == 'erWallmasters=full;erOneWays=none' and fw_entry['erEnabled'] and fw_entry['isEntranceShuffle']
+assert [(p['name'], p['ownGame'], p['alias']) for p in fw_entry['pools']] == [('WALLMASTERS', False, True)]
+fw_groups = fw_entry['pools'][0]['candidates']
+assert len(fw_groups) == 1 and len(fw_groups[0]['sources']) == 13
+fw_shared = fw_groups[0]['destinations']
+assert len(fw_shared) == fw['sharedCandidates'] == 18
+assert set(fw_shared) == set(next(iter(per_game(alone, 'WALLMASTERS', 'oot')))) | set(
+    next(iter(per_game(alone, 'WALLMASTERS', 'mm'))))
+assert fw_entry['resetGated'] == [] and fw_entry['deadEnds'] == []
+assert fw['sourcesByMqContext'] == list(range(11, 17)) and fw['capacityShortfalls'] == []
+assert any(rows[s]['game'] != rows[d]['game'] for s, d in fw_entry['sampleLayout'])
+fw_sites = {s['name']: (s['file'].split('/')[-1], s['lines']) for s in fw['crossGameSites']}
+assert fw_sites == {'dayOneGrant': ('pathfind.ts', [596, 599]), 'ootCapture': ('En_Wallmas.c', [48, 55]),
+                    'mmCapture': ('En_Wallmas.c', [26, 33]), 'ootSwitch': ('play.c', [738, 756]),
+                    'ootGameSwitch': ('play.c', [620, 625]), 'mmSwitch': ('play.c', [893, 912]),
+                    'saveOnSwitch': ('switch.c', [75, 85])}, fw_sites
 presence = data['registryAreaPresence']
 assert presence['never'] == [] and all(rows[n]['type'] == 'wallmaster' for n in presence['questDependentRows'])
 

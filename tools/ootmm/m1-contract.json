@@ -1,6 +1,6 @@
 {
   "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
-  "scope": "games=ootmm; erWallmasters and erOneWays in {none, ownGame}; the five one-way flags; every other er* key at its default (erNoPolarity, erSelfLoops and erDecoupled false); pools and candidates in the all-vanilla world",
+  "scope": "games=ootmm; erWallmasters and erOneWays in {none, ownGame}; the five one-way flags; every other er* key at its default (erNoPolarity, erSelfLoops and erDecoupled false); pools and candidates in the all-vanilla world; fullWallmasters: erWallmasters=full alone",
   "inputs": {
     "packages/logic/src/solver/entrances.ts": "fa3bd74313c06f50082d097a66539ced5c1d78709fd548a63d2ef40297b45f0b",
     "packages/logic/src/world/builder.ts": "88f98cac10bd801f40db3c84bcd72495162f755ad82e90728bb8ee0d7c097aa9",
@@ -114,6 +114,7 @@
     "data/world/oot/overworld/zora_river.yml": "afbe10b5b69b6adf8400b7af873a642d899e13c3543584fa6f91e9fcaf759a5f",
     "packages/generator/lib/combo/patch-build/index.ts": "0b477c713559a5d59d82295e38053597f705c16adad612ee17c9efc90c1e5f86",
     "packages/generator/lib/combo/randomizer/world-config.ts": "547f42e2e6e4503125117fa389bf61299af71617a99334778b4f8302845d3620",
+    "packages/generator/src/common/switch.c": "9dfe0412bd45f0c05ce636a4efb7cbd53f107c0e62f8d8330f7512eafa84c6bb",
     "packages/generator/src/mm/actors.c": "b8fda906faa69bc19c9e1d50cc45a3e36ad9573ca029241e2d3a105362f3d7b0",
     "packages/generator/src/mm/actors/En/En_Wallmas.S": "d4ef542d678db5ae091eabd810b444222ab37280defcd818c583144a9342d85e",
     "packages/generator/src/mm/actors/En/En_Wallmas.c": "1c27862006208aef099eefed664e5a64e64446f50e3f881ea85919715ace0725",
@@ -123,7 +124,8 @@
     "packages/generator/src/oot/actors/En/En_Wallmas.S": "c799bffdbea1a9500c887e640d9c45824bd28833c67ad36ea32f6c7832e69dfe",
     "packages/generator/src/oot/actors/En/En_Wallmas.c": "2d9e7729ea8fc152c3932d368cd1dea9911d103bf71eec35499028448186824d",
     "packages/generator/src/oot/play/play.c": "044d329150d5c4597d9d4ffef5062b7820bd3397403389a493d3cd87a4e042e8",
-    "packages/generator/src/oot/save.c": "8be1613d607fe36e71dacef3091d553c36f27a6cd1b021b676ce8b0bbc5b3c1d"
+    "packages/generator/src/oot/save.c": "8be1613d607fe36e71dacef3091d553c36f27a6cd1b021b676ce8b0bbc5b3c1d",
+    "packages/logic/src/pathfind/pathfind.ts": "9d95c72835d6c171632db823a1a9929b5543c9e674ebb90839608ad7896124b2"
   },
   "guardedBodies": {
     "POLARITY_ANY_OVERWORLD": {
@@ -5858,6 +5860,117 @@
         "mq": ["Forest", "Spirit", "BotW", "GTG"],
         "ootSources": 12,
         "combinations": ["erWallmasters=ownGame;erOneWays=none", "erWallmasters=ownGame;erOneWays=ownGame", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysWaterVoids", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysWaterVoids;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysOwls;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysOwls;erOneWaysWaterVoids;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysIkana", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysIkana;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysIkana;erOneWaysWaterVoids", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysIkana;erOneWaysWaterVoids;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysIkana;erOneWaysOwls;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysIkana;erOneWaysOwls;erOneWaysWaterVoids;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysMajor;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysMajor;erOneWaysWaterVoids;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysMajor;erOneWaysOwls;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysMajor;erOneWaysOwls;erOneWaysWaterVoids;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysMajor;erOneWaysIkana;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysMajor;erOneWaysIkana;erOneWaysWaterVoids;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysMajor;erOneWaysIkana;erOneWaysOwls;erOneWaysAnywhere", "erWallmasters=ownGame;erOneWays=ownGame;erOneWaysMajor;erOneWaysIkana;erOneWaysOwls;erOneWaysWaterVoids;erOneWaysAnywhere"]
+      }
+    ]
+  },
+  "fullWallmasters": {
+    "combination": {
+      "id": "erWallmasters=full;erOneWays=none",
+      "settings": {
+        "erWallmasters": "full",
+        "erOneWays": "none",
+        "erOneWaysMajor": false,
+        "erOneWaysIkana": false,
+        "erOneWaysOwls": false,
+        "erOneWaysWaterVoids": false,
+        "erOneWaysAnywhere": false
+      },
+      "erEnabled": true,
+      "isEntranceShuffle": true,
+      "pools": [
+        {
+          "name": "WALLMASTERS",
+          "ownGame": false,
+          "alias": true,
+          "srcTypes": ["wallmaster"],
+          "dstTypes": ["dungeon", "dungeon-minor", "dungeon-sh"],
+          "srcCount": {
+            "oot": 9,
+            "mm": 4
+          },
+          "dstCount": {
+            "oot": 22,
+            "mm": 14
+          },
+          "dst": ["MM_GREAT_BAY_FROM_SPIDER_HOUSE", "MM_GREAT_BAY_FROM_TEMPLE", "MM_SNOWHEAD_FROM_TEMPLE", "MM_SPIDER_HOUSE_OCEAN", "MM_SPIDER_HOUSE_SWAMP", "MM_STONE_TOWER_FROM_TEMPLE", "MM_STONE_TOWER_INVERTED_FROM_TEMPLE", "MM_SWAMP_FROM_SPIDER_HOUSE", "MM_TEMPLE_GREAT_BAY", "MM_TEMPLE_SNOWHEAD", "MM_TEMPLE_STONE_TOWER", "MM_TEMPLE_STONE_TOWER_INVERTED", "MM_TEMPLE_WOODFALL", "MM_WOODFALL_FROM_TEMPLE", "OOT_BOTTOM_OF_THE_WELL", "OOT_DEATH_CRATER_FROM_TEMPLE_FIRE", "OOT_DEKU_TREE", "OOT_DESERT_COLOSSUS_FROM_TEMPLE_SPIRIT", "OOT_DODONGO_CAVERN", "OOT_GERUDO_FORTRESS_FROM_GERUDO_TRAINING", "OOT_GERUDO_TRAINING_GROUNDS", "OOT_GRAVEYARD_FROM_TEMPLE_SHADOW", "OOT_ICE_CAVERN", "OOT_JABU_JABU", "OOT_KAKARIKO_FROM_BOTTOM_OF_THE_WELL", "OOT_KOKIRI_FOREST_FROM_DEKU_TREE", "OOT_LAKE_HYLIA_FROM_TEMPLE_WATER", "OOT_MOUNTAIN_TRAIL_FROM_DODONGO_CAVERN", "OOT_SACRED_MEADOW_FROM_TEMPLE_FOREST", "OOT_TEMPLE_FIRE", "OOT_TEMPLE_FOREST", "OOT_TEMPLE_SHADOW", "OOT_TEMPLE_SPIRIT", "OOT_TEMPLE_WATER", "OOT_ZORA_FOUNTAIN_FROM_ICE_CAVERN", "OOT_ZORA_FOUNTAIN_FROM_JABU_JABU"],
+          "candidates": [
+            {
+              "sources": ["MM_WALLMASTER_BTW_ENTRANCE", "MM_WALLMASTER_BTW_EXIT", "MM_WALLMASTER_BTW_FOUNTAIN", "MM_WALLMASTER_DAMPE", "OOT_WALLMASTER_BOTW_MAIN", "OOT_WALLMASTER_FOREST_CORRIDOR_EAST", "OOT_WALLMASTER_FOREST_CORRIDOR_WEST", "OOT_WALLMASTER_GANON_LIGHT", "OOT_WALLMASTER_GANON_SPIRIT", "OOT_WALLMASTER_GTG", "OOT_WALLMASTER_SHADOW", "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB", "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES"],
+              "destinations": ["MM_SPIDER_HOUSE_OCEAN", "MM_SPIDER_HOUSE_SWAMP", "MM_TEMPLE_GREAT_BAY", "MM_TEMPLE_SNOWHEAD", "MM_TEMPLE_STONE_TOWER", "MM_TEMPLE_STONE_TOWER_INVERTED", "MM_TEMPLE_WOODFALL", "OOT_BOTTOM_OF_THE_WELL", "OOT_DEKU_TREE", "OOT_DODONGO_CAVERN", "OOT_GERUDO_TRAINING_GROUNDS", "OOT_ICE_CAVERN", "OOT_JABU_JABU", "OOT_TEMPLE_FIRE", "OOT_TEMPLE_FOREST", "OOT_TEMPLE_SHADOW", "OOT_TEMPLE_SPIRIT", "OOT_TEMPLE_WATER"]
+            }
+          ]
+        }
+      ],
+      "resetGated": [],
+      "deadEnds": [],
+      "sampleLayout": [
+        ["MM_WALLMASTER_BTW_ENTRANCE", "MM_SPIDER_HOUSE_SWAMP"],
+        ["MM_WALLMASTER_BTW_EXIT", "MM_TEMPLE_GREAT_BAY"],
+        ["MM_WALLMASTER_BTW_FOUNTAIN", "MM_TEMPLE_SNOWHEAD"],
+        ["MM_WALLMASTER_DAMPE", "MM_TEMPLE_STONE_TOWER"],
+        ["OOT_WALLMASTER_BOTW_MAIN", "MM_TEMPLE_STONE_TOWER_INVERTED"],
+        ["OOT_WALLMASTER_FOREST_CORRIDOR_EAST", "MM_TEMPLE_WOODFALL"],
+        ["OOT_WALLMASTER_FOREST_CORRIDOR_WEST", "OOT_BOTTOM_OF_THE_WELL"],
+        ["OOT_WALLMASTER_GANON_LIGHT", "OOT_DEKU_TREE"],
+        ["OOT_WALLMASTER_GANON_SPIRIT", "OOT_DODONGO_CAVERN"],
+        ["OOT_WALLMASTER_GTG", "OOT_GERUDO_TRAINING_GROUNDS"],
+        ["OOT_WALLMASTER_SHADOW", "OOT_ICE_CAVERN"],
+        ["OOT_WALLMASTER_SPIRIT_ADULT_CLIMB", "OOT_JABU_JABU"],
+        ["OOT_WALLMASTER_SPIRIT_CHILD_RUPEES", "OOT_TEMPLE_FIRE"]
+      ]
+    },
+    "sharedCandidates": 18,
+    "sourcesByMqContext": [11, 12, 13, 14, 15, 16],
+    "capacityShortfalls": [],
+    "crossGameSites": [
+      {
+        "name": "dayOneGrant",
+        "file": "packages/logic/src/pathfind/pathfind.ts",
+        "lines": [596, 599],
+        "anchor": "if (a.game === 'oot' && exitArea.game === 'mm') {",
+        "sha256": "bccba9cd1fd0c19dd3ee883d1246fd7947d5da2f4d5297f76d1dcf369bb16502"
+      },
+      {
+        "name": "ootCapture",
+        "file": "packages/generator/src/oot/actors/En/En_Wallmas.c",
+        "lines": [48, 55],
+        "anchor": "gIsEntranceOverride = 1;",
+        "sha256": "bb9bc78ec216f1dca517cd6c2e6f197a9a13f8787be108d6881854de16f686d7"
+      },
+      {
+        "name": "mmCapture",
+        "file": "packages/generator/src/mm/actors/En/En_Wallmas.c",
+        "lines": [26, 33],
+        "anchor": "gIsEntranceOverride = 1;",
+        "sha256": "d8140da916be6984273a2cd646fc5733e9304a5edd7822d43fcf5a6f6476a1b8"
+      },
+      {
+        "name": "ootSwitch",
+        "file": "packages/generator/src/oot/play/play.c",
+        "lines": [738, 756],
+        "anchor": "Play_GameSwitch(play, entrance & ~MASK_FOREIGN_ENTRANCE);",
+        "sha256": "9c270cd902de33966196f52462f124dc1efc88e3b06e164eef026f3394d74b9c"
+      },
+      {
+        "name": "ootGameSwitch",
+        "file": "packages/generator/src/oot/play/play.c",
+        "lines": [620, 625],
+        "anchor": "comboGameSwitch(play, entrance);",
+        "sha256": "737c794469761847733e2a84a6910f20895231ad9703638176911aa75a054cf7"
+      },
+      {
+        "name": "mmSwitch",
+        "file": "packages/generator/src/mm/play/play.c",
+        "lines": [893, 912],
+        "anchor": "comboGameSwitch(play, entrance & ~MASK_FOREIGN_ENTRANCE);",
+        "sha256": "c4cfc0f1cb2c5984f6844a1dd3a212aaab0dc1595704ea52520d5d9c5bee1c67"
+      },
+      {
+        "name": "saveOnSwitch",
+        "file": "packages/generator/src/common/switch.c",
+        "lines": [75, 85],
+        "anchor": "Save_DoSave(play, SF_OWL);",
+        "sha256": "5af7dd0b4bf518029fd53b7dedbe75a58e1361a9a04f7f0b54b9a7b275f7767b"
       }
     ]
   },

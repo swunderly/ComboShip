@@ -114,7 +114,7 @@ for kind in ('settings', 'erEnabled', 'isEntranceShuffle', 'pools', 'opts', 'typ
              'resetGated', 'deadEnds', 'sampleLayout', 'regions', 'mq', 'capacity', 'rows', 'inputs', 'placement',
              'contract'):
     assert report['checked'].get(kind, 0) > 0, kind
-assert report['checked']['candidates'] >= 700 and report['checked']['erEnabled'] == 66
+assert report['checked']['candidates'] >= 700 and report['checked']['erEnabled'] == 66 + 1  # and Full's
 # One real seeded placement per combination succeeds; in the four MQ Spirit + MQ BotW contexts (vanilla Shadow and
 # Ganon) every Wallmaster combination with too few OoT destinations fails, as the fixture's capacity flags say.
 assert all(c['placement']['placed'] for c in facts['combinations'])
@@ -124,6 +124,18 @@ assert failed == {'+'.join(sorted(s['mq'])) for s in contract['mqSources']['capa
 # Every OoTMM source and data file ran from its pinned blob; entrances.ts is the one the fixture hashed.
 assert facts['servedBlobs'][entrances] == contract['inputs'][entrances]
 assert 'data/defs/entrances.yml' in facts['servedBlobs'] and 'packages/core/build/index.ts' in facts['servedBlobs']
+# Full Wallmasters (limits design, Stage 3): OoTMM's own run of erWallmasters=full is the fixture's pool, not own-game,
+# with one candidate set of 18 destinations for every source; its seeded placement succeeds, and so does one in each
+# MQ Spirit + MQ BotW context, where every own-game Wallmaster pool fails.
+full_facts, full_contract = facts['fullWallmasters'], contract['fullWallmasters']
+assert full_facts['id'] == full_contract['combination']['id'] == 'erWallmasters=full;erOneWays=none'
+assert [p['ownGame'] for p in full_facts['pools']] == [False] and full_contract['sharedCandidates'] == 18
+assert {len(d) for d in full_facts['pools'][0]['candidates'].values()} == {18}
+assert full_facts['placement']['placed'] and full_facts['resetGated'] == []
+full_tried = {'+'.join(sorted(r['mq'])): r['full'] for r in facts['mqSources']['table']}
+assert all(not v['short'] and not v['ownGame'] for v in full_tried.values())
+assert {k for k, v in full_tried.items() if 'placement' in v} == failed
+assert all(v['placement']['placed'] for v in full_tried.values() if 'placement' in v)
 print(f'Pinned OoTMM agrees with the M1 fixture on {sum(report["checked"].values())} facts '
       f'({facts["seconds"]["wall"]:.0f} s with {facts["jobs"]} Node workers).')
 
@@ -209,5 +221,18 @@ assert named == {('regions', f'{alone} extraHintRegions=true'), ('resetGated', f
                  ('mq', 'rows other than OoT Wallmaster sources that change with the MQ choice'),
                  ('placement', f'{alone} pairs outside the fixture candidates'),
                  ('placement', f'MQ [{"+".join(sorted(short["mq"]))}] attempts placed')}, named
-print('The comparer names every altered fixture value and every altered pinned fact, rejects facts made from '
-      'another contract, and refuses another Node.')
+# The Full section too: a fixture that made the pool own-game, and facts where OoTMM failed a Full placement.
+full_id = full_contract['combination']['id']
+own_full = copy.deepcopy(contract)
+own_full['fullWallmasters']['combination']['pools'][0]['ownGame'] = True
+named, _ = divergences(fixture=own_full)
+assert named == {made_from, ('opts', f'{full_id} WALLMASTERS')}, named
+full_failed = copy.deepcopy(facts)
+full_failed['fullWallmasters']['placement'] = {'placed': False, 'error': 'Too many backtracks'}
+tried = next(r for r in full_failed['mqSources']['table'] if 'placement' in r['full'])
+tried['full']['placement']['placed'] = False
+named, _ = divergences(altered_facts=full_failed)
+assert named == {('placement', f'{full_id} placed'),
+                 ('placement', f'Full MQ [{"+".join(sorted(tried["mq"]))}] attempt placed')}, named
+print('The comparer names every altered fixture value and every altered pinned fact, Full included, rejects facts '
+      'made from another contract, and refuses another Node.')

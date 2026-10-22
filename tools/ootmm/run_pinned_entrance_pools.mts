@@ -352,8 +352,9 @@ async function startWorker() {
   const wallmasterDungeons = Object.keys(core.WORLD.mq).filter(key => ['oot', 'mq'].some(section =>
     Object.keys(core.WORLD[section][key] || {}).some(area => wallmasterAreas.has(core.gameId('oot', area, ' ')))));
 
-  async function combination(index: number) {
-    const entry = contract.combinations[index];
+  // One fixture combination (index), or the Full Wallmaster one (fullWallmasters.combination, limits design Stage 3).
+  async function combination(index: number | null) {
+    const entry = index === null ? contract.fullWallmasters.combination : contract.combinations[index];
     const requested = m1Settings(entry.settings);
     const state = await buildState(requested);
     const { shuffler, pools } = timed('pools', () => capturePools(state, state.settings));
@@ -447,7 +448,22 @@ async function startWorker() {
         placements[entry.id] = timed('placement', () => place(state, settings, facts));
       }
     }
-    return { mq, ootSources: sorted(ootSources!), shortfalls, others, placements,
+    // Full: one alias pool with ownGame false, so every source of both games needs a destination of its own from the
+    // shared candidate set. A real attempt runs where an own-game pool is short, which Full must still place.
+    let full: any = null;
+    if (contract.fullWallmasters) {
+      const settings = core.makeSettings({ ...m1Settings(contract.fullWallmasters.combination.settings), mqDungeons });
+      const facts = timed('pools', () => {
+        const { shuffler, pools } = capturePools(state, settings);
+        return poolFacts(shuffler, pools);
+      });
+      const wallmasters = facts.find(p => p.name === 'WALLMASTERS')!;
+      const reachable = new Set(wallmasters.src.flatMap((s: string) => wallmasters.candidates[s]));
+      full = { ownGame: wallmasters.ownGame, sources: wallmasters.src.length, destinations: reachable.size,
+               short: wallmasters.src.length > reachable.size,
+               ...(shortfalls.length ? { placement: timed('placement', () => place(state, settings, facts)) } : {}) };
+    }
+    return { mq, ootSources: sorted(ootSources!), shortfalls, others, placements, full,
              areaKeys: sha256(JSON.stringify(Object.keys(state.worlds[0].areas).sort())) };
   }
 
@@ -597,6 +613,7 @@ async function startWorker() {
   parentPort!.on('message', async (task: any) => {
     try {
       const result = task.kind === 'combination' ? await combination(task.index)
+        : task.kind === 'full' ? await combination(null)
         : task.kind === 'mq' ? await mqContext(task.bits)
         : task.kind === 'temple' ? await templeGroup(task.index)
         : { fixedPoints: settingsFixedPoints(), wallmasterDungeons, distComparison, rows: rows(),
@@ -704,6 +721,7 @@ async function main() {
 
   const tasks: any[] = [{ kind: 'meta' }];
   contract.combinations.forEach((_: any, index: number) => tasks.push({ kind: 'combination', index }));
+  if (contract.fullWallmasters) tasks.push({ kind: 'full' });
   const mqContexts = 1 << contract.mqSources.dungeons.length;  // checked against OoTMM's own list below
   for (let bits = 0; bits < mqContexts; bits++) tasks.push({ kind: 'mq', bits });
   tasks.sort((a, b) => (a.kind === 'mq' ? 0 : 1) - (b.kind === 'mq' ? 0 : 1));  // MQ worlds first, all similar
@@ -754,7 +772,8 @@ async function main() {
   const mqAreaKeys = new Set<string>();
   for (let bits = 0; bits < mqContexts; bits++) {
     const context = results.get(`mq:${bits}`);
-    table.push({ mq: context.mq, ootSources: context.ootSources, placements: context.placements });
+    table.push({ mq: context.mq, ootSources: context.ootSources, placements: context.placements,
+                 ...(context.full ? { full: context.full } : {}) });
     if (context.shortfalls.length) {
       capacityShortfalls.push({ mq: context.mq, ootSources: context.ootSources.length,
                                 combinations: context.shortfalls });
@@ -777,6 +796,8 @@ async function main() {
     rows: meta.rows,
     areaKeysInvariantAcrossCombinations: new Set(combinations.map((c: any) => c.areaKeys)).size === 1,
     combinations: combinations.map(({ areaKeys, withoutOotWallmasters, ...rest }: any) => rest),
+    ...(contract.fullWallmasters ? { fullWallmasters: (({ areaKeys, withoutOotWallmasters, ...rest }: any) => rest)(
+      results.get('full:')) } : {}),
     mqSources: { dungeons: meta.wallmasterDungeons, table, capacityShortfalls, otherRowsDependOnMq,
                  distinctAreaSets: mqAreaKeys.size },
     seconds: { wall: (performance.now() - started) / 1000, summedOverWorkers: workerSeconds },

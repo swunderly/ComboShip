@@ -91,10 +91,9 @@ def compare(contract, contract_sha256, facts):
     pinned_by_id = {c['id']: c for c in facts['combinations']}
     report.check('pools', 'combination list', [c['id'] for c in contract['combinations']],
                  [c['id'] for c in facts['combinations']])
-    for entry in contract['combinations']:
-        cid, pinned = entry['id'], pinned_by_id.get(entry['id'])
-        if pinned is None:
-            continue
+
+    def same_entry(entry, pinned):
+        cid = entry['id']
         report.check('settings', cid, entry['settings'], pinned['normalized'])
         report.check('settings', f'{cid} (requested)', entry['settings'], pinned['requested'])
         report.check('erEnabled', cid, entry['erEnabled'], pinned['erEnabled'])
@@ -141,6 +140,18 @@ def compare(contract, contract_sha256, facts):
             used = [(pool_of.get(src), dst) for src, dst in pairs]
             report.check('placement', f'{cid} destinations used twice in a pool', [],
                          sorted({f'{p} {d}' for p, d in used if used.count((p, d)) > 1}))
+
+    for entry in contract['combinations']:
+        cid, pinned = entry['id'], pinned_by_id.get(entry['id'])
+        if pinned is not None:
+            same_entry(entry, pinned)
+    # Full Wallmasters (limits design, Stage 3): the same checks on its combination.
+    if 'fullWallmasters' in contract:
+        pinned_full = facts.get('fullWallmasters')
+        report.check('pools', 'Full Wallmaster combination run', contract['fullWallmasters']['combination']['id'],
+                     (pinned_full or {}).get('id'))
+        if pinned_full is not None:
+            same_entry(contract['fullWallmasters']['combination'], pinned_full)
     report.check('mq', 'world areas do not depend on the M1 keys', True, facts['areaKeysInvariantAcrossCombinations'])
 
     mq, pinned_mq = contract['mqSources'], facts['mqSources']
@@ -171,6 +182,19 @@ def compare(contract, contract_sha256, facts):
             expected[alone] = True
         report.check('placement', f'MQ [{key or "none"}] attempts placed', expected,
                      {cid: a['placed'] for cid, a in sorted(attempts.get(key, {}).items())})
+    if 'fullWallmasters' in contract:
+        full = contract['fullWallmasters']
+        pinned_full = {'+'.join(sorted(r['mq'])): r.get('full') for r in pinned_mq['table']}
+        report.check('capacity', 'Full: contexts with more sources than destinations',
+                     sorted('+'.join(sorted(s)) for s in full['capacityShortfalls']),
+                     sorted(k for k, v in pinned_full.items() if v and v['short']))
+        report.check('capacity', 'Full: source counts over the MQ contexts', full['sourcesByMqContext'],
+                     sorted({v['sources'] for v in pinned_full.values() if v}))
+        report.check('opts', 'Full: the pool is not own-game in any MQ context', [],
+                     sorted(k for k, v in pinned_full.items() if not v or v['ownGame']))
+        for key in sorted(fixture_short):
+            attempt = (pinned_full.get(key) or {}).get('placement') or {}
+            report.check('placement', f'Full MQ [{key}] attempt placed', True, attempt.get('placed'))
     return report
 
 
@@ -241,7 +265,8 @@ def main():
             print(f'  [{d["fact"]}] {d["where"]}\n    fixture: {json.dumps(d["fixture"])}\n'
                   f'    pinned:  {json.dumps(d["pinned"])}\n    rule:    {d["source"]}', file=sys.stderr)
         sys.exit(1)
-    print(f'All {total} compared facts agree with pinned OoTMM ({len(contract["combinations"])} combinations, '
+    full = ' and Full Wallmasters' if 'fullWallmasters' in contract else ''
+    print(f'All {total} compared facts agree with pinned OoTMM ({len(contract["combinations"])} combinations{full}, '
           f'{len(facts["mqSources"]["table"])} MQ contexts, Node {facts["node"]}).')
 
 

@@ -7,7 +7,9 @@ computeAllEntrances (179-201), entrancesForTypes/poolEntrancesForTypes (601-627)
 (791-886), the polarity sets (43-80), isSelfLoop/isAssignableConstraints (459-498) and the no-sot
 gate of placeSingleExpr (203-217). processRegions/propagateDungeons (960-1059) also run, to pin that
 M1 leaves hint regions and dungeon entrances unchanged. Only settings reachable in M1 are modelled:
-every other er* key must stay at its default, or the export fails. Python 3 and Git are the only
+every other er* key must stay at its default, or the export fails. Full Wallmasters (erWallmasters=full alone, the
+limits design's Stage 3) get a section of their own, with the cross-game facts the port copies: the day-1 grant of an
+OoT-to-MM exit (pathfind.ts:596-599) and the capture, override and game switch of the generator. Python 3 and Git are the only
 dependencies; a changed cited function body fails the export until this file is reviewed again.
 """
 import hashlib
@@ -29,6 +31,7 @@ MACROS_COMMON = 'data/macros/macros_common.yml'
 MACROS_MM = 'data/macros/macros_mm.yml'
 HELPERS_TS = 'packages/logic/src/helpers.ts'
 SPOILER_TS = 'packages/generator/lib/combo/spoiler.ts'
+PATHFIND_TS = 'packages/logic/src/pathfind/pathfind.ts'
 SETTINGS_UTIL_TS = 'packages/core/src/settings/util.ts'
 CORE_UTIL_TS = 'packages/core/src/util.ts'
 GENERATOR_SRC = 'packages/generator/src'
@@ -701,6 +704,29 @@ ENABLE_SITES = (
 )
 
 
+# Full Wallmaster facts (limits design, Stage 3): the day-1 grant of an OoT-to-MM exit, the capture that clears the
+# dungeon-entrance respawn and asks for the override, and the transition end that switches games on the foreign bit.
+CROSS_GAME_SITES = (
+    ('dayOneGrant', PATHFIND_TS, 596, 599, "if (a.game === 'oot' && exitArea.game === 'mm') {"),
+    ('ootCapture', f'{GENERATOR_SRC}/oot/actors/En/En_Wallmas.c', 48, 55, 'gIsEntranceOverride = 1;'),
+    ('mmCapture', f'{GENERATOR_SRC}/mm/actors/En/En_Wallmas.c', 26, 33, 'gIsEntranceOverride = 1;'),
+    ('ootSwitch', f'{GENERATOR_SRC}/oot/play/play.c', 738, 756, 'Play_GameSwitch(play, entrance & ~MASK_FOREIGN_ENTRANCE);'),
+    ('ootGameSwitch', f'{GENERATOR_SRC}/oot/play/play.c', 620, 625, 'comboGameSwitch(play, entrance);'),
+    ('mmSwitch', f'{GENERATOR_SRC}/mm/play/play.c', 893, 912, 'comboGameSwitch(play, entrance & ~MASK_FOREIGN_ENTRANCE);'),
+    ('saveOnSwitch', f'{GENERATOR_SRC}/common/switch.c', 75, 85, 'Save_DoSave(play, SF_OWL);'),
+)
+
+
+def cross_game_sites(blobs):
+    sites = []
+    for name, path, first, last, anchor in CROSS_GAME_SITES:
+        text = '\n'.join(blobs[path].decode('utf-8').split('\n')[first - 1:last])
+        if anchor not in text:
+            raise ValueError(f'Cited cross-game site moved: {path}:{first}')
+        sites.append({'name': name, 'file': path, 'lines': [first, last], 'anchor': anchor, 'sha256': sha(text)})
+    return sites
+
+
 def runtime_sites(reference, blobs):
     sites = []
     for flag, path, first, last, anchor in RUNTIME_SITES:
@@ -804,7 +830,7 @@ def build(reference):
     verified_blob(reference, 'data/defs/entrances.yml')  # refuse any other HEAD before reading anything else
     world_files = git_lines(reference, 'ls-tree', '-r', '--name-only', PIN, '--', 'data/world')
     runtime_paths = sorted({f'{GENERATOR_SRC}/{site[1]}' for site in RUNTIME_SITES} |
-                           {site[1] for site in ENABLE_SITES})
+                           {site[1] for site in ENABLE_SITES} | {site[1] for site in CROSS_GAME_SITES})
     paths = [ENTRANCES_TS, BUILDER_TS, DATA_BUILD_TS, SETTINGS_TS, SETTINGS_UTIL_TS, CORE_UTIL_TS, MACROS_COMMON,
              MACROS_MM, HELPERS_TS, SPOILER_TS,
              *world_files, *runtime_paths]
@@ -870,7 +896,9 @@ def build(reference):
     transient = set(INVALID_REGIONS[1:]) | {'MM_BUTLER_RACE', 'MM_GORON_RACETRACK'}
     oot_wallmasters = [r['name'] for r in records if r['type'] == 'wallmaster' and r['game'] == 'oot']
     matrix, m1_rows, wallmaster_oot_dst = [], set(), {}
-    for s in combos:
+
+    def describe(s):
+        """One settings combination in the all-vanilla world: pools, candidates and the C14 checks."""
         pools = Pools(bodies, records, vanilla_rows, s, defaults).placed()
         entry = {'id': combination_id(s), 'settings': {k: s[k] for k in M1_KEYS},
                  'erEnabled': evaluate(erm_terms, s), 'isEntranceShuffle': evaluate(ies_terms, s), 'pools': []}
@@ -887,7 +915,7 @@ def build(reference):
                 'candidates': [{'sources': sources, 'destinations': list(options)}
                                for options, sources in sorted(groups.items(), key=lambda g: g[1][0])]})
             destinations |= {d for options in pool['candidates'].values() for d in options}
-            m1_rows |= set(pool['src']) | set(pool['dst'])
+            m1_rows.update(pool['src'], pool['dst'])
             if pool['name'] == 'WALLMASTERS':
                 shared = {tuple(pool['candidates'][o]) for o in pool['src'] if o in oot_wallmasters}
                 if len(shared) != 1:
@@ -912,7 +940,18 @@ def build(reference):
                                    extra) != no_er[extra]:
                     raise ValueError(f'processRegions output changed in {entry["id"]}')
         entry['sampleLayout'] = [list(pair) for pair in layout]
-        matrix.append(entry)
+        return entry
+
+    for s in combos:
+        matrix.append(describe(s))
+    # Full (limits design, Stage 3): erWallmasters=full with every other er* key at its default. poolWallmasters
+    # (entrances.ts:657-669) gives the same alias pool with ownGame false, so isAssignableConstraints (:484-498)
+    # lets each source take a destination of either game; the shared candidate set and its no-sot rows are pinned.
+    full_settings = validate_settings(rows, dict(defaults, erWallmasters='full'))
+    if full_settings['erWallmasters'] != 'full':
+        raise ValueError('erWallmasters=full fails its OoTMM condition')
+    full_entry = describe(full_settings)
+    full_wallmasters_dst = wallmaster_oot_dst.pop(full_entry['id'])
 
     # MQ source table: active OoT Wallmaster sources for every choice of the dungeons with Wallmasters.
     wallmaster_dungeons = [k for k in mq_keys if any(
@@ -926,6 +965,14 @@ def build(reference):
         short = [cid for cid, n in wallmaster_oot_dst.items() if len(sources) > n]
         if short:
             shortfalls.append({'mq': list(mq), 'ootSources': len(sources), 'combinations': short})
+    # Full: every source of both games shares one candidate set, so the pool is short only when both games' sources
+    # together outnumber it (placePoolsRecursive consumes the destination it routes, entrances.ts:529-536).
+    full_wallmasters = next(p for p in full_entry['pools'] if p['name'] == 'WALLMASTERS')
+    if len(full_wallmasters['candidates']) != 1 or full_wallmasters['ownGame']:
+        raise ValueError('Full Wallmaster sources do not share one candidate set')
+    mm_wallmasters = [n for n in full_wallmasters['candidates'][0]['sources'] if by_name[n]['game'] == 'mm']
+    full_sources = sorted({len(r['ootSources']) + len(mm_wallmasters) for r in mq_table})
+    full_short = [r['mq'] for r in mq_table if len(r['ootSources']) + len(mm_wallmasters) > full_wallmasters_dst]
 
     # Exits into every M1 source area and the expression each source keeps, from vanilla and MQ files.
     worlds = (vanilla_world, mq_world)
@@ -956,7 +1003,7 @@ def build(reference):
         'upstreamCommit': PIN,
         'scope': 'games=ootmm; erWallmasters and erOneWays in {none, ownGame}; the five one-way flags; '
                  'every other er* key at its default (erNoPolarity, erSelfLoops and erDecoupled false); '
-                 'pools and candidates in the all-vanilla world',
+                 'pools and candidates in the all-vanilla world; fullWallmasters: erWallmasters=full alone',
         'inputs': {path: sha(blobs[path]) for path in paths},
         'guardedBodies': guards,
         'registryAreaPresence': {'never': never, 'byQuest': by_quest, 'questDependentRows': quest_rows,
@@ -973,6 +1020,9 @@ def build(reference):
             'extraHintRegions': [False, True]},
         'combinations': matrix,
         'mqSources': {'dungeons': wallmaster_dungeons, 'table': mq_table, 'capacityShortfalls': shortfalls},
+        'fullWallmasters': {'combination': full_entry, 'sharedCandidates': full_wallmasters_dst,
+                            'sourcesByMqContext': full_sources, 'capacityShortfalls': full_short,
+                            'crossGameSites': cross_game_sites(blobs)},
         'sources': sources,
         'soulWallmasterLines': soul_lines,
         'truthTables': {'erEnabled': {'file': MACROS_MM, 'line': erm_line,
