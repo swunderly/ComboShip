@@ -7,9 +7,9 @@ earlier id (vanilla, quests, songs-v1, songs-v2). Two older seed guards are then
 and run on them, with their shipping set and their whole catalog alike:
 - 0.4.12 (combo/ at tag v0.4.12-android) refuses the four Full seeds, which name a capability it does not know
   (EntranceLayout.h ValidateEntranceLayoutSettings: "requires unknown capability"), and loads the all-vanilla one;
-- 0.4.13 RC1 (combo/ at tag v0.4.13-rc1, the parent of the first commit that adds wallmasters-full-v1 to
-  Capabilities.h) refuses the four Full seeds the same way, before reading their routes or song facts, and loads
-  all four Own Game seeds.
+- 0.4.13 RC1 (combo/ at tag v0.4.13-rc1, an ancestor of the first commit that adds wallmasters-full-v1 to
+  Capabilities.h, with the same catalogue as that commit's parent) refuses the four Full seeds the same way, before
+  reading their routes or song facts, and loads all four Own Game seeds.
 Each older build is checked on its own. One that this checkout's history lacks is SKIPPED only in a shallow clone,
 and the report says which builds ran; in a full clone the test fails and says what to fetch.
 """
@@ -70,11 +70,13 @@ if not builds:
     print(f'SKIPPED: this shallow checkout lacks {lacking} (fetch the full history and the tags to run the older seed '
           'guards)')
     sys.exit(0)
-# The RC1 tag is the build this stage starts from: the Full id is new after it.
+# The RC1 tag is the build this stage starts from: the Full id is new after it, and nothing between them changes the
+# capability catalogue.
 base = full_base()
 rc1 = next((commit for label, commit, _ in builds if label == 'v0.4.13-rc1'), None)
 if rc1 and base:
-    assert rc1 == base, (rc1, base)
+    assert git('merge-base', '--is-ancestor', rc1, base).returncode == 0, (rc1, base)
+    assert git('diff', '--quiet', rc1, base, '--', CAPABILITIES).returncode == 0, (rc1, base)
 
 # This build's seeds: four Full ones, then the vanilla, quests, songs-v1 and songs-v2 ones.
 writer = work/'write_seeds.cpp'
