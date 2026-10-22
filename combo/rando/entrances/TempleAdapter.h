@@ -191,7 +191,8 @@ class TempleProbeSession {
 
 // A candidate world with an edge between the games (Full Wallmasters) needs the Temple check through MM, which the
 // probe does not have (limits design, Stage 5): refused, never answered from OoT alone. The monotone shortcut probes
-// only the base world, which has no Wallmaster edge at all.
+// only the base world, which has no Wallmaster edge at all. The refusal is a settings one, with the player's sentence
+// (FullWallmasterTempleRefusal), not an internal fault, and it is not retried.
 inline bool CrossGameTempleCandidate(const TempleCandidate& c) {
     return std::any_of(c.edges.begin(), c.edges.end(),
                        [](const TempleEdge& e) { return Find(e.src)->game != Find(e.dst)->game; });
@@ -201,8 +202,7 @@ inline std::function<bool(const Overrides&, const Pools&)> MakeTempleValidator(c
     return [fns, s](const Overrides& overrides, const Pools& pools) {
         const auto candidate = BuildTempleCandidate(overrides, pools, s);
         if (CrossGameTempleCandidate(candidate))
-            throw TempleProbeUnsupported("Temple probe: a cross-game Wallmaster candidate needs a Temple check "
-                                         "through MM (deferred)");
+            throw UnifiedEntranceRefused(FullWallmasterTempleRefusal());
         const auto query = EncodeTempleQuery(candidate);
         uint8_t ages = 0;
         return MapTempleResult(fns.query(query.c_str(), fns.poll, &ages), fns);

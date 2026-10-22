@@ -1,4 +1,5 @@
 #pragma once
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -75,6 +76,25 @@ struct EntranceRefusal {
         return player == other.player && log == other.log;
     }
 };
+// A refusal: this build, these settings or the seed's other options cannot generate the layout. Most are raised
+// before any random draw (UnifiedBridge.h GenerateEntranceLayout); Full Wallmasters' Temple refusal is raised by the
+// first candidate the Temple check would have to search through MM (TempleAdapter.h, the Temple validator). Not a
+// ShuffleError, so neither the Shuffler nor an outer generation attempt retries it (M1 plan, critic correction C1).
+class UnifiedEntranceRefused : public std::logic_error {
+  public:
+    using std::logic_error::logic_error;
+    // A settings or dungeon data reason: what() keeps the developer text for logs.
+    explicit UnifiedEntranceRefused(const EntranceRefusal& why) : std::logic_error(why.log), sentence(why.player) {
+    }
+    // The generation error the player sees: the reason's plain sentence (owner decision D3), or the developer text
+    // of an internal fault, which has none.
+    std::string player() const {
+        return sentence.empty() ? what() : sentence;
+    }
+
+  private:
+    std::string sentence;
+};
 // The menu shows two of kShipEntranceSettings, Warp Songs and Owl Drops, on Warps & travel (ComboNavigation.h), not
 // beside Wallmaster Shuffle under Entrances, so the sentence names them and their page.
 inline constexpr const char* kWallmasterShipEntrancesText =
@@ -109,6 +129,17 @@ inline EntranceRefusal ShipEntrancesRefusal() {
 }
 inline EntranceRefusal EnemyRandomizerRefusal() {
     return { "Turn off Enemy Randomizer to use Wallmaster Shuffle.", "Wallmaster Shuffle needs Enemy Randomizer off" };
+}
+// Full Wallmasters when the world without Wallmaster routes fails the opposite-age Temple check (UnifiedBridge.h, the
+// monotone shortcut): OoTMM's validateAgeTemple (entrances.ts:265-287) would then check each candidate, through both
+// games, but this port's probe cannot search MM yet (limits design, Stage 5). The first candidate with a route into
+// the other game stops generation with this sentence (TempleAdapter.h, the Temple validator); it is not retried. The
+// menu does not show it: only generation finds out whether that world passes.
+inline constexpr const char* kFullWallmasterTempleText =
+    "Full Wallmaster Shuffle can't be generated with these settings yet. Choose Own Game, or start as child Link.";
+inline EntranceRefusal FullWallmasterTempleRefusal() {
+    return { kFullWallmasterTempleText,
+             "Temple probe: a cross-game Wallmaster candidate needs a Temple check through MM (deferred)" };
 }
 // What the Temple probe cannot validate yet. Foreign-song logic ("Play warp songs across games") is not here: with no
 // starting song it cannot change OoTMM's Temple check (lemma S1, entrance_temple_song_lemma_tests.py), so the probe

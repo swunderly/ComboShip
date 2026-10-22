@@ -27,24 +27,7 @@
 #include <vector>
 
 namespace ComboRando::Entrances {
-// A refusal before any random draw: this build, these settings or the seed's other options cannot
-// generate the layout. Not a ShuffleError, so neither the Shuffler nor an outer generation attempt
-// retries it (M1 plan, critic correction C1).
-class UnifiedEntranceRefused : public std::logic_error {
-  public:
-    using std::logic_error::logic_error;
-    // A settings or dungeon data reason: what() keeps the developer text for logs (EntranceAvailability.h).
-    explicit UnifiedEntranceRefused(const EntranceRefusal& why) : std::logic_error(why.log), sentence(why.player) {
-    }
-    // The generation error the player sees: the reason's plain sentence (owner decision D3), or the developer text
-    // of an internal fault, which has none.
-    std::string player() const {
-        return sentence.empty() ? what() : sentence;
-    }
-
-  private:
-    std::string sentence;
-};
+// UnifiedEntranceRefused (EntranceAvailability.h): a refusal, never retried (C1).
 // The refusal of a Master Quest context with more OoT Wallmasters than dungeon entrances (RequireWallmasterCapacity).
 // It depends on the Master Quest dungeons the attempt rolled, unless the settings force it on every roll (`forced`),
 // so its caller can tell the seed's own roll from a retry's and a forced context from either

@@ -1345,21 +1345,30 @@ static Json CheckFullContexts(const Json &contract) {
   auto g = full(5);
   g.active = Caps().Only(kVanillaWallmasterCapability);
   assert(std::string(Refusal(g).what()) == "Entrance settings erWallmasters=full are not available in this build");
-  // Fails closed until the Temple check searches MM (Stage 5): without the shortcut every candidate is probed, and
-  // the first one has cross-game edges; and the same when the base world fails the Temple check, which leaves the
-  // shortcut unproven. Either way nothing stays installed.
+  // Fails closed until the Temple check searches MM (Stage 5): without the
+  // shortcut every candidate is probed, and the first one has cross-game edges;
+  // and the same when the base world fails the Temple check, which leaves the
+  // shortcut unproven. Either way it is a settings refusal, never retried (not
+  // a ShuffleError), whose player sees a plain sentence and whose log keeps the
+  // developer text, and nothing stays installed.
+  static_assert(!std::is_base_of_v<ShuffleError, UnifiedEntranceRefused>);
+  assert(std::string(kFullWallmasterTempleText) ==
+         "Full Wallmaster Shuffle can't be generated with these settings yet. "
+         "Choose Own Game, or start as child Link.");
   for (const bool baseFails : {false, true}) {
     Fake::Reset();
     Fake::rejectEmptyTemple = baseFails;
     auto failing = full(6);
     failing.wallmasterShortcut = baseFails;
-    std::string why;
+    std::string why, sentence;
     try {
       GenerateEntranceLayout(failing, Fake::Native(), Fake::Probe());
-    } catch (const TempleProbeUnsupported &error) {
+    } catch (const UnifiedEntranceRefused &error) {
       why = error.what();
+      sentence = error.player();
     }
     assert(why == "Temple probe: a cross-game Wallmaster candidate needs a Temple check through MM (deferred)");
+    assert(sentence == kFullWallmasterTempleText);
     assert(!ActiveOotUnified().active() && !ActiveMmUnified().active() && !Fake::prepared &&
            !ActiveOotUnifiedAssumptions() && !ActiveMmUnifiedAssumptions());
   }

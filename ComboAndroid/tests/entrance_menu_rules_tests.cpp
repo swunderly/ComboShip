@@ -430,11 +430,22 @@ int main(int argc, char **argv) {
   auto unknown = assets;
   unknown.erase("mqPlayable");
   plain(ProfileWallmasterRefusal(draft, unknown, read), data, dataLog);
+  // Full Wallmasters' generation error when the world without Wallmaster
+  // routes fails the Temple check, which the probe cannot yet answer through
+  // MM (TempleAdapter.h MakeTempleValidator). No menu rule shows it.
+  const std::string fullTemple =
+      "Full Wallmaster Shuffle can't be generated with these settings yet. "
+      "Choose Own Game, or start as child Link.";
+  assert(fullTemple == kFullWallmasterTempleText);
+  plain(FullWallmasterTempleRefusal(), fullTemple,
+        "Temple probe: a cross-game Wallmaster candidate needs a Temple check "
+        "through MM (deferred)");
   // Solo mode, Ship ER, Enemy Randomizer, glitched logic, song destination
   // shuffle, Soaring, Master Quest, the Master Quest Wallmaster capacity
-  // (forced, and a seed's roll) and unknown dungeon data. "Play warp songs
-  // across games" and the six warp songs have none since 0.4.13.
-  assert(sentences.size() == 10);
+  // (forced, and a seed's roll), unknown dungeon data and Full's Temple check.
+  // "Play warp songs across games" and the six warp songs have none since
+  // 0.4.13.
+  assert(sentences.size() == 11);
   for (const auto &sentence : sentences)
     assert(sentence.find("across games") == std::string::npos &&
            (sentence.find("Remove ") == std::string::npos ||
