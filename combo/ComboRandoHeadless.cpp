@@ -572,15 +572,17 @@ int RunHeadless(int argc, char** argv) {
             std::cerr << "[playthrough] " << error.what() << "\n";
             return 2;
         }
+        // The seed's entrance layout is installed in each pass after its settings are finalized (runPass), as the
+        // app's reload checks it after SOH_PrepRandoContext (ComboShip.cpp Combo_OnReloadRequestImpl): the OoT half
+        // binds the quest of each dungeon, which only the finalize rolls (combo_entrance_overlay.cpp SetLayout). This
+        // only validates and prints it.
         try {
-            ComboRando::Entrances::ApplyNativeSeed(entranceNative, spoiler,
-                                                   ComboRando::Entrances::ActiveCapabilities());
+            std::cout << ComboRando::Entrances::EntranceSpoilerForSeed(spoiler,
+                                                                       ComboRando::Entrances::ActiveCapabilities());
         } catch (const std::exception& error) {
             std::cerr << "[playthrough] " << error.what() << "\n";
             return 2;
         }
-        std::cout << ComboRando::Entrances::EntranceSpoilerForSeed(spoiler,
-                                                                   ComboRando::Entrances::ActiveCapabilities());
         const auto originalRules = ComboRando::GameplayRulesForSeed(spoiler);
         auto ootSettings = spoiler.value("oot", nlohmann::json::object()).value("settings", nlohmann::json::object());
         // Flat placement map that RunPlaythrough consumes.
@@ -657,6 +659,16 @@ int RunHeadless(int argc, char** argv) {
             }
         };
         auto runPass = [&](bool allTricks, nlohmann::json* ptOut) {
+            // Each pass prepares as a generation attempt does, without an entrance layout, which is installed below
+            // after the finalize, never left from an earlier pass.
+            try {
+                ComboRando::Entrances::ApplyNativeSeed(entranceNative, nlohmann::json::object(),
+                                                       ComboRando::Entrances::ActiveCapabilities());
+            } catch (const std::exception& error) {
+                std::cerr << "[playthrough] " << error.what() << "\n";
+                entranceRestoreFailed = true;
+                return ComboRando::PlaythroughResult{};
+            }
             // Restore the seed's ORIGINAL settings for the dump so the shuffled-shop-slot set matches
             // generation (a No-Logic seed shuffles 8 slots/shop; glitchless computes 7 — GAP-8).
             SOH_RestoreSettings(ootSettings.dump().c_str());

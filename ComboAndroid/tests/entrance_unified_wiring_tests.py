@@ -9,7 +9,9 @@ the attempt, pins a Random start to OoT after an MM start as the other failures 
 launcher is bounded by the headless budget (C1). A capacity shortfall of the Master Quest dungeons
 (WallmasterCapacityShortfall) stops generation on the first attempt, the seed's own roll, as OoTMM's
 seed fails, and on a later attempt, which rolled them again, fails that attempt alone, as a ShuffleError
-does, without counting toward that budget; every other entrance failure stops generation. The
+does, without counting toward that budget; every other entrance failure stops generation. The headless
+replay installs the recorded layout only after each pass finalizes the seed, as the launcher's reload
+checks it. The
 layout goes into the consolidated seed before its fileType is stamped, and the launcher's displaySeed
 also hashes it (C5); the headless tool gives a layout seed the same displaySeed. Nothing else calls the
 generator. Both callers resolve every MM entrance export into NativeFns in member order, including the
@@ -129,6 +131,19 @@ assert 'if (!nativePreparesEntrances && SOH_ShuffleEntrances &&' in generate, \
 replay = block(headless, 'auto runPass =')
 assert 'SOH_Dump()' in replay and 'SOH_GenerationDump()' not in replay, \
     'Saved-seed replay must retain the legacy metadata dump and recorded entrance apply'
+# The replay installs the recorded layout only after its finalize, as the app's reload checks it only after
+# SOH_PrepRandoContext: the OoT half binds the quest of each dungeon, which the finalize rolls
+# (combo_entrance_overlay.cpp SetLayout), so an install before it refused every Master Quest Wallmaster seed (0.4.13
+# corpus, 12 rows, "quest context does not match the loaded seed"). Each pass starts from no layout, as a generation
+# attempt does.
+playthrough = headless[headless.index('// ---- Playthrough mode:'):headless.index('auto runPass =')]
+assert 'ApplyNativeSeed(' not in playthrough, 'no native layout install before the replay finalizes the seed'
+ordered(replay, 'ApplyNativeSeed(entranceNative, nlohmann::json::object(),', 'SOH_Dump()', 'SOH_PrepContext();',
+        'ComboMq::ReplayKeepsMqDungeons(ootSeed,', 'SOH_ApplyEntranceOverrides(ootEntrances.dump().c_str())',
+        'ApplyNativeSeed(entranceNative, spoiler,')
+assert replay.count('ApplyNativeSeed(') == 2, 'one clear and one install in each replay pass'
+reload = ship[ship.index('static int Combo_OnReloadRequestImpl('):ship.index('static int Combo_OnReloadRequest(const char')]
+ordered(reload, 'SOH_PrepRandoContext();', 'ComboMq::ReplayKeepsMqDungeons(oot,', 'CheckPendingEntranceSeed(j)')
 for clear in ('ApplyNativeSeed(', 'applySeed(', 'ApplyNativeMm'):
     assert clear not in generate[steps[6]:steps[-1]], f'{clear} between the install and the requiredness pass'
 for field in ('capability = entranceCapability', 'active = ComboRando::Entrances::ActiveCapabilities()',

@@ -2528,7 +2528,13 @@ dungeons yet." (`kWallmasterMasterQuestText`), as before.
   changed is refused before any draw, as 0.4.12 refused it for the vanilla id. The layout records that context. A
   bundled-MQ seed rolls its dungeons on a stream of its own from its master seed (`MqMode.h` `MqRollSeed`), so every
   finalize of an attempt agrees and the check never refuses one. Captures run only while the loaded dungeons are the
-  layout's (`HasWallmasterLayout`).
+  layout's (`HasWallmasterLayout`). A seed's load checks its layout only after its settings are finalized
+  (`ComboShip.cpp` `Combo_OnReloadRequestImpl`: `SOH_PrepRandoContext`, `ReplayKeepsMqDungeons`, then
+  `CheckPendingEntranceSeed`; an existing save loads its MQ dungeons first, `SaveManager.cpp` `LoadRandomizer`, and
+  binds the layout in `Combo_OnOOTSaveLoad` from `OnLoadGame`), and so does `comborando --playthrough`, which in
+  0.4.13 RC1 installed it before the finalize and refused every Master Quest Wallmaster seed ("quest context does not
+  match the loaded seed", exit 2, 12 corpus rows). Each replay pass now starts from no layout, as a generation attempt
+  does, and installs the recorded one after its finalize.
 - **Only OoTMM's bundled data.** The quests id admits Master Quest dungeons only when the seed's MQ data source is the
   bundled data (`mqDataSource` "ootmm-32.3", `AdmitsMasterQuestContext`). Legacy MQ data (a real `oot-mq.o2r`, on an
   install where the bundled data cannot play) rolls on the shared stream, so the oracle's reset could roll other
