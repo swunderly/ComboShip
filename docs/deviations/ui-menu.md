@@ -575,23 +575,55 @@ vouches for the file (`combo/ComboShip.cpp` `Combo_DormantSaveEditSlot`, pushed 
 `SOH_SetSaveEditorDormantSlot` / `MM_SetSaveEditorDormantSlot`; OoT reports the file it plays through
 `SOH_GetPlayingFileNum`), else it shows only the no-file line. MM's dormant save counts only while
 `g_MmSaveInMemorySlot` is the file OoT plays, the residency the tracker peek and the dormant grants rely on; OoT's
-while MM runs that file. Combined mode only. In Dormant, `DrawElement` snapshots the save before the tabs, and when a
-control changed it and none is active (a drag is written once, when let go) writes it with the dormant grants'
-writer: MM `SaveManager_SaveCurrentForCombo`, OoT `SaveManager::SaveFile`. Live editing is unchanged.
+while MM runs that file and `g_OotSaveInMemorySlot` (set on every OoT load in `Combo_OnOOTSaveLoad`, cleared by an
+erase or a copy onto that file) is that file too. Combined mode only. In Dormant, `DrawElement` snapshots the save
+before the tabs, and when a control changed it and none is active (a drag is written once, when let go) writes it
+with the dormant grants' writer: MM `SaveManager_SaveCurrentForCombo`, OoT `SaveManager::SaveFile`. A waiting change
+belongs to the file it was made in (`DormantWrite`): another file or another access drops it, and both windows'
+`UpdateElement`, which the Gui runs every frame shown or not, writes it once the editor has not been drawn for a frame
+(the menu closed mid-drag, or with a text field focused) if the same file is still dormant, else drops it. Live
+editing is unchanged.
 
-**MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp` (all `COMBO_BUILD`):** `MmEditAccess` and `WriteDormantMmEdits` next
-to `DrawElement`; `NextQuestInSlot` needs a play state only for the sword and shield; `DrawRandoItemGives` gives
-through `Combo_MM_GiveDormantResolved` (as `MM_GrantCrossItem`) when Dormant; the Equipment sword and shield can be
-set when Dormant (Player_Init dresses Link from the save) and Give all / Reset set the B button without a play state;
-Player, Current scene, Cycle scene and Temporary events show "Switch to Majora's Mask to edit this." when Dormant,
-since MM rebuilds them when it starts. `initSafeItemsForInventorySlot` builds the slot lists again whenever an item's
-slot or public availability changed (Player_Init gives the gear and the Adult Mask their slots), where it used to
-build them once per session.
+**Drawing writes nothing.** Every tab of both editors was audited for writes made while drawing, without an edit
+(from the other game the editor would save them at once; while the game runs it would save them itself). Found and
+moved into the edit that means them: MM `DrawTempleClears` set the open flags of every cleared temple each frame
+(now when "cleared" is ticked; open shows as cleared or flagged); MM's player name used `CallbackAlways`, rewriting
+the name each frame the field was focused through a text round trip that is not exact (code 63 came back as 45; now
+`CallbackEdit`); the MM Randomizer tab's check list gave `UIWidgets::ComboboxWithSearch` the save's reward, which it
+replaces with its first entry when unlisted (now a copy, written back when picked); OoT's General tab clamped health
+and set `magicCapacity` and clamped magic every frame (now on the edit of max hearts, the magic level, Max or Reset).
+Widgets otherwise write only on input (`ComboTouch::Count`, the checkbox and combobox widgets, `Kit::LevelPicker`).
 
-**OoT, `soh/soh/Enhancements/debugger/debugSaveEditor.cpp` (all `COMBO_BUILD`):** `OotEditAccess` and
-`WriteDormantOotEdits` next to `DrawElement`; Player, Current scene and Temporary events show "Switch to Ocarina of
-Time to edit this." when Dormant, and General's Advanced entrance, cutscene and timer rows are greyed out under it
-(OoT's resume clears the context and sets the arrival).
+**MM, `mm/2s2h/DeveloperTools/SaveEditor.cpp` (`COMBO_BUILD`; `DrawTempleClears` and the play-state uses of
+`NextQuestInSlot` and `DrawEquipItemMenu` changed in place):**
+`MmEditAccess`, `WriteDormantMmEdits` and `UpdateElement` next to `DrawElement`; `NextQuestInSlot` needs a play state
+only for the sword and shield; `DrawRandoItemGives` gives through `Combo_MM_GiveDormantResolved` (as
+`MM_GrantCrossItem`), which writes the file itself, so the editor then re-snapshots and writes nothing more
+(`MmDormantSaveWritten`); the Equipment sword and shield can be set when Dormant (Player_Init dresses Link from the
+save) and Give all / Reset set the B button without a play state; Player, Current scene, Cycle scene, Temporary events
+and General's "Is Owl Save" show "Switch to Majora's Mask to edit this." when Dormant, since MM rebuilds them when it
+starts or reads the flag to pick the save page. Every play-state use the editor makes goes through `MmEditPlay()`, null
+when Dormant: MM's eager boot can leave a stale `gPlayState`. When Dormant the magic level shown and the magic bar's
+range come from the save (`MmSaveMagicLevel`: MM zeroes `magicLevel` on load until its next frame derives it), not
+from `magicCapacity`, MM's runtime meter. `initSafeItemsForInventorySlot` builds the slot lists again whenever an
+item's slot or public availability changed (Player_Init gives the gear and the Adult Mask their slots), where it used
+to build them once per session.
+
+**OoT, `soh/soh/Enhancements/debugger/debugSaveEditor.cpp` (all `COMBO_BUILD`):** `OotEditAccess`,
+`WriteDormantOotEdits` and `UpdateElement` next to `DrawElement`; Player, Current scene and Temporary events show
+"Switch to Ocarina of Time to edit this." when Dormant, and play-state uses go through `OotEditPlay()`. General's
+Advanced card greys out, under the same line, the rows that cannot reach the file from MM: Entrance Index and
+Cutscene Index (OoT's MM return sets the arrival and cutscene 0), the timers and the 64DD flag (not saved by
+`SaveFile`), and Audio and Z Target Mode (settings of the game, saved by `SaveManager::SaveGlobal`). The
+Navi Timer is saved by `SaveFile` and kept by the MM return (`title_setup.c`), so it stays editable. When Dormant the
+magic level shown and the magic bar's range come from the save (`OotSaveMagicLevel`).
+
+**OoT magic while parked for MM (`soh/soh/OTRGlobals.cpp` `SOH_ParkForComboMMResume`):** `FileChoose_LoadGame` stages
+the meter for its first Play frame (magic 0, the saved amount in `magicFillTarget`, `magicLevel` 0 until
+`Interface_Update` derives it). Resuming a file last saved in MM parks OoT before that frame, so every dormant OoT
+write (`SOH_GrantCrossItem`, the Save Editor) saved magic 0 and the next load filled the meter to 0. The park now
+undoes the staging as that frame would (magic from `magicFillTarget`, the level from the magic flags, the capacity
+from the level); OoT's next start reloads and stages its file again.
 
 ## Randomizer tab and menu navigation audit (T8, 2026-10-13)
 
