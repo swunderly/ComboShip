@@ -2762,3 +2762,65 @@ refusal (skipped only without the OoTMM checkout). `oot_scene_restrictions_tests
 OoTMM's, in a vanilla save and in randomizer saves with and without the marker, and checks the marker and its writers;
 `--check warp` runs `MSGMODE_SONG_PLAYED_ACT` for every warp song, `warpSongs` value and table, then each place above.
 `combo_entrance_slot_binding_tests.py` binds slots with and without the marker.
+
+## Random settings choices recorded in the seed (2026-10-22)
+
+Planned for 0.4.13. OoTMM resolves a seed's random settings once, from the seed, and plays them; SoH's settings finalize
+(`settings.cpp` `Context::FinalizeSettings`) draws the same kind of choices from its shared rando stream (`rng.h`
+`rando_state`), wherever that stream happens to be:
+
+| Choice | Random when | Drawn from (before) | Recorded (before) |
+| --- | --- | --- | --- |
+| Key Rings | Random, a Count other than none or all, or a Selection with a dungeon set to Random | shared stream | no: a Selection keeps "Random" |
+| Ganon's Trials | Random Number, or a Set Number other than 0 or 6 (which trials) | shared stream | `resolvedSeedRules` in profile seeds only |
+| Starting age | Random (Allsanity, Beginner) | shared stream | no: `SelectedStartingAge` is the menu's CVar |
+| MQ dungeons, bundled data | any MQ setting | its own stream (`MqMode.h` `MqRollSeed`) | yes: `masterQuestDungeons` |
+| MQ dungeons, a real `oot-mq.o2r` | as SoH's roll | shared stream | no |
+
+Fortress Carpenters, Ganon's Boss Key and Gerudo Fortress's ring in a Selection have no random value in SoH (any value
+but No is a ring, `item_pool.cpp`). Random shop counts and prices are drawn on the stream `Combo_SeedShopRng` seeds
+with the master seed, and recorded (`prices`). The seed recorded only the settings snapshot (`SOH_DumpRandoSettings`,
+the menu's CVars), so every later finalize drew the open choices again: the oracle's own first finalize during
+generation (`OTRGlobals.cpp` `EnsureOracleInit`), an app reload (`ComboShip.cpp` `Combo_OnReloadRequestImpl` runs
+`SOH_PrepRandoContext`, whose save then stores what it drew, `savefile.cpp` reads `RSK_SELECTED_STARTING_AGE`), and
+`comborando --playthrough`. Every Allsanity or Beginner seed reloaded in another session could start Link at the other
+age than its fill assumed; trials re-rolled for seeds without `resolvedSeedRules`; a Legacy-MQ seed could reload other
+MQ dungeons than its placements. Key rings alone do not change play: the placements carry the rings and keys the pool
+had, and logic counts keys by item. This is in every release since at least 0.4.5 (`v0.4.5-android` and `v0.4.12-android` have the same finalize and reload).
+
+The 0.4.13 RC1 corpus row d06 (Allsanity, no Wallmaster Shuffle) showed it. A host build of RC1's comborando
+regenerates the device's seed byte for byte and, instrumented, prints each finalize: generation drew key rings Water,
+Spirit, Bottom of the Well, GTG (and Gerudo Fortress) and a child start for the pool, then the oracle drew other rings
+and a child start again; the replay's dump drew the pool's rings, its own finalize child, and the oracle's first reset
+(inside `SOH_ApplyEntranceOverridesForCombo`) adult. Pass 1 walked an adult start and stuck at sphere 3; Pass 2 walked
+child (the oracle is initialized once per process) and passed, so "beatable only with all tricks" was the age, not the
+tricks. With the seed's Starting Age set to Child its replay passes Pass 1; set to Adult it fails even with all tricks.
+
+**What the port does now** (`combo/rando/SeedChoices.h`):
+- A new seed's generation (`RunComboFill`, the developer generators and comborando) binds the OoT context Seeded: each
+  choice its settings make random is drawn from a stream of its own, FNV-1a of `keyRings:soh-finalize-v1:`,
+  `trials:soh-finalize-v1:` or `startingAge:soh-finalize-v1:` and the master seed, and a Legacy-MQ seed's MQ dungeons
+  from `MqRollSeed` as a bundled seed's. SoH's own lines draw them unchanged, the shared stream is put back after
+  each, and every finalize of an attempt (the dump's and the oracle's) resolves the same choices. The winning
+  attempt's are recorded in the seed's `oot` section: `"resolvedChoices": {"version": 1, "keyRings": {"dungeons":
+  [DungeonKey ids], "gerudoFortress": bool}, "requiredTrials": [TrialKey ids], "startingAge": "child" | "adult",
+  "masterQuestDungeons": [ids]}`, with only the random choices.
+- A reload, `Combo_FinalizeGenerate` and `--playthrough` bind the seed's record before any finalize; the finalize draws
+  as generation did and the record wins over the draw (the rings and their options, the trials and their count, the
+  selected age, the MQ dungeons). After `SOH_PrepRandoContext`, as for `ReplayKeepsMqDungeons`, a seed whose finalize
+  did not keep the record is refused (`ReplayKeepsChoices`); a record for a choice its settings do not make random is
+  malformed. A settings document (`SettingsDocument`) and a vanilla run drop the record.
+- **Settings without a random choice record nothing and resolve exactly as before**, in the same stream state, so such
+  a seed is byte for byte the RC1 seed: d00 and the 0.4.12 regression row e-oot-child-everyCheck-souls0-00 regenerate
+  identical on the host. The 0.4.12 regression rows have no random choice, so their compared fields are unchanged; a
+  seed with a random choice differs from RC1's (other draws, and the new field).
+- **Older seeds are not migrated.** A seed without the record (everything made before, from the app or comborando)
+  finalizes Legacy, exactly as it loads today, re-rolling any random choice; `--playthrough` notes that its verdict
+  is approximate. Its existing save files are unaffected: a save stores the resolved settings it was created with.
+
+Tests: `seed_choices_tests.cpp` (which choices are random, the streams, the record, the scope, the settings document);
+`seed_choices_finalize_tests.py` compiles the production finalize lines and checks Legacy re-rolls, Seeded draws from
+the seed alone and agree across finalizes, settings without a random choice finalize identically in both modes, a
+record wins over another seed's draw, d06's master seed resolves what the host generator recorded, and the launcher's
+and comborando's order; `mq_generation_settings_tests.py` checks `MasterQuestRandom` against the roll and the Legacy-MQ
+choice.

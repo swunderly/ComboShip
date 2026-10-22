@@ -90,6 +90,10 @@ combo_harness_test(oot_oracle_save_context_allocator_and_borrowed_lifetime oot_s
 combo_json_harness_test(headless_cross_age_oracle_and_rule_snapshots headless_cross_age_tests.py)
 combo_json_harness_test(headless_saved_settings_metadata_and_cli_precedence headless_settings_tests.py)
 combo_json_harness_test(headless_fill_diagnostics_preserve_generation fill_diagnostics_tests.py)
+# The random OoT settings choices (settings.cpp FinalizeSettings, combo/rando/SeedChoices.h) on the production code: a
+# new seed draws them from itself and records them, its reload and replay use the record, and a seed without one, or
+# without a random choice, finalizes exactly as before.
+combo_json_harness_test(seed_choices_recorded_and_used_by_reload_and_replay seed_choices_finalize_tests.py)
 combo_json_harness_test(entrance_solver_pinned_pools_age_access_and_bounds entrance_solver_parity_tests.py)
 combo_harness_test(silver_rupee_native_actor_grant_pool_and_persistence silver_rupee_runtime_tests.py)
 combo_harness_test(feature_item_native_and_foreign_presentation feature_item_presentation_tests.py)
@@ -640,6 +644,22 @@ else()
     foreach(test mq_seed_marker_round_trip mq_seed_marker_keeps_local_saves_legacy)
         combo_skipped_test(${test} "${COMBO_NEEDS_JSON}")
     endforeach()
+endif()
+
+if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)
+    # The record of a seed's random OoT settings choices (combo/rando/SeedChoices.h): which choices are random, their
+    # streams, the record, the scope a reload or replay binds it with, and the settings document that drops it.
+    add_executable(seed_choices_tests seed_choices_tests.cpp)
+    target_compile_features(seed_choices_tests PRIVATE cxx_std_20)
+    target_include_directories(seed_choices_tests PRIVATE "${COMBO_SOURCE_DIR}" "${COMBO_JSON_INCLUDE_DIR}")
+    if(MSVC)
+        target_compile_options(seed_choices_tests PRIVATE /W4 /WX /UNDEBUG)
+    else()
+        target_compile_options(seed_choices_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    endif()
+    add_test(NAME seed_choices_record_and_scope COMMAND seed_choices_tests)
+else()
+    combo_skipped_test(seed_choices_record_and_scope "${COMBO_NEEDS_JSON}")
 endif()
 
 if(COMBO_SOURCE_DIR AND COMBO_JSON_INCLUDE_DIR)

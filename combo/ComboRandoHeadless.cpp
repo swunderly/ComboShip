@@ -59,6 +59,7 @@
 #include "rando/KokiriSeedRevision.h"
 #include "rando/OotSceneRestrictions.h"
 #include "mq/MqSeedMarker.h"
+#include "rando/SeedChoices.h"
 #include "rando/entrances/MmOrdinaryNativeBridge.h"
 #include "rando/entrances/MmOrdinaryGenerationSettings.h"
 #include "rando/entrances/MmMixedNativeBridge.h"
@@ -469,6 +470,11 @@ int RunHeadless(int argc, char** argv) {
     auto SOH_ReadComboSharedCVars = Sym<uint32_t (*)(void)>(soh, "SOH_ReadComboSharedCVars");
     // Ganon's trials resolved at generation (absent on spoilers made before they were recorded).
     auto SOH_ApplyResolvedSeedRules = Sym<int (*)(const char*)>(soh, "SOH_ApplyProfileResolvedSeedRules");
+    // How OoT's settings finalize resolves its random choices, and what it resolved (rando/SeedChoices.h).
+    auto SOH_GetSeedChoicesMode = Sym<ComboRando::SeedChoices::FnGetMode>(soh, "SOH_GetSeedChoicesMode");
+    auto SOH_GetSeedChoicesRecord = Sym<ComboRando::SeedChoices::FnGetRecord>(soh, "SOH_GetSeedChoicesRecord");
+    auto SOH_SetSeedChoices = Sym<ComboRando::SeedChoices::FnSetChoices>(soh, "SOH_SetSeedChoices");
+    auto SOH_DumpSeedChoices = Sym<ComboRando::SeedChoices::FnGetRecord>(soh, "SOH_DumpSeedChoices");
 
     ComboRando::OracleFns oot{ Sym<FnOracleVoid>(soh, "Combo_SOH_Rando_Reset"),
                                Sym<FnOracleSetItems>(soh, "Combo_SOH_Rando_SetOwnedItems"),
@@ -609,6 +615,21 @@ int RunHeadless(int argc, char** argv) {
         auto ootEntrances = spoiler.value("entrances", nlohmann::json::object()).value("oot", nlohmann::json::array());
         const auto ootSeed = spoiler.value("oot", nlohmann::json::object());
         const bool hasResolvedTrials = ootSeed.contains("resolvedSeedRules");
+        // Every finalize below uses the random choices the seed records, as the app's reload does; a seed without the
+        // record finalizes as it always has, drawing its random ones again (rando/SeedChoices.h).
+        std::unique_ptr<ComboRando::SeedChoices::Scope> seedChoices;
+        try {
+            const auto recorded = ComboRando::SeedChoices::RecordedChoices(ootSeed);
+            seedChoices = std::make_unique<ComboRando::SeedChoices::Scope>(
+                SOH_GetSeedChoicesMode, SOH_GetSeedChoicesRecord, SOH_SetSeedChoices,
+                ComboRando::SeedChoices::ModeForRecord(recorded), recorded);
+            if (!SOH_DumpSeedChoices)
+                throw std::runtime_error("Native resolved choices context unavailable");
+        } catch (const std::exception& error) {
+            std::cerr << "[playthrough] " << error.what() << "\n";
+            return 2;
+        }
+        bool choicesRerolled = false;
 
         // Prices are part of the seed: an unknown price can never be treated as buyable, so a spoiler
         // without them can't be validated honestly. Hard-fail rather than emit an optimistic verdict.
@@ -688,6 +709,15 @@ int RunHeadless(int argc, char** argv) {
                 nativePreparationFailed = true;
                 return ComboRando::PlaythroughResult{};
             }
+            // So do the random choices it records, and the oracle's own finalize keeps them (the record wins there).
+            const char* resolvedText = SOH_DumpSeedChoices();
+            const auto resolved = nlohmann::json::parse(resolvedText ? resolvedText : "null");
+            if (!ComboRando::SeedChoices::ReplayKeepsChoices(ootSeed, resolved)) {
+                std::cerr << "[playthrough] the seed's recorded settings choices did not reproduce — no verdict\n";
+                nativePreparationFailed = true;
+                return ComboRando::PlaythroughResult{};
+            }
+            choicesRerolled = choicesRerolled || ComboRando::SeedChoices::ReRollsChoices(ootSeed, resolved);
             // The player's trials are the ones generation resolved, as the in-game reload applies them.
             if (hasResolvedTrials && (!SOH_ApplyResolvedSeedRules ||
                                       !SOH_ApplyResolvedSeedRules(ootSeed.at("resolvedSeedRules").dump().c_str()))) {
@@ -842,6 +872,10 @@ int RunHeadless(int argc, char** argv) {
             std::cerr << "[playthrough] could not restore the seed's entrance layout — no verdict\n";
             return 2;
         }
+        if (choicesRerolled)
+            std::cout << "[playthrough] note: this seed predates recorded settings choices; its random Key Rings, "
+                         "Ganon's Trials, starting age or Master Quest dungeons are drawn again for the replay, so "
+                         "the verdict is approximate\n";
         if (r1.beatable) {
             if (int bad = affordabilityViolations(pt1)) {
                 std::cout << "[playthrough] RESULT: FAIL — beatable but " << bad
@@ -884,6 +918,19 @@ int RunHeadless(int argc, char** argv) {
     }
 
     // ---- Generate + validate mode. ----
+    // A new seed draws the random choices of OoT's settings from itself, so the dump's finalize and the oracle's agree,
+    // and records them (rando/SeedChoices.h), as RunComboFill.
+    std::unique_ptr<ComboRando::SeedChoices::Scope> seedChoices;
+    try {
+        seedChoices = std::make_unique<ComboRando::SeedChoices::Scope>(
+            SOH_GetSeedChoicesMode, SOH_GetSeedChoicesRecord, SOH_SetSeedChoices, ComboRando::SeedChoices::Mode::Seeded,
+            std::nullopt);
+        if (!SOH_DumpSeedChoices)
+            throw std::runtime_error("Native resolved choices context unavailable");
+    } catch (const std::exception& error) {
+        std::cerr << "[comborando] " << error.what() << "\n";
+        return 2;
+    }
     int kokiriRevision = ComboRando::kKokiriModernRevision;
     int grassRevision = ComboRando::kKokiriGrassModernRevision;
     auto mqSource = ComboMq::SourceForNewSeed(SOH_HasBundledMq && SOH_HasBundledMq());
@@ -1456,6 +1503,10 @@ int RunHeadless(int argc, char** argv) {
                         ComboRando::StampOotmmSceneRestrictions(consolidated["oot"]);
                     ComboMq::StampSeedMq(consolidated["oot"], mqSource,
                                          SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1);
+                    // What the winning attempt's finalize drew for each random choice, as RunComboFill records it.
+                    const char* resolvedChoices = SOH_DumpSeedChoices();
+                    ComboRando::SeedChoices::StampSeedChoices(
+                        consolidated["oot"], nlohmann::json::parse(resolvedChoices ? resolvedChoices : "null"));
                     consolidated["mm"] = { { "settings", nlohmann::json::parse(MM_DumpSettings()) },
                                            { "placements", mmPl },
                                            { "prices", pricesOf(mmDump) } };

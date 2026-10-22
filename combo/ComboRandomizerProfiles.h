@@ -3,6 +3,7 @@
 #include "rando/KokiriSeedRevision.h"
 #include "rando/ComboSeedFormat.h"
 #include "mq/MqSeedMarker.h"
+#include "rando/SeedChoices.h"
 #include <array>
 #include <cstdint>
 #include <stdexcept>
@@ -31,7 +32,7 @@ inline Json SettingsDocument(const Json& seed, const Entrances::CapabilitySet& c
             if (!result[game].is_object())
                 throw std::invalid_argument("Malformed game settings document");
             for (const char* output : { "placements", "prices", "iceTrapModels", "resolvedSeedRules",
-                                        ComboMq::kMqDungeonsKey, ComboMq::kMqDungeonNamesKey })
+                                        ComboMq::kMqDungeonsKey, ComboMq::kMqDungeonNamesKey, SeedChoices::kKey })
                 result[game].erase(output);
             if (result[game].contains("settings") && !result[game]["settings"].is_object())
                 throw std::invalid_argument("Malformed native settings snapshot");

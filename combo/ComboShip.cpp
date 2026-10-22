@@ -53,6 +53,7 @@ static ComboGameMode sBoundGameMode = COMBO_MODE_COMBINED;
 #include "rando/KokiriSeedRevision.h"
 #include "rando/OotSceneRestrictions.h"
 #include "mq/MqSeedMarker.h"
+#include "rando/SeedChoices.h"
 #include "rando/entrances/NativeBridge.h"
 #include "rando/entrances/MmGrottoNativeBridge.h"
 #include "rando/entrances/MmOrdinaryNativeBridge.h"
@@ -292,6 +293,18 @@ static ComboMq::FnGetMqDataSource SOH_GetMqDataSource = nullptr;
 static ComboMq::FnSetMqDataSource SOH_SetMqDataSource = nullptr;
 static ComboMq::FnHasBundledMq SOH_HasBundledMasterQuest = nullptr;
 static ComboMq::FnGetMqDungeonMask SOH_GetMqDungeonMask = nullptr;
+// How OoT's settings finalize resolves its random choices, and what it resolved (combo/rando/SeedChoices.h).
+static ComboRando::SeedChoices::FnGetMode SOH_GetSeedChoicesMode = nullptr;
+static ComboRando::SeedChoices::FnGetRecord SOH_GetSeedChoicesRecord = nullptr;
+static ComboRando::SeedChoices::FnSetChoices SOH_SetSeedChoices = nullptr;
+static ComboRando::SeedChoices::FnGetRecord SOH_DumpSeedChoices = nullptr;
+// The random choices the bound OoT context's last finalize resolved, as a seed records them.
+static nlohmann::json ResolvedSeedChoices() {
+    const char* text = SOH_DumpSeedChoices ? SOH_DumpSeedChoices() : nullptr;
+    if (!text)
+        throw std::runtime_error("Native resolved choices context unavailable");
+    return nlohmann::json::parse(text);
+}
 static bool BundledMqAvailable() {
     return SOH_HasBundledMasterQuest && SOH_HasBundledMasterQuest();
 }
@@ -2349,6 +2362,10 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     // A new seed's Master Quest dungeons use OoTMM's bundled data whenever this install has it (combo/mq/MqMode.h).
     const auto mqSource = ComboMq::SourceForNewSeed(BundledMqAvailable());
     ComboMq::MqDataSourceScope mqDataSource(SOH_GetMqDataSource, SOH_SetMqDataSource, mqSource);
+    // A new seed draws the random choices of OoT's settings from itself, so every finalize of each attempt (the dump's
+    // and the oracle's) resolves them the same, and records them (combo/rando/SeedChoices.h).
+    ComboRando::SeedChoices::Scope seedChoices(SOH_GetSeedChoicesMode, SOH_GetSeedChoicesRecord, SOH_SetSeedChoices,
+                                               ComboRando::SeedChoices::Mode::Seeded, std::nullopt);
     ComboRando::Entrances::NativeScope entranceRestore(sEntranceNative);
     ComboRando::CheckGenerationCancellation();
     struct SongRestore {
@@ -2990,6 +3007,10 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
         ComboMq::StampSeedMq(consolidated["oot"],
                              ComboRando::ModeRandomizesOot(gameMode) ? mqSource : ComboMq::SeedMqSource::Legacy,
                              SOH_GetMqDungeonMask ? SOH_GetMqDungeonMask() : -1);
+        // What the winning attempt's finalize drew for each random choice of OoT's settings, which a reload then uses;
+        // nothing when its settings made none random, so such a seed stays byte for byte what it was.
+        if (ComboRando::ModeRandomizesOot(gameMode))
+            ComboRando::SeedChoices::StampSeedChoices(consolidated["oot"], ResolvedSeedChoices());
         consolidated["mm"] = { { "settings", parseOrEmpty(MM_DumpRandoSettings) },
                                { "placements", mmSpoiler },
                                { "prices", pricesOf(mmDump) } };
@@ -3087,6 +3108,17 @@ static std::unique_ptr<ComboMq::MqDataSourceScope> BindNewSeedMqSource(const cha
         return nullptr;
     }
 }
+// Likewise RunComboFill's settings choices: a new seed draws them from itself (combo/rando/SeedChoices.h).
+static std::unique_ptr<ComboRando::SeedChoices::Scope> BindNewSeedChoices(const char* tag) {
+    try {
+        return std::make_unique<ComboRando::SeedChoices::Scope>(SOH_GetSeedChoicesMode, SOH_GetSeedChoicesRecord,
+                                                                SOH_SetSeedChoices,
+                                                                ComboRando::SeedChoices::Mode::Seeded, std::nullopt);
+    } catch (const std::exception& error) {
+        std::cerr << tag << " " << error.what() << "\n";
+        return nullptr;
+    }
+}
 
 // ComboShip: headless cross-world generation TEST (COMBO_GENTEST=<count>). Runs the combined fill
 // over a seed range; a seed "succeeds" only if every advancement check in both games is reachable
@@ -3106,6 +3138,9 @@ static int RunComboGenTest(int numSeeds, uint32_t seedBase) {
     }
     const auto mqDataSource = BindNewSeedMqSource("[GENTEST]");
     if (!mqDataSource)
+        return -1;
+    const auto seedChoices = BindNewSeedChoices("[GENTEST]");
+    if (!seedChoices)
         return -1;
     ComboRando::OracleFns ootOracle = {
         Combo_SOH_Rando_Reset,      Combo_SOH_Rando_SetOwnedItems, Combo_SOH_Rando_GetReachableChecks,
@@ -3241,6 +3276,9 @@ static void RunComboPlaythrough(const std::string& inputSeed) {
     }
     const auto mqDataSource = BindNewSeedMqSource("[PLAYTHROUGH]");
     if (!mqDataSource)
+        return;
+    const auto seedChoices = BindNewSeedChoices("[PLAYTHROUGH]");
+    if (!seedChoices)
         return;
     ComboRando::OracleFns ootOracle = {
         Combo_SOH_Rando_Reset,      Combo_SOH_Rando_SetOwnedItems, Combo_SOH_Rando_GetReachableChecks,
@@ -3408,6 +3446,7 @@ static void Combo_FinalizeGenerate() {
     std::unique_ptr<ComboRando::KokiriSeedRevisionScope> kokiriRevision;
     std::unique_ptr<ComboRando::KokiriGrassCatalogRevisionScope> grassRevision;
     std::unique_ptr<ComboMq::MqDataSourceScope> mqDataSource;
+    std::unique_ptr<ComboRando::SeedChoices::Scope> seedChoices;
     try {
         const auto seed = nlohmann::json::parse(g_ConsolidatedJson);
         const auto catalog = ComboRando::ReadKokiriCatalogRevisions(seed.value("oot", nlohmann::json::object()));
@@ -3418,6 +3457,11 @@ static void Combo_FinalizeGenerate() {
         mqDataSource = std::make_unique<ComboMq::MqDataSourceScope>(
             SOH_GetMqDataSource, SOH_SetMqDataSource,
             ComboMq::ReadMqDataSource(seed.value("oot", nlohmann::json::object())));
+        const auto recordedChoices =
+            ComboRando::SeedChoices::RecordedChoices(seed.value("oot", nlohmann::json::object()));
+        seedChoices = std::make_unique<ComboRando::SeedChoices::Scope>(
+            SOH_GetSeedChoicesMode, SOH_GetSeedChoicesRecord, SOH_SetSeedChoices,
+            ComboRando::SeedChoices::ModeForRecord(recordedChoices), recordedChoices);
         if (!CheckPendingEntranceSeed(seed)) {
             g_ComboProgress.SetError("Generated MM entrance layout could not be installed");
             g_ComboProgress.success.store(false);
@@ -3464,6 +3508,7 @@ static void Combo_FinalizeGenerate() {
     kokiriRevision->Keep();
     grassRevision->Keep();
     mqDataSource->Keep();
+    seedChoices->Keep();
     g_ComboProgress.running.store(false);
 }
 
@@ -3666,6 +3711,12 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
                                                                   SOH_SetKokiriGrassRevision, catalog.grass);
         ComboMq::MqDataSourceScope mqDataSource(SOH_GetMqDataSource, SOH_SetMqDataSource,
                                                 ComboMq::ReadMqDataSource(j.value("oot", nlohmann::json::object())));
+        // The seed's recorded random choices are the ones its finalize uses (combo/rando/SeedChoices.h). A seed without
+        // the record, older or without a random choice, finalizes as before and re-rolls any random one, as it did.
+        const auto recordedChoices = ComboRando::SeedChoices::RecordedChoices(j.value("oot", nlohmann::json::object()));
+        ComboRando::SeedChoices::Scope seedChoices(SOH_GetSeedChoicesMode, SOH_GetSeedChoicesRecord, SOH_SetSeedChoices,
+                                                   ComboRando::SeedChoices::ModeForRecord(recordedChoices),
+                                                   recordedChoices);
         // Reproducing entrances must use the seed's own gameplay rules too. Silent startup
         // restores the menu's choices afterwards; a failed import always restores them.
         struct RuleRestoreGuard {
@@ -3778,6 +3829,17 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
                 SOH_RestoreRandoSettings(userOotSnapshot.c_str());
             return 0;
         }
+        // And the random choices it records; one its settings do not make random is a malformed record.
+        const auto resolvedChoices = ResolvedSeedChoices();
+        if (!ComboRando::SeedChoices::ReplayKeepsChoices(oot, resolvedChoices)) {
+            std::cerr << "[ComboShip] reload: the seed's recorded settings choices did not reproduce, aborting\n";
+            if (isSilentAutoLoad && SOH_RestoreRandoSettings)
+                SOH_RestoreRandoSettings(userOotSnapshot.c_str());
+            return 0;
+        }
+        if (ComboRando::SeedChoices::ReRollsChoices(oot, resolvedChoices))
+            std::cout << "[ComboShip] reload: the seed predates recorded settings choices; its random ones were "
+                         "drawn again\n";
         if (oot.contains("resolvedSeedRules") &&
             (!sProfileApplyResolvedRules || !sProfileApplyResolvedRules(oot["resolvedSeedRules"].dump().c_str())))
             return 0;
@@ -3853,6 +3915,7 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
         kokiriRevision.Keep();
         grassRevision.Keep();
         mqDataSource.Keep();
+        seedChoices.Keep();
         ruleGuard.keep = !isSilentAutoLoad;
         return 1;
     } catch (const std::exception& e) {
@@ -4572,6 +4635,10 @@ int main(int argc, char** argv) {
     SOH_SetMqDataSource = (ComboMq::FnSetMqDataSource)GetSym(sohModule, "SOH_SetMqDataSource");
     SOH_HasBundledMasterQuest = (ComboMq::FnHasBundledMq)GetSym(sohModule, "SOH_HasBundledMasterQuest");
     SOH_GetMqDungeonMask = (ComboMq::FnGetMqDungeonMask)GetSym(sohModule, "SOH_GetMqDungeonMask");
+    SOH_GetSeedChoicesMode = (ComboRando::SeedChoices::FnGetMode)GetSym(sohModule, "SOH_GetSeedChoicesMode");
+    SOH_GetSeedChoicesRecord = (ComboRando::SeedChoices::FnGetRecord)GetSym(sohModule, "SOH_GetSeedChoicesRecord");
+    SOH_SetSeedChoices = (ComboRando::SeedChoices::FnSetChoices)GetSym(sohModule, "SOH_SetSeedChoices");
+    SOH_DumpSeedChoices = (ComboRando::SeedChoices::FnGetRecord)GetSym(sohModule, "SOH_DumpSeedChoices");
     MM_RestoreRandoSettings = (FnTakeStr)GetSym(mmModule, "MM_RestoreRandoSettings");
     SOH_SetCheckPrices = (FnTakeStr)GetSym(sohModule, "SOH_SetCheckPrices");
     MM_SetCheckPrices = (FnTakeStr)GetSym(mmModule, "MM_SetCheckPrices");

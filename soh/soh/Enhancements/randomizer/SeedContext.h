@@ -15,6 +15,7 @@
 #include <nlohmann/json.hpp>
 #ifdef COMBO_BUILD
 #include "mq/MqMode.h"
+#include "rando/SeedChoices.h"
 #endif
 
 #define RAND_GET_OPTION(option) Rando::Context::GetInstance()->GetOption(option)
@@ -77,6 +78,26 @@ class Context {
             return false;
         mMqDataSource = source;
         return true;
+    }
+    // ComboShip: how FinalizeSettings resolves its random choices (combo/rando/SeedChoices.h), the record it applies
+    // over them, and what the last finalize resolved. Legacy without a record until a generation, a reload or a
+    // replay binds a seed's.
+    ComboRando::SeedChoices::Mode GetSeedChoicesMode() const {
+        return mSeedChoicesMode;
+    }
+    const std::optional<ComboRando::SeedChoices::Choices>& GetSeedChoicesRecord() const {
+        return mSeedChoicesRecord;
+    }
+    bool SetSeedChoices(ComboRando::SeedChoices::Mode mode, std::optional<ComboRando::SeedChoices::Choices> record) {
+        if ((mode != ComboRando::SeedChoices::Mode::Legacy && mode != ComboRando::SeedChoices::Mode::Seeded) ||
+            (record && (mode != ComboRando::SeedChoices::Mode::Seeded || record->Empty())))
+            return false;
+        mSeedChoicesMode = mode;
+        mSeedChoicesRecord = std::move(record);
+        return true;
+    }
+    const ComboRando::SeedChoices::Choices& GetResolvedSeedChoices() const {
+        return mResolvedSeedChoices;
     }
 #endif
     bool IsLocationInCurrentCatalog(RandomizerCheck rc) const {
@@ -234,6 +255,9 @@ class Context {
     int mKokiriGrassCatalogRevision = 0;
     int mKokiriSeedRevision = 0; // Each context/file starts in legacy mode until an explicit seed binds.
     ComboMq::SeedMqSource mMqDataSource = ComboMq::SeedMqSource::Legacy; // likewise
+    ComboRando::SeedChoices::Mode mSeedChoicesMode = ComboRando::SeedChoices::Mode::Legacy; // likewise
+    std::optional<ComboRando::SeedChoices::Choices> mSeedChoicesRecord;
+    ComboRando::SeedChoices::Choices mResolvedSeedChoices;
 #endif
     std::array<Hint, RH_MAX> hintTable = {};
     std::array<ItemLocation, RC_MAX> itemLocationTable = {};

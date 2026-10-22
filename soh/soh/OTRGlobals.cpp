@@ -4947,6 +4947,45 @@ extern "C" COMBO_EXPORT int SOH_GetMqDungeonMask(void) {
     return mask;
 }
 
+// ComboShip: how the bound context's settings finalize resolves its random choices (combo/rando/SeedChoices.h) and the
+// record it applies, for the launcher's ComboRando::SeedChoices::Scope; -1 and null without a context.
+extern "C" COMBO_EXPORT int SOH_GetSeedChoicesMode(void) {
+    const auto ctx = Rando::Context::GetInstance();
+    return ctx ? static_cast<int>(ctx->GetSeedChoicesMode()) : -1;
+}
+extern "C" COMBO_EXPORT const char* SOH_GetSeedChoicesRecord(void) {
+    static thread_local std::string record;
+    const auto ctx = Rando::Context::GetInstance();
+    if (!ctx)
+        return nullptr;
+    const auto& choices = ctx->GetSeedChoicesRecord();
+    record = choices ? ComboRando::SeedChoices::Encode(*choices).dump() : "{}";
+    return record.c_str();
+}
+// Sets them; 0, with nothing changed, for an unknown mode, a malformed record or a record outside Seeded.
+extern "C" COMBO_EXPORT int SOH_SetSeedChoices(int mode, const char* record) {
+    const auto ctx = Rando::Context::GetInstance();
+    if (!ctx || mode < 0 || mode > static_cast<int>(ComboRando::SeedChoices::Mode::Seeded))
+        return 0;
+    try {
+        const auto choices = ComboRando::SeedChoices::Decode(nlohmann::json::parse(record ? record : "{}"));
+        return ctx->SetSeedChoices(static_cast<ComboRando::SeedChoices::Mode>(mode),
+                                   choices.Empty() ? std::nullopt : std::optional(choices))
+                   ? 1
+                   : 0;
+    } catch (...) { return 0; }
+}
+// The random choices the bound context's last finalize resolved, as a seed records them ("{}" when its settings made
+// none random); null without a context.
+extern "C" COMBO_EXPORT const char* SOH_DumpSeedChoices(void) {
+    static thread_local std::string resolved;
+    const auto ctx = Rando::Context::GetInstance();
+    if (!ctx)
+        return nullptr;
+    resolved = ComboRando::SeedChoices::Encode(ctx->GetResolvedSeedChoices()).dump();
+    return resolved.c_str();
+}
+
 extern "C" COMBO_EXPORT void SOH_PrepRandoContext(void) {
     try {
         auto ctx = OTRGlobals::Instance->gRandoContext;

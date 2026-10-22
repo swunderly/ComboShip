@@ -14,6 +14,10 @@ accessor (OTRGlobals.cpp) and the seed marker (combo/mq/MqSeedMarker.h), and che
 - the seed records the rolled dungeons (StampSeedMq) and a reload's roll matches them (ReplayKeepsMqDungeons);
 - the launcher and the headless generator set the master seed before every finalize, and the headless replay checks
   the recorded MQ dungeons as the in-game reload does;
+- a new seed without the bundled data (a real oot-mq.o2r) rolls random MQ dungeons from its master seed too, on the
+  same stream, and records them as one of its settings choices (combo/rando/SeedChoices.h), which its reload uses;
+  exactly the settings SeedChoices.h MasterQuestRandom calls random roll differently from stream to stream, and a
+  seed without the record rolls as before;
 - the menu's model of the roll (EntranceProfile.h MqRollRange, MqWallmasterShortfallForced) against the roll itself,
   over the MQ settings modes: every rolled dungeon stays within its modelled range, and the model calls a selection
   forced exactly when every roll leaves more OoT Wallmasters than dungeon entrances (m1-contract.json
@@ -87,6 +91,14 @@ gate = between(finalize, '// If we only have MQ, set all dungeons to MQ',
                '// If any of the individual shuffle settings are on')
 roll = between(finalize, 'std::array<DungeonInfo*, 12> dungeons = this->GetDungeons()->GetDungeonList();',
                '// Set key ring for each dungeon')
+# The random-choice preamble the roll reads (combo/rando/SeedChoices.h), and the context's choice state.
+choice_preamble = between(finalize, '#ifdef COMBO_BUILD // ComboShip: the random choices below',
+                          'std::array<DungeonInfo*, 12> dungeons = this->GetDungeons()->GetDungeonList();')
+seed_context = read('soh/soh/Enhancements/randomizer/SeedContext.h')
+choice_methods = between(seed_context, '// ComboShip: how FinalizeSettings resolves its random choices',
+                         'bool IsLocationInCurrentCatalog(')
+choice_methods = choice_methods[:choice_methods.rindex('#endif')]
+choice_members = between(seed_context, 'ComboRando::SeedChoices::Mode mSeedChoicesMode', '#endif')
 check(hostcxx.find(finalize, '// If we only have MQ') < hostcxx.find(finalize, 'std::array<DungeonInfo*, 12> dungeons'),
       'FinalizeSettings: the MQ gates must come before the MQ roll')
 check(re.search(r'#define MAX_MQ_DUNGEON_COUNT 12\b', read('soh/soh/Enhancements/randomizer/randomizerTypes.h')),
@@ -108,6 +120,9 @@ seed_statics = between(otr, 'static uint64_t sComboRandoSeed = 0;', '// Reseed S
 seed_set = function(otr, 'extern "C" COMBO_EXPORT void SOH_SetComboRandoSeed(uint64_t seed)')
 seed_get = function(otr, 'bool Combo_GetRandoSeed(uint64_t* seed)')
 mask_export = function(otr, 'extern "C" COMBO_EXPORT int SOH_GetMqDungeonMask(void)')
+choice_exports = ''.join(function(otr, signature) for signature in (
+    'extern "C" COMBO_EXPORT int SOH_SetSeedChoices(int mode, const char* record)',
+    'extern "C" COMBO_EXPORT const char* SOH_DumpSeedChoices(void)'))
 
 # The Master Quest contexts with more OoT Wallmasters than dungeon entrances, over the six Wallmaster dungeons
 # (tools/ootmm/m1-contract.json, which the generator tests pin to RequireWallmasterCapacity).
@@ -132,6 +147,7 @@ harness = r'''
 #include <cstdio>
 #include <map>
 #include <memory>
+#include <optional>
 #include <random>
 #include <set>
 #include <stdexcept>
@@ -143,6 +159,7 @@ harness = r'''
 #include "mq/MqSeedMarker.h"
 #include "rando/ComboPresets.h"
 #include "rando/entrances/EntranceProfile.h"
+#include "rando/SeedChoices.h"
 #define MAX_MQ_DUNGEON_COUNT 12
 
 namespace ShipUtils {
@@ -184,6 +201,9 @@ struct Dungeons {
             result[i] = &list[i];
         return result;
     }
+    size_t CountMQ() {
+        return std::count_if(list.begin(), list.end(), [](const DungeonInfo& d) { return d.mq; });
+    }
 };
 namespace Rando {
 class Context {
@@ -199,14 +219,17 @@ class Context {
     Dungeons* GetDungeons() { return &dungeonStore; }
     static std::shared_ptr<Context> GetInstance() { return instance; }
     static std::shared_ptr<Context> instance;
-    // settings.cpp Context::FinalizeSettings: the MQ gates, then the MQ roll.
+''' + choice_methods + r'''
+    // settings.cpp Context::FinalizeSettings: the MQ gates, the random-choice preamble, then the MQ roll.
     void FinalizeMq() {
-''' + gate + roll + r'''
+''' + gate + choice_preamble + roll + r'''
     }
+  private:
+''' + choice_members + r'''
 };
 std::shared_ptr<Context> Context::instance = std::make_shared<Context>();
 } // namespace Rando
-''' + mask_export + r'''
+''' + mask_export + choice_exports + r'''
 
 static const std::map<std::string, int> kMqCvars = {
 ''' + cvar_rows + r'''
@@ -472,6 +495,88 @@ int main() {
         rando_state = 777;
         Finalize(allsanity, kLegacy);
         Require(rando_state != 777, "a Legacy seed with oot-mq.o2r rolls on the shared stream, as before");
+
+        // Exactly the settings MasterQuestRandom calls random roll differently from stream to stream (the shared
+        // stream of a seed without the record), over the menu's MQ selection space.
+        namespace SC = ComboRando::SeedChoices;
+        int randomSelections = 0, fixedSelections = 0;
+        for (int mode : { RO_MQ_DUNGEONS_NONE, RO_MQ_DUNGEONS_SET_NUMBER, RO_MQ_DUNGEONS_RANDOM_NUMBER,
+                          RO_MQ_DUNGEONS_SELECTION })
+            for (int presets : { 0, 1 })
+                for (int count = 0; count <= 12; count++)
+                    for (int quests = 0; quests < 27; quests++) {
+                        Values rules = Rules({ { RSK_MQ_DUNGEON_RANDOM, mode }, { RSK_MQ_DUNGEON_COUNT, count },
+                                               { RSK_MQ_DUNGEON_SET, presets } });
+                        int randomDungeons = 0, mqDungeons = 0;
+                        for (int i = 0; i < 12; i++) {
+                            rules[RSK_MQ_DEKU_TREE + i] = i < 3 ? (quests / (i == 0 ? 1 : i == 1 ? 3 : 9)) % 3
+                                                                : (i % 4 == 0 ? RO_MQ_SET_MQ : RO_MQ_SET_VANILLA);
+                            randomDungeons += rules[RSK_MQ_DEKU_TREE + i] == RO_MQ_SET_RANDOM;
+                            mqDungeons += rules[RSK_MQ_DEKU_TREE + i] == RO_MQ_SET_MQ;
+                        }
+                        const bool random = SC::MasterQuestRandom(mode, count, presets != 0, randomDungeons, mqDungeons);
+                        std::set<int> masks;
+                        for (int sample = 0; sample < 32; sample++) {
+                            rando_state = garbage();
+                            masks.insert(Finalize(rules, kLegacy));
+                        }
+                        Require(random == (masks.size() > 1),
+                                std::string(random ? "a random" : "a fixed") + " MQ selection rolled " +
+                                    std::to_string(masks.size()) + " sets: mode " + std::to_string(mode) + " count " +
+                                    std::to_string(count) + " presets " + std::to_string(presets));
+                        (random ? randomSelections : fixedSelections)++;
+                    }
+        Require(randomSelections > 100 && fixedSelections > 100, "random and fixed MQ selections compared");
+
+        // A new seed without the bundled data (Seeded) rolls random MQ dungeons from its master seed, on the bundled
+        // seeds' stream, leaves the shared stream as it was, and records them; its reload uses the record.
+        Require(SOH_SetSeedChoices(1, "{}") == 1, "a generation binds a Seeded context");
+        for (uint64_t s = 0; s < 64; s++) {
+            const uint64_t master = 412070000ull + 7919ull * s;
+            SOH_SetComboRandoSeed(master);
+            const uint64_t shared = garbage();
+            rando_state = shared;
+            const int generated = Finalize(allsanity, kLegacy);
+            Require(rando_state == shared, "a Seeded Legacy-data MQ roll leaves the shared stream as it was");
+            rando_state = garbage();
+            Require(Finalize(allsanity, kLegacy) == generated, "the oracle's finalize rolls the same MQ dungeons");
+            SOH_SetComboRandoSeed(master);
+            rando_state = garbage();
+            Require(Finalize(allsanity, kBundled) == generated, "the same stream as a bundled seed's");
+            SOH_SetComboRandoSeed(master);
+            Finalize(allsanity, kLegacy);
+            const auto resolved = nlohmann::json::parse(SOH_DumpSeedChoices());
+            Require(SC::Decode(resolved).masterQuest == static_cast<uint16_t>(generated),
+                    "the seed records its Legacy-data MQ dungeons as a settings choice");
+            nlohmann::json oot = nlohmann::json::object();
+            SC::StampSeedChoices(oot, resolved);
+            SOH_SetComboRandoSeed(master + 1);
+            Require(SOH_SetSeedChoices(1, oot.at(SC::kKey).dump().c_str()) == 1, "a reload binds the record");
+            rando_state = garbage();
+            const int reloaded = Finalize(allsanity, kLegacy);
+            Require(reloaded == generated &&
+                        SC::ReplayKeepsChoices(oot, nlohmann::json::parse(SOH_DumpSeedChoices())),
+                    "a reload uses the recorded MQ dungeons, not another seed's roll");
+            Require(SOH_SetSeedChoices(1, "{}") == 1, "back to a generation");
+        }
+        // A fixed selection rolls as before in a Seeded finalize too, on the shared stream, and records nothing.
+        for (const auto& rules : { Rules({ { RSK_MQ_DUNGEON_RANDOM, RO_MQ_DUNGEONS_SET_NUMBER },
+                                           { RSK_MQ_DUNGEON_COUNT, 12 } }),
+                                   Rules({ { RSK_MQ_DUNGEON_RANDOM, RO_MQ_DUNGEONS_SELECTION },
+                                           { RSK_MQ_DEKU_TREE, RO_MQ_SET_MQ } }) }) {
+            const uint64_t shared = garbage();
+            rando_state = shared;
+            const int seeded = Finalize(rules, kLegacy);
+            const uint64_t seededStream = rando_state;
+            Require(nlohmann::json::parse(SOH_DumpSeedChoices()) == nlohmann::json::object(),
+                    "a fixed MQ selection records no choice");
+            Require(SOH_SetSeedChoices(0, "{}") == 1, "Legacy");
+            rando_state = shared;
+            Require(Finalize(rules, kLegacy) == seeded && rando_state == seededStream,
+                    "a fixed MQ selection finalizes as before");
+            Require(SOH_SetSeedChoices(1, "{}") == 1, "Seeded");
+        }
+        Require(SOH_SetSeedChoices(0, "{}") == 1, "Legacy again");
         std::puts("PASS: bundled seeds roll and keep their MQ dungeons; Legacy seeds finalize as before");
     } catch (const std::exception& e) {
         std::fprintf(stderr, "FAIL: %s\n", e.what());

@@ -3006,15 +3006,63 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
     mOptions[RSK_SHUFFLE_CHEST_MINIGAME].Set(RO_CHEST_GAME_OFF);
 
     // TODO: RandomizeAllSettings(true) when implementing the ability to randomize the options themselves.
+#ifdef COMBO_BUILD
+    // ComboShip: the random choices below (combo/rando/SeedChoices.h). A Seeded finalize, a new seed's generation or
+    // the reload and replay of a seed that records them, draws each one its settings make random from a stream of its
+    // own, from the combo master seed, and the seed's record wins over the draw; a Legacy finalize, every older seed's,
+    // draws them from the shared stream as SoH does. A choice the settings leave fixed is drawn as before either way.
+    // Each finalize reports what it resolved for every random choice (SOH_DumpSeedChoices), whichever stream drew it.
+    namespace SC = ComboRando::SeedChoices;
+    static_assert(RO_KEYRINGS_RANDOM == 1 && RO_KEYRINGS_COUNT == 2 && RO_KEYRINGS_SELECTION == 3 &&
+                      RO_GANONS_TRIALS_SET_NUMBER == 1 && RO_GANONS_TRIALS_RANDOM_NUMBER == 2 && RO_AGE_RANDOM == 2 &&
+                      RO_MQ_DUNGEONS_SET_NUMBER == 1 && RO_MQ_DUNGEONS_RANDOM_NUMBER == 2 &&
+                      RO_MQ_DUNGEONS_SELECTION == 3 && RO_MQ_SET_MQ == 1 && RO_MQ_SET_RANDOM == 2 &&
+                      TK_MAX == SC::kTrialCount && MAX_MQ_DUNGEON_COUNT == SC::kDungeonCount,
+                  "SeedChoices.h reads SoH's option values");
+    uint64_t choiceSeed = 0;
+    const bool seededChoices = GetSeedChoicesMode() == SC::Mode::Seeded && Combo_GetRandoSeed(&choiceSeed);
+    const auto& choiceRecord = GetSeedChoicesRecord();
+    mResolvedSeedChoices = {};
+    // One Seeded choice drawn from its own stream (SeedChoices.h RollSeed); Close puts the shared stream back.
+    struct ChoiceStream {
+        bool active;
+        uint64_t shared;
+        ChoiceStream(bool draw, SC::Choice choice, uint64_t seed) : active(draw), shared(rando_state) {
+            if (active) {
+                Random_Init(SC::RollSeed(choice, seed));
+            }
+        }
+        void Close() {
+            if (active) {
+                rando_state = shared;
+            }
+            active = false;
+        }
+        ~ChoiceStream() {
+            Close();
+        }
+    };
+#endif
     std::array<DungeonInfo*, 12> dungeons = this->GetDungeons()->GetDungeonList();
 #ifdef COMBO_BUILD
     // ComboShip: a bundled-MQ seed rolls its MQ dungeons on a stream of their own, from its combo master seed
     // (combo/mq/MqMode.h MqRollSeed), as OoTMM resolves mqDungeons from the seed (packages/logic/src/world/flags.ts).
     // So the generation, its oracle, a reload and a headless replay all roll the dungeons the seed records, wherever
-    // the shared stream is. The shared stream is put back after the roll, so every later roll is unchanged.
+    // the shared stream is. The shared stream is put back after the roll, so every later roll is unchanged. A Seeded
+    // seed without the bundled data rolls random MQ dungeons there too, and records them as one of its choices.
+    int mqRandomDungeons = 0, mqSetDungeons = 0;
+    for (auto dungeon : dungeons) {
+        mqRandomDungeons += mOptions[dungeon->GetMQSetting()].Is(RO_MQ_SET_RANDOM);
+        mqSetDungeons += mOptions[dungeon->GetMQSetting()].Is(RO_MQ_SET_MQ);
+    }
+    const bool mqRandom =
+        !bundledMq &&
+        SC::MasterQuestRandom(mOptions[RSK_MQ_DUNGEON_RANDOM].Get(), mOptions[RSK_MQ_DUNGEON_COUNT].Get(),
+                              mOptions[RSK_MQ_DUNGEON_SET].Get() != RO_GENERIC_OFF, mqRandomDungeons, mqSetDungeons);
+    const bool mqChoice = seededChoices && mqRandom;
     const uint64_t sharedRandoState = rando_state;
     uint64_t comboSeed = 0;
-    const bool mqOwnStream = bundledMq && Combo_GetRandoSeed(&comboSeed);
+    const bool mqOwnStream = (bundledMq || mqChoice) && Combo_GetRandoSeed(&comboSeed);
     if (mqOwnStream) {
         Random_Init(ComboMq::MqRollSeed(comboSeed));
     }
@@ -3140,6 +3188,22 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
     if (mqOwnStream) {
         rando_state = sharedRandoState;
     }
+    if (mqRandom) {
+        if (mqChoice && choiceRecord && choiceRecord->masterQuest) {
+            for (size_t i = 0; i < dungeons.size(); i++) {
+                dungeons[i]->ClearMQ();
+                if (*choiceRecord->masterQuest & (1u << i)) {
+                    dungeons[i]->SetMQ();
+                }
+            }
+            mOptions[RSK_MQ_DUNGEON_COUNT].Set(static_cast<uint8_t>(this->GetDungeons()->CountMQ()));
+        }
+        uint16_t mqDungeons = 0;
+        for (size_t i = 0; i < dungeons.size(); i++) {
+            mqDungeons |= dungeons[i]->IsMQ() ? 1u << i : 0u;
+        }
+        mResolvedSeedChoices.masterQuest = mqDungeons;
+    }
 #endif
 
     // Set key ring for each dungeon
@@ -3153,6 +3217,19 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
         &mOptions[RSK_KEYRINGS_SHADOW_TEMPLE], &mOptions[RSK_KEYRINGS_BOTTOM_OF_THE_WELL],
         &mOptions[RSK_KEYRINGS_GTG],           &mOptions[RSK_KEYRINGS_GANONS_CASTLE],
     };
+#ifdef COMBO_BUILD
+    const bool keyRingGerudoDraw = mOptions[RSK_GERUDO_FORTRESS].Is(RO_GF_CARPENTERS_NORMAL) &&
+                                   mOptions[RSK_GERUDO_KEYS].IsNot(RO_GERUDO_KEYS_VANILLA);
+    bool keyRingDungeonRandom = false;
+    for (const auto option : keyRingOptions) {
+        keyRingDungeonRandom |= option->Is(RO_KEYRING_FOR_DUNGEON_RANDOM);
+    }
+    const bool keyRingRandom =
+        SC::KeyRingsRandom(mOptions[RSK_KEYRINGS].Get(), mOptions[RSK_KEYRINGS_RANDOM_COUNT].Get(),
+                           static_cast<int>(keyRingOptions.size()) + keyRingGerudoDraw, keyRingDungeonRandom);
+    const bool keyRingChoice = seededChoices && keyRingRandom;
+    ChoiceStream keyRingStream(keyRingChoice, SC::Choice::KeyRings, choiceSeed);
+#endif
 
     if (mOptions[RSK_KEYRINGS]) {
         // Random Key Rings
@@ -3208,6 +3285,51 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
             this->GetDungeon(GANONS_CASTLE)->SetKeyRing();
         }
     }
+#ifdef COMBO_BUILD
+    if (keyRingRandom) {
+        keyRingStream.Close();
+        struct Ring {
+            DungeonKey dungeon;
+            RandomizerSettingKey option;
+        };
+        static constexpr Ring kRings[] = {
+            { FOREST_TEMPLE, RSK_KEYRINGS_FOREST_TEMPLE }, { FIRE_TEMPLE, RSK_KEYRINGS_FIRE_TEMPLE },
+            { WATER_TEMPLE, RSK_KEYRINGS_WATER_TEMPLE },   { SPIRIT_TEMPLE, RSK_KEYRINGS_SPIRIT_TEMPLE },
+            { SHADOW_TEMPLE, RSK_KEYRINGS_SHADOW_TEMPLE }, { BOTTOM_OF_THE_WELL, RSK_KEYRINGS_BOTTOM_OF_THE_WELL },
+            { GERUDO_TRAINING_GROUND, RSK_KEYRINGS_GTG },  { GANONS_CASTLE, RSK_KEYRINGS_GANONS_CASTLE },
+        };
+        if (keyRingChoice && choiceRecord && choiceRecord->keyRings) {
+            // A Random or Count setting resolves into each ring's Yes or No, as its draw above does.
+            const bool drawn =
+                mOptions[RSK_KEYRINGS].Is(RO_KEYRINGS_RANDOM) || mOptions[RSK_KEYRINGS].Is(RO_KEYRINGS_COUNT);
+            for (const auto& ring : kRings) {
+                const bool recorded = (choiceRecord->keyRings->dungeons & (1u << ring.dungeon)) != 0;
+                if (drawn) {
+                    mOptions[ring.option].Set(recorded ? RO_KEYRING_FOR_DUNGEON_ON : RO_KEYRING_FOR_DUNGEON_OFF);
+                }
+                this->GetDungeon(ring.dungeon)->ClearKeyRing();
+                if (recorded) {
+                    this->GetDungeon(ring.dungeon)->SetKeyRing();
+                }
+            }
+            if (drawn && keyRingGerudoDraw) {
+                mOptions[RSK_KEYRINGS_GERUDO_FORTRESS].Set(
+                    choiceRecord->keyRings->gerudoFortress ? RO_KEYRING_FOR_DUNGEON_ON : RO_KEYRING_FOR_DUNGEON_OFF);
+            }
+        }
+        SC::Choices::KeyRings rings;
+        for (const auto& ring : kRings) {
+            rings.dungeons |= this->GetDungeon(ring.dungeon)->HasKeyRing() ? 1u << ring.dungeon : 0u;
+        }
+        // item_pool.cpp adds Gerudo Fortress's ring for any value but No.
+        rings.gerudoFortress = mOptions[RSK_KEYRINGS_GERUDO_FORTRESS].IsNot(RO_KEYRING_FOR_DUNGEON_OFF);
+        mResolvedSeedChoices.keyRings = rings;
+    }
+    const bool trialRandom =
+        SC::TrialsRandom(mOptions[RSK_GANONS_TRIALS].Get(), mOptions[RSK_TRIAL_COUNT].Get(), TK_MAX);
+    const bool trialChoice = seededChoices && trialRandom;
+    ChoiceStream trialStream(trialChoice, SC::Choice::Trials, choiceSeed);
+#endif
 
     auto trials = this->GetTrials()->GetTrialList();
     Shuffle(trials);
@@ -3223,6 +3345,27 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
     for (uint8_t i = 0; i < mOptions[RSK_TRIAL_COUNT].Get(); i++) {
         trials[i]->SetAsRequired();
     }
+#ifdef COMBO_BUILD
+    if (trialRandom) {
+        trialStream.Close();
+        if (trialChoice && choiceRecord && choiceRecord->requiredTrials) {
+            this->GetTrials()->SkipAll();
+            uint8_t count = 0;
+            for (uint8_t key = 0; key < TK_MAX; key++) {
+                if (*choiceRecord->requiredTrials & (1u << key)) {
+                    this->GetTrial(static_cast<TrialKey>(key))->SetAsRequired();
+                    count++;
+                }
+            }
+            mOptions[RSK_TRIAL_COUNT].Set(count);
+        }
+        uint8_t required = 0;
+        for (const auto trial : this->GetTrials()->GetTrialList()) {
+            required |= trial->IsRequired() ? 1u << trial->GetTrialKey() : 0u;
+        }
+        mResolvedSeedChoices.requiredTrials = required;
+    }
+#endif
 
     bool dungeonShuffle = !mOptions[RSK_SHUFFLE_DUNGEON_ENTRANCES].Is(RO_GENERIC_OFF);
     bool bossShuffle = !mOptions[RSK_SHUFFLE_BOSS_ENTRANCES].Is(RO_GENERIC_OFF);
@@ -3259,6 +3402,11 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
         mOptions[RSK_MIX_GROTTO_ENTRANCES].Set(RO_GENERIC_OFF);
     }
 
+#ifdef COMBO_BUILD
+    const bool ageRandom = SC::StartingAgeRandom(mOptions[RSK_STARTING_AGE].Get());
+    const bool ageChoice = seededChoices && ageRandom;
+    ChoiceStream ageStream(ageChoice, SC::Choice::StartingAge, choiceSeed);
+#endif
     if (mOptions[RSK_STARTING_AGE].Is(RO_AGE_RANDOM)) {
         if (const uint32_t choice = Random(0, 2); choice == 0) {
             mOptions[RSK_SELECTED_STARTING_AGE].Set(RO_AGE_CHILD);
@@ -3268,6 +3416,15 @@ void Context::FinalizeSettings(const std::set<RandomizerCheck>& excludedLocation
     } else {
         mOptions[RSK_SELECTED_STARTING_AGE].Set(mOptions[RSK_STARTING_AGE].Get());
     }
+#ifdef COMBO_BUILD
+    if (ageRandom) {
+        ageStream.Close();
+        if (ageChoice && choiceRecord && choiceRecord->adult) {
+            mOptions[RSK_SELECTED_STARTING_AGE].Set(*choiceRecord->adult ? RO_AGE_ADULT : RO_AGE_CHILD);
+        }
+        mResolvedSeedChoices.adult = mOptions[RSK_SELECTED_STARTING_AGE].Is(RO_AGE_ADULT);
+    }
+#endif
 
     // TODO: Random Starting Time
 

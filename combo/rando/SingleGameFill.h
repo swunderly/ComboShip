@@ -4,6 +4,7 @@
 #include "ComboSeedFormat.h"
 #include "OotSceneRestrictions.h"
 #include "../mq/MqSeedMarker.h"
+#include "SeedChoices.h"
 
 namespace ComboRando {
 inline OracleFns InactiveGameOracle() {
@@ -49,6 +50,7 @@ inline nlohmann::json PrepareVanillaRun(nlohmann::json setup, const nlohmann::js
         seed[game]["placements"] = nlohmann::json::object();
         seed[game]["prices"] = nlohmann::json::object();
         seed[game].erase("resolvedSeedRules");
+        seed[game].erase(SeedChoices::kKey); // a vanilla game draws none of OoT's settings choices
     }
     // A vanilla game plays vanilla's scene restriction table; a draft of a randomizer seed records OoTMM's.
     seed["oot"].erase(kOotSceneRestrictionsKey);
