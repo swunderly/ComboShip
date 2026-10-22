@@ -2700,24 +2700,56 @@ shared destinations, its source counts per Master Quest context and these sites,
   that base world is certified once and every candidate skips the check (`UnifiedBridge.h`, `Shuffle.h`). When the
   base world fails, OoTMM's `validateAgeTemple` (`entrances.ts:265-287`) would probe each candidate, but this
   port's probe cannot search MM yet (limits design, Stage 5). So a candidate with routes into the other game stops
-  generation with `TempleProbeUnsupported` ("Temple probe: a cross-game Wallmaster candidate needs a Temple check
-  through MM (deferred)"), and nothing stays installed. The player sees that developer text, not a plain
-  sentence. Full alongside another entrance pool is refused the same way.
+  generation as a settings refusal, `UnifiedEntranceRefused` with `FullWallmasterTempleRefusal()`
+  (`EntranceAvailability.h`), and nothing stays installed. Like every such refusal it is not retried (C1). The
+  player sees "Full Wallmaster Shuffle can't be generated with these settings yet. Choose Own Game, or start as
+  child Link." (`kFullWallmasterTempleText`); the log keeps "Temple probe: a cross-game Wallmaster candidate needs
+  a Temple check through MM (deferred)". The menu cannot show it, since only generation finds out whether the base
+  world passes. Full alongside another entrance pool, which no build offers, is refused before any draw
+  (`TempleProbeUnsupported`, developer text).
 - **Master Quest.** Full's 18 destinations hold its at most 16 sources, so it has no capacity refusal
   (`capacityShortfalls` is empty in the contract). `MqWallmasterShortfallForced` and the menu's sentence are Own
   Game's alone; each menu choice shows the sentence for its own value (`ComboRandomizerProfiles.cpp`).
 - **Captures.** A route into the other game leaves through the port's cross-game entrance flight
-  (`CrossEntrance.inc.h`). The capture ends the dungeon record as an own-game capture does and queues the departure;
-  the native respawn then runs as the transition, and at its end the flight checks the launcher's preflight again
-  (`ComboShip.cpp` `Combo_PreflightEntranceDeparture`), saves, and arms the arrival in the other game. A departure
-  refused when it is queued, or at the end of the transition, keeps the native respawn to the dungeon's entrance,
-  and each refusal is logged (owner decision D7). The flight carries Link's age under the seed's Cross-Games Age
-  rules, as the Farore flight does.
+  (`CrossEntrance.inc.h`). The capture queues the departure first, and only if the queue succeeds ends the
+  dungeon record, as an own-game capture does; the native respawn then runs as the transition, and at its end the
+  flight checks the launcher's preflight again (`ComboShip.cpp` `Combo_PreflightEntranceDeparture`), saves, and
+  arms the arrival in the other game. A departure refused when it is queued, or at the end of the transition, keeps
+  the native respawn to the dungeon's entrance, and each refusal is logged with its reason (owner decision D7,
+  `NativeArrival.h` `DepartureEnd`); an ordinary transition with nothing queued logs nothing. The flight carries
+  Link's age under the seed's Cross-Games Age rules, as the Farore flight does.
+- **The save before leaving.** OoTMM's game switch saves with `Save_DoSave(play, SF_OWL)`
+  (`common/switch.c:75-85`), which first stores the scene's live flags (`PlayStoreFlags`). In OoT it also sets the
+  scene number (`oot/save.c:398-414`). The OoT departure does the same before its full save:
+  `Play_SaveSceneFlags(play)` and `savedSceneNum` (`CrossEntrance.inc.h` `Combo_OotFinishEntranceDeparture`), after
+  OoTMM's `Horse_ForceUnmount` and `Minigame_Fix`. Without it a chest opened, a door unlocked or a key picked up in
+  the room Link leaves would be missing from the save the return trip loads (`title_setup.c`), since `Play_Destroy`
+  stores them only after that save; a door could then lock again with its key spent. In MM, `Save_DoSave`
+  (`mm/save.c:180-199`) also copies the cycle flags into the saved ones (`PrepareSave`, the native
+  `func_8014546C`) and writes an owl save. The MM departure stores the live flags and makes the same copy
+  (`MmStoreCycleSceneFlags`), which is also what every MM scene load does (`Interface_NewDay`), before its normal
+  save (`SaveManager_SaveCurrentForCombo`). The next MM entry rebuilds the cycle flags from the saved ones
+  (`title_setup.c`), so the cycle's progress, the room Link leaves included, survives the trip, and the time and
+  day are kept as in OoTMM. In both games, a refused commit's rollback saves the same stored flags. The port's
+  normal save does not keep MM's `eventInf` or bottle timers, which OoTMM's owl save does; that holds for every
+  MM-to-OoT trip in the port. The other cross-game departures store the same flags since 0.4.13: OoT's departure
+  save behind a song, Farore's Wind and the Happy Mask Shop door (`OTRGlobals.cpp`) calls `Play_SaveSceneFlags` and
+  sets `savedSceneNum` first, and MM's behind a song, Farore's Wind and the Clock Tower door (`BenPort.cpp`, the
+  return hook) runs `MmStoreCycleSceneFlags` through `Combo_MMStoreDepartureFlags`, so both MM departures use the
+  one helper. The doors lost nothing before either, since Link has just entered the shop or the tower.
+- **A departure belongs to its play state.** The flight records the play state that queued a departure, and only
+  that play state's transition end may finish it (`NativeArrival.h`); another's refuses it and logs. In OoT a reset
+  during the capture's fade, or any quit (`OnExitGame`), any end of the play state (`OnPlayDestroy`) and the
+  ordinary title boot (`title_setup.c`) forget a queued departure, so a reloaded file's first door never leaves for
+  the other game; an arrival armed for OoT survives the combo return's own `OnExitGame`. In MM a reset or an
+  owl-save quit hands back to OoT, and the launcher then cancels MM's whole flight (`ComboShip.cpp`, the
+  `g_pendingOOTReturn` branch); any end of an MM play state (`OnPlayDestroy`) forgets the departure too.
 - **Spoiler.** `.entrances.txt` and the spoiler log list the routes into the other game with the others
   (`EntranceSpoiler.h`; OoTMM `packages/generator/lib/combo/spoiler.ts:237-272`).
 - **Port limits.** The live check tracker does not follow routes into the other game; it can show a check as out of
-  reach that logic reaches that way. In co-op, a capture moves only the player it grabs, as the Mask Shop door
-  does. The menu offers Full only in a build that has the id.
+  reach that logic reaches that way. The menu offers Full only in a build that has the id.
+- **Co-op (not a deviation).** A capture moves only the player it grabs. OoTMM does the same: each player runs
+  their own game, and a game switch is that player's alone (`common/switch.c:75-85`).
 
 ## Beginner preset: Prelude of Light as a starting item (since 2026-10-13)
 
