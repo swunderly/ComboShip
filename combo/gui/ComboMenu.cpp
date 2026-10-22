@@ -1308,11 +1308,18 @@ void PlandoSavePlay() {
         return;
     }
     int ok = sRequestReload(path.string().c_str());
+    const std::string file = "File " + std::to_string(targetSlot + 1);
     if (ok) {
-        sPlando.status = "Saved for File " + std::to_string(targetSlot + 1) + ". Start that file to play it.";
+        sPlando.status = "Saved for " + file + ". Start that file to play it.";
         sPlando.statusError = false;
+    } else if (sIsOnFileSelect && sIsOnFileSelect()) {
+        // Save works only here, and the generation window covers it while a seed is made, so the device or the
+        // file's settings profile refused this seed; the launcher logs why (Combo_OnReloadRequest).
+        sPlando.status =
+            "This seed could not be saved for " + file + ", so " + file + " is unchanged. native.log says why.";
+        sPlando.statusError = true;
     } else {
-        sPlando.status = "Reload rejected (be on the file-select screen; no generation running).";
+        sPlando.status = "Go back to the file-select menu, then save again.";
         sPlando.statusError = true;
     }
 }

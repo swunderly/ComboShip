@@ -96,7 +96,9 @@ Json sProfilePreparedSeed, appliedSeed;
 int (*sFileSelectSlot)() = NativeSlot;
 int (*sProfileSelected)() = SelectedSlot;
 uint8_t CanGenerate() { return 1; }
+// SOH_CanGenerateComboSeed, resolved by the launcher and by the menu (Save's refusal sentence).
 uint8_t (*sProfileCanGenerate)() = CanGenerate;
+uint8_t (*sIsOnFileSelect)() = CanGenerate;
 const char* (*SOH_GetComboSpoilerPath)() = nullptr;
 void (*SOH_SetSeedGenerated)(uint8_t) = nullptr;
 fs::path ResolveComboSeedPath(const char* path) { return path; }

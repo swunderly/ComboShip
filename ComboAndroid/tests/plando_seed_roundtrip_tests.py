@@ -75,6 +75,8 @@ int reloadCalls = 0;
 const char* OotDump() { return ootDump.c_str(); }
 const char* MmDump() { return mmDump.c_str(); }
 int FileThree() { return 2; }
+unsigned char OnFileSelect() { return 1; }
+unsigned char (*sIsOnFileSelect)() = OnFileSelect; // SOH_CanGenerateComboSeed: Save's refusal sentence
 int Reload(const char* path) { ++reloadCalls; reloadedPath = path; return 1; }
 std::string Read(const fs::path& path) {
     std::ifstream in(path, std::ios::binary); assert(in.is_open());
