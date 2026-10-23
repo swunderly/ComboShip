@@ -2848,10 +2848,10 @@ def full_seed_facts(row, seed, entrances, contract_facts, rows, links):
     if (recorded is not None) != bool(choices) or \
             (recorded is not None and (set(recorded) != choices | {'version'} or recorded.get('version') != 1)):
         problems.append(f'oot.resolvedChoices {recorded!r} is not the record of the random choices {sorted(choices)}')
-    if 'startingAge' in choices and recorded and \
-            recorded.get('startingAge') != ('adult' if oot['settings'].get('gRandoSettings.SelectedStartingAge')
-                                            else 'child'):
-        problems.append('the recorded starting age is not the selected one')
+    # gRandoSettings.SelectedStartingAge is the menu value, not the draw, so a Random age is checked only for being an
+    # age; the native --playthrough applies the record and refuses a draw that differs from it (ReplayKeepsChoices).
+    if 'startingAge' in choices and recorded and recorded.get('startingAge') not in ('child', 'adult'):
+        problems.append(f'the recorded starting age {recorded.get("startingAge")!r} is not an age')
     layout_problems, facts, routes = full_layout_facts(doc, mask, contract_facts, rows, links,
                                                        entrances.decode('utf-8'))
     problems += layout_problems
