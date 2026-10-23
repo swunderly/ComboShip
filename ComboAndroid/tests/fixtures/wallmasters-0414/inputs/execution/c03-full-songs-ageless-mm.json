@@ -1,0 +1,26 @@
+{
+  "row": "c03-full-songs-ageless-mm",
+  "receipt": {
+    "schema": "comboship-corpus-execution-v1",
+    "kind": "device-start",
+    "bootId": "e228a2d4-558f-4d8e-80e1-42ebd831b8db",
+    "worker": "91",
+    "hashes": {
+      "bundle.sha256": "d9853b0641b39a6d39e603adddfe29e9e8f43cb6de50267817f0f4719cd2c7db",
+      "plan.json": "196a338027efca52171047a0408321365dd3082a1266c02ba90134ae0f9c2dee",
+      "bin/comborando": "7f9fd052fe27118350b73bb8737466924f626f149e4721c214f9eb4c9f8b3805",
+      "bin/lib2ship.so": "d0a9d3943e54b6c66bbdbab1823759cfeab356f242fb84bb9e57bf6a950dce3c",
+      "bin/libSDL2.so": "e74542b0e7d377449a0aa1d6ca11f9663d5be71e5ccc348d692547b9c4a1bd6b",
+      "bin/libSDL2_net.so": "8834c0f5b4320e13453f96ef087e8b37acbaae2feb49b3a3b96e530b0de3b4c3",
+      "bin/libc++_shared.so": "cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c",
+      "bin/libcomboship.so": "c1cf55fbea72ecdf2b04734e88a912568337af51c1979e9b1fa8f8809598237a",
+      "bin/libcomboui.so": "1346d08160a95ba3a739df391a696de7c661f174799002902ada8809a8e3964b",
+      "bin/libsoh.so": "1a2b08940e16d31ac40852b527ad58fda131b6fe0e82945b57d7e43c08853e74",
+      "bin/libultraship.so": "d0e7d59a33bee665e47d11643c9c0987b3a52346d4618fc34f3595eccb6b6cc5"
+    }
+  },
+  "receiptText": "{\"schema\":\"comboship-corpus-execution-v1\",\"kind\":\"device-start\",\"bootId\":\"e228a2d4-558f-4d8e-80e1-42ebd831b8db\",\"worker\":\"91\",\"hashes\":{\"bundle.sha256\":\"d9853b0641b39a6d39e603adddfe29e9e8f43cb6de50267817f0f4719cd2c7db\",\"plan.json\":\"196a338027efca52171047a0408321365dd3082a1266c02ba90134ae0f9c2dee\",\"bin/comborando\":\"7f9fd052fe27118350b73bb8737466924f626f149e4721c214f9eb4c9f8b3805\",\"bin/lib2ship.so\":\"d0a9d3943e54b6c66bbdbab1823759cfeab356f242fb84bb9e57bf6a950dce3c\",\"bin/libSDL2.so\":\"e74542b0e7d377449a0aa1d6ca11f9663d5be71e5ccc348d692547b9c4a1bd6b\",\"bin/libSDL2_net.so\":\"8834c0f5b4320e13453f96ef087e8b37acbaae2feb49b3a3b96e530b0de3b4c3\",\"bin/libc++_shared.so\":\"cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c\",\"bin/libcomboship.so\":\"c1cf55fbea72ecdf2b04734e88a912568337af51c1979e9b1fa8f8809598237a\",\"bin/libcomboui.so\":\"1346d08160a95ba3a739df391a696de7c661f174799002902ada8809a8e3964b\",\"bin/libsoh.so\":\"1a2b08940e16d31ac40852b527ad58fda131b6fe0e82945b57d7e43c08853e74\",\"bin/libultraship.so\":\"d0e7d59a33bee665e47d11643c9c0987b3a52346d4618fc34f3595eccb6b6cc5\"}}\n",
+  "resultText": "{\"id\":\"c03-full-songs-ageless-mm\",\"task\":\"full\",\"worker\":\"91\",\"generationExit\":0,\"playthroughExit\":0,\"reproExit\":0,\"reproIdentical\":true,\"generationSeconds\":496,\"playthroughSeconds\":5,\"reproSeconds\":567}\n",
+  "receiptSha256": "ff07b0b8c2b1b3a265ceee436d576e256bb0060701a7fc783939400ee466e591",
+  "binding": "ff07b0b8c2b1b3a265ceee436d576e256bb0060701a7fc783939400ee466e591  execution-receipt.json\nd20cdbd899c024e9cbf7eb25f56ea6558e8ddad53c9b2956a6e20647ca83358f  generation.log\ncc0ca37ec91a1d3c052596199ee442aa749dfbae250375a2ae516827a6eb98ee  playthrough.log\ne637eec21f5f9863bfd2ba168e17c4cc698bca46ee56456c111072526ea3e898  repro.entrances.txt\n769366e48443927fb89217305feda1e3273657dbe57a9c0b843d31cbbe875316  repro.json\nb64b5eb88b1963f4d394232fce1b0f72fb97179125d843f51db56e1c37f89982  repro.log\nd2141567e02e46b2e2c40e60ce5a0bf87ce95049f2a9a7ad7d6e038525dc0753  result.json\ne637eec21f5f9863bfd2ba168e17c4cc698bca46ee56456c111072526ea3e898  seed.entrances.txt\n769366e48443927fb89217305feda1e3273657dbe57a9c0b843d31cbbe875316  seed.json\n653a67de6de6dc6b6b1fbdb58be59c46e453fc78f0eb6c46135258308c5f2b30  written-files.log\n"
+}

@@ -1,0 +1,2047 @@
+{
+  "schema": "comboship-wallmasters-corpus-plan-0414-v1",
+  "capability": "wallmasters-full-v1",
+  "release": {
+    "versionName": "0.4.14",
+    "versionCode": 72,
+    "sourceCommit": "dbedf9894028474f6b9008add208ee1698222f0b",
+    "build": "SHIPPING",
+    "apkSha256": "992b1c945069a416e4ca7368953f81a9c1d7043bec9f999533a8d36a29be9a5e",
+    "comborandoSha256": "7f9fd052fe27118350b73bb8737466924f626f149e4721c214f9eb4c9f8b3805",
+    "libraries": {
+      "lib2ship.so": "d0a9d3943e54b6c66bbdbab1823759cfeab356f242fb84bb9e57bf6a950dce3c",
+      "libSDL2.so": "e74542b0e7d377449a0aa1d6ca11f9663d5be71e5ccc348d692547b9c4a1bd6b",
+      "libSDL2_net.so": "8834c0f5b4320e13453f96ef087e8b37acbaae2feb49b3a3b96e530b0de3b4c3",
+      "libc++_shared.so": "cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c",
+      "libcomboship.so": "c1cf55fbea72ecdf2b04734e88a912568337af51c1979e9b1fa8f8809598237a",
+      "libcomboui.so": "1346d08160a95ba3a739df391a696de7c661f174799002902ada8809a8e3964b",
+      "libsoh.so": "1a2b08940e16d31ac40852b527ad58fda131b6fe0e82945b57d7e43c08853e74",
+      "libultraship.so": "d0e7d59a33bee665e47d11643c9c0987b3a52346d4618fc34f3595eccb6b6cc5"
+    }
+  },
+  "timeouts": {
+    "generation": 1800,
+    "playthrough": 1800,
+    "reproduction": 1800
+  },
+  "corpus0412": {
+    "sourceCommit": "3151532966517b945c902a0b379ad913b8fe7cfb",
+    "manifestSha256": "82b7668eaf8a89f28f729601446b604a4b90118192dc090f78d5e362abee07a2"
+  },
+  "rows": [
+    {
+      "id": "a01-full-oot-child",
+      "group": "a",
+      "kind": "full",
+      "label": "Wallmaster0414-a01-full-oot-child",
+      "masterSeed": 414070000,
+      "startingGame": "oot",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0
+      },
+      "config": "comboship-a01-full-oot-child.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a01-full-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070000",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a01-full-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070000",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "b05-full-mq-spirit-botw-oot-child",
+      "group": "b",
+      "kind": "full",
+      "label": "Wallmaster0414-b05-full-mq-spirit-botw-oot-child",
+      "masterSeed": 414070104,
+      "startingGame": "oot",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.MQDungeons": 3,
+        "gRandoSettings.MQDungeonsDekuTree": 0,
+        "gRandoSettings.MQDungeonsDodongosCavern": 0,
+        "gRandoSettings.MQDungeonsJabuJabu": 0,
+        "gRandoSettings.MQDungeonsForestTemple": 0,
+        "gRandoSettings.MQDungeonsFireTemple": 0,
+        "gRandoSettings.MQDungeonsWaterTemple": 0,
+        "gRandoSettings.MQDungeonsSpiritTemple": 1,
+        "gRandoSettings.MQDungeonsShadowTemple": 0,
+        "gRandoSettings.MQDungeonsBottomOfTheWell": 1,
+        "gRandoSettings.MQDungeonsIceCavern": 0,
+        "gRandoSettings.MQDungeonsGTG": 0,
+        "gRandoSettings.MQDungeonsGanonsCastle": 0
+      },
+      "config": "comboship-b05-full-mq-spirit-botw-oot-child.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [
+          "Spirit",
+          "BotW"
+        ],
+        "ownGameRefusal": "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.",
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b05-full-mq-spirit-botw-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070104",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b05-full-mq-spirit-botw-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070104",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "c02-full-songs-ageless-oot-adult",
+      "group": "c",
+      "kind": "full",
+      "label": "Wallmaster0414-c02-full-songs-ageless-oot-adult",
+      "masterSeed": 414070201,
+      "startingGame": "oot",
+      "ootStartingAge": 1,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 1,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 1,
+        "gRandoSettings.StartingAge": 1,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gCombo.Logic.gCombo.Enhancements.AgelessSoaring": 1,
+        "gCombo.Enhancements.AgelessSoaring": 1
+      },
+      "config": "comboship-c02-full-songs-ageless-oot-adult.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c02-full-songs-ageless-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070201",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c02-full-songs-ageless-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070201",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "d01-full-crossage-oot-adult",
+      "group": "d",
+      "kind": "full",
+      "label": "Wallmaster0414-d01-full-crossage-oot-adult",
+      "masterSeed": 414070300,
+      "startingGame": "oot",
+      "ootStartingAge": 1,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 1,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRando.Options.RO_MM_CROSS_AGE": 1
+      },
+      "config": "comboship-d01-full-crossage-oot-adult.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": true
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-d01-full-crossage-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070300",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-d01-full-crossage-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070300",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "a03-full-mm",
+      "group": "a",
+      "kind": "full",
+      "label": "Wallmaster0414-a03-full-mm",
+      "masterSeed": 414070002,
+      "startingGame": "mm",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0
+      },
+      "config": "comboship-a03-full-mm.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a03-full-mm",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070002",
+        "--starting-game",
+        "mm",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a03-full-mm",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070002",
+        "--starting-game",
+        "mm",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "b07-full-mq-capacity-roll-oot-adult",
+      "group": "b",
+      "kind": "full",
+      "label": "Wallmaster0414-b07-full-mq-capacity-roll-oot-adult",
+      "masterSeed": 414070192,
+      "startingGame": "oot",
+      "ootStartingAge": 1,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 1,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.MQDungeons": 3,
+        "gRandoSettings.MQDungeonsDekuTree": 2,
+        "gRandoSettings.MQDungeonsDodongosCavern": 2,
+        "gRandoSettings.MQDungeonsJabuJabu": 2,
+        "gRandoSettings.MQDungeonsForestTemple": 2,
+        "gRandoSettings.MQDungeonsFireTemple": 2,
+        "gRandoSettings.MQDungeonsWaterTemple": 2,
+        "gRandoSettings.MQDungeonsSpiritTemple": 2,
+        "gRandoSettings.MQDungeonsShadowTemple": 2,
+        "gRandoSettings.MQDungeonsBottomOfTheWell": 2,
+        "gRandoSettings.MQDungeonsIceCavern": 2,
+        "gRandoSettings.MQDungeonsGTG": 2,
+        "gRandoSettings.MQDungeonsGanonsCastle": 2
+      },
+      "masterChoice": {
+        "from": 414070190,
+        "rule": "capacity_shortfall",
+        "why": "the first master seed whose first attempt rolls the Master Quest context Own Game refuses (Spirit Temple and Bottom of the Well Master Quest, Shadow Temple and Ganon's Castle vanilla)"
+      },
+      "config": "comboship-b07-full-mq-capacity-roll-oot-adult.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [
+          "DT",
+          "Fire",
+          "Water",
+          "Spirit",
+          "BotW",
+          "GTG"
+        ],
+        "ownGameRefusal": "This seed's Master Quest dungeons have more Wallmasters than Wallmaster Shuffle can place. Try another seed.",
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b07-full-mq-capacity-roll-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070192",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b07-full-mq-capacity-roll-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070192",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "e01-full-nologic-songs-oot-adult",
+      "group": "e",
+      "kind": "full",
+      "label": "Wallmaster0414-e01-full-nologic-songs-oot-adult",
+      "masterSeed": 414070400,
+      "startingGame": "oot",
+      "ootStartingAge": 1,
+      "accessibility": "noLogic",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 1,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 1,
+        "gRandoSettings.StartingAge": 1,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 1,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 1,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0
+      },
+      "config": "comboship-e01-full-nologic-songs-oot-adult.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-e01-full-nologic-songs-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070400",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-e01-full-nologic-songs-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070400",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "a05-full-oot-randomage",
+      "group": "a",
+      "kind": "full",
+      "label": "Wallmaster0414-a05-full-oot-randomage",
+      "masterSeed": 414070004,
+      "startingGame": "oot",
+      "ootStartingAge": 2,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 2,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0
+      },
+      "config": "comboship-a05-full-oot-randomage.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a05-full-oot-randomage",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070004",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a05-full-oot-randomage",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070004",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "b01-full-mq12-oot-child",
+      "group": "b",
+      "kind": "full",
+      "label": "Wallmaster0414-b01-full-mq12-oot-child",
+      "masterSeed": 414070100,
+      "startingGame": "oot",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.MQDungeons": 1,
+        "gRandoSettings.MQDungeonCount": 12
+      },
+      "config": "comboship-b01-full-mq12-oot-child.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b01-full-mq12-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070100",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b01-full-mq12-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070100",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "c05-full-serenade-songs-mq12-oot-child",
+      "group": "c",
+      "kind": "full",
+      "label": "Wallmaster0414-c05-full-serenade-songs-mq12-oot-child",
+      "masterSeed": 414070204,
+      "startingGame": "oot",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 1,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 1,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.StartingSerenadeOfWater": 1,
+        "gRandoSettings.MQDungeons": 1,
+        "gRandoSettings.MQDungeonCount": 12
+      },
+      "config": "comboship-c05-full-serenade-songs-mq12-oot-child.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c05-full-serenade-songs-mq12-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070204",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c05-full-serenade-songs-mq12-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070204",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "a02-full-oot-adult",
+      "group": "a",
+      "kind": "full",
+      "label": "Wallmaster0414-a02-full-oot-adult",
+      "masterSeed": 414070001,
+      "startingGame": "oot",
+      "ootStartingAge": 1,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 1,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0
+      },
+      "config": "comboship-a02-full-oot-adult.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a02-full-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070001",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a02-full-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070001",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "b02-full-mq12-mm",
+      "group": "b",
+      "kind": "full",
+      "label": "Wallmaster0414-b02-full-mq12-mm",
+      "masterSeed": 414070101,
+      "startingGame": "mm",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.MQDungeons": 1,
+        "gRandoSettings.MQDungeonCount": 12
+      },
+      "config": "comboship-b02-full-mq12-mm.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [
+          "DT",
+          "DC",
+          "JJ",
+          "Forest",
+          "Fire",
+          "Water",
+          "Spirit",
+          "Shadow",
+          "BotW",
+          "IC",
+          "GTG",
+          "Ganon"
+        ],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b02-full-mq12-mm",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070101",
+        "--starting-game",
+        "mm",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b02-full-mq12-mm",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070101",
+        "--starting-game",
+        "mm",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "c01-full-songs-oot-child",
+      "group": "c",
+      "kind": "full",
+      "label": "Wallmaster0414-c01-full-songs-oot-child",
+      "masterSeed": 414070200,
+      "startingGame": "oot",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 1,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 1,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0
+      },
+      "config": "comboship-c01-full-songs-oot-child.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c01-full-songs-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070200",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c01-full-songs-oot-child",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070200",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "d02-full-crossage-songs-ageless-oot-randomage",
+      "group": "d",
+      "kind": "full",
+      "label": "Wallmaster0414-d02-full-crossage-songs-ageless-oot-randomage",
+      "masterSeed": 414070301,
+      "startingGame": "oot",
+      "ootStartingAge": 2,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 1,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 1,
+        "gRandoSettings.StartingAge": 2,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRando.Options.RO_MM_CROSS_AGE": 1,
+        "gCombo.Logic.gCombo.Enhancements.AgelessSoaring": 1,
+        "gCombo.Enhancements.AgelessSoaring": 1
+      },
+      "config": "comboship-d02-full-crossage-songs-ageless-oot-randomage.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": true
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-d02-full-crossage-songs-ageless-oot-randomage",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070301",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-d02-full-crossage-songs-ageless-oot-randomage",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070301",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "a04-full-random",
+      "group": "a",
+      "kind": "full",
+      "label": "Wallmaster0414-a04-full-random",
+      "masterSeed": 414070003,
+      "startingGame": "random",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0
+      },
+      "config": "comboship-a04-full-random.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a04-full-random",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070003",
+        "--starting-game",
+        "random",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a04-full-random",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070003",
+        "--starting-game",
+        "random",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "b03-full-mq-randomnumber-oot-adult",
+      "group": "b",
+      "kind": "full",
+      "label": "Wallmaster0414-b03-full-mq-randomnumber-oot-adult",
+      "masterSeed": 414070102,
+      "startingGame": "oot",
+      "ootStartingAge": 1,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 1,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.MQDungeons": 2
+      },
+      "masterChoice": {
+        "from": 414070102,
+        "rule": "any_mq",
+        "why": "the first master seed whose first attempt rolls at least one Master Quest dungeon"
+      },
+      "config": "comboship-b03-full-mq-randomnumber-oot-adult.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [
+          "DC",
+          "Forest",
+          "Fire",
+          "Shadow",
+          "BotW",
+          "GTG",
+          "Ganon"
+        ],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b03-full-mq-randomnumber-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070102",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b03-full-mq-randomnumber-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070102",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "c03-full-songs-ageless-mm",
+      "group": "c",
+      "kind": "full",
+      "label": "Wallmaster0414-c03-full-songs-ageless-mm",
+      "masterSeed": 414070202,
+      "startingGame": "mm",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 1,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 1,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gCombo.Logic.gCombo.Enhancements.AgelessSoaring": 1,
+        "gCombo.Enhancements.AgelessSoaring": 1
+      },
+      "config": "comboship-c03-full-songs-ageless-mm.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c03-full-songs-ageless-mm",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070202",
+        "--starting-game",
+        "mm",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c03-full-songs-ageless-mm",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070202",
+        "--starting-game",
+        "mm",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "e02-full-nologic-mq-spirit-botw-random",
+      "group": "e",
+      "kind": "full",
+      "label": "Wallmaster0414-e02-full-nologic-mq-spirit-botw-random",
+      "masterSeed": 414070401,
+      "startingGame": "random",
+      "ootStartingAge": 0,
+      "accessibility": "noLogic",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 1,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 1,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.MQDungeons": 3,
+        "gRandoSettings.MQDungeonsDekuTree": 0,
+        "gRandoSettings.MQDungeonsDodongosCavern": 0,
+        "gRandoSettings.MQDungeonsJabuJabu": 0,
+        "gRandoSettings.MQDungeonsForestTemple": 0,
+        "gRandoSettings.MQDungeonsFireTemple": 0,
+        "gRandoSettings.MQDungeonsWaterTemple": 0,
+        "gRandoSettings.MQDungeonsSpiritTemple": 1,
+        "gRandoSettings.MQDungeonsShadowTemple": 0,
+        "gRandoSettings.MQDungeonsBottomOfTheWell": 1,
+        "gRandoSettings.MQDungeonsIceCavern": 0,
+        "gRandoSettings.MQDungeonsGTG": 0,
+        "gRandoSettings.MQDungeonsGanonsCastle": 0
+      },
+      "config": "comboship-e02-full-nologic-mq-spirit-botw-random.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [
+          "Spirit",
+          "BotW"
+        ],
+        "ownGameRefusal": "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.",
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-e02-full-nologic-mq-spirit-botw-random",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070401",
+        "--starting-game",
+        "random",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-e02-full-nologic-mq-spirit-botw-random",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070401",
+        "--starting-game",
+        "random",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "a06-full-oot-child-souls",
+      "group": "a",
+      "kind": "full",
+      "label": "Wallmaster0414-a06-full-oot-child-souls",
+      "masterSeed": 414070005,
+      "startingGame": "oot",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 1,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 1,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 1
+      },
+      "config": "comboship-a06-full-oot-child-souls.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a06-full-oot-child-souls",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070005",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a06-full-oot-child-souls",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070005",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "b04-full-mq-count6-random",
+      "group": "b",
+      "kind": "full",
+      "label": "Wallmaster0414-b04-full-mq-count6-random",
+      "masterSeed": 414070103,
+      "startingGame": "random",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.MQDungeons": 1,
+        "gRandoSettings.MQDungeonCount": 6
+      },
+      "config": "comboship-b04-full-mq-count6-random.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [
+          "DT",
+          "Water",
+          "Spirit",
+          "BotW",
+          "GTG",
+          "Ganon"
+        ],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b04-full-mq-count6-random",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070103",
+        "--starting-game",
+        "random",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b04-full-mq-count6-random",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070103",
+        "--starting-game",
+        "random",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "c04-full-minuet-oot-adult",
+      "group": "c",
+      "kind": "full",
+      "label": "Wallmaster0414-c04-full-minuet-oot-adult",
+      "masterSeed": 414070203,
+      "startingGame": "oot",
+      "ootStartingAge": 1,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 1,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.StartingMinuetOfForest": 1
+      },
+      "config": "comboship-c04-full-minuet-oot-adult.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c04-full-minuet-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070203",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c04-full-minuet-oot-adult",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070203",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "a07-full-mm-completion-souls",
+      "group": "a",
+      "kind": "full",
+      "label": "Wallmaster0414-a07-full-mm-completion-souls",
+      "masterSeed": 414070006,
+      "startingGame": "mm",
+      "ootStartingAge": 0,
+      "accessibility": "completion",
+      "souls": 1,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 1,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 1,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 1
+      },
+      "config": "comboship-a07-full-mm-completion-souls.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a07-full-mm-completion-souls",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070006",
+        "--starting-game",
+        "mm",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a07-full-mm-completion-souls",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070006",
+        "--starting-game",
+        "mm",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "b06-full-mq-spirit-botw-mm-souls",
+      "group": "b",
+      "kind": "full",
+      "label": "Wallmaster0414-b06-full-mq-spirit-botw-mm-souls",
+      "masterSeed": 414070105,
+      "startingGame": "mm",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 1,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 1,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 1,
+        "gRandoSettings.MQDungeons": 3,
+        "gRandoSettings.MQDungeonsDekuTree": 2,
+        "gRandoSettings.MQDungeonsDodongosCavern": 2,
+        "gRandoSettings.MQDungeonsJabuJabu": 2,
+        "gRandoSettings.MQDungeonsForestTemple": 1,
+        "gRandoSettings.MQDungeonsFireTemple": 2,
+        "gRandoSettings.MQDungeonsWaterTemple": 1,
+        "gRandoSettings.MQDungeonsSpiritTemple": 1,
+        "gRandoSettings.MQDungeonsShadowTemple": 0,
+        "gRandoSettings.MQDungeonsBottomOfTheWell": 1,
+        "gRandoSettings.MQDungeonsIceCavern": 2,
+        "gRandoSettings.MQDungeonsGTG": 2,
+        "gRandoSettings.MQDungeonsGanonsCastle": 0
+      },
+      "config": "comboship-b06-full-mq-spirit-botw-mm-souls.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [
+          "DT",
+          "DC",
+          "Forest",
+          "Water",
+          "Spirit",
+          "BotW",
+          "IC"
+        ],
+        "ownGameRefusal": "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle.",
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b06-full-mq-spirit-botw-mm-souls",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070105",
+        "--starting-game",
+        "mm",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-b06-full-mq-spirit-botw-mm-souls",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070105",
+        "--starting-game",
+        "mm",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "c06-full-prelude-songs-ageless-random",
+      "group": "c",
+      "kind": "full",
+      "label": "Wallmaster0414-c06-full-prelude-songs-ageless-random",
+      "masterSeed": 414070205,
+      "startingGame": "random",
+      "ootStartingAge": 0,
+      "accessibility": "everyCheck",
+      "souls": 0,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 1,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 1,
+        "gRandoSettings.StartingAge": 0,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 0,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 0,
+        "gRandoSettings.StartingPreludeOfLight": 1,
+        "gCombo.Logic.gCombo.Enhancements.AgelessSoaring": 1,
+        "gCombo.Enhancements.AgelessSoaring": 1
+      },
+      "config": "comboship-c06-full-prelude-songs-ageless-random.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c06-full-prelude-songs-ageless-random",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070205",
+        "--starting-game",
+        "random",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-c06-full-prelude-songs-ageless-random",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070205",
+        "--starting-game",
+        "random",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    },
+    {
+      "id": "a08-full-oot-adult-souls-trials",
+      "group": "a",
+      "kind": "full",
+      "label": "Wallmaster0414-a08-full-oot-adult-souls-trials",
+      "masterSeed": 414070007,
+      "startingGame": "oot",
+      "ootStartingAge": 1,
+      "accessibility": "everyCheck",
+      "souls": 1,
+      "cvars": {
+        "gCombo.Rando.SongTravel": 0,
+        "gCombo.Rando.ForeignSongs": 0,
+        "gCombo.Rando.Reachability": 0,
+        "gCombo.Enhancements.SongTravel": 0,
+        "gCombo.Enhancements.ForeignSongs": 0,
+        "gRandoSettings.StartingAge": 1,
+        "gRandoSettings.ClosedForest": 2,
+        "gRandoSettings.DoorOfTime": 2,
+        "gRandoSettings.LogicRules": 0,
+        "gRandoSettings.SoulsEnemyOot": 1,
+        "gRando.Options.RO_LOGIC": 0,
+        "gRando.Options.RO_SHUFFLE_ENEMY_SOULS": 1,
+        "gRandoSettings.GanonTrial": 2
+      },
+      "config": "comboship-a08-full-oot-adult-souls-trials.json",
+      "expect": {
+        "outcome": "seed",
+        "capability": "wallmasters-full-v1",
+        "firstAttemptMqDungeons": [],
+        "ownGameRefusal": null,
+        "crossAge": false
+      },
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a08-full-oot-adult-souls-trials",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070007",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=full"
+      ],
+      "playthrough": [
+        "comborando",
+        "--playthrough",
+        "saves/combo/comborando.spoiler.json"
+      ],
+      "repro": [
+        "comborando",
+        "--seed",
+        "Wallmaster0414-a08-full-oot-adult-souls-trials",
+        "--count",
+        "1",
+        "--master-seed",
+        "414070007",
+        "--starting-game",
+        "oot",
+        "--settings",
+        "<the generated saves/combo/comborando.spoiler.json>"
+      ]
+    }
+  ],
+  "regression": [
+    {
+      "id": "v-oot-child-everyCheck-souls0-00",
+      "corpus": "ComboAndroid/tests/fixtures/wallmasters-vanilla-v1",
+      "corpusSeed": "oot-child-everyCheck-souls0-00",
+      "config": "0412-comboship-everyCheck-souls0-age0.json",
+      "label": "Wallmaster0412-oot-child-everyCheck-souls0-00",
+      "masterSeed": 412070000,
+      "startingGame": "oot",
+      "accessibility": "everyCheck",
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0412-oot-child-everyCheck-souls0-00",
+        "--count",
+        "1",
+        "--master-seed",
+        "412070000",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=ownGame",
+        "--er-capability",
+        "wallmasters-own-game-vanilla-v1"
+      ],
+      "expect": {
+        "sameAs": {
+          "corpus": "ComboAndroid/tests/fixtures/wallmasters-0413",
+          "seed": "e-oot-child-everyCheck-souls0-00",
+          "seedSha256": "d8d3e392ea0d8eba5d8f91c7b172410d1c962760c25a6c596c981bc844157fdc",
+          "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+        },
+        "corpusFixture": {
+          "seedSha256": "4ce1d32d5078c2cba14523905c6e1906023def796f99fba8d07fb61d75c8a1d3",
+          "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3",
+          "differsBy": [
+            {
+              "path": "oot.sceneRestrictions",
+              "value": "ootmm-32.3"
+            },
+            {
+              "path": "oot.mqDataSource",
+              "value": "ootmm-32.3"
+            },
+            {
+              "path": "oot.masterQuestDungeons",
+              "value": []
+            },
+            {
+              "path": "oot.masterQuestDungeonNames",
+              "value": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "v-mm-everyCheck-souls0-00",
+      "corpus": "ComboAndroid/tests/fixtures/wallmasters-vanilla-v1",
+      "corpusSeed": "mm-everyCheck-souls0-00",
+      "config": "0412-comboship-everyCheck-souls0-age0.json",
+      "label": "Wallmaster0412-mm-everyCheck-souls0-00",
+      "masterSeed": 412070000,
+      "startingGame": "mm",
+      "accessibility": "everyCheck",
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0412-mm-everyCheck-souls0-00",
+        "--count",
+        "1",
+        "--master-seed",
+        "412070000",
+        "--starting-game",
+        "mm",
+        "--er",
+        "erWallmasters=ownGame",
+        "--er-capability",
+        "wallmasters-own-game-vanilla-v1"
+      ],
+      "expect": {
+        "sameAs": {
+          "corpus": "ComboAndroid/tests/fixtures/wallmasters-0413",
+          "seed": "e-mm-everyCheck-souls0-00",
+          "seedSha256": "e32c6e94debb259f5b861db150925fd9e6429b7110a8f3e97244c113209674f6",
+          "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3"
+        },
+        "corpusFixture": {
+          "seedSha256": "9d3b0eaac9940316eddc21a71170ba5913ae41de48798f79b6230ccb13e47ded",
+          "entrancesSha256": "3dfad2bf6183d0dbc628a6552d2af1430c68d67b21af509387968d21a7c87ee3",
+          "differsBy": [
+            {
+              "path": "oot.sceneRestrictions",
+              "value": "ootmm-32.3"
+            },
+            {
+              "path": "oot.mqDataSource",
+              "value": "ootmm-32.3"
+            },
+            {
+              "path": "oot.masterQuestDungeons",
+              "value": []
+            },
+            {
+              "path": "oot.masterQuestDungeonNames",
+              "value": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "v-random-fallback-010",
+      "corpus": "ComboAndroid/tests/fixtures/wallmasters-vanilla-v1",
+      "corpusSeed": "random-fallback-010",
+      "config": "0412-comboship-everyCheck-souls0-age0.json",
+      "label": "Wallmaster0412-random-fallback-010",
+      "masterSeed": 412070210,
+      "startingGame": "random",
+      "accessibility": "everyCheck",
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0412-random-fallback-010",
+        "--count",
+        "1",
+        "--master-seed",
+        "412070210",
+        "--starting-game",
+        "random",
+        "--er",
+        "erWallmasters=ownGame",
+        "--er-capability",
+        "wallmasters-own-game-vanilla-v1"
+      ],
+      "expect": {
+        "sameAs": {
+          "corpus": "ComboAndroid/tests/fixtures/wallmasters-0413",
+          "seed": "e-random-fallback-010",
+          "seedSha256": "bfd02c21f4bf4debd402b8ccd62f7c2e1abdd6289c839a30bec09b2ee1c6dac5",
+          "entrancesSha256": "44e33a137b166d5e26c2af6db460957fa86bd399f08f5c24420086edeb63674d"
+        },
+        "corpusFixture": {
+          "seedSha256": "c98eb3ab5a2dc5391e64c281713024f938ab102e1a5edbc593019758b76f53da",
+          "entrancesSha256": "44e33a137b166d5e26c2af6db460957fa86bd399f08f5c24420086edeb63674d",
+          "differsBy": [
+            {
+              "path": "oot.sceneRestrictions",
+              "value": "ootmm-32.3"
+            },
+            {
+              "path": "oot.mqDataSource",
+              "value": "ootmm-32.3"
+            },
+            {
+              "path": "oot.masterQuestDungeons",
+              "value": []
+            },
+            {
+              "path": "oot.masterQuestDungeonNames",
+              "value": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "v-oot-adult-noLogic-souls0",
+      "corpus": "ComboAndroid/tests/fixtures/wallmasters-vanilla-v1",
+      "corpusSeed": "oot-adult-noLogic-souls0",
+      "config": "0412-comboship-noLogic-souls0-age1.json",
+      "label": "Wallmaster0412-oot-adult-noLogic-souls0",
+      "masterSeed": 412070108,
+      "startingGame": "oot",
+      "accessibility": "noLogic",
+      "generate": [
+        "comborando",
+        "--seed",
+        "Wallmaster0412-oot-adult-noLogic-souls0",
+        "--count",
+        "1",
+        "--master-seed",
+        "412070108",
+        "--starting-game",
+        "oot",
+        "--er",
+        "erWallmasters=ownGame",
+        "--er-capability",
+        "wallmasters-own-game-vanilla-v1"
+      ],
+      "expect": {
+        "sameAs": {
+          "corpus": "ComboAndroid/tests/fixtures/wallmasters-0413",
+          "seed": "e-oot-adult-noLogic-souls0",
+          "seedSha256": "6619420ad5aba0eeb9f0e38ead0302154950f35a0983b485439f12655e93995b",
+          "entrancesSha256": "49f0854f77820a2a90ee4d302a2cad49df56219cbe13affc6c5abbecd73c9ff4"
+        },
+        "corpusFixture": {
+          "seedSha256": "2e5a30c93e8e902b13f352344100ffe799940ed0bfc6ff10a3cacbacd464a730",
+          "entrancesSha256": "49f0854f77820a2a90ee4d302a2cad49df56219cbe13affc6c5abbecd73c9ff4",
+          "differsBy": [
+            {
+              "path": "oot.sceneRestrictions",
+              "value": "ootmm-32.3"
+            },
+            {
+              "path": "oot.mqDataSource",
+              "value": "ootmm-32.3"
+            },
+            {
+              "path": "oot.masterQuestDungeons",
+              "value": []
+            },
+            {
+              "path": "oot.masterQuestDungeonNames",
+              "value": []
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "queue": [
+    "a01-full-oot-child",
+    "v-oot-child-everyCheck-souls0-00",
+    "b05-full-mq-spirit-botw-oot-child",
+    "v-mm-everyCheck-souls0-00",
+    "c02-full-songs-ageless-oot-adult",
+    "v-random-fallback-010",
+    "d01-full-crossage-oot-adult",
+    "v-oot-adult-noLogic-souls0",
+    "a03-full-mm",
+    "b07-full-mq-capacity-roll-oot-adult",
+    "e01-full-nologic-songs-oot-adult",
+    "a05-full-oot-randomage",
+    "b01-full-mq12-oot-child",
+    "c05-full-serenade-songs-mq12-oot-child",
+    "a02-full-oot-adult",
+    "b02-full-mq12-mm",
+    "c01-full-songs-oot-child",
+    "d02-full-crossage-songs-ageless-oot-randomage",
+    "a04-full-random",
+    "b03-full-mq-randomnumber-oot-adult",
+    "c03-full-songs-ageless-mm",
+    "e02-full-nologic-mq-spirit-botw-random",
+    "a06-full-oot-child-souls",
+    "b04-full-mq-count6-random",
+    "c04-full-minuet-oot-adult",
+    "a07-full-mm-completion-souls",
+    "b06-full-mq-spirit-botw-mm-souls",
+    "c06-full-prelude-songs-ageless-random",
+    "a08-full-oot-adult-souls-trials"
+  ],
+  "executionBinding": "comboship-corpus-execution-v1"
+}

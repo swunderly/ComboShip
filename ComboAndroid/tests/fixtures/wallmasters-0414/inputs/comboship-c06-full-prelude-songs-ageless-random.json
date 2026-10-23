@@ -1,0 +1,37 @@
+{
+  "CVars": {
+    "gCombo": {
+      "Enhancements": {
+        "AgelessSoaring": 1,
+        "ForeignSongs": 1,
+        "SongTravel": 0
+      },
+      "Logic": {
+        "gCombo": {
+          "Enhancements": {
+            "AgelessSoaring": 1
+          }
+        }
+      },
+      "Rando": {
+        "ForeignSongs": 1,
+        "Reachability": 0,
+        "SongTravel": 0
+      }
+    },
+    "gRando": {
+      "Options": {
+        "RO_LOGIC": 0,
+        "RO_SHUFFLE_ENEMY_SOULS": 0
+      }
+    },
+    "gRandoSettings": {
+      "ClosedForest": 2,
+      "DoorOfTime": 2,
+      "LogicRules": 0,
+      "SoulsEnemyOot": 0,
+      "StartingAge": 0,
+      "StartingPreludeOfLight": 1
+    }
+  }
+}

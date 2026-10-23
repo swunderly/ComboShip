@@ -1,0 +1,26 @@
+{
+  "row": "a02-full-oot-adult",
+  "receipt": {
+    "schema": "comboship-corpus-execution-v1",
+    "kind": "device-start",
+    "bootId": "e228a2d4-558f-4d8e-80e1-42ebd831b8db",
+    "worker": "71",
+    "hashes": {
+      "bundle.sha256": "d9853b0641b39a6d39e603adddfe29e9e8f43cb6de50267817f0f4719cd2c7db",
+      "plan.json": "196a338027efca52171047a0408321365dd3082a1266c02ba90134ae0f9c2dee",
+      "bin/comborando": "7f9fd052fe27118350b73bb8737466924f626f149e4721c214f9eb4c9f8b3805",
+      "bin/lib2ship.so": "d0a9d3943e54b6c66bbdbab1823759cfeab356f242fb84bb9e57bf6a950dce3c",
+      "bin/libSDL2.so": "e74542b0e7d377449a0aa1d6ca11f9663d5be71e5ccc348d692547b9c4a1bd6b",
+      "bin/libSDL2_net.so": "8834c0f5b4320e13453f96ef087e8b37acbaae2feb49b3a3b96e530b0de3b4c3",
+      "bin/libc++_shared.so": "cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c",
+      "bin/libcomboship.so": "c1cf55fbea72ecdf2b04734e88a912568337af51c1979e9b1fa8f8809598237a",
+      "bin/libcomboui.so": "1346d08160a95ba3a739df391a696de7c661f174799002902ada8809a8e3964b",
+      "bin/libsoh.so": "1a2b08940e16d31ac40852b527ad58fda131b6fe0e82945b57d7e43c08853e74",
+      "bin/libultraship.so": "d0e7d59a33bee665e47d11643c9c0987b3a52346d4618fc34f3595eccb6b6cc5"
+    }
+  },
+  "receiptText": "{\"schema\":\"comboship-corpus-execution-v1\",\"kind\":\"device-start\",\"bootId\":\"e228a2d4-558f-4d8e-80e1-42ebd831b8db\",\"worker\":\"71\",\"hashes\":{\"bundle.sha256\":\"d9853b0641b39a6d39e603adddfe29e9e8f43cb6de50267817f0f4719cd2c7db\",\"plan.json\":\"196a338027efca52171047a0408321365dd3082a1266c02ba90134ae0f9c2dee\",\"bin/comborando\":\"7f9fd052fe27118350b73bb8737466924f626f149e4721c214f9eb4c9f8b3805\",\"bin/lib2ship.so\":\"d0a9d3943e54b6c66bbdbab1823759cfeab356f242fb84bb9e57bf6a950dce3c\",\"bin/libSDL2.so\":\"e74542b0e7d377449a0aa1d6ca11f9663d5be71e5ccc348d692547b9c4a1bd6b\",\"bin/libSDL2_net.so\":\"8834c0f5b4320e13453f96ef087e8b37acbaae2feb49b3a3b96e530b0de3b4c3\",\"bin/libc++_shared.so\":\"cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c\",\"bin/libcomboship.so\":\"c1cf55fbea72ecdf2b04734e88a912568337af51c1979e9b1fa8f8809598237a\",\"bin/libcomboui.so\":\"1346d08160a95ba3a739df391a696de7c661f174799002902ada8809a8e3964b\",\"bin/libsoh.so\":\"1a2b08940e16d31ac40852b527ad58fda131b6fe0e82945b57d7e43c08853e74\",\"bin/libultraship.so\":\"d0e7d59a33bee665e47d11643c9c0987b3a52346d4618fc34f3595eccb6b6cc5\"}}\n",
+  "resultText": "{\"id\":\"a02-full-oot-adult\",\"task\":\"full\",\"worker\":\"71\",\"generationExit\":0,\"playthroughExit\":0,\"reproExit\":0,\"reproIdentical\":true,\"generationSeconds\":584,\"playthroughSeconds\":6,\"reproSeconds\":648}\n",
+  "receiptSha256": "e313a1d303733fdbe75bb1153db8b45345d74b2a0cef05ff3336e847f9cca5e4",
+  "binding": "e313a1d303733fdbe75bb1153db8b45345d74b2a0cef05ff3336e847f9cca5e4  execution-receipt.json\n095b46ad3bd17f5b7fd3d4cc7b0cf45250f46be16c87bfdb83e59fbb80aa2cda  generation.log\ndf3dfe7ab2ed21f15d913a258dd028ddc46bc7dd13fbee7b32ef42edf92b4d95  playthrough.log\n08d3cea73ee00a07fb6badd1391682060a7d004cfcaf9fa4819dcafbb7810224  repro.entrances.txt\nbc2900e190ff7a2ccc1a29fd0ce0e32c63f7729a1b085c2e32da52ed5ac203df  repro.json\ndfd2f7fa2b74eb0dab682d9d6f063a9c733622a66069ed9ad55ec55766d9d53a  repro.log\nbaef07a2ede400c54705bb42a5a5f9d4768f738bb61c02d2f78739e9ee5f6d98  result.json\n08d3cea73ee00a07fb6badd1391682060a7d004cfcaf9fa4819dcafbb7810224  seed.entrances.txt\nbc2900e190ff7a2ccc1a29fd0ce0e32c63f7729a1b085c2e32da52ed5ac203df  seed.json\n653a67de6de6dc6b6b1fbdb58be59c46e453fc78f0eb6c46135258308c5f2b30  written-files.log\n"
+}

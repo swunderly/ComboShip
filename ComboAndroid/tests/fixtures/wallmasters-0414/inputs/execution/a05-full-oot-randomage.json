@@ -1,0 +1,26 @@
+{
+  "row": "a05-full-oot-randomage",
+  "receipt": {
+    "schema": "comboship-corpus-execution-v1",
+    "kind": "device-start",
+    "bootId": "e228a2d4-558f-4d8e-80e1-42ebd831b8db",
+    "worker": "61",
+    "hashes": {
+      "bundle.sha256": "d9853b0641b39a6d39e603adddfe29e9e8f43cb6de50267817f0f4719cd2c7db",
+      "plan.json": "196a338027efca52171047a0408321365dd3082a1266c02ba90134ae0f9c2dee",
+      "bin/comborando": "7f9fd052fe27118350b73bb8737466924f626f149e4721c214f9eb4c9f8b3805",
+      "bin/lib2ship.so": "d0a9d3943e54b6c66bbdbab1823759cfeab356f242fb84bb9e57bf6a950dce3c",
+      "bin/libSDL2.so": "e74542b0e7d377449a0aa1d6ca11f9663d5be71e5ccc348d692547b9c4a1bd6b",
+      "bin/libSDL2_net.so": "8834c0f5b4320e13453f96ef087e8b37acbaae2feb49b3a3b96e530b0de3b4c3",
+      "bin/libc++_shared.so": "cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c",
+      "bin/libcomboship.so": "c1cf55fbea72ecdf2b04734e88a912568337af51c1979e9b1fa8f8809598237a",
+      "bin/libcomboui.so": "1346d08160a95ba3a739df391a696de7c661f174799002902ada8809a8e3964b",
+      "bin/libsoh.so": "1a2b08940e16d31ac40852b527ad58fda131b6fe0e82945b57d7e43c08853e74",
+      "bin/libultraship.so": "d0e7d59a33bee665e47d11643c9c0987b3a52346d4618fc34f3595eccb6b6cc5"
+    }
+  },
+  "receiptText": "{\"schema\":\"comboship-corpus-execution-v1\",\"kind\":\"device-start\",\"bootId\":\"e228a2d4-558f-4d8e-80e1-42ebd831b8db\",\"worker\":\"61\",\"hashes\":{\"bundle.sha256\":\"d9853b0641b39a6d39e603adddfe29e9e8f43cb6de50267817f0f4719cd2c7db\",\"plan.json\":\"196a338027efca52171047a0408321365dd3082a1266c02ba90134ae0f9c2dee\",\"bin/comborando\":\"7f9fd052fe27118350b73bb8737466924f626f149e4721c214f9eb4c9f8b3805\",\"bin/lib2ship.so\":\"d0a9d3943e54b6c66bbdbab1823759cfeab356f242fb84bb9e57bf6a950dce3c\",\"bin/libSDL2.so\":\"e74542b0e7d377449a0aa1d6ca11f9663d5be71e5ccc348d692547b9c4a1bd6b\",\"bin/libSDL2_net.so\":\"8834c0f5b4320e13453f96ef087e8b37acbaae2feb49b3a3b96e530b0de3b4c3\",\"bin/libc++_shared.so\":\"cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c\",\"bin/libcomboship.so\":\"c1cf55fbea72ecdf2b04734e88a912568337af51c1979e9b1fa8f8809598237a\",\"bin/libcomboui.so\":\"1346d08160a95ba3a739df391a696de7c661f174799002902ada8809a8e3964b\",\"bin/libsoh.so\":\"1a2b08940e16d31ac40852b527ad58fda131b6fe0e82945b57d7e43c08853e74\",\"bin/libultraship.so\":\"d0e7d59a33bee665e47d11643c9c0987b3a52346d4618fc34f3595eccb6b6cc5\"}}\n",
+  "resultText": "{\"id\":\"a05-full-oot-randomage\",\"task\":\"full\",\"worker\":\"61\",\"generationExit\":0,\"playthroughExit\":0,\"reproExit\":0,\"reproIdentical\":true,\"generationSeconds\":550,\"playthroughSeconds\":6,\"reproSeconds\":640}\n",
+  "receiptSha256": "639df4a04cf2e0b9a7a48fa6c9b1dae32e63d678e801a7217f485ed891f70b6d",
+  "binding": "639df4a04cf2e0b9a7a48fa6c9b1dae32e63d678e801a7217f485ed891f70b6d  execution-receipt.json\n8df689c0203db36316bd60b47989271b1b20154a15dec6e9cf558ab50b068ebf  generation.log\ndf0612c8f68136c6f89ab66594efc7e32e291e936517cba8fc691fa83a5e1b52  playthrough.log\n8f1406e390a85fa7754445d6e284ba9fcb77ca970c15990e159b191cfc53683e  repro.entrances.txt\n1ad14eb8f8ace0ef92b0d11d34ee27cd7589442cb43a1da1dc45a6f99a6a0211  repro.json\n2fb53679a4c5b4e85b30bb9698c35b78aa1125d4ef6fdb6355a3fbc51df9265d  repro.log\neb6826f64cef55d577fa7cfacb9023b52fc33885eeb3dc6aae2f1635aac6e43e  result.json\n8f1406e390a85fa7754445d6e284ba9fcb77ca970c15990e159b191cfc53683e  seed.entrances.txt\n1ad14eb8f8ace0ef92b0d11d34ee27cd7589442cb43a1da1dc45a6f99a6a0211  seed.json\n653a67de6de6dc6b6b1fbdb58be59c46e453fc78f0eb6c46135258308c5f2b30  written-files.log\n"
+}

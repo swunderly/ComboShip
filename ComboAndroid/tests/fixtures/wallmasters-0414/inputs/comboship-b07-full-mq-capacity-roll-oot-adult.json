@@ -1,0 +1,41 @@
+{
+  "CVars": {
+    "gCombo": {
+      "Enhancements": {
+        "ForeignSongs": 0,
+        "SongTravel": 0
+      },
+      "Rando": {
+        "ForeignSongs": 0,
+        "Reachability": 0,
+        "SongTravel": 0
+      }
+    },
+    "gRando": {
+      "Options": {
+        "RO_LOGIC": 0,
+        "RO_SHUFFLE_ENEMY_SOULS": 0
+      }
+    },
+    "gRandoSettings": {
+      "ClosedForest": 2,
+      "DoorOfTime": 2,
+      "LogicRules": 0,
+      "MQDungeons": 3,
+      "MQDungeonsBottomOfTheWell": 2,
+      "MQDungeonsDekuTree": 2,
+      "MQDungeonsDodongosCavern": 2,
+      "MQDungeonsFireTemple": 2,
+      "MQDungeonsForestTemple": 2,
+      "MQDungeonsGTG": 2,
+      "MQDungeonsGanonsCastle": 2,
+      "MQDungeonsIceCavern": 2,
+      "MQDungeonsJabuJabu": 2,
+      "MQDungeonsShadowTemple": 2,
+      "MQDungeonsSpiritTemple": 2,
+      "MQDungeonsWaterTemple": 2,
+      "SoulsEnemyOot": 0,
+      "StartingAge": 1
+    }
+  }
+}
