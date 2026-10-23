@@ -459,7 +459,8 @@ int Run(int argc, char** argv) {
                             CE::kMmBaseWallmasterDestinations.end());
         CE::Overrides routes;
         size_t next = 0;
-        for (const auto src : CE::LayoutV2::MakePools(layout.settings, layout.ootMq)[0].src)
+        const auto pools = CE::LayoutV2::MakePools(layout.settings, layout.ootMq); // outlives the loop
+        for (const auto src : pools[0].src)
             routes[src] = destinations[next++];
         layout.overrides = routes;
         const auto validated = CE::Validate(layout, CE::CapabilitySet::AtLeast(CE::Stage::Hidden));

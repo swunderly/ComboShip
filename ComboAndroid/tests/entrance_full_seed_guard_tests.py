@@ -121,7 +121,8 @@ int main(int argc, char** argv) {
             destinations.insert(destinations.begin() + 4, kMmBaseWallmasterDestinations.begin(),
                                 kMmBaseWallmasterDestinations.end());
             size_t next = 0;
-            for (const auto src : LayoutV2::MakePools(layout.settings, layout.ootMq)[0].src)
+            const auto pools = LayoutV2::MakePools(layout.settings, layout.ootMq); // outlives the loop
+            for (const auto src : pools[0].src)
                 routes[src] = destinations[next++];
         } else {
             size_t oot = 0, mm = 0;
