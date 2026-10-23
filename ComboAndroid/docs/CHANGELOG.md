@@ -12,9 +12,7 @@ Install each update over the existing app, so your ROMs, saves and settings are 
 
 ---
 
-## Unreleased
-
-Planned as 0.4.14. Nothing in this section is in a release yet.
+## 0.4.14 - 2026-10-23
 
 - **Wallmaster Shuffle's Full choice, as in OoTMM.** Randomizer > Logic & access > Entrances > Wallmaster Shuffle now offers None, Own Game and Full, by OoTMM's names; as in OoTMM, Full has no description of its own beyond the row's. With Full, a Wallmaster that grabs Link takes him to the start of a dungeon in either game: one of the 11 OoT dungeons Own Game uses, one of MM's four temples (Stone Tower Temple either way up), or the Swamp or Ocean Spider House. The routes are chosen when the seed is made, and the seed's `.entrances.txt` and spoiler log list them, including the ones to the other game.
   - A trip to the other game works like the Happy Mask Shop door: the game saves first, and Link keeps his age as he does through that door (with Cross-Games Age on, adult Link stays adult in MM). As in OoTMM, that save keeps what Link did in the room he is taken from, such as a chest opened, a door unlocked or a key picked up, and in MM the progress of the current three-day cycle. Arriving in MM from OoT, logic counts on day 1 of the cycle, as OoTMM's does.
@@ -34,7 +32,18 @@ Planned as 0.4.14. Nothing in this section is in a release yet.
 - **Fix: looking at the Save Editor no longer changes the save.** MM's General > Progress marked every cleared temple as open each time it was shown, and the MM player name was rewritten while its field was selected (a "-" came back as another character). OoT's General tab lowered health above the hearts and resized the magic meter each time it was shown. In the Randomizer tab, the check list's reward could be replaced when shown. Now each of these changes only when you change it, as ticking "cleared" now also opens the temple. From the other game, these changes would otherwise have been saved to the file straight away.
 - **Fix: OoT's magic could be saved as empty after resuming a file in MM.** When a file last saved in MM was loaded from OoT's file screen, an OoT item received while in MM, or a change in the OoT Save Editor there, saved OoT's magic as 0: the meter was empty the next time OoT was played.
 
-Tested: _to be filled in after the emulator and phone runs._
+- **Fix: the MM Save Editor's randomizer check list no longer logs errors when it is scrolled out of view.** With the expanded list scrolled completely out of sight, the app logged eight errors a frame. Nothing in the save was affected. 0.4.13 had this too.
+
+Tested: 219 automated host tests pass and 2 are skipped on the Windows PC used. On the emulator, with release candidates of this version:
+- Full seeds generated in the app: an adult OoT start in 18 minutes, and an MM start with Master Quest Spirit Temple and Bottom of the Well (16 Wallmasters) in 21 minutes.
+- Wallmaster captures between the games in both directions, as child and as adult, with Cross-Games Age on and off, landed where the seed said. Afterwards the Song of Time, void-outs, death, saving and reloading, transformation masks and Epona behaved as intended. The room Link was taken from kept its opened chest, unlocked door and key.
+- A reset during a capture's fade cancelled the trip in both directions.
+- Installing over 0.4.12 and 0.4.13 kept an existing file, and 0.4.13 refused a Full seed.
+- The Save Editor checks passed, including edits to a second file staying in that file.
+- Co-op, with two emulators on a local server: a capture moved only the grabbed player, and items found by either player reached the other once, before and after the split, and after a save and reload.
+- 54 seed tasks ran with this version's generator. 25 new Full seeds and 4 earlier seeds generated and reproduced byte for byte, and all with logic were confirmed beatable. 12 seeds from 0.4.13 came out identical, 12 more were replayed as beatable, and a refused Master Quest combination stopped with its sentence.
+
+Not tested on a phone, or through a complete seed playthrough.
 
 ## 0.4.13 - 2026-10-22
 
