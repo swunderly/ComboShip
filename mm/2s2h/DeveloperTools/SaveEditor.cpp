@@ -1521,7 +1521,7 @@ static void DrawRandoItemGives() {
 
     static ImGuiTextFilter riFilter;
     UIWidgets::PushStyleCombobox();
-    riFilter.Draw("##filter", ImGui::GetContentRegionAvail().x);
+    riFilter.Draw("##riFilter", ImGui::GetContentRegionAvail().x);
     UIWidgets::PopStyleCombobox();
     if (!riFilter.IsActive()) {
         ImGui::SameLine(18.0f);
@@ -1543,6 +1543,8 @@ static void DrawRandoItemGives() {
 
         std::string buttonLabel = "Give ";
         buttonLabel += randoStaticItem.name;
+        // ComboShip: two items share a name (the boss and enemy souls of Igos du Ikana), so the id keeps them apart.
+        buttonLabel += "##" + std::to_string(static_cast<int>(randoItemId));
         if (UIWidgets::Button(buttonLabel.c_str())) {
             if (MmEditDormant()) {
                 // ComboShip: from OoT, MM has no play state to run a get-item event in, and MM clears the queue when
@@ -4206,7 +4208,7 @@ void DrawRandoTab() {
     if (ImGui::CollapsingHeader("Check list (shows item locations)")) {
         static ImGuiTextFilter rcFilter;
         UIWidgets::PushStyleCombobox();
-        rcFilter.Draw("##filter", ImGui::GetContentRegionAvail().x);
+        rcFilter.Draw("##rcFilter", ImGui::GetContentRegionAvail().x);
         UIWidgets::PopStyleCombobox();
         if (!rcFilter.IsActive()) {
             ImGui::SameLine(18.0f);

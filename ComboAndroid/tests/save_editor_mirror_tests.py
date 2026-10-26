@@ -154,6 +154,18 @@ check(hostcxx.contains(mm_rando, 'if (CVarGetInteger("gDeveloperTools.DebugEnabl
       mm_rando.index('CollapsingHeader("Check list (shows item locations)")') < mm_rando.index('BeginTable("Check List"') and
       'DrawRandoItemGives();' in mm_rando and 'DrawRandoItemGives' not in function(mm, 'void DrawItemsAndMasksTab() {'),
       'MM Randomizer tab: cross-send not developer-only, check list not collapsed, or gives not moved here')
+# One ID scope: the Randomizer tab's searches need their own labels (one shared label typed into both and showed
+# ImGui's conflicting-ID box), and a give button its item id, since two MM items share a name.
+mm_gives = function(mm, 'static void DrawRandoItemGives() {')
+searches = re.findall(r'\w+\.Draw\("([^"]*)"', mm_rando + mm_gives)
+check(len(searches) == 2 and len(set(searches)) == len(searches), f'MM Randomizer tab search labels: {searches}')
+item_names = re.findall(r'RI\(RI_\w+,\s*"[^"]*",\s*"([^"]*)"', read('mm/2s2h/Rando/StaticData/Items.cpp'))
+check(len(set(item_names)) == len(item_names) or
+      hostcxx.contains(mm_gives, 'buttonLabel += "##" + std::to_string(static_cast<int>(randoItemId));'),
+      'MM give buttons of items with the same name share an ImGui ID')
+oot_flags_tab = function(oot, 'void DrawFlagsTab() {')
+check(hostcxx.find(oot_flags_tab, 'ImGui::PushID(flagTable.name);') < hostcxx.find(oot_flags_tab, 'flagFilter.Draw('),
+      "OoT flag table searches are not in their table's ID scope")
 
 # ---- 3. CVars: what the editors read at android-source 620b2d3c, and the window CVars.
 for text, game, cvars in ((oot, 'OoT', ('CVAR_SETTING("DisableChanges")', 'CVAR_ENHANCEMENT("DpadEquips")')),
