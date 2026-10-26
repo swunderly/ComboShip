@@ -2832,17 +2832,8 @@ void ImGuiDrawTwoColorPickerSection(const char* text, const char* cvarMainName, 
     UIWidgets::PopStyleCombobox();
 }
 
-// Returns false when it bailed without recomputing, so the caller can keep the request pending.
-bool InternalRecalculateAvailableChecks(RandomizerRegion startingRegion, RandoAgeTime startingAgeTime) {
-    if (!enableAvailableChecks || !GameInteractor::IsSaveLoaded()) {
-        return false;
-    }
-    ResetPerformanceTimer(PT_RECALCULATE_AVAILABLE_CHECKS);
-    StartPerformanceTimer(PT_RECALCULATE_AVAILABLE_CHECKS);
-
-    const auto& ctx = Rando::Context::GetInstance();
-    logic = ctx->GetLogic();
-
+// Where a live search starts: the region of Link's entrance and his age and time, unless the caller gave them.
+static void LiveSearchStart(RandomizerRegion& startingRegion, RandoAgeTime& startingAgeTime) {
     // ComboShip: on a dormant peek (drawn while the other game is foreground) there is no play state,
     // so start from the saved entrance instead. Everything else here reads gSaveContext already.
     int16_t entranceIndex =
@@ -2875,6 +2866,24 @@ bool InternalRecalculateAvailableChecks(RandomizerRegion startingRegion, RandoAg
             startingAgeTime = RAT_ADULT_NIGHT;
         }
     }
+}
+
+#ifdef COMBO_BUILD
+// Full Wallmasters: runs the search, following the routes into MM and back (ComboCheckTrackerOOT.inc).
+static void ComboTrackerSearch(const std::function<void()>& search);
+#endif
+
+// Returns false when it bailed without recomputing, so the caller can keep the request pending.
+bool InternalRecalculateAvailableChecks(RandomizerRegion startingRegion, RandoAgeTime startingAgeTime) {
+    if (!enableAvailableChecks || !GameInteractor::IsSaveLoaded()) {
+        return false;
+    }
+    ResetPerformanceTimer(PT_RECALCULATE_AVAILABLE_CHECKS);
+    StartPerformanceTimer(PT_RECALCULATE_AVAILABLE_CHECKS);
+
+    const auto& ctx = Rando::Context::GetInstance();
+    logic = ctx->GetLogic();
+    LiveSearchStart(startingRegion, startingAgeTime);
 
     std::vector<RandomizerCheck> targetLocations;
     targetLocations.reserve(RC_MAX);
@@ -2887,8 +2896,13 @@ bool InternalRecalculateAvailableChecks(RandomizerRegion startingRegion, RandoAg
         }
     }
 
-    std::vector<RandomizerCheck> availableChecks =
-        ReachabilitySearch(targetLocations, RG_NONE, true, startingRegion, startingAgeTime);
+    std::vector<RandomizerCheck> availableChecks;
+#ifdef COMBO_BUILD
+    ComboTrackerSearch(
+        [&] { availableChecks = ReachabilitySearch(targetLocations, RG_NONE, true, startingRegion, startingAgeTime); });
+#else
+    availableChecks = ReachabilitySearch(targetLocations, RG_NONE, true, startingRegion, startingAgeTime);
+#endif
     for (auto& rc : availableChecks) {
         const auto& itemLocation = ctx->GetItemLocation(rc);
         itemLocation->SetAvailable(true);

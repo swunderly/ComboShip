@@ -39,7 +39,10 @@ start = hostcxx.find(fill, '    // Live arrivals read the loaded saves and the p
 root_block = fill[start:fill.index('\n#endif', start)]
 assert hostcxx.contains(fill, 'ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges();')
 globals_cpp = (source/'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
-live_arrivals = function(globals_cpp, 'ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges() {')
+live_arrivals = (function(globals_cpp, 'struct LiveOotSongDepartures {').rstrip() + ';\n' +
+                 function(globals_cpp, 'static LiveOotSongDepartures LiveSongDepartures(uint32_t mmKnowledge) {') +
+                 function(globals_cpp, 'ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges() {') +
+                 function(globals_cpp, 'uint8_t SOH_LiveMmEntryAges(const std::array<uint32_t, 2>& wallmasterDepartures) {'))
 soaring = function(globals_cpp, 'static uint32_t OotSoaringSources(')
 oracle = function(globals_cpp, 'extern "C" COMBO_EXPORT uint32_t SOH_GetOracleSongSourcesForAge(int age) {')
 # The MM export the live arrivals resolve is MM's runtime (not seed) song sources.
@@ -263,22 +266,27 @@ int main() {
         assert(!gals.logicUpdated&&!colossus.Child()&&!colossus.Adult());
     }
     // (d) Full Wallmasters: an MM capture lands in an OoT dungeon at the ages the fixpoint gives, adult 0 and child 1,
-    // with the root's day and night, as the songs do; the tracker and other searches never root one.
+    // with the root's day and night, as the songs do. The tracker roots the arrivals its live exchange set
+    // (rando/LiveWallmasterRoutes.h); the native playthrough and the other seed searches never root one.
     namespace CE=ComboRando::Entrances;
     const int forestBit=CE::OotWallmasterArrivalIndex("OOT_TEMPLE_FOREST"),dekuBit=CE::OotWallmasterArrivalIndex("OOT_DEKU_TREE");
     const Region& forest=regions[Rando::ComboEntrances::WallmasterArrivalRegion(forestBit)];
     const Region& deku=regions[Rando::ComboEntrances::WallmasterArrivalRegion(dekuBit)];
     assert(forest.randomizerRegionKey==RR_FOREST_TEMPLE_ENTRYWAY&&deku.randomizerRegionKey==RR_DEKU_TREE_ENTRYWAY);
-    Reset();
-    regions[RR_ROOT].childNight=true;
-    CE::OotWallmasterArrivals()={{1u<<forestBit,1u<<dekuBit}};
-    gals=Search();
-    assert(!forest.Adult()&&!forest.Child()&&!deku.Adult()&&!deku.Child());
-    ComboRando::OotSongOracle()=true;
-    gals=Search();
-    assert(gals.logicUpdated&&forest.adultDay&&forest.adultNight&&!forest.Child());
-    assert(deku.childDay&&deku.childNight&&!deku.Adult());
-    assert(gals.regionPool.size()==2);
+    for(bool tracker:{false,true}) {
+        Reset();
+        regions[RR_ROOT].childNight=true;
+        CE::OotWallmasterArrivals()={{1u<<forestBit,1u<<dekuBit}};
+        search.CalculatingAvailableChecks=false;
+        gals=Search();
+        assert(!forest.Adult()&&!forest.Child()&&!deku.Adult()&&!deku.Child());
+        if(tracker) search.CalculatingAvailableChecks=true;
+        else ComboRando::OotSongOracle()=true;
+        gals=Search();
+        assert(gals.logicUpdated&&forest.adultDay&&forest.adultNight&&!forest.Child());
+        assert(deku.childDay&&deku.childNight&&!deku.Adult());
+        assert(gals.regionPool.size()==2);
+    }
     gals=Search(); // already rooted: nothing more to add
     assert(!gals.logicUpdated&&gals.regionPool.empty());
     // The arrival's ages are the fixpoint's; its times are the root's, by either age: a root by day alone gives day.
@@ -293,10 +301,25 @@ int main() {
     gals=Search();
     assert(!forest.Adult()&&!forest.Child());
 
+    // The ages Link can be in MM at, which the tracker's MM departures land in OoT with: the Mask Shop portal's, a
+    // song's that lands in MM, a Wallmaster's into MM, and while MM is in front the dormant save's.
+    Reset();
+    assert(SOH_LiveMmEntryAges({0,0})==0);
+    regions[RR_MARKET_MASK_SHOP].childDay=true;
+    assert(SOH_LiveMmEntryAges({0,0})==2&&SOH_LiveMmEntryAges({1,0})==3);
+    Reset();
+    map.enabled=map.logicEnabled=true;
+    std::swap(map.destinations[5],map.destinations[6]);
+    regions[RR_PRELUDE_OF_LIGHT_WARP].adultDay=true;
+    assert(SOH_LiveMmEntryAges({0,0})==1&&SOH_LiveMmEntryAges({0,1})==3);
+    Reset();
+    sMmVisitedForSongs=true;
+    ootForeground=false;
+    assert(SOH_LiveMmEntryAges({0,0})==2);
     Reset();
     isRando=false;
     regions[RR_MARKET_MASK_SHOP].childDay=true;
-    assert(Arrivals(0,0));
+    assert(Arrivals(0,0)&&SOH_LiveMmEntryAges({1,1})==0);
     std::cout<<"PASS: MM songs land in OoT only with the ages that can be in MM (portal, per-age OoT departures, "
                "foreground visit with the dormant age), OoT Soaring keeps its age and is child-only without "
                "ageless Soaring (play and seed values kept apart), the enhancement-only option reaches the tracker "

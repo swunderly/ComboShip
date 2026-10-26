@@ -346,8 +346,23 @@ comboPeekRefresh:;
     Rando::CheckTracker::ComputeChecksInLogic(checksInLogic);
 }
 
+#ifdef COMBO_BUILD
+// Full Wallmasters: runs the search, following the routes into OoT and back (ComboCheckTrackerMM.inc).
+static void ComboMmTrackerSearch(const std::function<void()>& search);
+#endif
+namespace Rando::CheckTracker {
+void ComputeChecksInLogicOnce(std::unordered_map<RandoCheckId, bool>& inLogic);
+}
 // No throttle and no display mode: Saria's Song hint needs a fresh answer whatever the tracker shows.
 void Rando::CheckTracker::ComputeChecksInLogic(std::unordered_map<RandoCheckId, bool>& inLogic) {
+#ifdef COMBO_BUILD
+    ComboMmTrackerSearch([&] { ComputeChecksInLogicOnce(inLogic); });
+#else
+    ComputeChecksInLogicOnce(inLogic);
+#endif
+}
+// One live search, with the Full Wallmaster arrivals the exchange set, if any.
+void Rando::CheckTracker::ComputeChecksInLogicOnce(std::unordered_map<RandoCheckId, bool>& inLogic) {
 #ifdef COMBO_BUILD
     Rando::Logic::LiveTrackerRuleScope ruleScope;
     ComboRando::MmResourceScope resources;

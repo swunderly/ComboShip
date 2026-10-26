@@ -58,6 +58,7 @@ struct Logic {
     bool fireArrows = false, endingSuns = false;
     int forestKeys = 0;
     bool adultOnly = false;
+    bool CalculatingAvailableChecks = false; // the live tracker's search (fill.cpp records departures in it too)
     Souls::GeneralOotSoulsOwnership souls{};
     Souls::GeneralOotSoulOptions soulOptions{true, true, true, true, true};
     std::set<RandomizerGet> warpSongs; // playable warp songs, at any age, with an ocarina and their notes

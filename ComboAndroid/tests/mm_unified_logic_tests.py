@@ -138,6 +138,7 @@ std::map<s32, RandoRegionId> entranceRegions;
 std::set<s32> filtered;
 std::vector<s32> filterCalls;
 std::vector<RandoRegionId> explored;
+bool evaluatingLiveTracker = false; // Logic.h: the tracker's search (LiveTrackerRuleScope)
 bool HaveEnemySoul(int actor) { assert(actor == ACTOR_EN_WALLMAS); ++soulChecks; return soulOwned; }
 bool RecordMmAccess(uint64_t) { ++accessWrites; return true; }
 namespace TimeLogic {
@@ -452,24 +453,27 @@ void Logic() {
         try { Reached(RR_BENEATH_THE_GRAVEYARD_DAMPE); } catch (const std::runtime_error&) { threw = true; }
         assert(threw);
     }
-    // Full: an OoT dungeon of the pool is never traversed here. During an oracle search, once the soul edge holds,
-    // it is recorded at the age being searched (CrossWallmasters.h), for the fixpoint to root in OoT.
+    // Full: an OoT dungeon of the pool is never traversed here. During an oracle search, or the tracker's, once the
+    // soul edge holds, it is recorded at the age being searched (CrossWallmasters.h), for the fixpoint, or the
+    // tracker's live exchange (LiveWallmasterRoutes.h), to root in OoT. Another search records nothing.
     synthetic.routes[0xff00u] = {CE::MakeMmUnifiedRoute(*CE::Find("OOT_TEMPLE_FOREST"))};
     CE::ActiveMmUnifiedAssumptions() = synthetic;
     const uint32_t forest = 1u << CE::OotWallmasterArrivalIndex("OOT_TEMPLE_FOREST");
-    for (const bool oracle : {false, true})
+    for (const int searcher : {0, 1, 2}) // another search, the oracle's, the tracker's
         for (const uint8_t age : {uint8_t(0), uint8_t(1)})
             for (const bool soul : {false, true}) {
                 ResetSearch();
                 soulOwned = soul;
-                ComboRando::MmSongOracle() = oracle;
+                ComboRando::MmSongOracle() = searcher == 1;
+                evaluatingLiveTracker = searcher == 2;
                 gSaveContext.save.linkAge = age;
                 CE::MmWallmasterDepartures() = {};
                 assert(Reached(RR_BENEATH_THE_GRAVEYARD_DAMPE).empty() && filterCalls.empty() && resetChecks == 0);
                 const auto& recorded = CE::MmWallmasterDepartures().masks;
-                assert(recorded[age] == (oracle && soul ? forest : 0u) && recorded[1 - age] == 0u);
+                assert(recorded[age] == (searcher && soul ? forest : 0u) && recorded[1 - age] == 0u);
             }
     ComboRando::MmSongOracle() = false;
+    evaluatingLiveTracker = false;
     gSaveContext.save.linkAge = 1;
     CE::MmWallmasterDepartures() = {};
     // The private profile's logic is unchanged and never mixed with the unified one: candidate

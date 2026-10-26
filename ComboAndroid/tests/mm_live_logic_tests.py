@@ -28,7 +28,10 @@ def function(text, signature):
 
 tracker = (a.source/'mm/2s2h/Rando/CheckTracker/CheckTracker.cpp').read_text(encoding='utf-8')
 hint = (a.source/'mm/2s2h/Rando/MiscBehavior/SariasSongHint.cpp').read_text(encoding='utf-8')
-search = function(tracker, 'void Rando::CheckTracker::ComputeChecksInLogic(')
+# The tracker's search (ComputeChecksInLogicOnce) and the entry that runs it, here without a Full Wallmaster layout:
+# the exchange of cross-game routes (ComboCheckTrackerMM.inc) runs the search once.
+search = (function(tracker, 'void Rando::CheckTracker::ComputeChecksInLogic(') + '\n' +
+          function(tracker, 'void Rando::CheckTracker::ComputeChecksInLogicOnce('))
 pick = function(hint, 'RandoCheckId GetProgressiveCheckInLogic(')
 
 code = r'''
@@ -113,12 +116,16 @@ uint64_t CurrentTimeSlice() { return now; }
 uint64_t GetOwnedTimeSlices() { return OWNED; }
 } // namespace TimeLogic
 } // namespace Logic
-namespace CheckTracker { void ComputeChecksInLogic(std::unordered_map<RandoCheckId, bool>& inLogic); }
+namespace CheckTracker {
+void ComputeChecksInLogic(std::unordered_map<RandoCheckId, bool>& inLogic);
+void ComputeChecksInLogicOnce(std::unordered_map<RandoCheckId, bool>& inLogic);
+}
 namespace StaticData { struct Item { RandoItemType randoItemType; }; std::map<RandoItemId, Item> Items; }
 std::vector<RandoItemId> GetSariaPriorityItemsFromSave(RandoSaveInfo&) { return { RI_BOW }; }
 RandoItemId ConvertItem(RandoItemId item, RandoCheckId) { return item; }
 } // namespace Rando
 template <typename Low, typename High> Low Ship_Random(Low low, High) { return low; }
+static void ComboMmTrackerSearch(const std::function<void()>& search) { search(); }
 ''' + search + '\n' + pick + r'''
 static bool InLogic(RandoRegionId here, uint64_t time, RandoCheckId check) {
     gSaveContext.save.entrance = here;

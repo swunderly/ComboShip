@@ -3301,25 +3301,24 @@ static void ProcessForeignSongReply() {
 }
 
 bool Combo_OotIsForeground(void);
-// The live tracker's song arrivals at the OoT root, per age. Like the other tracker rules they follow
-// the player's active song options (resolve, runtime sources); seed searches keep the seed's rules.
-// MM keeps OoT's age, so MM's songs land only with the ages that can be in MM (SongTravel.h).
-ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges() {
-    ComboRando::SongAgeArrivals arrivals{ true, {} };
-    auto mmSources = (uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetLiveSongSources");
-    auto mmKnowledge = (uint32_t(*)())Combo_ResolveSym("2ship", "MM_GetLiveSongKnowledge");
-    if (!IS_RANDO || !mmSources || !mmKnowledge)
-        return arrivals;
+// The ages Link can be in MM at after the live search (by the Happy Mask Shop, or being there), and per age the
+// songs that leave OoT, as the song map resolves them.
+struct LiveOotSongDepartures {
+    uint8_t mmAges = 0;
+    std::array<uint32_t, 2> soaring{}, departures{};
+};
+static LiveOotSongDepartures LiveSongDepartures(uint32_t mmKnowledge) {
+    LiveOotSongDepartures out;
+    auto& [mmAges, soaring, departures] = out;
     const auto& travel = ComboRando::ActiveSongTravel();
     auto live = LiveSongLogic();
     auto* root = RegionTable(RR_ROOT);
     auto* portal = RegionTable(RR_MARKET_MASK_SHOP);
-    uint8_t mmAges = (portal->Adult() ? 1 : 0) | (portal->Child() ? 2 : 0);
+    mmAges = (portal->Adult() ? 1 : 0) | (portal->Child() ? 2 : 0);
     // While MM is in the foreground, Link is there with the dormant OoT save's age.
     if (sMmVisitedForSongs && !Combo_OotIsForeground())
         mmAges |= LINK_IS_CHILD ? 2 : 1;
     // OoT's own warp songs reach OoT through their native exits; only their MM landings matter here.
-    std::array<uint32_t, 2> soaring{}, departures{};
     for (int age = 0; age < 2; ++age) {
         if (!(age == 0 ? root->Adult() : root->Child()))
             continue;
@@ -3329,12 +3328,34 @@ ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges() {
             if (age == 0 ? warp->Adult() : warp->Child())
                 warps |= 1u << i;
         }
-        soaring[age] = travel.resolve(OotSoaringSources(live.get(), mmKnowledge(), age == 1));
+        soaring[age] = travel.resolve(OotSoaringSources(live.get(), mmKnowledge, age == 1));
         departures[age] = soaring[age] | travel.resolve(warps);
     }
-    arrivals.masks = ComboRando::OotArrivalsByAge(soaring, travel.resolve(mmSources()),
-                                                  ComboRando::MmEntryOotAges(mmAges, departures));
+    return out;
+}
+// The live tracker's song arrivals at the OoT root, per age. Like the other tracker rules they follow
+// the player's active song options (resolve, runtime sources); seed searches keep the seed's rules.
+// MM keeps OoT's age, so MM's songs land only with the ages that can be in MM (SongTravel.h).
+ComboRando::SongAgeArrivals SOH_LiveIncomingSongAges() {
+    ComboRando::SongAgeArrivals arrivals{ true, {} };
+    auto mmSources = (uint32_t (*)())Combo_ResolveSym("2ship", "MM_GetLiveSongSources");
+    auto mmKnowledge = (uint32_t (*)())Combo_ResolveSym("2ship", "MM_GetLiveSongKnowledge");
+    if (!IS_RANDO || !mmSources || !mmKnowledge)
+        return arrivals;
+    const auto songs = LiveSongDepartures(mmKnowledge());
+    arrivals.masks = ComboRando::OotArrivalsByAge(songs.soaring, ComboRando::ActiveSongTravel().resolve(mmSources()),
+                                                  ComboRando::MmEntryOotAges(songs.mmAges, songs.departures));
     return arrivals;
+}
+// Full Wallmasters (rando/LiveWallmasterRoutes.h): the OoT ages Link can be in MM at after the live search, as the song
+// arrivals above take them, and by the Wallmasters it reached into MM (adult 0, child 1).
+uint8_t SOH_LiveMmEntryAges(const std::array<uint32_t, 2>& wallmasterDepartures) {
+    auto mmKnowledge = (uint32_t (*)())Combo_ResolveSym("2ship", "MM_GetLiveSongKnowledge");
+    if (!IS_RANDO || !mmKnowledge)
+        return 0;
+    const auto songs = LiveSongDepartures(mmKnowledge());
+    return ComboRando::MmEntryOotAges(songs.mmAges, songs.departures) | (wallmasterDepartures[0] ? 1 : 0) |
+           (wallmasterDepartures[1] ? 2 : 0);
 }
 extern "C" void Combo_SOHCompleteWarp(PlayState* play, int destination) {
     if (destination < 0 || destination >= 16)

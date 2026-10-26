@@ -1,7 +1,11 @@
 // Included by the native OoT tracker so its hooks and save format remain authoritative.
 #include "ComboCheckTrackerABI.h"
 #include "../ComboExport.h"
+#include "../ComboResolve.h"
 #include "../rando/GameplayRules.h"
+#include "../rando/LiveWallmasterRoutes.h"
+#include "../rando/entrances/OotUnifiedLayout.h"
+uint8_t SOH_LiveMmEntryAges(const std::array<uint32_t, 2>& wallmasterDepartures); // OTRGlobals.cpp
 
 namespace CheckTracker {
 static void UpdateComboAvailabilitySettings(bool wantLogic) {
@@ -44,6 +48,107 @@ static const char* ComboCheckType(RandomizerCheckType type) {
         default: return "Item";
     }
 }
+}
+
+// Full Wallmaster Shuffle's routes between the games (rando/LiveWallmasterRoutes.h). Only a Full layout has them.
+namespace CheckTracker {
+namespace LiveCE = ComboRando::Entrances;
+static bool ComboCrossGameWallmasters() {
+    const auto& layout = LiveCE::ActiveOotUnified();
+    return layout.active() && layout.json().value("required", nlohmann::json::array()) ==
+                                  nlohmann::json::array({ std::string(LiveCE::kFullWallmasterCapability) });
+}
+// One live search with these arrivals: fill.cpp roots them and records the departures, as in an oracle search.
+static LiveCE::LiveOotSearch ComboLiveOotSearch(const std::function<void()>& search,
+                                                const LiveCE::WallmasterAgeMasks& arrivals) {
+    LiveCE::OotWallmasterArrivals() = arrivals;
+    LiveCE::OotWallmasterDepartures() = {};
+    search();
+    const auto departures = LiveCE::OotWallmasterDepartures().masks;
+    return { (departures[0] | departures[1]) & LiveCE::kMmWallmasterArrivalBits, SOH_LiveMmEntryAges(departures) };
+}
+// The exchange's searches run alone, and leave no arrivals for a later search (an oracle's, the playthrough's).
+static bool sComboLiveExchange = false;
+struct ComboLiveExchangeScope {
+    ComboLiveExchangeScope() {
+        sComboLiveExchange = true;
+    }
+    ~ComboLiveExchangeScope() {
+        LiveCE::OotWallmasterArrivals() = {};
+        LiveCE::OotWallmasterDepartures() = {};
+        sComboLiveExchange = false;
+    }
+};
+static void ComboTrackerSearch(const std::function<void()>& search) {
+    if (sComboLiveExchange || !Combo_OotIsForeground() || !ComboCrossGameWallmasters()) {
+        search();
+        return;
+    }
+    static const auto mmDepartures =
+        (uint32_t (*)(int, uint32_t, uint64_t))Combo_ResolveSym("2ship", "MM_LiveWallmasterDepartures");
+    const uint64_t ootState = LiveCE::LiveStateKey(&gSaveContext, sizeof(gSaveContext));
+    ComboLiveExchangeScope exchange;
+    try {
+        LiveCE::LiveWallmastersOotInFront(
+            [&](const LiveCE::WallmasterAgeMasks& arrivals) { return ComboLiveOotSearch(search, arrivals); },
+            [&](uint32_t fromOot) {
+                return mmDepartures
+                           ? mmDepartures(gSaveContext.fileNum, fromOot, ootState) & LiveCE::kOotWallmasterArrivalBits
+                           : 0u;
+            });
+    } catch (const std::exception& e) {
+        SPDLOG_ERROR("[ComboShip] Tracker Wallmaster routes into MM unavailable: {}", e.what());
+        LiveCE::OotWallmasterArrivals() = {};
+        search();
+    }
+}
+} // namespace CheckTracker
+
+// MM in front: OoT's live search from its save in memory with MM's departures (OoT bits), and its departures into MM
+// (MM bits). Its state does not change while MM runs, except by a grant, so the answer is kept until the save does.
+extern "C" COMBO_EXPORT uint32_t SOH_LiveWallmasterDepartures(int fileNum, uint32_t fromMm, uint64_t mmState) {
+    using namespace CheckTracker;
+    if (!IS_RANDO || fileNum != gSaveContext.fileNum || sComboLiveExchange || !ComboCrossGameWallmasters())
+        return 0;
+    static uint64_t cachedKey = 0;
+    static uint32_t cached = 0;
+    const auto stateKey = [fromMm, mmState] {
+        return LiveCE::LiveStateKey(&gSaveContext, sizeof(gSaveContext), mmState ^ fromMm);
+    };
+    if (stateKey() == cachedKey)
+        return cached;
+    Ship::ResourceManagerScope rmScope(Ship::CrossRMRegistry::Get("oot"));
+    struct Peek {
+        int previous = gComboTrackerPeekSaveLoaded;
+        Peek() {
+            gComboTrackerPeekSaveLoaded = !Combo_OotIsForeground();
+        }
+        ~Peek() {
+            gComboTrackerPeekSaveLoaded = previous;
+        }
+    } peek;
+    if (!GameInteractor::IsSaveLoaded())
+        return 0;
+    logic = OTRGlobals::Instance->gRandoContext->GetLogic();
+    RandomizerRegion region = RR_ROOT;
+    RandoAgeTime ageTime = RAT_NONE;
+    LiveSearchStart(region, ageTime);
+    const auto search = [&] { ReachabilitySearch({}, RG_NONE, true, region, ageTime); };
+    uint32_t departures = 0;
+    {
+        ComboLiveExchangeScope exchange;
+        try {
+            departures = LiveCE::LiveOotDeparturesForMm(fromMm, LINK_IS_CHILD ? 2 : 1, [&](const auto& arrivals) {
+                return ComboLiveOotSearch(search, arrivals);
+            });
+        } catch (const std::exception& e) {
+            SPDLOG_ERROR("[ComboShip] Tracker Wallmaster routes from MM unavailable: {}", e.what());
+            departures = 0;
+        }
+    }
+    cachedKey = stateKey(); // by the save the search leaves
+    cached = departures;
+    return departures;
 }
 
 extern "C" COMBO_EXPORT void SOH_ComboCheckSnapshot(ComboCheckInfo* info, ComboCheckVisitor visitor, void* user) {

@@ -586,8 +586,10 @@ void FindReachableRegions(RandoRegionId currentRegion, std::set<RandoRegionId>& 
 #ifdef COMBO_BUILD
     // Full Wallmasters (CrossWallmasters.h): an OoT capture lands in an MM dungeon at the OoT age being searched,
     // rooted here as the cross-game songs are, at this region's start time, the port's day 1 (OoTMM ORs day 1 into
-    // an OoT-to-MM exit, pathfind.ts:596-599). Every Full MM destination is no-sot: no can_reset_time gate.
-    if (currentRegion == RR_MAX && ComboRando::MmSongOracle() && gSaveContext.save.linkAge <= 1) {
+    // an OoT-to-MM exit, pathfind.ts:596-599). Every Full MM destination is no-sot: no can_reset_time gate. The
+    // tracker's searches root the arrivals its live exchange sets (rando/LiveWallmasterRoutes.h), at both ages.
+    if (currentRegion == RR_MAX && (ComboRando::MmSongOracle() || evaluatingLiveTracker) &&
+        gSaveContext.save.linkAge <= 1) {
         const uint32_t arrivals = ComboRando::Entrances::MmWallmasterArrivals().masks[gSaveContext.save.linkAge];
         for (size_t bit = 0; bit < ComboRando::Entrances::kMmBaseWallmasterDestinations.size(); ++bit) {
             if (!(arrivals & (1u << bit)))

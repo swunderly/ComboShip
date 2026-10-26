@@ -205,9 +205,10 @@ static void ProcessComboEntranceOverlay(Region* region, GetAccessibleLocationsSt
         }
         ProcessRegion(destination, gals, ignore, stopOnBeatable, addToPlaythrough);
     }
-    // Full Wallmasters: an edge into MM is never an OoT exit. During an oracle search the MM destination is recorded
-    // for each age whose access and audited condition reach the source; the cross-world fixpoint roots it in MM.
-    if (!ComboRando::OotSongOracle())
+    // Full Wallmasters: an edge into MM is never an OoT exit. During an oracle search, or the tracker's, the MM
+    // destination is recorded for each age whose access and audited condition reach the source; the cross-world
+    // fixpoint, or the tracker's live exchange, roots it in MM.
+    if (!ComboRando::OotSongOracle() && !logic->CalculatingAvailableChecks)
         return;
     auto& departures = ComboRando::Entrances::OotWallmasterDepartures().masks;
     for (auto& [exit, bit] : Rando::ComboEntrances::ForeignOverlayExits(region->randomizerRegionKey)) {
@@ -653,8 +654,9 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
     }
     // Full Wallmasters: an MM capture lands in an OoT dungeon at each OoT age Link can have in MM (the fixpoint's
     // masks, adult 0 and child 1), rooted here as the cross-game songs are, with the root's day and night. Oracle
-    // searches only: the tracker and the native playthrough never see MM.
-    if (region->randomizerRegionKey == RR_ROOT && ComboRando::OotSongOracle() &&
+    // searches, and the tracker's with the arrivals its live exchange sets (rando/LiveWallmasterRoutes.h); the native
+    // playthrough never sees MM.
+    if (region->randomizerRegionKey == RR_ROOT && (ComboRando::OotSongOracle() || logic->CalculatingAvailableChecks) &&
         ComboRando::Entrances::OotWallmasterArrivals().any()) {
         const auto& arrivals = ComboRando::Entrances::OotWallmasterArrivals().masks;
         const bool day = region->childDay || region->adultDay, night = region->childNight || region->adultNight;
