@@ -17,6 +17,7 @@ bool Active();
 bool Editable();
 bool Ready();
 int SelectedSlot();
+void SelectSlot(int slot);
 bool DrawUnavailableSettings();
 int ReadInteger(const char*, int);
 void WriteInteger(const char*, int);

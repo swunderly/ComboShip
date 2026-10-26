@@ -36,12 +36,12 @@ namespace ImGui {
  int GetFrameCount(){return frame;}double GetTime(){return now;}bool itemActive=false;bool IsAnyItemActive(){return itemActive;}
 }
 using Json=nlohmann::json;
-int inspections=0,policies=0,pools=0,commits=0;
+int inspections=0,policies=0,pools=0,commits=0,committedSlot=-1;
 Json current={{"catalog",Json::object()},{"draft",{{"value",0}}},{"savedSettings",{{"value",1}}},
               {"generatedSettings",{{"value",2}}},{"generation",{{"running",false}}}};
 std::string response;
 const char* Inspect(int slot){++inspections;current["file"]=slot;response=current.dump();return response.c_str();}
-const char* SetDraft(int,const char* raw){++commits;current["draft"]=Json::parse(raw);return "{}";}
+const char* SetDraft(int slot,const char* raw){++commits;committedSlot=slot;current["draft"]=Json::parse(raw);return "{}";}
 const char* Copy(int,int){return "{}";}
 const char* Generate(int,const char*){return "{}";}
 const char* Cancel(){return "{}";}
@@ -85,6 +85,15 @@ void Run(){
  for(int i=0;i<30;++i){Frame();EndFrame();}
  Require(inspections==started+2,"completed generation kept doing heavy inspection");
  view=2;Frame();Require(document["value"]==9,"new generated seed view became stale");EndFrame();
+ // "Open Randomizer Settings" from File 2's file-select screen opens on File 2 (ComboUI_OpenRandomizerSettings); an
+ // edit waiting on the file shown before is committed to that file, and a slot off the file select changes nothing.
+ view=0;selected=0;Frame();EndFrame();
+ ImGui::itemActive=true;Frame();document["value"]=70;dirty=true;EndFrame();ImGui::itemActive=false;
+ const int before=commits;
+ SelectSlot(1);Frame();
+ Require(commits==before+1&&committedSlot==0,"the waiting edit was not committed to the file it was made for");
+ Require(selected==1&&snapshot["file"]==1,"Open Randomizer Settings did not open on the highlighted file");EndFrame();
+ SelectSlot(-1);Frame();Require(selected==1&&snapshot["file"]==1,"an off-screen slot changed the settings file");EndFrame();
 }
 int main(){try{Run();std::cout<<"PASS: production menu caching, edits, file/view changes, reopening and generation refresh\n";}
  catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}}
@@ -94,8 +103,17 @@ cpp.write_text(engine + declarations + function('bool Ready()') + function('bool
                + function('static bool Response(')
                + (function('static void RefreshSnapshot(') if 'static void RefreshSnapshot(' in text else '')
                + (function('static void CommitDraft(') if 'static void CommitDraft(' in text else '')
+               + function('void SelectSlot(int slot)')
                + function('void BeginFrame()')
                + function('void EndFrame()')
                + (function('void Flush()') if 'void Flush()' in text else 'void Flush(){}\n') + tests, encoding='utf-8')
 exe = hostcxx.build(args.compiler, cpp, std='c++17', werror=True, includes=[source/'combo', args.json_include])
 subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
+# The file select's "Open Randomizer Settings" (OTRGlobals.cpp SOH_OpenComboRandoSettings) selects its highlighted
+# file before the menu opens.
+opener = (source / 'combo/gui/ComboMenu.cpp').read_text(encoding='utf-8')
+opener = opener[hostcxx.find(opener, 'extern "C" COMBO_EXPORT void ComboUI_OpenRandomizerSettings(void) {'):]
+assert hostcxx.find(opener, 'Combo_ResolveSym("soh", "SOH_GetFileSelectSlot")') < \
+    hostcxx.find(opener, 'ComboRando::ProfileUI::SelectSlot(fileSelectSlot());') < \
+    hostcxx.find(opener, 'ComboRando::sComboMenu->OpenAtRandomizer();'), 'the settings menu ignores the highlighted file'
+print('PASS: Open Randomizer Settings opens on the highlighted file')

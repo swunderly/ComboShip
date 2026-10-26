@@ -54,6 +54,11 @@ const Json& Catalogue() {
 int SelectedSlot() {
     return selected;
 }
+// The next menu frame commits an edit to the file it was made for (CommitDraft writes snapshotSlot) and shows this one.
+void SelectSlot(int slot) {
+    if (slot >= 0 && slot < 3)
+        selected = slot;
+}
 bool Active() {
     return active;
 }

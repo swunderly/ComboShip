@@ -2689,10 +2689,15 @@ void ComboMenu::DrawSharedPanel() {
 
 } // namespace ComboRando
 
-// ComboShip: open the combo menu on the Randomizer tab (file-select "Open Randomizer Settings").
+// ComboShip: open the combo menu on the Randomizer tab (file-select "Open Randomizer Settings"), on the file the
+// file-select screen has highlighted: Generate and Start Randomizer there use that file's next seed.
 extern "C" COMBO_EXPORT void ComboUI_OpenRandomizerSettings(void) {
-    if (ComboRando::sComboMenu)
-        ComboRando::sComboMenu->OpenAtRandomizer();
+    if (!ComboRando::sComboMenu)
+        return;
+    static const auto fileSelectSlot = (int (*)(void))Combo_ResolveSym("soh", "SOH_GetFileSelectSlot");
+    if (fileSelectSlot)
+        ComboRando::ProfileUI::SelectSlot(fileSelectSlot());
+    ComboRando::sComboMenu->OpenAtRandomizer();
 }
 
 extern "C" COMBO_EXPORT void ComboUI_Register(void) {
