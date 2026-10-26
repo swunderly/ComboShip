@@ -267,6 +267,7 @@ else()
     combo_skipped_test(oot_push_block_permanent_collision
         "needs COMBO_BLOCK_TEST_CLANG (clang with FMA; MSVC cannot contract floating-point math)")
 endif()
+combo_harness_test(audio_failed_output_never_spins_or_stalls audio_output_failure_tests.py)
 if(COMBO_SDL_DIR)
     combo_harness_test(audio_mobile_queue_conversion_and_batching audio_latency_tests.py --sdl "${COMBO_SDL_DIR}")
 else()

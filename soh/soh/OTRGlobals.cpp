@@ -1290,7 +1290,14 @@ void OTRAudio_Thread() {
             if (AudioPlayer_Buffered() + SAMPLES_MID * AUDIO_FRAMES_PER_UPDATE > AudioPlayer_GetDesiredBuffered()) {
                 break;
             }
+            // ComboShip: a backend whose output failed (no device after a failed reopen) takes nothing, and the
+            // queue would never fill: this loop then ran the audio engine flat out, without sleeping, forever.
+            // Wait for the next wake instead; the reservoir refills once the backend takes audio again.
+            const int buffered = AudioPlayer_Buffered();
             produce_next_batch();
+            if (AudioPlayer_Buffered() <= buffered) {
+                break;
+            }
         }
     }
 }

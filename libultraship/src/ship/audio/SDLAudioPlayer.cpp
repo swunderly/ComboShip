@@ -141,8 +141,10 @@ void SDLAudioPlayer::DoPlay(const uint8_t* buf, size_t len) {
             while ((bytes = SDL_AudioStreamGet(mConversion, converted, sizeof(converted))) > 0) {
                 outputFrames += bytes / (sizeof(int16_t) * mNumChannels);
                 if (SDL_QueueAudio(mDevice, converted, bytes) < 0) {
+                    // The block is lost: still charge it below, or Buffered() counts it as pending forever and
+                    // the producers, which wait for the queue to drain, stop for good.
                     SPDLOG_ERROR("SDL audio queue failed: {}", SDL_GetError());
-                    return;
+                    break;
                 }
             }
             // SDL rounds each converted block to whole output frames. Charge
