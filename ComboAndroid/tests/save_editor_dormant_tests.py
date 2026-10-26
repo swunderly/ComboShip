@@ -283,9 +283,17 @@ int SaveManager_ReadSaveFile(const std::filesystem::path& fileName, Json& j) {
 int SaveManager_MigrateSave(Json&) {
     return 0;
 }
+// The departure's cycle state (SaveManager/ComboDepartureContext.h): an editor write is never a departure; one made
+// while OoT is in front keeps what a departure kept, one while MM is drops it.
+bool Combo_MmIsForeground(void);
+namespace ComboDepartureContext {
+void Keep(Json&, const SaveContext&) { assert(false && "an editor write is not a departure"); }
+void Drop(Json& file) { file.erase("comboDepartureContext"); }
+}
 ''' + function(mm_saves, 'static int SaveManager_ClassifySaveFile(') + \
     function(mm_saves, 'void SaveManager_WriteSaveFile(const std::filesystem::path& fileName, nlohmann::json j) {') + \
     function(mm_saves, 'std::string SaveManager_GetFileName(int fileNum, bool isBackup) {') + \
+    function(mm_saves, 'static void SaveManager_SaveCurrentForCombo(bool departure) {') + \
     function(mm_saves, 'void SaveManager_SaveCurrentForCombo() {') + r'''
 
 // ---- The launcher (ComboShip.cpp), over stand-ins for its state and the production code that changes it.

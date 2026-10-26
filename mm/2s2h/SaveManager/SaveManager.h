@@ -23,6 +23,10 @@ void SaveManager_InitNewSaveForSlot(int mmFileNum, const unsigned char* ootName8
 // a failure is logged and leaves the fail-closed sentinel behind, and play still proceeds.
 int SaveManager_LoadSaveFile(int mmFileNum);
 void SaveManager_SaveCurrentForCombo();
+#ifdef COMBO_BUILD
+// An MM->OoT departure's save: also keeps the cycle state past the Save for MM's next start (ComboDepartureContext.h).
+void SaveManager_SaveDepartureForCombo();
+#endif
 // Stamps the "nothing usable loaded" sentinel a failed load leaves behind (fileNum 0xFF, VANILLA).
 void SaveManager_MarkNoSaveLoaded();
 #else

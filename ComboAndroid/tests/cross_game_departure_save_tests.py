@@ -97,14 +97,32 @@ mm_return = title[loop_at:title.index('{', loop_at)] + block(title, loop_at)
 benport = read('mm/2s2h/BenPort.cpp')
 main_start = benport[hostcxx.find(benport, 'RegisterGameHook<GameInteractor::OnGameStateMainStart>([]()'):]
 ordered(main_start, 'if (!isOwlSaveQuit && !isReset && gSaveContext.gameMode == GAMEMODE_NORMAL) {',
-        'Combo_MMStoreDepartureFlags(gPlayState);', 'SaveManager_SaveCurrentForCombo();',
+        'Combo_MMStoreDepartureFlags(gPlayState);', 'SaveManager_SaveDepartureForCombo();',
         'MM_DispatchNativeDeparture(gPlayState)')
 entrance = function(read('mm/2s2h/Rando/CrossEntrance.inc.h'),
                     'extern "C" COMBO_EXPORT int Combo_MMFinishEntranceDeparture(void* state)')
 ordered(entrance, 'MM_ApplyFaroreTransitionAge(request.file, request.age)', 'return false;',
-        'MmStoreCycleSceneFlags(play);', 'SaveManager_SaveCurrentForCombo();', 'return true;')
+        'MmStoreCycleSceneFlags(play);', 'SaveManager_SaveDepartureForCombo();', 'return true;')
 check(hostcxx.contains(read('mm/2s2h/Rando/FaroresWind.h'), 'void Combo_MMStoreDepartureFlags(PlayState* play);'),
       'FaroresWind.h declares the MM departure store for BenPort.cpp')
+# Those departure saves also keep MM's cycle state past the Save (eventInf, bottle timers, pictograph), as OoTMM's owl
+# save on a switch does, and MM's next load of that Save gives it back; MM's own writes drop it, the writes made while
+# OoT is in front keep it (ComboDepartureContext.h, run by mm_departure_keeps_owl_cycle_state).
+manager = read('mm/2s2h/SaveManager/SaveManager.cpp')
+writer = manager[hostcxx.find(manager, 'static void SaveManager_SaveCurrentForCombo(bool departure) {'):
+                 hostcxx.find(manager, 'void SaveManager_SaveDepartureForCombo() {')]
+ordered(writer, 'if (departure) {', 'ComboDepartureContext::Keep(j, gSaveContext);',
+        '} else if (Combo_MmIsForeground()) {', 'ComboDepartureContext::Drop(j);', 'SaveManager_WriteSaveFile(fileName, j);')
+check(hostcxx.contains(manager, 'void SaveManager_SaveDepartureForCombo() { SaveManager_SaveCurrentForCombo(true); }')
+      and hostcxx.contains(manager, 'void SaveManager_SaveCurrentForCombo() { SaveManager_SaveCurrentForCombo(false); }'),
+      'the departure save is not the combo save with the cycle state kept')
+loader = manager[hostcxx.find(manager, 'int SaveManager_LoadSaveFile(int mmFileNum) {'):
+                 hostcxx.find(manager, 'void SaveManager_DeleteSaveFile(')]
+ordered(loader, 'if (j.contains("owlSave")) {', 'Save save = j["newCycleSave"]["save"];', 'gSaveContext.save = save;',
+        'ComboDepartureContext::Restore(j, gSaveContext)')
+flash = manager[hostcxx.find(manager, 'extern "C" void SaveManager_SysFlashrom_WriteData('):
+                hostcxx.find(manager, 'extern "C" s32 SaveManager_SysFlashrom_ReadData(')]
+check(flash.count('ComboDepartureContext::Drop(j);') == 2, "MM's own new-cycle and owl saves must drop the kept state")
 
 harness = r'''
 #include <cstddef>

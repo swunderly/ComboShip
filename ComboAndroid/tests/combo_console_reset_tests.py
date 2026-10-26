@@ -114,6 +114,7 @@ int CVarGetInteger(const char* name, int fallback) {
     return std::strcmp(name, "gEnhancements.Saving.Autosave") ? fallback : autosave;
 }
 void SaveManager_SaveCurrentForCombo() { ++saves; }
+void SaveManager_SaveDepartureForCombo() { ++saves; }
 void Combo_MMStoreDepartureFlags(void*) { ++stores; }
 bool MM_DispatchNativeDeparture(void*) { ++dispatches; return true; }
 void MM_CancelNativeDeparture() { ++cancels; }

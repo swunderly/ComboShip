@@ -354,6 +354,20 @@ if(COMBO_SOURCE_DIR)
             target_compile_options(mm_save_compatibility_tests PRIVATE -UNDEBUG)
         endif()
         add_test(NAME mm_native_save_backward_compatibility COMMAND mm_save_compatibility_tests)
+        add_executable(mm_departure_context_tests mm_departure_context_tests.cpp)
+        target_compile_definitions(mm_departure_context_tests PRIVATE COMBO_BUILD _CRT_SECURE_NO_WARNINGS)
+        target_include_directories(mm_departure_context_tests PRIVATE
+            "${COMBO_SOURCE_DIR}"
+            "${COMBO_SOURCE_DIR}/../mm/include" "${COMBO_SOURCE_DIR}/../mm/2s2h"
+            "${COMBO_SOURCE_DIR}/../mm" "${COMBO_SOURCE_DIR}/../mm/assets" "${COMBO_SOURCE_DIR}/../libultraship/include"
+            "${COMBO_JSON_INCLUDE_DIR}" "${COMBO_JSON_INCLUDE_DIR}/../../spdlog-src/include")
+        target_compile_features(mm_departure_context_tests PRIVATE cxx_std_20)
+        if(MSVC)
+            target_compile_options(mm_departure_context_tests PRIVATE /UNDEBUG /utf-8)
+        else()
+            target_compile_options(mm_departure_context_tests PRIVATE -UNDEBUG)
+        endif()
+        add_test(NAME mm_departure_keeps_owl_cycle_state COMMAND mm_departure_context_tests)
         add_executable(song_travel_tests song_travel_tests.cpp)
         target_include_directories(song_travel_tests PRIVATE "${COMBO_SOURCE_DIR}" "${COMBO_JSON_INCLUDE_DIR}")
         target_compile_features(song_travel_tests PRIVATE cxx_std_20)

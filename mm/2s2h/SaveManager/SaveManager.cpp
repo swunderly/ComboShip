@@ -42,6 +42,8 @@ const std::filesystem::path savesFolderPath(Ship::Context::GetPathRelativeToAppD
 #ifdef COMBO_BUILD
 #include "ComboExport.h"        // ComboShip: COMBO_EXPORT for MM_InvalidateOwlBlobSlot
 #include "rando/CrossForeign.h" // ComboShip: merged-save IO callback typedefs + GameId
+#include "ComboDepartureContext.h"
+bool Combo_MmIsForeground(void);
 
 // ComboShip: launcher-provided .combosav IO. When set, a main per-slot file{N}.json read/write routes
 // into the container's "mm" section; unset -> the vendored disk IO below. Both primitives funnel here.
@@ -271,7 +273,7 @@ void SaveManager_InitNewSaveForSlot(int mmFileNum, const unsigned char* ootName8
     SaveManager_WriteSaveFile(SaveManager_GetFileName(mmFileNum), j);
 }
 
-void SaveManager_SaveCurrentForCombo() {
+static void SaveManager_SaveCurrentForCombo(bool departure) {
 #ifdef COMBO_BUILD
     // Guard the write itself, not each caller's own gate. 0xFF (no save) reaches here on real,
     // non-buggy paths (play proceeding after a failed load), so refuse and return — don't assert.
@@ -334,11 +336,30 @@ void SaveManager_SaveCurrentForCombo() {
             j.erase("owlSave"); // live state is newer than the blob
         }
     }
+    // The cycle state past the Save: kept by a departure, kept by the writes made while OoT is in front (MM's memory
+    // still holds the departure's), dropped by MM's own writes (ComboDepartureContext.h).
+    if (departure) {
+        ComboDepartureContext::Keep(j, gSaveContext);
+    } else if (Combo_MmIsForeground()) {
+        ComboDepartureContext::Drop(j);
+    }
 #endif
     j["version"] = CURRENT_SAVE_VERSION;
     j["type"] = "2S2H_SAVE";
     SaveManager_WriteSaveFile(fileName, j);
 }
+
+void SaveManager_SaveCurrentForCombo() {
+    SaveManager_SaveCurrentForCombo(false);
+}
+
+#ifdef COMBO_BUILD
+// An MM->OoT departure's save, which also keeps the cycle state past the Save for MM's next start, as OoTMM's game
+// switch does (ComboDepartureContext.h).
+void SaveManager_SaveDepartureForCombo() {
+    SaveManager_SaveCurrentForCombo(true);
+}
+#endif
 
 #ifdef COMBO_BUILD
 // ComboShip (#182): vanilla consumes the owl save on continue (func_80147314), but that needs
@@ -461,6 +482,12 @@ int SaveManager_LoadSaveFile(int mmFileNum) {
         save.saveInfo.checksum = Sram_CalcChecksum(&save, sizeof(Save));
         gSaveContext.save = save;
         gSaveContext.fileNum = (s16)(mmFileNum - 1);
+#ifdef COMBO_BUILD
+        // The state the last departure kept past this Save, as OoTMM's owl load keeps it (ComboDepartureContext.h).
+        if (ComboDepartureContext::Restore(j, gSaveContext)) {
+            SPDLOG_INFO("[ComboShip] Restored the departure's cycle state for slot {}", mmFileNum);
+        }
+#endif
     } catch (nlohmann::json::exception& je) {
         SPDLOG_ERROR("[ComboShip] Failed to parse MM save: {}", je.what());
         return SaveManager_LoadFailedForCombo(-5);
@@ -840,6 +867,7 @@ extern "C" void SaveManager_SysFlashrom_WriteData(u8* saveBuffer, u32 pageNum, u
                 if (j.contains("owlSave") && gComboOwlBlobSlot != (int)gSaveContext.fileNum + 1) {
                     j.erase("owlSave");
                 }
+                ComboDepartureContext::Drop(j); // MM's own save: its state is newer than a departure's
 #endif
                 j["version"] = CURRENT_SAVE_VERSION;
                 j["type"] = "2S2H_SAVE";
@@ -895,6 +923,7 @@ extern "C" void SaveManager_SysFlashrom_WriteData(u8* saveBuffer, u32 pageNum, u
                 j["type"] = "2S2H_SAVE";
 #ifdef COMBO_BUILD
                 gComboOwlBlobSlot = (int)gSaveContext.fileNum + 1; // #182: gSaveContext now matches the blob
+                ComboDepartureContext::Drop(j);                    // the owl blob holds the newer state
 #endif
                 SaveManager_WriteSaveFile(fileName, j);
             } else {

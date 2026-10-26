@@ -153,7 +153,7 @@ extern "C" COMBO_EXPORT int Combo_MMFinishEntranceDeparture(void* state) {
                 return false;
             }
             MmStoreCycleSceneFlags(play);
-            SaveManager_SaveCurrentForCombo();
+            SaveManager_SaveDepartureForCombo();
             return true;
         },
         [originalAge, originalForm, originalMask](const auto& request) {

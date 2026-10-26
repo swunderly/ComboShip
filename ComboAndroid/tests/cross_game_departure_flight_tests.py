@@ -376,6 +376,9 @@ int MM_FaroreDeparturePending() { return faroreDeparture; }
 // What each save writes: the whole Save struct, as SaveManager_SaveCurrentForCombo does (cycle flags are not in it).
 std::vector<Save> saves;
 void SaveManager_SaveCurrentForCombo() { saves.push_back(gSaveContext.save); }
+// The departure's own save also keeps the cycle state past the Save (SaveManager.cpp, ComboDepartureContext.h).
+int departureSaves = 0;
+void SaveManager_SaveDepartureForCombo() { ++departureSaves; saves.push_back(gSaveContext.save); }
 namespace CEMmArrival = ComboRando::Entrances;
 CEMmArrival::NativeEntranceFlight sMmEntranceFlight;
 """ + re.sub(r'\bthis\b', 'self', function(mm_play, 'void Play_SaveCycleSceneFlags(PlayState* this)')) + '\n'
@@ -415,6 +418,7 @@ void Fresh(PlayState& play) {
     gPlayState = &play;
     logs.clear();
     saves.clear();
+    departureSaves = 0;
     preflightResult = commitResult = applyResult = 1;
     preflights = commits = applies = 0;
 }
@@ -458,6 +462,7 @@ int main() {
     Fresh(play);
     assert(Queue() && preflights == 1);
     assert(Combo_MMFinishEntranceDeparture(&play) == 1 && commits == 1 && logs.empty() && saves.size() == 1);
+    assert(departureSaves == 1); // the departure's save, which keeps the cycle state too
     assert(Same(Live(play), saves[0].saveInfo.permanentSceneFlags[SCENE_REDEAD]));
     assert(Same(kTown, saves[0].saveInfo.permanentSceneFlags[SCENE_CLOCKTOWER]) && saves[0].isOwlSave == 0);
     // graph.c consumes the finished departure after Play_Destroy.
@@ -475,6 +480,7 @@ int main() {
     Fresh(play);
     commitResult = 0;
     assert(Queue() && Combo_MMFinishEntranceDeparture(&play) == 0 && commits == 1 && saves.size() == 2);
+    assert(departureSaves == 1); // the rollback's save is MM's own, which drops what the departure kept
     assert(Same(Live(play), saves[1].saveInfo.permanentSceneFlags[SCENE_REDEAD]));
     assert(Logged("the launcher's commit refused it") && MM_ConsumeFinishedEntranceDeparture() == 0);
     // The preflight refusing at the end, or the age refusing in the save: no save, logged, nothing stored.
