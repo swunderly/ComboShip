@@ -2436,10 +2436,12 @@ same seed file.
 fingerprint unchanged), get no entrance spoiler file and set no ER-wide flag. Older builds refuse a
 layout seed before decoding it.
 
-**Known issue, not caused by this change.** The OoT soul room guard tracks one room. When a room is
-held shut by a missing soul and the neighbouring room loads (`En_Holl`), the guard resets for the new
-room and the blocked room can clear early. It is unfixed and can show up in Wallmaster dungeons next
-to the cleared-room spawn exception.
+**OoT soul room guard (0.4.15).** The guard that keeps a room shut while one of its enemies is missing
+its soul is OoTMM's one flag for the play state (`souls/OotSoulRoomGuard.h`; OoTMM `oot/room.c`,
+`oot/actors.c`, `common/actors.c` `SetRoomClearHook`). Each room's actor list clears it and a refused
+enemy sets it, whichever room is current. Up to 0.4.14 it also held a room number, so when a
+room-transition plane (`En_Holl`) loaded the next room, the shut room could open even though the next
+room also lacked a soul. Now, as in OoTMM, it opens early only when the next room lacks none.
 
 ## Master Quest from OoTMM's bundled data: gameplay rules (MQ port U6, 2026-10-19)
 

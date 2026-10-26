@@ -301,9 +301,9 @@ void RegisterItems(std::array<Item, RG_MAX>& items) {
     }
 }
 } // namespace Rando::Souls
-static const void* soulPlay = nullptr;
-static int soulRoom = -1;
-static bool soulRoomBlocked = false;
+// Included here, not with the others: the lines above are evidence the Wallmaster edge audit pins by number.
+#include "OotSoulRoomGuard.h"
+static Rando::Souls::OotSoulRoomGuard soulRoomGuard;
 // SoH's Enemy Randomizer swaps enemies for identities logic never modelled (EnemyRandomizer.cpp), and OoTMM
 // has no counterpart. While it is on, a soul never keeps an enemy away, a room shut or Dark Link's room
 // open, so logic only asks for more than the game and a souls save cannot softlock (docs/deviations/rando.md).
@@ -311,13 +311,12 @@ static bool OotSoulsSuspended() {
     return CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0) != 0;
 }
 extern "C" void Combo_OotSoulResetRoom(void* raw) {
-    auto play = static_cast<PlayState*>(raw);
-    soulPlay = play;
-    soulRoom = play->roomCtx.curRoom.num;
-    soulRoomBlocked = false;
+    soulRoomGuard.RoomActorList(raw);
 }
+// Whichever room is current (OoTMM's flag is the play state's, not the room's; OotSoulRoomGuard.h).
 extern "C" int Combo_OotSoulCanClear(void* raw, int room) {
-    return OotSoulsSuspended() || !(soulRoomBlocked && soulPlay == raw && soulRoom == room);
+    (void)room;
+    return OotSoulsSuspended() || soulRoomGuard.CanClear(raw);
 }
 // OoTMM's En_Blkobj hook makes Actor_Find report Dark Link present while his soul is missing.
 extern "C" int Combo_OotDarkLinkSoulMissing(void) {
@@ -350,11 +349,8 @@ extern "C" int Combo_OotSoulPreSpawn(void* raw, int actor, unsigned params) {
         [&](Rando::Souls::OotSoul soul) {
             return Rando::Souls::BossItem(soul) != RG_NONE || Rando::Souls::HaveGeneralOotSoul(owned, options, soul);
         });
-    if (result == 0) {
-        if (soulPlay != play || soulRoom != play->roomCtx.curRoom.num)
-            Combo_OotSoulResetRoom(play);
-        soulRoomBlocked = true;
-    }
+    if (result == 0)
+        soulRoomGuard.SoulRefused(play);
     return result;
 }
 extern "C" int Combo_OotSoulGive(void*, int item) {

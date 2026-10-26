@@ -250,7 +250,14 @@ assert hostcxx.contains(prespawn, 'if (options.npc) {') and 'ACTOR_BOSS_SST' not
 assert hostcxx.contains(core, 'static bool OotSoulsSuspended() { return CVarGetInteger(CVAR_ENHANCEMENT("RandomizedEnemies"), 0) != 0; }')
 assert hostcxx.contains(prespawn, 'if (!IS_RANDO || OotSoulsSuspended() || !Rando::Souls::Options().enabled) return 1;')
 assert hostcxx.contains(function_body(core, 'extern "C" int Combo_OotSoulCanClear(void* raw, int room)'),
-                        'return OotSoulsSuspended() ||')
+                        'return OotSoulsSuspended() || soulRoomGuard.CanClear(raw);')
+# The guard is OoTMM's one flag for the play state (OotSoulRoomGuard.h, run below): each room's actor list clears it and
+# a refused enemy sets it, whichever room is current, so a room-transition plane's neighbour cannot reopen a room that
+# OoTMM keeps shut.
+assert hostcxx.contains(function_body(core, 'extern "C" void Combo_OotSoulResetRoom(void* raw)'),
+                        'soulRoomGuard.RoomActorList(raw);')
+assert hostcxx.contains(prespawn, 'if (result == 0) soulRoomGuard.SoulRefused(play); return result;')
+assert 'curRoom' not in function_body(core, 'extern "C" int Combo_OotSoulPreSpawn(void* raw, int actor, unsigned params)')
 assert hostcxx.contains(function_body(core, 'extern "C" int Combo_OotDarkLinkSoulMissing(void)'),
                         'return IS_RANDO && !OotSoulsSuspended() &&')
 # A room-list actor whose object its room never loads (OoT's broken actors) never reaches the soul hook.
@@ -353,6 +360,7 @@ for actor_id, variable, scene_id, adult, soul, cls in cases:
 code = '''#define OOT_SOUL_POLICY_HOST_ENUMS
 #include "OotSoulState.h"
 #include "OotSoulToken.h"
+#include "OotSoulRoomGuard.h"
 #include <cassert>
 #include <cstdio>
 #include <string>
@@ -475,6 +483,22 @@ int main() {
     copy.clear();
     assert(!ColorlessTokenCopy(list, TokenSkullEnvCmd, TokenSkullPrimCmd, 0xFAu, 0xFBu, noOp, copy) && copy.empty());
     assert(!ColorlessTokenCopy(list, 40, 41, 0xFAu, 0xFBu, noOp, copy) && copy.empty());
+    // The room guard through a room-transition plane (En_Holl), as OoTMM keeps it: room A's last enemy lacks its soul;
+    // walking up to the plane loads room B's actor list while A stays loaded, and the current room swaps between them.
+    {
+        OotSoulRoomGuard guard;
+        int play = 0, otherPlay = 0;
+        guard.RoomActorList(&play);
+        guard.SoulRefused(&play); // room A
+        assert(!guard.CanClear(&play) && guard.CanClear(&otherPlay));
+        guard.RoomActorList(&play);
+        guard.SoulRefused(&play); // room B lacks a soul too: neither room clears, whichever is current
+        assert(!guard.CanClear(&play));
+        guard.RoomActorList(&play); // room B lacks none: OoTMM's flag is clear, so either room may clear
+        assert(guard.CanClear(&play));
+        guard.SoulRefused(&otherPlay); // a refusal in a new play state starts over
+        assert(guard.CanClear(&play) && !guard.CanClear(&otherPlay));
+    }
     std::puts("STATE OK");
     return 0;
 }
