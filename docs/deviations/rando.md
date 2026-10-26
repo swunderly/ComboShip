@@ -2735,9 +2735,11 @@ shared destinations, its source counts per Master Quest context and these sites,
   (`MmStoreCycleSceneFlags`), which is also what every MM scene load does (`Interface_NewDay`), before its normal
   save (`SaveManager_SaveCurrentForCombo`). The next MM entry rebuilds the cycle flags from the saved ones
   (`title_setup.c`), so the cycle's progress, the room Link leaves included, survives the trip, and the time and
-  day are kept as in OoTMM. In both games, a refused commit's rollback saves the same stored flags. The port's
-  normal save does not keep MM's `eventInf` or bottle timers, which OoTMM's owl save does; that holds for every
-  MM-to-OoT trip in the port. The other cross-game departures store the same flags since 0.4.13: OoT's departure
+  day are kept as in OoTMM. In both games, a refused commit's rollback saves the same stored flags. Since 0.4.15
+  every MM-to-OoT departure also keeps what OoTMM's owl save keeps past the Save (`eventInf`, the bytes up to the
+  bottle timers, the bottle timers and `pictoPhotoI5`), beside the Save, and the next MM load restores it
+  (`SaveManager/ComboDepartureContext.h`; see `boot-shutdown.md`). The other cross-game departures store the same
+  flags since 0.4.13: OoT's departure
   save behind a song, Farore's Wind and the Happy Mask Shop door (`OTRGlobals.cpp`) calls `Play_SaveSceneFlags` and
   sets `savedSceneNum` first, and MM's behind a song, Farore's Wind and the Clock Tower door (`BenPort.cpp`, the
   return hook) runs `MmStoreCycleSceneFlags` through `Combo_MMStoreDepartureFlags`, so both MM departures use the
@@ -2751,8 +2753,10 @@ shared destinations, its source counts per Master Quest context and these sites,
   `g_pendingOOTReturn` branch); any end of an MM play state (`OnPlayDestroy`) forgets the departure too.
 - **Spoiler.** `.entrances.txt` and the spoiler log list the routes into the other game with the others
   (`EntranceSpoiler.h`; OoTMM `packages/generator/lib/combo/spoiler.ts:237-272`).
-- **Port limits.** The live check tracker does not follow routes into the other game; it can show a check as out of
-  reach that logic reaches that way. The menu offers Full only in a build that has the id.
+- **Port limits.** The menu offers Full only in a build that has the id. Since 0.4.15 the live check tracker follows
+  the routes into the other game, exchanging the two games' live searches as the oracles do
+  (`rando/LiveWallmasterRoutes.h`); as in `QuerySongWorlds`, its MM search has one age, so with Cross-Games Age it
+  does not search MM at each age Link could enter it at, as `QueryAgeSongWorlds` does.
 - **Co-op (not a deviation).** A capture moves only the player it grabs. OoTMM does the same: each player runs
   their own game, and a game switch is that player's alone (`common/switch.c:75-85`).
 

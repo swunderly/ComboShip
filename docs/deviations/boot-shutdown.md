@@ -592,6 +592,14 @@ slot whose owl blob `gSaveContext` descends from.
 **Entry kinds:** an owl blob wins on both, but only a resume follows it to where it was saved; a portal
 entry still arrives at South Clock Town.
 
+**Departure context (0.4.15):** OoTMM's game switch is an owl save of the SaveContext up to `fileNum`
+(`common/switch.c`, `mm/save.c` `Save_DoSave(SF_OWL)`, `MmSave` 0x3CA0 bytes), and the next MM boot loads it as an
+owl save, so `eventInf`, the bottle timers and `pictoPhotoI5` survive MM -> OoT -> MM. The port's departure
+(`SaveManager_SaveDepartureForCombo`) keeps them beside `newCycleSave` under the additive key
+`comboDepartureContext` (`{moment: {day, time, cycle}, state}`), and `SaveManager_LoadSaveFile` restores them after
+the new-cycle Save while the Save is still at that moment. MM's own writes drop the key, writes made while OoT is in
+front keep it, and older builds ignore it; one they carried past later play no longer matches its moment.
+
 **Not a gap:** the combo block never zeroes `eventInf` or resets the timers the way `Sram_OpenSave`'s
 non-owl branch does — it doesn't need to. `Setup_InitImpl` calls `SaveContext_Init()`, which `memset`s
 all of `gSaveContext` on every MM entry. Vanilla only needs those resets because its file select
