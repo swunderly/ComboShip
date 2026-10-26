@@ -1,6 +1,6 @@
 {
   "upstreamCommit": "413573d22d1d53e8a81931a70927f625b73488b9",
-  "scope": "games=ootmm; erWallmasters and erOneWays in {none, ownGame}; the five one-way flags; every other er* key at its default (erNoPolarity, erSelfLoops and erDecoupled false); pools and candidates in the all-vanilla world; fullWallmasters: erWallmasters=full alone",
+  "scope": "games=ootmm; erWallmasters and erOneWays in {none, ownGame}; the five one-way flags; every other er* key at its default (erNoPolarity, erSelfLoops and erDecoupled false); pools and candidates in the all-vanilla world; fullWallmasters: erWallmasters=full alone; warps: erWarps=full with erWallmasters ownGame or full",
   "inputs": {
     "packages/logic/src/solver/entrances.ts": "fa3bd74313c06f50082d097a66539ced5c1d78709fd548a63d2ef40297b45f0b",
     "packages/logic/src/world/builder.ts": "88f98cac10bd801f40db3c84bcd72495162f755ad82e90728bb8ee0d7c097aa9",
@@ -212,6 +212,11 @@
       "file": "packages/logic/src/solver/entrances.ts",
       "lines": [657, 669],
       "sha256": "b3bcc76dafe81a24585b82b73d7f85750c731fb25358405325f1fe5998de25fd"
+    },
+    "poolWarps": {
+      "file": "packages/logic/src/solver/entrances.ts",
+      "lines": [729, 740],
+      "sha256": "8ebba0a65ab4e4c02118e6f5ffb561613c46df85022de4668cad8eb4d10b92f6"
     },
     "poolOneWaysAnywhere": {
       "file": "packages/logic/src/solver/entrances.ts",
@@ -5973,6 +5978,1400 @@
         "sha256": "5af7dd0b4bf518029fd53b7dedbe75a58e1361a9a04f7f0b54b9a7b275f7767b"
       }
     ]
+  },
+  "warps": {
+    "setting": {
+      "key": "erWarps",
+      "name": "Warp Songs and Soaring Spots Shuffle",
+      "description": "Allows separate shuffling of the warp songs and soaring spots. This setting is disabled if both are selected in \"One-Ways Shuffle\".",
+      "default": "none",
+      "condition": "(s: any) => !s.erOneWaysSongs || !s.erOneWaysStatues",
+      "values": [
+        {
+          "value": "none",
+          "name": "None",
+          "description": "Warp songs and soaring spots are not shuffled.",
+          "condition": ""
+        },
+        {
+          "value": "ootOnly",
+          "name": "OoT Only",
+          "description": "Shuffles only OoT's warp songs among each other.",
+          "condition": "hasOoT"
+        },
+        {
+          "value": "mmOnly",
+          "name": "MM Only",
+          "description": "Shuffles only MM's soaring spots among each other.",
+          "condition": "hasMM"
+        },
+        {
+          "value": "ownGame",
+          "name": "Own Game",
+          "description": "Shuffles both warp songs and soaring spots within their own game.",
+          "condition": "hasOoTMM"
+        },
+        {
+          "value": "full",
+          "name": "Full",
+          "description": "Shuffles both warp songs and soaring spots together.",
+          "condition": ""
+        }
+      ]
+    },
+    "combinations": [
+      {
+        "id": "erWallmasters=ownGame;erOneWays=none;erWarps=full",
+        "settings": {
+          "erWallmasters": "ownGame",
+          "erOneWays": "none",
+          "erOneWaysMajor": false,
+          "erOneWaysIkana": false,
+          "erOneWaysOwls": false,
+          "erOneWaysWaterVoids": false,
+          "erOneWaysAnywhere": false,
+          "erWarps": "full"
+        },
+        "erEnabled": true,
+        "isEntranceShuffle": true,
+        "pools": [
+          {
+            "name": "WARPS",
+            "ownGame": false,
+            "alias": false,
+            "srcTypes": ["one-way-song", "one-way-statue"],
+            "dstTypes": ["one-way-song", "one-way-statue"],
+            "srcCount": {
+              "oot": 6,
+              "mm": 10
+            },
+            "dstCount": {
+              "oot": 6,
+              "mm": 10
+            },
+            "dst": ["MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"],
+            "candidates": [
+              {
+                "sources": ["MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"],
+                "destinations": ["MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"]
+              }
+            ]
+          },
+          {
+            "name": "WALLMASTERS",
+            "ownGame": true,
+            "alias": true,
+            "srcTypes": ["wallmaster"],
+            "dstTypes": ["one-way-song", "one-way-statue", "dungeon", "dungeon-minor", "dungeon-sh"],
+            "srcCount": {
+              "oot": 9,
+              "mm": 4
+            },
+            "dstCount": {
+              "oot": 28,
+              "mm": 24
+            },
+            "dst": ["MM_GREAT_BAY_FROM_SPIDER_HOUSE", "MM_GREAT_BAY_FROM_TEMPLE", "MM_SNOWHEAD_FROM_TEMPLE", "MM_SPIDER_HOUSE_OCEAN", "MM_SPIDER_HOUSE_SWAMP", "MM_STONE_TOWER_FROM_TEMPLE", "MM_STONE_TOWER_INVERTED_FROM_TEMPLE", "MM_SWAMP_FROM_SPIDER_HOUSE", "MM_TEMPLE_GREAT_BAY", "MM_TEMPLE_SNOWHEAD", "MM_TEMPLE_STONE_TOWER", "MM_TEMPLE_STONE_TOWER_INVERTED", "MM_TEMPLE_WOODFALL", "MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE", "MM_WOODFALL_FROM_TEMPLE", "OOT_BOTTOM_OF_THE_WELL", "OOT_DEATH_CRATER_FROM_TEMPLE_FIRE", "OOT_DEKU_TREE", "OOT_DESERT_COLOSSUS_FROM_TEMPLE_SPIRIT", "OOT_DODONGO_CAVERN", "OOT_GERUDO_FORTRESS_FROM_GERUDO_TRAINING", "OOT_GERUDO_TRAINING_GROUNDS", "OOT_GRAVEYARD_FROM_TEMPLE_SHADOW", "OOT_ICE_CAVERN", "OOT_JABU_JABU", "OOT_KAKARIKO_FROM_BOTTOM_OF_THE_WELL", "OOT_KOKIRI_FOREST_FROM_DEKU_TREE", "OOT_LAKE_HYLIA_FROM_TEMPLE_WATER", "OOT_MOUNTAIN_TRAIL_FROM_DODONGO_CAVERN", "OOT_SACRED_MEADOW_FROM_TEMPLE_FOREST", "OOT_TEMPLE_FIRE", "OOT_TEMPLE_FOREST", "OOT_TEMPLE_SHADOW", "OOT_TEMPLE_SPIRIT", "OOT_TEMPLE_WATER", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE", "OOT_ZORA_FOUNTAIN_FROM_ICE_CAVERN", "OOT_ZORA_FOUNTAIN_FROM_JABU_JABU"],
+            "candidates": [
+              {
+                "sources": ["MM_WALLMASTER_BTW_ENTRANCE", "MM_WALLMASTER_BTW_EXIT", "MM_WALLMASTER_BTW_FOUNTAIN", "MM_WALLMASTER_DAMPE"],
+                "destinations": ["MM_SPIDER_HOUSE_OCEAN", "MM_SPIDER_HOUSE_SWAMP", "MM_TEMPLE_GREAT_BAY", "MM_TEMPLE_SNOWHEAD", "MM_TEMPLE_STONE_TOWER", "MM_TEMPLE_STONE_TOWER_INVERTED", "MM_TEMPLE_WOODFALL", "MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE"]
+              },
+              {
+                "sources": ["OOT_WALLMASTER_BOTW_MAIN", "OOT_WALLMASTER_FOREST_CORRIDOR_EAST", "OOT_WALLMASTER_FOREST_CORRIDOR_WEST", "OOT_WALLMASTER_GANON_LIGHT", "OOT_WALLMASTER_GANON_SPIRIT", "OOT_WALLMASTER_GTG", "OOT_WALLMASTER_SHADOW", "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB", "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES"],
+                "destinations": ["OOT_BOTTOM_OF_THE_WELL", "OOT_DEKU_TREE", "OOT_DODONGO_CAVERN", "OOT_GERUDO_TRAINING_GROUNDS", "OOT_ICE_CAVERN", "OOT_JABU_JABU", "OOT_TEMPLE_FIRE", "OOT_TEMPLE_FOREST", "OOT_TEMPLE_SHADOW", "OOT_TEMPLE_SPIRIT", "OOT_TEMPLE_WATER", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"]
+              }
+            ]
+          }
+        ],
+        "resetGated": [],
+        "deadEnds": [],
+        "sampleLayout": [
+          ["MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY"],
+          ["MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON"],
+          ["MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD"],
+          ["MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE"],
+          ["MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD"],
+          ["MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP"],
+          ["MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER"],
+          ["MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL"],
+          ["MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE"],
+          ["MM_WARP_OWL_ZORA_CAPE", "OOT_WARP_SONG_CRATER"],
+          ["OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT"],
+          ["OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE"],
+          ["OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE"],
+          ["OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW"],
+          ["OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"],
+          ["OOT_WARP_SONG_TEMPLE", "MM_WARP_OWL_CLOCK_TOWN"],
+          ["MM_WALLMASTER_BTW_ENTRANCE", "MM_SPIDER_HOUSE_SWAMP"],
+          ["MM_WALLMASTER_BTW_EXIT", "MM_TEMPLE_GREAT_BAY"],
+          ["MM_WALLMASTER_BTW_FOUNTAIN", "MM_TEMPLE_SNOWHEAD"],
+          ["MM_WALLMASTER_DAMPE", "MM_TEMPLE_STONE_TOWER"],
+          ["OOT_WALLMASTER_BOTW_MAIN", "OOT_JABU_JABU"],
+          ["OOT_WALLMASTER_FOREST_CORRIDOR_EAST", "OOT_TEMPLE_FIRE"],
+          ["OOT_WALLMASTER_FOREST_CORRIDOR_WEST", "OOT_TEMPLE_FOREST"],
+          ["OOT_WALLMASTER_GANON_LIGHT", "OOT_TEMPLE_SHADOW"],
+          ["OOT_WALLMASTER_GANON_SPIRIT", "OOT_TEMPLE_SPIRIT"],
+          ["OOT_WALLMASTER_GTG", "OOT_TEMPLE_WATER"],
+          ["OOT_WALLMASTER_SHADOW", "OOT_WARP_SONG_CRATER"],
+          ["OOT_WALLMASTER_SPIRIT_ADULT_CLIMB", "OOT_WARP_SONG_DESERT"],
+          ["OOT_WALLMASTER_SPIRIT_CHILD_RUPEES", "OOT_WARP_SONG_GRAVE"]
+        ]
+      },
+      {
+        "id": "erWallmasters=full;erOneWays=none;erWarps=full",
+        "settings": {
+          "erWallmasters": "full",
+          "erOneWays": "none",
+          "erOneWaysMajor": false,
+          "erOneWaysIkana": false,
+          "erOneWaysOwls": false,
+          "erOneWaysWaterVoids": false,
+          "erOneWaysAnywhere": false,
+          "erWarps": "full"
+        },
+        "erEnabled": true,
+        "isEntranceShuffle": true,
+        "pools": [
+          {
+            "name": "WARPS",
+            "ownGame": false,
+            "alias": false,
+            "srcTypes": ["one-way-song", "one-way-statue"],
+            "dstTypes": ["one-way-song", "one-way-statue"],
+            "srcCount": {
+              "oot": 6,
+              "mm": 10
+            },
+            "dstCount": {
+              "oot": 6,
+              "mm": 10
+            },
+            "dst": ["MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"],
+            "candidates": [
+              {
+                "sources": ["MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"],
+                "destinations": ["MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"]
+              }
+            ]
+          },
+          {
+            "name": "WALLMASTERS",
+            "ownGame": false,
+            "alias": true,
+            "srcTypes": ["wallmaster"],
+            "dstTypes": ["one-way-song", "one-way-statue", "dungeon", "dungeon-minor", "dungeon-sh"],
+            "srcCount": {
+              "oot": 9,
+              "mm": 4
+            },
+            "dstCount": {
+              "oot": 28,
+              "mm": 24
+            },
+            "dst": ["MM_GREAT_BAY_FROM_SPIDER_HOUSE", "MM_GREAT_BAY_FROM_TEMPLE", "MM_SNOWHEAD_FROM_TEMPLE", "MM_SPIDER_HOUSE_OCEAN", "MM_SPIDER_HOUSE_SWAMP", "MM_STONE_TOWER_FROM_TEMPLE", "MM_STONE_TOWER_INVERTED_FROM_TEMPLE", "MM_SWAMP_FROM_SPIDER_HOUSE", "MM_TEMPLE_GREAT_BAY", "MM_TEMPLE_SNOWHEAD", "MM_TEMPLE_STONE_TOWER", "MM_TEMPLE_STONE_TOWER_INVERTED", "MM_TEMPLE_WOODFALL", "MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE", "MM_WOODFALL_FROM_TEMPLE", "OOT_BOTTOM_OF_THE_WELL", "OOT_DEATH_CRATER_FROM_TEMPLE_FIRE", "OOT_DEKU_TREE", "OOT_DESERT_COLOSSUS_FROM_TEMPLE_SPIRIT", "OOT_DODONGO_CAVERN", "OOT_GERUDO_FORTRESS_FROM_GERUDO_TRAINING", "OOT_GERUDO_TRAINING_GROUNDS", "OOT_GRAVEYARD_FROM_TEMPLE_SHADOW", "OOT_ICE_CAVERN", "OOT_JABU_JABU", "OOT_KAKARIKO_FROM_BOTTOM_OF_THE_WELL", "OOT_KOKIRI_FOREST_FROM_DEKU_TREE", "OOT_LAKE_HYLIA_FROM_TEMPLE_WATER", "OOT_MOUNTAIN_TRAIL_FROM_DODONGO_CAVERN", "OOT_SACRED_MEADOW_FROM_TEMPLE_FOREST", "OOT_TEMPLE_FIRE", "OOT_TEMPLE_FOREST", "OOT_TEMPLE_SHADOW", "OOT_TEMPLE_SPIRIT", "OOT_TEMPLE_WATER", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE", "OOT_ZORA_FOUNTAIN_FROM_ICE_CAVERN", "OOT_ZORA_FOUNTAIN_FROM_JABU_JABU"],
+            "candidates": [
+              {
+                "sources": ["MM_WALLMASTER_BTW_ENTRANCE", "MM_WALLMASTER_BTW_EXIT", "MM_WALLMASTER_BTW_FOUNTAIN", "MM_WALLMASTER_DAMPE", "OOT_WALLMASTER_BOTW_MAIN", "OOT_WALLMASTER_FOREST_CORRIDOR_EAST", "OOT_WALLMASTER_FOREST_CORRIDOR_WEST", "OOT_WALLMASTER_GANON_LIGHT", "OOT_WALLMASTER_GANON_SPIRIT", "OOT_WALLMASTER_GTG", "OOT_WALLMASTER_SHADOW", "OOT_WALLMASTER_SPIRIT_ADULT_CLIMB", "OOT_WALLMASTER_SPIRIT_CHILD_RUPEES"],
+                "destinations": ["MM_SPIDER_HOUSE_OCEAN", "MM_SPIDER_HOUSE_SWAMP", "MM_TEMPLE_GREAT_BAY", "MM_TEMPLE_SNOWHEAD", "MM_TEMPLE_STONE_TOWER", "MM_TEMPLE_STONE_TOWER_INVERTED", "MM_TEMPLE_WOODFALL", "MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE", "OOT_BOTTOM_OF_THE_WELL", "OOT_DEKU_TREE", "OOT_DODONGO_CAVERN", "OOT_GERUDO_TRAINING_GROUNDS", "OOT_ICE_CAVERN", "OOT_JABU_JABU", "OOT_TEMPLE_FIRE", "OOT_TEMPLE_FOREST", "OOT_TEMPLE_SHADOW", "OOT_TEMPLE_SPIRIT", "OOT_TEMPLE_WATER", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"]
+              }
+            ]
+          }
+        ],
+        "resetGated": [],
+        "deadEnds": [],
+        "sampleLayout": [
+          ["MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_GREAT_BAY"],
+          ["MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_IKANA_CANYON"],
+          ["MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_MILK_ROAD"],
+          ["MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE"],
+          ["MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SNOWHEAD"],
+          ["MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_SOUTHERN_SWAMP"],
+          ["MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_STONE_TOWER"],
+          ["MM_WARP_OWL_STONE_TOWER", "MM_WARP_OWL_WOODFALL"],
+          ["MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_ZORA_CAPE"],
+          ["MM_WARP_OWL_ZORA_CAPE", "OOT_WARP_SONG_CRATER"],
+          ["OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_DESERT"],
+          ["OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_GRAVE"],
+          ["OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_LAKE"],
+          ["OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_MEADOW"],
+          ["OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_TEMPLE"],
+          ["OOT_WARP_SONG_TEMPLE", "MM_WARP_OWL_CLOCK_TOWN"],
+          ["MM_WALLMASTER_BTW_ENTRANCE", "MM_SPIDER_HOUSE_SWAMP"],
+          ["MM_WALLMASTER_BTW_EXIT", "MM_TEMPLE_GREAT_BAY"],
+          ["MM_WALLMASTER_BTW_FOUNTAIN", "MM_TEMPLE_SNOWHEAD"],
+          ["MM_WALLMASTER_DAMPE", "MM_TEMPLE_STONE_TOWER"],
+          ["OOT_WALLMASTER_BOTW_MAIN", "MM_TEMPLE_STONE_TOWER_INVERTED"],
+          ["OOT_WALLMASTER_FOREST_CORRIDOR_EAST", "MM_TEMPLE_WOODFALL"],
+          ["OOT_WALLMASTER_FOREST_CORRIDOR_WEST", "MM_WARP_OWL_CLOCK_TOWN"],
+          ["OOT_WALLMASTER_GANON_LIGHT", "MM_WARP_OWL_GREAT_BAY"],
+          ["OOT_WALLMASTER_GANON_SPIRIT", "MM_WARP_OWL_IKANA_CANYON"],
+          ["OOT_WALLMASTER_GTG", "MM_WARP_OWL_MILK_ROAD"],
+          ["OOT_WALLMASTER_SHADOW", "MM_WARP_OWL_MOUNTAIN_VILLAGE"],
+          ["OOT_WALLMASTER_SPIRIT_ADULT_CLIMB", "MM_WARP_OWL_SNOWHEAD"],
+          ["OOT_WALLMASTER_SPIRIT_CHILD_RUPEES", "MM_WARP_OWL_SOUTHERN_SWAMP"]
+        ]
+      }
+    ],
+    "sharedOotCandidates": {
+      "erWallmasters=ownGame;erOneWays=none;erWarps=full": 17,
+      "erWallmasters=full;erOneWays=none;erWarps=full": 34
+    },
+    "capacityShortfalls": {
+      "erWallmasters=ownGame;erOneWays=none;erWarps=full": [],
+      "erWallmasters=full;erOneWays=none;erWarps=full": []
+    },
+    "warpRows": ["OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_CRATER", "OOT_WARP_SONG_LAKE", "OOT_WARP_SONG_GRAVE", "OOT_WARP_SONG_DESERT", "OOT_WARP_SONG_TEMPLE", "MM_WARP_OWL_GREAT_BAY", "MM_WARP_OWL_ZORA_CAPE", "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_CLOCK_TOWN", "MM_WARP_OWL_MILK_ROAD", "MM_WARP_OWL_WOODFALL", "MM_WARP_OWL_SOUTHERN_SWAMP", "MM_WARP_OWL_IKANA_CANYON", "MM_WARP_OWL_STONE_TOWER"],
+    "rows": {
+      "MM_WARP_OWL_CLOCK_TOWN": {
+        "game": "mm",
+        "id": 55440,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Clock Town",
+        "fromMap": "NONE",
+        "toMap": "MM_CLOCK_TOWN",
+        "noSot": true
+      },
+      "MM_WARP_OWL_GREAT_BAY": {
+        "game": "mm",
+        "id": 26800,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Great Bay",
+        "fromMap": "NONE",
+        "toMap": "MM_GREAT_BAY_COAST",
+        "noSot": true
+      },
+      "MM_WARP_OWL_IKANA_CANYON": {
+        "game": "mm",
+        "id": 8256,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Ikana",
+        "fromMap": "NONE",
+        "toMap": "MM_IKANA_VALLEY",
+        "noSot": true
+      },
+      "MM_WARP_OWL_MILK_ROAD": {
+        "game": "mm",
+        "id": 15936,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Milk Road",
+        "fromMap": "NONE",
+        "toMap": "MM_MILK_ROAD",
+        "noSot": true
+      },
+      "MM_WARP_OWL_MOUNTAIN_VILLAGE": {
+        "game": "mm",
+        "id": 39552,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Mountain",
+        "fromMap": "NONE",
+        "toMap": "MM_MOUNTAIN_VILLAGE",
+        "noSot": true
+      },
+      "MM_WARP_OWL_SNOWHEAD": {
+        "game": "mm",
+        "id": 45616,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Snowhead",
+        "fromMap": "NONE",
+        "toMap": "MM_SNOWHEAD",
+        "noSot": true
+      },
+      "MM_WARP_OWL_SOUTHERN_SWAMP": {
+        "game": "mm",
+        "id": 33952,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Swamp",
+        "fromMap": "NONE",
+        "toMap": "MM_SWAMP",
+        "noSot": true
+      },
+      "MM_WARP_OWL_STONE_TOWER": {
+        "game": "mm",
+        "id": 43568,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Stone Tower",
+        "fromMap": "NONE",
+        "toMap": "MM_STONE_TOWER",
+        "noSot": true
+      },
+      "MM_WARP_OWL_WOODFALL": {
+        "game": "mm",
+        "id": 34368,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Woodfall",
+        "fromMap": "NONE",
+        "toMap": "MM_WOODFALL",
+        "noSot": true
+      },
+      "MM_WARP_OWL_ZORA_CAPE": {
+        "game": "mm",
+        "id": 27232,
+        "type": "one-way-statue",
+        "reverse": null,
+        "from": "MM SOARING",
+        "to": "MM Owl Zora Cape",
+        "fromMap": "NONE",
+        "toMap": "MM_ZORA_CAPE",
+        "noSot": true
+      },
+      "OOT_WARP_SONG_CRATER": {
+        "game": "oot",
+        "id": 1270,
+        "type": "one-way-song",
+        "reverse": null,
+        "from": "OOT SONG_TP_FIRE",
+        "to": "OOT Death Mountain Crater Warp",
+        "fromMap": "NONE",
+        "toMap": "OOT_DEATH_MOUNTAIN_CRATER",
+        "noSot": false
+      },
+      "OOT_WARP_SONG_DESERT": {
+        "game": "oot",
+        "id": 497,
+        "type": "one-way-song",
+        "reverse": null,
+        "from": "OOT SONG_TP_SPIRIT",
+        "to": "OOT Desert Colossus",
+        "fromMap": "NONE",
+        "toMap": "OOT_COLOSSUS",
+        "noSot": false
+      },
+      "OOT_WARP_SONG_GRAVE": {
+        "game": "oot",
+        "id": 1384,
+        "type": "one-way-song",
+        "reverse": null,
+        "from": "OOT SONG_TP_SHADOW",
+        "to": "OOT Graveyard Upper",
+        "fromMap": "NONE",
+        "toMap": "OOT_GRAVEYARD",
+        "noSot": false
+      },
+      "OOT_WARP_SONG_LAKE": {
+        "game": "oot",
+        "id": 1540,
+        "type": "one-way-song",
+        "reverse": null,
+        "from": "OOT SONG_TP_WATER",
+        "to": "OOT Lake Hylia",
+        "fromMap": "NONE",
+        "toMap": "OOT_LAKE_HYLIA",
+        "noSot": false
+      },
+      "OOT_WARP_SONG_MEADOW": {
+        "game": "oot",
+        "id": 1536,
+        "type": "one-way-song",
+        "reverse": null,
+        "from": "OOT SONG_TP_FOREST",
+        "to": "OOT Sacred Meadow",
+        "fromMap": "NONE",
+        "toMap": "OOT_SACRED_MEADOW",
+        "noSot": false
+      },
+      "OOT_WARP_SONG_TEMPLE": {
+        "game": "oot",
+        "id": 1524,
+        "type": "one-way-song",
+        "reverse": null,
+        "from": "OOT SONG_TP_LIGHT",
+        "to": "OOT Temple of Time",
+        "fromMap": "NONE",
+        "toMap": "OOT_TEMPLE_OF_TIME",
+        "noSot": false
+      }
+    },
+    "sources": {
+      "OOT_WARP_SONG_MEADOW": {
+        "game": "oot",
+        "type": "one-way-song",
+        "from": "OOT SONG_TP_FOREST",
+        "to": "OOT Sacred Meadow",
+        "carried": [
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 40,
+            "expression": "true",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 20,
+            "from": "MM WARP_SONGS",
+            "expression": "can_play_tp_forest && setting(games, ootmm)",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 27,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_tp_forest",
+            "quest": "any"
+          }
+        ]
+      },
+      "OOT_WARP_SONG_CRATER": {
+        "game": "oot",
+        "type": "one-way-song",
+        "from": "OOT SONG_TP_FIRE",
+        "to": "OOT Death Mountain Crater Warp",
+        "carried": [
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 46,
+            "expression": "true",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 21,
+            "from": "MM WARP_SONGS",
+            "expression": "can_play_tp_fire && setting(games, ootmm)",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 28,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_tp_fire",
+            "quest": "any"
+          }
+        ]
+      },
+      "OOT_WARP_SONG_LAKE": {
+        "game": "oot",
+        "type": "one-way-song",
+        "from": "OOT SONG_TP_WATER",
+        "to": "OOT Lake Hylia",
+        "carried": [
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 52,
+            "expression": "true",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 22,
+            "from": "MM WARP_SONGS",
+            "expression": "can_play_tp_water && setting(games, ootmm)",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 29,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_tp_water",
+            "quest": "any"
+          }
+        ]
+      },
+      "OOT_WARP_SONG_GRAVE": {
+        "game": "oot",
+        "type": "one-way-song",
+        "from": "OOT SONG_TP_SHADOW",
+        "to": "OOT Graveyard Upper",
+        "carried": [
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 58,
+            "expression": "true",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 23,
+            "from": "MM WARP_SONGS",
+            "expression": "can_play_tp_shadow && setting(games, ootmm)",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 30,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_tp_shadow",
+            "quest": "any"
+          }
+        ]
+      },
+      "OOT_WARP_SONG_DESERT": {
+        "game": "oot",
+        "type": "one-way-song",
+        "from": "OOT SONG_TP_SPIRIT",
+        "to": "OOT Desert Colossus",
+        "carried": [
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 64,
+            "expression": "true",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 24,
+            "from": "MM WARP_SONGS",
+            "expression": "can_play_tp_spirit && setting(games, ootmm)",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 31,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_tp_spirit",
+            "quest": "any"
+          }
+        ]
+      },
+      "OOT_WARP_SONG_TEMPLE": {
+        "game": "oot",
+        "type": "one-way-song",
+        "from": "OOT SONG_TP_LIGHT",
+        "to": "OOT Temple of Time",
+        "carried": [
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 70,
+            "expression": "true",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 25,
+            "from": "MM WARP_SONGS",
+            "expression": "can_play_tp_light && setting(games, ootmm)",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 32,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_tp_light",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_GREAT_BAY": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Great Bay",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 36,
+            "expression": "has(OWL_GREAT_BAY)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_ZORA_CAPE": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Zora Cape",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 37,
+            "expression": "has(OWL_ZORA_CAPE)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_SNOWHEAD": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Snowhead",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 35,
+            "expression": "has(OWL_SNOWHEAD)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_MOUNTAIN_VILLAGE": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Mountain",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 34,
+            "expression": "has(OWL_MOUNTAIN_VILLAGE)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_CLOCK_TOWN": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Clock Town",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 30,
+            "expression": "has(OWL_CLOCK_TOWN)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_MILK_ROAD": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Milk Road",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 31,
+            "expression": "has(OWL_MILK_ROAD)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_WOODFALL": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Woodfall",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 33,
+            "expression": "has(OWL_WOODFALL)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_SOUTHERN_SWAMP": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Swamp",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 32,
+            "expression": "has(OWL_SOUTHERN_SWAMP)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_IKANA_CANYON": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Ikana",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 38,
+            "expression": "has(OWL_IKANA_CANYON)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      },
+      "MM_WARP_OWL_STONE_TOWER": {
+        "game": "mm",
+        "type": "one-way-statue",
+        "from": "MM SOARING",
+        "to": "MM Owl Stone Tower",
+        "carried": [
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 39,
+            "expression": "has(OWL_STONE_TOWER)",
+            "quest": "any"
+          }
+        ],
+        "incoming": [
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 35,
+            "from": "MM Pirate Fortress Sewers",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 122,
+            "from": "MM Pirate Fortress Sewers Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/dungeons/pirate_fortress.yml",
+            "line": 208,
+            "from": "MM Pirate Fortress Barrel Maze",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/_system.yml",
+            "line": 9,
+            "from": "MM GLOBAL",
+            "expression": "can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 145,
+            "from": "MM Great Bay Coast Near Pinnacle",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/great_bay_coast.yml",
+            "line": 158,
+            "from": "MM Great Bay Coast Fortress",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/pinnacle_rock.yml",
+            "line": 8,
+            "from": "MM Pinnacle Rock Entrance",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/mm/overworld/zora_cape.yml",
+            "line": 132,
+            "from": "MM Zora Cape Near Hall",
+            "expression": "has_mask_zora && can_play_soaring",
+            "quest": "any"
+          },
+          {
+            "file": "data/world/oot/overworld/_system.yml",
+            "line": 33,
+            "from": "OOT GLOBAL",
+            "expression": "can_play_soaring && setting(games, ootmm)",
+            "quest": "any"
+          }
+        ]
+      }
+    }
   },
   "sources": {
     "OOT_LAKE_HYLIA_FROM_VALLEY": {

@@ -36,7 +36,7 @@ RULES = {
     'erEnabled': 'data/macros/macros_mm.yml:305 (er_enabled)',
     'isEntranceShuffle': 'packages/logic/src/helpers.ts:6-56 (isEntranceShuffle)',
     'pools': f'{E}:863-879 (makePools), {E}:567-591 (placePools drops pools without sources)',
-    'opts': f'{E}:657-669 (poolWallmasters), {E}:742-784 (poolOneWaysAnywhere, poolOneWays)',
+    'opts': f'{E}:657-669 (poolWallmasters), {E}:729-740 (poolWarps), {E}:742-784 (poolOneWaysAnywhere, poolOneWays)',
     'types': f'{E}:657-669, {E}:742-784, {E}:791-886 (pool types, poolsTypesDst)',
     'members': f'{E}:179-201 (computeAllEntrances), {E}:601-627 (entrancesForTypes, poolEntrancesForTypes)',
     'candidates': f'{E}:513 (candidate filter), {E}:139-163 (polarity), {E}:459-498 (isSelfLoop, '
@@ -86,6 +86,8 @@ def compare(contract, contract_sha256, facts):
     report.check('settings', 'normalized M1 combinations (makeSettings fixed points of the 128 raw inputs)',
                  fixture_ids, facts['settingsFixedPoints'])
     for name, row in sorted(contract['rows'].items()):
+        report.check('rows', name, row, facts['rows'].get(name))
+    for name, row in sorted(contract.get('warps', {}).get('rows', {}).items()):
         report.check('rows', name, row, facts['rows'].get(name))
 
     pinned_by_id = {c['id']: c for c in facts['combinations']}
@@ -152,6 +154,14 @@ def compare(contract, contract_sha256, facts):
                      (pinned_full or {}).get('id'))
         if pinned_full is not None:
             same_entry(contract['fullWallmasters']['combination'], pinned_full)
+    # Warp Songs and Soaring Spots Shuffle with Wallmasters (limits design, Stage 4): the same checks on each.
+    if 'warps' in contract:
+        pinned_warps = {c['id']: c for c in (facts.get('warps') or {}).get('combinations', [])}
+        report.check('pools', 'warps combination runs', [c['id'] for c in contract['warps']['combinations']],
+                     [c['id'] for c in (facts.get('warps') or {}).get('combinations', [])])
+        for entry in contract['warps']['combinations']:
+            if entry['id'] in pinned_warps:
+                same_entry(entry, pinned_warps[entry['id']])
     report.check('mq', 'world areas do not depend on the M1 keys', True, facts['areaKeysInvariantAcrossCombinations'])
 
     mq, pinned_mq = contract['mqSources'], facts['mqSources']
@@ -195,6 +205,19 @@ def compare(contract, contract_sha256, facts):
         for key in sorted(fixture_short):
             attempt = (pinned_full.get(key) or {}).get('placement') or {}
             report.check('placement', f'Full MQ [{key}] attempt placed', True, attempt.get('placed'))
+    if 'warps' in contract:
+        warps = contract['warps']
+        for entry in warps['combinations']:
+            cid = entry['id']
+            pinned_warps = {'+'.join(sorted(r['mq'])): (r.get('warps') or {}).get(cid) for r in pinned_mq['table']}
+            report.check('capacity', f'{cid}: contexts with more sources than destinations',
+                         sorted('+'.join(sorted(s)) for s in warps['capacityShortfalls'][cid]),
+                         sorted(k for k, v in pinned_warps.items() if v and v['short']))
+            report.check('capacity', f'{cid}: MQ contexts without a measure', [],
+                         sorted(k for k, v in pinned_warps.items() if not v))
+            report.check('capacity', f'{cid}: shared OoT candidates in every MQ context',
+                         {warps['sharedOotCandidates'][cid]},
+                         {v['destinations'] for v in pinned_warps.values() if v})
     return report
 
 
@@ -266,8 +289,9 @@ def main():
                   f'    pinned:  {json.dumps(d["pinned"])}\n    rule:    {d["source"]}', file=sys.stderr)
         sys.exit(1)
     full = ' and Full Wallmasters' if 'fullWallmasters' in contract else ''
-    print(f'All {total} compared facts agree with pinned OoTMM ({len(contract["combinations"])} combinations{full}, '
-          f'{len(facts["mqSources"]["table"])} MQ contexts, Node {facts["node"]}).')
+    warps = f', {len(contract["warps"]["combinations"])} with the warps' if 'warps' in contract else ''
+    print(f'All {total} compared facts agree with pinned OoTMM ({len(contract["combinations"])} combinations{full}'
+          f'{warps}, {len(facts["mqSources"]["table"])} MQ contexts, Node {facts["node"]}).')
 
 
 if __name__ == '__main__':

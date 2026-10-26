@@ -114,7 +114,8 @@ for kind in ('settings', 'erEnabled', 'isEntranceShuffle', 'pools', 'opts', 'typ
              'resetGated', 'deadEnds', 'sampleLayout', 'regions', 'mq', 'capacity', 'rows', 'inputs', 'placement',
              'contract'):
     assert report['checked'].get(kind, 0) > 0, kind
-assert report['checked']['candidates'] >= 700 and report['checked']['erEnabled'] == 66 + 1  # and Full's
+# The 66 combinations, Full's and the two warps combinations.
+assert report['checked']['candidates'] >= 700 and report['checked']['erEnabled'] == 66 + 1 + 2
 # One real seeded placement per combination succeeds; in the four MQ Spirit + MQ BotW contexts (vanilla Shadow and
 # Ganon) every Wallmaster combination with too few OoT destinations fails, as the fixture's capacity flags say.
 assert all(c['placement']['placed'] for c in facts['combinations'])
@@ -136,6 +137,21 @@ full_tried = {'+'.join(sorted(r['mq'])): r['full'] for r in facts['mqSources']['
 assert all(not v['short'] and not v['ownGame'] for v in full_tried.values())
 assert {k for k, v in full_tried.items() if 'placement' in v} == failed
 assert all(v['placement']['placed'] for v in full_tried.values() if 'placement' in v)
+# Warp Songs and Soaring Spots Shuffle with Wallmasters (limits design, Stage 4): OoTMM's own runs of erWarps=full with
+# Own Game and with Full Wallmasters are the fixture's two pools, WARPS first, and each seeded placement succeeds,
+# routing all 16 warp rows among each other and every Wallmaster; no MQ context is short.
+warps_facts, warps_contract = facts['warps']['combinations'], contract['warps']['combinations']
+assert [c['id'] for c in warps_facts] == [c['id'] for c in warps_contract] == [
+    'erWallmasters=ownGame;erOneWays=none;erWarps=full', 'erWallmasters=full;erOneWays=none;erWarps=full']
+for entry in warps_facts:
+    assert [(p['name'], p['ownGame'], p['alias']) for p in entry['pools']] == [
+        ('WARPS', False, False), ('WALLMASTERS', entry['id'].startswith('erWallmasters=ownGame'), True)]
+    assert entry['normalized']['erWarps'] == 'full' and entry['placement']['placed']
+    warp_pairs = [pair for pair in entry['placement']['pairs'] if pair[0] in contract['warps']['warpRows']]
+    assert sorted(s for s, _ in warp_pairs) == sorted(d for _, d in warp_pairs) == sorted(
+        contract['warps']['warpRows'])
+warps_tried = [r['warps'] for r in facts['mqSources']['table']]
+assert all(not v['short'] for row in warps_tried for v in row.values()) and len(warps_tried) == 64
 print(f'Pinned OoTMM agrees with the M1 fixture on {sum(report["checked"].values())} facts '
       f'({facts["seconds"]["wall"]:.0f} s with {facts["jobs"]} Node workers).')
 
@@ -234,5 +250,24 @@ tried['full']['placement']['placed'] = False
 named, _ = divergences(altered_facts=full_failed)
 assert named == {('placement', f'{full_id} placed'),
                  ('placement', f'Full MQ [{"+".join(sorted(tried["mq"]))}] attempt placed')}, named
-print('The comparer names every altered fixture value and every altered pinned fact, Full included, rejects facts '
-      'made from another contract, and refuses another Node.')
+# The warps section too: a fixture that made the WARPS pool own-game or dropped an owl from the Wallmasters' own-game
+# destinations, and facts where OoTMM failed a warps placement or found an MQ context short.
+warps_id = warps_contract[0]['id']
+own_warps = copy.deepcopy(contract)
+own_warps['warps']['combinations'][0]['pools'][0]['ownGame'] = True
+mm_wallmasters = next(g for g in own_warps['warps']['combinations'][0]['pools'][1]['candidates']
+                      if g['sources'][0].startswith('MM_'))
+mm_wallmasters['destinations'].remove('MM_WARP_OWL_SNOWHEAD')
+named, _ = divergences(fixture=own_warps)
+# The seeded placement may also have used the dropped owl, which then lies outside the altered candidates.
+assert named - {('placement', f'{warps_id} pairs outside the fixture candidates')} == {
+    made_from, ('opts', f'{warps_id} WARPS')} | {
+    ('candidates', f'{warps_id} WALLMASTERS {s}') for s in mm_wallmasters['sources']}, named
+warps_failed = copy.deepcopy(facts)
+warps_failed['warps']['combinations'][1]['placement'] = {'placed': False, 'error': 'Too many backtracks'}
+warps_failed['mqSources']['table'][5]['warps'][warps_id]['short'] = True
+named, _ = divergences(altered_facts=warps_failed)
+assert named == {('placement', f'{warps_contract[1]["id"]} placed'),
+                 ('capacity', f'{warps_id}: contexts with more sources than destinations')}, named
+print('The comparer names every altered fixture value and every altered pinned fact, Full and the warps included, '
+      'rejects facts made from another contract, and refuses another Node.')

@@ -184,6 +184,58 @@ assert fw_sites == {'dayOneGrant': ('pathfind.ts', [596, 599]), 'ootCapture': ('
                     'mmCapture': ('En_Wallmas.c', [26, 33]), 'ootSwitch': ('play.c', [738, 756]),
                     'ootGameSwitch': ('play.c', [620, 625]), 'mmSwitch': ('play.c', [893, 912]),
                     'saveOnSwitch': ('switch.c', [75, 85])}, fw_sites
+# Warp Songs and Soaring Spots Shuffle with Wallmasters (limits design, Stage 4): erWarps=full with Own Game and with
+# Full Wallmasters. makePoolsSimple adds the WARPS pool (entrances.ts:852-854): the six OoT warp-song rows and the ten MM
+# owl statues (entrances.yml:174-179, 507-516) among each other, ownGame false (poolWarps, :729-740), and it comes
+# before WALLMASTERS. poolsTypesDst (:881-886) gives the Wallmasters its two types too: an OoT Wallmaster of Own Game
+# takes the 11 OoT dungeons and 6 warp pads, an MM one the 7 MM dungeons and 10 owls, and Full's take all 34.
+wp = data['warps']
+assert wp['setting']['key'] == 'erWarps' and wp['setting']['name'] == 'Warp Songs and Soaring Spots Shuffle'
+assert wp['setting']['condition'] == contract.WARPS_CONDITION == '(s: any) => !s.erOneWaysSongs || !s.erOneWaysStatues'
+assert [v['value'] for v in wp['setting']['values']] == ['none', 'ootOnly', 'mmOnly', 'ownGame', 'full']
+full_value = next(v for v in wp['setting']['values'] if v['value'] == 'full')
+assert full_value == {'value': 'full', 'name': 'Full', 'description': 'Shuffles both warp songs and soaring spots '
+                      'together.', 'condition': ''}
+assert [e['id'] for e in wp['combinations']] == ['erWallmasters=ownGame;erOneWays=none;erWarps=full',
+                                                 'erWallmasters=full;erOneWays=none;erWarps=full']
+# The section lists the warp rows apart, so the M1 rows stay the earlier stages' 63.
+warp_rows, wrows = wp['warpRows'], wp['rows']
+assert len(rows) == 63 and sorted(wrows) == sorted(warp_rows) and not set(wrows) & set(rows)
+assert len(warp_rows) == 16 and [wrows[n]['type'] for n in warp_rows] == ['one-way-song'] * 6 + ['one-way-statue'] * 10
+assert all(wrows[n]['game'] == ('oot' if wrows[n]['type'] == 'one-way-song' else 'mm') and not wrows[n]['reverse']
+           and wrows[n]['noSot'] == (wrows[n]['game'] == 'mm') for n in warp_rows)
+assert sorted(wrows[n]['id'] for n in warp_rows[:6]) == [0x1f1, 0x4f6, 0x568, 0x5f4, 0x600, 0x604]
+assert all(wrows[n]['from'] == 'MM SOARING' for n in warp_rows[6:])
+# The expression each warp source keeps: an OoT song's landing exit is unconditional (oot _system.yml:36-70), an
+# owl's needs its owl (mm _system.yml:27-39).
+warp_carried = {n: [c['expression'] for c in s['carried']] for n, s in wp['sources'].items()}
+assert all(warp_carried[n] == ['true'] for n in warp_rows[:6])
+assert all(len(warp_carried[n]) == 1 and warp_carried[n][0].startswith('has(OWL_') for n in warp_rows[6:])
+for entry in wp['combinations']:
+    full_pool = entry['settings']['erWallmasters'] == 'full'
+    assert entry['settings']['erWarps'] == 'full' and entry['erEnabled'] and entry['isEntranceShuffle']
+    assert [(p['name'], p['ownGame'], p['alias']) for p in entry['pools']] == [('WARPS', False, False),
+                                                                               ('WALLMASTERS', not full_pool, True)]
+    warps_pool, wallmaster_pool = entry['pools']
+    assert warps_pool['srcTypes'] == warps_pool['dstTypes'] == ['one-way-song', 'one-way-statue']
+    assert len(warps_pool['candidates']) == 1 and sorted(warps_pool['candidates'][0]['sources']) == sorted(warp_rows)
+    assert sorted(warps_pool['candidates'][0]['destinations']) == sorted(warp_rows) == warps_pool['dst']
+    assert set(wallmaster_pool['dstTypes']) == {'one-way-song', 'one-way-statue', 'dungeon', 'dungeon-minor',
+                                                'dungeon-sh'}
+    by_game = {g: per_game(entry, 'WALLMASTERS', g) for g in ('oot', 'mm')}
+    assert all(len(sets) == 1 for sets in by_game.values())
+    oot_dst, mm_dst = (set(next(iter(by_game[g]))) for g in ('oot', 'mm'))
+    alone_oot, alone_mm = (set(next(iter(per_game(alone, 'WALLMASTERS', g)))) for g in ('oot', 'mm'))
+    if full_pool:
+        assert oot_dst == mm_dst == alone_oot | alone_mm | set(warp_rows)
+    else:
+        assert oot_dst == alone_oot | set(warp_rows[:6]) and mm_dst == alone_mm | set(warp_rows[6:])
+    assert wp['sharedOotCandidates'][entry['id']] == len(oot_dst) == (34 if full_pool else 17)
+    assert entry['resetGated'] == [] and entry['deadEnds'] == [] and wp['capacityShortfalls'][entry['id']] == []
+    # The sample layout routes every warp source once to a warp row: a permutation of the 16.
+    sample = dict(entry['sampleLayout'])
+    assert sorted(sample[n] for n in warp_rows) == sorted(warp_rows)
+assert data['guardedBodies']['poolWarps']['lines'] == [729, 740]
 presence = data['registryAreaPresence']
 assert presence['never'] == [] and all(rows[n]['type'] == 'wallmaster' for n in presence['questDependentRows'])
 
@@ -223,7 +275,7 @@ assert spoiler['noErSection'][2].startswith('  OOT Market to OOT Market Mask Sho
 guards = data['guardedBodies']
 for name, lines in [('computeAllEntrances', [179, 201]), ('placeSingleExpr', [203, 217]), ('isSelfLoop', [459, 482]),
                     ('isAssignableConstraints', [484, 498]), ('entrancesForTypes', [601, 606]),
-                    ('poolEntrancesForTypes', [608, 627]), ('poolWallmasters', [657, 669]),
+                    ('poolEntrancesForTypes', [608, 627]), ('poolWallmasters', [657, 669]), ('poolWarps', [729, 740]),
                     ('poolOneWaysAnywhere', [742, 756]), ('poolOneWays', [758, 784]),
                     ('makePoolsSimple', [791, 861]), ('makePools', [863, 879]), ('poolsTypesDst', [881, 886]),
                     ('POLARITY_ANY_OVERWORLD', [43, 48]), ('POLARITY_OUT', [74, 80]),

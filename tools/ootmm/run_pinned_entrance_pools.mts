@@ -31,7 +31,10 @@
 // instance and records the pools placePools built after removing empty ones (entrances.ts:567-591). The pool,
 // candidate, reset, dead-end, region and settings facts come from OoTMM's own methods on that state, so none
 // depends on the RNG. One unmodified WorldShuffler.run() per combination (seeded as worldState seeds it) is also
-// recorded; its layout depends on the RNG, so only whether it placed and where it may place are compared.
+// recorded; its layout depends on the RNG, so only whether it placed and where it may place are compared. The Full
+// Wallmaster combination (fullWallmasters) and the two warps combinations (warps: erWarps=full with Own Game and with
+// Full Wallmasters, limits design Stage 4, whose settings name erWarps too) run the same way, and each MQ context
+// records their capacity.
 //
 // With --temple <fixture> instead of --contract (tools/ootmm/temple-song-fixtures.json), it runs OoTMM's own
 // validateAgeTemple (entrances.ts:265-287) instead, for the Temple probe's GLOBAL node (limits design, Stage 2):
@@ -83,6 +86,8 @@ const sorted = (values: Iterable<string>) => [...values].sort();
 const combinationId = (s: any) =>
   [`erWallmasters=${s.erWallmasters}`, `erOneWays=${s.erOneWays}`, ...M1_FLAGS.filter(f => s[f])].join(';');
 const m1Settings = (s: any) => Object.fromEntries(M1_KEYS.map(k => [k, s[k]]));
+// The warps combinations (limits design, Stage 4) add erWarps to the M1 keys.
+const warpSettings = (s: any) => ({ ...m1Settings(s), erWarps: s.erWarps });
 
 // --temple: one task per group (a starting age, a world and an instrument), in the fixture's order.
 const templeGroups = (fx: any) => fx.groups.map(({ startingAge, world, instrument }: any) => {
@@ -352,10 +357,10 @@ async function startWorker() {
   const wallmasterDungeons = Object.keys(core.WORLD.mq).filter(key => ['oot', 'mq'].some(section =>
     Object.keys(core.WORLD[section][key] || {}).some(area => wallmasterAreas.has(core.gameId('oot', area, ' ')))));
 
-  // One fixture combination (index), or the Full Wallmaster one (fullWallmasters.combination, limits design Stage 3).
-  async function combination(index: number | null) {
-    const entry = index === null ? contract.fullWallmasters.combination : contract.combinations[index];
-    const requested = m1Settings(entry.settings);
+  // One fixture combination: an M1 one, the Full Wallmaster one (fullWallmasters.combination, limits design Stage 3)
+  // or a warps one (warps.combinations, Stage 4), whose settings also name erWarps (`keys`).
+  async function combination(entry: any, keys: (s: any) => any = m1Settings) {
+    const requested = keys(entry.settings);
     const state = await buildState(requested);
     const { shuffler, pools } = timed('pools', () => capturePools(state, state.settings));
     const facts = timed('pools', () => poolFacts(shuffler, pools));
@@ -387,7 +392,7 @@ async function startWorker() {
     const erEnabled = state.worlds[0].exprParsers.mm.parse('er_enabled');
     const placement = timed('placement', () => place(state, state.settings, facts));
     return {
-      id: entry.id, requested, normalized: m1Settings(state.settings),
+      id: entry.id, requested, normalized: keys(state.settings),
       erEnabled: erEnabled === logic.exprTrue() ? true : erEnabled === logic.exprFalse() ? false : 'not constant',
       isEntranceShuffle: logic.isEntranceShuffle(state.settings),
       gameLinks: Object.entries(base).sort(),
@@ -463,13 +468,32 @@ async function startWorker() {
                short: wallmasters.src.length > reachable.size,
                ...(shortfalls.length ? { placement: timed('placement', () => place(state, settings, facts)) } : {}) };
     }
-    return { mq, ootSources: sorted(ootSources!), shortfalls, others, placements, full,
+    // The warps: an own-game pool's OoT sources need distinct destinations among the OoT candidates (dungeons and warp
+    // pads), Full's sources of both games among the shared set.
+    let warps: any = null;
+    if (contract.warps) {
+      warps = {};
+      for (const entry of contract.warps.combinations) {
+        const settings = core.makeSettings({ ...warpSettings(entry.settings), mqDungeons });
+        const facts = timed('pools', () => {
+          const { shuffler, pools } = capturePools(state, settings);
+          return poolFacts(shuffler, pools);
+        });
+        const wallmasters = facts.find(p => p.name === 'WALLMASTERS')!;
+        const sources = wallmasters.src.filter((s: string) => !wallmasters.ownGame || ENTRANCES[s].game === 'oot');
+        const reachable = new Set(sources.flatMap((s: string) => wallmasters.candidates[s]));
+        warps[entry.id] = { ownGame: wallmasters.ownGame, sources: sources.length, destinations: reachable.size,
+                            short: sources.length > reachable.size };
+      }
+    }
+    return { mq, ootSources: sorted(ootSources!), shortfalls, others, placements, full, warps,
              areaKeys: sha256(JSON.stringify(Object.keys(state.worlds[0].areas).sort())) };
   }
 
   // The registry fields the fixture records for each M1 row, as @ootmm/core's ENTRANCES has them.
   function rows() {
-    return Object.fromEntries(Object.keys(contract.rows).sort().map(name => {
+    const names = [...Object.keys(contract.rows), ...Object.keys(contract.warps?.rows ?? {})];
+    return Object.fromEntries(names.sort().map(name => {
       const e = ENTRANCES[name];
       if (!e) return [name, null];
       return [name, { game: e.game, id: e.id, type: e.type, reverse: e.reverse ?? null, from: e.from, to: e.to,
@@ -612,8 +636,9 @@ async function startWorker() {
 
   parentPort!.on('message', async (task: any) => {
     try {
-      const result = task.kind === 'combination' ? await combination(task.index)
-        : task.kind === 'full' ? await combination(null)
+      const result = task.kind === 'combination' ? await combination(contract.combinations[task.index])
+        : task.kind === 'full' ? await combination(contract.fullWallmasters.combination)
+        : task.kind === 'warps' ? await combination(contract.warps.combinations[task.index], warpSettings)
         : task.kind === 'mq' ? await mqContext(task.bits)
         : task.kind === 'temple' ? await templeGroup(task.index)
         : { fixedPoints: settingsFixedPoints(), wallmasterDungeons, distComparison, rows: rows(),
@@ -722,6 +747,7 @@ async function main() {
   const tasks: any[] = [{ kind: 'meta' }];
   contract.combinations.forEach((_: any, index: number) => tasks.push({ kind: 'combination', index }));
   if (contract.fullWallmasters) tasks.push({ kind: 'full' });
+  (contract.warps?.combinations ?? []).forEach((_: any, index: number) => tasks.push({ kind: 'warps', index }));
   const mqContexts = 1 << contract.mqSources.dungeons.length;  // checked against OoTMM's own list below
   for (let bits = 0; bits < mqContexts; bits++) tasks.push({ kind: 'mq', bits });
   tasks.sort((a, b) => (a.kind === 'mq' ? 0 : 1) - (b.kind === 'mq' ? 0 : 1));  // MQ worlds first, all similar
@@ -773,7 +799,7 @@ async function main() {
   for (let bits = 0; bits < mqContexts; bits++) {
     const context = results.get(`mq:${bits}`);
     table.push({ mq: context.mq, ootSources: context.ootSources, placements: context.placements,
-                 ...(context.full ? { full: context.full } : {}) });
+                 ...(context.full ? { full: context.full } : {}), ...(context.warps ? { warps: context.warps } : {}) });
     if (context.shortfalls.length) {
       capacityShortfalls.push({ mq: context.mq, ootSources: context.ootSources.length,
                                 combinations: context.shortfalls });
@@ -798,6 +824,8 @@ async function main() {
     combinations: combinations.map(({ areaKeys, withoutOotWallmasters, ...rest }: any) => rest),
     ...(contract.fullWallmasters ? { fullWallmasters: (({ areaKeys, withoutOotWallmasters, ...rest }: any) => rest)(
       results.get('full:')) } : {}),
+    ...(contract.warps ? { warps: { combinations: contract.warps.combinations.map((_: any, i: number) =>
+      (({ areaKeys, withoutOotWallmasters, ...rest }: any) => rest)(results.get(`warps:${i}`))) } } : {}),
     mqSources: { dungeons: meta.wallmasterDungeons, table, capacityShortfalls, otherRowsDependOnMq,
                  distinctAreaSets: mqAreaKeys.size },
     seconds: { wall: (performance.now() - started) / 1000, summedOverWorkers: workerSeconds },

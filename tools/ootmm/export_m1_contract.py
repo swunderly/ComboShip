@@ -9,8 +9,11 @@ gate of placeSingleExpr (203-217). processRegions/propagateDungeons (960-1059) a
 M1 leaves hint regions and dungeon entrances unchanged. Only settings reachable in M1 are modelled:
 every other er* key must stay at its default, or the export fails. Full Wallmasters (erWallmasters=full alone, the
 limits design's Stage 3) get a section of their own, with the cross-game facts the port copies: the day-1 grant of an
-OoT-to-MM exit (pathfind.ts:596-599) and the capture, override and game switch of the generator. Python 3 and Git are the only
-dependencies; a changed cited function body fails the export until this file is reviewed again.
+OoT-to-MM exit (pathfind.ts:596-599) and the capture, override and game switch of the generator. So does Warp Songs
+and Soaring Spots Shuffle with Wallmasters (erWarps=full with erWallmasters ownGame or full, Stage 4): poolWarps
+(729-740) joins the simple pools (852-854), whose destination types poolsTypesDst gives the Wallmasters (881-886).
+Python 3 and Git are the only dependencies; a changed cited function body fails the export until this file is
+reviewed again.
 """
 import hashlib
 import itertools
@@ -102,7 +105,7 @@ ENTRANCE_BODIES = {
     'entrancePolarity': method, 'entrancePolarityMatch': method, 'computeAllEntrances': method,
     'placeSingleExpr': method, 'placeSingle': method, 'changedWorld': method, 'isSelfLoop': method,
     'isAssignableConstraints': method, 'placePools': method, 'entrancesForTypes': method,
-    'poolEntrancesForTypes': method, 'overrideEntrance': method, 'poolWallmasters': method,
+    'poolEntrancesForTypes': method, 'overrideEntrance': method, 'poolWallmasters': method, 'poolWarps': method,
     'poolOneWaysAnywhere': method, 'poolOneWays': method, 'makePoolsSimple': method, 'makePools': method,
     'poolsTypesDst': method, 'connectGamesDefault': method, 'run': method, 'changeRegion': method,
     'isRegionInvalid': method, 'propagateRegionsStep': method, 'propagateDungeons': method,
@@ -169,6 +172,7 @@ EXPECTED_BODY_SHA256 = {
     'poolEntrancesForTypes': '1ee422aec4351203229a0a682ed9df63d791379cc7b4c9d8fece2af73e2fed8b',  # 608-627
     'overrideEntrance': 'fef675b72a4047014a90fb9c8b15fecc169224236ae613b442d12f4726654ed5',  # 629-636
     'poolWallmasters': 'b3bcc76dafe81a24585b82b73d7f85750c731fb25358405325f1fe5998de25fd',  # 657-669
+    'poolWarps': '8ebba0a65ab4e4c02118e6f5ffb561613c46df85022de4668cad8eb4d10b92f6',  # 729-740
     'poolOneWaysAnywhere': '58941e7b8a4c02ba3a2a752333a0d4ca4382f6d325b66ee45ccc63b3cf513bbe',  # 742-756
     'poolOneWays': '906b6d16b769111d6e35fd10eea4f7452240774ee55309e5d68bdc48d67882c5',  # 758-784
     'makePoolsSimple': '6960506634d4f66ec278c421403937a8bc44d9e0df2caed625e20f0e44bf25ed',  # 791-861
@@ -438,7 +442,24 @@ def m1_combinations(rows):
 
 def combination_id(s):
     flags = [key for key in M1_FLAGS if s[key]]
-    return ';'.join([f'erWallmasters={s["erWallmasters"]}', f'erOneWays={s["erOneWays"]}'] + flags)
+    warps = [f'erWarps={s["erWarps"]}'] if s.get('erWarps', 'none') != 'none' else []
+    return ';'.join([f'erWallmasters={s["erWallmasters"]}', f'erOneWays={s["erOneWays"]}'] + flags + warps)
+
+
+# erWarps (data.ts:3557-3570): its cond, which the Stage 4 combinations must meet with every one-way flag off.
+WARPS_CONDITION = '(s: any) => !s.erOneWaysSongs || !s.erOneWaysStatues'
+
+
+def warps_settings(rows, defaults, wallmasters):
+    """validateSettings for erWallmasters=<wallmasters> with erWarps=full: the M1 keys as above, and erWarps' own cond,
+    !erOneWaysSongs || !erOneWaysStatues, which holds as both stay at their default (false)."""
+    row = next(r for r in rows if r['key'] == 'erWarps')
+    if row['condition'] != WARPS_CONDITION or next(v for v in row['values'] if v['value'] == 'full')['condition']:
+        raise ValueError('erWarps or its full value has another condition; re-review export_m1_contract.py')
+    s = validate_settings(rows, dict(defaults, erWallmasters=wallmasters, erWarps='full'))
+    if s['erWallmasters'] != wallmasters or s['erOneWaysSongs'] or s['erOneWaysStatues']:
+        raise ValueError(f'erWallmasters={wallmasters} with erWarps=full fails an OoTMM condition')
+    return s
 
 
 class Pools:
@@ -446,7 +467,7 @@ class Pools:
 
     def __init__(self, ts, records, available, settings, defaults):
         for key, value in settings.items():
-            if key.startswith('er') and key not in M1_KEYS and value != defaults[key]:
+            if key.startswith('er') and key not in M1_KEYS and key != 'erWarps' and value != defaults[key]:
                 raise ValueError(f'{key} is outside the M1 model')
         self.s = settings
         self.by_name = {r['name']: r for r in records}
@@ -462,8 +483,19 @@ class Pools:
         types = [t for key, t in mapping if self.s[key]]
         return {'src': types, 'dst': list(types), 'opts': {'ownGame': self.s['erOneWays'] == 'ownGame'}}
 
+    def pool_warps(self):
+        """poolWarps (entrances.ts:729-740)."""
+        types = ['one-way-song', 'one-way-statue']
+        if self.s['erWarps'] == 'ootOnly' or self.s['erOneWaysStatues']:
+            types.remove('one-way-statue')
+        if self.s['erWarps'] == 'mmOnly' or self.s['erOneWaysSongs']:
+            types.remove('one-way-song')
+        return {'src': types, 'dst': list(types), 'opts': {'ownGame': self.s['erWarps'] == 'ownGame'}}
+
     def make_pools_simple(self):
         pools = {}
+        if self.s['erWarps'] != 'none':  # makePoolsSimple adds WARPS before ONE_WAYS (entrances.ts:852-858)
+            pools['WARPS'] = self.pool_warps()
         if self.s['erOneWays'] != 'none' and not self.s['erOneWaysAnywhere']:
             pools['ONE_WAYS'] = self.pool_one_ways()
         return pools
@@ -900,7 +932,8 @@ def build(reference):
     def describe(s):
         """One settings combination in the all-vanilla world: pools, candidates and the C14 checks."""
         pools = Pools(bodies, records, vanilla_rows, s, defaults).placed()
-        entry = {'id': combination_id(s), 'settings': {k: s[k] for k in M1_KEYS},
+        keys = M1_KEYS + (('erWarps',) if s['erWarps'] != 'none' else ())
+        entry = {'id': combination_id(s), 'settings': {k: s[k] for k in keys},
                  'erEnabled': evaluate(erm_terms, s), 'isEntranceShuffle': evaluate(ies_terms, s), 'pools': []}
         destinations = set()
         for pool in pools:
@@ -952,6 +985,16 @@ def build(reference):
         raise ValueError('erWallmasters=full fails its OoTMM condition')
     full_entry = describe(full_settings)
     full_wallmasters_dst = wallmaster_oot_dst.pop(full_entry['id'])
+    # Warp Songs and Soaring Spots Shuffle (limits design, Stage 4): erWarps=full with erWallmasters ownGame and full,
+    # every other er* key at its default. makePoolsSimple adds the WARPS pool, the 16 warp rows among each other with
+    # ownGame false (poolWarps, entrances.ts:729-740), and poolWallmasters gives the Wallmasters its destination types
+    # too (poolsTypesDst, :881-886): the six OoT warp pads and the ten MM owl statues.
+    # Their rows are listed in the section itself, so the M1 rows stay the ones the earlier stages read.
+    m1_rows_before = set(m1_rows)
+    warps_entries = [describe(warps_settings(rows, defaults, mode)) for mode in ('ownGame', 'full')]
+    warps_rows_used = sorted(m1_rows - m1_rows_before)
+    m1_rows.intersection_update(m1_rows_before)
+    warps_dst = {e['id']: wallmaster_oot_dst.pop(e['id']) for e in warps_entries}
 
     # MQ source table: active OoT Wallmaster sources for every choice of the dungeons with Wallmasters.
     wallmaster_dungeons = [k for k in mq_keys if any(
@@ -973,6 +1016,15 @@ def build(reference):
     mm_wallmasters = [n for n in full_wallmasters['candidates'][0]['sources'] if by_name[n]['game'] == 'mm']
     full_sources = sorted({len(r['ootSources']) + len(mm_wallmasters) for r in mq_table})
     full_short = [r['mq'] for r in mq_table if len(r['ootSources']) + len(mm_wallmasters) > full_wallmasters_dst]
+    # The warps: own game, the OoT sources share the OoT candidates (dungeons and warp pads); Full, every source of
+    # both games shares one set. Either way no MQ context has more sources than destinations.
+    warps_short = {}
+    for entry in warps_entries:
+        pool = next(p for p in entry['pools'] if p['name'] == 'WALLMASTERS')
+        extra = 0 if pool['ownGame'] else len(mm_wallmasters)
+        warps_short[entry['id']] = [r['mq'] for r in mq_table if len(r['ootSources']) + extra > warps_dst[entry['id']]]
+    warp_rows = [r['name'] for r in records if r['type'] in ('one-way-song', 'one-way-statue')]
+    warp_setting = next(r for r in rows if r['key'] == 'erWarps')
 
     # Exits into every M1 source area and the expression each source keeps, from vanilla and MQ files.
     worlds = (vanilla_world, mq_world)
@@ -981,6 +1033,11 @@ def build(reference):
         row = by_name[name]
         sources[name] = {'game': row['game'], 'type': row['type'], 'from': row['from'], 'to': row['to'],
                          'carried': carried_exits(worlds, row), 'incoming': exits_into(worlds, row['from'])}
+    warp_sources = {}
+    for name in warp_rows:
+        row = by_name[name]
+        warp_sources[name] = {'game': row['game'], 'type': row['type'], 'from': row['from'], 'to': row['to'],
+                              'carried': carried_exits(worlds, row), 'incoming': exits_into(worlds, row['from'])}
     soul_lines = [{'file': hit[1], 'line': int(hit[2])} for hit in
                   (line.split(':', 3) for line in git_lines(reference, 'grep', '-n', '-w', 'soul_wallmaster', PIN,
                                                             '--', 'data/world/oot'))]
@@ -1003,7 +1060,8 @@ def build(reference):
         'upstreamCommit': PIN,
         'scope': 'games=ootmm; erWallmasters and erOneWays in {none, ownGame}; the five one-way flags; '
                  'every other er* key at its default (erNoPolarity, erSelfLoops and erDecoupled false); '
-                 'pools and candidates in the all-vanilla world; fullWallmasters: erWallmasters=full alone',
+                 'pools and candidates in the all-vanilla world; fullWallmasters: erWallmasters=full alone; '
+                 'warps: erWarps=full with erWallmasters ownGame or full',
         'inputs': {path: sha(blobs[path]) for path in paths},
         'guardedBodies': guards,
         'registryAreaPresence': {'never': never, 'byQuest': by_quest, 'questDependentRows': quest_rows,
@@ -1023,6 +1081,14 @@ def build(reference):
         'fullWallmasters': {'combination': full_entry, 'sharedCandidates': full_wallmasters_dst,
                             'sourcesByMqContext': full_sources, 'capacityShortfalls': full_short,
                             'crossGameSites': cross_game_sites(blobs)},
+        'warps': {'setting': {k: warp_setting[k] for k in ('key', 'name', 'description', 'default', 'condition',
+                                                            'values')},
+                  'combinations': warps_entries, 'sharedOotCandidates': warps_dst,
+                  'capacityShortfalls': warps_short, 'warpRows': warp_rows,
+                  'rows': {n: {k: by_name[n][k] for k in ('game', 'id', 'type', 'reverse', 'from', 'to', 'fromMap',
+                                                          'toMap')} | {'noSot': 'no-sot' in by_name[n]['flags']}
+                           for n in warps_rows_used},
+                  'sources': warp_sources},
         'sources': sources,
         'soulWallmasterLines': soul_lines,
         'truthTables': {'erEnabled': {'file': MACROS_MM, 'line': erm_line,
