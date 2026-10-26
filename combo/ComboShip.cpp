@@ -3646,6 +3646,13 @@ static std::filesystem::path FindNewestComboSeed(nlohmann::json& out) {
 // settings, runs the pool prep, re-applies the saved OOT placements + seed-hash, stashes the MM
 // placements, and keeps the consolidated JSON in memory so "Start Randomizer" writes the per-slot
 // file. Returns 1 on success. The hash string is recomputed from displaySeed for the per-slot name.
+// The value whose icons a seed shows on the file-select screen once it is loaded (SOH_SetComboSeedHash). A headless
+// layout seed has no displaySeed: its icons show its co-op identity, as the slot will.
+static uint32_t SeedIconHash(const nlohmann::json& seed) {
+    if (!ComboRando::ModeRandomizesOot(ComboRando::ReadGameMode(seed)))
+        return seed.value("displaySeed", 0u);
+    return seed.contains("entranceLayout") ? ComboAnchorProtocol::SeedIdentity(seed) : seed.value("displaySeed", 0u);
+}
 static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* profileSeed = nullptr) {
     ++g_ComboContextEpoch;
     if (g_GenerateBusy.load() || g_ComboPendingFinalize.load()) {
@@ -3719,7 +3726,7 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
         if (!ComboRando::ModeRandomizesOot(mode)) {
             if (!CheckPendingEntranceSeed(j)) return 0;
             g_ConsolidatedJson = j.dump(2);
-            g_FinalizeDisplaySeed = j.value("displaySeed", 0u);
+            g_FinalizeDisplaySeed = SeedIconHash(j);
             if (SOH_SetComboSeedHash) SOH_SetComboSeedHash(g_FinalizeDisplaySeed);
             g_PendingMMSettingsJson = j.at("mm").value("settings", nlohmann::json::object()).dump();
             g_UserMMSettingsSnapshot = MM_DumpRandoSettings ? MM_DumpRandoSettings() : "{}";
@@ -3761,9 +3768,7 @@ static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* pro
         InstallSongTravel(j.value("songTravel", nlohmann::json()));
         uint32_t masterSeed = j.value("masterSeed", 0u);
         ResetCrossItemDedupForSeed(masterSeed);
-        // A headless layout seed has no displaySeed: its icons show its co-op identity, as the slot will.
-        uint32_t displaySeed =
-            j.contains("entranceLayout") ? ComboAnchorProtocol::SeedIdentity(j) : j.value("displaySeed", 0u);
+        uint32_t displaySeed = SeedIconHash(j);
         // ComboShip (#136): push the seed's goal before anything re-derives OOT's settings-scoped pool
         // or MM's — the forced wincon/hunt toggle decides what those pools contain.
         {
@@ -5237,6 +5242,7 @@ int main(int argc, char** argv) {
         (void (*)(const ComboRandomizerProfileCallbacks*))GetSym(comboUIModule, "ComboUI_SetRandomizerProfileStore");
     auto profilePrecreate = (void (*)(int (*)(int)))GetSym(sohModule, "SOH_SetProfileSavePreparation");
     auto profileReady = (void (*)(int (*)(int)))GetSym(sohModule, "SOH_SetProfilePendingReady");
+    auto profileIcons = (void (*)(int (*)(int, uint8_t*)))GetSym(sohModule, "SOH_SetProfilePendingSeedIcons");
     auto ootCatalog = (FnDumpData)GetSym(sohModule, "SOH_DumpProfileCatalog");
     auto mmCatalog = (FnDumpData)GetSym(mmModule, "MM_DumpProfileCatalog");
     if (mmEagerBooted && sProfileDumpCombo && sProfileApplyCombo && sProfileApplyOot && sProfileApplyMm &&
@@ -5261,6 +5267,8 @@ int main(int argc, char** argv) {
                                                                     ProfileRevision };
             profilePrecreate(ProfilePrepareSave);
             profileReady(ProfilePendingReady);
+            if (profileIcons)
+                profileIcons(ProfilePendingSeedIcons);
             profileUi(&callbacks);
         } catch (const std::exception& e) {
             sProfiles.reset();

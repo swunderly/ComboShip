@@ -60,9 +60,13 @@ require(hostcxx.contains(body(ship, 'static void Combo_WriteGameSave(int game, i
         'the Anchor journal is committed against another seed than the sync seed')
 reload_ = body(ship, 'static int Combo_OnReloadRequestImpl(const char* path, const nlohmann::json* profileSeed = nullptr) {')
 combined = reload_[hostcxx.find(reload_, 'const auto catalog ='):]
+# The rule is SeedIconHash's, which the file select's pending-seed icons share (ProfilePendingSeedIcons).
+require(hostcxx.contains(body(ship, 'static uint32_t SeedIconHash(const nlohmann::json& seed) {'),
+                         'return seed.contains("entranceLayout") ? ComboAnchorProtocol::SeedIdentity(seed) '
+                         ': seed.value("displaySeed", 0u);'),
+        "a layout seed's icons are not its identity")
 try:
-    ordered(combined, 'uint32_t displaySeed = j.contains("entranceLayout") ? ComboAnchorProtocol::SeedIdentity(j) '
-                      ': j.value("displaySeed", 0u);',
+    ordered(combined, 'uint32_t displaySeed = SeedIconHash(j);',
             'SOH_SetComboSeedHash(displaySeed);', 'g_ConsolidatedJson = j.dump(2);', 'g_FinalizeDisplaySeed = displaySeed;')
 except ValueError as error:
     sys.exit(f'FAIL: an imported layout seed does not show its identity, or is not kept as read: {error}')

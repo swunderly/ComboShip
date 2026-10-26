@@ -18,6 +18,8 @@ text = (a.source / 'combo/ComboShip.cpp').read_text(encoding='utf-8')
 start = text.index('static bool SeedNeedsUnavailableMmGear(')
 end = text.index('\n}', start) + 2
 gear = text[start:end]
+start = text.index('static uint32_t SeedIconHash(')
+icons = text[start:text.index('\n}', start) + 2]
 end = text.index('        const auto catalog =', text.rindex('static int Combo_OnReloadRequestImpl('))
 start = text.rindex('ComboRando::RequireSupportedSeedDocument(j,', 0, end)
 reload = text[start:end]
@@ -25,6 +27,7 @@ program = r'''
 #include "rando/GameMode.h"
 #include "rando/GearRules.h"
 #include "mq/MqSeedMarker.h"
+#include "network/ComboAnchorProtocol.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>
@@ -59,6 +62,7 @@ int mqQueries = 0;
 bool BundledMqAvailable() { ++mqQueries; return bundledMq; }
 '''
 program += gear
+program += '\n' + icons + '\n'
 program += '\nint Reload(const Json& j, bool profileSeed) {\n' + reload + '\nreturn 2;\n}\n'
 program += r'''
 void Reset() {

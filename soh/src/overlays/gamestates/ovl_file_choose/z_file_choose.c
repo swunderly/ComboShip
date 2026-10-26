@@ -33,6 +33,21 @@ static int FileChoose_ProfilePendingReady(FileChooseContext* this) {
 #endif
     return Randomizer_IsSeedGenerated() || Randomizer_IsSpoilerLoaded();
 }
+// The seed-hash icons the randomizer screens show. A combo build loads one seed at a time (the first highlighted
+// file's at startup, then each file's at Start Randomizer), but each file has its own pending seed: show the
+// highlighted file's, or none, as its "Seed ready" line does. Returns 0 to draw none.
+static int FileChoose_SeedIcons(FileChooseContext* this, u8* icons) {
+#ifdef COMBO_BUILD
+    extern int (*gComboProfilePendingSeedIcons)(int, u8*);
+    if (gComboProfilePendingSeedIcons)
+        return gComboProfilePendingSeedIcons(this->buttonIndex, icons);
+#endif
+    if (!(Randomizer_IsSeedGenerated() || Randomizer_IsSpoilerLoaded()))
+        return 0;
+    for (u8 i = 0; i < 5; i++)
+        icons[i] = GetSeedIconIndex(i);
+    return 1;
+}
 static int FileChoose_PrepareProfileSeed(FileChooseContext* this) {
 #ifdef COMBO_BUILD
     extern int (*gComboProfilePrepareSave)(int);
@@ -365,18 +380,19 @@ void DrawSeedHashSprites(FileChooseContext* this) {
     // Draw Seed Icons for spoiler log:
     // 1. On Name Entry if a rando seed has been generated
     // 2. On Quest Menu if a spoiler has been dropped and the Randomizer quest option is currently hovered.
-    if ((Randomizer_IsSeedGenerated() || Randomizer_IsSpoilerLoaded()) &&
-        (((this->configMode == CM_NAME_ENTRY || this->configMode == CM_ROTATE_TO_NAME_ENTRY ||
+    u8 seedIcons[5];
+    if ((((this->configMode == CM_NAME_ENTRY || this->configMode == CM_ROTATE_TO_NAME_ENTRY ||
            this->configMode == CM_NAME_ENTRY_TO_RANDOMIZER_SETTINGS_MENU || this->configMode == CM_START_NAME_ENTRY ||
            this->configMode == CM_START_RANDOMIZER_SETTINGS_MENU) ||
           this->configMode == CM_RANDOMIZER_SETTINGS_MENU) &&
-         gSaveContext.ship.quest.id == QUEST_RANDOMIZER)) {
+         gSaveContext.ship.quest.id == QUEST_RANDOMIZER) &&
+        FileChoose_SeedIcons(this, seedIcons)) {
 
         gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
         u16 xStart = 64;
         for (unsigned int i = 0; i < 5; i++) {
-            SpriteLoad(this, GetSeedTexture(GetSeedIconIndex(i)));
-            SpriteDraw(this, GetSeedTexture(GetSeedIconIndex(i)), xStart + (40 * i), 10, 24, 24);
+            SpriteLoad(this, GetSeedTexture(seedIcons[i]));
+            SpriteDraw(this, GetSeedTexture(seedIcons[i]), xStart + (40 * i), 10, 24, 24);
         }
     }
 

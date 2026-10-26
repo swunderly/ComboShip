@@ -61,8 +61,10 @@ def extract(signature, text=menu):
 state = menu[menu.index('struct PlandoPickItem {'):menu.index('static PlandoState sPlando;') + len('static PlandoState sPlando;')]
 functions = '\n'.join(extract(name) for name in (
     'int PlandoImportTarget()', 'void PlandoBuildItems()', 'void PlandoLoad()', 'void PlandoSavePlay()'))
-profile_functions = extract('static int ProfileNativeSlot()', launcher) + '\n' + '\n'.join(
-    extract(name, profiles) for name in ('static int ProfilePrepareSave(', 'static int Combo_OnReloadRequest('))
+profile_functions = '\n'.join(extract(name, launcher) for name in (
+    'static int ProfileNativeSlot()', 'static uint32_t SeedIconHash(')) + '\n' + '\n'.join(
+    extract(name, profiles) for name in ('static int ProfilePrepareSave(', 'static int Combo_OnReloadRequest(',
+                                         'static int ProfilePendingReady(', 'static int ProfilePendingSeedIcons('))
 support = r'''
 #include <algorithm>
 #include <cassert>
@@ -86,6 +88,7 @@ support = r'''
 #include "rando/entrances/OotWallmasterArrivalNames.h"
 #include "rando/entrances/Wallmasters.h"
 #include "ComboRandomizerProfileRepository.h"
+#include "network/ComboAnchorProtocol.h"
 namespace fs = std::filesystem;
 namespace CE = ComboRando::Entrances;
 namespace Profiles = ComboRando::Profiles;
@@ -318,6 +321,26 @@ void SeedCase(const fs::path& dir, const std::string& id, const Json& seed) {
     // Start Randomizer on File 2 prepares this seed, on File 3 its own.
     assert(ProfilePrepareSave(1) && appliedSeed == seed);
     assert(ProfilePrepareSave(2) && appliedSeed == other);
+    // The file select shows each file the icons of its own pending seed, those Start shows once it is loaded (OoT's
+    // GenerateHash of SOH_SetComboSeedHash's value), whichever seed is loaded now (File 3's); none for File 1, which
+    // has no seed, nor while a seed is generated.
+    const auto iconsOf = [](uint32_t value) {
+        char digits[16];
+        std::snprintf(digits, sizeof(digits), "%010u", value);
+        std::vector<int> icons;
+        for (int i = 0; i < 5; ++i) icons.push_back((digits[i * 2] - '0') * 10 + digits[i * 2 + 1] - '0');
+        return icons;
+    };
+    const auto shown = [](int slot) {
+        uint8_t icons[5] = {};
+        return ProfilePendingSeedIcons(slot, icons) ? std::vector<int>(icons, icons + 5) : std::vector<int>();
+    };
+    const uint32_t identity = seed.contains("entranceLayout") ? ComboAnchorProtocol::SeedIdentity(seed)
+                                                              : seed.at("displaySeed").get<uint32_t>();
+    assert(shown(1) == iconsOf(identity) && shown(2) == iconsOf(0) && shown(0).empty());
+    g_GenerateBusy = true;
+    assert(shown(1).empty() && shown(2).empty());
+    g_GenerateBusy = false;
     // A restart reads the store back; restore checks every draft and generation input.
     const auto stored = sProfiles->view().json();
     sProfiles = std::make_unique<Profiles::Repository>("Randomizer/settings-profiles.json", Legacy(), kCaps);
@@ -519,3 +542,12 @@ exe = hostcxx.build(args.compiler, cpp, includes=[source/'combo', args.json_incl
 subprocess.run([str(exe), str(work/('run-' + uuid.uuid4().hex)), str(fixtures)], check=True,
                timeout=hostcxx.RUN_TIMEOUT)
 print('Plandomizer Save for a file imports every app-made seed shape exactly as made, and a refusal says so plainly.')
+# The randomizer screens of the file select draw those icons for the highlighted file (z_file_choose.c), through the
+# export the launcher registers, never the loaded seed's.
+choose = (source/'soh/src/overlays/gamestates/ovl_file_choose/z_file_choose.c').read_text(encoding='utf-8-sig')
+assert hostcxx.contains(extract('static int FileChoose_SeedIcons(', choose),
+                        'return gComboProfilePendingSeedIcons(this->buttonIndex, icons);')
+draw = extract('void DrawSeedHashSprites(FileChooseContext* this)', choose)
+assert hostcxx.contains(draw, 'FileChoose_SeedIcons(this, seedIcons)) {') and 'GetSeedIconIndex' not in draw
+assert hostcxx.contains(launcher, 'if (profileIcons) profileIcons(ProfilePendingSeedIcons);')
+print('The file select shows each file its own pending seed\'s icons, or none.')

@@ -6482,6 +6482,11 @@ extern "C" COMBO_EXPORT void SOH_SetProfileSavePreparation(int (*callback)(int))
 extern "C" COMBO_EXPORT void SOH_SetProfilePendingReady(int (*callback)(int)) {
     gComboProfilePendingReady = callback;
 }
+// ComboShip: a file's own pending seed's five seed-hash icons for the file select (z_file_choose.c), or 0 for none.
+extern "C" int (*gComboProfilePendingSeedIcons)(int, uint8_t*) = nullptr;
+extern "C" COMBO_EXPORT void SOH_SetProfilePendingSeedIcons(int (*callback)(int, uint8_t*)) {
+    gComboProfilePendingSeedIcons = callback;
+}
 extern "C" COMBO_EXPORT int SOH_TriggerProfileGenerate(const char* seed) {
     if (!SOH_CanGenerateComboSeed() || CVarGetInteger(CVAR_GENERAL("RandoGenerating"), 0) ||
         !gComboGenerateRequestCallback)

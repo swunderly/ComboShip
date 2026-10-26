@@ -317,6 +317,21 @@ static int ProfilePendingReady(int slot){
     try{return sProfiles&&!g_GenerateBusy.load()&&!g_ComboPendingFinalize.load()&&!sProfileAttempt&&
         sProfiles->view().hasPendingSeed(slot);}catch(...){return 0;}
 }
+// The file-select seed icons of a file: its own pending seed's when it is ready (the "Seed ready" line above), never
+// the loaded seed's, which may be another file's; 0 draws none. The icons are those Start shows once the seed is
+// loaded (SeedIconHash, then OoT's GenerateHash: the decimal value padded to 10 digits, five 2-digit pairs).
+static int ProfilePendingSeedIcons(int slot, uint8_t* icons) {
+    try {
+        if (!ProfilePendingReady(slot))
+            return 0;
+        // Read in place: the screen asks every frame, and a seed is large.
+        auto digits = std::to_string(SeedIconHash(sProfiles->view().json().at("files").at(slot).at("generated")));
+        digits.insert(0, digits.size() < 10 ? 10 - digits.size() : 0, '0');
+        for (int i = 0; i < 5; ++i)
+            icons[i] = static_cast<uint8_t>(std::stoi(digits.substr(i * 2, 2)));
+        return 1;
+    } catch (...) { return 0; }
+}
 static int Combo_OnReloadRequest(const char* path){
     if(!sProfiles)return Combo_OnReloadRequestImpl(path);
     const bool explicitImport=path&&path[0];
