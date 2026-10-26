@@ -109,15 +109,33 @@ static NativeFns sEntranceNative{applySeed, nullptr, nullptr, dumpSeed};
 // The OoT layout exports, attached for the vanilla layout's bind.
 OotUnifiedLayout ootLayout;
 std::string ootDump;
+// SetLayout (combo_entrance_overlay.cpp) refuses a layout whose Master Quest dungeons differ from OoT's live rando
+// context; a generation or a pending seed's replay rebuilds that context for another seed.
+bool ootContextChanged = false;
+int ootRefusals = 0;
 int applyOot(const char* value) {
     const auto seed = Json::parse(value);
     ootLayout.clear();
+    if (seed.contains("entranceLayout") && ootContextChanged) {
+        ++ootRefusals;
+        return 0;
+    }
     if (seed.contains("entranceLayout")) ootLayout.install(seed, ActiveCapabilities());
     return 1;
 }
 const char* dumpOot() {
     ootDump = (ootLayout.active() ? Json{{"entranceLayout", ootLayout.json()}} : Json::object()).dump();
     return ootDump.c_str();
+}
+// SOH_GetOotmmAreaContext: the changed context has a Master Quest dungeon the loaded file does not.
+std::string ootContext;
+const char* areaContext() {
+    auto mq = Json::object();
+    for (size_t i = 0; i < kOotMqDungeons.size(); ++i)
+        mq[std::string(kOotMqDungeons[i])] = ootContextChanged && i == 0;
+    ootContext = Json{{"profile", "ootmm-oot-area-context-v1"}, {"registry", kRegistrySourceSha256},
+                      {"ootMq", mq}}.dump();
+    return ootContext.c_str();
 }
 // OTRGlobals.cpp's setter: the bound slot's ER-wide runtime flags (M1-09).
 std::vector<uint32_t> runtimeFlags;
@@ -247,6 +265,7 @@ int main() {
     vanilla.required = {std::string(kVanillaWallmasterCapability)};
     vanilla.settings.erWallmasters = Mode::OwnGame;
     vanilla.overrides = Overrides{@VANILLA_ROUTES@};
+    size_t flagsBefore = 0;
     auto vanillaSeed = seedFor(1);
     vanillaSeed["fileType"] = ComboRando::kEntranceSeedFileType;
     vanillaSeed["version"] = ComboRando::kEntranceSeedVersion;
@@ -255,6 +274,7 @@ int main() {
     containers[1] = {{"combo", {{"rando", vanillaSeed}}}};
     sEntranceNative.applyOotLayout = applyOot;
     sEntranceNative.dumpOotLayout = dumpOot;
+    sEntranceNative.ootAreaContext = areaContext;
     bind(1, true, true);
     assert(installedSeed == vanillaSeed && ActiveMmUnified().routes().size() == 4 &&
            ootLayout.routes().size() == 9 && runtimeFlags.back() == 1);
@@ -262,15 +282,33 @@ int main() {
     assert(installedSeed == vanillaSeed && ootLayout.routes().size() == 9);
     bind(2, true, true);
     assert(!ActiveMmUnified().active() && !ootLayout.active() && runtimeFlags.back() == 0);
+    // A pending seed's check keeps the loaded file's OoT layout while OoT's context has the same Master Quest
+    // dungeons. Under a context of others (a generation or a reload rebuilt it for another seed), OoT is left
+    // without a layout instead of being handed the loaded file's, which it would refuse; MM keeps the loaded
+    // file's. The file's next bind installs its OoT layout again.
+    bind(1, true, true);
+    assert(ootLayout.routes().size() == 9);
+    flagsBefore = runtimeFlags.size();
+    assert(CheckPendingEntranceSeed(seedFor(2)));
+    assert(ootRefusals == 0 && ootLayout.routes().size() == 9 && runtimeFlags.size() == flagsBefore);
+    ootContextChanged = true;
+    assert(CheckPendingEntranceSeed(seedFor(2)));
+    assert(ootRefusals == 0 && !ootLayout.active() && runtimeFlags.size() == flagsBefore);
+    assert(installedSeed == vanillaSeed && ActiveMmUnified().routes().size() == 4);
+    ootContextChanged = false;
+    bind(1, false, true);
+    assert(ootLayout.routes().size() == 9 && ootRefusals == 0);
+    bind(2, true, true);
     sEntranceNative.applyOotLayout = nullptr;
     sEntranceNative.dumpOotLayout = nullptr;
+    sEntranceNative.ootAreaContext = nullptr;
     containers[1] = previousSlot1;
     // Original pending-import/finalize behavior installed its layout into another live slot.
     assert(InstallEntranceSeed(valid));
     const auto legacyLive = installedSeed;
     assert(InstallEntranceSeed(seedFor(2)) && installedSeed != legacyLive); // negative control
     assert(InstallEntranceSeed(valid));
-    auto flagsBefore = runtimeFlags.size();
+    flagsBefore = runtimeFlags.size();
     assert(CheckPendingEntranceSeed(seedFor(2)) && installedSeed == legacyLive);
     assert(layout.destination(kMmWallmasterSources[0]) && runtimeFlags.size() == flagsBefore);
     auto malformed = valid;
@@ -325,6 +363,10 @@ for dev in (False, True):
 
 # Pending validation must stay temporary at both actual call sites, and creation commits only after success.
 assert hostcxx.contains(function('static void Combo_FinalizeGenerate()'), 'if (!CheckPendingEntranceSeed(seed))')
+# The generation rebuilds OoT's rando context too, so it restores OoT's layout only into its quests, as the check above.
+assert hostcxx.contains(function('static void RunComboFill(std::string inputSeed'),
+                        'ComboRando::Entrances::NativeScope entranceRestore(sEntranceNative); '
+                        'entranceRestore.RestoreOotOnlyIntoItsQuests();')
 assert hostcxx.contains(function('static int Combo_OnReloadRequestImpl('), 'if (!CheckPendingEntranceSeed(j))')
 creation = function('static void Combo_OnOOTSaveInit(int fileNum)')
 assert hostcxx.find(creation, 'std::make_unique<ComboRando::Entrances::NativeScope>') < hostcxx.find(creation, '!InstallEntranceSeed(seed)')

@@ -5,6 +5,7 @@
 #include "rando/entrances/MmGrottoLayout.h"
 #include "rando/entrances/MmOrdinaryLayout.h"
 #include "rando/entrances/MmMixedLayout.h"
+#include "rando/entrances/OotUnifiedLayout.h"
 #include "rando/CrossWorldRando.h"
 
 namespace ComboRando::Entrances {
@@ -24,6 +25,24 @@ struct NativeFns {
 class NativeLayoutScope {
     NativeFns native;
     std::string previous, previousOot;
+    bool ootOnlyIntoItsQuests = false;
+
+    // The OoT snapshot to re-install, or none when RestoreOotOnlyIntoItsQuests asked for it and OoT's Master Quest
+    // dungeons are no longer the snapshot's.
+    std::string OotRestore() const {
+        if (!ootOnlyIntoItsQuests || !native.ootAreaContext)
+            return previousOot;
+        try {
+            const auto snapshot = nlohmann::json::parse(previousOot);
+            if (!snapshot.contains("entranceLayout"))
+                return previousOot;
+            const auto* context = native.ootAreaContext();
+            if (context && DecodeEntranceLayout(snapshot.at("entranceLayout")).ootMq ==
+                               DecodeOotAreaContext(nlohmann::json::parse(context)))
+                return previousOot;
+        } catch (const std::exception&) {}
+        return "{}";
+    }
 
   public:
     explicit NativeLayoutScope(NativeFns f) : native(f) {
@@ -61,11 +80,19 @@ class NativeLayoutScope {
         if (native.applySeed && !previous.empty())
             native.applySeed(previous.c_str());
         if (native.applyOotLayout && !previousOot.empty())
-            native.applyOotLayout(previousOot.c_str());
+            native.applyOotLayout(OotRestore().c_str());
     }
     void Commit() {
         previous.clear();
         previousOot.clear();
+    }
+    // For the file-select paths that rebuild OoT's rando context for another seed (a generation, a pending seed's
+    // check): re-install the OoT snapshot only while OoT's Master Quest dungeons are still the snapshot's, and
+    // otherwise leave OoT without a layout. OoT refuses a layout for other quests (combo_entrance_overlay.cpp
+    // SetLayout) and needs none until the next slot bind, which installs that slot's own (Combo_OnOOTSaveLoad,
+    // Combo_OnOOTSaveInit). The MM half is restored either way.
+    void RestoreOotOnlyIntoItsQuests() {
+        ootOnlyIntoItsQuests = true;
     }
     NativeLayoutScope(const NativeLayoutScope&) = delete;
     NativeLayoutScope& operator=(const NativeLayoutScope&) = delete;

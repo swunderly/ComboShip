@@ -466,8 +466,11 @@ static bool InstallEntranceSeed(const nlohmann::json& seed) {
 // Finalizing or importing a pending seed validates its native layout, but does not bind a slot.
 // Keep the live slot's layout (and therefore its ER runtime switches) on every exit, including
 // rejection: InstallEntranceSeed deliberately clears a rejected layout when it is used for a bind.
+// OoT keeps it only while its Master Quest dungeons fit OoT's rando context, which the pending seed's
+// replay or fill may have rebuilt for other ones; the next bind installs that slot's own anyway.
 static bool CheckPendingEntranceSeed(const nlohmann::json& seed) {
     ComboRando::Entrances::NativeScope entranceRestore(sEntranceNative);
+    entranceRestore.RestoreOotOnlyIntoItsQuests();
     return InstallEntranceSeed(seed);
 }
 #include "rando/SongTravel.h"
@@ -2385,7 +2388,9 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
     // and the oracle's) resolves them the same, and records them (combo/rando/SeedChoices.h).
     ComboRando::SeedChoices::Scope seedChoices(SOH_GetSeedChoicesMode, SOH_GetSeedChoicesRecord, SOH_SetSeedChoices,
                                                ComboRando::SeedChoices::Mode::Seeded, std::nullopt);
+    // The fill rebuilds OoT's rando context for the new seed: OoT's layout comes back only into its own quests.
     ComboRando::Entrances::NativeScope entranceRestore(sEntranceNative);
+    entranceRestore.RestoreOotOnlyIntoItsQuests();
     ComboRando::CheckGenerationCancellation();
     struct SongRestore {
         nlohmann::json previous = sSongTravel.json();
