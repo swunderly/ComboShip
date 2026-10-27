@@ -99,6 +99,25 @@ main_start = benport[hostcxx.find(benport, 'RegisterGameHook<GameInteractor::OnG
 ordered(main_start, 'if (!isOwlSaveQuit && !isReset && gSaveContext.gameMode == GAMEMODE_NORMAL) {',
         'Combo_MMStoreDepartureFlags(gPlayState);', 'SaveManager_SaveDepartureForCombo();',
         'MM_DispatchNativeDeparture(gPlayState)')
+# The rest of the departure's frame still runs (game.c GameState_Update: the hook, then gameState->main): MM's clock
+# stays at the moment that save kept, so the writes made while OoT is in front write that moment and the next start
+# restores the kept cycle state (ComboDepartureContext.h Moment). Only once MM departs: a refused Farore's Wind return
+# keeps playing with its clock running. MM's next scene runs the clock again.
+ordered(main_start, 'SaveManager_SaveDepartureForCombo();', 'if (!MM_DispatchNativeDeparture(gPlayState)) return;',
+        'gComboReturnCallback(isOwlSaveQuit ? 2 : (isReset ? 1 : 0));',
+        'if (!isOwlSaveQuit && !isReset && gSaveContext.gameMode == GAMEMODE_NORMAL) Environment_StopTime();',
+        'fast3d->SetIsRunning(false);')
+check(main_start.count('Environment_StopTime();') == 1, 'MM departs with its clock running')
+game = read('mm/src/code/game.c')
+ordered(function(game, 'void GameState_Update(GameState* gameState)'), 'GameInteractor_ExecuteOnGameStateMainStart();',
+        'gameState->main(gameState);')
+kankyo = read('mm/src/code/z_kankyo.c')
+env_init = function(kankyo, 'void Environment_Init(PlayState* play2, EnvironmentContext* envCtx, s32 arg2)')
+check(hostcxx.contains(env_init, 'sEnvIsTimeStopped = false;'), "MM's next scene keeps the departure's clock stopped")
+update_time = function(kankyo, 'void Environment_UpdateTime(PlayState* play, EnvironmentContext* envCtx, '
+                               'PauseContext* pauseCtx, MessageContext* msgCtx, GameOverContext* gameOverCtx)')
+check(hostcxx.contains(update_time, 'if (!sEnvIsTimeStopped && (pauseCtx->state == PAUSE_STATE_OFF)'),
+      'a stopped clock still ticks')
 entrance = function(read('mm/2s2h/Rando/CrossEntrance.inc.h'),
                     'extern "C" COMBO_EXPORT int Combo_MMFinishEntranceDeparture(void* state)')
 ordered(entrance, 'MM_ApplyFaroreTransitionAge(request.file, request.age)', 'return false;',

@@ -1272,6 +1272,13 @@ extern "C" void InitOTR(int argc, char* argv[]) {
             if (gComboReturnCallback)
                 gComboReturnCallback(isOwlSaveQuit ? 2 : (isReset ? 1 : 0));
         }
+        // The rest of this frame still runs before MM stops. Its clock stays at the moment the departure saved, so the
+        // writes made while OoT is in front write that moment and MM's next start restores the kept cycle state
+        // (ComboDepartureContext.h). A Farore's Wind spell's choice already holds it (Player_InCsMode); this holds it
+        // for every departure here, a shared-dungeon return too. MM's next scene runs its clock again
+        // (Environment_Init).
+        if (!isOwlSaveQuit && !isReset && gSaveContext.gameMode == GAMEMODE_NORMAL)
+            Environment_StopTime();
         if (auto fast3d = std::dynamic_pointer_cast<Fast::Fast3dWindow>(Ship::Context::GetRawInstance()->GetWindow())) {
             fast3d->SetIsRunning(false);
         }

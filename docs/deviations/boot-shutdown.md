@@ -600,7 +600,11 @@ owl save, so `eventInf`, the bottle timers and `pictoPhotoI5` survive MM -> OoT 
 the new-cycle Save while the Save is still at that moment. MM's own writes drop the key, writes made while OoT is in
 front keep it, and older builds ignore it; one they carried past later play no longer matches its moment. The restore
 reads only the kept fields, never the Save again, and ignores a key it cannot read for any reason, so the key never
-stops the slot from loading.
+stops the slot from loading. The departure saves at the start of a frame (`BenPort.cpp`, `OnGameStateMainStart`) and
+the rest of that frame still runs, so the hook stops MM's clock once MM departs (`Environment_StopTime`, cleared by
+the next scene's `Environment_Init`): the Save in MM's memory stays at the kept moment, and the writes made while OoT
+is in front keep matching it. A Farore's Wind spell's choice already holds the clock (`Player_InCsMode`), but a
+shared-dungeon return, which leaves through the same hook, may come from a Wallmaster, a void-out or a door.
 
 - **Rupees still counting (deviation in timing only).** OoTMM's owl save keeps `rupeeAccumulator` pending and MM counts
   it into the wallet after the return, while the other game adds its rupees for MM straight to the wallet (`item_add.c`
