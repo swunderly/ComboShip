@@ -3,7 +3,8 @@
 SOH_LiveIncomingSongAges, OotSoaringSources, SOH_GetOracleSongSourcesForAge and
 fill.cpp's RR_ROOT arrival block come from source, Full Wallmaster arrivals from
 MM included (CrossWallmasters.h), with the arrival regions of
-combo_oot_wallmaster_arrivals.inc. The stubs replace region storage, the loaded
+combo_oot_wallmaster_arrivals.inc and, with the warps shuffled, the warp pads'
+(combo_entrance_overlay.cpp warpPadRegions). The stubs replace region storage, the loaded
 saves, the CVar store and the MM exports, not the age or option rules.
 """
 from pathlib import Path
@@ -54,7 +55,12 @@ arrival_rows = re.findall(r'\{ "(OOT_\w+)", 0x[0-9a-f]+u, \w+, (RR_\w+) \}',
                           (source/'soh/soh/Enhancements/randomizer/combo_oot_wallmaster_arrivals.inc').read_text(
                               encoding='utf-8'))
 assert len(arrival_rows) == 11 and [row for row, _ in arrival_rows] == sorted(row for row, _ in arrival_rows)
-arrival_regions = ', '.join(region for _, region in arrival_rows)
+# With the warps shuffled, the six OoT warp pads follow the dungeons (bits 11-16, WarpRows.h's order).
+overlay = (source/'soh/soh/Enhancements/randomizer/combo_entrance_overlay.cpp').read_text(encoding='utf-8')
+pads_start = hostcxx.find(overlay, 'const std::array<RandomizerRegion, 6> warpPadRegions = {')
+pad_regions = re.findall(r'RR_\w+', overlay[pads_start:overlay.index('};', pads_start)])
+assert len(pad_regions) == 6, pad_regions
+arrival_regions = ', '.join([region for _, region in arrival_rows] + pad_regions)
 oot_tables = '\n'.join(re.findall(
     r'inline constexpr RandomizerRegion kOotSong(?:Regions|Sources)\[\].*?;', oot_header, re.S))
 assert oot_tables.count('inline constexpr') == 2
@@ -289,6 +295,29 @@ int main() {
     }
     gals=Search(); // already rooted: nothing more to add
     assert(!gals.logicUpdated&&gals.regionPool.empty());
+    // With the warps shuffled (Warp Songs and Soaring Spots Shuffle), an MM capture can land at an OoT warp pad: bits
+    // 11-16 after the dungeons, rooted the same way by the oracle and the tracker, at the pad's landing.
+    const int meadowBit=CE::OotWallmasterArrivalIndex("OOT_WARP_SONG_MEADOW");
+    const int templeBit=CE::OotWallmasterArrivalIndex("OOT_WARP_SONG_TEMPLE");
+    assert(meadowBit==11&&templeBit==16&&templeBit+1==int(CE::kOotCrossArrivalCount));
+    const Region& meadow=regions[Rando::ComboEntrances::WallmasterArrivalRegion(meadowBit)];
+    const Region& temple=regions[Rando::ComboEntrances::WallmasterArrivalRegion(templeBit)];
+    assert(meadow.randomizerRegionKey==RR_SACRED_FOREST_MEADOW&&temple.randomizerRegionKey==RR_TEMPLE_OF_TIME);
+    for(int searcher:{0,1,2}) { // another search, the oracle's, the tracker's
+        Reset();
+        regions[RR_ROOT].childNight=true;
+        search.CalculatingAvailableChecks=searcher==2;
+        ComboRando::OotSongOracle()=searcher==1;
+        CE::OotWallmasterArrivals()={{1u<<meadowBit,(1u<<templeBit)|(1u<<forestBit)}};
+        gals=Search();
+        if(!searcher) {
+            assert(!gals.logicUpdated&&!meadow.Adult()&&!meadow.Child()&&!temple.Adult()&&!temple.Child());
+            continue;
+        }
+        assert(gals.logicUpdated&&meadow.adultDay&&meadow.adultNight&&!meadow.Child());
+        assert(temple.childDay&&temple.childNight&&!temple.Adult()&&forest.childDay&&!forest.Adult());
+        assert(gals.regionPool.size()==3);
+    }
     // The arrival's ages are the fixpoint's; its times are the root's, by either age: a root by day alone gives day.
     Reset();
     regions[RR_ROOT].childDay=false;
@@ -329,7 +358,9 @@ int main() {
 generated = prelude + 'namespace ComboRando {\n' + oot_tables + '\n}\n' + soaring + live_arrivals + oracle
 generated += ('namespace Rando::ComboEntrances {\nRandomizerRegion WallmasterArrivalRegion(int bit) {\n'
               '    static const RandomizerRegion arrivalRegions[] = {' + arrival_regions + '};\n'
-              '    assert(bit >= 0 && bit < 11);\n    return arrivalRegions[bit];\n}\n}\n')
+              '    constexpr int count = int(sizeof(arrivalRegions) / sizeof(arrivalRegions[0]));\n'
+              '    static_assert(count == int(ComboRando::Entrances::kOotCrossArrivalCount));\n'
+              '    assert(bit >= 0 && bit < count);\n    return arrivalRegions[bit];\n}\n}\n')
 generated += 'void ProcessRoot(Region* region,GetAccessibleLocationsStruct& gals,Rando::Logic* logic) {\n'
 generated += root_block + '\n}\n' + tests
 test = work/'song_live_arrivals.cpp'

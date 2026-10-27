@@ -2828,6 +2828,9 @@ from the pinned run, and the real pinned OoTMM places both (`entrance_m1_pinned_
   `MmArrivalBound` (`CrossEntrance.inc.h`) binds only while the installed layout shuffles the warps, and
   `MM_CanEntranceArrival` checks after the season fixup, as for every MM arrival. Full's trips to the other game's
   pads and owls leave through the cross-game entrance flight like its dungeon routes.
+- **Check tracker.** The live tracker follows the Wallmaster routes to the pads and owls as logic does: in their
+  own game as any route, and with Full into the other game through its live exchange (`rando/LiveWallmasterRoutes.h`),
+  whose pass bound grows with the 17 + 17 arrival bits; either Full id runs the exchange.
 - **Songs in play.** The warp songs and Song of Soaring land through the port's song travel runtime from the seed's
   song map, which is the WARPS routes, so nothing there changed. As for every seed with song destination shuffle,
   the runtime rule (`gCombo.Enhancements.SongTravel`) still decides for a run whether that map is used.

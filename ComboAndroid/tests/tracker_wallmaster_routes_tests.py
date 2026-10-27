@@ -7,9 +7,14 @@ neither recorded a departure, so a check reachable only through a cross-game Wal
 
 1. The exchange itself (combo/rando/LiveWallmasterRoutes.h) runs against a model of both games: an OoT check behind an
    OoT -> MM -> OoT chain of Wallmasters, the ages MM is entered at, MM entered not at all, and the MM-in-front side.
+   With Warp Songs and Soaring Spots Shuffle a Full Wallmaster may also land at the other game's warp pads and owl
+   statues (the arrival bits after the dungeons', CrossWallmasters.h): a route through the last owl and the last pad,
+   and a chain through every arrival bit of both games, settle within the exchange's passes.
 2. The production wiring: both engines' tracker searches root the exchange's arrivals and record their departures
-   (fill.cpp, Logic.cpp, ComboEntrancesMM.cpp; run in song_live_arrival_tests.py and mm_unified_logic_tests.py), each
-   tracker search runs through the exchange while its game is in front, and each game exports the other's search.
+   over every arrival bit (fill.cpp, Logic.cpp, ComboEntrancesMM.cpp; run in song_live_arrival_tests.py,
+   mm_unified_logic_tests.py and oot_wallmaster_overlay_tests.py, the warp pads and owls included), each tracker search
+   runs through the exchange while its game is in front, with either Full layout (with or without the warps), and each
+   game exports the other's search.
 """
 from pathlib import Path
 import argparse
@@ -43,6 +48,7 @@ cpp = r'''
 #include "rando/LiveWallmasterRoutes.h"
 #include <cassert>
 #include <cstdio>
+#include <vector>
 namespace CE = ComboRando::Entrances;
 // The model. OoT: child Link reaches the Mask Shop portal (MM entered as child) and the Kokiri Forest Wallmaster, which
 // routes into MM's Woodfall Temple (MM bit 0). MM: from Woodfall Temple a Wallmaster routes into OoT's Forest Temple
@@ -65,7 +71,40 @@ struct Model {
         return woodfallSource && (arrivals & 1u) ? 1u << 3 : 0u;
     }
 };
+// A chain of Full Wallmasters, by arrival bits: OoT's start reaches the Wallmaster to MM bit mm[0], an MM arrival at mm[k]
+// reaches the one to OoT bit oot[k], and an OoT arrival at oot[k] the one to mm[k + 1]. Child Link enters MM by the
+// Mask Shop; an OoT arrival at adultAt (if any) also lets adult Link reach MM.
+struct Chain {
+    std::vector<int> mm, oot;
+    int adultAt = -1;
+    int ootSearches = 0, mmSearches = 0;
+    uint32_t reached = 0; // the OoT arrivals the last OoT search had, at either age
+    CE::LiveOotSearch Oot(const CE::WallmasterAgeMasks& arrivals) {
+        ++ootSearches;
+        reached = arrivals.masks[0] | arrivals.masks[1];
+        CE::LiveOotSearch found;
+        found.departures = 1u << mm[0];
+        for (size_t k = 0; k + 1 < mm.size() && k < oot.size(); ++k)
+            if ((reached >> oot[k]) & 1)
+                found.departures |= 1u << mm[k + 1];
+        found.mmAges = uint8_t(2 | (adultAt >= 0 && ((reached >> adultAt) & 1) ? 1 : 0));
+        return found;
+    }
+    uint32_t Mm(uint32_t arrivals) {
+        ++mmSearches;
+        uint32_t departures = 0;
+        for (size_t k = 0; k < mm.size() && k < oot.size(); ++k)
+            if ((arrivals >> mm[k]) & 1)
+                departures |= 1u << oot[k];
+        return departures;
+    }
+};
 int main() {
+    // The passes cover every arrival bit of both games, warp pads and owls included, and the two ages, and one pass
+    // more to confirm.
+    static_assert(CE::kOotCrossArrivalCount == 17 && CE::kMmCrossArrivalCount == 17);
+    static_assert(CE::kLiveWallmasterPasses == int(CE::kOotCrossArrivalCount + CE::kMmCrossArrivalCount) + 2 + 1);
+    static_assert(CE::kOotWallmasterArrivalBits == 0x1ffffu && CE::kMmWallmasterArrivalBits == 0x1ffffu);
     {   // OoT in front: the check behind OoT -> MM -> OoT is reached, by the age MM was entered at only.
         Model m;
         const auto arrivals = CE::LiveWallmastersOotInFront([&](const auto& a) { return m.Oot(a); },
@@ -104,7 +143,52 @@ int main() {
         });
         assert(n.ootSearches == 2); // child too, once the portal is known
     }
-    std::puts("PASS: the tracker's live exchange follows Wallmaster routes into the other game and back");
+    {   // The warps, Full: an OoT Wallmaster to MM's Stone Tower owl, and from there an MM one to OoT's Temple of Time
+        // pad, the highest bit of each game.
+        const int owl = CE::MmWallmasterArrivalIndex("MM_WARP_OWL_STONE_TOWER");
+        const int pad = CE::OotWallmasterArrivalIndex("OOT_WARP_SONG_TEMPLE");
+        assert(owl == 16 && pad == 16 && CE::MmWallmasterArrivalRow(owl) == "MM_WARP_OWL_STONE_TOWER" &&
+               CE::OotWallmasterArrivalRow(pad) == "OOT_WARP_SONG_TEMPLE");
+        Chain c{ { owl }, { pad } };
+        const auto arrivals = CE::LiveWallmastersOotInFront([&](const auto& a) { return c.Oot(a); },
+                                                            [&](uint32_t d) { return c.Mm(d); });
+        assert(arrivals.masks[1] == 1u << pad && arrivals.masks[0] == 0 && c.reached == 1u << pad);
+        assert(c.ootSearches == 2);
+        // MM in front, at the owl: OoT's search with MM's departure to the pad, and its departure to the owl.
+        Chain m{ { owl }, { pad } };
+        uint32_t lastArrivals = 0;
+        const auto fromOot = CE::LiveWallmastersMmInFront(
+            [&](uint32_t a) { lastArrivals = a; return m.Mm(a); },
+            [&](uint32_t fromMm) {
+                return CE::LiveOotDeparturesForMm(fromMm, 2, [&](const auto& a) { return m.Oot(a); });
+            });
+        assert(fromOot == 1u << owl && lastArrivals == 1u << owl && m.reached == 1u << pad);
+    }
+    {   // The longest chain: through every MM arrival bit and every OoT one in turn (dungeons, then owls and pads), with
+        // adult Link reaching MM only at its end. Each pass adds a bit; the exchange settles with all of them.
+        Chain c;
+        for (int bit = 0; bit < int(CE::kMmCrossArrivalCount); ++bit)
+            c.mm.push_back(bit);
+        for (int bit = 0; bit < int(CE::kOotCrossArrivalCount); ++bit)
+            c.oot.push_back(bit);
+        c.adultAt = int(CE::kOotCrossArrivalCount) - 1;
+        const auto arrivals = CE::LiveWallmastersOotInFront([&](const auto& a) { return c.Oot(a); },
+                                                            [&](uint32_t d) { return c.Mm(d); });
+        assert(arrivals.masks[0] == CE::kOotWallmasterArrivalBits && arrivals.masks[1] == CE::kOotWallmasterArrivalBits);
+        assert(c.reached == CE::kOotWallmasterArrivalBits);
+        assert(c.ootSearches == int(CE::kOotCrossArrivalCount) + 2 && c.ootSearches <= CE::kLiveWallmasterPasses);
+        Chain m = c;
+        m.ootSearches = m.mmSearches = 0;
+        const auto fromOot = CE::LiveWallmastersMmInFront(
+            [&](uint32_t a) { return m.Mm(a); },
+            [&](uint32_t fromMm) {
+                return CE::LiveOotDeparturesForMm(fromMm, 2, [&](const auto& a) { return m.Oot(a); });
+            });
+        assert(fromOot == CE::kMmWallmasterArrivalBits);
+        assert(m.mmSearches == int(CE::kMmCrossArrivalCount) + 1 && m.mmSearches <= CE::kLiveWallmasterPasses);
+    }
+    std::puts("PASS: the tracker's live exchange follows Wallmaster routes into the other game and back, warp pads and "
+              "owl statues included");
     return 0;
 }
 '''
@@ -117,12 +201,15 @@ subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
 fill = read('soh/soh/Enhancements/randomizer/3drando/fill.cpp')
 assert hostcxx.contains(fill, 'if (region->randomizerRegionKey == RR_ROOT && (ComboRando::OotSongOracle() || '
                               'logic->CalculatingAvailableChecks) && ComboRando::Entrances::OotWallmasterArrivals().any())')
+# Every arrival bit is rooted, the warp pads' (OoT bits 11-16) and the owls' (MM bits 7-16) too.
+assert hostcxx.contains(fill, 'for (int bit = 0; bit < int(ComboRando::Entrances::kOotCrossArrivalCount); ++bit) {')
 assert hostcxx.contains(fill, 'if (!ComboRando::OotSongOracle() && !logic->CalculatingAvailableChecks) return; '
                               'auto& departures = ComboRando::Entrances::OotWallmasterDepartures().masks;')
 logic = read('mm/2s2h/Rando/Logic/Logic.cpp')
 assert hostcxx.contains(logic, 'if (currentRegion == RR_MAX && (ComboRando::MmSongOracle() || evaluatingLiveTracker) '
                                '&& gSaveContext.save.linkAge <= 1) { const uint32_t arrivals = '
                                'ComboRando::Entrances::MmWallmasterArrivals().masks[gSaveContext.save.linkAge];')
+assert hostcxx.contains(logic, 'for (size_t bit = 0; bit < ComboRando::Entrances::kMmCrossArrivalCount; ++bit) {')
 entrances = read('mm/2s2h/Rando/Logic/ComboEntrancesMM.cpp')
 assert hostcxx.contains(entrances, 'if (capturedTimes && (ComboRando::MmSongOracle() || evaluatingLiveTracker) && '
                                    'age <= 1) CE::MmWallmasterDepartures().masks[age] |= 1u << bit;')
@@ -135,6 +222,19 @@ mm_tracker = read('mm/2s2h/Rando/CheckTracker/CheckTracker.cpp')
 assert hostcxx.contains(function(mm_tracker, 'void Rando::CheckTracker::ComputeChecksInLogic('),
                         'ComboMmTrackerSearch([&] { ComputeChecksInLogicOnce(inLogic); });')
 oot_inc, mm_inc = read('combo/menu/ComboCheckTrackerOOT.inc'), read('combo/menu/ComboCheckTrackerMM.inc')
+# Either Full layout runs the exchange: wallmasters-full-v1, and wallmasters-full-warps-v1 with the warps. MM reads the
+# layout's Wallmaster value, which is Full for both.
+oot_gate = function(oot_inc, 'static bool ComboCrossGameWallmasters() {')
+assert hostcxx.contains(oot_gate, 'return layout.active() && LiveCE::RequiresFullWallmasters('
+                                  'layout.json().value("required", std::vector<std::string>{}));')
+full_ids = function(read('combo/rando/entrances/EntranceLayout.h'),
+                    'inline bool RequiresFullWallmasters(const std::vector<std::string>& required) {')
+assert 'kFullWallmasterCapability' in full_ids and 'kFullWarpsWallmasterCapability' in full_ids
+assert hostcxx.contains(function(mm_inc, 'static bool ComboMmCrossGameWallmasters() {'),
+                        'return settings && settings->erWallmasters == LiveCE::Mode::Full;')
+# The departures each game hands the other keep every arrival bit (CrossWallmasters.h's masks, the warps' included).
+assert hostcxx.contains(oot_inc, '(departures[0] | departures[1]) & LiveCE::kMmWallmasterArrivalBits')
+assert hostcxx.contains(mm_inc, '(departures[0] | departures[1]) & LiveCE::kOotWallmasterArrivalBits')
 oot_search = function(oot_inc, 'static void ComboTrackerSearch(const std::function<void()>& search) {')
 assert hostcxx.contains(oot_search, 'if (sComboLiveExchange || !Combo_OotIsForeground() || !ComboCrossGameWallmasters())')
 assert 'LiveCE::LiveWallmastersOotInFront(' in oot_search and '"MM_LiveWallmasterDepartures"' in oot_search
@@ -151,4 +251,5 @@ assert 'Rando::CheckTracker::ComputeChecksInLogicOnce(inLogic)' in mm_export
 for text, arrivals in ((oot_inc, 'LiveCE::OotWallmasterArrivals() = {};'), (mm_inc, 'LiveCE::MmWallmasterArrivals() = {};')):
     scope = text[text.index('ExchangeScope() {'):]
     assert arrivals in scope[:scope.index(chr(10) + '};')]
-print('PASS: both trackers run their searches through the live exchange and root its arrivals')
+print('PASS: both trackers run their searches through the live exchange, with either Full layout, and root its '
+      'arrivals, warp pads and owl statues included')

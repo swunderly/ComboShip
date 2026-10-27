@@ -3,7 +3,8 @@
 Checks the generated vanilla and MQ predicates against an independent truth table; uses the real soul
 ownership policy, registry, candidate split and age/time propagation. Built twice, with the dev and the
 shipping capability sets: a Master Quest context is admitted exactly when the build has the quests
-capability. Native object compilation is separate.
+capability. With the warps, a route to an OoT warp pad is an exit to the pad's landing, and one to an MM owl statue
+(Full) a departure only the oracle's and the tracker's searches record. Native object compilation is separate.
 """
 from pathlib import Path
 import argparse
@@ -156,6 +157,45 @@ int main() {
         assert(processed == ((mask & 12) ? 11 : 0));
     }
     logic->adultOnly = false;
+    // Warp Songs and Soaring Spots Shuffle with Full (limits design, Stage 4): a Wallmaster to an OoT warp pad is an exit
+    // to the pad's landing, which every search takes, the tracker's too; one to an MM owl statue is never an OoT exit,
+    // and the oracle's and the tracker's searches record it at the owl's MM bit (CrossWallmasters.h) for the ages that
+    // reach the source, for the cross-world fixpoint or the tracker's live exchange (rando/LiveWallmasterRoutes.h).
+    {
+        const auto saved = CE::ActiveOotUnifiedAssumptions();
+        const auto* botw = CE::Find("OOT_WALLMASTER_BOTW_MAIN");
+        CE::OotUnifiedAssumptions warps;
+        warps.routes[botw->id] = {{CE::Find("OOT_WARP_SONG_TEMPLE")->id}};
+        warps.foreign[botw->id] = {{CE::Find("MM_WARP_OWL_STONE_TOWER")->id}};
+        CE::ActiveOotUnifiedAssumptions() = warps;
+        auto pad = OverlayExits(RR_BOTW_MIDDLE);
+        assert(pad.size() == 1 && pad.front().GetConnectedRegion()->randomizerRegionKey == RR_TEMPLE_OF_TIME);
+        const auto owl = ForeignOverlayExits(RR_BOTW_MIDDLE);
+        assert(owl.size() == 1 && owl.front().second == CE::MmWallmasterArrivalIndex("MM_WARP_OWL_STONE_TOWER") &&
+               owl.front().second == 16);
+        for (const int searcher : {0, 1, 2}) { // another search, the oracle's, the tracker's
+            for (const bool adult : {false, true}) {
+                ClearRegions(); processed = 0;
+                ComboRando::OotSongOracle() = searcher == 1;
+                logic->CalculatingAvailableChecks = searcher == 2;
+                CE::OotWallmasterDepartures() = {};
+                auto* src = RegionTable(RR_BOTW_MIDDLE);
+                (adult ? src->adultNight : src->childDay) = true;
+                GetAccessibleLocationsStruct gals;
+                ProcessComboEntranceOverlay(src, gals, RG_NONE, false, true);
+                const auto* landing = RegionTable(RR_TEMPLE_OF_TIME);
+                assert(landing->childDay == !adult && !landing->childNight && !landing->adultDay &&
+                       landing->adultNight == adult);
+                assert(processed == 1 && gals.regionPool == std::vector<RandomizerRegion>{RR_TEMPLE_OF_TIME});
+                const auto& recorded = CE::OotWallmasterDepartures().masks;
+                assert(recorded[adult ? 0 : 1] == (searcher ? 1u << 16 : 0u) && recorded[adult ? 1 : 0] == 0u);
+            }
+        }
+        ComboRando::OotSongOracle() = false;
+        logic->CalculatingAvailableChecks = false;
+        CE::OotWallmasterDepartures() = {};
+        CE::ActiveOotUnifiedAssumptions() = saved;
+    }
     // A Master Quest context is admitted only with the quests capability; a source the quest removes never is.
     ctx->dungeons.rows[0].mq = true; // MQ Deku Tree: every vanilla source still exists
     assert(SetAssumptions(candidate.c_str()) == questsActive);
@@ -221,4 +261,4 @@ for dev in (True, False):
                         msvc=['/bigobj', '/Zc:preprocessor'], exe=work/f'overlay_{int(dev)}.exe')
     subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
 print('PASS production overlay: 11 vanilla and 10 MQ anchors x 4096 predicate cases, 16 age/time cases; native exits '
-      'untouched; MQ admitted only with the quests capability')
+      'untouched; MQ admitted only with the quests capability; warp pad exits and owl departures')

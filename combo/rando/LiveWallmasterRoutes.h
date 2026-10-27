@@ -7,7 +7,8 @@
 // RR_MAX, Logic.cpp). As in QuerySongWorlds, MM searches with one age, so every OoT departure arrives in MM, and an MM
 // departure arrives in OoT at each OoT age Link can be in MM at.
 //
-// Masks: OoT bits name kOotWallmasterArrivalRows, MM bits kMmBaseWallmasterDestinations; OoT ages adult 0, child 1.
+// Masks: OoT bits name kOotWallmasterArrivalRows, MM bits kMmBaseWallmasterDestinations, and with the warps shuffled
+// the bits after them the OoT warp pads and the MM owl statues (CrossWallmasters.h); OoT ages adult 0, child 1.
 #pragma once
 #include "entrances/CrossWallmasters.h"
 #include <cstddef>
@@ -24,8 +25,11 @@ struct LiveOotSearch {
 inline WallmasterAgeMasks LiveOotArrivals(uint32_t fromMm, uint8_t mmAges) {
     return { { (mmAges & 1) ? fromMm : 0u, (mmAges & 2) ? fromMm : 0u } };
 }
-// Bits only grow, by at most 7 + 11 + 2 between two searches of the game in front, so the loops end well before this.
-inline constexpr int kLiveWallmasterPasses = 32;
+// Bits only grow, and a pass that does not settle adds at least one: to the OoT arrivals, the MM arrivals or the two
+// ages Link can be in MM at (17 + 17 + 2 with the warps). So every loop settles, and its last search confirms it,
+// within this many passes.
+inline constexpr int kLiveWallmasterPasses = static_cast<int>(kOotCrossArrivalCount + kMmCrossArrivalCount) + 2 + 1;
+static_assert(kLiveWallmasterPasses >= 37, "the warps' 17 + 17 arrival bits and the two ages, and the confirming pass");
 // A search with the same arrivals finds the same: the exchange has settled.
 inline bool SameArrivals(const WallmasterAgeMasks& a, const WallmasterAgeMasks& b) {
     return a.masks == b.masks;

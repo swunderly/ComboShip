@@ -11,6 +11,8 @@ profile is decoded before the legacy fallback and gives the pinned 4x7 MM Wallma
 (tools/ootmm/m1-contract.json); and that the logic reads the unified routes with the
 HaveEnemySoul(ACTOR_EN_WALLMAS) gate, the can_reset_time AND for a destination without no-sot,
 FilterNativeMmIngressTimes and no ACCESS on arrival, while the private profile's logic is unchanged.
+With Full, a route into OoT is recorded, not traversed, by the oracle's and the tracker's searches, a warp pad's too,
+and Logic.cpp's RR_MAX block (taken from source) roots OoT's captures in MM at the age searched, an owl statue's too.
 """
 from pathlib import Path
 import argparse
@@ -60,6 +62,16 @@ exports = '\n'.join([
 ])
 logic = function('namespace Rando::Logic {')
 unified = function('static bool ExploreMmUnifiedWallmasterEntrances(')
+# Logic.cpp's FindReachableRegions roots Full Wallmaster arrivals from OoT at RR_MAX: that block, as a function.
+mm_logic = (source/'mm/2s2h/Rando/Logic/Logic.cpp').read_text(encoding='utf-8')
+root_start = hostcxx.find(mm_logic, '    // Full Wallmasters (CrossWallmasters.h): an OoT capture lands in an MM dungeon')
+root_block = mm_logic[root_start:mm_logic.index('\n#endif', root_start)]
+assert hostcxx.contains(root_block, 'for (size_t bit = 0; bit < ComboRando::Entrances::kMmCrossArrivalCount; ++bit) {')
+root_arrivals = ('namespace Rando::Logic {\n'
+                 'void RootFullWallmasterArrivals(RandoRegionId currentRegion, uint64_t currentTime,\n'
+                 '                                std::set<RandoRegionId>& reachableRegions,\n'
+                 '                                std::unordered_map<RandoRegionId, RegionTimeState>& regionTimeStates) {\n'
+                 + root_block + '\n}\n} // namespace Rando::Logic\n')
 
 # The installer reads this build's capabilities once; the harness swaps in a settable set.
 # The installer and the candidate decoder (Full's foreign routes) read them.
@@ -472,6 +484,72 @@ void Logic() {
                 const auto& recorded = CE::MmWallmasterDepartures().masks;
                 assert(recorded[age] == (searcher && soul ? forest : 0u) && recorded[1 - age] == 0u);
             }
+    // With the warps (Full), an OoT warp pad is such a destination too, after the dungeons (OoT bits 11-16).
+    synthetic.routes[0xff00u] = {CE::MakeMmUnifiedRoute(*CE::Find("OOT_WARP_SONG_TEMPLE"))};
+    CE::ActiveMmUnifiedAssumptions() = synthetic;
+    const uint32_t pad = 1u << CE::OotWallmasterArrivalIndex("OOT_WARP_SONG_TEMPLE");
+    assert(pad == 1u << 16);
+    for (const int searcher : {0, 1, 2})
+        for (const uint8_t age : {uint8_t(0), uint8_t(1)}) {
+            ResetSearch();
+            ComboRando::MmSongOracle() = searcher == 1;
+            evaluatingLiveTracker = searcher == 2;
+            gSaveContext.save.linkAge = age;
+            CE::MmWallmasterDepartures() = {};
+            assert(Reached(RR_BENEATH_THE_GRAVEYARD_DAMPE).empty() && filterCalls.empty() && resetChecks == 0);
+            const auto& recorded = CE::MmWallmasterDepartures().masks;
+            assert(recorded[age] == (searcher ? pad : 0u) && recorded[1 - age] == 0u);
+        }
+    // With the warps (Own Game or Full), an MM Wallmaster to an owl statue is an MM arrival every search traverses,
+    // the tracker's too, and no-sot: no can_reset_time gate.
+    synthetic.routes[0xff00u] = {CE::MakeMmUnifiedRoute(*CE::Find("MM_WARP_OWL_SNOWHEAD"))};
+    CE::ActiveMmUnifiedAssumptions() = synthetic;
+    for (const int searcher : {0, 1, 2}) {
+        ResetSearch();
+        ComboRando::MmSongOracle() = searcher == 1;
+        evaluatingLiveTracker = searcher == 2;
+        CE::MmWallmasterDepartures() = {};
+        assert(Reached(RR_BENEATH_THE_GRAVEYARD_DAMPE) == std::set<std::string>{"MM_WARP_OWL_SNOWHEAD"});
+        assert(resetChecks == 0 && accessWrites == 0 && !CE::MmWallmasterDepartures().any());
+        assert(filterCalls == std::vector<s32>{static_cast<s32>(CE::Find("MM_WARP_OWL_SNOWHEAD")->id)});
+    }
+    // OoT's captures into MM (Logic.cpp, at RR_MAX): rooted at the age searched by the oracle, and by the tracker with
+    // the arrivals its live exchange sets (both ages alike), an MM dungeon and, with the warps, an owl statue (MM bits
+    // 7-16), at the root's time through the ingress filter. Another search, another region or the other age's
+    // arrivals root none.
+    {
+        const auto regionOf = [](std::string_view row) {
+            return GetRegionIdFromEntrance(static_cast<s32>(CE::Find(row)->id));
+        };
+        const auto dungeon = CE::kMmBaseWallmasterDestinations[0];
+        const int owl = CE::MmWallmasterArrivalIndex("MM_WARP_OWL_STONE_TOWER");
+        assert(CE::MmWallmasterArrivalIndex(dungeon) == 0 && owl == 16 && owl + 1 == int(CE::kMmCrossArrivalCount));
+        const std::set<RandoRegionId> both{regionOf(dungeon), regionOf("MM_WARP_OWL_STONE_TOWER")};
+        assert(both.size() == 2 && !both.contains(RR_MAX));
+        for (const int searcher : {0, 1, 2})
+            for (const uint8_t age : {uint8_t(0), uint8_t(1)})
+                for (const bool here : {false, true}) {
+                    ResetSearch();
+                    ComboRando::MmSongOracle() = searcher == 1;
+                    evaluatingLiveTracker = searcher == 2;
+                    gSaveContext.save.linkAge = age;
+                    CE::MmWallmasterArrivals() = {};
+                    CE::MmWallmasterArrivals().masks[here ? age : 1 - age] = 1u | (1u << owl);
+                    std::set<RandoRegionId> reachable;
+                    std::unordered_map<RandoRegionId, RegionTimeState> states;
+                    RootFullWallmasterArrivals(RR_MAX, 0b1011, reachable, states);
+                    const auto rooted = searcher && here ? both : std::set<RandoRegionId>{};
+                    assert(reachable == rooted && explored.size() == rooted.size());
+                    assert(filterCalls.size() == rooted.size() && accessWrites == 0 && resetChecks == 0);
+                    for (const auto region : reachable)
+                        assert(states.at(region).timeSlices == 0b1011);
+                    ResetSearch();
+                    reachable.clear();
+                    RootFullWallmasterArrivals(RR_FIRST_TARGET, 0b1011, reachable, states);
+                    assert(reachable.empty() && filterCalls.empty());
+                }
+        CE::MmWallmasterArrivals() = {};
+    }
     ComboRando::MmSongOracle() = false;
     evaluatingLiveTracker = false;
     gSaveContext.save.linkAge = 1;
@@ -509,7 +587,8 @@ int main() {
 '''
 for dev in (False, True):
     cpp = work/('mm_unified_logic_dev.cpp' if dev else 'mm_unified_logic.cpp')
-    cpp.write_text(prelude + file_locals + '\n' + exports + '\n' + logic + '\n' + after + tests, encoding='utf-8')
+    cpp.write_text(prelude + file_locals + '\n' + exports + '\n' + logic + '\n' + after + root_arrivals + tests,
+                   encoding='utf-8')
     exe = hostcxx.build(args.compiler, cpp, includes=[source/'combo', args.json_include],
                         defines=['_CRT_SECURE_NO_WARNINGS'] + (['COMBO_ENTRANCE_DEV=1'] if dev else []),
                         werror=True, msvc=['/bigobj'], gnu=['-Wno-missing-field-initializers'])
